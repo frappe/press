@@ -1,5 +1,5 @@
 ---
-- name: Setup Bare Metal VM Host with NFS Shared Storage
+- name: Setup Bare Metal VM Host with NFS storage for Ubuntu
   hosts: all
   become: yes
   become_user: root
@@ -8,7 +8,6 @@
     configure_network: true
     configure_storage: true
     configure_firewall: true
-    configure_shared_storage: true
     setup_vm_storage: true
     optimize_io: true
     storage_path: "/var/lib/libvirt/images"
@@ -16,16 +15,17 @@
     vm_images_directory: "/opt/vm_images"
     vm_config_directory: "/opt/vm_configs"
     vm_templates_directory: "/opt/vm_templates"
-    nfs_server_host: "{{ nfs_server | mandatory }}"
-    nfs_server_export: "{{ nfs_export_path | default('/exports/vm_storage') }}"
     nfs_mount_point: "/mnt/vm_storage"
-    shared_storage_pool_name: "shared_storage"
+    nfs_server_host: "{{ nfs_server_host }}"
+    nfs_server_export: "{{ nfs_server_export | default('/exports/vm_storage') }}"
+    configure_shared_storage: true
     bridge_network:
       name: "br0"
       ip: "192.168.100.1"
       netmask: "255.255.255.0"
       dhcp_start: "192.168.100.100"
       dhcp_end: "192.168.100.200"
+      cidr: "192.168.100.0/24"
 
   roles:
     - role: essentials
@@ -33,6 +33,8 @@
     - role: nginx
     - role: agent
     - role: node_exporter
-    - role: nfs_client
+    - role: cadvisor
+    - role: statsd_exporter
+    - role: filebeat
     - role: kvm_virtualization
     - role: update_agent 

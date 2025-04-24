@@ -1,0 +1,9 @@
+interface={{ bridge_network.name | default('br0') }}
+bind-interfaces
+domain={{ ansible_domain | default('local') }}
+dhcp-range={{ bridge_network.dhcp_start | default('192.168.100.100') }},{{ bridge_network.dhcp_end | default('192.168.100.200') }},12h
+dhcp-option=option:router,{{ bridge_network.ip | default('192.168.100.1') }}
+dhcp-option=option:dns-server,{{ ansible_dns.nameservers[0] }}
+log-queries
+log-dhcp
+log-facility=/var/log/dnsmasq.log 

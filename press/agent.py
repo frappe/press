@@ -1331,3 +1331,32 @@ class AgentCallbackException(Exception):
 
 class AgentRequestSkippedException(Exception):
 	pass
+
+
+class BareMetalVirtualMachineJob(AgentJob):
+	"""
+	AgentJob subclass for handling virtual machine operations on a bare metal host.
+	This class extends AgentJob with specific methods for VM lifecycle operations.
+	"""
+
+	def __init__(self, server_type, server, job_type, details=None):
+		"""
+		Initialize the BareMetalVirtualMachineJob with server and job details
+		
+		Args:
+			server_type: Type of server ("Bare Metal Host")
+			server: The server name 
+			job_type: Type of job to perform on the VM
+			details: Additional job details (VM config, etc.)
+		"""
+		super().__init__(server_type, server, job_type, details)
+
+	@classmethod
+	def create(cls, server_type, server, job_type, details=None):
+		"""Create and return a new agent job for VM operations"""
+		return super().create(server_type, server, job_type, details)
+
+	@classmethod
+	def is_job_complete(cls, job_id):
+		"""Check if a VM operation job is complete"""
+		return super().is_job_complete(job_id)

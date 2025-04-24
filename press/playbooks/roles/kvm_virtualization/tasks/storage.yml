@@ -1,98 +1,126 @@
 ---
-- name: Check if default storage pool exists
-  shell: virsh pool-list --all | grep default
-  register: default_storage_pool
-  failed_when: false
+- name: Ensure VM storage directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  with_items:
+    - "{{ storage_path | default('/var/lib/libvirt/images') }}"
+    - "{{ vm_directory | default('/opt/vms') }}"
+    - "{{ vm_images_directory | default('/opt/vm_images') }}"
+    - "{{ vm_config_directory | default('/opt/vm_configs') }}"
+    - "{{ vm_templates_directory | default('/opt/vm_templates') }}"
+
+- name: Check for high-performance storage devices
+  shell: lsblk -o NAME,TYPE,MOUNTPOINT,SIZE -J
+  register: storage_devices
   changed_when: false
 
-- name: Create default storage pool if it doesn't exist
+- name: Configure storage for better performance (optional)
   block:
-    - name: Create directory for default storage pool
-      file:
-        path: "{{ storage_path | default('/var/lib/libvirt/images') }}"
-        state: directory
-        mode: '0755'
+    - name: Create a VM storage volume group (if dedicated device available)
+      lvg:
+        vg: vg_vms
+        pvs: "{{ optimize_io_device }}"
+      when: optimize_io_device is defined
+      register: vg_created
 
-    - name: Create storage pool XML
-      template:
-        src: default_storage_pool.xml.j2
-        dest: /tmp/default_storage_pool.xml
-        mode: '0644'
+    - name: Create a logical volume for VM storage
+      lvol:
+        vg: vg_vms
+        lv: lv_vms
+        size: 100%FREE
+      when: vg_created is defined and vg_created.changed
+      register: lv_created
 
+    - name: Format the logical volume
+      filesystem:
+        fstype: xfs
+        dev: /dev/vg_vms/lv_vms
+      when: lv_created is defined and lv_created.changed
+
+    - name: Mount the logical volume
+      mount:
+        path: "{{ vm_directory | default('/opt/vms') }}"
+        src: /dev/vg_vms/lv_vms
+        fstype: xfs
+        state: mounted
+      when: lv_created is defined and lv_created.changed
+  when: optimize_io | default(false) and optimize_io_device is defined
+
+- name: Configure libvirt storage pools
+  block:
     - name: Define default storage pool
-      command: virsh pool-define /tmp/default_storage_pool.xml
-      when: default_storage_pool.rc != 0
-
-    - name: Build default storage pool
-      command: virsh pool-build default
-      when: default_storage_pool.rc != 0
-
-    - name: Set default storage pool to autostart
-      command: virsh pool-autostart default
-      when: default_storage_pool.rc != 0
+      virt_pool:
+        command: define
+        name: default
+        xml: |
+          <pool type='dir'>
+            <name>default</name>
+            <target>
+              <path>{{ storage_path | default('/var/lib/libvirt/images') }}</path>
+            </target>
+          </pool>
+      register: default_pool
 
     - name: Start default storage pool
-      command: virsh pool-start default
-      when: default_storage_pool.rc != 0
+      virt_pool:
+        state: active
+        name: default
+      when: default_pool.changed
 
-    - name: Clean up temporary storage pool XML file
-      file:
-        path: /tmp/default_storage_pool.xml
-        state: absent
-  when: default_storage_pool.rc != 0
+    - name: Enable autostart for default storage pool
+      virt_pool:
+        autostart: yes
+        name: default
 
-- name: Configure additional VM storage pools
-  block:
-    - name: Create VM storage directory
-      file:
-        path: "{{ vm_directory | default('/opt/vms') }}"
-        state: directory
-        mode: '0755'
-        owner: libvirt-qemu
-        group: kvm
-
-    - name: Check if VM storage pool exists
-      shell: virsh pool-list --all | grep vm_storage
-      register: vm_storage_pool
-      failed_when: false
-      changed_when: false
-
-    - name: Create VM storage pool XML
-      copy:
-        content: |
-          <pool type="dir">
+    - name: Define VM storage pool
+      virt_pool:
+        command: define
+        name: vm_storage
+        xml: |
+          <pool type='dir'>
             <name>vm_storage</name>
             <target>
               <path>{{ vm_directory | default('/opt/vms') }}</path>
-              <permissions>
-                <mode>0755</mode>
-                <owner>64055</owner>
-                <group>108</group>
-              </permissions>
             </target>
           </pool>
-        dest: /tmp/vm_storage_pool.xml
-        mode: '0644'
-      when: vm_storage_pool.rc != 0
-
-    - name: Define VM storage pool
-      command: virsh pool-define /tmp/vm_storage_pool.xml
-      when: vm_storage_pool.rc != 0
-
-    - name: Set VM storage pool to autostart
-      command: virsh pool-autostart vm_storage
-      when: vm_storage_pool.rc != 0
+      register: vm_pool
 
     - name: Start VM storage pool
-      command: virsh pool-start vm_storage
-      when: vm_storage_pool.rc != 0 and vm_storage_pool.stdout.find("active") == -1
+      virt_pool:
+        state: active
+        name: vm_storage
+      when: vm_pool.changed
 
-    - name: Clean up temporary VM storage pool XML file
-      file:
-        path: /tmp/vm_storage_pool.xml
-        state: absent
-      when: vm_storage_pool.rc != 0
-  when: setup_vm_storage | default(true)
+    - name: Enable autostart for VM storage pool
+      virt_pool:
+        autostart: yes
+        name: vm_storage
+
+    - name: Define VM templates storage pool
+      virt_pool:
+        command: define
+        name: vm_templates
+        xml: |
+          <pool type='dir'>
+            <name>vm_templates</name>
+            <target>
+              <path>{{ vm_templates_directory | default('/opt/vm_templates') }}</path>
+            </target>
+          </pool>
+      register: vm_templates_pool
+
+    - name: Start VM templates storage pool
+      virt_pool:
+        state: active
+        name: vm_templates
+      when: vm_templates_pool.changed
+
+    - name: Enable autostart for VM templates storage pool
+      virt_pool:
+        autostart: yes
+        name: vm_templates
 
 - name: Configure system for improved VM I/O performance
   block:

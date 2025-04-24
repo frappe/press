@@ -55,9 +55,10 @@ class Cluster(Document):
 		availability_zone: DF.Data | None
 		aws_access_key_id: DF.Data | None
 		aws_secret_access_key: DF.Password | None
+		bare_metal_host: DF.Link | None
 		beta: DF.Check
 		cidr_block: DF.Data | None
-		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner"]
+		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner", "Bare Metal Host"]
 		description: DF.Data | None
 		hybrid: DF.Check
 		image: DF.AttachImage | None

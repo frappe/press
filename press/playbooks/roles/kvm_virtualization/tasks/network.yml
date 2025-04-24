@@ -99,4 +99,64 @@
     - name: Reload UFW
       command: ufw reload
       when: ufw_check.rc == 0
-  when: configure_firewall | default(true) 
+  when: configure_firewall | default(true)
+
+- name: Check if bridge exists
+  shell: ip addr show {{ bridge_network.name | default('br0') }}
+  register: bridge_exists
+  failed_when: false
+  changed_when: false
+
+- name: Install bridge networking packages
+  apt:
+    name:
+      - bridge-utils
+      - dnsmasq
+    state: present
+
+- name: Configure network bridge
+  block:
+    - name: Create bridge network interface file
+      template:
+        src: templates/bridge-interface.j2
+        dest: /etc/netplan/01-bridge-network.yaml
+        mode: '0644'
+      register: bridge_config
+
+    - name: Apply netplan configuration
+      command: netplan apply
+      when: bridge_config.changed
+
+    - name: Configure dnsmasq for DHCP on bridge
+      template:
+        src: templates/dnsmasq.conf.j2
+        dest: /etc/dnsmasq.d/bridge.conf
+        mode: '0644'
+      register: dnsmasq_config
+
+    - name: Restart dnsmasq service
+      systemd:
+        name: dnsmasq
+        state: restarted
+      when: dnsmasq_config.changed
+
+    - name: Enable IP forwarding
+      sysctl:
+        name: net.ipv4.ip_forward
+        value: '1'
+        state: present
+        reload: yes
+
+    - name: Configure iptables for NAT
+      iptables:
+        table: nat
+        chain: POSTROUTING
+        source: "{{ bridge_network.cidr | default('192.168.100.0/24') }}"
+        jump: MASQUERADE
+        state: present
+      register: iptables_config
+
+    - name: Save iptables rules
+      shell: iptables-save > /etc/iptables/rules.v4
+      when: iptables_config.changed
+  when: bridge_exists.rc != 0 and configure_network is defined and configure_network 

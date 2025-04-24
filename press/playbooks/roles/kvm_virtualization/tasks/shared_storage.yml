@@ -22,11 +22,93 @@
 
 - name: Start shared storage pool
   command: virsh pool-start {{ shared_storage_pool_name | default('shared_storage') }}
-  when: shared_storage_pool_exists.rc != 0
-  failed_when: false  # It might already be running
+  when: shared_storage_pool_exists.rc != 0  # It might already be running
 
 - name: Clean up temporary shared storage pool XML file
   file:
     path: /tmp/shared_storage_pool.xml
     state: absent
-  when: shared_storage_pool_exists.rc != 0 
+  when: shared_storage_pool_exists.rc != 0
+
+- name: Ensure NFS client packages are installed
+  apt:
+    name:
+      - nfs-common
+    state: present
+
+- name: Ensure NFS mount point exists
+  file:
+    path: "{{ nfs_mount_point | default('/mnt/vm_storage') }}"
+    state: directory
+    mode: '0755'
+
+- name: Mount NFS share
+  mount:
+    path: "{{ nfs_mount_point | default('/mnt/vm_storage') }}"
+    src: "{{ nfs_server_host }}:{{ nfs_server_export | default('/exports/vm_storage') }}"
+    fstype: nfs
+    opts: "rw,sync,hard,intr"
+    state: mounted
+  register: nfs_mounted
+
+- name: Create symlinks for VM storage on NFS
+  file:
+    src: "{{ nfs_mount_point | default('/mnt/vm_storage') }}/{{ item.subdir }}"
+    path: "{{ item.path }}"
+    state: link
+    force: yes
+  with_items:
+    - { subdir: "vms", path: "{{ vm_directory | default('/opt/vms') }}" }
+    - { subdir: "images", path: "{{ vm_images_directory | default('/opt/vm_images') }}" }
+    - { subdir: "templates", path: "{{ vm_templates_directory | default('/opt/vm_templates') }}" }
+  when: nfs_mounted.changed or nfs_mounted.state == "mounted"
+
+- name: Configure libvirt storage pools for NFS
+  block:
+    - name: Define VM storage pool on NFS
+      virt_pool:
+        command: define
+        name: vm_storage_nfs
+        xml: |
+          <pool type='dir'>
+            <name>vm_storage_nfs</name>
+            <target>
+              <path>{{ nfs_mount_point | default('/mnt/vm_storage') }}/vms</path>
+            </target>
+          </pool>
+      register: vm_pool_nfs
+
+    - name: Start VM storage pool on NFS
+      virt_pool:
+        state: active
+        name: vm_storage_nfs
+      when: vm_pool_nfs.changed
+
+    - name: Enable autostart for VM storage pool on NFS
+      virt_pool:
+        autostart: yes
+        name: vm_storage_nfs
+
+    - name: Define VM templates storage pool on NFS
+      virt_pool:
+        command: define
+        name: vm_templates_nfs
+        xml: |
+          <pool type='dir'>
+            <name>vm_templates_nfs</name>
+            <target>
+              <path>{{ nfs_mount_point | default('/mnt/vm_storage') }}/templates</path>
+            </target>
+          </pool>
+      register: vm_templates_pool_nfs
+
+    - name: Start VM templates storage pool on NFS
+      virt_pool:
+        state: active
+        name: vm_templates_nfs
+      when: vm_templates_pool_nfs.changed
+
+    - name: Enable autostart for VM templates storage pool on NFS
+      virt_pool:
+        autostart: yes
+        name: vm_templates_nfs 

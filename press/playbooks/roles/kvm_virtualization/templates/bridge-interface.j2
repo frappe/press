@@ -1,0 +1,17 @@
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    {{ ansible_default_ipv4.interface }}:
+      dhcp4: no
+      dhcp6: no
+  bridges:
+    {{ bridge_network.name | default('br0') }}:
+      interfaces: [{{ ansible_default_ipv4.interface }}]
+      addresses: [{{ bridge_network.ip | default('192.168.100.1') }}/{{ bridge_network.netmask | default('255.255.255.0') | ipaddr('prefix') }}]
+      gateway4: {{ ansible_default_ipv4.gateway }}
+      nameservers:
+        addresses: [{{ ansible_dns.nameservers[0] }}]
+      parameters:
+        stp: false
+        forward-delay: 0 

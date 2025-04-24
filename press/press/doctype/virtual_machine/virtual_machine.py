@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import ipaddress
 import time
+import json
 
 import boto3
 import botocore
@@ -169,31 +170,47 @@ class VirtualMachine(Document):
 	def _provision_bare_metal(self):
 		"""Provision VM on Bare Metal Host using libvirt/KVM"""
 		try:
-			# Mock implementation for now
+			# Set status to Pending
 			self.db_set('status', 'Pending')
 			
 			# Get the bare metal host
-			bare_metal_host = frappe.get_value(
+			bare_metal_host_name = frappe.get_value(
 				"Cluster", self.cluster, "bare_metal_host"
 			)
 			
-			if not bare_metal_host:
+			if not bare_metal_host_name:
 				frappe.throw("No Bare Metal Host selected for this cluster")
 			
-			# In a real implementation, we would:
-			# 1. Connect to the bare metal host
-			# 2. Use the agent to call create_vm endpoint
-			# 3. Wait for the VM to be created
-			# 4. Update the VM details
+			bare_metal_host = frappe.get_doc("Bare Metal Host", bare_metal_host_name)
 			
-			# For now, just update some fields to simulate a successful provision
-			frappe.db.set_value("Virtual Machine", self.name, {
-				"status": "Running",
-				"private_ip_address": f"192.168.100.{frappe.utils.cint(frappe.utils.nowdate())[-3:]}",
-				"instance_id": f"vm-{frappe.utils.random_string(8)}"
-			})
+			# Create the agent job for VM provisioning
+			job = self._create_bare_metal_agent_job(
+				bare_metal_host, 
+				"create_vm",
+				{
+					"name": self.name.split('.')[0],  # Use first part of name as VM name
+					"cpu": self.vcpu,
+					"memory": self.ram,
+					"disk": self.disk_size,
+					"image_template": "ubuntu-20.04-server-cloudimg-amd64",
+					"cloud_init": self._get_bare_metal_cloud_init_config(),
+					"network": {
+						"type": "bridge",
+						"bridge": "br0",
+					},
+					"start": True,
+				}
+			)
 			
-			frappe.msgprint(f"VM provisioning started on Bare Metal Host {bare_metal_host}")
+			# Store the job ID for future reference
+			self.db_set("job_id", job.name)
+			frappe.db.commit()
+			
+			# Update with placeholder values, will be updated when VM is ready
+			self.db_set("instance_id", f"vm-{frappe.utils.random_string(8)}")
+			self.db_set("status", "Pending")
+			
+			return job.name
 			
 		except Exception as e:
 			log_error("Bare Metal VM Provision Error", virtual_machine=self.name, error=str(e))
@@ -499,344 +516,39 @@ class VirtualMachine(Document):
 			self.client().reboot_instances(InstanceIds=[self.instance_id])
 		elif self.cloud_provider == "OCI":
 			self.client().instance_action(instance_id=self.instance_id, action="RESET")
+		elif self.cloud_provider == "Bare Metal Host":
+			self.reboot_bare_metal_vm()
 		self.sync()
 
 	@frappe.whitelist()
-	def increase_disk_size(self, volume_id=None, increment=50):
-		if not increment:
-			return
-		if not volume_id:
-			volume_id = self.volumes[0].volume_id
-
-		volume = find(self.volumes, lambda v: v.volume_id == volume_id)
-		volume.size += int(increment)
-		self.disk_size = self.get_data_volume().size
-		self.root_disk_size = self.get_root_volume().size
-		volume.last_updated_at = frappe.utils.now_datetime()
+	def start(self):
 		if self.cloud_provider == "AWS EC2":
-			self.client().modify_volume(VolumeId=volume.volume_id, Size=volume.size)
+			self.client().start_instances(InstanceIds=[self.instance_id])
 		elif self.cloud_provider == "OCI":
-			if ".bootvolume." in volume.volume_id:
-				self.client(BlockstorageClient).update_boot_volume(
-					boot_volume_id=volume.volume_id,
-					update_boot_volume_details=UpdateBootVolumeDetails(size_in_gbs=volume.size),
-				)
-			else:
-				self.client(BlockstorageClient).update_volume(
-					volume_id=volume.volume_id,
-					update_volume_details=UpdateVolumeDetails(size_in_gbs=volume.size),
-				)
-		self.save()
-
-	def get_volumes(self):
-		if self.cloud_provider == "AWS EC2":
-			response = self.client().describe_volumes(
-				Filters=[{"Name": "attachment.instance-id", "Values": [self.instance_id]}]
-			)
-			return response["Volumes"]
-		if self.cloud_provider == "OCI":
-			cluster = frappe.get_doc("Cluster", self.cluster)
-			return (
-				self.client()
-				.list_boot_volume_attachments(
-					compartment_id=cluster.oci_tenancy,
-					availability_domain=self.availability_zone,
-					instance_id=self.instance_id,
-				)
-				.data
-				+ self.client()
-				.list_volume_attachments(
-					compartment_id=cluster.oci_tenancy,
-					instance_id=self.instance_id,
-				)
-				.data
-			)
-		return None
-
-	def convert_to_gp3(self):
-		for volume in self.volumes:
-			if volume.volume_type != "gp3":
-				volume.volume_type = "gp3"
-				volume.iops = max(3000, volume.iops)
-				volume.throughput = 250 if volume.size > 340 else 125
-				self.client().modify_volume(
-					VolumeId=volume.volume_id,
-					VolumeType=volume.volume_type,
-					Iops=volume.iops,
-					Throughput=volume.throughput,
-				)
-				self.save()
-
-	@frappe.whitelist()
-	def sync(self, *args, **kwargs):
-		if self.cloud_provider == "AWS EC2":
-			self._sync_aws(*args, **kwargs)
-		elif self.cloud_provider == "OCI":
-			self._sync_oci(*args, **kwargs)
-		elif self.cloud_provider == "Hetzner":
-			self._sync_hetzner(*args, **kwargs)
+			self.client().instance_action(instance_id=self.instance_id, action="START")
 		elif self.cloud_provider == "Bare Metal Host":
-			self._sync_bare_metal(*args, **kwargs)
-		self.update_servers()
+			self.start_bare_metal_vm()
+		self.sync()
 
-	def _sync_bare_metal(self, *args, **kwargs):
-		"""Sync VM status from Bare Metal Host"""
-		try:
-			# Get the bare metal host
-			bare_metal_host = frappe.get_value(
-				"Cluster", self.cluster, "bare_metal_host"
-			)
-			
-			if not bare_metal_host:
-				frappe.throw("No Bare Metal Host selected for this cluster")
-			
-			# In a real implementation, we would:
-			# 1. Connect to the bare metal host
-			# 2. Use the agent to get VM status
-			# 3. Update the VM details
-			
-			# For now, just update status field if it's not set
-			if self.status == "Draft":
-				self.status = "Running"
-				self.instance_id = f"vm-{frappe.utils.random_string(8)}"
-				
-			frappe.msgprint(f"VM synced with Bare Metal Host {bare_metal_host}")
-			
-		except Exception as e:
-			log_error("Bare Metal VM Sync Error", virtual_machine=self.name, error=str(e))
-			frappe.throw(f"Error syncing VM with Bare Metal Host: {str(e)}")
-
-	def _sync_hetzner(self, server_instance=None):
-		is_deleted = False
-		if not server_instance:
-			try:
-				server_instance = self.client().servers.get_by_id(self.instance_id)
-			except APIException:
-				is_deleted = True
-		if server_instance and not is_deleted:
-			# cluster: Document = frappe.get_doc("Cluster", self.cluster)
-			self.status = self.get_hetzner_status_map()[server_instance.status]
-			self.machine_type = server_instance.server_type.name
-			self.private_ip_address = server_instance.private_net[0].ip
-			self.public_ip_address = server_instance.public_net.ipv4.ip
-		else:
-			self.status = "Terminated"
-		self.save()
-
-	def _sync_oci(self, instance=None):  # noqa: C901
-		if not instance:
-			instance = self.client().get_instance(instance_id=self.instance_id).data
-		if instance and instance.lifecycle_state != "TERMINATED":
-			cluster = frappe.get_doc("Cluster", self.cluster)
-
-			self.status = self.get_oci_status_map()[instance.lifecycle_state]
-
-			self.ram = instance.shape_config.memory_in_gbs * 1024
-			self.vcpu = instance.shape_config.vcpus
-			self.machine_type = f"{int(self.vcpu)}x{int(instance.shape_config.memory_in_gbs)}"
-
-			for vnic_attachment in (
-				self.client()
-				.list_vnic_attachments(compartment_id=cluster.oci_tenancy, instance_id=self.instance_id)
-				.data
-			):
-				try:
-					vnic = self.client(VirtualNetworkClient).get_vnic(vnic_id=vnic_attachment.vnic_id).data
-					self.public_ip_address = vnic.public_ip
-				except Exception:
-					log_error(
-						title="OCI VNIC Fetch Error",
-						virtual_machine=self.name,
-						vnic_attachment=vnic_attachment,
-					)
-
-			available_volumes = []
-			for volume in self.get_volumes():
-				try:
-					if hasattr(volume, "volume_id"):
-						volume = self.client(BlockstorageClient).get_volume(volume_id=volume.volume_id).data
-					else:
-						volume = (
-							self.client(BlockstorageClient)
-							.get_boot_volume(boot_volume_id=volume.boot_volume_id)
-							.data
-						)
-					existing_volume = find(self.volumes, lambda v: v.volume_id == volume.id)
-					if existing_volume:
-						row = existing_volume
-					else:
-						row = frappe._dict()
-					row.volume_id = volume.id
-					row.size = volume.size_in_gbs
-
-					vpus = volume.vpus_per_gb
-					# Reference: https://docs.oracle.com/en-us/iaas/Content/Block/Concepts/blockvolumeperformance.htm
-					row.iops = min(1.5 * vpus + 45, 2500 * vpus) * row.size
-					row.throughput = min(12 * vpus + 360, 20 * vpus + 280) * row.size // 1000
-
-					if row.volume_id:
-						available_volumes.append(row.volume_id)
-
-					if not existing_volume and row.volume_id:
-						self.append("volumes", row)
-				except Exception:
-					log_error(
-						title="OCI Volume Fetch Error",
-						virtual_machine=self.name,
-						volume=volume,
-					)
-			if self.volumes:
-				self.disk_size = self.get_data_volume().size
-				self.root_disk_size = self.get_root_volume().size
-
-			for volume in list(self.volumes):
-				if volume.volume_id not in available_volumes:
-					self.remove(volume)
-
-		else:
-			self.status = "Terminated"
-		self.save()
-		self.update_servers()
-
-	def _sync_aws(self, response=None):  # noqa: C901
-		if not response:
-			try:
-				response = self.client().describe_instances(InstanceIds=[self.instance_id])
-			except botocore.exceptions.ClientError as e:
-				if e.response.get("Error", {}).get("Code") == "InvalidInstanceID.NotFound":
-					response = {"Reservations": []}
-		if response["Reservations"]:
-			instance = response["Reservations"][0]["Instances"][0]
-
-			self.status = self.get_aws_status_map()[instance["State"]["Name"]]
-			self.machine_type = instance.get("InstanceType")
-
-			self.public_ip_address = instance.get("PublicIpAddress")
-			self.private_ip_address = instance.get("PrivateIpAddress")
-
-			self.public_dns_name = instance.get("PublicDnsName")
-			self.private_dns_name = instance.get("PrivateDnsName")
-			self.platform = instance.get("Architecture", "x86_64")
-
-			attached_volumes = []
-			attached_devices = []
-			for volume_index, volume in enumerate(self.get_volumes(), start=1):  # idx starts from 1
-				existing_volume = find(self.volumes, lambda v: v.volume_id == volume["VolumeId"])
-				if existing_volume:
-					row = existing_volume
-				else:
-					row = frappe._dict()
-				row.volume_id = volume["VolumeId"]
-				attached_volumes.append(row.volume_id)
-				row.volume_type = volume["VolumeType"]
-				row.size = volume["Size"]
-				row.iops = volume["Iops"]
-				row.device = volume["Attachments"][0]["Device"]
-				attached_devices.append(row.device)
-
-				if "Throughput" in volume:
-					row.throughput = volume["Throughput"]
-
-				row.idx = volume_index
-				if not existing_volume:
-					self.append("volumes", row)
-
-			self.disk_size = self.get_data_volume().size
-			self.root_disk_size = self.get_root_volume().size
-
-			for volume in list(self.volumes):
-				if volume.volume_id not in attached_volumes:
-					self.remove(volume)
-
-			for volume in list(self.temporary_volumes):
-				if volume.device not in attached_devices:
-					self.remove(volume)
-
-			self.termination_protection = self.client().describe_instance_attribute(
-				InstanceId=self.instance_id, Attribute="disableApiTermination"
-			)["DisableApiTermination"]["Value"]
-
-			instance_type_response = self.client().describe_instance_types(InstanceTypes=[self.machine_type])
-			self.ram = instance_type_response["InstanceTypes"][0]["MemoryInfo"]["SizeInMiB"]
-			self.vcpu = instance_type_response["InstanceTypes"][0]["VCpuInfo"]["DefaultVCpus"]
-		else:
-			self.status = "Terminated"
-		self.save()
-		self.update_servers()
-
-	def get_root_volume(self):
-		if len(self.volumes) == 1:
-			return self.volumes[0]
-
-		ROOT_VOLUME_FILTERS = {
-			"AWS EC2": lambda v: v.device == "/dev/sda1",
-			"OCI": lambda v: ".bootvolume." in v.volume_id,
-		}
-		root_volume_filter = ROOT_VOLUME_FILTERS.get(self.cloud_provider)
-		volume = find(self.volumes, root_volume_filter)
-		if volume:  # Un-provisioned machines might not have any volumes
-			return volume
-		return frappe._dict({"size": 0})
-
-	def get_data_volume(self):
-		if not self.has_data_volume:
-			return self.get_root_volume()
-
-		if len(self.volumes) == 1:
-			return self.volumes[0]
-
-		temporary_volume_devices = [x.device for x in self.temporary_volumes]
-
-		DATA_VOLUME_FILTERS = {
-			"AWS EC2": lambda v: v.device != "/dev/sda1" and v.device not in temporary_volume_devices,
-			"OCI": lambda v: ".bootvolume." not in v.volume_id and v.device not in temporary_volume_devices,
-		}
-		data_volume_filter = DATA_VOLUME_FILTERS.get(self.cloud_provider)
-		volume = find(self.volumes, data_volume_filter)
-		if volume:  # Un-provisioned machines might not have any volumes
-			return volume
-		return frappe._dict({"size": 0})
-
-	def update_servers(self):
-		status_map = {
-			"Pending": "Pending",
-			"Running": "Active",
-			"Terminated": "Archived",
-			"Stopped": "Pending",
-		}
-		for doctype in server_doctypes:
-			server = frappe.get_all(doctype, {"virtual_machine": self.name}, pluck="name")
-			if server:
-				server = server[0]
-				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
-				if doctype in ["Server", "Database Server"]:
-					frappe.db.set_value(doctype, server, "ram", self.ram)
-				if self.public_ip_address and self.has_value_changed("public_ip_address"):
-					frappe.get_doc(doctype, server).create_dns_record()
-				frappe.db.set_value(doctype, server, "status", status_map[self.status])
-
-	def update_name_tag(self, name):
+	@frappe.whitelist()
+	def stop(self, force=False):
 		if self.cloud_provider == "AWS EC2":
-			self.client().create_tags(
-				Resources=[self.instance_id],
-				Tags=[
-					{"Key": "Name", "Value": name},
-				],
-			)
+			self.client().stop_instances(InstanceIds=[self.instance_id], Force=bool(force))
+		elif self.cloud_provider == "OCI":
+			self.client().instance_action(instance_id=self.instance_id, action="STOP")
+		elif self.cloud_provider == "Bare Metal Host":
+			self.stop_bare_metal_vm(force=force)
+		self.sync()
 
 	@frappe.whitelist()
-	def create_image(self, public=True):
-		image = frappe.get_doc(
-			{
-				"doctype": "Virtual Machine Image",
-				"virtual_machine": self.name,
-				"public": public,
-				"has_data_volume": self.has_data_volume,
-			}
-		).insert()
-		return image.name
+	def terminate(self):
+		if self.cloud_provider == "AWS EC2":
+			self.client().terminate_instances(InstanceIds=[self.instance_id])
+		elif self.cloud_provider == "OCI":
+			self.client().terminate_instance(instance_id=self.instance_id)
+		elif self.cloud_provider == "Bare Metal Host":
+			self.terminate_bare_metal_vm()
 
-	@frappe.whitelist()
 	def create_snapshots(self, exclude_boot_volume=False, physical_backup=False):
 		"""
 		exclude_boot_volume is applicable only for Servers with data volume
@@ -851,191 +563,382 @@ class VirtualMachine(Document):
 			self._create_snapshots_aws(exclude_boot_volume, physical_backup)
 		elif self.cloud_provider == "OCI":
 			self._create_snapshots_oci(exclude_boot_volume)
+		elif self.cloud_provider == "Bare Metal Host":
+			self.create_bare_metal_snapshot(exclude_boot_volume, physical_backup)
 
-	def _create_snapshots_aws(self, exclude_boot_volume: bool, physical_backup: bool):
-		response = self.client().create_snapshots(
-			InstanceSpecification={"InstanceId": self.instance_id, "ExcludeBootVolume": exclude_boot_volume},
-			Description=f"Frappe Cloud - {self.name} - {frappe.utils.now()}",
-			TagSpecifications=[
+	def _sync_bare_metal(self, *args, **kwargs):
+		"""Sync VM status from Bare Metal Host"""
+		try:
+			# Get the bare metal host
+			bare_metal_host_name = frappe.get_value(
+				"Cluster", self.cluster, "bare_metal_host"
+			)
+			
+			if not bare_metal_host_name:
+				frappe.throw("No Bare Metal Host selected for this cluster")
+			
+			bare_metal_host = frappe.get_doc("Bare Metal Host", bare_metal_host_name)
+			
+			# Send a request to the agent to get VM status
+			job = self._create_bare_metal_agent_job(
+				bare_metal_host,
+				"get_vm_status",
 				{
-					"ResourceType": "snapshot",
-					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - {frappe.utils.now()}"}],
-				},
-			],
+					"name": self.name.split('.')[0],
+				}
+			)
+			
+			# Wait for the job to complete
+			job_result = self._wait_for_bare_metal_job(job.name)
+			
+			if not job_result or job_result.get("status") == "error":
+				self.status = "Broken"
+				self.save()
+				return
+				
+			vm_info = job_result.get("vm_info", {})
+			
+			# Update VM status based on job result
+			if vm_info.get("state") == "running":
+				self.status = "Running"
+			elif vm_info.get("state") == "paused" or vm_info.get("state") == "shutdown":
+				self.status = "Stopped"
+			elif vm_info.get("state") == "crashed" or vm_info.get("state") == "unknown":
+				self.status = "Broken"
+			else:
+				# Default to Pending if state is not recognized
+				self.status = "Pending"
+			
+			# Update VM resources
+			if "vcpu" in vm_info:
+				self.vcpu = vm_info.get("vcpu")
+			if "memory" in vm_info:
+				self.ram = vm_info.get("memory")
+			if "disk" in vm_info:
+				self.disk_size = vm_info.get("disk")
+				self.root_disk_size = vm_info.get("disk")
+				
+			# Update IP address if available
+			if "ip_address" in vm_info:
+				self.private_ip_address = vm_info.get("ip_address")
+				
+			self.save()
+			
+		except Exception as e:
+			log_error("Bare Metal VM Sync Error", virtual_machine=self.name, error=str(e))
+			frappe.throw(f"Error syncing VM from Bare Metal Host: {str(e)}")
+
+	@frappe.whitelist()
+	def start_bare_metal_vm(self):
+		"""Start VM on Bare Metal Host"""
+		try:
+			# Get the bare metal host
+			bare_metal_host_name = frappe.get_value(
+				"Cluster", self.cluster, "bare_metal_host"
+			)
+			
+			if not bare_metal_host_name:
+				frappe.throw("No Bare Metal Host selected for this cluster")
+				
+			bare_metal_host = frappe.get_doc("Bare Metal Host", bare_metal_host_name)
+			
+			# Create agent job to start VM
+			job = self._create_bare_metal_agent_job(
+				bare_metal_host,
+				"start_vm",
+				{
+					"name": self.name.split('.')[0],
+				}
+			)
+			
+			# Update status
+			self.db_set("status", "Pending")
+			
+			# Wait for the job to complete and sync status
+			self._wait_for_bare_metal_job(job.name)
+			self.sync()
+			
+		except Exception as e:
+			log_error("Bare Metal VM Start Error", virtual_machine=self.name, error=str(e))
+			frappe.throw(f"Error starting VM on Bare Metal Host: {str(e)}")
+
+	@frappe.whitelist()
+	def stop_bare_metal_vm(self, force=False):
+		"""Stop VM on Bare Metal Host"""
+		try:
+			# Get the bare metal host
+			bare_metal_host_name = frappe.get_value(
+				"Cluster", self.cluster, "bare_metal_host"
+			)
+			
+			if not bare_metal_host_name:
+				frappe.throw("No Bare Metal Host selected for this cluster")
+				
+			bare_metal_host = frappe.get_doc("Bare Metal Host", bare_metal_host_name)
+			
+			# Create agent job to stop VM
+			job = self._create_bare_metal_agent_job(
+				bare_metal_host,
+				"stop_vm",
+				{
+					"name": self.name.split('.')[0],
+					"force": force,
+				}
+			)
+			
+			# Update status
+			self.db_set("status", "Pending")
+			
+			# Wait for the job to complete and sync status
+			self._wait_for_bare_metal_job(job.name)
+			self.sync()
+			
+		except Exception as e:
+			log_error("Bare Metal VM Stop Error", virtual_machine=self.name, error=str(e))
+			frappe.throw(f"Error stopping VM on Bare Metal Host: {str(e)}")
+
+	@frappe.whitelist()
+	def reboot_bare_metal_vm(self):
+		"""Reboot VM on Bare Metal Host"""
+		try:
+			# Get the bare metal host
+			bare_metal_host_name = frappe.get_value(
+				"Cluster", self.cluster, "bare_metal_host"
+			)
+			
+			if not bare_metal_host_name:
+				frappe.throw("No Bare Metal Host selected for this cluster")
+				
+			bare_metal_host = frappe.get_doc("Bare Metal Host", bare_metal_host_name)
+			
+			# Create agent job to reboot VM
+			job = self._create_bare_metal_agent_job(
+				bare_metal_host,
+				"reboot_vm",
+				{
+					"name": self.name.split('.')[0],
+				}
+			)
+			
+			# Update status
+			self.db_set("status", "Pending")
+			
+			# Wait for the job to complete and sync status
+			self._wait_for_bare_metal_job(job.name)
+			self.sync()
+			
+		except Exception as e:
+			log_error("Bare Metal VM Reboot Error", virtual_machine=self.name, error=str(e))
+			frappe.throw(f"Error rebooting VM on Bare Metal Host: {str(e)}")
+
+	@frappe.whitelist()
+	def terminate_bare_metal_vm(self):
+		"""Terminate/delete VM on Bare Metal Host"""
+		try:
+			# Get the bare metal host
+			bare_metal_host_name = frappe.get_value(
+				"Cluster", self.cluster, "bare_metal_host"
+			)
+			
+			if not bare_metal_host_name:
+				frappe.throw("No Bare Metal Host selected for this cluster")
+				
+			bare_metal_host = frappe.get_doc("Bare Metal Host", bare_metal_host_name)
+			
+			# Create agent job to terminate VM
+			job = self._create_bare_metal_agent_job(
+				bare_metal_host,
+				"delete_vm",
+				{
+					"name": self.name.split('.')[0],
+				}
+			)
+			
+			# Update status
+			self.db_set("status", "Pending")
+			
+			# Wait for the job to complete and update status to Terminated
+			self._wait_for_bare_metal_job(job.name)
+			self.db_set("status", "Terminated")
+			
+		except Exception as e:
+			log_error("Bare Metal VM Terminate Error", virtual_machine=self.name, error=str(e))
+			frappe.throw(f"Error terminating VM on Bare Metal Host: {str(e)}")
+
+	def _create_bare_metal_agent_job(self, bare_metal_host, job_type, details):
+		"""Create and return a new agent job for VM operations"""
+		from press.agent import BareMetalVirtualMachineJob
+		
+		return BareMetalVirtualMachineJob.create(
+			server_type="Bare Metal Host",
+			server=bare_metal_host.name,
+			job_type=job_type,
+			details={
+				"vm": details,
+				"virtual_machine": self.name,
+			}
 		)
-		for snapshot in response.get("Snapshots", []):
-			try:
+
+	def _wait_for_bare_metal_job(self, job_id, timeout=300):
+		"""Wait for a VM operation job to complete and return the result"""
+		from press.agent import BareMetalVirtualMachineJob
+		import time
+		
+		start_time = time.time()
+		while time.time() - start_time < timeout:
+			if BareMetalVirtualMachineJob.is_job_complete(job_id):
+				job = frappe.get_doc("Agent Job", job_id)
+				if job.status == "Success":
+					try:
+						return json.loads(job.output or "{}")
+					except Exception:
+						return {"status": "success"}
+				else:
+					return {"status": "error", "message": job.output or "Unknown error"}
+			time.sleep(2)
+		
+		return {"status": "timeout", "message": f"Job {job_id} timed out after {timeout} seconds"}
+
+	def _get_bare_metal_cloud_init_config(self):
+		"""Generate cloud-init configuration for the VM"""
+		server = self.get_server()
+		if not server:
+			return {}
+		
+		log_server, kibana_password = server.get_log_server()
+		
+		# Generate SSH authorized keys
+		ssh_keys = []
+		if frappe.db.get_value("SSH Key", self.ssh_key, "public_key"):
+			ssh_keys.append(frappe.db.get_value("SSH Key", self.ssh_key, "public_key"))
+		
+		# Create basic cloud-init config
+		cloud_init = {
+			"hostname": self.name.split('.')[0],
+			"fqdn": self.name,
+			"ssh_authorized_keys": ssh_keys,
+			"chpasswd": {
+				"expire": False
+			},
+			"packages": [
+				"qemu-guest-agent",
+				"ntp",
+				"curl",
+				"vim",
+				"htop",
+				"git",
+				"python3",
+				"python3-pip"
+			],
+			"runcmd": [
+				"systemctl enable --now qemu-guest-agent",
+				"systemctl enable --now ntp"
+			]
+		}
+		
+			if server:
+			# Add agent password for server management
+			cloud_init["agent_password"] = server.get_password("agent_password")
+		
+		return cloud_init
+
+	@frappe.whitelist()
+	def create_bare_metal_snapshot(self, exclude_boot_volume=False, physical_backup=False):
+		"""Create a snapshot of the VM on the Bare Metal Host"""
+		try:
+			# Get the bare metal host
+			bare_metal_host_name = frappe.get_value(
+				"Cluster", self.cluster, "bare_metal_host"
+			)
+			
+			if not bare_metal_host_name:
+				frappe.throw("No Bare Metal Host selected for this cluster")
+				
+			bare_metal_host = frappe.get_doc("Bare Metal Host", bare_metal_host_name)
+			
+			# Create agent job to snapshot VM
+			job = self._create_bare_metal_agent_job(
+				bare_metal_host,
+				"snapshot_vm",
+				{
+					"name": self.name.split('.')[0],
+					"snapshot_name": f"{self.name.split('.')[0]}-{frappe.utils.now()}",
+				}
+			)
+			
+			# Wait for the job to complete
+			job_result = self._wait_for_bare_metal_job(job.name)
+			
+			if not job_result or job_result.get("status") == "error":
+				frappe.throw(f"Error creating VM snapshot: {job_result.get('message', 'Unknown error')}")
+				
+			# Create a Virtual Disk Snapshot document
+			snapshot_id = job_result.get("snapshot_id")
+			if snapshot_id:
 				doc = frappe.get_doc(
 					{
 						"doctype": "Virtual Disk Snapshot",
 						"virtual_machine": self.name,
-						"snapshot_id": snapshot["SnapshotId"],
+						"snapshot_id": snapshot_id,
 						"physical_backup": physical_backup,
 					}
 				).insert()
+				
+				if not hasattr(self, "flags"):
+					self.flags = frappe._dict()
+					
+				if not hasattr(self.flags, "created_snapshots"):
+					self.flags.created_snapshots = []
+					
 				self.flags.created_snapshots.append(doc.name)
-			except Exception:
-				log_error(title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot)
-
-	def _create_snapshots_oci(self, exclude_boot_volume: bool):
-		for volume in self.volumes:
-			try:
-				if ".bootvolume." in volume.volume_id:
-					if exclude_boot_volume:
-						continue
-					snapshot = (
-						self.client(BlockstorageClient)
-						.create_boot_volume_backup(
-							CreateBootVolumeBackupDetails(
-								boot_volume_id=volume.volume_id,
-								type="INCREMENTAL",
-								display_name=f"Frappe Cloud - {self.name} - {volume.name} - {frappe.utils.now()}",
-							)
-						)
-						.data
-					)
-				else:
-					snapshot = (
-						self.client(BlockstorageClient)
-						.create_volume_backup(
-							CreateVolumeBackupDetails(
-								volume_id=volume.volume_id,
-								type="INCREMENTAL",
-								display_name=f"Frappe Cloud - {self.name} - {volume.name} - {frappe.utils.now()}",
-							)
-						)
-						.data
-					)
-				doc = frappe.get_doc(
-					{
-						"doctype": "Virtual Disk Snapshot",
-						"virtual_machine": self.name,
-						"snapshot_id": snapshot.id,
-					}
-				).insert()
-				self.flags.created_snapshots.append(doc.name)
-			except TransientServiceError:
-				# We've hit OCI rate limit for creating snapshots
-				# Let's try again later
-				pass
-			except Exception:
-				log_error(title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot)
+			
+			return job_result
+			
+		except Exception as e:
+			log_error("Bare Metal VM Snapshot Error", virtual_machine=self.name, error=str(e))
+			frappe.throw(f"Error creating VM snapshot on Bare Metal Host: {str(e)}")
 
 	@frappe.whitelist()
-	def disable_termination_protection(self):
-		if self.cloud_provider == "AWS EC2":
-			self.client().modify_instance_attribute(
-				InstanceId=self.instance_id, DisableApiTermination={"Value": False}
+	def increase_bare_metal_disk_size(self, volume_id=None, increment=50):
+		"""Increase the disk size of a VM on Bare Metal Host"""
+		try:
+			# Get the bare metal host
+			bare_metal_host_name = frappe.get_value(
+				"Cluster", self.cluster, "bare_metal_host"
 			)
-			self.sync()
-
-	@frappe.whitelist()
-	def enable_termination_protection(self):
-		if self.cloud_provider == "AWS EC2":
-			self.client().modify_instance_attribute(
-				InstanceId=self.instance_id, DisableApiTermination={"Value": True}
+			
+			if not bare_metal_host_name:
+				frappe.throw("No Bare Metal Host selected for this cluster")
+				
+			bare_metal_host = frappe.get_doc("Bare Metal Host", bare_metal_host_name)
+			
+			# Create agent job to resize VM disk
+			job = self._create_bare_metal_agent_job(
+				bare_metal_host,
+				"resize_vm_disk",
+				{
+					"name": self.name.split('.')[0],
+					"disk_size": self.disk_size + increment,
+				}
 			)
-			self.sync()
-
-	@frappe.whitelist()
-	def start(self):
-		if self.cloud_provider == "AWS EC2":
-			self.client().start_instances(InstanceIds=[self.instance_id])
-		elif self.cloud_provider == "OCI":
-			self.client().instance_action(instance_id=self.instance_id, action="START")
-		self.sync()
-
-	@frappe.whitelist()
-	def stop(self, force=False):
-		if self.cloud_provider == "AWS EC2":
-			self.client().stop_instances(InstanceIds=[self.instance_id], Force=bool(force))
-		elif self.cloud_provider == "OCI":
-			self.client().instance_action(instance_id=self.instance_id, action="STOP")
-		self.sync()
-
-	@frappe.whitelist()
-	def force_stop(self):
-		self.stop(force=True)
-
-	@frappe.whitelist()
-	def force_terminate(self):
-		if not frappe.conf.developer_mode:
-			return
-		if self.cloud_provider == "AWS EC2":
-			self.client().modify_instance_attribute(
-				InstanceId=self.instance_id, DisableApiTermination={"Value": False}
-			)
-			self.client().terminate_instances(InstanceIds=[self.instance_id])
-
-	@frappe.whitelist()
-	def terminate(self):
-		if self.cloud_provider == "AWS EC2":
-			self.client().terminate_instances(InstanceIds=[self.instance_id])
-		elif self.cloud_provider == "OCI":
-			self.client().terminate_instance(instance_id=self.instance_id)
-
-	@frappe.whitelist()
-	def resize(self, machine_type):
-		if self.cloud_provider == "AWS EC2":
-			self.client().modify_instance_attribute(
-				InstanceId=self.instance_id,
-				InstanceType={"Value": machine_type},
-			)
-		elif self.cloud_provider == "OCI":
-			vcpu, ram_in_gbs = map(int, machine_type.split("x"))
-			self.client().update_instance(
-				self.instance_id,
-				UpdateInstanceDetails(
-					shape_config=UpdateInstanceShapeConfigDetails(
-						ocpus=vcpu // 2, vcpus=vcpu, memory_in_gbs=ram_in_gbs
-					)
-				),
-			)
-		self.machine_type = machine_type
-		self.save()
-
-	@frappe.whitelist()
-	def get_ebs_performance(self):
-		if self.cloud_provider == "AWS EC2":
-			volume = self.volumes[0]
-			return volume.iops, volume.throughput
-		return None
-
-	@frappe.whitelist()
-	def update_ebs_performance(self, volume_id, iops, throughput):
-		if self.cloud_provider == "AWS EC2":
-			volume = find(self.volumes, lambda v: v.volume_id == volume_id)
-			new_iops = int(iops) or volume.iops
-			new_throughput = int(throughput) or volume.throughput
-			self.client().modify_volume(
-				VolumeId=volume.volume_id,
-				Iops=new_iops,
-				Throughput=new_throughput,
-			)
-		self.sync()
-
-	@frappe.whitelist()
-	def get_oci_volume_performance(self):
-		if self.cloud_provider == "OCI":
-			volume = self.volumes[0]
-			return ((volume.iops / volume.size) - 45) / 1.5
-		return None
-
-	@frappe.whitelist()
-	def update_oci_volume_performance(self, vpus):
-		if self.cloud_provider == "OCI":
-			volume = self.volumes[0]
-			if ".bootvolume." in volume.volume_id:
-				self.client(BlockstorageClient).update_boot_volume(
-					boot_volume_id=volume.volume_id,
-					update_boot_volume_details=UpdateBootVolumeDetails(vpus_per_gb=int(vpus)),
-				)
-			else:
-				self.client(BlockstorageClient).update_volume(
-					volume_id=volume.volume_id,
-					update_volume_details=UpdateVolumeDetails(vpus_per_gb=int(vpus)),
-				)
-		self.sync()
+			
+			# Wait for the job to complete
+			job_result = self._wait_for_bare_metal_job(job.name)
+			
+			if not job_result or job_result.get("status") == "error":
+				frappe.throw(f"Error resizing VM disk: {job_result.get('message', 'Unknown error')}")
+				
+			# Update disk size
+			if job_result.get("status") == "success":
+				self.disk_size = self.disk_size + increment
+				self.root_disk_size = self.disk_size
+				self.save()
+			
+			return job_result
+			
+		except Exception as e:
+			log_error("Bare Metal VM Disk Resize Error", virtual_machine=self.name, error=str(e))
+			frappe.throw(f"Error resizing VM disk on Bare Metal Host: {str(e)}")
 
 	def client(self, client_type=None):
 		cluster = frappe.get_doc("Cluster", self.cluster)
@@ -1449,6 +1352,125 @@ class VirtualMachine(Document):
 			self.wait_for_volume_to_be_available(volume_id)
 			self.client().delete_volume(VolumeId=volume_id)
 			self.sync()
+
+	@frappe.whitelist()
+	def sync(self, *args, **kwargs):
+		if self.cloud_provider == "AWS EC2":
+			self._sync_aws(*args, **kwargs)
+		elif self.cloud_provider == "OCI":
+			self._sync_oci(*args, **kwargs)
+		elif self.cloud_provider == "Hetzner":
+			self._sync_hetzner(*args, **kwargs)
+		elif self.cloud_provider == "Bare Metal Host":
+			self._sync_bare_metal(*args, **kwargs)
+		self.update_servers()
+
+	@frappe.whitelist()
+	def increase_disk_size(self, volume_id=None, increment=50):
+		if not increment:
+			return
+		
+		if self.cloud_provider == "Bare Metal Host":
+			return self.increase_bare_metal_disk_size(volume_id, increment)
+			
+		if not volume_id:
+			volume_id = self.volumes[0].volume_id
+
+		volume = find(self.volumes, lambda v: v.volume_id == volume_id)
+		volume.size += int(increment)
+		self.disk_size = self.get_data_volume().size
+		self.root_disk_size = self.get_root_volume().size
+		volume.last_updated_at = frappe.utils.now_datetime()
+		if self.cloud_provider == "AWS EC2":
+			self.client().modify_volume(VolumeId=volume.volume_id, Size=volume.size)
+		elif self.cloud_provider == "OCI":
+			if ".bootvolume." in volume.volume_id:
+				self.client(BlockstorageClient).update_boot_volume(
+					boot_volume_id=volume.volume_id,
+					update_boot_volume_details=UpdateBootVolumeDetails(size_in_gbs=volume.size),
+				)
+			else:
+				self.client(BlockstorageClient).update_volume(
+					volume_id=volume.volume_id,
+					update_volume_details=UpdateVolumeDetails(size_in_gbs=volume.size),
+				)
+		self.save()
+
+	def get_volumes(self):
+		if self.cloud_provider == "AWS EC2":
+			response = self.client().describe_volumes(
+				Filters=[{"Name": "attachment.instance-id", "Values": [self.instance_id]}]
+			)
+			return response["Volumes"]
+		if self.cloud_provider == "OCI":
+			cluster = frappe.get_doc("Cluster", self.cluster)
+			return (
+				self.client()
+				.list_boot_volume_attachments(
+					compartment_id=cluster.oci_tenancy,
+					availability_domain=self.availability_zone,
+					instance_id=self.instance_id,
+				)
+				.data
+				+ self.client()
+				.list_volume_attachments(
+					compartment_id=cluster.oci_tenancy,
+					instance_id=self.instance_id,
+				)
+				.data
+			)
+		return None
+		
+	def get_root_volume(self):
+		if len(self.volumes) == 1:
+			return self.volumes[0]
+
+		ROOT_VOLUME_FILTERS = {
+			"AWS EC2": lambda v: v.device == "/dev/sda1",
+			"OCI": lambda v: ".bootvolume." in v.volume_id,
+		}
+		root_volume_filter = ROOT_VOLUME_FILTERS.get(self.cloud_provider)
+		volume = find(self.volumes, root_volume_filter)
+		if volume:  # Un-provisioned machines might not have any volumes
+			return volume
+		return frappe._dict({"size": 0})
+
+	def get_data_volume(self):
+		if not self.has_data_volume:
+			return self.get_root_volume()
+
+		if len(self.volumes) == 1:
+			return self.volumes[0]
+
+		temporary_volume_devices = [x.device for x in self.temporary_volumes]
+
+		DATA_VOLUME_FILTERS = {
+			"AWS EC2": lambda v: v.device != "/dev/sda1" and v.device not in temporary_volume_devices,
+			"OCI": lambda v: ".bootvolume." not in v.volume_id and v.device not in temporary_volume_devices,
+		}
+		data_volume_filter = DATA_VOLUME_FILTERS.get(self.cloud_provider)
+		volume = find(self.volumes, data_volume_filter)
+		if volume:  # Un-provisioned machines might not have any volumes
+			return volume
+		return frappe._dict({"size": 0})
+		
+	def update_servers(self):
+		status_map = {
+			"Pending": "Pending",
+			"Running": "Active",
+			"Terminated": "Archived",
+			"Stopped": "Pending",
+		}
+		for doctype in server_doctypes:
+			server = frappe.get_all(doctype, {"virtual_machine": self.name}, pluck="name")
+			if server:
+				server = server[0]
+				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
+				if doctype in ["Server", "Database Server"]:
+					frappe.db.set_value(doctype, server, "ram", self.ram)
+				if self.public_ip_address and self.has_value_changed("public_ip_address"):
+					frappe.get_doc(doctype, server).create_dns_record()
+				frappe.db.set_value(doctype, server, "status", status_map[self.status])
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")

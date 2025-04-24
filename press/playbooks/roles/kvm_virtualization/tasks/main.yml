@@ -96,4 +96,420 @@
   get_url:
     url: https://cloud-images.ubuntu.com/releases/focal/release/ubuntu-20.04-server-cloudimg-amd64.img
     dest: "{{ vm_images_directory | default('/opt/vm_images') }}/ubuntu-20.04-server-cloudimg-amd64.img"
-    mode: '0644' 
+    mode: '0644'
+
+- name: Install libvirt-python for Python API access
+  pip:
+    name: libvirt-python
+    state: present
+
+- name: Create python script for managing VMs
+  copy:
+    dest: /usr/local/bin/manage_vm.py
+    mode: '0755'
+    content: |
+      #!/usr/bin/env python3
+      import os
+      import sys
+      import json
+      import tempfile
+      import subprocess
+      import libvirt
+      import yaml
+      import base64
+      import time
+      from xml.etree import ElementTree
+
+      def create_vm(args):
+          vm_name = args.get('name')
+          cpu = args.get('cpu', 1)
+          memory = args.get('memory', 1024)
+          disk_size = args.get('disk', 20)
+          image_template = args.get('image_template')
+          disk_format = args.get('disk_format', 'qcow2')
+          cloud_init = args.get('cloud_init')
+          network = args.get('network', {'type': 'default'})
+          
+          vm_dir = "{{ vm_directory | default('/opt/vms') }}"
+          vm_images_dir = "{{ vm_images_directory | default('/opt/vm_images') }}"
+          
+          # Create disk from template if specified
+          disk_path = os.path.join(vm_dir, f"{vm_name}.{disk_format}")
+          if image_template:
+              template_path = os.path.join(vm_images_dir, f"{image_template}.{disk_format}")
+              if not os.path.exists(template_path):
+                  return {"error": f"Template image {template_path} not found"}
+                  
+              subprocess.run(["qemu-img", "create", "-f", disk_format, "-b", template_path, disk_path], check=True)
+              subprocess.run(["qemu-img", "resize", disk_path, f"{disk_size}G"], check=True)
+          else:
+              # Create new disk
+              subprocess.run(["qemu-img", "create", "-f", disk_format, disk_path, f"{disk_size}G"], check=True)
+          
+          # Create VM
+          if cloud_init:
+              # Create cloud-init config files
+              with tempfile.TemporaryDirectory() as tmpdir:
+                  # user-data
+                  with open(os.path.join(tmpdir, 'user-data'), 'w') as f:
+                      f.write("#cloud-config\n")
+                      f.write(yaml.dump(cloud_init))
+                  
+                  # meta-data
+                  with open(os.path.join(tmpdir, 'meta-data'), 'w') as f:
+                      f.write(f"instance-id: {vm_name}\n")
+                      f.write(f"local-hostname: {vm_name}\n")
+                  
+                  # Create ISO
+                  iso_path = f"/tmp/cloud-init-{vm_name}.iso"
+                  subprocess.run(["genisoimage", "-output", iso_path, "-volid", "cidata", 
+                                  "-joliet", "-rock", f"{tmpdir}/user-data", f"{tmpdir}/meta-data"], check=True)
+                  
+                  # Network config
+                  net_config = ""
+                  if network.get('type') == 'bridge':
+                      net_config = f"--network bridge={network.get('bridge', 'br0')}"
+                  else:
+                      net_config = f"--network network={network.get('name', 'default')}"
+                  
+                  # Create VM with cloud-init
+                  cmd = f"virt-install --name {vm_name} --ram {memory} --vcpus {cpu} " \
+                        f"--disk path={disk_path},format={disk_format} " \
+                        f"--disk path={iso_path},device=cdrom " \
+                        f"{net_config} " \
+                        f"--os-type linux --os-variant ubuntu20.04 " \
+                        f"--graphics none --import --noautoconsole"
+                  
+                  result = subprocess.run(cmd, shell=True, check=True, capture_output=True, text=True)
+                  return {"status": "success", "message": "VM created with cloud-init", "vm_name": vm_name}
+          else:
+              # Create VM without cloud-init
+              net_config = ""
+              if network.get('type') == 'bridge':
+                  net_config = f"--network bridge={network.get('bridge', 'br0')}"
+              else:
+                  net_config = f"--network network={network.get('name', 'default')}"
+              
+              cmd = f"virt-install --name {vm_name} --ram {memory} --vcpus {cpu} " \
+                    f"--disk path={disk_path},format={disk_format} " \
+                    f"{net_config} " \
+                    f"--os-type linux --os-variant ubuntu20.04 " \
+                    f"--graphics none --import --noautoconsole"
+              
+              result = subprocess.run(cmd, shell=True, check=True, capture_output=True, text=True)
+              return {"status": "success", "message": "VM created", "vm_name": vm_name}
+
+      def start_vm(args):
+          vm_name = args.get('name')
+          conn = libvirt.open('qemu:///system')
+          try:
+              dom = conn.lookupByName(vm_name)
+              if dom.isActive():
+                  return {"status": "success", "message": f"VM {vm_name} is already running"}
+              
+              dom.create()
+              return {"status": "success", "message": f"VM {vm_name} started"}
+          except libvirt.libvirtError as e:
+              return {"error": f"Failed to start VM: {str(e)}"}
+          finally:
+              conn.close()
+
+      def stop_vm(args):
+          vm_name = args.get('name')
+          force = args.get('force', False)
+          conn = libvirt.open('qemu:///system')
+          try:
+              dom = conn.lookupByName(vm_name)
+              if not dom.isActive():
+                  return {"status": "success", "message": f"VM {vm_name} is already stopped"}
+              
+              if force:
+                  dom.destroy()
+              else:
+                  dom.shutdown()
+              
+              return {"status": "success", "message": f"VM {vm_name} stopping"}
+          except libvirt.libvirtError as e:
+              return {"error": f"Failed to stop VM: {str(e)}"}
+          finally:
+              conn.close()
+
+      def reboot_vm(args):
+          vm_name = args.get('name')
+          conn = libvirt.open('qemu:///system')
+          try:
+              dom = conn.lookupByName(vm_name)
+              if not dom.isActive():
+                  dom.create()
+                  return {"status": "success", "message": f"VM {vm_name} was off, starting it"}
+              
+              dom.reboot(0)
+              return {"status": "success", "message": f"VM {vm_name} rebooting"}
+          except libvirt.libvirtError as e:
+              return {"error": f"Failed to reboot VM: {str(e)}"}
+          finally:
+              conn.close()
+
+      def delete_vm(args):
+          vm_name = args.get('name')
+          conn = libvirt.open('qemu:///system')
+          try:
+              dom = conn.lookupByName(vm_name)
+              if dom.isActive():
+                  dom.destroy()
+              
+              # Get disk paths before undefining
+              xml_desc = dom.XMLDesc(0)
+              root = ElementTree.fromstring(xml_desc)
+              disk_paths = []
+              for disk in root.findall('.//disk'):
+                  if disk.get('device') == 'disk':
+                      for source in disk.findall('.//source'):
+                          if 'file' in source.attrib:
+                              disk_paths.append(source.get('file'))
+              
+              # Undefine with storage
+              dom.undefineFlags(libvirt.VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA)
+              
+              # Delete disk files
+              for path in disk_paths:
+                  if os.path.exists(path):
+                      os.remove(path)
+                      
+              return {"status": "success", "message": f"VM {vm_name} deleted"}
+          except libvirt.libvirtError as e:
+              return {"error": f"Failed to delete VM: {str(e)}"}
+          finally:
+              conn.close()
+
+      def get_vm_status(args):
+          vm_name = args.get('name')
+          conn = libvirt.open('qemu:///system')
+          try:
+              dom = conn.lookupByName(vm_name)
+              state, reason = dom.state()
+              state_map = {
+                  libvirt.VIR_DOMAIN_NOSTATE: "unknown",
+                  libvirt.VIR_DOMAIN_RUNNING: "running",
+                  libvirt.VIR_DOMAIN_BLOCKED: "blocked",
+                  libvirt.VIR_DOMAIN_PAUSED: "paused",
+                  libvirt.VIR_DOMAIN_SHUTDOWN: "shutdown",
+                  libvirt.VIR_DOMAIN_SHUTOFF: "shutoff",
+                  libvirt.VIR_DOMAIN_CRASHED: "crashed",
+                  libvirt.VIR_DOMAIN_PMSUSPENDED: "suspended"
+              }
+              
+              # Get VM details
+              info = dom.info()
+              xml_desc = dom.XMLDesc(0)
+              root = ElementTree.fromstring(xml_desc)
+              
+              # Get disk info
+              disk_paths = []
+              for disk in root.findall('.//disk'):
+                  if disk.get('device') == 'disk':
+                      for source in disk.findall('.//source'):
+                          if 'file' in source.attrib:
+                              disk_paths.append(source.get('file'))
+              
+              # Get disk size
+              disk_size = 0
+              if disk_paths:
+                  cmd = ["qemu-img", "info", "--output=json", disk_paths[0]]
+                  result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+                  disk_info = json.loads(result.stdout)
+                  disk_size = disk_info.get('virtual-size', 0) // (1024*1024*1024)  # Convert to GB
+              
+              # Get IP address
+              ip_address = None
+              if state_map[state] == "running":
+                  try:
+                      # Try different approaches to get IP
+                      # Method 1: DHCPLeases
+                      for net in conn.listAllNetworks():
+                          leases = net.DHCPLeases()
+                          for lease in leases:
+                              if lease['hostname'] == vm_name:
+                                  ip_address = lease['ipaddr']
+                                  break
+                      
+                      # Method 2: qemu-agent if available
+                      if ip_address is None:
+                          try:
+                              ifaces = dom.interfaceAddresses(libvirt.VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT, 0)
+                              for iface in ifaces.values():
+                                  for addr in iface['addrs']:
+                                      if addr['type'] == libvirt.VIR_IP_ADDR_TYPE_IPV4:
+                                          ip_address = addr['addr']
+                                          break
+                          except:
+                              pass
+                  except:
+                      pass
+                          
+              return {
+                  "status": "success",
+                  "vm_info": {
+                      "name": vm_name,
+                      "state": state_map[state],
+                      "state_reason": reason,
+                      "vcpu": info[3],
+                      "memory": info[1] // 1024,  # Convert to MB
+                      "disk": disk_size,
+                      "ip_address": ip_address
+                  }
+              }
+          except libvirt.libvirtError as e:
+              return {"error": f"Failed to get VM status: {str(e)}"}
+          finally:
+              conn.close()
+
+      def snapshot_vm(args):
+          vm_name = args.get('name')
+          snapshot_name = args.get('snapshot_name')
+          
+          conn = libvirt.open('qemu:///system')
+          try:
+              dom = conn.lookupByName(vm_name)
+              
+              # Create snapshot XML
+              snapshot_xml = f"""
+              <domainsnapshot>
+                  <name>{snapshot_name}</name>
+                  <description>Snapshot created at {time.strftime('%Y-%m-%d %H:%M:%S')}</description>
+              </domainsnapshot>
+              """
+              
+              snapshot = dom.snapshotCreateXML(snapshot_xml, 0)
+              return {
+                  "status": "success", 
+                  "message": f"Snapshot {snapshot_name} created for VM {vm_name}",
+                  "snapshot_id": snapshot.getName()
+              }
+          except libvirt.libvirtError as e:
+              return {"error": f"Failed to create snapshot: {str(e)}"}
+          finally:
+              conn.close()
+
+      def resize_vm_disk(args):
+          vm_name = args.get('name')
+          disk_size = args.get('disk_size')
+          
+          conn = libvirt.open('qemu:///system')
+          try:
+              dom = conn.lookupByName(vm_name)
+              
+              # Get disk path
+              xml_desc = dom.XMLDesc(0)
+              root = ElementTree.fromstring(xml_desc)
+              disk_path = None
+              
+              for disk in root.findall('.//disk'):
+                  if disk.get('device') == 'disk':
+                      for source in disk.findall('.//source'):
+                          if 'file' in source.attrib:
+                              disk_path = source.get('file')
+                              break
+              
+              if not disk_path:
+                  return {"error": "No disk found for the VM"}
+              
+              # Resize disk (VM should be shut down for safety)
+              was_running = dom.isActive()
+              if was_running:
+                  dom.shutdown()
+                  # Wait for VM to shut down
+                  for _ in range(60):  # Wait up to 60 seconds
+                      if not dom.isActive():
+                          break
+                      time.sleep(1)
+                  else:
+                      # Force shutdown if normal shutdown takes too long
+                      dom.destroy()
+              
+              # Resize disk
+              subprocess.run(["qemu-img", "resize", disk_path, f"{disk_size}G"], check=True)
+              
+              # Restart VM if it was running
+              if was_running:
+                  dom.create()
+              
+              return {
+                  "status": "success", 
+                  "message": f"Disk for VM {vm_name} resized to {disk_size}GB",
+                  "disk_size": disk_size
+              }
+          except libvirt.libvirtError as e:
+              return {"error": f"Failed to resize VM disk: {str(e)}"}
+          except subprocess.CalledProcessError as e:
+              return {"error": f"Failed to resize disk: {str(e)}"}
+          finally:
+              conn.close()
+
+      def list_vms():
+          conn = libvirt.open('qemu:///system')
+          try:
+              domains = conn.listAllDomains()
+              vms = []
+              for dom in domains:
+                  state, reason = dom.state()
+                  state_map = {
+                      libvirt.VIR_DOMAIN_NOSTATE: "unknown",
+                      libvirt.VIR_DOMAIN_RUNNING: "running",
+                      libvirt.VIR_DOMAIN_BLOCKED: "blocked",
+                      libvirt.VIR_DOMAIN_PAUSED: "paused",
+                      libvirt.VIR_DOMAIN_SHUTDOWN: "shutdown",
+                      libvirt.VIR_DOMAIN_SHUTOFF: "shutoff",
+                      libvirt.VIR_DOMAIN_CRASHED: "crashed",
+                      libvirt.VIR_DOMAIN_PMSUSPENDED: "suspended"
+                  }
+                  vms.append({
+                      "name": dom.name(),
+                      "state": state_map[state],
+                      "id": dom.ID() if dom.ID() != -1 else None
+                  })
+              return {"status": "success", "vms": vms}
+          except libvirt.libvirtError as e:
+              return {"error": f"Failed to list VMs: {str(e)}"}
+          finally:
+              conn.close()
+
+      if __name__ == "__main__":
+          if len(sys.argv) < 2:
+              print(json.dumps({"error": "No command specified"}))
+              sys.exit(1)
+              
+          command = sys.argv[1]
+          
+          # Parse arguments
+          args = {}
+          if len(sys.argv) > 2:
+              try:
+                  args = json.loads(sys.argv[2])
+              except json.JSONDecodeError:
+                  print(json.dumps({"error": "Invalid JSON arguments"}))
+                  sys.exit(1)
+          
+          # Execute command
+          if command == "create_vm":
+              result = create_vm(args)
+          elif command == "start_vm":
+              result = start_vm(args)
+          elif command == "stop_vm":
+              result = stop_vm(args)
+          elif command == "reboot_vm":
+              result = reboot_vm(args)
+          elif command == "delete_vm":
+              result = delete_vm(args)
+          elif command == "get_vm_status":
+              result = get_vm_status(args)
+          elif command == "snapshot_vm":
+              result = snapshot_vm(args)
+          elif command == "resize_vm_disk":
+              result = resize_vm_disk(args)
+          elif command == "list_vms":
+              result = list_vms()
+          else:
+              result = {"error": f"Unknown command: {command}"}
+              
+          print(json.dumps(result)) 
