@@ -36,11 +36,10 @@ class CandidateInfo(typing.TypedDict):
 	deploy_candidate_build_error: str
 
 
-def get_deploy_bench_candidate(offset: int, limit: str) -> list[CandidateInfo]:
+def get_deploy_bench_candidate(
+	offset: int, limit: str, existing_deploy_candidate_builds: list[str]
+) -> list[CandidateInfo]:
 	"""Fetch all deploy candidates and their corresponding bench and deploy which don't have a build"""
-	existing_deploy_candidate_builds = frappe.get_all(
-		"Deploy Candidate Build", distinct=True, pluck="deploy_candidate"
-	)
 	deploy_candidates: list[CandidateInfo] = (
 		frappe.qb.from_(DeployCandidate)
 		.select(
@@ -154,9 +153,14 @@ def execute():
 	)
 	pages = paginate(num_deploy_candidate_builds, CHUNK_SIZE)
 	total = len(pages)
+	existing_deploy_candidate_builds = frappe.get_all(
+		"Deploy Candidate Build", distinct=True, pluck="deploy_candidate"
+	)
 	for idx, (start, _) in enumerate(pages):
 		print(f"In step: {idx}/{total}")
-		deploy_candidates_info = get_deploy_bench_candidate(offset=start, limit=CHUNK_SIZE)
+		deploy_candidates_info = get_deploy_bench_candidate(
+			offset=start, limit=CHUNK_SIZE, existing_deploy_candidate_builds=existing_deploy_candidate_builds
+		)
 
 		for deploy_candidate_info in deploy_candidates_info:
 			deploy_candidate_build_name = create_deploy_candidate_build(deploy_candidate_info)
