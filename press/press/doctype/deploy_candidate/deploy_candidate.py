@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import contextlib
-import glob
 import json
 import os
 import re
@@ -10,7 +9,6 @@ import re
 # For license information, please see license.txt
 import shlex
 import subprocess
-import tempfile
 import typing
 from datetime import datetime, timedelta
 from subprocess import Popen
@@ -655,37 +653,6 @@ def pull_update_file_filter(file_path: str) -> bool:
 	return True
 
 
-def cleanup_build_directories():
-	# Cleanup Build Directories for Deploy Candidate Builds older than a day
-	dcs = frappe.get_all(
-		"Deploy Candidate Build",
-		{
-			"status": ("!=", "Draft"),
-			"build_directory": ("is", "set"),
-			"creation": ("<=", frappe.utils.add_to_date(None, hours=-6)),
-		},
-		order_by="creation asc",
-		pluck="name",
-		limit=100,
-	)
-	for dc in dcs:
-		doc: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dc)
-		try:
-			doc.cleanup_build_directory()
-			frappe.db.commit()
-		except Exception as e:
-			frappe.db.rollback()
-			log_error(title="Deploy Candidate Build Cleanup Error", exception=e, doc=doc)
-
-	# Delete all temporary files created by the build process
-	glob_path = os.path.join(tempfile.gettempdir(), f"{tempfile.gettempprefix()}*.tar.gz")
-	six_hours_ago = frappe.utils.add_to_date(None, hours=-6)
-	for file in glob.glob(glob_path):
-		# Use local time to compare timestamps
-		if os.stat(file).st_ctime < six_hours_ago.timestamp():
-			os.remove(file)
-
-
 def ansi_escape(text):
 	# Reference:
 	# https://stackoverflow.com/questions/14693701/how-can-i-remove-the-ansi-escape-sequences-from-a-string-in-python
@@ -701,35 +668,6 @@ def desk_app(doctype, txt, searchfield, start, page_len, filters):
 		fields=["app"],
 		as_list=True,
 	)
-
-
-def delete_draft_candidates():
-	dcs = frappe.get_all(
-		"Deploy Candidate",
-		{
-			"status": "Draft",
-			"creation": ("<=", frappe.utils.add_days(None, -1)),
-		},
-		order_by="creation asc",
-		pluck="name",
-		limit=1000,
-	)
-
-	for dc in dcs:
-		if frappe.db.exists("Bench", {"candidate": dc}):
-			frappe.db.set_value("Deploy Candidate", dc, "status", "Success", update_modified=False)
-			frappe.db.commit()
-			continue
-		try:
-			frappe.delete_doc("Deploy Candidate", dc, delete_permanently=True)
-			frappe.db.commit()
-		except Exception:
-			log_error(
-				"Draft Deploy Candidate Deletion Error",
-				reference_doctype="Deploy Candidate",
-				reference_name=dc,
-			)
-			frappe.db.rollback()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Deploy Candidate")
