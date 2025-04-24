@@ -27,7 +27,7 @@
   "restart_redis",
   "column_break_ylpr",
   "auto_rollback_changes",
-  "rollback_commit",
+  "default_rollback_commit",
   "section_break_whdl",
   "servers"
  ],
@@ -79,11 +79,6 @@
    "label": "Auto Rollback Changes"
   },
   {
-   "fieldname": "rollback_commit",
-   "fieldtype": "Data",
-   "label": "Rollback Commit"
-  },
-  {
    "fieldname": "column_break_xsdu",
    "fieldtype": "Column Break"
   },
@@ -112,7 +107,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Draft\nRunning\nRollbacking\nSuccess\nFailure",
+   "options": "Draft\nPlanning\nRunning\nRollbacking\nSuccess\nFailure",
    "reqd": 1
   },
   {
@@ -139,19 +134,22 @@
    "default": "0",
    "fieldname": "app_server",
    "fieldtype": "Check",
-   "label": "App Server"
+   "label": "App Server",
+   "set_only_once": 1
   },
   {
    "default": "0",
    "fieldname": "database_server",
    "fieldtype": "Check",
-   "label": "Database Server"
+   "label": "Database Server",
+   "set_only_once": 1
   },
   {
    "default": "0",
    "fieldname": "proxy_server",
    "fieldtype": "Check",
-   "label": "Proxy Server"
+   "label": "Proxy Server",
+   "set_only_once": 1
   },
   {
    "fieldname": "column_break_ylpr",
@@ -161,7 +159,8 @@
    "default": "0",
    "fieldname": "exclude_self_hosted_servers",
    "fieldtype": "Check",
-   "label": "Exclude Self Hosted Servers"
+   "label": "Exclude Self Hosted Servers",
+   "set_only_once": 1
   },
   {
    "fieldname": "section_break_whdl",
@@ -172,11 +171,16 @@
    "fieldtype": "Table",
    "label": "Servers",
    "options": "Agent Update Server"
+  },
+  {
+   "fieldname": "default_rollback_commit",
+   "fieldtype": "Data",
+   "label": "Default Rollback Commit"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-23 16:36:35.829216",
+ "modified": "2025-04-24 09:23:26.282774",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Update",

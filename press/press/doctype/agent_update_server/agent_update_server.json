@@ -11,14 +11,17 @@
   "rollbacked",
   "start",
   "end",
-  "current_commit"
+  "current_commit",
+  "server_type",
+  "is_rollback_possible"
  ],
  "fields": [
   {
    "fieldname": "server",
-   "fieldtype": "Data",
+   "fieldtype": "Dynamic Link",
    "in_list_view": 1,
    "label": "Server",
+   "options": "server_type",
    "reqd": 1
   },
   {
@@ -27,8 +30,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nRunning\nSuccess\nFailure\nSkipped",
-   "reqd": 1
+   "options": "Pending\nRunning\nSuccess\nFailure\nSkipped"
   },
   {
    "default": "0",
@@ -53,12 +55,25 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Current Commit"
+  },
+  {
+   "fieldname": "server_type",
+   "fieldtype": "Select",
+   "label": "Server Type",
+   "options": "Server\nDatabase Server\nProxy Server",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_rollback_possible",
+   "fieldtype": "Check",
+   "label": "Is Rollback Possible"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-04-23 16:14:43.253486",
+ "modified": "2025-04-24 01:00:06.409838",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Update Server",
