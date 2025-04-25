@@ -454,6 +454,7 @@ class DeployCandidateBuild(Document):
 			PreBuildValidations(self.candidate, pmf).validate()
 		except Exception as e:
 			step.output = str(e)
+			# We need to raise to get traceback in `deploy notifications`
 			raise e
 
 		step.duration = get_duration(start_time)
