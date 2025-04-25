@@ -108,7 +108,7 @@ def validate_plan(secret_key):
 
 	if not secret_key:
 		frappe.throw(
-			"Secret key missing. Email Delivery Service seems to be improperly installed. Try uninstalling and reinstalling it.",
+			"Secret key missing. Email Delivery Service seems to be improperly installed. Try reinstalling it.",
 			EmailConfigError,
 		)
 
@@ -123,8 +123,8 @@ def validate_plan(secret_key):
 
 	if not subscription["enabled"]:
 		frappe.throw(
-			"Your subscription is not active. Try activating it from, "
-			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/overview",
+			"Your subscription is not active. Try reinstalling Email Delivery Service."
+			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/apps",
 			EmailConfigError,
 		)
 
@@ -141,7 +141,7 @@ def validate_plan(secret_key):
 	if not count < plan_label_map[subscription["plan"]]:
 		frappe.throw(
 			"You have exceeded your quota for Email Delivery Service. Try upgrading it from, "
-			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/overview",
+			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/apps",
 			EmailLimitExceeded,
 		)
 
