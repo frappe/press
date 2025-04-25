@@ -450,7 +450,11 @@ class DeployCandidateBuild(Document):
 		start_time = now()
 		self.save(ignore_version=True)
 
-		PreBuildValidations(self.candidate, pmf).validate()
+		try:
+			PreBuildValidations(self.candidate, pmf).validate()
+		except Exception as e:
+			step.output = str(e)
+			raise e
 
 		step.duration = get_duration(start_time)
 		step.output = "Pre-Build validations passed"
