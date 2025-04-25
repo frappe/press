@@ -251,8 +251,8 @@ def create_build_failed_notification(
 		"doctype": "Press Notification",
 		"team": dc.team,
 		"type": "Bench Deploy",
-		"document_type": dc.doctype,
-		"document_name": dc.name,
+		"document_type": dcb.doctype,
+		"document_name": dcb.name,
 		"class": "Error",
 		**details,
 	}
