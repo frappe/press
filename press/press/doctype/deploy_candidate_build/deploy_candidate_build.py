@@ -1296,7 +1296,7 @@ def fail_or_retry_stuck_builds(
 	for (name,) in result:
 		dcb: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", name)
 		dcb.manually_failed = True
-		dcb._stop_and_fail(False)
+		dcb._stop_and_fail()
 		if can_retry_build(dcb.name, dcb.group, dcb.build_start):
 			dcb.schedule_build_retry()
 
@@ -1393,7 +1393,7 @@ def correct_status(dcb_name: str):
 	if not found_failed:
 		return
 
-	dcb._stop_and_fail(False)
+	dcb._stop_and_fail()
 
 
 def throw_no_build_server():
