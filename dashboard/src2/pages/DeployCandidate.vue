@@ -196,7 +196,7 @@ export default {
 					condition: () => this.$team?.doc?.is_desk_user,
 					onClick: () => {
 						window.open(
-							`${window.location.protocol}//${window.location.host}/app/deploy-candidate/${this.id}`,
+							`${window.location.protocol}//${window.location.host}/app/deploy-candidate-build/${this.id}`,
 							'_blank',
 						);
 					},
