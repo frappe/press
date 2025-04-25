@@ -28,6 +28,8 @@
   "grafana_password",
   "node_exporter_dashboard_path",
   "ssh_section",
+  "ssh_user",
+  "ssh_port",
   "frappe_user_password",
   "frappe_public_key",
   "column_break_20",
@@ -229,6 +231,17 @@
    "fieldname": "node_exporter_dashboard_path",
    "fieldtype": "Data",
    "label": "Node Exporter Dashboard Path"
+  },
+  {
+   "fieldname": "ssh_user",
+   "fieldtype": "Data",
+   "label": "SSH User"
+  },
+  {
+   "default": "22",
+   "fieldname": "ssh_port",
+   "fieldtype": "Int",
+   "label": "SSH Port"
   }
  ],
  "links": [
@@ -237,7 +250,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2025-01-24 00:35:26.093683",
+ "modified": "2025-04-23 15:29:42.125395",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Monitor Server",
@@ -256,6 +269,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
