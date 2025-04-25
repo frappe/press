@@ -164,6 +164,9 @@ class ProductTrialRequest(Document):
 			subdomain (str): The subdomain for the new site.
 			cluster (str | None): The cluster to use for site creation.
 		"""
+		if self.status != "Pending":
+			return
+
 		if not subdomain:
 			frappe.throw("Subdomain is required to create a site.")
 
