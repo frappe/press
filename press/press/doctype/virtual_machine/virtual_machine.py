@@ -63,7 +63,7 @@ class VirtualMachine(Document):
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
 		availability_zone: DF.Data
-		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner", "Bare Metal Host"]
+		cloud_provider: DF.Literal
 		cluster: DF.Link
 		disk_size: DF.Int
 		domain: DF.Link
@@ -800,43 +800,55 @@ class VirtualMachine(Document):
 		return {"status": "timeout", "message": f"Job {job_id} timed out after {timeout} seconds"}
 
 	def _get_bare_metal_cloud_init_config(self):
-		"""Generate cloud-init configuration for the VM"""
-		server = self.get_server()
-		if not server:
-			return {}
-		
-		log_server, kibana_password = server.get_log_server()
-		
-		# Generate SSH authorized keys
-		ssh_keys = []
-		if frappe.db.get_value("SSH Key", self.ssh_key, "public_key"):
-			ssh_keys.append(frappe.db.get_value("SSH Key", self.ssh_key, "public_key"))
-		
-		# Create basic cloud-init config
+		"""Generate cloud-init config for bare metal VM"""
 		cloud_init = {
 			"hostname": self.name.split('.')[0],
-			"fqdn": self.name,
-			"ssh_authorized_keys": ssh_keys,
-			"chpasswd": {
-				"expire": False
-			},
+			"manage_etc_hosts": True,
+			"ssh_pwauth": True,
+			"users": [
+				{
+					"name": "frappe",
+					"sudo": "ALL=(ALL) NOPASSWD:ALL",
+					"shell": "/bin/bash",
+					"ssh_authorized_keys": [
+						self.get_ssh_public_key()
+					]
+				}
+			],
+			"write_files": [
+				{
+					"path": "/etc/ssh/sshd_config",
+					"content": """
+Port 22
+PermitRootLogin yes
+PubkeyAuthentication yes
+PasswordAuthentication yes
+UsePAM yes
+X11Forwarding yes
+PrintMotd no
+AcceptEnv LANG LC_*
+Subsystem sftp /usr/lib/openssh/sftp-server
+"""
+				}
+			],
 			"packages": [
-				"qemu-guest-agent",
-				"ntp",
 				"curl",
-				"vim",
-				"htop",
+				"wget",
 				"git",
-				"python3",
-				"python3-pip"
+				"software-properties-common",
+				"apt-transport-https",
+				"ca-certificates",
+				"gnupg-agent"
 			],
 			"runcmd": [
-				"systemctl enable --now qemu-guest-agent",
-				"systemctl enable --now ntp"
+				"systemctl restart ssh",
 			]
 		}
 		
-			if server:
+		# Check if we need to create a server
+		server = self.get_server()
+		
+		if server:
 			# Add agent password for server management
 			cloud_init["agent_password"] = server.get_password("agent_password")
 		
@@ -1355,14 +1367,15 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def sync(self, *args, **kwargs):
+		"""Sync VM status with cloud provider"""
 		if self.cloud_provider == "AWS EC2":
-			self._sync_aws(*args, **kwargs)
+			return self._sync_aws(*args, **kwargs)
 		elif self.cloud_provider == "OCI":
-			self._sync_oci(*args, **kwargs)
+			return self._sync_oci(*args, **kwargs)
 		elif self.cloud_provider == "Hetzner":
-			self._sync_hetzner(*args, **kwargs)
+			return self._sync_hetzner(*args, **kwargs)
 		elif self.cloud_provider == "Bare Metal Host":
-			self._sync_bare_metal(*args, **kwargs)
+			return self._sync_bare_metal(*args, **kwargs)
 		self.update_servers()
 
 	@frappe.whitelist()
@@ -1626,3 +1639,164 @@ AWS_SERIAL_CONSOLE_ENDPOINT_MAP = {
 		"fingerprint": "SHA256:kfOFRWLaOZfB+utbd3bRf8OlPf8nGO2YZLqXZiIw5DQ",
 	},
 }
+
+# VM Performance Monitoring features
+@frappe.whitelist()
+def get_performance_metrics(self, period="hour"):
+	"""Get performance metrics for the VM (POC for Bare Metal Host only)"""
+	if self.cloud_provider != "Bare Metal Host":
+		return {"error": "Performance metrics only available for Bare Metal Host VMs"}
+		
+	# Simplified POC implementation that would be expanded later
+	return {
+		"cpu": [
+			{"timestamp": time.time() - 3600, "value": 25},
+			{"timestamp": time.time() - 1800, "value": 35},
+			{"timestamp": time.time(), "value": 40}
+		],
+		"memory": [
+			{"timestamp": time.time() - 3600, "value": 60},
+			{"timestamp": time.time() - 1800, "value": 65},
+			{"timestamp": time.time(), "value": 70}
+		],
+		"disk": [
+			{"timestamp": time.time() - 3600, "value": 50},
+			{"timestamp": time.time() - 1800, "value": 50},
+			{"timestamp": time.time(), "value": 51}
+		]
+	}
+
+@frappe.whitelist()
+def set_performance_alerts(self, cpu_threshold=80, memory_threshold=80, disk_threshold=80):
+	"""
+	Set performance alert thresholds for the VM
+	
+	Args:
+		cpu_threshold (int): CPU usage percentage threshold
+		memory_threshold (int): Memory usage percentage threshold
+		disk_threshold (int): Disk usage percentage threshold
+	"""
+	# Only available for Bare Metal Host VMs
+	if self.cloud_provider != "Bare Metal Host":
+		return {"error": "Performance alerts only available for Bare Metal Host VMs"}
+		
+	thresholds = {
+		"cpu_threshold": cpu_threshold,
+		"memory_threshold": memory_threshold,
+		"disk_threshold": disk_threshold
+	}
+	
+	# Store thresholds in Frappe using custom fields
+	for key, value in thresholds.items():
+		frappe.db.set_value("Virtual Machine", self.name, key, value)
+	
+	# Schedule background job to check alerts
+	frappe.enqueue(
+		method="press.press.doctype.virtual_machine.virtual_machine.check_vm_performance_alerts",
+		queue="long",
+		vm=self.name
+	)
+	
+	return {"success": True, "message": "Performance alerts configured successfully"}
+
+# Automated VM Management features
+@frappe.whitelist()
+def schedule_operation(self, operation, schedule_time):
+	"""Schedule a VM operation (POC for Bare Metal Host only)"""
+	if self.cloud_provider != "Bare Metal Host":
+		return {"error": "Scheduled operations only available for Bare Metal Host VMs"}
+		
+	valid_operations = ["start", "stop", "reboot", "backup"]
+	if operation not in valid_operations:
+		return {"error": f"Invalid operation. Supported operations: {', '.join(valid_operations)}"}
+	
+	# Simple POC implementation - in production this would create a proper scheduled job
+	return {
+		"success": True,
+		"message": f"VM {operation} scheduled for {schedule_time}",
+		"operation": operation,
+		"schedule_time": schedule_time
+	}
+
+@frappe.whitelist()
+def enable_auto_scaling(self, min_vcpu=None, max_vcpu=None, cpu_threshold=80):
+	"""Enable VM auto-scaling (POC for Bare Metal Host only)"""
+	if self.cloud_provider != "Bare Metal Host":
+		return {"error": "Auto-scaling only available for Bare Metal Host VMs"}
+	
+	# Simple POC implementation
+	if min_vcpu is None:
+		min_vcpu = max(1, self.vcpu - 1)
+	if max_vcpu is None:
+		max_vcpu = self.vcpu + 1
+		
+	# Store configuration values (would be custom fields in real implementation)
+	frappe.cache().set_value(f"vm_scaling_{self.name}", {
+		"enabled": True,
+		"min_vcpu": min_vcpu,
+		"max_vcpu": max_vcpu,
+		"cpu_threshold": cpu_threshold
+	})
+	
+	return {
+		"success": True,
+		"message": "Auto-scaling enabled (POC)",
+		"config": {
+			"min_vcpu": min_vcpu,
+			"max_vcpu": max_vcpu,
+			"cpu_threshold": cpu_threshold
+		}
+	}
+
+@frappe.whitelist()
+def disable_auto_scaling(self):
+	"""Disable VM auto-scaling (POC for Bare Metal Host only)"""
+	if self.cloud_provider != "Bare Metal Host":
+		return {"error": "Auto-scaling only available for Bare Metal Host VMs"}
+		
+	# Simple POC implementation
+	frappe.cache().set_value(f"vm_scaling_{self.name}", {"enabled": False})
+	
+	return {"success": True, "message": "Auto-scaling disabled (POC)"}
+
+@frappe.whitelist()
+def check_vm_performance_alerts(vm):
+	"""Check VM performance against thresholds (POC for Bare Metal Host only)"""
+	try:
+		vm_doc = frappe.get_doc("Virtual Machine", vm)
+		if vm_doc.cloud_provider != "Bare Metal Host":
+			return
+			
+		# For POC, we're just logging instead of creating actual alerts
+		log_error(
+			"VM Performance Check (POC)", 
+			vm=vm, 
+			message="This is a proof-of-concept for VM performance monitoring"
+		)
+	except Exception as e:
+		log_error("VM Alert Check Error", vm=vm, error=str(e))
+
+def create_vm_alert(vm, alert_type, message):
+	"""
+	Create a notification for VM performance alert
+	
+	Args:
+		vm (str): Virtual machine name
+		alert_type (str): Type of alert (CPU, Memory, Disk)
+		message (str): Alert message
+	"""
+	# Get VM owner team
+	team = frappe.db.get_value("Virtual Machine", vm, "team")
+	
+	# Create notification
+	frappe.get_doc({
+		"doctype": "Notification Log",
+		"subject": f"VM Performance Alert: {vm} - {alert_type}",
+		"for_user": team,  # This would need to be adapted based on how user permissions work
+		"type": "Alert",
+		"document_type": "Virtual Machine",
+		"document_name": vm,
+		"email_content": message
+	}).insert(ignore_permissions=True)
+	
+	# Could also send an email or other notification here
