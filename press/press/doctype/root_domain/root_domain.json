@@ -7,12 +7,11 @@
  "engine": "InnoDB",
  "field_order": [
   "default_cluster",
-  "default_proxy_server",
   "team",
   "column_break_4",
   "dns_provider",
+  "cf_zone_id",
   "cf_cred_path",
-  "cf_api_token",
   "aws_access_key_id",
   "aws_secret_access_key"
  ],
@@ -65,16 +64,10 @@
   },
   {
    "depends_on": "eval:doc.dns_provider=='Cloudflare';",
-   "fieldname": "cf_api_token",
-   "fieldtype": "Password",
-   "label": "Cloudflare credentials path",
+   "fieldname": "cf_zone_id",
+   "fieldtype": "Data",
+   "label": "Cloudflare Zone ID",
    "reqd": 1
-  },
-  {
-   "fieldname": "default_proxy_server",
-   "fieldtype": "Link",
-   "label": "Default Proxy Server",
-   "options": "Proxy Server"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -110,8 +103,7 @@
    "link_fieldname": "domain"
   }
  ],
- "modified": "2025-04-22 02:57:26.410414",
- "modified": "2025-04-22 02:57:26.410414",
+ "modified": "2025-04-26 15:59:13.869275",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Root Domain",
