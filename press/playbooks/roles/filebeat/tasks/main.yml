@@ -2,16 +2,20 @@
 - name: Update APT Cache
   apt:
     update_cache: yes
+  ignore_errors: yes
 
 - name: Install Filebeat Dependencies
   apt:
     state: present
-    force: yes
     pkg:
       - apt-transport-https
       - ca-certificates
       - curl
       - software-properties-common
+  register: result
+  until: result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Add Elasticsearch Repository Key
   apt_key:
@@ -27,7 +31,11 @@
 - name: Install Filebeat
   apt:
     name: filebeat
-    state: present
+    state: latest
+  register: result
+  until: result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Setup Filebeat
   template:
