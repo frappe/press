@@ -67,7 +67,7 @@ class PressNotification(Document):
 			self.send_bench_deploy_failed(user)
 
 	def send_bench_deploy_failed(self, user: str):
-		group_name = frappe.db.get_value("Deploy Candidate", self.document_name, "group")
+		group_name = frappe.db.get_value("Deploy Candidate Build", self.document_name, "group")
 		rg_title = frappe.db.get_value("Release Group", group_name, "title")
 
 		frappe.sendmail(

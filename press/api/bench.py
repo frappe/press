@@ -744,9 +744,9 @@ def deploy(name, apps):
 		frappe.throw("A deploy for this bench is already in progress")
 
 	candidate = rg.create_deploy_candidate(apps)
-	candidate.schedule_build_and_deploy()
+	deploy_candidate_build = candidate.schedule_build_and_deploy()
 
-	return candidate.name
+	return deploy_candidate_build["name"]
 
 
 @frappe.whitelist()
