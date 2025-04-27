@@ -53,6 +53,12 @@ frappe.ui.form.on('Server', {
 		[
 			[__('Update Agent'), 'update_agent', true, frm.doc.is_server_setup],
 			[
+				__('Install Filebeat'),
+				'install_filebeat',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
 				__('Update Agent Ansible'),
 				'update_agent_ansible',
 				true,
