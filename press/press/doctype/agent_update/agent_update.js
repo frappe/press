@@ -8,7 +8,13 @@ frappe.ui.form.on('Agent Update', {
 				__('Build Plan'),
 				'create_execution_plan',
 				true,
-				doc.status === 'Draft' || doc.status === 'Planning',
+				frm.doc.status === 'Draft' || frm.doc.status === 'Planning',
+			],
+			[
+				__('Start'),
+				'execute',
+				true,
+				frm.doc.status === 'Pending' || frm.doc.status === 'Running',
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {

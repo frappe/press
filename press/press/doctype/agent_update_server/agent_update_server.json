@@ -7,11 +7,14 @@
  "engine": "InnoDB",
  "field_order": [
   "server",
+  "agent_status",
   "status",
   "start",
   "end",
   "current_commit",
+  "update_ansible_play",
   "rollback_commit",
+  "rollback_ansible_play",
   "server_type"
  ],
  "fields": [
@@ -29,18 +32,18 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Draft\nPending\nRunning\nSuccess\nFailure\nSkipped\nRolledback"
+   "options": "Draft\nPending\nRunning\nSuccess\nFailure\nFatal\nSkipped\nRolling Back\nRolled Back"
   },
   {
    "fieldname": "start",
    "fieldtype": "Datetime",
    "in_list_view": 1,
-   "label": "Start"
+   "label": "Start",
+   "read_only": 1
   },
   {
    "fieldname": "end",
    "fieldtype": "Datetime",
-   "in_list_view": 1,
    "label": "End"
   },
   {
@@ -59,12 +62,34 @@
    "fieldname": "rollback_commit",
    "fieldtype": "Data",
    "label": "Rollback Commit"
+  },
+  {
+   "fieldname": "agent_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Agent Status",
+   "options": "\nInactive\nActive",
+   "read_only": 1
+  },
+  {
+   "fieldname": "update_ansible_play",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Update Ansible Play",
+   "options": "Ansible Play"
+  },
+  {
+   "fieldname": "rollback_ansible_play",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Rollback Ansible Play",
+   "options": "Ansible Play"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-04-25 00:05:45.068123",
+ "modified": "2025-04-27 20:44:44.742186",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Update Server",

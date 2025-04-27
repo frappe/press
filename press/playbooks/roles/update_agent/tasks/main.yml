@@ -35,18 +35,17 @@
   args:
     chdir: /home/frappe/agent
 
-- name: Update Agent
-  become: yes
-  become_user: frappe
-  command: '/home/frappe/agent/env/bin/agent update {{ agent_update_args }}'
-  args:
-    chdir: /home/frappe/agent
-  ignore_errors: yes
-
 - name: Update Agent database
   become: yes
   become_user: frappe
   command: /home/frappe/agent/env/bin/agent setup database
+  args:
+    chdir: /home/frappe/agent
+
+- name: Update Agent
+  become: yes
+  become_user: frappe
+  command: '/home/frappe/agent/env/bin/agent update {{ agent_update_args }}'
   args:
     chdir: /home/frappe/agent
 

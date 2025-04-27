@@ -16,16 +16,29 @@ class AgentUpdateServer(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		agent_status: DF.Literal["", "Inactive", "Active"]
 		current_commit: DF.Data | None
 		end: DF.Datetime | None
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
+		rollback_ansible_play: DF.Link | None
 		rollback_commit: DF.Data | None
 		server: DF.DynamicLink
 		server_type: DF.Literal["Server", "Database Server", "Proxy Server"]
 		start: DF.Datetime | None
-		status: DF.Literal["Draft", "Pending", "Running", "Success", "Failure", "Skipped", "Rolledback"]
+		status: DF.Literal[
+			"Draft",
+			"Pending",
+			"Running",
+			"Success",
+			"Failure",
+			"Fatal",
+			"Skipped",
+			"Rolling Back",
+			"Rolled Back",
+		]
+		update_ansible_play: DF.Link | None
 	# end: auto-generated types
 
 	pass

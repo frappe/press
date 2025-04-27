@@ -23,8 +23,9 @@
   "exclude_self_hosted_servers",
   "column_break_xsdu",
   "restart_web_workers",
-  "restart_background_workers",
+  "restart_rq_workers",
   "restart_redis",
+  "agent_startup_timeout_minutes",
   "column_break_ylpr",
   "auto_rollback_changes",
   "rollback_to_specific_commit",
@@ -94,12 +95,6 @@
   },
   {
    "default": "0",
-   "fieldname": "restart_background_workers",
-   "fieldtype": "Check",
-   "label": "Restart Background Workers"
-  },
-  {
-   "default": "0",
    "fieldname": "restart_redis",
    "fieldtype": "Check",
    "label": "Restart Redis"
@@ -111,7 +106,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Draft\nPlanning\nPending\nRunning\nRollbacking\nSuccess\nFailure",
+   "options": "Draft\nPlanning\nPending\nRunning\nSuccess\nFailure",
    "reqd": 1
   },
   {
@@ -197,11 +192,22 @@
    "fieldtype": "Check",
    "label": "Rollback to Specific Commit",
    "set_only_once": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "restart_rq_workers",
+   "fieldtype": "Check",
+   "label": "Restart RQ Workers"
+  },
+  {
+   "fieldname": "agent_startup_timeout_minutes",
+   "fieldtype": "Int",
+   "label": "Agent Startup Timeout (Minutes)"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-24 23:57:42.769141",
+ "modified": "2025-04-25 01:52:11.072992",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Update",
