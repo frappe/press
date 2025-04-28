@@ -42,6 +42,7 @@
   "frappe_user_password",
   "frappe_public_key",
   "column_break_18",
+  "bastion_server",
   "root_public_key",
   "section_break_21",
   "domains",
@@ -431,10 +432,16 @@
    "fieldtype": "Check",
    "label": "Is Nginx Defer Reload Setup",
    "read_only": 1
+  },
+  {
+   "fieldname": "bastion_server",
+   "fieldtype": "Link",
+   "label": "Bastion Server",
+   "options": "Bastion Server"
   }
  ],
  "links": [],
- "modified": "2025-04-18 13:53:15.907964",
+ "modified": "2025-01-24 15:13:50.974733",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",

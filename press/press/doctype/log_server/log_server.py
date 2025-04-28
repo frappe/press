@@ -1,5 +1,6 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import frappe
 
@@ -18,6 +19,7 @@ class LogServer(BaseServer):
 		from frappe.types import DF
 
 		agent_password: DF.Password | None
+		bastion_server: DF.Link | None
 		cluster: DF.Link | None
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None
@@ -32,6 +34,8 @@ class LogServer(BaseServer):
 		private_vlan_id: DF.Data | None
 		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
 		root_public_key: DF.Code | None
+		ssh_port: DF.Int
+		ssh_user: DF.Data | None
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		virtual_machine: DF.Link | None
 	# end: auto-generated types

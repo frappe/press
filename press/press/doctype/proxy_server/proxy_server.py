@@ -31,6 +31,7 @@ class ProxyServer(BaseServer):
 		agent_password: DF.Password | None
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
+		bastion_server: DF.Link | None
 		cluster: DF.Link | None
 		disable_agent_job_auto_retry: DF.Check
 		domain: DF.Link | None

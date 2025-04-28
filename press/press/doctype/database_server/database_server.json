@@ -49,6 +49,7 @@
   "column_break_18",
   "ssh_user",
   "ssh_port",
+  "bastion_server",
   "root_public_key",
   "section_break_cees",
   "ram",
@@ -546,6 +547,12 @@
    "fieldname": "enable_physical_backup",
    "fieldtype": "Check",
    "label": "Enable Physical Backup"
+   },
+   {
+   "fieldname": "bastion_server",
+   "fieldtype": "Link",
+   "label": "Bastion Server",
+   "options": "Bastion Server"
   }
  ],
  "index_web_pages_for_search": 1,

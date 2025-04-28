@@ -21,6 +21,7 @@ class MonitorServer(BaseServer):
 		from frappe.types import DF
 
 		agent_password: DF.Password | None
+		bastion_server: DF.Link | None
 		cluster: DF.Link | None
 		default_server: DF.Data | None
 		domain: DF.Link | None
@@ -39,6 +40,8 @@ class MonitorServer(BaseServer):
 		prometheus_data_directory: DF.Data | None
 		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
 		root_public_key: DF.Code | None
+		ssh_port: DF.Int
+		ssh_user: DF.Data | None
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		virtual_machine: DF.Link | None
 	# end: auto-generated types

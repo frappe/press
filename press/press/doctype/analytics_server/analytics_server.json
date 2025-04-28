@@ -24,6 +24,7 @@
   "frappe_user_password",
   "frappe_public_key",
   "column_break_19",
+  "bastion_server",
   "root_public_key",
   "monitoring_section",
   "monitoring_password",
@@ -244,6 +245,12 @@
    "fieldtype": "Password",
    "label": "Google Client Secret",
    "set_only_once": 1
+  },
+  {
+   "fieldname": "bastion_server",
+   "fieldtype": "Link",
+   "label": "Bastion Server",
+   "options": "Bastion Server"
   }
  ],
  "links": [
@@ -252,7 +259,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2023-12-13 15:09:40.978998",
+ "modified": "2025-01-24 15:14:28.789254",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Analytics Server",
