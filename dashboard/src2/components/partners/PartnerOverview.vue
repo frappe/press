@@ -220,14 +220,14 @@ function calculateTierProgress(next_tier_value) {
 
 function calculateNextTier(tier) {
 	const target_inr = {
-		Gold: 500000,
-		Silver: 200000,
-		Bronze: 50000,
+		Gold: 575000,
+		Silver: 230000,
+		Bronze: 57500,
 	};
 	const target_usd = {
-		Gold: 6000,
-		Silver: 2500,
-		Bronze: 600,
+		Gold: 6900,
+		Silver: 2875,
+		Bronze: 690,
 	};
 
 	const current_tier = partnerDetails.data?.partner_type;
