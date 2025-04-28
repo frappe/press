@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import typing
+from collections import Counter
 from dataclasses import dataclass, field
 
 import frappe
@@ -53,11 +54,17 @@ class DeployCandidateBuildType(typing.TypedDict):
 class FailedBuildType(typing.TypedDict):
 	user_failure: list[DeployCandidateBuildType]
 	fc_failure: list[DeployCandidateBuildType]
+	fc_manually_failed: list[DeployCandidateBuildType]
 
 
 class DurationType(typing.TypedDict):
 	avg_build_duration: float
 	avg_pending_duration: float
+
+
+class ContextDurationType(typing.TypedDict):
+	avg_package_duration: float
+	avg_upload_duration: float
 
 
 @dataclass
@@ -82,23 +89,48 @@ class GenerateBuildMetric:
 	)
 
 	def get_metric(self):
+		"""
+		- Get total builds
+		- Get total failed builds (user, fc, manually)
+		- Get Avg pending and build duration
+		- Get Avg context durations (package & upload)
+		- Get failure frequency.
+		"""
 		self.total_builds = self.get_total_builds()
 		self.total_failures = self.get_total_failures()
 		self.duration_metrics = self.get_build_duration_metrics()
-
-		from textwrap import dedent
-
-		print(
-			dedent(
-				f"""
-				Total Builds: {self.total_builds} \n
-				Total Failures: {len(self.total_failures["user_failure"]), len(self.total_failures["fc_failure"])} \n
-				Durations: {self.duration_metrics}
-			"""
-			)
+		self.context_durations = self.get_context_durations()
+		self.failure_frequency = self.get_error_frequency(
+			self.total_failures["user_failure"],
 		)
 
+	def get_error_frequency(
+		self,
+		user_failures: list[DeployCandidateBuildType],
+	) -> Counter:
+		"""What type of user addressable failure is most common"""
+		return Counter(failure["error_key"] for failure in user_failures)
+
+	def get_context_durations(self) -> ContextDurationType:
+		context_durations = frappe.get_all(
+			"Deploy Candidate Build Step",
+			{
+				"stage_slug": ("in", ["package", "upload"]),
+				"step_slug": "context",
+				"creation": ("between", [frappe.utils.add_to_date(days=-7), frappe.utils.now()]),
+			},
+			["duration", "stage_slug"],
+		)
+		package_durations = [ctx.duration for ctx in context_durations if ctx.stage_slug == "package"]
+		upload_durations = [ctx.duration for ctx in context_durations if ctx.stage_slug == "upload"]
+
+		return {
+			"avg_package_duration": sum(package_durations) / len(package_durations),
+			"avg_upload_duration": sum(upload_durations) / len(upload_durations),
+		}
+
 	def get_build_duration_metrics(self) -> DurationType:
+		"""Average duration pending / build"""
 		return frappe.get_all(
 			"Deploy Candidate Build",
 			filters={"creation": ("between", [self.from_date, self.end_date])},
@@ -109,32 +141,35 @@ class GenerateBuildMetric:
 		)
 
 	def get_total_failures(self) -> FailedBuildType:
+		"""User failures, fc failures and manual failures"""
 		return {
-			"user_failure": self._get_failure(is_user_addressable=True),
-			"fc_failure": self._get_failure(is_user_addressable=False),
+			"user_failure": self._get_failure(is_user_addressable=True, is_manually_failed=False),
+			"fc_failure": self._get_failure(is_user_addressable=False, is_manually_failed=False),
+			"fc_manual_failure": self._get_failure(is_user_addressable=False, is_manually_failed=True),
 		}
 
-	def _get_failure(self, is_user_addressable: bool) -> list[DeployCandidateBuildType]:
+	def _get_failure(
+		self, is_user_addressable: bool, is_manually_failed: bool
+	) -> list[DeployCandidateBuildType]:
 		return frappe.get_all(
 			"Deploy Candidate Build",
 			{
 				"creation": ("between", [self.from_date, self.end_date]),
 				"status": "Failure",
 				"user_addressable_failure": is_user_addressable,
+				"manually_failed": is_manually_failed,
 			},
-			# self.metric_fields,
+			self.metric_fields,
 		)
 
 	def get_total_builds(self) -> DeployCandidateBuildType:
 		return frappe.db.count(
 			"Deploy Candidate Build",
 			{"creation": ("between", [self.from_date, self.end_date])},
-			self.metric_fields,
 		)
 
 
 def create_build_metric():
-	"""Create build metric"""
 	build_metric = GenerateBuildMetric(
 		frappe.utils.add_to_date(days=-7),
 		frappe.utils.add_to_date(days=1),
