@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import typing
 from collections import Counter
 from dataclasses import dataclass, field
@@ -18,6 +19,7 @@ if typing.TYPE_CHECKING:
 		DeployCandidateBuildType,
 		DurationType,
 		FailedBuildType,
+		MetricsType,
 	)
 
 
@@ -54,6 +56,21 @@ class GenerateBuildMetric:
 			"platform",
 		]
 	)
+
+	def dump_metrics(self) -> MetricsType:
+		return {
+			"total_builds": self.total_builds,
+			"total_failures": {
+				"user_failure": len(self.total_failures["user_failure"]),
+				"fc_manual_failure": len(self.total_failures["fc_manual_failure"]),
+				"fc_failure": len(self.total_failures["fc_failure"]),
+			},
+			"avg_pending_duration": self.duration_metrics["avg_pending_duration"],
+			"avg_build_duration": self.duration_metrics["avg_build_duration"],
+			"avg_upload_context_duration": self.context_durations["avg_upload_duration"],
+			"avg_package_context_duration": self.context_durations["avg_package_duration"],
+			"failure_frequency": dict(self.failure_frequency),
+		}
 
 	def get_metric(self):
 		"""
@@ -98,13 +115,14 @@ class GenerateBuildMetric:
 
 	def get_build_duration_metrics(self) -> DurationType:
 		"""Average duration pending / build"""
-		return frappe.get_all(
+		return frappe.get_value(
 			"Deploy Candidate Build",
 			filters={"creation": ("between", [self.from_date, self.end_date])},
-			fields=[
+			fieldname=[
 				"AVG(build_duration) as avg_build_duration",
 				"AVG(pending_duration) as avg_pending_duration",
 			],
+			as_dict=True,
 		)
 
 	def get_total_failures(self) -> FailedBuildType:
@@ -129,7 +147,7 @@ class GenerateBuildMetric:
 			self.metric_fields,
 		)
 
-	def get_total_builds(self) -> DeployCandidateBuildType:
+	def get_total_builds(self) -> int:
 		return frappe.db.count(
 			"Deploy Candidate Build",
 			{"creation": ("between", [self.from_date, self.end_date])},
@@ -137,8 +155,8 @@ class GenerateBuildMetric:
 
 
 def create_build_metric():
-	build_metric = GenerateBuildMetric(
-		frappe.utils.add_to_date(days=-7),
-		frappe.utils.add_to_date(days=1),
-	)
+	build_metric = GenerateBuildMetric(frappe.utils.add_to_date(days=-7), frappe.utils.now())
 	build_metric.get_metric()
+	frappe.new_doc("Build Metric", metric_dump=json.dumps(build_metric.dump_metrics(), indent=4)).insert(
+		ignore_permissions=True
+	)

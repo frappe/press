@@ -44,3 +44,19 @@ class DurationType(typing.TypedDict):
 class ContextDurationType(typing.TypedDict):
 	avg_package_duration: float
 	avg_upload_duration: float
+
+
+class TotalFailuresDict(typing.TypedDict):
+	user_failure: int
+	fc_manual_failure: int
+	fc_failure: int
+
+
+class MetricsType(typing.TypedDict):
+	total_builds: int
+	total_failures: TotalFailuresDict
+	avg_pending_duration: float
+	avg_build_duration: float
+	avg_upload_context_duration: float
+	avg_package_context_duration: float
+	failure_frequency: dict[str, int]
