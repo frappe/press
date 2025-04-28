@@ -69,7 +69,7 @@ class GenerateBuildMetric:
 			"avg_build_duration": self.duration_metrics["avg_build_duration"],
 			"avg_upload_context_duration": self.context_durations["avg_upload_duration"],
 			"avg_package_context_duration": self.context_durations["avg_package_duration"],
-			"failure_frequency": dict(self.failure_frequency),
+			"failure_frequency": dict(self.failure_frequency.most_common()),
 		}
 
 	def get_metric(self):
