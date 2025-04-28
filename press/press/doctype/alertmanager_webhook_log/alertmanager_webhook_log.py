@@ -107,8 +107,6 @@ class AlertmanagerWebhookLog(Document):
 				self.name,
 				"validate_and_create_incident",
 				enqueue_after_commit=True,
-				job_id=f"validate_and_create_incident:{self.incident_scope}:{self.alert}",
-				deduplicate=True,
 			)
 		if not frappe.get_cached_value("Prometheus Alert Rule", self.alert, "silent"):
 			send_telegram_notifs = frappe.db.get_single_value("Press Settings", "send_telegram_notifications")
@@ -300,6 +298,7 @@ class AlertmanagerWebhookLog(Document):
 	def create_incident(self):
 		try:
 			with filelock(f"incident_creation_{self.server}"):
+				frappe.db.commit()  # To avoid reading old data
 				if self.ongoing_incident_exists():
 					return
 				incident = frappe.new_doc("Incident")
