@@ -37,13 +37,13 @@ class FailedBuildType(typing.TypedDict):
 
 
 class DurationType(typing.TypedDict):
-	avg_build_duration: float
-	avg_pending_duration: float
+	median_build_duration: float
+	median_pending_duration: float
 
 
 class ContextDurationType(typing.TypedDict):
-	avg_package_duration: float
-	avg_upload_duration: float
+	median_package_duration: float
+	median_upload_duration: float
 
 
 class TotalFailuresDict(typing.TypedDict):
@@ -55,8 +55,8 @@ class TotalFailuresDict(typing.TypedDict):
 class MetricsType(typing.TypedDict):
 	total_builds: int
 	total_failures: TotalFailuresDict
-	avg_pending_duration: float
-	avg_build_duration: float
-	avg_upload_context_duration: float
-	avg_package_context_duration: float
+	median_pending_duration: float
+	median_build_duration: float
+	median_upload_context_duration: float
+	median_package_context_duration: float
 	failure_frequency: dict[str, int]

@@ -7,6 +7,7 @@ import json
 import typing
 from collections import Counter
 from dataclasses import dataclass, field
+from statistics import median
 
 import frappe
 from frappe.model.document import Document
@@ -33,6 +34,7 @@ class BuildMetric(Document):
 		from frappe.types import DF
 
 		metric_dump: DF.JSON | None
+		name: DF.Int | None
 		start_from: DF.Datetime | None
 		to: DF.Datetime | None
 	# end: auto-generated types
@@ -78,10 +80,10 @@ class GenerateBuildMetric:
 				"fc_manual_failure": len(self.total_failures["fc_manual_failure"]),
 				"fc_failure": len(self.total_failures["fc_failure"]),
 			},
-			"avg_pending_duration": self.duration_metrics["avg_pending_duration"],
-			"avg_build_duration": self.duration_metrics["avg_build_duration"],
-			"avg_upload_context_duration": self.context_durations["avg_upload_duration"],
-			"avg_package_context_duration": self.context_durations["avg_package_duration"],
+			"median_pending_duration": self.duration_metrics["median_pending_duration"],
+			"median_build_duration": self.duration_metrics["median_build_duration"],
+			"median_upload_context_duration": self.context_durations["median_upload_duration"],
+			"median_package_context_duration": self.context_durations["median_package_duration"],
 			"failure_frequency": dict(self.failure_frequency.most_common()),
 		}
 
@@ -114,29 +116,41 @@ class GenerateBuildMetric:
 			{
 				"stage_slug": ("in", ["package", "upload"]),
 				"step_slug": "context",
-				"creation": ("between", [frappe.utils.add_to_date(days=-7), frappe.utils.now()]),
+				"creation": ("between", [self.from_date, self.end_date]),
 			},
 			["duration", "stage_slug"],
 		)
-		package_durations = [ctx.duration for ctx in context_durations if ctx.stage_slug == "package"]
-		upload_durations = [ctx.duration for ctx in context_durations if ctx.stage_slug == "upload"]
+		package_durations = [ctx.duration / 60 for ctx in context_durations if ctx.stage_slug == "package"]
+		upload_durations = [ctx.duration / 60 for ctx in context_durations if ctx.stage_slug == "upload"]
 
 		return {
-			"avg_package_duration": sum(package_durations) / len(package_durations),
-			"avg_upload_duration": sum(upload_durations) / len(upload_durations),
+			"median_package_duration": median(package_durations),
+			"median_upload_duration": median(upload_durations),
 		}
 
 	def get_build_duration_metrics(self) -> DurationType:
-		"""Average duration pending / build"""
-		return frappe.get_value(
+		"""Average duration pending / build getting python median"""
+		durations = frappe.get_all(
 			"Deploy Candidate Build",
-			filters={"creation": ("between", [self.from_date, self.end_date])},
-			fieldname=[
-				"AVG(build_duration) as avg_build_duration",
-				"AVG(pending_duration) as avg_pending_duration",
-			],
-			as_dict=True,
+			{
+				"creation": ["between", (self.from_date, self.end_date)],
+				"build_duration": ("is", "set"),
+				"pending_duration": ("is", "set"),
+			},
+			["build_duration", "pending_duration"],
 		)
+
+		median_pending_duration = median(
+			[duration["pending_duration"].total_seconds() / 60 for duration in durations]
+		)
+		median_build_duration = median(
+			[duration["build_duration"].total_seconds() / 60 for duration in durations]
+		)
+
+		return {
+			"median_build_duration": median_build_duration,
+			"median_pending_duration": median_pending_duration,
+		}
 
 	def get_total_failures(self) -> FailedBuildType:
 		"""User failures, fc failures and manual failures"""
