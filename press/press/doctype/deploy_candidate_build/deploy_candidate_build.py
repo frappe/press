@@ -57,6 +57,7 @@ if typing.TYPE_CHECKING:
 # build_duration, pending_duration are Time fields, >= 1 day is invalid
 MAX_DURATION = timedelta(hours=23, minutes=59, seconds=59)
 DISTUTILS_SUPPORTED_VERSION = semantic_version.SimpleSpec("<3.12")
+GET_PIP_VERSION_MODIFIED_URL = semantic_version.SimpleSpec(">=3.2,<=3.8")
 
 
 class Status(Enum):
@@ -298,32 +299,49 @@ class DeployCandidateBuild(Document):
 
 		return checkpoints
 
-	def check_distutils_support(self, version: str):
-		"""
-		Checks if specified python version supports distutils.
-		"""
+	def _parse_python_version(self, version: str) -> semantic_version.Version:
 		try:
 			python_version = semantic_version.Version(version)
 		except ValueError:
 			python_version = semantic_version.Version(f"{version}.0")
+		return python_version
 
+	def check_distutils_support(self, version: str) -> bool:
+		"""
+		Checks if specified python version supports distutils.
+		"""
+		python_version = self._parse_python_version(version)
 		return python_version in DISTUTILS_SUPPORTED_VERSION
+
+	def check_get_pip_url_support(self, version: str) -> bool:
+		"""
+		Checks if specified python version can be fetched from get-pip
+		"""
+		python_version = self._parse_python_version(version)
+		return python_version in GET_PIP_VERSION_MODIFIED_URL
 
 	def _generate_dockerfile(self):
 		dockerfile = os.path.join(self.build_directory, "Dockerfile")
 		with open(dockerfile, "w") as f:
 			dockerfile_template = "press/docker/Dockerfile"
 			is_distutils_supported = True
+			requires_version_based_get_pip = False
+
 			for d in self.candidate.dependencies:
 				if d.dependency == "PYTHON_VERSION":
 					is_distutils_supported = self.check_distutils_support(d.version)
+					requires_version_based_get_pip = self.check_get_pip_url_support(d.version)
 
 				if d.dependency == "BENCH_VERSION" and d.version == "5.2.1":
 					dockerfile_template = "press/docker/Dockerfile_Bench_5_2_1"
 
 			content = frappe.render_template(
 				dockerfile_template,
-				{"doc": self.candidate, "remove_distutils": not is_distutils_supported},
+				{
+					"doc": self.candidate,
+					"remove_distutils": not is_distutils_supported,
+					"requires_version_based_get_pip": requires_version_based_get_pip,
+				},
 				is_path=True,
 			)
 			f.write(content)
