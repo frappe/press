@@ -1041,8 +1041,7 @@ def process_new_bench_job_update(job):
 	)
 	bench.add_ssh_user()
 
-	dc_status = frappe.get_value("Deploy Candidate", bench.candidate, "status")
-	if dc_status != "Success":
+	if frappe.get_value("Deploy Candidate Build", bench.build, "status") != "Success":
 		return
 
 	bench_updates = frappe.get_all(
