@@ -5,19 +5,32 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "start_from",
+  "to",
   "metric_dump"
  ],
  "fields": [
   {
    "fieldname": "metric_dump",
    "fieldtype": "JSON",
-   "label": "Metric Dump"
+   "label": "Metric Dump",
+   "read_only": 1
+  },
+  {
+   "fieldname": "to",
+   "fieldtype": "Datetime",
+   "label": "To"
+  },
+  {
+   "fieldname": "start_from",
+   "fieldtype": "Datetime",
+   "label": "From"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-28 13:32:08.877264",
+ "modified": "2025-04-29 10:05:16.010898",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Build Metric",
