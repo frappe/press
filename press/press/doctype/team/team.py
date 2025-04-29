@@ -1390,7 +1390,7 @@ def _enqueue_finalize_unpaid_invoices_for_team(team: str):
 	frappe.enqueue(
 		"press.press.doctype.team.team.enqueue_finalize_unpaid_for_team",
 		team=team,
-		queue="long",
+		enqueue_after_commit=True,
 	)
 
 
