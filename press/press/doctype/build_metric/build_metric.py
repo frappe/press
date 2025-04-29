@@ -33,7 +33,20 @@ class BuildMetric(Document):
 		from frappe.types import DF
 
 		metric_dump: DF.JSON | None
+		start_from: DF.Datetime | None
+		to: DF.Datetime | None
 	# end: auto-generated types
+
+	def after_insert(self):
+		"""If dates not specified take last week"""
+		self.start_from = self.start_from or frappe.utils.add_to_date(days=-7)
+		self.to = self.to or frappe.utils.now()
+
+		build_metric = GenerateBuildMetric(self.start_from, self.to)
+		build_metric.get_metric()
+
+		self.metric_dump = json.dumps(build_metric.dump_metrics(), indent=4)
+		self.save()
 
 
 @dataclass
@@ -155,8 +168,5 @@ class GenerateBuildMetric:
 
 
 def create_build_metric():
-	build_metric = GenerateBuildMetric(frappe.utils.add_to_date(days=-7), frappe.utils.now())
-	build_metric.get_metric()
-	frappe.new_doc("Build Metric", metric_dump=json.dumps(build_metric.dump_metrics(), indent=4)).insert(
-		ignore_permissions=True
-	)
+	"""Create build metric triggered from hooks."""
+	frappe.new_doc("Build Metric").insert(ignore_permissions=True)
