@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "autoincrement",
+ "autoname": "hash",
  "creation": "2025-04-25 20:55:25.031408",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -31,11 +31,11 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-29 12:14:32.455132",
+ "modified": "2025-04-29 13:26:52.477384",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Build Metric",
- "naming_rule": "Autoincrement",
+ "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [
   {
