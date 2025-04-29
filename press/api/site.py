@@ -1727,12 +1727,12 @@ def check_dns_cname_a(name, domain):
 
 	if cname["matched"] and a["exists"] and not a["matched"]:
 		frappe.throw(
-			f"Domain {domain} has correct CNAME record ({cname['answer']}), but also an A record that points to an incorrect IP address ({a['answer']}). Please remove the same or update the record.",
+			f"Domain {domain} has correct CNAME record ({cname['answer'].strip().split()[-1]}), but also an A record that points to an incorrect IP address ({a['answer'].strip().split()[-1]}). Please remove the same or update the record.",
 			ConflictingDNSRecord,
 		)
 	if a["matched"] and cname["exists"] and not cname["matched"]:
 		frappe.throw(
-			f"Domain {domain} has correct A record ({a['answer']}), but also a CNAME record that points to an incorrect domain ({cname['answer']}). Please remove the same or update the record.",
+			f"Domain {domain} has correct A record ({a['answer'].strip().split()[-1]}), but also a CNAME record that points to an incorrect domain ({cname['answer'].strip().split()[-1]}). Please remove the same or update the record.",
 			ConflictingDNSRecord,
 		)
 
