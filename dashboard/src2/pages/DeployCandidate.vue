@@ -210,13 +210,14 @@ export default {
 			].filter((option) => option.condition?.() ?? true);
 		},
 		showFailAndRedeploy() {
-			if (!this.deploy || this.deploy.status !== 'Running') {
+			if (!this.deploy || this.deploy.status == 'Failure') {
 				return false;
 			}
-
+			if (!this.deploy.build_start) {
+				return true;
+			}
 			const start = dayjs(this.deploy.build_start);
 			const now = dayjs(new Date());
-
 			return now.diff(start, 'hours') > 2;
 		},
 	},

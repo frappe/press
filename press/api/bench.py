@@ -17,6 +17,9 @@ from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app_patch.app_patch import create_app_patch
 from press.press.doctype.bench_update.bench_update import get_bench_update
 from press.press.doctype.cluster.cluster import Cluster
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
+	fail_and_redeploy as fail_and_redeploy_build,
+)
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_total_installs_by_app,
 )
@@ -1036,9 +1039,7 @@ def apply_patch(release_group: str, app: str, patch_config: dict) -> list[str]:
 @frappe.whitelist()
 @protected("Release Group")
 def fail_and_redeploy(name: str, dc_name: str):
-	"""Fix this to deploy candidate build"""
-	dc: "DeployCandidate" = frappe.get_doc("Deploy Candidate", dc_name)
-	res = dc.fail_and_redeploy()
+	res = fail_and_redeploy_build(dc_name)
 
 	# If failed error is True
 	if res.get("error"):
