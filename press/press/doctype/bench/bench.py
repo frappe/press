@@ -42,6 +42,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.bench_update.bench_update import BenchUpdate
 	from press.press.doctype.bench_update_app.bench_update_app import BenchUpdateApp
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.press_settings.press_settings import PressSettings
 
 	SupervisorctlActions = Literal[
@@ -613,11 +614,11 @@ class Bench(Document):
 
 	@frappe.whitelist()
 	def retry_bench(self):
-		if frappe.get_value("Deploy Candidate", self.candidate, "status") != "Success":
-			frappe.throw(f"Deploy Candidate {self.candidate} is not Active")
+		if frappe.get_value("Deploy Candidate Build", self.build, "status") != "Success":
+			frappe.throw(f"Deploy Candidate Build {self.build} is not Active")
 
-		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
-		candidate._create_deploy([self.server])
+		deploy_candidate_build: "DeployCandidateBuild" = frappe.get_doc("Deploy Candidate Build", self.build)
+		deploy_candidate_build._create_deploy([self.server])
 
 	def get_free_memory(self):
 		return usage(self.server).get("free_memory")

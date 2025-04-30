@@ -36,6 +36,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.app_source.app_source import AppSource
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 
 
 @frappe.whitelist()
@@ -666,6 +667,7 @@ def get_processes(name):
 @frappe.whitelist()
 @protected("Release Group")
 def candidates(filters=None, order_by=None, limit_start=None, limit_page_length=None):
+	# TODO: Status is redundant here.
 	result = frappe.get_all(
 		"Deploy Candidate",
 		["name", "creation", "status"],
@@ -694,7 +696,7 @@ def candidate(name):
 	if not name:
 		return None
 
-	candidate = frappe.get_doc("Deploy Candidate", name)
+	candidate: DeployCandidate = frappe.get_doc("Deploy Candidate", name)
 	jobs = []
 	deploys = frappe.get_all("Deploy", {"candidate": name}, limit=1)
 	if deploys:
@@ -710,16 +712,20 @@ def candidate(name):
 			) or [{}]
 			jobs.append(job[0])
 
+	# Taking the latest Build for that Candidate
+	build_name = frappe.get_value("Deploy Candidate Build", {"deploy_candidate": name})
+	build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", build_name)
+
 	return {
 		"name": candidate.name,
-		"status": candidate.status,
-		"creation": candidate.creation,
+		"status": build.status,
+		"creation": build.creation,
 		"deployed": False,
-		"build_steps": candidate.build_steps,
-		"build_start": candidate.build_start,
-		"build_end": candidate.build_end,
-		"build_duration": candidate.build_duration,
-		"apps": candidate.apps,
+		"build_steps": build.build_steps,
+		"build_start": build.build_start,
+		"build_end": build.build_end,
+		"build_duration": build.build_duration,
+		"apps": build.candidate.apps,
 		"jobs": jobs,
 	}
 
@@ -1030,6 +1036,7 @@ def apply_patch(release_group: str, app: str, patch_config: dict) -> list[str]:
 @frappe.whitelist()
 @protected("Release Group")
 def fail_and_redeploy(name: str, dc_name: str):
+	"""Fix this to deploy candidate build"""
 	dc: "DeployCandidate" = frappe.get_doc("Deploy Candidate", dc_name)
 	res = dc.fail_and_redeploy()
 
