@@ -10,7 +10,6 @@ import frappe
 import pyotp
 from frappe import _
 from frappe.core.doctype.user.user import update_password
-from frappe.core.utils import find
 from frappe.exceptions import DoesNotExistError
 from frappe.query_builder.custom import GROUP_CONCAT
 from frappe.rate_limiter import rate_limit
@@ -96,7 +95,7 @@ def verify_otp_and_login(email: str, otp: str):
 
 	account_request = frappe.db.get_value("Account Request", {"email": email}, "name")
 
-	if not account_request:
+	if not account_request or not frappe.db.exists("Team", {"user": email}):
 		frappe.throw("Please sign up first")
 
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
@@ -153,39 +152,42 @@ def send_otp(email: str):
 
 
 @frappe.whitelist(allow_guest=True)
-def setup_account(  # noqa: C901
+def setup_account(
 	key,
 	first_name=None,
 	last_name=None,
 	password=None,
 	is_invitation=False,
-	country=None,
+	# country=None,
 	user_exists=False,
 	accepted_user_terms=False,
 	invited_by_parent_team=False,
 	oauth_signup=False,
 	oauth_domain=False,
+	site_domain=None,
 ):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
 		frappe.throw("Invalid or Expired Key")
 
-	if not user_exists:
-		if not first_name:
-			frappe.throw("First Name is required")
+	account_request.db_set("site_domain", site_domain)
 
-		if not is_invitation and not country:
-			frappe.throw("Country is required")
+	if not user_exist and not first_name:
+		frappe.throw("First Name is required")
 
-		if not is_invitation and country:
-			all_countries = frappe.db.get_all("Country", pluck="name")
-			country = find(all_countries, lambda x: x.lower() == country.lower())
-			if not country:
-				frappe.throw("Please provide a valid country name")
+	# if not is_invitation and not country:
+	# 	frappe.throw("Country is required")
 
-	if not accepted_user_terms:
-		frappe.throw("Please accept our Terms of Service & Privacy Policy to continue")
+	# if not is_invitation and country:
+	# 	all_countries = frappe.db.get_all("Country", pluck="name")
+	# 	country = find(all_countries, lambda x: x.lower() == country.lower())
+	# 	if not country:
+	# 		frappe.throw("Please provide a valid country name")
 
+	# if not accepted_user_terms:
+	# 	frappe.throw("Please accept our Terms of Service & Privacy Policy to continue")
+
+	print("setup_account", key, first_name, last_name, password, is_invitation, user_exists)
 	# if the request is authenticated, set the user to Administrator
 	frappe.set_user("Administrator")
 
@@ -206,7 +208,7 @@ def setup_account(  # noqa: C901
 			first_name=first_name,
 			last_name=last_name,
 			password=password,
-			country=country,
+			# country=country,
 			user_exists=bool(user_exists),
 		)
 		if invited_by_parent_team:
@@ -382,8 +384,9 @@ def validate_request_key(key, timezone=None):
 				"OAuth Domain Mapping", {"email_domain": account_request.email.split("@")[1]}
 			),
 			"product_trial": frappe.db.get_value(
-				"Product Trial", account_request.product_trial, ["logo", "title", "name"], as_dict=1
+				"Product Trial", account_request.product_trial, ["logo", "title", "name", "domain"], as_dict=1
 			),
+			"default_domain": frappe.db.get_single_value("Press Settings", "domain"),
 		}
 	return None
 
