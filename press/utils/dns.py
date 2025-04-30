@@ -23,8 +23,7 @@ def create_dns_record(doc, record_name=None):
 	if frappe.flags.in_test:
 		return
 
-	proxy_server = frappe.get_value("Server", doc.server, "proxy_server")
-	is_standalone = frappe.get_value("Server", doc.server, "is_standalone")
+	proxy_server, is_standalone = frappe.get_value("Server", doc.server, ["proxy_server", "is_standalone"])
 
 	if doc.cluster == domain.default_cluster and not is_standalone:
 		# Check if the cluster has multiple proxy servers
