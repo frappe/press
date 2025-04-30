@@ -806,7 +806,6 @@ class DeployCandidateBuild(Document):
 		file, _update_packages() needs to run after the repos
 		have been cloned.
 		"""
-		self.candidate.reload()
 		self.candidate._update_packages(pmf)
 		self.candidate.save(ignore_permissions=True, ignore_version=True)
 
