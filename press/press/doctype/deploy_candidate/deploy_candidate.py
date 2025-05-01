@@ -453,17 +453,17 @@ class DeployCandidate(Document):
 		if deploy_doc:
 			return str(deploy_doc)
 
-		return self._create_deploy(servers).name
+		self._create_deploy(servers)
+		return None
 
 	def _create_deploy(self, servers: list[str]):
-		return frappe.get_doc(
-			{
-				"doctype": "Deploy",
-				"group": self.group,
-				"candidate": self.name,
-				"benches": [{"server": server} for server in servers],
-			}
-		).insert()
+		builds = frappe.get_all(
+			"Deploy Candidate Build", filters={"deploy_candidate": self.name}, pluck="name"
+		)
+		for build_name in builds:
+			build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", build_name)
+			if build.status == "Success":
+				build._create_deploy(servers)
 
 	def get_dependency_version(self, dependency: str, as_env: bool = False):
 		if dependency.islower():
