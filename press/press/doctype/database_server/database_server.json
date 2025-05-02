@@ -21,6 +21,7 @@
   "is_server_prepared",
   "is_server_renamed",
   "enable_physical_backup",
+  "halt_agent_jobs",
   "billing_section",
   "team",
   "column_break_11",
@@ -546,8 +547,16 @@
    "fieldname": "enable_physical_backup",
    "fieldtype": "Check",
    "label": "Enable Physical Backup"
+  },
+  {
+   "default": "0",
+   "description": "Stop polling and queuing agent jobs",
+   "fieldname": "halt_agent_jobs",
+   "fieldtype": "Check",
+   "label": "Halt Agent Jobs"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [
   {
@@ -556,7 +565,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2025-03-25 20:37:53.186326",
+ "modified": "2025-05-02 15:00:34.631435",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
@@ -587,6 +596,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

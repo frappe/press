@@ -456,7 +456,8 @@ class BaseServer(Document, TagHelpers):
 				playbook="update_agent.yml",
 				variables={
 					"agent_repository_url": self.get_agent_repository_url(),
-					"agent_repository_branch": self.get_agent_repository_branch(),
+					"agent_repository_branch_or_commit_ref": "master",
+					"agent_update_args": "",
 				},
 				server=self,
 				user=self._ssh_user(),
@@ -1386,6 +1387,7 @@ class Server(BaseServer):
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
+		halt_agent_jobs: DF.Check
 		has_data_volume: DF.Check
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
