@@ -140,13 +140,6 @@ class AgentUpdate(Document):
 		# Add servers
 		self.add_server_entries()
 
-	def on_update(self):
-		if self.has_value_changed("status"):
-			if self.status == "Running" and not self.start:
-				self.start = frappe.utils.now_datetime()
-			if self.status in ["Success", "Partial Success", "Failure"] and not self.end:
-				self.end = frappe.utils.now_datetime()
-
 	def add_server_entries(self):
 		filters = {"status": "Active"}
 		if self.exclude_self_hosted_servers:
@@ -264,6 +257,8 @@ class AgentUpdate(Document):
 		"""
 		# Update Status to Running
 		if self.status != "Running":
+			if not self.start:
+				self.start = frappe.utils.now_datetime()
 			self.status = "Running"
 			self.save()
 
@@ -299,6 +294,7 @@ class AgentUpdate(Document):
 			if self.status not in ["Success", "Partial Success", "Failure"]:
 				self.status = "Success"
 
+			self.end = frappe.utils.now_datetime()
 			self.save()
 			return False
 
