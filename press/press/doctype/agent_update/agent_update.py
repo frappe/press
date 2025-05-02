@@ -246,9 +246,6 @@ class AgentUpdate(Document):
 
 	@frappe.whitelist()
 	def execute(self):
-		if self.current_agent_update_to_process is None:
-			return
-
 		if self._process_next_step():
 			frappe.enqueue_doc(
 				self.doctype,
@@ -267,18 +264,13 @@ class AgentUpdate(Document):
 		"""
 		# Update Status to Running
 		if self.status != "Running":
-			self.start = frappe.utils.now_datetime()
 			self.status = "Running"
 			self.save()
 
-		if self.current_agent_update_to_process is None:
-			return False
-
-		current_agent_update_to_process = self.current_agent_update_to_process
 		last_terminated_agent_update = self.last_terminated_agent_update
 
 		# Decide status on termination
-		if self.is_any_update_pending or (
+		if (not self.is_any_update_pending) or (
 			last_terminated_agent_update
 			and (
 				last_terminated_agent_update.status == "Fatal"
@@ -308,6 +300,10 @@ class AgentUpdate(Document):
 				self.status = "Success"
 
 			self.save()
+			return False
+
+		current_agent_update_to_process = self.current_agent_update_to_process
+		if self.current_agent_update_to_process is None:
 			return False
 
 		"""

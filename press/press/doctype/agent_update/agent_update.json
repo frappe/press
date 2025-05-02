@@ -98,7 +98,8 @@
    "default": "0",
    "fieldname": "restart_redis",
    "fieldtype": "Check",
-   "label": "Restart Redis"
+   "label": "Restart Redis",
+   "read_only_depends_on": "eval: doc.status != \"Draft\" && doc.status != \"Planning\""
   },
   {
    "default": "Draft",
@@ -199,12 +200,14 @@
    "default": "0",
    "fieldname": "restart_rq_workers",
    "fieldtype": "Check",
-   "label": "Restart RQ Workers"
+   "label": "Restart RQ Workers",
+   "read_only_depends_on": "eval: doc.status != \"Draft\" && doc.status != \"Planning\""
   },
   {
    "fieldname": "agent_startup_timeout_minutes",
    "fieldtype": "Int",
-   "label": "Agent Startup Timeout (Minutes)"
+   "label": "Agent Startup Timeout (Minutes)",
+   "read_only_depends_on": "eval: doc.status != \"Running\""
   },
   {
    "default": "0",
@@ -216,7 +219,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-02 11:55:22.266485",
+ "modified": "2025-05-02 12:11:16.543774",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Update",
