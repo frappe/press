@@ -686,7 +686,7 @@ def set_bench_and_clusters(version, for_bench):
 		)
 		clusters = frappe.db.get_all(
 			"Cluster",
-			filters={"name": ("in", cluster_names)},
+			filters={"name": ("in", cluster_names), "public": True},
 			fields=["name", "title", "image", "beta"],
 		)
 		if not for_bench:
