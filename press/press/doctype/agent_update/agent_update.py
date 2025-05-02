@@ -502,7 +502,8 @@ def process_bulk_agent_update():
 			"Agent Update",
 			agent_update_name,
 			"execute",
-			queue="default",
+			queue="short",
+			timeout=120,
 			deduplicate=True,
 			job_id=f"execute_agent_update:{agent_update_name}",
 		)
