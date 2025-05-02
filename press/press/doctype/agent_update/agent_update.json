@@ -178,7 +178,7 @@
    "set_only_once": 1
   },
   {
-   "depends_on": "eval: doc.stuck_at_planning_reason && doc.status === 'Planning'",
+   "depends_on": "eval: doc.stuck_at_planning_reason",
    "fieldname": "stuck_at_planning_reason",
    "fieldtype": "Small Text",
    "label": "Why Stuck at Planning ?",
@@ -222,7 +222,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-02 13:28:56.312393",
+ "modified": "2025-05-02 13:54:04.708122",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Update",

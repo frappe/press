@@ -234,13 +234,16 @@ class AgentUpdate(Document):
 			if s.current_commit == self.commit_hash:
 				s.status = "Skipped"
 
-		# Change status from `Planning` to `Pending` if all sites are `Pending`
+		# Change status from `Planning` to `Pending` if all server updates are `Pending`
 		is_all_server_ready = all(s.status in ("Pending", "Skipped") for s in self.servers)
 		if is_all_server_ready:
 			self.status = "Pending"
 
 		if not is_all_server_ready:
+			self.status = "Draft"
 			self.stuck_at_planning_reason += "\nPlease fix the server's issue or remove it from the list."
+		else:
+			self.stuck_at_planning_reason = ""
 
 		self.save()
 

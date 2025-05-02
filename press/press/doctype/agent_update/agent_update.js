@@ -8,7 +8,7 @@ frappe.ui.form.on('Agent Update', {
 				__('Build Plan'),
 				'create_execution_plan',
 				true,
-				frm.doc.status === 'Draft' || frm.doc.status === 'Planning',
+				frm.doc.status === 'Draft',
 			],
 			[
 				__('Start'),
