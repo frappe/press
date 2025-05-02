@@ -404,8 +404,17 @@ class Invoice(Document):
 		amount = int(self.amount_due_with_tax * 100)
 		self._make_stripe_invoice(customer_id, amount)
 
+	def mandate_inactive(self, mandate_id):
+		stripe = get_stripe()
+		mandate = stripe.Mandate.retrieve(mandate_id)
+		return mandate.status in ("inactive", "pending")
+
 	def _make_stripe_invoice(self, customer_id, amount):
 		mandate_id = self.get_mandate_id(customer_id)
+		if mandate_id and self.mandate_inactive(mandate_id):
+			frappe.db.set_value("Invoice", self.name, "payment_mode", "Prepaid Credits")
+			self.reload()
+			return None
 		try:
 			stripe = get_stripe()
 			invoice = stripe.Invoice.create(

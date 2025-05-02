@@ -317,6 +317,7 @@ scheduler_events = {
 			"press.press.doctype.aws_savings_plan_recommendation.aws_savings_plan_recommendation.refresh",
 			"press.infrastructure.doctype.ssh_access_audit.ssh_access_audit.run",
 		],
+		"0 9 * * 2": ["press.press.doctype.build_metric.build_metric.create_build_metric"],
 	},
 }
 

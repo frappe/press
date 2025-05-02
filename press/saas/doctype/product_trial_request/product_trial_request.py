@@ -283,7 +283,7 @@ class ProductTrialRequest(Document):
 			# they'll log in as user after setup wizard
 			email = frappe.db.get_value("Team", self.team, "user")
 			sid = site.get_login_sid(user=email)
-			return f"https://{self.domain}/{redirect_to_after_login}?sid={sid}"
+			return f"https://{self.domain}{redirect_to_after_login}?sid={sid}"
 
 		sid = site.get_login_sid()
 		return f"https://{self.domain}/desk?sid={sid}"

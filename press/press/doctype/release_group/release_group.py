@@ -1255,8 +1255,8 @@ class ReleaseGroup(Document, TagHelpers):
 		app_update_available = self.deploy_information().update_available
 		self.add_server(server, deploy=not app_update_available)
 
-	def get_last_successful_candidate(self) -> "DeployCandidate":
-		return frappe.get_last_doc("Deploy Candidate", {"status": "Success", "group": self.name})
+	def get_last_candidate(self) -> "DeployCandidate":
+		return frappe.get_last_doc("Deploy Candidate", {"group": self.name})
 
 	def get_last_deploy_candidate_build(self):
 		try:
@@ -1276,7 +1276,7 @@ class ReleaseGroup(Document, TagHelpers):
 		self.append("servers", {"server": server, "default": False})
 		self.save()
 		if deploy:
-			return self.get_last_successful_candidate()._create_deploy([server])
+			return self.get_last_candidate()._create_deploy([server])
 		return None
 
 	@frappe.whitelist()
