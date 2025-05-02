@@ -491,33 +491,36 @@ class AgentUpdate(Document):
 	@property
 	def github_access_token_header(self):
 		github_access_token = frappe.get_cached_value("Press Settings", None, "github_access_token")
+		if not github_access_token:
+			return {}
+
 		return {"Authorization": f"Bearer {github_access_token}"}
 
 	def fetch_commit_hash(self, ref: str) -> str:
-		res = requests.get(
-			f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/commits/{ref}",
-			headers=self.github_access_token_header,
-		)
-		res.raise_for_status()
-		return res.json().get("sha")
+		return self._get_commit_info(ref).get("sha")
 
 	def fetch_commit_message(self, ref: str) -> str:
-		res = requests.get(
-			f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/commits/{ref}",
-			headers=self.github_access_token_header,
-		)
-		res.raise_for_status()
-		return res.json().get("commit").get("message")
+		return self._get_commit_info(ref).get("commit").get("message")
 
 	def fetch_commit_date(self, ref: str) -> datetime.datetime | None:
+		return datetime.datetime.strptime(
+			self._get_commit_info(ref).get("commit").get("committer").get("date"), "%Y-%m-%dT%H:%M:%SZ"
+		)
+
+	def _get_commit_info(self, ref: str) -> dict:
+		if not hasattr(self, "git_commit_info"):
+			self.git_commit_info = {}
+
+		if ref in self.git_commit_info:
+			return self.git_commit_info[ref]
+
 		res = requests.get(
 			f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/commits/{ref}",
 			headers=self.github_access_token_header,
 		)
 		res.raise_for_status()
-		return datetime.datetime.strptime(
-			res.json().get("commit").get("committer").get("date"), "%Y-%m-%dT%H:%M:%SZ"
-		)
+		self.git_commit_info[ref] = res.json()
+		return self.git_commit_info[ref]
 
 	def is_commit_supported(self, ref: str) -> bool:
 		date_limit = datetime.datetime(
