@@ -17,7 +17,7 @@
   become: yes
   become_user: frappe
   shell: |
-    git checkout --detach {{ agent_repository_branch_or_commit_ref }}
+    git checkout {{ agent_repository_branch_or_commit_ref }}
     git reset --hard {{ agent_repository_branch_or_commit_ref }}
     git clean -fd
   args:

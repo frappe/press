@@ -21,6 +21,7 @@ class AgentUpdateServer(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
+		reason_of_fatal_status: DF.Data | None
 		rollback_ansible_play: DF.Link | None
 		rollback_commit: DF.Data | None
 		server: DF.DynamicLink

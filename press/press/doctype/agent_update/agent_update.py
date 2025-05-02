@@ -35,6 +35,7 @@ class AgentUpdate(Document):
 		auto_rollback_changes: DF.Check
 		branch: DF.Data | None
 		commit_hash: DF.Data | None
+		commit_message: DF.Data | None
 		database_server: DF.Check
 		default_rollback_commit: DF.Data | None
 		end: DF.Datetime | None
@@ -94,9 +95,16 @@ class AgentUpdate(Document):
 		return any(s.status == "Pending" for s in self.servers)
 
 	@property
+	def is_any_ongoing_update(self):
+		return any(
+			s.status in ("Pending", "Running", "Failure", "Rolling Back")
+			or (s.status in ["Success", "Rolled Back"] and s.agent_status != "Active")
+			for s in self.servers
+		)
+
+	@property
 	def agent_update_args(self) -> str:
-		return ""
-		return f" --restart-web-workers={bool_to_str(self.restart_web_workers)} --restart-rq-workers={bool_to_str(self.restart_rq_workers)} --restart-redis={bool_to_str(self.restart_redis)} --skip-repo-setup --skip-patches"
+		return f" --restart-web-workers={bool_to_str(self.restart_web_workers)} --restart-rq-workers={bool_to_str(self.restart_rq_workers)} --restart-redis={bool_to_str(self.restart_redis)} --skip-repo-setup=false --skip-patches=false"
 
 	@property
 	def agent_repository_url(self) -> str:
@@ -128,6 +136,10 @@ class AgentUpdate(Document):
 		else:
 			if self.fetch_commit_hash(self.branch) != self.commit_hash:
 				frappe.throw("Commit hash looks in valid. Please recheck")
+
+		# Set commit message
+		if not self.commit_message:
+			self.commit_message = self.fetch_commit_message(self.commit_hash)
 
 		# Verify rollback commit hash
 		if self.auto_rollback_changes and self.rollback_to_specific_commit:
@@ -265,7 +277,7 @@ class AgentUpdate(Document):
 		last_terminated_agent_update = self.last_terminated_agent_update
 
 		# Decide status on termination
-		if (not self.is_any_update_pending) or (
+		if (not self.is_any_update_pending and not self.is_any_ongoing_update) or (
 			last_terminated_agent_update
 			and (
 				last_terminated_agent_update.status == "Fatal"
@@ -277,7 +289,6 @@ class AgentUpdate(Document):
 			)
 		):
 			# Status can be - Success, Failure, Partial Success
-
 			no_of_successful_updates = sum(1 for server in self.servers if server.status == "Success")
 
 			# Fatal / Rolled Back both are considered as failed
@@ -385,11 +396,12 @@ class AgentUpdate(Document):
 				).total_seconds()
 				> self.agent_startup_timeout_minutes * 60
 			):
-				# TODO: add reason why status changes in doctype
 				if current_agent_update_to_process.status == "Success":
 					current_agent_update_to_process.status = "Failure"
+					current_agent_update_to_process.reason_of_fatal_status = f"After successful update, agent is not responding anymore even after {self.agent_startup_timeout_minutes} minutes"
 				else:
 					current_agent_update_to_process.status = "Fatal"
+					current_agent_update_to_process.reason_of_fatal_status = f"After failed update + successful rollback, agent is not responding anymore even after {self.agent_startup_timeout_minutes} minutes"
 
 			self.save()
 
@@ -412,7 +424,7 @@ class AgentUpdate(Document):
 			playbook="update_agent.yml",
 			variables={
 				"agent_repository_url": self.agent_repository_url,
-				"agent_repository_branch_or_commit_ref": f"upstream/{commit}",
+				"agent_repository_branch_or_commit_ref": commit,
 				"agent_update_args": self.agent_update_args,
 			},
 			server=server_doc,
@@ -443,6 +455,11 @@ class AgentUpdate(Document):
 		res = requests.get(f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/commits/{ref}")
 		res.raise_for_status()
 		return res.json().get("sha")
+
+	def fetch_commit_message(self, ref: str) -> str:
+		res = requests.get(f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/commits/{ref}")
+		res.raise_for_status()
+		return res.json().get("commit").get("message")
 
 	def fetch_commit_date(self, ref: str) -> datetime.datetime | None:
 		res = requests.get(f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/commits/{ref}")

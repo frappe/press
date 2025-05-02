@@ -10,12 +10,6 @@
   "start",
   "column_break_uvpj",
   "end",
-  "source_section",
-  "repo",
-  "column_break_zkly",
-  "branch",
-  "column_break_xohd",
-  "commit_hash",
   "section_break_xivh",
   "app_server",
   "database_server",
@@ -31,6 +25,12 @@
   "stop_after_rollback",
   "rollback_to_specific_commit",
   "default_rollback_commit",
+  "source_section",
+  "repo",
+  "commit_hash",
+  "column_break_zkly",
+  "branch",
+  "commit_message",
   "section_break_whdl",
   "stuck_at_planning_reason",
   "servers"
@@ -58,10 +58,6 @@
    "in_list_view": 1,
    "label": "Branch",
    "set_only_once": 1
-  },
-  {
-   "fieldname": "column_break_xohd",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "commit_hash",
@@ -92,14 +88,14 @@
    "fieldname": "restart_web_workers",
    "fieldtype": "Check",
    "label": "Restart Web Workers",
-   "read_only_depends_on": "eval: doc.status != \"Draft\" && doc.status != \"Planning\""
+   "read_only_depends_on": "eval: doc.status != \"Draft\" && doc.status != \"Planning\" && doc.status != \"Pending\""
   },
   {
    "default": "0",
    "fieldname": "restart_redis",
    "fieldtype": "Check",
    "label": "Restart Redis",
-   "read_only_depends_on": "eval: doc.status != \"Draft\" && doc.status != \"Planning\""
+   "read_only_depends_on": "eval: doc.status != \"Draft\" && doc.status != \"Planning\" && doc.status != \"Pending\""
   },
   {
    "default": "Draft",
@@ -201,7 +197,7 @@
    "fieldname": "restart_rq_workers",
    "fieldtype": "Check",
    "label": "Restart RQ Workers",
-   "read_only_depends_on": "eval: doc.status != \"Draft\" && doc.status != \"Planning\""
+   "read_only_depends_on": "eval: doc.status != \"Draft\" && doc.status != \"Planning\" && doc.status != \"Pending\""
   },
   {
    "fieldname": "agent_startup_timeout_minutes",
@@ -214,12 +210,19 @@
    "depends_on": "eval: doc.auto_rollback_changes",
    "fieldname": "stop_after_rollback",
    "fieldtype": "Check",
-   "label": "Stop After Rollback"
+   "label": "Stop After Rollback",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "commit_message",
+   "fieldtype": "Data",
+   "label": "Commit Message",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-02 12:11:16.543774",
+ "modified": "2025-05-02 13:28:56.312393",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Update",
