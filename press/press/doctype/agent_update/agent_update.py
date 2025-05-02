@@ -27,6 +27,7 @@ class AgentUpdate(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.agent_update_server.agent_update_server import AgentUpdateServer
 
 		agent_startup_timeout_minutes: DF.Int
@@ -340,6 +341,7 @@ class AgentUpdate(Document):
 			If pending, run the ansible play to update the agent
 			"""
 			current_agent_update_to_process.status = "Running"
+			self._halt_agent_jobs(current_agent_update_to_process)
 			self.save(ignore_version=True)
 			return True
 
@@ -375,6 +377,7 @@ class AgentUpdate(Document):
 				self.save(ignore_version=True)
 			elif play_status == "Failure":
 				current_agent_update_to_process.status = "Fatal"
+				self._resume_agent_jobs(current_agent_update_to_process)
 				self.save(ignore_version=True)
 
 			return False
@@ -396,6 +399,7 @@ class AgentUpdate(Document):
 
 			if message == "pong":
 				current_agent_update_to_process.agent_status = "Active"
+				self._resume_agent_jobs(current_agent_update_to_process)
 			else:
 				current_agent_update_to_process.agent_status = "Inactive"
 
@@ -417,6 +421,24 @@ class AgentUpdate(Document):
 			self.save()
 
 		return False
+
+	def _halt_agent_jobs(self, agent_update_server: AgentUpdateServer):
+		frappe.db.set_value(
+			agent_update_server.server_type,
+			agent_update_server.server,
+			"halt_agent_jobs",
+			True,
+			update_modified=False,
+		)
+
+	def _resume_agent_jobs(self, agent_update_server: AgentUpdateServer):
+		frappe.db.set_value(
+			agent_update_server.server_type,
+			agent_update_server.server,
+			"halt_agent_jobs",
+			False,
+			update_modified=False,
+		)
 
 	def _update_agent_on_server(self):
 		current_agent_update_to_process = self.current_agent_update_to_process

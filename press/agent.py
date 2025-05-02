@@ -951,6 +951,11 @@ class Agent:
 		return json_response
 
 	def should_skip_requests(self):
+		if self.server_type in ("Server", "Database Server", "Proxy Server") and frappe.db.get_value(
+			self.server_type, self.server, "halt_agent_jobs"
+		):
+			return True
+
 		return bool(frappe.db.count("Agent Request Failure", {"server": self.server}))
 
 	def handle_request_failure(self, agent_job, result: Response | None):

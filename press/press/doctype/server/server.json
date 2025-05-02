@@ -16,13 +16,16 @@
   "provider",
   "virtual_machine",
   "ignore_incidents_since",
-  "is_server_prepared",
+  "section_break_mequ",
   "is_server_setup",
-  "is_self_hosted",
+  "is_server_prepared",
   "is_server_renamed",
+  "is_self_hosted",
+  "column_break_laiq",
   "public",
   "use_agent_job_callbacks",
   "is_pyspy_setup",
+  "halt_agent_jobs",
   "billing_section",
   "team",
   "column_break_11",
@@ -566,10 +569,25 @@
    "fieldtype": "Check",
    "label": "Is PySpy Setup",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_break_mequ",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_laiq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Stop polling and queuing agent jobs",
+   "fieldname": "halt_agent_jobs",
+   "fieldtype": "Check",
+   "label": "Halt Agent Jobs"
   }
  ],
  "links": [],
- "modified": "2025-04-28 11:27:08.455782",
+ "modified": "2025-05-02 15:00:00.861519",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
