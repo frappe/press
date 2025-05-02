@@ -116,6 +116,15 @@ class AgentUpdate(Document):
 		if not (self.app_server or self.database_server or self.proxy_server):
 			frappe.throw("Please select at least one server type")
 
+		if not self.restart_web_workers and not self.restart_rq_workers and not self.restart_redis:
+			frappe.throw("At minimum, you need to restart web workers during update")
+
+		if self.restart_redis:  # noqa: SIM102
+			if not self.restart_rq_workers or not self.restart_web_workers:
+				frappe.throw(
+					"If you are restarting redis, you need to restart rq workers and web workers as well"
+				)
+
 		if not self.agent_startup_timeout_minutes:
 			self.agent_startup_timeout_minutes = 10
 
