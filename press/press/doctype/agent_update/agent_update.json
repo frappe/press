@@ -203,7 +203,7 @@
    "fieldname": "agent_startup_timeout_minutes",
    "fieldtype": "Int",
    "label": "Agent Startup Timeout (Minutes)",
-   "read_only_depends_on": "eval: doc.status != \"Running\""
+   "read_only_depends_on": "eval: doc.status == \"Running\""
   },
   {
    "fieldname": "commit_message",
@@ -222,7 +222,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-02 14:53:01.422062",
+ "modified": "2025-05-02 16:29:50.265273",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Update",
