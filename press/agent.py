@@ -1135,7 +1135,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		return self.get(f"agent-jobs/{agent_job_ids}")
 
 	def get_version(self):
-		return self.get("version")
+		return self.raw_request("GET", "version", raises=True, timeout=(2, 10))
 
 	def update(self):
 		url = frappe.get_doc(self.server_type, self.server).get_agent_repository_url()
@@ -1143,7 +1143,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		return self.post("update", data={"url": url, "branch": branch})
 
 	def ping(self):
-		return self.get("ping")["message"]
+		return self.raw_request("GET", "ping", raises=True, timeout=(2, 5))["message"]
 
 	def fetch_monitor_data(self, bench):
 		return self.post(f"benches/{bench}/monitor")["data"]
