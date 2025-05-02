@@ -27,7 +27,6 @@ class AgentUpdate(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.agent_update_server.agent_update_server import AgentUpdateServer
 
 		agent_startup_timeout_minutes: DF.Int
@@ -51,7 +50,7 @@ class AgentUpdate(Document):
 		status: DF.Literal[
 			"Draft", "Planning", "Pending", "Running", "Partial Success", "Success", "Paused", "Failure"
 		]
-		stop_after_rollback: DF.Check
+		stop_after_single_rollback: DF.Check
 		stuck_at_planning_reason: DF.SmallText | None
 	# end: auto-generated types
 
@@ -296,7 +295,7 @@ class AgentUpdate(Document):
 				or (
 					last_terminated_agent_update.status == "Rolled Back"
 					and last_terminated_agent_update.agent_status == "Active"
-					and self.stop_after_rollback
+					and self.stop_after_single_rollback
 				)
 			)
 		):

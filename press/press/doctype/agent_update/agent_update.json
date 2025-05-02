@@ -22,7 +22,7 @@
   "agent_startup_timeout_minutes",
   "column_break_ylpr",
   "auto_rollback_changes",
-  "stop_after_rollback",
+  "stop_after_single_rollback",
   "rollback_to_specific_commit",
   "default_rollback_commit",
   "source_section",
@@ -206,23 +206,23 @@
    "read_only_depends_on": "eval: doc.status != \"Running\""
   },
   {
-   "default": "0",
-   "depends_on": "eval: doc.auto_rollback_changes",
-   "fieldname": "stop_after_rollback",
-   "fieldtype": "Check",
-   "label": "Stop After Rollback",
-   "set_only_once": 1
-  },
-  {
    "fieldname": "commit_message",
    "fieldtype": "Data",
    "label": "Commit Message",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.auto_rollback_changes",
+   "fieldname": "stop_after_single_rollback",
+   "fieldtype": "Check",
+   "label": "Stop After Single Rollback",
+   "set_only_once": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-02 13:54:04.708122",
+ "modified": "2025-05-02 14:53:01.422062",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Update",
