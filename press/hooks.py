@@ -250,8 +250,6 @@ scheduler_events = {
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs",
 			"press.press.doctype.press_webhook_log.press_webhook_log.process",
 			"press.press.doctype.telegram_message.telegram_message.send_telegram_message",
-		],
-		"* * * * * 0/15": [
 			"press.press.doctype.agent_update.agent_update.process_bulk_agent_update",
 		],
 		"* * * * * 0/30": [

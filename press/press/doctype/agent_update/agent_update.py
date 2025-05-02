@@ -489,13 +489,11 @@ class AgentUpdate(Document):
 def process_bulk_agent_update():
 	agent_update_names = frappe.get_all("Agent Update", filters={"status": "Running"}, pluck="name")
 	for agent_update_name in agent_update_names:
-		try:
-			doc: AgentUpdate = frappe.get_doc("Agent Update", agent_update_name)
-			doc.execute()
-		except Exception as e:
-			frappe.log_error(
-				title=f"Agent Update {agent_update_name} failed to process",
-				message=str(e),
-				reference_doctype="Agent Update",
-				reference_name=agent_update_name,
-			)
+		frappe.enqueue_doc(
+			"Agent Update",
+			agent_update_name,
+			"execute",
+			queue="default",
+			deduplicate=True,
+			job_id=f"execute_agent_update:{agent_update_name}",
+		)
