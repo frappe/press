@@ -253,6 +253,7 @@ scheduler_events = {
 		],
 		"* * * * * 0/30": [
 			"press.press.doctype.physical_backup_restoration.physical_backup_restoration.process_scheduled_restorations",
+			"press.press.doctype.agent_update.agent_update.process_bulk_agent_update",
 		],
 		"0 */6 * * *": [
 			"press.press.doctype.server.server.cleanup_unused_files",

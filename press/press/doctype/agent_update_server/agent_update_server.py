@@ -1,7 +1,6 @@
 # Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
 
-# import frappe
 from __future__ import annotations
 
 from frappe.model.document import Document
@@ -38,7 +37,6 @@ class AgentUpdateServer(Document):
 			"Rolling Back",
 			"Rolled Back",
 		]
+		status_check_started_on: DF.Datetime | None
 		update_ansible_play: DF.Link | None
 	# end: auto-generated types
-
-	pass

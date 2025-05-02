@@ -5,17 +5,14 @@ from __future__ import annotations
 
 import contextlib
 import datetime
-from typing import TYPE_CHECKING
 
 import frappe
+import frappe.utils
 import requests
 from frappe.model.document import Document
 
 from press.agent import Agent
 from press.runner import Ansible
-
-if TYPE_CHECKING:
-	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 
 
 def bool_to_str(b: bool) -> str:
@@ -50,7 +47,10 @@ class AgentUpdate(Document):
 		rollback_to_specific_commit: DF.Check
 		servers: DF.Table[AgentUpdateServer]
 		start: DF.Datetime | None
-		status: DF.Literal["Draft", "Planning", "Pending", "Running", "Success", "Failure"]
+		status: DF.Literal[
+			"Draft", "Planning", "Pending", "Running", "Partial Success", "Success", "Paused", "Failure"
+		]
+		stop_after_rollback: DF.Check
 		stuck_at_planning_reason: DF.SmallText | None
 	# end: auto-generated types
 
@@ -63,7 +63,7 @@ class AgentUpdate(Document):
 		return self.repo.split("/")[-2]
 
 	@property
-	def current_server_to_update(self) -> AgentUpdateServer | None:
+	def current_agent_update_to_process(self) -> AgentUpdateServer | None:
 		if len(self.servers) == 0:
 			return None
 
@@ -74,6 +74,24 @@ class AgentUpdate(Document):
 				return s
 
 		return None
+
+	@property
+	def last_terminated_agent_update(self) -> AgentUpdateServer | None:
+		if len(self.servers) == 0:
+			return None
+
+		# check in reverse order
+		for s in reversed(self.servers):
+			if s.status in ["Success", "Rolled Back"] and s.agent_status == "Active":
+				return s
+			if s.status == "Fatal":
+				return s
+
+		return None
+
+	@property
+	def is_any_update_pending(self):
+		return any(s.status == "Pending" for s in self.servers)
 
 	@property
 	def agent_update_args(self) -> str:
@@ -121,6 +139,13 @@ class AgentUpdate(Document):
 
 		# Add servers
 		self.add_server_entries()
+
+	def on_update(self):
+		if self.has_value_changed("status"):
+			if self.status == "Running" and not self.start:
+				self.start = frappe.utils.now_datetime()
+			if self.status in ["Success", "Partial Success", "Failure"] and not self.end:
+				self.end = frappe.utils.now_datetime()
 
 	def add_server_entries(self):
 		filters = {"status": "Active"}
@@ -215,41 +240,75 @@ class AgentUpdate(Document):
 		self.save()
 
 	@frappe.whitelist()
+	def pause(self):
+		self.status = "Paused"
+		self.save(ignore_version=True)
+
+	@frappe.whitelist()
 	def execute(self):
-		if self.current_server_to_update is None:
+		if self.current_agent_update_to_process is None:
 			return
 
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"_execute_next_step",
-			job_id=f"agent_update:{self.name}",
-			deduplicate=True,
-		)
+		if self._process_next_step():
+			frappe.enqueue_doc(
+				self.doctype,
+				self.name,
+				"_update_agent_on_server",
+				queue="long",
+				timeout=2400,
+				enqueue_after_commit=True,
+				job_id=f"update_agent_on_server||{self.name}",
+				deduplicate=True,
+			)
 
-	def _execute_next_step(self):  # noqa: C901
+	def _process_next_step(self) -> bool:  # noqa: C901
+		"""
+		Return True: if we need to trigger agent update on server
+		"""
 		# Update Status to Running
 		if self.status != "Running":
+			self.start = frappe.utils.now_datetime()
 			self.status = "Running"
 			self.save()
-			frappe.db.commit()
 
-		if self.current_server_to_update is None:
-			return
+		if self.current_agent_update_to_process is None:
+			return False
 
-		current_server_to_update = self.current_server_to_update
+		current_agent_update_to_process = self.current_agent_update_to_process
+		last_terminated_agent_update = self.last_terminated_agent_update
 
-		# Try updating agent
-		if current_server_to_update.status not in [
-			"Draft",
-			"Pending",
-			"Running",
-			"Failure",
-		]:
-			# TODO decide the status
-			self.status = "Success"
+		# Decide status on termination
+		if self.is_any_update_pending or (
+			last_terminated_agent_update
+			and (
+				last_terminated_agent_update.status == "Fatal"
+				or (
+					last_terminated_agent_update.status == "Rolled Back"
+					and last_terminated_agent_update.agent_status == "Active"
+					and self.stop_after_rollback
+				)
+			)
+		):
+			# Status can be - Success, Failure, Partial Success
+
+			no_of_successful_updates = sum(1 for server in self.servers if server.status == "Success")
+
+			# Fatal / Rolled Back both are considered as failed
+			no_of_failed_updates = sum(
+				1 for server in self.servers if server.status == "Fatal" or server.status == "Rolled Back"
+			)
+
+			if no_of_successful_updates > 0:
+				self.status = "Success"
+
+			if no_of_failed_updates > 0:
+				self.status = "Partial Success" if self.status == "Success" else "Failure"
+
+			if self.status not in ["Success", "Partial Success", "Failure"]:
+				self.status = "Success"
+
 			self.save()
-			return
+			return False
 
 		"""
 		Agent Update Server Status
@@ -257,62 +316,107 @@ class AgentUpdate(Document):
 		Start State -> Pending
 		Running State -> Running, Rolling Back, Failure
 
-		Terminating State -> (Success + Agent Status need to be Active) or Fatal, Rolled Back
+		Terminating State -> (Success / Rolled Back + Agent Status need to be Active) or Fatal,
 		"""
 
 		# status: DF.Literal["Draft", "Pending", "Running", "Success", "Failure", "Fatal", "Skipped", "Rolling Back", "Rolled Back"]
 
-		if current_server_to_update.status == "Pending":
+		if current_agent_update_to_process.status == "Pending":
 			"""
 			If pending, run the ansible play to update the agent
 			"""
-			play: AnsiblePlay = self._update_agent_on_server(
-				current_server_to_update.server_type,
-				current_server_to_update.server,
-				self.commit_hash,
-			)
-			current_server_to_update.start = frappe.utils.now_datetime()
-			current_server_to_update.update_ansible_play = play.play
-			current_server_to_update.status = "Running"
+			current_agent_update_to_process.status = "Running"
 			self.save(ignore_version=True)
-			frappe.enqueue_doc(play.doctype, play.name, "run", enqueue_after_commit=True)
+			return True
 
-		elif current_server_to_update.status == "Running":
+		if current_agent_update_to_process.status == "Running":
+			if not current_agent_update_to_process.update_ansible_play:
+				return False
+
 			play_status = frappe.get_value(
-				"Ansible Play", current_server_to_update.update_ansible_play, "status"
+				"Ansible Play", current_agent_update_to_process.update_ansible_play, "status"
 			)
 			if play_status in ("Success", "Failure"):
-				current_server_to_update.status = "Running"
+				current_agent_update_to_process.end = frappe.utils.now_datetime()
+				current_agent_update_to_process.status = play_status
 				self.save(ignore_version=True)
 
-		elif current_server_to_update.status == "Failure":
-			play: AnsiblePlay = self._update_agent_on_server(
-				current_server_to_update.server_type,
-				current_server_to_update.server,
-				current_server_to_update.rollback_commit,
-			)
-			current_server_to_update.update_ansible_play = play.play
-			current_server_to_update.status = "Rolling Back"
-			self.save(ignore_version=True)
-			frappe.enqueue_doc(play.doctype, play.name, "run", enqueue_after_commit=True)
+			return False
 
-		elif current_server_to_update.status == "Rolling Back":
+		if current_agent_update_to_process.status == "Failure":
+			current_agent_update_to_process.status = "Rolling Back"
+			self.save(ignore_version=True)
+			return True
+
+		if current_agent_update_to_process.status == "Rolling Back":
+			if not current_agent_update_to_process.rollback_ansible_play:
+				return False
+
 			play_status = frappe.get_value(
-				"Ansible Play", current_server_to_update.rollback_ansible_play, "status"
+				"Ansible Play", current_agent_update_to_process.rollback_ansible_play, "status"
 			)
 			if play_status == "Success":
-				current_server_to_update.status = "Rolled Back"
+				current_agent_update_to_process.status = "Rolled Back"
+				current_agent_update_to_process.end = frappe.utils.now_datetime()
 				self.save(ignore_version=True)
 			elif play_status == "Failure":
-				current_server_to_update.status = "Fatal"
+				current_agent_update_to_process.status = "Fatal"
 				self.save(ignore_version=True)
 
-		elif current_server_to_update.status == "Success" or current_server_to_update.status == "Rolled Back":
-			pass
+			return False
 
-	def _update_agent_on_server(self, server_type: str, server: str, commit: str) -> AnsiblePlay:
-		server_doc = frappe.get_doc(server_type, server)
-		ansible = Ansible(
+		if (
+			current_agent_update_to_process.status == "Success"
+			or current_agent_update_to_process.status == "Rolled Back"
+		):
+			agent = Agent(
+				current_agent_update_to_process.server,
+				server_type=current_agent_update_to_process.server_type,
+			)
+			message = ""
+			with contextlib.suppress(Exception):
+				message = agent.ping()
+
+			if not current_agent_update_to_process.status_check_started_on:
+				current_agent_update_to_process.status_check_started_on = frappe.utils.now_datetime()
+
+			if message == "pong":
+				current_agent_update_to_process.agent_status = "Active"
+			else:
+				current_agent_update_to_process.agent_status = "Inactive"
+
+			# Check if agent status check timedout
+			if (
+				current_agent_update_to_process.agent_status == "Inactive"
+				and (
+					frappe.utils.now_datetime() - current_agent_update_to_process.status_check_started_on
+				).total_seconds()
+				> self.agent_startup_timeout_minutes * 60
+			):
+				# TODO: add reason why status changes in doctype
+				if current_agent_update_to_process.status == "Success":
+					current_agent_update_to_process.status = "Failure"
+				else:
+					current_agent_update_to_process.status = "Fatal"
+
+			self.save()
+
+		return False
+
+	def _update_agent_on_server(self):
+		current_agent_update_to_process = self.current_agent_update_to_process
+		server_doc = frappe.get_doc(
+			current_agent_update_to_process.server_type, current_agent_update_to_process.server
+		)
+
+		is_rollback = False
+		if current_agent_update_to_process.status == "Rolling Back":
+			is_rollback = True
+		commit = self.commit_hash
+		if is_rollback:
+			commit = current_agent_update_to_process.rollback_commit
+
+		play = Ansible(
 			playbook="update_agent.yml",
 			variables={
 				"agent_repository_url": self.agent_repository_url,
@@ -323,7 +427,25 @@ class AgentUpdate(Document):
 			user=server_doc._ssh_user(),
 			port=server_doc._ssh_port(),
 		)
-		return ansible.run()
+
+		data_to_update = {
+			"start": frappe.utils.now_datetime(),
+		}
+
+		if is_rollback:
+			data_to_update["rollback_ansible_play"] = play.play
+		else:
+			data_to_update["update_ansible_play"] = play.play
+
+		frappe.db.set_value(
+			"Agent Update Server",
+			current_agent_update_to_process.name,
+			data_to_update,
+			update_modified=False,
+		)
+		frappe.db.commit()
+
+		play.run()
 
 	def fetch_commit_hash(self, ref: str) -> str:
 		res = requests.get(f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/commits/{ref}")
@@ -350,3 +472,18 @@ class AgentUpdate(Document):
 		if commit_date is not None and commit_date >= date_limit:
 			return True
 		return False
+
+
+def process_bulk_agent_update():
+	agent_update_names = frappe.get_all("Agent Update", filters={"status": "Running"}, pluck="name")
+	for agent_update_name in agent_update_names:
+		try:
+			doc: AgentUpdate = frappe.get_doc("Agent Update", agent_update_name)
+			doc.execute()
+		except Exception as e:
+			frappe.log_error(
+				title=f"Agent Update {agent_update_name} failed to process",
+				message=str(e),
+				reference_doctype="Agent Update",
+				reference_name=agent_update_name,
+			)

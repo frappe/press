@@ -15,7 +15,8 @@
   "update_ansible_play",
   "rollback_commit",
   "rollback_ansible_play",
-  "server_type"
+  "server_type",
+  "status_check_started_on"
  ],
  "fields": [
   {
@@ -24,6 +25,7 @@
    "in_list_view": 1,
    "label": "Server",
    "options": "server_type",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -44,24 +46,28 @@
   {
    "fieldname": "end",
    "fieldtype": "Datetime",
-   "label": "End"
+   "label": "End",
+   "read_only": 1
   },
   {
    "fieldname": "current_commit",
    "fieldtype": "Data",
-   "label": "Current Commit"
+   "label": "Current Commit",
+   "read_only": 1
   },
   {
    "fieldname": "server_type",
    "fieldtype": "Select",
    "label": "Server Type",
    "options": "Server\nDatabase Server\nProxy Server",
+   "read_only": 1,
    "reqd": 1
   },
   {
    "fieldname": "rollback_commit",
    "fieldtype": "Data",
-   "label": "Rollback Commit"
+   "label": "Rollback Commit",
+   "read_only": 1
   },
   {
    "fieldname": "agent_status",
@@ -76,25 +82,34 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Update Ansible Play",
-   "options": "Ansible Play"
+   "options": "Ansible Play",
+   "read_only": 1
   },
   {
    "fieldname": "rollback_ansible_play",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Rollback Ansible Play",
-   "options": "Ansible Play"
+   "options": "Ansible Play",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status_check_started_on",
+   "fieldtype": "Datetime",
+   "label": "Status Check Started On",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-04-27 20:44:44.742186",
+ "modified": "2025-05-02 10:27:59.345514",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Update Server",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": []

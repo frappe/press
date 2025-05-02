@@ -1143,7 +1143,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		return self.post("update", data={"url": url, "branch": branch})
 
 	def ping(self):
-		return self.get("ping")["message"]
+		return self.raw_request("GET", "ping", raises=True, timeout=(2, 5))["message"]
 
 	def fetch_monitor_data(self, bench):
 		return self.post(f"benches/{bench}/monitor")["data"]
