@@ -203,56 +203,60 @@ class AgentUpdate(Document):
 
 		self.stuck_at_planning_reason = ""
 
-		# Fetch commit hash of each agent
-		# Set to unknown if not found
-		self.stuck_at_planning_reason += (
-			"Fetching commit hash from server. If it fails, resolve the issue and then resume again\n"
-		)
-		for s in self.servers:
-			if s.status == "Pending":
-				continue
+		try:
+			# Fetch commit hash of each agent
+			# Set to unknown if not found
+			self.stuck_at_planning_reason += (
+				"Fetching commit hash from server. If it fails, resolve the issue and then resume again\n"
+			)
+			for s in self.servers:
+				if s.status == "Pending":
+					continue
 
-			with contextlib.suppress(Exception):
-				agent = Agent(s.server, server_type=s.server_type)
-				commit = agent.get_version()["commit"]
-				s.current_commit = commit
-				s.status = "Pending"
+				with contextlib.suppress(Exception):
+					agent = Agent(s.server, server_type=s.server_type)
+					commit = agent.get_version()["commit"]
+					s.current_commit = commit
+					s.status = "Pending"
 
-				if self.auto_rollback_changes:
-					if self.rollback_to_specific_commit:
-						s.rollback_commit = self.default_rollback_commit
-					else:
-						s.rollback_commit = commit
+					if self.auto_rollback_changes:
+						if self.rollback_to_specific_commit:
+							s.rollback_commit = self.default_rollback_commit
+						else:
+							s.rollback_commit = commit
 
-			if not s.current_commit:
-				self.stuck_at_planning_reason += f"- {s.server}\n"
+				if not s.current_commit:
+					self.stuck_at_planning_reason += f"- {s.server}\n"
 
-		# Decide whether rollback possible, we can't auto rollback for very old agents
-		# Because agent doesn't has the rollback facility before 22nd April 2025
-		self.stuck_at_planning_reason += "\nChecking if agent rollback impossible due to old commit hash. If found any, please update the agent manually\n"
-		for s in self.servers:
-			if s.status != "Pending":
-				continue
+			# Decide whether rollback possible, we can't auto rollback for very old agents
+			# Because agent doesn't has the rollback facility before 22nd April 2025
+			self.stuck_at_planning_reason += "\nChecking if agent rollback impossible due to old commit hash. If found any, please update the agent manually\n"
+			for s in self.servers:
+				if s.status != "Pending":
+					continue
 
-			if not self.is_commit_supported(s.current_commit):
-				self.stuck_at_planning_reason += f"- {s.server} - {s.current_commit}\n"
-				s.status = "Draft"  # Move status to Draft
+				if not self.is_commit_supported(s.current_commit):
+					self.stuck_at_planning_reason += f"- {s.server} - {s.current_commit}\n"
+					s.status = "Draft"  # Move status to Draft
 
-		# Mark same commit hash servers as Skipped
-		for s in self.servers:
-			if s.current_commit == self.commit_hash:
-				s.status = "Skipped"
+			# Mark same commit hash servers as Skipped
+			for s in self.servers:
+				if s.current_commit == self.commit_hash:
+					s.status = "Skipped"
 
-		# Change status from `Planning` to `Pending` if all server updates are `Pending`
-		is_all_server_ready = all(s.status in ("Pending", "Skipped") for s in self.servers)
-		if is_all_server_ready:
-			self.status = "Pending"
+			# Change status from `Planning` to `Pending` if all server updates are `Pending`
+			is_all_server_ready = all(s.status in ("Pending", "Skipped") for s in self.servers)
+			if is_all_server_ready:
+				self.status = "Pending"
 
-		if not is_all_server_ready:
+			if not is_all_server_ready:
+				self.status = "Draft"
+				self.stuck_at_planning_reason += "\nPlease fix the server's issue or remove it from the list."
+			else:
+				self.stuck_at_planning_reason = ""
+		except Exception as e:
 			self.status = "Draft"
-			self.stuck_at_planning_reason += "\nPlease fix the server's issue or remove it from the list."
-		else:
-			self.stuck_at_planning_reason = ""
+			self.stuck_at_planning_reason = f"Error: {e!s}"
 
 		self.save()
 
