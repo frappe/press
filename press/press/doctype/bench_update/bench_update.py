@@ -88,7 +88,7 @@ class BenchUpdate(Document):
 	def deploy(self, run_will_fail_check=False) -> str:
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
 		candidate = rg.create_deploy_candidate(self.apps, run_will_fail_check)
-		candidate.schedule_build_and_deploy()
+		deploy = candidate.schedule_build_and_deploy()
 
 		self.candidate = candidate.name
 		self.save()
@@ -98,7 +98,7 @@ class BenchUpdate(Document):
 				f"Invalid name found for deploy candidate '{candidate.name}' of type {type(candidate.name)}"
 			)
 
-		return candidate.name
+		return deploy["name"]
 
 	def update_inplace(self) -> str:
 		if not self.is_inplace_update:

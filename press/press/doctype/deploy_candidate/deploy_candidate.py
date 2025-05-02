@@ -218,7 +218,7 @@ class DeployCandidate(Document):
 		# Here it's fine to call `self.build_and_deploy()`
 		# Since the doc has not been created yet.
 		if run_now and not is_suspended():
-			return {"error": False, "message": self.build_and_deploy()}
+			return {"error": False, "name": self.build_and_deploy()}
 
 		deploy_candidate_build = self.create_build(
 			no_cache=False,
@@ -227,7 +227,7 @@ class DeployCandidate(Document):
 			scheduled_time=scheduled_time or now(),
 		)
 		deploy_candidate_build.insert()
-		return {"error": False, "message": deploy_candidate_build.name}
+		return {"error": False, "name": deploy_candidate_build.name}
 
 	def build_and_deploy(self, no_cache: bool = False) -> str:
 		deploy_candidate_build = self.create_build(no_cache=no_cache, deploy_after_build=True)
