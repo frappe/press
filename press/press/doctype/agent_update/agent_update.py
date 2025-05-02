@@ -484,18 +484,32 @@ class AgentUpdate(Document):
 
 		play.run()
 
+	@property
+	def github_access_token_header(self):
+		github_access_token = frappe.get_cached_value("Press Settings", None, "github_access_token")
+		return {"Authorization": f"Bearer {github_access_token}"}
+
 	def fetch_commit_hash(self, ref: str) -> str:
-		res = requests.get(f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/commits/{ref}")
+		res = requests.get(
+			f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/commits/{ref}",
+			headers=self.github_access_token_header,
+		)
 		res.raise_for_status()
 		return res.json().get("sha")
 
 	def fetch_commit_message(self, ref: str) -> str:
-		res = requests.get(f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/commits/{ref}")
+		res = requests.get(
+			f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/commits/{ref}",
+			headers=self.github_access_token_header,
+		)
 		res.raise_for_status()
 		return res.json().get("commit").get("message")
 
 	def fetch_commit_date(self, ref: str) -> datetime.datetime | None:
-		res = requests.get(f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/commits/{ref}")
+		res = requests.get(
+			f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/commits/{ref}",
+			headers=self.github_access_token_header,
+		)
 		res.raise_for_status()
 		return datetime.datetime.strptime(
 			res.json().get("commit").get("committer").get("date"), "%Y-%m-%dT%H:%M:%SZ"
