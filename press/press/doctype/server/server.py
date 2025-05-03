@@ -1054,7 +1054,7 @@ class BaseServer(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def reboot(self):
-		if self.provider in ("AWS EC2", "OCI"):
+		if self.provider in ("AWS EC2", "OCI", "Hetzner"):
 			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 			virtual_machine.reboot()
 

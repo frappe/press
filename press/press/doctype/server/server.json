@@ -263,7 +263,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner",
    "set_only_once": 1
   },
   {
@@ -311,11 +311,11 @@
    "label": "Staging"
   },
   {
-   "depends_on": "eval:[\"AWS EC2\", \"OCI\"].includes(doc.provider)",
+   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\"].includes(doc.provider)",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
-   "mandatory_depends_on": "eval:[\"AWS EC2\", \"OCI\"].includes(doc.provider)",
+   "mandatory_depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\"].includes(doc.provider)",
    "options": "Virtual Machine"
   },
   {
