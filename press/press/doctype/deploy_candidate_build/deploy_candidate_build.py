@@ -661,11 +661,17 @@ class DeployCandidateBuild(Document):
 			log_error("Deploy Candidate Build Exception", doc=self)
 
 	def schedule_build_retry(self):
-		self.retry_count += 1
+		"""
+		Fail the current deploy candidate build and create a new deploy candidate build
+		with an increased `retry_count` and a scheduled time.
+		"""
 		minutes = min(5**self.retry_count, 125)
 		scheduled_time = now() + timedelta(minutes=minutes)
-		self.set_status(Status.SCHEDULED)
-		self.candidate.schedule_build_and_deploy(run_now=False, scheduled_time=scheduled_time)
+		self.set_status(Status.FAILURE)
+		# Increase the retry count
+		self.candidate.schedule_build_and_deploy(
+			run_now=False, scheduled_time=scheduled_time, retry_count=self.retry_count + 1
+		)
 
 	@retry(
 		reraise=True,
