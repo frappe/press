@@ -214,6 +214,7 @@ class DeployCandidate(Document):
 		self,
 		run_now: bool = True,
 		scheduled_time: datetime | None = None,
+		retry_count: int = 0,
 	):
 		# Here it's fine to call `self.build_and_deploy()`
 		# Since the doc has not been created yet.
@@ -225,6 +226,7 @@ class DeployCandidate(Document):
 			deploy_after_build=True,
 			status="Scheduled",
 			scheduled_time=scheduled_time or now(),
+			retry_count=retry_count,
 		)
 		deploy_candidate_build.insert()
 		return {"error": False, "name": deploy_candidate_build.name}
