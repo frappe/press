@@ -807,7 +807,6 @@ class DeployCandidateBuild(Document):
 		have been cloned.
 		"""
 		self.candidate._update_packages(pmf)
-		self.candidate.save(ignore_permissions=True, ignore_version=True)
 
 		# Set props used when generating the Dockerfile
 		self.candidate._set_additional_packages()
