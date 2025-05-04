@@ -669,9 +669,10 @@ class DeployCandidateBuild(Document):
 		scheduled_time = now() + timedelta(minutes=minutes)
 		self.set_status(Status.FAILURE)
 		# Increase the retry count
-		self.candidate.schedule_build_and_deploy(
-			run_now=False, scheduled_time=scheduled_time, retry_count=self.retry_count + 1
-		)
+		if self.retry_count < 3:
+			self.candidate.schedule_build_and_deploy(
+				run_now=False, scheduled_time=scheduled_time, retry_count=self.retry_count + 1
+			)
 
 	@retry(
 		reraise=True,
