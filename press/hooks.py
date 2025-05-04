@@ -213,9 +213,8 @@ scheduler_events = {
 		"press.press.doctype.app.app.poll_new_releases",
 		"press.press.doctype.agent_job.agent_job.fail_old_jobs",
 		"press.press.doctype.site_update.site_update.mark_stuck_updates_as_fatal",
-		"press.press.doctype.deploy_candidate.deploy_candidate.cleanup_build_directories",
-		"press.press.doctype.deploy_candidate.deploy_candidate.delete_draft_candidates",
-		"press.press.doctype.deploy_candidate.deploy_candidate.check_builds_status",
+		"press.press.doctype.deploy_candidate_build.deploy_candidate_build.cleanup_build_directories",
+		"press.press.doctype.deploy_candidate_build.deploy_candidate_build.check_builds_status",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_virtual_machines",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_old_snapshots",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_expired_snapshots",
@@ -251,6 +250,7 @@ scheduler_events = {
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs",
 			"press.press.doctype.press_webhook_log.press_webhook_log.process",
 			"press.press.doctype.telegram_message.telegram_message.send_telegram_message",
+			"press.press.doctype.agent_update.agent_update.process_bulk_agent_update",
 		],
 		"* * * * * 0/30": [
 			"press.press.doctype.physical_backup_restoration.physical_backup_restoration.process_scheduled_restorations",
@@ -282,7 +282,7 @@ scheduler_events = {
 		],
 		"* * * * *": [
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",
-			"press.press.doctype.deploy_candidate.deploy_candidate.run_scheduled_builds",
+			"press.press.doctype.deploy_candidate_build.deploy_candidate_build.run_scheduled_builds",
 			"press.press.doctype.agent_request_failure.agent_request_failure.remove_old_failures",
 			"press.saas.doctype.site_access_token.site_access_token.cleanup_expired_access_tokens",
 		],
@@ -317,6 +317,7 @@ scheduler_events = {
 			"press.press.doctype.aws_savings_plan_recommendation.aws_savings_plan_recommendation.refresh",
 			"press.infrastructure.doctype.ssh_access_audit.ssh_access_audit.run",
 		],
+		"0 9 * * 2": ["press.press.doctype.build_metric.build_metric.create_build_metric"],
 	},
 }
 

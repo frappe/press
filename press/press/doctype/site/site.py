@@ -439,7 +439,7 @@ class Site(Document, TagHelpers):
 		if self.skip_auto_updates and is_group_public:
 			frappe.throw("Auto updates can't be disabled for sites on public benches!")
 
-	def validate_site_plan(self):
+	def validate_site_plan(self):  # noqa: C901
 		if hasattr(self, "subscription_plan") and self.subscription_plan:
 			"""
 			If `release_groups` in site plan is empty, then site can be deployed in any release group.
@@ -479,13 +479,22 @@ class Site(Document, TagHelpers):
 					if app not in allowed_apps:
 						frappe.throw(f"In {self.subscription_plan}, you can't deploy site with {app} app")
 
-			is_dedicated_server_plan = frappe.db.get_value(
-				"Site Plan", self.subscription_plan, "dedicated_server_plan"
+			plan = frappe.db.get_value(
+				"Site Plan",
+				self.subscription_plan,
+				["dedicated_server_plan", "price_inr", "price_usd"],
+				as_dict=True,
 			)
 			is_site_on_public_server = frappe.db.get_value("Server", self.server, "public")
 
+			# Don't allow free plan for non-system managers
+			if "System Manager" not in frappe.get_roles():
+				is_plan_free = (plan.price_inr == 0 or plan.price_usd == 0) and not plan.dedicated_server_plan
+				if is_plan_free:
+					frappe.throw("You can't select a free plan!")
+
 			# If site is on public server, don't allow unlimited plans
-			if is_site_on_public_server and is_dedicated_server_plan:
+			if is_site_on_public_server and plan.dedicated_server_plan:
 				self.subscription_plan = frappe.db.get_value(
 					"Site Plan",
 					{
@@ -498,7 +507,7 @@ class Site(Document, TagHelpers):
 				)
 
 			# If site is on dedicated server, set unlimited plan
-			elif not is_dedicated_server_plan and not is_site_on_public_server:
+			elif not plan.dedicated_server_plan and not is_site_on_public_server:
 				self.subscription_plan = frappe.db.get_value(
 					"Site Plan",
 					{

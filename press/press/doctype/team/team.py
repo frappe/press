@@ -19,6 +19,7 @@ from press.utils import get_valid_teams_for_user, has_role, log_error
 from press.utils.billing import (
 	get_frappe_io_connection,
 	get_stripe,
+	is_frappe_auth_disabled,
 	process_micro_debit_test_charge,
 )
 from press.utils.telemetry import capture
@@ -450,7 +451,6 @@ class Team(Document):
 
 		self.validate_payment_mode()
 		self.update_draft_invoice_payment_mode()
-		self.validate_partnership_date()
 		self.set_notification_emails()
 
 		if (
@@ -461,20 +461,6 @@ class Team(Document):
 		):
 			self.update_billing_details_on_frappeio()
 
-	def validate_partnership_date(self):
-		if self.erpnext_partner or not self.partnership_date:
-			return
-
-		if partner_email := self.partner_email:
-			frappe_partnership_date = frappe.db.get_value(
-				"Team",
-				{"enabled": 1, "erpnext_partner": 1, "partner_email": partner_email},
-				"frappe_partnership_date",
-			)
-			if frappe_partnership_date and frappe_partnership_date > frappe.utils.getdate(
-				self.partnership_date
-			):
-				frappe.throw("Partnership date cannot be less than the partnership date of the partner")
 
 	def update_draft_invoice_payment_mode(self):
 		if self.has_value_changed("payment_mode"):
@@ -524,6 +510,9 @@ class Team(Document):
 
 	def get_partnership_start_date(self):
 		if frappe.flags.in_test:
+			return frappe.utils.getdate()
+
+		if is_frappe_auth_disabled():
 			return frappe.utils.getdate()
 
 		client = get_frappe_io_connection()
@@ -671,6 +660,9 @@ class Team(Document):
 
 	def update_billing_details_on_frappeio(self):
 		if frappe.flags.in_install:
+			return
+
+		if is_frappe_auth_disabled():
 			return
 
 		try:
@@ -983,6 +975,12 @@ class Team(Document):
 
 	def get_partner_level(self):
 		# fetch partner level from frappe.io
+		if frappe.flags.in_install:
+			return None
+
+		if is_frappe_auth_disabled():
+			return None
+
 		client = get_frappe_io_connection()
 		response = client.session.get(
 			f"{client.url}/api/method/get_partner_level",
@@ -1392,7 +1390,7 @@ def _enqueue_finalize_unpaid_invoices_for_team(team: str):
 	frappe.enqueue(
 		"press.press.doctype.team.team.enqueue_finalize_unpaid_for_team",
 		team=team,
-		queue="long",
+		enqueue_after_commit=True,
 	)
 
 

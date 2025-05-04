@@ -56,6 +56,7 @@ class LastDeployInfo(TypedDict):
 if TYPE_CHECKING:
 	from press.press.doctype.app.app import App
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 
 
 class ReleaseGroup(Document, TagHelpers):
@@ -936,20 +937,20 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@cached_property
 	def last_dc_info(self) -> "LastDeployInfo | None":
-		dc = frappe.qb.DocType("Deploy Candidate")
+		DeployCandidateBuild = frappe.qb.DocType("Deploy Candidate Build")
 
 		query = (
-			frappe.qb.from_(dc)
-			.where(dc.group == self.name)
-			.select(dc.name, dc.status, dc.creation)
-			.orderby(dc.creation, order=frappe.qb.desc)
+			frappe.qb.from_(DeployCandidateBuild)
+			.where(DeployCandidateBuild.group == self.name)
+			.select(DeployCandidateBuild.name, DeployCandidateBuild.status, DeployCandidateBuild.creation)
+			.orderby(DeployCandidateBuild.creation, order=frappe.qb.desc)
 			.limit(1)
 		)
 
 		results = query.run(as_dict=True)
-
-		if len(results) > 0:
+		if results:
 			return results[0]
+
 		return None
 
 	@cached_property
@@ -957,12 +958,12 @@ class ReleaseGroup(Document, TagHelpers):
 		if not (name := (self.last_dc_info or {}).get("name")):
 			return []
 
-		b = frappe.qb.DocType("Bench")
+		Bench = frappe.qb.DocType("Bench")
 		query = (
-			frappe.qb.from_(b)
-			.where(b.candidate == name)
-			.select(b.name, b.status, b.creation)
-			.orderby(b.creation, order=frappe.qb.desc)
+			frappe.qb.from_(Bench)
+			.where(Bench.candidate == name)
+			.select(Bench.name, Bench.status, Bench.creation)
+			.orderby(Bench.creation, order=frappe.qb.desc)
 			.limit(1)
 		)
 		return query.run(as_dict=True)
@@ -1254,13 +1255,13 @@ class ReleaseGroup(Document, TagHelpers):
 		app_update_available = self.deploy_information().update_available
 		self.add_server(server, deploy=not app_update_available)
 
-	def get_last_successful_candidate(self) -> "DeployCandidate":
-		return frappe.get_last_doc("Deploy Candidate", {"status": "Success", "group": self.name})
+	def get_last_candidate(self) -> "DeployCandidate":
+		return frappe.get_last_doc("Deploy Candidate", {"group": self.name})
 
-	def get_last_deploy_candidate(self):
+	def get_last_deploy_candidate_build(self):
 		try:
-			dc: "DeployCandidate" = frappe.get_last_doc(
-				"Deploy Candidate",
+			dc: "DeployCandidateBuild" = frappe.get_last_doc(
+				"Deploy Candidate Build",
 				{
 					"status": ["!=", "Draft"],
 					"group": self.name,
@@ -1275,7 +1276,7 @@ class ReleaseGroup(Document, TagHelpers):
 		self.append("servers", {"server": server, "default": False})
 		self.save()
 		if deploy:
-			return self.get_last_successful_candidate()._create_deploy([server])
+			return self.get_last_candidate()._create_deploy([server])
 		return None
 
 	@frappe.whitelist()

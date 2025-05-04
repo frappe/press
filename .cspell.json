@@ -350,6 +350,7 @@
 		"pypt",
 		"PYTHONUNBUFFERED",
 		"pyunit",
+		"pyspy",
 		"QCONTENT",
 		"Qostanay",
 		"qrcode",
@@ -506,6 +507,7 @@
 		"iour",
 		"FWUP",
 		"prm",
-		"mbps"
+		"mbps",
+		"pyspy"
 	]
 }

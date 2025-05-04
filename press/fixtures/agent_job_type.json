@@ -1659,11 +1659,11 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 3,
-  "modified": "2025-01-09 17:07:45.359754",
+  "modified": "2025-05-02 15:31:19.602466",
   "name": "Physical Backup Database",
   "request_method": "POST",
   "request_path": "/database/physical-backup",
@@ -1749,11 +1749,11 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 3,
-  "modified": "2025-01-21 15:31:19.602466",
+  "modified": "2025-05-02 15:31:19.602466",
   "name": "Activate Site",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/activate",
@@ -1764,11 +1764,11 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 3,
-  "modified": "2025-01-21 15:32:21.823510",
+  "modified": "2025-05-02 15:31:19.602466",
   "name": "Deactivate Site",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/deactivate",

@@ -456,7 +456,8 @@ class BaseServer(Document, TagHelpers):
 				playbook="update_agent.yml",
 				variables={
 					"agent_repository_url": self.get_agent_repository_url(),
-					"agent_repository_branch": self.get_agent_repository_branch(),
+					"agent_repository_branch_or_commit_ref": "master",
+					"agent_update_args": "",
 				},
 				server=self,
 				user=self._ssh_user(),
@@ -972,19 +973,6 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Swappiness Setup Exception", doc=self)
 
-	def update_filebeat(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_update_filebeat")
-
-	def _update_filebeat(self):
-		try:
-			ansible = Ansible(
-				playbook="filebeat_update.yml",
-				server=self,
-			)
-			ansible.run()
-		except Exception:
-			log_error("Filebeat Update Exception", doc=self)
-
 	@frappe.whitelist()
 	def update_tls_certificate(self):
 		from press.press.doctype.tls_certificate.tls_certificate import (
@@ -1399,6 +1387,7 @@ class Server(BaseServer):
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
+		halt_agent_jobs: DF.Check
 		has_data_volume: DF.Check
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
@@ -1472,9 +1461,7 @@ class Server(BaseServer):
 			self.update_subscription()
 			frappe.db.delete("Press Role Permission", {"server": self.name})
 
-		# Enable bench memory limits for public servers
-		if self.public:
-			self.set_bench_memory_limits = True
+		self.set_bench_memory_limits_if_needed(save=False)
 
 	def after_insert(self):
 		from press.press.doctype.press_role.press_role import (
@@ -1483,6 +1470,16 @@ class Server(BaseServer):
 
 		super().after_insert()
 		add_permission_for_newly_created_doc(self)
+
+	def set_bench_memory_limits_if_needed(self, save: bool = False):
+		# Enable bench memory limits for public servers
+		if self.public:
+			self.set_bench_memory_limits = True
+		else:
+			self.set_bench_memory_limits = False
+
+		if save:
+			self.save()
 
 	def update_subscription(self):
 		subscription = frappe.db.get_value(
