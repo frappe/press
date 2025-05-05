@@ -112,13 +112,13 @@ class BackupRotationScheme:
 			# set snapshot as Unavailable
 			frappe.db.set_value(
 				"Site Backup",
-				backup.name,
+				backup,
 				"files_availability",
 				"Unavailable",
 			)
 			frappe.db.set_value(
 				"Virtual Disk Snapshot",
-				backup.database_snapshot,
+				frappe.db.get_value("Site Backup", backup, "database_snapshot"),
 				"expired",
 				True,
 			)
