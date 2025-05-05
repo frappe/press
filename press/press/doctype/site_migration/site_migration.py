@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 import frappe
@@ -749,13 +750,14 @@ def run_scheduled_migrations():
 		site_migration = SiteMigration("Site Migration", migration)
 		try:
 			site_migration.start()
-		except OngoingAgentJob:
-			pass  # ongoing jobs will finish in some time
-		except MissingAppsInBench as e:
-			site_migration.cleanup_and_fail(reason=str(e), force_activate=True)
-		except InsufficientSpaceOnServer as e:
-			site_migration.cleanup_and_fail(reason=str(e), force_activate=True)
-		except InactiveDomains as e:
+		except OngoingAgentJob as e:
+			if not site_migration.scheduled_time:
+				return
+			if frappe.utils.now() > site_migration.scheduled_time + timedelta(
+				hours=4
+			):  # don't trigger more than 4 hours later scheduled time
+				site_migration.cleanup_and_fail(reason=str(e))
+		except (MissingAppsInBench, InsufficientSpaceOnServer, InactiveDomains) as e:
 			site_migration.cleanup_and_fail(reason=str(e), force_activate=True)
 		except Exception as e:
 			log_error("Site Migration Start Error", exception=e)
