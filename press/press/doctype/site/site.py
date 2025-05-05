@@ -91,6 +91,7 @@ if TYPE_CHECKING:
 
 	from frappe.types.DF import Table
 
+	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.bench_app.bench_app import BenchApp
 	from press.press.doctype.database_server.database_server import DatabaseServer
@@ -2053,7 +2054,7 @@ class Site(Document, TagHelpers):
 		self.update_site_config(config_list)
 
 	@frappe.whitelist()
-	def update_site_config(self, config=None):
+	def update_site_config(self, config=None) -> AgentJob:
 		"""Updates site.configuration, site.config and runs site.save which initiates an Agent Request
 		This checks for the blacklisted config keys via Frappe Validations, but not for internal usages.
 		Don't expose this directly to an external API. Pass through `press.utils.sanitize_config` or use
