@@ -43,7 +43,7 @@ class BackupRotationScheme:
 	Rotation is maintained by controlled deletion of daily backups.
 	"""
 
-	def _expire_and_get_remote_files(self, offsite_backups: list[dict[str, str]]) -> list[str]:
+	def _expire_and_get_remote_files(self, offsite_backups: list[str]) -> list[str]:
 		"""Mark backup as unavailable and return remote files to delete."""
 		remote_files_to_delete = []
 		for backup in offsite_backups:
@@ -163,6 +163,7 @@ class FIFO(BackupRotationScheme):
 					"physical": backup_type == "Physical",
 				},
 				order_by="creation desc",
+				pluck="name",
 			)[offsite_expiry:]
 		return to_be_expired_backups
 
@@ -188,7 +189,7 @@ class GFS(BackupRotationScheme):
 		oldest_weekly = today - timedelta(weeks=4)
 		oldest_monthly = today - timedelta(days=366)
 		oldest_yearly = today - timedelta(days=3653)
-		return frappe.db.sql(
+		backups = frappe.db.sql(
 			f"""
 			SELECT name from `tabSite Backup`
 			WHERE
@@ -204,6 +205,7 @@ class GFS(BackupRotationScheme):
 			""",
 			as_dict=True,
 		)
+		return [backup["name"] for backup in backups]
 		# XXX: DAYOFWEEK in sql gives 1-7 for SUN-SAT in sql
 		# datetime.weekday() in python gives 0-6 for MON-SUN
 		# datetime.isoweekday() in python gives 1-7 for MON-SUN
