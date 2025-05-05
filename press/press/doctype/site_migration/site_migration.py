@@ -136,9 +136,9 @@ class SiteMigration(Document):
 
 	@frappe.whitelist()
 	def start(self):
+		self.check_for_ongoing_agent_jobs()  # has to be before setting state to pending so it gets retried
 		self.status = "Pending"
 		self.save()
-		self.check_for_ongoing_agent_jobs()
 		self.check_for_inactive_domains()
 		self.validate_apps()
 		self.check_enough_space_on_destination_server()

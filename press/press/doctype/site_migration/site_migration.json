@@ -154,9 +154,10 @@
    "label": "Skip Failing Patches"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-15 16:53:44.667863",
+ "modified": "2025-05-05 10:32:27.636592",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Migration",
@@ -206,6 +207,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
