@@ -97,6 +97,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.release_group.release_group import ReleaseGroup
+	from press.press.doctype.root_domain.root_domain import RootDomain
 	from press.press.doctype.server.server import BaseServer, Server
 
 DOCTYPE_SERVER_TYPE_MAP = {
@@ -650,9 +651,9 @@ class Site(Document, TagHelpers):
 
 		try:
 			# remove old dns record from route53 after rename
-			domain = frappe.get_doc("Root Domain", self.domain)
+			domain: RootDomain = frappe.get_doc("Root Domain", self.domain)
 			proxy_server = frappe.get_value("Server", self.server, "proxy_server")
-			self.remove_dns_record(domain, proxy_server, self.name)
+			self.remove_dns_record(domain, proxy_server)
 		except Exception:
 			log_error("Removing Old Site from Route53 Failed")
 
@@ -800,9 +801,17 @@ class Site(Document, TagHelpers):
 
 		create_site_status_update_webhook_event(self.name)
 
-	def remove_dns_record(self, domain: Document, proxy_server: str, site: str):
+	def remove_dns_record(self, domain: RootDomain, proxy_server: str):
 		"""Remove dns record of site pointing to proxy."""
-		_change_dns_record(method="DELETE", domain=domain, proxy_server=proxy_server, record_name=site)
+		self._create_default_site_domain()
+		domains = frappe.db.get_all(
+			"Site Domain", filters={"site": self.name}, fields=["domain"], pluck="domain"
+		)
+		for domain in domains:
+			if bool(frappe.db.exists("Root Domain", domain.split(".", 1)[1])):
+				_change_dns_record(
+					method="DELETE", domain=domain, proxy_server=proxy_server, record_name=domain
+				)
 
 	def is_version_14_or_higher(self) -> bool:
 		group: ReleaseGroup = frappe.get_cached_doc("Release Group", self.group)
@@ -1254,11 +1263,11 @@ class Site(Document, TagHelpers):
 	@frappe.whitelist()
 	def create_dns_record(self):
 		self._create_default_site_domain()
-		domains = frappe.db.get_list(
+		domains = frappe.db.get_all(
 			"Site Domain", filters={"site": self.name}, fields=["domain"], pluck="domain"
 		)
 		for domain in domains:
-			if bool(frappe.db.exists("Root Domain", domain.split(".", 1)[1], "name")):
+			if bool(frappe.db.exists("Root Domain", domain.split(".", 1)[1])):
 				create_dns_record(doc=self, record_name=domain)
 
 	@frappe.whitelist()
