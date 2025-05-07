@@ -52,7 +52,6 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
 		DeployCandidateApp,
 	)
-	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 # build_duration, pending_duration are Time fields, >= 1 day is invalid
 MAX_DURATION = timedelta(hours=23, minutes=59, seconds=59)
@@ -341,6 +340,7 @@ class DeployCandidateBuild(Document):
 					"doc": self.candidate,
 					"remove_distutils": not is_distutils_supported,
 					"requires_version_based_get_pip": requires_version_based_get_pip,
+					"arm_build": self.platform == "arm64",
 				},
 				is_path=True,
 			)
@@ -992,11 +992,8 @@ class DeployCandidateBuild(Document):
 		self.pending_end = None
 		self.pending_duration = None
 
-	def get_platform(self) -> VirtualMachine | None:
-		if virtual_machine_name := frappe.get_value("Server", self.build_server, "virtual_machine"):
-			virtual_machine: VirtualMachine = frappe.get_doc("Virtual Machine", virtual_machine_name)
-			return virtual_machine.platform
-		return None
+	def get_platform(self) -> str:
+		return frappe.get_value("Server", self.build_server, "platform")
 
 	def set_platform(self):
 		self.platform = self.get_platform() or "x86_64"
