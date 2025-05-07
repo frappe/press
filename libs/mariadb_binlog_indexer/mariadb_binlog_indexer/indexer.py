@@ -8,6 +8,7 @@ import traceback
 from typing import Literal
 
 import duckdb
+import filelock
 
 QUERY_TYPES = Literal["SELECT", "INSERT", "UPDATE", "DELETE", "OTHER"]
 
@@ -21,22 +22,25 @@ class Indexer:
 		self.indexer_lib = os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib", "indexer")
 		self.base_path = base_path
 		self.db_name = db_name
-		self.logging = True
+		self.logging = False
+		self._lock_file_path = os.path.join(self.base_path, "indexer.lock")
 
 	def add(self, binlog_path: str, batch_size: int = 10000):
-		subprocess.run(
-			[
-				self.indexer_lib,
-				"add",
-				self.base_path,
-				binlog_path,
-				self.db_name,
-				str(batch_size),
-			]
-		)
+		with filelock.FileLock(self._lock_file_path):
+			subprocess.run(
+				[
+					self.indexer_lib,
+					"add",
+					self.base_path,
+					binlog_path,
+					self.db_name,
+					str(batch_size),
+				]
+			)
 
 	def remove(self, binlog_path: str):
-		subprocess.run([self.indexer_lib, "remove", self.base_path, binlog_path, self.db_name])
+		with filelock.FileLock(self._lock_file_path):
+			subprocess.run([self.indexer_lib, "remove", self.base_path, binlog_path, self.db_name])
 
 	def get_timeline(
 		self,
@@ -325,10 +329,13 @@ class Indexer:
 			params = []
 		result = []
 		db: duckdb.DuckDBPyConnection | None = None
+		lock: filelock.FileLock | None = None
 		try:
 			if source == "parquet":
 				db = duckdb.connect()
 			elif source == "db":
+				lock = filelock.FileLock(self._lock_file_path)
+				lock.acquire(timeout=5)
 				db = duckdb.connect(database=os.path.join(self.base_path, self.db_name), read_only=True)
 			result = db.execute(query, parameters=params).fetchall()
 		except Exception as e:
@@ -342,4 +349,7 @@ class Indexer:
 			if db is not None:
 				with contextlib.suppress(Exception):
 					db.close()
+			if lock is not None:
+				with contextlib.suppress(Exception):
+					lock.release()
 		return result
