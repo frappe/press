@@ -87,7 +87,7 @@
 							:src="`/assets/press/images/mpesa-logo.svg`"
 							alt="M-pesa Logo"
 						/>
-						<Badge variant="outline" theme="blue" size="sm" label="Beta" />
+						<Badge variant="outline" theme="orange" size="sm" label="Beta" />
 					</div>
 				</Button>
 			</div>
