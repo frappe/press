@@ -74,18 +74,21 @@
 					<StripeLogo class="h-7 w-24" />
 				</Button>
 				<Button
-					v-if="team.doc.country === 'Kenya' && team.doc.mpesa_enabled"
+					v-if="team.doc.country === 'Kenya'"
 					size="lg"
 					:class="{
 						'border-[1.5px] border-gray-700': paymentGateway === 'M-Pesa',
 					}"
 					@click="paymentGateway = 'M-Pesa'"
 				>
-					<img
-						class="h-14 w-24"
-						:src="`/assets/press/images/mpesa-logo.svg`"
-						alt="M-pesa Logo"
-					/>
+					<div class="flex items-center">
+						<img
+							class="h-14 w-24"
+							:src="`/assets/press/images/mpesa-logo.svg`"
+							alt="M-pesa Logo"
+						/>
+						<Badge variant="outline" theme="blue" size="sm" label="Beta" />
+					</div>
 				</Button>
 			</div>
 		</div>
