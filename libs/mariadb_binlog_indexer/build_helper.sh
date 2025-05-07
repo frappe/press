@@ -19,6 +19,9 @@ rm -rf dist
 rm -rf build
 cat pyproject.toml | sed -i "s/version = \"[^\"]*\"/version = \"$VERSION\"/" pyproject.toml
 
+# Install wheel
+pip install wheel
+
 # Build x86_64 wheel
 rm -rf ./mariadb_binlog_indexer/lib || true
 mkdir -p ./mariadb_binlog_indexer/lib
