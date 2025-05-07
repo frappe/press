@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 # Check if VERSION environment is set
 if [ -z "$VERSION" ]; then
   echo "ERROR: VERSION environment variable is not set"
@@ -42,5 +44,5 @@ pip wheel . --no-deps --wheel-dir dist --config-settings="--build-option=--plat-
 
 if [ -z "$LOCAL_BUILD" ]; then
   pip install build twine
-  twine upload dist/* --non-interactive
+  twine upload ./dist/* --non-interactive
 fi

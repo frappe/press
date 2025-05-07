@@ -1,8 +1,8 @@
-module test
+module mariadb_binlog_indexer
 
 go 1.24
 
-toolchain go1.24.2
+toolchain go1.24.3
 
 require (
 	github.com/marcboeker/go-duckdb/v2 v2.2.0
