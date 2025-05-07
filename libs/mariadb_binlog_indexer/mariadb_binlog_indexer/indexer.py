@@ -91,11 +91,15 @@ class Indexer:
 		# Split the time range in 30 slices
 		interval = math.ceil(((end_timestamp - start_timestamp) // 30) / 60) * 60
 		where_clause = ""
+		parameters = [interval, start_timestamp, end_timestamp, interval]
+
 		if type is not None:
-			where_clause += f"AND q.type = '{type}'"
+			where_clause += " AND q.type = ? "
+			parameters.append(type)
 
 		if database is not None:
-			where_clause += f"AND q.db_name = '{database}'"
+			where_clause += " AND q.db_name = ? "
+			parameters.append(database)
 
 		query_result = self._execute_query(
 			"db",
@@ -117,7 +121,7 @@ class Indexer:
 				{where_clause}
 			GROUP BY t.start_ts, t.end_ts, q.type
 			ORDER BY t.start_ts, q.type;""",
-			[interval, start_timestamp, end_timestamp, interval],
+			parameters,
 		)
 
 		result_map = {}
@@ -164,12 +168,16 @@ class Indexer:
 		"""
 		# First fetch all the row ids
 		where_clause = ""
+		parameters = [start_timestamp, end_timestamp]
 		if type is not None:
-			where_clause += f"AND type = '{type}'\n"
+			where_clause += " AND type = ? "
+			parameters.append(type)
 		if database is not None:
-			where_clause += f"AND db_name = '{database}'\n"
+			where_clause += " AND db_name = ? "
+			parameters.append(database)
 		if table is not None:
-			where_clause += f"AND table_name = '{table}'\n"
+			where_clause += " AND table_name = ? "
+			parameters.append(table)
 
 		row_ids = [
 			i
@@ -185,7 +193,7 @@ class Indexer:
 					AND timestamp < ?
 					{where_clause}
 				""",
-				[start_timestamp, end_timestamp],
+				parameters,
 			)
 		]
 
