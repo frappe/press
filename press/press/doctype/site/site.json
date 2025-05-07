@@ -52,6 +52,17 @@
   "column_break_34",
   "remote_private_file",
   "remote_public_file",
+  "backup_tab",
+  "logical_backup_section",
+  "skip_scheduled_logical_backups",
+  "schedule_logical_backup_at_custom_time",
+  "logical_backup_times",
+  "physical_backup_section",
+  "skip_scheduled_physical_backups",
+  "schedule_physical_backup_at_custom_time",
+  "physical_backup_times",
+  "flags1_section",
+  "allow_physical_backup_by_user",
   "tab_break_46",
   "notifications_section",
   "notify_email",
@@ -77,13 +88,11 @@
   "is_standby",
   "standby_for",
   "standby_for_product",
+  "signup_time",
   "column_break_63",
   "hybrid_saas_pool",
   "saas_communication_secret",
-  "backups_section",
-  "backup_time",
-  "column_break_zgig",
-  "skip_scheduled_backups",
+  "label",
   "tags_section",
   "tags"
  ],
@@ -123,9 +132,10 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nInstalling\nUpdating\nActive\nInactive\nBroken\nArchived\nSuspended",
+   "options": "Pending\nInstalling\nUpdating\nRecovering\nActive\nInactive\nBroken\nArchived\nSuspended",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "admin_password",
@@ -519,18 +529,6 @@
   },
   {
    "collapsible": 1,
-   "fieldname": "backups_section",
-   "fieldtype": "Section Break",
-   "label": "Backups"
-  },
-  {
-   "default": "0",
-   "fieldname": "skip_scheduled_backups",
-   "fieldtype": "Check",
-   "label": "Skip Scheduled Backups"
-  },
-  {
-   "collapsible": 1,
    "fieldname": "tags_section",
    "fieldtype": "Section Break",
    "label": "Tags"
@@ -546,15 +544,6 @@
    "fieldtype": "Link",
    "label": "Standby for Product",
    "options": "Product Trial"
-  },
-  {
-   "fieldname": "backup_time",
-   "fieldtype": "Time",
-   "label": "Backup Time"
-  },
-  {
-   "fieldname": "column_break_zgig",
-   "fieldtype": "Column Break"
   },
   {
    "default": "0",
@@ -600,6 +589,81 @@
    "fieldname": "database_access_connection_limit",
    "fieldtype": "Int",
    "label": "Database Access Connection Limit"
+  },
+  {
+   "description": "Set for sites created through SaaS flow",
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "label": "Label"
+  },
+  {
+   "fieldname": "signup_time",
+   "fieldtype": "Datetime",
+   "label": "Signup Time"
+  },
+  {
+   "fieldname": "backup_tab",
+   "fieldtype": "Tab Break",
+   "label": "Backup"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_physical_backup_by_user",
+   "fieldtype": "Check",
+   "label": "Allow Physical Backup By User"
+  },
+  {
+   "collapsible_depends_on": "eval: doc.schedule_logical_backup_at_custom_time",
+   "fieldname": "logical_backup_section",
+   "fieldtype": "Section Break",
+   "label": "Logical Backup"
+  },
+  {
+   "fieldname": "logical_backup_times",
+   "fieldtype": "Table",
+   "label": "Logical Backup Times",
+   "options": "Site Backup Time"
+  },
+  {
+   "collapsible_depends_on": "eval: doc.schedule_physical_backup_at_custom_time",
+   "fieldname": "physical_backup_section",
+   "fieldtype": "Section Break",
+   "label": "Physical Backup"
+  },
+  {
+   "default": "0",
+   "fieldname": "schedule_physical_backup_at_custom_time",
+   "fieldtype": "Check",
+   "label": "Schedule Physical Backup at Custom Time"
+  },
+  {
+   "fieldname": "physical_backup_times",
+   "fieldtype": "Table",
+   "label": "Physical Backup Times",
+   "options": "Site Backup Time"
+  },
+  {
+   "fieldname": "flags1_section",
+   "fieldtype": "Section Break",
+   "label": "Flags"
+  },
+  {
+   "default": "0",
+   "fieldname": "schedule_logical_backup_at_custom_time",
+   "fieldtype": "Check",
+   "label": "Schedule Logical Backup at Custom Time"
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_scheduled_logical_backups",
+   "fieldtype": "Check",
+   "label": "Skip Scheduled Logical Backups"
+  },
+  {
+   "default": "1",
+   "fieldname": "skip_scheduled_physical_backups",
+   "fieldtype": "Check",
+   "label": "Skip Scheduled Physical Backups"
   }
  ],
  "links": [
@@ -672,9 +736,14 @@
    "group": "Related Documents",
    "link_doctype": "Site Database User",
    "link_fieldname": "site"
+  },
+  {
+   "group": "Related Documents",
+   "link_doctype": "Physical Backup Restoration",
+   "link_fieldname": "site"
   }
  ],
- "modified": "2024-11-28 15:40:02.431631",
+ "modified": "2025-04-17 12:06:50.364785",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

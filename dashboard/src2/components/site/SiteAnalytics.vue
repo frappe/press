@@ -198,29 +198,49 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard class="sm:col-span-2" title="Frequent Slow Queries">
+				<template #action>
+					<Tooltip text="Show Detailed Reports">
+						<router-link
+							class="ml-2 mr-auto text-base text-gray-600 hover:text-gray-700"
+							:to="{ name: 'Site Performance Slow Queries' }"
+						>
+							→
+						</router-link>
+					</Tooltip>
+					<TabButtons
+						:buttons="[{ label: 'Denormalized' }, { label: 'Normalized' }]"
+						v-model="slowLogsFrequencyType"
+					/>
+				</template>
 				<BarChart
-					:key="slowLogsByCountData"
-					:data="slowLogsByCountData"
+					:key="slowLogsCountData"
+					:data="slowLogsCountData"
 					unit="queries"
 					:chartTheme="requestChartColors"
 					:loading="$resources.advancedAnalytics.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
-				<template #action>
-					<router-link
-						class="text-base text-gray-600 hover:text-gray-700"
-						:to="{ name: 'Site Performance Slow Queries' }"
-					>
-						Slow Queries Reports →
-					</router-link>
-				</template>
 			</AnalyticsCard>
 
 			<AnalyticsCard class="sm:col-span-2" title="Top Slow Queries">
+				<template #action>
+					<Tooltip text="Show Detailed Reports">
+						<router-link
+							class="ml-2 mr-auto text-base text-gray-600 hover:text-gray-700"
+							:to="{ name: 'Site Performance Slow Queries' }"
+						>
+							→
+						</router-link>
+					</Tooltip>
+					<TabButtons
+						:buttons="[{ label: 'Denormalized' }, { label: 'Normalized' }]"
+						v-model="slowLogsDurationType"
+					/>
+				</template>
 				<BarChart
-					:key="slowLogsByDurationData"
-					:data="slowLogsByDurationData"
+					:key="slowLogsDurationData"
+					:data="slowLogsDurationData"
 					unit="seconds"
 					:chartTheme="requestChartColors"
 					:loading="$resources.advancedAnalytics.loading"
@@ -248,47 +268,74 @@ export default {
 		LineChart,
 		SiteUptime,
 		AlertBanner,
-		AnalyticsCard
+		AnalyticsCard,
 	},
 	data() {
 		return {
 			duration: '24h',
 			showAdvancedAnalytics: false,
+			localTimezone: dayjs.tz.guess(),
+			slowLogsDurationType: 'Denormalized',
+			slowLogsFrequencyType: 'Denormalized',
 			durationOptions: [
 				{ label: 'Duration', value: null, disabled: true },
 				{ label: '1 hour', value: '1h' },
 				{ label: '6 hours', value: '6h' },
 				{ label: '24 hours', value: '24h' },
 				{ label: '7 days', value: '7d' },
-				{ label: '15 days', value: '15d' }
-			]
+				{ label: '15 days', value: '15d' },
+			],
 		};
 	},
 	resources: {
 		analytics() {
-			const localTimezone = dayjs.tz.guess();
 			return {
 				url: 'press.api.analytics.get',
 				params: {
 					name: this.name,
-					timezone: localTimezone,
-					duration: this.duration
+					timezone: this.localTimezone,
+					duration: this.duration,
 				},
-				auto: true
+				auto: true,
 			};
 		},
 		advancedAnalytics() {
-			const localTimezone = dayjs.tz.guess();
 			return {
 				url: 'press.api.analytics.get_advanced_analytics',
 				params: {
 					name: this.name,
-					timezone: localTimezone,
-					duration: this.duration
+					timezone: this.localTimezone,
+					duration: this.duration,
 				},
-				auto: this.showAdvancedAnalytics
+				auto: this.showAdvancedAnalytics,
 			};
-		}
+		},
+		slowLogsCount() {
+			return {
+				url: 'press.api.analytics.get_slow_logs_by_query',
+				params: {
+					name: this.name,
+					agg_type: 'count',
+					timezone: this.localTimezone,
+					duration: this.duration,
+					normalize: this.slowLogsFrequencyType === 'Normalized',
+				},
+				auto: this.showAdvancedAnalytics,
+			};
+		},
+		slowLogsDuration() {
+			return {
+				url: 'press.api.analytics.get_slow_logs_by_query',
+				params: {
+					name: this.name,
+					agg_type: 'duration',
+					timezone: this.localTimezone,
+					duration: this.duration,
+					normalize: this.slowLogsDurationType === 'Normalized',
+				},
+				auto: this.showAdvancedAnalytics,
+			};
+		},
 	},
 	computed: {
 		requestChartColors() {
@@ -302,7 +349,7 @@ export default {
 				this.$theme.colors.teal[500],
 				this.$theme.colors.cyan[500],
 				this.$theme.colors.gray[500],
-				this.$theme.colors.orange[500]
+				this.$theme.colors.orange[500],
 			];
 		},
 		usageCounterData() {
@@ -312,7 +359,7 @@ export default {
 			let plan_limit = this.$resources.analytics.data?.plan_limit;
 
 			return {
-				datasets: [data.map(d => [+new Date(d.date), d.value / 1000000])],
+				datasets: [data.map((d) => [+new Date(d.date), d.value / 1000000])],
 				// daily limit marker
 				markLine: {
 					data: [
@@ -321,15 +368,15 @@ export default {
 							yAxis: plan_limit,
 							label: {
 								formatter: '{b}: {c} seconds',
-								position: 'middle'
+								position: 'middle',
 							},
 							lineStyle: {
-								color: '#f5222d'
-							}
-						}
+								color: '#f5222d',
+							},
+						},
 					],
-					symbol: ['none', 'none']
-				}
+					symbol: ['none', 'none'],
+				},
 			};
 		},
 		requestCountData() {
@@ -337,7 +384,7 @@ export default {
 			if (!requestCount) return;
 
 			return {
-				datasets: [requestCount.map(d => [+new Date(d.date), d.value])]
+				datasets: [requestCount.map((d) => [+new Date(d.date), d.value])],
 			};
 		},
 		requestCountByPathData() {
@@ -385,19 +432,17 @@ export default {
 
 			return averageBackgroundJobDurationByMethod;
 		},
-		slowLogsByCountData() {
-			let slowLogsByCount =
-				this.$resources.advancedAnalytics.data?.slow_logs_by_count;
-			if (!slowLogsByCount) return;
+		slowLogsDurationData() {
+			const slowLogs = this.$resources.slowLogsDuration.data;
+			if (!slowLogs) return;
 
-			return slowLogsByCount;
+			return slowLogs;
 		},
-		slowLogsByDurationData() {
-			let slowLogsByDuration =
-				this.$resources.advancedAnalytics.data?.slow_logs_by_duration;
-			if (!slowLogsByDuration) return;
+		slowLogsCountData() {
+			const slowLogs = this.$resources.slowLogsCount.data;
+			if (!slowLogs) return;
 
-			return slowLogsByDuration;
+			return slowLogs;
 		},
 		requestTimeData() {
 			let requestCpuTime = this.$resources.analytics.data?.request_cpu_time;
@@ -405,8 +450,8 @@ export default {
 
 			return {
 				datasets: [
-					requestCpuTime.map(d => [+new Date(d.date), d.value / 1000000])
-				]
+					requestCpuTime.map((d) => [+new Date(d.date), d.value / 1000000]),
+				],
 			};
 		},
 		jobCountData() {
@@ -414,7 +459,7 @@ export default {
 			if (!jobCount) return;
 
 			return {
-				datasets: [jobCount.map(d => [+new Date(d.date), d.value])]
+				datasets: [jobCount.map((d) => [+new Date(d.date), d.value])],
 			};
 		},
 		jobTimeData() {
@@ -422,14 +467,16 @@ export default {
 			if (!jobCpuTime) return;
 
 			return {
-				datasets: [jobCpuTime.map(d => [+new Date(d.date), d.value / 1000000])]
+				datasets: [
+					jobCpuTime.map((d) => [+new Date(d.date), d.value / 1000000]),
+				],
 			};
-		}
+		},
 	},
 	methods: {
 		toggleAdvancedAnalytics() {
 			this.showAdvancedAnalytics = !this.showAdvancedAnalytics;
-		}
-	}
+		},
+	},
 };
 </script>

@@ -1,0 +1,97 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "prompt",
+ "creation": "2025-02-18 10:25:00.790197",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "no_of_sites",
+  "column_break_bbil",
+  "successful_backups",
+  "column_break_vwuc",
+  "available_backups",
+  "column_break_ikwc",
+  "unavailable_backups",
+  "section_break_bvmf",
+  "site_backups"
+ ],
+ "fields": [
+  {
+   "fieldname": "no_of_sites",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "No of Sites",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_bbil",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "successful_backups",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Successful Backups",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_vwuc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "available_backups",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Available Backups",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ikwc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "unavailable_backups",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Unavailable Backups",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_bvmf",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "site_backups",
+   "fieldtype": "Table",
+   "label": "Site Backups",
+   "options": "Physical Backup Group Site",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-02-18 15:14:19.059871",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Physical Backup Group",
+ "naming_rule": "Set by user",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

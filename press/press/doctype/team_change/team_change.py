@@ -42,7 +42,17 @@ class TeamChange(Document):
 				"team",
 				self.to_team,
 			)
+
 			frappe.db.set_value("Site Domain", {"site": self.document_name}, "team", self.to_team)
+			tls_certificates = frappe.get_all(
+				"Site Domain",
+				filters={"site": self.document_name},
+				fields=["tls_certificate"],
+				pluck="tls_certificate",
+			)
+			frappe.db.set_value("TLS Certificate", {"name": ["in", tls_certificates]}, "team", self.to_team)
+
+			frappe.db.set_value("Site Backup", {"site": self.document_name}, "team", self.to_team)
 
 		if self.document_type == "Release Group" and self.transfer_completed:
 			frappe.db.set_value("Release Group", self.document_name, "team", self.to_team)

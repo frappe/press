@@ -1,0 +1,119 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "PCERT-.#####",
+ "creation": "2025-02-28 21:41:15.404946",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "course",
+  "evaluator",
+  "evaluator_name",
+  "certificate_link",
+  "template",
+  "version",
+  "issue_date",
+  "column_break_xjql",
+  "team",
+  "partner_member_email",
+  "partner_member_name",
+  "free"
+ ],
+ "fields": [
+  {
+   "fieldname": "course",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Course"
+  },
+  {
+   "fieldname": "evaluator",
+   "fieldtype": "Data",
+   "label": "Evaluator"
+  },
+  {
+   "fieldname": "evaluator_name",
+   "fieldtype": "Data",
+   "label": "Evaluator Name"
+  },
+  {
+   "fieldname": "certificate_link",
+   "fieldtype": "Data",
+   "label": "Certificate Link"
+  },
+  {
+   "fieldname": "template",
+   "fieldtype": "Data",
+   "label": "Template"
+  },
+  {
+   "fieldname": "version",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Version"
+  },
+  {
+   "fieldname": "issue_date",
+   "fieldtype": "Date",
+   "label": "Issue Date"
+  },
+  {
+   "fieldname": "column_break_xjql",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "partner_member_email",
+   "fieldtype": "Data",
+   "label": "Partner Member Email"
+  },
+  {
+   "fetch_from": "partner_member_email.full_name",
+   "fieldname": "partner_member_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Partner Member Name"
+  },
+  {
+   "default": "0",
+   "fieldname": "free",
+   "fieldtype": "Check",
+   "label": "Free"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Partner Team",
+   "options": "Team"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-03-27 10:50:40.049583",
+ "modified_by": "Administrator",
+ "module": "Partner",
+ "name": "Partner Certificate",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Partner Member"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

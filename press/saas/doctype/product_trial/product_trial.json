@@ -25,8 +25,6 @@
   "standby_pool_size",
   "standby_queue_size",
   "signup_details_tab",
-  "column_break_cdhw",
-  "signup_fields",
   "email_section",
   "email_account",
   "column_break_gokr",
@@ -34,10 +32,10 @@
   "section_break_ncgc",
   "email_subject",
   "email_header_content",
+  "suspension_email_section",
+  "suspension_email_subject",
+  "suspension_email_content",
   "setup_wizard_tab",
-  "setup_wizard_completion_mode",
-  "setup_wizard_payload_generator_script",
-  "create_additional_system_user",
   "redirect_to_after_login"
  ],
  "fields": [
@@ -130,13 +128,6 @@
    "label": "Signup Details"
   },
   {
-   "description": "For timezone fields, append _tz at the end of fieldname and choose Select as fieldtype and you can leave the Options field empty. <br>\nIf you are not using <b>Setup Wizard Autocompletion</b>, you can add a password field (fieldname - <b>user_login_password</b>) to set it to the new user of site.",
-   "fieldname": "signup_fields",
-   "fieldtype": "Table",
-   "label": "Signup Fields",
-   "options": "Product Trial Signup Field"
-  },
-  {
    "default": "14",
    "fieldname": "trial_days",
    "fieldtype": "Int",
@@ -152,22 +143,7 @@
   {
    "fieldname": "setup_wizard_tab",
    "fieldtype": "Tab Break",
-   "label": "Setup Wizard"
-  },
-  {
-   "default": "manual",
-   "fieldname": "setup_wizard_completion_mode",
-   "fieldtype": "Select",
-   "label": "Setup Wizard Completion Mode",
-   "options": "manual\nauto"
-  },
-  {
-   "depends_on": "eval: doc.setup_wizard_completion_mode == \"auto\"",
-   "description": "You can write python script to generate the payload for setup wizard\n<br>\n<br>\n\n<b>Available Variables - </b><br>\na. <b>signup_details</b> : This is a dictionary and it will contain user submitted data for app trial. If the user hasn't provided any value for specific info, then the value will be null.<br>\nb. <b>team</b>: This is dictionary and will contain information regarding team.\n\n<pre>{\n  \"name\" : \"jhd8dsw\",\n  \"user\" : {\n    \"email\" : \"test@example.com\",\n    \"full_name\" : \"Rahul Roy\",\n    \"first_name\" : \"Rahul\",\n    \"last_name\" : \"Roy\",\n  },\n  \"country\" : \"India\",\n  \"currency\" : \"INR\"\n}\n</pre>\n\n<b>Expected Result - </b>\nWrite the final result (dictionary) in a variable <b>payload</b>. It will be send to site for setup wizard completion.\n<br>\n<br>\n<b>Note - </b><br>\na. Use <b>decrypt_password(..)</b> to decrypt <b>password</b> signup field.",
-   "fieldname": "setup_wizard_payload_generator_script",
-   "fieldtype": "Code",
-   "label": "Setup Wizard Payload Generator Script",
-   "options": "Python"
+   "label": "After Signup"
   },
   {
    "fieldname": "email_section",
@@ -197,7 +173,8 @@
   },
   {
    "fieldname": "section_break_ncgc",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Signup E-mail"
   },
   {
    "default": "<p><strong>You're almost done!</strong></p>\n<p>Just one quick step left to get you started with Frappe Cloud!</p>",
@@ -208,25 +185,31 @@
    "reqd": 1
   },
   {
-   "fieldname": "column_break_cdhw",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "depends_on": "eval: doc.setup_wizard_completion_mode == \"manual\"",
-   "description": "Only configurable while using manual setup wizard completion mode",
-   "fieldname": "create_additional_system_user",
-   "fieldtype": "Check",
-   "label": "Create Additional System User"
-  },
-  {
    "default": "/desk",
    "fieldname": "redirect_to_after_login",
    "fieldtype": "Data",
    "label": "Redirect To After Login",
    "reqd": 1
+  },
+  {
+   "fieldname": "suspension_email_section",
+   "fieldtype": "Section Break",
+   "label": "Suspension E-mail"
+  },
+  {
+   "default": "Your {product_title} trial just expired",
+   "fieldname": "suspension_email_subject",
+   "fieldtype": "Data",
+   "label": "Subject"
+  },
+  {
+   "default": "{% import \"templates/emails/macros.html\" as utils %}\n\n{% block content %}\n\n\t<div class=\"bg-white\">\n\t\t<p class=\"mb-6\">\n\t\t    The trial period of your {{ product.title }} site <strong>{{ site.host_name }}</strong> has ended on {{ frappe.utils.getdate(site.trial_end_date).strftime('%d %B, %Y') }}.\n\t\t    Your site will now be suspended. Choose a plan and add your billing information for your site to resume service.\n\t\t</p>\n\t\t{{ utils.button('Open Dashboard', frappe.get_url('/dashboard/sites/' + site.name)) }}\n\t\t{{ utils.separator() }}\n\t\t{{ utils.signature() }}\n\t</div>\n\n{% endblock %}\n",
+   "fieldname": "suspension_email_content",
+   "fieldtype": "HTML Editor",
+   "label": "Content"
   }
  ],
+ "grid_page_length": 50,
  "image_field": "logo",
  "index_web_pages_for_search": 1,
  "links": [
@@ -239,7 +222,7 @@
    "link_fieldname": "product_trial"
   }
  ],
- "modified": "2024-11-21 22:13:33.724250",
+ "modified": "2025-04-13 11:15:13.500479",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial",
@@ -259,6 +242,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

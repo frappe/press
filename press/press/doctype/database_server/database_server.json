@@ -15,11 +15,13 @@
   "cluster",
   "provider",
   "virtual_machine",
+  "public",
   "is_self_hosted",
   "is_server_setup",
   "is_server_prepared",
   "is_server_renamed",
-  "public",
+  "enable_physical_backup",
+  "halt_agent_jobs",
   "billing_section",
   "team",
   "column_break_11",
@@ -539,11 +541,31 @@
    "fieldtype": "Check",
    "label": "Has Data Volume",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_physical_backup",
+   "fieldtype": "Check",
+   "label": "Enable Physical Backup"
+  },
+  {
+   "default": "0",
+   "description": "Stop polling and queuing agent jobs",
+   "fieldname": "halt_agent_jobs",
+   "fieldtype": "Check",
+   "label": "Halt Agent Jobs"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-01-02 16:51:08.113931",
+ "links": [
+  {
+   "group": "Analytics",
+   "link_doctype": "Disk Performance",
+   "link_fieldname": "server"
+  }
+ ],
+ "modified": "2025-05-02 15:00:34.631435",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
@@ -574,6 +596,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

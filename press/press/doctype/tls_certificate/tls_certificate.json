@@ -11,6 +11,7 @@
   "column_break_3",
   "rsa_key_size",
   "wildcard",
+  "provider",
   "section_break_6",
   "issued_on",
   "column_break_8",
@@ -45,10 +46,12 @@
    "set_only_once": 1
   },
   {
+   "description": "Output of openssl req -noout -text -in request.csr\n",
    "fieldname": "decoded_certificate",
    "fieldtype": "Code",
    "label": "Decoded Certificate",
-   "read_only": 1
+   "read_only": 1,
+   "read_only_depends_on": "eval: doc.provider === \"Let's Encrypt\""
   },
   {
    "fieldname": "status",
@@ -103,26 +106,31 @@
    "fieldname": "certificate",
    "fieldtype": "Code",
    "label": "Certificate",
-   "read_only": 1
+   "read_only": 1,
+   "read_only_depends_on": "eval: doc.provider === \"Let's Encrypt\""
   },
   {
    "fieldname": "full_chain",
    "fieldtype": "Code",
    "label": "Full Chain",
-   "read_only": 1
+   "read_only": 1,
+   "read_only_depends_on": "eval: doc.provider == \"Let's Encrypt\""
   },
   {
    "fieldname": "intermediate_chain",
    "fieldtype": "Code",
    "label": "Intermediate Chain",
-   "read_only": 1
+   "read_only": 1,
+   "read_only_depends_on": "eval: doc.provider === \"Let's Encrypt\""
   },
   {
+   "depends_on": "eval: doc.provider !== \"Let's Encrypt\"",
+   "description": "Output of openssl genpkey -algorithm RSA -out private.key -pkeyopt rsa_keygen_bits:4096\n",
    "fieldname": "private_key",
    "fieldtype": "Code",
    "label": "Private Key",
-   "hidden": 1,
-   "read_only": 1
+   "read_only": 1,
+   "read_only_depends_on": "eval: doc.provider === \"Let's Encrypt\""
   },
   {
    "fieldname": "team",
@@ -148,11 +156,20 @@
    "fieldtype": "Int",
    "label": "Retry Count",
    "read_only": 1
+  },
+  {
+   "default": "Let's Encrypt",
+   "fieldname": "provider",
+   "fieldtype": "Select",
+   "label": "Provider",
+   "options": "Let's Encrypt\nOther",
+   "reqd": 1
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-10-17 10:43:33.881463",
+ "modified": "2025-03-30 18:03:13.270000",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "TLS Certificate",
@@ -185,6 +202,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

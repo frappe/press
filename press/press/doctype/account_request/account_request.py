@@ -4,13 +4,13 @@
 from __future__ import annotations
 
 import json
-import random
 
 import frappe
 from frappe.model.document import Document
 from frappe.utils import get_url, random_string
 
 from press.utils import get_country_info, is_valid_email_address
+from press.utils.otp import generate_otp
 from press.utils.telemetry import capture
 
 
@@ -45,6 +45,7 @@ class AccountRequest(Document):
 		no_of_users: DF.Int
 		oauth_signup: DF.Check
 		otp: DF.Data | None
+		otp_generated_at: DF.Datetime | None
 		phone_number: DF.Data | None
 		plan: DF.Link | None
 		press_roles: DF.TableMultiSelect[AccountRequestPressRole]
@@ -59,6 +60,7 @@ class AccountRequest(Document):
 		state: DF.Data | None
 		subdomain: DF.Data | None
 		team: DF.Data | None
+		unsubscribed_from_drip_emails: DF.Check
 		url_args: DF.Code | None
 	# end: auto-generated types
 
@@ -81,7 +83,10 @@ class AccountRequest(Document):
 			self.request_key = random_string(32)
 
 		if not self.otp:
-			self.otp = random.randint(10000, 99999)
+			self.otp = generate_otp()
+			self.otp_generated_at = frappe.utils.now_datetime()
+			if frappe.conf.developer_mode and frappe.local.dev_server:
+				self.otp = 111111
 
 		self.ip_address = frappe.local.request_ip
 		geo_location = self.get_country_info() or {}
@@ -97,6 +102,9 @@ class AccountRequest(Document):
 			self.is_us_eu = True
 		else:
 			self.is_us_eu = False
+
+	def validate(self):
+		self.email = self.email.strip()
 
 	def after_insert(self):
 		# Telemetry: Only capture if it's not a saas signup or invited by parent team. Also don't capture if user already have a team
@@ -138,7 +146,9 @@ class AccountRequest(Document):
 		return False
 
 	def reset_otp(self):
-		self.otp = random.randint(10000, 99999)
+		self.otp = generate_otp()
+		if frappe.conf.developer_mode and frappe.local.dev_server:
+			self.otp = 111111
 		self.save(ignore_permissions=True)
 
 	@frappe.whitelist()
@@ -216,13 +226,30 @@ class AccountRequest(Document):
 			now=True,
 		)
 
+	def send_login_mail(self):
+		if frappe.conf.developer_mode and frappe.local.dev_server:
+			print(rf"\Login OTP for {self.email}:")
+			print(self.otp)
+			print()
+			return
+
+		subject = f"{self.otp} - OTP for Frappe Cloud Login"
+		args = {
+			"otp": self.otp,
+		}
+		template = "login_otp"
+
+		frappe.sendmail(
+			recipients=self.email,
+			subject=subject,
+			template=template,
+			args=args,
+			now=True,
+		)
+
 	def get_verification_url(self):
 		if self.saas:
 			return get_url(f"/api/method/press.api.saas.validate_account_request?key={self.request_key}")
-		if self.product_trial:
-			return get_url(
-				f"/dashboard/saas/{self.product_trial}/oauth?key={self.request_key}&email={self.email}"
-			)
 		return get_url(f"/dashboard/setup-account/{self.request_key}")
 
 	@property

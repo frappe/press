@@ -9,7 +9,7 @@
 					:upload-args="{
 						doctype: 'User',
 						docname: user.name,
-						method: 'press.api.account.update_profile_picture'
+						method: 'press.api.account.update_profile_picture',
 					}"
 				>
 					<template v-slot="{ openFileSelector, uploading, progress, error }">
@@ -98,9 +98,9 @@
 					{
 						variant: 'solid',
 						label: 'Save Changes',
-						onClick: () => $resources.updateProfile.submit()
-					}
-				]
+						onClick: () => $resources.updateProfile.submit(),
+					},
+				],
 			}"
 			v-model="showProfileEditDialog"
 		>
@@ -122,12 +122,9 @@
 						variant: 'solid',
 						theme: 'red',
 						loading: $resources.disableAccount.loading,
-						onClick: () =>
-							$resources.disableAccount.submit({
-								totp_code: disableAccount2FACode
-							})
-					}
-				]
+						onClick: () => deactivateAccount(disableAccount2FACode),
+					},
+				],
 			}"
 			v-model="showDisableAccountDialog"
 		>
@@ -142,7 +139,7 @@
 						</li>
 						<li>Your account billing will be stopped</li>
 					</ul>
-					You can enable your account later anytime. Do you want to continue?
+					You can log in later to enable your account. Do you want to continue?
 				</div>
 				<FormControl
 					v-if="user.is_2fa_enabled"
@@ -162,9 +159,9 @@
 						label: 'Enable Account',
 						variant: 'solid',
 						loading: $resources.enableAccount.loading,
-						onClick: () => $resources.enableAccount.submit()
-					}
-				]
+						onClick: () => $resources.enableAccount.submit(),
+					},
+				],
 			}"
 			v-model="showEnableAccountDialog"
 		>
@@ -181,6 +178,13 @@
 				<ErrorMessage class="mt-2" :message="$resources.enableAccount.error" />
 			</template>
 		</Dialog>
+
+		<AddPrepaidCreditsDialog
+			:showMessage="showMessage"
+			v-if="showAddPrepaidCreditsDialog"
+			v-model="showAddPrepaidCreditsDialog"
+			@success="reloadAccount"
+		/>
 	</Card>
 	<TFADialog v-model="show2FADialog" />
 </template>
@@ -191,12 +195,15 @@ import { defineAsyncComponent, h } from 'vue';
 import FileUploader from '@/components/FileUploader.vue';
 import { confirmDialog, renderDialog } from '../../../utils/components';
 import TFADialog from './TFADialog.vue';
+import router from '../../../router';
+import AddPrepaidCreditsDialog from '../../billing/AddPrepaidCreditsDialog.vue';
 
 export default {
 	name: 'AccountProfile',
 	components: {
 		TFADialog,
-		FileUploader
+		FileUploader,
+		AddPrepaidCreditsDialog,
 	},
 	data() {
 		return {
@@ -204,7 +211,12 @@ export default {
 			disableAccount2FACode: '',
 			showProfileEditDialog: false,
 			showEnableAccountDialog: false,
-			showDisableAccountDialog: false
+			showDisableAccountDialog: false,
+			showAddPrepaidCreditsDialog: false,
+			showActiveServersDialog: false,
+			showMessage: false,
+			draftInvoice: {},
+			unpaidInvoices: [] | {},
 		};
 	},
 	computed: {
@@ -213,7 +225,7 @@ export default {
 		},
 		user() {
 			return this.$team?.doc?.user_info;
-		}
+		},
 	},
 	resources: {
 		updateProfile() {
@@ -223,46 +235,34 @@ export default {
 				params: {
 					first_name,
 					last_name,
-					email
+					email,
 				},
 				onSuccess() {
 					this.showProfileEditDialog = false;
 					this.notifySuccess();
-				}
+				},
 			};
 		},
 		disableAccount: {
 			url: 'press.api.account.disable_account',
-			onSuccess(data) {
+			onSuccess() {
 				this.showDisableAccountDialog = false;
 
-				if (data === 'Unpaid Invoices') {
-					const finalizeInvoicesDialog = defineAsyncComponent(() =>
-						import('../../billing/FinalizeInvoicesDialog.vue')
-					);
-					renderDialog(h(finalizeInvoicesDialog));
-				} else if (data === 'Active Servers') {
-					const activeServersDialog = defineAsyncComponent(() =>
-						import('../../ActiveServersDialog.vue')
-					);
-					renderDialog(h(activeServersDialog));
-				} else {
-					const ChurnFeedbackDialog = defineAsyncComponent(() =>
-						import('../../ChurnFeedbackDialog.vue')
-					);
+				const ChurnFeedbackDialog = defineAsyncComponent(
+					() => import('../../ChurnFeedbackDialog.vue'),
+				);
 
-					renderDialog(
-						h(ChurnFeedbackDialog, {
-							team: this.$team.doc.name,
-							onUpdated: () => {
-								toast.success('Your feedback was submitted successfully');
-							}
-						})
-					);
-					toast.success('Your account was disabled successfully');
-					this.reloadAccount();
-				}
-			}
+				renderDialog(
+					h(ChurnFeedbackDialog, {
+						team: this.$team.doc.name,
+						onUpdated: () => {
+							toast.success('Your feedback was submitted successfully');
+						},
+					}),
+				);
+				toast.success('Your account was disabled successfully');
+				this.reloadAccount();
+			},
 		},
 		enableAccount: {
 			url: 'press.api.account.enable_account',
@@ -270,8 +270,36 @@ export default {
 				toast.success('Your account was enabled successfully');
 				this.reloadAccount();
 				this.showEnableAccountDialog = false;
-			}
-		}
+			},
+		},
+		upcomingInvoice: {
+			url: 'press.api.billing.upcoming_invoice',
+			auto: true,
+			onSuccess(data) {
+				this.draftInvoice = data.upcoming_invoice;
+			},
+		},
+		unPaidInvoices: {
+			url: 'press.api.billing.get_unpaid_invoices',
+			auto: true,
+			onSuccess(data) {
+				this.unpaidInvoices = data;
+			},
+		},
+		hasActiveServers() {
+			return {
+				url: 'press.api.account.has_active_servers',
+				auto: true,
+				params: {
+					team: this.$team.doc.name,
+				},
+				onSuccess(data) {
+					if (data) {
+						this.showActiveServersDialog = true;
+					}
+				},
+			};
+		},
 	},
 	methods: {
 		reloadAccount() {
@@ -284,6 +312,79 @@ export default {
 		notifySuccess() {
 			toast.success('Your profile was updated successfully');
 		},
+		deactivateAccount(disableAccount2FACode) {
+			const currency = this.$team.doc.currency;
+			const minAmount = currency === 'INR' ? 410 : 5;
+			if (this.draftInvoice && this.draftInvoice.amount_due > minAmount) {
+				const finalizeInvoicesDialog = defineAsyncComponent(
+					() => import('../../billing/FinalizeInvoicesDialog.vue'),
+				);
+				renderDialog(h(finalizeInvoicesDialog));
+			} else if (this.unpaidInvoices) {
+				if (this.unpaidInvoices.length > 1) {
+					this.showDisableAccountDialog = false;
+					if (this.$team.doc.payment_mode === 'Prepaid Credits') {
+						this.showAddPrepaidCreditsDialog = true;
+					} else {
+						confirmDialog({
+							title: 'Multiple unpaid invoices',
+							message:
+								'You have multiple unpaid invoices. Please pay them from the invoices page',
+							primaryAction: {
+								label: 'Go to invoices',
+								variant: 'solid',
+								onClick: ({ hide }) => {
+									router.push({ name: 'BillingInvoices' });
+									hide();
+								},
+							},
+						});
+					}
+				} else {
+					let invoice = this.unpaidInvoices;
+					if (invoice.amount_due > minAmount) {
+						this.showDisableAccountDialog = false;
+						confirmDialog({
+							title: 'Clear Unpaid Invoice',
+							message: `You have an unpaid invoice of ${
+								invoice.currency === 'INR' ? '₹' : '$'
+							} ${
+								invoice.amount_due
+							}. Please clear it before disabling the account.`,
+							primaryAction: {
+								label: 'Settle it now',
+								variant: 'solid',
+								onClick: ({ hide }) => {
+									if (
+										invoice.stripe_invoice_url &&
+										this.$team.doc.payment_mode === 'Card'
+									) {
+										window.open(
+											`/api/method/press.api.client.run_doc_method?dt=Invoice&dn=${invoice.name}&method=stripe_payment_url`,
+										);
+									} else {
+										this.showAddPrepaidCreditsDialog = true;
+									}
+									hide();
+								},
+							},
+						});
+					}
+				}
+			}
+
+			// validate if any active servers
+			if (this.showActiveServersDialog) {
+				const activeServersDialog = defineAsyncComponent(
+					() => import('../../ActiveServersDialog.vue'),
+				);
+				renderDialog(h(activeServersDialog));
+				return;
+			}
+			this.$resources.disableAccount.submit({
+				totp_code: disableAccount2FACode,
+			});
+		},
 		confirmPublisherAccount() {
 			confirmDialog({
 				title: 'Become a marketplace app developer?',
@@ -293,29 +394,29 @@ export default {
 					toast.promise(
 						this.$team.setValue.submit(
 							{
-								is_developer: 1
+								is_developer: 1,
 							},
 							{
 								onSuccess: () => {
 									hide();
 									this.$router.push({
-										name: 'Marketplace App List'
+										name: 'Marketplace App List',
 									});
 								},
 								onError(e) {
 									console.error(e);
-								}
-							}
+								},
+							},
 						),
 						{
 							success: 'You can now publish apps to our Marketplace',
 							error: 'Failed to mark you as a developer',
-							loading: 'Making you a developer...'
-						}
+							loading: 'Making you a developer...',
+						},
 					);
-				}
+				},
 			});
-		}
-	}
+		},
+	},
 };
 </script>

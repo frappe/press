@@ -182,8 +182,8 @@
 				</h2>
 				<div class="mt-2 items-center">
 					<div class="col-span-2 flex w-full">
-						<TextInput
-							class="flex-1 rounded-r-none"
+						<input
+							class="dark:[color-scheme:dark] z-10 h-7 w-full flex-1 rounded rounded-r-none border border-[--surface-gray-2] bg-surface-gray-2 py-1.5 pl-2 pr-2 text-base text-ink-gray-8 placeholder-ink-gray-4 transition-colors hover:border-outline-gray-modals hover:bg-surface-gray-3 focus:border-outline-gray-4 focus:bg-surface-white focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-outline-gray-3"
 							placeholder="Subdomain"
 							v-model="subdomain"
 						/>
@@ -227,7 +227,6 @@
 				class="flex flex-col space-y-4"
 			>
 				<FormControl
-					class="checkbox"
 					type="checkbox"
 					v-model="agreedToRegionConsent"
 					:label="`I agree that the laws of the region selected by me (${selectedClusterTitle}) shall stand applicable to me and Frappe.`"
@@ -416,7 +415,6 @@ export default {
 								],
 								app_plans: appPlans,
 								cluster: this.cluster,
-								bench: this.bench ? this.selectedVersion.group.bench : null,
 								group: this.selectedVersion.group.name,
 								domain: this.options.domain,
 								subscription_plan: this.plan.name,
@@ -687,7 +685,9 @@ export default {
 			let appPlans = [];
 			for (let app of this.apps) {
 				appPlans.push(
-					`${this.selectedVersionApps.find((a) => a.app === app.app).app_title} ${
+					`${
+						this.selectedVersionApps.find((a) => a.app === app.app).app_title
+					} ${
 						app.plan?.price_inr
 							? `- <span class="text-gray-600">${this.$format.userCurrency(
 									this.$team.doc.currency == 'INR'

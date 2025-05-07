@@ -6,15 +6,17 @@
  "engine": "InnoDB",
  "field_order": [
   "status",
-  "files_availability",
   "site",
-  "job",
+  "database_name",
   "team",
+  "column_break_obsx",
+  "job",
+  "files_availability",
+  "physical",
+  "for_site_update",
   "with_files",
   "offsite",
-  "database",
-  "size",
-  "url",
+  "deactivate_site_during_backup",
   "data_7",
   "database_file",
   "database_url",
@@ -36,7 +38,11 @@
   "remote_private_file",
   "private_size",
   "section_break_21",
-  "offsite_backup"
+  "offsite_backup",
+  "section_break_hiaw",
+  "database_snapshot",
+  "column_break_hksx",
+  "snapshot_request_key"
  ],
  "fields": [
   {
@@ -68,25 +74,8 @@
    "search_index": 1
   },
   {
-   "fieldname": "database",
-   "fieldtype": "Data",
-   "label": "database",
-   "read_only": 1
-  },
-  {
-   "fieldname": "size",
-   "fieldtype": "Data",
-   "label": "size",
-   "read_only": 1
-  },
-  {
-   "fieldname": "url",
-   "fieldtype": "Data",
-   "label": "url",
-   "read_only": 1
-  },
-  {
    "default": "0",
+   "depends_on": "eval: doc.physical != 1",
    "fieldname": "with_files",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -149,10 +138,12 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval: doc.physical != 1",
    "fieldname": "data_7",
    "fieldtype": "Section Break"
   },
   {
+   "depends_on": "eval: doc.physical != 1",
    "fieldname": "data_12",
    "fieldtype": "Section Break"
   },
@@ -162,6 +153,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval: doc.physical != 1",
    "fieldname": "offsite",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -170,6 +162,7 @@
    "set_only_once": 1
   },
   {
+   "depends_on": "eval: doc.physical != 1 && doc.offsite == 1",
    "fieldname": "section_break_21",
    "fieldtype": "Section Break"
   },
@@ -246,10 +239,75 @@
    "label": "Team",
    "options": "Team",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "physical",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Physical",
+   "set_only_once": 1
+  },
+  {
+   "collapsible_depends_on": "1",
+   "depends_on": "eval: doc.physical == 1",
+   "fieldname": "section_break_hiaw",
+   "fieldtype": "Section Break",
+   "label": "Physical Backup"
+  },
+  {
+   "fieldname": "column_break_hksx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "snapshot_request_key",
+   "fieldtype": "Data",
+   "label": "Snapshot Request Key",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval: doc.physical",
+   "fieldname": "database_snapshot",
+   "fieldtype": "Link",
+   "label": "Database Snapshot",
+   "options": "Virtual Disk Snapshot",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "depends_on": "eval: doc.database_name",
+   "fieldname": "database_name",
+   "fieldtype": "Data",
+   "label": "Database Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_obsx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.physical == 1",
+   "fieldname": "for_site_update",
+   "fieldtype": "Check",
+   "label": "For Site Update"
+  },
+  {
+   "default": "0",
+   "fieldname": "deactivate_site_during_backup",
+   "fieldtype": "Check",
+   "label": "Deactivate Site During Backup",
+   "set_only_once": 1
   }
  ],
- "links": [],
- "modified": "2024-05-15 12:20:00.892082",
+ "links": [
+  {
+   "link_doctype": "Agent Job",
+   "link_fieldname": "reference_name"
+  }
+ ],
+ "modified": "2025-04-17 10:57:09.359685",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Backup",

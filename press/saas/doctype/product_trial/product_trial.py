@@ -9,9 +9,8 @@ import frappe
 import frappe.utils
 from frappe.model.document import Document
 from frappe.utils.data import get_url
-from frappe.utils.momentjs import get_all_timezones
 
-from press.utils import log_error
+from press.utils import log_error, validate_subdomain
 from press.utils.unique_name_generator import generate as generate_random_name
 
 
@@ -25,12 +24,8 @@ class ProductTrial(Document):
 		from frappe.types import DF
 
 		from press.saas.doctype.product_trial_app.product_trial_app import ProductTrialApp
-		from press.saas.doctype.product_trial_signup_field.product_trial_signup_field import (
-			ProductTrialSignupField,
-		)
 
 		apps: DF.Table[ProductTrialApp]
-		create_additional_system_user: DF.Check
 		domain: DF.Link
 		email_account: DF.Link | None
 		email_full_logo: DF.AttachImage | None
@@ -41,11 +36,10 @@ class ProductTrial(Document):
 		published: DF.Check
 		redirect_to_after_login: DF.Data
 		release_group: DF.Link
-		setup_wizard_completion_mode: DF.Literal["manual", "auto"]
-		setup_wizard_payload_generator_script: DF.Code | None
-		signup_fields: DF.Table[ProductTrialSignupField]
 		standby_pool_size: DF.Int
 		standby_queue_size: DF.Int
+		suspension_email_content: DF.HTMLEditor | None
+		suspension_email_subject: DF.Data | None
 		title: DF.Data
 		trial_days: DF.Int
 		trial_plan: DF.Link
@@ -60,31 +54,10 @@ class ProductTrial(Document):
 		"redirect_to_after_login",
 	)
 
-	USER_LOGIN_PASSWORD_FIELD = "user_login_password"
-
 	def get_doc(self, doc):
 		if not self.published:
 			frappe.throw("Not permitted")
 
-		def _parse_options(field):
-			if field.fieldtype != "Select":
-				return []
-			if field.fieldname.endswith("_tz"):
-				return get_all_timezones()
-			if not field.options:
-				return []
-			return [option for option in ((field.options or "").split("\n")) if option]
-
-		doc.signup_fields = [
-			{
-				"label": field.label,
-				"fieldname": field.fieldname,
-				"fieldtype": field.fieldtype,
-				"options": _parse_options(field),
-				"required": field.required,
-			}
-			for field in self.signup_fields
-		]
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
 		return doc
 
@@ -95,53 +68,49 @@ class ProductTrial(Document):
 		if not plan.is_trial_plan:
 			frappe.throw("Selected plan is not a trial plan")
 
-		for field in self.signup_fields:
-			if field.fieldname == self.USER_LOGIN_PASSWORD_FIELD:
-				if not field.required:
-					frappe.throw(f"{self.USER_LOGIN_PASSWORD_FIELD} field should be marked as required")
-				if field.fieldtype != "Password":
-					frappe.throw(f"{self.USER_LOGIN_PASSWORD_FIELD} field should be of type Password")
-
 		if not self.redirect_to_after_login.startswith("/"):
 			frappe.throw("Redirection route after login should start with /")
 
-	def setup_trial_site(self, team, plan, cluster=None, account_request=None):
-		from press.press.doctype.site.site import get_plan_config
+	def setup_trial_site(self, subdomain, team, cluster=None, account_request=None):
+		from press.press.doctype.site.site import Site, get_plan_config
+
+		validate_subdomain(subdomain)
+		Site.exists(subdomain, self.domain)
+
+		site_domain = f"{subdomain}.{self.domain}"
 
 		standby_site = self.get_standby_site(cluster)
-		team_record = frappe.get_doc("Team", team)
+
 		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
 		site = None
 		agent_job_name = None
-		current_user = frappe.session.user
-		apps_site_config = get_app_subscriptions_site_config([d.app for d in self.apps])
-		"""
-		We have set the current user to "Administrator" temporarily
-		to bypass the site creation validation
-		"""
-		frappe.set_user("Administrator")
+		plan = self.trial_plan
+
 		if standby_site:
 			site = frappe.get_doc("Site", standby_site)
 			site.is_standby = False
-			site.team = team_record.name
+			site.team = team
 			site.trial_end_date = trial_end_date
 			site.account_request = account_request
+			apps_site_config = get_app_subscriptions_site_config([d.app for d in self.apps], standby_site)
 			site._update_configuration(apps_site_config, save=False)
 			site._update_configuration(get_plan_config(plan), save=False)
-			site.save(ignore_permissions=True)
+			site.signup_time = frappe.utils.now()
+			site.generate_saas_communication_secret(create_agent_job=True, save=False)
+			site.save()  # Save is needed for create_subscription to work TODO: remove this
 			site.create_subscription(plan)
-			site.generate_saas_communication_secret(create_agent_job=True, save=True)
-			if self.create_additional_system_user:
-				agent_job_name = site.create_user_with_team_info()
+			site.reload()
+			self.set_site_domain(site, site_domain)
 		else:
 			# Create a site in the cluster, if standby site is not available
 			apps = [{"app": d.app} for d in self.apps]
 			is_frappe_app_present = any(d["app"] == "frappe" for d in apps)
 			if not is_frappe_app_present:
 				apps.insert(0, {"app": "frappe"})
+
 			site = frappe.get_doc(
 				doctype="Site",
-				subdomain=self.get_unique_site_name(),
+				subdomain=subdomain,
 				domain=self.domain,
 				group=self.release_group,
 				cluster=cluster,
@@ -152,16 +121,15 @@ class ProductTrial(Document):
 				team=team,
 				apps=apps,
 				trial_end_date=trial_end_date,
+				signup_time=frappe.utils.now(),
 			)
+			apps_site_config = get_app_subscriptions_site_config([d.app for d in self.apps], site.name)
 			site._update_configuration(apps_site_config, save=False)
 			site._update_configuration(get_plan_config(plan), save=False)
 			site.generate_saas_communication_secret(create_agent_job=False, save=False)
-			if self.setup_wizard_completion_mode == "auto" or not self.create_additional_system_user:
-				site.flags.ignore_additional_system_user_creation = True
-			site.insert(ignore_permissions=True)
+			site.insert()
 			agent_job_name = site.flags.get("new_site_agent_job_name", None)
 
-		frappe.set_user(current_user)
 		return site, agent_job_name, bool(standby_site)
 
 	def get_proxy_servers_for_available_clusters(self):
@@ -186,6 +154,16 @@ class ProductTrial(Document):
 				proxy_servers_for_available_clusters[proxy_server_name] = cluster
 
 		return proxy_servers_for_available_clusters
+
+	def set_site_domain(self, site: Site, site_domain: str):
+		if not site_domain:
+			return
+
+		if site.name == site_domain or site.host_name == site_domain:
+			return
+
+		site.add_domain_for_product_site(site_domain)
+		site.add_domain_to_config(site_domain)
 
 	def get_available_clusters(self):
 		release_group = frappe.get_doc("Release Group", self.release_group)
@@ -247,12 +225,14 @@ class ProductTrial(Document):
 	def create_standby_site(self, cluster):
 		administrator = frappe.db.get_value("Team", {"user": "Administrator"}, "name")
 		apps = [{"app": d.app} for d in self.apps]
+		server = self.get_server_from_cluster(cluster)
 		site = frappe.get_doc(
 			doctype="Site",
 			subdomain=self.get_unique_site_name(),
 			domain=self.domain,
 			group=self.release_group,
 			cluster=cluster,
+			server=server,
 			is_standby=True,
 			standby_for_product=self.name,
 			team=administrator,
@@ -270,32 +250,64 @@ class ProductTrial(Document):
 				"status": "Active",
 			},
 		)
-		# sites that are in pending state created in the last hour
-		recent_pending_standby_sites = frappe.db.count(
+		# sites that are created in the last hour
+		recent_standby_sites = frappe.db.count(
 			"Site",
 			{
 				"cluster": cluster,
 				"is_standby": 1,
 				"standby_for_product": self.name,
-				"status": ("in", ["Pending", "Installing"]),
+				"status": ("not in", ["Archived", "Suspended"]),
 				"creation": (">", frappe.utils.add_to_date(None, hours=-1)),
 			},
 		)
-		return active_standby_sites + recent_pending_standby_sites
+		return active_standby_sites + recent_standby_sites
 
 	def get_unique_site_name(self):
-		subdomain = generate_random_name()
+		subdomain = f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}"
 		filters = {
 			"subdomain": subdomain,
 			"domain": self.domain,
 			"status": ("!=", "Archived"),
 		}
 		while frappe.db.exists("Site", filters):
-			subdomain = generate_random_name()
+			subdomain = f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}"
 		return subdomain
 
+	def get_server_from_cluster(self, cluster):
+		"""Return the server with the least number of standby sites in the cluster"""
 
-def get_app_subscriptions_site_config(apps: list[str]):
+		ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
+		Server = frappe.qb.DocType("Server")
+
+		servers = (
+			frappe.qb.from_(ReleaseGroupServer)
+			.select(ReleaseGroupServer.server)
+			.where(ReleaseGroupServer.parent == self.release_group)
+			.join(Server)
+			.on(Server.name == ReleaseGroupServer.server)
+			.where(Server.cluster == cluster)
+			.run(pluck="server")
+		)
+
+		server_sites = {}
+		for server in servers:
+			server_sites[server] = frappe.db.count(
+				"Site",
+				{
+					"server": server,
+					"status": ("!=", "Archived"),
+					"is_standby": 1,
+				},
+			)
+
+		# get the server with the least number of sites
+		return min(server_sites, key=server_sites.get)
+
+
+def get_app_subscriptions_site_config(apps: list[str], site: str | None = None) -> dict:
+	from press.utils import get_current_team
+
 	subscriptions = []
 	site_config = {}
 
@@ -313,8 +325,9 @@ def get_app_subscriptions_site_config(apps: list[str]):
 					"document_name": app,
 					"plan_type": "Marketplace App Plan",
 					"plan": free_plan[0],
-					"enabled": 0,
-					"team": frappe.get_value("Team", {"user": "Administrator"}, "name"),
+					"site": site,
+					"enabled": 1,
+					"team": get_current_team(),
 				}
 			).insert(ignore_permissions=True)
 
@@ -337,8 +350,13 @@ def replenish_standby_sites():
 		try:
 			product.create_standby_sites_in_each_cluster()
 			frappe.db.commit()
-		except Exception:
-			log_error("Replenish Standby Sites Error", product=product.name)
+		except Exception as e:
+			log_error(
+				"Replenish Standby Sites Error",
+				data=e,
+				reference_doctype="Product Trial",
+				reference_name=product.name,
+			)
 			frappe.db.rollback()
 
 
@@ -369,4 +387,89 @@ def send_verification_mail_for_login(email: str, product: str, code: str):
 		template="product_trial_verify_account",
 		args=args,
 		now=True,
+	)
+
+
+def sync_product_site_users():
+	"""Fetch and sync users from product sites, so that they can be used for login to the site from FC."""
+
+	product_groups = frappe.db.get_all(
+		"Product Trial", {"published": 1}, ["release_group"], pluck="release_group"
+	)
+	product_benches = frappe.get_all(
+		"Bench", {"group": ("in", product_groups), "status": "Active"}, pluck="name"
+	)
+	frappe.enqueue(
+		"press.saas.doctype.product_trial.product_trial._sync_product_site_users",
+		queue="short",
+		product_benches=product_benches,
+		job_id="sync_product_site_users",
+		deduplicate=True,
+		enqueue_after_commit=True,
+	)
+	frappe.db.commit()
+
+
+def _sync_product_site_users(product_benches):
+	for bench_name in product_benches:
+		bench = frappe.get_doc("Bench", bench_name)
+		# Skip syncing analytics for benches that have been archived (after the job was enqueued)
+		if bench.status != "Active":
+			return
+		try:
+			bench.sync_product_site_users()
+			frappe.db.commit()
+		except Exception:
+			log_error(
+				"Bench Analytics Sync Error",
+				bench=bench.name,
+				reference_doctype="Bench",
+				reference_name=bench.name,
+			)
+			frappe.db.rollback()
+
+
+def send_suspend_mail(site: str, product: str) -> None:
+	"""Send suspension mail to the site owner."""
+
+	site = frappe.db.get_value("Site", site, ["team", "trial_end_date", "name", "host_name"], as_dict=True)
+	product = frappe.db.get_value(
+		"Product Trial",
+		product,
+		["title", "suspension_email_subject", "suspension_email_content", "email_full_logo", "logo"],
+		as_dict=True,
+	)
+
+	if not site or not product:
+		return
+
+	sender = ""
+	subject = (
+		product.suspension_email_subject.format(product_title=product.title)
+		or f"Your {product.title} site is expired"
+	)
+	recipient = frappe.get_value("Team", site.team, "user")
+	args = {}
+
+	# TODO: enable it when we use the full logo
+	# if product.email_full_logo:
+	# 	args.update({"image_path": get_url(product.email_full_logo, True)})
+	if product.logo:
+		args.update({"logo": get_url(product.logo, True), "title": product.title})
+	if product.email_account:
+		sender = frappe.get_value("Email Account", product.email_account, "email_id")
+
+	context = {
+		"site": site,
+		"product": product,
+	}
+	message = frappe.render_template(product.suspension_email_content, context)
+	args.update({"message": message})
+
+	frappe.sendmail(
+		sender=sender,
+		recipients=recipient,
+		subject=subject,
+		template="product_trial_email",
+		args=args,
 	)

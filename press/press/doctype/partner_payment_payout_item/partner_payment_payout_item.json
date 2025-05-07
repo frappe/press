@@ -1,0 +1,90 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-01-20 14:16:33.396639",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "transaction_id",
+  "posting_date",
+  "amount",
+  "column_break_ayfd",
+  "commission_amount",
+  "amount_in_local_currency",
+  "net_amount",
+  "exchange_rate"
+ ],
+ "fields": [
+  {
+   "fieldname": "transaction_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Transaction Id",
+   "options": "Payment Partner Transaction",
+   "reqd": 1
+  },
+  {
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Posting Date"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Amount(USD)"
+  },
+  {
+   "fieldname": "column_break_ayfd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "commission_amount",
+   "fieldtype": "Currency",
+   "hidden": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Commission Amount"
+  },
+  {
+   "fieldname": "amount_in_local_currency",
+   "fieldtype": "Currency",
+   "hidden": 1,
+   "label": "Amount(LC)"
+  },
+  {
+   "fieldname": "net_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Net Amount"
+  },
+  {
+   "fetch_from": "transaction_id.exchange_rate",
+   "fieldname": "exchange_rate",
+   "fieldtype": "Float",
+   "label": "Exchange Rate"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-03-26 09:07:18.191183",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Partner Payment Payout Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

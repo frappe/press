@@ -7,14 +7,13 @@ from typing import Any, Optional, TypedDict
 
 import frappe
 
-PackageManagers = TypedDict(
-	"PackageManagers",
-	{
-		"repo_path": str,
-		"pyproject": Optional[dict[str, Any]],
-		"packagejsons": list[dict[str, Any]],
-	},
-)
+
+class PackageManagers(TypedDict):
+	repo_path: str
+	pyproject: Optional[dict[str, Any]]
+	packagejsons: list[dict[str, Any]]
+
+
 PackageManagerFiles = dict[str, PackageManagers]
 
 
@@ -97,9 +96,7 @@ def load_package_json(app: str, package_json_path: str):
 			return json.load(f)
 		except json.JSONDecodeError:
 			# Do not edit without updating deploy_notifications.py
-			raise Exception(
-				"App has invalid package.json file", app, package_json_path
-			) from None
+			raise Exception("App has invalid package.json file", app, package_json_path) from None
 
 
 def get_error_key(error_substring: str | list[str]) -> str:
@@ -131,8 +128,7 @@ def is_suspended() -> bool:
 	return bool(frappe.db.get_single_value("Press Settings", "suspend_builds"))
 
 
-class BuildValidationError(frappe.ValidationError):
-	...
+class BuildValidationError(frappe.ValidationError): ...
 
 
 def get_build_server(group: str | None = None) -> str | None:
@@ -168,14 +164,14 @@ def get_build_server_with_least_active_builds() -> str | None:
 	build_count = get_active_build_count_by_build_server()
 
 	# Build server might not be in build_count, or might be inactive
-	build_count_tuples = [(s, build_count[s]) for s in build_servers]
+	build_count_tuples = [(s, build_count.get(s, 0)) for s in build_servers]
 	build_count_tuples.sort(key=lambda x: x[1])
 	return build_count_tuples[0][0]
 
 
 def get_active_build_count_by_build_server():
 	build_servers = frappe.get_all(
-		"Deploy Candidate",
+		"Deploy Candidate Build",
 		fields=["build_server"],
 		filters={
 			"status": ["in", ["Running", "Preparing"]],

@@ -3,17 +3,19 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, Literal
 
 import frappe
+import frappe.utils
 from frappe.core.doctype.version.version import get_diff
 from frappe.core.utils import find
 
+from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
 	DatabaseServerMariaDBVariable,
 )
-from press.press.doctype.server.server import BaseServer
+from press.press.doctype.server.server import Agent, BaseServer
 from press.runner import Ansible
 from press.utils import log_error
 
@@ -38,8 +40,10 @@ class DatabaseServer(BaseServer):
 		auto_add_storage_min: DF.Int
 		cluster: DF.Link | None
 		domain: DF.Link | None
+		enable_physical_backup: DF.Check
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
+		halt_agent_jobs: DF.Check
 		has_data_volume: DF.Check
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
@@ -88,6 +92,28 @@ class DatabaseServer(BaseServer):
 		title: DF.Data | None
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
+
+	"""
+	`dynamic` is used to indicate if the variable can be applied on running server
+	For applying non-dynamic variables, we need to restart the server
+
+	---
+
+	`skippable` is used to indicate if the variable is of `skip` type
+	skip is to add a `skip_` prefix to the variable.
+
+	It basically enables/disables something.
+	Only some variables have it.
+
+	Eg: log_bin . Putting skip_log_bin in config turns off binary logging
+
+	---
+
+	`persist` is to make the variable persist in config file.
+	Otherwise, mariadb restart will make config change go away.
+
+	In hindsight, persist should be on by default
+	"""
 
 	def validate(self):
 		super().validate()
@@ -144,6 +170,74 @@ class DatabaseServer(BaseServer):
 				except Exception:
 					frappe.log_error("Database Subscription Creation Error")
 
+	def get_doc(self, doc):
+		doc = super().get_doc(doc)
+		doc.mariadb_variables = {
+			"innodb_buffer_pool_size": self.get_mariadb_variable_value(
+				"innodb_buffer_pool_size", return_default_if_not_found=True
+			),
+			"max_connections": frappe.utils.cint(
+				self.get_mariadb_variable_value("max_connections", return_default_if_not_found=True)
+			),
+		}
+		doc.mariadb_variables_recommended_values = {
+			"innodb_buffer_pool_size": self.recommended_innodb_buffer_pool_size,
+			"max_connections": max(50, self.recommended_max_db_connections),
+		}
+		return doc
+
+	def get_actions(self):
+		server_actions = super().get_actions()
+		server_type = "database server"
+		actions = [
+			{
+				"action": "Enable Performance Schema",
+				"description": "Activate for enhanced database insights",
+				"button_label": "Enable",
+				"condition": self.status == "Active" and not self.is_performance_schema_enabled,
+				"doc_method": "enable_performance_schema",
+				"group": f"{server_type.title()} Actions",
+			},
+			{
+				"action": "Disable Performance Schema",
+				"description": "Disable to reduce extra overhead",
+				"button_label": "Disable",
+				"condition": self.status == "Active" and self.is_performance_schema_enabled,
+				"doc_method": "disable_performance_schema",
+				"group": f"{server_type.title()} Actions",
+			},
+			{
+				"action": "Update InnoDB Buffer Pool Size",
+				"description": "Increase/Decrease InnoDB Buffer Pool Size",
+				"button_label": "Update",
+				"condition": self.status == "Active",
+				"doc_method": "update_innodb_buffer_pool_size",
+				"group": f"{server_type.title()} Actions",
+			},
+			{
+				"action": "Update Max DB Connections",
+				"description": "Increase/Decrease Max DB Connections",
+				"button_label": "Update",
+				"condition": self.status == "Active",
+				"doc_method": "update_max_db_connections",
+				"group": f"{server_type.title()} Actions",
+			},
+			{
+				"action": "View Database Configuration",
+				"description": "View Database Configuration",
+				"button_label": "View",
+				"condition": self.status == "Active",
+				"doc_method": "get_mariadb_variables",
+				"group": f"{server_type.title()} Actions",
+			},
+		]
+
+		for action in actions:
+			action["server_doctype"] = self.doctype
+			action["server_name"] = self.name
+
+		return [action for action in actions if action.get("condition", True)] + server_actions
+
 	def update_memory_limits(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_update_memory_limits", enqueue_after_commit=True)
 
@@ -168,6 +262,9 @@ class DatabaseServer(BaseServer):
 			log_error("Database Server Update Memory Limits Error", server=self.name)
 
 	def update_mariadb_system_variables(self):
+		variables_to_update = self.get_variables_to_update()
+		if not variables_to_update:
+			return
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
@@ -311,31 +408,111 @@ class DatabaseServer(BaseServer):
 		if play.status == "Failure":
 			log_error("MariaDB Upgrade Error", server=self.name)
 
-	def add_mariadb_variable(
+	def add_or_update_mariadb_variable(  # noqa: C901
 		self,
 		variable: str,
-		value_type: str,
-		value: Any,
+		value_type: Literal["value_int", "value_float", "value_str"],
+		value: Any = None,
 		skip: bool = False,
 		persist: bool = True,
+		save: bool = True,
+		avoid_update_if_exists: bool = False,
 	):
 		"""Add or update MariaDB variable on the server"""
+		if not skip and not value:
+			frappe.throw("For non-skippable variables, value is mandatory")
+
 		existing = find(self.mariadb_system_variables, lambda x: x.mariadb_variable == variable)
 		if existing:
-			existing.set(value_type, value)
-			existing.set("skip", skip)
-			existing.set("persist", persist)
+			if not avoid_update_if_exists:
+				existing.set("skip", skip)
+				if not skip:
+					existing.set(value_type, value)
+				existing.set("persist", persist)
 		else:
+			data = {
+				"mariadb_variable": variable,
+				"skip": skip,
+				"persist": persist,
+			}
+			if not skip:
+				data.update({value_type: value})
+
 			self.append(
 				"mariadb_system_variables",
-				{
-					"mariadb_variable": variable,
-					value_type: value,
-					"skip": skip,
-					"persist": persist,
-				},
+				data,
 			)
-		self.save()
+
+		"""
+		If it's `performance_schema` variable and set to 1 or ON
+		ensure to set other variables if not available
+		"""
+		if variable == "performance_schema":
+			if value in (1, "1", "ON"):
+				for key, value in PERFORMANCE_SCHEMA_VARIABLES.items():
+					if key == "performance_schema":
+						continue
+
+					self.add_or_update_mariadb_variable(
+						key, "value_str", value, skip=False, persist=True, avoid_update_if_exists=True
+					)
+
+				self.is_performance_schema_enabled = True
+			elif value in (0, "0", "OFF"):
+				self.is_performance_schema_enabled = False
+
+		if save:
+			self.save()
+
+	@dashboard_whitelist()
+	def get_mariadb_variable_value(
+		self, variable: str, return_default_if_not_found: bool = False
+	) -> str | int | float | None:
+		existing = find(self.mariadb_system_variables, lambda x: x.mariadb_variable == variable)
+		if not existing:
+			return None
+
+		variable_datatype = frappe.db.get_value("MariaDB Variable", existing.mariadb_variable, "datatype")
+		if variable_datatype == "Int":
+			return existing.value_int
+		if variable_datatype == "Float":
+			return existing.value_float
+		if variable_datatype == "Str":
+			return existing.value_str
+
+		if return_default_if_not_found:
+			# Ref : https://github.com/frappe/press/blob/master/press/playbooks/roles/mariadb/templates/mariadb.cnf
+			match variable:
+				case "innodb_buffer_pool_size":
+					return int(self.ram_for_mariadb * 0.65)
+				case "max_connections":
+					return 200
+		return None
+
+	@dashboard_whitelist()
+	def update_innodb_buffer_pool_size(self, size_mb: int):
+		# InnoDB need to be at least 20% of RAM
+		if size_mb < int(self.ram_for_mariadb * 0.2):
+			frappe.throw(f"InnoDB Buffer Size cannot be less than {int(self.ram_for_mariadb * 0.2)}MB.")
+
+		# Hard limit 70% of Memory
+		if size_mb > int(self.ram_for_mariadb * 0.70):
+			frappe.throw(
+				f"InnoDB Buffer Size cannot be greater than {int(self.ram_for_mariadb * 0.70)}MB. If you need larger InnoDB Buffer Size, please increase memory of database server."
+			)
+		self.add_or_update_mariadb_variable("innodb_buffer_pool_size", "value_int", size_mb, save=True)
+
+	@dashboard_whitelist()
+	def update_max_db_connections(self, max_connections: int):
+		max_possible_connections = int(self.ram_for_mariadb / self.memory_per_db_connection)
+		if max_connections > max_possible_connections:
+			frappe.throw(
+				f"Max Connections cannot be greater than {max_possible_connections}. If you need more connections, please increase memory of database server."
+			)
+		if max_connections < 10:
+			frappe.throw("Max Connections cannot be less than 10")
+
+		self.add_or_update_mariadb_variable("max_connections", "value_str", str(max_connections), save=True)
 
 	def validate_server_id(self):
 		if self.is_new() and not self.server_id:
@@ -665,42 +842,17 @@ class DatabaseServer(BaseServer):
 			log_error("Database Server Password Reset Exception", server=self.as_dict())
 			raise
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def enable_performance_schema(self):
-		for key, value in PERFORMANCE_SCHEMA_VARIABLES.items():
-			if isinstance(value, int):
-				type_key = "value_int"
-			elif isinstance(value, str):
-				type_key = "value_str"
-
-			existing_variable = find(self.mariadb_system_variables, lambda x: x.mariadb_variable == key)
-
-			if existing_variable:
-				existing_variable.set(type_key, value)
-			else:
-				self.append(
-					"mariadb_system_variables",
-					{"mariadb_variable": key, type_key: value, "persist": True},
-				)
-
-		self.is_performance_schema_enabled = True
-		self.save()
-
-	@frappe.whitelist()
-	def disable_performance_schema(self):
-		existing_variable = find(
-			self.mariadb_system_variables, lambda x: x.mariadb_variable == "performance_schema"
+		self.add_or_update_mariadb_variable(
+			"performance_schema", "value_str", "1", skip=False, persist=True, save=True
 		)
-		if existing_variable:
-			existing_variable.value_str = "OFF"
-		else:
-			self.append(
-				"mariadb_system_variables",
-				{"mariadb_variable": "performance_schema", "value_str": "OFF", "persist": True},
-			)
 
-		self.is_performance_schema_enabled = False
-		self.save()
+	@dashboard_whitelist()
+	def disable_performance_schema(self):
+		self.add_or_update_mariadb_variable(
+			"performance_schema", "value_str", "OFF", skip=False, persist=True, save=True
+		)
 
 	def reset_root_password_secondary(self):
 		primary = frappe.get_doc("Database Server", self.primary)
@@ -862,9 +1014,80 @@ class DatabaseServer(BaseServer):
 			log_error("Database Server Rename Exception", server=self.as_dict())
 		self.save()
 
+	system_reserved_memory: int = 700
+	"""
+	OS : 500 MB
+	Agent + Redis Server : ~100 MB
+	Filebeat : ~100 MB
+	"""
+
+	memory_per_db_connection: int = 35
+	"""
+	Per DB Connection Memory : ~35MB
+	- sort_buffer_size : 2MB
+	- read_buffer_size : 0.13MB
+	- read_rnd_buffer_size : 0.26MB
+	- join_buffer_size : 0.26MB
+	- thread_stack : 0.29MB
+	- binlog_cache_size : 0.03MB
+	- max_heap_table_size : 32MB
+
+	https://github.com/frappe/press/blob/master/press/playbooks/roles/mariadb/templates/mariadb.cnf
+	"""
+
+	@property
+	def key_buffer_size(self):
+		"""
+		key-buffer-size :
+		- If server has 4GB Ram, set to 32MB (Default set by press)
+		- Else set to 128MB
+
+		Database Server should have 1:100 ratio for Key Reads and Key Read Requests on MyISAM tables
+		"""
+		if self.ram_for_mariadb > 4096:
+			return 128
+
+		return 32
+
+	@property
+	def base_memory_mariadb(self):
+		"""
+		Base Memory
+		- key_buffer_size +
+		- query_cache_size : 0MB
+		- tmp_table_size : 32MB (applies to internal temporary tables created during query execution)
+		- innodb_log_buffer_size : 16MB
+
+		https://github.com/frappe/press/blob/master/press/playbooks/roles/mariadb/templates/mariadb.cnf
+		"""
+		return self.key_buffer_size + 32 + 16
+
+	@property
+	def recommended_max_db_connections(self):
+		"""
+		Based on historical data, the simple formula for recommending max_connections is:
+		5 DB Users per GB of RAM
+
+		e.g. For 4GB of server, this will be 20
+
+		But, set lower bound of 50 connections
+		"""
+		return 5 * round(self.ram / 1024)
+
 	@property
 	def ram_for_mariadb(self):
-		return self.real_ram - 700  # OS and other services
+		return self.real_ram - self.system_reserved_memory
+
+	@property
+	def recommended_innodb_buffer_pool_size(self):
+		return min(
+			int(
+				self.ram_for_mariadb
+				- self.base_memory_mariadb
+				- self.recommended_max_db_connections * self.memory_per_db_connection
+			),
+			int(self.ram_for_mariadb * 0.65),
+		)
 
 	@frappe.whitelist()
 	def adjust_memory_config(self):
@@ -873,13 +1096,35 @@ class DatabaseServer(BaseServer):
 
 		self.memory_high = round(max(self.ram_for_mariadb / 1024 - 1, 1), 3)
 		self.memory_max = round(max(self.ram_for_mariadb / 1024, 2), 3)
-		self.save()
 
-		self.add_mariadb_variable(
+		max_recommended_connections = max(50, self.recommended_max_db_connections)
+		# Check if we can add some extra connections
+		if self.recommended_innodb_buffer_pool_size < int(self.ram_for_mariadb * 0.65):
+			extra_connections = round(
+				(self.recommended_innodb_buffer_pool_size - int(self.ram_for_mariadb * 0.65))
+				/ self.memory_per_db_connection
+			)
+			max_recommended_connections += extra_connections
+
+		self.add_or_update_mariadb_variable(
 			"innodb_buffer_pool_size",
 			"value_int",
-			int(self.ram_for_mariadb * 0.65),  # will be rounded up based on chunk_size
+			self.recommended_innodb_buffer_pool_size,
+			save=False,
 		)
+
+		existing_max_connections = frappe.utils.cint(self.get_mariadb_variable_value("max_connections"))
+		if existing_max_connections is None:
+			existing_max_connections = 0
+
+		# Avoid setting max_connections to a lower value, if it's already set to a higher value
+		# User might have changed the value in the past, and we don't want to override it
+		if max_recommended_connections > existing_max_connections:
+			self.add_or_update_mariadb_variable(
+				"max_connections", "value_str", str(max_recommended_connections), save=False
+			)
+		self.add_or_update_mariadb_variable("key_buffer_size", "value_int", self.key_buffer_size, save=False)
+		self.save()
 
 	@frappe.whitelist()
 	def reconfigure_mariadb_exporter(self):
@@ -942,6 +1187,14 @@ class DatabaseServer(BaseServer):
 				self.memory_allocator_version = query_result[0][0]["Value"]
 				self.save()
 
+	@dashboard_whitelist()
+	def get_mariadb_variables(self):
+		try:
+			agent = Agent(self.name, "Database Server")
+			return agent.fetch_database_variables()
+		except Exception:
+			frappe.throw("Failed to fetch MariaDB Variables. Please try again.")
+
 	@property
 	def mariadb_depends_on_mounts(self):
 		mount_points = set(mount.mount_point for mount in self.mounts)
@@ -964,3 +1217,20 @@ PERFORMANCE_SCHEMA_VARIABLES = {
 	"performance-schema-consumer-events-waits-history": "ON",
 	"performance-schema-consumer-events-waits-history-long": "ON",
 }
+
+
+def monitor_disk_performance():
+	databases = frappe.db.get_all(
+		"Database Server",
+		filters={"status": "Active", "is_server_setup": 1, "is_self_hosted": 0},
+		pluck="name",
+	)
+	frappe.enqueue(
+		"press.press.doctype.disk_performance.disk_performance.check_disk_read_write_latency",
+		servers=databases,
+		server_type="db",
+		deduplicate=True,
+		queue="long",
+		job_id="monitor_disk_performance||database",
+		timeout=3600,
+	)

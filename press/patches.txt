@@ -138,3 +138,8 @@ press.patches.v0_7_0.set_label_for_site_database_user
 press.press.doctype.press_settings.patches.set_redis_cache_size
 press.press.doctype.virtual_machine.patches.set_root_disk_size
 press.press.doctype.virtual_machine_image.patches.set_root_size
+press.patches.v0_7_0.fix_team_for_tls_certificates
+press.press.doctype.press_settings.patches.set_minimum_rebuild_memory
+press.press.doctype.app_patch.patches.set_archived_patch_on_archived_bench
+press.patches.v0_7_0.add_site_backup_times_for_configured_ones
+press.patches.v0_7_0.rename_site_skip_scheduled_backups_field

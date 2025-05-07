@@ -8,88 +8,153 @@
 	</div>
 	<div class="flex h-screen overflow-hidden sm:bg-gray-50" v-else>
 		<div class="w-full overflow-auto">
-			<SaaSLoginBox
-				v-if="this.$resources?.siteRequest?.doc?.status === 'Site Created'"
-				title="Logging in to site"
-				:subtitle="this.$resources?.siteRequest?.doc?.site"
-				:logo="saasProduct?.logo"
+			<LoginBox
+				v-if="$resources?.siteRequest?.doc?.status === 'Site Created'"
+				title="Site created successfully"
+				:subtitle="`Your trial site is ready at
+					${$resources?.siteRequest?.doc?.domain || $resources?.siteRequest?.doc?.site}`"
 			>
-				<div
-					class="flex h-40 items-center justify-center"
-					v-if="
-						this.$resources?.siteRequest?.getLoginSid.loading ||
-						isRedirectingToSite
-					"
-				>
-					<Spinner class="mr-2 w-4" />
-					<p class="text-base text-gray-800">Please wait for a moment</p>
+				<template v-slot:logo v-if="saasProduct">
+					<div class="mx-auto flex items-center space-x-2">
+						<img
+							class="inline-block h-7 w-7 rounded-sm"
+							:src="saasProduct?.logo"
+						/>
+						<span
+							class="select-none text-xl font-semibold tracking-tight text-gray-900"
+						>
+							{{ saasProduct?.title }}
+						</span>
+					</div>
+				</template>
+				<div>
+					<div
+						class="mb-4 mt-16 flex flex-col items-center justify-center space-y-4"
+					>
+						<Button
+							variant="solid"
+							class="w-2/5"
+							icon-right="external-link"
+							@click="loginToSite"
+							:loading="this.$resources?.siteRequest?.getLoginSid.loading"
+						>
+							Log In
+						</Button>
+					</div>
 				</div>
 				<ErrorMessage
-					v-if="!isRedirectingToSite"
 					class="w-full text-center"
 					:message="this.$resources?.siteRequest?.getLoginSid.error"
 				/>
-			</SaaSLoginBox>
-			<SaaSLoginBox
-				v-else-if="this.$resources?.siteRequest?.doc?.status === 'Error'"
-				title="Site creation failed"
-				:subtitle="this.$resources?.siteRequest?.doc?.site"
-				:logo="saasProduct?.logo"
-			>
-				<template v-slot:default>
-					<div class="flex h-40 flex-col items-center justify-center px-10">
-						<Button variant="outline" @click="signupForCurrentProduct"
-							>Signup for new site</Button
-						>
-						<p class="my-4 text-gray-600">or,</p>
-						<p class="text-center text-base leading-5 text-gray-800">
-							Contact at
-							<a href="mailto:support@frappe.io" class="underline"
-								>support@frappe.io</a
-							><br />
-							to resolve the issue
-						</p>
+				<template v-slot:footer>
+					<div
+						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
+					>
+						Powered by Frappe Cloud
 					</div>
 				</template>
-			</SaaSLoginBox>
-			<SaaSLoginBox
-				v-else
-				title="Building your site"
-				:subtitle="this.$resources?.siteRequest?.doc?.site"
-				:logo="saasProduct?.logo"
+			</LoginBox>
+			<LoginBox
+				v-else-if="this.$resources?.siteRequest?.doc?.status === 'Error'"
+				title="Site creation failed"
+				:subtitle="
+					this.$resources?.siteRequest?.doc?.domain ||
+					this.$resources?.siteRequest?.doc?.site
+				"
 			>
+				<template v-slot:logo v-if="saasProduct">
+					<div class="mx-auto flex items-center space-x-2">
+						<img
+							class="inline-block h-7 w-7 rounded-sm"
+							:src="saasProduct?.logo"
+						/>
+						<span
+							class="select-none text-xl font-semibold tracking-tight text-gray-900"
+						>
+							{{ saasProduct?.title }}
+						</span>
+					</div>
+				</template>
+				<template v-slot:default>
+					<div class="flex h-40 flex-col items-center justify-center px-10">
+						<div class="text-center text-base leading-5 text-gray-800">
+							<p>It looks like something went wrong</p>
+							<p>
+								Contact
+								<a href="mailto:support@frappe.io" class="underline"
+									>support@frappe.io</a
+								><br />
+								to resolve the issue
+							</p>
+						</div>
+					</div>
+				</template>
+				<template v-slot:footer>
+					<div
+						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
+					>
+						Powered by Frappe Cloud
+					</div>
+				</template>
+			</LoginBox>
+			<LoginBox
+				v-else
+				title="Creating your site"
+				:subtitle="
+					this.$resources?.siteRequest?.doc?.domain ||
+					this.$resources?.siteRequest?.doc?.site
+				"
+			>
+				<template v-slot:logo v-if="saasProduct">
+					<div class="mx-auto flex items-center space-x-2">
+						<img
+							class="inline-block h-7 w-7 rounded-sm"
+							:src="saasProduct?.logo"
+						/>
+						<span
+							class="select-none text-xl font-semibold tracking-tight text-gray-900"
+						>
+							{{ saasProduct?.title }}
+						</span>
+					</div>
+				</template>
 				<template v-slot:default>
 					<div class="flex h-40 items-center justify-center">
 						<Progress
 							class="px-10"
-							size="lg"
+							size="md"
 							:value="progressCount"
 							:label="currentBuildStep"
-							:hint="true"
 						/>
 					</div>
 				</template>
-			</SaaSLoginBox>
+				<template v-slot:footer>
+					<div
+						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
+					>
+						Powered by Frappe Cloud
+					</div>
+				</template>
+			</LoginBox>
 		</div>
 	</div>
 </template>
 <script>
-import SaaSLoginBox from '../../components/auth/SaaSLoginBox.vue';
+import LoginBox from '../../components/auth/LoginBox.vue';
 import { Progress } from 'frappe-ui';
 
 export default {
-	name: 'SaaSSignupLoginToSite',
+	name: 'SignupLoginToSite',
 	props: ['productId'],
 	components: {
-		SaaSLoginBox,
-		Progress
+		LoginBox,
+		Progress,
 	},
 	data() {
 		return {
 			product_trial_request: this.$route.query.product_trial_request,
 			progressCount: 0,
-			isRedirectingToSite: false,
-			currentBuildStep: 'Preparing for build'
+			currentBuildStep: 'Preparing for build',
 		};
 	},
 	resources: {
@@ -98,7 +163,7 @@ export default {
 				type: 'document',
 				doctype: 'Product Trial',
 				name: this.productId,
-				auto: true
+				auto: true,
 			};
 		},
 		siteRequest() {
@@ -111,13 +176,9 @@ export default {
 				onSuccess(doc) {
 					if (
 						doc.status == 'Wait for Site' ||
-						doc.status == 'Completing Setup Wizard'
+						doc.status == 'Prefilling Setup Wizard'
 					) {
 						this.$resources.siteRequest.getProgress.reload();
-					}
-
-					if (doc.status == 'Site Created') {
-						this.loginToSite();
 					}
 				},
 				whitelistedMethods: {
@@ -126,16 +187,27 @@ export default {
 						makeParams() {
 							return {
 								current_progress:
-									this.$resources.siteRequest.getProgress.data?.progress || 0
+									this.$resources.siteRequest.getProgress.data?.progress || 0,
 							};
 						},
-						onSuccess: data => {
+						onSuccess: (data) => {
+							const currentStepMap = {
+								'Wait for Site': 'Creating your site',
+								'New Site': 'Creating your site',
+								'Prefilling Setup Wizard': 'Setting up your site',
+								'Update Site Configuration': 'Setting up your site',
+								'Enable Scheduler': 'Setting up your site',
+								'Bench Setup NGINX': 'Setting up your site',
+								'Reload NGINX': 'Setting up your site',
+							};
+
 							this.currentBuildStep =
-								data.current_step || this.currentBuildStep;
+								currentStepMap[data.current_step] ||
+								data.current_step ||
+								this.currentBuildStep;
 							this.progressCount += 1;
-							if (data.progress == 100) {
-								this.loginToSite();
-							} else if (
+
+							if (
 								!(
 									this.$resources.siteRequest.getProgress.error &&
 									this.progressCount <= 10
@@ -146,39 +218,27 @@ export default {
 									this.$resources.siteRequest.getProgress.reload();
 								}, 2000);
 							}
-						}
+						},
 					},
 					getLoginSid: {
 						method: 'get_login_sid',
-						onSuccess(data) {
-							let sid = data;
-							let redirectRoute =
-								this.$resources?.saasProduct?.doc?.redirect_to_after_login ??
-								'/desk';
-							let loginURL = `https://${this.$resources.siteRequest.doc.site}${redirectRoute}?sid=${sid}`;
-							this.isRedirectingToSite = true;
-							window.open(loginURL, '_self');
-						}
-					}
-				}
+						onSuccess(loginURL) {
+							window.open(loginURL, '_blank');
+						},
+					},
+				},
 			};
-		}
+		},
 	},
 	computed: {
 		saasProduct() {
 			return this.$resources.saasProduct.doc;
-		}
+		},
 	},
 	methods: {
 		loginToSite() {
 			this.$resources.siteRequest.getLoginSid.submit();
 		},
-		signupForCurrentProduct() {
-			this.$router.push({
-				name: 'SaaSSignupSetup',
-				params: { productId: this.productId }
-			});
-		}
-	}
+	},
 };
 </script>

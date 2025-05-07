@@ -5,6 +5,7 @@
 			class="col-span-1 lg:col-span-2"
 			title="Your sites are on an End of Life version. Upgrade to the latest version to get the latest features and security updates."
 			:id="`${$releaseGroup.name}-eol`"
+			type="gray"
 		>
 			<Button
 				class="ml-auto"
@@ -355,8 +356,10 @@ export default {
 					label: 'Rebuild Assets',
 					condition: () =>
 						bench.status === 'Active' &&
+						!bench.on_public_server &&
 						(Number(this.$releaseGroup.doc.version.split(' ')[1]) > 13 ||
 							this.$releaseGroup.doc.version === 'Nightly'),
+
 					onClick: () => {
 						confirmDialog({
 							title: 'Rebuild Assets',

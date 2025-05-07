@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, Mock, patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
@@ -38,6 +39,7 @@ from press.utils import get_current_team
 from press.utils.test import foreground_enqueue, foreground_enqueue_doc
 
 if TYPE_CHECKING:
+	from press.press.doctype.press_settings.press_settings import PressSettings
 	from press.press.doctype.team.team import Team
 
 
@@ -65,12 +67,14 @@ class TestBench(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def _create_bench_with_n_sites_with_cpu_time(self, n: int, x: float, bench: str | None = None) -> Bench:
+	def _create_bench_with_n_sites_with_cpu_time(
+		self, n: int, x: float, bench: str | None = None, public_server: bool = False
+	) -> Bench:
 		"""Creates new bench if None given."""
 		plan = create_test_plan("Site", cpu_time=x)
 
 		if not bench:
-			site = create_test_site()
+			site = create_test_site(public_server=public_server)
 			create_test_subscription(site.name, plan.name, site.team)  # map site with plan
 			bench = site.bench
 			n -= 1
@@ -78,6 +82,57 @@ class TestBench(FrappeTestCase):
 			site = create_test_site(bench=bench)
 			create_test_subscription(site.name, plan.name, site.team)
 		return Bench("Bench", bench)
+
+	@patch.object(Agent, "rebuild_bench", new=lambda x, y: "Triggered agent job")
+	def test_minimum_rebuild_memory(self):
+		bench = self._create_bench_with_n_sites_with_cpu_time(3, 5, public_server=False)
+		bench_public = self._create_bench_with_n_sites_with_cpu_time(3, 5, public_server=True)
+		bench.memory_swap = 5000
+		bench.memory_high = 928
+
+		high_prometheus_memory = 3073741182
+		low_prometheus_memeory = 1073741182
+		high_memory_max = 4020
+		low_memory_max = 1029
+
+		press_settings: PressSettings = frappe.get_doc("Press Settings")
+
+		if not press_settings.minimum_rebuild_memory:
+			press_settings.certbot_directory = "./"
+			press_settings.eff_registration_email = "test"
+			press_settings.minimum_rebuild_memory = 2
+			press_settings.save()
+
+		bench.memory_max = low_memory_max
+		bench.save()
+
+		with patch.object(Bench, "get_free_memory", new=lambda x: high_prometheus_memory):
+			# Low memory_max should not affect rebuild for dedicated servers
+			self.assertEqual(bench.get_memory_info(), (True, high_prometheus_memory / (1024**3), 2))
+			self.assertEqual(bench.rebuild(), "Triggered agent job")
+
+		with self.assertRaises(frappe.ValidationError):
+			# Raise on public servers
+			bench_public.rebuild()
+
+		bench.memory_max = high_memory_max
+		bench.save()
+
+		with patch.object(Bench, "get_free_memory", new=lambda x: low_prometheus_memeory), self.assertRaises(
+			frappe.ValidationError
+		):
+			# Should not rebuild due to low server mem
+			self.assertEqual(bench.get_memory_info(), (True, low_prometheus_memeory / (1024**3), 2))
+			bench.rebuild()
+
+		bench.memory_max = high_memory_max
+		bench.save()
+
+		with patch.object(
+			Bench, "get_free_memory", new=lambda x: high_prometheus_memory
+		):  # Testing with 3GB from prometheus query
+			self.assertEqual(bench.get_memory_info(), (True, high_prometheus_memory / (1024**3), 2))
+			self.assertEqual(bench.rebuild(), "Triggered agent job")
 
 	def test_workload_is_calculated_correctly(self):
 		bench = self._create_bench_with_n_sites_with_cpu_time(3, 5)

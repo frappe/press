@@ -5,82 +5,125 @@
 	>
 		<div class="w-full overflow-auto">
 			<LoginBox>
+				<template v-slot:logo v-if="saasProduct">
+					<div class="mx-auto flex items-center space-x-2">
+						<img
+							class="inline-block h-7 w-7 rounded-sm"
+							:src="saasProduct?.logo"
+						/>
+						<span
+							class="select-none text-xl font-semibold tracking-tight text-gray-900"
+						>
+							{{ saasProduct?.title }}
+						</span>
+					</div>
+				</template>
 				<div
 					class="text-center text-lg font-medium leading-5 tracking-tight text-gray-900"
 				>
-					{{ invitedBy ? 'Invitation to join' : 'Set up your account' }}
+					{{
+						invitedBy
+							? 'Invitation to join'
+							: 'Set up your Frappe Cloud account'
+					}}
 				</div>
 				<div class="mt-2 text-center text-sm text-gray-600" v-if="invitedBy">
 					Invitation by {{ invitedBy }}
 				</div>
-				<form
-					class="mt-6 flex flex-col"
-					@submit.prevent="$resources.setupAccount.submit()"
-				>
-					<div class="space-y-4">
+				<form class="mt-6 flex flex-col" @submit.prevent="submitForm">
+					<template v-if="is2FA">
 						<FormControl
-							v-if="oauthSignup == 0"
-							label="Email"
-							type="text"
-							:modelValue="email"
-							disabled
-						/>
-						<template v-if="oauthSignup == 0 && !userExists">
-							<FormControl
-								label="First Name"
-								type="text"
-								v-model="firstName"
-								name="fname"
-								autocomplete="given-name"
-								required
-							/>
-							<FormControl
-								label="Last Name"
-								type="text"
-								v-model="lastName"
-								name="lname"
-								autocomplete="family-name"
-								required
-							/>
-							<FormControl
-								v-if="!oauthDomain"
-								label="Password"
-								type="password"
-								v-model="password"
-								name="password"
-								autocomplete="new-password"
-								required
-							/>
-						</template>
-						<FormControl
-							type="select"
-							:options="countries"
-							v-if="!isInvitation"
-							label="Country"
-							v-model="country"
+							label="2FA Code from your Authenticator App"
+							placeholder="123456"
+							v-model="twoFactorCode"
 							required
 						/>
-						<div class="mt-4 flex items-center gap-2">
-							<FormControl type="checkbox" v-model="termsAccepted" />
-							<label class="text-base text-gray-900">
-								By clicking on
-								<span>{{ isInvitation ? 'Accept' : 'Create account' }}</span
-								>, you accept our
-								<Link href="https://frappecloud.com/policies" target="_blank"
-									>Terms and Policies</Link
-								>
-							</label>
+						<Button
+							class="mt-4"
+							:loading="$resources.verify2FA.loading"
+							variant="solid"
+							@click="
+								$resources.verify2FA.submit({
+									user: email,
+									totp_code: twoFactorCode,
+								})
+							"
+						>
+							Verify
+						</Button>
+						<ErrorMessage class="mt-2" :message="$resources.verify2FA.error" />
+					</template>
+					<template v-else>
+						<div class="space-y-4">
+							<FormControl
+								v-if="oauthSignup == 0"
+								label="Email"
+								type="text"
+								:modelValue="email"
+								disabled
+							/>
+							<template v-if="oauthSignup == 0 && !userExists">
+								<FormControl
+									label="First Name"
+									type="text"
+									v-model="firstName"
+									name="fname"
+									autocomplete="given-name"
+									required
+								/>
+								<FormControl
+									label="Last Name"
+									type="text"
+									v-model="lastName"
+									name="lname"
+									autocomplete="family-name"
+									required
+								/>
+							</template>
+							<FormControl
+								type="select"
+								:options="countries"
+								v-if="!isInvitation"
+								label="Country"
+								v-model="country"
+								required
+							/>
+							<div class="!mt-6 flex gap-2">
+								<FormControl type="checkbox" v-model="termsAccepted" />
+								<label class="text-base text-gray-700">
+									I accept the
+									<Link
+										class="!text-gray-700"
+										href="https://frappecloud.com/policies"
+										target="_blank"
+									>
+										Terms and Policies
+									</Link>
+								</label>
+							</div>
 						</div>
-					</div>
-					<ErrorMessage class="mt-4" :message="$resources.setupAccount.error" />
-					<Button
-						class="mt-4"
-						variant="solid"
-						:loading="$resources.setupAccount.loading"
-					>
-						{{ isInvitation ? 'Accept' : 'Create account' }}
-					</Button>
+						<ErrorMessage
+							class="mt-4"
+							:message="$resources.setupAccount.error"
+						/>
+						<Button
+							class="mt-6"
+							variant="solid"
+							:loading="$resources.setupAccount.loading"
+						>
+							{{
+								is2FA ? 'Verify' : isInvitation ? 'Accept' : 'Create account'
+							}}
+						</Button>
+					</template>
 				</form>
+				<template #footer v-if="saasProduct">
+					<div
+						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
+					>
+						Powered by Frappe Cloud
+					</div>
+				</template>
 			</LoginBox>
 		</div>
 	</div>
@@ -105,7 +148,7 @@ export default {
 	components: {
 		LoginBox,
 		Link,
-		Form
+		Form,
 	},
 	props: ['requestKey', 'joinRequest'],
 	data() {
@@ -113,9 +156,9 @@ export default {
 			email: null,
 			firstName: null,
 			lastName: null,
-			password: null,
 			errorMessage: null,
 			userExists: null,
+			twoFactorCode: null,
 			invitationToTeam: null,
 			isInvitation: null,
 			oauthSignup: 0,
@@ -126,7 +169,7 @@ export default {
 			invitedByParentTeam: false,
 			countries: [],
 			saasProduct: null,
-			signupValues: {}
+			signupValues: {},
 		};
 	},
 	resources: {
@@ -137,7 +180,7 @@ export default {
 					key: this.requestKey,
 					timezone: window.Intl
 						? Intl.DateTimeFormat().resolvedOptions().timeZone
-						: null
+						: null,
 				},
 				auto: true,
 				onSuccess(res) {
@@ -156,7 +199,7 @@ export default {
 						this.countries = res.countries;
 						this.saasProduct = res.product_trial;
 					}
-				}
+				},
 			};
 		},
 		setupAccount() {
@@ -164,7 +207,6 @@ export default {
 				url: 'press.api.account.setup_account',
 				params: {
 					key: this.requestKey,
-					password: this.password,
 					first_name: this.firstName,
 					last_name: this.lastName,
 					country: this.country,
@@ -173,17 +215,65 @@ export default {
 					invited_by_parent_team: this.invitedByParentTeam,
 					accepted_user_terms: this.termsAccepted,
 					oauth_signup: this.oauthSignup,
-					oauth_domain: this.oauthDomain
+					oauth_domain: this.oauthDomain,
 				},
 				onSuccess() {
-					let path = '/dashboard';
+					let path = '/dashboard/create-site/app-selector';
 					if (this.saasProduct) {
-						path = `/dashboard/app-trial/setup/${this.saasProduct.name}`;
+						path = `/dashboard/create-site/${this.saasProduct.name}/setup`;
 					}
 					window.location.href = path;
-				}
+				},
 			};
-		}
-	}
+		},
+		is2FAEnabled() {
+			return {
+				url: 'press.api.account.is_2fa_enabled',
+			};
+		},
+		verify2FA() {
+			return {
+				url: 'press.api.account.verify_2fa',
+				onSuccess() {
+					this.$resources.setupAccount.submit();
+				},
+			};
+		},
+	},
+	computed: {
+		is2FA() {
+			return (
+				this.$route.name === 'Setup Account' && this.$route.query.two_factor
+			);
+		},
+	},
+	methods: {
+		submitForm() {
+			if (this.invitedBy) {
+				this.$resources.is2FAEnabled.submit(
+					{
+						user: this.email,
+					},
+					{
+						onSuccess: (two_factor_enabled) => {
+							if (two_factor_enabled) {
+								this.$router.push({
+									name: 'Setup Account',
+									query: {
+										...this.$route.query,
+										two_factor: 1,
+									},
+								});
+							} else {
+								this.$resources.setupAccount.submit();
+							}
+						},
+					},
+				);
+			} else {
+				this.$resources.setupAccount.submit();
+			}
+		},
+	},
 };
 </script>

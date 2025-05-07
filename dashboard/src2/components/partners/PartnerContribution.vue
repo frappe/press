@@ -32,7 +32,7 @@ export default {
 							status: d.status,
 							due_date: d.due_date,
 							currency: d.currency,
-							total: d.total,
+							total: d.total_before_discount,
 							partner_total: d.partner_total
 						};
 					});
@@ -65,7 +65,7 @@ export default {
 								day: 'numeric'
 							}).format(new Date(value));
 						},
-						width: 0.8
+						width: 0.6
 					},
 					{
 						label: 'Currency',
@@ -83,7 +83,7 @@ export default {
 							return currency(value, columns.currency);
 						},
 						align: 'right',
-						width: 0.8
+						width: 0.6
 					},
 					{
 						label: 'Partner Total',
@@ -92,7 +92,7 @@ export default {
 							return userCurrency(value);
 						},
 						align: 'right',
-						width: 0.8
+						width: 0.6
 					}
 				]
 			};

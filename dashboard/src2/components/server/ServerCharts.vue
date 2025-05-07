@@ -13,7 +13,7 @@
 				label="Duration"
 				type="select"
 				:options="
-					durationOptions.map(option => ({ label: option, value: option }))
+					durationOptions.map((option) => ({ label: option, value: option }))
 				"
 				v-model="duration"
 			/>
@@ -42,14 +42,14 @@
 					:data="cpuData"
 					unit="%"
 					:chartTheme="[
-						$theme.colors.red[500], // iowait
-						$theme.colors.yellow[500], // irq
-						$theme.colors.pink[500], // nice
-						$theme.colors.purple[500], // softirq
-						$theme.colors.blue[500], // steal
-						$theme.colors.teal[500], // system
+						$theme.colors.yellow[500], // system
 						$theme.colors.cyan[500], // user
-						$theme.colors.green[500] // idle
+						$theme.colors.red[500], // iowait
+						$theme.colors.teal[500], // irq
+						$theme.colors.purple[500], // softirq
+						$theme.colors.pink[500], // nice
+						$theme.colors.blue[500], // steal
+						$theme.colors.green[500], // idle
 					]"
 					:loading="$resources.cpu.loading"
 					:error="$resources.cpu.error"
@@ -67,7 +67,7 @@
 					:chartTheme="[
 						$theme.colors.green[500],
 						$theme.colors.yellow[400],
-						$theme.colors.red[500]
+						$theme.colors.red[500],
 					]"
 					:loading="$resources.loadavg.loading"
 					:error="$resources.loadavg.error"
@@ -173,7 +173,7 @@
 						this.$theme.colors.teal[500],
 						this.$theme.colors.cyan[500],
 						this.$theme.colors.gray[500],
-						this.$theme.colors.orange[500]
+						this.$theme.colors.orange[500],
 					]"
 					:loading="$resources.requestCountBySite.loading"
 					:error="$resources.requestCountBySite.error"
@@ -215,7 +215,7 @@
 						$theme.colors.purple[500],
 						$theme.colors.blue[500],
 						$theme.colors.teal[500],
-						$theme.colors.cyan[500]
+						$theme.colors.cyan[500],
 					]"
 					:loading="$resources.databaseCommandsCount.loading"
 					:error="$resources.databaseCommandsCount.error"
@@ -236,7 +236,7 @@
 					unit="connections"
 					:chartTheme="[
 						this.$theme.colors.yellow[500],
-						this.$theme.colors.green[500]
+						this.$theme.colors.green[500],
 					]"
 					:loading="$resources.databaseConnections.loading"
 					:error="$resources.databaseConnections.error"
@@ -297,6 +297,17 @@
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
+				<template #action>
+					<router-link
+						class="text-base text-gray-600 hover:text-gray-700"
+						:to="{
+							name: 'Server Detail Actions',
+							params: { name: this.serverName },
+						}"
+					>
+						Manage InnoDB Buffer →
+					</router-link>
+				</template>
 			</AnalyticsCard>
 
 			<AnalyticsCard
@@ -315,6 +326,17 @@
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
+				<template #action>
+					<router-link
+						class="text-base text-gray-600 hover:text-gray-700"
+						:to="{
+							name: 'Server Detail Actions',
+							params: { name: this.serverName },
+						}"
+					>
+						Manage InnoDB Buffer →
+					</router-link>
+				</template>
 			</AnalyticsCard>
 
 			<AnalyticsCard
@@ -324,7 +346,7 @@
 			>
 				<template #action>
 					<TabButtons
-						:buttons="[{ label: 'Non-normalized' }, { label: 'Normalized' }]"
+						:buttons="[{ label: 'Denormalized' }, { label: 'Normalized' }]"
 						v-model="slowLogsFrequencyType"
 					/>
 				</template>
@@ -348,7 +370,7 @@
 			>
 				<template #action>
 					<TabButtons
-						:buttons="[{ label: 'Non-normalized' }, { label: 'Normalized' }]"
+						:buttons="[{ label: 'Denormalized' }, { label: 'Normalized' }]"
 						v-model="slowLogsDurationType"
 					/>
 				</template>
@@ -380,15 +402,15 @@ export default {
 	components: {
 		AnalyticsCard,
 		BarChart,
-		LineChart
+		LineChart,
 	},
 	data() {
 		return {
 			duration: '1 Hour',
 			showAdvancedAnalytics: false,
 			localTimezone: dayjs.tz.guess(),
-			slowLogsDurationType: 'Non-normalized',
-			slowLogsFrequencyType: 'Non-normalized',
+			slowLogsDurationType: 'Denormalized',
+			slowLogsFrequencyType: 'Denormalized',
 			chosenServer: this.$route.query.server ?? this.serverName,
 			durationOptions: ['1 Hour', '6 Hour', '24 Hour', '7 Days', '15 Days'],
 			chartColors: [
@@ -401,18 +423,18 @@ export default {
 				this.$theme.colors.teal[500],
 				this.$theme.colors.cyan[500],
 				this.$theme.colors.gray[500],
-				this.$theme.colors.orange[500]
-			]
+				this.$theme.colors.orange[500],
+			],
 		};
 	},
 	watch: {
 		chosenServer() {
 			this.$router.push({
 				query: {
-					server: this.chosenServer
-				}
+					server: this.chosenServer,
+				},
 			});
-		}
+		},
 	},
 	resources: {
 		loadavg() {
@@ -422,9 +444,9 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'loadavg',
-					duration: this.duration
+					duration: this.duration,
 				},
-				auto: true
+				auto: true,
 			};
 		},
 		cpu() {
@@ -434,9 +456,9 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'cpu',
-					duration: this.duration
+					duration: this.duration,
 				},
-				auto: true
+				auto: true,
 			};
 		},
 		memory() {
@@ -446,9 +468,9 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'memory',
-					duration: this.duration
+					duration: this.duration,
 				},
-				auto: true
+				auto: true,
 			};
 		},
 		network() {
@@ -458,9 +480,9 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'network',
-					duration: this.duration
+					duration: this.duration,
 				},
-				auto: true
+				auto: true,
 			};
 		},
 		iops() {
@@ -470,9 +492,9 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'iops',
-					duration: this.duration
+					duration: this.duration,
 				},
-				auto: true
+				auto: true,
 			};
 		},
 		space() {
@@ -482,9 +504,9 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'space',
-					duration: this.duration
+					duration: this.duration,
 				},
-				auto: true
+				auto: true,
 			};
 		},
 		requestCountBySite() {
@@ -494,10 +516,10 @@ export default {
 					name: this.chosenServer,
 					query: 'count',
 					timezone: this.localTimezone,
-					duration: this.duration
+					duration: this.duration,
 				},
 				auto:
-					this.showAdvancedAnalytics && this.isServerType('Application Server')
+					this.showAdvancedAnalytics && this.isServerType('Application Server'),
 			};
 		},
 		requestDurationBySite() {
@@ -507,10 +529,10 @@ export default {
 					name: this.chosenServer,
 					query: 'duration',
 					timezone: this.localTimezone,
-					duration: this.duration
+					duration: this.duration,
 				},
 				auto:
-					this.showAdvancedAnalytics && this.isServerType('Application Server')
+					this.showAdvancedAnalytics && this.isServerType('Application Server'),
 			};
 		},
 		slowLogsCount() {
@@ -521,24 +543,11 @@ export default {
 					query: 'count',
 					timezone: this.localTimezone,
 					duration: this.duration,
-					normalize: this.slowLogsFrequencyType === 'Normalized'
+					normalize: this.slowLogsFrequencyType === 'Normalized',
 				},
 				auto:
-					this.showAdvancedAnalytics && !this.isServerType('Application Server')
-			};
-		},
-		normalizedSlowLogsCount() {
-			return {
-				url: 'press.api.server.get_slow_logs_by_site',
-				params: {
-					name: this.chosenServer,
-					query: 'count',
-					timezone: this.localTimezone,
-					duration: this.duration,
-					normalize: true
-				},
-				auto:
-					this.showAdvancedAnalytics && !this.isServerType('Application Server')
+					this.showAdvancedAnalytics &&
+					!this.isServerType('Application Server'),
 			};
 		},
 		slowLogsDuration() {
@@ -549,10 +558,11 @@ export default {
 					query: 'duration',
 					timezone: this.localTimezone,
 					duration: this.duration,
-					normalize: this.slowLogsDurationType === 'Normalized'
+					normalize: this.slowLogsDurationType === 'Normalized',
 				},
 				auto:
-					this.showAdvancedAnalytics && !this.isServerType('Application Server')
+					this.showAdvancedAnalytics &&
+					!this.isServerType('Application Server'),
 			};
 		},
 		databaseUptime() {
@@ -562,9 +572,9 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'database_uptime',
-					duration: this.duration
+					duration: this.duration,
 				},
-				auto: this.isServerType('Database Server')
+				auto: this.isServerType('Database Server'),
 			};
 		},
 		databaseCommandsCount() {
@@ -574,9 +584,10 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'database_commands_count',
-					duration: this.duration
+					duration: this.duration,
 				},
-				auto: this.showAdvancedAnalytics && this.isServerType('Database Server')
+				auto:
+					this.showAdvancedAnalytics && this.isServerType('Database Server'),
 			};
 		},
 		databaseConnections() {
@@ -586,9 +597,10 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'database_connections',
-					duration: this.duration
+					duration: this.duration,
 				},
-				auto: this.showAdvancedAnalytics && this.isServerType('Database Server')
+				auto:
+					this.showAdvancedAnalytics && this.isServerType('Database Server'),
 			};
 		},
 		innodbBufferPoolSize() {
@@ -598,9 +610,10 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'innodb_bp_size',
-					duration: this.duration
+					duration: this.duration,
 				},
-				auto: this.showAdvancedAnalytics && this.isServerType('Database Server')
+				auto:
+					this.showAdvancedAnalytics && this.isServerType('Database Server'),
 			};
 		},
 		innodbBufferPoolSizeOfTotalRam() {
@@ -610,9 +623,10 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'innodb_bp_size_of_total_ram',
-					duration: this.duration
+					duration: this.duration,
 				},
-				auto: this.showAdvancedAnalytics && this.isServerType('Database Server')
+				auto:
+					this.showAdvancedAnalytics && this.isServerType('Database Server'),
 			};
 		},
 		innodbBufferPoolMissPercentage() {
@@ -622,9 +636,10 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'innodb_bp_miss_percent',
-					duration: this.duration
+					duration: this.duration,
 				},
-				auto: this.showAdvancedAnalytics && this.isServerType('Database Server')
+				auto:
+					this.showAdvancedAnalytics && this.isServerType('Database Server'),
 			};
 		},
 		innodbAvgRowLockTime() {
@@ -634,11 +649,12 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'innodb_avg_row_lock_time',
-					duration: this.duration
+					duration: this.duration,
 				},
-				auto: this.showAdvancedAnalytics && this.isServerType('Database Server')
+				auto:
+					this.showAdvancedAnalytics && this.isServerType('Database Server'),
 			};
-		}
+		},
 	},
 	computed: {
 		$server() {
@@ -648,24 +664,24 @@ export default {
 			return [
 				{
 					label: 'Application Server',
-					value: this.$server.doc.name
+					value: this.$server.doc.name,
 				},
 				{
 					label: 'Database Server',
-					value: this.$server.doc.database_server
+					value: this.$server.doc.database_server,
 				},
 				{
 					label: 'Replication Server',
-					value: this.$server.doc.replication_server
-				}
-			].filter(v => v.value);
+					value: this.$server.doc.replication_server,
+				},
+			].filter((v) => v.value);
 		},
 		loadAverageData() {
 			let loadavg = this.$resources.loadavg.data;
 			if (!loadavg) return;
 
 			loadavg.datasets.sort(
-				(a, b) => Number(a.name.split(' ')[2]) - Number(b.name.split(' ')[2])
+				(a, b) => Number(a.name.split(' ')[2]) - Number(b.name.split(' ')[2]),
 			);
 
 			return this.transformMultiLineChartData(loadavg);
@@ -673,12 +689,19 @@ export default {
 		cpuData() {
 			let cpu = this.$resources.cpu.data;
 			if (!cpu) return;
+			const order = [
+				'system',
+				'user',
+				'iowait',
+				'irq',
+				'softirq',
+				'nice',
+				'steal',
+				'idle',
+			];
 
-			// move idle to the end
 			cpu.datasets = cpu.datasets.sort((a, b) => {
-				if (a.name === 'idle') return 1;
-				if (b.name === 'idle') return -1;
-				return 0;
+				return order.indexOf(a.name) - order.indexOf(b.name);
 			});
 
 			return this.transformMultiLineChartData(cpu, 'cpu', true);
@@ -758,18 +781,63 @@ export default {
 		innodbBufferPoolSizeOfTotalRamData() {
 			let data = this.$resources.innodbBufferPoolSizeOfTotalRam.data;
 			if (!data) return;
-			return this.transformSingleLineChartData(data, true);
+			let payload = this.transformSingleLineChartData(data, true);
+			payload['markLine'] = {
+				data: [
+					{
+						name: 'Too Low InnoDB Buffer Pool',
+						yAxis: 15,
+						label: {
+							formatter: '{b} ({c}%)',
+							position: 'middle',
+						},
+						lineStyle: {
+							color: '#f5222d',
+						},
+					},
+					{
+						name: 'Too High InnoDB Buffer Pool',
+						yAxis: 65,
+						label: {
+							formatter: '{b} ({c}%)',
+							position: 'middle',
+						},
+						lineStyle: {
+							color: '#f5222d',
+						},
+					},
+				],
+				symbol: ['none', 'none'],
+			};
+			return payload;
 		},
 		innodbBufferPoolMissPercentageData() {
 			let data = this.$resources.innodbBufferPoolMissPercentage.data;
 			if (!data) return;
-			return this.transformSingleLineChartData(data, false);
+			let payload = this.transformSingleLineChartData(data, false);
+			payload['markLine'] = {
+				data: [
+					{
+						name: 'Accepted Range',
+						yAxis: 1,
+						label: {
+							formatter: '{b} < {c}%',
+							position: 'middle',
+						},
+						lineStyle: {
+							color: '#f5222d',
+						},
+					},
+				],
+				symbol: ['none', 'none'],
+			};
+			return payload;
 		},
 		innodbAvgRowLockTimeData() {
 			let data = this.$resources.innodbAvgRowLockTime.data;
 			if (!data) return;
 			return this.transformSingleLineChartData(data, false);
-		}
+		},
 	},
 	methods: {
 		transformSingleLineChartData(data, percentage = false) {
@@ -780,13 +848,13 @@ export default {
 			for (let index = 0; index < data.datasets[0].values.length; index++) {
 				dataset.push([
 					+new Date(data.labels[index]),
-					data.datasets[0].values[index]
+					data.datasets[0].values[index],
 				]);
 			}
 
 			return {
 				datasets: [{ dataset: dataset, name }],
-				yMax: percentage ? 100 : null
+				yMax: percentage ? 100 : null,
 			};
 		},
 		transformMultiLineChartData(data, stack = null, percentage = false) {
@@ -808,7 +876,7 @@ export default {
 				for (let i = 0; i < values.length; i++) {
 					dataset.push([
 						+new Date(data.labels[i]),
-						percentage ? (values[i] / total[i]) * 100 : values[i]
+						percentage ? (values[i] / total[i]) * 100 : values[i],
 					]);
 				}
 				return { name, dataset, stack };
@@ -819,12 +887,12 @@ export default {
 		isServerType(type) {
 			return (
 				this.chosenServer ===
-				this.serverOptions.find(s => s.label === type)?.value
+				this.serverOptions.find((s) => s.label === type)?.value
 			);
 		},
 		toggleAdvancedAnalytics() {
 			this.showAdvancedAnalytics = !this.showAdvancedAnalytics;
-		}
-	}
+		},
+	},
 };
 </script>

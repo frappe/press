@@ -64,7 +64,7 @@ jobs:
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-python-files.outputs.all_changed_files }}
         run: |
-          ruff format --check ${ALL_CHANGED_FILES}
+          ruff format --check ${ALL_CHANGED_FILES} --diff
 
   semgrep:
     name: Semgrep Rules

@@ -33,6 +33,9 @@ class SitePlanChange(Document):
 		if not self.from_plan and self.to_plan:
 			self.type = "Initial Plan"
 
+		if self.from_plan and self.to_plan and self.from_plan == self.to_plan:
+			frappe.throw("From Plan and To Plan cannot be the same")
+
 		if self.from_plan and not self.type:
 			from_plan_value = frappe.db.get_value("Site Plan", self.from_plan, "price_usd")
 			to_plan_value = frappe.db.get_value("Site Plan", self.to_plan, "price_usd")
@@ -44,7 +47,9 @@ class SitePlanChange(Document):
 			and self.type == "Downgrade"
 			and not frappe.db.get_value("Site Plan", self.to_plan, "allow_downgrading_from_other_plan")
 		):
-			frappe.throw(f"Sorry, you cannot downgrade to {self.to_plan} from {self.from_plan}")
+			frappe.throw(
+				f"Sorry, you cannot downgrade to {self.to_plan} from {self.from_plan}. <a href='https://frappecloud.com/docs/tiny-plan#why-cant-i-upgrade-to-this-plan-'><u>Why?</u></a>"
+			)
 
 		if self.type == "Initial Plan":
 			self.from_plan = ""

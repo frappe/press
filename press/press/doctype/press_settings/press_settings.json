@@ -48,6 +48,7 @@
   "erpnext_api_secret",
   "column_break_38",
   "frappeio_authentication_section",
+  "disable_frappe_auth",
   "frappe_url",
   "frappeio_api_key",
   "column_break_39",
@@ -68,6 +69,10 @@
   "backup_offset",
   "column_break_48",
   "backup_limit",
+  "max_failed_backup_attempts_in_a_day",
+  "physical_backups_section",
+  "disable_physical_backup",
+  "max_concurrent_physical_restorations",
   "docker_tab",
   "section_break_59",
   "docker_registry_url",
@@ -80,12 +85,14 @@
   "clone_directory",
   "build_directory",
   "build_server",
+  "minimum_rebuild_memory",
   "column_break_66",
   "code_server",
   "code_server_password",
   "use_app_cache",
   "compress_app_cache",
   "use_delta_builds",
+  "use_agent_job_callbacks",
   "auto_update_section",
   "auto_update_queue_size",
   "remote_files_section",
@@ -151,6 +158,12 @@
   "twilio_api_key_secret",
   "column_break_kxuj",
   "twilio_phone_number",
+  "spamd_section",
+  "enable_spam_check",
+  "spamd_endpoint",
+  "column_break_xhfy",
+  "spamd_api_key",
+  "spamd_api_secret",
   "marketplace_tab",
   "marketplace_settings_section",
   "max_allowed_screenshots",
@@ -185,10 +198,13 @@
   "monitor_server",
   "monitor_token",
   "press_monitoring_password",
-  "column_break_100",
+  "send_telegram_notifications",
+  "column_break_jlzi",
   "log_server",
   "telegram_alert_chat_id",
   "telegram_alerts_chat_group",
+  "send_email_notifications",
+  "email_recipients",
   "feature_flags_tab",
   "verify_cards_with_micro_charge",
   "enable_google_oauth",
@@ -945,10 +961,6 @@
    "options": "Monitor Server"
   },
   {
-   "fieldname": "column_break_100",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "monitor_token",
    "fieldtype": "Data",
    "label": "Monitor Token"
@@ -1320,11 +1332,105 @@
    "fieldname": "github_pat_token",
    "fieldtype": "Data",
    "label": "Github PAT Token"
+  },
+  {
+   "default": "1",
+   "fieldname": "disable_physical_backup",
+   "fieldtype": "Check",
+   "label": "Disable Physical Backup"
+  },
+  {
+   "fieldname": "physical_backups_section",
+   "fieldtype": "Section Break",
+   "label": "Physical Backups"
+  },
+  {
+   "fieldname": "spamd_section",
+   "fieldtype": "Section Break",
+   "label": "Spamd"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_spam_check",
+   "fieldtype": "Check",
+   "label": "Enable Spam Check"
+  },
+  {
+   "fieldname": "spamd_endpoint",
+   "fieldtype": "Data",
+   "label": "Spamd Endpoint"
+  },
+  {
+   "fieldname": "column_break_xhfy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "spamd_api_key",
+   "fieldtype": "Data",
+   "label": "Spamd API Key"
+  },
+  {
+   "fieldname": "spamd_api_secret",
+   "fieldtype": "Password",
+   "label": "Spamd API Secret"
+  },
+  {
+   "default": "2",
+   "fieldname": "max_concurrent_physical_restorations",
+   "fieldtype": "Int",
+   "label": "Max Concurrent Physical Restorations"
+  },
+  {
+   "default": "1",
+   "fieldname": "send_telegram_notifications",
+   "fieldtype": "Check",
+   "label": "Send Telegram Notifications"
+  },
+  {
+   "fieldname": "column_break_jlzi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "send_email_notifications",
+   "fieldtype": "Check",
+   "label": "Send Email Notifications"
+  },
+  {
+   "depends_on": "eval: doc.send_email_notifications== true",
+   "fieldname": "email_recipients",
+   "fieldtype": "Small Text",
+   "label": "Email Recipients"
+  },
+  {
+   "default": "1",
+   "fieldname": "use_agent_job_callbacks",
+   "fieldtype": "Check",
+   "label": "Use Agent Job Callbacks"
+  },
+  {
+   "default": "2",
+   "fieldname": "minimum_rebuild_memory",
+   "fieldtype": "Int",
+   "label": "Minimum Rebuild Memory (GB)",
+   "non_negative": 1
+  },
+  {
+   "description": "Max attempts we will do on a site with failed attempts",
+   "fieldname": "max_failed_backup_attempts_in_a_day",
+   "fieldtype": "Int",
+   "label": "Max Failed Backup Attempts In A Day"
+  },
+  {
+   "default": "0",
+   "fieldname": "disable_frappe_auth",
+   "fieldtype": "Check",
+   "label": "Disable Frappe Auth"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-01-21 18:23:40.072599",
+ "modified": "2025-04-18 16:28:20.736910",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
@@ -1342,6 +1448,7 @@
   }
  ],
  "quick_entry": 1,
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

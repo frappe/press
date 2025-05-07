@@ -14,9 +14,11 @@ from frappe.model.naming import make_autoname
 from press.exceptions import InsufficientSpaceOnServer
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
 )
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
@@ -36,12 +38,14 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
+@patch.object(DeployCandidateBuild, "pre_build", new=Mock())
 def create_test_bench(
 	user: str | None = None,
 	group: ReleaseGroup = None,
 	server: str | None = None,
 	apps: list[dict] | None = None,
 	creation: datetime | None = None,
+	public_server: bool = False,
 ) -> "Bench":
 	"""
 	Create test Bench doc.
@@ -56,7 +60,7 @@ def create_test_bench(
 	if not server:
 		proxy_server = create_test_proxy_server()
 		database_server = create_test_database_server()
-		server = create_test_server(proxy_server.name, database_server.name).name
+		server = create_test_server(proxy_server.name, database_server.name, public=public_server).name
 
 	if not group:
 		app = create_test_app()
@@ -64,7 +68,7 @@ def create_test_bench(
 
 	name = frappe.mock("name")
 	candidate = group.create_deploy_candidate()
-	candidate.db_set("docker_image", frappe.mock("url"))
+	candidate.build()
 	bench = frappe.get_doc(
 		{
 			"name": f"Test Bench{name}",
@@ -76,6 +80,7 @@ def create_test_bench(
 			"apps": apps,
 			"candidate": candidate.name,
 			"server": server,
+			"docker_image": frappe.mock("url"),
 		}
 	).insert(ignore_if_duplicate=True)
 	bench.db_set("creation", creation)
@@ -97,7 +102,6 @@ def create_test_site(
 	remote_public_file=None,
 	remote_private_file=None,
 	remote_config_file=None,
-	backup_time=None,
 	**kwargs,
 ) -> Site:
 	"""Create test Site doc.
@@ -108,7 +112,7 @@ def create_test_site(
 	subdomain = subdomain or make_autoname("test-site-.#####")
 	apps = [{"app": app} for app in apps] if apps else None
 	if not bench:
-		bench = create_test_bench(server=server)
+		bench = create_test_bench(server=server, public_server=kwargs.get("public_server", False))
 	else:
 		bench = frappe.get_doc("Bench", bench)
 	group = frappe.get_doc("Release Group", bench.group)
@@ -136,7 +140,6 @@ def create_test_site(
 	site.update(kwargs)
 	site.insert()
 	site.db_set("creation", creation)
-	site.db_set("backup_time", backup_time)
 	site.reload()
 	return site
 
@@ -478,6 +481,7 @@ class TestSite(unittest.TestCase):
 		site.save(ignore_permissions=True)
 
 	@responses.activate
+	@patch.object(AppSource, "validate_dependant_apps", new=Mock())
 	def test_sync_apps_updates_apps_child_table(self):
 		app1 = create_test_app()
 		app2 = create_test_app("erpnext", "ERPNext")

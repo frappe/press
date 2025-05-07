@@ -26,7 +26,6 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.x509.oid import ExtensionOID
 from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import site_cache
-from pymysql.err import InterfaceError
 
 from press.utils.email_validator import validate_email
 
@@ -600,9 +599,11 @@ def reconnect_on_failure():
 	def wrapper(wrapped, instance, args, kwargs):
 		try:
 			return wrapped(*args, **kwargs)
-		except InterfaceError:
-			frappe.db.connect()
-			return wrapped(*args, **kwargs)
+		except Exception as e:
+			if frappe.db.is_interface_error(e):
+				frappe.db.connect()
+				return wrapped(*args, **kwargs)
+			raise
 
 	return wrapper
 
@@ -912,3 +913,14 @@ def timer(f):
 		return result
 
 	return wrap
+
+
+def validate_subdomain(subdomain: str):
+	site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+	if not re.match(site_regex, subdomain):
+		frappe.throw("Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens")
+	if len(subdomain) > 32:
+		frappe.throw("Subdomain too long. Use 32 or less characters")
+
+	if len(subdomain) < 5:
+		frappe.throw("Subdomain too short. Use 5 or more characters")

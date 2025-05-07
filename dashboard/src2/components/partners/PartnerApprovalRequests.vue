@@ -12,7 +12,7 @@ import Clock from '~icons/lucide/clock';
 export default {
 	name: 'PartnerApprovalRequests',
 	components: {
-		ObjectList
+		ObjectList,
 	},
 	computed: {
 		options() {
@@ -22,92 +22,95 @@ export default {
 				columns: [
 					{
 						label: 'Customer Email',
-						fieldname: 'customer_email'
+						fieldname: 'customer_email',
 					},
 					{
-						label: 'Customer Team ID',
-						fieldname: 'requested_by'
+						label: 'customer team id',
+						fieldname: 'requested_by',
 					},
 					{
 						label: 'Raised On',
 						fieldname: 'creation',
+						width: 0.6,
 						format(value) {
 							return Intl.DateTimeFormat('en-US', {
 								year: 'numeric',
 								month: 'long',
-								day: 'numeric'
+								day: 'numeric',
 							}).format(new Date(value));
-						}
+						},
 					},
 					{
 						label: 'Approval By Frappe',
 						fieldname: 'approved_by_frappe',
 						type: 'Component',
 						align: 'center',
+						width: 0.6,
 						component({ row }) {
 							if (row.approved_by_frappe) {
 								return h(
 									Tooltip,
 									{
-										text: 'Approved'
+										text: 'Approved',
 									},
 									() =>
 										h(FeatherIcon, {
 											name: 'check-circle',
-											class: 'h-4 w-4 text-green-600'
-										})
+											class: 'h-4 w-4 text-green-600',
+										}),
 								);
 							} else {
 								return h(
 									Tooltip,
 									{
-										text: 'Approval Pending'
+										text: 'Approval Pending',
 									},
 									() =>
 										h(Clock, {
-											class: 'h-4 w-4 text-yellow-500'
-										})
+											class: 'h-4 w-4 text-yellow-500',
+										}),
 								);
 							}
-						}
+						},
 					},
 					{
 						label: 'Partner Approval',
 						fieldname: 'approved_by_partner',
 						type: 'Component',
 						align: 'center',
+						width: 0.6,
 						component({ row }) {
 							if (row.approved_by_partner) {
 								return h(
 									Tooltip,
 									{
-										text: 'Approved'
+										text: 'Approved',
 									},
 									() =>
 										h(FeatherIcon, {
 											name: 'check-circle',
-											class: 'h-4 w-4 text-green-600'
-										})
+											class: 'h-4 w-4 text-green-600',
+										}),
 								);
 							} else {
 								return h(
 									Tooltip,
 									{
-										text: 'Approval Pending'
+										text: 'Approval Pending',
 									},
 									() =>
 										h(Clock, {
-											class: 'h-4 w-4 text-yellow-500'
-										})
+											class: 'h-4 w-4 text-yellow-500',
+										}),
 								);
 							}
-						}
+						},
 					},
 					{
 						label: '',
 						type: 'Component',
-						width: 1,
-						align: 'left',
+						width: 0.8,
+						align: 'center',
 						component({ row, listResource }) {
 							if (row.status === 'Pending' && row.approved_by_partner === 0) {
 								return h(Button, {
@@ -118,15 +121,15 @@ export default {
 										toast.promise(
 											listResource.runDocMethod.submit({
 												method: 'approve_partner_request',
-												name: row.name
+												name: row.name,
 											}),
 											{
 												loading: 'Approving...',
 												success: 'Approval request sent to Frappe',
-												error: 'Failed to Approve'
-											}
+												error: 'Failed to Approve',
+											},
 										);
-									}
+									},
 								});
 							} else if (
 								row.status === 'Pending' &&
@@ -136,18 +139,18 @@ export default {
 									label: "Waiting for Frappe's approval",
 									theme: 'blue',
 									variant: 'subtle',
-									size: 'md'
+									size: 'md',
 								});
 							}
-						}
-					}
+						},
+					},
 				],
 				filters: {
-					partner: this.$team.doc.name
+					partner: this.$team.doc.name,
 				},
-				orderBy: 'creation desc'
+				orderBy: 'creation desc',
 			};
-		}
-	}
+		},
+	},
 };
 </script>

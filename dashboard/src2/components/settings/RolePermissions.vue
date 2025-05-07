@@ -1,7 +1,7 @@
 <template>
 	<div class="mb-5 flex items-center gap-2">
 		<Tooltip text="All Roles">
-			<Button :route="{ name: 'SettingsPermissionRoles' }" class="">
+			<Button :route="{ name: 'SettingsPermissionRoles' }">
 				<template #icon>
 					<i-lucide-arrow-left class="h-4 w-4 text-gray-700" />
 				</template>
@@ -10,10 +10,13 @@
 		<h3 class="text-lg font-medium text-gray-900">
 			{{ role.doc?.title }}
 		</h3>
+		<Tooltip text="Admin Role" v-if="role.doc?.admin_access">
+			<FeatherIcon name="shield" class="h-5 w-5 text-gray-700" />
+		</Tooltip>
 	</div>
 	<ObjectList
 		:options="rolePermissions"
-		@update:selections="e => (selectedItems = e)"
+		@update:selections="(e) => (selectedItems = e)"
 	>
 		<template #header-left="{ listResource }">
 			<Dropdown :options="getDropdownOptions(listResource)">
@@ -36,7 +39,7 @@ import {
 	Button,
 	Dropdown,
 	createDocumentResource,
-	createResource
+	createResource,
 } from 'frappe-ui';
 import { computed, h, ref } from 'vue';
 import LucideAppWindow from '~icons/lucide/app-window';
@@ -49,7 +52,7 @@ import RoleConfigureDialog from './RoleConfigureDialog.vue';
 let selectedItems = ref(new Set());
 
 const props = defineProps({
-	roleId: { type: String, required: true }
+	roleId: { type: String, required: true },
 });
 
 const role = createDocumentResource({
@@ -59,12 +62,12 @@ const role = createDocumentResource({
 	whitelistedMethods: {
 		addUser: 'add_user',
 		removeUser: 'remove_user',
-		bulkDelete: 'delete_permissions'
-	}
+		bulkDelete: 'delete_permissions',
+	},
 });
 
 const docInsert = createResource({
-	url: 'press.api.client.insert'
+	url: 'press.api.client.insert',
 });
 
 const dropdownOptions = [
@@ -72,19 +75,19 @@ const dropdownOptions = [
 	{
 		label: 'Allowed Bench Groups',
 		doctype: 'Release Group',
-		fieldname: 'release_group'
+		fieldname: 'release_group',
 	},
-	{ label: 'Allowed Servers', doctype: 'Server', fieldname: 'server' }
+	{ label: 'Allowed Servers', doctype: 'Server', fieldname: 'server' },
 ];
 const currentDropdownOption = ref(dropdownOptions[0]);
 function getDropdownOptions(listResource) {
-	return dropdownOptions.map(option => {
+	return dropdownOptions.map((option) => {
 		return {
 			...option,
 			onClick: () => {
 				currentDropdownOption.value = option;
 				let filters = {
-					role: props.roleId
+					role: props.roleId,
 				};
 				if (option.doctype === 'Site') {
 					filters.site = ['is', 'set'];
@@ -97,7 +100,7 @@ function getDropdownOptions(listResource) {
 				}
 				listResource.update({ filters });
 				listResource.reload();
-			}
+			},
 		};
 	});
 }
@@ -110,11 +113,11 @@ const rolePermissions = ref({
 		'release_group',
 		'release_group.title as release_group_title',
 		'server',
-		'server.title as server_title'
+		'server.title as server_title',
 	],
 	filters: {
 		role: props.roleId,
-		site: ['is', 'set']
+		site: ['is', 'set'],
 	},
 	selectable: true,
 	columns: [
@@ -122,8 +125,8 @@ const rolePermissions = ref({
 			label: computed(() =>
 				currentDropdownOption.value.doctype.replace(
 					'Release Group',
-					'Bench Group'
-				)
+					'Bench Group',
+				),
 			),
 			format(_value, row) {
 				return (
@@ -132,44 +135,44 @@ const rolePermissions = ref({
 					row.release_group_title ||
 					row.server_title
 				);
-			}
-		}
+			},
+		},
 	],
 	actions({ listResource: permissions }) {
 		return [
 			{
 				label: 'Configure',
 				slots: {
-					prefix: icon('settings')
+					prefix: icon('settings'),
 				},
 				onClick() {
 					renderDialog(h(RoleConfigureDialog, { roleId: props.roleId }));
-				}
+				},
 			},
 			{
 				label: 'Delete',
 				slots: {
-					prefix: icon('trash-2')
+					prefix: icon('trash-2'),
 				},
 				condition: () => selectedItems.value.size > 0,
 				onClick() {
 					role.bulkDelete.submit(
 						{
-							permissions: Array.from(selectedItems.value)
+							permissions: Array.from(selectedItems.value),
 						},
 						{
 							onSuccess: () => {
 								toast.success('Items deleted successfully');
 								selectedItems.value.clear();
-							}
-						}
+							},
+						},
 					);
-				}
+				},
 			},
 			{
 				label: 'Add',
 				slots: {
-					prefix: icon('plus')
+					prefix: icon('plus'),
 				},
 				onClick() {
 					confirmDialog({
@@ -179,7 +182,7 @@ const rolePermissions = ref({
 							{
 								label: `Select ${currentDropdownOption.value.doctype.replace(
 									'Release Group',
-									'Bench Group'
+									'Bench Group',
 								)}`,
 								type: 'link',
 								fieldname: 'document_name',
@@ -189,13 +192,13 @@ const rolePermissions = ref({
 										name: [
 											'not in',
 											permissions.data.map(
-												p => p[currentDropdownOption.value.fieldname]
-											) || ''
+												(p) => p[currentDropdownOption.value.fieldname],
+											) || '',
 										],
-										status: ['!=', 'Archived']
-									}
-								}
-							}
+										status: ['!=', 'Archived'],
+									},
+								},
+							},
 						],
 						primaryAction: {
 							label: 'Add',
@@ -207,8 +210,8 @@ const rolePermissions = ref({
 										doc: {
 											doctype: 'Press Role Permission',
 											role: props.roleId,
-											[key]: values.document_name
-										}
+											[key]: values.document_name,
+										},
 									}),
 									{
 										loading: 'Adding permission...',
@@ -216,15 +219,15 @@ const rolePermissions = ref({
 											permissions.reload();
 											return 'Permission added successfully';
 										},
-										error: e => getToastErrorMessage(e)
-									}
+										error: (e) => getToastErrorMessage(e),
+									},
 								);
-							}
-						}
+							},
+						},
 					});
-				}
-			}
-		].filter(action => (action.condition ? action.condition() : true));
-	}
+				},
+			},
+		].filter((action) => (action.condition ? action.condition() : true));
+	},
 });
 </script>

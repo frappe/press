@@ -1,17 +1,22 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
+
+import re
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING
 
 import frappe
 import requests
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
+
 from press.api.github import get_access_token, get_auth_headers
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import get_current_team, log_error
+
+REQUIRED_APPS_PATTERN = re.compile(r"required_apps = \[(.*?)\]")
 
 if TYPE_CHECKING:
 	from press.press.doctype.app_release.app_release import AppRelease
@@ -25,7 +30,9 @@ class AppSource(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.app_source_version.app_source_version import AppSourceVersion
+		from press.press.doctype.required_apps.required_apps import RequiredApps
 
 		app: DF.Link
 		app_title: DF.Data
@@ -40,12 +47,43 @@ class AppSource(Document):
 		repository: DF.Data | None
 		repository_owner: DF.Data | None
 		repository_url: DF.Data
+		required_apps: DF.Table[RequiredApps]
 		team: DF.Link
 		uninstalled: DF.Check
 		versions: DF.Table[AppSourceVersion]
 	# end: auto-generated types
 
-	dashboard_fields = ["repository_owner", "repository", "branch"]
+	dashboard_fields = ("repository_owner", "repository", "branch")
+
+	def set_required_apps(self, match: str):
+		# In the format frappe/erpnext
+		apps = match.replace("'", "").replace('"', "").replace(" ", "").split(",")
+
+		for app in apps:
+			try:
+				owner, repo = app.split("/")
+			except ValueError:
+				owner, repo = "frappe", app
+
+			self.append("required_apps", {"repository_url": f"https://github.com/{owner}/{repo}"})
+
+	def validate_dependant_apps(self):
+		hooks_uri = f"{self.repository_owner}/{self.app}/{self.branch}/{self.app}/hooks.py"
+		raw_content_url = (
+			f"https://{get_access_token(self.github_installation_id)}@raw.githubusercontent.com/"
+			if self.github_installation_id
+			else "https://raw.githubusercontent.com/"
+		)
+		uri = raw_content_url + hooks_uri
+
+		response = requests.get(uri)
+		if not response.ok:
+			return
+
+		required_apps = REQUIRED_APPS_PATTERN.findall(response.text)
+		if required_apps:
+			required_apps = required_apps[0]
+			self.set_required_apps(match=required_apps)
 
 	def autoname(self):
 		series = f"SRC-{self.app}-.###"
@@ -87,9 +125,7 @@ class AppSource(Document):
 		versions = set()
 		for row in self.versions:
 			if row.version in versions:
-				frappe.throw(
-					f"Version {row.version} can be added only once", frappe.ValidationError
-				)
+				frappe.throw(f"Version {row.version} can be added only once", frappe.ValidationError)
 			versions.add(row.version)
 
 	def before_save(self):
@@ -97,6 +133,7 @@ class AppSource(Document):
 		self.repository_url = self.repository_url.removesuffix(".git")
 
 		_, self.repository_owner, self.repository = self.repository_url.rsplit("/", 2)
+		self.validate_dependant_apps()
 		# self.create_release()
 
 	@frappe.whitelist()
@@ -106,14 +143,14 @@ class AppSource(Document):
 		commit_hash: str | None = None,
 	):
 		if self.last_github_poll_failed and not force:
-			return
+			return None
 
 		_commit_hash, commit_info, ok = self.get_commit_info(
 			commit_hash,
 		)
 
 		if not ok:
-			return
+			return None
 
 		try:
 			return self._create_release(
@@ -171,6 +208,7 @@ class AppSource(Document):
 			self.set_poll_succeeded()
 		else:
 			self.set_poll_failed(response)
+			self.db_update()
 			return ("", {}, False)
 
 		# Will cause recursion of db.save is used
@@ -227,7 +265,7 @@ class AppSource(Document):
 	def get_auth_headers(self) -> dict:
 		return get_auth_headers(self.github_installation_id)
 
-	def get_access_token(self) -> Optional[str]:
+	def get_access_token(self) -> str | None:
 		if self.github_installation_id:
 			return get_access_token(self.github_installation_id)
 
@@ -246,7 +284,7 @@ class AppSource(Document):
 
 
 def create_app_source(
-	app: str, repository_url: str, branch: str, versions: List[str]
+	app: str, repository_url: str, branch: str, versions: list[str], required_apps: list[str]
 ) -> AppSource:
 	team = get_current_team()
 
@@ -258,6 +296,7 @@ def create_app_source(
 			"branch": branch,
 			"team": team,
 			"versions": [{"version": version} for version in versions],
+			"required_apps": [{"repository_url": required_app} for required_app in required_apps],
 		}
 	)
 
@@ -266,9 +305,7 @@ def create_app_source(
 	return app_source
 
 
-get_permission_query_conditions = get_permission_query_conditions_for_doctype(
-	"App Source"
-)
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("App Source")
 
 
 def get_timestamp_from_commit_info(commit_info: dict) -> str | None:

@@ -8,7 +8,7 @@
 				<Breadcrumbs
 					:items="[
 						{ label: 'Dev Tools', route: '/database-analyzer' },
-						{ label: 'Database Analyzer', route: '/database-analyzer' }
+						{ label: 'Database Analyzer', route: '/database-analyzer' },
 					]"
 				/>
 			</div>
@@ -27,7 +27,7 @@
 					@click="
 						() =>
 							fetchTableSchemas({
-								reload: true
+								reload: true,
 							})
 					"
 				>
@@ -68,14 +68,14 @@
 						class="h-7"
 						:style="{
 							backgroundColor: '#E86C13',
-							width: `${databaseSizeBreakup.data_size_percentage}%`
+							width: `${databaseSizeBreakup.data_size_percentage}%`,
 						}"
 					></div>
 					<div
 						class="h-7"
 						:style="{
 							backgroundColor: '#34BAE3',
-							width: `${databaseSizeBreakup.index_size_percentage}%`
+							width: `${databaseSizeBreakup.index_size_percentage}%`,
 						}"
 					></div>
 				</div>
@@ -89,9 +89,9 @@
 							style="background-color: #e86c13"
 						></div>
 						<span class="text-sm text-gray-800">Data Size</span
-						><span class="ml-auto text-sm text-gray-800"
-							>{{ this.databaseSizeBreakup.data_size }} MB</span
-						>
+						><span class="ml-auto text-sm text-gray-800">{{
+							formatSizeInMB(this.databaseSizeBreakup.data_size)
+						}}</span>
 					</div>
 					<div
 						class="flex w-full items-center justify-start gap-x-2 border-t py-3"
@@ -102,8 +102,8 @@
 						></div>
 						<span class="text-sm text-gray-800">Index Size</span
 						><span class="ml-auto text-sm text-gray-800"
-							>{{ this.databaseSizeBreakup.index_size }} MB</span
-						>
+							>{{ formatSizeInMB(this.databaseSizeBreakup.index_size) }}
+						</span>
 					</div>
 					<div
 						class="flex w-full items-center justify-start gap-x-2 border-t py-3"
@@ -114,8 +114,8 @@
 						></div>
 						<span class="text-sm text-gray-800">Free Space</span
 						><span class="ml-auto text-sm text-gray-800"
-							>{{ this.databaseSizeBreakup.free_size }} MB</span
-						>
+							>{{ formatSizeInMB(this.databaseSizeBreakup.free_size) }}
+						</span>
 					</div>
 				</div>
 			</div>
@@ -149,10 +149,13 @@
 						class="mt-2"
 						:columns="databaseProcesses.columns"
 						:data="databaseProcesses.data"
-						actionHeaderLabel="Kill Process"
+						:alignColumns="alignColumns"
+						:cellFormatters="cellFormatters"
+						:fullViewFormatters="fullViewFormatters"
+						actionHeaderLabel="Kill"
 						:actionComponent="DatabaseProcessKillButton"
 						:actionComponentProps="{
-							site: this.site
+							site: this.site,
 						}"
 						:enableCSVExport="false"
 						:borderLess="true"
@@ -166,29 +169,34 @@
 				label="SQL Query Analysis"
 				subLabel="Check the concerning queries that might be affecting your database performance"
 			>
-				<FTabs
-					class="mt-1"
-					:tabs="queryTabs"
-					v-model="queryTabIndex"
-					v-if="queryTabs.length"
-				>
-					<template #default="{ tab }">
-						<DatabasePerformanceSchemaDisabledNotice
-							v-if="
-								(tab.label === 'Time Consuming Queries' ||
-									tab.label === 'Full Table Scan Queries') &&
-								!isPerformanceSchemaEnabled
-							"
-						/>
-						<ResultTable
-							v-else
-							:columns="tab.columns"
-							:data="tab.data"
-							:enableCSVExport="false"
-							:borderLess="true"
-						/>
-					</template>
-				</FTabs>
+				<div class="mt-1">
+					<FTabs
+						:tabs="queryTabs"
+						v-model="queryTabIndex"
+						v-if="queryTabs.length"
+					>
+						<template #tab-panel="{ tab }">
+							<DatabasePerformanceSchemaDisabledNotice
+								v-if="
+									(tab.label === 'Time Consuming Queries' ||
+										tab.label === 'Full Table Scan Queries') &&
+									!isPerformanceSchemaEnabled
+								"
+							/>
+							<ResultTable
+								v-else
+								:columns="tab.columns"
+								:data="tab.data"
+								:alignColumns="alignColumns"
+								:cellFormatters="cellFormatters"
+								:fullViewFormatters="fullViewFormatters"
+								:enableCSVExport="false"
+								:borderLess="true"
+								:isTruncateText="true"
+							/>
+						</template>
+					</FTabs>
+				</div>
 			</ToggleContent>
 
 			<!-- Indexes Information -->
@@ -197,70 +205,78 @@
 				label="Database Index Analysis"
 				subLabel="Analyze the indexes of the database"
 			>
-				<FTabs
-					class="mt-1"
-					:tabs="databaseIndexesTab"
-					v-model="dbIndexTabIndex"
-					v-if="databaseIndexesTab.length"
-				>
-					<template #default="{ tab }">
-						<DatabasePerformanceSchemaDisabledNotice
-							v-if="
-								(tab.label === 'Unused Indexes' ||
-									tab.label === 'Suggested Indexes') &&
-								!isPerformanceSchemaEnabled
-							"
-						/>
-						<div v-else-if="tab.label === 'Suggested Indexes'">
-							<div
+				<div class="mt-1">
+					<FTabs
+						:tabs="databaseIndexesTab"
+						v-model="dbIndexTabIndex"
+						v-if="databaseIndexesTab.length"
+					>
+						<template #tab-panel="{ tab }">
+							<DatabasePerformanceSchemaDisabledNotice
 								v-if="
-									!isIndexSuggestionTriggered ||
-									this.$resources.suggestDatabaseIndexes.loading ||
-									this.fetchingDatabaseIndex
+									(tab.label === 'Unused Indexes' ||
+										tab.label === 'Suggested Indexes') &&
+									!isPerformanceSchemaEnabled
 								"
-								class="flex h-60 flex-col items-center justify-center gap-4"
-							>
-								<Button
-									variant="outline"
-									@click="
-										() => {
-											this.isIndexSuggestionTriggered = true;
-											this.$resources.suggestDatabaseIndexes.submit();
-										}
-									"
-									:loading="
+							/>
+							<div v-else-if="tab.label === 'Suggested Indexes'">
+								<div
+									v-if="
+										!isIndexSuggestionTriggered ||
 										this.$resources.suggestDatabaseIndexes.loading ||
 										this.fetchingDatabaseIndex
 									"
-									>Suggest Indexes</Button
+									class="flex h-60 flex-col items-center justify-center gap-4"
 								>
-								<p class="text-base text-gray-700">
-									This may take a while to analyze
-								</p>
+									<Button
+										variant="outline"
+										@click="
+											() => {
+												this.isIndexSuggestionTriggered = true;
+												this.$resources.suggestDatabaseIndexes.submit();
+											}
+										"
+										:loading="
+											this.$resources.suggestDatabaseIndexes.loading ||
+											this.fetchingDatabaseIndex
+										"
+										>Suggest Indexes</Button
+									>
+									<p class="text-base text-gray-700">
+										This may take a while to analyze
+									</p>
+								</div>
+								<ResultTable
+									v-else
+									:columns="suggestedDatabaseIndexes.columns"
+									:data="suggestedDatabaseIndexes.data"
+									:alignColumns="alignColumns"
+									:cellFormatters="cellFormatters"
+									:fullViewFormatters="fullViewFormatters"
+									:enableCSVExport="false"
+									:borderLess="true"
+									actionHeaderLabel="Add Index"
+									:actionComponent="DatabaseAddIndexButton"
+									:actionComponentProps="{
+										site: this.site,
+									}"
+									:isTruncateText="true"
+								/>
 							</div>
 							<ResultTable
 								v-else
-								:columns="suggestedDatabaseIndexes.columns"
-								:data="suggestedDatabaseIndexes.data"
+								:columns="tab.columns"
+								:data="tab.data"
+								:alignColumns="alignColumns"
+								:cellFormatters="cellFormatters"
+								:fullViewFormatters="fullViewFormatters"
+								:isTruncateText="true"
 								:enableCSVExport="false"
 								:borderLess="true"
-								actionHeaderLabel="Add Index"
-								:actionComponent="DatabaseAddIndexButton"
-								:actionComponentProps="{
-									site: this.site
-								}"
-								:isTruncateText="true"
 							/>
-						</div>
-						<ResultTable
-							v-else
-							:columns="tab.columns"
-							:data="tab.data"
-							:enableCSVExport="false"
-							:borderLess="true"
-						/>
-					</template>
-				</FTabs>
+						</template>
+					</FTabs>
+				</div>
 			</ToggleContent>
 
 			<DatabaseTableSchemaSizeDetailsDialog
@@ -300,6 +316,7 @@ import LinkControl from '../../../components/LinkControl.vue';
 import ObjectList from '../../../components/ObjectList.vue';
 import { h, markRaw } from 'vue';
 import { toast } from 'vue-sonner';
+import { formatValue } from '../../../utils/format';
 import ToggleContent from '../../../components/ToggleContent.vue';
 import ResultTable from '../../../components/devtools/database/ResultTable.vue';
 import DatabaseProcessKillButton from '../../../components/devtools/database/DatabaseProcessKillButton.vue';
@@ -321,7 +338,7 @@ export default {
 		DatabaseTableSchemaDialog,
 		DatabaseTableSchemaSizeDetailsDialog,
 		DatabaseProcessKillButton,
-		DatabasePerformanceSchemaDisabledNotice
+		DatabasePerformanceSchemaDisabledNotice,
 	},
 	data() {
 		return {
@@ -335,21 +352,42 @@ export default {
 			showTableSchemasDialog: false,
 			fetchingDatabaseIndex: false,
 			DatabaseProcessKillButton: markRaw(DatabaseProcessKillButton),
-			DatabaseAddIndexButton: markRaw(DatabaseAddIndexButton)
+			DatabaseAddIndexButton: markRaw(DatabaseAddIndexButton),
 		};
+	},
+	mounted() {
+		const url = new URL(window.location.href);
+		const site_name = url.searchParams.get('site');
+		if (site_name) {
+			this.site = site_name;
+		}
 	},
 	watch: {
 		site(site_name) {
+			if (!site_name) return;
+			// set site to query param ?site=site_name
+			const url = new URL(window.location.href);
+			url.searchParams.set('site', site_name);
+			window.history.pushState({}, '', url);
+
 			// reset state
 			this.data = null;
 			this.errorMessage = null;
 			this.fetchTableSchemas({
-				site_name: site_name
+				site_name: site_name,
 			});
 			this.$resources.site.submit();
-			this.$resources.databasePerformanceReport.submit();
-			this.$resources.databaseProcesses.submit();
-		}
+			this.$resources.databasePerformanceReport.submit({
+				dt: 'Site',
+				dn: site_name,
+				method: 'get_database_performance_report',
+			});
+			this.$resources.databaseProcesses.submit({
+				dt: 'Site',
+				dn: site_name,
+				method: 'fetch_database_processes',
+			});
+		},
 	},
 	resources: {
 		site() {
@@ -359,7 +397,7 @@ export default {
 				makeParams: () => {
 					return { doctype: 'Site', name: this.site };
 				},
-				auto: false
+				auto: false,
 			};
 		},
 		tableSchemas() {
@@ -367,11 +405,18 @@ export default {
 				url: 'press.api.client.run_doc_method',
 				initialData: {},
 				auto: false,
-				onSuccess: data => {
+				makeParams: () => {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'fetch_database_table_schema',
+					};
+				},
+				onSuccess: (data) => {
 					if (data?.message?.loading) {
 						setTimeout(this.fetchTableSchemas, 5000);
 					}
-				}
+				},
 			};
 		},
 		optimizeTable() {
@@ -379,18 +424,18 @@ export default {
 				url: 'press.api.client.run_doc_method',
 				initialData: {},
 				auto: false,
-				onSuccess: data => {
+				onSuccess: (data) => {
 					if (data?.message) {
 						if (data?.message?.success) {
 							toast.success(data?.message?.message);
 							this.$router.push(
-								`/sites/${this.site}/insights/jobs/${data?.message?.job_name}`
+								`/sites/${this.site}/insights/jobs/${data?.message?.job_name}`,
 							);
 						} else {
 							toast.error(data?.message?.message);
 						}
 					}
-				}
+				},
 			};
 		},
 		databasePerformanceReport() {
@@ -401,10 +446,10 @@ export default {
 					return {
 						dt: 'Site',
 						dn: this.site,
-						method: 'get_database_performance_report'
+						method: 'get_database_performance_report',
 					};
 				},
-				auto: false
+				auto: false,
 			};
 		},
 		suggestDatabaseIndexes() {
@@ -415,10 +460,10 @@ export default {
 					return {
 						dt: 'Site',
 						dn: this.site,
-						method: 'suggest_database_indexes'
+						method: 'suggest_database_indexes',
 					};
 				},
-				onSuccess: data => {
+				onSuccess: (data) => {
 					if (data?.message) {
 						this.fetchingDatabaseIndex =
 							this.$resources.suggestDatabaseIndexes?.data?.message?.loading ??
@@ -430,7 +475,7 @@ export default {
 						}
 					}
 				},
-				auto: false
+				auto: false,
 			};
 		},
 		databaseProcesses() {
@@ -441,12 +486,12 @@ export default {
 					return {
 						dt: 'Site',
 						dn: this.site,
-						method: 'fetch_database_processes'
+						method: 'fetch_database_processes',
 					};
 				},
-				auto: false
+				auto: false,
 			};
-		}
+		},
 	},
 	computed: {
 		site_info() {
@@ -477,7 +522,7 @@ export default {
 					data_size_mb: (table.size.data_length / (1024 * 1024)).toFixed(3),
 					index_size_mb: (table.size.index_length / (1024 * 1024)).toFixed(3),
 					total_size_mb: (table.size.total_size / (1024 * 1024)).toFixed(3),
-					no_of_columns: table.columns.length
+					no_of_columns: table.columns.length,
 				});
 			}
 			return data;
@@ -503,36 +548,36 @@ export default {
 											navigator.clipboard.writeText(row.table_name);
 											toast.success('Copied to clipboard');
 										}
-									}
+									},
 								},
-								[row.table_name]
+								[row.table_name],
 							);
-						}
+						},
 					},
 					{
 						label: 'Size (MB)',
 						fieldname: 'total_size_mb',
-						width: 0.5
+						width: 0.5,
 					},
 					{
 						label: 'No of Columns',
 						fieldname: 'no_of_columns',
-						width: 0.5
-					}
-				]
+						width: 0.5,
+					},
+				],
 			};
 		},
 		databaseSizeBreakup() {
 			if (!this.isRequiredInformationReceived) return null;
 			let data_size = this.tableSizeInfo.reduce(
 				(a, b) => a + parseFloat(b.data_size_mb),
-				0
+				0,
 			);
 			data_size = data_size.toFixed(2);
 
 			let index_size = this.tableSizeInfo.reduce(
 				(a, b) => a + parseFloat(b.index_size_mb),
-				0
+				0,
 			);
 			index_size = index_size.toFixed(2);
 
@@ -546,8 +591,8 @@ export default {
 				free_size: (database_size_limit - data_size - index_size).toFixed(2),
 				data_size_percentage: parseInt((data_size / database_size_limit) * 100),
 				index_size_percentage: parseInt(
-					(index_size / database_size_limit) * 100
-				)
+					(index_size / database_size_limit) * 100,
+				),
 			};
 		},
 		isPerformanceSchemaEnabled() {
@@ -563,29 +608,29 @@ export default {
 				{
 					label: 'Slow Queries',
 					columns: ['Rows Examined', 'Rows Sent', 'Calls', 'Duration', 'Query'],
-					data: result['slow_queries'].map(e => {
+					data: result['slow_queries'].map((e) => {
 						return [e.rows_examined, e.rows_sent, e.count, e.duration, e.query];
-					})
+					}),
 				},
 				{
 					label: 'Time Consuming Queries',
-					columns: ['Percentage', 'Calls', 'Avg Time (ms)', 'Query'],
-					data: result['top_10_time_consuming_queries'].map(e => {
+					columns: ['Percentage', 'Calls', 'Avg Time', 'Query'],
+					data: result['top_10_time_consuming_queries'].map((e) => {
 						return [
 							Math.round(e['percent'], 1),
 							e['calls'],
 							e['avg_time_ms'],
-							e['query']
+							e['query'],
 						];
-					})
+					}),
 				},
 				{
 					label: 'Full Table Scan Queries',
 					columns: ['Rows Examined', 'Rows Sent', 'Calls', 'Query'],
-					data: result['top_10_queries_with_full_table_scan'].map(e => {
+					data: result['top_10_queries_with_full_table_scan'].map((e) => {
 						return [e['rows_examined'], e['rows_sent'], e['calls'], e['query']];
-					})
-				}
+					}),
+				},
 			];
 			return prepared_result;
 		},
@@ -597,7 +642,7 @@ export default {
 				{
 					label: 'Suggested Indexes',
 					columns: ['Table', 'Column', 'Index Name', 'Sample Query'],
-					data: []
+					data: [],
 				},
 				{
 					label: 'Redundant Indexes',
@@ -606,25 +651,25 @@ export default {
 						'Dominant Index',
 						'Dominant Index Columns',
 						'Redundant Index',
-						'Redundant Index Columns'
+						'Redundant Index Columns',
 					],
-					data: result['redundant_indexes'].map(e => {
+					data: result['redundant_indexes'].map((e) => {
 						return [
 							e['table_name'],
 							e['dominant_index_name'],
 							e['dominant_index_columns'],
 							e['redundant_index_name'],
-							e['redundant_index_columns']
+							e['redundant_index_columns'],
 						];
-					})
+					}),
 				},
 				{
 					label: 'Unused Indexes',
 					columns: ['Table Name', 'Index Name'],
-					data: result['unused_indexes'].map(e => {
+					data: result['unused_indexes'].map((e) => {
 						return [e['table_name'], e['index_name']];
-					})
-				}
+					}),
+				},
 			];
 			return prepared_result;
 		},
@@ -640,23 +685,15 @@ export default {
 			}
 			return {
 				columns: ['Table', 'Column', 'Slow Query'],
-				data: data
+				data: data,
 			};
 		},
 		databaseProcesses() {
 			if (!this.isRequiredInformationReceived) return null;
 			const result = this.$resources.databaseProcesses.data?.message ?? [];
 			return {
-				columns: [
-					'ID',
-					'State',
-					'Time (s)',
-					'User',
-					'Host',
-					'Command',
-					'Query'
-				],
-				data: result.map(e => {
+				columns: ['ID', 'State', 'Time', 'User', 'Host', 'Command', 'Query'],
+				data: result.map((e) => {
 					return [
 						e['id'],
 						e['state'],
@@ -664,11 +701,37 @@ export default {
 						e['db_user'],
 						e['db_user_host'],
 						e['command'],
-						e['query']
+						e['query'],
 					];
-				})
+				}),
 			};
-		}
+		},
+		cellFormatters() {
+			return {
+				'Rows Examined': (v) => formatValue(v, 'commaSeperatedNumber'),
+				'Rows Sent': (v) => formatValue(v, 'commaSeperatedNumber'),
+				Calls: (v) => formatValue(v, 'commaSeperatedNumber'),
+				'Avg Time': (v) => formatValue(v, 'durationMilliseconds'),
+				Duration: (v) => formatValue(v, 'durationSeconds'),
+				Time: (v) => formatValue(v, 'durationSeconds'),
+			};
+		},
+		fullViewFormatters() {
+			return {
+				Query: (v) => formatValue(v, 'sql'),
+			};
+		},
+		alignColumns() {
+			return {
+				Percentage: 'right',
+				'Rows Examined': 'right',
+				'Rows Sent': 'right',
+				Calls: 'right',
+				'Avg Time': 'right',
+				Duration: 'right',
+				Time: 'right',
+			};
+		},
 	},
 	methods: {
 		fetchTableSchemas({ site_name = null, reload = false } = {}) {
@@ -679,22 +742,38 @@ export default {
 				dn: site_name,
 				method: 'fetch_database_table_schema',
 				args: {
-					reload
-				}
+					reload,
+				},
 			});
 		},
 		optimizeTable() {
 			this.$resources.optimizeTable.submit({
 				dt: 'Site',
 				dn: this.site,
-				method: 'optimize_tables'
+				method: 'optimize_tables',
 			});
 		},
 		viewTableSchemaDetails(tableName) {
 			this.showTableSchemaSizeDetailsDialog = false;
 			this.preSelectedSchemaForSchemaDialog = tableName;
 			this.showTableSchemasDialog = true;
-		}
-	}
+		},
+		formatSizeInMB(mb) {
+			try {
+				let floatMB = parseFloat(mb);
+				if (floatMB < 1) {
+					let kb = floatMB * 1024; // Convert MB to KB
+					return `${Math.round(kb)} KB`; // Return KB without decimal
+				} else if (floatMB < 1024) {
+					return `${Math.round(floatMB)} MB`; // Return MB without decimal
+				} else {
+					let gb = floatMB / 1024; // Convert MB to GB
+					return `${gb.toFixed(1)} GB`; // Return GB with 1 decimal
+				}
+			} catch (error) {
+				return `${mb} MB`; // Return MB without decimal
+			}
+		},
+	},
 };
 </script>

@@ -113,7 +113,8 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Site",
-   "options": "Site"
+   "options": "Site",
+   "search_index": 1
   },
   {
    "fieldname": "quantity",
@@ -130,7 +131,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-07-05 10:28:46.559419",
+ "modified": "2025-03-18 10:10:51.856778",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payout Order Item",

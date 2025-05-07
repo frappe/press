@@ -29,14 +29,6 @@ class VolumeResizeLimitError(ValidationError):
 	pass
 
 
-class AAAARecordExists(ValidationError):
-	pass
-
-
-class ConflictingCAARecord(ValidationError):
-	pass
-
-
 class TeamHeaderNotInRequestError(ValidationError):
 	pass
 
@@ -54,4 +46,32 @@ class SiteAlreadyArchived(ValidationError):
 
 
 class InactiveDomains(ValidationError):
+	pass
+
+
+class DNSValidationError(ValidationError):
+	pass
+
+
+class AAAARecordExists(DNSValidationError):
+	pass
+
+
+class ConflictingCAARecord(DNSValidationError):
+	pass
+
+
+class ConflictingDNSRecord(DNSValidationError):
+	pass
+
+
+class MultipleARecords(DNSValidationError):
+	pass
+
+
+class MultipleCNAMERecords(DNSValidationError):
+	pass
+
+
+class TLSRetryLimitExceeded(ValidationError):
 	pass

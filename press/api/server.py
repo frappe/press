@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 import frappe
 import requests
 from frappe.utils import convert_utc_to_timezone, flt
+from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 
 from press.api.bench import all as all_benches
@@ -203,6 +204,10 @@ def usage(name):
 			f"""(node_memory_MemTotal_bytes{{instance="{name}",job="node"}} - node_memory_MemFree_bytes{{instance="{name}",job="node"}} - (node_memory_Cached_bytes{{instance="{name}",job="node"}} + node_memory_Buffers_bytes{{instance="{name}",job="node"}})) / (1024 * 1024)""",
 			lambda x: x,
 		),
+		"free_memory": (
+			f"""avg_over_time(node_memory_MemAvailable_bytes{{instance="{name}", job="node"}}[10m])""",
+			lambda x: x,
+		),
 	}
 
 	result = {}
@@ -275,6 +280,7 @@ def calculate_swap(name):
 
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
+@redis_cache(ttl=10 * 60)
 def analytics(name, query, timezone, duration):
 	timespan, timegrain = get_timespan_timegrain(duration)
 
@@ -346,22 +352,24 @@ avg by (instance) (
 
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
+@redis_cache(ttl=10 * 60)
 def get_request_by_site(name, query, timezone, duration):
-	from press.api.analytics import FilterByResource, get_request_by_
+	from press.api.analytics import ResourceType, get_request_by_
 
 	timespan, timegrain = get_timespan_timegrain(duration)
 
-	return get_request_by_(name, query, timezone, timespan, timegrain, FilterByResource.SERVER)
+	return get_request_by_(name, query, timezone, timespan, timegrain, ResourceType.SERVER)
 
 
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
+@redis_cache(ttl=10 * 60)
 def get_slow_logs_by_site(name, query, timezone, duration, normalize=False):
-	from press.api.analytics import FilterByResource, get_slow_logs
+	from press.api.analytics import ResourceType, get_slow_logs
 
 	timespan, timegrain = get_timespan_timegrain(duration)
 
-	return get_slow_logs(name, query, timezone, timespan, timegrain, FilterByResource.SERVER, normalize)
+	return get_slow_logs(name, query, timezone, timespan, timegrain, ResourceType.SERVER, normalize)
 
 
 def prometheus_query(query, function, timezone, timespan, timegrain):

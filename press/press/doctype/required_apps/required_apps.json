@@ -1,0 +1,35 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-03-28 11:42:58.586288",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "repository_url"
+ ],
+ "fields": [
+  {
+   "fieldname": "repository_url",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Repository URL ",
+   "read_only": 1,
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-03-28 11:43:50.259197",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Required Apps",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

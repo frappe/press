@@ -10,6 +10,7 @@
   "product_trial",
   "team",
   "site",
+  "domain",
   "column_break_cubd",
   "status",
   "account_request",
@@ -17,9 +18,7 @@
   "section_break_zlzx",
   "site_creation_started_on",
   "column_break_bvut",
-  "site_creation_completed_on",
-  "signup_info_tab",
-  "signup_details"
+  "site_creation_completed_on"
  ],
  "fields": [
   {
@@ -28,6 +27,7 @@
    "in_list_view": 1,
    "label": "Team",
    "options": "Team",
+   "read_only": 1,
    "search_index": 1
   },
   {
@@ -35,6 +35,7 @@
    "fieldtype": "Link",
    "label": "Account Request",
    "options": "Account Request",
+   "read_only": 1,
    "search_index": 1
   },
   {
@@ -48,7 +49,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nWait for Site\nCompleting Setup Wizard\nSite Created\nError\nExpired"
+   "options": "Pending\nWait for Site\nPrefilling Setup Wizard\nAdding Domain\nSite Created\nError\nExpired"
   },
   {
    "fieldname": "site",
@@ -56,6 +57,7 @@
    "in_list_view": 1,
    "label": "Site",
    "options": "Site",
+   "read_only": 1,
    "search_index": 1
   },
   {
@@ -63,6 +65,7 @@
    "fieldtype": "Link",
    "label": "Agent Job",
    "options": "Agent Job",
+   "read_only": 1,
    "search_index": 1
   },
   {
@@ -71,18 +74,8 @@
    "in_list_view": 1,
    "label": "Product Trial",
    "options": "Product Trial",
+   "read_only": 1,
    "search_index": 1
-  },
-  {
-   "fieldname": "signup_info_tab",
-   "fieldtype": "Tab Break",
-   "label": "Signup Info"
-  },
-  {
-   "default": "{}",
-   "fieldname": "signup_details",
-   "fieldtype": "JSON",
-   "label": "Signup Details"
   },
   {
    "fieldname": "section_break_zlzx",
@@ -91,7 +84,8 @@
   {
    "fieldname": "site_creation_started_on",
    "fieldtype": "Datetime",
-   "label": "Site Creation Started On"
+   "label": "Site Creation Started On",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_bvut",
@@ -100,12 +94,19 @@
   {
    "fieldname": "site_creation_completed_on",
    "fieldtype": "Datetime",
-   "label": "Site Creation Completed On"
+   "label": "Site Creation Completed On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Data",
+   "label": "Domain"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-19 15:17:20.958670",
+ "modified": "2025-04-13 12:09:12.193287",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial Request",
@@ -147,6 +148,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

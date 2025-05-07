@@ -12,6 +12,7 @@ from frappe.model.document import Document
 from frappe.utils import get_url_to_form
 from frappe.utils.background_jobs import enqueue_doc
 from frappe.utils.data import add_to_date
+from frappe.utils.synchronization import filelock
 
 from press.exceptions import AlertRuleNotEnabled
 from press.press.doctype.incident.incident import INCIDENT_ALERT, INCIDENT_SCOPE
@@ -106,11 +107,16 @@ class AlertmanagerWebhookLog(Document):
 				self.name,
 				"validate_and_create_incident",
 				enqueue_after_commit=True,
-				job_id=f"validate_and_create_incident:{self.incident_scope}:{self.alert}",
-				deduplicate=True,
 			)
 		if not frappe.get_cached_value("Prometheus Alert Rule", self.alert, "silent"):
-			enqueue_doc(self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True)
+			send_telegram_notifs = frappe.db.get_single_value("Press Settings", "send_telegram_notifications")
+			if send_telegram_notifs:
+				enqueue_doc(self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True)
+
+			send_email_notifs = frappe.db.get_single_value("Press Settings", "send_email_notifications")
+			if send_email_notifs:
+				enqueue_doc(self.doctype, self.name, "send_email_notification", enqueue_after_commit=True)
+
 		if self.status == "Firing" and frappe.get_cached_value(
 			"Prometheus Alert Rule", self.alert, "press_job_type"
 		):
@@ -190,6 +196,10 @@ class AlertmanagerWebhookLog(Document):
 			return
 		if not (self.alert == INCIDENT_ALERT and self.severity == "Critical" and self.status == "Firing"):
 			return
+		cluster = frappe.get_value("Server", self.incident_scope, "cluster")
+		rule: "PrometheusAlertRule" = frappe.get_doc("Prometheus Alert Rule", self.alert)
+		if find(rule.ignore_on_clusters, lambda x: x.cluster == cluster):
+			return
 
 		instances = self.get_past_alert_instances()
 		if len(instances) > min(0.4 * self.total_instances(), 15):
@@ -246,6 +256,16 @@ class AlertmanagerWebhookLog(Document):
 		message = self.generate_telegram_message()
 		TelegramMessage.enqueue(message=message, topic=self.severity)
 
+	def send_email_notification(self):
+		message = self.generate_telegram_message()
+		recipient_emails = frappe.db.get_single_value("Press Settings", "email_recipients")
+		email_list = [email.strip() for email in recipient_emails.split(",")]
+		frappe.sendmail(
+			recipients=email_list,
+			subject=self.alert,
+			message=message,
+		)
+
 	@property
 	def bench(self):
 		return self.parsed_group_labels.get("bench")
@@ -277,12 +297,14 @@ class AlertmanagerWebhookLog(Document):
 
 	def create_incident(self):
 		try:
-			if self.ongoing_incident_exists():
-				return
-			incident = frappe.new_doc("Incident")
-			incident.alert = self.alert
-			incident.server = self.server
-			incident.cluster = self.cluster
-			incident.save()
+			with filelock(f"incident_creation_{self.server}"):
+				frappe.db.commit()  # To avoid reading old data
+				if self.ongoing_incident_exists():
+					return
+				incident = frappe.new_doc("Incident")
+				incident.alert = self.alert
+				incident.server = self.server
+				incident.cluster = self.cluster
+				incident.save()
 		except Exception:
 			log_error("Incident creation failed")

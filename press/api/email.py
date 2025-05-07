@@ -9,6 +9,7 @@ from datetime import datetime
 import frappe
 import requests
 from frappe.exceptions import OutgoingEmailError, TooManyRequestsError, ValidationError
+from frappe.utils.password import get_decrypted_password
 
 from press.api.developer.marketplace import get_subscription_info
 from press.api.site import site_config, update_config
@@ -107,7 +108,7 @@ def validate_plan(secret_key):
 
 	if not secret_key:
 		frappe.throw(
-			"Secret key missing. Email Delivery Service seems to be improperly installed. Try uninstalling and reinstalling it.",
+			"Secret key missing. Email Delivery Service seems to be improperly installed. Try reinstalling it.",
 			EmailConfigError,
 		)
 
@@ -122,8 +123,8 @@ def validate_plan(secret_key):
 
 	if not subscription["enabled"]:
 		frappe.throw(
-			"Your subscription is not active. Try activating it from, "
-			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/overview",
+			"Your subscription is not active. Try reinstalling Email Delivery Service."
+			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/apps",
 			EmailConfigError,
 		)
 
@@ -140,15 +141,28 @@ def validate_plan(secret_key):
 	if not count < plan_label_map[subscription["plan"]]:
 		frappe.throw(
 			"You have exceeded your quota for Email Delivery Service. Try upgrading it from, "
-			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/overview",
+			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/apps",
 			EmailLimitExceeded,
 		)
 
 
 def check_spam(message: bytes):
+	press_settings = frappe.get_cached_value(
+		"Press Settings",
+		None,
+		["enable_spam_check", "spamd_endpoint", "spamd_api_key"],
+		as_dict=True,
+	)
+	if not press_settings.enable_spam_check:
+		return
 	try:
+		headers = {}
+		if press_settings.spamd_api_key:
+			spamd_api_secret = get_decrypted_password("Press Settings", "Press Settings", "spamd_api_secret")
+			headers["Authorization"] = f"token {press_settings.spamd_api_key}:{spamd_api_secret}"
 		resp = requests.post(
-			"https://server.frappemail.com/spamd/score",
+			press_settings.spamd_endpoint,
+			headers=headers,
 			files={"message": message},
 		)
 		resp.raise_for_status()

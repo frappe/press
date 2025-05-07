@@ -15,6 +15,7 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   git \
   mariadb-client \
   libmariadb-dev \
+  pkg-config \
   pv \
   ntp \
   wget \
@@ -72,13 +73,14 @@ ENV {{ doc.get_dependency_version("python", True) }}
 RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/ppa \
   && apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
-  python${PYTHON_VERSION} \
-  python${PYTHON_VERSION}-dev \
-  python${PYTHON_VERSION}-venv \
-  python${PYTHON_VERSION}-distutils \
+    python${PYTHON_VERSION} \
+    python${PYTHON_VERSION}-dev \
+    {% if not remove_distutils -%}
+    python${PYTHON_VERSION}-distutils \
+    {%- endif %}
+    python${PYTHON_VERSION}-venv \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre-python`
-
 
 # Install wkhtmltopdf
 ENV {{ doc.get_dependency_version("wkhtmltopdf", True) }}
@@ -183,7 +185,12 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 npm install 
 # Install Bench
 ENV PATH "$PATH:/home/frappe/.local/bin"
 
+{% if requires_version_based_get_pip %}
+RUN wget https://bootstrap.pypa.io/pip/${PYTHON_VERSION}/get-pip.py && python${PYTHON_VERSION} get-pip.py `#stage-pre-pip`
+{% else %}
 RUN wget https://bootstrap.pypa.io/get-pip.py && python${PYTHON_VERSION} get-pip.py `#stage-pre-pip`
+{% endif %}
+
 ENV {{ doc.get_dependency_version("bench", True) }}
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 python${PYTHON_VERSION} -m pip install --upgrade frappe-bench==${BENCH_VERSION} `#stage-bench-bench`
 

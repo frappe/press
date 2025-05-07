@@ -25,6 +25,12 @@ frappe.ui.form.on('Database Server', {
 				frm.doc.is_server_setup,
 			],
 			[
+				__('Install Filebeat'),
+				'install_filebeat',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
 				__('Fetch Keys'),
 				'fetch_keys',
 				true,

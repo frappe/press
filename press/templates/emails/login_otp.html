@@ -1,0 +1,23 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/saas.html" %}
+{% set title = title %}
+{% set image_path = image_path %}
+{% set read_pixel_path = read_pixel_path %}
+{% set otp = otp %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+    <div class="p-8 bg-white from-markdown">
+        <p>Use below verification code to log in to Frappe Cloud!</p>
+        <p class="font-medium">Verification Code</p>
+        <div class="text-xl font-bold">{{ otp }}</div>
+        {{ utils.separator() }}
+        <p class="my-0">Team Frappe</p>
+    </div>
+    {% if read_pixel_path %}
+    <img src="{{ read_pixel_path }}">
+    {% endif %}
+</td>
+
+{% endblock %}

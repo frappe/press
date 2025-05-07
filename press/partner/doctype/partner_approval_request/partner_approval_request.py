@@ -1,5 +1,6 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -26,13 +27,13 @@ class PartnerApprovalRequest(Document):
 		status: DF.Literal["Pending", "Approved", "Rejected"]
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"requested_by",
 		"partner",
 		"status",
 		"approved_by_frappe",
 		"approved_by_partner",
-	]
+	)
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
@@ -54,18 +55,16 @@ class PartnerApprovalRequest(Document):
 				partner = frappe.get_doc("Team", self.partner)
 				customer.partner_email = partner.partner_email
 				customer.partnership_date = frappe.utils.getdate(self.creation)
-				team_members = [d.user for d in customer.team_members]
-				if partner.user not in team_members:
-					customer.append("team_members", {"user": partner.user})
 				customer.save(ignore_permissions=True)
 
 	@dashboard_whitelist()
 	def approve_partner_request(self):
-		if self.status == "Pending" and not self.approved_by_frappe:
+		if self.status == "Pending":
 			self.approved_by_partner = True
 			self.save(ignore_permissions=True)
 			self.reload()
-			self.send_approval_request_email()
+			if not self.approved_by_frappe:
+				self.send_approval_request_email()
 
 	def send_approval_request_email(self):
 		from press.utils.billing import get_frappe_io_connection
@@ -77,9 +76,7 @@ class PartnerApprovalRequest(Document):
 			frappe.throw("Failed to create approval request. Please contact support.")
 		customer = frappe.db.get_value("Team", self.requested_by, "user")
 
-		link = get_url(
-			f"/api/method/press.api.partner.approve_partner_request?key={self.key}"
-		)
+		link = get_url(f"/api/method/press.api.partner.approve_partner_request?key={self.key}")
 
 		frappe.sendmail(
 			subject="Partner Approval Request",

@@ -6,7 +6,7 @@ import boto3
 import frappe
 from boto3.session import Session
 from frappe.model.document import Document
-from frappe.utils import get_url
+from frappe.utils import get_url, validate_email_address
 from twilio.rest import Client
 
 from press.api.billing import get_stripe
@@ -57,16 +57,20 @@ class PressSettings(Document):
 		default_outgoing_pass: DF.Data | None
 		disable_agent_job_deduplication: DF.Check
 		disable_auto_retry: DF.Check
+		disable_frappe_auth: DF.Check
+		disable_physical_backup: DF.Check
 		docker_registry_namespace: DF.Data | None
 		docker_registry_password: DF.Data | None
 		docker_registry_url: DF.Data | None
 		docker_registry_username: DF.Data | None
 		domain: DF.Link | None
 		eff_registration_email: DF.Data
+		email_recipients: DF.SmallText | None
 		enable_app_grouping: DF.Check
 		enable_email_pre_verification: DF.Check
 		enable_google_oauth: DF.Check
 		enable_site_pooling: DF.Check
+		enable_spam_check: DF.Check
 		enforce_storage_limits: DF.Check
 		erpnext_api_key: DF.Data | None
 		erpnext_api_secret: DF.Password | None
@@ -96,8 +100,11 @@ class PressSettings(Document):
 		log_server: DF.Link | None
 		mailgun_api_key: DF.Data | None
 		max_allowed_screenshots: DF.Int
+		max_concurrent_physical_restorations: DF.Int
+		max_failed_backup_attempts_in_a_day: DF.Int
 		micro_debit_charge_inr: DF.Currency
 		micro_debit_charge_usd: DF.Currency
+		minimum_rebuild_memory: DF.Int
 		monitor_server: DF.Link | None
 		monitor_token: DF.Data | None
 		ngrok_auth_token: DF.Data | None
@@ -125,7 +132,12 @@ class PressSettings(Document):
 		remote_uploads_bucket: DF.Data | None
 		root_domain: DF.Data | None
 		rsa_key_size: DF.Literal["2048", "3072", "4096"]
+		send_email_notifications: DF.Check
+		send_telegram_notifications: DF.Check
 		spaces_domain: DF.Link | None
+		spamd_api_key: DF.Data | None
+		spamd_api_secret: DF.Password | None
+		spamd_endpoint: DF.Data | None
 		ssh_certificate_authority: DF.Link | None
 		staging_expiry: DF.Int
 		staging_plan: DF.Link | None
@@ -152,6 +164,7 @@ class PressSettings(Document):
 		twilio_phone_number: DF.Phone | None
 		usage_record_creation_batch_size: DF.Int
 		usd_rate: DF.Float
+		use_agent_job_callbacks: DF.Check
 		use_app_cache: DF.Check
 		use_delta_builds: DF.Check
 		use_staging_ca: DF.Check
@@ -163,6 +176,23 @@ class PressSettings(Document):
 		"partnership_fee_inr",
 		"partnership_fee_usd",
 	)
+
+	def validate(self):
+		if self.max_concurrent_physical_restorations > 5:
+			frappe.throw("Max Concurrent Physical Restorations should be less than 5")
+
+		if self.send_email_notifications:
+			if self.email_recipients:
+				# Split the comma-separated emails into a list
+				email_list = [email.strip() for email in self.email_recipients.split(",")]
+				for email in email_list:
+					if not validate_email_address(email):
+						frappe.throw(f"Invalid email address: {email}")
+			else:
+				frappe.throw("Email Recipients List can not be empty")
+
+		if self.minimum_rebuild_memory < 2:
+			frappe.throw("Minimum rebuild memory needs to be 2 GB or more.")
 
 	@frappe.whitelist()
 	def create_stripe_webhook(self):

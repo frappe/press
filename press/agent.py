@@ -10,6 +10,7 @@ from datetime import date
 from typing import TYPE_CHECKING
 
 import frappe
+import frappe.utils
 import requests
 from frappe.utils.password import get_decrypted_password
 from requests.exceptions import HTTPError
@@ -21,7 +22,11 @@ if TYPE_CHECKING:
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_patch.app_patch import AgentPatchConfig, AppPatch
+	from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
+		PhysicalBackupRestoration,
+	)
 	from press.press.doctype.site.site import Site
+	from press.press.doctype.site_backup.site_backup import SiteBackup
 
 
 class Agent:
@@ -324,6 +329,26 @@ class Agent:
 			site=site.name,
 		)
 
+	def activate_site(self, site, reference_doctype=None, reference_name=None):
+		return self.create_agent_job(
+			"Activate Site",
+			f"benches/{site.bench}/sites/{site.name}/activate",
+			bench=site.bench,
+			site=site.name,
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def deactivate_site(self, site, reference_doctype=None, reference_name=None):
+		return self.create_agent_job(
+			"Deactivate Site",
+			f"benches/{site.bench}/sites/{site.name}/deactivate",
+			bench=site.bench,
+			site=site.name,
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
 	def update_site(
 		self,
 		site,
@@ -362,8 +387,21 @@ class Agent:
 			site=site.name,
 		)
 
-	def update_site_recover_move(self, site, target, deploy_type, activate, rollback_scripts=None):
-		data = {"target": target, "activate": activate, "rollback_scripts": rollback_scripts}
+	def update_site_recover_move(
+		self,
+		site,
+		target,
+		deploy_type,
+		activate,
+		rollback_scripts=None,
+		restore_touched_tables=True,
+	):
+		data = {
+			"target": target,
+			"activate": activate,
+			"rollback_scripts": rollback_scripts,
+			"restore_touched_tables": restore_touched_tables,
+		}
 		return self.create_agent_job(
 			f"Recover Failed Site {deploy_type}",
 			f"benches/{site.bench}/sites/{site.name}/update/{deploy_type.lower()}/recover",
@@ -420,12 +458,66 @@ class Agent:
 			site=site.name,
 		)
 
-	def backup_site(self, site, with_files=False, offsite=False):
+	def physical_backup_database(self, site: Site, site_backup: SiteBackup):
+		"""
+		For physical database backup, the flow :
+		- Create the agent job
+		- Agent job will lock the specific database + flush the changes to disk
+		- Take a database dump
+		- Use `fsync` to ensure the changes are written to disk
+		- Agent will send back a request to FC for taking the snapshot
+			- By calling `snapshot_create_callback` url
+		- Then, unlock the database
+		"""
+		press_public_base_url = frappe.utils.get_url()
+		data = {
+			"databases": [site_backup.database_name],
+			"mariadb_root_password": get_mariadb_root_password(site),
+			"private_ip": frappe.get_value(
+				"Database Server", frappe.db.get_value("Server", site.server, "database_server"), "private_ip"
+			),
+			"site_backup": {
+				"name": site_backup.name,
+				"snapshot_request_key": site_backup.snapshot_request_key,
+				"snapshot_trigger_url": f"{press_public_base_url}/api/method/press.api.site_backup.create_snapshot",
+			},
+		}
+		return self.create_agent_job(
+			"Physical Backup Database",
+			"/database/physical-backup",
+			data=data,
+			bench=site.bench,
+			site=site.name,
+		)
+
+	def physical_restore_database(self, site, backup_restoration: PhysicalBackupRestoration):
+		data = {
+			"backup_db": backup_restoration.source_database,
+			"target_db": backup_restoration.destination_database,
+			"target_db_root_password": get_mariadb_root_password(site),
+			"private_ip": frappe.get_value(
+				"Database Server", frappe.db.get_value("Server", site.server, "database_server"), "private_ip"
+			),
+			"backup_db_base_directory": os.path.join(backup_restoration.mount_point, "var/lib/mysql"),
+			"restore_specific_tables": backup_restoration.restore_specific_tables,
+			"tables_to_restore": json.loads(backup_restoration.tables_to_restore),
+		}
+		return self.create_agent_job(
+			"Physical Restore Database",
+			"/database/physical-restore",
+			data=data,
+			bench=site.bench,
+			site=site.name,
+			reference_name=backup_restoration.name,
+			reference_doctype=backup_restoration.doctype,
+		)
+
+	def backup_site(self, site, site_backup: SiteBackup):
 		from press.press.doctype.site_backup.site_backup import get_backup_bucket
 
-		data = {"with_files": with_files}
+		data = {"with_files": site_backup.with_files}
 
-		if offsite:
+		if site_backup.offsite:
 			settings = frappe.get_single("Press Settings")
 			backups_path = os.path.join(site.name, str(date.today()))
 			backup_bucket = get_backup_bucket(site.cluster, region=True)
@@ -533,6 +625,18 @@ class Agent:
 			data,
 			site=site,
 			code_server=code_server,
+			upstream=server,
+		)
+
+	def add_domain_to_upstream(self, server, site=None, domain=None):
+		_server = frappe.get_doc("Server", server)
+		ip = _server.ip if _server.is_self_hosted else _server.private_ip
+		data = {"domain": domain}
+		return self.create_agent_job(
+			"Add Domain to Upstream",
+			f"proxy/upstreams/{ip}/domains",
+			data,
+			site=site,
 			upstream=server,
 		)
 
@@ -721,8 +825,13 @@ class Agent:
 			reference_name=reference_name,
 		)
 
-	def update_site_status(self, server, site, status, skip_reload=False):
-		data = {"status": status, "skip_reload": skip_reload}
+	def update_site_status(self, server: str, site: str, status, skip_reload=False):
+		extra_domains = frappe.get_all(
+			"Site Domain",
+			{"site": site, "tls_certificate": ("is", "not set"), "status": "Active", "domain": ("!=", site)},
+			pluck="domain",
+		)
+		data = {"status": status, "skip_reload": skip_reload, "extra_domains": extra_domains}
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		return self.create_agent_job(
@@ -842,18 +951,23 @@ class Agent:
 		return json_response
 
 	def should_skip_requests(self):
+		if self.server_type in ("Server", "Database Server", "Proxy Server") and frappe.db.get_value(
+			self.server_type, self.server, "halt_agent_jobs"
+		):
+			return True
+
 		return bool(frappe.db.count("Agent Request Failure", {"server": self.server}))
 
 	def handle_request_failure(self, agent_job, result: Response | None):
 		if not agent_job:
 			raise
 
-		reason = status_code = None
+		status_code = getattr(result, "status_code", "Unknown")
 		with suppress(TypeError, ValueError):
 			reason = json.dumps(result.json(), indent=4, sort_keys=True) if result else None
 
 		message = f"""
-Status Code: {status_code or "Unknown"}\n
+Status Code: {status_code}\n
 Response: {reason or getattr(result, "text", "Unknown")}
 """
 		self.log_failure_reason(agent_job, message)
@@ -1026,7 +1140,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		return self.get(f"agent-jobs/{agent_job_ids}")
 
 	def get_version(self):
-		return self.get("version")
+		return self.raw_request("GET", "version", raises=True, timeout=(2, 10))
 
 	def update(self):
 		url = frappe.get_doc(self.server_type, self.server).get_agent_repository_url()
@@ -1034,7 +1148,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		return self.post("update", data={"url": url, "branch": branch})
 
 	def ping(self):
-		return self.get("ping")["message"]
+		return self.raw_request("GET", "ping", raises=True, timeout=(2, 5))["message"]
 
 	def fetch_monitor_data(self, bench):
 		return self.post(f"benches/{bench}/monitor")["data"]
@@ -1044,6 +1158,9 @@ Response: {reason or getattr(result, "text", "Unknown")}
 
 	def fetch_bench_status(self, bench):
 		return self.get(f"benches/{bench}/status")
+
+	def get_snapshot(self, bench: str):
+		return self.get(f"process-snapshot/{bench}")
 
 	def run_after_migrate_steps(self, site):
 		data = {
@@ -1110,12 +1227,12 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		return None
 
 	def run_build(self, data: dict):
-		reference_name = data.get("deploy_candidate")
+		reference_name = data.get("deploy_candidate_build")
 		return self.create_agent_job(
 			"Run Remote Builder",
 			"builder/build",
 			data=data,
-			reference_doctype="Deploy Candidate",
+			reference_doctype="Deploy Candidate Build",
 			reference_name=reference_name,
 		)
 
@@ -1218,6 +1335,19 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			f"benches/{site.bench}/sites/{site.name}/database/kill-process/{id}",
 			data={
 				"mariadb_root_password": get_mariadb_root_password(site),
+			},
+		)
+
+	def fetch_database_variables(self):
+		if self.server_type != "Database Server":
+			return NotImplementedError("Only Database Server supports this method")
+		return self.post(
+			"database/variables",
+			data={
+				"private_ip": frappe.get_value("Database Server", self.server, "private_ip"),
+				"mariadb_root_password": get_decrypted_password(
+					"Database Server", self.server, "mariadb_root_password"
+				),
 			},
 		)
 

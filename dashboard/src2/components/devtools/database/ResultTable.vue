@@ -3,7 +3,7 @@ import {
 	FlexRender,
 	getCoreRowModel,
 	getPaginationRowModel,
-	useVueTable
+	useVueTable,
 } from '@tanstack/vue-table';
 import { computed, ref, watch } from 'vue';
 import { unparse } from 'papaparse';
@@ -12,13 +12,16 @@ import MaximizedIcon from '~icons/lucide/maximize-2';
 const props = defineProps({
 	columns: { type: Array, required: true },
 	data: { type: Array, required: true },
+	alignColumns: { type: Object, default: {} },
+	cellFormatters: { type: Object, default: {} }, // For cell level formatters
+	fullViewFormatters: { type: Object, default: {} }, // For full view formatters
 	borderLess: { type: Boolean, default: false },
 	enableCSVExport: { type: Boolean, default: true },
 	actionHeaderLabel: { type: String },
 	actionComponent: { type: Object },
 	actionComponentProps: { type: Object, default: {} },
 	isTruncateText: { type: Boolean, default: false },
-	truncateLength: { type: Number, default: 100 }
+	truncateLength: { type: Number, default: 70 },
 });
 
 const generateData = computed(() => {
@@ -41,12 +44,12 @@ const table = useVueTable({
 			id: '__index',
 			header: '#',
 			accessorKey: '__index',
-			cell: props => props.row.index + 1
+			cell: (props) => props.row.index + 1,
 		};
-		const cols = props.columns.map(column => {
+		const cols = props.columns.map((column) => {
 			return {
 				id: column,
-				cell: cellProps => {
+				cell: (cellProps) => {
 					const value = cellProps.getValue();
 					if (props.isTruncateText) {
 						if (
@@ -54,15 +57,21 @@ const table = useVueTable({
 							typeof value === 'string' &&
 							value.length > props.truncateLength
 						) {
-							return `${value.substring(0, props.truncateLength)}...`;
+							return `${value.substring(0, props.truncateLength)}`;
 						}
+					}
+					if (props.cellFormatters[cellProps.column.columnDef.id]) {
+						return props.cellFormatters[cellProps.column.columnDef.id](value);
 					}
 					return value;
 				},
 				header: column,
 				accessorKey: column,
 				enableSorting: false,
-				isNumber: false
+				isNumber: false,
+				meta: {
+					align: props.alignColumns[column] || 'left',
+				},
 			};
 		});
 		return [indexColumn, ...cols];
@@ -70,15 +79,15 @@ const table = useVueTable({
 	initialState: {
 		pagination: {
 			pageSize: 10,
-			pageIndex: 0
-		}
+			pageIndex: 0,
+		},
 	},
 	filterFns: {},
 	getCoreRowModel: getCoreRowModel(),
-	getPaginationRowModel: getPaginationRowModel()
+	getPaginationRowModel: getPaginationRowModel(),
 });
 
-const isTextTruncated = cell => {
+const isTextTruncated = (cell) => {
 	const value = cell.getValue();
 	return (
 		props.isTruncateText &&
@@ -91,10 +100,14 @@ const isTextTruncated = cell => {
 const fullViewDialogHeader = ref(null);
 const fullViewDialogBody = ref(null);
 const showFullViewDialog = ref(false);
-const handleViewFull = cell => {
+const handleViewFull = (cell) => {
 	const fullText = cell.getValue();
 	fullViewDialogHeader.value = cell.column.columnDef.header;
 	fullViewDialogBody.value = fullText;
+	if (props.fullViewFormatters[cell.column.columnDef.id]) {
+		fullViewDialogBody.value =
+			props.fullViewFormatters[cell.column.columnDef.id](fullText);
+	}
 	showFullViewDialog.value = true;
 };
 
@@ -108,7 +121,7 @@ const pageEnd = computed(() => {
 });
 const totalRows = computed(() => props.data.length);
 const showPagination = computed(
-	() => props.data?.length && totalRows.value > pageLength.value
+	() => props.data?.length && totalRows.value > pageLength.value,
 );
 
 const pageSize = ref(10);
@@ -120,7 +133,7 @@ watch(pageSize, () => {
 const downloadCSV = async () => {
 	let csv = unparse({
 		fields: props.columns,
-		data: props.data
+		data: props.data,
 	});
 	csv = '\uFEFF' + csv; // for utf-8
 	// create a blob and trigger a download
@@ -140,7 +153,7 @@ const downloadCSV = async () => {
 	<Dialog
 		:options="{
 			title: fullViewDialogHeader,
-			size: '2xl'
+			size: '3xl',
 		}"
 		v-model="showFullViewDialog"
 	>
@@ -155,7 +168,7 @@ const downloadCSV = async () => {
 	<div
 		class="flex h-full w-full flex-col overflow-hidden"
 		:class="{
-			'rounded border': !borderLess
+			'rounded border': !borderLess,
 		}"
 	>
 		<div class="relative flex flex-1 flex-col overflow-auto text-base">
@@ -198,12 +211,13 @@ const downloadCSV = async () => {
 						<td
 							v-for="cell in row.getVisibleCells()"
 							:key="cell.id"
+							:align="cell.column.columnDef.meta?.align"
 							class="truncate border-r px-3 py-2"
 							:class="{
 								'border-b': !(
 									index === table.getRowModel().rows.length - 1 && borderLess
 								),
-								'min-w-[6rem] ': cell.column.columnDef.id !== 'index'
+								'min-w-[6rem] ': cell.column.columnDef.id !== 'index',
 							}"
 						>
 							<FlexRender
@@ -213,11 +227,11 @@ const downloadCSV = async () => {
 							<MaximizedIcon
 								v-if="isTextTruncated(cell)"
 								@click="handleViewFull(cell)"
-								class="!m-0 inline-block !h-4 !w-4 cursor-pointer text-gray-700"
+								class="!my-0 ml-2 inline-block !h-4 !w-4 cursor-pointer text-gray-700"
 							/>
 						</td>
 						<td
-							class="w-[10rem] border-b border-r text-center text-gray-800"
+							class="w-[6rem] border-b border-r text-center text-gray-800"
 							v-if="actionComponent"
 						>
 							<component

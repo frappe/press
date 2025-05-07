@@ -11,6 +11,7 @@
   "oauth_signup",
   "send_email",
   "otp",
+  "otp_generated_at",
   "column_break_4",
   "role",
   "invited_by",
@@ -21,6 +22,7 @@
   "saas",
   "saas_app",
   "product_trial",
+  "unsubscribed_from_drip_emails",
   "column_break_eaxp",
   "first_name",
   "last_name",
@@ -264,11 +266,23 @@
   {
    "fieldname": "column_break_eaxp",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "otp_generated_at",
+   "fieldtype": "Datetime",
+   "label": "OTP Generated at"
+  },
+  {
+   "default": "0",
+   "fieldname": "unsubscribed_from_drip_emails",
+   "fieldtype": "Check",
+   "label": "Unsubscribed from Drip Emails"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-12-17 11:18:35.247936",
+ "modified": "2025-03-07 13:51:15.724863",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",
@@ -295,6 +309,7 @@
    "role": "Press Member"
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

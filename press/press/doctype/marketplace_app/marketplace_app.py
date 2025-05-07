@@ -45,9 +45,7 @@ class MarketplaceApp(WebsiteGenerator):
 		from press.press.doctype.marketplace_app_screenshot.marketplace_app_screenshot import (
 			MarketplaceAppScreenshot,
 		)
-		from press.press.doctype.marketplace_app_version.marketplace_app_version import (
-			MarketplaceAppVersion,
-		)
+		from press.press.doctype.marketplace_app_version.marketplace_app_version import MarketplaceAppVersion
 		from press.press.doctype.marketplace_localisation_app.marketplace_localisation_app import (
 			MarketplaceLocalisationApp,
 		)
@@ -57,6 +55,7 @@ class MarketplaceApp(WebsiteGenerator):
 		app: DF.Link
 		average_rating: DF.Float
 		categories: DF.Table[MarketplaceAppCategories]
+		collect_feedback: DF.Check
 		custom_verify_template: DF.Check
 		description: DF.SmallText
 		documentation: DF.Data | None
@@ -87,7 +86,7 @@ class MarketplaceApp(WebsiteGenerator):
 		signature: DF.TextEditor | None
 		site_config: DF.JSON | None
 		sources: DF.Table[MarketplaceAppVersion]
-		status: DF.Literal["Draft", "Published", "In Review", "Attention Required", "Rejected"]
+		status: DF.Literal["Draft", "Published", "In Review", "Attention Required", "Rejected", "Disabled"]
 		stop_auto_review: DF.Check
 		subject: DF.Data | None
 		subscription_type: DF.Literal["Free", "Paid", "Freemium"]

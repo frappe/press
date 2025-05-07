@@ -10,31 +10,30 @@
 						? 'border-gray-900 ring-1 ring-gray-900'
 						: 'border-gray-300',
 					{
-						'pointer-events-none opacity-50': plan.disabled
-					}
+						'pointer-events-none opacity-50': plan.disabled,
+					},
 				]"
 				@click="$emit('update:modelValue', plan)"
 			>
 				<div
-					class="w-full border-b p-3"
+					class="h-16 w-full border-b p-3"
 					:class="[
-						modelValue === plan ? 'border-gray-900 ring-1 ring-gray-900' : ''
+						modelValue === plan ? 'border-gray-900 ring-1 ring-gray-900' : '',
 					]"
 				>
 					<div class="flex items-center justify-between">
-						<div class="flex items-center text-lg">
-							<span class="font-medium text-gray-900">
-								<template v-if="plan.label">
-									{{ plan.label }}
-								</template>
+						<div class="flex w-full items-center text-lg">
+							<span class="truncate font-medium text-gray-900">
+								<!-- Needed for app plan selector -->
+								<template v-if="plan.label">{{ plan.label }}</template>
 								<template v-else>
-									{{ $format.planTitle(plan)
-									}}<span v-if="plan.price_inr" class="text-gray-700">/mo</span>
+									{{ $format.planTitle(plan) }}
+									<span v-if="plan.price_inr" class="text-gray-700">/mo</span>
 								</template>
 							</span>
 							<Tooltip text="Support included">
 								<i-lucide-badge-check
-									class="ml-1 h-4 w-4 text-gray-600"
+									class="ml-1 h-4 w-6 text-gray-600"
 									v-if="plan.support_included"
 								/>
 							</Tooltip>
@@ -44,14 +43,14 @@
 						<template v-if="plan.sublabel">
 							{{ plan.sublabel }}
 						</template>
-						<template v-else>
+						<template v-else-if="plan.price_inr || plan.price_usd">
 							{{
 								$format.userCurrency(
 									$format.pricePerDay(
 										$team.doc.currency === 'INR'
 											? plan.price_inr
-											: plan.price_usd
-									)
+											: plan.price_usd,
+									),
 								)
 							}}/day
 						</template>
@@ -87,7 +86,7 @@ export default {
 	methods: {
 		_icon(iconName, classes) {
 			return icon(iconName, classes);
-		}
-	}
+		},
+	},
 };
 </script>

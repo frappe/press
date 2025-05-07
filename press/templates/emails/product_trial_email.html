@@ -1,0 +1,41 @@
+<table class="sm:bg-white" cellpadding="0" cellspacing="0" role="presentation" width="100%"
+  style="background-color: #f6f6f6;">
+  <tr>
+    <td align="center" valign="top">
+      <table cellpadding="0" cellspacing="0" role="presentation" width="600px">
+        <tbody>
+          <tr>
+            <td class="py-10 sm:px-8" style="color: #383838;">
+              <div class="flex">
+                {% if logo %}
+                <img src="{{ logo }}" alt="{{ title }}" class="h-7 mr-1">
+                {% endif %}
+                <span class="font-bold text-xl my-auto">
+                  {% if title %}
+                  {{ title }}
+                  {% else %}
+                  Frappe Cloud
+                  {% endif %}
+                </span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td class="text-base leading-6" style="color: #383838;">
+              <div class="p-8 bg-white">
+                <div class="from-markdown">
+                  {{ message }}
+                </div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td class="py-8">
+              &nbsp;
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </td>
+  </tr>
+</table>

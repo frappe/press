@@ -32,13 +32,14 @@
    "fieldname": "site",
    "fieldtype": "Link",
    "label": "Site",
-   "options": "Site"
+   "options": "Site",
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-03-28 12:24:09.561279",
+ "modified": "2025-03-18 10:09:56.500243",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Site Apps",

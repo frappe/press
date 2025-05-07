@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 import frappe
@@ -26,12 +27,12 @@ from press.press.doctype.site_backup.site_backup import (
 	process_backup_site_job_update,
 )
 from press.utils import log_error
-from press.utils.dns import create_dns_record
 
 if TYPE_CHECKING:
 	from frappe.types.DF import Link
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.root_domain.root_domain import RootDomain
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.site.site import Site
 
@@ -136,9 +137,9 @@ class SiteMigration(Document):
 
 	@frappe.whitelist()
 	def start(self):
+		self.check_for_ongoing_agent_jobs()  # has to be before setting state to pending so it gets retried
 		self.status = "Pending"
 		self.save()
-		self.check_for_ongoing_agent_jobs()
 		self.check_for_inactive_domains()
 		self.validate_apps()
 		self.check_enough_space_on_destination_server()
@@ -197,6 +198,7 @@ class SiteMigration(Document):
 				raise NotImplementedError
 				# TODO: switch order of steps here (archive before restore)
 			self.add_steps_for_server_migration()
+			self.add_steps_for_user_defined_domains()
 		else:
 			# TODO: Call site update for bench only migration with popup with link to site update job
 			raise NotImplementedError
@@ -221,6 +223,24 @@ class SiteMigration(Document):
 		}
 		self.append("steps", step)
 
+	def _add_remove_user_defined_domain_from_source_proxy_step(self, domain: str):
+		step = {
+			"step_title": f"Remove user defined domain {domain} from source proxy",
+			"method_name": self.remove_user_defined_domain_from_source_proxy.__name__,
+			"status": "Pending",
+			"method_arg": domain,
+		}
+		self.append("steps", step)
+
+	def _add_restore_user_defined_domain_to_destination_proxy_step(self, domain: str):
+		step = {
+			"step_title": f"Restore user defined domain {domain} on destination proxy",
+			"method_name": self.restore_user_defined_domain_on_destination_proxy.__name__,
+			"status": "Pending",
+			"method_arg": domain,
+		}
+		self.append("steps", step)
+
 	def _add_add_host_to_destination_proxy_step(self, domain: str):
 		step = {
 			"step_title": f"Add host {domain} to destination proxy",
@@ -234,6 +254,12 @@ class SiteMigration(Document):
 		site_domain = frappe.get_doc("Site Domain", domain)
 		proxy_server = frappe.db.get_value("Server", self.destination_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
+
+		if site_domain.has_root_tls_certificate:
+			return agent.add_domain_to_upstream(
+				server=self.destination_server, site=site_domain.site, domain=site_domain.domain
+			)
+
 		return agent.new_host(site_domain)
 
 	def remove_host_from_source_proxy(self, domain):
@@ -270,6 +296,15 @@ class SiteMigration(Document):
 			self._add_add_host_to_destination_proxy_step(domain)
 		if len(domains) > 1:
 			self._add_setup_redirects_step()
+
+	def add_steps_for_user_defined_domains(self):
+		domains = frappe.get_all("Site Domain", {"site": self.site, "name": ["!=", self.site]}, pluck="name")
+		for domain in domains:
+			site_domain = frappe.get_doc("Site Domain", domain)
+			if site_domain.default:
+				continue
+			self._add_remove_user_defined_domain_from_source_proxy_step(domain)
+			self._add_restore_user_defined_domain_to_destination_proxy_step(domain)
 
 	@property
 	def next_step(self) -> SiteMigrationStep | None:
@@ -543,8 +578,8 @@ class SiteMigration(Document):
 	def restore_site_on_destination_server(self):
 		"""Restore site on destination"""
 		agent = Agent(self.destination_server)
-		site = frappe.get_doc("Site", self.site)
-		backup = frappe.get_doc("Site Backup", self.backup)
+		site: Site = frappe.get_doc("Site", self.site)
+		backup: SiteBackup = frappe.get_doc("Site Backup", self.backup)
 		site.remote_database_file = backup.remote_database_file
 		site.remote_public_file = backup.remote_public_file
 		site.remote_private_file = backup.remote_private_file
@@ -553,11 +588,11 @@ class SiteMigration(Document):
 		site.cluster = self.destination_cluster
 		site.server = self.destination_server
 		if self.migration_type == "Cluster":
-			create_dns_record(site, record_name=site._get_site_name(site.subdomain))
-			domain = frappe.get_doc("Root Domain", site.domain)
+			site.create_dns_record()  # won't create for default cluster
+			domain: RootDomain = frappe.get_doc("Root Domain", str(site.domain))
 			if self.destination_cluster == domain.default_cluster:
-				source_proxy = frappe.db.get_value("Server", self.source_server, "proxy_server")
-				site.remove_dns_record(domain, source_proxy, site.name)
+				source_proxy = str(frappe.db.get_value("Server", self.source_server, "proxy_server"))
+				site.remove_dns_record(domain, source_proxy)
 		return agent.new_site_from_backup(site, skip_failing_patches=self.skip_failing_patches)
 
 	def restore_site_on_destination_proxy(self):
@@ -566,11 +601,29 @@ class SiteMigration(Document):
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		return agent.new_upstream_file(server=self.destination_server, site=self.site)
 
+	def restore_user_defined_domain_on_destination_proxy(self, domain: str):
+		"""Restore user defined domain on destination proxy for product trial sites"""
+
+		proxy_server = frappe.db.get_value("Server", self.destination_server, "proxy_server")
+		agent = Agent(proxy_server, server_type="Proxy Server")
+		site_domain = frappe.get_doc("Site Domain", domain)
+
+		return agent.add_domain_to_upstream(
+			server=self.destination_server, site=site_domain.site, domain=domain
+		)
+
 	def remove_site_from_source_proxy(self):
 		"""Remove site from source proxy"""
 		proxy_server = frappe.db.get_value("Server", self.source_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		return agent.remove_upstream_file(server=self.source_server, site=self.site)
+
+	def remove_user_defined_domain_from_source_proxy(self, domain: str):
+		"""Remove user defined domain from source proxy for product trial sites"""
+
+		proxy_server = frappe.db.get_value("Server", self.source_server, "proxy_server")
+		agent = Agent(proxy_server, server_type="Proxy Server")
+		return agent.remove_upstream_file(server=self.source_server, site=self.site, site_name=domain)
 
 	def archive_site_on_source(self):
 		"""Archive site on source"""
@@ -646,8 +699,11 @@ class SiteMigration(Document):
 		self.run_next_step()
 
 	def is_cleanup_done(self, job: "AgentJob") -> bool:
-		return (
-			job.job_type == "Archive Site" and job.status == "Success" and job.bench == self.destination_bench
+		return (job.job_type == "Archive Site" and job.bench == self.destination_bench) and (
+			job.status == "Success"
+			or (
+				job.status == "Failure" and f"KeyError: '{self.site}'" in str(job.traceback)
+			)  # sometimes site may not even get created in destination to clean it up
 		)
 
 
@@ -694,13 +750,14 @@ def run_scheduled_migrations():
 		site_migration = SiteMigration("Site Migration", migration)
 		try:
 			site_migration.start()
-		except OngoingAgentJob:
-			pass  # ongoing jobs will finish in some time
-		except MissingAppsInBench as e:
-			site_migration.cleanup_and_fail(reason=str(e), force_activate=True)
-		except InsufficientSpaceOnServer as e:
-			site_migration.cleanup_and_fail(reason=str(e), force_activate=True)
-		except InactiveDomains as e:
+		except OngoingAgentJob as e:
+			if not site_migration.scheduled_time:
+				return
+			if frappe.utils.now() > site_migration.scheduled_time + timedelta(
+				hours=4
+			):  # don't trigger more than 4 hours later scheduled time
+				site_migration.cleanup_and_fail(reason=str(e))
+		except (MissingAppsInBench, InsufficientSpaceOnServer, InactiveDomains) as e:
 			site_migration.cleanup_and_fail(reason=str(e), force_activate=True)
 		except Exception as e:
 			log_error("Site Migration Start Error", exception=e)

@@ -2,10 +2,10 @@
 # For license information, please see license.txt
 
 
+import os
 from functools import partial
 
 import frappe
-from ansible.utils.path import cleanup_tmp_file
 from frappe.core.doctype.user.user import User
 from frappe.handler import is_whitelisted
 from frappe.utils import cint
@@ -76,6 +76,24 @@ def on_session_creation():
 		pass
 
 
+def on_login(login_manager):
+	if frappe.session.user and frappe.session.data and frappe.session.data.user_type == "System User":
+		return
+	user = login_manager.user
+	has_2fa = frappe.db.get_value(
+		"User 2FA", {"user": user, "enabled": 1}, ["last_verified_at"], as_dict=True
+	)
+	if has_2fa and (
+		not has_2fa.get("last_verified_at")
+		or has_2fa.get("last_verified_at") < frappe.utils.add_to_date(None, seconds=-10)
+	):
+		frappe.throw("Please re-login to verify your identity.")
+
+	if frappe.db.exists("Team", {"user": frappe.session.user, "enabled": 0}):
+		frappe.db.set_value("Team", {"user": frappe.session.user, "enabled": 0}, "enabled", 1)
+		frappe.db.commit()
+
+
 def before_job():
 	frappe.local.team = _get_current_team
 	frappe.local.system_user = _system_user
@@ -87,12 +105,27 @@ def before_request():
 
 
 def cleanup_ansible_tmp_files():
-	if hasattr(constants, "DEFAULT_LOCAL_TMP"):
-		cleanup_tmp_file(constants.DEFAULT_LOCAL_TMP)
+	import pathlib
+	import shutil
+	import time
 
+	if not hasattr(constants, "DEFAULT_LOCAL_TMP"):
+		return
 
-def after_job():
-	cleanup_ansible_tmp_files()
+	threshold = time.time() - 60 * 60  # >One hour old
+
+	if os.environ.get("FRAPPE_BACKGROUND_WORKERS_NOFORK"):
+		# Long running processes, don't cleanup
+		threshold = time.time() - 2 * 24 * 60 * 60  # >2 days old
+
+	temp_dir = pathlib.Path(constants.DEFAULT_LOCAL_TMP).parent
+	ansible_dir = pathlib.Path.home() / ".ansible"
+	# Avoid clearing unknown directories
+	assert temp_dir.is_relative_to(ansible_dir) and temp_dir != ansible_dir
+
+	for folder in temp_dir.iterdir():
+		if folder.is_dir() and folder.stat().st_mtime < threshold:
+			shutil.rmtree(folder)
 
 
 def update_website_context(context):

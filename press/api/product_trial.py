@@ -7,7 +7,6 @@ import random
 
 import frappe
 import frappe.utils
-from frappe.core.utils import find
 from frappe.rate_limiter import rate_limit
 
 from press.api.account import get_account_request_from_key
@@ -96,55 +95,9 @@ def login_using_code(email: str, product: str, code: str):
 
 
 @frappe.whitelist(allow_guest=True)
-def signup(
-	first_name: str,
-	last_name: str,
-	email: str,
-	country: str,
-	product: str,
-	terms_accepted: bool,
-	referrer=None,
-):
-	if not terms_accepted:
-		frappe.throw("Please accept the terms and conditions")
-	frappe.utils.validate_email_address(email, True)
-	email = email.strip().lower()
-
-	# validate country
-	all_countries = frappe.db.get_all("Country", pluck="name")
-	country = find(all_countries, lambda x: x.lower() == country.lower())
-	if not country:
-		frappe.throw("Please provide a valid country name")
-
-	# validation
-	team_exists = frappe.db.exists("Team", {"user": email})
-	if team_exists:
-		# check if team has 2fa enabled and active
-		team = frappe.get_value("Team", {"user": email}, ["enforce_2fa", "enabled"], as_dict=True)
-		if not team.enabled:
-			frappe.throw("Your account is disabled. Please contact support.")
-		if team.enforce_2fa:
-			frappe.throw("Your account has 2FA enabled. Please go to frappecloud.com to login.")
-
-	if team_exists and _get_active_site(product, frappe.db.get_value("Team", {"user": email}, "name")):
-		frappe.throw(f"You have already signed up for {product}. Instead try to log in.")
-
-	# create account request
-	account_request = frappe.get_doc(
-		{
-			"doctype": "Account Request",
-			"email": email,
-			"first_name": first_name,
-			"last_name": last_name,
-			"country": country,
-			"role": "Press Admin",
-			"saas": 1,
-			"referrer_id": referrer,
-			"product_trial": product,
-			"send_email": True,
-		}
-	).insert(ignore_permissions=True)
-	return account_request.name
+@rate_limit(limit=5, seconds=60)
+def get_account_request_for_product_signup():
+	return frappe.db.get_value("Account Request", {"email": frappe.session.user}, "name")
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
@@ -199,15 +152,26 @@ def setup_account(key: str, country: str | None = None):
 	}
 
 
+def _get_existing_trial_request(product: str, team: str):
+	return frappe.get_value(
+		"Product Trial Request",
+		{"team": team, "status": ["not in", ["Error", "Expired", "Site Created"]], "product_trial": product},
+		["name", "site"],
+		as_dict=True,
+	)
+
+
 @frappe.whitelist(methods=["POST"])
 def get_request(product: str, account_request: str | None = None):
 	team = frappe.local.team()
+
 	# validate if there is already a site
-	site = _get_active_site(product, team.name)
-	if site:
+	if site := _get_active_site(product, team.name):
 		site_request = frappe.get_doc(
 			"Product Trial Request", {"product_trial": product, "team": team, "site": site}
 		)
+	elif request := _get_existing_trial_request(product, team.name):
+		site_request = frappe.get_doc("Product Trial Request", request.name)
 	else:
 		# check if account request is valid
 		is_valid_account_request = frappe.get_value("Account Request", account_request, "email") == team.user

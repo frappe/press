@@ -24,16 +24,11 @@
 					type="text"
 					v-model="billingInformation.cardHolderName"
 				/>
-				<!-- <AddressForm
-					ref="addressFormRef"
-					class="mt-5"
-					v-model:address="billingInformation"
-					@success="console.log('Address form submitted')"
-				/> -->
 				<NewAddressForm
 					ref="addressFormRef"
 					class="mt-5"
 					v-model="billingInformation"
+					:disable-form="props.disableAddressForm"
 					@success="console.log('Address form submitted')"
 				/>
 			</div>
@@ -45,16 +40,6 @@
 					card works. This amount will be <strong>refunded</strong> back to your
 					account.
 				</p>
-
-				<Button
-					:loading="!microChargeCompleted"
-					:loadingText="'Verifying Card'"
-				>
-					Card Verified
-					<template #prefix>
-						<GreenCheckIcon class="h-4 w-4" />
-					</template>
-				</Button>
 			</div>
 
 			<ErrorMessage class="mt-2" :message="errorMessage" />
@@ -75,24 +60,33 @@
 					variant="solid"
 					label="Verify & Save Card"
 					:loading="addingCard"
-					@click="submit"
+					@click="verifyWithMicroChargeIfApplicable"
 				/>
+
+				<Button
+					v-else-if="tryingMicroCharge"
+					:loading="!microChargeCompleted"
+					:loadingText="'Verifying Card'"
+				>
+					Card Verified
+					<template #prefix>
+						<GreenCheckIcon class="h-4 w-4" />
+					</template>
+				</Button>
 			</div>
 		</div>
 	</div>
 </template>
 <script setup>
-import AddressForm from '../AddressForm.vue';
 import NewAddressForm from './NewAddressForm.vue';
 import PoweredByStripeLogo from '../../logo/PoweredByStripeLogo.vue';
-// import GreenCheckIcon from '../icons/GreenCheckIcon.vue';
 import {
 	FeatherIcon,
 	Button,
 	FormControl,
 	Spinner,
 	ErrorMessage,
-	createResource
+	createResource,
 } from 'frappe-ui';
 import { currency } from '../../utils/format';
 import { loadStripe } from '@stripe/stripe-js';
@@ -100,6 +94,9 @@ import { ref, reactive, computed, inject, onMounted } from 'vue';
 import { toast } from 'vue-sonner';
 
 const emit = defineEmits(['success']);
+const props = defineProps({
+	disableAddressForm: { type: Boolean, default: true },
+});
 
 const team = inject('team');
 
@@ -121,7 +118,7 @@ const cardElementRef = ref(null);
 
 const getPublishedKeyAndSetupIntent = createResource({
 	url: 'press.api.billing.get_publishable_key_and_setup_intent',
-	onSuccess: async data => {
+	onSuccess: async (data) => {
 		const { publishable_key, setup_intent } = data;
 		_setupIntent.value = setup_intent;
 		stripe.value = await loadStripe(publishable_key);
@@ -143,41 +140,41 @@ const getPublishedKeyAndSetupIntent = createResource({
 					'"Apple Color Emoji"',
 					'"Segoe UI Emoji"',
 					'"Segoe UI Symbol"',
-					'"Noto Color Emoji"'
+					'"Noto Color Emoji"',
 				].join(', '),
 				fontSmoothing: 'antialiased',
 				fontSize: '13px',
 				'::placeholder': {
-					color: '#C7C7C7'
-				}
+					color: '#C7C7C7',
+				},
 			},
 			invalid: {
 				color: '#C7C7C7',
-				iconColor: '#C7C7C7'
-			}
+				iconColor: '#C7C7C7',
+			},
 		};
 		card.value = elements.value.create('card', {
 			hidePostalCode: true,
 			style: style,
 			classes: {
 				complete: '',
-				focus: 'bg-gray-100'
-			}
+				focus: 'bg-gray-100',
+			},
 		});
 		card.value.mount(cardElementRef.value);
-		card.value.addEventListener('change', event => {
+		card.value.addEventListener('change', (event) => {
 			cardErrorMessage.value = event.error?.message || null;
 		});
 		card.value.addEventListener('ready', () => {
 			ready.value = true;
 		});
-	}
+	},
 });
 
 const countryList = createResource({
 	url: 'press.api.account.country_list',
 	cache: 'countryList',
-	auto: true
+	auto: true,
 });
 
 const browserTimezone = computed(() => {
@@ -190,14 +187,14 @@ const browserTimezone = computed(() => {
 const billingInformation = reactive({
 	cardHolderName: '',
 	country: '',
-	gstin: ''
+	gstin: '',
 });
 
 createResource({
 	url: 'press.api.account.get_billing_information',
 	params: { timezone: browserTimezone.value },
 	auto: true,
-	onSuccess: data => {
+	onSuccess: (data) => {
 		billingInformation.country = data?.country;
 		billingInformation.address = data?.address_line1;
 		billingInformation.city = data?.city;
@@ -205,7 +202,7 @@ createResource({
 		billingInformation.postal_code = data?.pincode;
 		billingInformation.gstin =
 			data?.gstin == 'Not Applicable' ? '' : data?.gstin;
-	}
+	},
 });
 
 const setupIntentSuccess = createResource({
@@ -213,50 +210,50 @@ const setupIntentSuccess = createResource({
 	makeParams: ({ setupIntent }) => {
 		return {
 			setup_intent: setupIntent,
-			address: billingInformation
+			address: billingInformation,
 		};
 	},
 	onSuccess: async ({ payment_method_name }) => {
-		await verifyWithMicroChargeIfApplicable(payment_method_name);
 		addingCard.value = false;
 		toast.success('Card added successfully');
+		emit('success');
 	},
-	onError: error => {
+	onError: (error) => {
 		console.error(error);
 		addingCard.value = false;
 		errorMessage.value = error.messages.join('\n');
 		toast.error(errorMessage.value);
-	}
+	},
 });
 
 const verifyCardWithMicroCharge = createResource({
 	url: 'press.api.billing.create_payment_intent_for_micro_debit',
-	makeParams: ({ paymentMethodName }) => {
-		return { payment_method_name: paymentMethodName };
-	},
-	onSuccess: async paymentIntent => {
+	onSuccess: async (paymentIntent) => {
 		let { client_secret } = paymentIntent;
 
 		let payload = await stripe.value.confirmCardPayment(client_secret, {
-			payment_method: { card: card.value }
+			payment_method: { card: card.value },
 		});
 
 		if (payload.paymentIntent?.status === 'succeeded') {
 			microChargeCompleted.value = true;
-			emit('success');
+			submit();
+		} else {
+			tryingMicroCharge.value = false;
+			errorMessage.value = payload.error?.message;
 		}
 	},
-	onError: error => {
+	onError: (error) => {
 		console.error(error);
 		tryingMicroCharge.value = false;
 		errorMessage.value = error.messages.join('\n');
-	}
+	},
 });
 
 async function setupStripeIntent() {
 	await getPublishedKeyAndSetupIntent.submit();
 	const { first_name, last_name = '' } = team.doc?.user_info;
-	const fullname = first_name + ' ' + last_name;
+	const fullname = `${first_name} ${last_name ?? ''}`;
 	billingInformation.cardHolderName = fullname.trimEnd();
 }
 
@@ -286,11 +283,11 @@ async function submit() {
 						city: billingInformation.city,
 						state: billingInformation.state,
 						postal_code: billingInformation.postal_code,
-						country: getCountryCode(team.doc?.country)
-					}
-				}
-			}
-		}
+						country: getCountryCode(team.doc?.country),
+					},
+				},
+			},
+		},
 	);
 	if (error) {
 		addingCard.value = false;
@@ -314,7 +311,7 @@ async function submit() {
 	}
 }
 
-async function verifyWithMicroChargeIfApplicable(paymentMethodName) {
+async function verifyWithMicroChargeIfApplicable() {
 	const teamCurrency = team.doc?.currency;
 	const verifyCardsWithMicroCharge = window.verify_cards_with_micro_charge;
 	const isMicroChargeApplicable =
@@ -322,21 +319,19 @@ async function verifyWithMicroChargeIfApplicable(paymentMethodName) {
 		(verifyCardsWithMicroCharge == 'Only INR' && teamCurrency === 'INR') ||
 		(verifyCardsWithMicroCharge === 'Only USD' && teamCurrency === 'USD');
 	if (isMicroChargeApplicable) {
-		await _verifyWithMicroCharge(paymentMethodName);
+		await _verifyWithMicroCharge();
 	} else {
-		emit('success');
+		submit();
 	}
 }
 
-async function _verifyWithMicroCharge(paymentMethodName) {
+async function _verifyWithMicroCharge() {
 	tryingMicroCharge.value = true;
-	return verifyCardWithMicroCharge.submit({
-		paymentMethodName
-	});
+	return verifyCardWithMicroCharge.submit();
 }
 
 function getCountryCode(country) {
-	let code = countryList.data.find(d => d.name === country).code;
+	let code = countryList.data.find((d) => d.name === country).code;
 	return code.toUpperCase();
 }
 
@@ -354,7 +349,7 @@ const formattedMicroChargeAmount = computed(() => {
 	}
 	return currency(
 		team.doc?.billing_info?.micro_debit_charge_amount,
-		team.doc?.currency
+		team.doc?.currency,
 	);
 });
 </script>

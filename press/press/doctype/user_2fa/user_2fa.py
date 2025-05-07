@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 
 # import frappe
+from __future__ import annotations
+
 from frappe.model.document import Document
 
 
@@ -15,6 +17,7 @@ class User2FA(Document):
 		from frappe.types import DF
 
 		enabled: DF.Check
+		last_verified_at: DF.Datetime | None
 		totp_secret: DF.Password | None
 		user: DF.Link | None
 	# end: auto-generated types

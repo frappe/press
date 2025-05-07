@@ -10,6 +10,11 @@ frappe.query_reports['MariaDB Slow Queries'] = {
 			fieldtype: 'Link',
 			options: 'Site',
 			reqd: 1,
+			get_query: function () {
+				return {
+					filters: { status: ["!=", "Archived"] },
+				};
+			},
 		},
 		{
 			fieldname: 'start_datetime',
@@ -29,11 +34,12 @@ frappe.query_reports['MariaDB Slow Queries'] = {
 			fieldname: 'normalize_queries',
 			label: __('Normalize Queries'),
 			fieldtype: 'Check',
+			default: 1,
 		},
 		{
 			fieldname: 'max_lines',
 			label: __('Max Lines'),
-			default: 1000,
+			default: 10000,
 			fieldtype: 'Int',
 		},
 		{

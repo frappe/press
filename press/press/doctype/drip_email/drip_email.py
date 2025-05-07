@@ -9,7 +9,9 @@ import frappe
 import rq
 import rq.exceptions
 import rq.timeouts
+from frappe import _
 from frappe.model.document import Document
+from frappe.rate_limiter import rate_limit
 from frappe.utils.make_random import get_random
 
 from press.utils import log_error
@@ -48,11 +50,11 @@ class DripEmail(Document):
 		subject: DF.SmallText
 	# end: auto-generated types
 
-	def send(self, site_name=None):
+	def send(self, site_name: str | None = None):
 		if self.evaluate_condition(site_name) and self.email_type in ["Drip", "Sign Up"] and site_name:
 			self.send_drip_email(site_name)
 
-	def send_drip_email(self, site_name):
+	def send_drip_email(self, site_name: str, email: str | None = None):
 		site = frappe.get_doc("Site", site_name)
 		if self.email_type == "Drip" and site.status in ["Pending", "Broken"]:
 			return
@@ -61,6 +63,8 @@ class DripEmail(Document):
 			return
 
 		account_request = frappe.get_doc("Account Request", site.account_request)
+		if not email and account_request.unsubscribed_from_drip_emails:
+			return
 
 		if self.send_by_consultant:
 			consultant = self.select_consultant(site)
@@ -70,19 +74,20 @@ class DripEmail(Document):
 		self.send_mail(
 			context=dict(
 				full_name=account_request.full_name,
-				email=account_request.email,
-				domain=site.name,
+				email=email or account_request.email,
+				domain=site.host_name or site.name,
 				consultant=consultant,
 				site=site,
 				account_request=account_request,
 			),
-			recipient=account_request.email,
+			recipient=email or account_request.email,
 		)
 
 	def send_mail(self, context, recipient):
 		# build the message
 		message = frappe.render_template(self.message, context)
-		title = frappe.db.get_value("Marketplace App", self.saas_app, "title")
+		account_request = context.get("account_request", "")
+		app = frappe.db.get_value("Marketplace App", self.saas_app, ["title", "image"], as_dict=True)
 
 		# add to queue
 		frappe.sendmail(
@@ -92,10 +97,12 @@ class DripEmail(Document):
 			reply_to=self.reply_to,
 			reference_doctype="Drip Email",
 			reference_name=self.name,
-			unsubscribe_message="Don't send me help messages",
-			attachments=self.get_setup_guides(context.get("account_request", "")),
-			template="drip_email",
-			args={"message": message, "title": title},
+			unsubscribe_message="Unsubscribe",
+			unsubscribe_method="api/method/press.press.doctype.drip_email.drip_email.unsubscribe",
+			unsubscribe_params={"account_request": account_request.name},
+			attachments=self.get_setup_guides(account_request),
+			template="product_trial_email",
+			args={"message": message, "title": app.title, "logo": app.image},
 		)
 
 	@property
@@ -184,6 +191,7 @@ class DripEmail(Document):
 					site.account_request = account_request.name
 				WHERE
 					site.status = "Active" AND
+					account_request.unsubscribed_from_drip_emails = 0 AND
 					DATE(account_request.creation) = "{signup_date}"
 					{conditions}
 			"""
@@ -209,6 +217,11 @@ class DripEmail(Document):
 			except Exception:
 				frappe.db.rollback()
 				log_error("Drip Email Error", drip_email=self.name, site=site)
+
+	@frappe.whitelist()
+	def send_test_email(self, site: str, email: str):
+		"""Send test email to the given email address."""
+		self.send_drip_email(site, email)
 
 
 def send_drip_emails():
@@ -252,3 +265,38 @@ def send_welcome_email():
 		sites_in_last_15_mins = [t[0] for t in tuples]
 		for site in sites_in_last_15_mins:
 			welcome_email.send(site)
+
+
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60 * 60)
+def unsubscribe(email: str, account_request: str) -> None:
+	"""
+	Unsubscribe from drip emails of a site.
+	"""
+	if not account_request or not email:
+		return None
+
+	is_unsubscribed = frappe.db.get_value("Account Request", account_request, "unsubscribed_from_drip_emails")
+	if is_unsubscribed is None:  # no account request found
+		return None
+
+	site = frappe.db.get_value("Site", {"account_request": account_request}, ["host_name", "name"], as_dict=1)
+	if is_unsubscribed:  # already unsubscribed
+		return frappe.respond_as_web_page(
+			_("Already Unsubscribed"),
+			_(
+				f"You have already unsubscribed from receiving emails related to the site {frappe.bold(site.host_name or site.name)}."
+			),
+			indicator_color="red",
+		)
+
+	frappe.db.set_value("Account Request", account_request, "unsubscribed_from_drip_emails", 1)
+	frappe.db.commit()
+
+	return frappe.respond_as_web_page(
+		_("Unsubscribed"),
+		_(
+			f"You have been unsubscribed from receiving emails related to the site {frappe.bold(site.host_name or site.name)}."
+		),
+		indicator_color="green",
+	)

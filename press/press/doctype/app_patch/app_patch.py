@@ -1,9 +1,11 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
+
 import json
 import typing
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import frappe
 import requests
@@ -12,27 +14,23 @@ from frappe.model.document import Document
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 
-PatchConfig = TypedDict(
-	"PatchConfig",
-	{
-		"patch": Optional[str],
-		"filename": str,
-		"patch_url": str,
-		"build_assets": bool,
-		"patch_bench": Optional[str],
-		"patch_all_benches": bool,
-	},
-)
 
-AgentPatchConfig = TypedDict(
-	"AgentPatchConfig",
-	{
-		"patch": str,
-		"filename": str,
-		"build_assets": bool,
-		"revert": bool,
-	},
-)
+class PatchConfig(TypedDict):
+	patch: str | None
+	filename: str
+	patch_url: str
+	build_assets: bool
+	patch_bench: str | None
+	patch_all_benches: bool
+	patch_latest_deploy: bool
+
+
+class AgentPatchConfig(TypedDict):
+	patch: str
+	filename: str
+	build_assets: bool
+	revert: bool
+
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
@@ -55,12 +53,12 @@ class AppPatch(Document):
 		group: DF.Link
 		name: DF.Int | None
 		patch: DF.Code
-		status: DF.Literal["Not Applied", "In Process", "Failed", "Applied"]
+		status: DF.Literal["Not Applied", "In Process", "Failed", "Applied", "Archived"]
 		team: DF.Link
 		url: DF.Data | None
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = [  # noqa: RUF012
 		"name",
 		"app",
 		"app_release",
@@ -194,8 +192,24 @@ def get_patch(patch_config: PatchConfig) -> str:
 
 
 def get_benches(release_group: str, patch_config: PatchConfig) -> list[str]:
-	if not patch_config.get("patch_all_benches"):
+	patch_all_benches = patch_config.get("patch_all_benches")
+	patch_latest_deploy = patch_config.get("patch_latest_deploy")
+
+	if not patch_all_benches and not patch_latest_deploy:
 		return [patch_config["patch_bench"]]
+
+	if patch_latest_deploy:
+		latest_deploy_candidate = frappe.db.get_value(
+			"Deploy Candidate",
+			filters={"group": release_group},
+			order_by="creation desc",
+			pluck="name",
+		)
+		return frappe.get_all(
+			"Bench",
+			filters={"status": "Active", "group": release_group, "candidate": latest_deploy_candidate},
+			pluck="name",
+		)
 
 	return frappe.get_all(
 		"Bench",
