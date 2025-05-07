@@ -1,6 +1,6 @@
 [project]
 name = "mariadb_binlog_indexer"
-version = "0.0.4"
+version = "0.0.5"
 description = "MariaDB Binlog Indexer for Faster Querying"
 readme = "README.md"
 requires-python = ">=3.7"

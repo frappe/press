@@ -12,7 +12,7 @@ if [ -z "$TWINE_PASSWORD" ]; then
   exit 1
 fi
 
-set -euo pipefail
+set -eo pipefail
 
 chmod +x build_helper.sh
 docker build -f build.Dockerfile -t mariadb-binlog-indexer-build-helper .
