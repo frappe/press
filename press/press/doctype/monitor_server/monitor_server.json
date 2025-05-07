@@ -23,7 +23,7 @@
   "agent_password",
   "grafana_section",
   "grafana_username",
-  "default_server",
+  "prometheus_username",
   "column_break_ilpd",
   "grafana_password",
   "node_exporter_dashboard_path",
@@ -219,25 +219,26 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "This is the server that is selected by default in node exporter dashboard due to sorting. Used by incident detection to collect data.",
-   "fieldname": "default_server",
-   "fieldtype": "Data",
-   "label": "Default Server"
-  },
-  {
    "description": "Begin with / but don't end with /",
    "fieldname": "node_exporter_dashboard_path",
    "fieldtype": "Data",
    "label": "Node Exporter Dashboard Path"
+  },
+  {
+   "description": "for /prometheus",
+   "fieldname": "prometheus_username",
+   "fieldtype": "Data",
+   "label": "Prometheus Username"
   }
  ],
+ "grid_page_length": 50,
  "links": [
   {
    "link_doctype": "Ansible Play",
    "link_fieldname": "server"
   }
  ],
- "modified": "2025-01-24 00:35:26.093683",
+ "modified": "2025-05-07 15:11:11.557419",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Monitor Server",
@@ -256,6 +257,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

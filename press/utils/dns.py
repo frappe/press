@@ -9,7 +9,7 @@ from frappe.core.utils import find
 from press.utils import log_error
 
 if TYPE_CHECKING:
-	from frappe.model.document import Document
+	from press.press.doctype.root_domain.root_domain import RootDomain
 
 
 @frappe.whitelist()
@@ -49,7 +49,7 @@ def create_dns_record(doc, record_name=None):
 		_change_dns_record("UPSERT", domain, proxy_server, record_name=record_name)
 
 
-def _change_dns_record(method: str, domain: Document, proxy_server: str, record_name: str | None = None):
+def _change_dns_record(method: str, domain: RootDomain, proxy_server: str, record_name: str | None = None):
 	"""
 	Change dns record of site
 
