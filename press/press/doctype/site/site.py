@@ -97,7 +97,6 @@ if TYPE_CHECKING:
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.release_group.release_group import ReleaseGroup
-	from press.press.doctype.root_domain.root_domain import RootDomain
 	from press.press.doctype.server.server import BaseServer, Server
 
 DOCTYPE_SERVER_TYPE_MAP = {
@@ -651,9 +650,8 @@ class Site(Document, TagHelpers):
 
 		try:
 			# remove old dns record from route53 after rename
-			domain: RootDomain = frappe.get_doc("Root Domain", self.domain)
 			proxy_server = frappe.get_value("Server", self.server, "proxy_server")
-			self.remove_dns_record(domain, proxy_server)
+			self.remove_dns_record(proxy_server)
 		except Exception:
 			log_error("Removing Old Site from Route53 Failed")
 
@@ -801,7 +799,7 @@ class Site(Document, TagHelpers):
 
 		create_site_status_update_webhook_event(self.name)
 
-	def remove_dns_record(self, domain: RootDomain, proxy_server: str):
+	def remove_dns_record(self, proxy_server: str):
 		"""Remove dns record of site pointing to proxy."""
 		self._create_default_site_domain()
 		domains = frappe.db.get_all(
@@ -3214,15 +3212,14 @@ def site_cleanup_after_archive(site):
 	release_name(site)
 
 
-def delete_site_subdomain(site):
-	site_doc = frappe.get_doc("Site", site)
-	domain = frappe.get_doc("Root Domain", site_doc.domain)
-	is_standalone = frappe.get_value("Server", site_doc.server, "is_standalone")
+def delete_site_subdomain(site_name):
+	site: Site = frappe.get_doc("Site", site_name)
+	is_standalone = frappe.get_value("Server", site.server, "is_standalone")
 	if is_standalone:
-		proxy_server = site_doc.server
+		proxy_server = site.server
 	else:
-		proxy_server = frappe.get_value("Server", site_doc.server, "proxy_server")
-	site_doc.remove_dns_record(domain, proxy_server)
+		proxy_server = frappe.get_value("Server", site.server, "proxy_server")
+	site.remove_dns_record(proxy_server)
 
 
 def delete_site_domains(site):
