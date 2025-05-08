@@ -1358,20 +1358,14 @@ Response: {reason or getattr(result, "text", "Unknown")}
 
 	def add_binlogs_to_indexer(self, binlogs):
 		return self.create_agent_job(
-			"Add Binlogs to Indexer",
+			"Add Binlogs To Indexer",
 			"/database/binlogs/indexer/add",
 			data={"binlogs": binlogs},
-			bench=self.bench,
-			site=self.site,
 		)
 
 	def remove_binlogs_from_indexer(self, binlogs):
 		return self.create_agent_job(
-			"Remove Binlogs from Indexer",
-			"/database/binlogs/indexer/remove",
-			data={"binlogs": binlogs},
-			bench=self.bench,
-			site=self.site,
+			"Remove Binlogs From Indexer", "/database/binlogs/indexer/remove", data={"binlogs": binlogs}
 		)
 
 	def get_binlogs_timeline(self, start: int, end: int, database: str, type: str | None = None):

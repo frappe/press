@@ -23,4 +23,5 @@ class MariaDBBinlog(Document):
 		size_mb: DF.Float
 	# end: auto-generated types
 
-	pass
+	def remove_from_indexer(self):
+		pass

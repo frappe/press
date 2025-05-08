@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import frappe
 import frappe.utils
@@ -19,6 +19,9 @@ from press.press.doctype.database_server_mariadb_variable.database_server_mariad
 from press.press.doctype.server.server import Agent, BaseServer
 from press.runner import Ansible
 from press.utils import log_error
+
+if TYPE_CHECKING:
+	from press.press.doctype.agent_job.agent_job import AgentJob
 
 
 class DatabaseServer(BaseServer):
@@ -1305,6 +1308,52 @@ class DatabaseServer(BaseServer):
 			0,
 		)
 
+	def add_binlogs_to_indexer(self):
+		if not self.enable_binlog_indexing:
+			return
+
+		# Avoid if there is already Binlog Indexing related job and in ["Undelivered", "Pending", "Running"]
+		if frappe.db.exists(
+			"Agent Job",
+			{
+				"job_type": ("in", ["Add Binlogs to Indexer", "Remove Binlogs From Indexer"]),
+				"server": self.name,
+				"status": ("in", ["Pending", "Running"]),
+			},
+		):
+			return
+
+		"""
+		Start indexing from old ones
+		Fetch 15 binlogs
+		"""
+
+		binlogs = frappe.get_all(
+			"MariaDB Binlog",
+			filters={
+				"database_server": self.name,
+				"indexed": 0,
+				"purged_from_disk": 0,
+			},
+			order_by="file_name asc",
+			limit=15,
+			fields=["file_name", "size_mb"],
+		)
+
+		max_size_in_batch = 1024  # 1GB
+		filtered_binlogs = []
+		while max_size_in_batch > 0 and binlogs:
+			filtered_binlogs.append(binlogs.pop(0))
+			max_size_in_batch -= filtered_binlogs[-1].size_mb
+
+		if len(filtered_binlogs) == 0:
+			return
+
+		self.agent.add_binlogs_to_indexer([x["file_name"] for x in filtered_binlogs])
+
+	def remove_binlogs_from_indexer(self, binlogs: list[str]):
+		self.agent.remove_binlogs_from_indexer(binlogs)
+
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Database Server")
 
@@ -1355,3 +1404,64 @@ def sync_binlogs_info():
 			deduplicate=True,
 			queue="sync",
 		)
+
+
+def index_mariadb_binlogs():
+	databases = frappe.get_all(
+		"Database Server",
+		fields=["name"],
+		filters={"status": "Active", "is_server_setup": 1, "is_self_hosted": 0, "enable_binlog_indexing": 1},
+	)
+	for database in databases:
+		frappe.get_doc("Database Server", database).index_binlogs()
+
+
+def process_add_binlogs_to_indexer_agent_job_update(job: AgentJob):
+	if job.status != "Success":
+		return
+
+	json_data = json.loads(job.data)
+	indexed_binlogs = json_data.get("indexed_binlogs", [])
+	frappe.db.set_value(
+		"MariaDB Binlog",
+		{
+			"database_server": job.server,
+			"file_name": ("in", indexed_binlogs),
+		},
+		"indexed",
+		1,
+	)
+	current_binlog_set_to = frappe.db.exists(
+		"MariaDB Binlog", {"database_server": job.server, "current": True}
+	)
+	if current_binlog_set_to != json_data.get("current_binlog"):
+		if current_binlog_set_to:
+			frappe.db.set_value(
+				"MariaDB Binlog",
+				{"database_server": job.server, "file_name": json_data.get("current_binlog")},
+				"current",
+				0,
+			)
+		frappe.db.set_value(
+			"MariaDB Binlog",
+			{"database_server": job.server, "file_name": json_data.get("current_binlog")},
+			"current",
+			1,
+		)
+
+
+def process_remove_binlogs_from_indexer_agent_job_update(job: AgentJob):
+	if job.status != "Success":
+		return
+
+	json_data = json.loads(job.data)
+	binlogs_in_disk = json_data.get("unindexed_binlogs", [])
+	frappe.db.set_value(
+		"MariaDB Binlog",
+		{
+			"database_server": job.server,
+			"file_name": ("in", binlogs_in_disk),
+		},
+		"indexed",
+		0,
+	)
