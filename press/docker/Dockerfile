@@ -85,12 +85,24 @@ RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/p
 # Install wkhtmltopdf
 ENV {{ doc.get_dependency_version("wkhtmltopdf", True) }}
 
-{% if arm_build %}
-RUN wget https://github.com/adityahase/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.focal_arm64.deb \
-  && dpkg -i wkhtmltox_0.12.5-1.focal_arm64.deb \
-  && rm wkhtmltox_0.12.5-1.focal_arm64.deb \
-  `#stage-pre-wkhtmltopdf`
+
+{% if is_arm_build %}
+  # ARM setup (0.12.5) & (0.12.6)
+  {% if doc.get_dependency_version("wkhtmltopdf") == '0.12.5' %}
+  RUN wget https://github.com/adityahase/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.focal_arm64.deb \
+    && dpkg -i wkhtmltox_0.12.5-1.focal_arm64.deb \
+    && rm wkhtmltox_0.12.5-1.focal_arm64.deb \
+    `#stage-pre-wkhtmltopdf`
+  {% endif %}
+
+  {% if doc.get_dependency_version("wkhtmltopdf") == '0.12.6' %}
+  RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_arm64.deb \
+    && dpkg -i wkhtmltox_0.12.6-1.focal_arm64.deb \
+    && rm wkhtmltox_0.12.6-1.focal_arm64.deb \
+    `#stage-pre-wkhtmltopdf`
+  {% endif %}
 {% else %}
+  # Intel setup
   {% if doc.get_dependency_version("wkhtmltopdf") == '0.12.6' %}
   RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_amd64.deb \
     && dpkg -i wkhtmltox_0.12.6-1.focal_amd64.deb \
