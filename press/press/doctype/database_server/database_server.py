@@ -1312,15 +1312,8 @@ class DatabaseServer(BaseServer):
 		if not self.enable_binlog_indexing:
 			return
 
-		# Avoid if there is already Binlog Indexing related job and in ["Undelivered", "Pending", "Running"]
-		if frappe.db.exists(
-			"Agent Job",
-			{
-				"job_type": ("in", ["Add Binlogs to Indexer", "Remove Binlogs From Indexer"]),
-				"server": self.name,
-				"status": ("in", ["Pending", "Running"]),
-			},
-		):
+		# Avoid if there is already Binlog Indexing related job
+		if self._is_binlog_indexing_related_operation_running():
 			return
 
 		"""
@@ -1351,8 +1344,51 @@ class DatabaseServer(BaseServer):
 
 		self.agent.add_binlogs_to_indexer([x["file_name"] for x in filtered_binlogs])
 
-	def remove_binlogs_from_indexer(self, binlogs: list[str]):
-		self.agent.remove_binlogs_from_indexer(binlogs)
+	def remove_binlogs_from_indexer(self, days: int = 7):
+		# Avoid if there is already Binlog Indexing related job
+		if self._is_binlog_indexing_related_operation_running():
+			return
+
+		# Fetch indexed binlogs before X days
+		binlogs = frappe.get_all(
+			"MariaDB Binlog",
+			filters={
+				"database_server": self.name,
+				"indexed": 1,
+				"file_modification_time": ("<", frappe.utils.add_to_date(None, days=-1 * days)),
+			},
+			pluck="file_name",
+			order_by="file_modification_time asc",
+		)
+		if len(binlogs) == 0:
+			return
+
+		# Ensure that we don't miss any binlogs in between while unindexing
+		# If mysql-bin.000001, mysql-bin.000002, mysql-bin.000004 are there,
+		# But, mysql-bin.000003 is not indexed, then include that as well in the list
+
+		# Binlog file format mysql-bin.xxxxxxx
+		no_of_digits = len(binlogs[0].split(".")[-1])
+		first_binlog_no = int(binlogs[0].split(".")[-1])
+		last_binlog_no = int(binlogs[-1].split(".")[-1])
+
+		# Generate series of binlog
+		unindexable_binlogs = []
+		for binlog_no in range(first_binlog_no, last_binlog_no + 1):
+			binlog_no = str(binlog_no).zfill(no_of_digits)
+			unindexable_binlogs.append(f"mysql-bin.{binlog_no}")
+
+		self.agent.remove_binlogs_from_indexer(unindexable_binlogs)
+
+	def _is_binlog_indexing_related_operation_running(self):
+		return frappe.db.exists(
+			"Agent Job",
+			{
+				"job_type": ("in", ["Add Binlogs to Indexer", "Remove Binlogs From Indexer"]),
+				"server": self.name,
+				"status": ("in", ["Pending", "Running"]),
+			},
+		)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Database Server")
@@ -1414,6 +1450,16 @@ def index_mariadb_binlogs():
 	)
 	for database in databases:
 		frappe.get_doc("Database Server", database).index_binlogs()
+
+
+def unindex_mariadb_binlogs():
+	databases = frappe.get_all(
+		"Database Server",
+		fields=["name"],
+		filters={"status": "Active", "is_server_setup": 1, "is_self_hosted": 0, "enable_binlog_indexing": 1},
+	)
+	for database in databases:
+		frappe.get_doc("Database Server", database).remove_binlogs_from_indexer(days=7)
 
 
 def process_add_binlogs_to_indexer_agent_job_update(job: AgentJob):

@@ -22,6 +22,3 @@ class MariaDBBinlog(Document):
 		purged_from_disk: DF.Check
 		size_mb: DF.Float
 	# end: auto-generated types
-
-	def remove_from_indexer(self):
-		pass

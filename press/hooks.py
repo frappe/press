@@ -178,6 +178,7 @@ scheduler_events = {
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 		"press.press.doctype.log_counter.log_counter.record_counts",
 		"press.press.doctype.incident.incident.notify_ignored_servers",
+		"press.press.doctype.database_server.database_server.unindex_mariadb_binlogs",
 	],
 	"daily_long": [
 		"press.press.audit.check_bench_fields",
