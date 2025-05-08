@@ -5,14 +5,15 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "file_name",
   "database_server",
-  "size_mb",
   "column_break_pvji",
+  "current",
   "indexed",
   "purged_from_disk",
   "section_break_zpmy",
-  "file_creation_time",
-  "column_break_hzlo",
+  "size_mb",
+  "column_break_botn",
   "file_modification_time"
  ],
  "fields": [
@@ -20,15 +21,18 @@
    "default": "0",
    "fieldname": "indexed",
    "fieldtype": "Check",
-   "label": "Indexed"
+   "label": "Indexed",
+   "search_index": 1
   },
   {
    "fieldname": "database_server",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Database Server",
    "options": "Database Server",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "column_break_pvji",
@@ -39,38 +43,51 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "file_creation_time",
-   "fieldtype": "Datetime",
-   "label": "File Creation Time",
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_hzlo",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "file_modification_time",
    "fieldtype": "Datetime",
-   "label": "File Modification Time",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Modification Time",
    "reqd": 1
   },
   {
    "default": "0",
    "fieldname": "purged_from_disk",
    "fieldtype": "Check",
-   "label": "Purged from Disk"
+   "label": "Purged from Disk",
+   "search_index": 1
   },
   {
    "fieldname": "size_mb",
    "fieldtype": "Float",
    "label": "Size (MB)",
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "current",
+   "fieldtype": "Check",
+   "label": "Current",
+   "search_index": 1
+  },
+  {
+   "fieldname": "file_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "File Name",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_botn",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-08 16:45:37.213687",
+ "modified": "2025-05-08 19:00:09.853051",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Binlog",

@@ -203,6 +203,7 @@ scheduler_events = {
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.saas.doctype.product_trial_request.product_trial_request.expire_long_pending_trial_requests",
 		"press.overrides.cleanup_ansible_tmp_files",
+		"press.press.doctype.database_server.database_server.sync_binlogs_info",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",

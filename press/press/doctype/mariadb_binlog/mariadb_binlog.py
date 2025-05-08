@@ -14,9 +14,10 @@ class MariaDBBinlog(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		current: DF.Check
 		database_server: DF.Link
-		file_creation_time: DF.Datetime
 		file_modification_time: DF.Datetime
+		file_name: DF.Data
 		indexed: DF.Check
 		purged_from_disk: DF.Check
 		size_mb: DF.Float
