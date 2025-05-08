@@ -104,7 +104,7 @@ class AgentUpdate(Document):
 
 	@property
 	def agent_update_args(self) -> str:
-		return f" --restart-web-workers={bool_to_str(self.restart_web_workers)} --restart-rq-workers={bool_to_str(self.restart_rq_workers)} --restart-redis={bool_to_str(self.restart_redis)} --skip-repo-setup=false --skip-patches=false"
+		return f" --restart-web-workers={bool_to_str(self.restart_web_workers)} --restart-rq-workers={bool_to_str(self.restart_rq_workers)} --restart-redis={bool_to_str(self.restart_redis)} --skip-repo-setup=true --skip-patches=true"
 
 	@property
 	def agent_repository_url(self) -> str:
