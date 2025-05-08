@@ -808,9 +808,13 @@ class Site(Document, TagHelpers):
 			"Site Domain", filters={"site": self.name}, fields=["domain"], pluck="domain"
 		)
 		for domain in domains:
-			if bool(frappe.db.exists("Root Domain", domain.split(".", 1)[1])):
+			root_domain = domain.split(".", 1)[1]
+			if bool(frappe.db.exists("Root Domain", root_domain)):
 				_change_dns_record(
-					method="DELETE", domain=domain, proxy_server=proxy_server, record_name=domain
+					method="DELETE",
+					domain=frappe.get_doc("Root Domain", root_domain),
+					proxy_server=proxy_server,
+					record_name=domain,
 				)
 
 	def is_version_14_or_higher(self) -> bool:
