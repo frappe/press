@@ -563,9 +563,14 @@
    "group": "Analytics",
    "link_doctype": "Disk Performance",
    "link_fieldname": "server"
+  },
+  {
+   "group": "Logs",
+   "link_doctype": "MariaDB Binlog",
+   "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-05-02 15:00:34.631435",
+ "modified": "2025-05-08 17:20:44.238329",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
