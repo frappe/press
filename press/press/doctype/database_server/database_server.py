@@ -1207,6 +1207,41 @@ class DatabaseServer(BaseServer):
 		return mariadb_mount_points.issubset(mount_points)
 
 	@frappe.whitelist()
+	def get_binlog_summary(self):
+		binlogs_in_disk = self.agent.fetch_binlog_list().get("binlogs_in_disk", [])
+		no_of_binlogs = len(binlogs_in_disk)
+		size = sum(binlog.get("size", 0) for binlog in binlogs_in_disk)
+		size_gb = round(size / 1024 / 1024 / 1024, 1)
+
+		oldest_binlog = binlogs_in_disk[0] if no_of_binlogs > 0 else {}
+		latest_binlog = binlogs_in_disk[-1] if no_of_binlogs > 0 else {}
+		first_binlog_date = (
+			datetime.fromtimestamp(int(oldest_binlog.get("modified_at", 0))) if oldest_binlog else ""
+		)
+		last_binlog_date = (
+			datetime.fromtimestamp(int(latest_binlog.get("modified_at", 0))) if no_of_binlogs > 0 else ""
+		)
+		first_binlog_size_mb = round(oldest_binlog.get("size", 0) / 1024 / 1024, 1) if oldest_binlog else 0
+		last_binlog_size_mb = round(latest_binlog.get("size", 0) / 1024 / 1024, 1) if no_of_binlogs > 0 else 0
+
+		message = f"""No of binlogs in Disk : {no_of_binlogs}<br>
+Total size : {size_gb} GB<br><br>
+Oldest binlog : {oldest_binlog.get("name", "")} - {first_binlog_size_mb} MB - {first_binlog_date}<br>
+Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last_binlog_date}
+		"""
+		frappe.msgprint(message, "Binlog Summary")
+
+	@frappe.whitelist()
+	def purge_binlogs(self, to_binlog: str):
+		try:
+			self.agent.purge_binlog(database_server=self, to_binlog=to_binlog)
+			frappe.msgprint(f"Purged to {to_binlog}", "Successfully purged binlogs")
+			self.sync_binlogs_info()
+		except Exception as e:
+			frappe.msgprint(str(e), "Failed to purge binlog")
+			raise e
+
+	@frappe.whitelist()
 	def sync_binlogs_info(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_sync_binlogs_info", timeout=600)
 
