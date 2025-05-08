@@ -777,11 +777,15 @@ class DeployCandidateBuild(Document):
 		)
 		build._process_run_build(job, request_data, response_data)
 
-		allow_arm_build: bool = frappe.get_cached_doc("Press Settings").allow_arm_build
-		if not allow_arm_build:
+		allow_automatic_arm_build: bool = frappe.get_cached_doc("Press Settings").allow_automatic_arm_build
+		if not allow_automatic_arm_build:
 			return
 
-		if not build.arm_build and build.platform != "arm64":
+		successful_arm_build = (
+			frappe.get_value("Deploy Candidate Build", build.arm_build, "status") == "Success"
+		)
+
+		if not successful_arm_build and build.platform != "arm64":
 			# There are two conditions to not trigger an arm build
 			# 1. There already exists an arm build associated to the x86 build
 			# 2. The current build is on a arm platform
@@ -1068,8 +1072,25 @@ class DeployCandidateBuild(Document):
 
 	@frappe.whitelist()
 	def create_arm_build(self) -> str:
+		current_arm_build = frappe.get_value("Deploy Candidate Build", self.name, "arm_build")
+		if (
+			current_arm_build
+			and frappe.get_value("Deploy Candidate Build", current_arm_build, "status") != "Failure"
+		):
+			frappe.throw(
+				f"""ARM <a href="/app/deploy-candidate-build/{current_arm_build}">Deploy Candidate Build</a>` already exists!"""
+			)
+
 		arm_build = ARMBuild(self.deploy_candidate)
-		return arm_build.create_deploy_candidate_build()
+		arm_build_name = arm_build.create_deploy_candidate_build()
+
+		# In case this is triggered from actions and allow arm build is unset
+		# Process job will early exit, skipping build.db_set("arm_build", arm_build_name, commit=True)
+		allow_automatic_arm_build: bool = frappe.get_cached_doc("Press Settings").allow_automatic_arm_build
+		if not allow_automatic_arm_build:
+			self.db_set("arm_build", arm_build_name, commit=True)
+
+		return arm_build_name
 
 	def pre_build(self, **kwargs):
 		self.reset_build_state()

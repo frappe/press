@@ -86,7 +86,7 @@
   "build_directory",
   "build_server",
   "minimum_rebuild_memory",
-  "allow_arm_build",
+  "allow_automatic_arm_build",
   "column_break_66",
   "code_server",
   "code_server_password",
@@ -1441,9 +1441,9 @@
   },
   {
    "default": "0",
-   "fieldname": "allow_arm_build",
+   "fieldname": "allow_automatic_arm_build",
    "fieldtype": "Check",
-   "label": "Allow ARM Build"
+   "label": "Allow Automatic ARM Build"
   }
  ],
  "issingle": 1,
