@@ -32,7 +32,6 @@ if TYPE_CHECKING:
 	from frappe.types.DF import Link
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
-	from press.press.doctype.root_domain.root_domain import RootDomain
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.site.site import Site
 
@@ -589,10 +588,9 @@ class SiteMigration(Document):
 		site.server = self.destination_server
 		if self.migration_type == "Cluster":
 			site.create_dns_record()  # won't create for default cluster
-			domain: RootDomain = frappe.get_doc("Root Domain", str(site.domain))
-			if self.destination_cluster == domain.default_cluster:
+			if self.destination_cluster == frappe.db.get_value("Root Domain", site.domain, "default_cluster"):
 				source_proxy = str(frappe.db.get_value("Server", self.source_server, "proxy_server"))
-				site.remove_dns_record(domain, source_proxy)
+				site.remove_dns_record(source_proxy)
 		return agent.new_site_from_backup(site, skip_failing_patches=self.skip_failing_patches)
 
 	def restore_site_on_destination_proxy(self):
