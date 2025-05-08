@@ -12,6 +12,7 @@ import shutil
 import tarfile
 import tempfile
 import typing
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from functools import cached_property
@@ -166,6 +167,30 @@ def get_duration(start_time: datetime, end_time: datetime | None = None):
 	seconds_elapsed = (end_time - start_time).total_seconds()
 	value = rounded(seconds_elapsed, 3)
 	return float(value)
+
+
+@dataclass
+class ARMBuild:
+	deploy_candidate: str
+	build_server: str = field(init=False)
+	build_name: str = field(init=False)
+
+	def __post_init__(self):
+		self.build_server = self.set_build_server()
+		# We don't push the image for now, this is just to see if the build works or not.
+		deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
+			{
+				"doctype": "Deploy Candidate Build",
+				"deploy_candidate": self.deploy_candidate,
+				"no_push": True,
+				"build_server": self.build_server,
+			}
+		)
+		deploy_candidate_build.insert()
+		self.build_name = deploy_candidate_build.name
+
+	def set_build_server(self) -> str:
+		return frappe.get_value("Server", {"platform": "arm64", "use_for_build": True}, "name")
 
 
 class DeployCandidateBuild(Document):
@@ -744,6 +769,10 @@ class DeployCandidateBuild(Document):
 			"Deploy Candidate Build", request_data["deploy_candidate_build"]
 		)
 		build._process_run_build(job, request_data, response_data)
+		if build.platform != "arm64":
+			# If not an arm build already create an arm build
+			# Add futher validations to this to avoid multiple / recursive builds.
+			build.create_parallel_arm_build()
 
 	def _process_run_build(
 		self,
@@ -908,24 +937,26 @@ class DeployCandidateBuild(Document):
 		context_filename = self._package_and_upload_context()
 		settings = self._fetch_registry_settings()
 
-		Agent(self.build_server).run_build(
-			{
-				"filename": context_filename,
-				"image_repository": self.docker_image_repository,
-				"image_tag": self.docker_image_tag,
-				"registry": {
-					"url": settings.docker_registry_url,
-					"username": settings.docker_registry_username,
-					"password": settings.docker_registry_password,
-				},
-				"no_cache": self.no_cache,
-				"no_push": self.no_push,
-				# Next few values are not used by agent but are
-				# read in `process_run_build`
-				"deploy_candidate_build": self.name,
-				"deploy_after_build": self.deploy_after_build,
-			}
-		)
+		build_parameters = {
+			"filename": context_filename,
+			"image_repository": self.docker_image_repository,
+			"image_tag": self.docker_image_tag,
+			"registry": {
+				"url": settings.docker_registry_url,
+				"username": settings.docker_registry_username,
+				"password": settings.docker_registry_password,
+			},
+			"no_cache": self.no_cache,
+			"no_push": self.no_push,
+			# Next few values are not used by agent but are
+			# read in `process_run_build`
+			"deploy_candidate_build": self.name,
+			"deploy_after_build": self.deploy_after_build,
+		}
+		if self.platform == "arm64":
+			build_parameters.update({"platform": self.platform})
+
+		Agent(self.build_server).run_build(build_parameters)
 
 		self.set_status(Status.RUNNING)
 
@@ -1019,6 +1050,10 @@ class DeployCandidateBuild(Document):
 			"Please wait for build to succeed or fail before retrying."
 		)
 		return False
+
+	def create_parallel_arm_build(self):
+		arm_build = ARMBuild(self.deploy_candidate)
+		return arm_build.build_name
 
 	def pre_build(self, **kwargs):
 		self.reset_build_state()
