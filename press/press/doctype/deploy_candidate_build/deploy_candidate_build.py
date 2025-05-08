@@ -58,6 +58,7 @@ if typing.TYPE_CHECKING:
 MAX_DURATION = timedelta(hours=23, minutes=59, seconds=59)
 DISTUTILS_SUPPORTED_VERSION = semantic_version.SimpleSpec("<3.12")
 GET_PIP_VERSION_MODIFIED_URL = semantic_version.SimpleSpec(">=3.2,<=3.8")
+ARM_SUPPORTED_WKHTMLTOPDF = ["0.12.5", "0.12.6"]
 
 
 class Status(Enum):
@@ -173,21 +174,29 @@ def get_duration(start_time: datetime, end_time: datetime | None = None):
 class ARMBuild:
 	deploy_candidate: str
 	build_server: str = field(init=False)
-	build_name: str = field(init=False)
 
 	def __post_init__(self):
 		self.build_server = self.set_build_server()
+
+	def create_deploy_candidate_build(self) -> str | None:
 		# We don't push the image for now, this is just to see if the build works or not.
-		deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
-			{
-				"doctype": "Deploy Candidate Build",
-				"deploy_candidate": self.deploy_candidate,
-				"no_push": True,
-				"build_server": self.build_server,
-			}
-		)
-		deploy_candidate_build.insert()
-		self.build_name = deploy_candidate_build.name
+		deploy_candidate: DeployCandidate = frappe.get_cached_doc("Deploy Candidate", self.deploy_candidate)
+		wkhtmltopdf_version = deploy_candidate.get_dependency_version("wkhtmltopdf")
+
+		if wkhtmltopdf_version in ARM_SUPPORTED_WKHTMLTOPDF:
+			# Skip for 0.12.4
+			deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
+				{
+					"doctype": "Deploy Candidate Build",
+					"deploy_candidate": self.deploy_candidate,
+					"no_push": True,
+					"build_server": self.build_server,
+				}
+			)
+			deploy_candidate_build.insert()
+			return deploy_candidate_build.name
+
+		return None
 
 	def set_build_server(self) -> str:
 		return frappe.get_value("Server", {"platform": "arm64", "use_for_build": True}, "name")
@@ -206,6 +215,7 @@ class DeployCandidateBuild(Document):
 			DeployCandidateBuildStep,
 		)
 
+		arm_build: DF.Link | None
 		build_directory: DF.Data | None
 		build_duration: DF.Time | None
 		build_end: DF.Datetime | None
@@ -365,7 +375,7 @@ class DeployCandidateBuild(Document):
 					"doc": self.candidate,
 					"remove_distutils": not is_distutils_supported,
 					"requires_version_based_get_pip": requires_version_based_get_pip,
-					"arm_build": self.platform == "arm64",
+					"is_arm_build": self.platform == "arm64",
 				},
 				is_path=True,
 			)
@@ -769,10 +779,14 @@ class DeployCandidateBuild(Document):
 			"Deploy Candidate Build", request_data["deploy_candidate_build"]
 		)
 		build._process_run_build(job, request_data, response_data)
-		if build.platform != "arm64":
-			# If not an arm build already create an arm build
-			# Add futher validations to this to avoid multiple / recursive builds.
-			build.create_parallel_arm_build()
+
+		if not build.arm_build and build.platform != "arm64":
+			# There are two conditions to not trigger an arm build
+			# 1. There already exists an arm build associated to the x86 build
+			# 2. The current build is on a arm platform
+			# These two conditions ensure we don't have excessive arm builds.
+			arm_build_name = build.create_arm_build()
+			build.db_set("arm_build", arm_build_name, commit=True)
 
 	def _process_run_build(
 		self,
@@ -1051,9 +1065,9 @@ class DeployCandidateBuild(Document):
 		)
 		return False
 
-	def create_parallel_arm_build(self):
+	def create_arm_build(self) -> str:
 		arm_build = ARMBuild(self.deploy_candidate)
-		return arm_build.build_name
+		return arm_build.create_deploy_candidate_build()
 
 	def pre_build(self, **kwargs):
 		self.reset_build_state()
