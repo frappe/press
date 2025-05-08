@@ -176,7 +176,7 @@ class ARMBuild:
 	build_server: str = field(init=False)
 
 	def __post_init__(self):
-		self.build_server = self.set_build_server()
+		self.build_server = self.get_build_server()
 
 	def create_deploy_candidate_build(self) -> str | None:
 		# We don't push the image for now, this is just to see if the build works or not.
@@ -198,7 +198,7 @@ class ARMBuild:
 
 		return None
 
-	def set_build_server(self) -> str:
+	def get_build_server(self) -> str:
 		return frappe.get_value("Server", {"platform": "arm64", "use_for_build": True}, "name")
 
 
