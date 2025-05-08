@@ -1066,6 +1066,7 @@ class DeployCandidateBuild(Document):
 		)
 		return False
 
+	@frappe.whitelist()
 	def create_arm_build(self) -> str:
 		arm_build = ARMBuild(self.deploy_candidate)
 		return arm_build.create_deploy_candidate_build()
