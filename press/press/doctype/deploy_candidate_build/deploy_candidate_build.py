@@ -179,17 +179,14 @@ class ARMBuild:
 		self.build_server = self.get_build_server()
 
 	def create_deploy_candidate_build(self) -> str | None:
-		# We don't push the image for now, this is just to see if the build works or not.
 		deploy_candidate: DeployCandidate = frappe.get_cached_doc("Deploy Candidate", self.deploy_candidate)
 		wkhtmltopdf_version = deploy_candidate.get_dependency_version("wkhtmltopdf")
 
 		if wkhtmltopdf_version in ARM_SUPPORTED_WKHTMLTOPDF:
-			# Skip for 0.12.4
 			deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
 				{
 					"doctype": "Deploy Candidate Build",
 					"deploy_candidate": self.deploy_candidate,
-					"no_push": True,
 					"build_server": self.build_server,
 				}
 			)
@@ -779,8 +776,9 @@ class DeployCandidateBuild(Document):
 			"Deploy Candidate Build", request_data["deploy_candidate_build"]
 		)
 		build._process_run_build(job, request_data, response_data)
+		allow_arm_build: bool = frappe.get_cached_value("Press Settings", "allow_arm_build")
 
-		if not build.arm_build and build.platform != "arm64":
+		if allow_arm_build and not build.arm_build and build.platform != "arm64":
 			# There are two conditions to not trigger an arm build
 			# 1. There already exists an arm build associated to the x86 build
 			# 2. The current build is on a arm platform
