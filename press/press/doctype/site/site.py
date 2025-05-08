@@ -3218,7 +3218,7 @@ def delete_site_subdomain(site):
 		proxy_server = site_doc.server
 	else:
 		proxy_server = frappe.get_value("Server", site_doc.server, "proxy_server")
-	site_doc.remove_dns_record(domain, proxy_server, site)
+	site_doc.remove_dns_record(domain, proxy_server)
 
 
 def delete_site_domains(site):
