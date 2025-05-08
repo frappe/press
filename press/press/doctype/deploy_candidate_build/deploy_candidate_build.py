@@ -776,9 +776,12 @@ class DeployCandidateBuild(Document):
 			"Deploy Candidate Build", request_data["deploy_candidate_build"]
 		)
 		build._process_run_build(job, request_data, response_data)
-		allow_arm_build: bool = frappe.get_cached_value("Press Settings", "allow_arm_build")
 
-		if allow_arm_build and not build.arm_build and build.platform != "arm64":
+		allow_arm_build: bool = frappe.get_cached_doc("Press Settings").allow_arm_build
+		if not allow_arm_build:
+			return
+
+		if not build.arm_build and build.platform != "arm64":
 			# There are two conditions to not trigger an arm build
 			# 1. There already exists an arm build associated to the x86 build
 			# 2. The current build is on a arm platform
