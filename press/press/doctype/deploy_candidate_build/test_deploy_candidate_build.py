@@ -48,10 +48,26 @@ class TestDeployCandidateBuild(unittest.TestCase):
 	@patch.object(DeployCandidateBuild, "_build", new=Mock())
 	def test_creation_of_arm_build(self, mock_enqueue_doc):
 		self.deploy_candidate_build.insert()
+		with self.assertRaises(frappe.ValidationError):
+			# Since x86 build is in intermediate state.
+			self.deploy_candidate_build.create_arm_build()
+
+		self.deploy_candidate_build.status = "Failure"
+		self.deploy_candidate_build.save()
+
+		with self.assertRaises(frappe.ValidationError):
+			# Since x86 build is in failed state.
+			self.deploy_candidate_build.create_arm_build()
+
+		self.deploy_candidate_build.status = "Success"
+		self.deploy_candidate_build.save()
+
 		arm_build = self.deploy_candidate_build.create_arm_build()
 		self.assertEqual(
 			"x86_64", frappe.get_value("Deploy Candidate Build", self.deploy_candidate_build.name, "platform")
 		)
 		self.assertEqual("arm64", frappe.get_value("Deploy Candidate Build", arm_build, "platform"))
+
 		with self.assertRaises(frappe.ValidationError):
+			# Since arm build already exists
 			self.deploy_candidate_build.create_arm_build()

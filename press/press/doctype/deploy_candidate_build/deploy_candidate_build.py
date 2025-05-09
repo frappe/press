@@ -781,15 +781,7 @@ class DeployCandidateBuild(Document):
 		if not allow_automatic_arm_build:
 			return
 
-		successful_arm_build = (
-			frappe.get_value("Deploy Candidate Build", build.arm_build, "status") == "Success"
-		)
-
-		if not successful_arm_build and build.platform != "arm64":
-			# There are two conditions to not trigger an arm build
-			# 1. There already exists an arm build associated to the x86 build
-			# 2. The current build is on a arm platform
-			# These two conditions ensure we don't have excessive arm builds.
+		if should_create_arm_build(build):
 			arm_build_name = build.create_arm_build()
 			build.db_set("arm_build", arm_build_name, commit=True)
 
@@ -1072,15 +1064,8 @@ class DeployCandidateBuild(Document):
 
 	@frappe.whitelist()
 	def create_arm_build(self) -> str:
-		current_arm_build = frappe.get_value("Deploy Candidate Build", self.name, "arm_build")
-		if (
-			current_arm_build
-			and frappe.get_value("Deploy Candidate Build", current_arm_build, "status") != "Failure"
-		):
-			frappe.throw(
-				f"""ARM <a href="/app/deploy-candidate-build/{current_arm_build}">Deploy Candidate Build</a>` already exists!""",
-				frappe.ValidationError,
-			)
+		if not should_create_arm_build(self):
+			frappe.throw("Can not create arm build for this build", frappe.ValidationError)
 
 		arm_build = ARMBuild(self.deploy_candidate)
 		arm_build_name = arm_build.create_deploy_candidate_build()
@@ -1249,6 +1234,28 @@ def fail_and_redeploy(dn: str):
 def is_build_job(job: Job) -> bool:
 	doc_method: str = job.kwargs.get("kwargs", {}).get("doc_method", "")
 	return doc_method.startswith("_build")
+
+
+def should_create_arm_build(build: DeployCandidateBuild):
+	"""
+	There are three conditions to not trigger an arm build
+	1. There already exists a successful arm build associated to the x86 build
+	2. The current build is on a arm platform
+	3. The current build is unsuccessful.
+	These three conditions ensure we don't have excessive arm builds.
+	"""
+	arm_build_status = frappe.get_value("Deploy Candidate Build", build.arm_build, "status")
+
+	if arm_build_status in Status.intermediate() or arm_build_status == Status.SUCCESS.value:
+		return False
+
+	if build.platform == "arm64":
+		return False
+
+	if build.status != Status.SUCCESS.value:
+		return False
+
+	return True
 
 
 def should_build_retry_build_output(build_output: str):
