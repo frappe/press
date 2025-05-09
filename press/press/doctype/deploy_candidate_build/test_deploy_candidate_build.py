@@ -71,3 +71,13 @@ class TestDeployCandidateBuild(unittest.TestCase):
 		with self.assertRaises(frappe.ValidationError):
 			# Since arm build already exists
 			self.deploy_candidate_build.create_arm_build()
+
+		for dep in self.deploy_candidate.dependencies:
+			if dep.dependency == "WKHTMLTOPDF_VERSION":
+				dep.version = "0.12.4"
+
+		self.deploy_candidate.save()
+
+		with self.assertRaises(frappe.ValidationError):
+			# Since wkhtmltopdf version is not supported!
+			self.deploy_candidate_build.create_arm_build()

@@ -178,22 +178,16 @@ class ARMBuild:
 	def __post_init__(self):
 		self.build_server = self.get_build_server()
 
-	def create_deploy_candidate_build(self) -> str | None:
-		deploy_candidate: DeployCandidate = frappe.get_cached_doc("Deploy Candidate", self.deploy_candidate)
-		wkhtmltopdf_version = deploy_candidate.get_dependency_version("wkhtmltopdf")
-
-		if wkhtmltopdf_version in ARM_SUPPORTED_WKHTMLTOPDF:
-			deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
-				{
-					"doctype": "Deploy Candidate Build",
-					"deploy_candidate": self.deploy_candidate,
-					"build_server": self.build_server,
-				}
-			)
-			deploy_candidate_build.insert()
-			return deploy_candidate_build.name
-
-		return None
+	def create_deploy_candidate_build(self) -> str:
+		deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
+			{
+				"doctype": "Deploy Candidate Build",
+				"deploy_candidate": self.deploy_candidate,
+				"build_server": self.build_server,
+			}
+		)
+		deploy_candidate_build.insert()
+		return deploy_candidate_build.name
 
 	def get_build_server(self) -> str:
 		return frappe.get_value("Server", {"platform": "arm64", "use_for_build": True}, "name")
@@ -1238,14 +1232,18 @@ def is_build_job(job: Job) -> bool:
 
 def should_create_arm_build(build: DeployCandidateBuild):
 	"""
-	There are three conditions to not trigger an arm build
+	There are four conditions to not trigger an arm build
 	1. There already exists a successful arm build associated to the x86 build
 	2. The current build is on a arm platform
 	3. The current build is unsuccessful.
-	These three conditions ensure we don't have excessive arm builds.
+	4. WKHTMLTOPDF version is not in ARM_SUPPORTED_WKHTMLTOPDF versions
+	These four conditions ensure we don't have excessive arm builds.
 	"""
-	arm_build_status = frappe.get_value("Deploy Candidate Build", build.arm_build, "status")
+	wkhtmltopdf_version = build.candidate.get_dependency_version("wkhtmltopdf")
+	if wkhtmltopdf_version not in ARM_SUPPORTED_WKHTMLTOPDF:
+		return False
 
+	arm_build_status = frappe.get_value("Deploy Candidate Build", build.arm_build, "status")
 	if arm_build_status in Status.intermediate() or arm_build_status == Status.SUCCESS.value:
 		return False
 
