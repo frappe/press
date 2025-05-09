@@ -25,7 +25,7 @@ from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.x509.oid import ExtensionOID
 from frappe.utils import get_datetime, get_system_timezone
-from frappe.utils.caching import redis_cache, site_cache
+from frappe.utils.caching import site_cache
 
 from press.utils.email_validator import validate_email
 
@@ -926,7 +926,7 @@ def validate_subdomain(subdomain: str):
 		frappe.throw("Subdomain too short. Use 5 or more characters")
 
 
-@redis_cache(ttl=120)
+@site_cache(ttl=120)
 def servers_using_alternative_port_for_communication() -> list:
 	servers = frappe.db.get_value(
 		"Press Settings", None, "servers_using_alternative_http_port_for_communication"
