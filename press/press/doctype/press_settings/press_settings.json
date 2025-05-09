@@ -205,6 +205,8 @@
   "telegram_alerts_chat_group",
   "send_email_notifications",
   "email_recipients",
+  "section_break_nloq",
+  "servers_using_alternative_http_port_for_communication",
   "feature_flags_tab",
   "verify_cards_with_micro_charge",
   "enable_google_oauth",
@@ -1426,11 +1428,20 @@
    "fieldname": "disable_frappe_auth",
    "fieldtype": "Check",
    "label": "Disable Frappe Auth"
+  },
+  {
+   "fieldname": "section_break_nloq",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "servers_using_alternative_http_port_for_communication",
+   "fieldtype": "Small Text",
+   "label": "Servers Using Alternative HTTP Port For Communication"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-04-18 16:28:20.736910",
+ "modified": "2025-05-09 12:05:50.457458",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
