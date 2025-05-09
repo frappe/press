@@ -1078,7 +1078,8 @@ class DeployCandidateBuild(Document):
 			and frappe.get_value("Deploy Candidate Build", current_arm_build, "status") != "Failure"
 		):
 			frappe.throw(
-				f"""ARM <a href="/app/deploy-candidate-build/{current_arm_build}">Deploy Candidate Build</a>` already exists!"""
+				f"""ARM <a href="/app/deploy-candidate-build/{current_arm_build}">Deploy Candidate Build</a>` already exists!""",
+				frappe.ValidationError,
 			)
 
 		arm_build = ARMBuild(self.deploy_candidate)
