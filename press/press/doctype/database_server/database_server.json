@@ -9,19 +9,22 @@
   "hostname",
   "hostname_abbreviation",
   "domain",
-  "self_hosted_server_domain",
   "title",
   "column_break_4",
   "cluster",
   "provider",
   "virtual_machine",
+  "self_hosted_server_domain",
+  "section_break_qury",
   "public",
   "is_self_hosted",
-  "is_server_setup",
-  "is_server_prepared",
-  "is_server_renamed",
   "enable_physical_backup",
   "halt_agent_jobs",
+  "enable_binlog_indexing",
+  "column_break_qsqm",
+  "is_server_setup",
+  "is_server_renamed",
+  "is_server_prepared",
   "billing_section",
   "team",
   "column_break_11",
@@ -554,6 +557,20 @@
    "fieldname": "halt_agent_jobs",
    "fieldtype": "Check",
    "label": "Halt Agent Jobs"
+  },
+  {
+   "fieldname": "section_break_qury",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_binlog_indexing",
+   "fieldtype": "Check",
+   "label": "Enable Binlog Indexing"
+  },
+  {
+   "fieldname": "column_break_qsqm",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
@@ -563,9 +580,14 @@
    "group": "Analytics",
    "link_doctype": "Disk Performance",
    "link_fieldname": "server"
+  },
+  {
+   "group": "Logs",
+   "link_doctype": "MariaDB Binlog",
+   "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-05-02 15:00:34.631435",
+ "modified": "2025-05-08 19:03:14.840782",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

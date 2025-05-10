@@ -964,6 +964,10 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_start_code_server_job_update,
 			process_stop_code_server_job_update,
 		)
+		from press.press.doctype.database_server.database_server import (
+			process_add_binlogs_to_indexer_agent_job_update,
+			process_remove_binlogs_from_indexer_agent_job_update,
+		)
 		from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 		from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
 			process_job_update as process_physical_backup_restoration_job_update,
@@ -1108,6 +1112,10 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_physical_backup_restoration_deactivate_site_job_update(job)
 		elif job.job_type == "Add Domain":
 			process_add_domain_job_update(job)
+		elif job.job_type == "Add Binlogs To Indexer":
+			process_add_binlogs_to_indexer_agent_job_update(job)
+		elif job.job_type == "Remove Binlogs From Indexer":
+			process_remove_binlogs_from_indexer_agent_job_update(job)
 
 		# send failure notification if job failed
 		if job.status == "Failure":
