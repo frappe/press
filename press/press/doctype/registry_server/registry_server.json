@@ -190,7 +190,7 @@
    "set_only_once": 1
   },
   {
-   "depends_on": "eval:doc.provider === \"AWS EC2\"",
+   "depends_on": "eval: doc.provider === \"AWS EC2\"",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
