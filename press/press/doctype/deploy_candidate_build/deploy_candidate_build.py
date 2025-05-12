@@ -1190,8 +1190,8 @@ class DeployCandidateBuild(Document):
 		if not deploy_candidate:
 			return dict(error=True, message="Cannot create duplicate Deploy Candidate")
 
-		deploy_candidate.build_and_deploy(no_cache=no_cache)
-		return dict(error=False, message=deploy_candidate.name)
+		deploy_candidate_build_name = deploy_candidate.build_and_deploy(no_cache=no_cache)
+		return dict(error=False, message=deploy_candidate_build_name)
 
 	@frappe.whitelist()
 	def cleanup_build_directory(self):
@@ -1207,12 +1207,8 @@ class DeployCandidateBuild(Document):
 
 @frappe.whitelist()
 def stop_and_fail(dn: str):
-	build: DeployCandidateBuild = frappe.get_doc(
-		"Deploy Candidate Build",
-		dn,
-		for_update=True,
-	)
-
+	# We can avoid lock here in testing it did not raise a timestamp mismatch error.
+	build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dn)
 	if build.status in Status.intermediate():
 		build._stop_and_fail()
 
@@ -1222,7 +1218,8 @@ def fail_and_redeploy(dn: str):
 	stop_and_fail(dn)
 
 	build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dn)
-	build.redeploy()
+
+	return build.redeploy()
 
 
 def is_build_job(job: Job) -> bool:
