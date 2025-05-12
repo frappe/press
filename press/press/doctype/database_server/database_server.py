@@ -1380,6 +1380,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		self.agent.add_binlogs_to_indexer([x["file_name"] for x in filtered_binlogs])
 
 	def remove_binlogs_from_indexer(self, days: int = 7):
+		return
 		# Avoid if there is already Binlog Indexing related job
 		if self._is_binlog_indexing_related_operation_running():
 			return
@@ -1484,7 +1485,7 @@ def index_mariadb_binlogs():
 		filters={"status": "Active", "is_server_setup": 1, "is_self_hosted": 0, "enable_binlog_indexing": 1},
 	)
 	for database in databases:
-		frappe.get_doc("Database Server", database).index_binlogs()
+		frappe.get_doc("Database Server", database).add_binlogs_to_indexer()
 
 
 def unindex_mariadb_binlogs():

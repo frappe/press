@@ -1410,7 +1410,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			},
 		)
 
-	def get_binlog_queries(self, row_ids: list[int], database: str):
+	def get_binlog_queries(self, row_ids: dict[str, list[int]], database: str):
 		return self.post(
 			"/database/binlogs/indexer/query",
 			data={
