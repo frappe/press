@@ -15,7 +15,12 @@ import requests
 from frappe.utils.password import get_decrypted_password
 from requests.exceptions import HTTPError
 
-from press.utils import get_mariadb_root_password, log_error, sanitize_config
+from press.utils import (
+	get_mariadb_root_password,
+	log_error,
+	sanitize_config,
+	servers_using_alternative_port_for_communication,
+)
 
 if TYPE_CHECKING:
 	from io import BufferedReader
@@ -42,7 +47,7 @@ class Agent:
 	def __init__(self, server, server_type="Server"):
 		self.server_type = server_type
 		self.server = server
-		self.port = 443
+		self.port = 443 if self.server not in servers_using_alternative_port_for_communication() else 8443
 
 	def new_bench(self, bench):
 		settings = frappe.db.get_value(
