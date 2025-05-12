@@ -9,7 +9,7 @@ from frappe.core.utils import find
 from press.utils import log_error
 
 if TYPE_CHECKING:
-	from frappe.model.document import Document
+	from press.press.doctype.root_domain.root_domain import RootDomain
 
 
 @frappe.whitelist()
@@ -49,21 +49,21 @@ def create_dns_record(doc, record_name=None):
 		_change_dns_record("UPSERT", domain, proxy_server, record_name=record_name)
 
 
-def _change_dns_record(method: str, domain: Document, proxy_server: str, record_name: str | None = None):
+def _change_dns_record(method: str, domain: RootDomain, proxy_server: str, record_name: str | None = None):
 	"""
 	Change dns record of site
 
 	method: CREATE | DELETE | UPSERT
 	"""
-	try:
-		if domain.generic_dns_provider:
-			return
+	if domain.generic_dns_provider:
+		return
 
-		client = boto3.client(
-			"route53",
-			aws_access_key_id=domain.aws_access_key_id,
-			aws_secret_access_key=domain.get_password("aws_secret_access_key"),
-		)
+	client = boto3.client(
+		"route53",
+		aws_access_key_id=domain.aws_access_key_id,
+		aws_secret_access_key=domain.get_password("aws_secret_access_key"),
+	)
+	try:
 		zones = client.list_hosted_zones_by_name()["HostedZones"]
 		hosted_zone = find(reversed(zones), lambda x: domain.name.endswith(x["Name"][:-1]))["Id"]
 		client.change_resource_record_sets(

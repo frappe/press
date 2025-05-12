@@ -27,7 +27,6 @@ from press.press.doctype.site_backup.site_backup import (
 	process_backup_site_job_update,
 )
 from press.utils import log_error
-from press.utils.dns import create_dns_record
 
 if TYPE_CHECKING:
 	from frappe.types.DF import Link
@@ -578,8 +577,8 @@ class SiteMigration(Document):
 	def restore_site_on_destination_server(self):
 		"""Restore site on destination"""
 		agent = Agent(self.destination_server)
-		site = frappe.get_doc("Site", self.site)
-		backup = frappe.get_doc("Site Backup", self.backup)
+		site: Site = frappe.get_doc("Site", self.site)
+		backup: SiteBackup = frappe.get_doc("Site Backup", self.backup)
 		site.remote_database_file = backup.remote_database_file
 		site.remote_public_file = backup.remote_public_file
 		site.remote_private_file = backup.remote_private_file
@@ -588,11 +587,10 @@ class SiteMigration(Document):
 		site.cluster = self.destination_cluster
 		site.server = self.destination_server
 		if self.migration_type == "Cluster":
-			create_dns_record(site, record_name=site._get_site_name(site.subdomain))
-			domain = frappe.get_doc("Root Domain", site.domain)
-			if self.destination_cluster == domain.default_cluster:
-				source_proxy = frappe.db.get_value("Server", self.source_server, "proxy_server")
-				site.remove_dns_record(domain, source_proxy, site.name)
+			site.create_dns_record()  # won't create for default cluster
+			if self.destination_cluster == frappe.db.get_value("Root Domain", site.domain, "default_cluster"):
+				source_proxy = str(frappe.db.get_value("Server", self.source_server, "proxy_server"))
+				site.remove_dns_record(source_proxy)
 		return agent.new_site_from_backup(site, skip_failing_patches=self.skip_failing_patches)
 
 	def restore_site_on_destination_proxy(self):

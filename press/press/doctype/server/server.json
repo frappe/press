@@ -71,6 +71,7 @@
   "use_for_new_sites",
   "staging",
   "use_for_build",
+  "platform",
   "column_break_ktkv",
   "new_worker_allocation",
   "set_bench_memory_limits",
@@ -584,10 +585,17 @@
    "fieldname": "halt_agent_jobs",
    "fieldtype": "Check",
    "label": "Halt Agent Jobs"
+  },
+  {
+   "default": "x86_64",
+   "fieldname": "platform",
+   "fieldtype": "Select",
+   "label": "Platform",
+   "options": "x86_64\narm64"
   }
  ],
  "links": [],
- "modified": "2025-05-02 15:00:00.861519",
+ "modified": "2025-05-08 14:16:23.903981",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

@@ -456,7 +456,7 @@ class BaseServer(Document, TagHelpers):
 				playbook="update_agent.yml",
 				variables={
 					"agent_repository_url": self.get_agent_repository_url(),
-					"agent_repository_branch_or_commit_ref": "master",
+					"agent_repository_branch_or_commit_ref": "upstream/master",
 					"agent_update_args": "",
 				},
 				server=self,
@@ -1409,6 +1409,7 @@ class Server(BaseServer):
 		mounts: DF.Table[ServerMount]
 		new_worker_allocation: DF.Check
 		plan: DF.Link | None
+		platform: DF.Literal["x86_64", "arm64"]
 		primary: DF.Link | None
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None

@@ -12,6 +12,7 @@ import shutil
 import tarfile
 import tempfile
 import typing
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from functools import cached_property
@@ -52,12 +53,12 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
 		DeployCandidateApp,
 	)
-	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 # build_duration, pending_duration are Time fields, >= 1 day is invalid
 MAX_DURATION = timedelta(hours=23, minutes=59, seconds=59)
 DISTUTILS_SUPPORTED_VERSION = semantic_version.SimpleSpec("<3.12")
 GET_PIP_VERSION_MODIFIED_URL = semantic_version.SimpleSpec(">=3.2,<=3.8")
+ARM_SUPPORTED_WKHTMLTOPDF = ["0.12.5", "0.12.6"]
 
 
 class Status(Enum):
@@ -169,6 +170,29 @@ def get_duration(start_time: datetime, end_time: datetime | None = None):
 	return float(value)
 
 
+@dataclass
+class ARMBuild:
+	deploy_candidate: str
+	build_server: str = field(init=False)
+
+	def __post_init__(self):
+		self.build_server = self.get_build_server()
+
+	def create_deploy_candidate_build(self) -> str:
+		deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
+			{
+				"doctype": "Deploy Candidate Build",
+				"deploy_candidate": self.deploy_candidate,
+				"build_server": self.build_server,
+			}
+		)
+		deploy_candidate_build.insert()
+		return deploy_candidate_build.name
+
+	def get_build_server(self) -> str:
+		return frappe.get_value("Server", {"platform": "arm64", "use_for_build": True}, "name")
+
+
 class DeployCandidateBuild(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
@@ -182,6 +206,7 @@ class DeployCandidateBuild(Document):
 			DeployCandidateBuildStep,
 		)
 
+		arm_build: DF.Link | None
 		build_directory: DF.Data | None
 		build_duration: DF.Time | None
 		build_end: DF.Datetime | None
@@ -341,6 +366,7 @@ class DeployCandidateBuild(Document):
 					"doc": self.candidate,
 					"remove_distutils": not is_distutils_supported,
 					"requires_version_based_get_pip": requires_version_based_get_pip,
+					"is_arm_build": self.platform == "arm64",
 				},
 				is_path=True,
 			)
@@ -745,6 +771,14 @@ class DeployCandidateBuild(Document):
 		)
 		build._process_run_build(job, request_data, response_data)
 
+		allow_automatic_arm_build: bool = frappe.get_cached_doc("Press Settings").allow_automatic_arm_build
+		if not allow_automatic_arm_build:
+			return
+
+		if should_create_arm_build(build):
+			arm_build_name = build.create_arm_build()
+			build.db_set("arm_build", arm_build_name, commit=True)
+
 	def _process_run_build(
 		self,
 		job: "AgentJob",
@@ -908,24 +942,26 @@ class DeployCandidateBuild(Document):
 		context_filename = self._package_and_upload_context()
 		settings = self._fetch_registry_settings()
 
-		Agent(self.build_server).run_build(
-			{
-				"filename": context_filename,
-				"image_repository": self.docker_image_repository,
-				"image_tag": self.docker_image_tag,
-				"registry": {
-					"url": settings.docker_registry_url,
-					"username": settings.docker_registry_username,
-					"password": settings.docker_registry_password,
-				},
-				"no_cache": self.no_cache,
-				"no_push": self.no_push,
-				# Next few values are not used by agent but are
-				# read in `process_run_build`
-				"deploy_candidate_build": self.name,
-				"deploy_after_build": self.deploy_after_build,
-			}
-		)
+		build_parameters = {
+			"filename": context_filename,
+			"image_repository": self.docker_image_repository,
+			"image_tag": self.docker_image_tag,
+			"registry": {
+				"url": settings.docker_registry_url,
+				"username": settings.docker_registry_username,
+				"password": settings.docker_registry_password,
+			},
+			"no_cache": self.no_cache,
+			"no_push": self.no_push,
+			# Next few values are not used by agent but are
+			# read in `process_run_build`
+			"deploy_candidate_build": self.name,
+			"deploy_after_build": self.deploy_after_build,
+		}
+		if self.platform == "arm64":
+			build_parameters.update({"platform": self.platform})
+
+		Agent(self.build_server).run_build(build_parameters)
 
 		self.set_status(Status.RUNNING)
 
@@ -992,11 +1028,8 @@ class DeployCandidateBuild(Document):
 		self.pending_end = None
 		self.pending_duration = None
 
-	def get_platform(self) -> VirtualMachine | None:
-		if virtual_machine_name := frappe.get_value("Server", self.build_server, "virtual_machine"):
-			virtual_machine: VirtualMachine = frappe.get_doc("Virtual Machine", virtual_machine_name)
-			return virtual_machine.platform
-		return None
+	def get_platform(self) -> str:
+		return frappe.get_value("Server", self.build_server, "platform")
 
 	def set_platform(self):
 		self.platform = self.get_platform() or "x86_64"
@@ -1022,6 +1055,22 @@ class DeployCandidateBuild(Document):
 			"Please wait for build to succeed or fail before retrying."
 		)
 		return False
+
+	@frappe.whitelist()
+	def create_arm_build(self) -> str:
+		if not should_create_arm_build(self):
+			frappe.throw("Can not create arm build for this build", frappe.ValidationError)
+
+		arm_build = ARMBuild(self.deploy_candidate)
+		arm_build_name = arm_build.create_deploy_candidate_build()
+
+		# In case this is triggered from actions and allow arm build is unset
+		# Process job will early exit, skipping build.db_set("arm_build", arm_build_name, commit=True)
+		allow_automatic_arm_build: bool = frappe.get_cached_doc("Press Settings").allow_automatic_arm_build
+		if not allow_automatic_arm_build:
+			self.db_set("arm_build", arm_build_name, commit=True)
+
+		return arm_build_name
 
 	def pre_build(self, **kwargs):
 		self.reset_build_state()
@@ -1176,6 +1225,32 @@ def fail_and_redeploy(dn: str):
 def is_build_job(job: Job) -> bool:
 	doc_method: str = job.kwargs.get("kwargs", {}).get("doc_method", "")
 	return doc_method.startswith("_build")
+
+
+def should_create_arm_build(build: DeployCandidateBuild):
+	"""
+	There are four conditions to not trigger an arm build
+	1. There already exists a successful arm build associated to the x86 build
+	2. The current build is on a arm platform
+	3. The current build is unsuccessful.
+	4. WKHTMLTOPDF version is not in ARM_SUPPORTED_WKHTMLTOPDF versions
+	These four conditions ensure we don't have excessive arm builds.
+	"""
+	wkhtmltopdf_version = build.candidate.get_dependency_version("wkhtmltopdf")
+	if wkhtmltopdf_version not in ARM_SUPPORTED_WKHTMLTOPDF:
+		return False
+
+	arm_build_status = frappe.get_value("Deploy Candidate Build", build.arm_build, "status")
+	if arm_build_status in Status.intermediate() or arm_build_status == Status.SUCCESS.value:
+		return False
+
+	if build.platform == "arm64":
+		return False
+
+	if build.status != Status.SUCCESS.value:
+		return False
+
+	return True
 
 
 def should_build_retry_build_output(build_output: str):

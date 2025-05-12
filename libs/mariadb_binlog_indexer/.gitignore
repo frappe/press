@@ -1,0 +1,12 @@
+*.txt
+*.parquet
+*.db
+test*
+*.wal
+
+**/lib/**
+__pycache__
+env
+dist
+build
+*.egg-info
