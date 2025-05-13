@@ -897,24 +897,25 @@ def redirect_to(location):
 	)
 
 
-def get_frappe_io_auth_url() -> str | None:
-	"""Get auth url for oauth login with frappe.io."""
-
-	try:
-		provider = frappe.get_last_doc(
-			"Social Login Key", filters={"enable_social_login": 1, "provider_name": "Frappe"}
-		)
-	except DoesNotExistError:
-		return None
-
-	if (
-		provider.base_url
-		and provider.client_id
-		and get_oauth_keys(provider.name)
-		and provider.get_password("client_secret")
-	):
-		return get_oauth2_authorize_url(provider.name, redirect_to="")
-	return None
+def get_frappe_io_auth_url() -> str:
+    """Get auth URL for OAuth login with frappe.io, with a fallback to '/'."""
+    try:
+        provider = frappe.get_last_doc(
+            "Social Login Key", filters={"enable_social_login": 1, "provider_name": "Frappe"}
+        )
+        if (
+            provider.base_url
+            and provider.client_id
+            and get_oauth_keys(provider.name)
+            and provider.get_password("client_secret")
+        ):
+            return get_oauth2_authorize_url(provider.name, redirect_to="")
+    except Exception as e:
+        # Log the error for debugging purposes
+        #frappe.log_error(message=str(e), title="Failed to get Frappe OAuth URL")
+    
+    # Fallback to root URL if any error occurs
+    return "/"
 
 
 @frappe.whitelist()
