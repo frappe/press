@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 	from twilio.rest.api.v2010.account.call import CallInstance
 
 	from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import AlertmanagerWebhookLog
+	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.incident_settings.incident_settings import IncidentSettings
 	from press.press.doctype.incident_settings_self_hosted_user.incident_settings_self_hosted_user import (
 		IncidentSettingsSelfHostedUser,
@@ -36,6 +37,7 @@ if TYPE_CHECKING:
 	)
 	from press.press.doctype.monitor_server.monitor_server import MonitorServer
 	from press.press.doctype.press_settings.press_settings import PressSettings
+	from press.press.doctype.server.server import Server
 
 INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere #
 INCIDENT_SCOPE = (
@@ -332,6 +334,16 @@ class Incident(WebsiteGenerator):
 		Ignore incidents on server (Don't call)
 		"""
 		frappe.db.set_value("Server", self.server, "ignore_incidents_since", frappe.utils.now_datetime())
+
+	def reboot_database_server(self):
+		db_server_name: Server = frappe.db.get_value("Server", self.server, "database_server")
+		if not db_server_name:
+			frappe.throw("No database server found for this server")
+		db_server: DatabaseServer = frappe.get_doc("Database Server", db_server_name)
+		try:
+			db_server.reboot_with_serial_console()
+		except NotImplementedError:
+			db_server.reboot()
 
 	def call_humans(self):
 		enqueue_doc(
