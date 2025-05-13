@@ -30,6 +30,7 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   htop \
   iputils-ping \
   telnet \
+  screen \
   # Dependencies for adding Python PPA
   software-properties-common \
   gnupg \
