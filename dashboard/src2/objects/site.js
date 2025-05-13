@@ -1639,7 +1639,13 @@ export default {
 					condition: () =>
 						site.doc.status !== 'Archived' && site.doc?.setup_wizard_complete,
 					onClick() {
-						window.open(`https://${site.name}/apps`, '_blank');
+						let siteURL = `https://${site.name}`;
+						if (
+							site.doc.version === 'Nightly' ||
+							Number(site.doc.version.split(' ')[1]) >= 15
+						)
+							siteURL += '/apps';
+						window.open(siteURL, '_blank');
 					},
 				},
 				{
