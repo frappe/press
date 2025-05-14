@@ -555,7 +555,7 @@ Incident URL: {incident_link}"""
 
 	def get_last_alert_status_for_each_group(self):
 		"""
-		Can be used to verify all instances of the incident are resolved (all sites for a server)
+		Not in use. Can be used to verify all instances of the incident are resolved (all sites for a server)
 		"""
 		return frappe.db.sql_list(
 			f"""
@@ -600,14 +600,18 @@ where
 		try:
 			last_resolved: AlertmanagerWebhookLog = frappe.get_last_doc(
 				"Alertmanager Webhook Log",
-				{"status": "Resolved", "group_key": ("like", self.incident_scope), "alert": self.alert},
+				{
+					"status": "Resolved",
+					"group_key": ("like", f"%{self.incident_scope}%"),
+					"alert": self.alert,
+				},
 			)
 		except frappe.DoesNotExistError:
 			return
 		else:
 			resolved_instances = last_resolved.get_past_alert_instances()
 			total_instances = last_resolved.total_instances()
-			if len(resolved_instances) > min(
+			if len(resolved_instances) > max(
 				(1 - MIN_FIRING_INSTANCES_PERCENTAGE) * total_instances,
 				total_instances - MIN_FIRING_INSTANCES,
 			):
