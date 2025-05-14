@@ -295,24 +295,28 @@ class TestIncident(FrappeTestCase):
 		incident.reload()
 		self.assertEqual(incident.status, "Auto-Resolved")
 
-	def test_incident_does_not_auto_resolve_when_other_alerts_are_still_firing(self):
+	def test_incident_does_resolve_when_other_alerts_are_still_firing_but_does_when_less_than_required_sites_are_down(
+		self,
+	):
 		site = create_test_site()
 		site2 = create_test_site(server=site.server)
+		site3 = create_test_site(server=site.server)
 		alert = create_test_prometheus_alert_rule()
-		create_test_alertmanager_webhook_log(site=site, alert=alert, status="firing")  # 50% sites down
-		incident = frappe.get_last_doc("Incident")
+		create_test_alertmanager_webhook_log(site=site, alert=alert, status="firing")  # 33% sites down
+		create_test_alertmanager_webhook_log(site=site2, alert=alert, status="firing")  # 66% sites down
+		incident: Incident = frappe.get_last_doc("Incident")
 		self.assertEqual(incident.status, "Validating")
-		create_test_alertmanager_webhook_log(site=site2, status="firing")  # other site down, nothing resolved
+		create_test_alertmanager_webhook_log(site=site3, status="firing")  # 3rd site down, nothing resolved
+		resolve_incidents()
+		incident.reload()
+		self.assertEqual(incident.status, "Validating")
+		create_test_alertmanager_webhook_log(site=site3, status="resolved")  # 66% sites down, 1 resolved
 		resolve_incidents()
 		incident.reload()
 		self.assertEqual(incident.status, "Validating")
 		create_test_alertmanager_webhook_log(
 			site=site2, status="resolved"
-		)  # other site resolved, first site still down
-		resolve_incidents()
-		incident.reload()
-		self.assertEqual(incident.status, "Validating")
-		create_test_alertmanager_webhook_log(site=site, status="resolved")
+		)  # 33% sites down, 2 resolved # minimum resolved
 		resolve_incidents()
 		incident.reload()
 		self.assertEqual(incident.status, "Auto-Resolved")
