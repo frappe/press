@@ -1042,9 +1042,10 @@ class BaseServer(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def reboot(self):
-		if self.provider in ("AWS EC2", "OCI"):
-			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
-			virtual_machine.reboot()
+		if self.provider not in ("AWS EC2", "OCI"):
+			raise NotImplementedError
+		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		virtual_machine.reboot()
 
 	@dashboard_whitelist()
 	def rename(self, title):
