@@ -191,9 +191,7 @@ def get_gateway_controller():
 @frappe.whitelist()
 def get_tax_percentage(payment_partner):
 	team = frappe.db.get_value("Team", {"user": payment_partner}, "name")
-	mpesa_setups = frappe.get_all(
-		"Mpesa Setup", {"api_type": "Mpesa Express", "team": team}, pluck="name"
-	)
+	mpesa_setups = frappe.get_all("Mpesa Setup", {"api_type": "Mpesa Express", "team": team}, pluck="name")
 	taxes_and_charges = 0
 	for mpesa_setup in mpesa_setups:
 		payment_gateways = frappe.get_all(
@@ -403,9 +401,7 @@ def fetch_payments(payment_gateway, partner, from_date, to_date):
 	partner_payments = frappe.get_all(
 		"Payment Partner Transaction", filters=filters, fields=["name", "amount", "posting_date"]
 	)
-	print("Partner Payments", partner_payments)
-	frappe.response.message = partner_payments
-	return partner_payments
+	return partner_payments  # noqa: RET504
 
 
 @frappe.whitelist()

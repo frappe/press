@@ -98,7 +98,7 @@
    "label": "Feature Flags"
   },
   {
-   "default": "0",
+   "default": "1",
    "fetch_from": "group.is_redisearch_enabled",
    "fieldname": "is_redisearch_enabled",
    "fieldtype": "Check",
@@ -198,7 +198,7 @@
    "link_fieldname": "deploy_candidate"
   }
  ],
- "modified": "2025-04-16 15:09:54.321884",
+ "modified": "2025-05-07 20:52:35.176671",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

@@ -151,7 +151,7 @@ def get_build_server(group: str | None = None) -> str | None:
 def get_build_server_with_least_active_builds() -> str | None:
 	build_servers = frappe.get_all(
 		"Server",
-		filters={"use_for_build": True, "status": "Active"},
+		filters={"use_for_build": True, "status": "Active", "platform": "x86_64"},
 		pluck="name",
 	)
 

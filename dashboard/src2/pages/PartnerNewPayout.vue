@@ -60,16 +60,18 @@
 					</div>
 					<div class="flex justify-end mt-4 space-x-2">
 						<Button
-							variant="solid"
-							@click="fetchTransactions"
+							:variant="transactions.length > 0 ? 'subtle' : 'solid'"
+							@click="$resources.fetchTransactions.submit()"
 							:loading="fetchPayoutTransactions"
+							:disabled="!Boolean(partnerInput && paymentGateway)"
 						>
 							Fetch Transactions
 						</Button>
 						<Button
-							variant="subtle"
-							@click="onSubmitPayout"
+							variant="solid"
+							@click="$resources.submitPaymentPayout.submit()"
 							:loading="reconciliationInProgress"
+							:disabled="Boolean(transactions.length === 0)"
 						>
 							Submit Payout
 						</Button>
@@ -145,7 +147,7 @@ export default {
 		return {
 			partnerInput: '',
 			paymentGateway: '',
-			partnerCommission: 0,
+			partnerCommission: this.$team.doc.erpnext_partner ? 10 : 5,
 			from_date: new Date().toISOString().split('T')[0],
 			to_date: new Date().toISOString().split('T')[0],
 
@@ -202,7 +204,7 @@ export default {
 		},
 	},
 	resources: {
-		submitPaymentPayouts() {
+		submitPaymentPayout() {
 			return {
 				url: 'press.press.doctype.partner_payment_payout.partner_payment_payout.submit_payment_payout',
 				params: {
@@ -213,119 +215,66 @@ export default {
 					partner_commission: this.partnerCommission,
 					transactions: this.transactions,
 				},
-			};
-		},
-		fetchTransactions() {
-			return {
-				url: 'press.api.partner.fetch_payment_transactions',
-				debounce: 300,
+				validate: () => {
+					if (this.transactions.length === 0) {
+						toast.error('No transactions to submit');
+						return false;
+					}
+				},
 				onSuccess: (data) => {
 					if (data) {
-						this.docname = data.name;
-						this.doc = data;
+						toast.success('Payout Submitted Successfully!', {
+							duration: 1000,
+							onAutoClose: () => {
+								this.$router.push({ name: 'PartnerPayout' });
+							},
+						});
+					} else {
+						toast.error('Failed to submit payout');
 					}
 				},
 			};
 		},
-		submitResource() {
+		fetchTransactions() {
 			return {
+				url: 'press.api.regional_payments.mpesa.utils.fetch_payments',
+				debounce: 300,
 				params: {
-					doctype: 'Partner Payment Payout',
-					name: this.docname,
+					partner: this.partnerInput.value,
+					payment_gateway: this.paymentGateway.value,
+					from_date: this.from_date,
+					to_date: this.to_date,
+				},
+				onSuccess: (data) => {
+					if (data.length > 0) {
+						this.transactions = data || [];
+						this.fetchPayoutTransactions = false;
+					} else {
+						toast.info('No transactions found');
+						this.fetchPayoutTransactions = false;
+					}
+				},
+			};
+		},
+		fetchPartners() {
+			return {
+				url: 'press.api.regional_payments.mpesa.utils.display_mpesa_payment_partners',
+				auto: true,
+				onSuccess: (data) => {
+					if (Array.isArray(data)) {
+						this.partners = data;
+					} else {
+						console.log('No Data');
+					}
 				},
 			};
 		},
 	},
 	methods: {
-		async onSubmitPayout() {
-			this.reconciliationInProgress = true;
-			try {
-				if (
-					!this.partnerInput ||
-					!this.paymentGateway ||
-					this.transactions.length === 0
-				) {
-					toast.error(
-						'Please select partner, payment gateway and fetch transactions first',
-					);
-					return;
-				}
-
-				const result = await this.$resources.submitPaymentPayouts.submit({
-					partner: this.partnerInput.value,
-					payment_gateway: this.paymentGateway.value,
-					from_date: this.from_date,
-					to_date: this.to_date,
-					partner_commission: this.partnerCommission,
-					transactions: this.transactions,
-				});
-
-				if (result) {
-					toast.success(`Payout Submitted Successfully!`, {
-						duration: 1000,
-						onAutoClose: () => {
-							this.$router.push({ name: 'PartnerPayout' });
-						},
-					});
-				}
-			} catch (error) {
-				toast.error(error.message || 'Failed to submit payout');
-			} finally {
-				this.reconciliationInProgress = false;
-			}
-		},
-
-		async fetchTransactions() {
-			this.fetchPayoutTransactions = true;
-			if (!this.partnerInput || !this.paymentGateway) {
-				return 'Please fill required values';
-			}
-			const response = await frappeRequest({
-				url: 'press.api.regional_payments.mpesa.utils.fetch_payments',
-				method: 'GET',
-				params: {
-					partner: this.partnerInput.value,
-					payment_gateway: this.paymentGateway.value,
-					from_date: this.from_date,
-					to_date: this.to_date,
-				},
-			});
-			if (response.length > 0) {
-				this.transactions = response || [];
-				this.fetchPayoutTransactions = false;
-			} else {
-				toast.info('No transactions found');
-			}
-		},
-
-		submitPayout() {
-			this.submitResource.submit();
-		},
-		resetForm() {
-			this.partnerInput = '';
-			this.paymentGateway = '';
-			this.transactions = [];
-		},
-		async fetchPartners() {
-			try {
-				const response = await frappeRequest({
-					url: 'press.api.regional_payments.mpesa.utils.display_mpesa_payment_partners',
-					method: 'GET',
-				});
-				if (Array.isArray(response)) {
-					this.partners = response;
-				} else {
-					console.log('No Data');
-				}
-			} catch (error) {
-				this.errorMessage = `Failed to fetch teams ${error.message}`;
-			}
-		},
 		async fetchPaymentGateways() {
 			try {
 				const response = await frappeRequest({
 					url: 'press.api.regional_payments.mpesa.utils.display_payment_gateways',
-					method: 'GET',
 					params: {
 						payment_partner: this.partnerInput.value,
 					},
@@ -342,8 +291,7 @@ export default {
 		async fetchPercentageCommission() {
 			try {
 				const response = await frappeRequest({
-					url: '/api/method/press.api.regional_payments.mpesa.utils.fetch_percentage_commission',
-					method: 'GET',
+					url: 'press.api.regional_payments.mpesa.utils.fetch_percentage_commission',
 					params: {
 						partner: this.partnerInput.value,
 					},
@@ -367,10 +315,6 @@ export default {
 		formatDate(value) {
 			return new Date(value).toLocaleDateString();
 		},
-	},
-
-	mounted() {
-		this.fetchPartners();
 	},
 	watch: {
 		partnerInput() {

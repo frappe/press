@@ -8,6 +8,7 @@ import traceback
 from typing import Literal
 
 import duckdb
+import filelock
 
 QUERY_TYPES = Literal["SELECT", "INSERT", "UPDATE", "DELETE", "OTHER"]
 
@@ -21,22 +22,25 @@ class Indexer:
 		self.indexer_lib = os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib", "indexer")
 		self.base_path = base_path
 		self.db_name = db_name
-		self.logging = True
+		self.logging = False
+		self._lock_file_path = os.path.join(self.base_path, "indexer.lock")
 
 	def add(self, binlog_path: str, batch_size: int = 10000):
-		subprocess.run(
-			[
-				self.indexer_lib,
-				"add",
-				self.base_path,
-				binlog_path,
-				self.db_name,
-				str(batch_size),
-			]
-		)
+		with filelock.FileLock(self._lock_file_path):
+			subprocess.run(
+				[
+					self.indexer_lib,
+					"add",
+					self.base_path,
+					binlog_path,
+					self.db_name,
+					str(batch_size),
+				]
+			)
 
 	def remove(self, binlog_path: str):
-		subprocess.run([self.indexer_lib, "remove", self.base_path, binlog_path, self.db_name])
+		with filelock.FileLock(self._lock_file_path):
+			subprocess.run([self.indexer_lib, "remove", self.base_path, binlog_path, self.db_name])
 
 	def get_timeline(
 		self,
@@ -91,11 +95,15 @@ class Indexer:
 		# Split the time range in 30 slices
 		interval = math.ceil(((end_timestamp - start_timestamp) // 30) / 60) * 60
 		where_clause = ""
+		parameters = [interval, start_timestamp, end_timestamp, interval]
+
 		if type is not None:
-			where_clause += f"AND q.type = '{type}'"
+			where_clause += " AND q.type = ? "
+			parameters.append(type)
 
 		if database is not None:
-			where_clause += f"AND q.db_name = '{database}'"
+			where_clause += " AND q.db_name = ? "
+			parameters.append(database)
 
 		query_result = self._execute_query(
 			"db",
@@ -117,7 +125,7 @@ class Indexer:
 				{where_clause}
 			GROUP BY t.start_ts, t.end_ts, q.type
 			ORDER BY t.start_ts, q.type;""",
-			[interval, start_timestamp, end_timestamp, interval],
+			parameters,
 		)
 
 		result_map = {}
@@ -164,12 +172,16 @@ class Indexer:
 		"""
 		# First fetch all the row ids
 		where_clause = ""
+		parameters = [start_timestamp, end_timestamp]
 		if type is not None:
-			where_clause += f"AND type = '{type}'\n"
+			where_clause += " AND type = ? "
+			parameters.append(type)
 		if database is not None:
-			where_clause += f"AND db_name = '{database}'\n"
+			where_clause += " AND db_name = ? "
+			parameters.append(database)
 		if table is not None:
-			where_clause += f"AND table_name = '{table}'\n"
+			where_clause += " AND table_name = ? "
+			parameters.append(table)
 
 		row_ids = [
 			i
@@ -185,7 +197,7 @@ class Indexer:
 					AND timestamp < ?
 					{where_clause}
 				""",
-				[start_timestamp, end_timestamp],
+				parameters,
 			)
 		]
 
@@ -317,10 +329,13 @@ class Indexer:
 			params = []
 		result = []
 		db: duckdb.DuckDBPyConnection | None = None
+		lock: filelock.FileLock | None = None
 		try:
 			if source == "parquet":
 				db = duckdb.connect()
 			elif source == "db":
+				lock = filelock.FileLock(self._lock_file_path)
+				lock.acquire(timeout=5)
 				db = duckdb.connect(database=os.path.join(self.base_path, self.db_name), read_only=True)
 			result = db.execute(query, parameters=params).fetchall()
 		except Exception as e:
@@ -334,4 +349,7 @@ class Indexer:
 			if db is not None:
 				with contextlib.suppress(Exception):
 					db.close()
+			if lock is not None:
+				with contextlib.suppress(Exception):
+					lock.release()
 		return result

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail
+set -eo pipefail
 
 # Check if VERSION environment is set
 if [ -z "$VERSION" ]; then
