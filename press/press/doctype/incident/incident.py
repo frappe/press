@@ -553,7 +553,7 @@ Incident URL: {incident_link}"""
 	def incident_scope(self):
 		return getattr(self, INCIDENT_SCOPE)
 
-	def get_last_alert_status_for_each_group(self):
+	def get_last_alert_status_for_each_group(self):  # pragma: no cover
 		"""
 		Not in use. Can be used to verify all instances of the incident are resolved (all sites for a server)
 		"""
