@@ -94,6 +94,24 @@
 						placeholder="Selected Table"
 						v-model="selectedTable"
 					/>
+					<Button
+						variant="outline"
+						theme="gray"
+						size="sm"
+						@click="this.showTypeColumn = !this.showTypeColumn"
+						:iconLeft="this.showTypeColumn ? 'eye' : 'eye-off'"
+					>
+						Query Type
+					</Button>
+					<Button
+						variant="outline"
+						theme="gray"
+						size="sm"
+						@click="this.showTableColumn = !this.showTableColumn"
+						:iconLeft="this.showTableColumn ? 'eye' : 'eye-off'"
+					>
+						Table Name
+					</Button>
 				</div>
 
 				<div class="flex flex-row items-center gap-2">
@@ -109,7 +127,10 @@
 						theme="gray"
 						size="sm"
 						@click="searchBinlogs"
-						:loading="this.$resources?.searchBinlogs?.loading"
+						:loading="
+							this.$resources?.searchBinlogs?.loading ||
+							this.$resources?.fetchQueriesFromBinlog?.loading
+						"
 						loadingText="Searching"
 						iconLeft="search"
 					>
@@ -131,18 +152,21 @@
 				>
 					<Spinner class="w-4" /> Searching for binlogs...
 				</div>
-				<div
-					v-else-if="this.$resources?.fetchQueriesFromBinlog?.loading"
-					class="flex h-80 w-full items-center justify-center gap-2 text-base text-gray-700"
-				>
-					<Spinner class="w-4" /> Searching for Queries...
-				</div>
-				<SQLResultTable
+				<BinlogResultTable
 					v-else
-					:columns="['Type', 'Table', 'Query', 'Timestamp', 'Event Size (kb)']"
-					:data="this.result"
+					:loadingData="this.$resources?.fetchQueriesFromBinlog?.loading"
+					:loadData="this.fetchQueries"
+					:columns="this.tableColumns"
+					:data="this.tableRows"
 					:isTruncateText="true"
 					:truncateLength="120"
+					:noOfRows="queryIds.length"
+					:fullViewFormatters="fullViewFormatters"
+					:cellFormatters="cellFormatters"
+					:alignColumns="{
+						'Event Size': 'center',
+						Timestamp: 'center',
+					}"
 				/>
 			</div>
 		</div>
@@ -151,8 +175,9 @@
 <script>
 import Header from '../../../components/Header.vue';
 import { Tabs, Breadcrumbs, Select, FeatherIcon } from 'frappe-ui';
+import { formatValue } from '../../../utils/format';
 import LinkControl from '../../../components/LinkControl.vue';
-import SQLResultTable from '../../../components/devtools/database/ResultTable.vue';
+import BinlogResultTable from '../../../components/devtools/database/BinlogResultTable.vue';
 
 export default {
 	name: 'BinlogBrowser',
@@ -162,7 +187,7 @@ export default {
 		Tabs,
 		LinkControl,
 		Select,
-		SQLResultTable,
+		BinlogResultTable,
 	},
 	data() {
 		return {
@@ -177,6 +202,8 @@ export default {
 			queryIds: [],
 			result: [],
 			searchResultReady: false,
+			showTypeColumn: false,
+			showTableColumn: false,
 		};
 	},
 	mounted() {
@@ -232,6 +259,11 @@ export default {
 				url: 'press.api.client.run_doc_method',
 				initialData: {},
 				auto: false,
+				onSuccess: (data) => {
+					if (data?.message) {
+						this.resetSearch();
+					}
+				},
 			};
 		},
 		searchBinlogs() {
@@ -252,7 +284,6 @@ export default {
 							}
 						}
 						this.searchResultReady = true;
-						this.fetchQueries();
 					}
 				},
 			};
@@ -266,6 +297,7 @@ export default {
 					if (data?.message) {
 						let binlogs = Object.keys(data.message);
 						binlogs.sort();
+						this.result = [];
 						for (let i = 0; i < binlogs.length; i++) {
 							let binlogRowIds = Object.keys(data.message[binlogs[i]]);
 							binlogRowIds.sort();
@@ -276,7 +308,7 @@ export default {
 									queryInfo[4],
 									queryInfo[0],
 									new Date(queryInfo[5] * 1000).toLocaleString(),
-									(queryInfo[2] / 1024).toFixed(2),
+									queryInfo[2],
 								]);
 							}
 						}
@@ -314,7 +346,7 @@ export default {
 				},
 			});
 		},
-		fetchQueries() {
+		fetchQueries(start, end) {
 			let lastQueryIndex = this.result.length;
 			if (lastQueryIndex >= this.queryIds.length) {
 				return;
@@ -322,10 +354,7 @@ export default {
 			if (this.$resources.fetchQueriesFromBinlog?.loading ?? true) return;
 
 			// Load 50 queries at a time
-			const queriesToLoad = this.queryIds.slice(
-				lastQueryIndex,
-				lastQueryIndex + 500,
-			);
+			const queriesToLoad = this.queryIds.slice(start, end);
 			let rowIds = {};
 			queriesToLoad.forEach((q) => {
 				const [binlog, rowId] = q.split(':');
@@ -345,6 +374,11 @@ export default {
 					},
 				});
 			}
+		},
+		resetSearch() {
+			this.queryIds = [];
+			this.result = [];
+			this.searchResultReady = false;
 		},
 	},
 	computed: {
@@ -376,6 +410,39 @@ export default {
 						minute: '2-digit',
 					});
 				}),
+			};
+		},
+		tableColumns() {
+			let columns = ['Type', 'Table', 'Query', 'Timestamp', 'Event Size'];
+			if (!this.showTypeColumn && !this.showTableColumn) {
+				columns = columns.slice(2);
+			} else if (!this.showTypeColumn) {
+				columns = columns.slice(1);
+			} else if (!this.showTableColumn) {
+				columns = columns.filter((col) => col !== 'Table');
+			}
+			return columns;
+		},
+		tableRows() {
+			if (!this.result) return [];
+			let result = this.result;
+			if (!this.showTypeColumn && !this.showTableColumn) {
+				result = result.map((row) => row.slice(2));
+			} else if (!this.showTypeColumn) {
+				result = result.map((row) => [row[1], row[2], row[3]]);
+			} else if (!this.showTableColumn) {
+				result = result.map((row) => [row[0], row[2], row[3]]);
+			}
+			return result;
+		},
+		cellFormatters() {
+			return {
+				'Event Size': (v) => formatValue(v, 'bytes'),
+			};
+		},
+		fullViewFormatters() {
+			return {
+				Query: (v) => formatValue(v, 'sql'),
 			};
 		},
 	},
