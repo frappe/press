@@ -612,9 +612,9 @@ where
 		else:
 			resolved_instances = last_resolved.get_past_alert_instances()
 			total_instances = last_resolved.total_instances()
-			if len(resolved_instances) > max(
+			if len(resolved_instances) >= max(
 				(1 - MIN_FIRING_INSTANCES_PERCENTAGE) * total_instances,
-				total_instances - MIN_FIRING_INSTANCES,
+				MIN_FIRING_INSTANCES,
 			):
 				self.resolve()
 
