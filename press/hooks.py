@@ -194,6 +194,7 @@ scheduler_events = {
 		"press.press.doctype.press_webhook_log.press_webhook_log.clean_logs_older_than_24_hours",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_all_snapshots_from_aws",
 		"press.press.doctype.payment_due_extension.payment_due_extension.remove_payment_due_extension",
+		"press.press.doctype.tls_certificate.tls_certificate.notify_custom_tls_renewal",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",

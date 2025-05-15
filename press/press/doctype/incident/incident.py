@@ -335,6 +335,7 @@ class Incident(WebsiteGenerator):
 		"""
 		frappe.db.set_value("Server", self.server, "ignore_incidents_since", frappe.utils.now_datetime())
 
+	@frappe.whitelist()
 	def reboot_database_server(self):
 		db_server_name: Server = frappe.db.get_value("Server", self.server, "database_server")
 		if not db_server_name:
