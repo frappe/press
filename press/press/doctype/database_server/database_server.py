@@ -1095,7 +1095,7 @@ class DatabaseServer(BaseServer):
 		)
 
 	@frappe.whitelist()
-	def adjust_memory_config(self):
+	def adjust_memory_config(self):  # noqa: C901
 		if not self.ram:
 			return
 
@@ -1129,6 +1129,23 @@ class DatabaseServer(BaseServer):
 				"max_connections", "value_str", str(max_recommended_connections), save=False
 			)
 		self.add_or_update_mariadb_variable("key_buffer_size", "value_int", self.key_buffer_size, save=False)
+
+		# Recommended Log file size
+		# Ref: https://www.percona.com/blog/mysql-8-0-innodb_dedicated_server-variable-optimizes-innodb/
+		ram_gb = round(self.ram / 1024)
+
+		if ram_gb > 16:
+			log_file_size = 2048
+		elif ram_gb > 8:
+			log_file_size = 1024
+		elif ram_gb > 4:
+			log_file_size = 512
+		elif ram_gb > 2:
+			log_file_size = 256
+		else:
+			log_file_size = 128
+		self.add_or_update_mariadb_variable("innodb_log_file_size", "value_int", log_file_size, save=False)
+
 		self.save()
 
 	@frappe.whitelist()
