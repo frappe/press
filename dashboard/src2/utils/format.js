@@ -7,7 +7,7 @@ export function bytes(bytes, decimals = 2, current = 0) {
 
 	const k = 1024;
 	const dm = decimals < 0 ? 0 : decimals;
-	const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+	const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 	let i = Math.floor(Math.log(Math.abs(bytes)) / Math.log(k));
 	if (i < 0) i++;
 
