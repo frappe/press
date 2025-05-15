@@ -1390,7 +1390,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			fields=["file_name", "size_mb"],
 		)
 
-		if len(current_indexed_binlog) == 0:
+		if len(current_indexed_binlog) != 0:
 			binlogs.extend(current_indexed_binlog)
 			binlogs = sorted(binlogs, key=lambda x: x["file_name"])
 
