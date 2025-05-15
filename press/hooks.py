@@ -205,7 +205,6 @@ scheduler_events = {
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.saas.doctype.product_trial_request.product_trial_request.expire_long_pending_trial_requests",
 		"press.overrides.cleanup_ansible_tmp_files",
-		"press.press.doctype.database_server.database_server.sync_binlogs_info",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
@@ -274,7 +273,6 @@ scheduler_events = {
 			"press.press.doctype.subscription.subscription.create_usage_records",
 			"press.press.doctype.virtual_machine.virtual_machine.sync_virtual_machines",
 			"press.press.doctype.mariadb_stalk.mariadb_stalk.fetch_stalks",
-			"press.press.doctype.database_server.database_server.index_mariadb_binlogs",
 			"press.press.doctype.virtual_machine.virtual_machine.rolling_snapshot_database_server_virtual_machines",
 		],
 		"*/5 * * * *": [
@@ -297,6 +295,7 @@ scheduler_events = {
 		"*/30 * * * *": [
 			"press.press.doctype.site_update.scheduled_auto_updates.trigger",
 			"press.press.doctype.team.suspend_sites.execute",
+			"press.press.doctype.database_server.database_server.sync_binlogs_info",
 		],
 		"15,45 * * * *": [
 			"press.press.doctype.site.site_usages.update_cpu_usages",

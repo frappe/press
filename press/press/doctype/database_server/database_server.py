@@ -1240,7 +1240,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		try:
 			self.agent.purge_binlog(database_server=self, to_binlog=to_binlog)
 			frappe.msgprint(f"Purged to {to_binlog}", "Successfully purged binlogs")
-			self.sync_binlogs_info()
+			self.sync_binlogs_info(index_binlogs=False)
 		except Exception as e:
 			frappe.msgprint(str(e), "Failed to purge binlog")
 			raise e
@@ -1253,7 +1253,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 
 		frappe.enqueue_doc(self.doctype, self.name, "_sync_binlogs_info", timeout=600)
 
-	def _sync_binlogs_info(self):
+	def _sync_binlogs_info(self, index_binlogs: bool = True):
 		info = self.agent.fetch_binlog_list()
 		current_binlog = info.get("current_binlog", "")
 		binlogs_in_disk = info.get("binlogs_in_disk", [])
@@ -1350,6 +1350,9 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			"indexed",
 			0,
 		)
+
+		if index_binlogs:
+			self.add_binlogs_to_indexer()
 
 	def add_binlogs_to_indexer(self):
 		if not self.enable_binlog_indexing:
@@ -1498,16 +1501,6 @@ def sync_binlogs_info():
 			deduplicate=True,
 			queue="sync",
 		)
-
-
-def index_mariadb_binlogs():
-	databases = frappe.get_all(
-		"Database Server",
-		fields=["name"],
-		filters={"status": "Active", "is_server_setup": 1, "is_self_hosted": 0, "enable_binlog_indexing": 1},
-	)
-	for database in databases:
-		frappe.get_doc("Database Server", database).add_binlogs_to_indexer()
 
 
 def unindex_mariadb_binlogs():
