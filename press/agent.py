@@ -602,10 +602,12 @@ class Agent:
 			site=site,
 		)
 
-	def remove_host(self, domain):
+	def remove_host(self, domain, skip_reload=True):
+		data = {"skip_reload": skip_reload}
 		return self.create_agent_job(
 			"Remove Host from Proxy",
 			f"proxy/hosts/{domain.domain}",
+			data,
 			method="DELETE",
 			site=domain.site,
 		)
@@ -621,10 +623,10 @@ class Agent:
 		data = {"name": private_ip}
 		return self.create_agent_job("Rename Upstream", f"proxy/upstreams/{ip}/rename", data, upstream=server)
 
-	def new_upstream_file(self, server, site=None, code_server=None):
+	def new_upstream_file(self, server, site=None, code_server=None, skip_reload=True):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
-		data = {"name": site if site else code_server}
+		data = {"name": site if site else code_server, "skip_reload": skip_reload}
 		doctype = "Site" if site else "Code Server"
 		return self.create_agent_job(
 			f"Add {doctype} to Upstream",
@@ -635,10 +637,10 @@ class Agent:
 			upstream=server,
 		)
 
-	def add_domain_to_upstream(self, server, site=None, domain=None):
+	def add_domain_to_upstream(self, server, site=None, domain=None, skip_reload=True):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
-		data = {"domain": domain}
+		data = {"domain": domain, "skip_reload": skip_reload}
 		return self.create_agent_job(
 			"Add Domain to Upstream",
 			f"proxy/upstreams/{ip}/domains",
