@@ -1141,9 +1141,9 @@ class DatabaseServer(BaseServer):
 		elif ram_gb > 4:
 			log_file_size = 512
 		elif ram_gb > 2:
-			log_file_size = 256
-		else:
 			log_file_size = 128
+		else:
+			log_file_size = 48
 		self.add_or_update_mariadb_variable("innodb_log_file_size", "value_int", log_file_size, save=False)
 
 		self.save()
