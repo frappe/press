@@ -1095,7 +1095,7 @@ class DatabaseServer(BaseServer):
 		)
 
 	@frappe.whitelist()
-	def adjust_memory_config(self):
+	def adjust_memory_config(self):  # noqa: C901
 		if not self.ram:
 			return
 
@@ -1129,6 +1129,23 @@ class DatabaseServer(BaseServer):
 				"max_connections", "value_str", str(max_recommended_connections), save=False
 			)
 		self.add_or_update_mariadb_variable("key_buffer_size", "value_int", self.key_buffer_size, save=False)
+
+		# Recommended Log file size
+		# Ref: https://www.percona.com/blog/mysql-8-0-innodb_dedicated_server-variable-optimizes-innodb/
+		ram_gb = round(self.ram / 1024)
+
+		if ram_gb > 16:
+			log_file_size = 2048
+		elif ram_gb > 8:
+			log_file_size = 1024
+		elif ram_gb > 4:
+			log_file_size = 512
+		elif ram_gb > 2:
+			log_file_size = 128
+		else:
+			log_file_size = 48
+		self.add_or_update_mariadb_variable("innodb_log_file_size", "value_int", log_file_size, save=False)
+
 		self.save()
 
 	@frappe.whitelist()
@@ -1240,7 +1257,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		try:
 			self.agent.purge_binlog(database_server=self, to_binlog=to_binlog)
 			frappe.msgprint(f"Purged to {to_binlog}", "Successfully purged binlogs")
-			self.sync_binlogs_info()
+			self.sync_binlogs_info(index_binlogs=False)
 		except Exception as e:
 			frappe.msgprint(str(e), "Failed to purge binlog")
 			raise e
@@ -1253,7 +1270,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 
 		frappe.enqueue_doc(self.doctype, self.name, "_sync_binlogs_info", timeout=600)
 
-	def _sync_binlogs_info(self):
+	def _sync_binlogs_info(self, index_binlogs: bool = True):
 		info = self.agent.fetch_binlog_list()
 		current_binlog = info.get("current_binlog", "")
 		binlogs_in_disk = info.get("binlogs_in_disk", [])
@@ -1351,6 +1368,9 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			0,
 		)
 
+		if index_binlogs:
+			self.add_binlogs_to_indexer()
+
 	def add_binlogs_to_indexer(self):
 		if not self.enable_binlog_indexing:
 			return
@@ -1375,6 +1395,21 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			limit=15,
 			fields=["file_name", "size_mb"],
 		)
+
+		current_indexed_binlog = frappe.get_all(
+			"MariaDB Binlog",
+			filters={
+				"database_server": self.name,
+				"current": 1,
+				"indexed": 1,
+				"purged_from_disk": 0,
+			},
+			fields=["file_name", "size_mb"],
+		)
+
+		if len(current_indexed_binlog) != 0:
+			binlogs.extend(current_indexed_binlog)
+			binlogs = sorted(binlogs, key=lambda x: x["file_name"])
 
 		max_size_in_batch = 1024  # 1GB
 		filtered_binlogs = []
@@ -1483,16 +1518,6 @@ def sync_binlogs_info():
 			deduplicate=True,
 			queue="sync",
 		)
-
-
-def index_mariadb_binlogs():
-	databases = frappe.get_all(
-		"Database Server",
-		fields=["name"],
-		filters={"status": "Active", "is_server_setup": 1, "is_self_hosted": 0, "enable_binlog_indexing": 1},
-	)
-	for database in databases:
-		frappe.get_doc("Database Server", database).add_binlogs_to_indexer()
 
 
 def unindex_mariadb_binlogs():

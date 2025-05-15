@@ -652,7 +652,12 @@ class Agent:
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		doctype = "Site" if site else "Code Server"
 		file_name = site_name or site if (site or site_name) else code_server
-		data = {"skip_reload": skip_reload}
+		extra_domains = frappe.get_all(
+			"Site Domain",
+			{"site": site, "tls_certificate": ("is", "not set"), "status": "Active", "domain": ("!=", site)},
+			pluck="domain",
+		)
+		data = {"skip_reload": skip_reload, "extra_domains": extra_domains}
 		return self.create_agent_job(
 			f"Remove {doctype} from Upstream",
 			f"proxy/upstreams/{ip}/sites/{file_name}",
