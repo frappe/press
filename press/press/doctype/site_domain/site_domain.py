@@ -138,7 +138,7 @@ class SiteDomain(Document):
 			self.status = "Broken"
 			self.save()
 
-	def create_agent_request(self, skip_reload=False):
+	def create_agent_request(self, skip_reload=True):
 		server = frappe.db.get_value("Site", self.site, "server")
 		is_standalone = frappe.db.get_value("Server", server, "is_standalone")
 		if is_standalone:

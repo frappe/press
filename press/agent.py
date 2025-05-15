@@ -569,7 +569,7 @@ class Agent:
 			bench=site.bench,
 		)
 
-	def new_host(self, domain, skip_reload=False):
+	def new_host(self, domain, skip_reload=True):
 		certificate = frappe.get_doc("TLS Certificate", domain.tls_certificate)
 		data = {
 			"name": domain.domain,
@@ -647,7 +647,7 @@ class Agent:
 			upstream=server,
 		)
 
-	def remove_upstream_file(self, server, site=None, site_name=None, code_server=None, skip_reload=False):
+	def remove_upstream_file(self, server, site=None, site_name=None, code_server=None, skip_reload=True):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		doctype = "Site" if site else "Code Server"
@@ -837,7 +837,7 @@ class Agent:
 			reference_name=reference_name,
 		)
 
-	def update_site_status(self, server: str, site: str, status, skip_reload=False):
+	def update_site_status(self, server: str, site: str, status, skip_reload=True):
 		extra_domains = frappe.get_all(
 			"Site Domain",
 			{"site": site, "tls_certificate": ("is", "not set"), "status": "Active", "domain": ("!=", site)},
