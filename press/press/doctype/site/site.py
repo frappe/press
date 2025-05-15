@@ -814,7 +814,8 @@ class Site(Document, TagHelpers):
 
 	def remove_dns_record(self, proxy_server: str):
 		"""Remove dns record of site pointing to proxy."""
-		self._create_default_site_domain()
+		if self.status != "Archived":
+			self._create_default_site_domain()
 		domains = frappe.db.get_all(
 			"Site Domain", filters={"site": self.name}, fields=["domain"], pluck="domain"
 		)
