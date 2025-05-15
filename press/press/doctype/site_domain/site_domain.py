@@ -173,7 +173,7 @@ class SiteDomain(Document):
 			frappe.throw(msg="Primary domain cannot be deleted", exc=frappe.exceptions.LinkExistsError)
 
 		self.disavow_agent_jobs()
-		if not self.default or self.redirect_to_primary or not self.has_root_tls_certificate:
+		if (not self.default or self.redirect_to_primary) and not self.has_root_tls_certificate:
 			self.create_remove_host_agent_request()
 		if self.status == "Active":
 			self.remove_domain_from_site_config()
