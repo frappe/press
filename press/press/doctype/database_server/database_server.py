@@ -1208,6 +1208,10 @@ class DatabaseServer(BaseServer):
 
 	@frappe.whitelist()
 	def get_binlog_summary(self):
+		if not self.enable_binlog_indexing:
+			frappe.msgprint("Binlog Indexing is not enabled")
+			return
+
 		binlogs_in_disk = self.agent.fetch_binlog_list().get("binlogs_in_disk", [])
 		no_of_binlogs = len(binlogs_in_disk)
 		size = sum(binlog.get("size", 0) for binlog in binlogs_in_disk)
@@ -1243,6 +1247,10 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 
 	@frappe.whitelist()
 	def sync_binlogs_info(self):
+		if not self.enable_binlog_indexing:
+			frappe.msgprint("Binlog Indexing is not enabled")
+			return
+
 		frappe.enqueue_doc(self.doctype, self.name, "_sync_binlogs_info", timeout=600)
 
 	def _sync_binlogs_info(self):
@@ -1380,7 +1388,6 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		self.agent.add_binlogs_to_indexer([x["file_name"] for x in filtered_binlogs])
 
 	def remove_binlogs_from_indexer(self, days: int = 7):
-		return
 		# Avoid if there is already Binlog Indexing related job
 		if self._is_binlog_indexing_related_operation_running():
 			return
