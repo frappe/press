@@ -345,7 +345,7 @@ def renew_tls_certificates():
 			frappe.db.commit()
 
 
-def alert_custom_provider_tls_renewal():
+def notify_custom_tls_renewal():
 	seven_days = frappe.utils.add_days(None, 7).date()
 	fifteen_days = frappe.utils.add_days(None, 15).date()
 
