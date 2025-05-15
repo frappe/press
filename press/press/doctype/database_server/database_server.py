@@ -1376,6 +1376,21 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			fields=["file_name", "size_mb"],
 		)
 
+		current_indexed_binlog = frappe.get_all(
+			"MariaDB Binlog",
+			filters={
+				"database_server": self.name,
+				"current": 1,
+				"indexed": 1,
+				"purged_from_disk": 0,
+			},
+			fields=["file_name", "size_mb"],
+		)
+
+		if len(current_indexed_binlog) == 0:
+			binlogs.extend(current_indexed_binlog)
+			binlogs = sorted(binlogs, key=lambda x: x["file_name"])
+
 		max_size_in_batch = 1024  # 1GB
 		filtered_binlogs = []
 		while max_size_in_batch > 0 and binlogs:
