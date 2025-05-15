@@ -25,6 +25,8 @@ from press.utils import (
 if TYPE_CHECKING:
 	from io import BufferedReader
 
+	from apps.press.press.press.doctype.database_server.database_server import DatabaseServer
+
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_patch.app_patch import AgentPatchConfig, AppPatch
 	from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
@@ -1353,6 +1355,67 @@ Response: {reason or getattr(result, "text", "Unknown")}
 				"mariadb_root_password": get_decrypted_password(
 					"Database Server", self.server, "mariadb_root_password"
 				),
+			},
+		)
+
+	def fetch_binlog_list(self):
+		return self.get("database/binlogs/list")
+
+	def add_binlogs_to_indexer(self, binlogs):
+		return self.create_agent_job(
+			"Add Binlogs To Indexer",
+			"/database/binlogs/indexer/add",
+			data={"binlogs": binlogs},
+		)
+
+	def remove_binlogs_from_indexer(self, binlogs):
+		return self.create_agent_job(
+			"Remove Binlogs From Indexer", "/database/binlogs/indexer/remove", data={"binlogs": binlogs}
+		)
+
+	def get_binlogs_timeline(self, start: int, end: int, database: str, type: str | None = None):
+		return self.post(
+			"/database/binlogs/indexer/timeline",
+			data={"start_timestamp": start, "end_timestamp": end, "database": database, "type": type},
+		)
+
+	def search_binlogs(
+		self,
+		start: int,
+		end: int,
+		database: str,
+		type: str | None = None,
+		table: str | None = None,
+		search_str: str | None = None,
+	):
+		return self.post(
+			"/database/binlogs/indexer/search",
+			data={
+				"start_timestamp": start,
+				"end_timestamp": end,
+				"database": database,
+				"type": type,
+				"table": table,
+				"search_str": search_str,
+			},
+		)
+
+	def purge_binlog(self, database_server: DatabaseServer, to_binlog: str):
+		return self.post(
+			"/database/binlogs/purge",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+				"to_binlog": to_binlog,
+			},
+		)
+
+	def get_binlog_queries(self, row_ids: dict[str, list[int]], database: str):
+		return self.post(
+			"/database/binlogs/indexer/query",
+			data={
+				"row_ids": row_ids,
+				"database": database,
 			},
 		)
 
