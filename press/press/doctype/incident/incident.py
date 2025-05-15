@@ -60,7 +60,6 @@ CALL_THRESHOLD_SECONDS_NIGHT = (
 )
 CALL_REPEAT_INTERVAL_DAY = 15 * 60
 CALL_REPEAT_INTERVAL_NIGHT = 20 * 60
-PAST_ALERT_COVER_MINUTES = 15  # to cover alerts that fired before/triggered the incident
 
 
 class Incident(WebsiteGenerator):
@@ -335,6 +334,7 @@ class Incident(WebsiteGenerator):
 		"""
 		frappe.db.set_value("Server", self.server, "ignore_incidents_since", frappe.utils.now_datetime())
 
+	@frappe.whitelist()
 	def reboot_database_server(self):
 		db_server_name: Server = frappe.db.get_value("Server", self.server, "database_server")
 		if not db_server_name:
@@ -553,38 +553,6 @@ Incident URL: {incident_link}"""
 	def incident_scope(self):
 		return getattr(self, INCIDENT_SCOPE)
 
-	def get_last_alert_status_for_each_group(self):  # pragma: no cover
-		"""
-		Not in use. Can be used to verify all instances of the incident are resolved (all sites for a server)
-		"""
-		return frappe.db.sql_list(
-			f"""
-select
-	last_alert_per_group.status
-from
-	(
-		select
-			name,
-			status,
-			group_key,
-			modified,
-			ROW_NUMBER() OVER (
-				PARTITION BY
-					`group_key`
-				ORDER BY
-					`modified` DESC
-			) AS rank
-		from
-			`tabAlertmanager Webhook Log`
-		where
-			modified >= "{self.creation - timedelta(minutes=PAST_ALERT_COVER_MINUTES)}"
-			and group_key like "%%{self.incident_scope}%%"
-	) last_alert_per_group
-where
-	last_alert_per_group.rank = 1
-			"""
-		)  # status of the sites down in each bench
-
 	def get_past_resolved_instances(self):
 		try:
 			last_resolved: AlertmanagerWebhookLog = frappe.get_last_doc(
@@ -611,9 +579,9 @@ where
 		else:
 			resolved_instances = last_resolved.get_past_alert_instances()
 			total_instances = last_resolved.total_instances()
-			if len(resolved_instances) > max(
+			if len(resolved_instances) >= max(
 				(1 - MIN_FIRING_INSTANCES_PERCENTAGE) * total_instances,
-				total_instances - MIN_FIRING_INSTANCES,
+				MIN_FIRING_INSTANCES,
 			):
 				self.resolve()
 

@@ -321,6 +321,11 @@ let router = createRouter({
 			component: () => import('./pages/devtools/database/DatabaseAnalyzer.vue'),
 		},
 		{
+			path: '/binlog-browser',
+			name: 'Binlog Browser',
+			component: () => import('./pages/devtools/database/BinlogBrowser.vue'),
+		},
+		{
 			path: '/log-browser/:mode?/:docName?/:logId?',
 			name: 'Log Browser',
 			component: () => import('./pages/devtools/log-browser/LogBrowser.vue'),
