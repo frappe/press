@@ -145,12 +145,14 @@ export default {
 							route: '/sql-playground',
 							isActive: routeName === 'SQL Playground',
 						},
+						/*			
 						{
 							name: 'Binlog Browser',
 							icon: () => h(FileSearch),
 							route: '/binlog-browser',
 							isActive: routeName === 'Binlog Browser',
 						},
+						*/
 					].filter((item) => item.condition ?? true),
 					isActive: [
 						'SQL Playground',

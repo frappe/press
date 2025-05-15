@@ -207,11 +207,10 @@ export default {
 		};
 	},
 	mounted() {
-		this.start = 'Thursday, April 24, 2025 4:26:00 PM';
-		// this.start.setDate(this.start.getDate() - 21);
-		// this.start.setHours(0, 0, 0, 0);
-
-		this.end = 'Thursday, April 24, 2025 4:46:03 PM';
+		const now = new Date();
+		this.end = now.toLocaleString();
+		const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+		this.start = oneHourAgo.toLocaleString();
 
 		const url = new URL(window.location.href);
 		const site_name = url.searchParams.get('site');
@@ -319,6 +318,7 @@ export default {
 	},
 	methods: {
 		fetchBinlogTimeline() {
+			if (!this.start || !this.end || !this.site) return;
 			if (this.$resources.timeline?.loading ?? true) return;
 			this.$resources.timeline.submit({
 				dt: 'Site',
