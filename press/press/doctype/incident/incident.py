@@ -579,7 +579,7 @@ Incident URL: {incident_link}"""
 		else:
 			resolved_instances = last_resolved.get_past_alert_instances()
 			total_instances = last_resolved.total_instances()
-			if len(resolved_instances) >= max(
+			if len(resolved_instances) >= min(
 				(1 - MIN_FIRING_INSTANCES_PERCENTAGE) * total_instances,
 				MIN_FIRING_INSTANCES,
 			):
