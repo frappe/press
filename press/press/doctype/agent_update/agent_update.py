@@ -40,12 +40,14 @@ class AgentUpdate(Document):
 		default_rollback_commit: DF.Data | None
 		end: DF.Datetime | None
 		exclude_self_hosted_servers: DF.Check
+		no_of_servers_to_update_initially: DF.Int
 		proxy_server: DF.Check
 		repo: DF.Data | None
 		restart_redis: DF.Check
 		restart_rq_workers: DF.Check
 		restart_web_workers: DF.Check
 		rollback_to_specific_commit: DF.Check
+		run_on_fewer_servers_and_pause: DF.Check
 		servers: DF.Table[AgentUpdateServer]
 		start: DF.Datetime | None
 		status: DF.Literal[
@@ -89,6 +91,10 @@ class AgentUpdate(Document):
 				return s
 
 		return None
+
+	@property
+	def no_of_completed_updates(self):
+		return sum(1 for s in self.servers if s.status in ("Success", "Rolled Back", "Fatal"))
 
 	@property
 	def is_any_update_pending(self):
@@ -338,9 +344,14 @@ class AgentUpdate(Document):
 		Terminating State -> (Success / Rolled Back + Agent Status need to be Active) or Fatal,
 		"""
 
-		# status: DF.Literal["Draft", "Pending", "Running", "Success", "Failure", "Fatal", "Skipped", "Rolling Back", "Rolled Back"]
-
 		if current_agent_update_to_process.status == "Pending":
+			if (
+				self.run_on_fewer_servers_and_pause
+				and self.no_of_completed_updates >= self.no_of_servers_to_update_initially
+			):
+				self.pause()
+				return False
+
 			"""
 			If pending, run the ansible play to update the agent
 			"""
