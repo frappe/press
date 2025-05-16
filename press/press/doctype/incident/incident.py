@@ -595,8 +595,8 @@ Incident URL: {incident_link}"""
 
 	@frappe.whitelist()
 	def get_down_site(self):
-		sites_down = self.monitor_server.sites_down
-		return sites_down[0] or None
+		sites_down = self.monitor_server.get_sites_down_for_server(str(self.server))
+		return sites_down[0] if sites_down else None
 
 
 def get_confirmation_threshold_duration():
