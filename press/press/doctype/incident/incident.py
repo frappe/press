@@ -595,7 +595,6 @@ Incident URL: {incident_link}"""
 
 	@frappe.whitelist()
 	def get_down_site(self):
-		return None
 		sites_down = self.monitor_server.sites_down
 		return sites_down[0] or None
 
