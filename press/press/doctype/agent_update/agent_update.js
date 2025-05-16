@@ -44,5 +44,40 @@ frappe.ui.form.on('Agent Update', {
 				});
 			}
 		});
+
+		if (frm.doc.status === 'Pending') {
+			frm.add_custom_button(__('Split Update'), () => {
+				const no_of_servers = cur_frm.doc.servers.length;
+				const dialog = new frappe.ui.Dialog({
+					title: __('Split Updates in Multiple Batches'),
+
+					fields: [
+						{
+							fieldtype: 'Int',
+							label: __('Number of Batches'),
+							description: __(
+								`Number of batches to split ${no_of_servers} updates`,
+							),
+							fieldname: 'no_of_batches',
+							default: 2,
+						},
+					],
+				});
+
+				dialog.set_primary_action(__('Split'), (args) => {
+					frm.call({
+						method: 'split_updates',
+						doc: frm.doc,
+						args: args,
+						freeze: true,
+						callback: () => {
+							dialog.hide();
+							frm.refresh();
+						},
+					});
+				});
+				dialog.show();
+			});
+		}
 	},
 });

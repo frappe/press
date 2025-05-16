@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import contextlib
 import datetime
+import math
 
 import frappe
 import frappe.utils
@@ -41,6 +42,7 @@ class AgentUpdate(Document):
 		end: DF.Datetime | None
 		exclude_self_hosted_servers: DF.Check
 		no_of_servers_to_update_initially: DF.Int
+		paused_due_to_test_mode: DF.Check
 		proxy_server: DF.Check
 		repo: DF.Data | None
 		restart_redis: DF.Check
@@ -117,6 +119,10 @@ class AgentUpdate(Document):
 		return f"https://github.com/{self.repo_owner}/{self.repo_name}"
 
 	def before_insert(self):  # noqa: C901
+		if self.flags.in_group_split:
+			# If this is a group spliting operation, we don't need to do anything
+			return
+
 		self.status = "Draft"
 
 		if not (self.app_server or self.database_server or self.proxy_server):
@@ -187,6 +193,88 @@ class AgentUpdate(Document):
 			servers = frappe.get_all("Proxy Server", filters, pluck="name")
 			for server in servers:
 				self.append("servers", {"server": server, "server_type": "Proxy Server", "status": "Draft"})
+
+	@frappe.whitelist()
+	def split_updates(self, no_of_batches: int):
+		if self.status != "Pending":
+			frappe.throw("You can only split updates when the status is Pending")
+
+		if not self.servers:
+			frappe.throw("No servers found to split updates")
+
+		if len(self.servers) < no_of_batches:
+			frappe.throw(
+				f"You have only {len(self.servers)} servers, can't split into {no_of_batches} groups"
+			)
+
+		if no_of_batches <= 1:
+			frappe.throw("You need to split into at least 2 groups")
+
+		"""
+		For splitting updates, we need to create a duplicate Agent Update document for N groups
+		Then, split the servers into N groups and assign them to the new Agent Update documents
+		"""
+
+		# Create N new Agent Update documents
+		new_agent_updates = [self.name]
+		for _ in range(no_of_batches - 1):
+			doc = frappe.get_doc(
+				{
+					"doctype": "Agent Update",
+					"agent_startup_timeout_minutes": self.agent_startup_timeout_minutes,
+					"app_server": self.app_server,
+					"auto_rollback_changes": self.auto_rollback_changes,
+					"branch": self.branch,
+					"commit_hash": self.commit_hash,
+					"commit_message": self.commit_message,
+					"database_server": self.database_server,
+					"default_rollback_commit": self.default_rollback_commit,
+					"end": self.end,
+					"exclude_self_hosted_servers": self.exclude_self_hosted_servers,
+					"no_of_servers_to_update_initially": self.no_of_servers_to_update_initially,
+					"proxy_server": self.proxy_server,
+					"repo": self.repo,
+					"restart_redis": self.restart_redis,
+					"restart_rq_workers": self.restart_rq_workers,
+					"restart_web_workers": self.restart_web_workers,
+					"rollback_to_specific_commit": self.rollback_to_specific_commit,
+					"run_on_fewer_servers_and_pause": self.run_on_fewer_servers_and_pause,
+					"start": self.start,
+					"status": self.status,
+					"stop_after_single_rollback": self.stop_after_single_rollback,
+					"stuck_at_planning_reason": "",
+				}
+			)
+			doc.flags.in_group_split = True
+			doc.insert(ignore_permissions=True)
+			doc.reload()
+			new_agent_updates.append(doc.name)
+
+		# Split servers into N groups
+		servers = self.servers
+
+		no_of_servers = len(servers)
+		no_of_servers_per_group = math.ceil(no_of_servers / no_of_batches)
+
+		for i in range(no_of_batches):
+			start = i * no_of_servers_per_group
+			end = start + no_of_servers_per_group
+			if end > no_of_servers:
+				end = no_of_servers
+
+			# Add servers to the new Agent Update document
+			update_server_names = [s.name for s in servers[start:end]]
+			frappe.db.set_value(
+				"Agent Update Server",
+				{
+					"name": ("in", update_server_names),
+				},
+				{
+					"parent": new_agent_updates[i],
+				},
+			)
+
+		frappe.msgprint(f"Agent Update has been split into {no_of_batches} batches")
 
 	@frappe.whitelist()
 	def create_execution_plan(self):
@@ -347,8 +435,10 @@ class AgentUpdate(Document):
 		if current_agent_update_to_process.status == "Pending":
 			if (
 				self.run_on_fewer_servers_and_pause
+				and not self.paused_due_to_test_mode
 				and self.no_of_completed_updates >= self.no_of_servers_to_update_initially
 			):
+				self.paused_due_to_test_mode = True
 				self.pause()
 				return False
 
