@@ -1570,7 +1570,7 @@ class Site(Document, TagHelpers):
 		if self.additional_system_user_created:
 			team_user = frappe.db.get_value("Team", self.team, "user")
 			sid = self.get_login_sid(user=team_user)
-			if self.standby_for_product:
+			if self.standby_for_product and self.is_setup_wizard_complete:
 				redirect_route = (
 					frappe.db.get_value("Product Trial", self.standby_for_product, "redirect_to_after_login")
 					or "/desk"
