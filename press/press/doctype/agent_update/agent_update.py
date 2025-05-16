@@ -96,7 +96,13 @@ class AgentUpdate(Document):
 
 	@property
 	def no_of_completed_updates(self):
-		return sum(1 for s in self.servers if s.status in ("Success", "Rolled Back", "Fatal"))
+		return frappe.db.count(
+			"Agent Update Server",
+			{
+				"parent": self.name,
+				"status": ("in", ["Success", "Rolled Back", "Fatal"]),
+			},
+		)
 
 	@property
 	def is_any_update_pending(self):
