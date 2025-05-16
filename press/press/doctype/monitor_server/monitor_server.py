@@ -252,3 +252,10 @@ class MonitorServer(BaseServer):
 		for alert in self.sites_down_alerts:
 			sites.append(alert["labels"]["instance"])
 		return sites
+
+	@property
+	def benches_down(self):
+		benches = []
+		for alert in self.sites_down_alerts:
+			benches.append(alert["labels"]["bench"])
+		return benches

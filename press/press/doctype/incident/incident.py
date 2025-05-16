@@ -553,17 +553,6 @@ Incident URL: {incident_link}"""
 	def incident_scope(self):
 		return getattr(self, INCIDENT_SCOPE)
 
-	def get_past_resolved_instances(self):
-		try:
-			last_resolved: AlertmanagerWebhookLog = frappe.get_last_doc(
-				"Alertmanager Webhook Log",
-				{"status": "Resolved", "group_key": ("like", self.incident_scope), "alert": self.alert},
-			)
-		except frappe.DoesNotExistError:
-			return set()
-		else:
-			return last_resolved.get_past_alert_instances()
-
 	def check_resolved(self):
 		try:
 			last_resolved: AlertmanagerWebhookLog = frappe.get_last_doc(
@@ -603,6 +592,12 @@ Incident URL: {incident_link}"""
 		return self.status == "Acknowledged" and frappe.utils.now_datetime() - self.modified > timedelta(
 			seconds=get_call_repeat_interval()
 		)
+
+	@frappe.whitelist()
+	def get_down_site(self):
+		return None
+		sites_down = self.monitor_server.sites_down
+		return sites_down[0] or None
 
 
 def get_confirmation_threshold_duration():
