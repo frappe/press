@@ -33,6 +33,7 @@
   "auto_add_storage_max",
   "networking_section",
   "ip",
+  "db_port",
   "column_break_10",
   "private_ip",
   "private_mac_address",
@@ -570,7 +571,12 @@
   },
   {
    "fieldname": "column_break_qsqm",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break"},
+ {
+   "default": "3306",
+   "fieldname": "db_port",
+   "fieldtype": "Int",
+   "label": "DB Port"
   }
  ],
  "grid_page_length": 50,
