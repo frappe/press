@@ -1273,6 +1273,7 @@ class Site(Document, TagHelpers):
 				"site": self.name,
 				"domain": domain,
 				"dns_type": "CNAME",
+				"skip_reload": False,
 			}
 		).insert()
 
