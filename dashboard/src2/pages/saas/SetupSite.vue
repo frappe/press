@@ -6,29 +6,30 @@
 		<Spinner class="mr-2 w-4" />
 		<p class="text-gray-800">Loading</p>
 	</div>
-	<div class="flex h-screen overflow-hidden sm:bg-gray-50" v-else>
+	<div class="flex h-screen overflow-hidden" v-else>
 		<div class="w-full overflow-auto">
 			<LoginBox
 				v-if="saasProduct"
-				title="Let’s set up your site"
+				title="Set up your site"
+				subtitle="It's time to configure your default settings with ease"
 				:logo="saasProduct?.logo"
 			>
 				<template v-slot:logo v-if="saasProduct">
-					<div class="mx-auto flex items-center space-x-2">
+					<div class="flex space-x-2">
 						<img
-							class="inline-block h-7 w-7 rounded-sm"
+							class="inline-block h-8 w-8 rounded-sm"
 							:src="saasProduct?.logo"
 						/>
-						<span
+						<!-- <span
 							class="select-none text-xl font-semibold tracking-tight text-gray-900"
 						>
 							{{ saasProduct?.title }}
-						</span>
+						</span> -->
 					</div>
 				</template>
 				<template v-slot:default>
 					<form class="w-full space-y-4" @submit.prevent="createSite">
-						<div class="w-full space-y-1.5">
+						<!-- <div class="w-full space-y-1.5">
 							<label class="block text-xs text-ink-gray-5">
 								Enter subdomain for your site
 							</label>
@@ -70,14 +71,50 @@
 								</template>
 								<ErrorMessage :message="$resources.subdomainExists.error" />
 							</div>
-						</div>
-						<FormControl
+						</div> -->
+						<!-- <FormControl
 							label="Email address (will be your login ID)"
 							:modelValue="$team.doc.user"
 							:disabled="true"
 							variant="outline"
 							class="mb-4"
-						/>
+						/> -->
+						<div class="flex gap-2">
+							<FormControl
+								label="Country"
+								class="w-full"
+								v-model="country"
+								variant="outline"
+								type="select"
+								:options="countryOptions"
+							/>
+							<FormControl
+								label="Language"
+								class="w-full"
+								v-model="language"
+								variant="outline"
+								type="select"
+								:options="languageOptions"
+							/>
+						</div>
+						<div class="flex gap-2">
+							<FormControl
+								class="w-full"
+								label="Timezone"
+								v-model="timezone"
+								variant="outline"
+								type="select"
+								:options="timezoneOptions"
+							/>
+							<FormControl
+								class="w-full"
+								label="Currency"
+								v-model="currency"
+								variant="outline"
+								type="select"
+								:options="currencyOptions"
+							/>
+						</div>
 						<ErrorMessage
 							class="mt-2"
 							:message="$resources.createSite?.error"
@@ -86,11 +123,6 @@
 							class="mt-8 w-full"
 							variant="solid"
 							type="submit"
-							:disabled="
-								!!$resources.subdomainExists.error ||
-								!$resources.subdomainExists.data ||
-								!subdomain.length
-							"
 							:loading="findingClosestServer || $resources.createSite?.loading"
 							loadingText="Creating site..."
 						>
@@ -98,23 +130,21 @@
 						</Button>
 					</form>
 				</template>
-				<template v-slot:footer>
+				<!-- <template v-slot:footer>
 					<div
 						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
 					>
 						Powered by Frappe Cloud
 					</div>
-				</template>
+				</template> -->
 			</LoginBox>
 		</div>
 	</div>
 </template>
 <script>
 import { toast } from 'vue-sonner';
-import { debounce } from 'frappe-ui';
 import LoginBox from '../../components/auth/LoginBox.vue';
-import { validateSubdomain } from '../../utils/site';
-import { DashboardError } from '../../utils/error';
+import dayjs from '../../utils/dayjs';
 
 export default {
 	name: 'SignupSetup',
@@ -127,15 +157,15 @@ export default {
 			progressErrorCount: 0,
 			findingClosestServer: false,
 			closestCluster: null,
-			subdomain: '',
+			timezone: dayjs.tz.guess(),
+			currency: null,
+			country: null,
+			language: null,
+			timezoneOptions: [],
+			currencyOptions: [],
+			countryOptions: [],
+			languageOptions: [],
 		};
-	},
-	watch: {
-		subdomain: {
-			handler: debounce(function () {
-				this.$resources.subdomainExists.submit();
-			}, 500),
-		},
 	},
 	resources: {
 		siteRequest() {
@@ -144,10 +174,51 @@ export default {
 				params: {
 					product: this.productId,
 					account_request: this.$team.doc.account_request,
+					timezone: dayjs.tz.guess(),
 				},
 				auto: true,
 				initialData: {},
 				onSuccess: (data) => {
+					// set options
+					const formattedCountry = Object.entries(data.country_info).map(
+						([country, details]) => ({
+							country: country,
+							...details,
+						}),
+					);
+					this.countryOptions = formattedCountry.map((c) => ({
+						label: c.country,
+						value: c.country,
+					}));
+					this.currencyOptions = formattedCountry
+						.filter((c) => c.currency)
+						.map((c) => ({
+							label: c.currency_name
+								? `${c.currency_name} (${c.currency})`
+								: c.currency,
+							value: c.currency,
+						}))
+						// unique by value
+						.filter(
+							(c, index, self) =>
+								index === self.findIndex((t) => t.value === c.value),
+						);
+					this.timezoneOptions = data.all_timezones.map((tz) => ({
+						label: tz,
+						value: tz,
+					}));
+					this.languageOptions = data.languages.map((lang) => ({
+						label: lang.language_name,
+						value: lang.language_code,
+					}));
+
+					// set default values
+					this.country = data.country;
+					this.currency = formattedCountry.find(
+						(c) => c.country === data.country,
+					)?.currency;
+					this.language = 'en';
+
 					if (data?.status !== 'Pending') {
 						this.$router.push({
 							name: 'SignupLoginToSite',
@@ -171,26 +242,6 @@ export default {
 				auto: true,
 			};
 		},
-		subdomainExists() {
-			return {
-				url: 'press.api.site.exists',
-				makeParams() {
-					return {
-						domain: this.saasProduct?.domain,
-						subdomain: this.subdomain,
-					};
-				},
-				validate() {
-					const error = validateSubdomain(this.subdomain);
-					if (error) {
-						throw new DashboardError(error);
-					}
-				},
-				transform(data) {
-					return !Boolean(data);
-				},
-			};
-		},
 		createSite() {
 			return {
 				url: 'press.api.client.run_doc_method',
@@ -200,8 +251,13 @@ export default {
 						dn: this.$resources.siteRequest.data.name,
 						method: 'create_site',
 						args: {
-							subdomain: this.subdomain,
 							cluster: this.closestCluster ?? 'Default',
+							site_defaults: {
+								timezone: this.timezone,
+								language: this.language,
+								currency: this.currency,
+								country: this.country,
+							},
 						},
 					};
 				},

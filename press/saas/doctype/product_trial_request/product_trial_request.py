@@ -110,25 +110,37 @@ class ProductTrialRequest(Document):
 					site.create_sync_user_webhook()
 
 	@frappe.whitelist()
-	def get_setup_wizard_payload(self):
+	def get_setup_wizard_payload(self, site_defaults: dict | None = None):
 		import json
 
 		try:
 			team_details = frappe.db.get_value(
 				"Team", self.team, ["name", "user", "country", "currency"], as_dict=True
 			)
+
+			if site_defaults:
+				country = site_defaults.get("country")
+				timezone = site_defaults.get("timezone")
+				language = site_defaults.get("language")
+				currency = site_defaults.get("currency")
+			else:
+				if self.account_request:
+					account_request_geo_data = frappe.db.get_value(
+						"Account Request", self.account_request, "geo_location"
+					)
+				else:
+					account_request_geo_data = frappe.db.get_value(
+						"Account Request", {"email": team_user.email}, "geo_location"
+					)
+
+				country = team_details.country
+				timezone = frappe.parse_json(account_request_geo_data or {}).get("timezone", "Asia/Kolkata")
+				language = "en"
+				currency = team_details.currency
+
 			team_user = frappe.db.get_value(
 				"User", team_details.user, ["first_name", "last_name", "full_name", "email"], as_dict=True
 			)
-			if self.account_request:
-				account_request_geo_data = frappe.db.get_value(
-					"Account Request", self.account_request, "geo_location"
-				)
-			else:
-				account_request_geo_data = frappe.db.get_value(
-					"Account Request", {"email": team_user.email}, "geo_location"
-				)
-			timezone = frappe.parse_json(account_request_geo_data or {}).get("timezone", "Asia/Kolkata")
 
 			return json.dumps(
 				{
@@ -139,10 +151,10 @@ class ProductTrialRequest(Document):
 				}
 			), json.dumps(
 				{
-					"country": team_details.country,
+					"country": country,
 					"time_zone": timezone,
-					"language": "en",
-					"currency": team_details.currency,
+					"language": language,
+					"currency": currency,
 					# setup wizard will override currency anyway
 					# but adding this since ERPNext will throw an error otherwise
 				}
@@ -157,33 +169,30 @@ class ProductTrialRequest(Document):
 			frappe.throw(f"Failed to generate payload for Setup Wizard: {e}")
 
 	@dashboard_whitelist()
-	def create_site(self, subdomain: str, cluster: str | None = None):
+	def create_site(self, cluster: str | None = None, site_defaults: dict | None = None):
 		"""
 		Trigger the site creation process for the product trial request.
 		Args:
-			subdomain (str): The subdomain for the new site.
 			cluster (str | None): The cluster to use for site creation.
+			site_defaults (dict | None): The site defaults to use for the setup wizard.
 		"""
 		if self.status != "Pending":
 			return
-
-		if not subdomain:
-			frappe.throw("Subdomain is required to create a site.")
 
 		try:
 			product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
 			self.status = "Wait for Site"
 			self.site_creation_started_on = now_datetime()
-			self.domain = f"{subdomain}.{product.domain}"
+			self.domain = frappe.db.get_value("Account Request", self.account_request, "site_domain")
 			site, agent_job_name, is_standby_site = product.setup_trial_site(
-				subdomain=subdomain, team=self.team, cluster=cluster, account_request=self.account_request
+				site_domain=self.domain, team=self.team, cluster=cluster, account_request=self.account_request
 			)
 			self.agent_job = agent_job_name
 			self.site = site.name
 			self.save()
 
 			if is_standby_site:
-				self.prefill_setup_wizard_data()
+				self.prefill_setup_wizard_data(site_defaults)
 
 			user_mail = frappe.db.get_value("Team", self.team, "user")
 			frappe.get_doc(
@@ -252,12 +261,13 @@ class ProductTrialRequest(Document):
 		# If agent job is undelivered, pending
 		return {"progress": current_progress + 0.1}
 
-	def prefill_setup_wizard_data(self):
+	def prefill_setup_wizard_data(self, site_defaults: dict | None = None):
 		if self.status == "Prefilling Setup Wizard":
 			return
-		site = frappe.get_doc("Site", self.site)
+
+		site: Site = frappe.get_doc("Site", self.site)
 		try:
-			user_payload, system_settings_payload = self.get_setup_wizard_payload()
+			user_payload, system_settings_payload = self.get_setup_wizard_payload(site_defaults)
 			site.prefill_setup_wizard(system_settings_payload, user_payload)
 			if self.site != self.domain:
 				self.status = "Prefilling Setup Wizard"

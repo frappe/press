@@ -6,25 +6,25 @@
 		<Spinner class="mr-2 w-4" />
 		<p class="text-gray-800">Loading</p>
 	</div>
-	<div class="flex h-screen overflow-hidden sm:bg-gray-50" v-else>
+	<div class="flex h-screen overflow-hidden" v-else>
 		<div class="w-full overflow-auto">
 			<LoginBox
 				v-if="$resources?.siteRequest?.doc?.status === 'Site Created'"
 				title="Site created successfully"
-				:subtitle="`Your trial site is ready at
+				:subtitle="`Your trial site is ready ats
 					${$resources?.siteRequest?.doc?.domain || $resources?.siteRequest?.doc?.site}`"
 			>
 				<template v-slot:logo v-if="saasProduct">
-					<div class="mx-auto flex items-center space-x-2">
+					<div class="flex space-x-2">
 						<img
-							class="inline-block h-7 w-7 rounded-sm"
+							class="inline-block h-[38px] w-[38px] rounded-sm"
 							:src="saasProduct?.logo"
 						/>
-						<span
+						<!-- <span
 							class="select-none text-xl font-semibold tracking-tight text-gray-900"
 						>
 							{{ saasProduct?.title }}
-						</span>
+						</span> -->
 					</div>
 				</template>
 				<div>
@@ -46,13 +46,13 @@
 					class="w-full text-center"
 					:message="this.$resources?.siteRequest?.getLoginSid.error"
 				/>
-				<template v-slot:footer>
+				<!-- <template v-slot:footer>
 					<div
 						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
 					>
 						Powered by Frappe Cloud
 					</div>
-				</template>
+				</template> -->
 			</LoginBox>
 			<LoginBox
 				v-else-if="this.$resources?.siteRequest?.doc?.status === 'Error'"
@@ -89,13 +89,13 @@
 						</div>
 					</div>
 				</template>
-				<template v-slot:footer>
+				<!-- <template v-slot:footer>
 					<div
 						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
 					>
 						Powered by Frappe Cloud
 					</div>
-				</template>
+				</template> -->
 			</LoginBox>
 			<LoginBox
 				v-else
@@ -128,13 +128,13 @@
 						/>
 					</div>
 				</template>
-				<template v-slot:footer>
+				<!-- <template v-slot:footer>
 					<div
 						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
 					>
 						Powered by Frappe Cloud
 					</div>
-				</template>
+				</template> -->
 			</LoginBox>
 		</div>
 	</div>
@@ -174,7 +174,8 @@ export default {
 				realtime: true,
 				auto: true,
 				onSuccess(doc) {
-					if (
+					if (doc.status == 'Site Created') this.loginToSite();
+					else if (
 						doc.status == 'Wait for Site' ||
 						doc.status == 'Prefilling Setup Wizard'
 					) {
@@ -191,6 +192,10 @@ export default {
 							};
 						},
 						onSuccess: (data) => {
+							if (data.status === 'Site Created') {
+								return this.loginToSite();
+							}
+
 							const currentStepMap = {
 								'Wait for Site': 'Creating your site',
 								'New Site': 'Creating your site',
@@ -215,6 +220,13 @@ export default {
 							) {
 								this.progressCount = Math.round(data.progress * 10) / 10;
 								setTimeout(() => {
+									// if (
+									// 	['Site Created', 'Error'].includes(
+									// 		this.$resources.siteRequest.doc.status
+									// 	)
+									// )
+									// 	return;
+
 									this.$resources.siteRequest.getProgress.reload();
 								}, 2000);
 							}
