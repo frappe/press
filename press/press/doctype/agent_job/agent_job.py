@@ -439,9 +439,7 @@ def suspend_sites():
 	issue_reload = False
 	for site in active_sites:
 		if site.current_database_usage > 100 or site.current_disk_usage > 100:
-			frappe.get_doc("Site", site.name).suspend(
-				reason="Site Usage Exceeds Plan limits", skip_reload=True
-			)
+			frappe.get_doc("Site", site.name).suspend(reason="Site Usage Exceeds Plan limits")
 			issue_reload = True
 
 	if issue_reload:

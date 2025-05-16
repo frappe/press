@@ -1273,6 +1273,7 @@ class Site(Document, TagHelpers):
 				"site": self.name,
 				"domain": domain,
 				"dns_type": "CNAME",
+				"skip_reload": False,
 			}
 		).insert()
 
@@ -1409,7 +1410,7 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Suspended"])
-	def archive(self, site_name=None, reason=None, force=False, skip_reload=False):
+	def archive(self, site_name=None, reason=None, force=False, skip_reload=True):
 		agent = Agent(self.server)
 		self.status = "Pending"
 		self.save()
@@ -2284,7 +2285,7 @@ class Site(Document, TagHelpers):
 		self.reactivate_app_subscriptions()
 
 	@frappe.whitelist()
-	def suspend(self, reason=None, skip_reload=False):
+	def suspend(self, reason=None, skip_reload=True):
 		log_site_activity(self.name, "Suspend Site", reason)
 		self.status = "Suspended"
 		self.update_site_config({"maintenance_mode": 1})
@@ -2312,7 +2313,7 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	@site_action(["Suspended"])
-	def unsuspend(self, reason=None, skip_reload=False):
+	def unsuspend(self, reason=None, skip_reload=True):
 		log_site_activity(self.name, "Unsuspend Site", reason)
 		self.status = "Active"
 		self.update_site_config({"maintenance_mode": 0})
@@ -2324,7 +2325,7 @@ class Site(Document, TagHelpers):
 		agent = Agent(self.server)
 		agent.reset_site_usage(self)
 
-	def update_site_status_on_proxy(self, status, skip_reload=False):
+	def update_site_status_on_proxy(self, status, skip_reload=True):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.update_site_status(self.server, self.name, status, skip_reload)

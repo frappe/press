@@ -366,30 +366,29 @@ class TestSite(unittest.TestCase):
 			config_host = site.configuration[0].value
 		self.assertEqual(config_host, f"https://{site_domain1.name}")
 
-	def test_suspend_without_reload_creates_agent_job_with_skip_reload(self):
-		site = create_test_site("testsubdomain")
-		site.suspend(skip_reload=True)
-
-		job = frappe.get_doc("Agent Job", {"site": site.name})
-		self.assertTrue(json.loads(job.request_data).get("skip_reload"))
-
-	def test_suspend_without_skip_reload_creates_agent_job_without_skip_reload(self):
+	def test_suspend_creates_agent_job_with_skip_reload(self):
 		site = create_test_site("testsubdomain")
 		site.suspend()
 
 		job = frappe.get_doc("Agent Job", {"site": site.name})
-		self.assertFalse(json.loads(job.request_data).get("skip_reload"))
-
-	def test_archive_with_skip_reload_creates_agent_job_with_skip_reload(self):
-		site = create_test_site("testsubdomain")
-		site.archive(skip_reload=True)
-
-		job = frappe.get_doc("Agent Job", {"site": site.name})
 		self.assertTrue(json.loads(job.request_data).get("skip_reload"))
 
-	def test_archive_without_skip_reload_creates_agent_job_without_skip_reload(self):
+	def test_suspend_with_skip_reload_false_creates_agent_job_with_skip_reload(self):
+		site = create_test_site("testsubdomain")
+		site.suspend(skip_reload=False)
+
+		job = frappe.get_doc("Agent Job", {"site": site.name})
+		self.assertFalse(json.loads(job.request_data).get("skip_reload"))
+
+	def test_archive_without_skip_reload_creates_agent_job_with_skip_reload(self):
 		site = create_test_site("testsubdomain")
 		site.archive()
+
+		frappe.get_doc("Agent Job", {"site": site.name})
+
+	def test_archive_with_skip_reload_false_creates_agent_job_without_skip_reload(self):
+		site = create_test_site("testsubdomain")
+		site.archive(skip_reload=False)
 
 		job = frappe.get_doc("Agent Job", {"site": site.name})
 		self.assertFalse(json.loads(job.request_data).get("skip_reload"))

@@ -64,7 +64,12 @@ class SiteDomain(Document):
 			proxy_server = frappe.db.get_value("Server", server, "proxy_server")
 
 			agent = Agent(server=proxy_server, server_type="Proxy Server")
-			agent.add_domain_to_upstream(server=server, site=self.site, domain=self.domain)
+			agent.add_domain_to_upstream(
+				server=server,
+				site=self.site,
+				domain=self.domain,
+				skip_reload=self.skip_reload if hasattr(self, "skip_reload") else True,
+			)
 			return
 
 		self.create_tls_certificate()
@@ -138,7 +143,7 @@ class SiteDomain(Document):
 			self.status = "Broken"
 			self.save()
 
-	def create_agent_request(self, skip_reload=False):
+	def create_agent_request(self, skip_reload=True):
 		server = frappe.db.get_value("Site", self.site, "server")
 		is_standalone = frappe.db.get_value("Server", server, "is_standalone")
 		if is_standalone:
