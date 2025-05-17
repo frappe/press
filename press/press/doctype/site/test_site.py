@@ -480,7 +480,7 @@ class TestSite(unittest.TestCase):
 		site.save(ignore_permissions=True)
 
 	@responses.activate
-	@patch.object(AppSource, "validate_dependant_apps", new=Mock())
+	@patch.object(AppSource, "validate_dependent_apps", new=Mock())
 	def test_sync_apps_updates_apps_child_table(self):
 		app1 = create_test_app()
 		app2 = create_test_app("erpnext", "ERPNext")
