@@ -407,7 +407,7 @@ class TestReleaseGroup(unittest.TestCase):
 		for app, app_source in [(frappe_app, frappe_app_source), (hrms_app, hrms_app_source)]:
 			release_group.append("apps", {"app": app.name, "source": app_source.name})
 
-		release_group.check_dependant_apps = True
+		release_group.check_dependent_apps = True
 
 		with self.assertRaises(frappe.exceptions.ValidationError):
 			release_group.insert()
