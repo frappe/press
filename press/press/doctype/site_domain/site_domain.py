@@ -64,7 +64,12 @@ class SiteDomain(Document):
 			proxy_server = frappe.db.get_value("Server", server, "proxy_server")
 
 			agent = Agent(server=proxy_server, server_type="Proxy Server")
-			agent.add_domain_to_upstream(server=server, site=self.site, domain=self.domain)
+			agent.add_domain_to_upstream(
+				server=server,
+				site=self.site,
+				domain=self.domain,
+				skip_reload=self.skip_reload if hasattr(self, "skip_reload") else True,
+			)
 			return
 
 		self.create_tls_certificate()
@@ -138,7 +143,7 @@ class SiteDomain(Document):
 			self.status = "Broken"
 			self.save()
 
-	def create_agent_request(self, skip_reload=False):
+	def create_agent_request(self, skip_reload=True):
 		server = frappe.db.get_value("Site", self.site, "server")
 		is_standalone = frappe.db.get_value("Server", server, "is_standalone")
 		if is_standalone:
@@ -173,7 +178,7 @@ class SiteDomain(Document):
 			frappe.throw(msg="Primary domain cannot be deleted", exc=frappe.exceptions.LinkExistsError)
 
 		self.disavow_agent_jobs()
-		if not self.default or self.redirect_to_primary:
+		if not (self.default and self.has_root_tls_certificate) or self.redirect_to_primary:
 			self.create_remove_host_agent_request()
 		if self.status == "Active":
 			self.remove_domain_from_site_config()

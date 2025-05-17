@@ -256,6 +256,18 @@ class Site(Document, TagHelpers):
 			}
 		raise
 
+	@property
+	def database_server_name(self) -> str:
+		return frappe.get_value("Server", self.server, "database_server")
+
+	@property
+	def app_server_agent(self) -> Agent:
+		return Agent(self.server)
+
+	@property
+	def database_server_agent(self) -> Agent:
+		return Agent(self.database_server_name, server_type="Database Server")
+
 	def get_doc(self, doc):
 		from press.api.client import get
 
@@ -559,7 +571,8 @@ class Site(Document, TagHelpers):
 
 		if self.has_value_changed("team"):
 			frappe.db.set_value("Site Domain", {"site": self.name}, "team", self.team)
-			frappe.db.delete("Press Role Permission", {"site": self.name})
+			if not self.flags.in_insert:
+				frappe.db.delete("Press Role Permission", {"site": self.name})
 
 		if self.status not in [
 			"Pending",
@@ -801,7 +814,8 @@ class Site(Document, TagHelpers):
 
 	def remove_dns_record(self, proxy_server: str):
 		"""Remove dns record of site pointing to proxy."""
-		self._create_default_site_domain()
+		if self.status != "Archived":
+			self._create_default_site_domain()
 		domains = frappe.db.get_all(
 			"Site Domain", filters={"site": self.name}, fields=["domain"], pluck="domain"
 		)
@@ -1259,6 +1273,7 @@ class Site(Document, TagHelpers):
 				"site": self.name,
 				"domain": domain,
 				"dns_type": "CNAME",
+				"skip_reload": False,
 			}
 		).insert()
 
@@ -1395,7 +1410,7 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Suspended"])
-	def archive(self, site_name=None, reason=None, force=False, skip_reload=False):
+	def archive(self, site_name=None, reason=None, force=False, skip_reload=True):
 		agent = Agent(self.server)
 		self.status = "Pending"
 		self.save()
@@ -1556,7 +1571,7 @@ class Site(Document, TagHelpers):
 		if self.additional_system_user_created:
 			team_user = frappe.db.get_value("Team", self.team, "user")
 			sid = self.get_login_sid(user=team_user)
-			if self.standby_for_product:
+			if self.standby_for_product and self.is_setup_wizard_complete:
 				redirect_route = (
 					frappe.db.get_value("Product Trial", self.standby_for_product, "redirect_to_after_login")
 					or "/desk"
@@ -2270,7 +2285,7 @@ class Site(Document, TagHelpers):
 		self.reactivate_app_subscriptions()
 
 	@frappe.whitelist()
-	def suspend(self, reason=None, skip_reload=False):
+	def suspend(self, reason=None, skip_reload=True):
 		log_site_activity(self.name, "Suspend Site", reason)
 		self.status = "Suspended"
 		self.update_site_config({"maintenance_mode": 1})
@@ -2298,7 +2313,7 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	@site_action(["Suspended"])
-	def unsuspend(self, reason=None, skip_reload=False):
+	def unsuspend(self, reason=None, skip_reload=True):
 		log_site_activity(self.name, "Unsuspend Site", reason)
 		self.status = "Active"
 		self.update_site_config({"maintenance_mode": 0})
@@ -2310,7 +2325,7 @@ class Site(Document, TagHelpers):
 		agent = Agent(self.server)
 		agent.reset_site_usage(self)
 
-	def update_site_status_on_proxy(self, status, skip_reload=False):
+	def update_site_status_on_proxy(self, status, skip_reload=True):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.update_site_status(self.server, self.name, status, skip_reload)
@@ -3204,6 +3219,105 @@ class Site(Document, TagHelpers):
 	def fetch_certificate(self, domain: str):
 		tls_certificate = frappe.get_last_doc("TLS Certificate", {"domain": domain})
 		tls_certificate.obtain_certificate()
+
+	def fetch_database_name(self):
+		if not self.database_name:
+			synced = self._sync_config_info()
+			if not synced:
+				frappe.throw("Unable to fetch database name. Please try again.")
+			self.save()
+		return self.database_name
+
+	@dashboard_whitelist()
+	def fetch_binlog_timeline(self, start: int, end: int, query_type: str | None = None):  # noqa: C901
+		data = self.database_server_agent.get_binlogs_timeline(
+			start=start,
+			end=end,
+			type=query_type,
+			database=self.fetch_database_name(),
+		)
+
+		start_timestamp = data.get("start_timestamp")
+		end_timestamp = data.get("end_timestamp")
+		interval = data.get("interval")
+		series = []
+		current_timestamp = start_timestamp
+		while current_timestamp < end_timestamp:
+			series.append(current_timestamp)
+			current_timestamp += interval
+
+		if current_timestamp == end_timestamp:
+			series.append(current_timestamp)
+		elif len(series) > 0 and series[-1] != end_timestamp:
+			series.append(end_timestamp)
+
+		dataset_map = {
+			"INSERT": [0],
+			"UPDATE": [0],
+			"DELETE": [0],
+			"SELECT": [0],
+			"OTHER": [0],
+		}
+
+		if len(series) > 1:
+			for i in range(len(series) - 1):
+				start_timestamp = series[i]
+				end_timestamp = series[i + 1]
+				key = f"{start_timestamp}:{end_timestamp}"
+				if key not in data["results"]:
+					continue
+
+				query_data: dict = data["results"][key]
+				for q in dataset_map:
+					dataset_map[q].append(query_data.get(q, 0))
+
+		datasets = []
+		for key, value in dataset_map.items():
+			datasets.append(
+				{
+					"stack": "path",
+					"path": key,
+					"values": value,
+				}
+			)
+
+		return {
+			"datasets": datasets,
+			"labels": series,
+			"tables": data.get("tables", []),
+		}
+
+	@dashboard_whitelist()
+	def search_binlogs(
+		self,
+		start: int,
+		end: int,
+		query_type: str | None = None,
+		table: str | None = None,
+		search_string: str | None = None,
+	):
+		if (end - start) > 60 * 60 * 2:
+			frappe.throw("Binlog search is limited to 2 hour. Please select a smaller time range.")
+
+		if not table:
+			table = None
+		if not search_string:
+			search_string = None
+
+		return self.database_server_agent.search_binlogs(
+			start=start,
+			end=end,
+			type=query_type,
+			database=self.fetch_database_name(),
+			table=table,
+			search_str=search_string,
+		)
+
+	@dashboard_whitelist()
+	def fetch_queries_from_binlog(self, row_ids: dict[str, list[int]]):
+		return self.database_server_agent.get_binlog_queries(
+			row_ids=row_ids, database=self.fetch_database_name()
+		)
 
 
 def site_cleanup_after_archive(site):

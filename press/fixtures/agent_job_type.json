@@ -1780,5 +1780,35 @@
     "step_name": "Wait for Enqueued Jobs"
    }
   ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2025-05-08 15:21:19.528916",
+  "name": "Add Binlogs To Indexer",
+  "request_method": "POST",
+  "request_path": "/database/binlogs/indexer/add",
+  "steps": [
+   {
+    "step_name": "Add Binlogs To Indexer"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2025-05-08 15:22:23.850136",
+  "name": "Remove Binlogs From Indexer",
+  "request_method": "POST",
+  "request_path": "/database/binlogs/indexer/remove",
+  "steps": [
+   {
+    "step_name": "Remove Binlogs From Indexer"
+   }
+  ]
  }
 ]

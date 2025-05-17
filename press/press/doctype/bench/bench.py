@@ -364,7 +364,7 @@ class Bench(Document):
 			config = json.loads(self.config)
 			self.update_config_with_rg_config(config)
 			self.update_bench_config_with_rg_config(bench_config)
-			self.save()
+			self.save()  # triggers on_update
 			return
 		old = self.get_doc_before_save()
 		if old and (old.config != self.config or old.bench_config != self.bench_config):

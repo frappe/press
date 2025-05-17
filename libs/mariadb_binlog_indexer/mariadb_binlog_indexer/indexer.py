@@ -258,9 +258,10 @@ class Indexer:
 
 		"""
 		if database is not None:
+			filtered_row_ids = {}
 			# Filter out the row_ids that doesn't belong to the database
 			for binlog, selected_row_ids in row_ids.items():
-				row_ids = [
+				filtered_row_ids[binlog] = [
 					i[0]
 					for i in self._execute_query(
 						"db",
@@ -268,6 +269,7 @@ class Indexer:
 						[binlog, database, selected_row_ids],
 					)
 				]
+			row_ids = filtered_row_ids
 
 		# Fetch the query info
 		results = {}
@@ -279,7 +281,7 @@ class Indexer:
 
 			# Fetch query from parquet file
 			results[binlog] = {
-				i[0]: [i[1]]
+				int(i[0]): [i[1]]
 				for i in self._execute_query(
 					"parquet",
 					f"SELECT id, query FROM '{parquet_file_path}' where id in ? limit 500",
@@ -304,7 +306,7 @@ class Indexer:
 					binlog = ?
 					AND row_id IN ?
 				""",
-				[binlog, row_ids],
+				[binlog, selected_row_ids],
 			)
 
 			for row in data:

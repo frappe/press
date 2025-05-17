@@ -15,7 +15,12 @@ from frappe.utils.data import add_to_date
 from frappe.utils.synchronization import filelock
 
 from press.exceptions import AlertRuleNotEnabled
-from press.press.doctype.incident.incident import INCIDENT_ALERT, INCIDENT_SCOPE
+from press.press.doctype.incident.incident import (
+	INCIDENT_ALERT,
+	INCIDENT_SCOPE,
+	MIN_FIRING_INSTANCES,
+	MIN_FIRING_INSTANCES_PERCENTAGE,
+)
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error
 
@@ -202,7 +207,9 @@ class AlertmanagerWebhookLog(Document):
 			return
 
 		instances = self.get_past_alert_instances()
-		if len(instances) > min(0.4 * self.total_instances(), 15):
+		if len(instances) > min(
+			MIN_FIRING_INSTANCES_PERCENTAGE * self.total_instances(), MIN_FIRING_INSTANCES
+		):
 			self.create_incident()
 
 	def get_repeat_interval(self):

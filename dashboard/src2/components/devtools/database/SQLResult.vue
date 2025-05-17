@@ -33,22 +33,22 @@
 }
 </style>
 <script>
-import SQLResultTable from './ResultTable.vue';
+import SQLResultTable from './SQLResultTable.vue';
 export default {
 	name: 'SQLResult',
 	props: ['result'],
 	components: {
-		SQLResultTable
+		SQLResultTable,
 	},
 	data() {
 		return {
-			isSQLQueryVisible: false
+			isSQLQueryVisible: false,
 		};
 	},
 	methods: {
 		toggleSQLQuerySection() {
 			this.isSQLQueryVisible = !this.isSQLQueryVisible;
-		}
-	}
+		},
+	},
 };
 </script>

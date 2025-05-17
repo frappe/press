@@ -318,7 +318,7 @@ import { h, markRaw } from 'vue';
 import { toast } from 'vue-sonner';
 import { formatValue } from '../../../utils/format';
 import ToggleContent from '../../../components/ToggleContent.vue';
-import ResultTable from '../../../components/devtools/database/ResultTable.vue';
+import ResultTable from '../../../components/devtools/database/SQLResultTable.vue';
 import DatabaseProcessKillButton from '../../../components/devtools/database/DatabaseProcessKillButton.vue';
 import DatabaseTableSchemaDialog from '../../../components/devtools/database/DatabaseTableSchemaDialog.vue';
 import DatabaseTableSchemaSizeDetailsDialog from '../../../components/devtools/database/DatabaseTableSchemaSizeDetailsDialog.vue';

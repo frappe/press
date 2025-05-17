@@ -620,5 +620,19 @@
   "set_on_new_servers": 1,
   "skippable": 0,
   "title": null
+ },
+ {
+  "configurable_by_user": 0,
+  "datatype": "Int",
+  "default_value": null,
+  "doc_section": "innodb",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 0,
+  "modified": "2025-05-15 18:00:12.351782",
+  "name": "innodb_log_file_size",
+  "set_on_new_servers": 0,
+  "skippable": 0,
+  "title": null
  }
 ]

@@ -461,7 +461,6 @@ class Team(Document):
 		):
 			self.update_billing_details_on_frappeio()
 
-
 	def update_draft_invoice_payment_mode(self):
 		if self.has_value_changed("payment_mode"):
 			draft_invoices = frappe.get_all(
@@ -1080,7 +1079,7 @@ class Team(Document):
 		sites_to_suspend = self.get_sites_to_suspend()
 		for site in sites_to_suspend:
 			try:
-				Site("Site", site).suspend(reason, skip_reload=True)
+				Site("Site", site).suspend(reason)
 			except Exception:
 				log_error("Failed to Suspend Sites", traceback=frappe.get_traceback())
 		return sites_to_suspend
@@ -1129,7 +1128,7 @@ class Team(Document):
 		]
 		workloads_before = list(Bench.get_workloads(suspended_sites))
 		for site in suspended_sites:
-			Site("Site", site).unsuspend(reason, skip_reload=True)
+			Site("Site", site).unsuspend(reason)
 		workloads_after = list(Bench.get_workloads(suspended_sites))
 		self.reallocate_workers_if_needed(workloads_before, workloads_after)
 

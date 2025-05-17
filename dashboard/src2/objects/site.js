@@ -217,30 +217,38 @@ export default {
 							'version',
 							'creation',
 						];
+						createListResource({
+							doctype: 'Site',
+							fields: [
+								'host_name',
+								'plan.plan_title as plan_title',
+								'cluster.title as cluster_title',
+								'group.title as group_title',
+								'group.version as version',
+								'creation',
+							],
+							auto: true,
+							pageLength: 999999,
+							onSuccess(data) {
+								let csv = unparse({
+									fields,
+									data,
+								});
+								csv = '\uFEFF' + csv; // for utf-8
 
-						const data = sites.data.map((site) => {
-							const row = {};
-							fields.forEach((field) => {
-								row[field] = site[field];
-							});
-							return row;
+								// create a blob and trigger a download
+								const blob = new Blob([csv], {
+									type: 'text/csv;charset=utf-8',
+								});
+								const today = new Date().toISOString().split('T')[0];
+								const filename = `sites-${today}.csv`;
+								const link = document.createElement('a');
+								link.href = URL.createObjectURL(blob);
+								link.download = filename;
+								link.click();
+								URL.revokeObjectURL(link.href);
+							},
 						});
-
-						let csv = unparse({
-							fields,
-							data,
-						});
-						csv = '\uFEFF' + csv; // for utf-8
-
-						// create a blob and trigger a download
-						const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-						const today = new Date().toISOString().split('T')[0];
-						const filename = `sites-${today}.csv`;
-						const link = document.createElement('a');
-						link.href = URL.createObjectURL(blob);
-						link.download = filename;
-						link.click();
-						URL.revokeObjectURL(link.href);
 					},
 				},
 			];
@@ -1639,7 +1647,13 @@ export default {
 					condition: () =>
 						site.doc.status !== 'Archived' && site.doc?.setup_wizard_complete,
 					onClick() {
-						window.open(`https://${site.name}/apps`, '_blank');
+						let siteURL = `https://${site.name}`;
+						if (
+							site.doc.version === 'Nightly' ||
+							Number(site.doc.version.split(' ')[1]) >= 15
+						)
+							siteURL += '/apps';
+						window.open(siteURL, '_blank');
 					},
 				},
 				{

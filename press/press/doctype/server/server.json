@@ -381,7 +381,6 @@
   },
   {
    "default": "root",
-   "depends_on": "eval:doc.is_self_hosted",
    "fieldname": "ssh_user",
    "fieldtype": "Data",
    "label": "SSH User"

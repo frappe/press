@@ -1,0 +1,51 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-05-12 18:24:34.545167",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "trace_id",
+  "data"
+ ],
+ "fields": [
+  {
+   "fieldname": "trace_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Trace ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "data",
+   "fieldtype": "Code",
+   "label": "Data",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "hide_toolbar": 1,
+ "index_web_pages_for_search": 1,
+ "is_virtual": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-05-12 18:28:47.694295",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Inspect Trace ID",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
