@@ -55,15 +55,15 @@ def _change_dns_record(method: str, domain: RootDomain, proxy_server: str, recor
 
 	method: CREATE | DELETE | UPSERT
 	"""
-	try:
-		if domain.generic_dns_provider:
-			return
+	if domain.generic_dns_provider:
+		return
 
-		client = boto3.client(
-			"route53",
-			aws_access_key_id=domain.aws_access_key_id,
-			aws_secret_access_key=domain.get_password("aws_secret_access_key"),
-		)
+	client = boto3.client(
+		"route53",
+		aws_access_key_id=domain.aws_access_key_id,
+		aws_secret_access_key=domain.get_password("aws_secret_access_key"),
+	)
+	try:
 		zones = client.list_hosted_zones_by_name()["HostedZones"]
 		hosted_zone = find(reversed(zones), lambda x: domain.name.endswith(x["Name"][:-1]))["Id"]
 		client.change_resource_record_sets(

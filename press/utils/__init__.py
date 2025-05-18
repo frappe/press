@@ -924,3 +924,14 @@ def validate_subdomain(subdomain: str):
 
 	if len(subdomain) < 5:
 		frappe.throw("Subdomain too short. Use 5 or more characters")
+
+
+@site_cache(ttl=120)
+def servers_using_alternative_port_for_communication() -> list:
+	servers = frappe.db.get_value(
+		"Press Settings", None, "servers_using_alternative_http_port_for_communication"
+	)
+	if not servers:
+		return []
+	servers: list[str] = servers.split("\n")
+	return [x.strip() for x in servers if x.strip()]

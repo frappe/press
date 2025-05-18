@@ -2075,7 +2075,7 @@ def add_server_to_release_group(name, group_name, server=None):
 
 	rg = frappe.get_doc("Release Group", group_name)
 
-	if not frappe.db.exists("Deploy Candidate", {"status": "Success", "group": group_name}):
+	if not frappe.db.exists("Deploy Candidate Build", {"status": "Success", "group": group_name}):
 		frappe.throw(
 			f"There should be atleast one deploy in the bench {frappe.bold(rg.title)} to do a site migration or a site version upgrade."
 		)

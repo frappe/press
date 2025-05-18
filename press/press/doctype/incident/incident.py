@@ -26,6 +26,8 @@ from press.utils import log_error
 if TYPE_CHECKING:
 	from twilio.rest.api.v2010.account.call import CallInstance
 
+	from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import AlertmanagerWebhookLog
+	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.incident_settings.incident_settings import IncidentSettings
 	from press.press.doctype.incident_settings_self_hosted_user.incident_settings_self_hosted_user import (
 		IncidentSettingsSelfHostedUser,
@@ -35,10 +37,16 @@ if TYPE_CHECKING:
 	)
 	from press.press.doctype.monitor_server.monitor_server import MonitorServer
 	from press.press.doctype.press_settings.press_settings import PressSettings
+	from press.press.doctype.server.server import Server
 
 INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere #
 INCIDENT_SCOPE = (
 	"server"  # can be bench, cluster, server, etc. Not site, minor code changes required for that
+)
+
+MIN_FIRING_INSTANCES = 15  # minimum instances that should have fired for an incident to be valid
+MIN_FIRING_INSTANCES_PERCENTAGE = (
+	0.4  # minimum percentage of instances that should have fired for an incident to be valid
 )
 
 DAY_HOURS = range(9, 18)
@@ -52,7 +60,6 @@ CALL_THRESHOLD_SECONDS_NIGHT = (
 )
 CALL_REPEAT_INTERVAL_DAY = 15 * 60
 CALL_REPEAT_INTERVAL_NIGHT = 20 * 60
-PAST_ALERT_COVER_MINUTES = 15  # to cover alerts that fired before/triggered the incident
 
 
 class Incident(WebsiteGenerator):
@@ -327,6 +334,17 @@ class Incident(WebsiteGenerator):
 		"""
 		frappe.db.set_value("Server", self.server, "ignore_incidents_since", frappe.utils.now_datetime())
 
+	@frappe.whitelist()
+	def reboot_database_server(self):
+		db_server_name: Server = frappe.db.get_value("Server", self.server, "database_server")
+		if not db_server_name:
+			frappe.throw("No database server found for this server")
+		db_server: DatabaseServer = frappe.get_doc("Database Server", db_server_name)
+		try:
+			db_server.reboot_with_serial_console()
+		except NotImplementedError:
+			db_server.reboot()
+
 	def call_humans(self):
 		enqueue_doc(
 			self.doctype,
@@ -535,39 +553,28 @@ Incident URL: {incident_link}"""
 	def incident_scope(self):
 		return getattr(self, INCIDENT_SCOPE)
 
-	def get_last_alert_status_for_each_group(self):
-		return frappe.db.sql_list(
-			f"""
-select
-	last_alert_per_group.status
-from
-	(
-		select
-			name,
-			status,
-			group_key,
-			modified,
-			ROW_NUMBER() OVER (
-				PARTITION BY
-					`group_key`
-				ORDER BY
-					`modified` DESC
-			) AS rank
-		from
-			`tabAlertmanager Webhook Log`
-		where
-			modified >= "{self.creation - timedelta(minutes=PAST_ALERT_COVER_MINUTES)}"
-			and group_key like "%%{self.incident_scope}%%"
-	) last_alert_per_group
-where
-	last_alert_per_group.rank = 1
-			"""
-		)  # status of the sites down in each bench
-
 	def check_resolved(self):
-		if "Firing" in self.get_last_alert_status_for_each_group():
-			# all should be "resolved" for auto-resolve
+		try:
+			last_resolved: AlertmanagerWebhookLog = frappe.get_last_doc(
+				"Alertmanager Webhook Log",
+				{
+					"status": "Resolved",
+					"group_key": ("like", f"%{self.incident_scope}%"),
+					"alert": self.alert,
+				},
+			)
+		except frappe.DoesNotExistError:
 			return
+		else:
+			resolved_instances = last_resolved.get_past_alert_instances()
+			total_instances = last_resolved.total_instances()
+			if len(resolved_instances) >= min(
+				(1 - MIN_FIRING_INSTANCES_PERCENTAGE) * total_instances,
+				MIN_FIRING_INSTANCES,
+			):
+				self.resolve()
+
+	def resolve(self):
 		if self.status == "Validating":
 			self.status = "Auto-Resolved"
 		else:
@@ -585,6 +592,11 @@ where
 		return self.status == "Acknowledged" and frappe.utils.now_datetime() - self.modified > timedelta(
 			seconds=get_call_repeat_interval()
 		)
+
+	@frappe.whitelist()
+	def get_down_site(self):
+		sites_down = self.monitor_server.get_sites_down_for_server(str(self.server))
+		return sites_down[0] if sites_down else None
 
 
 def get_confirmation_threshold_duration():
