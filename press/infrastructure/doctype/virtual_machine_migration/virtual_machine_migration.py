@@ -174,7 +174,7 @@ class VirtualMachineMigration(Document):
 			self.append(
 				"bind_mounts",
 				{
-					"source_mount_point": "/opt/volumes/docker/var/lib/docker",
+					"source_mount_point": "/opt/volumes/benches/var/lib/docker",
 					"service": "docker",
 					"mount_point_owner": "root",
 					"mount_point_group": "root",
