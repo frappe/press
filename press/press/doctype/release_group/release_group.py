@@ -43,7 +43,7 @@ DEFAULT_DEPENDENCIES = [
 	{"dependency": "NODE_VERSION", "version": "14.19.0"},
 	{"dependency": "PYTHON_VERSION", "version": "3.7"},
 	{"dependency": "WKHTMLTOPDF_VERSION", "version": "0.12.5"},
-	{"dependency": "BENCH_VERSION", "version": "5.15.2"},
+	{"dependency": "BENCH_VERSION", "version": "5.25.1"},
 ]
 
 
@@ -83,7 +83,7 @@ class ReleaseGroup(Document, TagHelpers):
 		bench_config: DF.Code | None
 		build_server: DF.Link | None
 		central_bench: DF.Check
-		check_dependant_apps: DF.Check
+		check_dependent_apps: DF.Check
 		common_site_config: DF.Code | None
 		common_site_config_table: DF.Table[CommonSiteConfig]
 		compress_app_cache: DF.Check
@@ -223,10 +223,10 @@ class ReleaseGroup(Document, TagHelpers):
 		self.validate_rq_queues()
 		self.validate_max_min_workers()
 		self.validate_feature_flags()
-		if self.check_dependant_apps:
-			self.validate_dependant_apps()
+		if self.check_dependent_apps:
+			self.validate_dependent_apps()
 
-	def validate_dependant_apps(self):
+	def validate_dependent_apps(self):
 		required_repository_urls = set()
 		existing_repository_urls = set()
 

@@ -305,7 +305,7 @@ class SiteMigration(Document):
 		domains = frappe.get_all("Site Domain", {"site": self.site, "name": ["!=", self.site]}, pluck="name")
 		for domain in domains:
 			site_domain = frappe.get_doc("Site Domain", domain)
-			if site_domain.default:
+			if site_domain.default or not site_domain.has_root_tls_certificate:
 				continue
 			self._add_remove_user_defined_domain_from_source_proxy_step(domain)
 			self._add_restore_user_defined_domain_to_destination_proxy_step(domain)
