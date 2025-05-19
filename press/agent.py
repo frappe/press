@@ -1368,6 +1368,32 @@ Response: {reason or getattr(result, "text", "Unknown")}
 	def fetch_binlog_list(self):
 		return self.get("database/binlogs/list")
 
+	def upload_binlogs_to_s3(self, binlogs: list[str]):
+		from press.press.doctype.site_backup.site_backup import get_backup_bucket
+
+		if self.server_type != "Database Server":
+			return NotImplementedError("Only Database Server supports this method")
+
+		settings = frappe.get_single("Press Settings")
+		backup_bucket = get_backup_bucket(
+			frappe.get_value("Database Server", self.server, "cluster"), region=True
+		)
+		bucket_name = backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
+		if not (settings.aws_s3_bucket or bucket_name):
+			return ValueError("Offsite Backups aren't set yet")
+
+		auth = {
+			"ACCESS_KEY": settings.offsite_backups_access_key_id,
+			"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
+			"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
+		}
+
+		return self.create_agent_job(
+			"Upload Binlogs to S3",
+			"/database/binlogs/upload",
+			data={"binlogs": binlogs, "offsite": {"bucket": bucket_name, "auth": auth, "path": self.server}},
+		)
+
 	def add_binlogs_to_indexer(self, binlogs):
 		return self.create_agent_job(
 			"Add Binlogs To Indexer",

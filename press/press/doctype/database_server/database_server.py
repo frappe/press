@@ -1270,7 +1270,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 
 		frappe.enqueue_doc(self.doctype, self.name, "_sync_binlogs_info", timeout=600)
 
-	def _sync_binlogs_info(self, index_binlogs: bool = True):
+	def _sync_binlogs_info(self, index_binlogs: bool = True, upload_binlogs: bool = True):
 		info = self.agent.fetch_binlog_list()
 		current_binlog = info.get("current_binlog", "")
 		binlogs_in_disk = info.get("binlogs_in_disk", [])
@@ -1371,6 +1371,9 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		if index_binlogs:
 			self.add_binlogs_to_indexer()
 
+		if upload_binlogs:
+			self.upload_binlogs_to_s3()
+
 	def add_binlogs_to_indexer(self):
 		if not self.enable_binlog_indexing:
 			return
@@ -1381,7 +1384,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 
 		"""
 		Start indexing from old ones
-		Fetch 15 binlogs
+		Only try to index last 7 days of binlogs
 		"""
 
 		binlogs = frappe.get_all(
@@ -1390,6 +1393,10 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 				"database_server": self.name,
 				"indexed": 0,
 				"purged_from_disk": 0,
+				"file_modification_time": (
+					">=",
+					frappe.utils.add_to_date(None, days=-1 * 7),
+				),
 			},
 			order_by="file_name asc",
 			limit=15,
@@ -1467,6 +1474,54 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 				"status": ("in", ["Pending", "Running"]),
 			},
 		)
+
+	def upload_binlogs_to_s3(self):
+		if not self.enable_binlog_indexing:
+			frappe.msgprint("Binlog Indexing is not enabled")
+			return
+
+		# Upload only those binlogs which is indexed
+		binlogs = frappe.get_all(
+			"MariaDB Binlog",
+			filters={
+				"database_server": self.name,
+				"current": 0,
+				"indexed": 1,
+				"uploaded": 0,
+				"purged_from_disk": 0,
+				"file_modification_time": (
+					"between",
+					(frappe.utils.now_datetime(), frappe.utils.add_to_date(None, days=-1 * 7)),
+				),
+			},
+			order_by="file_name asc",
+			pluck="file_name",
+			limit=10,
+		)
+
+		# Or, unindexed binlogs which are older than 7 days
+		unindexed_binlogs = frappe.get_all(
+			"MariaDB Binlog",
+			filters={
+				"database_server": self.name,
+				"current": 0,
+				"indexed": 0,
+				"uploaded": 0,
+				"purged_from_disk": 0,
+				"file_modification_time": ("<=", frappe.utils.add_to_date(None, days=-1 * 7)),
+			},
+			order_by="file_name asc",
+			pluck="file_name",
+			limit=10,
+		)
+
+		binlogs.extend(unindexed_binlogs)
+		binlogs = list(set(binlogs))
+
+		if len(binlogs) == 0:
+			return
+
+		self.agent.upload_binlogs_to_s3(binlogs)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Database Server")
