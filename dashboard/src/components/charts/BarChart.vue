@@ -42,7 +42,7 @@ import {
 	GridComponent,
 	LegendComponent,
 	TooltipComponent,
-	MarkLineComponent
+	MarkLineComponent,
 } from 'echarts/components';
 import VChart from 'vue-echarts';
 import Card from '../global/Card.vue';
@@ -53,26 +53,26 @@ const props = defineProps({
 	showCard: {
 		type: Boolean,
 		required: false,
-		default: () => true
+		default: () => true,
 	},
 	title: {
 		type: String,
-		required: false
+		required: false,
 	},
 	unit: {
 		type: String,
 		required: false,
-		default: () => ''
+		default: () => '',
 	},
 	data: {
 		type: Object,
 		required: true,
-		default: () => ({ labels: [], datasets: [] })
+		default: () => ({ labels: [], datasets: [] }),
 	},
 	type: {
 		type: String,
 		required: false,
-		default: () => 'category'
+		default: () => 'category',
 	},
 	chartTheme: {
 		type: Array,
@@ -85,19 +85,19 @@ const props = defineProps({
 			theme.colors.yellow[500],
 			theme.colors.teal[500],
 			theme.colors.pink[500],
-			theme.colors.cyan[500]
-		]
+			theme.colors.cyan[500],
+		],
 	},
 	loading: {
 		type: Boolean,
 		required: false,
-		default: () => false
+		default: () => false,
 	},
 	error: {
 		type: String,
 		required: false,
-		default: () => ''
-	}
+		default: () => '',
+	},
 });
 
 const { title, unit, data, type, chartTheme } = toRefs(props);
@@ -108,11 +108,11 @@ use([
 	GridComponent,
 	LegendComponent,
 	TooltipComponent,
-	MarkLineComponent
+	MarkLineComponent,
 ]);
 
 const initOptions = {
-	renderer: 'svg'
+	renderer: 'svg',
 };
 
 const options = ref({
@@ -120,48 +120,51 @@ const options = ref({
 		top: 20,
 		left: 60,
 		right: 40,
-		bottom: 50
+		bottom: 50,
 	},
 	tooltip: {
 		trigger: 'axis',
 		confine: true,
 		extraCssText: 'width: 60%; white-space: normal; word-wrap: break-word;',
-		formatter: params => {
+		formatter: (params) => {
 			// for the dot to follow the same color as the line 🗿
 			let tooltip = `<p>${DateTime.fromSQL(
-				params[0].axisValueLabel
+				params[0].axisValueLabel,
 			).toLocaleString(DateTime.DATETIME_MED)}</p>`;
 
 			params.forEach(({ value, seriesName }, i) => {
-				let colorSpan = color =>
+				if (value === 0) {
+					return;
+				}
+				let colorSpan = (color) =>
 					'<span style="display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:' +
 					color +
 					'"></span>';
 
 				tooltip += `<p>${colorSpan(chartTheme.value[i])}  ${getUnit(
 					value,
-					unit.value
+					unit.value,
 				)} ${unit.value !== seriesName ? `- ${seriesName}` : ''}</p>`;
 			});
 			return tooltip;
-		}
+		},
 	},
 	xAxis: {
 		type: type,
 		boundaryGap: false,
 		data: data.value.labels,
 		axisLine: {
-			show: false
+			show: false,
 		},
 		axisTick: {
-			show: false
-		}
+			show: false,
+		},
 	},
 	yAxis: {
 		type: 'value',
 		max: data.value.yMax,
 		axisLabel: {
-			formatter: value => {
+			formatter: (value) => {
 				if (unit.value === 'bytes') {
 					return formatBytes(value, 0);
 				} else {
@@ -171,19 +174,19 @@ const options = ref({
 					return value;
 				}
 			},
-			padding: 5
-		}
+			padding: 5,
+		},
 	},
 	labelLine: {
 		smooth: 0.2,
 		length: 10,
-		length2: 20
+		length2: 20,
 	},
 	legend: {
 		type: 'scroll',
 		top: 'bottom',
 		icon: 'circle',
-		show: data.value.datasets.length > 1
+		show: data.value.datasets.length > 1,
 	},
 	series: data.value.datasets.map((dataset, i) => {
 		return {
@@ -197,29 +200,29 @@ const options = ref({
 				itemStyle: {
 					shadowBlur: 10,
 					shadowOffsetX: 0,
-					shadowColor: 'rgba(0, 0, 0, 0.5)'
-				}
+					shadowColor: 'rgba(0, 0, 0, 0.5)',
+				},
 			},
 			lineStyle: {
-				color: chartTheme.value[i]
+				color: chartTheme.value[i],
 			},
 			itemStyle: {
-				color: chartTheme.value[i]
+				color: chartTheme.value[i],
 			},
 			areaStyle: {
 				color: new graphic.LinearGradient(0, 0, 0, 1, [
 					{
 						offset: 0,
-						color: chartTheme.value[i]
+						color: chartTheme.value[i],
 					},
 					{
 						offset: 1,
-						color: '#fff'
-					}
+						color: '#fff',
+					},
 				]),
-				opacity: 0.3
-			}
+				opacity: 0.3,
+			},
 		};
-	})
+	}),
 });
 </script>

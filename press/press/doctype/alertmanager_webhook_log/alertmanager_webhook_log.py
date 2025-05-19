@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -18,8 +19,9 @@ from press.exceptions import AlertRuleNotEnabled
 from press.press.doctype.incident.incident import (
 	INCIDENT_ALERT,
 	INCIDENT_SCOPE,
-	MIN_FIRING_INSTANCES,
-	MIN_FIRING_INSTANCES_PERCENTAGE,
+	MINIMUM_INSTANCES,
+	MINIMUM_INSTANCES_FRACTION,
+	Incident,
 )
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error
@@ -190,6 +192,7 @@ class AlertmanagerWebhookLog(Document):
 			instances.extend(self.get_instances_from_alerts_payload(alert["payload"]))
 		return set(instances)
 
+	@property
 	def total_instances(self) -> int:
 		return frappe.db.count(
 			"Site",
@@ -206,9 +209,9 @@ class AlertmanagerWebhookLog(Document):
 		if find(rule.ignore_on_clusters, lambda x: x.cluster == cluster):
 			return
 
-		instances = self.get_past_alert_instances()
-		if len(instances) > min(
-			MIN_FIRING_INSTANCES_PERCENTAGE * self.total_instances(), MIN_FIRING_INSTANCES
+		firing_instances = self.get_past_alert_instances()
+		if len(firing_instances) > min(
+			math.floor(MINIMUM_INSTANCES_FRACTION * self.total_instances), MINIMUM_INSTANCES
 		):
 			self.create_incident()
 
@@ -298,20 +301,20 @@ class AlertmanagerWebhookLog(Document):
 				"status": ("in", ["Validating", "Confirmed", "Acknowledged"]),
 			},
 			"status",
-			for_update=True,
+			for_update=True,  # To get latest incidents already committed; required because 2 jobs can start at the same time
 		)
 		return bool(ongoing_incident_status)
 
 	def create_incident(self):
 		try:
 			with filelock(f"incident_creation_{self.server}"):
-				frappe.db.commit()  # To avoid reading old data
 				if self.ongoing_incident_exists():
 					return
-				incident = frappe.new_doc("Incident")
+				incident: Incident = frappe.new_doc("Incident")
 				incident.alert = self.alert
 				incident.server = self.server
 				incident.cluster = self.cluster
 				incident.save()
+				frappe.db.commit()  # commit inside filelock to avoid deadlock when inserting in gap
 		except Exception:
 			log_error("Incident creation failed")

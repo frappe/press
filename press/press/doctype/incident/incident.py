@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import math
 from base64 import b64encode
 from datetime import timedelta
 from functools import cached_property
@@ -44,9 +45,9 @@ INCIDENT_SCOPE = (
 	"server"  # can be bench, cluster, server, etc. Not site, minor code changes required for that
 )
 
-MIN_FIRING_INSTANCES = 15  # minimum instances that should have fired for an incident to be valid
-MIN_FIRING_INSTANCES_PERCENTAGE = (
-	0.4  # minimum percentage of instances that should have fired for an incident to be valid
+MINIMUM_INSTANCES = 15  # minimum instances that should have fired for an incident to be valid
+MINIMUM_INSTANCES_FRACTION = (
+	0.4  # 40%; minimum percentage of instances that should have fired for an incident to be valid
 )
 
 DAY_HOURS = range(9, 18)
@@ -567,10 +568,10 @@ Incident URL: {incident_link}"""
 			return
 		else:
 			resolved_instances = last_resolved.get_past_alert_instances()
-			total_instances = last_resolved.total_instances()
+			total_instances = last_resolved.total_instances
 			if len(resolved_instances) >= min(
-				(1 - MIN_FIRING_INSTANCES_PERCENTAGE) * total_instances,
-				MIN_FIRING_INSTANCES,
+				math.floor(MINIMUM_INSTANCES_FRACTION * total_instances),
+				MINIMUM_INSTANCES,
 			):
 				self.resolve()
 

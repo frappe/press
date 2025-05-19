@@ -2388,3 +2388,34 @@ def get_site_config_standard_keys():
 		["name", "key", "title", "description", "type"],
 		order_by="title asc",
 	)
+
+
+@frappe.whitelist()
+def fetch_sites_data_for_export():
+	from press.api.client import get_list
+
+	sites = get_list(
+		"Site",
+		[
+			"name",
+			"host_name",
+			"plan.plan_title as plan_title",
+			"cluster.title as cluster_title",
+			"group.title as group_title",
+			"group.version as version",
+			"creation",
+		],
+		start=0,
+		limit=99999,
+	)
+
+	tags = frappe.db.get_all(
+		"Resource Tag",
+		filters={"parenttype": "Site", "parent": ["in", [site.name for site in sites]]},
+		fields=["name", "tag_name", "parent"],
+	)
+
+	for site in sites:
+		site.tags = [tag.tag_name for tag in tags if tag.parent == site.name]
+
+	return sites
