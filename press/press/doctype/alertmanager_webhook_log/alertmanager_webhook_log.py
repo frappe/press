@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -18,8 +19,8 @@ from press.exceptions import AlertRuleNotEnabled
 from press.press.doctype.incident.incident import (
 	INCIDENT_ALERT,
 	INCIDENT_SCOPE,
-	MIN_FIRING_INSTANCES,
-	MIN_FIRING_INSTANCES_PERCENTAGE,
+	MINIMUM_INSTANCES,
+	MINIMUM_INSTANCES_FRACTION,
 )
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error
@@ -190,6 +191,7 @@ class AlertmanagerWebhookLog(Document):
 			instances.extend(self.get_instances_from_alerts_payload(alert["payload"]))
 		return set(instances)
 
+	@property
 	def total_instances(self) -> int:
 		return frappe.db.count(
 			"Site",
@@ -206,9 +208,9 @@ class AlertmanagerWebhookLog(Document):
 		if find(rule.ignore_on_clusters, lambda x: x.cluster == cluster):
 			return
 
-		instances = self.get_past_alert_instances()
-		if len(instances) > min(
-			MIN_FIRING_INSTANCES_PERCENTAGE * self.total_instances(), MIN_FIRING_INSTANCES
+		firing_instances = self.get_past_alert_instances()
+		if len(firing_instances) > min(
+			math.floor(MINIMUM_INSTANCES_FRACTION * self.total_instances), MINIMUM_INSTANCES
 		):
 			self.create_incident()
 
