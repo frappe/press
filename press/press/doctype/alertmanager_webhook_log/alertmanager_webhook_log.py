@@ -21,6 +21,7 @@ from press.press.doctype.incident.incident import (
 	INCIDENT_SCOPE,
 	MINIMUM_INSTANCES,
 	MINIMUM_INSTANCES_FRACTION,
+	Incident,
 )
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error
@@ -300,20 +301,20 @@ class AlertmanagerWebhookLog(Document):
 				"status": ("in", ["Validating", "Confirmed", "Acknowledged"]),
 			},
 			"status",
-			for_update=True,
+			for_update=True,  # To get latest incidents already committed; required because 2 jobs can start at the same time
 		)
 		return bool(ongoing_incident_status)
 
 	def create_incident(self):
 		try:
 			with filelock(f"incident_creation_{self.server}"):
-				frappe.db.commit()  # To avoid reading old data
 				if self.ongoing_incident_exists():
 					return
-				incident = frappe.new_doc("Incident")
+				incident: Incident = frappe.new_doc("Incident")
 				incident.alert = self.alert
 				incident.server = self.server
 				incident.cluster = self.cluster
 				incident.save()
+				frappe.db.commit()  # commit inside filelock to avoid deadlock when inserting in gap
 		except Exception:
 			log_error("Incident creation failed")
