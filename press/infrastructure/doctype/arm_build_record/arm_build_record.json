@@ -32,7 +32,7 @@
  "modified": "2025-05-19 18:27:32.367162",
  "modified_by": "Administrator",
  "module": "Infrastructure",
- "name": "ARM Build",
+ "name": "ARM Build Record",
  "naming_rule": "Autoincrement",
  "owner": "Administrator",
  "permissions": [

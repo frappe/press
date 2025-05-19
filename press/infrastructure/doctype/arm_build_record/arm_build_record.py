@@ -9,7 +9,7 @@ from frappe.model.document import Document
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import Status
 
 
-class ARMBuild(Document):
+class ARMBuildRecord(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
