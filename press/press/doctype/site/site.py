@@ -1243,6 +1243,7 @@ class Site(Document, TagHelpers):
 		).insert()
 
 	@dashboard_whitelist()
+	@site_action(["Active"])
 	def add_domain(self, domain):
 		domain = domain.lower().strip(".")
 		response = check_dns(self.name, domain)
@@ -1321,6 +1322,7 @@ class Site(Document, TagHelpers):
 		agent.remove_domain(self, domain)
 
 	@dashboard_whitelist()
+	@site_action(["Active"])
 	def remove_domain(self, domain):
 		if domain == self.name:
 			frappe.throw("Cannot delete default site_domain")
