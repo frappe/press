@@ -43,6 +43,10 @@ export default {
 				{ label: 'Overview', route: { name: 'PartnerOverview' } },
 				{ label: 'Customers', route: { name: 'PartnerCustomers' } },
 				{
+					label: 'Leads',
+					route: { name: 'PartnerLeads' },
+				},
+				{
 					label: 'Approval Requests',
 					route: { name: 'PartnerApprovalRequests' },
 				},

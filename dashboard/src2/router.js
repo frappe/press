@@ -116,6 +116,19 @@ let router = createRouter({
 			component: () => import('./pages/PartnerNewPayout.vue'),
 		},
 		{
+			name: 'PartnerLeadDetails',
+			path: '/partner-lead/:leadId',
+			component: () => import('./pages/PartnerLeadDetails.vue'),
+			children: [
+				{
+					name: 'LeadOverview',
+					path: '',
+					component: () =>
+						import('./components/partners/PartnerLeadOverview.vue'),
+				},
+			],
+		},
+		{
 			name: 'Billing',
 			path: '/billing',
 			component: () => import('./pages/Billing.vue'),
@@ -213,6 +226,11 @@ let router = createRouter({
 					name: 'PartnerCustomers',
 					path: 'customers',
 					component: () => import('./components/partners/PartnerCustomers.vue'),
+				},
+				{
+					name: 'PartnerLeads',
+					path: 'partner-leads',
+					component: () => import('./components/partners/PartnerLeads.vue'),
 				},
 				{
 					name: 'PartnerCertificates',

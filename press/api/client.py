@@ -80,7 +80,7 @@ ALLOWED_DOCTYPES = [
 	"Partner Certificate",
 	"Partner Payment Payout",
 	"Deploy Candidate Build",
-	"Account Request",
+	"Partner Lead",
 ]
 
 ALLOWED_DOCTYPES_FOR_SUPPORT = [
