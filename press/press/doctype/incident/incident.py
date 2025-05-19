@@ -314,6 +314,7 @@ class Incident(WebsiteGenerator):
 		token = b64encode(f"{username}:{password}".encode()).decode("ascii")
 		return f"Basic {token}"
 
+	@frappe.whitelist()
 	@filelock("grafana_screenshots")  # prevent 100 chromes from opening
 	def take_grafana_screenshots(self):
 		if not frappe.db.get_single_value("Incident Settings", "grafana_screenshots"):
