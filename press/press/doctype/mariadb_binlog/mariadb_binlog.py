@@ -10,8 +10,11 @@ import frappe
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.model.document import Document
 
+from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
+
 if TYPE_CHECKING:
-	from apps.press.press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.remote_file.remote_file import RemoteFile
 
 
 class MariaDBBinlog(Document):
@@ -44,6 +47,42 @@ class MariaDBBinlog(Document):
 			self.remote_file = None
 			self.save()
 			frappe.delete_doc("Remote File", remote_file)
+
+	@frappe.whitelist()
+	def download_binlog(self):
+		frappe.enqueue_doc(
+			"MariaDB Binlog",
+			self.name,
+			"_download_binlog",
+			queue="default",
+			timeout=300,
+			now=True,
+		)
+		frappe.msgprint(
+			"Binlog download started. You will be notified when the download is complete.",
+		)
+
+	def _download_binlog(self):
+		if not self.uploaded:
+			return
+		remote_file: RemoteFile = frappe.get_doc("Remote File", self.remote_file)
+		download_link = remote_file.get_download_link()
+		if not download_link:
+			return
+
+		command = f"curl -sSL '{download_link}' | gunzip -c > /var/lib/mysql/{self.file_name}.bak"
+		virtual_machine_ip = frappe.db.get_value(
+			"Virtual Machine",
+			frappe.get_value("Database Server", self.database_server, "virtual_machine"),
+			"public_ip_address",
+		)
+		result = AnsibleAdHoc(sources=f"{virtual_machine_ip},").run(command, self.name, raw_params=True)[0]
+		if not result.get("success"):
+			pretty_result = json.dumps(result, indent=2, sort_keys=True, default=str)
+			comment = f"<pre><code>{command}</code></pre><pre><code>{pretty_result}</pre></code>"
+			self.add_comment(text=comment)
+		else:
+			self.add_comment(text=f"Binlog downloaded successfully to /var/lib/mysql/{self.file_name}.bak")
 
 
 def process_upload_binlogs_to_s3_job_update(job: AgentJob):
