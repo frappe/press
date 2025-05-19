@@ -84,7 +84,9 @@
   "column_break_objb",
   "stalk_interval",
   "stalk_cycles",
-  "stalk_sleep"
+  "stalk_sleep",
+  "section_break_imng",
+  "binlog_retention_days"
  ],
  "fields": [
   {
@@ -571,6 +573,16 @@
   {
    "fieldname": "column_break_qsqm",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_imng",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "14",
+   "fieldname": "binlog_retention_days",
+   "fieldtype": "Int",
+   "label": "Binlog Retention (days)"
   }
  ],
  "grid_page_length": 50,
@@ -587,7 +599,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-05-08 19:03:14.840782",
+ "modified": "2025-05-19 18:09:30.538442",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

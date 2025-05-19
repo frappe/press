@@ -179,6 +179,9 @@ scheduler_events = {
 		"press.press.doctype.log_counter.log_counter.record_counts",
 		"press.press.doctype.incident.incident.notify_ignored_servers",
 		"press.press.doctype.database_server.database_server.unindex_mariadb_binlogs",
+		"press.press.doctype.database_server.database_server.remove_uploaded_binlogs_from_disk",
+		"press.press.doctype.database_server.database_server.remove_uploaded_binlogs_from_s3",
+		"press.press.doctype.mariadb_binlog.mariadb_binlog.cleanup_old_records",
 	],
 	"daily_long": [
 		"press.press.audit.check_bench_fields",

@@ -35,8 +35,15 @@ class MariaDBBinlog(Document):
 	# end: auto-generated types
 
 	def on_trash(self):
+		self.delete_remote_file()
+
+	def delete_remote_file(self):
 		if self.remote_file:
-			frappe.get_doc("Remote File", self.remote_file).delete_remote_object()
+			remote_file = self.remote_file
+			self.uploaded = 0
+			self.remote_file = None
+			self.save()
+			frappe.delete_doc("Remote File", remote_file)
 
 
 def process_upload_binlogs_to_s3_job_update(job: AgentJob):
@@ -77,3 +84,17 @@ def process_upload_binlogs_to_s3_job_update(job: AgentJob):
 				"remote_file": remote_file_name,
 			},
 		)
+
+
+def cleanup_old_records():
+	"""
+	Cleanup junk records
+	"""
+	frappe.db.delete(
+		"MariaDB Binlog",
+		{
+			"purged_from_disk": 1,
+			"uploaded": 0,
+			"indexed": 0,
+		},
+	)
