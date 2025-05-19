@@ -11,18 +11,18 @@ EXTRA_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
 IGNORE_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
 
 
-class UnitTestARMBuild(UnitTestCase):
+class UnitTestARMBuildRecord(UnitTestCase):
 	"""
-	Unit tests for ARMBuild.
+	Unit tests for ARMBuildRecord.
 	Use this class for testing individual functions and methods.
 	"""
 
 	pass
 
 
-class IntegrationTestARMBuild(IntegrationTestCase):
+class IntegrationTestARMBuildRecord(IntegrationTestCase):
 	"""
-	Integration tests for ARMBuild.
+	Integration tests for ARMBuildRecord.
 	Use this class for testing interactions between multiple components.
 	"""
 
