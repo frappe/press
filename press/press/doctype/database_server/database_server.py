@@ -43,6 +43,7 @@ class DatabaseServer(BaseServer):
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
 		binlog_retention_days: DF.Int
+		binlogs_removed: DF.Check
 		cluster: DF.Link | None
 		domain: DF.Link | None
 		enable_binlog_indexing: DF.Check
@@ -1570,6 +1571,33 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			frappe.get_doc("MariaDB Binlog", binlog).delete_remote_file()
 			frappe.db.commit()
 
+	def delete_all_mariadb_binlog_records(self):
+		frappe.enqueue_doc(
+			"Database Server",
+			self.name,
+			"delete_all_mariadb_binlog_records",
+			enqueue_after_commit=True,
+			queue="long",
+			job_id=f"delete_mariadb_binlog_records||{self.name}",
+			deduplicate=True,
+		)
+
+	def _delete_all_mariadb_binlog_records(self):
+		"""
+		Delete all binlog records for a server
+		"""
+		binlogs = frappe.get_all(
+			"MariaDB Binlog",
+			filters={"database_server": self.name},
+			pluck="name",
+		)
+		if not binlogs:
+			return
+		for binlog in binlogs:
+			frappe.delete_doc("MariaDB Binlog", binlog)
+		self.binlogs_removed = 1
+		self.save()
+
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Database Server")
 
@@ -1653,6 +1681,30 @@ def remove_uploaded_binlogs_from_s3():
 			job_id=f"remove_uploaded_binlogs_from_s3:{database}",
 			deduplicate=True,
 			queue="sync",
+		)
+
+
+def delete_mariadb_binlog_for_archived_servers():
+	"""
+	Delete binlog records for archived servers
+	"""
+	archived_servers = frappe.get_all(
+		"MariaDB Server",
+		filters={"status": "Archived", "binlogs_removed": 0},
+		pluck="name",
+	)
+	if not archived_servers:
+		return
+
+	for server in archived_servers:
+		frappe.enqueue_doc(
+			"Database Server",
+			server,
+			"delete_all_mariadb_binlog_records",
+			enqueue_after_commit=True,
+			queue="long",
+			job_id=f"delete_mariadb_binlog_records||{server}",
+			deduplicate=True,
 		)
 
 

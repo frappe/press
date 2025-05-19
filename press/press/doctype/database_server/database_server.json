@@ -86,7 +86,8 @@
   "stalk_cycles",
   "stalk_sleep",
   "section_break_imng",
-  "binlog_retention_days"
+  "binlog_retention_days",
+  "binlogs_removed"
  ],
  "fields": [
   {
@@ -583,6 +584,13 @@
    "fieldname": "binlog_retention_days",
    "fieldtype": "Int",
    "label": "Binlog Retention (days)"
+  },
+  {
+   "default": "0",
+   "fieldname": "binlogs_removed",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Binlogs Removed"
   }
  ],
  "grid_page_length": 50,
@@ -599,7 +607,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-05-19 18:09:30.538442",
+ "modified": "2025-05-19 18:45:32.246644",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
