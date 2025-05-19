@@ -19,8 +19,8 @@ from press.exceptions import AlertRuleNotEnabled
 from press.press.doctype.incident.incident import (
 	INCIDENT_ALERT,
 	INCIDENT_SCOPE,
-	MINIMUM_INSTANCES,
-	MINIMUM_INSTANCES_FRACTION,
+	MIN_FIRING_INSTANCES,
+	MIN_FIRING_INSTANCES_FRACTION,
 	Incident,
 )
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
@@ -169,14 +169,14 @@ class AlertmanagerWebhookLog(Document):
 			return alert["labels"]
 		return {}
 
-	def get_past_alert_instances(self):
+	def past_alert_instances(self, status: DF.Literal["Firing", "Resolved"]) -> set[str]:
 		past_alerts = frappe.get_all(
 			self.doctype,
 			fields=["payload"],
 			filters={
 				"alert": self.alert,
 				"severity": self.severity,
-				"status": self.status,
+				"status": status,
 				"group_key": ("like", f"%{self.incident_scope}%"),
 				"modified": [
 					">",
@@ -199,6 +199,19 @@ class AlertmanagerWebhookLog(Document):
 			{"status": "Active", INCIDENT_SCOPE: self.incident_scope},
 		)
 
+	@property
+	def is_enough_firing(self):
+		if self.status == "Resolved":
+			firing_instances = len(
+				self.past_alert_instances("Firing") - self.past_alert_instances("Resolved")
+			)
+		else:
+			firing_instances = len(self.past_alert_instances("Firing"))
+
+		return firing_instances > min(
+			math.floor(MIN_FIRING_INSTANCES_FRACTION * self.total_instances), MIN_FIRING_INSTANCES
+		)
+
 	def validate_and_create_incident(self):
 		if not frappe.db.get_single_value("Incident Settings", "enable_incident_detection"):
 			return
@@ -208,11 +221,7 @@ class AlertmanagerWebhookLog(Document):
 		rule: "PrometheusAlertRule" = frappe.get_doc("Prometheus Alert Rule", self.alert)
 		if find(rule.ignore_on_clusters, lambda x: x.cluster == cluster):
 			return
-
-		firing_instances = self.get_past_alert_instances()
-		if len(firing_instances) > min(
-			math.floor(MINIMUM_INSTANCES_FRACTION * self.total_instances), MINIMUM_INSTANCES
-		):
+		if self.is_enough_firing:
 			self.create_incident()
 
 	def get_repeat_interval(self):
