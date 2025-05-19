@@ -297,6 +297,11 @@ def get_partner_members(partner):
 
 
 @frappe.whitelist()
+def get_partner_leads():
+	return frappe.get_all("Partner Lead", ["name", "organization_name", "lead_name", "status", "lead_source"])
+
+
+@frappe.whitelist()
 def remove_partner():
 	team = get_current_team(get_doc=True)
 	if team.payment_mode == "Paid By Partner":

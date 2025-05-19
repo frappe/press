@@ -1,0 +1,303 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-05-14 16:23:41.502914",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "lead_details_section",
+  "organization_name",
+  "lead_name",
+  "domain",
+  "column_break_wbzh",
+  "origin",
+  "lead_source",
+  "lead_type",
+  "column_break_fyau",
+  "status",
+  "engagement_stage",
+  "contact_info_section",
+  "full_name",
+  "country",
+  "column_break_wsxo",
+  "email",
+  "state",
+  "column_break_glyz",
+  "contact_no",
+  "territory",
+  "deal_details_section",
+  "plan_proposed",
+  "estimated_closure_date",
+  "column_break_jtbg",
+  "probability",
+  "requirement_details_section",
+  "requirement",
+  "partner_tab",
+  "partner_details_section",
+  "partner_team",
+  "company_name",
+  "partner_territory",
+  "column_break_jonl",
+  "partner_email",
+  "partner_manager",
+  "feedback_tab",
+  "lead_rating",
+  "feedback_to_partner",
+  "column_break_sjll",
+  "feedback_for_frappe",
+  "more_info_tab",
+  "hosting",
+  "column_break_rdxj",
+  "site_url"
+ ],
+ "fields": [
+  {
+   "fieldname": "lead_details_section",
+   "fieldtype": "Section Break",
+   "label": "Lead Details"
+  },
+  {
+   "fieldname": "organization_name",
+   "fieldtype": "Data",
+   "label": "Organization Name"
+  },
+  {
+   "fieldname": "lead_name",
+   "fieldtype": "Data",
+   "label": "Lead Name"
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Select",
+   "label": "Domain",
+   "options": "\nDistribution\nManufacturing\nRetail\nEducation\nAgriculture\nHealthcare\nServices\nNon Profit\nOther"
+  },
+  {
+   "fieldname": "column_break_wbzh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "origin",
+   "fieldtype": "Link",
+   "label": "Origin",
+   "options": "Partner Lead Origin"
+  },
+  {
+   "fieldname": "lead_source",
+   "fieldtype": "Select",
+   "label": "Lead Source",
+   "options": "\nPartner Owned\nPassed to Partner\nPartner Listing\nPublic Webinar"
+  },
+  {
+   "fieldname": "lead_type",
+   "fieldtype": "Link",
+   "label": "Lead Type",
+   "options": "Partner Lead Type"
+  },
+  {
+   "fieldname": "column_break_fyau",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status"
+  },
+  {
+   "fieldname": "engagement_stage",
+   "fieldtype": "Select",
+   "label": "Engagement Stage",
+   "options": "Demo"
+  },
+  {
+   "fieldname": "contact_info_section",
+   "fieldtype": "Section Break",
+   "label": "Contact Info"
+  },
+  {
+   "fieldname": "full_name",
+   "fieldtype": "Data",
+   "label": "Full Name"
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "label": "Country",
+   "options": "Country"
+  },
+  {
+   "fieldname": "column_break_wsxo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email"
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "Data",
+   "label": "State"
+  },
+  {
+   "fieldname": "column_break_glyz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "contact_no",
+   "fieldtype": "Data",
+   "label": "Contact No",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "territory",
+   "fieldtype": "Data",
+   "label": "Territory"
+  },
+  {
+   "fieldname": "deal_details_section",
+   "fieldtype": "Section Break",
+   "label": "Deal Details"
+  },
+  {
+   "fieldname": "plan_proposed",
+   "fieldtype": "Data",
+   "label": "Plan Proposed"
+  },
+  {
+   "fieldname": "estimated_closure_date",
+   "fieldtype": "Date",
+   "label": "Estimated Closure Date"
+  },
+  {
+   "fieldname": "requirement_details_section",
+   "fieldtype": "Section Break",
+   "label": "Requirement Details"
+  },
+  {
+   "fieldname": "requirement",
+   "fieldtype": "Text",
+   "label": "Requirement"
+  },
+  {
+   "fieldname": "partner_tab",
+   "fieldtype": "Tab Break",
+   "label": "Partner"
+  },
+  {
+   "fieldname": "partner_details_section",
+   "fieldtype": "Section Break",
+   "label": "Partner Details"
+  },
+  {
+   "fieldname": "partner_team",
+   "fieldtype": "Link",
+   "label": "Partner Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "company_name",
+   "fieldtype": "Data",
+   "label": "Company Name"
+  },
+  {
+   "fieldname": "partner_territory",
+   "fieldtype": "Data",
+   "label": "Partner Territory"
+  },
+  {
+   "fieldname": "column_break_jonl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "partner_email",
+   "fieldtype": "Data",
+   "label": "Partner Email"
+  },
+  {
+   "fieldname": "partner_manager",
+   "fieldtype": "Data",
+   "label": "Partner Manager"
+  },
+  {
+   "fieldname": "feedback_tab",
+   "fieldtype": "Tab Break",
+   "label": "Feedback"
+  },
+  {
+   "fieldname": "lead_rating",
+   "fieldtype": "Rating",
+   "label": "Lead Rating"
+  },
+  {
+   "fieldname": "feedback_to_partner",
+   "fieldtype": "Small Text",
+   "label": "Feedback to Partner"
+  },
+  {
+   "fieldname": "column_break_sjll",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "feedback_for_frappe",
+   "fieldtype": "Small Text",
+   "label": "Feedback for Frappe"
+  },
+  {
+   "fieldname": "more_info_tab",
+   "fieldtype": "Tab Break",
+   "label": "More Info"
+  },
+  {
+   "fieldname": "hosting",
+   "fieldtype": "Select",
+   "label": "Hosting",
+   "options": "Frappe Cloud\nSelf Hosted"
+  },
+  {
+   "fieldname": "site_url",
+   "fieldtype": "Data",
+   "label": "Site URL"
+  },
+  {
+   "fieldname": "probability",
+   "fieldtype": "Select",
+   "label": "Probability",
+   "options": "Hot\nCold\nWarm"
+  },
+  {
+   "fieldname": "column_break_jtbg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_rdxj",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-05-19 15:55:06.816679",
+ "modified_by": "Administrator",
+ "module": "Partner",
+ "name": "Partner Lead",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
