@@ -1,0 +1,55 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-05-19 15:11:34.470678",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "build",
+  "status",
+  "existing_image"
+ ],
+ "fields": [
+  {
+   "fieldname": "build",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Build",
+   "options": "Deploy Candidate Build",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fetch_from": "build.status",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nPreparing\nRunning\nFailure\nSuccess",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "existing_image",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Existing Image"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-05-19 17:44:27.847790",
+ "modified_by": "Administrator",
+ "module": "Infrastructure",
+ "name": "Virtual Machine ARM Image",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
