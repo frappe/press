@@ -12,7 +12,7 @@
 				title="Verify your email"
 				:subtitle="[
 					`We sent you an email to ${email}`,
-					'Check your inbox for next steps'
+					'Check your inbox for next steps',
 				]"
 				:logo="saasProduct?.logo"
 			>
@@ -67,14 +67,14 @@ export default {
 	name: 'SaaSSignupVerifyEmail',
 	props: ['productId'],
 	components: {
-		SaaSLoginBox
+		SaaSLoginBox,
 	},
 	data() {
 		return {
 			account_request: this.$route.query.account_request,
 			email: this.$route.query.email,
 			code: '',
-			requestKey: ''
+			requestKey: '',
 		};
 	},
 	resources: {
@@ -83,9 +83,9 @@ export default {
 				url: 'press.api.account.signup_settings',
 				params: {
 					product: this.productId,
-					fetch_countries: false
+					fetch_countries: false,
 				},
-				auto: true
+				auto: true,
 			};
 		},
 		verifyCode() {
@@ -93,19 +93,19 @@ export default {
 				url: 'press.api.account.verify_otp',
 				params: {
 					account_request: this.account_request,
-					otp: this.code
+					otp: this.code,
 				},
-				onSuccess: key => {
+				onSuccess: (key) => {
 					this.requestKey = key;
 					this.$resources.setupAccount.submit();
-				}
+				},
 			};
 		},
 		resendOTP() {
 			return {
 				url: 'press.api.account.resend_otp',
 				params: {
-					account_request: this.account_request
+					account_request: this.account_request,
 				},
 				onSuccess() {
 					this.otp = '';
@@ -113,7 +113,7 @@ export default {
 				},
 				onerror() {
 					toast.error('Failed to resend OTP');
-				}
+				},
 			};
 		},
 		setupAccount() {
@@ -121,19 +121,19 @@ export default {
 				url: 'press.api.product_trial.setup_account',
 				makeParams() {
 					return {
-						key: this.requestKey
+						key: this.requestKey,
 					};
 				},
-				onSuccess: data => {
+				onSuccess: (data) => {
 					window.location.href = data?.location;
-				}
+				},
 			};
-		}
+		},
 	},
 	computed: {
 		saasProduct() {
 			return this.$resources.signupSettings.data?.product_trial;
-		}
-	}
+		},
+	},
 };
 </script>
