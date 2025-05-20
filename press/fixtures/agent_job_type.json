@@ -1781,6 +1781,21 @@
    }
   ]
  },
+  {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2025-05-19 15:37:53.073108",
+  "name": "Upload Binlogs To S3",
+  "request_method": "POST",
+  "request_path": "/database/binlogs/upload",
+  "steps": [
+   {
+    "step_name": "Upload Binlogs To S3"
+   }
+  ]
+ },
  {
   "disabled_auto_retry": 1,
   "docstatus": 0,
