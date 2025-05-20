@@ -153,7 +153,7 @@ def send_otp(email: str):
 
 
 @frappe.whitelist(allow_guest=True)
-def setup_account(
+def setup_account(  # noqa: C901
 	key,
 	first_name=None,
 	last_name=None,
@@ -172,17 +172,18 @@ def setup_account(
 
 	account_request.db_set("site_domain", site_domain)
 
-	if not user_exists and not first_name:
-		frappe.throw("First Name is required")
+	if not user_exists:
+		if not first_name:
+			frappe.throw("First Name is required")
 
-	if not is_invitation and not country:
-		frappe.throw("Country is required")
+		if not is_invitation and not country:
+			frappe.throw("Country is required")
 
-	if not is_invitation and country:
-		all_countries = frappe.db.get_all("Country", pluck="name")
-		country = find(all_countries, lambda x: x.lower() == country.lower())
-		if not country:
-			frappe.throw("Please provide a valid country name")
+		if not is_invitation and country:
+			all_countries = frappe.db.get_all("Country", pluck="name")
+			country = find(all_countries, lambda x: x.lower() == country.lower())
+			if not country:
+				frappe.throw("Please provide a valid country name")
 
 	# if the request is authenticated, set the user to Administrator
 	frappe.set_user("Administrator")
