@@ -4,7 +4,13 @@
 		v-if="$resources?.siteRequest?.doc?.status !== 'Error'"
 	>
 		<SignupSpinner />
-		<p class="text-white">Completing setup</p>
+		<p class="text-white">
+			{{
+				$resources?.siteRequest?.doc?.status === 'Site Created'
+					? 'Logging you in'
+					: 'Completing setup'
+			}}
+		</p>
 	</div>
 	<div class="flex h-screen overflow-hidden" v-else>
 		<div class="w-full overflow-auto">
