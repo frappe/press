@@ -461,7 +461,7 @@ class VirtualMachine(Document):
 		if self.cloud_provider == "AWS EC2":
 			architecture = {"x86_64": "amd64", "arm64": "arm64"}[self.platform]
 			return self.client("ssm").get_parameter(
-				Name=f"/aws/service/canonical/ubuntu/server/22.04/stable/current/{architecture}/hvm/ebs-gp2/ami-id"
+				Name=f"/aws/service/canonical/ubuntu/server/20.04/stable/current/{architecture}/hvm/ebs-gp2/ami-id"
 			)["Parameter"]["Value"]
 		if self.cloud_provider == "OCI":
 			cluster = frappe.get_doc("Cluster", self.cluster)
@@ -469,7 +469,7 @@ class VirtualMachine(Document):
 			images = client.list_images(
 				compartment_id=cluster.oci_tenancy,
 				operating_system="Canonical Ubuntu",
-				operating_system_version="22.04",
+				operating_system_version="20.04",
 				shape="VM.Standard3.Flex",
 				lifecycle_state="AVAILABLE",
 			).data
