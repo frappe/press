@@ -204,7 +204,7 @@ def setup_account(
 			first_name=first_name,
 			last_name=last_name,
 			password=password,
-			# country=country,
+			country=country,
 			user_exists=bool(user_exists),
 		)
 		if invited_by_parent_team:
