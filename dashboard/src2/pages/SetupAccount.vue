@@ -6,6 +6,7 @@
 		<div class="w-full overflow-auto">
 			<LoginBox
 				:title="invitedBy ? 'Invitation to join' : 'Let\'s set up your site'"
+				:subtitle="invitedBy ? `Invitation by ${invitedBy}` : ''"
 			>
 				<template v-slot:logo v-if="saasProduct">
 					<div class="flex space-x-2">
@@ -13,19 +14,8 @@
 							class="inline-block h-[38px] w-[38px] rounded-sm"
 							:src="saasProduct?.logo"
 						/>
-						<!-- <span
-							class="select-none text-xl font-semibold tracking-tight text-gray-900"
-						>
-							{{ saasProduct?.title }}
-						</span> -->
 					</div>
 				</template>
-				<div class="text-lg font-medium leading-5 tracking-tight text-gray-900">
-					{{}}
-				</div>
-				<div class="mt-2 text-center text-sm text-gray-600" v-if="invitedBy">
-					Invitation by {{ invitedBy }}
-				</div>
 				<form class="mt-6 flex flex-col" @submit.prevent="submitForm">
 					<template v-if="is2FA">
 						<FormControl
@@ -51,7 +41,7 @@
 					</template>
 					<template v-else>
 						<div class="space-y-4">
-							<div class="w-full space-y-1.5">
+							<div v-if="!isInvitation" class="w-full space-y-1.5">
 								<div class="flex items-center gap-2">
 									<label class="block text-xs text-ink-gray-5">
 										Site name
@@ -170,13 +160,6 @@
 						Terms & Policies
 					</a>
 				</div>
-				<!-- <template #footer v-if="saasProduct">
-					<div
-						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
-					>
-						Powered by Frappe Cloud
-					</div>
-				</template> -->
 			</LoginBox>
 		</div>
 	</div>
@@ -306,6 +289,9 @@ export default {
 					let path = '/dashboard/create-site/app-selector';
 					if (this.saasProduct) {
 						path = `/dashboard/create-site/${this.saasProduct.name}/setup`;
+					}
+					if (this.isInvitation) {
+						path = '/dashboard/sites';
 					}
 					window.location.href = path;
 				},

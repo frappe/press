@@ -43,16 +43,6 @@
 									</div>
 								</Button>
 							</div>
-
-							<div class="my-4 border-t text-center">
-								<div class="-translate-y-1/2 transform">
-									<!-- <span
-										class="relative bg-white px-2 text-sm font-medium leading-8 text-gray-800"
-									>
-										Or
-									</span> -->
-								</div>
-							</div>
 						</div>
 						<form class="flex flex-col" @submit.prevent="submitForm">
 							<!-- 2FA Section -->
@@ -391,20 +381,8 @@
 							class="inline-block h-[38px] w-[38px] rounded-sm"
 							:src="saasProduct?.logo"
 						/>
-						<!-- <span
-							class="select-none text-xl font-semibold tracking-tight text-gray-900"
-						>
-							{{ saasProduct?.title }}
-						</span> -->
 					</div>
 				</template>
-				<!-- <template v-slot:footer v-if="saasProduct">
-					<div
-						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
-					>
-						Powered by Frappe Cloud
-					</div>
-				</template> -->
 			</LoginBox>
 		</div>
 	</div>
@@ -825,11 +803,6 @@ export default {
 		subtitle() {
 			if (this.hasForgotPassword) {
 				return 'Enter your email address to reset your password';
-				// } else if (this.isLogin) {
-				// 	if (this.saasProduct) {
-				// 		return `Log in to start using ${this.saasProduct.title}`;
-				// 	}
-				// 	return 'Log in to your account';
 			} else {
 				if (this.saasProduct) {
 					return `Get started and explore the easiest way to use ${this.saasProduct.title}`;

@@ -52,7 +52,6 @@
 				</defs>
 			</svg>
 		</div>
-		<!-- <Spinner class="mb-2 w-4" /> -->
 		<p class="text-white">Completing setup</p>
 	</div>
 	<div class="flex h-screen overflow-hidden" v-else>
@@ -69,11 +68,6 @@
 							class="inline-block h-[38px] w-[38px] rounded-sm"
 							:src="saasProduct?.logo"
 						/>
-						<!-- <span
-							class="select-none text-xl font-semibold tracking-tight text-gray-900"
-						>
-							{{ saasProduct?.title }}
-						</span> -->
 					</div>
 				</template>
 				<div>
@@ -95,13 +89,6 @@
 					class="w-full text-center"
 					:message="this.$resources?.siteRequest?.getLoginSid.error"
 				/>
-				<!-- <template v-slot:footer>
-					<div
-						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
-					>
-						Powered by Frappe Cloud
-					</div>
-				</template> -->
 			</LoginBox>
 			<LoginBox
 				v-else-if="$resources?.siteRequest?.doc?.status === 'Error'"
@@ -112,21 +99,16 @@
 				"
 			>
 				<template v-slot:logo v-if="saasProduct">
-					<div class="mx-auto flex items-center space-x-2">
+					<div class="flex space-x-2">
 						<img
 							class="inline-block h-7 w-7 rounded-sm"
 							:src="saasProduct?.logo"
 						/>
-						<span
-							class="select-none text-xl font-semibold tracking-tight text-gray-900"
-						>
-							{{ saasProduct?.title }}
-						</span>
 					</div>
 				</template>
 				<template v-slot:default>
-					<div class="flex h-40 flex-col items-center justify-center px-10">
-						<div class="text-center text-base leading-5 text-gray-800">
+					<div class="flex h-40 flex-col justify-center">
+						<div class="text-base leading-5 text-gray-800">
 							<p>It looks like something went wrong</p>
 							<p>
 								Contact
@@ -138,13 +120,6 @@
 						</div>
 					</div>
 				</template>
-				<!-- <template v-slot:footer>
-					<div
-						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
-					>
-						Powered by Frappe Cloud
-					</div>
-				</template> -->
 			</LoginBox>
 			<LoginBox
 				v-else
@@ -177,13 +152,6 @@
 						/>
 					</div>
 				</template>
-				<!-- <template v-slot:footer>
-					<div
-						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
-					>
-						Powered by Frappe Cloud
-					</div>
-				</template> -->
 			</LoginBox>
 		</div>
 	</div>

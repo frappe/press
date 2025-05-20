@@ -5,11 +5,6 @@
 				<slot name="logo">
 					<div class="flex items-center space-x-2">
 						<FCLogo class="inline-block h-[38px] w-[38px]" />
-						<!-- <span
-							class="select-none text-xl font-semibold tracking-tight text-gray-900"
-						>
-							Frappe Cloud
-						</span> -->
 					</div>
 				</slot>
 			</div>
@@ -31,23 +26,18 @@
 			</div>
 			<slot name="footer"></slot>
 		</div>
-		<!-- <div class="absolute bottom-4 z-[1] flex w-full justify-center">
-			<FrappeLogo class="h-4" />
-		</div> -->
 	</div>
 </template>
 
 <script>
 import { toast } from 'vue-sonner';
 import FCLogo from '@/components/icons/FCLogo.vue';
-import FrappeLogo from '@/components/icons/FrappeLogo.vue';
 
 export default {
 	name: 'LoginBox',
 	props: ['title', 'logo', 'subtitle'],
 	components: {
 		FCLogo,
-		FrappeLogo,
 	},
 	mounted() {
 		const params = new URLSearchParams(window.location.search);
