@@ -45,7 +45,11 @@ export default {
 			const handleInstall = (row) => {
 				if (this.$site.installApp.loading) return;
 
-				if (row.plans && row.plans.some((plan) => plan.price_inr > 0)) {
+				if (
+					row.plans &&
+					row.plans.some((plan) => plan.price_inr > 0) &&
+					row.team !== this.$site.doc?.team
+				) {
 					this.show = false;
 
 					let SiteAppPlanSelectDialog = defineAsyncComponent(

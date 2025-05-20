@@ -79,7 +79,7 @@ def create_test_alertmanager_webhook_log(
 						"server": site.server,
 					},
 					"receiver": "web\\.hook",
-					"status": status,
+					"status": status.capitalize(),
 					"truncatedAlerts": 0,
 					"version": "4",
 					"externalURL": "http://localhost:9093",

@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import math
 from base64 import b64encode
 from datetime import timedelta
 from functools import cached_property
@@ -45,8 +44,8 @@ INCIDENT_SCOPE = (
 	"server"  # can be bench, cluster, server, etc. Not site, minor code changes required for that
 )
 
-MINIMUM_INSTANCES = 15  # minimum instances that should have fired for an incident to be valid
-MINIMUM_INSTANCES_FRACTION = (
+MIN_FIRING_INSTANCES = 15  # minimum instances that should have fired for an incident to be valid
+MIN_FIRING_INSTANCES_FRACTION = (
 	0.4  # 40%; minimum percentage of instances that should have fired for an incident to be valid
 )
 
@@ -314,6 +313,7 @@ class Incident(WebsiteGenerator):
 		token = b64encode(f"{username}:{password}".encode()).decode("ascii")
 		return f"Basic {token}"
 
+	@frappe.whitelist()
 	@filelock("grafana_screenshots")  # prevent 100 chromes from opening
 	def take_grafana_screenshots(self):
 		if not frappe.db.get_single_value("Incident Settings", "grafana_screenshots"):
@@ -567,12 +567,7 @@ Incident URL: {incident_link}"""
 		except frappe.DoesNotExistError:
 			return
 		else:
-			resolved_instances = last_resolved.get_past_alert_instances()
-			total_instances = last_resolved.total_instances
-			if len(resolved_instances) >= min(
-				math.floor(MINIMUM_INSTANCES_FRACTION * total_instances),
-				MINIMUM_INSTANCES,
-			):
+			if not last_resolved.is_enough_firing:
 				self.resolve()
 
 	def resolve(self):
