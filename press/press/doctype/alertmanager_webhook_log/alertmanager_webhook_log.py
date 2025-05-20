@@ -218,15 +218,16 @@ class AlertmanagerWebhookLog(Document):
 		if not (self.alert == INCIDENT_ALERT and self.severity == "Critical" and self.status == "Firing"):
 			return
 		cluster = frappe.get_value("Server", self.incident_scope, "cluster")
-		rule: "PrometheusAlertRule" = frappe.get_doc("Prometheus Alert Rule", self.alert)
+		rule: PrometheusAlertRule = frappe.get_doc("Prometheus Alert Rule", self.alert)
 		if find(rule.ignore_on_clusters, lambda x: x.cluster == cluster):
 			return
 		if self.is_enough_firing:
 			self.create_incident()
 
 	def get_repeat_interval(self):
-		repeat_interval = frappe.db.get_value("Prometheus Alert Rule", self.alert, "repeat_interval")
-		hours = repeat_interval.split("h")[0]  # assume hours
+		repeat_interval = str(frappe.db.get_value("Prometheus Alert Rule", self.alert, "repeat_interval"))
+		assert repeat_interval.endswith("h"), f"Repeat interval not in hours: {repeat_interval}"
+		hours = repeat_interval.split("h")[0]  # only handles hours
 		return int(hours)
 
 	def generate_telegram_message(self):
