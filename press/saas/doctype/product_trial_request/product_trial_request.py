@@ -37,7 +37,6 @@ class ProductTrialRequest(Document):
 		site: DF.Link | None
 		site_creation_completed_on: DF.Datetime | None
 		site_creation_started_on: DF.Datetime | None
-		site_defaults: DF.Code | None
 		status: DF.Literal[
 			"Pending",
 			"Wait for Site",
@@ -111,7 +110,7 @@ class ProductTrialRequest(Document):
 					site.create_sync_user_webhook()
 
 	@frappe.whitelist()
-	def get_setup_wizard_payload(self, site_defaults: dict | None = None):
+	def get_setup_wizard_payload(self):
 		import json
 
 		try:
@@ -119,25 +118,19 @@ class ProductTrialRequest(Document):
 				"Team", self.team, ["name", "user", "country", "currency"], as_dict=True
 			)
 
-			if site_defaults:
-				country = site_defaults.get("country")
-				timezone = site_defaults.get("timezone")
-				language = site_defaults.get("language")
-				currency = site_defaults.get("currency")
+			if self.account_request:
+				account_request_geo_data = frappe.db.get_value(
+					"Account Request", self.account_request, "geo_location"
+				)
 			else:
-				if self.account_request:
-					account_request_geo_data = frappe.db.get_value(
-						"Account Request", self.account_request, "geo_location"
-					)
-				else:
-					account_request_geo_data = frappe.db.get_value(
-						"Account Request", {"email": team_user.email}, "geo_location"
-					)
+				account_request_geo_data = frappe.db.get_value(
+					"Account Request", {"email": team_user.email}, "geo_location"
+				)
 
-				country = team_details.country
-				timezone = frappe.parse_json(account_request_geo_data or {}).get("timezone", "Asia/Kolkata")
-				language = "en"
-				currency = team_details.currency
+			country = team_details.country
+			timezone = frappe.parse_json(account_request_geo_data or {}).get("timezone", "Asia/Kolkata")
+			language = "en"
+			currency = team_details.currency
 
 			team_user = frappe.db.get_value(
 				"User", team_details.user, ["first_name", "last_name", "full_name", "email"], as_dict=True
@@ -170,7 +163,7 @@ class ProductTrialRequest(Document):
 			frappe.throw(f"Failed to generate payload for Setup Wizard: {e}")
 
 	@dashboard_whitelist()
-	def create_site(self, cluster: str | None = None, site_defaults: dict | None = None):
+	def create_site(self, cluster: str | None = None):
 		"""
 		Trigger the site creation process for the product trial request.
 		Args:
@@ -190,11 +183,10 @@ class ProductTrialRequest(Document):
 			)
 			self.agent_job = agent_job_name
 			self.site = site.name
-			# self.site_defaults = site_defaults
 			self.save()
 
 			if is_standby_site:
-				self.prefill_setup_wizard_data(site_defaults)
+				self.prefill_setup_wizard_data()
 
 			user_mail = frappe.db.get_value("Team", self.team, "user")
 			frappe.get_doc(
@@ -263,13 +255,13 @@ class ProductTrialRequest(Document):
 		# If agent job is undelivered, pending
 		return {"progress": current_progress + 0.1}
 
-	def prefill_setup_wizard_data(self, site_defaults: dict | None = None):
+	def prefill_setup_wizard_data(self):
 		if self.status == "Prefilling Setup Wizard":
 			return
 
 		site: Site = frappe.get_doc("Site", self.site)
 		try:
-			user_payload, system_settings_payload = self.get_setup_wizard_payload(site_defaults)
+			user_payload, system_settings_payload = self.get_setup_wizard_payload()
 			site.prefill_setup_wizard(system_settings_payload, user_payload)
 			if self.site != self.domain:
 				self.status = "Prefilling Setup Wizard"
