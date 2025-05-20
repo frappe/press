@@ -319,8 +319,8 @@ class Team(Document):
 		if account_request.referrer_id:
 			team.create_referral_bonus(account_request.referrer_id)
 
-		# if not team.via_erpnext and not account_request.invited_by_parent_team:
-		# 	team.create_upcoming_invoice()
+		if not team.via_erpnext and not account_request.invited_by_parent_team:
+			team.create_upcoming_invoice()
 		return team
 
 	@staticmethod
