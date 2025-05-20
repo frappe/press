@@ -1389,7 +1389,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		}
 
 		return self.create_agent_job(
-			"Upload Binlogs to S3",
+			"Upload Binlogs To S3",
 			"/database/binlogs/upload",
 			data={"binlogs": binlogs, "offsite": {"bucket": bucket_name, "auth": auth, "path": self.server}},
 		)
