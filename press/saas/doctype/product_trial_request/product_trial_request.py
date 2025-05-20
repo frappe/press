@@ -164,7 +164,6 @@ class ProductTrialRequest(Document):
 		Trigger the site creation process for the product trial request.
 		Args:
 			cluster (str | None): The cluster to use for site creation.
-			site_defaults (dict | None): The site defaults to use for the setup wizard.
 		"""
 		if self.status != "Pending":
 			return
