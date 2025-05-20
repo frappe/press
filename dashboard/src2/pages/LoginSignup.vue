@@ -807,6 +807,8 @@ export default {
 		title() {
 			if (this.hasForgotPassword) {
 				return 'Reset password';
+			} else if (this.otpRequested) {
+				return 'Verify your email address';
 			} else if (this.isLogin) {
 				if (this.saasProduct) {
 					return `Log in to your account to start using ${this.saasProduct.title}`;
@@ -816,6 +818,7 @@ export default {
 				if (this.saasProduct) {
 					return `Sign up to create your ${this.saasProduct.title} site`;
 				}
+
 				return 'Create your Frappe Cloud account';
 			}
 		},

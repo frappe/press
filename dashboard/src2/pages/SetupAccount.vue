@@ -113,7 +113,7 @@
 										autocomplete="given-name"
 										variant="outline"
 										required
-										:disabled="oauthSignup"
+										:disabled="Boolean(oauthSignup)"
 									/>
 									<FormControl
 										label="Last name"
@@ -123,7 +123,7 @@
 										autocomplete="family-name"
 										variant="outline"
 										required
-										:disabled="oauthSignup"
+										:disabled="Boolean(oauthSignup)"
 									/>
 								</div>
 							</template>
@@ -134,7 +134,7 @@
 								variant="outline"
 								disabled
 							/>
-							<!-- <FormControl
+							<FormControl
 								type="select"
 								:options="countries"
 								v-if="!isInvitation"
@@ -142,20 +142,7 @@
 								v-model="country"
 								variant="outline"
 								required
-							/> -->
-							<!-- <div class="!mt-6 flex gap-2">
-								<FormControl type="checkbox" v-model="termsAccepted" />
-								<label class="text-base text-gray-700">
-									I accept the
-									<Link
-										class="!text-gray-700"
-										href="https://frappecloud.com/policies"
-										target="_blank"
-									>
-										Terms and Policies
-									</Link>
-								</label>
-							</div> -->
+							/>
 						</div>
 						<ErrorMessage
 							class="mt-4"

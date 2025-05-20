@@ -10,6 +10,7 @@ import frappe
 import pyotp
 from frappe import _
 from frappe.core.doctype.user.user import update_password
+from frappe.core.utils import find
 from frappe.exceptions import DoesNotExistError
 from frappe.query_builder.custom import GROUP_CONCAT
 from frappe.rate_limiter import rate_limit
@@ -158,9 +159,8 @@ def setup_account(
 	last_name=None,
 	password=None,
 	is_invitation=False,
-	# country=None,
+	country=None,
 	user_exists=False,
-	accepted_user_terms=False,
 	invited_by_parent_team=False,
 	oauth_signup=False,
 	oauth_domain=False,
@@ -172,22 +172,18 @@ def setup_account(
 
 	account_request.db_set("site_domain", site_domain)
 
-	if not user_exist and not first_name:
+	if not user_exists and not first_name:
 		frappe.throw("First Name is required")
 
-	# if not is_invitation and not country:
-	# 	frappe.throw("Country is required")
+	if not is_invitation and not country:
+		frappe.throw("Country is required")
 
-	# if not is_invitation and country:
-	# 	all_countries = frappe.db.get_all("Country", pluck="name")
-	# 	country = find(all_countries, lambda x: x.lower() == country.lower())
-	# 	if not country:
-	# 		frappe.throw("Please provide a valid country name")
+	if not is_invitation and country:
+		all_countries = frappe.db.get_all("Country", pluck="name")
+		country = find(all_countries, lambda x: x.lower() == country.lower())
+		if not country:
+			frappe.throw("Please provide a valid country name")
 
-	# if not accepted_user_terms:
-	# 	frappe.throw("Please accept our Terms of Service & Privacy Policy to continue")
-
-	print("setup_account", key, first_name, last_name, password, is_invitation, user_exists)
 	# if the request is authenticated, set the user to Administrator
 	frappe.set_user("Administrator")
 

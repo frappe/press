@@ -18,7 +18,9 @@
   "section_break_zlzx",
   "site_creation_started_on",
   "column_break_bvut",
-  "site_creation_completed_on"
+  "site_creation_completed_on",
+  "section_break_jsqg",
+  "site_defaults"
  ],
  "fields": [
   {
@@ -101,12 +103,22 @@
    "fieldname": "domain",
    "fieldtype": "Data",
    "label": "Domain"
+  },
+  {
+   "fieldname": "section_break_jsqg",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "site_defaults",
+   "fieldtype": "Code",
+   "label": "Site Defaults",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-13 12:09:12.193287",
+ "modified": "2025-05-12 15:52:11.283394",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial Request",

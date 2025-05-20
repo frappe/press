@@ -37,6 +37,7 @@ class ProductTrialRequest(Document):
 		site: DF.Link | None
 		site_creation_completed_on: DF.Datetime | None
 		site_creation_started_on: DF.Datetime | None
+		site_defaults: DF.Code | None
 		status: DF.Literal[
 			"Pending",
 			"Wait for Site",
@@ -189,6 +190,7 @@ class ProductTrialRequest(Document):
 			)
 			self.agent_job = agent_job_name
 			self.site = site.name
+			# self.site_defaults = site_defaults
 			self.save()
 
 			if is_standby_site:

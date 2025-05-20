@@ -12,44 +12,51 @@
 			title="Select an app to get started"
 			subtitle="Select the app you need to configure them effortlessly"
 		>
-			<!-- app list with set height -->
-			<div
-				class="flex h-full max-h-96 flex-col items-center justify-center space-y-2 overflow-auto py-2"
-			>
+			<div v-if="$resources.availableApps.loading">
+				<div class="flex h-40 justify-center">
+					<LoadingText />
+				</div>
+			</div>
+			<div v-else>
 				<div
-					v-for="app in $resources.availableApps.data"
-					:key="app.name"
-					class="w-full"
+					class="flex h-full max-h-96 flex-col items-center justify-center space-y-2 overflow-auto py-2"
 				>
 					<div
-						class="flex cursor-pointer items-center rounded border border-gray-100 p-2 hover:bg-gray-50"
-						:class="{
-							'bg-gray-100': selectedApp?.name === app.name,
-							'border-gray-100': selectedApp?.name !== app.name,
-						}"
-						@click="selectedApp = app"
+						v-for="app in $resources.availableApps.data"
+						:key="app.name"
+						class="w-full"
 					>
-						<img
-							:src="app.image"
-							:alt="app.title"
-							class="mr-2 h-8 w-8 rounded"
-						/>
-						<div class="space-y-1">
-							<p class="text-lg font-medium">{{ app.title }}</p>
-							<p class="line-clamp-1 text-sm text-gray-500">
-								{{ app.description }}
-							</p>
+						<div
+							class="flex cursor-pointer items-center rounded border border-gray-100 p-2"
+							:class="{
+								'bg-gray-100': selectedApp?.name === app.name,
+								'border-gray-100 hover:bg-gray-50':
+									selectedApp?.name !== app.name,
+							}"
+							@click="selectedApp = app"
+						>
+							<img
+								:src="app.image"
+								:alt="app.title"
+								class="mr-2 h-8 w-8 rounded"
+							/>
+							<div class="space-y-1">
+								<p class="text-lg font-medium">{{ app.title }}</p>
+								<p class="line-clamp-1 text-sm text-gray-600">
+									{{ app.description }}
+								</p>
+							</div>
 						</div>
 					</div>
 				</div>
+				<Button
+					class="mt-4 w-full"
+					:label="selectedApp ? `Install ${selectedApp.title}` : 'Install app'"
+					variant="solid"
+					:disabled="!selectedApp"
+					@click="openInstallAppPage(selectedApp)"
+				/>
 			</div>
-			<Button
-				class="mt-4 w-full"
-				:label="selectedApp ? `Install ${selectedApp.title}` : 'Install app'"
-				variant="solid"
-				:disabled="!selectedApp"
-				@click="openInstallAppPage(selectedApp)"
-			/>
 			<template #footer>
 				<span class="ml-4 text-base font-normal text-gray-600">
 					{{ 'Skip creating a site? ' }}
@@ -64,44 +71,6 @@
 				</router-link>
 			</template>
 		</LoginBox>
-
-		<!-- <div class="relative h-full">
-			<div class="relative z-10 mx-auto pt-8 sm:pt-16">
-				<div
-					class="flex flex-col items-center"
-					@dblclick="redirectForFrappeioAuth"
-				>
-					<FCLogo class="inline-block h-12 w-12" />
-				</div>
-				<div
-					class="mx-auto w-full bg-white px-4 py-8 sm:mt-6 sm:w-3/6 sm:rounded-2xl sm:px-6 sm:py-6 sm:shadow-2xl"
-				>
-					<div class="mb-7.5 text-center">
-						<p
-							class="text-center text-lg font-medium leading-5 tracking-tight text-gray-900"
-						>
-							Choose an app below to create your first site.
-						</p>
-					</div>
-					<div
-						v-if="$resources.availableApps.loading"
-						class="flex justify-center"
-					>
-						<LoadingText />
-					</div>
-					<OnboardingAppSelector v-else :apps="$resources.availableApps.data" />
-				</div>
-			</div>
-			<div class="flex w-full">
-				<Button
-					class="mx-auto mt-4"
-					label="Skip to Dashboard"
-					variant="ghost"
-					icon-right="arrow-right"
-					:route="{ name: 'Site List' }"
-				/>
-			</div>
-		</div> -->
 	</div>
 </template>
 <script>

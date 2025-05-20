@@ -162,12 +162,7 @@ def _get_existing_trial_request(product: str, team: str):
 
 
 @frappe.whitelist(methods=["POST"])
-def get_request(product: str, account_request: str | None = None, timezone: str | None = None):
-	from frappe.geo.country_info import get_country_timezone_info
-
-	from press.utils import get_country_info
-	from press.utils.country_timezone import get_country_from_timezone
-
+def get_request(product: str, account_request: str | None = None):
 	team = frappe.local.team()
 
 	# validate if there is already a site
@@ -188,17 +183,9 @@ def get_request(product: str, account_request: str | None = None, timezone: str 
 			account_request=account_request if is_valid_account_request else None,
 		).insert(ignore_permissions=True)
 
-	country_info_from_ip = get_country_info()
-	possible_country = country_info_from_ip.get("country") or get_country_from_timezone(timezone)
-
-	country_timezone_info = get_country_timezone_info()
 	return {
 		"name": site_request.name,
 		"site": site_request.site,
 		"product_trial": site_request.product_trial,
 		"status": site_request.status,
-		"all_timezones": country_timezone_info.get("all_timezones", []),
-		"country": possible_country,
-		"country_info": country_timezone_info.get("country_info", []),
-		"languages": frappe.db.get_all("Language", ["language_name", "language_code"]),
 	}

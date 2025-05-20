@@ -319,8 +319,8 @@ class Team(Document):
 		if account_request.referrer_id:
 			team.create_referral_bonus(account_request.referrer_id)
 
-		if not team.via_erpnext and not account_request.invited_by_parent_team:
-			team.create_upcoming_invoice()
+		# if not team.via_erpnext and not account_request.invited_by_parent_team:
+		# 	team.create_upcoming_invoice()
 		return team
 
 	@staticmethod
@@ -460,7 +460,6 @@ class Team(Document):
 			and self.has_value_changed("billing_name")
 		):
 			self.update_billing_details_on_frappeio()
-
 
 	def update_draft_invoice_payment_mode(self):
 		if self.has_value_changed("payment_mode"):
