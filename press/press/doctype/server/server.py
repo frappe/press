@@ -1119,10 +1119,11 @@ class BaseServer(Document, TagHelpers):
 				},
 			)
 			self.append(
-				"bind_mounts",
+				"mounts",
 				{
-					"source_mount_point": "/opt/volumes/benches/var/lib/docker",
-					"service": "docker",
+					"mount_type": "Bind",
+					"mount_point": "/var/lib/docker",
+					"source": "/opt/volumes/benches/var/lib/docker",
 					"mount_point_owner": "root",
 					"mount_point_group": "root",
 				},
