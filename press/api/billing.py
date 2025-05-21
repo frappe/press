@@ -886,6 +886,7 @@ def create_mpesa_payment_record(transaction_response):
 		"transaction_id": transaction_id,
 		"amount": amount,
 		"team": frappe.get_value("Team", info.team, "user"),
+		"tax_id": frappe.get_value("Team", info.team, "mpesa_tax_id"),
 		"default_currency": "KES",
 		"rate": info.requested_amount,
 	}
