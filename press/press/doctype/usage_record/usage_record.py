@@ -87,6 +87,7 @@ class UsageRecord(Document):
 				"plan": self.plan,
 				"docstatus": 1,
 				"subscription": self.subscription,
+				"amount": self.amount,
 			},
 			pluck="name",
 		)
