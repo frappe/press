@@ -364,20 +364,24 @@ def create_payment_partner_transaction(
 	team, payment_partner, exchange_rate, amount, paid_amount, payment_gateway, payload=None
 ):
 	"""Create a Payment Partner Transaction record."""
-	transaction_doc = frappe.get_doc(
-		{
-			"doctype": "Payment Partner Transaction",
-			"team": team,
-			"payment_partner": payment_partner,
-			"exchange_rate": exchange_rate,
-			"payment_gateway": payment_gateway,
-			"amount": amount,
-			"actual_amount": paid_amount,
-			"payment_transaction_details": payload,
-		}
-	)
-	transaction_doc.insert(ignore_permissions=True)
-	transaction_doc.submit()
+	try:
+		transaction_doc = frappe.get_doc(
+			{
+				"doctype": "Payment Partner Transaction",
+				"team": team,
+				"payment_partner": payment_partner,
+				"exchange_rate": exchange_rate,
+				"payment_gateway": payment_gateway,
+				"amount": amount,
+				"actual_amount": paid_amount,
+				"payment_transaction_details": payload,
+			}
+		)
+		transaction_doc.insert(ignore_permissions=True)
+		transaction_doc.submit()
+	except Exception:
+		frappe.log_error("Error creating Payment Partner Transaction")
+		raise
 	return transaction_doc.name
 
 
