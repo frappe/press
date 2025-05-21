@@ -168,7 +168,7 @@ class DripEmail(Document):
 		conditions = ""
 
 		if self.saas_app:
-			conditions += f'AND site.standby_for = "{self.saas_app}"'
+			conditions += f'AND site.standby_for_product = "{self.saas_app}"'
 
 		if self.skip_sites_with_paid_plan:
 			paid_site_plans = frappe.get_all(
