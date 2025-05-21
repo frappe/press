@@ -34,7 +34,6 @@
     "auto_increase_storage",
     "networking_section",
     "ip",
-    "db_port",
     "column_break_10",
     "private_ip",
     "private_mac_address",
@@ -44,6 +43,7 @@
     "mariadb_section",
     "self_hosted_mariadb_server",
     "mariadb_root_password",
+    "db_port",
     "server_id",
     "is_primary",
     "column_break_12",
@@ -604,7 +604,8 @@
       "default": "3306",
       "fieldname": "db_port",
       "fieldtype": "Int",
-      "label": "DB Port"
+      "label": "DB Port",
+      "read_only_depends_on": "eval:doc.is_server_setup"
     }
   ],
   "grid_page_length": 50,
