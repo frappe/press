@@ -41,7 +41,7 @@ from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
 
 if typing.TYPE_CHECKING:
-	from press.infrastructure.doctype.arm_build.arm_build import ARMBuild
+	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 
 server_doctypes = [
@@ -461,7 +461,7 @@ class VirtualMachine(Document):
 		if self.cloud_provider == "AWS EC2":
 			architecture = {"x86_64": "amd64", "arm64": "arm64"}[self.platform]
 			return self.client("ssm").get_parameter(
-				Name=f"/aws/service/canonical/ubuntu/server/22.04/stable/current/{architecture}/hvm/ebs-gp2/ami-id"
+				Name=f"/aws/service/canonical/ubuntu/server/20.04/stable/current/{architecture}/hvm/ebs-gp2/ami-id"
 			)["Parameter"]["Value"]
 		if self.cloud_provider == "OCI":
 			cluster = frappe.get_doc("Cluster", self.cluster)
@@ -469,7 +469,7 @@ class VirtualMachine(Document):
 			images = client.list_images(
 				compartment_id=cluster.oci_tenancy,
 				operating_system="Canonical Ubuntu",
-				operating_system_version="22.04",
+				operating_system_version="20.04",
 				shape="VM.Standard3.Flex",
 				lifecycle_state="AVAILABLE",
 			).data
@@ -1053,7 +1053,7 @@ class VirtualMachine(Document):
 			document["is_server_renamed"] = True
 			document["is_upstream_setup"] = True
 
-		return frappe.get_doc(document).insert()
+		return f"Created <a href='/app/server/{frappe.get_doc(document).insert().name}'> Server"
 
 	@frappe.whitelist()
 	def create_database_server(self):
@@ -1077,7 +1077,7 @@ class VirtualMachine(Document):
 				"Virtual Machine Image", self.virtual_machine_image
 			).get_password("mariadb_root_password")
 
-		return frappe.get_doc(document).insert()
+		return f"Created <a href='/app/database-server/{frappe.get_doc(document).insert().name}'> Database Server"
 
 	@frappe.whitelist()
 	def create_proxy_server(self):
@@ -1093,7 +1093,7 @@ class VirtualMachine(Document):
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
 
-		return frappe.get_doc(document).insert()
+		return f"Created <a href='/app/proxy-server/{frappe.get_doc(document).insert().name}'> Proxy Server"
 
 	@frappe.whitelist()
 	def create_monitor_server(self):
@@ -1109,7 +1109,9 @@ class VirtualMachine(Document):
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
 
-		return frappe.get_doc(document).insert()
+		return (
+			f"Created <a href='/app/monitor-server/{frappe.get_doc(document).insert().name}'> Monitor Server"
+		)
 
 	@frappe.whitelist()
 	def create_log_server(self):
@@ -1125,7 +1127,7 @@ class VirtualMachine(Document):
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
 
-		return frappe.get_doc(document).insert()
+		return f"Created <a href='/app/log-server/{frappe.get_doc(document).insert().name}'> Log Server"
 
 	@frappe.whitelist()
 	def create_registry_server(self):
@@ -1141,7 +1143,7 @@ class VirtualMachine(Document):
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
 
-		return frappe.get_doc(document).insert()
+		return f"Created <a href='/app/registry-server/{frappe.get_doc(document).insert().name}'> Registry Server"
 
 	def get_security_groups(self):
 		groups = [self.security_group_id]
@@ -1342,15 +1344,24 @@ class VirtualMachine(Document):
 		return {"build": new_arm_build, "existing_image": False, "status": "Pending"}
 
 	@frappe.whitelist()
-	def collect_arm_images(self):
-		benches = frappe.get_all("Bench", {"server": self.name}, ["name", "build"])
-		arm_build: ARMBuild = frappe.new_doc("ARM Build", virtual_machine=self.name)
+	def collect_arm_images(self) -> str:
+		"""Collect arm build images of all active benches on VM"""
+		benches = frappe.get_all(
+			"Bench",
+			{"server": self.name, "status": "Active"},
+			["name", "build"],
+		)
+
+		if not benches:
+			frappe.throw(f"No active benches found on <a href='/app/server/{self.name}'> Server")
+
+		arm_build_record: ARMBuildRecord = frappe.new_doc("ARM Build Record", virtual_machine=self.name)
 
 		for bench_info in benches:
-			arm_build.append("arm_images", self.process_bench(bench_info))
+			arm_build_record.append("arm_images", self.process_bench(bench_info))
 
-		arm_build.save()
-		frappe.db.commit()
+		arm_build_record.save()
+		return f"Created <a href='/app/arm-build-record/{arm_build_record.name}'> ARM Build Record"
 
 	@frappe.whitelist()
 	def convert_to_arm(self, virtual_machine_image, machine_type):
