@@ -1994,6 +1994,13 @@ class Server(BaseServer):
 		log_server, kibana_password = self.get_log_server()
 		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
 
+		# If database server is set, then define db port under configuration
+		db_port = (
+			frappe.db.get_value("Database Server", self.database_server, "db_port")
+			if self.database_server
+			else None
+		)
+
 		try:
 			ansible = Ansible(
 				playbook="self_hosted.yml" if getattr(self, "is_self_hosted", False) else "server.yml",
@@ -2015,6 +2022,7 @@ class Server(BaseServer):
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 					"docker_depends_on_mounts": self.docker_depends_on_mounts,
+					"db_port": db_port,
 					**self.get_mount_variables(),
 				},
 			)
