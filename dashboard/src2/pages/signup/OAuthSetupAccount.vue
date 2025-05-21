@@ -95,7 +95,7 @@ export default {
 	props: ['productId'],
 	components: {
 		LoginBox,
-		Spinner
+		Spinner,
 	},
 	data() {
 		return {
@@ -103,7 +103,7 @@ export default {
 			email: this.$route.query.email,
 			country: null,
 			terms_accepted: false,
-			isRedirecting: false
+			isRedirecting: false,
 		};
 	},
 	resources: {
@@ -113,13 +113,13 @@ export default {
 				makeParams() {
 					return {
 						key: this.key,
-						country: this.country
+						country: this.country,
 					};
 				},
-				onSuccess: data => {
+				onSuccess: (data) => {
 					this.isRedirecting = true;
 					window.location.href = data?.location;
-				}
+				},
 			};
 		},
 		signupSettings() {
@@ -130,16 +130,16 @@ export default {
 					fetch_countries: true,
 					timezone: window.Intl
 						? Intl.DateTimeFormat().resolvedOptions().timeZone
-						: null
+						: null,
 				},
 				auto: true,
 				onSuccess(res) {
 					if (res && res.country) {
 						this.country = res.country;
 					}
-				}
+				},
 			};
-		}
+		},
 	},
 	computed: {
 		saasProduct() {
@@ -147,7 +147,7 @@ export default {
 		},
 		countries() {
 			return this.$resources.signupSettings.data?.countries || [];
-		}
-	}
+		},
+	},
 };
 </script>

@@ -71,13 +71,14 @@ class ProductTrial(Document):
 		if not self.redirect_to_after_login.startswith("/"):
 			frappe.throw("Redirection route after login should start with /")
 
-	def setup_trial_site(self, subdomain, team, cluster=None, account_request=None):
+	def setup_trial_site(
+		self, site_domain: str, team: str, cluster: str | None = None, account_request: str | None = None
+	):
 		from press.press.doctype.site.site import Site, get_plan_config
 
+		subdomain = site_domain.split(".")[0]
 		validate_subdomain(subdomain)
 		Site.exists(subdomain, self.domain)
-
-		site_domain = f"{subdomain}.{self.domain}"
 
 		standby_site = self.get_standby_site(cluster)
 
@@ -87,7 +88,7 @@ class ProductTrial(Document):
 		plan = self.trial_plan
 
 		if standby_site:
-			site = frappe.get_doc("Site", standby_site)
+			site: Site = frappe.get_doc("Site", standby_site)
 			site.is_standby = False
 			site.team = team
 			site.trial_end_date = trial_end_date

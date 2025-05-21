@@ -120,6 +120,7 @@ class ProductTrialRequest(Document):
 			team_user = frappe.db.get_value(
 				"User", team_details.user, ["first_name", "last_name", "full_name", "email"], as_dict=True
 			)
+
 			if self.account_request:
 				account_request_geo_data = frappe.db.get_value(
 					"Account Request", self.account_request, "geo_location"
@@ -128,6 +129,7 @@ class ProductTrialRequest(Document):
 				account_request_geo_data = frappe.db.get_value(
 					"Account Request", {"email": team_user.email}, "geo_location"
 				)
+
 			timezone = frappe.parse_json(account_request_geo_data or {}).get("timezone", "Asia/Kolkata")
 
 			return json.dumps(
@@ -157,26 +159,22 @@ class ProductTrialRequest(Document):
 			frappe.throw(f"Failed to generate payload for Setup Wizard: {e}")
 
 	@dashboard_whitelist()
-	def create_site(self, subdomain: str, cluster: str | None = None):
+	def create_site(self, cluster: str | None = None):
 		"""
 		Trigger the site creation process for the product trial request.
 		Args:
-			subdomain (str): The subdomain for the new site.
 			cluster (str | None): The cluster to use for site creation.
 		"""
 		if self.status != "Pending":
 			return
 
-		if not subdomain:
-			frappe.throw("Subdomain is required to create a site.")
-
 		try:
 			product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
 			self.status = "Wait for Site"
 			self.site_creation_started_on = now_datetime()
-			self.domain = f"{subdomain}.{product.domain}"
+			self.domain = frappe.db.get_value("Account Request", self.account_request, "site_domain")
 			site, agent_job_name, is_standby_site = product.setup_trial_site(
-				subdomain=subdomain, team=self.team, cluster=cluster, account_request=self.account_request
+				site_domain=self.domain, team=self.team, cluster=cluster, account_request=self.account_request
 			)
 			self.agent_job = agent_job_name
 			self.site = site.name
@@ -255,7 +253,8 @@ class ProductTrialRequest(Document):
 	def prefill_setup_wizard_data(self):
 		if self.status == "Prefilling Setup Wizard":
 			return
-		site = frappe.get_doc("Site", self.site)
+
+		site: Site = frappe.get_doc("Site", self.site)
 		try:
 			user_payload, system_settings_payload = self.get_setup_wizard_payload()
 			site.prefill_setup_wizard(system_settings_payload, user_payload)

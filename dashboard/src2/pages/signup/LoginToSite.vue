@@ -1,30 +1,31 @@
 <template>
 	<div
-		class="flex h-screen w-screen items-center justify-center"
-		v-if="$resources.saasProduct.loading || $resources.siteRequest.loading"
+		class="flex h-screen w-screen flex-col items-center justify-center bg-gray-600 bg-opacity-50"
+		v-if="$resources?.siteRequest?.doc?.status !== 'Error'"
 	>
-		<Spinner class="mr-2 w-4" />
-		<p class="text-gray-800">Loading</p>
+		<SignupSpinner />
+		<p class="text-white">
+			{{
+				$resources?.siteRequest?.doc?.status === 'Site Created'
+					? 'Logging you in'
+					: 'Completing setup'
+			}}
+		</p>
 	</div>
-	<div class="flex h-screen overflow-hidden sm:bg-gray-50" v-else>
+	<div class="flex h-screen overflow-hidden" v-else>
 		<div class="w-full overflow-auto">
 			<LoginBox
 				v-if="$resources?.siteRequest?.doc?.status === 'Site Created'"
 				title="Site created successfully"
-				:subtitle="`Your trial site is ready at
+				:subtitle="`Your trial site is ready ats
 					${$resources?.siteRequest?.doc?.domain || $resources?.siteRequest?.doc?.site}`"
 			>
 				<template v-slot:logo v-if="saasProduct">
-					<div class="mx-auto flex items-center space-x-2">
+					<div class="flex space-x-2">
 						<img
-							class="inline-block h-7 w-7 rounded-sm"
+							class="inline-block h-[38px] w-[38px] rounded-sm"
 							:src="saasProduct?.logo"
 						/>
-						<span
-							class="select-none text-xl font-semibold tracking-tight text-gray-900"
-						>
-							{{ saasProduct?.title }}
-						</span>
 					</div>
 				</template>
 				<div>
@@ -33,7 +34,7 @@
 					>
 						<Button
 							variant="solid"
-							class="w-2/5"
+							class="w-full"
 							icon-right="external-link"
 							@click="loginToSite"
 							:loading="this.$resources?.siteRequest?.getLoginSid.loading"
@@ -46,38 +47,26 @@
 					class="w-full text-center"
 					:message="this.$resources?.siteRequest?.getLoginSid.error"
 				/>
-				<template v-slot:footer>
-					<div
-						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
-					>
-						Powered by Frappe Cloud
-					</div>
-				</template>
 			</LoginBox>
 			<LoginBox
-				v-else-if="this.$resources?.siteRequest?.doc?.status === 'Error'"
+				v-else-if="$resources?.siteRequest?.doc?.status === 'Error'"
 				title="Site creation failed"
 				:subtitle="
-					this.$resources?.siteRequest?.doc?.domain ||
-					this.$resources?.siteRequest?.doc?.site
+					$resources?.siteRequest?.doc?.domain ||
+					$resources?.siteRequest?.doc?.site
 				"
 			>
 				<template v-slot:logo v-if="saasProduct">
-					<div class="mx-auto flex items-center space-x-2">
+					<div class="flex space-x-2">
 						<img
 							class="inline-block h-7 w-7 rounded-sm"
 							:src="saasProduct?.logo"
 						/>
-						<span
-							class="select-none text-xl font-semibold tracking-tight text-gray-900"
-						>
-							{{ saasProduct?.title }}
-						</span>
 					</div>
 				</template>
 				<template v-slot:default>
-					<div class="flex h-40 flex-col items-center justify-center px-10">
-						<div class="text-center text-base leading-5 text-gray-800">
+					<div class="flex h-40 flex-col justify-center">
+						<div class="text-base leading-5 text-gray-800">
 							<p>It looks like something went wrong</p>
 							<p>
 								Contact
@@ -87,13 +76,6 @@
 								to resolve the issue
 							</p>
 						</div>
-					</div>
-				</template>
-				<template v-slot:footer>
-					<div
-						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
-					>
-						Powered by Frappe Cloud
 					</div>
 				</template>
 			</LoginBox>
@@ -128,19 +110,13 @@
 						/>
 					</div>
 				</template>
-				<template v-slot:footer>
-					<div
-						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
-					>
-						Powered by Frappe Cloud
-					</div>
-				</template>
 			</LoginBox>
 		</div>
 	</div>
 </template>
 <script>
 import LoginBox from '../../components/auth/LoginBox.vue';
+import Spinner from '../../components/Spinner.vue';
 import { Progress } from 'frappe-ui';
 
 export default {
@@ -149,6 +125,7 @@ export default {
 	components: {
 		LoginBox,
 		Progress,
+		SignupSpinner: Spinner,
 	},
 	data() {
 		return {
@@ -174,7 +151,8 @@ export default {
 				realtime: true,
 				auto: true,
 				onSuccess(doc) {
-					if (
+					if (doc.status == 'Site Created') this.loginToSite();
+					else if (
 						doc.status == 'Wait for Site' ||
 						doc.status == 'Prefilling Setup Wizard'
 					) {
@@ -191,6 +169,10 @@ export default {
 							};
 						},
 						onSuccess: (data) => {
+							if (data.status === 'Site Created') {
+								return this.loginToSite();
+							}
+
 							const currentStepMap = {
 								'Wait for Site': 'Creating your site',
 								'New Site': 'Creating your site',
@@ -215,6 +197,13 @@ export default {
 							) {
 								this.progressCount = Math.round(data.progress * 10) / 10;
 								setTimeout(() => {
+									if (
+										['Site Created', 'Error'].includes(
+											this.$resources.siteRequest.doc.status,
+										)
+									)
+										return;
+
 									this.$resources.siteRequest.getProgress.reload();
 								}, 2000);
 							}
@@ -223,7 +212,7 @@ export default {
 					getLoginSid: {
 						method: 'get_login_sid',
 						onSuccess(loginURL) {
-							window.open(loginURL, '_blank');
+							window.open(loginURL, '_self');
 						},
 					},
 				},

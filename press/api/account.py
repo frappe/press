@@ -96,7 +96,7 @@ def verify_otp_and_login(email: str, otp: str):
 
 	account_request = frappe.db.get_value("Account Request", {"email": email}, "name")
 
-	if not account_request:
+	if not account_request or not frappe.db.exists("Team", {"user": email}):
 		frappe.throw("Please sign up first")
 
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
@@ -161,14 +161,16 @@ def setup_account(  # noqa: C901
 	is_invitation=False,
 	country=None,
 	user_exists=False,
-	accepted_user_terms=False,
 	invited_by_parent_team=False,
 	oauth_signup=False,
 	oauth_domain=False,
+	site_domain=None,
 ):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
 		frappe.throw("Invalid or Expired Key")
+
+	account_request.db_set("site_domain", site_domain)
 
 	if not user_exists:
 		if not first_name:
@@ -182,9 +184,6 @@ def setup_account(  # noqa: C901
 			country = find(all_countries, lambda x: x.lower() == country.lower())
 			if not country:
 				frappe.throw("Please provide a valid country name")
-
-	if not accepted_user_terms:
-		frappe.throw("Please accept our Terms of Service & Privacy Policy to continue")
 
 	# if the request is authenticated, set the user to Administrator
 	frappe.set_user("Administrator")
@@ -382,8 +381,9 @@ def validate_request_key(key, timezone=None):
 				"OAuth Domain Mapping", {"email_domain": account_request.email.split("@")[1]}
 			),
 			"product_trial": frappe.db.get_value(
-				"Product Trial", account_request.product_trial, ["logo", "title", "name"], as_dict=1
+				"Product Trial", account_request.product_trial, ["logo", "title", "name", "domain"], as_dict=1
 			),
+			"default_domain": frappe.db.get_single_value("Press Settings", "domain"),
 		}
 	return None
 
