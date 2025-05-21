@@ -349,6 +349,9 @@ class NginxRequestGroupBy(StackedGroupByChart):
 			frappe.throw("Monitor server not set in Press Settings")
 		self.search = self.search.exclude("match_phrase", source__ip=monitor_ip)
 		if ResourceType(self.resource_type) is ResourceType.SITE:
+			server = frappe.db.get_value("Site", self.name, "server")
+			proxy = frappe.db.get_value("Server", server, "proxy_server")
+			self.search = self.search.filter("match_phrase", agent__name=proxy)
 			domains = frappe.get_all(
 				"Site Domain",
 				{"site": self.name},
