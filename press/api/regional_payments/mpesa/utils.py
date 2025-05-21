@@ -426,6 +426,7 @@ def create_invoice_partner_site(data, gateway_controller):
 	team = data.get("team")
 	default_currency = data.get("default_currency")
 	rate = data.get("rate")
+	tax_id = data.get("tax_id")
 
 	# Validate the necessary fields
 	if not transaction_id or not amount:
@@ -443,7 +444,9 @@ def create_invoice_partner_site(data, gateway_controller):
 		"team": team,
 		"default_currency": default_currency,
 		"rate": rate,
+		"tax_id": tax_id,
 	}
+
 	# Make the POST request to your API
 	try:
 		response = requests.post(api_url, data=payload, headers=headers)
