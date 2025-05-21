@@ -57,7 +57,6 @@ class AccountRequest(Document):
 		saas: DF.Check
 		saas_app: DF.Link | None
 		send_email: DF.Check
-		site_domain: DF.Data | None
 		state: DF.Data | None
 		subdomain: DF.Data | None
 		team: DF.Data | None

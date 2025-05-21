@@ -5,7 +5,7 @@
 	>
 		<div class="w-full overflow-auto">
 			<LoginBox
-				:title="invitedBy ? 'Invitation to join' : 'Let\'s set up your site'"
+				:title="invitedBy ? 'Invitation to join' : 'Let\'s set up your account'"
 				:subtitle="invitedBy ? `Invitation by ${invitedBy}` : ''"
 			>
 				<template v-slot:logo v-if="saasProduct">
@@ -41,58 +41,6 @@
 					</template>
 					<template v-else>
 						<div class="space-y-4">
-							<div v-if="!isInvitation" class="w-full space-y-1.5">
-								<div class="flex items-center gap-2">
-									<label class="block text-xs text-ink-gray-5">
-										Site name
-									</label>
-									<Tooltip
-										text="You will be able to access your site via your site name"
-									>
-										<i-lucide-info class="h-4 w-4 text-gray-500" />
-									</Tooltip>
-								</div>
-								<div class="col-span-2 flex w-full">
-									<input
-										class="dark:[color-scheme:dark] z-10 h-7 w-full rounded rounded-r-none border border-outline-gray-2 bg-surface-white py-1.5 pl-2 pr-2 text-base text-ink-gray-8 placeholder-ink-gray-4 transition-colors hover:border-outline-gray-3 hover:shadow-sm focus:border-outline-gray-4 focus:bg-surface-white focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-outline-gray-3"
-										:placeholder="
-											saasProduct ? `${saasProduct?.name}-site` : 'company-name'
-										"
-										v-model="subdomain"
-									/>
-									<div
-										class="flex cursor-default items-center rounded-r bg-gray-100 px-2 text-base"
-									>
-										.{{ domain }}
-									</div>
-								</div>
-								<div class="mt-1">
-									<div
-										v-if="$resources.subdomainExists.loading"
-										class="text-sm text-gray-600"
-									>
-										Checking...
-									</div>
-									<template
-										v-else-if="
-											!$resources.subdomainExists.error &&
-											$resources.subdomainExists.fetched &&
-											subdomain
-										"
-									>
-										<div
-											v-if="$resources.subdomainExists.data"
-											class="text-sm text-green-600"
-										>
-											{{ subdomain }}.{{ domain }} is available
-										</div>
-										<div v-else class="text-sm text-red-600">
-											{{ subdomain }}.{{ domain }} is not available
-										</div>
-									</template>
-									<ErrorMessage :message="$resources.subdomainExists.error" />
-								</div>
-							</div>
 							<template v-if="!userExists">
 								<div class="flex gap-2">
 									<FormControl
@@ -175,11 +123,9 @@
 </template>
 
 <script>
-import { debounce } from 'frappe-ui';
 import LoginBox from '../components/auth/LoginBox.vue';
 import Link from '@/components/Link.vue';
 import Form from '@/components/Form.vue';
-import { validateSubdomain } from '../utils/site';
 import { DashboardError } from '../utils/error';
 
 export default {
@@ -208,38 +154,9 @@ export default {
 			countries: [],
 			saasProduct: null,
 			signupValues: {},
-			subdomain: '',
-			defaultDomain: '',
 		};
 	},
-	watch: {
-		subdomain: {
-			handler: debounce(function () {
-				this.$resources.subdomainExists.submit();
-			}, 500),
-		},
-	},
 	resources: {
-		subdomainExists() {
-			return {
-				url: 'press.api.site.exists',
-				makeParams() {
-					return {
-						domain: this.domain,
-						subdomain: this.subdomain,
-					};
-				},
-				validate() {
-					const error = validateSubdomain(this.subdomain);
-					if (error) {
-						throw new DashboardError(error);
-					}
-				},
-				transform(data) {
-					return !Boolean(data);
-				},
-			};
-		},
 		validateRequestKey() {
 			return {
 				url: 'press.api.account.validate_request_key',
@@ -265,7 +182,6 @@ export default {
 						this.oauthDomain = res.oauth_domain;
 						this.countries = res.countries;
 						this.saasProduct = res.product_trial;
-						this.defaultDomain = res.default_domain;
 					}
 				},
 			};
@@ -283,7 +199,6 @@ export default {
 					invited_by_parent_team: this.invitedByParentTeam,
 					oauth_signup: this.oauthSignup,
 					oauth_domain: this.oauthDomain,
-					site_domain: `${this.subdomain}.${this.domain}`,
 				},
 				onSuccess() {
 					let path = '/dashboard/create-site/app-selector';
@@ -316,9 +231,6 @@ export default {
 			return (
 				this.$route.name === 'Setup Account' && this.$route.query.two_factor
 			);
-		},
-		domain() {
-			return this.saasProduct?.domain || this.defaultDomain;
 		},
 	},
 	methods: {

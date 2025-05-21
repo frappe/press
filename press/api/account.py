@@ -170,8 +170,6 @@ def setup_account(  # noqa: C901
 	if not account_request:
 		frappe.throw("Invalid or Expired Key")
 
-	account_request.db_set("site_domain", site_domain)
-
 	if not user_exists:
 		if not first_name:
 			frappe.throw("First Name is required")
@@ -381,11 +379,9 @@ def validate_request_key(key, timezone=None):
 				"OAuth Domain Mapping", {"email_domain": account_request.email.split("@")[1]}
 			),
 			"product_trial": frappe.db.get_value(
-				"Product Trial", account_request.product_trial, ["logo", "title", "name", "domain"], as_dict=1
+				"Product Trial", account_request.product_trial, ["logo", "name"], as_dict=1
 			),
-			"default_domain": frappe.db.get_single_value("Press Settings", "domain"),
 		}
-	return None
 
 	return None
 

@@ -19,7 +19,6 @@
   "invited_by_parent_team",
   "press_roles",
   "saas_sign_up_section",
-  "site_domain",
   "saas",
   "saas_app",
   "product_trial",
@@ -278,17 +277,12 @@
    "fieldname": "unsubscribed_from_drip_emails",
    "fieldtype": "Check",
    "label": "Unsubscribed from Drip Emails"
-  },
-  {
-   "fieldname": "site_domain",
-   "fieldtype": "Data",
-   "label": "Site Domain"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-22 14:42:15.001237",
+ "modified": "2025-05-21 09:33:56.945672",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",
