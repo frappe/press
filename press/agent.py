@@ -1368,6 +1368,28 @@ Response: {reason or getattr(result, "text", "Unknown")}
 	def fetch_binlog_list(self):
 		return self.get("database/binlogs/list")
 
+	def pull_docker_images(self, image_tags: list[str], reference_doctype=None, reference_name=None):
+		settings = frappe.db.get_value(
+			"Press Settings",
+			None,
+			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
+			as_dict=True,
+		)
+		return self.create_agent_job(
+			"Pull Docker Images",
+			"/server/pull-images",
+			data={
+				"image_tags": image_tags,
+				"registry": {
+					"url": settings.docker_registry_url,
+					"username": settings.docker_registry_username,
+					"password": settings.docker_registry_password,
+				},
+			},
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
 	def upload_binlogs_to_s3(self, binlogs: list[str]):
 		from press.press.doctype.site_backup.site_backup import get_backup_bucket
 

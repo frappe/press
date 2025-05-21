@@ -28,8 +28,13 @@
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-05-19 18:27:32.367162",
+ "links": [
+  {
+   "link_doctype": "Agent Job",
+   "link_fieldname": "reference_name"
+  }
+ ],
+ "modified": "2025-05-21 12:12:29.203472",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "ARM Build Record",
