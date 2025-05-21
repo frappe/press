@@ -671,7 +671,8 @@
       "default": "3306",
       "fieldname": "db_port",
       "fieldtype": "Int",
-      "label": "DB Port"
+      "label": "DB Port",
+      "read_only_depends_on": "eval:doc.is_server_setup"
     }
   ],
   "grid_page_length": 50,
