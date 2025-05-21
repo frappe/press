@@ -577,7 +577,6 @@
    "fieldtype": "Column Break"
   },
   {
-<<<<<<< HEAD
    "fieldname": "section_break_imng",
    "fieldtype": "Section Break"
   },
@@ -595,8 +594,6 @@
    "label": "Binlogs Removed"
  },
  {
-=======
->>>>>>> 81a1916f8 (fix: rearrange db_port field seq)
    "default": "3306",
    "fieldname": "db_port",
    "fieldtype": "Int",
