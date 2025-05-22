@@ -811,10 +811,6 @@ def handle_transaction_result(transaction_response, integration_request):
 
 			create_mpesa_payment_record(transaction_response)
 		except Exception as e:
-			status = "Failed"
-			create_mpesa_request_log(
-				transaction_response, "Host", "Mpesa Express", integration_request, None, status
-			)
 			frappe.log_error(f"Mpesa: Transaction failed with error {e}")
 
 	elif result_code == 1037:  # User unreachable (Phone off or timeout)
@@ -890,30 +886,35 @@ def create_mpesa_payment_record(transaction_response):
 		"transaction_id": transaction_id,
 		"amount": amount,
 		"team": frappe.get_value("Team", info.team, "user"),
+		"tax_id": frappe.get_value("Team", info.team, "mpesa_tax_id"),
 		"default_currency": "KES",
 		"rate": info.requested_amount,
 	}
 	mpesa_invoice, invoice_name = create_invoice_partner_site(data, gateway_name)
-	payment_record = frappe.get_doc(
-		{
-			"doctype": "Mpesa Payment Record",
-			"transaction_id": transaction_id,
-			"transaction_time": parse_datetime(transaction_time),
-			"transaction_type": "Mpesa Express",
-			"team": info.team,
-			"phone_number": str(phone_number),
-			"amount": info.requested_amount,
-			"grand_total": amount,
-			"merchant_request_id": merchant_request_id,
-			"payment_partner": info.partner,
-			"amount_usd": info.amount_usd,
-			"exchange_rate": info.exchange_rate,
-			"local_invoice": mpesa_invoice,
-			"mpesa_receipt_number": mpesa_receipt_number,
-		}
-	)
-	payment_record.insert(ignore_permissions=True)
-	payment_record.submit()
+	try:
+		payment_record = frappe.get_doc(
+			{
+				"doctype": "Mpesa Payment Record",
+				"transaction_id": transaction_id,
+				"transaction_time": parse_datetime(transaction_time),
+				"transaction_type": "Mpesa Express",
+				"team": info.team,
+				"phone_number": str(phone_number),
+				"amount": info.requested_amount,
+				"grand_total": amount,
+				"merchant_request_id": merchant_request_id,
+				"payment_partner": info.partner,
+				"amount_usd": info.amount_usd,
+				"exchange_rate": info.exchange_rate,
+				"local_invoice": mpesa_invoice,
+				"mpesa_receipt_number": mpesa_receipt_number,
+			}
+		)
+		payment_record.insert(ignore_permissions=True)
+		payment_record.submit()
+	except Exception:
+		frappe.log_error("Failed to create Mpesa Payment Record")
+		raise
 	"""create payment partner transaction which will then create balance transaction"""
 	create_payment_partner_transaction(
 		info.team, info.partner, info.exchange_rate, info.amount_usd, info.requested_amount, gateway_name
@@ -931,46 +932,49 @@ def create_mpesa_payment_record(transaction_response):
 
 
 def create_balance_transaction_and_invoice(team, amount, mpesa_details):
-	balance_transaction = frappe.get_doc(
-		doctype="Balance Transaction",
-		team=team,
-		source="Prepaid Credits",
-		type="Adjustment",
-		amount=amount,
-		description=mpesa_details.get("mpesa_payment_record"),
-		paid_via_local_pg=1,
-	)
-	balance_transaction.insert(ignore_permissions=True)
-	balance_transaction.submit()
+	try:
+		balance_transaction = frappe.get_doc(
+			doctype="Balance Transaction",
+			team=team,
+			source="Prepaid Credits",
+			type="Adjustment",
+			amount=amount,
+			description=mpesa_details.get("mpesa_payment_record"),
+			paid_via_local_pg=1,
+		)
+		balance_transaction.insert(ignore_permissions=True)
+		balance_transaction.submit()
 
-	invoice = frappe.get_doc(
-		doctype="Invoice",
-		team=team,
-		type="Prepaid Credits",
-		status="Paid",
-		total=amount,
-		amount_due=amount,
-		amount_paid=amount,
-		amount_due_with_tax=amount,
-		due_date=frappe.utils.nowdate(),
-		mpesa_merchant_id=mpesa_details.get("mpesa_merchant_id", ""),
-		mpesa_receipt_number=mpesa_details.get("mpesa_receipt_number", ""),
-		mpesa_request_id=mpesa_details.get("mpesa_request_id", ""),
-		mpesa_payment_record=mpesa_details.get("mpesa_payment_record", ""),
-		mpesa_invoice=mpesa_details.get("mpesa_invoice", ""),
-	)
-	invoice.append(
-		"items",
-		{
-			"description": "Prepaid Credits",
-			"document_type": "Balance Transaction",
-			"document_name": balance_transaction.name,
-			"quantity": 1,
-			"rate": amount,
-		},
-	)
-	invoice.insert(ignore_permissions=True)
-	invoice.submit()
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=team,
+			type="Prepaid Credits",
+			status="Paid",
+			total=amount,
+			amount_due=amount,
+			amount_paid=amount,
+			amount_due_with_tax=amount,
+			due_date=frappe.utils.nowdate(),
+			mpesa_merchant_id=mpesa_details.get("mpesa_merchant_id", ""),
+			mpesa_receipt_number=mpesa_details.get("mpesa_receipt_number", ""),
+			mpesa_request_id=mpesa_details.get("mpesa_request_id", ""),
+			mpesa_payment_record=mpesa_details.get("mpesa_payment_record", ""),
+			mpesa_invoice=mpesa_details.get("mpesa_invoice", ""),
+		)
+		invoice.append(
+			"items",
+			{
+				"description": "Prepaid Credits",
+				"document_type": "Balance Transaction",
+				"document_name": balance_transaction.name,
+				"quantity": 1,
+				"rate": amount,
+			},
+		)
+		invoice.insert(ignore_permissions=True)
+		invoice.submit()
+	except Exception:
+		frappe.log_error("Mpesa: Failed to create balance transaction and invoice")
 
 
 def parse_datetime(date):

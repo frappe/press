@@ -23,6 +23,7 @@ class ProductTrial(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.saas.doctype.hybrid_pool_item.hybrid_pool_item import HybridPoolItem
 		from press.saas.doctype.product_trial_app.product_trial_app import ProductTrialApp
 
 		apps: DF.Table[ProductTrialApp]
@@ -31,7 +32,9 @@ class ProductTrial(Document):
 		email_full_logo: DF.AttachImage | None
 		email_header_content: DF.Code
 		email_subject: DF.Data
+		enable_hybrid_pooling: DF.Check
 		enable_pooling: DF.Check
+		hybrid_pool_rules: DF.Table[HybridPoolItem]
 		logo: DF.AttachImage | None
 		published: DF.Check
 		redirect_to_after_login: DF.Data
@@ -81,7 +84,7 @@ class ProductTrial(Document):
 
 		site_domain = f"{subdomain}.{self.domain}"
 
-		standby_site = self.get_standby_site(cluster)
+		standby_site = self.get_standby_site(cluster, account_request)
 
 		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
 		site = None
@@ -180,7 +183,7 @@ class ProductTrial(Document):
 			"Cluster", {"name": ("in", clusters), "public": 1}, order_by="name asc", pluck="name"
 		)
 
-	def get_standby_site(self, cluster=None):
+	def get_standby_site(self, cluster: str | None = None, account_request: str | None = None) -> str | None:
 		filters = {
 			"is_standby": True,
 			"standby_for_product": self.name,
@@ -188,6 +191,17 @@ class ProductTrial(Document):
 		}
 		if cluster:
 			filters["cluster"] = cluster
+
+		country = (
+			frappe.db.get_value("Account Request", account_request, "country") if account_request else None
+		)
+		for rule in self.hybrid_pool_rules:
+			if not country:
+				break
+			if rule.country == country:
+				filters["hybrid_for"] = rule.app
+				break
+
 		sites = frappe.db.get_all(
 			"Site",
 			filters=filters,
@@ -214,19 +228,32 @@ class ProductTrial(Document):
 		if not self.enable_pooling:
 			return
 
-		sites_to_create = self.standby_pool_size - self.get_standby_sites_count(cluster)
+		self._create_standby_sites(cluster)
+
+		if self.enable_hybrid_pooling:
+			for rule in self.hybrid_pool_rules:
+				self._create_standby_sites(cluster, rule)
+
+	def _create_standby_sites(self, cluster: str, rule: dict | None = None):
+		sites_to_create = self.standby_pool_size - self.get_standby_sites_count(
+			cluster, rule.get("app") if rule else None
+		)
 		if sites_to_create <= 0:
 			return
 		if sites_to_create > self.standby_queue_size:
 			sites_to_create = self.standby_queue_size
 
 		for _i in range(sites_to_create):
-			self.create_standby_site(cluster)
+			self.create_standby_site(cluster, rule)
 			frappe.db.commit()
 
-	def create_standby_site(self, cluster):
+	def create_standby_site(self, cluster: str, rule: dict | None = None):
 		administrator = frappe.db.get_value("Team", {"user": "Administrator"}, "name")
 		apps = [{"app": d.app} for d in self.apps]
+
+		if rule:
+			apps += [{"app": rule.get("app")}]
+
 		server = self.get_server_from_cluster(cluster)
 		site = frappe.get_doc(
 			doctype="Site",
@@ -237,12 +264,13 @@ class ProductTrial(Document):
 			server=server,
 			is_standby=True,
 			standby_for_product=self.name,
+			hybrid_for=rule.get("app") if rule else None,
 			team=administrator,
 			apps=apps,
 		)
 		site.insert(ignore_permissions=True)
 
-	def get_standby_sites_count(self, cluster):
+	def get_standby_sites_count(self, cluster: str, hybrid_for: str | None = None):
 		active_standby_sites = frappe.db.count(
 			"Site",
 			{
@@ -250,6 +278,7 @@ class ProductTrial(Document):
 				"is_standby": 1,
 				"standby_for_product": self.name,
 				"status": "Active",
+				"hybrid_for": hybrid_for,
 			},
 		)
 		# sites that are created in the last hour
@@ -261,6 +290,7 @@ class ProductTrial(Document):
 				"standby_for_product": self.name,
 				"status": ("not in", ["Archived", "Suspended"]),
 				"creation": (">", frappe.utils.add_to_date(None, hours=-1)),
+				"hybrid_for": hybrid_for,
 			},
 		)
 		return active_standby_sites + recent_standby_sites
