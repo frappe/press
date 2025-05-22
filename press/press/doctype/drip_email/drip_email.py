@@ -245,7 +245,7 @@ def send_welcome_email():
 	welcome_drips = frappe.db.get_all("Drip Email", {"email_type": "Sign Up", "enabled": 1}, pluck="name")
 	for drip in welcome_drips:
 		welcome_email = frappe.get_doc("Drip Email", drip)
-		_15_mins_ago = frappe.utils.add_to_date(None, minutes=-15)
+		_15_mins_ago = frappe.utils.add_to_date(None, minutes=-5)
 		tuples = frappe.db.sql(
 			f"""
 				SELECT
