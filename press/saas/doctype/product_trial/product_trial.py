@@ -228,11 +228,11 @@ class ProductTrial(Document):
 		if not self.enable_pooling:
 			return
 
+		self._create_standby_sites(cluster)
+
 		if self.enable_hybrid_pooling:
 			for rule in self.hybrid_pool_rules:
 				self._create_standby_sites(cluster, rule)
-		else:
-			self._create_standby_sites(cluster)
 
 	def _create_standby_sites(self, cluster: str, rule: dict | None = None):
 		sites_to_create = self.standby_pool_size - self.get_standby_sites_count(
