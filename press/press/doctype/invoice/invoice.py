@@ -655,7 +655,12 @@ class Invoice(Document):
 		self.total_discount_amount = sum([item.discount for item in self.items]) + sum(
 			[d.amount for d in self.discounts]
 		)
-		# TODO: handle percent discount from discount table
+
+		npo_discount_applicable = frappe.db.get_value("Team", self.team, "apply_npo_discount")
+		if npo_discount_applicable:
+			npo_discount = frappe.db.get_single_value("Press Settings", "npo_discount")
+			if npo_discount:
+				self.total_discount_amount += flt(self.total * (npo_discount / 100), 2)
 
 		self.total_before_discount = self.total
 		self.total = flt(self.total_before_discount - self.total_discount_amount, 2)

@@ -120,6 +120,7 @@ class ProductTrialRequest(Document):
 			team_user = frappe.db.get_value(
 				"User", team_details.user, ["first_name", "last_name", "full_name", "email"], as_dict=True
 			)
+
 			if self.account_request:
 				account_request_geo_data = frappe.db.get_value(
 					"Account Request", self.account_request, "geo_location"
@@ -128,6 +129,7 @@ class ProductTrialRequest(Document):
 				account_request_geo_data = frappe.db.get_value(
 					"Account Request", {"email": team_user.email}, "geo_location"
 				)
+
 			timezone = frappe.parse_json(account_request_geo_data or {}).get("timezone", "Asia/Kolkata")
 
 			return json.dumps(
@@ -255,7 +257,8 @@ class ProductTrialRequest(Document):
 	def prefill_setup_wizard_data(self):
 		if self.status == "Prefilling Setup Wizard":
 			return
-		site = frappe.get_doc("Site", self.site)
+
+		site: Site = frappe.get_doc("Site", self.site)
 		try:
 			user_payload, system_settings_payload = self.get_setup_wizard_payload()
 			site.prefill_setup_wizard(system_settings_payload, user_payload)

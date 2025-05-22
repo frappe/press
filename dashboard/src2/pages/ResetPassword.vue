@@ -1,7 +1,8 @@
 <template>
 	<LoginBox
 		v-if="!$resources.validateResetKey.loading && email"
-		title="Set a new password for your account"
+		title="Reset Password"
+		subtitle="Set a new password for your account"
 	>
 		<form class="flex flex-col" @submit.prevent="handleSubmit">
 			<div v-if="ask2FA">

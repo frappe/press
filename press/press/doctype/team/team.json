@@ -20,6 +20,7 @@
   "via_erpnext",
   "enforce_2fa",
   "extend_payment_due_suspension",
+  "apply_npo_discount",
   "team_members_tab",
   "section_break_6",
   "team_members",
@@ -565,8 +566,16 @@
    "fieldtype": "Check",
    "label": "Extend Payment Due Suspension",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "If checked, Non Profit Organisation discount will be applied in Invoice",
+   "fieldname": "apply_npo_discount",
+   "fieldtype": "Check",
+   "label": "Apply NPO Discount"
   }
  ],
+ "grid_page_length": 50,
  "links": [
   {
    "group": "General",
@@ -629,7 +638,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2025-04-14 12:26:13.440918",
+ "modified": "2025-05-20 12:56:19.719372",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
@@ -656,6 +665,7 @@
   }
  ],
  "quick_entry": 1,
+ "row_format": "Dynamic",
  "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",

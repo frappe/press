@@ -54,8 +54,8 @@ except ImportError:
 
 from typing import TYPE_CHECKING
 
+from frappe.permissions import is_system_user
 from frappe.utils.password import get_decrypted_password
-from frappe.utils.user import is_system_user
 
 from press.agent import Agent, AgentRequestSkippedException
 from press.api.client import dashboard_whitelist
@@ -500,8 +500,8 @@ class Site(Document, TagHelpers):
 			)
 			is_site_on_public_server = frappe.db.get_value("Server", self.server, "public")
 
-			# Don't allow free plan for non-system managers
-			if "System Manager" not in frappe.get_roles():
+			# Don't allow free plan for non-system users
+			if not is_system_user():
 				is_plan_free = (plan.price_inr == 0 or plan.price_usd == 0) and not plan.dedicated_server_plan
 				if is_plan_free:
 					frappe.throw("You can't select a free plan!")

@@ -11,6 +11,9 @@
   "current",
   "indexed",
   "purged_from_disk",
+  "column_break_wwgs",
+  "uploaded",
+  "remote_file",
   "section_break_zpmy",
   "size_mb",
   "column_break_botn",
@@ -22,6 +25,7 @@
    "fieldname": "indexed",
    "fieldtype": "Check",
    "label": "Indexed",
+   "read_only": 1,
    "search_index": 1
   },
   {
@@ -55,6 +59,7 @@
    "fieldname": "purged_from_disk",
    "fieldtype": "Check",
    "label": "Purged from Disk",
+   "read_only": 1,
    "search_index": 1
   },
   {
@@ -68,6 +73,7 @@
    "fieldname": "current",
    "fieldtype": "Check",
    "label": "Current",
+   "read_only": 1,
    "search_index": 1
   },
   {
@@ -82,12 +88,31 @@
   {
    "fieldname": "column_break_botn",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_wwgs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "uploaded",
+   "fieldtype": "Check",
+   "label": "Uploaded",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval: doc.uploaded",
+   "fieldname": "remote_file",
+   "fieldtype": "Link",
+   "label": "Remote File",
+   "options": "Remote File",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-08 19:00:09.853051",
+ "modified": "2025-05-19 16:04:37.248196",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Binlog",

@@ -157,6 +157,17 @@
 					class="h-[15.55rem] p-2 pb-3"
 				/>
 			</AnalyticsCard>
+			<AnalyticsCard class="sm:col-span-2" title="Requests by IP">
+				<BarChart
+					:key="requestCountByIPData"
+					:data="requestCountByIPData"
+					unit="requests"
+					:chartTheme="requestChartColors"
+					:loading="$resources.advancedAnalytics.loading"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
 
 			<AnalyticsCard class="sm:col-span-2" title="Frequent Background Jobs">
 				<BarChart
@@ -408,6 +419,13 @@ export default {
 			if (!averageRequestDurationByPath) return;
 
 			return averageRequestDurationByPath;
+		},
+		requestCountByIPData() {
+			let requestCountByIP =
+				this.$resources.advancedAnalytics.data?.request_count_by_ip;
+			if (!requestCountByIP) return;
+
+			return requestCountByIP;
 		},
 		backgroundJobCountByMethodData() {
 			let backgroundJobCountByMethod =

@@ -364,20 +364,24 @@ def create_payment_partner_transaction(
 	team, payment_partner, exchange_rate, amount, paid_amount, payment_gateway, payload=None
 ):
 	"""Create a Payment Partner Transaction record."""
-	transaction_doc = frappe.get_doc(
-		{
-			"doctype": "Payment Partner Transaction",
-			"team": team,
-			"payment_partner": payment_partner,
-			"exchange_rate": exchange_rate,
-			"payment_gateway": payment_gateway,
-			"amount": amount,
-			"actual_amount": paid_amount,
-			"payment_transaction_details": payload,
-		}
-	)
-	transaction_doc.insert(ignore_permissions=True)
-	transaction_doc.submit()
+	try:
+		transaction_doc = frappe.get_doc(
+			{
+				"doctype": "Payment Partner Transaction",
+				"team": team,
+				"payment_partner": payment_partner,
+				"exchange_rate": exchange_rate,
+				"payment_gateway": payment_gateway,
+				"amount": amount,
+				"actual_amount": paid_amount,
+				"payment_transaction_details": payload,
+			}
+		)
+		transaction_doc.insert(ignore_permissions=True)
+		transaction_doc.submit()
+	except Exception:
+		frappe.log_error("Error creating Payment Partner Transaction")
+		raise
 	return transaction_doc.name
 
 
@@ -422,6 +426,7 @@ def create_invoice_partner_site(data, gateway_controller):
 	team = data.get("team")
 	default_currency = data.get("default_currency")
 	rate = data.get("rate")
+	tax_id = data.get("tax_id")
 
 	# Validate the necessary fields
 	if not transaction_id or not amount:
@@ -439,7 +444,9 @@ def create_invoice_partner_site(data, gateway_controller):
 		"team": team,
 		"default_currency": default_currency,
 		"rate": rate,
+		"tax_id": tax_id,
 	}
+
 	# Make the POST request to your API
 	try:
 		response = requests.post(api_url, data=payload, headers=headers)
