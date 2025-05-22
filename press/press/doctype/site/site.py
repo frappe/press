@@ -144,10 +144,10 @@ class Site(Document, TagHelpers):
 		group: DF.Link
 		hide_config: DF.Check
 		host_name: DF.Data | None
+		hybrid_for: DF.Data | None
 		hybrid_saas_pool: DF.Link | None
 		is_erpnext_setup: DF.Check
 		is_standby: DF.Check
-		label: DF.Data | None
 		logical_backup_times: DF.Table[SiteBackupTime]
 		notify_email: DF.Data | None
 		only_update_at_specified_time: DF.Check
