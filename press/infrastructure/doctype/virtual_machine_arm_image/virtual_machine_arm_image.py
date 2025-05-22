@@ -19,7 +19,7 @@ class VirtualMachineARMImage(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		status: DF.Literal["Pending", "Preparing", "Running", "Failure", "Success"]
+		status: DF.Literal["Draft", "Pending", "Preparing", "Running", "Failure", "Success"]
 	# end: auto-generated types
 
 	pass
