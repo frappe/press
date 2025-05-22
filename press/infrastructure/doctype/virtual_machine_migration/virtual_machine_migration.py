@@ -299,7 +299,7 @@ class VirtualMachineMigration(Document):
 		]
 
 		if self.server_type == "Server":
-			methods.insert(0, (self.stop_docker, Wait))
+			methods.insert(0, (self.remove_docker_containers, Wait))
 
 		steps = []
 		for method, wait_for_completion in methods:
@@ -312,9 +312,14 @@ class VirtualMachineMigration(Document):
 			)
 		return steps
 
-	def stop_docker(self) -> StepStatus:
-		"""Stop all docker containers to avoid copying /var/lib/docker/containers"""
-		command = "systemctl stop docker"
+	def remove_docker_containers(self) -> StepStatus:
+		"""Remove docker containers"""
+		container_names = frappe.get_all(
+			"Bench",
+			{"status": "Active", "server": self.name},
+			pluck="name",
+		)
+		command = f"docker rm -f {container_names}"
 		result = self.ansible_run(command)
 
 		if result["status"] != "Success":
