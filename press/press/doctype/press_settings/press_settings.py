@@ -181,8 +181,8 @@ class PressSettings(Document):
 	)
 
 	def validate(self):
-		# if self.max_concurrent_physical_restorations > 5:
-		# 	frappe.throw("Max Concurrent Physical Restorations should be less than 5")
+		if self.max_concurrent_physical_restorations > 5:
+			frappe.throw("Max Concurrent Physical Restorations should be less than 5")
 
 		if self.send_email_notifications:
 			if self.email_recipients:
@@ -194,8 +194,8 @@ class PressSettings(Document):
 			else:
 				frappe.throw("Email Recipients List can not be empty")
 
-		# if self.minimum_rebuild_memory < 2:
-		# 	frappe.throw("Minimum rebuild memory needs to be 2 GB or more.")
+		if self.minimum_rebuild_memory < 2:
+			frappe.throw("Minimum rebuild memory needs to be 2 GB or more.")
 
 	@frappe.whitelist()
 	def create_stripe_webhook(self):
