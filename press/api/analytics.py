@@ -478,8 +478,6 @@ def get_advanced_analytics(name, timezone, duration="7d"):
 		"average_background_job_duration_by_method": get_background_job_by_method(
 			name, "average_duration", timezone, timespan, timegrain
 		),
-		"slow_logs_by_count": get_slow_logs(name, "count", timezone, timespan, timegrain),
-		"slow_logs_by_duration": get_slow_logs(name, "duration", timezone, timespan, timegrain),
 		"job_count": [{"value": r.count, "date": r.date} for r in job_data],
 		"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
 	}

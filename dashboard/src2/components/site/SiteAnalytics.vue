@@ -228,7 +228,7 @@
 					:data="slowLogsCountData"
 					unit="queries"
 					:chartTheme="requestChartColors"
-					:loading="$resources.advancedAnalytics.loading"
+					:loading="$resources.slowLogsCount.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -254,7 +254,7 @@
 					:data="slowLogsDurationData"
 					unit="seconds"
 					:chartTheme="requestChartColors"
-					:loading="$resources.advancedAnalytics.loading"
+					:loading="$resources.slowLogsDuration.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
