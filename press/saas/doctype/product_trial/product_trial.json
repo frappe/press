@@ -24,6 +24,9 @@
   "enable_pooling",
   "standby_pool_size",
   "standby_queue_size",
+  "section_break_klpr",
+  "enable_hybrid_pooling",
+  "hybrid_pool_rules",
   "signup_details_tab",
   "email_section",
   "email_account",
@@ -207,6 +210,23 @@
    "fieldname": "suspension_email_content",
    "fieldtype": "HTML Editor",
    "label": "Content"
+  },
+  {
+   "fieldname": "section_break_klpr",
+   "fieldtype": "Section Break",
+   "label": "Hybrid Pooling"
+  },
+  {
+   "fieldname": "hybrid_pool_rules",
+   "fieldtype": "Table",
+   "label": "Hybrid Pool Rules",
+   "options": "Hybrid Pool Item"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_hybrid_pooling",
+   "fieldtype": "Check",
+   "label": "Enable Hybrid Pooling"
   }
  ],
  "grid_page_length": 50,
@@ -222,7 +242,7 @@
    "link_fieldname": "product_trial"
   }
  ],
- "modified": "2025-04-13 11:15:13.500479",
+ "modified": "2025-05-22 12:29:52.256771",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial",
