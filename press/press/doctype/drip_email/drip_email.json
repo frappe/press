@@ -10,7 +10,7 @@
  "field_order": [
   "enabled",
   "email_type",
-  "saas_app",
+  "product_trial",
   "subject",
   "column_break_7",
   "send_by_consultant",
@@ -129,12 +129,6 @@
    "options": "Module Setup Guide"
   },
   {
-   "fieldname": "saas_app",
-   "fieldtype": "Link",
-   "label": "Saas App",
-   "options": "Marketplace App"
-  },
-  {
    "default": "0",
    "fieldname": "skip_sites_with_paid_plan",
    "fieldtype": "Check",
@@ -184,11 +178,18 @@
    "fieldtype": "HTML Editor",
    "in_list_view": 1,
    "label": "Message (HTML)"
+  },
+  {
+   "fieldname": "product_trial",
+   "fieldtype": "Link",
+   "label": "Product Trial",
+   "options": "Product Trial"
   }
  ],
+ "grid_page_length": 50,
  "icon": "icon-envelope",
  "links": [],
- "modified": "2024-11-25 09:50:47.777689",
+ "modified": "2025-05-22 15:14:07.377379",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Drip Email",
@@ -220,6 +221,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "ASC",
  "states": [],
