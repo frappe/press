@@ -80,7 +80,7 @@ class ARMBuildRecord(Document):
 				"ARM images have not been successfully pulled on the server",
 				frappe.ValidationError,
 			)
-		# self._update_image_tags_on_benches()
+		self._update_image_tags_on_benches()
 
 	@frappe.whitelist()
 	def sync_status(self):
