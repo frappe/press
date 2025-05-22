@@ -42,6 +42,7 @@
   "mariadb_section",
   "self_hosted_mariadb_server",
   "mariadb_root_password",
+  "db_port",
   "server_id",
   "is_primary",
   "column_break_12",
@@ -591,6 +592,13 @@
    "fieldtype": "Check",
    "hidden": 1,
    "label": "Binlogs Removed"
+ },
+ {
+   "default": "3306",
+   "fieldname": "db_port",
+   "fieldtype": "Int",
+   "label": "DB Port",
+   "read_only_depends_on": "eval:doc.is_server_setup"
   }
  ],
  "grid_page_length": 50,
