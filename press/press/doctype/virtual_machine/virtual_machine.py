@@ -62,6 +62,7 @@ class ARMImageType(TypedDict):
 	build: str
 	existing_image: bool
 	status: Literal["Pending", "Preparing", "Running", "Failure", "Success"]
+	bench: str
 
 
 class VirtualMachine(Document):
@@ -1341,7 +1342,12 @@ class VirtualMachine(Document):
 			}
 
 		new_arm_build = self.create_arm_build(build_id)
-		return {"build": new_arm_build, "existing_image": False, "status": "Pending"}
+		return {
+			"build": new_arm_build,
+			"existing_image": False,
+			"status": "Pending",
+			"bench": bench_info["name"],
+		}
 
 	@frappe.whitelist()
 	def collect_arm_images(self) -> str:

@@ -14,6 +14,7 @@ class VirtualMachineARMImage(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		bench: DF.Link
 		build: DF.Link
 		parent: DF.Data
 		parentfield: DF.Data
