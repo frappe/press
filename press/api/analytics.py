@@ -324,7 +324,7 @@ class BackgroundJobGroupByChart(StackedGroupByChart):
 			self.group_by_field = "json.site"
 
 
-class NginxRequestGroupBy(StackedGroupByChart):
+class NginxRequestGroupByChart(StackedGroupByChart):
 	def __init__(self, name, agg_type, resource_type, timezone, timespan, timegrain):
 		super().__init__(name, agg_type, resource_type, timezone, timespan, timegrain)
 
@@ -345,7 +345,14 @@ class NginxRequestGroupBy(StackedGroupByChart):
 	def setup_search_filters(self):
 		super().setup_search_filters()
 		press_settings: PressSettings = frappe.get_cached_doc("Press Settings")
-		if not (monitor_ip := press_settings.monitor_server):
+		if not (
+			press_settings.monitor_server
+			and (
+				monitor_ip := frappe.db.get_value(
+					"Monitor Server", press_settings.monitor_server, "ip", cache=True
+				)
+			)
+		):
 			frappe.throw("Monitor server not set in Press Settings")
 		self.search = self.search.exclude("match_phrase", source__ip=monitor_ip)
 		if ResourceType(self.resource_type) is ResourceType.SITE:
@@ -600,7 +607,7 @@ def get_request_by_(
 
 
 def get_nginx_request_by_(name, agg_type: AggType, timezone: str, timespan: int, timegrain: int):
-	return NginxRequestGroupBy(name, agg_type, ResourceType.SITE, timezone, timespan, timegrain).run()
+	return NginxRequestGroupByChart(name, agg_type, ResourceType.SITE, timezone, timespan, timegrain).run()
 
 
 def get_background_job_by_method(site, agg_type, timezone, timespan, timegrain):
