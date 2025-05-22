@@ -27,7 +27,7 @@ class MpesaRequestLog(Document):
 		url: DF.SmallText | None
 	# end: auto-generated types
 
-	def validate(self):
+	def before_insert(self):
 		self.validate_duplicate_request_id()
 
 	def validate_duplicate_request_id(self):
