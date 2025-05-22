@@ -549,6 +549,7 @@ class DatabaseServer(BaseServer):
 					"workers": "2",
 					"agent_password": config.agent_password,
 					"agent_repository_url": config.agent_repository_url,
+					"agent_branch": config.agent_branch,
 					"monitoring_password": config.monitoring_password,
 					"log_server": config.log_server,
 					"kibana_password": config.kibana_password,
@@ -595,6 +596,7 @@ class DatabaseServer(BaseServer):
 			dict(
 				agent_password=self.get_password("agent_password"),
 				agent_repository_url=self.get_agent_repository_url(),
+				agent_branch=self.get_agent_repository_branch(),
 				mariadb_root_password=self.get_password("mariadb_root_password"),
 				certificate=certificate,
 				monitoring_password=frappe.get_doc("Cluster", self.cluster).get_password(
