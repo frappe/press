@@ -3326,11 +3326,10 @@ class Site(Document, TagHelpers):
 			frappe.qb.from_(site_backups)
 			.select(site_backups.name)
 			.where(
-				site_backups.site
-				== self.name & site_backups.with_files
-				== 1 & site_backups.offsite
-				== 1 & site_backups.creation
-				> frappe.utils.add_to_date(frappe.utils.now(), days=-1)
+				(site_backups.site == self.name)
+				& (site_backups.with_files == 1)
+				& (site_backups.offsite == 1)
+				& (site_backups.creation > frappe.utils.add_to_date(frappe.utils.now(), days=-1))
 			)
 		)
 
@@ -3338,15 +3337,13 @@ class Site(Document, TagHelpers):
 	def recent_offsite_backup_exists(self):
 		site_backups = frappe.qb.DocType("Site Backup")
 		return self.recent_offsite_backups_.where(
-			site_backups.status == "Success" & site_backups.files_availability == "Available"
+			(site_backups.status == "Success") & (site_backups.files_availability == "Available")
 		).run()
 
 	@cached_property
 	def recent_offsite_backups_pending(self):
 		site_backups = frappe.qb.DocType("Site Backup")
-		return self.recent_offsite_backups_.where(
-			site_backups.status == "Pending" | site_backups.status == "Running"
-		).run()
+		return self.recent_offsite_backups_.where(site_backups.status in ["Pending", "Running"]).run()
 
 
 def site_cleanup_after_archive(site):
