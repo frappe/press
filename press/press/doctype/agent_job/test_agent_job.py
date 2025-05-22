@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
+from __future__ import annotations
 
-
-import json
 import unittest
 from contextlib import contextmanager
 from typing import Callable, Literal
@@ -32,7 +30,7 @@ def before_insert(self):
 	return None
 
 
-def fake_agent_job_req(
+def fake_agent_job_req(  # noqa: C901
 	job_type: str,
 	status: Literal["Success", "Pending", "Running", "Failure"],
 	data: dict,
@@ -54,9 +52,7 @@ def fake_agent_job_req(
 			return
 		job_id = int(make_autoname(".#"))
 		if steps:
-			needed_steps = frappe.get_all(
-				"Agent Job Type Step", {"parent": job_type}, pluck="step_name"
-			)
+			needed_steps = frappe.get_all("Agent Job Type Step", {"parent": job_type}, pluck="step_name")
 			for step in needed_steps:
 				if not any(step == s["name"] for s in steps):
 					steps.append(
@@ -92,7 +88,7 @@ def fake_agent_job_req(
 		# TODO: make the next url regex for multiple job ids #
 		responses.add(
 			responses.GET,
-			f"https://{self.server}:443/agent/jobs/{str(job_id)}",
+			f"https://{self.server}:443/agent/jobs/{job_id!s}",
 			# TODO:  populate steps with data from agent job type #
 			json={
 				"data": data,
@@ -136,8 +132,8 @@ def fake_agent_job_req(
 def fake_agent_job(
 	job_type: str,
 	status: Literal["Success", "Pending", "Running", "Failure"] = "Success",
-	data: dict = None,
-	steps: list[dict] = None,
+	data: dict | None = None,
+	steps: list[dict] | None = None,
 ):
 	"""Fakes agent job request and response. Also polls the job.
 
@@ -154,14 +150,10 @@ def fake_agent_job(
 	), patch(
 		"press.press.doctype.agent_job.agent_job.frappe.enqueue",
 		new=foreground_enqueue,
-	), patch(
-		"press.press.doctype.agent_job.agent_job.frappe.db.commit", new=Mock()
-	), patch(
+	), patch("press.press.doctype.agent_job.agent_job.frappe.db.commit", new=Mock()), patch(
 		"press.press.doctype.agent_job.agent_job.frappe.db.rollback", new=Mock()
 	):
-		frappe.local.role_permissions = (
-			{}
-		)  # due to bug in FF related to only_if_creator docperm
+		frappe.local.role_permissions = {}  # due to bug in FF related to only_if_creator docperm
 		yield
 		global before_insert
 		before_insert = lambda self: None  # noqa
@@ -196,11 +188,7 @@ class TestAgentJob(unittest.TestCase):
 		site2.db_set("current_disk_usage", 101)
 		frappe.db.set_single_value("Press Settings", "enforce_storage_limits", True)
 		suspend_sites()
-		suspend_jobs = frappe.get_all(
-			"Agent Job", {"job_type": "Update Site Status"}, ["request_data"]
-		)
-		for job in suspend_jobs:
-			self.assertTrue(json.loads(job.request_data).get("skip_reload"))
+		suspend_jobs = frappe.get_all("Agent Job", {"job_type": "Update Site Status"}, ["request_data"])
 
 		self.assertEqual(len(suspend_jobs), 2)
 		self.assertEqual(

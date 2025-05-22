@@ -1274,7 +1274,6 @@ class Site(Document, TagHelpers):
 				"site": self.name,
 				"domain": domain,
 				"dns_type": "CNAME",
-				"skip_reload": False,
 			}
 		).insert()
 
@@ -1412,7 +1411,7 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Suspended"])
-	def archive(self, site_name=None, reason=None, force=False, skip_reload=True):
+	def archive(self, site_name=None, reason=None, force=False):
 		agent = Agent(self.server)
 		self.status = "Pending"
 		self.save()
@@ -1426,7 +1425,6 @@ class Site(Document, TagHelpers):
 			server=self.server,
 			site=self.name,
 			site_name=site_name,
-			skip_reload=skip_reload,
 		)
 
 		self.db_set("host_name", None)
@@ -2287,11 +2285,11 @@ class Site(Document, TagHelpers):
 		self.reactivate_app_subscriptions()
 
 	@frappe.whitelist()
-	def suspend(self, reason=None, skip_reload=True):
+	def suspend(self, reason=None):
 		log_site_activity(self.name, "Suspend Site", reason)
 		self.status = "Suspended"
 		self.update_site_config({"maintenance_mode": 1})
-		self.update_site_status_on_proxy("suspended", skip_reload=skip_reload)
+		self.update_site_status_on_proxy("suspended")
 		self.deactivate_app_subscriptions()
 
 		if self.standby_for_product:
@@ -2315,11 +2313,11 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	@site_action(["Suspended"])
-	def unsuspend(self, reason=None, skip_reload=True):
+	def unsuspend(self, reason=None):
 		log_site_activity(self.name, "Unsuspend Site", reason)
 		self.status = "Active"
 		self.update_site_config({"maintenance_mode": 0})
-		self.update_site_status_on_proxy("activated", skip_reload=skip_reload)
+		self.update_site_status_on_proxy("activated")
 		self.reactivate_app_subscriptions()
 
 	@frappe.whitelist()
@@ -2327,10 +2325,10 @@ class Site(Document, TagHelpers):
 		agent = Agent(self.server)
 		agent.reset_site_usage(self)
 
-	def update_site_status_on_proxy(self, status, skip_reload=True):
+	def update_site_status_on_proxy(self, status):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.update_site_status(self.server, self.name, status, skip_reload)
+		agent.update_site_status(self.server, self.name, status)
 
 	def get_user_details(self):
 		if frappe.db.get_value("Team", self.team, "user") == "Administrator" and self.account_request:
