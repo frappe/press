@@ -1337,14 +1337,13 @@ class VirtualMachine(Document):
 		if arm_build:
 			return {
 				"build": arm_build,
-				"existing_image": True,
 				"status": frappe.get_value("Deploy Candidate Build", arm_build, "status"),
+				"bench": bench_info["name"],
 			}
 
 		new_arm_build = self.create_arm_build(build_id)
 		return {
 			"build": new_arm_build,
-			"existing_image": False,
 			"status": "Pending",
 			"bench": bench_info["name"],
 		}

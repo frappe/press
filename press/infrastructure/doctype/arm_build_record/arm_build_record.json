@@ -1,7 +1,6 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "autoincrement",
  "creation": "2025-05-19 15:10:21.448402",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -34,11 +33,10 @@
    "link_fieldname": "reference_name"
   }
  ],
- "modified": "2025-05-21 12:12:29.203472",
+ "modified": "2025-05-22 15:28:14.580339",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "ARM Build Record",
- "naming_rule": "Autoincrement",
  "owner": "Administrator",
  "permissions": [
   {
@@ -57,5 +55,6 @@
  "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "virtual_machine"
 }
