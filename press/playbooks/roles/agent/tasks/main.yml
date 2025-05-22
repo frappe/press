@@ -6,7 +6,7 @@
     repo: '{{ agent_repository_url }}'
     dest: /home/frappe/agent/repo
     remote: upstream
-    version: master
+    version: '{% if agent_branch is defined and agent_branch is truthy %} {{ agent_branch }} {% else %} master {% endif %}'
     update: yes
 
 - name: Install Agent
