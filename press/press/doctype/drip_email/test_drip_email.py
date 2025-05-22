@@ -6,6 +6,7 @@ from __future__ import annotations
 import unittest
 from datetime import date, timedelta
 from typing import TYPE_CHECKING
+from unittest.mock import patch
 
 import frappe
 
@@ -22,15 +23,20 @@ if TYPE_CHECKING:
 
 
 def create_test_drip_email(
-	send_after: int, product_trial: str | None = None, skip_sites_with_paid_plan: bool = False
+	send_after: int,
+	product_trial: str | None = None,
+	skip_sites_with_paid_plan: bool = False,
+	email_type: str = "Drip",
 ) -> DripEmail:
 	drip_email = frappe.get_doc(
 		{
 			"doctype": "Drip Email",
+			"enabled": 1,
 			"sender": "test@test.com",
 			"sender_name": "Test User",
 			"subject": "Drip Test",
 			"message": "Drip Top, Drop Top",
+			"email_type": email_type,
 			"send_after": send_after,
 			"product_trial": product_trial,
 			"skip_sites_with_paid_plan": skip_sites_with_paid_plan,
@@ -121,3 +127,30 @@ class TestDripEmail(unittest.TestCase):
 		site3.save()
 
 		self.assertEqual(drip_email.sites_to_send_drip, [site1.name, site3.name])
+
+	def test_welcome_mail_is_sent_for_new_signups(self):
+		from press.press.doctype.drip_email.drip_email import DripEmail, send_welcome_email
+
+		test_app = create_test_app("wiki", "Wiki")
+		test_product_trial = create_test_product_trial(test_app)
+		create_test_drip_email(
+			0, product_trial=test_product_trial.name, skip_sites_with_paid_plan=True, email_type="Sign Up"
+		)
+
+		site1 = create_test_site(
+			"site1",
+			standby_for_product=test_product_trial.name,
+			account_request=create_test_account_request(
+				"site1", saas=True, product_trial=test_product_trial.name
+			).name,
+			plan=self.trial_site_plan.name,
+		)
+		site1.save()
+
+		with patch.object(
+			DripEmail,
+			"send",
+		) as send_welcome_mail:
+			send_welcome_email()
+
+		send_welcome_mail.assert_called()
