@@ -192,7 +192,9 @@ class ProductTrial(Document):
 		if cluster:
 			filters["cluster"] = cluster
 
-		country = frappe.db.get_value("Account Request", account_request, "country")
+		country = (
+			frappe.db.get_value("Account Request", account_request, "country") if account_request else None
+		)
 		for rule in self.hybrid_pool_rules:
 			if not country:
 				break
