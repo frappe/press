@@ -9,7 +9,7 @@
 				<template v-slot:default>
 					<div v-if="!(resetPasswordEmailSent || otpRequested)">
 						<div
-							class="mb-2 flex flex-col"
+							class="mb-4 flex flex-col"
 							v-if="!hasForgotPassword && !isOauthLogin && !is2FA"
 						>
 							<div class="flex flex-col gap-2">
