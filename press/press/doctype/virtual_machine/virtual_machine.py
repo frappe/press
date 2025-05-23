@@ -5,8 +5,6 @@ from __future__ import annotations
 import base64
 import ipaddress
 import time
-import typing
-from typing import Literal, TypedDict
 
 import boto3
 import botocore
@@ -40,10 +38,6 @@ from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
 
-if typing.TYPE_CHECKING:
-	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
-	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
-
 server_doctypes = [
 	"Server",
 	"Database Server",
@@ -51,18 +45,6 @@ server_doctypes = [
 	"Monitor Server",
 	"Log Server",
 ]
-
-
-class BenchInfoType(TypedDict):
-	name: str
-	build: str
-
-
-class ARMImageType(TypedDict):
-	build: str
-	existing_image: bool
-	status: Literal["Pending", "Preparing", "Running", "Failure", "Success"]
-	bench: str
 
 
 class VirtualMachine(Document):
@@ -1320,53 +1302,6 @@ class VirtualMachine(Document):
 		self.client().modify_instance_attribute(
 			InstanceId=self.instance_id, BlockDeviceMappings=modified_volumes
 		)
-
-	def create_arm_build(self, build: str) -> str:
-		build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", build)
-		try:
-			return build.create_arm_build(set_arm_build_name=True)
-		except frappe.ValidationError:
-			frappe.log_error(
-				"Failed to create ARM build", message=f"Failed to create arm build for build {build.name}"
-			)
-
-	def process_bench(self, bench_info: BenchInfoType) -> ARMImageType:
-		build_id = bench_info["build"]
-		arm_build = frappe.get_value("Deploy Candidate Build", build_id, "arm_build")
-
-		if arm_build:
-			return {
-				"build": arm_build,
-				"status": frappe.get_value("Deploy Candidate Build", arm_build, "status"),
-				"bench": bench_info["name"],
-			}
-
-		new_arm_build = self.create_arm_build(build_id)
-		return {
-			"build": new_arm_build,
-			"status": "Pending",
-			"bench": bench_info["name"],
-		}
-
-	@frappe.whitelist()
-	def collect_arm_images(self) -> str:
-		"""Collect arm build images of all active benches on VM"""
-		benches = frappe.get_all(
-			"Bench",
-			{"server": self.name, "status": "Active"},
-			["name", "build"],
-		)
-
-		if not benches:
-			frappe.throw(f"No active benches found on <a href='/app/server/{self.name}'> Server")
-
-		arm_build_record: ARMBuildRecord = frappe.new_doc("ARM Build Record", virtual_machine=self.name)
-
-		for bench_info in benches:
-			arm_build_record.append("arm_images", self.process_bench(bench_info))
-
-		arm_build_record.save()
-		return f"Created <a href='/app/arm-build-record/{arm_build_record.name}'> ARM Build Record"
 
 	@frappe.whitelist()
 	def convert_to_arm(self, virtual_machine_image, machine_type):

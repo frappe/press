@@ -74,12 +74,6 @@ frappe.ui.form.on('Virtual Machine', {
 				true,
 				frm.doc.status === 'Running' && frm.doc.cloud_provider === 'AWS EC2',
 			],
-			[
-				__('Collect ARM Images'),
-				'collect_arm_images',
-				true,
-				frm.doc.series == 'f' && frm.doc.platform == 'x86_64',
-			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

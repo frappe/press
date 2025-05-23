@@ -26,11 +26,9 @@ class ARMBuildRecord(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.infrastructure.doctype.virtual_machine_arm_image.virtual_machine_arm_image import (
-			VirtualMachineARMImage,
-		)
+		from press.infrastructure.doctype.arm_docker_image.arm_docker_image import ARMDockerImage
 
-		arm_images: DF.Table[VirtualMachineARMImage]
+		arm_images: DF.Table[ARMDockerImage]
 		virtual_machine: DF.Link
 	# end: auto-generated types
 

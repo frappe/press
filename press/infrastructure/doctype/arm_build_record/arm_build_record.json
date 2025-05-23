@@ -13,7 +13,7 @@
    "fieldname": "arm_images",
    "fieldtype": "Table",
    "label": "Arm Images",
-   "options": "Virtual Machine ARM Image",
+   "options": "ARM Docker Image",
    "reqd": 1
   },
   {
@@ -33,7 +33,7 @@
    "link_fieldname": "reference_name"
   }
  ],
- "modified": "2025-05-22 15:28:14.580339",
+ "modified": "2025-05-23 17:25:22.068280",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "ARM Build Record",

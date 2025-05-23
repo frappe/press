@@ -21,9 +21,9 @@ if typing.TYPE_CHECKING:
 class TestARMBuildRecord(unittest.TestCase):
 	@classmethod
 	def setUpClass(cls):
-		cls.virtual_machine = create_test_virtual_machine(series="f")
-		cls.virtual_machine.create_server()
-		cls.server = frappe.get_value("Server", {})
+		virtual_machine = create_test_virtual_machine(series="f")
+		virtual_machine.create_server()
+		cls.server = frappe.get_last_doc("Server")
 		app = create_test_app()
 		rg = create_test_release_group([app], servers=[cls.server])
 		cls.bench = create_test_bench(group=rg, server=cls.server)
@@ -36,7 +36,7 @@ class TestARMBuildRecord(unittest.TestCase):
 
 	@patch.object(DeployCandidateBuild, "pre_build", new=Mock())
 	def test_build_trigger(self):
-		self.virtual_machine.collect_arm_images()
+		self.server.collect_arm_images()
 		arm_build_record: ARMBuildRecord = frappe.get_doc(
 			"ARM Build Record", frappe.get_value("ARM Build Record", {})
 		)
