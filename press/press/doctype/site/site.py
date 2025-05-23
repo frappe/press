@@ -144,7 +144,7 @@ class Site(Document, TagHelpers):
 		group: DF.Link
 		hide_config: DF.Check
 		host_name: DF.Data | None
-		hybrid_for: DF.Data | None
+		hybrid_for: DF.Link | None
 		hybrid_saas_pool: DF.Link | None
 		is_erpnext_setup: DF.Check
 		is_standby: DF.Check
@@ -3333,14 +3333,14 @@ class Site(Document, TagHelpers):
 			)
 		)
 
-	@cached_property
+	@property
 	def recent_offsite_backup_exists(self):
 		site_backups = frappe.qb.DocType("Site Backup")
 		return self.recent_offsite_backups_.where(
 			(site_backups.status == "Success") & (site_backups.files_availability == "Available")
 		).run()
 
-	@cached_property
+	@property
 	def recent_offsite_backups_pending(self):
 		site_backups = frappe.qb.DocType("Site Backup")
 		return self.recent_offsite_backups_.where(site_backups.status in ["Pending", "Running"]).run()
