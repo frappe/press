@@ -1102,6 +1102,16 @@ class BaseServer(Document, TagHelpers):
 					"mount_point_group": "frappe",
 				},
 			)
+			self.append(
+				"mounts",
+				{
+					"mount_type": "Bind",
+					"mount_point": "/var/lib/docker",
+					"source": "/opt/volumes/benches/var/lib/docker",
+					"mount_point_owner": "root",
+					"mount_point_group": "root",
+				},
+			)
 		elif self.doctype == "Database Server":
 			first.mount_point = "/opt/volumes/mariadb"
 			self.append(
