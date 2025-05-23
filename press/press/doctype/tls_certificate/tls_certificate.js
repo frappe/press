@@ -4,9 +4,17 @@
 frappe.ui.form.on('TLS Certificate', {
 	refresh: function (frm) {
 		if (frm.doc.wildcard) {
-			frm.add_custom_button(__('Trigger Callback'), () => {
+			frm.add_custom_button(__('Trigger Server Setup Callback'), () => {
 				frm.call({
 					method: 'trigger_server_tls_setup_callback',
+					doc: frm.doc,
+					callback: (result) => frm.refresh(),
+				});
+			});
+		} else {
+			frm.add_custom_button(__('Trigger Site Domain Callback'), () => {
+				frm.call({
+					method: 'trigger_site_domain_callback',
 					doc: frm.doc,
 					callback: (result) => frm.refresh(),
 				});
