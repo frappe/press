@@ -196,6 +196,7 @@ class TLSCertificate(Document):
 					certificate=self,
 				)
 
+	@frappe.whitelist()
 	def trigger_site_domain_callback(self):
 		domain = frappe.db.get_value("Site Domain", {"tls_certificate": self.name}, "name")
 		if domain:
