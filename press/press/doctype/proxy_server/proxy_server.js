@@ -41,12 +41,6 @@ frappe.ui.form.on('Proxy Server', {
 				frm.doc.is_proxysql_setup,
 			],
 			[
-				__('Setup NGINX Defer Reload'),
-				'setup_nginx_defer_reload',
-				true,
-				!frm.doc.is_nginx_defer_reload_setup,
-			],
-			[
 				__('Setup Wildcard Hosts'),
 				'setup_wildcard_hosts',
 				true,

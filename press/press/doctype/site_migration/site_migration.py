@@ -261,16 +261,15 @@ class SiteMigration(Document):
 				server=self.destination_server,
 				site=site_domain.site,
 				domain=site_domain.domain,
-				skip_reload=False,
 			)
 
-		return agent.new_host(site_domain, skip_reload=False)
+		return agent.new_host(site_domain)
 
 	def remove_host_from_source_proxy(self, domain):
 		site_domain = frappe.get_doc("Site Domain", domain)
 		proxy_server = frappe.db.get_value("Server", self.source_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		return agent.remove_host(site_domain, skip_reload=False)
+		return agent.remove_host(site_domain)
 
 	def _add_setup_redirects_step(self):
 		step = {
@@ -602,7 +601,7 @@ class SiteMigration(Document):
 		"""Restore site on destination proxy"""
 		proxy_server = frappe.db.get_value("Server", self.destination_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		return agent.new_upstream_file(server=self.destination_server, site=self.site, skip_reload=False)
+		return agent.new_upstream_file(server=self.destination_server, site=self.site)
 
 	def restore_user_defined_domain_on_destination_proxy(self, domain: str):
 		"""Restore user defined domain on destination proxy for product trial sites"""
@@ -619,15 +618,13 @@ class SiteMigration(Document):
 		"""Remove site from source proxy"""
 		proxy_server = frappe.db.get_value("Server", self.source_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		return agent.remove_upstream_file(server=self.source_server, site=self.site, skip_reload=False)
+		return agent.remove_upstream_file(server=self.source_server, site=self.site)
 
 	def remove_user_defined_domain_from_source_proxy(self, domain: str):
 		"""Remove user defined domain from source proxy for product trial sites"""
 		proxy_server = frappe.db.get_value("Server", self.source_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		return agent.remove_upstream_file(
-			server=self.source_server, site=self.site, site_name=domain, skip_reload=False
-		)
+		return agent.remove_upstream_file(server=self.source_server, site=self.site, site_name=domain)
 
 	def archive_site_on_source(self):
 		"""Archive site on source"""
