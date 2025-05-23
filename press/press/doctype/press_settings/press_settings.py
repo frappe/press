@@ -29,6 +29,7 @@ class PressSettings(Document):
 		agent_github_access_token: DF.Data | None
 		agent_repository_owner: DF.Data | None
 		agent_sentry_dsn: DF.Data | None
+		allow_automatic_arm_build: DF.Check
 		app_include_script: DF.Data | None
 		auto_update_queue_size: DF.Int
 		aws_access_key_id: DF.Data | None
@@ -108,6 +109,7 @@ class PressSettings(Document):
 		monitor_server: DF.Link | None
 		monitor_token: DF.Data | None
 		ngrok_auth_token: DF.Data | None
+		npo_discount: DF.Float
 		offsite_backups_access_key_id: DF.Data | None
 		offsite_backups_count: DF.Int
 		offsite_backups_provider: DF.Literal["AWS S3"]
@@ -134,6 +136,7 @@ class PressSettings(Document):
 		rsa_key_size: DF.Literal["2048", "3072", "4096"]
 		send_email_notifications: DF.Check
 		send_telegram_notifications: DF.Check
+		servers_using_alternative_http_port_for_communication: DF.SmallText | None
 		spaces_domain: DF.Link | None
 		spamd_api_key: DF.Data | None
 		spamd_api_secret: DF.Password | None

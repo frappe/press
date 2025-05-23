@@ -178,6 +178,11 @@ scheduler_events = {
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 		"press.press.doctype.log_counter.log_counter.record_counts",
 		"press.press.doctype.incident.incident.notify_ignored_servers",
+		"press.press.doctype.database_server.database_server.unindex_mariadb_binlogs",
+		"press.press.doctype.database_server.database_server.remove_uploaded_binlogs_from_disk",
+		"press.press.doctype.database_server.database_server.remove_uploaded_binlogs_from_s3",
+		"press.press.doctype.mariadb_binlog.mariadb_binlog.cleanup_old_records",
+		"press.press.doctype.database_server.database_server.delete_mariadb_binlog_for_archived_servers",
 	],
 	"daily_long": [
 		"press.press.audit.check_bench_fields",
@@ -193,6 +198,7 @@ scheduler_events = {
 		"press.press.doctype.press_webhook_log.press_webhook_log.clean_logs_older_than_24_hours",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_all_snapshots_from_aws",
 		"press.press.doctype.payment_due_extension.payment_due_extension.remove_payment_due_extension",
+		"press.press.doctype.tls_certificate.tls_certificate.notify_custom_tls_renewal",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -262,7 +268,6 @@ scheduler_events = {
 		"30 * * * *": ["press.press.doctype.agent_job.agent_job.suspend_sites"],
 		"*/15 * * * *": [
 			"press.press.doctype.site_update.site_update.schedule_updates",
-			"press.press.doctype.drip_email.drip_email.send_welcome_email",
 			"press.press.doctype.site.backups.schedule_logical_backups",
 			"press.press.doctype.site.backups.schedule_physical_backups",
 			"press.press.doctype.site_update.site_update.run_scheduled_updates",
@@ -271,7 +276,6 @@ scheduler_events = {
 			"press.press.doctype.subscription.subscription.create_usage_records",
 			"press.press.doctype.virtual_machine.virtual_machine.sync_virtual_machines",
 			"press.press.doctype.mariadb_stalk.mariadb_stalk.fetch_stalks",
-			"press.press.doctype.database_server.database_server.monitor_disk_performance",
 			"press.press.doctype.virtual_machine.virtual_machine.rolling_snapshot_database_server_virtual_machines",
 		],
 		"*/5 * * * *": [
@@ -279,6 +283,7 @@ scheduler_events = {
 			"press.press.doctype.site_replication.site_replication.update_from_site",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_snapshots",
 			"press.press.doctype.site.site.sync_sites_setup_wizard_complete_status",
+			"press.press.doctype.drip_email.drip_email.send_welcome_email",
 		],
 		"* * * * *": [
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",
@@ -294,6 +299,7 @@ scheduler_events = {
 		"*/30 * * * *": [
 			"press.press.doctype.site_update.scheduled_auto_updates.trigger",
 			"press.press.doctype.team.suspend_sites.execute",
+			"press.press.doctype.database_server.database_server.sync_binlogs_info",
 		],
 		"15,45 * * * *": [
 			"press.press.doctype.site.site_usages.update_cpu_usages",

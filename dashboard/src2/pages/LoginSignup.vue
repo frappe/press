@@ -1,12 +1,49 @@
 <template>
-	<div class="flex h-screen overflow-hidden sm:bg-gray-50">
+	<div class="flex h-screen overflow-hidden">
 		<div class="w-full overflow-auto">
 			<LoginBox
 				:title="title"
+				:subtitle="subtitle"
 				:class="{ 'pointer-events-none': $resources.signup.loading }"
 			>
 				<template v-slot:default>
 					<div v-if="!(resetPasswordEmailSent || otpRequested)">
+						<div
+							class="mb-4 flex flex-col"
+							v-if="!hasForgotPassword && !isOauthLogin && !is2FA"
+						>
+							<div class="flex flex-col gap-2">
+								<Button
+									v-if="isLogin && !usePassword"
+									:route="{
+										name: 'Login',
+										query: { ...$route.query, use_password: 1 },
+									}"
+									icon-left="key"
+								>
+									Continue with password
+								</Button>
+								<Button
+									v-else-if="isLogin && usePassword"
+									:route="{
+										name: 'Login',
+										query: { ...$route.query, use_password: undefined },
+									}"
+									icon-left="mail"
+								>
+									Continue with verification code
+								</Button>
+								<Button
+									:loading="$resources.googleLogin.loading"
+									@click="$resources.googleLogin.submit()"
+								>
+									<div class="flex items-center">
+										<GoogleIcon class="w-4" />
+										<span class="ml-2">Continue with Google</span>
+									</div>
+								</Button>
+							</div>
+						</div>
 						<form class="flex flex-col" @submit.prevent="submitForm">
 							<!-- 2FA Section -->
 							<template v-if="is2FA">
@@ -15,6 +52,7 @@
 									placeholder="123456"
 									v-model="twoFactorCode"
 									required
+									variant="outline"
 								/>
 								<Button
 									class="mt-4"
@@ -47,6 +85,7 @@
 									placeholder="johndoe@mail.com"
 									autocomplete="email"
 									v-model="email"
+									variant="outline"
 									required
 								/>
 								<router-link
@@ -76,6 +115,7 @@
 									autocomplete="email"
 									v-model="email"
 									:disabled="otpSent && !usePassword"
+									variant="outline"
 									required
 								/>
 
@@ -87,6 +127,7 @@
 										type="password"
 										placeholder="•••••"
 										v-model="password"
+										variant="outline"
 										name="password"
 										autocomplete="current-password"
 										required
@@ -117,8 +158,10 @@
 									<template v-if="otpSent">
 										<FormControl
 											class="mt-4"
-											label="Verification Code"
+											label="Verification code"
 											placeholder="123456"
+											variant="outline"
+											ref="otpInput"
 											v-model="otp"
 											required
 										/>
@@ -187,6 +230,7 @@
 									type="email"
 									placeholder="johndoe@mail.com"
 									autocomplete="email"
+									variant="outline"
 									v-model="email"
 									required
 								/>
@@ -202,65 +246,37 @@
 							<ErrorMessage class="mt-2" :message="error" />
 						</form>
 						<div
-							class="flex flex-col"
+							class="mt-4 flex flex-col"
 							v-if="!hasForgotPassword && !isOauthLogin && !is2FA"
 						>
-							<div class="-mb-2 mt-6 border-t text-center">
-								<div class="-translate-y-1/2 transform">
-									<span
-										class="relative bg-white px-2 text-sm font-medium leading-8 text-gray-800"
-									>
-										Or
-									</span>
-								</div>
+							<div v-if="$route.name === 'Signup'">
+								<span class="text-base font-normal text-gray-600">
+									{{ 'By signing up, you agree to our ' }}
+								</span>
+								<a
+									class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+									href="https://frappecloud.com/policies"
+								>
+									Terms & Policies
+								</a>
 							</div>
-
-							<div class="flex flex-col gap-2">
-								<Button
-									v-if="isLogin && !usePassword"
-									:route="{
-										name: 'Login',
-										query: { ...$route.query, use_password: 1 },
-									}"
-									icon-left="key"
-								>
-									Continue with password
-								</Button>
-								<Button
-									v-else-if="isLogin && usePassword"
-									:route="{
-										name: 'Login',
-										query: { ...$route.query, use_password: undefined },
-									}"
-									icon-left="mail"
-								>
-									Continue with verification code
-								</Button>
-								<Button
-									:loading="$resources.googleLogin.loading"
-									@click="$resources.googleLogin.submit()"
-								>
-									<div class="flex items-center">
-										<GoogleIconSolid class="w-4" />
-										<span class="ml-2">Continue with Google</span>
-									</div>
-								</Button>
-							</div>
-							<div
-								class="mt-6 text-center"
-								v-if="!(otpRequested || resetPasswordEmailSent)"
-							>
+							<div v-if="!(otpRequested || resetPasswordEmailSent)">
+								<span class="text-base font-normal text-gray-600">
+									{{
+										$route.name == 'Login'
+											? 'New member? '
+											: 'Already have an account? '
+									}}
+								</span>
 								<router-link
-									class="text-center text-base font-medium text-gray-900 hover:text-gray-700"
+									class="text-base font-normal text-gray-900 underline hover:text-gray-700"
 									:to="{
 										name: $route.name == 'Login' ? 'Signup' : 'Login',
 										query: { ...$route.query, forgot: undefined },
 									}"
 								>
 									{{
-										$route.name == 'Login'
-											? 'New member? Create a new account.'
-											: 'Already have an account? Log in.'
+										$route.name == 'Login' ? 'Create a new account.' : 'Log in.'
 									}}
 								</router-link>
 							</div>
@@ -274,6 +290,7 @@
 								placeholder="johndoe@mail.com"
 								autocomplete="email"
 								v-model="email"
+								variant="outline"
 								required
 							/>
 							<FormControl
@@ -284,6 +301,7 @@
 								maxlength="6"
 								v-model="otp"
 								required
+								variant="outline"
 							/>
 							<ErrorMessage
 								class="mt-2"
@@ -312,20 +330,38 @@
 								}}
 							</Button>
 						</form>
-						<div class="mt-6 text-center">
-							<router-link
-								class="text-center text-base font-medium text-gray-900 hover:text-gray-700"
-								:to="{
-									name: $route.name == 'Login' ? 'Signup' : 'Login',
-									query: { ...$route.query, forgot: undefined },
-								}"
-							>
-								{{
-									$route.name == 'Login'
-										? 'New member? Create a new account.'
-										: 'Already have an account? Log in.'
-								}}
-							</router-link>
+						<div class="mt-4 space-y-2">
+							<div v-if="$route.name === 'Signup'">
+								<span class="text-base font-normal text-gray-600">
+									{{ 'By signing up, you agree to our ' }}
+								</span>
+								<a
+									class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+									href="https://frappecloud.com/policies"
+								>
+									Terms & Policies
+								</a>
+							</div>
+							<div>
+								<span class="text-base font-normal text-gray-600">
+									{{
+										$route.name == 'Login'
+											? 'New member? '
+											: 'Already have an account? '
+									}}
+								</span>
+								<router-link
+									class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+									:to="{
+										name: $route.name == 'Login' ? 'Signup' : 'Login',
+										query: { ...$route.query, forgot: undefined },
+									}"
+								>
+									{{
+										$route.name == 'Login' ? 'Create a new account.' : 'Log in.'
+									}}
+								</router-link>
+							</div>
 						</div>
 					</div>
 					<div
@@ -340,23 +376,11 @@
 					</div>
 				</template>
 				<template v-slot:logo v-if="saasProduct">
-					<div class="mx-auto flex items-center space-x-2">
+					<div class="flex space-x-2">
 						<img
-							class="inline-block h-7 w-7 rounded-sm"
+							class="inline-block h-[38px] w-[38px] rounded-sm"
 							:src="saasProduct?.logo"
 						/>
-						<span
-							class="select-none text-xl font-semibold tracking-tight text-gray-900"
-						>
-							{{ saasProduct?.title }}
-						</span>
-					</div>
-				</template>
-				<template v-slot:footer v-if="saasProduct">
-					<div
-						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
-					>
-						Powered by Frappe Cloud
 					</div>
 				</template>
 			</LoginBox>
@@ -367,6 +391,7 @@
 <script>
 import LoginBox from '../components/auth/LoginBox.vue';
 import GoogleIconSolid from '@/components/icons/GoogleIconSolid.vue';
+import GoogleIcon from '@/components/icons/GoogleIcon.vue';
 import { toast } from 'vue-sonner';
 import { getToastErrorMessage } from '../utils/toast';
 
@@ -374,7 +399,7 @@ export default {
 	name: 'Signup',
 	components: {
 		LoginBox,
-		GoogleIconSolid,
+		GoogleIcon,
 	},
 	data() {
 		return {
@@ -760,6 +785,8 @@ export default {
 		title() {
 			if (this.hasForgotPassword) {
 				return 'Reset password';
+			} else if (this.otpRequested) {
+				return 'Verify your email address';
 			} else if (this.isLogin) {
 				if (this.saasProduct) {
 					return `Log in to your account to start using ${this.saasProduct.title}`;
@@ -769,7 +796,18 @@ export default {
 				if (this.saasProduct) {
 					return `Sign up to create your ${this.saasProduct.title} site`;
 				}
-				return 'Create a new account';
+
+				return 'Create your Frappe Cloud account';
+			}
+		},
+		subtitle() {
+			if (this.hasForgotPassword) {
+				return 'Enter your email address to reset your password';
+			} else {
+				if (this.saasProduct) {
+					return `Get started and explore the easiest way to use ${this.saasProduct.title}`;
+				}
+				return 'Get started and explore the easiest way to use all Frappe apps';
 			}
 		},
 	},

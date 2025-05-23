@@ -22,6 +22,7 @@
   "invoicing_section",
   "invoicing_column",
   "gst_percentage",
+  "npo_discount",
   "column_break_qfwx",
   "print_format",
   "stripe_settings_section",
@@ -86,6 +87,7 @@
   "build_directory",
   "build_server",
   "minimum_rebuild_memory",
+  "allow_automatic_arm_build",
   "column_break_66",
   "code_server",
   "code_server_password",
@@ -205,6 +207,8 @@
   "telegram_alerts_chat_group",
   "send_email_notifications",
   "email_recipients",
+  "section_break_nloq",
+  "servers_using_alternative_http_port_for_communication",
   "feature_flags_tab",
   "verify_cards_with_micro_charge",
   "enable_google_oauth",
@@ -1426,11 +1430,32 @@
    "fieldname": "disable_frappe_auth",
    "fieldtype": "Check",
    "label": "Disable Frappe Auth"
+  },
+  {
+   "fieldname": "section_break_nloq",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "servers_using_alternative_http_port_for_communication",
+   "fieldtype": "Small Text",
+   "label": "Servers Using Alternative HTTP Port For Communication"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_automatic_arm_build",
+   "fieldtype": "Check",
+   "label": "Allow Automatic ARM Build"
+  },
+  {
+   "description": "Add value in percent (%). e.g. 10",
+   "fieldname": "npo_discount",
+   "fieldtype": "Float",
+   "label": "NPO Discount"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-04-18 16:28:20.736910",
+ "modified": "2025-05-20 13:05:30.783898",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

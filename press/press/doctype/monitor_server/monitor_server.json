@@ -28,6 +28,8 @@
   "grafana_password",
   "node_exporter_dashboard_path",
   "ssh_section",
+  "ssh_user",
+  "ssh_port",
   "frappe_user_password",
   "frappe_public_key",
   "column_break_20",
@@ -229,6 +231,17 @@
    "fieldname": "prometheus_username",
    "fieldtype": "Data",
    "label": "Prometheus Username"
+ },
+ {
+   "fieldname": "ssh_user",
+   "fieldtype": "Data",
+   "label": "SSH User"
+  },
+  {
+   "default": "22",
+   "fieldname": "ssh_port",
+   "fieldtype": "Int",
+   "label": "SSH Port"
   }
  ],
  "grid_page_length": 50,

@@ -34,6 +34,8 @@ if TYPE_CHECKING:
 	from elasticsearch_dsl.response import AggResponse
 	from elasticsearch_dsl.response.aggs import FieldBucket, FieldBucketData
 
+	from press.press.doctype.press_settings.press_settings import PressSettings
+
 	class Dataset(TypedDict):
 		"""Single element of list of Datasets returned for stacked histogram chart"""
 
@@ -294,8 +296,8 @@ class RequestGroupByChart(StackedGroupByChart):
 
 
 class BackgroundJobGroupByChart(StackedGroupByChart):
-	def __init__(self, name, agg_type, resource_type, timezone, timespan, timegrain):
-		super().__init__(name, agg_type, resource_type, timezone, timespan, timegrain)
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 
 	def sum_of_duration(self):
 		return A("sum", field="json.duration")
@@ -322,21 +324,66 @@ class BackgroundJobGroupByChart(StackedGroupByChart):
 			self.group_by_field = "json.site"
 
 
+class NginxRequestGroupByChart(StackedGroupByChart):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+	def sum_of_duration(self):
+		return A("sum", field="http.request.duration")
+
+	def avg_of_duration(self):
+		return A("avg", field="http.request.duration")
+
+	def exclude_top_k_data(self, datasets):
+		if ResourceType(self.resource_type) is ResourceType.SITE:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", source__ip=path)
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", http__request__site=path)
+
+	def setup_search_filters(self):
+		super().setup_search_filters()
+		press_settings: PressSettings = frappe.get_cached_doc("Press Settings")
+		if not (
+			press_settings.monitor_server
+			and (
+				monitor_ip := frappe.db.get_value(
+					"Monitor Server", press_settings.monitor_server, "ip", cache=True
+				)
+			)
+		):
+			frappe.throw("Monitor server not set in Press Settings")
+		self.search = self.search.exclude("match_phrase", source__ip=monitor_ip)
+		if ResourceType(self.resource_type) is ResourceType.SITE:
+			server = frappe.db.get_value("Site", self.name, "server")
+			proxy = frappe.db.get_value("Server", server, "proxy_server")
+			self.search = self.search.filter("match_phrase", agent__name=proxy)
+			domains = frappe.get_all(
+				"Site Domain",
+				{"site": self.name},
+				pluck="domain",
+			)
+			self.search = self.search.query(
+				"bool", should=[{"match_phrase": {"http.request.site": domain}} for domain in domains]
+			)
+			self.group_by_field = "source.ip"
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:
+			self.search = self.search.filter("match_phrase", agent__name=self.name)
+			self.group_by_field = "http.request.site"
+
+
 class SlowLogGroupByChart(StackedGroupByChart):
 	to_s_divisor = 1e9
 	database_name = None
 
 	def __init__(
 		self,
-		name,
-		agg_type,
-		resource_type,
-		timezone,
-		timespan,
-		timegrain,
 		normalize_slow_logs=False,
+		*args,
+		**kwargs,
 	):
-		super().__init__(name, agg_type, resource_type, timezone, timespan, timegrain)
+		super().__init__(*args, **kwargs)
 		self.normalize_slow_logs = normalize_slow_logs
 
 	def sum_of_duration(self):
@@ -421,6 +468,7 @@ def get_advanced_analytics(name, timezone, duration="7d"):
 		"average_request_duration_by_path": get_request_by_(
 			name, "average_duration", timezone, timespan, timegrain
 		),
+		"request_count_by_ip": get_nginx_request_by_(name, "count", timezone, timespan, timegrain),
 		"background_job_count_by_method": get_background_job_by_method(
 			name, "count", timezone, timespan, timegrain
 		),
@@ -430,8 +478,6 @@ def get_advanced_analytics(name, timezone, duration="7d"):
 		"average_background_job_duration_by_method": get_background_job_by_method(
 			name, "average_duration", timezone, timespan, timegrain
 		),
-		"slow_logs_by_count": get_slow_logs(name, "count", timezone, timespan, timegrain),
-		"slow_logs_by_duration": get_slow_logs(name, "duration", timezone, timespan, timegrain),
 		"job_count": [{"value": r.count, "date": r.date} for r in job_data],
 		"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
 	}
@@ -554,6 +600,10 @@ def get_request_by_(
 	return RequestGroupByChart(name, agg_type, resource_type, timezone, timespan, timegrain).run()
 
 
+def get_nginx_request_by_(name, agg_type: AggType, timezone: str, timespan: int, timegrain: int):
+	return NginxRequestGroupByChart(name, agg_type, ResourceType.SITE, timezone, timespan, timegrain).run()
+
+
 def get_background_job_by_method(site, agg_type, timezone, timespan, timegrain):
 	return BackgroundJobGroupByChart(site, agg_type, ResourceType.SITE, timezone, timespan, timegrain).run()
 
@@ -570,7 +620,7 @@ def get_slow_logs_by_query(
 def get_slow_logs(
 	name, agg_type, timezone, timespan, timegrain, resource_type=ResourceType.SITE, normalize=False
 ):
-	return SlowLogGroupByChart(name, agg_type, resource_type, timezone, timespan, timegrain, normalize).run()
+	return SlowLogGroupByChart(normalize, name, agg_type, resource_type, timezone, timespan, timegrain).run()
 
 
 class RunDocMethodMethodNames(RequestGroupByChart):

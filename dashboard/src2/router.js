@@ -283,20 +283,20 @@ let router = createRouter({
 				{
 					name: 'SignupAppSelector',
 					path: 'app-selector',
-					component: () => import('./pages/saas/AppSelector.vue'),
+					component: () => import('./pages/signup/AppSelector.vue'),
 					meta: { hideSidebar: true },
 				},
 				{
 					name: 'SignupSetup',
 					path: ':productId/setup',
-					component: () => import('./pages/saas/SetupSite.vue'),
+					component: () => import('./pages/signup/SetupSite.vue'),
 					props: true,
 					meta: { hideSidebar: true },
 				},
 				{
 					name: 'SignupLoginToSite',
 					path: ':productId/login-to-site',
-					component: () => import('./pages/saas/LoginToSite.vue'),
+					component: () => import('./pages/signup/LoginToSite.vue'),
 					props: true,
 					meta: { hideSidebar: true },
 				},
@@ -337,6 +337,11 @@ let router = createRouter({
 			path: '/database-analyzer',
 			name: 'DB Analyzer',
 			component: () => import('./pages/devtools/database/DatabaseAnalyzer.vue'),
+		},
+		{
+			path: '/binlog-browser',
+			name: 'Binlog Browser',
+			component: () => import('./pages/devtools/database/BinlogBrowser.vue'),
 		},
 		{
 			path: '/log-browser/:mode?/:docName?/:logId?',

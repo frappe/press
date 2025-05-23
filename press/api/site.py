@@ -14,6 +14,7 @@ from botocore.exceptions import ClientError
 from dns.resolver import Resolver
 from frappe.core.utils import find
 from frappe.desk.doctype.tag.tag import add_tag
+from frappe.rate_limiter import rate_limit
 from frappe.utils import flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
@@ -1580,7 +1581,8 @@ def restore(name, files, skip_failing_patches=False):
 	return site.restore_site(skip_failing_patches=skip_failing_patches)
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=10, seconds=60)
 def exists(subdomain, domain):
 	from press.press.doctype.site.site import Site
 
@@ -2075,7 +2077,7 @@ def add_server_to_release_group(name, group_name, server=None):
 
 	rg = frappe.get_doc("Release Group", group_name)
 
-	if not frappe.db.exists("Deploy Candidate", {"status": "Success", "group": group_name}):
+	if not frappe.db.exists("Deploy Candidate Build", {"status": "Success", "group": group_name}):
 		frappe.throw(
 			f"There should be atleast one deploy in the bench {frappe.bold(rg.title)} to do a site migration or a site version upgrade."
 		)
@@ -2388,3 +2390,34 @@ def get_site_config_standard_keys():
 		["name", "key", "title", "description", "type"],
 		order_by="title asc",
 	)
+
+
+@frappe.whitelist()
+def fetch_sites_data_for_export():
+	from press.api.client import get_list
+
+	sites = get_list(
+		"Site",
+		[
+			"name",
+			"host_name",
+			"plan.plan_title as plan_title",
+			"cluster.title as cluster_title",
+			"group.title as group_title",
+			"group.version as version",
+			"creation",
+		],
+		start=0,
+		limit=99999,
+	)
+
+	tags = frappe.db.get_all(
+		"Resource Tag",
+		filters={"parenttype": "Site", "parent": ["in", [site.name for site in sites]]},
+		fields=["name", "tag_name", "parent"],
+	)
+
+	for site in sites:
+		site.tags = [tag.tag_name for tag in tags if tag.parent == site.name]
+
+	return sites

@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import frappe
 from frappe.model.document import Document
 
 
@@ -26,4 +27,19 @@ class MpesaRequestLog(Document):
 		url: DF.SmallText | None
 	# end: auto-generated types
 
-	pass
+	def before_insert(self):
+		self.validate_duplicate_request_id()
+
+	def validate_duplicate_request_id(self):
+		request_logs = frappe.get_all(
+			"Mpesa Request Log",
+			{
+				"name": ("!=", self.name),
+				"request_id": self.request_id,
+				"status": "Completed",
+				"integration_request_service": self.integration_request_service,
+			},
+			pluck="name",
+		)
+		if request_logs:
+			frappe.throw(f"Request log already processed with this request id: {self.request_id}")

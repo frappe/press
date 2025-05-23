@@ -96,7 +96,7 @@ def create_test_site(
 	bench: str | None = None,
 	server: str | None = None,
 	team: str | None = None,
-	standby_for: str | None = None,
+	standby_for_product: str | None = None,
 	apps: list[str] | None = None,
 	remote_database_file=None,
 	remote_public_file=None,
@@ -130,7 +130,7 @@ def create_test_site(
 			"team": team or get_current_team(),
 			"apps": apps or [{"app": app.app} for app in group.apps],
 			"admin_password": "admin",
-			"standby_for": standby_for,
+			"standby_for_product": standby_for_product,
 			"remote_database_file": remote_database_file,
 			"remote_public_file": remote_public_file,
 			"remote_private_file": remote_private_file,
@@ -366,30 +366,29 @@ class TestSite(unittest.TestCase):
 			config_host = site.configuration[0].value
 		self.assertEqual(config_host, f"https://{site_domain1.name}")
 
-	def test_suspend_without_reload_creates_agent_job_with_skip_reload(self):
-		site = create_test_site("testsubdomain")
-		site.suspend(skip_reload=True)
-
-		job = frappe.get_doc("Agent Job", {"site": site.name})
-		self.assertTrue(json.loads(job.request_data).get("skip_reload"))
-
-	def test_suspend_without_skip_reload_creates_agent_job_without_skip_reload(self):
+	def test_suspend_creates_agent_job_with_skip_reload(self):
 		site = create_test_site("testsubdomain")
 		site.suspend()
 
 		job = frappe.get_doc("Agent Job", {"site": site.name})
-		self.assertFalse(json.loads(job.request_data).get("skip_reload"))
-
-	def test_archive_with_skip_reload_creates_agent_job_with_skip_reload(self):
-		site = create_test_site("testsubdomain")
-		site.archive(skip_reload=True)
-
-		job = frappe.get_doc("Agent Job", {"site": site.name})
 		self.assertTrue(json.loads(job.request_data).get("skip_reload"))
 
-	def test_archive_without_skip_reload_creates_agent_job_without_skip_reload(self):
+	def test_suspend_with_skip_reload_false_creates_agent_job_with_skip_reload(self):
+		site = create_test_site("testsubdomain")
+		site.suspend(skip_reload=False)
+
+		job = frappe.get_doc("Agent Job", {"site": site.name})
+		self.assertFalse(json.loads(job.request_data).get("skip_reload"))
+
+	def test_archive_without_skip_reload_creates_agent_job_with_skip_reload(self):
 		site = create_test_site("testsubdomain")
 		site.archive()
+
+		frappe.get_doc("Agent Job", {"site": site.name})
+
+	def test_archive_with_skip_reload_false_creates_agent_job_without_skip_reload(self):
+		site = create_test_site("testsubdomain")
+		site.archive(skip_reload=False)
 
 		job = frappe.get_doc("Agent Job", {"site": site.name})
 		self.assertFalse(json.loads(job.request_data).get("skip_reload"))
@@ -481,7 +480,7 @@ class TestSite(unittest.TestCase):
 		site.save(ignore_permissions=True)
 
 	@responses.activate
-	@patch.object(AppSource, "validate_dependant_apps", new=Mock())
+	@patch.object(AppSource, "validate_dependent_apps", new=Mock())
 	def test_sync_apps_updates_apps_child_table(self):
 		app1 = create_test_app()
 		app2 = create_test_app("erpnext", "ERPNext")

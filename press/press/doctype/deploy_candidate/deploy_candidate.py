@@ -442,31 +442,6 @@ class DeployCandidate(Document):
 			"id_rsa-cert.pub": self.user_certificate,
 		}
 
-	def create_deploy(self):
-		servers = frappe.get_doc("Release Group", self.group).servers
-		servers = [server.server for server in servers]
-		if not servers:
-			return None
-
-		deploy_doc = frappe.db.exists(
-			"Deploy", {"group": self.group, "candidate": self.name, "staging": False}
-		)
-
-		if deploy_doc:
-			return str(deploy_doc)
-
-		self._create_deploy(servers)
-		return None
-
-	def _create_deploy(self, servers: list[str]):
-		builds = frappe.get_all(
-			"Deploy Candidate Build", filters={"deploy_candidate": self.name}, pluck="name"
-		)
-		for build_name in builds:
-			build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", build_name)
-			if build.status == "Success":
-				build._create_deploy(servers)
-
 	def get_dependency_version(self, dependency: str, as_env: bool = False):
 		if dependency.islower():
 			dependency = dependency.upper() + "_VERSION"

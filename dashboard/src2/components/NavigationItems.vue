@@ -20,6 +20,7 @@ import Globe from '~icons/lucide/globe';
 import Shield from '~icons/lucide/shield';
 import Notification from '~icons/lucide/inbox';
 import Code from '~icons/lucide/code';
+import FileSearch from '~icons/lucide/file-search';
 import { unreadNotificationsCount } from '../data/notifications';
 
 export default {
@@ -127,12 +128,6 @@ export default {
 					disabled: enforce2FA,
 					children: [
 						{
-							name: 'SQL Playground',
-							icon: () => h(DatabaseZap),
-							route: '/sql-playground',
-							isActive: routeName === 'SQL Playground',
-						},
-						{
 							name: 'Log Browser',
 							icon: () => h(Logs),
 							route: '/log-browser',
@@ -144,10 +139,27 @@ export default {
 							route: '/database-analyzer',
 							isActive: routeName === 'DB Analyzer',
 						},
+						{
+							name: 'SQL Playground',
+							icon: () => h(DatabaseZap),
+							route: '/sql-playground',
+							isActive: routeName === 'SQL Playground',
+						},
+						/*			
+						{
+							name: 'Binlog Browser',
+							icon: () => h(FileSearch),
+							route: '/binlog-browser',
+							isActive: routeName === 'Binlog Browser',
+						},
+						*/
 					].filter((item) => item.condition ?? true),
-					isActive: ['SQL Playground', 'DB Analyzer', 'Log Browser'].includes(
-						routeName,
-					),
+					isActive: [
+						'SQL Playground',
+						'DB Analyzer',
+						'Log Browser',
+						'Binlog Browser',
+					].includes(routeName),
 					disabled: enforce2FA,
 				},
 				{

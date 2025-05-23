@@ -67,8 +67,8 @@ class AppSource(Document):
 
 			self.append("required_apps", {"repository_url": f"https://github.com/{owner}/{repo}"})
 
-	def validate_dependant_apps(self):
-		hooks_uri = f"{self.repository_owner}/{self.app}/{self.branch}/{self.app}/hooks.py"
+	def validate_dependent_apps(self):
+		hooks_uri = f"{self.repository_owner}/{self.repository}/{self.branch}/{self.app}/hooks.py"
 		raw_content_url = (
 			f"https://{get_access_token(self.github_installation_id)}@raw.githubusercontent.com/"
 			if self.github_installation_id
@@ -76,14 +76,18 @@ class AppSource(Document):
 		)
 		uri = raw_content_url + hooks_uri
 
-		response = requests.get(uri)
-		if not response.ok:
-			return
+		try:
+			response = requests.get(uri, timeout=10)
+			if not response.ok:
+				return
 
-		required_apps = REQUIRED_APPS_PATTERN.findall(response.text)
-		if required_apps:
-			required_apps = required_apps[0]
-			self.set_required_apps(match=required_apps)
+			required_apps = REQUIRED_APPS_PATTERN.findall(response.text)
+			if required_apps:
+				required_apps = required_apps[0]
+				self.set_required_apps(match=required_apps)
+		except Exception as e:
+			frappe.log_error(f"Error fetching hooks.py: {e}", "App Source Dependency Check")
+			return  # Continue with the save process even if validation fails
 
 	def autoname(self):
 		series = f"SRC-{self.app}-.###"
@@ -133,7 +137,7 @@ class AppSource(Document):
 		self.repository_url = self.repository_url.removesuffix(".git")
 
 		_, self.repository_owner, self.repository = self.repository_url.rsplit("/", 2)
-		self.validate_dependant_apps()
+		self.validate_dependent_apps()
 		# self.create_release()
 
 	@frappe.whitelist()
