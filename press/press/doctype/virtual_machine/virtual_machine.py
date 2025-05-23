@@ -223,6 +223,10 @@ class VirtualMachine(Document):
 				volume_options["Ebs"]["Throughput"] = volume.throughput
 			additional_volumes.append(volume_options)
 
+		if not self.machine_image:
+			self.machine_image = self.get_latest_ubuntu_image()
+			self.save(ignore_version=True)
+
 		options = {
 			"BlockDeviceMappings": [
 				*[
@@ -1032,7 +1036,7 @@ class VirtualMachine(Document):
 			document["is_server_renamed"] = True
 			document["is_upstream_setup"] = True
 
-		return frappe.get_doc(document).insert()
+		return f"Created <a href='/app/server/{frappe.get_doc(document).insert().name}'> Server"
 
 	@frappe.whitelist()
 	def create_database_server(self):
@@ -1056,7 +1060,7 @@ class VirtualMachine(Document):
 				"Virtual Machine Image", self.virtual_machine_image
 			).get_password("mariadb_root_password")
 
-		return frappe.get_doc(document).insert()
+		return f"Created <a href='/app/database-server/{frappe.get_doc(document).insert().name}'> Database Server"
 
 	@frappe.whitelist()
 	def create_proxy_server(self):
@@ -1072,7 +1076,7 @@ class VirtualMachine(Document):
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
 
-		return frappe.get_doc(document).insert()
+		return f"Created <a href='/app/proxy-server/{frappe.get_doc(document).insert().name}'> Proxy Server"
 
 	@frappe.whitelist()
 	def create_monitor_server(self):
@@ -1088,7 +1092,9 @@ class VirtualMachine(Document):
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
 
-		return frappe.get_doc(document).insert()
+		return (
+			f"Created <a href='/app/monitor-server/{frappe.get_doc(document).insert().name}'> Monitor Server"
+		)
 
 	@frappe.whitelist()
 	def create_log_server(self):
@@ -1104,7 +1110,7 @@ class VirtualMachine(Document):
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
 
-		return frappe.get_doc(document).insert()
+		return f"Created <a href='/app/log-server/{frappe.get_doc(document).insert().name}'> Log Server"
 
 	@frappe.whitelist()
 	def create_registry_server(self):
@@ -1120,7 +1126,7 @@ class VirtualMachine(Document):
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
 
-		return frappe.get_doc(document).insert()
+		return f"Created <a href='/app/registry-server/{frappe.get_doc(document).insert().name}'> Registry Server"
 
 	def get_security_groups(self):
 		groups = [self.security_group_id]

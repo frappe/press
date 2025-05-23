@@ -51,7 +51,11 @@ def create_test_deploy_candidate(group: ReleaseGroup) -> DeployCandidate:
 
 
 def create_test_deploy_candidate_build(
-	deploy_candidate: ReleaseGroup, no_build: bool = False, no_push: bool = False, no_cache: bool = False
+	deploy_candidate: DeployCandidate,
+	no_build: bool = False,
+	no_push: bool = False,
+	no_cache: bool = False,
+	status: str = "Pending",
 ) -> DeployCandidateBuild:
 	deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
 		{
@@ -60,6 +64,8 @@ def create_test_deploy_candidate_build(
 			"no_build": no_build,
 			"no_push": no_push,
 			"no_cache": no_cache,
+			"group": deploy_candidate.group,
+			"status": status,
 		}
 	)
 	return deploy_candidate_build
