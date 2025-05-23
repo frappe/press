@@ -30,7 +30,8 @@ class TestARMBuildRecord(unittest.TestCase):
 		cls.build = frappe.get_value("Deploy Candidate Build", {})
 		frappe.db.set_value("Deploy Candidate Build", {"name": cls.build}, field="status", val="Success")
 
-	def tearDown(self):
+	@classmethod
+	def tearDownClass(cls):
 		frappe.db.rollback()
 
 	@patch.object(DeployCandidateBuild, "pre_build", new=Mock())
