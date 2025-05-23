@@ -569,7 +569,7 @@ class Agent:
 			bench=site.bench,
 		)
 
-	def new_host(self, domain, skip_reload=True):
+	def new_host(self, domain, skip_reload=False):
 		certificate = frappe.get_doc("TLS Certificate", domain.tls_certificate)
 		data = {
 			"name": domain.domain,
@@ -602,7 +602,7 @@ class Agent:
 			site=site,
 		)
 
-	def remove_host(self, domain, skip_reload=True):
+	def remove_host(self, domain, skip_reload=False):
 		data = {"skip_reload": skip_reload}
 		return self.create_agent_job(
 			"Remove Host from Proxy",
@@ -623,7 +623,7 @@ class Agent:
 		data = {"name": private_ip}
 		return self.create_agent_job("Rename Upstream", f"proxy/upstreams/{ip}/rename", data, upstream=server)
 
-	def new_upstream_file(self, server, site=None, code_server=None, skip_reload=True):
+	def new_upstream_file(self, server, site=None, code_server=None, skip_reload=False):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		data = {"name": site if site else code_server, "skip_reload": skip_reload}
@@ -637,7 +637,7 @@ class Agent:
 			upstream=server,
 		)
 
-	def add_domain_to_upstream(self, server, site=None, domain=None, skip_reload=True):
+	def add_domain_to_upstream(self, server, site=None, domain=None, skip_reload=False):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		data = {"domain": domain, "skip_reload": skip_reload}
@@ -649,7 +649,7 @@ class Agent:
 			upstream=server,
 		)
 
-	def remove_upstream_file(self, server, site=None, site_name=None, code_server=None, skip_reload=True):
+	def remove_upstream_file(self, server, site=None, site_name=None, code_server=None, skip_reload=False):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		doctype = "Site" if site else "Code Server"
