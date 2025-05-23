@@ -1241,12 +1241,13 @@ class BaseServer(Document, TagHelpers):
 		if not benches:
 			frappe.throw(f"No active benches found on <a href='/app/server/{self.name}'> Server")
 
-		arm_build_record: ARMBuildRecord = frappe.new_doc("ARM Build Record", virtual_machine=self.name)
+		arm_build_record: ARMBuildRecord = frappe.new_doc("ARM Build Record", server=self.name)
 
 		for bench_info in benches:
 			arm_build_record.append("arm_images", self._process_bench(bench_info))
 
 		arm_build_record.save()
+		return f"<a href=/app/arm-build-record/{arm_build_record.name}> ARM Build Record"
 
 	@frappe.whitelist()
 	def mount_volumes(self):

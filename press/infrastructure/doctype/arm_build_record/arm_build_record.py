@@ -29,11 +29,12 @@ class ARMBuildRecord(Document):
 		from press.infrastructure.doctype.arm_docker_image.arm_docker_image import ARMDockerImage
 
 		arm_images: DF.Table[ARMDockerImage]
-		virtual_machine: DF.Link
+		server: DF.Link
+		updated_image_tags_on_benches: DF.Check
 	# end: auto-generated types
 
 	def _pull_images(self, image_tags: list[str]) -> AgentJob:
-		return Agent(self.virtual_machine).pull_docker_images(
+		return Agent(self.server).pull_docker_images(
 			image_tags, reference_doctype=self.doctype, reference_name=self.name
 		)
 
@@ -47,6 +48,9 @@ class ARMBuildRecord(Document):
 			bench_config["docker_image"] = new_docker_image
 			bench.bench_config = json.dumps(bench_config, indent=4)
 			bench.save()
+
+		self.updated_image_tags_on_benches = True
+		self.save(ignore_version=True)
 
 	def _check_images_pulled(self) -> bool:
 		try:

@@ -5,8 +5,9 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "virtual_machine",
-  "arm_images"
+  "server",
+  "arm_images",
+  "updated_image_tags_on_benches"
  ],
  "fields": [
   {
@@ -17,12 +18,19 @@
    "reqd": 1
   },
   {
-   "fieldname": "virtual_machine",
+   "fieldname": "server",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Virtual Machine",
-   "options": "Virtual Machine",
+   "label": "Server",
+   "options": "Server",
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "updated_image_tags_on_benches",
+   "fieldtype": "Check",
+   "label": "Updated Image Tags On Benches",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -33,7 +41,7 @@
    "link_fieldname": "reference_name"
   }
  ],
- "modified": "2025-05-23 17:25:22.068280",
+ "modified": "2025-05-23 17:42:43.827351",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "ARM Build Record",
@@ -56,5 +64,5 @@
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],
- "title_field": "virtual_machine"
+ "title_field": "server"
 }
