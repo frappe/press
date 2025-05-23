@@ -890,6 +890,8 @@ def create_mpesa_payment_record(transaction_response):
 		"default_currency": "KES",
 		"rate": info.requested_amount,
 	}
+	if frappe.db.exists("Mpesa Payment Record", {"transaction_id": transaction_id}):
+		return
 	mpesa_invoice, invoice_name = create_invoice_partner_site(data, gateway_name)
 	try:
 		payment_record = frappe.get_doc(
