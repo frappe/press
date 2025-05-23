@@ -245,7 +245,7 @@ def send_welcome_email():
 	welcome_drips = frappe.db.get_all("Drip Email", {"email_type": "Sign Up", "enabled": 1}, pluck="name")
 	for drip in welcome_drips:
 		welcome_email = frappe.get_doc("Drip Email", drip)
-		_15_mins_ago = frappe.utils.add_to_date(None, minutes=-5)
+		_5_mins_ago = frappe.utils.add_to_date(None, minutes=-5)
 		tuples = frappe.db.sql(
 			f"""
 				SELECT
@@ -259,7 +259,7 @@ def send_welcome_email():
 				WHERE
 					site.status = "Active" and
 					site.standby_for_product = "{welcome_email.product_trial}" and
-					account_request.creation > "{_15_mins_ago}"
+					account_request.creation > "{_5_mins_ago}"
 			"""
 		)
 		sites_in_last_15_mins = [t[0] for t in tuples]
