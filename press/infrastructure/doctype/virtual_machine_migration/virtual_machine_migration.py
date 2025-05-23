@@ -300,6 +300,7 @@ class VirtualMachineMigration(Document):
 
 		if self.server_type == "Server":
 			methods.insert(0, (self.remove_docker_containers, Wait))
+			methods.append((self.update_server_platform, Wait))
 
 		steps = []
 		for method, wait_for_completion in methods:
@@ -311,6 +312,11 @@ class VirtualMachineMigration(Document):
 				}
 			)
 		return steps
+
+	def update_server_platform(self) -> StepStatus:
+		server = self.machine.get_server()
+		server.platform = "arm64"
+		server.save()
 
 	def remove_docker_containers(self) -> StepStatus:
 		"""Remove docker containers"""
