@@ -317,6 +317,7 @@ class VirtualMachineMigration(Document):
 		server = self.machine.get_server()
 		server.platform = "arm64"
 		server.save()
+		return StepStatus.Success
 
 	def remove_docker_containers(self) -> StepStatus:
 		"""Remove docker containers"""
