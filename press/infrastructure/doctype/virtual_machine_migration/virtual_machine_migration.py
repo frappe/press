@@ -316,7 +316,7 @@ class VirtualMachineMigration(Document):
 		"""Remove docker containers"""
 		container_names = frappe.get_all(
 			"Bench",
-			{"status": "Active", "server": self.name},
+			{"status": "Active", "server": self.machine.name},
 			pluck="name",
 		)
 		command = f"docker rm -f {container_names}"
