@@ -1,10 +1,12 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "PRM-LEAD-.#####",
  "creation": "2025-05-14 16:23:41.502914",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "details_tab",
   "lead_details_section",
   "organization_name",
   "lead_name",
@@ -16,6 +18,9 @@
   "column_break_fyau",
   "status",
   "engagement_stage",
+  "conversion_date",
+  "lost_reason",
+  "lost_reason_specify",
   "contact_info_section",
   "full_name",
   "country",
@@ -30,6 +35,13 @@
   "estimated_closure_date",
   "column_break_jtbg",
   "probability",
+  "success_pack_section",
+  "erpnext_success_pack_interested_in",
+  "need_demo_before_implementation",
+  "additional_comments",
+  "section_break_uzlc",
+  "next_action_date",
+  "followup",
   "requirement_details_section",
   "requirement",
   "partner_tab",
@@ -59,6 +71,8 @@
   {
    "fieldname": "organization_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Organization Name"
   },
   {
@@ -101,13 +115,19 @@
   {
    "fieldname": "status",
    "fieldtype": "Select",
-   "label": "Status"
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Open\nIn Process\nWon\nLost\nJunk\nPass to Other Partner"
   },
   {
+   "depends_on": "eval:in_list(['In Process'], doc.status)",
    "fieldname": "engagement_stage",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Engagement Stage",
-   "options": "Demo"
+   "options": "\nDemo\nQualification\nLearning\nFollow-up\nQuotation\nNegotiation\nReady for Closing"
   },
   {
    "fieldname": "contact_info_section",
@@ -198,6 +218,8 @@
   {
    "fieldname": "company_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Company Name"
   },
   {
@@ -272,15 +294,77 @@
   {
    "fieldname": "column_break_rdxj",
    "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.status === 'Won';",
+   "fieldname": "conversion_date",
+   "fieldtype": "Date",
+   "label": "Conversion Date"
+  },
+  {
+   "depends_on": "eval:doc.status===\"Lost\"",
+   "fieldname": "lost_reason",
+   "fieldtype": "Select",
+   "label": "Lost Reason",
+   "options": "Lost to Competitor\nNo Response\nBudget Constraints\nPartner Rejected\nTrash Lead\nFree User\nNot Interested Anymore\nOther"
+  },
+  {
+   "depends_on": "eval:doc.lost_reason == 'Other'",
+   "fieldname": "lost_reason_specify",
+   "fieldtype": "Data",
+   "label": "Lost Reason (Specify)"
+  },
+  {
+   "depends_on": "eval:doc.origin == 'Success Pack'",
+   "fieldname": "success_pack_section",
+   "fieldtype": "Section Break",
+   "label": "Success Pack"
+  },
+  {
+   "fieldname": "erpnext_success_pack_interested_in",
+   "fieldtype": "Data",
+   "label": "ERPNext Success Pack Interested In"
+  },
+  {
+   "default": "0",
+   "fieldname": "need_demo_before_implementation",
+   "fieldtype": "Check",
+   "label": "Need Demo before Implementation"
+  },
+  {
+   "fieldname": "additional_comments",
+   "fieldtype": "Small Text",
+   "label": "Additional Comments"
+  },
+  {
+   "fieldname": "section_break_uzlc",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "followup",
+   "fieldtype": "Table",
+   "label": "Followup",
+   "options": "Lead Followup"
+  },
+  {
+   "fieldname": "next_action_date",
+   "fieldtype": "Date",
+   "label": "Next Action Date"
+  },
+  {
+   "fieldname": "details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Details"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-19 15:55:06.816679",
+ "modified": "2025-05-23 11:50:42.421633",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Partner Lead",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
@@ -299,5 +383,6 @@
  "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "lead_name"
 }
