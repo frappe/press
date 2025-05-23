@@ -39,8 +39,8 @@ class DripEmail(Document):
 		message_rich_text: DF.TextEditor | None
 		module_setup_guide: DF.Table[ModuleSetupGuide]
 		pre_header: DF.Data | None
+		product_trial: DF.Link | None
 		reply_to: DF.Data | None
-		saas_app: DF.Link | None
 		send_after: DF.Int
 		send_after_payment: DF.Check
 		send_by_consultant: DF.Check
@@ -87,7 +87,7 @@ class DripEmail(Document):
 		# build the message
 		message = frappe.render_template(self.message, context)
 		account_request = context.get("account_request", "")
-		app = frappe.db.get_value("Marketplace App", self.saas_app, ["title", "image"], as_dict=True)
+		app = frappe.db.get_value("Product Trial", self.product_trial, ["title", "logo"], as_dict=True)
 
 		# add to queue
 		frappe.sendmail(
@@ -120,12 +120,12 @@ class DripEmail(Document):
 		if not self.condition:
 			return True
 
-		saas_app = frappe.get_doc("Marketplace App", self.saas_app)
+		product_trial = frappe.get_doc("Product Trial", self.product_trial)
 		site_account_request = frappe.db.get_value("Site", site_name, "account_request")
 		account_request = frappe.get_doc("Account Request", site_account_request)
 
 		eval_locals = dict(
-			app=saas_app,
+			app=product_trial,
 			doc=self,
 			account_request=account_request,
 		)
@@ -167,8 +167,8 @@ class DripEmail(Document):
 
 		conditions = ""
 
-		if self.saas_app:
-			conditions += f'AND site.standby_for = "{self.saas_app}"'
+		if self.product_trial:
+			conditions += f'AND site.standby_for_product = "{self.product_trial}"'
 
 		if self.skip_sites_with_paid_plan:
 			paid_site_plans = frappe.get_all(
@@ -245,7 +245,7 @@ def send_welcome_email():
 	welcome_drips = frappe.db.get_all("Drip Email", {"email_type": "Sign Up", "enabled": 1}, pluck="name")
 	for drip in welcome_drips:
 		welcome_email = frappe.get_doc("Drip Email", drip)
-		_15_mins_ago = frappe.utils.add_to_date(None, minutes=-15)
+		_15_mins_ago = frappe.utils.add_to_date(None, minutes=-5)
 		tuples = frappe.db.sql(
 			f"""
 				SELECT
@@ -258,7 +258,7 @@ def send_welcome_email():
 					site.account_request = account_request.name
 				WHERE
 					site.status = "Active" and
-					site.standby_for = "{welcome_email.saas_app}" and
+					site.standby_for_product = "{welcome_email.product_trial}" and
 					account_request.creation > "{_15_mins_ago}"
 			"""
 		)

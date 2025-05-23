@@ -1,0 +1,42 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-05-22 11:45:09.986862",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "country",
+  "app"
+ ],
+ "fields": [
+  {
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "App",
+   "options": "App"
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Country",
+   "options": "Country"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-05-22 12:28:36.096646",
+ "modified_by": "Administrator",
+ "module": "SaaS",
+ "name": "Hybrid Pool Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
