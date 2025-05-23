@@ -472,7 +472,7 @@
    "collapsible": 1,
    "fieldname": "saas_section",
    "fieldtype": "Section Break",
-   "label": "SaaS"
+   "label": "SaaS / Signup"
   },
   {
    "fieldname": "column_break_63",
@@ -662,8 +662,9 @@
   },
   {
    "fieldname": "hybrid_for",
-   "fieldtype": "Data",
-   "label": "Hybrid For"
+   "fieldtype": "Link",
+   "label": "Hybrid For",
+   "options": "App"
   }
  ],
  "links": [
@@ -743,7 +744,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2025-05-22 12:48:38.054811",
+ "modified": "2025-05-23 10:26:34.020466",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
