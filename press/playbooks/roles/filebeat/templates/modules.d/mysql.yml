@@ -2,9 +2,15 @@
   error:
     enabled: true
     var.paths:
-      - /var/lib/mysql/mysql-error.log
+      - /var/lib/mysql/mysql-error.*
+    input:
+      close_removed: true
+      close_renamed: false
 
   slowlog:
     enabled: true
     var.paths:
-      - /var/lib/mysql/mysql-slow.log
+      - /var/lib/mysql/mysql-slow.*
+    input:
+      close_removed: true
+      close_renamed: false

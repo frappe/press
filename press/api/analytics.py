@@ -296,8 +296,8 @@ class RequestGroupByChart(StackedGroupByChart):
 
 
 class BackgroundJobGroupByChart(StackedGroupByChart):
-	def __init__(self, name, agg_type, resource_type, timezone, timespan, timegrain):
-		super().__init__(name, agg_type, resource_type, timezone, timespan, timegrain)
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 
 	def sum_of_duration(self):
 		return A("sum", field="json.duration")
@@ -325,8 +325,8 @@ class BackgroundJobGroupByChart(StackedGroupByChart):
 
 
 class NginxRequestGroupByChart(StackedGroupByChart):
-	def __init__(self, name, agg_type, resource_type, timezone, timespan, timegrain):
-		super().__init__(name, agg_type, resource_type, timezone, timespan, timegrain)
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 
 	def sum_of_duration(self):
 		return A("sum", field="http.request.duration")
@@ -379,15 +379,11 @@ class SlowLogGroupByChart(StackedGroupByChart):
 
 	def __init__(
 		self,
-		name,
-		agg_type,
-		resource_type,
-		timezone,
-		timespan,
-		timegrain,
 		normalize_slow_logs=False,
+		*args,
+		**kwargs,
 	):
-		super().__init__(name, agg_type, resource_type, timezone, timespan, timegrain)
+		super().__init__(*args, **kwargs)
 		self.normalize_slow_logs = normalize_slow_logs
 
 	def sum_of_duration(self):
@@ -482,8 +478,6 @@ def get_advanced_analytics(name, timezone, duration="7d"):
 		"average_background_job_duration_by_method": get_background_job_by_method(
 			name, "average_duration", timezone, timespan, timegrain
 		),
-		"slow_logs_by_count": get_slow_logs(name, "count", timezone, timespan, timegrain),
-		"slow_logs_by_duration": get_slow_logs(name, "duration", timezone, timespan, timegrain),
 		"job_count": [{"value": r.count, "date": r.date} for r in job_data],
 		"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
 	}
@@ -626,7 +620,7 @@ def get_slow_logs_by_query(
 def get_slow_logs(
 	name, agg_type, timezone, timespan, timegrain, resource_type=ResourceType.SITE, normalize=False
 ):
-	return SlowLogGroupByChart(name, agg_type, resource_type, timezone, timespan, timegrain, normalize).run()
+	return SlowLogGroupByChart(normalize, name, agg_type, resource_type, timezone, timespan, timegrain).run()
 
 
 class RunDocMethodMethodNames(RequestGroupByChart):

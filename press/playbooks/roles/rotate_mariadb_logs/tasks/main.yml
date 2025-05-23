@@ -1,0 +1,14 @@
+---
+- name: Remove Old Logrotate Configurations
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/logrotate.d/mariadb
+    - /etc/logrotate.d/mysql
+    - /etc/logrotate.d/mysql-server
+    - /etc/logrotate.d/mysqld
+- name: Create Logrotate Configuration For MariaDB
+  template:
+    src: mariadb
+    dest: /etc/logrotate.d/mariadb

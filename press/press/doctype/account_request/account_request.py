@@ -92,6 +92,7 @@ class AccountRequest(Document):
 		geo_location = self.get_country_info() or {}
 		self.geo_location = json.dumps(geo_location, indent=1, sort_keys=True)
 		self.state = geo_location.get("regionName")
+		self.country = geo_location.get("country")
 
 		# check for US and EU
 		if (
