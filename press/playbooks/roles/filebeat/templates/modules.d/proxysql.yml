@@ -1,0 +1,15 @@
+- module: proxysql
+  audit:
+    enabled: true
+    var.paths:
+      - /home/frappe/proxysql/audit.log.*
+    input:
+      close_removed: true
+      close_renamed: false
+  events:
+    enabled: true
+    var.paths:
+      - /home/frappe/proxysql/events.log.*
+    input:
+      close_removed: true
+      close_renamed: false
