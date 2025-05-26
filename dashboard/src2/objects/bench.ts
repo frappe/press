@@ -1,4 +1,4 @@
-import Tooltip from 'frappe-ui/src/components/Tooltip/Tooltip.vue';
+import { Tooltip } from 'frappe-ui';
 import LucideAppWindow from '~icons/lucide/app-window';
 import type { VNode } from 'vue';
 import { defineAsyncComponent, h } from 'vue';
