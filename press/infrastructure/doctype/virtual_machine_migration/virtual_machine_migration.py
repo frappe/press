@@ -314,6 +314,7 @@ class VirtualMachineMigration(Document):
 		return steps
 
 	def update_server_platform(self) -> StepStatus:
+		"""Update server platform"""
 		server = self.machine.get_server()
 		server.platform = "arm64"
 		server.save()
