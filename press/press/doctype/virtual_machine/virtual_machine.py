@@ -77,6 +77,7 @@ class VirtualMachine(Document):
 		public_dns_name: DF.Data | None
 		public_ip_address: DF.Data | None
 		ram: DF.Int
+		ready_for_conversion: DF.Check
 		region: DF.Link
 		root_disk_size: DF.Int
 		security_group_id: DF.Data | None
@@ -1303,6 +1304,9 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def convert_to_arm(self, virtual_machine_image, machine_type):
+		if self.series == "f" and not self.ready_for_conversion:
+			frappe.throw("Please complete pre-migration steps before migrating", frappe.ValidationError)
+
 		return frappe.new_doc(
 			"Virtual Machine Migration",
 			virtual_machine=self.name,
