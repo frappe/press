@@ -77,13 +77,16 @@ TIMESPAN_TIMEGRAIN_MAP: Final[dict[str, tuple[int, int]]] = {
 	"15d": (15 * 24 * 60 * 60, 6 * 60 * 60),
 }
 
+MAX_NO_OF_PATHS: Final[int] = 10
+MAX_MAX_NO_OF_PATHS: Final[int] = 50
+
 
 class StackedGroupByChart:
 	search: Search
 	to_s_divisor: float = 1e6
 	normalize_slow_logs: bool = False
 	group_by_field: str
-	MAX_NO_OF_PATHS: int = 10
+	max_no_of_paths: int = 10
 
 	def __init__(
 		self,
@@ -93,6 +96,7 @@ class StackedGroupByChart:
 		timezone: str,
 		timespan: int,
 		timegrain: int,
+		max_no_of_paths: int = MAX_NO_OF_PATHS,
 	):
 		self.log_server = frappe.db.get_single_value("Press Settings", "log_server")
 		if not self.log_server:
@@ -107,6 +111,7 @@ class StackedGroupByChart:
 		self.timezone = timezone
 		self.timespan = timespan
 		self.timegrain = timegrain
+		self.max_no_of_paths = min(max_no_of_paths, MAX_MAX_NO_OF_PATHS)
 
 		self.setup_search_filters()
 		self.setup_search_aggs()
@@ -136,7 +141,7 @@ class StackedGroupByChart:
 				"method_path",
 				"terms",
 				field=self.group_by_field,
-				size=self.MAX_NO_OF_PATHS,
+				size=self.max_no_of_paths,
 				order={"path_count": "desc"},
 			).bucket("histogram_of_method", self.histogram_of_method())
 			self.search.aggs["method_path"].bucket("path_count", self.count_of_values())
@@ -146,7 +151,7 @@ class StackedGroupByChart:
 				"method_path",
 				"terms",
 				field=self.group_by_field,
-				size=self.MAX_NO_OF_PATHS,
+				size=self.max_no_of_paths,
 				order={"outside_sum": "desc"},
 			).bucket("histogram_of_method", self.histogram_of_method()).bucket(
 				"sum_of_duration", self.sum_of_duration()
@@ -158,7 +163,7 @@ class StackedGroupByChart:
 				"method_path",
 				"terms",
 				field=self.group_by_field,
-				size=self.MAX_NO_OF_PATHS,
+				size=self.max_no_of_paths,
 				order={"outside_avg": "desc"},
 			).bucket("histogram_of_method", self.histogram_of_method()).bucket(
 				"avg_of_duration", self.avg_of_duration()
@@ -248,14 +253,20 @@ class StackedGroupByChart:
 		for path_bucket in aggs.method_path.buckets:
 			datasets.append(self.get_histogram_chart(path_bucket, labels))
 
-		if len(datasets) >= self.MAX_NO_OF_PATHS:
+		if len(datasets) >= self.max_no_of_paths:
 			datasets.append(self.get_other_bucket(datasets, labels))
 
 		if self.normalize_slow_logs:
 			datasets = normalize_datasets(datasets)
 
 		labels = [label.replace(tzinfo=None) for label in labels]
-		return {"datasets": datasets, "labels": labels}
+		return {"datasets": datasets, "labels": labels, "allow_drill_down": self.allow_drill_down}
+
+	@property
+	def allow_drill_down(self):
+		if self.max_no_of_paths >= MAX_MAX_NO_OF_PATHS:
+			return False
+		return True
 
 	def run(self):
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
@@ -265,8 +276,8 @@ class StackedGroupByChart:
 
 
 class RequestGroupByChart(StackedGroupByChart):
-	def __init__(self, name, agg_type, resource_type, timezone, timespan, timegrain):
-		super().__init__(name, agg_type, resource_type, timezone, timespan, timegrain)
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 
 	def sum_of_duration(self):
 		return A("sum", field="json.duration")
@@ -456,27 +467,32 @@ def get(name, timezone, duration="7d"):
 
 
 @frappe.whitelist()
-@redis_cache(ttl=10 * 60)
-def get_advanced_analytics(name, timezone, duration="7d"):
+def get_advanced_analytics(name, timezone, duration="7d", max_no_of_paths=MAX_NO_OF_PATHS):
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
 
 	job_data = get_usage(name, "job", timezone, timespan, timegrain)
 
 	return {
-		"request_count_by_path": get_request_by_(name, "count", timezone, timespan, timegrain),
-		"request_duration_by_path": get_request_by_(name, "duration", timezone, timespan, timegrain),
-		"average_request_duration_by_path": get_request_by_(
-			name, "average_duration", timezone, timespan, timegrain
+		"request_count_by_path": get_request_by_(
+			name, "count", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
 		),
-		"request_count_by_ip": get_nginx_request_by_(name, "count", timezone, timespan, timegrain),
+		"request_duration_by_path": get_request_by_(
+			name, "duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+		),
+		"average_request_duration_by_path": get_request_by_(
+			name, "average_duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+		),
+		"request_count_by_ip": get_nginx_request_by_(
+			name, "count", timezone, timespan, timegrain, max_no_of_paths
+		),
 		"background_job_count_by_method": get_background_job_by_method(
-			name, "count", timezone, timespan, timegrain
+			name, "count", timezone, timespan, timegrain, max_no_of_paths
 		),
 		"background_job_duration_by_method": get_background_job_by_method(
-			name, "duration", timezone, timespan, timegrain
+			name, "duration", timezone, timespan, timegrain, max_no_of_paths
 		),
 		"average_background_job_duration_by_method": get_background_job_by_method(
-			name, "average_duration", timezone, timespan, timegrain
+			name, "average_duration", timezone, timespan, timegrain, max_no_of_paths
 		),
 		"job_count": [{"value": r.count, "date": r.date} for r in job_data],
 		"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
@@ -586,8 +602,15 @@ def normalize_datasets(datasets: list[Dataset]) -> list[Dataset]:
 	return list(n_datasets.values())
 
 
+@redis_cache(ttl=10 * 60)
 def get_request_by_(
-	name, agg_type: AggType, timezone: str, timespan: int, timegrain: int, resource_type=ResourceType.SITE
+	name,
+	agg_type: AggType,
+	timezone: str,
+	timespan: int,
+	timegrain: int,
+	resource_type=ResourceType.SITE,
+	max_no_of_paths=MAX_NO_OF_PATHS,
 ):
 	"""
 	:param name: site/server name depending on resource_type
@@ -597,30 +620,57 @@ def get_request_by_(
 	:param timegrain: interval in seconds
 	:param resource_type: filter by site or server
 	"""
-	return RequestGroupByChart(name, agg_type, resource_type, timezone, timespan, timegrain).run()
+	return RequestGroupByChart(
+		name, agg_type, resource_type, timezone, timespan, timegrain, max_no_of_paths
+	).run()
 
 
-def get_nginx_request_by_(name, agg_type: AggType, timezone: str, timespan: int, timegrain: int):
-	return NginxRequestGroupByChart(name, agg_type, ResourceType.SITE, timezone, timespan, timegrain).run()
+@redis_cache(ttl=10 * 60)
+def get_nginx_request_by_(
+	name, agg_type: AggType, timezone: str, timespan: int, timegrain: int, max_no_of_paths
+):
+	return NginxRequestGroupByChart(
+		name, agg_type, ResourceType.SITE, timezone, timespan, timegrain, max_no_of_paths
+	).run()
 
 
-def get_background_job_by_method(site, agg_type, timezone, timespan, timegrain):
-	return BackgroundJobGroupByChart(site, agg_type, ResourceType.SITE, timezone, timespan, timegrain).run()
+@redis_cache(ttl=10 * 60)
+def get_background_job_by_method(site, agg_type, timezone, timespan, timegrain, max_no_of_paths):
+	return BackgroundJobGroupByChart(
+		site, agg_type, ResourceType.SITE, timezone, timespan, timegrain, max_no_of_paths
+	).run()
 
 
 @frappe.whitelist()
 def get_slow_logs_by_query(
-	name: str, agg_type: str, timezone: str, duration: str = "24h", normalize: bool = False
+	name: str,
+	agg_type: str,
+	timezone: str,
+	duration: str = "24h",
+	normalize: bool = False,
+	max_no_of_paths: int = MAX_NO_OF_PATHS,
 ):
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
 
-	return get_slow_logs(name, agg_type, timezone, timespan, timegrain, ResourceType.SITE, normalize)
+	return get_slow_logs(
+		name, agg_type, timezone, timespan, timegrain, ResourceType.SITE, normalize, max_no_of_paths
+	)
 
 
+@redis_cache(ttl=10 * 60)
 def get_slow_logs(
-	name, agg_type, timezone, timespan, timegrain, resource_type=ResourceType.SITE, normalize=False
+	name,
+	agg_type,
+	timezone,
+	timespan,
+	timegrain,
+	resource_type=ResourceType.SITE,
+	normalize=False,
+	max_no_of_paths=MAX_NO_OF_PATHS,
 ):
-	return SlowLogGroupByChart(normalize, name, agg_type, resource_type, timezone, timespan, timegrain).run()
+	return SlowLogGroupByChart(
+		normalize, name, agg_type, resource_type, timezone, timespan, timegrain, max_no_of_paths
+	).run()
 
 
 class RunDocMethodMethodNames(RequestGroupByChart):
