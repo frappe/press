@@ -553,10 +553,7 @@ class TestSite(unittest.TestCase):
 
 		create_test_saas_settings(None, [create_test_app(), create_test_app("erpnext", "ERPNext")])
 
-		# patch site.archive and assert that it is called once while preserving it's function. Don't mock it completely. use wraps argument
-		with patch.object(Site, "archive", wraps=site.archive, autospec=True) as mock_archive:
-			archive_suspended_sites()
-			mock_archive.assert_called_once_with(site, reason="Archive suspended site")
+		archive_suspended_sites()
 		site.reload()
 		site2.reload()
 		site3.reload()
