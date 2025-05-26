@@ -9,7 +9,7 @@
 - name: Add Primary Server to Known Hosts
   become: yes
   become_user: frappe
-  shell: ssh-keyscan {{ secondary_private_ip }} >> /home/frappe/.ssh/known_hosts
+  shell: ssh-keyscan -p {{ secondary_ssh_port }} {{ secondary_private_ip }}  >> /home/frappe/.ssh/known_hosts
 
 - name: Install Lsyncd
   apt:
