@@ -1057,7 +1057,7 @@ class DeployCandidateBuild(Document):
 		return False
 
 	@frappe.whitelist()
-	def create_arm_build(self) -> str:
+	def create_arm_build(self, set_arm_build_name: bool = False) -> str:
 		if not should_create_arm_build(self):
 			frappe.throw("Can not create arm build for this build", frappe.ValidationError)
 
@@ -1067,7 +1067,7 @@ class DeployCandidateBuild(Document):
 		# In case this is triggered from actions and allow arm build is unset
 		# Process job will early exit, skipping build.db_set("arm_build", arm_build_name, commit=True)
 		allow_automatic_arm_build: bool = frappe.get_cached_doc("Press Settings").allow_automatic_arm_build
-		if not allow_automatic_arm_build:
+		if not allow_automatic_arm_build or set_arm_build_name:
 			self.db_set("arm_build", arm_build_name, commit=True)
 
 		return arm_build_name
