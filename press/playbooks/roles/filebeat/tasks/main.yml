@@ -69,9 +69,6 @@
     recursive: yes
     archive: false
 
-- name: Enable Filebeat Modules
-  command: filebeat modules enable nginx mysql system proxysql
-
 - name: Setup Filebeat Modules
   template:
     src: 'modules.d/{{ item }}.yml'
@@ -81,6 +78,9 @@
     - 'system'
     - 'nginx'
     - 'proxysql'
+
+- name: Enable Filebeat Modules
+  command: filebeat modules enable nginx mysql system proxysql
 
 - name: Create Filebeat Modules Directory
   file:
