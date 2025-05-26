@@ -1684,8 +1684,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		ansible = Ansible(
 			playbook="fetch_frappe_public_key.yml",
 			server=primary,
-			user=self._ssh_user(),
-			port=self._ssh_port(),
+			user=primary._ssh_user(),
+			port=primary._ssh_port(),
 		)
 		play = ansible.run()
 		if play.status == "Success":
@@ -2200,14 +2200,19 @@ class Server(BaseServer):
 				self.save()
 
 	def _setup_primary(self, secondary):
-		secondary_private_ip = frappe.db.get_value("Server", secondary, "private_ip")
+		secondary_private_ip, secondary_ssh_port = frappe.db.get_value(
+			"Server", secondary, ("private_ip", "ssh_port")
+		)
 		try:
 			ansible = Ansible(
 				playbook="primary_app.yml",
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
-				variables={"secondary_private_ip": secondary_private_ip},
+				variables={
+					"secondary_private_ip": secondary_private_ip,
+					"secondary_ssh_port": secondary_ssh_port,
+				},
 			)
 			play = ansible.run()
 			self.reload()
