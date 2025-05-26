@@ -3,6 +3,13 @@
   "processors": [
     {
       "rename": {
+        "field": "server",
+        "target_field": "db_server",
+        "ignore_missing": true
+      }
+    },
+    {
+      "rename": {
         "field": "schemaname",
         "target_field": "schema"
       }

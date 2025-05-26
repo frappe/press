@@ -35,3 +35,6 @@
     - name: end_timestamp
       type: date
       description: "End timestamp of the event."
+    - name: db_server
+      type: keyword
+      description: "Database server name or IP address."
