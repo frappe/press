@@ -1036,7 +1036,7 @@ class VirtualMachine(Document):
 			document["is_server_renamed"] = True
 			document["is_upstream_setup"] = True
 
-		return f"Created <a href='/app/server/{frappe.get_doc(document).insert().name}'> Server"
+		return frappe.get_doc(document).insert()
 
 	@frappe.whitelist()
 	def create_database_server(self):
@@ -1060,7 +1060,7 @@ class VirtualMachine(Document):
 				"Virtual Machine Image", self.virtual_machine_image
 			).get_password("mariadb_root_password")
 
-		return f"Created <a href='/app/database-server/{frappe.get_doc(document).insert().name}'> Database Server"
+		return frappe.get_doc(document).insert()
 
 	@frappe.whitelist()
 	def create_proxy_server(self):
@@ -1076,7 +1076,7 @@ class VirtualMachine(Document):
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
 
-		return f"Created <a href='/app/proxy-server/{frappe.get_doc(document).insert().name}'> Proxy Server"
+		return frappe.get_doc(document).insert()
 
 	@frappe.whitelist()
 	def create_monitor_server(self):
@@ -1092,9 +1092,7 @@ class VirtualMachine(Document):
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
 
-		return (
-			f"Created <a href='/app/monitor-server/{frappe.get_doc(document).insert().name}'> Monitor Server"
-		)
+		return frappe.get_doc(document).insert()
 
 	@frappe.whitelist()
 	def create_log_server(self):
@@ -1110,7 +1108,7 @@ class VirtualMachine(Document):
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
 
-		return f"Created <a href='/app/log-server/{frappe.get_doc(document).insert().name}'> Log Server"
+		return frappe.get_doc(document).insert()
 
 	@frappe.whitelist()
 	def create_registry_server(self):
@@ -1126,7 +1124,7 @@ class VirtualMachine(Document):
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
 
-		return f"Created <a href='/app/registry-server/{frappe.get_doc(document).insert().name}'> Registry Server"
+		return frappe.get_doc(document).insert()
 
 	def get_security_groups(self):
 		groups = [self.security_group_id]
