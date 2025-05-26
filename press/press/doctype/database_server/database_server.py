@@ -691,6 +691,7 @@ class DatabaseServer(BaseServer):
 					"primary_private_ip": primary.private_ip,
 					"private_ip": self.private_ip,
 					"db_port": self.db_port or 3306,
+					"primary_db_port": primary.db_port or 3306,
 				},
 			)
 			play = ansible.run()
