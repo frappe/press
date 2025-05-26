@@ -68,7 +68,7 @@ def create_test_bench(
 
 	name = frappe.mock("name")
 	candidate = group.create_deploy_candidate()
-	candidate.build()
+	deploy_candidate_build = candidate.build()
 	bench = frappe.get_doc(
 		{
 			"name": f"Test Bench{name}",
@@ -79,6 +79,7 @@ def create_test_bench(
 			"group": group.name,
 			"apps": apps,
 			"candidate": candidate.name,
+			"build": deploy_candidate_build["message"],
 			"server": server,
 			"docker_image": frappe.mock("url"),
 		}

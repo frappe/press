@@ -30,10 +30,26 @@ from press.telegram_utils import Telegram
 from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
+	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 	from press.press.doctype.bench.bench import Bench
+	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+
+from typing import Literal, TypedDict
+
+
+class BenchInfoType(TypedDict):
+	name: str
+	build: str
+
+
+class ARMDockerImageType(TypedDict):
+	build: str
+	existing_image: bool
+	status: Literal["Pending", "Preparing", "Running", "Failure", "Success"]
+	bench: str
 
 
 class BaseServer(Document, TagHelpers):
@@ -1170,6 +1186,53 @@ class BaseServer(Document, TagHelpers):
 
 	def get_volume_mounts(self):
 		return [mount.as_dict() for mount in self.mounts if mount.mount_type == "Volume"]
+
+	def _create_arm_build(self, build: str) -> str:
+		build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", build)
+		try:
+			return build.create_arm_build(set_arm_build_name=True)
+		except frappe.ValidationError:
+			frappe.log_error(
+				"Failed to create ARM build", message=f"Failed to create arm build for build {build.name}"
+			)
+
+	def _process_bench(self, bench_info: BenchInfoType) -> ARMDockerImageType:
+		build_id = bench_info["build"]
+		arm_build = frappe.get_value("Deploy Candidate Build", build_id, "arm_build")
+
+		if arm_build:
+			return {
+				"build": arm_build,
+				"status": frappe.get_value("Deploy Candidate Build", arm_build, "status"),
+				"bench": bench_info["name"],
+			}
+
+		new_arm_build = self._create_arm_build(build_id)
+		return {
+			"build": new_arm_build,
+			"status": "Pending",
+			"bench": bench_info["name"],
+		}
+
+	@frappe.whitelist()
+	def collect_arm_images(self) -> str:
+		"""Collect arm build images of all active benches on VM"""
+		benches = frappe.get_all(
+			"Bench",
+			{"server": self.name, "status": "Active"},
+			["name", "build"],
+		)
+
+		if not benches:
+			frappe.throw(f"No active benches found on <a href='/app/server/{self.name}'> Server")
+
+		arm_build_record: ARMBuildRecord = frappe.new_doc("ARM Build Record", server=self.name)
+
+		for bench_info in benches:
+			arm_build_record.append("arm_images", self._process_bench(bench_info))
+
+		arm_build_record.save()
+		return f"<a href=/app/arm-build-record/{arm_build_record.name}> ARM Build Record"
 
 	@frappe.whitelist()
 	def mount_volumes(self):

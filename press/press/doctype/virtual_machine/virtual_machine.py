@@ -223,6 +223,10 @@ class VirtualMachine(Document):
 				volume_options["Ebs"]["Throughput"] = volume.throughput
 			additional_volumes.append(volume_options)
 
+		if not self.machine_image:
+			self.machine_image = self.get_latest_ubuntu_image()
+			self.save(ignore_version=True)
+
 		options = {
 			"BlockDeviceMappings": [
 				*[
