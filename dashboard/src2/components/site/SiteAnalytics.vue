@@ -288,6 +288,7 @@ export default {
 			localTimezone: dayjs.tz.guess(),
 			slowLogsDurationType: 'Denormalized',
 			slowLogsFrequencyType: 'Denormalized',
+			allowDrillDown: false,
 			durationOptions: [
 				{ label: 'Duration', value: null, disabled: true },
 				{ label: '1 hour', value: '1h' },
