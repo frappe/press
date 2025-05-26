@@ -1118,6 +1118,16 @@ class BaseServer(Document, TagHelpers):
 					"mount_point_group": "frappe",
 				},
 			)
+			self.append(
+				"mounts",
+				{
+					"mount_type": "Bind",
+					"mount_point": "/var/lib/docker",
+					"source": "/opt/volumes/benches/var/lib/docker",
+					"mount_point_owner": "root",
+					"mount_point_group": "root",
+				},
+			)
 		elif self.doctype == "Database Server":
 			first.mount_point = "/opt/volumes/mariadb"
 			self.append(
@@ -1233,6 +1243,22 @@ class BaseServer(Document, TagHelpers):
 
 		arm_build_record.save()
 		return f"<a href=/app/arm-build-record/{arm_build_record.name}> ARM Build Record"
+
+	@frappe.whitelist()
+	def start_all_benches(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_start_all_benches")
+
+	def _start_all_benches(self):
+		try:
+			ansible = Ansible(
+				playbook="start_benches.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Start Benches Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def mount_volumes(self):

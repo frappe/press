@@ -22,6 +22,7 @@
   "machine_type",
   "instance_id",
   "platform",
+  "ready_for_conversion",
   "column_break_hgcr",
   "disk_size",
   "root_disk_size",
@@ -327,6 +328,13 @@
    "fieldname": "skip_automated_snapshot",
    "fieldtype": "Check",
    "label": "Skip Automated Snapshot"
+  },
+  {
+   "default": "0",
+   "fieldname": "ready_for_conversion",
+   "fieldtype": "Check",
+   "label": "Ready For Conversion",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -362,7 +370,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2025-03-19 11:19:06.067266",
+ "modified": "2025-05-26 12:38:56.121666",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
@@ -393,6 +401,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

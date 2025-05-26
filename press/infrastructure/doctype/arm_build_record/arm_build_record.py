@@ -49,6 +49,11 @@ class ARMBuildRecord(Document):
 			bench.bench_config = json.dumps(bench_config, indent=4)
 			bench.save()
 
+		# Once the benches are updated with latest images, we can then start migration.
+		# And once the migration is completed we then just need to start all benches on the server
+		# and new images which have been pulled will be used to restart the docker containers.
+
+		frappe.set_value("Virtual Machine", self.server, "ready_for_conversion", True)
 		self.updated_image_tags_on_benches = True
 		self.save(ignore_version=True)
 
