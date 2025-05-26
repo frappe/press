@@ -1245,6 +1245,22 @@ class BaseServer(Document, TagHelpers):
 		return f"<a href=/app/arm-build-record/{arm_build_record.name}> ARM Build Record"
 
 	@frappe.whitelist()
+	def start_all_benches(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_start_all_benches")
+
+	def _start_all_benches(self):
+		try:
+			ansible = Ansible(
+				playbook="start_benches.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Start Benches Exception", server=self.as_dict())
+
+	@frappe.whitelist()
 	def mount_volumes(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_mount_volumes", queue="short", timeout=1200)
 

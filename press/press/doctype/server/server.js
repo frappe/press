@@ -149,6 +149,12 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup,
 			],
 			[
+				__('Start All Benches'),
+				'start_all_benches',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
 				__('Show Agent Password'),
 				'show_agent_password',
 				false,
