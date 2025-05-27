@@ -153,16 +153,16 @@ def get_build_server(group: str | None = None) -> str | None:
 				if server := get_arm_build_server_with_least_active_builds():
 					return server
 			else:
-				if server := get_x86_build_server_with_least_active_builds():
+				if server := get_intel_build_server_with_least_active_builds():
 					return server
 	else:
-		if server := get_x86_build_server_with_least_active_builds():
+		if server := get_intel_build_server_with_least_active_builds():
 			return server
 
 	return frappe.get_value("Press Settings", None, "build_server")
 
 
-def get_x86_build_server_with_least_active_builds() -> str | None:
+def get_intel_build_server_with_least_active_builds() -> str | None:
 	return get_build_server_with_least_active_builds(platform="x86_64")
 
 
