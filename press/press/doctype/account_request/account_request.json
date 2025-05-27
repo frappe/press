@@ -41,6 +41,7 @@
   "state",
   "is_us_eu",
   "agreed_to_partner_consent",
+  "is_mobile",
   "referrer_data",
   "referral_source",
   "url_args",
@@ -277,12 +278,18 @@
    "fieldname": "unsubscribed_from_drip_emails",
    "fieldtype": "Check",
    "label": "Unsubscribed from Drip Emails"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_mobile",
+   "fieldtype": "Check",
+   "label": "Is Mobile"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-21 09:33:56.945672",
+ "modified": "2025-05-27 10:06:42.902767",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

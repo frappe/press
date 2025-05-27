@@ -39,6 +39,7 @@ class AccountRequest(Document):
 		invited_by: DF.Data | None
 		invited_by_parent_team: DF.Check
 		ip_address: DF.Data | None
+		is_mobile: DF.Check
 		is_us_eu: DF.Check
 		last_name: DF.Data | None
 		no_of_employees: DF.Data | None
@@ -93,6 +94,7 @@ class AccountRequest(Document):
 		self.geo_location = json.dumps(geo_location, indent=1, sort_keys=True)
 		self.state = geo_location.get("regionName")
 		self.country = geo_location.get("country")
+		self.is_mobile = geo_location.get("mobile", False)
 
 		# check for US and EU
 		if (

@@ -31,7 +31,7 @@
 									<span v-if="plan.price_inr" class="text-gray-700">/mo</span>
 								</template>
 							</span>
-							<Tooltip text="Support included">
+							<Tooltip text="Product support included">
 								<i-lucide-badge-check
 									class="ml-1 h-4 w-6 text-gray-600"
 									v-if="plan.support_included"
