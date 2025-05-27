@@ -90,7 +90,7 @@
 													!currentPlan.is_trial_plan
 												"
 											>
-												<Tooltip text="Support included">
+												<Tooltip text="Product support included">
 													<i-lucide-badge-check class="h-4 w-4" />
 												</Tooltip>
 											</div>
