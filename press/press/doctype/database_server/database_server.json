@@ -513,7 +513,7 @@
    "read_only": 1
   },
   {
-   "default": "50",
+   "default": "25",
    "description": "Minimum storage to add automatically each time",
    "fieldname": "auto_add_storage_min",
    "fieldtype": "Int",
@@ -607,7 +607,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-05-19 18:45:32.246644",
+ "modified": "2025-05-27 13:00:57.532008",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
