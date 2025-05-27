@@ -149,11 +149,15 @@ def get_build_server(group: str | None = None) -> str | None:
 		release_group: ReleaseGroup = frappe.get_doc("Release Group", group)
 		for server in release_group.servers:
 			server_platform = frappe.get_value("Server", server.server, "platform")
-			if server_platform == "arm64" and (server := get_arm_build_server_with_least_active_builds()):
-				return server
-
-	if server := get_x86_build_server_with_least_active_builds():
-		return server
+			if server_platform == "arm64":
+				if server := get_arm_build_server_with_least_active_builds():
+					return server
+			else:
+				if server := get_x86_build_server_with_least_active_builds():
+					return server
+	else:
+		if server := get_x86_build_server_with_least_active_builds():
+			return server
 
 	return frappe.get_value("Press Settings", None, "build_server")
 
