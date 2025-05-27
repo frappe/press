@@ -3,9 +3,12 @@ import re
 from collections import Counter
 from datetime import timedelta
 from pathlib import Path
-from typing import Any, Optional, TypedDict
+from typing import TYPE_CHECKING, Any, Optional, TypedDict
 
 import frappe
+
+if TYPE_CHECKING:
+	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 class PackageManagers(TypedDict):
@@ -142,16 +145,31 @@ def get_build_server(group: str | None = None) -> str | None:
 	if group and (server := frappe.get_value("Release Group", group, "build_server")):
 		return server
 
-	if server := get_build_server_with_least_active_builds():
+	if group:
+		release_group: ReleaseGroup = frappe.get_doc("Release Group", group)
+		for server in release_group.servers:
+			server_platform = frappe.get_value("Server", server.server, "platform")
+			if server_platform == "arm64" and (server := get_arm_build_server_with_least_active_builds()):
+				return server
+
+	if server := get_x86_build_server_with_least_active_builds():
 		return server
 
 	return frappe.get_value("Press Settings", None, "build_server")
 
 
-def get_build_server_with_least_active_builds() -> str | None:
+def get_x86_build_server_with_least_active_builds() -> str | None:
+	return get_build_server_with_least_active_builds(platform="x86_64")
+
+
+def get_arm_build_server_with_least_active_builds() -> str | None:
+	return get_build_server_with_least_active_builds(platform="arm64")
+
+
+def get_build_server_with_least_active_builds(platform: str) -> str | None:
 	build_servers = frappe.get_all(
 		"Server",
-		filters={"use_for_build": True, "status": "Active", "platform": "x86_64"},
+		filters={"use_for_build": True, "status": "Active", "platform": platform},
 		pluck="name",
 	)
 

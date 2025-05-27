@@ -1245,16 +1245,19 @@ class BaseServer(Document, TagHelpers):
 		return f"<a href=/app/arm-build-record/{arm_build_record.name}> ARM Build Record"
 
 	@frappe.whitelist()
-	def start_all_benches(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_start_all_benches")
+	def start_active_benches(self):
+		arm_build_record: ARMBuildRecord = frappe.get_last_doc("ARM Build Record", {"server": self.name})
+		benches = [image.bench for image in arm_build_record.arm_images]
+		frappe.enqueue_doc(self.doctype, self.name, "_start_active_benches", benches=benches)
 
-	def _start_all_benches(self):
+	def _start_active_benches(self, benches: list[str]):
 		try:
 			ansible = Ansible(
 				playbook="start_benches.yml",
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
+				variables={"benches": " ".join(benches)},
 			)
 			ansible.run()
 		except Exception:
