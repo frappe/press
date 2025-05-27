@@ -105,6 +105,8 @@ DOCTYPE_SERVER_TYPE_MAP = {
 	"Proxy Server": "Proxy",
 }
 
+ARCHIVE_AFTER_SUSPEND_DAYS = 21
+
 
 class Site(Document, TagHelpers):
 	# begin: auto-generated types
@@ -3339,9 +3341,9 @@ class Site(Document, TagHelpers):
 		).run()
 
 	@property
-	def recent_offsite_backups_pending(self):
+	def recent_offsite_backup_pending(self):
 		site_backups = frappe.qb.DocType("Site Backup")
-		return self.recent_offsite_backups_.where(site_backups.status in ["Pending", "Running"]).run()
+		return self.recent_offsite_backups_.where(site_backups.status.isin(["Pending", "Running"])).run()
 
 
 def site_cleanup_after_archive(site):
@@ -4079,7 +4081,7 @@ def get_suspended_time(site: str):
 
 
 def archive_suspended_site(site_dict: SiteToArchive):
-	archive_after_days = 21
+	archive_after_days = ARCHIVE_AFTER_SUSPEND_DAYS
 
 	suspended_days = frappe.utils.date_diff(frappe.utils.today(), get_suspended_time(site_dict.name))
 
@@ -4092,7 +4094,7 @@ def archive_suspended_site(site_dict: SiteToArchive):
 	site = Site("Site", site_dict.name)
 	# take an offsite backup before archive
 	if site.plan == "USD 10" and not site.recent_offsite_backup_exists:
-		if not site.recent_offsite_backups_pending:
+		if not site.recent_offsite_backup_pending:
 			site.backup(with_files=True, offsite=True)
 		return  # last backup ongoing
 	site.archive(reason="Archive suspended site")
