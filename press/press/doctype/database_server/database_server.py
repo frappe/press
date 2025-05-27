@@ -1238,10 +1238,6 @@ class DatabaseServer(BaseServer):
 
 	@frappe.whitelist()
 	def get_binlog_summary(self):
-		if not self.enable_binlog_indexing:
-			frappe.msgprint("Binlog Indexing is not enabled")
-			return
-
 		binlogs_in_disk = self.agent.fetch_binlog_list().get("binlogs_in_disk", [])
 		no_of_binlogs = len(binlogs_in_disk)
 		size = sum(binlog.get("size", 0) for binlog in binlogs_in_disk)
@@ -1267,6 +1263,9 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 
 	@frappe.whitelist()
 	def purge_binlogs(self, to_binlog: str):
+		if not self.enable_binlog_indexing:
+			frappe.msgprint("Binlog Indexing is not enabled")
+			return
 		try:
 			self.agent.purge_binlog(database_server=self, to_binlog=to_binlog)
 			frappe.msgprint(f"Purged to {to_binlog}", "Successfully purged binlogs")
