@@ -518,7 +518,7 @@
    "search_index": 1
   },
   {
-   "default": "50",
+   "default": "25",
    "description": "Minimum storage to add automatically each time",
    "fieldname": "auto_add_storage_min",
    "fieldtype": "Int",
@@ -594,7 +594,7 @@
   }
  ],
  "links": [],
- "modified": "2025-05-08 14:16:23.903981",
+ "modified": "2025-05-27 13:00:39.884929",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
