@@ -115,6 +115,7 @@ import { confirmDialog, renderDialog } from '../../utils/components';
 import { getToastErrorMessage } from '../../utils/toast';
 import ServerPlansDialog from './ServerPlansDialog.vue';
 import ServerLoadAverage from './ServerLoadAverage.vue';
+import StorageBreakdownDialog from './StorageBreakdownDialog.vue';
 import { getDocResource } from '../../utils/resource';
 
 export default {
@@ -122,6 +123,7 @@ export default {
 	components: {
 		ServerLoadAverage,
 		ServerPlansDialog,
+		StorageBreakdownDialog,
 	},
 	methods: {
 		showPlanChangeDialog(serverType) {
@@ -130,6 +132,20 @@ export default {
 			);
 			renderDialog(
 				h(ServerPlansDialog, {
+					server:
+						serverType === 'Server'
+							? this.$appServer.name
+							: this.$dbServer.name,
+					serverType,
+				}),
+			);
+		},
+		showStorageBreakdownDialog(serverType) {
+			let StorageBreakdownDialog = defineAsyncComponent(
+				() => import('./StorageBreakdownDialog.vue'),
+			);
+			renderDialog(
+				h(StorageBreakdownDialog, {
 					server:
 						serverType === 'Server'
 							? this.$appServer.name
@@ -389,7 +405,16 @@ export default {
 								});
 							},
 						},
-					],
+						{
+							label: 'Storage Breakdown',
+							icon: 'pie-chart',
+							variant: 'ghost',
+							hidden: serverType !== 'Database Server',
+							onClick: () => {
+								this.showStorageBreakdownDialog(serverType);
+							},
+						},
+					].filter((e) => e.hidden !== true),
 				},
 			];
 		},
