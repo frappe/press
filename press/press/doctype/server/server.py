@@ -52,6 +52,9 @@ class ARMDockerImageType(TypedDict):
 	bench: str
 
 
+PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
+
+
 class BaseServer(Document, TagHelpers):
 	dashboard_fields = (
 		"title",
@@ -1585,6 +1588,8 @@ class Server(BaseServer):
 			frappe.db.delete("Press Role Permission", {"server": self.name})
 
 		self.set_bench_memory_limits_if_needed(save=False)
+		if self.public:
+			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
 
 	def after_insert(self):
 		from press.press.doctype.press_role.press_role import (
