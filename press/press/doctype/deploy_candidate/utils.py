@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import json
 import re
 from collections import Counter
 from datetime import timedelta
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import frappe
 
@@ -13,7 +15,7 @@ if TYPE_CHECKING:
 
 class PackageManagers(TypedDict):
 	repo_path: str
-	pyproject: Optional[dict[str, Any]]
+	pyproject: dict[str, Any] | None
 	packagejsons: list[dict[str, Any]]
 
 
@@ -58,7 +60,7 @@ def _get_package_manager_files_from_repo(
 	repo_path: str,
 	recursive: bool,
 ) -> tuple[Path | None, list[Path]]:
-	pyproject_toml: Optional[Path] = None
+	pyproject_toml: Path | None = None
 	package_jsons: list[Path] = []  # An app can have multiple
 
 	for p in Path(repo_path).iterdir():
@@ -83,7 +85,7 @@ def load_pyproject(app: str, pyproject_path: str):
 	try:
 		from tomli import TOMLDecodeError, load
 	except ImportError:
-		from tomllib import TOMLDecodeError, load
+		from tomllib import TOMLDecodeError, load  # type: ignore
 
 	with open(pyproject_path, "rb") as f:
 		try:
@@ -126,6 +128,8 @@ def get_will_fail_checker(error_key: str):
 		if get_error_key(error_substring) == error_key:
 			return will_fail_checker
 
+	return None
+
 
 def is_suspended() -> bool:
 	return bool(frappe.db.get_single_value("Press Settings", "suspend_builds"))
@@ -140,6 +144,12 @@ def get_build_server(group: str | None = None) -> str | None:
 	1. Build Server set on Release Group
 	2. Build Server with least active builds
 	3. Build Server set in Press Settings
+	This returns the build server based on the first server in the release group
+	depending on the platform of the server, if more servers exist in the release group
+	deploy candidate will trigger another build based on the platform of the next server
+	from either of the following functions
+		- get_intel_build_server_with_least_active_builds
+		- get_arm_build_server_with_least_active_builds
 	"""
 
 	if group and (server := frappe.get_value("Release Group", group, "build_server")):
