@@ -167,7 +167,7 @@ def check_spam(message: bytes):
 		)
 		resp.raise_for_status()
 		data = resp.json()
-		if data["message"] > 3.5:
+		if data["message"] > 4.0:
 			frappe.throw(
 				"This email was blocked as it was flagged as spam by our system. Please review the contents and try again.",
 				SpamDetectionError,

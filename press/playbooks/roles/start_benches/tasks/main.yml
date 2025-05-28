@@ -2,6 +2,6 @@
 - name: Start Benches
   become: yes
   become_user: frappe
-  command: '/home/frappe/agent/env/bin/agent bench start'
+  command: '/home/frappe/agent/env/bin/agent bench start {{ benches }}'
   args:
     chdir: /home/frappe/agent
