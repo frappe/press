@@ -46,6 +46,12 @@
       }
     },
     {
+      "script": {
+        "lang": "painless",
+        "source": "if(ctx.query != null) { ctx.query_text = ctx.query; }"
+      }
+    },
+    {
       "date": {
         "field": "start_timestamp",
         "target_field": "@timestamp",
