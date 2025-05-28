@@ -1612,49 +1612,52 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 
 	@dashboard_whitelist()
 	def get_storage_usage(self):
-		result = AnsibleAdHoc(sources=f"{self.ip},").run(
-			'df --output=source,size,used,target | tail -n +2  && echo -e "\n\n" && du -s /var/lib/mysql/*',
-			self.name,
-			raw_params=True,
-		)[0]
-		if result.get("status") != "Success":
-			frappe.throw("Failed to fetch storage usage of the database server")
+		try:
+			result = AnsibleAdHoc(sources=f"{self.ip},").run(
+				'df --output=source,size,used,target | tail -n +2  && echo -e "\n\n" && du -s /var/lib/mysql/*',
+				self.name,
+				raw_params=True,
+			)[0]
+			if result.get("status") != "Success":
+				frappe.throw("Failed to fetch storage usage of the database server")
 
-		disk_info_str, mysql_dir_info_str = result.get("output", "\n\n").split("\n\n", 1)
-		disk_info = find_db_disk_info(disk_info_str)
-		if disk_info is None:
-			return None
-		mysql_storage_info = parse_du_output_of_mysql_directory(mysql_dir_info_str)
-		total_db_usage = (
-			sum(mysql_storage_info["schema"].values())
-			+ mysql_storage_info["bin_log"]
-			+ mysql_storage_info["slow_log"]
-			+ mysql_storage_info["error_log"]
-			+ mysql_storage_info["core"]
-			+ mysql_storage_info["other"]
-		)
+			disk_info_str, mysql_dir_info_str = result.get("output", "\n\n").split("\n\n", 1)
+			disk_info = find_db_disk_info(disk_info_str)
+			if disk_info is None:
+				return None
+			mysql_storage_info = parse_du_output_of_mysql_directory(mysql_dir_info_str)
+			total_db_usage = (
+				sum(mysql_storage_info["schema"].values())
+				+ mysql_storage_info["bin_log"]
+				+ mysql_storage_info["slow_log"]
+				+ mysql_storage_info["error_log"]
+				+ mysql_storage_info["core"]
+				+ mysql_storage_info["other"]
+			)
 
-		sites_db_name_info = frappe.get_all(
-			"Site",
-			filters={
-				"database_name": ("in", mysql_storage_info["schema"].keys()),
-			},
-			fields=["name", "database_name"],
-		)
+			sites_db_name_info = frappe.get_all(
+				"Site",
+				filters={
+					"database_name": ("in", mysql_storage_info["schema"].keys()),
+				},
+				fields=["name", "database_name"],
+			)
 
-		db_name_site_mapping = {}
-		for site in sites_db_name_info:
-			db_name_site_mapping[site.database_name] = site.name
+			db_name_site_mapping = {}
+			for site in sites_db_name_info:
+				db_name_site_mapping[site.database_name] = site.name
 
-		return {
-			"disk_total": disk_info[0],
-			"disk_used": disk_info[1],
-			"disk_free": disk_info[0] - disk_info[1],
-			"database_usage": total_db_usage,
-			"os_usage": disk_info[1] - total_db_usage,
-			"database": mysql_storage_info,
-			"db_name_site_map": db_name_site_mapping,
-		}
+			return {
+				"disk_total": disk_info[0],
+				"disk_used": disk_info[1],
+				"disk_free": disk_info[0] - disk_info[1],
+				"database_usage": total_db_usage,
+				"os_usage": disk_info[1] - total_db_usage,
+				"database": mysql_storage_info,
+				"db_name_site_map": db_name_site_mapping,
+			}
+		except Exception:
+			frappe.throw("Failed to fetch storage usage of the database server. Please try again.")
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Database Server")
