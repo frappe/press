@@ -48,8 +48,7 @@
 
 <script>
 import { toast } from 'vue-sonner';
-import FormControl from 'frappe-ui/src/components/FormControl.vue';
-import ErrorMessage from 'frappe-ui/src/components/ErrorMessage.vue';
+import { FormControl, ErrorMessage } from 'frappe-ui';
 
 export default {
 	name: 'AddExchangeRate',
