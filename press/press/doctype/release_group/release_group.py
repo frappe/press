@@ -693,8 +693,9 @@ class ReleaseGroup(Document, TagHelpers):
 	@frappe.whitelist()
 	def deploy_information(self):
 		out = frappe._dict(update_available=False)
-
-		last_deployed_bench = get_last_doc("Bench", {"group": self.name, "status": "Active"})
+		last_deployed_bench = get_last_doc(
+			"Bench", {"group": self.name, "status": ("in", ("Active", "Installing", "Pending"))}
+		)
 		out.apps = self.get_app_updates(last_deployed_bench.apps if last_deployed_bench else [])
 		out.last_deploy = self.last_dc_info
 		out.deploy_in_progress = self.deploy_in_progress
