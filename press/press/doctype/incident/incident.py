@@ -320,7 +320,7 @@ class Incident(WebsiteGenerator):
 			return
 		with sync_playwright() as p:
 			browser = p.chromium.launch(headless=True, channel="chromium")
-			page = browser.new_page()
+			page = browser.new_page(locale="en-IN", timezone_id="Asia/Kolkata")
 			page.set_extra_http_headers({"Authorization": self.get_grafana_auth_header()})
 
 			self.add_node_exporter_screenshot(page, self.resource or self.server)
@@ -345,6 +345,11 @@ class Incident(WebsiteGenerator):
 			db_server.reboot_with_serial_console()
 		except NotImplementedError:
 			db_server.reboot()
+		self.add_likely_cause("Rebooted database server.")
+
+	def add_likely_cause(self, cause: str):
+		self.likely_cause = self.likely_cause + cause + "\n" if self.likely_cause else cause + "\n"
+		self.save()
 
 	def call_humans(self):
 		enqueue_doc(
