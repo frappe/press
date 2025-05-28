@@ -1171,7 +1171,6 @@ class DeployCandidateBuild(Document):
 				"doctype": "Deploy",
 				"group": self.group,
 				"candidate": self.deploy_candidate,
-				"build": self.name,
 				"benches": [{"server": server} for server in servers],
 			}
 		).insert()

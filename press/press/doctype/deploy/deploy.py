@@ -29,7 +29,6 @@ class Deploy(Document):
 		from press.press.doctype.deploy_bench.deploy_bench import DeployBench
 
 		benches: DF.Table[DeployBench]
-		build: DF.Link | None
 		candidate: DF.Link
 		group: DF.Link
 		staging: DF.Check
