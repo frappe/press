@@ -12,7 +12,6 @@ import shutil
 import tarfile
 import tempfile
 import typing
-from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from functools import cached_property
@@ -35,7 +34,9 @@ from press.press.doctype.deploy_candidate.docker_output_parsers import (
 	UploadStepUpdater,
 )
 from press.press.doctype.deploy_candidate.utils import (
+	get_arm_build_server_with_least_active_builds,
 	get_build_server,
+	get_intel_build_server_with_least_active_builds,
 	get_package_manager_files,
 	is_suspended,
 	load_pyproject,
@@ -170,27 +171,27 @@ def get_duration(start_time: datetime, end_time: datetime | None = None):
 	return float(value)
 
 
-@dataclass
-class ARMBuild:
-	deploy_candidate: str
-	build_server: str = field(init=False)
+# @dataclass
+# class ARMBuild:
+# 	deploy_candidate: str
+# 	build_server: str = field(init=False)
 
-	def __post_init__(self):
-		self.build_server = self.get_build_server()
+# 	def __post_init__(self):
+# 		self.build_server = self.get_build_server()
 
-	def create_deploy_candidate_build(self) -> str:
-		deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
-			{
-				"doctype": "Deploy Candidate Build",
-				"deploy_candidate": self.deploy_candidate,
-				"build_server": self.build_server,
-			}
-		)
-		deploy_candidate_build.insert()
-		return deploy_candidate_build.name
+# 	def create_deploy_candidate_build(self) -> str:
+# 		deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
+# 			{
+# 				"doctype": "Deploy Candidate Build",
+# 				"deploy_candidate": self.deploy_candidate,
+# 				"build_server": self.build_server,
+# 			}
+# 		)
+# 		deploy_candidate_build.insert()
+# 		return deploy_candidate_build.name
 
-	def get_build_server(self) -> str:
-		return frappe.get_value("Server", {"platform": "arm64", "use_for_build": True}, "name")
+# 	def get_build_server(self) -> str:
+# 		return frappe.get_value("Server", {"platform": "arm64", "use_for_build": True}, "name")
 
 
 class DeployCandidateBuild(Document):
@@ -206,7 +207,6 @@ class DeployCandidateBuild(Document):
 			DeployCandidateBuildStep,
 		)
 
-		arm_build: DF.Link | None
 		build_directory: DF.Data | None
 		build_duration: DF.Time | None
 		build_end: DF.Datetime | None
@@ -763,6 +763,32 @@ class DeployCandidateBuild(Document):
 			case _:
 				raise Exception("unreachable code execution")
 
+	def update_deploy_candidate_with_build(self):
+		"""Update the deploy candidate with the build fields"""
+		candidate_field = "arm_build" if self.platform == "arm64" else "intel_build"
+		setattr(self.candidate, candidate_field, self.name)
+		self.candidate.save()
+
+	def create_new_platform_build_if_required(self):
+		"""Create a platform specefic build if requirement enforced by the deploy candidate"""
+		requires_arm = self.candidate.requires_arm_build and not self.candidate.arm_build
+		requires_intel_build = self.candidate.requires_intel_build and not self.candidate.intel_build
+
+		build_meta = {
+			"doctype": "Deploy Candidate Build",
+			"deploy_candidate": self.candidate,
+			"no_build": self.no_build,
+			"no_cache": self.no_cache,
+			"no_push": self.no_push,
+		}
+
+		if requires_arm:
+			build_meta.update({"platform": "arm64"})
+			frappe.get_doc(build_meta).insert()
+		if requires_intel_build:
+			build_meta.update({"platform": "x86_64"})
+			frappe.get_doc(build_meta).insert()
+
 	@staticmethod
 	def process_run_build(job: AgentJob, response_data: dict | None):
 		request_data = json.loads(job.request_data)
@@ -771,13 +797,9 @@ class DeployCandidateBuild(Document):
 		)
 		build._process_run_build(job, request_data, response_data)
 
-		allow_automatic_arm_build: bool = frappe.get_cached_doc("Press Settings").allow_automatic_arm_build
-		if not allow_automatic_arm_build:
-			return
-
-		if should_create_arm_build(build):
-			arm_build_name = build.create_arm_build()
-			build.db_set("arm_build", arm_build_name, commit=True)
+		if build.status == Status.SUCCESS.value:
+			build.update_deploy_candidate_with_build()
+			build.create_new_platform_build_if_required()
 
 	def _process_run_build(
 		self,
@@ -1031,12 +1053,28 @@ class DeployCandidateBuild(Document):
 	def get_platform(self) -> str:
 		return frappe.get_value("Server", self.build_server, "platform")
 
+	def _select_build_server(self):
+		"""Select build server based on platform or group"""
+		match self.platform:
+			case "arm64":
+				return get_arm_build_server_with_least_active_builds()
+			case "x86_64":
+				return get_intel_build_server_with_least_active_builds()
+			case _:
+				# Case where no platform is set?
+				# The first build that occurs will be based on the platform of first
+				# Server listed in the Release Group Server List
+				# Then if anyother builds are required their platform will be passed in.
+				return get_build_server(self.group)
+
 	def set_platform(self):
-		self.platform = self.get_platform() or "x86_64"
+		# If no platform is set we set the platform based on the build server
+		if not self.platform:
+			self.platform = self.get_platform() or "x86_64"
 
 	def set_build_server(self):
 		if not self.build_server:
-			self.build_server = get_build_server(self.group)
+			self.build_server = self._select_build_server()
 
 		if self.build_server:
 			self.set_platform()
@@ -1055,22 +1093,6 @@ class DeployCandidateBuild(Document):
 			"Please wait for build to succeed or fail before retrying."
 		)
 		return False
-
-	@frappe.whitelist()
-	def create_arm_build(self, set_arm_build_name: bool = False) -> str:
-		if not should_create_arm_build(self):
-			frappe.throw("Can not create arm build for this build", frappe.ValidationError)
-
-		arm_build = ARMBuild(self.deploy_candidate)
-		arm_build_name = arm_build.create_deploy_candidate_build()
-
-		# In case this is triggered from actions and allow arm build is unset
-		# Process job will early exit, skipping build.db_set("arm_build", arm_build_name, commit=True)
-		allow_automatic_arm_build: bool = frappe.get_cached_doc("Press Settings").allow_automatic_arm_build
-		if not allow_automatic_arm_build or set_arm_build_name:
-			self.db_set("arm_build", arm_build_name, commit=True)
-
-		return arm_build_name
 
 	def pre_build(self, **kwargs):
 		self.reset_build_state()

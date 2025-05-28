@@ -14,6 +14,7 @@ from press.utils import log_error
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 
 
 class Deploy(Document):
@@ -41,6 +42,30 @@ class Deploy(Document):
 	def after_insert(self):
 		self.create_benches()
 
+	def _get_build_for_bench(self, server_platform: str) -> str:
+		"Fetch build from deploy candidate depending on the server platform"
+		build_field = {"arm64": "arm_build", "x86_64": "intel_build"}.get(server_platform)
+		return frappe.get_value("Deploy Candidate", self.candidate, build_field)
+
+	def _get_docker_image_for_bench(self, server_platform: str) -> str:
+		"""Fetch docker image for a particular server depending on the server platform"""
+		DeployCandidate: DeployCandidate = frappe.qb.DocType("Deploy Candidate")
+		DeployCandidateBuild: DeployCandidateBuild = frappe.qb.DocType("Deploy Candidate Build")
+
+		build_field = {"arm64": DeployCandidate.arm_build, "x86_64": DeployCandidate.intel_build}.get(
+			server_platform
+		)
+
+		return (
+			frappe.qb.from_(DeployCandidate)
+			.join(DeployCandidateBuild)
+			.on(DeployCandidateBuild.deploy_candidate == DeployCandidate.name)
+			.where(DeployCandidate.name == self.candidate)
+			.where(build_field == DeployCandidateBuild.name)
+			.select(DeployCandidateBuild.docker_image)
+			.run(pluck=True)
+		)[0]
+
 	def create_benches(self):
 		deploy_candidate: DeployCandidate = frappe.get_doc("Deploy Candidate", self.candidate)
 		environment_variables = [
@@ -57,12 +82,14 @@ class Deploy(Document):
 			for v in group.mounts
 		]
 		for bench in self.benches:
-			docker_image = frappe.get_value("Deploy Candidate Build", {"name": self.build}, "docker_image")
+			server_platform = frappe.get_value("Server", bench.server, "platform")
+			build = self._get_build_for_bench(server_platform)
+			docker_image = self._get_docker_image_for_bench(server_platform)
 			new = frappe.get_doc(
 				{
 					"doctype": "Bench",
 					"server": bench.server,
-					"build": self.build,
+					"build": build,
 					"docker_image": docker_image,
 					"group": self.group,
 					"candidate": self.candidate,
