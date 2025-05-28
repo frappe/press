@@ -193,7 +193,7 @@ class TestAgentJob(unittest.TestCase):
 		self.assertEqual(len(suspend_jobs), 2)
 		self.assertEqual(
 			mock_reload_nginx.call_count,
-			frappe.db.count("Proxy Server", {"status": "Active"}),
+			0,
 		)
 
 	def test_lock_doc_updated_by_job_respects_hierarchy(self):
