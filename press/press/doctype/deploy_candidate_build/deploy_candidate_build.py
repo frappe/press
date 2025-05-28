@@ -746,7 +746,7 @@ class DeployCandidateBuild(Document):
 		setattr(self.candidate, candidate_field, self.name)
 		self.candidate.save()
 
-	def create_new_platform_build_if_required(self):
+	def create_new_platform_build_if_required_and_deploy(self, deploy_after_build: bool):
 		"""Create a platform specific build if requirement enforced by the deploy candidate"""
 		requires_arm = self.candidate.requires_arm_build and not self.candidate.arm_build
 		requires_intel_build = self.candidate.requires_intel_build and not self.candidate.intel_build
@@ -766,6 +766,14 @@ class DeployCandidateBuild(Document):
 			build_meta.update({"platform": "x86_64"})
 			frappe.get_doc(build_meta).insert()
 
+		if (
+			not requires_arm
+			and not requires_intel_build
+			and self.status == Status.SUCCESS.value
+			and deploy_after_build
+		):
+			self.create_deploy()
+
 	@staticmethod
 	def process_run_build(job: AgentJob, response_data: dict | None):
 		request_data = json.loads(job.request_data)
@@ -776,7 +784,9 @@ class DeployCandidateBuild(Document):
 
 		if build.status == Status.SUCCESS.value:
 			build.update_deploy_candidate_with_build()
-			build.create_new_platform_build_if_required()
+			build.create_new_platform_build_if_required_and_deploy(
+				deploy_after_build=request_data.get("deploy_after_build")
+			)
 
 	def _process_run_build(
 		self,
@@ -817,9 +827,6 @@ class DeployCandidateBuild(Document):
 
 		# Fallback case cause upload step can be left hanging
 		self.correct_upload_step_status()
-
-		if self.status == "Success" and request_data.get("deploy_after_build"):
-			self.create_deploy()
 
 	def _prepare_build_directory(self):
 		build_directory = frappe.get_value("Press Settings", None, "build_directory")

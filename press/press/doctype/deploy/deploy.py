@@ -60,6 +60,7 @@ class Deploy(Document):
 			.join(DeployCandidateBuild)
 			.on(DeployCandidateBuild.deploy_candidate == DeployCandidate.name)
 			.where(DeployCandidate.name == self.candidate)
+			.where(DeployCandidateBuild.status == "Success")
 			.where(build_field == DeployCandidateBuild.name)
 			.select(DeployCandidateBuild.docker_image)
 			.run(pluck=True)
