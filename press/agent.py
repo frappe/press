@@ -837,13 +837,13 @@ class Agent:
 			reference_name=reference_name,
 		)
 
-	def update_site_status(self, server: str, site: str, status):
+	def update_site_status(self, server: str, site: str, status, skip_reload=False):
 		extra_domains = frappe.get_all(
 			"Site Domain",
 			{"site": site, "tls_certificate": ("is", "not set"), "status": "Active", "domain": ("!=", site)},
 			pluck="domain",
 		)
-		data = {"status": status, "extra_domains": extra_domains}
+		data = {"status": status, "extra_domains": extra_domains, "skip_reload": skip_reload}
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		return self.create_agent_job(

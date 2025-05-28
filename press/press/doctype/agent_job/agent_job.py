@@ -6,6 +6,7 @@ import json
 import os
 import random
 import traceback
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe.core.utils import find
@@ -33,6 +34,9 @@ from press.press.doctype.site_migration.site_migration import (
 from press.utils import has_role, log_error, timer
 
 AGENT_LOG_KEY = "agent-jobs"
+
+if TYPE_CHECKING:
+	from press.press.doctype.site.site import Site
 
 
 class AgentJob(Document):
@@ -439,7 +443,8 @@ def suspend_sites():
 	issue_reload = False
 	for site in active_sites:
 		if site.current_database_usage > 100 or site.current_disk_usage > 100:
-			frappe.get_doc("Site", site.name).suspend(reason="Site Usage Exceeds Plan limits")
+			site: Site = frappe.get_doc("Site", site.name)
+			site.suspend(reason="Site Usage Exceeds Plan limits", skip_reload=True)
 			issue_reload = True
 
 	if issue_reload:
