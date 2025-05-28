@@ -171,29 +171,6 @@ def get_duration(start_time: datetime, end_time: datetime | None = None):
 	return float(value)
 
 
-# @dataclass
-# class ARMBuild:
-# 	deploy_candidate: str
-# 	build_server: str = field(init=False)
-
-# 	def __post_init__(self):
-# 		self.build_server = self.get_build_server()
-
-# 	def create_deploy_candidate_build(self) -> str:
-# 		deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
-# 			{
-# 				"doctype": "Deploy Candidate Build",
-# 				"deploy_candidate": self.deploy_candidate,
-# 				"build_server": self.build_server,
-# 			}
-# 		)
-# 		deploy_candidate_build.insert()
-# 		return deploy_candidate_build.name
-
-# 	def get_build_server(self) -> str:
-# 		return frappe.get_value("Server", {"platform": "arm64", "use_for_build": True}, "name")
-
-
 class DeployCandidateBuild(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
@@ -770,7 +747,7 @@ class DeployCandidateBuild(Document):
 		self.candidate.save()
 
 	def create_new_platform_build_if_required(self):
-		"""Create a platform specefic build if requirement enforced by the deploy candidate"""
+		"""Create a platform specific build if requirement enforced by the deploy candidate"""
 		requires_arm = self.candidate.requires_arm_build and not self.candidate.arm_build
 		requires_intel_build = self.candidate.requires_intel_build and not self.candidate.intel_build
 
@@ -1247,32 +1224,6 @@ def fail_and_redeploy(dn: str):
 def is_build_job(job: Job) -> bool:
 	doc_method: str = job.kwargs.get("kwargs", {}).get("doc_method", "")
 	return doc_method.startswith("_build")
-
-
-def should_create_arm_build(build: DeployCandidateBuild):
-	"""
-	There are four conditions to not trigger an arm build
-	1. There already exists a successful arm build associated to the x86 build
-	2. The current build is on a arm platform
-	3. The current build is unsuccessful.
-	4. WKHTMLTOPDF version is not in ARM_SUPPORTED_WKHTMLTOPDF versions
-	These four conditions ensure we don't have excessive arm builds.
-	"""
-	wkhtmltopdf_version = build.candidate.get_dependency_version("wkhtmltopdf")
-	if wkhtmltopdf_version not in ARM_SUPPORTED_WKHTMLTOPDF:
-		return False
-
-	arm_build_status = frappe.get_value("Deploy Candidate Build", build.arm_build, "status")
-	if arm_build_status in Status.intermediate() or arm_build_status == Status.SUCCESS.value:
-		return False
-
-	if build.platform == "arm64":
-		return False
-
-	if build.status != Status.SUCCESS.value:
-		return False
-
-	return True
 
 
 def should_build_retry_build_output(build_output: str):
