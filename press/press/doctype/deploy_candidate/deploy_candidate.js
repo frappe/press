@@ -83,7 +83,7 @@ function get_handler(frm, method, args) {
 				title: 'Deploy Candidate Build Created',
 				indicator: 'green',
 				message: __(`New {0} has been created`, [
-					`<a href="/app/deploy-candidate-build/${data.message}">Deploy Candidate Build</a>`,
+					`<a href="/app/deploy-candidate-build/${data.message.message}">Deploy Candidate Build</a>`,
 				]),
 			});
 		}
