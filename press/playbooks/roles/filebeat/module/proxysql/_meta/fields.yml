@@ -14,9 +14,6 @@
     - name: query
       type: keyword
       description: 'Executed SQL query.'
-    - name: query_text
-      type: text
-      description: 'Text representation of the SQL query.'
     - name: rows_affected
       type: long
       description: 'Number of rows affected by the query.'
