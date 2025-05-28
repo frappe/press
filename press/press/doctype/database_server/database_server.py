@@ -17,7 +17,7 @@ from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
 	DatabaseServerMariaDBVariable,
 )
-from press.press.doctype.server.server import Agent, BaseServer
+from press.press.doctype.server.server import PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN, Agent, BaseServer
 from press.runner import Ansible
 from press.utils import log_error
 from press.utils.database import find_db_disk_info, parse_du_output_of_mysql_directory
@@ -178,6 +178,8 @@ class DatabaseServer(BaseServer):
 					).insert()
 				except Exception:
 					frappe.log_error("Database Subscription Creation Error")
+		if self.public:
+			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
 
 	def get_doc(self, doc):
 		doc = super().get_doc(doc)

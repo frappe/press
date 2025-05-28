@@ -51,7 +51,7 @@
 </template>
 
 <script>
-import FormControl from 'frappe-ui/src/components/FormControl.vue';
+import { FormControl } from 'frappe-ui';
 import StarRatingInput from '../../src/components/StarRatingInput.vue';
 import { DashboardError } from '../utils/error';
 
