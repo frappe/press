@@ -757,6 +757,7 @@ class DeployCandidateBuild(Document):
 			"no_build": self.no_build,
 			"no_cache": self.no_cache,
 			"no_push": self.no_push,
+			"deploy_after_build": deploy_after_build,
 		}
 
 		if requires_arm:
