@@ -1432,6 +1432,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		except Exception:
 			log_error("Prune Docker System Exception", doc=self)
 
+	@frappe.whitelist()
 	def reload_nginx(self):
 		agent = Agent(self.name, server_type=self.doctype)
 		agent.reload_nginx()
