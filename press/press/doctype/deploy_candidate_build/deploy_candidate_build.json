@@ -11,7 +11,6 @@
   "group",
   "team",
   "platform",
-  "arm_build",
   "column_break_9sga",
   "no_build",
   "no_cache",
@@ -285,13 +284,6 @@
    "fieldname": "run_build",
    "fieldtype": "Check",
    "label": "Run Build"
-  },
-  {
-   "fieldname": "arm_build",
-   "fieldtype": "Link",
-   "label": "Arm Build",
-   "options": "Deploy Candidate Build",
-   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -318,7 +310,7 @@
    "link_fieldname": "build"
   }
  ],
- "modified": "2025-05-08 13:17:34.367411",
+ "modified": "2025-05-27 23:08:21.433327",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Build",

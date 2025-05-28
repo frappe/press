@@ -180,7 +180,7 @@ class AlertmanagerWebhookLog(Document):
 				"group_key": ("like", f"%{self.incident_scope}%"),
 				"modified": [
 					">",
-					add_to_date(self.modified, hours=-self.get_repeat_interval()),
+					add_to_date(frappe.utils.now(), hours=-self.get_repeat_interval()),
 				],
 			},
 			group_by="group_key",
@@ -193,40 +193,11 @@ class AlertmanagerWebhookLog(Document):
 		return set(instances)
 
 	@property
-	def future_firing_instances(self):
-		# Get future firing instances for this alert and severity
-		future_alerts = frappe.get_all(
-			self.doctype,
-			fields=["payload"],
-			filters={
-				"alert": self.alert,
-				"severity": self.severity,
-				"status": "Firing",
-				"group_key": ("like", f"%{self.incident_scope}%"),
-				"modified": [
-					">",
-					self.modified,
-				],
-			},
-			group_by="group_key",
-			ignore_ifnull=True,
-		)
-
-		instances = []
-		for alert in future_alerts:
-			instances.extend(self.get_instances_from_alerts_payload(alert["payload"]))
-		return set(instances)
-
-	@property
 	def total_instances(self) -> int:
 		return frappe.db.count(
 			"Site",
 			{"status": "Active", INCIDENT_SCOPE: self.incident_scope},
 		)
-
-	@property
-	def minimum_firing_instances(self) -> int:
-		return min(math.floor(MIN_FIRING_INSTANCES_FRACTION * self.total_instances), MIN_FIRING_INSTANCES)
 
 	@property
 	def is_enough_firing(self):
@@ -237,13 +208,9 @@ class AlertmanagerWebhookLog(Document):
 		else:
 			firing_instances = len(self.past_alert_instances("Firing"))
 
-		if firing_instances <= self.minimum_firing_instances:
-			return False
-
-		if self.status == "Resolved":
-			# double check if the incident is still firing; May have missed some resolved alerts
-			return len(self.future_firing_instances) >= self.minimum_firing_instances
-		return True
+		return firing_instances > min(
+			math.floor(MIN_FIRING_INSTANCES_FRACTION * self.total_instances), MIN_FIRING_INSTANCES
+		)
 
 	def validate_and_create_incident(self):
 		if not frappe.db.get_single_value("Incident Settings", "enable_incident_detection"):

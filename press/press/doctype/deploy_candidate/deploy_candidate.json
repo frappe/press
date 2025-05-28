@@ -12,6 +12,11 @@
   "redis_cache_size",
   "use_app_cache",
   "compress_app_cache",
+  "column_break_uyow",
+  "requires_arm_build",
+  "requires_intel_build",
+  "intel_build",
+  "arm_build",
   "column_break_tkdd",
   "merge_all_rq_queues",
   "merge_default_and_short_rq_queues",
@@ -182,6 +187,38 @@
    "fieldname": "redis_cache_size",
    "fieldtype": "Int",
    "label": "Redis Cache Size (MB)"
+  },
+  {
+   "fieldname": "column_break_uyow",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "requires_arm_build",
+   "fieldtype": "Check",
+   "label": "Requires ARM Build",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "requires_intel_build",
+   "fieldtype": "Check",
+   "label": "Requires Intel Build",
+   "read_only": 1
+  },
+  {
+   "fieldname": "intel_build",
+   "fieldtype": "Link",
+   "label": "Intel Build",
+   "options": "Deploy Candidate Build",
+   "read_only": 1
+  },
+  {
+   "fieldname": "arm_build",
+   "fieldtype": "Link",
+   "label": "ARM Build",
+   "options": "Deploy Candidate Build",
+   "read_only": 1
   }
  ],
  "links": [
@@ -198,7 +235,7 @@
    "link_fieldname": "deploy_candidate"
   }
  ],
- "modified": "2025-05-07 20:52:35.176671",
+ "modified": "2025-05-27 22:02:19.465983",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

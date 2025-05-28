@@ -10,7 +10,6 @@
   "staging",
   "column_break_2",
   "candidate",
-  "build",
   "section_break_5",
   "benches"
  ],
@@ -67,17 +66,10 @@
    "fieldtype": "Check",
    "in_standard_filter": 1,
    "label": "Staging"
-  },
-  {
-   "fieldname": "build",
-   "fieldtype": "Link",
-   "label": "Build",
-   "options": "Deploy Candidate Build",
-   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2025-04-23 16:32:04.888307",
+ "modified": "2025-05-28 11:45:25.237521",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy",

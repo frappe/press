@@ -583,7 +583,6 @@ Incident URL: {incident_link}"""
 					"status": "Resolved",
 					"group_key": ("like", f"%{self.incident_scope}%"),
 					"alert": self.alert,
-					"creation": [">=", self.creation],
 				},
 			)
 		except frappe.DoesNotExistError:
