@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 	from twilio.rest.api.v2010.account.call import CallInstance
 
 	from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import AlertmanagerWebhookLog
+	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.incident_settings.incident_settings import IncidentSettings
 	from press.press.doctype.incident_settings_self_hosted_user.incident_settings_self_hosted_user import (
@@ -349,6 +350,21 @@ class Incident(WebsiteGenerator):
 
 	def add_likely_cause(self, cause: str):
 		self.likely_cause = self.likely_cause + cause + "\n" if self.likely_cause else cause + "\n"
+		self.save()
+
+	@frappe.whitelist()
+	def restart_down_benches(self):
+		"""
+		Restart all benches on the server that are down
+		"""
+		down_benches = self.monitor_server.get_benches_down_for_server(str(self.server))
+		if not down_benches:
+			frappe.throw("No down benches found for this server")
+			return
+		for bench_name in down_benches:
+			bench: Bench = frappe.get_doc("Bench", bench_name)
+			bench.restart()
+			self.add_likely_cause(f"Restarted bench {bench_name}")
 		self.save()
 
 	def call_humans(self):
