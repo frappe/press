@@ -12,7 +12,7 @@
       type: keyword
       description: "Event name"
     - name: query
-      type: keyword
+      type: text
       description: "Executed SQL query."
     - name: rows_affected
       type: long
