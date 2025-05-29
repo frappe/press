@@ -314,6 +314,10 @@ class SiteDatabaseUser(Document):
 	def fetch_logs(
 		self, start_timestamp: int, end_timestamp: int, search_string: str = "", client_ip: str = ""
 	):
+		if abs(start_timestamp - end_timestamp) > 2592000:
+			frappe.throw(
+				"You can only search through at max 30 days of logs. Please try again with a smaller range."
+			)
 		try:
 			log_server = frappe.db.get_single_value("Press Settings", "log_server")
 
