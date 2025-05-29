@@ -240,7 +240,8 @@ class ProductTrial(Document):
 				self._create_standby_sites(cluster, rule)
 
 	def _create_standby_sites(self, cluster: str, rule: dict | None = None):
-		standby_pool_size = rule.custom_pool_size if rule else self.standby_pool_size
+		standby_pool_size = rule.custom_pool_size if rule else 0
+		standby_pool_size = standby_pool_size or self.standby_pool_size
 		sites_to_create = standby_pool_size - self.get_standby_sites_count(
 			cluster, rule.app if rule else None
 		)
