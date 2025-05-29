@@ -74,6 +74,16 @@ class ProductTrial(Document):
 		if not self.redirect_to_after_login.startswith("/"):
 			frappe.throw("Redirection route after login should start with /")
 
+		self.validate_hybrid_rules()
+
+	def validate_hybrid_rules(self):
+		for rule in self.hybrid_pool_rules:
+			if not frappe.db.exists("Release Group App", {"parent": self.release_group, "app": rule.app}):
+				frappe.throw(
+					f"App {rule.app} is not present in release group {self.release_group}. "
+					"Please add the app to the release group."
+				)
+
 	def setup_trial_site(
 		self, subdomain: str, team: str, cluster: str | None = None, account_request: str | None = None
 	):
@@ -192,13 +202,16 @@ class ProductTrial(Document):
 		if cluster:
 			filters["cluster"] = cluster
 
-		country = (
-			frappe.db.get_value("Account Request", account_request, "country") if account_request else None
-		)
 		for rule in self.hybrid_pool_rules:
-			if not country:
+			value = (
+				frappe.db.get_value("Account Request", account_request, rule.field)
+				if account_request
+				else None
+			)
+			if not value:
 				break
-			if rule.country == country:
+
+			if rule.value == value:
 				filters["hybrid_for"] = rule.app
 				break
 
@@ -211,6 +224,9 @@ class ProductTrial(Document):
 		)
 		if sites:
 			return sites[0]
+		if cluster and account_request:
+			# if site is not found and account request was specified, try to find a site in any cluster
+			return self.get_standby_site(None, account_request)
 		if cluster:
 			# if site is not found and cluster was specified, try to find a site in any cluster
 			return self.get_standby_site()
@@ -235,8 +251,12 @@ class ProductTrial(Document):
 				self._create_standby_sites(cluster, rule)
 
 	def _create_standby_sites(self, cluster: str, rule: dict | None = None):
-		sites_to_create = self.standby_pool_size - self.get_standby_sites_count(
-			cluster, rule.get("app") if rule else None
+		if rule and rule.preferred_cluster and rule.preferred_cluster != cluster:
+			return
+
+		standby_pool_size = rule.custom_pool_size if rule else self.standby_pool_size
+		sites_to_create = standby_pool_size - self.get_standby_sites_count(
+			cluster, rule.app if rule else None
 		)
 		if sites_to_create <= 0:
 			return
@@ -252,7 +272,7 @@ class ProductTrial(Document):
 		apps = [{"app": d.app} for d in self.apps]
 
 		if rule:
-			apps += [{"app": rule.get("app")}]
+			apps += [{"app": rule.app}]
 
 		server = self.get_server_from_cluster(cluster)
 		site = frappe.get_doc(
@@ -264,7 +284,7 @@ class ProductTrial(Document):
 			server=server,
 			is_standby=True,
 			standby_for_product=self.name,
-			hybrid_for=rule.get("app") if rule else None,
+			hybrid_for=rule.app if rule else None,
 			team=administrator,
 			apps=apps,
 		)

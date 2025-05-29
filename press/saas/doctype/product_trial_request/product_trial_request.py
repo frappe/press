@@ -32,6 +32,7 @@ class ProductTrialRequest(Document):
 
 		account_request: DF.Link | None
 		agent_job: DF.Link | None
+		cluster: DF.Link | None
 		domain: DF.Data | None
 		product_trial: DF.Link | None
 		site: DF.Link | None
@@ -177,6 +178,7 @@ class ProductTrialRequest(Document):
 			self.status = "Wait for Site"
 			self.site_creation_started_on = now_datetime()
 			self.domain = f"{subdomain}.{product.domain}"
+			self.cluster = cluster
 			site, agent_job_name, is_standby_site = product.setup_trial_site(
 				subdomain=subdomain, team=self.team, cluster=cluster, account_request=self.account_request
 			)

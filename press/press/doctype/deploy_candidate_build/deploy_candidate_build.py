@@ -1477,3 +1477,23 @@ def throw_no_build_server():
 		"Server not found to run builds. "
 		"Please set <b>Build Server</b> under <b>Press Settings > Docker > Docker Build</b>."
 	)
+
+
+def _create_arm_build(deploy_candidate: str) -> DeployCandidateBuild:
+	"""This is a utility to create an ARM build for all benches on a server."""
+
+	deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
+		{
+			"doctype": "Deploy Candidate Build",
+			"deploy_candidate": deploy_candidate,
+			"no_build": False,
+			"no_cache": False,
+			"no_push": False,
+			"platform": "arm64",
+		}
+	)
+	arm_build = deploy_candidate_build.insert()
+	# Even if arm_build is not required on this deploy candidate we still attach it here
+	# Since we don't want loose builds
+	frappe.db.set_value("Deploy Candidate", {"name": deploy_candidate}, "arm_build", arm_build.name)
+	return arm_build.name
