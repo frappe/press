@@ -12,7 +12,7 @@ def find_db_disk_info(df_output: str) -> tuple[int, int] | None:
 		data_disk_available = True
 
 	for line in df_output.strip().split("\n"):
-		if not data_disk_available and "/dev/root" not in line:
+		if not data_disk_available and not ("/dev/root" in line or "/dev/sda1" in line):
 			continue
 		if data_disk_available and "/opt/volumes/mariadb" not in line:
 			continue
