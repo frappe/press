@@ -33,7 +33,6 @@ if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 	from press.press.doctype.bench.bench import Bench
-	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
@@ -1201,9 +1200,14 @@ class BaseServer(Document, TagHelpers):
 		return [mount.as_dict() for mount in self.mounts if mount.mount_type == "Volume"]
 
 	def _create_arm_build(self, build: str) -> str:
-		build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", build)
+		from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
+			_create_arm_build as arm_build_util,
+		)
+
+		deploy_candidate = frappe.get_value("Deploy Candidate Build", build, "deploy_candidate")
+
 		try:
-			return build.create_arm_build(set_arm_build_name=True)
+			return arm_build_util(deploy_candidate)
 		except frappe.ValidationError:
 			frappe.log_error(
 				"Failed to create ARM build", message=f"Failed to create arm build for build {build.name}"
