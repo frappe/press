@@ -192,13 +192,16 @@ class ProductTrial(Document):
 		if cluster:
 			filters["cluster"] = cluster
 
-		country = (
-			frappe.db.get_value("Account Request", account_request, "country") if account_request else None
-		)
 		for rule in self.hybrid_pool_rules:
-			if not country:
+			value = (
+				frappe.db.get_value("Account Request", account_request, rule.field)
+				if account_request
+				else None
+			)
+			if not value:
 				break
-			if rule.country == country:
+
+			if rule.value == value:
 				filters["hybrid_for"] = rule.app
 				break
 
@@ -232,11 +235,14 @@ class ProductTrial(Document):
 
 		if self.enable_hybrid_pooling:
 			for rule in self.hybrid_pool_rules:
+				if rule.preferred_cluster and rule.preferred_cluster != cluster:
+					continue
 				self._create_standby_sites(cluster, rule)
 
 	def _create_standby_sites(self, cluster: str, rule: dict | None = None):
-		sites_to_create = self.standby_pool_size - self.get_standby_sites_count(
-			cluster, rule.get("app") if rule else None
+		standby_pool_size = rule.custom_pool_size if rule else self.standby_pool_size
+		sites_to_create = standby_pool_size - self.get_standby_sites_count(
+			cluster, rule.app if rule else None
 		)
 		if sites_to_create <= 0:
 			return
@@ -252,7 +258,7 @@ class ProductTrial(Document):
 		apps = [{"app": d.app} for d in self.apps]
 
 		if rule:
-			apps += [{"app": rule.get("app")}]
+			apps += [{"app": rule.app}]
 
 		server = self.get_server_from_cluster(cluster)
 		site = frappe.get_doc(
@@ -264,7 +270,7 @@ class ProductTrial(Document):
 			server=server,
 			is_standby=True,
 			standby_for_product=self.name,
-			hybrid_for=rule.get("app") if rule else None,
+			hybrid_for=rule.app if rule else None,
 			team=administrator,
 			apps=apps,
 		)
