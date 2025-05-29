@@ -42,6 +42,7 @@ from typing import Literal, TypedDict
 class BenchInfoType(TypedDict):
 	name: str
 	build: str
+	candidate: str
 
 
 class ARMDockerImageType(TypedDict):
@@ -1214,8 +1215,10 @@ class BaseServer(Document, TagHelpers):
 			)
 
 	def _process_bench(self, bench_info: BenchInfoType) -> ARMDockerImageType:
+		candidate = bench_info["candidate"]
 		build_id = bench_info["build"]
-		arm_build = frappe.get_value("Deploy Candidate Build", build_id, "arm_build")
+
+		arm_build = frappe.get_value("Deploy Candidate", candidate, "arm_build")
 
 		if arm_build:
 			return {
@@ -1237,7 +1240,7 @@ class BaseServer(Document, TagHelpers):
 		benches = frappe.get_all(
 			"Bench",
 			{"server": self.name, "status": "Active"},
-			["name", "build"],
+			["name", "build", "candidate"],
 		)
 
 		if not benches:
