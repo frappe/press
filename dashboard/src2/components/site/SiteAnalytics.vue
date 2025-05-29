@@ -146,8 +146,13 @@
 			<AnalyticsCard
 				class="sm:col-span-2"
 				title="Query Report Durations"
-				v-if="$session.isSystemUser"
+				v-if="queryReportRunReportsData"
 			>
+				<template #action>
+					<Tooltip text="Shown only as reports seem to take time">
+						<i-lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+					</Tooltip>
+				</template>
 				<BarChart
 					:key="queryReportRunReportsData"
 					:data="queryReportRunReportsData"
@@ -162,8 +167,13 @@
 			<AnalyticsCard
 				class="sm:col-span-2"
 				title="Run Doc Method Durations"
-				v-if="$session.isSystemUser"
+				v-if="runDocMethodMethodNamesData"
 			>
+				<template #action>
+					<Tooltip text="Shown only as run_doc_method calls seem to take time">
+						<i-lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+					</Tooltip>
+				</template>
 				<BarChart
 					:key="runDocMethodMethodNamesData"
 					:data="runDocMethodMethodNamesData"
