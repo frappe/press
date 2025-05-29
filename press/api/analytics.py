@@ -20,7 +20,6 @@ from frappe.utils import (
 )
 from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
-from frappe.utils.user import is_system_user
 from pytz import timezone as pytz_timezone
 
 from press.agent import Agent
@@ -472,6 +471,9 @@ def get_advanced_analytics(name, timezone, duration="7d", max_no_of_paths=MAX_NO
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
 
 	job_data = get_usage(name, "job", timezone, timespan, timegrain)
+	is_system_user = (
+		frappe.db.get_value("User", frappe.session.user, "user_type", cache=True) == "System User"
+	)
 
 	system_user_reports = (
 		{
@@ -482,7 +484,7 @@ def get_advanced_analytics(name, timezone, duration="7d", max_no_of_paths=MAX_NO
 				name, "duration", timezone, timespan, timegrain
 			),
 		}
-		if is_system_user(frappe.session.user)
+		if is_system_user
 		else {}
 	)
 
@@ -690,10 +692,10 @@ def get_slow_logs(
 class RunDocMethodMethodNames(RequestGroupByChart):
 	def __init__(self, name, agg_type, timezone, timespan, timegrain):
 		super().__init__(name, agg_type, ResourceType.SITE, timezone, timespan, timegrain)
-		self.group_by_field = "json.methodname"
 
 	def setup_search_filters(self):
 		super().setup_search_filters()
+		self.group_by_field = "json.methodname"
 		self.search = self.search.filter("match_phrase", json__request__path="/api/method/run_doc_method")
 
 
@@ -704,10 +706,10 @@ def get_run_doc_method_methodnames(site, agg_type, timezone, timespan, timegrain
 class QueryReportRunReports(RequestGroupByChart):
 	def __init__(self, name, agg_type, timezone, timespan, timegrain):
 		super().__init__(name, agg_type, ResourceType.SITE, timezone, timespan, timegrain)
-		self.group_by_field = "json.report"
 
 	def setup_search_filters(self):
 		super().setup_search_filters()
+		self.group_by_field = "json.report"
 		self.search = self.search.filter(
 			"match_phrase", json__request__path="/api/method/frappe.desk.query_report.run"
 		)
