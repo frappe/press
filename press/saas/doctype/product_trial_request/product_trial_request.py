@@ -34,6 +34,7 @@ class ProductTrialRequest(Document):
 		agent_job: DF.Link | None
 		cluster: DF.Link | None
 		domain: DF.Data | None
+		is_standby_site: DF.Check
 		product_trial: DF.Link | None
 		site: DF.Link | None
 		site_creation_completed_on: DF.Datetime | None
