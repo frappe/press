@@ -6,7 +6,10 @@ import re
 from collections import Counter
 
 import frappe
+import frappe.utils
+from elasticsearch import Elasticsearch
 from frappe.model.document import Document
+from frappe.utils.password import get_decrypted_password
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
@@ -306,6 +309,57 @@ class SiteDatabaseUser(Document):
 		if not self.user_created_in_database and not self.user_added_in_proxysql:
 			self.status = "Archived"
 			self.save()
+
+	@dashboard_whitelist()
+	def fetch_logs(self, start_timestamp: int, end_timestamp: int, search_string: str = ""):
+		try:
+			log_server = frappe.db.get_single_value("Press Settings", "log_server")
+
+			if not log_server:
+				return []
+
+			query = {
+				"bool": {
+					"filter": [
+						{"term": {"event.dataset": "proxysql.events"}},
+						{"term": {"username": self.username}},
+						{
+							"range": {
+								"@timestamp": {
+									"gte": int(start_timestamp) * 1000,  # Convert to milliseconds
+									"lte": int(end_timestamp) * 1000,  # Convert to milliseconds
+								}
+							}
+						},
+					],
+					"must": [],
+					"must_not": [],
+					"should": [],
+				}
+			}
+
+			if search_string and search_string.strip() != "*":
+				query["bool"]["must"].append(
+					{"wildcard": {"query": {"value": search_string, "case_insensitive": True}}}
+				)
+
+			url = f"https://{log_server}/elasticsearch/"
+			password = get_decrypted_password("Log Server", log_server, "kibana_password")
+			client = Elasticsearch(url, basic_auth=("frappe", password))
+			result = client.search(
+				size=500,
+				index="filebeat-*",
+				query=query,
+				_source=["query", "client_ip", "start_timestamp", "duration_ms"],
+			)
+			# Only return the _source part of each hit
+			hits = [hit["_source"] for hit in result["hits"]["hits"]]
+			for i in range(len(hits)):
+				hits[i]["start_timestamp"] = int(
+					frappe.utils.cint(hits[i].get("start_timestamp"), 0) / 1000
+				)  # Convert to seconds
+		except Exception:
+			frappe.throw("Failed to fetch logs from log server. Please try again later.")
 
 	@staticmethod
 	def process_job_update(job):  # noqa: C901
