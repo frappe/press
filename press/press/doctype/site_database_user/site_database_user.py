@@ -311,7 +311,9 @@ class SiteDatabaseUser(Document):
 			self.save()
 
 	@dashboard_whitelist()
-	def fetch_logs(self, start_timestamp: int, end_timestamp: int, search_string: str = ""):
+	def fetch_logs(
+		self, start_timestamp: int, end_timestamp: int, search_string: str = "", client_ip: str = ""
+	):
 		try:
 			log_server = frappe.db.get_single_value("Press Settings", "log_server")
 
@@ -340,8 +342,11 @@ class SiteDatabaseUser(Document):
 
 			if search_string and search_string.strip() != "*":
 				query["bool"]["must"].append(
-					{"wildcard": {"query": {"value": search_string, "case_insensitive": True}}}
+					{"wildcard": {"query": {"value": f"*{search_string}*", "case_insensitive": True}}}
 				)
+
+			if client_ip:
+				query["bool"]["filter"].append({"term": {"client_ip": client_ip}})
 
 			url = f"https://{log_server}/elasticsearch/"
 			password = get_decrypted_password("Log Server", log_server, "kibana_password")
@@ -358,6 +363,7 @@ class SiteDatabaseUser(Document):
 				hits[i]["start_timestamp"] = int(
 					frappe.utils.cint(hits[i].get("start_timestamp"), 0) / 1000
 				)  # Convert to seconds
+			return hits
 		except Exception:
 			frappe.throw("Failed to fetch logs from log server. Please try again later.")
 
