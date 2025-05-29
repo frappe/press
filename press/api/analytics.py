@@ -20,6 +20,7 @@ from frappe.utils import (
 )
 from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
+from frappe.utils.user import is_system_user
 from pytz import timezone as pytz_timezone
 
 from press.agent import Agent
@@ -472,6 +473,19 @@ def get_advanced_analytics(name, timezone, duration="7d", max_no_of_paths=MAX_NO
 
 	job_data = get_usage(name, "job", timezone, timespan, timegrain)
 
+	system_user_reports = (
+		{
+			"query_report_run_reports": get_query_report_run_reports(
+				name, "duration", timezone, timespan, timegrain
+			),
+			"run_doc_method_methodnames": get_run_doc_method_methodnames(
+				name, "duration", timezone, timespan, timegrain
+			),
+		}
+		if is_system_user(frappe.session.user)
+		else {}
+	)
+
 	return {
 		"request_count_by_path": get_request_by_(
 			name, "count", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
@@ -496,7 +510,7 @@ def get_advanced_analytics(name, timezone, duration="7d", max_no_of_paths=MAX_NO
 		),
 		"job_count": [{"value": r.count, "date": r.date} for r in job_data],
 		"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
-	}
+	} | system_user_reports
 
 
 def get_more_request_detail_fn_names():

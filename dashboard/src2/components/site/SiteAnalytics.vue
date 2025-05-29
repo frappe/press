@@ -145,6 +145,38 @@
 
 			<AnalyticsCard
 				class="sm:col-span-2"
+				title="Query Report Durations"
+				v-if="$session.isSystemUser"
+			>
+				<BarChart
+					:key="queryReportRunReportsData"
+					:data="queryReportRunReportsData"
+					unit="seconds"
+					:chartTheme="requestChartColors"
+					:loading="$resources.advancedAnalytics.loading"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				class="sm:col-span-2"
+				title="Run Doc Method Durations"
+				v-if="$session.isSystemUser"
+			>
+				<BarChart
+					:key="runDocMethodMethodNamesData"
+					:data="runDocMethodMethodNamesData"
+					unit="seconds"
+					:chartTheme="requestChartColors"
+					:loading="$resources.advancedAnalytics.loading"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				class="sm:col-span-2"
 				title="Individual Request Time (Average)"
 			>
 				<BarChart
@@ -412,6 +444,20 @@ export default {
 			if (!requestDurationByPath) return;
 
 			return requestDurationByPath;
+		},
+		queryReportRunReportsData() {
+			let queryReportRunReports =
+				this.$resources.advancedAnalytics.data?.query_report_run_reports;
+			if (!queryReportRunReports) return;
+
+			return queryReportRunReports;
+		},
+		runDocMethodMethodNamesData() {
+			let runDocMethodMethodNames =
+				this.$resources.advancedAnalytics.data?.run_doc_method_method_names;
+			if (!runDocMethodMethodNames) return;
+
+			return runDocMethodMethodNames;
 		},
 		averageRequestDurationByPathData() {
 			let averageRequestDurationByPath =
