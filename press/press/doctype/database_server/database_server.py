@@ -1621,12 +1621,13 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 				raw_params=True,
 			)[0]
 			if result.get("status") != "Success":
-				frappe.throw("Failed to fetch storage usage of the database server")
+				raise Exception("Failed to fetch storage usage")
 
 			disk_info_str, mysql_dir_info_str = result.get("output", "\n\n").split("\n\n", 1)
 			disk_info = find_db_disk_info(disk_info_str)
 			if disk_info is None:
-				return frappe.throw("Failed to fetch disk information of the database server")
+				raise Exception("Failed to parse disk info")
+
 			mysql_storage_info = parse_du_output_of_mysql_directory(mysql_dir_info_str)
 			total_db_usage = (
 				sum(mysql_storage_info["schema"].values())
@@ -1659,7 +1660,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 				"db_name_site_map": db_name_site_mapping,
 			}
 		except Exception:
-			frappe.throw("Failed to fetch storage usage of the database server. Please try again.")
+			frappe.throw("Failed to fetch storage usage. Try again later.")
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Database Server")
