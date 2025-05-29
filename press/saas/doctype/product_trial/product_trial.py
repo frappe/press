@@ -214,6 +214,9 @@ class ProductTrial(Document):
 		)
 		if sites:
 			return sites[0]
+		if cluster and account_request:
+			# if site is not found and account request was specified, try to find a site in any cluster
+			return self.get_standby_site(None, account_request)
 		if cluster:
 			# if site is not found and cluster was specified, try to find a site in any cluster
 			return self.get_standby_site()
