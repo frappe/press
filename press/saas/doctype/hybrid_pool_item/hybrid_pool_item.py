@@ -16,11 +16,14 @@ class HybridPoolItem(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		app: DF.Link | None
-		country: DF.Link | None
+		app: DF.Link
+		custom_pool_size: DF.Int
+		field: DF.Data
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
+		preferred_cluster: DF.Link | None
+		value: DF.Data
 	# end: auto-generated types
 
 	pass

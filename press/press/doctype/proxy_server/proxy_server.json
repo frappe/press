@@ -46,7 +46,6 @@
   "root_public_key",
   "section_break_21",
   "domains",
-  "is_nginx_defer_reload_setup",
   "ssh_proxy_section",
   "ssh_certificate_authority",
   "column_break_26",
@@ -427,14 +426,6 @@
   },
   {
    "default": "0",
-   "description": "If any agent job has skip_reload=True, reload is deferred and grouped to run later (<=2 min).",
-   "fieldname": "is_nginx_defer_reload_setup",
-   "fieldtype": "Check",
-   "label": "Is Nginx Defer Reload Setup",
-   "read_only": 1
-  },
-  {
-   "default": "0",
    "description": "Stop polling and queuing agent jobs",
    "fieldname": "halt_agent_jobs",
    "fieldtype": "Check",
@@ -442,7 +433,7 @@
   }
  ],
  "links": [],
- "modified": "2025-05-02 15:00:15.495681",
+ "modified": "2025-05-22 17:42:29.377442",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
