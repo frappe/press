@@ -105,6 +105,8 @@ DOCTYPE_SERVER_TYPE_MAP = {
 	"Proxy Server": "Proxy",
 }
 
+ARCHIVE_AFTER_SUSPEND_DAYS = 21
+
 
 class Site(Document, TagHelpers):
 	# begin: auto-generated types
@@ -1266,7 +1268,6 @@ class Site(Document, TagHelpers):
 				"site": self.name,
 				"domain": domain,
 				"dns_type": "CNAME",
-				"skip_reload": False,
 			}
 		).insert()
 
@@ -1404,7 +1405,7 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Suspended"])
-	def archive(self, site_name=None, reason=None, force=False, skip_reload=True):
+	def archive(self, site_name=None, reason=None, force=False):
 		agent = Agent(self.server)
 		self.status = "Pending"
 		self.save()
@@ -1418,7 +1419,6 @@ class Site(Document, TagHelpers):
 			server=self.server,
 			site=self.name,
 			site_name=site_name,
-			skip_reload=skip_reload,
 		)
 
 		self.db_set("host_name", None)
@@ -2279,7 +2279,7 @@ class Site(Document, TagHelpers):
 		self.reactivate_app_subscriptions()
 
 	@frappe.whitelist()
-	def suspend(self, reason=None, skip_reload=True):
+	def suspend(self, reason=None, skip_reload=False):
 		log_site_activity(self.name, "Suspend Site", reason)
 		self.status = "Suspended"
 		self.update_site_config({"maintenance_mode": 1})
@@ -2307,11 +2307,11 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	@site_action(["Suspended"])
-	def unsuspend(self, reason=None, skip_reload=True):
+	def unsuspend(self, reason=None):
 		log_site_activity(self.name, "Unsuspend Site", reason)
 		self.status = "Active"
 		self.update_site_config({"maintenance_mode": 0})
-		self.update_site_status_on_proxy("activated", skip_reload=skip_reload)
+		self.update_site_status_on_proxy("activated")
 		self.reactivate_app_subscriptions()
 
 	@frappe.whitelist()
@@ -2319,10 +2319,10 @@ class Site(Document, TagHelpers):
 		agent = Agent(self.server)
 		agent.reset_site_usage(self)
 
-	def update_site_status_on_proxy(self, status, skip_reload=True):
+	def update_site_status_on_proxy(self, status, skip_reload=False):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.update_site_status(self.server, self.name, status, skip_reload)
+		agent.update_site_status(self.server, self.name, status, skip_reload=skip_reload)
 
 	def get_user_details(self):
 		if frappe.db.get_value("Team", self.team, "user") == "Administrator" and self.account_request:
@@ -3333,17 +3333,17 @@ class Site(Document, TagHelpers):
 			)
 		)
 
-	@cached_property
+	@property
 	def recent_offsite_backup_exists(self):
 		site_backups = frappe.qb.DocType("Site Backup")
 		return self.recent_offsite_backups_.where(
 			(site_backups.status == "Success") & (site_backups.files_availability == "Available")
 		).run()
 
-	@cached_property
-	def recent_offsite_backups_pending(self):
+	@property
+	def recent_offsite_backup_pending(self):
 		site_backups = frappe.qb.DocType("Site Backup")
-		return self.recent_offsite_backups_.where(site_backups.status in ["Pending", "Running"]).run()
+		return self.recent_offsite_backups_.where(site_backups.status.isin(["Pending", "Running"])).run()
 
 
 def site_cleanup_after_archive(site):
@@ -4081,7 +4081,7 @@ def get_suspended_time(site: str):
 
 
 def archive_suspended_site(site_dict: SiteToArchive):
-	archive_after_days = 21
+	archive_after_days = ARCHIVE_AFTER_SUSPEND_DAYS
 
 	suspended_days = frappe.utils.date_diff(frappe.utils.today(), get_suspended_time(site_dict.name))
 
@@ -4094,7 +4094,7 @@ def archive_suspended_site(site_dict: SiteToArchive):
 	site = Site("Site", site_dict.name)
 	# take an offsite backup before archive
 	if site.plan == "USD 10" and not site.recent_offsite_backup_exists:
-		if not site.recent_offsite_backups_pending:
+		if not site.recent_offsite_backup_pending:
 			site.backup(with_files=True, offsite=True)
 		return  # last backup ongoing
 	site.archive(reason="Archive suspended site")

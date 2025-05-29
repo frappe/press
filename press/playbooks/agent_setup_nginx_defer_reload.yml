@@ -1,8 +1,0 @@
----
-- name: Setup NGINX Defer Reload
-  hosts: all
-  become: yes
-  become_user: root
-  gather_facts: no
-  roles:
-    - role: agent_setup_nginx_defer_reload

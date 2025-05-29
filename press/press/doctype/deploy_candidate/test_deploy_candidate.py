@@ -20,6 +20,7 @@ from press.press.doctype.deploy_candidate_build.deploy_candidate_build import De
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
+from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.team.test_team import (
 	create_test_press_admin_team,
 	create_test_team,
@@ -51,7 +52,11 @@ def create_test_deploy_candidate(group: ReleaseGroup) -> DeployCandidate:
 
 
 def create_test_deploy_candidate_build(
-	deploy_candidate: ReleaseGroup, no_build: bool = False, no_push: bool = False, no_cache: bool = False
+	deploy_candidate: DeployCandidate,
+	no_build: bool = False,
+	no_push: bool = False,
+	no_cache: bool = False,
+	status: str = "Pending",
 ) -> DeployCandidateBuild:
 	deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
 		{
@@ -60,6 +65,8 @@ def create_test_deploy_candidate_build(
 			"no_build": no_build,
 			"no_push": no_push,
 			"no_cache": no_cache,
+			"group": deploy_candidate.group,
+			"status": status,
 		}
 	)
 	return deploy_candidate_build
@@ -332,6 +339,26 @@ class TestDeployCandidate(unittest.TestCase):
 		# # Assert that all packages are added
 		chunked_pacakges = [package for chunk in chunks for package in chunk.split()]
 		self.assertEqual(set(chunked_pacakges), set(packages))
+
+	def test_build_fields_check(self, mock_enqueue_doc):
+		app = create_test_app()
+		intel_server = create_test_server(platform="x86_64")
+		arm_server = create_test_server(platform="arm64")
+		group = create_test_release_group([app], servers=[intel_server, arm_server])
+		dc: DeployCandidate = group.create_deploy_candidate()
+
+		self.assertEqual(dc.requires_arm_build, True)
+		self.assertEqual(dc.requires_intel_build, True)
+
+		group = create_test_release_group([app], servers=[intel_server])
+		dc: DeployCandidate = group.create_deploy_candidate()
+
+		self.assertEqual(dc.requires_intel_build, True)
+
+		group = create_test_release_group([app], servers=[arm_server])
+		dc: DeployCandidate = group.create_deploy_candidate()
+
+		self.assertEqual(dc.requires_arm_build, True)
 
 
 def create_cache_test_release_group(app_info_list: list["AppInfo"], team: "Team") -> "ReleaseGroup":

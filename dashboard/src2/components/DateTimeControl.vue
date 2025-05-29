@@ -43,9 +43,9 @@ export default {
 			set(value) {
 				this.$emit(
 					'update:modelValue',
-					`${value}T${this.scheduledHour}:${this.scheduledMinute}`
+					`${value}T${this.scheduledHour}:${this.scheduledMinute}`,
 				);
-			}
+			},
 		},
 		scheduledHour: {
 			get() {
@@ -58,9 +58,9 @@ export default {
 					'update:modelValue',
 					`${this.scheduledDate}T${value.padStart(2, '0')}:${
 						this.scheduledMinute
-					}`
+					}`,
 				);
-			}
+			},
 		},
 		scheduledMinute: {
 			get() {
@@ -73,55 +73,55 @@ export default {
 					'update:modelValue',
 					`${this.scheduledDate}T${this.scheduledHour}:${value.padStart(
 						2,
-						'0'
-					)}`
+						'0',
+					)}`,
 				);
-			}
+			},
 		},
 		dayOptions() {
 			let days = [];
 			for (let i = 0; i < 7; i++) {
 				days.push({
 					label: dayjs().add(i, 'day').format('dddd, MMMM D'),
-					value: dayjs().add(i, 'day').format('YYYY-MM-DD')
+					value: dayjs().add(i, 'day').format('YYYY-MM-DD'),
 				});
 			}
 			return days;
 		},
 		hourOptions() {
-			let options = [...Array(24).keys()].map(n => ({
+			let options = [...Array(24).stickyKeys()].map((n) => ({
 				label:
 					n < 12
 						? `${(n == 0 ? 12 : n).toString().padStart(2, '0')} AM`
 						: `${(n != 12 ? n - 12 : n).toString().padStart(2, '0')} PM`,
-				value: n
+				value: n,
 			}));
 
 			if (this.scheduledDate === dayjs().format('YYYY-MM-DD')) {
 				options = options.filter(
-					option =>
+					(option) =>
 						option.value >=
-						(dayjs().minute() < 45 ? dayjs().hour() : dayjs().hour() + 1)
+						(dayjs().minute() < 45 ? dayjs().hour() : dayjs().hour() + 1),
 				);
 			}
 
 			return options;
 		},
 		minuteOptions() {
-			let options = [0, 15, 30, 45].map(i => ({
+			let options = [0, 15, 30, 45].map((i) => ({
 				label: i.toString().padStart(2, '0'),
-				value: i
+				value: i,
 			}));
 
 			if (
 				this.scheduledDate === dayjs().format('YYYY-MM-DD') &&
 				this.scheduledHour === String(dayjs().hour())
 			) {
-				options = options.filter(option => option.value >= dayjs().minute());
+				options = options.filter((option) => option.value >= dayjs().minute());
 			}
 
 			return options;
-		}
-	}
+		},
+	},
 };
 </script>

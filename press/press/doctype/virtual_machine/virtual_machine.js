@@ -110,7 +110,7 @@ frappe.ui.form.on('Virtual Machine', {
 				__('Resize'),
 				'resize',
 				frm.doc.status == 'Stopped' ||
-				(frm.doc.cloud_provider == 'OCI' && frm.doc.status != 'Draft'),
+					(frm.doc.cloud_provider == 'OCI' && frm.doc.status != 'Draft'),
 			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
@@ -258,7 +258,9 @@ frappe.ui.form.on('Virtual Machine', {
 						({ size, iops, throughput }) => {
 							frm
 								.call('attach_new_volume', {
-									size, iops, throughput,
+									size,
+									iops,
+									throughput,
 								})
 								.then((r) => frm.refresh());
 						},

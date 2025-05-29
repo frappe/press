@@ -137,7 +137,7 @@ export default {
 						label: 'Branch',
 						fieldname: 'branch',
 						class: 'text-gray-600',
-						width: '20rem',
+						width: '10rem',
 					},
 					{
 						label: '',

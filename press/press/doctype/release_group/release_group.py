@@ -545,6 +545,16 @@ class ReleaseGroup(Document, TagHelpers):
 		except ValueError:
 			return False
 
+	def required_build_platforms(self) -> tuple[bool, bool]:
+		platforms = frappe.get_all(
+			"Server",
+			{"name": ("in", [server_ref.server for server_ref in self.servers])},
+			pluck="platform",
+		)
+		required_arm_build = "arm64" in platforms
+		required_intel_build = "x86_64" in platforms
+		return required_arm_build, required_intel_build
+
 	@frappe.whitelist()
 	def create_duplicate_deploy_candidate(self):
 		return self.create_deploy_candidate([])
@@ -585,7 +595,7 @@ class ReleaseGroup(Document, TagHelpers):
 		]
 
 		environment_variables = [{"key": v.key, "value": v.value} for v in self.environment_variables]
-
+		requires_arm_build, requires_intel_build = self.required_build_platforms()
 		# Create and deploy the DC
 		new_dc: "DeployCandidate" = frappe.get_doc(
 			{
@@ -595,6 +605,8 @@ class ReleaseGroup(Document, TagHelpers):
 				"dependencies": dependencies,
 				"packages": packages,
 				"environment_variables": environment_variables,
+				"requires_arm_build": requires_arm_build,
+				"requires_intel_build": requires_intel_build,
 			}
 		)
 
@@ -681,8 +693,9 @@ class ReleaseGroup(Document, TagHelpers):
 	@frappe.whitelist()
 	def deploy_information(self):
 		out = frappe._dict(update_available=False)
-
-		last_deployed_bench = get_last_doc("Bench", {"group": self.name, "status": "Active"})
+		last_deployed_bench = get_last_doc(
+			"Bench", {"group": self.name, "status": ("in", ("Active", "Installing", "Pending"))}
+		)
 		out.apps = self.get_app_updates(last_deployed_bench.apps if last_deployed_bench else [])
 		out.last_deploy = self.last_dc_info
 		out.deploy_in_progress = self.deploy_in_progress

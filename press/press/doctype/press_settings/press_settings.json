@@ -87,7 +87,6 @@
   "build_directory",
   "build_server",
   "minimum_rebuild_memory",
-  "allow_automatic_arm_build",
   "column_break_66",
   "code_server",
   "code_server_password",
@@ -1441,12 +1440,6 @@
    "label": "Servers Using Alternative HTTP Port For Communication"
   },
   {
-   "default": "0",
-   "fieldname": "allow_automatic_arm_build",
-   "fieldtype": "Check",
-   "label": "Allow Automatic ARM Build"
-  },
-  {
    "description": "Add value in percent (%). e.g. 10",
    "fieldname": "npo_discount",
    "fieldtype": "Float",
@@ -1455,7 +1448,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-05-20 13:05:30.783898",
+ "modified": "2025-05-28 10:07:18.507316",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

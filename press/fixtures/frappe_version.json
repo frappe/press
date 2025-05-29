@@ -82,12 +82,12 @@
     "parent": "Version 13",
     "parentfield": "dependencies",
     "parenttype": "Frappe Version",
-    "version": "5.15.2"
+    "version": "5.23.0"
    }
   ],
   "docstatus": 0,
   "doctype": "Frappe Version",
-  "modified": "2024-06-27 14:45:38.192207",
+  "modified": "2025-05-23 11:09:57.983138",
   "name": "Version 13",
   "number": 13,
   "public": 1,
@@ -129,12 +129,12 @@
     "parent": "Nightly",
     "parentfield": "dependencies",
     "parenttype": "Frappe Version",
-    "version": "5.22.6"
+    "version": "5.25.1"
    }
   ],
   "docstatus": 0,
   "doctype": "Frappe Version",
-  "modified": "2023-07-21 19:46:37.813960",
+  "modified": "2025-05-23 11:09:57.983138",
   "name": "Nightly",
   "number": 15,
   "public": 1,
@@ -176,12 +176,12 @@
     "parent": "Version 14",
     "parentfield": "dependencies",
     "parenttype": "Frappe Version",
-    "version": "5.15.2"
+    "version": "5.25.1"
    }
   ],
   "docstatus": 0,
   "doctype": "Frappe Version",
-  "modified": "2023-07-21 19:44:34.122005",
+  "modified": "2025-05-23 11:09:57.983138",
   "name": "Version 14",
   "number": 14,
   "public": 1,
@@ -223,12 +223,12 @@
     "parent": "Version 15",
     "parentfield": "dependencies",
     "parenttype": "Frappe Version",
-    "version": "5.22.6"
+    "version": "5.25.1"
    }
   ],
   "docstatus": 0,
   "doctype": "Frappe Version",
-  "modified": "2023-07-19 17:31:05.044895",
+  "modified": "2025-05-23 11:09:57.983138",
   "name": "Version 15",
   "number": 15,
   "public": 1,

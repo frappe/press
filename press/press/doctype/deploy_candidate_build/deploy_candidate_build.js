@@ -30,16 +30,7 @@ frappe.ui.form.on('Deploy Candidate Build', {
 				{},
 				'Build',
 			],
-			[
-				__('Create ARM Build'),
-				'create_arm_build',
-				(frm.doc.status === 'Success') & (frm.doc.platform !== 'arm64'),
-				{},
-				'Build',
-			],
-
 			[__('Deploy'), 'deploy', frm.doc.status === 'Success', {}, 'Deploy'],
-
 			[
 				__('Redeploy'),
 				'redeploy',

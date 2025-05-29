@@ -364,7 +364,7 @@ class TestIncident(FrappeTestCase):
 		):
 			self.assertFalse(alert.is_enough_firing)
 
-	def test_incident_does_resolve_when_other_alerts_are_still_firing_but_does_when_less_than_required_sites_are_down(
+	def test_incident_does_not_resolve_when_other_alerts_are_still_firing_but_does_when_less_than_required_sites_are_down(
 		self,
 	):
 		site = create_test_site()

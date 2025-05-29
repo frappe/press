@@ -149,6 +149,12 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup,
 			],
 			[
+				__('Start Active Benches'),
+				'start_active_benches',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
 				__('Show Agent Password'),
 				'show_agent_password',
 				false,
@@ -215,6 +221,14 @@ frappe.ui.form.on('Server', {
 				'mount_volumes',
 				true,
 				frm.doc.virtual_machine && frm.doc.mounts,
+			],
+			[
+				__('Collect ARM Images'),
+				'collect_arm_images',
+				true,
+				frm.doc.virtual_machine &&
+					frm.doc.status === 'Active' &&
+					frm.doc.platform === 'x86_64',
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
