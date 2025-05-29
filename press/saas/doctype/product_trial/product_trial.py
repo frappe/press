@@ -74,6 +74,16 @@ class ProductTrial(Document):
 		if not self.redirect_to_after_login.startswith("/"):
 			frappe.throw("Redirection route after login should start with /")
 
+		self.validate_hybrid_rules()
+
+	def validate_hybrid_rules(self):
+		for rule in self.hybrid_pool_rules:
+			if not frappe.db.exists("Release Group App", {"parent": self.release_group, "app": rule.app}):
+				frappe.throw(
+					f"App {rule.app} is not present in release group {self.release_group}. "
+					"Please add the app to the release group."
+				)
+
 	def setup_trial_site(
 		self, subdomain: str, team: str, cluster: str | None = None, account_request: str | None = None
 	):
