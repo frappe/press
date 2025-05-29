@@ -1626,7 +1626,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			disk_info_str, mysql_dir_info_str = result.get("output", "\n\n").split("\n\n", 1)
 			disk_info = find_db_disk_info(disk_info_str)
 			if disk_info is None:
-				return None
+				return frappe.throw("Failed to fetch disk information of the database server")
 			mysql_storage_info = parse_du_output_of_mysql_directory(mysql_dir_info_str)
 			total_db_usage = (
 				sum(mysql_storage_info["schema"].values())
