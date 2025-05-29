@@ -183,6 +183,7 @@ class ProductTrialRequest(Document):
 			site, agent_job_name, is_standby_site = product.setup_trial_site(
 				subdomain=subdomain, team=self.team, cluster=cluster, account_request=self.account_request
 			)
+			self.is_standby_site = is_standby_site
 			self.agent_job = agent_job_name
 			self.site = site.name
 			self.save()
