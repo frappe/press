@@ -15,6 +15,7 @@ import frappe
 import frappe.utils
 import pytz
 import requests
+import rq
 from frappe import _
 from frappe.core.utils import find
 from frappe.frappeclient import FrappeClient, FrappeException
@@ -43,6 +44,7 @@ from press.exceptions import (
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
+from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.webhook import create_webhook_event
 
 try:
@@ -2276,11 +2278,12 @@ class Site(Document, TagHelpers):
 	@site_action(["Inactive", "Broken"])
 	def activate(self):
 		log_site_activity(self.name, "Activate Site")
+		if self.status == "Suspended":
+			self.reset_disk_usage_exceeded_status()
 		self.status = "Active"
 		self.update_site_config({"maintenance_mode": 0})
 		self.update_site_status_on_proxy("activated")
 		self.reactivate_app_subscriptions()
-		self.reset_disk_usage_exceeded_status()
 
 	@frappe.whitelist()
 	def suspend(self, reason=None, skip_reload=False):
@@ -2665,7 +2668,7 @@ class Site(Document, TagHelpers):
 			return
 
 		# Check if disk usage exceeded
-		disk_usage_exceeded = self.current_database_usage > 101 or self.current_disk_usage > 101
+		disk_usage_exceeded = self.current_database_usage > 120 or self.current_disk_usage > 120
 		# If disk usage not exceeded, and site
 		if not disk_usage_exceeded and self.site_usage_exceeded:
 			# Reset site usage exceeded flags
@@ -4224,11 +4227,43 @@ def send_warning_mail_regarding_sites_exceeding_disk_usage():
 		pluck="name",
 	)
 
-	sites = sites_with_no_mail_sent_previously + sites_with_recurring_alerts
+	sites = list(set(sites_with_no_mail_sent_previously + sites_with_recurring_alerts))
 
-	for _site in sites:
-		# TODO: send email to site owner
-		pass
+	for site in sites:
+		if has_job_timeout_exceeded():
+			break
+		try:
+			site_info = frappe.get_value(
+				"Site",
+				site,
+				["notify_email", "current_disk_usage", "current_database_usage", "site_usage_exceeded_on"],
+				as_dict=True,
+			)
+			if not site_info.notify_email or (
+				site_info.current_disk_usage <= 100 and site_info.current_database_usage <= 100
+			):
+				# Final check if site is still exceeding limits
+				continue
+			frappe.sendmail(
+				recipients=site_info.notify_email,
+				subject=f"Action Required: Site {site} has exceeded plan limits",
+				template="site_exceeded_disk_usage_warning",
+				args={
+					"site": site,
+					"current_disk_usage": site_info.current_disk_usage,
+					"current_database_usage": site_info.current_database_usage,
+					"no_of_days_left_to_suspend": 7
+					- (frappe.utils.date_diff(frappe.utils.nowdate(), site_info.site_usage_exceeded_on) or 0),
+				},
+			)
+			frappe.db.set_value("Site", site, "last_site_usage_warning_mail_sent_on", frappe.utils.now())
+			frappe.db.commit()
+		except rq.timeouts.JobTimeoutException:
+			frappe.db.rollback()
+			return
+		except Exception as e:
+			print(e)
+			frappe.db.rollback()
 
 
 def suspend_sites_exceeding_disk_usage_for_last_7_days():
@@ -4251,7 +4286,7 @@ def suspend_sites_exceeding_disk_usage_for_last_7_days():
 	)
 
 	for site in active_sites:
-		if site.current_database_usage > 100 or site.current_disk_usage > 100:
+		if site.current_database_usage > 120 or site.current_disk_usage > 120:
 			# Check once again and suspend if still exceeds limits
 			site: Site = frappe.get_doc("Site", site.name)
 			site.suspend(reason="Site Usage Exceeds Plan limits", skip_reload=True)
