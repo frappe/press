@@ -40,6 +40,9 @@ class ARMBuildRecord(Document):
 
 	def _update_image_tags_on_benches(self):
 		"""Maybe enqueue this?"""
+		if self.updated_image_tags_on_benches:
+			return
+
 		for image in self.arm_images:
 			new_docker_image = frappe.get_value("Deploy Candidate Build", image.build, "docker_image")
 			bench: Bench = frappe.get_doc("Bench", image.bench)
@@ -84,7 +87,7 @@ class ARMBuildRecord(Document):
 		"""
 		if not self._check_images_pulled():
 			frappe.throw(
-				"ARM images have not been successfully pulled on the server",
+				f"ARM images have not been successfully pulled on {self.server}",
 				frappe.ValidationError,
 			)
 		self._update_image_tags_on_benches()
