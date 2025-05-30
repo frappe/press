@@ -92,7 +92,7 @@ def pull_images_on_servers(servers: list[str]):
 
 @cli.command()
 @click.option("--vmi", default="f377-mumbai.frappe.cloud")
-@click.argument("servers", nargs=-1, type=list[str])
+@click.argument("servers", nargs=-1, type=str)
 def update_image_and_create_migration(vmi: str, servers: list[str]):
 	"""Update docker image on bench config and create virtual machine migration"""
 	vmi = frappe.get_value("Virtual Machine Image", {"virtual_machine": vmi}, "name")
