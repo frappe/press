@@ -117,7 +117,7 @@ def update_image_and_create_migration(vmi: str, servers: list[str]):
 
 
 @cli.command()
-@click.argument("servers", nargs=-1, type=list[str])
+@click.argument("servers", nargs=-1, type=str)
 def start_active_benches_on_servers(servers: list[str]):
 	"""Start docker containers post migration"""
 	for server in servers:
