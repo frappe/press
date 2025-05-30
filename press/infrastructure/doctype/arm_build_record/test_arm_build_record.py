@@ -40,10 +40,11 @@ class TestARMBuildRecord(unittest.TestCase):
 		arm_build_record: ARMBuildRecord = frappe.get_doc(
 			"ARM Build Record", frappe.get_value("ARM Build Record", {})
 		)
+		deploy_candidate = frappe.get_value("Deploy Candidate Build", self.build, "deploy_candidate")
 		for image in arm_build_record.arm_images:
 			# Assert that the arm build is attached and created for the intel build
 			self.assertEqual(
-				image.build, frappe.db.get_value("Deploy Candidate Build", self.build, "arm_build")
+				image.build, frappe.db.get_value("Deploy Candidate", deploy_candidate, "arm_build")
 			)
 
 		# Assert no bench update on app server without image pull.

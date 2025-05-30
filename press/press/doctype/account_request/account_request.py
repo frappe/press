@@ -29,6 +29,7 @@ class AccountRequest(Document):
 
 		agreed_to_partner_consent: DF.Check
 		company: DF.Data | None
+		continent: DF.Data | None
 		country: DF.Data | None
 		designation: DF.Data | None
 		email: DF.Data | None
@@ -95,6 +96,7 @@ class AccountRequest(Document):
 		self.state = geo_location.get("regionName")
 		self.country = geo_location.get("country")
 		self.is_mobile = geo_location.get("mobile", False)
+		self.continent = geo_location.get("continent")
 
 		# check for US and EU
 		if (

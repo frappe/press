@@ -34,6 +34,7 @@ class ProductTrialRequest(Document):
 		agent_job: DF.Link | None
 		cluster: DF.Link | None
 		domain: DF.Data | None
+		is_standby_site: DF.Check
 		product_trial: DF.Link | None
 		site: DF.Link | None
 		site_creation_completed_on: DF.Datetime | None
@@ -182,6 +183,7 @@ class ProductTrialRequest(Document):
 			site, agent_job_name, is_standby_site = product.setup_trial_site(
 				subdomain=subdomain, team=self.team, cluster=cluster, account_request=self.account_request
 			)
+			self.is_standby_site = is_standby_site
 			self.agent_job = agent_job_name
 			self.site = site.name
 			self.save()

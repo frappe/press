@@ -46,6 +46,7 @@ class ARMBuildRecord(Document):
 		for image in self.arm_images:
 			new_docker_image = frappe.get_value("Deploy Candidate Build", image.build, "docker_image")
 			bench: Bench = frappe.get_doc("Bench", image.bench)
+			bench.build = image.build
 			bench.docker_image = new_docker_image
 			bench_config = json.loads(bench.bench_config)
 			bench_config["docker_image"] = new_docker_image

@@ -18,10 +18,7 @@
 				class="flex h-80 w-full items-center justify-center gap-2 text-base text-gray-700"
 			>
 				<ErrorMessage
-					:message="
-						$resources.databaseServerStorageBreakdown.error ||
-						'Error fetching storage breakdown. Please try again later.'
-					"
+					:message="$resources.databaseServerStorageBreakdown.error"
 				/>
 			</div>
 			<div v-else>
