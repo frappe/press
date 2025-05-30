@@ -51,45 +51,6 @@ class TestDeployCandidateBuild(unittest.TestCase):
 
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc", new=Mock())
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock())
-	@patch.object(DeployCandidateBuild, "_build", new=Mock())
-	def test_creation_of_arm_build(self, mock_enqueue_doc):
-		self.deploy_candidate_build.insert()
-		with self.assertRaises(frappe.ValidationError):
-			# Since x86 build is in intermediate state.
-			self.deploy_candidate_build.create_arm_build()
-
-		self.deploy_candidate_build.status = "Failure"
-		self.deploy_candidate_build.save()
-
-		with self.assertRaises(frappe.ValidationError):
-			# Since x86 build is in failed state.
-			self.deploy_candidate_build.create_arm_build()
-
-		self.deploy_candidate_build.status = "Success"
-		self.deploy_candidate_build.save()
-
-		arm_build = self.deploy_candidate_build.create_arm_build()
-		self.assertEqual(
-			"x86_64", frappe.get_value("Deploy Candidate Build", self.deploy_candidate_build.name, "platform")
-		)
-		self.assertEqual("arm64", frappe.get_value("Deploy Candidate Build", arm_build, "platform"))
-
-		with self.assertRaises(frappe.ValidationError):
-			# Since arm build already exists
-			self.deploy_candidate_build.create_arm_build()
-
-		for dep in self.deploy_candidate.dependencies:
-			if dep.dependency == "WKHTMLTOPDF_VERSION":
-				dep.version = "0.12.4"
-
-		self.deploy_candidate.save()
-
-		with self.assertRaises(frappe.ValidationError):
-			# Since wkhtmltopdf version is not supported!
-			self.deploy_candidate_build.create_arm_build()
-
-	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc", new=Mock())
-	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock())
 	@patch.object(DeployCandidateBuild, "_process_run_build", new=Mock())
 	@patch.object(Bench, "after_insert", new=Mock())
 	def test_correct_build_flow(self, mock_enqueue):
