@@ -2660,8 +2660,8 @@ class Site(Document, TagHelpers):
 		return result
 
 	def check_if_disk_usage_exceeded(self, save=True):
-		if self.free:
-			# Ignore for free teams
+		if self.free or frappe.get_cached_value("Team", self.team, "free_account"):
+			# Ignore for free sites and teams
 			return
 		if not frappe.db.get_value("Server", self.server, "public"):
 			# Don't check disk usage for dedicated servers

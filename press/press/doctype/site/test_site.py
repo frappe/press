@@ -576,13 +576,14 @@ class TestSite(unittest.TestCase):
 		self.assertEqual(site2.status, "Pending")
 
 	def test_site_usage_exceed_tracking(self):
+		team = create_test_team()
 		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")
-		site = create_test_site(plan=plan_10.name, public_server=True)
+		site = create_test_site(plan=plan_10.name, public_server=True, team=team.name)
 
 		self.assertEqual(site.status, "Active")
 		self.assertFalse(site.site_usage_exceeded)
 
-		site.current_disk_usage = 120
+		site.current_disk_usage = 150
 		site.check_if_disk_usage_exceeded()
 		site.reload()
 
@@ -590,14 +591,46 @@ class TestSite(unittest.TestCase):
 		self.assertIsNotNone(site.site_usage_exceeded_on)
 		self.assertEqual(site.status, "Active")
 
-	def test_sites_on_dedicated_server_ignore_usage_exceed_tracking(self):
+	def test_free_sites_ignore_usage_exceed_tracking(self):
+		team = create_test_team(free_account=False)
 		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")
-		site = create_test_site(plan=plan_10.name, public_server=False)
+		site = create_test_site(plan=plan_10.name, public_server=True, team=team.name, free=True)
 
 		self.assertEqual(site.status, "Active")
 		self.assertFalse(site.site_usage_exceeded)
 
-		site.current_disk_usage = 120
+		site.current_disk_usage = 150
+		site.check_if_disk_usage_exceeded()
+		site.reload()
+
+		self.assertFalse(site.site_usage_exceeded)
+		self.assertIsNone(site.site_usage_exceeded_on)
+		self.assertEqual(site.status, "Active")
+
+	def test_free_team_sites_ignore_usage_exceed_tracking(self):
+		team = create_test_team(free_account=True)
+		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")
+		site = create_test_site(plan=plan_10.name, public_server=True, team=team.name, free=False)
+
+		self.assertEqual(site.status, "Active")
+		self.assertFalse(site.site_usage_exceeded)
+
+		site.current_disk_usage = 150
+		site.check_if_disk_usage_exceeded()
+		site.reload()
+
+		self.assertFalse(site.site_usage_exceeded)
+		self.assertIsNone(site.site_usage_exceeded_on)
+
+	def test_sites_on_dedicated_server_ignore_usage_exceed_tracking(self):
+		team = create_test_team()
+		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")
+		site = create_test_site(plan=plan_10.name, public_server=False, team=team.name)
+
+		self.assertEqual(site.status, "Active")
+		self.assertFalse(site.site_usage_exceeded)
+
+		site.current_disk_usage = 150
 		site.check_if_disk_usage_exceeded()
 		site.reload()
 
@@ -606,12 +639,13 @@ class TestSite(unittest.TestCase):
 		self.assertEqual(site.status, "Active")
 
 	def test_reset_disk_usage_exceed_alert_on_changing_plan(self):
+		team = create_test_team()
 		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")
 		plan_20 = create_test_plan("Site", price_usd=20.0, price_inr=1500.0, plan_name="USD 20")
 
-		site: Site = create_test_site(plan=plan_10.name, public_server=True)
+		site: Site = create_test_site(plan=plan_10.name, public_server=True, team=team.name)
 		site.create_subscription(plan=plan_10.name)
-		site.current_disk_usage = 120
+		site.current_disk_usage = 150
 		site.check_if_disk_usage_exceeded(save=True)
 		site.reload()
 
@@ -624,10 +658,11 @@ class TestSite(unittest.TestCase):
 		self.assertIsNone(site.site_usage_exceeded_on)
 
 	def test_reset_disk_usage_exceed_alert_on_reducing_disk_size(self):
+		team = create_test_team()
 		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")
-		site: Site = create_test_site(plan=plan_10.name, public_server=True)
+		site: Site = create_test_site(plan=plan_10.name, public_server=True, team=team.name)
 		site.create_subscription(plan=plan_10.name)
-		site.current_disk_usage = 120
+		site.current_disk_usage = 150
 		site.check_if_disk_usage_exceeded(save=True)
 		site.reload()
 
@@ -640,12 +675,13 @@ class TestSite(unittest.TestCase):
 		self.assertFalse(site.site_usage_exceeded)
 		self.assertIsNone(site.site_usage_exceeded_on)
 
+	@patch("frappe.sendmail", new=Mock())
 	def test_suspend_site_on_exceeding_site_usage_for_consecutive_7_days(self):
 		frappe.db.set_single_value("Press Settings", "enforce_storage_limits", 1)
 		team = create_test_team()
 		site: Site = create_test_site(public_server=True, free=False, team=team.name)
 
-		site.current_database_usage = 120
+		site.current_database_usage = 150
 		site.site_usage_exceeded = True
 		site.site_usage_exceeded_on = frappe.utils.add_to_date(None, days=-2)
 		site.save()
