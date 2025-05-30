@@ -145,6 +145,48 @@
 
 			<AnalyticsCard
 				class="sm:col-span-2"
+				title="Query Report Durations"
+				v-if="queryReportRunReportsData"
+			>
+				<template #action>
+					<Tooltip text="Shown only as reports seem to take time">
+						<i-lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+					</Tooltip>
+				</template>
+				<BarChart
+					:key="queryReportRunReportsData"
+					:data="queryReportRunReportsData"
+					unit="seconds"
+					:chartTheme="requestChartColors"
+					:loading="$resources.advancedAnalytics.loading"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				class="sm:col-span-2"
+				title="Run Doc Method Durations"
+				v-if="runDocMethodMethodNamesData"
+			>
+				<template #action>
+					<Tooltip text="Shown only as run_doc_method calls seem to take time">
+						<i-lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+					</Tooltip>
+				</template>
+				<BarChart
+					:key="runDocMethodMethodNamesData"
+					:data="runDocMethodMethodNamesData"
+					unit="seconds"
+					:chartTheme="requestChartColors"
+					:loading="$resources.advancedAnalytics.loading"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				class="sm:col-span-2"
 				title="Individual Request Time (Average)"
 			>
 				<BarChart
@@ -412,6 +454,20 @@ export default {
 			if (!requestDurationByPath) return;
 
 			return requestDurationByPath;
+		},
+		queryReportRunReportsData() {
+			let queryReportRunReports =
+				this.$resources.advancedAnalytics.data?.query_report_run_reports;
+			if (!queryReportRunReports) return;
+
+			return queryReportRunReports;
+		},
+		runDocMethodMethodNamesData() {
+			let runDocMethodMethodNames =
+				this.$resources.advancedAnalytics.data?.run_doc_method_method_names;
+			if (!runDocMethodMethodNames) return;
+
+			return runDocMethodMethodNames;
 		},
 		averageRequestDurationByPathData() {
 			let averageRequestDurationByPath =
