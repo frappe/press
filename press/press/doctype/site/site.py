@@ -2280,6 +2280,7 @@ class Site(Document, TagHelpers):
 		self.update_site_config({"maintenance_mode": 0})
 		self.update_site_status_on_proxy("activated")
 		self.reactivate_app_subscriptions()
+		self.reset_disk_usage_exceeded_status()
 
 	@frappe.whitelist()
 	def suspend(self, reason=None, skip_reload=False):
@@ -2294,7 +2295,15 @@ class Site(Document, TagHelpers):
 
 			send_suspend_mail(self.name, self.standby_for_product)
 
-		# TODO: send mail if suspend due to hitting plan limits
+		if self.site_usage_exceeded and self.notify_email:
+			frappe.sendmail(
+				recipients=self.notify_email,
+				subject=f"Action Required: Site {self.host_name} Suspended",
+				template="site_suspend_due_to_exceeding_disk_usage",
+				args={
+					"subject": f"Site {self.host_name} has been suspended",
+				},
+			)
 
 	def deactivate_app_subscriptions(self):
 		frappe.db.set_value(
