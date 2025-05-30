@@ -18,6 +18,7 @@
   "cluster",
   "section_break_zlzx",
   "site_creation_started_on",
+  "is_standby_site",
   "column_break_bvut",
   "site_creation_completed_on"
  ],
@@ -108,12 +109,18 @@
    "fieldtype": "Link",
    "label": "Cluster",
    "options": "Cluster"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_standby_site",
+   "fieldtype": "Check",
+   "label": "Is Standby Site"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-29 13:42:59.705979",
+ "modified": "2025-05-29 15:49:08.389380",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial Request",

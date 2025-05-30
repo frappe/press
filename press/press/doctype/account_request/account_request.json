@@ -27,6 +27,7 @@
   "first_name",
   "last_name",
   "country",
+  "continent",
   "is_mobile",
   "section_break_8",
   "erpnext",
@@ -284,12 +285,17 @@
    "fieldname": "is_mobile",
    "fieldtype": "Check",
    "label": "Is Mobile"
+  },
+  {
+   "fieldname": "continent",
+   "fieldtype": "Data",
+   "label": "Continent"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-27 11:04:21.454752",
+ "modified": "2025-05-29 15:31:57.451420",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",
