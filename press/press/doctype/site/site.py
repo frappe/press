@@ -688,6 +688,12 @@ class Site(Document, TagHelpers):
 					row.value if isinstance(row.value, bool) else bool(sbool(json.loads(cstr(row.value))))
 				)
 			elif key_type == "JSON":
+				"""
+				Handle the old value for the `allow_cors` key
+				Previously it was of string type, now it is a JSON object.
+				"""
+				if row.key == "allow_cors" and row.value in ["", "*"]:
+					row.value = "['*']" if row.value == "*" else "[]"
 				key_value = json.loads(cstr(row.value))
 			else:
 				key_value = row.value
