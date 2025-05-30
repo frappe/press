@@ -701,7 +701,7 @@ def get_slow_logs(
 	max_no_of_paths=MAX_NO_OF_PATHS,
 ):
 	return SlowLogGroupByChart(
-		normalize, name, agg_type, resource_type, timezone, timespan, timegrain, max_no_of_paths
+		normalize, name, agg_type, timezone, timespan, timegrain, resource_type, max_no_of_paths
 	).run()
 
 
