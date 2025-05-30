@@ -8,7 +8,20 @@ import frappe
 
 if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
+	from press.infrastructure.doctype.virtual_machine_migration.virtual_machine_migration import (
+		VirtualMachineMigration,
+	)
 	from press.press.doctype.server.server import Server
+
+
+arm_machine_mappings = {
+	"t2.medium": "t4g.medium",
+	"c6i.large": "c8g.large",
+	"m6i.large": "m8g.large",
+	"m7i.large": "m8g.large",
+	"c6i.xlarge": "c8g.xlarge",
+	"m6i.xlarge": "m8g.xlarge",
+}
 
 
 def has_arm_build_record(server: str) -> bool:
@@ -17,6 +30,18 @@ def has_arm_build_record(server: str) -> bool:
 
 def check_image_build_failure(arm_build_record: ARMBuildRecord) -> bool:
 	return any(arm_image.status != "Success" for arm_image in arm_build_record.arm_images)
+
+
+def create_vmm(server: str, virtual_machine_image: str, target_machine_type: str) -> VirtualMachineMigration:
+	virtual_machine_migration: VirtualMachineMigration = frappe.get_doc(
+		{
+			"doctype": "Virtual Machine Migration",
+			"virtual_machine_image": virtual_machine_image,
+			"machine_type": target_machine_type,
+			"virtual_machine": server,
+		}
+	)
+	return virtual_machine_migration.insert()
 
 
 def connect(bench_dir, site_dir):
@@ -50,6 +75,7 @@ def trigger_arm_build(servers: list[str]):
 @cli.command()
 @click.argument("servers", nargs=-1, type=str)
 def pull_images_on_servers(servers: list[str]):
+	"""Trigger image pulls on Intel server to be converted"""
 	for server in servers:
 		arm_build_record: ARMBuildRecord = frappe.get_doc("ARM Build Record", {"server": server})
 		arm_build_record.sync_status()
@@ -65,15 +91,28 @@ def pull_images_on_servers(servers: list[str]):
 
 
 @cli.command()
+@click.option("--vmi", default="f377-mumbai.frappe.cloud")
 @click.argument("servers", nargs=-1, type=str)
-def update_docker_image_in_conf(servers: list[str]):
+def update_image_and_create_migration(vmi: str, servers: list[str]):
+	"""Update docker image on bench config and create virtual machine migration"""
+	vmi = frappe.get_value("Virtual Machine Image", {"virtual_machine": vmi}, "name")
+	if not vmi:
+		print(f"Aborting VMI not found {vmi}!")
+		return
 	for server in servers:
 		arm_build_record: ARMBuildRecord = frappe.get_doc("ARM Build Record", {"server": server})
 		try:
 			arm_build_record.update_image_tags_on_benches()
-			print(f"Update config for {server}")
+			machine_type = frappe.db.get_value("Virtual Machine", {"name": server}, "machine_type")
+			virtual_machine_migration: VirtualMachineMigration = create_vmm(
+				server=server,
+				virtual_machine_image=vmi,
+				target_machine_type=arm_machine_mappings[machine_type],
+			)
+			frappe.db.commit()
+			print(f"Created {virtual_machine_migration.name}")
 		except frappe.ValidationError as e:
-			print(e)
+			print(f"Aborting: {e}!")
 			break
 
 
