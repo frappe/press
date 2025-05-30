@@ -693,7 +693,7 @@ class Site(Document, TagHelpers):
 				Previously it was of string type, now it is a JSON object.
 				"""
 				if row.key == "allow_cors" and row.value in ["", "*"]:
-					row.value = "['*']" if row.value == "*" else "[]"
+					row.value = '["*"]' if row.value == "*" else "[]"
 				key_value = json.loads(cstr(row.value))
 			else:
 				key_value = row.value
