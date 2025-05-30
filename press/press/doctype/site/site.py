@@ -2179,6 +2179,7 @@ class Site(Document, TagHelpers):
 
 	def change_plan(self, plan, ignore_card_setup=False):
 		self.can_change_plan(ignore_card_setup)
+		self.reset_disk_usage_exceeded_status(save=False)
 		plan_config = self.get_plan_config(plan)
 
 		self._update_configuration(plan_config)
