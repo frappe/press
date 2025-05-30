@@ -92,7 +92,7 @@ def pull_images_on_servers(servers: list[str]):
 
 @cli.command()
 @click.option("--vmi", default="f377-mumbai.frappe.cloud")
-@click.argument("servers", nargs=-1, type=str)
+@click.argument("servers", nargs=-1, type=list[str])
 def update_image_and_create_migration(vmi: str, servers: list[str]):
 	"""Update docker image on bench config and create virtual machine migration"""
 	vmi = frappe.get_value("Virtual Machine Image", {"virtual_machine": vmi}, "name")
@@ -114,6 +114,15 @@ def update_image_and_create_migration(vmi: str, servers: list[str]):
 		except frappe.ValidationError as e:
 			print(f"Aborting: {e}!")
 			break
+
+
+@cli.command()
+@click.argument("servers", nargs=-1, type=list[str])
+def start_active_benches_on_servers(servers: list[str]):
+	"""Start docker containers post migration"""
+	for server in servers:
+		server: Server = frappe.get_doc("Server", server)
+		server.start_active_benches()
 
 
 @cli.result_callback()
