@@ -2301,7 +2301,7 @@ class Site(Document, TagHelpers):
 		if self.site_usage_exceeded and self.notify_email:
 			frappe.sendmail(
 				recipients=self.notify_email,
-				subject=f"Action Required: Site {self.host_name} Suspended",
+				subject=f"Action Required: Site {self.host_name} suspended",
 				template="site_suspend_due_to_exceeding_disk_usage",
 				args={
 					"subject": f"Site {self.host_name} has been suspended",
@@ -4246,7 +4246,7 @@ def send_warning_mail_regarding_sites_exceeding_disk_usage():
 				continue
 			frappe.sendmail(
 				recipients=site_info.notify_email,
-				subject=f"Action Required: Site {site} has exceeded plan limits",
+				subject=f"Action Required: Site {site} exceeded plan limits",
 				template="site_exceeded_disk_usage_warning",
 				args={
 					"site": site,
