@@ -23,6 +23,7 @@ from press.exceptions import (
 	AAAARecordExists,
 	ConflictingCAARecord,
 	ConflictingDNSRecord,
+	DomainProxied,
 	MultipleARecords,
 	MultipleCNAMERecords,
 )
@@ -1716,8 +1717,27 @@ def ensure_dns_aaaa_record_doesnt_exist(domain: str):
 		pass  # We have other problems
 
 
-def check_dns_cname_a(name, domain):
+def check_domain_proxied(domain, raise_exception=True):
+	try:
+		res = requests.head(f"http://{domain}", timeout=3)
+	except requests.exceptions.RequestException as e:
+		frappe.throw("Unable to connect to the domain. Is the DNS correct?: \n\n" + str(e))
+	else:
+		if (server := res.headers.get("server")) not in ("Frappe Cloud", None):  # eg: cloudflare
+			if not raise_exception:
+				return True
+			frappe.throw(
+				f"Domain {domain} appears to be proxied (server: {server}). Please turn off proxying and try again in some time. You may enable it once the domain is verified.",
+				DomainProxied,
+			)
+		return False
+
+
+def check_dns_cname_a(name, domain, ignore_proxying=False):
 	check_domain_allows_letsencrypt_certs(domain)
+	proxied = check_domain_proxied(domain, raise_exception=not ignore_proxying)
+	if proxied and ignore_proxying:
+		return {"CNAME": {}, "A": {}, "matched": True}
 	ensure_dns_aaaa_record_doesnt_exist(domain)
 	cname = check_dns_cname(name, domain)
 	result = {"CNAME": cname}
