@@ -286,6 +286,13 @@ class ReleaseGroup(Document, TagHelpers):
 			frappe.delete_doc("Deploy Candidate", candidate.name)
 
 	def before_save(self):
+		has_arm_server = frappe.get_value(
+			"Server", {"name": ("in", [server.server for server in self.servers]), "platform": "arm64"}
+		)
+
+		if has_arm_server and self.is_redisearch_enabled:
+			frappe.throw("Redisearch is currently disabled for ARM based servers!")
+
 		self.update_common_site_config_preview()
 
 	def update_common_site_config_preview(self):
