@@ -1656,6 +1656,7 @@ export default {
 						prefix: icon('external-link'),
 					},
 					variant: 'solid',
+					loading: site.loginAsAdmin.loading || site.loginAsTeam.loading,
 					condition: () =>
 						site.doc.status === 'Active' && !site.doc?.setup_wizard_complete,
 					onClick() {
