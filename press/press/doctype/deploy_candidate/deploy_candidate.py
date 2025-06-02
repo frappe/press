@@ -190,6 +190,12 @@ class DeployCandidate(Document):
 		)
 
 	def create_build(self, **kwargs) -> DeployCandidateBuild:
+		release_group: ReleaseGroup = frappe.get_doc("Release Group", self.group)
+		servers = [server_ref.server for server_ref in release_group.servers]
+
+		if frappe.get_value("Server", {"name": ("in", servers)}, "stop_deployments"):
+			frappe.throw("Deployments on this server are currently halted!")
+
 		kwargs.update(
 			{"doctype": "Deploy Candidate Build", "deploy_candidate": self.name},
 		)
