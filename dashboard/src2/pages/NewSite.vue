@@ -188,7 +188,7 @@
 							v-model="subdomain"
 						/>
 						<div class="flex items-center rounded-r bg-gray-100 px-4 text-base">
-							.{{ options.domain }}
+							.{{ domain }}
 						</div>
 					</div>
 				</div>
@@ -209,10 +209,10 @@
 							v-if="$resources.subdomainExists.data"
 							class="text-sm text-green-600"
 						>
-							{{ subdomain }}.{{ options.domain }} is available
+							{{ subdomain }}.{{ domain }} is available
 						</div>
 						<div v-else class="text-sm text-red-600">
-							{{ subdomain }}.{{ options.domain }} is not available
+							{{ subdomain }}.{{ domain }} is not available
 						</div>
 					</template>
 					<ErrorMessage :message="$resources.subdomainExists.error" />
@@ -373,7 +373,7 @@ export default {
 				url: 'press.api.site.exists',
 				makeParams() {
 					return {
-						domain: this.options?.domain,
+						domain: this.domain,
 						subdomain: this.subdomain,
 					};
 				},
@@ -416,7 +416,7 @@ export default {
 								app_plans: appPlans,
 								cluster: this.cluster,
 								group: this.selectedVersion.group.name,
-								domain: this.options.domain,
+								domain: this.domain,
 								subscription_plan: this.plan.name,
 								share_details_consent: this.shareDetailsConsent,
 							},
@@ -464,6 +464,7 @@ export default {
 								plan: this.plan.name,
 								share_details_consent: this.shareDetailsConsent,
 								selected_app_plans: appPlans,
+								domain: this.domain,
 								// files: this.selectedFiles,
 								// skip_failing_patches: this.skipFailingPatches,
 							},
@@ -493,6 +494,13 @@ export default {
 	computed: {
 		options() {
 			return this.$resources.options.data;
+		},
+		domain() {
+			return (
+				this.options.cluster_specific_root_domains.find(
+					(d) => d.cluster === this.cluster,
+				)?.name || this.options.domain
+			);
 		},
 		selectedVersion() {
 			return this.options?.versions.find((v) => v.name === this.version);
@@ -710,7 +718,7 @@ export default {
 				},
 				{
 					label: 'Site URL',
-					value: `${this.subdomain}.${this.options?.domain}`,
+					value: `${this.subdomain}.${this.domain}`,
 				},
 				{
 					label: 'Site Plan',
