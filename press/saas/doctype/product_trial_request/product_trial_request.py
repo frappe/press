@@ -161,12 +161,12 @@ class ProductTrialRequest(Document):
 			frappe.throw(f"Failed to generate payload for Setup Wizard: {e}")
 
 	@dashboard_whitelist()
-	def create_site(self, subdomain: str, cluster: str | None = None):
+	def create_site(self, subdomain: str, domain: str):
 		"""
 		Trigger the site creation process for the product trial request.
 		Args:
 			subdomain (str): The subdomain for the new site.
-			cluster (str | None): The cluster to use for site creation.
+			domain (str): The domain for the new site.
 		"""
 		if self.status != "Pending":
 			return
@@ -178,10 +178,15 @@ class ProductTrialRequest(Document):
 			product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
 			self.status = "Wait for Site"
 			self.site_creation_started_on = now_datetime()
-			self.domain = f"{subdomain}.{product.domain}"
+			self.domain = f"{subdomain}.{domain}"
+			cluster = frappe.db.get_value("Root Domain", domain, "default_cluster")
 			self.cluster = cluster
 			site, agent_job_name, is_standby_site = product.setup_trial_site(
-				subdomain=subdomain, team=self.team, cluster=cluster, account_request=self.account_request
+				subdomain=subdomain,
+				domain=domain,
+				team=self.team,
+				cluster=cluster,
+				account_request=self.account_request,
 			)
 			self.is_standby_site = is_standby_site
 			self.agent_job = agent_job_name
