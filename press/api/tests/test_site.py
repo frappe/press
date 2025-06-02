@@ -147,6 +147,7 @@ class TestAPISite(unittest.TestCase):
 				"plan": plan.name,
 				"apps": [frappe_app.name, allowed_app.name, disallowed_app.name],
 				"cluster": cluster.name,
+				"domain": self.domain,
 			},
 		)
 
@@ -323,6 +324,7 @@ class TestAPISite(unittest.TestCase):
 				"plan": plan.name,
 				"apps": [frappe_app.name],
 				"cluster": cluster.name,
+				"domain": self.domain,
 			},
 		)
 
