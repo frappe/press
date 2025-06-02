@@ -167,7 +167,7 @@
 			<AnalyticsCard
 				class="sm:col-span-2"
 				title="Run Doc Method Durations"
-				v-if="runDocMethodMethodNamesData"
+				v-if="runDocMethodMethodnamesData"
 			>
 				<template #action>
 					<Tooltip text="Shown only as run_doc_method calls seem to take time">
@@ -175,8 +175,8 @@
 					</Tooltip>
 				</template>
 				<BarChart
-					:key="runDocMethodMethodNamesData"
-					:data="runDocMethodMethodNamesData"
+					:key="runDocMethodMethodnamesData"
+					:data="runDocMethodMethodnamesData"
 					unit="seconds"
 					:chartTheme="requestChartColors"
 					:loading="$resources.advancedAnalytics.loading"
@@ -462,12 +462,12 @@ export default {
 
 			return queryReportRunReports;
 		},
-		runDocMethodMethodNamesData() {
-			let runDocMethodMethodNames =
-				this.$resources.advancedAnalytics.data?.run_doc_method_method_names;
-			if (!runDocMethodMethodNames) return;
+		runDocMethodMethodnamesData() {
+			let runDocMethodMethodnames =
+				this.$resources.advancedAnalytics.data?.run_doc_method_methodnames;
+			if (!runDocMethodMethodnames) return;
 
-			return runDocMethodMethodNames;
+			return runDocMethodMethodnames;
 		},
 		averageRequestDurationByPathData() {
 			let averageRequestDurationByPath =
