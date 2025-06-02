@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import ast
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import frappe
 import semantic_version as sv
@@ -145,7 +147,7 @@ class PreBuildValidations:
 				expected,
 			)
 
-	def _get_app_version(self, app: str) -> Optional[str]:
+	def _get_app_version(self, app: str) -> str | None:
 		pm = self.pmf.get(app)
 		if not pm:
 			return None
@@ -199,7 +201,7 @@ def get_required_apps_from_hookpy(hooks_path: str) -> list[str]:
 		if not hasattr(assign.targets[0], "id"):
 			continue
 
-		if not assign.targets[0].id == "required_apps":
+		if assign.targets[0].id != "required_apps":
 			continue
 
 		if not isinstance(assign.value, ast.List):
@@ -211,13 +213,13 @@ def get_required_apps_from_hookpy(hooks_path: str) -> list[str]:
 
 
 def check_if_update_will_fail(rg: "ReleaseGroup", new_dc: "DeployCandidate"):
-	if not (old_dc := rg.get_last_deploy_candidate()):
+	if not (old_dcb := rg.get_last_deploy_candidate_build()):
 		return
 
-	if not old_dc.error_key:
+	if not old_dcb.error_key:
 		return
 
-	if not (checker := get_will_fail_checker(old_dc.error_key)):
+	if not (checker := get_will_fail_checker(old_dcb.error_key)):
 		return
 
-	checker(old_dc, new_dc)
+	checker(old_dcb, new_dc)

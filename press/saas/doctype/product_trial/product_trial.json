@@ -24,9 +24,10 @@
   "enable_pooling",
   "standby_pool_size",
   "standby_queue_size",
+  "section_break_klpr",
+  "enable_hybrid_pooling",
+  "hybrid_pool_rules",
   "signup_details_tab",
-  "column_break_cdhw",
-  "signup_fields",
   "email_section",
   "email_account",
   "column_break_gokr",
@@ -38,9 +39,6 @@
   "suspension_email_subject",
   "suspension_email_content",
   "setup_wizard_tab",
-  "setup_wizard_completion_mode",
-  "setup_wizard_payload_generator_script",
-  "create_additional_system_user",
   "redirect_to_after_login"
  ],
  "fields": [
@@ -133,13 +131,6 @@
    "label": "Signup Details"
   },
   {
-   "description": "For timezone fields, append _tz at the end of fieldname and choose Select as fieldtype and you can leave the Options field empty. <br>\nIf you are not using <b>Setup Wizard Autocompletion</b>, you can add a password field (fieldname - <b>user_login_password</b>) to set it to the new user of site.",
-   "fieldname": "signup_fields",
-   "fieldtype": "Table",
-   "label": "Signup Fields",
-   "options": "Product Trial Signup Field"
-  },
-  {
    "default": "14",
    "fieldname": "trial_days",
    "fieldtype": "Int",
@@ -155,22 +146,7 @@
   {
    "fieldname": "setup_wizard_tab",
    "fieldtype": "Tab Break",
-   "label": "Setup Wizard"
-  },
-  {
-   "default": "manual",
-   "fieldname": "setup_wizard_completion_mode",
-   "fieldtype": "Select",
-   "label": "Setup Wizard Completion Mode",
-   "options": "manual\nauto"
-  },
-  {
-   "depends_on": "eval: doc.setup_wizard_completion_mode == \"auto\"",
-   "description": "You can write python script to generate the payload for setup wizard\n<br>\n<br>\n\n<b>Available Variables - </b><br>\na. <b>signup_details</b> : This is a dictionary and it will contain user submitted data for app trial. If the user hasn't provided any value for specific info, then the value will be null.<br>\nb. <b>team</b>: This is dictionary and will contain information regarding team.\n\n<pre>{\n  \"name\" : \"jhd8dsw\",\n  \"user\" : {\n    \"email\" : \"test@example.com\",\n    \"full_name\" : \"Rahul Roy\",\n    \"first_name\" : \"Rahul\",\n    \"last_name\" : \"Roy\",\n  },\n  \"country\" : \"India\",\n  \"currency\" : \"INR\"\n}\n</pre>\n\n<b>Expected Result - </b>\nWrite the final result (dictionary) in a variable <b>payload</b>. It will be send to site for setup wizard completion.\n<br>\n<br>\n<b>Note - </b><br>\na. Use <b>decrypt_password(..)</b> to decrypt <b>password</b> signup field.",
-   "fieldname": "setup_wizard_payload_generator_script",
-   "fieldtype": "Code",
-   "label": "Setup Wizard Payload Generator Script",
-   "options": "Python"
+   "label": "After Signup"
   },
   {
    "fieldname": "email_section",
@@ -212,18 +188,6 @@
    "reqd": 1
   },
   {
-   "fieldname": "column_break_cdhw",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "depends_on": "eval: doc.setup_wizard_completion_mode == \"manual\"",
-   "description": "Only configurable while using manual setup wizard completion mode",
-   "fieldname": "create_additional_system_user",
-   "fieldtype": "Check",
-   "label": "Create Additional System User"
-  },
-  {
    "default": "/desk",
    "fieldname": "redirect_to_after_login",
    "fieldtype": "Data",
@@ -246,6 +210,23 @@
    "fieldname": "suspension_email_content",
    "fieldtype": "HTML Editor",
    "label": "Content"
+  },
+  {
+   "fieldname": "section_break_klpr",
+   "fieldtype": "Section Break",
+   "label": "Hybrid Pooling"
+  },
+  {
+   "fieldname": "hybrid_pool_rules",
+   "fieldtype": "Table",
+   "label": "Hybrid Pool Rules",
+   "options": "Hybrid Pool Item"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_hybrid_pooling",
+   "fieldtype": "Check",
+   "label": "Enable Hybrid Pooling"
   }
  ],
  "grid_page_length": 50,
@@ -261,7 +242,7 @@
    "link_fieldname": "product_trial"
   }
  ],
- "modified": "2025-03-17 17:52:47.220276",
+ "modified": "2025-05-22 12:29:52.256771",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial",

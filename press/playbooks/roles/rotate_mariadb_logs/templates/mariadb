@@ -1,0 +1,17 @@
+/var/lib/mysql/mysql-slow.log /var/lib/mysql/mysql-error.log {
+	daily
+	rotate 1
+	missingok
+	notifempty
+	maxsize 100M
+	minsize 50M
+	create 640 mysql adm
+	nocompress
+	sharedscripts
+	postrotate
+          test -x /usr/bin/mysqladmin || exit 0
+          if mysqladmin ping > /dev/null 2>&1; then
+            mysqladmin --local flush-error-log flush-slow-log
+          fi
+	endscript
+}

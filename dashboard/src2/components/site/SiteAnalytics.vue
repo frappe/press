@@ -145,12 +145,65 @@
 
 			<AnalyticsCard
 				class="sm:col-span-2"
+				title="Query Report Durations"
+				v-if="queryReportRunReportsData"
+			>
+				<template #action>
+					<Tooltip text="Shown only as reports seem to take time">
+						<i-lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+					</Tooltip>
+				</template>
+				<BarChart
+					:key="queryReportRunReportsData"
+					:data="queryReportRunReportsData"
+					unit="seconds"
+					:chartTheme="requestChartColors"
+					:loading="$resources.advancedAnalytics.loading"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				class="sm:col-span-2"
+				title="Run Doc Method Durations"
+				v-if="runDocMethodMethodnamesData"
+			>
+				<template #action>
+					<Tooltip text="Shown only as run_doc_method calls seem to take time">
+						<i-lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+					</Tooltip>
+				</template>
+				<BarChart
+					:key="runDocMethodMethodnamesData"
+					:data="runDocMethodMethodnamesData"
+					unit="seconds"
+					:chartTheme="requestChartColors"
+					:loading="$resources.advancedAnalytics.loading"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				class="sm:col-span-2"
 				title="Individual Request Time (Average)"
 			>
 				<BarChart
 					:key="averageRequestDurationByPathData"
 					:data="averageRequestDurationByPathData"
 					unit="seconds"
+					:chartTheme="requestChartColors"
+					:loading="$resources.advancedAnalytics.loading"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+			<AnalyticsCard class="sm:col-span-2" title="Requests by IP">
+				<BarChart
+					:key="requestCountByIPData"
+					:data="requestCountByIPData"
+					unit="requests"
 					:chartTheme="requestChartColors"
 					:loading="$resources.advancedAnalytics.loading"
 					:showCard="false"
@@ -217,7 +270,7 @@
 					:data="slowLogsCountData"
 					unit="queries"
 					:chartTheme="requestChartColors"
-					:loading="$resources.advancedAnalytics.loading"
+					:loading="$resources.slowLogsCount.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -243,7 +296,7 @@
 					:data="slowLogsDurationData"
 					unit="seconds"
 					:chartTheme="requestChartColors"
-					:loading="$resources.advancedAnalytics.loading"
+					:loading="$resources.slowLogsDuration.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -277,6 +330,7 @@ export default {
 			localTimezone: dayjs.tz.guess(),
 			slowLogsDurationType: 'Denormalized',
 			slowLogsFrequencyType: 'Denormalized',
+			allowDrillDown: false,
 			durationOptions: [
 				{ label: 'Duration', value: null, disabled: true },
 				{ label: '1 hour', value: '1h' },
@@ -401,6 +455,20 @@ export default {
 
 			return requestDurationByPath;
 		},
+		queryReportRunReportsData() {
+			let queryReportRunReports =
+				this.$resources.advancedAnalytics.data?.query_report_run_reports;
+			if (!queryReportRunReports) return;
+
+			return queryReportRunReports;
+		},
+		runDocMethodMethodnamesData() {
+			let runDocMethodMethodnames =
+				this.$resources.advancedAnalytics.data?.run_doc_method_methodnames;
+			if (!runDocMethodMethodnames) return;
+
+			return runDocMethodMethodnames;
+		},
 		averageRequestDurationByPathData() {
 			let averageRequestDurationByPath =
 				this.$resources.advancedAnalytics.data
@@ -408,6 +476,13 @@ export default {
 			if (!averageRequestDurationByPath) return;
 
 			return averageRequestDurationByPath;
+		},
+		requestCountByIPData() {
+			let requestCountByIP =
+				this.$resources.advancedAnalytics.data?.request_count_by_ip;
+			if (!requestCountByIP) return;
+
+			return requestCountByIP;
 		},
 		backgroundJobCountByMethodData() {
 			let backgroundJobCountByMethod =

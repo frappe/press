@@ -1,5 +1,6 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import frappe
 
@@ -32,6 +33,8 @@ class LogServer(BaseServer):
 		private_vlan_id: DF.Data | None
 		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
 		root_public_key: DF.Code | None
+		ssh_port: DF.Int
+		ssh_user: DF.Data | None
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
@@ -62,6 +65,8 @@ class LogServer(BaseServer):
 			ansible = Ansible(
 				playbook="log.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"workers": 1,
@@ -105,7 +110,12 @@ class LogServer(BaseServer):
 
 	def _install_elasticsearch_exporter(self):
 		try:
-			ansible = Ansible(playbook="elasticsearch_exporter.yml", server=self)
+			ansible = Ansible(
+				playbook="elasticsearch_exporter.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
 			ansible.run()
 		except Exception:
 			log_error("Elasticsearch Exporter Install Exception", server=self.as_dict())

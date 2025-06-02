@@ -22,7 +22,9 @@
 
 		<div class="mt-3">
 			<div class="flex w-full items-center">
-				<h2 class="text-lg font-medium text-gray-900">{{ deploy.name }}</h2>
+				<h2 class="text-lg font-medium text-gray-900">
+					{{ deploy.deploy_candidate }}
+				</h2>
 				<Badge class="ml-2" :label="deploy.status" />
 				<div class="ml-auto flex items-center space-x-2">
 					<Button
@@ -116,7 +118,7 @@ export default {
 		deploy() {
 			return {
 				type: 'document',
-				doctype: 'Deploy Candidate',
+				doctype: 'Deploy Candidate Build',
 				name: this.id,
 				transform: this.transformDeploy,
 			};
@@ -124,12 +126,17 @@ export default {
 		errors() {
 			return {
 				type: 'list',
-				cache: ['Press Notification', 'Error', 'Deploy Candidate', this.id],
+				cache: [
+					'Press Notification',
+					'Error',
+					'Deploy Candidate Build',
+					this.id,
+				],
 				doctype: 'Press Notification',
 				auto: true,
 				fields: ['title', 'name'],
 				filters: {
-					document_type: 'Deploy Candidate',
+					document_type: 'Deploy Candidate Build',
 					document_name: this.id,
 					is_actionable: true,
 					class: 'Error',
@@ -139,7 +146,7 @@ export default {
 		},
 	},
 	mounted() {
-		this.$socket.emit('doc_subscribe', 'Deploy Candidate', this.id);
+		this.$socket.emit('doc_subscribe', 'Deploy Candidate Build', this.id);
 		this.$socket.on(`bench_deploy:${this.id}:steps`, (data) => {
 			if (data.name === this.id && this.$resources.deploy.doc) {
 				this.$resources.deploy.doc.build_steps = this.transformDeploy({
@@ -158,7 +165,7 @@ export default {
 		});
 	},
 	beforeUnmount() {
-		this.$socket.emit('doc_unsubscribe', 'Deploy Candidate', this.id);
+		this.$socket.emit('doc_unsubscribe', 'Deploy Candidate Build', this.id);
 		this.$socket.off(`bench_deploy:${this.id}:steps`);
 	},
 	computed: {
@@ -189,7 +196,7 @@ export default {
 					condition: () => this.$team?.doc?.is_desk_user,
 					onClick: () => {
 						window.open(
-							`${window.location.protocol}//${window.location.host}/app/deploy-candidate/${this.id}`,
+							`${window.location.protocol}//${window.location.host}/app/deploy-candidate-build/${this.id}`,
 							'_blank',
 						);
 					},
@@ -203,14 +210,14 @@ export default {
 			].filter((option) => option.condition?.() ?? true);
 		},
 		showFailAndRedeploy() {
-			if (!this.deploy || this.deploy.status !== 'Running') {
+			if (!this.deploy || this.deploy.status == 'Failure') {
 				return false;
 			}
-
-			const start = dayjs(this.deploy.build_start);
+			const from = ['Pending', 'Preparing'].includes(this.deploy.status)
+				? this.deploy.creation
+				: this.deploy.build_start;
 			const now = dayjs(new Date());
-
-			return now.diff(start, 'hours') > 2;
+			return now.diff(from, 'hours') > 2;
 		},
 	},
 	methods: {

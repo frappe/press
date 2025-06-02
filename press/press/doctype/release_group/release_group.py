@@ -43,7 +43,7 @@ DEFAULT_DEPENDENCIES = [
 	{"dependency": "NODE_VERSION", "version": "14.19.0"},
 	{"dependency": "PYTHON_VERSION", "version": "3.7"},
 	{"dependency": "WKHTMLTOPDF_VERSION", "version": "0.12.5"},
-	{"dependency": "BENCH_VERSION", "version": "5.15.2"},
+	{"dependency": "BENCH_VERSION", "version": "5.25.1"},
 ]
 
 
@@ -56,6 +56,7 @@ class LastDeployInfo(TypedDict):
 if TYPE_CHECKING:
 	from press.press.doctype.app.app import App
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 
 
 class ReleaseGroup(Document, TagHelpers):
@@ -82,7 +83,7 @@ class ReleaseGroup(Document, TagHelpers):
 		bench_config: DF.Code | None
 		build_server: DF.Link | None
 		central_bench: DF.Check
-		check_dependant_apps: DF.Check
+		check_dependent_apps: DF.Check
 		common_site_config: DF.Code | None
 		common_site_config_table: DF.Table[CommonSiteConfig]
 		compress_app_cache: DF.Check
@@ -222,10 +223,10 @@ class ReleaseGroup(Document, TagHelpers):
 		self.validate_rq_queues()
 		self.validate_max_min_workers()
 		self.validate_feature_flags()
-		if self.check_dependant_apps:
-			self.validate_dependant_apps()
+		if self.check_dependent_apps:
+			self.validate_dependent_apps()
 
-	def validate_dependant_apps(self):
+	def validate_dependent_apps(self):
 		required_repository_urls = set()
 		existing_repository_urls = set()
 
@@ -285,6 +286,13 @@ class ReleaseGroup(Document, TagHelpers):
 			frappe.delete_doc("Deploy Candidate", candidate.name)
 
 	def before_save(self):
+		has_arm_server = frappe.get_value(
+			"Server", {"name": ("in", [server.server for server in self.servers]), "platform": "arm64"}
+		)
+
+		if has_arm_server and self.is_redisearch_enabled:
+			frappe.throw("Redisearch is currently disabled for ARM based servers!")
+
 		self.update_common_site_config_preview()
 
 	def update_common_site_config_preview(self):
@@ -544,6 +552,16 @@ class ReleaseGroup(Document, TagHelpers):
 		except ValueError:
 			return False
 
+	def required_build_platforms(self) -> tuple[bool, bool]:
+		platforms = frappe.get_all(
+			"Server",
+			{"name": ("in", [server_ref.server for server_ref in self.servers])},
+			pluck="platform",
+		)
+		required_arm_build = "arm64" in platforms
+		required_intel_build = "x86_64" in platforms
+		return required_arm_build, required_intel_build
+
 	@frappe.whitelist()
 	def create_duplicate_deploy_candidate(self):
 		return self.create_deploy_candidate([])
@@ -584,7 +602,7 @@ class ReleaseGroup(Document, TagHelpers):
 		]
 
 		environment_variables = [{"key": v.key, "value": v.value} for v in self.environment_variables]
-
+		requires_arm_build, requires_intel_build = self.required_build_platforms()
 		# Create and deploy the DC
 		new_dc: "DeployCandidate" = frappe.get_doc(
 			{
@@ -594,6 +612,8 @@ class ReleaseGroup(Document, TagHelpers):
 				"dependencies": dependencies,
 				"packages": packages,
 				"environment_variables": environment_variables,
+				"requires_arm_build": requires_arm_build,
+				"requires_intel_build": requires_intel_build,
 			}
 		)
 
@@ -680,8 +700,9 @@ class ReleaseGroup(Document, TagHelpers):
 	@frappe.whitelist()
 	def deploy_information(self):
 		out = frappe._dict(update_available=False)
-
-		last_deployed_bench = get_last_doc("Bench", {"group": self.name, "status": "Active"})
+		last_deployed_bench = get_last_doc(
+			"Bench", {"group": self.name, "status": ("in", ("Active", "Installing", "Pending"))}
+		)
 		out.apps = self.get_app_updates(last_deployed_bench.apps if last_deployed_bench else [])
 		out.last_deploy = self.last_dc_info
 		out.deploy_in_progress = self.deploy_in_progress
@@ -936,20 +957,20 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@cached_property
 	def last_dc_info(self) -> "LastDeployInfo | None":
-		dc = frappe.qb.DocType("Deploy Candidate")
+		DeployCandidateBuild = frappe.qb.DocType("Deploy Candidate Build")
 
 		query = (
-			frappe.qb.from_(dc)
-			.where(dc.group == self.name)
-			.select(dc.name, dc.status, dc.creation)
-			.orderby(dc.creation, order=frappe.qb.desc)
+			frappe.qb.from_(DeployCandidateBuild)
+			.where(DeployCandidateBuild.group == self.name)
+			.select(DeployCandidateBuild.name, DeployCandidateBuild.status, DeployCandidateBuild.creation)
+			.orderby(DeployCandidateBuild.creation, order=frappe.qb.desc)
 			.limit(1)
 		)
 
 		results = query.run(as_dict=True)
-
-		if len(results) > 0:
+		if results:
 			return results[0]
+
 		return None
 
 	@cached_property
@@ -957,12 +978,12 @@ class ReleaseGroup(Document, TagHelpers):
 		if not (name := (self.last_dc_info or {}).get("name")):
 			return []
 
-		b = frappe.qb.DocType("Bench")
+		Bench = frappe.qb.DocType("Bench")
 		query = (
-			frappe.qb.from_(b)
-			.where(b.candidate == name)
-			.select(b.name, b.status, b.creation)
-			.orderby(b.creation, order=frappe.qb.desc)
+			frappe.qb.from_(Bench)
+			.where(Bench.candidate == name)
+			.select(Bench.name, Bench.status, Bench.creation)
+			.orderby(Bench.creation, order=frappe.qb.desc)
 			.limit(1)
 		)
 		return query.run(as_dict=True)
@@ -1254,18 +1275,12 @@ class ReleaseGroup(Document, TagHelpers):
 		app_update_available = self.deploy_information().update_available
 		self.add_server(server, deploy=not app_update_available)
 
-	def get_last_successful_candidate(self) -> "DeployCandidate":
-		return frappe.get_last_doc("Deploy Candidate", {"status": "Success", "group": self.name})
+	def get_last_successful_candidate_build(self) -> "DeployCandidateBuild":
+		return frappe.get_last_doc("Deploy Candidate Build", {"status": "Success", "group": self.name})
 
-	def get_last_deploy_candidate(self):
+	def get_last_deploy_candidate_build(self):
 		try:
-			dc: "DeployCandidate" = frappe.get_last_doc(
-				"Deploy Candidate",
-				{
-					"status": ["!=", "Draft"],
-					"group": self.name,
-				},
-			)
+			dc: "DeployCandidateBuild" = frappe.get_last_doc("Deploy Candidate Build", {"group": self.name})
 			return dc
 		except frappe.DoesNotExistError:
 			return None
@@ -1275,7 +1290,7 @@ class ReleaseGroup(Document, TagHelpers):
 		self.append("servers", {"server": server, "default": False})
 		self.save()
 		if deploy:
-			return self.get_last_successful_candidate()._create_deploy([server])
+			return self.get_last_successful_candidate_build()._create_deploy([server])
 		return None
 
 	@frappe.whitelist()

@@ -205,7 +205,7 @@ def usage(name):
 			lambda x: x,
 		),
 		"free_memory": (
-			f"""avg_over_time(node_memory_MemFree_bytes{{instance="{name}", job="node"}}[10m])""",
+			f"""avg_over_time(node_memory_MemAvailable_bytes{{instance="{name}", job="node"}}[10m])""",
 			lambda x: x,
 		),
 	}

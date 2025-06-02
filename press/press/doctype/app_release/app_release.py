@@ -274,7 +274,7 @@ class AppRelease(Document):
 		)
 		for group in groups:
 			if frappe.get_all(
-				"Deploy Candidate",
+				"Deploy Candidate Build",
 				{"status": ("in", ("Pending", "Running")), "group": group.parent},
 			):
 				continue
@@ -348,7 +348,7 @@ def get_permission_query_conditions(user):
 
 	team = get_current_team()
 
-	return f"(`tabApp Release`.`team` = {frappe.db.escape(team)} or `tabApp" " Release`.`public` = 1)"
+	return f"(`tabApp Release`.`team` = {frappe.db.escape(team)} or `tabApp Release`.`public` = 1)"
 
 
 def has_permission(doc, ptype, user):

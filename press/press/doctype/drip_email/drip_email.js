@@ -20,13 +20,18 @@ frappe.ui.form.on('Drip Email', {
 					label: __('Site'),
 					fieldname: 'site',
 					fieldtype: 'Link',
+					filters: {
+						standby_for_product: frm.doc.product_trial,
+					},
 					options: 'Site',
+					reqd: 1,
 				},
 				{
 					label: __('Email'),
 					fieldname: 'email',
 					fieldtype: 'Data',
 					options: 'Email',
+					reqd: 1,
 				},
 			],
 			primary_action_label: __('Send'),

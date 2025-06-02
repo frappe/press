@@ -7,7 +7,7 @@ from itertools import groupby
 import frappe
 
 from press.exceptions import AlertRuleNotEnabled
-from press.utils import log_error
+from press.utils import log_error, servers_using_alternative_port_for_communication
 
 
 def get_benches():
@@ -55,6 +55,7 @@ def get_clusters():
 		"app": ["node", "nginx", "docker", "cadvisor", "gunicorn", "rq"],
 		"database": ["node", "mariadb"],
 	}
+	servers_using_alternative_port = servers_using_alternative_port_for_communication()
 	for cluster in clusters:
 		cluster["jobs"] = {}
 
@@ -62,7 +63,10 @@ def get_clusters():
 			for server in server_type_servers:
 				if server.cluster == cluster.name:
 					for job in job_map[server_type]:
-						cluster["jobs"].setdefault(job, []).append(server.name)
+						if server.name in servers_using_alternative_port:
+							cluster["jobs"].setdefault(job, []).append(f"{server.name}:8443")
+						else:
+							cluster["jobs"].setdefault(job, []).append(server.name)
 
 	return clusters
 

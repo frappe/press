@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 import frappe
 import requests
@@ -190,9 +191,7 @@ def get_gateway_controller():
 @frappe.whitelist()
 def get_tax_percentage(payment_partner):
 	team = frappe.db.get_value("Team", {"user": payment_partner}, "name")
-	mpesa_setups = frappe.get_all(
-		"Mpesa Setup", filters={"api_type": "Mpesa Express", "team": team}, fields=["name"]
-	)
+	mpesa_setups = frappe.get_all("Mpesa Setup", {"api_type": "Mpesa Express", "team": team}, pluck="name")
 	taxes_and_charges = 0
 	for mpesa_setup in mpesa_setups:
 		payment_gateways = frappe.get_all(
@@ -365,27 +364,32 @@ def create_payment_partner_transaction(
 	team, payment_partner, exchange_rate, amount, paid_amount, payment_gateway, payload=None
 ):
 	"""Create a Payment Partner Transaction record."""
-	transaction_doc = frappe.get_doc(
-		{
-			"doctype": "Payment Partner Transaction",
-			"team": team,
-			"payment_partner": payment_partner,
-			"exchange_rate": exchange_rate,
-			"payment_gateway": payment_gateway,
-			"amount": amount,
-			"actual_amount": paid_amount,
-			"payment_transaction_details": payload,
-		}
-	)
-	transaction_doc.insert(ignore_permissions=True)
-	transaction_doc.submit()
+	try:
+		transaction_doc = frappe.get_doc(
+			{
+				"doctype": "Payment Partner Transaction",
+				"team": team,
+				"payment_partner": payment_partner,
+				"exchange_rate": exchange_rate,
+				"payment_gateway": payment_gateway,
+				"amount": amount,
+				"actual_amount": paid_amount,
+				"payment_transaction_details": payload,
+			}
+		)
+		transaction_doc.insert(ignore_permissions=True)
+		transaction_doc.submit()
+	except Exception:
+		frappe.log_error("Error creating Payment Partner Transaction")
+		raise
 	return transaction_doc.name
 
 
 @frappe.whitelist()
 def fetch_payments(payment_gateway, partner, from_date, to_date):
-	print("fetching payments", payment_gateway)
-	partner = frappe.get_value("Team", {"user": partner}, "name")
+	partner = (
+		partner if frappe.db.exists("Team", partner) else frappe.get_value("Team", {"user": partner}, "name")
+	)
 	filters = {
 		"docstatus": 1,
 		"submitted_to_frappe": 0,
@@ -393,49 +397,21 @@ def fetch_payments(payment_gateway, partner, from_date, to_date):
 		"payment_partner": partner,
 	}
 
+	from_date = convert_string_to_date(from_date)
+	to_date = convert_string_to_date(to_date)
 	if from_date and to_date:
 		filters["posting_date"] = ["between", [from_date, to_date]]
 
 	partner_payments = frappe.get_all(
 		"Payment Partner Transaction", filters=filters, fields=["name", "amount", "posting_date"]
 	)
-	frappe.response.message = partner_payments
-	return partner_payments
+	return partner_payments  # noqa: RET504
 
 
 @frappe.whitelist()
-def create_payment_partner_payout(from_date, to_date, payment_gateway, payment_partner, payments):
-	"""Create a Payment Partner Payout record."""
-	partner_commission = frappe.get_value("Team", {"user": payment_partner}, "partner_commission")
-
-	# Initialize the main document
-	payout_doc = frappe.get_doc(
-		{
-			"doctype": "Partner Payment Payout",
-			"from_date": from_date,
-			"to_date": to_date,
-			"payment_gateway": payment_gateway,
-			"partner": payment_partner,
-			"partner_commission": partner_commission,
-			"transfer_items": [],  # Initialize an empty child table
-		}
-	)
-
-	# Add each payment to the child table
-	for payment in payments:
-		payout_doc.append(
-			"transfer_items",
-			{
-				"transaction_id": payment.get("name"),
-				"amount": payment.get("amount"),
-				"posting_date": payment.get("posting_date"),
-			},
-		)
-	# Save and submit the document
-	payout_doc.insert()
-	payout_doc.submit()
-
-	return payout_doc.name
+def fetch_percentage_commission(partner):
+	"""Fetch the percentage commission for the partner."""
+	return frappe.get_value("Team", {"user": partner}, "partner_commission")
 
 
 @frappe.whitelist()
@@ -450,6 +426,7 @@ def create_invoice_partner_site(data, gateway_controller):
 	team = data.get("team")
 	default_currency = data.get("default_currency")
 	rate = data.get("rate")
+	tax_id = data.get("tax_id")
 
 	# Validate the necessary fields
 	if not transaction_id or not amount:
@@ -467,7 +444,9 @@ def create_invoice_partner_site(data, gateway_controller):
 		"team": team,
 		"default_currency": default_currency,
 		"rate": rate,
+		"tax_id": tax_id,
 	}
+
 	# Make the POST request to your API
 	try:
 		response = requests.post(api_url, data=payload, headers=headers)
@@ -482,3 +461,38 @@ def create_invoice_partner_site(data, gateway_controller):
 	except requests.exceptions.RequestException as e:
 		frappe.log_error(f"Error calling API: {e}")
 		frappe.throw(_("There was an issue connecting to the API."))
+
+
+@frappe.whitelist()
+def display_payment_gateways(payment_partner):
+	"""Display the list of payment gateways for the partner."""
+	Team = DocType("Team")
+	PaymentGateway = DocType("Payment Gateway")
+
+	query = (
+		frappe.qb.from_(Team)
+		.join(PaymentGateway)
+		.on(Team.name == PaymentGateway.team)
+		.select(PaymentGateway.name)
+		.where(Team.user == payment_partner)
+	)
+
+	payment_gateways = query.run(as_dict=True)
+
+	return [gateway["name"] for gateway in payment_gateways]
+
+
+@frappe.whitelist()
+def fetch_payouts():
+	team = get_current_team()
+	payouts = frappe.get_all(
+		"Partner Payment Payout",
+		filters={"partner": team},
+		fields=["name", "total_amount", "commission", "net_amount", "posting_date"],
+	)
+	print("here", len(payouts))
+	return payouts
+
+
+def convert_string_to_date(date_string):
+	return datetime.strptime(date_string, "%Y-%m-%d").date()

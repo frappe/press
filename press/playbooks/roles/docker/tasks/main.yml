@@ -81,7 +81,7 @@
 - name: Get Docker Info
   command: docker info
 
-- name: Restart Agent processes
+- name: Start Agent processes
   supervisorctl:
     name: "agent:"
-    state: restarted
+    state: started

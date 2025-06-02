@@ -15,10 +15,17 @@ import requests
 from frappe.utils.password import get_decrypted_password
 from requests.exceptions import HTTPError
 
-from press.utils import get_mariadb_root_password, log_error, sanitize_config
+from press.utils import (
+	get_mariadb_root_password,
+	log_error,
+	sanitize_config,
+	servers_using_alternative_port_for_communication,
+)
 
 if TYPE_CHECKING:
 	from io import BufferedReader
+
+	from apps.press.press.press.doctype.database_server.database_server import DatabaseServer
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_patch.app_patch import AgentPatchConfig, AppPatch
@@ -40,7 +47,7 @@ class Agent:
 	def __init__(self, server, server_type="Server"):
 		self.server_type = server_type
 		self.server = server
-		self.port = 443
+		self.port = 443 if self.server not in servers_using_alternative_port_for_communication() else 8443
 
 	def new_bench(self, bench):
 		settings = frappe.db.get_value(
@@ -562,7 +569,7 @@ class Agent:
 			bench=site.bench,
 		)
 
-	def new_host(self, domain, skip_reload=False):
+	def new_host(self, domain):
 		certificate = frappe.get_doc("TLS Certificate", domain.tls_certificate)
 		data = {
 			"name": domain.domain,
@@ -572,7 +579,6 @@ class Agent:
 				"fullchain.pem": certificate.full_chain,
 				"chain.pem": certificate.intermediate_chain,
 			},
-			"skip_reload": skip_reload,
 		}
 		return self.create_agent_job(
 			"Add Host to Proxy", "proxy/hosts", data, host=domain.domain, site=domain.site
@@ -599,6 +605,7 @@ class Agent:
 		return self.create_agent_job(
 			"Remove Host from Proxy",
 			f"proxy/hosts/{domain.domain}",
+			{},
 			method="DELETE",
 			site=domain.site,
 		)
@@ -640,12 +647,17 @@ class Agent:
 			upstream=server,
 		)
 
-	def remove_upstream_file(self, server, site=None, site_name=None, code_server=None, skip_reload=False):
+	def remove_upstream_file(self, server, site=None, site_name=None, code_server=None):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		doctype = "Site" if site else "Code Server"
 		file_name = site_name or site if (site or site_name) else code_server
-		data = {"skip_reload": skip_reload}
+		extra_domains = frappe.get_all(
+			"Site Domain",
+			{"site": site, "tls_certificate": ("is", "not set"), "status": "Active", "domain": ("!=", site)},
+			pluck="domain",
+		)
+		data = {"extra_domains": extra_domains}
 		return self.create_agent_job(
 			f"Remove {doctype} from Upstream",
 			f"proxy/upstreams/{ip}/sites/{file_name}",
@@ -825,8 +837,13 @@ class Agent:
 			reference_name=reference_name,
 		)
 
-	def update_site_status(self, server, site, status, skip_reload=False):
-		data = {"status": status, "skip_reload": skip_reload}
+	def update_site_status(self, server: str, site: str, status, skip_reload=False):
+		extra_domains = frappe.get_all(
+			"Site Domain",
+			{"site": site, "tls_certificate": ("is", "not set"), "status": "Active", "domain": ("!=", site)},
+			pluck="domain",
+		)
+		data = {"status": status, "extra_domains": extra_domains, "skip_reload": skip_reload}
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		return self.create_agent_job(
@@ -946,18 +963,23 @@ class Agent:
 		return json_response
 
 	def should_skip_requests(self):
+		if self.server_type in ("Server", "Database Server", "Proxy Server") and frappe.db.get_value(
+			self.server_type, self.server, "halt_agent_jobs"
+		):
+			return True
+
 		return bool(frappe.db.count("Agent Request Failure", {"server": self.server}))
 
 	def handle_request_failure(self, agent_job, result: Response | None):
 		if not agent_job:
 			raise
 
-		reason = status_code = None
+		status_code = getattr(result, "status_code", "Unknown")
 		with suppress(TypeError, ValueError):
 			reason = json.dumps(result.json(), indent=4, sort_keys=True) if result else None
 
 		message = f"""
-Status Code: {status_code or "Unknown"}\n
+Status Code: {status_code}\n
 Response: {reason or getattr(result, "text", "Unknown")}
 """
 		self.log_failure_reason(agent_job, message)
@@ -1130,7 +1152,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		return self.get(f"agent-jobs/{agent_job_ids}")
 
 	def get_version(self):
-		return self.get("version")
+		return self.raw_request("GET", "version", raises=True, timeout=(2, 10))
 
 	def update(self):
 		url = frappe.get_doc(self.server_type, self.server).get_agent_repository_url()
@@ -1138,7 +1160,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		return self.post("update", data={"url": url, "branch": branch})
 
 	def ping(self):
-		return self.get("ping")["message"]
+		return self.raw_request("GET", "ping", raises=True, timeout=(2, 5))["message"]
 
 	def fetch_monitor_data(self, bench):
 		return self.post(f"benches/{bench}/monitor")["data"]
@@ -1148,6 +1170,9 @@ Response: {reason or getattr(result, "text", "Unknown")}
 
 	def fetch_bench_status(self, bench):
 		return self.get(f"benches/{bench}/status")
+
+	def get_snapshot(self, bench: str):
+		return self.get(f"process-snapshot/{bench}")
 
 	def run_after_migrate_steps(self, site):
 		data = {
@@ -1214,12 +1239,12 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		return None
 
 	def run_build(self, data: dict):
-		reference_name = data.get("deploy_candidate")
+		reference_name = data.get("deploy_candidate_build")
 		return self.create_agent_job(
 			"Run Remote Builder",
 			"builder/build",
 			data=data,
-			reference_doctype="Deploy Candidate",
+			reference_doctype="Deploy Candidate Build",
 			reference_name=reference_name,
 		)
 
@@ -1335,6 +1360,115 @@ Response: {reason or getattr(result, "text", "Unknown")}
 				"mariadb_root_password": get_decrypted_password(
 					"Database Server", self.server, "mariadb_root_password"
 				),
+			},
+		)
+
+	def fetch_binlog_list(self):
+		return self.get("database/binlogs/list")
+
+	def pull_docker_images(self, image_tags: list[str], reference_doctype=None, reference_name=None):
+		settings = frappe.db.get_value(
+			"Press Settings",
+			None,
+			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
+			as_dict=True,
+		)
+		return self.create_agent_job(
+			"Pull Docker Images",
+			"/server/pull-images",
+			data={
+				"image_tags": image_tags,
+				"registry": {
+					"url": settings.docker_registry_url,
+					"username": settings.docker_registry_username,
+					"password": settings.docker_registry_password,
+				},
+			},
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def upload_binlogs_to_s3(self, binlogs: list[str]):
+		from press.press.doctype.site_backup.site_backup import get_backup_bucket
+
+		if self.server_type != "Database Server":
+			return NotImplementedError("Only Database Server supports this method")
+
+		settings = frappe.get_single("Press Settings")
+		backup_bucket = get_backup_bucket(
+			frappe.get_value("Database Server", self.server, "cluster"), region=True
+		)
+		bucket_name = backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
+		if not (settings.aws_s3_bucket or bucket_name):
+			return ValueError("Offsite Backups aren't set yet")
+
+		auth = {
+			"ACCESS_KEY": settings.offsite_backups_access_key_id,
+			"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
+			"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
+		}
+
+		return self.create_agent_job(
+			"Upload Binlogs To S3",
+			"/database/binlogs/upload",
+			data={"binlogs": binlogs, "offsite": {"bucket": bucket_name, "auth": auth, "path": self.server}},
+		)
+
+	def add_binlogs_to_indexer(self, binlogs):
+		return self.create_agent_job(
+			"Add Binlogs To Indexer",
+			"/database/binlogs/indexer/add",
+			data={"binlogs": binlogs},
+		)
+
+	def remove_binlogs_from_indexer(self, binlogs):
+		return self.create_agent_job(
+			"Remove Binlogs From Indexer", "/database/binlogs/indexer/remove", data={"binlogs": binlogs}
+		)
+
+	def get_binlogs_timeline(self, start: int, end: int, database: str, type: str | None = None):
+		return self.post(
+			"/database/binlogs/indexer/timeline",
+			data={"start_timestamp": start, "end_timestamp": end, "database": database, "type": type},
+		)
+
+	def search_binlogs(
+		self,
+		start: int,
+		end: int,
+		database: str,
+		type: str | None = None,
+		table: str | None = None,
+		search_str: str | None = None,
+	):
+		return self.post(
+			"/database/binlogs/indexer/search",
+			data={
+				"start_timestamp": start,
+				"end_timestamp": end,
+				"database": database,
+				"type": type,
+				"table": table,
+				"search_str": search_str,
+			},
+		)
+
+	def purge_binlog(self, database_server: DatabaseServer, to_binlog: str):
+		return self.post(
+			"/database/binlogs/purge",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+				"to_binlog": to_binlog,
+			},
+		)
+
+	def get_binlog_queries(self, row_ids: dict[str, list[int]], database: str):
+		return self.post(
+			"/database/binlogs/indexer/query",
+			data={
+				"row_ids": row_ids,
+				"database": database,
 			},
 		)
 

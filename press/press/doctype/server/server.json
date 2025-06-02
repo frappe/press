@@ -16,12 +16,17 @@
   "provider",
   "virtual_machine",
   "ignore_incidents_since",
-  "is_server_prepared",
+  "section_break_mequ",
   "is_server_setup",
-  "is_self_hosted",
+  "is_server_prepared",
   "is_server_renamed",
+  "is_self_hosted",
+  "column_break_laiq",
   "public",
   "use_agent_job_callbacks",
+  "is_pyspy_setup",
+  "halt_agent_jobs",
+  "stop_deployments",
   "billing_section",
   "team",
   "column_break_11",
@@ -67,6 +72,7 @@
   "use_for_new_sites",
   "staging",
   "use_for_build",
+  "platform",
   "column_break_ktkv",
   "new_worker_allocation",
   "set_bench_memory_limits",
@@ -376,7 +382,6 @@
   },
   {
    "default": "root",
-   "depends_on": "eval:doc.is_self_hosted",
    "fieldname": "ssh_user",
    "fieldtype": "Data",
    "label": "SSH User"
@@ -449,7 +454,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "set_bench_memory_limits",
    "fieldtype": "Check",
    "label": "Set Bench Memory Limits"
@@ -558,10 +563,46 @@
    "fieldname": "use_agent_job_callbacks",
    "fieldtype": "Check",
    "label": "Use Agent Job Callbacks"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_pyspy_setup",
+   "fieldtype": "Check",
+   "label": "Is PySpy Setup",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_mequ",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_laiq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Stop polling and queuing agent jobs",
+   "fieldname": "halt_agent_jobs",
+   "fieldtype": "Check",
+   "label": "Halt Agent Jobs"
+  },
+  {
+   "default": "x86_64",
+   "fieldname": "platform",
+   "fieldtype": "Select",
+   "label": "Platform",
+   "options": "x86_64\narm64"
+  },
+  {
+   "default": "0",
+   "description": "Stop all new builds for the server",
+   "fieldname": "stop_deployments",
+   "fieldtype": "Check",
+   "label": "Stop deployments"
   }
  ],
  "links": [],
- "modified": "2025-03-26 12:49:49.214409",
+ "modified": "2025-06-02 09:43:06.619945",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

@@ -111,6 +111,11 @@ let router = createRouter({
 			component: () => import('./pages/NewServer.vue'),
 		},
 		{
+			name: 'PartnerNewPayout',
+			path: '/payment-payout/New',
+			component: () => import('./pages/PartnerNewPayout.vue'),
+		},
+		{
 			name: 'Billing',
 			path: '/billing',
 			component: () => import('./pages/Billing.vue'),
@@ -227,6 +232,11 @@ let router = createRouter({
 					component: () =>
 						import('./components/partners/PartnerLocalPaymentSetup.vue'),
 				},
+				{
+					name: 'PartnerPayout',
+					path: 'payment-payout',
+					component: () => import('./components/partners/PartnerPayout.vue'),
+				},
 			],
 		},
 		{
@@ -255,20 +265,20 @@ let router = createRouter({
 				{
 					name: 'SignupAppSelector',
 					path: 'app-selector',
-					component: () => import('./pages/saas/AppSelector.vue'),
+					component: () => import('./pages/signup/AppSelector.vue'),
 					meta: { hideSidebar: true },
 				},
 				{
 					name: 'SignupSetup',
 					path: ':productId/setup',
-					component: () => import('./pages/saas/SetupSite.vue'),
+					component: () => import('./pages/signup/SetupSite.vue'),
 					props: true,
 					meta: { hideSidebar: true },
 				},
 				{
 					name: 'SignupLoginToSite',
 					path: ':productId/login-to-site',
-					component: () => import('./pages/saas/LoginToSite.vue'),
+					component: () => import('./pages/signup/LoginToSite.vue'),
 					props: true,
 					meta: { hideSidebar: true },
 				},
@@ -309,6 +319,11 @@ let router = createRouter({
 			path: '/database-analyzer',
 			name: 'DB Analyzer',
 			component: () => import('./pages/devtools/database/DatabaseAnalyzer.vue'),
+		},
+		{
+			path: '/binlog-browser',
+			name: 'Binlog Browser',
+			component: () => import('./pages/devtools/database/BinlogBrowser.vue'),
 		},
 		{
 			path: '/log-browser/:mode?/:docName?/:logId?',

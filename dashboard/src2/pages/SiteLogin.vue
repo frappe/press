@@ -1,5 +1,5 @@
 <template>
-	<div class="h-screen overflow-hidden sm:bg-gray-50">
+	<div class="h-screen overflow-hidden">
 		<LoginBox title="Log in to your site on Frappe Cloud" :subtitle="subtitle">
 			<template v-slot:default>
 				<div>
@@ -60,8 +60,11 @@
 					<form v-else-if="!sites.fetched">
 						<FormControl
 							label="Email"
-							:disabled="showOTPField"
+							type="email"
 							class="w-full"
+							:class="{
+								'pointer-events-none': showOTPField,
+							}"
 							v-model="email"
 							placeholder="johndoe@mail.com"
 						/>
@@ -178,28 +181,31 @@
 				</div>
 			</template>
 			<template v-slot:footer>
-				<div
-					class="flex w-full flex-col items-center justify-center space-y-2 pb-8"
-				>
-					<Button
-						v-if="sites.fetched"
-						class="mt-4"
-						@click="goBack"
-						icon-right="log-out"
-						variant="ghost"
-						label="Log out"
-					/>
-					<Button
-						class="mt-4"
-						@click="
-							$router.push({
+				<div class="flex w-full flex-col px-4 justify-center pb-8">
+					<div v-if="sites.fetched">
+						<span class="text-base font-normal text-gray-600">
+							Switch to a different account?
+						</span>
+						<span
+							class="text-base font-normal text-gray-900 underline hover:text-gray-700 cursor-pointer"
+							@click="goBack"
+						>
+							Logout
+						</span>
+					</div>
+					<div>
+						<span class="text-base font-normal text-gray-600">
+							Manage your sites?
+						</span>
+						<router-link
+							class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+							:to="{
 								name: 'Login',
-							})
-						"
-						icon-right="arrow-right"
-						variant="ghost"
-						label="Go to Frappe Cloud dashboard"
-					/>
+							}"
+						>
+							Go to Frappe Cloud dashboard
+						</router-link>
+					</div>
 				</div>
 			</template>
 		</LoginBox>
@@ -215,6 +221,7 @@ import { getToastErrorMessage } from '../utils/toast';
 import { trialDays } from '../utils/site';
 import { userCurrency } from '../utils/format';
 import { useRoute } from 'vue-router';
+import { DashboardError } from '../utils/error';
 
 const team = inject('team');
 const session = inject('session');
@@ -311,6 +318,14 @@ function loginToSite(siteName) {
 
 const sendOTPMethod = createResource({
 	url: 'press.api.site_login.send_otp',
+	validate: (data) => {
+		if (!data.email) {
+			throw new DashboardError('Please enter email');
+		}
+		if (!data.email.match(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)) {
+			throw new DashboardError('Please enter a valid email');
+		}
+	},
 	onSuccess: () => {
 		showOTPField.value = true;
 		otpResendCountdown.value = 30;

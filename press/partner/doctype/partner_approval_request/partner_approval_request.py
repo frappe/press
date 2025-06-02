@@ -59,11 +59,12 @@ class PartnerApprovalRequest(Document):
 
 	@dashboard_whitelist()
 	def approve_partner_request(self):
-		if self.status == "Pending" and not self.approved_by_frappe:
+		if self.status == "Pending":
 			self.approved_by_partner = True
 			self.save(ignore_permissions=True)
 			self.reload()
-			self.send_approval_request_email()
+			if not self.approved_by_frappe:
+				self.send_approval_request_email()
 
 	def send_approval_request_email(self):
 		from press.utils.billing import get_frappe_io_connection

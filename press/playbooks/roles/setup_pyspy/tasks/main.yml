@@ -1,0 +1,5 @@
+---
+- name: Allow PySpy To Run With Elevated Permissions
+  become: yes
+  become_user: root
+  command: /home/frappe/agent/env/bin/agent setup pyspy

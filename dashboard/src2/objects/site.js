@@ -29,7 +29,7 @@ export default {
 		activate: 'activate',
 		addDomain: 'add_domain',
 		archive: 'archive',
-		backup: 'backup',
+		backup: 'schedule_backup',
 		clearSiteCache: 'clear_site_cache',
 		deactivate: 'deactivate',
 		disableReadWrite: 'disable_read_write',
@@ -50,6 +50,7 @@ export default {
 		fetchCertificate: 'fetch_certificate',
 		restoreSite: 'restore_site',
 		restoreSiteFromFiles: 'restore_site_from_files',
+		restoreSiteFromPhysicalBackup: 'restore_site_from_physical_backup',
 		scheduleUpdate: 'schedule_update',
 		editScheduledUpdate: 'edit_scheduled_update',
 		cancelUpdate: 'cancel_scheduled_update',
@@ -61,6 +62,7 @@ export default {
 		removeTag: 'remove_resource_tag',
 		getBackupDownloadLink: 'get_backup_download_link',
 		fetchDatabaseTableSchemas: 'fetch_database_table_schemas',
+		fetchSitesDataForExport: 'fetch_sites_data_for_export',
 	},
 	list: {
 		route: '/sites',
@@ -213,33 +215,34 @@ export default {
 							'plan_title',
 							'cluster_title',
 							'group_title',
+							'tags',
 							'version',
 							'creation',
 						];
+						createListResource({
+							doctype: 'Site',
+							url: 'press.api.site.fetch_sites_data_for_export',
+							auto: true,
+							onSuccess(data) {
+								let csv = unparse({
+									fields,
+									data,
+								});
+								csv = '\uFEFF' + csv; // for utf-8
 
-						const data = sites.data.map((site) => {
-							const row = {};
-							fields.forEach((field) => {
-								row[field] = site[field];
-							});
-							return row;
+								// create a blob and trigger a download
+								const blob = new Blob([csv], {
+									type: 'text/csv;charset=utf-8',
+								});
+								const today = new Date().toISOString().split('T')[0];
+								const filename = `sites-${today}.csv`;
+								const link = document.createElement('a');
+								link.href = URL.createObjectURL(blob);
+								link.download = filename;
+								link.click();
+								URL.revokeObjectURL(link.href);
+							},
 						});
-
-						let csv = unparse({
-							fields,
-							data,
-						});
-						csv = '\uFEFF' + csv; // for utf-8
-
-						// create a blob and trigger a download
-						const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-						const today = new Date().toISOString().split('T')[0];
-						const filename = `sites-${today}.csv`;
-						const link = document.createElement('a');
-						link.href = URL.createObjectURL(blob);
-						link.download = filename;
-						link.click();
-						URL.revokeObjectURL(link.href);
 					},
 				},
 			];
@@ -639,7 +642,6 @@ export default {
 					filters: (site) => {
 						return {
 							site: site.doc?.name,
-							files_availability: 'Available',
 							status: ['in', ['Pending', 'Running', 'Success']],
 						};
 					},
@@ -667,7 +669,13 @@ export default {
 								return `Backup on ${date(value, 'llll')}`;
 							},
 						},
-
+						{
+							label: 'Status',
+							fieldname: 'status',
+							width: '150px',
+							align: 'center',
+							type: 'Badge',
+						},
 						{
 							label: 'Database',
 							fieldname: 'database_size',
@@ -710,9 +718,23 @@ export default {
 								return value ? 'check' : '';
 							},
 						},
+						{
+							label: 'Physical Backup',
+							fieldname: 'physical',
+							width: 0.5,
+							type: 'Icon',
+							Icon(value) {
+								return value ? 'check' : '';
+							},
+						},
 					],
 					filterControls() {
 						return [
+							{
+								type: 'checkbox',
+								label: 'Physical Backups',
+								fieldname: 'physical',
+							},
 							{
 								type: 'checkbox',
 								label: 'Offsite Backups',
@@ -794,6 +816,7 @@ export default {
 							},
 							{
 								group: 'Download',
+								condition: () => !row.physical,
 								items: [
 									{
 										label: 'Download Database',
@@ -826,49 +849,88 @@ export default {
 							},
 							{
 								group: 'Restore',
-								condition: () => row.offsite,
+								condition: () => row.offsite || row.physical,
 								items: [
 									{
 										label: 'Restore Backup',
 										condition: () => site.doc.status !== 'Archived',
 										onClick() {
-											confirmDialog({
-												title: 'Restore Backup',
-												message: `Are you sure you want to restore your site to this offsite backup from <b>${dayjs(
-													row.creation,
-												).format('lll')}</b> ?`,
-												onSuccess({ hide }) {
-													toast.promise(
-														site.restoreSiteFromFiles.submit({
-															files: {
-																database: row.remote_database_file,
-																public: row.remote_public_file,
-																private: row.remote_private_file,
-																config: row.remote_config_file,
+											if (row.physical && row.ready_to_restore) {
+												toast.error(
+													'Physical Snapshot is not ready to restore. Try again after 10 minutes.',
+												);
+												return;
+											}
+
+											if (row.physical) {
+												confirmDialog({
+													title: 'Restore Physical Backup',
+													message: `Are you sure you want to restore your site's database from physical backup taken on <b>${dayjs(
+														row.creation,
+													).format('lll')}</b> ?`,
+													onSuccess({ hide }) {
+														toast.promise(
+															site.restoreSiteFromPhysicalBackup.submit({
+																backup: row.name,
+															}),
+															{
+																loading:
+																	'Scheduling physical backup restore...',
+																success: () => {
+																	hide();
+																	router.push({
+																		name: 'Site Jobs',
+																		params: {
+																			name: site.name,
+																		},
+																	});
+																	return 'Backup restore scheduled successfully.';
+																},
+																error: (e) => getToastErrorMessage(e),
 															},
-														}),
-														{
-															loading: 'Scheduling backup restore...',
-															success: (jobId) => {
-																hide();
-																router.push({
-																	name: 'Site Job',
-																	params: {
-																		name: site.name,
-																		id: jobId,
-																	},
-																});
-																return 'Backup restore scheduled successfully.';
+														);
+													},
+												});
+											} else {
+												confirmDialog({
+													title: 'Restore Backup',
+													message: `Are you sure you want to restore your site to this offsite backup from <b>${dayjs(
+														row.creation,
+													).format('lll')}</b> ?`,
+													onSuccess({ hide }) {
+														toast.promise(
+															site.restoreSiteFromFiles.submit({
+																files: {
+																	database: row.remote_database_file,
+																	public: row.remote_public_file,
+																	private: row.remote_private_file,
+																	config: row.remote_config_file,
+																},
+															}),
+															{
+																loading: 'Scheduling backup restore...',
+																success: (jobId) => {
+																	hide();
+																	router.push({
+																		name: 'Site Job',
+																		params: {
+																			name: site.name,
+																			id: jobId,
+																		},
+																	});
+																	return 'Backup restore scheduled successfully.';
+																},
+																error: (e) => getToastErrorMessage(e),
 															},
-															error: (e) => getToastErrorMessage(e),
-														},
-													);
-												},
-											});
+														);
+													},
+												});
+											}
 										},
 									},
 									{
 										label: 'Restore Backup on another Site',
+										condition: () => !row.physical,
 										onClick() {
 											let SelectSiteForRestore = defineAsyncComponent(
 												() =>
@@ -921,30 +983,17 @@ export default {
 							},
 							loading: site.backup.loading,
 							onClick() {
-								confirmDialog({
-									title: 'Schedule Backup',
-									message:
-										'Are you sure you want to schedule a backup? This will create an onsite backup.',
-									onSuccess({ hide }) {
-										toast.promise(
-											site.backup.submit({
-												with_files: true,
-											}),
-											{
-												loading: 'Scheduling backup...',
-												success: () => {
-													hide();
-													router.push({
-														name: 'Site Jobs',
-														params: { name: site.name },
-													});
-													return 'Backup scheduled successfully.';
-												},
-												error: (e) => getToastErrorMessage(e),
-											},
-										);
-									},
-								});
+								renderDialog(
+									h(
+										defineAsyncComponent(
+											() => import('../components/site/SiteScheduleBackup.vue'),
+										),
+										{
+											site: site.name,
+											onScheduleBackupSuccess: () => backups.reload(),
+										},
+									),
+								);
 							},
 						};
 					},
@@ -1592,7 +1641,13 @@ export default {
 					condition: () =>
 						site.doc.status !== 'Archived' && site.doc?.setup_wizard_complete,
 					onClick() {
-						window.open(`https://${site.name}`, '_blank');
+						let siteURL = `https://${site.name}`;
+						if (
+							site.doc.version === 'Nightly' ||
+							Number(site.doc.version.split(' ')[1]) >= 15
+						)
+							siteURL += '/apps';
+						window.open(siteURL, '_blank');
 					},
 				},
 				{
@@ -1601,6 +1656,7 @@ export default {
 						prefix: icon('external-link'),
 					},
 					variant: 'solid',
+					loading: site.loginAsAdmin.loading || site.loginAsTeam.loading,
 					condition: () =>
 						site.doc.status === 'Active' && !site.doc?.setup_wizard_complete,
 					onClick() {
@@ -1639,7 +1695,7 @@ export default {
 									title: 'Login as Administrator',
 									message: `Are you sure you want to login as administrator on the site <b>${site.doc?.name}</b>?`,
 									fields:
-										$team.name !== site.doc.team
+										$team.name !== site.doc.team || $team.doc.is_desk_user
 											? [
 													{
 														label: 'Reason',
@@ -1649,7 +1705,10 @@ export default {
 												]
 											: [],
 									onSuccess: ({ hide, values }) => {
-										if (!values.reason && $team.name !== site.doc.team) {
+										if (
+											!values.reason &&
+											($team.name !== site.doc.team || $team.doc.is_desk_user)
+										) {
 											throw new Error('Reason is required');
 										}
 										return site.loginAsAdmin

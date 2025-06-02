@@ -57,6 +57,7 @@ class PressSettings(Document):
 		default_outgoing_pass: DF.Data | None
 		disable_agent_job_deduplication: DF.Check
 		disable_auto_retry: DF.Check
+		disable_frappe_auth: DF.Check
 		disable_physical_backup: DF.Check
 		docker_registry_namespace: DF.Data | None
 		docker_registry_password: DF.Data | None
@@ -100,12 +101,14 @@ class PressSettings(Document):
 		mailgun_api_key: DF.Data | None
 		max_allowed_screenshots: DF.Int
 		max_concurrent_physical_restorations: DF.Int
+		max_failed_backup_attempts_in_a_day: DF.Int
 		micro_debit_charge_inr: DF.Currency
 		micro_debit_charge_usd: DF.Currency
 		minimum_rebuild_memory: DF.Int
 		monitor_server: DF.Link | None
 		monitor_token: DF.Data | None
 		ngrok_auth_token: DF.Data | None
+		npo_discount: DF.Float
 		offsite_backups_access_key_id: DF.Data | None
 		offsite_backups_count: DF.Int
 		offsite_backups_provider: DF.Literal["AWS S3"]
@@ -132,6 +135,7 @@ class PressSettings(Document):
 		rsa_key_size: DF.Literal["2048", "3072", "4096"]
 		send_email_notifications: DF.Check
 		send_telegram_notifications: DF.Check
+		servers_using_alternative_http_port_for_communication: DF.SmallText | None
 		spaces_domain: DF.Link | None
 		spamd_api_key: DF.Data | None
 		spamd_api_secret: DF.Password | None

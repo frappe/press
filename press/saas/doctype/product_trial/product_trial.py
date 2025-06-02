@@ -9,7 +9,6 @@ import frappe
 import frappe.utils
 from frappe.model.document import Document
 from frappe.utils.data import get_url
-from frappe.utils.momentjs import get_all_timezones
 
 from press.utils import log_error, validate_subdomain
 from press.utils.unique_name_generator import generate as generate_random_name
@@ -24,26 +23,22 @@ class ProductTrial(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.saas.doctype.hybrid_pool_item.hybrid_pool_item import HybridPoolItem
 		from press.saas.doctype.product_trial_app.product_trial_app import ProductTrialApp
-		from press.saas.doctype.product_trial_signup_field.product_trial_signup_field import (
-			ProductTrialSignupField,
-		)
 
 		apps: DF.Table[ProductTrialApp]
-		create_additional_system_user: DF.Check
 		domain: DF.Link
 		email_account: DF.Link | None
 		email_full_logo: DF.AttachImage | None
 		email_header_content: DF.Code
 		email_subject: DF.Data
+		enable_hybrid_pooling: DF.Check
 		enable_pooling: DF.Check
+		hybrid_pool_rules: DF.Table[HybridPoolItem]
 		logo: DF.AttachImage | None
 		published: DF.Check
 		redirect_to_after_login: DF.Data
 		release_group: DF.Link
-		setup_wizard_completion_mode: DF.Literal["manual", "auto"]
-		setup_wizard_payload_generator_script: DF.Code | None
-		signup_fields: DF.Table[ProductTrialSignupField]
 		standby_pool_size: DF.Int
 		standby_queue_size: DF.Int
 		suspension_email_content: DF.HTMLEditor | None
@@ -62,31 +57,10 @@ class ProductTrial(Document):
 		"redirect_to_after_login",
 	)
 
-	USER_LOGIN_PASSWORD_FIELD = "user_login_password"
-
 	def get_doc(self, doc):
 		if not self.published:
 			frappe.throw("Not permitted")
 
-		def _parse_options(field):
-			if field.fieldtype != "Select":
-				return []
-			if field.fieldname.endswith("_tz"):
-				return get_all_timezones()
-			if not field.options:
-				return []
-			return [option for option in ((field.options or "").split("\n")) if option]
-
-		doc.signup_fields = [
-			{
-				"label": field.label,
-				"fieldname": field.fieldname,
-				"fieldtype": field.fieldtype,
-				"options": _parse_options(field),
-				"required": field.required,
-			}
-			for field in self.signup_fields
-		]
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
 		return doc
 
@@ -97,17 +71,22 @@ class ProductTrial(Document):
 		if not plan.is_trial_plan:
 			frappe.throw("Selected plan is not a trial plan")
 
-		for field in self.signup_fields:
-			if field.fieldname == self.USER_LOGIN_PASSWORD_FIELD:
-				if not field.required:
-					frappe.throw(f"{self.USER_LOGIN_PASSWORD_FIELD} field should be marked as required")
-				if field.fieldtype != "Password":
-					frappe.throw(f"{self.USER_LOGIN_PASSWORD_FIELD} field should be of type Password")
-
 		if not self.redirect_to_after_login.startswith("/"):
 			frappe.throw("Redirection route after login should start with /")
 
-	def setup_trial_site(self, subdomain, team, cluster=None, account_request=None):
+		self.validate_hybrid_rules()
+
+	def validate_hybrid_rules(self):
+		for rule in self.hybrid_pool_rules:
+			if not frappe.db.exists("Release Group App", {"parent": self.release_group, "app": rule.app}):
+				frappe.throw(
+					f"App {rule.app} is not present in release group {self.release_group}. "
+					"Please add the app to the release group."
+				)
+
+	def setup_trial_site(
+		self, subdomain: str, team: str, cluster: str | None = None, account_request: str | None = None
+	):
 		from press.press.doctype.site.site import Site, get_plan_config
 
 		validate_subdomain(subdomain)
@@ -115,32 +94,26 @@ class ProductTrial(Document):
 
 		site_domain = f"{subdomain}.{self.domain}"
 
-		# if user didn't change the subdomain, and is picking the provided site
-		if frappe.db.exists("Site", {"name": site_domain, "is_standby": 1, "standby_for_product": self.name}):
-			standby_site = site_domain
-		else:
-			standby_site = self.get_standby_site(cluster)
+		standby_site = self.get_standby_site(cluster, account_request)
 
 		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
 		site = None
 		agent_job_name = None
-		apps_site_config = get_app_subscriptions_site_config([d.app for d in self.apps])
 		plan = self.trial_plan
 
 		if standby_site:
-			site = frappe.get_doc("Site", standby_site)
+			site: Site = frappe.get_doc("Site", standby_site)
 			site.is_standby = False
 			site.team = team
 			site.trial_end_date = trial_end_date
 			site.account_request = account_request
+			apps_site_config = get_app_subscriptions_site_config([d.app for d in self.apps], standby_site)
 			site._update_configuration(apps_site_config, save=False)
 			site._update_configuration(get_plan_config(plan), save=False)
 			site.signup_time = frappe.utils.now()
 			site.generate_saas_communication_secret(create_agent_job=True, save=False)
 			site.save()  # Save is needed for create_subscription to work TODO: remove this
 			site.create_subscription(plan)
-			if self.create_additional_system_user:
-				agent_job_name = site.create_user_with_team_info()
 			site.reload()
 			self.set_site_domain(site, site_domain)
 		else:
@@ -165,11 +138,10 @@ class ProductTrial(Document):
 				trial_end_date=trial_end_date,
 				signup_time=frappe.utils.now(),
 			)
+			apps_site_config = get_app_subscriptions_site_config([d.app for d in self.apps], site.name)
 			site._update_configuration(apps_site_config, save=False)
 			site._update_configuration(get_plan_config(plan), save=False)
 			site.generate_saas_communication_secret(create_agent_job=False, save=False)
-			if self.setup_wizard_completion_mode == "auto" or not self.create_additional_system_user:
-				site.flags.ignore_additional_system_user_creation = True
 			site.insert()
 			agent_job_name = site.flags.get("new_site_agent_job_name", None)
 
@@ -221,7 +193,7 @@ class ProductTrial(Document):
 			"Cluster", {"name": ("in", clusters), "public": 1}, order_by="name asc", pluck="name"
 		)
 
-	def get_standby_site(self, cluster=None):
+	def get_standby_site(self, cluster: str | None = None, account_request: str | None = None) -> str | None:
 		filters = {
 			"is_standby": True,
 			"standby_for_product": self.name,
@@ -229,6 +201,20 @@ class ProductTrial(Document):
 		}
 		if cluster:
 			filters["cluster"] = cluster
+
+		for rule in self.hybrid_pool_rules:
+			value = (
+				frappe.db.get_value("Account Request", account_request, rule.field)
+				if account_request
+				else None
+			)
+			if not value:
+				break
+
+			if rule.value == value:
+				filters["hybrid_for"] = rule.app
+				break
+
 		sites = frappe.db.get_all(
 			"Site",
 			filters=filters,
@@ -238,6 +224,9 @@ class ProductTrial(Document):
 		)
 		if sites:
 			return sites[0]
+		if cluster and account_request:
+			# if site is not found and account request was specified, try to find a site in any cluster
+			return self.get_standby_site(None, account_request)
 		if cluster:
 			# if site is not found and cluster was specified, try to find a site in any cluster
 			return self.get_standby_site()
@@ -255,19 +244,36 @@ class ProductTrial(Document):
 		if not self.enable_pooling:
 			return
 
-		sites_to_create = self.standby_pool_size - self.get_standby_sites_count(cluster)
+		self._create_standby_sites(cluster)
+
+		if self.enable_hybrid_pooling:
+			for rule in self.hybrid_pool_rules:
+				self._create_standby_sites(cluster, rule)
+
+	def _create_standby_sites(self, cluster: str, rule: dict | None = None):
+		if rule and rule.preferred_cluster and rule.preferred_cluster != cluster:
+			return
+
+		standby_pool_size = rule.custom_pool_size if rule else self.standby_pool_size
+		sites_to_create = standby_pool_size - self.get_standby_sites_count(
+			cluster, rule.app if rule else None
+		)
 		if sites_to_create <= 0:
 			return
 		if sites_to_create > self.standby_queue_size:
 			sites_to_create = self.standby_queue_size
 
 		for _i in range(sites_to_create):
-			self.create_standby_site(cluster)
+			self.create_standby_site(cluster, rule)
 			frappe.db.commit()
 
-	def create_standby_site(self, cluster):
+	def create_standby_site(self, cluster: str, rule: dict | None = None):
 		administrator = frappe.db.get_value("Team", {"user": "Administrator"}, "name")
 		apps = [{"app": d.app} for d in self.apps]
+
+		if rule:
+			apps += [{"app": rule.app}]
+
 		server = self.get_server_from_cluster(cluster)
 		site = frappe.get_doc(
 			doctype="Site",
@@ -278,12 +284,13 @@ class ProductTrial(Document):
 			server=server,
 			is_standby=True,
 			standby_for_product=self.name,
+			hybrid_for=rule.app if rule else None,
 			team=administrator,
 			apps=apps,
 		)
 		site.insert(ignore_permissions=True)
 
-	def get_standby_sites_count(self, cluster):
+	def get_standby_sites_count(self, cluster: str, hybrid_for: str | None = None):
 		active_standby_sites = frappe.db.count(
 			"Site",
 			{
@@ -291,6 +298,7 @@ class ProductTrial(Document):
 				"is_standby": 1,
 				"standby_for_product": self.name,
 				"status": "Active",
+				"hybrid_for": hybrid_for,
 			},
 		)
 		# sites that are created in the last hour
@@ -302,6 +310,7 @@ class ProductTrial(Document):
 				"standby_for_product": self.name,
 				"status": ("not in", ["Archived", "Suspended"]),
 				"creation": (">", frappe.utils.add_to_date(None, hours=-1)),
+				"hybrid_for": hybrid_for,
 			},
 		)
 		return active_standby_sites + recent_standby_sites
@@ -348,7 +357,9 @@ class ProductTrial(Document):
 		return min(server_sites, key=server_sites.get)
 
 
-def get_app_subscriptions_site_config(apps: list[str]):
+def get_app_subscriptions_site_config(apps: list[str], site: str | None = None) -> dict:
+	from press.utils import get_current_team
+
 	subscriptions = []
 	site_config = {}
 
@@ -366,8 +377,9 @@ def get_app_subscriptions_site_config(apps: list[str]):
 					"document_name": app,
 					"plan_type": "Marketplace App Plan",
 					"plan": free_plan[0],
-					"enabled": 0,
-					"team": frappe.get_value("Team", {"user": "Administrator"}, "name"),
+					"site": site,
+					"enabled": 1,
+					"team": get_current_team(),
 				}
 			).insert(ignore_permissions=True)
 

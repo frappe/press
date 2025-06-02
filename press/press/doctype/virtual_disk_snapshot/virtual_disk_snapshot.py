@@ -28,6 +28,7 @@ class VirtualDiskSnapshot(Document):
 
 		cluster: DF.Link | None
 		duration: DF.Duration | None
+		expired: DF.Check
 		mariadb_root_password: DF.Password | None
 		physical_backup: DF.Check
 		progress: DF.Data | None
@@ -56,7 +57,9 @@ class VirtualDiskSnapshot(Document):
 
 	def on_update(self):  # noqa: C901
 		if self.has_value_changed("status") and self.status == "Unavailable":
-			site_backup_name = frappe.db.exists("Site Backup", {"database_snapshot": self.name})
+			site_backup_name = frappe.db.exists(
+				"Site Backup", {"database_snapshot": self.name, "files_availability": ("!=", "Unavailable")}
+			)
 			if site_backup_name:
 				frappe.db.set_value("Site Backup", site_backup_name, "files_availability", "Unavailable")
 
@@ -287,8 +290,8 @@ def delete_old_snapshots():
 		{
 			"status": "Completed",
 			"creation": ("<=", frappe.utils.add_days(None, -2)),
-			"physical_backup": 0,
-			"rolling_snapshot": 0,
+			"physical_backup": False,
+			"rolling_snapshot": False,
 		},
 		pluck="name",
 		order_by="creation asc",
@@ -296,6 +299,46 @@ def delete_old_snapshots():
 	)
 	for snapshot in snapshots:
 		try:
+			frappe.get_doc("Virtual Disk Snapshot", snapshot).delete_snapshot()
+			frappe.db.commit()
+		except Exception:
+			log_error("Virtual Disk Snapshot Delete Error", snapshot=snapshot)
+			frappe.db.rollback()
+
+
+def delete_expired_snapshots():
+	snapshots = frappe.get_all(
+		"Virtual Disk Snapshot",
+		filters={"status": "Completed", "physical_backup": True, "rolling_snapshot": False, "expired": True},
+		pluck="name",
+		order_by="creation asc",
+		limit=500,
+	)
+	for snapshot in snapshots:
+		try:
+			# Ensure there is no Restoration which is using / can use this snapshot
+			if (
+				frappe.db.count(
+					"Physical Backup Restoration",
+					filters={
+						"disk_snapshot": snapshot,
+						"status": ["in", ["Pending", "Scheduled", "Running"]],
+					},
+				)
+				> 0
+			) or (
+				frappe.db.count(
+					"Physical Backup Restoration",
+					filters={
+						"disk_snapshot": snapshot,
+						"is_failure_resolved": False,
+						"status": "Failure",
+					},
+				)
+				> 0
+			):
+				continue
+
 			frappe.get_doc("Virtual Disk Snapshot", snapshot).delete_snapshot()
 			frappe.db.commit()
 		except Exception:

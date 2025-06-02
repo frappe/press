@@ -17,6 +17,7 @@ from press.utils.billing import (
 	get_frappe_io_connection,
 	get_gateway_details,
 	get_partner_external_connection,
+	is_frappe_auth_disabled,
 )
 
 
@@ -403,8 +404,17 @@ class Invoice(Document):
 		amount = int(self.amount_due_with_tax * 100)
 		self._make_stripe_invoice(customer_id, amount)
 
+	def mandate_inactive(self, mandate_id):
+		stripe = get_stripe()
+		mandate = stripe.Mandate.retrieve(mandate_id)
+		return mandate.status in ("inactive", "pending")
+
 	def _make_stripe_invoice(self, customer_id, amount):
 		mandate_id = self.get_mandate_id(customer_id)
+		if mandate_id and self.mandate_inactive(mandate_id):
+			frappe.db.set_value("Invoice", self.name, "payment_mode", "Prepaid Credits")
+			self.reload()
+			return None
 		try:
 			stripe = get_stripe()
 			invoice = stripe.Invoice.create(
@@ -645,7 +655,12 @@ class Invoice(Document):
 		self.total_discount_amount = sum([item.discount for item in self.items]) + sum(
 			[d.amount for d in self.discounts]
 		)
-		# TODO: handle percent discount from discount table
+
+		npo_discount_applicable = frappe.db.get_value("Team", self.team, "apply_npo_discount")
+		if npo_discount_applicable:
+			npo_discount = frappe.db.get_single_value("Press Settings", "npo_discount")
+			if npo_discount:
+				self.total_discount_amount += flt(self.total * (npo_discount / 100), 2)
 
 		self.total_before_discount = self.total
 		self.total = flt(self.total_before_discount - self.total_discount_amount, 2)
@@ -758,6 +773,9 @@ class Invoice(Document):
 		if self.frappe_invoice or self.frappe_partner_order or self.mpesa_receipt_number:
 			return None
 
+		if is_frappe_auth_disabled():
+			return None
+
 		try:
 			team = frappe.get_doc("Team", self.team)
 			address = frappe.get_doc("Address", team.billing_address) if team.billing_address else None
@@ -808,6 +826,9 @@ class Invoice(Document):
 	def fetch_invoice_pdf(self):
 		if self.frappe_invoice:
 			from urllib.parse import urlencode
+
+			if is_frappe_auth_disabled():
+				return
 
 			client = self.get_frappeio_connection()
 			print_format = frappe.db.get_single_value("Press Settings", "print_format")

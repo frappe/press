@@ -112,11 +112,11 @@ def cleanup_ansible_tmp_files():
 	if not hasattr(constants, "DEFAULT_LOCAL_TMP"):
 		return
 
+	threshold = time.time() - 60 * 60  # >One hour old
+
 	if os.environ.get("FRAPPE_BACKGROUND_WORKERS_NOFORK"):
 		# Long running processes, don't cleanup
-		return
-
-	threshold = time.time() - 60 * 60  # >One hour old
+		threshold = time.time() - 2 * 24 * 60 * 60  # >2 days old
 
 	temp_dir = pathlib.Path(constants.DEFAULT_LOCAL_TMP).parent
 	ansible_dir = pathlib.Path.home() / ".ansible"

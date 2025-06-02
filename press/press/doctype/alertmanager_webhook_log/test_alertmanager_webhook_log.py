@@ -1,10 +1,10 @@
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
+from __future__ import annotations
 
 import json
 import typing
 import unittest
-from datetime import datetime
 
 import frappe
 
@@ -14,6 +14,9 @@ from press.press.doctype.prometheus_alert_rule.test_prometheus_alert_rule import
 from press.press.doctype.site.test_site import create_test_site
 
 if typing.TYPE_CHECKING:
+	from datetime import datetime
+
+	from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import AlertmanagerWebhookLog
 	from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import (
 		PrometheusAlertRule,
 	)
@@ -21,14 +24,14 @@ if typing.TYPE_CHECKING:
 
 
 def create_test_alertmanager_webhook_log(
-	alert: "PrometheusAlertRule" = None,
-	creation: datetime = None,
-	site: "Site" = None,
+	alert: PrometheusAlertRule | None = None,
+	creation: datetime | None = None,
+	site: Site | None = None,
 	status: str = "firing",
-):
+) -> AlertmanagerWebhookLog:
 	alert = alert or create_test_prometheus_alert_rule()
 	site = site or create_test_site()
-	return frappe.get_doc(
+	return frappe.get_doc(  # type: ignore
 		{
 			"doctype": "Alertmanager Webhook Log",
 			"alert": alert.name,
@@ -76,7 +79,7 @@ def create_test_alertmanager_webhook_log(
 						"server": site.server,
 					},
 					"receiver": "web\\.hook",
-					"status": status,
+					"status": status.capitalize(),
 					"truncatedAlerts": 0,
 					"version": "4",
 					"externalURL": "http://localhost:9093",

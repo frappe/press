@@ -263,9 +263,9 @@ class SiteUpdate(Document):
 		if len(last_logical_site_backups) > 0:
 			db_backup_size = cint(last_logical_site_backups[0])
 
-		# If last logical backup size is greater than 250MB and less than 1GB
+		# If last logical backup size is greater than 300MB (actual db size approximate 3GB)
 		# Then only take physical backup
-		if db_backup_size > 262144000 and db_backup_size < 1073741824:
+		if db_backup_size > 314572800:
 			self.backup_type = "Physical"
 
 	@dashboard_whitelist()
@@ -346,8 +346,10 @@ class SiteUpdate(Document):
 		frappe.db.set_value("Site Update", self.name, "status", "Running")
 
 	def create_physical_backup(self):
-		site = frappe.get_doc("Site", self.site)
-		frappe.db.set_value("Site Update", self.name, "site_backup", site.physical_backup().name)
+		site: Site = frappe.get_doc("Site", self.site)
+		frappe.db.set_value(
+			"Site Update", self.name, "site_backup", site.physical_backup(for_site_update=True).name
+		)
 
 	def have_past_updates_failed(self):
 		return frappe.db.exists(

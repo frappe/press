@@ -73,32 +73,53 @@ ENV {{ doc.get_dependency_version("python", True) }}
 RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/ppa \
   && apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
-  python${PYTHON_VERSION} \
-  python${PYTHON_VERSION}-dev \
-  python${PYTHON_VERSION}-venv \
-  python${PYTHON_VERSION}-distutils \
+    python${PYTHON_VERSION} \
+    python${PYTHON_VERSION}-dev \
+    {% if not remove_distutils -%}
+    python${PYTHON_VERSION}-distutils \
+    {%- endif %}
+    python${PYTHON_VERSION}-venv \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre-python`
 
-
 # Install wkhtmltopdf
 ENV {{ doc.get_dependency_version("wkhtmltopdf", True) }}
-{% if doc.get_dependency_version("wkhtmltopdf") == '0.12.6' %}
-RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_amd64.deb \
-  && dpkg -i wkhtmltox_0.12.6-1.focal_amd64.deb \
-  && rm wkhtmltox_0.12.6-1.focal_amd64.deb \
-  `#stage-pre-wkhtmltopdf`
-{% elif doc.get_dependency_version("wkhtmltopdf") == '0.12.5' %}
-RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.focal_amd64.deb \
-  && dpkg -i wkhtmltox_0.12.5-1.focal_amd64.deb \
-  && rm wkhtmltox_0.12.5-1.focal_amd64.deb \
-  `#stage-pre-wkhtmltopdf`
-{% elif doc.get_dependency_version("wkhtmltopdf") == '0.12.4' %}
-RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz \
-  && tar -xvf wkhtmltox-0.12.4_linux-generic-amd64.tar.xz \
-  && mv wkhtmltox/bin/wkhtmlto* /usr/local/bin/ \
-  && rm -rf wkhtmltox-0.12.4_linux-generic-amd64.tar.xz wkhtmltox \
-  `#stage-pre-wkhtmltopdf`
+
+
+{% if is_arm_build %}
+  # ARM setup (0.12.5) & (0.12.6)
+  {% if doc.get_dependency_version("wkhtmltopdf") == '0.12.5' %}
+  RUN wget https://github.com/adityahase/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.focal_arm64.deb \
+    && dpkg -i wkhtmltox_0.12.5-1.focal_arm64.deb \
+    && rm wkhtmltox_0.12.5-1.focal_arm64.deb \
+    `#stage-pre-wkhtmltopdf`
+  {% endif %}
+
+  {% if doc.get_dependency_version("wkhtmltopdf") == '0.12.6' %}
+  RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_arm64.deb \
+    && dpkg -i wkhtmltox_0.12.6-1.focal_arm64.deb \
+    && rm wkhtmltox_0.12.6-1.focal_arm64.deb \
+    `#stage-pre-wkhtmltopdf`
+  {% endif %}
+{% else %}
+  # Intel setup
+  {% if doc.get_dependency_version("wkhtmltopdf") == '0.12.6' %}
+  RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_amd64.deb \
+    && dpkg -i wkhtmltox_0.12.6-1.focal_amd64.deb \
+    && rm wkhtmltox_0.12.6-1.focal_amd64.deb \
+    `#stage-pre-wkhtmltopdf`
+  {% elif doc.get_dependency_version("wkhtmltopdf") == '0.12.5' %}
+  RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.focal_amd64.deb \
+    && dpkg -i wkhtmltox_0.12.5-1.focal_amd64.deb \
+    && rm wkhtmltox_0.12.5-1.focal_amd64.deb \
+    `#stage-pre-wkhtmltopdf`
+  {% elif doc.get_dependency_version("wkhtmltopdf") == '0.12.4' %}
+  RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz \
+    && tar -xvf wkhtmltox-0.12.4_linux-generic-amd64.tar.xz \
+    && mv wkhtmltox/bin/wkhtmlto* /usr/local/bin/ \
+    && rm -rf wkhtmltox-0.12.4_linux-generic-amd64.tar.xz wkhtmltox \
+    `#stage-pre-wkhtmltopdf`
+  {% endif %}
 {% endif %}
 
 {% if doc.is_code_server_enabled %}
@@ -184,7 +205,12 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 npm install 
 # Install Bench
 ENV PATH "$PATH:/home/frappe/.local/bin"
 
+{% if requires_version_based_get_pip %}
+RUN wget https://bootstrap.pypa.io/pip/${PYTHON_VERSION}/get-pip.py && python${PYTHON_VERSION} get-pip.py `#stage-pre-pip`
+{% else %}
 RUN wget https://bootstrap.pypa.io/get-pip.py && python${PYTHON_VERSION} get-pip.py `#stage-pre-pip`
+{% endif %}
+
 ENV {{ doc.get_dependency_version("bench", True) }}
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 python${PYTHON_VERSION} -m pip install --upgrade frappe-bench==${BENCH_VERSION} `#stage-bench-bench`
 

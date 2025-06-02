@@ -18,6 +18,7 @@
   "is_self_hosted",
   "team",
   "public",
+  "halt_agent_jobs",
   "storage_section",
   "auto_add_storage_min",
   "auto_add_storage_max",
@@ -199,7 +200,8 @@
   },
   {
    "fieldname": "section_break_21",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Nginx"
   },
   {
    "fieldname": "domains",
@@ -421,10 +423,17 @@
    "fieldtype": "Int",
    "label": "Auto Add Storage Max",
    "non_negative": 1
+  },
+  {
+   "default": "0",
+   "description": "Stop polling and queuing agent jobs",
+   "fieldname": "halt_agent_jobs",
+   "fieldtype": "Check",
+   "label": "Halt Agent Jobs"
   }
  ],
  "links": [],
- "modified": "2024-12-26 13:20:05.120010",
+ "modified": "2025-05-22 17:42:29.377442",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
@@ -443,6 +452,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

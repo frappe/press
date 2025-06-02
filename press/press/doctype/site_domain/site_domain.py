@@ -127,18 +127,12 @@ class SiteDomain(Document):
 			"TLS Certificate", self.tls_certificate, ["status", "creation"], as_dict=True
 		)
 		if certificate.status == "Active":
-			if frappe.utils.add_days(None, -1) > certificate.creation:
-				# This is an old (older than 1 day) certificate, we are renewing it.
-				# NGINX likely has a valid certificate, no need to reload.
-				skip_reload = True
-			else:
-				skip_reload = False
-			self.create_agent_request(skip_reload=skip_reload)
+			self.create_agent_request()
 		elif certificate.status == "Failure":
 			self.status = "Broken"
 			self.save()
 
-	def create_agent_request(self, skip_reload=False):
+	def create_agent_request(self):
 		server = frappe.db.get_value("Site", self.site, "server")
 		is_standalone = frappe.db.get_value("Server", server, "is_standalone")
 		if is_standalone:
@@ -146,7 +140,7 @@ class SiteDomain(Document):
 		else:
 			proxy_server = frappe.db.get_value("Server", server, "proxy_server")
 			agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.new_host(self, skip_reload=skip_reload)
+		agent.new_host(self)
 
 	def create_remove_host_agent_request(self):
 		server = frappe.db.get_value("Site", self.site, "server")
@@ -173,7 +167,7 @@ class SiteDomain(Document):
 			frappe.throw(msg="Primary domain cannot be deleted", exc=frappe.exceptions.LinkExistsError)
 
 		self.disavow_agent_jobs()
-		if not self.default or self.redirect_to_primary:
+		if not (self.default and self.has_root_tls_certificate) or self.redirect_to_primary:
 			self.create_remove_host_agent_request()
 		if self.status == "Active":
 			self.remove_domain_from_site_config()

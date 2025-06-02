@@ -116,7 +116,9 @@ export default {
 					});
 				},
 				onSuccess: (data) => {
-					if (data.status != 'Success') {
+					if (
+						!['Success', 'Failure', 'Recovered', 'Fatal'].includes(data.status)
+					) {
 						setTimeout(() => {
 							this.$resources.siteUpdate.reload();
 						}, 5000);

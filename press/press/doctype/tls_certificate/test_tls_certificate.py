@@ -82,8 +82,12 @@ class TestTLSCertificate(unittest.TestCase):
 		mock_setup_wildcard_hosts.assert_not_called()
 
 	def test_renewal_of_primary_domain_calls_update_tls_certificates(self):
-		cert = create_test_tls_certificate("fc.dev", wildcard=True)
-		create_test_proxy_server("n1")
+		# Use a diffferent domain to avoid any chance of
+		# Reusing same non wildcard domain in tests
+		# Because, in create_test_tls_certificate, we ignore certificate creation if it already exists
+		create_test_root_domain("fc2.dev")
+		cert = create_test_tls_certificate("fc2.dev", wildcard=True)
+		create_test_proxy_server("n2", domain="fc2.dev")
 		with patch.object(LetsEncrypt, "__init__", new=none_init), patch.object(
 			TLSCertificate, "trigger_server_tls_setup_callback"
 		) as mock_trigger_server_tls_setup, patch.object(ProxyServer, "setup_wildcard_hosts", new=Mock()):

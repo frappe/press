@@ -1,9 +1,14 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
+from typing import TYPE_CHECKING
+
 import frappe
 
 from press.utils import log_error
+
+if TYPE_CHECKING:
+	from press.press.doctype.site.site import Site
 
 
 def archive_suspended_trial_sites():
@@ -42,8 +47,8 @@ def archive_suspended_trial_sites():
 			suspended_days = frappe.utils.date_diff(frappe.utils.today(), suspension_date)
 
 			if suspended_days > ARCHIVE_AFTER_DAYS:
-				site = frappe.get_doc("Site", site.name, for_update=True)
-				site.archive(reason="Archive suspended trial site", skip_reload=True)
+				site: Site = frappe.get_doc("Site", site.name, for_update=True)
+				site.archive(reason="Archive suspended trial site")
 				archived_now = archived_now + 1
 		except Exception:
 			log_error("Suspended Site Archive Error")

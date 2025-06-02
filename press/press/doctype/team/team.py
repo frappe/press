@@ -19,6 +19,7 @@ from press.utils import get_valid_teams_for_user, has_role, log_error
 from press.utils.billing import (
 	get_frappe_io_connection,
 	get_stripe,
+	is_frappe_auth_disabled,
 	process_micro_debit_test_charge,
 )
 from press.utils.telemetry import capture
@@ -39,6 +40,7 @@ class Team(Document):
 		from press.press.doctype.team_member.team_member import TeamMember
 
 		account_request: DF.Link | None
+		apply_npo_discount: DF.Check
 		benches_enabled: DF.Check
 		billing_address: DF.Link | None
 		billing_email: DF.Data | None
@@ -59,6 +61,7 @@ class Team(Document):
 		enabled: DF.Check
 		enforce_2fa: DF.Check
 		erpnext_partner: DF.Check
+		extend_payment_due_suspension: DF.Check
 		frappe_partnership_date: DF.Date | None
 		free_account: DF.Check
 		free_credits_allocated: DF.Check
@@ -449,7 +452,6 @@ class Team(Document):
 
 		self.validate_payment_mode()
 		self.update_draft_invoice_payment_mode()
-		self.validate_partnership_date()
 		self.set_notification_emails()
 
 		if (
@@ -459,21 +461,6 @@ class Team(Document):
 			and self.has_value_changed("billing_name")
 		):
 			self.update_billing_details_on_frappeio()
-
-	def validate_partnership_date(self):
-		if self.erpnext_partner or not self.partnership_date:
-			return
-
-		if partner_email := self.partner_email:
-			frappe_partnership_date = frappe.db.get_value(
-				"Team",
-				{"enabled": 1, "erpnext_partner": 1, "partner_email": partner_email},
-				"frappe_partnership_date",
-			)
-			if frappe_partnership_date and frappe_partnership_date > frappe.utils.getdate(
-				self.partnership_date
-			):
-				frappe.throw("Partnership date cannot be less than the partnership date of the partner")
 
 	def update_draft_invoice_payment_mode(self):
 		if self.has_value_changed("payment_mode"):
@@ -523,6 +510,9 @@ class Team(Document):
 
 	def get_partnership_start_date(self):
 		if frappe.flags.in_test:
+			return frappe.utils.getdate()
+
+		if is_frappe_auth_disabled():
 			return frappe.utils.getdate()
 
 		client = get_frappe_io_connection()
@@ -670,6 +660,9 @@ class Team(Document):
 
 	def update_billing_details_on_frappeio(self):
 		if frappe.flags.in_install:
+			return
+
+		if is_frappe_auth_disabled():
 			return
 
 		try:
@@ -982,6 +975,12 @@ class Team(Document):
 
 	def get_partner_level(self):
 		# fetch partner level from frappe.io
+		if frappe.flags.in_install:
+			return None
+
+		if is_frappe_auth_disabled():
+			return None
+
 		client = get_frappe_io_connection()
 		response = client.session.get(
 			f"{client.url}/api/method/get_partner_level",
@@ -1081,7 +1080,7 @@ class Team(Document):
 		sites_to_suspend = self.get_sites_to_suspend()
 		for site in sites_to_suspend:
 			try:
-				Site("Site", site).suspend(reason, skip_reload=True)
+				Site("Site", site).suspend(reason)
 			except Exception:
 				log_error("Failed to Suspend Sites", traceback=frappe.get_traceback())
 		return sites_to_suspend
@@ -1130,7 +1129,7 @@ class Team(Document):
 		]
 		workloads_before = list(Bench.get_workloads(suspended_sites))
 		for site in suspended_sites:
-			Site("Site", site).unsuspend(reason, skip_reload=True)
+			Site("Site", site).unsuspend(reason)
 		workloads_after = list(Bench.get_workloads(suspended_sites))
 		self.reallocate_workers_if_needed(workloads_before, workloads_after)
 
@@ -1391,7 +1390,7 @@ def _enqueue_finalize_unpaid_invoices_for_team(team: str):
 	frappe.enqueue(
 		"press.press.doctype.team.team.enqueue_finalize_unpaid_for_team",
 		team=team,
-		queue="long",
+		enqueue_after_commit=True,
 	)
 
 

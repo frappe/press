@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "default_cluster",
+  "default_proxy_server",
   "team",
   "column_break_4",
   "dns_provider",
@@ -52,6 +53,12 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team"
+  },
+  {
+   "fieldname": "default_proxy_server",
+   "fieldtype": "Link",
+   "label": "Default Proxy Server",
+   "options": "Proxy Server"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -87,7 +94,7 @@
    "link_fieldname": "domain"
   }
  ],
- "modified": "2025-02-04 11:38:19.013512",
+ "modified": "2025-04-20 17:40:52.227291",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Root Domain",

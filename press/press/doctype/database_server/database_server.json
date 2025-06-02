@@ -9,18 +9,22 @@
   "hostname",
   "hostname_abbreviation",
   "domain",
-  "self_hosted_server_domain",
   "title",
   "column_break_4",
   "cluster",
   "provider",
   "virtual_machine",
+  "self_hosted_server_domain",
+  "section_break_qury",
   "public",
   "is_self_hosted",
-  "is_server_setup",
-  "is_server_prepared",
-  "is_server_renamed",
   "enable_physical_backup",
+  "halt_agent_jobs",
+  "enable_binlog_indexing",
+  "column_break_qsqm",
+  "is_server_setup",
+  "is_server_renamed",
+  "is_server_prepared",
   "billing_section",
   "team",
   "column_break_11",
@@ -80,7 +84,10 @@
   "column_break_objb",
   "stalk_interval",
   "stalk_cycles",
-  "stalk_sleep"
+  "stalk_sleep",
+  "section_break_imng",
+  "binlog_retention_days",
+  "binlogs_removed"
  ],
  "fields": [
   {
@@ -506,7 +513,7 @@
    "read_only": 1
   },
   {
-   "default": "50",
+   "default": "25",
    "description": "Minimum storage to add automatically each time",
    "fieldname": "auto_add_storage_min",
    "fieldtype": "Int",
@@ -546,17 +553,61 @@
    "fieldname": "enable_physical_backup",
    "fieldtype": "Check",
    "label": "Enable Physical Backup"
+  },
+  {
+   "default": "0",
+   "description": "Stop polling and queuing agent jobs",
+   "fieldname": "halt_agent_jobs",
+   "fieldtype": "Check",
+   "label": "Halt Agent Jobs"
+  },
+  {
+   "fieldname": "section_break_qury",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_binlog_indexing",
+   "fieldtype": "Check",
+   "label": "Enable Binlog Indexing"
+  },
+  {
+   "fieldname": "column_break_qsqm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_imng",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "14",
+   "fieldname": "binlog_retention_days",
+   "fieldtype": "Int",
+   "label": "Binlog Retention (days)"
+  },
+  {
+   "default": "0",
+   "fieldname": "binlogs_removed",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Binlogs Removed"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [
   {
    "group": "Analytics",
    "link_doctype": "Disk Performance",
    "link_fieldname": "server"
+  },
+  {
+   "group": "Logs",
+   "link_doctype": "MariaDB Binlog",
+   "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-03-25 20:37:53.186326",
+ "modified": "2025-05-27 13:00:57.532008",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
@@ -587,6 +638,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

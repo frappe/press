@@ -30,9 +30,29 @@ from press.telegram_utils import Telegram
 from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
+	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
+	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+
+from typing import Literal, TypedDict
+
+
+class BenchInfoType(TypedDict):
+	name: str
+	build: str
+	candidate: str
+
+
+class ARMDockerImageType(TypedDict):
+	build: str
+	existing_image: bool
+	status: Literal["Pending", "Preparing", "Running", "Failure", "Success"]
+	bench: str
+
+
+PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
 
 
 class BaseServer(Document, TagHelpers):
@@ -388,6 +408,8 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="nginx.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			play = ansible.run()
 			self.reload()
@@ -455,7 +477,8 @@ class BaseServer(Document, TagHelpers):
 				playbook="update_agent.yml",
 				variables={
 					"agent_repository_url": self.get_agent_repository_url(),
-					"agent_repository_branch": self.get_agent_repository_branch(),
+					"agent_repository_branch_or_commit_ref": "upstream/master",
+					"agent_update_args": "",
 				},
 				server=self,
 				user=self._ssh_user(),
@@ -559,6 +582,8 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="extend_ec2_volume.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={"restart_mariadb": restart_mariadb, "device": device},
 			)
 			ansible.run()
@@ -883,6 +908,8 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="increase_swap.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"swap_size": swap_size,
 					"swap_file": swap_file_name,
@@ -923,6 +950,8 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="reset_swap.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"swap_size": swap_size,
 					"swap_file": "swap",
@@ -938,7 +967,12 @@ class BaseServer(Document, TagHelpers):
 
 	def _add_glass_file(self):
 		try:
-			ansible = Ansible(playbook="glass_file.yml", server=self)
+			ansible = Ansible(
+				playbook="glass_file.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
 			ansible.run()
 		except Exception:
 			log_error("Add Glass File Exception", doc=self)
@@ -952,6 +986,8 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="mysqldump.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			ansible.run()
 		except Exception:
@@ -966,23 +1002,12 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="swappiness.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			ansible.run()
 		except Exception:
 			log_error("Swappiness Setup Exception", doc=self)
-
-	def update_filebeat(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_update_filebeat")
-
-	def _update_filebeat(self):
-		try:
-			ansible = Ansible(
-				playbook="filebeat_update.yml",
-				server=self,
-			)
-			ansible.run()
-		except Exception:
-			log_error("Filebeat Update Exception", doc=self)
 
 	@frappe.whitelist()
 	def update_tls_certificate(self):
@@ -1005,7 +1030,11 @@ class BaseServer(Document, TagHelpers):
 		update_server_tls_certifcate(self, certificate)
 
 	@frappe.whitelist()
-	def show_agent_password(self):
+	def show_agent_version(self) -> str:
+		return self.agent.get_version()["commit"]
+
+	@frappe.whitelist()
+	def show_agent_password(self) -> str:
 		return self.get_password("agent_password")
 
 	@property
@@ -1024,6 +1053,8 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="configure_ssh_logging.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			ansible.run()
 		except Exception:
@@ -1049,9 +1080,10 @@ class BaseServer(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def reboot(self):
-		if self.provider in ("AWS EC2", "OCI"):
-			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
-			virtual_machine.reboot()
+		if self.provider not in ("AWS EC2", "OCI"):
+			raise NotImplementedError
+		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		virtual_machine.reboot()
 
 	@dashboard_whitelist()
 	def rename(self, title):
@@ -1087,6 +1119,16 @@ class BaseServer(Document, TagHelpers):
 					"source": "/opt/volumes/benches/home/frappe/benches",
 					"mount_point_owner": "frappe",
 					"mount_point_group": "frappe",
+				},
+			)
+			self.append(
+				"mounts",
+				{
+					"mount_type": "Bind",
+					"mount_point": "/var/lib/docker",
+					"source": "/opt/volumes/benches/var/lib/docker",
+					"mount_point_owner": "root",
+					"mount_point_group": "root",
 				},
 			)
 		elif self.doctype == "Database Server":
@@ -1158,6 +1200,79 @@ class BaseServer(Document, TagHelpers):
 	def get_volume_mounts(self):
 		return [mount.as_dict() for mount in self.mounts if mount.mount_type == "Volume"]
 
+	def _create_arm_build(self, build: str) -> str:
+		from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
+			_create_arm_build as arm_build_util,
+		)
+
+		deploy_candidate = frappe.get_value("Deploy Candidate Build", build, "deploy_candidate")
+
+		try:
+			return arm_build_util(deploy_candidate)
+		except frappe.ValidationError:
+			frappe.log_error(
+				"Failed to create ARM build", message=f"Failed to create arm build for build {build.name}"
+			)
+
+	def _process_bench(self, bench_info: BenchInfoType) -> ARMDockerImageType:
+		candidate = bench_info["candidate"]
+		build_id = bench_info["build"]
+
+		arm_build = frappe.get_value("Deploy Candidate", candidate, "arm_build")
+
+		if arm_build:
+			return {
+				"build": arm_build,
+				"status": frappe.get_value("Deploy Candidate Build", arm_build, "status"),
+				"bench": bench_info["name"],
+			}
+
+		new_arm_build = self._create_arm_build(build_id)
+		return {
+			"build": new_arm_build,
+			"status": "Pending",
+			"bench": bench_info["name"],
+		}
+
+	@frappe.whitelist()
+	def collect_arm_images(self) -> str:
+		"""Collect arm build images of all active benches on VM"""
+		benches = frappe.get_all(
+			"Bench",
+			{"server": self.name, "status": "Active"},
+			["name", "build", "candidate"],
+		)
+
+		if not benches:
+			frappe.throw(f"No active benches found on <a href='/app/server/{self.name}'> Server")
+
+		arm_build_record: ARMBuildRecord = frappe.new_doc("ARM Build Record", server=self.name)
+
+		for bench_info in benches:
+			arm_build_record.append("arm_images", self._process_bench(bench_info))
+
+		arm_build_record.save()
+		return f"<a href=/app/arm-build-record/{arm_build_record.name}> ARM Build Record"
+
+	@frappe.whitelist()
+	def start_active_benches(self):
+		arm_build_record: ARMBuildRecord = frappe.get_last_doc("ARM Build Record", {"server": self.name})
+		benches = [image.bench for image in arm_build_record.arm_images]
+		frappe.enqueue_doc(self.doctype, self.name, "_start_active_benches", benches=benches)
+
+	def _start_active_benches(self, benches: list[str]):
+		try:
+			ansible = Ansible(
+				playbook="start_benches.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={"benches": " ".join(benches)},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Start Benches Exception", server=self.as_dict())
+
 	@frappe.whitelist()
 	def mount_volumes(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_mount_volumes", queue="short", timeout=1200)
@@ -1167,6 +1282,8 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="mount.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={**self.get_mount_variables()},
 			)
 			play = ansible.run()
@@ -1220,6 +1337,8 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="wait_for_cloud_init.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			ansible.run()
 		except Exception:
@@ -1313,11 +1432,14 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			ansible = Ansible(
 				playbook="docker_system_prune.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			ansible.run()
 		except Exception:
 			log_error("Prune Docker System Exception", doc=self)
 
+	@frappe.whitelist()
 	def reload_nginx(self):
 		agent = Agent(self.name, server_type=self.doctype)
 		agent.reload_nginx()
@@ -1340,6 +1462,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		ansible = Ansible(
 			playbook="fetch_frappe_public_key.yml",
 			server=primary,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
 		)
 		play = ansible.run()
 		if play.status == "Success":
@@ -1363,6 +1487,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			ansible = Ansible(
 				playbook="copy.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"source": source,
 					"destination": destination,
@@ -1394,6 +1520,7 @@ class Server(BaseServer):
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
+		halt_agent_jobs: DF.Check
 		has_data_volume: DF.Check
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
@@ -1402,6 +1529,7 @@ class Server(BaseServer):
 		ipv6: DF.Data | None
 		is_managed_database: DF.Check
 		is_primary: DF.Check
+		is_pyspy_setup: DF.Check
 		is_replication_setup: DF.Check
 		is_self_hosted: DF.Check
 		is_server_prepared: DF.Check
@@ -1414,6 +1542,7 @@ class Server(BaseServer):
 		mounts: DF.Table[ServerMount]
 		new_worker_allocation: DF.Check
 		plan: DF.Link | None
+		platform: DF.Literal["x86_64", "arm64"]
 		primary: DF.Link | None
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
@@ -1432,6 +1561,7 @@ class Server(BaseServer):
 		ssh_user: DF.Data | None
 		staging: DF.Check
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		stop_deployments: DF.Check
 		tags: DF.Table[ResourceTag]
 		team: DF.Link | None
 		title: DF.Data | None
@@ -1466,9 +1596,9 @@ class Server(BaseServer):
 			self.update_subscription()
 			frappe.db.delete("Press Role Permission", {"server": self.name})
 
-		# Enable bench memory limits for public servers
+		self.set_bench_memory_limits_if_needed(save=False)
 		if self.public:
-			self.set_bench_memory_limits = True
+			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
 
 	def after_insert(self):
 		from press.press.doctype.press_role.press_role import (
@@ -1477,6 +1607,16 @@ class Server(BaseServer):
 
 		super().after_insert()
 		add_permission_for_newly_created_doc(self)
+
+	def set_bench_memory_limits_if_needed(self, save: bool = False):
+		# Enable bench memory limits for public servers
+		if self.public:
+			self.set_bench_memory_limits = True
+		else:
+			self.set_bench_memory_limits = False
+
+		if save:
+			self.save()
 
 	def update_subscription(self):
 		subscription = frappe.db.get_value(
@@ -1659,6 +1799,8 @@ class Server(BaseServer):
 			ansible = Ansible(
 				playbook="agent_sentry.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={"agent_sentry_dsn": agent_sentry_dsn},
 			)
 			ansible.run()
@@ -1677,6 +1819,8 @@ class Server(BaseServer):
 			ansible = Ansible(
 				playbook="whitelist_ipaddress.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={"ip_address": proxy_server_ip},
 			)
 			play = ansible.run()
@@ -1727,6 +1871,8 @@ class Server(BaseServer):
 			ansible = Ansible(
 				playbook="fail2ban.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			play = ansible.run()
 			self.reload()
@@ -1738,6 +1884,21 @@ class Server(BaseServer):
 			self.status = "Broken"
 			log_error("Fail2ban Setup Exception", server=self.as_dict())
 		self.save()
+
+	@frappe.whitelist()
+	def setup_pyspy(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_pyspy", queue="long")
+
+	def _setup_pyspy(self):
+		try:
+			ansible = Ansible(
+				playbook="setup_pyspy.yml", server=self, user=self._ssh_user(), port=self._ssh_port()
+			)
+			play: AnsiblePlay = ansible.run()
+			self.is_pyspy_setup = play.status == "Success"
+			self.save()
+		except Exception:
+			log_error("Setup PySpy Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def setup_replication(self):
@@ -1760,6 +1921,8 @@ class Server(BaseServer):
 			ansible = Ansible(
 				playbook="primary_app.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={"secondary_private_ip": secondary_private_ip},
 			)
 			play = ansible.run()
@@ -1778,6 +1941,8 @@ class Server(BaseServer):
 			ansible = Ansible(
 				playbook="secondary_app.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={"primary_public_key": self.get_primary_frappe_public_key()},
 			)
 			play = ansible.run()
@@ -1798,6 +1963,8 @@ class Server(BaseServer):
 			ansible = Ansible(
 				playbook="server_exporters.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"private_ip": self.private_ip,
 					"monitoring_password": monitoring_password,
@@ -2005,6 +2172,8 @@ class Server(BaseServer):
 			ansible = Ansible(
 				playbook="server_memory_limits.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			ansible.run()
 		except Exception:

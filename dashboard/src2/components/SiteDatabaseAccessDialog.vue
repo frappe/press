@@ -51,6 +51,14 @@
 		v-if="showDatabaseAddEditUserDialog"
 		@success="this.hideSiteDatabaseAddEditUserDialog"
 	/>
+
+	<SiteDatabaseUserLogs
+		:name="selectedUser"
+		:db_user_name="selectedUserLabel"
+		v-model="showDatabaseUserLogsDialog"
+		v-if="showDatabaseUserLogsDialog"
+		@hide="show = true"
+	/>
 </template>
 <script>
 import { defineAsyncComponent } from 'vue';
@@ -61,6 +69,7 @@ import { date } from '../utils/format';
 import { confirmDialog, icon } from '../utils/components';
 import SiteDatabaseUserCredentialDialog from './site_database_user/SiteDatabaseUserCredentialDialog.vue';
 import SiteDatabaseAddEditUserDialog from './site_database_user/SiteDatabaseAddEditUserDialog.vue';
+import SiteDatabaseUserLogs from './site_database_user/SiteDatabaseUserLogs.vue';
 import { toast } from 'vue-sonner';
 
 export default {
@@ -74,6 +83,7 @@ export default {
 		ObjectList,
 		SiteDatabaseUserCredentialDialog,
 		SiteDatabaseAddEditUserDialog,
+		SiteDatabaseUserLogs,
 	},
 	data() {
 		return {
@@ -81,8 +91,10 @@ export default {
 			show: true,
 			showChangePlanDialog: false,
 			selectedUser: '',
+			selectedUserLabel: '',
 			showDatabaseUserCredentialDialog: false,
 			showDatabaseAddEditUserDialog: false,
+			showDatabaseUserLogsDialog: false,
 		};
 	},
 	watch: {
@@ -179,6 +191,15 @@ export default {
 						return [];
 					}
 					return [
+						{
+							label: 'View Logs',
+							onClick: () => {
+								this.show = false;
+								this.selectedUser = row.name;
+								this.selectedUserLabel = row.label;
+								this.showDatabaseUserLogsDialog = true;
+							},
+						},
 						{
 							label: 'View Credential',
 							onClick: () => {

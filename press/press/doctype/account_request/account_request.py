@@ -29,6 +29,7 @@ class AccountRequest(Document):
 
 		agreed_to_partner_consent: DF.Check
 		company: DF.Data | None
+		continent: DF.Data | None
 		country: DF.Data | None
 		designation: DF.Data | None
 		email: DF.Data | None
@@ -39,6 +40,7 @@ class AccountRequest(Document):
 		invited_by: DF.Data | None
 		invited_by_parent_team: DF.Check
 		ip_address: DF.Data | None
+		is_mobile: DF.Check
 		is_us_eu: DF.Check
 		last_name: DF.Data | None
 		no_of_employees: DF.Data | None
@@ -92,6 +94,9 @@ class AccountRequest(Document):
 		geo_location = self.get_country_info() or {}
 		self.geo_location = json.dumps(geo_location, indent=1, sort_keys=True)
 		self.state = geo_location.get("regionName")
+		self.country = geo_location.get("country")
+		self.is_mobile = geo_location.get("mobile", False)
+		self.continent = geo_location.get("continent")
 
 		# check for US and EU
 		if (
@@ -250,10 +255,6 @@ class AccountRequest(Document):
 	def get_verification_url(self):
 		if self.saas:
 			return get_url(f"/api/method/press.api.saas.validate_account_request?key={self.request_key}")
-		if self.product_trial:
-			return get_url(
-				f"/dashboard/saas/{self.product_trial}/oauth?key={self.request_key}&email={self.email}"
-			)
 		return get_url(f"/dashboard/setup-account/{self.request_key}")
 
 	@property

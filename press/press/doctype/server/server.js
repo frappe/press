@@ -53,10 +53,22 @@ frappe.ui.form.on('Server', {
 		[
 			[__('Update Agent'), 'update_agent', true, frm.doc.is_server_setup],
 			[
+				__('Install Filebeat'),
+				'install_filebeat',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
 				__('Update Agent Ansible'),
 				'update_agent_ansible',
 				true,
 				frm.doc.is_server_setup,
+			],
+			[
+				__('Setup PySpy'),
+				'setup_pyspy',
+				false,
+				frm.doc.is_server_setup && !frm.doc.is_pyspy_setup,
 			],
 			[
 				__('Prepare Server'),
@@ -137,8 +149,20 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup,
 			],
 			[
+				__('Start Active Benches'),
+				'start_active_benches',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
 				__('Show Agent Password'),
 				'show_agent_password',
+				false,
+				frm.doc.is_server_setup,
+			],
+			[
+				__('Show Agent Version'),
+				'show_agent_version',
 				false,
 				frm.doc.is_server_setup,
 			],
@@ -197,6 +221,14 @@ frappe.ui.form.on('Server', {
 				'mount_volumes',
 				true,
 				frm.doc.virtual_machine && frm.doc.mounts,
+			],
+			[
+				__('Collect ARM Images'),
+				'collect_arm_images',
+				true,
+				frm.doc.virtual_machine &&
+					frm.doc.status === 'Active' &&
+					frm.doc.platform === 'x86_64',
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
