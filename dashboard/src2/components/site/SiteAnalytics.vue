@@ -237,6 +237,27 @@
 
 			<AnalyticsCard
 				class="sm:col-span-2"
+				title="Background Report Durations"
+				v-if="generateReportReportsData"
+			>
+				<template #action>
+					<Tooltip text="Shown only as reports seem to take time">
+						<i-lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+					</Tooltip>
+				</template>
+				<BarChart
+					:key="generateReportReportsData"
+					:data="generateReportReportsData"
+					unit="seconds"
+					:chartTheme="requestChartColors"
+					:loading="$resources.advancedAnalytics.loading"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				class="sm:col-span-2"
 				title="Individual Background Job Time (Average)"
 			>
 				<BarChart
@@ -468,6 +489,13 @@ export default {
 			if (!runDocMethodMethodnames) return;
 
 			return runDocMethodMethodnames;
+		},
+		generateReportReportsData() {
+			let generateReportReports =
+				this.$resources.advancedAnalytics.data?.generate_report_reports;
+			if (!generateReportReports) return;
+
+			return generateReportReports;
 		},
 		averageRequestDurationByPathData() {
 			let averageRequestDurationByPath =
