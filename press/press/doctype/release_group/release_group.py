@@ -242,14 +242,10 @@ class ReleaseGroup(Document, TagHelpers):
 			missing_app_source = frappe.db.get_values(
 				"App Source", filters={"repository_url": ("in", missing_urls)}, pluck="name"
 			)
-			frappe.throw(
-				f"""
-				Please add the following sources <br>
-				<strong>
-				{"<br>".join(missing_app_source) or "<br>".join(missing_urls)}
-				</strong>
-				"""
-			)
+			if missing_app_source:
+				frappe.throw(f"Missing app sources {', '.join(missing_app_source)}")
+			else:
+				frappe.throw("Missing app sources!")
 
 	def before_insert(self):
 		# to avoid adding deps while cloning a release group
