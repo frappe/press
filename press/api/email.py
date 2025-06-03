@@ -167,7 +167,7 @@ def check_spam(message: bytes):
 		)
 		resp.raise_for_status()
 		data = resp.json()
-		if data["message"] > 3.5:
+		if data["message"] > 4.0:
 			frappe.throw(
 				"This email was blocked as it was flagged as spam by our system. Please review the contents and try again.",
 				SpamDetectionError,
@@ -202,7 +202,7 @@ def send_mime_mail(**data):
 
 	if resp.status_code == 200:
 		return "Sending"  # Not really required as v14 and up automatically marks the email q as sent
-	log_error("Email Delivery Service: Sending error", data=resp.text)
+	log_error("Email Delivery Service: Sending error", response=resp.text, data=data)
 	frappe.throw(
 		"Something went wrong with sending emails. Please try again later or raise a support ticket with support.frappe.io",
 		EmailSendError,

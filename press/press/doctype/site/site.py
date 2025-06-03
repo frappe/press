@@ -54,8 +54,8 @@ except ImportError:
 
 from typing import TYPE_CHECKING
 
+from frappe.permissions import is_system_user
 from frappe.utils.password import get_decrypted_password
-from frappe.utils.user import is_system_user
 
 from press.agent import Agent, AgentRequestSkippedException
 from press.api.client import dashboard_whitelist
@@ -105,6 +105,8 @@ DOCTYPE_SERVER_TYPE_MAP = {
 	"Proxy Server": "Proxy",
 }
 
+ARCHIVE_AFTER_SUSPEND_DAYS = 21
+
 
 class Site(Document, TagHelpers):
 	# begin: auto-generated types
@@ -144,10 +146,10 @@ class Site(Document, TagHelpers):
 		group: DF.Link
 		hide_config: DF.Check
 		host_name: DF.Data | None
+		hybrid_for: DF.Link | None
 		hybrid_saas_pool: DF.Link | None
 		is_erpnext_setup: DF.Check
 		is_standby: DF.Check
-		label: DF.Data | None
 		logical_backup_times: DF.Table[SiteBackupTime]
 		notify_email: DF.Data | None
 		only_update_at_specified_time: DF.Check
@@ -441,7 +443,7 @@ class Site(Document, TagHelpers):
 
 		# create an agent request if config has been updated
 		# if not self.is_new() and self.has_value_changed("config"):
-		# 	Agent(self.server).update_site_config(self)
+		# Agent(self.server).update_site_config(self)
 
 	def validate_auto_update_fields(self):
 		# Validate day of month
@@ -500,8 +502,8 @@ class Site(Document, TagHelpers):
 			)
 			is_site_on_public_server = frappe.db.get_value("Server", self.server, "public")
 
-			# Don't allow free plan for non-system managers
-			if "System Manager" not in frappe.get_roles():
+			# Don't allow free plan for non-system users
+			if not is_system_user():
 				is_plan_free = (plan.price_inr == 0 or plan.price_usd == 0) and not plan.dedicated_server_plan
 				if is_plan_free:
 					frappe.throw("You can't select a free plan!")
@@ -686,6 +688,12 @@ class Site(Document, TagHelpers):
 					row.value if isinstance(row.value, bool) else bool(sbool(json.loads(cstr(row.value))))
 				)
 			elif key_type == "JSON":
+				"""
+				Handle the old value for the `allow_cors` key
+				Previously it was of string type, now it is a JSON object.
+				"""
+				if row.key == "allow_cors" and row.value in ["", "*"]:
+					row.value = '["*"]' if row.value == "*" else "[]"
 				key_value = json.loads(cstr(row.value))
 			else:
 				key_value = row.value
@@ -1060,27 +1068,19 @@ class Site(Document, TagHelpers):
 		for_site_update: bool = False,
 		deactivate_site_during_backup: bool = False,
 	):
-		if self.status == "Suspended":
-			activity = frappe.db.get_all(
-				"Site Activity",
-				filters={"site": self.name, "action": "Suspend Site"},
-				order_by="creation desc",
-				limit=1,
+		if (
+			self.status == "Suspended"
+			and frappe.db.count(
+				"Site Backup",
+				filters=dict(
+					site=self.name,
+					status="Success",
+					creation=(">=", get_suspended_time(self.name)),
+				),
 			)
-			suspension_time = frappe.get_doc("Site Activity", activity[0]).creation
-
-			if (
-				frappe.db.count(
-					"Site Backup",
-					filters=dict(
-						site=self.name,
-						status="Success",
-						creation=(">=", suspension_time),
-					),
-				)
-				> 3
-			):
-				frappe.throw("You cannot take more than 3 backups after site suspension")
+			> 3
+		):
+			frappe.throw("You cannot take more than 3 backups after site suspension")
 
 		return frappe.get_doc(
 			{
@@ -1243,6 +1243,7 @@ class Site(Document, TagHelpers):
 		).insert()
 
 	@dashboard_whitelist()
+	@site_action(["Active"])
 	def add_domain(self, domain):
 		domain = domain.lower().strip(".")
 		response = check_dns(self.name, domain)
@@ -1273,7 +1274,6 @@ class Site(Document, TagHelpers):
 				"site": self.name,
 				"domain": domain,
 				"dns_type": "CNAME",
-				"skip_reload": False,
 			}
 		).insert()
 
@@ -1321,6 +1321,7 @@ class Site(Document, TagHelpers):
 		agent.remove_domain(self, domain)
 
 	@dashboard_whitelist()
+	@site_action(["Active"])
 	def remove_domain(self, domain):
 		if domain == self.name:
 			frappe.throw("Cannot delete default site_domain")
@@ -1410,7 +1411,7 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Suspended"])
-	def archive(self, site_name=None, reason=None, force=False, skip_reload=True):
+	def archive(self, site_name=None, reason=None, force=False):
 		agent = Agent(self.server)
 		self.status = "Pending"
 		self.save()
@@ -1424,7 +1425,6 @@ class Site(Document, TagHelpers):
 			server=self.server,
 			site=self.name,
 			site_name=site_name,
-			skip_reload=skip_reload,
 		)
 
 		self.db_set("host_name", None)
@@ -2285,7 +2285,7 @@ class Site(Document, TagHelpers):
 		self.reactivate_app_subscriptions()
 
 	@frappe.whitelist()
-	def suspend(self, reason=None, skip_reload=True):
+	def suspend(self, reason=None, skip_reload=False):
 		log_site_activity(self.name, "Suspend Site", reason)
 		self.status = "Suspended"
 		self.update_site_config({"maintenance_mode": 1})
@@ -2313,11 +2313,11 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	@site_action(["Suspended"])
-	def unsuspend(self, reason=None, skip_reload=True):
+	def unsuspend(self, reason=None):
 		log_site_activity(self.name, "Unsuspend Site", reason)
 		self.status = "Active"
 		self.update_site_config({"maintenance_mode": 0})
-		self.update_site_status_on_proxy("activated", skip_reload=skip_reload)
+		self.update_site_status_on_proxy("activated")
 		self.reactivate_app_subscriptions()
 
 	@frappe.whitelist()
@@ -2325,10 +2325,10 @@ class Site(Document, TagHelpers):
 		agent = Agent(self.server)
 		agent.reset_site_usage(self)
 
-	def update_site_status_on_proxy(self, status, skip_reload=True):
+	def update_site_status_on_proxy(self, status, skip_reload=False):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.update_site_status(self.server, self.name, status, skip_reload)
+		agent.update_site_status(self.server, self.name, status, skip_reload=skip_reload)
 
 	def get_user_details(self):
 		if frappe.db.get_value("Team", self.team, "user") == "Administrator" and self.account_request:
@@ -2739,11 +2739,17 @@ class Site(Document, TagHelpers):
 		site_filters = {"status": "Active"}
 		if backup_type == "Logical":
 			site_filters.update(
-				{"skip_scheduled_logical_backups": 0, "schedule_logical_backup_at_custom_time": 1}
+				{
+					"skip_scheduled_logical_backups": 0,
+					"schedule_logical_backup_at_custom_time": 1,
+				}
 			)
 		elif backup_type == "Physical":
 			site_filters.update(
-				{"skip_scheduled_physical_backups": 0, "schedule_physical_backup_at_custom_time": 1}
+				{
+					"skip_scheduled_physical_backups": 0,
+					"schedule_physical_backup_at_custom_time": 1,
+				}
 			)
 
 		sites = frappe.get_all("Site", filters=site_filters, pluck="name")
@@ -3318,6 +3324,32 @@ class Site(Document, TagHelpers):
 		return self.database_server_agent.get_binlog_queries(
 			row_ids=row_ids, database=self.fetch_database_name()
 		)
+
+	@property
+	def recent_offsite_backups_(self):
+		site_backups = frappe.qb.DocType("Site Backup")
+		return (
+			frappe.qb.from_(site_backups)
+			.select(site_backups.name)
+			.where(
+				(site_backups.site == self.name)
+				& (site_backups.with_files == 1)
+				& (site_backups.offsite == 1)
+				& (site_backups.creation > frappe.utils.add_to_date(frappe.utils.now(), days=-1))
+			)
+		)
+
+	@property
+	def recent_offsite_backup_exists(self):
+		site_backups = frappe.qb.DocType("Site Backup")
+		return self.recent_offsite_backups_.where(
+			(site_backups.status == "Success") & (site_backups.files_availability == "Available")
+		).run()
+
+	@property
+	def recent_offsite_backup_pending(self):
+		site_backups = frappe.qb.DocType("Site Backup")
+		return self.recent_offsite_backups_.where(site_backups.status.isin(["Pending", "Running"])).run()
 
 
 def site_cleanup_after_archive(site):
@@ -4035,3 +4067,73 @@ def create_site_status_update_webhook_event(site: str):
 	if record.team == "Administrator":
 		return
 	create_webhook_event("Site Status Update", record, record.team)
+
+
+class SiteToArchive(frappe._dict):
+	name: str
+	plan: str
+	team: str
+	bench: str
+
+
+def get_suspended_time(site: str):
+	return frappe.get_all(
+		"Site Activity",
+		filters={"site": site, "action": "Suspend Site"},
+		fields=["creation"],
+		limit=1,
+		order_by="creation desc",
+	)[0].creation
+
+
+def archive_suspended_site(site_dict: SiteToArchive):
+	archive_after_days = ARCHIVE_AFTER_SUSPEND_DAYS
+
+	suspended_days = frappe.utils.date_diff(frappe.utils.today(), get_suspended_time(site_dict.name))
+
+	if suspended_days <= archive_after_days:
+		return
+
+	if frappe.db.get_value("Bench", site_dict.bench, "managed_database_service"):
+		return
+
+	site = Site("Site", site_dict.name)
+	# take an offsite backup before archive
+	if site.plan == "USD 10" and not site.recent_offsite_backup_exists:
+		if not site.recent_offsite_backup_pending:
+			site.backup(with_files=True, offsite=True)
+		return  # last backup ongoing
+	site.archive(reason="Archive suspended site")
+
+
+def archive_suspended_sites():
+	archive_at_once = 4
+
+	filters = [
+		["status", "=", "Suspended"],
+		["trial_end_date", "is", "not set"],
+		["plan", "!=", "ERPNext Trial"],
+	]
+
+	sites = frappe.db.get_all(
+		"Site", filters=filters, fields=["name", "team", "plan", "bench"], order_by="creation asc"
+	)
+
+	archived_now = 0
+	for site_dict in sites:
+		try:
+			if archived_now > archive_at_once:
+				break
+			archive_suspended_site(site_dict)
+			frappe.db.commit()
+			archived_now = archived_now + 1
+		except (frappe.QueryDeadlockError, frappe.QueryTimeoutError):
+			frappe.db.rollback()
+		except Exception:
+			frappe.log_error(title="Suspended Site Archive Error")
+			frappe.db.rollback()
+
+	signup_cluster = frappe.db.get_value("Saas Settings", "erpnext", "cluster")
+	agent = frappe.get_doc("Proxy Server", {"cluster": signup_cluster}).agent
+	if archived_now:
+		agent.reload_nginx()

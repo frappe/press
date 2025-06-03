@@ -1,35 +1,21 @@
 <template>
 	<div
-		class="flex h-screen overflow-hidden bg-gray-50"
+		class="flex h-screen overflow-hidden"
 		v-if="!$resources.validateRequestKey.loading && email"
 	>
 		<div class="w-full overflow-auto">
-			<LoginBox>
+			<LoginBox
+				:title="invitedBy ? 'Invitation to join' : 'Let\'s set up your account'"
+				:subtitle="invitedBy ? `Invitation by ${invitedBy}` : ''"
+			>
 				<template v-slot:logo v-if="saasProduct">
-					<div class="mx-auto flex items-center space-x-2">
+					<div class="flex space-x-2">
 						<img
-							class="inline-block h-7 w-7 rounded-sm"
+							class="inline-block h-[38px] w-[38px] rounded-sm"
 							:src="saasProduct?.logo"
 						/>
-						<span
-							class="select-none text-xl font-semibold tracking-tight text-gray-900"
-						>
-							{{ saasProduct?.title }}
-						</span>
 					</div>
 				</template>
-				<div
-					class="text-center text-lg font-medium leading-5 tracking-tight text-gray-900"
-				>
-					{{
-						invitedBy
-							? 'Invitation to join'
-							: 'Set up your Frappe Cloud account'
-					}}
-				</div>
-				<div class="mt-2 text-center text-sm text-gray-600" v-if="invitedBy">
-					Invitation by {{ invitedBy }}
-				</div>
 				<form class="mt-6 flex flex-col" @submit.prevent="submitForm">
 					<template v-if="is2FA">
 						<FormControl
@@ -55,59 +41,53 @@
 					</template>
 					<template v-else>
 						<div class="space-y-4">
+							<template v-if="!userExists">
+								<div class="flex gap-2">
+									<FormControl
+										label="First name"
+										type="text"
+										v-model="firstName"
+										name="fname"
+										autocomplete="given-name"
+										variant="outline"
+										required
+										:disabled="Boolean(oauthSignup)"
+									/>
+									<FormControl
+										label="Last name"
+										type="text"
+										v-model="lastName"
+										name="lname"
+										autocomplete="family-name"
+										variant="outline"
+										required
+										:disabled="Boolean(oauthSignup)"
+									/>
+								</div>
+							</template>
 							<FormControl
-								v-if="oauthSignup == 0"
 								label="Email"
 								type="text"
 								:modelValue="email"
+								variant="outline"
 								disabled
 							/>
-							<template v-if="oauthSignup == 0 && !userExists">
-								<FormControl
-									label="First Name"
-									type="text"
-									v-model="firstName"
-									name="fname"
-									autocomplete="given-name"
-									required
-								/>
-								<FormControl
-									label="Last Name"
-									type="text"
-									v-model="lastName"
-									name="lname"
-									autocomplete="family-name"
-									required
-								/>
-							</template>
 							<FormControl
 								type="select"
 								:options="countries"
 								v-if="!isInvitation"
 								label="Country"
 								v-model="country"
+								variant="outline"
 								required
 							/>
-							<div class="!mt-6 flex gap-2">
-								<FormControl type="checkbox" v-model="termsAccepted" />
-								<label class="text-base text-gray-700">
-									I accept the
-									<Link
-										class="!text-gray-700"
-										href="https://frappecloud.com/policies"
-										target="_blank"
-									>
-										Terms and Policies
-									</Link>
-								</label>
-							</div>
 						</div>
 						<ErrorMessage
 							class="mt-4"
 							:message="$resources.setupAccount.error"
 						/>
 						<Button
-							class="mt-6"
+							class="mt-4"
 							variant="solid"
 							:loading="$resources.setupAccount.loading"
 						>
@@ -117,13 +97,17 @@
 						</Button>
 					</template>
 				</form>
-				<template #footer v-if="saasProduct">
-					<div
-						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
+				<div class="mt-4" v-if="!is2FA && !isInvitation">
+					<span class="text-base font-normal text-gray-600">
+						{{ 'By signing up, you agree to our ' }}
+					</span>
+					<a
+						class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+						href="https://frappecloud.com/policies"
 					>
-						Powered by Frappe Cloud
-					</div>
-				</template>
+						Terms & Policies
+					</a>
+				</div>
 			</LoginBox>
 		</div>
 	</div>
@@ -142,6 +126,7 @@
 import LoginBox from '../components/auth/LoginBox.vue';
 import Link from '@/components/Link.vue';
 import Form from '@/components/Form.vue';
+import { DashboardError } from '../utils/error';
 
 export default {
 	name: 'SetupAccount',
@@ -164,7 +149,6 @@ export default {
 			oauthSignup: 0,
 			oauthDomain: false,
 			country: null,
-			termsAccepted: false,
 			invitedBy: null,
 			invitedByParentTeam: false,
 			countries: [],
@@ -213,7 +197,6 @@ export default {
 					is_invitation: this.isInvitation,
 					user_exists: this.userExists,
 					invited_by_parent_team: this.invitedByParentTeam,
-					accepted_user_terms: this.termsAccepted,
 					oauth_signup: this.oauthSignup,
 					oauth_domain: this.oauthDomain,
 				},
@@ -221,6 +204,9 @@ export default {
 					let path = '/dashboard/create-site/app-selector';
 					if (this.saasProduct) {
 						path = `/dashboard/create-site/${this.saasProduct.name}/setup`;
+					}
+					if (this.isInvitation) {
+						path = '/dashboard/sites';
 					}
 					window.location.href = path;
 				},

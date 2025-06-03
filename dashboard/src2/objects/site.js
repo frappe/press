@@ -62,6 +62,7 @@ export default {
 		removeTag: 'remove_resource_tag',
 		getBackupDownloadLink: 'get_backup_download_link',
 		fetchDatabaseTableSchemas: 'fetch_database_table_schemas',
+		fetchSitesDataForExport: 'fetch_sites_data_for_export',
 	},
 	list: {
 		route: '/sites',
@@ -214,21 +215,14 @@ export default {
 							'plan_title',
 							'cluster_title',
 							'group_title',
+							'tags',
 							'version',
 							'creation',
 						];
 						createListResource({
 							doctype: 'Site',
-							fields: [
-								'host_name',
-								'plan.plan_title as plan_title',
-								'cluster.title as cluster_title',
-								'group.title as group_title',
-								'group.version as version',
-								'creation',
-							],
+							url: 'press.api.site.fetch_sites_data_for_export',
 							auto: true,
-							pageLength: 999999,
 							onSuccess(data) {
 								let csv = unparse({
 									fields,
@@ -1662,6 +1656,7 @@ export default {
 						prefix: icon('external-link'),
 					},
 					variant: 'solid',
+					loading: site.loginAsAdmin.loading || site.loginAsTeam.loading,
 					condition: () =>
 						site.doc.status === 'Active' && !site.doc?.setup_wizard_complete,
 					onClick() {

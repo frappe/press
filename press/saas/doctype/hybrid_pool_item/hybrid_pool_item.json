@@ -1,0 +1,67 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-05-22 11:45:09.986862",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "field",
+  "value",
+  "app",
+  "custom_pool_size",
+  "preferred_cluster"
+ ],
+ "fields": [
+  {
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "App",
+   "options": "App",
+   "reqd": 1
+  },
+  {
+   "fieldname": "custom_pool_size",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Custom Pool Size",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "preferred_cluster",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Preferred Cluster",
+   "options": "Cluster"
+  },
+  {
+   "fieldname": "field",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Field",
+   "reqd": 1
+  },
+  {
+   "fieldname": "value",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Value",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-05-29 12:12:58.602008",
+ "modified_by": "Administrator",
+ "module": "SaaS",
+ "name": "Hybrid Pool Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

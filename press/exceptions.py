@@ -57,6 +57,10 @@ class AAAARecordExists(DNSValidationError):
 	pass
 
 
+class DomainProxied(DNSValidationError):
+	pass
+
+
 class ConflictingCAARecord(DNSValidationError):
 	pass
 

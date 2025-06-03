@@ -27,6 +27,8 @@
   "first_name",
   "last_name",
   "country",
+  "continent",
+  "is_mobile",
   "section_break_8",
   "erpnext",
   "subdomain",
@@ -198,7 +200,7 @@
    "collapsible": 1,
    "fieldname": "saas_sign_up_section",
    "fieldtype": "Section Break",
-   "label": "Saas Sign Up"
+   "label": "Sign Up"
   },
   {
    "collapsible": 1,
@@ -277,12 +279,23 @@
    "fieldname": "unsubscribed_from_drip_emails",
    "fieldtype": "Check",
    "label": "Unsubscribed from Drip Emails"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_mobile",
+   "fieldtype": "Check",
+   "label": "Is Mobile"
+  },
+  {
+   "fieldname": "continent",
+   "fieldtype": "Data",
+   "label": "Continent"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-07 13:51:15.724863",
+ "modified": "2025-05-29 15:31:57.451420",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

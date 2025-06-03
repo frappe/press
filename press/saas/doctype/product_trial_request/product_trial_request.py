@@ -32,7 +32,9 @@ class ProductTrialRequest(Document):
 
 		account_request: DF.Link | None
 		agent_job: DF.Link | None
+		cluster: DF.Link | None
 		domain: DF.Data | None
+		is_standby_site: DF.Check
 		product_trial: DF.Link | None
 		site: DF.Link | None
 		site_creation_completed_on: DF.Datetime | None
@@ -120,6 +122,7 @@ class ProductTrialRequest(Document):
 			team_user = frappe.db.get_value(
 				"User", team_details.user, ["first_name", "last_name", "full_name", "email"], as_dict=True
 			)
+
 			if self.account_request:
 				account_request_geo_data = frappe.db.get_value(
 					"Account Request", self.account_request, "geo_location"
@@ -128,6 +131,7 @@ class ProductTrialRequest(Document):
 				account_request_geo_data = frappe.db.get_value(
 					"Account Request", {"email": team_user.email}, "geo_location"
 				)
+
 			timezone = frappe.parse_json(account_request_geo_data or {}).get("timezone", "Asia/Kolkata")
 
 			return json.dumps(
@@ -175,9 +179,11 @@ class ProductTrialRequest(Document):
 			self.status = "Wait for Site"
 			self.site_creation_started_on = now_datetime()
 			self.domain = f"{subdomain}.{product.domain}"
+			self.cluster = cluster
 			site, agent_job_name, is_standby_site = product.setup_trial_site(
 				subdomain=subdomain, team=self.team, cluster=cluster, account_request=self.account_request
 			)
+			self.is_standby_site = is_standby_site
 			self.agent_job = agent_job_name
 			self.site = site.name
 			self.save()
@@ -255,7 +261,8 @@ class ProductTrialRequest(Document):
 	def prefill_setup_wizard_data(self):
 		if self.status == "Prefilling Setup Wizard":
 			return
-		site = frappe.get_doc("Site", self.site)
+
+		site: Site = frappe.get_doc("Site", self.site)
 		try:
 			user_payload, system_settings_payload = self.get_setup_wizard_payload()
 			site.prefill_setup_wizard(system_settings_payload, user_payload)

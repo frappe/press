@@ -6,6 +6,7 @@ import json
 import os
 import random
 import traceback
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe.core.utils import find
@@ -33,6 +34,9 @@ from press.press.doctype.site_migration.site_migration import (
 from press.utils import has_role, log_error, timer
 
 AGENT_LOG_KEY = "agent-jobs"
+
+if TYPE_CHECKING:
+	from press.press.doctype.site.site import Site
 
 
 class AgentJob(Document):
@@ -436,17 +440,10 @@ def suspend_sites():
 		fields=["name", "team", "current_database_usage", "current_disk_usage"],
 	)
 
-	issue_reload = False
 	for site in active_sites:
 		if site.current_database_usage > 100 or site.current_disk_usage > 100:
-			frappe.get_doc("Site", site.name).suspend(reason="Site Usage Exceeds Plan limits")
-			issue_reload = True
-
-	if issue_reload:
-		proxies = frappe.get_all("Proxy Server", {"status": "Active"}, pluck="name")
-		for proxy_name in proxies:
-			agent = Agent(proxy_name, server_type="Proxy Server")
-			agent.reload_nginx()
+			site: Site = frappe.get_doc("Site", site.name)
+			site.suspend(reason="Site Usage Exceeds Plan limits", skip_reload=True)
 
 
 @timer
@@ -967,6 +964,9 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_remove_binlogs_from_indexer_agent_job_update,
 		)
 		from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
+		from press.press.doctype.mariadb_binlog.mariadb_binlog import (
+			process_upload_binlogs_to_s3_job_update,
+		)
 		from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
 			process_job_update as process_physical_backup_restoration_job_update,
 		)
@@ -1114,6 +1114,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_add_binlogs_to_indexer_agent_job_update(job)
 		elif job.job_type == "Remove Binlogs From Indexer":
 			process_remove_binlogs_from_indexer_agent_job_update(job)
+		elif job.job_type == "Upload Binlogs To S3":
+			process_upload_binlogs_to_s3_job_update(job)
 
 		# send failure notification if job failed
 		if job.status == "Failure":

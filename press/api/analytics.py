@@ -6,7 +6,7 @@ from __future__ import annotations
 from contextlib import suppress
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import TYPE_CHECKING, Final, TypedDict
+from typing import TYPE_CHECKING, Callable, ClassVar, Final, TypedDict
 
 import frappe
 import requests
@@ -33,6 +33,8 @@ from press.press.report.mariadb_slow_queries.mariadb_slow_queries import execute
 if TYPE_CHECKING:
 	from elasticsearch_dsl.response import AggResponse
 	from elasticsearch_dsl.response.aggs import FieldBucket, FieldBucketData
+
+	from press.press.doctype.press_settings.press_settings import PressSettings
 
 	class Dataset(TypedDict):
 		"""Single element of list of Datasets returned for stacked histogram chart"""
@@ -75,22 +77,26 @@ TIMESPAN_TIMEGRAIN_MAP: Final[dict[str, tuple[int, int]]] = {
 	"15d": (15 * 24 * 60 * 60, 6 * 60 * 60),
 }
 
+MAX_NO_OF_PATHS: Final[int] = 10
+MAX_MAX_NO_OF_PATHS: Final[int] = 50
+
 
 class StackedGroupByChart:
 	search: Search
 	to_s_divisor: float = 1e6
 	normalize_slow_logs: bool = False
 	group_by_field: str
-	MAX_NO_OF_PATHS: int = 10
+	max_no_of_paths: int = 10
 
 	def __init__(
 		self,
 		name: str,
 		agg_type: AggType,
-		resource_type: ResourceType,
 		timezone: str,
 		timespan: int,
 		timegrain: int,
+		resource_type: ResourceType,
+		max_no_of_paths: int = MAX_NO_OF_PATHS,
 	):
 		self.log_server = frappe.db.get_single_value("Press Settings", "log_server")
 		if not self.log_server:
@@ -105,6 +111,7 @@ class StackedGroupByChart:
 		self.timezone = timezone
 		self.timespan = timespan
 		self.timegrain = timegrain
+		self.max_no_of_paths = min(max_no_of_paths, MAX_MAX_NO_OF_PATHS)
 
 		self.setup_search_filters()
 		self.setup_search_aggs()
@@ -134,7 +141,7 @@ class StackedGroupByChart:
 				"method_path",
 				"terms",
 				field=self.group_by_field,
-				size=self.MAX_NO_OF_PATHS,
+				size=self.max_no_of_paths,
 				order={"path_count": "desc"},
 			).bucket("histogram_of_method", self.histogram_of_method())
 			self.search.aggs["method_path"].bucket("path_count", self.count_of_values())
@@ -144,7 +151,7 @@ class StackedGroupByChart:
 				"method_path",
 				"terms",
 				field=self.group_by_field,
-				size=self.MAX_NO_OF_PATHS,
+				size=self.max_no_of_paths,
 				order={"outside_sum": "desc"},
 			).bucket("histogram_of_method", self.histogram_of_method()).bucket(
 				"sum_of_duration", self.sum_of_duration()
@@ -156,7 +163,7 @@ class StackedGroupByChart:
 				"method_path",
 				"terms",
 				field=self.group_by_field,
-				size=self.MAX_NO_OF_PATHS,
+				size=self.max_no_of_paths,
 				order={"outside_avg": "desc"},
 			).bucket("histogram_of_method", self.histogram_of_method()).bucket(
 				"avg_of_duration", self.avg_of_duration()
@@ -246,14 +253,20 @@ class StackedGroupByChart:
 		for path_bucket in aggs.method_path.buckets:
 			datasets.append(self.get_histogram_chart(path_bucket, labels))
 
-		if len(datasets) >= self.MAX_NO_OF_PATHS:
+		if len(datasets) >= self.max_no_of_paths:
 			datasets.append(self.get_other_bucket(datasets, labels))
 
 		if self.normalize_slow_logs:
 			datasets = normalize_datasets(datasets)
 
 		labels = [label.replace(tzinfo=None) for label in labels]
-		return {"datasets": datasets, "labels": labels}
+		return {"datasets": datasets, "labels": labels, "allow_drill_down": self.allow_drill_down}
+
+	@property
+	def allow_drill_down(self):
+		if self.max_no_of_paths >= MAX_MAX_NO_OF_PATHS:
+			return False
+		return True
 
 	def run(self):
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
@@ -263,8 +276,8 @@ class StackedGroupByChart:
 
 
 class RequestGroupByChart(StackedGroupByChart):
-	def __init__(self, name, agg_type, resource_type, timezone, timespan, timegrain):
-		super().__init__(name, agg_type, resource_type, timezone, timespan, timegrain)
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 
 	def sum_of_duration(self):
 		return A("sum", field="json.duration")
@@ -294,8 +307,8 @@ class RequestGroupByChart(StackedGroupByChart):
 
 
 class BackgroundJobGroupByChart(StackedGroupByChart):
-	def __init__(self, name, agg_type, resource_type, timezone, timespan, timegrain):
-		super().__init__(name, agg_type, resource_type, timezone, timespan, timegrain)
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 
 	def sum_of_duration(self):
 		return A("sum", field="json.duration")
@@ -322,21 +335,66 @@ class BackgroundJobGroupByChart(StackedGroupByChart):
 			self.group_by_field = "json.site"
 
 
+class NginxRequestGroupByChart(StackedGroupByChart):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+	def sum_of_duration(self):
+		return A("sum", field="http.request.duration")
+
+	def avg_of_duration(self):
+		return A("avg", field="http.request.duration")
+
+	def exclude_top_k_data(self, datasets):
+		if ResourceType(self.resource_type) is ResourceType.SITE:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", source__ip=path)
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", http__request__site=path)
+
+	def setup_search_filters(self):
+		super().setup_search_filters()
+		press_settings: PressSettings = frappe.get_cached_doc("Press Settings")
+		if not (
+			press_settings.monitor_server
+			and (
+				monitor_ip := frappe.db.get_value(
+					"Monitor Server", press_settings.monitor_server, "ip", cache=True
+				)
+			)
+		):
+			frappe.throw("Monitor server not set in Press Settings")
+		self.search = self.search.exclude("match_phrase", source__ip=monitor_ip)
+		if ResourceType(self.resource_type) is ResourceType.SITE:
+			server = frappe.db.get_value("Site", self.name, "server")
+			proxy = frappe.db.get_value("Server", server, "proxy_server")
+			self.search = self.search.filter("match_phrase", agent__name=proxy)
+			domains = frappe.get_all(
+				"Site Domain",
+				{"site": self.name},
+				pluck="domain",
+			)
+			self.search = self.search.query(
+				"bool", should=[{"match_phrase": {"http.request.site": domain}} for domain in domains]
+			)
+			self.group_by_field = "source.ip"
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:
+			self.search = self.search.filter("match_phrase", agent__name=self.name)
+			self.group_by_field = "http.request.site"
+
+
 class SlowLogGroupByChart(StackedGroupByChart):
 	to_s_divisor = 1e9
 	database_name = None
 
 	def __init__(
 		self,
-		name,
-		agg_type,
-		resource_type,
-		timezone,
-		timespan,
-		timegrain,
 		normalize_slow_logs=False,
+		*args,
+		**kwargs,
 	):
-		super().__init__(name, agg_type, resource_type, timezone, timespan, timegrain)
+		super().__init__(*args, **kwargs)
 		self.normalize_slow_logs = normalize_slow_logs
 
 	def sum_of_duration(self):
@@ -408,46 +466,89 @@ def get(name, timezone, duration="7d"):
 	}
 
 
+def add_commonly_slow_path_to_reports(
+	reports: dict, path: str, name: str, timezone, timespan, timegrain, max_no_of_paths
+):
+	for slow_path in COMMONLY_SLOW_PATHS + COMMONLY_SLOW_JOBS:
+		if slow_path["path"] == path:
+			reports[slow_path["id"]] = slow_path["function"](
+				name, "duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+			)
+			break
+
+
+def get_additional_duration_reports(
+	request_duration_by_path, name: str, timezone, timespan, timegrain, max_no_of_paths
+):
+	"""Get additional reports for the request duration by path"""
+	reports = {}
+	for path_data in request_duration_by_path["datasets"][:4]:  # top 4 paths
+		add_commonly_slow_path_to_reports(
+			reports,
+			path_data["path"],
+			name,
+			timezone,
+			timespan,
+			timegrain,
+			max_no_of_paths,
+		)
+
+	return reports
+
+
 @frappe.whitelist()
-@redis_cache(ttl=10 * 60)
-def get_advanced_analytics(name, timezone, duration="7d"):
+def get_advanced_analytics(name, timezone, duration="7d", max_no_of_paths=MAX_NO_OF_PATHS):
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
 
 	job_data = get_usage(name, "job", timezone, timespan, timegrain)
 
-	return {
-		"request_count_by_path": get_request_by_(name, "count", timezone, timespan, timegrain),
-		"request_duration_by_path": get_request_by_(name, "duration", timezone, timespan, timegrain),
-		"average_request_duration_by_path": get_request_by_(
-			name, "average_duration", timezone, timespan, timegrain
-		),
-		"background_job_count_by_method": get_background_job_by_method(
-			name, "count", timezone, timespan, timegrain
-		),
-		"background_job_duration_by_method": get_background_job_by_method(
-			name, "duration", timezone, timespan, timegrain
-		),
-		"average_background_job_duration_by_method": get_background_job_by_method(
-			name, "average_duration", timezone, timespan, timegrain
-		),
-		"slow_logs_by_count": get_slow_logs(name, "count", timezone, timespan, timegrain),
-		"slow_logs_by_duration": get_slow_logs(name, "duration", timezone, timespan, timegrain),
-		"job_count": [{"value": r.count, "date": r.date} for r in job_data],
-		"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
-	}
+	request_duration_by_path = get_request_by_(
+		name, "duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+	)
 
+	background_job_duration_by_method = get_background_job_by_method(
+		name, "duration", timezone, timespan, timegrain, max_no_of_paths
+	)
 
-def get_more_request_detail_fn_names():
-	return {
-		"/api/method/run_doc_method": get_run_doc_method_methodnames.__name__,
-		"/api/method/frappe.desk.query_report.run": get_query_report_run_reports.__name__,
-	}
-
-
-def get_more_background_job_detail_fn_names():
-	return {
-		"generate_report": get_generate_report_reports.__name__,
-	}
+	return (
+		{
+			"request_count_by_path": get_request_by_(
+				name, "count", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+			),
+			"request_duration_by_path": request_duration_by_path,
+			"average_request_duration_by_path": get_request_by_(
+				name, "average_duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+			),
+			"request_count_by_ip": get_nginx_request_by_(
+				name, "count", timezone, timespan, timegrain, max_no_of_paths
+			),
+			"background_job_count_by_method": get_background_job_by_method(
+				name, "count", timezone, timespan, timegrain, max_no_of_paths
+			),
+			"background_job_duration_by_method": background_job_duration_by_method,
+			"average_background_job_duration_by_method": get_background_job_by_method(
+				name, "average_duration", timezone, timespan, timegrain, max_no_of_paths
+			),
+			"job_count": [{"value": r.count, "date": r.date} for r in job_data],
+			"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
+		}
+		| get_additional_duration_reports(
+			request_duration_by_path,
+			name,
+			timezone,
+			timespan,
+			timegrain,
+			max_no_of_paths,
+		)
+		| get_additional_duration_reports(
+			background_job_duration_by_method,
+			name,
+			timezone,
+			timespan,
+			timegrain,
+			max_no_of_paths,
+		)
+	)
 
 
 @frappe.whitelist()
@@ -540,8 +641,15 @@ def normalize_datasets(datasets: list[Dataset]) -> list[Dataset]:
 	return list(n_datasets.values())
 
 
+@redis_cache(ttl=10 * 60)
 def get_request_by_(
-	name, agg_type: AggType, timezone: str, timespan: int, timegrain: int, resource_type=ResourceType.SITE
+	name,
+	agg_type: AggType,
+	timezone: str,
+	timespan: int,
+	timegrain: int,
+	resource_type=ResourceType.SITE,
+	max_no_of_paths=MAX_NO_OF_PATHS,
 ):
 	"""
 	:param name: site/server name depending on resource_type
@@ -551,70 +659,162 @@ def get_request_by_(
 	:param timegrain: interval in seconds
 	:param resource_type: filter by site or server
 	"""
-	return RequestGroupByChart(name, agg_type, resource_type, timezone, timespan, timegrain).run()
+	return RequestGroupByChart(
+		name, agg_type, timezone, timespan, timegrain, resource_type, max_no_of_paths
+	).run()
 
 
-def get_background_job_by_method(site, agg_type, timezone, timespan, timegrain):
-	return BackgroundJobGroupByChart(site, agg_type, ResourceType.SITE, timezone, timespan, timegrain).run()
+@redis_cache(ttl=10 * 60)
+def get_nginx_request_by_(
+	name, agg_type: AggType, timezone: str, timespan: int, timegrain: int, max_no_of_paths
+):
+	return NginxRequestGroupByChart(
+		name, agg_type, timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+	).run()
+
+
+@redis_cache(ttl=10 * 60)
+def get_background_job_by_method(site, agg_type, timezone, timespan, timegrain, max_no_of_paths):
+	return BackgroundJobGroupByChart(
+		site, agg_type, timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+	).run()
 
 
 @frappe.whitelist()
 def get_slow_logs_by_query(
-	name: str, agg_type: str, timezone: str, duration: str = "24h", normalize: bool = False
+	name: str,
+	agg_type: str,
+	timezone: str,
+	duration: str = "24h",
+	normalize: bool = False,
+	max_no_of_paths: int = MAX_NO_OF_PATHS,
 ):
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
 
-	return get_slow_logs(name, agg_type, timezone, timespan, timegrain, ResourceType.SITE, normalize)
+	return get_slow_logs(
+		name, agg_type, timezone, timespan, timegrain, ResourceType.SITE, normalize, max_no_of_paths
+	)
 
 
+@redis_cache(ttl=10 * 60)
 def get_slow_logs(
-	name, agg_type, timezone, timespan, timegrain, resource_type=ResourceType.SITE, normalize=False
+	name,
+	agg_type,
+	timezone,
+	timespan,
+	timegrain,
+	resource_type=ResourceType.SITE,
+	normalize=False,
+	max_no_of_paths=MAX_NO_OF_PATHS,
 ):
-	return SlowLogGroupByChart(name, agg_type, resource_type, timezone, timespan, timegrain, normalize).run()
+	return SlowLogGroupByChart(
+		normalize, name, agg_type, timezone, timespan, timegrain, resource_type, max_no_of_paths
+	).run()
 
 
 class RunDocMethodMethodNames(RequestGroupByChart):
-	def __init__(self, name, agg_type, timezone, timespan, timegrain):
-		super().__init__(name, agg_type, ResourceType.SITE, timezone, timespan, timegrain)
-		self.group_by_field = "json.methodname"
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 
 	def setup_search_filters(self):
 		super().setup_search_filters()
+		self.group_by_field = "json.methodname"
 		self.search = self.search.filter("match_phrase", json__request__path="/api/method/run_doc_method")
 
+	def exclude_top_k_data(self, datasets: list[Dataset]):
+		if ResourceType(self.resource_type) is ResourceType.SITE:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__methodname=path)
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:  # not used atp
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__site=path)
 
-def get_run_doc_method_methodnames(site, agg_type, timezone, timespan, timegrain):
-	return RunDocMethodMethodNames(site, agg_type, timezone, timespan, timegrain).run()
+
+def get_run_doc_method_methodnames(*args, **kwargs):
+	return RunDocMethodMethodNames(*args, **kwargs).run()
 
 
 class QueryReportRunReports(RequestGroupByChart):
-	def __init__(self, name, agg_type, timezone, timespan, timegrain):
-		super().__init__(name, agg_type, ResourceType.SITE, timezone, timespan, timegrain)
-		self.group_by_field = "json.report"
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 
 	def setup_search_filters(self):
 		super().setup_search_filters()
+		self.group_by_field = "json.report"
 		self.search = self.search.filter(
 			"match_phrase", json__request__path="/api/method/frappe.desk.query_report.run"
 		)
 
+	def exclude_top_k_data(self, datasets: list[Dataset]):
+		if ResourceType(self.resource_type) is ResourceType.SITE:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__report=path)
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:  # not used atp
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__site=path)
 
-def get_query_report_run_reports(site, agg_type, timezone, timespan, timegrain):
-	return QueryReportRunReports(site, agg_type, timezone, timespan, timegrain).run()
+
+def get_query_report_run_reports(*args, **kwargs):
+	return QueryReportRunReports(*args, **kwargs).run()
+
+
+def get_generate_report_reports(*args, **kwargs):
+	return GenerateReportReports(*args, **kwargs).run()
+
+
+class CommonSlowPath(TypedDict):
+	path: str
+	id: str
+	function: Callable
+
+
+COMMONLY_SLOW_PATHS: list[CommonSlowPath] = [
+	{
+		"path": "/api/method/run_doc_method",
+		"id": "run_doc_method_methodnames",
+		"function": get_run_doc_method_methodnames,
+	},
+	{
+		"path": "/api/method/frappe.desk.query_report.run",
+		"id": "query_report_run_reports",
+		"function": get_query_report_run_reports,
+	},
+]
+
+COMMONLY_SLOW_JOBS: list[CommonSlowPath] = [
+	{
+		"path": "generate_report",
+		"id": "generate_report_reports",
+		"function": get_generate_report_reports,
+	},
+	{
+		"path": "frappe.core.doctype.prepared_report.prepared_report.generate_report",
+		"id": "generate_report_reports",
+		"function": get_generate_report_reports,
+	},
+]
 
 
 class GenerateReportReports(BackgroundJobGroupByChart):
-	def __init__(self, name, agg_type, timezone, timespan, timegrain):
-		super().__init__(name, agg_type, ResourceType.SITE, timezone, timespan, timegrain)
-		self.group_by_field = "json.report"
+	paths: ClassVar = [job["path"] for job in COMMONLY_SLOW_JOBS if job["id"] == "generate_report_reports"]
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 
 	def setup_search_filters(self):
 		super().setup_search_filters()
-		self.search = self.search.filter("match_phrase", json__job__method="generate_report")
+		self.group_by_field = "json.report"
+		self.search = self.search.query(
+			"bool", should=[{"match_phrase": {"json.job.method": path}} for path in self.paths]
+		)
 
-
-def get_generate_report_reports(site, agg_type, timezone, timespan, timegrain):
-	return GenerateReportReports(site, agg_type, timezone, timespan, timegrain).run()
+	def exclude_top_k_data(self, datasets: list[Dataset]):
+		if ResourceType(self.resource_type) is ResourceType.SITE:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__report=path)
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:  # not used atp
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__site=path)
 
 
 def get_usage(site, type, timezone, timespan, timegrain):

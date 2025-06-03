@@ -179,6 +179,10 @@ scheduler_events = {
 		"press.press.doctype.log_counter.log_counter.record_counts",
 		"press.press.doctype.incident.incident.notify_ignored_servers",
 		"press.press.doctype.database_server.database_server.unindex_mariadb_binlogs",
+		"press.press.doctype.database_server.database_server.remove_uploaded_binlogs_from_disk",
+		"press.press.doctype.database_server.database_server.remove_uploaded_binlogs_from_s3",
+		"press.press.doctype.mariadb_binlog.mariadb_binlog.cleanup_old_records",
+		"press.press.doctype.database_server.database_server.delete_mariadb_binlog_for_archived_servers",
 	],
 	"daily_long": [
 		"press.press.audit.check_bench_fields",
@@ -205,6 +209,7 @@ scheduler_events = {
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.saas.doctype.product_trial_request.product_trial_request.expire_long_pending_trial_requests",
 		"press.overrides.cleanup_ansible_tmp_files",
+		"press.press.doctype.site.site.archive_suspended_sites",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
@@ -264,7 +269,6 @@ scheduler_events = {
 		"30 * * * *": ["press.press.doctype.agent_job.agent_job.suspend_sites"],
 		"*/15 * * * *": [
 			"press.press.doctype.site_update.site_update.schedule_updates",
-			"press.press.doctype.drip_email.drip_email.send_welcome_email",
 			"press.press.doctype.site.backups.schedule_logical_backups",
 			"press.press.doctype.site.backups.schedule_physical_backups",
 			"press.press.doctype.site_update.site_update.run_scheduled_updates",
@@ -280,6 +284,7 @@ scheduler_events = {
 			"press.press.doctype.site_replication.site_replication.update_from_site",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_snapshots",
 			"press.press.doctype.site.site.sync_sites_setup_wizard_complete_status",
+			"press.press.doctype.drip_email.drip_email.send_welcome_email",
 		],
 		"* * * * *": [
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",

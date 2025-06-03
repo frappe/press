@@ -84,7 +84,10 @@
   "column_break_objb",
   "stalk_interval",
   "stalk_cycles",
-  "stalk_sleep"
+  "stalk_sleep",
+  "section_break_imng",
+  "binlog_retention_days",
+  "binlogs_removed"
  ],
  "fields": [
   {
@@ -510,7 +513,7 @@
    "read_only": 1
   },
   {
-   "default": "50",
+   "default": "25",
    "description": "Minimum storage to add automatically each time",
    "fieldname": "auto_add_storage_min",
    "fieldtype": "Int",
@@ -571,6 +574,23 @@
   {
    "fieldname": "column_break_qsqm",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_imng",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "14",
+   "fieldname": "binlog_retention_days",
+   "fieldtype": "Int",
+   "label": "Binlog Retention (days)"
+  },
+  {
+   "default": "0",
+   "fieldname": "binlogs_removed",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Binlogs Removed"
   }
  ],
  "grid_page_length": 50,
@@ -587,7 +607,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-05-08 19:03:14.840782",
+ "modified": "2025-05-27 13:00:57.532008",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

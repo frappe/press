@@ -13,12 +13,14 @@ from frappe.core.utils import find
 
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
 	DatabaseServerMariaDBVariable,
 )
-from press.press.doctype.server.server import Agent, BaseServer
+from press.press.doctype.server.server import PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN, Agent, BaseServer
 from press.runner import Ansible
 from press.utils import log_error
+from press.utils.database import find_db_disk_info, parse_du_output_of_mysql_directory
 
 if TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
@@ -42,6 +44,8 @@ class DatabaseServer(BaseServer):
 		agent_password: DF.Password | None
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
+		binlog_retention_days: DF.Int
+		binlogs_removed: DF.Check
 		cluster: DF.Link | None
 		domain: DF.Link | None
 		enable_binlog_indexing: DF.Check
@@ -174,6 +178,8 @@ class DatabaseServer(BaseServer):
 					).insert()
 				except Exception:
 					frappe.log_error("Database Subscription Creation Error")
+		if self.public:
+			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
 
 	def get_doc(self, doc):
 		doc = super().get_doc(doc)
@@ -934,6 +940,17 @@ class DatabaseServer(BaseServer):
 			log_error("Percona Stalk Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def setup_logrotate(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_logrotate", queue="long", timeout=1200)
+
+	def _setup_logrotate(self):
+		try:
+			ansible = Ansible(playbook="rotate_mariadb_logs.yml", server=self)
+			ansible.run()
+		except Exception:
+			log_error("Logrotate Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
 	def setup_mariadb_debug_symbols(self):
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_setup_mariadb_debug_symbols", queue="long", timeout=1200
@@ -1226,10 +1243,6 @@ class DatabaseServer(BaseServer):
 
 	@frappe.whitelist()
 	def get_binlog_summary(self):
-		if not self.enable_binlog_indexing:
-			frappe.msgprint("Binlog Indexing is not enabled")
-			return
-
 		binlogs_in_disk = self.agent.fetch_binlog_list().get("binlogs_in_disk", [])
 		no_of_binlogs = len(binlogs_in_disk)
 		size = sum(binlog.get("size", 0) for binlog in binlogs_in_disk)
@@ -1255,6 +1268,9 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 
 	@frappe.whitelist()
 	def purge_binlogs(self, to_binlog: str):
+		if not self.enable_binlog_indexing:
+			frappe.msgprint("Binlog Indexing is not enabled")
+			return
 		try:
 			self.agent.purge_binlog(database_server=self, to_binlog=to_binlog)
 			frappe.msgprint(f"Purged to {to_binlog}", "Successfully purged binlogs")
@@ -1271,7 +1287,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 
 		frappe.enqueue_doc(self.doctype, self.name, "_sync_binlogs_info", timeout=600)
 
-	def _sync_binlogs_info(self, index_binlogs: bool = True):
+	def _sync_binlogs_info(self, index_binlogs: bool = True, upload_binlogs: bool = True):
 		info = self.agent.fetch_binlog_list()
 		current_binlog = info.get("current_binlog", "")
 		binlogs_in_disk = info.get("binlogs_in_disk", [])
@@ -1372,6 +1388,9 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		if index_binlogs:
 			self.add_binlogs_to_indexer()
 
+		if upload_binlogs:
+			self.upload_binlogs_to_s3()
+
 	def add_binlogs_to_indexer(self):
 		if not self.enable_binlog_indexing:
 			return
@@ -1382,7 +1401,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 
 		"""
 		Start indexing from old ones
-		Fetch 15 binlogs
+		Only try to index last 7 days of binlogs
 		"""
 
 		binlogs = frappe.get_all(
@@ -1391,6 +1410,10 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 				"database_server": self.name,
 				"indexed": 0,
 				"purged_from_disk": 0,
+				"file_modification_time": (
+					">=",
+					frappe.utils.add_to_date(None, days=-1 * 7),
+				),
 			},
 			order_by="file_name asc",
 			limit=15,
@@ -1469,6 +1492,177 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			},
 		)
 
+	def upload_binlogs_to_s3(self):
+		if not self.enable_binlog_indexing:
+			frappe.msgprint("Binlog Indexing is not enabled")
+			return
+
+		# Upload only those binlogs which is indexed
+		binlogs = frappe.get_all(
+			"MariaDB Binlog",
+			filters={
+				"database_server": self.name,
+				"current": 0,
+				"indexed": 1,
+				"uploaded": 0,
+				"purged_from_disk": 0,
+				"file_modification_time": (
+					"between",
+					(frappe.utils.now_datetime(), frappe.utils.add_to_date(None, days=-1 * 7)),
+				),
+			},
+			order_by="file_name asc",
+			pluck="file_name",
+			limit=10,
+		)
+
+		# Or, unindexed binlogs which are older than 7 days
+		unindexed_binlogs = frappe.get_all(
+			"MariaDB Binlog",
+			filters={
+				"database_server": self.name,
+				"current": 0,
+				"indexed": 0,
+				"uploaded": 0,
+				"purged_from_disk": 0,
+				"file_modification_time": ("<=", frappe.utils.add_to_date(None, days=-1 * 7)),
+			},
+			order_by="file_name asc",
+			pluck="file_name",
+			limit=10,
+		)
+
+		binlogs.extend(unindexed_binlogs)
+		binlogs = list(set(binlogs))
+
+		if len(binlogs) == 0:
+			return
+
+		self.agent.upload_binlogs_to_s3(binlogs)
+
+	def remove_uploaded_binlogs_from_disk(self):
+		# Remove only those binlogs in disk
+		binlogs = frappe.get_all(
+			"MariaDB Binlog",
+			filters={
+				"database_server": self.name,
+				"current": 0,
+				"purged_from_disk": 0,
+				"file_modification_time": ("<", frappe.utils.add_to_date(None, days=-1)),
+			},
+			order_by="file_name asc",
+			fields=["file_name", "uploaded"],
+		)
+
+		to_binlog = None
+		for binlog in binlogs:
+			if binlog.uploaded:
+				to_binlog = binlog.file_name
+			else:
+				break
+
+		self.purge_binlogs(to_binlog=to_binlog)
+
+	def remove_uploaded_binlogs_from_s3(self):
+		# Remove only those binlogs in S3
+		binlogs = frappe.get_all(
+			"MariaDB Binlog",
+			filters={
+				"database_server": self.name,
+				"current": 0,
+				"uploaded": 1,
+				"file_modification_time": (
+					"<",
+					frappe.utils.add_to_date(None, days=-1 * self.binlog_retention_days),
+				),
+			},
+			pluck="name",
+		)
+
+		if len(binlogs) == 0:
+			return
+
+		for binlog in binlogs:
+			frappe.get_doc("MariaDB Binlog", binlog).delete_remote_file()
+			frappe.db.commit()
+
+	def delete_all_mariadb_binlog_records(self):
+		frappe.enqueue_doc(
+			"Database Server",
+			self.name,
+			"delete_all_mariadb_binlog_records",
+			enqueue_after_commit=True,
+			queue="long",
+			job_id=f"delete_mariadb_binlog_records||{self.name}",
+			deduplicate=True,
+		)
+
+	def _delete_all_mariadb_binlog_records(self):
+		"""
+		Delete all binlog records for a server
+		"""
+		binlogs = frappe.get_all(
+			"MariaDB Binlog",
+			filters={"database_server": self.name},
+			pluck="name",
+		)
+		if not binlogs:
+			return
+		for binlog in binlogs:
+			frappe.delete_doc("MariaDB Binlog", binlog)
+		self.binlogs_removed = 1
+		self.save()
+
+	@dashboard_whitelist()
+	def get_storage_usage(self):
+		try:
+			result = AnsibleAdHoc(sources=f"{self.ip},").run(
+				'df --output=source,size,used,target | tail -n +2  && echo -e "\n\n" && du -s /var/lib/mysql/*',
+				self.name,
+				raw_params=True,
+			)[0]
+			if result.get("status") != "Success":
+				raise Exception("Failed to fetch storage usage")
+
+			disk_info_str, mysql_dir_info_str = result.get("output", "\n\n").split("\n\n", 1)
+			disk_info = find_db_disk_info(disk_info_str)
+			if disk_info is None:
+				raise Exception("Failed to parse disk info")
+
+			mysql_storage_info = parse_du_output_of_mysql_directory(mysql_dir_info_str)
+			total_db_usage = (
+				sum(mysql_storage_info["schema"].values())
+				+ mysql_storage_info["bin_log"]
+				+ mysql_storage_info["slow_log"]
+				+ mysql_storage_info["error_log"]
+				+ mysql_storage_info["core"]
+				+ mysql_storage_info["other"]
+			)
+
+			sites_db_name_info = frappe.get_all(
+				"Site",
+				filters={
+					"database_name": ("in", mysql_storage_info["schema"].keys()),
+				},
+				fields=["name", "database_name"],
+			)
+
+			db_name_site_mapping = {}
+			for site in sites_db_name_info:
+				db_name_site_mapping[site.database_name] = site.name
+
+			return {
+				"disk_total": disk_info[0],
+				"disk_used": disk_info[1],
+				"disk_free": disk_info[0] - disk_info[1],
+				"database_usage": total_db_usage,
+				"os_usage": disk_info[1] - total_db_usage,
+				"database": mysql_storage_info,
+				"db_name_site_map": db_name_site_mapping,
+			}
+		except Exception:
+			frappe.throw("Failed to fetch storage usage. Try again later.")
+
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Database Server")
 
@@ -1518,6 +1712,64 @@ def sync_binlogs_info():
 			job_id=f"sync_binlogs_info:{database}",
 			deduplicate=True,
 			queue="sync",
+		)
+
+
+def remove_uploaded_binlogs_from_disk():
+	databases = frappe.db.get_all(
+		"Database Server",
+		filters={"status": "Active", "is_server_setup": 1, "is_self_hosted": 0, "enable_binlog_indexing": 1},
+		pluck="name",
+	)
+	for database in databases:
+		frappe.enqueue_doc(
+			"Database Server",
+			database,
+			"remove_uploaded_binlogs_from_disk",
+			job_id=f"remove_uploaded_binlogs_from_disk:{database}",
+			deduplicate=True,
+			queue="sync",
+		)
+
+
+def remove_uploaded_binlogs_from_s3():
+	databases = frappe.db.get_all(
+		"Database Server",
+		filters={"status": "Active", "is_server_setup": 1, "is_self_hosted": 0, "enable_binlog_indexing": 1},
+		pluck="name",
+	)
+	for database in databases:
+		frappe.enqueue_doc(
+			"Database Server",
+			database,
+			"remove_uploaded_binlogs_from_s3",
+			job_id=f"remove_uploaded_binlogs_from_s3:{database}",
+			deduplicate=True,
+			queue="sync",
+		)
+
+
+def delete_mariadb_binlog_for_archived_servers():
+	"""
+	Delete binlog records for archived servers
+	"""
+	archived_servers = frappe.get_all(
+		"MariaDB Server",
+		filters={"status": "Archived", "binlogs_removed": 0},
+		pluck="name",
+	)
+	if not archived_servers:
+		return
+
+	for server in archived_servers:
+		frappe.enqueue_doc(
+			"Database Server",
+			server,
+			"delete_all_mariadb_binlog_records",
+			enqueue_after_commit=True,
+			queue="long",
+			job_id=f"delete_mariadb_binlog_records||{server}",
+			deduplicate=True,
 		)
 
 

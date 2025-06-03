@@ -86,13 +86,13 @@
   "database_access_connection_limit",
   "saas_section",
   "is_standby",
-  "standby_for",
   "standby_for_product",
+  "hybrid_for",
+  "saas_communication_secret",
   "signup_time",
   "column_break_63",
+  "standby_for",
   "hybrid_saas_pool",
-  "saas_communication_secret",
-  "label",
   "tags_section",
   "tags"
  ],
@@ -472,11 +472,12 @@
    "collapsible": 1,
    "fieldname": "saas_section",
    "fieldtype": "Section Break",
-   "label": "SaaS"
+   "label": "SaaS / Signup"
   },
   {
    "fieldname": "column_break_63",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "label": "Old SaaS fields"
   },
   {
    "fieldname": "hybrid_saas_pool",
@@ -591,12 +592,6 @@
    "label": "Database Access Connection Limit"
   },
   {
-   "description": "Set for sites created through SaaS flow",
-   "fieldname": "label",
-   "fieldtype": "Data",
-   "label": "Label"
-  },
-  {
    "fieldname": "signup_time",
    "fieldtype": "Datetime",
    "label": "Signup Time"
@@ -664,6 +659,12 @@
    "fieldname": "skip_scheduled_physical_backups",
    "fieldtype": "Check",
    "label": "Skip Scheduled Physical Backups"
+  },
+  {
+   "fieldname": "hybrid_for",
+   "fieldtype": "Link",
+   "label": "Hybrid For",
+   "options": "App"
   }
  ],
  "links": [
@@ -743,7 +744,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2025-04-17 12:06:50.364785",
+ "modified": "2025-05-23 10:26:34.020466",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
@@ -783,6 +784,7 @@
    "share": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],

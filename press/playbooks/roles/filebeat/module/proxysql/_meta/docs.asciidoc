@@ -1,0 +1,19 @@
+:modulename: proxysql
+:has-dashboards: false
+
+== proxysql module
+
+This Filebeat module collects and ships ProxySQL logs—including event logs and audit logs—to Elasticsearch.
+
+[float]
+=== Compatibility
+
+Tested with ProxySQL 2.3.2
+
+:fileset_ex: {fileset}
+
+:has-dashboards!:
+
+:fileset_ex!:
+
+:modulename!:

@@ -67,16 +67,20 @@ class DeployCandidate(Document):
 		)
 
 		apps: DF.Table[DeployCandidateApp]
+		arm_build: DF.Link | None
 		compress_app_cache: DF.Check
 		dependencies: DF.Table[DeployCandidateDependency]
 		environment_variables: DF.Table[DeployCandidateVariable]
 		group: DF.Link
 		gunicorn_threads_per_worker: DF.Int
+		intel_build: DF.Link | None
 		is_redisearch_enabled: DF.Check
 		merge_all_rq_queues: DF.Check
 		merge_default_and_short_rq_queues: DF.Check
 		packages: DF.Table[DeployCandidatePackage]
 		redis_cache_size: DF.Int
+		requires_arm_build: DF.Check
+		requires_intel_build: DF.Check
 		team: DF.Link
 		use_app_cache: DF.Check
 		use_rq_workerpool: DF.Check
@@ -186,6 +190,12 @@ class DeployCandidate(Document):
 		)
 
 	def create_build(self, **kwargs) -> DeployCandidateBuild:
+		release_group: ReleaseGroup = frappe.get_doc("Release Group", self.group)
+		servers = [server_ref.server for server_ref in release_group.servers]
+
+		if frappe.get_value("Server", {"name": ("in", servers)}, "stop_deployments"):
+			frappe.throw("Deployments on this server are currently halted!")
+
 		kwargs.update(
 			{"doctype": "Deploy Candidate Build", "deploy_candidate": self.name},
 		)
@@ -216,8 +226,6 @@ class DeployCandidate(Document):
 		scheduled_time: datetime | None = None,
 		retry_count: int = 0,
 	):
-		# Here it's fine to call `self.build_and_deploy()`
-		# Since the doc has not been created yet.
 		if run_now and not is_suspended():
 			return {"error": False, "name": self.build_and_deploy()}
 

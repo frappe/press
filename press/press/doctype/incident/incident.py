@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 	from twilio.rest.api.v2010.account.call import CallInstance
 
 	from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import AlertmanagerWebhookLog
+	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.incident_settings.incident_settings import IncidentSettings
 	from press.press.doctype.incident_settings_self_hosted_user.incident_settings_self_hosted_user import (
@@ -45,8 +46,8 @@ INCIDENT_SCOPE = (
 )
 
 MIN_FIRING_INSTANCES = 15  # minimum instances that should have fired for an incident to be valid
-MIN_FIRING_INSTANCES_PERCENTAGE = (
-	0.4  # minimum percentage of instances that should have fired for an incident to be valid
+MIN_FIRING_INSTANCES_FRACTION = (
+	0.4  # 40%; minimum percentage of instances that should have fired for an incident to be valid
 )
 
 DAY_HOURS = range(9, 18)
@@ -313,13 +314,14 @@ class Incident(WebsiteGenerator):
 		token = b64encode(f"{username}:{password}".encode()).decode("ascii")
 		return f"Basic {token}"
 
+	@frappe.whitelist()
 	@filelock("grafana_screenshots")  # prevent 100 chromes from opening
 	def take_grafana_screenshots(self):
 		if not frappe.db.get_single_value("Incident Settings", "grafana_screenshots"):
 			return
 		with sync_playwright() as p:
 			browser = p.chromium.launch(headless=True, channel="chromium")
-			page = browser.new_page()
+			page = browser.new_page(locale="en-IN", timezone_id="Asia/Kolkata")
 			page.set_extra_http_headers({"Authorization": self.get_grafana_auth_header()})
 
 			self.add_node_exporter_screenshot(page, self.resource or self.server)
@@ -344,6 +346,26 @@ class Incident(WebsiteGenerator):
 			db_server.reboot_with_serial_console()
 		except NotImplementedError:
 			db_server.reboot()
+		self.add_likely_cause("Rebooted database server.")
+
+	def add_likely_cause(self, cause: str):
+		self.likely_cause = self.likely_cause + cause + "\n" if self.likely_cause else cause + "\n"
+		self.save()
+
+	@frappe.whitelist()
+	def restart_down_benches(self):
+		"""
+		Restart all benches on the server that are down
+		"""
+		down_benches = self.monitor_server.get_benches_down_for_server(str(self.server))
+		if not down_benches:
+			frappe.throw("No down benches found for this server")
+			return
+		for bench_name in down_benches:
+			bench: Bench = frappe.get_doc("Bench", bench_name)
+			bench.restart()
+			self.add_likely_cause(f"Restarted bench {bench_name}")
+		self.save()
 
 	def call_humans(self):
 		enqueue_doc(
@@ -566,12 +588,7 @@ Incident URL: {incident_link}"""
 		except frappe.DoesNotExistError:
 			return
 		else:
-			resolved_instances = last_resolved.get_past_alert_instances()
-			total_instances = last_resolved.total_instances()
-			if len(resolved_instances) >= min(
-				(1 - MIN_FIRING_INSTANCES_PERCENTAGE) * total_instances,
-				MIN_FIRING_INSTANCES,
-			):
+			if not last_resolved.is_enough_firing:
 				self.resolve()
 
 	def resolve(self):

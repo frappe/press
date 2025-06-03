@@ -56,8 +56,18 @@
     src: filebeat.yml
     dest: /etc/filebeat/filebeat.yml
 
-- name: Enable Filebeat Modules
-  command: filebeat modules enable nginx mysql system
+- name: Create ProxySQL Module Directory
+  file:
+    path: /usr/share/filebeat/module/proxysql
+    state: directory
+    owner: root
+
+- name: Setup ProxySQL Module
+  synchronize:
+    src: 'roles/filebeat/module/proxysql/'
+    dest: /usr/share/filebeat/module/proxysql/
+    recursive: yes
+    archive: false
 
 - name: Setup Filebeat Modules
   template:
@@ -67,6 +77,10 @@
     - 'mysql'
     - 'system'
     - 'nginx'
+    - 'proxysql'
+
+- name: Enable Filebeat Modules
+  command: filebeat modules enable nginx mysql system proxysql
 
 - name: Create Filebeat Modules Directory
   file:

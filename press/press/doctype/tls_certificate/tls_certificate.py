@@ -196,6 +196,7 @@ class TLSCertificate(Document):
 					certificate=self,
 				)
 
+	@frappe.whitelist()
 	def trigger_site_domain_callback(self):
 		domain = frappe.db.get_value("Site Domain", {"tls_certificate": self.name}, "name")
 		if domain:
@@ -275,7 +276,7 @@ def should_renew(site: str | None, certificate: PendingCertificate) -> bool:
 		return False
 	if frappe.db.get_value("Site", site, "status") != "Active":
 		return False
-	dns_response = check_dns_cname_a(site, certificate.domain)
+	dns_response = check_dns_cname_a(site, certificate.domain, ignore_proxying=True)
 	if dns_response["matched"]:
 		return True
 	frappe.db.set_value(

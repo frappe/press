@@ -30,10 +30,29 @@ from press.telegram_utils import Telegram
 from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
+	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+
+from typing import Literal, TypedDict
+
+
+class BenchInfoType(TypedDict):
+	name: str
+	build: str
+	candidate: str
+
+
+class ARMDockerImageType(TypedDict):
+	build: str
+	existing_image: bool
+	status: Literal["Pending", "Preparing", "Running", "Failure", "Success"]
+	bench: str
+
+
+PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
 
 
 class BaseServer(Document, TagHelpers):
@@ -990,21 +1009,6 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Swappiness Setup Exception", doc=self)
 
-	def update_filebeat(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_update_filebeat")
-
-	def _update_filebeat(self):
-		try:
-			ansible = Ansible(
-				playbook="filebeat_update.yml",
-				server=self,
-				user=self._ssh_user(),
-				port=self._ssh_port(),
-			)
-			ansible.run()
-		except Exception:
-			log_error("Filebeat Update Exception", doc=self)
-
 	@frappe.whitelist()
 	def update_tls_certificate(self):
 		from press.press.doctype.tls_certificate.tls_certificate import (
@@ -1117,6 +1121,16 @@ class BaseServer(Document, TagHelpers):
 					"mount_point_group": "frappe",
 				},
 			)
+			self.append(
+				"mounts",
+				{
+					"mount_type": "Bind",
+					"mount_point": "/var/lib/docker",
+					"source": "/opt/volumes/benches/var/lib/docker",
+					"mount_point_owner": "root",
+					"mount_point_group": "root",
+				},
+			)
 		elif self.doctype == "Database Server":
 			first.mount_point = "/opt/volumes/mariadb"
 			self.append(
@@ -1185,6 +1199,79 @@ class BaseServer(Document, TagHelpers):
 
 	def get_volume_mounts(self):
 		return [mount.as_dict() for mount in self.mounts if mount.mount_type == "Volume"]
+
+	def _create_arm_build(self, build: str) -> str:
+		from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
+			_create_arm_build as arm_build_util,
+		)
+
+		deploy_candidate = frappe.get_value("Deploy Candidate Build", build, "deploy_candidate")
+
+		try:
+			return arm_build_util(deploy_candidate)
+		except frappe.ValidationError:
+			frappe.log_error(
+				"Failed to create ARM build", message=f"Failed to create arm build for build {build.name}"
+			)
+
+	def _process_bench(self, bench_info: BenchInfoType) -> ARMDockerImageType:
+		candidate = bench_info["candidate"]
+		build_id = bench_info["build"]
+
+		arm_build = frappe.get_value("Deploy Candidate", candidate, "arm_build")
+
+		if arm_build:
+			return {
+				"build": arm_build,
+				"status": frappe.get_value("Deploy Candidate Build", arm_build, "status"),
+				"bench": bench_info["name"],
+			}
+
+		new_arm_build = self._create_arm_build(build_id)
+		return {
+			"build": new_arm_build,
+			"status": "Pending",
+			"bench": bench_info["name"],
+		}
+
+	@frappe.whitelist()
+	def collect_arm_images(self) -> str:
+		"""Collect arm build images of all active benches on VM"""
+		benches = frappe.get_all(
+			"Bench",
+			{"server": self.name, "status": "Active"},
+			["name", "build", "candidate"],
+		)
+
+		if not benches:
+			frappe.throw(f"No active benches found on <a href='/app/server/{self.name}'> Server")
+
+		arm_build_record: ARMBuildRecord = frappe.new_doc("ARM Build Record", server=self.name)
+
+		for bench_info in benches:
+			arm_build_record.append("arm_images", self._process_bench(bench_info))
+
+		arm_build_record.save()
+		return f"<a href=/app/arm-build-record/{arm_build_record.name}> ARM Build Record"
+
+	@frappe.whitelist()
+	def start_active_benches(self):
+		arm_build_record: ARMBuildRecord = frappe.get_last_doc("ARM Build Record", {"server": self.name})
+		benches = [image.bench for image in arm_build_record.arm_images]
+		frappe.enqueue_doc(self.doctype, self.name, "_start_active_benches", benches=benches)
+
+	def _start_active_benches(self, benches: list[str]):
+		try:
+			ansible = Ansible(
+				playbook="start_benches.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={"benches": " ".join(benches)},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Start Benches Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def mount_volumes(self):
@@ -1352,6 +1439,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		except Exception:
 			log_error("Prune Docker System Exception", doc=self)
 
+	@frappe.whitelist()
 	def reload_nginx(self):
 		agent = Agent(self.name, server_type=self.doctype)
 		agent.reload_nginx()
@@ -1473,6 +1561,7 @@ class Server(BaseServer):
 		ssh_user: DF.Data | None
 		staging: DF.Check
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		stop_deployments: DF.Check
 		tags: DF.Table[ResourceTag]
 		team: DF.Link | None
 		title: DF.Data | None
@@ -1508,6 +1597,8 @@ class Server(BaseServer):
 			frappe.db.delete("Press Role Permission", {"server": self.name})
 
 		self.set_bench_memory_limits_if_needed(save=False)
+		if self.public:
+			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
 
 	def after_insert(self):
 		from press.press.doctype.press_role.press_role import (

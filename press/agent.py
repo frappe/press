@@ -569,7 +569,7 @@ class Agent:
 			bench=site.bench,
 		)
 
-	def new_host(self, domain, skip_reload=True):
+	def new_host(self, domain):
 		certificate = frappe.get_doc("TLS Certificate", domain.tls_certificate)
 		data = {
 			"name": domain.domain,
@@ -579,7 +579,6 @@ class Agent:
 				"fullchain.pem": certificate.full_chain,
 				"chain.pem": certificate.intermediate_chain,
 			},
-			"skip_reload": skip_reload,
 		}
 		return self.create_agent_job(
 			"Add Host to Proxy", "proxy/hosts", data, host=domain.domain, site=domain.site
@@ -602,12 +601,11 @@ class Agent:
 			site=site,
 		)
 
-	def remove_host(self, domain, skip_reload=True):
-		data = {"skip_reload": skip_reload}
+	def remove_host(self, domain):
 		return self.create_agent_job(
 			"Remove Host from Proxy",
 			f"proxy/hosts/{domain.domain}",
-			data,
+			{},
 			method="DELETE",
 			site=domain.site,
 		)
@@ -623,10 +621,10 @@ class Agent:
 		data = {"name": private_ip}
 		return self.create_agent_job("Rename Upstream", f"proxy/upstreams/{ip}/rename", data, upstream=server)
 
-	def new_upstream_file(self, server, site=None, code_server=None, skip_reload=True):
+	def new_upstream_file(self, server, site=None, code_server=None):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
-		data = {"name": site if site else code_server, "skip_reload": skip_reload}
+		data = {"name": site if site else code_server}
 		doctype = "Site" if site else "Code Server"
 		return self.create_agent_job(
 			f"Add {doctype} to Upstream",
@@ -637,10 +635,10 @@ class Agent:
 			upstream=server,
 		)
 
-	def add_domain_to_upstream(self, server, site=None, domain=None, skip_reload=True):
+	def add_domain_to_upstream(self, server, site=None, domain=None):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
-		data = {"domain": domain, "skip_reload": skip_reload}
+		data = {"domain": domain}
 		return self.create_agent_job(
 			"Add Domain to Upstream",
 			f"proxy/upstreams/{ip}/domains",
@@ -649,7 +647,7 @@ class Agent:
 			upstream=server,
 		)
 
-	def remove_upstream_file(self, server, site=None, site_name=None, code_server=None, skip_reload=True):
+	def remove_upstream_file(self, server, site=None, site_name=None, code_server=None):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		doctype = "Site" if site else "Code Server"
@@ -659,7 +657,7 @@ class Agent:
 			{"site": site, "tls_certificate": ("is", "not set"), "status": "Active", "domain": ("!=", site)},
 			pluck="domain",
 		)
-		data = {"skip_reload": skip_reload, "extra_domains": extra_domains}
+		data = {"extra_domains": extra_domains}
 		return self.create_agent_job(
 			f"Remove {doctype} from Upstream",
 			f"proxy/upstreams/{ip}/sites/{file_name}",
@@ -839,13 +837,13 @@ class Agent:
 			reference_name=reference_name,
 		)
 
-	def update_site_status(self, server: str, site: str, status, skip_reload=True):
+	def update_site_status(self, server: str, site: str, status, skip_reload=False):
 		extra_domains = frappe.get_all(
 			"Site Domain",
 			{"site": site, "tls_certificate": ("is", "not set"), "status": "Active", "domain": ("!=", site)},
 			pluck="domain",
 		)
-		data = {"status": status, "skip_reload": skip_reload, "extra_domains": extra_domains}
+		data = {"status": status, "extra_domains": extra_domains, "skip_reload": skip_reload}
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		return self.create_agent_job(
@@ -1367,6 +1365,54 @@ Response: {reason or getattr(result, "text", "Unknown")}
 
 	def fetch_binlog_list(self):
 		return self.get("database/binlogs/list")
+
+	def pull_docker_images(self, image_tags: list[str], reference_doctype=None, reference_name=None):
+		settings = frappe.db.get_value(
+			"Press Settings",
+			None,
+			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
+			as_dict=True,
+		)
+		return self.create_agent_job(
+			"Pull Docker Images",
+			"/server/pull-images",
+			data={
+				"image_tags": image_tags,
+				"registry": {
+					"url": settings.docker_registry_url,
+					"username": settings.docker_registry_username,
+					"password": settings.docker_registry_password,
+				},
+			},
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def upload_binlogs_to_s3(self, binlogs: list[str]):
+		from press.press.doctype.site_backup.site_backup import get_backup_bucket
+
+		if self.server_type != "Database Server":
+			return NotImplementedError("Only Database Server supports this method")
+
+		settings = frappe.get_single("Press Settings")
+		backup_bucket = get_backup_bucket(
+			frappe.get_value("Database Server", self.server, "cluster"), region=True
+		)
+		bucket_name = backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
+		if not (settings.aws_s3_bucket or bucket_name):
+			return ValueError("Offsite Backups aren't set yet")
+
+		auth = {
+			"ACCESS_KEY": settings.offsite_backups_access_key_id,
+			"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
+			"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
+		}
+
+		return self.create_agent_job(
+			"Upload Binlogs To S3",
+			"/database/binlogs/upload",
+			data={"binlogs": binlogs, "offsite": {"bucket": bucket_name, "auth": auth, "path": self.server}},
+		)
 
 	def add_binlogs_to_indexer(self, binlogs):
 		return self.create_agent_job(
