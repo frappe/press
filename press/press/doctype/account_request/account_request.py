@@ -218,10 +218,13 @@ class AccountRequest(Document):
 				}
 			)
 		# Telemetry: Verification Email Sent
-		# Only capture if it's not a saas signup or invited by parent team
 		if not (self.is_saas_signup() or self.invited_by_parent_team):
 			# Telemetry: Verification Mail Sent
 			capture("verification_email_sent", "fc_signup", self.email)
+		if self.is_using_new_saas_flow():
+			# Telemetry: Verification Email Sent for new saas flow when coming from product page
+			capture("verification_email_sent", "fc_saas", self.email)
+
 		frappe.sendmail(
 			sender=sender,
 			recipients=self.email,
