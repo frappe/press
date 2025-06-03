@@ -798,8 +798,8 @@ COMMONLY_SLOW_JOBS: list[CommonSlowPath] = [
 class GenerateReportReports(BackgroundJobGroupByChart):
 	paths: ClassVar = [job["path"] for job in COMMONLY_SLOW_JOBS if job["id"] == "generate_report_reports"]
 
-	def __init__(self, name, agg_type, timezone, timespan, timegrain):
-		super().__init__(name, agg_type, ResourceType.SITE, timezone, timespan, timegrain)
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 
 	def setup_search_filters(self):
 		super().setup_search_filters()
