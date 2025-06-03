@@ -506,8 +506,8 @@ def get_advanced_analytics(name, timezone, duration="7d", max_no_of_paths=MAX_NO
 		name, "duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
 	)
 
-	background_job_duration_by_method = (
-		get_background_job_by_method(name, "duration", timezone, timespan, timegrain, max_no_of_paths),
+	background_job_duration_by_method = get_background_job_by_method(
+		name, "duration", timezone, timespan, timegrain, max_no_of_paths
 	)
 
 	return (
