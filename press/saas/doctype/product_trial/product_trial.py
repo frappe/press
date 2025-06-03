@@ -224,7 +224,7 @@ class ProductTrial(Document):
 			"Site",
 			filters=filters,
 			pluck="name",
-			order_by="creation desc",
+			order_by="creation asc",
 			limit=1,
 		)
 		if sites:
