@@ -5,13 +5,9 @@ import {
 	getPaginationRowModel,
 	useVueTable,
 } from '@tanstack/vue-table';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { unparse } from 'papaparse';
 import MaximizedIcon from '~icons/lucide/maximize-2';
-
-onMounted(() => {
-	console.log('SQLResultTable is deprecated. Use DatabaseTable instead.');
-});
 
 const props = defineProps({
 	columns: { type: Array, required: true },
@@ -75,6 +71,7 @@ const table = useVueTable({
 				},
 				header: column,
 				accessorKey: column,
+				accessorFn: (row) => row[column],
 				enableSorting: false,
 				isNumber: false,
 				meta: {
