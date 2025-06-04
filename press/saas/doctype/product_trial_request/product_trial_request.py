@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils.caching import redis_cache
 from frappe.utils.data import add_to_date, now_datetime
 from frappe.utils.telemetry import init_telemetry
 
@@ -77,24 +78,51 @@ class ProductTrialRequest(Document):
 	def get_email(self):
 		return frappe.db.get_value("Team", self.team, "user")
 
+	@redis_cache(ttl=2 * 60)
+	def is_first_trial_request(self) -> bool:
+		return (
+			frappe.db.count(
+				"Product Trial Request",
+				filters={
+					"account_request": self.account_request,
+					"status": ("not in", ["Expired", "Error", "Pending"]),
+				},
+			)
+			< 1
+		)
+
 	def capture_posthog_event(self, event_name):
+		if not self.is_first_trial_request():
+			# Only capture events for the first trial request
+			return
+
 		init_telemetry()
 		ph = getattr(frappe.local, "posthog", None)
 		with suppress(Exception):
 			ph and ph.capture(
-				distinct_id=self.get_email(),
-				event=f"fc_saas_{event_name}",
+				distinct_id=self.account_request,
+				event=f"fc_product_trial_{event_name}",
 				properties={
+					"product_trial": True,
 					"product_trial_request_id": self.name,
-					"product_trial": self.product_trial,
+					"product_trial_id": self.product_trial,
 					"email": self.get_email(),
 				},
 			)
+
+	def set_posthog_alias(self, new_alias: str):
+		init_telemetry()
+		ph = getattr(frappe.local, "posthog", None)
+		with suppress(Exception):
+			ph and ph.alias(previous_id=self.account_request, distinct_id=new_alias)
 
 	def after_insert(self):
 		self.capture_posthog_event("product_trial_request_created")
 
 	def on_update(self):
+		if self.has_value_changed("site") and self.site:
+			self.set_posthog_alias(self.site)
+
 		if self.has_value_changed("status"):
 			match self.status:
 				case "Error":

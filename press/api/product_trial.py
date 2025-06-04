@@ -136,7 +136,7 @@ def setup_account(key: str, country: str | None = None):
 			user_exists=is_user_exists,
 		)
 	# Telemetry: Created account
-	capture("completed_signup", "fc_saas", ar.email)
+	capture("completed_signup", "fc_product_trial", ar.email)
 	# login
 	frappe.set_user(ar.email)
 	frappe.local.login_manager.login_as(ar.email)
@@ -162,7 +162,7 @@ def _get_existing_trial_request(product: str, team: str):
 
 
 @frappe.whitelist(methods=["POST"])
-def get_request(product: str, account_request: str | None = None):
+def get_request(product: str, account_request: str | None = None) -> dict:
 	team = frappe.local.team()
 
 	# validate if there is already a site
@@ -173,9 +173,8 @@ def get_request(product: str, account_request: str | None = None):
 	elif request := _get_existing_trial_request(product, team.name):
 		site_request = frappe.get_doc("Product Trial Request", request.name)
 	else:
-		# check if account request is valid
 		is_valid_account_request = frappe.get_value("Account Request", account_request, "email") == team.user
-		# create a new one
+
 		site_request = frappe.new_doc(
 			"Product Trial Request",
 			product_trial=product,
