@@ -83,7 +83,7 @@ class ProductTrialRequest(Document):
 		with suppress(Exception):
 			ph and ph.capture(
 				distinct_id=self.account_request,
-				event=f"fc_saas_{event_name}",
+				event=f"fc_product_trial_{event_name}",
 				properties={
 					"product_trial_request_id": self.name,
 					"product_trial": self.product_trial,

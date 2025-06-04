@@ -136,7 +136,7 @@ def setup_account(key: str, country: str | None = None):
 			user_exists=is_user_exists,
 		)
 	# Telemetry: Created account
-	capture("completed_signup", "fc_saas", ar.email)
+	capture("completed_signup", "fc_product_trial", ar.email)
 	# login
 	frappe.set_user(ar.email)
 	frappe.local.login_manager.login_as(ar.email)

@@ -88,7 +88,7 @@ def verify_otp(account_request: str, otp: str):
 	account_request.reset_otp()
 
 	if account_request.product_trial:
-		capture("otp_verified", "fc_saas", account_request.name)
+		capture("otp_verified", "fc_product_trial", account_request.name)
 
 	return account_request.request_key
 
@@ -217,7 +217,7 @@ def setup_account(  # noqa: C901
 
 	# Telemetry: Created account
 	if account_request.product_trial:
-		capture("created_account", "fc_saas", account_request.name)
+		capture("created_account", "fc_product_trial", account_request.name)
 	else:
 		capture("completed_signup", "fc_signup", account_request.email)
 	frappe.local.login_manager.login_as(email)
