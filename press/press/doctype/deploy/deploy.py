@@ -51,7 +51,7 @@ class Deploy(Document):
 		arm_build, intel_build = frappe.get_value(
 			"Deploy Candidate", self.candidate, ["arm_build", "intel_build"]
 		)
-		if not any(arm_build, intel_build):
+		if not any([arm_build, intel_build]):
 			# Since migration has not been retrospectively patched as there is no easy
 			# Way to tell the platform of a build, we can currently just associate a single build
 			# To a deploy candidate and assume that build works since it is by default intel.
