@@ -48,6 +48,19 @@ class Deploy(Document):
 
 	def _get_docker_image_for_bench(self, server_platform: str) -> str:
 		"""Fetch docker image for a particular server depending on the server platform"""
+		arm_build, intel_build = frappe.get_value(
+			"Deploy Candidate", self.candidate, ["arm_build", "intel_build"]
+		)
+		if not any(arm_build, intel_build):
+			# Since migration has not been retrospectively patched as there is no easy
+			# Way to tell the platform of a build, we can currently just associate a single build
+			# To a deploy candidate and assume that build works since it is by default intel.
+			return frappe.get_value(
+				"Deploy Candidate Build",
+				{"deploy_candidate": self.candidate, "status": "Success"},
+				"docker_image",
+			)
+
 		DeployCandidate: DeployCandidate = frappe.qb.DocType("Deploy Candidate")
 		DeployCandidateBuild: DeployCandidateBuild = frappe.qb.DocType("Deploy Candidate Build")
 
