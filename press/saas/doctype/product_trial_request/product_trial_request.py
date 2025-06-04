@@ -85,6 +85,7 @@ class ProductTrialRequest(Document):
 				"Product Trial Request",
 				filters={
 					"account_request": self.account_request,
+					"name": ("!=", self.name),
 					"status": ("not in", ["Expired", "Error", "Pending"]),
 				},
 			)
