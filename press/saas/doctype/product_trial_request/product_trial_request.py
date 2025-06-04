@@ -85,8 +85,9 @@ class ProductTrialRequest(Document):
 				distinct_id=self.account_request,
 				event=f"fc_product_trial_{event_name}",
 				properties={
+					"product_trial": True,
 					"product_trial_request_id": self.name,
-					"product_trial": self.product_trial,
+					"product_trial_id": self.product_trial,
 					"email": self.get_email(),
 				},
 			)
