@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils.caching import redis_cache
 from frappe.utils.data import add_to_date, now_datetime
 from frappe.utils.telemetry import init_telemetry
 
@@ -77,7 +78,24 @@ class ProductTrialRequest(Document):
 	def get_email(self):
 		return frappe.db.get_value("Team", self.team, "user")
 
+	@redis_cache(ttl=2 * 60)
+	def is_first_trial_request(self) -> bool:
+		return (
+			frappe.db.count(
+				"Product Trial Request",
+				filters={
+					"account_request": self.account_request,
+					"status": ("not in", ["Expired", "Error", "Pending"]),
+				},
+			)
+			< 1
+		)
+
 	def capture_posthog_event(self, event_name):
+		if not self.is_first_trial_request():
+			# Only capture events for the first trial request
+			return
+
 		init_telemetry()
 		ph = getattr(frappe.local, "posthog", None)
 		with suppress(Exception):
