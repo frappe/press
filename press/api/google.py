@@ -11,6 +11,7 @@ from google_auth_oauthlib.flow import Flow
 from oauthlib.oauth2 import AccessDeniedError
 
 from press.utils import log_error
+from press.utils.telemetry import capture
 
 
 @frappe.whitelist(allow_guest=True)
@@ -38,7 +39,7 @@ def callback(code=None, state=None):  # noqa: C901
 	def _redirect_to_login_on_failed_authentication():
 		frappe.local.response.type = "redirect"
 		if product_trial:
-			frappe.local.response.location = f"/dashboard/saas/{product_trial.name}/login"
+			frappe.local.response.location = f"/dashboard/login?product={product_trial.name}"
 		else:
 			frappe.local.response.location = "/dashboard/login"
 
@@ -93,6 +94,10 @@ def callback(code=None, state=None):  # noqa: C901
 	)
 	account_request.insert(ignore_permissions=True)
 	frappe.db.commit()
+
+	if product_trial:
+		# dummy event so that the stat in funnel won't break
+		capture("otp_verified", "fc_product_trial", account_request.name)
 
 	if team_name and product_trial:
 		frappe.local.login_manager.login_as(email)

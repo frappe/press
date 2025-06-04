@@ -202,7 +202,7 @@ def send_mime_mail(**data):
 
 	if resp.status_code == 200:
 		return "Sending"  # Not really required as v14 and up automatically marks the email q as sent
-	log_error("Email Delivery Service: Sending error", data=resp.text)
+	log_error("Email Delivery Service: Sending error", response=resp.text, data=data)
 	frappe.throw(
 		"Something went wrong with sending emails. Please try again later or raise a support ticket with support.frappe.io",
 		EmailSendError,
