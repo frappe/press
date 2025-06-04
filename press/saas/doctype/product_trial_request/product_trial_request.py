@@ -82,7 +82,7 @@ class ProductTrialRequest(Document):
 		ph = getattr(frappe.local, "posthog", None)
 		with suppress(Exception):
 			ph and ph.capture(
-				distinct_id=self.site or self.get_email(),
+				distinct_id=self.account_request,
 				event=f"fc_saas_{event_name}",
 				properties={
 					"product_trial_request_id": self.name,
@@ -91,15 +91,18 @@ class ProductTrialRequest(Document):
 				},
 			)
 
+	def set_posthog_alias(self, new_alias: str):
+		init_telemetry()
+		ph = getattr(frappe.local, "posthog", None)
+		with suppress(Exception):
+			ph and ph.alias(previous_id=self.account_request, distinct_id=new_alias)
+
 	def after_insert(self):
 		self.capture_posthog_event("product_trial_request_created")
 
 	def on_update(self):
 		if self.has_value_changed("site") and self.site:
-			init_telemetry()
-			ph = getattr(frappe.local, "posthog", None)
-			with suppress(Exception):
-				ph and ph.alias(previous_id=self.get_email(), distinct_id=self.site)
+			self.set_posthog_alias(self.site)
 
 		if self.has_value_changed("status"):
 			match self.status:

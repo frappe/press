@@ -1923,12 +1923,9 @@ class Site(Document, TagHelpers):
 
 		self.save()
 
-		# Telemetry: Send event if first site status changed to Active
+		# Telemetry: Capture event for setup wizard completion
 		if self.setup_wizard_complete:
-			if self.standby_for_product:
-				capture("setup_wizard_completed", "fc_saas", self.name)
-			else:
-				self.capture_signup_event("first_site_setup_wizard_completed")
+			self.capture_signup_event("first_site_setup_wizard_completed")
 
 		return setup_complete
 

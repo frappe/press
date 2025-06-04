@@ -223,7 +223,7 @@ class AccountRequest(Document):
 			capture("verification_email_sent", "fc_signup", self.email)
 		if self.is_using_new_saas_flow():
 			# Telemetry: Verification Email Sent for new saas flow when coming from product page
-			capture("verification_email_sent", "fc_saas", self.email)
+			capture("verification_email_sent", "fc_saas", self.name)
 
 		frappe.sendmail(
 			sender=sender,

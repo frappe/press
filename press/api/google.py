@@ -97,7 +97,7 @@ def callback(code=None, state=None):  # noqa: C901
 
 	if product_trial:
 		# dummy event so that the stat in funnel won't break
-		capture("otp_verified", "fc_saas", email)
+		capture("otp_verified", "fc_saas", account_request.name)
 
 	if team_name and product_trial:
 		frappe.local.login_manager.login_as(email)
