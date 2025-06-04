@@ -111,6 +111,10 @@ class ProductTrialRequest(Document):
 			)
 
 	def set_posthog_alias(self, new_alias: str):
+		if not self.is_first_trial_request():
+			# Only set alias for the first trial request
+			return
+
 		init_telemetry()
 		ph = getattr(frappe.local, "posthog", None)
 		with suppress(Exception):
