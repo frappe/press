@@ -974,6 +974,9 @@ def get_nearest_cluster():
 		return R * c
 
 	user_geo_data = get_country_info()
+	if not user_geo_data:
+		return None
+
 	user_latitude = user_geo_data.get("lat", 0.0)
 	user_longitude = user_geo_data.get("lon", 0.0)
 

@@ -527,6 +527,8 @@ def app_details_for_new_public_site():
 
 @frappe.whitelist()
 def options_for_new(for_bench: str | None = None):  # noqa: C901
+	from press.utils import get_nearest_cluster
+
 	for_bench = str(for_bench) if for_bench else None
 	available_versions = get_available_versions(for_bench)
 
@@ -592,6 +594,7 @@ def options_for_new(for_bench: str | None = None):  # noqa: C901
 	return {
 		"versions": available_versions,
 		"domain": default_domain,
+		"closest_cluster": get_nearest_cluster(),
 		"cluster_specific_root_domains": cluster_specific_root_domains,
 		"marketplace_details": marketplace_details,
 		"app_source_details": app_source_details_grouped,
