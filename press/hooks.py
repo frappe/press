@@ -1,7 +1,8 @@
 import sys
-from press.api.account import get_frappe_io_auth_url
-from . import __version__ as app_version
 
+from press.api.account import get_frappe_io_auth_url
+
+from . import __version__ as app_version
 
 app_name = "press"
 app_title = "Press"
@@ -70,7 +71,14 @@ website_route_rules = [
 ]
 
 website_redirects = [
-	{"source": "/dashboard/f-login", "target": (target := get_frappe_io_auth_url() if not ("frappe" in sys.orig_argv[3] and "version" in sys.orig_argv[4]) else "/")},
+	{
+		"source": "/dashboard/f-login",
+		"target": (
+			target := get_frappe_io_auth_url()
+			if not ("frappe" in sys.orig_argv[3] and "version" in sys.orig_argv[4])
+			else "/"
+		),
+	},
 	{
 		"source": "/suspended-site",
 		"target": "/api/method/press.api.handle_suspended_site_redirection",
