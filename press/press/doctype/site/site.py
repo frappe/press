@@ -1275,7 +1275,7 @@ class Site(Document, TagHelpers):
 				"domain": domain,
 				"dns_type": "CNAME",
 			}
-		).insert()
+		).insert(ignore_if_duplicate=True)
 
 	@frappe.whitelist()
 	def create_dns_record(self):
