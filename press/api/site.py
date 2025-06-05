@@ -289,8 +289,6 @@ def validate_plan(server, plan):
 
 @frappe.whitelist()
 def new(site):
-	site["domain"] = frappe.db.get_single_value("Press Settings", "domain")
-
 	return _new(site)
 
 
@@ -584,9 +582,17 @@ def options_for_new(for_bench: str | None = None):  # noqa: C901
 		# app source details are all fetched from marketplace apps for public sites
 		marketplace_details = None
 
+	default_domain = frappe.db.get_single_value("Press Settings", "domain")
+	cluster_specific_root_domains = frappe.db.get_all(
+		"Root Domain",
+		{"name": ("like", f"%.{default_domain}")},
+		["name", "default_cluster as cluster"],
+	)
+
 	return {
 		"versions": available_versions,
-		"domain": frappe.db.get_single_value("Press Settings", "domain"),
+		"domain": default_domain,
+		"cluster_specific_root_domains": cluster_specific_root_domains,
 		"marketplace_details": marketplace_details,
 		"app_source_details": app_source_details_grouped,
 	}

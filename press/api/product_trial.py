@@ -163,6 +163,10 @@ def _get_existing_trial_request(product: str, team: str):
 
 @frappe.whitelist(methods=["POST"])
 def get_request(product: str, account_request: str | None = None) -> dict:
+	from frappe.core.utils import find
+
+	from press.utils import get_nearest_cluster
+
 	team = frappe.local.team()
 
 	# validate if there is already a site
@@ -182,9 +186,22 @@ def get_request(product: str, account_request: str | None = None) -> dict:
 			account_request=account_request if is_valid_account_request else None,
 		).insert(ignore_permissions=True)
 
+	cluster = get_nearest_cluster()
+	domain = frappe.db.get_value("Product Trial", product, "domain")
+	cluster_domains = frappe.db.get_all(
+		"Root Domain", {"name": ("like", f"%.{domain}")}, ["name", "default_cluster as cluster"]
+	)
+
+	cluster = "Default"
+	cluster_domain = find(
+		cluster_domains,
+		lambda d: d.cluster == cluster if cluster else False,
+	)
+
 	return {
 		"name": site_request.name,
 		"site": site_request.site,
 		"product_trial": site_request.product_trial,
+		"domain": cluster_domain["name"] if cluster_domain else domain,
 		"status": site_request.status,
 	}

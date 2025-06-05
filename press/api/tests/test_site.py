@@ -41,6 +41,8 @@ class TestAPISite(unittest.TestCase):
 		self.team.payment_mode = "Prepaid Credits"
 		self.team.save()
 
+		self.domain = frappe.db.get_single_value("Press Settings", "domain")
+
 	def tearDown(self):
 		frappe.db.rollback()
 		frappe.set_user("Administrator")
@@ -90,6 +92,7 @@ class TestAPISite(unittest.TestCase):
 				"plan": plan.name,
 				"apps": [app.name],
 				"cluster": bench.cluster,
+				"domain": self.domain,
 			}
 		)
 
@@ -144,6 +147,7 @@ class TestAPISite(unittest.TestCase):
 				"plan": plan.name,
 				"apps": [frappe_app.name, allowed_app.name, disallowed_app.name],
 				"cluster": cluster.name,
+				"domain": self.domain,
 			},
 		)
 
@@ -182,6 +186,7 @@ class TestAPISite(unittest.TestCase):
 				"plan": plan.name,
 				"apps": [frappe_app.name, another_app.name],
 				"cluster": cluster.name,
+				"domain": self.domain,
 			}
 		)
 		self.assertEqual(site["site"], "testsite.fc.dev")
@@ -237,6 +242,7 @@ class TestAPISite(unittest.TestCase):
 				"plan": plan.name,
 				"apps": [frappe_app.name],
 				"cluster": cluster.name,
+				"domain": self.domain,
 			}
 		)["site"]
 		site = frappe.get_doc("Site", site_name)
@@ -296,6 +302,7 @@ class TestAPISite(unittest.TestCase):
 				"plan": plan.name,
 				"apps": [frappe_app.name],
 				"cluster": cluster.name,
+				"domain": self.domain,
 			}
 		)["site"]
 		site = frappe.get_doc("Site", site_name)
@@ -317,6 +324,7 @@ class TestAPISite(unittest.TestCase):
 				"plan": plan.name,
 				"apps": [frappe_app.name],
 				"cluster": cluster.name,
+				"domain": self.domain,
 			},
 		)
 
@@ -689,6 +697,7 @@ erpnext 0.8.3	    HEAD
 						"private": private,
 					},
 					"cluster": "Default",
+					"domain": self.domain,
 				}
 			)
 			poll_pending_jobs()
