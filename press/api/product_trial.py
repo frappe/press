@@ -192,7 +192,6 @@ def get_request(product: str, account_request: str | None = None) -> dict:
 		"Root Domain", {"name": ("like", f"%.{domain}")}, ["name", "default_cluster as cluster"]
 	)
 
-	cluster = "Default"
 	cluster_domain = find(
 		cluster_domains,
 		lambda d: d.cluster == cluster if cluster else False,
