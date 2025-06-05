@@ -2,7 +2,7 @@
 	<Dialog
 		v-model="showDialog"
 		:options="{
-			title: `Uninstall ${app.title}`,
+			title: `Uninstall ${app.title || app.app_title}`,
 			actions: [
 				{
 					label: 'Uninstall',
@@ -16,7 +16,7 @@
 			<div class="space-y-4">
 				<p class="text-p-base text-gray-800">
 					Are you sure you want to uninstall the app
-					<b>{{ app.title }}</b> from the site
+					<b>{{ app.title || app.app_title }}</b> from the site
 					<b>{{ site.doc?.host_name || site.doc?.name }}</b>
 					?
 					<br />
