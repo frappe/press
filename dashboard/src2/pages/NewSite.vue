@@ -177,9 +177,17 @@
 				</div>
 			</div>
 			<div v-if="selectedVersion && plan && cluster">
-				<h2 class="text-base font-medium leading-6 text-gray-900">
-					Enter Subdomain
-				</h2>
+				<div class="flex justify-between items-center">
+					<h2 class="text-base font-medium leading-6 text-gray-900">
+						Enter Subdomain
+					</h2>
+					<Tooltip
+						v-if="this.domain !== this.options.domain"
+						text="The root domain can change depending on the region you choose"
+					>
+						<i-lucide-help-circle class="h-4 w-4 text-gray-500" />
+					</Tooltip>
+				</div>
 				<div class="mt-2 items-center">
 					<div class="col-span-2 flex w-full">
 						<input
