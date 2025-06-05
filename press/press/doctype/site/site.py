@@ -3637,9 +3637,8 @@ def process_install_app_site_job_update(job):
 
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
-		if job.status == "Success":
-			site: Site = frappe.get_doc("Site", job.site)
-			site.sync_apps()
+		site: Site = frappe.get_doc("Site", job.site)
+		site.sync_apps()
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 		create_site_status_update_webhook_event(job.site)
 
@@ -3655,9 +3654,8 @@ def process_uninstall_app_site_job_update(job):
 
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
-		if job.status == "Success":
-			site: Site = frappe.get_doc("Site", job.site)
-			site.sync_apps()
+		site: Site = frappe.get_doc("Site", job.site)
+		site.sync_apps()
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 		create_site_status_update_webhook_event(job.site)
 
