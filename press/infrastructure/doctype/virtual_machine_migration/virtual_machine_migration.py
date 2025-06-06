@@ -303,6 +303,7 @@ class VirtualMachineMigration(Document):
 			methods.insert(0, (self.remove_docker_containers, Wait))
 			methods.append((self.update_server_platform, Wait))
 			methods.append((self.update_agent_ansible, Wait))
+			methods.append((self.start_active_benches, Wait))
 
 		steps = []
 		for method, wait_for_completion in methods:
@@ -343,6 +344,12 @@ class VirtualMachineMigration(Document):
 		"""Update agent on server"""
 		server: Server = frappe.get_doc("Server", self.machine.name)
 		server._update_agent_ansible()
+		return StepStatus.Success
+
+	def start_active_benches(self) -> StepStatus:
+		"""Start active benches on the server"""
+		server: Server = frappe.get_doc("Server", self.machine.name)
+		server.start_active_benches()
 		return StepStatus.Success
 
 	def update_partition_labels(self) -> StepStatus:
