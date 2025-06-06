@@ -81,6 +81,7 @@ from press.utils import (
 	get_current_team,
 	guess_type,
 	human_readable,
+	is_list,
 	log_error,
 	unique,
 	validate_subdomain,
@@ -692,8 +693,8 @@ class Site(Document, TagHelpers):
 				Handle the old value for the `allow_cors` key
 				Previously it was of string type, now it is a JSON object.
 				"""
-				if row.key == "allow_cors" and row.value in ["", "*"]:
-					row.value = '["*"]' if row.value == "*" else "[]"
+				if row.key == "allow_cors" and not is_list(row.value):
+					row.value = json.dumps([row.value])
 				key_value = json.loads(cstr(row.value))
 			else:
 				key_value = row.value

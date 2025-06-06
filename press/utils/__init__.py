@@ -473,6 +473,15 @@ def is_json(string):
 	return None
 
 
+def is_list(string):
+	if isinstance(string, list):
+		return True
+	if isinstance(string, str):
+		string = string.strip()
+		return string.startswith("[") and string.endswith("]")
+	return False
+
+
 def guess_type(value):
 	type_dict = {
 		int: "Number",
