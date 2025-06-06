@@ -132,6 +132,16 @@ let router = createRouter({
 					component: () =>
 						import('./components/partners/PartnerLeadOverview.vue'),
 				},
+				{
+					name: 'LeadDealDetails',
+					path: 'deal-info',
+					component: () => import('./components/partners/LeadDealDetails.vue'),
+				},
+				{
+					name: 'LeadFollowUp',
+					path: 'follow-up',
+					component: () => import('./components/partners/LeadFollowup.vue'),
+				},
 			],
 		},
 		{
