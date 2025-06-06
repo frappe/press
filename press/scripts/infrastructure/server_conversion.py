@@ -50,6 +50,11 @@ def connect(bench_dir, site_dir):
 	frappe.connect()
 
 
+def load_servers_from_file(file_path: str) -> list[str]:
+	with open(file_path) as server_file:
+		return server_file.read().strip().split("\n")
+
+
 @click.group()
 @click.option("--site", "site_name", required=True, help="Frappe site name")
 def cli(site_name):
@@ -60,9 +65,15 @@ def cli(site_name):
 
 
 @cli.command()
+@click.option(
+	"--server-file", type=click.Path(exists=True), help="Path to a file containing a list of servers."
+)
 @click.argument("servers", nargs=-1, type=str)
-def trigger_arm_build(servers: list[str]):
+def trigger_arm_build(servers: list[str], server_file: str):
 	"""Trigger ARM build for one or more servers."""
+	if server_file:
+		servers = load_servers_from_file(server_file)
+
 	for server in servers:
 		if has_arm_build_record(server):
 			continue
@@ -73,9 +84,15 @@ def trigger_arm_build(servers: list[str]):
 
 
 @cli.command()
+@click.option(
+	"--server-file", type=click.Path(exists=True), help="Path to a file containing a list of servers."
+)
 @click.argument("servers", nargs=-1, type=str)
-def pull_images_on_servers(servers: list[str]):
+def pull_images_on_servers(servers: list[str], server_file: str):
 	"""Trigger image pulls on Intel server to be converted"""
+	if server_file:
+		servers = load_servers_from_file(server_file)
+
 	for server in servers:
 		arm_build_record: ARMBuildRecord = frappe.get_doc("ARM Build Record", {"server": server})
 		arm_build_record.sync_status()
@@ -92,13 +109,20 @@ def pull_images_on_servers(servers: list[str]):
 
 @cli.command()
 @click.option("--vmi", default="f377-mumbai.frappe.cloud")
+@click.option(
+	"--server-file", type=click.Path(exists=True), help="Path to a file containing a list of servers."
+)
 @click.argument("servers", nargs=-1, type=str)
-def update_image_and_create_migration(vmi: str, servers: list[str]):
+def update_image_and_create_migration(vmi: str, servers: list[str], server_file: str):
 	"""Update docker image on bench config and create virtual machine migration"""
 	vmi = frappe.get_value("Virtual Machine Image", {"virtual_machine": vmi}, "name")
 	if not vmi:
 		print(f"Aborting VMI not found {vmi}!")
 		return
+
+	if server_file:
+		servers = load_servers_from_file(server_file)
+
 	for server in servers:
 		arm_build_record: ARMBuildRecord = frappe.get_doc("ARM Build Record", {"server": server})
 		try:
@@ -117,9 +141,15 @@ def update_image_and_create_migration(vmi: str, servers: list[str]):
 
 
 @cli.command()
+@click.option(
+	"--server-file", type=click.Path(exists=True), help="Path to a file containing a list of servers."
+)
 @click.argument("servers", nargs=-1, type=str)
-def start_active_benches_on_servers(servers: list[str]):
+def start_active_benches_on_servers(servers: list[str], server_file: str):
 	"""Start docker containers post migration"""
+	if server_file:
+		servers = load_servers_from_file(server_file)
+
 	for server in servers:
 		server: Server = frappe.get_doc("Server", server)
 		server.start_active_benches()
