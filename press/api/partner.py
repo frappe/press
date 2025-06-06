@@ -350,3 +350,42 @@ def get_local_payment_setup():
 	data.mpesa_setup = frappe.db.get_value("Mpesa Setup", {"team": team}, "mpesa_setup_id") or None
 	data.payment_gateway = frappe.db.get_value("Payment Gateway", {"team": team}, "name") or None
 	return data
+
+
+@frappe.whitelist()
+def get_lead_details(lead_id):
+	return frappe.get_doc("Partner Lead", lead_id).as_dict()
+
+
+@frappe.whitelist()
+def update_lead_details(lead_name, lead_details):
+	lead_details = frappe._dict(lead_details)
+	doc = frappe.get_doc("Partner Lead", lead_name)
+	doc.update(
+		{
+			"organization_name": lead_details.organization_name,
+			"status": lead_details.status,
+			"full_name": lead_details.full_name,
+			"domain": lead_details.domain,
+			"email": lead_details.email,
+			"contact_no": lead_details.contact_no,
+			"state": lead_details.state,
+			"country": lead_details.country,
+		}
+	)
+	doc.save(ignore_permissions=True)
+	doc.reload()
+
+
+@frappe.whitelist()
+def update_lead_status(lead_name, status, engagement_stage=None, conversion_date=None, reason=None):
+	if status == "In Process":
+		frappe.db.set_value(
+			"Partner Lead", lead_name, {"status": status, "engagement_stage": engagement_stage}
+		)
+	elif status == "Won":
+		frappe.db.set_value("Partner Lead", lead_name, {"status": status, "conversion_date": conversion_date})
+	elif status == "Lost":
+		frappe.db.set_value("Partner Lead", lead_name, {"status": status, "lost_reason": reason})
+	else:
+		frappe.db.set_value("Partner Lead", lead_name, "status", status)

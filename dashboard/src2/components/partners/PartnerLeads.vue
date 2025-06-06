@@ -5,6 +5,7 @@
 </template>
 <script>
 import ObjectList from '../ObjectList.vue';
+import { icon } from '../../utils/components';
 export default {
 	name: 'PartnerLeads',
 	components: {
@@ -54,11 +55,22 @@ export default {
 					},
 				],
 				onRowClick: (row) => {
-					console.log('Row clicked:', row);
 					this.$router.push({
 						name: 'PartnerLeadDetails',
 						params: { leadId: row.name },
 					});
+				},
+				primaryAction: () => {
+					return {
+						label: 'Add Lead',
+						variant: 'solid',
+						slots: {
+							prefix: icon('plus'),
+						},
+						onClick: () => {
+							console.log('Add Lead button clicked');
+						},
+					};
 				},
 			};
 		},

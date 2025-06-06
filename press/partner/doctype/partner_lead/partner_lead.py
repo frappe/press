@@ -84,4 +84,18 @@ class PartnerLead(Document):
 		territory: DF.Data | None
 	# end: auto-generated types
 
-	dashboard_fields = ("organization_name", "state")
+	dashboard_fields = (
+		"organization_name",
+		"state",
+		"status",
+		"engagement_stage",
+		"lead_type",
+		"lead_source",
+		"lead_name",
+		"domain",
+		"conversion_date",
+		"full_name",
+		"email",
+		"contact_no",
+		"country",
+	)
