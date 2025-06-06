@@ -97,6 +97,8 @@ class ProductTrial(Document):
 		validate_subdomain(subdomain)
 		Site.exists(subdomain, domain)
 
+		site_domain = f"{subdomain}.{domain}"
+
 		standby_site = self.get_standby_site(cluster, account_request)
 
 		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
@@ -118,7 +120,7 @@ class ProductTrial(Document):
 			site.save()  # Save is needed for create_subscription to work TODO: remove this
 			site.create_subscription(plan)
 			site.reload()
-			self.set_site_domain(site, subdomain, domain, cluster)
+			self.set_site_domain(site, site_domain)
 		else:
 			# Create a site in the cluster, if standby site is not available
 			apps = [{"app": d.app} for d in self.apps]
@@ -173,15 +175,14 @@ class ProductTrial(Document):
 
 		return proxy_servers_for_available_clusters
 
-	def set_site_domain(self, site: Site, subdomain: str, domain: str, cluster: str):
-		site_domain = f"{subdomain}.{domain}"
+	def set_site_domain(self, site: Site, site_domain: str):
 		if not site_domain:
 			return
 
 		if site.name == site_domain or site.host_name == site_domain:
 			return
 
-		site.add_domain_for_product_site(subdomain, domain, cluster)
+		site.add_domain_for_product_site(site_domain)
 		site.add_domain_to_config(site_domain)
 
 	def get_available_clusters(self):

@@ -1264,34 +1264,16 @@ class Site(Document, TagHelpers):
 				}
 			).insert()
 
-	def add_domain_for_product_site(self, subdomain: str, domain: str, cluster: str):
-		site_domain = f"{subdomain}.{domain}"
-		site_domain = site_domain.lower().strip(".")
-		doc = (
-			self
-			if cluster == self.cluster
-			else frappe._dict(
-				# faking site doc so that a dns record is created if the cluster specific root domain
-				# is different to the site's root domain (domain field)
-				{
-					"domain": domain,
-					"server": frappe.db.get_value("Server", {"cluster": cluster, "public": 1}, "name"),
-					"cluster": cluster,
-				}
-			)
-		)
-
+	def add_domain_for_product_site(self, domain):
+		domain = domain.lower().strip(".")
 		log_site_activity(self.name, "Add Domain")
-		create_dns_record(
-			doc=doc,
-			record_name=site_domain,
-		)
+		create_dns_record(doc=self, record_name=domain)
 		frappe.get_doc(
 			{
 				"doctype": "Site Domain",
 				"status": "Pending",
 				"site": self.name,
-				"domain": site_domain,
+				"domain": domain,
 				"dns_type": "CNAME",
 			}
 		).insert(ignore_if_duplicate=True)
