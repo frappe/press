@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 	from press.infrastructure.doctype.virtual_machine_migration_step.virtual_machine_migration_step import (
 		VirtualMachineMigrationStep,
 	)
+	from press.press.doctype.server.server import Server
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
@@ -301,6 +302,7 @@ class VirtualMachineMigration(Document):
 		if self.server_type == "Server":
 			methods.insert(0, (self.remove_docker_containers, Wait))
 			methods.append((self.update_server_platform, Wait))
+			methods.append((self.update_agent_ansible, Wait))
 
 		steps = []
 		for method, wait_for_completion in methods:
@@ -335,6 +337,12 @@ class VirtualMachineMigration(Document):
 			self.add_comment(text=f"Error stoping docker: {result}")
 			return StepStatus.Failure
 
+		return StepStatus.Success
+
+	def update_agent_ansible(self) -> StepStatus:
+		"""Update agent on server"""
+		server: Server = frappe.get_doc("Server", self.machine.name)
+		server._update_agent_ansible()
 		return StepStatus.Success
 
 	def update_partition_labels(self) -> StepStatus:
