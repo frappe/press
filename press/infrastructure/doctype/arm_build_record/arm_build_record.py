@@ -83,7 +83,7 @@ class ARMBuildRecord(Document):
 
 		for image in self.arm_images:
 			if image.status != Status.SUCCESS.value:
-				frappe.throw("Some builds failed skipping image pull!")
+				frappe.throw("Some builds failed skipping image pull!", frappe.ValidationError)
 			builds.append(image.build)
 
 		image_tags = frappe.db.get_all(

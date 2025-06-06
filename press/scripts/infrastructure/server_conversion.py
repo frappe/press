@@ -95,15 +95,12 @@ def pull_images_on_servers(servers: list[str], server_file: str):
 
 	for server in servers:
 		arm_build_record: ARMBuildRecord = frappe.get_doc("ARM Build Record", {"server": server})
-		arm_build_record.sync_status()
-		has_failed_builds = check_image_build_failure(arm_build_record)
 
-		if has_failed_builds:
-			print(f"Has Failed ARM Builds: {arm_build_record.name}")
-			continue
+		try:
+			arm_build_record.pull_images()
+		except frappe.ValidationError:
+			print(f"Skipping server {server} due to failed builds")
 
-		print(f"Pull image on server: {server}")
-		arm_build_record.pull_images()
 		frappe.db.commit()
 
 
