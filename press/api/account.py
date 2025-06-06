@@ -71,7 +71,7 @@ def signup(email: str, product: str | None = None, referrer: str | None = None) 
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 60)
-def verify_otp(account_request: str, otp: str):
+def verify_otp(account_request: str, otp: str) -> str:
 	from frappe.auth import get_login_attempt_tracker
 
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
@@ -428,7 +428,6 @@ def get_account_request_from_key(key):
 		domain = frappe.db.get_value("Saas Settings", ar.saas_app, "domain")
 		if frappe.db.get_value("Site", ar.subdomain + "." + domain, "status") == "Active":
 			return ar
-	return None
 
 	return None
 
