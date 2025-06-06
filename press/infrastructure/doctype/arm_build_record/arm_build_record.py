@@ -78,7 +78,14 @@ class ARMBuildRecord(Document):
 	@frappe.whitelist()
 	def pull_images(self):
 		"""Pull images on app server using image tags"""
-		builds = [image.build for image in self.arm_images if image.status == Status.SUCCESS.value]
+		builds = []
+		self.sync_status()
+
+		for image in self.arm_images:
+			if image.status != Status.SUCCESS.value:
+				frappe.throw("Some builds failed skipping image pull!")
+			builds.append(image.build)
+
 		image_tags = frappe.db.get_all(
 			"Deploy Candidate Build", {"name": ("in", builds)}, pluck="docker_image"
 		)
