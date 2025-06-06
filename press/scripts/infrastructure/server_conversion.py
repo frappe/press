@@ -8,6 +8,7 @@ import frappe
 
 if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
+	from press.infrastructure.doctype.arm_docker_image.arm_docker_image import ARMDockerImage
 	from press.infrastructure.doctype.virtual_machine_migration.virtual_machine_migration import (
 		VirtualMachineMigration,
 	)
@@ -142,14 +143,23 @@ def update_image_and_create_migration(vmi: str, servers: list[str], server_file:
 	"--server-file", type=click.Path(exists=True), help="Path to a file containing a list of servers."
 )
 @click.argument("servers", nargs=-1, type=str)
-def start_active_benches_on_servers(servers: list[str], server_file: str):
-	"""Start docker containers post migration"""
+def arm_build_info(servers: list[str], server_file: str):
+	total, successful, failed, running = 0, 0, 0, 0
 	if server_file:
 		servers = load_servers_from_file(server_file)
 
+	def _status_info(images: list[ARMDockerImage], status: str):
+		return len([image for image in images if image.status == status])
+
 	for server in servers:
-		server: Server = frappe.get_doc("Server", server)
-		server.start_active_benches()
+		arm_build_record: ARMBuildRecord = frappe.get_doc("ARM Build Record", {"server": server})
+		arm_build_record.sync_status()
+		total += len(arm_build_record.arm_images)
+		running += _status_info(arm_build_record.arm_images, "Running")
+		successful += _status_info(arm_build_record.arm_images, "Success")
+		failed += _status_info(arm_build_record.arm_images, "Failure")
+
+	print(f"Total: {total}\nSuccessful: {successful}\nRunning: {running}\nFailed: {failed}")
 
 
 @cli.result_callback()
