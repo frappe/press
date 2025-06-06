@@ -38,8 +38,12 @@ class ARMBuildRecord(Document):
 			image_tags, reference_doctype=self.doctype, reference_name=self.name
 		)
 
+	def _update_redis_conf(self, bench: Bench) -> None:
+		"""Update redis-queue.conf & redis-cache.conf with new arm redisearch.so location"""
+		command = """sed -i 's|loadmodule /home/frappe/frappe-bench/redis/redisearch.so|loadmodule /home/frappe/frappe-bench/redis/arm64/redisearch.so|' /home/frappe/frappe-bench/config/redis-cache.conf /home/frappe/frappe-bench/config/redis-queue.conf"""
+		bench.docker_execute(command)
+
 	def _update_image_tags_on_benches(self):
-		"""Maybe enqueue this?"""
 		if self.updated_image_tags_on_benches:
 			return
 
@@ -51,6 +55,7 @@ class ARMBuildRecord(Document):
 			bench_config = json.loads(bench.bench_config)
 			bench_config["docker_image"] = new_docker_image
 			bench.bench_config = json.dumps(bench_config, indent=4)
+			self._update_redis_conf(bench)
 			bench.save()
 
 		# Once the benches are updated with latest images, we can then start migration.
