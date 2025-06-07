@@ -18,10 +18,13 @@ if typing.TYPE_CHECKING:
 arm_machine_mappings = {
 	"t2.medium": "t4g.medium",
 	"c6i.large": "c8g.large",
+	"c6i.2xlarge": "c8g.2xlarge",
+	"c6i.xlarge": "c8g.xlarge",
 	"m6i.large": "m8g.large",
 	"m7i.large": "m8g.large",
-	"c6i.xlarge": "c8g.xlarge",
 	"m6i.xlarge": "m8g.xlarge",
+	"r6i.xlarge": "r8g.xlarge",
+	"r6i.large": "r8g.large",
 }
 
 
