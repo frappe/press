@@ -99,6 +99,7 @@ def pull_images_on_servers(servers: list[str], server_file: str):
 
 		try:
 			arm_build_record.pull_images()
+			print(f"Pulled image on {server}")
 		except frappe.ValidationError:
 			print(f"Skipping server {server} due to failed builds")
 
