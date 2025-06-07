@@ -304,7 +304,6 @@ class VirtualMachineMigration(Document):
 			methods.append((self.update_server_platform, Wait))
 			methods.append((self.update_agent_ansible, Wait))
 			methods.append((self.start_active_benches, Wait))
-			methods.append((self.create_glass_file, Wait))
 
 		steps = []
 		for method, wait_for_completion in methods:
@@ -351,11 +350,6 @@ class VirtualMachineMigration(Document):
 		"""Start active benches on the server"""
 		server: Server = frappe.get_doc("Server", self.machine.name)
 		server.start_active_benches()
-		return StepStatus.Success
-
-	def create_glass_file(self) -> StepStatus:
-		"""Create glass file"""
-		self.ansible_run("fallocate -l 200M /root/glass")
 		return StepStatus.Success
 
 	def update_partition_labels(self) -> StepStatus:
