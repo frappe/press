@@ -21,10 +21,12 @@ arm_machine_mappings = {
 	"c6i.2xlarge": "c8g.2xlarge",
 	"c6i.xlarge": "c8g.xlarge",
 	"m6i.large": "m8g.large",
-	"m7i.large": "m8g.large",
 	"m6i.xlarge": "m8g.xlarge",
+	"m6i.2xlarge": "m8g.2xlarge",
+	"m7i.large": "m8g.large",
 	"r6i.xlarge": "r8g.xlarge",
 	"r6i.large": "r8g.large",
+	"r6i.2xlarge": "r8g.2xlarge",
 }
 
 
