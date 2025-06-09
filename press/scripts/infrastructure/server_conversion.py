@@ -15,19 +15,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.server.server import Server
 
 
-arm_machine_mappings = {
-	"t2.medium": "t4g.medium",
-	"c6i.large": "c8g.large",
-	"c6i.2xlarge": "c8g.2xlarge",
-	"c6i.xlarge": "c8g.xlarge",
-	"m6i.large": "m8g.large",
-	"m6i.xlarge": "m8g.xlarge",
-	"m6i.2xlarge": "m8g.2xlarge",
-	"m7i.large": "m8g.large",
-	"r6i.xlarge": "r8g.xlarge",
-	"r6i.large": "r8g.large",
-	"r6i.2xlarge": "r8g.2xlarge",
-}
+arm_machine_mappings = {"t2": "t4g", "c6i": "c8g", "m6i": "m8g", "m7i": "m8g", "r6i": "r8g"}
 
 
 def has_arm_build_record(server: str) -> bool:
@@ -132,10 +120,11 @@ def update_image_and_create_migration(vmi: str, servers: list[str], server_file:
 		try:
 			arm_build_record.update_image_tags_on_benches()
 			machine_type = frappe.db.get_value("Virtual Machine", {"name": server}, "machine_type")
+			machine_series, machine_size = machine_type.split(".")
 			virtual_machine_migration: VirtualMachineMigration = create_vmm(
 				server=server,
 				virtual_machine_image=vmi,
-				target_machine_type=arm_machine_mappings[machine_type],
+				target_machine_type=f"{arm_machine_mappings[machine_series]}.{machine_size}",
 			)
 			frappe.db.commit()
 			print(f"Created {virtual_machine_migration.name}")
