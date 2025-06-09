@@ -78,12 +78,21 @@ class SiteMigration(Document):
 	def before_insert(self):
 		self.validate_apps()
 		self.validate_bench()
+
+		if not self.check_cross_platform_migration():
+			frappe.throw("Can not move site between different platform servers.")
+
 		self.check_for_inactive_domains()
 		self.check_enough_space_on_destination_server()
 		if get_ongoing_migration(self.site, scheduled=True):
 			frappe.throw(f"Ongoing/Scheduled Site Migration for the site {frappe.bold(self.site)} exists.")
 		site: Site = frappe.get_doc("Site", self.site)
 		site.check_move_scheduled()
+
+	def check_cross_platform_migration(self) -> bool:
+		source_server_platform = frappe.db.get_value("Server", self.source_server, "platform")
+		destination_server_platform = frappe.db.get_value("Server", self.destination_server, "platform")
+		return source_server_platform == destination_server_platform
 
 	def validate_bench(self):
 		if frappe.db.get_value("Bench", self.destination_bench, "status", for_update=True) != "Active":
