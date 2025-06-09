@@ -1273,18 +1273,25 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		try:
 			self.agent.purge_binlog(database_server=self, to_binlog=to_binlog)
 			frappe.msgprint(f"Purged to {to_binlog}", "Successfully purged binlogs")
-			self.sync_binlogs_info(index_binlogs=False)
+			self.sync_binlogs_info(index_binlogs=False, upload_binlogs=False)
 		except Exception as e:
 			frappe.msgprint(str(e), "Failed to purge binlog")
 			raise e
 
 	@frappe.whitelist()
-	def sync_binlogs_info(self):
+	def sync_binlogs_info(self, index_binlogs: bool = True, upload_binlogs: bool = True):
 		if not self.enable_binlog_indexing:
 			frappe.msgprint("Binlog Indexing is not enabled")
 			return
 
-		frappe.enqueue_doc(self.doctype, self.name, "_sync_binlogs_info", timeout=600)
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_sync_binlogs_info",
+			timeout=600,
+			upload_binlogs=upload_binlogs,
+			index_binlogs=index_binlogs,
+		)
 
 	def _sync_binlogs_info(self, index_binlogs: bool = True, upload_binlogs: bool = True):
 		info = self.agent.fetch_binlog_list()
