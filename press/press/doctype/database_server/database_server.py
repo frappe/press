@@ -1422,7 +1422,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 				),
 			},
 			order_by="file_name asc",
-			limit=15,
+			limit=4,
 			fields=["file_name", "size_mb"],
 		)
 
@@ -1441,7 +1441,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			binlogs.extend(current_indexed_binlog)
 			binlogs = sorted(binlogs, key=lambda x: x["file_name"])
 
-		max_size_in_batch = 1024  # 1GB
+		max_size_in_batch = 400
 		filtered_binlogs = []
 		while max_size_in_batch > 0 and binlogs:
 			filtered_binlogs.append(binlogs.pop(0))
@@ -1509,7 +1509,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			filters={"database_server": self.name, "current": 0, "uploaded": 0, "purged_from_disk": 0},
 			order_by="file_name asc",
 			pluck="file_name",
-			limit=10,
+			limit=5,
 		)
 
 		if len(binlogs) == 0:
