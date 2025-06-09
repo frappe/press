@@ -1499,40 +1499,11 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		# Upload only those binlogs which is indexed
 		binlogs = frappe.get_all(
 			"MariaDB Binlog",
-			filters={
-				"database_server": self.name,
-				"current": 0,
-				"indexed": 1,
-				"uploaded": 0,
-				"purged_from_disk": 0,
-				"file_modification_time": (
-					"between",
-					(frappe.utils.now_datetime(), frappe.utils.add_to_date(None, days=-1 * 7)),
-				),
-			},
+			filters={"database_server": self.name, "current": 0, "uploaded": 0, "purged_from_disk": 0},
 			order_by="file_name asc",
 			pluck="file_name",
 			limit=10,
 		)
-
-		# Or, unindexed binlogs which are older than 7 days
-		unindexed_binlogs = frappe.get_all(
-			"MariaDB Binlog",
-			filters={
-				"database_server": self.name,
-				"current": 0,
-				"indexed": 0,
-				"uploaded": 0,
-				"purged_from_disk": 0,
-				"file_modification_time": ("<=", frappe.utils.add_to_date(None, days=-1 * 7)),
-			},
-			order_by="file_name asc",
-			pluck="file_name",
-			limit=10,
-		)
-
-		binlogs.extend(unindexed_binlogs)
-		binlogs = list(set(binlogs))
 
 		if len(binlogs) == 0:
 			return
