@@ -519,7 +519,7 @@
    "search_index": 1
   },
   {
-   "default": "50",
+   "default": "25",
    "description": "Minimum storage to add automatically each time",
    "fieldname": "auto_add_storage_min",
    "fieldtype": "Int",

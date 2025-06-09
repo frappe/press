@@ -35,11 +35,9 @@ if TYPE_CHECKING:
 
 
 @frappe.whitelist(allow_guest=True)
-def signup(email, product=None, referrer=None):
+@rate_limit(limit=5, seconds=60 * 60)
+def signup(email: str, product: str | None = None, referrer: str | None = None) -> str:
 	frappe.utils.validate_email_address(email, True)
-
-	current_user = frappe.session.user
-	frappe.set_user("Administrator")
 
 	email = email.strip().lower()
 	exists, enabled = frappe.db.get_value("Team", {"user": email}, ["name", "enabled"]) or [0, 0]
@@ -49,8 +47,14 @@ def signup(email, product=None, referrer=None):
 		frappe.throw(_("Account {0} has been deactivated").format(email))
 	elif exists and enabled:
 		frappe.throw(_("Account {0} is already registered").format(email))
-	else:
-		account_request = frappe.get_doc(
+
+	account_request = frappe.db.get_value(
+		"Account Request",
+		{"email": email, "referrer_id": referrer, "product_trial": product},
+		"name",
+	)
+	if not account_request:
+		account_request_doc = frappe.get_doc(
 			{
 				"doctype": "Account Request",
 				"email": email,
@@ -59,18 +63,15 @@ def signup(email, product=None, referrer=None):
 				"send_email": True,
 				"product_trial": product,
 			}
-		).insert()
+		).insert(ignore_permissions=True)
+		account_request = account_request_doc.name
 
-	frappe.set_user(current_user)
-	if account_request:
-		return account_request.name
-
-	return None
+	return account_request
 
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 60)
-def verify_otp(account_request: str, otp: str):
+def verify_otp(account_request: str, otp: str) -> str:
 	from frappe.auth import get_login_attempt_tracker
 
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
@@ -427,7 +428,6 @@ def get_account_request_from_key(key):
 		domain = frappe.db.get_value("Saas Settings", ar.saas_app, "domain")
 		if frappe.db.get_value("Site", ar.subdomain + "." + domain, "status") == "Active":
 			return ar
-	return None
 
 	return None
 

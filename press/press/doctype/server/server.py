@@ -12,6 +12,7 @@ from functools import cached_property
 
 import boto3
 import frappe
+import semantic_version
 from frappe import _
 from frappe.core.utils import find, find_all
 from frappe.installer import subprocess
@@ -1245,6 +1246,22 @@ class BaseServer(Document, TagHelpers):
 
 		if not benches:
 			frappe.throw(f"No active benches found on <a href='/app/server/{self.name}'> Server")
+
+		for bench in benches:
+			version = frappe.get_value(
+				"Deploy Candidate Dependency",
+				{"parent": bench["candidate"], "dependency": "BENCH_VERSION"},
+				"version",
+			)
+			if semantic_version.Version(version) < semantic_version.Version("5.25.1"):
+				frappe.db.set_value(
+					"Deploy Candidate Dependency",
+					{"parent": bench["candidate"], "dependency": "BENCH_VERSION"},
+					"version",
+					"5.25.1",
+				)
+
+		frappe.db.commit()
 
 		arm_build_record: ARMBuildRecord = frappe.new_doc("ARM Build Record", server=self.name)
 
