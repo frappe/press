@@ -66,6 +66,8 @@ class GitHubWebhookLog(Document):
 				self.tag = payload.ref
 			elif self.git_reference_type == "branch":
 				self.branch = payload.ref
+		elif self.event == "release":
+			self.tag = payload.release.tag_name
 
 		self.payload = json.dumps(payload, indent=4, sort_keys=True)
 
