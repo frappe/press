@@ -340,7 +340,7 @@ export default {
 									<strong>Note</strong>: Storage can auto increase only once in 6 hours.
 
 
-									</div>Enter the maximum and minimum storage to increase for the server <b>${
+									</div>Enter the maximum and minimum storage to increase for the server (each time) <b>${
 										doc.title || doc.name
 									}</b>.`,
 									fields: [
