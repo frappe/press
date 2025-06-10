@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import hashlib
 import hmac
@@ -39,7 +38,7 @@ class GitHubWebhookLog(Document):
 		tag: DF.Data | None
 	# end: auto-generated types
 
-	def validate(self):
+	def validate(self):  # noqa: C901
 		secret = frappe.db.get_single_value("Press Settings", "github_webhook_secret")
 		digest = hmac.HMAC(secret.encode(), self.payload.encode(), hashlib.sha1)
 		if not hmac.compare_digest(digest.hexdigest(), self.signature):
