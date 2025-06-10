@@ -289,6 +289,9 @@ def validate_plan(server, plan):
 
 @frappe.whitelist()
 def new(site):
+	if not hasattr(site, "domain") or not site["domain"]:
+		site["domain"] = frappe.db.get_single_value("Press Settings", "domain")
+
 	return _new(site)
 
 
