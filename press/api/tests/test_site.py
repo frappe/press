@@ -814,7 +814,7 @@ erpnext 0.8.3	    HEAD
 		v14_group.append(
 			"servers",
 			{
-				"server": server,
+				"server": server.name,
 			},
 		)
 		v14_group.save()
@@ -823,7 +823,7 @@ erpnext 0.8.3	    HEAD
 		v15_group.append(
 			"servers",
 			{
-				"server": server,
+				"server": server.name,
 			},
 		)
 		v15_group.save()

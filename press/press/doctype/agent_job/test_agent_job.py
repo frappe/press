@@ -175,9 +175,9 @@ class TestAgentJob(unittest.TestCase):
 	def test_suspend_sites_issues_reload_in_bulk(self, mock_reload_nginx):
 		from .agent_job import suspend_sites
 
-		bench1 = create_test_bench()
-		bench2 = create_test_bench()
-		bench3 = create_test_bench()
+		bench1 = create_test_bench().name
+		bench2 = create_test_bench().name
+		bench3 = create_test_bench().name
 
 		frappe.set_user(self.team.user)
 		site1 = create_test_site(bench=bench1)
