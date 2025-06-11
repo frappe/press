@@ -101,13 +101,19 @@ def pull_images_on_servers(servers: list[str], server_file: str):
 
 @cli.command()
 @click.option("--vmi", default="f377-mumbai.frappe.cloud")
+@click.option("--vmi-cluster", required=True)
 @click.option(
 	"--server-file", type=click.Path(exists=True), help="Path to a file containing a list of servers."
 )
 @click.argument("servers", nargs=-1, type=str)
-def update_image_and_create_migration(vmi: str, servers: list[str], server_file: str):
+def update_image_and_create_migration(
+	vmi: str,
+	vmi_cluster: str,
+	servers: list[str],
+	server_file: str,
+):
 	"""Update docker image on bench config and create virtual machine migration"""
-	vmi = frappe.get_value("Virtual Machine Image", {"virtual_machine": vmi}, "name")
+	vmi = frappe.get_value("Virtual Machine Image", {"virtual_machine": vmi, "cluster": vmi_cluster}, "name")
 	if not vmi:
 		print(f"Aborting VMI not found {vmi}!")
 		return
