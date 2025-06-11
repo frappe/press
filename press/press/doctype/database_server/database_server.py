@@ -1163,7 +1163,7 @@ class DatabaseServer(BaseServer):
 			log_file_size = 48
 		self.add_or_update_mariadb_variable("innodb_log_file_size", "value_int", log_file_size, save=False)
 
-		self.save()
+		self.save(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def reconfigure_mariadb_exporter(self):
