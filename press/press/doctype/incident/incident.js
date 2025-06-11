@@ -7,7 +7,7 @@ frappe.ui.form.on('Incident', {
 			[__('Ignore Incidents on Server'), 'ignore_for_server'],
 			[__('Reboot Database Server'), 'reboot_database_server'],
 			[__('Restart Down Benches'), 'restart_down_benches'],
-			[__('Take Grafana screenshots'), 'take_grafana_screenshots'],
+			[__('Take Grafana screenshots'), 'regather_info_and_screenshots'],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

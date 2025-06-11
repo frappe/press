@@ -760,13 +760,17 @@ class BaseServer(Document, TagHelpers):
 			filters={"server": self.name, "status": ("!=", "Archived")},
 			ignore_ifnull=True,
 		):
-			frappe.throw(_("Cannot archive server with sites"))
+			frappe.throw(
+				_("Cannot archive server with sites. Please drop them from their respective dashboards.")
+			)
 		if frappe.get_all(
 			"Bench",
 			filters={"server": self.name, "status": ("!=", "Archived")},
 			ignore_ifnull=True,
 		):
-			frappe.throw(_("Cannot archive server with benches"))
+			frappe.throw(
+				_("Cannot archive server with benches. Please drop them from their respective dashboards.")
+			)
 		self.status = "Pending"
 		self.save()
 		if self.is_self_hosted:
