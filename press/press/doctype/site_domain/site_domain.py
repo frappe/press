@@ -10,7 +10,7 @@ import rq
 from frappe.model.document import Document
 
 from press.agent import Agent
-from press.api.site import check_dns
+from press.api.site import check_dns_cname_a
 from press.exceptions import (
 	DNSValidationError,
 )
@@ -252,7 +252,7 @@ def update_dns_type():
 		if has_job_timeout_exceeded():
 			return
 		try:
-			response = check_dns(domain.site, domain.domain)
+			response = check_dns_cname_a(domain.site, domain.domain, ignore_proxying=True)
 			if response["matched"] and response["type"] != domain.dns_type:
 				frappe.db.set_value(
 					"Site Domain", domain.name, "dns_type", response["type"], update_modified=False
