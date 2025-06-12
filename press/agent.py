@@ -1283,7 +1283,12 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		raw_apps_list = self.get(
 			f"benches/{site.bench}/sites/{site.name}/apps",
 		)
-		apps: list[str] = [line.split()[0] for line in raw_apps_list["data"].splitlines() if line]
+
+		try:
+			apps: list[str] = json.loads(raw_apps_list["data"])
+		except json.JSONDecodeError:
+			apps: list[str] = [line.split()[0] for line in raw_apps_list["data"].splitlines() if line]
+
 		return apps
 
 	def fetch_database_table_schema(
