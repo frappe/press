@@ -1284,11 +1284,10 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			f"benches/{site.bench}/sites/{site.name}/apps",
 		)
 
-		apps: list[str] = (
-			[line.split()[0] for line in raw_apps_list["data"].splitlines() if line]
-			if not isinstance(raw_apps_list, list)
-			else raw_apps_list
-		)
+		try:
+			apps: list[str] = json.loads(raw_apps_list["data"])
+		except json.JSONDecodeError:
+			apps: list[str] = [line.split()[0] for line in raw_apps_list["data"].splitlines() if line]
 
 		return apps
 
