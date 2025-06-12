@@ -1283,7 +1283,13 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		raw_apps_list = self.get(
 			f"benches/{site.bench}/sites/{site.name}/apps",
 		)
-		apps: list[str] = [line.split()[0] for line in raw_apps_list["data"].splitlines() if line]
+
+		apps: list[str] = (
+			[line.split()[0] for line in raw_apps_list["data"].splitlines() if line]
+			if not isinstance(raw_apps_list, list)
+			else raw_apps_list
+		)
+
 		return apps
 
 	def fetch_database_table_schema(
