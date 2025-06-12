@@ -208,7 +208,7 @@ def get_request(product: str, account_request: str | None = None) -> dict:
 				break
 
 			if rule.value == value:
-				cluster = rule.cluster
+				cluster = rule.preferred_cluster
 				break
 
 		if not cluster:
