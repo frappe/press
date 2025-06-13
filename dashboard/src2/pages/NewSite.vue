@@ -177,9 +177,17 @@
 				</div>
 			</div>
 			<div v-if="selectedVersion && plan && cluster">
-				<h2 class="text-base font-medium leading-6 text-gray-900">
-					Enter Subdomain
-				</h2>
+				<div class="flex justify-between items-center">
+					<h2 class="text-base font-medium leading-6 text-gray-900">
+						Enter Subdomain
+					</h2>
+					<Tooltip
+						v-if="this.domain !== this.options.domain"
+						text="The root domain can change depending on the region you choose"
+					>
+						<i-lucide-help-circle class="h-4 w-4 text-gray-500" />
+					</Tooltip>
+				</div>
 				<div class="mt-2 items-center">
 					<div class="col-span-2 flex w-full">
 						<input
@@ -188,7 +196,7 @@
 							v-model="subdomain"
 						/>
 						<div class="flex items-center rounded-r bg-gray-100 px-4 text-base">
-							.{{ options.domain }}
+							.{{ domain }}
 						</div>
 					</div>
 				</div>
@@ -209,10 +217,10 @@
 							v-if="$resources.subdomainExists.data"
 							class="text-sm text-green-600"
 						>
-							{{ subdomain }}.{{ options.domain }} is available
+							{{ subdomain }}.{{ domain }} is available
 						</div>
 						<div v-else class="text-sm text-red-600">
-							{{ subdomain }}.{{ options.domain }} is not available
+							{{ subdomain }}.{{ domain }} is not available
 						</div>
 					</template>
 					<ErrorMessage :message="$resources.subdomainExists.error" />
@@ -331,9 +339,9 @@ export default {
 				this.selectedLocalisationCountry = null;
 			}
 		},
-		async version() {
+		version() {
 			this.cluster = null;
-			this.cluster = await this.getClosestCluster();
+			this.cluster = this.closestCluster;
 			this.agreedToRegionConsent = false;
 		},
 		cluster() {
@@ -349,9 +357,6 @@ export default {
 				}
 			}, 500),
 		},
-		closestCluster() {
-			this.cluster = this.closestCluster;
-		},
 	},
 	resources: {
 		options() {
@@ -361,6 +366,7 @@ export default {
 					return { for_bench: this.bench };
 				},
 				onSuccess() {
+					this.closestCluster = this.options.closest_cluster;
 					if (this.bench && this.options.versions.length > 0) {
 						this.version = this.options.versions[0].name;
 					}
@@ -373,7 +379,7 @@ export default {
 				url: 'press.api.site.exists',
 				makeParams() {
 					return {
-						domain: this.options?.domain,
+						domain: this.domain,
 						subdomain: this.subdomain,
 					};
 				},
@@ -416,7 +422,7 @@ export default {
 								app_plans: appPlans,
 								cluster: this.cluster,
 								group: this.selectedVersion.group.name,
-								domain: this.options.domain,
+								domain: this.domain,
 								subscription_plan: this.plan.name,
 								share_details_consent: this.shareDetailsConsent,
 							},
@@ -464,6 +470,7 @@ export default {
 								plan: this.plan.name,
 								share_details_consent: this.shareDetailsConsent,
 								selected_app_plans: appPlans,
+								domain: this.domain,
 								// files: this.selectedFiles,
 								// skip_failing_patches: this.skipFailingPatches,
 							},
@@ -493,6 +500,13 @@ export default {
 	computed: {
 		options() {
 			return this.$resources.options.data;
+		},
+		domain() {
+			return (
+				this.options.cluster_specific_root_domains.find(
+					(d) => d.cluster === this.cluster,
+				)?.name || this.options.domain
+			);
 		},
 		selectedVersion() {
 			return this.options?.versions.find((v) => v.name === this.version);
@@ -710,7 +724,7 @@ export default {
 				},
 				{
 					label: 'Site URL',
-					value: `${this.subdomain}.${this.options?.domain}`,
+					value: `${this.subdomain}.${this.domain}`,
 				},
 				{
 					label: 'Site Plan',
@@ -739,44 +753,6 @@ export default {
 		},
 	},
 	methods: {
-		async getClosestCluster() {
-			if (this.closestCluster) return this.closestCluster;
-			let proxyServers = this.selectedVersion?.group?.clusters
-				.flatMap((c) => c.proxy_server || [])
-				.map((server) => server.name);
-
-			if (proxyServers.length > 0) {
-				this.findingClosestServer = true;
-				let promises = proxyServers.map((server) => this.getPingTime(server));
-				let results = await Promise.allSettled(promises);
-				let fastestServer = results.reduce((a, b) =>
-					a.value.pingTime < b.value.pingTime ? a : b,
-				);
-				let closestServer = fastestServer.value.server;
-				let closestCluster = this.selectedVersion?.group?.clusters.find(
-					(c) => c.proxy_server?.name === closestServer,
-				);
-				if (!this.closestCluster) {
-					this.closestCluster = closestCluster.name;
-				}
-				this.findingClosestServer = false;
-			} else if (proxyServers.length === 1) {
-				this.closestCluster = this.selectedVersion?.group?.clusters[0].name;
-			}
-			return this.closestCluster;
-		},
-		async getPingTime(server) {
-			let pingTime = 999999;
-			try {
-				let t1 = new Date().getTime();
-				let r = await fetch(`https://${server}`);
-				let t2 = new Date().getTime();
-				pingTime = t2 - t1;
-			} catch (error) {
-				console.warn(error);
-			}
-			return { server, pingTime };
-		},
 		autoSelectVersion() {
 			if (!this.availableVersions) return null;
 

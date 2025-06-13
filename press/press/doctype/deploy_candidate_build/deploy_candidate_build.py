@@ -356,9 +356,7 @@ class DeployCandidateBuild(Document):
 
 		with open(conf_file, "w") as f:
 			content = frappe.render_template(
-				template.value,
-				{"doc": self.candidate},
-				is_path=True,
+				template.value, {"doc": self.candidate, "platform": self.platform}, is_path=True
 			)
 			f.write(content)
 

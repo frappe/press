@@ -85,14 +85,19 @@ class ProductTrial(Document):
 				)
 
 	def setup_trial_site(
-		self, subdomain: str, team: str, cluster: str | None = None, account_request: str | None = None
+		self,
+		subdomain: str,
+		domain: str,
+		team: str,
+		cluster: str | None = None,
+		account_request: str | None = None,
 	):
 		from press.press.doctype.site.site import Site, get_plan_config
 
 		validate_subdomain(subdomain)
-		Site.exists(subdomain, self.domain)
+		Site.exists(subdomain, domain)
 
-		site_domain = f"{subdomain}.{self.domain}"
+		site_domain = f"{subdomain}.{domain}"
 
 		standby_site = self.get_standby_site(cluster, account_request)
 
@@ -126,7 +131,7 @@ class ProductTrial(Document):
 			site = frappe.get_doc(
 				doctype="Site",
 				subdomain=subdomain,
-				domain=self.domain,
+				domain=domain,
 				group=self.release_group,
 				cluster=cluster,
 				account_request=account_request,
@@ -202,12 +207,19 @@ class ProductTrial(Document):
 		if cluster:
 			filters["cluster"] = cluster
 
-		for rule in self.hybrid_pool_rules:
-			value = (
-				frappe.db.get_value("Account Request", account_request, rule.field)
-				if account_request
-				else None
+		fields = [rule.field for rule in self.hybrid_pool_rules]
+		acc_req = (
+			frappe.db.get_value(
+				"Account Request",
+				account_request,
+				fields,
+				as_dict=True,
 			)
+			if account_request
+			else None
+		)
+		for rule in self.hybrid_pool_rules:
+			value = acc_req.get(rule.field) if acc_req else None
 			if not value:
 				break
 
@@ -268,6 +280,8 @@ class ProductTrial(Document):
 			frappe.db.commit()
 
 	def create_standby_site(self, cluster: str, rule: dict | None = None):
+		from frappe.core.utils import find
+
 		administrator = frappe.db.get_value("Team", {"user": "Administrator"}, "name")
 		apps = [{"app": d.app} for d in self.apps]
 
@@ -275,10 +289,18 @@ class ProductTrial(Document):
 			apps += [{"app": rule.app}]
 
 		server = self.get_server_from_cluster(cluster)
+		cluster_domains = frappe.db.get_all(
+			"Root Domain", {"name": ("like", f"%.{self.domain}")}, ["name", "default_cluster as cluster"]
+		)
+		cluster_domain = find(
+			cluster_domains,
+			lambda d: d.cluster == cluster if cluster else False,
+		)
+		domain = cluster_domain.name if cluster_domain else self.domain
 		site = frappe.get_doc(
 			doctype="Site",
 			subdomain=self.get_unique_site_name(),
-			domain=self.domain,
+			domain=domain,
 			group=self.release_group,
 			cluster=cluster,
 			server=server,

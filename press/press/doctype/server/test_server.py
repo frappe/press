@@ -60,7 +60,7 @@ def create_test_server(
 			"team": team,
 			"plan": plan,
 			"public": public,
-			"virtual_machine": create_test_virtual_machine(),
+			"virtual_machine": create_test_virtual_machine().name,
 			"platform": platform,
 			"use_for_build": use_for_build,
 		}

@@ -187,6 +187,11 @@ class Incident(WebsiteGenerator):
 		self.take_grafana_screenshots()
 		self.save()
 
+	@frappe.whitelist()
+	def regather_info_and_screenshots(self):
+		self.identify_affected_resource()
+		self.take_grafana_screenshots()
+
 	def get_cpu_state(self, resource: str):
 		timespan = get_confirmation_threshold_duration()
 		cpu_info = prometheus_query(
@@ -314,7 +319,6 @@ class Incident(WebsiteGenerator):
 		token = b64encode(f"{username}:{password}".encode()).decode("ascii")
 		return f"Basic {token}"
 
-	@frappe.whitelist()
 	@filelock("grafana_screenshots")  # prevent 100 chromes from opening
 	def take_grafana_screenshots(self):
 		if not frappe.db.get_single_value("Incident Settings", "grafana_screenshots"):

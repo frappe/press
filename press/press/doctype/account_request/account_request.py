@@ -123,7 +123,7 @@ class AccountRequest(Document):
 
 		if self.is_saas_signup() and self.is_using_new_saas_flow():
 			# Telemetry: Account Request Created
-			capture("account_request_created", "fc_saas", self.email)
+			capture("account_request_created", "fc_product_trial", self.email)
 
 		if self.is_saas_signup() and not self.is_using_new_saas_flow():
 			# If user used oauth, we don't need to verification email but to track the event in stat, send this dummy event
@@ -152,6 +152,7 @@ class AccountRequest(Document):
 
 	def reset_otp(self):
 		self.otp = generate_otp()
+		self.request_key = random_string(32)
 		if frappe.conf.developer_mode and frappe.local.dev_server:
 			self.otp = 111111
 		self.save(ignore_permissions=True)
@@ -218,10 +219,13 @@ class AccountRequest(Document):
 				}
 			)
 		# Telemetry: Verification Email Sent
-		# Only capture if it's not a saas signup or invited by parent team
 		if not (self.is_saas_signup() or self.invited_by_parent_team):
 			# Telemetry: Verification Mail Sent
 			capture("verification_email_sent", "fc_signup", self.email)
+		if self.is_using_new_saas_flow():
+			# Telemetry: Verification Email Sent for new saas flow when coming from product page
+			capture("verification_email_sent", "fc_product_trial", self.name)
+
 		frappe.sendmail(
 			sender=sender,
 			recipients=self.email,

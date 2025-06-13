@@ -279,16 +279,9 @@ def should_renew(site: str | None, certificate: PendingCertificate) -> bool:
 	dns_response = check_dns_cname_a(site, certificate.domain, ignore_proxying=True)
 	if dns_response["matched"]:
 		return True
-	frappe.db.set_value(
-		"TLS Certificate",
-		certificate.name,
-		{
-			"status": "Failure",
-			"error": f"DNS check failed. {dns_response.get('answer')}",
-			"retry_count": certificate.retry_count + 1,
-		},
+	raise DNSValidationError(
+		f"DNS check failed. {dns_response.get('answer')}",
 	)
-	return False
 
 
 def rollback_and_fail_tls(certificate: PendingCertificate, e: Exception):
