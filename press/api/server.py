@@ -455,6 +455,9 @@ def options():
 
 @frappe.whitelist()
 def plans(name, cluster=None, platform="x86_64"):
+	if name == "Server":
+		platform = "arm64"
+
 	return Plan.get_plans(
 		doctype="Server Plan",
 		fields=[
