@@ -921,6 +921,7 @@ class Invoice(Document):
 
 		self.save()
 
+	@frappe.whitelist()
 	def fetch_mpesa_invoice_pdf(self):
 		if not (self.mpesa_payment_record and self.mpesa_invoice):
 			return

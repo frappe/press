@@ -148,6 +148,14 @@ frappe.ui.form.on('Site', {
 		});
 
 		frm.add_custom_button(
+			__('Update Skip Failing Patches'),
+			() => {
+				frm.call('schedule_update', { skip_failing_patches: true });
+			},
+			__('Actions'),
+		);
+
+		frm.add_custom_button(
 			__('Force Archive'),
 			() => {
 				frappe.confirm(`Are you sure you want to force drop this site?`, () =>

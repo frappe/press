@@ -268,11 +268,11 @@
    "set_only_once": 1
   },
   {
-   "depends_on": "eval:doc.provider === \"AWS EC2\"",
+   "depends_on": "eval:[\"AWS EC2\", \"OCI\"].includes(doc.provider)",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
-   "mandatory_depends_on": "eval:doc.provider === \"AWS EC2\"",
+   "mandatory_depends_on": "eval:[\"AWS EC2\", \"OCI\"].includes(doc.provider)",
    "options": "Virtual Machine"
   },
   {
@@ -607,7 +607,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-05-27 13:00:57.532008",
+ "modified": "2025-06-13 12:51:58.756907",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
