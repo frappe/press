@@ -1,5 +1,5 @@
 import { DateTime, Duration } from 'luxon';
-import theme from '../tailwind.theme.json';
+import { theme } from '../../../src2/utils/theme';
 
 let utils = {
 	methods: {
@@ -14,7 +14,7 @@ let utils = {
 
 			let localZone = DateTime.local().zoneName;
 			return DateTime.fromSQL(date, { zone: serverDatesTimezone }).setZone(
-				localZone
+				localZone,
 			);
 		},
 		round(number, precision) {
@@ -40,7 +40,7 @@ let utils = {
 			// 0:0:2 -> 00:00:02
 			const formattedDuration = value
 				.split(':')
-				.map(x => x.padStart(2, '0'))
+				.map((x) => x.padStart(2, '0'))
 				.join(':');
 
 			const dateTime = Duration.fromISOTime(formattedDuration).toObject();
@@ -92,7 +92,7 @@ let utils = {
 					params: { pathMatch: this.$route.path.substring(1).split('/') },
 					// preserve existing query and hash if any
 					query: this.$route.query,
-					hash: this.$route.hash
+					hash: this.$route.hash,
 				});
 			}
 		},
@@ -105,7 +105,7 @@ let utils = {
 			let usage = Math.max(
 				site.current_cpu_usage,
 				site.current_database_usage,
-				site.current_disk_usage
+				site.current_disk_usage,
 			);
 			if (usage && usage >= 80 && status == 'Active') {
 				status = 'Attention Required';
@@ -123,11 +123,11 @@ let utils = {
 				'>': '&gt;',
 				'"': '&quot;',
 				"'": '&#x27;',
-				'/': '&#x2F;'
+				'/': '&#x2F;',
 			};
 			const reg = /[&<>"'/]/gi;
-			return text.replace(reg, match => map[match]);
-		}
+			return text.replace(reg, (match) => map[match]);
+		},
 	},
 	computed: {
 		$theme() {
@@ -143,14 +143,14 @@ let utils = {
 			} else if (ua.indexOf('x11') > -1 || ua.indexOf('linux') > -1) {
 				return 'linux';
 			}
-		}
-	}
+		},
+	},
 };
 
 export function validateGST(gst) {
 	// https://github.com/raysk4ever/raysk-vali/blob/master/validate.js#L51
 	const gstReg = new RegExp(
-		/\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}/
+		/\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}/,
 	);
 	return gstReg.test(gst);
 }
@@ -169,7 +169,7 @@ export function isWasmSupported() {
 				typeof WebAssembly.instantiate === 'function'
 			) {
 				const module = new WebAssembly.Module(
-					Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00)
+					Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00),
 				);
 				if (module instanceof WebAssembly.Module)
 					return (

@@ -8,9 +8,6 @@ import { sentryVitePlugin } from '@sentry/vite-plugin';
 
 export default defineConfig({
 	plugins: [
-		vue(),
-		vueJsx(),
-		pluginRewriteAll(),
 		frappeui({
 			frappeProxy: true,
 			lucideIcons: true,
@@ -22,30 +19,23 @@ export default defineConfig({
 				sourcemap: true,
 			},
 		}),
+		vue(),
+		vueJsx(),
+		pluginRewriteAll(),
 		sentryVitePlugin({
 			url: process.env.SENTRY_URL,
 			org: process.env.SENTRY_ORG,
 			project: process.env.SENTRY_PROJECT,
 			applicationKey: 'press-dashboard',
-			authToken: process.env.SENTRY_AUTH_TOKEN
-		})
+			authToken: process.env.SENTRY_AUTH_TOKEN,
+		}),
 	],
 	resolve: {
 		alias: {
-			'@': path.resolve(__dirname, 'src')
-		}
+			'@': path.resolve(__dirname, 'src'),
+		},
 	},
 	optimizeDeps: {
-		include: ['feather-icons', 'showdown']
+		include: ['feather-icons', 'showdown'],
 	},
-	// @ts-ignore
-	test: {
-		globals: true,
-		environment: 'jsdom',
-		setupFiles: 'src/tests/setup/msw.js',
-		coverage: {
-			extension: ['.vue', '.js'],
-			all: true
-		}
-	}
 });
