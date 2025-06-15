@@ -1,5 +1,6 @@
 import plugin from 'tailwindcss/plugin';
 import frappeUIPreset from 'frappe-ui/src/tailwind/preset';
+import containerQueries from '@tailwindcss/container-queries';
 
 export default {
 	presets: [frappeUIPreset],
@@ -40,7 +41,7 @@ export default {
 		},
 	},
 	plugins: [
-		require('@tailwindcss/container-queries'),
+		containerQueries,
 		plugin(function ({ addUtilities, theme }) {
 			// Add your custom styles here
 			addUtilities({
