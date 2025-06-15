@@ -4,9 +4,6 @@ import vue from '@vitejs/plugin-vue';
 import vueJsx from '@vitejs/plugin-vue-jsx';
 import frappeui from 'frappe-ui/vite';
 import pluginRewriteAll from 'vite-plugin-rewrite-all';
-import Components from 'unplugin-vue-components/vite';
-import Icons from 'unplugin-icons/vite';
-import IconsResolver from 'unplugin-icons/resolver';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 
 export default defineConfig({
@@ -14,16 +11,17 @@ export default defineConfig({
 		vue(),
 		vueJsx(),
 		pluginRewriteAll(),
-		frappeui(),
-		Components({
-			dirs: [
-				'src/components',
-				// 'src2/components',
-				'node_modules/frappe-ui/src/components'
-			],
-			resolvers: [IconsResolver()]
+		frappeui({
+			frappeProxy: true,
+			lucideIcons: true,
+			jinjaBootData: true,
+			buildConfig: {
+				outDir: '../press/public/dashboard',
+				indexHtmlPath: './index.html',
+				emptyOutDir: true,
+				sourcemap: true,
+			},
 		}),
-		Icons(),
 		sentryVitePlugin({
 			url: process.env.SENTRY_URL,
 			org: process.env.SENTRY_ORG,
@@ -39,17 +37,6 @@ export default defineConfig({
 	},
 	optimizeDeps: {
 		include: ['feather-icons', 'showdown']
-	},
-	build: {
-		outDir: '../press/public/dashboard',
-		emptyOutDir: true,
-		sourcemap: true,
-		target: 'es2015',
-		rollupOptions: {
-			input: {
-				main: path.resolve(__dirname, 'index.html')
-			}
-		}
 	},
 	// @ts-ignore
 	test: {

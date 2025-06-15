@@ -46,7 +46,7 @@ import {
 } from 'echarts/components';
 import VChart from 'vue-echarts';
 import Card from '../global/Card.vue';
-import theme from '../../../tailwind.theme.json';
+import { theme } from '../../../src2/utils/theme';
 import { formatBytes, getUnit } from './utils';
 
 const props = defineProps({
