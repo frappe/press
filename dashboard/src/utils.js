@@ -1,5 +1,5 @@
 import { DateTime, Duration } from 'luxon';
-import { theme } from '../../../src2/utils/theme';
+import { theme } from '../src2/utils/theme';
 
 let utils = {
 	methods: {
