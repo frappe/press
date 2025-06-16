@@ -764,6 +764,7 @@ class Cluster(Document):
 				"series": series,
 				"disk_size": disk_size,
 				"machine_type": machine_type,
+				"platform": platform,
 				"virtual_machine_image": self.get_available_vmi(series, platform=platform),
 				"team": team,
 			},
@@ -817,6 +818,7 @@ class Cluster(Document):
 				server.database_server = self.database_server
 				server.proxy_server = self.proxy_server
 				server.new_worker_allocation = True
+				server.platform = vm.platform
 			case "Proxy Server":
 				server = vm.create_proxy_server()
 				server.title = f"{title} - Proxy"

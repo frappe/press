@@ -23,6 +23,9 @@ if TYPE_CHECKING:
 	from press.press.doctype.cluster.cluster import Cluster
 
 
+REGIONS_WITH_ARM_SUPPORT = ["ap-south-1", "eu-central-1"]
+
+
 def poly_get_doc(doctypes, name):
 	for doctype in doctypes:
 		if frappe.db.exists(doctype, name):
@@ -181,6 +184,12 @@ def archive(name):
 
 @frappe.whitelist()
 def new(server):
+	server_plan_platform = frappe.get_value("Server Plan", server["app_plan"], "platform")
+	cluster_region = frappe.get_value("Cluster", server["cluster"], "region")
+
+	if server_plan_platform == "arm64" and cluster_region not in REGIONS_WITH_ARM_SUPPORT:
+		frappe.throw(f"ARM Instances are currently unavailable in the {server['cluster']} region")
+
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
 		frappe.throw("You cannot create a new server because your account is disabled")
@@ -449,14 +458,21 @@ def options():
 	return {
 		"regions": regions,
 		"app_plans": plans("Server"),
-		"db_plans": plans("Database Server"),
+		"db_plans": plans("Database Server", platform="x86_64"),
 	}
 
 
 @frappe.whitelist()
-def plans(name, cluster=None, platform="x86_64"):
-	if name == "Server":
-		platform = "arm64"
+def plans(name, cluster=None, platform=None):
+	# Removed default platform of x86_64;
+	# Still use x86_64 for new database servers
+	filters = {"server_type": name}
+
+	if cluster:
+		filters.update({"cluster": cluster})
+
+	if platform:
+		filters.update({"platform": platform})
 
 	return Plan.get_plans(
 		doctype="Server Plan",
@@ -472,12 +488,7 @@ def plans(name, cluster=None, platform="x86_64"):
 			"instance_type",
 			"premium",
 		],
-		filters={"server_type": name, "platform": platform, "cluster": cluster}
-		if cluster
-		else {
-			"server_type": name,
-			"platform": platform,
-		},
+		filters=filters,
 	)
 
 
