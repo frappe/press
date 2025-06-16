@@ -635,7 +635,7 @@ class BaseServer(Document, TagHelpers):
 			self.reboot()
 
 	def guess_data_disk_mountpoint(self) -> str:
-		if not self.has_data_volume:
+		if not hasattr(self, "has_data_volume") or not self.has_data_volume:
 			return "/"
 
 		volumes = self.get_volume_mounts()
@@ -721,7 +721,7 @@ class BaseServer(Document, TagHelpers):
 			{
 				"document_type": self.doctype,
 				"document_name": self.name,
-				"team": self.team,
+				"team": self.team or "team@erpnext.com",
 				"plan_type": plan_type,
 				"plan": plan,
 			},
