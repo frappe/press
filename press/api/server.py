@@ -23,9 +23,6 @@ if TYPE_CHECKING:
 	from press.press.doctype.cluster.cluster import Cluster
 
 
-REGIONS_WITH_ARM_SUPPORT = ["ap-south-1", "eu-central-1"]
-
-
 def poly_get_doc(doctypes, name):
 	for doctype in doctypes:
 		if frappe.db.exists(doctype, name):
@@ -185,9 +182,9 @@ def archive(name):
 @frappe.whitelist()
 def new(server):
 	server_plan_platform = frappe.get_value("Server Plan", server["app_plan"], "platform")
-	cluster_region = frappe.get_value("Cluster", server["cluster"], "region")
+	cluster_has_arm_support = frappe.get_value("Cluster", server["cluster"], "has_arm_support")
 
-	if server_plan_platform == "arm64" and cluster_region not in REGIONS_WITH_ARM_SUPPORT:
+	if server_plan_platform == "arm64" and not cluster_has_arm_support:
 		frappe.throw(f"ARM Instances are currently unavailable in the {server['cluster']} region")
 
 	team = get_current_team(get_doc=True)

@@ -59,6 +59,7 @@ class Cluster(Document):
 		cidr_block: DF.Data | None
 		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner"]
 		description: DF.Data | None
+		has_arm_support: DF.Check
 		hybrid: DF.Check
 		image: DF.AttachImage | None
 		monitoring_password: DF.Password | None
