@@ -45,9 +45,15 @@ def _get_intel_mount_point(_: Literal["f", "m"]) -> str:
 
 
 def get_mount_point(server: str) -> str:
+	provider = frappe.get_value("Server", server, provider)
+
+	if provider != "AWS EC2":
+		return _get_intel_mount_point(series)
+
 	platform, series = frappe.get_value("Virtual Machine", server, ["platform", "series"])
 	if platform == "arm64":
 		return _get_arm_mount_point(series)
+
 	return _get_intel_mount_point(series)
 
 
@@ -361,7 +367,7 @@ def analytics(name, query, timezone, duration):
 		"innodb_bp_miss_percent": (
 			f"""
 avg by (instance) (
-        rate(mysql_global_status_innodb_buffer_pool_reads{{instance=~"{name}"}}[{timegrain}s])
+		rate(mysql_global_status_innodb_buffer_pool_reads{{instance=~"{name}"}}[{timegrain}s])
 		/
 		rate(mysql_global_status_innodb_buffer_pool_read_requests{{instance=~"{name}"}}[{timegrain}s])
 )
