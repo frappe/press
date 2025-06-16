@@ -1,5 +1,8 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
@@ -7,6 +10,9 @@ from frappe.model.document import Document
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
 from press.utils import log_error
+
+if TYPE_CHECKING:
+	from press.press.doctype.server.server import Server
 
 
 class SecurityUpdateCheck(Document):
@@ -36,12 +42,12 @@ class SecurityUpdateCheck(Document):
 
 	def _start(self):
 		try:
-			_server = frappe.get_doc(self.server_type, self.server)
+			server: Server = frappe.get_doc(self.server_type, self.server)
 			ansible = Ansible(
 				playbook="security_update.yml",
-				server=_server,
-				user=_server.ssh_user or "root",
-				port=_server.ssh_port or 22,
+				server=server,
+				user=server.ssh_user or "root",
+				port=server.ssh_port or 22,
 				variables={"validate_pending_security_updates": True},
 			)
 			self.reload()
