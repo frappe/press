@@ -15,7 +15,17 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.server.server import Server
 
 
-arm_machine_mappings = {"t2": "t4g", "c6i": "c8g", "m6i": "m8g", "m7i": "m8g", "r6i": "r8g"}
+arm_machine_mappings = {
+	"t2": "t4g",
+	"c6i": "c8g",
+	"m6i": "m8g",
+	"m7i": "m8g",
+	"r6i": "r8g",
+	# Following are for Zurich due to lack of newer processors in that region
+	"r5": "r7g",
+	"m5": "m7g",
+	"c5": "c7g",
+}
 
 
 def has_arm_build_record(server: str) -> bool:

@@ -1242,6 +1242,10 @@ class BaseServer(Document, TagHelpers):
 	@frappe.whitelist()
 	def collect_arm_images(self) -> str:
 		"""Collect arm build images of all active benches on VM"""
+		# Need to disable all further deployments before collecting arm images.
+		frappe.db.set_value("Server", self.name, "stop_deployments", 1)
+		frappe.db.commit()
+
 		benches = frappe.get_all(
 			"Bench",
 			{"server": self.name, "status": "Active"},
