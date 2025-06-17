@@ -41,9 +41,9 @@
 					v-if="skipBackups"
 					class="flex items-center rounded bg-gray-50 p-4 text-sm text-gray-700"
 				>
-					<i-lucide-info class="mr-2 h-4 w-8" />
-					Backups will not be taken during the upgrade process and incase of any
-					failure rollback will not be possible.
+					<lucide-info class="mr-2 h-4 w-8" />
+					Backups will not be taken during the upgrade process and in case of
+					any failure rollback will not be possible.
 				</div>
 				<p v-if="message && !errorMessage" class="text-sm text-gray-700">
 					{{ message }}
@@ -102,11 +102,11 @@ export default {
 			targetDateTime: null,
 			privateReleaseGroup: {
 				value: '',
-				label: ''
+				label: '',
 			},
 			skipBackups: false,
 			skipFailingPatches: false,
-			benchHasCommonServer: false
+			benchHasCommonServer: false,
 		};
 	},
 	watch: {
@@ -115,11 +115,11 @@ export default {
 				if (privateReleaseGroup?.value) {
 					this.$resources.validateGroupforUpgrade.submit({
 						name: this.site,
-						group_name: privateReleaseGroup.value
+						group_name: privateReleaseGroup.value,
 					});
 				}
-			}
-		}
+			},
+		},
 	},
 	computed: {
 		nextVersion() {
@@ -156,7 +156,7 @@ export default {
 		datetimeInIST() {
 			if (!this.targetDateTime) return null;
 			const datetimeInIST = this.$dayjs(this.targetDateTime).format(
-				'YYYY-MM-DDTHH:mm'
+				'YYYY-MM-DDTHH:mm',
 			);
 
 			return datetimeInIST;
@@ -171,7 +171,7 @@ export default {
 		},
 		$site() {
 			return getCachedDocumentResource('Site', this.site);
-		}
+		},
 	},
 	resources: {
 		versionUpgrade() {
@@ -182,12 +182,12 @@ export default {
 					destination_group: this.privateReleaseGroup.value,
 					skip_failing_patches: this.skipFailingPatches,
 					skip_backups: this.skipBackups,
-					scheduled_datetime: this.datetimeInIST
+					scheduled_datetime: this.datetimeInIST,
 				},
 				onSuccess() {
 					toast.success("Site's version upgrade has been scheduled.");
 					this.show = false;
-				}
+				},
 			};
 		},
 		getPrivateGroups() {
@@ -195,20 +195,20 @@ export default {
 				url: 'press.api.site.get_private_groups_for_upgrade',
 				params: {
 					name: this.site,
-					version: this.$site.doc?.version
+					version: this.$site.doc?.version,
 				},
 				auto:
 					this.$site.doc?.version &&
 					!this.$site.doc?.group_public &&
 					this.$site.doc?.version !== 'Nightly',
 				transform(data) {
-					return data.map(group => ({
+					return data.map((group) => ({
 						label: group.title || group.name,
 						description: group.name,
-						value: group.name
+						value: group.name,
 					}));
 				},
-				initialData: []
+				initialData: [],
 			};
 		},
 		addServerToReleaseGroup() {
@@ -216,22 +216,22 @@ export default {
 				url: 'press.api.site.add_server_to_release_group',
 				params: {
 					name: this.site,
-					group_name: this.privateReleaseGroup.value
+					group_name: this.privateReleaseGroup.value,
 				},
 				onSuccess(data) {
 					toast.success('Server Added to the Bench Group', {
-						description: `Added a server to ${this.privateReleaseGroup.value} bench. Please wait for the deploy to be completed.`
+						description: `Added a server to ${this.privateReleaseGroup.value} bench. Please wait for the deploy to be completed.`,
 					});
 					this.$router.push({
 						name: 'Release Group Job',
 						params: {
 							name: this.privateReleaseGroup.value,
-							id: data
-						}
+							id: data,
+						},
 					});
 					this.resetValues();
 					this.show = false;
-				}
+				},
 			};
 		},
 		validateGroupforUpgrade() {
@@ -239,20 +239,20 @@ export default {
 				url: 'press.api.site.validate_group_for_upgrade',
 				onSuccess(data) {
 					this.benchHasCommonServer = data;
-				}
+				},
 			};
-		}
+		},
 	},
 	methods: {
 		resetValues() {
 			this.targetDateTime = null;
 			this.privateReleaseGroup = {
 				label: '',
-				value: ''
+				value: '',
 			};
 			this.benchHasCommonServer = false;
 			this.$resources.getPrivateGroups.reset();
-		}
-	}
+		},
+	},
 };
 </script>

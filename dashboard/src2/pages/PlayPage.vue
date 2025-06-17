@@ -2,7 +2,7 @@
 	<div class="p-5" v-if="play">
 		<Button :route="{ name: `${object.doctype} Detail Plays` }">
 			<template #prefix>
-				<i-lucide-arrow-left class="inline-block h-4 w-4" />
+				<lucide-arrow-left class="inline-block h-4 w-4" />
 			</template>
 			All plays
 		</Button>
@@ -18,14 +18,14 @@
 							:loading="$resources.play.loading"
 						>
 							<template #icon>
-								<i-lucide-refresh-ccw class="h-4 w-4" />
+								<lucide-refresh-ccw class="h-4 w-4" />
 							</template>
 						</Button>
 						<Dropdown v-if="dropdownOptions.length" :options="dropdownOptions">
 							<template v-slot="{ open }">
 								<Button>
 									<template #icon>
-										<i-lucide-more-horizontal class="h-4 w-4" />
+										<lucide-more-horizontal class="h-4 w-4" />
 									</template>
 								</Button>
 							</template>
@@ -100,9 +100,9 @@ export default {
 				},
 				onSuccess() {
 					this.lastLoaded = Date.now();
-				}
+				},
 			};
-		}
+		},
 	},
 	computed: {
 		object() {
@@ -120,16 +120,16 @@ export default {
 					onClick: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/ansible-play/${this.id}`,
-							'_blank'
+							'_blank',
 						);
-					}
-				}
-			].filter(option => option.condition?.() ?? true);
-		}
+					},
+				},
+			].filter((option) => option.condition?.() ?? true);
+		},
 	},
 	mounted() {
 		this.$socket.emit('doc_subscribe', 'Ansible Play', this.id);
-		this.$socket.on('ansible_play_update', data => {
+		this.$socket.on('ansible_play_update', (data) => {
 			if (data.id === this.id) {
 				this.reload();
 			}
@@ -153,7 +153,7 @@ export default {
 			) {
 				this.$resources.play.reload();
 			}
-		}
-	}
+		},
+	},
 };
 </script>

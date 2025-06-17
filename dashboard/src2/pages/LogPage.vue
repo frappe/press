@@ -6,11 +6,11 @@
 					name:
 						object.doctype === 'Site'
 							? 'Site Logs'
-							: `${object.doctype} Detail Logs`
+							: `${object.doctype} Detail Logs`,
 				}"
 			>
 				<template #icon>
-					<i-lucide-arrow-left class="inline-block h-4 w-4" />
+					<lucide-arrow-left class="inline-block h-4 w-4" />
 				</template>
 			</Button>
 			<h2 class="text-lg font-medium text-gray-900">{{ logName }}</h2>
@@ -21,12 +21,12 @@
 						params: {
 							mode: object.doctype === 'Site' ? 'site' : 'bench',
 							docName: name,
-							logId: logName
-						}
+							logId: logName,
+						},
 					}"
 				>
 					<template #prefix>
-						<i-lucide-sparkle class="h-4 w-4" />
+						<lucide-sparkle class="h-4 w-4" />
 					</template>
 					View in Log Browser
 				</Button>
@@ -35,7 +35,7 @@
 					:loading="$resources.log.loading"
 				>
 					<template #icon>
-						<i-lucide-refresh-ccw class="h-4 w-4" />
+						<lucide-refresh-ccw class="h-4 w-4" />
 					</template>
 				</Button>
 			</div>
@@ -82,9 +82,9 @@ export default {
 				},
 				onSuccess() {
 					this.lastLoaded = Date.now();
-				}
+				},
 			};
-		}
+		},
 	},
 	computed: {
 		forSite() {
@@ -97,7 +97,7 @@ export default {
 		},
 		log() {
 			return this.$resources.log.data;
-		}
-	}
+		},
+	},
 };
 </script>

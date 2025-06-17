@@ -23,7 +23,7 @@
 				<div
 					class="flex items-center rounded border border-gray-200 bg-gray-100 p-4 text-sm text-gray-600"
 				>
-					<i-lucide-alert-triangle class="mr-4 inline-block h-6 w-6" />
+					<lucide-alert-triangle class="mr-4 inline-block h-6 w-6" />
 					<div>
 						This will overwrite all <b>data</b> & <b>apps</b> in your site with
 						those from the backup

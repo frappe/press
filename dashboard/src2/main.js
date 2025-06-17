@@ -13,6 +13,7 @@ import { fetchPlans } from './data/plans.js';
 import * as Sentry from '@sentry/vue';
 import { session } from './data/session.js';
 import { unreadNotificationsCount } from './data/notifications.js';
+import registerGlobalComponents from './components/global/register';
 import './vendor/posthog.js';
 
 const request = (options) => {
@@ -41,6 +42,8 @@ getInitialData().then(() => {
 	app.use(router);
 	app.use(resourcesPlugin);
 	app.use(pageMetaPlugin);
+
+	registerGlobalComponents(app);
 
 	socket = initSocket();
 	app.config.globalProperties.$socket = socket;

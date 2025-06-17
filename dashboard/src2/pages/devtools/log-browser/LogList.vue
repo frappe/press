@@ -6,7 +6,7 @@
 			v-model="searchLogQuery"
 		>
 			<template #prefix>
-				<i-lucide-search class="h-4 w-4 text-gray-500" />
+				<lucide-search class="h-4 w-4 text-gray-500" />
 			</template>
 		</FormControl>
 		<div class="h-[81.5vh] space-y-2 overflow-auto pr-4">
@@ -27,7 +27,7 @@
 				<div
 					class="cursor-pointer rounded border border-gray-200 p-3 hover:bg-gray-50"
 					:class="{
-						'border-gray-800': logId === log.name
+						'border-gray-800': logId === log.name,
 					}"
 					@click="
 						() => {
@@ -37,8 +37,8 @@
 								params: {
 									mode,
 									docName: mode === 'bench' ? bench : site,
-									logId: log.name
-								}
+									logId: log.name,
+								},
 							});
 						}
 					"
@@ -64,12 +64,12 @@
 export default {
 	props: {
 		mode: String,
-		docName: String
+		docName: String,
 	},
 	data() {
 		return {
 			searchLogQuery: '',
-			logId: this.$route.params.logId
+			logId: this.$route.params.logId,
 		};
 	},
 	resources: {
@@ -78,22 +78,22 @@ export default {
 				url: 'press.api.bench.logs',
 				params: {
 					name: this.bench?.split('-').slice(0, 2).join('-'), // TODO: fetch group instead of hardcoding
-					bench: this.bench
+					bench: this.bench,
 				},
 				auto: this.mode === 'bench' && this.bench,
-				cache: ['BenchLogs', this.bench]
+				cache: ['BenchLogs', this.bench],
 			};
 		},
 		siteLogs() {
 			return {
 				url: 'press.api.site.logs',
 				params: {
-					name: this.site
+					name: this.site,
 				},
 				auto: this.mode === 'site' && this.site,
-				cache: ['SiteLogs', this.site]
+				cache: ['SiteLogs', this.site],
 			};
-		}
+		},
 	},
 	computed: {
 		logs() {
@@ -109,8 +109,8 @@ export default {
 			// logs = logs.filter(log => !log.name.match(/\.\d+$/));
 
 			if (this.searchLogQuery) {
-				logs = logs.filter(log =>
-					log.name.toLowerCase().includes(this.searchLogQuery.toLowerCase())
+				logs = logs.filter((log) =>
+					log.name.toLowerCase().includes(this.searchLogQuery.toLowerCase()),
 				);
 			}
 
@@ -127,7 +127,7 @@ export default {
 				return this.docName;
 			}
 			return null;
-		}
-	}
+		},
+	},
 };
 </script>

@@ -20,7 +20,7 @@
 							<Tooltip
 								text="You will be able to access your site via your site name"
 							>
-								<i-lucide-info class="h-4 w-4 text-gray-500" />
+								<lucide-info class="h-4 w-4 text-gray-500" />
 							</Tooltip>
 						</div>
 						<div class="col-span-2 flex w-full">

@@ -45,7 +45,7 @@ const listOptions = ref({
 					>
 						<UserAvatarGroup users={row.users} />
 						<Button label="Add Member">
-							{{ icon: () => <i-lucide-plus class="h-4 w-4 text-gray-600" /> }}
+							{{ icon: () => <lucide-plus class="h-4 w-4 text-gray-600" /> }}
 						</Button>
 					</div>
 				);

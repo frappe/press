@@ -9,7 +9,7 @@
 		v-if="!$team.doc?.is_desk_user && !$session.hasSiteCreationAccess"
 		class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
 	>
-		<i-lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
+		<lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
 		<ErrorMessage message="You aren't permitted to create new sites" />
 	</div>
 
@@ -36,7 +36,7 @@
 					<Tooltip
 						text="A local compliance app allows creating transactions as per statutory compliance. They're maintained by community partners."
 					>
-						<i-lucide-info class="h-4 w-4 text-gray-500" />
+						<lucide-info class="h-4 w-4 text-gray-500" />
 					</Tooltip>
 				</div>
 				<FormControl
@@ -94,7 +94,7 @@
 									<Tooltip
 										text="This version is under development and may have bugs. Do not use for production sites."
 									>
-										<i-lucide-info class="h-4 w-4 text-gray-500" />
+										<lucide-info class="h-4 w-4 text-gray-500" />
 									</Tooltip>
 									<span class="ml-1 text-gray-600">
 										{{ v.status }}
@@ -146,7 +146,7 @@
 					<div>
 						<Button link="https://frappecloud.com/pricing" variant="ghost">
 							<template #prefix>
-								<i-lucide-help-circle class="h-4 w-4 text-gray-700" />
+								<lucide-help-circle class="h-4 w-4 text-gray-700" />
 							</template>
 							Help
 						</Button>
@@ -167,7 +167,7 @@
 					<div
 						class="flex items-center rounded bg-gray-50 p-2 text-p-base font-medium text-gray-800"
 					>
-						<i-lucide-badge-check class="h-4 w-8 text-gray-600" />
+						<lucide-badge-check class="h-4 w-8 text-gray-600" />
 						<span class="ml-4">
 							<strong>Support</strong> covers only issues of Frappe apps and not
 							functional queries. You can raise a support ticket for Frappe
@@ -185,7 +185,7 @@
 						v-if="this.domain !== this.options.domain"
 						text="The root domain can change depending on the region you choose"
 					>
-						<i-lucide-help-circle class="h-4 w-4 text-gray-500" />
+						<lucide-help-circle class="h-4 w-4 text-gray-500" />
 					</Tooltip>
 				</div>
 				<div class="mt-2 items-center">

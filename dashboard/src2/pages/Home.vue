@@ -5,7 +5,7 @@
 			<Dropdown
 				:options="[
 					{ label: 'Site', route: { name: 'New Site' } },
-					{ label: 'Bench Group', route: { name: 'New Release Group' } }
+					{ label: 'Bench Group', route: { name: 'New Release Group' } },
 				]"
 			>
 				<Button
@@ -14,7 +14,7 @@
 					:disabled="!$team.doc?.payment_mode"
 				>
 					<template #suffix>
-						<i-lucide-chevron-down class="h-4 w-4 text-gray-300" />
+						<lucide-chevron-down class="h-4 w-4 text-gray-300" />
 					</template>
 				</Button>
 			</Dropdown>
@@ -36,9 +36,9 @@ export default {
 	components: {
 		Header,
 		HomeSummary,
-		Onboarding: defineAsyncComponent(() =>
-			import('../components/Onboarding.vue')
-		)
-	}
+		Onboarding: defineAsyncComponent(
+			() => import('../components/Onboarding.vue'),
+		),
+	},
 };
 </script>

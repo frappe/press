@@ -16,7 +16,7 @@
 						v-model="searchQuery"
 					>
 						<template #prefix>
-							<i-lucide-search class="h-4 w-4 text-gray-500" />
+							<lucide-search class="h-4 w-4 text-gray-500" />
 						</template>
 						<template #suffix>
 							<span class="text-sm text-gray-500" v-if="searchQuery">
@@ -35,7 +35,7 @@
 						:loading="isLoading"
 					>
 						<template #icon>
-							<i-lucide-refresh-ccw class="h-4 w-4" />
+							<lucide-refresh-ccw class="h-4 w-4" />
 						</template>
 					</Button>
 					<Button
@@ -45,7 +45,7 @@
 						"
 					>
 						<template #prefix>
-							<i-lucide-github class="h-4 w-4" />
+							<lucide-github class="h-4 w-4" />
 							Add from GitHub
 						</template>
 					</Button>

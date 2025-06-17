@@ -23,7 +23,7 @@
 						<div
 							class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
 						>
-							<i-lucide-check class="h-3 w-3 text-white" />
+							<lucide-check class="h-3 w-3 text-white" />
 						</div>
 					</div>
 				</div>
@@ -81,7 +81,7 @@
 					<div
 						class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
 					>
-						<i-lucide-check class="h-3 w-3 text-white" />
+						<lucide-check class="h-3 w-3 text-white" />
 					</div>
 				</div>
 				<div class="pl-7">
@@ -92,7 +92,7 @@
 							target="_blank"
 						>
 							https://{{ trialSite.host_name || trialSite.name }}
-							<i-lucide-external-link class="ml-1 h-3.5 w-3.5 text-gray-800" />
+							<lucide-external-link class="ml-1 h-3.5 w-3.5 text-gray-800" />
 						</a>
 					</div>
 					<p class="mt-2 text-p-base text-gray-800">
@@ -140,7 +140,7 @@
 						<div
 							class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
 						>
-							<i-lucide-check class="h-3 w-3 text-white" />
+							<lucide-check class="h-3 w-3 text-white" />
 						</div>
 					</div>
 				</div>
@@ -222,7 +222,7 @@
 						<div
 							class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
 						>
-							<i-lucide-check class="h-3 w-3 text-white" />
+							<lucide-check class="h-3 w-3 text-white" />
 						</div>
 					</div>
 					<div

@@ -1,7 +1,7 @@
 <template>
 	<Button v-if="$isMobile" @click="showDialog = true">
 		<template #icon>
-			<i-lucide-filter class="h-4 w-4 text-gray-600" />
+			<lucide-filter class="h-4 w-4 text-gray-600" />
 		</template>
 	</Button>
 	<component :is="$isMobile ? 'DialogWrapper' : 'div'" v-bind="wrapperProps">
@@ -33,7 +33,9 @@
 							!$isMobile ? control.placeholder || control.label : null
 						"
 						:modelValue="control.value"
-						@update:modelValue="value => onFilterControlChange(control, value)"
+						@update:modelValue="
+							(value) => onFilterControlChange(control, value)
+						"
 					/>
 				</component>
 			</template>
@@ -53,11 +55,11 @@ export default {
 		Dialog,
 		Tooltip,
 		DialogWrapper,
-		FilterControl
+		FilterControl,
 	},
 	data() {
 		return {
-			showDialog: false
+			showDialog: false,
 		};
 	},
 	methods: {
@@ -68,7 +70,7 @@ export default {
 				control.value = value;
 			}
 			this.$emit('update:filter', control);
-		}
+		},
 	},
 	computed: {
 		wrapperProps() {
@@ -77,14 +79,14 @@ export default {
 			}
 			return {
 				modelValue: this.showDialog,
-				'onUpdate:modelValue': value => {
+				'onUpdate:modelValue': (value) => {
 					this.showDialog = value;
 				},
 				options: {
-					title: 'Filters'
-				}
+					title: 'Filters',
+				},
 			};
-		}
-	}
+		},
+	},
 };
 </script>
