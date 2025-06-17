@@ -33,6 +33,7 @@ class BackupTest:
 			),
 			pluck="name",
 		)
+		random.shuffle(servers)
 		for server in servers:
 			benches = self.get_benches(server)
 			for bench in benches:
@@ -55,6 +56,8 @@ class BackupTest:
 
 			if len(sites) >= BATCH_SIZE:
 				break
+
+		return sites
 
 	def start(self):
 		for site in self.sites:
