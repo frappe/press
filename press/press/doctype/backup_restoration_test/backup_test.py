@@ -1,25 +1,38 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
+
 from random import choice
-from typing import List
+from typing import TYPE_CHECKING
 
 import frappe
 
 from press.press.audit import get_benches_in_server
-from press.press.doctype.server.server import Server
+
+if TYPE_CHECKING:
+	from press.press.doctype.site_backup.site_backup import SiteBackup
+
+BATCH_SIZE = 50
+BACKUP_SIZE_LIMIT = 2 * 1024 * 1024 * 1024  # 2 GB
 
 
 class BackupTest:
 	def __init__(self) -> None:
-		self.trial_plans = frappe.get_all(
-			"Site Plan", dict(enabled=1, is_trial_plan=1), pluck="name"
-		)
+		self.trial_plans = frappe.get_all("Site Plan", dict(enabled=1, is_trial_plan=1), pluck="name")
 		self.sites = self.get_random_sites()
 
-	def get_random_sites(self) -> List:
+	def get_random_sites(self) -> list:
 		sites = []
-		servers = Server.get_all_primary_prod()
+		servers = frappe.get_all(
+			"Server",
+			dict(
+				status="Active",
+				public=True,
+				is_primary=True,
+			),
+			pluck="name",
+		)
 		for server in servers:
 			benches = self.get_benches(server)
 			for bench in benches:
@@ -32,6 +45,9 @@ class BackupTest:
 					continue
 				site = choice(site_list)
 				sites.append(site)
+				break
+			if len(sites) >= BATCH_SIZE:
+				break
 
 		return sites
 
@@ -49,14 +65,39 @@ class BackupTest:
 			except Exception:
 				frappe.log_error("Backup Restore Test insertion failed")
 
-	def get_benches(self, server: str) -> List[str]:
+	def is_last_backup_size_less_than_limit(self, site: str) -> bool:
+		try:
+			backup: SiteBackup = frappe.get_last_doc(
+				"Site Backup",
+				{
+					"site": site,
+					"with_files": True,
+					"offsite": True,
+					"status": "Success",
+					"files_availability": "Available",
+				},
+			)
+		except frappe.DoesNotExistError:
+			return False
+		else:
+			db_size, public_size, private_size = (
+				frappe.get_doc("Remote File", file_name).size if file_name else 0
+				for file_name in (
+					backup.remote_database_file,
+					backup.remote_public_file,
+					backup.remote_private_file,
+				)
+			)
+			if any(size > BACKUP_SIZE_LIMIT for size in (db_size, public_size, private_size)):
+				return False
+			return True
+
+	def get_benches(self, server: str) -> list[str]:
 		benches = get_benches_in_server(server)
 
 		# select all benches from central benches
 		# TODO: provision to run for all release groups
-		groups = frappe.get_all(
-			"Release Group", dict(enabled=1, central_bench=1), pluck="name"
-		)
+		groups = frappe.get_all("Release Group", dict(enabled=1, public=1), pluck="name")
 
 		bench_list = []
 		for group in groups:
@@ -64,7 +105,7 @@ class BackupTest:
 				"Bench", dict(status="Active", group=group, server=server), pluck="name"
 			)
 
-			for bench in benches.keys():
+			for bench in benches:
 				if bench in group_benches:
 					bench_list.append(bench)
 

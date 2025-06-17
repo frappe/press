@@ -1996,11 +1996,6 @@ class Server(BaseServer):
 			log_error("Exporters Install Exception", server=self.as_dict())
 
 	@classmethod
-	def get_all_prod(cls, **kwargs) -> list[str]:
-		"""Active prod servers."""
-		return frappe.get_all("Server", {"status": "Active"}, pluck="name", **kwargs)
-
-	@classmethod
 	def get_all_primary_prod(cls) -> list[str]:
 		"""Active primary prod servers."""
 		return frappe.get_all("Server", {"status": "Active", "is_primary": True}, pluck="name")
