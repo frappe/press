@@ -10,6 +10,7 @@ from frappe import _
 from frappe.contacts.address_and_contact import load_address_and_contact
 from frappe.core.utils import find
 from frappe.model.document import Document
+from frappe.rate_limiter import rate_limit
 from frappe.utils import get_fullname, get_url_to_form, random_string
 
 from press.api.client import dashboard_whitelist
@@ -831,6 +832,7 @@ class Team(Document):
 		return get_team_members(self.name)
 
 	@dashboard_whitelist()
+	@rate_limit(limit=10, seconds=60 * 60)
 	def invite_team_member(self, email, roles=None):
 		PressRole = frappe.qb.DocType("Press Role")
 		PressRoleUser = frappe.qb.DocType("Press Role User")
@@ -851,6 +853,17 @@ class Team(Document):
 
 		if frappe.db.exists("Team Member", {"user": email, "parent": self.name, "parenttype": "Team"}):
 			frappe.throw(_("Team member already exists"))
+
+		if frappe.db.exists(
+			"Account Request",
+			{
+				"email": email,
+				"team": self.name,
+				"invited_by": ("is", "set"),
+				"creation": (">", frappe.utils.add_days(None, -1)),
+			},
+		):
+			frappe.throw("User has already been invited recently. Please try again later.")
 
 		account_request = frappe.get_doc(
 			{
