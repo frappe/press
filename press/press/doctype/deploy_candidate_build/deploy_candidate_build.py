@@ -1226,6 +1226,14 @@ def fail_and_redeploy(dn: str):
 	return build.redeploy()
 
 
+@frappe.whitelist()
+def fail_remote_job(dn: str):
+	agent_job: "AgentJob" = frappe.get_doc(
+		"Agent Job", {"reference_doctype": "Deploy Candidate Build", "reference_name": dn}
+	)
+	agent_job.cancel_job()
+
+
 def is_build_job(job: Job) -> bool:
 	doc_method: str = job.kwargs.get("kwargs", {}).get("doc_method", "")
 	return doc_method.startswith("_build")
