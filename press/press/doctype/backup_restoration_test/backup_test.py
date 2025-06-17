@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from random import choice
+import random
 from typing import TYPE_CHECKING
 
 import frappe
@@ -23,7 +23,7 @@ class BackupTest:
 		self.sites = self.get_random_sites()
 
 	def get_random_sites(self) -> list:
-		sites = []
+		sites: list[str] = []
 		servers = frappe.get_all(
 			"Server",
 			dict(
@@ -36,20 +36,25 @@ class BackupTest:
 		for server in servers:
 			benches = self.get_benches(server)
 			for bench in benches:
-				site_list = frappe.get_all(
+				site_list: list[str] = frappe.get_all(
 					"Site",
 					dict(status="Active", plan=("not in", self.trial_plans), bench=bench),
 					pluck="name",
 				)
 				if not site_list:
 					continue
-				site = choice(site_list)
-				sites.append(site)
-				break
+				random.shuffle(site_list)
+				chosen_site = None
+				for site in site_list:
+					if self.is_last_backup_size_less_than_limit(site):
+						chosen_site = site
+						break
+				if chosen_site:
+					sites.append(chosen_site)
+					break
+
 			if len(sites) >= BATCH_SIZE:
 				break
-
-		return sites
 
 	def start(self):
 		for site in self.sites:
