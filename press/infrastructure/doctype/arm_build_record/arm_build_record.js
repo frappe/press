@@ -7,6 +7,7 @@ frappe.ui.form.on('ARM Build Record', {
 			[__('Sync Status'), 'sync_status'],
 			[__('Pull Images on Server'), 'pull_images'],
 			[__('Update Images on Benches'), 'update_image_tags_on_benches'],
+			[__('Cancel All Running Builds'), 'cancel_all_jobs'],
 		].forEach(([label, method, condition]) => {
 			if (condition || typeof condition == 'undefined') {
 				frm.add_custom_button(

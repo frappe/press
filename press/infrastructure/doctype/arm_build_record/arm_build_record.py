@@ -79,6 +79,21 @@ class ARMBuildRecord(Document):
 		return agent_job.status == "Success"
 
 	@frappe.whitelist()
+	def cancel_all_jobs(self):
+		"""Cancel all current running jobs"""
+		self.sync_status()
+
+		for arm_image in self.arm_images:
+			if arm_image.status == "Running":
+				agent_job: "AgentJob" = frappe.get_doc(
+					"Agent Job",
+					{"reference_doctype": "Deploy Candidate Build", "reference_name": arm_image.build},
+				)
+				agent_job.cancel_job()
+
+		self.sync_status()
+
+	@frappe.whitelist()
 	def pull_images(self):
 		"""Pull images on app server using image tags"""
 		builds = []
