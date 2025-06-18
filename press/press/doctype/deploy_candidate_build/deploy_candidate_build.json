@@ -302,15 +302,11 @@
    "link_fieldname": "document_name"
   },
   {
-   "link_doctype": "Deploy",
-   "link_fieldname": "build"
-  },
-  {
    "link_doctype": "Bench",
    "link_fieldname": "build"
   }
  ],
- "modified": "2025-05-27 23:08:21.433327",
+ "modified": "2025-06-18 15:04:51.144067",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Build",
