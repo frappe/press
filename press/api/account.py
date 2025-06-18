@@ -414,22 +414,16 @@ def set_country(country):
 	team_doc.create_stripe_customer()
 
 
-def get_account_request_from_key(key):
-	"""Find Account Request using `key` in the past 12 hours or if site is active"""
+def get_account_request_from_key(key: str):
+	"""Find Account Request using `key`"""
 
 	if not key or not isinstance(key, str):
 		frappe.throw(_("Invalid Key"))
 
-	hours = 12
-	ar = frappe.get_doc("Account Request", {"request_key": key})
-	if ar.creation > frappe.utils.add_to_date(None, hours=-hours):
-		return ar
-	if ar.subdomain and ar.saas_app:
-		domain = frappe.db.get_value("Saas Settings", ar.saas_app, "domain")
-		if frappe.db.get_value("Site", ar.subdomain + "." + domain, "status") == "Active":
-			return ar
-
-	return None
+	try:
+		return frappe.get_doc("Account Request", {"request_key": key})
+	except frappe.DoesNotExistError:
+		return None
 
 
 @frappe.whitelist()
