@@ -129,7 +129,7 @@ def get_name_from_filters(filters: dict):
 		return None
 
 	value = values[0]
-	if isinstance(value, (int, str)):
+	if isinstance(value, int | str):
 		return value
 
 	return None
@@ -1642,7 +1642,10 @@ def check_dns_cname(name, domain):
 			raise MultipleCNAMERecords
 		mapped_domain = answer[0].to_text().rsplit(".", 1)[0]
 		result["answer"] = answer.rrset.to_text()
-		if mapped_domain == name:
+		other_domains = frappe.db.get_all(
+			"Site Domain", {"site": name, "status": "Active", "domain": ("!=", name)}, pluck="domain"
+		)
+		if mapped_domain == name or mapped_domain in other_domains:
 			result["matched"] = True
 	except MultipleCNAMERecords:
 		multiple_domains = ", ".join(part.to_text() for part in answer)
