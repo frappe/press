@@ -45,12 +45,12 @@ def _get_intel_mount_point(_: Literal["f", "m"]) -> str:
 
 
 def get_mount_point(server: str) -> str:
-	provider = frappe.get_value("Server", server, "provider")
+	doctype = "Database Server" if server[0] == "m" else "Server"
+	provider = frappe.get_value(doctype, server, "provider")
 	if provider != "AWS EC2":
 		return _get_intel_mount_point("/")
 
 	platform, series = frappe.get_value("Virtual Machine", server, ["platform", "series"])
-
 	if platform == "arm64":
 		return _get_arm_mount_point(series)
 
