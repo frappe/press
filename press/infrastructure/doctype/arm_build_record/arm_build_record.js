@@ -19,5 +19,29 @@ frappe.ui.form.on('ARM Build Record', {
 				);
 			}
 		});
+
+		frm.add_custom_button(
+			__('Remove ARM Build From DC'),
+			() => {
+				frappe.prompt(
+					[
+						{
+							fieldtype: 'Data',
+							label: 'Build',
+							fieldname: 'build',
+							reqd: 1,
+						},
+					],
+					({ build }) => {
+						frm
+							.call('remove_build_from_deploy_candidate', {
+								build,
+							})
+							.then((r) => frm.refresh());
+					},
+				);
+			},
+			__('Actions'),
+		);
 	},
 });

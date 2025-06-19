@@ -304,7 +304,6 @@ class VirtualMachineMigration(Document):
 			methods.append((self.update_server_platform, Wait))
 			methods.append((self.update_agent_ansible, Wait))
 			methods.append((self.start_active_benches, Wait))
-			methods.append((self.enable_deployments, Wait))
 
 		steps = []
 		for method, wait_for_completion in methods:
@@ -351,12 +350,6 @@ class VirtualMachineMigration(Document):
 		"""Start active benches on the server"""
 		server: Server = frappe.get_doc("Server", self.machine.name)
 		server.start_active_benches()
-		return StepStatus.Success
-
-	def enable_deployments(self) -> StepStatus:
-		"""Enable deployments on the server"""
-		frappe.db.set_value("Server", self.machine.name, "stop_deployments", 0)
-		frappe.db.commit()
 		return StepStatus.Success
 
 	def update_partition_labels(self) -> StepStatus:
