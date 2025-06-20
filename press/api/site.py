@@ -55,6 +55,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
 		DeployCandidateApp,
 	)
+	from press.press.doctype.site.site import Site
 
 
 NAMESERVERS = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
@@ -95,7 +96,8 @@ def protected(doctypes):
 			if owner == team or has_role("Press Support Agent"):
 				return wrapped(*args, **kwargs)
 
-		frappe.throw("Not Permitted", frappe.PermissionError)  # noqa: RET503
+		frappe.throw("Not Permitted", frappe.PermissionError)
+		return None
 
 	return wrapper
 
@@ -1590,7 +1592,7 @@ def restore(name, files, skip_failing_patches=False):
 			"remote_config_file": files.get("config", ""),
 		},
 	)
-	site = frappe.get_doc("Site", name)
+	site: Site = frappe.get_doc("Site", name)
 	return site.restore_site(skip_failing_patches=skip_failing_patches)
 
 
