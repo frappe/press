@@ -603,7 +603,7 @@ export default {
 								condition: () =>
 									row.status === 'Broken' &&
 									site.doc.broken_domain_error &&
-									site.doc.tls_cert_retry_count < 5,
+									site.doc.tls_cert_retry_count < 8,
 								onClick() {
 									confirmDialog({
 										title: `Fetch Certificate`,

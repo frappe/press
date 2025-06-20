@@ -100,6 +100,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server.server import BaseServer, Server
+	from press.press.doctype.tls_certificate.tls_certificate import TLSCertificate
 
 DOCTYPE_SERVER_TYPE_MAP = {
 	"Server": "Application",
@@ -683,7 +684,7 @@ class Site(Document, TagHelpers):
 			row.type = key_type
 
 			if key_type == "Number":
-				key_value = int(row.value) if isinstance(row.value, (float, int)) else json.loads(row.value)
+				key_value = int(row.value) if isinstance(row.value, float | int) else json.loads(row.value)
 			elif key_type == "Boolean":
 				key_value = (
 					row.value if isinstance(row.value, bool) else bool(sbool(json.loads(cstr(row.value))))
@@ -1978,7 +1979,7 @@ class Site(Document, TagHelpers):
 
 		for d in config:
 			d = frappe._dict(d)
-			if isinstance(d.value, (dict, list)):
+			if isinstance(d.value, dict | list):
 				value = json.dumps(d.value)
 			else:
 				value = d.value
@@ -2044,11 +2045,11 @@ class Site(Document, TagHelpers):
 		if frappe.db.exists("Site Config Key", key):
 			return frappe.db.get_value("Site Config Key", key, "type")
 
-		if isinstance(value, (dict, list)):
+		if isinstance(value, dict | list):
 			return "JSON"
 		if isinstance(value, bool):
 			return "Boolean"
-		if isinstance(value, (int, float)):
+		if isinstance(value, int | float):
 			return "Number"
 		return "String"
 
@@ -3224,7 +3225,7 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active"])
 	def fetch_certificate(self, domain: str):
-		tls_certificate = frappe.get_last_doc("TLS Certificate", {"domain": domain})
+		tls_certificate: TLSCertificate = frappe.get_last_doc("TLS Certificate", {"domain": domain})
 		tls_certificate.obtain_certificate()
 
 	def fetch_database_name(self):
