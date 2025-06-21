@@ -3,7 +3,8 @@
 
 from __future__ import annotations
 
-import frappe import frappe.utils
+import frappe
+import frappe.utils
 from frappe.model.document import Document
 
 
@@ -61,10 +62,10 @@ def yearly_2fa_recovery_code_reminder():
 			recipients=[user],
 			subject="Verify Your Recovery Codes",
 			message=f"""
-	           <p>It's been a year since you last reviewed your two-factor authentication recovery codes.</p>
-	           <p>Please verify that you still have access to these codes. They are essential for account recovery if you lose access to your authentication device.</p>
-	           <p><a href="{dashboard_url}">View your recovery codes</a></p>
-	           """,
+			<p>It's been a year since you last reviewed your two-factor authentication recovery codes.</p>
+			<p>Please verify that you still have access to these codes. They are essential for account recovery if you lose access to your authentication device.</p>
+			<p><a href="{dashboard_url}">View your recovery codes</a></p>
+			""",
 		)
 
 		# Update recovery codes last viewed time.

@@ -1252,14 +1252,12 @@ def enable_2fa(totp_code):
 	# Save the document.
 	two_fa.save()
 
-	# Decrypt recovery codes for the user.
-	recovery_codes = [
+	# Decrypt and return recovery codes for the user.
+	return [
 		get_decrypted_password("User 2FA Recovery Code", recovery_code.name, "code")
 		for recovery_code in two_fa.recovery_codes
 		if not recovery_code.used_at
 	]
-
-	return recovery_codes
 
 
 @frappe.whitelist()
