@@ -15,9 +15,11 @@ class User2FA(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+		from press.press.doctype.user_2fa_recovery_code.user_2fa_recovery_code import User2FARecoveryCode
 
 		enabled: DF.Check
 		last_verified_at: DF.Datetime | None
+		recovery_codes: DF.Table[User2FARecoveryCode]
 		totp_secret: DF.Password | None
 		user: DF.Link | None
 	# end: auto-generated types

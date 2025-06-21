@@ -1224,15 +1224,30 @@ def get_2fa_qr_code_url():
 def enable_2fa(totp_code):
 	"""Enable 2FA for the user after verifying the TOTP code"""
 
-	if frappe.db.exists("User 2FA", frappe.session.user):
-		user_totp_secret = get_decrypted_password("User 2FA", frappe.session.user, "totp_secret")
-	else:
-		frappe.throw(f"2FA is not enabled for {frappe.session.user}")
+	# Get the User 2FA document.
+	two_fa = frappe.get_doc("User 2FA", frappe.session.user)
 
-	if pyotp.totp.TOTP(user_totp_secret).verify(totp_code):
-		frappe.db.set_value("User 2FA", frappe.session.user, "enabled", 1)
-	else:
+	# Get decrypted TOTP secret for the user.
+	user_totp_secret = get_decrypted_password("User 2FA", frappe.session.user, "totp_secret")
+
+	# Handle invalid TOTP code.
+	if not pyotp.totp.TOTP(user_totp_secret).verify(totp_code):
 		frappe.throw("Invalid TOTP code")
+
+	# Enable 2FA for the user.
+	two_fa.enabled = 1
+
+	# Generate recovery codes.
+	two_fa.recovery_codes = []
+	recovery_codes = [frappe.generate_hash(length=8).upper() for _ in range(8)]
+
+	# Append recovery codes to the User 2FA document.
+	for recovery_code in recovery_codes:
+		two_fa.append("recovery_codes", {"code": recovery_code})
+
+	# Save the document and return recovery codes.
+	two_fa.save()
+	return recovery_codes
 
 
 @frappe.whitelist()

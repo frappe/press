@@ -1,0 +1,39 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-06-21 13:22:03.233018",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "code",
+  "used_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "code",
+   "fieldtype": "Password",
+   "in_list_view": 1,
+   "label": "Code",
+   "reqd": 1
+  },
+  {
+   "fieldname": "used_on",
+   "fieldtype": "Datetime",
+   "label": "Used On"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-06-21 13:23:51.519151",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "User 2FA Recovery Code",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
