@@ -1248,7 +1248,7 @@ def enable_2fa(totp_code):
 			)
 
 	# Update the last verified time.
-	two_fa.recovery_codes_last_viewed_at = frappe.utils.now_datetime()
+	two_fa.mark_recovery_codes_viewed()
 
 	# Save the document.
 	two_fa.save()
@@ -1333,7 +1333,7 @@ def get_2fa_recovery_codes(password: str):
 	]
 
 	# Add a timestamp for when the recovery codes were last viewed.
-	two_fa.recovery_codes_last_viewed_at = frappe.utils.now_datetime()
+	two_fa.mark_recovery_codes_viewed()
 	two_fa.save()
 
 	# Return the recovery codes.
@@ -1363,7 +1363,7 @@ def reset_2fa_recovery_codes():
 		)
 
 	# Update time and save the document.
-	two_fa.recovery_codes_last_viewed_at = frappe.utils.now_datetime()
+	two_fa.mark_recovery_codes_viewed()
 	two_fa.save()
 
 	# Return the new recovery codes.

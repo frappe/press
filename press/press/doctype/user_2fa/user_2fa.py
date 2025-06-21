@@ -36,6 +36,38 @@ class User2FA(Document):
 
 		self.totp_secret = pyotp.random_base32()
 
+	def mark_recovery_codes_viewed(self):
+		"""
+		Mark recovery codes as viewed by updating the last viewed timestamp.
+		Also, send an email notification to the user.
+		"""
+
+		# Update the time.
+		self.recovery_codes_last_viewed_at = frappe.utils.now_datetime()
+
+		# Send email notification.
+		try:
+			dashboard_url = frappe.utils.get_url("/dashboard/settings/profile")
+			frappe.sendmail(
+				recipients=[self.user],
+				subject="Your 2FA Recovery Codes Were Viewed",
+				message=f"""
+				<h2>Security Alert</h2>
+				<p>Your two-factor authentication recovery codes were viewed at {frappe.utils.format_datetime(self.recovery_codes_last_viewed_at)}.</p>
+				<p>If you did not view your recovery codes, please secure your account immediately:</p>
+				<ul>
+					<li>Change your password</li>
+					<li>Generate new recovery codes</li>
+					<li>Review any recent account activity</li>
+				</ul>
+				<p>You can access your security settings here:</p>
+				<p><a href="{dashboard_url}">Security Settings</a></p>
+				<p>If you recognize this activity, you can ignore this email.</p>
+				""",
+			)
+		except Exception:
+			frappe.log_error("Failed to send recovery codes viewed notification email")
+
 
 def yearly_2fa_recovery_code_reminder():
 	"""Check and send yearly recovery code reminders"""
