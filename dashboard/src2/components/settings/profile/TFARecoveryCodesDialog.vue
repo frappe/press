@@ -4,14 +4,34 @@
 		:options="{
 			title: 'Two-Factor Authentication Recovery Codes',
 		}"
+		@close="closeDialog"
 	>
 		<template #body-content>
 			<TFARecoveryCodes
+				v-if="recoveryCodes.length"
 				:recoveryCodes="recoveryCodes"
 				@close="closeDialog"
 				@reset="() => $resources.resetRecoveryCodes.submit()"
 				with-reset
 			/>
+			<div v-else class="space-y-4">
+				<FormControl
+					label="Password"
+					type="password"
+					placeholder="•••••"
+					v-model="password"
+					name="password"
+					autocomplete="current-password"
+					required
+				/>
+				<ErrorMessage :message="$resources.getRecoveryCodes.error" />
+				<Button
+					label="Fetch Recovery Codes"
+					class="w-full"
+					variant="solid"
+					@click="() => $resources.getRecoveryCodes.submit({ password })"
+				/>
+			</div>
 		</template>
 	</Dialog>
 </template>
@@ -31,6 +51,7 @@ export default {
 	},
 	data() {
 		return {
+			password: '',
 			recoveryCodes: [],
 		};
 	},
@@ -38,8 +59,9 @@ export default {
 		getRecoveryCodes() {
 			return {
 				url: 'press.api.account.get_2fa_recovery_codes',
-				auto: true,
 				onSuccess(codes) {
+					// Reset the password after fetching recovery codes.
+					this.password = '';
 					this.recoveryCodes = codes;
 				},
 			};
@@ -57,6 +79,7 @@ export default {
 	methods: {
 		closeDialog() {
 			this.show = false;
+			this.recoveryCodes = [];
 		},
 	},
 	computed: {

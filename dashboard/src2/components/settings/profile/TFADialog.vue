@@ -4,12 +4,12 @@
 		:options="{
 			title,
 		}"
+		@close="closeDialog"
 	>
 		<template #body-content>
 			<TFARecoveryCodes
 				v-if="is2FAEnabled && recoveryCodes.length"
 				:recoveryCodes="recoveryCodes"
-				@close="closeDialog"
 			/>
 			<Configure2FA
 				v-else

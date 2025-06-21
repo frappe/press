@@ -10,6 +10,7 @@ import frappe
 import frappe.utils
 import pyotp
 from frappe import _
+from frappe.auth import check_password
 from frappe.core.doctype.user.user import update_password
 from frappe.core.utils import find
 from frappe.exceptions import DoesNotExistError
@@ -1307,8 +1308,15 @@ def recover_2fa(user: str, recovery_code: str):
 
 
 @frappe.whitelist()
-def get_2fa_recovery_codes():
+def get_2fa_recovery_codes(password: str):
 	"""Get the recovery codes for the user."""
+
+	# Verify user password.
+	try:
+		check_password(frappe.session.user, password)
+	# Modify the error message to be more specific.
+	except frappe.AuthenticationError:
+		frappe.throw("Invalid password", frappe.ValidationError)
 
 	# Check if the user has 2FA enabled.
 	if not frappe.db.exists("User 2FA", frappe.session.user):

@@ -21,13 +21,6 @@
 			label="Reset Recovery Codes"
 			@click="() => $emit('reset')"
 		/>
-
-		<Button
-			class="w-full"
-			variant="solid"
-			label="Close"
-			@click="() => $emit('close')"
-		/>
 	</div>
 </template>
 
