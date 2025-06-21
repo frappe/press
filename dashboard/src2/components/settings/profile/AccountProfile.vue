@@ -65,6 +65,7 @@
 				</template>
 			</ListItem>
 			<ListItem
+				v-if="user.is_2fa_enabled"
 				title="View Recovery Codes"
 				subtitle="View your two-factor authentication recovery codes"
 			>
