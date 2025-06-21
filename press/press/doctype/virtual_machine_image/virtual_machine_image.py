@@ -39,6 +39,7 @@ class VirtualMachineImage(Document):
 		size: DF.Int
 		snapshot_id: DF.Data | None
 		status: DF.Literal["Pending", "Available", "Unavailable"]
+		use_for_arm_server_creation: DF.Check
 		virtual_machine: DF.Link
 		volumes: DF.Table[VirtualMachineImageVolume]
 	# end: auto-generated types
@@ -239,6 +240,10 @@ class VirtualMachineImage(Document):
 			get_available_images = get_available_images.where(images.region == region)
 		if platform:
 			get_available_images = get_available_images.where(images.platform == platform)
+
+			if platform == "arm64" and series == "f":
+				get_available_images = get_available_images.where(images.use_for_arm_server_creation == 1)
+
 		available_images = get_available_images.run(as_dict=True)
 		if not available_images:
 			return None
