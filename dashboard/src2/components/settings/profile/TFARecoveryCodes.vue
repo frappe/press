@@ -8,7 +8,7 @@
 		/>
 
 		<div class="rounded border border-gray-200 bg-gray-50 p-4">
-			<div class="text-sm text-gray-700">
+			<div class="font-mono text-sm leading-loose text-gray-700">
 				{{ recoveryCodesStr }}
 			</div>
 		</div>
