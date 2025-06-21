@@ -6,7 +6,12 @@
 		}"
 	>
 		<template #body-content>
-			<TFARecoveryCodes :recoveryCodes="recoveryCodes" @close="closeDialog" />
+			<TFARecoveryCodes
+				:recoveryCodes="recoveryCodes"
+				@close="closeDialog"
+				@reset="() => $resources.resetRecoveryCodes.submit()"
+				with-reset
+			/>
 		</template>
 	</Dialog>
 </template>
@@ -36,6 +41,15 @@ export default {
 				auto: true,
 				onSuccess(codes) {
 					this.recoveryCodes = codes;
+				},
+			};
+		},
+		resetRecoveryCodes() {
+			return {
+				url: 'press.api.account.reset_2fa_recovery_codes',
+				onSuccess(codes) {
+					this.recoveryCodes = codes;
+					this.$toast.success('Recovery codes have been reset.');
 				},
 			};
 		},

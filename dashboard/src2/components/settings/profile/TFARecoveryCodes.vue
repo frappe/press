@@ -13,6 +13,15 @@
 			</div>
 		</div>
 
+		<!-- Reset button only shown if withReset prop is true -->
+		<Button
+			v-if="withReset"
+			class="w-full"
+			variant="subtle"
+			label="Reset Recovery Codes"
+			@click="() => $emit('reset')"
+		/>
+
 		<Button
 			class="w-full"
 			variant="solid"
@@ -31,8 +40,12 @@ export default {
 			type: Array,
 			required: true,
 		},
+		withReset: {
+			type: Boolean,
+			default: false,
+		},
 	},
-	emits: ['close'],
+	emits: ['close', 'reset'],
 	components: {
 		AlertBanner,
 	},
