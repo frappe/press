@@ -1305,6 +1305,32 @@ def recover_2fa(user: str, recovery_code: str):
 	two_fa.save(ignore_permissions=True)
 
 
+@frappe.whitelist()
+def get_2fa_recovery_codes():
+	"""Get the recovery codes for the user."""
+
+	# Check if the user has 2FA enabled.
+	if not frappe.db.exists("User 2FA", frappe.session.user):
+		frappe.throw("2FA is not enabled for this user")
+
+	# Get the User 2FA document.
+	two_fa = frappe.get_doc("User 2FA", frappe.session.user)
+
+	# Decrypt recovery codes for the user.
+	recovery_codes = [
+		get_decrypted_password("User 2FA Recovery Code", recovery_code.name, "code")
+		for recovery_code in two_fa.recovery_codes
+		if not recovery_code.used_on
+	]
+
+	# Add a timestamp for when the recovery codes were last viewed.
+	two_fa.recovery_codes_last_viewed_at = frappe.utils.now_datetime()
+	two_fa.save()
+
+	# Return the recovery codes.
+	return recovery_codes
+
+
 # Not available for Telangana, Ladakh, and Other Territory
 STATE_PINCODE_MAPPING = {
 	"Jammu and Kashmir": (180, 194),

@@ -10,7 +10,8 @@
   "totp_secret",
   "enabled",
   "last_verified_at",
-  "recovery_codes"
+  "recovery_codes",
+  "recovery_codes_last_viewed_at"
  ],
  "fields": [
   {
@@ -41,12 +42,17 @@
    "fieldtype": "Table",
    "label": "Recovery Codes",
    "options": "User 2FA Recovery Code"
+  },
+  {
+   "fieldname": "recovery_codes_last_viewed_at",
+   "fieldtype": "Datetime",
+   "label": "Recovery Codes Last Viewed At"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-21 13:25:11.061337",
+ "modified": "2025-06-21 16:04:54.476967",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "User 2FA",

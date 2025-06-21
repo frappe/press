@@ -65,6 +65,14 @@
 				</template>
 			</ListItem>
 			<ListItem
+				title="View Recovery Codes"
+				subtitle="View your two-factor authentication recovery codes"
+			>
+				<template #actions>
+					<Button @click="show2FARecoveryCodesDialog = true"> Show </Button>
+				</template>
+			</ListItem>
+			<ListItem
 				:title="teamEnabled ? 'Disable Account' : 'Enable Account'"
 				:subtitle="
 					teamEnabled
@@ -187,6 +195,7 @@
 		/>
 	</Card>
 	<TFADialog v-model="show2FADialog" />
+	<TFARecoveryCodesDialog v-model="show2FARecoveryCodesDialog" />
 </template>
 
 <script>
@@ -195,6 +204,7 @@ import { defineAsyncComponent, h } from 'vue';
 import FileUploader from '@/components/FileUploader.vue';
 import { confirmDialog, renderDialog } from '../../../utils/components';
 import TFADialog from './TFADialog.vue';
+import TFARecoveryCodesDialog from './TFARecoveryCodesDialog.vue';
 import router from '../../../router';
 import AddPrepaidCreditsDialog from '../../billing/AddPrepaidCreditsDialog.vue';
 
@@ -202,12 +212,14 @@ export default {
 	name: 'AccountProfile',
 	components: {
 		TFADialog,
+		TFARecoveryCodesDialog,
 		FileUploader,
 		AddPrepaidCreditsDialog,
 	},
 	data() {
 		return {
 			show2FADialog: false,
+			show2FARecoveryCodesDialog: false,
 			disableAccount2FACode: '',
 			showProfileEditDialog: false,
 			showEnableAccountDialog: false,
@@ -248,8 +260,8 @@ export default {
 			onSuccess() {
 				this.showDisableAccountDialog = false;
 
-				const ChurnFeedbackDialog = defineAsyncComponent(
-					() => import('../../ChurnFeedbackDialog.vue'),
+				const ChurnFeedbackDialog = defineAsyncComponent(() =>
+					import('../../ChurnFeedbackDialog.vue')
 				);
 
 				renderDialog(
@@ -258,7 +270,7 @@ export default {
 						onUpdated: () => {
 							toast.success('Your feedback was submitted successfully');
 						},
-					}),
+					})
 				);
 				toast.success('Your account was disabled successfully');
 				this.reloadAccount();
@@ -316,8 +328,8 @@ export default {
 			const currency = this.$team.doc.currency;
 			const minAmount = currency === 'INR' ? 410 : 5;
 			if (this.draftInvoice && this.draftInvoice.amount_due > minAmount) {
-				const finalizeInvoicesDialog = defineAsyncComponent(
-					() => import('../../billing/FinalizeInvoicesDialog.vue'),
+				const finalizeInvoicesDialog = defineAsyncComponent(() =>
+					import('../../billing/FinalizeInvoicesDialog.vue')
 				);
 				renderDialog(h(finalizeInvoicesDialog));
 			} else if (this.unpaidInvoices) {
@@ -360,7 +372,7 @@ export default {
 										this.$team.doc.payment_mode === 'Card'
 									) {
 										window.open(
-											`/api/method/press.api.client.run_doc_method?dt=Invoice&dn=${invoice.name}&method=stripe_payment_url`,
+											`/api/method/press.api.client.run_doc_method?dt=Invoice&dn=${invoice.name}&method=stripe_payment_url`
 										);
 									} else {
 										this.showAddPrepaidCreditsDialog = true;
@@ -375,8 +387,8 @@ export default {
 
 			// validate if any active servers
 			if (this.showActiveServersDialog) {
-				const activeServersDialog = defineAsyncComponent(
-					() => import('../../ActiveServersDialog.vue'),
+				const activeServersDialog = defineAsyncComponent(() =>
+					import('../../ActiveServersDialog.vue')
 				);
 				renderDialog(h(activeServersDialog));
 				return;
@@ -406,13 +418,13 @@ export default {
 								onError(e) {
 									console.error(e);
 								},
-							},
+							}
 						),
 						{
 							success: 'You can now publish apps to our Marketplace',
 							error: 'Failed to mark you as a developer',
 							loading: 'Making you a developer...',
-						},
+						}
 					);
 				},
 			});

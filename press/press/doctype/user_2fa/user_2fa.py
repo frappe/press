@@ -20,6 +20,7 @@ class User2FA(Document):
 		enabled: DF.Check
 		last_verified_at: DF.Datetime | None
 		recovery_codes: DF.Table[User2FARecoveryCode]
+		recovery_codes_last_viewed_at: DF.Datetime | None
 		totp_secret: DF.Password | None
 		user: DF.Link | None
 	# end: auto-generated types
