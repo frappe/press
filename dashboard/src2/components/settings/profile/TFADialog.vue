@@ -2,34 +2,50 @@
 	<Dialog
 		v-model="show"
 		:options="{
-			title: is2FAEnabled
-				? 'Disable Two-Factor Authentication'
-				: 'Enable Two-Factor Authentication'
+			title,
 		}"
 	>
 		<template #body-content>
-			<Configure2FA @enabled="closeDialog" @disabled="closeDialog" />
+			<TFARecoveryCodes
+				v-if="is2FAEnabled && recoveryCodes.length"
+				:recoveryCodes="recoveryCodes"
+				@close="closeDialog"
+			/>
+			<Configure2FA
+				v-else
+				@enabled="closeDialog"
+				@disabled="closeDialog"
+				@update-recovery-codes="(codes) => (recoveryCodes = codes)"
+			/>
 		</template>
 	</Dialog>
 </template>
 
 <script>
 import Configure2FA from '../../auth/Configure2FA.vue';
+import TFARecoveryCodes from './TFARecoveryCodes.vue';
 
 export default {
 	props: {
 		modelValue: {
 			type: Boolean,
-			required: true
-		}
+			required: true,
+		},
 	},
 	components: {
-		Configure2FA
+		Configure2FA,
+		TFARecoveryCodes,
+	},
+	data() {
+		return {
+			recoveryCodes: [],
+		};
 	},
 	methods: {
 		closeDialog() {
 			this.show = false;
-		}
+			this.recoveryCodes = [];
+		},
 	},
 	computed: {
 		is2FAEnabled() {
@@ -41,8 +57,17 @@ export default {
 			},
 			set(value) {
 				this.$emit('update:modelValue', value);
+			},
+		},
+		title() {
+			if (this.is2FAEnabled && this.recoveryCodes.length) {
+				return 'Two-Factor Authentication Recovery Codes';
+			} else if (this.is2FAEnabled) {
+				return 'Disable Two-Factor Authentication';
+			} else {
+				return 'Enable Two-Factor Authentication';
 			}
-		}
-	}
+		},
+	},
 };
 </script>

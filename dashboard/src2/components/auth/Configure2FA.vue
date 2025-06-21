@@ -8,22 +8,6 @@
 			<LoadingText />
 		</div>
 
-		<!-- Show recovery codes if present. -->
-		<div v-else-if="recoveryCodes.length" class="space-y-4">
-			<AlertBanner
-				title="Save these recovery codes in a safe place. You can use them to
-				reset two factor authentication if you lose access to your
-				authenticator app."
-				type="warning"
-			/>
-
-			<div class="rounded border border-gray-200 bg-gray-50 p-4">
-				<div class="text-sm text-gray-700">
-					{{ recoveryCodesStr }}
-				</div>
-			</div>
-		</div>
-
 		<!-- Disable if 2FA is enabled. -->
 		<div
 			v-else-if="is2FAEnabled && $route.name !== 'Enable2FA'"
@@ -135,15 +119,6 @@
 				@click="enable2FA"
 			/>
 
-			<!-- Show recovery codes if present. -->
-			<Button
-				v-else-if="recoveryCodes.length"
-				class="w-full"
-				variant="solid"
-				label="Close"
-				@click="() => $emit('enabled')"
-			/>
-
 			<!-- Disable 2FA if already enabled. -->
 			<Button
 				v-else
@@ -164,13 +139,12 @@ import { toast } from 'vue-sonner';
 import AlertBanner from '../AlertBanner.vue';
 
 export default {
-	emits: ['enabled', 'disabled'],
+	emits: ['enabled', 'disabled', 'update-recovery-codes'],
 	data() {
 		return {
 			qrUrl: '', // not storing as computed property to avoid re-fetching on dialog close
 			totpCode: '',
 			showSetupKey: false,
-			recoveryCodes: [],
 		};
 	},
 	components: {
@@ -187,7 +161,7 @@ export default {
 					loading: 'Enabling 2FA...',
 					success: (recoveryCodes) => {
 						this.totpCode = '';
-						this.recoveryCodes = recoveryCodes;
+						this.$emit('update-recovery-codes', recoveryCodes);
 
 						// avoid flickering of 2FA dialog
 						setTimeout(() => {
@@ -272,9 +246,6 @@ export default {
 		},
 		is2FAEnabled() {
 			return this.$team.doc?.user_info?.is_2fa_enabled;
-		},
-		recoveryCodesStr() {
-			return this.recoveryCodes.reduce((acc, cur) => acc + ' ' + cur, '');
 		},
 	},
 };
