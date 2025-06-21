@@ -1256,7 +1256,7 @@ def enable_2fa(totp_code):
 	recovery_codes = [
 		get_decrypted_password("User 2FA Recovery Code", recovery_code.name, "code")
 		for recovery_code in two_fa.recovery_codes
-		if not recovery_code.used_on
+		if not recovery_code.used_at
 	]
 
 	return recovery_codes
@@ -1292,7 +1292,7 @@ def recover_2fa(user: str, recovery_code: str):
 	code = None
 	for code_doc in two_fa.recovery_codes:
 		decrypted_code = get_decrypted_password("User 2FA Recovery Code", code_doc.name, "code")
-		if decrypted_code == recovery_code and not code_doc.used_on:
+		if decrypted_code == recovery_code and not code_doc.used_at:
 			code = code_doc
 			break
 
@@ -1301,7 +1301,7 @@ def recover_2fa(user: str, recovery_code: str):
 		frappe.throw("Invalid or used recovery code")
 
 	# Mark the recovery code as used.
-	code.used_on = frappe.utils.now_datetime()
+	code.used_at = frappe.utils.now_datetime()
 
 	# Disable 2FA and save the document.
 	two_fa.enabled = 0
@@ -1323,7 +1323,7 @@ def get_2fa_recovery_codes():
 	recovery_codes = [
 		get_decrypted_password("User 2FA Recovery Code", recovery_code.name, "code")
 		for recovery_code in two_fa.recovery_codes
-		if not recovery_code.used_on
+		if not recovery_code.used_at
 	]
 
 	# Add a timestamp for when the recovery codes were last viewed.

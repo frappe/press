@@ -6,7 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "code",
-  "used_on"
+  "used_at"
  ],
  "fields": [
   {
@@ -17,17 +17,17 @@
    "reqd": 1
   },
   {
-   "fieldname": "used_on",
+   "fieldname": "used_at",
    "fieldtype": "Datetime",
    "in_list_view": 1,
-   "label": "Used On"
+   "label": "Used At"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-06-21 15:16:33.271412",
+ "modified": "2025-06-21 16:20:54.624042",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "User 2FA Recovery Code",

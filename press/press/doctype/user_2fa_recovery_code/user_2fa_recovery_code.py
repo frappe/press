@@ -18,7 +18,7 @@ class User2FARecoveryCode(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		used_on: DF.Datetime | None
+		used_at: DF.Datetime | None
 	# end: auto-generated types
 
 	pass
