@@ -3,7 +3,7 @@
 		<slot></slot>
 		<Button class="ml-1" variant="ghost" @click="dismiss">
 			<template #icon>
-				<i-lucide-x class="h-4 w-4" />
+				<lucide-x class="h-4 w-4" />
 			</template>
 		</Button>
 	</AlertBanner>

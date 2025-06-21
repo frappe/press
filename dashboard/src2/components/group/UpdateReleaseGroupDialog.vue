@@ -64,7 +64,7 @@
 							target="_blank"
 							class="cursor-pointer rounded-full border border-gray-200 bg-gray-100 p-0.5 text-base text-gray-700"
 						>
-							<i-lucide-help-circle :class="`h-4 w-4 text-red-600`" />
+							<lucide-help-circle :class="`h-4 w-4 text-red-600`" />
 						</a>
 					</div>
 					<p
@@ -91,7 +91,7 @@
 							href="https://frappecloud.com/docs/in-place-updates"
 							target="_blank"
 						>
-							<i-lucide-help-circle :class="`h-4 w-4 text-gray-600`" />
+							<lucide-help-circle :class="`h-4 w-4 text-gray-600`" />
 						</a>
 					</Tooltip>
 				</div>

@@ -3,7 +3,7 @@
 		<Tooltip text="All Roles">
 			<Button :route="{ name: 'SettingsPermissionRoles' }">
 				<template #icon>
-					<i-lucide-arrow-left class="h-4 w-4 text-gray-700" />
+					<lucide-arrow-left class="h-4 w-4 text-gray-700" />
 				</template>
 			</Button>
 		</Tooltip>

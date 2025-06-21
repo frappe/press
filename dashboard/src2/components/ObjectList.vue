@@ -20,7 +20,7 @@
 						v-model="searchQuery"
 					>
 						<template #prefix>
-							<i-lucide-search class="h-4 w-4 text-gray-500" />
+							<lucide-search class="h-4 w-4 text-gray-500" />
 						</template>
 						<template #suffix>
 							<span class="text-sm text-gray-500" v-if="searchQuery">
@@ -43,13 +43,13 @@
 					text="This is an experimental feature"
 				>
 					<div class="rounded-md bg-purple-100 p-1.5">
-						<i-lucide-flask-conical class="h-4 w-4 text-purple-500" />
+						<lucide-flask-conical class="h-4 w-4 text-purple-500" />
 					</div>
 				</Tooltip>
 				<Tooltip v-if="options.documentation" text="View documentation">
 					<div class="rounded-md bg-gray-100 p-1.5">
 						<a :href="options.documentation" target="_blank">
-							<i-lucide-help-circle class="h-4 w-4" />
+							<lucide-help-circle class="h-4 w-4" />
 						</a>
 					</div>
 				</Tooltip>
@@ -61,7 +61,7 @@
 				>
 					<template #icon>
 						<Tooltip text="Refresh">
-							<i-lucide-refresh-ccw class="h-4 w-4" />
+							<lucide-refresh-ccw class="h-4 w-4" />
 						</Tooltip>
 					</template>
 				</Button>

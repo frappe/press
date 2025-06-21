@@ -150,7 +150,7 @@
 			>
 				<template #action>
 					<Tooltip text="Shown only as reports seem to take time">
-						<i-lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
 					</Tooltip>
 				</template>
 				<BarChart
@@ -171,7 +171,7 @@
 			>
 				<template #action>
 					<Tooltip text="Shown only as run_doc_method calls seem to take time">
-						<i-lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
 					</Tooltip>
 				</template>
 				<BarChart
@@ -242,7 +242,7 @@
 			>
 				<template #action>
 					<Tooltip text="Shown only as reports seem to take time">
-						<i-lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
 					</Tooltip>
 				</template>
 				<BarChart

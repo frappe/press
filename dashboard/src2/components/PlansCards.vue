@@ -32,7 +32,7 @@
 								</template>
 							</span>
 							<Tooltip text="Product support included">
-								<i-lucide-badge-check
+								<lucide-badge-check
 									class="ml-1 h-4 w-6 text-gray-600"
 									v-if="plan.support_included"
 								/>

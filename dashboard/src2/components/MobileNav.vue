@@ -16,24 +16,24 @@
 					{
 						label: 'Change Team',
 						icon: 'command',
-						onClick: () => (showTeamSwitcher = true)
+						onClick: () => (showTeamSwitcher = true),
 					},
 					{
 						label: 'Support & Docs',
 						icon: 'help-circle',
-						onClick: support
+						onClick: support,
 					},
 					{
 						label: 'Logout',
 						icon: 'log-out',
-						onClick: $session.logout.submit
-					}
+						onClick: $session.logout.submit,
+					},
 				]"
 			>
 				<template v-slot="{ open }">
 					<Button class="ml-auto">
 						<template #suffix>
-							<i-lucide-chevron-down class="h-3.5 w-3.5 text-gray-700" />
+							<lucide-chevron-down class="h-3.5 w-3.5 text-gray-700" />
 						</template>
 						{{ $team?.get.loading ? 'Loading...' : $team?.doc?.user }}
 					</Button>
@@ -43,8 +43,8 @@
 			<DisclosureButton as="template">
 				<Button class="ml-2">
 					<template #icon>
-						<i-lucide-x v-if="open" class="h-4 w-4 text-gray-700" />
-						<i-lucide-menu v-else class="h-4 w-4 text-gray-700" />
+						<lucide-x v-if="open" class="h-4 w-4 text-gray-700" />
+						<lucide-menu v-else class="h-4 w-4 text-gray-700" />
 					</template>
 				</Button>
 			</DisclosureButton>
@@ -74,8 +74,8 @@ import NavigationItems from './NavigationItems.vue';
 import MobileNavItem from './MobileNavItem.vue';
 import MobileNavItemGroup from './MobileNavItemGroup.vue';
 
-const SwitchTeamDialog2 = defineAsyncComponent(() =>
-	import('./SwitchTeamDialog.vue')
+const SwitchTeamDialog2 = defineAsyncComponent(
+	() => import('./SwitchTeamDialog.vue'),
 );
 const showTeamSwitcher = ref(false);
 
