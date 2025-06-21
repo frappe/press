@@ -638,7 +638,6 @@ export default {
 				},
 			};
 		},
-		// Todo!
 		recover2FA() {
 			return {
 				url: 'press.api.account.recover_2fa',

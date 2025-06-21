@@ -1238,16 +1238,24 @@ def enable_2fa(totp_code):
 	# Enable 2FA for the user.
 	two_fa.enabled = 1
 
-	# Generate recovery codes.
-	two_fa.recovery_codes = []
-	recovery_codes = [frappe.generate_hash(length=8).upper() for _ in range(8)]
+	# Add recovery codes to the User 2FA document, if not already present.
+	if not two_fa.recovery_codes:
+		for _ in range(8):
+			two_fa.append(
+				"recovery_codes",
+				{"code": frappe.generate_hash(length=8).upper()},
+			)
 
-	# Append recovery codes to the User 2FA document.
-	for recovery_code in recovery_codes:
-		two_fa.append("recovery_codes", {"code": recovery_code})
-
-	# Save the document and return recovery codes.
+	# Save the document.
 	two_fa.save()
+
+	# Decrypt recovery codes for the user.
+	recovery_codes = [
+		get_decrypted_password("User 2FA Recovery Code", recovery_code.name, "code")
+		for recovery_code in two_fa.recovery_codes
+		if not recovery_code.used_on
+	]
+
 	return recovery_codes
 
 
