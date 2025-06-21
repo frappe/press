@@ -7,6 +7,7 @@ import re
 from typing import TYPE_CHECKING
 
 import frappe
+import frappe.utils
 import pyotp
 from frappe import _
 from frappe.core.doctype.user.user import update_password
@@ -1263,6 +1264,37 @@ def disable_2fa(totp_code):
 		frappe.db.set_value("User 2FA", frappe.session.user, "enabled", 0)
 	else:
 		frappe.throw("Invalid TOTP code")
+
+
+@frappe.whitelist(allow_guest=True)
+def recover_2fa(user: str, recovery_code: str):
+	"""Recover 2FA using a recovery code."""
+
+	# Get the User 2FA document.
+	two_fa = frappe.get_doc("User 2FA", user)
+
+	# Check if the user has 2FA enabled.
+	if not two_fa.enabled:
+		frappe.throw(f"2FA is not enabled for {user}")
+
+	# Get valid recovery code doc.
+	code = None
+	for code_doc in two_fa.recovery_codes:
+		decrypted_code = get_decrypted_password("User 2FA Recovery Code", code_doc.name, "code")
+		if decrypted_code == recovery_code and not code_doc.used_on:
+			code = code_doc
+			break
+
+	# If no valid recovery code found, throw an error.
+	if not code:
+		frappe.throw("Invalid or used recovery code")
+
+	# Mark the recovery code as used.
+	code.used_on = frappe.utils.now_datetime()
+
+	# Disable 2FA and save the document.
+	two_fa.enabled = 0
+	two_fa.save(ignore_permissions=True)
 
 
 # Not available for Telangana, Ladakh, and Other Territory

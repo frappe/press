@@ -19,6 +19,7 @@
   {
    "fieldname": "used_on",
    "fieldtype": "Datetime",
+   "in_list_view": 1,
    "label": "Used On"
   }
  ],
@@ -26,7 +27,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-06-21 13:23:51.519151",
+ "modified": "2025-06-21 15:16:33.271412",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "User 2FA Recovery Code",

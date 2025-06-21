@@ -46,34 +46,78 @@
 						</div>
 						<form class="flex flex-col" @submit.prevent="submitForm">
 							<!-- 2FA Section -->
-							<template v-if="is2FA">
+							<template v-if="is2FA && !is2FARecovery">
 								<FormControl
 									label="2FA Code from your Authenticator App"
 									placeholder="123456"
 									v-model="twoFactorCode"
-									required
 									variant="outline"
+									required
+								/>
+								<ErrorMessage
+									class="mt-2"
+									:message="$resources.verify2FA.error"
 								/>
 								<Button
 									class="mt-4"
+									label="Verify"
+									variant="solid"
 									:loading="
 										$resources.verify2FA.loading ||
-										$session.login.loading ||
-										$resources.resetPassword.loading
+										$resources.recover2FA.loading ||
+										$resources.resetPassword.loading ||
+										$session.login.loading
 									"
-									variant="solid"
 									@click="
 										$resources.verify2FA.submit({
 											user: email,
 											totp_code: twoFactorCode,
 										})
 									"
-								>
-									Verify
-								</Button>
+								/>
+								<Button
+									class="mt-2"
+									variant="ghost"
+									label="Reset 2FA"
+									@click="on2FARecovery = true"
+								/>
+							</template>
+
+							<!-- 2FA Recovery Section -->
+							<template v-else-if="is2FARecovery">
+								<FormControl
+									label="Recovery Code"
+									placeholder="123456"
+									v-model="twoFactorRecoveryCode"
+									variant="outline"
+									required
+								/>
 								<ErrorMessage
 									class="mt-2"
-									:message="$resources.verify2FA.error"
+									:message="$resources.recover2FA.error"
+								/>
+								<Button
+									class="mt-4"
+									label="Reset"
+									variant="solid"
+									:loading="
+										$resources.verify2FA.loading ||
+										$resources.recover2FA.loading ||
+										$resources.resetPassword.loading ||
+										$session.login.loading
+									"
+									@click="
+										$resources.recover2FA.submit({
+											user: email,
+											recovery_code: twoFactorRecoveryCode,
+										})
+									"
+								/>
+								<Button
+									class="mt-2"
+									variant="ghost"
+									label="Back to 2FA Verification"
+									@click="on2FARecovery = false"
 								/>
 							</template>
 
@@ -409,9 +453,11 @@ export default {
 			otp: '',
 			otpSent: false,
 			twoFactorCode: '',
+			twoFactorRecoveryCode: '',
 			password: null,
 			otpResendCountdown: 0,
 			resetPasswordEmailSent: false,
+			on2FARecovery: false,
 		};
 	},
 	mounted() {
@@ -495,7 +541,7 @@ export default {
 				},
 				onError(err) {
 					toast.error(
-						getToastErrorMessage(err, 'Failed to resend verification code'),
+						getToastErrorMessage(err, 'Failed to resend verification code')
 					);
 				},
 			};
@@ -513,7 +559,7 @@ export default {
 				},
 				onError(err) {
 					toast.error(
-						getToastErrorMessage(err, 'Failed to send verification code'),
+						getToastErrorMessage(err, 'Failed to send verification code')
 					);
 				},
 			};
@@ -592,6 +638,24 @@ export default {
 				},
 			};
 		},
+		// Todo!
+		recover2FA() {
+			return {
+				url: 'press.api.account.recover_2fa',
+				onSuccess: () => {
+					toast.success('2FA recovered successfully');
+					this.$router.push({
+						name: 'Login',
+						query: {
+							two_factor: undefined,
+						},
+					});
+				},
+				onError: (err) => {
+					toast.error(getToastErrorMessage(err, 'Failed to recover 2FA'));
+				},
+			};
+		},
 	},
 	methods: {
 		resetSignupState() {
@@ -637,7 +701,7 @@ export default {
 							await this.login();
 						}
 					},
-				},
+				}
 			);
 		},
 
@@ -660,7 +724,7 @@ export default {
 							});
 						}
 					},
-				},
+				}
 			);
 		},
 
@@ -681,7 +745,7 @@ export default {
 							await this.$resources.verifyOTPAndLogin.submit();
 						}
 					},
-				},
+				}
 			);
 		},
 		getReferrerIfAny() {
@@ -710,7 +774,7 @@ export default {
 							this.twoFactorCode = '';
 						}
 					},
-				},
+				}
 			);
 		},
 		afterLogin(res) {
@@ -745,6 +809,13 @@ export default {
 		is2FA() {
 			return this.$route.name == 'Login' && this.$route.query.two_factor;
 		},
+		is2FARecovery() {
+			return (
+				this.$route.name == 'Login' &&
+				this.$route.query.two_factor &&
+				this.on2FARecovery
+			);
+		},
 		emailDomain() {
 			return this.email?.includes('@') ? this.email?.split('@').pop() : '';
 		},
@@ -767,7 +838,7 @@ export default {
 						(providers[d.email_domain] = {
 							social_login_key: d.social_login_key,
 							provider_name: d.provider_name,
-						}),
+						})
 				);
 			}
 
