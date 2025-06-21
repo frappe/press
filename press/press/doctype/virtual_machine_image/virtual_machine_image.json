@@ -20,7 +20,6 @@
   "series",
   "copied_from",
   "public",
-  "use_for_arm_server_creation",
   "credentials_section",
   "mariadb_root_password",
   "section_break_acrc",
@@ -160,17 +159,11 @@
    "fieldtype": "Check",
    "label": "Has Data Volume",
    "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "use_for_arm_server_creation",
-   "fieldtype": "Check",
-   "label": "Use for ARM Server Creation"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-21 17:27:35.328088",
+ "modified": "2025-06-22 00:17:30.369440",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",
