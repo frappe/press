@@ -21,6 +21,12 @@
 			label="Reset Recovery Codes"
 			@click="() => $emit('reset')"
 		/>
+		<Button
+			class="w-full"
+			variant="solid"
+			label="Download"
+			@click="downloadCodes"
+		/>
 	</div>
 </template>
 
@@ -41,6 +47,21 @@ export default {
 	emits: ['close', 'reset'],
 	components: {
 		AlertBanner,
+	},
+	methods: {
+		downloadCodes() {
+			const blob = new Blob([this.recoveryCodesStr], {
+				type: 'text/plain',
+			});
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = 'recovery_codes.txt';
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+		},
 	},
 	computed: {
 		recoveryCodesStr() {
