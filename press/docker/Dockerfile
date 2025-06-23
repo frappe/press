@@ -240,12 +240,34 @@ COPY --chown=frappe:frappe redis /home/frappe/frappe-bench/redis
 COPY --chown=frappe:frappe .vimrc /home/frappe/.vimrc
 COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
 
+RUN git clone $CUSTOM_ASSETS_REPO /home/frappe/custom_assets
+
 # Install other apps
 {% for app in doc.apps %}
 {% if app.app != "frappe" %}
 
 RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 \
-  --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
+  --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }},rw \
+  # --- START: Custom asset replacement logic ---
+  # Check if a custom asset folder exists for this specific app
+  if [ -d "/home/frappe/custom_assets/{{ app.app }}" ]; then \
+    echo "Applying custom assets for app: {{ app.app }}"; \
+    # Loop through each custom asset file for this app
+    for file in /home/frappe/custom_assets/{{ app.app }}/*; do \
+      if [ -f "$file" ]; then \
+        filename=$(basename "$file"); \
+        echo "Processing $filename..."; \
+        # Find and replace the corresponding file in the app's source context
+        find "/home/frappe/context/apps/{{ app.app }}" -type f -name "$filename" | while read -r target; do \
+            echo "  -> Replacing $target"; \
+            cp "$file" "$target"; \
+        done; \
+      fi; \
+    done; \
+  fi && \
+  # --- END: Custom asset replacement logic ---
+  #
+  # Original command to install the app (now with modified assets)
   bench get-app file:///home/frappe/context/apps/{{ app.app }} \
     {% if app.use_cached %}
     # Bench get-app flags to use get-app cache
@@ -256,13 +278,13 @@ RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=10
 {% endif %}
 {% endfor %}
 
-# Replace default assets with custom_assets
-RUN git clone $CUSTOM_ASSETS_REPO /home/frappe/custom_assets && \
-    for file in /home/frappe/custom_assets/*/*; do \
+# Replace default assets with custom_assets in frappe
+RUN for file in /home/frappe/custom_assets/frappe/*; do \
         app=$(basename $(dirname "$file")); \
         filename=$(basename "$file"); \
         echo "Processing $filename for app $app..."; \
-        find "/home/frappe/frappe-bench/apps/$app" -type f -name "$filename" | while read -r target; do>            echo "  -> Replacing $target"; \
+        find "/home/frappe/frappe-bench/apps/$app" -type f -name "$filename" | while read -r target; do \
+            echo "  -> Replacing $target"; \
             cp "$file" "$target"; \
         done; \
     done
