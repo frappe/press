@@ -259,10 +259,12 @@ RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=10
 # Replace default assets with custom_assets
 RUN git clone $CUSTOM_ASSETS_REPO /home/frappe/custom_assets && \
     for file in /home/frappe/custom_assets/*/*; do \
-        app=$(basename $(dirname $file)); \
-        filename=$(basename $file); \
-        target=$(find /home/frappe/frappe-bench/apps/$app -type f -name $filename); \
-        if [ -n "$target" ]; then cp "$file" "$target"; fi; \
+        app=$(basename $(dirname "$file")); \
+        filename=$(basename "$file"); \
+        echo "Processing $filename for app $app..."; \
+        find "/home/frappe/frappe-bench/apps/$app" -type f -name "$filename" | while read -r target; do>            echo "  -> Replacing $target"; \
+            cp "$file" "$target"; \
+        done; \
     done
 
 # Pull app updates from mounted repository
