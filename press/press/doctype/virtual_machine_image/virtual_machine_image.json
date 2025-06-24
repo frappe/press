@@ -163,7 +163,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-02 16:51:28.443140",
+ "modified": "2025-06-22 00:17:30.369440",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",
@@ -182,6 +182,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",

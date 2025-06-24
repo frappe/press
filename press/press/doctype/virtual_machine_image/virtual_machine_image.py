@@ -239,6 +239,7 @@ class VirtualMachineImage(Document):
 			get_available_images = get_available_images.where(images.region == region)
 		if platform:
 			get_available_images = get_available_images.where(images.platform == platform)
+
 		available_images = get_available_images.run(as_dict=True)
 		if not available_images:
 			return None

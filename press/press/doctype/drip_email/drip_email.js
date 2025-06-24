@@ -20,6 +20,9 @@ frappe.ui.form.on('Drip Email', {
 					label: __('Site'),
 					fieldname: 'site',
 					fieldtype: 'Link',
+					filters: {
+						standby_for_product: frm.doc.product_trial,
+					},
 					options: 'Site',
 					reqd: 1,
 				},

@@ -6,7 +6,7 @@ from __future__ import annotations
 from contextlib import suppress
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import TYPE_CHECKING, Callable, Final, TypedDict
+from typing import TYPE_CHECKING, ClassVar, Final, TypedDict
 
 import frappe
 import requests
@@ -18,7 +18,7 @@ from frappe.utils import (
 	flt,
 	get_datetime,
 )
-from frappe.utils.caching import redis_cache
+from frappe.utils.caching import redis_cache, request_cache
 from frappe.utils.password import get_decrypted_password
 from pytz import timezone as pytz_timezone
 
@@ -31,6 +31,8 @@ from press.press.report.binary_log_browser.binary_log_browser import (
 from press.press.report.mariadb_slow_queries.mariadb_slow_queries import execute, normalize_query
 
 if TYPE_CHECKING:
+	from collections.abc import Callable
+
 	from elasticsearch_dsl.response import AggResponse
 	from elasticsearch_dsl.response.aggs import FieldBucket, FieldBucketData
 
@@ -469,7 +471,7 @@ def get(name, timezone, duration="7d"):
 def add_commonly_slow_path_to_reports(
 	reports: dict, path: str, name: str, timezone, timespan, timegrain, max_no_of_paths
 ):
-	for slow_path in COMMONLY_SLOW_PATHS:
+	for slow_path in COMMONLY_SLOW_PATHS + COMMONLY_SLOW_JOBS:
 		if slow_path["path"] == path:
 			reports[slow_path["id"]] = slow_path["function"](
 				name, "duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
@@ -506,42 +508,49 @@ def get_advanced_analytics(name, timezone, duration="7d", max_no_of_paths=MAX_NO
 		name, "duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
 	)
 
-	return {
-		"request_count_by_path": get_request_by_(
-			name, "count", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
-		),
-		"request_duration_by_path": request_duration_by_path,
-		"average_request_duration_by_path": get_request_by_(
-			name, "average_duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
-		),
-		"request_count_by_ip": get_nginx_request_by_(
-			name, "count", timezone, timespan, timegrain, max_no_of_paths
-		),
-		"background_job_count_by_method": get_background_job_by_method(
-			name, "count", timezone, timespan, timegrain, max_no_of_paths
-		),
-		"background_job_duration_by_method": get_background_job_by_method(
-			name, "duration", timezone, timespan, timegrain, max_no_of_paths
-		),
-		"average_background_job_duration_by_method": get_background_job_by_method(
-			name, "average_duration", timezone, timespan, timegrain, max_no_of_paths
-		),
-		"job_count": [{"value": r.count, "date": r.date} for r in job_data],
-		"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
-	} | get_additional_duration_reports(
-		request_duration_by_path,
-		name,
-		timezone,
-		timespan,
-		timegrain,
-		max_no_of_paths,
+	background_job_duration_by_method = get_background_job_by_method(
+		name, "duration", timezone, timespan, timegrain, max_no_of_paths
 	)
 
-
-def get_more_background_job_detail_fn_names():
-	return {
-		"generate_report": get_generate_report_reports.__name__,
-	}
+	return (
+		{
+			"request_count_by_path": get_request_by_(
+				name, "count", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+			),
+			"request_duration_by_path": request_duration_by_path,
+			"average_request_duration_by_path": get_request_by_(
+				name, "average_duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+			),
+			"request_count_by_ip": get_nginx_request_by_(
+				name, "count", timezone, timespan, timegrain, max_no_of_paths
+			),
+			"background_job_count_by_method": get_background_job_by_method(
+				name, "count", timezone, timespan, timegrain, max_no_of_paths
+			),
+			"background_job_duration_by_method": background_job_duration_by_method,
+			"average_background_job_duration_by_method": get_background_job_by_method(
+				name, "average_duration", timezone, timespan, timegrain, max_no_of_paths
+			),
+			"job_count": [{"value": r.count, "date": r.date} for r in job_data],
+			"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
+		}
+		| get_additional_duration_reports(
+			request_duration_by_path,
+			name,
+			timezone,
+			timespan,
+			timegrain,
+			max_no_of_paths,
+		)
+		| get_additional_duration_reports(
+			background_job_duration_by_method,
+			name,
+			timezone,
+			timespan,
+			timegrain,
+			max_no_of_paths,
+		)
+	)
 
 
 @frappe.whitelist()
@@ -573,6 +582,7 @@ def rounded_time(dt=None, round_to=60):
 	return dt + timedelta(0, rounding - seconds, -dt.microsecond)
 
 
+@request_cache
 def get_rounded_boundaries(timespan: int, timegrain: int, timezone: str = "UTC"):
 	"""
 	Round the start and end time to the nearest interval, because Elasticsearch does this
@@ -626,7 +636,7 @@ def normalize_datasets(datasets: list[Dataset]) -> list[Dataset]:
 		n_query = normalize_query(data_dict["path"])
 		if n_datasets.get(n_query):
 			n_datasets[n_query]["values"] = [
-				x + y for x, y in zip(n_datasets[n_query]["values"], data_dict["values"])
+				x + y for x, y in zip(n_datasets[n_query]["values"], data_dict["values"], strict=False)
 			]
 		else:
 			data_dict["path"] = n_query
@@ -751,6 +761,10 @@ def get_query_report_run_reports(*args, **kwargs):
 	return QueryReportRunReports(*args, **kwargs).run()
 
 
+def get_generate_report_reports(*args, **kwargs):
+	return GenerateReportReports(*args, **kwargs).run()
+
+
 class CommonSlowPath(TypedDict):
 	path: str
 	id: str
@@ -770,15 +784,32 @@ COMMONLY_SLOW_PATHS: list[CommonSlowPath] = [
 	},
 ]
 
+COMMONLY_SLOW_JOBS: list[CommonSlowPath] = [
+	{
+		"path": "generate_report",
+		"id": "generate_report_reports",
+		"function": get_generate_report_reports,
+	},
+	{
+		"path": "frappe.core.doctype.prepared_report.prepared_report.generate_report",
+		"id": "generate_report_reports",
+		"function": get_generate_report_reports,
+	},
+]
+
 
 class GenerateReportReports(BackgroundJobGroupByChart):
-	def __init__(self, name, agg_type, timezone, timespan, timegrain):
-		super().__init__(name, agg_type, ResourceType.SITE, timezone, timespan, timegrain)
+	paths: ClassVar = [job["path"] for job in COMMONLY_SLOW_JOBS if job["id"] == "generate_report_reports"]
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 
 	def setup_search_filters(self):
 		super().setup_search_filters()
 		self.group_by_field = "json.report"
-		self.search = self.search.filter("match_phrase", json__job__method="generate_report")
+		self.search = self.search.query(
+			"bool", should=[{"match_phrase": {"json.job.method": path}} for path in self.paths]
+		)
 
 	def exclude_top_k_data(self, datasets: list[Dataset]):
 		if ResourceType(self.resource_type) is ResourceType.SITE:
@@ -787,10 +818,6 @@ class GenerateReportReports(BackgroundJobGroupByChart):
 		elif ResourceType(self.resource_type) is ResourceType.SERVER:  # not used atp
 			for path in list(map(lambda x: x["path"], datasets)):
 				self.search = self.search.exclude("match_phrase", json__site=path)
-
-
-def get_generate_report_reports(site, agg_type, timezone, timespan, timegrain):
-	return GenerateReportReports(site, agg_type, timezone, timespan, timegrain).run()
 
 
 def get_usage(site, type, timezone, timespan, timegrain):

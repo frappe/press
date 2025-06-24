@@ -23,6 +23,7 @@ from press.exceptions import (
 	AAAARecordExists,
 	ConflictingCAARecord,
 	ConflictingDNSRecord,
+	DomainProxied,
 	MultipleARecords,
 	MultipleCNAMERecords,
 )
@@ -54,6 +55,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
 		DeployCandidateApp,
 	)
+	from press.press.doctype.site.site import Site
 
 
 NAMESERVERS = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
@@ -94,7 +96,8 @@ def protected(doctypes):
 			if owner == team or has_role("Press Support Agent"):
 				return wrapped(*args, **kwargs)
 
-		frappe.throw("Not Permitted", frappe.PermissionError)  # noqa: RET503
+		frappe.throw("Not Permitted", frappe.PermissionError)
+		return None
 
 	return wrapper
 
@@ -128,7 +131,7 @@ def get_name_from_filters(filters: dict):
 		return None
 
 	value = values[0]
-	if isinstance(value, (int, str)):
+	if isinstance(value, int | str):
 		return value
 
 	return None
@@ -288,7 +291,8 @@ def validate_plan(server, plan):
 
 @frappe.whitelist()
 def new(site):
-	site["domain"] = frappe.db.get_single_value("Press Settings", "domain")
+	if not hasattr(site, "domain") or not site["domain"]:
+		site["domain"] = frappe.db.get_single_value("Press Settings", "domain")
 
 	return _new(site)
 
@@ -528,6 +532,8 @@ def app_details_for_new_public_site():
 
 @frappe.whitelist()
 def options_for_new(for_bench: str | None = None):  # noqa: C901
+	from press.utils import get_nearest_cluster
+
 	for_bench = str(for_bench) if for_bench else None
 	available_versions = get_available_versions(for_bench)
 
@@ -583,9 +589,18 @@ def options_for_new(for_bench: str | None = None):  # noqa: C901
 		# app source details are all fetched from marketplace apps for public sites
 		marketplace_details = None
 
+	default_domain = frappe.db.get_single_value("Press Settings", "domain")
+	cluster_specific_root_domains = frappe.db.get_all(
+		"Root Domain",
+		{"name": ("like", f"%.{default_domain}")},
+		["name", "default_cluster as cluster"],
+	)
+
 	return {
 		"versions": available_versions,
-		"domain": frappe.db.get_single_value("Press Settings", "domain"),
+		"domain": default_domain,
+		"closest_cluster": get_nearest_cluster(),
+		"cluster_specific_root_domains": cluster_specific_root_domains,
 		"marketplace_details": marketplace_details,
 		"app_source_details": app_source_details_grouped,
 	}
@@ -1577,7 +1592,7 @@ def restore(name, files, skip_failing_patches=False):
 			"remote_config_file": files.get("config", ""),
 		},
 	)
-	site = frappe.get_doc("Site", name)
+	site: Site = frappe.get_doc("Site", name)
 	return site.restore_site(skip_failing_patches=skip_failing_patches)
 
 
@@ -1629,7 +1644,10 @@ def check_dns_cname(name, domain):
 			raise MultipleCNAMERecords
 		mapped_domain = answer[0].to_text().rsplit(".", 1)[0]
 		result["answer"] = answer.rrset.to_text()
-		if mapped_domain == name:
+		other_domains = frappe.db.get_all(
+			"Site Domain", {"site": name, "status": "Active", "domain": ("!=", name)}, pluck="domain"
+		)
+		if mapped_domain == name or mapped_domain in other_domains:
 			result["matched"] = True
 	except MultipleCNAMERecords:
 		multiple_domains = ", ".join(part.to_text() for part in answer)
@@ -1716,16 +1734,32 @@ def ensure_dns_aaaa_record_doesnt_exist(domain: str):
 		pass  # We have other problems
 
 
-def check_dns_cname_a(name, domain):
+def check_domain_proxied(domain) -> str | None:
+	try:
+		res = requests.head(f"http://{domain}", timeout=3)
+	except requests.exceptions.RequestException as e:
+		frappe.throw("Unable to connect to the domain. Is the DNS correct?\n\n" + str(e))
+	else:
+		if (server := res.headers.get("server")) not in ("Frappe Cloud", None):  # eg: cloudflare
+			return server
+
+
+def check_dns_cname_a(name, domain, ignore_proxying=False):
 	check_domain_allows_letsencrypt_certs(domain)
+	proxy = check_domain_proxied(domain)
+	if proxy:
+		if ignore_proxying:  # no point checking the rest if proxied
+			return {"CNAME": {}, "A": {}, "matched": True, "type": "A"}  # assume A
+		frappe.throw(
+			f"Domain {domain} appears to be proxied (server: {proxy}). Please turn off proxying and try again in some time. You may enable it once the domain is verified.",
+			DomainProxied,
+		)
 	ensure_dns_aaaa_record_doesnt_exist(domain)
 	cname = check_dns_cname(name, domain)
-	result = {"CNAME": cname}
-	result.update(cname)
+	result = {"CNAME": cname} | cname
 
 	a = check_dns_a(name, domain)
-	result.update({"A": a})
-	result.update(a)
+	result |= {"A": a} | a
 
 	if cname["matched"] and a["exists"] and not a["matched"]:
 		frappe.throw(

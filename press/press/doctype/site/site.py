@@ -45,6 +45,7 @@ from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import 
 	MarketplaceAppPlan,
 )
 from press.utils.jobs import has_job_timeout_exceeded
+from press.utils.telemetry import capture
 from press.utils.webhook import create_webhook_event
 
 try:
@@ -82,6 +83,7 @@ from press.utils import (
 	get_current_team,
 	guess_type,
 	human_readable,
+	is_list,
 	log_error,
 	unique,
 	validate_subdomain,
@@ -100,6 +102,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server.server import BaseServer, Server
+	from press.press.doctype.tls_certificate.tls_certificate import TLSCertificate
 
 DOCTYPE_SERVER_TYPE_MAP = {
 	"Server": "Application",
@@ -119,6 +122,7 @@ class Site(Document, TagHelpers):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.account_request.account_request import AccountRequest
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 		from press.press.doctype.site_app.site_app import SiteApp
 		from press.press.doctype.site_backup_time.site_backup_time import SiteBackupTime
@@ -563,9 +567,7 @@ class Site(Document, TagHelpers):
 	def capture_signup_event(self, event: str):
 		team = frappe.get_doc("Team", self.team)
 		if frappe.db.count("Site", {"team": team.name}) <= 1 and team.account_request:
-			from press.utils.telemetry import capture
-
-			account_request = frappe.get_doc("Account Request", team.account_request)
+			account_request: AccountRequest = frappe.get_doc("Account Request", team.account_request)
 			if not (account_request.is_saas_signup() or account_request.invited_by_parent_team):
 				capture(event, "fc_signup", team.user)
 
@@ -688,7 +690,7 @@ class Site(Document, TagHelpers):
 			row.type = key_type
 
 			if key_type == "Number":
-				key_value = int(row.value) if isinstance(row.value, (float, int)) else json.loads(row.value)
+				key_value = int(row.value) if isinstance(row.value, float | int) else json.loads(row.value)
 			elif key_type == "Boolean":
 				key_value = (
 					row.value if isinstance(row.value, bool) else bool(sbool(json.loads(cstr(row.value))))
@@ -698,8 +700,8 @@ class Site(Document, TagHelpers):
 				Handle the old value for the `allow_cors` key
 				Previously it was of string type, now it is a JSON object.
 				"""
-				if row.key == "allow_cors" and row.value in ["", "*"]:
-					row.value = '["*"]' if row.value == "*" else "[]"
+				if row.key == "allow_cors" and not is_list(row.value):
+					row.value = json.dumps([row.value])
 				key_value = json.loads(cstr(row.value))
 			else:
 				key_value = row.value
@@ -1281,7 +1283,7 @@ class Site(Document, TagHelpers):
 				"domain": domain,
 				"dns_type": "CNAME",
 			}
-		).insert()
+		).insert(ignore_if_duplicate=True)
 
 	@frappe.whitelist()
 	def create_dns_record(self):
@@ -1929,7 +1931,7 @@ class Site(Document, TagHelpers):
 
 		self.save()
 
-		# Telemetry: Send event if first site status changed to Active
+		# Telemetry: Capture event for setup wizard completion
 		if self.setup_wizard_complete:
 			self.capture_signup_event("first_site_setup_wizard_completed")
 
@@ -1983,7 +1985,7 @@ class Site(Document, TagHelpers):
 
 		for d in config:
 			d = frappe._dict(d)
-			if isinstance(d.value, (dict, list)):
+			if isinstance(d.value, dict | list):
 				value = json.dumps(d.value)
 			else:
 				value = d.value
@@ -2049,11 +2051,11 @@ class Site(Document, TagHelpers):
 		if frappe.db.exists("Site Config Key", key):
 			return frappe.db.get_value("Site Config Key", key, "type")
 
-		if isinstance(value, (dict, list)):
+		if isinstance(value, dict | list):
 			return "JSON"
 		if isinstance(value, bool):
 			return "Boolean"
-		if isinstance(value, (int, float)):
+		if isinstance(value, int | float):
 			return "Number"
 		return "String"
 
@@ -3288,7 +3290,7 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active"])
 	def fetch_certificate(self, domain: str):
-		tls_certificate = frappe.get_last_doc("TLS Certificate", {"domain": domain})
+		tls_certificate: TLSCertificate = frappe.get_last_doc("TLS Certificate", {"domain": domain})
 		tls_certificate.obtain_certificate()
 
 	def fetch_database_name(self):
@@ -3702,13 +3704,8 @@ def process_install_app_site_job_update(job):
 
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
-		if job.status == "Success":
-			site = frappe.get_doc("Site", job.site)
-			app = json.loads(job.request_data).get("name")
-			app_doc = find(site.apps, lambda x: x.app == app)
-			if not app_doc:
-				site.append("apps", {"app": app})
-				site.save()
+		site: Site = frappe.get_doc("Site", job.site)
+		site.sync_apps()
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 		create_site_status_update_webhook_event(job.site)
 
@@ -3724,13 +3721,8 @@ def process_uninstall_app_site_job_update(job):
 
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
-		if job.status == "Success":
-			site = frappe.get_doc("Site", job.site)
-			app = job.request_path.rsplit("/", 1)[-1]
-			app_doc = find(site.apps, lambda x: x.app == app)
-			if app_doc:
-				site.remove(app_doc)
-				site.save()
+		site: Site = frappe.get_doc("Site", job.site)
+		site.sync_apps()
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 		create_site_status_update_webhook_event(job.site)
 

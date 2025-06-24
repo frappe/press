@@ -26,6 +26,7 @@
   "use_agent_job_callbacks",
   "is_pyspy_setup",
   "halt_agent_jobs",
+  "stop_deployments",
   "billing_section",
   "team",
   "column_break_11",
@@ -591,10 +592,17 @@
    "fieldtype": "Select",
    "label": "Platform",
    "options": "x86_64\narm64"
+  },
+  {
+   "default": "0",
+   "description": "Stop all new builds for the server",
+   "fieldname": "stop_deployments",
+   "fieldtype": "Check",
+   "label": "Stop deployments"
   }
  ],
  "links": [],
- "modified": "2025-05-27 13:00:39.884929",
+ "modified": "2025-06-02 09:43:06.619945",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

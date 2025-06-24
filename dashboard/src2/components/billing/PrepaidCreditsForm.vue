@@ -81,14 +81,11 @@
 					}"
 					@click="paymentGateway = 'M-Pesa'"
 				>
-					<div class="flex items-center">
-						<img
-							class="h-14 w-24"
-							:src="`/assets/press/images/mpesa-logo.svg`"
-							alt="M-pesa Logo"
-						/>
-						<Badge variant="outline" theme="orange" size="sm" label="Beta" />
-					</div>
+					<img
+						class="h-14 w-24"
+						:src="`/assets/press/images/mpesa-logo.svg`"
+						alt="M-pesa Logo"
+					/>
 				</Button>
 			</div>
 		</div>

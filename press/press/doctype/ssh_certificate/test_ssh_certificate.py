@@ -37,7 +37,7 @@ class TestSSHCertificate(unittest.TestCase):
 				"certificate_type": "User",
 				"group": group,
 				"user": frappe.session.user,
-				"user_ssh_key": user_ssh_key,
+				"user_ssh_key": user_ssh_key.name,
 				"validity": "6h",
 			}
 		).insert()

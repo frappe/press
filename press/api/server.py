@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from datetime import timezone as tz
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import frappe
 import requests
@@ -30,7 +30,31 @@ def poly_get_doc(doctypes, name):
 	return frappe.get_doc(doctypes[-1], name)
 
 
-MOUNTPOINT_REGEX = "(/|/opt/volumes/mariadb|/opt/volumes/benches)"
+def _get_arm_mount_point(series: Literal["f", "m"]) -> str:
+	"""Returns to arm64 mount points."""
+	match series:
+		case "f":
+			return "/opt/volumes/benches"
+		case "m":
+			return "/opt/volumes/mariadb"
+
+
+def _get_intel_mount_point(_: Literal["f", "m"]) -> str:
+	"""Returns the Intel mount point (same for all series)."""
+	return "/"
+
+
+def get_mount_point(server: str) -> str:
+	doctype = "Database Server" if server[0] == "m" else "Server"
+	provider = frappe.get_value(doctype, server, "provider")
+	if provider != "AWS EC2":
+		return _get_intel_mount_point("/")
+
+	platform, series = frappe.get_value("Virtual Machine", server, ["platform", "series"])
+	if platform == "arm64":
+		return _get_arm_mount_point(series)
+
+	return _get_intel_mount_point(series)
 
 
 @frappe.whitelist()
@@ -163,6 +187,12 @@ def archive(name):
 
 @frappe.whitelist()
 def new(server):
+	server_plan_platform = frappe.get_value("Server Plan", server["app_plan"], "platform")
+	cluster_has_arm_support = frappe.get_value("Cluster", server["cluster"], "has_arm_support")
+
+	if server_plan_platform == "arm64" and not cluster_has_arm_support:
+		frappe.throw(f"ARM Instances are currently unavailable in the {server['cluster']} region")
+
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
 		frappe.throw("You cannot create a new server because your account is disabled")
@@ -191,13 +221,14 @@ def new(server):
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 def usage(name):
+	mount_point = get_mount_point(name)
 	query_map = {
 		"vcpu": (
 			f"""((count(count(node_cpu_seconds_total{{instance="{name}",job="node"}}) by (cpu))) - avg(sum by (mode)(rate(node_cpu_seconds_total{{mode='idle',instance="{name}",job="node"}}[120s])))) / count(count(node_cpu_seconds_total{{instance="{name}",job="node"}}) by (cpu))""",
 			lambda x: x,
 		),
 		"disk": (
-			f"""sum(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{MOUNTPOINT_REGEX}"}} - node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint=~"{MOUNTPOINT_REGEX}"}}) by ()/ (1024 * 1024 * 1024)""",
+			f"""sum(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}} - node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}}) by ()/ (1024 * 1024 * 1024)""",
 			lambda x: x,
 		),
 		"memory": (
@@ -220,13 +251,14 @@ def usage(name):
 
 @protected(["Server", "Database Server"])
 def total_resource(name):
+	mount_point = get_mount_point(name)
 	query_map = {
 		"vcpu": (
 			f"""(count(count(node_cpu_seconds_total{{instance="{name}",job="node"}}) by (cpu)))""",
 			lambda x: x,
 		),
 		"disk": (
-			f"""sum(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{MOUNTPOINT_REGEX}"}}) by () / (1024 * 1024 * 1024)""",
+			f"""sum(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}}) by () / (1024 * 1024 * 1024)""",
 			lambda x: x,
 		),
 		"memory": (
@@ -282,6 +314,7 @@ def calculate_swap(name):
 @protected(["Server", "Database Server"])
 @redis_cache(ttl=10 * 60)
 def analytics(name, query, timezone, duration):
+	mount_point = get_mount_point(name)
 	timespan, timegrain = get_timespan_timegrain(duration)
 
 	query_map = {
@@ -298,7 +331,7 @@ def analytics(name, query, timezone, duration):
 			lambda x: x["device"],
 		),
 		"space": (
-			f"""100 - ((node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint=~"{MOUNTPOINT_REGEX}"}} * 100) / node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{MOUNTPOINT_REGEX}"}})""",
+			f"""100 - ((node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}} * 100) / node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}})""",
 			lambda x: x["mountpoint"],
 		),
 		"loadavg": (
@@ -334,7 +367,7 @@ def analytics(name, query, timezone, duration):
 		"innodb_bp_miss_percent": (
 			f"""
 avg by (instance) (
-        rate(mysql_global_status_innodb_buffer_pool_reads{{instance=~"{name}"}}[{timegrain}s])
+		rate(mysql_global_status_innodb_buffer_pool_reads{{instance=~"{name}"}}[{timegrain}s])
 		/
 		rate(mysql_global_status_innodb_buffer_pool_read_requests{{instance=~"{name}"}}[{timegrain}s])
 )
@@ -428,12 +461,22 @@ def options():
 	return {
 		"regions": regions,
 		"app_plans": plans("Server"),
-		"db_plans": plans("Database Server"),
+		"db_plans": plans("Database Server", platform="x86_64"),
 	}
 
 
 @frappe.whitelist()
-def plans(name, cluster=None, platform="x86_64"):
+def plans(name, cluster=None, platform=None):
+	# Removed default platform of x86_64;
+	# Still use x86_64 for new database servers
+	filters = {"server_type": name}
+
+	if cluster:
+		filters.update({"cluster": cluster})
+
+	if platform:
+		filters.update({"platform": platform})
+
 	return Plan.get_plans(
 		doctype="Server Plan",
 		fields=[
@@ -448,12 +491,7 @@ def plans(name, cluster=None, platform="x86_64"):
 			"instance_type",
 			"premium",
 		],
-		filters={"server_type": name, "platform": platform, "cluster": cluster}
-		if cluster
-		else {
-			"server_type": name,
-			"platform": platform,
-		},
+		filters=filters,
 	)
 
 

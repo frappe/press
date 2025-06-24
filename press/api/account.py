@@ -35,11 +35,9 @@ if TYPE_CHECKING:
 
 
 @frappe.whitelist(allow_guest=True)
-def signup(email, product=None, referrer=None):
+@rate_limit(limit=5, seconds=60 * 60)
+def signup(email: str, product: str | None = None, referrer: str | None = None) -> str:
 	frappe.utils.validate_email_address(email, True)
-
-	current_user = frappe.session.user
-	frappe.set_user("Administrator")
 
 	email = email.strip().lower()
 	exists, enabled = frappe.db.get_value("Team", {"user": email}, ["name", "enabled"]) or [0, 0]
@@ -49,8 +47,14 @@ def signup(email, product=None, referrer=None):
 		frappe.throw(_("Account {0} has been deactivated").format(email))
 	elif exists and enabled:
 		frappe.throw(_("Account {0} is already registered").format(email))
-	else:
-		account_request = frappe.get_doc(
+
+	account_request = frappe.db.get_value(
+		"Account Request",
+		{"email": email, "referrer_id": referrer, "product_trial": product},
+		"name",
+	)
+	if not account_request:
+		account_request_doc = frappe.get_doc(
 			{
 				"doctype": "Account Request",
 				"email": email,
@@ -59,18 +63,15 @@ def signup(email, product=None, referrer=None):
 				"send_email": True,
 				"product_trial": product,
 			}
-		).insert()
+		).insert(ignore_permissions=True)
+		account_request = account_request_doc.name
 
-	frappe.set_user(current_user)
-	if account_request:
-		return account_request.name
-
-	return None
+	return account_request
 
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 60)
-def verify_otp(account_request: str, otp: str):
+def verify_otp(account_request: str, otp: str) -> str:
 	from frappe.auth import get_login_attempt_tracker
 
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
@@ -86,6 +87,10 @@ def verify_otp(account_request: str, otp: str):
 
 	ip_tracker and ip_tracker.add_success_attempt()
 	account_request.reset_otp()
+
+	if account_request.product_trial:
+		capture("otp_verified", "fc_product_trial", account_request.name)
+
 	return account_request.request_key
 
 
@@ -96,7 +101,7 @@ def verify_otp_and_login(email: str, otp: str):
 
 	account_request = frappe.db.get_value("Account Request", {"email": email}, "name")
 
-	if not account_request or not frappe.db.exists("Team", {"user": email}):
+	if not account_request:
 		frappe.throw("Please sign up first")
 
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
@@ -212,7 +217,10 @@ def setup_account(  # noqa: C901
 			doc.save()
 
 	# Telemetry: Created account
-	capture("completed_signup", "fc_signup", account_request.email)
+	if account_request.product_trial:
+		capture("created_account", "fc_product_trial", account_request.name)
+	else:
+		capture("completed_signup", "fc_signup", account_request.email)
 	frappe.local.login_manager.login_as(email)
 
 	return account_request.name
@@ -406,23 +414,16 @@ def set_country(country):
 	team_doc.create_stripe_customer()
 
 
-def get_account_request_from_key(key):
-	"""Find Account Request using `key` in the past 12 hours or if site is active"""
+def get_account_request_from_key(key: str):
+	"""Find Account Request using `key`"""
 
 	if not key or not isinstance(key, str):
 		frappe.throw(_("Invalid Key"))
 
-	hours = 12
-	ar = frappe.get_doc("Account Request", {"request_key": key})
-	if ar.creation > frappe.utils.add_to_date(None, hours=-hours):
-		return ar
-	if ar.subdomain and ar.saas_app:
-		domain = frappe.db.get_value("Saas Settings", ar.saas_app, "domain")
-		if frappe.db.get_value("Site", ar.subdomain + "." + domain, "status") == "Active":
-			return ar
-	return None
-
-	return None
+	try:
+		return frappe.get_doc("Account Request", {"request_key": key})
+	except frappe.DoesNotExistError:
+		return None
 
 
 @frappe.whitelist()

@@ -89,7 +89,7 @@ export default {
 			return days;
 		},
 		hourOptions() {
-			let options = [...Array(24).stickyKeys()].map((n) => ({
+			let options = [...Array(24).keys()].map((n) => ({
 				label:
 					n < 12
 						? `${(n == 0 ? 12 : n).toString().padStart(2, '0')} AM`
