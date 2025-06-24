@@ -1776,7 +1776,7 @@ class Server(BaseServer):
 
 		return uuid
 
-	def create_data_mount_directories(self) -> str:
+	def create_data_mount_directories(self):
 		"""Create mountpoint directories"""
 		self.ansible_run(
 			"mkdir -p /opt/volumes/benches && "
@@ -1785,10 +1785,13 @@ class Server(BaseServer):
 		)
 
 	def _update_fstab(self, uuid: str):
-		"""Update fstab and mount all"""
-		ansible = Ansible(playbook="update_fstab_with_mounts.yml", server=self, variables={"uuid": uuid})
+		"""Update fstab and mount all filesystems"""
+		ansible = Ansible(
+			playbook="update_fstab_with_mounts.yml",
+			server=self,
+			variables={"uuid": uuid},
+		)
 		ansible.run()
-		self.ansible_run("mount -a")
 
 	def _stop_docker(self):
 		"""Stop docker to avoid data loss/corruption before move"""
