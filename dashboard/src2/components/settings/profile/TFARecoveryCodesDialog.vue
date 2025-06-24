@@ -14,7 +14,7 @@
 				@reset="() => $resources.resetRecoveryCodes.submit()"
 				with-reset
 			/>
-			<div v-else class="space-y-4">
+			<div v-else>
 				<FormControl
 					label="Password"
 					type="password"
@@ -24,10 +24,13 @@
 					autocomplete="current-password"
 					required
 				/>
-				<ErrorMessage :message="$resources.getRecoveryCodes.error" />
+				<ErrorMessage
+					class="mt-2"
+					:message="$resources.getRecoveryCodes.error"
+				/>
 				<Button
 					label="Fetch Recovery Codes"
-					class="w-full"
+					class="mt-6 w-full"
 					variant="solid"
 					@click="() => $resources.getRecoveryCodes.submit({ password })"
 				/>
