@@ -1189,7 +1189,7 @@ class ReleaseGroup(Document, TagHelpers):
 		required_app_source = frappe.get_all(
 			"App Source",
 			filters={"repository_url": current_app_source.repository_url, "branch": to_branch},
-			or_filters={"team": current_app_source.team, "public": 1},
+			or_filters={"team": get_current_team(), "public": 1},
 			limit=1,
 			fields=["name", "team", "public"],
 		)

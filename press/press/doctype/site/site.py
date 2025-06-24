@@ -15,6 +15,7 @@ import frappe
 import frappe.utils
 import pytz
 import requests
+import rq
 from frappe import _
 from frappe.core.utils import find
 from frappe.frappeclient import FrappeClient, FrappeException
@@ -43,6 +44,7 @@ from press.exceptions import (
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
+from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture
 from press.utils.webhook import create_webhook_event
 
@@ -144,6 +146,7 @@ class Site(Document, TagHelpers):
 		current_disk_usage: DF.Int
 		database_access_connection_limit: DF.Int
 		database_name: DF.Data | None
+		disable_site_usage_exceed_check: DF.Check
 		domain: DF.Link | None
 		erpnext_consultant: DF.Link | None
 		free: DF.Check
@@ -154,6 +157,7 @@ class Site(Document, TagHelpers):
 		hybrid_saas_pool: DF.Link | None
 		is_erpnext_setup: DF.Check
 		is_standby: DF.Check
+		last_site_usage_warning_mail_sent_on: DF.Datetime | None
 		logical_backup_times: DF.Table[SiteBackupTime]
 		notify_email: DF.Data | None
 		only_update_at_specified_time: DF.Check
@@ -171,6 +175,9 @@ class Site(Document, TagHelpers):
 		setup_wizard_status_check_next_retry_on: DF.Datetime | None
 		setup_wizard_status_check_retries: DF.Int
 		signup_time: DF.Datetime | None
+		site_usage_exceeded: DF.Check
+		site_usage_exceeded_last_checked_on: DF.Datetime | None
+		site_usage_exceeded_on: DF.Datetime | None
 		skip_auto_updates: DF.Check
 		skip_failing_patches: DF.Check
 		skip_scheduled_logical_backups: DF.Check
@@ -2183,6 +2190,7 @@ class Site(Document, TagHelpers):
 
 	def change_plan(self, plan, ignore_card_setup=False):
 		self.can_change_plan(ignore_card_setup)
+		self.reset_disk_usage_exceeded_status(save=False)
 		plan_config = self.get_plan_config(plan)
 
 		self._update_configuration(plan_config)
@@ -2258,9 +2266,7 @@ class Site(Document, TagHelpers):
 
 		disk_usage = usage.public + usage.private
 		if usage.database < plan.max_database_usage and disk_usage < plan.max_storage_usage:
-			self.current_database_usage = (usage.database / plan.max_database_usage) * 100
-			self.current_disk_usage = ((usage.public + usage.private) / plan.max_storage_usage) * 100
-			self.unsuspend(reason="Plan Upgraded")
+			self.reset_disk_usage_exceeded_status()
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
@@ -2281,6 +2287,8 @@ class Site(Document, TagHelpers):
 	@site_action(["Inactive", "Broken"])
 	def activate(self):
 		log_site_activity(self.name, "Activate Site")
+		if self.status == "Suspended":
+			self.reset_disk_usage_exceeded_status()
 		self.status = "Active"
 		self.update_site_config({"maintenance_mode": 0})
 		self.update_site_status_on_proxy("activated")
@@ -2298,6 +2306,16 @@ class Site(Document, TagHelpers):
 			from press.saas.doctype.product_trial.product_trial import send_suspend_mail
 
 			send_suspend_mail(self.name, self.standby_for_product)
+
+		if self.site_usage_exceeded and self.notify_email:
+			frappe.sendmail(
+				recipients=self.notify_email,
+				subject=f"Action Required: Site {self.host_name} suspended",
+				template="site_suspend_due_to_exceeding_disk_usage",
+				args={
+					"subject": f"Site {self.host_name} has been suspended",
+				},
+			)
 
 	def deactivate_app_subscriptions(self):
 		frappe.db.set_value(
@@ -2649,6 +2667,58 @@ class Site(Document, TagHelpers):
 		result["slow_queries"] = sorted(slow_queries, key=lambda x: x["rows_examined"], reverse=True)
 		result["is_performance_schema_enabled"] = is_performance_schema_enabled
 		return result
+
+	def check_if_disk_usage_exceeded(self, save=True):  # noqa: C901
+		if self.disable_site_usage_exceed_check:
+			# Flag to disable disk usage exceeded check
+			return
+
+		if self.free or frappe.get_cached_value("Team", self.team, "free_account"):
+			# Ignore for free sites and teams
+			return
+		if not frappe.db.get_value("Server", self.server, "public"):
+			# Don't check disk usage for dedicated servers
+			return
+
+		# Check if disk usage exceeded
+		disk_usage_exceeded = self.current_database_usage > 120 or self.current_disk_usage > 120
+		# If disk usage not exceeded, and site
+		if not disk_usage_exceeded and self.site_usage_exceeded:
+			# Reset site usage exceeded flags
+			self.reset_disk_usage_exceeded_status(save=save)
+			return
+
+		# If that's detected previously as well, just update the last checked time
+		if disk_usage_exceeded and self.site_usage_exceeded:
+			self.site_usage_exceeded_last_checked_on = now_datetime()
+			if save:
+				self.save()
+			return
+
+		if disk_usage_exceeded and not self.site_usage_exceeded:
+			# If disk usage exceeded, set the flags
+			self.site_usage_exceeded = True
+			self.site_usage_exceeded_on = now_datetime()
+			self.site_usage_exceeded_last_checked_on = now_datetime()
+			if save:
+				self.save()
+
+	def reset_disk_usage_exceeded_status(self, save=True):
+		if not self.site_usage_exceeded:
+			return
+
+		self.site_usage_exceeded = False
+		self.site_usage_exceeded_on = None
+		self.site_usage_exceeded_last_checked_on = None
+		self.last_site_usage_warning_mail_sent_on = None
+
+		if self.status == "Suspended":
+			self.unsuspend(reason="Disk usage issue resolved")
+		elif self.status_before_update == "Suspended":
+			self.status_before_update = "Active"
+
+		if save:
+			self.save()
 
 	@property
 	def server_logs(self):
@@ -4129,3 +4199,97 @@ def archive_suspended_sites():
 	agent = frappe.get_doc("Proxy Server", {"cluster": signup_cluster}).agent
 	if archived_now:
 		agent.reload_nginx()
+
+
+def send_warning_mail_regarding_sites_exceeding_disk_usage():
+	if not frappe.db.get_single_value("Press Settings", "enforce_storage_limits"):
+		return
+
+	free_teams = frappe.get_all("Team", filters={"free_account": True, "enabled": True}, pluck="name")
+	sites_with_no_mail_sent_previously = frappe.get_all(
+		"Site",
+		filters={
+			"status": "Active",
+			"free": False,
+			"team": ("not in", free_teams),
+			"site_usage_exceeded": 1,
+			"last_site_usage_warning_mail_sent_on": ("is", "not set"),
+		},
+		pluck="name",
+	)
+
+	sites_with_recurring_alerts = frappe.get_all(
+		"Site",
+		filters={
+			"status": "Active",
+			"free": False,
+			"team": ("not in", free_teams),
+			"site_usage_exceeded": 1,
+			"last_site_usage_warning_mail_sent_on": ("<", frappe.utils.nowdate()),
+		},
+		pluck="name",
+	)
+
+	sites = list(set(sites_with_no_mail_sent_previously + sites_with_recurring_alerts))
+
+	for site in sites:
+		if has_job_timeout_exceeded():
+			break
+		try:
+			site_info = frappe.get_value(
+				"Site",
+				site,
+				["notify_email", "current_disk_usage", "current_database_usage", "site_usage_exceeded_on"],
+				as_dict=True,
+			)
+			if not site_info.notify_email or (
+				site_info.current_disk_usage < 120 and site_info.current_database_usage < 120
+			):
+				# Final check if site is still exceeding limits
+				continue
+			frappe.sendmail(
+				recipients=site_info.notify_email,
+				subject=f"Action Required: Site {site} exceeded plan limits",
+				template="site_exceeded_disk_usage_warning",
+				args={
+					"site": site,
+					"current_disk_usage": site_info.current_disk_usage,
+					"current_database_usage": site_info.current_database_usage,
+					"no_of_days_left_to_suspend": 7
+					- (frappe.utils.date_diff(frappe.utils.nowdate(), site_info.site_usage_exceeded_on) or 0),
+				},
+			)
+			frappe.db.set_value("Site", site, "last_site_usage_warning_mail_sent_on", frappe.utils.now())
+			frappe.db.commit()
+		except rq.timeouts.JobTimeoutException:
+			frappe.db.rollback()
+			return
+		except Exception as e:
+			print(e)
+			frappe.db.rollback()
+
+
+def suspend_sites_exceeding_disk_usage_for_last_7_days():
+	"""Suspend sites if they have exceeded database or disk usage limits for the last 7 days."""
+
+	if not frappe.db.get_single_value("Press Settings", "enforce_storage_limits"):
+		return
+
+	free_teams = frappe.get_all("Team", filters={"free_account": True, "enabled": True}, pluck="name")
+	active_sites = frappe.get_all(
+		"Site",
+		filters={
+			"status": "Active",
+			"free": False,
+			"team": ("not in", free_teams),
+			"site_usage_exceeded": 1,
+			"site_usage_exceeded_on": ("<", frappe.utils.add_to_date(frappe.utils.now(), days=-7)),
+		},
+		fields=["name", "team", "current_database_usage", "current_disk_usage"],
+	)
+
+	for site in active_sites:
+		if site.current_database_usage > 120 or site.current_disk_usage > 120:
+			# Check once again and suspend if still exceeds limits
+			site: Site = frappe.get_doc("Site", site.name)
+			site.suspend(reason="Site Usage Exceeds Plan limits", skip_reload=True)

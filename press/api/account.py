@@ -103,7 +103,7 @@ def verify_otp_and_login(email: str, otp: str):
 
 	account_request = frappe.db.get_value("Account Request", {"email": email}, "name")
 
-	if not account_request or not frappe.db.exists("Team", {"user": email}):
+	if not account_request:
 		frappe.throw("Please sign up first")
 
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)

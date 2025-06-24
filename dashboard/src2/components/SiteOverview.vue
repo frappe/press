@@ -32,11 +32,11 @@
 		<DismissableBanner
 			v-if="$site.doc.eol_versions.includes($site.doc.version)"
 			class="col-span-1 lg:col-span-2"
-			title="Your site is on an End of Life version. Upgrade to the latest version to get the latest features and security updates."
+			title="Your site is on an End of Life version. Upgrade to the latest version to get support, latest features and security updates."
 			:id="`${$site.name}-eol`"
 		>
 			<Button
-				class="ml-auto"
+				class="ml-auto min-w-[7rem]"
 				variant="outline"
 				link="https://frappecloud.com/docs/sites/version-upgrade"
 			>
