@@ -7,11 +7,8 @@
 			type="warning"
 		/>
 
-		<div class="rounded border border-gray-200 bg-gray-50 p-4">
-			<div class="font-mono text-sm leading-loose text-gray-700">
-				{{ recoveryCodesStr }}
-			</div>
-		</div>
+		<!-- Display recovery codes -->
+		<ClickToCopy label="Copy Recovery Codes" :textContent="recoveryCodesStr" />
 
 		<!-- Reset button only shown if withReset prop is true -->
 		<Button
@@ -32,6 +29,7 @@
 
 <script>
 import AlertBanner from '../../AlertBanner.vue';
+import ClickToCopy from '../../../components/ClickToCopyField.vue';
 
 export default {
 	props: {
@@ -47,6 +45,7 @@ export default {
 	emits: ['close', 'reset'],
 	components: {
 		AlertBanner,
+		ClickToCopy,
 	},
 	methods: {
 		downloadCodes() {
