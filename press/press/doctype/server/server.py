@@ -25,6 +25,7 @@ from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.exceptions import VolumeResizeLimitError
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.runner import Ansible
 from press.telegram_utils import Telegram
@@ -35,6 +36,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.release_group.release_group import ReleaseGroup
+	from press.press.doctype.server_mount.server_mount import ServerMount
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 from typing import Literal, TypedDict
@@ -1753,6 +1755,56 @@ class Server(BaseServer):
 	def add_upstream_to_proxy(self):
 		agent = Agent(self.proxy_server, server_type="Proxy Server")
 		agent.new_server(self.name)
+
+	def ansible_run(self, command: str) -> dict[str, str]:
+		inventory = f"{self.ip},"
+		return AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
+
+	def format_attached_volume(self) -> str:
+		volume_mount: ServerMount = self.mounts[0]
+		output = self.ansible_run(f"mkfs -t ext4 {volume_mount.source}")["output"]
+		uuid = ""
+
+		for line in output.splitlines():
+			if "UUID" not in line:
+				continue
+			uuid = line.split()[-1]
+			break
+
+		return uuid
+
+	def create_data_mount_directories(self) -> str:
+		"""Create mountpoint directories"""
+		self.ansible_run(
+			"mkdir -p /opt/volumes/benches && "
+			"mkdir -p /opt/volumes/benches/home/frappe/benches && "
+			"mkdir -p /opt/volumes/benches/var/lib/docker"
+		)
+
+	def _update_fstab(self, uuid: str):
+		"""Update fstab and mount all"""
+		ansible = Ansible(playbook="update_fstab_with_mounts.yml", server=self, variables={"uuid": uuid})
+		ansible.run()
+		self.ansible_run("mount -a")
+
+	def _stop_docker(self):
+		"""Stop docker to avoid data loss/corruption before move"""
+		self.ansible_run("systemctl stop docker")
+
+	def _start_docker(self):
+		"""Start docker after move"""
+		self.ansible_run("systemctl start docker")
+
+	def setup_attached_data_volume(self):
+		"""Created vm needs to have has_data_volume checked!"""
+		if not self.has_data_volume:
+			return
+
+		self.create_data_mount_directories()
+		self._stop_docker()
+		uuid = self.format_attached_volume()
+		self._update_fstab(uuid)
+		self._start_docker()
 
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
