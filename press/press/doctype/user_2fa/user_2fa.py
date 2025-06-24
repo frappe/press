@@ -58,23 +58,16 @@ class User2FA(Document):
 
 		# Send email notification.
 		try:
-			dashboard_url = frappe.utils.get_url("/dashboard/settings/profile")
+			args = {
+				"viewed_at": frappe.utils.format_datetime(self.recovery_codes_last_viewed_at),
+				"link": frappe.utils.get_url("/dashboard/settings/profile"),
+			}
+
 			frappe.sendmail(
 				recipients=[self.user],
 				subject="Your 2FA Recovery Codes Were Viewed",
-				message=f"""
-				<h2>Security Alert</h2>
-				<p>Your two-factor authentication recovery codes were viewed at {frappe.utils.format_datetime(self.recovery_codes_last_viewed_at)}.</p>
-				<p>If you did not view your recovery codes, please secure your account immediately:</p>
-				<ul>
-					<li>Change your password</li>
-					<li>Generate new recovery codes</li>
-					<li>Review any recent account activity</li>
-				</ul>
-				<p>You can access your security settings here:</p>
-				<p><a href="{dashboard_url}">Security Settings</a></p>
-				<p>If you recognize this activity, you can ignore this email.</p>
-				""",
+				template="2fa_recovery_codes_viewed",
+				args=args,
 			)
 		except Exception:
 			frappe.log_error("Failed to send recovery codes viewed notification email")
@@ -83,8 +76,10 @@ class User2FA(Document):
 def yearly_2fa_recovery_code_reminder():
 	"""Check and send yearly recovery code reminders"""
 
-	# Construct dashboard url.
-	dashboard_url = frappe.utils.get_url("/dashboard/settings/profile")
+	# Construct email args.
+	args = {
+		"link": frappe.utils.get_url("/dashboard/settings/profile"),
+	}
 
 	# Get all users who have not viewed their recovery codes in the last year.
 	users = frappe.get_all(
@@ -94,7 +89,6 @@ def yearly_2fa_recovery_code_reminder():
 				"<=",
 				frappe.utils.add_to_date(frappe.utils.now_datetime(), years=-1),
 			],
-			"user": ["!=", "Administrator"],
 		},
 		pluck="name",
 	)
@@ -103,13 +97,7 @@ def yearly_2fa_recovery_code_reminder():
 		# Send mail.
 		frappe.sendmail(
 			recipients=[user],
-			subject="Verify Your Recovery Codes",
-			message=f"""
-			<p>It's been a year since you last reviewed your two-factor authentication recovery codes.</p>
-			<p>Please verify that you still have access to these codes. They are essential for account recovery if you lose access to your authentication device.</p>
-			<p><a href="{dashboard_url}">View your recovery codes</a></p>
-			""",
+			subject="Review Your 2FA Recovery Codes",
+			template="2fa_recovery_codes_yearly_reminder",
+			args=args,
 		)
-
-		# Update recovery codes last viewed time.
-		frappe.db.set_value("User 2FA", user, "recovery_codes_last_viewed_at", frappe.utils.now_datetime())
