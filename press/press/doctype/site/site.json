@@ -36,6 +36,7 @@
   "trial_end_date",
   "erpnext_consultant",
   "site_usage_section",
+  "disable_site_usage_exceed_check",
   "site_usage_exceeded",
   "site_usage_exceeded_on",
   "site_usage_exceeded_last_checked_on",
@@ -702,6 +703,12 @@
    "fieldname": "site_usage_exceeded_last_checked_on",
    "fieldtype": "Datetime",
    "label": "Site Usage Exceeded Last Checked On"
+  },
+  {
+   "default": "0",
+   "fieldname": "disable_site_usage_exceed_check",
+   "fieldtype": "Check",
+   "label": "Disable Site Usage Exceed Check"
   }
  ],
  "links": [
@@ -781,7 +788,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2025-05-29 18:30:20.821489",
+ "modified": "2025-06-24 15:48:14.796986",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

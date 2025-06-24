@@ -146,6 +146,7 @@ class Site(Document, TagHelpers):
 		current_disk_usage: DF.Int
 		database_access_connection_limit: DF.Int
 		database_name: DF.Data | None
+		disable_site_usage_exceed_check: DF.Check
 		domain: DF.Link | None
 		erpnext_consultant: DF.Link | None
 		free: DF.Check
@@ -2667,7 +2668,11 @@ class Site(Document, TagHelpers):
 		result["is_performance_schema_enabled"] = is_performance_schema_enabled
 		return result
 
-	def check_if_disk_usage_exceeded(self, save=True):
+	def check_if_disk_usage_exceeded(self, save=True):  # noqa: C901
+		if self.disable_site_usage_exceed_check:
+			# Flag to disable disk usage exceeded check
+			return
+
 		if self.free or frappe.get_cached_value("Team", self.team, "free_account"):
 			# Ignore for free sites and teams
 			return
