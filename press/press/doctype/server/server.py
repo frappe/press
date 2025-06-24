@@ -1771,6 +1771,9 @@ class Server(BaseServer):
 			uuid = line.split()[-1]
 			break
 
+		if not uuid:
+			frappe.throw("Could find UUID of attached volume", frappe.ValidationError)
+
 		return uuid
 
 	def create_data_mount_directories(self) -> str:
