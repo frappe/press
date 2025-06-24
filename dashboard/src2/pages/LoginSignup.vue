@@ -642,7 +642,9 @@ export default {
 			return {
 				url: 'press.api.account.recover_2fa',
 				onSuccess: () => {
-					toast.success('2FA recovered successfully');
+					toast.success(
+						'2FA reset successfully. Please re-enable it as soon as possible!'
+					);
 					this.$router.push({
 						name: 'Login',
 						query: {
