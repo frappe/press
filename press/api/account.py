@@ -1241,10 +1241,10 @@ def enable_2fa(totp_code):
 
 	# Add recovery codes to the User 2FA document, if not already present.
 	if not two_fa.recovery_codes:
-		for _ in range(9):
+		for recovery_code in two_fa.generate_recovery_codes():
 			two_fa.append(
 				"recovery_codes",
-				{"code": frappe.generate_hash(length=16).upper()},
+				{"code": recovery_code},
 			)
 
 	# Update the last verified time.
@@ -1353,7 +1353,7 @@ def reset_2fa_recovery_codes():
 
 	# Clear existing recovery codes.
 	two_fa.recovery_codes = []
-	recovery_codes = [frappe.generate_hash(length=16).upper() for _ in range(9)]
+	recovery_codes = list(two_fa.generate_recovery_codes())
 
 	# Add new recovery codes.
 	for recovery_code in recovery_codes:

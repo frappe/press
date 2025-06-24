@@ -27,6 +27,12 @@ class User2FA(Document):
 		user: DF.Link | None
 	# end: auto-generated types
 
+	# Maximum number of recovery codes.
+	recovery_codes_max = 9
+
+	# Length of each recovery code.
+	recovery_codes_length = 16
+
 	def validate(self):
 		if self.enabled and not self.totp_secret:
 			self.generate_secret()
@@ -35,6 +41,10 @@ class User2FA(Document):
 		import pyotp
 
 		self.totp_secret = pyotp.random_base32()
+
+	def generate_recovery_codes(self):
+		for _ in range(self.recovery_codes_max):
+			yield frappe.generate_hash(length=self.recovery_codes_length).upper()
 
 	def mark_recovery_codes_viewed(self):
 		"""
