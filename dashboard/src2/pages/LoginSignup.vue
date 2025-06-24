@@ -87,7 +87,7 @@
 							<template v-else-if="is2FARecovery">
 								<FormControl
 									label="Recovery Code"
-									placeholder="123456"
+									placeholder="C6BD7F3DC3C5777D"
 									v-model="twoFactorRecoveryCode"
 									variant="outline"
 									required
