@@ -4243,7 +4243,7 @@ def send_warning_mail_regarding_sites_exceeding_disk_usage():
 				as_dict=True,
 			)
 			if not site_info.notify_email or (
-				site_info.current_disk_usage <= 100 and site_info.current_database_usage <= 100
+				site_info.current_disk_usage < 120 and site_info.current_database_usage < 120
 			):
 				# Final check if site is still exceeding limits
 				continue
