@@ -8,7 +8,7 @@
 			type="gray"
 		>
 			<Button
-				class="ml-auto"
+				class="ml-auto min-w-[7rem]"
 				variant="outline"
 				link="https://frappecloud.com/docs/sites/version-upgrade"
 			>
