@@ -64,6 +64,11 @@
     "script": "if doc.server_type == \"Database Server\":\n    default_variables = frappe.get_all(\"MariaDB Variable\", {\"set_on_new_servers\":1}, pluck=\"name\")\n    for var_name in default_variables:\n        var = frappe.get_doc(\"MariaDB Variable\", var_name)\n        var.set_on_server(doc.server)\n\nserver = frappe.get_doc(doc.server_type, doc.server)\nserver.set_swappiness()\nserver.add_glass_file()\nserver.install_filebeat()\n\nif doc.server_type == \"Server\":\n    server.setup_mysqldump()\n    server.install_earlyoom()\n    \nif doc.server_type == \"Database Server\":\n    server.adjust_memory_config()\n    server.setup_logrotate()\n\nserver.validate_mounts()\nserver.save()",
     "step_name": "Set additional config",
     "wait_until_true": 0
+   },
+   {
+    "script": "if doc.server_type == \"Server\" and doc.platform == \"arm64\":\n    doc.setup_attached_data_volume()",
+    "step_name": "Setup Attached Data Volume",
+    "wait_until_true": 1
    }
   ]
  },

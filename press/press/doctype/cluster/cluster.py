@@ -9,7 +9,7 @@ import re
 import time
 import typing
 from textwrap import wrap
-from typing import ClassVar, Generator
+from typing import ClassVar
 
 import boto3
 import frappe
@@ -38,6 +38,8 @@ from press.press.doctype.virtual_machine_image.virtual_machine_image import (
 from press.utils import get_current_team, unique
 
 if typing.TYPE_CHECKING:
+	from collections.abc import Generator
+
 	from press.press.doctype.press_settings.press_settings import PressSettings
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
@@ -819,7 +821,6 @@ class Cluster(Document):
 				server.database_server = self.database_server
 				server.proxy_server = self.proxy_server
 				server.new_worker_allocation = True
-				server.platform = vm.platform
 			case "Proxy Server":
 				server = vm.create_proxy_server()
 				server.title = f"{title} - Proxy"

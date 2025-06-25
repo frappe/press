@@ -1,0 +1,13 @@
+---
+- name: Add mount entries for benches and docker
+  ansible.builtin.blockinfile:
+    path: /etc/fstab
+    block: |
+      UUID={{ uuid }} /opt/volumes/benches ext4 defaults,nofail 0 0
+      /opt/volumes/benches/home/frappe/benches /home/frappe/benches none defaults,nofail,bind 0 0
+      /opt/volumes/benches/var/lib/docker /var/lib/docker none defaults,nofail,bind 0 0
+
+- name: Mount all filesystems in fstab
+  ansible.builtin.command:
+    cmd: mount -a
+  when: fstab_update.changed

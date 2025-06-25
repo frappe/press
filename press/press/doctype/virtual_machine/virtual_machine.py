@@ -1029,6 +1029,7 @@ class VirtualMachine(Document):
 			"provider": self.cloud_provider,
 			"virtual_machine": self.name,
 			"team": self.team,
+			"platform": self.platform,
 		}
 
 		if self.virtual_machine_image:
