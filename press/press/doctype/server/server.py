@@ -1761,9 +1761,9 @@ class Server(BaseServer):
 		return AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
 
 	def format_attached_volume(self) -> str:
+		uuid = None
 		volume_mount: ServerMount = self.mounts[0]
 		output = self.ansible_run(f"mkfs -t ext4 {volume_mount.source}")["output"]
-		uuid = ""
 
 		for line in output.splitlines():
 			if "UUID" not in line:
@@ -1772,7 +1772,7 @@ class Server(BaseServer):
 			break
 
 		if not uuid:
-			frappe.throw("Could find UUID of attached volume", frappe.ValidationError)
+			frappe.throw("Could not find UUID of attached volume", frappe.ValidationError)
 
 		return uuid
 
