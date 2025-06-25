@@ -108,6 +108,7 @@ class VirtualMachine(Document):
 				# Copy their sizes correctly
 				self.disk_size = max(self.disk_size, image.size)
 				self.root_disk_size = max(self.root_disk_size, image.root_size)
+				self.has_data_volume = True
 			else:
 				# We have only one volume. Both root and data are the same
 				self.disk_size = max(self.disk_size, image.size)
