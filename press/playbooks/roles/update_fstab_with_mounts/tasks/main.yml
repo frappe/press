@@ -6,6 +6,7 @@
       UUID={{ uuid }} /opt/volumes/benches ext4 defaults,nofail 0 0
       /opt/volumes/benches/home/frappe/benches /home/frappe/benches none defaults,nofail,bind 0 0
       /opt/volumes/benches/var/lib/docker /var/lib/docker none defaults,nofail,bind 0 0
+  register: fstab_update
 
 - name: Mount all filesystems in fstab
   ansible.builtin.command:
