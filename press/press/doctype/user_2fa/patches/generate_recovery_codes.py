@@ -1,4 +1,5 @@
 import frappe
+import frappe.utils
 from frappe.query_builder import JoinType
 from frappe.query_builder.functions import Count
 
@@ -24,5 +25,6 @@ def execute():
 		doc.recovery_codes = []
 		for code in doc.generate_recovery_codes():
 			doc.append("recovery_codes", {"code": code})
+		doc.recovery_codes_last_viewed_at = frappe.utils.now_datetime()
 		doc.save()
 		frappe.db.commit()
