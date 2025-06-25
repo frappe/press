@@ -1,0 +1,24 @@
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+<div class="p-8 bg-white text-base leading-6 text-gray-900">
+	<div class="from-markdown">
+		<h2>Security Alert</h2>
+		<p>Hey there!</p>
+		<p>
+			Your two-factor authentication recovery codes were viewed at {{ viewed_at }}.
+		</p>
+		<p>
+			If you did not view your recovery codes, please secure your account immediately:
+		</p>
+		<ul>
+			<li>Change your password</li>
+			<li>Generate new recovery codes</li>
+			<li>Review any recent account activity</li>
+		</ul>
+		<p>You can access your security settings here:</p>
+		<p><a href="{{ link }}">Security Settings</a></p>
+		<p>If you recognize this activity, you can ignore this email.</p>
+	</div>
+</div>
+{% endblock %}

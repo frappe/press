@@ -200,6 +200,7 @@ scheduler_events = {
 		"press.press.doctype.payment_due_extension.payment_due_extension.remove_payment_due_extension",
 		"press.press.doctype.tls_certificate.tls_certificate.notify_custom_tls_renewal",
 		"press.press.doctype.site.site.suspend_sites_exceeding_disk_usage_for_last_7_days",
+		"press.press.doctype.user_2fa.user_2fa.yearly_2fa_recovery_code_reminder",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
