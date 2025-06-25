@@ -1760,58 +1760,6 @@ class Server(BaseServer):
 		inventory = f"{self.ip},"
 		return AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
 
-	def format_attached_volume(self) -> str:
-		uuid = None
-		volume_mount: ServerMount = self.mounts[0]
-		output = self.ansible_run(f"mkfs -t ext4 {volume_mount.source}")["output"]
-
-		for line in output.splitlines():
-			if "UUID" not in line:
-				continue
-			uuid = line.split()[-1]
-			break
-
-		if not uuid:
-			frappe.throw("Could not find UUID of attached volume", frappe.ValidationError)
-
-		return uuid
-
-	def create_data_mount_directories(self):
-		"""Create mountpoint directories"""
-		self.ansible_run(
-			"mkdir -p /opt/volumes/benches && "
-			"mkdir -p /opt/volumes/benches/home/frappe/benches && "
-			"mkdir -p /opt/volumes/benches/var/lib/docker"
-		)
-
-	def _update_fstab(self, uuid: str):
-		"""Update fstab and mount all filesystems"""
-		ansible = Ansible(
-			playbook="update_fstab_with_mounts.yml",
-			server=self,
-			variables={"uuid": uuid},
-		)
-		ansible.run()
-
-	def _stop_docker(self):
-		"""Stop docker to avoid data loss/corruption before move"""
-		self.ansible_run("systemctl stop docker")
-
-	def _start_docker(self):
-		"""Start docker after move"""
-		self.ansible_run("systemctl start docker")
-
-	def setup_attached_data_volume(self):
-		"""Created vm needs to have has_data_volume checked!"""
-		if not self.has_data_volume:
-			return
-
-		self.create_data_mount_directories()
-		self._stop_docker()
-		uuid = self.format_attached_volume()
-		self._update_fstab(uuid)
-		self._start_docker()
-
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
 		agent_repository_url = self.get_agent_repository_url()
