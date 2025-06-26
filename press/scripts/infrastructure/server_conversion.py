@@ -209,6 +209,26 @@ def arm_build_info(servers: list[str], server_file: str):
 	print(f"Total: {total}\nSuccessful: {successful}\nRunning: {running}\nFailed: {failed}")
 
 
+@cli.command()
+@click.option(
+	"--server-file", type=click.Path(exists=True), help="Path to a file containing a list of servers."
+)
+@click.argument("servers", nargs=-1, type=str)
+def database_post_migration_steps(servers: list[str], server_file: str):
+	"""Not a part of the migration script since"""
+	if server_file:
+		servers = load_servers_from_file(server_file)
+
+	for server in servers:
+		server = frappe.get_doc("Database Server", server)
+		server.set_swappiness()
+		server.add_glass_file()
+		server.install_filebeat()
+		server.adjust_memory_config()
+		server.setup_logrotate()
+		server.save()
+
+
 @cli.result_callback()
 def cleanup(*args, **kwargs):
 	frappe.destroy()
