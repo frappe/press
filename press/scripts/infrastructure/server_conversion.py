@@ -186,6 +186,7 @@ def convert_database_servers(
 				"Virtual Machine Migration", {"virtual_machine": server}
 			)
 			virtual_machine_migration.execute()
+			frappe.db.commit()
 
 
 @cli.command()

@@ -461,7 +461,7 @@ def options():
 	return {
 		"regions": regions,
 		"app_plans": plans("Server"),
-		"db_plans": plans("Database Server", platform="x86_64"),
+		"db_plans": plans("Database Server"),
 	}
 
 
