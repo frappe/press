@@ -177,12 +177,15 @@ def convert_database_servers(
 
 	for server in servers:
 		virtual_machine_migration = vmm(server, vmi)
-
-		if start:
-			virtual_machine_migration.execute()
-
 		frappe.db.commit()
 		print(f"Created {virtual_machine_migration.name}")
+
+	if start:
+		for server in servers:
+			virtual_machine_migration: VirtualMachineMigration = frappe.get_doc(
+				"Virtual Machine Migration", {"virtual_machine": server}
+			)
+			virtual_machine_migration.execute()
 
 
 @cli.command()
