@@ -48,6 +48,17 @@ def create_vmm(server: str, virtual_machine_image: str, target_machine_type: str
 	return virtual_machine_migration.insert()
 
 
+def vmm(server, vmi) -> VirtualMachineMigration:
+	machine_type = frappe.db.get_value("Virtual Machine", {"name": server}, "machine_type")
+	machine_series, machine_size = machine_type.split(".")
+	virtual_machine_migration: VirtualMachineMigration = create_vmm(
+		server=server,
+		virtual_machine_image=vmi,
+		target_machine_type=f"{arm_machine_mappings[machine_series]}.{machine_size}",
+	)
+	return virtual_machine_migration
+
+
 def connect(bench_dir, site_dir):
 	sites_dir = os.path.join(bench_dir, "sites")
 	frappe.init(site=site_dir, sites_path=sites_dir)
@@ -135,18 +146,43 @@ def update_image_and_create_migration(
 		arm_build_record: ARMBuildRecord = frappe.get_doc("ARM Build Record", {"server": server})
 		try:
 			arm_build_record.update_image_tags_on_benches()
-			machine_type = frappe.db.get_value("Virtual Machine", {"name": server}, "machine_type")
-			machine_series, machine_size = machine_type.split(".")
-			virtual_machine_migration: VirtualMachineMigration = create_vmm(
-				server=server,
-				virtual_machine_image=vmi,
-				target_machine_type=f"{arm_machine_mappings[machine_series]}.{machine_size}",
-			)
+			virtual_machine_migration = vmm(server, vmi)
 			frappe.db.commit()
 			print(f"Created {virtual_machine_migration.name}")
 		except frappe.ValidationError as e:
 			print(f"Aborting: {e}!")
 			break
+
+
+@cli.command()
+@click.option("--vmi", default="m263-mumbai.frappe.cloud")
+@click.option("--vmi-cluster", required=True)
+@click.option(
+	"--server-file",
+	type=click.Path(exists=True),
+	help="Path to a file containing a list of servers.",
+)
+@click.option("--start", type=bool, default=False)
+@click.argument("servers", nargs=-1, type=str)
+def convert_database_servers(
+	vmi: str, vmi_cluster: str, servers: list[str], server_file: str, start: bool = False
+):
+	vmi = frappe.get_value("Virtual Machine Image", {"virtual_machine": vmi, "cluster": vmi_cluster}, "name")
+	if not vmi:
+		print(f"Aborting VMI not found {vmi}!")
+		return
+
+	if server_file:
+		servers = load_servers_from_file(server_file)
+
+	for server in servers:
+		virtual_machine_migration = vmm(server, vmi)
+
+		if start:
+			virtual_machine_migration.execute()
+
+		frappe.db.commit()
+		print(f"Created {virtual_machine_migration.name}")
 
 
 @cli.command()
