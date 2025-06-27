@@ -259,7 +259,7 @@ frappe.ui.form.on('Virtual Machine', {
 						],
 						({ virtual_machine_image, machine_type }) => {
 							frm
-								.call(method, {
+								.call('convert_to_amd', {
 									virtual_machine_image,
 									machine_type,
 								})
