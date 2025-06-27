@@ -26,6 +26,7 @@ from press.utils import log_error
 if TYPE_CHECKING:
 	from twilio.rest.api.v2010.account.call import CallInstance
 
+	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import AlertmanagerWebhookLog
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.database_server.database_server import DatabaseServer
@@ -351,10 +352,34 @@ class Incident(WebsiteGenerator):
 		except NotImplementedError:
 			db_server.reboot()
 		self.add_likely_cause("Rebooted database server.")
+		self.save()
+
+	@frappe.whitelist()
+	def cancel_stuck_jobs(self):
+		"""
+		During db reboot/upgrade some jobs tend to get stuck. This is a hack to cancel those jobs
+		"""
+		stuck_jobs = frappe.get_all(
+			"Agent Job",
+			{
+				"status": "Running",
+				INCIDENT_SCOPE: self.incident_scope,
+				"job_type": (
+					"in",
+					["Fetch Database Table Schema", "Backup Site", "Restore Site"],
+				),  # to be safe
+			},
+			["name", "job_type"],
+			limit=2,
+		)  # only 2 workers
+		for stuck_job in stuck_jobs:
+			job: AgentJob = frappe.get_doc("Agent Job", stuck_job.name)
+			job.cancel_job()
+			self.add_likely_cause(f"Cancelled stuck {stuck_job.job_type} job {stuck_job.name}")
+		self.save()
 
 	def add_likely_cause(self, cause: str):
 		self.likely_cause = self.likely_cause + cause + "\n" if self.likely_cause else cause + "\n"
-		self.save()
 
 	@frappe.whitelist()
 	def restart_down_benches(self):
