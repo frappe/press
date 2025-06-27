@@ -119,8 +119,10 @@ class StackedGroupByChart:
 		self.setup_search_aggs()
 
 	def setup_search_filters(self):
-		es = Elasticsearch(self.url, basic_auth=("frappe", self.password))
-		self.start, self.end = get_rounded_boundaries(self.timespan, self.timegrain, self.timezone)
+		es = Elasticsearch(self.url, basic_auth=("frappe", self.password), request_timeout=120)
+		self.start, self.end = get_rounded_boundaries(
+			self.timespan, self.timegrain, self.timezone
+		)  # we pass timezone to ES query in get_histogram_chart
 		self.search = (
 			Search(using=es, index="filebeat-*")
 			.filter(
