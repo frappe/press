@@ -15,7 +15,7 @@
 		/>
 		<Button :route="{ name: `${object.doctype} Detail Deploys` }">
 			<template #prefix>
-				<i-lucide-arrow-left class="inline-block h-4 w-4" />
+				<lucide-arrow-left class="inline-block h-4 w-4" />
 			</template>
 			All deploys
 		</Button>
@@ -32,14 +32,14 @@
 						:loading="$resources.deploy.get.loading"
 					>
 						<template #icon>
-							<i-lucide-refresh-ccw class="h-4 w-4" />
+							<lucide-refresh-ccw class="h-4 w-4" />
 						</template>
 					</Button>
 					<Dropdown v-if="dropdownOptions?.length" :options="dropdownOptions">
 						<template v-slot="{ open }">
 							<Button>
 								<template #icon>
-									<i-lucide-more-horizontal class="h-4 w-4" />
+									<lucide-more-horizontal class="h-4 w-4" />
 								</template>
 							</Button>
 						</template>

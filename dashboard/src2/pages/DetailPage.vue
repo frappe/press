@@ -46,7 +46,7 @@
 			v-else-if="$resources.document.get.error"
 			class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
 		>
-			<i-lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
+			<lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
 			<ErrorMessage :message="$resources.document.get.error" />
 		</div>
 	</div>
@@ -67,18 +67,18 @@ export default {
 		id: String,
 		objectType: {
 			type: String,
-			required: true
+			required: true,
 		},
 		name: {
 			type: String,
-			required: true
-		}
+			required: true,
+		},
 	},
 	components: {
 		Header,
 		ActionButton,
 		TabsWithRouter,
-		FBreadcrumbs: Breadcrumbs
+		FBreadcrumbs: Breadcrumbs,
 	},
 	resources: {
 		document() {
@@ -94,16 +94,16 @@ export default {
 							return;
 						}
 					}
-				}
+				},
 			};
-		}
+		},
 	},
 	mounted() {
 		if (!subscribed[`${this.object.doctype}:${this.name}`]) {
 			this.$socket.emit('doc_subscribe', this.object.doctype, this.name);
 			subscribed[`${this.object.doctype}:${this.name}`] = true;
 		}
-		this.$socket.on('doc_update', data => {
+		this.$socket.on('doc_update', (data) => {
 			if (data.doctype === this.object.doctype && data.name === this.name) {
 				this.$resources.document.reload();
 			}
@@ -121,10 +121,10 @@ export default {
 			return getObject(this.objectType);
 		},
 		tabs() {
-			return this.object.detail.tabs.filter(tab => {
+			return this.object.detail.tabs.filter((tab) => {
 				if (tab.condition) {
 					return tab.condition({
-						documentResource: this.$resources.document
+						documentResource: this.$resources.document,
 					});
 				}
 				return true;
@@ -137,7 +137,7 @@ export default {
 		badge() {
 			if (this.object.detail.statusBadge) {
 				return this.object.detail.statusBadge({
-					documentResource: this.$resources.document
+					documentResource: this.$resources.document,
 				});
 			}
 			return null;
@@ -145,12 +145,12 @@ export default {
 		actions() {
 			if (this.object.detail.actions && this.$resources.document?.doc) {
 				let actions = this.object.detail.actions({
-					documentResource: this.$resources.document
+					documentResource: this.$resources.document,
 				});
-				return actions.filter(action => {
+				return actions.filter((action) => {
 					if (action.condition) {
 						return action.condition({
-							documentResource: this.$resources.document
+							documentResource: this.$resources.document,
 						});
 					}
 					return true;
@@ -165,14 +165,14 @@ export default {
 					label: this.title,
 					route: {
 						name: `${this.object.doctype} Detail`,
-						params: { name: this.name }
-					}
-				}
+						params: { name: this.name },
+					},
+				},
 			];
 			if (this.object.detail.breadcrumbs && this.$resources.document?.doc) {
 				let result = this.object.detail.breadcrumbs({
 					documentResource: this.$resources.document,
-					items
+					items,
 				});
 				if (Array.isArray(result)) {
 					items = result;
@@ -187,8 +187,8 @@ export default {
 			}
 
 			return items;
-		}
-	}
+		},
+	},
 };
 </script>
 <style scoped>

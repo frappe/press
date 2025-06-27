@@ -91,7 +91,7 @@
 												"
 											>
 												<Tooltip text="Product support included">
-													<i-lucide-badge-check class="h-4 w-4" />
+													<lucide-badge-check class="h-4 w-4" />
 												</Tooltip>
 											</div>
 										</span>
@@ -253,7 +253,7 @@
 						@click="removeTag(tag)"
 						class="ml-1 hidden transition group-hover:block"
 					>
-						<i-lucide-x class="mt-0.5 h-3 w-3" />
+						<lucide-x class="mt-0.5 h-3 w-3" />
 					</button>
 				</template>
 			</Badge>
@@ -265,7 +265,7 @@
 				@click="showAddTagDialog"
 			>
 				<template #suffix>
-					<i-lucide-plus class="h-3 w-3" />
+					<lucide-plus class="h-3 w-3" />
 				</template>
 			</Badge>
 		</div>

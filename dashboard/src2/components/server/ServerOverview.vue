@@ -49,7 +49,7 @@
 									<div class="flex space-x-1">
 										<div class="text-sm text-gray-600" v-html="d.subValue" />
 										<Tooltip v-if="d.help" :text="d.help">
-											<i-lucide-info class="h-3.5 w-3.5 text-gray-500" />
+											<lucide-info class="h-3.5 w-3.5 text-gray-500" />
 										</Tooltip>
 									</div>
 								</div>
@@ -77,7 +77,7 @@
 										</div>
 									</div>
 									<Tooltip v-if="d.help" :text="d.help">
-										<i-lucide-info class="mt-2 h-4 w-4 text-gray-500" />
+										<lucide-info class="mt-2 h-4 w-4 text-gray-500" />
 									</Tooltip>
 								</div>
 							</div>

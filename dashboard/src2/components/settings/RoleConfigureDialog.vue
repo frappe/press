@@ -65,7 +65,7 @@
 									/>
 									<Button variant="ghost" @click="() => removeUser(user.user)">
 										<template #icon>
-											<i-lucide-x class="h-4 w-4 text-gray-600" />
+											<lucide-x class="h-4 w-4 text-gray-600" />
 										</template>
 									</Button>
 								</div>

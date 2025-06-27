@@ -12,7 +12,7 @@
 								{ label: 'Info', value: 'Info' },
 								{ label: 'Warning', value: 'warning' },
 								{ label: 'Error', value: 'error' },
-								{ label: 'Critical', value: 'critical' }
+								{ label: 'Critical', value: 'critical' },
 							]"
 							class="w-24"
 							v-if="columns.includes('level')"
@@ -26,7 +26,7 @@
 							:options="[
 								{ label: 'Sort By', disabled: true },
 								{ label: 'Newest First', value: 'desc' },
-								{ label: 'Oldest First', value: 'asc' }
+								{ label: 'Oldest First', value: 'asc' },
 							]"
 							class="w-32"
 							v-if="columns.includes('time')"
@@ -38,7 +38,7 @@
 							v-model="searchLogQuery"
 						>
 							<template #prefix>
-								<i-lucide-search class="h-4 w-4 text-gray-500" />
+								<lucide-search class="h-4 w-4 text-gray-500" />
 							</template>
 						</FormControl>
 					</div>
@@ -63,7 +63,7 @@
 										class="text-gray-800"
 										:class="{
 											'w-2/12': header.column.columnDef.id === 'level',
-											'w-3/12': header.column.columnDef.id === 'time'
+											'w-3/12': header.column.columnDef.id === 'time',
 										}"
 									>
 										<div
@@ -89,7 +89,7 @@
 											:key="cell.id"
 											class="max-w-[35rem] cursor-pointer truncate border-b px-3 py-2"
 											:class="{
-												'border-b-0': row.getIsExpanded()
+												'border-b-0': row.getIsExpanded(),
 											}"
 											@click="handleExpand(row)"
 										>
@@ -97,15 +97,15 @@
 												v-if="cell.column.columnDef.id === 'level'"
 												class="flex items-center space-x-2"
 											>
-												<i-lucide-info
+												<lucide-info
 													v-if="getBadgeLabel(cell) === 'Info'"
 													class="h-4 w-4 text-blue-500"
 												/>
-												<i-lucide-alert-triangle
+												<lucide-alert-triangle
 													v-else-if="getBadgeLabel(cell) === 'Warning'"
 													class="h-4 w-4 text-yellow-500"
 												/>
-												<i-lucide-alert-circle
+												<lucide-alert-circle
 													v-else-if="
 														getBadgeLabel(cell) === 'Error' ||
 														getBadgeLabel(cell) === 'Critical'
@@ -120,7 +120,7 @@
 															getBadgeLabel(cell) === 'Warning',
 														'text-red-500':
 															getBadgeLabel(cell) === 'Error' ||
-															getBadgeLabel(cell) === 'Critical'
+															getBadgeLabel(cell) === 'Critical',
 													}"
 													>{{ getBadgeLabel(cell) }}</span
 												>
@@ -131,7 +131,7 @@
 												:class="{
 													'font-mono ': cell.column.columnDef.id === 'time',
 													'font-mono text-gray-600':
-														cell.column.columnDef.id === 'description'
+														cell.column.columnDef.id === 'description',
 												}"
 											>
 												<FlexRender
@@ -202,15 +202,15 @@ import {
 	getFilteredRowModel,
 	getExpandedRowModel,
 	getPaginationRowModel,
-	useVueTable
+	useVueTable,
 } from '@tanstack/vue-table';
 import { computed, ref } from 'vue';
 
 const props = defineProps({
 	log: {
 		type: Array,
-		required: true
-	}
+		required: true,
+	},
 });
 
 const searchLogQuery = ref('');
@@ -222,13 +222,13 @@ const columnFilters = computed(() => {
 	if (levelFilter.value) {
 		filters.push({
 			id: 'level',
-			value: levelFilter.value
+			value: levelFilter.value,
 		});
 	}
 	if (searchLogQuery.value) {
 		filters.push({
 			id: 'description',
-			value: searchLogQuery.value
+			value: searchLogQuery.value,
 		});
 	}
 	return filters;
@@ -250,21 +250,21 @@ const sortingState = computed(() => {
 	return [
 		{
 			id: 'time',
-			desc: sortOrder.value === 'desc'
-		}
+			desc: sortOrder.value === 'desc',
+		},
 	];
 });
 
 const table = useVueTable({
 	data: logEntries.value,
-	columns: columns.value.map(column => {
+	columns: columns.value.map((column) => {
 		return {
 			id: column,
 			header: capitalizeFirstLetter(column),
 			accessorKey: column,
 			enableSorting: column === 'time' ? true : false,
 			sortingFn: column === 'time' ? 'datetime' : null,
-			isNumber: false
+			isNumber: false,
 		};
 	}),
 	state: {
@@ -273,21 +273,21 @@ const table = useVueTable({
 		},
 		get sorting() {
 			return sortingState.value;
-		}
+		},
 	},
 	initialState: {
 		pagination: {
 			pageSize: 20,
-			pageIndex: 0
-		}
+			pageIndex: 0,
+		},
 	},
 	// debugTable: true, // Uncomment to see the table state in the console
-	getRowCanExpand: _row => true,
+	getRowCanExpand: (_row) => true,
 	getCoreRowModel: getCoreRowModel(),
 	getSortedRowModel: getSortedRowModel(),
 	getExpandedRowModel: getExpandedRowModel(),
 	getFilteredRowModel: getFilteredRowModel(),
-	getPaginationRowModel: getPaginationRowModel()
+	getPaginationRowModel: getPaginationRowModel(),
 });
 
 const pageLength = computed(() => table.getState().pagination.pageSize);
@@ -295,7 +295,7 @@ const currPage = computed(() => table.getState().pagination.pageIndex + 1);
 
 const totalRows = computed(() => props.log.length);
 const pageStart = computed(() =>
-	totalRows.value ? (currPage.value - 1) * pageLength.value + 1 : 0
+	totalRows.value ? (currPage.value - 1) * pageLength.value + 1 : 0,
 );
 const pageEnd = computed(() => {
 	const end = currPage.value * pageLength.value;

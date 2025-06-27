@@ -8,9 +8,9 @@
 					label: 'Change plan',
 					variant: 'solid',
 					onClick: changePlan,
-					disabled: !plan || plan === $server?.doc.plan
-				}
-			]
+					disabled: !plan || plan === $server?.doc.plan,
+				},
+			],
 		}"
 		v-model="show"
 	>
@@ -21,12 +21,12 @@
 						v-for="c in [
 							{
 								name: 'Standard',
-								description: 'Includes standard support and SLAs'
+								description: 'Includes standard support and SLAs',
 							},
 							{
 								name: 'Premium',
-								description: 'Includes enterprise support and SLAs'
-							}
+								description: 'Includes enterprise support and SLAs',
+							},
 						]"
 						:key="c.name"
 						@click="planType = c.name"
@@ -34,7 +34,7 @@
 							planType === c.name
 								? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
 								: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
-							'flex w-full items-center rounded border p-3 text-left text-base text-gray-900'
+							'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
 						]"
 					>
 						<div class="flex w-full items-center justify-between space-x-2">
@@ -42,7 +42,7 @@
 								{{ c.name }}
 							</span>
 							<Tooltip :text="c.description">
-								<i-lucide-info class="h-4 w-4 text-gray-500" />
+								<lucide-info class="h-4 w-4 text-gray-500" />
 							</Tooltip>
 						</div>
 					</button>
@@ -52,8 +52,8 @@
 				v-model="plan"
 				:plans="
 					planType === 'Premium'
-						? $resources.serverPlans.data.filter(p => p.premium === 1)
-						: $resources.serverPlans.data.filter(p => p.premium === 0)
+						? $resources.serverPlans.data.filter((p) => p.premium === 1)
+						: $resources.serverPlans.data.filter((p) => p.premium === 0)
 				"
 			/>
 			<ErrorMessage class="mt-2" :message="$server.changePlan.error" />
@@ -69,18 +69,18 @@ export default {
 	props: {
 		server: {
 			type: String,
-			required: true
+			required: true,
 		},
 		serverType: {
 			type: String,
-			required: true
-		}
+			required: true,
+		},
 	},
 	data() {
 		return {
 			show: true,
 			plan: null,
-			planType: 'Standard'
+			planType: 'Standard',
 		};
 	},
 	watch: {
@@ -92,8 +92,8 @@ export default {
 						this.plan = this.$server.doc.current_plan;
 					}
 				}
-			}
-		}
+			},
+		},
 	},
 	resources: {
 		serverPlans() {
@@ -102,12 +102,12 @@ export default {
 				params: {
 					name: this.serverType,
 					cluster: this.$server.doc.cluster,
-					platform: this.$server.doc.current_plan.platform
+					platform: this.$server.doc.current_plan.platform,
 				},
 				auto: true,
-				initialData: []
+				initialData: [],
 			};
-		}
+		},
 	},
 	methods: {
 		changePlan() {
@@ -118,7 +118,7 @@ export default {
 						this.show = false;
 
 						const plan = this.$resources.serverPlans.data.find(
-							plan => plan.name === this.$server.doc.plan
+							(plan) => plan.name === this.$server.doc.plan,
 						);
 
 						const formattedPlan = plan
@@ -126,15 +126,15 @@ export default {
 							: this.$server.doc.plan;
 
 						this.$toast.success(`Plan changed to ${formattedPlan}`);
-					}
-				}
+					},
+				},
 			);
-		}
+		},
 	},
 	computed: {
 		$server() {
 			return getCachedDocumentResource(this.serverType, this.server);
-		}
-	}
+		},
+	},
 };
 </script>
