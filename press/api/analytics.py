@@ -220,7 +220,7 @@ class StackedGroupByChart:
 	):
 		path_data = {
 			"path": path_bucket.key,
-			"values": [0] * len(labels),
+			"values": [None] * len(labels),
 			"stack": "path",
 		}
 		hist_bucket: HistBucket
