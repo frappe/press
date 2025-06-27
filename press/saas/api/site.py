@@ -9,11 +9,21 @@ from press.saas.api import whitelist_saas_api
 
 @whitelist_saas_api
 def info():
-	site = frappe.get_value("Site", frappe.local.site_name, ["plan", "trial_end_date"], as_dict=True)
+	is_fc_user = False
+	site = frappe.get_value("Site", frappe.local.site_name, ["plan", "trial_end_date", "team"], as_dict=True)
+	site_user = frappe.request.headers.get("x-site-user")
+
+	team_members = frappe.get_doc("Team", site.team).get_user_list()
+	if site_user and site_user in team_members:
+		is_fc_user = True
+
 	return {
+		"is_fc_user": is_fc_user,
 		"name": frappe.local.site_name,
-		"trial_end_date": frappe.get_value("Site", frappe.local.site_name, "trial_end_date"),
-		"plan": frappe.get_doc("Site Plan", site.plan),
+		"trial_end_date": site.trial_end_date,
+		"plan": frappe.db.get_value("Site Plan", site.plan, ["is_trial_plan"], as_dict=True)
+		if site.plan
+		else None,
 	}
 
 
@@ -44,7 +54,7 @@ def get_plans():
 		filtered_plans.append(plan)
 
 	"""
-	plans `site_api.get_site_plans()` doesn't include trial plan, as we don't have any roles specfied for trial plan
+	plans `site_api.get_site_plans()` doesn't include trial plan, as we don't have any roles specified for trial plan
 	because from backend only we set the trial plan, end-user can't subscribe to trial plan directly
 	If the site is on a trial plan, add it to the starting of the list
 	"""

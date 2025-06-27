@@ -9,17 +9,22 @@
   "hostname",
   "hostname_abbreviation",
   "domain",
-  "self_hosted_server_domain",
   "title",
   "column_break_4",
   "cluster",
   "provider",
   "virtual_machine",
-  "is_self_hosted",
-  "is_server_setup",
-  "is_server_prepared",
-  "is_server_renamed",
+  "self_hosted_server_domain",
+  "section_break_qury",
   "public",
+  "is_self_hosted",
+  "enable_physical_backup",
+  "halt_agent_jobs",
+  "enable_binlog_indexing",
+  "column_break_qsqm",
+  "is_server_setup",
+  "is_server_renamed",
+  "is_server_prepared",
   "billing_section",
   "team",
   "column_break_11",
@@ -55,6 +60,7 @@
   "tags_section",
   "tags",
   "mounts_section",
+  "has_data_volume",
   "mounts",
   "mariadb_settings_tab",
   "memory_limits_section",
@@ -78,7 +84,10 @@
   "column_break_objb",
   "stalk_interval",
   "stalk_cycles",
-  "stalk_sleep"
+  "stalk_sleep",
+  "section_break_imng",
+  "binlog_retention_days",
+  "binlogs_removed"
  ],
  "fields": [
   {
@@ -259,11 +268,11 @@
    "set_only_once": 1
   },
   {
-   "depends_on": "eval:doc.provider === \"AWS EC2\"",
+   "depends_on": "eval:[\"AWS EC2\", \"OCI\"].includes(doc.provider)",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
-   "mandatory_depends_on": "eval:doc.provider === \"AWS EC2\"",
+   "mandatory_depends_on": "eval:[\"AWS EC2\", \"OCI\"].includes(doc.provider)",
    "options": "Virtual Machine"
   },
   {
@@ -504,7 +513,7 @@
    "read_only": 1
   },
   {
-   "default": "50",
+   "default": "25",
    "description": "Minimum storage to add automatically each time",
    "fieldname": "auto_add_storage_min",
    "fieldtype": "Int",
@@ -530,11 +539,75 @@
    "fieldtype": "Table",
    "label": "Mounts",
    "options": "Server Mount"
+  },
+  {
+   "default": "0",
+   "fetch_from": "virtual_machine.has_data_volume",
+   "fieldname": "has_data_volume",
+   "fieldtype": "Check",
+   "label": "Has Data Volume",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_physical_backup",
+   "fieldtype": "Check",
+   "label": "Enable Physical Backup"
+  },
+  {
+   "default": "0",
+   "description": "Stop polling and queuing agent jobs",
+   "fieldname": "halt_agent_jobs",
+   "fieldtype": "Check",
+   "label": "Halt Agent Jobs"
+  },
+  {
+   "fieldname": "section_break_qury",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_binlog_indexing",
+   "fieldtype": "Check",
+   "label": "Enable Binlog Indexing"
+  },
+  {
+   "fieldname": "column_break_qsqm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_imng",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "14",
+   "fieldname": "binlog_retention_days",
+   "fieldtype": "Int",
+   "label": "Binlog Retention (days)"
+  },
+  {
+   "default": "0",
+   "fieldname": "binlogs_removed",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Binlogs Removed"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2024-12-09 19:35:23.683437",
+ "links": [
+  {
+   "group": "Analytics",
+   "link_doctype": "Disk Performance",
+   "link_fieldname": "server"
+  },
+  {
+   "group": "Logs",
+   "link_doctype": "MariaDB Binlog",
+   "link_fieldname": "database_server"
+  }
+ ],
+ "modified": "2025-06-13 12:51:58.756907",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
@@ -565,6 +638,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

@@ -1,0 +1,20 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/saas.html" %}
+{% set image_path = image_path %}
+{% set otp = otp %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+    <div class="p-8 bg-white from-markdown">
+        <p>Hi,</p>
+        <p>You have requested a verification code to log in to your site(s) on Frappe Cloud.</p>
+        <p class="font-medium">Verification Code</p>
+        <div class="text-xl font-bold">{{ otp }}</div>
+        <p>If you haven't requested for this, please ignore this email.</p>
+        {{ utils.separator() }}
+        <p class="my-0">Team Frappe</p>
+    </div>
+</td>
+
+{% endblock %}

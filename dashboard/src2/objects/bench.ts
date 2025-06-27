@@ -1,4 +1,4 @@
-import Tooltip from 'frappe-ui/src/components/Tooltip/Tooltip.vue';
+import { Tooltip } from 'frappe-ui';
 import LucideAppWindow from '~icons/lucide/app-window';
 import type { VNode } from 'vue';
 import { defineAsyncComponent, h } from 'vue';
@@ -119,20 +119,30 @@ function getList() {
 			{
 				label: 'Bench',
 				fieldname: 'name',
-				width: 1.5,
 				class: 'font-medium',
 				suffix: getBenchTitleSuffix
 			},
-			{ label: 'Status', fieldname: 'status', type: 'Badge', width: 0.6 },
-			{ label: 'Sites', fieldname: 'site_count', type: 'Number' },
+			{
+				label: 'Status',
+				fieldname: 'status',
+				type: 'Badge',
+				width: '100px'
+			},
+			{
+				label: 'Sites',
+				fieldname: 'site_count',
+				type: 'Number',
+				width: '100px',
+				align: 'right'
+			},
 			{
 				label: 'Region',
 				fieldname: 'cluster',
-				width: 1,
+				width: 0.75,
 				format: (value, row) => String(row.cluster_title || value || ''),
 				prefix: getClusterImagePrefix
 			},
-			{ label: 'Bench Group', fieldname: 'group_title' }
+			{ label: 'Bench Group', fieldname: 'group_title', width: '350px' }
 		],
 		filterControls
 	} satisfies List as List;

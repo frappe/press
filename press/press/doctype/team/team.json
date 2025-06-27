@@ -11,45 +11,62 @@
   "team_title",
   "user",
   "account_request",
-  "partner_email",
-  "billing_team",
   "parent_team",
   "column_break_wejg",
-  "erpnext_partner",
   "is_developer",
   "is_saas_user",
   "is_code_server_user",
   "free_account",
   "via_erpnext",
   "enforce_2fa",
+  "extend_payment_due_suspension",
+  "apply_npo_discount",
+  "team_members_tab",
   "section_break_6",
   "team_members",
   "section_break_tdm9",
   "child_team_members",
-  "section_break_9",
-  "send_notifications",
-  "billing_email",
-  "column_break_9",
-  "notify_email",
-  "last_used_team",
+  "billing_tab",
   "subscription_details_section",
   "stripe_customer_id",
   "country",
   "currency",
   "payment_mode",
+  "billing_team",
   "default_payment_method",
   "billing_name",
   "billing_address",
   "free_credits_allocated",
   "column_break_12",
   "address_html",
-  "custom_apps_section",
-  "github_access_token",
+  "notification_tab",
+  "section_break_9",
+  "send_notifications",
+  "notify_email",
+  "billing_email",
+  "column_break_9",
+  "last_used_team",
+  "section_break_28",
+  "communication_emails",
+  "partner_tab",
+  "partner_details_section",
+  "erpnext_partner",
+  "partner_email",
+  "column_break_ooyo",
+  "partner_tier",
+  "website_info_section",
+  "company_logo",
+  "website_link",
+  "introduction",
+  "column_break_akmx",
+  "customers",
   "partner_section",
   "partner_referral_code",
   "partnership_date",
   "column_break_ppov",
   "frappe_partnership_date",
+  "partner_commission",
+  "feature_flags_tab",
   "feature_flags_section",
   "referrer_id",
   "ssh_access_enabled",
@@ -64,11 +81,16 @@
   "self_hosted_servers_enabled",
   "security_portal_enabled",
   "benches_enabled",
-  "section_break_28",
-  "communication_emails",
+  "mpesa_enabled",
   "discounts_section",
   "discounts",
-  "is_us_eu"
+  "is_us_eu",
+  "custom_apps_tab",
+  "custom_apps_section",
+  "github_access_token",
+  "column_break_uyxo",
+  "mpesa_tax_id",
+  "mpesa_phone_number"
  ],
  "fields": [
   {
@@ -128,15 +150,6 @@
   },
   {
    "default": "0",
-   "description": "If checked, this user can Transfer credits from ERPNext.com",
-   "fieldname": "erpnext_partner",
-   "fieldtype": "Check",
-   "in_standard_filter": 1,
-   "label": "ERPNext Partner",
-   "read_only": 1
-  },
-  {
-   "default": "0",
    "description": "If checked, usage data will not be sent to Stripe and they won't be charged",
    "fieldname": "free_account",
    "fieldtype": "Check",
@@ -177,8 +190,7 @@
   },
   {
    "fieldname": "custom_apps_section",
-   "fieldtype": "Section Break",
-   "label": "Custom Apps"
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "billing_name",
@@ -260,6 +272,7 @@
    "collapsible": 1,
    "fieldname": "discounts_section",
    "fieldtype": "Section Break",
+   "hidden": 1,
    "label": "Discounts"
   },
   {
@@ -328,6 +341,7 @@
   {
    "fieldname": "team_title",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "Team Title"
   },
   {
@@ -368,10 +382,11 @@
    "label": "Code Servers Enabled"
   },
   {
-   "depends_on": "eval: !doc.erpnext_partner",
+   "depends_on": "eval: !doc.erpnext_partner && doc.payment_mode == 'Paid By Partner'",
    "fieldname": "billing_team",
    "fieldtype": "Link",
    "label": "Billing Team",
+   "mandatory_depends_on": "eval: doc.payment_mode == 'Paid By Partner'",
    "options": "Team"
   },
   {
@@ -382,8 +397,7 @@
   },
   {
    "fieldname": "partner_section",
-   "fieldtype": "Section Break",
-   "label": "Partner"
+   "fieldtype": "Section Break"
   },
   {
    "depends_on": "eval:!doc.erpnext_partner && doc.partner_email",
@@ -438,8 +452,130 @@
    "fieldname": "billing_email",
    "fieldtype": "Data",
    "label": "Billing Email"
+  },
+  {
+   "default": "0",
+   "fieldname": "mpesa_enabled",
+   "fieldtype": "Check",
+   "label": "Mpesa Enabled"
+  },
+  {
+   "fieldname": "column_break_uyxo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mpesa_tax_id",
+   "fieldtype": "Data",
+   "label": "Mpesa Tax Id"
+  },
+  {
+   "fieldname": "mpesa_phone_number",
+   "fieldtype": "Data",
+   "label": "Mpesa Phone Number"
+  },
+  {
+   "fieldname": "partner_commission",
+   "fieldtype": "Percent",
+   "label": "Partner Commission"
+  },
+  {
+   "fieldname": "team_members_tab",
+   "fieldtype": "Tab Break",
+   "label": "Team Members"
+  },
+  {
+   "fieldname": "notification_tab",
+   "fieldtype": "Tab Break",
+   "label": "Notification"
+  },
+  {
+   "fieldname": "billing_tab",
+   "fieldtype": "Tab Break",
+   "label": "Billing"
+  },
+  {
+   "fieldname": "partner_tab",
+   "fieldtype": "Tab Break",
+   "label": "Partner"
+  },
+  {
+   "fieldname": "feature_flags_tab",
+   "fieldtype": "Tab Break",
+   "label": "Feature Flags"
+  },
+  {
+   "fieldname": "partner_details_section",
+   "fieldtype": "Section Break",
+   "label": "Partner Details"
+  },
+  {
+   "fieldname": "column_break_ooyo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "partner_tier",
+   "fieldtype": "Data",
+   "label": "Partner Tier"
+  },
+  {
+   "fieldname": "custom_apps_tab",
+   "fieldtype": "Tab Break",
+   "label": "Custom Apps"
+  },
+  {
+   "default": "0",
+   "fieldname": "erpnext_partner",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "ERPNext Partner",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval: doc.erpnext_partner == 1",
+   "fieldname": "website_info_section",
+   "fieldtype": "Section Break",
+   "label": "Website Info"
+  },
+  {
+   "fieldname": "company_logo",
+   "fieldtype": "Attach",
+   "label": "Company Logo"
+  },
+  {
+   "fieldname": "website_link",
+   "fieldtype": "Data",
+   "label": "Website Link"
+  },
+  {
+   "fieldname": "introduction",
+   "fieldtype": "Small Text",
+   "label": "Introduction"
+  },
+  {
+   "fieldname": "column_break_akmx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "customers",
+   "fieldtype": "Small Text",
+   "label": "Customers"
+  },
+  {
+   "default": "0",
+   "fieldname": "extend_payment_due_suspension",
+   "fieldtype": "Check",
+   "label": "Extend Payment Due Suspension",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "If checked, Non Profit Organisation discount will be applied in Invoice",
+   "fieldname": "apply_npo_discount",
+   "fieldtype": "Check",
+   "label": "Apply NPO Discount"
   }
  ],
+ "grid_page_length": 50,
  "links": [
   {
    "group": "General",
@@ -495,9 +631,14 @@
    "group": "Billing",
    "link_doctype": "Stripe Payment Method",
    "link_fieldname": "team"
+  },
+  {
+   "group": "Billing",
+   "link_doctype": "Payment Due Extension",
+   "link_fieldname": "team"
   }
  ],
- "modified": "2024-11-11 10:27:47.247515",
+ "modified": "2025-05-20 12:56:19.719372",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
@@ -524,6 +665,7 @@
   }
  ],
  "quick_entry": 1,
+ "row_format": "Dynamic",
  "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",

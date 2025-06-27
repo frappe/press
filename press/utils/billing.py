@@ -91,6 +91,10 @@ def get_frappe_io_connection():
 	return get_frappe_io_connection()
 
 
+def is_frappe_auth_disabled():
+	return frappe.db.get_single_value("Press Settings", "disable_frappe_auth", cache=True)
+
+
 def make_formatted_doc(doc, fieldtypes=None):
 	formatted = {}
 	filters = None
@@ -206,7 +210,7 @@ def get_razorpay_client():
 
 		if not (key_id and key_secret):
 			frappe.throw(
-				"Setup razorpay via Press Settings before using" " press.api.billing.get_razorpay_client"
+				"Setup razorpay via Press Settings before using press.api.billing.get_razorpay_client"
 			)
 
 		frappe.local.press_razorpay_client_object = razorpay.Client(auth=(key_id, key_secret))
@@ -231,3 +235,38 @@ def process_micro_debit_test_charge(stripe_event):
 		).insert(ignore_permissions=True)
 	except Exception:
 		log_error("Error Processing Stripe Micro Debit Charge", body=stripe_event)
+
+
+def get_gateway_details(payment_record):
+	partner_team = frappe.db.get_value("Mpesa Payment Record", payment_record, "payment_partner")
+	return frappe.db.get_value(
+		"Payment Gateway", {"team": partner_team}, ["gateway_controller", "print_format"]
+	)
+
+
+# Get partners external connection
+def get_partner_external_connection(mpesa_setup):
+	# check if connection is already established
+	if hasattr(frappe.local, "_external_conn"):
+		return frappe.local.press_external_conn
+
+	from frappe.frappeclient import FrappeClient
+
+	# Fetch API from gateway
+	payment_gateway = frappe.get_all(
+		"Payment Gateway",
+		filters={"gateway_controller": mpesa_setup, "gateway_settings": "Mpesa Setup"},
+		fields=["name", "url", "api_key", "api_secret"],
+	)
+	if not payment_gateway:
+		frappe.throw("Mpesa Setup not set up in Payment Gateway")
+	# Fetch API key and secret
+	pg = frappe.get_doc("Payment Gateway", payment_gateway[0].name)
+	api_key = pg.api_key
+	api_secret = pg.get_password("api_secret")
+	url = pg.url
+
+	site_name = url.split("/api/method")[0]
+	# Establish connection
+	frappe.local._external_conn = FrappeClient(site_name, api_key=api_key, api_secret=api_secret)
+	return frappe.local._external_conn

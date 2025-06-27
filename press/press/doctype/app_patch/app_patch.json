@@ -94,7 +94,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Not Applied\nIn Process\nFailed\nApplied"
+   "options": "Not Applied\nIn Process\nFailed\nApplied\nArchived"
   },
   {
    "fieldname": "meta_section",
@@ -116,7 +116,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-29 13:42:12.525421",
+ "modified": "2025-04-17 11:22:43.781613",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Patch",
@@ -160,6 +160,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

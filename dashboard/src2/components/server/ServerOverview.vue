@@ -17,7 +17,7 @@
 					>
 						<div
 							v-if="d.type === 'header'"
-							class="m-auto flex items-center justify-between"
+							class="m-auto flex h-full items-center justify-between"
 						>
 							<div
 								v-if="d.type === 'header'"
@@ -25,7 +25,27 @@
 							>
 								<div class="text-base text-gray-700">{{ d.label }}</div>
 								<div class="space-y-1">
-									<div class="text-base text-gray-900" v-html="d.value" />
+									<div class="flex items-center text-base text-gray-900">
+										{{ d.value }}
+										<Tooltip v-if="d.isPremium" text="Premium Server">
+											<!-- this icon isn't available in unplugin package yet -->
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
+												width="24"
+												height="24"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												class="lucide lucide-circle-parking ml-2 h-4 w-4 text-gray-600"
+											>
+												<circle cx="12" cy="12" r="10" />
+												<path d="M9 17V7h4a3 3 0 0 1 0 6H9" />
+											</svg>
+										</Tooltip>
+									</div>
 									<div class="flex space-x-1">
 										<div class="text-sm text-gray-600" v-html="d.subValue" />
 										<Tooltip v-if="d.help" :text="d.help">
@@ -95,18 +115,20 @@ import { confirmDialog, renderDialog } from '../../utils/components';
 import { getToastErrorMessage } from '../../utils/toast';
 import ServerPlansDialog from './ServerPlansDialog.vue';
 import ServerLoadAverage from './ServerLoadAverage.vue';
+import StorageBreakdownDialog from './StorageBreakdownDialog.vue';
 import { getDocResource } from '../../utils/resource';
 
 export default {
 	props: ['server'],
 	components: {
 		ServerLoadAverage,
-		ServerPlansDialog
+		ServerPlansDialog,
+		StorageBreakdownDialog,
 	},
 	methods: {
 		showPlanChangeDialog(serverType) {
-			let ServerPlansDialog = defineAsyncComponent(() =>
-				import('./ServerPlansDialog.vue')
+			let ServerPlansDialog = defineAsyncComponent(
+				() => import('./ServerPlansDialog.vue'),
 			);
 			renderDialog(
 				h(ServerPlansDialog, {
@@ -114,24 +136,38 @@ export default {
 						serverType === 'Server'
 							? this.$appServer.name
 							: this.$dbServer.name,
-					serverType
-				})
+					serverType,
+				}),
+			);
+		},
+		showStorageBreakdownDialog(serverType) {
+			let StorageBreakdownDialog = defineAsyncComponent(
+				() => import('./StorageBreakdownDialog.vue'),
+			);
+			renderDialog(
+				h(StorageBreakdownDialog, {
+					server:
+						serverType === 'Server'
+							? this.$appServer.name
+							: this.$dbServer.name,
+					serverType,
+				}),
 			);
 		},
 		currentUsage(serverType) {
 			if (!this.$appServer?.doc) return [];
 			if (!this.$dbServer?.doc) return [];
 
-			let formatBytes = v => this.$format.bytes(v, 0, 2);
+			let formatBytes = (v) => this.$format.bytes(v, 0, 2);
 
 			let doc =
 				serverType === 'Server'
 					? this.$appServer.doc
 					: serverType === 'Database Server'
-					? this.$dbServer.doc
-					: serverType === 'Replication Server'
-					? this.$dbReplicaServer?.doc
-					: null;
+						? this.$dbServer.doc
+						: serverType === 'Replication Server'
+							? this.$dbReplicaServer?.doc
+							: null;
 
 			if (!doc) return [];
 
@@ -160,25 +196,26 @@ export default {
 						serverType === 'Server'
 							? 'Application Server Plan'
 							: serverType === 'Database Server'
-							? 'Database Server Plan'
-							: 'Replication Server Plan',
+								? 'Database Server Plan'
+								: 'Replication Server Plan',
 					value: planDescription,
 					subValue:
 						additionalStorage > 0
 							? `${this.$format.userCurrency(
 									doc.storage_plan[priceField] * additionalStorage,
-									0
-							  )}/mo`
+									0,
+								)}/mo`
 							: '',
 					type: 'header',
+					isPremium: !!currentPlan?.premium,
 					help:
 						additionalStorage > 0
 							? `Server Plan: ${this.$format.userCurrency(
-									currentPlan[priceField]
-							  )}/mo & Add-on Storage Plan: ${this.$format.userCurrency(
-									doc.storage_plan[priceField] * additionalStorage
-							  )}/mo`
-							: ''
+									currentPlan[priceField],
+								)}/mo & Add-on Storage Plan: ${this.$format.userCurrency(
+									doc.storage_plan[priceField] * additionalStorage,
+								)}/mo`
+							: '',
 				},
 				{
 					label: 'CPU',
@@ -188,13 +225,13 @@ export default {
 						: 0,
 					value: currentPlan
 						? `${(((currentUsage.vcpu || 0) / currentPlan.vcpu) * 100).toFixed(
-								2
-						  )}% of ${currentPlan.vcpu} ${this.$format.plural(
+								2,
+							)}% of ${currentPlan.vcpu} ${this.$format.plural(
 								currentPlan.vcpu,
 								'vCPU',
-								'vCPUs'
-						  )}`
-						: '0% vCPU'
+								'vCPUs',
+							)}`
+						: '0% vCPU',
 				},
 				{
 					label: 'Memory',
@@ -204,21 +241,21 @@ export default {
 						: 0,
 					value: currentPlan
 						? `${formatBytes(currentUsage.memory || 0)} of ${formatBytes(
-								currentPlan.memory
-						  )}`
-						: formatBytes(currentUsage.memory || 0)
+								currentPlan.memory,
+							)}`
+						: formatBytes(currentUsage.memory || 0),
 				},
 				{
 					label: 'Storage',
 					type: 'progress',
 					progress_value: currentPlan
 						? (currentUsage.disk / (diskSize ? diskSize : currentPlan.disk)) *
-						  100
+							100
 						: 0,
 					value: currentPlan
 						? `${currentUsage.disk || 0} GB of ${
 								diskSize ? diskSize : currentPlan.disk
-						  } GB`
+							} GB`
 						: `${currentUsage.disk || 0} GB`,
 					help:
 						diskSize - (currentPlan?.disk || 0) > 0
@@ -235,7 +272,7 @@ export default {
 									message: `Enter the disk size you want to increase to the server <b>${
 										doc.title || doc.name
 									}</b><div class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border">You will be charged at the rate of <b>${this.$format.userCurrency(
-										doc.storage_plan[priceField]
+										doc.storage_plan[priceField],
 									)}/mo</b> for each additional GB of storage.</div><p class="mt-4 text-sm text-gray-700"><strong>Note</strong>: You can increase the storage size of the server only once in 6 hours.</div>`,
 									fields: [
 										{
@@ -247,43 +284,43 @@ export default {
 											// options from 5 GB to 500 GB in steps of 5 GB
 											options: Array.from({ length: 100 }, (_, i) => ({
 												label: `${(i + 1) * 5} GB`,
-												value: (i + 1) * 5
-											}))
-										}
+												value: (i + 1) * 5,
+											})),
+										},
 									],
 									onSuccess: ({ hide, values }) => {
 										toast.promise(
 											this.$appServer.increaseDiskSize.submit(
 												{
 													server: doc.name,
-													increment: values.storage
+													increment: Number(values.storage),
 												},
 												{
 													onSuccess: () => {
 														hide();
 														this.$router.push({
 															name: 'Server Detail Plays',
-															params: { name: this.$appServer.name }
+															params: { name: this.$appServer.name },
 														});
 													},
 													onError(e) {
 														console.error(e);
-													}
-												}
+													},
+												},
 											),
 											{
 												loading: 'Increasing disk size...',
 												success: 'Disk size is scheduled to increase',
-												error: e =>
+												error: (e) =>
 													getToastErrorMessage(
 														e,
-														'Failed to increase disk size'
-													)
-											}
+														'Failed to increase disk size',
+													),
+											},
 										);
-									}
+									},
 								});
-							}
+							},
 						},
 						{
 							label: 'Configure Auto Increase Storage',
@@ -292,7 +329,18 @@ export default {
 							onClick: () => {
 								confirmDialog({
 									title: 'Configure Auto Increase Storage',
-									message: `<div class="rounded my-4 p-2 text-sm text-gray-700 bg-gray-100 border">Auto Increase Storage feature is enabled by default to avoid server/site downtime when the storage gets full.<br><br>You can disable this feature by providing minimum and maximum as 0.<br><br>But if you disable it, <strong>we may not be notified of incidents from this server</strong>.</div>Enter the maximum and minimum storage to increase for the server <b>${
+									message: `<div class="rounded my-4 p-2 text-sm text-gray-700 bg-gray-100 border">
+
+									This feature automatically increases available storage as it reaches over <b>90%</b> of its capacity. It is enabled by default to avoid server/site downtime.
+
+									<br><br>
+									You can disable this entirely by setting minimum and maximum below to <b>0 GB</b>. But if you do, <strong>we may not be notified of incidents from this server</strong>.
+
+									<br><br>
+									<strong>Note</strong>: Storage can auto increase only once in 6 hours.
+
+
+									</div>Enter the maximum and minimum storage to increase for the server (each time) <b>${
 										doc.title || doc.name
 									}</b>.`,
 									fields: [
@@ -305,8 +353,8 @@ export default {
 											// options from 5 GB to 250 GB in steps of 5 GB
 											options: Array.from({ length: 51 }, (_, i) => ({
 												label: `${i * 5} GB`,
-												value: i * 5
-											}))
+												value: i * 5,
+											})),
 										},
 										{
 											fieldname: 'max',
@@ -317,9 +365,9 @@ export default {
 											// options from 5 GB to 250 GB in steps of 5 GB
 											options: Array.from({ length: 51 }, (_, i) => ({
 												label: `${i * 5} GB`,
-												value: i * 5
-											}))
-										}
+												value: i * 5,
+											})),
+										},
 									],
 									onSuccess: ({ hide, values }) => {
 										toast.promise(
@@ -327,7 +375,7 @@ export default {
 												{
 													server: doc.name,
 													min: Number(values.min),
-													max: Number(values.max)
+													max: Number(values.max),
 												},
 												{
 													onSuccess: () => {
@@ -339,57 +387,66 @@ export default {
 															this.$dbServer.reload();
 														else if (doc.name === this.$replicationServer.name)
 															this.$replicationServer.reload();
-													}
-												}
+													},
+												},
 											),
 											{
 												loading: 'Configuring auto increase storage...',
 												success: 'Auto increase storage is configured',
-												error: err => {
+												error: (err) => {
 													return err.messages.length
 														? err.messages.join('/n')
 														: err.message ||
 																'Failed to configure auto increase storage';
-												}
-											}
+												},
+											},
 										);
-									}
+									},
 								});
-							}
-						}
-					]
-				}
+							},
+						},
+						{
+							label: 'Storage Breakdown',
+							icon: 'pie-chart',
+							variant: 'ghost',
+							hidden: serverType !== 'Database Server',
+							onClick: () => {
+								this.showStorageBreakdownDialog(serverType);
+							},
+						},
+					].filter((e) => e.hidden !== true),
+				},
 			];
-		}
+		},
 	},
 	computed: {
 		serverInformation() {
 			return [
 				{
 					label: 'Application server',
-					value: this.$appServer.doc.name
+					value: this.$appServer.doc.name,
 				},
 				{
 					label: 'Database server',
-					value: this.$appServer.doc.database_server
+					value: this.$appServer.doc.database_server,
 				},
 				{
 					label: 'Replication server',
-					value: this.$appServer.doc.replication_server
+					value: this.$appServer.doc.replication_server,
 				},
 				{
 					label: 'Owned by',
-					value: this.$appServer.doc.team
+					value: this.$appServer.doc.owner_email || this.$appServer.doc.team,
 				},
 				{
 					label: 'Created by',
-					value: this.$appServer.doc.owner
+					value: this.$appServer.doc.owner,
 				},
 				{
 					label: 'Created on',
-					value: this.$format.date(this.$appServer.doc.creation)
-				}
-			].filter(d => d.value);
+					value: this.$format.date(this.$appServer.doc.creation),
+				},
+			].filter((d) => d.value);
 		},
 		$appServer() {
 			return getCachedDocumentResource('Server', this.server);
@@ -401,8 +458,8 @@ export default {
 				whitelistedMethods: {
 					changePlan: 'change_plan',
 					reboot: 'reboot',
-					rename: 'rename'
-				}
+					rename: 'rename',
+				},
 			});
 		},
 		$dbReplicaServer() {
@@ -412,10 +469,10 @@ export default {
 				whitelistedMethods: {
 					changePlan: 'change_plan',
 					reboot: 'reboot',
-					rename: 'rename'
-				}
+					rename: 'rename',
+				},
 			});
-		}
-	}
+		},
+	},
 };
 </script>

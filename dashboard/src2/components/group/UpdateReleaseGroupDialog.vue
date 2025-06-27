@@ -3,7 +3,7 @@
 		v-model="show"
 		:options="{
 			size: '4xl',
-			title: 'Update Bench Group'
+			title: 'Update Bench Group',
 		}"
 	>
 		<template #body-content>
@@ -136,7 +136,7 @@ export default {
 		GenericList,
 		CommitChooser,
 		CommitTag,
-		AlertBanner
+		AlertBanner,
 	},
 	data() {
 		return {
@@ -147,7 +147,7 @@ export default {
 			useInPlaceUpdate: false,
 			restrictMessage: '',
 			selectedApps: [],
-			selectedSites: []
+			selectedSites: [],
 		};
 	},
 	mounted() {
@@ -163,7 +163,7 @@ export default {
 		updatableAppOptions() {
 			let deployInformation = this.benchDocResource.doc.deploy_information;
 			let appData = deployInformation.apps.filter(
-				app => app.update_available === true
+				(app) => app.update_available === true,
 			);
 
 			return {
@@ -173,7 +173,7 @@ export default {
 					{
 						label: 'App',
 						fieldname: 'title',
-						width: 1.75
+						width: 1.75,
 					},
 					{
 						label: 'From',
@@ -187,9 +187,9 @@ export default {
 
 							return h(CommitTag, {
 								tag: tag,
-								link: `${app.repository_url}/commit/${tag}`
+								link: `${app.repository_url}/commit/${tag}`,
 							});
-						}
+						},
 					},
 					{
 						label: 'To',
@@ -199,12 +199,12 @@ export default {
 							if (app.will_branch_change) {
 								return h(CommitTag, {
 									tag: app.branch,
-									link: `${app.repository_url}/commit/${app.branch}`
+									link: `${app.repository_url}/commit/${app.branch}`,
 								});
 							}
 
 							function commitChooserOptions(app) {
-								return app.releases.map(release => {
+								return app.releases.map((release) => {
 									const messageMaxLength = 75;
 									let message = release.message.split('\n')[0];
 									message =
@@ -216,14 +216,14 @@ export default {
 										label: release.tag
 											? release.tag
 											: `${message} (${release.hash.slice(0, 7)})`,
-										value: release.name
+										value: release.name,
 									};
 								});
 							}
 
 							function initialDeployTo(app) {
 								const next_release = app.releases.filter(
-									release => release.name === app.next_release
+									(release) => release.name === app.next_release,
 								)[0];
 								if (app.will_branch_change) {
 									return app.branch;
@@ -236,18 +236,18 @@ export default {
 
 							let initialValue = {
 								label: initialDeployTo(app),
-								value: app.next_release
+								value: app.next_release,
 							};
 
 							return h(CommitChooser, {
 								options: commitChooserOptions(app),
 								modelValue: initialValue,
-								'onUpdate:modelValue': value => {
-									appData.find(a => a.name === app.name).next_release =
+								'onUpdate:modelValue': (value) => {
+									appData.find((a) => a.name === app.name).next_release =
 										value.value;
-								}
+								},
 							});
-						}
+						},
 					},
 					{
 						label: 'Status',
@@ -256,7 +256,7 @@ export default {
 						format(value, row) {
 							if (
 								deployInformation.removed_apps.find(
-									app => app.name === row.name
+									(app) => app.name === row.name,
 								)
 							) {
 								return 'Will be Uninstalled';
@@ -264,7 +264,7 @@ export default {
 								return 'First Deploy';
 							}
 							return 'Update Available';
-						}
+						},
 					},
 					{
 						label: 'Changes',
@@ -275,7 +275,7 @@ export default {
 							let url;
 							if (row.current_hash && row.next_release) {
 								let hash = row.releases.find(
-									release => release.name === row.next_release
+									(release) => release.name === row.next_release,
 								)?.hash;
 
 								if (hash)
@@ -283,7 +283,7 @@ export default {
 							} else if (row.next_release) {
 								url = `${row.repository_url}/commit/${
 									row.releases.find(
-										release => release.name === row.next_release
+										(release) => release.name === row.next_release,
 									).hash
 								}`;
 							}
@@ -295,11 +295,11 @@ export default {
 								variant: 'ghost',
 								onClick() {
 									window.open(url, '_blank');
-								}
+								},
 							};
-						}
-					}
-				]
+						},
+					},
+				],
 			};
 		},
 		removedAppOptions() {
@@ -311,7 +311,7 @@ export default {
 				columns: [
 					{
 						label: 'App',
-						fieldname: 'title'
+						fieldname: 'title',
 					},
 					{
 						label: 'Status',
@@ -319,9 +319,9 @@ export default {
 						type: 'Badge',
 						format() {
 							return 'Will be Uninstalled';
-						}
-					}
-				]
+						},
+					},
+				],
 			};
 		},
 		siteOptions() {
@@ -341,7 +341,7 @@ export default {
 				columns: [
 					{
 						label: 'Site',
-						fieldname: 'name'
+						fieldname: 'name',
 					},
 					{
 						label: 'Skip failed patches',
@@ -351,9 +351,9 @@ export default {
 						component({ row }) {
 							return h(Checkbox, {
 								modelValue: row.skip_failing_patches,
-								disabled
+								disabled,
 							});
-						}
+						},
 					},
 					{
 						label: 'Skip backup',
@@ -366,11 +366,11 @@ export default {
 						component({ row }) {
 							return h(Checkbox, {
 								modelValue: row.skip_backups,
-								disabled
+								disabled,
 							});
-						}
-					}
-				]
+						},
+					},
+				],
 			};
 		},
 		benchDocResource() {
@@ -378,7 +378,7 @@ export default {
 		},
 		hasUpdateAvailable() {
 			return this.benchDocResource.doc.deploy_information.apps.some(
-				app => app.update_available === true
+				(app) => app.update_available === true,
 			);
 		},
 		hasRemovedApps() {
@@ -435,7 +435,7 @@ export default {
 			}
 
 			// All sites to be updated must belong to the same bench.
-			const benches = new Set(this.selectedSites.map(s => s.bench));
+			const benches = new Set(this.selectedSites.map((s) => s.bench));
 			if (benches.size !== 1) {
 				return false;
 			}
@@ -446,10 +446,11 @@ export default {
 
 			const allSites = this.siteOptions.data
 				.filter(
-					s =>
-						benches.has(s.bench) || inPlaceUpdateFailedBenches.includes(s.bench)
+					(s) =>
+						benches.has(s.bench) ||
+						inPlaceUpdateFailedBenches.includes(s.bench),
 				)
-				.map(s => s.name);
+				.map((s) => s.name);
 
 			// All sites under a bench should be updated
 			if (allSites.length !== this.selectedSites.length) {
@@ -457,7 +458,7 @@ export default {
 			}
 
 			return true;
-		}
+		},
 	},
 	resources: {
 		deployAndUpdate() {
@@ -467,10 +468,11 @@ export default {
 					name: this.bench,
 					apps: this.selectedApps,
 					sites: this.selectedSites,
-					run_will_fail_check: !this.ignoreWillFailCheck
+					run_will_fail_check: !this.ignoreWillFailCheck,
 				},
 				validate() {
 					if (
+						this.hasUpdateAvailable &&
 						this.selectedApps.length === 0 &&
 						this.deployInformation.removed_apps.length === 0
 					) {
@@ -482,14 +484,14 @@ export default {
 						name: 'Deploy Candidate',
 						params: {
 							id: candidate,
-							name: this.bench
-						}
+							name: this.bench,
+						},
 					});
 					this.restrictMessage = '';
 					this.show = false;
 					this.$emit('success', candidate);
 				},
-				onError: this.setErrorMessage.bind(this)
+				onError: this.setErrorMessage.bind(this),
 			};
 		},
 		updateInPlace() {
@@ -498,21 +500,21 @@ export default {
 				params: {
 					name: this.bench,
 					apps: this.selectedApps,
-					sites: this.selectedSites
+					sites: this.selectedSites,
 				},
 				onSuccess(id) {
 					this.$router.push({
 						name: 'Release Group Job',
-						params: { id }
+						params: { id },
 					});
 
 					this.restrictMessage = '';
 					this.show = false;
 					this.$emit('success', null);
 				},
-				onError: this.setErrorMessage.bind(this)
+				onError: this.setErrorMessage.bind(this),
 			};
-		}
+		},
 	},
 	methods: {
 		back() {
@@ -555,15 +557,15 @@ export default {
 			let appData = this.benchDocResource.doc.deploy_information.apps;
 
 			this.selectedApps = appData
-				.filter(app => apps.includes(app.name))
-				.map(app => {
+				.filter((app) => apps.includes(app.name))
+				.map((app) => {
 					return {
 						app: app.name,
 						source: app.source,
 						release: app.next_release,
 						hash: app.releases.find(
-							release => release.name === app.next_release
-						).hash
+							(release) => release.name === app.next_release,
+						).hash,
 					};
 				});
 		},
@@ -571,7 +573,7 @@ export default {
 			sites = Array.from(sites);
 			let siteData = this.benchDocResource.doc.deploy_information.sites;
 
-			this.selectedSites = siteData.filter(site => sites.includes(site.name));
+			this.selectedSites = siteData.filter((site) => sites.includes(site.name));
 		},
 		deployFrom(app) {
 			if (app.will_branch_change) {
@@ -583,7 +585,7 @@ export default {
 		},
 		initialDeployTo(app) {
 			return this.benchDocResource.doc.deploy_information.apps.find(
-				a => a.app === app.app
+				(a) => a.app === app.app,
 			).next_release;
 		},
 		updateBench() {
@@ -625,7 +627,7 @@ export default {
 
 			this.errorMessage =
 				'Internal Server Error: Deploy could not be initiated';
-		}
-	}
+		},
+	},
 };
 </script>

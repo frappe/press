@@ -38,17 +38,17 @@ export default {
 	name: 'SQLResult',
 	props: ['result'],
 	components: {
-		SQLResultTable
+		SQLResultTable,
 	},
 	data() {
 		return {
-			isSQLQueryVisible: false
+			isSQLQueryVisible: false,
 		};
 	},
 	methods: {
 		toggleSQLQuerySection() {
 			this.isSQLQueryVisible = !this.isSQLQueryVisible;
-		}
-	}
+		},
+	},
 };
 </script>

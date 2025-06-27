@@ -11,7 +11,7 @@ frappe.query_reports['MariaDB Process List'] = {
 					{
 						fieldtype: 'Int',
 						default: 120,
-						label: __('Kill Proceeses Running Longer Than (Seconds)'),
+						label: __('Kill Processes Running Longer Than (Seconds)'),
 						fieldname: 'kill_threshold',
 					},
 				],

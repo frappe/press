@@ -14,11 +14,19 @@ from botocore.exceptions import ClientError
 from dns.resolver import Resolver
 from frappe.core.utils import find
 from frappe.desk.doctype.tag.tag import add_tag
+from frappe.rate_limiter import rate_limit
 from frappe.utils import flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
 
-from press.exceptions import AAAARecordExists, ConflictingCAARecord
+from press.exceptions import (
+	AAAARecordExists,
+	ConflictingCAARecord,
+	ConflictingDNSRecord,
+	DomainProxied,
+	MultipleARecords,
+	MultipleCNAMERecords,
+)
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
@@ -47,6 +55,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
 		DeployCandidateApp,
 	)
+	from press.press.doctype.site.site import Site
 
 
 NAMESERVERS = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
@@ -87,7 +96,8 @@ def protected(doctypes):
 			if owner == team or has_role("Press Support Agent"):
 				return wrapped(*args, **kwargs)
 
-		frappe.throw("Not Permitted", frappe.PermissionError)  # noqa: RET503
+		frappe.throw("Not Permitted", frappe.PermissionError)
+		return None
 
 	return wrapper
 
@@ -121,7 +131,7 @@ def get_name_from_filters(filters: dict):
 		return None
 
 	value = values[0]
-	if isinstance(value, (int, str)):
+	if isinstance(value, int | str):
 		return value
 
 	return None
@@ -281,7 +291,8 @@ def validate_plan(server, plan):
 
 @frappe.whitelist()
 def new(site):
-	site["domain"] = frappe.db.get_single_value("Press Settings", "domain")
+	if not hasattr(site, "domain") or not site["domain"]:
+		site["domain"] = frappe.db.get_single_value("Press Settings", "domain")
 
 	return _new(site)
 
@@ -521,6 +532,8 @@ def app_details_for_new_public_site():
 
 @frappe.whitelist()
 def options_for_new(for_bench: str | None = None):  # noqa: C901
+	from press.utils import get_nearest_cluster
+
 	for_bench = str(for_bench) if for_bench else None
 	available_versions = get_available_versions(for_bench)
 
@@ -576,9 +589,18 @@ def options_for_new(for_bench: str | None = None):  # noqa: C901
 		# app source details are all fetched from marketplace apps for public sites
 		marketplace_details = None
 
+	default_domain = frappe.db.get_single_value("Press Settings", "domain")
+	cluster_specific_root_domains = frappe.db.get_all(
+		"Root Domain",
+		{"name": ("like", f"%.{default_domain}")},
+		["name", "default_cluster as cluster"],
+	)
+
 	return {
 		"versions": available_versions,
-		"domain": frappe.db.get_single_value("Press Settings", "domain"),
+		"domain": default_domain,
+		"closest_cluster": get_nearest_cluster(),
+		"cluster_specific_root_domains": cluster_specific_root_domains,
 		"marketplace_details": marketplace_details,
 		"app_source_details": app_source_details_grouped,
 	}
@@ -1287,6 +1309,7 @@ def get_installed_apps(site, query_filters: dict | None = None):
 			AppSource.public,
 			AppSource.app_title,
 			MarketplaceApp.title,
+			MarketplaceApp.collect_feedback,
 		)
 		.where(AppSource.name.isin([d.source for d in installed_bench_apps]))
 	)
@@ -1342,12 +1365,6 @@ def get_installed_apps(site, query_filters: dict | None = None):
 				as_dict=True,
 			)
 			app_source.subscription = subscription
-			marketplace_app_info = frappe.db.get_value(
-				"Marketplace App", subscription.app, ["title", "image"], as_dict=True
-			)
-
-			app_source.app_title = marketplace_app_info.title
-			app_source.app_image = marketplace_app_info.image
 
 			app_source.plan_info = frappe.db.get_value(
 				"Marketplace App Plan",
@@ -1575,11 +1592,12 @@ def restore(name, files, skip_failing_patches=False):
 			"remote_config_file": files.get("config", ""),
 		},
 	)
-	site = frappe.get_doc("Site", name)
+	site: Site = frappe.get_doc("Site", name)
 	return site.restore_site(skip_failing_patches=skip_failing_patches)
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=10, seconds=60)
 def exists(subdomain, domain):
 	from press.press.doctype.site.site import Site
 
@@ -1617,15 +1635,29 @@ def check_domain_allows_letsencrypt_certs(domain):
 
 
 def check_dns_cname(name, domain):
-	result = {"type": "CNAME", "matched": False, "answer": ""}
+	result = {"type": "CNAME", "exists": True, "matched": False, "answer": ""}
 	try:
 		resolver = Resolver(configure=False)
 		resolver.nameservers = NAMESERVERS
 		answer = resolver.query(domain, "CNAME")
+		if len(answer) > 1:
+			raise MultipleCNAMERecords
 		mapped_domain = answer[0].to_text().rsplit(".", 1)[0]
 		result["answer"] = answer.rrset.to_text()
-		if mapped_domain == name:
+		other_domains = frappe.db.get_all(
+			"Site Domain", {"site": name, "status": "Active", "domain": ("!=", name)}, pluck="domain"
+		)
+		if mapped_domain == name or mapped_domain in other_domains:
 			result["matched"] = True
+	except MultipleCNAMERecords:
+		multiple_domains = ", ".join(part.to_text() for part in answer)
+		frappe.throw(
+			f"Domain {domain} has multiple CNAME records: {multiple_domains}. Please keep only one.",
+			MultipleCNAMERecords,
+		)
+	except dns.resolver.NoAnswer as e:
+		result["exists"] = False
+		result["answer"] = str(e)
 	except dns.exception.DNSException as e:
 		result["answer"] = str(e)
 	except Exception as e:
@@ -1634,28 +1666,44 @@ def check_dns_cname(name, domain):
 	return result
 
 
+def check_for_ip_match(site_name: str, site_ip: str | None, domain_ip: str | None):
+	if domain_ip == site_ip:
+		return True
+	if site_ip:
+		# We can issue certificates even if the domain points to the secondary proxies
+		server = frappe.db.get_value("Site", site_name, "server")
+		proxy = frappe.db.get_value("Server", server, "proxy_server")
+		secondary_ips = frappe.get_all(
+			"Proxy Server",
+			{"status": "Active", "primary": proxy, "is_replication_setup": True},
+			pluck="ip",
+		)
+		if domain_ip in secondary_ips:
+			return True
+	return False
+
+
 def check_dns_a(name, domain):
-	result = {"type": "A", "matched": False, "answer": ""}
+	result = {"type": "A", "exists": True, "matched": False, "answer": ""}
 	try:
 		resolver = Resolver(configure=False)
 		resolver.nameservers = NAMESERVERS
 		answer = resolver.query(domain, "A")
+		if len(answer) > 1:
+			raise MultipleARecords
 		domain_ip = answer[0].to_text()
 		site_ip = resolver.query(name, "A")[0].to_text()
 		result["answer"] = answer.rrset.to_text()
-		if domain_ip == site_ip:
-			result["matched"] = True
-		elif site_ip:
-			# We can issue certificates even if the domain points to the secondary proxies
-			server = frappe.db.get_value("Site", name, "server")
-			proxy = frappe.db.get_value("Server", server, "proxy_server")
-			secondary_ips = frappe.get_all(
-				"Proxy Server",
-				{"status": "Active", "primary": proxy, "is_replication_setup": True},
-				pluck="ip",
-			)
-			if domain_ip in secondary_ips:
-				result["matched"] = True
+		result["matched"] = check_for_ip_match(name, site_ip, domain_ip)
+	except MultipleARecords:
+		multiple_ips = ", ".join(part.to_text() for part in answer)
+		frappe.throw(
+			f"Domain {domain} has multiple A records: {multiple_ips}. Please keep only one.",
+			MultipleARecords,
+		)
+	except dns.resolver.NoAnswer as e:
+		result["exists"] = False
+		result["answer"] = str(e)
 	except dns.exception.DNSException as e:
 		result["answer"] = str(e)
 	except Exception as e:
@@ -1683,22 +1731,46 @@ def ensure_dns_aaaa_record_doesnt_exist(domain: str):
 	except dns.resolver.NoAnswer:
 		pass
 	except dns.exception.DNSException:
-		pass  # We have other probems
+		pass  # We have other problems
 
 
-def check_dns_cname_a(name, domain):
+def check_domain_proxied(domain) -> str | None:
+	try:
+		res = requests.head(f"http://{domain}", timeout=3)
+	except requests.exceptions.RequestException as e:
+		frappe.throw("Unable to connect to the domain. Is the DNS correct?\n\n" + str(e))
+	else:
+		if (server := res.headers.get("server")) not in ("Frappe Cloud", None):  # eg: cloudflare
+			return server
+
+
+def check_dns_cname_a(name, domain, ignore_proxying=False):
 	check_domain_allows_letsencrypt_certs(domain)
+	proxy = check_domain_proxied(domain)
+	if proxy:
+		if ignore_proxying:  # no point checking the rest if proxied
+			return {"CNAME": {}, "A": {}, "matched": True, "type": "A"}  # assume A
+		frappe.throw(
+			f"Domain {domain} appears to be proxied (server: {proxy}). Please turn off proxying and try again in some time. You may enable it once the domain is verified.",
+			DomainProxied,
+		)
 	ensure_dns_aaaa_record_doesnt_exist(domain)
 	cname = check_dns_cname(name, domain)
-	result = {"CNAME": cname}
-	result.update(cname)
-
-	if result["matched"]:
-		return result
+	result = {"CNAME": cname} | cname
 
 	a = check_dns_a(name, domain)
-	result.update({"A": a})
-	result.update(a)
+	result |= {"A": a} | a
+
+	if cname["matched"] and a["exists"] and not a["matched"]:
+		frappe.throw(
+			f"Domain {domain} has correct CNAME record ({cname['answer'].strip().split()[-1]}), but also an A record that points to an incorrect IP address ({a['answer'].strip().split()[-1]}). Please remove the same or update the record.",
+			ConflictingDNSRecord,
+		)
+	if a["matched"] and cname["exists"] and not cname["matched"]:
+		frappe.throw(
+			f"Domain {domain} has correct A record ({a['answer'].strip().split()[-1]}), but also a CNAME record that points to an incorrect domain ({cname['answer'].strip().split()[-1]}). Please remove the same or update the record.",
+			ConflictingDNSRecord,
+		)
 
 	return result
 
@@ -1981,24 +2053,54 @@ def send_change_team_request(name, team_mail_id, reason):
 
 
 @frappe.whitelist(allow_guest=True)
-def confirm_site_transfer(key):
+def confirm_site_transfer(key: str):
+	from frappe import _
+
+	if frappe.session.user == "Guest":
+		return frappe.respond_as_web_page(
+			_("Not Permitted"),
+			_("You need to be logged in to confirm the site transfer."),
+			http_status_code=403,
+			indicator_color="red",
+			primary_action="/dashboard/login",
+			primary_label=_("Login"),
+		)
+
+	if not isinstance(key, str):
+		return frappe.respond_as_web_page(
+			_("Not Permitted"),
+			_("The link you are using is invalid."),
+			http_status_code=403,
+			indicator_color="red",
+		)
+
 	if team_change := frappe.db.get_value("Team Change", {"key": key}):
 		team_change = frappe.get_doc("Team Change", team_change)
+		to_team = team_change.to_team
+		if not frappe.db.get_value(
+			"Team Member", {"user": frappe.session.user, "parent": to_team, "parenttype": "Team"}
+		):
+			return frappe.respond_as_web_page(
+				_("Not Permitted"),
+				_("You are not a member of the team to which the site is being transferred."),
+				http_status_code=403,
+				indicator_color="red",
+			)
+
 		team_change.transfer_completed = True
 		team_change.save()
 		frappe.db.commit()
 
 		frappe.response.type = "redirect"
 		frappe.response.location = f"/dashboard/sites/{team_change.document_name}"
-	else:
-		from frappe import _
+		return None
 
-		frappe.respond_as_web_page(
-			_("Not Permitted"),
-			_("The link you are using is invalid or expired."),
-			http_status_code=403,
-			indicator_color="red",
-		)
+	return frappe.respond_as_web_page(
+		_("Not Permitted"),
+		_("The link you are using is invalid or expired."),
+		http_status_code=403,
+		indicator_color="red",
+	)
 
 
 @frappe.whitelist()
@@ -2009,7 +2111,7 @@ def add_server_to_release_group(name, group_name, server=None):
 
 	rg = frappe.get_doc("Release Group", group_name)
 
-	if not frappe.db.exists("Deploy Candidate", {"status": "Success", "group": group_name}):
+	if not frappe.db.exists("Deploy Candidate Build", {"status": "Success", "group": group_name}):
 		frappe.throw(
 			f"There should be atleast one deploy in the bench {frappe.bold(rg.title)} to do a site migration or a site version upgrade."
 		)
@@ -2322,3 +2424,34 @@ def get_site_config_standard_keys():
 		["name", "key", "title", "description", "type"],
 		order_by="title asc",
 	)
+
+
+@frappe.whitelist()
+def fetch_sites_data_for_export():
+	from press.api.client import get_list
+
+	sites = get_list(
+		"Site",
+		[
+			"name",
+			"host_name",
+			"plan.plan_title as plan_title",
+			"cluster.title as cluster_title",
+			"group.title as group_title",
+			"group.version as version",
+			"creation",
+		],
+		start=0,
+		limit=99999,
+	)
+
+	tags = frappe.db.get_all(
+		"Resource Tag",
+		filters={"parenttype": "Site", "parent": ["in", [site.name for site in sites]]},
+		fields=["name", "tag_name", "parent"],
+	)
+
+	for site in sites:
+		site.tags = [tag.tag_name for tag in tags if tag.parent == site.name]
+
+	return sites

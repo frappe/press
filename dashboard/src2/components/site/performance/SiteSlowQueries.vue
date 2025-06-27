@@ -1,31 +1,37 @@
 <template>
 	<div>
 		<PerformanceReport
-			v-if="siteVersion !== 'Version 14'"
 			title="Slow Queries"
 			:site="name"
 			:reportOptions="slowQueriesOptions"
 		/>
-		<div v-else class="m-5 space-y-4">
-			<AlertBanner
-				title="Performance Tuning coming soon for Version 15"
-				type="info"
-			/>
-		</div>
+		<SiteSlowQueryDialog
+			v-if="show"
+			v-model="show"
+			:query="selectedQuery"
+			:duration="selectedQueryDuration"
+		/>
 	</div>
 </template>
 
 <script>
-import { defineAsyncComponent, h } from 'vue';
 import AlertBanner from '../../AlertBanner.vue';
-import { renderDialog } from '../../../utils/components';
 import PerformanceReport from './PerformanceReport.vue';
+import SiteSlowQueryDialog from './SiteSlowQueryDialog.vue';
 
 export default {
 	props: ['name', 'siteVersion'],
 	components: {
 		PerformanceReport,
-		AlertBanner
+		AlertBanner,
+		SiteSlowQueryDialog
+	},
+	data() {
+		return {
+			show: false,
+			selectedQuery: '',
+			selectedQueryDuration: 0
+		};
 	},
 	computed: {
 		slowQueriesOptions() {
@@ -34,20 +40,9 @@ export default {
 				documentation: 'https://frappecloud.com/docs/performance-tuning',
 				data: () => this.$resources.slowQueries.data.data,
 				onRowClick: row => {
-					const SlowQueryDialog = defineAsyncComponent(() =>
-						import('./SiteSlowQueryDialog.vue')
-					);
-					renderDialog(
-						h(SlowQueryDialog, {
-							siteName: this.name,
-							query: row.query,
-							duration: row.duration,
-							count: row.count,
-							rows_examined: row.rows_examined,
-							rows_sent: row.rows_sent,
-							example: row.example
-						})
-					);
+					this.selectedQuery = row.query;
+					this.selectedQueryDuration = row.duration;
+					this.show = true;
 				},
 				emptyStateMessage: 'No slow queries found',
 				columns: [

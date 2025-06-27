@@ -200,11 +200,16 @@ def get_data(filters):
 
 
 def get_servers(filters):
-	server_filters = {"status": "Active"}
-	if filters.team:
-		server_filters["team"] = filters.team
+	server_filters = {"status": "Active", **filters}
+
+	if filters.server_name:
+		server_filters["name"] = ("like", f"%{filters.server_name}%")
+	server_filters.pop("server_name", None)
+
 	if filters.exclude_self_hosted:
 		server_filters["is_self_hosted"] = False
+	server_filters.pop("exclude_self_hosted", None)
+
 	server_types = (
 		[filters.server_type]
 		if filters.server_type
@@ -221,7 +226,13 @@ def get_servers(filters):
 	)
 	servers = []
 	for server_type in server_types:
-		for server in frappe.get_all(server_type, server_filters):
+		server_type_filters = server_filters.copy()
+		for field in server_filters:
+			if field == "name":
+				continue
+			if not frappe.get_meta(server_type).has_field(field):
+				server_type_filters.pop(field, None)
+		for server in frappe.get_all(server_type, server_type_filters):
 			server.update({"server_type": server_type})
 			servers.append(server)
 	return servers

@@ -137,13 +137,13 @@ function initiateRequestForLoginToFrappeCloud() {
 
 function requestLoginToFC(freezing_msg) {
 	frappe.request.call({
-		url: `${frappe_cloud_base_endpoint}/api/method/press.api.developer.saas.request_login_to_fc`,
+		url: `${frappe_cloud_base_endpoint}/api/method/press.api.developer.saas.send_verification_code`,
 		type: 'POST',
 		args: {
 			domain: window.location.hostname,
 		},
 		freeze: true,
-		freeze_message: freezing_msg || 'Initating login to Frappe Cloud',
+		freeze_message: freezing_msg || 'Initiating login to Frappe Cloud',
 		success: function (r) {
 			showFCLogindialog(r.message.email);
 			setErrorMessage('');
@@ -198,11 +198,11 @@ function showFCLogindialog(email) {
 			return;
 		}
 		frappe.request.call({
-			url: `${frappe_cloud_base_endpoint}/api/method/press.api.developer.saas.validate_login_to_fc`,
+			url: `${frappe_cloud_base_endpoint}/api/method/press.api.developer.saas.verify_verification_code`,
 			type: 'POST',
 			args: {
 				domain: window.location.hostname,
-				otp: otp,
+				verification_code: otp,
 			},
 			freeze: true,
 			silent: true,

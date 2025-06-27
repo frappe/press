@@ -1,0 +1,40 @@
+---
+- name: Create Redis Exporter Directory
+  file:
+    path: /opt/redis_exporter
+    state: directory
+    mode: 0755
+
+- name: Set Architecture
+  set_fact:
+    arch: "{{'amd64' if (ansible_architecture == 'x86_64') else 'arm64'}}"
+
+- name: Download Redis Exporter Archive
+  unarchive:
+    src: "https://github.com/oliver006/redis_exporter/releases/download/v1.67.0/redis_exporter-v1.67.0.linux-{{ arch }}.tar.gz"
+    dest: /tmp
+    remote_src: yes
+
+- name: Copy Redis Exporter Binary
+  copy:
+    src: "/tmp/redis_exporter-v1.67.0.linux-{{ arch }}/redis_exporter"
+    dest: /opt/redis_exporter/redis_exporter
+    remote_src: yes
+    mode: 0755
+    owner: root
+    group: root
+
+- name: Create Redis Exporter Systemd Service File
+  template:
+    src: redis_exporter.service
+    dest: /etc/systemd/system/redis_exporter.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Start Redis Exporter Service
+  systemd:
+    daemon_reload: true
+    name: redis_exporter
+    enabled: yes
+    state: started

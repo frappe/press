@@ -74,12 +74,14 @@
 			</AnalyticsCard>
 		</div>
 
-		<div class="!mt-6 flex space-x-2">
+		<div
+			class="!mt-6 flex w-fit cursor-pointer space-x-2"
+			@click="toggleAdvancedAnalytics"
+		>
 			<h2 class="text-lg font-semibold">Advanced Analytics</h2>
 			<FeatherIcon
-				class="h-5 w-5 cursor-pointer text-gray-500 hover:text-gray-700"
+				class="h-5 w-5 text-gray-500 hover:text-gray-700"
 				:name="showAdvancedAnalytics ? 'chevron-down' : 'chevron-right'"
-				@click="toggleAdvancedAnalytics"
 			/>
 		</div>
 
@@ -143,12 +145,65 @@
 
 			<AnalyticsCard
 				class="sm:col-span-2"
+				title="Query Report Durations"
+				v-if="queryReportRunReportsData"
+			>
+				<template #action>
+					<Tooltip text="Shown only as reports seem to take time">
+						<i-lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+					</Tooltip>
+				</template>
+				<BarChart
+					:key="queryReportRunReportsData"
+					:data="queryReportRunReportsData"
+					unit="seconds"
+					:chartTheme="requestChartColors"
+					:loading="$resources.advancedAnalytics.loading"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				class="sm:col-span-2"
+				title="Run Doc Method Durations"
+				v-if="runDocMethodMethodnamesData"
+			>
+				<template #action>
+					<Tooltip text="Shown only as run_doc_method calls seem to take time">
+						<i-lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+					</Tooltip>
+				</template>
+				<BarChart
+					:key="runDocMethodMethodnamesData"
+					:data="runDocMethodMethodnamesData"
+					unit="seconds"
+					:chartTheme="requestChartColors"
+					:loading="$resources.advancedAnalytics.loading"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				class="sm:col-span-2"
 				title="Individual Request Time (Average)"
 			>
 				<BarChart
 					:key="averageRequestDurationByPathData"
 					:data="averageRequestDurationByPathData"
 					unit="seconds"
+					:chartTheme="requestChartColors"
+					:loading="$resources.advancedAnalytics.loading"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+			<AnalyticsCard class="sm:col-span-2" title="Requests by IP">
+				<BarChart
+					:key="requestCountByIPData"
+					:data="requestCountByIPData"
+					unit="requests"
 					:chartTheme="requestChartColors"
 					:loading="$resources.advancedAnalytics.loading"
 					:showCard="false"
@@ -182,6 +237,27 @@
 
 			<AnalyticsCard
 				class="sm:col-span-2"
+				title="Background Report Durations"
+				v-if="generateReportReportsData"
+			>
+				<template #action>
+					<Tooltip text="Shown only as reports seem to take time">
+						<i-lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+					</Tooltip>
+				</template>
+				<BarChart
+					:key="generateReportReportsData"
+					:data="generateReportReportsData"
+					unit="seconds"
+					:chartTheme="requestChartColors"
+					:loading="$resources.advancedAnalytics.loading"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				class="sm:col-span-2"
 				title="Individual Background Job Time (Average)"
 			>
 				<BarChart
@@ -196,32 +272,52 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard class="sm:col-span-2" title="Frequent Slow Queries">
+				<template #action>
+					<Tooltip text="Show Detailed Reports">
+						<router-link
+							class="ml-2 mr-auto text-base text-gray-600 hover:text-gray-700"
+							:to="{ name: 'Site Performance Slow Queries' }"
+						>
+							→
+						</router-link>
+					</Tooltip>
+					<TabButtons
+						:buttons="[{ label: 'Denormalized' }, { label: 'Normalized' }]"
+						v-model="slowLogsFrequencyType"
+					/>
+				</template>
 				<BarChart
-					:key="slowLogsByCountData"
-					:data="slowLogsByCountData"
+					:key="slowLogsCountData"
+					:data="slowLogsCountData"
 					unit="queries"
 					:chartTheme="requestChartColors"
-					:loading="$resources.advancedAnalytics.loading"
+					:loading="$resources.slowLogsCount.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
-				<template #action>
-					<router-link
-						class="text-base text-gray-600 hover:text-gray-700"
-						:to="{ name: 'Site Performance Slow Queries' }"
-					>
-						Slow Queries Reports →
-					</router-link>
-				</template>
 			</AnalyticsCard>
 
 			<AnalyticsCard class="sm:col-span-2" title="Top Slow Queries">
+				<template #action>
+					<Tooltip text="Show Detailed Reports">
+						<router-link
+							class="ml-2 mr-auto text-base text-gray-600 hover:text-gray-700"
+							:to="{ name: 'Site Performance Slow Queries' }"
+						>
+							→
+						</router-link>
+					</Tooltip>
+					<TabButtons
+						:buttons="[{ label: 'Denormalized' }, { label: 'Normalized' }]"
+						v-model="slowLogsDurationType"
+					/>
+				</template>
 				<BarChart
-					:key="slowLogsByDurationData"
-					:data="slowLogsByDurationData"
+					:key="slowLogsDurationData"
+					:data="slowLogsDurationData"
 					unit="seconds"
 					:chartTheme="requestChartColors"
-					:loading="$resources.advancedAnalytics.loading"
+					:loading="$resources.slowLogsDuration.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -246,47 +342,75 @@ export default {
 		LineChart,
 		SiteUptime,
 		AlertBanner,
-		AnalyticsCard
+		AnalyticsCard,
 	},
 	data() {
 		return {
-			duration: '24h',
-			showAdvancedAnalytics: false,
+			duration: '1h',
+			showAdvancedAnalytics: true,
+			localTimezone: dayjs.tz.guess(),
+			slowLogsDurationType: 'Denormalized',
+			slowLogsFrequencyType: 'Denormalized',
+			allowDrillDown: false,
 			durationOptions: [
 				{ label: 'Duration', value: null, disabled: true },
 				{ label: '1 hour', value: '1h' },
 				{ label: '6 hours', value: '6h' },
 				{ label: '24 hours', value: '24h' },
 				{ label: '7 days', value: '7d' },
-				{ label: '15 days', value: '15d' }
-			]
+				{ label: '15 days', value: '15d' },
+			],
 		};
 	},
 	resources: {
 		analytics() {
-			const localTimezone = dayjs.tz.guess();
 			return {
 				url: 'press.api.analytics.get',
 				params: {
 					name: this.name,
-					timezone: localTimezone,
-					duration: this.duration
+					timezone: this.localTimezone,
+					duration: this.duration,
 				},
-				auto: true
+				auto: true,
 			};
 		},
 		advancedAnalytics() {
-			const localTimezone = dayjs.tz.guess();
 			return {
 				url: 'press.api.analytics.get_advanced_analytics',
 				params: {
 					name: this.name,
-					timezone: localTimezone,
-					duration: this.duration
+					timezone: this.localTimezone,
+					duration: this.duration,
 				},
-				auto: this.showAdvancedAnalytics
+				auto: this.showAdvancedAnalytics,
 			};
-		}
+		},
+		slowLogsCount() {
+			return {
+				url: 'press.api.analytics.get_slow_logs_by_query',
+				params: {
+					name: this.name,
+					agg_type: 'count',
+					timezone: this.localTimezone,
+					duration: this.duration,
+					normalize: this.slowLogsFrequencyType === 'Normalized',
+				},
+				auto: this.showAdvancedAnalytics,
+			};
+		},
+		slowLogsDuration() {
+			return {
+				url: 'press.api.analytics.get_slow_logs_by_query',
+				params: {
+					name: this.name,
+					agg_type: 'duration',
+					timezone: this.localTimezone,
+					duration: this.duration,
+					normalize: this.slowLogsDurationType === 'Normalized',
+				},
+				auto: this.showAdvancedAnalytics,
+			};
+		},
 	},
 	computed: {
 		requestChartColors() {
@@ -300,7 +424,7 @@ export default {
 				this.$theme.colors.teal[500],
 				this.$theme.colors.cyan[500],
 				this.$theme.colors.gray[500],
-				this.$theme.colors.orange[500]
+				this.$theme.colors.orange[500],
 			];
 		},
 		usageCounterData() {
@@ -310,7 +434,7 @@ export default {
 			let plan_limit = this.$resources.analytics.data?.plan_limit;
 
 			return {
-				datasets: [data.map(d => [+new Date(d.date), d.value / 1000000])],
+				datasets: [data.map((d) => [+new Date(d.date), d.value / 1000000])],
 				// daily limit marker
 				markLine: {
 					data: [
@@ -319,15 +443,15 @@ export default {
 							yAxis: plan_limit,
 							label: {
 								formatter: '{b}: {c} seconds',
-								position: 'middle'
+								position: 'middle',
 							},
 							lineStyle: {
-								color: '#f5222d'
-							}
-						}
+								color: '#f5222d',
+							},
+						},
 					],
-					symbol: ['none', 'none']
-				}
+					symbol: ['none', 'none'],
+				},
 			};
 		},
 		requestCountData() {
@@ -335,7 +459,7 @@ export default {
 			if (!requestCount) return;
 
 			return {
-				datasets: [requestCount.map(d => [+new Date(d.date), d.value])]
+				datasets: [requestCount.map((d) => [+new Date(d.date), d.value])],
 			};
 		},
 		requestCountByPathData() {
@@ -352,6 +476,27 @@ export default {
 
 			return requestDurationByPath;
 		},
+		queryReportRunReportsData() {
+			let queryReportRunReports =
+				this.$resources.advancedAnalytics.data?.query_report_run_reports;
+			if (!queryReportRunReports) return;
+
+			return queryReportRunReports;
+		},
+		runDocMethodMethodnamesData() {
+			let runDocMethodMethodnames =
+				this.$resources.advancedAnalytics.data?.run_doc_method_methodnames;
+			if (!runDocMethodMethodnames) return;
+
+			return runDocMethodMethodnames;
+		},
+		generateReportReportsData() {
+			let generateReportReports =
+				this.$resources.advancedAnalytics.data?.generate_report_reports;
+			if (!generateReportReports) return;
+
+			return generateReportReports;
+		},
 		averageRequestDurationByPathData() {
 			let averageRequestDurationByPath =
 				this.$resources.advancedAnalytics.data
@@ -359,6 +504,13 @@ export default {
 			if (!averageRequestDurationByPath) return;
 
 			return averageRequestDurationByPath;
+		},
+		requestCountByIPData() {
+			let requestCountByIP =
+				this.$resources.advancedAnalytics.data?.request_count_by_ip;
+			if (!requestCountByIP) return;
+
+			return requestCountByIP;
 		},
 		backgroundJobCountByMethodData() {
 			let backgroundJobCountByMethod =
@@ -383,19 +535,17 @@ export default {
 
 			return averageBackgroundJobDurationByMethod;
 		},
-		slowLogsByCountData() {
-			let slowLogsByCount =
-				this.$resources.advancedAnalytics.data?.slow_logs_by_count;
-			if (!slowLogsByCount) return;
+		slowLogsDurationData() {
+			const slowLogs = this.$resources.slowLogsDuration.data;
+			if (!slowLogs) return;
 
-			return slowLogsByCount;
+			return slowLogs;
 		},
-		slowLogsByDurationData() {
-			let slowLogsByDuration =
-				this.$resources.advancedAnalytics.data?.slow_logs_by_duration;
-			if (!slowLogsByDuration) return;
+		slowLogsCountData() {
+			const slowLogs = this.$resources.slowLogsCount.data;
+			if (!slowLogs) return;
 
-			return slowLogsByDuration;
+			return slowLogs;
 		},
 		requestTimeData() {
 			let requestCpuTime = this.$resources.analytics.data?.request_cpu_time;
@@ -403,8 +553,8 @@ export default {
 
 			return {
 				datasets: [
-					requestCpuTime.map(d => [+new Date(d.date), d.value / 1000000])
-				]
+					requestCpuTime.map((d) => [+new Date(d.date), d.value / 1000000]),
+				],
 			};
 		},
 		jobCountData() {
@@ -412,7 +562,7 @@ export default {
 			if (!jobCount) return;
 
 			return {
-				datasets: [jobCount.map(d => [+new Date(d.date), d.value])]
+				datasets: [jobCount.map((d) => [+new Date(d.date), d.value])],
 			};
 		},
 		jobTimeData() {
@@ -420,14 +570,16 @@ export default {
 			if (!jobCpuTime) return;
 
 			return {
-				datasets: [jobCpuTime.map(d => [+new Date(d.date), d.value / 1000000])]
+				datasets: [
+					jobCpuTime.map((d) => [+new Date(d.date), d.value / 1000000]),
+				],
 			};
-		}
+		},
 	},
 	methods: {
 		toggleAdvancedAnalytics() {
 			this.showAdvancedAnalytics = !this.showAdvancedAnalytics;
-		}
-	}
+		},
+	},
 };
 </script>

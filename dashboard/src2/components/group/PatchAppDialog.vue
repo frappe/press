@@ -63,17 +63,24 @@
 				<ErrorMessage class="-mt-2 w-full" :message="error" />
 				<h3 class="mt-4 text-base font-semibold">Patch Config</h3>
 				<FormControl
-					v-if="!applyToAllBenches"
+					v-if="!applyToAllBenches && !applyToLatestDeploy"
 					v-model="applyToBench"
-					label="Select deploy"
+					label="Select bench"
 					type="select"
 					variant="outline"
 					:options="$resources.benches.data"
 				/>
 				<FormControl
-					label="Apply patch to all active deploys"
+					v-if="!applyToLatestDeploy"
+					label="Apply patch to all active benches"
 					type="checkbox"
 					v-model="applyToAllBenches"
+				/>
+				<FormControl
+					v-if="!applyToAllBenches"
+					label="Apply patch to all active benches from the latest deploy"
+					type="checkbox"
+					v-model="applyToLatestDeploy"
 				/>
 				<FormControl
 					label="Build assets after applying patch"
@@ -83,7 +90,12 @@
 			</div>
 		</template>
 		<template v-slot:actions>
-			<Button variant="solid" class="w-full" @click="applyPatch">
+			<Button
+				variant="solid"
+				class="w-full"
+				@click="applyPatch"
+				:loading="$resources.applyPatch.loading"
+			>
 				Apply Patch
 			</Button>
 		</template>
@@ -96,14 +108,14 @@ import {
 	ErrorMessage,
 	FeatherIcon,
 	FileUploader,
-	FormControl
+	FormControl,
 } from 'frappe-ui';
 
 export default {
 	name: 'PatchAppDialog',
 	props: {
 		app: [null, String],
-		group: String
+		group: String,
 	},
 	components: {
 		Dialog,
@@ -111,7 +123,7 @@ export default {
 		ErrorMessage,
 		FileUploader,
 		Button,
-		FeatherIcon
+		FeatherIcon,
 	},
 	watch: {
 		app(value) {
@@ -125,7 +137,7 @@ export default {
 			}
 
 			setTimeout(this.clearApp, 150);
-		}
+		},
 	},
 	data() {
 		return {
@@ -137,7 +149,8 @@ export default {
 			buildAssets: false,
 			applyToApp: '',
 			applyToBench: '',
-			applyToAllBenches: false
+			applyToAllBenches: false,
+			applyToLatestDeploy: false,
 		};
 	},
 	computed: {
@@ -148,7 +161,7 @@ export default {
 			}
 
 			return 'Apply a patch';
-		}
+		},
 	},
 	methods: {
 		clearApp() {
@@ -171,9 +184,13 @@ export default {
 				return false;
 			}
 
-			if (!this.applyToAllBenches && !this.applyToBench) {
+			if (
+				!this.applyToAllBenches &&
+				!this.applyToBench &&
+				!this.applyToLatestDeploy
+			) {
 				this.error =
-					'Please select a deploy or check Apply patch to all active deploys.';
+					'Please select a bench or check Apply patch to all active benches';
 				return false;
 			}
 
@@ -182,7 +199,7 @@ export default {
 				return false;
 			}
 
-			if (this.patchURL && !this.patchURL.endsWith('.patch')) {
+			if (this.patchURL && !this.patchURL.split('?')[0].endsWith('.patch')) {
 				this.error =
 					'Patch URL does not have a `.patch` extension. Please enter a valid URL,';
 				return false;
@@ -196,7 +213,8 @@ export default {
 			}
 
 			if (!this.patchFileName && this.patchURL) {
-				this.patchFileName = this.patchURL.split('/').at(-1);
+				const patchURL = this.patchURL.split('?')[0];
+				this.patchFileName = patchURL.split('/').at(-1);
 			}
 
 			if (!this.patchFileName.endsWith('.patch')) {
@@ -213,8 +231,9 @@ export default {
 					patch_url: this.patchURL,
 					build_assets: this.buildAssets,
 					patch_bench: this.applyToBench,
-					patch_all_benches: this.applyToAllBenches
-				}
+					patch_all_benches: this.applyToAllBenches,
+					patch_latest_deploy: this.applyToLatestDeploy,
+				},
 			};
 
 			this.$resources.applyPatch.submit(args);
@@ -237,7 +256,7 @@ export default {
 		close() {
 			this.show = false;
 			this.clear();
-		}
+		},
 	},
 	resources: {
 		apps() {
@@ -248,7 +267,7 @@ export default {
 				auto: true,
 				filters: {
 					parenttype: 'Release Group',
-					parent: this.group
+					parent: this.group,
 				},
 				onSuccess(data) {
 					if (data.length === 1) {
@@ -260,7 +279,7 @@ export default {
 				},
 				transform(data) {
 					return data.map(({ name }) => ({ value: name, label: name }));
-				}
+				},
 			};
 		},
 		benches() {
@@ -270,7 +289,7 @@ export default {
 				fields: ['name'],
 				filters: {
 					group: this.group,
-					status: 'Active'
+					status: 'Active',
 				},
 				auto: true,
 				onSuccess(data) {
@@ -287,7 +306,7 @@ export default {
 				},
 				transform(data) {
 					return data.map(({ name }) => ({ value: name, label: name }));
-				}
+				},
 			};
 		},
 		applyPatch() {
@@ -297,7 +316,7 @@ export default {
 					this.close();
 					this.$router.push({
 						name: 'Release Group Detail Jobs',
-						params: { name: this.group }
+						params: { name: this.group },
 					});
 				},
 				onError(error) {
@@ -306,9 +325,9 @@ export default {
 					} else {
 						this.error = error.message;
 					}
-				}
+				},
 			};
-		}
-	}
+		},
+	},
 };
 </script>

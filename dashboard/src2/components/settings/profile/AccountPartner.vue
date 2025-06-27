@@ -37,21 +37,30 @@
 		</div>
 		<Dialog
 			:options="{
-				title: 'Partner Code',
+				title: 'Link Partner Account',
 				actions: [
 					{
 						label: 'Submit',
 						variant: 'solid',
-						onClick: () => $resources.addPartnerCode.submit()
-					}
-				]
+						onClick: () => $resources.addPartnerCode.submit(),
+					},
+				],
 			}"
 			v-model="showAddPartnerCodeDialog"
 		>
 			<template v-slot:body-content>
-				<p class="pb-3 text-p-base">
-					Enter partner code provided by your Partner
+				<p class="pb-2 text-p-base">
+					Enter the partner code provided by your Partner
 				</p>
+				<div class="rounded border border-gray-200 bg-gray-100 p-2 mb-4">
+					<span class="text-sm leading-[1.5] text-gray-700">
+						<strong>Note</strong>: After linking with Partner, following details
+						shall be shared with your partner team:
+						<br />
+						<li>Billing name</li>
+						<li>Monthly billing amount</li>
+					</span>
+				</div>
 				<FormControl
 					placeholder="e.g. rGjw3hJ81b"
 					v-model="code"
@@ -76,16 +85,20 @@
 						theme: 'red',
 						onClick: () => {
 							$resources.removePartner.submit();
-						}
-					}
-				]
+						},
+					},
+				],
 			}"
 		>
 			<template v-slot:body-content>
-				<p class="text-p-base pb-3">
+				<div class="text-p-base pb-2">
 					This will remove the Partner associated with your account. Are you
-					sure you want to remove the Partner?
-				</p>
+					sure you want to remove the Partner? <br /><br />
+					<div class="text-gray-800 bg-gray-200 p-2 rounded-md">
+						Your partner will no longer have access to your sites and servers
+						and will be removed as team member from your team.
+					</div>
+				</div>
 			</template>
 		</Dialog>
 	</Card>
@@ -98,7 +111,7 @@ export default {
 	name: 'AccountPartner',
 	components: {
 		Card,
-		FormControl
+		FormControl,
 	},
 	data() {
 		return {
@@ -107,7 +120,7 @@ export default {
 			code: '',
 			partnerExists: false,
 			partner: '',
-			errorMessage: ''
+			errorMessage: '',
 		};
 	},
 	resources: {
@@ -115,19 +128,21 @@ export default {
 			return {
 				url: 'press.api.partner.add_partner',
 				params: {
-					referral_code: this.code
+					referral_code: this.code,
 				},
 				onSuccess(data) {
 					this.showAddPartnerCodeDialog = false;
 					if (data === 'Request already sent') {
 						toast.error('Approval Request has already been sent to Partner');
 					} else {
-						toast.success('Approval Request has been sent to Partner');
+						toast.success(
+							'Approval Request has been sent to Partner. Please wait for Partner to accept the request',
+						);
 					}
 				},
 				onError() {
 					throw new DashboardError('Failed to add Partner Code');
-				}
+				},
 			};
 		},
 		partnerName() {
@@ -135,8 +150,8 @@ export default {
 				url: 'press.api.partner.get_partner_name',
 				auto: true,
 				params: {
-					partner_email: this.$team.doc?.partner_email
-				}
+					partner_email: this.$team.doc?.partner_email,
+				},
 			};
 		},
 		removePartner() {
@@ -148,9 +163,9 @@ export default {
 				},
 				onError() {
 					throw new DashboardError('Failed to remove Partner');
-				}
+				},
 			};
-		}
+		},
 	},
 	methods: {
 		referralCodeChange: debounce(async function (e) {
@@ -159,7 +174,7 @@ export default {
 
 			let result = await frappeRequest({
 				url: 'press.api.partner.validate_partner_code',
-				params: { code: code }
+				params: { code: code },
 			});
 
 			let isValidCode = result[0];
@@ -172,12 +187,12 @@ export default {
 			} else {
 				this.errorMessage = `${code} is Invalid Referral Code`;
 			}
-		}, 500)
+		}, 500),
 	},
 	computed: {
 		partner_billing_name() {
 			return this.$resources.partnerName.data;
-		}
-	}
+		},
+	},
 };
 </script>

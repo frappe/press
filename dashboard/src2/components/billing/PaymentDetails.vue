@@ -1,15 +1,13 @@
 <template>
 	<div class="flex flex-col gap-4">
-		<div class="text-lg font-semibold text-gray-900">
-			{{ 'Payment details' }}
-		</div>
+		<div class="text-lg font-semibold text-gray-900">Payment details</div>
 		<div class="flex flex-col">
 			<div
 				v-if="team.doc.payment_mode == 'Card'"
 				class="flex items-center justify-between text-base text-gray-900"
 			>
 				<div class="flex flex-col gap-1.5">
-					<div class="font-medium">{{ 'Active card' }}</div>
+					<div class="font-medium">Active Card</div>
 					<div class="overflow-hidden text-ellipsis text-gray-700">
 						<div
 							v-if="team.doc.payment_method"
@@ -42,7 +40,7 @@
 			/>
 			<div class="flex items-center justify-between text-base text-gray-900">
 				<div class="flex flex-col gap-1.5">
-					<div class="font-medium">{{ 'Mode of payment' }}</div>
+					<div class="font-medium">Mode of payment</div>
 					<div
 						v-if="team.doc.payment_mode"
 						class="inline-flex items-center gap-2 text-gray-700"
@@ -72,7 +70,7 @@
 			<div class="my-3 h-px bg-gray-100" />
 			<div class="flex items-center justify-between text-base text-gray-900">
 				<div class="flex flex-col gap-1.5">
-					<div class="font-medium">{{ 'Credit balance' }}</div>
+					<div class="font-medium">Credit balance</div>
 					<div class="text-gray-700">
 						{{ availableCredits || currency + ' 0.00' }}
 					</div>
@@ -101,7 +99,7 @@
 			<div class="my-3 h-px bg-gray-100" />
 			<div class="flex items-center justify-between text-base text-gray-900">
 				<div class="flex flex-col gap-1.5">
-					<div class="font-medium">{{ 'Billing address' }}</div>
+					<div class="font-medium">Billing address</div>
 					<div v-if="billingDetailsSummary" class="leading-5 text-gray-700">
 						{{ billingDetailsSummary }}
 					</div>
@@ -171,7 +169,7 @@ import { Dropdown, Button, FeatherIcon, createResource } from 'frappe-ui';
 import {
 	cardBrandIcon,
 	confirmDialog,
-	renderDialog
+	renderDialog,
 } from '../../utils/components';
 import { computed, ref, inject, h, defineAsyncComponent } from 'vue';
 import router from '../../router';
@@ -181,7 +179,7 @@ const {
 	availableCredits,
 	upcomingInvoice,
 	currentBillingAmount,
-	unpaidInvoices
+	unpaidInvoices,
 } = inject('billing');
 
 const showBillingDetailsDialog = ref(false);
@@ -194,12 +192,12 @@ const currency = computed(() => (team.doc.currency == 'INR' ? '₹' : '$'));
 const billingDetails = createResource({
 	url: 'press.api.account.get_billing_information',
 	cache: 'billingDetails',
-	auto: true
+	auto: true,
 });
 
 const changePaymentMode = createResource({
 	url: 'press.api.billing.change_payment_mode',
-	onSuccess: () => setTimeout(() => team.reload(), 1000)
+	onSuccess: () => setTimeout(() => team.reload(), 1000),
 });
 
 const billingDetailsSummary = computed(() => {
@@ -208,7 +206,15 @@ const billingDetailsSummary = computed(() => {
 
 	const { billing_name, address_line1, city, state, country, pincode, gstin } =
 		_billingDetails || {};
-	return [billing_name, address_line1, city, state, country, pincode, gstin]
+	return [
+		billing_name,
+		address_line1,
+		city,
+		state,
+		country,
+		pincode,
+		gstin == 'Not Applicable' ? '' : gstin,
+	]
 		.filter(Boolean)
 		.join(', ');
 });
@@ -222,8 +228,8 @@ const paymentModeOptions = [
 			h(DropdownItem, {
 				label: 'Card',
 				active: team.doc.payment_mode === 'Card',
-				onClick: () => updatePaymentMode('Card')
-			})
+				onClick: () => updatePaymentMode('Card'),
+			}),
 	},
 	{
 		label: 'Prepaid credits',
@@ -234,8 +240,8 @@ const paymentModeOptions = [
 			h(DropdownItem, {
 				label: 'Prepaid credits',
 				active: team.doc.payment_mode === 'Prepaid Credits',
-				onClick: () => updatePaymentMode('Prepaid Credits')
-			})
+				onClick: () => updatePaymentMode('Prepaid Credits'),
+			}),
 	},
 	{
 		label: 'Paid by Partner',
@@ -246,8 +252,20 @@ const paymentModeOptions = [
 			h(DropdownItem, {
 				label: 'Paid by Partner',
 				active: team.doc.payment_mode === 'Paid by Partner',
-				onClick: () => updatePaymentMode('Paid By Partner')
-			})
+				onClick: () =>
+					confirmDialog({
+						title: 'Confirm Payment Mode',
+						message: `By changing the payment mode to <strong>Paid by Partner</strong>, following details will be shared with your partner: <br><br><li>Site/Server name</li> <li>Plan name</li><li>Number of days site/server is active</li><br>Are you sure you want to proceed?`,
+						primaryAction: {
+							label: 'Change Payment Mode',
+							variant: 'solid',
+							onClick: ({ hide }) => {
+								updatePaymentMode('Paid By Partner');
+								hide();
+							},
+						},
+					}),
+			}),
 	},
 	{
 		component: () =>
@@ -260,19 +278,19 @@ const paymentModeOptions = [
 								'a',
 								{
 									href: 'https://frappecloud.com/payment-options',
-									target: '_blank'
+									target: '_blank',
 								},
-								'Alternate Payment Methods'
+								'Alternate Payment Methods',
 							),
-							h(FeatherIcon, { name: 'external-link', class: 'h-4' })
-						])
-				})
-			])
-	}
+							h(FeatherIcon, { name: 'external-link', class: 'h-4' }),
+						]),
+				}),
+			]),
+	},
 ];
 
 const paymentMode = computed(() => {
-	return paymentModeOptions.find(o => o.value === team.doc.payment_mode);
+	return paymentModeOptions.find((o) => o.value === team.doc.payment_mode);
 });
 
 function payUnpaidInvoices() {
@@ -291,15 +309,15 @@ function payUnpaidInvoices() {
 					onClick: ({ hide }) => {
 						router.push({ name: 'BillingInvoices' });
 						hide();
-					}
-				}
+					},
+				},
 			});
 		}
 	} else {
-		let invoice = _unpaidInvoices;
+		let invoice = _unpaidInvoices[0];
 		if (invoice.stripe_invoice_url && team.doc.payment_mode === 'Card') {
 			window.open(
-				`/api/method/press.api.client.run_doc_method?dt=Invoice&dn=${invoice.name}&method=stripe_payment_url`
+				`/api/method/press.api.client.run_doc_method?dt=Invoice&dn=${invoice.name}&method=stripe_payment_url`,
 			);
 		} else {
 			showAddPrepaidCreditsDialog.value = true;
@@ -322,16 +340,17 @@ function updatePaymentMode(mode) {
 	} else if (mode === 'Card' && !team.doc.payment_method) {
 		showMessage.value = true;
 		showAddCardDialog.value = true;
-	} else if (mode === 'Paid By Partner') {
-		if (unpaidInvoices.data.length > 0) {
+	} else if (mode === 'Paid By Partner' && Boolean(unpaidInvoices.data.length > 0)) {
+		if (unpaidInvoices.data) {
 			payUnpaidInvoices();
 			return;
 		}
 		if (currentBillingAmount.value) {
-			const finalizeInvoicesDialog = defineAsyncComponent(() =>
-				import('./FinalizeInvoicesDialog.vue')
+			const finalizeInvoicesDialog = defineAsyncComponent(
+				() => import('./FinalizeInvoicesDialog.vue'),
 			);
 			renderDialog(h(finalizeInvoicesDialog));
+			return;
 		}
 	}
 	if (!changePaymentMode.loading) changePaymentMode.submit({ mode });

@@ -18,6 +18,10 @@
   "is_self_hosted",
   "team",
   "public",
+  "halt_agent_jobs",
+  "storage_section",
+  "auto_add_storage_min",
+  "auto_add_storage_max",
   "section_break_8",
   "ip",
   "enabled_default_routing",
@@ -196,7 +200,8 @@
   },
   {
    "fieldname": "section_break_21",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Nginx"
   },
   {
    "fieldname": "domains",
@@ -205,11 +210,11 @@
    "options": "Proxy Server Domain"
   },
   {
-   "depends_on": "eval: doc.provider === \"AWS EC2\"",
+   "depends_on": "eval:[\"AWS EC2\", \"OCI\"].includes(doc.provider)",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
-   "mandatory_depends_on": "eval: doc.provider === \"AWS EC2\"",
+   "mandatory_depends_on": "eval:[\"AWS EC2\", \"OCI\"].includes(doc.provider)",
    "options": "Virtual Machine"
   },
   {
@@ -397,10 +402,38 @@
    "fieldname": "public",
    "fieldtype": "Check",
    "label": "Public"
+  },
+  {
+   "fieldname": "storage_section",
+   "fieldtype": "Section Break",
+   "label": "Storage"
+  },
+  {
+   "default": "10",
+   "description": "Minimum storage to add automatically each time",
+   "fieldname": "auto_add_storage_min",
+   "fieldtype": "Int",
+   "label": "Auto Add Storage Min",
+   "non_negative": 1
+  },
+  {
+   "default": "50",
+   "description": "Maximum storage to add automatically each time",
+   "fieldname": "auto_add_storage_max",
+   "fieldtype": "Int",
+   "label": "Auto Add Storage Max",
+   "non_negative": 1
+  },
+  {
+   "default": "0",
+   "description": "Stop polling and queuing agent jobs",
+   "fieldname": "halt_agent_jobs",
+   "fieldtype": "Check",
+   "label": "Halt Agent Jobs"
   }
  ],
  "links": [],
- "modified": "2024-09-10 15:44:10.989216",
+ "modified": "2025-06-13 12:52:19.785213",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
@@ -419,6 +452,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

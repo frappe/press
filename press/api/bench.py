@@ -17,6 +17,9 @@ from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app_patch.app_patch import create_app_patch
 from press.press.doctype.bench_update.bench_update import get_bench_update
 from press.press.doctype.cluster.cluster import Cluster
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
+	fail_and_redeploy as fail_and_redeploy_build,
+)
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_total_installs_by_app,
 )
@@ -36,6 +39,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.app_source.app_source import AppSource
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 
 
 @frappe.whitelist()
@@ -199,8 +203,8 @@ def get_default_apps():
 
 	version_based_default_apps = {v.version: [] for v in versions}
 
-	for row in rows:
-		if row.app in default_apps:
+	for app in default_apps:
+		for row in filter(lambda x: x.app == app, rows):
 			version_based_default_apps[row.version].append(row)
 
 	return version_based_default_apps
@@ -274,6 +278,9 @@ def options():
 		versions.append(version_dict)
 
 	clusters = Cluster.get_all_for_new_bench()
+
+	if not versions:
+		frappe.throw("Only enabled and public app sources will reflect here!")
 
 	return {"versions": versions, "clusters": clusters}
 
@@ -440,11 +447,14 @@ def apps(name):
 		hash = latest_deployed_app.hash if latest_deployed_app else None
 		tag = get_app_tag(source.repository, source.repository_owner, hash)
 
+		marketplace_app_title = frappe.db.get_value("Marketplace App", app.name, "title")
+		app_title = marketplace_app_title or app.title
+
 		apps.append(
 			{
 				"name": app.name,
 				"frappe": app.frappe,
-				"title": app.title,
+				"title": app_title,
 				"branch": source.branch,
 				"repository_url": source.repository_url,
 				"repository": source.repository,
@@ -660,6 +670,7 @@ def get_processes(name):
 @frappe.whitelist()
 @protected("Release Group")
 def candidates(filters=None, order_by=None, limit_start=None, limit_page_length=None):
+	# TODO: Status is redundant here.
 	result = frappe.get_all(
 		"Deploy Candidate",
 		["name", "creation", "status"],
@@ -688,7 +699,7 @@ def candidate(name):
 	if not name:
 		return None
 
-	candidate = frappe.get_doc("Deploy Candidate", name)
+	candidate: DeployCandidate = frappe.get_doc("Deploy Candidate", name)
 	jobs = []
 	deploys = frappe.get_all("Deploy", {"candidate": name}, limit=1)
 	if deploys:
@@ -704,16 +715,20 @@ def candidate(name):
 			) or [{}]
 			jobs.append(job[0])
 
+	# Taking the latest Build for that Candidate
+	build_name = frappe.get_value("Deploy Candidate Build", {"deploy_candidate": name})
+	build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", build_name)
+
 	return {
 		"name": candidate.name,
-		"status": candidate.status,
-		"creation": candidate.creation,
+		"status": build.status,
+		"creation": build.creation,
 		"deployed": False,
-		"build_steps": candidate.build_steps,
-		"build_start": candidate.build_start,
-		"build_end": candidate.build_end,
-		"build_duration": candidate.build_duration,
-		"apps": candidate.apps,
+		"build_steps": build.build_steps,
+		"build_start": build.build_start,
+		"build_end": build.build_end,
+		"build_duration": build.build_duration,
+		"apps": build.candidate.apps,
 		"jobs": jobs,
 	}
 
@@ -738,9 +753,9 @@ def deploy(name, apps):
 		frappe.throw("A deploy for this bench is already in progress")
 
 	candidate = rg.create_deploy_candidate(apps)
-	candidate.schedule_build_and_deploy()
+	deploy_candidate_build = candidate.schedule_build_and_deploy()
 
-	return candidate.name
+	return deploy_candidate_build["name"]
 
 
 @frappe.whitelist()
@@ -1024,8 +1039,7 @@ def apply_patch(release_group: str, app: str, patch_config: dict) -> list[str]:
 @frappe.whitelist()
 @protected("Release Group")
 def fail_and_redeploy(name: str, dc_name: str):
-	dc: "DeployCandidate" = frappe.get_doc("Deploy Candidate", dc_name)
-	res = dc.fail_and_redeploy()
+	res = fail_and_redeploy_build(dc_name)
 
 	# If failed error is True
 	if res.get("error"):
@@ -1036,21 +1050,51 @@ def fail_and_redeploy(name: str, dc_name: str):
 
 
 @frappe.whitelist(allow_guest=True)
-def confirm_bench_transfer(key):
+def confirm_bench_transfer(key: str):
+	from frappe import _
+
+	if frappe.session.user == "Guest":
+		return frappe.respond_as_web_page(
+			_("Not Permitted"),
+			_("You need to be logged in to confirm the bench group transfer."),
+			http_status_code=403,
+			indicator_color="red",
+			primary_action="/dashboard/login",
+			primary_label=_("Login"),
+		)
+
+	if not isinstance(key, str):
+		return frappe.respond_as_web_page(
+			_("Not Permitted"),
+			_("The link you are using is invalid."),
+			http_status_code=403,
+			indicator_color="red",
+		)
+
 	if team_change := frappe.db.get_value("Team Change", {"key": key}):
 		team_change = frappe.get_doc("Team Change", team_change)
+		to_team = team_change.to_team
+		if not frappe.db.get_value(
+			"Team Member", {"user": frappe.session.user, "parent": to_team, "parenttype": "Team"}
+		):
+			return frappe.respond_as_web_page(
+				_("Not Permitted"),
+				_("You are not a member of the team to which the site is being transferred."),
+				http_status_code=403,
+				indicator_color="red",
+			)
+
 		team_change.transfer_completed = True
 		team_change.save()
 		frappe.db.commit()
 
 		frappe.response.type = "redirect"
 		frappe.response.location = f"/dashboard/groups/{team_change.document_name}"
-	else:
-		from frappe import _
+		return None
 
-		frappe.respond_as_web_page(
-			_("Not Permitted"),
-			_("The link you are using is invalid or expired."),
-			http_status_code=403,
-			indicator_color="red",
-		)
+	return frappe.respond_as_web_page(
+		_("Not Permitted"),
+		_("The link you are using is invalid or expired."),
+		http_status_code=403,
+		indicator_color="red",
+	)

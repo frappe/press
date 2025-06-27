@@ -46,14 +46,14 @@ export default {
 	components: {
 		ObjectList,
 		InvoiceTable,
-		AddPrepaidCreditsDialog
+		AddPrepaidCreditsDialog,
 	},
 	data() {
 		return {
 			invoiceDialog: false,
 			showInvoice: null,
 			showBuyPrepaidCreditsDialog: false,
-			minimumAmount: 0
+			minimumAmount: 0,
 		};
 	},
 	computed: {
@@ -67,7 +67,9 @@ export default {
 					'stripe_invoice_url',
 					'due_date',
 					'period_start',
-					'period_end'
+					'period_end',
+					'mpesa_invoice',
+					'mpesa_invoice_pdf',
 				],
 				filterControls: () => {
 					return [
@@ -76,7 +78,7 @@ export default {
 							label: 'Type',
 							class: !this.$isMobile ? 'w-36' : '',
 							fieldname: 'type',
-							options: ['', 'Subscription', 'Prepaid Credits']
+							options: ['', 'Subscription', 'Prepaid Credits'],
 						},
 						{
 							type: 'select',
@@ -92,9 +94,9 @@ export default {
 								'Refunded',
 								'Uncollectible',
 								'Collected',
-								'Empty'
-							]
-						}
+								'Empty',
+							],
+						},
 					];
 				},
 				columns: [
@@ -106,16 +108,18 @@ export default {
 							if (row.type == 'Subscription') {
 								let end = dayjsLocal(row.period_end);
 								return end.format('MMMM YYYY');
+							} else if (row.type == 'Partnership Fees') {
+								return 'Partnership Fees';
 							}
 							return 'Prepaid Credits';
 						},
-						width: 0.8
+						width: 0.8,
 					},
 					{
 						label: 'Status',
 						fieldname: 'status',
 						type: 'Badge',
-						width: '150px'
+						width: '150px',
 					},
 					{
 						label: 'Date',
@@ -131,62 +135,66 @@ export default {
 								return `${formattedStart} - ${end.format('ll')}`;
 							}
 							return date(value, 'll');
-						}
+						},
 					},
 					{
 						label: 'Total',
 						fieldname: 'total',
 						format: this.formatCurrency,
 						align: 'right',
-						width: 0.6
+						width: 0.6,
 					},
 					{
 						label: 'Amount Paid',
 						fieldname: 'amount_paid',
 						format: this.formatCurrency,
 						align: 'right',
-						width: 0.6
+						width: 0.6,
 					},
 					{
 						label: 'Amount Due',
 						fieldname: 'amount_due',
 						format: this.formatCurrency,
 						align: 'right',
-						width: 0.6
+						width: 0.6,
 					},
 					{
 						label: '',
 						type: 'Button',
 						align: 'right',
 						Button: ({ row }) => {
-							if (row.invoice_pdf) {
+							if (row.invoice_pdf || row.mpesa_invoice_pdf) {
 								return {
 									label: 'Download Invoice',
 									slots: {
-										prefix: icon('download')
+										prefix: icon('download'),
 									},
 									onClick: () => {
-										window.open(row.invoice_pdf);
-									}
+										if (row.mpesa_invoice_pdf) {
+											window.open(row.mpesa_invoice_pdf);
+										} else {
+											window.open(row.invoice_pdf);
+										}
+									},
 								};
 							}
 							if (row.status === 'Unpaid' && row.amount_due > 0) {
 								return {
 									label: 'Pay Now',
 									slots: {
-										prefix: icon('external-link')
+										prefix: icon('external-link'),
 									},
-									onClick: e => {
+									onClick: (e) => {
 										e.stopPropagation();
 										if (row.stripe_invoice_url && row.payment_mode == 'Card') {
 											window.open(
-												`/api/method/press.api.client.run_doc_method?dt=Invoice&dn=${row.name}&method=stripe_payment_url`
+												`/api/method/press.api.client.run_doc_method?dt=Invoice&dn=${row.name}&method=stripe_payment_url`,
 											);
 										} else {
 											this.showBuyPrepaidCreditsDialog = true;
 											this.minimumAmount = row.amount_due;
 										}
-									}
+									},
 								};
 							}
 						},
@@ -207,24 +215,24 @@ export default {
 												onClick: ({ hide }) => {
 													hide();
 													router.push({
-														name: 'BillingPaymentMethods'
+														name: 'BillingPaymentMethods',
 													});
-												}
-											}
+												},
+											},
 										});
-									}
+									},
 								});
 							}
-						}
-					}
+						},
+					},
 				],
 				orderBy: 'due_date desc, creation desc',
-				onRowClick: row => {
+				onRowClick: (row) => {
 					this.showInvoice = row;
 					this.invoiceDialog = true;
-				}
+				},
 			};
-		}
+		},
 	},
 	methods: {
 		formatCurrency(value) {
@@ -232,7 +240,7 @@ export default {
 				return '';
 			}
 			return userCurrency(value);
-		}
-	}
+		},
+	},
 };
 </script>

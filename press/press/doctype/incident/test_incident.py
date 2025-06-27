@@ -1,12 +1,17 @@
 # Copyright (c) 2023, Frappe and Contributors
 # See license.txt
+from __future__ import annotations
 
+import math
 from contextlib import suppress
-from datetime import timedelta
+from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
+import zoneinfo
 from frappe.tests.utils import FrappeTestCase
+from hypothesis import given, settings
+from hypothesis import strategies as st
 from twilio.base.exceptions import TwilioRestException
 
 from press.press.doctype.agent_job.agent_job import AgentJob
@@ -20,6 +25,9 @@ from press.press.doctype.incident.incident import (
 	CALL_REPEAT_INTERVAL_NIGHT,
 	CALL_THRESHOLD_SECONDS_NIGHT,
 	CONFIRMATION_THRESHOLD_SECONDS_NIGHT,
+	MIN_FIRING_INSTANCES,
+	MIN_FIRING_INSTANCES_FRACTION,
+	Incident,
 	resolve_incidents,
 	validate_incidents,
 )
@@ -75,6 +83,41 @@ class MockTwilioClient:
 		return MockTwilioMessageList()
 
 
+@st.composite
+def get_total_and_firing_for_ongoing_incident(draw) -> tuple[int, int]:
+	total = draw(st.integers(min_value=1, max_value=50))
+	firing = draw(
+		st.integers(
+			min_value=min(
+				MIN_FIRING_INSTANCES + 1, math.floor(MIN_FIRING_INSTANCES_FRACTION * total) + 1, total
+			),
+			max_value=total,
+		)
+	)
+	return total, firing
+
+
+@st.composite
+def get_total_firing_and_resolved_for_resolved_incident(draw) -> tuple[int, int, int]:
+	"""Generate a tuple of total and resolved instances such that incident is resolved."""
+	total = draw(st.integers(min_value=1, max_value=50))
+	firing = draw(
+		st.integers(
+			min_value=min(
+				MIN_FIRING_INSTANCES + 1, math.floor(MIN_FIRING_INSTANCES_FRACTION * total) + 1, total
+			),  # enough instances to trigger incident
+			max_value=total,
+		)
+	)
+	resolved = draw(
+		st.integers(
+			min_value=firing - min(MIN_FIRING_INSTANCES, math.floor(MIN_FIRING_INSTANCES_FRACTION * total)),
+			max_value=firing,  # at least 1 firing and at most all firing instances should be resolved
+		)
+	)
+	return total, firing, resolved
+
+
 @patch(
 	"press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log.enqueue_doc",
 	new=foreground_enqueue_doc,
@@ -86,13 +129,14 @@ class MockTwilioClient:
 @patch("press.press.doctype.site.site._change_dns_record", new=Mock())
 @patch("press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient)
 @patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
+@patch("tenacity.nap.time", new=Mock())  # no sleep
 class TestIncident(FrappeTestCase):
 	def setUp(self):
 		self.from_ = "+911234567892"
-		frappe.db.set_value("Press Settings", None, "twilio_account_sid", "test")
-		frappe.db.set_value("Press Settings", None, "twilio_api_key_sid", "test")
-		frappe.db.set_value("Press Settings", None, "twilio_api_key_secret", "test")
-		frappe.db.set_value("Press Settings", None, "twilio_phone_number", self.from_)
+		frappe.db.set_single_value("Press Settings", "twilio_account_sid", "test")
+		frappe.db.set_single_value("Press Settings", "twilio_api_key_sid", "test")
+		frappe.db.set_single_value("Press Settings", "twilio_api_key_secret", "test")
+		frappe.db.set_single_value("Press Settings", "twilio_phone_number", self.from_)
 
 		self._create_test_incident_settings()
 
@@ -120,7 +164,6 @@ class TestIncident(FrappeTestCase):
 			}
 		).insert()
 
-	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	@patch.object(
 		MockTwilioCallList,
 		"create",
@@ -147,7 +190,6 @@ class TestIncident(FrappeTestCase):
 			url="http://demo.twilio.com/docs/voice.xml",
 		)
 
-	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	@patch.object(MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create)
 	def test_incident_calls_only_one_person_if_first_person_picks_up(self, mock_calls_create: Mock):
 		frappe.get_doc(
@@ -158,7 +200,6 @@ class TestIncident(FrappeTestCase):
 		).insert().call_humans()
 		self.assertEqual(mock_calls_create.call_count, 1)
 
-	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	@patch.object(MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create)
 	def test_incident_calls_stop_for_in_progress_state(self, mock_calls_create):
 		incident = frappe.get_doc(
@@ -172,7 +213,6 @@ class TestIncident(FrappeTestCase):
 		incident.reload()
 		self.assertEqual(len(incident.updates), 1)
 
-	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	@patch.object(MockTwilioCallList, "create", wraps=MockTwilioCallList("ringing").create)
 	def test_incident_calls_next_person_after_retry_limit(self, mock_calls_create):
 		frappe.get_doc(
@@ -209,7 +249,6 @@ class TestIncident(FrappeTestCase):
 		create_test_alertmanager_webhook_log(site=site3)
 		self.assertEqual(frappe.db.count("Incident") - incident_count_before, 1)
 
-	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	def test_call_event_creates_acknowledgement_update(self):
 		with patch.object(MockTwilioCallList, "create", new=MockTwilioCallList("completed").create):
 			incident = frappe.get_doc(
@@ -233,10 +272,9 @@ class TestIncident(FrappeTestCase):
 			incident.reload()
 			self.assertEqual(len(incident.updates), 2)
 
-	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	@patch.object(MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create)
 	def test_global_phone_call_alerts_disabled_wont_create_phone_calls(self, mock_calls_create):
-		frappe.db.set_value("Incident Settings", None, "phone_call_alerts", 0)
+		frappe.db.set_single_value("Incident Settings", "phone_call_alerts", 0)
 		frappe.get_doc(
 			{
 				"doctype": "Incident",
@@ -252,7 +290,7 @@ class TestIncident(FrappeTestCase):
 			}
 		).insert().call_humans()
 		mock_calls_create.assert_not_called()
-		frappe.db.set_value("Incident Settings", None, "phone_call_alerts", 1)
+		frappe.db.set_single_value("Incident Settings", "phone_call_alerts", 1)
 		frappe.get_doc(
 			{
 				"doctype": "Incident",
@@ -298,24 +336,60 @@ class TestIncident(FrappeTestCase):
 		incident.reload()
 		self.assertEqual(incident.status, "Auto-Resolved")
 
-	def test_incident_does_not_auto_resolve_when_other_alerts_are_still_firing(self):
+	@given(get_total_and_firing_for_ongoing_incident())
+	@settings(max_examples=20, deadline=timedelta(seconds=5))
+	def test_is_enough_firing_is_true_for_ongoing_incident(self, total_firing):
+		alert = create_test_alertmanager_webhook_log()
+		total, firing = total_firing
+		firing_instances = [0] * firing
+		with patch.object(AlertmanagerWebhookLog, "total_instances", new=total), patch.object(
+			AlertmanagerWebhookLog,
+			"past_alert_instances",
+			new=lambda x, y: firing_instances,
+		):
+			self.assertTrue(alert.is_enough_firing)
+
+	@given(get_total_firing_and_resolved_for_resolved_incident())
+	@settings(max_examples=20, deadline=timedelta(seconds=5))
+	def test_is_enough_firing_is_false_for_resolved_incident(self, total_firing_resolved):
+		alert = create_test_alertmanager_webhook_log(status="resolved")
+		total, firing, resolved = total_firing_resolved
+		firing_instances = set(range(firing))
+		resolved_instances = set(range(resolved))
+
+		with patch.object(AlertmanagerWebhookLog, "total_instances", new=total), patch.object(
+			AlertmanagerWebhookLog,
+			"past_alert_instances",
+			side_effect=[firing_instances, resolved_instances],
+		):
+			self.assertFalse(alert.is_enough_firing)
+
+	def test_incident_does_not_resolve_when_other_alerts_are_still_firing_but_does_when_less_than_required_sites_are_down(
+		self,
+	):
 		site = create_test_site()
 		site2 = create_test_site(server=site.server)
+		site3 = create_test_site(server=site.server)
 		alert = create_test_prometheus_alert_rule()
-		create_test_alertmanager_webhook_log(site=site, alert=alert, status="firing")  # 50% sites down
-		incident = frappe.get_last_doc("Incident")
+
+		create_test_alertmanager_webhook_log(site=site, alert=alert, status="firing")  # 33% sites down
+		create_test_alertmanager_webhook_log(site=site2, alert=alert, status="firing")  # 66% sites down
+		incident: Incident = frappe.get_last_doc("Incident")
 		self.assertEqual(incident.status, "Validating")
-		create_test_alertmanager_webhook_log(site=site2, status="firing")  # other site down, nothing resolved
+
+		create_test_alertmanager_webhook_log(site=site3, status="firing")  # 3rd site down, nothing resolved
 		resolve_incidents()
 		incident.reload()
 		self.assertEqual(incident.status, "Validating")
+
+		create_test_alertmanager_webhook_log(site=site3, status="resolved")  # 66% sites down, 1 resolved
+		resolve_incidents()
+		incident.reload()
+		self.assertEqual(incident.status, "Validating")
+
 		create_test_alertmanager_webhook_log(
 			site=site2, status="resolved"
-		)  # other site resolved, first site still down
-		resolve_incidents()
-		incident.reload()
-		self.assertEqual(incident.status, "Validating")
-		create_test_alertmanager_webhook_log(site=site, status="resolved")
+		)  # 33% sites down, 2 resolved # minimum resolved
 		resolve_incidents()
 		incident.reload()
 		self.assertEqual(incident.status, "Auto-Resolved")
@@ -333,8 +407,8 @@ class TestIncident(FrappeTestCase):
 		self.assertEqual(incident.status, "Confirmed")
 		incident.db_set("status", "Validating")
 		incident.db_set("creation", frappe.utils.add_to_date(frappe.utils.now(), minutes=-19))
-		frappe.db.set_value("Incident Settings", None, "confirmation_threshold_day", str(21 * 60))
-		frappe.db.set_value("Incident Settings", None, "confirmation_threshold_night", str(21 * 60))
+		frappe.db.set_single_value("Incident Settings", "confirmation_threshold_day", str(21 * 60))
+		frappe.db.set_single_value("Incident Settings", "confirmation_threshold_night", str(21 * 60))
 		validate_incidents()
 		incident.reload()
 		self.assertEqual(incident.status, "Validating")
@@ -400,3 +474,45 @@ class TestIncident(FrappeTestCase):
 		), suppress(TwilioRestException):
 			incident.call_humans()
 		mock_telegram_send.assert_called_once()
+
+	def get_5_min_load_avg_prometheus_response(self, load_avg: float):
+		return {
+			"datasets": [
+				{
+					"name": {
+						"__name__": "node_load5",
+						"cluster": "Default",
+						"instance": "n1.local.frappe.dev",
+						"job": "node",
+					},
+					"values": [load_avg],
+				}
+			],
+			"labels": [
+				datetime(2025, 1, 17, 12, 40, 41, 241000, tzinfo=zoneinfo.ZoneInfo(key="Asia/Kolkata")),
+			],
+		}
+
+	def test_high_load_avg_on_resource_makes_it_affected(self):
+		create_test_alertmanager_webhook_log()
+		incident: Incident = frappe.get_last_doc("Incident")
+		with patch(
+			"press.press.doctype.incident.incident.prometheus_query",
+			side_effect=[
+				self.get_5_min_load_avg_prometheus_response(2.0),
+				self.get_5_min_load_avg_prometheus_response(32.0),
+				self.get_5_min_load_avg_prometheus_response(2.0),
+			],
+		):
+			incident.identify_affected_resource()
+		self.assertEqual(incident.resource, incident.server)
+		self.assertEqual(incident.resource_type, "Server")
+
+	def test_no_response_from_monitor_on_resource_makes_it_affected(self):
+		create_test_alertmanager_webhook_log()
+		incident: Incident = frappe.get_last_doc("Incident")
+		incident.identify_affected_resource()
+		self.assertEqual(
+			incident.resource, frappe.get_value("Server", incident.server, "database_server")
+		)  # database is checked first because history
+		self.assertEqual(incident.resource_type, "Database Server")

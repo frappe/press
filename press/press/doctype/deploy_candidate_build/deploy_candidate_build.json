@@ -1,0 +1,356 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-04-07 23:10:49.524879",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "deploy_candidate",
+  "build_directory",
+  "status",
+  "group",
+  "team",
+  "platform",
+  "column_break_9sga",
+  "no_build",
+  "no_cache",
+  "no_push",
+  "deploy_after_build",
+  "run_build",
+  "scheduled_time",
+  "section_break_bfxt",
+  "build_steps",
+  "docker_meta_section",
+  "docker_image_id",
+  "docker_image_repository",
+  "column_break_gi6p",
+  "docker_image_tag",
+  "docker_image",
+  "times_section",
+  "build_start",
+  "build_duration",
+  "pending_start",
+  "column_break_5m9f",
+  "build_end",
+  "pending_duration",
+  "build_server",
+  "pending_end",
+  "failure_section",
+  "user_addressable_failure",
+  "retry_count",
+  "column_break_3jie",
+  "manually_failed",
+  "error_key",
+  "output_tab",
+  "build_output",
+  "build_error"
+ ],
+ "fields": [
+  {
+   "fieldname": "deploy_candidate",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Deploy Candidate",
+   "options": "Deploy Candidate",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "no_build",
+   "fieldtype": "Check",
+   "label": "No Build",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "no_cache",
+   "fieldtype": "Check",
+   "label": "No Cache",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "no_push",
+   "fieldtype": "Check",
+   "label": "No Push",
+   "read_only": 1
+  },
+  {
+   "fieldname": "build_steps",
+   "fieldtype": "Table",
+   "label": "Build Steps",
+   "options": "Deploy Candidate Build Step",
+   "read_only": 1
+  },
+  {
+   "fieldname": "build_output",
+   "fieldtype": "Code",
+   "label": "Build Output",
+   "read_only": 1
+  },
+  {
+   "fieldname": "build_error",
+   "fieldtype": "Code",
+   "label": "Build Error",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "deploy_after_build",
+   "fieldtype": "Check",
+   "label": "Deploy After Build",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_9sga",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_bfxt",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "build_directory",
+   "fieldtype": "Data",
+   "label": "Directory",
+   "read_only": 1
+  },
+  {
+   "fieldname": "output_tab",
+   "fieldtype": "Tab Break",
+   "label": "Output"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Draft\nScheduled\nPending\nPreparing\nRunning\nSuccess\nFailure",
+   "read_only": 1
+  },
+  {
+   "fieldname": "times_section",
+   "fieldtype": "Section Break",
+   "label": "Build Meta"
+  },
+  {
+   "fieldname": "build_start",
+   "fieldtype": "Datetime",
+   "label": "Build Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_5m9f",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "build_end",
+   "fieldtype": "Datetime",
+   "label": "Build End",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pending_duration",
+   "fieldtype": "Time",
+   "label": "Pending Duration",
+   "read_only": 1
+  },
+  {
+   "fieldname": "build_server",
+   "fieldtype": "Link",
+   "label": "Build Server",
+   "options": "Server"
+  },
+  {
+   "fieldname": "docker_meta_section",
+   "fieldtype": "Section Break",
+   "label": "Docker Config"
+  },
+  {
+   "fieldname": "failure_section",
+   "fieldtype": "Section Break",
+   "label": "Failure"
+  },
+  {
+   "default": "0",
+   "description": "Set if the build failure is user addressable, i.e. the cause of failure is not FC.",
+   "fieldname": "user_addressable_failure",
+   "fieldtype": "Check",
+   "label": "User Addressable Failure",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Under certain failure conditions, a build will be retried.",
+   "fieldname": "retry_count",
+   "fieldtype": "Int",
+   "label": "Retry Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_3jie",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Set if the build was manually failed or cancelled.",
+   "fieldname": "manually_failed",
+   "fieldtype": "Check",
+   "label": "Manually Failed",
+   "read_only": 1
+  },
+  {
+   "description": "Set if Failure is User Addressable. Used to prevent subsequent builds unless a valid change has been made.",
+   "fieldname": "error_key",
+   "fieldtype": "Data",
+   "label": "Error Key"
+  },
+  {
+   "fieldname": "build_duration",
+   "fieldtype": "Time",
+   "label": "Build Duration",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pending_start",
+   "fieldtype": "Datetime",
+   "label": "Pending Start"
+  },
+  {
+   "fieldname": "pending_end",
+   "fieldtype": "Datetime",
+   "label": "Pending End"
+  },
+  {
+   "fieldname": "docker_image_id",
+   "fieldtype": "Data",
+   "label": "Docker Image Id",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "deploy_candidate.group",
+   "fieldname": "group",
+   "fieldtype": "Link",
+   "label": "Release Group",
+   "options": "Release Group",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "scheduled_time",
+   "fieldtype": "Datetime",
+   "label": "Scheduled Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "docker_image_repository",
+   "fieldtype": "Data",
+   "label": "Docker Image Repository",
+   "read_only": 1
+  },
+  {
+   "fieldname": "docker_image_tag",
+   "fieldtype": "Data",
+   "label": "Docker Image Tag",
+   "read_only": 1
+  },
+  {
+   "fieldname": "docker_image",
+   "fieldtype": "Data",
+   "label": "Docker image",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_gi6p",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "group.team",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1
+  },
+  {
+   "fieldname": "platform",
+   "fieldtype": "Data",
+   "label": "Platform",
+   "read_only": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "run_build",
+   "fieldtype": "Check",
+   "label": "Run Build"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "link_doctype": "Agent Job",
+   "link_fieldname": "reference_name"
+  },
+  {
+   "link_doctype": "Error Log",
+   "link_fieldname": "reference_name"
+  },
+  {
+   "link_doctype": "Press Notification",
+   "link_fieldname": "document_name"
+  },
+  {
+   "link_doctype": "Bench",
+   "link_fieldname": "build"
+  }
+ ],
+ "modified": "2025-06-18 15:04:51.144067",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Deploy Candidate Build",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "deploy_candidate"
+}

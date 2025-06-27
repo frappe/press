@@ -1,0 +1,276 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-01-10 13:02:39.393157",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "site",
+  "status",
+  "cleanup_completed",
+  "site_backup",
+  "disk_snapshot",
+  "column_break_zind",
+  "job",
+  "volume",
+  "device",
+  "mount_point",
+  "section_break_pqgo",
+  "source_database",
+  "column_break_kaja",
+  "destination_database",
+  "destination_server",
+  "section_break_gthb",
+  "deactivate_site_during_restoration",
+  "restore_specific_tables",
+  "tables_to_restore",
+  "log_ansible_output",
+  "is_failure_resolved",
+  "section_break_swxv",
+  "start",
+  "column_break_xqdd",
+  "end",
+  "column_break_qosz",
+  "duration",
+  "section_break_aqam",
+  "steps",
+  "section_break_weie",
+  "physical_restoration_test"
+ ],
+ "fields": [
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Site",
+   "options": "Site",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_zind",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nScheduled\nRunning\nSuccess\nFailure",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "disk_snapshot",
+   "fieldtype": "Link",
+   "label": "Disk Snapshot",
+   "options": "Virtual Disk Snapshot",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "site_backup",
+   "fieldtype": "Link",
+   "label": "Site Backup",
+   "options": "Site Backup",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_pqgo",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "source_database",
+   "fieldtype": "Data",
+   "label": "Source Database",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_kaja",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "destination_database",
+   "fieldtype": "Data",
+   "label": " Destination Database",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_aqam",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "steps",
+   "fieldtype": "Table",
+   "label": "Steps",
+   "options": "Physical Backup Restoration Step"
+  },
+  {
+   "fieldname": "destination_server",
+   "fieldtype": "Link",
+   "label": "Destination Server",
+   "options": "Database Server",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "volume",
+   "fieldtype": "Data",
+   "label": "Volume",
+   "read_only": 1
+  },
+  {
+   "fieldname": "device",
+   "fieldtype": "Data",
+   "label": "Device",
+   "read_only": 1
+  },
+  {
+   "fieldname": "job",
+   "fieldtype": "Link",
+   "label": "Job",
+   "options": "Agent Job",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_swxv",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "start",
+   "fieldtype": "Datetime",
+   "label": "Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_xqdd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "end",
+   "fieldtype": "Datetime",
+   "label": "End",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_qosz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Duration",
+   "label": "Duration",
+   "read_only": 1
+  },
+  {
+   "fieldname": "mount_point",
+   "fieldtype": "Data",
+   "label": "Mount Point",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_gthb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval: doc.restore_specific_tables",
+   "fieldname": "tables_to_restore",
+   "fieldtype": "JSON",
+   "label": "Tables To Restore"
+  },
+  {
+   "default": "0",
+   "fieldname": "restore_specific_tables",
+   "fieldtype": "Check",
+   "label": "Restore Specific Tables"
+  },
+  {
+   "fieldname": "section_break_weie",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "physical_restoration_test",
+   "fieldtype": "Data",
+   "label": "Physical Restoration Test"
+  },
+  {
+   "default": "0",
+   "fieldname": "cleanup_completed",
+   "fieldtype": "Check",
+   "label": "Cleanup Completed"
+  },
+  {
+   "default": "0",
+   "fieldname": "log_ansible_output",
+   "fieldtype": "Check",
+   "label": "Log Ansible Output"
+  },
+  {
+   "default": "0",
+   "fieldname": "deactivate_site_during_restoration",
+   "fieldtype": "Check",
+   "label": "Deactivate Site During Restoration"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_failure_resolved",
+   "fieldtype": "Check",
+   "label": "Is Failure Resolved"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "link_doctype": "Agent Job",
+   "link_fieldname": "reference_name"
+  }
+ ],
+ "modified": "2025-04-17 11:13:10.779531",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Physical Backup Restoration",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

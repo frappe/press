@@ -75,6 +75,12 @@ ALLOWED_DOCTYPES = [
 	"Press Webhook",
 	"SQL Playground Log",
 	"Site Database User",
+	"Press Settings",
+	"Mpesa Payment Record",
+	"Partner Certificate",
+	"Partner Payment Payout",
+	"Deploy Candidate Build",
+	"Account Request",
 ]
 
 ALLOWED_DOCTYPES_FOR_SUPPORT = [
@@ -323,12 +329,16 @@ def search_link(
 	meta = frappe.get_meta(doctype)
 	DocType = frappe.qb.DocType(doctype)
 	valid_filters = validate_filters(doctype, filters)
-	q = frappe.qb.get_query(
+	valid_fields = validate_fields(doctype, ["name", meta.title_field or "name"])
+	q = get_list_query(
 		doctype,
-		filters=valid_filters,
-		offset=0,
-		limit=page_length or 10,
-		order_by=order_by or "modified desc",
+		meta,
+		filters,
+		valid_filters,
+		valid_fields,
+		0,
+		page_length or 10,
+		order_by or "modified desc",
 	)
 	q = q.select(DocType.name.as_("value"))
 	if meta.title_field:

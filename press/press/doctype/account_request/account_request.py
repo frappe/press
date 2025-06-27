@@ -4,13 +4,13 @@
 from __future__ import annotations
 
 import json
-import random
 
 import frappe
 from frappe.model.document import Document
 from frappe.utils import get_url, random_string
 
-from press.utils import get_country_info
+from press.utils import get_country_info, is_valid_email_address
+from press.utils.otp import generate_otp
 from press.utils.telemetry import capture
 
 
@@ -29,6 +29,7 @@ class AccountRequest(Document):
 
 		agreed_to_partner_consent: DF.Check
 		company: DF.Data | None
+		continent: DF.Data | None
 		country: DF.Data | None
 		designation: DF.Data | None
 		email: DF.Data | None
@@ -39,12 +40,14 @@ class AccountRequest(Document):
 		invited_by: DF.Data | None
 		invited_by_parent_team: DF.Check
 		ip_address: DF.Data | None
+		is_mobile: DF.Check
 		is_us_eu: DF.Check
 		last_name: DF.Data | None
 		no_of_employees: DF.Data | None
 		no_of_users: DF.Int
 		oauth_signup: DF.Check
 		otp: DF.Data | None
+		otp_generated_at: DF.Datetime | None
 		phone_number: DF.Data | None
 		plan: DF.Link | None
 		press_roles: DF.TableMultiSelect[AccountRequestPressRole]
@@ -59,10 +62,22 @@ class AccountRequest(Document):
 		state: DF.Data | None
 		subdomain: DF.Data | None
 		team: DF.Data | None
+		unsubscribed_from_drip_emails: DF.Check
 		url_args: DF.Code | None
 	# end: auto-generated types
 
 	def before_insert(self):
+		# This pre-verification is only beneficial for SaaS signup
+		# because, in general flow we already have e-mail link/otp based verification
+		if (
+			not frappe.conf.developer_mode
+			and frappe.db.get_single_value("Press Settings", "enable_email_pre_verification")
+			and self.saas
+			and not self.oauth_signup
+			and not is_valid_email_address(self.email)
+		):
+			frappe.throw(f"{self.email} is not a valid email address")
+
 		if not self.team:
 			self.team = self.email
 
@@ -70,12 +85,18 @@ class AccountRequest(Document):
 			self.request_key = random_string(32)
 
 		if not self.otp:
-			self.otp = random.randint(10000, 99999)
+			self.otp = generate_otp()
+			self.otp_generated_at = frappe.utils.now_datetime()
+			if frappe.conf.developer_mode and frappe.local.dev_server:
+				self.otp = 111111
 
 		self.ip_address = frappe.local.request_ip
 		geo_location = self.get_country_info() or {}
 		self.geo_location = json.dumps(geo_location, indent=1, sort_keys=True)
 		self.state = geo_location.get("regionName")
+		self.country = geo_location.get("country")
+		self.is_mobile = geo_location.get("mobile", False)
+		self.continent = geo_location.get("continent")
 
 		# check for US and EU
 		if (
@@ -86,6 +107,9 @@ class AccountRequest(Document):
 			self.is_us_eu = True
 		else:
 			self.is_us_eu = False
+
+	def validate(self):
+		self.email = self.email.strip()
 
 	def after_insert(self):
 		# Telemetry: Only capture if it's not a saas signup or invited by parent team. Also don't capture if user already have a team
@@ -99,7 +123,7 @@ class AccountRequest(Document):
 
 		if self.is_saas_signup() and self.is_using_new_saas_flow():
 			# Telemetry: Account Request Created
-			capture("account_request_created", "fc_saas", self.email)
+			capture("account_request_created", "fc_product_trial", self.email)
 
 		if self.is_saas_signup() and not self.is_using_new_saas_flow():
 			# If user used oauth, we don't need to verification email but to track the event in stat, send this dummy event
@@ -127,7 +151,9 @@ class AccountRequest(Document):
 		return False
 
 	def reset_otp(self):
-		self.otp = random.randint(10000, 99999)
+		self.otp = generate_otp()
+		if frappe.conf.developer_mode and frappe.local.dev_server:
+			self.otp = 111111
 		self.save(ignore_permissions=True)
 
 	@frappe.whitelist()
@@ -192,12 +218,36 @@ class AccountRequest(Document):
 				}
 			)
 		# Telemetry: Verification Email Sent
-		# Only capture if it's not a saas signup or invited by parent team
 		if not (self.is_saas_signup() or self.invited_by_parent_team):
 			# Telemetry: Verification Mail Sent
 			capture("verification_email_sent", "fc_signup", self.email)
+		if self.is_using_new_saas_flow():
+			# Telemetry: Verification Email Sent for new saas flow when coming from product page
+			capture("verification_email_sent", "fc_product_trial", self.name)
+
 		frappe.sendmail(
 			sender=sender,
+			recipients=self.email,
+			subject=subject,
+			template=template,
+			args=args,
+			now=True,
+		)
+
+	def send_login_mail(self):
+		if frappe.conf.developer_mode and frappe.local.dev_server:
+			print(rf"\Login OTP for {self.email}:")
+			print(self.otp)
+			print()
+			return
+
+		subject = f"{self.otp} - OTP for Frappe Cloud Login"
+		args = {
+			"otp": self.otp,
+		}
+		template = "login_otp"
+
+		frappe.sendmail(
 			recipients=self.email,
 			subject=subject,
 			template=template,
@@ -208,10 +258,6 @@ class AccountRequest(Document):
 	def get_verification_url(self):
 		if self.saas:
 			return get_url(f"/api/method/press.api.saas.validate_account_request?key={self.request_key}")
-		if self.product_trial:
-			return get_url(
-				f"/dashboard/saas/{self.product_trial}/oauth?key={self.request_key}&email={self.email}"
-			)
 		return get_url(f"/dashboard/setup-account/{self.request_key}")
 
 	@property

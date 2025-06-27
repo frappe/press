@@ -5,18 +5,21 @@ from __future__ import annotations
 import json
 import typing
 import unittest
-from unittest.mock import Mock, PropertyMock, patch
+from unittest.mock import Mock, patch
 
 import frappe
+import frappe.utils
 import responses
 from frappe.model.naming import make_autoname
 
 from press.exceptions import InsufficientSpaceOnServer
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
 )
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
@@ -25,7 +28,17 @@ from press.press.doctype.remote_file.test_remote_file import (
 	create_test_remote_file,
 )
 from press.press.doctype.server.server import BaseServer, Server
-from press.press.doctype.site.site import Site, process_rename_site_job_update
+from press.press.doctype.site.site import (
+	ARCHIVE_AFTER_SUSPEND_DAYS,
+	Site,
+	archive_suspended_sites,
+	process_rename_site_job_update,
+	suspend_sites_exceeding_disk_usage_for_last_7_days,
+)
+from press.press.doctype.site_activity.test_site_activity import create_test_site_activity
+from press.press.doctype.site_plan.test_site_plan import create_test_plan
+from press.press.doctype.team.test_team import create_test_team
+from press.saas.doctype.saas_settings.test_saas_settings import create_test_saas_settings
 from press.telegram_utils import Telegram
 from press.utils import get_current_team
 
@@ -36,12 +49,14 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
+@patch.object(DeployCandidateBuild, "pre_build", new=Mock())
 def create_test_bench(
 	user: str | None = None,
 	group: ReleaseGroup = None,
 	server: str | None = None,
 	apps: list[dict] | None = None,
 	creation: datetime | None = None,
+	public_server: bool = False,
 ) -> "Bench":
 	"""
 	Create test Bench doc.
@@ -56,7 +71,7 @@ def create_test_bench(
 	if not server:
 		proxy_server = create_test_proxy_server()
 		database_server = create_test_database_server()
-		server = create_test_server(proxy_server.name, database_server.name).name
+		server = create_test_server(proxy_server.name, database_server.name, public=public_server).name
 
 	if not group:
 		app = create_test_app()
@@ -64,7 +79,7 @@ def create_test_bench(
 
 	name = frappe.mock("name")
 	candidate = group.create_deploy_candidate()
-	candidate.db_set("docker_image", frappe.mock("url"))
+	deploy_candidate_build = candidate.build()
 	bench = frappe.get_doc(
 		{
 			"name": f"Test Bench{name}",
@@ -75,7 +90,9 @@ def create_test_bench(
 			"group": group.name,
 			"apps": apps,
 			"candidate": candidate.name,
+			"build": deploy_candidate_build["message"],
 			"server": server,
+			"docker_image": frappe.mock("url"),
 		}
 	).insert(ignore_if_duplicate=True)
 	bench.db_set("creation", creation)
@@ -91,13 +108,12 @@ def create_test_site(
 	bench: str | None = None,
 	server: str | None = None,
 	team: str | None = None,
-	standby_for: str | None = None,
+	standby_for_product: str | None = None,
 	apps: list[str] | None = None,
 	remote_database_file=None,
 	remote_public_file=None,
 	remote_private_file=None,
 	remote_config_file=None,
-	backup_time=None,
 	**kwargs,
 ) -> Site:
 	"""Create test Site doc.
@@ -108,7 +124,7 @@ def create_test_site(
 	subdomain = subdomain or make_autoname("test-site-.#####")
 	apps = [{"app": app} for app in apps] if apps else None
 	if not bench:
-		bench = create_test_bench(server=server)
+		bench = create_test_bench(server=server, public_server=kwargs.get("public_server", False))
 	else:
 		bench = frappe.get_doc("Bench", bench)
 	group = frappe.get_doc("Release Group", bench.group)
@@ -126,7 +142,7 @@ def create_test_site(
 			"team": team or get_current_team(),
 			"apps": apps or [{"app": app.app} for app in group.apps],
 			"admin_password": "admin",
-			"standby_for": standby_for,
+			"standby_for_product": standby_for_product,
 			"remote_database_file": remote_database_file,
 			"remote_public_file": remote_public_file,
 			"remote_private_file": remote_private_file,
@@ -136,7 +152,6 @@ def create_test_site(
 	site.update(kwargs)
 	site.insert()
 	site.db_set("creation", creation)
-	site.db_set("backup_time", backup_time)
 	site.reload()
 	return site
 
@@ -363,34 +378,6 @@ class TestSite(unittest.TestCase):
 			config_host = site.configuration[0].value
 		self.assertEqual(config_host, f"https://{site_domain1.name}")
 
-	def test_suspend_without_reload_creates_agent_job_with_skip_reload(self):
-		site = create_test_site("testsubdomain")
-		site.suspend(skip_reload=True)
-
-		job = frappe.get_doc("Agent Job", {"site": site.name})
-		self.assertTrue(json.loads(job.request_data).get("skip_reload"))
-
-	def test_suspend_without_skip_reload_creates_agent_job_without_skip_reload(self):
-		site = create_test_site("testsubdomain")
-		site.suspend()
-
-		job = frappe.get_doc("Agent Job", {"site": site.name})
-		self.assertFalse(json.loads(job.request_data).get("skip_reload"))
-
-	def test_archive_with_skip_reload_creates_agent_job_with_skip_reload(self):
-		site = create_test_site("testsubdomain")
-		site.archive(skip_reload=True)
-
-		job = frappe.get_doc("Agent Job", {"site": site.name})
-		self.assertTrue(json.loads(job.request_data).get("skip_reload"))
-
-	def test_archive_without_skip_reload_creates_agent_job_without_skip_reload(self):
-		site = create_test_site("testsubdomain")
-		site.archive()
-
-		job = frappe.get_doc("Agent Job", {"site": site.name})
-		self.assertFalse(json.loads(job.request_data).get("skip_reload"))
-
 	@patch.object(RemoteFile, "download_link", new="http://test.com")
 	@patch.object(RemoteFile, "get_content", new=lambda x: {"a": "test"})  # type: ignore
 	def test_new_site_with_backup_files(self):
@@ -418,7 +405,7 @@ class TestSite(unittest.TestCase):
 		)
 
 	@patch.object(Telegram, "send", new=Mock())
-	@patch.object(BaseServer, "disk_capacity", new=PropertyMock(return_value=100))
+	@patch.object(BaseServer, "disk_capacity", new=Mock(return_value=100))
 	@patch.object(RemoteFile, "download_link", new="http://test.com")
 	@patch.object(RemoteFile, "get_content", new=lambda _: {"a": "test"})
 	@patch.object(RemoteFile, "exists", lambda _: True)
@@ -441,11 +428,11 @@ class TestSite(unittest.TestCase):
 			"public",
 			True,
 		)
-		with patch.object(BaseServer, "free_space", new=PropertyMock(return_value=500 * 1024 * 1024 * 1024)):
+		with patch.object(BaseServer, "free_space", new=Mock(return_value=500 * 1024 * 1024 * 1024)):
 			site.restore_site()
 		mock_increase_disk_size.assert_not_called()
 
-		with patch.object(BaseServer, "free_space", new=PropertyMock(return_value=0)):
+		with patch.object(BaseServer, "free_space", new=Mock(return_value=0)):
 			site.restore_site()
 		mock_increase_disk_size.assert_called()
 
@@ -456,7 +443,7 @@ class TestSite(unittest.TestCase):
 			"public",
 			False,
 		)
-		with patch.object(Server, "free_space", new=PropertyMock(return_value=0)):
+		with patch.object(Server, "free_space", new=Mock(return_value=0)):
 			self.assertRaises(InsufficientSpaceOnServer, site.restore_site)
 
 	def test_user_cannot_disable_auto_update_if_site_in_public_release_group(self):
@@ -478,6 +465,7 @@ class TestSite(unittest.TestCase):
 		site.save(ignore_permissions=True)
 
 	@responses.activate
+	@patch.object(AppSource, "validate_dependent_apps", new=Mock())
 	def test_sync_apps_updates_apps_child_table(self):
 		app1 = create_test_app()
 		app2 = create_test_app("erpnext", "ERPNext")
@@ -509,3 +497,208 @@ class TestSite(unittest.TestCase):
 			json.loads(update_job.request_data).get("remove"),
 			["key1", "key2"],
 		)
+
+	def test_apps_are_reordered_to_follow_bench_order(self):
+		app1 = create_test_app()
+		app2 = create_test_app("erpnext", "ERPNext")
+		app3 = create_test_app("crm", "Frappe CRM")
+		group = create_test_release_group([app1, app2, app3])
+		bench = create_test_bench(group=group)
+		site = create_test_site(bench=bench.name, apps=["frappe", "crm", "erpnext"])
+		site.reload()
+		self.assertEqual(site.apps[0].app, "frappe")
+		self.assertEqual(site.apps[1].app, "erpnext")
+		self.assertEqual(site.apps[2].app, "crm")
+
+	@patch("press.press.doctype.site.site.frappe.db.commit", new=Mock())
+	@patch("press.press.doctype.site.site.frappe.db.rollback", new=Mock())
+	def test_archive_suspended_sites_archives_only_sites_suspended_longer_than_days(self):
+		site = create_test_site()
+		site.db_set("status", "Suspended")
+		site_activity = create_test_site_activity(site.name, "Suspend Site")
+		site_activity.db_set(
+			"creation", frappe.utils.add_days(frappe.utils.now_datetime(), -ARCHIVE_AFTER_SUSPEND_DAYS - 1)
+		)
+		site2 = create_test_site()
+		site2.db_set("status", "Suspended")
+		site2_activity = create_test_site_activity(site2.name, "Suspend Site")
+		site2_activity.db_set(
+			"creation", frappe.utils.add_days(frappe.utils.now_datetime(), -ARCHIVE_AFTER_SUSPEND_DAYS + 1)
+		)  # site2 suspended recently
+		site3 = create_test_site()  # active site should not be archived
+
+		create_test_saas_settings(None, [create_test_app(), create_test_app("erpnext", "ERPNext")])
+
+		archive_suspended_sites()
+		site.reload()
+		site2.reload()
+		site3.reload()
+		self.assertEqual(site.status, "Pending")  # to be archived
+		self.assertEqual(site2.status, "Suspended")
+		self.assertEqual(site3.status, "Active")
+
+	@patch("press.press.doctype.site.site.frappe.db.commit", new=Mock())
+	@patch("press.press.doctype.site.site.frappe.db.rollback", new=Mock())
+	def test_suspension_of_10_usd_site_triggers_backup_if_it_does_not_exist(self):
+		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")
+
+		site = create_test_site()
+		site.db_set("status", "Suspended")
+		site.db_set("plan", plan_10.name)
+		site_activity = create_test_site_activity(site.name, "Suspend Site")
+		site_activity.db_set(
+			"creation", frappe.utils.add_days(frappe.utils.now_datetime(), -ARCHIVE_AFTER_SUSPEND_DAYS - 1)
+		)
+
+		site2 = create_test_site()
+		site2.db_set("status", "Suspended")
+		site2.db_set("plan", plan_10.name)
+		site2_activity = create_test_site_activity(site2.name, "Suspend Site")
+		site2_activity.db_set(
+			"creation", frappe.utils.add_days(frappe.utils.now_datetime(), -ARCHIVE_AFTER_SUSPEND_DAYS - 1)
+		)
+		from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
+
+		create_test_site_backup(site2.name)
+
+		create_test_saas_settings(None, [create_test_app(), create_test_app("erpnext", "ERPNext")])
+
+		self.assertEqual(frappe.db.count("Site Backup", {"site": site.name, "status": "Pending"}), 0)
+		self.assertEqual(frappe.db.count("Site Backup", {"site": site2.name, "status": "Pending"}), 0)
+		archive_suspended_sites()
+		self.assertEqual(frappe.db.count("Site Backup", {"site": site.name, "status": "Pending"}), 1)
+		self.assertEqual(frappe.db.count("Site Backup", {"site": site2.name, "status": "Pending"}), 0)
+
+		site.reload()
+		site2.reload()
+
+		self.assertNotEqual(site.status, "Pending")  # should not be archived
+		self.assertEqual(site2.status, "Pending")
+
+	def test_site_usage_exceed_tracking(self):
+		team = create_test_team()
+		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")
+		site = create_test_site(plan=plan_10.name, public_server=True, team=team.name)
+
+		self.assertEqual(site.status, "Active")
+		self.assertFalse(site.site_usage_exceeded)
+
+		site.current_disk_usage = 150
+		site.check_if_disk_usage_exceeded()
+		site.reload()
+
+		self.assertTrue(site.site_usage_exceeded)
+		self.assertIsNotNone(site.site_usage_exceeded_on)
+		self.assertEqual(site.status, "Active")
+
+	def test_free_sites_ignore_usage_exceed_tracking(self):
+		team = create_test_team(free_account=False)
+		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")
+		site = create_test_site(plan=plan_10.name, public_server=True, team=team.name, free=True)
+
+		self.assertEqual(site.status, "Active")
+		self.assertFalse(site.site_usage_exceeded)
+
+		site.current_disk_usage = 150
+		site.check_if_disk_usage_exceeded()
+		site.reload()
+
+		self.assertFalse(site.site_usage_exceeded)
+		self.assertIsNone(site.site_usage_exceeded_on)
+		self.assertEqual(site.status, "Active")
+
+	def test_free_team_sites_ignore_usage_exceed_tracking(self):
+		team = create_test_team(free_account=True)
+		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")
+		site = create_test_site(plan=plan_10.name, public_server=True, team=team.name, free=False)
+
+		self.assertEqual(site.status, "Active")
+		self.assertFalse(site.site_usage_exceeded)
+
+		site.current_disk_usage = 150
+		site.check_if_disk_usage_exceeded()
+		site.reload()
+
+		self.assertFalse(site.site_usage_exceeded)
+		self.assertIsNone(site.site_usage_exceeded_on)
+
+	def test_sites_on_dedicated_server_ignore_usage_exceed_tracking(self):
+		team = create_test_team()
+		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")
+		site = create_test_site(plan=plan_10.name, public_server=False, team=team.name)
+
+		self.assertEqual(site.status, "Active")
+		self.assertFalse(site.site_usage_exceeded)
+
+		site.current_disk_usage = 150
+		site.check_if_disk_usage_exceeded()
+		site.reload()
+
+		self.assertFalse(site.site_usage_exceeded)
+		self.assertIsNone(site.site_usage_exceeded_on)
+		self.assertEqual(site.status, "Active")
+
+	def test_reset_disk_usage_exceed_alert_on_changing_plan(self):
+		team = create_test_team()
+		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")
+		plan_20 = create_test_plan("Site", price_usd=20.0, price_inr=1500.0, plan_name="USD 20")
+
+		site: Site = create_test_site(plan=plan_10.name, public_server=True, team=team.name)
+		site.create_subscription(plan=plan_10.name)
+		site.current_disk_usage = 150
+		site.check_if_disk_usage_exceeded(save=True)
+		site.reload()
+
+		self.assertTrue(site.site_usage_exceeded)
+
+		site.change_plan(plan_20.name, ignore_card_setup=True)
+		site.reload()
+
+		self.assertFalse(site.site_usage_exceeded)
+		self.assertIsNone(site.site_usage_exceeded_on)
+
+	def test_reset_disk_usage_exceed_alert_on_reducing_disk_size(self):
+		team = create_test_team()
+		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")
+		site: Site = create_test_site(plan=plan_10.name, public_server=True, team=team.name)
+		site.create_subscription(plan=plan_10.name)
+		site.current_disk_usage = 150
+		site.check_if_disk_usage_exceeded(save=True)
+		site.reload()
+
+		self.assertTrue(site.site_usage_exceeded)
+
+		site.current_disk_usage = 50
+		site.check_if_disk_usage_exceeded(save=True)
+		site.reload()
+
+		self.assertFalse(site.site_usage_exceeded)
+		self.assertIsNone(site.site_usage_exceeded_on)
+
+	@patch("frappe.sendmail", new=Mock())
+	def test_suspend_site_on_exceeding_site_usage_for_consecutive_7_days(self):
+		frappe.db.set_single_value("Press Settings", "enforce_storage_limits", 1)
+		team = create_test_team()
+		site: Site = create_test_site(public_server=True, free=False, team=team.name)
+
+		site.current_database_usage = 150
+		site.site_usage_exceeded = True
+		site.site_usage_exceeded_on = frappe.utils.add_to_date(None, days=-2)
+		site.save()
+		self.assertEqual(site.status, "Active")
+
+		suspend_sites_exceeding_disk_usage_for_last_7_days()
+		site.reload()
+		self.assertEqual(site.status, "Active")
+
+		site.site_usage_exceeded_on = frappe.utils.add_to_date(None, days=-6)
+		site.save()
+		suspend_sites_exceeding_disk_usage_for_last_7_days()
+		site.reload()
+		self.assertEqual(site.status, "Active")
+
+		site.site_usage_exceeded_on = frappe.utils.add_to_date(None, days=-7)
+		site.save()
+		suspend_sites_exceeding_disk_usage_for_last_7_days()
+		site.reload()
+		self.assertEqual(site.status, "Suspended")

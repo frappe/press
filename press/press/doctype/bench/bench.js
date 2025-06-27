@@ -20,6 +20,7 @@ frappe.ui.form.on('Bench', {
 
 		[
 			[__('Archive'), 'archive'],
+			[__('Take Process Snapshot'), 'take_process_snapshot'],
 			[__('Sync Sites Info'), 'sync_info'],
 			[__('Sync Sites Analytics'), 'sync_analytics'],
 			[__('Update All Sites'), 'update_all_sites'],
@@ -49,7 +50,19 @@ frappe.ui.form.on('Bench', {
 					() => {
 						frappe.confirm(
 							`Are you sure you want to ${label.toLowerCase()} this bench?`,
-							() => frm.call(method).then((r) => frm.refresh()),
+							() =>
+								frm.call(method).then((r) => {
+									if (label.toLowerCase() === 'take process snapshot') {
+										frappe.msgprint({
+											title: 'Snapshot taken',
+											indicator: 'green',
+											message: __(`New {0} taken for this bench.`, [
+												`<a href="/app/process-snapshot/${r.message}">Process Snapshot</a>`,
+											]),
+										});
+									}
+									frm.refresh();
+								}),
 						);
 					},
 					__('Actions'),

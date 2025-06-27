@@ -17,6 +17,7 @@ class TestPressRole(FrappeTestCase):
 		self.team_member = create_user("user123@example.com")
 		self.team.append("team_members", {"user": self.team_member.name})
 		self.team.save()
+		self.admin_perm_role = create_permission_role(self.team.name)
 		self.perm_role = create_permission_role(self.team.name)
 		self.perm_role2 = create_permission_role(self.team.name)
 
@@ -36,9 +37,7 @@ class TestPressRole(FrappeTestCase):
 			self.team_member.name == perm_role_user.user for perm_role_user in perm_role_users
 		)
 		self.assertTrue(perm_role_user_exists)
-		self.assertRaises(
-			frappe.ValidationError, self.perm_role.add_user, self.team_member.name
-		)
+		self.assertRaises(frappe.ValidationError, self.perm_role.add_user, self.team_member.name)
 
 	def test_remove_user(self):
 		self.perm_role.add_user(self.team_member.name)
@@ -48,9 +47,7 @@ class TestPressRole(FrappeTestCase):
 			self.team_member.name == perm_role_user.user for perm_role_user in perm_role_users
 		)
 		self.assertFalse(perm_role_user_exists)
-		self.assertRaises(
-			frappe.ValidationError, self.perm_role.remove_user, self.team_member.name
-		)
+		self.assertRaises(frappe.ValidationError, self.perm_role.remove_user, self.team_member.name)
 
 	def test_delete_role(self):
 		perm = frappe.new_doc("Press Role Permission")
@@ -60,9 +57,7 @@ class TestPressRole(FrappeTestCase):
 
 		self.perm_role.delete()
 		self.assertFalse(frappe.db.exists("Press Role", self.perm_role.name))
-		self.assertFalse(
-			frappe.db.get_all("Press Role Permission", filters={"role": self.perm_role.name})
-		)
+		self.assertFalse(frappe.db.get_all("Press Role Permission", filters={"role": self.perm_role.name}))
 
 	def test_delete_permissions(self):
 		perm = frappe.new_doc("Press Role Permission")
@@ -74,9 +69,7 @@ class TestPressRole(FrappeTestCase):
 			"Press Role Permission", filters={"role": self.perm_role.name}, pluck="name"
 		)
 		self.perm_role.delete_permissions(permissions)
-		self.assertFalse(
-			frappe.db.get_all("Press Role Permission", filters={"role": self.perm_role.name})
-		)
+		self.assertFalse(frappe.db.get_all("Press Role Permission", filters={"role": self.perm_role.name}))
 
 	def test_get_list_with_permissions(self):
 		from press.api.client import get_list
@@ -158,9 +151,7 @@ class TestPressRole(FrappeTestCase):
 
 		frappe.set_user(self.team_user.name)
 
-		self.assertTrue(
-			frappe.db.exists("Press Role Permission", {"site": site.name, "role": role.name})
-		)
+		self.assertTrue(frappe.db.exists("Press Role Permission", {"site": site.name, "role": role.name}))
 
 		frappe.set_user("Administrator")
 		frappe.delete_doc("Press Role", role.name, force=1)

@@ -7,13 +7,13 @@ import { icon } from '../utils/components';
 import { getTeam } from '../data/team';
 import { toast } from 'vue-sonner';
 
-const getNotification = name => {
+const getNotification = (name) => {
 	return getDocResource({
 		doctype: 'Press Notification',
 		name: name,
 		whitelistedMethods: {
-			markNotificationAsRead: 'mark_as_read'
-		}
+			markNotificationAsRead: 'mark_as_read',
+		},
 	});
 };
 
@@ -29,10 +29,9 @@ export default {
 				url: 'press.api.notifications.get_notifications',
 				auto: true,
 				filters: {
-					team: $team.name,
-					read: 'Unread'
+					read: 'Unread',
 				},
-				cache: ['Notifications']
+				cache: ['Notifications'],
 			};
 		},
 		route: '/notifications',
@@ -45,15 +44,15 @@ export default {
 					label: 'Read',
 					fieldname: 'read',
 					options: ['All', 'Unread'],
-					default: 'Unread'
-				}
+					default: 'Unread',
+				},
 			];
 		},
 		onRowClick(row) {
 			const notification = getNotification(row.name);
 
 			notification.markNotificationAsRead.submit().then(() => {
-				unreadNotificationsCount.setData(data => data - 1);
+				unreadNotificationsCount.setData((data) => data - 1);
 				if (row.route) router.push(row.route);
 			});
 		},
@@ -62,12 +61,12 @@ export default {
 				{
 					label: 'Mark all as read',
 					slots: {
-						prefix: icon('check-circle')
+						prefix: icon('check-circle'),
 					},
 					async onClick() {
 						toast.promise(
 							frappeRequest({
-								url: '/api/method/press.api.notifications.mark_all_notifications_as_read'
+								url: '/api/method/press.api.notifications.mark_all_notifications_as_read',
 							}),
 							{
 								success: () => {
@@ -75,14 +74,14 @@ export default {
 									return 'All notifications marked as read';
 								},
 								loading: 'Marking all notifications as read...',
-								error: error =>
+								error: (error) =>
 									error.messages?.length
 										? error.messages.join('\n')
-										: error.message
-							}
+										: error.message,
+							},
 						);
-					}
-				}
+					},
+				},
 			];
 		},
 		columns: [
@@ -99,21 +98,21 @@ export default {
 						return h(
 							Tooltip,
 							{
-								text: 'This notification requires your attention'
+								text: 'This notification requires your attention',
 							},
 							{
 								default: () =>
 									h(
 										'div',
 										{
-											class: 'ml-2  text-red-500'
+											class: 'ml-2  text-red-500',
 										},
-										h(AlertIcon)
-									)
-							}
+										h(AlertIcon),
+									),
+							},
 						);
 					}
-				}
+				},
 			},
 			{
 				label: 'Message',
@@ -126,17 +125,17 @@ export default {
 						// replace all html tags except <b>
 						innerHTML: row.message
 							.replace(/<(?!\/?b\b)[^>]*>/g, '')
-							.split('\n')[0]
+							.split('\n')[0],
 					});
-				}
+				},
 			},
 			{
 				label: '',
 				fieldname: 'creation',
 				type: 'Timestamp',
-				align: 'right'
-			}
-		]
+				align: 'right',
+			},
+		],
 	},
-	routes: []
+	routes: [],
 };

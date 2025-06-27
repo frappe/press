@@ -33,6 +33,14 @@ class AgentRequestFailure(Document):
 			print(frappe.get_traceback(with_context=True))
 
 
+def is_server_archived(failure):
+	# Server was archived more than an hour ago
+	server = frappe.db.get_value(failure.server_type, failure.server, ["status", "modified"], as_dict=True)
+	if (server.status == "Archived") and (server.modified < frappe.utils.add_to_date(None, hours=-1)):
+		return True
+	return False
+
+
 def remove_old_failures():
 	failures = frappe.get_all(
 		"Agent Request Failure",
@@ -62,7 +70,7 @@ def remove_old_failures():
 			delta = -100
 
 		if delta:
-			if failure.failure_count + delta <= 0:
+			if failure.failure_count + delta <= 0 or is_server_archived(failure):
 				frappe.delete_doc("Agent Request Failure", failure.name)
 			else:
 				frappe.db.set_value(

@@ -133,7 +133,7 @@
    "label": "Period End"
   },
   {
-   "fetch_from": "recipient.currency",
+   "fetch_from": "team.currency",
    "fieldname": "recipient_currency",
    "fieldtype": "Data",
    "label": "Currency"
@@ -182,7 +182,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-07-15 18:03:18.004496",
+ "modified": "2025-03-20 10:23:23.836067",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payout Order",

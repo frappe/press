@@ -29,7 +29,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Action",
-   "options": "Activate Site\nAdd Domain\nArchive\nBackup\nCreate\nClear Cache\nDeactivate Site\nInstall App\nLogin as Administrator\nMigrate\nReinstall\nRestore\nSuspend Site\nUninstall App\nUnsuspend Site\nUpdate\nUpdate Configuration\nDrop Offsite Backups\nEnable Database Access\nDisable Database Access\nCreate Database User\nRemove Database User\nModify Database User Permissions",
+   "options": "Activate Site\nAdd Domain\nArchive\nBackup\nCreate\nClear Cache\nDeactivate Site\nInstall App\nLogin as Administrator\nMigrate\nReinstall\nRestore\nSuspend Site\nUninstall App\nUnsuspend Site\nUpdate\nUpdate Configuration\nDrop Offsite Backups\nDrop Physical Backups\nEnable Database Access\nDisable Database Access\nCreate Database User\nRemove Database User\nModify Database User Permissions",
    "read_only": 1,
    "reqd": 1,
    "search_index": 1

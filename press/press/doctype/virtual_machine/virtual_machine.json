@@ -22,8 +22,10 @@
   "machine_type",
   "instance_id",
   "platform",
+  "ready_for_conversion",
   "column_break_hgcr",
   "disk_size",
+  "root_disk_size",
   "vcpu",
   "ram",
   "column_break_8",
@@ -43,7 +45,11 @@
   "column_break_18",
   "termination_protection",
   "volumes_section",
-  "volumes"
+  "has_data_volume",
+  "volumes",
+  "temporary_volumes",
+  "snapshots_section",
+  "skip_automated_snapshot"
  ],
  "fields": [
   {
@@ -76,6 +82,7 @@
   {
    "fieldname": "cluster",
    "fieldtype": "Link",
+   "in_standard_filter": 1,
    "label": "Cluster",
    "options": "Cluster",
    "reqd": 1,
@@ -104,6 +111,7 @@
    "fieldname": "machine_type",
    "fieldtype": "Data",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Machine Type",
    "reqd": 1
   },
@@ -170,6 +178,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Status",
    "options": "Draft\nPending\nRunning\nStopped\nTerminated",
    "read_only": 1,
@@ -278,6 +287,7 @@
   {
    "fieldname": "instance_id",
    "fieldtype": "Data",
+   "in_standard_filter": 1,
    "label": "Instance ID",
    "read_only": 1
   },
@@ -287,6 +297,44 @@
    "label": "Platform",
    "options": "x86_64\narm64",
    "reqd": 1
+  },
+  {
+   "default": "8",
+   "fieldname": "root_disk_size",
+   "fieldtype": "Int",
+   "label": "Root Disk Size",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "has_data_volume",
+   "fieldtype": "Check",
+   "label": "Has Data Volume"
+  },
+  {
+   "description": "Data volumes that have been temporarily attached for tasks such as Physical Backup Restoration.",
+   "fieldname": "temporary_volumes",
+   "fieldtype": "Table",
+   "label": "Temporary Volumes",
+   "options": "Virtual Machine Temporary Volume"
+  },
+  {
+   "fieldname": "snapshots_section",
+   "fieldtype": "Section Break",
+   "label": "Snapshots"
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_automated_snapshot",
+   "fieldtype": "Check",
+   "label": "Skip Automated Snapshot"
+  },
+  {
+   "default": "0",
+   "fieldname": "ready_for_conversion",
+   "fieldtype": "Check",
+   "label": "Ready For Conversion",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -322,7 +370,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2024-11-18 18:55:50.846189",
+ "modified": "2025-05-26 12:38:56.121666",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
@@ -353,6 +401,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

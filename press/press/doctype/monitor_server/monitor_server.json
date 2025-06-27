@@ -22,8 +22,14 @@
   "agent_section",
   "agent_password",
   "grafana_section",
+  "grafana_username",
+  "prometheus_username",
+  "column_break_ilpd",
   "grafana_password",
+  "node_exporter_dashboard_path",
   "ssh_section",
+  "ssh_user",
+  "ssh_port",
   "frappe_user_password",
   "frappe_public_key",
   "column_break_20",
@@ -204,15 +210,48 @@
    "fieldname": "prometheus_data_directory",
    "fieldtype": "Data",
    "label": "Prometheus Data Directory"
+  },
+  {
+   "fieldname": "grafana_username",
+   "fieldtype": "Data",
+   "label": "Grafana Username"
+  },
+  {
+   "fieldname": "column_break_ilpd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Begin with / but don't end with /",
+   "fieldname": "node_exporter_dashboard_path",
+   "fieldtype": "Data",
+   "label": "Node Exporter Dashboard Path"
+  },
+  {
+   "description": "for /prometheus",
+   "fieldname": "prometheus_username",
+   "fieldtype": "Data",
+   "label": "Prometheus Username"
+ },
+ {
+   "fieldname": "ssh_user",
+   "fieldtype": "Data",
+   "label": "SSH User"
+  },
+  {
+   "default": "22",
+   "fieldname": "ssh_port",
+   "fieldtype": "Int",
+   "label": "SSH Port"
   }
  ],
+ "grid_page_length": 50,
  "links": [
   {
    "link_doctype": "Ansible Play",
    "link_fieldname": "server"
   }
  ],
- "modified": "2024-02-05 20:07:19.024804",
+ "modified": "2025-05-07 15:11:11.557419",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Monitor Server",
@@ -231,6 +270,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

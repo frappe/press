@@ -2,14 +2,28 @@
 	<Dialog
 		:options="{
 			title: 'SSH Access',
-			size: 'xl'
+			size: 'xl',
 		}"
 		v-model="show"
 	>
 		<template #body-content v-if="$bench.doc">
 			<div v-if="certificate" class="space-y-4">
-				<div class="space-y-2">
+				<div class="space-y-2" v-if="isWindows">
 					<h4 class="text-base font-semibold text-gray-700">Step 1</h4>
+					<div class="space-y-2">
+						<p class="text-base">
+							Execute the following shell command to set the encoding to UTF-8.
+						</p>
+						<ClickToCopyField
+							textContent="$PSDefaultParameterValues['*: Encoding'] = 'utf8'"
+							:breakLines="false"
+						/>
+					</div>
+				</div>
+				<div class="space-y-2">
+					<h4 class="text-base font-semibold text-gray-700">
+						Step {{ isWindows ? '2' : '1' }}
+					</h4>
 					<div class="space-y-2">
 						<p class="text-base">
 							Execute the following shell command to store the SSH certificate
@@ -22,7 +36,9 @@
 					</div>
 				</div>
 				<div class="space-y-2">
-					<h4 class="text-base font-semibold text-gray-700">Step 2</h4>
+					<h4 class="text-base font-semibold text-gray-700">
+						Step {{ isWindows ? '3' : '2' }}
+					</h4>
 					<div class="space-y-1">
 						<p class="text-base">
 							Execute the following shell command to SSH into your bench
@@ -30,10 +46,10 @@
 						<ClickToCopyField :textContent="sshCommand" />
 					</div>
 				</div>
-				<div class="space-y-2">
-					<h4 class="text-base font-semibold text-gray-700">Step 3</h4>
-					<div class="space-y-1">
-						<p class="text-base">
+				<div class="flex items-center gap-2 rounded bg-gray-100 p-3">
+					<FeatherIcon name="alert-triangle" class="h-4 w-4" />
+					<div class="space-y-1 text-base">
+						<p>
 							Use wisely and only for
 							<a
 								href="/docs/benches/debugging"
@@ -41,8 +57,11 @@
 								target="_blank"
 								>debugging</a
 							>
-							purposes. Do not install/uninstall apps as you would on a local
-							machine. Use the UI for that.
+							purposes.
+						</p>
+						<p>
+							Do not install/uninstall apps as you would on a local machine. Use
+							the dashboard instead.
 						</p>
 					</div>
 				</div>
@@ -112,7 +131,7 @@ export default {
 	props: ['bench', 'releaseGroup'],
 	data() {
 		return {
-			show: true
+			show: true,
 		};
 	},
 	resources: {
@@ -125,9 +144,9 @@ export default {
 					if (doc.is_ssh_proxy_setup && doc.user_ssh_key) {
 						this.$releaseGroup.getCertificate.reload();
 					}
-				}
+				},
 			};
-		}
+		},
 	},
 	computed: {
 		$bench() {
@@ -150,7 +169,10 @@ export default {
 				}-cert.pub`;
 			}
 			return null;
-		}
-	}
+		},
+		isWindows() {
+			return navigator.userAgent.includes('Windows');
+		},
+	},
 };
 </script>

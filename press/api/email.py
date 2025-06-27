@@ -1,5 +1,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import calendar
 import json
@@ -9,6 +10,8 @@ from datetime import datetime
 import frappe
 import requests
 from frappe.exceptions import OutgoingEmailError, TooManyRequestsError, ValidationError
+from frappe.utils import validate_email_address
+from frappe.utils.password import get_decrypted_password
 
 from press.api.developer.marketplace import get_subscription_info
 from press.api.site import site_config, update_config
@@ -21,6 +24,10 @@ class EmailLimitExceeded(TooManyRequestsError):
 
 class EmailSendError(OutgoingEmailError):
 	pass
+
+
+class InvalidEmail(ValidationError):
+	http_status_code = 400
 
 
 class EmailConfigError(ValidationError):
@@ -107,7 +114,7 @@ def validate_plan(secret_key):
 
 	if not secret_key:
 		frappe.throw(
-			"Secret key missing. Email Delivery Service seems to be improperly installed. Try uninstalling and reinstalling it.",
+			"Secret key missing. Email Delivery Service seems to be improperly installed. Try reinstalling it.",
 			EmailConfigError,
 		)
 
@@ -122,8 +129,8 @@ def validate_plan(secret_key):
 
 	if not subscription["enabled"]:
 		frappe.throw(
-			"Your subscription is not active. Try activating it from, "
-			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/overview",
+			"Your subscription is not active. Try reinstalling Email Delivery Service."
+			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/apps",
 			EmailConfigError,
 		)
 
@@ -140,20 +147,33 @@ def validate_plan(secret_key):
 	if not count < plan_label_map[subscription["plan"]]:
 		frappe.throw(
 			"You have exceeded your quota for Email Delivery Service. Try upgrading it from, "
-			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/overview",
+			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/apps",
 			EmailLimitExceeded,
 		)
 
 
 def check_spam(message: bytes):
+	press_settings = frappe.get_cached_value(
+		"Press Settings",
+		None,
+		["enable_spam_check", "spamd_endpoint", "spamd_api_key"],
+		as_dict=True,
+	)
+	if not press_settings.enable_spam_check:
+		return
 	try:
+		headers = {}
+		if press_settings.spamd_api_key:
+			spamd_api_secret = get_decrypted_password("Press Settings", "Press Settings", "spamd_api_secret")
+			headers["Authorization"] = f"token {press_settings.spamd_api_key}:{spamd_api_secret}"
 		resp = requests.post(
-			"https://server.frappemail.com/spamd/score",
+			press_settings.spamd_endpoint,
+			headers=headers,
 			files={"message": message},
 		)
 		resp.raise_for_status()
 		data = resp.json()
-		if data["message"] > 3.5:
+		if data["message"] > 4.0:
 			frappe.throw(
 				"This email was blocked as it was flagged as spam by our system. Please review the contents and try again.",
 				SpamDetectionError,
@@ -162,6 +182,14 @@ def check_spam(message: bytes):
 		# Ignore error, if server.frappemail.com is being updated.
 		if e.response.status_code != 503:
 			log_error("Spam Detection : Error", data=e)
+
+
+def check_recipients(recipients: str | list[str]):
+	if isinstance(recipients, str):
+		validate_email_address(recipients, throw=True)
+	elif isinstance(recipients, list):
+		for recipient in recipients:
+			validate_email_address(recipient, throw=True)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -178,6 +206,7 @@ def send_mime_mail(**data):
 
 	message: bytes = files["mime"].read()
 	check_spam(message)
+	check_recipients(data["recipients"])
 
 	resp = requests.post(
 		f"https://api.mailgun.net/v3/{domain}/messages.mime",
@@ -188,7 +217,10 @@ def send_mime_mail(**data):
 
 	if resp.status_code == 200:
 		return "Sending"  # Not really required as v14 and up automatically marks the email q as sent
-	log_error("Email Delivery Service: Sending error", data=resp.text)
+	if resp.status_code == 400:
+		message = resp.json().get("message", "Invalid request")
+		frappe.throw(f"Something went wrong with sending emails: {message}", InvalidEmail)
+	log_error("Email Delivery Service: Sending error", response=resp.text, data=data, message=message)
 	frappe.throw(
 		"Something went wrong with sending emails. Please try again later or raise a support ticket with support.frappe.io",
 		EmailSendError,

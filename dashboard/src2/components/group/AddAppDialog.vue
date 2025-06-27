@@ -2,7 +2,7 @@
 	<Dialog
 		:options="{
 			title: 'Add Marketplace App',
-			size: '6xl'
+			size: '6xl',
 		}"
 		v-model="showDialog"
 	>
@@ -58,7 +58,7 @@
 					:options="{
 						selectable: false,
 						onRowClick: () => {},
-						getRowRoute: null
+						getRowRoute: null,
 					}"
 					row-key="name"
 				>
@@ -142,7 +142,7 @@ import {
 	ListRowItem,
 	TextInput,
 	Badge,
-	Button
+	Button,
 } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import { h } from 'vue';
@@ -154,8 +154,8 @@ export default {
 	props: {
 		group: {
 			type: Object,
-			required: true
-		}
+			required: true,
+		},
 	},
 	components: {
 		ListView,
@@ -165,7 +165,7 @@ export default {
 		ListRows,
 		ListRowItem,
 		TextInput,
-		NewAppDialog
+		NewAppDialog,
 	},
 	emits: ['appAdd', 'newApp'],
 	data() {
@@ -174,7 +174,7 @@ export default {
 			showNewAppDialog: false,
 			selectedAppSources: [],
 			showDialog: true,
-			addedApps: []
+			addedApps: [],
 		};
 	},
 	resources: {
@@ -185,26 +185,26 @@ export default {
 			},
 			onError(e) {
 				toast.error(getToastErrorMessage(e));
-			}
+			},
 		},
 		installableApps() {
 			return {
 				url: 'press.api.bench.all_apps',
 				params: {
-					name: this.group.name
+					name: this.group.name,
 				},
 				transform(data) {
-					return data.map(app => {
+					return data.map((app) => {
 						app.compatible = app.sources.length > 0;
 						app.source = app.sources.length > 0 ? app.sources[0] : {};
 						return app;
 					});
 				},
 				auto: true,
-				cache: 'benchInstallableApps',
-				initialData: []
+				cache: ['benchInstallableApps', this.group.version],
+				initialData: [],
 			};
-		}
+		},
 	},
 	computed: {
 		rows() {
@@ -221,17 +221,17 @@ export default {
 							? h('img', {
 									src: row.image,
 									class: 'w-6 h-6 rounded',
-									alt: row.title
-							  })
+									alt: row.title,
+								})
 							: h(
 									'div',
 									{
 										class:
-											'w-6 h-6 rounded bg-gray-300 text-gray-600 flex items-center justify-center'
+											'w-6 h-6 rounded bg-gray-300 text-gray-600 flex items-center justify-center',
 									},
-									row.title[0].toUpperCase()
-							  );
-					}
+									row.title[0].toUpperCase(),
+								);
+					},
 				},
 				{
 					label: 'Repository',
@@ -241,7 +241,7 @@ export default {
 					format(value, row) {
 						if (!row.sources.length) return value;
 						return `${row.source.repository_owner}/${row.source.repository}`;
-					}
+					},
 				},
 				{
 					label: 'Branch',
@@ -249,19 +249,19 @@ export default {
 					key: 'sources',
 					width: '15rem',
 					format(value, row) {
-						return row.sources.map(s => {
+						return row.sources.map((s) => {
 							return {
 								label: s.branch,
-								value: s.name
+								value: s.name,
 							};
 						});
-					}
+					},
 				},
 				{
 					label: '',
 					type: 'Component',
 					width: '8rem',
-					component: row => {
+					component: (row) => {
 						if (row.compatible)
 							return h(Button, {
 								label: 'Add',
@@ -270,18 +270,18 @@ export default {
 								disabled: !row.compatible,
 								class: {
 									'ml-auto': true,
-									'pointer-events-none': this.addedApps.includes(row)
+									'pointer-events-none': this.addedApps.includes(row),
 								},
-								onClick: () => this.addApp(row)
+								onClick: () => this.addApp(row),
 							});
 						else
 							return h(Badge, {
 								class: 'ml-auto',
 								label: 'Not Compatible',
-								theme: 'red'
+								theme: 'red',
 							});
-					}
-				}
+					},
+				},
 			];
 		},
 		filteredRows() {
@@ -301,8 +301,8 @@ export default {
 			if (!this.searchQuery) return rows;
 			let query = this.searchQuery.toLowerCase();
 
-			return rows.filter(row => {
-				let values = this.columns.map(column => {
+			return rows.filter((row) => {
+				let values = this.columns.map((column) => {
 					let value = row[column.key];
 					if (column.format) {
 						value = column.format(value, row);
@@ -322,7 +322,7 @@ export default {
 				this.$resources.addApp.loading ||
 				this.$resources.installableApps.loading
 			);
-		}
+		},
 	},
 	methods: {
 		addAppFromGithub(app, isUpdate) {
@@ -333,31 +333,31 @@ export default {
 			if (!this.selectedAppSources.includes(row))
 				this.selectedAppSources.push(row);
 
-			let app = this.selectedAppSources.find(app => app.name === row.name);
+			let app = this.selectedAppSources.find((app) => app.name === row.name);
 
 			this.$resources.addApp
 				.submit({
 					name: this.group.name,
 					source: app.source.name,
-					app: app.name
+					app: app.name,
 				})
 				.then(() => {
 					this.addedApps.push(app);
 				});
 		},
 		dropdownItems(row) {
-			return row.sources.map(source => ({
+			return row.sources.map((source) => ({
 				label: `${source.repository_owner}/${source.repository}:${source.branch}`,
-				onClick: () => this.selectSource(row, source)
+				onClick: () => this.selectSource(row, source),
 			}));
 		},
 		selectSource(app, source) {
 			app.source = source;
-			this.selectedAppSources = this.filteredRows.map(_app => {
+			this.selectedAppSources = this.filteredRows.map((_app) => {
 				if (app.name === _app.app) {
 					return {
 						app: app.name,
-						source
+						source,
 					};
 				}
 				return _app;
@@ -371,7 +371,7 @@ export default {
 			return typeof formattedValue === 'object'
 				? formattedValue
 				: String(formattedValue);
-		}
-	}
+		},
+	},
 };
 </script>

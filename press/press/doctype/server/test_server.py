@@ -20,6 +20,7 @@ from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy
 from press.press.doctype.server.server import BaseServer
 from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
 from press.press.doctype.team.test_team import create_test_team
+from press.press.doctype.virtual_machine.test_virtual_machine import create_test_virtual_machine
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.server.server import Server
@@ -33,6 +34,8 @@ def create_test_server(
 	plan: str | None = None,
 	team: str | None = None,
 	public: bool = False,
+	platform: str = "x86_64",
+	use_for_build: bool = False,
 ) -> "Server":
 	"""Create test Server doc."""
 	if not proxy_server:
@@ -57,6 +60,9 @@ def create_test_server(
 			"team": team,
 			"plan": plan,
 			"public": public,
+			"virtual_machine": create_test_virtual_machine().name,
+			"platform": platform,
+			"use_for_build": use_for_build,
 		}
 	).insert()
 	server.reload()

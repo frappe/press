@@ -1,0 +1,287 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-04-23 13:20:25.030627",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "column_break_ubnu",
+  "start",
+  "column_break_uvpj",
+  "end",
+  "source_section",
+  "repo",
+  "commit_hash",
+  "column_break_zkly",
+  "branch",
+  "commit_message",
+  "section_break_xivh",
+  "app_server",
+  "database_server",
+  "proxy_server",
+  "exclude_self_hosted_servers",
+  "column_break_xsdu",
+  "restart_web_workers",
+  "restart_rq_workers",
+  "restart_redis",
+  "agent_startup_timeout_minutes",
+  "column_break_ylpr",
+  "auto_rollback_changes",
+  "stop_after_single_rollback",
+  "rollback_to_specific_commit",
+  "default_rollback_commit",
+  "test_mode_section",
+  "run_on_fewer_servers_and_pause",
+  "paused_due_to_test_mode",
+  "column_break_dlmn",
+  "no_of_servers_to_update_initially",
+  "section_break_whdl",
+  "stuck_at_planning_reason",
+  "servers"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_section",
+   "fieldtype": "Section Break",
+   "label": "Source"
+  },
+  {
+   "fieldname": "repo",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Repo",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_zkly",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Branch",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "commit_hash",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Commit Hash",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_xivh",
+   "fieldtype": "Section Break",
+   "label": "Config"
+  },
+  {
+   "default": "1",
+   "fieldname": "auto_rollback_changes",
+   "fieldtype": "Check",
+   "label": "Auto Rollback Changes",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_xsdu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "restart_web_workers",
+   "fieldtype": "Check",
+   "label": "Restart Web Workers",
+   "read_only_depends_on": "eval: doc.status != \"Draft\" && doc.status != \"Planning\" && doc.status != \"Pending\""
+  },
+  {
+   "default": "0",
+   "fieldname": "restart_redis",
+   "fieldtype": "Check",
+   "label": "Restart Redis",
+   "read_only_depends_on": "eval: doc.status != \"Draft\" && doc.status != \"Planning\" && doc.status != \"Pending\""
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nPlanning\nPending\nRunning\nPartial Success\nSuccess\nPaused\nFailure",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_ubnu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "start",
+   "fieldtype": "Datetime",
+   "label": "Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_uvpj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "end",
+   "fieldtype": "Datetime",
+   "label": "End",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "app_server",
+   "fieldtype": "Check",
+   "label": "App Server",
+   "set_only_once": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "database_server",
+   "fieldtype": "Check",
+   "label": "Database Server",
+   "set_only_once": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "proxy_server",
+   "fieldtype": "Check",
+   "label": "Proxy Server",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_ylpr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "exclude_self_hosted_servers",
+   "fieldtype": "Check",
+   "label": "Exclude Self Hosted Servers",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_whdl",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "servers",
+   "fieldtype": "Table",
+   "label": "Servers",
+   "options": "Agent Update Server"
+  },
+  {
+   "depends_on": "eval: doc.rollback_to_specific_commit",
+   "fieldname": "default_rollback_commit",
+   "fieldtype": "Data",
+   "label": "Default Rollback Commit",
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval: doc.stuck_at_planning_reason",
+   "fieldname": "stuck_at_planning_reason",
+   "fieldtype": "Small Text",
+   "label": "Why Stuck at Planning ?",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.auto_rollback_changes",
+   "fieldname": "rollback_to_specific_commit",
+   "fieldtype": "Check",
+   "label": "Rollback to Specific Commit",
+   "set_only_once": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "restart_rq_workers",
+   "fieldtype": "Check",
+   "label": "Restart RQ Workers",
+   "read_only_depends_on": "eval: doc.status != \"Draft\" && doc.status != \"Planning\" && doc.status != \"Pending\""
+  },
+  {
+   "fieldname": "agent_startup_timeout_minutes",
+   "fieldtype": "Int",
+   "label": "Agent Startup Timeout (Minutes)",
+   "read_only_depends_on": "eval: doc.status == \"Running\""
+  },
+  {
+   "fieldname": "commit_message",
+   "fieldtype": "Data",
+   "label": "Commit Message",
+   "read_only": 1
+  },
+  {
+   "default": "1",
+   "depends_on": "eval: doc.auto_rollback_changes",
+   "fieldname": "stop_after_single_rollback",
+   "fieldtype": "Check",
+   "label": "Stop After Single Rollback",
+   "set_only_once": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "eval: doc.run_on_fewer_servers_and_pause",
+   "fieldname": "test_mode_section",
+   "fieldtype": "Section Break",
+   "label": "Test Mode"
+  },
+  {
+   "fieldname": "column_break_dlmn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval: doc.run_on_fewer_servers_and_pause",
+   "fieldname": "no_of_servers_to_update_initially",
+   "fieldtype": "Int",
+   "label": "No of Servers To Update Initially",
+   "mandatory_depends_on": "eval: doc.run_on_fewer_servers_and_pause",
+   "read_only_depends_on": "eval: doc.status != \"Draft\" && doc.status != \"Planning\" && doc.status != \"Pending\""
+  },
+  {
+   "default": "0",
+   "description": "You need to resume update once it pauses",
+   "fieldname": "run_on_fewer_servers_and_pause",
+   "fieldtype": "Check",
+   "label": "Run on Fewer Servers and Pause",
+   "read_only_depends_on": "eval: doc.status != \"Draft\" && doc.status != \"Planning\" && doc.status != \"Pending\""
+  },
+  {
+   "default": "0",
+   "fieldname": "paused_due_to_test_mode",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Paused Due to Test Mode"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-05-16 13:41:29.319164",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Agent Update",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

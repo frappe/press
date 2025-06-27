@@ -6,10 +6,12 @@ import json
 import os
 import random
 import traceback
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
+from frappe.monitor import add_data_to_monitor
 from frappe.utils import (
 	add_days,
 	cint,
@@ -27,10 +29,9 @@ from press.press.doctype.agent_job_type.agent_job_type import (
 from press.press.doctype.site_database_user.site_database_user import SiteDatabaseUser
 from press.press.doctype.site_migration.site_migration import (
 	get_ongoing_migration,
-	job_matches_site_migration,
 	process_site_migration_job_update,
 )
-from press.utils import has_role, log_error
+from press.utils import has_role, log_error, timer
 
 AGENT_LOG_KEY = "agent-jobs"
 
@@ -38,8 +39,6 @@ AGENT_LOG_KEY = "agent-jobs"
 class AgentJob(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
-
-	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
@@ -99,8 +98,10 @@ class AgentJob(Document):
 		if site and not has_role("Press Support Agent"):
 			is_owned_by_team("Site", site, raise_exception=True)
 
-		if group and not has_role("Press Support Agent"):
-			is_owned_by_team("Release Group", group, raise_exception=True)
+		if group:
+			if not has_role("Press Support Agent"):
+				is_owned_by_team("Release Group", group, raise_exception=True)
+
 			AgentJob = frappe.qb.DocType("Agent Job")
 			Bench = frappe.qb.DocType("Bench")
 			benches = frappe.qb.from_(Bench).select(Bench.name).where(Bench.group == filters.group)
@@ -306,6 +307,11 @@ class AgentJob(Document):
 	def process_job_updates(self):
 		process_job_updates(self.name)
 
+	@frappe.whitelist()
+	def cancel_job(self):
+		agent = Agent(self.server, server_type=self.server_type)
+		agent.cancel_job(self.job_id)
+
 	def on_trash(self):
 		steps = frappe.get_all("Agent Job Step", filters={"agent_job": self.name})
 		for step in steps:
@@ -340,6 +346,10 @@ class AgentJob(Document):
 		):
 			return True
 		return False
+
+	@property
+	def on_public_server(self):
+		return bool(frappe.db.get_value(self.server_type, self.server, "public"))
 
 
 def job_detail(job):
@@ -412,32 +422,25 @@ def publish_update(job):
 		)
 
 
-def suspend_sites():
-	"""Suspend sites if they have exceeded database or disk limits"""
+@timer
+def poll_random_jobs(agent, pending_ids):
+	random_pending_ids = random.sample(pending_ids, k=min(100, len(pending_ids)))
+	return agent.get_jobs_status(random_pending_ids)
 
-	if not frappe.db.get_single_value("Press Settings", "enforce_storage_limits"):
-		return
 
-	free_teams = frappe.get_all("Team", filters={"free_account": True, "enabled": True}, pluck="name")
-	active_sites = frappe.get_all(
-		"Site",
-		filters={"status": "Active", "free": False, "team": ("not in", free_teams)},
-		fields=["name", "team", "current_database_usage", "current_disk_usage"],
-	)
+@timer
+def handle_polled_jobs(polled_jobs, pending_jobs):
+	for polled_job in polled_jobs:
+		if not polled_job:
+			continue
+		handle_polled_job(pending_jobs=pending_jobs, polled_job=polled_job)
 
-	issue_reload = False
-	for site in active_sites:
-		if site.current_database_usage > 100 or site.current_disk_usage > 100:
-			frappe.get_doc("Site", site.name).suspend(
-				reason="Site Usage Exceeds Plan limits", skip_reload=True
-			)
-			issue_reload = True
 
-	if issue_reload:
-		proxies = frappe.get_all("Proxy Server", {"status": "Active"}, pluck="name")
-		for proxy_name in proxies:
-			agent = Agent(proxy_name, server_type="Proxy Server")
-			agent.reload_nginx()
+def add_timer_data_to_monitor(server):
+	if not hasattr(frappe.local, "timers"):
+		frappe.local.timers = {}
+
+	add_data_to_monitor(server=server, timing=frappe.local.timers)
 
 
 def poll_pending_jobs_server(server):
@@ -462,26 +465,25 @@ def poll_pending_jobs_server(server):
 
 	if not pending_jobs:
 		retry_undelivered_jobs(server)
+		add_timer_data_to_monitor(server.server)
 		return
 
 	pending_ids = [j.job_id for j in pending_jobs]
-	random_pending_ids = random.sample(pending_ids, k=min(100, len(pending_ids)))
-	polled_jobs = agent.get_jobs_status(random_pending_ids)
+	polled_jobs = poll_random_jobs(agent, pending_ids)
 
 	if not polled_jobs:
 		retry_undelivered_jobs(server)
+		add_timer_data_to_monitor(server.server)
 		return
 
-	for polled_job in polled_jobs:
-		if not polled_job:
-			continue
-		handle_polled_job(pending_jobs, polled_job)
+	handle_polled_jobs(polled_jobs, pending_jobs)
 
 	retry_undelivered_jobs(server)
+	add_timer_data_to_monitor(server.server)
 
 
-def handle_polled_job(pending_jobs, polled_job):
-	job = find(pending_jobs, lambda x: x.job_id == polled_job["id"])
+def handle_polled_job(polled_job, pending_jobs=None, job=None):
+	job = job or find(pending_jobs, lambda x: x.job_id == polled_job["id"])
 	try:
 		# Update Job Status
 		# If it is worthy of an update
@@ -543,17 +545,53 @@ def populate_output_cache(polled_job, job):
 			frappe.cache.hset("agent_job_step_output", step.name, "\n".join(lines))
 
 
+def filter_active_servers(servers):
+	# Prepare list of all_active_servers for each server_type
+	# Return servers that are in all_active_servers
+	server_types = [server.server_type for server in servers]
+	all_active_servers = {}
+	for server_type in server_types:
+		all_active_servers[server_type] = set(frappe.get_all(server_type, {"status": "Active"}, pluck="name"))
+
+	active_servers = []
+	for server in servers:
+		if server.server in all_active_servers[server.server_type]:
+			active_servers.append(server)
+
+	return active_servers
+
+
+def filter_request_failures(servers):
+	request_failures = set(frappe.get_all("Agent Request Failure", pluck="server"))
+
+	alive_servers = []
+	for server in servers:
+		if server.server not in request_failures:
+			alive_servers.append(server)
+
+	return alive_servers
+
+
 def poll_pending_jobs():
+	filters = {"status": ("in", ["Pending", "Running", "Undelivered"])}
+	if random.random() > 0.1:
+		# Experimenting with fewer polls (only for backup jobs)
+		# Reduce poll frequency for Backup Site jobs
+		# TODO: Replace this with something deterministic
+		filters["job_type"] = ("!=", "Backup Site")
 	servers = frappe.get_all(
 		"Agent Job",
 		fields=["server", "server_type"],
-		filters={"status": ("in", ["Pending", "Running", "Undelivered"])},
+		filters=filters,
 		group_by="server",
 		order_by="",
 		ignore_ifnull=True,
 	)
 
-	for server in servers:
+	active_servers = filter_active_servers(servers)
+	alive_servers = filter_request_failures(active_servers)
+
+	for server in alive_servers:
 		frappe.enqueue(
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs_server",
 			queue="short",
@@ -726,6 +764,7 @@ def get_next_retry_at(job_retry_count):
 	return add_to_date(now_datetime(), seconds=retry_in_seconds)
 
 
+@timer
 def retry_undelivered_jobs(server):
 	"""Retry undelivered jobs and update job status if max retry count is reached"""
 
@@ -879,10 +918,6 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 	start = now_datetime()
 
 	try:
-		from press.api.dboptimize import (
-			delete_all_occurences_of_mariadb_analyze_query,
-			fetch_column_stats_update,
-		)
 		from press.press.doctype.agent_job.agent_job_notifications import (
 			send_job_failure_notification,
 		)
@@ -900,7 +935,20 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_start_code_server_job_update,
 			process_stop_code_server_job_update,
 		)
-		from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+		from press.press.doctype.database_server.database_server import (
+			process_add_binlogs_to_indexer_agent_job_update,
+			process_remove_binlogs_from_indexer_agent_job_update,
+		)
+		from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
+		from press.press.doctype.mariadb_binlog.mariadb_binlog import (
+			process_upload_binlogs_to_s3_job_update,
+		)
+		from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
+			process_job_update as process_physical_backup_restoration_job_update,
+		)
+		from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
+			process_physical_backup_restoration_deactivate_site_job_update,
+		)
 		from press.press.doctype.proxy_server.proxy_server import (
 			process_update_nginx_job_update,
 		)
@@ -909,9 +957,11 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_setup_erpnext_site_job_update,
 		)
 		from press.press.doctype.site.site import (
+			process_add_domain_job_update,
 			process_archive_site_job_update,
 			process_complete_setup_wizard_job_update,
 			process_create_user_job_update,
+			process_fetch_database_table_schema_job_update,
 			process_install_app_site_job_update,
 			process_migrate_site_job_update,
 			process_move_site_to_bench_job_update,
@@ -923,17 +973,22 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_uninstall_app_site_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
-		from press.press.doctype.site_database_table_schema.site_database_table_schema import (
-			SiteDatabaseTableSchema,
+		from press.press.doctype.site_backup.site_backup import (
+			process_deactivate_site_job_update as process_site_backup_deactivate_site_job_update,
 		)
-		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
+		from press.press.doctype.site_domain.site_domain import (
+			process_add_domain_to_upstream_job_update,
+			process_new_host_job_update,
+		)
 		from press.press.doctype.site_update.site_update import (
+			process_activate_site_job_update,
+			process_deactivate_site_job_update,
 			process_update_site_job_update,
 			process_update_site_recover_job_update,
 		)
 
 		site_migration = get_ongoing_migration(job.site)
-		if site_migration and job_matches_site_migration(job, site_migration):
+		if site_migration:
 			process_site_migration_job_update(job, site_migration)
 		elif job.job_type == "Add Upstream to Proxy":
 			process_new_server_job_update(job)
@@ -966,12 +1021,14 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_stop_code_server_job_update(job)
 		elif job.job_type == "Archive Code Server" or job.job_type == "Remove Code Server from Upstream":
 			process_archive_code_server_job_update(job)
-		elif job.job_type == "Backup Site":
+		elif job.job_type in ["Backup Site", "Physical Backup Database"]:
 			process_backup_site_job_update(job)
 		elif job.job_type == "Archive Site" or job.job_type == "Remove Site from Upstream":
 			process_archive_site_job_update(job)
 		elif job.job_type == "Add Host to Proxy":
 			process_new_host_job_update(job)
+		elif job.job_type == "Add Domain to Upstream":
+			process_add_domain_to_upstream_job_update(job)
 		elif job.job_type == "Update Site Migrate" or job.job_type == "Update Site Pull":
 			process_update_site_job_update(job)
 		elif (
@@ -1000,24 +1057,9 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 		elif job.job_type == "Patch App":
 			AppPatch.process_patch_app(job)
 		elif job.job_type == "Run Remote Builder":
-			DeployCandidate.process_run_build(job, response_data)
-		elif job.job_type == "Column Statistics":
-			frappe.enqueue(
-				fetch_column_stats_update,
-				queue="default",
-				timeout=None,
-				is_async=True,
-				now=False,
-				job_name="Fetch Column Updates Through Enque",
-				enqueue_after_commit=False,
-				at_front=False,
-				job=job,
-				response_data=response_data,
-			)
+			DeployCandidateBuild.process_run_build(job, response_data)
 		elif job.job_type == "Create User":
 			process_create_user_job_update(job)
-		elif job.job_type == "Add Database Index":
-			delete_all_occurences_of_mariadb_analyze_query(job)
 		elif job.job_type == "Complete Setup Wizard":
 			process_complete_setup_wizard_job_update(job)
 		elif job.job_type == "Update Bench In Place":
@@ -1025,13 +1067,31 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 		elif job.job_type == "Recover Update In Place":
 			Bench.process_recover_update_inplace(job)
 		elif job.job_type == "Fetch Database Table Schema":
-			SiteDatabaseTableSchema.process_job_update(job)
+			process_fetch_database_table_schema_job_update(job)
 		elif job.job_type in [
 			"Create Database User",
 			"Remove Database User",
 			"Modify Database User Permissions",
 		]:
 			SiteDatabaseUser.process_job_update(job)
+		elif job.job_type == "Physical Restore Database":
+			process_physical_backup_restoration_job_update(job)
+		elif job.job_type == "Deactivate Site" and job.reference_doctype == "Site Update":
+			process_deactivate_site_job_update(job)
+		elif job.job_type == "Activate Site" and job.reference_doctype == "Site Update":
+			process_activate_site_job_update(job)
+		elif job.job_type == "Deactivate Site" and job.reference_doctype == "Site Backup":
+			process_site_backup_deactivate_site_job_update(job)
+		elif job.job_type == "Deactivate Site" and job.reference_doctype == "Physical Backup Restoration":
+			process_physical_backup_restoration_deactivate_site_job_update(job)
+		elif job.job_type == "Add Domain":
+			process_add_domain_job_update(job)
+		elif job.job_type == "Add Binlogs To Indexer":
+			process_add_binlogs_to_indexer_agent_job_update(job)
+		elif job.job_type == "Remove Binlogs From Indexer":
+			process_remove_binlogs_from_indexer_agent_job_update(job)
+		elif job.job_type == "Upload Binlogs To S3":
+			process_upload_binlogs_to_s3_job_update(job)
 
 		# send failure notification if job failed
 		if job.status == "Failure":

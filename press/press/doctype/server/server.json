@@ -16,11 +16,17 @@
   "provider",
   "virtual_machine",
   "ignore_incidents_since",
-  "is_server_prepared",
+  "section_break_mequ",
   "is_server_setup",
-  "is_self_hosted",
+  "is_server_prepared",
   "is_server_renamed",
+  "is_self_hosted",
+  "column_break_laiq",
   "public",
+  "use_agent_job_callbacks",
+  "is_pyspy_setup",
+  "halt_agent_jobs",
+  "stop_deployments",
   "billing_section",
   "team",
   "column_break_11",
@@ -29,6 +35,7 @@
   "auto_add_storage_max",
   "networking_section",
   "ip",
+  "ipv6",
   "column_break_3",
   "private_ip",
   "private_mac_address",
@@ -65,6 +72,7 @@
   "use_for_new_sites",
   "staging",
   "use_for_build",
+  "platform",
   "column_break_ktkv",
   "new_worker_allocation",
   "set_bench_memory_limits",
@@ -78,6 +86,7 @@
   "tags_section",
   "tags",
   "mounts_section",
+  "has_data_volume",
   "mounts"
  ],
  "fields": [
@@ -373,7 +382,6 @@
   },
   {
    "default": "root",
-   "depends_on": "eval:doc.is_self_hosted",
    "fieldname": "ssh_user",
    "fieldtype": "Data",
    "label": "SSH User"
@@ -511,7 +519,7 @@
    "search_index": 1
   },
   {
-   "default": "50",
+   "default": "25",
    "description": "Minimum storage to add automatically each time",
    "fieldname": "auto_add_storage_min",
    "fieldtype": "Int",
@@ -536,10 +544,65 @@
    "fieldtype": "Table",
    "label": "Mounts",
    "options": "Server Mount"
+  },
+  {
+   "default": "0",
+   "fetch_from": "virtual_machine.has_data_volume",
+   "fieldname": "has_data_volume",
+   "fieldtype": "Check",
+   "label": "Has Data Volume",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ipv6",
+   "fieldtype": "Data",
+   "label": "IPv6"
+  },
+  {
+   "default": "0",
+   "fieldname": "use_agent_job_callbacks",
+   "fieldtype": "Check",
+   "label": "Use Agent Job Callbacks"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_pyspy_setup",
+   "fieldtype": "Check",
+   "label": "Is PySpy Setup",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_mequ",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_laiq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Stop polling and queuing agent jobs",
+   "fieldname": "halt_agent_jobs",
+   "fieldtype": "Check",
+   "label": "Halt Agent Jobs"
+  },
+  {
+   "default": "x86_64",
+   "fieldname": "platform",
+   "fieldtype": "Select",
+   "label": "Platform",
+   "options": "x86_64\narm64"
+  },
+  {
+   "default": "0",
+   "description": "Stop all new builds for the server",
+   "fieldname": "stop_deployments",
+   "fieldtype": "Check",
+   "label": "Stop deployments"
   }
  ],
  "links": [],
- "modified": "2024-11-12 14:45:00.123456",
+ "modified": "2025-06-02 09:43:06.619945",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
@@ -570,6 +633,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

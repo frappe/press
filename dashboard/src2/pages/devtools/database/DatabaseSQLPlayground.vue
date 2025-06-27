@@ -8,7 +8,7 @@
 				<Breadcrumbs
 					:items="[
 						{ label: 'Dev Tools', route: '/sql-playground' }, // Dev tools has no seperate page as its own, so it doesn't need a different route
-						{ label: 'SQL Playground', route: '/sql-playground' }
+						{ label: 'SQL Playground', route: '/sql-playground' },
 					]"
 				/>
 				<!-- Actions -->
@@ -18,12 +18,12 @@
 					:options="[
 						{
 							label: 'Read Only&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;',
-							value: 'read-only'
+							value: 'read-only',
 						},
 						{
 							label: 'Read Write&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;',
-							value: 'read-write'
-						}
+							value: 'read-write',
+						},
 					]"
 					size="sm"
 					variant="outline"
@@ -33,19 +33,22 @@
 			<div class="flex flex-row gap-2">
 				<LinkControl
 					class="cursor-pointer"
-					:options="{ doctype: 'Site', filters: { status: 'Active' } }"
+					:options="{
+						doctype: 'Site',
+						filters: { status: ['!=', 'Archived'] },
+					}"
 					placeholder="Select a site"
 					v-model="site"
 				/>
 				<Button
-					iconLeft="refresh-ccw"
+					icon="refresh-ccw"
 					variant="subtle"
-					:loading="site && !isSQLEditorReady"
+					:loading="site && !isAutoCompletionReady"
 					:disabled="!site"
 					@click="
 						() =>
 							fetchTableSchemas({
-								reload: true
+								reload: true,
 							})
 					"
 				>
@@ -57,29 +60,50 @@
 	</Header>
 	<div class="m-5">
 		<!-- body -->
-		<div class="mt-2 flex flex-col" v-if="isSQLEditorReady">
+		<div
+			v-if="!site"
+			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
+		>
+			Select a site to get started
+		</div>
+		<div class="mt-2 flex flex-col" v-else>
 			<div class="overflow-hidden rounded border">
 				<SQLCodeEditor
 					v-model="query"
-					v-if="sqlSchemaForAutocompletion"
 					:schema="sqlSchemaForAutocompletion"
+					@codeSelected="handleCodeSelected"
+					@codeUnselected="handleCodeUnselected"
 				/>
 			</div>
 			<div class="mt-2 flex flex-row items-center justify-between">
 				<div class="flex gap-2">
-					<Button iconLeft="table" @click="toggleTableSchemasDialog"
+					<Button
+						iconLeft="table"
+						@click="toggleTableSchemasDialog"
+						:disabled="!isAutoCompletionReady"
 						>Tables</Button
 					>
 					<Button iconLeft="file-text" @click="toggleLogsDialog">Logs</Button>
 				</div>
 
-				<Button
-					@click="() => runSQLQuery()"
-					:loading="$resources.runSQLQuery.loading"
-					iconLeft="play"
-					variant="solid"
-					>Run Query</Button
-				>
+				<div class="flex gap-2">
+					<Button
+						v-if="selectedQuery"
+						@click="runSelectedSQLQuery"
+						:loading="$resources.runSQLQuery.loading"
+						iconLeft="play"
+						variant="outline"
+					>
+						Run Selected Query
+					</Button>
+					<Button
+						@click="() => runSQLQuery()"
+						:loading="$resources.runSQLQuery.loading"
+						iconLeft="play"
+						variant="solid"
+						>Run Query</Button
+					>
+				</div>
 			</div>
 			<div
 				class="mt-4"
@@ -98,7 +122,7 @@
 				</div>
 				<div v-else>
 					<FTabs :tabs="sqlResultTabs" v-model="tabIndex">
-						<template #default="{ tab }">
+						<template #tab-panel="{ tab }">
 							<div class="pt-5">
 								<SQLResult :result="tab" />
 							</div>
@@ -107,18 +131,7 @@
 				</div>
 			</div>
 		</div>
-		<div
-			v-else-if="!site"
-			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
-		>
-			Select a site to get started
-		</div>
-		<div
-			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
-			v-else
-		>
-			<Spinner class="w-4" /> Setting Up SQL Playground
-		</div>
+
 		<DatabaseSQLPlaygroundLog
 			v-if="this.site"
 			:site="this.site"
@@ -130,6 +143,7 @@
 			:site="this.site"
 			:tableSchemas="$resources.tableSchemas?.data?.message?.data ?? {}"
 			v-model="showTableSchemasDialog"
+			:showSQLActions="true"
 			@runSQLQuery="runSQLQueryForViewingTable"
 		/>
 	</div>
@@ -143,7 +157,6 @@
 import { toast } from 'vue-sonner';
 import Header from '../../../components/Header.vue';
 import { Tabs, Breadcrumbs } from 'frappe-ui';
-import SQLResultTable from '../../../components/devtools/database/SQLResultTable.vue';
 import SQLCodeEditor from '../../../components/devtools/database/SQLCodeEditor.vue';
 import { confirmDialog } from '../../../utils/components';
 import DatabaseSQLPlaygroundLog from '../../../components/devtools/database/DatabaseSQLPlaygroundLog.vue';
@@ -158,18 +171,18 @@ export default {
 		Header,
 		Breadcrumbs,
 		FTabs: Tabs,
-		SQLResultTable,
 		SQLResult,
 		SQLCodeEditor,
 		DatabaseSQLPlaygroundLog,
 		DatabaseTableSchemaDialog,
-		LinkControl
+		LinkControl,
 	},
 	data() {
 		return {
 			site: null,
 			tabIndex: 0,
 			query: '',
+			selectedQuery: null,
 			commit: false,
 			execution_successful: null,
 			data: null,
@@ -177,7 +190,7 @@ export default {
 			failedQuery: null,
 			mode: 'read-only',
 			showLogsDialog: false,
-			showTableSchemasDialog: false
+			showTableSchemasDialog: false,
 		};
 	},
 	mounted() {},
@@ -185,7 +198,7 @@ export default {
 		query() {
 			window.localStorage.setItem(
 				`sql_playground_query_${this.site}`,
-				this.query
+				this.query,
 			);
 		},
 		site(site_name) {
@@ -202,15 +215,15 @@ export default {
 			this.query =
 				window.localStorage.getItem(`sql_playground_query_${this.site}`) || '';
 			this.fetchTableSchemas({
-				site_name: site_name
+				site_name: site_name,
 			});
-		}
+		},
 	},
 	resources: {
 		runSQLQuery() {
 			return {
 				url: 'press.api.client.run_doc_method',
-				onSuccess: data => {
+				onSuccess: (data) => {
 					this.execution_successful = data?.message?.success || false;
 					if (!this.execution_successful) {
 						this.errorMessage = data?.message?.data ?? 'Unknown error';
@@ -222,10 +235,10 @@ export default {
 					}
 					this.tabIndex = 0; // reset tab index for results
 				},
-				onError: e => {
+				onError: (e) => {
 					toast.error(getToastErrorMessage(e, 'Failed to run SQL query'));
 				},
-				auto: false
+				auto: false,
 			};
 		},
 		tableSchemas() {
@@ -233,13 +246,13 @@ export default {
 				url: 'press.api.client.run_doc_method',
 				initialData: {},
 				auto: false,
-				onSuccess: data => {
+				onSuccess: (data) => {
 					if (data?.message?.loading) {
 						setTimeout(this.fetchTableSchemas, 5000);
 					}
-				}
+				},
 			};
-		}
+		},
 	},
 	computed: {
 		sqlSchemaForAutocompletion() {
@@ -250,19 +263,19 @@ export default {
 			for (const tableName in tableSchemas) {
 				childrenSchemas[tableName] = {
 					self: { label: tableName, type: 'table' },
-					children: tableSchemas[tableName].map(x => ({
+					children: tableSchemas[tableName].columns.map((x) => ({
 						label: x.column,
 						type: 'column',
-						detail: x.data_type
-					}))
+						detail: x.data_type,
+					})),
 				};
 			}
 			return {
 				self: { label: 'SQL Schema', type: 'schema' },
-				children: childrenSchemas
+				children: childrenSchemas,
 			};
 		},
-		isSQLEditorReady() {
+		isAutoCompletionReady() {
 			if (this.$resources.tableSchemas.loading) return false;
 			if (this.$resources.tableSchemas?.data?.message?.loading) return false;
 			if (!this.$resources.tableSchemas?.data?.message?.data) return false;
@@ -277,13 +290,19 @@ export default {
 			for (let i = 0; i < this.data.length; i++) {
 				data.push({
 					label: `Query ${queryNo++}`,
-					...this.data[i]
+					...this.data[i],
 				});
 			}
 			return data;
-		}
+		},
 	},
 	methods: {
+		handleCodeSelected(selectedCode) {
+			this.selectedQuery = selectedCode;
+		},
+		handleCodeUnselected() {
+			this.selectedQuery = null;
+		},
 		fetchTableSchemas({ site_name = null, reload = false } = {}) {
 			if (!site_name) site_name = this.site;
 			if (!site_name) return;
@@ -292,11 +311,11 @@ export default {
 				dn: site_name,
 				method: 'fetch_database_table_schema',
 				args: {
-					reload
-				}
+					reload,
+				},
 			});
 		},
-		runSQLQuery(ignore_validation = false) {
+		runSQLQuery(ignore_validation = false, run_selected_query = false) {
 			if (!this.query) return;
 			if (this.mode === 'read-only' || ignore_validation) {
 				this.$resources.runSQLQuery.submit({
@@ -304,9 +323,9 @@ export default {
 					dn: this.site,
 					method: 'run_sql_query_in_database',
 					args: {
-						query: this.query,
-						commit: this.mode === 'read-write'
-					}
+						query: run_selected_query ? this.selectedQuery : this.query,
+						commit: this.mode === 'read-write',
+					},
 				});
 				return;
 			}
@@ -321,16 +340,41 @@ Are you sure you want to run the query?`,
 					label: 'Run Query',
 					variant: 'solid',
 					onClick: ({ hide }) => {
-						this.runSQLQuery(true);
+						this.runSQLQuery(true, run_selected_query);
 						hide();
-					}
-				}
+					},
+				},
+			});
+		},
+		runSelectedSQLQuery() {
+			if (!this.selectedQuery) {
+				return;
+			}
+			confirmDialog({
+				title: 'Verify Query',
+				message: `
+Are you sure you want to run the query?
+<br>
+<pre class="mt-2 max-h-52 overflow-y-auto whitespace-pre-wrap rounded bg-gray-50 px-2 py-1.5 text-sm text-gray-700">${this.selectedQuery}</pre>
+				`,
+				primaryAction: {
+					label: 'Run Query',
+					variant: 'solid',
+					onClick: ({ hide }) => {
+						this.runSQLQuery(false, true);
+						hide();
+					},
+				},
 			});
 		},
 		toggleLogsDialog() {
 			this.showLogsDialog = !this.showLogsDialog;
 		},
 		toggleTableSchemasDialog() {
+			if (!this.isAutoCompletionReady) {
+				toast.error('Table schemas are still loading. Please wait.');
+				return;
+			}
 			this.showTableSchemasDialog = !this.showTableSchemasDialog;
 		},
 		rerunQuery(query) {
@@ -357,7 +401,7 @@ Are you sure you want to run the query?`,
 			} else {
 				return msg;
 			}
-		}
-	}
+		},
+	},
 };
 </script>

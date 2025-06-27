@@ -80,7 +80,7 @@ def account_request(
 			source=json.loads(url_args).get("source") if url_args else "fc",
 		)
 		account_request.insert(ignore_permissions=True)
-		capture("completed_server_account_request", "fc_saas", site_name)
+		capture("completed_server_account_request", "fc_product_trial", site_name)
 	except Exception as e:
 		log_error("Account Request Creation Failed", data=e)
 		raise
@@ -111,7 +111,7 @@ def create_or_rename_saas_site(app, account_request):
 			).insert(ignore_permissions=True)
 			set_site_in_subscription_docs(saas_site.subscription_docs, saas_site.name)
 
-		capture("completed_server_site_created", "fc_saas", account_request.get_site_name())
+		capture("completed_server_site_created", "fc_product_trial", account_request.get_site_name())
 	except Exception as e:
 		log_error("Saas Site Creation or Rename failed", data=e)
 
@@ -166,7 +166,13 @@ def get_hybrid_saas_pool(account_request):
 	)
 
 	for rule in ar_rules:
-		if eval(f"account_request.{rule.field} {rule.condition} '{rule.value}'"):
+		eval_locals = eval_locals = dict(
+			account_request=account_request,
+		)
+
+		if frappe.safe_eval(
+			f"account_request.{rule.field} {rule.condition} '{rule.value}'", None, eval_locals
+		):
 			hybrid_pool = rule.parent
 			return hybrid_pool  # noqa: RET504
 
@@ -233,7 +239,7 @@ def setup_account(key, business_data=None):
 
 	capture(
 		"init_server_setup_account",
-		"fc_saas",
+		"fc_product_trial",
 		account_request.get_site_name(),
 	)
 	frappe.set_user("Administrator")
@@ -262,7 +268,7 @@ def setup_account(key, business_data=None):
 	create_marketplace_subscription(account_request)
 	capture(
 		"completed_server_setup_account",
-		"fc_saas",
+		"fc_product_trial",
 		account_request.get_site_name(),
 	)
 
@@ -278,7 +284,7 @@ def headless_setup_account(key):
 
 	capture(
 		"init_server_setup_account",
-		"fc_saas",
+		"fc_product_trial",
 		account_request.get_site_name(),
 	)
 	frappe.set_user("Administrator")
@@ -287,7 +293,7 @@ def headless_setup_account(key):
 	# create team and enable the subscriptions for site
 	capture(
 		"completed_server_setup_account",
-		"fc_saas",
+		"fc_product_trial",
 		account_request.get_site_name(),
 	)
 
@@ -369,7 +375,7 @@ def get_site_status(key, app=None):
 		as_dict=1,
 	)
 	if site:
-		capture("completed_site_allocation", "fc_saas", site.name)
+		capture("completed_site_allocation", "fc_product_trial", site.name)
 		return site
 	return {"status": "Pending"}
 

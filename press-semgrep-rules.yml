@@ -22,6 +22,7 @@ rules:
         - python
       references:
         - https://docs.python-guide.org/writing/gotchas/#mutable-default-arguments
+
   - id: except-with-db-code
     languages:
       - python
@@ -32,33 +33,33 @@ rules:
           except ...:
             $ERR_HANDL_BLK
       - pattern-either:
-        - pattern: |
-            try:
-              ...
-            except ...:
-              ...
-              $DOC.save(...)
-              ...
-              raise
-              ...
-        - pattern: |
-            try:
-              ...
-            except ...:
-              ...
-              frappe. ... .set_value(...)
-              ...
-              raise
-              ...
-        - pattern: |
-            try:
-              ...
-            except ...:
-              ...
-              $DOC.db_set(...)
-              ...
-              raise
-              ...
+          - pattern: |
+              try:
+                ...
+              except ...:
+                ...
+                $DOC.save(...)
+                ...
+                raise
+                ...
+          - pattern: |
+              try:
+                ...
+              except ...:
+                ...
+                frappe. ... .set_value(...)
+                ...
+                raise
+                ...
+          - pattern: |
+              try:
+                ...
+              except ...:
+                ...
+                $DOC.db_set(...)
+                ...
+                raise
+                ...
       - pattern-not: |
           try:
             ...
@@ -94,4 +95,32 @@ rules:
 
     message: except block has no db commit before raise. The db changes made won't persist assuming innodb tables.
     severity: ERROR
+
+  - id: retries-without-until
+    languages:
+      - yaml
+    patterns:
+      - pattern: |
+          ...
+          retries: $RETRIES
+          delay: $DELAY
+          ...
+
+      - pattern-not: |
+          ...
+          retries: $RETRIES
+          delay: $DELAY
+          until: $UNTIL
+          ...
+
+    paths:
+      include:
+        - 'press/playbooks/**/*.yml'
+    message: retry block doesn't have until condition. Only works with ansible 2.16 and above.
+    severity: ERROR
+    metadata:
+      category: correctness
+      references:
+        - https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_loops.html#retrying-a-task-until-a-condition-is-met
+        - https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-community-changelogs
 

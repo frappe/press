@@ -53,10 +53,22 @@ frappe.ui.form.on('Server', {
 		[
 			[__('Update Agent'), 'update_agent', true, frm.doc.is_server_setup],
 			[
+				__('Install Filebeat'),
+				'install_filebeat',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
 				__('Update Agent Ansible'),
 				'update_agent_ansible',
 				true,
 				frm.doc.is_server_setup,
+			],
+			[
+				__('Setup PySpy'),
+				'setup_pyspy',
+				false,
+				frm.doc.is_server_setup && !frm.doc.is_pyspy_setup,
 			],
 			[
 				__('Prepare Server'),
@@ -137,8 +149,20 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup,
 			],
 			[
+				__('Start Active Benches'),
+				'start_active_benches',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
 				__('Show Agent Password'),
 				'show_agent_password',
+				false,
+				frm.doc.is_server_setup,
+			],
+			[
+				__('Show Agent Version'),
+				'show_agent_version',
 				false,
 				frm.doc.is_server_setup,
 			],
@@ -198,6 +222,14 @@ frappe.ui.form.on('Server', {
 				true,
 				frm.doc.virtual_machine && frm.doc.mounts,
 			],
+			[
+				__('Collect ARM Images'),
+				'collect_arm_images',
+				true,
+				frm.doc.virtual_machine &&
+					frm.doc.status === 'Active' &&
+					frm.doc.platform === 'x86_64',
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
@@ -239,8 +271,8 @@ frappe.ui.form.on('Server', {
 						fields: [
 							{
 								fieldtype: 'Int',
-								label: __('Swap Size'),
-								description: __('Size in GB'),
+								label: __('Swap Size (GB)'),
+								description: __('Add additional swap'),
 								fieldname: 'swap_size',
 								default: 4,
 							},
@@ -249,6 +281,34 @@ frappe.ui.form.on('Server', {
 
 					dialog.set_primary_action(__('Increase Swap'), (args) => {
 						frm.call('increase_swap', args).then(() => {
+							dialog.hide();
+							frm.refresh();
+						});
+					});
+					dialog.show();
+				},
+				__('Actions'),
+			);
+			frm.add_custom_button(
+				__('Reset Swap'),
+				() => {
+					const dialog = new frappe.ui.Dialog({
+						title: __('Swap Size'),
+						fields: [
+							{
+								fieldtype: 'Int',
+								label: __('Swap Size (GB)'),
+								description: __(
+									'This will reset swap space to specified size. 0 or empty to remove all.',
+								),
+								fieldname: 'swap_size',
+								default: 1,
+							},
+						],
+					});
+
+					dialog.set_primary_action(__('Reset Swap'), (args) => {
+						frm.call('reset_swap', args).then(() => {
 							dialog.hide();
 							frm.refresh();
 						});

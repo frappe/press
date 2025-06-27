@@ -1,32 +1,39 @@
 ---
-- name: Update Agent Repository
+- name: Update Agent Repository Remote
   become: yes
   become_user: frappe
   command: 'git remote set-url upstream {{ agent_repository_url }}'
   args:
     chdir: /home/frappe/agent/repo
 
-- name: Checkout Agent Repository Branch
+- name: Fetch Agent Upstream
   become: yes
   become_user: frappe
-  command: 'git checkout {{ agent_repository_branch }}'
+  command: 'git fetch upstream'
   args:
     chdir: /home/frappe/agent/repo
 
-- name: Pull Agent Changes
+- name: Checkout specified commit or branch
   become: yes
   become_user: frappe
-  command: 'git pull upstream {{ agent_repository_branch }}'
+  shell: |
+    git checkout {{ agent_repository_branch_or_commit_ref }}
+    git reset --hard {{ agent_repository_branch_or_commit_ref }}
+    git clean -fd
   args:
     chdir: /home/frappe/agent/repo
 
-- name: Update Agent
+- name: Install Python Requirements
   become: yes
   become_user: frappe
-  command: /home/frappe/agent/env/bin/agent update
+  command: './env/bin/pip install -r ./repo/requirements.txt'
   args:
     chdir: /home/frappe/agent
-  ignore_errors: yes
+
+- name: Install Agent
+  command: './env/bin/pip install -e /home/frappe/agent/repo'
+  args:
+    chdir: /home/frappe/agent
 
 - name: Update Agent database
   become: yes
@@ -42,18 +49,19 @@
   args:
     chdir: /home/frappe/agent
 
+- name: Update Agent
+  become: yes
+  become_user: frappe
+  command: '/home/frappe/agent/env/bin/agent update {{ agent_update_args }}'
+  args:
+    chdir: /home/frappe/agent
+
 - name: Set Ownership of Agent Logs to Frappe user
   file:
     path: /home/frappe/agent/logs
     owner: frappe
     group: frappe
     recurse: yes
-
-- name: Start Agent processes
-  become: yes
-  become_user: frappe
-  command: 'sudo supervisorctl start agent:'
-  ignore_errors: yes
 
 - name: Ensure Agent processes are started
   supervisorctl:

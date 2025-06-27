@@ -38,6 +38,7 @@ class ServerPlan(Plan):
 		"memory",
 		"disk",
 		"platform",
+		"premium",
 	)
 
 	def get_doc(self, doc):

@@ -11,9 +11,9 @@
 					onClick: () => {
 						$resources.restoreBackup.submit();
 						showRestoreDialog = false;
-					}
-				}
-			]
+					},
+				},
+			],
 		}"
 		v-model="showRestoreDialog"
 	>
@@ -25,8 +25,8 @@
 				>
 					<i-lucide-alert-triangle class="mr-4 inline-block h-6 w-6" />
 					<div>
-						This operation will replace all <b>data</b> & <b>apps</b> in your
-						site with those from the backup
+						This will overwrite all <b>data</b> & <b>apps</b> in your site with
+						those from the backup
 					</div>
 				</div>
 				<BackupFilesUploader v-model:backupFiles="selectedFiles" />
@@ -55,8 +55,8 @@ export default {
 	props: {
 		site: {
 			type: String,
-			required: true
-		}
+			required: true,
+		},
 	},
 	data() {
 		return {
@@ -65,9 +65,9 @@ export default {
 				database: null,
 				public: null,
 				private: null,
-				config: null
+				config: null,
 			},
-			skipFailingPatches: false
+			skipFailingPatches: false,
 		};
 	},
 	resources: {
@@ -77,12 +77,12 @@ export default {
 				params: {
 					name: this.site,
 					files: this.selectedFiles,
-					skip_failing_patches: this.skipFailingPatches
+					skip_failing_patches: this.skipFailingPatches,
 				},
 				validate() {
 					if (!this.filesUploaded) {
 						throw new DashboardError(
-							'Please upload database, public and private files to restore.'
+							'Please upload database, public and private files to restore.',
 						);
 					}
 				},
@@ -90,16 +90,16 @@ export default {
 					this.selectedFiles = {};
 					this.$router.push({
 						name: 'Site Jobs',
-						params: { name: this.site }
+						params: { name: this.site },
 					});
-				}
+				},
 			};
-		}
+		},
 	},
 	computed: {
 		filesUploaded() {
 			return this.selectedFiles.database;
-		}
-	}
+		},
+	},
 };
 </script>

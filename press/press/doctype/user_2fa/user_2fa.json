@@ -8,7 +8,10 @@
  "field_order": [
   "user",
   "totp_secret",
-  "enabled"
+  "enabled",
+  "last_verified_at",
+  "recovery_codes",
+  "recovery_codes_last_viewed_at"
  ],
  "fields": [
   {
@@ -28,11 +31,28 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled"
+  },
+  {
+   "fieldname": "last_verified_at",
+   "fieldtype": "Datetime",
+   "label": "Last Verified At"
+  },
+  {
+   "fieldname": "recovery_codes",
+   "fieldtype": "Table",
+   "label": "Recovery Codes",
+   "options": "User 2FA Recovery Code"
+  },
+  {
+   "fieldname": "recovery_codes_last_viewed_at",
+   "fieldtype": "Datetime",
+   "label": "Recovery Codes Last Viewed At"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-08-21 16:36:26.321395",
+ "modified": "2025-06-21 16:04:54.476967",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "User 2FA",
@@ -76,6 +96,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": []

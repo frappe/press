@@ -33,6 +33,7 @@
    "label": "Deploy Candidate",
    "options": "Deploy Candidate",
    "reqd": 1,
+   "search_index": 1,
    "set_only_once": 1
   },
   {
@@ -68,7 +69,7 @@
   }
  ],
  "links": [],
- "modified": "2021-07-23 10:34:15.747070",
+ "modified": "2025-05-28 11:45:25.237521",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy",
@@ -99,7 +100,9 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

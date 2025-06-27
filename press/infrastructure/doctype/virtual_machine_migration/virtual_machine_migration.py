@@ -7,7 +7,7 @@ import shlex
 import subprocess
 import time
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import frappe
 from frappe.core.utils import find
@@ -19,6 +19,8 @@ if TYPE_CHECKING:
 	from press.infrastructure.doctype.virtual_machine_migration_step.virtual_machine_migration_step import (
 		VirtualMachineMigrationStep,
 	)
+	from press.press.doctype.server.server import Server
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 StepStatus = Enum("StepStatus", ["Pending", "Running", "Success", "Failure"])
@@ -65,6 +67,7 @@ class VirtualMachineMigration(Document):
 	# end: auto-generated types
 
 	def before_insert(self):
+		self.server_type: Literal["Database Server", "Server"] = self.machine.get_server().doctype
 		self.validate_aws_only()
 		self.validate_existing_migration()
 		self.add_steps()
@@ -133,11 +136,10 @@ class VirtualMachineMigration(Document):
 			# No root volume found
 			return
 
-		server_type = self.machine.get_server().doctype
-		if server_type == "Server":
+		if self.server_type == "Server":
 			target_mount_point = "/opt/volumes/benches"
 			service = "docker"
-		elif server_type == "Database Server":
+		elif self.server_type == "Database Server":
 			target_mount_point = "/opt/volumes/mariadb"
 			service = "mariadb"
 		else:
@@ -160,8 +162,7 @@ class VirtualMachineMigration(Document):
 		if self.bind_mounts:
 			return
 
-		server_type = self.machine.get_server().doctype
-		if server_type == "Server":
+		if self.server_type == "Server":
 			self.append(
 				"bind_mounts",
 				{
@@ -171,7 +172,16 @@ class VirtualMachineMigration(Document):
 					"mount_point_group": "frappe",
 				},
 			)
-		elif server_type == "Database Server":
+			self.append(
+				"bind_mounts",
+				{
+					"source_mount_point": "/opt/volumes/benches/var/lib/docker",
+					"service": "docker",
+					"mount_point_owner": "root",
+					"mount_point_group": "root",
+				},
+			)
+		elif self.server_type == "Database Server":
 			self.append(
 				"bind_mounts",
 				{
@@ -221,6 +231,10 @@ class VirtualMachineMigration(Document):
 
 	def set_new_plan(self):
 		server = self.machine.get_server()
+
+		if not server.plan:
+			return
+
 		old_plan = frappe.get_doc("Server Plan", server.plan)
 		matching_plans = frappe.get_all(
 			"Server Plan",
@@ -255,11 +269,11 @@ class VirtualMachineMigration(Document):
 			frappe.throw(f"An existing migration is already {existing[0].lower()}.")
 
 	@property
-	def machine(self):
+	def machine(self) -> VirtualMachine:
 		return frappe.get_doc("Virtual Machine", self.virtual_machine)
 
 	@property
-	def copied_machine(self):
+	def copied_machine(self) -> VirtualMachine:
 		return frappe.get_doc("Virtual Machine", self.copied_virtual_machine)
 
 	@property
@@ -282,7 +296,15 @@ class VirtualMachineMigration(Document):
 			(self.update_mounts, NoWait),
 			(self.update_bind_mount_permissions, NoWait),
 			(self.update_plan, NoWait),
+			(self.update_tls_certificate, NoWait),
 		]
+
+		if self.server_type == "Server":
+			methods.insert(0, (self.remove_docker_containers, Wait))
+			methods.append((self.update_server_platform, Wait))
+			methods.append((self.update_agent_ansible, Wait))
+			methods.append((self.start_active_benches, Wait))
+			methods.append((self.post_init_configurations, Wait))
 
 		steps = []
 		for method, wait_for_completion in methods:
@@ -294,6 +316,51 @@ class VirtualMachineMigration(Document):
 				}
 			)
 		return steps
+
+	def update_server_platform(self) -> StepStatus:
+		"""Update server platform"""
+		server = self.machine.get_server()
+		server.platform = "arm64"
+		server.save()
+		return StepStatus.Success
+
+	def remove_docker_containers(self) -> StepStatus:
+		"""Remove docker containers"""
+		container_names = frappe.get_all(
+			"Bench",
+			{"status": "Active", "server": self.machine.name},
+			pluck="name",
+		)
+		container_names = " ".join(container_names)
+		command = f"docker rm -f {container_names}"
+		result = self.ansible_run(command)
+
+		if result["status"] != "Success" or result["error"]:
+			self.add_comment(text=f"Error stoping docker: {result}")
+			return StepStatus.Failure
+
+		return StepStatus.Success
+
+	def post_init_configurations(self) -> StepStatus:
+		"""Run post init configurations"""
+		server: Server = frappe.get_doc("Server", self.machine.name)
+		server.set_swappiness()
+		server.add_glass_file()
+		server.install_filebeat()
+		server.setup_mysqldump()
+		server.install_earlyoom()
+
+	def update_agent_ansible(self) -> StepStatus:
+		"""Update agent on server"""
+		server: Server = frappe.get_doc("Server", self.machine.name)
+		server._update_agent_ansible()
+		return StepStatus.Success
+
+	def start_active_benches(self) -> StepStatus:
+		"""Start active benches on the server"""
+		server: Server = frappe.get_doc("Server", self.machine.name)
+		server.start_active_benches()
+		return StepStatus.Success
 
 	def update_partition_labels(self) -> StepStatus:
 		"Update partition labels"
@@ -359,6 +426,7 @@ class VirtualMachineMigration(Document):
 		if copied_machine.status == "Terminated":
 			return StepStatus.Success
 		if copied_machine.status == "Pending":
+			copied_machine.sync()
 			return StepStatus.Pending
 
 		copied_machine.disable_termination_protection()
@@ -384,8 +452,10 @@ class VirtualMachineMigration(Document):
 
 		# Set new machine image and machine type
 		machine.virtual_machine_image = self.virtual_machine_image
+		machine.machine_image = None
 		machine.machine_type = self.machine_type
-		machine.disk_size = 10  # Default disk size for new machines
+		machine.root_disk_size = 10  # Default root disk size for new machines
+		machine.has_data_volume = True  # VM Migration always adds a data volume
 		machine.save()
 		return StepStatus.Success
 
@@ -494,6 +564,24 @@ class VirtualMachineMigration(Document):
 			server._change_plan(plan)
 		return StepStatus.Success
 
+	def update_tls_certificate(self) -> StepStatus:
+		"Update TLS certificate"
+		server = self.machine.get_server()
+		server.update_tls_certificate()
+
+		plays = frappe.get_all(
+			"Ansible Play",
+			{"server": server.name, "play": "Setup TLS Certificates", "creation": (">", self.creation)},
+			["status"],
+			order_by="creation desc",
+			limit=1,
+		)
+		if not plays:
+			return StepStatus.Failure
+		if plays[0].status == "Success":
+			return StepStatus.Success
+		return StepStatus.Failure
+
 	@frappe.whitelist()
 	def execute(self):
 		self.status = "Running"
@@ -533,6 +621,7 @@ class VirtualMachineMigration(Document):
 			"execute_step",
 			step_name=next_step.name,
 			enqueue_after_commit=True,
+			at_front=True,
 		)
 
 	@frappe.whitelist()
@@ -594,7 +683,8 @@ class VirtualMachineMigration(Document):
 		return None
 
 	def ansible_run(self, command):
-		inventory = f"{self.virtual_machine},"
+		virtual_machine_ip = frappe.db.get_value("Virtual Machine", self.virtual_machine, "public_ip_address")
+		inventory = f"{virtual_machine_ip},"
 		result = AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
 		self.add_command(command, result)
 		return result

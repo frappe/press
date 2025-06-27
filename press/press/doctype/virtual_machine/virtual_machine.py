@@ -56,6 +56,9 @@ class VirtualMachine(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.virtual_machine_temporary_volume.virtual_machine_temporary_volume import (
+			VirtualMachineTemporaryVolume,
+		)
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
 		availability_zone: DF.Data
@@ -63,6 +66,7 @@ class VirtualMachine(Document):
 		cluster: DF.Link
 		disk_size: DF.Int
 		domain: DF.Link
+		has_data_volume: DF.Check
 		index: DF.Int
 		instance_id: DF.Data | None
 		machine_image: DF.Data | None
@@ -73,14 +77,18 @@ class VirtualMachine(Document):
 		public_dns_name: DF.Data | None
 		public_ip_address: DF.Data | None
 		ram: DF.Int
+		ready_for_conversion: DF.Check
 		region: DF.Link
+		root_disk_size: DF.Int
 		security_group_id: DF.Data | None
 		series: DF.Literal["n", "f", "m", "c", "p", "e", "r"]
+		skip_automated_snapshot: DF.Check
 		ssh_key: DF.Link
 		status: DF.Literal["Draft", "Pending", "Running", "Stopped", "Terminated"]
 		subnet_cidr_block: DF.Data | None
 		subnet_id: DF.Data | None
 		team: DF.Link | None
+		temporary_volumes: DF.Table[VirtualMachineTemporaryVolume]
 		termination_protection: DF.Check
 		vcpu: DF.Int
 		virtual_machine_image: DF.Link | None
@@ -92,17 +100,26 @@ class VirtualMachine(Document):
 		self.index = int(make_autoname(series)[-5:])
 		self.name = f"{self.series}{self.index}-{slug(self.cluster)}.{self.domain}"
 
-	def validate(self):
+	def after_insert(self):
 		if self.virtual_machine_image:
-			self.disk_size = max(
-				self.disk_size,
-				frappe.db.get_value("Virtual Machine Image", self.virtual_machine_image, "size"),
-			)
-			self.machine_image = frappe.db.get_value(
-				"Virtual Machine Image", self.virtual_machine_image, "image_id"
-			)
+			image = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
+			if image.has_data_volume:
+				# We have two separate volumes for root and data
+				# Copy their sizes correctly
+				self.disk_size = max(self.disk_size, image.size)
+				self.root_disk_size = max(self.root_disk_size, image.root_size)
+				self.has_data_volume = True
+			else:
+				# We have only one volume. Both root and data are the same
+				self.disk_size = max(self.disk_size, image.size)
+				self.root_disk_size = self.disk_size
+			self.machine_image = image.image_id
+			self.has_data_volume = image.has_data_volume
 		if not self.machine_image:
 			self.machine_image = self.get_latest_ubuntu_image()
+		self.save()
+
+	def validate(self):
 		if not self.private_ip_address:
 			ip = ipaddress.IPv4Interface(self.subnet_cidr_block).ip
 			index = self.index + 356
@@ -128,6 +145,13 @@ class VirtualMachine(Document):
 		)
 		for image in images:
 			frappe.delete_doc("Virtual Machine Image", image)
+
+	def on_update(self):
+		if self.has_value_changed("has_data_volume"):
+			server = self.get_server()
+			if server:
+				server.has_data_volume = self.has_data_volume
+				server.save()
 
 	@frappe.whitelist()
 	def provision(self):
@@ -170,18 +194,40 @@ class VirtualMachine(Document):
 
 	def _provision_aws(self):
 		additional_volumes = []
-		for index, volume in enumerate(self.volumes):
+		if self.virtual_machine_image:
+			image = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
+			if image.has_data_volume:
+				volume = image.get_data_volume()
+				additional_volumes.append(
+					{
+						"DeviceName": volume.device,
+						"Ebs": {
+							"DeleteOnTermination": True,
+							"VolumeSize": max(self.disk_size, volume.size),
+							"VolumeType": volume.volume_type,
+						},
+					}
+				)
+
+		for index, volume in enumerate(self.volumes, start=len(additional_volumes)):
 			device_name_index = chr(ord("f") + index)
-			additional_volumes.append(
-				{
-					"DeviceName": f"/dev/sd{device_name_index}",
-					"Ebs": {
-						"DeleteOnTermination": True,
-						"VolumeSize": volume.size,
-						"VolumeType": volume.volume_type,
-					},
-				}
-			)
+			volume_options = {
+				"DeviceName": f"/dev/sd{device_name_index}",
+				"Ebs": {
+					"DeleteOnTermination": True,
+					"VolumeSize": volume.size,
+					"VolumeType": volume.volume_type,
+				},
+			}
+			if volume.iops:
+				volume_options["Ebs"]["Iops"] = volume.iops
+			if volume.throughput:
+				volume_options["Ebs"]["Throughput"] = volume.throughput
+			additional_volumes.append(volume_options)
+
+		if not self.machine_image:
+			self.machine_image = self.get_latest_ubuntu_image()
+			self.save(ignore_version=True)
 
 		options = {
 			"BlockDeviceMappings": [
@@ -190,7 +236,7 @@ class VirtualMachine(Document):
 						"DeviceName": "/dev/sda1",
 						"Ebs": {
 							"DeleteOnTermination": True,
-							"VolumeSize": self.disk_size,  # This in GB. Fucking AWS!
+							"VolumeSize": self.root_disk_size,  # This in GB. Fucking AWS!
 							"VolumeType": "gp3",
 						},
 					}
@@ -256,7 +302,7 @@ class VirtualMachine(Document):
 					instance_options=InstanceOptions(are_legacy_imds_endpoints_disabled=True),
 					source_details=InstanceSourceViaImageDetails(
 						image_id=self.machine_image,
-						boot_volume_size_in_gbs=max(self.disk_size, 50),
+						boot_volume_size_in_gbs=max(self.root_disk_size, 50),
 						boot_volume_vpus_per_gb=30,
 					),
 					shape="VM.Standard.E4.Flex",
@@ -303,6 +349,7 @@ class VirtualMachine(Document):
 			"filebeat_config": frappe.render_template(
 				"press/playbooks/roles/filebeat/templates/filebeat.yml",
 				{
+					"server_type": server.doctype,
 					"server": self.name,
 					"log_server": log_server,
 					"kibana_password": kibana_password,
@@ -423,12 +470,16 @@ class VirtualMachine(Document):
 		self.sync()
 
 	@frappe.whitelist()
-	def increase_disk_size(self, increment=50):
+	def increase_disk_size(self, volume_id=None, increment=50):
 		if not increment:
 			return
-		volume = self.volumes[0]
+		if not volume_id:
+			volume_id = self.volumes[0].volume_id
+
+		volume = find(self.volumes, lambda v: v.volume_id == volume_id)
 		volume.size += int(increment)
-		self.disk_size = volume.size
+		self.disk_size = self.get_data_volume().size
+		self.root_disk_size = self.get_root_volume().size
 		volume.last_updated_at = frappe.utils.now_datetime()
 		if self.cloud_provider == "AWS EC2":
 			self.client().modify_volume(VolumeId=volume.volume_id, Size=volume.size)
@@ -578,7 +629,8 @@ class VirtualMachine(Document):
 						volume=volume,
 					)
 			if self.volumes:
-				self.disk_size = self.volumes[0].size
+				self.disk_size = self.get_data_volume().size
+				self.root_disk_size = self.get_root_volume().size
 
 			for volume in list(self.volumes):
 				if volume.volume_id not in available_volumes:
@@ -610,6 +662,7 @@ class VirtualMachine(Document):
 			self.platform = instance.get("Architecture", "x86_64")
 
 			attached_volumes = []
+			attached_devices = []
 			for volume_index, volume in enumerate(self.get_volumes(), start=1):  # idx starts from 1
 				existing_volume = find(self.volumes, lambda v: v.volume_id == volume["VolumeId"])
 				if existing_volume:
@@ -622,6 +675,7 @@ class VirtualMachine(Document):
 				row.size = volume["Size"]
 				row.iops = volume["Iops"]
 				row.device = volume["Attachments"][0]["Device"]
+				attached_devices.append(row.device)
 
 				if "Throughput" in volume:
 					row.throughput = volume["Throughput"]
@@ -630,10 +684,15 @@ class VirtualMachine(Document):
 				if not existing_volume:
 					self.append("volumes", row)
 
-			self.disk_size = self._get_root_volume_size()
+			self.disk_size = self.get_data_volume().size
+			self.root_disk_size = self.get_root_volume().size
 
 			for volume in list(self.volumes):
 				if volume.volume_id not in attached_volumes:
+					self.remove(volume)
+
+			for volume in list(self.temporary_volumes):
+				if volume.device not in attached_devices:
 					self.remove(volume)
 
 			self.termination_protection = self.client().describe_instance_attribute(
@@ -648,13 +707,38 @@ class VirtualMachine(Document):
 		self.save()
 		self.update_servers()
 
-	def _get_root_volume_size(self):
-		if self.volumes:
-			volume = find(self.volumes, lambda v: v.device == "/dev/sda1")
-			if volume:
-				return volume.size
-			return self.volumes[0].size
-		return self.disk_size
+	def get_root_volume(self):
+		if len(self.volumes) == 1:
+			return self.volumes[0]
+
+		ROOT_VOLUME_FILTERS = {
+			"AWS EC2": lambda v: v.device == "/dev/sda1",
+			"OCI": lambda v: ".bootvolume." in v.volume_id,
+		}
+		root_volume_filter = ROOT_VOLUME_FILTERS.get(self.cloud_provider)
+		volume = find(self.volumes, root_volume_filter)
+		if volume:  # Un-provisioned machines might not have any volumes
+			return volume
+		return frappe._dict({"size": 0})
+
+	def get_data_volume(self):
+		if not self.has_data_volume:
+			return self.get_root_volume()
+
+		if len(self.volumes) == 1:
+			return self.volumes[0]
+
+		temporary_volume_devices = [x.device for x in self.temporary_volumes]
+
+		DATA_VOLUME_FILTERS = {
+			"AWS EC2": lambda v: v.device != "/dev/sda1" and v.device not in temporary_volume_devices,
+			"OCI": lambda v: ".bootvolume." not in v.volume_id and v.device not in temporary_volume_devices,
+		}
+		data_volume_filter = DATA_VOLUME_FILTERS.get(self.cloud_provider)
+		volume = find(self.volumes, data_volume_filter)
+		if volume:  # Un-provisioned machines might not have any volumes
+			return volume
+		return frappe._dict({"size": 0})
 
 	def update_servers(self):
 		status_map = {
@@ -684,20 +768,41 @@ class VirtualMachine(Document):
 			)
 
 	@frappe.whitelist()
-	def create_image(self):
-		image = frappe.get_doc({"doctype": "Virtual Machine Image", "virtual_machine": self.name}).insert()
+	def create_image(self, public=True):
+		image = frappe.get_doc(
+			{
+				"doctype": "Virtual Machine Image",
+				"virtual_machine": self.name,
+				"public": public,
+				"has_data_volume": self.has_data_volume,
+			}
+		).insert()
 		return image.name
 
 	@frappe.whitelist()
-	def create_snapshots(self):
-		if self.cloud_provider == "AWS EC2":
-			self._create_snapshots_aws()
-		elif self.cloud_provider == "OCI":
-			self._create_snapshots_oci()
+	def create_snapshots(self, exclude_boot_volume=False, physical_backup=False, rolling_snapshot=False):
+		"""
+		exclude_boot_volume is applicable only for Servers with data volume
+		"""
+		if not self.has_data_volume:
+			exclude_boot_volume = False
 
-	def _create_snapshots_aws(self):
+		# Store the newly created snapshots reference in the flags
+		# So that, we can get the correct reference of snapshots created in current session
+		self.flags.created_snapshots = []
+		if self.cloud_provider == "AWS EC2":
+			self._create_snapshots_aws(exclude_boot_volume, physical_backup, rolling_snapshot)
+		elif self.cloud_provider == "OCI":
+			self._create_snapshots_oci(exclude_boot_volume)
+
+	def _create_snapshots_aws(self, exclude_boot_volume: bool, physical_backup: bool, rolling_snapshot: bool):
+		temporary_volume_ids = self.get_temporary_volume_ids()
+		instance_specification = {"InstanceId": self.instance_id, "ExcludeBootVolume": exclude_boot_volume}
+		if temporary_volume_ids:
+			instance_specification["ExcludeDataVolumeIds"] = temporary_volume_ids
+
 		response = self.client().create_snapshots(
-			InstanceSpecification={"InstanceId": self.instance_id},
+			InstanceSpecification=instance_specification,
 			Description=f"Frappe Cloud - {self.name} - {frappe.utils.now()}",
 			TagSpecifications=[
 				{
@@ -708,20 +813,25 @@ class VirtualMachine(Document):
 		)
 		for snapshot in response.get("Snapshots", []):
 			try:
-				frappe.get_doc(
+				doc = frappe.get_doc(
 					{
 						"doctype": "Virtual Disk Snapshot",
 						"virtual_machine": self.name,
 						"snapshot_id": snapshot["SnapshotId"],
+						"physical_backup": physical_backup,
+						"rolling_snapshot": rolling_snapshot,
 					}
 				).insert()
+				self.flags.created_snapshots.append(doc.name)
 			except Exception:
 				log_error(title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot)
 
-	def _create_snapshots_oci(self):
+	def _create_snapshots_oci(self, exclude_boot_volume: bool):
 		for volume in self.volumes:
 			try:
 				if ".bootvolume." in volume.volume_id:
+					if exclude_boot_volume:
+						continue
 					snapshot = (
 						self.client(BlockstorageClient)
 						.create_boot_volume_backup(
@@ -745,19 +855,36 @@ class VirtualMachine(Document):
 						)
 						.data
 					)
-				frappe.get_doc(
+				doc = frappe.get_doc(
 					{
 						"doctype": "Virtual Disk Snapshot",
 						"virtual_machine": self.name,
 						"snapshot_id": snapshot.id,
 					}
 				).insert()
+				self.flags.created_snapshots.append(doc.name)
 			except TransientServiceError:
 				# We've hit OCI rate limit for creating snapshots
 				# Let's try again later
 				pass
 			except Exception:
 				log_error(title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot)
+
+	def get_temporary_volume_ids(self) -> list[str]:
+		tmp_volume_ids = set()
+		tmp_volumes_devices = [x.device for x in self.temporary_volumes]
+
+		def get_volume_id_by_device(device):
+			for volume in self.volumes:
+				if volume.device == device:
+					return volume.volume_id
+			return None
+
+		for device in tmp_volumes_devices:
+			volume_id = get_volume_id_by_device(device)
+			if volume_id:
+				tmp_volume_ids.add(volume_id)
+		return list(tmp_volume_ids)
 
 	@frappe.whitelist()
 	def disable_termination_protection(self):
@@ -840,9 +967,9 @@ class VirtualMachine(Document):
 		return None
 
 	@frappe.whitelist()
-	def update_ebs_performance(self, iops, throughput):
+	def update_ebs_performance(self, volume_id, iops, throughput):
 		if self.cloud_provider == "AWS EC2":
-			volume = self.volumes[0]
+			volume = find(self.volumes, lambda v: v.volume_id == volume_id)
 			new_iops = int(iops) or volume.iops
 			new_throughput = int(throughput) or volume.throughput
 			self.client().modify_volume(
@@ -903,6 +1030,7 @@ class VirtualMachine(Document):
 			"provider": self.cloud_provider,
 			"virtual_machine": self.name,
 			"team": self.team,
+			"platform": self.platform,
 		}
 
 		if self.virtual_machine_image:
@@ -1178,6 +1306,9 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def convert_to_arm(self, virtual_machine_image, machine_type):
+		if self.series == "f" and not self.ready_for_conversion:
+			frappe.throw("Please complete pre-migration steps before migrating", frappe.ValidationError)
+
 		return frappe.new_doc(
 			"Virtual Machine Migration",
 			virtual_machine=self.name,
@@ -1186,46 +1317,111 @@ class VirtualMachine(Document):
 		).insert()
 
 	@frappe.whitelist()
-	def attach_new_volume(self, size):
+	def attach_new_volume(self, size, iops=None, throughput=None):
 		if self.cloud_provider != "AWS EC2":
-			return
-		volume_id = self.client().create_volume(
-			AvailabilityZone=self.availability_zone,
-			Size=size,
-			VolumeType="gp3",
-			TagSpecifications=[
+			return None
+		volume_options = {
+			"AvailabilityZone": self.availability_zone,
+			"Size": size,
+			"VolumeType": "gp3",
+			"TagSpecifications": [
 				{
 					"ResourceType": "volume",
 					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name}"}],
 				},
 			],
-		)["VolumeId"]
-		# Wait for the volume to be available
-		while (
-			self.client().describe_volumes(
-				VolumeIds=[
-					volume_id,
-				],
-			)["Volumes"][0]["State"]
-			!= "available"
-		):
+		}
+		if iops:
+			volume_options["Iops"] = iops
+		if throughput:
+			volume_options["Throughput"] = throughput
+		volume_id = self.client().create_volume(**volume_options)["VolumeId"]
+		self.wait_for_volume_to_be_available(volume_id)
+		self.attach_volume(volume_id)
+		return volume_id
+
+	def wait_for_volume_to_be_available(self, volume_id):
+		# AWS EC2 specific
+		while self.get_state_of_volume(volume_id) != "available":
 			time.sleep(1)
-		# First volume starts from /dev/sdf
-		device_name_index = chr(ord("f") + len(self.volumes) - 1)
+
+	def get_state_of_volume(self, volume_id):
+		if self.cloud_provider != "AWS EC2":
+			raise NotImplementedError
+		try:
+			# AWS EC2 specific
+			# https://docs.aws.amazon.com/ebs/latest/userguide/ebs-describing-volumes.html
+			return self.client().describe_volumes(VolumeIds=[volume_id])["Volumes"][0]["State"]
+		except botocore.exceptions.ClientError as e:
+			if e.response.get("Error", {}).get("Code") == "InvalidVolume.NotFound":
+				return "deleted"
+
+	def get_volume_modifications(self, volume_id):
+		if self.cloud_provider != "AWS EC2":
+			raise NotImplementedError
+
+		# AWS EC2 specific https://docs.aws.amazon.com/ebs/latest/userguide/monitoring-volume-modifications.html
+
+		try:
+			return self.client().describe_volumes_modifications(VolumeIds=[volume_id])[
+				"VolumesModifications"
+			][0]
+		except botocore.exceptions.ClientError as e:
+			if e.response.get("Error", {}).get("Code") == "InvalidVolumeModification.NotFound":
+				return None
+
+	def attach_volume(self, volume_id, is_temporary_volume: bool = False) -> str:
+		"""
+		temporary_volumes: If you are attaching a volume to an instance just for temporary use, then set this to True.
+
+		Then, snapshot and other stuff will be ignored for this volume.
+		"""
+		if self.cloud_provider != "AWS EC2":
+			raise NotImplementedError
+		# Attach a volume to the instance and return the device name
+		device_name = self.get_next_volume_device_name()
 		self.client().attach_volume(
-			Device=f"/dev/sd{device_name_index}",
+			Device=device_name,
 			InstanceId=self.instance_id,
 			VolumeId=volume_id,
 		)
+		if is_temporary_volume:
+			# add the volume to the list of temporary volumes
+			self.append("temporary_volumes", {"device": device_name})
+		self.save()
+		# sync
 		self.sync()
+		return device_name
+
+	def get_next_volume_device_name(self):
+		# Hold the lock, so that we dont allocate same device name to multiple volumes
+		frappe.db.get_value(self.doctype, self.name, "status", for_update=True)
+		# First volume starts from /dev/sdf
+		used_devices = {v.device for v in self.volumes} | {v.device for v in self.temporary_volumes}
+		for i in range(5, 26):  # 'f' to 'z'
+			device_name = f"/dev/sd{chr(ord('a') + i)}"
+			if device_name not in used_devices:
+				return device_name
+		frappe.throw("No device name available for new volume")
+		return None
 
 	@frappe.whitelist()
 	def detach(self, volume_id):
 		volume = find(self.volumes, lambda v: v.volume_id == volume_id)
+		if not volume:
+			return False
 		self.client().detach_volume(
 			Device=volume.device, InstanceId=self.instance_id, VolumeId=volume.volume_id
 		)
 		self.sync()
+		return True
+
+	@frappe.whitelist()
+	def delete_volume(self, volume_id):
+		if self.detach(volume_id):
+			self.wait_for_volume_to_be_available(volume_id)
+			self.client().delete_volume(VolumeId=volume_id)
+			self.sync()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")
@@ -1238,12 +1434,17 @@ def sync_virtual_machines():
 
 
 def snapshot_virtual_machines():
-	machines = frappe.get_all("Virtual Machine", {"status": "Running"})
+	machines = frappe.get_all("Virtual Machine", {"status": "Running", "skip_automated_snapshot": 0})
 	for machine in machines:
 		# Skip if a snapshot has already been created today
 		if frappe.get_all(
 			"Virtual Disk Snapshot",
-			{"virtual_machine": machine.name, "creation": (">=", frappe.utils.today())},
+			{
+				"virtual_machine": machine.name,
+				"physical_backup": 0,
+				"rolling_snapshot": 0,
+				"creation": (">=", frappe.utils.today()),
+			},
 			limit=1,
 		):
 			continue
@@ -1253,6 +1454,61 @@ def snapshot_virtual_machines():
 		except Exception:
 			frappe.db.rollback()
 			log_error(title="Virtual Machine Snapshot Error", virtual_machine=machine.name)
+
+
+def rolling_snapshot_database_server_virtual_machines():
+	# For now, let's keep it specific to database servers having physical backup enabled
+	virtual_machines = frappe.get_all(
+		"Database Server",
+		filters={
+			"status": "Active",
+			"enable_physical_backup": 1,
+		},
+		pluck="name",
+	)
+
+	# Find out virtual machines with snapshot explicitly skipped
+	ignorable_virtual_machines = set(
+		frappe.get_all("Virtual Machine", {"skip_automated_snapshot": 1}, pluck="name")
+	)
+
+	start_time = time.time()
+	for virtual_machine_name in virtual_machines:
+		if has_job_timeout_exceeded():
+			return
+
+		# Don't spend more than 10 minutes in snapshotting
+		if time.time() - start_time > 900:
+			break
+
+		if virtual_machine_name in ignorable_virtual_machines:
+			continue
+
+		# Skip if a valid snapshot has already existed within last 2 hours
+		if frappe.get_all(
+			"Virtual Disk Snapshot",
+			{
+				"status": [
+					"in",
+					["Pending", "Completed"],
+				],
+				"virtual_machine": virtual_machine_name,
+				"physical_backup": 0,
+				"rolling_snapshot": 1,
+				"creation": (">=", frappe.utils.add_to_date(None, hours=-2)),
+			},
+			limit=1,
+		):
+			continue
+
+		try:
+			# Also, if vm has multiple volumes, then exclude boot volume
+			frappe.get_doc("Virtual Machine", virtual_machine_name).create_snapshots(
+				exclude_boot_volume=True, rolling_snapshot=True
+			)
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
 
 
 AWS_SERIAL_CONSOLE_ENDPOINT_MAP = {

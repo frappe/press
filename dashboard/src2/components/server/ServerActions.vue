@@ -41,7 +41,7 @@ export default {
 			const totalActions = [
 				...this.$appServer.doc.actions,
 				...this.$dbServer.doc.actions,
-				...(this.$dbReplicaServer?.doc?.actions || [])
+				...(this.$dbReplicaServer?.doc?.actions || []),
 			];
 
 			const groupedActions = totalActions.reduce((acc, action) => {
@@ -53,19 +53,19 @@ export default {
 				return acc;
 			}, {});
 
-			let groups = Object.keys(groupedActions).map(group => {
+			let groups = Object.keys(groupedActions).map((group) => {
 				return {
 					group,
-					actions: groupedActions[group]
+					actions: groupedActions[group],
 				};
 			});
 
 			// move dangerous actions to the bottom
 			const dangerousActions = groups.find(
-				group => group.group === 'Dangerous Actions'
+				(group) => group.group === 'Dangerous Actions',
 			);
 			if (dangerousActions) {
-				groups = groups.filter(group => group.group !== 'Dangerous Actions');
+				groups = groups.filter((group) => group.group !== 'Dangerous Actions');
 				groups.push(dangerousActions);
 			}
 
@@ -81,8 +81,13 @@ export default {
 				whitelistedMethods: {
 					changePlan: 'change_plan',
 					reboot: 'reboot',
-					rename: 'rename'
-				}
+					rename: 'rename',
+					enablePerformanceSchema: 'enable_performance_schema',
+					disablePerformanceSchema: 'disable_performance_schema',
+					getMariadbVariables: 'get_mariadb_variables',
+					updateInnodbBufferPoolSize: 'update_innodb_buffer_pool_size',
+					updateMaxDbConnections: 'update_max_db_connections',
+				},
 			});
 		},
 		$dbReplicaServer() {
@@ -92,10 +97,10 @@ export default {
 				whitelistedMethods: {
 					changePlan: 'change_plan',
 					reboot: 'reboot',
-					rename: 'rename'
-				}
+					rename: 'rename',
+				},
 			});
-		}
-	}
+		},
+	},
 };
 </script>

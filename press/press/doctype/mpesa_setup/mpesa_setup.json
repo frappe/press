@@ -1,0 +1,143 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:{mpesa_setup_id}-{api_type}",
+ "creation": "2025-01-17 14:42:39.157512",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "team",
+  "mpesa_setup_id",
+  "consumer_key",
+  "consumer_secret",
+  "till_number",
+  "api_type",
+  "sandbox",
+  "column_break_qzeb",
+  "transaction_limit",
+  "pass_key",
+  "initiator_name",
+  "business_shortcode",
+  "security_credential"
+ ],
+ "fields": [
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1
+  },
+  {
+   "fieldname": "consumer_key",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Consumer Key",
+   "reqd": 1
+  },
+  {
+   "fieldname": "consumer_secret",
+   "fieldtype": "Password",
+   "in_list_view": 1,
+   "label": "Consumer Secret",
+   "reqd": 1
+  },
+  {
+   "fieldname": "till_number",
+   "fieldtype": "Data",
+   "label": "Till Number",
+   "reqd": 1
+  },
+  {
+   "default": "Mpesa Express",
+   "fieldname": "api_type",
+   "fieldtype": "Select",
+   "label": "API Type",
+   "options": "Mpesa Express\nMpesa C2B"
+  },
+  {
+   "default": "150000",
+   "fieldname": "transaction_limit",
+   "fieldtype": "Float",
+   "label": "Transaction Limit"
+  },
+  {
+   "fieldname": "initiator_name",
+   "fieldtype": "Data",
+   "label": "Initiator Name"
+  },
+  {
+   "default": "0",
+   "fieldname": "sandbox",
+   "fieldtype": "Check",
+   "label": "Sandbox"
+  },
+  {
+   "fieldname": "business_shortcode",
+   "fieldtype": "Data",
+   "label": "Business Shortcode"
+  },
+  {
+   "fieldname": "column_break_qzeb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pass_key",
+   "fieldtype": "Password",
+   "label": "Pass Key",
+   "reqd": 1
+  },
+  {
+   "fieldname": "security_credential",
+   "fieldtype": "Small Text",
+   "label": "Security Credential",
+   "reqd": 1
+  },
+  {
+   "fieldname": "mpesa_setup_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Mpesa Setup ID",
+   "reqd": 1,
+   "unique": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-01-31 22:35:54.537908",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Mpesa Setup",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

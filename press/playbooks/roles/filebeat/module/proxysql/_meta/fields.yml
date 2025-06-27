@@ -1,0 +1,40 @@
+- key: proxysql
+  title: 'proxysql'
+  description: 'Fields related to ProxySQL logs and metrics.'
+  fields:
+    - name: client_ip
+      type: ip
+      description: 'Client IP address.'
+    - name: duration_ms
+      type: long
+      description: 'Duration of the event in milliseconds.'
+    - name: event
+      type: keyword
+      description: 'Event name'
+    - name: query
+      type: keyword
+      description: 'Executed SQL query.'
+    - name: rows_affected
+      type: long
+      description: 'Number of rows affected by the query.'
+    - name: rows_sent
+      type: long
+      description: 'Number of rows sent in the response.'
+    - name: schema
+      type: keyword
+      description: 'Database schema name.'
+    - name: username
+      type: keyword
+      description: 'Username executing the query.'
+    - name: thread_id
+      type: long
+      description: 'Thread ID handling the query.'
+    - name: start_timestamp
+      type: date
+      description: 'Start timestamp of the event.'
+    - name: end_timestamp
+      type: date
+      description: 'End timestamp of the event.'
+    - name: db_server
+      type: keyword
+      description: 'Database server name or IP address.'

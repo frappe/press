@@ -30,7 +30,7 @@ frappe.ui.form.on('Site', {
 				</div>
 			</div>`,
 		);
-		frm.add_web_link(`https://${frm.doc.name}`, __('Visit Site'));
+		frm.add_web_link(`https://${frm.doc.name}/apps`, __('Visit Site'));
 		frm.add_web_link(`/dashboard/sites/${frm.doc.name}`, __('Visit Dashboard'));
 
 		let site = frm.get_doc();
@@ -84,6 +84,7 @@ frappe.ui.form.on('Site', {
 
 		[
 			[__('Backup'), 'backup'],
+			[__('Physical Backup'), 'physical_backup'],
 			[__('Sync Info'), 'sync_info'],
 		].forEach(([label, method]) => {
 			frm.add_custom_button(
@@ -145,6 +146,14 @@ frappe.ui.form.on('Site', {
 				);
 			}
 		});
+
+		frm.add_custom_button(
+			__('Update Skip Failing Patches'),
+			() => {
+				frm.call('schedule_update', { skip_failing_patches: true });
+			},
+			__('Actions'),
+		);
 
 		frm.add_custom_button(
 			__('Force Archive'),

@@ -11,6 +11,7 @@
   "oauth_signup",
   "send_email",
   "otp",
+  "otp_generated_at",
   "column_break_4",
   "role",
   "invited_by",
@@ -21,10 +22,13 @@
   "saas",
   "saas_app",
   "product_trial",
+  "unsubscribed_from_drip_emails",
   "column_break_eaxp",
   "first_name",
   "last_name",
   "country",
+  "continent",
+  "is_mobile",
   "section_break_8",
   "erpnext",
   "subdomain",
@@ -196,7 +200,7 @@
    "collapsible": 1,
    "fieldname": "saas_sign_up_section",
    "fieldtype": "Section Break",
-   "label": "Saas Sign Up"
+   "label": "Sign Up"
   },
   {
    "collapsible": 1,
@@ -264,11 +268,34 @@
   {
    "fieldname": "column_break_eaxp",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "otp_generated_at",
+   "fieldtype": "Datetime",
+   "label": "OTP Generated at"
+  },
+  {
+   "default": "0",
+   "fieldname": "unsubscribed_from_drip_emails",
+   "fieldtype": "Check",
+   "label": "Unsubscribed from Drip Emails"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_mobile",
+   "fieldtype": "Check",
+   "label": "Is Mobile"
+  },
+  {
+   "fieldname": "continent",
+   "fieldtype": "Data",
+   "label": "Continent"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-11 17:33:21.986307",
+ "modified": "2025-05-29 15:31:57.451420",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",
@@ -289,8 +316,13 @@
   {
    "create": 1,
    "role": "Press Admin"
+  },
+  {
+   "create": 1,
+   "role": "Press Member"
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

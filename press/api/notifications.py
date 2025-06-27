@@ -24,7 +24,7 @@ def get_notifications(filters=None, order_by="creation desc", limit_start=None, 
 			PressNotification.document_type,
 			PressNotification.document_name,
 		)
-		.where(PressNotification.team == filters.get("team") or get_current_team())
+		.where(PressNotification.team == get_current_team())
 		.orderby(PressNotification.creation, order=frappe.qb.desc)
 		.limit(limit_page_length)
 		.offset(limit_start)
@@ -63,11 +63,6 @@ def get_notifications(filters=None, order_by="creation desc", limit_start=None, 
 			notification.route = None
 
 	return notifications
-
-
-@frappe.whitelist()
-def mark_notification_as_read(name):
-	frappe.db.set_value("Press Notification", name, "read", True)
 
 
 @frappe.whitelist()

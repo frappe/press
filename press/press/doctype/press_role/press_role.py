@@ -56,6 +56,15 @@ class PressRole(Document):
 			frappe.throw("Only the team owner can create roles")
 
 	def validate(self):
+		self.set_first_role_as_admin()
+		self.allow_only_one_admin_role()
+		self.set_admin_permissions()
+
+	def set_first_role_as_admin(self):
+		if not frappe.get_all("Press Role", filters={"team": self.team}):
+			self.admin_access = 1
+
+	def allow_only_one_admin_role(self):
 		admin_roles = frappe.get_all(
 			"Press Role",
 			filters={"team": self.team, "admin_access": 1, "name": ("!=", self.name)},
@@ -63,6 +72,7 @@ class PressRole(Document):
 		if admin_roles and self.admin_access:
 			frappe.throw("There can only be one admin role per team")
 
+	def set_admin_permissions(self):
 		if self.admin_access:
 			self.allow_apps = 1
 			self.allow_billing = 1
@@ -114,7 +124,7 @@ class PressRole(Document):
 		frappe.db.delete("Account Request Press Role", {"press_role": self.name})
 
 
-def check_role_permissions(doctype: str, name: str | None = None) -> list[str] | None:
+def check_role_permissions(doctype: str, name: str | None = None) -> list[str] | None:  # noqa: C901
 	"""
 	Check if the user is permitted to access the document based on the role permissions
 	Expects the function to throw error for `get` if no permission and return a list of permitted roles for `get_list`
@@ -171,10 +181,17 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 
 	elif doctype in ["Site", "Release Group", "Server"]:
 		field = doctype.lower().replace(" ", "_")
-		if roles := query.run(as_dict=1, pluck="name"):
+		roles = query.select(PressRole.admin_access).run(as_dict=1)
+
+		# this is an admin that can access all sites, release groups, and servers
+		if any(perm.admin_access for perm in roles):
+			return []
+
+		if roles:
+			role_names = [perm.name for perm in roles]
 			perms = frappe.db.get_all(
 				"Press Role Permission",
-				filters={"role": ["in", roles], field: name},
+				filters={"role": ["in", role_names], field: name},
 			)
 			if not perms and name:
 				# throw error if the user is not permitted for the document
@@ -183,7 +200,7 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 					frappe.PermissionError,
 				)
 			else:
-				return roles
+				return role_names
 
 	return []
 

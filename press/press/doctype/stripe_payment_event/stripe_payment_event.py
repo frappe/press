@@ -1,5 +1,6 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 from datetime import datetime
 
@@ -7,6 +8,7 @@ import frappe
 from frappe.model.document import Document
 
 from press.utils.billing import convert_stripe_money
+from press.api.billing import get_stripe
 
 
 class StripePaymentEvent(Document):
@@ -36,6 +38,8 @@ class StripePaymentEvent(Document):
 
 	def handle_finalized(self):
 		invoice = frappe.get_doc("Invoice", self.invoice, for_update=True)
+		if invoice.status == "Paid":
+			return
 		stripe_invoice = frappe.parse_json(self.stripe_invoice_object)
 
 		invoice.update(
@@ -49,14 +53,31 @@ class StripePaymentEvent(Document):
 
 	def handle_payment_succeeded(self):
 		invoice = frappe.get_doc("Invoice", self.invoice, for_update=True)
+
+		if invoice.status == "Paid" and invoice.amount_paid == 0:
+			# check if invoice is already refunded
+			stripe = get_stripe()
+			inv = stripe.Invoice.retrieve(invoice.stripe_invoice_id)
+			payment_intent = stripe.PaymentIntent.retrieve(inv.payment_intent)
+			is_refunded = payment_intent["charges"]["data"][0]["refunded"]
+			if is_refunded:
+				return
+			# if the fc invoice is already paid via credits and the stripe payment succeeded
+			# issue a refund of the invoice payment
+			invoice.refund(reason="Payment done via credits")
+			invoice.add_comment(
+				text=(
+					f"Stripe Invoice {invoice.stripe_invoice_id} refunded because"
+					" payment is done via credits and card both."
+				)
+			)
+			return
 		stripe_invoice = frappe.parse_json(self.stripe_invoice_object)
 		team = frappe.get_doc("Team", self.team)
 
 		invoice.update(
 			{
-				"payment_date": datetime.fromtimestamp(
-					stripe_invoice["status_transitions"]["paid_at"]
-				),
+				"payment_date": datetime.fromtimestamp(stripe_invoice["status_transitions"]["paid_at"]),
 				"status": "Paid",
 				"amount_paid": stripe_invoice["amount_paid"] / 100,
 				"stripe_invoice_url": stripe_invoice["hosted_invoice_url"],
@@ -84,14 +105,27 @@ class StripePaymentEvent(Document):
 			== 0
 		):
 			# unsuspend sites only if all invoices are paid
-			team.unsuspend_sites(
-				reason=f"Unsuspending sites because of successful payment of {self.invoice}"
-			)
+			team.unsuspend_sites(reason=f"Unsuspending sites because of successful payment of {self.invoice}")
 
 	def handle_payment_failed(self):
 		invoice = frappe.get_doc("Invoice", self.invoice, for_update=True)
 
 		if invoice.status == "Paid":
+			if invoice.amount_paid == 0:
+				# check if invoice is already voided
+				stripe = get_stripe()
+				inv = stripe.Invoice.retrieve(invoice.stripe_invoice_id)
+				if inv.status == "void":
+					return
+				# if the fc invoice is already paid via credits and the stripe payment failed
+				# mark the stripe invoice as void
+				invoice.change_stripe_invoice_status("Void")
+				invoice.add_comment(
+					text=(
+						f"Stripe Invoice {invoice.stripe_invoice_id} voided because"
+						" payment is done via credits."
+					)
+				)
 			return
 
 		stripe_invoice = frappe.parse_json(self.stripe_invoice_object)

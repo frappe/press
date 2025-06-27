@@ -63,7 +63,9 @@
   "show_for_site_creation",
   "localisation_apps",
   "section_break_tlpw",
-  "average_rating"
+  "average_rating",
+  "others_section",
+  "collect_feedback"
  ],
  "fields": [
   {
@@ -92,7 +94,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Draft\nPublished\nIn Review\nAttention Required\nRejected"
+   "options": "Draft\nPublished\nIn Review\nAttention Required\nRejected\nDisabled"
   },
   {
    "fieldname": "section_break_5",
@@ -373,7 +375,8 @@
   },
   {
    "fieldname": "section_break_tlpw",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Marketplace Page"
   },
   {
    "default": "0",
@@ -388,8 +391,20 @@
    "fieldtype": "Table",
    "label": "Localisation Apps",
    "options": "Marketplace Localisation App"
+  },
+  {
+   "fieldname": "others_section",
+   "fieldtype": "Section Break",
+   "label": "Others"
+  },
+  {
+   "default": "0",
+   "fieldname": "collect_feedback",
+   "fieldtype": "Check",
+   "label": "Collect Feedback"
   }
  ],
+ "grid_page_length": 50,
  "has_web_view": 1,
  "image_field": "image",
  "index_web_pages_for_search": 1,
@@ -411,7 +426,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2024-09-12 10:43:13.742115",
+ "modified": "2025-03-20 16:54:10.343806",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
@@ -430,6 +445,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [

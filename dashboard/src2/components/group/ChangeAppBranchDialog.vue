@@ -5,12 +5,7 @@
 	>
 		<template #body-content>
 			<div class="flex flex-col items-center">
-				<Button
-					class="w-min"
-					v-if="$resources.branches.loading"
-					:loading="true"
-					loadingText="Loading..."
-				/>
+				<LoadingText class="my-4" v-if="$resources.branches.loading" />
 				<FormControl
 					v-else
 					class="w-full"
@@ -48,7 +43,7 @@ export default {
 	data() {
 		return {
 			selectedBranch: this.app.branch,
-			showDialog: true
+			showDialog: true,
 		};
 	},
 	resources: {
@@ -57,13 +52,13 @@ export default {
 				url: 'press.api.bench.branch_list',
 				params: {
 					name: this.bench,
-					app: this.app.name
+					app: this.app.name,
 				},
 				auto: true,
 				initialData: [],
 				transform(data) {
-					return data.map(d => d.name);
-				}
+					return data.map((d) => d.name);
+				},
 			};
 		},
 		changeBranch() {
@@ -77,18 +72,18 @@ export default {
 					if (this.selectedBranch == this.app.branch) {
 						throw new DashboardError('Please select a different branch');
 					}
-				}
+				},
 			};
-		}
+		},
 	},
 	methods: {
 		changeBranch() {
 			this.$resources.changeBranch.submit({
 				name: this.bench,
 				app: this.app.name,
-				to_branch: this.selectedBranch
+				to_branch: this.selectedBranch,
 			});
-		}
-	}
+		},
+	},
 };
 </script>

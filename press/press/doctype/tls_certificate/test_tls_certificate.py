@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
 import unittest
+from typing import Literal
 from unittest.mock import Mock, patch
 
 import frappe
@@ -19,13 +19,16 @@ from press.press.doctype.tls_certificate.tls_certificate import (
 
 
 @patch.object(TLSCertificate, "obtain_certificate", new=Mock())
-def create_test_tls_certificate(domain: str, wildcard: bool = False) -> TLSCertificate:
+def create_test_tls_certificate(
+	domain: str, wildcard: bool = False, provider: Literal["Let's Encrypt", "Other"] = "Let's Encrypt"
+) -> TLSCertificate:
 	certificate = frappe.get_doc(
 		{
 			"doctype": "TLS Certificate",
 			"domain": domain,
 			"rsa_key_size": 2048,
 			"wildcard": wildcard,
+			"provider": provider,
 		}
 	).insert(ignore_if_duplicate=True)
 	certificate.reload()
@@ -66,29 +69,27 @@ class TestTLSCertificate(unittest.TestCase):
 	def test_renewal_of_primary_wildcard_domains_doesnt_call_setup_wildcard_domains(self):
 		erpnext_domain = create_test_root_domain("erpnext.xyz")
 		fc_domain = create_test_root_domain("fc.dev")
-		create_test_proxy_server(
-			"n1", domains=[{"domain": fc_domain.name}, {"domain": erpnext_domain.name}]
-		)
+		create_test_proxy_server("n1", domains=[{"domain": fc_domain.name}, {"domain": erpnext_domain.name}])
 
 		cert = create_test_tls_certificate(fc_domain.name, wildcard=True)
 		cert.reload()  # already created with proxy server
 
 		with patch.object(LetsEncrypt, "__init__", new=none_init), patch.object(
 			TLSCertificate, "trigger_server_tls_setup_callback", new=Mock()
-		), patch.object(
-			ProxyServer, "setup_wildcard_hosts"
-		) as mock_setup_wildcard_hosts:
+		), patch.object(ProxyServer, "setup_wildcard_hosts") as mock_setup_wildcard_hosts:
 			cert._obtain_certificate()
 
 		mock_setup_wildcard_hosts.assert_not_called()
 
 	def test_renewal_of_primary_domain_calls_update_tls_certificates(self):
-		cert = create_test_tls_certificate("fc.dev", wildcard=True)
-		create_test_proxy_server("n1")
+		# Use a diffferent domain to avoid any chance of
+		# Reusing same non wildcard domain in tests
+		# Because, in create_test_tls_certificate, we ignore certificate creation if it already exists
+		create_test_root_domain("fc2.dev")
+		cert = create_test_tls_certificate("fc2.dev", wildcard=True)
+		create_test_proxy_server("n2", domain="fc2.dev")
 		with patch.object(LetsEncrypt, "__init__", new=none_init), patch.object(
 			TLSCertificate, "trigger_server_tls_setup_callback"
-		) as mock_trigger_server_tls_setup, patch.object(
-			ProxyServer, "setup_wildcard_hosts", new=Mock()
-		):
+		) as mock_trigger_server_tls_setup, patch.object(ProxyServer, "setup_wildcard_hosts", new=Mock()):
 			cert._obtain_certificate()
 		mock_trigger_server_tls_setup.assert_called()

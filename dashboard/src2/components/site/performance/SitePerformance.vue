@@ -36,12 +36,12 @@ export default {
 						description:
 							'Identify and optimize slow-running database queries to improve performance.',
 						route: 'Site Performance Slow Queries'
+					},
+					{
+						title: 'Deadlock Report',
+						description: 'Shows database conflicts that block transactions.',
+						route: 'Site Performance Deadlock Report'
 					}
-					// {
-					// 	title: 'Deadlock Report',
-					// 	description: 'Shows database conflicts that block transactions.',
-					// 	route: 'Site Performance Deadlock Report'
-					// }
 				],
 				columns: [
 					{

@@ -6,9 +6,9 @@
 				{
 					label: 'Invite Member',
 					variant: 'solid',
-					onClick: inviteMember
-				}
-			]
+					onClick: inviteMember,
+				},
+			],
 		}"
 		v-model="show"
 	>
@@ -26,7 +26,13 @@
 						:options="roleOptions"
 						v-model="selectedRole"
 					/>
-					<Button label="Add" icon-left="plus" @click="addRole" class="mt-5" />
+					<Button
+						label="Add"
+						icon-left="plus"
+						:disabled="!selectedRole"
+						@click="addRole"
+						class="mt-5"
+					/>
 				</div>
 				<div
 					v-if="selectedRoles.length > 0"
@@ -63,7 +69,7 @@ export default {
 			email: '',
 			show: true,
 			selectedRoles: [],
-			selectedRole: null
+			selectedRole: null,
 		};
 	},
 	resources: {
@@ -73,23 +79,23 @@ export default {
 				doctype: 'Press Role',
 				fields: ['name', 'title'],
 				initialData: [],
-				auto: true
+				auto: true,
 			};
-		}
+		},
 	},
 	computed: {
 		roleOptions() {
 			return this.$resources.roles.data
-				.filter(role => {
+				.filter((role) => {
 					return !this.selectedRoles.some(
-						selectedRole => selectedRole.value === role.name
+						(selectedRole) => selectedRole.value === role.name,
 					);
 				})
-				.map(role => ({
+				.map((role) => ({
 					label: role.title,
-					value: role.name
+					value: role.name,
 				}));
-		}
+		},
 	},
 	methods: {
 		addRole() {
@@ -100,7 +106,7 @@ export default {
 		},
 		removeRole(roleToRemove) {
 			this.selectedRoles = this.selectedRoles.filter(
-				role => role.value !== roleToRemove
+				(role) => role.value !== roleToRemove,
 			);
 		},
 		inviteMember() {
@@ -108,15 +114,15 @@ export default {
 				this.$team.inviteTeamMember.submit(
 					{
 						email: this.email,
-						roles: this.selectedRoles.map(role => role.value)
+						roles: this.selectedRoles.map((role) => role.value),
 					},
 					{
 						validate: () => {
 							if (!this.email) {
 								throw new DashboardError('Email is required');
 							}
-						}
-					}
+						},
+					},
 				),
 				{
 					loading: 'Sending Invite...',
@@ -124,10 +130,10 @@ export default {
 						this.show = false;
 						return 'Invite Sent!';
 					},
-					error: e => getToastErrorMessage(e)
-				}
+					error: (e) => getToastErrorMessage(e),
+				},
 			);
-		}
-	}
+		},
+	},
 };
 </script>

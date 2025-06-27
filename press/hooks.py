@@ -178,6 +178,11 @@ scheduler_events = {
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 		"press.press.doctype.log_counter.log_counter.record_counts",
 		"press.press.doctype.incident.incident.notify_ignored_servers",
+		"press.press.doctype.database_server.database_server.unindex_mariadb_binlogs",
+		"press.press.doctype.database_server.database_server.remove_uploaded_binlogs_from_disk",
+		"press.press.doctype.database_server.database_server.remove_uploaded_binlogs_from_s3",
+		"press.press.doctype.mariadb_binlog.mariadb_binlog.cleanup_old_records",
+		"press.press.doctype.database_server.database_server.delete_mariadb_binlog_for_archived_servers",
 	],
 	"daily_long": [
 		"press.press.audit.check_bench_fields",
@@ -192,13 +197,22 @@ scheduler_events = {
 		"press.press.doctype.site_domain.site_domain.update_dns_type",
 		"press.press.doctype.press_webhook_log.press_webhook_log.clean_logs_older_than_24_hours",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_all_snapshots_from_aws",
+		"press.press.doctype.payment_due_extension.payment_due_extension.remove_payment_due_extension",
+		"press.press.doctype.tls_certificate.tls_certificate.notify_custom_tls_renewal",
+		"press.press.doctype.site.site.suspend_sites_exceeding_disk_usage_for_last_7_days",
+		"press.press.doctype.user_2fa.user_2fa.yearly_2fa_recovery_code_reminder",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
 		"press.press.doctype.agent_job.agent_job.update_job_step_status",
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
-		"press.press.doctype.site.backups.schedule_for_sites_with_backup_time",
+		"press.press.doctype.site.backups.schedule_logical_backups_for_sites_with_backup_time",
+		"press.press.doctype.site.backups.schedule_physical_backups_for_sites_with_backup_time",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
+		"press.saas.doctype.product_trial_request.product_trial_request.expire_long_pending_trial_requests",
+		"press.overrides.cleanup_ansible_tmp_files",
+		"press.press.doctype.site.site.archive_suspended_sites",
+		"press.press.doctype.site.site.send_warning_mail_regarding_sites_exceeding_disk_usage",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
@@ -209,13 +223,14 @@ scheduler_events = {
 		"press.press.doctype.app.app.poll_new_releases",
 		"press.press.doctype.agent_job.agent_job.fail_old_jobs",
 		"press.press.doctype.site_update.site_update.mark_stuck_updates_as_fatal",
-		"press.press.doctype.deploy_candidate.deploy_candidate.cleanup_build_directories",
-		"press.press.doctype.deploy_candidate.deploy_candidate.delete_draft_candidates",
-		"press.press.doctype.deploy_candidate.deploy_candidate.check_builds_status",
+		"press.press.doctype.deploy_candidate_build.deploy_candidate_build.cleanup_build_directories",
+		"press.press.doctype.deploy_candidate_build.deploy_candidate_build.check_builds_status",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_virtual_machines",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_old_snapshots",
+		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_expired_snapshots",
 		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
 		"press.press.doctype.press_webhook.press_webhook.auto_disable_high_delivery_failure_webhooks",
+		"press.saas.doctype.product_trial.product_trial.sync_product_site_users",
 	],
 	"all": [
 		"press.auth.flush",
@@ -232,6 +247,7 @@ scheduler_events = {
 		],
 		"0 4 * * *": [
 			"press.press.doctype.site.backups.cleanup_offsite",
+			"press.press.doctype.site.backups.expire_physical",
 			"press.press.cleanup.unlink_remote_files_from_site",
 		],
 		"10 0 * * *": [
@@ -244,41 +260,49 @@ scheduler_events = {
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs",
 			"press.press.doctype.press_webhook_log.press_webhook_log.process",
 			"press.press.doctype.telegram_message.telegram_message.send_telegram_message",
+			"press.press.doctype.agent_update.agent_update.process_bulk_agent_update",
+		],
+		"* * * * * 0/30": [
+			"press.press.doctype.physical_backup_restoration.physical_backup_restoration.process_scheduled_restorations",
 		],
 		"0 */6 * * *": [
 			"press.press.doctype.server.server.cleanup_unused_files",
 			"press.press.doctype.razorpay_payment_record.razorpay_payment_record.fetch_pending_payment_orders",
 		],
-		"30 * * * *": ["press.press.doctype.agent_job.agent_job.suspend_sites"],
 		"*/15 * * * *": [
 			"press.press.doctype.site_update.site_update.schedule_updates",
-			"press.press.doctype.drip_email.drip_email.send_welcome_email",
-			"press.press.doctype.site.backups.schedule",
+			"press.press.doctype.site.backups.schedule_logical_backups",
+			"press.press.doctype.site.backups.schedule_physical_backups",
 			"press.press.doctype.site_update.site_update.run_scheduled_updates",
 			"press.press.doctype.site_migration.site_migration.run_scheduled_migrations",
 			"press.press.doctype.version_upgrade.version_upgrade.run_scheduled_upgrades",
 			"press.press.doctype.subscription.subscription.create_usage_records",
 			"press.press.doctype.virtual_machine.virtual_machine.sync_virtual_machines",
 			"press.press.doctype.mariadb_stalk.mariadb_stalk.fetch_stalks",
+			"press.press.doctype.virtual_machine.virtual_machine.rolling_snapshot_database_server_virtual_machines",
 		],
 		"*/5 * * * *": [
 			"press.press.doctype.version_upgrade.version_upgrade.update_from_site_update",
 			"press.press.doctype.site_replication.site_replication.update_from_site",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_snapshots",
 			"press.press.doctype.site.site.sync_sites_setup_wizard_complete_status",
+			"press.press.doctype.drip_email.drip_email.send_welcome_email",
 		],
 		"* * * * *": [
-			"press.press.doctype.deploy_candidate.deploy_candidate.run_scheduled_builds",
+			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",
+			"press.press.doctype.deploy_candidate_build.deploy_candidate_build.run_scheduled_builds",
 			"press.press.doctype.agent_request_failure.agent_request_failure.remove_old_failures",
 			"press.saas.doctype.site_access_token.site_access_token.cleanup_expired_access_tokens",
 		],
 		"*/10 * * * *": [
 			"press.saas.doctype.product_trial.product_trial.replenish_standby_sites",
 			"press.press.doctype.site.saas_pool.create",
+			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_rolling_snapshots",
 		],
 		"*/30 * * * *": [
 			"press.press.doctype.site_update.scheduled_auto_updates.trigger",
 			"press.press.doctype.team.suspend_sites.execute",
+			"press.press.doctype.database_server.database_server.sync_binlogs_info",
 		],
 		"15,45 * * * *": [
 			"press.press.doctype.site.site_usages.update_cpu_usages",
@@ -290,8 +314,9 @@ scheduler_events = {
 		"0 0 1 */3 *": ["press.press.doctype.backup_restoration_test.backup_test.run_backup_restore_test"],
 		"0 8 * * *": [
 			"press.press.doctype.aws_savings_plan_recommendation.aws_savings_plan_recommendation.create",
+			"press.press.cleanup.reset_large_output_fields_from_ansible_tasks",
 		],
-		"0 18 * * *": [
+		"0 21 * * *": [
 			"press.press.audit.billing_audit",
 			"press.press.audit.partner_billing_audit",
 		],
@@ -299,7 +324,9 @@ scheduler_events = {
 			"press.press.audit.suspend_sites_with_disabled_team",
 			"press.press.doctype.tls_certificate.tls_certificate.retrigger_failed_wildcard_tls_callbacks",
 			"press.press.doctype.aws_savings_plan_recommendation.aws_savings_plan_recommendation.refresh",
+			"press.infrastructure.doctype.ssh_access_audit.ssh_access_audit.run",
 		],
+		"0 9 * * 2": ["press.press.doctype.build_metric.build_metric.create_build_metric"],
 	},
 }
 
@@ -339,10 +366,11 @@ override_doctype_class = {"User": "press.overrides.CustomUser"}
 
 on_session_creation = "press.overrides.on_session_creation"
 # on_logout = "press.overrides.on_logout"
+on_login = "press.overrides.on_login"
 
 before_request = "press.overrides.before_request"
 before_job = "press.overrides.before_job"
-after_job = "press.overrides.after_job"
+# after_job = "press.overrides.after_job"
 
 # Data Deletion Privacy Docs
 
@@ -355,3 +383,62 @@ auth_hooks = ["press.auth.hook"]
 page_renderer = ["press.metrics.MetricsRenderer"]
 
 export_python_type_annotations = True
+
+
+# These are used for some business logic, they should be manually evicted.
+__persistent_cache_keys = [
+	"agent-jobs",
+	"monitor-transactions",
+	"google_oauth_flow*",
+	"fc_oauth_state*",
+	"one_time_login_key*",
+	"press-auth-logs",
+	"rl:*",
+]
+
+# `frappe.rename_doc` erases all caches, this hook preserves some of them.
+# Note:
+# - These are only "most used" cache keys. This lessens the impact of renames but doesn't eliminate them.
+# - Adding more keys here will slow down `frappe.clear_cache` but it's "rare" enough.
+# - This also means that other "valid" frappe.clear_cache() usage won't clear these keys!
+# - Use frappe.cache.flushall() instead.
+persistent_cache_keys = [
+	*__persistent_cache_keys,
+	"agent_job_step_output",
+	"all_apps",
+	"app_hooks",
+	"assets_json",
+	"assignment_rule_map",
+	"bootinfo",
+	"builder.builder*",  # path resolution, it has its own cache eviction.
+	"db_tables",
+	"defaults",
+	"doctype_form_meta",
+	"doctype_meta",
+	"doctypes_with_web_view",
+	"document_cache::*",
+	"document_naming_rule_map",
+	"domain_restricted_doctypes",
+	"domain_restricted_pages",
+	"energy_point_rule_map",
+	"frappe.utils.scheduler.schedule_jobs_based_on_activity*",  # dormant checks
+	"frappe.website.page_renderers*",  # FW's routing
+	"home_page",
+	"information_schema:counts",
+	"installed_app_modules",
+	"ip_country_map",
+	"is_table",
+	"languages",
+	"last_db_session_update",
+	"marketplace_apps",
+	"merged_translations",
+	"metadata_version",
+	"server_script_map",  # Routing and actual server scripts
+	"session",
+	"table_columns",
+	"website_page",
+	"website_route_rules",
+]
+
+before_migrate = ["press.overrides.before_after_migrate"]
+after_migrate = ["press.overrides.before_after_migrate"]

@@ -9,7 +9,7 @@ import re
 import time
 import typing
 from textwrap import wrap
-from typing import ClassVar, Generator
+from typing import ClassVar
 
 import boto3
 import frappe
@@ -38,6 +38,8 @@ from press.press.doctype.virtual_machine_image.virtual_machine_image import (
 from press.utils import get_current_team, unique
 
 if typing.TYPE_CHECKING:
+	from collections.abc import Generator
+
 	from press.press.doctype.press_settings.press_settings import PressSettings
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
@@ -59,6 +61,7 @@ class Cluster(Document):
 		cidr_block: DF.Data | None
 		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner"]
 		description: DF.Data | None
+		has_arm_support: DF.Check
 		hybrid: DF.Check
 		image: DF.AttachImage | None
 		monitoring_password: DF.Password | None
@@ -500,9 +503,9 @@ class Cluster(Document):
 		return config
 
 	def set_oci_availability_zone(self):
-		identiy_client = IdentityClient(self.get_oci_config())
-		availibility_domain = identiy_client.list_availability_domains(self.oci_tenancy).data[0].name
-		self.availability_zone = availibility_domain
+		identity_client = IdentityClient(self.get_oci_config())
+		availability_domain = identity_client.list_availability_domains(self.oci_tenancy).data[0].name
+		self.availability_zone = availability_domain
 
 	def provision_on_oci(self):
 		vcn_client = VirtualNetworkClient(self.get_oci_config())
@@ -764,6 +767,7 @@ class Cluster(Document):
 				"series": series,
 				"disk_size": disk_size,
 				"machine_type": machine_type,
+				"platform": platform,
 				"virtual_machine_image": self.get_available_vmi(series, platform=platform),
 				"team": team,
 			},
