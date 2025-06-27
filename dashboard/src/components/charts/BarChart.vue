@@ -133,9 +133,7 @@ const options = ref({
 			).toLocaleString(DateTime.DATETIME_MED)}</p>`;
 
 			params.forEach(({ value, seriesName }, i) => {
-				if (value === null || value === 0) {
-					return;
-				}
+				if (!value || !value[1]) return;
 				let colorSpan = (color) =>
 					'<span style="display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:' +
 					color +
