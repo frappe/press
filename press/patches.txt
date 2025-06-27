@@ -146,3 +146,4 @@ press.patches.v0_7_0.rename_site_skip_scheduled_backups_field
 press.press.doctype.drip_email.patches.migrate_to_product_trial_field
 press.press.doctype.mpesa_payment_record.patches.add_unique_constraint
 press.press.doctype.user_2fa.patches.generate_recovery_codes
+press.press.doctype.account_request.patches.generate_expiration_time_for_request_key

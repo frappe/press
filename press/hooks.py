@@ -263,6 +263,7 @@ scheduler_events = {
 			"press.press.doctype.agent_update.agent_update.process_bulk_agent_update",
 		],
 		"* * * * * 0/30": [
+			"press.press.doctype.account_request.account_request.expire_request_key",
 			"press.press.doctype.physical_backup_restoration.physical_backup_restoration.process_scheduled_restorations",
 		],
 		"0 */6 * * *": [

@@ -55,6 +55,7 @@ class AccountRequest(Document):
 		referral_source: DF.Data | None
 		referrer_id: DF.Data | None
 		request_key: DF.Data | None
+		request_key_expiration_time: DF.Datetime | None
 		role: DF.Data | None
 		saas: DF.Check
 		saas_app: DF.Link | None
@@ -83,6 +84,7 @@ class AccountRequest(Document):
 
 		if not self.request_key:
 			self.request_key = random_string(32)
+			self.request_key_expiration_time = frappe.utils.add_to_date(minutes=10)
 
 		if not self.otp:
 			self.otp = generate_otp()
@@ -270,3 +272,21 @@ class AccountRequest(Document):
 
 	def is_saas_signup(self):
 		return bool(self.saas_app or self.saas or self.erpnext or self.product_trial)
+
+
+def expire_request_key():
+	"""
+	Expire the request key requested 10 minutes ago.
+	"""
+	frappe.db.set_value(
+		"Account Request",
+		{
+			"request_key_expiration_time": ("<", frappe.utils.now_datetime()),
+			"request_key": ["is", "set"],
+		},
+		{
+			"request_key": "",
+			"request_key_expiration_time": None,
+		},
+		update_modified=False,
+	)
