@@ -18,7 +18,7 @@ from frappe.utils import (
 	flt,
 	get_datetime,
 )
-from frappe.utils.caching import redis_cache, request_cache
+from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 from pytz import timezone as pytz_timezone
 
@@ -582,7 +582,7 @@ def rounded_time(dt=None, round_to=60):
 	return dt + timedelta(0, rounding - seconds, -dt.microsecond)
 
 
-@request_cache
+@redis_cache(ttl=10 * 60)
 def get_rounded_boundaries(timespan: int, timegrain: int, timezone: str = "UTC"):
 	"""
 	Round the start and end time to the nearest interval, because Elasticsearch does this
