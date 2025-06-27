@@ -2704,9 +2704,6 @@ class Site(Document, TagHelpers):
 				self.save()
 
 	def reset_disk_usage_exceeded_status(self, save=True):
-		if not self.site_usage_exceeded:
-			return
-
 		self.site_usage_exceeded = False
 		self.site_usage_exceeded_on = None
 		self.site_usage_exceeded_last_checked_on = None
