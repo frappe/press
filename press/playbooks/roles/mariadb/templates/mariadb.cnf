@@ -35,6 +35,7 @@ table-definition-cache          = 4096
 table-open-cache                = 10240
 tmp-disk-table-size             = 5120M
 max-statement-time              = 3600
+port                            = {{ db_port }}
 extra_port                      = 3307
 extra_max_connections           = 5
 
