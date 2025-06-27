@@ -2246,27 +2246,10 @@ class Site(Document, TagHelpers):
 		self.archive_site_database_users()
 
 	def unsuspend_if_applicable(self):
-		try:
-			usage = frappe.get_last_doc("Site Usage", {"site": self.name})
-		except frappe.DoesNotExistError:
-			# If no doc is found, it means the site was created a few moments before
-			# team was suspended, potentially due to failure in payment. Don't unsuspend
-			# site in that case. team.unsuspend_sites should handle that, then.
-			return
-
-		plan_name = self.plan
-		# get plan from subscription
-		if not plan_name:
-			subscription = self.subscription
-			if not subscription:
-				return
-			plan_name = subscription.plan
-
-		plan = frappe.get_doc("Site Plan", plan_name)
-
-		disk_usage = usage.public + usage.private
-		if usage.database < plan.max_database_usage and disk_usage < plan.max_storage_usage:
+		if self.site_usage_exceeded:
 			self.reset_disk_usage_exceeded_status()
+		else:
+			self.unsuspend("Plan Upgraded")
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
