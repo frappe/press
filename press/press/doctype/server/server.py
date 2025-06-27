@@ -1299,8 +1299,7 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def start_active_benches(self):
-		arm_build_record: ARMBuildRecord = frappe.get_last_doc("ARM Build Record", {"server": self.name})
-		benches = [image.bench for image in arm_build_record.arm_images]
+		benches = frappe.get_all("Bench", {"server": self.name, "status": "Active"}, pluck="name")
 		frappe.enqueue_doc(self.doctype, self.name, "_start_active_benches", benches=benches)
 
 	def _start_active_benches(self, benches: list[str]):
