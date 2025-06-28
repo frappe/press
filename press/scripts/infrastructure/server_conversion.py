@@ -58,8 +58,8 @@ def vmm(server, vmi, amd_conversion: bool = False) -> VirtualMachineMigration:
 	if amd_conversion and "r6i" in machine_series:
 		if machine_size == "xlarge":
 			machine_size = "2xlarge"
-
-		machine_size = machine_size.replace("2", "4")
+		else:
+			machine_size = machine_size.replace("2", "4")
 
 	virtual_machine_migration: VirtualMachineMigration = create_vmm(
 		server=server,
