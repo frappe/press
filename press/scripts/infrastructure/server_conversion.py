@@ -27,7 +27,7 @@ arm_machine_mappings = {
 	"c5": "c7g",
 }
 
-amd_machine_mappings = {"r6i": "m6a", "m6i": "m6a", "c6i": "m6a", "m5": "m6a"}
+amd_machine_mappings = {"r6i": "m6a", "m6i": "m6a", "c6i": "m6a", "m5": "m6a", "r7i": "m6a"}
 
 
 def has_arm_build_record(server: str) -> bool:
@@ -55,7 +55,7 @@ def vmm(server, vmi, amd_conversion: bool = False) -> VirtualMachineMigration:
 	machine_series, machine_size = machine_type.split(".")
 
 	machine_mappings = arm_machine_mappings if not amd_conversion else amd_machine_mappings
-	if amd_conversion and "r6i" in machine_series:
+	if amd_conversion and ("r6i" in machine_series or "r7i" in machine_series):
 		if machine_size == "xlarge":
 			machine_size = "2xlarge"
 		else:
