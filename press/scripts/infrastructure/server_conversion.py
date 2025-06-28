@@ -27,6 +27,8 @@ arm_machine_mappings = {
 	"c5": "c7g",
 }
 
+amd_machine_mappings = {"r6i": "m6a", "m6i": "m6a", "c6i": "m6a"}
+
 
 def has_arm_build_record(server: str) -> bool:
 	return bool(frappe.get_value("ARM Build Record", {"server": server}))
@@ -48,13 +50,18 @@ def create_vmm(server: str, virtual_machine_image: str, target_machine_type: str
 	return virtual_machine_migration.insert()
 
 
-def vmm(server, vmi) -> VirtualMachineMigration:
+def vmm(server, vmi, amd_conversion: bool = False) -> VirtualMachineMigration:
 	machine_type = frappe.db.get_value("Virtual Machine", {"name": server}, "machine_type")
 	machine_series, machine_size = machine_type.split(".")
+
+	machine_mappings = arm_machine_mappings if not amd_conversion else amd_machine_mappings
+	if amd_conversion and "r6i" in machine_series:
+		machine_size = machine_size.replace("2", "4")
+
 	virtual_machine_migration: VirtualMachineMigration = create_vmm(
 		server=server,
 		virtual_machine_image=vmi,
-		target_machine_type=f"{arm_machine_mappings[machine_series]}.{machine_size}",
+		target_machine_type=machine_type or f"{machine_mappings[machine_series]}.{machine_size}",
 	)
 	return virtual_machine_migration
 
@@ -176,7 +183,7 @@ def convert_database_servers(
 		servers = load_servers_from_file(server_file)
 
 	for server in servers:
-		virtual_machine_migration = vmm(server, vmi)
+		virtual_machine_migration = vmm(server, vmi, amd_conversion=True)
 		frappe.db.commit()
 		print(f"Created {virtual_machine_migration.name}")
 
@@ -211,6 +218,34 @@ def arm_build_info(servers: list[str], server_file: str):
 		failed += _status_info(arm_build_record.arm_images, "Failure")
 
 	print(f"Total: {total}\nSuccessful: {successful}\nRunning: {running}\nFailed: {failed}")
+
+
+@cli.command()
+@click.option(
+	"--server-file", type=click.Path(exists=True), help="Path to a file containing a list of servers."
+)
+@click.option("--vmi", default="f436-mumbai.frappe.cloud")
+@click.option("--vmi-cluster", required=True)
+@click.argument("servers", nargs=-1, type=str)
+def convert_to_amd(servers: list[str], server_file: str, vmi_cluster: str):
+	"""Update docker image on bench config and create virtual machine migration"""
+	vmi = frappe.get_value("Virtual Machine Image", {"virtual_machine": vmi, "cluster": vmi_cluster}, "name")
+	if not vmi:
+		print(f"Aborting VMI not found {vmi}!")
+		return
+
+	if server_file:
+		servers = load_servers_from_file(server_file)
+
+	for server in servers:
+		try:
+			frappe.get_value("Virtual ")
+			virtual_machine_migration = vmm(server, vmi)
+			frappe.db.commit()
+			print(f"Created {virtual_machine_migration.name}")
+		except frappe.ValidationError as e:
+			print(f"Aborting: {e}!")
+			break
 
 
 @cli.command()
