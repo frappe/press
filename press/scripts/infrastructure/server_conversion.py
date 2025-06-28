@@ -227,7 +227,7 @@ def arm_build_info(servers: list[str], server_file: str):
 @click.option("--vmi", default="f436-mumbai.frappe.cloud")
 @click.option("--vmi-cluster", required=True)
 @click.argument("servers", nargs=-1, type=str)
-def convert_to_amd(servers: list[str], server_file: str, vmi_cluster: str):
+def convert_to_amd(servers: list[str], vmi: str, server_file: str, vmi_cluster: str):
 	"""Update docker image on bench config and create virtual machine migration"""
 	vmi = frappe.get_value("Virtual Machine Image", {"virtual_machine": vmi, "cluster": vmi_cluster}, "name")
 	if not vmi:
