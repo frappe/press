@@ -61,7 +61,7 @@ def vmm(server, vmi, amd_conversion: bool = False) -> VirtualMachineMigration:
 	virtual_machine_migration: VirtualMachineMigration = create_vmm(
 		server=server,
 		virtual_machine_image=vmi,
-		target_machine_type=machine_type or f"{machine_mappings[machine_series]}.{machine_size}",
+		target_machine_type=f"{machine_mappings[machine_series]}.{machine_size}",
 	)
 	return virtual_machine_migration
 
@@ -239,7 +239,7 @@ def convert_to_amd(servers: list[str], vmi: str, server_file: str, vmi_cluster: 
 
 	for server in servers:
 		try:
-			virtual_machine_migration = vmm(server, vmi)
+			virtual_machine_migration = vmm(server, vmi, amd_conversion=True)
 			frappe.db.commit()
 			print(f"Created {virtual_machine_migration.name}")
 		except frappe.ValidationError as e:
