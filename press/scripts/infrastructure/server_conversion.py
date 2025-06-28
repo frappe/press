@@ -239,7 +239,6 @@ def convert_to_amd(servers: list[str], vmi: str, server_file: str, vmi_cluster: 
 
 	for server in servers:
 		try:
-			frappe.get_value("Virtual ")
 			virtual_machine_migration = vmm(server, vmi)
 			frappe.db.commit()
 			print(f"Created {virtual_machine_migration.name}")
