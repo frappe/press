@@ -1076,7 +1076,6 @@ class DeployCandidateBuild(Document):
 			"Please wait for build to succeed or fail before retrying."
 		)
 		return False
-
 	def pre_build(self, **kwargs):
 		self.reset_build_state()
 		self.add_pre_build_steps()
@@ -1093,18 +1092,12 @@ class DeployCandidateBuild(Document):
 
 		self.save()
 
-		(
-			user,
-			session_data,
-			team,
-		) = (
-			frappe.session.user,
-			frappe.session.data,
-			get_current_team(True),
-		)
+		user, session_data, team = frappe.session.user, frappe.session.data, get_current_team(True)
 
 		frappe.set_user(frappe.get_value("Team", team.name, "user"))
-		queue = "default" if frappe.conf.developer_mode else "build"
+
+		# Use 'long' instead of 'build'
+		queue = "default" if frappe.conf.developer_mode else "long"
 
 		frappe.enqueue_doc(
 			self.doctype,
