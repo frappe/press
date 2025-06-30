@@ -192,6 +192,33 @@ class BaseServer(Document, TagHelpers):
 				"doc_method": "reboot",
 				"group": f"{server_type.title()} Actions",
 			},
+		]
+
+		server: Server | DatabaseServer = frappe.get_doc(self.doctype, self.name)
+		if server.auto_increase_storage:
+			actions.append(
+				{
+					"action": "Disable Automatic Disk Expansion",
+					"description": "Disable the automatic increase of disk size when the server runs out of space.",
+					"button_label": "Disable",
+					"condition": self.status == "Active" and self.doctype == "Server",
+					"doc_method": "toggle_auto_increase_storage",
+					"group": "Dangerous Actions",
+				}
+			)
+		else:
+			actions.append(
+				{
+					"action": "Enable Automatic Disk Expansion",
+					"description": "Enable the automatic increase of disk size when the server runs out of space.",
+					"button_label": "Enable",
+					"condition": self.status == "Active" and self.doctype == "Server",
+					"doc_method": "toggle_auto_increase_storage",
+					"group": "Dangerous Actions",
+				}
+			)
+
+		actions.append(
 			{
 				"action": "Drop server",
 				"description": "Drop both the application and database servers",
@@ -200,15 +227,7 @@ class BaseServer(Document, TagHelpers):
 				"doc_method": "drop_server",
 				"group": "Dangerous Actions",
 			},
-			{
-				"action": "Disable Automatic Disk Expansion",
-				"description": "Disable the automatic increase of disk size when the server runs out of space.",
-				"button_label": "Disable Auto Expansion",
-				"condition": self.status == "Active" and self.doctype == "Server",
-				"doc_method": "stop_auto_increase_storage",
-				"group": "Dangerous Actions",
-			},
-		]
+		)
 
 		for action in actions:
 			action["server_doctype"] = self.doctype
@@ -232,12 +251,12 @@ class BaseServer(Document, TagHelpers):
 		db_server.archive()
 
 	@dashboard_whitelist()
-	def stop_auto_increase_storage(self):
-		"""Stop auto disk increase."""
+	def toggle_auto_increase_storage(self, enable: bool):
+		"""Toggle auto disk increase."""
 		app_server, database_server = self._get_app_and_database_servers()
 
-		app_server.auto_increase_storage = False
-		database_server.auto_increase_storage = False
+		app_server.auto_increase_storage = enable
+		database_server.auto_increase_storage = enable
 
 		app_server.save()
 		database_server.save()

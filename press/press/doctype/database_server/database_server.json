@@ -594,7 +594,7 @@
    "label": "Binlogs Removed"
   },
   {
-   "default": "0",
+   "default": "1",
    "fieldname": "auto_increase_storage",
    "fieldtype": "Check",
    "label": "Auto Increase Storage"
@@ -614,7 +614,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-06-30 11:05:18.617654",
+ "modified": "2025-06-30 15:28:31.177218",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
