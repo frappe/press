@@ -866,6 +866,8 @@ class Site(Document, TagHelpers):
 
 	@property
 	def space_required_on_db_server(self):
+		if not self.remote_database_file:
+			return 0
 		db_size = frappe.get_doc("Remote File", self.remote_database_file).size
 		return self.space_required_for_restoration_on_db_server(db_file_size=db_size)
 
@@ -1013,7 +1015,10 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def restore_site(self, skip_failing_patches=False):
-		if not frappe.get_doc("Remote File", self.remote_database_file).exists():
+		if (
+			self.remote_database_file
+			and not frappe.get_doc("Remote File", self.remote_database_file).exists()
+		):
 			raise Exception(f"Remote File {self.remote_database_file} is unavailable on S3")
 
 		agent = Agent(self.server)

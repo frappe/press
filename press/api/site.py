@@ -1584,6 +1584,9 @@ def clear_cache(name):
 @frappe.whitelist()
 @protected("Site")
 def restore(name, files, skip_failing_patches=False):
+	if not files.get("database") and not files.get("public") and not files.get("private"):
+		frappe.throw("At least one file must be provided for restoration.")
+
 	frappe.db.set_value(
 		"Site",
 		name,
@@ -1600,7 +1603,9 @@ def restore(name, files, skip_failing_patches=False):
 
 @frappe.whitelist()
 @protected("Site")
-def validate_restoration_space_requirements(name, db_file_size, public_file_size, private_file_size):
+def validate_restoration_space_requirements(
+	name: str, db_file_size: int, public_file_size: int, private_file_size: int
+):
 	site: Site = frappe.get_cached_doc("Site", name)
 	server: Server = frappe.get_cached_doc("Server", site.server)
 	database_server: DatabaseServer = frappe.get_cached_doc("Database Server", server.database_server)
@@ -1630,10 +1635,12 @@ def validate_restoration_space_requirements(name, db_file_size, public_file_size
 
 	return {
 		"allowed_to_upload": allowed_to_upload,
-		"app_server_free_space": free_space_on_app_server
+		"free_space_on_app_server": free_space_on_app_server
 		if not server.public
 		else -1,  # -1 indicates unlimited space, no need to expose public server space
-		"db_server_free_space": free_space_on_db_server if not database_server.public else -1,
+		"free_space_on_db_server": free_space_on_db_server if not database_server.public else -1,
+		"is_insufficient_space_on_app_server": free_space_on_app_server < required_space_on_app_server,
+		"is_insufficient_space_on_db_server": free_space_on_db_server < required_space_on_db_server,
 		"required_space_on_app_server": required_space_on_app_server,
 		"required_space_on_db_server": required_space_on_db_server,
 	}

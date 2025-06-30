@@ -4,16 +4,20 @@
 			<FileUploader
 				v-for="file in files"
 				:fileTypes="file.ext"
+				:ref="file.type"
 				:key="file.type"
 				:type="file.type"
 				@success="onFileUpload(file, $event)"
-				:fileValidator="(f) => databaseBackupChecker(f, file.type)"
+				@failure="() => onFileUploadFailure()"
+				@setFile="file.file = $event"
+				:fileValidator="(f) => backupFileChecker(f, file.type)"
 				:s3="true"
 			>
 				<template
 					v-slot="{
 						file: fileObj,
 						uploading,
+						uploaded,
 						progress,
 						error,
 						success,
@@ -43,8 +47,9 @@
 						<template #actions>
 							<Button
 								:loading="uploading"
-								loadingText="Uploading..."
+								loadingText="Uploading"
 								@click="openFileSelector()"
+								:disabled="uploading || success || disableUploadButton"
 								v-if="!success"
 							>
 								Upload
@@ -59,12 +64,20 @@
 </template>
 <script>
 import FileUploader from './FileUploader.vue';
+import { createResource } from 'frappe-ui';
+import { toast } from 'vue-sonner';
 
 export default {
 	name: 'BackupFilesUploader',
 	components: { FileUploader },
-	emits: ['update:backupFiles'],
-	props: ['backupFiles'],
+	emits: ['update:backupFiles', 'uploadComplete'],
+	props: [
+		'backupFiles',
+		'site',
+		'onError',
+		'disableUploadButton',
+		'abortUpload',
+	],
 	data() {
 		return {
 			files: [
@@ -105,6 +118,12 @@ export default {
 					file: null,
 				},
 			],
+			fileSize: {
+				database: 0,
+				public: 0,
+				private: 0,
+				config: 0,
+			},
 		};
 	},
 	methods: {
@@ -112,8 +131,15 @@ export default {
 			let backupFiles = Object.assign({}, this.backupFiles);
 			backupFiles[file.type] = data;
 			this.$emit('update:backupFiles', backupFiles);
+			if (this.isAllFilesUploaded(backupFiles)) {
+				this.$emit('uploadComplete', backupFiles);
+			}
 		},
-		async databaseBackupChecker(file, type) {
+		onFileUploadFailure() {
+			this.$emit('abortUpload');
+		},
+		async backupFileChecker(file, type) {
+			this.fileSize[type] = file?.size ?? 0;
 			if (type === 'database') {
 				// valid strings are "database.sql.gz", "database.sql", "database.sql (1).gz", "database.sql (2).gz"
 				if (!/\.sql( \(\d\))?\.gz$|\.sql$/.test(file.name)) {
@@ -141,6 +167,75 @@ export default {
 					throw new Error(`Invalid ${type} files backup file`);
 				}
 			}
+		},
+		async checkServerDiskSize() {
+			if (!this.site) {
+				// If site is not provided, we cannot check the disk size
+				return true;
+			}
+			let post = createResource({
+				url: 'press.api.site.validate_restoration_space_requirements',
+				method: 'POST',
+			});
+			return post.fetch({
+				name: this.site,
+				db_file_size: this.fileSize.database || 0,
+				public_file_size: this.fileSize.public || 0,
+				private_file_size: this.fileSize.private || 0,
+			});
+		},
+		isAllFilesUploaded(backupFiles) {
+			return (
+				Object.values(backupFiles || this.backupFiles).filter((e) => e)
+					.length === this.files.filter((e) => e.file).length
+			);
+		},
+		async uploadFiles() {
+			let response = await this.checkServerDiskSize();
+			if (!response.allowed_to_upload) {
+				let errorMessage = '';
+				if (response.is_insufficient_space_on_app_server) {
+					let requiredGB = Math.round(
+						(response.required_space_on_app_server -
+							response.free_space_on_app_server) /
+							(1024 * 1024 * 1024),
+						2,
+					);
+					errorMessage += `Insufficient space on app server. Please add ${requiredGB} GB more storage.`;
+				}
+				if (response.is_insufficient_space_on_db_server) {
+					let requiredGB = Math.round(
+						(response.required_space_on_db_server -
+							response.free_space_on_db_server) /
+							(1024 * 1024 * 1024),
+						2,
+					);
+					errorMessage += ` Insufficient space on database server. Please add ${requiredGB} GB more storage.`;
+				}
+				if (!errorMessage) {
+					errorMessage = 'Failed to upload files. Please try again later.';
+				}
+				if (this.onError) {
+					this.onError(errorMessage);
+				}
+				toast.error(errorMessage);
+				return false;
+			}
+
+			if (this.$refs.database) {
+				this.$refs.database[0].uploadFile();
+			}
+			if (this.$refs.public) {
+				this.$refs.public[0].uploadFile();
+			}
+			if (this.$refs.private) {
+				this.$refs.private[0].uploadFile();
+			}
+			if (this.$refs.config) {
+				this.$refs.config[0].uploadFile();
+			}
+
+			return true;
 		},
 	},
 };
