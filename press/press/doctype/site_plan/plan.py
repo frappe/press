@@ -36,7 +36,7 @@ class Plan(Document):
 			fields = ["*"]
 
 		fields.append("`tabHas Role`.role")
-		if not filters["platform"]:
+		if not filters.get("platform"):
 			# The server is already on a specified platform we can then ignore weather a plan is enabled or not.
 			filters.update({"enabled": True})
 		plans = frappe.get_all(doctype, filters=filters, fields=fields, order_by="price_usd asc")
