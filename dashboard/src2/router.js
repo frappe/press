@@ -122,6 +122,29 @@ let router = createRouter({
 			component: () => import('./pages/PartnerNewPayout.vue'),
 		},
 		{
+			name: 'PartnerLeadDetails',
+			path: '/partner-lead/:leadId',
+			component: () => import('./pages/PartnerLeadDetails.vue'),
+			children: [
+				{
+					name: 'LeadOverview',
+					path: '',
+					component: () =>
+						import('./components/partners/PartnerLeadOverview.vue'),
+				},
+				{
+					name: 'LeadDealDetails',
+					path: 'deal-info',
+					component: () => import('./components/partners/LeadDealDetails.vue'),
+				},
+				{
+					name: 'LeadFollowUp',
+					path: 'follow-up',
+					component: () => import('./components/partners/LeadFollowup.vue'),
+				},
+			],
+		},
+		{
 			name: 'Billing',
 			path: '/billing',
 			component: () => import('./pages/Billing.vue'),
@@ -221,6 +244,11 @@ let router = createRouter({
 					component: () => import('./components/partners/PartnerCustomers.vue'),
 				},
 				{
+					name: 'PartnerLeads',
+					path: 'partner-leads',
+					component: () => import('./components/partners/PartnerLeads.vue'),
+				},
+				{
 					name: 'PartnerCertificates',
 					path: 'certificates',
 					component: () =>
@@ -243,6 +271,11 @@ let router = createRouter({
 					path: 'payment-payout',
 					component: () => import('./components/partners/PartnerPayout.vue'),
 				},
+				{
+					name: 'PartnerAnalytics',
+					path: 'partner-charts',
+					component: () => import('./components/partners/PartnerAnalytics.vue'),
+				},
 			],
 		},
 		{
@@ -260,6 +293,11 @@ let router = createRouter({
 					name: 'CertificateList',
 					path: 'certificate-list',
 					component: () => import('./pages/PartnerAdminCertificates.vue'),
+				},
+				{
+					name: 'PartnerLeadList',
+					path: 'partner-lead-list',
+					component: () => import('./components/partners/PartnerLeads.vue'),
 				},
 			],
 		},

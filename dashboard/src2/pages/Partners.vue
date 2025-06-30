@@ -40,15 +40,46 @@ export default {
 		return {
 			currentTab: 0,
 			tabs: [
-				{ label: 'Overview', route: { name: 'PartnerOverview' } },
-				{ label: 'Customers', route: { name: 'PartnerCustomers' } },
 				{
-					label: 'Approval Requests',
-					route: { name: 'PartnerApprovalRequests' },
+					label: 'Overview',
+					route: { name: 'PartnerOverview' },
+					condition: () => Boolean(this.$team.doc.erpnext_partner),
 				},
 				{
-					label: 'Partner  Certificates',
+					label: 'Customers',
+					route: { name: 'PartnerCustomers' },
+					condition: () =>
+						Boolean(
+							this.$team.doc.erpnext_partner &&
+								this.$team.doc.partner_status === 'Active',
+						),
+				},
+				{
+					label: 'Link Customers',
+					route: { name: 'PartnerApprovalRequests' },
+					condition: () =>
+						Boolean(
+							this.$team.doc.erpnext_partner &&
+								this.$team.doc.partner_status === 'Active',
+						),
+				},
+				{
+					label: 'Leads',
+					route: { name: 'PartnerLeads' },
+					condition: () =>
+						Boolean(
+							this.$team.doc.erpnext_partner &&
+								this.$team.doc.partner_status === 'Active',
+						),
+				},
+				{
+					label: 'Certificates',
 					route: { name: 'PartnerCertificates' },
+					condition: () =>
+						Boolean(
+							this.$team.doc.erpnext_partner &&
+								this.$team.doc.partner_status === 'Active',
+						),
 				},
 				{
 					label: 'Local Payment Setup',
@@ -56,13 +87,19 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.country === 'Kenya' &&
-								this.$team.doc.mpesa_enabled,
+								this.$team.doc.mpesa_enabled &&
+								this.$team.doc.erpnext_partner &&
+								this.$team.doc.partner_status === 'Active',
 						),
 				},
 				{
 					label: 'Partner Payout',
 					route: { name: 'PartnerPayout' },
-					condition: () => Boolean(this.$team.doc.country === 'Kenya' && this.$team.doc.mpesa_enabled),
+					condition: () =>
+						Boolean(
+							this.$team.doc.country === 'Kenya' &&
+								this.$team.doc.mpesa_enabled,
+						),
 				},
 			],
 		};

@@ -81,6 +81,7 @@ class Team(Document):
 		partner_commission: DF.Percent
 		partner_email: DF.Data | None
 		partner_referral_code: DF.Data | None
+		partner_status: DF.Literal["Active", "Inactive"]
 		partner_tier: DF.Data | None
 		partnership_date: DF.Date | None
 		payment_mode: DF.Literal["", "Card", "Prepaid Credits", "Paid By Partner"]
@@ -129,6 +130,7 @@ class Team(Document):
 		"mpesa_phone_number",
 		"mpesa_enabled",
 		"account_request",
+		"partner_status",
 	)
 
 	def get_doc(self, doc):
@@ -1121,7 +1123,7 @@ class Team(Document):
 	def reallocate_workers_if_needed(
 		self, workloads_before: list[str, float, str], workloads_after: list[str, float, str]
 	):
-		for before, after in zip(workloads_before, workloads_after):
+		for before, after in zip(workloads_before, workloads_after, strict=False):
 			if after[1] - before[1] >= 8:  # 100 USD equivalent
 				frappe.enqueue_doc(
 					"Server",
