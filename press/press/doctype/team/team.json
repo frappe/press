@@ -53,6 +53,7 @@
   "erpnext_partner",
   "partner_email",
   "column_break_ooyo",
+  "partner_status",
   "partner_tier",
   "website_info_section",
   "company_logo",
@@ -573,6 +574,12 @@
    "fieldname": "apply_npo_discount",
    "fieldtype": "Check",
    "label": "Apply NPO Discount"
+  },
+  {
+   "fieldname": "partner_status",
+   "fieldtype": "Select",
+   "label": "Partner Status",
+   "options": "Active\nInactive"
   }
  ],
  "grid_page_length": 50,
@@ -638,7 +645,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2025-05-20 12:56:19.719372",
+ "modified": "2025-06-27 09:52:43.110409",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

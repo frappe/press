@@ -32,7 +32,7 @@
 					</Dropdown>
 				</div>
 			</div>
-			<div class="rounded-lg text-base text-gray-900 shadow">
+			<div class="rounded-lg text-base text-gray-900 border">
 				<div class="p-4">
 					<div class="flex items-center justify-between pb-2">
 						<div class="font-semibold text-xl">Company Information</div>
@@ -64,7 +64,7 @@
 				</div>
 			</div>
 
-			<div class="rounded-lg text-base text-gray-900 shadow">
+			<div class="rounded-lg text-base text-gray-900 border">
 				<div class="p-4">
 					<div class="flex items-center justify-between pb-2">
 						<div class="font-semibold text-xl">Contact Info</div>
@@ -79,6 +79,42 @@
 								<div class="text-lg font-medium py-2">
 									{{ item.value }}
 								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="rounded-lg text-base text-gray-900 border">
+				<div class="p-4">
+					<div class="flex items-center justify-between pb-2">
+						<div class="font-semibold text-xl">Deal Info</div>
+					</div>
+					<div class="my-1 h-px bg-gray-100" />
+					<div class="pt-2">
+						<div class="grid grid-cols-2 gap-4">
+							<div v-for="item in deal_info" class="flex-1">
+								<div class="text-sm text-gray-600">
+									{{ item.label }}
+								</div>
+								<div v-if="item.label === 'Probability'" class="py-1">
+									<Badge
+										variant="outline"
+										:theme="probabilityTheme[item.value]"
+										size="lg"
+										:label="item.value"
+									/>
+								</div>
+								<div v-else class="text-lg font-medium py-2">
+									{{ item.value }}
+								</div>
+							</div>
+						</div>
+						<!-- <div class="my-1 h-px bg-gray-100" /> -->
+						<div class="pt-2">
+							<div class="text-sm text-gray-600">Requirement</div>
+							<div class="text-base leading-6 font-normal py-2">
+								{{ lead?.requirement }}
 							</div>
 						</div>
 					</div>
@@ -131,7 +167,7 @@
 	</div>
 </template>
 <script>
-import { Badge, FeatherIcon } from 'frappe-ui';
+import { Badge } from 'frappe-ui';
 import LeadDetailsDialog from './LeadDetailsDialog.vue';
 import UpdateWonDialog from './UpdateWonDialog.vue';
 import { h } from 'vue';
@@ -209,6 +245,31 @@ export default {
 				{ label: 'Territory', value: this.lead?.territory },
 				{ label: 'Contact', value: this.lead?.contact_no },
 			];
+		},
+		deal_info() {
+			return [
+				{
+					label: 'Plan Proposed',
+					value: this.lead?.plan_proposed,
+					condition: ['Won', 'In Process'].includes(this.lead?.status),
+				},
+				{ label: 'Probability', value: this.lead?.probability },
+				{
+					label: 'Expected Close Date',
+					value: this.lead?.estimated_closure_date,
+					condition: this.lead?.status === 'In Process',
+				},
+				{
+					label: 'Hosting',
+					value: this.lead?.hosting,
+					condition: this.lead?.status === 'Won',
+				},
+				{
+					label: 'Site URL',
+					value: this.lead?.site_url,
+					condition: this.lead?.status === 'Won',
+				},
+			].filter((d) => d.condition ?? true);
 		},
 		lead() {
 			return this.$resources.lead.doc;
@@ -293,10 +354,17 @@ export default {
 				'Passed to Other Partner': 'gray',
 			};
 		},
+		probabilityTheme() {
+			return {
+				Hot: 'red',
+				Warm: 'orange',
+				Cold: 'blue',
+			};
+		},
 	},
 	methods: {
 		_updateStatus(status) {
-			if (status === this.lead.status) return;
+			if (status === this.lead.status && status !== 'In Process') return;
 			if (status === 'In Process') {
 				this.showUpdateEngagementStageDialog = true;
 			} else if (status === 'Won') {

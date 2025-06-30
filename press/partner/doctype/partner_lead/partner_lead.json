@@ -100,7 +100,7 @@
    "fieldname": "lead_source",
    "fieldtype": "Select",
    "label": "Lead Source",
-   "options": "\nPartner Owned\nPassed to Partner\nPartner Listing\nPublic Webinar"
+   "options": "\nPartner Owned\nPassed to Partner\nPartner Listing"
   },
   {
    "fieldname": "lead_type",
@@ -113,6 +113,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "default": "Open",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -282,6 +283,7 @@
    "label": "Site URL"
   },
   {
+   "default": "Cold",
    "fieldname": "probability",
    "fieldtype": "Select",
    "label": "Probability",
@@ -360,7 +362,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-23 11:50:42.421633",
+ "modified": "2025-06-30 11:41:47.517000",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Partner Lead",

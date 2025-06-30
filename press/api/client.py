@@ -81,6 +81,8 @@ ALLOWED_DOCTYPES = [
 	"Partner Payment Payout",
 	"Deploy Candidate Build",
 	"Partner Lead",
+	"Partner Lead Type",
+	"Lead Followup",
 ]
 
 ALLOWED_DOCTYPES_FOR_SUPPORT = [

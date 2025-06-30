@@ -7,6 +7,25 @@
 					label="Conversion Date"
 					type="date"
 					name="conversion_date"
+					:required="true"
+				/>
+				<FormControl
+					v-model="hosting_type"
+					label="Hosting Type"
+					type="select"
+					name="hosting_type"
+					:options="[
+						{ label: 'Self-Hosted', value: 'Self-Hosted' },
+						{ label: 'Frappe Cloud', value: 'Frappe Cloud' },
+					]"
+					:required="true"
+				/>
+				<FormControl
+					v-model="site_url"
+					label="Site URL"
+					type="data"
+					name="site_url"
+					:required="true"
 				/>
 				<Button variant="solid" @click="() => updateStatus.submit()"
 					>Submit</Button
@@ -29,6 +48,8 @@ const props = defineProps({
 });
 
 const conversion_date = ref();
+const hosting_type = ref();
+const site_url = ref();
 const updateStatus = createResource({
 	url: 'press.api.partner.update_lead_status',
 	makeParams: () => {
@@ -36,6 +57,8 @@ const updateStatus = createResource({
 			lead_name: props.lead_id,
 			status: 'Won',
 			conversion_date: conversion_date.value,
+			hosting: hosting_type.value,
+			site_url: site_url.value,
 		};
 	},
 	onSuccess: () => {

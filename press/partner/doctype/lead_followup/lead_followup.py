@@ -38,4 +38,11 @@ class LeadFollowup(Document):
 		spoke_to: DF.Data | None
 	# end: auto-generated types
 
-	pass
+	dashboard_fields = (
+		"discussion",
+		"communication_type",
+		"date",
+		"followup_by",
+		"spoke_to",
+		"designation",
+	)

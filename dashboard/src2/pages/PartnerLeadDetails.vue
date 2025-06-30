@@ -2,7 +2,11 @@
 	<div class="sticky top-0 z-10 shrink-0">
 		<Header>
 			<FBreadcrumbs
-				:items="[{ label: 'Partner Lead', route: { name: 'PartnerLeads' } }]"
+				:items="[
+					{ label: 'Partnership', route: { name: 'PartnerLeads' } },
+					{ label: 'Partner Lead', route: { name: 'PartnerLeads' } },
+					{ label: lead.doc?.organization_name, route: '#' },
+				]"
 			/>
 		</Header>
 		<TabsWithRouter :tabs="tabs" />
@@ -34,8 +38,7 @@ export default {
 			currentTab: 0,
 			tabs: [
 				{ label: 'Overview', route: { name: 'LeadOverview' } },
-				{ label: 'Deal Details', route: { name: 'LeadDealDetails' } },
-				{ label: 'Follow Up', route: { name: 'LeadFollowUp' } },
+				{ label: 'Follow-up', route: { name: 'LeadDealDetails' } },
 			],
 		};
 	},
@@ -44,6 +47,5 @@ export default {
 			return this.$resources.lead;
 		},
 	},
-	methods: {},
 };
 </script>

@@ -54,7 +54,7 @@ class PartnerLead(Document):
 		hosting: DF.Literal["Frappe Cloud", "Self Hosted"]
 		lead_name: DF.Data | None
 		lead_rating: DF.Rating
-		lead_source: DF.Literal["", "Partner Owned", "Passed to Partner", "Partner Listing", "Public Webinar"]
+		lead_source: DF.Literal["", "Partner Owned", "Passed to Partner", "Partner Listing"]
 		lead_type: DF.Link | None
 		lost_reason: DF.Literal[
 			"Lost to Competitor",
@@ -98,4 +98,12 @@ class PartnerLead(Document):
 		"email",
 		"contact_no",
 		"country",
+		"plan_proposed",
+		"site_url",
+		"hosting",
+		"estimated_closure_date",
+		"probability",
+		"requirement",
+		"partner_team",
+		"discussion",
 	)

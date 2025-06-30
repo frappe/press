@@ -1,47 +1,58 @@
 <template>
-	<div class="flex flex-col gap-5">
-		<div
-			v-for="section in sections"
-			:key="section.name"
-			class="grid gap-4"
-			:class="'grid-cols-' + section.columns"
-		>
-			<div v-for="field in section.fields" :key="field.name">
-				<FormControl
-					v-model="leadInfo[field.fieldname]"
-					:label="field.label || field.fieldname"
-					:type="getInputType(field)"
-					:name="field.fieldname"
-					:options="field.options"
-					:disabled="props.disableForm"
-					:required="field.required"
-				/>
+	<Dialog v-model="show" :options="{ title: 'New Lead', size: '2xl' }">
+		<template #body-content>
+			<div class="flex flex-col gap-5">
+				<div
+					v-for="section in sections"
+					:key="section.name"
+					class="grid gap-4"
+					:class="'grid-cols-' + section.columns"
+				>
+					<div v-for="field in section.fields" :key="field.name">
+						<FormControl
+							v-model="leadInfo[field.fieldname]"
+							:label="field.label || field.fieldname"
+							:type="getInputType(field)"
+							:name="field.fieldname"
+							:options="field.options"
+							:required="field.required"
+						/>
+					</div>
+				</div>
+				<div>
+					<Button
+						class="w-full"
+						variant="solid"
+						label="Create Lead"
+						@click="_newLeadInfo"
+					/>
+				</div>
 			</div>
-		</div>
-		<div>
-			<Button
-				class="w-full"
-				variant="solid"
-				label="Update Lead details"
-				@click="_updateLeadInfo"
-			/>
-		</div>
-	</div>
+		</template>
+	</Dialog>
 </template>
 <script setup>
-import { FormControl, createResource } from 'frappe-ui';
+import {
+	Dialog,
+	FormControl,
+	createResource,
+	createListResource,
+} from 'frappe-ui';
 import { toast } from 'vue-sonner';
-import { computed } from 'vue';
-import { DashboardError } from '../../utils/error';
-import { useRoute } from 'vue-router';
+import { computed, ref } from 'vue';
 
-const emit = defineEmits(['success']);
-const route = useRoute();
-
-const leadInfo = defineModel();
-const props = defineProps({
-	disableForm: { type: Boolean, default: false },
+const leadInfo = ref({
+	organization_name: '',
+	domain: '',
+	full_name: '',
+	email: '',
+	contact_no: '',
+	country: '',
+	state: '',
+	requirement: '',
+	status: '',
 });
+const show = defineModel();
 
 const _domainList = [
 	'Distribution',
@@ -62,43 +73,23 @@ const domainList = computed(() => {
 	}));
 });
 
-const _statusList = [
-	'Won',
-	'Open',
-	'Lost',
-	'In Process',
-	'Junk',
-	'Passed to Other Partner',
-];
-
-const statusList = computed(() => {
-	return _statusList.map((status) => ({
-		label: status,
-		value: status,
-	}));
+const _leadTypeList = createListResource({
+	doctype: 'Partner Lead Type',
+	fields: ['name'],
+	cache: 'leadTypeList',
+	auto: true,
 });
-
-const probability = computed(() => {
-	return [
-		{ label: 'Hot', value: 'Hot' },
-		{ label: 'Warm', value: 'Warm' },
-		{ label: 'Cold', value: 'Cold' },
-	];
+const leadTypeList = computed(() => {
+	return (_leadTypeList.data || []).map((type) => ({
+		label: type.name,
+		value: type.name,
+	}));
 });
 
 const _countryList = createResource({
 	url: 'press.api.account.country_list',
 	cache: 'countryList',
 	auto: true,
-	onSuccess: () => {
-		let leadCountry = leadInfo.value.country;
-		if (leadCountry) {
-			let country = countryList.value?.find((d) => d.label === leadCountry);
-			if (country) {
-				leadInfo.value.country = country.value;
-			}
-		}
-	},
 });
 
 const countryList = computed(() => {
@@ -108,11 +99,10 @@ const countryList = computed(() => {
 	}));
 });
 
-const updateLeadInfo = createResource({
-	url: 'press.api.partner.update_lead_details',
+const newLeadInfo = createResource({
+	url: 'press.api.partner.add_new_lead',
 	makeParams: () => {
 		return {
-			lead_name: route.params.leadId,
 			lead_details: leadInfo.value,
 		};
 	},
@@ -121,13 +111,13 @@ const updateLeadInfo = createResource({
 		if (error) throw new DashboardError(error);
 	},
 	onSuccess: () => {
-		toast.success('Lead Information updated');
-		emit('success');
+		toast.success('New Lead created successfully');
+		show.value = false;
 	},
 });
 
-function _updateLeadInfo() {
-	updateLeadInfo.submit();
+function _newLeadInfo() {
+	newLeadInfo.submit();
 }
 
 async function validate() {
@@ -219,9 +209,9 @@ const sections = computed(() => {
 				},
 				{
 					fieldtype: 'Select',
-					fieldname: 'status',
-					label: 'Status',
-					options: statusList.value,
+					fieldname: 'lead_type',
+					label: 'Lead Type',
+					options: leadTypeList.value,
 					required: true,
 				},
 			],
@@ -270,26 +260,9 @@ const sections = computed(() => {
 					fieldtype: leadInfo.value.country === 'India' ? 'Select' : 'Data',
 					fieldname: 'state',
 					label: 'State / Region',
-					required: true,
+					required: leadInfo.value.country === 'India' ? true : false,
 					options:
 						leadInfo.value.country === 'India' ? indianStates.value : null,
-				},
-			],
-		},
-		{
-			name: 'Deal details',
-			columns: 2,
-			fields: [
-				{
-					fieldtype: 'Select',
-					fieldname: 'probability',
-					label: 'Probability',
-					options: probability.value,
-				},
-				{
-					fieldtype: 'Data',
-					fieldname: 'plan_proposed',
-					label: 'Plan Proposed',
 				},
 			],
 		},
