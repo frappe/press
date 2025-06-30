@@ -176,8 +176,8 @@
 						><strong>Frappe Partnership Agreement</strong></a
 					>.
 				</p>
-			</template> </Dialog
-		>>
+			</template>
+		</Dialog>
 	</div>
 </template>
 

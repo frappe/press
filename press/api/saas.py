@@ -211,24 +211,6 @@ def check_subdomain_availability(subdomain, app):
 
 
 @frappe.whitelist(allow_guest=True)
-def validate_account_request(key):
-	if not key:
-		frappe.throw("Request Key not provided")
-
-	app = frappe.db.get_value("Account Request", {"request_key": key}, "saas_app")
-	app_info = frappe.db.get_value("Saas Setup Account Generator", app, ["headless", "route"], as_dict=True)
-
-	if not app_info:
-		frappe.throw("App configurations are missing! Please contact support")
-
-	if app_info.headless:
-		headless_setup_account(key)
-	else:
-		frappe.local.response["type"] = "redirect"
-		frappe.local.response["location"] = f"/{app_info.route}?key={key}"
-
-
-@frappe.whitelist(allow_guest=True)
 def setup_account(key, business_data=None):
 	"""
 	Includes the data collection step in setup-account.html

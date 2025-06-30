@@ -50,6 +50,12 @@ let router = createRouter({
 			meta: { isLoginPage: true },
 		},
 		{
+			path: '/accept-invite/:requestKey/:joinRequest?',
+			name: 'Team Invite',
+			component: () => import('./pages/SetupAccount.vue'),
+			props: true,
+		},
+		{
 			path: '/reset-password/:requestKey',
 			name: 'Reset Password',
 			component: () => import('./pages/ResetPassword.vue'),
@@ -396,6 +402,9 @@ router.beforeEach(async (to, from, next) => {
 					name: 'SignupSetup',
 					params: { productId: to.query.product },
 				});
+			}
+			if (to.name == 'Setup Account') {
+				next({ name: 'Team Invite', params: to.params });
 			}
 			next({ name: defaultRoute });
 		} else {

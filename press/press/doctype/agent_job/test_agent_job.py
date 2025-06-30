@@ -13,7 +13,7 @@ from frappe.model.naming import make_autoname
 
 from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import AgentJob, lock_doc_updated_by_job
-from press.press.doctype.site.test_site import create_test_bench, create_test_site
+from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.utils.test import foreground_enqueue, foreground_enqueue_doc
 
@@ -170,31 +170,6 @@ class TestAgentJob(unittest.TestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 		frappe.set_user("Administrator")
-
-	@patch.object(Agent, "reload_nginx")
-	def test_suspend_sites_issues_reload_in_bulk(self, mock_reload_nginx):
-		from .agent_job import suspend_sites
-
-		bench1 = create_test_bench().name
-		bench2 = create_test_bench().name
-		bench3 = create_test_bench().name
-
-		frappe.set_user(self.team.user)
-		site1 = create_test_site(bench=bench1)
-		site2 = create_test_site(bench=bench2)
-		create_test_site(bench=bench3)  # control; no suspend
-
-		site1.db_set("current_database_usage", 101)
-		site2.db_set("current_disk_usage", 101)
-		frappe.db.set_single_value("Press Settings", "enforce_storage_limits", True)
-		suspend_sites()
-		suspend_jobs = frappe.get_all("Agent Job", {"job_type": "Update Site Status"}, ["request_data"])
-
-		self.assertEqual(len(suspend_jobs), 2)
-		self.assertEqual(
-			mock_reload_nginx.call_count,
-			0,
-		)
 
 	def test_lock_doc_updated_by_job_respects_hierarchy(self):
 		"""

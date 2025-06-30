@@ -25,7 +25,7 @@
 					title="Uptime"
 					:key="databaseUptimeData"
 					:data="databaseUptimeData"
-					unit="seconds"
+					unit=""
 					:chartTheme="[$theme.colors.purple[500]]"
 					:loading="$resources.databaseUptime.loading"
 					:error="$resources.databaseUptime.error"

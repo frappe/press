@@ -41,20 +41,20 @@ class AppRelease(Document):
 		from frappe.types import DF
 
 		app: DF.Link
-		author: DF.Data | None  # noqa
-		clone_directory: DF.Text | None  # noqa
+		author: DF.Data | None
+		clone_directory: DF.Text | None
 		cloned: DF.Check
-		code_server_url: DF.Text | None  # noqa
+		code_server_url: DF.Text | None
 		hash: DF.Data
 		invalid_release: DF.Check
-		invalidation_reason: DF.Code | None  # noqa
-		message: DF.Code | None  # noqa
-		output: DF.Code | None  # noqa
+		invalidation_reason: DF.Code | None
+		message: DF.Code | None
+		output: DF.Code | None
 		public: DF.Check
 		source: DF.Link
 		status: DF.Literal["Draft", "Approved", "Awaiting Approval", "Rejected"]
 		team: DF.Link
-		timestamp: DF.Datetime | None  # noqa
+		timestamp: DF.Datetime | None
 	# end: auto-generated types
 
 	dashboard_fields = ["app", "source", "message", "hash", "author", "status"]  # noqa
@@ -103,7 +103,7 @@ class AppRelease(Document):
 
 	def after_insert(self):
 		self.create_release_differences()
-		self.auto_deploy()
+		frappe.enqueue_doc(self.doctype, self.name, "auto_deploy", enqueue_after_commit=True)
 
 	def get_source(self) -> AppSource:
 		"""Return the `App Source` associated with this `App Release`"""
@@ -267,22 +267,27 @@ class AppRelease(Document):
 			difference.insert()
 
 	def auto_deploy(self):
-		groups = frappe.get_all(
-			"Release Group App",
-			["parent"],
-			{"source": self.source, "enable_auto_deploy": True},
-		)
-		for group in groups:
-			if frappe.get_all(
-				"Deploy Candidate Build",
-				{"status": ("in", ("Pending", "Running")), "group": group.parent},
-			):
-				continue
-			group = frappe.get_doc("Release Group", group.parent)
-			apps = [app.as_dict() for app in group.apps if app.enable_auto_deploy]
-			candidate = group.create_deploy_candidate(apps)
-			if candidate:
-				candidate.schedule_build_and_deploy()
+		current_user = frappe.session.user
+		try:
+			frappe.set_user("Administrator")
+			groups = frappe.get_all(
+				"Release Group App",
+				["parent"],
+				{"source": self.source, "enable_auto_deploy": True},
+			)
+			for group in groups:
+				if frappe.get_all(
+					"Deploy Candidate Build",
+					{"status": ("in", ("Pending", "Running")), "group": group.parent},
+				):
+					continue
+				group = frappe.get_doc("Release Group", group.parent)
+				apps = [app.as_dict() for app in group.apps if app.enable_auto_deploy]
+				candidate = group.create_deploy_candidate(apps)
+				if candidate:
+					candidate.schedule_build_and_deploy()
+		finally:
+			frappe.set_user(current_user)
 
 
 def cleanup_unused_releases():

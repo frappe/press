@@ -751,7 +751,7 @@ class DeployCandidateBuild(Document):
 
 		build_meta = {
 			"doctype": "Deploy Candidate Build",
-			"deploy_candidate": self.candidate,
+			"deploy_candidate": self.candidate.name,
 			"no_build": self.no_build,
 			"no_cache": self.no_cache,
 			"no_push": self.no_push,

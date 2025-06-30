@@ -273,9 +273,9 @@ class MonitorServer(BaseServer):
 			benches.append(alert["labels"]["bench"])
 		return benches
 
-	def get_benches_down_for_server(self, server: str) -> list[str]:
+	def get_benches_down_for_server(self, server: str) -> set[str]:
 		benches = []
 		for alert in self.sites_down_alerts:
 			if alert["labels"]["server"] == server:
 				benches.append(alert["labels"]["bench"])
-		return benches
+		return set(benches)

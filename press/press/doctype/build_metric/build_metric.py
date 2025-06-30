@@ -8,6 +8,7 @@ import typing
 from collections import Counter
 from dataclasses import dataclass, field
 from statistics import median
+from typing import Any
 
 import frappe
 from frappe.model.document import Document
@@ -85,6 +86,7 @@ class GenerateBuildMetric:
 			"median_upload_context_duration": self.context_durations["median_upload_duration"],
 			"median_package_context_duration": self.context_durations["median_package_duration"],
 			"failure_frequency": dict(self.failure_frequency.most_common()),
+			"build_count_split": self.get_build_count_platform_split(),
 		}
 
 	def get_metric(self):
@@ -111,15 +113,21 @@ class GenerateBuildMetric:
 		return Counter(failure["error_key"] for failure in user_failures)
 
 	def get_context_durations(self) -> ContextDurationType:
-		context_durations = frappe.get_all(
-			"Deploy Candidate Build Step",
-			{
-				"stage_slug": ("in", ["package", "upload"]),
-				"step_slug": "context",
-				"creation": ("between", [self.from_date, self.end_date]),
-			},
-			["duration", "stage_slug"],
+		deploy_candidate_build = frappe.qb.DocType("Deploy Candidate Build")
+		deploy_candidate_build_step = frappe.qb.DocType("Deploy Candidate Build Step")
+
+		context_durations = (
+			frappe.qb.from_(deploy_candidate_build_step)
+			.join(deploy_candidate_build)
+			.on(deploy_candidate_build_step.parent == deploy_candidate_build.name)
+			.select(deploy_candidate_build_step.duration, deploy_candidate_build_step.stage_slug)
+			.where(deploy_candidate_build_step.stage_slug.isin(["package", "upload"]))
+			.where(deploy_candidate_build_step.step_slug == "context")
+			.where(deploy_candidate_build_step.creation[self.from_date : self.end_date])
+			.where(deploy_candidate_build.deploy_after_build == 1)
+			.run(as_dict=1)
 		)
+
 		package_durations = [ctx.duration / 60 for ctx in context_durations if ctx.stage_slug == "package"]
 		upload_durations = [ctx.duration / 60 for ctx in context_durations if ctx.stage_slug == "upload"]
 
@@ -134,6 +142,7 @@ class GenerateBuildMetric:
 			"Deploy Candidate Build",
 			{
 				"creation": ["between", (self.from_date, self.end_date)],
+				"deploy_after_build": 1,
 				"build_duration": ("is", "set"),
 				"pending_duration": ("is", "set"),
 			},
@@ -163,6 +172,7 @@ class GenerateBuildMetric:
 	def _get_failure(
 		self, is_user_addressable: bool, is_manually_failed: bool
 	) -> list[DeployCandidateBuildType]:
+		# Ensure failures are not exaggerated due to conversions
 		return frappe.get_all(
 			"Deploy Candidate Build",
 			{
@@ -170,15 +180,33 @@ class GenerateBuildMetric:
 				"status": "Failure",
 				"user_addressable_failure": is_user_addressable,
 				"manually_failed": is_manually_failed,
+				"deploy_after_build": 1,
 			},
 			self.metric_fields,
 		)
 
-	def get_total_builds(self) -> int:
-		return frappe.db.count(
-			"Deploy Candidate Build",
-			{"creation": ("between", [self.from_date, self.end_date])},
+	def _get_build_count(self, filters: dict[str, Any] | None = None):
+		# Ensure build creation was not a part of migration using deploy flag.
+		if not filters:
+			filters = {}
+
+		filters.update(
+			{
+				"creation": ("between", [self.from_date, self.end_date]),
+				"deploy_after_build": 1,
+			}
 		)
+
+		return frappe.db.count("Deploy Candidate Build", filters=filters)
+
+	def get_build_count_platform_split(self) -> dict[str, int]:
+		return {
+			"arm64": self._get_build_count({"platform": "arm64"}),
+			"x86_64": self._get_build_count({"platform": "x86_64"}),
+		}
+
+	def get_total_builds(self) -> int:
+		return self._get_build_count()
 
 
 def create_build_metric():

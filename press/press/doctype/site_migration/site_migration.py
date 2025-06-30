@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 	from frappe.types.DF import Link
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.cluster.cluster import Cluster
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.site.site import Site
 	from press.press.doctype.site_domain.site_domain import SiteDomain
@@ -401,7 +402,12 @@ class SiteMigration(Document):
 			and site.status_before_update != "Inactive"
 		):
 			site.activate()
-			if self.migration_type == "Cluster":
+		if self.migration_type == "Cluster":
+			if site.cluster == frappe.db.get_value(
+				"Root Domain", site.domain, "default_cluster"
+			):  # reverse the DNS record creation
+				site.remove_dns_record(frappe.db.get_value("Server", self.destination_server, "proxy_server"))
+			else:
 				site.create_dns_record()
 
 	def send_fail_notification(self, reason: str | None = None):

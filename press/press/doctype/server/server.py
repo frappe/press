@@ -25,6 +25,7 @@ from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.exceptions import VolumeResizeLimitError
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.runner import Ansible
 from press.telegram_utils import Telegram
@@ -35,6 +36,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.release_group.release_group import ReleaseGroup
+	from press.press.doctype.server_mount.server_mount import ServerMount
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 from typing import Literal, TypedDict
@@ -1297,8 +1299,7 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def start_active_benches(self):
-		arm_build_record: ARMBuildRecord = frappe.get_last_doc("ARM Build Record", {"server": self.name})
-		benches = [image.bench for image in arm_build_record.arm_images]
+		benches = frappe.get_all("Bench", {"server": self.name, "status": "Active"}, pluck="name")
 		frappe.enqueue_doc(self.doctype, self.name, "_start_active_benches", benches=benches)
 
 	def _start_active_benches(self, benches: list[str]):
@@ -1753,6 +1754,10 @@ class Server(BaseServer):
 	def add_upstream_to_proxy(self):
 		agent = Agent(self.proxy_server, server_type="Proxy Server")
 		agent.new_server(self.name)
+
+	def ansible_run(self, command: str) -> dict[str, str]:
+		inventory = f"{self.ip},"
+		return AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
 
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")

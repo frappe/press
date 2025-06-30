@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from datetime import timezone as tz
 from typing import TYPE_CHECKING, Literal
 
@@ -13,6 +13,7 @@ from frappe.utils import convert_utc_to_timezone, flt
 from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 
+from press.api.analytics import get_rounded_boundaries
 from press.api.bench import all as all_benches
 from press.api.site import protected
 from press.press.doctype.site_plan.plan import Plan
@@ -45,15 +46,18 @@ def _get_intel_mount_point(_: Literal["f", "m"]) -> str:
 
 
 def get_mount_point(server: str) -> str:
-	doctype = "Database Server" if server[0] == "m" else "Server"
-	provider = frappe.get_value(doctype, server, "provider")
+	provider = frappe.get_value("Database Server" if server[0] == "m" else "Server", server, "provider")
 	if provider != "AWS EC2":
-		return _get_intel_mount_point("/")
+		return "/"
 
-	platform, series = frappe.get_value("Virtual Machine", server, ["platform", "series"])
+	platform, series, has_data_volume = frappe.get_value(
+		"Virtual Machine", server, ["platform", "series", "has_data_volume"]
+	)
+	if not has_data_volume:
+		return "/"
+
 	if platform == "arm64":
 		return _get_arm_mount_point(series)
-
 	return _get_intel_mount_point(series)
 
 
@@ -336,7 +340,7 @@ def analytics(name, query, timezone, duration):
 		),
 		"loadavg": (
 			f"""{{__name__=~"node_load1|node_load5|node_load15", instance="{name}", job="node"}}""",
-			lambda x: f"Load Average {x['__name__'][9:]}",
+			lambda x: f"Load Average {x['__name__'][9:]}",  # strip "node_load" prefix
 		),
 		"memory": (
 			f"""node_memory_MemTotal_bytes{{instance="{name}",job="node"}} - node_memory_MemFree_bytes{{instance="{name}",job="node"}} - (node_memory_Cached_bytes{{instance="{name}",job="node"}} + node_memory_Buffers_bytes{{instance="{name}",job="node"}})""",
@@ -413,8 +417,11 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 	url = f"https://{monitor_server}/prometheus/api/v1/query_range"
 	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
 
-	end = datetime.utcnow().replace(tzinfo=tz.utc)
-	start = frappe.utils.add_to_date(end, seconds=-timespan)
+	start, end = get_rounded_boundaries(
+		timespan,
+		timegrain,
+	)  # timezone not passed as only utc time allowed in promql
+
 	query = {
 		"query": query,
 		"start": start.timestamp(),
@@ -422,7 +429,7 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 		"step": f"{timegrain}s",
 	}
 
-	response = requests.get(url, params=query, auth=("frappe", password)).json()
+	response = requests.get(url, params=query, auth=("frappe", str(password))).json()
 
 	datasets = []
 	labels = []
@@ -430,21 +437,22 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 	if not response["data"]["result"]:
 		return {"datasets": datasets, "labels": labels}
 
-	for timestamp, _ in response["data"]["result"][0]["values"]:
-		labels.append(
-			convert_utc_to_timezone(
-				datetime.fromtimestamp(timestamp, tz=tz.utc).replace(tzinfo=None), timezone
-			)
-		)
+	timegrain_delta = timedelta(seconds=timegrain)
+	labels = [(start + i * timegrain_delta).timestamp() for i in range((end - start) // timegrain_delta + 1)]
 
 	for index in range(len(response["data"]["result"])):
 		dataset = {
 			"name": function(response["data"]["result"][index]["metric"]),
-			"values": [],
+			"values": [None] * len(labels),  # Initialize with None
 		}
-		for _, value in response["data"]["result"][index]["values"]:
-			dataset["values"].append(flt(value, 2))
+		for label, value in response["data"]["result"][index]["values"]:
+			dataset["values"][labels.index(label)] = flt(value, 2)
 		datasets.append(dataset)
+
+	labels = [
+		convert_utc_to_timezone(datetime.fromtimestamp(label, tz=tz.utc).replace(tzinfo=None), timezone)
+		for label in labels
+	]
 
 	return {"datasets": datasets, "labels": labels}
 
@@ -461,7 +469,7 @@ def options():
 	return {
 		"regions": regions,
 		"app_plans": plans("Server"),
-		"db_plans": plans("Database Server", platform="x86_64"),
+		"db_plans": plans("Database Server"),
 	}
 
 

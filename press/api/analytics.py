@@ -6,7 +6,7 @@ from __future__ import annotations
 from contextlib import suppress
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import TYPE_CHECKING, Callable, ClassVar, Final, TypedDict
+from typing import TYPE_CHECKING, ClassVar, Final, TypedDict
 
 import frappe
 import requests
@@ -31,6 +31,8 @@ from press.press.report.binary_log_browser.binary_log_browser import (
 from press.press.report.mariadb_slow_queries.mariadb_slow_queries import execute, normalize_query
 
 if TYPE_CHECKING:
+	from collections.abc import Callable
+
 	from elasticsearch_dsl.response import AggResponse
 	from elasticsearch_dsl.response.aggs import FieldBucket, FieldBucketData
 
@@ -117,8 +119,10 @@ class StackedGroupByChart:
 		self.setup_search_aggs()
 
 	def setup_search_filters(self):
-		es = Elasticsearch(self.url, basic_auth=("frappe", self.password))
-		self.start, self.end = get_rounded_boundaries(self.timespan, self.timegrain, self.timezone)
+		es = Elasticsearch(self.url, basic_auth=("frappe", self.password), request_timeout=120)
+		self.start, self.end = get_rounded_boundaries(
+			self.timespan, self.timegrain, self.timezone
+		)  # we pass timezone to ES query in get_histogram_chart
 		self.search = (
 			Search(using=es, index="filebeat-*")
 			.filter(
@@ -218,7 +222,7 @@ class StackedGroupByChart:
 	):
 		path_data = {
 			"path": path_bucket.key,
-			"values": [0] * len(labels),
+			"values": [None] * len(labels),
 			"stack": "path",
 		}
 		hist_bucket: HistBucket
@@ -580,6 +584,7 @@ def rounded_time(dt=None, round_to=60):
 	return dt + timedelta(0, rounding - seconds, -dt.microsecond)
 
 
+@redis_cache(ttl=10 * 60)
 def get_rounded_boundaries(timespan: int, timegrain: int, timezone: str = "UTC"):
 	"""
 	Round the start and end time to the nearest interval, because Elasticsearch does this
@@ -633,7 +638,7 @@ def normalize_datasets(datasets: list[Dataset]) -> list[Dataset]:
 		n_query = normalize_query(data_dict["path"])
 		if n_datasets.get(n_query):
 			n_datasets[n_query]["values"] = [
-				x + y for x, y in zip(n_datasets[n_query]["values"], data_dict["values"])
+				x + y for x, y in zip(n_datasets[n_query]["values"], data_dict["values"], strict=False)
 			]
 		else:
 			data_dict["path"] = n_query
