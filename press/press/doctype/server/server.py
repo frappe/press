@@ -35,6 +35,7 @@ if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 	from press.press.doctype.bench.bench import Bench
+	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server_mount.server_mount import ServerMount
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
@@ -198,6 +199,14 @@ class BaseServer(Document, TagHelpers):
 				"doc_method": "drop_server",
 				"group": "Dangerous Actions",
 			},
+			{
+				"action": "Disable Automatic Disk Expansion",
+				"description": "Disable the automatic increase of disk size when the server runs out of space.",
+				"button_label": "Disable Auto Expansion",
+				"condition": self.status == "Active" and self.doctype == "Server",
+				"doc_method": "stop_auto_increase_storage",
+				"group": "Dangerous Actions",
+			},
 		]
 
 		for action in actions:
@@ -206,18 +215,31 @@ class BaseServer(Document, TagHelpers):
 
 		return [action for action in actions if action.get("condition", True)]
 
-	@dashboard_whitelist()
-	def drop_server(self):
+	def _get_app_and_database_servers(self) -> tuple[Server, DatabaseServer]:
 		if self.doctype == "Database Server":
 			app_server_name = frappe.db.get_value("Server", {"database_server": self.name}, "name")
 			app_server = frappe.get_doc("Server", app_server_name)
-			db_server = self
-		else:
-			app_server = self
-			db_server = frappe.get_doc("Database Server", self.database_server)
+			return app_server, self
 
+		db_server = frappe.get_doc("Database Server", self.database_server)
+		return self, db_server
+
+	@dashboard_whitelist()
+	def drop_server(self):
+		app_server, db_server = self._get_app_and_database_servers()
 		app_server.archive()
 		db_server.archive()
+
+	@dashboard_whitelist()
+	def stop_auto_increase_storage(self):
+		"""Stop auto disk increase."""
+		app_server, database_server = self._get_app_and_database_servers()
+
+		app_server.auto_increase_storage = False
+		database_server.auto_increase_storage = False
+
+		app_server.save()
+		database_server.save()
 
 	def autoname(self):
 		if not self.domain:
@@ -1454,10 +1476,26 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		mountpoint: str | None = None,
 	):
 		telegram = Telegram("Information")
+
 		buffer = self.size_to_increase_by_for_20_percent_available(mountpoint)
+		server: Server | DatabaseServer = frappe.get_doc(self.doctype, self.name)
+
+		if not server.auto_increase_storage:
+			telegram.send(
+				f"Not increasing disk (mount point {mountpoint}) on "
+				f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
+				f"by {buffer + additional}G as auto disk increase disabled by user"
+			)
+			# Send notification of disk size increase required however not doing it.
+			return
+
 		telegram.send(
-			f"Increasing disk (mount point {mountpoint})on [{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) by {buffer + additional}G"
+			f"Increasing disk (mount point {mountpoint}) on "
+			f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
+			f"by {buffer + additional}G"
 		)
+
+		# Send notification of disk size increase
 		self.increase_disk_size_for_server(self.name, buffer + additional, mountpoint)
 
 	def prune_docker_system(self):
@@ -1556,6 +1594,7 @@ class Server(BaseServer):
 		agent_password: DF.Password | None
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
+		auto_increase_storage: DF.Check
 		cluster: DF.Link | None
 		database_server: DF.Link | None
 		disable_agent_job_auto_retry: DF.Check
@@ -1603,7 +1642,6 @@ class Server(BaseServer):
 		ssh_user: DF.Data | None
 		staging: DF.Check
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
-		stop_deployments: DF.Check
 		tags: DF.Table[ResourceTag]
 		team: DF.Link | None
 		title: DF.Data | None

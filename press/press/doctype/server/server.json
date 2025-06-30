@@ -26,13 +26,13 @@
   "use_agent_job_callbacks",
   "is_pyspy_setup",
   "halt_agent_jobs",
-  "stop_deployments",
   "billing_section",
   "team",
   "column_break_11",
   "plan",
   "auto_add_storage_min",
   "auto_add_storage_max",
+  "auto_increase_storage",
   "networking_section",
   "ip",
   "ipv6",
@@ -594,15 +594,14 @@
    "options": "x86_64\narm64"
   },
   {
-   "default": "0",
-   "description": "Stop all new builds for the server",
-   "fieldname": "stop_deployments",
+   "default": "1",
+   "fieldname": "auto_increase_storage",
    "fieldtype": "Check",
-   "label": "Stop deployments"
+   "label": "Auto Increase Storage"
   }
  ],
  "links": [],
- "modified": "2025-06-02 09:43:06.619945",
+ "modified": "2025-06-30 11:04:40.442416",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
