@@ -1,11 +1,18 @@
 <template>
 	<div class="p-4">
-		<ObjectList :options="partnerLeadsList" />
+		<div v-if="partnerLeadsList">
+			<ObjectList :options="partnerLeadsList" />
+		</div>
+		<div v-else class="text-base text-gray-600">
+			No partner leads available.
+		</div>
 	</div>
 </template>
 <script>
 import ObjectList from '../ObjectList.vue';
-import { icon } from '../../utils/components';
+import { icon, renderDialog } from '../../utils/components';
+import NewPartnerLead from './NewPartnerLead.vue';
+import { h } from 'vue';
 export default {
 	name: 'PartnerLeads',
 	components: {
@@ -27,16 +34,13 @@ export default {
 									organization: d.organization_name || '',
 									lead_source: d.lead_source || '',
 									status: d.status || '',
+									partner_team: d.partner_team || '',
 								};
 							});
 						},
 					};
 				},
 				columns: [
-					{
-						label: 'Lead ID',
-						fieldname: 'name',
-					},
 					{
 						label: 'Lead Name',
 						fieldname: 'lead_name',
@@ -52,11 +56,54 @@ export default {
 					{
 						label: 'Status',
 						fieldname: 'status',
+						type: 'Badge',
+					},
+					{
+						label: 'Lead ID',
+						fieldname: 'name',
+					},
+					{
+						label: 'Partner',
+						fieldname: 'partner_team',
+						condition: () => Boolean(this.$team.doc.is_desk_user),
 					},
 				],
+				filterControls() {
+					return [
+						{
+							type: 'select',
+							fieldname: 'status',
+							label: 'Status',
+							options: [
+								'',
+								'Open',
+								'In Process',
+								'Won',
+								'Lost',
+								'Junk',
+								'Passed to Other Partner',
+								'Other',
+							],
+						},
+						{
+							type: 'select',
+							fieldname: 'engagement_stage',
+							label: 'Engagement Stage',
+							options: [
+								'',
+								'Demo',
+								'Qualification',
+								'Quotation',
+								'Ready for Closing',
+								'Negotiation',
+								'Learning',
+							],
+						},
+					];
+				},
 				onRowClick: (row) => {
 					this.$router.push({
-						name: 'PartnerLeadDetails',
+						name: 'LeadOverview',
 						params: { leadId: row.name },
 					});
 				},
@@ -68,10 +115,24 @@ export default {
 							prefix: icon('plus'),
 						},
 						onClick: () => {
-							console.log('Add Lead button clicked');
+							return renderDialog(
+								h(NewPartnerLead, {
+									modelValue: true,
+								}),
+							);
 						},
 					};
 				},
+			};
+		},
+		statusTheme() {
+			return {
+				Open: 'blue',
+				'In Process': 'orange',
+				Won: 'green',
+				Lost: 'red',
+				Junk: 'gray',
+				'Passed to Other Partner': 'gray',
 			};
 		},
 	},

@@ -1,5 +1,5 @@
 <template>
-	<Dialog v-model="show" :options="{ title: 'Lead Details' }">
+	<Dialog v-model="show" :options="{ title: 'Lead Details', size: '2xl' }">
 		<template #body-content>
 			<LeadDetailsForm @success="() => emit('success')" v-model="leadInfo" />
 		</template>
@@ -31,12 +31,10 @@ createResource({
 	url: 'press.api.partner.get_lead_details',
 	auto: true,
 	makeParams: () => {
-		// console.log(route)
 		return { lead_id: route.params.leadId };
 	},
 	onSuccess: (data) => {
 		if (!data) return '';
-		console.log(data);
 		Object.assign(leadInfo, {
 			organization_name: data.organization_name || '',
 			domain: data.domain || '',
@@ -47,6 +45,9 @@ createResource({
 			country: data.country || '',
 			state: data.state || '',
 			status: data.status || '',
+			probability: data.probability || 0,
+			requirement: data.requirement || '',
+			plan_proposed: data.plan_proposed || '',
 		});
 	},
 });
