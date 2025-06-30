@@ -15,6 +15,7 @@ from press.press.doctype.deploy_candidate_build.deploy_candidate_build import St
 if typing.TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.bench.bench import Bench
+	from press.press.doctype.server.server import Server
 
 
 class ARMBuildRecord(Document):
@@ -34,19 +35,30 @@ class ARMBuildRecord(Document):
 	# end: auto-generated types
 
 	def _pull_images(self, image_tags: list[str]) -> AgentJob:
+		server: Server = frappe.get_doc("Server", self.server)
+		server._update_agent_ansible()
 		return Agent(self.server).pull_docker_images(
 			image_tags, reference_doctype=self.doctype, reference_name=self.name
 		)
 
+	def _update_redis_conf(self, bench: Bench) -> None:
+		"""Update redis-queue.conf & redis-cache.conf with new arm redisearch.so location"""
+		command = """sed -i 's|loadmodule /home/frappe/frappe-bench/redis/redisearch.so|loadmodule /home/frappe/frappe-bench/redis/arm64/redisearch.so|' /home/frappe/frappe-bench/config/redis-cache.conf /home/frappe/frappe-bench/config/redis-queue.conf"""
+		bench.docker_execute(command)
+
 	def _update_image_tags_on_benches(self):
-		"""Maybe enqueue this?"""
+		if self.updated_image_tags_on_benches:
+			return
+
 		for image in self.arm_images:
 			new_docker_image = frappe.get_value("Deploy Candidate Build", image.build, "docker_image")
 			bench: Bench = frappe.get_doc("Bench", image.bench)
+			bench.build = image.build
 			bench.docker_image = new_docker_image
 			bench_config = json.loads(bench.bench_config)
 			bench_config["docker_image"] = new_docker_image
 			bench.bench_config = json.dumps(bench_config, indent=4)
+			self._update_redis_conf(bench)
 			bench.save()
 
 		# Once the benches are updated with latest images, we can then start migration.
@@ -67,9 +79,47 @@ class ARMBuildRecord(Document):
 		return agent_job.status == "Success"
 
 	@frappe.whitelist()
+	def remove_build_from_deploy_candidate(self, build: str):
+		"""
+		Remove arm build field from deploy candidate.
+		(when new arm build record is attempted a fresh build will be created).
+		"""
+		deploy_candidate = frappe.db.get_value("Deploy Candidate Build", build, "deploy_candidate")
+		frappe.db.set_value("Deploy Candidate", deploy_candidate, "arm_build", None)
+		frappe.db.commit()
+
+	@frappe.whitelist()
+	def retry(self):
+		server: Server = frappe.get_doc("Server", self.server)
+		server.collect_arm_images()
+		self.delete(ignore_permissions=True)
+
+	@frappe.whitelist()
+	def cancel_all_jobs(self):
+		"""Cancel all current running jobs"""
+		self.sync_status()
+
+		for arm_image in self.arm_images:
+			if arm_image.status == "Running":
+				agent_job: "AgentJob" = frappe.get_doc(
+					"Agent Job",
+					{"reference_doctype": "Deploy Candidate Build", "reference_name": arm_image.build},
+				)
+				agent_job.cancel_job()
+
+		self.sync_status()
+
+	@frappe.whitelist()
 	def pull_images(self):
 		"""Pull images on app server using image tags"""
-		builds = [image.build for image in self.arm_images if image.status == Status.SUCCESS.value]
+		builds = []
+		self.sync_status()
+
+		for image in self.arm_images:
+			if image.status != Status.SUCCESS.value:
+				frappe.throw("Some builds failed skipping image pull!", frappe.ValidationError)
+			builds.append(image.build)
+
 		image_tags = frappe.db.get_all(
 			"Deploy Candidate Build", {"name": ("in", builds)}, pluck="docker_image"
 		)
@@ -84,7 +134,7 @@ class ARMBuildRecord(Document):
 		"""
 		if not self._check_images_pulled():
 			frappe.throw(
-				"ARM images have not been successfully pulled on the server",
+				f"ARM images have not been successfully pulled on {self.server}",
 				frappe.ValidationError,
 			)
 		self._update_image_tags_on_benches()

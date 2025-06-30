@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import ipaddress
 import time
+import typing
 
 import boto3
 import botocore
@@ -37,6 +38,11 @@ from oci.exceptions import TransientServiceError
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
+
+if typing.TYPE_CHECKING:
+	from press.press.infrastructure.doctype.virtual_machine_migration.virtual_machine_migration import (
+		VirtualMachineMigration,
+	)
 
 server_doctypes = [
 	"Server",
@@ -108,6 +114,7 @@ class VirtualMachine(Document):
 				# Copy their sizes correctly
 				self.disk_size = max(self.disk_size, image.size)
 				self.root_disk_size = max(self.root_disk_size, image.root_size)
+				self.has_data_volume = True
 			else:
 				# We have only one volume. Both root and data are the same
 				self.disk_size = max(self.disk_size, image.size)
@@ -1029,6 +1036,7 @@ class VirtualMachine(Document):
 			"provider": self.cloud_provider,
 			"virtual_machine": self.name,
 			"team": self.team,
+			"platform": self.platform,
 		}
 
 		if self.virtual_machine_image:
@@ -1302,17 +1310,24 @@ class VirtualMachine(Document):
 			InstanceId=self.instance_id, BlockDeviceMappings=modified_volumes
 		)
 
-	@frappe.whitelist()
-	def convert_to_arm(self, virtual_machine_image, machine_type):
-		if self.series == "f" and not self.ready_for_conversion:
-			frappe.throw("Please complete pre-migration steps before migrating", frappe.ValidationError)
-
+	def _create_vmm(self, virtual_machine_image: str, machine_type: str) -> VirtualMachineMigration:
 		return frappe.new_doc(
 			"Virtual Machine Migration",
 			virtual_machine=self.name,
 			virtual_machine_image=virtual_machine_image,
 			machine_type=machine_type,
 		).insert()
+
+	@frappe.whitelist()
+	def convert_to_arm(self, virtual_machine_image, machine_type):
+		if self.series == "f" and not self.ready_for_conversion:
+			frappe.throw("Please complete pre-migration steps before migrating", frappe.ValidationError)
+
+		return self._create_vmm(virtual_machine_image, machine_type)
+
+	@frappe.whitelist()
+	def convert_to_amd(self, virtual_machine_image, machine_type):
+		return self._create_vmm(virtual_machine_image, machine_type)
 
 	@frappe.whitelist()
 	def attach_new_volume(self, size, iops=None, throughput=None):

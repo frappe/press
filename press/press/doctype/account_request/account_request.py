@@ -29,6 +29,7 @@ class AccountRequest(Document):
 
 		agreed_to_partner_consent: DF.Check
 		company: DF.Data | None
+		continent: DF.Data | None
 		country: DF.Data | None
 		designation: DF.Data | None
 		email: DF.Data | None
@@ -54,6 +55,7 @@ class AccountRequest(Document):
 		referral_source: DF.Data | None
 		referrer_id: DF.Data | None
 		request_key: DF.Data | None
+		request_key_expiration_time: DF.Datetime | None
 		role: DF.Data | None
 		saas: DF.Check
 		saas_app: DF.Link | None
@@ -82,6 +84,7 @@ class AccountRequest(Document):
 
 		if not self.request_key:
 			self.request_key = random_string(32)
+			self.request_key_expiration_time = frappe.utils.add_to_date(minutes=10)
 
 		if not self.otp:
 			self.otp = generate_otp()
@@ -95,6 +98,7 @@ class AccountRequest(Document):
 		self.state = geo_location.get("regionName")
 		self.country = geo_location.get("country")
 		self.is_mobile = geo_location.get("mobile", False)
+		self.continent = geo_location.get("continent")
 
 		# check for US and EU
 		if (
@@ -121,7 +125,7 @@ class AccountRequest(Document):
 
 		if self.is_saas_signup() and self.is_using_new_saas_flow():
 			# Telemetry: Account Request Created
-			capture("account_request_created", "fc_saas", self.email)
+			capture("account_request_created", "fc_product_trial", self.email)
 
 		if self.is_saas_signup() and not self.is_using_new_saas_flow():
 			# If user used oauth, we don't need to verification email but to track the event in stat, send this dummy event
@@ -216,10 +220,13 @@ class AccountRequest(Document):
 				}
 			)
 		# Telemetry: Verification Email Sent
-		# Only capture if it's not a saas signup or invited by parent team
 		if not (self.is_saas_signup() or self.invited_by_parent_team):
 			# Telemetry: Verification Mail Sent
 			capture("verification_email_sent", "fc_signup", self.email)
+		if self.is_using_new_saas_flow():
+			# Telemetry: Verification Email Sent for new saas flow when coming from product page
+			capture("verification_email_sent", "fc_product_trial", self.name)
+
 		frappe.sendmail(
 			sender=sender,
 			recipients=self.email,
@@ -251,8 +258,6 @@ class AccountRequest(Document):
 		)
 
 	def get_verification_url(self):
-		if self.saas:
-			return get_url(f"/api/method/press.api.saas.validate_account_request?key={self.request_key}")
 		return get_url(f"/dashboard/setup-account/{self.request_key}")
 
 	@property
@@ -267,3 +272,21 @@ class AccountRequest(Document):
 
 	def is_saas_signup(self):
 		return bool(self.saas_app or self.saas or self.erpnext or self.product_trial)
+
+
+def expire_request_key():
+	"""
+	Expire the request key requested 10 minutes ago.
+	"""
+	frappe.db.set_value(
+		"Account Request",
+		{
+			"request_key_expiration_time": ("<", frappe.utils.now_datetime()),
+			"request_key": ["is", "set"],
+		},
+		{
+			"request_key": "",
+			"request_key_expiration_time": None,
+		},
+		update_modified=False,
+	)

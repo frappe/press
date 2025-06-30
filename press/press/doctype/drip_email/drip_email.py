@@ -102,7 +102,7 @@ class DripEmail(Document):
 			unsubscribe_params={"account_request": account_request.name},
 			attachments=self.get_setup_guides(account_request),
 			template="product_trial_email",
-			args={"message": message, "title": app.title, "logo": app.image},
+			args={"message": message, "title": app.title, "logo": app.logo},
 		)
 
 	@property

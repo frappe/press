@@ -603,7 +603,7 @@ export default {
 								condition: () =>
 									row.status === 'Broken' &&
 									site.doc.broken_domain_error &&
-									site.doc.tls_cert_retry_count < 5,
+									site.doc.tls_cert_retry_count < 8,
 								onClick() {
 									confirmDialog({
 										title: `Fetch Certificate`,
@@ -1656,6 +1656,7 @@ export default {
 						prefix: icon('external-link'),
 					},
 					variant: 'solid',
+					loading: site.loginAsAdmin.loading || site.loginAsTeam.loading,
 					condition: () =>
 						site.doc.status === 'Active' && !site.doc?.setup_wizard_complete,
 					onClick() {

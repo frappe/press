@@ -356,9 +356,7 @@ class DeployCandidateBuild(Document):
 
 		with open(conf_file, "w") as f:
 			content = frappe.render_template(
-				template.value,
-				{"doc": self.candidate},
-				is_path=True,
+				template.value, {"doc": self.candidate, "platform": self.platform}, is_path=True
 			)
 			f.write(content)
 
@@ -753,7 +751,7 @@ class DeployCandidateBuild(Document):
 
 		build_meta = {
 			"doctype": "Deploy Candidate Build",
-			"deploy_candidate": self.candidate,
+			"deploy_candidate": self.candidate.name,
 			"no_build": self.no_build,
 			"no_cache": self.no_cache,
 			"no_push": self.no_push,
@@ -1228,6 +1226,14 @@ def fail_and_redeploy(dn: str):
 	return build.redeploy()
 
 
+@frappe.whitelist()
+def fail_remote_job(dn: str):
+	agent_job: "AgentJob" = frappe.get_doc(
+		"Agent Job", {"reference_doctype": "Deploy Candidate Build", "reference_name": dn}
+	)
+	agent_job.cancel_job()
+
+
 def is_build_job(job: Job) -> bool:
 	doc_method: str = job.kwargs.get("kwargs", {}).get("doc_method", "")
 	return doc_method.startswith("_build")
@@ -1477,3 +1483,23 @@ def throw_no_build_server():
 		"Server not found to run builds. "
 		"Please set <b>Build Server</b> under <b>Press Settings > Docker > Docker Build</b>."
 	)
+
+
+def _create_arm_build(deploy_candidate: str) -> DeployCandidateBuild:
+	"""This is a utility to create an ARM build for all benches on a server."""
+
+	deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
+		{
+			"doctype": "Deploy Candidate Build",
+			"deploy_candidate": deploy_candidate,
+			"no_build": False,
+			"no_cache": False,
+			"no_push": False,
+			"platform": "arm64",
+		}
+	)
+	arm_build = deploy_candidate_build.insert()
+	# Even if arm_build is not required on this deploy candidate we still attach it here
+	# Since we don't want loose builds
+	frappe.db.set_value("Deploy Candidate", {"name": deploy_candidate}, "arm_build", arm_build.name)
+	return arm_build.name

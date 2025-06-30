@@ -3,9 +3,9 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from datetime import timezone as tz
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import frappe
 import requests
@@ -13,6 +13,7 @@ from frappe.utils import convert_utc_to_timezone, flt
 from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 
+from press.api.analytics import get_rounded_boundaries
 from press.api.bench import all as all_benches
 from press.api.site import protected
 from press.press.doctype.site_plan.plan import Plan
@@ -30,7 +31,34 @@ def poly_get_doc(doctypes, name):
 	return frappe.get_doc(doctypes[-1], name)
 
 
-MOUNTPOINT_REGEX = "(/|/opt/volumes/mariadb|/opt/volumes/benches)"
+def _get_arm_mount_point(series: Literal["f", "m"]) -> str:
+	"""Returns to arm64 mount points."""
+	match series:
+		case "f":
+			return "/opt/volumes/benches"
+		case "m":
+			return "/opt/volumes/mariadb"
+
+
+def _get_intel_mount_point(_: Literal["f", "m"]) -> str:
+	"""Returns the Intel mount point (same for all series)."""
+	return "/"
+
+
+def get_mount_point(server: str) -> str:
+	provider = frappe.get_value("Database Server" if server[0] == "m" else "Server", server, "provider")
+	if provider != "AWS EC2":
+		return "/"
+
+	platform, series, has_data_volume = frappe.get_value(
+		"Virtual Machine", server, ["platform", "series", "has_data_volume"]
+	)
+	if not has_data_volume:
+		return "/"
+
+	if platform == "arm64":
+		return _get_arm_mount_point(series)
+	return _get_intel_mount_point(series)
 
 
 @frappe.whitelist()
@@ -163,6 +191,12 @@ def archive(name):
 
 @frappe.whitelist()
 def new(server):
+	server_plan_platform = frappe.get_value("Server Plan", server["app_plan"], "platform")
+	cluster_has_arm_support = frappe.get_value("Cluster", server["cluster"], "has_arm_support")
+
+	if server_plan_platform == "arm64" and not cluster_has_arm_support:
+		frappe.throw(f"ARM Instances are currently unavailable in the {server['cluster']} region")
+
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
 		frappe.throw("You cannot create a new server because your account is disabled")
@@ -191,13 +225,14 @@ def new(server):
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 def usage(name):
+	mount_point = get_mount_point(name)
 	query_map = {
 		"vcpu": (
 			f"""((count(count(node_cpu_seconds_total{{instance="{name}",job="node"}}) by (cpu))) - avg(sum by (mode)(rate(node_cpu_seconds_total{{mode='idle',instance="{name}",job="node"}}[120s])))) / count(count(node_cpu_seconds_total{{instance="{name}",job="node"}}) by (cpu))""",
 			lambda x: x,
 		),
 		"disk": (
-			f"""sum(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{MOUNTPOINT_REGEX}"}} - node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint=~"{MOUNTPOINT_REGEX}"}}) by ()/ (1024 * 1024 * 1024)""",
+			f"""sum(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}} - node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}}) by ()/ (1024 * 1024 * 1024)""",
 			lambda x: x,
 		),
 		"memory": (
@@ -220,13 +255,14 @@ def usage(name):
 
 @protected(["Server", "Database Server"])
 def total_resource(name):
+	mount_point = get_mount_point(name)
 	query_map = {
 		"vcpu": (
 			f"""(count(count(node_cpu_seconds_total{{instance="{name}",job="node"}}) by (cpu)))""",
 			lambda x: x,
 		),
 		"disk": (
-			f"""sum(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{MOUNTPOINT_REGEX}"}}) by () / (1024 * 1024 * 1024)""",
+			f"""sum(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}}) by () / (1024 * 1024 * 1024)""",
 			lambda x: x,
 		),
 		"memory": (
@@ -282,6 +318,7 @@ def calculate_swap(name):
 @protected(["Server", "Database Server"])
 @redis_cache(ttl=10 * 60)
 def analytics(name, query, timezone, duration):
+	mount_point = get_mount_point(name)
 	timespan, timegrain = get_timespan_timegrain(duration)
 
 	query_map = {
@@ -298,12 +335,12 @@ def analytics(name, query, timezone, duration):
 			lambda x: x["device"],
 		),
 		"space": (
-			f"""100 - ((node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint=~"{MOUNTPOINT_REGEX}"}} * 100) / node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{MOUNTPOINT_REGEX}"}})""",
+			f"""100 - ((node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}} * 100) / node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}})""",
 			lambda x: x["mountpoint"],
 		),
 		"loadavg": (
 			f"""{{__name__=~"node_load1|node_load5|node_load15", instance="{name}", job="node"}}""",
-			lambda x: f"Load Average {x['__name__'][9:]}",
+			lambda x: f"Load Average {x['__name__'][9:]}",  # strip "node_load" prefix
 		),
 		"memory": (
 			f"""node_memory_MemTotal_bytes{{instance="{name}",job="node"}} - node_memory_MemFree_bytes{{instance="{name}",job="node"}} - (node_memory_Cached_bytes{{instance="{name}",job="node"}} + node_memory_Buffers_bytes{{instance="{name}",job="node"}})""",
@@ -334,7 +371,7 @@ def analytics(name, query, timezone, duration):
 		"innodb_bp_miss_percent": (
 			f"""
 avg by (instance) (
-        rate(mysql_global_status_innodb_buffer_pool_reads{{instance=~"{name}"}}[{timegrain}s])
+		rate(mysql_global_status_innodb_buffer_pool_reads{{instance=~"{name}"}}[{timegrain}s])
 		/
 		rate(mysql_global_status_innodb_buffer_pool_read_requests{{instance=~"{name}"}}[{timegrain}s])
 )
@@ -380,8 +417,11 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 	url = f"https://{monitor_server}/prometheus/api/v1/query_range"
 	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
 
-	end = datetime.utcnow().replace(tzinfo=tz.utc)
-	start = frappe.utils.add_to_date(end, seconds=-timespan)
+	start, end = get_rounded_boundaries(
+		timespan,
+		timegrain,
+	)  # timezone not passed as only utc time allowed in promql
+
 	query = {
 		"query": query,
 		"start": start.timestamp(),
@@ -389,7 +429,7 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 		"step": f"{timegrain}s",
 	}
 
-	response = requests.get(url, params=query, auth=("frappe", password)).json()
+	response = requests.get(url, params=query, auth=("frappe", str(password))).json()
 
 	datasets = []
 	labels = []
@@ -397,21 +437,22 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 	if not response["data"]["result"]:
 		return {"datasets": datasets, "labels": labels}
 
-	for timestamp, _ in response["data"]["result"][0]["values"]:
-		labels.append(
-			convert_utc_to_timezone(
-				datetime.fromtimestamp(timestamp, tz=tz.utc).replace(tzinfo=None), timezone
-			)
-		)
+	timegrain_delta = timedelta(seconds=timegrain)
+	labels = [(start + i * timegrain_delta).timestamp() for i in range((end - start) // timegrain_delta + 1)]
 
 	for index in range(len(response["data"]["result"])):
 		dataset = {
 			"name": function(response["data"]["result"][index]["metric"]),
-			"values": [],
+			"values": [None] * len(labels),  # Initialize with None
 		}
-		for _, value in response["data"]["result"][index]["values"]:
-			dataset["values"].append(flt(value, 2))
+		for label, value in response["data"]["result"][index]["values"]:
+			dataset["values"][labels.index(label)] = flt(value, 2)
 		datasets.append(dataset)
+
+	labels = [
+		convert_utc_to_timezone(datetime.fromtimestamp(label, tz=tz.utc).replace(tzinfo=None), timezone)
+		for label in labels
+	]
 
 	return {"datasets": datasets, "labels": labels}
 
@@ -433,7 +474,17 @@ def options():
 
 
 @frappe.whitelist()
-def plans(name, cluster=None, platform="x86_64"):
+def plans(name, cluster=None, platform=None):
+	# Removed default platform of x86_64;
+	# Still use x86_64 for new database servers
+	filters = {"server_type": name}
+
+	if cluster:
+		filters.update({"cluster": cluster})
+
+	if platform:
+		filters.update({"platform": platform})
+
 	return Plan.get_plans(
 		doctype="Server Plan",
 		fields=[
@@ -448,12 +499,7 @@ def plans(name, cluster=None, platform="x86_64"):
 			"instance_type",
 			"premium",
 		],
-		filters={"server_type": name, "platform": platform, "cluster": cluster}
-		if cluster
-		else {
-			"server_type": name,
-			"platform": platform,
-		},
+		filters=filters,
 	)
 
 

@@ -15,7 +15,6 @@ frappe.ui.form.on('Deploy Candidate Build', {
 				{},
 				'Build',
 			],
-			// When its' running it has created an agent job we can't stop that from this function
 			[
 				__('Stop And Fail'),
 				null,
@@ -23,6 +22,7 @@ frappe.ui.form.on('Deploy Candidate Build', {
 				{},
 				'Build',
 			],
+			[__('Fail Remote Job'), null, frm.doc.status === 'Running', {}, 'Build'],
 			[
 				__('Fail and Redeploy'),
 				null,
@@ -57,59 +57,67 @@ frappe.ui.form.on('Deploy Candidate Build', {
 									dn: frm.doc.name,
 								},
 							);
-						}
-
-						if (label == 'Fail And Redeploy') {
+						} else if (label == 'Fail Remote Job') {
+							frappe.call(
+								'press.press.doctype.deploy_candidate_build.deploy_candidate_build.fail_remote_job',
+								{
+									dn: frm.doc.name,
+								},
+							);
+						} else if (label == 'Fail And Redeploy') {
 							frappe.call(
 								'press.press.doctype.deploy_candidate_build.deploy_candidate_build.fail_and_redeploy',
 								{
 									dn: frm.doc.name,
 								},
 							);
+						} else {
+							frm.call(method, args).then((r) => {
+								if (!r) {
+									return;
+								}
+
+								const { error, message } = r.message;
+
+								if (error) {
+									frappe.msgprint({
+										title: 'Action Failed',
+										indicator: 'yellow',
+										message: message,
+									});
+								}
+
+								if (method === 'deploy') {
+									frappe.msgprint({
+										title: 'Deploy Triggered',
+										indicator: 'green',
+										message: __(`Created a new {0}`, [
+											`<a href="/app/deploy/${message}">Deploy</a>`,
+										]),
+									});
+								} else if (method === 'redeploy') {
+									frappe.msgprint({
+										title: 'Redeploy Triggered',
+										indicator: 'green',
+										message: __(
+											`Duplicate {0} created and redeploy triggered.`,
+											[
+												`<a href="/app/deploy-candidate/${message}">Deploy Candidate</a>`,
+											],
+										),
+									});
+								} else if (method === 'create_arm_build') {
+									// TODO: Fix the message later!
+									frappe.msgprint({
+										title: 'ARM Build Triggered',
+										indicator: 'green',
+										message: __(`Created a new {0}`, [
+											`<a href="/app/deploy-candidate-build/${r.message}">Deploy Candidate Build</a>`,
+										]),
+									});
+								}
+							});
 						}
-
-						frm.call(method, args).then((r) => {
-							if (!r) {
-								return;
-							}
-
-							const { error, message } = r.message;
-
-							if (error) {
-								frappe.msgprint({
-									title: 'Action Failed',
-									indicator: 'yellow',
-									message: message,
-								});
-							}
-
-							if (method === 'deploy') {
-								frappe.msgprint({
-									title: 'Deploy Triggered',
-									indicator: 'green',
-									message: __(`Created a new {0}`, [
-										`<a href="/app/deploy/${message}">Deploy</a>`,
-									]),
-								});
-							} else if (method === 'redeploy') {
-								frappe.msgprint({
-									title: 'Redeploy Triggered',
-									indicator: 'green',
-									message: __(`Duplicate {0} created and redeploy triggered.`, [
-										`<a href="/app/deploy-candidate/${message}">Deploy Candidate</a>`,
-									]),
-								});
-							} else if (method === 'create_arm_build') {
-								// TODO: Fix the message later!
-								frappe.msgprint({
-									title: 'ARM Build Triggered',
-									indicator: 'green',
-									message: __(`Created a new {0}`, [
-										`<a href="/app/deploy-candidate-build/${r.message}">Deploy Candidate Build</a>`,
-									]),
-								});
-							}
-						});
 					},
 					group,
 				);

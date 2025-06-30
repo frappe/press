@@ -15,8 +15,10 @@
   "status",
   "account_request",
   "agent_job",
+  "cluster",
   "section_break_zlzx",
   "site_creation_started_on",
+  "is_standby_site",
   "column_break_bvut",
   "site_creation_completed_on"
  ],
@@ -101,12 +103,24 @@
    "fieldname": "domain",
    "fieldtype": "Data",
    "label": "Domain"
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_standby_site",
+   "fieldtype": "Check",
+   "label": "Is Standby Site"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-20 19:13:05.005122",
+ "modified": "2025-05-29 15:49:08.389380",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial Request",

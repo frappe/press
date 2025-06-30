@@ -5,6 +5,7 @@
 from itertools import groupby
 
 import frappe
+from frappe.rate_limiter import rate_limit
 
 from press.exceptions import AlertRuleNotEnabled
 from press.utils import log_error, servers_using_alternative_port_for_communication
@@ -96,8 +97,11 @@ def get_tls():
 
 
 @frappe.whitelist(allow_guest=True)
-def targets(token):
-	monitor_token = frappe.db.get_single_value("Press Settings", "monitor_token")
+@rate_limit(limit=5, seconds=60)
+def targets(token=None):
+	if not token:
+		frappe.throw_permission_error()
+	monitor_token = frappe.db.get_single_value("Press Settings", "monitor_token", cache=True)
 	if token != monitor_token:
 		return None
 

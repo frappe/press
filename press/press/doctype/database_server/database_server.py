@@ -1163,7 +1163,7 @@ class DatabaseServer(BaseServer):
 			log_file_size = 48
 		self.add_or_update_mariadb_variable("innodb_log_file_size", "value_int", log_file_size, save=False)
 
-		self.save()
+		self.save(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def reconfigure_mariadb_exporter(self):
@@ -1273,18 +1273,25 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		try:
 			self.agent.purge_binlog(database_server=self, to_binlog=to_binlog)
 			frappe.msgprint(f"Purged to {to_binlog}", "Successfully purged binlogs")
-			self.sync_binlogs_info(index_binlogs=False)
+			self.sync_binlogs_info(index_binlogs=False, upload_binlogs=False)
 		except Exception as e:
 			frappe.msgprint(str(e), "Failed to purge binlog")
 			raise e
 
 	@frappe.whitelist()
-	def sync_binlogs_info(self):
+	def sync_binlogs_info(self, index_binlogs: bool = True, upload_binlogs: bool = True):
 		if not self.enable_binlog_indexing:
 			frappe.msgprint("Binlog Indexing is not enabled")
 			return
 
-		frappe.enqueue_doc(self.doctype, self.name, "_sync_binlogs_info", timeout=600)
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_sync_binlogs_info",
+			timeout=600,
+			upload_binlogs=upload_binlogs,
+			index_binlogs=index_binlogs,
+		)
 
 	def _sync_binlogs_info(self, index_binlogs: bool = True, upload_binlogs: bool = True):
 		info = self.agent.fetch_binlog_list()
@@ -1415,7 +1422,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 				),
 			},
 			order_by="file_name asc",
-			limit=15,
+			limit=4,
 			fields=["file_name", "size_mb"],
 		)
 
@@ -1434,7 +1441,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			binlogs.extend(current_indexed_binlog)
 			binlogs = sorted(binlogs, key=lambda x: x["file_name"])
 
-		max_size_in_batch = 1024  # 1GB
+		max_size_in_batch = 400
 		filtered_binlogs = []
 		while max_size_in_batch > 0 and binlogs:
 			filtered_binlogs.append(binlogs.pop(0))
@@ -1499,40 +1506,11 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		# Upload only those binlogs which is indexed
 		binlogs = frappe.get_all(
 			"MariaDB Binlog",
-			filters={
-				"database_server": self.name,
-				"current": 0,
-				"indexed": 1,
-				"uploaded": 0,
-				"purged_from_disk": 0,
-				"file_modification_time": (
-					"between",
-					(frappe.utils.now_datetime(), frappe.utils.add_to_date(None, days=-1 * 7)),
-				),
-			},
+			filters={"database_server": self.name, "current": 0, "uploaded": 0, "purged_from_disk": 0},
 			order_by="file_name asc",
 			pluck="file_name",
-			limit=10,
+			limit=5,
 		)
-
-		# Or, unindexed binlogs which are older than 7 days
-		unindexed_binlogs = frappe.get_all(
-			"MariaDB Binlog",
-			filters={
-				"database_server": self.name,
-				"current": 0,
-				"indexed": 0,
-				"uploaded": 0,
-				"purged_from_disk": 0,
-				"file_modification_time": ("<=", frappe.utils.add_to_date(None, days=-1 * 7)),
-			},
-			order_by="file_name asc",
-			pluck="file_name",
-			limit=10,
-		)
-
-		binlogs.extend(unindexed_binlogs)
-		binlogs = list(set(binlogs))
 
 		if len(binlogs) == 0:
 			return
@@ -1621,12 +1599,13 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 				raw_params=True,
 			)[0]
 			if result.get("status") != "Success":
-				frappe.throw("Failed to fetch storage usage of the database server")
+				raise Exception("Failed to fetch storage usage")
 
 			disk_info_str, mysql_dir_info_str = result.get("output", "\n\n").split("\n\n", 1)
 			disk_info = find_db_disk_info(disk_info_str)
 			if disk_info is None:
-				return None
+				raise Exception("Failed to parse disk info")
+
 			mysql_storage_info = parse_du_output_of_mysql_directory(mysql_dir_info_str)
 			total_db_usage = (
 				sum(mysql_storage_info["schema"].values())
@@ -1659,7 +1638,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 				"db_name_site_map": db_name_site_mapping,
 			}
 		except Exception:
-			frappe.throw("Failed to fetch storage usage of the database server. Please try again.")
+			frappe.throw("Failed to fetch storage usage. Try again later.")
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Database Server")

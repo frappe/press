@@ -22,6 +22,7 @@ const props = defineProps({
 	actionComponentProps: { type: Object, default: {} },
 	isTruncateText: { type: Boolean, default: false },
 	truncateLength: { type: Number, default: 70 },
+	hideIndexColumn: { type: Boolean, default: false },
 });
 
 const generateData = computed(() => {
@@ -35,6 +36,9 @@ const generateData = computed(() => {
 	}
 	return data;
 });
+
+const lastColumn =
+	props.columns.length > 0 ? props.columns[props.columns.length - 1] : '';
 
 const table = useVueTable({
 	data: generateData,
@@ -67,6 +71,7 @@ const table = useVueTable({
 				},
 				header: column,
 				accessorKey: column,
+				accessorFn: (row) => row[column],
 				enableSorting: false,
 				isNumber: false,
 				meta: {
@@ -74,6 +79,9 @@ const table = useVueTable({
 				},
 			};
 		});
+		if (props.hideIndexColumn) {
+			return cols;
+		}
 		return [indexColumn, ...cols];
 	},
 	initialState: {
@@ -101,7 +109,8 @@ const fullViewDialogHeader = ref(null);
 const fullViewDialogBody = ref(null);
 const showFullViewDialog = ref(false);
 const handleViewFull = (cell) => {
-	const fullText = cell.getValue();
+	// Avoid using cell.getValue(), as that reset state of pagination
+	const fullText = cell.getContext().row.original[cell.column.columnDef.header];
 	fullViewDialogHeader.value = cell.column.columnDef.header;
 	fullViewDialogBody.value = fullText;
 	if (props.fullViewFormatters[cell.column.columnDef.id]) {
@@ -153,7 +162,7 @@ const downloadCSV = async () => {
 	<Dialog
 		:options="{
 			title: fullViewDialogHeader,
-			size: '3xl',
+			size: '2xl',
 		}"
 		v-model="showFullViewDialog"
 	>
@@ -185,7 +194,10 @@ const downloadCSV = async () => {
 							v-for="header in headerGroup.headers"
 							:key="header.id"
 							:colSpan="header.colSpan"
-							class="border-b border-r text-gray-800"
+							class="border-b text-gray-800"
+							:class="{
+								'border-r': header.column.columnDef.id !== lastColumn,
+							}"
 							:width="
 								header.column.columnDef.id === '__index' ? '6rem' : 'auto'
 							"
@@ -212,11 +224,12 @@ const downloadCSV = async () => {
 							v-for="cell in row.getVisibleCells()"
 							:key="cell.id"
 							:align="cell.column.columnDef.meta?.align"
-							class="truncate border-r px-3 py-2"
+							class="truncate px-3 py-2"
 							:class="{
 								'border-b': !(
 									index === table.getRowModel().rows.length - 1 && borderLess
 								),
+								'border-r': cell.column.columnDef.id !== lastColumn,
 								'min-w-[6rem] ': cell.column.columnDef.id !== 'index',
 							}"
 						>

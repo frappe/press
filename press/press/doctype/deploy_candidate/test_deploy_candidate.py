@@ -342,8 +342,8 @@ class TestDeployCandidate(unittest.TestCase):
 
 	def test_build_fields_check(self, mock_enqueue_doc):
 		app = create_test_app()
-		intel_server = create_test_server(platform="x86_64")
-		arm_server = create_test_server(platform="arm64")
+		intel_server = create_test_server(platform="x86_64").name
+		arm_server = create_test_server(platform="arm64").name
 		group = create_test_release_group([app], servers=[intel_server, arm_server])
 		dc: DeployCandidate = group.create_deploy_candidate()
 

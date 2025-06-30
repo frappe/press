@@ -106,7 +106,7 @@
 								label="Renew"
 								:disabled="false"
 								:variant="'solid'"
-								@click="showPartnerCreditsDialog = true"
+								@click="showRenewalConfirmationDialog = true"
 							/>
 						</div>
 					</div>
@@ -204,6 +204,37 @@
 				<WebsiteInfoDialog />
 			</template>
 		</Dialog>
+
+		<Dialog
+			:show="showRenewalConfirmationDialog"
+			v-model="showRenewalConfirmationDialog"
+			:options="{
+				title: 'Renewal Confirmation',
+				actions: [
+					{
+						label: 'I Agree',
+						variant: 'solid',
+						onClick: () => {
+							showRenewalConfirmationDialog = false;
+							showPartnerCreditsDialog = true;
+						},
+					},
+				],
+			}"
+		>
+			<template #body-content>
+				<p class="text-base text-gray-700">
+					By clicking "I Agree", you confirm that you have read and accepted the
+					terms and conditions of the
+					<a
+						href="https://frappe.io/partners/terms"
+						target="_blank"
+						class="underline"
+						><strong>Frappe Partnership Agreement</strong></a
+					>.
+				</p>
+			</template>
+		</Dialog>
 	</div>
 </template>
 
@@ -216,6 +247,7 @@ import ClickToCopyField from '../ClickToCopyField.vue';
 import PartnerCreditsForm from './PartnerCreditsForm.vue';
 import PartnerMembers from './PartnerMembers.vue';
 import WebsiteInfoDialog from './WebsiteInfoDialog.vue';
+import Dialog from 'frappe-ui/src/components/Dialog.vue';
 
 const team = inject('team');
 
@@ -223,6 +255,7 @@ const showPartnerContributionDialog = ref(false);
 const showPartnerCreditsDialog = ref(false);
 const showPartnerMembersDialog = ref(false);
 const showUpdateWebsiteInfo = ref(false);
+const showRenewalConfirmationDialog = ref(false);
 
 const partnerDetails = createResource({
 	url: 'press.api.partner.get_partner_details',
@@ -252,7 +285,7 @@ function isRenewalPeriod() {
 	const today = dayjs();
 	const daysDifference = renewal.diff(today, 'days');
 
-	return Boolean(daysDifference >= 0 && daysDifference <= 15);
+	return Boolean(daysDifference >= 0 && daysDifference <= 30);
 }
 
 const currentMonthContribution = createResource({

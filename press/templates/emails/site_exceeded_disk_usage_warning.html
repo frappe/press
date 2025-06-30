@@ -1,0 +1,37 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+    <div class="p-8 bg-white from-markdown">
+        <p class="mb-4 font-bold">
+            Site <strong>{{ site }}</strong> exceeded plan limit
+        </p>
+        <p class="mb-6">
+            Your site has exceeded <br>
+
+            {% if current_disk_usage > 100 %}
+            - disk usage limit by <strong>{{ current_disk_usage - 100 }}%</strong><br>
+            {% endif %}
+            {% if current_database_usage > 100 %}
+            - database usage limit by <strong>{{ current_database_usage - 100 }}%</strong><br>
+            {% endif %}
+            <br>
+            To continue using your Frappe Cloud site, please upgrade the plan of your site<br>
+            <br>
+            <strong>Need Help ?</strong><br>
+            1. How to change the plan ? Please refer the <a href="https://frappecloud.com/docs/how-to-change-a-site-plan" target="_blank"><b>documentation</b></a><br>
+            2. If you want to know, which database table is consuming more space, you can check it using <a href="https://frappecloud.com/docs/database-analyzer" _target="blank"><b>Database Analyzer</b></a><br>
+            4. If you need some guide on which table can be truncated to reduce database storage, please check <a href="https://frappecloud.com/docs/faq/site#clearing-logs"><b>documentation</b></a><br>
+            3. If you have any doubts or need help, please contact support at <a href="https://frappecloud.com/support" target="_blank"><b>Frappe Cloud Support</b></a><br>
+            <br>
+            If there is no action taken, your site will be suspended in {{ no_of_days_left_to_suspend }} days.
+        </p>
+
+        {{ utils.separator() }}
+		{{ utils.signature() }}
+    </div>
+</td>
+
+{% endblock %}

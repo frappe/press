@@ -41,6 +41,8 @@ class TestAPISite(unittest.TestCase):
 		self.team.payment_mode = "Prepaid Credits"
 		self.team.save()
 
+		self.domain = frappe.db.get_single_value("Press Settings", "domain")
+
 	def tearDown(self):
 		frappe.db.rollback()
 		frappe.set_user("Administrator")
@@ -90,6 +92,7 @@ class TestAPISite(unittest.TestCase):
 				"plan": plan.name,
 				"apps": [app.name],
 				"cluster": bench.cluster,
+				"domain": self.domain,
 			}
 		)
 
@@ -144,6 +147,7 @@ class TestAPISite(unittest.TestCase):
 				"plan": plan.name,
 				"apps": [frappe_app.name, allowed_app.name, disallowed_app.name],
 				"cluster": cluster.name,
+				"domain": self.domain,
 			},
 		)
 
@@ -182,6 +186,7 @@ class TestAPISite(unittest.TestCase):
 				"plan": plan.name,
 				"apps": [frappe_app.name, another_app.name],
 				"cluster": cluster.name,
+				"domain": self.domain,
 			}
 		)
 		self.assertEqual(site["site"], "testsite.fc.dev")
@@ -237,6 +242,7 @@ class TestAPISite(unittest.TestCase):
 				"plan": plan.name,
 				"apps": [frappe_app.name],
 				"cluster": cluster.name,
+				"domain": self.domain,
 			}
 		)["site"]
 		site = frappe.get_doc("Site", site_name)
@@ -296,6 +302,7 @@ class TestAPISite(unittest.TestCase):
 				"plan": plan.name,
 				"apps": [frappe_app.name],
 				"cluster": cluster.name,
+				"domain": self.domain,
 			}
 		)["site"]
 		site = frappe.get_doc("Site", site_name)
@@ -317,6 +324,7 @@ class TestAPISite(unittest.TestCase):
 				"plan": plan.name,
 				"apps": [frappe_app.name],
 				"cluster": cluster.name,
+				"domain": self.domain,
 			},
 		)
 
@@ -689,6 +697,7 @@ erpnext 0.8.3	    HEAD
 						"private": private,
 					},
 					"cluster": "Default",
+					"domain": self.domain,
 				}
 			)
 			poll_pending_jobs()
@@ -707,10 +716,10 @@ erpnext 0.8.3	    HEAD
 		server = create_test_server()
 		group1 = create_test_release_group([app])
 		group2 = create_test_release_group([app])
-		bench1 = create_test_bench(group=group1, server=server)
-		bench2 = create_test_bench(group=group2, server=server)
+		bench1 = create_test_bench(group=group1, server=server.name)
+		bench2 = create_test_bench(group=group2, server=server.name)
 		site = create_test_site(
-			bench=bench1.name, team=self.team, plan=create_test_plan("Site", private_benches=True).name
+			bench=bench1.name, team=self.team.name, plan=create_test_plan("Site", private_benches=True).name
 		)
 
 		self.assertEqual(change_group_options(site.name), [{"name": group2.name, "title": group2.title}])
@@ -805,7 +814,7 @@ erpnext 0.8.3	    HEAD
 		v14_group.append(
 			"servers",
 			{
-				"server": server,
+				"server": server.name,
 			},
 		)
 		v14_group.save()
@@ -814,13 +823,13 @@ erpnext 0.8.3	    HEAD
 		v15_group.append(
 			"servers",
 			{
-				"server": server,
+				"server": server.name,
 			},
 		)
 		v15_group.save()
 
-		v14_bench = create_test_bench(group=v14_group, server=server)
-		create_test_bench(group=v15_group, server=server)
+		v14_bench = create_test_bench(group=v14_group, server=server.name)
+		create_test_bench(group=v15_group, server=server.name)
 		site = create_test_site(bench=v14_bench.name)
 
 		self.assertEqual(
@@ -873,7 +882,7 @@ erpnext 0.8.3	    HEAD
 		group.append(
 			"servers",
 			{
-				"server": server,
+				"server": server.name,
 			},
 		)
 		group.save()
@@ -885,7 +894,7 @@ erpnext 0.8.3	    HEAD
 		group.append(
 			"servers",
 			{
-				"server": other_server,
+				"server": other_server.name,
 			},
 		)
 		group.save()

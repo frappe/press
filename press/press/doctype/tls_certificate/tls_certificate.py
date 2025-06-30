@@ -24,7 +24,8 @@ from press.overrides import get_permission_query_conditions_for_doctype
 from press.runner import Ansible
 from press.utils import get_current_team, log_error
 
-RETRY_LIMIT = 5
+AUTO_RETRY_LIMIT = 5
+MANUAL_RETRY_LIMIT = 8
 
 
 class TLSCertificate(Document):
@@ -84,7 +85,7 @@ class TLSCertificate(Document):
 		if self.provider != "Let's Encrypt":
 			return
 
-		if self.retry_count >= RETRY_LIMIT:
+		if self.retry_count >= MANUAL_RETRY_LIMIT:
 			frappe.throw("Retry limit exceeded. Please check the error and try again.", TLSRetryLimitExceeded)
 		(
 			user,
@@ -276,19 +277,12 @@ def should_renew(site: str | None, certificate: PendingCertificate) -> bool:
 		return False
 	if frappe.db.get_value("Site", site, "status") != "Active":
 		return False
-	dns_response = check_dns_cname_a(site, certificate.domain)
+	dns_response = check_dns_cname_a(site, certificate.domain, ignore_proxying=True)
 	if dns_response["matched"]:
 		return True
-	frappe.db.set_value(
-		"TLS Certificate",
-		certificate.name,
-		{
-			"status": "Failure",
-			"error": f"DNS check failed. {dns_response.get('answer')}",
-			"retry_count": certificate.retry_count + 1,
-		},
+	raise DNSValidationError(
+		f"DNS check failed. {dns_response.get('answer')}",
 	)
-	return False
 
 
 def rollback_and_fail_tls(certificate: PendingCertificate, e: Exception):
@@ -312,7 +306,7 @@ def renew_tls_certificates():
 		filters={
 			"status": ("in", ("Active", "Failure")),
 			"expires_on": ("<", frappe.utils.add_days(None, 25)),
-			"retry_count": ("<", RETRY_LIMIT),
+			"retry_count": ("<", AUTO_RETRY_LIMIT),
 			"provider": "Let's Encrypt",
 		},
 		ignore_ifnull=True,
