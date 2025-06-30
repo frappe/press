@@ -1291,11 +1291,24 @@ class ReleaseGroup(Document, TagHelpers):
 		except frappe.DoesNotExistError:
 			return None
 
+	def requires_new_platform_build(
+		self,
+		deploy_candidate_build: DeployCandidateBuild,
+		server: str,
+	) -> bool:
+		server_platform = frappe.get_value("Server", server, "platform")
+		return server_platform != deploy_candidate_build.platform
+
 	@frappe.whitelist()
 	def add_server(self, server: str, deploy=False):
 		self.append("servers", {"server": server, "default": False})
 		self.save()
 		if deploy:
+			last_successful_deploy_candidate_build = self.get_last_deploy_candidate_build()
+
+			if self.requires_new_platform_build(last_successful_deploy_candidate_build, server):
+				frappe.throw("No ARM builds present to be deployed!")
+
 			return self.get_last_successful_candidate_build()._create_deploy([server])
 		return None
 
