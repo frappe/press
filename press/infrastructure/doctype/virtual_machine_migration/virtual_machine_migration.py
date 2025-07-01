@@ -239,7 +239,7 @@ class VirtualMachineMigration(Document):
 		matching_plans = frappe.get_all(
 			"Server Plan",
 			{
-				"enabled": True,
+				# "enabled": True,
 				"server_type": old_plan.server_type,
 				"cluster": old_plan.cluster,
 				"instance_type": self.machine_type,
