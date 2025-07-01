@@ -38,6 +38,8 @@ if TYPE_CHECKING:
 	from datetime import datetime
 	from typing import Any
 
+	from press.press.doctype.user_ssh_key.user_ssh_key import UserSSHKey
+
 DEFAULT_DEPENDENCIES = [
 	{"dependency": "NVM_VERSION", "version": "0.36.0"},
 	{"dependency": "NODE_VERSION", "version": "14.19.0"},
@@ -873,15 +875,18 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def generate_certificate(self):
-		user_ssh_key = frappe.get_all(
+		ssh_key = frappe.get_all(
 			"User SSH Key",
 			{"user": frappe.session.user, "is_default": True},
 			pluck="name",
 			limit=1,
 		)
 
-		if not user_ssh_key:
+		if not ssh_key:
 			frappe.throw(_("Please set a SSH key to generate certificate"))
+
+		user_ssh_key: UserSSHKey = frappe.get_doc("User SSH Key", ssh_key[0])
+		user_ssh_key.validate()  # user may have already added invalid ssh key. Validate again
 
 		return frappe.get_doc(
 			{
@@ -889,7 +894,7 @@ class ReleaseGroup(Document, TagHelpers):
 				"certificate_type": "User",
 				"group": self.name,
 				"user": frappe.session.user,
-				"user_ssh_key": user_ssh_key[0],
+				"user_ssh_key": ssh_key[0],
 				"validity": "6h",
 			}
 		).insert()
