@@ -50,7 +50,7 @@ class TestMariaDBVariable(FrappeTestCase):
 		variable.default_value = "5120"
 		variable.save()
 
-		variable.set_on_server(db_1.name)
+		variable.set_on_server(db_1)
 		db_1.reload()
 		db_2.reload()
 		self.assertEqual(db_1.mariadb_system_variables[0].value, 5120 * 1024 * 1024)
@@ -60,7 +60,7 @@ class TestMariaDBVariable(FrappeTestCase):
 		variable.default_value = "5000"
 		variable.save()
 
-		variable.set_on_server(db_2.name)
+		variable.set_on_server(db_2)
 		db_1.reload()
 		db_2.reload()
 		self.assertEqual(db_1.mariadb_system_variables[1].value, "1000")
