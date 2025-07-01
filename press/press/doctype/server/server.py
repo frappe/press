@@ -1499,6 +1499,9 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		buffer = self.size_to_increase_by_for_20_percent_available(mountpoint)
 		server: Server | DatabaseServer = frappe.get_doc(self.doctype, self.name)
+		notify_email = frappe.get_value("Team", server.team, "notify_email")
+		disk_capacity = self.disk_capacity(mountpoint)
+		current_disk_usage = disk_capacity - self.free_space(mountpoint)
 
 		if not server.auto_increase_storage:
 			telegram.send(
@@ -1506,7 +1509,17 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
 				f"by {buffer + additional}G as auto disk increase disabled by user"
 			)
-			# Send notification of disk size increase required however not doing it.
+			frappe.sendmail(
+				recipients=notify_email,
+				subject=f"Important: Server {server.name} storage space at 90%",
+				template="disabled_auto_disk_expansion",
+				args={
+					"sever": server.name,
+					"current_disk_usage": f"{current_disk_usage} GiB",
+					"available_disk_space": f"{disk_capacity} GiB",
+					"increase_by": f"{buffer + additional} GiB",
+				},
+			)
 			return
 
 		telegram.send(
@@ -1515,7 +1528,17 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			f"by {buffer + additional}G"
 		)
 
-		# Send notification of disk size increase
+		frappe.sendmail(
+			recipients=notify_email,
+			subject=f"Important: Server {server.name} storage space at 90%",
+			template="enabled_auto_disk_expansion",
+			args={
+				"sever": server.name,
+				"current_disk_usage": f"{current_disk_usage} GiB",
+				"available_disk_space": f"{disk_capacity} GiB",
+				"increase_by": f"{buffer + additional} GiB",
+			},
+		)
 		self.increase_disk_size_for_server(self.name, buffer + additional, mountpoint)
 
 	def prune_docker_system(self):
