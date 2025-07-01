@@ -304,7 +304,6 @@ class VirtualMachineMigration(Document):
 			methods.append((self.update_server_platform, Wait))
 			methods.append((self.update_agent_ansible, Wait))
 			methods.append((self.start_active_benches, Wait))
-			methods.append((self.post_init_configurations, Wait))
 
 		steps = []
 		for method, wait_for_completion in methods:
@@ -340,15 +339,6 @@ class VirtualMachineMigration(Document):
 			return StepStatus.Failure
 
 		return StepStatus.Success
-
-	def post_init_configurations(self) -> StepStatus:
-		"""Run post init configurations"""
-		server: Server = frappe.get_doc("Server", self.machine.name)
-		server.set_swappiness()
-		server.add_glass_file()
-		server.install_filebeat()
-		server.setup_mysqldump()
-		server.install_earlyoom()
 
 	def update_agent_ansible(self) -> StepStatus:
 		"""Update agent on server"""
