@@ -473,7 +473,7 @@ class DatabaseServer(BaseServer):
 				self.is_performance_schema_enabled = False
 
 		if save:
-			self.save()
+			self.save(ignore_permissions=True)
 
 	@dashboard_whitelist()
 	def get_mariadb_variable_value(

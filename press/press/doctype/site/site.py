@@ -3372,8 +3372,8 @@ class Site(Document, TagHelpers):
 		table: str | None = None,
 		search_string: str | None = None,
 	):
-		if (end - start) > 60 * 60 * 2:
-			frappe.throw("Binlog search is limited to 2 hour. Please select a smaller time range.")
+		if (end - start) > 60 * 60 * 24:
+			frappe.throw("Binlog search is limited to 24 hours. Please select a smaller time range.")
 
 		if not table:
 			table = None
