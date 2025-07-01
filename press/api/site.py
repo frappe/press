@@ -1988,6 +1988,7 @@ def get_upload_link(file, parts=1):
 
 @frappe.whitelist()
 def multipart_exit(file, id, action, parts=None):
+	bucket_name = frappe.db.get_single_value("Press Settings", "remote_uploads_bucket")
 	s3_client = client(
 		"s3",
 		aws_access_key_id=frappe.db.get_single_value("Press Settings", "remote_access_key_id"),
@@ -2000,12 +2001,12 @@ def multipart_exit(file, id, action, parts=None):
 		region_name="ap-south-1",
 	)
 	if action == "abort":
-		response = s3_client.abort_multipart_upload(Bucket="uploads.frappe.cloud", Key=file, UploadId=id)
+		response = s3_client.abort_multipart_upload(Bucket=bucket_name, Key=file, UploadId=id)
 	elif action == "complete":
 		parts = json.loads(parts)
 		# After completing for all parts, you will use complete_multipart_upload api which requires that parts list
 		response = s3_client.complete_multipart_upload(
-			Bucket="uploads.frappe.cloud",
+			Bucket=bucket_name,
 			Key=file,
 			UploadId=id,
 			MultipartUpload={"Parts": parts},
