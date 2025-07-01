@@ -35,6 +35,7 @@ if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 	from press.press.doctype.bench.bench import Bench
+	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.mariadb_variable.mariadb_variable import MariaDBVariable
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server_mount.server_mount import ServerMount
@@ -1542,7 +1543,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			log_error("Sever File Copy Exception", server=self.as_dict())
 
 	@frappe.whitelist()
-	def set_additional_config(self):
+	def set_additional_config(self: Server | DatabaseServer):
 		"""
 		Corresponds to Set additional config step in Create Server Press Job
 		"""
@@ -1550,7 +1551,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			default_variables = frappe.get_all("MariaDB Variable", {"set_on_new_servers": 1}, pluck="name")
 			for var_name in default_variables:
 				var: MariaDBVariable = frappe.get_doc("MariaDB Variable", var_name)
-				var.set_on_server(self.name)
+				var.set_on_server(self)
 
 		self.set_swappiness()
 		self.add_glass_file()

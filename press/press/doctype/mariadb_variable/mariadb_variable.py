@@ -50,8 +50,6 @@ class MariaDBVariable(Document):
 			server: DatabaseServer = frappe.get_doc("Database Server", server_name)
 			server.add_or_update_mariadb_variable(self.name, f"value_{self.datatype.lower()}", value)
 
-	@frappe.whitelist()
-	def set_on_server(self, server_name):
+	def set_on_server(self, server: DatabaseServer):
 		value = self.get_default_value()
-		server: DatabaseServer = frappe.get_doc("Database Server", server_name)
 		server.add_or_update_mariadb_variable(self.name, f"value_{self.datatype.lower()}", value)
