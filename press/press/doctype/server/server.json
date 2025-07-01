@@ -26,6 +26,7 @@
   "use_agent_job_callbacks",
   "is_pyspy_setup",
   "halt_agent_jobs",
+  "stop_deployments",
   "billing_section",
   "team",
   "column_break_11",
@@ -598,10 +599,17 @@
    "fieldname": "auto_increase_storage",
    "fieldtype": "Check",
    "label": "Auto Increase Storage"
+  },
+  {
+   "default": "0",
+   "description": "Stop all deployments on this server.",
+   "fieldname": "stop_deployments",
+   "fieldtype": "Check",
+   "label": "Stop Deployments"
   }
  ],
  "links": [],
- "modified": "2025-06-30 11:04:40.442416",
+ "modified": "2025-07-01 10:28:26.145882",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
