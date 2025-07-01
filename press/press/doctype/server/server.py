@@ -35,6 +35,7 @@ if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 	from press.press.doctype.bench.bench import Bench
+	from press.press.doctype.mariadb_variable.mariadb_variable import MariaDBVariable
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server_mount.server_mount import ServerMount
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
@@ -1539,6 +1540,32 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			ansible.run()
 		except Exception:
 			log_error("Sever File Copy Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def set_additional_config(self):
+		"""
+		Corresponds to Set additional config step in Create Server Press Job
+		"""
+		if self.doctype == "Database Server":
+			default_variables = frappe.get_all("MariaDB Variable", {"set_on_new_servers": 1}, pluck="name")
+			for var_name in default_variables:
+				var: MariaDBVariable = frappe.get_doc("MariaDB Variable", var_name)
+				var.set_on_server(self.name)
+
+		self.set_swappiness()
+		self.add_glass_file()
+		self.install_filebeat()
+
+		if self.doctype == "Server":
+			self.setup_mysqldump()
+			self.install_earlyoom()
+
+		if self.doctype == "Database Server":
+			self.adjust_memory_config()
+			self.setup_logrotate()
+
+		self.validate_mounts()
+		self.save(ignore_permissions=True)
 
 
 class Server(BaseServer):
