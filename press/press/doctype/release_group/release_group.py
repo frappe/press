@@ -24,6 +24,7 @@ from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import new_app
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
 from press.press.doctype.deploy_candidate.utils import is_suspended
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import create_platform_build_and_deploy
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server import Server
 from press.utils import (
@@ -1313,8 +1314,21 @@ class ReleaseGroup(Document, TagHelpers):
 			if not last_successful_deploy_candidate_build:
 				frappe.throw("No ARM builds present to be deployed!")
 
-			return last_successful_deploy_candidate_build._create_deploy([server])
-		return None
+		server_platform = frappe.get_value("Server", server, "platform")
+		last_successful_deploy_candidate_build = self.get_last_successful_candidate_build(
+			platform=server_platform
+		)
+
+		if not last_successful_deploy_candidate_build:
+			# No build of this platform is available creating new build
+			last_candidate_build = self.get_last_successful_candidate_build()
+			return create_platform_build_and_deploy(
+				deploy_candidate=last_candidate_build.candidate.name,
+				server=server,
+				platform=server_platform,
+			)
+
+		return last_successful_deploy_candidate_build._create_deploy([server])
 
 	@frappe.whitelist()
 	def change_server(self, server: str):

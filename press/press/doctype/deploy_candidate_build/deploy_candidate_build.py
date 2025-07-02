@@ -1342,9 +1342,8 @@ def run_scheduled_builds(max_builds: int = 5):
 			log_error(title="Scheduled Deploy Candidate Error", doc=doc)
 
 
-def create_arm_build_and_deploy(deploy_candidate_build: DeployCandidateBuild):
-	deploy_candidate = deploy_candidate_build.candidate.name
-
+def create_platform_build_and_deploy(deploy_candidate: str, server: str, platform: str) -> str:
+	"""Create an arm / intel build and trigger a deploy on the given server"""
 	deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
 		{
 			"doctype": "Deploy Candidate Build",
@@ -1352,14 +1351,15 @@ def create_arm_build_and_deploy(deploy_candidate_build: DeployCandidateBuild):
 			"no_build": False,
 			"no_cache": False,
 			"no_push": False,
-			"platform": "arm64",
+			"platform": platform,
+			"deploy_on_server": server,
 		}
 	)
-	arm_build = deploy_candidate_build.insert()
+	build = deploy_candidate_build.insert()
 	# Even if arm_build is not required on this deploy candidate we still attach it here
 	# Since we don't want loose builds
-	frappe.db.set_value("Deploy Candidate", {"name": deploy_candidate}, "arm_build", arm_build.name)
-	return arm_build.name
+	frappe.db.set_value("Deploy Candidate", {"name": deploy_candidate}, platform, build.name)
+	return build.name
 
 
 def check_builds_status(
@@ -1440,9 +1440,9 @@ def correct_false_positives(last_n_days=0, last_n_hours=1):
 		and    dcb.status != "Failure"
 	)
 	select dcb.name
-	from   dcb join `tabDeploy Candidate Build Step` as dcbs
-	on     dcb.name = dcbs.parent
-	where  dcbs.status = "Failure"
+	from   dcb join `tabDeploy Candidate Build Step` as deploy_candidate_build_step
+	on     dcb.name = deploy_candidate_build_step.parent
+	where  deploy_candidate_build_step.status = "Failure"
 	""",
 		(
 			last_n_days,
