@@ -57,6 +57,12 @@ export default {
 				'Action Required': 'red',
 				'First Deploy': 'green',
 				'Will be Uninstalled': 'red',
+				Open: 'red',
+				'In Process': 'orange',
+				Won: 'green',
+				Lost: 'red',
+				Junk: 'gray',
+				'Passed to Other Partner': 'gray',
 			}[this.label];
 		},
 	},
