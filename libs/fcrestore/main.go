@@ -11,9 +11,18 @@ import (
 )
 
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("An unexpected error occurred:", r)
+			fmt.Println("Please try again or contact support if the issue persists.")
+		} else {
+			fmt.Println("Thank you for using Frappe Cloud Restore CLI!")
+			fmt.Println("Exiting in 5 seconds...")
+			time.Sleep(5 * time.Second)
+		}
+	}()
 	session := GetSession()
 	loginRequired := true
-
 	fmt.Println("Welcome to Frappe Cloud Restore CLI")
 	fmt.Println("This CLI will help you restore your site on Frappe Cloud")
 	fmt.Print("\n\n")
@@ -89,6 +98,11 @@ func main() {
 	teamName := strings.Split(selectedTeam, "<")[1]
 	teamName = strings.TrimSuffix(teamName, ">")
 	fmt.Println("Selected team:", teamName)
+	err = session.SetCurrentTeam(teamName, true)
+	if err != nil {
+		fmt.Println("Error setting current team: " + err.Error())
+		return
+	}
 
 	// Ask to pick the site to restore
 	sites, err := session.FetchSites()
@@ -160,7 +174,6 @@ func main() {
 		}
 		filePaths[restoreType] = filePath
 	}
-
 	// Create the link for multipart upload
 	fileUploads := make(map[string]*MultipartUpload)
 	spinner := tui.ShowSpinner("Generating upload links...", func() {
@@ -177,24 +190,26 @@ func main() {
 	spinner.Done()
 
 	// Pre-verify restoration space requirements
-	spinner = tui.ShowSpinner("Validating space requirements", func() {
-	})
+	spinner = tui.ShowSpinner("Checking Space on Server", func() {})
 	defer spinner.Done()
-	validationResults, err := session.ValidateRestorationSpaceRequirements(selectedSite, fileUploads["database"], fileUploads["private"], fileUploads["public"])
+
+	result, err := session.CheckSpaceOnserver(selectedSite, fileUploads["database"], fileUploads["private"], fileUploads["public"])
 	if err != nil {
 		fmt.Println("Error validating restoration space requirements:", err.Error())
 		return
 	}
-	if !validationResults.AllowedToUpload {
-		fmt.Println("Restoration space requirements not met:")
-		if validationResults.IsInsufficientSpaceOnAppServer {
-			fmt.Printf("- Insufficient space on app server [Required: %s, Available: %s]\n", formatBytes(validationResults.RequiredSpaceOnAppServer), formatBytes(validationResults.FreeSpaceOnAppServer))
+
+	if !result.AllowedToUpload {
+		fmt.Println("Restoration cannot be performed due to insufficient space on the server.")
+		if result.IsInsufficientSpaceOnAppServer {
+			fmt.Printf("- Insufficient space on app server [Required: %s, Available: %s]\n", formatBytes(result.RequiredSpaceOnAppServer), formatBytes(result.FreeSpaceOnAppServer))
 		}
-		if validationResults.ISInsufficientSpaceOnDBServer {
-			fmt.Printf("- Insufficient space on database server [Required: %s, Available: %s]\n", formatBytes(validationResults.RequiredSpaceOnDBServer), formatBytes(validationResults.FreeSpaceOnDBServer))
+		if result.ISInsufficientSpaceOnDBServer {
+			fmt.Printf("- Insufficient space on database server [Required: %s, Available: %s]\n", formatBytes(result.RequiredSpaceOnDBServer), formatBytes(result.FreeSpaceOnDBServer))
 		}
 		return
 	}
+
 	spinner.Done()
 
 	// Start uploading files

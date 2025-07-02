@@ -132,7 +132,7 @@ type ProgressUI struct {
 
 func ShowProgress(prompt string, onQuit func()) *ProgressUI {
 	prog := progress.New(
-		progress.WithGradient("#888888", "#bbbbbb"),
+		progress.WithGradient("#FF87D7", "#FF87D7"),
 	)
 
 	m := progressModel{

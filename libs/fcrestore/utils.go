@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 func fileExists(filename string) bool {
@@ -50,6 +51,10 @@ func formatBytes(size int64) string {
 func getTotalSize(m *MultipartUpload) int64 {
 	if m == nil {
 		return 0
+	}
+	// If database file is sql file, divide its size by 8 atleast
+	if strings.HasSuffix(m.FileName, ".sql") {
+		return m.TotalSize / 8
 	}
 	return m.TotalSize
 }

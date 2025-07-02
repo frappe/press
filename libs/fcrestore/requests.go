@@ -99,7 +99,7 @@ func (s *Session) SendRequest(method string, payload map[string]any) (map[string
 			"X-Press-Team": {s.CurrentTeam},
 			"Cookie":       {fmt.Sprintf("sid=%s", s.SessionID)},
 		},
-		Body: http.NoBody, // No body for the request, we will set it later
+		Body: http.NoBody, // No body for the request, we will set it later,
 	}
 
 	data, err := json.Marshal(payload)
@@ -337,18 +337,18 @@ type SpaceRequirementResponse struct {
 	RequiredSpaceOnDBServer        int64 `json:"required_space_on_db_server"`
 }
 
-func (s *Session) ValidateRestorationSpaceRequirements(siteName string, databaseFile *MultipartUpload, publicFile *MultipartUpload, privateFile *MultipartUpload) (*SpaceRequirementResponse, error) {
-	if os.Getenv("IGNORE_SPACE_REQUIREMENT_VALIDATION") == "1" {
-		return &SpaceRequirementResponse{
-			AllowedToUpload:                true,
-			FreeSpaceOnAppServer:           0,
-			FreeSpaceOnDBServer:            0,
-			IsInsufficientSpaceOnAppServer: false,
-			ISInsufficientSpaceOnDBServer:  false,
-			RequiredSpaceOnAppServer:       0,
-			RequiredSpaceOnDBServer:        0,
-		}, nil
-	}
+func (s *Session) CheckSpaceOnserver(siteName string, databaseFile *MultipartUpload, publicFile *MultipartUpload, privateFile *MultipartUpload) (*SpaceRequirementResponse, error) {
+	// if os.Getenv("IGNORE_SPACE_REQUIREMENT_VALIDATION") == "1" {
+	// 	return &SpaceRequirementResponse{
+	// 		AllowedToUpload:                true,
+	// 		FreeSpaceOnAppServer:           0,
+	// 		FreeSpaceOnDBServer:            0,
+	// 		IsInsufficientSpaceOnAppServer: false,
+	// 		ISInsufficientSpaceOnDBServer:  false,
+	// 		RequiredSpaceOnAppServer:       0,
+	// 		RequiredSpaceOnDBServer:        0,
+	// 	}, nil
+	// }
 	resp, err := s.SendRequest("press.api.site.validate_restoration_space_requirements", map[string]any{
 		"name":              siteName,
 		"db_file_size":      getTotalSize(databaseFile),
