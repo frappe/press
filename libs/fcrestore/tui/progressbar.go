@@ -111,7 +111,7 @@ func (m progressModel) View() string {
 
 	if m.err != nil {
 		return "\n  " + titleStyle.Render(m.prompt) + "\n\n  Error: " + m.err.Error() + "\n\n  " +
-			progressHelpStyle("press ctrl+q to quit") + "\n"
+			progressHelpStyle("press <ctrl+q> to quit") + "\n"
 	}
 
 	pad := strings.Repeat(" ", progressPadding)
@@ -120,7 +120,7 @@ func (m progressModel) View() string {
 	return "\n  " + titleStyle.Render(m.prompt) + "\n\n" +
 		pad + progressView + "\n" +
 		pad + m.currentInfo + "\n\n" +
-		pad + progressHelpStyle("press ctrl+q to quit") + "\n"
+		pad + progressHelpStyle("press <ctrl+q> to quit") + "\n"
 }
 
 type ProgressUI struct {

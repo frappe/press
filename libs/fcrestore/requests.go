@@ -338,17 +338,6 @@ type SpaceRequirementResponse struct {
 }
 
 func (s *Session) CheckSpaceOnserver(siteName string, databaseFile *MultipartUpload, publicFile *MultipartUpload, privateFile *MultipartUpload) (*SpaceRequirementResponse, error) {
-	// if os.Getenv("IGNORE_SPACE_REQUIREMENT_VALIDATION") == "1" {
-	// 	return &SpaceRequirementResponse{
-	// 		AllowedToUpload:                true,
-	// 		FreeSpaceOnAppServer:           0,
-	// 		FreeSpaceOnDBServer:            0,
-	// 		IsInsufficientSpaceOnAppServer: false,
-	// 		ISInsufficientSpaceOnDBServer:  false,
-	// 		RequiredSpaceOnAppServer:       0,
-	// 		RequiredSpaceOnDBServer:        0,
-	// 	}, nil
-	// }
 	resp, err := s.SendRequest("press.api.site.validate_restoration_space_requirements", map[string]any{
 		"name":              siteName,
 		"db_file_size":      getTotalSize(databaseFile),
@@ -373,7 +362,7 @@ func (s *Session) CheckSpaceOnserver(siteName string, databaseFile *MultipartUpl
 	return &spaceResp, nil
 }
 
-func (s *Session) RestoreSite(siteName string, databaseFile *MultipartUpload, publicFile *MultipartUpload, privateFile *MultipartUpload) error {
+func (s *Session) RestoreSite(siteName string, databaseFile *MultipartUpload, publicFile *MultipartUpload, privateFile *MultipartUpload, skipFailingPatches bool) error {
 	files := map[string]any{
 		"database": nil,
 		"public":   nil,
@@ -389,8 +378,9 @@ func (s *Session) RestoreSite(siteName string, databaseFile *MultipartUpload, pu
 		files["private"] = privateFile.RemoteFile
 	}
 	_, err := s.SendRequest("press.api.site.restore", map[string]any{
-		"name":  siteName,
-		"files": files,
+		"name":                 siteName,
+		"files":                files,
+		"skip_failing_patches": skipFailingPatches,
 	})
 	if err != nil {
 		return fmt.Errorf("error restoring site: %w", err)

@@ -16,7 +16,7 @@ func main() {
 			fmt.Println("An unexpected error occurred:", r)
 			fmt.Println("Please try again or contact support if the issue persists.")
 		} else {
-			fmt.Println("Thank you for using Frappe Cloud Restore CLI!")
+			fmt.Println("\n\nThank you for using Frappe Cloud Restore CLI!")
 			fmt.Println("Exiting in 5 seconds...")
 			time.Sleep(5 * time.Second)
 		}
@@ -291,18 +291,37 @@ func main() {
 			fmt.Println("Restoration cancelled.")
 			return
 		}
+		isDatabaseGettingRestored := false
+		if fileUploads["database"] != nil && fileUploads["database"].IsUploaded() {
+			isDatabaseGettingRestored = true
+		}
+		skipFailingPatches := false
+		if isDatabaseGettingRestored {
+			isSkipPatches, err := tui.PickItem("Do you want to skip failing patches during migration ?\nYou can fix the issues manually and migrate from Site Actions later", []string{"Yes, Skip Patches", "No, Migrate with Patches"})
+			if err != nil {
+				fmt.Println("Error picking skip patches option:", err.Error())
+				return
+			}
+			skipFailingPatches = strings.HasPrefix(isSkipPatches, "Yes")
+		}
 		// Proceed with restoration
 		spinner = tui.ShowSpinner("Restoring site...", func() {
 		})
-		defer spinner.Done()
-		err = session.RestoreSite(selectedSite, fileUploads["database"], fileUploads["private"], fileUploads["public"])
+		err = session.RestoreSite(selectedSite, fileUploads["database"], fileUploads["private"], fileUploads["public"], skipFailingPatches)
 		if err != nil {
-			fmt.Println("Error restoring site:", err.Error())
+			spinner.Done()
+			time.Sleep(1 * time.Second)
+			fmt.Println("Failed to restore site:", err.Error())
 			return
 		}
 		spinner.Done()
+		time.Sleep(1 * time.Second)
 		fmt.Println("Site restoration triggered successfully!")
 		fmt.Println("You can check the status of the restoration in your Frappe Cloud dashboard.")
 		fmt.Printf("%s/dashboard/sites/%s/insights/jobs\n", session.Server, selectedSite)
+		if isDatabaseGettingRestored {
+			fmt.Println()
+			fmt.Println("NOTE: Once restoration gets completed, please collect the encryption key from backed up site_config.json file and set it in the restored site.")
+		}
 	}
 }

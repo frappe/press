@@ -54,7 +54,6 @@ type SpinnerUI struct {
 func (s *SpinnerUI) Done() {
 	s.program.Send(tea.KeyMsg{Type: tea.KeyCtrlQ})
 	<-s.doneChan
-
 }
 
 func (m spinnerModel) Init() tea.Cmd {
@@ -90,5 +89,5 @@ func (m spinnerModel) View() string {
 	if m.err != nil {
 		return fmt.Sprintf(" %s Error: %v", m.spinner.View(), m.err)
 	}
-	return fmt.Sprintf("  %s %s", m.spinner.View(), m.message) + "\n\n  Press <ctrl+q> to quit"
+	return fmt.Sprintf("  %s %s", m.spinner.View(), m.message) + "\n\n  press <ctrl+q> to quit"
 }
