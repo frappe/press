@@ -27,9 +27,9 @@ type Session struct {
 }
 
 type Team struct {
-	Name      string `json:"name"`
-	TeamTitle string `json:"team_title"`
-	User      string `json:"user"`
+	Name  string `json:"name"`
+	Title string `json:"team_title"`
+	User  string `json:"user"`
 }
 
 func GetSession() Session {
@@ -63,6 +63,7 @@ func GetSession() Session {
 		CurrentTeam:      "",
 		CurrentTeamTitle: "",
 		Teams:            []Team{},
+		UploadedFiles:    make(map[string]string),
 	}
 
 	data, err := json.MarshalIndent(session, "", "  ")
@@ -163,7 +164,7 @@ func (s *Session) SendRequest(method string, payload map[string]any) (map[string
 			if strings.HasPrefix(part, "sid=") {
 				// If sid is set, update the session
 				sid := strings.TrimPrefix(part, "sid=")
-				if strings.Compare(s.SessionID, sid) != 0 {
+				if strings.Compare(s.SessionID, sid) != 0 && strings.Compare(sid, "Guest") != 0 {
 					s.SessionID = sid
 					if err := s.Save(); err != nil {
 						return nil, fmt.Errorf("failed to save session after setting sid: %w", err)
@@ -258,7 +259,7 @@ func (s *Session) SetCurrentTeam(teamID string, save bool) error {
 	foundTeam := false
 	for _, t := range s.Teams {
 		if t.Name == teamID {
-			currentTeamTitle = t.TeamTitle
+			currentTeamTitle = t.Title
 			foundTeam = true
 			break
 		}
@@ -274,6 +275,25 @@ func (s *Session) SetCurrentTeam(teamID string, save bool) error {
 		}
 	}
 	return nil
+}
+
+func (s *Session) IsLoggedIn() bool {
+	if s.SessionID == "" || s.LoginEmail == "" || s.SessionID == "Guest" {
+		return false
+	}
+	// Check if the session is still valid by sending a simple request
+	resp, err := s.SendRequest("press.api.account.get", map[string]any{})
+	if err != nil {
+		return false
+	}
+	// If the response contains a message, it means the session is valid
+	_, ok := resp["message"].(map[string]any)
+
+	if !ok {
+		s.Logout()
+	}
+
+	return ok
 }
 
 func (s *Session) FetchSites() ([]string, error) {

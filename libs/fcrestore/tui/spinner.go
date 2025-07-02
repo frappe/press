@@ -29,13 +29,13 @@ func ShowSpinner(message string, onQuit func()) *SpinnerUI {
 	}
 
 	// Create program without alt screen
-	p := tea.NewProgram(m, tea.WithOutput(os.Stderr)) // Output to stderr to avoid mixing with stdout
+	p := tea.NewProgram(m, tea.WithOutput(os.Stderr))
 
 	doneChan := make(chan struct{})
 
 	go func() {
 		if _, err := p.Run(); err != nil {
-			fmt.Fprint(os.Stderr, "\033[?25h")
+			m.err = fmt.Errorf("spinner error: %w", err)
 		}
 		close(doneChan)
 	}()
@@ -52,17 +52,16 @@ type SpinnerUI struct {
 }
 
 func (s *SpinnerUI) Done() {
-	s.program.Send(tea.KeyMsg{Type: tea.KeyCtrlC})
+	s.program.Send(tea.KeyMsg{Type: tea.KeyCtrlQ})
 	<-s.doneChan
-	fmt.Fprint(os.Stderr, "\033[?25h")
 
 }
 
 func (m spinnerModel) Init() tea.Cmd {
 	return tea.Batch(
-		m.spinner.Tick,
 		tea.EnterAltScreen, // Start with alt screen
 		tea.HideCursor,     // Hide cursor
+		m.spinner.Tick,
 	)
 }
 
@@ -70,7 +69,7 @@ func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "q", "esc":
+		case "ctrl+q":
 			m.quitting = true
 			m.onQuit()
 			return m, tea.Sequence(tea.ShowCursor, tea.Quit)
@@ -91,5 +90,5 @@ func (m spinnerModel) View() string {
 	if m.err != nil {
 		return fmt.Sprintf(" %s Error: %v", m.spinner.View(), m.err)
 	}
-	return fmt.Sprintf(" %s %s", m.spinner.View(), m.message) + "\n\n  Press <q> or <ctrl+c> to quit"
+	return fmt.Sprintf("  %s %s", m.spinner.View(), m.message) + "\n\n  Press <ctrl+q> to quit"
 }

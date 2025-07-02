@@ -361,7 +361,7 @@ func (m *MultipartUpload) Progress() (float64, string, string) {
 	if m.TotalSize == 0 {
 		return 0, "", ""
 	}
-	return float64(atomic.LoadInt64(&m.UploadedSize)) / float64(m.TotalSize) * 100, formatBytes(m.UploadedSize), formatBytes(m.TotalSize)
+	return float64(atomic.LoadInt64(&m.UploadedSize)) / float64(m.TotalSize), formatBytes(m.UploadedSize), formatBytes(m.TotalSize)
 }
 
 func (m *MultipartUpload) Errors() []error {

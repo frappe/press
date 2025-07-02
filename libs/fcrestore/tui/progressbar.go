@@ -34,7 +34,7 @@ type progressModel struct {
 	err         error
 	currentInfo string
 	quitting    bool
-	onQuit      func() // Quit handler function
+	onQuit      func()
 }
 
 func finalPause() tea.Cmd {
@@ -44,20 +44,28 @@ func finalPause() tea.Cmd {
 }
 
 func (m progressModel) Init() tea.Cmd {
-	return nil
+	return tea.Batch(
+		tea.EnterAltScreen,
+		tea.HideCursor,
+		m.progress.Init(),
+	)
 }
 
 func (m progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+q":
+		if msg.Type == tea.KeyCtrlQ {
 			m.quitting = true
-			m.onQuit()
-			return m, tea.Sequence(tea.ShowCursor, tea.Quit)
-		default:
-			return m, nil
+			if m.onQuit != nil {
+				m.onQuit()
+			}
+			return m, tea.Batch(
+				tea.ExitAltScreen,
+				tea.ShowCursor,
+				tea.Quit,
+			)
 		}
+		return m, nil
 
 	case tea.WindowSizeMsg:
 		m.progress.Width = msg.Width - progressPadding*2 - 4
@@ -76,6 +84,8 @@ func (m progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			cmds = append(cmds, tea.Sequence(
 				finalPause(),
+				tea.ExitAltScreen,
+				tea.ShowCursor,
 				tea.Quit,
 			))
 		}
@@ -101,7 +111,7 @@ func (m progressModel) View() string {
 
 	if m.err != nil {
 		return "\n  " + titleStyle.Render(m.prompt) + "\n\n  Error: " + m.err.Error() + "\n\n  " +
-			progressHelpStyle("Press ctrl+q to quit") + "\n"
+			progressHelpStyle("press ctrl+q to quit") + "\n"
 	}
 
 	pad := strings.Repeat(" ", progressPadding)
@@ -110,18 +120,16 @@ func (m progressModel) View() string {
 	return "\n  " + titleStyle.Render(m.prompt) + "\n\n" +
 		pad + progressView + "\n" +
 		pad + m.currentInfo + "\n\n" +
-		pad + progressHelpStyle("Press ctrl+q to quit") + "\n"
+		pad + progressHelpStyle("press ctrl+q to quit") + "\n"
 }
 
 type ProgressUI struct {
 	updateChan chan progressMsg
 	errChan    chan error
-	doneChan   chan struct{}
+	DoneChan   chan struct{}
 	program    *tea.Program
 }
 
-// ShowProgress starts a progress UI with the given prompt and quit handler
-// The quit handler function will be called when the UI is quitting (either by completion or user interruption)
 func ShowProgress(prompt string, onQuit func()) *ProgressUI {
 	prog := progress.New(
 		progress.WithGradient("#888888", "#bbbbbb"),
@@ -141,7 +149,8 @@ func ShowProgress(prompt string, onQuit func()) *ProgressUI {
 
 	go func() {
 		if _, err := p.Run(); err != nil {
-			fmt.Fprint(os.Stderr, "\033[?25h") // Show cursor
+			// Ensure terminal state is restored on error
+			fmt.Fprint(os.Stderr, "\033[?25h\033[?1049l")
 		}
 		close(doneChan)
 	}()
@@ -162,14 +171,14 @@ func ShowProgress(prompt string, onQuit func()) *ProgressUI {
 	return &ProgressUI{
 		updateChan: updateChan,
 		errChan:    errChan,
-		doneChan:   doneChan,
+		DoneChan:   doneChan,
 		program:    p,
 	}
 }
 
 func (p *ProgressUI) Update(ratio float64, uploadedGB, totalGB string) {
 	select {
-	case <-p.doneChan:
+	case <-p.DoneChan:
 		return
 	default:
 		p.updateChan <- progressMsg{
@@ -182,7 +191,7 @@ func (p *ProgressUI) Update(ratio float64, uploadedGB, totalGB string) {
 
 func (p *ProgressUI) Error(err error) {
 	select {
-	case <-p.doneChan:
+	case <-p.DoneChan:
 		return
 	default:
 		p.errChan <- err
@@ -190,8 +199,17 @@ func (p *ProgressUI) Error(err error) {
 }
 
 func (p *ProgressUI) Done() {
-	p.program.Send(tea.KeyMsg{Type: tea.KeyEsc})
-	close(p.updateChan)
-	close(p.errChan)
-	fmt.Fprint(os.Stdout, "\033[?25h")
+	// Send Ctrl+Q to quit
+	p.program.Send(tea.KeyMsg{Type: tea.KeyCtrlQ})
+
+	// Add timeout to prevent hanging
+	select {
+	case <-p.DoneChan:
+	case <-time.After(2 * time.Second):
+		// Force cleanup if graceful quit times out
+		fmt.Fprint(os.Stdout, "\033[?25h\033[?1049l")
+	}
+
+	// Extra terminal reset to be safe
+	fmt.Fprint(os.Stdout, "\033[?25h\033[?1049l")
 }

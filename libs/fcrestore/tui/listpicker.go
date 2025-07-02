@@ -76,7 +76,11 @@ type model struct {
 }
 
 func (m *model) Init() tea.Cmd {
-	return nil
+	return tea.Batch(
+		tea.EnterAltScreen, // Start with alt screen
+		tea.HideCursor,     // Hide cursor
+		tea.ClearScreen,    // Clear the screen
+	)
 }
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

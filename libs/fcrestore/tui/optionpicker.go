@@ -37,7 +37,11 @@ type multiSelectModel struct {
 }
 
 func (m *multiSelectModel) Init() tea.Cmd {
-	return nil
+	return tea.Batch(
+		tea.EnterAltScreen,
+		tea.HideCursor,
+		clearErrorAfter(0),
+	)
 }
 
 func (m *multiSelectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

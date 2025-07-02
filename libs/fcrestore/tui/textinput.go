@@ -14,17 +14,24 @@ func AskInput(prompt, placeholder string) (string, error) {
 	ti.Focus()
 	ti.Width = 40
 
-	m := inputModel{
+	m := &inputModel{ // Use pointer
 		textInput: ti,
 		prompt:    prompt,
+		result:    "",
 	}
 
 	p := tea.NewProgram(m)
-	if _, err := p.Run(); err != nil {
+	finalModel, err := p.Run()
+	if err != nil {
 		return "", err
 	}
 
-	return m.result, nil
+	// Cast back to our model type and access result
+	if finalInputModel, ok := finalModel.(*inputModel); ok {
+		return finalInputModel.result, nil
+	}
+
+	return "", nil
 }
 
 type inputModel struct {
@@ -33,11 +40,11 @@ type inputModel struct {
 	result    string
 }
 
-func (m inputModel) Init() tea.Cmd {
-	return textinput.Blink
+func (m *inputModel) Init() tea.Cmd { // Use pointer receiver
+	return tea.Sequence(tea.EnterAltScreen, textinput.Blink, tea.HideCursor)
 }
 
-func (m inputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *inputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) { // Use pointer receiver
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -45,6 +52,7 @@ func (m inputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyEnter:
 			m.result = m.textInput.Value()
+			fmt.Println("You entered:", m.result)
 			return m, tea.Quit
 		case tea.KeyCtrlQ:
 			return m, tea.Quit
@@ -55,9 +63,9 @@ func (m inputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m inputModel) View() string {
+func (m *inputModel) View() string { // Use pointer receiver
 	return fmt.Sprintf(
-		"%s\n\n%s\n\n<enter> to submit • <ctrl+q> to quit)",
+		"%s\n\n%s\n\n<enter> to submit • <ctrl+q> to quit",
 		titleStyle.Render(m.prompt),
 		m.textInput.View(),
 	)
