@@ -643,7 +643,7 @@ class BaseServer(Document, TagHelpers):
 			return "/"
 
 		volumes = self.get_volume_mounts()
-		if volumes:
+		if volumes or self.has_data_volume:
 			if self.doctype == "Server":
 				mountpoint = "/opt/volumes/benches"
 			elif self.doctype == "Database Server":

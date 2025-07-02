@@ -1661,6 +1661,16 @@ class Site(Document, TagHelpers):
 				)
 			elif f"User {user} does not exist" in str(e):
 				frappe.throw(f"User {user} does not exist in the site", frappe.ValidationError)
+			elif "certificate has expired" in str(e):
+				frappe.throw(
+					"SSL certificate for the site has expired. Please check the domains tab.",
+					frappe.ValidationError,
+				)
+			elif "no space left on device" in str(e):
+				frappe.throw(
+					"Site is unresponsive due to no space left on device. Please contact support.",
+					frappe.ValidationError,
+				)
 			elif frappe.db.exists(
 				"Incident",
 				{
