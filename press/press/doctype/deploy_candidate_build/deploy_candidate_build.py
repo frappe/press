@@ -195,6 +195,7 @@ class DeployCandidateBuild(Document):
 		build_steps: DF.Table[DeployCandidateBuildStep]
 		deploy_after_build: DF.Check
 		deploy_candidate: DF.Link
+		deploy_on_server: DF.Link | None
 		docker_image: DF.Data | None
 		docker_image_id: DF.Data | None
 		docker_image_repository: DF.Data | None
@@ -784,6 +785,12 @@ class DeployCandidateBuild(Document):
 
 		if build.status == Status.SUCCESS.value:
 			build.update_deploy_candidate_with_build()
+
+			deploy_on_server = request_data.get("deploy_on_server")
+			if deploy_on_server:
+				build._create_deploy([deploy_on_server])
+				return
+
 			build.create_new_platform_build_if_required_and_deploy(
 				deploy_after_build=request_data.get("deploy_after_build")
 			)
@@ -963,6 +970,7 @@ class DeployCandidateBuild(Document):
 			# read in `process_run_build`
 			"deploy_candidate_build": self.name,
 			"deploy_after_build": self.deploy_after_build,
+			"deploy_on_server": self.deploy_on_server,
 		}
 		if self.platform == "arm64":
 			build_parameters.update({"platform": self.platform})
@@ -1163,7 +1171,7 @@ class DeployCandidateBuild(Document):
 		servers = [
 			server.server
 			for server in servers
-			if frappe.get_doc("Server", server.server, "platform") == self.platform
+			if frappe.get_value("Server", server.server, "platform") == self.platform
 		]
 		if not servers:
 			return None
@@ -1356,9 +1364,6 @@ def create_platform_build_and_deploy(deploy_candidate: str, server: str, platfor
 		}
 	)
 	build = deploy_candidate_build.insert()
-	# Even if arm_build is not required on this deploy candidate we still attach it here
-	# Since we don't want loose builds
-	frappe.db.set_value("Deploy Candidate", {"name": deploy_candidate}, platform, build.name)
 	return build.name
 
 

@@ -1287,11 +1287,13 @@ class ReleaseGroup(Document, TagHelpers):
 		app_update_available = self.deploy_information().update_available
 		self.add_server(server, deploy=not app_update_available)
 
-	def get_last_successful_candidate_build(self, platform: str) -> DeployCandidateBuild | None:
+	def get_last_successful_candidate_build(self, platform: str | None = None) -> DeployCandidateBuild | None:
 		try:
-			return frappe.get_last_doc(
-				"Deploy Candidate Build", {"status": "Success", "group": self.name, "platform": platform}
-			)
+			filters = {"status": "Success", "group": self.name}
+			if platform:
+				filters.update({"platform": platform})
+
+			return frappe.get_last_doc("Deploy Candidate Build", filters)
 		except frappe.DoesNotExistError:
 			return None
 
@@ -1305,14 +1307,9 @@ class ReleaseGroup(Document, TagHelpers):
 	def add_server(self, server: str, deploy=False):
 		self.append("servers", {"server": server, "default": False})
 		self.save()
-		if deploy:
-			server_platform = frappe.get_value("Server", server, "platform")
-			last_successful_deploy_candidate_build = self.get_last_successful_candidate_build(
-				platform=server_platform
-			)
 
-			if not last_successful_deploy_candidate_build:
-				frappe.throw("No ARM builds present to be deployed!")
+		if not deploy:
+			return None
 
 		server_platform = frappe.get_value("Server", server, "platform")
 		last_successful_deploy_candidate_build = self.get_last_successful_candidate_build(
