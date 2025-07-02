@@ -54,6 +54,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
 		DeployCandidateApp,
 	)
+	from press.press.doctype.release_group_server.release_group_server import ReleaseGroupServer
 
 # build_duration, pending_duration are Time fields, >= 1 day is invalid
 MAX_DURATION = timedelta(hours=23, minutes=59, seconds=59)
@@ -1157,8 +1158,13 @@ class DeployCandidateBuild(Document):
 		self._set_build_duration()
 
 	def create_deploy(self):
-		servers = frappe.get_doc("Release Group", self.group).servers
-		servers = [server.server for server in servers]
+		"""Create a new deploy for the servers of matching platform present on the release group"""
+		servers: list[ReleaseGroupServer] = frappe.get_doc("Release Group", self.group).servers
+		servers = [
+			server.server
+			for server in servers
+			if frappe.get_doc("Server", server.server, "platform") == self.platform
+		]
 		if not servers:
 			return None
 
@@ -1334,6 +1340,26 @@ def run_scheduled_builds(max_builds: int = 5):
 		except Exception:
 			frappe.db.rollback()
 			log_error(title="Scheduled Deploy Candidate Error", doc=doc)
+
+
+def create_arm_build_and_deploy(deploy_candidate_build: DeployCandidateBuild):
+	deploy_candidate = deploy_candidate_build.candidate.name
+
+	deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
+		{
+			"doctype": "Deploy Candidate Build",
+			"deploy_candidate": deploy_candidate,
+			"no_build": False,
+			"no_cache": False,
+			"no_push": False,
+			"platform": "arm64",
+		}
+	)
+	arm_build = deploy_candidate_build.insert()
+	# Even if arm_build is not required on this deploy candidate we still attach it here
+	# Since we don't want loose builds
+	frappe.db.set_value("Deploy Candidate", {"name": deploy_candidate}, "arm_build", arm_build.name)
+	return arm_build.name
 
 
 def check_builds_status(

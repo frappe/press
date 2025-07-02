@@ -1286,35 +1286,34 @@ class ReleaseGroup(Document, TagHelpers):
 		app_update_available = self.deploy_information().update_available
 		self.add_server(server, deploy=not app_update_available)
 
-	def get_last_successful_candidate_build(self) -> "DeployCandidateBuild":
-		return frappe.get_last_doc("Deploy Candidate Build", {"status": "Success", "group": self.name})
-
-	def get_last_deploy_candidate_build(self):
+	def get_last_successful_candidate_build(self, platform: str) -> DeployCandidateBuild | None:
 		try:
-			dc: "DeployCandidateBuild" = frappe.get_last_doc("Deploy Candidate Build", {"group": self.name})
-			return dc
+			return frappe.get_last_doc(
+				"Deploy Candidate Build", {"status": "Success", "group": self.name, "platform": platform}
+			)
 		except frappe.DoesNotExistError:
 			return None
 
-	def requires_new_platform_build(
-		self,
-		deploy_candidate_build: DeployCandidateBuild,
-		server: str,
-	) -> bool:
-		server_platform = frappe.get_value("Server", server, "platform")
-		return server_platform != deploy_candidate_build.platform
+	def get_last_deploy_candidate_build(self) -> DeployCandidateBuild:
+		try:
+			return frappe.get_last_doc("Deploy Candidate Build", {"group": self.name})
+		except frappe.DoesNotExistError:
+			return None
 
 	@frappe.whitelist()
 	def add_server(self, server: str, deploy=False):
 		self.append("servers", {"server": server, "default": False})
 		self.save()
 		if deploy:
-			last_successful_deploy_candidate_build = self.get_last_deploy_candidate_build()
+			server_platform = frappe.get_value("Server", server, "platform")
+			last_successful_deploy_candidate_build = self.get_last_successful_candidate_build(
+				platform=server_platform
+			)
 
-			if self.requires_new_platform_build(last_successful_deploy_candidate_build, server):
+			if not last_successful_deploy_candidate_build:
 				frappe.throw("No ARM builds present to be deployed!")
 
-			return self.get_last_successful_candidate_build()._create_deploy([server])
+			return last_successful_deploy_candidate_build._create_deploy([server])
 		return None
 
 	@frappe.whitelist()
