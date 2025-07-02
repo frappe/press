@@ -1648,6 +1648,11 @@ class Site(Document, TagHelpers):
 					"SSL certificate for the site has expired. Please check the domains tab.",
 					frappe.ValidationError,
 				)
+			elif "no space left on device" in str(e):
+				frappe.throw(
+					"Site is unresponsive due to no space left on device. Please contact support.",
+					frappe.ValidationError,
+				)
 			elif frappe.db.exists(
 				"Incident",
 				{
