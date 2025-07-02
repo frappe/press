@@ -318,6 +318,9 @@ class VirtualMachineMigration(Document):
 
 	def update_server_platform(self) -> StepStatus:
 		"""Update server platform"""
+		if "m6a" in self.machine.machine_type:
+			return StepStatus.Success
+
 		server = self.machine.get_server()
 		server.platform = "arm64"
 		server.save()
