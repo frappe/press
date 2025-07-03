@@ -860,16 +860,31 @@ class Site(Document, TagHelpers):
 				self.remote_private_file,
 			)
 		)
-		space_for_download = db_size + public_size + private_size
-		space_for_extracted_files = (
-			(0 if self.is_version_14_or_higher() else (8 * db_size)) + public_size + private_size
-		)  # 8 times db size for extraction; estimated
-		return space_for_download + space_for_extracted_files
+		return self.space_required_for_restoration_on_app_server(
+			db_file_size=db_size, public_file_size=public_size, private_file_size=private_size
+		)
 
 	@property
 	def space_required_on_db_server(self):
+		if not self.remote_database_file:
+			return 0
 		db_size = frappe.get_doc("Remote File", self.remote_database_file).size
-		return 8 * db_size * 2  # double extracted size for binlog
+		return self.space_required_for_restoration_on_db_server(db_file_size=db_size)
+
+	def space_required_for_restoration_on_app_server(
+		self, db_file_size: int = 0, public_file_size: int = 0, private_file_size: int = 0
+	) -> int:
+		space_for_download = db_file_size + public_file_size + private_file_size
+		space_for_extracted_files = (
+			(0 if self.is_version_14_or_higher() else (8 * db_file_size))
+			+ public_file_size
+			+ private_file_size
+		)  # 8 times db size for extraction; estimated
+		return space_for_download + space_for_extracted_files
+
+	def space_required_for_restoration_on_db_server(self, db_file_size: int = 0) -> int:
+		"""Returns the space required on the database server for restoration."""
+		return 8 * db_file_size * 2  # double for binlogs
 
 	def check_and_increase_disk(self, server: "BaseServer", space_required: int):
 		mountpoint = server.guess_data_disk_mountpoint()
@@ -1000,7 +1015,10 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def restore_site(self, skip_failing_patches=False):
-		if not frappe.get_doc("Remote File", self.remote_database_file).exists():
+		if (
+			self.remote_database_file
+			and not frappe.get_doc("Remote File", self.remote_database_file).exists()
+		):
 			raise Exception(f"Remote File {self.remote_database_file} is unavailable on S3")
 
 		agent = Agent(self.server)
