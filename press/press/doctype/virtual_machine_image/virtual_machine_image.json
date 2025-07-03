@@ -163,14 +163,14 @@
   },
   {
    "fieldname": "object_storage_uri",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Object Storage URI"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-03 12:40:38.183361",
+ "modified": "2025-07-03 13:15:16.427597",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",
