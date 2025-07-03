@@ -448,7 +448,7 @@ class TestReleaseGroup(unittest.TestCase):
 		f1_server.save()
 		f2_server.save()
 
-		rg = create_test_release_group([create_test_app()], servers=[f1_server])
+		rg = create_test_release_group([create_test_app()], servers=[f1_server.name])
 
 		with self.assertRaises(frappe.ValidationError):
 			# No previous builds present
