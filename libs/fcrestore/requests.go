@@ -12,6 +12,7 @@ import (
 )
 
 var debugLogFile *os.File
+var sessionFile = "session_v2.json"
 
 func init() {
 	if os.Getenv("DEBUG") == "1" {
@@ -52,10 +53,9 @@ type Team struct {
 }
 
 func GetSession() Session {
-	const sessionFile = "session_v2.json"
 	defaultServer := "frappecloud.com"
 
-	// Check if session.json exists
+	// Check if session file exists
 	if fileExists(sessionFile) {
 		data, err := os.ReadFile(sessionFile)
 		if err == nil {
@@ -99,7 +99,7 @@ func (s *Session) Save() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile("session.json", data, 0644)
+	return os.WriteFile(sessionFile, data, 0644)
 }
 
 func (s *Session) SendRequest(method string, payload map[string]any) (map[string]any, error) {
