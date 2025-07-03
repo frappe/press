@@ -764,17 +764,21 @@ class DatabaseServer(BaseServer):
 				self.is_primary = True
 				old_primary = self.primary
 				self.primary = None
-				servers = frappe.get_all("Server", {"database_server": old_primary})
-				for server in servers:
-					server = frappe.get_doc("Server", server.name)
-					server.database_server = self.name
-					server.save()
 			else:
 				self.status = "Broken"
 		except Exception:
 			self.status = "Broken"
 			log_error("Database Server Failover Exception", server=self.as_dict())
 		self.save()
+		self._update_db_reference_for_app_server(old_primary)
+
+	def _update_db_reference_for_app_server(self, old_primary):
+		"""Configure the old primary server after failover"""
+		servers = frappe.get_all("Server", {"database_server": old_primary})
+		for server in servers:
+			server = frappe.get_doc("Server", server.name)
+			server.database_server = self.name
+			server.save()
 
 	@frappe.whitelist()
 	def trigger_failover(self):
