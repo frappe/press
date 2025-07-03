@@ -52,7 +52,7 @@ type Team struct {
 }
 
 func GetSession() Session {
-	const sessionFile = "session.json"
+	const sessionFile = "session_v2.json"
 	defaultServer := "frappecloud.com"
 
 	// Check if session.json exists
