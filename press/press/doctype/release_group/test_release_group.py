@@ -420,3 +420,49 @@ class TestReleaseGroup(unittest.TestCase):
 
 		release_group.append("apps", {"app": erpnext.name, "source": erpnext_app_source.name})
 		release_group.insert()
+
+	@patch.object(frappe, "enqueue_doc", new=Mock())
+	def test_multiple_platform_server_addition(self):
+		def create_build_and_succeed(release_group: ReleaseGroup):
+			deploy_candidate = release_group.create_deploy_candidate()
+			response = deploy_candidate.build()
+			deploy_candidate_name = response["message"]
+			frappe.db.set_value("Deploy Candidate Build", deploy_candidate_name, "status", "Success")
+
+		from press.press.doctype.cluster.test_cluster import create_test_cluster
+		from press.press.doctype.proxy_server.test_proxy_server import (
+			create_test_proxy_server,
+		)
+		from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
+		from press.press.doctype.server.test_server import create_test_server
+
+		cluster = create_test_cluster("Default", public=True)
+		root_domain = create_test_root_domain("local.fc.frappe.dev")
+		n1_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
+
+		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name, use_for_build=True)
+		f2_server = create_test_server(
+			cluster=cluster.name, proxy_server=n1_server.name, platform="arm64", use_for_build=True
+		)
+
+		f1_server.save()
+		f2_server.save()
+
+		rg = create_test_release_group([create_test_app()], servers=[f1_server])
+
+		with self.assertRaises(frappe.ValidationError):
+			# No previous builds present
+			rg.add_server(f2_server.name, True)
+
+		create_build_and_succeed(rg)
+
+		# This server addition created a deploy candidate build
+		rg.add_server(f2_server.name, True)
+		arm_build = frappe.get_value("Deploy Candidate Build", {"group": rg.name, "platform": "arm64"})
+
+		self.assertTrue(arm_build)
+
+		# Assert added deploy candidate build has a `deploy on server` field
+		self.assertEqual(
+			frappe.get_value("Deploy Candidate Build", arm_build, "deploy_on_server"), f2_server.name
+		)

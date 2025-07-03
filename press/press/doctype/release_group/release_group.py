@@ -1305,9 +1305,6 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def add_server(self, server: str, deploy=False):
-		self.append("servers", {"server": server, "default": False})
-		self.save()
-
 		if not deploy:
 			return None
 
@@ -1319,11 +1316,21 @@ class ReleaseGroup(Document, TagHelpers):
 		if not last_successful_deploy_candidate_build:
 			# No build of this platform is available creating new build
 			last_candidate_build = self.get_last_successful_candidate_build()
+
+			if not last_candidate_build:
+				frappe.throw("No build present for this release group", frappe.ValidationError)
+
+			self.append("servers", {"server": server, "default": False})
+			self.save()
+
 			return create_platform_build_and_deploy(
 				deploy_candidate=last_candidate_build.candidate.name,
 				server=server,
 				platform=server_platform,
 			)
+
+		self.append("servers", {"server": server, "default": False})
+		self.save()
 
 		return last_successful_deploy_candidate_build._create_deploy([server])
 
