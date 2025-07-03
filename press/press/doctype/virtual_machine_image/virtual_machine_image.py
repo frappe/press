@@ -7,7 +7,12 @@ import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
 from oci.core import ComputeClient
-from oci.core.models import CreateImageDetails
+from oci.core.models import (
+	CreateImageDetails,
+)
+from oci.core.models.image_source_via_object_storage_uri_details import (
+	ImageSourceViaObjectStorageUriDetails,
+)
 from tenacity import retry, stop_after_attempt, wait_fixed
 from tenacity.retry import retry_if_result
 
@@ -31,6 +36,7 @@ class VirtualMachineImage(Document):
 		image_id: DF.Data | None
 		instance_id: DF.Data
 		mariadb_root_password: DF.Password | None
+		object_storage_uri: DF.Data | None
 		platform: DF.Data | None
 		public: DF.Check
 		region: DF.Link
@@ -63,11 +69,18 @@ class VirtualMachineImage(Document):
 			)
 			self.image_id = response["ImageId"]
 		elif cluster.cloud_provider == "OCI":
+			if self.object_storage_uri:
+				object_storage_details = {
+					"image_source_details": ImageSourceViaObjectStorageUriDetails(
+						source_uri=self.object_storage_uri
+					)
+				}
 			image = self.client.create_image(
 				CreateImageDetails(
 					compartment_id=cluster.oci_tenancy,
 					display_name=f"Frappe Cloud {self.name} - {self.virtual_machine}",
 					instance_id=self.instance_id,
+					**object_storage_details,
 				)
 			).data
 			self.image_id = image.id
