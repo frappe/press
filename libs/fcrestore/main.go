@@ -57,6 +57,12 @@ func main() {
 			fmt.Println("Login cancelled.")
 			return
 		}
+		session.LoginEmail = email
+		is2FAEnabled, err := session.Is2FAEnabled()
+		if err != nil {
+			fmt.Println("Error checking 2FA status: " + err.Error())
+			return
+		}
 		err = session.SendLoginVerificationCode(email)
 		if err != nil {
 			fmt.Println("Error logging in: " + err.Error())
@@ -73,6 +79,24 @@ func main() {
 			fmt.Println("Login cancelled.")
 			return
 		}
+		// Ask for 2FA code if enabled
+		if is2FAEnabled {
+			totpCode, err := tui.AskInput("Enter the 2FA code", "123456")
+			if err != nil {
+				fmt.Println("Error logging in: " + err.Error())
+				return
+			}
+			if totpCode == "" {
+				fmt.Println("Login cancelled.")
+				return
+			}
+			err = session.Verify2FA(totpCode)
+			if err != nil {
+				fmt.Println("Error verifying 2FA code: " + err.Error())
+				return
+			}
+		}
+		// Log in with the verification code
 		err = session.Login(code)
 		if err != nil {
 			fmt.Println("Error logging in: " + err.Error())

@@ -11,12 +11,31 @@ import (
 	"strings"
 )
 
+var debugLogFile *os.File
+
+func init() {
+	if os.Getenv("DEBUG") == "1" {
+		var err error
+		debugLogFile, err = os.OpenFile("debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			debugLogFile = nil
+		}
+	}
+}
+
+func DebugLogger(format string, args ...any) {
+	if debugLogFile != nil {
+		fmt.Fprintf(debugLogFile, format, args...)
+	}
+}
+
 type Session struct {
 	Server           string            `json:"server"`
 	SessionID        string            `json:"session_id"`
 	LoginEmail       string            `json:"login_email"`
 	CurrentTeam      string            `json:"current_team"`
 	CurrentTeamTitle string            `json:"current_team_title"`
+	TwoFactorState   map[string]bool   `json:"two_factor_state"` // Track 2FA state for each team
 	Teams            []Team            `json:"teams"`
 	UploadedFiles    map[string]string `json:"uploaded_files"`
 	/*
@@ -62,6 +81,7 @@ func GetSession() Session {
 		LoginEmail:       "",
 		CurrentTeam:      "",
 		CurrentTeamTitle: "",
+		TwoFactorState:   make(map[string]bool),
 		Teams:            []Team{},
 		UploadedFiles:    make(map[string]string),
 	}
@@ -115,7 +135,7 @@ func (s *Session) SendRequest(method string, payload map[string]any) (map[string
 	defer resp.Body.Close()
 
 	// Handle 417 status specially
-	if resp.StatusCode == http.StatusExpectationFailed {
+	if resp.StatusCode == http.StatusExpectationFailed || resp.StatusCode == http.StatusUnauthorized {
 		var errorPayload struct {
 			ExcType        string `json:"exc_type"`
 			ServerMessages string `json:"_server_messages"`
@@ -145,14 +165,19 @@ func (s *Session) SendRequest(method string, payload map[string]any) (map[string
 
 	if resp.StatusCode != http.StatusOK {
 		if os.Getenv("DEBUG") == "1" {
-			fmt.Printf("Request failed with status: %s\n", resp.Status)
-			fmt.Printf("Request URL: %s\n", req.URL.String())
+			DebugLogger("Request Failed")
+			DebugLogger("Status Code: %d\n", resp.StatusCode)
+			DebugLogger("URL: %s\n", req.URL.String())
+			DebugLogger("Method: %s\n", req.Method)
+			DebugLogger("Headers: %v\n", req.Header)
+			DebugLogger("Request Body: %s\n", string(data))
 			// Read the response body to provide more context in the error
 			bodyBytes, err := io.ReadAll(resp.Body)
 			if err == nil {
 				bodyString := string(bodyBytes)
-				fmt.Printf("Response body: %s\n", bodyString)
+				DebugLogger("Response body: %s\n", bodyString)
 			}
+			DebugLogger("\n\n")
 		}
 		return nil, fmt.Errorf("request failed with status: %s", resp.Status)
 	}
@@ -192,6 +217,61 @@ func (s *Session) SendLoginVerificationCode(email string) error {
 		"email": s.LoginEmail,
 	})
 	return err
+}
+
+func (s *Session) Is2FAEnabled() (bool, error) {
+	// Check if we already have the 2FA state for this user
+	if state, exists := s.TwoFactorState[s.LoginEmail]; exists {
+		return state, nil
+	}
+	if s.LoginEmail == "" {
+		return false, fmt.Errorf("login email is not set")
+	}
+	// Check if 2FA is enabled for the user
+	resp, err := s.SendRequest("press.api.account.is_2fa_enabled", map[string]any{
+		"user": s.LoginEmail,
+	})
+	if err != nil {
+		return false, fmt.Errorf("error checking 2FA status: %w", err)
+	}
+	// grab the message field
+	message, ok := resp["message"].(bool)
+	if !ok {
+		return false, fmt.Errorf("response does not contain 'message'")
+	}
+	// Cache the 2FA state for the user
+	// Because the endpoint rate limited highly
+	// Every hour only 10 requests are allowed
+	s.TwoFactorState[s.LoginEmail] = message
+	if err := s.Save(); err != nil {
+		return false, fmt.Errorf("failed to save session after checking 2FA status: %w", err)
+	}
+	return message, nil
+}
+
+func (s *Session) Verify2FA(totp_code string) error {
+	if s.LoginEmail == "" {
+		return fmt.Errorf("login email is not set")
+	}
+	resp, err := s.SendRequest("press.api.account.verify_2fa", map[string]any{
+		"user":      s.LoginEmail,
+		"totp_code": totp_code,
+	})
+	if err != nil {
+		return fmt.Errorf("error verifying 2FA OTP: %w", err)
+	}
+
+	// Check if the response contains a message
+	verified, ok := resp["message"].(bool)
+	if !ok {
+		return fmt.Errorf("response does not contain 'message'")
+	}
+
+	if !verified {
+		return fmt.Errorf("2FA verification failed, provided code might be incorrect")
+	}
+
+	return nil
 }
 
 func (s *Session) Login(otp string) error {
