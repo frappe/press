@@ -9,6 +9,7 @@ from functools import cached_property
 from typing import TYPE_CHECKING
 
 import frappe
+import requests
 from frappe.types.DF import Phone
 from frappe.utils import cint
 from frappe.utils.background_jobs import enqueue_doc
@@ -268,6 +269,14 @@ class Incident(WebsiteGenerator):
 			self.update_high_io_server_issue()
 
 	def identify_problem(self):
+		if site := self.get_down_site():
+			try:
+				ret = requests.get(f"https://{site}/api/method/ping", timeout=10)
+			except requests.RequestException as e:
+				self.add_description(f"Error pinging sample site {site}: {e!s}")
+			else:
+				self.add_description(f"Ping response for sample site {site}: {ret.status_code} {ret.reason}")
+
 		if not self.resource:
 			return
 			# TODO: Try random shit if resource isn't identified
