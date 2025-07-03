@@ -193,7 +193,7 @@ func main() {
 	spinner = tui.ShowSpinner("Checking Space on Server", func() {})
 	defer spinner.Done()
 
-	result, err := session.CheckSpaceOnserver(selectedSite, fileUploads["database"], fileUploads["private"], fileUploads["public"])
+	result, err := session.CheckSpaceOnserver(selectedSite, fileUploads["database"], fileUploads["public"], fileUploads["private"])
 	if err != nil {
 		fmt.Println("Error validating restoration space requirements:", err.Error())
 		return
@@ -307,7 +307,7 @@ func main() {
 		// Proceed with restoration
 		spinner = tui.ShowSpinner("Restoring site...", func() {
 		})
-		err = session.RestoreSite(selectedSite, fileUploads["database"], fileUploads["private"], fileUploads["public"], skipFailingPatches)
+		err = session.RestoreSite(selectedSite, fileUploads["database"], fileUploads["public"], fileUploads["private"], skipFailingPatches)
 		if err != nil {
 			spinner.Done()
 			time.Sleep(1 * time.Second)
