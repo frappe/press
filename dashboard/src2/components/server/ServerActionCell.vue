@@ -50,6 +50,8 @@ function getServerActionHandler(action) {
 		'Reboot server': onRebootServer,
 		'Rename server': onRenameServer,
 		'Drop server': onDropServer,
+		'Disable Automatic Disk Expansion': onDisableAutoDiskExpansion,
+		'Enable Automatic Disk Expansion': onEnableAutoDiskExpansion,
 		'Enable Performance Schema': onEnablePerformanceSchema,
 		'Disable Performance Schema': onDisablePerformanceSchema,
 		'Update InnoDB Buffer Pool Size': onUpdateInnodbBufferPoolSize,
@@ -124,6 +126,64 @@ function onRenameServer() {
 					loading: 'Updating title...',
 					success: 'Title updated',
 					error: 'Failed to update title',
+				},
+			);
+		},
+	});
+}
+
+function onEnableAutoDiskExpansion() {
+	confirmDialog({
+		title: 'Enable automatic storage disk expansion',
+		message: `<div class="prose text-base">Enable auto add on storage?</div>`,
+		primaryAction: {
+			label: 'Enable',
+			theme: 'green',
+		},
+		onSuccess({ hide, values }) {
+			if (server.toggleAutoIncreaseStorage.loading) return;
+			toast.promise(
+				server.toggleAutoIncreaseStorage.submit(
+					{ enable: true },
+					{
+						onSuccess() {
+							hide();
+						},
+					},
+				),
+				{
+					loading: 'Enabling auto disk expansion...',
+					success: 'Enabling',
+					error: 'Failed to enable auto disk expansion',
+				},
+			);
+		},
+	});
+}
+
+function onDisableAutoDiskExpansion() {
+	confirmDialog({
+		title: 'Disable automatic storage disk expansion',
+		message: `<div class="prose text-base">Disable auto add on storage?</div>`,
+		primaryAction: {
+			label: 'Disable',
+			theme: 'red',
+		},
+		onSuccess({ hide, values }) {
+			if (server.toggleAutoIncreaseStorage.loading) return;
+			toast.promise(
+				server.toggleAutoIncreaseStorage.submit(
+					{ enable: false },
+					{
+						onSuccess() {
+							hide();
+						},
+					},
+				),
+				{
+					loading: 'Disabling auto disk expansion...',
+					success: 'Disabled',
+					error: 'Failed to disable auto disk expansion',
 				},
 			);
 		},

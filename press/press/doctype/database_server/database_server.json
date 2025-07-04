@@ -31,6 +31,7 @@
   "plan",
   "auto_add_storage_min",
   "auto_add_storage_max",
+  "auto_increase_storage",
   "networking_section",
   "ip",
   "column_break_10",
@@ -268,11 +269,11 @@
    "set_only_once": 1
   },
   {
-   "depends_on": "eval:[\"AWS EC2\", \"OCI\"].includes(doc.provider)",
+   "depends_on": "eval:doc.provider === \"AWS EC2\"",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
-   "mandatory_depends_on": "eval:[\"AWS EC2\", \"OCI\"].includes(doc.provider)",
+   "mandatory_depends_on": "eval:doc.provider === \"AWS EC2\"",
    "options": "Virtual Machine"
   },
   {
@@ -591,6 +592,12 @@
    "fieldtype": "Check",
    "hidden": 1,
    "label": "Binlogs Removed"
+  },
+  {
+   "default": "1",
+   "fieldname": "auto_increase_storage",
+   "fieldtype": "Check",
+   "label": "Auto Increase Storage"
   }
  ],
  "grid_page_length": 50,
@@ -607,7 +614,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-06-13 12:51:58.756907",
+ "modified": "2025-06-30 15:28:31.177218",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

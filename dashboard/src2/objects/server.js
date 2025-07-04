@@ -15,6 +15,7 @@ export default {
 		increaseDiskSize: 'increase_disk_size_for_server',
 		configureAutoAddStorage: 'configure_auto_add_storage',
 		changePlan: 'change_plan',
+		toggleAutoIncreaseStorage: 'toggle_auto_increase_storage',
 		reboot: 'reboot',
 		rename: 'rename',
 		dropServer: 'drop_server',

@@ -1,0 +1,31 @@
+{% import "templates/emails/macros.html" as utils %} {% extends
+"templates/emails/base.html" %} {% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+	<div class="p-8 bg-white from-markdown">
+		<p class="mb-4 font-bold">
+			Server <strong>{{ server }}</strong> has used more that 90% of storage
+			available.
+		</p>
+		<p class="mb-6">
+			Your server has currently used {{ current_disk_usage }} of the available
+			{{ available_disk_space }}
+			<br />
+			To ensure that the server is not overloaded we recommend increasing the
+			storage by <strong>{{ increase_by }}</strong><br />
+			<br />
+
+			To enable auto disk expansion please refer the following
+			<a href="https://frappecloud.com/docs" target="_blank"
+				><b>documentation</b></a
+			><br />
+
+			<strong>Need Help ?</strong><br />
+			Please reach out to us via the support portal for any queries.
+		</p>
+
+		{{ utils.separator() }} {{ utils.signature() }}
+	</div>
+</td>
+
+{% endblock %}

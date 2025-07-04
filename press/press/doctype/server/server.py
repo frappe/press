@@ -192,6 +192,33 @@ class BaseServer(Document, TagHelpers):
 				"doc_method": "reboot",
 				"group": f"{server_type.title()} Actions",
 			},
+		]
+
+		server: Server | DatabaseServer = frappe.get_doc(self.doctype, self.name)
+		if server.auto_increase_storage:
+			actions.append(
+				{
+					"action": "Disable Automatic Disk Expansion",
+					"description": "Disable the automatic increase of disk size when the server runs out of space.",
+					"button_label": "Disable",
+					"condition": self.status == "Active" and self.doctype == "Server",
+					"doc_method": "toggle_auto_increase_storage",
+					"group": "Dangerous Actions",
+				}
+			)
+		else:
+			actions.append(
+				{
+					"action": "Enable Automatic Disk Expansion",
+					"description": "Enable the automatic increase of disk size when the server runs out of space.",
+					"button_label": "Enable",
+					"condition": self.status == "Active" and self.doctype == "Server",
+					"doc_method": "toggle_auto_increase_storage",
+					"group": "Dangerous Actions",
+				}
+			)
+
+		actions.append(
 			{
 				"action": "Drop server",
 				"description": "Drop both the application and database servers",
@@ -200,7 +227,7 @@ class BaseServer(Document, TagHelpers):
 				"doc_method": "drop_server",
 				"group": "Dangerous Actions",
 			},
-		]
+		)
 
 		for action in actions:
 			action["server_doctype"] = self.doctype
@@ -208,18 +235,31 @@ class BaseServer(Document, TagHelpers):
 
 		return [action for action in actions if action.get("condition", True)]
 
-	@dashboard_whitelist()
-	def drop_server(self):
+	def _get_app_and_database_servers(self) -> tuple[Server, DatabaseServer]:
 		if self.doctype == "Database Server":
 			app_server_name = frappe.db.get_value("Server", {"database_server": self.name}, "name")
 			app_server = frappe.get_doc("Server", app_server_name)
-			db_server = self
-		else:
-			app_server = self
-			db_server = frappe.get_doc("Database Server", self.database_server)
+			return app_server, self
 
+		db_server = frappe.get_doc("Database Server", self.database_server)
+		return self, db_server
+
+	@dashboard_whitelist()
+	def drop_server(self):
+		app_server, db_server = self._get_app_and_database_servers()
 		app_server.archive()
 		db_server.archive()
+
+	@dashboard_whitelist()
+	def toggle_auto_increase_storage(self, enable: bool):
+		"""Toggle auto disk increase."""
+		app_server, database_server = self._get_app_and_database_servers()
+
+		app_server.auto_increase_storage = enable
+		database_server.auto_increase_storage = enable
+
+		app_server.save()
+		database_server.save()
 
 	def autoname(self):
 		if not self.domain:
@@ -1456,9 +1496,48 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		mountpoint: str | None = None,
 	):
 		telegram = Telegram("Information")
+
 		buffer = self.size_to_increase_by_for_20_percent_available(mountpoint)
+		server: Server | DatabaseServer = frappe.get_doc(self.doctype, self.name)
+		notify_email = frappe.get_value("Team", server.team, "notify_email")
+		disk_capacity = self.disk_capacity(mountpoint)
+		current_disk_usage = disk_capacity - self.free_space(mountpoint)
+
+		if not server.auto_increase_storage:
+			telegram.send(
+				f"Not increasing disk (mount point {mountpoint}) on "
+				f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
+				f"by {buffer + additional}G as auto disk increase disabled by user"
+			)
+			frappe.sendmail(
+				recipients=notify_email,
+				subject=f"Important: Server {server.name} storage space at 90%",
+				template="disabled_auto_disk_expansion",
+				args={
+					"sever": server.name,
+					"current_disk_usage": f"{current_disk_usage} GiB",
+					"available_disk_space": f"{disk_capacity} GiB",
+					"increase_by": f"{buffer + additional} GiB",
+				},
+			)
+			return
+
 		telegram.send(
-			f"Increasing disk (mount point {mountpoint})on [{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) by {buffer + additional}G"
+			f"Increasing disk (mount point {mountpoint}) on "
+			f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
+			f"by {buffer + additional}G"
+		)
+
+		frappe.sendmail(
+			recipients=notify_email,
+			subject=f"Important: Server {server.name} storage space at 90%",
+			template="enabled_auto_disk_expansion",
+			args={
+				"sever": server.name,
+				"current_disk_usage": f"{current_disk_usage} GiB",
+				"available_disk_space": f"{disk_capacity} GiB",
+				"increase_by": f"{buffer + additional} GiB",
+			},
 		)
 		self.increase_disk_size_for_server(self.name, buffer + additional, mountpoint)
 
@@ -1584,6 +1663,7 @@ class Server(BaseServer):
 		agent_password: DF.Password | None
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
+		auto_increase_storage: DF.Check
 		cluster: DF.Link | None
 		database_server: DF.Link | None
 		disable_agent_job_auto_retry: DF.Check
