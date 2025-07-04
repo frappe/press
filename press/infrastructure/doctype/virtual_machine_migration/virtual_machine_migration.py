@@ -333,13 +333,14 @@ class VirtualMachineMigration(Document):
 			{"status": "Active", "server": self.machine.name},
 			pluck="name",
 		)
-		container_names = " ".join(container_names)
-		command = f"docker rm -f {container_names}"
-		result = self.ansible_run(command)
+		if container_names:
+			container_names = " ".join(container_names)
+			command = f"docker rm -f {container_names}"
+			result = self.ansible_run(command)
 
-		if result["status"] != "Success" or result["error"]:
-			self.add_comment(text=f"Error stoping docker: {result}")
-			return StepStatus.Failure
+			if result["status"] != "Success" or result["error"]:
+				self.add_comment(text=f"Error stoping docker: {result}")
+				return StepStatus.Failure
 
 		return StepStatus.Success
 
