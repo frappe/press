@@ -35,8 +35,11 @@ class Plan(Document):
 		if not fields:
 			fields = ["*"]
 
+		filters.update(
+			{"use_for_plan_change" if filters.get("platform") else "enabled": True},
+		)
+
 		fields.append("`tabHas Role`.role")
-		filters.update({"enabled": True})
 		plans = frappe.get_all(doctype, filters=filters, fields=fields, order_by="price_usd asc")
 		return filter_by_roles(plans)
 
