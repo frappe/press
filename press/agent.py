@@ -5,6 +5,7 @@ from __future__ import annotations
 import _io  # type: ignore
 import json
 import os
+import re
 from contextlib import suppress
 from datetime import date
 from typing import TYPE_CHECKING
@@ -34,6 +35,9 @@ if TYPE_CHECKING:
 	)
 	from press.press.doctype.site.site import Site
 	from press.press.doctype.site_backup.site_backup import SiteBackup
+
+
+APPS_LIST_REGEX = re.compile(r"\[.*\]")
 
 
 class Agent:
@@ -1287,8 +1291,10 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		)
 
 		try:
-			apps: list[str] = json.loads(raw_apps_list["data"])
-		except json.JSONDecodeError:
+			raw_apps = raw_apps_list["data"]
+			apps = APPS_LIST_REGEX.findall(raw_apps)[0]
+			apps: list[str] = json.loads(apps)
+		except (json.JSONDecodeError, IndexError):
 			apps: list[str] = [line.split()[0] for line in raw_apps_list["data"].splitlines() if line]
 
 		return apps
