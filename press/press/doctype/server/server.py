@@ -297,7 +297,6 @@ class BaseServer(Document, TagHelpers):
 		if not self.public:
 			frappe.throw("Action only allowed for public servers")
 
-		self.add_server_to_public_groups()
 		server = self.get_server_enabled_for_new_benches_and_sites()
 
 		if server:
@@ -643,7 +642,7 @@ class BaseServer(Document, TagHelpers):
 			return "/"
 
 		volumes = self.get_volume_mounts()
-		if volumes:
+		if volumes or self.has_data_volume:
 			if self.doctype == "Server":
 				mountpoint = "/opt/volumes/benches"
 			elif self.doctype == "Database Server":

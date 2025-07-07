@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta
-from typing import Iterable
+from typing import TYPE_CHECKING
 
 import boto3
 import frappe
@@ -12,6 +12,9 @@ from frappe.core.utils import find
 from frappe.model.document import Document
 
 from press.utils import log_error
+
+if TYPE_CHECKING:
+	from collections.abc import Iterable
 
 
 class RootDomain(Document):
@@ -28,6 +31,7 @@ class RootDomain(Document):
 		default_cluster: DF.Link
 		default_proxy_server: DF.Link | None
 		dns_provider: DF.Literal["AWS Route 53", "Generic"]
+		enabled: DF.Check
 		team: DF.Link | None
 	# end: auto-generated types
 

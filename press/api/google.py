@@ -76,6 +76,19 @@ def callback(code=None, state=None):  # noqa: C901
 
 	# if team exitst and  oauth is not using in saas login/signup flow
 	if team_name and not product_trial:
+		has_2fa = frappe.db.get_value("User 2FA", {"user": email, "enabled": 1})
+		if has_2fa:
+			# redirect to 2fa page
+			frappe.respond_as_web_page(
+				_("Two-Factor Authentication Required"),
+				_(
+					"Google OAuth login doesn't support 2FA. Please login using your email and verification code / password."
+				),
+				primary_action="/dashboard/login",
+				primary_label=_("Login with Email"),
+			)
+			return None
+
 		# login to existing account
 		frappe.local.login_manager.login_as(email)
 		frappe.local.response.type = "redirect"

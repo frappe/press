@@ -13,14 +13,14 @@
 				<div>
 					<h3 class="text-lg">Restore</h3>
 					<p class="mt-1 text-base text-gray-600">
-						Restore your database using a previous backup
+						Restore your site using a previous backup
 					</p>
 				</div>
 				<Tooltip
 					:text="
 						!permissions.restore
 							? `You don't have enough permissions to perform this action`
-							: 'Restore Database'
+							: 'Restore Site'
 					"
 				>
 					<Button
@@ -125,9 +125,9 @@
 						variant: 'solid',
 						theme: 'red',
 						loading: $resources.migrateDatabase.loading,
-						onClick: migrateDatabase
-					}
-				]
+						onClick: migrateDatabase,
+					},
+				],
 			}"
 			v-model="showMigrateDialog"
 			@close="
@@ -175,17 +175,15 @@
 						label: 'Restore',
 						variant: 'solid',
 						loading: $resources.restoreBackup.loading,
-						onClick: () => $resources.restoreBackup.submit()
-					}
-				]
+						onClick: () => $resources.restoreBackup.submit(),
+					},
+				],
 			}"
 			v-model="showRestoreDialog"
 		>
 			<template v-slot:body-content>
 				<div class="space-y-4">
-					<p class="text-base">
-						Restore your database using a previous backup.
-					</p>
+					<p class="text-base">Restore your site using a previous backup.</p>
 					<BackupFilesUploader v-model:backupFiles="selectedFiles" />
 				</div>
 				<p class="mt-4 text-base">
@@ -224,9 +222,9 @@
 						variant: 'solid',
 						theme: 'red',
 						loading: $resources.resetDatabase.loading,
-						onClick: () => $resources.resetDatabase.submit()
-					}
-				]
+						onClick: () => $resources.resetDatabase.submit(),
+					},
+				],
 			}"
 			v-model="showResetDialog"
 		>
@@ -256,7 +254,7 @@ export default {
 	components: {
 		FileUploader,
 		BackupFilesUploader,
-		DatabaseAccessDialog
+		DatabaseAccessDialog,
 	},
 	props: ['site'],
 	data() {
@@ -269,9 +267,9 @@ export default {
 			selectedFiles: {
 				database: null,
 				public: null,
-				private: null
+				private: null,
 			},
-			wantToSkipFailingPatches: false
+			wantToSkipFailingPatches: false,
 		};
 	},
 	resources: {
@@ -281,7 +279,7 @@ export default {
 				params: {
 					name: this.site?.name,
 					files: this.selectedFiles,
-					skip_failing_patches: this.wantToSkipFailingPatches
+					skip_failing_patches: this.wantToSkipFailingPatches,
 				},
 				validate() {
 					if (this.confirmSiteName !== this.site?.name) {
@@ -297,14 +295,14 @@ export default {
 					setTimeout(() => {
 						window.location.reload();
 					}, 1000);
-				}
+				},
 			};
 		},
 		resetDatabase() {
 			return {
 				url: 'press.api.site.reinstall',
 				params: {
-					name: this.site?.name
+					name: this.site?.name,
 				},
 				validate() {
 					if (this.confirmSiteName !== this.site?.name) {
@@ -316,14 +314,14 @@ export default {
 					setTimeout(() => {
 						window.location.reload();
 					}, 1000);
-				}
+				},
 			};
 		},
 		migrateDatabase() {
 			return {
 				url: 'press.api.site.migrate',
 				params: {
-					name: this.site?.name
+					name: this.site?.name,
 				},
 				validate() {
 					if (this.confirmSiteName !== this.site?.name) {
@@ -333,37 +331,37 @@ export default {
 				onSuccess() {
 					this.$router.push({
 						name: 'SiteOverview',
-						params: { site: this.site?.name }
+						params: { site: this.site?.name },
 					});
 					setTimeout(() => {
 						window.location.reload();
 					}, 1000);
-				}
+				},
 			};
 		},
 		clearCache() {
 			return {
 				url: 'press.api.site.clear_cache',
 				params: {
-					name: this.site?.name
+					name: this.site?.name,
 				},
 				onSuccess() {
 					this.$router.push({
 						name: 'SiteOverview',
-						params: { site: this.site?.name }
+						params: { site: this.site?.name },
 					});
 					setTimeout(() => {
 						window.location.reload();
 					}, 1000);
-				}
+				},
 			};
-		}
+		},
 	},
 	methods: {
 		migrateDatabase() {
 			this.$resources.migrateDatabase.submit({
 				name: this.site.name,
-				skip_failing_patches: this.wantToSkipFailingPatches
+				skip_failing_patches: this.wantToSkipFailingPatches,
 			});
 		},
 		confirmClearCache() {
@@ -375,37 +373,37 @@ export default {
 				`,
 				actionLabel: 'Clear Cache',
 				actionColor: 'red',
-				action: closeDialog => {
+				action: (closeDialog) => {
 					this.$resources.clearCache.submit();
 					closeDialog();
-				}
+				},
 			});
-		}
+		},
 	},
 	computed: {
 		permissions() {
 			return {
 				migrate: this.$account.hasPermission(
 					this.site.name,
-					'press.api.site.migrate'
+					'press.api.site.migrate',
 				),
 				restore: this.$account.hasPermission(
 					this.site.name,
-					'press.api.site.restore'
+					'press.api.site.restore',
 				),
 				reset: this.$account.hasPermission(
 					this.site.name,
-					'press.api.site.reset'
+					'press.api.site.reset',
 				),
 				access: this.$account.hasPermission(
 					this.site.name,
-					'press.api.site.enable_database_access'
-				)
+					'press.api.site.enable_database_access',
+				),
 			};
 		},
 		filesUploaded() {
 			return this.selectedFiles.database;
-		}
-	}
+		},
+	},
 };
 </script>

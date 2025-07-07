@@ -217,12 +217,12 @@ const daysUntilRenewal = computed(() => {
 });
 
 function isRenewalPeriod() {
-	// 15 days before renewal date
+	// 30 days before and after renewal date
 	const renewal = dayjs(partnerDetails.data?.end_date);
 	const today = dayjs();
 	const daysDifference = renewal.diff(today, 'days');
 
-	return Boolean(daysDifference >= 0 && daysDifference <= 30);
+	return Boolean(daysDifference >= -30 && daysDifference <= 30);
 }
 
 const currentMonthContribution = createResource({

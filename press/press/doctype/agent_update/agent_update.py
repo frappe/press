@@ -166,7 +166,7 @@ class AgentUpdate(Document):
 
 		# Set commit message
 		if not self.commit_message:
-			self.commit_message = self.fetch_commit_message(self.commit_hash)
+			self.commit_message = self.fetch_commit_message(self.commit_hash)[:130]
 
 		# Verify rollback commit hash
 		if self.auto_rollback_changes and self.rollback_to_specific_commit:

@@ -135,7 +135,11 @@ export default {
 					server:
 						serverType === 'Server'
 							? this.$appServer.name
-							: this.$dbServer.name,
+							: serverType === 'Database Server'
+								? this.$dbServer.name
+								: serverType === 'Replication Server'
+									? this.$dbReplicaServer?.name
+									: null,
 					serverType,
 				}),
 			);
@@ -149,7 +153,11 @@ export default {
 					server:
 						serverType === 'Server'
 							? this.$appServer.name
-							: this.$dbServer.name,
+							: serverType === 'Database Server'
+								? this.$dbServer.name
+								: serverType === 'Replication Server'
+									? this.$dbReplicaServer?.name
+									: null,
 					serverType,
 				}),
 			);

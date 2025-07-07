@@ -51,10 +51,12 @@ if TYPE_CHECKING:
 
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.bench_app.bench_app import BenchApp
+	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
 		DeployCandidateApp,
 	)
+	from press.press.doctype.server.server import Server
 	from press.press.doctype.site.site import Site
 
 
@@ -1582,6 +1584,9 @@ def clear_cache(name):
 @frappe.whitelist()
 @protected("Site")
 def restore(name, files, skip_failing_patches=False):
+	if not files.get("database") and not files.get("public") and not files.get("private"):
+		frappe.throw("At least one file must be provided for restoration.")
+
 	frappe.db.set_value(
 		"Site",
 		name,
@@ -1594,6 +1599,51 @@ def restore(name, files, skip_failing_patches=False):
 	)
 	site: Site = frappe.get_doc("Site", name)
 	return site.restore_site(skip_failing_patches=skip_failing_patches)
+
+
+@frappe.whitelist()
+@protected("Site")
+def validate_restoration_space_requirements(
+	name: str, db_file_size: int, public_file_size: int, private_file_size: int
+):
+	site: Site = frappe.get_cached_doc("Site", name)
+	server: Server = frappe.get_cached_doc("Server", site.server)
+	database_server: DatabaseServer = frappe.get_cached_doc("Database Server", server.database_server)
+
+	required_space_on_app_server = site.space_required_for_restoration_on_app_server(
+		db_file_size=db_file_size, public_file_size=public_file_size, private_file_size=private_file_size
+	)
+	required_space_on_db_server = site.space_required_for_restoration_on_db_server(db_file_size=db_file_size)
+
+	free_space_on_app_server = server.free_space(server.guess_data_disk_mountpoint())
+	free_space_on_db_server = database_server.free_space(database_server.guess_data_disk_mountpoint())
+
+	allowed_to_upload = False
+
+	if server.public:
+		"""
+		If it's a public server, Frappe Cloud will auto extend the disk space
+		to accommodate the restoration.
+		"""
+		allowed_to_upload = True
+	else:
+		if (
+			free_space_on_app_server >= required_space_on_app_server
+			and free_space_on_db_server >= required_space_on_db_server
+		):
+			allowed_to_upload = True
+
+	return {
+		"allowed_to_upload": allowed_to_upload,
+		"free_space_on_app_server": free_space_on_app_server
+		if not server.public
+		else -1,  # -1 indicates unlimited space, no need to expose public server space
+		"free_space_on_db_server": free_space_on_db_server if not database_server.public else -1,
+		"is_insufficient_space_on_app_server": free_space_on_app_server < required_space_on_app_server,
+		"is_insufficient_space_on_db_server": free_space_on_db_server < required_space_on_db_server,
+		"required_space_on_app_server": required_space_on_app_server,
+		"required_space_on_db_server": required_space_on_db_server,
+	}
 
 
 @frappe.whitelist(allow_guest=True)
@@ -1938,6 +1988,7 @@ def get_upload_link(file, parts=1):
 
 @frappe.whitelist()
 def multipart_exit(file, id, action, parts=None):
+	bucket_name = frappe.db.get_single_value("Press Settings", "remote_uploads_bucket")
 	s3_client = client(
 		"s3",
 		aws_access_key_id=frappe.db.get_single_value("Press Settings", "remote_access_key_id"),
@@ -1950,12 +2001,12 @@ def multipart_exit(file, id, action, parts=None):
 		region_name="ap-south-1",
 	)
 	if action == "abort":
-		response = s3_client.abort_multipart_upload(Bucket="uploads.frappe.cloud", Key=file, UploadId=id)
+		response = s3_client.abort_multipart_upload(Bucket=bucket_name, Key=file, UploadId=id)
 	elif action == "complete":
 		parts = json.loads(parts)
 		# After completing for all parts, you will use complete_multipart_upload api which requires that parts list
 		response = s3_client.complete_multipart_upload(
-			Bucket="uploads.frappe.cloud",
+			Bucket=bucket_name,
 			Key=file,
 			UploadId=id,
 			MultipartUpload={"Parts": parts},

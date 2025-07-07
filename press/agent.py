@@ -157,7 +157,9 @@ class Agent:
 	def restore_site(self, site: "Site", skip_failing_patches=False):
 		site.check_enough_space_on_server()
 		apps = [app.app for app in site.apps]
-		public_link, private_link = None, None
+		public_link, private_link, database_link = None, None, None
+		if site.remote_database_file:
+			database_link = frappe.get_doc("Remote File", site.remote_database_file).download_link
 		if site.remote_public_file:
 			public_link = frappe.get_doc("Remote File", site.remote_public_file).download_link
 		if site.remote_private_file:
@@ -167,7 +169,7 @@ class Agent:
 			"apps": apps,
 			"mariadb_root_password": get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
-			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
+			"database": database_link,
 			"public": public_link,
 			"private": private_link,
 			"skip_failing_patches": skip_failing_patches,

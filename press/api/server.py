@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 from datetime import timezone as tz
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 import frappe
 import requests
@@ -22,6 +22,8 @@ from press.utils import get_current_team
 
 if TYPE_CHECKING:
 	from press.press.doctype.cluster.cluster import Cluster
+	from press.press.doctype.database_server.database_server import DatabaseServer
+	from press.press.doctype.server.server import Server
 
 
 def poly_get_doc(doctypes, name):
@@ -31,34 +33,15 @@ def poly_get_doc(doctypes, name):
 	return frappe.get_doc(doctypes[-1], name)
 
 
-def _get_arm_mount_point(series: Literal["f", "m"]) -> str:
-	"""Returns to arm64 mount points."""
-	match series:
-		case "f":
-			return "/opt/volumes/benches"
-		case "m":
-			return "/opt/volumes/mariadb"
-
-
-def _get_intel_mount_point(_: Literal["f", "m"]) -> str:
-	"""Returns the Intel mount point (same for all series)."""
-	return "/"
-
-
 def get_mount_point(server: str) -> str:
-	provider = frappe.get_value("Database Server" if server[0] == "m" else "Server", server, "provider")
-	if provider != "AWS EC2":
-		return "/"
-
-	platform, series, has_data_volume = frappe.get_value(
-		"Virtual Machine", server, ["platform", "series", "has_data_volume"]
+	"""Guess mount point from server"""
+	server: Server | DatabaseServer = frappe.get_doc(
+		"Database Server" if server[0] == "m" else "Server", server
 	)
-	if not has_data_volume:
+	if server.provider != "AWS EC2":
 		return "/"
 
-	if platform == "arm64":
-		return _get_arm_mount_point(series)
-	return _get_intel_mount_point(series)
+	return server.guess_data_disk_mountpoint()
 
 
 @frappe.whitelist()
