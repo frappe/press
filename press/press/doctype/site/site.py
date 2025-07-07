@@ -2442,6 +2442,7 @@ class Site(Document, TagHelpers):
 				benches.name,
 				benches.server,
 				benches.group,
+				benches.cluster,
 				PseudoColumn(f"`tabBench`.`cluster` = '{self.cluster}' `in_primary_cluster`"),
 			)
 			.left_join(servers)
@@ -2510,6 +2511,8 @@ class Site(Document, TagHelpers):
 		self.server = benches[0].server
 		if release_group_names:
 			self.group = benches[0].group
+		if self.cluster != benches[0].cluster:
+			frappe.throw(f"Site cannot be deployed on {self.cluster} yet. Please contact support.")
 
 	def _create_initial_site_plan_change(self, plan):
 		frappe.get_doc(
