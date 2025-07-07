@@ -234,6 +234,8 @@ class AccountRequest(Document):
 			template=template,
 			args=args,
 			now=True,
+			reference_doctype=self.doctype,
+			reference_name=self.name,
 		)
 
 	def send_login_mail(self):
@@ -255,6 +257,8 @@ class AccountRequest(Document):
 			template=template,
 			args=args,
 			now=True,
+			reference_doctype=self.doctype,
+			reference_name=self.name,
 		)
 
 	def get_verification_url(self):
