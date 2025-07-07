@@ -65,7 +65,7 @@ def can_deploy(deploy_info: dict[str, Any] | None):
 		raise typer.Exit(0)
 
 
-def get_deploy_information(release_group: str, session: "CloudSession", console: "Console"):
+def get_deploy_information_and_deploy(release_group: str, session: "CloudSession", console: "Console"):
 	"""
 	Fetch deployment information for a given release group and prompt user to select updates for apps.
 	"""
@@ -93,8 +93,7 @@ def get_deploy_information(release_group: str, session: "CloudSession", console:
 			}
 			for release in app.get("releases", [])
 		]
-
-		choices.insert(0, {"name": "\nSkip App Update\n", "value": None})
+		choices.append({"name": f"Skip {app['name']} update", "value": None})
 
 		current = app.get("current_release")
 		next_release = app.get("next_release")
@@ -109,7 +108,6 @@ def get_deploy_information(release_group: str, session: "CloudSession", console:
 			message=f"{title} ({current}) → {title} ({next_release})",
 			choices=choices,
 		).execute()
-
 		if selection:
 			release = next((r for r in app.get("releases") if r["name"] == selection), None)
 			if release:
@@ -122,4 +120,5 @@ def get_deploy_information(release_group: str, session: "CloudSession", console:
 					}
 				)
 
-	trigger_deploy(release_group, session, console, apps=selected_app_updates)
+	if selected_app_updates:
+		trigger_deploy(release_group, session, console, apps=selected_app_updates)

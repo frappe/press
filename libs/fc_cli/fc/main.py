@@ -7,7 +7,7 @@ from rich.console import Console
 
 from fc.authentication.login import OtpLogin, session_file_path
 from fc.authentication.session import CloudSession
-from fc.deploy import get_deploy_information
+from fc.commands.deploy import get_deploy_information_and_deploy
 from fc.models import ClientList
 
 app = typer.Typer(help="FC CLI - Deploy Utility!")
@@ -17,7 +17,7 @@ console = Console()
 
 
 ### Authentication Command
-@app.command()
+@app.command(help="Login")
 def login(email: str):
 	"""Log user in using email"""
 	login_handler = OtpLogin(email)
@@ -39,7 +39,7 @@ def login(email: str):
 	typer.secho("Logged In", fg="green")
 
 
-@app.command()
+@app.command(help="Logout")
 def logout():
 	"""Remove stored session info"""
 	if os.path.exists(session_file_path):
@@ -52,13 +52,15 @@ def logout():
 def requires_login(ctx: typer.Context):
 	if ctx.invoked_subcommand == "login" or ctx.invoked_subcommand == "logout":
 		return
+
 	with open(session_file_path, "r") as f:
 		session_data = json.load(f)
+
 	session = CloudSession(session_id=session_data["sid"])
 	ctx.obj = session
 
 
-@app.command()
+@app.command(help="List servers")
 def servers(ctx: typer.Context):
 	session: CloudSession = ctx.obj
 	server_data = ClientList(
@@ -100,7 +102,7 @@ def servers(ctx: typer.Context):
 	print(selection)
 
 
-@app.command()
+@app.command(help="Create a new deploy")
 def create_deploy(ctx: typer.Context):
 	session: CloudSession = ctx.obj
 	release_group_data = ClientList(
@@ -125,7 +127,7 @@ def create_deploy(ctx: typer.Context):
 		instruction="(Type to search, ↑↓ to move, Enter to select)",
 	).execute()
 
-	get_deploy_information(selection, session, console)
+	get_deploy_information_and_deploy(selection, session, console)
 
 
 if __name__ == "__main__":
