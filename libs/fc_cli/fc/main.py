@@ -50,6 +50,8 @@ def logout():
 
 @app.callback()
 def requires_login(ctx: typer.Context):
+	if ctx.invoked_subcommand == "login" or ctx.invoked_subcommand == "logout":
+		return
 	with open(session_file_path, "r") as f:
 		session_data = json.load(f)
 	session = CloudSession(session_id=session_data["sid"])
