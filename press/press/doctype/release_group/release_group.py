@@ -570,7 +570,8 @@ class ReleaseGroup(Document, TagHelpers):
 	@dashboard_whitelist()
 	def initial_deploy(self):
 		dc = self.create_deploy_candidate()
-		dc.schedule_build_and_deploy()
+		response = dc.schedule_build_and_deploy()
+		return response.get("name")
 
 	@frappe.whitelist()
 	def create_deploy_candidate(

@@ -35,6 +35,8 @@ class Plan(Document):
 		if not fields:
 			fields = ["*"]
 
+		# Change plan with show all use_for_change_plan plans
+		# New plan cases we will use enabled Plans
 		filters.update(
 			{"use_for_plan_change" if filters.get("platform") else "enabled": True},
 		)

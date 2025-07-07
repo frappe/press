@@ -1,0 +1,56 @@
+[project]
+name = "fc"
+description = "CLI to manage frappe deployments"
+readme = "README.md"
+license = "GPL-3.0-only"
+requires-python = ">=3.10"
+authors = [
+    { name = "Frappe Technologies Pvt Ltd", email = "developers@frappe.io" },
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Natural Language :: English",
+    "Operating System :: MacOS",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: User Interfaces",
+    "Topic :: System :: Installation/Setup",
+]
+dependencies = [
+    "typer==0.16.0",
+    "requests<2.32",
+    "inquirerpy==0.3.4"
+]
+dynamic = [
+    "version",
+]
+
+[project.scripts]
+fc-cli = "fc.main:app"
+
+[project.urls]
+Changelog = "https://github.com/frappe/press/releases"
+Documentation = "https://frappecloud.com/docs/user/en/bench"
+Homepage = "https://frappecloud.com"
+Source = "https://github.com/frappe/press"
+
+[build-system]
+requires = [
+    "hatchling==1.27.0",
+]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "fc/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/fc"
+]
+
+[tool.hatch.build.targets.wheel]
+include = [
+  "/fc"
+]
