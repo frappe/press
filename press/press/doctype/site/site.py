@@ -2430,9 +2430,45 @@ class Site(Document, TagHelpers):
 			config["rate_limit"] = {}
 		return config
 
-	def set_latest_bench(self):
+	def _get_benches_for_(self, proxy_servers, release_group_names=None):
 		from pypika.terms import PseudoColumn
 
+		benches = frappe.qb.DocType("Bench")
+		servers = frappe.qb.DocType("Server")
+
+		bench_query = (
+			frappe.qb.from_(benches)
+			.select(
+				benches.name,
+				benches.server,
+				benches.group,
+				PseudoColumn(f"`tabBench`.`cluster` = '{self.cluster}' `in_primary_cluster`"),
+			)
+			.left_join(servers)
+			.on(benches.server == servers.name)
+			.where(servers.proxy_server.isin(proxy_servers))
+			.where(benches.status == "Active")
+			.orderby(PseudoColumn("in_primary_cluster"), order=frappe.qb.desc)
+			.orderby(servers.use_for_new_sites, order=frappe.qb.desc)
+			.orderby(benches.creation, order=frappe.qb.desc)
+			.limit(1)
+		)
+		if release_group_names:
+			bench_query = bench_query.where(benches.group.isin(release_group_names))
+		else:
+			restricted_release_group_names = frappe.db.get_all(
+				"Site Plan Release Group",
+				pluck="release_group",
+				filters={"parenttype": "Site Plan", "parentfield": "release_groups"},
+			)
+			if self.group in restricted_release_group_names:
+				frappe.throw(f"Site can't be deployed on this release group {self.group} due to restrictions")
+			bench_query = bench_query.where(benches.group == self.group)
+		if self.server:
+			bench_query = bench_query.where(servers.name == self.server)
+		return bench_query.run(as_dict=True)
+
+	def set_latest_bench(self):
 		if not (self.domain and self.cluster and self.group):
 			frappe.throw("domain, cluster and group are required to create site")
 
@@ -2462,49 +2498,18 @@ class Site(Document, TagHelpers):
 				},
 			)
 
-		Bench = frappe.qb.DocType("Bench")
-		Server = frappe.qb.DocType("Server")
-
-		bench_query = (
-			frappe.qb.from_(Bench)
-			.select(
-				Bench.name,
-				Bench.server,
-				Bench.group,
-				PseudoColumn(f"`tabBench`.`cluster` = '{self.cluster}' `in_primary_cluster`"),
-			)
-			.left_join(Server)
-			.on(Bench.server == Server.name)
-			.where(Server.proxy_server.isin(proxy_servers))
-			.where(Bench.status == "Active")
-			.orderby(PseudoColumn("in_primary_cluster"), order=frappe.qb.desc)
-			.orderby(Server.use_for_new_sites, order=frappe.qb.desc)
-			.orderby(Bench.creation, order=frappe.qb.desc)
-			.limit(1)
+		benches = self._get_benches_for_(
+			proxy_servers,
+			release_group_names,
 		)
-		if release_group_names:
-			bench_query = bench_query.where(Bench.group.isin(release_group_names))
-		else:
-			restricted_release_group_names = frappe.db.get_all(
-				"Site Plan Release Group",
-				pluck="release_group",
-				filters={"parenttype": "Site Plan", "parentfield": "release_groups"},
-			)
-			if self.group in restricted_release_group_names:
-				frappe.throw(f"Site can't be deployed on this release group {self.group} due to restrictions")
-			bench_query = bench_query.where(Bench.group == self.group)
-		if self.server:
-			bench_query = bench_query.where(Server.name == self.server)
-
-		result = bench_query.run(as_dict=True)
-		if len(result) == 0:
+		if len(benches) == 0:
 			frappe.throw("No bench available to deploy this site")
 			return
 
-		self.bench = result[0].name
-		self.server = result[0].server
+		self.bench = benches[0].name
+		self.server = benches[0].server
 		if release_group_names:
-			self.group = result[0].group
+			self.group = benches[0].group
 
 	def _create_initial_site_plan_change(self, plan):
 		frappe.get_doc(
