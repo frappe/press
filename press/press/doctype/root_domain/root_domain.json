@@ -9,6 +9,7 @@
   "default_cluster",
   "default_proxy_server",
   "team",
+  "enabled",
   "column_break_4",
   "dns_provider",
   "aws_access_key_id",
@@ -59,6 +60,12 @@
    "fieldtype": "Link",
    "label": "Default Proxy Server",
    "options": "Proxy Server"
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -94,7 +101,7 @@
    "link_fieldname": "domain"
   }
  ],
- "modified": "2025-04-20 17:40:52.227291",
+ "modified": "2025-07-07 13:57:57.363562",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Root Domain",
@@ -114,6 +121,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
