@@ -30,7 +30,14 @@ import { trypromise } from '@/utils';
 
 export default {
 	name: 'FileUploader',
-	props: ['fileTypes', 'uploadArgs', 's3', 'type', 'fileValidator'],
+	props: [
+		'fileTypes',
+		'uploadArgs',
+		's3',
+		'type',
+		'fileValidator',
+		'disableAutoUpload',
+	],
 	emits: ['success', 'failure', 'setFile'],
 	data() {
 		return {
@@ -80,6 +87,7 @@ export default {
 			}
 
 			this.$emit('setFile', this.file);
+			if (!this.disableAutoUpload) await this.uploadFile();
 		},
 		async uploadFile() {
 			if (this.uploaded || this.finishedUploading || this.error || !this.file) {

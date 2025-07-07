@@ -12,6 +12,7 @@
 				@setFile="file.file = $event"
 				:fileValidator="(f) => backupFileChecker(f, file.type)"
 				:s3="true"
+				:disableAutoUpload="true"
 			>
 				<template
 					v-slot="{
