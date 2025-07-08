@@ -847,7 +847,7 @@ class Team(Document):
 		)
 
 		if frappe.session.user != self.user and not has_admin_access.run():
-			frappe.throw(_("Only team owner can invite team members"))
+			frappe.throw(_("Only team owner or admins can invite team members"))
 
 		frappe.utils.validate_email_address(email, True)
 
