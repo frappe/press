@@ -631,6 +631,7 @@ def get_available_versions(for_bench: str = None):  # noqa
 		release_group_filters = {
 			"public": 1,
 			"enabled": 1,
+			"saas_bench": 0,
 			"name": (
 				"not in",
 				restricted_release_group_names,
