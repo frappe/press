@@ -11,7 +11,7 @@ class CloudSession(Session):
 
 	def __init__(self, session_id: str):
 		super().__init__()
-		self.base_url = "http://fc.live:8000/api/method/"
+		self.base_url = "https://frappecloud.com/api/method/"
 		self.cookies.set("sid", session_id)
 
 	def request(self, method, url, *args, **kwargs) -> dict[str, str]:

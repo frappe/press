@@ -8,10 +8,12 @@ from rich.console import Console
 from fc.authentication.login import OtpLogin, session_file_path
 from fc.authentication.session import CloudSession
 from fc.commands.deploy import get_deploy_information_and_deploy, get_deploys
+from fc.commands.servers import server_usage
 from fc.models import ClientList
 
 app = typer.Typer(help="FC CLI")
 deploy = typer.Typer(help="Manage deploys")
+server = typer.Typer(help="Server Info")
 
 console = Console()
 
@@ -63,8 +65,8 @@ def requires_login(ctx: typer.Context):
 ### Authentication Commands
 
 
-@app.command(help="List servers")
-def servers(ctx: typer.Context):
+@server.command(help="List servers")
+def usage(ctx: typer.Context):
 	session: CloudSession = ctx.obj
 	server_data = ClientList(
 		doctype="Server",
@@ -94,15 +96,21 @@ def servers(ctx: typer.Context):
 	response = session.post(
 		"press.api.client.get_list", json=server_data, message="[bold green]Getting servers..."
 	)
+
 	selection = inquirer.fuzzy(
 		message="Select Release Group",
 		choices=[
-			{"name": res["title"] if res["title"] else res["name"], "value": res["name"]} for res in response
+			{
+				"name": f"{res['title'] if res['title'] else res['name']} - {res['plan_title']}",
+				"value": res["name"],
+			}
+			for res in response
 		],
 		pointer="→",
 		instruction="(Type to search, ↑↓ to move, Enter to select)",
 	).execute()
-	print(selection)
+
+	server_usage(selection, session, console)
 
 
 def get_release_groups(session: CloudSession) -> list[dict[str, str]]:
@@ -154,6 +162,7 @@ def show_deploy(ctx: typer.Context):
 
 
 app.add_typer(deploy, name="deploy")
+app.add_typer(server, name="server")
 
 if __name__ == "__main__":
 	app()
