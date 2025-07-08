@@ -247,7 +247,7 @@ class AccountRequest(Document):
 			)
 			print(self.otp)
 			print()
-			# return
+			return
 
 		if for_login:
 			template = "login_otp"
