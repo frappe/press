@@ -55,6 +55,19 @@ class SiteDomain(Document):
 			return domains
 		return None
 
+	def before_insert(self):
+		Site = frappe.qb.DocType("Site")
+
+		site = (
+			frappe.qb.from_(Site)
+			.select(Site.name)
+			.where(Site.name == self.domain)
+			.where(Site.name != self.site)
+			.run(as_dict=True)
+		)
+		if site:
+			frappe.throw(f"Domain {self.domain} is already taken. Please choose a different domain.")
+
 	def after_insert(self):
 		if self.default:
 			return
