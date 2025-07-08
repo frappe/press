@@ -1168,11 +1168,8 @@ class DeployCandidateBuild(Document):
 	def create_deploy(self):
 		"""Create a new deploy for the servers of matching platform present on the release group"""
 		servers: list[ReleaseGroupServer] = frappe.get_doc("Release Group", self.group).servers
-		servers = [
-			server.server
-			for server in servers
-			if frappe.get_value("Server", server.server, "platform") == self.platform
-		]
+		servers = [server.server for server in servers]
+
 		if not servers:
 			return None
 
