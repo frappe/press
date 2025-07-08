@@ -18,9 +18,9 @@ from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 if TYPE_CHECKING:
 	from datetime import datetime
 
-	from apps.press.press.press.doctype.agent_job.agent_job import AgentJob
-	from apps.press.press.press.doctype.site_update.site_update import SiteUpdate
-	from apps.press.press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.site_update.site_update import SiteUpdate
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 class SiteBackup(Document):
@@ -204,7 +204,13 @@ class SiteBackup(Document):
 				"""
 				site_update: SiteUpdate = frappe.get_doc("Site Update", site_update_doc_name)
 				if self.status == "Success":
-					site_update.create_update_site_agent_request()
+					if not site_update.wait_for_snapshot_before_update and site_update.status in [
+						"Pending",
+						"Running",
+					]:
+						# If this specific flag is set, then we can only trigger the site update
+						# after the snapshot becomes available only
+						site_update.create_update_site_agent_request()
 				elif self.status == "Failure":
 					site_update.activate_site(backup_failed=True)
 
