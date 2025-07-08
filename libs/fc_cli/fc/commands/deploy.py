@@ -5,12 +5,26 @@ from urllib.parse import urljoin
 import typer
 from InquirerPy import inquirer
 
-from fc.models import ClientGet, ClientRunDocMethod
+from fc.models import ClientGet, ClientList, ClientRunDocMethod
 
 if typing.TYPE_CHECKING:
 	from rich.console import Console
 
 	from fc.authentication.session import CloudSession
+
+
+def show_builds(builds, release_group: str, base_url: str, console: "Console"):
+	deploy_link = urljoin(base_url, f"dashboard/groups/{release_group}/deploys")
+
+	for build in builds:
+		status_color = "green" if build["status"].lower() == "success" else "red"
+
+		console.print(f"  Name:     [bold][link={deploy_link}/{build['name']}]{build['name']}[/link][/bold]")
+		console.print(f"  Created:  {build['creation']}")
+		console.print(f"  Status:   [{status_color}]{build['status']}[/{status_color}]")
+		console.print(f"  Duration: {build['build_duration'] or 'N/A'}")
+		console.print(f"  Owner:    {build['owner']}")
+		console.print(f"  Apps:     {', '.join(build['apps'])}\n")
 
 
 def trigger_deploy(
@@ -107,7 +121,9 @@ def get_deploy_information_and_deploy(release_group: str, session: "CloudSession
 			pointer="→",
 			message=f"{title} ({current}) → {title} ({next_release})",
 			choices=choices,
+			instruction="(Type to search, ↑↓ to move, Enter to select)",
 		).execute()
+
 		if selection:
 			release = next((r for r in app.get("releases") if r["name"] == selection), None)
 			if release:
@@ -122,3 +138,46 @@ def get_deploy_information_and_deploy(release_group: str, session: "CloudSession
 
 	if selected_app_updates:
 		trigger_deploy(release_group, session, console, apps=selected_app_updates)
+
+
+def get_deploys(
+	release_group: str,
+	session: "CloudSession",
+	console: "Console",
+	start: int = 0,
+	limit: int = 5,
+) -> list:
+	increment_by = 5
+	all_deploys = []
+
+	while True:
+		deploy_data = ClientList(
+			doctype="Deploy Candidate Build",
+			fields=["name", "creation", "status", "build_duration", "owner"],
+			filters={"group": release_group},
+			start=start,
+			limit=limit,
+			debug=0,
+		)
+
+		response = session.get(
+			"press.api.client.get_list",
+			json=deploy_data,
+			message=f"[bold green]Fetching deploys for {release_group} (offset {start})...",
+		)
+
+		if not response:
+			console.print("[bold yellow]No more deploys found.[/bold yellow]")
+			break
+
+		base_url = session.base_url.replace("api/method/", "")
+		show_builds(response, release_group, base_url, console)
+		all_deploys.extend(response)
+
+		choice = typer.prompt("Show more? [y/N]").strip().lower()
+		if choice != "y":
+			break
+
+		start += increment_by
+
+	return all_deploys

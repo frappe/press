@@ -7,16 +7,16 @@ from rich.console import Console
 
 from fc.authentication.login import OtpLogin, session_file_path
 from fc.authentication.session import CloudSession
-from fc.commands.deploy import get_deploy_information_and_deploy
+from fc.commands.deploy import get_deploy_information_and_deploy, get_deploys
 from fc.models import ClientList
 
-app = typer.Typer(help="FC CLI - Deploy Utility!")
-
+app = typer.Typer(help="FC CLI")
+deploy = typer.Typer(help="Manage deploys")
 
 console = Console()
 
 
-### Authentication Command
+### Authentication Commands
 @app.command(help="Login")
 def login(email: str):
 	"""Log user in using email"""
@@ -58,6 +58,9 @@ def requires_login(ctx: typer.Context):
 
 	session = CloudSession(session_id=session_data["sid"])
 	ctx.obj = session
+
+
+### Authentication Commands
 
 
 @app.command(help="List servers")
@@ -102,9 +105,8 @@ def servers(ctx: typer.Context):
 	print(selection)
 
 
-@app.command(help="Create a new deploy")
-def create_deploy(ctx: typer.Context):
-	session: CloudSession = ctx.obj
+def get_release_groups(session: CloudSession) -> list[dict[str, str]]:
+	"""Get all release groups in for a user"""
 	release_group_data = ClientList(
 		doctype="Release Group",
 		filters={},
@@ -118,17 +120,40 @@ def create_deploy(ctx: typer.Context):
 	message = session.post(
 		"press.api.client.get_list", json=release_group_data, message="[bold green]Getting bench groups..."
 	)
-	options = [{"name": info["title"], "value": info["name"]} for info in message]
+	return [{"name": info["title"], "value": info["name"]} for info in message]
+
+
+@deploy.command(help="Create a new deploy")
+def create_deploy(ctx: typer.Context):
+	session: CloudSession = ctx.obj
+	release_groups = get_release_groups(session)
 
 	selection = inquirer.fuzzy(
 		message="Select Release Group",
-		choices=options,
+		choices=release_groups,
 		pointer="→",
 		instruction="(Type to search, ↑↓ to move, Enter to select)",
 	).execute()
 
 	get_deploy_information_and_deploy(selection, session, console)
 
+
+@deploy.command(help="Get deploys of bench group")
+def show_deploy(ctx: typer.Context):
+	session: CloudSession = ctx.obj
+	release_groups = get_release_groups(session)
+
+	release_group = inquirer.fuzzy(
+		message="Select Release Group",
+		choices=release_groups,
+		pointer="→",
+		instruction="(Type to search, ↑↓ to move, Enter to select)",
+	).execute()
+
+	get_deploys(release_group, session, console)
+
+
+app.add_typer(deploy, name="deploy")
 
 if __name__ == "__main__":
 	app()
