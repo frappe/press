@@ -834,6 +834,8 @@ class Team(Document):
 	@dashboard_whitelist()
 	@rate_limit(limit=10, seconds=60 * 60)
 	def invite_team_member(self, email, roles=None):
+		from frappe.utils.user import is_system_user
+
 		PressRole = frappe.qb.DocType("Press Role")
 		PressRoleUser = frappe.qb.DocType("Press Role User")
 
@@ -846,7 +848,7 @@ class Team(Document):
 			.where(PressRole.admin_access == 1)
 		)
 
-		if frappe.session.user != self.user and not has_admin_access.run():
+		if not is_system_user() and frappe.session.user != self.user and not has_admin_access.run():
 			frappe.throw(_("Only team owner or admins can invite team members"))
 
 		frappe.utils.validate_email_address(email, True)
