@@ -2481,6 +2481,10 @@ class Site(Document, TagHelpers):
 			{"status": "Active", "name": ("in", proxy_servers_names)},
 			pluck="name",
 		)
+		if not proxy_servers:
+			frappe.throw(
+				f"No active proxy servers found for domain {self.domain}. Please contact support.",
+			)
 
 		"""
 		For restricted plans, just choose any bench from the release groups and clusters combination

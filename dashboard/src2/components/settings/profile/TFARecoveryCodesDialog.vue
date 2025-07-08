@@ -2,7 +2,7 @@
 	<Dialog
 		v-model="show"
 		:options="{
-			title: 'Two-Factor Authentication Recovery Codes',
+			title: 'Authenticate to view 2FA recovery codes',
 		}"
 		@close="closeDialog"
 	>
@@ -14,25 +14,56 @@
 				@reset="() => $resources.resetRecoveryCodes.submit()"
 				with-reset
 			/>
-			<div v-else>
+			<div class="space-y-4" v-else>
 				<FormControl
-					label="Password"
-					type="password"
-					placeholder="•••••"
-					v-model="password"
-					name="password"
-					autocomplete="current-password"
+					label="Email"
+					type="email"
+					:modelValue="$team.doc.user"
+					name="email"
+					disabled
+				/>
+				<FormControl
+					v-if="isOTPSent"
+					label="Verification Code"
+					type="text"
+					placeholder="123456"
+					v-model="verificationCode"
+					name="verificationCode"
+					autocomplete="one-time-code"
 					required
 				/>
 				<ErrorMessage
 					class="mt-2"
 					:message="$resources.getRecoveryCodes.error"
 				/>
+			</div>
+		</template>
+		<template v-if="!recoveryCodes.length" #actions>
+			<Button
+				v-if="!isOTPSent"
+				label="Send verification code"
+				class="w-full"
+				variant="solid"
+				@click="
+					$resources.sendOTP.submit({
+						email: $team.doc.user,
+						for_2fa_keys: true,
+					})
+				"
+				:loading="$resources.sendOTP.loading"
+			/>
+			<div v-else>
 				<Button
 					label="Fetch Recovery Codes"
-					class="mt-6 w-full"
+					class="w-full"
 					variant="solid"
-					@click="() => $resources.getRecoveryCodes.submit({ password })"
+					:loading="$resources.getRecoveryCodes.loading"
+					@click="
+						() =>
+							$resources.getRecoveryCodes.submit({
+								verification_code: verificationCode,
+							})
+					"
 				/>
 			</div>
 		</template>
@@ -41,6 +72,7 @@
 
 <script>
 import TFARecoveryCodes from './TFARecoveryCodes.vue';
+import { toast } from 'vue-sonner';
 
 export default {
 	props: {
@@ -54,17 +86,28 @@ export default {
 	},
 	data() {
 		return {
-			password: '',
 			recoveryCodes: [],
+			verificationCode: '',
+			isOTPSent: false,
 		};
 	},
 	resources: {
+		sendOTP() {
+			return {
+				url: 'press.api.account.send_otp',
+				onSuccess() {
+					this.isOTPSent = true;
+					toast.success('Verification code sent to your email.');
+				},
+				onError(error) {
+					toast.error(error.message || 'Failed to send verification code.');
+				},
+			};
+		},
 		getRecoveryCodes() {
 			return {
 				url: 'press.api.account.get_2fa_recovery_codes',
 				onSuccess(codes) {
-					// Reset the password after fetching recovery codes.
-					this.password = '';
 					this.recoveryCodes = codes;
 				},
 			};
@@ -74,7 +117,7 @@ export default {
 				url: 'press.api.account.reset_2fa_recovery_codes',
 				onSuccess(codes) {
 					this.recoveryCodes = codes;
-					this.$toast.success('Recovery codes have been reset.');
+					toast.success('Recovery codes have been reset.');
 				},
 			};
 		},
@@ -83,6 +126,8 @@ export default {
 		closeDialog() {
 			this.show = false;
 			this.recoveryCodes = [];
+			this.verificationCode = '';
+			this.isOTPSent = false;
 		},
 	},
 	computed: {
