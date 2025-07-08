@@ -178,13 +178,11 @@ def get_request(product: str, account_request: str | None = None) -> dict:
 	elif request := _get_existing_trial_request(product, team.name):
 		site_request = frappe.get_doc("Product Trial Request", request.name)
 	else:
-		is_valid_account_request = frappe.get_value("Account Request", account_request, "email") == team.user
-
 		site_request = frappe.new_doc(
 			"Product Trial Request",
 			product_trial=product,
 			team=team.name,
-			account_request=account_request if is_valid_account_request else None,
+			account_request=account_request,
 		).insert(ignore_permissions=True)
 
 	product_trial = frappe.get_doc("Product Trial", product)
