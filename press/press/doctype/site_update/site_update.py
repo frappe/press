@@ -232,7 +232,6 @@ class SiteUpdate(Document):
 			self.start()
 
 	def set_physical_backup_mode_if_eligible(self):  # noqa: C901
-		self.backup_type = "Physical"
 		if self.skipped_backups:
 			return
 
@@ -292,17 +291,30 @@ class SiteUpdate(Document):
 
 	@dashboard_whitelist()
 	def cancel(self):
+		if self.backup_type != "Physical" or self.skipped_backups:
+			if self.status != "Scheduled":
+				frappe.throw(
+					"Site Update can only be cancelled if it is scheduled or waiting for snapshot",
+				)
+
+			# If the update is scheduled, we can just cancel it
+			update_status(self.name, "Cancelled")
+			return
+
 		# Cancellation is only allowed for physical backup
 		if self.backup_type != "Physical":
 			frappe.throw("Site Update can only be cancelled for Physical Backup", frappe.ValidationError)
+
 		if not self.wait_for_snapshot_before_update:
 			frappe.throw(
 				"Site Update can only be cancelled if it is waiting for snapshot", frappe.ValidationError
 			)
+
 		if self.status not in ("Pending", "Running"):
 			frappe.throw(
 				"Site Update can only be cancelled if it is Pending or Running", frappe.ValidationError
 			)
+
 		# Ensure there is no update or recovery job running
 		if self.update_job or self.recover_job:
 			frappe.throw(
