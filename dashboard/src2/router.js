@@ -271,11 +271,6 @@ let router = createRouter({
 					path: 'payment-payout',
 					component: () => import('./components/partners/PartnerPayout.vue'),
 				},
-				{
-					name: 'PartnerAnalytics',
-					path: 'partner-charts',
-					component: () => import('./components/partners/PartnerAnalytics.vue'),
-				},
 			],
 		},
 		{
