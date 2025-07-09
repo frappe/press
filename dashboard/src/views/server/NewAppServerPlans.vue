@@ -31,7 +31,10 @@ export default {
 	},
 	computed: {
 		appPlanOptions() {
-			if (this.selectedRegion === 'Mumbai') {
+			if (
+				this.selectedRegion === 'Mumbai' ||
+				this.selectedRegion === 'Frankfurt'
+			) {
 				return this.options.app_plans.filter(
 					(plan) =>
 						plan.cluster == this.selectedRegion && plan.platform == 'arm64',
