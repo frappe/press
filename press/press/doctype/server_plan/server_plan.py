@@ -27,6 +27,7 @@ class ServerPlan(Plan):
 		roles: DF.Table[HasRole]
 		server_type: DF.Literal["Server", "Database Server", "Proxy Server", "Self Hosted Server"]
 		title: DF.Data | None
+		use_for_plan_change: DF.Check
 		vcpu: DF.Int
 	# end: auto-generated types
 

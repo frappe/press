@@ -419,6 +419,7 @@ export default {
 				childrenRoutes: ['Server Play'],
 				route: 'plays',
 				type: 'list',
+				searchField: 'play',
 				list: {
 					doctype: 'Ansible Play',
 					filterControls({ documentResource: server }) {

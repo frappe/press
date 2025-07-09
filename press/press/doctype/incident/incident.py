@@ -9,6 +9,7 @@ from functools import cached_property
 from typing import TYPE_CHECKING
 
 import frappe
+import requests
 from frappe.types.DF import Phone
 from frappe.utils import cint
 from frappe.utils.background_jobs import enqueue_doc
@@ -170,6 +171,7 @@ class Incident(WebsiteGenerator):
 		"""
 		Identify the affected resource and set the resource field
 		"""
+		self.add_description(f"{len(self.sites_down)} / {self.total_instances} sites down")
 
 		for resource_type, resource in [
 			("Database Server", self.database_server),
@@ -213,7 +215,7 @@ class Incident(WebsiteGenerator):
 		self.add_description(f"CPU Usage: {max_mode} {max_cpu if max_cpu > 0 else 'No data'}")
 		return max_mode, mode_cpus[max_mode]
 
-	def add_description(self, description):
+	def add_description(self, description: str):
 		if not self.description:
 			self.description = ""
 		self.description += "<p>" + description + "</p>"
@@ -267,6 +269,14 @@ class Incident(WebsiteGenerator):
 			self.update_high_io_server_issue()
 
 	def identify_problem(self):
+		if site := self.get_down_site():
+			try:
+				ret = requests.get(f"https://{site}/api/method/ping", timeout=10)
+			except requests.RequestException as e:
+				self.add_description(f"Error pinging sample site {site}: {e!s}")
+			else:
+				self.add_description(f"Ping response for sample site {site}: {ret.status_code} {ret.reason}")
+
 		if not self.resource:
 			return
 			# TODO: Try random shit if resource isn't identified
@@ -608,6 +618,13 @@ Incident URL: {incident_link}"""
 	def incident_scope(self):
 		return getattr(self, INCIDENT_SCOPE)
 
+	@property
+	def total_instances(self) -> int:
+		return frappe.db.count(
+			"Site",
+			{"status": "Active", INCIDENT_SCOPE: self.incident_scope},
+		)
+
 	def check_resolved(self):
 		try:
 			last_resolved: AlertmanagerWebhookLog = frappe.get_last_doc(
@@ -643,10 +660,13 @@ Incident URL: {incident_link}"""
 			seconds=get_call_repeat_interval()
 		)
 
+	@property
+	def sites_down(self) -> list[str]:
+		return self.monitor_server.get_sites_down_for_server(str(self.server))
+
 	@frappe.whitelist()
 	def get_down_site(self):
-		sites_down = self.monitor_server.get_sites_down_for_server(str(self.server))
-		return sites_down[0] if sites_down else None
+		return self.sites_down[0] if self.sites_down else None
 
 
 def get_confirmation_threshold_duration():

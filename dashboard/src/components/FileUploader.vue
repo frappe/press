@@ -17,7 +17,7 @@
 				error,
 				total,
 				success,
-				openFileSelector
+				openFileSelector,
 			}"
 		/>
 	</div>
@@ -30,7 +30,15 @@ import { trypromise } from '@/utils';
 
 export default {
 	name: 'FileUploader',
-	props: ['fileTypes', 'uploadArgs', 's3', 'type', 'fileValidator'],
+	props: [
+		'fileTypes',
+		'uploadArgs',
+		's3',
+		'type',
+		'fileValidator',
+		'disableAutoUpload',
+	],
+	emits: ['success', 'failure', 'setFile'],
 	data() {
 		return {
 			uploader: null,
@@ -40,7 +48,7 @@ export default {
 			message: '',
 			total: 0,
 			file: null,
-			finishedUploading: false
+			finishedUploading: false,
 		};
 	},
 	computed: {
@@ -50,7 +58,7 @@ export default {
 		},
 		success() {
 			return this.finishedUploading && !this.error;
-		}
+		},
 	},
 	methods: {
 		openFileSelector() {
@@ -58,6 +66,12 @@ export default {
 		},
 		async onFileAdd(e) {
 			this.error = null;
+			this.finishedUploading = false;
+			this.uploading = false;
+			this.uploaded = 0;
+			this.total = 0;
+			this.message = '';
+
 			this.file = e.target.files[0];
 
 			if (this.file && this.fileValidator) {
@@ -67,11 +81,18 @@ export default {
 				}
 			}
 
-			if (!this.error) {
-				this.uploadFile(this.file);
+			if (this.error) {
+				this.$emit('failure', this.error);
+				return;
 			}
+
+			this.$emit('setFile', this.file);
+			if (!this.disableAutoUpload) await this.uploadFile();
 		},
-		async uploadFile(file) {
+		async uploadFile() {
+			if (this.uploaded || this.finishedUploading || this.error || !this.file) {
+				return;
+			}
 			this.error = null;
 			this.uploaded = 0;
 			this.total = 0;
@@ -80,7 +101,7 @@ export default {
 			this.uploader.on('start', () => {
 				this.uploading = true;
 			});
-			this.uploader.on('progress', data => {
+			this.uploader.on('progress', (data) => {
 				this.uploaded = data.uploaded;
 				this.total = data.total;
 			});
@@ -93,16 +114,16 @@ export default {
 				this.finishedUploading = true;
 			});
 			this.uploader
-				.upload(file, this.uploadArgs || {})
-				.then(data => {
+				.upload(this.file, this.uploadArgs || {})
+				.then((data) => {
 					this.$emit('success', data);
 				})
-				.catch(error => {
+				.catch((error) => {
 					this.uploading = false;
 					let errorMessage = 'Error Uploading File';
 					if (error._server_messages) {
 						errorMessage = JSON.parse(
-							JSON.parse(error._server_messages)[0]
+							JSON.parse(error._server_messages)[0],
 						).message;
 					} else if (error.exc) {
 						errorMessage = JSON.parse(error.exc)[0]
@@ -112,7 +133,7 @@ export default {
 					this.error = errorMessage;
 					this.$emit('failure', errorMessage);
 				});
-		}
-	}
+		},
+	},
 };
 </script>

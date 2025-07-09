@@ -234,20 +234,31 @@ class AccountRequest(Document):
 			template=template,
 			args=args,
 			now=True,
+			reference_doctype=self.doctype,
+			reference_name=self.name,
 		)
 
-	def send_login_mail(self):
+	def send_otp_mail(self, for_login: bool = True):
 		if frappe.conf.developer_mode and frappe.local.dev_server:
-			print(rf"\Login OTP for {self.email}:")
+			print(
+				f"Login OTP for {self.email}:"
+				if for_login
+				else f"OTP to view 2FA recovery codes for {self.email}:"
+			)
 			print(self.otp)
 			print()
 			return
 
-		subject = f"{self.otp} - OTP for Frappe Cloud Login"
+		if for_login:
+			template = "login_otp"
+			subject = f"{self.otp} - OTP for Frappe Cloud Login"
+		else:
+			template = "2fa_recovery_codes_otp"
+			subject = f"{self.otp} - OTP to view 2FA recovery codes for Frappe Cloud"
+
 		args = {
 			"otp": self.otp,
 		}
-		template = "login_otp"
 
 		frappe.sendmail(
 			recipients=self.email,
@@ -255,6 +266,8 @@ class AccountRequest(Document):
 			template=template,
 			args=args,
 			now=True,
+			reference_doctype=self.doctype,
+			reference_name=self.name,
 		)
 
 	def get_verification_url(self):

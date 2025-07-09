@@ -35,10 +35,11 @@ class Plan(Document):
 		if not fields:
 			fields = ["*"]
 
+		filters.update(
+			{"use_for_plan_change" if filters.get("platform") else "enabled": True},
+		)
+
 		fields.append("`tabHas Role`.role")
-		if not filters.get("platform") or filters.get("platform") == "arm64":
-			# If the server is on a intel platform then we need to show all intel plans
-			filters.update({"enabled": True})
 		plans = frappe.get_all(doctype, filters=filters, fields=fields, order_by="price_usd asc")
 		return filter_by_roles(plans)
 

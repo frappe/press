@@ -860,16 +860,31 @@ class Site(Document, TagHelpers):
 				self.remote_private_file,
 			)
 		)
-		space_for_download = db_size + public_size + private_size
-		space_for_extracted_files = (
-			(0 if self.is_version_14_or_higher() else (8 * db_size)) + public_size + private_size
-		)  # 8 times db size for extraction; estimated
-		return space_for_download + space_for_extracted_files
+		return self.space_required_for_restoration_on_app_server(
+			db_file_size=db_size, public_file_size=public_size, private_file_size=private_size
+		)
 
 	@property
 	def space_required_on_db_server(self):
+		if not self.remote_database_file:
+			return 0
 		db_size = frappe.get_doc("Remote File", self.remote_database_file).size
-		return 8 * db_size * 2  # double extracted size for binlog
+		return self.space_required_for_restoration_on_db_server(db_file_size=db_size)
+
+	def space_required_for_restoration_on_app_server(
+		self, db_file_size: int = 0, public_file_size: int = 0, private_file_size: int = 0
+	) -> int:
+		space_for_download = db_file_size + public_file_size + private_file_size
+		space_for_extracted_files = (
+			(0 if self.is_version_14_or_higher() else (8 * db_file_size))
+			+ public_file_size
+			+ private_file_size
+		)  # 8 times db size for extraction; estimated
+		return space_for_download + space_for_extracted_files
+
+	def space_required_for_restoration_on_db_server(self, db_file_size: int = 0) -> int:
+		"""Returns the space required on the database server for restoration."""
+		return 8 * db_file_size * 2  # double for binlogs
 
 	def check_and_increase_disk(self, server: "BaseServer", space_required: int):
 		mountpoint = server.guess_data_disk_mountpoint()
@@ -1000,7 +1015,10 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def restore_site(self, skip_failing_patches=False):
-		if not frappe.get_doc("Remote File", self.remote_database_file).exists():
+		if (
+			self.remote_database_file
+			and not frappe.get_doc("Remote File", self.remote_database_file).exists()
+		):
 			raise Exception(f"Remote File {self.remote_database_file} is unavailable on S3")
 
 		agent = Agent(self.server)
@@ -1643,6 +1661,16 @@ class Site(Document, TagHelpers):
 				)
 			elif f"User {user} does not exist" in str(e):
 				frappe.throw(f"User {user} does not exist in the site", frappe.ValidationError)
+			elif "certificate has expired" in str(e):
+				frappe.throw(
+					"SSL certificate for the site has expired. Please check the domains tab.",
+					frappe.ValidationError,
+				)
+			elif "no space left on device" in str(e):
+				frappe.throw(
+					"Site is unresponsive due to no space left on device. Please contact support.",
+					frappe.ValidationError,
+				)
 			elif frappe.db.exists(
 				"Incident",
 				{
@@ -2402,9 +2430,46 @@ class Site(Document, TagHelpers):
 			config["rate_limit"] = {}
 		return config
 
-	def set_latest_bench(self):
+	def _get_benches_for_(self, proxy_servers, release_group_names=None):
 		from pypika.terms import PseudoColumn
 
+		benches = frappe.qb.DocType("Bench")
+		servers = frappe.qb.DocType("Server")
+
+		bench_query = (
+			frappe.qb.from_(benches)
+			.select(
+				benches.name,
+				benches.server,
+				benches.group,
+				benches.cluster,
+				PseudoColumn(f"`tabBench`.`cluster` = '{self.cluster}' `in_primary_cluster`"),
+			)
+			.left_join(servers)
+			.on(benches.server == servers.name)
+			.where(servers.proxy_server.isin(proxy_servers))
+			.where(benches.status == "Active")
+			.orderby(PseudoColumn("in_primary_cluster"), order=frappe.qb.desc)
+			.orderby(servers.use_for_new_sites, order=frappe.qb.desc)
+			.orderby(benches.creation, order=frappe.qb.desc)
+			.limit(1)
+		)
+		if release_group_names:
+			bench_query = bench_query.where(benches.group.isin(release_group_names))
+		else:
+			restricted_release_group_names = frappe.db.get_all(
+				"Site Plan Release Group",
+				pluck="release_group",
+				filters={"parenttype": "Site Plan", "parentfield": "release_groups"},
+			)
+			if self.group in restricted_release_group_names:
+				frappe.throw(f"Site can't be deployed on this release group {self.group} due to restrictions")
+			bench_query = bench_query.where(benches.group == self.group)
+		if self.server:
+			bench_query = bench_query.where(servers.name == self.server)
+		return bench_query.run(as_dict=True)
+
+	def set_latest_bench(self):
 		if not (self.domain and self.cluster and self.group):
 			frappe.throw("domain, cluster and group are required to create site")
 
@@ -2416,6 +2481,10 @@ class Site(Document, TagHelpers):
 			{"status": "Active", "name": ("in", proxy_servers_names)},
 			pluck="name",
 		)
+		if not proxy_servers:
+			frappe.throw(
+				f"No active proxy servers found for domain {self.domain}. Please contact support.",
+			)
 
 		"""
 		For restricted plans, just choose any bench from the release groups and clusters combination
@@ -2434,49 +2503,20 @@ class Site(Document, TagHelpers):
 				},
 			)
 
-		Bench = frappe.qb.DocType("Bench")
-		Server = frappe.qb.DocType("Server")
-
-		bench_query = (
-			frappe.qb.from_(Bench)
-			.select(
-				Bench.name,
-				Bench.server,
-				Bench.group,
-				PseudoColumn(f"`tabBench`.`cluster` = '{self.cluster}' `in_primary_cluster`"),
-			)
-			.left_join(Server)
-			.on(Bench.server == Server.name)
-			.where(Server.proxy_server.isin(proxy_servers))
-			.where(Bench.status == "Active")
-			.orderby(PseudoColumn("in_primary_cluster"), order=frappe.qb.desc)
-			.orderby(Server.use_for_new_sites, order=frappe.qb.desc)
-			.orderby(Bench.creation, order=frappe.qb.desc)
-			.limit(1)
+		benches = self._get_benches_for_(
+			proxy_servers,
+			release_group_names,
 		)
-		if release_group_names:
-			bench_query = bench_query.where(Bench.group.isin(release_group_names))
-		else:
-			restricted_release_group_names = frappe.db.get_all(
-				"Site Plan Release Group",
-				pluck="release_group",
-				filters={"parenttype": "Site Plan", "parentfield": "release_groups"},
-			)
-			if self.group in restricted_release_group_names:
-				frappe.throw(f"Site can't be deployed on this release group {self.group} due to restrictions")
-			bench_query = bench_query.where(Bench.group == self.group)
-		if self.server:
-			bench_query = bench_query.where(Server.name == self.server)
-
-		result = bench_query.run(as_dict=True)
-		if len(result) == 0:
+		if len(benches) == 0:
 			frappe.throw("No bench available to deploy this site")
 			return
 
-		self.bench = result[0].name
-		self.server = result[0].server
+		self.bench = benches[0].name
+		self.server = benches[0].server
 		if release_group_names:
-			self.group = result[0].group
+			self.group = benches[0].group
+		if self.cluster != benches[0].cluster:
+			frappe.throw(f"Site cannot be deployed on {self.cluster} yet. Please contact support.")
 
 	def _create_initial_site_plan_change(self, plan):
 		frappe.get_doc(

@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
+  "use_for_plan_change",
   "title",
   "pricing_section",
   "price_inr",
@@ -127,11 +128,17 @@
    "label": "Platform",
    "options": "x86_64\narm64",
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "use_for_plan_change",
+   "fieldtype": "Check",
+   "label": "Use for plan change"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-21 13:49:02.682602",
+ "modified": "2025-07-05 12:20:05.314258",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Plan",
@@ -151,6 +158,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

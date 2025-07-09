@@ -10,7 +10,6 @@ import frappe
 import frappe.utils
 import pyotp
 from frappe import _
-from frappe.auth import check_password
 from frappe.core.doctype.user.user import update_password
 from frappe.core.utils import find
 from frappe.exceptions import DoesNotExistError
@@ -121,7 +120,7 @@ def verify_otp_and_login(email: str, otp: str):
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60)
-def resend_otp(account_request: str):
+def resend_otp(account_request: str, for_2fa_keys: bool = False):
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
 
 	# if last OTP was sent less than 30 seconds ago, throw an error
@@ -135,12 +134,12 @@ def resend_otp(account_request: str):
 	if frappe.db.exists("Team", {"user": account_request.email}) and not account_request.product_trial:
 		frappe.throw("Invalid Email")
 	account_request.reset_otp()
-	account_request.send_verification_email()
+	account_request.send_otp_mail(for_login=not for_2fa_keys)
 
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60)
-def send_otp(email: str):
+def send_otp(email: str, for_2fa_keys: bool = False):
 	account_request = frappe.db.get_value("Account Request", {"email": email}, "name")
 
 	if not account_request:
@@ -156,7 +155,7 @@ def send_otp(email: str):
 		frappe.throw("Please wait for 30 seconds before requesting a new OTP")
 
 	account_request.reset_otp()
-	account_request.send_login_mail()
+	account_request.send_otp_mail(for_login=not for_2fa_keys)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -1309,19 +1308,18 @@ def recover_2fa(user: str, recovery_code: str):
 
 
 @frappe.whitelist()
-def get_2fa_recovery_codes(password: str):
+def get_2fa_recovery_codes(verification_code: int):
 	"""Get the recovery codes for the user."""
 
-	# Verify user password.
-	try:
-		check_password(frappe.session.user, password)
-	# Modify the error message to be more specific.
-	except frappe.AuthenticationError:
-		frappe.throw("Invalid password", frappe.ValidationError)
-
-	# Check if the user has 2FA enabled.
-	if not frappe.db.exists("User 2FA", frappe.session.user):
+	if not frappe.db.exists("User 2FA", {"user": frappe.session.user, "enabled": 1}):
 		frappe.throw("2FA is not enabled for this user")
+
+	account_request: "AccountRequest" = frappe.get_doc("Account Request", {"email": frappe.session.user})
+
+	if account_request.otp != verification_code:
+		frappe.throw("Invalid OTP. Please try again.")
+
+	account_request.reset_otp()
 
 	# Get the User 2FA document.
 	two_fa = frappe.get_doc("User 2FA", frappe.session.user)
