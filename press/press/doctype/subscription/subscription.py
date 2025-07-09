@@ -289,10 +289,7 @@ def create_usage_records():
 
 def paid_plans():
 	paid_plans = []
-	filter = {
-		"price_inr": (">", 0),
-		"enabled": 1,
-	}
+
 	doctypes = [
 		"Site Plan",
 		"Marketplace App Plan",
@@ -300,8 +297,17 @@ def paid_plans():
 		"Server Storage Plan",
 		"Cluster Plan",
 	]
-	for doctype in doctypes:
-		paid_plans += frappe.get_all(doctype, filter, pluck="name", ignore_ifnull=True)
+
+	for name in doctypes:
+		doctype = frappe.qb.DocType(name)
+		query = frappe.qb.from_(doctype).select(doctype.name).where(doctype.price_inr > 0)
+
+		if name == "Server Plan":
+			query.where((doctype.enabled == 1) | (doctype.use_for_plan_change) == 1)
+		else:
+			query.where(doctype.enabled == 1)
+
+		paid_plans += query.run(pluck=True)
 
 	return list(set(paid_plans))
 
