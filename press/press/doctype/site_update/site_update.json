@@ -26,6 +26,7 @@
   "site_backup",
   "skipped_backups",
   "skipped_failing_patches",
+  "wait_for_snapshot_before_update",
   "section_break_luvm",
   "deactivate_site_job",
   "update_job",
@@ -78,7 +79,7 @@
    "in_standard_filter": 1,
    "label": "Status",
    "no_copy": 1,
-   "options": "Pending\nRunning\nSuccess\nFailure\nRecovering\nRecovered\nFatal\nScheduled"
+   "options": "Pending\nRunning\nSuccess\nFailure\nRecovering\nRecovered\nFatal\nScheduled\nCancelled"
   },
   {
    "fieldname": "destination_bench",
@@ -322,11 +323,18 @@
    "fieldtype": "Duration",
    "label": "Update Duration",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "wait_for_snapshot_before_update",
+   "fieldtype": "Check",
+   "label": "Wait For Snapshot Before Update"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-28 14:12:55.667576",
+ "modified": "2025-07-08 23:38:18.727537",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",
@@ -355,6 +363,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

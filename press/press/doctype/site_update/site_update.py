@@ -15,7 +15,6 @@ from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils import convert_utc_to_system_timezone
 from frappe.utils.caching import site_cache
-from frappe.utils.data import cint
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
@@ -63,7 +62,15 @@ class SiteUpdate(Document):
 		source_bench: DF.Link | None
 		source_candidate: DF.Link | None
 		status: DF.Literal[
-			"Pending", "Running", "Success", "Failure", "Recovering", "Recovered", "Fatal", "Scheduled"
+			"Pending",
+			"Running",
+			"Success",
+			"Failure",
+			"Recovering",
+			"Recovered",
+			"Fatal",
+			"Scheduled",
+			"Cancelled",
 		]
 		team: DF.Link | None
 		touched_tables: DF.Code | None
@@ -71,6 +78,7 @@ class SiteUpdate(Document):
 		update_end: DF.Datetime | None
 		update_job: DF.Link | None
 		update_start: DF.Datetime | None
+		wait_for_snapshot_before_update: DF.Check
 	# end: auto-generated types
 
 	dashboard_fields: ClassVar = [
@@ -196,12 +204,12 @@ class SiteUpdate(Document):
 		if self.triggered_by_user:
 			return  # Allow user to trigger update for same source and destination
 
-		if not self.skipped_failing_patches and self.have_past_updates_failed():
-			frappe.throw(
-				f"Update from Source Candidate {self.source_candidate} to Destination"
-				f" Candidate {self.destination_candidate} has failed in the past.",
-				frappe.ValidationError,
-			)
+		# if not self.skipped_failing_patches and self.have_past_updates_failed():
+		# 	frappe.throw(
+		# 		f"Update from Source Candidate {self.source_candidate} to Destination"
+		# 		f" Candidate {self.destination_candidate} has failed in the past.",
+		# 		frappe.ValidationError,
+		# 	)
 
 	def validate_apps(self):
 		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
@@ -222,50 +230,16 @@ class SiteUpdate(Document):
 		if not self.scheduled_time:
 			self.start()
 
-	def set_physical_backup_mode_if_eligible(self):  # noqa: C901
+	def set_physical_backup_mode_if_eligible(self):
+		from press.press.doctype.site.site import is_eligible_for_physical_backup
+
 		if self.skipped_backups:
 			return
 
 		if self.deploy_type != "Migrate":
 			return
 
-		# Check if physical backup is disabled globally from Press Settings
-		if frappe.utils.cint(frappe.get_value("Press Settings", None, "disable_physical_backup")):
-			return
-
-		database_server = frappe.get_value("Server", self.server, "database_server")
-		if not database_server:
-			# It might be the case of configured RDS server and no self hosted database server
-			return
-
-		# Check if physical backup is enabled on the database server
-		enable_physical_backup = frappe.get_value(
-			"Database Server", database_server, "enable_physical_backup"
-		)
-		if not enable_physical_backup:
-			return
-
-		# Sanity check - Provider should be AWS EC2
-		provider = frappe.get_value("Database Server", database_server, "provider")
-		if provider != "AWS EC2":
-			return
-
-		# Check for last logical backup
-		last_logical_site_backups = frappe.db.get_list(
-			"Site Backup",
-			filters={"site": self.site, "physical": False},
-			pluck="database_size",
-			limit=1,
-			order_by="creation desc",
-			ignore_permissions=True,
-		)
-		db_backup_size = 0
-		if len(last_logical_site_backups) > 0:
-			db_backup_size = cint(last_logical_site_backups[0])
-
-		# If last logical backup size is greater than 300MB (actual db size approximate 3GB)
-		# Then only take physical backup
-		if db_backup_size > 314572800:
+		if is_eligible_for_physical_backup(self.site):
 			self.backup_type = "Physical"
 
 	@dashboard_whitelist()
@@ -279,6 +253,45 @@ class SiteUpdate(Document):
 			self.deactivate_site()
 		else:
 			self.create_update_site_agent_request()
+
+	@dashboard_whitelist()
+	def cancel(self):
+		if self.backup_type != "Physical" or self.skipped_backups:
+			if self.status != "Scheduled":
+				frappe.throw(
+					"Site Update can only be cancelled if it is scheduled or waiting for snapshot",
+				)
+
+			# If the update is scheduled, we can just cancel it
+			update_status(self.name, "Cancelled")
+			return
+
+		# Cancellation is only allowed for physical backup
+		if self.backup_type != "Physical":
+			frappe.throw("Site Update can only be cancelled for Physical Backup", frappe.ValidationError)
+
+		if not self.wait_for_snapshot_before_update:
+			frappe.throw(
+				"Site Update can only be cancelled if it is waiting for snapshot", frappe.ValidationError
+			)
+
+		if self.status not in ("Pending", "Running"):
+			frappe.throw(
+				"Site Update can only be cancelled if it is Pending or Running", frappe.ValidationError
+			)
+
+		# Ensure there is no update or recovery job running
+		if self.update_job or self.recover_job:
+			frappe.throw(
+				"Site Update cannot be cancelled while an update or recovery job exists regarding this update",
+				frappe.ValidationError,
+			)
+
+		# Set status to Cancelled
+		update_status(self.name, "Cancelled")
+
+		# Set site status to active
+		self.activate_site()
 
 	def get_before_migrate_scripts(self, rollback=False):
 		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
@@ -506,6 +519,7 @@ class SiteUpdate(Document):
 		Expand the steps of job
 		- Steps of Deactivate Job [if exists]
 		- Steps of Physical Backup Job [Site Backup] [if exists]
+		- Steps of Wait for Snapshot [In case user has opted]
 		- Steps of Update Job
 		- Steps of Physical Restore Job [if exists]
 		- Steps of Recovery Job [if exists]
@@ -517,6 +531,16 @@ class SiteUpdate(Document):
 		if self.backup_type == "Physical" and self.site_backup:
 			agent_job = frappe.get_value("Site Backup", self.site_backup, "job")
 			steps.extend(self.get_job_steps(agent_job, "Backup Site"))
+		if self.backup_type == "Physical" and self.wait_for_snapshot_before_update and not self.update_job:
+			steps.append(
+				{
+					"name": "wait_for_snapshot",
+					"title": "Wait for Snapshot",
+					"status": "Success",
+					"output": "Waiting for snapshot before update",
+					"stage": "Pre-Update",
+				}
+			)
 		if self.update_job:
 			steps.extend(self.get_job_steps(self.update_job, "Update Site"))
 		if self.physical_backup_restoration:
@@ -557,7 +581,15 @@ class SiteUpdate(Document):
 def update_status(
 	name: str,
 	status: Literal[
-		"Pending", "Running", "Success", "Failure", "Recovering", "Recovered", "Fatal", "Scheduled"
+		"Pending",
+		"Running",
+		"Success",
+		"Failure",
+		"Recovering",
+		"Recovered",
+		"Fatal",
+		"Scheduled",
+		"Cancelled",
 	],
 ):
 	frappe.db.set_value("Site Update", name, "status", status)
@@ -573,7 +605,7 @@ def update_status(
 					frappe.utils.time_diff_in_seconds(frappe.utils.now_datetime(), update_start)
 				),
 			)
-	if status in ["Success", "Recovered"]:
+	if status in ["Success", "Recovered", "Cancelled"]:
 		backup_type = frappe.db.get_value("Site Update", name, "backup_type")
 		if backup_type == "Physical":
 			# Remove the snapshot

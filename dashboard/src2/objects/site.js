@@ -53,7 +53,7 @@ export default {
 		restoreSiteFromPhysicalBackup: 'restore_site_from_physical_backup',
 		scheduleUpdate: 'schedule_update',
 		editScheduledUpdate: 'edit_scheduled_update',
-		cancelUpdate: 'cancel_scheduled_update',
+		cancelUpdate: 'cancel_update',
 		setPlan: 'set_plan',
 		updateConfig: 'update_config',
 		deleteConfig: 'delete_config',
@@ -1164,6 +1164,7 @@ export default {
 						'update_job',
 						'backup_type',
 						'recover_job',
+						'backup_type',
 					],
 					columns: [
 						{
@@ -1231,11 +1232,14 @@ export default {
 							},
 							{
 								label: 'Cancel',
-								condition: () => row.status === 'Scheduled',
+								condition: () =>
+									row.status === 'Scheduled' ||
+									((row.status === 'Pending' || row.status === 'Running') &&
+										row.backup_type === 'Physical'),
 								onClick() {
 									confirmDialog({
 										title: 'Cancel Update',
-										message: `Are you sure you want to cancel the scheduled update?`,
+										message: `Are you sure you want to cancel the update ?`,
 										onSuccess({ hide }) {
 											if (site.cancelUpdate.loading) return;
 											toast.promise(
