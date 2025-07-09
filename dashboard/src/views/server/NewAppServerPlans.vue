@@ -12,7 +12,7 @@
 			<ServerPlansTable
 				:plans="appPlanOptions"
 				:selectedPlan="selectedAppPlan"
-				@update:selectedPlan="plan => $emit('update:selectedAppPlan', plan)"
+				@update:selectedPlan="(plan) => $emit('update:selectedAppPlan', plan)"
 			/>
 		</div>
 	</div>
@@ -27,14 +27,20 @@ export default {
 	props: ['options', 'selectedAppPlan', 'selectedRegion'],
 	components: {
 		ServerPlansTable,
-		AlertBillingInformation
+		AlertBillingInformation,
 	},
 	computed: {
 		appPlanOptions() {
+			if (this.selectedRegion === 'Mumbai') {
+				return this.options.app_plans.filter(
+					(plan) =>
+						plan.cluster == this.selectedRegion && plan.platform == 'arm64',
+				);
+			}
 			return this.options.app_plans.filter(
-				plan => plan.cluster == this.selectedRegion
+				(plan) => plan.cluster == this.selectedRegion,
 			);
-		}
-	}
+		},
+	},
 };
 </script>

@@ -12,7 +12,7 @@
 			<ServerPlansTable
 				:plans="dbPlanOptions"
 				:selectedPlan="selectedDBPlan"
-				@update:selectedPlan="plan => $emit('update:selectedDBPlan', plan)"
+				@update:selectedPlan="(plan) => $emit('update:selectedDBPlan', plan)"
 			/>
 		</div>
 	</div>
@@ -27,14 +27,20 @@ export default {
 	props: ['options', 'selectedDBPlan', 'selectedRegion'],
 	components: {
 		ServerPlansTable,
-		AlertBillingInformation
+		AlertBillingInformation,
 	},
 	computed: {
 		dbPlanOptions() {
+			if (this.selectedRegion === 'Mumbai') {
+				return this.options.db_plans.filter(
+					(plan) =>
+						plan.cluster == this.selectedRegion && plan.platform == 'arm64',
+				);
+			}
 			return this.options.db_plans.filter(
-				plan => plan.cluster == this.selectedRegion
+				(plan) => plan.cluster == this.selectedRegion,
 			);
-		}
-	}
+		},
+	},
 };
 </script>
