@@ -8,9 +8,9 @@
 					loading: $resources.changeRegion.loading,
 					variant: 'solid',
 					disabled: !selectedRegion,
-					onClick: changeRegion
-				}
-			]
+					onClick: changeRegion,
+				},
+			],
 		}"
 		v-model="show"
 		@close="resetValues"
@@ -27,10 +27,10 @@
 					label="Choose Region"
 					v-model="selectedRegion"
 					:options="
-						$resources.changeRegionOptions.data.regions.map(r => ({
+						$resources.changeRegionOptions.data.regions.map((r) => ({
 							label: r.title || r.name,
 							value: r.name,
-							image: r.image
+							image: r.image,
 						}))
 					"
 				>
@@ -71,7 +71,7 @@
 						<strong>A record</strong>. Please update the same after migration to
 						avoid downtime. To know more, refer
 						<a
-							href="https://frappecloud.com/docs/sites/custom-domains"
+							href="https://docs.frappe.io/cloud/sites/custom-domains"
 							target="_blank"
 							class="underline"
 							>the documentation.</a
@@ -96,11 +96,11 @@ export default {
 			show: true,
 			targetDateTime: null,
 			selectedRegion: null,
-			skipFailingPatches: false
+			skipFailingPatches: false,
 		};
 	},
 	components: {
-		DateTimeControl
+		DateTimeControl,
 	},
 	computed: {
 		datetimeInIST() {
@@ -113,7 +113,7 @@ export default {
 		},
 		$site() {
 			return getCachedDocumentResource('Site', this.site);
-		}
+		},
 	},
 	resources: {
 		ARecords() {
@@ -123,26 +123,26 @@ export default {
 				filters: {
 					site: this.site,
 					dns_type: 'A',
-					domain: ['!=', this.site]
+					domain: ['!=', this.site],
 				},
 				limit: 1,
-				auto: true
+				auto: true,
 			};
 		},
 		changeRegionOptions() {
 			return {
 				url: 'press.api.site.change_region_options',
 				params: {
-					name: this.site
+					name: this.site,
 				},
-				auto: true
+				auto: true,
 			};
 		},
 		changeRegion() {
 			return {
-				url: 'press.api.site.change_region'
+				url: 'press.api.site.change_region',
 			};
-		}
+		},
 	},
 	methods: {
 		changeRegion() {
@@ -151,7 +151,7 @@ export default {
 					name: this.site,
 					cluster: this.selectedRegion?.value,
 					scheduled_datetime: this.datetimeInIST,
-					skip_failing_patches: this.skipFailingPatches
+					skip_failing_patches: this.skipFailingPatches,
 				}),
 				{
 					success: () => {
@@ -159,17 +159,17 @@ export default {
 						return `Site scheduled to be migrated to ${this.selectedRegion?.label}`;
 					},
 					loading: `Scheduling site to be migrated to ${this.selectedRegion?.label}...`,
-					error: error =>
+					error: (error) =>
 						error.messages?.length
 							? error.messages.join('\n')
-							: error.message || 'Failed to schedule site migration'
-				}
+							: error.message || 'Failed to schedule site migration',
+				},
 			);
 		},
 		resetValues() {
 			this.selectedRegion = null;
 			this.targetDateTime = null;
-		}
-	}
+		},
+	},
 };
 </script>

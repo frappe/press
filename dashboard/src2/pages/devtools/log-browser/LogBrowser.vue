@@ -9,7 +9,7 @@
 					<Breadcrumbs
 						:items="[
 							{ label: 'Dev Tools', route: { name: 'Log Browser' } }, // Dev tools has no seperate page as its own, so it doesn't need a different route
-							{ label: 'Log Browser', route: { name: 'Log Browser' } }
+							{ label: 'Log Browser', route: { name: 'Log Browser' } },
 						]"
 					/>
 				</div>
@@ -20,20 +20,20 @@
 						:options="[
 							{
 								label: 'Select Mode',
-								disabled: true
+								disabled: true,
 							},
 							{
 								label: 'Bench',
-								value: 'bench'
+								value: 'bench',
 							},
 							{
 								label: 'Site',
-								value: 'site'
-							}
+								value: 'site',
+							},
 						]"
 						:modelValue="mode"
 						@update:modelValue="
-							e => $router.push({ name: 'Log Browser', params: { mode: e } })
+							(e) => $router.push({ name: 'Log Browser', params: { mode: e } })
 						"
 					/>
 					<LinkControl
@@ -41,16 +41,16 @@
 						:options="{
 							doctype: 'Site',
 							filters: { status: 'Active' },
-							initialData: [{ label: site, value: site }]
+							initialData: [{ label: site, value: site }],
 						}"
 						placeholder="Select a site"
 						:modelValue="site"
 						@update:modelValue="
-							site => {
+							(site) => {
 								this.site = site;
 								$router.push({
 									name: 'Log Browser',
-									params: { mode: 'site', docName: site }
+									params: { mode: 'site', docName: site },
 								});
 							}
 						"
@@ -64,18 +64,18 @@
 							initialData: [
 								{
 									label: bench,
-									value: bench
-								}
-							]
+									value: bench,
+								},
+							],
 						}"
 						placeholder="Select a bench"
 						:modelValue="bench"
 						@update:modelValue="
-							bench => {
+							(bench) => {
 								this.bench = bench;
 								$router.push({
 									name: 'Log Browser',
-									params: { mode: 'bench', docName: bench }
+									params: { mode: 'bench', docName: bench },
 								});
 							}
 						"
@@ -86,7 +86,7 @@
 						</div>
 					</Tooltip>
 					<Button
-						link="https://frappecloud.com/docs/devtools/log-browser"
+						link="https://docs.frappe.io/cloud/devtools/log-browser"
 						target="_blank"
 					>
 						<i-lucide-help-circle class="h-4 w-4" />
@@ -145,12 +145,12 @@ export default {
 		LogList,
 		LogViewer,
 		LinkControl,
-		Breadcrumbs
+		Breadcrumbs,
 	},
 	props: {
 		mode: String,
 		logId: String,
-		docName: String
+		docName: String,
 	},
 	mounted() {
 		if (!this.mode) {
@@ -166,7 +166,7 @@ export default {
 		return {
 			site: this.mode === 'site' ? this.docName : null || null,
 			bench: this.mode === 'bench' ? this.docName : null || null,
-			searchLogQuery: ''
+			searchLogQuery: '',
 		};
 	},
 	resources: {
@@ -176,17 +176,17 @@ export default {
 				params: {
 					log_type: this.mode,
 					doc_name: this.docName,
-					log_name: this.logId
+					log_name: this.logId,
 				},
 				initialData: [],
-				auto: this.logId
+				auto: this.logId,
 			};
-		}
+		},
 	},
 	computed: {
 		log() {
 			return this.$resources.log?.data;
-		}
-	}
+		},
+	},
 };
 </script>
