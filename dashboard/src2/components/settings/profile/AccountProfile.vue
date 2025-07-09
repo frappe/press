@@ -74,6 +74,7 @@
 				</template>
 			</ListItem>
 			<ListItem
+				class="border-t"
 				:title="teamEnabled ? 'Disable Account' : 'Enable Account'"
 				:subtitle="
 					teamEnabled
@@ -261,8 +262,8 @@ export default {
 			onSuccess() {
 				this.showDisableAccountDialog = false;
 
-				const ChurnFeedbackDialog = defineAsyncComponent(() =>
-					import('../../ChurnFeedbackDialog.vue')
+				const ChurnFeedbackDialog = defineAsyncComponent(
+					() => import('../../ChurnFeedbackDialog.vue'),
 				);
 
 				renderDialog(
@@ -271,7 +272,7 @@ export default {
 						onUpdated: () => {
 							toast.success('Your feedback was submitted successfully');
 						},
-					})
+					}),
 				);
 				toast.success('Your account was disabled successfully');
 				this.reloadAccount();
@@ -329,8 +330,8 @@ export default {
 			const currency = this.$team.doc.currency;
 			const minAmount = currency === 'INR' ? 410 : 5;
 			if (this.draftInvoice && this.draftInvoice.amount_due > minAmount) {
-				const finalizeInvoicesDialog = defineAsyncComponent(() =>
-					import('../../billing/FinalizeInvoicesDialog.vue')
+				const finalizeInvoicesDialog = defineAsyncComponent(
+					() => import('../../billing/FinalizeInvoicesDialog.vue'),
 				);
 				renderDialog(h(finalizeInvoicesDialog));
 			} else if (this.unpaidInvoices) {
@@ -373,7 +374,7 @@ export default {
 										this.$team.doc.payment_mode === 'Card'
 									) {
 										window.open(
-											`/api/method/press.api.client.run_doc_method?dt=Invoice&dn=${invoice.name}&method=stripe_payment_url`
+											`/api/method/press.api.client.run_doc_method?dt=Invoice&dn=${invoice.name}&method=stripe_payment_url`,
 										);
 									} else {
 										this.showAddPrepaidCreditsDialog = true;
@@ -388,8 +389,8 @@ export default {
 
 			// validate if any active servers
 			if (this.showActiveServersDialog) {
-				const activeServersDialog = defineAsyncComponent(() =>
-					import('../../ActiveServersDialog.vue')
+				const activeServersDialog = defineAsyncComponent(
+					() => import('../../ActiveServersDialog.vue'),
 				);
 				renderDialog(h(activeServersDialog));
 				return;
@@ -419,13 +420,13 @@ export default {
 								onError(e) {
 									console.error(e);
 								},
-							}
+							},
 						),
 						{
 							success: 'You can now publish apps to our Marketplace',
 							error: 'Failed to mark you as a developer',
 							loading: 'Making you a developer...',
-						}
+						},
 					);
 				},
 			});

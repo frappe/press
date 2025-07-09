@@ -7,9 +7,9 @@
 					label: 'Add Webhook',
 					variant: 'solid',
 					onClick: addWebhook,
-					loading: $resources?.addWebhook?.loading
-				}
-			]
+					loading: $resources?.addWebhook?.loading,
+				},
+			],
 		}"
 	>
 		<template #body-content>
@@ -27,7 +27,10 @@
 					</FormControl>
 					<p class="mt-2 text-sm text-gray-700">
 						<strong>Note:</strong> Secret is optional. Check
-						<a href="https://frappecloud.com/docs/webhook-introduction" class="underline" target="_blank"
+						<a
+							href="https://docs.frappe.io/cloud/webhook-introduction"
+							class="underline"
+							target="_blank"
 							>the documentation</a
 						>
 						to learn more
@@ -69,12 +72,12 @@ export default {
 			endpoint: '',
 			secret: '',
 			selectedEvents: [],
-			errorMessage: ''
+			errorMessage: '',
 		};
 	},
 	mounted() {
 		if (this.selectedEvents.length) {
-			this.selectedEvents = this.selectedEvents.map(event => event.name);
+			this.selectedEvents = this.selectedEvents.map((event) => event.name);
 		}
 	},
 	resources: {
@@ -82,7 +85,7 @@ export default {
 			return {
 				url: 'press.api.webhook.available_events',
 				inititalData: [],
-				auto: true
+				auto: true,
 			};
 		},
 		addWebhook() {
@@ -91,14 +94,14 @@ export default {
 				params: {
 					endpoint: this.endpoint,
 					secret: this.secret,
-					events: this.selectedEvents
+					events: this.selectedEvents,
 				},
 				onSuccess() {
 					toast.success('Webhook added successfully');
 					this.$emit('success');
-				}
+				},
 			};
-		}
+		},
 	},
 	computed: {},
 	methods: {
@@ -109,13 +112,13 @@ export default {
 					() =>
 						'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[
 							Math.floor(Math.random() * 62)
-						]
+						],
 				)
 				.join('');
 		},
 		selectEvent(event) {
 			if (this.selectedEvents.includes(event)) {
-				this.selectedEvents = this.selectedEvents.filter(e => e !== event);
+				this.selectedEvents = this.selectedEvents.filter((e) => e !== event);
 			} else {
 				this.selectedEvents.push(event);
 			}
@@ -134,7 +137,7 @@ export default {
 			}
 			this.errorMessage = '';
 			this.$resources.addWebhook.submit();
-		}
-	}
+		},
+	},
 };
 </script>

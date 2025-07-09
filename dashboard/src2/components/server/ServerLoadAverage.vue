@@ -6,7 +6,7 @@
 				<Button
 					icon="help-circle"
 					variant="ghost"
-					:link="'https://frappecloud.com/docs/server-analytics#load-average'"
+					:link="'https://docs.frappe.io/cloud/server-analytics#load-average'"
 				/>
 				<router-link
 					class="text-base text-gray-600 hover:text-gray-700"
@@ -24,7 +24,7 @@
 			:chartTheme="[
 				$theme.colors.green[500],
 				$theme.colors.yellow[400],
-				$theme.colors.red[500]
+				$theme.colors.red[500],
 			]"
 			:data="loadAverageData"
 			:showCard="false"
@@ -50,11 +50,11 @@ export default {
 					name: this.server,
 					timezone: localTimezone,
 					query: 'loadavg',
-					duration: '6 Hour'
+					duration: '6 Hour',
 				},
-				auto: true
+				auto: true,
 			};
-		}
+		},
 	},
 	computed: {
 		loadAverageData() {
@@ -62,11 +62,11 @@ export default {
 			if (!loadavg) return;
 
 			loadavg.datasets.sort(
-				(a, b) => Number(a.name.split(' ')[2]) - Number(b.name.split(' ')[2])
+				(a, b) => Number(a.name.split(' ')[2]) - Number(b.name.split(' ')[2]),
 			);
 
 			return this.transformMultiLineChartData(loadavg);
-		}
+		},
 	},
 	methods: {
 		transformMultiLineChartData(data, stack = null, percentage = false) {
@@ -86,14 +86,14 @@ export default {
 				for (let i = 0; i < values.length; i++) {
 					dataset.push([
 						+new Date(data.labels[i]),
-						percentage ? (values[i] / total[i]) * 100 : values[i]
+						percentage ? (values[i] / total[i]) * 100 : values[i],
 					]);
 				}
 				return { name, dataset, stack };
 			});
 
 			return { datasets, yMax: percentage ? 100 : null };
-		}
-	}
+		},
+	},
 };
 </script>

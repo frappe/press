@@ -77,7 +77,7 @@
 					<p class="text-sm">
 						Please check out the
 						<a
-							href="https://frappecloud.com/docs/database-users-and-permission-manager#faq"
+							href="https://docs.frappe.io/cloud/database-users-and-permission-manager#faq"
 							target="_blank"
 							class="underline"
 							>documentation</a
@@ -109,11 +109,11 @@ export default {
 					return {
 						dt: 'Site Database User',
 						dn: this.name,
-						method: 'get_credential'
+						method: 'get_credential',
 					};
 				},
 				initialData: {},
-				auto: true
+				auto: true,
 			};
 		},
 		downloadSSLCert() {
@@ -121,11 +121,11 @@ export default {
 				url: 'press.api.download_ssl_cert',
 				makeParams: () => {
 					return {
-						domain: this.databaseCredential?.host ?? ''
+						domain: this.databaseCredential?.host ?? '',
 					};
 				},
 				auto: false,
-				onSuccess: data => {
+				onSuccess: (data) => {
 					// create a blob and trigger a download
 					const blob = new Blob([data], { type: 'text/plain' });
 					const filename = `${this.databaseCredential?.host ?? ''}.pem`;
@@ -135,9 +135,9 @@ export default {
 					link.click();
 					URL.revokeObjectURL(link.href);
 					toast.success('SSL Certificate downloaded successfully');
-				}
+				},
 			};
-		}
+		},
 	},
 	computed: {
 		databaseCredential() {
@@ -153,8 +153,8 @@ export default {
 			},
 			set(value) {
 				this.$emit('update:modelValue', value);
-			}
-		}
-	}
+			},
+		},
+	},
 };
 </script>

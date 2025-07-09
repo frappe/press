@@ -21,7 +21,7 @@ export default {
 		createApprovalRequest: 'create_approval_request',
 		cancelApprovalRequest: 'cancel_approval_request',
 		updateListing: 'update_listing',
-		markAppReadyForReview: 'mark_app_ready_for_review'
+		markAppReadyForReview: 'mark_app_ready_for_review',
 	},
 	list: {
 		route: '/apps',
@@ -38,46 +38,47 @@ export default {
 						? h('img', {
 								src: row.image,
 								class: 'w-6 h-6 rounded-sm',
-								alt: row.title
-						  })
+								alt: row.title,
+							})
 						: h(
 								'div',
 								{
 									class:
-										'w-6 h-6 rounded bg-gray-300 text-gray-600 flex items-center justify-center'
+										'w-6 h-6 rounded bg-gray-300 text-gray-600 flex items-center justify-center',
 								},
-								row.title[0].toUpperCase()
-						  );
-				}
+								row.title[0].toUpperCase(),
+							);
+				},
 			},
 			{
 				label: 'Status',
 				type: 'Badge',
 				fieldname: 'status',
-				width: 0.3
+				width: 0.3,
 			},
 			{
 				label: 'Description',
 				fieldname: 'description',
-				width: 1.0
-			}
+				width: 1.0,
+			},
 		],
 		primaryAction() {
 			return {
 				label: 'New App',
 				variant: 'solid',
 				slots: {
-					prefix: icon('plus')
+					prefix: icon('plus'),
 				},
 				onClick() {
-					const NewMarketplaceAppDialog = defineAsyncComponent(() =>
-						import('../components/marketplace/NewMarketplaceAppDialog.vue')
+					const NewMarketplaceAppDialog = defineAsyncComponent(
+						() =>
+							import('../components/marketplace/NewMarketplaceAppDialog.vue'),
 					);
 
 					renderDialog(h(NewMarketplaceAppDialog));
-				}
+				},
 			};
-		}
+		},
 	},
 	detail: {
 		titleField: 'name',
@@ -90,8 +91,8 @@ export default {
 				items[0],
 				{
 					label: app.doc.title,
-					route: `/apps/${app.doc.name}`
-				}
+					route: `/apps/${app.doc.name}`,
+				},
 			];
 		},
 		tabs: [
@@ -100,24 +101,24 @@ export default {
 				icon: icon('bar-chart-2'),
 				route: 'analytics',
 				type: 'Component',
-				component: defineAsyncComponent(() =>
-					import('../components/marketplace/MarketplaceAppAnalytics.vue')
+				component: defineAsyncComponent(
+					() => import('../components/marketplace/MarketplaceAppAnalytics.vue'),
 				),
-				props: app => {
+				props: (app) => {
 					return { app: app.doc.name };
-				}
+				},
 			},
 			{
 				label: 'Listing',
 				icon: icon('shopping-cart'),
 				route: 'listing',
 				type: 'Component',
-				component: defineAsyncComponent(() =>
-					import('../components/MarketplaceAppListing.vue')
+				component: defineAsyncComponent(
+					() => import('../components/MarketplaceAppListing.vue'),
 				),
-				props: app => {
+				props: (app) => {
 					return { app: app };
-				}
+				},
 			},
 			{
 				label: 'Versions',
@@ -126,7 +127,7 @@ export default {
 				type: 'list',
 				list: {
 					doctype: 'Marketplace App Version',
-					filters: app => {
+					filters: (app) => {
 						return { parent: app.doc.name, parenttype: 'Marketplace App' };
 					},
 					onRowClick: (row, context) => {
@@ -136,38 +137,38 @@ export default {
 					fields: [
 						'source.repository_owner as repository_owner',
 						'source.repository as repository',
-						'source.branch as branch'
+						'source.branch as branch',
 					],
 					columns: [
 						{
 							label: 'Version',
 							fieldname: 'version',
-							width: 0.5
+							width: 0.5,
 						},
 						{
 							label: 'Source',
 							fieldname: 'source',
-							width: 0.5
+							width: 0.5,
 						},
 						{
 							label: 'Repository',
 							width: 0.5,
 							format: (value, row) => {
 								return `${row.repository_owner}/${row.repository}`;
-							}
+							},
 						},
 						{
 							label: 'Branch',
 							fieldname: 'branch',
 							type: 'Badge',
-							width: 0.5
-						}
+							width: 0.5,
+						},
 					],
 					primaryAction({ listResource: versions, documentResource: app }) {
 						return {
 							label: 'New Version',
 							slots: {
-								prefix: icon('plus')
+								prefix: icon('plus'),
 							},
 							onClick() {
 								renderDialog(
@@ -176,8 +177,8 @@ export default {
 										{
 											options: {
 												title: `Add version support for ${app.doc.title}`,
-												size: '4xl'
-											}
+												size: '4xl',
+											},
 										},
 										{
 											default: () =>
@@ -189,7 +190,7 @@ export default {
 														columns: [
 															{
 																label: 'Version',
-																fieldname: 'version'
+																fieldname: 'version',
 															},
 															{
 																label: 'Branch',
@@ -197,14 +198,14 @@ export default {
 																fieldname: 'branch',
 																format: (value, row) => {
 																	row.selectedOption = value[0];
-																	return value.map(v => ({
+																	return value.map((v) => ({
 																		label: v,
 																		value: v,
 																		onClick: () => {
 																			row.selectedOption = v;
-																		}
+																		},
 																	}));
-																}
+																},
 															},
 															{
 																label: '',
@@ -220,7 +221,7 @@ export default {
 																			toast.promise(
 																				app.addVersion.submit({
 																					version: row.version,
-																					branch: row.selectedOption
+																					branch: row.selectedOption,
 																				}),
 																				{
 																					loading: 'Adding new version...',
@@ -229,29 +230,29 @@ export default {
 																						versionsOptions.reload();
 																						return 'New version added';
 																					},
-																					error: e => getToastErrorMessage(e)
-																				}
+																					error: (e) => getToastErrorMessage(e),
+																				},
 																			);
-																		}
+																		},
 																	};
-																}
-															}
+																},
+															},
 														],
 														resource() {
 															return {
 																url: 'press.api.marketplace.options_for_version',
 																params: {
-																	name: app.doc.name
+																	name: app.doc.name,
 																},
-																auto: true
+																auto: true,
 															};
-														}
-													}
-												})
-										}
-									)
+														},
+													},
+												}),
+										},
+									),
 								);
-							}
+							},
 						};
 					},
 					rowActions({ row, listResource: versions, documentResource: app }) {
@@ -259,11 +260,11 @@ export default {
 							{
 								label: 'Show Releases',
 								slots: {
-									prefix: icon('plus')
+									prefix: icon('plus'),
 								},
 								onClick() {
 									showReleases(row, app);
-								}
+								},
 							},
 							{
 								label: 'Change Branch',
@@ -276,10 +277,10 @@ export default {
 											activeBranch: row.branch,
 											onBranchChanged() {
 												versions.reload();
-											}
-										})
+											},
+										}),
 									);
-								}
+								},
 							},
 							{
 								label: 'Remove Version',
@@ -292,14 +293,14 @@ export default {
 												versions.reload();
 												return 'Version removed successfully';
 											},
-											error: e => getToastErrorMessage(e)
-										}
+											error: (e) => getToastErrorMessage(e),
+										},
 									);
-								}
-							}
+								},
+							},
 						];
-					}
-				}
+					},
+				},
 			},
 			{
 				label: 'Pricing',
@@ -308,43 +309,43 @@ export default {
 				type: 'list',
 				list: {
 					doctype: 'Marketplace App Plan',
-					filters: app => {
+					filters: (app) => {
 						return { app: app.doc.name };
 					},
 					fields: ['name', 'title', 'price_inr', 'price_usd', 'enabled'],
 					columns: [
 						{
 							label: 'Title',
-							fieldname: 'title'
+							fieldname: 'title',
 						},
 						{
 							label: 'Enabled',
 							type: 'Badge',
 							fieldname: 'enabled',
-							format: value => {
+							format: (value) => {
 								return value == 1 ? 'Enabled' : 'Disabled';
-							}
+							},
 						},
 						{
 							label: 'Price (INR)',
 							fieldname: 'price_inr',
-							format: value => {
+							format: (value) => {
 								return currency(value, 'INR');
-							}
+							},
 						},
 						{
 							label: 'Price (USD)',
 							fieldname: 'price_usd',
-							format: value => {
+							format: (value) => {
 								return currency(value, 'USD');
-							}
-						}
+							},
+						},
 					],
 					primaryAction({ listResource: plans, documentResource: app }) {
 						return {
 							label: 'New Plan',
 							slots: {
-								prefix: icon('plus')
+								prefix: icon('plus'),
 							},
 							onClick() {
 								renderDialog(
@@ -352,10 +353,10 @@ export default {
 										app: app.doc.name,
 										onPlanCreated() {
 											plans.reload();
-										}
-									})
+										},
+									}),
 								);
-							}
+							},
 						};
 					},
 					rowActions({ row, listResource: plans, documentResource: app }) {
@@ -369,14 +370,14 @@ export default {
 											plan: row,
 											onPlanUpdated() {
 												plans.reload();
-											}
-										})
+											},
+										}),
 									);
-								}
-							}
+								},
+							},
 						];
-					}
-				}
+					},
+				},
 			},
 			{
 				label: 'Subscriptions',
@@ -385,10 +386,10 @@ export default {
 				type: 'list',
 				list: {
 					doctype: 'Subscription',
-					filters: app => {
+					filters: (app) => {
 						return {
 							document_type: 'Marketplace App',
-							document_name: app.name
+							document_name: app.name,
 						};
 					},
 					fields: ['site', 'enabled', 'team'],
@@ -399,91 +400,92 @@ export default {
 								label: 'Status',
 								class: !isMobile() ? 'w-24' : '',
 								fieldname: 'enabled',
-								options: ['', 'Active', 'Disabled']
-							}
+								options: ['', 'Active', 'Disabled'],
+							},
 						];
 					},
 					columns: [
 						{
 							label: 'Site',
 							fieldname: 'site',
-							width: 0.6
+							width: 0.6,
 						},
 						{
 							label: 'Status',
 							type: 'Badge',
 							fieldname: 'enabled',
 							width: 0.3,
-							format: value => {
+							format: (value) => {
 								return value ? 'Active' : 'Disabled';
-							}
+							},
 						},
 						{
 							label: 'Price',
 							fieldname: 'price',
 							width: 0.3,
-							format: value => {
+							format: (value) => {
 								return userCurrency(value);
-							}
+							},
 						},
 						{
 							label: 'Active For',
 							fieldname: 'active_for',
 							width: 0.3,
-							format: value => {
+							format: (value) => {
 								return value + (value == 1 ? ' day' : ' days');
-							}
-						}
-					]
-				}
-			}
+							},
+						},
+					],
+				},
+			},
 		],
 		actions({ documentResource: app }) {
 			return [
 				{
 					label: 'View in Marketplace',
 					slots: {
-						prefix: icon('external-link')
+						prefix: icon('external-link'),
 					},
 					condition: () => app.doc.status === 'Published',
 					onClick() {
 						window.open(
 							`${window.location.origin}/marketplace/apps/${app.name}`,
-							'_blank'
+							'_blank',
 						);
-					}
+					},
 				},
 				{
 					label: 'Guidelines',
 					slots: {
-						icon: icon('help-circle')
+						icon: icon('help-circle'),
 					},
 					condition: () => app.doc.status === 'Draft',
 					onClick() {
 						window.open(
-							'https://frappecloud.com/docs/marketplace/marketplace-guidelines',
-							'_blank'
+							'https://docs.frappe.io/cloud/marketplace/marketplace-guidelines',
+							'_blank',
 						);
-					}
+					},
 				},
 				{
 					label: 'Complete Listing',
 					variant: 'solid',
 					slots: {
-						prefix: icon('alert-circle')
+						prefix: icon('alert-circle'),
 					},
 					condition: () => app.doc.status === 'Draft',
 					onClick() {
-						let AppListingStepsDialog = defineAsyncComponent(() =>
-							import('../components/marketplace/AppListingStepsDialog.vue')
+						let AppListingStepsDialog = defineAsyncComponent(
+							() =>
+								import('../components/marketplace/AppListingStepsDialog.vue'),
 						);
 
 						renderDialog(
 							h(AppListingStepsDialog, {
-								app: app.doc.name
-							})
+								app: app.doc.name,
+							}),
 						);
-					}
+					},
 				},
 				,
 				{
@@ -506,17 +508,17 @@ export default {
 												router.push({ name: 'Marketplace App List' });
 												return 'App deleted successfully';
 											},
-											error: e => getToastErrorMessage(e)
+											error: (e) => getToastErrorMessage(e),
 										});
-									}
+									},
 								});
-							}
-						}
-					]
-				}
+							},
+						},
+					],
+				},
 			];
-		}
-	}
+		},
+	},
 };
 
 function showReleases(row, app) {
@@ -526,8 +528,8 @@ function showReleases(row, app) {
 			{
 				options: {
 					title: `Releases for ${app.doc.name} on ${row.branch} branch`,
-					size: '6xl'
-				}
+					size: '6xl',
+				},
 			},
 			{
 				default: () =>
@@ -538,7 +540,7 @@ function showReleases(row, app) {
 							doctype: 'App Release',
 							filters: {
 								app: app.doc.name,
-								source: row.source
+								source: row.source,
 							},
 							fields: ['message', 'tag', 'author', 'status'],
 							orderBy: 'creation desc',
@@ -547,7 +549,7 @@ function showReleases(row, app) {
 									label: 'Commit Message',
 									fieldname: 'message',
 									class: 'w-64',
-									width: 0.5
+									width: 0.5,
 								},
 								{
 									label: 'Hash',
@@ -555,20 +557,20 @@ function showReleases(row, app) {
 									class: 'w-24',
 									type: 'Badge',
 									width: 0.2,
-									format: value => {
+									format: (value) => {
 										return value.slice(0, 7);
-									}
+									},
 								},
 								{
 									label: 'Author',
 									fieldname: 'author',
-									width: 0.2
+									width: 0.2,
 								},
 								{
 									label: 'Status',
 									fieldname: 'status',
 									type: 'Badge',
-									width: 0.3
+									width: 0.3,
 								},
 								{
 									label: 'Code Screening',
@@ -586,13 +588,13 @@ function showReleases(row, app) {
 												theme: 'blue',
 												size: 'sm',
 												onClick: () =>
-													codeReview(row, app, window.is_system_user)
+													codeReview(row, app, window.is_system_user),
 											});
 										}
 										return h(Badge, {
-											label: row.screening_status || 'Not Started'
+											label: row.screening_status || 'Not Started',
 										});
-									}
+									},
 								},
 								{
 									label: '',
@@ -622,29 +624,29 @@ function showReleases(row, app) {
 												toast.promise(
 													row.status === 'Awaiting Approval'
 														? app.cancelApprovalRequest.submit({
-																app_release: row.name
-														  })
+																app_release: row.name,
+															})
 														: app.createApprovalRequest.submit({
-																app_release: row.name
-														  }),
+																app_release: row.name,
+															}),
 													{
 														loading: loadingMessage,
 														success: () => {
 															releases.reload();
 															return successMessage;
 														},
-														error: e => getToastErrorMessage(e)
-													}
+														error: (e) => getToastErrorMessage(e),
+													},
 												);
-											}
+											},
 										};
-									}
-								}
-							]
-						}
-					})
-			}
-		)
+									},
+								},
+							],
+						},
+					}),
+			},
+		),
 	);
 }
 
@@ -653,7 +655,7 @@ function codeReview(row, app, isSystemUser) {
 		h(CodeReview, {
 			row: row,
 			app: app,
-			isSystemUser: isSystemUser
-		})
+			isSystemUser: isSystemUser,
+		}),
 	);
 }

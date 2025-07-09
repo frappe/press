@@ -7,9 +7,9 @@
 					label: 'Save Changes',
 					variant: 'solid',
 					onClick: updateWebhook,
-					loading: this.$resources.updateWebhook.loading
-				}
-			]
+					loading: this.$resources.updateWebhook.loading,
+				},
+			],
 		}"
 	>
 		<template #body-content>
@@ -42,7 +42,7 @@
 					<p class="mt-1.5 text-sm text-gray-700">
 						<secret>Note:</secret> Secret is optional. Check
 						<a
-							href="https://frappecloud.com/docs/webhook-introduction"
+							href="https://docs.frappe.io/cloud/webhook-introduction"
 							class="underline"
 							target="_blank"
 							>the documentation</a
@@ -91,12 +91,12 @@ export default {
 			secret: '',
 			updateSecret: false,
 			selectedEvents: [],
-			errorMessage: ''
+			errorMessage: '',
 		};
 	},
 	mounted() {
 		if (this.selectedEvents.length) {
-			this.selectedEvents = this.selectedEvents.map(event => event.name);
+			this.selectedEvents = this.selectedEvents.map((event) => event.name);
 		}
 	},
 	resources: {
@@ -104,7 +104,7 @@ export default {
 			return {
 				url: 'press.api.webhook.available_events',
 				inititalData: [],
-				auto: true
+				auto: true,
 			};
 		},
 		fetchWebhookInfo() {
@@ -112,13 +112,13 @@ export default {
 				url: 'press.api.client.get',
 				params: {
 					doctype: 'Press Webhook',
-					name: this.webhook.name
+					name: this.webhook.name,
 				},
 				auto: true,
-				onSuccess: doc => {
+				onSuccess: (doc) => {
 					this.endpoint = doc.endpoint;
-					this.selectedEvents = doc.events.map(event => event.event);
-				}
+					this.selectedEvents = doc.events.map((event) => event.event);
+				},
 			};
 		},
 		updateWebhook() {
@@ -134,7 +134,7 @@ export default {
 						name: this.webhook.name,
 						endpoint: this.endpoint,
 						secret: this.updateSecret ? this.secret : '',
-						events: this.selectedEvents
+						events: this.selectedEvents,
 					};
 				},
 				onSuccess: () => {
@@ -142,16 +142,16 @@ export default {
 					const activationRequired = this.webhook.endpoint !== this.endpoint;
 					this.$emit('success', activationRequired);
 				},
-				onError: e => {
+				onError: (e) => {
 					toast.error(
 						getToastErrorMessage(
 							e,
-							'Failed to update webhook. Please try again'
-						)
+							'Failed to update webhook. Please try again',
+						),
 					);
-				}
+				},
 			};
-		}
+		},
 	},
 	computed: {},
 	methods: {
@@ -162,13 +162,13 @@ export default {
 					() =>
 						'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[
 							Math.floor(Math.random() * 62)
-						]
+						],
 				)
 				.join('');
 		},
 		selectEvent(event) {
 			if (this.selectedEvents.includes(event)) {
-				this.selectedEvents = this.selectedEvents.filter(e => e !== event);
+				this.selectedEvents = this.selectedEvents.filter((e) => e !== event);
 			} else {
 				this.selectedEvents.push(event);
 			}
@@ -183,7 +183,7 @@ export default {
 			}
 			this.errorMessage = '';
 			this.$resources.updateWebhook.submit();
-		}
-	}
+		},
+	},
 };
 </script>
