@@ -26,7 +26,6 @@ class BenchUpdate(Document):
 
 		from press.press.doctype.bench_site_update.bench_site_update import BenchSiteUpdate
 		from press.press.doctype.bench_update_app.bench_update_app import BenchUpdateApp
-		from press.press.doctype.release_group.release_group import ReleaseGroup
 
 		apps: DF.Table[BenchUpdateApp]
 		bench: DF.Link | None
@@ -34,6 +33,7 @@ class BenchUpdate(Document):
 		group: DF.Link
 		is_inplace_update: DF.Check
 		sites: DF.Table[BenchSiteUpdate]
+		wait_for_snapshot_before_update: DF.Check
 	# end: auto-generated types
 
 	def validate(self):
@@ -85,11 +85,12 @@ class BenchUpdate(Document):
 				frappe.ValidationError,
 			)
 
-	def deploy(self, run_will_fail_check=False) -> str:
+	def deploy(self, run_will_fail_check=False, wait_for_snapshot_before_update: bool = False) -> str:
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
 		candidate = rg.create_deploy_candidate(self.apps, run_will_fail_check)
 		deploy = candidate.schedule_build_and_deploy()
 
+		self.wait_for_snapshot_before_update = wait_for_snapshot_before_update
 		self.candidate = candidate.name
 		self.save()
 
@@ -138,7 +139,9 @@ class BenchUpdate(Document):
 					):
 						continue
 					site_update = frappe.get_doc("Site", row.site).schedule_update(
-						skip_failing_patches=row.skip_failing_patches, skip_backups=row.skip_backups
+						skip_failing_patches=row.skip_failing_patches,
+						skip_backups=row.skip_backups,
+						wait_for_snapshot_before_update=self.wait_for_snapshot_before_update,
 					)
 					frappe.db.set_value("Bench Site Update", row.name, "site_update", site_update)
 					frappe.db.commit()

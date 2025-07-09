@@ -765,6 +765,7 @@ def deploy_and_update(
 	apps: list,
 	sites: list | None = None,
 	run_will_fail_check: bool = True,
+	wait_for_snapshot_before_update: bool = False,
 ):
 	# Returns name of the Deploy Candidate that is running the build
 	return get_bench_update(
@@ -772,7 +773,7 @@ def deploy_and_update(
 		apps,
 		sites,
 		False,
-	).deploy(run_will_fail_check)
+	).deploy(run_will_fail_check, wait_for_snapshot_before_update)
 
 
 @frappe.whitelist()

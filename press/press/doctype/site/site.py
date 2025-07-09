@@ -1173,6 +1173,7 @@ class Site(Document, TagHelpers):
 		skip_failing_patches: bool = False,
 		skip_backups: bool = False,
 		physical_backup: bool = False,
+		wait_for_snapshot_before_update: bool = False,
 		scheduled_time: str | None = None,
 	):
 		log_site_activity(self.name, "Update")
@@ -1186,6 +1187,9 @@ class Site(Document, TagHelpers):
 				"skipped_backups": skip_backups,
 				"status": "Scheduled" if scheduled_time else "Pending",
 				"scheduled_time": scheduled_time,
+				"wait_for_snapshot_before_update": wait_for_snapshot_before_update
+				if physical_backup
+				else False,
 			}
 		).insert()
 		return doc.name

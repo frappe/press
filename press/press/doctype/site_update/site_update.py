@@ -15,7 +15,6 @@ from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils import convert_utc_to_system_timezone
 from frappe.utils.caching import site_cache
-from frappe.utils.data import cint
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
@@ -23,7 +22,6 @@ from press.press.doctype.physical_backup_restoration.physical_backup_restoration
 	get_physical_backup_restoration_steps,
 )
 from press.utils import log_error
-from press.press.doctype.site.site import is_eligible_for_physical_backup
 
 if TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
@@ -233,6 +231,8 @@ class SiteUpdate(Document):
 			self.start()
 
 	def set_physical_backup_mode_if_eligible(self):
+		from press.press.doctype.site.site import is_eligible_for_physical_backup
+
 		if self.skipped_backups:
 			return
 
