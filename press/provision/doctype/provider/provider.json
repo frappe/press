@@ -1,0 +1,85 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:cloud_provider",
+ "creation": "2025-06-25 13:41:00.298622",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "providers_section",
+  "cloud_provider",
+  "source",
+  "status",
+  "credentials_section",
+  "secret"
+ ],
+ "fields": [
+  {
+   "fieldname": "providers_section",
+   "fieldtype": "Section Break",
+   "label": "Providers and Secret"
+  },
+  {
+   "fieldname": "cloud_provider",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Provider",
+   "options": "Virtual Machine",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "Select",
+   "fieldname": "source",
+   "fieldtype": "Data",
+   "label": "Source"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Select\nActive\nExpired"
+  },
+  {
+   "fieldname": "credentials_section",
+   "fieldtype": "Section Break",
+   "label": "Credentials"
+  },
+  {
+   "fieldname": "secret",
+   "fieldtype": "Password",
+   "label": "Secret",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-07-03 11:06:19.213521",
+ "modified_by": "Administrator",
+ "module": "Provision",
+ "name": "Provider",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "track_seen": 1,
+ "track_views": 1
+}
