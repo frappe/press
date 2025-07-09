@@ -1,5 +1,7 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
+from typing import TYPE_CHECKING
+
 from cdktf import Fn
 from cdktf_cdktf_provider_digitalocean.droplet import Droplet
 from cdktf_cdktf_provider_digitalocean.project import Project
@@ -9,12 +11,8 @@ from cdktf_cdktf_provider_digitalocean.volume_attachment import VolumeAttachment
 from cdktf_cdktf_provider_digitalocean.vpc import Vpc
 from constructs import Construct
 
-from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
 	from press.press.doctype.region.region import Region
-	from press.press.opentofu import PilotStack
-
 
 class DigitalOcean:
 	def provision(self, stack: "PilotStack", scope: Construct, name: str, region: "Region") -> None:
