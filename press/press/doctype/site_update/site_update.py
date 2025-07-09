@@ -23,6 +23,7 @@ from press.press.doctype.physical_backup_restoration.physical_backup_restoration
 	get_physical_backup_restoration_steps,
 )
 from press.utils import log_error
+from press.press.doctype.site.site import is_eligible_for_physical_backup
 
 if TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
@@ -231,50 +232,14 @@ class SiteUpdate(Document):
 		if not self.scheduled_time:
 			self.start()
 
-	def set_physical_backup_mode_if_eligible(self):  # noqa: C901
+	def set_physical_backup_mode_if_eligible(self):
 		if self.skipped_backups:
 			return
 
 		if self.deploy_type != "Migrate":
 			return
 
-		# Check if physical backup is disabled globally from Press Settings
-		if frappe.utils.cint(frappe.get_value("Press Settings", None, "disable_physical_backup")):
-			return
-
-		database_server = frappe.get_value("Server", self.server, "database_server")
-		if not database_server:
-			# It might be the case of configured RDS server and no self hosted database server
-			return
-
-		# Check if physical backup is enabled on the database server
-		enable_physical_backup = frappe.get_value(
-			"Database Server", database_server, "enable_physical_backup"
-		)
-		if not enable_physical_backup:
-			return
-
-		# Sanity check - Provider should be AWS EC2
-		provider = frappe.get_value("Database Server", database_server, "provider")
-		if provider != "AWS EC2":
-			return
-
-		# Check for last logical backup
-		last_logical_site_backups = frappe.db.get_list(
-			"Site Backup",
-			filters={"site": self.site, "physical": False},
-			pluck="database_size",
-			limit=1,
-			order_by="creation desc",
-			ignore_permissions=True,
-		)
-		db_backup_size = 0
-		if len(last_logical_site_backups) > 0:
-			db_backup_size = cint(last_logical_site_backups[0])
-
-		# If last logical backup size is greater than 300MB (actual db size approximate 3GB)
-		# Then only take physical backup
-		if db_backup_size > 314572800:
+		if is_eligible_for_physical_backup(self.site):
 			self.backup_type = "Physical"
 
 	@dashboard_whitelist()

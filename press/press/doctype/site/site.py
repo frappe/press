@@ -4310,3 +4310,54 @@ def suspend_sites_exceeding_disk_usage_for_last_7_days():
 			# Check once again and suspend if still exceeds limits
 			site: Site = frappe.get_doc("Site", site.name)
 			site.suspend(reason="Site Usage Exceeds Plan limits", skip_reload=True)
+
+
+def is_eligible_for_physical_backup(site: str):
+	"""
+	Check if the site is eligible for physical backup.
+	Physical backup is only available for sites on dedicated server plans.
+	"""
+	# Check if physical backup is disabled globally from Press Settings
+	if frappe.utils.cint(frappe.get_cached_value("Press Settings", None, "disable_physical_backup")):
+		return False
+
+	server = frappe.get_cached_value("Site", site, "server")
+	if not server:
+		return False
+
+	database_server = frappe.get_cached_value("Server", server, "database_server")
+	if not database_server:
+		# It might be the case of configured RDS server and no self hosted database server
+		return False
+
+	# Check if physical backup is enabled on the database server
+	enable_physical_backup = frappe.get_cached_value(
+		"Database Server", database_server, "enable_physical_backup"
+	)
+	if not enable_physical_backup:
+		return False
+
+	# Sanity check - Provider should be AWS EC2
+	provider = frappe.get_cached_value("Database Server", database_server, "provider")
+	if provider != "AWS EC2":
+		return False
+
+	# Check for last logical backup
+	last_logical_site_backups = frappe.db.get_list(
+		"Site Backup",
+		filters={"site": site, "physical": False},
+		pluck="database_size",
+		limit=1,
+		order_by="creation desc",
+		ignore_permissions=True,
+	)
+	db_backup_size = 0
+	if len(last_logical_site_backups) > 0:
+		db_backup_size = cint(last_logical_site_backups[0])
+
+	# If last logical backup size is greater than 300MB (actual db size approximate 3GB)
+	# Then only take physical backup
+	if db_backup_size > 314572800:
+		return True
+
+	return False
