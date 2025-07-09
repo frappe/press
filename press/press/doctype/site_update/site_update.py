@@ -522,7 +522,7 @@ class SiteUpdate(Document):
 				steps.append(
 					{
 						"name": "site_backup_not_found",
-						"title": "Backup Doesn't Exist",
+						"title": "Backup Cleared",
 						"status": "Skipped",
 						"output": "",
 						"stage": "Physical Backup",
