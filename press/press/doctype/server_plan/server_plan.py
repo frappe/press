@@ -20,7 +20,7 @@ class ServerPlan(Plan):
 		enabled: DF.Check
 		instance_type: DF.Data | None
 		memory: DF.Int
-		platform: DF.Literal["x86_64", "arm64"]
+		platform: DF.Literal["x86_64", "arm64", "amd64"]
 		premium: DF.Check
 		price_inr: DF.Currency
 		price_usd: DF.Currency

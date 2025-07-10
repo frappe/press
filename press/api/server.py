@@ -481,6 +481,7 @@ def plans(name, cluster=None, platform=None):
 			"cluster",
 			"instance_type",
 			"premium",
+			"platform",
 		],
 		filters=filters,
 	)
