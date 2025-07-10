@@ -7,7 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
-  "use_for_plan_change",
+  "legacy_plan",
   "title",
   "pricing_section",
   "price_inr",
@@ -131,14 +131,14 @@
   },
   {
    "default": "0",
-   "fieldname": "use_for_plan_change",
+   "fieldname": "legacy_plan",
    "fieldtype": "Check",
-   "label": "Use for plan change"
+   "label": "Legacy Plan"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-09 16:06:49.637516",
+ "modified": "2025-07-10 23:10:18.403862",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Plan",

@@ -304,7 +304,7 @@ def paid_plans():
 			frappe.qb.from_(doctype)
 			.select(doctype.name)
 			.where(doctype.price_inr > 0)
-			.where(doctype.enabled == 1)
+			.where((doctype.enabled == 1) | (doctype.legacy_plan == 1))
 			.run(pluck=True)
 		)
 
