@@ -31,7 +31,7 @@ class AddOnStorageLog(Document):
 
 	def after_insert(self):
 		"""Send add on storage notification"""
-		server: Server | DatabaseServer = frappe.get_doc(
+		server: Server | DatabaseServer = frappe.get_cached_doc(
 			self.server if self.server else self.database_server, self.name
 		)
 		notify_email = frappe.get_value("Team", server.team, "notify_email")
