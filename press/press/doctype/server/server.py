@@ -224,7 +224,7 @@ class BaseServer(Document, TagHelpers):
 			actions.append(
 				{
 					"action": "Disable Automatic Disk Expansion",
-					"description": "Disable the automatic increase of disk size when the server runs out of space.",
+					"description": "Disable the automatic increase of disk size when the server reached 90% of storage.",
 					"button_label": "Disable",
 					"condition": self.status == "Active" and self.doctype == "Server",
 					"doc_method": "toggle_auto_increase_storage",

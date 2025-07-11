@@ -138,7 +138,6 @@ function onEnableAutoDiskExpansion() {
 		message: `<div class="prose text-base">Enable auto add on storage?</div>`,
 		primaryAction: {
 			label: 'Enable',
-			theme: 'green',
 		},
 		onSuccess({ hide, values }) {
 			if (server.toggleAutoIncreaseStorage.loading) return;
@@ -164,7 +163,7 @@ function onEnableAutoDiskExpansion() {
 function onDisableAutoDiskExpansion() {
 	confirmDialog({
 		title: 'Disable automatic storage disk expansion',
-		message: `<div class="prose text-base">Disable auto add on storage?</div>`,
+		message: `<div class="prose text-base">Disable auto add on storage?<br>This can effect server uptime <a href="https://docs.frappe.io/cloud/storage-addons">Know more</a></br></div>`,
 		primaryAction: {
 			label: 'Disable',
 			theme: 'red',
