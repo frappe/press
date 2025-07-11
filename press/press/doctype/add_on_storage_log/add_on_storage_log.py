@@ -39,9 +39,9 @@ class AddOnStorageLog(Document):
 		frappe.sendmail(
 			recipients=notify_email,
 			subject=f"Important: Server {server.name} storage space at 90%",
-			template="disabled_auto_disk_expansion",
+			template="enabled_auto_disk_expansion",
 			args={
-				"sever": server.name,
+				"server": server.name,
 				"current_disk_usage": f"{self.current_disk_usage} GiB",
 				"available_disk_space": f"{self.increased_from} GiB",
 				"increase_by": f"{self.increased_to} GiB",
