@@ -136,9 +136,6 @@ class BaseServer(Document, TagHelpers):
 		is_auto_increase: bool = False,
 		current_disk_usage: int | None = None,
 	) -> None:
-		if not increment:
-			return
-
 		storage_parameters = {
 			"doctype": "Add On Storage Log",
 			"adding_storage": increment,
@@ -153,16 +150,20 @@ class BaseServer(Document, TagHelpers):
 
 		if server == self.name:
 			storage_parameters.update({"server": self.name})
-			add_on_storage_log: AddOnStorageLog = frappe.get_doc(storage_parameters)
-			add_on_storage_log.insert()
+
+			if increment:
+				add_on_storage_log: AddOnStorageLog = frappe.get_doc(storage_parameters)
+				add_on_storage_log.insert()
 
 			self.increase_disk_size(increment=increment, mountpoint=mountpoint)
 			self.create_subscription_for_storage(increment)
 		else:
 			server_doc: DatabaseServer = frappe.get_doc("Database Server", server)
 			storage_parameters.update({"database_server": server_doc.name})
-			add_on_storage_log: AddOnStorageLog = frappe.get_doc(storage_parameters)
-			add_on_storage_log.insert()
+
+			if increment:
+				add_on_storage_log: AddOnStorageLog = frappe.get_doc(storage_parameters)
+				add_on_storage_log.insert()
 
 			server_doc.increase_disk_size(increment=increment, mountpoint=mountpoint)
 			server_doc.create_subscription_for_storage(increment)
