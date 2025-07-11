@@ -1,7 +1,7 @@
 <template>
 	<Dialog
 		:options="{
-			title: 'Settings'
+			title: 'Settings',
 		}"
 		v-model="show"
 	>
@@ -11,6 +11,16 @@
 					v-model="enforce2FA"
 					label="Enforce 2FA"
 					description="Require all team members to enable 2FA"
+				/>
+				<Switch
+					v-model="enableBenchGroups"
+					label="Enable Bench Groups"
+					description="Enable bench groups for your team"
+				/>
+				<Switch
+					v-model="enableServers"
+					label="Enable Servers"
+					description="Enable servers for your team"
 				/>
 			</div>
 		</template>
@@ -23,7 +33,7 @@ import { Switch } from 'frappe-ui';
 export default {
 	data() {
 		return {
-			show: true
+			show: true,
 		};
 	},
 	components: { Switch },
@@ -34,8 +44,24 @@ export default {
 			},
 			set(value) {
 				this.$team.setValue.submit({ enforce_2fa: value });
-			}
-		}
-	}
+			},
+		},
+		enableBenchGroups: {
+			get() {
+				return Boolean(this.$team?.doc.benches_enabled);
+			},
+			set(value) {
+				this.$team.setValue.submit({ benches_enabled: value });
+			},
+		},
+		enableServers: {
+			get() {
+				return Boolean(this.$team?.doc.servers_enabled);
+			},
+			set(value) {
+				this.$team.setValue.submit({ servers_enabled: value });
+			},
+		},
+	},
 };
 </script>
