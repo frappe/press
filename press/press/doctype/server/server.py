@@ -29,10 +29,10 @@ from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.runner import Ansible
 from press.telegram_utils import Telegram
-from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
+	from press.press.doctype.add_on_storage_log.add_on_storage_log import AddOnStorageLog
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.database_server.database_server import DatabaseServer
@@ -128,13 +128,38 @@ class BaseServer(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def increase_disk_size_for_server(
-		self, server: str, increment: int, mountpoint: str | None = None
+		self,
+		server: str,
+		increment: int,
+		mountpoint: str | None = None,
+		is_auto_increase: bool = False,
+		current_disk_usage: int | None = None,
 	) -> None:
+		storage_parameters = {
+			"doctype": "Add On Storage Log",
+			"increased_from": self.disk_capacity(mountpoint),
+			"increased_to": increment,
+			"mountpoint": mountpoint,
+			"reason": "Auto trigged by frappe cloud"
+			if is_auto_increase
+			else f"Triggered by {frappe.session.user}",
+			"current_disk_usage": current_disk_usage
+			or self.disk_capacity(mountpoint) - self.free_space(mountpoint),
+		}
+
 		if server == self.name:
+			storage_parameters.update({"server": self.name})
+			add_on_storage_log: AddOnStorageLog = frappe.get_doc(storage_parameters)
+			add_on_storage_log.insert()
+
 			self.increase_disk_size(increment=increment, mountpoint=mountpoint)
 			self.create_subscription_for_storage(increment)
 		else:
-			server_doc = frappe.get_doc("Database Server", server)
+			server_doc: DatabaseServer = frappe.get_doc("Database Server", server)
+			storage_parameters.update({"database_server": server_doc.name})
+			add_on_storage_log: AddOnStorageLog = frappe.get_doc(storage_parameters)
+			add_on_storage_log.insert()
+
 			server_doc.increase_disk_size(increment=increment, mountpoint=mountpoint)
 			server_doc.create_subscription_for_storage(increment)
 
@@ -1489,11 +1514,58 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			)
 		)
 
+	def recommend_disk_increase(self, mountpoint: str | None = None):
+		"""
+		Send disk expansion email to users with disabled auto addon storage at 80% capacity
+		Calculate the disk usage over a 30 hour period and take 25 percent of that
+		"""
+		server: Server | DatabaseServer = frappe.get_doc(self.doctype, self.name)
+		if server.auto_increase_storage:
+			return
+
+		notify_email = frappe.get_value("Team", server.team, notify_email)
+		disk_capacity = self.disk_capacity(mountpoint)
+		current_disk_usage = disk_capacity - self.free_space(mountpoint)
+		recommended_increase = (
+			abs(self.disk_capacity(mountpoint) - self.space_available_in_6_hours(mountpoint) * 5)
+			/ 4
+			/ 1024
+			/ 1024
+			/ 1024
+		)
+
+		frappe.sendmail(
+			recipients=notify_email,
+			subject=f"Important: Server {server.name} has used 80% of the available space",
+			template="disabled_auto_disk_expansion",
+			args={
+				"server": server.name,
+				"current_disk_usage": f"{current_disk_usage} Gib",
+				"available_disk_space": f"{disk_capacity} GiB",
+				"used_storage_percentage": "80%",
+				"increase_by": f"{recommended_increase} GiB",
+			},
+		)
+
 	def calculated_increase_disk_size(
 		self,
 		additional: int = 0,
 		mountpoint: str | None = None,
 	):
+		"""
+		Calculate required disk increase for servers and handle notifications accordingly.
+
+		- For servers with `auto_increase_storage` enabled:
+			- Compute the required storage increase.
+			- Automatically apply the increase.
+			- Send an email notification about the auto-added storage.
+
+		- For servers with `auto_increase_storage` disabled:
+			- If disk usage exceeds 90%, send a warning email.
+			- We have also sent them emails at 80% if they haven't enabled auto add on yet then send here again.
+			- Notify the user to manually increase disk space.
+		"""
+
 		telegram = Telegram("Information")
 
 		buffer = self.size_to_increase_by_for_20_percent_available(mountpoint)
@@ -1510,13 +1582,14 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			)
 			frappe.sendmail(
 				recipients=notify_email,
-				subject=f"Important: Server {server.name} storage space at 90%",
+				subject=f"Important: Server {server.name} has used 90% of the available space",
 				template="disabled_auto_disk_expansion",
 				args={
 					"sever": server.name,
 					"current_disk_usage": f"{current_disk_usage} GiB",
 					"available_disk_space": f"{disk_capacity} GiB",
 					"increase_by": f"{buffer + additional} GiB",
+					"used_storage_percentage": "90%",
 				},
 			)
 			return
@@ -1527,18 +1600,13 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			f"by {buffer + additional}G"
 		)
 
-		frappe.sendmail(
-			recipients=notify_email,
-			subject=f"Important: Server {server.name} storage space at 90%",
-			template="enabled_auto_disk_expansion",
-			args={
-				"sever": server.name,
-				"current_disk_usage": f"{current_disk_usage} GiB",
-				"available_disk_space": f"{disk_capacity} GiB",
-				"increase_by": f"{buffer + additional} GiB",
-			},
+		self.increase_disk_size_for_server(
+			self.name,
+			buffer + additional,
+			mountpoint,
+			is_auto_increase=True,
+			current_disk_usage=current_disk_usage,
 		)
-		self.increase_disk_size_for_server(self.name, buffer + additional, mountpoint)
 
 	def prune_docker_system(self):
 		frappe.enqueue_doc(
