@@ -1,0 +1,91 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-07-11 11:12:51.772222",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "server",
+  "database_server",
+  "reason",
+  "column_break_dlfs",
+  "increased_from",
+  "increased_to",
+  "current_disk_usage",
+  "mountpoint"
+ ],
+ "fields": [
+  {
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "label": "Server",
+   "options": "Server",
+   "read_only": 1
+  },
+  {
+   "fieldname": "database_server",
+   "fieldtype": "Link",
+   "label": "Database Server",
+   "options": "Database Server",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_dlfs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "increased_from",
+   "fieldtype": "Float",
+   "label": "Increased From",
+   "read_only": 1
+  },
+  {
+   "fieldname": "increased_to",
+   "fieldtype": "Float",
+   "label": "Increased To",
+   "read_only": 1
+  },
+  {
+   "fieldname": "mountpoint",
+   "fieldtype": "Data",
+   "label": "Mount Point",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason"
+  },
+  {
+   "fieldname": "current_disk_usage",
+   "fieldtype": "Float",
+   "label": "Current Disk Usage"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-07-11 14:28:01.278836",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Add On Storage Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
