@@ -136,6 +136,9 @@ class BaseServer(Document, TagHelpers):
 		is_auto_increase: bool = False,
 		current_disk_usage: int | None = None,
 	) -> None:
+		if not increment:
+			return
+
 		storage_parameters = {
 			"doctype": "Add On Storage Log",
 			"adding_storage": increment,
