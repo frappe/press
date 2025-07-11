@@ -20,10 +20,10 @@ class AddOnStorageLog(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		adding_storage: DF.Float
+		available_disk_space: DF.Float
 		current_disk_usage: DF.Float
 		database_server: DF.Link | None
-		increased_from: DF.Float
-		increased_to: DF.Float
 		mountpoint: DF.Data | None
 		reason: DF.SmallText | None
 		server: DF.Link | None
@@ -43,7 +43,7 @@ class AddOnStorageLog(Document):
 			args={
 				"server": server.name,
 				"current_disk_usage": f"{self.current_disk_usage} GiB",
-				"available_disk_space": f"{self.increased_from} GiB",
-				"increase_by": f"{self.increased_to} GiB",
+				"available_disk_space": f"{self.available_disk_space} GiB",
+				"increase_by": f"{self.adding_storage} GiB",
 			},
 		)

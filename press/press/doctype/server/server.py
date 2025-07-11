@@ -137,14 +137,14 @@ class BaseServer(Document, TagHelpers):
 	) -> None:
 		storage_parameters = {
 			"doctype": "Add On Storage Log",
-			"increased_from": self.disk_capacity(mountpoint) / 1024 / 1024 / 1024,
-			"increased_to": increment,
+			"adding_storage": increment,
+			"available_disk_space": round((self.disk_capacity(mountpoint) / 1024 / 1024 / 1024), 2),
+			"current_disk_usage": current_disk_usage
+			or round((self.disk_capacity(mountpoint) - self.free_space(mountpoint)) / 1024 / 1024 / 1024, 2),
 			"mountpoint": mountpoint,
 			"reason": "Auto trigged by frappe cloud"
 			if is_auto_increase
 			else f"Triggered by {frappe.session.user}",
-			"current_disk_usage": current_disk_usage
-			or (self.disk_capacity(mountpoint) - self.free_space(mountpoint)) / 1024 / 1024 / 1024,
 		}
 
 		if server == self.name:
@@ -1577,8 +1577,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		disk_capacity = self.disk_capacity(mountpoint)
 		current_disk_usage = disk_capacity - self.free_space(mountpoint)
 
-		current_disk_usage = current_disk_usage / 1024 / 1024 / 1024
-		disk_capacity = disk_capacity / 1024 / 1024 / 1024
+		current_disk_usage = round(current_disk_usage / 1024 / 1024 / 1024, 2)
+		disk_capacity = round(disk_capacity / 1024 / 1024 / 1024, 2)
 
 		if not server.auto_increase_storage:
 			telegram.send(
@@ -1593,7 +1593,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				args={
 					"server": server.name,
 					"current_disk_usage": f"{current_disk_usage} GiB",
-					"available_disk_space": f"{disk_capacity / 1024 / 1024 / 1024} GiB",
+					"available_disk_space": f"{disk_capacity} GiB",
 					"increase_by": f"{buffer + additional} GiB",
 					"used_storage_percentage": "90%",
 				},

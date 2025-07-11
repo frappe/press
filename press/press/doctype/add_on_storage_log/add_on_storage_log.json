@@ -9,10 +9,10 @@
   "database_server",
   "reason",
   "column_break_dlfs",
-  "increased_from",
-  "increased_to",
+  "available_disk_space",
   "current_disk_usage",
-  "mountpoint"
+  "mountpoint",
+  "adding_storage"
  ],
  "fields": [
   {
@@ -34,18 +34,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "increased_from",
-   "fieldtype": "Float",
-   "label": "Increased From",
-   "read_only": 1
-  },
-  {
-   "fieldname": "increased_to",
-   "fieldtype": "Float",
-   "label": "Increased To",
-   "read_only": 1
-  },
-  {
    "fieldname": "mountpoint",
    "fieldtype": "Data",
    "label": "Mount Point",
@@ -60,12 +48,23 @@
    "fieldname": "current_disk_usage",
    "fieldtype": "Float",
    "label": "Current Disk Usage"
+  },
+  {
+   "fieldname": "available_disk_space",
+   "fieldtype": "Float",
+   "label": "Available Disk Space",
+   "read_only": 1
+  },
+  {
+   "fieldname": "adding_storage",
+   "fieldtype": "Float",
+   "label": "Adding storage"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-11 14:28:01.278836",
+ "modified": "2025-07-11 17:13:06.167938",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Add On Storage Log",
