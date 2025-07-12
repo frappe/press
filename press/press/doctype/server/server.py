@@ -142,7 +142,7 @@ class BaseServer(Document, TagHelpers):
 			"available_disk_space": round((self.disk_capacity(mountpoint) / 1024 / 1024 / 1024), 2),
 			"current_disk_usage": current_disk_usage
 			or round((self.disk_capacity(mountpoint) - self.free_space(mountpoint)) / 1024 / 1024 / 1024, 2),
-			"mountpoint": mountpoint,
+			"mountpoint": mountpoint or self.guess_data_disk_mountpoint(),
 			"reason": "Auto trigged by frappe cloud"
 			if is_auto_increase
 			else f"Triggered by {frappe.session.user}",
