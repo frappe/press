@@ -153,7 +153,7 @@ class BaseServer(Document, TagHelpers):
 
 			if increment:
 				add_on_storage_log: AddOnStorageLog = frappe.get_doc(storage_parameters)
-				add_on_storage_log.insert()
+				add_on_storage_log.insert(ignore_permissions=True)
 
 			self.increase_disk_size(increment=increment, mountpoint=mountpoint)
 			self.create_subscription_for_storage(increment)
@@ -163,7 +163,7 @@ class BaseServer(Document, TagHelpers):
 
 			if increment:
 				add_on_storage_log: AddOnStorageLog = frappe.get_doc(storage_parameters)
-				add_on_storage_log.insert()
+				add_on_storage_log.insert(ignore_permissions=True)
 
 			server_doc.increase_disk_size(increment=increment, mountpoint=mountpoint)
 			server_doc.create_subscription_for_storage(increment)
