@@ -16,6 +16,16 @@
     - /home/frappe/grafana/data/dashboards
     - /home/frappe/grafana/data/plugins
 
+- name: Copy Grfana Dashboards
+  copy:
+    src: '{{ item }}'
+    dest: '/home/frappe/grafana/data/dashboards/{{ item }}'
+    mode: 0755
+  with_items:
+    - docker_container.json
+    - mysql_overview.json
+    - node_exporter.json
+
 - name: Download Grafana Archive
   become: yes
   become_user: frappe
@@ -78,3 +88,30 @@
   become: yes
   become_user: frappe
   command: 'htpasswd -Bbc /home/frappe/agent/nginx/grafana-ui.htpasswd admin {{ grafana_password }}'
+
+- name: Setup Nginx Config
+  become: yes
+  become_user: frappe
+  command: /home/frappe/agent/env/bin/agent setup nginx
+  args:
+    chdir: /home/frappe/agent
+
+- name: Restart NGINX
+  service:
+    name: nginx
+    state: restarted
+
+- name: Import Grfana Dashboard
+  community.grafana.grafana_dashboard:
+    grafana_url: 'https://{{ server }}/grafana'
+    grafana_user: admin
+    grafana_password: '{{ grafana_password }}'
+    state: present
+    org_id: 1
+    overwrite: yes
+    path: '/home/frappe/grafana/data/dashboards/{{ item }}'
+  with_items:
+    - docker_container.json
+    - mysql_overview.json
+    - node_exporter.json
+
