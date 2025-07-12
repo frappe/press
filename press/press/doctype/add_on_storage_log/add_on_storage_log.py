@@ -29,7 +29,7 @@ class AddOnStorageLog(Document):
 		server: DF.Link | None
 	# end: auto-generated types
 
-	def after_insert(self):
+	def send_notification(self):
 		"""Send add on storage notification"""
 		server: Server | DatabaseServer = frappe.get_cached_doc(
 			"Server" if self.server else "Database Server", self.server or self.database_server
