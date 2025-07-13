@@ -455,11 +455,8 @@ class Agent:
 
 	def archive_site(self, site, site_name=None, force=False):
 		site_name = site_name or site.name
-		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		data = {
-			"mariadb_root_password": get_decrypted_password(
-				"Database Server", database_server, "mariadb_root_password"
-			),
+			"mariadb_root_password": get_mariadb_root_password(site),
 			"force": force,
 		}
 
