@@ -1,4 +1,4 @@
-# !/usr/bin/env bash
+#!/usr/bin/env bash
 
 echo "Installing python dev dependencies"
 pip install -r dev-requirements.txt
