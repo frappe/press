@@ -300,13 +300,22 @@ def paid_plans():
 
 	for name in doctypes:
 		doctype = frappe.qb.DocType(name)
-		paid_plans += (
-			frappe.qb.from_(doctype)
-			.select(doctype.name)
-			.where(doctype.price_inr > 0)
-			.where((doctype.enabled == 1) | (doctype.legacy_plan == 1))
-			.run(pluck=True)
-		)
+		if name == 'Server Plan':
+			paid_plans += (
+				frappe.qb.from_(doctype)
+				.select(doctype.name)
+				.where(doctype.price_inr > 0)
+				.where((doctype.enabled == 1) | (doctype.legacy_plan == 1))
+				.run(pluck=True)
+			)
+		else:
+			paid_plans += (
+				frappe.qb.from_(doctype)
+				.select(doctype.name)
+				.where(doctype.price_inr > 0)
+				.where(doctype.enabled == 1)
+				.run(pluck=True)
+			)
 
 	return list(set(paid_plans))
 
