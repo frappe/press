@@ -148,9 +148,12 @@ class BaseServer(Document, TagHelpers):
 			else f"Triggered by {frappe.session.user}",
 		}
 
-		if server == self.name:
+		if self.doctype == "Server":
 			storage_parameters.update({"server": self.name})
+		else:
+			storage_parameters.update({"database_server": self.name})
 
+		if server == self.name:
 			if increment:
 				add_on_storage_log: AddOnStorageLog = frappe.get_doc(storage_parameters)
 				add_on_storage_log.insert(ignore_permissions=True)
@@ -159,7 +162,6 @@ class BaseServer(Document, TagHelpers):
 			self.create_subscription_for_storage(increment)
 		else:
 			server_doc: DatabaseServer = frappe.get_doc("Database Server", server)
-			storage_parameters.update({"database_server": server_doc.name})
 
 			if increment:
 				add_on_storage_log: AddOnStorageLog = frappe.get_doc(storage_parameters)
