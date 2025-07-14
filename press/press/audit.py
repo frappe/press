@@ -6,7 +6,7 @@ import json
 from datetime import datetime, timedelta
 
 import frappe
-from frappe.utils import rounded
+from frappe.utils import add_days, rounded, today
 
 from press.agent import Agent
 from press.press.doctype.server.server import Server
@@ -361,7 +361,7 @@ class BillingAudit(Audit):
 				"team": ("not in", free_teams),
 				"enabled": True,
 				"plan": ("in", self.paid_plans),
-				"name": ("not in", created_usage_records(free_sites, frappe.utils.today())),
+				"name": ("not in", created_usage_records(free_sites, add_days(today(), days=-1))),
 				"document_name": ("not in", free_sites),
 			},
 			pluck="name",
@@ -398,7 +398,7 @@ class BillingAudit(Audit):
 		)
 
 	def free_sites_after_trial(self):
-		today = frappe.utils.today()
+		yesterday = add_days(today(), days=-1)
 		free_teams = frappe.get_all("Team", {"free_account": 1}, pluck="name")
 
 		filters = {
@@ -412,7 +412,9 @@ class BillingAudit(Audit):
 		sites = frappe.db.get_all("Site", filters=filters, fields=["name", "team"], pluck="name")
 
 		# Flake doesn't allow use of duplicate keys in same dictionary
-		return frappe.get_all("Site", {"trial_end_date": ["<", today], "name": ("in", sites)}, pluck="name")
+		return frappe.get_all(
+			"Site", {"trial_end_date": ["<", yesterday], "name": ("in", sites)}, pluck="name"
+		)
 
 	def teams_with_active_sites_and_unpaid_invoices(self):
 		today = frappe.utils.getdate()
@@ -421,7 +423,9 @@ class BillingAudit(Audit):
 
 		plan = frappe.qb.DocType("Site Plan")
 		query = (
-			frappe.qb.from_(plan).select(plan.name).where((plan.enabled == 1) & ((plan.is_frappe_plan == 1) | (plan.is_trial_plan == 1)))
+			frappe.qb.from_(plan)
+			.select(plan.name)
+			.where((plan.enabled == 1) & ((plan.is_frappe_plan == 1) | (plan.is_trial_plan == 1)))
 		).run(as_dict=True)
 		frappe_plans = [d.name for d in query]
 
