@@ -69,6 +69,12 @@ Additionally, customers lacked full control over their servers—no SSH access, 
 
 To self host or to setup Press locally follow the steps in the [Local Development Environment Setup Guide](https://docs.frappe.io/cloud/local-fc-setup) or [this YouTube video](https://www.youtube.com/watch?v=Xb9QHnUrIEk)
 
+When running Ansible playbooks that use the `synchronize` module, ensure the control machine has the `rsync` package installed. For example:
+
+```sh
+sudo apt install rsync
+```
+
 ## Learn and connect
 
 - [Telegram Public Group](https://t.me/frappecloud)
