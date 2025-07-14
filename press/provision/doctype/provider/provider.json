@@ -7,8 +7,8 @@
  "engine": "InnoDB",
  "field_order": [
   "providers_section",
+  "region",
   "cloud_provider",
-  "source",
   "status",
   "credentials_section",
   "secret"
@@ -29,12 +29,6 @@
    "unique": 1
   },
   {
-   "default": "Select",
-   "fieldname": "source",
-   "fieldtype": "Data",
-   "label": "Source"
-  },
-  {
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
@@ -50,12 +44,19 @@
    "fieldtype": "Password",
    "label": "Secret",
    "reqd": 1
+  },
+  {
+   "fieldname": "region",
+   "fieldtype": "Link",
+   "label": "Region",
+   "options": "Cloud Region",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-03 11:06:19.213521",
+ "modified": "2025-07-14 11:58:41.915076",
  "modified_by": "Administrator",
  "module": "Provision",
  "name": "Provider",

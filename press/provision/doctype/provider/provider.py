@@ -15,8 +15,8 @@ class Provider(Document):
 		from frappe.types import DF
 
 		cloud_provider: DF.Link
+		region: DF.Link
 		secret: DF.Password
-		source: DF.Data | None
 		status: DF.Literal["Select", "Active", "Expired"]
 	# end: auto-generated types
 
