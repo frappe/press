@@ -206,6 +206,7 @@ def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 			"team": team.name,
 			"free": team.free_account,
 			"subscription_plan": plan,
+			"version": site.get("version"),
 			"remote_config_file": files.get("config"),
 			"remote_database_file": files.get("database"),
 			"remote_public_file": files.get("public"),
@@ -293,7 +294,7 @@ def validate_plan(server, plan):
 
 @frappe.whitelist()
 def new(site):
-	if not hasattr(site, "domain") or not site["domain"]:
+	if not hasattr(site, "domain") and not site.get("domain"):
 		site["domain"] = frappe.db.get_single_value("Press Settings", "domain")
 
 	return _new(site)
@@ -631,6 +632,7 @@ def get_available_versions(for_bench: str = None):  # noqa
 		release_group_filters = {
 			"public": 1,
 			"enabled": 1,
+			"saas_bench": 0,
 			"name": (
 				"not in",
 				restricted_release_group_names,

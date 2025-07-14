@@ -169,7 +169,7 @@
 					</div>
 					<a
 						class="text-sm underline"
-						href="https://frappecloud.com/docs/installing-an-app"
+						href="https://docs.frappe.io/cloud/installing-an-app"
 						target="_blank"
 					>
 						Read documentation

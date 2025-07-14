@@ -2455,7 +2455,13 @@ class Site(Document, TagHelpers):
 			.limit(1)
 		)
 		if release_group_names:
-			bench_query = bench_query.where(benches.group.isin(release_group_names))
+			groups = frappe.qb.DocType("Release Group")
+			bench_query = (
+				bench_query.where(benches.group.isin(release_group_names))
+				.join(groups)
+				.on(benches.group == groups.name)
+				.where(groups.version == self.version)
+			)
 		else:
 			restricted_release_group_names = frappe.db.get_all(
 				"Site Plan Release Group",
@@ -2481,6 +2487,10 @@ class Site(Document, TagHelpers):
 			{"status": "Active", "name": ("in", proxy_servers_names)},
 			pluck="name",
 		)
+		if not proxy_servers:
+			frappe.throw(
+				f"No active proxy servers found for domain {self.domain}. Please contact support.",
+			)
 
 		"""
 		For restricted plans, just choose any bench from the release groups and clusters combination
