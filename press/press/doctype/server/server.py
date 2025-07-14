@@ -148,10 +148,7 @@ class BaseServer(Document, TagHelpers):
 			else f"Triggered by {frappe.session.user}",
 		}
 
-		if self.doctype == "Server":
-			storage_parameters.update({"server": self.name})
-		else:
-			storage_parameters.update({"database_server": self.name})
+		storage_parameters.update({"database_server" if server[0] == "m" else "server": server})
 
 		if server == self.name:
 			if increment:
