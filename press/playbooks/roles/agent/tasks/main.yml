@@ -20,7 +20,7 @@
 - name: Generate Agent Configuration File
   become: yes
   become_user: frappe
-  command: '/home/frappe/agent/env/bin/agent setup config --name {{ server }} --workers {{ workers }} {% if proxy_ip is defined and proxy_ip is truthy %}--proxy-ip {{ proxy_ip }}{% endif %} {% if agent_sentry_dsn is defined and agent_sentry_dsn is truthy %}--sentry-dsn {{ agent_sentry_dsn }}{% endif %} {%if db_port is defined and db_port is truthy %} --db-port {{db_port}} {% endif %}'
+  command: '/home/frappe/agent/env/bin/agent setup config --name {{ server }} --workers {{ workers }} {% if proxy_ip is defined and proxy_ip is truthy %}--proxy-ip {{ proxy_ip }}{% endif %} {% if agent_sentry_dsn is defined and agent_sentry_dsn is truthy %}--sentry-dsn {{ agent_sentry_dsn }}{% endif %}'
   args:
     chdir: /home/frappe/agent
 
