@@ -68,7 +68,7 @@
 					<div class="flex items-center gap-2">
 						<h2 class="text-lg font-medium">Build might fail</h2>
 						<a
-							href="https://frappecloud.com/docs/common-issues/build-might-fail"
+							href="https://docs.frappe.io/cloud/common-issues/build-might-fail"
 							target="_blank"
 							class="cursor-pointer rounded-full border border-gray-200 bg-gray-100 p-0.5 text-base text-gray-700"
 						>
@@ -96,7 +96,7 @@
 					/>
 					<Tooltip text="View documentation">
 						<a
-							href="https://frappecloud.com/docs/in-place-updates"
+							href="https://docs.frappe.io/cloud/in-place-updates"
 							target="_blank"
 						>
 							<i-lucide-help-circle :class="`h-4 w-4 text-gray-600`" />

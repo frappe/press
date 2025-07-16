@@ -2456,7 +2456,13 @@ class Site(Document, TagHelpers):
 			.limit(1)
 		)
 		if release_group_names:
-			bench_query = bench_query.where(benches.group.isin(release_group_names))
+			groups = frappe.qb.DocType("Release Group")
+			bench_query = (
+				bench_query.where(benches.group.isin(release_group_names))
+				.join(groups)
+				.on(benches.group == groups.name)
+				.where(groups.version == self.version)
+			)
 		else:
 			restricted_release_group_names = frappe.db.get_all(
 				"Site Plan Release Group",

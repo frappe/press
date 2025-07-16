@@ -206,6 +206,7 @@ def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 			"team": team.name,
 			"free": team.free_account,
 			"subscription_plan": plan,
+			"version": site.get("version"),
 			"remote_config_file": files.get("config"),
 			"remote_database_file": files.get("database"),
 			"remote_public_file": files.get("public"),

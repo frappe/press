@@ -7,9 +7,9 @@
 					label: 'Update',
 					variant: 'solid',
 					loading: groupDocResource?.updateDependency?.loading,
-					onClick: updateDependency
-				}
-			]
+					onClick: updateDependency,
+				},
+			],
 		}"
 		v-model="showDialog"
 	>
@@ -48,7 +48,7 @@
 						<a
 							class="no-underline"
 							target="_blank"
-							href="https://frappecloud.com/docs/benches/editing-bench-dependency-version#setting-a-custom-version"
+							href="https://docs.frappe.io/cloud/benches/editing-bench-dependency-version#setting-a-custom-version"
 							><FeatherIcon
 								name="help-circle"
 								class="h-3 w-3 text-gray-700"
@@ -72,7 +72,7 @@ export default {
 	name: 'DependencyEditorDialog',
 	props: {
 		group: { required: true, type: Object },
-		dependency: { required: true, type: Object }
+		dependency: { required: true, type: Object },
 	},
 	data() {
 		return {
@@ -83,8 +83,8 @@ export default {
 			selectedDependencyVersion: null,
 			groupDocResource: getCachedDocumentResource(
 				'Release Group',
-				this.group.name
-			)
+				this.group.name,
+			),
 		};
 	},
 	mounted() {
@@ -104,9 +104,9 @@ export default {
 
 			return Array.from(versions)
 				.sort()
-				.map(v => ({
+				.map((v) => ({
 					label: v,
-					value: v
+					value: v,
 				}));
 		},
 		version() {
@@ -115,7 +115,7 @@ export default {
 			}
 
 			return this.selectedDependencyVersion;
-		}
+		},
 	},
 	resources: {
 		dependencyVersions() {
@@ -126,16 +126,16 @@ export default {
 				filters: {
 					parenttype: 'Bench Dependency',
 					parent: this.dependency.dependency,
-					supported_frappe_version: this.group.version
+					supported_frappe_version: this.group.version,
 				},
 				transform(data) {
-					return data.map(d => d.version);
+					return data.map((d) => d.version);
 				},
 				orderBy: 'version asc',
 				pageLength: 1000,
-				auto: true
+				auto: true,
 			};
-		}
+		},
 	},
 	methods: {
 		setErrorIfCannotUpdate() {
@@ -163,16 +163,16 @@ export default {
 				{
 					dependency_name: this.dependency.name,
 					version: this.version,
-					is_custom: this.useCustomVersion
+					is_custom: this.useCustomVersion,
 				},
 				{
 					onSuccess: () => {
 						this.$emit('success');
 						this.showDialog = false;
-					}
-				}
+					},
+				},
 			);
-		}
-	}
+		},
+	},
 };
 </script>

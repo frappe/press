@@ -528,9 +528,11 @@ class SiteUpdate(Document):
 		steps = []
 		if self.deactivate_site_job:
 			steps.extend(self.get_job_steps(self.deactivate_site_job, "Deactivate Site"))
+
 		if self.backup_type == "Physical" and self.site_backup:
 			agent_job = frappe.get_value("Site Backup", self.site_backup, "job")
 			steps.extend(self.get_job_steps(agent_job, "Backup Site"))
+
 		if self.backup_type == "Physical" and self.wait_for_snapshot_before_update and not self.update_job:
 			steps.append(
 				{
@@ -539,6 +541,20 @@ class SiteUpdate(Document):
 					"status": "Success",
 					"output": "Waiting for snapshot before update",
 					"stage": "Pre-Update",
+				}
+			)
+
+		if frappe.db.exists("Site Backup", self.site_backup):
+			agent_job = frappe.get_value("Site Backup", self.site_backup, "job")
+			steps.extend(self.get_job_steps(agent_job, "Backup Site"))
+		else:
+			steps.append(
+			  {
+			  	"name": "site_backup_not_found",
+			  	"title": "Backup Cleared",
+			  	"status": "Skipped",
+			  	"output": "",
+			  	"stage": "Physical Backup",
 				}
 			)
 		if self.update_job:

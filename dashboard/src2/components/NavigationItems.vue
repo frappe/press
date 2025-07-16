@@ -32,6 +32,8 @@ export default {
 			const routeName = this.$route?.name || '';
 			const onboardingComplete = this.$team.doc.onboarding.complete;
 			const isSaasUser = this.$team.doc.is_saas_user;
+			const benchGroupsEnabled = this.$team.doc.benches_enabled;
+			const serversEnabled = this.$team.doc.servers_enabled;
 			const enforce2FA = Boolean(
 				!this.$team.doc.is_desk_user &&
 					this.$team.doc.enforce_2fa &&
@@ -97,7 +99,7 @@ export default {
 							'Deploy Candidate',
 						].includes(routeName) ||
 						routeName.startsWith('Release Group Detail'),
-					condition: onboardingComplete && !isSaasUser,
+					condition: onboardingComplete && !isSaasUser && benchGroupsEnabled,
 					disabled: enforce2FA,
 				},
 				{
@@ -107,7 +109,7 @@ export default {
 					isActive:
 						['New Server'].includes(routeName) ||
 						routeName.startsWith('Server'),
-					condition: onboardingComplete && !isSaasUser,
+					condition: onboardingComplete && !isSaasUser && serversEnabled,
 					disabled: enforce2FA,
 				},
 				{
