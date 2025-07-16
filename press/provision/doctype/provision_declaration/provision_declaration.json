@@ -14,7 +14,6 @@
   {
    "fieldname": "stack",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Stack",
    "read_only": 1,
@@ -24,21 +23,25 @@
   {
    "fieldname": "region",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Region",
    "options": "Cloud Region",
+   "read_only": 1,
    "reqd": 1
   },
   {
    "fieldname": "declaration",
    "fieldtype": "Code",
    "label": "Declaration",
+   "read_only": 1,
    "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-08 11:35:22.906588",
+ "modified": "2025-07-15 18:59:23.035029",
  "modified_by": "Administrator",
  "module": "Provision",
  "name": "Provision Declaration",

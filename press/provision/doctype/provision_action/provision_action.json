@@ -10,8 +10,8 @@
   "column_break_gwdi",
   "action",
   "action_section",
-  "action_output",
   "output",
+  "parsed_output",
   "error_log"
  ],
  "fields": [
@@ -46,14 +46,14 @@
    "label": "Action"
   },
   {
-   "fieldname": "action_output",
-   "fieldtype": "Code",
-   "label": "Action Output"
-  },
-  {
    "fieldname": "error_log",
    "fieldtype": "Code",
    "label": "Error Log"
+  },
+  {
+   "fieldname": "parsed_output",
+   "fieldtype": "Code",
+   "label": "Parsed output"
   },
   {
    "fieldname": "output",
@@ -64,7 +64,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-08 12:09:46.768701",
+ "modified": "2025-07-15 19:01:58.712783",
  "modified_by": "Administrator",
  "module": "Provision",
  "name": "Provision Action",

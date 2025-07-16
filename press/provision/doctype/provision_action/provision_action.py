@@ -15,9 +15,9 @@ class ProvisionAction(Document):
 		from frappe.types import DF
 
 		action: DF.Data
-		action_output: DF.Code | None
 		error_log: DF.Code | None
 		output: DF.Code | None
+		parsed_output: DF.Code | None
 		region: DF.Link
 		stack: DF.Data
 	# end: auto-generated types
