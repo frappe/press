@@ -8,7 +8,6 @@
   "annotations_section",
   "server",
   "database_server",
-  "reason",
   "column_break_dlfs",
   "available_disk_space",
   "current_disk_usage",
@@ -16,8 +15,9 @@
   "adding_storage",
   "extend_ec2_play",
   "storage_settings_section",
-  "has_auto_increased",
-  "notification_sent"
+  "notification_sent",
+  "is_auto_triggered",
+  "is_warning"
  ],
  "fields": [
   {
@@ -43,11 +43,6 @@
    "fieldtype": "Data",
    "label": "Mount Point",
    "read_only": 1
-  },
-  {
-   "fieldname": "reason",
-   "fieldtype": "Small Text",
-   "label": "Reason"
   },
   {
    "fieldname": "current_disk_usage",
@@ -76,13 +71,6 @@
   },
   {
    "default": "0",
-   "fieldname": "has_auto_increased",
-   "fieldtype": "Check",
-   "label": "Has Auto Increased",
-   "read_only": 1
-  },
-  {
-   "default": "0",
    "fieldname": "notification_sent",
    "fieldtype": "Check",
    "label": "Notification Sent"
@@ -92,12 +80,24 @@
    "fieldtype": "Link",
    "label": "Extend EC2 Play",
    "options": "Ansible Play"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_auto_triggered",
+   "fieldtype": "Check",
+   "label": "Is auto triggered"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_warning",
+   "fieldtype": "Check",
+   "label": "Is Warning"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-17 14:45:24.113546",
+ "modified": "2025-07-17 21:51:34.568795",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Add On Storage Log",
