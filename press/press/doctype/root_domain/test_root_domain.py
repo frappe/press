@@ -32,6 +32,7 @@ def create_test_root_domain(
 	return root_domain
 
 
+@mock_aws
 @patch.object(AgentJob, "after_insert", new=Mock())
 class TestRootDomain(unittest.TestCase):
 	def tearDown(self):
@@ -72,55 +73,50 @@ class TestRootDomain(unittest.TestCase):
 		self.assertIn(new_site_name, root_domain.get_active_domains())
 		self.assertNotIn(old_site_name, root_domain.get_active_domains())
 
-	@mock_aws
-	def test_creation_of_root_domain_creates_aws_hosted_zone(self):
-		root_domain = frappe.get_doc(
+	def _create_aws_root_domain(self, name: str) -> RootDomain:
+		return frappe.get_doc(
 			{
 				"doctype": "Root Domain",
-				"name": "frappe.dev",
+				"name": name,
 				"default_cluster": "Default",
 				"dns_provider": "AWS Route 53",
 				"aws_access_key_id": "a",
 				"aws_secret_access_key": "b",
 			}
-		).insert(ignore_if_duplicate=True)
+		).insert()
+
+	def test_creation_of_root_domain_creates_aws_hosted_zone(self):
+		root_domain = self._create_aws_root_domain("frappe.dev")
 		self.assertIsNotNone(root_domain.hosted_zone)
 
-	@mock_aws
 	def test_creation_of_root_domain_that_is_subdomain_of_existing_zone_creates_ns_record_within_root_domain(
 		self,
 	):
-		root_domain = frappe.get_doc(
-			{
-				"doctype": "Root Domain",
-				"name": "frappe.dev",
-				"default_cluster": "Default",
-				"dns_provider": "AWS Route 53",
-				"aws_access_key_id": "a",
-				"aws_secret_access_key": "b",
-			}
-		).insert(ignore_if_duplicate=True)
-		self.assertIsNotNone(root_domain.hosted_zone)
+		root_domain_1 = self._create_aws_root_domain("frappe.dev")
+		self.assertIsNotNone(root_domain_1.hosted_zone)
+		records_1 = next(iter(root_domain_1.get_dns_record_pages()))["ResourceRecordSets"]
+		self.assertEqual(len(records_1), 2)
 
-		records = next(iter(root_domain.get_dns_record_pages()))["ResourceRecordSets"]
-		self.assertEqual(len(records), 2)
-
-		root_domain_2 = frappe.get_doc(
-			{
-				"doctype": "Root Domain",
-				"name": "sub.frappe.dev",
-				"default_cluster": "Default",
-				"dns_provider": "AWS Route 53",
-				"aws_access_key_id": "a",
-				"aws_secret_access_key": "b",
-			}
-		).insert(ignore_if_duplicate=True)
+		root_domain_2 = self._create_aws_root_domain("sub.frappe.dev")
 		self.assertIsNotNone(root_domain_2.hosted_zone)
+		records_2 = next(iter(root_domain_2.get_dns_record_pages()))["ResourceRecordSets"]
+		self.assertEqual(len(records_2), 2)
 
-		records = next(iter(root_domain_2.get_dns_record_pages()))["ResourceRecordSets"]
-		self.assertEqual(len(records), 2)
+		records_1 = next(iter(root_domain_1.get_dns_record_pages()))["ResourceRecordSets"]
+		self.assertEqual(len(records_1), 3)
+		self.assertEqual(find(records_1, lambda x: x["Name"] == "sub.frappe.dev.")["Type"], "NS")
 
-		records = next(iter(root_domain.get_dns_record_pages()))["ResourceRecordSets"]
-		self.assertEqual(len(records), 3)
+	def test_creation_of_sibling_domain_does_not_add_ns_record_to_existing_root_domain(self):
+		root_domain_1 = self._create_aws_root_domain("x.frappe.dev")
+		self.assertIsNotNone(root_domain_1.hosted_zone)
 
-		self.assertEqual(find(records, lambda x: x["Name"] == "sub.frappe.dev.")["Type"], "NS")
+		records_1 = next(iter(root_domain_1.get_dns_record_pages()))["ResourceRecordSets"]
+		self.assertEqual(len(records_1), 2)
+
+		root_domain_2 = self._create_aws_root_domain("y.frappe.dev")
+		self.assertIsNotNone(root_domain_2.hosted_zone)
+		records_2 = next(iter(root_domain_2.get_dns_record_pages()))["ResourceRecordSets"]
+		self.assertEqual(len(records_2), 2)
+
+		records_1 = next(iter(root_domain_1.get_dns_record_pages()))["ResourceRecordSets"]
+		self.assertEqual(len(records_1), 2)

@@ -82,10 +82,12 @@ class RootDomain(Document):
 		return self._boto3_client
 
 	@property
-	def root_hosted_zone(self) -> str:  # /hostedzone/xyz
-		if not self.zones:
+	def root_hosted_zone(self) -> str | None:  # /hostedzone/xyz
+		if not self.all_zones:
 			return None
-		return find(reversed(self.zones), lambda x: self.name.endswith(x["Name"][:-1]))["Id"]
+		if closest_zone := (find(reversed(self.all_zones), lambda x: self.name.endswith(x["Name"][:-1]))):
+			return closest_zone["Id"]
+		return None
 
 	@property
 	def hosted_zone(self) -> str:
@@ -95,7 +97,7 @@ class RootDomain(Document):
 		return zones[0]["Id"]
 
 	@property
-	def zones(self) -> list[str]:
+	def all_zones(self) -> list[str]:
 		"""Get all hosted zones for the root domain"""
 		if self.generic_dns_provider:
 			return []
