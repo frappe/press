@@ -100,7 +100,6 @@ export default {
 		return {
 			progressErrorCount: 0,
 			findingClosestServer: false,
-			closestCluster: null,
 			subdomain: '',
 		};
 	},
@@ -175,7 +174,7 @@ export default {
 						method: 'create_site',
 						args: {
 							subdomain: this.subdomain,
-							cluster: this.closestCluster ?? 'Default',
+							domain: this.domain,
 						},
 					};
 				},
@@ -197,44 +196,14 @@ export default {
 			return this.$resources.saasProduct?.doc;
 		},
 		domain() {
-			return this.saasProduct?.domain;
+			return (
+				this.$resources.siteRequest?.data?.domain || this.saasProduct?.domain
+			);
 		},
 	},
 	methods: {
 		async createSite() {
-			await this.getClosestCluster();
 			return this.$resources.createSite.submit();
-		},
-		async getClosestCluster() {
-			if (this.closestCluster) return this.closestCluster;
-			let proxyServers = Object.keys(this.saasProduct.proxy_servers);
-			if (proxyServers.length > 0) {
-				this.findingClosestServer = true;
-				let promises = proxyServers.map((server) => this.getPingTime(server));
-				let results = await Promise.allSettled(promises);
-				let fastestServer = results.reduce((a, b) =>
-					a.value.pingTime < b.value.pingTime ? a : b,
-				);
-				let closestServer = fastestServer.value.server;
-				let closestCluster = this.saasProduct.proxy_servers[closestServer];
-				if (!this.closestCluster) {
-					this.closestCluster = closestCluster;
-				}
-				this.findingClosestServer = false;
-			}
-			return this.closestCluster;
-		},
-		async getPingTime(server) {
-			let pingTime = 999999;
-			try {
-				let t1 = new Date().getTime();
-				await fetch(`https://${server}`);
-				let t2 = new Date().getTime();
-				pingTime = t2 - t1;
-			} catch (error) {
-				console.warn(error);
-			}
-			return { server, pingTime };
 		},
 		redirectToLogin() {
 			this.$router.push({

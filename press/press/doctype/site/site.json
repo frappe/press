@@ -35,13 +35,20 @@
   "is_erpnext_setup",
   "trial_end_date",
   "erpnext_consultant",
+  "site_usage_section",
+  "disable_site_usage_exceed_check",
+  "site_usage_exceeded",
+  "site_usage_exceeded_on",
+  "site_usage_exceeded_last_checked_on",
+  "column_break_vngj",
+  "last_site_usage_warning_mail_sent_on",
+  "_site_usages",
+  "current_disk_usage",
+  "current_cpu_usage",
+  "current_database_usage",
   "apps_tab",
   "apps",
   "_keys_removed_in_last_update",
-  "_site_usages",
-  "current_cpu_usage",
-  "current_database_usage",
-  "current_disk_usage",
   "deploy_section",
   "timezone",
   "column_break_29",
@@ -86,13 +93,13 @@
   "database_access_connection_limit",
   "saas_section",
   "is_standby",
+  "standby_for",
   "standby_for_product",
   "hybrid_for",
-  "saas_communication_secret",
   "signup_time",
   "column_break_63",
-  "standby_for",
   "hybrid_saas_pool",
+  "saas_communication_secret",
   "tags_section",
   "tags"
  ],
@@ -476,8 +483,7 @@
   },
   {
    "fieldname": "column_break_63",
-   "fieldtype": "Column Break",
-   "label": "Old SaaS fields"
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "hybrid_saas_pool",
@@ -665,6 +671,44 @@
    "fieldtype": "Link",
    "label": "Hybrid For",
    "options": "App"
+  },
+  {
+   "fieldname": "site_usage_section",
+   "fieldtype": "Section Break",
+   "label": "Site Usage"
+  },
+  {
+   "depends_on": "eval: doc.site_usage_exceeded",
+   "fieldname": "site_usage_exceeded_on",
+   "fieldtype": "Datetime",
+   "label": "Site Usage Exceeded On"
+  },
+  {
+   "fieldname": "column_break_vngj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "site_usage_exceeded",
+   "fieldtype": "Check",
+   "label": "Site Usage Exceeded"
+  },
+  {
+   "depends_on": "eval: doc.site_usage_exceeded",
+   "fieldname": "last_site_usage_warning_mail_sent_on",
+   "fieldtype": "Datetime",
+   "label": "Last Site Usage Warning Mail Sent On"
+  },
+  {
+   "fieldname": "site_usage_exceeded_last_checked_on",
+   "fieldtype": "Datetime",
+   "label": "Site Usage Exceeded Last Checked On"
+  },
+  {
+   "default": "0",
+   "fieldname": "disable_site_usage_exceed_check",
+   "fieldtype": "Check",
+   "label": "Disable Site Usage Exceed Check"
   }
  ],
  "links": [
@@ -744,7 +788,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2025-05-23 10:26:34.020466",
+ "modified": "2025-06-24 15:48:14.796986",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

@@ -1,5 +1,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import calendar
 import json
@@ -9,6 +10,7 @@ from datetime import datetime
 import frappe
 import requests
 from frappe.exceptions import OutgoingEmailError, TooManyRequestsError, ValidationError
+from frappe.utils import validate_email_address
 from frappe.utils.password import get_decrypted_password
 
 from press.api.developer.marketplace import get_subscription_info
@@ -22,6 +24,10 @@ class EmailLimitExceeded(TooManyRequestsError):
 
 class EmailSendError(OutgoingEmailError):
 	pass
+
+
+class InvalidEmail(ValidationError):
+	http_status_code = 400
 
 
 class EmailConfigError(ValidationError):
@@ -178,6 +184,14 @@ def check_spam(message: bytes):
 			log_error("Spam Detection : Error", data=e)
 
 
+def check_recipients(recipients: str | list[str]):
+	if isinstance(recipients, str):
+		validate_email_address(recipients, throw=True)
+	elif isinstance(recipients, list):
+		for recipient in recipients:
+			validate_email_address(recipient, throw=True)
+
+
 @frappe.whitelist(allow_guest=True)
 def send_mime_mail(**data):
 	"""
@@ -192,6 +206,7 @@ def send_mime_mail(**data):
 
 	message: bytes = files["mime"].read()
 	check_spam(message)
+	check_recipients(data["recipients"])
 
 	resp = requests.post(
 		f"https://api.mailgun.net/v3/{domain}/messages.mime",
@@ -202,7 +217,10 @@ def send_mime_mail(**data):
 
 	if resp.status_code == 200:
 		return "Sending"  # Not really required as v14 and up automatically marks the email q as sent
-	log_error("Email Delivery Service: Sending error", data=resp.text)
+	if resp.status_code == 400:
+		message = resp.json().get("message", "Invalid request")
+		frappe.throw(f"Something went wrong with sending emails: {message}", InvalidEmail)
+	log_error("Email Delivery Service: Sending error", response=resp.text, data=data, message=message)
 	frappe.throw(
 		"Something went wrong with sending emails. Please try again later or raise a support ticket with support.frappe.io",
 		EmailSendError,

@@ -169,7 +169,7 @@
 					</div>
 					<a
 						class="text-sm underline"
-						href="https://frappecloud.com/docs/installing-an-app"
+						href="https://docs.frappe.io/cloud/installing-an-app"
 						target="_blank"
 					>
 						Read documentation
@@ -251,8 +251,9 @@ export default {
 					clusters: [],
 					private_groups: [],
 				},
-				async onSuccess() {
-					this.cluster = await this.getClosestCluster();
+				onSuccess() {
+					this.cluster =
+						this.$resources.installAppOptions.data?.closest_cluster;
 					if (this.$resources.installAppOptions.data?.plans.length > 0) {
 						this.selectedPlan = this.$resources.installAppOptions.data.plans[0];
 					}
@@ -351,46 +352,6 @@ export default {
 					}
 				},
 			};
-		},
-	},
-	methods: {
-		async getClosestCluster() {
-			if (this.closestCluster) return this.closestCluster;
-			let proxyServers = this.options.clusters
-				.flatMap((c) => c.proxy_server || [])
-				.map((server) => server.name);
-
-			if (proxyServers.length > 0) {
-				this.findingClosestServer = true;
-				let promises = proxyServers.map((server) => this.getPingTime(server));
-				let results = await Promise.allSettled(promises);
-				let fastestServer = results.reduce((a, b) =>
-					a.value.pingTime < b.value.pingTime ? a : b,
-				);
-				let closestServer = fastestServer.value.server;
-				let closestCluster = this.options.clusters.find(
-					(c) => c.proxy_server?.name === closestServer,
-				);
-				if (!this.closestCluster) {
-					this.closestCluster = closestCluster.name;
-				}
-				this.findingClosestServer = false;
-			} else if (proxyServers.length === 1) {
-				this.closestCluster = this.options.clusters[0].name;
-			}
-			return this.closestCluster;
-		},
-		async getPingTime(server) {
-			let pingTime = 999999;
-			try {
-				let t1 = new Date().getTime();
-				let r = await fetch(`https://${server}`);
-				let t2 = new Date().getTime();
-				pingTime = t2 - t1;
-			} catch (error) {
-				console.warn(error);
-			}
-			return { server, pingTime };
 		},
 	},
 	computed: {

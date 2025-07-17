@@ -10,7 +10,7 @@ import rq
 from frappe.model.document import Document
 
 from press.agent import Agent
-from press.api.site import check_dns
+from press.api.site import check_dns_cname_a
 from press.exceptions import (
 	DNSValidationError,
 )
@@ -54,6 +54,19 @@ class SiteDomain(Document):
 			domains.sort(key=lambda domain: not domain.primary)
 			return domains
 		return None
+
+	def before_insert(self):
+		Site = frappe.qb.DocType("Site")
+
+		site = (
+			frappe.qb.from_(Site)
+			.select(Site.name)
+			.where(Site.name == self.domain)
+			.where(Site.name != self.site)
+			.run(as_dict=True)
+		)
+		if site:
+			frappe.throw(f"Domain {self.domain} is already taken. Please choose a different domain.")
 
 	def after_insert(self):
 		if self.default:
@@ -252,7 +265,7 @@ def update_dns_type():
 		if has_job_timeout_exceeded():
 			return
 		try:
-			response = check_dns(domain.site, domain.domain)
+			response = check_dns_cname_a(domain.site, domain.domain, ignore_proxying=True)
 			if response["matched"] and response["type"] != domain.dns_type:
 				frappe.db.set_value(
 					"Site Domain", domain.name, "dns_type", response["type"], update_modified=False

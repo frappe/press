@@ -33,6 +33,7 @@
   "plan",
   "auto_add_storage_min",
   "auto_add_storage_max",
+  "auto_increase_storage",
   "networking_section",
   "ip",
   "ipv6",
@@ -519,7 +520,7 @@
    "search_index": 1
   },
   {
-   "default": "50",
+   "default": "25",
    "description": "Minimum storage to add automatically each time",
    "fieldname": "auto_add_storage_min",
    "fieldtype": "Int",
@@ -594,15 +595,21 @@
    "options": "x86_64\narm64"
   },
   {
+   "default": "1",
+   "fieldname": "auto_increase_storage",
+   "fieldtype": "Check",
+   "label": "Auto Increase Storage"
+  },
+  {
    "default": "0",
-   "description": "Stop all new builds for the server",
+   "description": "Stop all deployments on this server.",
    "fieldname": "stop_deployments",
    "fieldtype": "Check",
-   "label": "Stop deployments"
+   "label": "Stop Deployments"
   }
  ],
  "links": [],
- "modified": "2025-06-02 09:43:06.619945",
+ "modified": "2025-07-01 10:28:26.145882",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

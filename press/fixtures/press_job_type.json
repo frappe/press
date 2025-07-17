@@ -2,7 +2,7 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2025-05-21 10:45:16.641585",
+  "modified": "2025-07-01 12:06:58.478924",
   "name": "Create Server",
   "steps": [
    {
@@ -61,8 +61,13 @@
     "wait_until_true": 1
    },
    {
-    "script": "if doc.server_type == \"Database Server\":\n    default_variables = frappe.get_all(\"MariaDB Variable\", {\"set_on_new_servers\":1}, pluck=\"name\")\n    for var_name in default_variables:\n        var = frappe.get_doc(\"MariaDB Variable\", var_name)\n        var.set_on_server(doc.server)\n\nserver = frappe.get_doc(doc.server_type, doc.server)\nserver.set_swappiness()\nserver.add_glass_file()\nserver.install_filebeat()\n\nif doc.server_type == \"Server\":\n    server.setup_mysqldump()\n    server.install_earlyoom()\n    \nif doc.server_type == \"Database Server\":\n    server.adjust_memory_config()\n    server.setup_logrotate()\n\nserver.validate_mounts()\nserver.save()",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.set_additional_config()",
     "step_name": "Set additional config",
+    "wait_until_true": 0
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Server\" and server.cluster == 'Mumbai':\n    server.setup_archived_folder()\n\nserver.save()\n",
+    "step_name": "Setup archived folder",
     "wait_until_true": 0
    }
   ]
@@ -328,5 +333,18 @@
     "wait_until_true": 1
    }
   ]
- }
+ },
+ {
+    "docstatus": 0,
+    "doctype": "Press Job Type",
+    "modified": "2025-07-11 15:20:56.780290",
+    "name": "Warn disk at 80%",
+    "steps": [
+        {
+        "script": "server = frappe.get_doc(doc.server_type, doc.server)\nmountpoint = arguments.labels.get(\"mountpoint\")\nserver.recommend_disk_increase(mountpoint=mountpoint)",
+        "step_name": "Send Warning",
+        "wait_until_true": 0
+        }
+    ]
+    }
 ]

@@ -24,6 +24,7 @@ from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import new_app
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
 from press.press.doctype.deploy_candidate.utils import is_suspended
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import create_platform_build_and_deploy
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server import Server
 from press.utils import (
@@ -37,6 +38,8 @@ from press.utils import (
 if TYPE_CHECKING:
 	from datetime import datetime
 	from typing import Any
+
+	from press.press.doctype.user_ssh_key.user_ssh_key import UserSSHKey
 
 DEFAULT_DEPENDENCIES = [
 	{"dependency": "NVM_VERSION", "version": "0.36.0"},
@@ -286,13 +289,6 @@ class ReleaseGroup(Document, TagHelpers):
 			frappe.delete_doc("Deploy Candidate", candidate.name)
 
 	def before_save(self):
-		has_arm_server = frappe.get_value(
-			"Server", {"name": ("in", [server.server for server in self.servers]), "platform": "arm64"}
-		)
-
-		if has_arm_server and self.is_redisearch_enabled:
-			frappe.throw("Redisearch is currently disabled for ARM based servers!")
-
 		self.update_common_site_config_preview()
 
 	def update_common_site_config_preview(self):
@@ -880,15 +876,18 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def generate_certificate(self):
-		user_ssh_key = frappe.get_all(
+		ssh_key = frappe.get_all(
 			"User SSH Key",
 			{"user": frappe.session.user, "is_default": True},
 			pluck="name",
 			limit=1,
 		)
 
-		if not user_ssh_key:
+		if not ssh_key:
 			frappe.throw(_("Please set a SSH key to generate certificate"))
+
+		user_ssh_key: UserSSHKey = frappe.get_doc("User SSH Key", ssh_key[0])
+		user_ssh_key.validate()  # user may have already added invalid ssh key. Validate again
 
 		return frappe.get_doc(
 			{
@@ -896,7 +895,7 @@ class ReleaseGroup(Document, TagHelpers):
 				"certificate_type": "User",
 				"group": self.name,
 				"user": frappe.session.user,
-				"user_ssh_key": user_ssh_key[0],
+				"user_ssh_key": ssh_key[0],
 				"validity": "6h",
 			}
 		).insert()
@@ -1196,12 +1195,25 @@ class ReleaseGroup(Document, TagHelpers):
 		required_app_source = frappe.get_all(
 			"App Source",
 			filters={"repository_url": current_app_source.repository_url, "branch": to_branch},
-			or_filters={"team": current_app_source.team, "public": 1},
+			or_filters={"team": get_current_team(), "public": 1},
 			limit=1,
+			fields=["name", "team", "public"],
 		)
 
 		if required_app_source:
 			required_app_source = required_app_source[0]
+			if not required_app_source.public:
+				required_app_source = frappe.get_doc("App Source", required_app_source.name)
+				# check if the version already exists
+				if not any(vs.version == self.version for vs in required_app_source.versions):
+					required_app_source.append(
+						"versions",
+						{
+							"version": self.version,
+						},
+					)
+					required_app_source.save()
+
 		else:
 			versions = frappe.get_all(
 				"App Source Version", filters={"parent": current_app_source.name}, pluck="version"
@@ -1275,23 +1287,52 @@ class ReleaseGroup(Document, TagHelpers):
 		app_update_available = self.deploy_information().update_available
 		self.add_server(server, deploy=not app_update_available)
 
-	def get_last_successful_candidate_build(self) -> "DeployCandidateBuild":
-		return frappe.get_last_doc("Deploy Candidate Build", {"status": "Success", "group": self.name})
-
-	def get_last_deploy_candidate_build(self):
+	def get_last_successful_candidate_build(self, platform: str | None = None) -> DeployCandidateBuild | None:
 		try:
-			dc: "DeployCandidateBuild" = frappe.get_last_doc("Deploy Candidate Build", {"group": self.name})
-			return dc
+			filters = {"status": "Success", "group": self.name}
+			if platform:
+				filters.update({"platform": platform})
+
+			return frappe.get_last_doc("Deploy Candidate Build", filters)
+		except frappe.DoesNotExistError:
+			return None
+
+	def get_last_deploy_candidate_build(self) -> DeployCandidateBuild:
+		try:
+			return frappe.get_last_doc("Deploy Candidate Build", {"group": self.name})
 		except frappe.DoesNotExistError:
 			return None
 
 	@frappe.whitelist()
 	def add_server(self, server: str, deploy=False):
+		if not deploy:
+			return None
+
+		server_platform = frappe.get_value("Server", server, "platform")
+		last_successful_deploy_candidate_build = self.get_last_successful_candidate_build(
+			platform=server_platform
+		)
+
+		if not last_successful_deploy_candidate_build:
+			# No build of this platform is available creating new build
+			last_candidate_build = self.get_last_successful_candidate_build()
+
+			if not last_candidate_build:
+				frappe.throw("No build present for this release group", frappe.ValidationError)
+
+			self.append("servers", {"server": server, "default": False})
+			self.save()
+
+			return create_platform_build_and_deploy(
+				deploy_candidate=last_candidate_build.candidate.name,
+				server=server,
+				platform=server_platform,
+			)
+
 		self.append("servers", {"server": server, "default": False})
 		self.save()
-		if deploy:
-			return self.get_last_successful_candidate_build()._create_deploy([server])
-		return None
+
+		return last_successful_deploy_candidate_build._create_deploy([server])
 
 	@frappe.whitelist()
 	def change_server(self, server: str):

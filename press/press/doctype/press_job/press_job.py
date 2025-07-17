@@ -5,6 +5,7 @@ import json
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import add_days
 
 
 class PressJob(Document):
@@ -73,9 +74,7 @@ class PressJob(Document):
 
 	def fail(self, arguments=None):
 		self.status = "Failure"
-		pending_steps = frappe.get_all(
-			"Press Job Step", {"job": self.name, "status": "Pending"}
-		)
+		pending_steps = frappe.get_all("Press Job Step", {"job": self.name, "status": "Pending"})
 		for step in pending_steps:
 			frappe.db.set_value("Press Job Step", step.name, "status", "Skipped")
 		self.end = frappe.utils.now_datetime()
@@ -163,3 +162,19 @@ class PressJob(Document):
 
 	def on_trash(self):
 		frappe.db.delete("Press Job Step", {"job": self.name})
+
+
+def fail_stuck_press_jobs():
+	jobs = frappe.get_all(
+		"Press Job",
+		filters={
+			"status": ("in", ["Running", "Pending"]),
+			"creation": ("<", add_days(None, -1)),
+		},
+		pluck="name",
+		limit=100,
+	)
+	for job_name in jobs:
+		job = PressJob("Press Job", job_name)
+		job.force_fail()
+		frappe.db.commit()

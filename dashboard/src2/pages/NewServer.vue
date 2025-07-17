@@ -4,7 +4,7 @@
 			<Breadcrumbs
 				:items="[
 					{ label: 'Servers', route: '/servers' },
-					{ label: 'New Server', route: '/servers/new' }
+					{ label: 'New Server', route: '/servers/new' },
 				]"
 			/>
 		</Header>
@@ -34,7 +34,7 @@
 								serverType === c.name
 									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
 									: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
-								'flex w-full items-center rounded border p-3 text-left text-base text-gray-900'
+								'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
 							]"
 						>
 							<div class="flex w-full items-center justify-between space-x-2">
@@ -76,7 +76,7 @@
 									serverRegion === c.name
 										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
 										: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
-									'flex w-full items-center rounded border p-3 text-left text-base text-gray-900'
+									'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
 								]"
 							>
 								<div class="flex w-full items-center justify-between">
@@ -118,12 +118,12 @@
 								v-for="c in [
 									{
 										name: 'Standard',
-										description: 'Includes standard support and SLAs'
+										description: 'Includes standard support and SLAs',
 									},
 									{
 										name: 'Premium',
-										description: 'Includes enterprise support and SLAs'
-									}
+										description: 'Includes enterprise support and SLAs',
+									},
 								]"
 								:key="c.name"
 								@click="planType = c.name"
@@ -131,7 +131,7 @@
 									planType === c.name
 										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
 										: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
-									'flex w-full items-center rounded border p-3 text-left text-base text-gray-900'
+									'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
 								]"
 							>
 								<div class="flex w-full items-center justify-between space-x-2">
@@ -158,7 +158,14 @@
 									(planType === 'Standard'
 										? options.app_plans
 										: options.app_premium_plans
-									).filter(p => p.cluster === serverRegion)
+									).filter((p) => {
+										const isARMSupportedCluster =
+											p.cluster === 'Mumbai' || p.cluster === 'Frankfurt';
+										return (
+											p.cluster === serverRegion &&
+											(!isARMSupportedCluster || p.platform === 'arm64')
+										);
+									})
 								"
 							/>
 						</div>
@@ -177,7 +184,14 @@
 									(planType === 'Standard'
 										? options.db_plans
 										: options.db_premium_plans
-									).filter(p => p.cluster === serverRegion)
+									).filter((p) => {
+										const isARMSupportedCluster =
+											p.cluster === 'Mumbai' || p.cluster === 'Frankfurt';
+										return (
+											p.cluster === serverRegion &&
+											(!isARMSupportedCluster || p.platform === 'arm64')
+										);
+									})
 								"
 							/>
 						</div>
@@ -272,9 +286,9 @@
 										title: serverTitle,
 										cluster: serverRegion,
 										app_plan: appServerPlan?.name,
-										db_plan: dbServerPlan?.name
-									}
-							  })
+										db_plan: dbServerPlan?.name,
+									},
+								})
 							: $resources.createHybridServer.submit({
 									server: {
 										title: serverTitle,
@@ -282,9 +296,9 @@
 										app_private_ip: appPrivateIP,
 										db_public_ip: dbPublicIP,
 										db_private_ip: dbPrivateIP,
-										plan: $resources.hybridOptions.data.plans[0]
-									}
-							  })
+										plan: $resources.hybridOptions.data.plans[0],
+									},
+								})
 					"
 					:loading="
 						$resources.createServer.loading ||
@@ -335,7 +349,7 @@ export default {
 		LucideServer,
 		ClickToCopy,
 		Summary,
-		Header
+		Header,
 	},
 	props: ['server'],
 	data() {
@@ -351,7 +365,7 @@ export default {
 			dbPrivateIP: '',
 			planType: 'Standard',
 			serverEnabled: true,
-			agreedToRegionConsent: false
+			agreedToRegionConsent: false,
 		};
 	},
 	watch: {
@@ -367,7 +381,7 @@ export default {
 		planType() {
 			this.appServerPlan = '';
 			this.dbServerPlan = '';
-		}
+		},
 	},
 	resources: {
 		options() {
@@ -381,37 +395,37 @@ export default {
 								name: 'dedicated',
 								title: 'Dedicated Server',
 								description:
-									'A pair of dedicated servers managed and owned by frappe'
+									'A pair of dedicated servers managed and owned by frappe',
 							},
 							{
 								name: 'hybrid',
 								title: 'Hybrid Server',
 								description:
-									'A pair of dedicated servers managed by frappe and owned/provisioned by you'
-							}
+									'A pair of dedicated servers managed by frappe and owned/provisioned by you',
+							},
 						],
 						regions: data.regions,
-						app_plans: data.app_plans.filter(p => p.premium == 0),
-						db_plans: data.db_plans.filter(p => p.premium == 0),
-						app_premium_plans: data.app_plans.filter(p => p.premium == 1),
-						db_premium_plans: data.db_plans.filter(p => p.premium == 1)
+						app_plans: data.app_plans.filter((p) => p.premium == 0),
+						db_plans: data.db_plans.filter((p) => p.premium == 0),
+						app_premium_plans: data.app_plans.filter((p) => p.premium == 1),
+						db_premium_plans: data.db_plans.filter((p) => p.premium == 1),
 					};
 				},
 				onError(error) {
 					if (
 						error.messages.includes(
-							'Servers feature is not yet enabled on your account'
+							'Servers feature is not yet enabled on your account',
 						)
 					) {
 						this.serverEnabled = false;
 					}
-				}
+				},
 			};
 		},
 		hybridOptions() {
 			return {
 				url: 'press.api.selfhosted.options_for_new',
-				auto: true
+				auto: true,
 			};
 		},
 		createServer() {
@@ -428,7 +442,7 @@ export default {
 						throw new DashboardError('Please select a Database Server Plan');
 					} else if (Object.keys(this.$team.doc.billing_details).length === 0) {
 						throw new DashboardError(
-							"You don't have billing details added. Please add billing details from settings to continue."
+							"You don't have billing details added. Please add billing details from settings to continue.",
 						);
 					} else if (
 						this.$team.doc.servers_enabled == 0 &&
@@ -438,16 +452,16 @@ export default {
 								this.$team.doc.balance < 16000))
 					) {
 						throw new DashboardError(
-							'You need to have $200 worth of credits to create a server.'
+							'You need to have $200 worth of credits to create a server.',
 						);
 					}
 				},
 				onSuccess(server) {
 					this.$router.push({
 						name: 'Server Detail Plays',
-						params: { name: server.server }
+						params: { name: server.server },
 					});
-				}
+				},
 			};
 		},
 		createHybridServer() {
@@ -465,21 +479,21 @@ export default {
 						throw new DashboardError('Please fill all the IP addresses');
 					} else if (this.validateIP(this.appPublicIP)) {
 						throw new DashboardError(
-							'Please enter a valid Application Public IP'
+							'Please enter a valid Application Public IP',
 						);
 					} else if (this.validateIP(this.appPrivateIP)) {
 						throw new DashboardError(
-							'Please enter a valid Application Private IP'
+							'Please enter a valid Application Private IP',
 						);
 					} else if (this.validateIP(this.dbPublicIP)) {
 						throw new DashboardError('Please enter a valid Database Public IP');
 					} else if (this.validateIP(this.dbPrivateIP)) {
 						throw new DashboardError(
-							'Please enter a valid Database Private IP'
+							'Please enter a valid Database Private IP',
 						);
 					} else if (this.dbPublicIP === this.appPublicIP) {
 						throw new DashboardError(
-							"Please don't use the same server as Application and Database servers"
+							"Please don't use the same server as Application and Database servers",
 						);
 					} else if (!this.agreedToRegionConsent) {
 						throw new DashboardError('Please agree to the region consent');
@@ -488,11 +502,11 @@ export default {
 				onSuccess(server) {
 					this.$router.push({
 						name: 'Server Detail Plays',
-						params: { name: server }
+						params: { name: server },
 					});
-				}
+				},
 			};
-		}
+		},
 	},
 	computed: {
 		options() {
@@ -514,73 +528,73 @@ export default {
 		},
 		totalPerDay() {
 			return this.$format.userCurrency(
-				this.$format.pricePerDay(this._totalPerMonth)
+				this.$format.pricePerDay(this._totalPerMonth),
 			);
 		},
 		summaryOptions() {
 			return [
 				{
 					label: 'Server Name',
-					value: this.serverTitle
+					value: this.serverTitle,
 				},
 				{
 					label: 'Region',
 					value: this.serverRegion,
-					condition: () => this.serverType === 'dedicated'
+					condition: () => this.serverType === 'dedicated',
 				},
 				{
 					label: 'App Server Plan',
 					value: this.$format.planTitle(this.appServerPlan) + ' per month',
-					condition: () => this.serverType === 'dedicated'
+					condition: () => this.serverType === 'dedicated',
 				},
 				{
 					label: 'DB Server Plan',
 					value: this.$format.planTitle(this.dbServerPlan) + ' per month',
-					condition: () => this.serverType === 'dedicated'
+					condition: () => this.serverType === 'dedicated',
 				},
 				{
 					label: 'App Public IP',
 					value: this.appPublicIP,
-					condition: () => this.serverType === 'hybrid'
+					condition: () => this.serverType === 'hybrid',
 				},
 				{
 					label: 'App Private IP',
 					value: this.appPrivateIP,
-					condition: () => this.serverType === 'hybrid'
+					condition: () => this.serverType === 'hybrid',
 				},
 				{
 					label: 'DB Public IP',
 					value: this.dbPublicIP,
-					condition: () => this.serverType === 'hybrid'
+					condition: () => this.serverType === 'hybrid',
 				},
 				{
 					label: 'DB Private IP',
 					value: this.dbPrivateIP,
-					condition: () => this.serverType === 'hybrid'
+					condition: () => this.serverType === 'hybrid',
 				},
 				{
 					label: 'Plan',
 					value: `${this.$format.planTitle(
-						this.$resources.hybridOptions?.data?.plans[0]
+						this.$resources.hybridOptions?.data?.plans[0],
 					)} per month`,
 					condition: () =>
 						this.serverType === 'hybrid' &&
-						this.$resources.hybridOptions?.data?.plans[0]
+						this.$resources.hybridOptions?.data?.plans[0],
 				},
 				{
 					label: 'Total',
 					value: `${this.totalPerMonth} per month <div class="text-gray-600"> ${this.totalPerDay} per day</div>`,
-					condition: () => this._totalPerMonth
-				}
+					condition: () => this._totalPerMonth,
+				},
 			];
-		}
+		},
 	},
 	methods: {
 		validateIP(ip) {
 			return !ip.match(
-				/^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
+				/^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/,
 			);
-		}
-	}
+		},
+	},
 };
 </script>

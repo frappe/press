@@ -15,6 +15,7 @@ export default {
 		increaseDiskSize: 'increase_disk_size_for_server',
 		configureAutoAddStorage: 'configure_auto_add_storage',
 		changePlan: 'change_plan',
+		toggleAutoIncreaseStorage: 'toggle_auto_increase_storage',
 		reboot: 'reboot',
 		rename: 'rename',
 		dropServer: 'drop_server',
@@ -418,6 +419,7 @@ export default {
 				childrenRoutes: ['Server Play'],
 				route: 'plays',
 				type: 'list',
+				searchField: 'play',
 				list: {
 					doctype: 'Ansible Play',
 					filterControls({ documentResource: server }) {

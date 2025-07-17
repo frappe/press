@@ -58,7 +58,9 @@ class TestDeployCandidateBuild(unittest.TestCase):
 
 		app = create_test_app()
 
-		group = create_test_release_group([app], servers=[self.x86_build_server, self.arm_build_server])
+		group = create_test_release_group(
+			[app], servers=[self.x86_build_server.name, self.arm_build_server.name]
+		)
 
 		dc: DeployCandidate = group.create_deploy_candidate()
 		deploy_candidate_build_name = dc.build().get("message")
@@ -112,7 +114,9 @@ class TestDeployCandidateBuild(unittest.TestCase):
 
 		app = create_test_app()
 
-		group = create_test_release_group([app], servers=[self.x86_build_server, self.arm_build_server])
+		group = create_test_release_group(
+			[app], servers=[self.x86_build_server.name, self.arm_build_server.name]
+		)
 
 		dc: DeployCandidate = group.create_deploy_candidate()
 		deploy_candidate_build_name = dc.build_and_deploy()

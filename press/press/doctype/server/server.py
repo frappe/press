@@ -12,6 +12,7 @@ from functools import cached_property
 
 import boto3
 import frappe
+import semantic_version
 from frappe import _
 from frappe.core.utils import find, find_all
 from frappe.installer import subprocess
@@ -24,6 +25,7 @@ from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.exceptions import VolumeResizeLimitError
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.runner import Ansible
 from press.telegram_utils import Telegram
@@ -31,9 +33,13 @@ from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
+	from press.press.doctype.add_on_storage_log.add_on_storage_log import AddOnStorageLog
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 	from press.press.doctype.bench.bench import Bench
+	from press.press.doctype.database_server.database_server import DatabaseServer
+	from press.press.doctype.mariadb_variable.mariadb_variable import MariaDBVariable
 	from press.press.doctype.release_group.release_group import ReleaseGroup
+	from press.press.doctype.server_mount.server_mount import ServerMount
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 from typing import Literal, TypedDict
@@ -123,13 +129,41 @@ class BaseServer(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def increase_disk_size_for_server(
-		self, server: str, increment: int, mountpoint: str | None = None
+		self,
+		server: str,
+		increment: int,
+		mountpoint: str | None = None,
+		is_auto_increase: bool = False,
+		current_disk_usage: int | None = None,
 	) -> None:
+		storage_parameters = {
+			"doctype": "Add On Storage Log",
+			"adding_storage": increment,
+			"available_disk_space": round((self.disk_capacity(mountpoint) / 1024 / 1024 / 1024), 2),
+			"current_disk_usage": current_disk_usage
+			or round((self.disk_capacity(mountpoint) - self.free_space(mountpoint)) / 1024 / 1024 / 1024, 2),
+			"mountpoint": mountpoint or self.guess_data_disk_mountpoint(),
+			"reason": "Auto trigged by frappe cloud"
+			if is_auto_increase
+			else f"Triggered by {frappe.session.user}",
+		}
+
+		storage_parameters.update({"database_server" if server[0] == "m" else "server": server})
+
 		if server == self.name:
+			if increment:
+				add_on_storage_log: AddOnStorageLog = frappe.get_doc(storage_parameters)
+				add_on_storage_log.insert(ignore_permissions=True)
+
 			self.increase_disk_size(increment=increment, mountpoint=mountpoint)
 			self.create_subscription_for_storage(increment)
 		else:
-			server_doc = frappe.get_doc("Database Server", server)
+			server_doc: DatabaseServer = frappe.get_doc("Database Server", server)
+
+			if increment:
+				add_on_storage_log: AddOnStorageLog = frappe.get_doc(storage_parameters)
+				add_on_storage_log.insert(ignore_permissions=True)
+
 			server_doc.increase_disk_size(increment=increment, mountpoint=mountpoint)
 			server_doc.create_subscription_for_storage(increment)
 
@@ -187,6 +221,33 @@ class BaseServer(Document, TagHelpers):
 				"doc_method": "reboot",
 				"group": f"{server_type.title()} Actions",
 			},
+		]
+
+		server: Server | DatabaseServer = frappe.get_doc(self.doctype, self.name)
+		if server.auto_increase_storage:
+			actions.append(
+				{
+					"action": "Disable Automatic Disk Expansion",
+					"description": "Disable the automatic increase of disk size when the server reached 90% of storage.",
+					"button_label": "Disable",
+					"condition": self.status == "Active" and self.doctype == "Server",
+					"doc_method": "toggle_auto_increase_storage",
+					"group": "Dangerous Actions",
+				}
+			)
+		else:
+			actions.append(
+				{
+					"action": "Enable Automatic Disk Expansion",
+					"description": "Enable the automatic increase of disk size when the server runs out of space.",
+					"button_label": "Enable",
+					"condition": self.status == "Active" and self.doctype == "Server",
+					"doc_method": "toggle_auto_increase_storage",
+					"group": "Dangerous Actions",
+				}
+			)
+
+		actions.append(
 			{
 				"action": "Drop server",
 				"description": "Drop both the application and database servers",
@@ -195,7 +256,7 @@ class BaseServer(Document, TagHelpers):
 				"doc_method": "drop_server",
 				"group": "Dangerous Actions",
 			},
-		]
+		)
 
 		for action in actions:
 			action["server_doctype"] = self.doctype
@@ -203,18 +264,31 @@ class BaseServer(Document, TagHelpers):
 
 		return [action for action in actions if action.get("condition", True)]
 
-	@dashboard_whitelist()
-	def drop_server(self):
+	def _get_app_and_database_servers(self) -> tuple[Server, DatabaseServer]:
 		if self.doctype == "Database Server":
 			app_server_name = frappe.db.get_value("Server", {"database_server": self.name}, "name")
 			app_server = frappe.get_doc("Server", app_server_name)
-			db_server = self
-		else:
-			app_server = self
-			db_server = frappe.get_doc("Database Server", self.database_server)
+			return app_server, self
 
+		db_server = frappe.get_doc("Database Server", self.database_server)
+		return self, db_server
+
+	@dashboard_whitelist()
+	def drop_server(self):
+		app_server, db_server = self._get_app_and_database_servers()
 		app_server.archive()
 		db_server.archive()
+
+	@dashboard_whitelist()
+	def toggle_auto_increase_storage(self, enable: bool):
+		"""Toggle auto disk increase."""
+		app_server, database_server = self._get_app_and_database_servers()
+
+		app_server.auto_increase_storage = enable
+		database_server.auto_increase_storage = enable
+
+		app_server.save()
+		database_server.save()
 
 	def autoname(self):
 		if not self.domain:
@@ -292,7 +366,6 @@ class BaseServer(Document, TagHelpers):
 		if not self.public:
 			frappe.throw("Action only allowed for public servers")
 
-		self.add_server_to_public_groups()
 		server = self.get_server_enabled_for_new_benches_and_sites()
 
 		if server:
@@ -634,11 +707,11 @@ class BaseServer(Document, TagHelpers):
 			self.reboot()
 
 	def guess_data_disk_mountpoint(self) -> str:
-		if not self.has_data_volume:
+		if not hasattr(self, "has_data_volume") or not self.has_data_volume:
 			return "/"
 
 		volumes = self.get_volume_mounts()
-		if volumes:
+		if volumes or self.has_data_volume:
 			if self.doctype == "Server":
 				mountpoint = "/opt/volumes/benches"
 			elif self.doctype == "Database Server":
@@ -720,7 +793,7 @@ class BaseServer(Document, TagHelpers):
 			{
 				"document_type": self.doctype,
 				"document_name": self.name,
-				"team": self.team,
+				"team": self.team or "team@erpnext.com",
 				"plan_type": plan_type,
 				"plan": plan,
 			},
@@ -759,13 +832,17 @@ class BaseServer(Document, TagHelpers):
 			filters={"server": self.name, "status": ("!=", "Archived")},
 			ignore_ifnull=True,
 		):
-			frappe.throw(_("Cannot archive server with sites"))
+			frappe.throw(
+				_("Cannot archive server with sites. Please drop them from their respective dashboards.")
+			)
 		if frappe.get_all(
 			"Bench",
 			filters={"server": self.name, "status": ("!=", "Archived")},
 			ignore_ifnull=True,
 		):
-			frappe.throw(_("Cannot archive server with benches"))
+			frappe.throw(
+				_("Cannot archive server with benches. Please drop them from their respective dashboards.")
+			)
 		self.status = "Pending"
 		self.save()
 		if self.is_self_hosted:
@@ -1234,9 +1311,27 @@ class BaseServer(Document, TagHelpers):
 			"bench": bench_info["name"],
 		}
 
+	def _get_dependency_version(self, candidate: str, dependency: str) -> str:
+		return frappe.get_value(
+			"Deploy Candidate Dependency",
+			{"parent": candidate, "dependency": dependency},
+			"version",
+		)
+
 	@frappe.whitelist()
 	def collect_arm_images(self) -> str:
 		"""Collect arm build images of all active benches on VM"""
+		# Need to disable all further deployments before collecting arm images.
+
+		def _parse_semantic_version(version_str: str) -> semantic_version.Version:
+			try:
+				return semantic_version.Version(version_str)
+			except ValueError:
+				return semantic_version.Version(f"{version_str}.0")
+
+		frappe.db.set_value("Server", self.name, "stop_deployments", 1)
+		frappe.db.commit()
+
 		benches = frappe.get_all(
 			"Bench",
 			{"server": self.name, "status": "Active"},
@@ -1245,6 +1340,24 @@ class BaseServer(Document, TagHelpers):
 
 		if not benches:
 			frappe.throw(f"No active benches found on <a href='/app/server/{self.name}'> Server")
+
+		for bench in benches:
+			raw_bench_version = self._get_dependency_version(bench["candidate"], "BENCH_VERSION")
+			raw_python_version = self._get_dependency_version(bench["candidate"], "PYTHON_VERSION")
+			bench_version = _parse_semantic_version(raw_bench_version)
+			python_version = _parse_semantic_version(raw_python_version)
+
+			if python_version > semantic_version.Version(
+				"3.8.0"
+			) and bench_version < semantic_version.Version("5.25.1"):
+				frappe.db.set_value(
+					"Deploy Candidate Dependency",
+					{"parent": bench["candidate"], "dependency": "BENCH_VERSION"},
+					"version",
+					"5.25.1",
+				)
+
+		frappe.db.commit()
 
 		arm_build_record: ARMBuildRecord = frappe.new_doc("ARM Build Record", server=self.name)
 
@@ -1256,8 +1369,7 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def start_active_benches(self):
-		arm_build_record: ARMBuildRecord = frappe.get_last_doc("ARM Build Record", {"server": self.name})
-		benches = [image.bench for image in arm_build_record.arm_images]
+		benches = frappe.get_all("Bench", {"server": self.name, "status": "Active"}, pluck="name")
 		frappe.enqueue_doc(self.doctype, self.name, "_start_active_benches", benches=benches)
 
 	def _start_active_benches(self, benches: list[str]):
@@ -1406,17 +1518,105 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			)
 		)
 
+	def recommend_disk_increase(self, mountpoint: str | None = None):
+		"""
+		Send disk expansion email to users with disabled auto addon storage at 80% capacity
+		Calculate the disk usage over a 30 hour period and take 25 percent of that
+		"""
+		server: Server | DatabaseServer = frappe.get_doc(self.doctype, self.name)
+		if server.auto_increase_storage:
+			return
+
+		notify_email = frappe.get_value("Team", server.team, notify_email)
+		disk_capacity = self.disk_capacity(mountpoint)
+		current_disk_usage = disk_capacity - self.free_space(mountpoint)
+		recommended_increase = (
+			abs(self.disk_capacity(mountpoint) - self.space_available_in_6_hours(mountpoint) * 5)
+			/ 4
+			/ 1024
+			/ 1024
+			/ 1024
+		)
+
+		current_disk_usage = current_disk_usage / 1024 / 1024 / 1024
+		disk_capacity = disk_capacity / 1024 / 1024 / 1024
+
+		frappe.sendmail(
+			recipients=notify_email,
+			subject=f"Important: Server {server.name} has used 80% of the available space",
+			template="disabled_auto_disk_expansion",
+			args={
+				"server": server.name,
+				"current_disk_usage": f"{current_disk_usage} Gib",
+				"available_disk_space": f"{disk_capacity} GiB",
+				"used_storage_percentage": "80%",
+				"increase_by": f"{recommended_increase} GiB",
+			},
+		)
+
 	def calculated_increase_disk_size(
 		self,
 		additional: int = 0,
 		mountpoint: str | None = None,
 	):
+		"""
+		Calculate required disk increase for servers and handle notifications accordingly.
+
+		- For servers with `auto_increase_storage` enabled:
+			- Compute the required storage increase.
+			- Automatically apply the increase.
+			- Send an email notification about the auto-added storage.
+
+		- For servers with `auto_increase_storage` disabled:
+			- If disk usage exceeds 90%, send a warning email.
+			- We have also sent them emails at 80% if they haven't enabled auto add on yet then send here again.
+			- Notify the user to manually increase disk space.
+		"""
+
 		telegram = Telegram("Information")
+
 		buffer = self.size_to_increase_by_for_20_percent_available(mountpoint)
+		server: Server | DatabaseServer = frappe.get_doc(self.doctype, self.name)
+		notify_email = frappe.get_value("Team", server.team, "notify_email")
+		disk_capacity = self.disk_capacity(mountpoint)
+		current_disk_usage = disk_capacity - self.free_space(mountpoint)
+
+		current_disk_usage = round(current_disk_usage / 1024 / 1024 / 1024, 2)
+		disk_capacity = round(disk_capacity / 1024 / 1024 / 1024, 2)
+
+		if not server.auto_increase_storage:
+			telegram.send(
+				f"Not increasing disk (mount point {mountpoint}) on "
+				f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
+				f"by {buffer + additional}G as auto disk increase disabled by user"
+			)
+			frappe.sendmail(
+				recipients=notify_email,
+				subject=f"Important: Server {server.name} has used 90% of the available space",
+				template="disabled_auto_disk_expansion",
+				args={
+					"server": server.name,
+					"current_disk_usage": f"{current_disk_usage} GiB",
+					"available_disk_space": f"{disk_capacity} GiB",
+					"increase_by": f"{buffer + additional} GiB",
+					"used_storage_percentage": "90%",
+				},
+			)
+			return
+
 		telegram.send(
-			f"Increasing disk (mount point {mountpoint})on [{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) by {buffer + additional}G"
+			f"Increasing disk (mount point {mountpoint}) on "
+			f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
+			f"by {buffer + additional}G"
 		)
-		self.increase_disk_size_for_server(self.name, buffer + additional, mountpoint)
+
+		self.increase_disk_size_for_server(
+			self.name,
+			buffer + additional,
+			mountpoint,
+			is_auto_increase=True,
+			current_disk_usage=current_disk_usage,
+		)
 
 	def prune_docker_system(self):
 		frappe.enqueue_doc(
@@ -1498,6 +1698,32 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		except Exception:
 			log_error("Sever File Copy Exception", server=self.as_dict())
 
+	@frappe.whitelist()
+	def set_additional_config(self: Server | DatabaseServer):
+		"""
+		Corresponds to Set additional config step in Create Server Press Job
+		"""
+		if self.doctype == "Database Server":
+			default_variables = frappe.get_all("MariaDB Variable", {"set_on_new_servers": 1}, pluck="name")
+			for var_name in default_variables:
+				var: MariaDBVariable = frappe.get_doc("MariaDB Variable", var_name)
+				var.set_on_server(self)
+
+		self.set_swappiness()
+		self.add_glass_file()
+		self.install_filebeat()
+
+		if self.doctype == "Server":
+			self.setup_mysqldump()
+			self.install_earlyoom()
+
+		if self.doctype == "Database Server":
+			self.adjust_memory_config()
+			self.setup_logrotate()
+
+		self.validate_mounts()
+		self.save(ignore_permissions=True)
+
 
 class Server(BaseServer):
 	# begin: auto-generated types
@@ -1514,6 +1740,7 @@ class Server(BaseServer):
 		agent_password: DF.Password | None
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
+		auto_increase_storage: DF.Check
 		cluster: DF.Link | None
 		database_server: DF.Link | None
 		disable_agent_job_auto_retry: DF.Check
@@ -1712,6 +1939,31 @@ class Server(BaseServer):
 	def add_upstream_to_proxy(self):
 		agent = Agent(self.proxy_server, server_type="Proxy Server")
 		agent.new_server(self.name)
+
+	def ansible_run(self, command: str) -> dict[str, str]:
+		inventory = f"{self.ip},"
+		return AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
+
+	def setup_archived_folder(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_setup_archived_folder",
+			queue="short",
+			timeout=1200,
+		)
+
+	def _setup_archived_folder(self):
+		try:
+			ansible = Ansible(
+				playbook="setup_archived_folder.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Archived folder setup error", server=self.as_dict())
 
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
@@ -1973,11 +2225,6 @@ class Server(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("Exporters Install Exception", server=self.as_dict())
-
-	@classmethod
-	def get_all_prod(cls, **kwargs) -> list[str]:
-		"""Active prod servers."""
-		return frappe.get_all("Server", {"status": "Active"}, pluck="name", **kwargs)
 
 	@classmethod
 	def get_all_primary_prod(cls) -> list[str]:

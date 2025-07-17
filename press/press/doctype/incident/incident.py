@@ -9,6 +9,7 @@ from functools import cached_property
 from typing import TYPE_CHECKING
 
 import frappe
+import requests
 from frappe.types.DF import Phone
 from frappe.utils import cint
 from frappe.utils.background_jobs import enqueue_doc
@@ -26,6 +27,7 @@ from press.utils import log_error
 if TYPE_CHECKING:
 	from twilio.rest.api.v2010.account.call import CallInstance
 
+	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import AlertmanagerWebhookLog
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.database_server.database_server import DatabaseServer
@@ -169,6 +171,7 @@ class Incident(WebsiteGenerator):
 		"""
 		Identify the affected resource and set the resource field
 		"""
+		self.add_description(f"{len(self.sites_down)} / {self.total_instances} sites down")
 
 		for resource_type, resource in [
 			("Database Server", self.database_server),
@@ -186,6 +189,11 @@ class Incident(WebsiteGenerator):
 		self.identify_problem()
 		self.take_grafana_screenshots()
 		self.save()
+
+	@frappe.whitelist()
+	def regather_info_and_screenshots(self):
+		self.identify_affected_resource()
+		self.take_grafana_screenshots()
 
 	def get_cpu_state(self, resource: str):
 		timespan = get_confirmation_threshold_duration()
@@ -207,7 +215,7 @@ class Incident(WebsiteGenerator):
 		self.add_description(f"CPU Usage: {max_mode} {max_cpu if max_cpu > 0 else 'No data'}")
 		return max_mode, mode_cpus[max_mode]
 
-	def add_description(self, description):
+	def add_description(self, description: str):
 		if not self.description:
 			self.description = ""
 		self.description += "<p>" + description + "</p>"
@@ -261,6 +269,14 @@ class Incident(WebsiteGenerator):
 			self.update_high_io_server_issue()
 
 	def identify_problem(self):
+		if site := self.get_down_site():
+			try:
+				ret = requests.get(f"https://{site}/api/method/ping", timeout=10)
+			except requests.RequestException as e:
+				self.add_description(f"Error pinging sample site {site}: {e!s}")
+			else:
+				self.add_description(f"Ping response for sample site {site}: {ret.status_code} {ret.reason}")
+
 		if not self.resource:
 			return
 			# TODO: Try random shit if resource isn't identified
@@ -314,7 +330,6 @@ class Incident(WebsiteGenerator):
 		token = b64encode(f"{username}:{password}".encode()).decode("ascii")
 		return f"Basic {token}"
 
-	@frappe.whitelist()
 	@filelock("grafana_screenshots")  # prevent 100 chromes from opening
 	def take_grafana_screenshots(self):
 		if not frappe.db.get_single_value("Incident Settings", "grafana_screenshots"):
@@ -347,10 +362,34 @@ class Incident(WebsiteGenerator):
 		except NotImplementedError:
 			db_server.reboot()
 		self.add_likely_cause("Rebooted database server.")
+		self.save()
+
+	@frappe.whitelist()
+	def cancel_stuck_jobs(self):
+		"""
+		During db reboot/upgrade some jobs tend to get stuck. This is a hack to cancel those jobs
+		"""
+		stuck_jobs = frappe.get_all(
+			"Agent Job",
+			{
+				"status": "Running",
+				INCIDENT_SCOPE: self.incident_scope,
+				"job_type": (
+					"in",
+					["Fetch Database Table Schema", "Backup Site", "Restore Site"],
+				),  # to be safe
+			},
+			["name", "job_type"],
+			limit=2,
+		)  # only 2 workers
+		for stuck_job in stuck_jobs:
+			job: AgentJob = frappe.get_doc("Agent Job", stuck_job.name)
+			job.cancel_job()
+			self.add_likely_cause(f"Cancelled stuck {stuck_job.job_type} job {stuck_job.name}")
+		self.save()
 
 	def add_likely_cause(self, cause: str):
 		self.likely_cause = self.likely_cause + cause + "\n" if self.likely_cause else cause + "\n"
-		self.save()
 
 	@frappe.whitelist()
 	def restart_down_benches(self):
@@ -479,6 +518,10 @@ Likely due to insufficient balance or incorrect credentials""",
 		Sending one SMS to one number
 		Ref: https://support.twilio.com/hc/en-us/articles/223181548-Can-I-set-up-one-API-call-to-send-messages-to-a-list-of-people-
 		"""
+		if (
+			ignore_since := frappe.db.get_value("Server", self.server, "ignore_incidents_since")
+		) and ignore_since < frappe.utils.now_datetime():
+			return
 		domain = frappe.db.get_value("Press Settings", None, "domain")
 		incident_link = f"{domain}{self.get_url()}"
 
@@ -575,6 +618,13 @@ Incident URL: {incident_link}"""
 	def incident_scope(self):
 		return getattr(self, INCIDENT_SCOPE)
 
+	@property
+	def total_instances(self) -> int:
+		return frappe.db.count(
+			"Site",
+			{"status": "Active", INCIDENT_SCOPE: self.incident_scope},
+		)
+
 	def check_resolved(self):
 		try:
 			last_resolved: AlertmanagerWebhookLog = frappe.get_last_doc(
@@ -610,10 +660,13 @@ Incident URL: {incident_link}"""
 			seconds=get_call_repeat_interval()
 		)
 
+	@property
+	def sites_down(self) -> list[str]:
+		return self.monitor_server.get_sites_down_for_server(str(self.server))
+
 	@frappe.whitelist()
 	def get_down_site(self):
-		sites_down = self.monitor_server.get_sites_down_for_server(str(self.server))
-		return sites_down[0] if sites_down else None
+		return self.sites_down[0] if self.sites_down else None
 
 
 def get_confirmation_threshold_duration():

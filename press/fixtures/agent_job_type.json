@@ -1279,7 +1279,7 @@
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 6,
-  "modified": "2023-11-06 07:28:19.470276",
+  "modified": "2025-06-30 07:28:18.839292",
   "name": "Restore Site",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/restore",
@@ -1289,6 +1289,9 @@
    },
    {
     "step_name": "Restore Site"
+   },
+   {
+    "step_name": "Restore Files"
    },
    {
     "step_name": "Checksum of Downloaded Backup Files"

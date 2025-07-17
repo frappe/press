@@ -45,6 +45,8 @@ def get(app):
 def get_install_app_options(marketplace_app: str) -> dict:
 	"""Get options for installing a marketplace app"""
 
+	from press.utils import get_nearest_cluster
+
 	restricted_site_plan_release_group = frappe.get_all(
 		"Site Plan Release Group",
 		fields=["parent", "release_group"],
@@ -155,6 +157,7 @@ def get_install_app_options(marketplace_app: str) -> dict:
 		"public_site_plan": public_site_plan,
 		"private_groups": private_groups,
 		"clusters": clusters,
+		"closest_cluster": get_nearest_cluster(),
 		"domain": frappe.db.get_single_value("Press Settings", "domain"),
 	}
 

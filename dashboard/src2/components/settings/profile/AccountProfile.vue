@@ -65,6 +65,16 @@
 				</template>
 			</ListItem>
 			<ListItem
+				v-if="user.is_2fa_enabled"
+				title="View Recovery Codes"
+				subtitle="View your two-factor authentication recovery codes"
+			>
+				<template #actions>
+					<Button @click="show2FARecoveryCodesDialog = true"> Show </Button>
+				</template>
+			</ListItem>
+			<ListItem
+				class="border-t"
 				:title="teamEnabled ? 'Disable Account' : 'Enable Account'"
 				:subtitle="
 					teamEnabled
@@ -187,6 +197,7 @@
 		/>
 	</Card>
 	<TFADialog v-model="show2FADialog" />
+	<TFARecoveryCodesDialog v-model="show2FARecoveryCodesDialog" />
 </template>
 
 <script>
@@ -195,6 +206,7 @@ import { defineAsyncComponent, h } from 'vue';
 import FileUploader from '@/components/FileUploader.vue';
 import { confirmDialog, renderDialog } from '../../../utils/components';
 import TFADialog from './TFADialog.vue';
+import TFARecoveryCodesDialog from './TFARecoveryCodesDialog.vue';
 import router from '../../../router';
 import AddPrepaidCreditsDialog from '../../billing/AddPrepaidCreditsDialog.vue';
 
@@ -202,12 +214,14 @@ export default {
 	name: 'AccountProfile',
 	components: {
 		TFADialog,
+		TFARecoveryCodesDialog,
 		FileUploader,
 		AddPrepaidCreditsDialog,
 	},
 	data() {
 		return {
 			show2FADialog: false,
+			show2FARecoveryCodesDialog: false,
 			disableAccount2FACode: '',
 			showProfileEditDialog: false,
 			showEnableAccountDialog: false,

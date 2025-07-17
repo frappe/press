@@ -62,7 +62,7 @@ export default {
 				{
 					label: 'Partner Payout',
 					route: { name: 'PartnerPayout' },
-					condition: () => Boolean(this.$team.doc.erpnext_partner),
+					condition: () => Boolean(this.$team.doc.country === 'Kenya' && this.$team.doc.mpesa_enabled),
 				},
 			],
 		};

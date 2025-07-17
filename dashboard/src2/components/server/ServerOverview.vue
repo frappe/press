@@ -135,7 +135,11 @@ export default {
 					server:
 						serverType === 'Server'
 							? this.$appServer.name
-							: this.$dbServer.name,
+							: serverType === 'Database Server'
+								? this.$dbServer.name
+								: serverType === 'Replication Server'
+									? this.$dbReplicaServer?.name
+									: null,
 					serverType,
 				}),
 			);
@@ -149,7 +153,11 @@ export default {
 					server:
 						serverType === 'Server'
 							? this.$appServer.name
-							: this.$dbServer.name,
+							: serverType === 'Database Server'
+								? this.$dbServer.name
+								: serverType === 'Replication Server'
+									? this.$dbReplicaServer?.name
+									: null,
 					serverType,
 				}),
 			);
@@ -340,7 +348,7 @@ export default {
 									<strong>Note</strong>: Storage can auto increase only once in 6 hours.
 
 
-									</div>Enter the maximum and minimum storage to increase for the server <b>${
+									</div>Enter the maximum and minimum storage to increase for the server (each time) <b>${
 										doc.title || doc.name
 									}</b>.`,
 									fields: [

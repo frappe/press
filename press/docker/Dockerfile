@@ -1,6 +1,7 @@
 # syntax = docker/dockerfile:experimental
 FROM ubuntu:20.04
 
+ENV FRAPPE_DOCKER_BUILD True
 ENV LANG C.UTF-8
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -314,6 +315,7 @@ RUN mkdir -p {{ m.destination }} && \
   `#stage-mounts-create`
 {% endfor %}
 
+ENV FRAPPE_DOCKER_BUILD=
 ENV FRAPPE_HARD_LINK_ASSETS True
 ENV HISTTIMEFORMAT "%Y-%m-%d %T "
 

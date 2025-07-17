@@ -347,7 +347,8 @@ class RemoteFrappeSite:
 			frappe.throw("Invalid Frappe Site")
 
 		if res.json().get("message") == "pong":
-			url = res.url.split("/api")[0]
+			# Get final redirect URL
+			url = res.url.split("/api/method")[0]
 			self._site = url
 
 	def _validate_user_permissions(self):
@@ -471,6 +472,15 @@ def is_json(string):
 	if isinstance(string, (dict, list)):
 		return True
 	return None
+
+
+def is_list(string):
+	if isinstance(string, list):
+		return True
+	if isinstance(string, str):
+		string = string.strip()
+		return string.startswith("[") and string.endswith("]")
+	return False
 
 
 def guess_type(value):
@@ -935,3 +945,63 @@ def servers_using_alternative_port_for_communication() -> list:
 		return []
 	servers: list[str] = servers.split("\n")
 	return [x.strip() for x in servers if x.strip()]
+
+
+def get_nearest_cluster():
+	import math
+
+	cluster_locations = {
+		"Mumbai": {"latitude": 19.0760, "longitude": 72.8777},
+		"Zurich": {"latitude": 47.3769, "longitude": 8.5417},
+		"Frankfurt": {"latitude": 50.1109, "longitude": 8.6821},
+		"Singapore": {"latitude": 1.3521, "longitude": 103.8198},
+		"London": {"latitude": 51.5074, "longitude": -0.1278},
+		"Virginia": {"latitude": 38.8048, "longitude": -77.0469},
+		"Jakarta": {"latitude": -6.2088, "longitude": 106.8456},
+		"Bahrain": {"latitude": 26.0667, "longitude": 50.5577},
+		"UAE": {"latitude": 24.4539, "longitude": 54.3773},
+		"KSA": {"latitude": 24.7136, "longitude": 46.6753},
+		"Cape Town": {"latitude": -33.9249, "longitude": 18.4241},
+		"Johannesburg": {"latitude": -26.2041, "longitude": 28.0473},
+	}
+
+	def haversine_distance(lat1, lon1, lat2, lon2):
+		R = 6371  # Radius of Earth in kilometers
+
+		lat1_rad = math.radians(lat1)
+		lon1_rad = math.radians(lon1)
+		lat2_rad = math.radians(lat2)
+		lon2_rad = math.radians(lon2)
+
+		longitude_diff = lon2_rad - lon1_rad
+		latitude_diff = lat2_rad - lat1_rad
+
+		a = (
+			math.sin(latitude_diff / 2) ** 2
+			+ math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(longitude_diff / 2) ** 2
+		)
+		c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+		return R * c
+
+	user_geo_data = get_country_info()
+	if not user_geo_data:
+		return None
+
+	user_latitude = user_geo_data.get("lat", 0.0)
+	user_longitude = user_geo_data.get("lon", 0.0)
+
+	min_distance = float("inf")
+	nearest_cluster = None
+
+	for cluster_name, cluster_coords in cluster_locations.items():
+		cluster_latitude = cluster_coords["latitude"]
+		cluster_longitude = cluster_coords["longitude"]
+
+		distance = haversine_distance(user_latitude, user_longitude, cluster_latitude, cluster_longitude)
+
+		if distance < min_distance:
+			min_distance = distance
+			nearest_cluster = cluster_name
+
+	return nearest_cluster
