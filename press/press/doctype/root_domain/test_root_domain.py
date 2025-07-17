@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
 
@@ -8,6 +7,8 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.core.utils import find
+from moto import mock_aws
 
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.root_domain.root_domain import RootDomain
@@ -46,9 +47,7 @@ class TestRootDomain(unittest.TestCase):
 		from press.press.doctype.server.test_server import create_test_server
 
 		creation = creation or frappe.utils.now_datetime()
-		server = create_test_server(
-			create_test_proxy_server().name, create_test_database_server().name
-		)
+		server = create_test_server(create_test_proxy_server().name, create_test_database_server().name)
 
 		job = frappe.get_doc(
 			{
@@ -72,3 +71,56 @@ class TestRootDomain(unittest.TestCase):
 
 		self.assertIn(new_site_name, root_domain.get_active_domains())
 		self.assertNotIn(old_site_name, root_domain.get_active_domains())
+
+	@mock_aws
+	def test_creation_of_root_domain_creates_aws_hosted_zone(self):
+		root_domain = frappe.get_doc(
+			{
+				"doctype": "Root Domain",
+				"name": "frappe.dev",
+				"default_cluster": "Default",
+				"dns_provider": "AWS Route 53",
+				"aws_access_key_id": "a",
+				"aws_secret_access_key": "b",
+			}
+		).insert(ignore_if_duplicate=True)
+		self.assertIsNotNone(root_domain.hosted_zone)
+
+	@mock_aws
+	def test_creation_of_root_domain_that_is_subdomain_of_existing_zone_creates_ns_record_within_root_domain(
+		self,
+	):
+		root_domain = frappe.get_doc(
+			{
+				"doctype": "Root Domain",
+				"name": "frappe.dev",
+				"default_cluster": "Default",
+				"dns_provider": "AWS Route 53",
+				"aws_access_key_id": "a",
+				"aws_secret_access_key": "b",
+			}
+		).insert(ignore_if_duplicate=True)
+		self.assertIsNotNone(root_domain.hosted_zone)
+
+		records = next(iter(root_domain.get_dns_record_pages()))["ResourceRecordSets"]
+		self.assertEqual(len(records), 2)
+
+		root_domain_2 = frappe.get_doc(
+			{
+				"doctype": "Root Domain",
+				"name": "sub.frappe.dev",
+				"default_cluster": "Default",
+				"dns_provider": "AWS Route 53",
+				"aws_access_key_id": "a",
+				"aws_secret_access_key": "b",
+			}
+		).insert(ignore_if_duplicate=True)
+		self.assertIsNotNone(root_domain_2.hosted_zone)
+
+		records = next(iter(root_domain_2.get_dns_record_pages()))["ResourceRecordSets"]
+		self.assertEqual(len(records), 2)
+
+		records = next(iter(root_domain.get_dns_record_pages()))["ResourceRecordSets"]
+		self.assertEqual(len(records), 3)
+
+		self.assertEqual(find(records, lambda x: x["Name"] == "sub.frappe.dev.")["Type"], "NS")

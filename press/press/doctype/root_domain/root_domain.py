@@ -47,6 +47,7 @@ class RootDomain(Document):
 				"obtain_root_domain_tls_certificate",
 				enqueue_after_commit=True,
 			)
+		self.create_hosted_zone()
 
 	def obtain_root_domain_tls_certificate(self):
 		try:
@@ -81,9 +82,65 @@ class RootDomain(Document):
 		return self._boto3_client
 
 	@property
-	def hosted_zone(self):
-		zones = self.boto3_client.list_hosted_zones_by_name()["HostedZones"]
-		return find(reversed(zones), lambda x: self.name.endswith(x["Name"][:-1]))["Id"]
+	def root_hosted_zone(self) -> str:  # /hostedzone/xyz
+		if not self.zones:
+			return None
+		return find(reversed(self.zones), lambda x: self.name.endswith(x["Name"][:-1]))["Id"]
+
+	@property
+	def hosted_zone(self) -> str:
+		zones = self.boto3_client.list_hosted_zones_by_name(DNSName=self.name)["HostedZones"]
+		if not zones:
+			return None
+		return zones[0]["Id"]
+
+	@property
+	def zones(self) -> list[str]:
+		"""Get all hosted zones for the root domain"""
+		if self.generic_dns_provider:
+			return []
+
+		return self.boto3_client.list_hosted_zones_by_name()["HostedZones"]
+
+	def add_hosted_zone_ns(self, root_hosted_zone: str, ns_record: list[str]):
+		ns_record = self.boto3_client.get_hosted_zone(Id=self.hosted_zone)["DelegationSet"]["NameServers"]
+		self.boto3_client.change_resource_record_sets(
+			ChangeBatch={
+				"Changes": [
+					{
+						"Action": "CREATE",
+						"ResourceRecordSet": {
+							"Name": self.name,
+							"Type": "NS",
+							"TTL": 172800,
+							"ResourceRecords": [{"Value": ns} for ns in ns_record],
+						},
+					}
+				]
+			},
+			HostedZoneId=root_hosted_zone,
+		)
+
+	def create_hosted_zone(self):
+		if self.generic_dns_provider:
+			return
+		if self.hosted_zone:
+			# If the hosted zone already exists, we can safely ignore this error
+			return
+		root_hosted_zone = self.root_hosted_zone  # eg: frappe.cloud for x.frappe.cloud
+
+		zone = self.boto3_client.create_hosted_zone(
+			Name=self.name,
+			CallerReference=str(datetime.now()),
+			HostedZoneConfig={
+				"Comment": f"Press Root Domain for {self.default_cluster}",
+				"PrivateZone": False,
+			},
+		)
+		if not root_hosted_zone:
+			return
+		# get newly created hosted zone's ns record and add to root hosted zone
+		self.add_hosted_zone_ns(root_hosted_zone, zone["DelegationSet"]["NameServers"])
 
 	def get_dns_record_pages(self) -> Iterable:
 		try:
