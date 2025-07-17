@@ -155,7 +155,7 @@ class BaseServer(Document, TagHelpers):
 				add_on_storage_log: AddOnStorageLog = frappe.get_doc(storage_parameters)
 				add_on_storage_log.insert(ignore_permissions=True)
 
-			self.increase_disk_size(increment=increment, mountpoint=mountpoint)
+			self.increase_disk_size(increment=increment, mountpoint=mountpoint, log=add_on_storage_log.name)
 			self.create_subscription_for_storage(increment)
 		else:
 			server_doc: DatabaseServer = frappe.get_doc("Database Server", server)
@@ -164,7 +164,9 @@ class BaseServer(Document, TagHelpers):
 				add_on_storage_log: AddOnStorageLog = frappe.get_doc(storage_parameters)
 				add_on_storage_log.insert(ignore_permissions=True)
 
-			server_doc.increase_disk_size(increment=increment, mountpoint=mountpoint)
+			server_doc.increase_disk_size(
+				increment=increment, mountpoint=mountpoint, log=add_on_storage_log.name
+			)
 			server_doc.create_subscription_for_storage(increment)
 
 	@dashboard_whitelist()
@@ -638,7 +640,7 @@ class BaseServer(Document, TagHelpers):
 			log_error(f"Error removing glassfile: {e.output.decode()}")
 
 	@frappe.whitelist()
-	def extend_ec2_volume(self, device=None):
+	def extend_ec2_volume(self, device=None, log: str | None = None):
 		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		# Restart MariaDB if MariaDB disk is full
@@ -659,12 +661,14 @@ class BaseServer(Document, TagHelpers):
 				port=self._ssh_port(),
 				variables={"restart_mariadb": restart_mariadb, "device": device},
 			)
-			ansible.run()
+			play = ansible.run()
+			frappe.db.set_value("Add On Storage Log", log, "extend_ec2_play", play.name)
+			frappe.db.commit()
 		except Exception:
 			log_error("EC2 Volume Extend Exception", server=self.as_dict())
 
-	def enqueue_extend_ec2_volume(self, device):
-		frappe.enqueue_doc(self.doctype, self.name, "extend_ec2_volume", device=device)
+	def enqueue_extend_ec2_volume(self, device, log):
+		frappe.enqueue_doc(self.doctype, self.name, "extend_ec2_volume", device=device, log=log)
 
 	@cached_property
 	def time_to_wait_before_updating_volume(self) -> timedelta | int:
@@ -682,7 +686,7 @@ class BaseServer(Document, TagHelpers):
 		return diff if diff < timedelta(hours=6) else 0
 
 	@frappe.whitelist()
-	def increase_disk_size(self, increment=50, mountpoint=None):
+	def increase_disk_size(self, increment=50, mountpoint=None, log: str | None = None):
 		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		if self.provider == "AWS EC2" and self.time_to_wait_before_updating_volume:
@@ -699,7 +703,7 @@ class BaseServer(Document, TagHelpers):
 		virtual_machine.increase_disk_size(volume.volume_id, increment)
 		if self.provider == "AWS EC2":
 			device = self.get_device_from_volume_id(volume.volume_id)
-			self.enqueue_extend_ec2_volume(device)
+			self.enqueue_extend_ec2_volume(device, log)
 		elif self.provider == "OCI":
 			# TODO: Add support for volumes on OCI
 			# Non-boot volumes might not need resize
@@ -1585,6 +1589,21 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		disk_capacity = round(disk_capacity / 1024 / 1024 / 1024, 2)
 
 		if not server.auto_increase_storage:
+			storage_parameters = {
+				"doctype": "Add On Storage Log",
+				"adding_storage": additional + buffer,
+				"available_disk_space": round((self.disk_capacity(mountpoint) / 1024 / 1024 / 1024), 2),
+				"current_disk_usage": current_disk_usage
+				or round(
+					(self.disk_capacity(mountpoint) - self.free_space(mountpoint)) / 1024 / 1024 / 1024, 2
+				),
+				"mountpoint": mountpoint or self.guess_data_disk_mountpoint(),
+				"reason": "[Alert] Auto trigged by frappe cloud",
+				"notification_sent": 1,
+				"has_auto_increased": 0,
+			}
+			storage_parameters.update({"database_server" if server[0] == "m" else "server": server})
+
 			telegram.send(
 				f"Not increasing disk (mount point {mountpoint}) on "
 				f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "

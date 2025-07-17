@@ -24,10 +24,34 @@ class AddOnStorageLog(Document):
 		available_disk_space: DF.Float
 		current_disk_usage: DF.Float
 		database_server: DF.Link | None
+		extend_ec2_play: DF.Link | None
+		has_auto_increased: DF.Check
 		mountpoint: DF.Data | None
+		notification_sent: DF.Check
 		reason: DF.SmallText | None
 		server: DF.Link | None
 	# end: auto-generated types
+
+	def validate_existing_logs(self):
+		logs_created_today = frappe.get_value(
+			"Add On Storage",
+			{
+				"server": self.server,
+				"database_server": self.database_server,
+				"creation": (
+					"between",
+					[
+						frappe.utils.add_to_date(days=-1),
+						frappe.utils.now(),
+					],
+				),
+			},
+		)
+		if logs_created_today:
+			frappe.throw("A log for this machine already exists")
+
+	def validate(self):
+		self.validate_existing_logs()
 
 	def send_notification(self):
 		"""Send add on storage notification"""
@@ -47,3 +71,7 @@ class AddOnStorageLog(Document):
 				"increase_by": f"{self.adding_storage} GiB",
 			},
 		)
+
+
+def get_teams_to_send_notifications_to():
+	frappe.get_all("Add On Storage Log", {"notification_sent": 0}, pluck="name")

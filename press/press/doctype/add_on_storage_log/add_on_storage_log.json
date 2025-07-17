@@ -5,6 +5,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "annotations_section",
   "server",
   "database_server",
   "reason",
@@ -12,7 +13,11 @@
   "available_disk_space",
   "current_disk_usage",
   "mountpoint",
-  "adding_storage"
+  "adding_storage",
+  "extend_ec2_play",
+  "storage_settings_section",
+  "has_auto_increased",
+  "notification_sent"
  ],
  "fields": [
   {
@@ -59,12 +64,40 @@
    "fieldname": "adding_storage",
    "fieldtype": "Float",
    "label": "Adding storage"
+  },
+  {
+   "fieldname": "annotations_section",
+   "fieldtype": "Section Break",
+   "label": "Annotations"
+  },
+  {
+   "fieldname": "storage_settings_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "has_auto_increased",
+   "fieldtype": "Check",
+   "label": "Has Auto Increased",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "notification_sent",
+   "fieldtype": "Check",
+   "label": "Notification Sent"
+  },
+  {
+   "fieldname": "extend_ec2_play",
+   "fieldtype": "Link",
+   "label": "Extend EC2 Play",
+   "options": "Ansible Play"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-11 17:13:06.167938",
+ "modified": "2025-07-17 14:45:24.113546",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Add On Storage Log",
