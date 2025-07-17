@@ -2,11 +2,11 @@
 	<div class="block w-full">
 		<div class="flex items-center rounded-md p-3 text-base" :class="classes">
 			<FeatherIcon
-				v-if="type === 'warning'"
+				v-if="type === 'warning' && showIcon"
 				name="alert-circle"
 				class="h-5 w-5 text-gray-900"
 			/>
-			<div class="ml-2 w-full">
+			<div class="w-full" :class="{ 'pl-2': showIcon }">
 				<div class="flex flex-col md:flex-row md:items-baseline">
 					<h3 class="text-lg font-medium text-gray-900" v-if="title">
 						{{ title }}
@@ -30,15 +30,19 @@ export default {
 		title: String,
 		type: {
 			type: String,
-			default: 'warning'
-		}
+			default: 'warning',
+		},
+		showIcon: {
+			type: Boolean,
+			default: true,
+		},
 	},
 	computed: {
 		classes() {
 			return {
-				warning: 'text-gray-700 bg-gray-50'
+				warning: 'text-gray-700 bg-gray-50',
 			}[this.type];
-		}
-	}
+		},
+	},
 };
 </script>

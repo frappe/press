@@ -17,7 +17,6 @@ class BenchSiteUpdate(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		prefer_physical_backup: DF.Check
 		server: DF.Link | None
 		site: DF.Link
 		site_update: DF.Link | None
@@ -25,7 +24,6 @@ class BenchSiteUpdate(Document):
 		skip_failing_patches: DF.Check
 		source_candidate: DF.Link | None
 		status: DF.Literal["Pending", "Running", "Failure", "Recovered", "Success", "Fatal"]
-		wait_for_snapshot_before_update: DF.Check
 	# end: auto-generated types
 
 	pass

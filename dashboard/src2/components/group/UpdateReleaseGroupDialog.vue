@@ -44,12 +44,34 @@
 							:options="siteOptions"
 							@update:selections="handleSiteSelection"
 						/>
-						<div class="mt-4 px-2">
+						<div
+							class="mt-5 flex flex-col gap-2.5 px-2"
+							v-if="
+								benchDocResource.doc.deploy_information
+									.eligible_for_physical_backup
+							"
+						>
 							<Checkbox
 								size="sm"
-								v-model="waitForSnapshotBeforeUpdate"
-								label="Wait For Snapshot Before Update (Applicable for Physical Backups)"
+								v-model="preferPhysicalBackup"
+								label="Prefer Physical Backup For Large Sites"
 							/>
+							<Checkbox
+								size="sm"
+								v-if="preferPhysicalBackup"
+								v-model="waitForSnapshotBeforeUpdate"
+								label="Wait For Snapshot Before Starting Update"
+							/>
+							<Alert v-if="waitForSnapshotBeforeUpdate" :show-icon="false">
+								<p>
+									> Enabling this option will delay the update until a snapshot
+									is ready.<br />
+									> But, this will ensure that the site restoration can begin as
+									soon as update failed.<br />
+									> If the snapshot takes too long, you can cancel the update
+									and try again later.
+								</p>
+							</Alert>
 						</div>
 					</div>
 					<p
@@ -156,7 +178,8 @@ export default {
 			restrictMessage: '',
 			selectedApps: [],
 			selectedSites: [],
-			waitForSnapshotBeforeUpdate: true,
+			preferPhysicalBackup: true,
+			waitForSnapshotBeforeUpdate: false,
 		};
 	},
 	mounted() {
@@ -172,7 +195,7 @@ export default {
 		updatableAppOptions() {
 			let deployInformation = this.benchDocResource.doc.deploy_information;
 			let appData = deployInformation.apps.filter(
-				(app) => app.update_available === true
+				(app) => app.update_available === true,
 			);
 
 			return {
@@ -232,7 +255,7 @@ export default {
 
 							function initialDeployTo(app) {
 								const next_release = app.releases.filter(
-									(release) => release.name === app.next_release
+									(release) => release.name === app.next_release,
 								)[0];
 								if (app.will_branch_change) {
 									return app.branch;
@@ -265,7 +288,7 @@ export default {
 						format(value, row) {
 							if (
 								deployInformation.removed_apps.find(
-									(app) => app.name === row.name
+									(app) => app.name === row.name,
 								)
 							) {
 								return 'Will be Uninstalled';
@@ -284,7 +307,7 @@ export default {
 							let url;
 							if (row.current_hash && row.next_release) {
 								let hash = row.releases.find(
-									(release) => release.name === row.next_release
+									(release) => release.name === row.next_release,
 								)?.hash;
 
 								if (hash)
@@ -292,7 +315,7 @@ export default {
 							} else if (row.next_release) {
 								url = `${row.repository_url}/commit/${
 									row.releases.find(
-										(release) => release.name === row.next_release
+										(release) => release.name === row.next_release,
 									).hash
 								}`;
 							}
@@ -387,7 +410,7 @@ export default {
 		},
 		hasUpdateAvailable() {
 			return this.benchDocResource.doc.deploy_information.apps.some(
-				(app) => app.update_available === true
+				(app) => app.update_available === true,
 			);
 		},
 		hasRemovedApps() {
@@ -456,7 +479,8 @@ export default {
 			const allSites = this.siteOptions.data
 				.filter(
 					(s) =>
-						benches.has(s.bench) || inPlaceUpdateFailedBenches.includes(s.bench)
+						benches.has(s.bench) ||
+						inPlaceUpdateFailedBenches.includes(s.bench),
 				)
 				.map((s) => s.name);
 
@@ -477,7 +501,14 @@ export default {
 					apps: this.selectedApps,
 					sites: this.selectedSites,
 					run_will_fail_check: !this.ignoreWillFailCheck,
-					wait_for_snapshot_before_update: this.waitForSnapshotBeforeUpdate,
+					prefer_physical_backup:
+						this.benchDocResource.doc.deploy_information
+							.eligible_for_physical_backup && this.preferPhysicalBackup,
+					wait_for_snapshot_before_update:
+						this.benchDocResource.doc.deploy_information
+							.eligible_for_physical_backup &&
+						this.preferPhysicalBackup &&
+						this.waitForSnapshotBeforeUpdate,
 				},
 				validate() {
 					if (
@@ -573,7 +604,7 @@ export default {
 						source: app.source,
 						release: app.next_release,
 						hash: app.releases.find(
-							(release) => release.name === app.next_release
+							(release) => release.name === app.next_release,
 						).hash,
 					};
 				});
@@ -594,7 +625,7 @@ export default {
 		},
 		initialDeployTo(app) {
 			return this.benchDocResource.doc.deploy_information.apps.find(
-				(a) => a.app === app.app
+				(a) => a.app === app.app,
 			).next_release;
 		},
 		updateBench() {

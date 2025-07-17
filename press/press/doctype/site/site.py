@@ -1242,6 +1242,7 @@ class Site(Document, TagHelpers):
 			return latest_backup_agent_job_step.seconds if latest_backup_agent_job_step else -1
 
 		def _snapshot_duration():
+			return 10000
 			database_server: DatabaseServer = frappe.get_doc("Database Server", self.database_server_name)
 			predicted_duration = database_server.predict_snapshot_duration()
 			return predicted_duration if predicted_duration else -1
@@ -4381,7 +4382,7 @@ def suspend_sites_exceeding_disk_usage_for_last_7_days():
 			site.suspend(reason="Site Usage Exceeds Plan limits", skip_reload=True)
 
 
-@redis_cache(ttl=3600)
+@redis_cache(ttl=7200)
 def is_eligible_for_physical_backup(site: str):
 	"""
 	Check if the site is eligible for physical backup.
