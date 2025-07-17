@@ -17,35 +17,35 @@ from press.provision.doctype.provision_plan.provision_plan import ProvisionPlan
 from press.provision.doctype.provision_state.provision_state import ProvisionState
 
 if TYPE_CHECKING:
-	from press.press.doctype.region.region import Region
-	from press.provision.doctype.provider.provider import Provider
+	from press.press.doctype.cloud_region.cloud_region import CloudRegion
 
-
-STACKS_DIRECTORY = "stacks"
 OPENTOFU_BINARY = "tofu"
 
 
 class PilotStack(TerraformStack):
-	def __init__(self, scope: Construct, name: str, region, provider: "Provider"):
+	def __init__(self, scope: Construct, name: str, region: "CloudRegion", stack_dir):
 		super().__init__(scope, name)
 
 		# Backend file by default is placed at
 		# Which happens to be `sites/terraform.<region>.tfstate`
 		# This moves it to the stack directory
-		directory = os.path.abspath(frappe.get_site_path(STACKS_DIRECTORY))
-		stack_directory = os.path.join(directory, "stacks", region.name)
+		directory = os.path.abspath(frappe.get_site_path(stack_dir))
+		stack_directory = os.path.join(directory, region.region_name)
 		backend_file = os.path.join(stack_directory, "terraform.tfstate")
+		provider = frappe.get_doc(
+			"Provider", {"region": region.region_name, "cloud_provider": region.provider}
+		)
 		LocalBackend(self, path=backend_file)
-		if region.cloud_provider == "digitalocean":
-			DigitalOcean().provision(self, scope, name, region)
+		if region.provider == "AWS EC2":
+			DigitalOcean().provision(self, scope, name, region, provider)
 
 
 class OpenTofu:
-	def __init__(self, region: "Region", stack_dir) -> None:
+	def __init__(self, region: "CloudRegion", stack_dir) -> None:
 		self.region = region
-		self.directory = os.path.abspath(frappe.get_site_path(STACKS_DIRECTORY))
-		self.stack_directory = os.path.join(stack_dir, "stacks", self.region.name)
-		self.tofu = TofuCLI(self.stack_directory, region)
+		self.directory = os.path.abspath(frappe.get_site_path(stack_dir))
+		self.stack_directory = os.path.join(self.directory, "stacks", self.region.name)
+		self.tofu = TofuCLI(self.stack_directory, self.region)
 
 	def provision(self) -> None:
 		self.synth()
@@ -60,10 +60,11 @@ class OpenTofu:
 		self._destroy()
 		self.sync()
 
-	def synth(self, directory) -> ProvisionDeclaration:
+	def synth(self) -> ProvisionDeclaration:
 		# Creates sites/<site>/stacks directory on first run
-		app = App(outdir=directory)
-		PilotStack(app, self.region.region_name, self.region)
+		app = App(outdir=self.directory)
+		# TODO: Clean up region naming confusion - self.region.name vs self.region usage is ambiguous
+		PilotStack(app, self.region.name, self.region, self.stack_directory)
 		app.synth()
 		synth_file = os.path.join(self.directory, "stacks", self.region.name, "cdk.tf.json")
 		with open(synth_file) as f:
@@ -99,7 +100,9 @@ class OpenTofu:
 		return self.tofu.destroy()
 
 	def create_declaration(self, declaration: str) -> ProvisionDeclaration:
-		return
+		return frappe.new_doc(
+			"Provision Declaration", region=self.region.name, stack=self.region.name, declaration=declaration
+		).insert()
 
 	def create_plan(self, plan: str, pretty_plan: str) -> ProvisionPlan:
 		return frappe.new_doc(
@@ -121,7 +124,8 @@ class OpenTofu:
 
 
 class TofuCLI:
-	def __init__(self, path, region) -> None:
+	def __init__(self, path, region: "Region") -> None:
+		print(path)
 		self.path = path
 		self.region = region
 
@@ -135,7 +139,7 @@ class TofuCLI:
 		frappe.new_doc(
 			"Provision Action",
 			region=self.region.name,
-			stack=self.region.name,
+			stack=self.region.region_name,
 			action=command[1],
 			output=output,
 			error=error,
