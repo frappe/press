@@ -1,5 +1,7 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
+from typing import TYPE_CHECKING
+
 from cdktf import Fn
 from cdktf_cdktf_provider_digitalocean.droplet import Droplet
 from cdktf_cdktf_provider_digitalocean.project import Project
@@ -8,12 +10,10 @@ from cdktf_cdktf_provider_digitalocean.volume import Volume
 from cdktf_cdktf_provider_digitalocean.volume_attachment import VolumeAttachment
 from constructs import Construct
 
-from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
 	from press.press.doctype.cloud_region.cloud_region import CloudRegion
-	from press.provision.doctype.provider.provider import Provider
 	from press.press.opentofu import PilotStack
+	from press.provision.doctype.provider.provider import Provider
 
 
 class DigitalOcean:
