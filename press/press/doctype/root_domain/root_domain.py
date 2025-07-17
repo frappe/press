@@ -105,7 +105,6 @@ class RootDomain(Document):
 		return self.boto3_client.list_hosted_zones_by_name()["HostedZones"]
 
 	def add_hosted_zone_ns(self, root_hosted_zone: str, ns_record: list[str]):
-		ns_record = self.boto3_client.get_hosted_zone(Id=self.hosted_zone)["DelegationSet"]["NameServers"]
 		self.boto3_client.change_resource_record_sets(
 			ChangeBatch={
 				"Changes": [
