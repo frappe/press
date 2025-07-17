@@ -143,7 +143,7 @@ class SiteUpdate(Document):
 		self.validate_apps()
 		self.validate_pending_updates()
 		self.validate_past_failed_updates()
-		self.set_physical_backup_mode_if_eligible()
+		self.validate_backup_mode()
 
 	def validate_destination_bench(self, differences):
 		if not self.destination_bench:
@@ -222,7 +222,6 @@ class SiteUpdate(Document):
 			)
 
 	def before_insert(self):
-		self.backup_type = "Logical"
 		site: "Site" = frappe.get_cached_doc("Site", self.site)
 		site.check_move_scheduled()
 
@@ -230,7 +229,7 @@ class SiteUpdate(Document):
 		if not self.scheduled_time:
 			self.start()
 
-	def set_physical_backup_mode_if_eligible(self):
+	def validate_backup_mode(self):
 		from press.press.doctype.site.site import is_eligible_for_physical_backup
 
 		if self.skipped_backups:
@@ -242,7 +241,11 @@ class SiteUpdate(Document):
 		backup_mode_selected_by_user = (
 			hasattr(self, "backup_mode_selected_by_user") and self.backup_mode_selected_by_user
 		)
+
 		eligible_for_physical_backup = is_eligible_for_physical_backup(self.site)
+		if not eligible_for_physical_backup and self.backup_type == "Physical":
+			self.backup_type = "Logical"
+
 		if eligible_for_physical_backup and not backup_mode_selected_by_user:
 			self.backup_type = "Physical"
 

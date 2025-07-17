@@ -16,8 +16,7 @@
   "bench",
   "section_break_nfd1",
   "apps",
-  "sites",
-  "wait_for_snapshot_before_update"
+  "sites"
  ],
  "fields": [
   {
@@ -79,19 +78,12 @@
    "fieldtype": "Link",
    "label": "Bench",
    "options": "Bench"
-  },
-  {
-   "default": "0",
-   "description": "Specific to Physical Backup Only",
-   "fieldname": "wait_for_snapshot_before_update",
-   "fieldtype": "Check",
-   "label": "Wait For Snapshot Before Update"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-09 10:56:00.529890",
+ "modified": "2025-07-17 18:11:30.040067",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench Update",

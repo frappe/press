@@ -33,7 +33,6 @@ class BenchUpdate(Document):
 		group: DF.Link
 		is_inplace_update: DF.Check
 		sites: DF.Table[BenchSiteUpdate]
-		wait_for_snapshot_before_update: DF.Check
 	# end: auto-generated types
 
 	def validate(self):
@@ -141,7 +140,8 @@ class BenchUpdate(Document):
 					site_update = frappe.get_doc("Site", row.site).schedule_update(
 						skip_failing_patches=row.skip_failing_patches,
 						skip_backups=row.skip_backups,
-						wait_for_snapshot_before_update=self.wait_for_snapshot_before_update,
+						prefer_physical_backup=row.prefer_physical_backup,
+						wait_for_snapshot_before_update=row.wait_for_snapshot_before_update,
 					)
 					frappe.db.set_value("Bench Site Update", row.name, "site_update", site_update)
 					frappe.db.commit()

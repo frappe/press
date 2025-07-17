@@ -1173,7 +1173,7 @@ class Site(Document, TagHelpers):
 		self,
 		skip_failing_patches: bool = False,
 		skip_backups: bool = False,
-		physical_backup: bool = False,
+		prefer_physical_backup: bool = False,
 		wait_for_snapshot_before_update: bool = False,
 		scheduled_time: str | None = None,
 		auto_update: bool = False,
@@ -1188,6 +1188,11 @@ class Site(Document, TagHelpers):
 			if (
 				not database_server.predict_snapshot_duration() > 3600
 			):  # If snapshot duration is more than 1 hour
+				log_site_activity(
+					self.name,
+					"Auto Site Update Cancelled",
+					"Physical DB Restoration will take longer time in case of failed update",
+				)
 				return None
 
 		log_site_activity(self.name, "Update")
@@ -1196,15 +1201,15 @@ class Site(Document, TagHelpers):
 			{
 				"doctype": "Site Update",
 				"site": self.name,
-				"backup_type": "Physical" if physical_backup else "Logical",
+				"backup_type": "Physical" if prefer_physical_backup else "Logical",
 				"skipped_failing_patches": skip_failing_patches,
 				"skipped_backups": skip_backups,
 				"status": "Scheduled" if scheduled_time else "Pending",
 				"scheduled_time": scheduled_time,
 				"wait_for_snapshot_before_update": wait_for_snapshot_before_update
-				if physical_backup
+				if prefer_physical_backup
 				else False,
-				"backup_mode_selected_by_user": physical_backup,
+				"backup_mode_selected_by_user": True,
 			}
 		).insert()
 		return doc.name
@@ -1245,7 +1250,7 @@ class Site(Document, TagHelpers):
 		return {
 			"eligible_for_physical_backup": eligible_for_physical_backup,
 			"logical_backup_duration": _logical_backup_duration(),
-			"snapshot_duration": _snapshot_duration(),
+			"snapshot_duration": _snapshot_duration() if eligible_for_physical_backup else -1,
 		}
 
 	@dashboard_whitelist()
