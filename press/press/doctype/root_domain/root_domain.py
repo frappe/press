@@ -90,7 +90,7 @@ class RootDomain(Document):
 		return None
 
 	@property
-	def hosted_zone(self) -> str:
+	def hosted_zone(self) -> str | None:
 		zones = self.boto3_client.list_hosted_zones_by_name(DNSName=self.name)["HostedZones"]
 		if not zones:
 			return None
