@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
@@ -55,7 +54,7 @@ def trigger():
 
 		try:
 			site_doc: Site = frappe.get_doc("Site", site.name)
-			site_doc.schedule_update()
+			site_doc.schedule_update(auto_update=True)
 			site_doc.auto_update_last_triggered_on = now_datetime()
 			site_doc.save()
 		except Exception:
@@ -101,7 +100,7 @@ def should_update_trigger_for_daily(doc, current_datetime=None):
 		and get_time(doc.update_trigger_time) <= get_time(auto_update_last_triggered_on)
 	):
 		return False
-	elif get_time(doc.update_trigger_time) <= get_time(current_datetime):
+	if get_time(doc.update_trigger_time) <= get_time(current_datetime):
 		return True
 
 	return False

@@ -17,6 +17,7 @@ from urllib.parse import urljoin
 from urllib.request import urlopen
 
 import frappe
+import joblib
 import pytz
 import requests
 import wrapt
@@ -25,7 +26,7 @@ from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.x509.oid import ExtensionOID
 from frappe.utils import get_datetime, get_system_timezone
-from frappe.utils.caching import site_cache
+from frappe.utils.caching import redis_cache, site_cache
 
 from press.utils.email_validator import validate_email
 
@@ -1005,3 +1006,43 @@ def get_nearest_cluster():
 			nearest_cluster = cluster_name
 
 	return nearest_cluster
+
+
+class SnapshotTimeEstimator:
+	_model = None
+	_model_path = "snapshot_time_estimator.pkl"
+	_model_exists = False
+
+	@staticmethod
+	def get_model():
+		if not SnapshotTimeEstimator._model:
+			path = Path(__file__).parent.resolve() / SnapshotTimeEstimator._model_path
+			if not path.exists():
+				SnapshotTimeEstimator._model_exists = False
+				return None
+
+			SnapshotTimeEstimator._model = joblib.load(
+				Path(__file__).parent.resolve() / SnapshotTimeEstimator._model_path
+			)
+			SnapshotTimeEstimator._model_exists = True
+
+		return SnapshotTimeEstimator._model
+
+	@staticmethod
+	def predict(total_writes_gb: int, max_p99_iops_usage: int) -> int:
+		if not SnapshotTimeEstimator._model_exists and SnapshotTimeEstimator.get_model() is None:
+			return -1
+
+		return SnapshotTimeEstimator._predict(total_writes_gb, max_p99_iops_usage)
+
+	@staticmethod
+	@redis_cache(ttl=864000)
+	def _predict(total_writes_gb: int, max_p99_iops_usage: int) -> int:
+		"""
+		Predict the snapshot time based on the provided features.
+
+		:param total_writes_gb: Total writes in GB between current and last successful snapshot
+		:param max_p99_iops_usage: Maximum P99 IOPS usage between current and last successful snapshot
+		:return: Predicted snapshot time in seconds
+		"""
+		return int(SnapshotTimeEstimator.get_model().predict([[total_writes_gb, max_p99_iops_usage]])[0])

@@ -33,6 +33,7 @@ from frappe.utils import (
 	sbool,
 	time_diff_in_hours,
 )
+from frappe.utils.caching import redis_cache
 
 from press.exceptions import (
 	CannotChangePlan,
@@ -1175,7 +1176,20 @@ class Site(Document, TagHelpers):
 		physical_backup: bool = False,
 		wait_for_snapshot_before_update: bool = False,
 		scheduled_time: str | None = None,
+		auto_update: bool = False,
 	):
+		if auto_update and is_eligible_for_physical_backup(self.name):
+			# In case of auto update
+			# If site is going to take Physical Backup
+			# And if snapshot is going to take more than 1 hour
+			# Then don't do any auto update
+			# End-user can trigger manual update later
+			database_server: DatabaseServer = frappe.get_doc("Database Server", self.database_server_name)
+			if (
+				not database_server.predict_snapshot_duration() > 3600
+			):  # If snapshot duration is more than 1 hour
+				return None
+
 		log_site_activity(self.name, "Update")
 
 		doc = frappe.get_doc(
@@ -1190,9 +1204,49 @@ class Site(Document, TagHelpers):
 				"wait_for_snapshot_before_update": wait_for_snapshot_before_update
 				if physical_backup
 				else False,
+				"backup_mode_selected_by_user": physical_backup,
 			}
 		).insert()
 		return doc.name
+
+	@dashboard_whitelist()
+	def options_for_site_update(self):
+		def _logical_backup_duration():
+			# Get the latest successful logical backup job step duration
+			latest_backup_agent_job = frappe.get_value(
+				"Agent Job",
+				filters={
+					"site": self.name,
+					"status": "Success",
+					"job_type": "Backup Site",
+				},
+				order_by="creation desc",
+				fieldname="name",
+			)
+			if not latest_backup_agent_job:
+				return -1
+
+			latest_backup_agent_job_step = frappe.get_value(
+				"Agent Job Step",
+				filters={
+					"agent_job": latest_backup_agent_job,
+					"step_name": "Backup Site",
+				},
+				fieldname="duration",
+			)
+			return latest_backup_agent_job_step.seconds if latest_backup_agent_job_step else -1
+
+		def _snapshot_duration():
+			database_server: DatabaseServer = frappe.get_doc("Database Server", self.database_server_name)
+			predicted_duration = database_server.predict_snapshot_duration()
+			return predicted_duration if predicted_duration else -1
+
+		eligible_for_physical_backup = is_eligible_for_physical_backup(self.name)
+		return {
+			"eligible_for_physical_backup": eligible_for_physical_backup,
+			"logical_backup_duration": _logical_backup_duration(),
+			"snapshot_duration": _snapshot_duration(),
+		}
 
 	@dashboard_whitelist()
 	def edit_scheduled_update(
@@ -4322,6 +4376,7 @@ def suspend_sites_exceeding_disk_usage_for_last_7_days():
 			site.suspend(reason="Site Usage Exceeds Plan limits", skip_reload=True)
 
 
+@redis_cache(ttl=3600)
 def is_eligible_for_physical_backup(site: str):
 	"""
 	Check if the site is eligible for physical backup.

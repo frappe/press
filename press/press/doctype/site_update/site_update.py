@@ -204,12 +204,12 @@ class SiteUpdate(Document):
 		if self.triggered_by_user:
 			return  # Allow user to trigger update for same source and destination
 
-		# if not self.skipped_failing_patches and self.have_past_updates_failed():
-		# 	frappe.throw(
-		# 		f"Update from Source Candidate {self.source_candidate} to Destination"
-		# 		f" Candidate {self.destination_candidate} has failed in the past.",
-		# 		frappe.ValidationError,
-		# 	)
+		if not self.skipped_failing_patches and self.have_past_updates_failed():
+			frappe.throw(
+				f"Update from Source Candidate {self.source_candidate} to Destination"
+				f" Candidate {self.destination_candidate} has failed in the past.",
+				frappe.ValidationError,
+			)
 
 	def validate_apps(self):
 		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
@@ -239,7 +239,11 @@ class SiteUpdate(Document):
 		if self.deploy_type != "Migrate":
 			return
 
-		if is_eligible_for_physical_backup(self.site):
+		backup_mode_selected_by_user = (
+			hasattr(self, "backup_mode_selected_by_user") and self.backup_mode_selected_by_user
+		)
+		eligible_for_physical_backup = is_eligible_for_physical_backup(self.site)
+		if eligible_for_physical_backup and not backup_mode_selected_by_user:
 			self.backup_type = "Physical"
 
 	@dashboard_whitelist()
@@ -507,7 +511,7 @@ class SiteUpdate(Document):
 				frappe.get_doc("Virtual Disk Snapshot", snapshot).delete_snapshot()
 
 	@dashboard_whitelist()
-	def get_steps(self):
+	def get_steps(self):  # noqa: C901
 		"""
 		{
 			"title": "Step Name",
@@ -549,12 +553,12 @@ class SiteUpdate(Document):
 			steps.extend(self.get_job_steps(agent_job, "Backup Site"))
 		else:
 			steps.append(
-			  {
-			  	"name": "site_backup_not_found",
-			  	"title": "Backup Cleared",
-			  	"status": "Skipped",
-			  	"output": "",
-			  	"stage": "Physical Backup",
+				{
+					"name": "site_backup_not_found",
+					"title": "Backup Cleared",
+					"status": "Skipped",
+					"output": "",
+					"stage": "Physical Backup",
 				}
 			)
 		if self.update_job:
