@@ -253,6 +253,7 @@ scheduler_events = {
 		],
 		"10 0 * * *": [
 			"press.press.audit.check_backup_records",
+			"press.press.audit.billing_audit",
 		],
 		"0 3 * * *": [
 			"press.press.doctype.drip_email.drip_email.send_drip_emails",
@@ -319,7 +320,6 @@ scheduler_events = {
 			"press.press.cleanup.reset_large_output_fields_from_ansible_tasks",
 		],
 		"0 21 * * *": [
-			"press.press.audit.billing_audit",
 			"press.press.audit.partner_billing_audit",
 		],
 		"0 6 * * *": [

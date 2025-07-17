@@ -4,6 +4,9 @@
 frappe.ui.form.on('Root Domain', {
 	refresh: function (frm) {
 		frm.trigger('set_mandatory_fields');
+		frm.add_custom_button('Add to proxies', () => {
+			frm.call('add_to_proxies').then((r) => frm.refresh());
+		});
 	},
 
 	dns_provider: function (frm) {
