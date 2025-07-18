@@ -448,6 +448,7 @@ class VirtualDiskResize(Document):
 		self.old_volume_status = "Deleted"
 		return StepStatus.Success
 
+	@frappe.whitelist()
 	def propagate_volume_id(self) -> StepStatus:
 		"Propagate volume id"
 		machine = self.machine
