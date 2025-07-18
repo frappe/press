@@ -50,8 +50,6 @@ function getServerActionHandler(action) {
 		'Reboot server': onRebootServer,
 		'Rename server': onRenameServer,
 		'Drop server': onDropServer,
-		'Disable Automatic Disk Expansion': onDisableAutoDiskExpansion,
-		'Enable Automatic Disk Expansion': onEnableAutoDiskExpansion,
 		'Enable Performance Schema': onEnablePerformanceSchema,
 		'Disable Performance Schema': onDisablePerformanceSchema,
 		'Update InnoDB Buffer Pool Size': onUpdateInnodbBufferPoolSize,

@@ -799,6 +799,7 @@ class Cluster(Document):
 		domain: str | None = None,
 		team: str | None = None,
 		create_subscription=True,
+		auto_increase_storage: bool = False,
 	):
 		"""Creates a server for the cluster"""
 		domain = domain or frappe.db.get_single_value("Press Settings", "domain")
@@ -814,6 +815,7 @@ class Cluster(Document):
 				server = vm.create_database_server()
 				server.ram = plan.memory
 				server.title = f"{title} - Database"
+				server.auto_increase_storage = auto_increase_storage
 			case "Server":
 				server = vm.create_server()
 				server.title = f"{title} - Application"
@@ -821,6 +823,7 @@ class Cluster(Document):
 				server.database_server = self.database_server
 				server.proxy_server = self.proxy_server
 				server.new_worker_allocation = True
+				server.auto_increase_storage = auto_increase_storage
 			case "Proxy Server":
 				server = vm.create_proxy_server()
 				server.title = f"{title} - Proxy"
