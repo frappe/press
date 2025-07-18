@@ -38,12 +38,42 @@
 				<!-- Select Site Step -->
 				<div v-else-if="step === 'select-sites'">
 					<h2 class="mb-4 text-lg font-medium">Select sites to update</h2>
-					<GenericList
-						class="max-h-[500px]"
-						v-if="benchDocResource.doc.deploy_information.sites.length"
-						:options="siteOptions"
-						@update:selections="handleSiteSelection"
-					/>
+					<div v-if="benchDocResource.doc.deploy_information.sites.length">
+						<GenericList
+							class="max-h-[500px]"
+							:options="siteOptions"
+							@update:selections="handleSiteSelection"
+						/>
+						<div
+							class="mt-5 flex flex-col gap-2.5 px-2"
+							v-if="
+								benchDocResource.doc.deploy_information
+									.eligible_for_physical_backup
+							"
+						>
+							<Checkbox
+								size="sm"
+								v-model="preferPhysicalBackup"
+								label="Prefer Physical Backup For Large Sites"
+							/>
+							<Checkbox
+								size="sm"
+								v-if="preferPhysicalBackup"
+								v-model="waitForSnapshotBeforeUpdate"
+								label="Wait For Snapshot Before Starting Update"
+							/>
+							<Alert v-if="waitForSnapshotBeforeUpdate" :show-icon="false">
+								<p>
+									> Enabling this option will delay the update until a snapshot
+									is ready.<br />
+									> But, this will ensure that the site restoration can begin as
+									soon as update failed.<br />
+									> If the snapshot takes too long, you can cancel the update
+									and try again later.
+								</p>
+							</Alert>
+						</div>
+					</div>
 					<p
 						class="text-center text-base font-medium text-gray-600"
 						v-else-if="!benchDocResource.doc.deploy_information.sites.length"
@@ -128,6 +158,8 @@ import GenericList from '../../components/GenericList.vue';
 import { getTeam } from '../../data/team';
 import { DashboardError } from '../../utils/error';
 import AlertBanner from '../AlertBanner.vue';
+import { renderDialog } from '../../utils/components';
+import SiteUpdateEstimatedDuration from '../site/SiteUpdateEstimatedDuration.vue';
 
 export default {
 	name: 'UpdateReleaseGroupDialog',
@@ -137,6 +169,7 @@ export default {
 		CommitChooser,
 		CommitTag,
 		AlertBanner,
+		SiteUpdateEstimatedDuration,
 	},
 	data() {
 		return {
@@ -148,9 +181,12 @@ export default {
 			restrictMessage: '',
 			selectedApps: [],
 			selectedSites: [],
+			preferPhysicalBackup: true,
+			waitForSnapshotBeforeUpdate: false,
 		};
 	},
 	mounted() {
+		if (this.step) return;
 		if (this.hasUpdateAvailable) {
 			this.step = 'select-apps';
 		} else if (this.hasRemovedApps) {
@@ -370,6 +406,28 @@ export default {
 							});
 						},
 					},
+					{
+						label: 'Estimate Duration',
+						width: '200px',
+						type: 'Button',
+						Button: ({ row }) => {
+							return {
+								label: 'Estimate',
+								variant: 'subtle',
+								onClick: () => {
+									this.closeDialog();
+									renderDialog(
+										h(SiteUpdateEstimatedDuration, {
+											site: row.name,
+											onClose: () => {
+												this.showDialog();
+											},
+										}),
+									);
+								},
+							};
+						},
+					},
 				],
 			};
 		},
@@ -469,6 +527,14 @@ export default {
 					apps: this.selectedApps,
 					sites: this.selectedSites,
 					run_will_fail_check: !this.ignoreWillFailCheck,
+					prefer_physical_backup:
+						this.benchDocResource.doc.deploy_information
+							.eligible_for_physical_backup && this.preferPhysicalBackup,
+					wait_for_snapshot_before_update:
+						this.benchDocResource.doc.deploy_information
+							.eligible_for_physical_backup &&
+						this.preferPhysicalBackup &&
+						this.waitForSnapshotBeforeUpdate,
 				},
 				validate() {
 					if (
@@ -517,6 +583,12 @@ export default {
 		},
 	},
 	methods: {
+		showDialog() {
+			this.show = true;
+		},
+		closeDialog() {
+			this.show = false;
+		},
 		back() {
 			if (this.step === 'select-apps') {
 				return;

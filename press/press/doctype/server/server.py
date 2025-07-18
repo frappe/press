@@ -3,21 +3,24 @@
 
 from __future__ import annotations
 
+import datetime
 import json
 import shlex
 import typing
 from contextlib import suppress
-from datetime import timedelta
+from datetime import timedelta, timezone
 from functools import cached_property
 
 import boto3
 import frappe
+import requests
 import semantic_version
 from frappe import _
 from frappe.core.utils import find, find_all
 from frappe.installer import subprocess
 from frappe.model.document import Document
 from frappe.utils import cint
+from frappe.utils.password import get_decrypted_password
 from frappe.utils.synchronization import filelock
 from frappe.utils.user import is_system_user
 
@@ -29,7 +32,7 @@ from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.runner import Ansible
 from press.telegram_utils import Telegram
-from press.utils import fmt_timedelta, log_error
+from press.utils import SnapshotTimeEstimator, fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
@@ -1723,6 +1726,51 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		self.validate_mounts()
 		self.save(ignore_permissions=True)
+
+	def predict_snapshot_duration(self) -> int:
+		last_completed_snapshot_time: datetime.datetime = frappe.get_value(
+			"Virtual Disk Snapshot",
+			filters={"virtual_machine": self.name, "status": ("in", ["Completed", "Unavailable"])},
+			order_by="start_time desc",
+			fieldname="start_time",
+		)
+		if not last_completed_snapshot_time:
+			return -1
+
+		last_completed_snapshot_timestamp = last_completed_snapshot_time.replace(
+			tzinfo=timezone.utc
+		).timestamp()
+
+		start_time = last_completed_snapshot_timestamp
+		end_time = datetime.datetime.now(timezone.utc).timestamp()
+		# Fetch total written bytes in last snapshot
+
+		seconds_elapsed = end_time - start_time
+
+		query = {
+			"total_written_bytes": f'sum(increase(node_disk_written_bytes_total{{instance="{self.name}"}}[{seconds_elapsed}s]))',
+			"p99_iops": f'quantile(0.99, rate(node_disk_io_time_seconds_total{{instance="{self.name}"}}[{seconds_elapsed}s]))',
+		}
+
+		monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
+		if not monitor_server:
+			return -1
+
+		url = f"https://{monitor_server}/prometheus/api/v1/query"
+		password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
+
+		result = {}
+		for key, query_str in query.items():
+			prom_query = {"query": query_str, "time": end_time}
+			response = requests.get(url, params=prom_query, auth=("frappe", password)).json()
+			if response["status"] == "success":
+				result[key] = response["data"]["result"][0]["value"][1]
+			else:
+				log_error("Failed to fetch disk info for snapshot duration prediction", doc=self)
+
+		return SnapshotTimeEstimator.predict(
+			result["total_written_bytes"] / (1024 * 1024 * 1024), result["p99_iops"] * 100
+		)
 
 
 class Server(BaseServer):

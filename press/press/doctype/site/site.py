@@ -33,6 +33,7 @@ from frappe.utils import (
 	sbool,
 	time_diff_in_hours,
 )
+from frappe.utils.caching import redis_cache
 
 from press.exceptions import (
 	CannotChangePlan,
@@ -320,6 +321,7 @@ class Site(Document, TagHelpers):
 		doc.server_title = server.title
 		doc.inbound_ip = self.inbound_ip
 		doc.is_dedicated_server = is_dedicated_server(self.server)
+		doc.is_eligible_for_physical_backup = self.is_eligible_for_physical_backup()
 
 		if doc.owner == "Administrator":
 			doc.signup_by = frappe.db.get_value("Account Request", doc.account_request, "email")
@@ -1197,23 +1199,115 @@ class Site(Document, TagHelpers):
 		self,
 		skip_failing_patches: bool = False,
 		skip_backups: bool = False,
-		physical_backup: bool = False,
+		prefer_physical_backup: bool = False,
+		wait_for_snapshot_before_update: bool = False,
 		scheduled_time: str | None = None,
+		auto_update: bool = False,
 	):
+		if auto_update and is_eligible_for_physical_backup(self.name):
+			# In case of auto update
+			# If site is going to take Physical Backup
+			# And if snapshot is going to take more than 1 hour
+			# Then don't do any auto update
+			# End-user can trigger manual update later
+			database_server: DatabaseServer = frappe.get_doc("Database Server", self.database_server_name)
+			if (
+				not database_server.predict_snapshot_duration() > 3600
+			):  # If snapshot duration is more than 1 hour
+				log_site_activity(
+					self.name,
+					"Auto Site Update Cancelled",
+					"Physical DB Restoration will take longer time in case of failed update",
+				)
+				return None
+
 		log_site_activity(self.name, "Update")
 
 		doc = frappe.get_doc(
 			{
 				"doctype": "Site Update",
 				"site": self.name,
-				"backup_type": "Physical" if physical_backup else "Logical",
+				"backup_type": "Physical" if prefer_physical_backup else "Logical",
 				"skipped_failing_patches": skip_failing_patches,
 				"skipped_backups": skip_backups,
 				"status": "Scheduled" if scheduled_time else "Pending",
 				"scheduled_time": scheduled_time,
+				"wait_for_snapshot_before_update": wait_for_snapshot_before_update
+				if prefer_physical_backup
+				else False,
+				"backup_mode_selected_by_user": True,
 			}
 		).insert()
 		return doc.name
+
+	@dashboard_whitelist()
+	def is_eligible_for_physical_backup(self):
+		return is_eligible_for_physical_backup(self.name)
+
+	@dashboard_whitelist()
+	def options_for_site_update(self):
+		def _logical_backup_duration():
+			latest_site_update_job = frappe.get_value(
+				"Site Update",
+				filters={
+					"site": self.name,
+					"status": "Success",
+					"skipped_backups": 0,
+					"deploy_type": "Migrate",
+					"backup_type": "Logical",
+					"creation": [">=", frappe.utils.add_to_date(days=-30)],
+				},
+				order_by="creation desc",
+				fieldname="update_job",
+			)
+
+			if latest_site_update_job:
+				latest_logical_backup_agent_job_step = frappe.get_value(
+					"Agent Job Step",
+					filters={
+						"agent_job": latest_site_update_job,
+						"step_name": "Backup Site Tables",
+					},
+					fieldname="duration",
+				)
+				if latest_logical_backup_agent_job_step:
+					return latest_logical_backup_agent_job_step.seconds
+
+			# Get the latest successful logical backup job step duration
+			latest_backup_agent_job = frappe.get_value(
+				"Agent Job",
+				filters={
+					"site": self.name,
+					"status": "Success",
+					"job_type": "Backup Site",
+				},
+				order_by="creation desc",
+				fieldname="name",
+			)
+			if not latest_backup_agent_job:
+				return -1
+
+			latest_backup_agent_job_step = frappe.get_value(
+				"Agent Job Step",
+				filters={
+					"agent_job": latest_backup_agent_job,
+					"step_name": "Backup Site",
+				},
+				fieldname="duration",
+			)
+			return latest_backup_agent_job_step.seconds * 0.8 if latest_backup_agent_job_step else -1
+
+		def _snapshot_duration():
+			database_server: DatabaseServer = frappe.get_doc("Database Server", self.database_server_name)
+			predicted_duration = database_server.predict_snapshot_duration()
+			return predicted_duration if predicted_duration else -1
+
+		eligible_for_physical_backup = self.is_eligible_for_physical_backup()
+		return {
+			"eligible_for_physical_backup": eligible_for_physical_backup,
+			"logical_backup_duration": _logical_backup_duration(),
+			"snapshot_duration": _snapshot_duration() if eligible_for_physical_backup else -1,
+		}
 
 	@dashboard_whitelist()
 	def edit_scheduled_update(
@@ -1231,12 +1325,9 @@ class Site(Document, TagHelpers):
 		return doc.name
 
 	@dashboard_whitelist()
-	def cancel_scheduled_update(self, site_update: str):
-		if status := frappe.db.get_value("Site Update", site_update, "status") != "Scheduled":
-			frappe.throw(f"Cannot cancel a Site Update with status {status}")
-
-		# TODO: Set status to cancelled instead of deleting the doc
-		frappe.delete_doc("Site Update", site_update)
+	def cancel_update(self, site_update: str):
+		update = frappe.get_doc("Site Update", site_update)
+		update.cancel()
 
 	@frappe.whitelist()
 	def move_to_group(self, group, skip_failing_patches=False, skip_backups=False):
@@ -4344,3 +4435,55 @@ def suspend_sites_exceeding_disk_usage_for_last_7_days():
 			# Check once again and suspend if still exceeds limits
 			site: Site = frappe.get_doc("Site", site.name)
 			site.suspend(reason="Site Usage Exceeds Plan limits", skip_reload=True)
+
+
+@redis_cache(ttl=60)
+def is_eligible_for_physical_backup(site: str):
+	"""
+	Check if the site is eligible for physical backup.
+	Physical backup is only available for sites on dedicated server plans.
+	"""
+	# Check if physical backup is disabled globally from Press Settings
+	if frappe.utils.cint(frappe.get_cached_value("Press Settings", None, "disable_physical_backup")):
+		return False
+
+	server = frappe.get_cached_value("Site", site, "server")
+	if not server:
+		return False
+
+	database_server = frappe.get_cached_value("Server", server, "database_server")
+	if not database_server:
+		# It might be the case of configured RDS server and no self hosted database server
+		return False
+
+	# Check if physical backup is enabled on the database server
+	enable_physical_backup = frappe.get_cached_value(
+		"Database Server", database_server, "enable_physical_backup"
+	)
+	if not enable_physical_backup:
+		return False
+
+	# Sanity check - Provider should be AWS EC2
+	provider = frappe.get_cached_value("Database Server", database_server, "provider")
+	if provider != "AWS EC2":
+		return False
+
+	# Check for last logical backup
+	last_logical_site_backups = frappe.db.get_list(
+		"Site Backup",
+		filters={"site": site, "physical": False},
+		pluck="database_size",
+		limit=1,
+		order_by="creation desc",
+		ignore_permissions=True,
+	)
+	db_backup_size = 0
+	if len(last_logical_site_backups) > 0:
+		db_backup_size = cint(last_logical_site_backups[0])
+
+	# If last logical backup size is greater than 300MB (actual db size approximate 3GB)
+	# Then only take physical backup
+	if db_backup_size > 314572800:
+		return True
+
+	return False

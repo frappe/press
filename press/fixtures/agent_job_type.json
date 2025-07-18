@@ -1648,7 +1648,7 @@
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 3,
-  "modified": "2025-03-17 17:57:23.072792",
+  "modified": "2025-07-16 12:43:12.858341",
   "name": "Physical Restore Database",
   "request_method": "POST",
   "request_path": "/database/physical-restore",
@@ -1657,7 +1657,10 @@
     "step_name": "Validate Backup Files"
    },
    {
-    "step_name": "Validate Connection to Target Database"
+    "step_name": "Create Intermediary Database"
+   },
+   {
+    "step_name": "Validate Connection to Database"
    },
    {
     "step_name": "Warmup MyISAM Files"
@@ -1672,28 +1675,49 @@
     "step_name": "Prepare Database for Restoration"
    },
    {
-    "step_name": "Create Tables from Table Schema"
+    "step_name": "Create Tables from Schema in Intermediary Database"
    },
    {
-    "step_name": "Discard InnoDB Tablespaces"
+    "step_name": "Discard InnoDB Tablespaces from Intermediary Database"
    },
    {
-    "step_name": "Copying InnoDB Table Files"
+    "step_name": "Copying InnoDB Table Files to Intermediary Database"
    },
    {
-    "step_name": "Import InnoDB Tablespaces"
+    "step_name": "Import InnoDB Tablespaces in Intermediary Database"
    },
    {
-    "step_name": "Hold Write Lock on MyISAM Tables"
+    "step_name": "Hold Write Lock on MyISAM Tables in Intermediary Database"
    },
    {
-    "step_name": "Copying MyISAM Table Files"
+    "step_name": "Copying MyISAM Table Files to Intermediary Database"
    },
    {
-    "step_name": "Unlock All Tables"
+    "step_name": "Unlock All Tables of Intermediary Database"
    },
    {
-    "step_name": "Validate And Fix Tables"
+    "step_name": "Validate And Fix Tables of Intermediary Database"
+   },
+   {
+    "step_name": "Lock Target Database Tables for Renaming"
+   },
+   {
+    "step_name": "Backup Existing Target Database Tables"
+   },
+   {
+    "step_name": "Unlock Target Database Tables"
+   },
+   {
+    "step_name": "Move Restored Tables to Target Database"
+   },
+   {
+    "step_name": "Drop Backup Tables From Target Database"
+   },
+   {
+    "step_name": "Rollback Backup Tables In Target Database"
+   },
+   {
+    "step_name": "Drop Intermediary Database"
    }
   ]
  },

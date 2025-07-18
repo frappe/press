@@ -1079,6 +1079,20 @@
 		"mattn",
 		"sahilm",
 		"Rsya",
-		"rivo"
+		"rivo",
+		"pytest",
+		"Scrapy",
+		"ipynb",
+		"pyenv",
+		"pipenv",
+		"pypa",
+		"pyflow",
+		"pypackages",
+		"mkdocs",
+		"mkpy",
+		"dmypy",
+		"artefacts",
+		"nvimrc",
+		"mypy"
 	]
 }
