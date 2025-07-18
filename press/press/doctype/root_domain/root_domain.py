@@ -16,6 +16,8 @@ from press.utils import log_error
 if TYPE_CHECKING:
 	from collections.abc import Iterable
 
+	from press.press.doctype.proxy_server.proxy_server import ProxyServer
+
 
 class RootDomain(Document):
 	# begin: auto-generated types
@@ -187,6 +189,15 @@ class RootDomain(Document):
 			self.boto3_client.change_resource_record_sets(
 				ChangeBatch={"Changes": changes}, HostedZoneId=self.hosted_zone
 			)
+
+	@frappe.whitelist()
+	def add_to_proxies(self):
+		proxies = frappe.get_all("Proxy Server", {"status": "Active"}, pluck="name")
+		for proxy_name in proxies:
+			proxy: ProxyServer = frappe.get_doc("Proxy Server", proxy_name)
+			proxy.append("domains", {"domain": self.name})
+			proxy.save()
+			proxy.setup_wildcard_hosts()
 
 
 def cleanup_cname_records():
