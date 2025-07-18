@@ -54,7 +54,7 @@ class ServerPlan(Plan):
 
 	def validate_active_subscriptions(self):
 		old_doc = self.get_doc_before_save()
-		if old_doc and old_doc.enabled and not self.enabled:
+		if old_doc and old_doc.enabled and not self.enabled and not self.legacy_plan:
 			active_sub_count = frappe.db.count("Subscription", {"enabled": 1, "plan": self.name})
 			if active_sub_count > 0:
 				frappe.throw(
