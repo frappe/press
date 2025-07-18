@@ -395,6 +395,7 @@ def update_dependencies(name: str, dependencies: str):
 	for dep, new in zip(
 		sorted(rg.dependencies, key=lambda x: x.dependency),
 		sorted(dependencies, key=lambda x: x["key"]),
+		strict=False,
 	):
 		if dep.dependency != new["key"]:
 			frappe.throw(f"Invalid dependency: {new['key']}")

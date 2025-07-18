@@ -158,6 +158,8 @@ import GenericList from '../../components/GenericList.vue';
 import { getTeam } from '../../data/team';
 import { DashboardError } from '../../utils/error';
 import AlertBanner from '../AlertBanner.vue';
+import { renderDialog } from '../../utils/components';
+import SiteUpdateEstimatedDuration from '../site/SiteUpdateEstimatedDuration.vue';
 
 export default {
 	name: 'UpdateReleaseGroupDialog',
@@ -167,6 +169,7 @@ export default {
 		CommitChooser,
 		CommitTag,
 		AlertBanner,
+		SiteUpdateEstimatedDuration,
 	},
 	data() {
 		return {
@@ -183,6 +186,7 @@ export default {
 		};
 	},
 	mounted() {
+		if (this.step) return;
 		if (this.hasUpdateAvailable) {
 			this.step = 'select-apps';
 		} else if (this.hasRemovedApps) {
@@ -402,6 +406,28 @@ export default {
 							});
 						},
 					},
+					{
+						label: 'Estimate Duration',
+						width: '200px',
+						type: 'Button',
+						Button: ({ row }) => {
+							return {
+								label: 'Estimate',
+								variant: 'subtle',
+								onClick: () => {
+									this.closeDialog();
+									renderDialog(
+										h(SiteUpdateEstimatedDuration, {
+											site: row.name,
+											onClose: () => {
+												this.showDialog();
+											},
+										}),
+									);
+								},
+							};
+						},
+					},
 				],
 			};
 		},
@@ -557,6 +583,12 @@ export default {
 		},
 	},
 	methods: {
+		showDialog() {
+			this.show = true;
+		},
+		closeDialog() {
+			this.show = false;
+		},
 		back() {
 			if (this.step === 'select-apps') {
 				return;

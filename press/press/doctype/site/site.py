@@ -321,6 +321,7 @@ class Site(Document, TagHelpers):
 		doc.server_title = server.title
 		doc.inbound_ip = self.inbound_ip
 		doc.is_dedicated_server = is_dedicated_server(self.server)
+		doc.is_eligible_for_physical_backup = self.is_eligible_for_physical_backup()
 
 		if doc.owner == "Administrator":
 			doc.signup_by = frappe.db.get_value("Account Request", doc.account_request, "email")
@@ -1215,8 +1216,38 @@ class Site(Document, TagHelpers):
 		return doc.name
 
 	@dashboard_whitelist()
+	def is_eligible_for_physical_backup(self):
+		return is_eligible_for_physical_backup(self.name)
+
+	@dashboard_whitelist()
 	def options_for_site_update(self):
 		def _logical_backup_duration():
+			latest_site_update_job = frappe.get_value(
+				"Site Update",
+				filters={
+					"site": self.name,
+					"status": "Success",
+					"skipped_backups": 0,
+					"deploy_type": "Migrate",
+					"backup_type": "Logical",
+					"creation": [">=", frappe.utils.add_to_date(days=-30)],
+				},
+				order_by="creation desc",
+				fieldname="update_job",
+			)
+
+			if latest_site_update_job:
+				latest_logical_backup_agent_job_step = frappe.get_value(
+					"Agent Job Step",
+					filters={
+						"agent_job": latest_site_update_job,
+						"step_name": "Backup Site Tables",
+					},
+					fieldname="duration",
+				)
+				if latest_logical_backup_agent_job_step:
+					return latest_logical_backup_agent_job_step.seconds
+
 			# Get the latest successful logical backup job step duration
 			latest_backup_agent_job = frappe.get_value(
 				"Agent Job",
@@ -1239,15 +1270,14 @@ class Site(Document, TagHelpers):
 				},
 				fieldname="duration",
 			)
-			return latest_backup_agent_job_step.seconds if latest_backup_agent_job_step else -1
+			return latest_backup_agent_job_step.seconds * 0.8 if latest_backup_agent_job_step else -1
 
 		def _snapshot_duration():
-			return 10000
 			database_server: DatabaseServer = frappe.get_doc("Database Server", self.database_server_name)
 			predicted_duration = database_server.predict_snapshot_duration()
 			return predicted_duration if predicted_duration else -1
 
-		eligible_for_physical_backup = is_eligible_for_physical_backup(self.name)
+		eligible_for_physical_backup = self.is_eligible_for_physical_backup()
 		return {
 			"eligible_for_physical_backup": eligible_for_physical_backup,
 			"logical_backup_duration": _logical_backup_duration(),
@@ -4382,7 +4412,7 @@ def suspend_sites_exceeding_disk_usage_for_last_7_days():
 			site.suspend(reason="Site Usage Exceeds Plan limits", skip_reload=True)
 
 
-@redis_cache(ttl=7200)
+@redis_cache(ttl=60)
 def is_eligible_for_physical_backup(site: str):
 	"""
 	Check if the site is eligible for physical backup.
