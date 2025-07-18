@@ -14,7 +14,8 @@
   "dns_provider",
   "aws_access_key_id",
   "aws_secret_access_key",
-  "parent_domain"
+  "parent_domain",
+  "hosted_zone"
  ],
  "fields": [
   {
@@ -76,6 +77,13 @@
    "label": "Parent Domain",
    "options": "Root Domain",
    "set_only_once": 1
+  },
+  {
+   "fieldname": "hosted_zone",
+   "fieldtype": "Data",
+   "label": "Hosted Zone",
+   "placeholder": "If set, won't create on Route53",
+   "set_only_once": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -111,7 +119,7 @@
    "link_fieldname": "domain"
   }
  ],
- "modified": "2025-07-18 13:51:54.162018",
+ "modified": "2025-07-18 15:26:27.393675",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Root Domain",

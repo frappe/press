@@ -39,6 +39,7 @@ def create_test_virtual_machine(
 			"cluster": cluster.name,
 			"instance_id": "i-1234567890",
 			"vcpu": 4,
+			"public_ip_address": ip,
 		}
 	).insert(ignore_if_duplicate=True)
 

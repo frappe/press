@@ -129,3 +129,23 @@ class TestRootDomain(unittest.TestCase):
 
 		records_1 = next(iter(root_domain_1.get_dns_record_pages()))["ResourceRecordSets"]
 		self.assertEqual(len(records_1), 2)
+
+	def test_setting_default_proxy_server_adds_wildcard_dns_record(self):
+		from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
+
+		root_domain = self._create_aws_root_domain("frappe.dev")
+		self.assertIsNone(root_domain.default_proxy_server)
+		records_before = next(iter(root_domain.get_dns_record_pages()))["ResourceRecordSets"]
+		self.assertEqual(len(records_before), 2)
+
+		proxy_server = create_test_proxy_server()
+		root_domain.default_proxy_server = proxy_server.name
+		root_domain.save()
+
+		records_after = next(iter(root_domain.get_dns_record_pages()))["ResourceRecordSets"]
+		self.assertEqual(len(records_after), 3)
+		self.assertEqual(find(records_after, lambda x: x["Name"] == "*.frappe.dev.")["Type"], "A")
+		self.assertEqual(
+			find(records_after, lambda x: x["Name"] == "*.frappe.dev.")["ResourceRecords"][0]["Value"],
+			proxy_server.ip,
+		)
