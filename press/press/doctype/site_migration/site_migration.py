@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from functools import cached_property
 from typing import TYPE_CHECKING
 
 import frappe
@@ -90,18 +91,35 @@ class SiteMigration(Document):
 		if frappe.db.get_value("Bench", self.destination_bench, "status", for_update=True) != "Active":
 			frappe.throw("Destination bench does not exist")
 
+	@cached_property
+	def last_backup(self) -> SiteBackup | None:
+		return frappe.get_last_doc(
+			"Site Backup",
+			{
+				"site": self.site,
+				"with_files": True,
+				"offsite": True,
+				"status": "Success",
+				"files_availability": "Available",
+			},
+		)
+
+	def check_enough_space_on_source_server(self):
+		# server needs to have enough space to create backup
+		try:
+			backup = self.last_backup
+		except frappe.DoesNotExistError:
+			pass
+		else:
+			site: "Site" = frappe.get_doc("Site", self.site)
+			site.remote_database_file = backup.remote_database_file
+			site.remote_public_file = backup.remote_public_file
+			site.remote_private_file = backup.remote_private_file
+			site.check_space_on_server_for_backup()
+
 	def check_enough_space_on_destination_server(self):
 		try:
-			backup: SiteBackup = frappe.get_last_doc(  # approximation with last backup
-				"Site Backup",
-				{
-					"site": self.site,
-					"with_files": True,
-					"offsite": True,
-					"status": "Success",
-					"files_availability": "Available",
-				},
-			)
+			backup = self.last_backup
 		except frappe.DoesNotExistError:
 			pass
 		else:
@@ -110,7 +128,7 @@ class SiteMigration(Document):
 			site.remote_database_file = backup.remote_database_file
 			site.remote_public_file = backup.remote_public_file
 			site.remote_private_file = backup.remote_private_file
-			site.check_enough_space_on_server()
+			site.check_space_on_server_for_restore()
 
 	def after_insert(self):
 		self.set_migration_type()
