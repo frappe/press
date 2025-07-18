@@ -72,6 +72,7 @@ class BaseServer(Document, TagHelpers):
 		"is_self_hosted",
 		"auto_add_storage_min",
 		"auto_add_storage_max",
+		"auto_increase_storage",
 	)
 
 	@staticmethod
@@ -95,7 +96,6 @@ class BaseServer(Document, TagHelpers):
 
 	def get_doc(self, doc):
 		from press.api.client import get
-		from press.api.server import usage
 
 		if self.plan:
 			doc.current_plan = get("Server Plan", self.plan)
@@ -115,7 +115,7 @@ class BaseServer(Document, TagHelpers):
 			["price_inr", "price_usd"],
 			as_dict=True,
 		)
-		doc.usage = usage(self.name)
+		doc.usage = []
 		doc.actions = self.get_actions()
 		doc.disk_size = frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size")
 		doc.replication_server = frappe.db.get_value(
@@ -168,18 +168,24 @@ class BaseServer(Document, TagHelpers):
 			server_doc.create_subscription_for_storage(increment)
 
 	@dashboard_whitelist()
-	def configure_auto_add_storage(self, server: str, min: int, max: int) -> None:
+	def configure_auto_add_storage(self, server: str, enabled: bool, min: int = 0, max: int = 0) -> None:
+		if not enabled:
+			frappe.db.set_value(self.doctype, self.name, "auto_add_storage_enabled", False)
+			return
+
 		if min < 0 or max < 0:
 			frappe.throw(_("Minimum and maximum storage sizes must be positive"))
 		if min > max:
 			frappe.throw(_("Minimum storage size must be less than the maximum storage size"))
 
 		if server == self.name:
+			self.auto_increase_storage = True
 			self.auto_add_storage_min = min
 			self.auto_add_storage_max = max
 			self.save()
 		else:
 			server_doc = frappe.get_doc("Database Server", server)
+			server_doc.auto_increase_storage = True
 			server_doc.auto_add_storage_min = min
 			server_doc.auto_add_storage_max = max
 			server_doc.save()
@@ -222,31 +228,6 @@ class BaseServer(Document, TagHelpers):
 				"group": f"{server_type.title()} Actions",
 			},
 		]
-
-		server: Server | DatabaseServer = frappe.get_doc(self.doctype, self.name)
-		if server.auto_increase_storage:
-			actions.append(
-				{
-					"action": "Disable Automatic Disk Expansion",
-					"description": "Disable the automatic increase of disk size when the server reached 90% of storage.",
-					"button_label": "Disable",
-					"condition": self.status == "Active" and self.doctype == "Server",
-					"doc_method": "toggle_auto_increase_storage",
-					"group": "Dangerous Actions",
-				}
-			)
-		else:
-			actions.append(
-				{
-					"action": "Enable Automatic Disk Expansion",
-					"description": "Enable the automatic increase of disk size when the server runs out of space.",
-					"button_label": "Enable",
-					"condition": self.status == "Active" and self.doctype == "Server",
-					"doc_method": "toggle_auto_increase_storage",
-					"group": "Dangerous Actions",
-				}
-			)
-
 		actions.append(
 			{
 				"action": "Drop server",
