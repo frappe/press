@@ -23,6 +23,7 @@ from frappe.utils.user import is_system_user
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
+from press.api.server import usage
 from press.exceptions import VolumeResizeLimitError
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
@@ -115,7 +116,7 @@ class BaseServer(Document, TagHelpers):
 			["price_inr", "price_usd"],
 			as_dict=True,
 		)
-		doc.usage = []
+		doc.usage = usage(self.name)
 		doc.actions = self.get_actions()
 		doc.disk_size = frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size")
 		doc.replication_server = frappe.db.get_value(

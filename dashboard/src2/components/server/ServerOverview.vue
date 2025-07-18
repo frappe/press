@@ -349,7 +349,7 @@ export default {
 
 									<ul>
 										<li>
-											• This may result in <strong>service degradation or downtime</strong> if storage is exhausted.
+											• Disabling this feature may result in <strong>service degradation or downtime</strong> if storage is exhausted.
 										</li>
 										<li>
 											• Storage can auto increase only once in <strong>6 hours</strong>.
