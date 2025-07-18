@@ -457,7 +457,7 @@ class VirtualDiskResize(Document):
 		if len(machine.volumes) == 2 and machine.has_data_volume:
 			# Clear the volumes list, it'll be repopulated on save
 			server = machine.get_server()
-			server.volumes = []
+			server.mounts = []
 			server.save()
 		return StepStatus.Success
 
