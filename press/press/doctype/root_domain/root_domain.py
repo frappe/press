@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 
 import boto3
 import frappe
-from frappe.core.utils import find
 from frappe.model.document import Document
 
 from press.utils import log_error
@@ -34,6 +33,7 @@ class RootDomain(Document):
 		default_proxy_server: DF.Link | None
 		dns_provider: DF.Literal["AWS Route 53", "Generic"]
 		enabled: DF.Check
+		parent_domain: DF.Link | None
 		team: DF.Link | None
 	# end: auto-generated types
 
@@ -82,14 +82,6 @@ class RootDomain(Document):
 		return self._boto3_client
 
 	@property
-	def root_hosted_zone(self) -> str | None:  # /hostedzone/xyz
-		if not self.all_zones:
-			return None
-		if closest_zone := (find(reversed(self.all_zones), lambda x: self.name.endswith(x["Name"][:-1]))):
-			return closest_zone["Id"]
-		return None
-
-	@property
 	def hosted_zone(self) -> str | None:
 		zones = self.boto3_client.list_hosted_zones_by_name(DNSName=self.name)["HostedZones"]
 		if not zones:
@@ -104,7 +96,11 @@ class RootDomain(Document):
 
 		return self.boto3_client.list_hosted_zones_by_name()["HostedZones"]
 
-	def add_hosted_zone_ns(self, root_hosted_zone: str, ns_record: list[str]):
+	def add_hosted_zone_ns(self, ns_record: list[str]):
+		if not self.parent_domain:
+			return
+		parent_zone = frappe.get_doc("Root Domain", self.parent_domain).hosted_zone
+
 		self.boto3_client.change_resource_record_sets(
 			ChangeBatch={
 				"Changes": [
@@ -119,29 +115,24 @@ class RootDomain(Document):
 					}
 				]
 			},
-			HostedZoneId=root_hosted_zone,
+			HostedZoneId=parent_zone,
 		)
 
 	def create_hosted_zone(self):
 		if self.generic_dns_provider:
 			return
-		if self.hosted_zone:
+		zone = self.hosted_zone
+		if not zone:
 			# If the hosted zone already exists, we can safely ignore this error
-			return
-		root_hosted_zone = self.root_hosted_zone  # eg: frappe.cloud for x.frappe.cloud
-
-		zone = self.boto3_client.create_hosted_zone(
-			Name=self.name,
-			CallerReference=str(datetime.now()),
-			HostedZoneConfig={
-				"Comment": f"Press Root Domain for {self.default_cluster}",
-				"PrivateZone": False,
-			},
-		)
-		if not root_hosted_zone:
-			return
-		# get newly created hosted zone's ns record and add to root hosted zone
-		self.add_hosted_zone_ns(root_hosted_zone, zone["DelegationSet"]["NameServers"])
+			zone = self.boto3_client.create_hosted_zone(
+				Name=self.name,
+				CallerReference=str(datetime.now()),
+				HostedZoneConfig={
+					"Comment": f"Press Root Domain for {self.default_cluster}",
+					"PrivateZone": False,
+				},
+			)
+		self.add_hosted_zone_ns(zone["DelegationSet"]["NameServers"])
 
 	def get_dns_record_pages(self) -> Iterable:
 		try:

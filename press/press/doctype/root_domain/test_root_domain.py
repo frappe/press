@@ -73,7 +73,7 @@ class TestRootDomain(unittest.TestCase):
 		self.assertIn(new_site_name, root_domain.get_active_domains())
 		self.assertNotIn(old_site_name, root_domain.get_active_domains())
 
-	def _create_aws_root_domain(self, name: str) -> RootDomain:
+	def _create_aws_root_domain(self, name: str, parent_domain: str | None = None) -> RootDomain:
 		return frappe.get_doc(
 			{
 				"doctype": "Root Domain",
@@ -82,6 +82,7 @@ class TestRootDomain(unittest.TestCase):
 				"dns_provider": "AWS Route 53",
 				"aws_access_key_id": "a",
 				"aws_secret_access_key": "b",
+				"parent_domain": parent_domain,
 			}
 		).insert()
 
@@ -92,12 +93,20 @@ class TestRootDomain(unittest.TestCase):
 	def test_creation_of_root_domain_that_is_subdomain_of_existing_zone_creates_ns_record_within_root_domain(
 		self,
 	):
+		d = self._create_aws_root_domain(
+			"b.frappe.dev"
+		)  # similar record to subdomain to throw off any guessing
+		self.assertIsNotNone(d.hosted_zone)
+
 		root_domain_1 = self._create_aws_root_domain("frappe.dev")
 		self.assertIsNotNone(root_domain_1.hosted_zone)
 		records_1 = next(iter(root_domain_1.get_dns_record_pages()))["ResourceRecordSets"]
 		self.assertEqual(len(records_1), 2)
 
-		root_domain_2 = self._create_aws_root_domain("sub.frappe.dev")
+		self._create_aws_root_domain("ub.frappe.dev")  # similar record to subdomain to throw off any guessing
+		self.assertIsNotNone(d.hosted_zone)
+
+		root_domain_2 = self._create_aws_root_domain("sub.frappe.dev", parent_domain="frappe.dev")
 		self.assertIsNotNone(root_domain_2.hosted_zone)
 		records_2 = next(iter(root_domain_2.get_dns_record_pages()))["ResourceRecordSets"]
 		self.assertEqual(len(records_2), 2)
