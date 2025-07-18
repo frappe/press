@@ -14,11 +14,12 @@ from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.root_domain.root_domain import RootDomain
 
 
+@patch.object(RootDomain, "before_insert", new=Mock())
 @patch.object(RootDomain, "after_insert", new=Mock())
 def create_test_root_domain(
 	name: str,
 	default_cluster: str = "Default",
-):
+) -> RootDomain:
 	root_domain = frappe.get_doc(
 		{
 			"doctype": "Root Domain",
