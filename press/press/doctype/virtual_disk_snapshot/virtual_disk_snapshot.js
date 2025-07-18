@@ -6,7 +6,6 @@ frappe.ui.form.on('Virtual Disk Snapshot', {
 		[
 			[__('Sync'), 'sync'],
 			[__('Delete'), 'delete_snapshot'],
-			[__('Propagate Volume ID'), 'propagate_volume_id'],
 		].forEach(([label, method]) => {
 			frm.add_custom_button(
 				label,
