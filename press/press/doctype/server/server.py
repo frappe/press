@@ -1590,18 +1590,18 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
 				f"by {buffer + additional}G as auto disk increase disabled by user"
 			)
-			frappe.sendmail(
-				recipients=notify_email,
-				subject=f"Important: Server {server.name} has used 90% of the available space",
-				template="disabled_auto_disk_expansion",
-				args={
-					"server": server.name,
-					"current_disk_usage": f"{current_disk_usage} GiB",
-					"available_disk_space": f"{disk_capacity} GiB",
-					"increase_by": f"{buffer + additional} GiB",
-					"used_storage_percentage": "90%",
-				},
-			)
+			# frappe.sendmail(
+			# 	recipients=notify_email,
+			# 	subject=f"Important: Server {server.name} has used 90% of the available space",
+			# 	template="disabled_auto_disk_expansion",
+			# 	args={
+			# 		"server": server.name,
+			# 		"current_disk_usage": f"{current_disk_usage} GiB",
+			# 		"available_disk_space": f"{disk_capacity} GiB",
+			# 		"increase_by": f"{buffer + additional} GiB",
+			# 		"used_storage_percentage": "90%",
+			# 	},
+			# )
 			return
 
 		telegram.send(
