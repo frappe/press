@@ -126,6 +126,11 @@ def insert_addon_storage_log(
 		}
 	)
 	add_on_storage_log.insert()
+
+	# In cases of warnings send emails immediately
+	if add_on_storage_log.is_warning:
+		add_on_storage_log.send_notification()
+
 	return add_on_storage_log
 
 
