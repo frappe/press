@@ -7,7 +7,7 @@ import json
 from collections import OrderedDict
 from functools import cached_property
 from itertools import groupby
-from typing import TYPE_CHECKING, Generator, Iterable, Literal
+from typing import TYPE_CHECKING, Literal
 
 import frappe
 import pytz
@@ -27,6 +27,10 @@ from press.press.doctype.bench_shell_log.bench_shell_log import (
 from press.press.doctype.site.site import Site
 from press.utils import SupervisorProcess, flatten, log_error, parse_supervisor_status
 from press.utils.webhook import create_webhook_event
+
+if TYPE_CHECKING:
+	from collections.abc import Generator, Iterable
+
 
 TRANSITORY_STATES = ["Pending", "Installing"]
 FINAL_STATES = ["Active", "Broken", "Archived"]
@@ -734,11 +738,12 @@ class Bench(Document):
 		subdir: str | None = None,
 		save_output: bool = True,
 		create_log: bool = True,
+		as_root: bool = False,
 	) -> ExecuteResult:
 		if self.status not in ["Active", "Broken"]:
 			raise Exception(f"Bench {self.name} has status {self.status}, docker_execute cannot be run")
 
-		data = {"command": cmd}
+		data = {"command": cmd, "as_root": as_root}
 		if subdir:
 			data["subdir"] = subdir
 
