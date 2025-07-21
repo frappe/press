@@ -87,6 +87,18 @@ export default {
 		hide() {
 			this.showDialog = false;
 		},
+		handleKeydown(event) {
+			if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+				event.preventDefault();
+				this.onConfirm();
+			}
+		},
+	},
+	mounted() {
+		document.addEventListener('keydown', this.handleKeydown);
+	},
+	beforeUnmount() {
+		document.removeEventListener('keydown', this.handleKeydown);
 	},
 	computed: {
 		primaryActionProps() {

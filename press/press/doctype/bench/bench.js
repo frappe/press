@@ -43,6 +43,11 @@ frappe.ui.form.on('Bench', {
 			[__('Rebuild'), 'rebuild', frm.doc.status === 'Active'],
 			[__('Retry New Bench'), 'retry_bench', frm.doc.status === 'Broken'],
 			[__('Force Update Limits'), 'force_update_limits'],
+			[
+				__('Correct Bench Permissions'),
+				'correct_bench_permissions',
+				frm.doc.status === 'Active',
+			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

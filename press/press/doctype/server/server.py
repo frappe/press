@@ -23,7 +23,6 @@ from frappe.utils.user import is_system_user
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
-from press.api.server import usage
 from press.exceptions import VolumeResizeLimitError
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
@@ -97,6 +96,7 @@ class BaseServer(Document, TagHelpers):
 
 	def get_doc(self, doc):
 		from press.api.client import get
+		from press.api.server import usage
 
 		if self.plan:
 			doc.current_plan = get("Server Plan", self.plan)
@@ -171,7 +171,7 @@ class BaseServer(Document, TagHelpers):
 	@dashboard_whitelist()
 	def configure_auto_add_storage(self, server: str, enabled: bool, min: int = 0, max: int = 0) -> None:
 		if not enabled:
-			frappe.db.set_value(self.doctype, self.name, "auto_add_storage_enabled", False)
+			frappe.db.set_value(self.doctype, self.name, "auto_increase_storage", False)
 			return
 
 		if min < 0 or max < 0:
@@ -1566,12 +1566,13 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		current_disk_usage = round(current_disk_usage / 1024 / 1024 / 1024, 2)
 		disk_capacity = round(disk_capacity / 1024 / 1024 / 1024, 2)
 
-		if not server.auto_increase_storage:
+		if not server.auto_increase_storage and mountpoint != "/":
 			telegram.send(
 				f"Not increasing disk (mount point {mountpoint}) on "
 				f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
 				f"by {buffer + additional}G as auto disk increase disabled by user"
 			)
+
 			frappe.sendmail(
 				recipients=notify_email,
 				subject=f"Important: Server {server.name} has used 90% of the available space",
