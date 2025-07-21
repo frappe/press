@@ -704,7 +704,7 @@ export default {
 							label: 'Files',
 							fieldname: 'with_files',
 							type: 'Icon',
-							width: 0.5,
+							width: 0.25,
 							Icon(value) {
 								return value ? 'check' : '';
 							},
