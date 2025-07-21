@@ -701,7 +701,7 @@ export default {
 							},
 						},
 						{
-							label: 'Backup with files',
+							label: 'Files',
 							fieldname: 'with_files',
 							type: 'Icon',
 							width: 0.5,
