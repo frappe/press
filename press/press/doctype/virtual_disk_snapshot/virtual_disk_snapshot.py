@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from typing import TYPE_CHECKING
 
 import boto3
 import frappe
@@ -15,6 +16,9 @@ from oci.core import BlockstorageClient
 
 from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
+
+if TYPE_CHECKING:
+	from press.press.doctype.site_update.site_update import SiteUpdate
 
 
 class VirtualDiskSnapshot(Document):
@@ -80,6 +84,27 @@ class VirtualDiskSnapshot(Document):
 				)
 				if physical_restore_name:
 					frappe.get_doc("Physical Backup Restoration", physical_restore_name).next()
+
+				# Resume Site Update if it was waiting for this snapshot
+				site_backup_name = frappe.db.exists(
+					"Site Backup",
+					{"database_snapshot": self.name, "files_availability": "Available"},
+				)
+				if site_backup_name:
+					# Look if any site update is waiting for this snapshot
+					site_update_doc_name = frappe.db.exists(
+						"Site Update",
+						{
+							"status": "Running",
+							"wait_for_snapshot_before_update": 1,
+							"site_backup": site_backup_name,
+						},
+					)
+
+					if site_update_doc_name:
+						# Resume the site update
+						site_update: SiteUpdate = frappe.get_doc("Site Update", site_update_doc_name)
+						site_update.create_update_site_agent_request()
 
 			if self.rolling_snapshot:
 				# Find older rolling snapshots than current snapshot

@@ -395,6 +395,7 @@ def update_dependencies(name: str, dependencies: str):
 	for dep, new in zip(
 		sorted(rg.dependencies, key=lambda x: x.dependency),
 		sorted(dependencies, key=lambda x: x["key"]),
+		strict=False,
 	):
 		if dep.dependency != new["key"]:
 			frappe.throw(f"Invalid dependency: {new['key']}")
@@ -765,6 +766,7 @@ def deploy_and_update(
 	apps: list,
 	sites: list | None = None,
 	run_will_fail_check: bool = True,
+	wait_for_snapshot_before_update: bool = False,
 ):
 	# Returns name of the Deploy Candidate that is running the build
 	return get_bench_update(
@@ -772,7 +774,7 @@ def deploy_and_update(
 		apps,
 		sites,
 		False,
-	).deploy(run_will_fail_check)
+	).deploy(run_will_fail_check, wait_for_snapshot_before_update)
 
 
 @frappe.whitelist()

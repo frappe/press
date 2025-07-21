@@ -164,3 +164,6 @@ press/public/css/marketplace-next.css
 # IDE
 .idea
 .vscode
+
+# Ignore pickle files
+*.pkl

@@ -7,7 +7,7 @@
 		:class="{
 			'text-gray-900 outline-gray-400 hover:text-gray-700': column.link,
 			'justify-end': column.align === 'right',
-			'justify-center': column.align === 'center'
+			'justify-center': column.align === 'center',
 		}"
 	>
 		<div v-if="column.prefix" class="mr-2">
@@ -75,7 +75,7 @@ export default {
 		row: Object,
 		column: Object,
 		idx: Number,
-		context: Object
+		context: Object,
 	},
 	computed: {
 		value() {
@@ -127,17 +127,17 @@ export default {
 		contextWithRow() {
 			return {
 				...this.context,
-				row: this.row
+				row: this.row,
 			};
 		},
 		showDropdown() {
 			let filteredOptions = (this.actions || [])
 				.filter(Boolean)
-				.filter(option => (option.condition ? option.condition() : true));
+				.filter((option) => (option.condition ? option.condition() : true));
 
 			return filteredOptions.length > 0;
-		}
+		},
 	},
-	components: { Tooltip, ActionButton }
+	components: { Tooltip, ActionButton },
 };
 </script>

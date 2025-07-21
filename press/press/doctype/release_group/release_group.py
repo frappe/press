@@ -27,6 +27,7 @@ from press.press.doctype.deploy_candidate.utils import is_suspended
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import create_platform_build_and_deploy
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server import Server
+from press.press.doctype.site.site import is_eligible_for_physical_backup
 from press.utils import (
 	get_app_tag,
 	get_client_blacklisted_keys,
@@ -712,7 +713,13 @@ class ReleaseGroup(Document, TagHelpers):
 		out.number_of_apps = len(self.apps)
 
 		out.sites = [
-			site.update({"skip_failing_patches": False, "skip_backups": False})
+			site.update(
+				{
+					"skip_failing_patches": False,
+					"skip_backups": False,
+					"wait_for_snapshot_before_update": False,
+				}
+			)
 			for site in frappe.get_all(
 				"Site",
 				{"group": self.name, "status": ("in", ["Active", "Broken"])},
@@ -720,6 +727,10 @@ class ReleaseGroup(Document, TagHelpers):
 			)
 		]
 
+		out.eligible_for_physical_backup = any(
+			is_eligible_for_physical_backup(site.name) for site in out.sites
+		)
+		out.eligible_for_physical_backup = True
 		return out
 
 	@dashboard_whitelist()

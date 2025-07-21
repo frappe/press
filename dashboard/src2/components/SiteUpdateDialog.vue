@@ -22,12 +22,38 @@
 							type="checkbox"
 							v-model="skipBackups"
 						/>
+						<FormControl
+							label="Prefer Physical Backup (If available)"
+							type="checkbox"
+							v-model="preferPhysicalBackup"
+							v-if="$site.doc.is_eligible_for_physical_backup"
+						/>
+						<FormControl
+							label="Wait for snapshot before update (If available)"
+							type="checkbox"
+							v-model="waitForSnapshotBeforeUpdate"
+							v-if="
+								$site.doc.is_eligible_for_physical_backup &&
+								preferPhysicalBackup
+							"
+						/>
 					</div>
 				</div>
 			</template>
 			<div v-else class="text-center text-base text-gray-600">
 				No apps to update
 			</div>
+			<AlertBanner
+				title="Want to know how long each part of the update might take?"
+				:showIcon="false"
+			>
+				<Button
+					class="ml-auto"
+					variant="outline"
+					label="Estimate Duration"
+					@click="showEstimatedDurationDialog"
+				></Button>
+			</AlertBanner>
 			<ErrorMessage class="mt-4" :message="$site.scheduleUpdate.error" />
 		</template>
 		<template #actions>
@@ -57,6 +83,10 @@ import DateTimeControl from './DateTimeControl.vue';
 import GenericList from './GenericList.vue';
 import dayjs, { dayjsIST } from '../utils/dayjs';
 import { toast } from 'vue-sonner';
+import AlertBanner from './AlertBanner.vue';
+import SiteUpdateEstimatedDuration from './site/SiteUpdateEstimatedDuration.vue';
+import SiteUpdateEstimatedDuration from './site/SiteUpdateEstimatedDuration.vue';
+import { renderDialog } from '../utils/components';
 
 export default {
 	name: 'SiteUpdateDialog',
@@ -70,6 +100,7 @@ export default {
 	components: {
 		GenericList,
 		DateTimeControl,
+		AlertBanner,
 	},
 	data() {
 		return {
@@ -77,6 +108,8 @@ export default {
 			skipFailingPatches: false,
 			scheduledTime: '',
 			skipBackups: false,
+			preferPhysicalBackup: true,
+			waitForSnapshotBeforeUpdate: false,
 		};
 	},
 	resources: {
@@ -181,12 +214,31 @@ export default {
 		},
 	},
 	methods: {
+		showEstimatedDurationDialog() {
+			this.closeDialog();
+			renderDialog(
+				h(SiteUpdateEstimatedDuration, {
+					site: $site.doc.name,
+					onClose: () => {
+						this.showDialog();
+					},
+				}),
+			);
+		},
+		showDialog() {
+			this.show = true;
+		},
+		closeDialog() {
+			this.show = false;
+		},
 		scheduleUpdate() {
 			this.$site.scheduleUpdate.submit(
 				{
 					skip_failing_patches: this.skipFailingPatches,
 					skip_backups: this.skipBackups,
 					scheduled_time: this.scheduledTimeInIST,
+					prefer_physical_backup: this.preferPhysicalBackup,
+					wait_for_snapshot_before_update: this.waitForSnapshotBeforeUpdate,
 				},
 				{
 					onSuccess: () => {

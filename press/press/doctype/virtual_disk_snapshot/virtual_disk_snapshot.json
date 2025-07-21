@@ -91,7 +91,8 @@
    "fieldname": "start_time",
    "fieldtype": "Datetime",
    "label": "Start Time",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "section_break_12",
@@ -170,7 +171,7 @@
    "link_fieldname": "database_snapshot"
   }
  ],
- "modified": "2025-04-16 14:48:54.212097",
+ "modified": "2025-07-17 16:33:29.476368",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Disk Snapshot",
@@ -189,6 +190,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
