@@ -25,6 +25,7 @@ from press.press.doctype.bench_shell_log.bench_shell_log import (
 	create_bench_shell_log,
 )
 from press.press.doctype.site.site import Site
+from press.runner import Ansible
 from press.utils import SupervisorProcess, flatten, log_error, parse_supervisor_status
 from press.utils.webhook import create_webhook_event
 
@@ -340,6 +341,29 @@ class Bench(Document):
 			"memory_swap": self.memory_swap,
 			"vcpu": self.vcpu,
 		}
+
+	@frappe.whitelist()
+	def correct_bench_permissions(self):
+		"""Give all permissions to frappe:frappe in (container:/home/frappe)"""
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_correct_bench_permissions",
+			queue="long",
+			timeout=1800,
+		)
+
+	def _correct_bench_permissions(self):
+		try:
+			ansible = Ansible(
+				playbook="correct_bench_permissions.yml",
+				server=self.server,
+				user="root",
+				variables={"bench_name": self.name},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Bench Permissions Correction Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def force_update_limits(self):
