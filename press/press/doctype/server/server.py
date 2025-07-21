@@ -162,7 +162,7 @@ class BaseServer(Document, TagHelpers):
 					),
 					mountpoint=mountpoint or self.guess_data_disk_mountpoint(),
 					is_auto_triggered=is_auto_triggered,
-					ignore_if_exists=True,
+					skip_if_exists=True,
 				)
 
 			self.increase_disk_size(
@@ -183,7 +183,7 @@ class BaseServer(Document, TagHelpers):
 					),
 					mountpoint=mountpoint or self.guess_data_disk_mountpoint(),
 					is_auto_triggered=is_auto_triggered,
-					ignore_if_exists=True,
+					skip_if_exists=True,
 				)
 
 			server_doc.increase_disk_size(
@@ -1613,7 +1613,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				is_warning=True,
 				database_server=server if server[0] == "m" else None,
 				server=server if server[0] == "f" else None,
-				ignore_if_exists=True,  # Create one warning log in a day,
+				skip_if_exists=False,
 			)
 
 			return

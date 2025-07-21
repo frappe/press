@@ -106,9 +106,9 @@ def insert_addon_storage_log(
 	is_warning: bool,
 	database_server: str | None = None,
 	server: str | None = None,
-	ignore_if_exists: bool = False,
+	skip_if_exists: bool = False,
 ) -> AddOnStorageLog | None:
-	if ignore_if_exists and check_existing_logs(server, database_server, is_auto_triggered):
+	if skip_if_exists and check_existing_logs(server, database_server, is_auto_triggered):
 		return None
 
 	add_on_storage_log: AddOnStorageLog = frappe.get_doc(
