@@ -162,7 +162,7 @@ class BaseServer(Document, TagHelpers):
 					),
 					mountpoint=mountpoint or self.guess_data_disk_mountpoint(),
 					is_auto_triggered=is_auto_triggered,
-					skip_if_exists=True,
+					is_warning=False,
 				)
 
 			self.increase_disk_size(
@@ -183,7 +183,7 @@ class BaseServer(Document, TagHelpers):
 					),
 					mountpoint=mountpoint or self.guess_data_disk_mountpoint(),
 					is_auto_triggered=is_auto_triggered,
-					skip_if_exists=True,
+					is_warning=False,
 				)
 
 			server_doc.increase_disk_size(
@@ -1608,12 +1608,10 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 					(self.disk_capacity(mountpoint) - self.free_space(mountpoint)) / 1024 / 1024 / 1024, 2
 				),
 				mountpoint=mountpoint or self.guess_data_disk_mountpoint(),
-				notification_sent=False,
 				is_auto_triggered=True,
 				is_warning=True,
 				database_server=server if server[0] == "m" else None,
 				server=server if server[0] == "f" else None,
-				skip_if_exists=False,
 			)
 
 			return

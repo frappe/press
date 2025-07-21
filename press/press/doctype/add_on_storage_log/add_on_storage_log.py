@@ -101,14 +101,25 @@ def insert_addon_storage_log(
 	available_disk_space: float,
 	current_disk_usage: float,
 	mountpoint: str,
-	notification_sent: bool,
 	is_auto_triggered: bool,
 	is_warning: bool,
 	database_server: str | None = None,
 	server: str | None = None,
 	skip_if_exists: bool = False,
 ) -> AddOnStorageLog | None:
-	if skip_if_exists and check_existing_logs(server, database_server, is_auto_triggered):
+	# if skip_if_exists and check_existing_logs(server, database_server, is_auto_triggered):
+	# 	return None
+
+	doctype = "Server" if server else "Database Server"
+	name = server or database_server
+	server = frappe.get_cached_doc(doctype, name)
+
+	if (
+		(server.provider not in ("AWS EC2", "OCI"))
+		or (server.provider == "AWS EC2" and server.time_to_wait_before_updating_volume)
+	) and not is_warning:
+		# This won't trigger ec2 play in this case.
+		# We might not need skip_if_exists at all also don't skip if is_warning
 		return None
 
 	add_on_storage_log: AddOnStorageLog = frappe.get_doc(
@@ -118,7 +129,7 @@ def insert_addon_storage_log(
 			"available_disk_space": available_disk_space,
 			"current_disk_usage": current_disk_usage,
 			"mountpoint": mountpoint,
-			"notification_sent": notification_sent,
+			"notification_sent": is_warning,  # If is warning we send the notification immediately,
 			"is_auto_triggered": is_auto_triggered,
 			"is_warning": is_warning,
 			"server": server,
