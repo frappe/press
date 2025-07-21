@@ -9,11 +9,21 @@
 							v-if="field.type == 'link'"
 							v-bind="field"
 							v-model="values[field.fieldname]"
+							v-show="
+								typeof field.condition === 'function'
+									? field.condition(this.values)
+									: true
+							"
 						/>
 						<FormControl
 							v-else
 							v-bind="field"
 							v-model="values[field.fieldname]"
+							v-show="
+								typeof field.condition === 'function'
+									? field.condition(this.values)
+									: true
+							"
 						/>
 					</template>
 				</div>

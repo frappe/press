@@ -176,6 +176,7 @@ def archive(name):
 def new(server):
 	server_plan_platform = frappe.get_value("Server Plan", server["app_plan"], "platform")
 	cluster_has_arm_support = frappe.get_value("Cluster", server["cluster"], "has_arm_support")
+	auto_increase_storage = server.get("auto_increase_storage", False)
 
 	if server_plan_platform == "arm64" and not cluster_has_arm_support:
 		frappe.throw(f"ARM Instances are currently unavailable in the {server['cluster']} region")
@@ -200,7 +201,9 @@ def new(server):
 	cluster.proxy_server = proxy_server.name
 
 	app_plan = frappe.get_doc("Server Plan", server["app_plan"])
-	app_server, job = cluster.create_server("Server", server["title"], app_plan, team=team.name)
+	app_server, job = cluster.create_server(
+		"Server", server["title"], app_plan, team=team.name, auto_increase_storage=auto_increase_storage
+	)
 
 	return {"server": app_server.name, "job": job.name}
 
@@ -449,10 +452,17 @@ def options():
 		{"cloud_provider": ("!=", "Generic"), "public": True},
 		["name", "title", "image", "beta"],
 	)
+	storage_plan = frappe.db.get_value(
+		"Server Storage Plan",
+		{"enabled": 1},
+		["price_inr", "price_usd"],
+		as_dict=True,
+	)
 	return {
 		"regions": regions,
 		"app_plans": plans("Server"),
 		"db_plans": plans("Database Server"),
+		"storage_plan": storage_plan,
 	}
 
 
