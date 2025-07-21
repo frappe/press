@@ -701,27 +701,27 @@ export default {
 							},
 						},
 						{
-							label: 'Backup with files',
+							label: 'Files',
 							fieldname: 'with_files',
 							type: 'Icon',
-							width: 0.5,
+							width: 0.25,
 							Icon(value) {
 								return value ? 'check' : '';
 							},
 						},
 						{
-							label: 'Offsite Backup',
+							label: 'Offsite',
 							fieldname: 'offsite',
-							width: 0.5,
+							width: 0.25,
 							type: 'Icon',
 							Icon(value) {
 								return value ? 'check' : '';
 							},
 						},
 						{
-							label: 'Physical Backup',
+							label: 'Physical',
 							fieldname: 'physical',
-							width: 0.5,
+							width: 0.25,
 							type: 'Icon',
 							Icon(value) {
 								return value ? 'check' : '';
