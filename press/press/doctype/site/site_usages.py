@@ -113,7 +113,6 @@ def update_disk_usages():
 			WHERE
 				`rank` = 1 AND
 				s.`document_type` = 'Site' AND
-				s.`enabled` AND
 				site.`status` != "Archived"
 		)
 		SELECT
