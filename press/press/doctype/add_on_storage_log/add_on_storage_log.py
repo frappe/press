@@ -109,7 +109,7 @@ def insert_addon_storage_log(
 			"database_server": database_server,
 		}
 	)
-	add_on_storage_log.insert()
+	add_on_storage_log.insert(ignore_permissions=True)
 
 	# In cases of warnings send emails immediately
 	if add_on_storage_log.is_warning:
