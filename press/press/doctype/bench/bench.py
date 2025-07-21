@@ -357,7 +357,7 @@ class Bench(Document):
 		try:
 			ansible = Ansible(
 				playbook="correct_bench_permissions.yml",
-				server=self.server,
+				server=frappe.get_cached_doc("Server", self.server),
 				user="root",
 				variables={"bench_name": self.name},
 			)
