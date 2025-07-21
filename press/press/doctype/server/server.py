@@ -163,6 +163,8 @@ class BaseServer(Document, TagHelpers):
 					mountpoint=mountpoint or self.guess_data_disk_mountpoint(),
 					is_auto_triggered=is_auto_triggered,
 					is_warning=False,
+					server=storage_parameters.get("server"),
+					database_server=storage_parameters.get("database_server"),
 				)
 
 			self.increase_disk_size(
@@ -184,6 +186,8 @@ class BaseServer(Document, TagHelpers):
 					mountpoint=mountpoint or self.guess_data_disk_mountpoint(),
 					is_auto_triggered=is_auto_triggered,
 					is_warning=False,
+					server=storage_parameters.get("server"),
+					database_server=storage_parameters.get("database_server"),
 				)
 
 			server_doc.increase_disk_size(

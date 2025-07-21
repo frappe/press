@@ -7,8 +7,7 @@ import frappe
 from frappe.model.document import Document
 
 if typing.TYPE_CHECKING:
-	from press.press.doctype.database_server.database_server import DatabaseServer
-	from press.press.doctype.server.server import Server
+	from press.press.doctype.server.server import BaseServer
 
 
 class AddOnStorageLog(Document):
@@ -56,7 +55,7 @@ class AddOnStorageLog(Document):
 
 	def send_notification(self):
 		"""Send add on storage notification / warning"""
-		server: Server | DatabaseServer = frappe.get_cached_doc(
+		server: BaseServer = frappe.get_cached_doc(
 			"Server" if self.server else "Database Server", self.server or self.database_server
 		)
 		notify_email = frappe.get_value("Team", server.team, "notify_email")
@@ -105,14 +104,10 @@ def insert_addon_storage_log(
 	is_warning: bool,
 	database_server: str | None = None,
 	server: str | None = None,
-	skip_if_exists: bool = False,
 ) -> AddOnStorageLog | None:
-	# if skip_if_exists and check_existing_logs(server, database_server, is_auto_triggered):
-	# 	return None
-
 	doctype = "Server" if server else "Database Server"
 	name = server or database_server
-	server = frappe.get_cached_doc(doctype, name)
+	server: BaseServer = frappe.get_cached_doc(doctype, name)
 
 	if (
 		(server.provider not in ("AWS EC2", "OCI"))
