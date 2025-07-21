@@ -31,28 +31,6 @@ class AddOnStorageLog(Document):
 		server: DF.Link | None
 	# end: auto-generated types
 
-	def validate_existing_logs(self):
-		logs_created_today = frappe.get_value(
-			"Add On Storage",
-			{
-				"server": self.server,
-				"database_server": self.database_server,
-				"creation": (
-					"between",
-					[
-						frappe.utils.add_to_date(days=-1),
-						frappe.utils.now(),
-					],
-				),
-			},
-		)
-		if logs_created_today and self.is_auto_triggered:
-			# Don't allow creation of more than 1 auto triggered log a day
-			frappe.throw("A log for this machine already exists")
-
-	def validate(self):
-		self.validate_existing_logs()
-
 	def send_notification(self):
 		"""Send add on storage notification / warning"""
 		server: BaseServer = frappe.get_cached_doc(
