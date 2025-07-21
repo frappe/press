@@ -400,6 +400,7 @@ export default {
 											this.$appServer.configureAutoAddStorage.submit(
 												{
 													server: doc.name,
+													enabled: values.auto_increase_storage,
 													min: Number(values.min),
 													max: Number(values.max),
 												},
