@@ -188,7 +188,13 @@ def new(server):
 	cluster: Cluster = frappe.get_doc("Cluster", server["cluster"])
 
 	db_plan = frappe.get_doc("Server Plan", server["db_plan"])
-	db_server, job = cluster.create_server("Database Server", server["title"], db_plan, team=team.name)
+	db_server, job = cluster.create_server(
+		"Database Server",
+		server["title"],
+		db_plan,
+		team=team.name,
+		auto_increase_storage=auto_increase_storage,
+	)
 
 	proxy_server = frappe.get_all(
 		"Proxy Server",
