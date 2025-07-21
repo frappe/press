@@ -710,18 +710,18 @@ export default {
 							},
 						},
 						{
-							label: 'Offsite Backup',
+							label: 'Offsite',
 							fieldname: 'offsite',
-							width: 0.5,
+							width: 0.25,
 							type: 'Icon',
 							Icon(value) {
 								return value ? 'check' : '';
 							},
 						},
 						{
-							label: 'Physical Backup',
+							label: 'Physical',
 							fieldname: 'physical',
-							width: 0.5,
+							width: 0.25,
 							type: 'Icon',
 							Icon(value) {
 								return value ? 'check' : '';
