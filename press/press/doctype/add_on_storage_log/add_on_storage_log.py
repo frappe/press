@@ -55,24 +55,6 @@ class AddOnStorageLog(Document):
 		self.save()
 
 
-def check_existing_logs(server: str, database_server: str, is_auto_triggered: bool) -> bool:
-	logs_created_today = frappe.get_value(
-		"Add On Storage",
-		{
-			"server": server,
-			"database_server": database_server,
-			"creation": (
-				"between",
-				[
-					frappe.utils.add_to_date(days=-1),
-					frappe.utils.now(),
-				],
-			),
-		},
-	)
-	return logs_created_today and is_auto_triggered
-
-
 def insert_addon_storage_log(
 	adding_storage: float,
 	available_disk_space: float,
