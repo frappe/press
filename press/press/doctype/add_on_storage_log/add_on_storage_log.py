@@ -67,11 +67,11 @@ def insert_addon_storage_log(
 ) -> AddOnStorageLog | None:
 	doctype = "Server" if server else "Database Server"
 	name = server or database_server
-	server: BaseServer = frappe.get_cached_doc(doctype, name)
+	base_server: BaseServer = frappe.get_cached_doc(doctype, name)
 
 	if (
-		(server.provider not in ("AWS EC2", "OCI"))
-		or (server.provider == "AWS EC2" and server.time_to_wait_before_updating_volume)
+		(base_server.provider not in ("AWS EC2", "OCI"))
+		or (base_server.provider == "AWS EC2" and base_server.time_to_wait_before_updating_volume)
 	) and not is_warning:
 		# This won't trigger ec2 play in this case.
 		# We might not need skip_if_exists at all also don't skip if is_warning
