@@ -139,6 +139,7 @@ class BaseServer(Document, TagHelpers):
 		is_auto_triggered: bool = False,
 		current_disk_usage: int | None = None,
 	) -> None:
+		add_on_storage_log = None
 		storage_parameters = {
 			"doctype": "Add On Storage Log",
 			"adding_storage": increment,
