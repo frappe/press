@@ -1607,7 +1607,6 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
 				f"by {buffer + additional}G as auto disk increase disabled by user"
 			)
-
 			insert_addon_storage_log(
 				adding_storage=additional + buffer,
 				available_disk_space=round((self.disk_capacity(mountpoint) / 1024 / 1024 / 1024), 2),
@@ -1618,8 +1617,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				mountpoint=mountpoint or self.guess_data_disk_mountpoint(),
 				is_auto_triggered=True,
 				is_warning=True,
-				database_server=server if server[0] == "m" else None,
-				server=server if server[0] == "f" else None,
+				database_server=server.name if server.name[0] == "m" else None,
+				server=server.name if server.name[0] == "f" else None,
 			)
 
 			return
