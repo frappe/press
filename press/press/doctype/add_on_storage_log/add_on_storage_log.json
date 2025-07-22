@@ -5,14 +5,19 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "annotations_section",
   "server",
   "database_server",
-  "reason",
   "column_break_dlfs",
   "available_disk_space",
   "current_disk_usage",
   "mountpoint",
-  "adding_storage"
+  "adding_storage",
+  "extend_ec2_play",
+  "storage_settings_section",
+  "notification_sent",
+  "is_auto_triggered",
+  "is_warning"
  ],
  "fields": [
   {
@@ -40,11 +45,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "reason",
-   "fieldtype": "Small Text",
-   "label": "Reason"
-  },
-  {
    "fieldname": "current_disk_usage",
    "fieldtype": "Float",
    "label": "Current Disk Usage"
@@ -59,12 +59,45 @@
    "fieldname": "adding_storage",
    "fieldtype": "Float",
    "label": "Adding storage"
+  },
+  {
+   "fieldname": "annotations_section",
+   "fieldtype": "Section Break",
+   "label": "Annotations"
+  },
+  {
+   "fieldname": "storage_settings_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "notification_sent",
+   "fieldtype": "Check",
+   "label": "Notification Sent"
+  },
+  {
+   "fieldname": "extend_ec2_play",
+   "fieldtype": "Link",
+   "label": "Extend EC2 Play",
+   "options": "Ansible Play"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_auto_triggered",
+   "fieldtype": "Check",
+   "label": "Is auto triggered"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_warning",
+   "fieldtype": "Check",
+   "label": "Is Warning"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-11 17:13:06.167938",
+ "modified": "2025-07-17 21:51:34.568795",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Add On Storage Log",

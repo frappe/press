@@ -25,6 +25,9 @@ from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.exceptions import VolumeResizeLimitError
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.add_on_storage_log.add_on_storage_log import (
+	insert_addon_storage_log,
+)
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.runner import Ansible
@@ -33,7 +36,6 @@ from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
-	from press.press.doctype.add_on_storage_log.add_on_storage_log import AddOnStorageLog
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.database_server.database_server import DatabaseServer
@@ -134,7 +136,7 @@ class BaseServer(Document, TagHelpers):
 		server: str,
 		increment: int,
 		mountpoint: str | None = None,
-		is_auto_increase: bool = False,
+		is_auto_triggered: bool = False,
 		current_disk_usage: int | None = None,
 	) -> None:
 		storage_parameters = {
@@ -144,28 +146,55 @@ class BaseServer(Document, TagHelpers):
 			"current_disk_usage": current_disk_usage
 			or round((self.disk_capacity(mountpoint) - self.free_space(mountpoint)) / 1024 / 1024 / 1024, 2),
 			"mountpoint": mountpoint or self.guess_data_disk_mountpoint(),
-			"reason": "Auto trigged by frappe cloud"
-			if is_auto_increase
-			else f"Triggered by {frappe.session.user}",
+			is_auto_triggered: is_auto_triggered,
 		}
 
 		storage_parameters.update({"database_server" if server[0] == "m" else "server": server})
 
 		if server == self.name:
 			if increment:
-				add_on_storage_log: AddOnStorageLog = frappe.get_doc(storage_parameters)
-				add_on_storage_log.insert(ignore_permissions=True)
+				add_on_storage_log = insert_addon_storage_log(
+					adding_storage=increment,
+					available_disk_space=round((self.disk_capacity(mountpoint) / 1024 / 1024 / 1024), 2),
+					current_disk_usage=current_disk_usage
+					or round(
+						(self.disk_capacity(mountpoint) - self.free_space(mountpoint)) / 1024 / 1024 / 1024, 2
+					),
+					mountpoint=mountpoint or self.guess_data_disk_mountpoint(),
+					is_auto_triggered=is_auto_triggered,
+					is_warning=False,
+					server=storage_parameters.get("server"),
+					database_server=storage_parameters.get("database_server"),
+				)
 
-			self.increase_disk_size(increment=increment, mountpoint=mountpoint)
+			self.increase_disk_size(
+				increment=increment,
+				mountpoint=mountpoint,
+				log=add_on_storage_log.name if add_on_storage_log else None,
+			)
 			self.create_subscription_for_storage(increment)
 		else:
 			server_doc: DatabaseServer = frappe.get_doc("Database Server", server)
-
 			if increment:
-				add_on_storage_log: AddOnStorageLog = frappe.get_doc(storage_parameters)
-				add_on_storage_log.insert(ignore_permissions=True)
+				add_on_storage_log = insert_addon_storage_log(
+					adding_storage=increment,
+					available_disk_space=round((self.disk_capacity(mountpoint) / 1024 / 1024 / 1024), 2),
+					current_disk_usage=current_disk_usage
+					or round(
+						(self.disk_capacity(mountpoint) - self.free_space(mountpoint)) / 1024 / 1024 / 1024, 2
+					),
+					mountpoint=mountpoint or self.guess_data_disk_mountpoint(),
+					is_auto_triggered=is_auto_triggered,
+					is_warning=False,
+					server=storage_parameters.get("server"),
+					database_server=storage_parameters.get("database_server"),
+				)
 
-			server_doc.increase_disk_size(increment=increment, mountpoint=mountpoint)
+			server_doc.increase_disk_size(
+				increment=increment,
+				mountpoint=mountpoint,
+				log=add_on_storage_log.name if add_on_storage_log else None,
+			)
 			server_doc.create_subscription_for_storage(increment)
 
 	@dashboard_whitelist()
@@ -620,7 +649,7 @@ class BaseServer(Document, TagHelpers):
 			log_error(f"Error removing glassfile: {e.output.decode()}")
 
 	@frappe.whitelist()
-	def extend_ec2_volume(self, device=None):
+	def extend_ec2_volume(self, device=None, log: str | None = None):
 		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		# Restart MariaDB if MariaDB disk is full
@@ -641,12 +670,15 @@ class BaseServer(Document, TagHelpers):
 				port=self._ssh_port(),
 				variables={"restart_mariadb": restart_mariadb, "device": device},
 			)
-			ansible.run()
+			play = ansible.run()
+			if log:
+				frappe.db.set_value("Add On Storage Log", log, "extend_ec2_play", play.name)
+				frappe.db.commit()
 		except Exception:
 			log_error("EC2 Volume Extend Exception", server=self.as_dict())
 
-	def enqueue_extend_ec2_volume(self, device):
-		frappe.enqueue_doc(self.doctype, self.name, "extend_ec2_volume", device=device)
+	def enqueue_extend_ec2_volume(self, device, log):
+		frappe.enqueue_doc(self.doctype, self.name, "extend_ec2_volume", device=device, log=log)
 
 	@cached_property
 	def time_to_wait_before_updating_volume(self) -> timedelta | int:
@@ -664,7 +696,7 @@ class BaseServer(Document, TagHelpers):
 		return diff if diff < timedelta(hours=6) else 0
 
 	@frappe.whitelist()
-	def increase_disk_size(self, increment=50, mountpoint=None):
+	def increase_disk_size(self, increment=50, mountpoint=None, log: str | None = None):
 		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		if self.provider == "AWS EC2" and self.time_to_wait_before_updating_volume:
@@ -681,7 +713,7 @@ class BaseServer(Document, TagHelpers):
 		virtual_machine.increase_disk_size(volume.volume_id, increment)
 		if self.provider == "AWS EC2":
 			device = self.get_device_from_volume_id(volume.volume_id)
-			self.enqueue_extend_ec2_volume(device)
+			self.enqueue_extend_ec2_volume(device, log)
 		elif self.provider == "OCI":
 			# TODO: Add support for volumes on OCI
 			# Non-boot volumes might not need resize
@@ -1559,7 +1591,6 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		buffer = self.size_to_increase_by_for_20_percent_available(mountpoint)
 		server: Server | DatabaseServer = frappe.get_doc(self.doctype, self.name)
-		notify_email = frappe.get_value("Team", server.team, "notify_email")
 		disk_capacity = self.disk_capacity(mountpoint)
 		current_disk_usage = disk_capacity - self.free_space(mountpoint)
 
@@ -1573,18 +1604,20 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				f"by {buffer + additional}G as auto disk increase disabled by user"
 			)
 
-			frappe.sendmail(
-				recipients=notify_email,
-				subject=f"Important: Server {server.name} has used 90% of the available space",
-				template="disabled_auto_disk_expansion",
-				args={
-					"server": server.name,
-					"current_disk_usage": f"{current_disk_usage} GiB",
-					"available_disk_space": f"{disk_capacity} GiB",
-					"increase_by": f"{buffer + additional} GiB",
-					"used_storage_percentage": "90%",
-				},
+			insert_addon_storage_log(
+				adding_storage=additional + buffer,
+				available_disk_space=round((self.disk_capacity(mountpoint) / 1024 / 1024 / 1024), 2),
+				current_disk_usage=current_disk_usage
+				or round(
+					(self.disk_capacity(mountpoint) - self.free_space(mountpoint)) / 1024 / 1024 / 1024, 2
+				),
+				mountpoint=mountpoint or self.guess_data_disk_mountpoint(),
+				is_auto_triggered=True,
+				is_warning=True,
+				database_server=server if server[0] == "m" else None,
+				server=server if server[0] == "f" else None,
 			)
+
 			return
 
 		telegram.send(
@@ -1597,7 +1630,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			self.name,
 			buffer + additional,
 			mountpoint,
-			is_auto_increase=True,
+			is_auto_triggered=True,
 			current_disk_usage=current_disk_usage,
 		)
 
