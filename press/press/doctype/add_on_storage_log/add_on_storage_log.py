@@ -106,6 +106,7 @@ def send_disk_extention_notification():
 		{
 			"notification_sent": 0,
 			"creation": ("between", [frappe.utils.add_to_date(days=-1), frappe.utils.now()]),
+			"mountpoint": ("!=", "/"),
 		},
 		pluck="name",
 		limit=100,
