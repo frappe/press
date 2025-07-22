@@ -149,6 +149,9 @@ class BaseServer(Document, TagHelpers):
 			is_auto_triggered: is_auto_triggered,
 		}
 
+		if not isinstance(server, str):
+			server = server.name
+
 		storage_parameters.update({"database_server" if server[0] == "m" else "server": server})
 
 		if server == self.name:
