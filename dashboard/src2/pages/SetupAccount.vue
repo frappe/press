@@ -89,7 +89,10 @@
 						<Button
 							class="mt-4"
 							variant="solid"
-							:loading="$resources.setupAccount.loading"
+							:loading="
+								$resources.setupAccount.loading ||
+								$resources.acceptInvite.loading
+							"
 						>
 							{{
 								is2FA ? 'Verify' : isInvitation ? 'Accept' : 'Create account'
@@ -217,6 +220,19 @@ export default {
 				url: 'press.api.account.is_2fa_enabled',
 			};
 		},
+		acceptInvite() {
+			return {
+				url: 'press.api.account.accept_team_invite',
+				params: {
+					key: this.requestKey,
+				},
+				onSuccess() {
+					this.$router.push({
+						name: 'Site List',
+					});
+				},
+			};
+		},
 		verify2FA() {
 			return {
 				url: 'press.api.account.verify_2fa',
@@ -236,26 +252,30 @@ export default {
 	methods: {
 		submitForm() {
 			if (this.invitedBy) {
-				this.$resources.is2FAEnabled.submit(
-					{
-						user: this.email,
-					},
-					{
-						onSuccess: (two_factor_enabled) => {
-							if (two_factor_enabled) {
-								this.$router.push({
-									name: 'Setup Account',
-									query: {
-										...this.$route.query,
-										two_factor: 1,
-									},
-								});
-							} else {
-								this.$resources.setupAccount.submit();
-							}
+				if (this.$session.isLoggedIn) {
+					this.$resources.acceptInvite.submit();
+				} else {
+					this.$resources.is2FAEnabled.submit(
+						{
+							user: this.email,
 						},
-					},
-				);
+						{
+							onSuccess: (two_factor_enabled) => {
+								if (two_factor_enabled) {
+									this.$router.push({
+										name: 'Setup Account',
+										query: {
+											...this.$route.query,
+											two_factor: 1,
+										},
+									});
+								} else {
+									this.$resources.setupAccount.submit();
+								}
+							},
+						},
+					);
+				}
 			} else {
 				this.$resources.setupAccount.submit();
 			}

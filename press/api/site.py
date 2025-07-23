@@ -1612,10 +1612,10 @@ def validate_restoration_space_requirements(
 	server: Server = frappe.get_cached_doc("Server", site.server)
 	database_server: DatabaseServer = frappe.get_cached_doc("Database Server", server.database_server)
 
-	required_space_on_app_server = site.space_required_for_restoration_on_app_server(
+	required_space_on_app_server = site.get_restore_space_required_on_app(
 		db_file_size=db_file_size, public_file_size=public_file_size, private_file_size=private_file_size
 	)
-	required_space_on_db_server = site.space_required_for_restoration_on_db_server(db_file_size=db_file_size)
+	required_space_on_db_server = site.get_restore_space_required_on_db(db_file_size=db_file_size)
 
 	free_space_on_app_server = server.free_space(server.guess_data_disk_mountpoint())
 	free_space_on_db_server = database_server.free_space(database_server.guess_data_disk_mountpoint())

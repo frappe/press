@@ -227,6 +227,29 @@ def setup_account(  # noqa: C901
 	return account_request.name
 
 
+@frappe.whitelist()
+@rate_limit(limit=5, seconds=60 * 60)
+def accept_team_invite(key: str):
+	account_request = get_account_request_from_key(key)
+
+	if not account_request:
+		frappe.throw("Invalid or Expired Key")
+
+	if not account_request.invited_by:
+		frappe.throw("You are not invited by any team")
+
+	team = account_request.team
+	first_name = account_request.first_name
+	last_name = account_request.last_name
+	email = account_request.email
+	password = None
+	role = account_request.role
+	press_roles = account_request.press_roles
+
+	team_doc = frappe.get_doc("Team", team)
+	return team_doc.create_user_for_member(first_name, last_name, email, password, role, press_roles)
+
+
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 60)
 def send_login_link(email):
@@ -1181,7 +1204,7 @@ def get_user_ssh_keys():
 
 
 @frappe.whitelist(allow_guest=True)
-@rate_limit(limit=10, seconds=60 * 60)
+@rate_limit(limit=20, seconds=60 * 60)
 def is_2fa_enabled(user: str) -> bool:
 	return bool(frappe.db.get_value("User 2FA", user, "enabled"))
 

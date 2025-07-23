@@ -851,7 +851,7 @@ class Site(Document, TagHelpers):
 		return group.is_version_14_or_higher()
 
 	@property
-	def space_required_on_app_server(self):
+	def restore_space_required_on_app(self):
 		db_size, public_size, private_size = (
 			frappe.get_doc("Remote File", file_name).size if file_name else 0
 			for file_name in (
@@ -860,18 +860,18 @@ class Site(Document, TagHelpers):
 				self.remote_private_file,
 			)
 		)
-		return self.space_required_for_restoration_on_app_server(
+		return self.get_restore_space_required_on_app(
 			db_file_size=db_size, public_file_size=public_size, private_file_size=private_size
 		)
 
 	@property
-	def space_required_on_db_server(self):
+	def restore_space_required_on_db(self):
 		if not self.remote_database_file:
 			return 0
 		db_size = frappe.get_doc("Remote File", self.remote_database_file).size
-		return self.space_required_for_restoration_on_db_server(db_file_size=db_size)
+		return self.get_restore_space_required_on_db(db_file_size=db_size)
 
-	def space_required_for_restoration_on_app_server(
+	def get_restore_space_required_on_app(
 		self, db_file_size: int = 0, public_file_size: int = 0, private_file_size: int = 0
 	) -> int:
 		space_for_download = db_file_size + public_file_size + private_file_size
@@ -882,16 +882,18 @@ class Site(Document, TagHelpers):
 		)  # 8 times db size for extraction; estimated
 		return space_for_download + space_for_extracted_files
 
-	def space_required_for_restoration_on_db_server(self, db_file_size: int = 0) -> int:
+	def get_restore_space_required_on_db(self, db_file_size: int = 0) -> int:
 		"""Returns the space required on the database server for restoration."""
 		return 8 * db_file_size * 2  # double for binlogs
 
-	def check_and_increase_disk(self, server: "BaseServer", space_required: int):
+	def check_and_increase_disk(
+		self, server: "BaseServer", space_required: int, no_increase=False, purpose="create site"
+	):
 		mountpoint = server.guess_data_disk_mountpoint()
 		free_space = server.free_space(mountpoint)
 		if (diff := free_space - space_required) <= 0:
-			msg = f"Insufficient estimated space on {DOCTYPE_SERVER_TYPE_MAP[server.doctype]} server to create site. Required: {human_readable(space_required)}, Available: {human_readable(free_space)} (Need {human_readable(abs(diff))})."
-			if server.public:
+			msg = f"Insufficient estimated space on {DOCTYPE_SERVER_TYPE_MAP[server.doctype]} server to {purpose}. Required: {human_readable(space_required)}, Available: {human_readable(free_space)} (Need {human_readable(abs(diff))})."
+			if server.public and not no_increase:
 				self.try_increasing_disk(server, mountpoint, diff, msg)
 			else:
 				frappe.throw(msg, InsufficientSpaceOnServer)
@@ -905,13 +907,36 @@ class Site(Document, TagHelpers):
 				InsufficientSpaceOnServer,
 			)
 
-	def check_enough_space_on_server(self):
+	@property
+	def backup_space_required_on_app(self) -> int:
+		"""Returns the space required on the app server for backup."""
+		db_size, public_size, private_size = (
+			frappe.get_doc("Remote File", file_name).size if file_name else 0
+			for file_name in (
+				self.remote_database_file,
+				self.remote_public_file,
+				self.remote_private_file,
+			)
+		)
+		return db_size + public_size + private_size
+
+	def check_space_on_server_for_backup(self):
+		provider = frappe.get_value("Cluster", self.cluster, "cloud_provider")
 		app: "Server" = frappe.get_doc("Server", self.server)
-		self.check_and_increase_disk(app, self.space_required_on_app_server)
+		no_increase = True
+		if app.auto_increase_storage or (app.public and provider in ["AWS EC2", "OCI"]):
+			no_increase = False
+		self.check_and_increase_disk(
+			app, self.backup_space_required_on_app, no_increase=no_increase, purpose="backup site"
+		)
+
+	def check_space_on_server_for_restore(self):
+		app: "Server" = frappe.get_doc("Server", self.server)
+		self.check_and_increase_disk(app, self.restore_space_required_on_app)
 
 		if app.database_server:
 			db: "DatabaseServer" = frappe.get_doc("Database Server", app.database_server)
-			self.check_and_increase_disk(db, self.space_required_on_db_server)
+			self.check_and_increase_disk(db, self.restore_space_required_on_db)
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
@@ -1080,7 +1105,7 @@ class Site(Document, TagHelpers):
 		if physical and not self.allow_physical_backup_by_user:
 			frappe.throw(_("Physical backup is not enabled for this site. Please reach out to support."))
 
-		if frappe.db.get_single_value("Press Settings", "disable_physical_backup"):
+		if physical and frappe.db.get_single_value("Press Settings", "disable_physical_backup"):
 			frappe.throw(_("Physical backup is disabled system wide. Please try again later."))
 		# Site deactivation required only for physical backup
 		return self.backup(with_files=with_files, physical=physical, deactivate_site_during_backup=physical)
@@ -3017,28 +3042,28 @@ class Site(Document, TagHelpers):
 				"description": "Upgrade your site to a major version",
 				"button_label": "Upgrade",
 				"doc_method": "upgrade",
-				"condition": self.status == "Active",
+				"condition": self.status in ["Active", "Broken", "Inactive"],
 			},
 			{
 				"action": "Change region",
 				"description": "Move your site to a different region",
 				"button_label": "Change",
 				"doc_method": "change_region",
-				"condition": self.status == "Active",
+				"condition": self.status in ["Active", "Broken", "Inactive"],
 			},
 			{
 				"action": "Change bench group",
 				"description": "Move your site to a different bench group",
 				"button_label": "Change",
 				"doc_method": "change_bench",
-				"condition": self.status == "Active",
+				"condition": self.status in ["Active", "Broken", "Inactive"],
 			},
 			{
 				"action": "Change server",
 				"description": "Move your site to a different server",
 				"button_label": "Change",
 				"doc_method": "change_server",
-				"condition": self.status == "Active" and not is_group_public,
+				"condition": self.status in ["Active", "Broken", "Inactive"] and not is_group_public,
 			},
 			{
 				"action": "Clear cache",

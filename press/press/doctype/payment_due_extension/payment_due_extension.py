@@ -34,6 +34,9 @@ class PaymentDueExtension(Document):
 
 	def on_submit(self):
 		frappe.db.set_value("Team", self.team, "extend_payment_due_suspension", 1)
+	
+	def on_cancel(self):
+		frappe.db.set_value("Team", self.team, "extend_payment_due_suspension", 0)
 
 
 def remove_payment_due_extension():

@@ -159,7 +159,7 @@ class Agent:
 		)
 
 	def restore_site(self, site: "Site", skip_failing_patches=False):
-		site.check_enough_space_on_server()
+		site.check_space_on_server_for_restore()
 		apps = [app.app for app in site.apps]
 		public_link, private_link, database_link = None, None, None
 		if site.remote_database_file:
@@ -246,7 +246,7 @@ class Agent:
 		)
 
 	def new_site_from_backup(self, site: "Site", skip_failing_patches=False):
-		site.check_enough_space_on_server()
+		site.check_space_on_server_for_restore()
 		apps = [app.app for app in site.apps]
 
 		def sanitized_site_config(site):

@@ -7,7 +7,7 @@ import json
 from collections import OrderedDict
 from functools import cached_property
 from itertools import groupby
-from typing import TYPE_CHECKING, Generator, Iterable, Literal
+from typing import TYPE_CHECKING, Literal
 
 import frappe
 import pytz
@@ -25,8 +25,13 @@ from press.press.doctype.bench_shell_log.bench_shell_log import (
 	create_bench_shell_log,
 )
 from press.press.doctype.site.site import Site
+from press.runner import Ansible
 from press.utils import SupervisorProcess, flatten, log_error, parse_supervisor_status
 from press.utils.webhook import create_webhook_event
+
+if TYPE_CHECKING:
+	from collections.abc import Generator, Iterable
+
 
 TRANSITORY_STATES = ["Pending", "Installing"]
 FINAL_STATES = ["Active", "Broken", "Archived"]
@@ -336,6 +341,29 @@ class Bench(Document):
 			"memory_swap": self.memory_swap,
 			"vcpu": self.vcpu,
 		}
+
+	@frappe.whitelist()
+	def correct_bench_permissions(self):
+		"""Give all permissions to frappe:frappe in (container:/home/frappe)"""
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_correct_bench_permissions",
+			queue="long",
+			timeout=1800,
+		)
+
+	def _correct_bench_permissions(self):
+		try:
+			ansible = Ansible(
+				playbook="correct_bench_permissions.yml",
+				server=frappe.get_cached_doc("Server", self.server),
+				user="root",
+				variables={"bench_name": self.name},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Bench Permissions Correction Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def force_update_limits(self):
@@ -734,11 +762,12 @@ class Bench(Document):
 		subdir: str | None = None,
 		save_output: bool = True,
 		create_log: bool = True,
+		as_root: bool = False,
 	) -> ExecuteResult:
 		if self.status not in ["Active", "Broken"]:
 			raise Exception(f"Bench {self.name} has status {self.status}, docker_execute cannot be run")
 
-		data = {"command": cmd}
+		data = {"command": cmd, "as_root": as_root}
 		if subdir:
 			data["subdir"] = subdir
 

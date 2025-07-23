@@ -213,6 +213,7 @@ scheduler_events = {
 		"press.overrides.cleanup_ansible_tmp_files",
 		"press.press.doctype.site.site.archive_suspended_sites",
 		"press.press.doctype.site.site.send_warning_mail_regarding_sites_exceeding_disk_usage",
+		"press.press.doctype.add_on_storage_log.add_on_storage_log.send_disk_extention_notification",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
@@ -253,6 +254,7 @@ scheduler_events = {
 		],
 		"10 0 * * *": [
 			"press.press.audit.check_backup_records",
+			"press.press.audit.billing_audit",
 		],
 		"0 3 * * *": [
 			"press.press.doctype.drip_email.drip_email.send_drip_emails",
@@ -319,7 +321,6 @@ scheduler_events = {
 			"press.press.cleanup.reset_large_output_fields_from_ansible_tasks",
 		],
 		"0 21 * * *": [
-			"press.press.audit.billing_audit",
 			"press.press.audit.partner_billing_audit",
 		],
 		"0 6 * * *": [

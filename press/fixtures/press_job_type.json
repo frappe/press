@@ -226,7 +226,7 @@
     "wait_until_true": 0
    },
    {
-    "script": "if frappe.db.get_value(doc.server_type, doc.server, \"provider\") == \"AWS EC2\":\n    plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Extend EC2 Volume\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n    result = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\nelse:\n    result = (True, False)",
+    "script": "should_auto_increase = frappe.db.get_value(doc.server_type, doc.server, \"auto_increase_storage\")\nif not should_auto_increase:\n    result = (True, False)\n\nelse:\n    if frappe.db.get_value(doc.server_type, doc.server, \"provider\") == \"AWS EC2\":\n        plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Extend EC2 Volume\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n        result = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\n    else:\n        result = (True, False)",
     "step_name": "Wait for partition to resize (AWS)",
     "wait_until_true": 1
    },

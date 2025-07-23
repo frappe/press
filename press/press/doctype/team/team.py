@@ -91,6 +91,7 @@ class Team(Document):
 		send_notifications: DF.Check
 		servers_enabled: DF.Check
 		skip_backups: DF.Check
+		skip_onboarding: DF.Check
 		ssh_access_enabled: DF.Check
 		stripe_customer_id: DF.Data | None
 		team_members: DF.Table[TeamMember]
@@ -1037,7 +1038,8 @@ class Team(Document):
 
 		complete = False
 		if (
-			is_payment_mode_set
+			self.skip_onboarding
+			or is_payment_mode_set
 			or frappe.db.get_value("User", self.user, "user_type") == "System User"
 			or has_role("Press Support Agent")
 		):
@@ -1056,7 +1058,7 @@ class Team(Document):
 		)
 
 	def get_route_on_login(self):
-		if self.payment_mode:
+		if self.payment_mode or self.skip_onboarding:
 			return "/sites"
 
 		if self.is_saas_user:

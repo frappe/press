@@ -1,7 +1,8 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
-# import frappe
+import frappe
+
 from press.press.doctype.site_plan.plan import Plan
 
 
@@ -22,4 +23,14 @@ class ClusterPlan(Plan):
 		title: DF.Data | None
 	# end: auto-generated types
 
-	pass
+	def validate(self):
+		self.validate_active_subscriptions()
+
+	def validate_active_subscriptions(self):
+		old_doc = self.get_doc_before_save()
+		if old_doc and old_doc.enabled and not self.enabled:
+			active_sub_count = frappe.db.count("Subscription", {"enabled": 1, "plan": self.name})
+			if active_sub_count > 0:
+				frappe.throw(
+					f"Cannot disable this plan. This plan is used in {active_sub_count} active subscription(s)."
+				)

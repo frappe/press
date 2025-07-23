@@ -21,6 +21,7 @@
   "enforce_2fa",
   "extend_payment_due_suspension",
   "apply_npo_discount",
+  "skip_onboarding",
   "team_members_tab",
   "section_break_6",
   "team_members",
@@ -573,6 +574,13 @@
    "fieldname": "apply_npo_discount",
    "fieldtype": "Check",
    "label": "Apply NPO Discount"
+  },
+  {
+   "default": "0",
+   "description": "If checked, members will not be forced to go through the onboarding",
+   "fieldname": "skip_onboarding",
+   "fieldtype": "Check",
+   "label": "Skip Onboarding"
   }
  ],
  "grid_page_length": 50,
@@ -638,7 +646,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2025-05-20 12:56:19.719372",
+ "modified": "2025-07-16 09:33:39.442432",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

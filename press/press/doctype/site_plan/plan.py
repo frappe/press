@@ -27,18 +27,23 @@ class Plan(Document):
 
 	@classmethod
 	def get_plans(cls, doctype, fields=None, filters=None):
-		"""We will sometime send plans that are not enabled, since database conversions were not
-		done region wise, we will need to allow plan change for both arm and intel however creation
-		of new intel servers can be stopped by keeping intel plans disabled.
-		"""
+		or_filters = None
 		filters = filters or {}
 		if not fields:
 			fields = ["*"]
 
-		filters.update({"enabled": True})
+		# Should either be enabled or a legacy plan
+		# In case a platform is not passed in we want more control and only want to show
+		# enabled plans in the region, in other cases we can show legacy plan
+		if doctype != "Server Plan" or not filters.get("platform"):
+			filters.update({"enabled": True})
+		else:
+			or_filters = {"enabled": True, "legacy_plan": True}
 
 		fields.append("`tabHas Role`.role")
-		plans = frappe.get_all(doctype, filters=filters, fields=fields, order_by="price_usd asc")
+		plans = frappe.get_all(
+			doctype, filters=filters, fields=fields, order_by="price_usd asc", or_filters=or_filters
+		)
 		return filter_by_roles(plans)
 
 
