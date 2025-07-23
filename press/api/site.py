@@ -1704,7 +1704,7 @@ def check_dns_cname(name, domain):
 	except MultipleCNAMERecords:
 		multiple_domains = ", ".join(part.to_text() for part in answer)
 		frappe.throw(
-			f"Domain {domain} has multiple CNAME records: {multiple_domains}. Please keep only one.",
+			f"Domain <b>{domain}</b> has multiple CNAME records: <b>{multiple_domains}</b>. Please keep only one.",
 			MultipleCNAMERecords,
 		)
 	except dns.resolver.NoAnswer as e:
@@ -1803,7 +1803,8 @@ def check_dns_cname_a(name, domain, ignore_proxying=False):
 		if ignore_proxying:  # no point checking the rest if proxied
 			return {"CNAME": {}, "A": {}, "matched": True, "type": "A"}  # assume A
 		frappe.throw(
-			f"Domain {domain} appears to be proxied (server: {proxy}). Please turn off proxying and try again in some time. You may enable it once the domain is verified.",
+			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.
+			<br>You may enable it once the domain is verified.""",
 			DomainProxied,
 		)
 	ensure_dns_aaaa_record_doesnt_exist(domain)
@@ -1815,12 +1816,18 @@ def check_dns_cname_a(name, domain, ignore_proxying=False):
 
 	if cname["matched"] and a["exists"] and not a["matched"]:
 		frappe.throw(
-			f"Domain {domain} has correct CNAME record ({cname['answer'].strip().split()[-1]}), but also an A record that points to an incorrect IP address ({a['answer'].strip().split()[-1]}). Please remove the same or update the record.",
+			f"""
+			Domain <b>{domain}</b> has correct CNAME record <b>{cname["answer"].strip().split()[-1]}</b>, but also an A record that points to an incorrect IP address <b>{a["answer"].strip().split()[-1]}</b>.
+			<br>Please remove the same or update the record.
+			""",
 			ConflictingDNSRecord,
 		)
 	if a["matched"] and cname["exists"] and not cname["matched"]:
 		frappe.throw(
-			f"Domain {domain} has correct A record ({a['answer'].strip().split()[-1]}), but also a CNAME record that points to an incorrect domain ({cname['answer'].strip().split()[-1]}). Please remove the same or update the record.",
+			"""
+			f"Domain <b>{domain}</b> has correct A record <b>{a['answer'].strip().split()[-1]}</b>, but also a CNAME record that points to an incorrect domain <b>{cname['answer'].strip().split()[-1]}</b>.
+			<br>Please remove the same or update the record.
+			""",
 			ConflictingDNSRecord,
 		)
 
