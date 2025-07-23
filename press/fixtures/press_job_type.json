@@ -244,6 +244,11 @@
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"OCI\":\n    server.add_glass_file()\nelse:\n    result = (True, False)\n    # handled for aws already in extend playbook",
     "step_name": "Add glass file back (OCI)",
     "wait_until_true": 0
+   },
+   {
+    "script": "if doc.server_type == 'Server':\n    server = frappe.get_doc(doc.server_type, doc.server)\n    server.start_active_benches()\n",
+    "step_name": "Restart Active Benches",
+    "wait_until_true": 0
    }
   ]
  },
