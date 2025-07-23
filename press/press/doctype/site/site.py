@@ -1105,7 +1105,7 @@ class Site(Document, TagHelpers):
 		if physical and not self.allow_physical_backup_by_user:
 			frappe.throw(_("Physical backup is not enabled for this site. Please reach out to support."))
 
-		if frappe.db.get_single_value("Press Settings", "disable_physical_backup"):
+		if physical and frappe.db.get_single_value("Press Settings", "disable_physical_backup"):
 			frappe.throw(_("Physical backup is disabled system wide. Please try again later."))
 		# Site deactivation required only for physical backup
 		return self.backup(with_files=with_files, physical=physical, deactivate_site_during_backup=physical)
