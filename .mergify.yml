@@ -5,6 +5,8 @@ pull_request_rules:
         - and:
           - author!=frappe-pr-bot
           - author!=mergify[bot]
+        - or:
+          - base=master
     actions:
       close:
       comment:
