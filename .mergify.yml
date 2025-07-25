@@ -5,6 +5,7 @@ pull_request_rules:
         - and:
           - author!=frappe-pr-bot
           - author!=mergify[bot]
+          - author!=github-actions
         - or:
           - base=master
     actions:
