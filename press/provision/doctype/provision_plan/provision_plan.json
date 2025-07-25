@@ -1,0 +1,116 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:plan_name",
+ "creation": "2025-07-01 16:08:14.081948",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "plan_data_section",
+  "cluster",
+  "plan_name",
+  "status",
+  "column_break_bygh",
+  "region",
+  "provider",
+  "plan_section",
+  "plan",
+  "error_log"
+ ],
+ "fields": [
+  {
+   "fieldname": "plan_data_section",
+   "fieldtype": "Section Break",
+   "label": "Plan Data"
+  },
+  {
+   "fieldname": "plan_name",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Stack",
+   "options": "Virtual Machine",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Code",
+   "label": "Plan",
+   "options": "oonga",
+   "reqd": 1
+  },
+  {
+   "fieldname": "error_log",
+   "fieldtype": "Code",
+   "label": "Error Log"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Select\nPending\nRunning\nStopped\nTerminated",
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_bygh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "plan_section",
+   "fieldtype": "Section Break",
+   "label": "Plan"
+  },
+  {
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "label": "Region",
+   "reqd": 1
+  },
+  {
+   "fieldname": "provider",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Provider",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster",
+   "reqd": 1,
+   "set_only_once": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-07-09 11:46:08.627910",
+ "modified_by": "Administrator",
+ "module": "Provision",
+ "name": "Provision Plan",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
