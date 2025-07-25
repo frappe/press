@@ -1,0 +1,85 @@
+name: Auto PR from Master to Develop
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    # Skip if the commit message contains merge-related keywords
+    if: |
+      !contains(github.event.head_commit.message, 'Merge pull request') &&
+      !contains(github.event.head_commit.message, 'Merge branch') &&
+      !startsWith(github.event.head_commit.message, 'Merge')
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Get commit details
+        id: commit-info
+        run: |
+          git fetch origin develop
+
+          COMMITS=$(git log origin/develop..HEAD --pretty=format:"- %h %s")
+          
+          # Store commits in a file to handle multiline content
+          echo "$COMMITS" > commits.txt
+
+      - name: Check if PR already exists
+        id: check-pr
+        run: |
+          # Check if there's already an open PR from master to develop
+          EXISTING_PR=$(gh pr list --head master --base develop --state open --json number --jq '.[0].number // empty')
+          echo "existing_pr=$EXISTING_PR" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Pull Request
+        if: steps.check-pr.outputs.existing_pr == ''
+        run: |
+          # Read commits from file
+          COMMITS_LIST=$(cat commits.txt)
+          
+          # Create PR description with merge instruction
+          PR_DESCRIPTION="**Please perform \`Merge & Commit\` to preserve commit history to avoid commit conflicts**
+          
+          $COMMITS_LIST"
+
+          # Create the PR
+          gh pr create \
+            --title "chore: Sync Changes from Master to Develop" \
+            --body "$PR_DESCRIPTION" \
+            --head master \
+            --base develop
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update existing PR
+        if: steps.check-pr.outputs.existing_pr != ''
+        run: |
+          # Read commits from file
+          COMMITS_LIST=$(cat commits.txt)
+          PR_DESCRIPTION="**Please perform \`Merge & Commit\` to preserve commit history to avoid commit conflicts**
+          
+          $COMMITS_LIST"
+ 
+          # Update the existing PR
+          gh pr edit ${{ steps.check-pr.outputs.existing_pr }} \
+            --body "$PR_DESCRIPTION"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
