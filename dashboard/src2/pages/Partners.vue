@@ -1,10 +1,12 @@
 <template>
-	<div class="sticky top-0 z-10 shrink-0">
-		<Header>
-			<FBreadcrumbs
-				:items="[{ label: 'Partnership', route: { name: 'Partnership' } }]"
-			/>
-		</Header>
+	<div class="flex h-full flex-col">
+		<div class="sticky top-0 z-10 shrink-0">
+			<Header>
+				<FBreadcrumbs
+					:items="[{ label: 'Partnership', route: { name: 'Partnership' } }]"
+				/>
+			</Header>
+		</div>
 		<TabsWithRouter
 			v-if="
 				Boolean(this.$team.doc.erpnext_partner) && $session.hasPartnerAccess
@@ -55,7 +57,7 @@ export default {
 						),
 				},
 				{
-					label: 'Link Customers',
+					label: 'Customer Approval Requests',
 					route: { name: 'PartnerApprovalRequests' },
 					condition: () =>
 						Boolean(
