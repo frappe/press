@@ -16,9 +16,9 @@ class ProvisionPlan(Document):
 		cluster: DF.Link
 		error_log: DF.Code | None
 		plan: DF.Code
-		plan_name: DF.Link
 		provider: DF.Data
 		region: DF.Data
+		stack: DF.Data
 		status: DF.Literal["Select", "Pending", "Running", "Stopped", "Terminated"]
 	# end: auto-generated types
 

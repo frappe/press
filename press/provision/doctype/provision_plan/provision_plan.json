@@ -1,14 +1,14 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "field:plan_name",
+ "autoname": "field:stack",
  "creation": "2025-07-01 16:08:14.081948",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "plan_data_section",
   "cluster",
-  "plan_name",
+  "stack",
   "status",
   "column_break_bygh",
   "region",
@@ -22,15 +22,6 @@
    "fieldname": "plan_data_section",
    "fieldtype": "Section Break",
    "label": "Plan Data"
-  },
-  {
-   "fieldname": "plan_name",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Stack",
-   "options": "Virtual Machine",
-   "reqd": 1,
-   "unique": 1
   },
   {
    "fieldname": "plan",
@@ -84,12 +75,21 @@
    "options": "Cluster",
    "reqd": 1,
    "set_only_once": 1
+  },
+  {
+   "fieldname": "stack",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Stack",
+   "options": "Virtual Machine",
+   "reqd": 1,
+   "unique": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-09 11:46:08.627910",
+ "modified": "2025-07-24 16:12:51.276409",
  "modified_by": "Administrator",
  "module": "Provision",
  "name": "Provision Plan",
