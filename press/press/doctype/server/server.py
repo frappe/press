@@ -133,20 +133,22 @@ class BaseServer(Document, TagHelpers):
 	@dashboard_whitelist()
 	def increase_disk_size_for_server(
 		self,
-		server: str,
+		server: str | Server | DatabaseServer,
 		increment: int,
 		mountpoint: str | None = None,
 		is_auto_triggered: bool = False,
 		current_disk_usage: int | None = None,
 	) -> None:
 		add_on_storage_log = None
+		mountpoint = mountpoint or self.guess_data_disk_mountpoint()
+
 		storage_parameters = {
 			"doctype": "Add On Storage Log",
 			"adding_storage": increment,
 			"available_disk_space": round((self.disk_capacity(mountpoint) / 1024 / 1024 / 1024), 2),
 			"current_disk_usage": current_disk_usage
 			or round((self.disk_capacity(mountpoint) - self.free_space(mountpoint)) / 1024 / 1024 / 1024, 2),
-			"mountpoint": mountpoint or self.guess_data_disk_mountpoint(),
+			"mountpoint": mountpoint,
 			is_auto_triggered: is_auto_triggered,
 		}
 
@@ -164,7 +166,7 @@ class BaseServer(Document, TagHelpers):
 					or round(
 						(self.disk_capacity(mountpoint) - self.free_space(mountpoint)) / 1024 / 1024 / 1024, 2
 					),
-					mountpoint=mountpoint or self.guess_data_disk_mountpoint(),
+					mountpoint=mountpoint,
 					is_auto_triggered=is_auto_triggered,
 					is_warning=False,
 					server=storage_parameters.get("server"),
@@ -187,7 +189,7 @@ class BaseServer(Document, TagHelpers):
 					or round(
 						(self.disk_capacity(mountpoint) - self.free_space(mountpoint)) / 1024 / 1024 / 1024, 2
 					),
-					mountpoint=mountpoint or self.guess_data_disk_mountpoint(),
+					mountpoint=mountpoint,
 					is_auto_triggered=is_auto_triggered,
 					is_warning=False,
 					server=storage_parameters.get("server"),
@@ -730,9 +732,10 @@ class BaseServer(Document, TagHelpers):
 
 		volumes = self.get_volume_mounts()
 		if volumes or self.has_data_volume:
-			if self.doctype == "Server":
+			# Adding this condition since this method is called from both server and database server doctypes
+			if self.name[0] == "f":
 				mountpoint = "/opt/volumes/benches"
-			elif self.doctype == "Database Server":
+			elif self.name[0] == "m":
 				mountpoint = "/opt/volumes/mariadb"
 		else:
 			mountpoint = "/"
