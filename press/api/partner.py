@@ -146,8 +146,50 @@ def get_partner_contribution_list(partner_email):
 
 
 @frappe.whitelist()
-def get_total_partner_contribution(partner_email):
-	return
+def get_partner_invoices(due_date=None):
+	partner_email = get_current_team(get_doc=True).partner_email
+	# partner_currency = frappe.db.get_value(
+	# 	"Team", {"erpnext_partner": 1, "partner_email": partner_email}, "currency"
+	# )
+
+	filters = {
+		"partner_email": partner_email,
+		"type": "Subscription",
+	}
+	if due_date:
+		# month_end = frappe.utils.get_last_day(today())
+		filters["due_date"] = due_date
+	print(filters)
+
+	invoices = frappe.get_all(
+		"Invoice",
+		filters,
+		["name", "due_date", "customer_name", "total_before_discount", "currency", "status"],
+	)
+	print(len(invoices))
+	# for d in invoices:
+	# 	if partner_currency != d.currency:
+	# 		if partner_currency == "USD":
+	# 			d.update({"partner_total": flt(d.total_before_discount / 83, 2)})
+	# 		else:
+	# 			d.update({"partner_total": flt(d.total_before_discount * 83)})
+	# 	else:
+	# 		d.update({"partner_total": d.total_before_discount})
+	return invoices
+
+
+@frappe.whitelist()
+def get_invoice_items(invoice):
+	data = frappe.get_all(
+		"Invoice Item",
+		{"parent": invoice},
+		["document_type", "document_name", "rate", "plan", "quantity", "amount"],
+	)
+	for d in data:
+		team = frappe.db.get_value(d.document_type, d.document_name, "team")
+		d["user"] = frappe.db.get_value("Team", team, "user")
+		print(d)
+	return data
 
 
 @frappe.whitelist()
