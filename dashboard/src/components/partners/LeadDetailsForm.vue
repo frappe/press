@@ -190,7 +190,7 @@ const sections = computed(() => {
 	return [
 		{
 			name: 'Company Information',
-			columns: 2,
+			columns: 1,
 			fields: [
 				{
 					fieldtype: 'Data',
@@ -198,23 +198,17 @@ const sections = computed(() => {
 					label: 'Organization Name',
 					required: true,
 				},
+			],
+		},
+		{
+			name: 'Domain and Status',
+			columns: 2,
+			fields: [
 				{
 					fieldtype: 'Select',
 					fieldname: 'domain',
 					label: 'Domain',
 					options: domainList.value,
-					required: true,
-				},
-			],
-		},
-		{
-			name: 'Lead name and Status',
-			columns: 2,
-			fields: [
-				{
-					fieldtype: 'Data',
-					fieldname: 'lead_name',
-					label: 'Lead Name',
 					required: true,
 				},
 				{

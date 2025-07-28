@@ -123,6 +123,7 @@ class Invoice(Document):
 		"amount_due_with_tax",
 		"mpesa_invoice",
 		"mpesa_invoice_pdf",
+		"customer_name",
 	)
 
 	@staticmethod
