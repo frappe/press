@@ -36,16 +36,17 @@ class PilotStack(TerraformStack):
 			"Provider", {"region": region.region_name, "cloud_provider": region.provider}
 		)
 		LocalBackend(self, path=backend_file)
-		if region.provider == "AWS EC2":
+		if region.provider == "Digital Ocean":
 			DigitalOcean().provision(self, scope, name, region, provider)
 
 
 class OpenTofu:
-	def __init__(self, region: "CloudRegion", stack_dir) -> None:
+	def __init__(self, region: "CloudRegion", stack_dir, cluster) -> None:
 		self.region = region
 		self.directory = os.path.abspath(frappe.get_site_path(stack_dir))
-		self.stack_directory = os.path.join(self.directory, "stacks", self.region.name)
+		self.stack_directory = os.path.join(self.directory, "stacks", self.region.region_name)
 		self.tofu = TofuCLI(self.stack_directory, self.region)
+		self.cluster = cluster
 
 	def provision(self) -> None:
 		self.synth()
@@ -53,7 +54,7 @@ class OpenTofu:
 		self.init()
 		self.plan()
 		self.deploy()
-		self.sync()
+		# self.sync()
 
 	def destroy(self) -> None:
 		self.sync()
@@ -91,7 +92,7 @@ class OpenTofu:
 		self.tofu.plan("tf.plan")
 		plan = self.tofu.show("tf.plan")
 		pretty_plan = self.tofu.pretty_show("tf.plan")
-		return self.create_plan(plan, pretty_plan)
+		return self.create_plan(plan, pretty_plan, self.cluster)
 
 	def deploy(self) -> str:
 		return self.tofu.apply("tf.plan")
@@ -104,11 +105,13 @@ class OpenTofu:
 			"Provision Declaration", region=self.region.name, stack=self.region.name, declaration=declaration
 		).insert()
 
-	def create_plan(self, plan: str, pretty_plan: str) -> ProvisionPlan:
+	def create_plan(self, plan: str, pretty_plan: str, cluster: str) -> ProvisionPlan:
 		return frappe.new_doc(
 			"Provision Plan",
+			cluster=cluster,
 			region=self.region.name,
 			stack=self.region.name,
+			provider=self.region.provider,
 			plan=json.dumps(json.loads(plan), indent=2),
 			pretty_plan=pretty_plan,
 		).insert()
@@ -124,8 +127,7 @@ class OpenTofu:
 
 
 class TofuCLI:
-	def __init__(self, path, region: "Region") -> None:
-		print(path)
+	def __init__(self, path, region: "CloudRegion") -> None:
 		self.path = path
 		self.region = region
 
@@ -176,6 +178,11 @@ class TofuCLI:
 		for line in output.split("\n"):
 			if not line:
 				continue
-			parsed_lines.append(json.loads(line)["@message"])
+			try:
+				json.loads(line)
+				if "@message" in json.loads(line):
+					parsed_lines.append(json.loads(line)["@message"])
+			except (json.JSONDecodeError, KeyError):
+				continue
 
 		return "\n".join(parsed_lines)
