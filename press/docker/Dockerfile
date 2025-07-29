@@ -324,6 +324,22 @@ RUN if [ -d "/home/frappe/custom_assets/frappe" ]; then \
     fi
 # ========================================================================================================
 
+# ========================================================================================================
+# CUSTOM CODE: This block performs string replacements based on a `terms.csv` file found in the
+# custom assets repository. It reads the CSV file line by line, where each line contains a pair of
+# comma-separated terms. For each pair, it performs a case-sensitive search for the first term and
+# replaces it with the second term in all `.vue`, `.html`, `.js`, and `.py` files within the bench.
+# ========================================================================================================
+RUN if [ -f "/home/frappe/custom_assets/terms.csv" ]; then \
+      echo "Performing string replacements from terms.csv..."; \
+      while IFS=, read -r old_term new_term; do \
+        echo "Replacing '$old_term' with '$new_term'"; \
+        find /home/frappe/frappe-bench -type f \( -name "*.vue" -o -name "*.html" -o -name "*.js" -o -name "*.py" \) -print0 | \
+        xargs -0 sed -i "s/$old_term/$new_term/g"; \
+      done < /home/frappe/custom_assets/terms.csv; \
+    fi
+# ========================================================================================================
+
 # Pull app updates from mounted repository
 {% for app in doc.apps %}
 {% if app.pullable_release %}
@@ -338,6 +354,27 @@ RUN --mount=type=bind,source=app_updates/{{ app.app }},target=/home/frappe/conte
 {% endif %}
 {% endfor %}
 
+# ========================================================================================================
+# CUSTOM CODE: This block re-applies custom assets after a `pullable_release` may have
+# overwritten them. This ensures that custom assets are present regardless of the app
+# installation method.
+# ========================================================================================================
+{% for app in doc.apps %}
+RUN if [ -d "/home/frappe/custom_assets/{{ app.app }}" ]; then \
+      echo "Re-applying custom assets for app: {{ app.app }}"; \
+      for file in /home/frappe/custom_assets/{{ app.app }}/*; do \
+        if [ -f "$file" ]; then \
+          filename=$(basename "$file"); \
+          echo "Processing $filename..."; \
+          find "/home/frappe/frappe-bench/apps/{{ app.app }}" -type f -name "$filename" | while read -r target; do \
+              echo "  -> Replacing $target"; \
+              cp "$file" "$target"; \
+          done; \
+        fi; \
+      done; \
+    fi
+{% endfor %}
+# ========================================================================================================
 
 COPY --chown=frappe:frappe config /home/frappe/frappe-bench/config
 COPY --chown=frappe:frappe apps.txt /home/frappe/frappe-bench/sites/apps.txt
