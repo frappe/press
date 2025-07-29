@@ -144,6 +144,7 @@ function getAppsTabColumns(forSite: boolean) {
 
 const siteAppListOptions: Partial<TabList> = {
 	doctype: 'Site App',
+	pageLength: 999,
 	filters: (res) => {
 		return { parenttype: 'Site', parent: res.doc?.name };
 	},
