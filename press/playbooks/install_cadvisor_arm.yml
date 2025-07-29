@@ -1,8 +1,8 @@
 ---
-- name: Install cAdvisor (ARM)
+- name: Update Agent
   hosts: all
   become: yes
   become_user: root
-  gather_facts: yes
+  gather_facts: no
   roles:
     - role: cadvisor
