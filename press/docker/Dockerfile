@@ -249,6 +249,7 @@ RUN git clone $CUSTOM_ASSETS_REPO /home/frappe/custom_assets
 
 RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 \
   --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }},rw \
+  # ========================================================================================================
   # --- START: Custom asset replacement logic ---
   # Check if a custom asset folder exists for this specific app
   if [ -d "/home/frappe/custom_assets/{{ app.app }}" ]; then \
@@ -267,6 +268,7 @@ RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=10
     done; \
   fi && \
   # --- END: Custom asset replacement logic ---
+  # ========================================================================================================
   #
   # Original command to install the app (now with modified assets)
   bench get-app file:///home/frappe/context/apps/{{ app.app }} \
@@ -279,6 +281,7 @@ RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=10
 {% endif %}
 {% endfor %}
 
+# ========================================================================================================
 # Replace default assets with custom_assets in frappe
 RUN for file in /home/frappe/custom_assets/frappe/*; do \
         app=$(basename $(dirname "$file")); \
@@ -289,6 +292,7 @@ RUN for file in /home/frappe/custom_assets/frappe/*; do \
             cp "$file" "$target"; \
         done; \
     done
+# ========================================================================================================
 
 # Pull app updates from mounted repository
 {% for app in doc.apps %}
