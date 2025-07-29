@@ -542,9 +542,16 @@ class Agent:
 					"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
 				}
 				data.update({"offsite": {"bucket": bucket_name, "auth": auth, "path": backups_path}})
-
 			else:
 				log_error("Offsite Backups aren't set yet")
+
+			data.update(
+				{
+					"keep_files_locally_after_offsite_backup": bool(
+						frappe.get_value("Server", site.server, "keep_files_on_server_in_offsite_backup")
+					)
+				}
+			)
 
 		return self.create_agent_job(
 			"Backup Site",

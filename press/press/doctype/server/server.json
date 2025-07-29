@@ -21,6 +21,7 @@
   "is_server_prepared",
   "is_server_renamed",
   "is_self_hosted",
+  "keep_files_on_server_in_offsite_backup",
   "column_break_laiq",
   "public",
   "use_agent_job_callbacks",
@@ -606,10 +607,16 @@
    "fieldname": "stop_deployments",
    "fieldtype": "Check",
    "label": "Stop Deployments"
+  },
+  {
+   "default": "0",
+   "fieldname": "keep_files_on_server_in_offsite_backup",
+   "fieldtype": "Check",
+   "label": "Keep Files on Server In Offsite Backup"
   }
  ],
  "links": [],
- "modified": "2025-07-01 10:28:26.145882",
+ "modified": "2025-07-29 13:47:46.560661",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
