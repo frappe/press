@@ -241,10 +241,29 @@ COPY --chown=frappe:frappe redis /home/frappe/frappe-bench/redis
 COPY --chown=frappe:frappe .vimrc /home/frappe/.vimrc
 COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
 
-RUN git clone $CUSTOM_ASSETS_REPO /home/frappe/custom_assets
+# ========================================================================================================
+# CUSTOM CODE: The following RUN command has been modified from the original Frappe Dockerfile.
+# It checks if the `$CUSTOM_ASSETS_REPO` environment variable is set. If it is, it clones the
+# repository. Otherwise, it creates an empty directory. This prevents the build from failing if the
+# variable is not provided.
+# ========================================================================================================
+RUN if [ -n "$CUSTOM_ASSETS_REPO" ]; then \
+      git clone $CUSTOM_ASSETS_REPO /home/frappe/custom_assets; \
+    else \
+      mkdir -p /home/frappe/custom_assets; \
+    fi
+# ========================================================================================================
 
 # Install other apps
 {% for app in doc.apps %}
+
+# ========================================================================================================
+# CUSTOM CODE: The following RUN command has been modified from the original Frappe Dockerfile.
+# It includes a shell script block that checks for the existence of custom assets for each app
+# in the `/home/frappe/custom_assets/` directory. If found, it replaces the default app assets
+# with the custom ones *before* the `bench get-app` command is executed. This allows for
+# customizing app assets during the image build process.
+# ========================================================================================================
 {% if app.app != "frappe" %}
 
 RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 \
@@ -282,16 +301,27 @@ RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=10
 {% endfor %}
 
 # ========================================================================================================
+# CUSTOM CODE: This block handles the replacement of default assets with custom assets specifically
+# for the 'frappe' app. It iterates through any files present in `/home/frappe/custom_assets/frappe/`
+# and replaces the corresponding files in the installed `frappe` app directory within the bench.
+# This is a separate step because the Frappe app is installed differently from other apps.
+# It now includes a check to ensure the `frappe` directory exists in `custom_assets` before
+# attempting to copy files, preventing build failures.
+# ========================================================================================================
 # Replace default assets with custom_assets in frappe
-RUN for file in /home/frappe/custom_assets/frappe/*; do \
-        app=$(basename $(dirname "$file")); \
-        filename=$(basename "$file"); \
-        echo "Processing $filename for app $app..."; \
-        find "/home/frappe/frappe-bench/apps/$app" -type f -name "$filename" | while read -r target; do \
-            echo "  -> Replacing $target"; \
-            cp "$file" "$target"; \
-        done; \
-    done
+RUN if [ -d "/home/frappe/custom_assets/frappe" ]; then \
+      for file in /home/frappe/custom_assets/frappe/*; do \
+        if [ -f "$file" ]; then \
+          app=$(basename $(dirname "$file")); \
+          filename=$(basename "$file"); \
+          echo "Processing $filename for app $app..."; \
+          find "/home/frappe/frappe-bench/apps/$app" -type f -name "$filename" | while read -r target; do \
+              echo "  -> Replacing $target"; \
+              cp "$file" "$target"; \
+          done; \
+        fi; \
+      done; \
+    fi
 # ========================================================================================================
 
 # Pull app updates from mounted repository
