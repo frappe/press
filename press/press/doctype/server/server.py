@@ -1525,19 +1525,14 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		return frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size") * 1024 * 1024 * 1024
 
 	def size_to_increase_by_for_20_percent_available(self, mountpoint: str):  # min 50 GB, max 250 GB
-		return int(
-			min(
-				self.auto_add_storage_max,
-				max(
-					self.auto_add_storage_min,
-					abs(self.disk_capacity(mountpoint) - self.space_available_in_6_hours(mountpoint) * 5)
-					/ 4
-					/ 1024
-					/ 1024
-					/ 1024,
-				),
-			)
-		)
+		projected_usage = self.disk_capacity(mountpoint) - self.space_available_in_6_hours(mountpoint) * 5
+		projected_growth_gb = abs(projected_usage) / (4 * 1024 * 1024 * 1024)
+
+		if mountpoint == "/":
+			# Ingore limits set in case of mountpoint being /
+			return int(projected_growth_gb)
+
+		return int(max(self.auto_add_storage_min, min(projected_growth_gb, self.auto_add_storage_max)))
 
 	def recommend_disk_increase(self, mountpoint: str | None = None):
 		"""
