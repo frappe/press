@@ -1720,8 +1720,23 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		except Exception:
 			log_error("Sever File Copy Exception", server=self.as_dict())
 
+	def install_cadvisor_arm(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_install_cadvisor_arm")
+
+	def _install_cadvisor_arm(self):
+		try:
+			ansible = Ansible(
+				playbook="install_cadvisor_arm.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Cadvisor Install Exception", server=self.as_dict())
+
 	@frappe.whitelist()
-	def set_additional_config(self: Server | DatabaseServer):
+	def set_additional_config(self):
 		"""
 		Corresponds to Set additional config step in Create Server Press Job
 		"""
@@ -1738,6 +1753,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		if self.doctype == "Server":
 			self.setup_mysqldump()
 			self.install_earlyoom()
+			if self.platform == "arm64":
+				self.install_cadvisor_arm()
 
 		if self.doctype == "Database Server":
 			self.adjust_memory_config()
