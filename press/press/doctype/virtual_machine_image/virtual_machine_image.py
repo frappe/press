@@ -37,7 +37,7 @@ class VirtualMachineImage(Document):
 		instance_id: DF.Data
 		mariadb_root_password: DF.Password | None
 		object_storage_uri: DF.SmallText | None
-		platform: DF.Data | None
+		platform: DF.Data
 		public: DF.Check
 		region: DF.Link
 		root_size: DF.Int
