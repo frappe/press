@@ -612,11 +612,11 @@
    "default": "0",
    "fieldname": "keep_files_on_server_in_offsite_backup",
    "fieldtype": "Check",
-   "label": "Keep Files on Server In Offsite Backup"
+   "label": "Keep Backup Files Onsite"
   }
  ],
  "links": [],
- "modified": "2025-07-29 13:47:46.560661",
+ "modified": "2025-07-29 17:35:06.128262",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
