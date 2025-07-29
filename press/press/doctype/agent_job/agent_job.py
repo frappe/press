@@ -115,7 +115,7 @@ class AgentJob(Document):
 		return results
 
 	def get_doc(self, doc):
-		if doc.status == "Undelivered":
+		if doc.status == "Undelivered" and not doc.output:
 			doc.status = "Pending"
 
 		doc["steps"] = frappe.get_all(
