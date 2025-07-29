@@ -41,7 +41,8 @@
    "fieldname": "platform",
    "fieldtype": "Data",
    "label": "Platform",
-   "read_only": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fetch_from": "cluster.region",
@@ -170,7 +171,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-03 13:15:16.427597",
+ "modified": "2025-07-29 14:04:58.677541",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",
