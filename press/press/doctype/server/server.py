@@ -1528,7 +1528,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		projected_usage = self.disk_capacity(mountpoint) - self.space_available_in_6_hours(mountpoint) * 5
 		projected_growth_gb = abs(projected_usage) / (4 * 1024 * 1024 * 1024)
 
-		if mountpoint == "/" and self.guess_data_disk_mountpoint() != "/":
+		if mountpoint == "/":
 			# Ingore limits set in case of mountpoint being /
 			return int(projected_growth_gb)
 
