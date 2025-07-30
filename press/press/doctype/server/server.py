@@ -1755,6 +1755,9 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			self.adjust_memory_config()
 			self.setup_logrotate()
 
+		if self.doctype == "Proxy Server":
+			self.setup_wildcard_hosts()
+
 		self.validate_mounts()
 		self.save(ignore_permissions=True)
 
