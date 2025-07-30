@@ -250,10 +250,10 @@
 				</div>
 			</div>
 			<div
-				class="flex flex-col space-y-2"
+				class="flex flex-col space-y-3"
 				v-if="serverType === 'dedicated' && serverRegion"
 			>
-				<h2 class="text-sm font-medium leading-6 text-gray-900">
+				<h2 class="text-base font-medium leading-6 text-gray-900">
 					Auto Add-on Storage
 				</h2>
 				<div class="my-4 rounded border bg-gray-50 p-2 prose-sm prose">
@@ -286,7 +286,7 @@
 						</li>
 					</ul>
 				</div>
-				<div class="mt-4">
+				<div>
 					<FormControl
 						type="checkbox"
 						v-model="enableAutoAddStorage"
