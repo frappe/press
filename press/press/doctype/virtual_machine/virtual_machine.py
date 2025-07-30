@@ -1068,6 +1068,10 @@ class VirtualMachine(Document):
 			document["mariadb_root_password"] = frappe.get_doc(
 				"Virtual Machine Image", self.virtual_machine_image
 			).get_password("mariadb_root_password")
+			if not document["mariadb_root_password"]:
+				frappe.throw(
+					f"Virtual Machine Image {self.virtual_machine_image} does not have a MariaDB root password set."
+				)
 
 		return frappe.get_doc(document).insert()
 
