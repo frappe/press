@@ -42,6 +42,8 @@ MAX_BACKGROUND_WORKERS = 8
 MIN_BACKGROUND_WORKERS = 1
 
 if TYPE_CHECKING:
+	from collections.abc import Generator, Iterable
+
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_source.app_source import AppSource
 	from press.press.doctype.bench_update.bench_update import BenchUpdate
@@ -1229,6 +1231,10 @@ def archive_obsolete_benches(group: str | None = None, server: str | None = None
 	""",
 		as_dict=True,
 	)
+	for bench in benches:
+		if _is_bench_ready_to_archive(bench):
+			return
+
 	benches_by_server = groupby(benches, lambda x: x.server)
 	for server_benches in benches_by_server:
 		frappe.enqueue(
@@ -1240,31 +1246,34 @@ def archive_obsolete_benches(group: str | None = None, server: str | None = None
 		)
 
 
+def _is_bench_ready_to_archive(bench):
+	# Skip benches that are in these states
+	if (
+		bench.resetting_bench
+		or (
+			bench.last_archive_failure
+			and bench.last_archive_failure > frappe.utils.add_to_date(None, hours=-24)
+		)
+		or get_archive_jobs(bench.name)  # already being archived
+		or get_ongoing_jobs(bench.name)
+		or get_active_site_updates(bench.name)
+		or get_unfinished_site_migrations(bench.name)
+		or get_unarchived_sites(bench.name)
+	):
+		return True
+
+	if (
+		not bench.public
+		and bench.creation < frappe.utils.add_days(None, -3)
+		and not get_scheduled_version_upgrades(bench)
+	):
+		return try_archive(bench.name)
+
+	return False
+
+
 def archive_obsolete_benches_for_server(benches: Iterable[dict]):
 	for bench in benches:
-		# Bench is Broken but a reset to a working state is being attempted
-		if (
-			bench.resetting_bench
-			or (
-				bench.last_archive_failure
-				and bench.last_archive_failure > frappe.utils.add_to_date(None, hours=-24)
-			)
-			or get_archive_jobs(bench.name)  # already being archived
-			or get_ongoing_jobs(bench.name)
-			or get_active_site_updates(bench.name)
-			or get_unfinished_site_migrations(bench.name)
-			or get_unarchived_sites(bench.name)
-		):
-			continue
-
-		if (
-			not (bench.public or bench.central_bench)
-			and bench.creation < frappe.utils.add_days(None, -3)
-			and not get_scheduled_version_upgrades(bench)
-		):
-			try_archive(bench.name)
-			continue
-
 		# If there isn't a Deploy Candidate Difference with this bench's candidate as source
 		# That means this is the most recent bench and should be skipped.
 
