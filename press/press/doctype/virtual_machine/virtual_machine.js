@@ -60,7 +60,7 @@ frappe.ui.form.on('Virtual Machine', {
 				__('Create Monitor Server'),
 				'create_monitor_server',
 				false,
-				frm.doc.series === 'm',
+				frm.doc.series === 'p',
 			],
 			[
 				__('Create Log Server'),
