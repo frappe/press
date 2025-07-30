@@ -1075,6 +1075,9 @@ class VirtualMachine(Document):
 
 		return frappe.get_doc(document).insert()
 
+	def get_root_domains(self):
+		return frappe.get_all("Root Domain", {"enabled": True}, pluck="name")
+
 	@frappe.whitelist()
 	def create_proxy_server(self):
 		document = {
@@ -1085,6 +1088,7 @@ class VirtualMachine(Document):
 			"provider": self.cloud_provider,
 			"virtual_machine": self.name,
 			"team": self.team,
+			"domains": [{"domain": domain} for domain in self.get_root_domains()],
 		}
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
