@@ -19,12 +19,8 @@ class SitePlan(Plan):
 		from frappe.core.doctype.has_role.has_role import HasRole
 		from frappe.types import DF
 
-		from press.press.doctype.site_plan_allowed_app.site_plan_allowed_app import (
-			SitePlanAllowedApp,
-		)
-		from press.press.doctype.site_plan_release_group.site_plan_release_group import (
-			SitePlanReleaseGroup,
-		)
+		from press.press.doctype.site_plan_allowed_app.site_plan_allowed_app import SitePlanAllowedApp
+		from press.press.doctype.site_plan_release_group.site_plan_release_group import SitePlanReleaseGroup
 
 		allow_downgrading_from_other_plan: DF.Check
 		allowed_apps: DF.Table[SitePlanAllowedApp]
@@ -39,6 +35,7 @@ class SitePlan(Plan):
 		interval: DF.Literal["Daily", "Monthly", "Annually"]
 		is_frappe_plan: DF.Check
 		is_trial_plan: DF.Check
+		legacy_plan: DF.Check
 		max_database_usage: DF.Int
 		max_storage_usage: DF.Int
 		memory: DF.Int
@@ -86,7 +83,7 @@ class SitePlan(Plan):
 
 	def validate_active_subscriptions(self):
 		old_doc = self.get_doc_before_save()
-		if old_doc and old_doc.enabled and not self.enabled:
+		if old_doc and old_doc.enabled and not self.enabled and not self.legacy_plan:
 			active_sub_count = frappe.db.count("Subscription", {"enabled": 1, "plan": self.name})
 			if active_sub_count > 0:
 				frappe.throw(
