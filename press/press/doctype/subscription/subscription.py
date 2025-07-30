@@ -149,7 +149,7 @@ class Subscription(Document):
 
 		if self.is_usage_record_created(date):
 			return None
-		
+
 		if not self.is_valid_subscription(date):
 			return None
 
