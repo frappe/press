@@ -1971,6 +1971,22 @@ class Server(BaseServer):
 					frappe.log_error("Server Storage Subscription Creation Error")
 
 	@frappe.whitelist()
+	def setup_ncdu(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_ncdu")
+
+	def _setup_ncdu(self):
+		try:
+			ansible = Ansible(
+				playbook="install_and_setup_ncdu.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Install and ncdu Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
 	def add_upstream_to_proxy(self):
 		agent = Agent(self.proxy_server, server_type="Proxy Server")
 		agent.new_server(self.name)
