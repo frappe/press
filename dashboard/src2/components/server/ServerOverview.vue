@@ -337,7 +337,7 @@ export default {
 							onClick: () => {
 								confirmDialog({
 									title: 'Configure Auto Increase Storage',
-									message: `<div class="rounded my-4 p-2 text-sm text-gray-700 bg-gray-100 border">
+									message: `<div class="rounded my-4 p-2 prose-sm prose bg-gray-50 border">
 
 									This feature will automatically increases the storage as it reaches over <b>90%</b> of its capacity.
 
