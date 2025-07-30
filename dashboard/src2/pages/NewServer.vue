@@ -250,13 +250,13 @@
 				</div>
 			</div>
 			<div
-				class="flex flex-col space-y-2"
+				class="flex flex-col space-y-3"
 				v-if="serverType === 'dedicated' && serverRegion"
 			>
-				<h2 class="text-sm font-medium leading-6 text-gray-900">
+				<h2 class="text-base font-medium leading-6 text-gray-900">
 					Auto Add-on Storage
 				</h2>
-				<div class="my-4 rounded border bg-gray-100 p-2 text-sm text-gray-700">
+				<div class="my-4 rounded border bg-gray-50 p-2 prose-sm prose">
 					This feature will automatically increases the storage as it reaches
 					over <b>90%</b> of its capacity.
 
@@ -268,23 +268,25 @@
 					<br /><br />
 					<strong>Note :</strong>
 
-					<p v-if="this.storagePlanRate">
-						• You will be charged at the rate of
-						<b>{{ this.$format.userCurrency(this.storagePlanRate) }}/mo</b>
-						for each additional GB of storage.
-					</p>
+					<ul>
+						<li v-if="this.storagePlanRate">
+							• You will be charged at the rate of
+							<b>{{ this.$format.userCurrency(this.storagePlanRate) }}/mo</b>
+							for each additional GB of storage.
+						</li>
 
-					<p>
-						• Disabling this feature may result in
-						<strong>service degradation or downtime</strong> if storage is
-						exhausted.
-					</p>
+						<li>
+							• Disabling this feature may result in
+							<strong>service degradation or downtime</strong> if storage is
+							exhausted.
+						</li>
 
-					<p>
-						• Storage can auto increase only once in <strong>6 hours</strong>.
-					</p>
+						<li>
+							• Storage can auto increase only once in <strong>6 hours</strong>.
+						</li>
+					</ul>
 				</div>
-				<div class="mt-4">
+				<div>
 					<FormControl
 						type="checkbox"
 						v-model="enableAutoAddStorage"
