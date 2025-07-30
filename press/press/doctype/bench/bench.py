@@ -1233,7 +1233,7 @@ def archive_obsolete_benches(group: str | None = None, server: str | None = None
 	)
 	for bench in benches:
 		if _is_bench_ready_to_archive(bench):
-			return
+			continue
 
 	benches_by_server = groupby(benches, lambda x: x.server)
 	for server_benches in benches_by_server:
@@ -1263,7 +1263,7 @@ def _is_bench_ready_to_archive(bench):
 		return True
 
 	if (
-		not bench.public
+		not (bench.public or bench.central_bench)
 		and bench.creation < frappe.utils.add_days(None, -3)
 		and not get_scheduled_version_upgrades(bench)
 	):
