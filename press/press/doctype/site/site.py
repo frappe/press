@@ -3702,6 +3702,30 @@ def get_remove_step_status(job):
 	)
 
 
+def get_backup_restoration_tests(site: str) -> list[str]:
+	return frappe.get_all(
+		"Backup Restoration Test",
+		dict(test_site=site, status=("in", ("Success", "Archive Failed"))),
+		pluck="name",
+	)
+
+
+def update_backup_restoration_test(site: str, status: str):
+	backup_tests = get_backup_restoration_tests(site)
+
+	if not backup_tests:
+		return
+	if status == "Archived":
+		frappe.db.set_value(
+			"Backup Restoration Test",
+			backup_tests[0],
+			"status",
+			"Archive Successful",
+		)
+	elif status == "Broken":
+		frappe.db.set_value("Backup Restoration Test", backup_tests[0], "status", "Archive Failed")
+
+
 def process_archive_site_job_update(job):
 	site_status = frappe.get_value("Site", job.site, "status", for_update=True)
 
@@ -3716,6 +3740,7 @@ def process_archive_site_job_update(job):
 			filters={"job_type": other_job_type, "site": job.site},
 			for_update=True,
 		)
+
 	except frappe.DoesNotExistError:
 		# Site is already renamed, the other job beat us to it
 		# Our work is done
@@ -3745,6 +3770,7 @@ def process_archive_site_job_update(job):
 			job.site,
 			{"status": updated_status, "archive_failed": updated_status != "Archived"},
 		)
+		update_backup_restoration_test(job.site, updated_status)
 		if updated_status == "Archived":
 			site_cleanup_after_archive(job.site)
 
