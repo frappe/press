@@ -549,7 +549,7 @@ export default {
 								onClick() {
 									confirmDialog({
 										title: `Redirect Domain`,
-										message: `Are you sure you want to redirect the domain <b>${row.domain}</b> to the primary domain of the site <b>${site.doc?.name}</b>?`,
+										message: `Are you sure you want to redirect the domain <b>${row.domain}</b> to the primary domain of the site <b>${site.doc?.host_name}</b>?`,
 										onSuccess({ hide }) {
 											if (site.redirectToPrimary.loading) return;
 											toast.promise(
@@ -578,7 +578,7 @@ export default {
 								onClick() {
 									confirmDialog({
 										title: `Remove Redirect`,
-										message: `Are you sure you want to remove the redirect from the domain <b>${row.domain}</b> to the primary domain of the site <b>${site.doc?.name}</b>?`,
+										message: `Are you sure you want to remove the redirect from the domain <b>${row.domain}</b> to the primary domain of the site <b>${site.doc?.host_name}</b>?`,
 										onSuccess({ hide }) {
 											if (site.removeRedirect.loading) return;
 											toast.promise(
