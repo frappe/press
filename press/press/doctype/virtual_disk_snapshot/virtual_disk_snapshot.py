@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 
 import boto3
+import botocore
 import frappe
 import frappe.utils
 import pytz
@@ -183,6 +184,30 @@ class VirtualDiskSnapshot(Document):
 			"FAULTY": "Error",
 			"REQUEST_RECEIVED": "Pending",
 		}.get(status, "Unavailable")
+
+	def lock(self):
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		if cluster.cloud_provider != "AWS EC2":
+			frappe.throw("Only AWS Provider is supported for now")
+
+		self.client.lock_snapshot(
+			SnapshotId=self.snapshot_id,
+			LockMode="governance",
+			LockDuration=365,  # Lock for 1 year
+			# After this period, the snapshot will be automatically unlocked
+		)
+
+	def unlock(self):
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		if cluster.cloud_provider != "AWS EC2":
+			frappe.throw("Only AWS Provider is supported for now")
+
+		try:
+			self.client.unlock_snapshot(SnapshotId=self.snapshot_id)
+		except botocore.exceptions.ClientError as e:
+			if e.response.get("Error", {}).get("Code") == "SnapshotLockNotFound":
+				return
+			raise e
 
 	def create_volume(self, availability_zone: str, iops: int = 3000, throughput: int | None = None) -> str:
 		self.sync()

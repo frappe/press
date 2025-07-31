@@ -1,5 +1,6 @@
 [
  {
+<<<<<<< HEAD
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2025-08-12 16:24:10.555919",
@@ -8,11 +9,33 @@
    {
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nprint(machine.as_dict())\nif machine.cloud_provider in [\"AWS EC2\", \"OCI\"]:\n    machine.attach_new_volume(machine.size, machine.iops, machine.throughput)\nelse:\n    machine.attach_volume(size=100)",
     "step_name": "Attach Volume",
+=======
+  "callback_max_retry": 0,
+  "callback_script": "",
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2025-07-31 11:57:10.194983",
+  "name": "Resume Services After Snapshot",
+  "steps": [
+   {
+    "script": "if doc.server_type == \"Server\" and arguments.get(\"is_consistent_snapshot\", False):\n    server = frappe.get_doc(\"Server\", doc.server)\n    output = server.ansible_run(\"systemctl start docker\")\n    if not (output and output.get(\"status\") == \"Success\"):\n        raise Exception(\"Failed to start docker daemon\")\n\n    frappe.db.set_value(\"Server Snapshot\", arguments.get(\"server_snapshot\"), \"app_server_services_started\", True, update_modified=False)\nelse:\n    result = (False, False) # Skipped\n    # As it wasn't a consistent snapshot services were never stopped\n    frappe.db.set_value(\"Server Snapshot\", arguments.get(\"server_snapshot\"), \"app_server_services_started\", True, update_modified=False)",
+    "step_name": "Start Docker Daemon",
+    "wait_until_true": 0
+   },
+   {
+    "script": "if doc.server_type == \"Database Server\" and arguments.get(\"is_consistent_snapshot\", False):\n    server = frappe.get_doc(\"Database Server\", doc.server)\n    output = server.ansible_run(\"systemctl start mariadb\")\n    if not (output and output.get(\"status\") == \"Success\"):\n        raise Exception(\"Failed to start mariadb service\")\n    frappe.db.set_value(\"Server Snapshot\", arguments.get(\"server_snapshot\"), \"database_server_services_started\", True, update_modified=False)\n\nelse:\n    result = (False, False) # Skipped\n    # As it wasn't a consistent snapshot services were never stopped\n    frappe.db.set_value(\"Server Snapshot\", arguments.get(\"server_snapshot\"), \"database_server_services_started\", True, update_modified=False)",
+    "step_name": "Start MariaDB Service",
+>>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
     "wait_until_true": 0
    }
   ]
  },
  {
+<<<<<<< HEAD
+=======
+  "callback_max_retry": 0,
+  "callback_script": null,
+>>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2025-07-01 12:06:58.478924",
@@ -77,10 +100,23 @@
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.set_additional_config()",
     "step_name": "Set additional config",
     "wait_until_true": 0
+<<<<<<< HEAD
+=======
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Server\" and server.cluster == 'Mumbai':\n    server.setup_archived_folder()\n\nserver.save()\n",
+    "step_name": "Setup archived folder",
+    "wait_until_true": 0
+>>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
    }
   ]
  },
  {
+<<<<<<< HEAD
+=======
+  "callback_max_retry": 0,
+  "callback_script": null,
+>>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2025-01-02 15:33:27.252601",
@@ -129,6 +165,11 @@
   ]
  },
  {
+<<<<<<< HEAD
+=======
+  "callback_max_retry": 0,
+  "callback_script": null,
+>>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2024-02-05 17:08:00.514456",
@@ -167,6 +208,11 @@
   ]
  },
  {
+<<<<<<< HEAD
+=======
+  "callback_max_retry": 0,
+  "callback_script": null,
+>>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2022-11-01 14:35:52.936503",
@@ -190,6 +236,11 @@
   ]
  },
  {
+<<<<<<< HEAD
+=======
+  "callback_max_retry": 0,
+  "callback_script": null,
+>>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2024-01-05 13:40:21.038901",
@@ -223,6 +274,11 @@
   ]
  },
  {
+<<<<<<< HEAD
+=======
+  "callback_max_retry": 0,
+  "callback_script": null,
+>>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2025-02-14 14:30:00.676187",
@@ -261,6 +317,11 @@
   ]
  },
  {
+<<<<<<< HEAD
+=======
+  "callback_max_retry": 0,
+  "callback_script": null,
+>>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2024-05-27 11:29:41.787719",
@@ -279,6 +340,11 @@
   ]
  },
  {
+<<<<<<< HEAD
+=======
+  "callback_max_retry": 0,
+  "callback_script": null,
+>>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2024-06-18 16:03:25.166898",
@@ -297,6 +363,11 @@
   ]
  },
  {
+<<<<<<< HEAD
+=======
+  "callback_max_retry": 0,
+  "callback_script": null,
+>>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2024-12-06 10:59:08.032149",
@@ -330,6 +401,11 @@
   ]
  },
  {
+<<<<<<< HEAD
+=======
+  "callback_max_retry": 0,
+  "callback_script": null,
+>>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2025-03-30 17:33:29.170125",
@@ -348,6 +424,11 @@
   ]
  },
  {
+<<<<<<< HEAD
+=======
+  "callback_max_retry": 0,
+  "callback_script": null,
+>>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2025-07-11 15:20:56.780290",
@@ -361,6 +442,11 @@
   ]
  },
  {
+<<<<<<< HEAD
+=======
+  "callback_max_retry": 0,
+  "callback_script": null,
+>>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2025-07-25 21:43:11.895128",
@@ -372,5 +458,43 @@
     "wait_until_true": 0
    }
   ]
+<<<<<<< HEAD
+=======
+ },
+ {
+  "callback_max_retry": 5,
+  "callback_script": "snapshot = frappe.get_doc(\"Server Snapshot\", arguments.get(\"server_snapshot\"))\nif doc.server_type == \"Server\":\n\tsnapshot.resume_app_server_services()\nelif doc.server_type == \"Database Server\":\n\tsnapshot.resume_database_server_services()\n\nsnapshot.sync(now=False)\n\nif doc.status == \"Failure\":\n    snapshot.reload()\n    snapshot.status = \"Failure\"\n    snapshot.save()\n    \n    for s in snapshot.snapshots:\n        try:\n            frappe.get_doc(\"Virtual Disk Snapshot\", s).delete_snapshot()\n        except:\n            pass",
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2025-07-31 14:12:53.182402",
+  "name": "Snapshot Disk",
+  "steps": [
+   {
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n\nwhile True:\n    try:\n        machine.sync()\n    finally:\n        break\n\nif machine.status == \"Terminated\":\n    raise Exception(\"Can't snapshot terminated virtual machine\")\nelif machine.status == \"Draft\":\n    raise Exception(\"Can't snapshot draft virtual machine\")",
+    "step_name": "Verify Virtual Machine Status",
+    "wait_until_true": 0
+   },
+   {
+    "script": "if doc.server_type == \"Server\" and arguments.get(\"is_consistent_snapshot\", False):\n    server = frappe.get_doc(\"Server\", doc.server)\n    output = server.ansible_run(\"systemctl stop docker\")\n    if not (output and output.get(\"status\") == \"Success\"):\n        raise Exception(\"Failed to stop docker daemon\")\nelse:\n    result = (False, False) # Skipped\n",
+    "step_name": "Stop Docker Daemon",
+    "wait_until_true": 0
+   },
+   {
+    "script": "if doc.server_type == \"Database Server\" and arguments.get(\"is_consistent_snapshot\", False):\n    server = frappe.get_doc(\"Database Server\", doc.server)\n    output = server.ansible_run(\"systemctl stop mariadb\")\n    if not (output and output.get(\"status\") == \"Success\"):\n        raise Exception(\"Failed to stop mariadb service\")\n    result = (True, False)\nelse:\n    result = (False, False) # Skipped\n",
+    "step_name": "Stop MariaDB Service",
+    "wait_until_true": 0
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\noutput = server.ansible_run(\"sync\")\nif not (output and output.get(\"status\") == \"Success\"):\n    raise Exception(\"Failed to flush file system buffers to disk\")\n",
+    "step_name": "Flush File System Buffers to Disk",
+    "wait_until_true": 0
+   },
+   {
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.create_snapshots(exclude_boot_volume=True)\n\nfield_name = \"app_server_snapshot\" if doc.server_type == \"Server\" else \"database_server_snapshot\"\nno_of_snapshots = len(machine.flags.created_snapshots)\nif no_of_snapshots != 1:\n    raise Exception(\"Expected 1 disk snapshot. Found : \"+str(no_of_snapshots))\n    \nfrappe.db.set_value(\"Server Snapshot\", arguments.get(\"server_snapshot\"), field_name, machine.flags.created_snapshots[0], update_modified=False)",
+    "step_name": "Snapshot Disk",
+    "wait_until_true": 0
+   }
+  ]
+>>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
  }
 ]

@@ -639,6 +639,10 @@ class DatabaseServer(BaseServer):
 			)
 		)
 
+	def ansible_run(self, command: str) -> dict[str, str]:
+		inventory = f"{self.ip},"
+		return AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
+
 	@frappe.whitelist()
 	def setup_essentials(self):
 		"""Setup missing essentials after server setup"""
