@@ -1020,7 +1020,6 @@ class Bench(Document):
 			frappe.throw("Cannot archive as previous archive failed in the last 24 hours.", ArchiveBenchError)
 
 	def ready_to_archive(self):
-		print(self.as_dict())
 		self.is_reset_bench()
 		self.check_last_archive()
 		self.check_archive_jobs()  # already being archived
@@ -1198,7 +1197,7 @@ def process_remove_ssh_user_job_update(job):
 		frappe.db.set_value("Bench", job.bench, "is_ssh_proxy_setup", False, update_modified=False)
 
 
-def get_scheduled_version_upgrades(self):
+def get_scheduled_version_upgrades(bench: dict):
 	frappe.db.commit()
 	sites = frappe.qb.DocType("Site")
 	version_upgrades = frappe.qb.DocType("Version Upgrade")
@@ -1207,18 +1206,18 @@ def get_scheduled_version_upgrades(self):
 		.join(version_upgrades)
 		.on(sites.name == version_upgrades.site)
 		.select("name")
-		.where(sites.server == self.server)
-		.where(version_upgrades.destination_group == self.group)
+		.where(sites.server == bench.server)
+		.where(version_upgrades.destination_group == bench.group)
 		.where(version_upgrades.status.isin(["Scheduled", "Pending", "Running"]))
 		.run()
 	)
 
 
-def get_unfinished_site_migrations(self):
+def get_unfinished_site_migrations(bench: dict):
 	frappe.db.commit()
 	return frappe.db.exists(
 		"Site Migration",
-		{"status": ("in", ["Scheduled", "Pending", "Running"]), "destination_bench": self.name},
+		{"status": ("in", ["Scheduled", "Pending", "Running"]), "destination_bench": bench.name},
 	)
 
 
