@@ -32,7 +32,7 @@ class PressJobStep(Document):
 	# end: auto-generated types
 
 	@frappe.whitelist()
-	def execute(self):
+	def execute(self):  # noqa: C901
 		if not self.start:
 			self.start = frappe.utils.now_datetime()
 		self.status = "Running"
@@ -60,7 +60,12 @@ class PressJobStep(Document):
 
 					time.sleep(1)
 			else:
-				self.status = "Success"
+				if result is not None and (isinstance(result, (list, tuple))) and len(result) == 2:
+					self.status = "Success" if result[0] else "Failure"
+					if not result[0] and not result[1]:
+						self.status = "Skipped"
+				else:
+					self.status = "Success"
 			self.result = str(result)
 		except Exception:
 			self.status = "Failure"

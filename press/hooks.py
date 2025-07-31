@@ -268,6 +268,7 @@ scheduler_events = {
 			"press.press.doctype.press_webhook_log.press_webhook_log.process",
 			"press.press.doctype.telegram_message.telegram_message.send_telegram_message",
 			"press.press.doctype.agent_update.agent_update.process_bulk_agent_update",
+			"press.press.doctype.press_job.press_job.process_failed_callbacks",
 		],
 		"* * * * * 0/30": [
 			"press.press.doctype.account_request.account_request.expire_request_key",
