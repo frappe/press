@@ -436,9 +436,6 @@ export default {
 							label: 'Storage Breakdown',
 							icon: 'pie-chart',
 							variant: 'ghost',
-							hidden:
-								this.$appServer.doc.cluster != 'Mumbai' &&
-								serverType === 'Server',
 							onClick: () => {
 								this.showStorageBreakdownDialog(serverType);
 							},

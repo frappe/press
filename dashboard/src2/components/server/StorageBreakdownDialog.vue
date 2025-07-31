@@ -149,6 +149,9 @@ export default {
 						method: 'get_storage_usage',
 					};
 				},
+				// onSuccess: (data) => {
+				// 	console.log(data.message);
+				// },
 				auto: false,
 			};
 		},
@@ -168,24 +171,16 @@ export default {
 	},
 	computed: {
 		applicationServerBreakDown() {
-			if (!this.$resources.applicationServerStorageBreakdown?.data?.message)
+			if (!this.$resources.applicationServerBreakDown?.data?.message) {
 				return {};
+			}
 
-			let message =
-				this.$resources.applicationServerStorageBreakdown.data.message;
-
-			const getDisplaySize = (formattedSize) => {
-				var units = formattedSize.slice(-2);
-				var sizeFormatted = formattedSize.replace(units, '');
-				return `${sizeFormatted} ${units}`;
-			};
+			let message = this.$resources.applicationServerBreakDown.data.message;
 
 			const transformNode = (node, isRoot = false) => {
 				const transformed = {
 					name: node.name,
-					label: isRoot
-						? `${node.name}`
-						: `${node.name} (${getDisplaySize(node.size_formatted)})`,
+					label: isRoot ? node.name : `${node.name} (${node.size_formatted})`,
 					children: [],
 				};
 
@@ -198,26 +193,19 @@ export default {
 				return transformed;
 			};
 
-			const additionalUsage = (
-				(message.total.size - (message.benches.size + message.docker.size)) /
-				1024 ** 3
-			).toFixed(2);
-			const totalCalculatedSize = (
-				(message.benches.size + message.docker.size) /
-				1024 ** 3
-			).toFixed(2);
-
+			// Create the tree structure
 			const treeData = {
 				name: 'server-storage',
-				label: `Server Storage Breakdown (${totalCalculatedSize} GB)`,
-				additionalUsage: `${additionalUsage} GB`,
+				label: 'Server Storage Breakdown',
 				children: [],
 			};
 
+			// Add benches data
 			if (message.benches) {
 				treeData.children.push(transformNode(message.benches, true));
 			}
 
+			// Add docker data as a separate node
 			if (message.docker) {
 				const dockerNode = {
 					name: 'docker',
@@ -225,19 +213,19 @@ export default {
 					children: [
 						{
 							name: 'docker-images',
-							label: `Images (${getDisplaySize(message.docker.image)})`,
+							label: `Images (${message.docker.image})`,
 							children: [],
 						},
 						{
 							name: 'docker-containers',
-							label: `Containers (${getDisplaySize(message.docker.container)})`,
+							label: `Containers (${message.docker.container})`,
 							children: [],
 						},
 					],
 				};
 				treeData.children.push(dockerNode);
 			}
-
+			console.log(treeData);
 			return treeData;
 		},
 		databaseStorageBreakdown() {
