@@ -56,6 +56,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
 		DeployCandidateApp,
 	)
+	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.site.site import Site
 
@@ -2169,14 +2170,21 @@ def add_server_to_release_group(name, group_name, server=None):
 	if not server:
 		server = frappe.db.get_value("Site", name, "server")
 
-	rg = frappe.get_doc("Release Group", group_name)
+	rg: ReleaseGroup = frappe.get_doc("Release Group", group_name)
 
 	if not frappe.db.exists("Deploy Candidate Build", {"status": "Success", "group": group_name}):
 		frappe.throw(
 			f"There should be atleast one deploy in the bench {frappe.bold(rg.title)} to do a site migration or a site version upgrade."
 		)
-
-	deploy = rg.add_server(server, deploy=True)
+	try:
+		deploy = rg.add_server(server, deploy=True)
+	except PermissionError as e:
+		if f"does not have access to this document: Release Group - {group_name}" in str(e):
+			frappe.throw(
+				f"Bench group is owned by a team you (<strong>{frappe.session.user}</strong>) are not a member of. Please contact the team owner or transfer the bench group to your team.",
+			)
+		else:
+			frappe.throw(str(e), type(e))
 
 	bench = find(deploy.benches, lambda bench: bench.server == server).bench
 	return frappe.get_value("Agent Job", {"bench": bench, "job_type": "New Bench"}, "name")
