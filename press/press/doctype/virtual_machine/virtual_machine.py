@@ -1068,8 +1068,15 @@ class VirtualMachine(Document):
 			document["mariadb_root_password"] = frappe.get_doc(
 				"Virtual Machine Image", self.virtual_machine_image
 			).get_password("mariadb_root_password")
+			if not document["mariadb_root_password"]:
+				frappe.throw(
+					f"Virtual Machine Image {self.virtual_machine_image} does not have a MariaDB root password set."
+				)
 
 		return frappe.get_doc(document).insert()
+
+	def get_root_domains(self):
+		return frappe.get_all("Root Domain", {"enabled": True}, pluck="name")
 
 	@frappe.whitelist()
 	def create_proxy_server(self):
@@ -1081,6 +1088,7 @@ class VirtualMachine(Document):
 			"provider": self.cloud_provider,
 			"virtual_machine": self.name,
 			"team": self.team,
+			"domains": [{"domain": domain} for domain in self.get_root_domains()],
 		}
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
