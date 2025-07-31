@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<!-- Database stuff -->
-		<div v-if="!isTree">
+		<div v-if="!isTreeData">
 			<div
 				v-if="showSlider"
 				class="mb-4 mt-4 flex h-7 w-full items-start justify-start overflow-clip rounded border bg-gray-50 pl-0"
@@ -50,13 +50,13 @@
 			</div>
 		</div>
 
-		<div v-else-if="isTree && data.name">
+		<div v-else-if="isTreeData && data.name">
 			<Tree nodeKey="name" :node="data" ref="tree" />
 			<div class="prose prose-sm my-4 p-2">
-				<b>Additional Disk Usage:</b> {{ data.additionalUsage }}
+				<b>Additional Disk Usage:</b> {{ data.otherUsages }}
 			</div>
 
-			<div class="prose-sm my-4 rounded border bg-gray-50 p-2">
+			<div class="prose prose-sm my-4 rounded border bg-gray-50 p-2">
 				The <b>Additional Disk Usage</b> value represents disk space consumed by
 				files and folders that are not included in the main bench size
 				calculation. These typically include:
@@ -126,8 +126,17 @@ export default {
 		},
 	},
 	computed: {
+		// check if is database or server
+		isTreeData() {
+			return (
+				this.data &&
+				typeof this.data === 'object' &&
+				('name' in this.data || 'label' in this.data) &&
+				'children' in this.data
+			);
+		},
 		dataKeys() {
-			if (this.isTree) return [];
+			if (this.isTreeData) return [];
 
 			let keys = Object.keys(this.data);
 			if (this.stickyKeys.length > 0) {
@@ -142,7 +151,7 @@ export default {
 				.splice(0, this.showTopN || keys.length);
 		},
 		total() {
-			if (this.isTree) return 1;
+			if (this.isTreeData) return 1;
 			return (
 				Object.values(this.data).reduce((a, b) => Number(a) + Number(b), 0) || 1
 			);
@@ -150,7 +159,7 @@ export default {
 	},
 	methods: {
 		getPercentage(key) {
-			if (this.isTree) return 0;
+			if (this.isTreeData) return 0;
 
 			if (this.hiddenKeysInSlider.includes(key)) {
 				return 0; // Return 0% for hidden keys in slider
