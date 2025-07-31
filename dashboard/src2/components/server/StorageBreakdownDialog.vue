@@ -149,9 +149,6 @@ export default {
 						method: 'get_storage_usage',
 					};
 				},
-				// onSuccess: (data) => {
-				// 	console.log(data.message);
-				// },
 				auto: false,
 			};
 		},
@@ -171,16 +168,20 @@ export default {
 	},
 	computed: {
 		applicationServerBreakDown() {
-			if (!this.$resources.applicationServerBreakDown?.data?.message) {
+			if (!this.$resources.applicationServerStorageBreakdown?.data?.message)
 				return {};
-			}
 
-			let message = this.$resources.applicationServerBreakDown.data.message;
+			let message =
+				this.$resources.applicationServerStorageBreakdown.data.message;
+
+			console.log(message);
 
 			const transformNode = (node, isRoot = false) => {
 				const transformed = {
 					name: node.name,
-					label: isRoot ? node.name : `${node.name} (${node.size_formatted})`,
+					label: isRoot
+						? `${node.name}`
+						: `${node.name} (${node.size_formatted})`,
 					children: [],
 				};
 
@@ -193,19 +194,26 @@ export default {
 				return transformed;
 			};
 
-			// Create the tree structure
+			const otherUsages = (
+				(message.total.size - (message.benches.size + message.docker.size)) /
+				1024 ** 3
+			).toFixed(2);
+			const totalCalculatedSize = (
+				(message.benches.size + message.docker.size) /
+				1024 ** 3
+			).toFixed(2);
+
 			const treeData = {
 				name: 'server-storage',
-				label: 'Server Storage Breakdown',
+				label: `Server Storage Breakdown (${totalCalculatedSize}GB)`,
+				otherUsages: `${otherUsages}GB`,
 				children: [],
 			};
 
-			// Add benches data
 			if (message.benches) {
 				treeData.children.push(transformNode(message.benches, true));
 			}
 
-			// Add docker data as a separate node
 			if (message.docker) {
 				const dockerNode = {
 					name: 'docker',
@@ -225,7 +233,7 @@ export default {
 				};
 				treeData.children.push(dockerNode);
 			}
-			console.log(treeData);
+
 			return treeData;
 		},
 		databaseStorageBreakdown() {
