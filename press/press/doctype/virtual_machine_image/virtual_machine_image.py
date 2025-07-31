@@ -51,8 +51,10 @@ class VirtualMachineImage(Document):
 
 	DOCTYPE = "Virtual Machine Image"
 
-	def after_insert(self):
+	def before_insert(self):
 		self.set_credentials()
+
+	def after_insert(self):
 		if self.copied_from:
 			self.create_image_from_copy()
 		else:

@@ -140,15 +140,9 @@ class BaseServer(Document, TagHelpers):
 		current_disk_usage: int | None = None,
 	) -> None:
 		add_on_storage_log = None
-		mountpoint = mountpoint or self.guess_data_disk_mountpoint()
-
 		storage_parameters = {
 			"doctype": "Add On Storage Log",
 			"adding_storage": increment,
-			"available_disk_space": round((self.disk_capacity(mountpoint) / 1024 / 1024 / 1024), 2),
-			"current_disk_usage": current_disk_usage
-			or round((self.disk_capacity(mountpoint) - self.free_space(mountpoint)) / 1024 / 1024 / 1024, 2),
-			"mountpoint": mountpoint,
 			is_auto_triggered: is_auto_triggered,
 		}
 
@@ -158,6 +152,17 @@ class BaseServer(Document, TagHelpers):
 		storage_parameters.update({"database_server" if server[0] == "m" else "server": server})
 
 		if server == self.name:
+			mountpoint = mountpoint or self.guess_data_disk_mountpoint()
+			storage_parameters.update(
+				{
+					"available_disk_space": round((self.disk_capacity(mountpoint) / 1024 / 1024 / 1024), 2),
+					"current_disk_usage": current_disk_usage
+					or round(
+						(self.disk_capacity(mountpoint) - self.free_space(mountpoint)) / 1024 / 1024 / 1024, 2
+					),
+					"mountpoint": mountpoint,
+				}
+			)
 			if increment:
 				add_on_storage_log = insert_addon_storage_log(
 					adding_storage=increment,
@@ -181,6 +186,19 @@ class BaseServer(Document, TagHelpers):
 			self.create_subscription_for_storage(increment)
 		else:
 			server_doc: DatabaseServer = frappe.get_doc("Database Server", server)
+			mountpoint = (
+				mountpoint or server_doc.guess_data_disk_mountpoint()
+			)  # Name will now be changed to m*
+			storage_parameters.update(
+				{
+					"available_disk_space": round((self.disk_capacity(mountpoint) / 1024 / 1024 / 1024), 2),
+					"current_disk_usage": current_disk_usage
+					or round(
+						(self.disk_capacity(mountpoint) - self.free_space(mountpoint)) / 1024 / 1024 / 1024, 2
+					),
+					"mountpoint": mountpoint,
+				}
+			)
 			if increment:
 				add_on_storage_log = insert_addon_storage_log(
 					adding_storage=increment,
@@ -1754,6 +1772,9 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		if self.doctype == "Database Server":
 			self.adjust_memory_config()
 			self.setup_logrotate()
+
+		if self.doctype == "Proxy Server":
+			self.setup_wildcard_hosts()
 
 		self.validate_mounts()
 		self.save(ignore_permissions=True)
