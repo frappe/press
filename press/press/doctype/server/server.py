@@ -131,6 +131,14 @@ class BaseServer(Document, TagHelpers):
 		return doc
 
 	@dashboard_whitelist()
+	def get_storage_usage(self):
+		"""Get storage usage of the application server"""
+		try:
+			return self.agent.get("/server/storage-breakdown")
+		except Exception:
+			frappe.throw("Failed to fetch storage usage. Try again later.")
+
+	@dashboard_whitelist()
 	def increase_disk_size_for_server(
 		self,
 		server: str | Server | DatabaseServer,
