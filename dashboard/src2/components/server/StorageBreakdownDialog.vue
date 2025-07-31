@@ -42,7 +42,9 @@
 					:valueFormatter="(key, value) => formatSizeInKB(value)"
 					:stickyKeys="['free', 'os']"
 					:hiddenKeysInSlider="['free']"
+					:isTree="serverType === 'Server'"
 				/>
+
 				<div v-if="serverType === 'Database Server' && noOfDatabases">
 					<div
 						v-if="noOfDatabases > 1"
