@@ -119,9 +119,27 @@ export default {
 	mounted() {
 		if (this.serverType == 'Database Server') {
 			this.$resources.databaseServerStorageBreakdown.submit();
+		} else {
+			this.$resources.applicationServerStorageBreakdown.submit();
 		}
 	},
 	resources: {
+		applicationServerStorageBreakdown() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				makeParams() {
+					return {
+						dt: 'Server',
+						dn: this.server,
+						method: 'get_storage_usage',
+					};
+				},
+				// onSuccess: (data) => {
+				// 	console.log(data.message);
+				// },
+				auto: false,
+			};
+		},
 		databaseServerStorageBreakdown() {
 			return {
 				url: 'press.api.client.run_doc_method',
@@ -140,6 +158,64 @@ export default {
 		},
 	},
 	computed: {
+		applicationServerBreakDown() {
+			if (!this.$resources.applicationServerBreakDown?.data?.message) {
+				return {};
+			}
+
+			let message = this.$resources.applicationServerBreakDown.data.message;
+
+			const transformNode = (node, isRoot = false) => {
+				const transformed = {
+					name: node.name,
+					label: isRoot ? node.name : `${node.name} (${node.size_formatted})`,
+					children: [],
+				};
+
+				if (node.children && node.children.length > 0) {
+					transformed.children = node.children.map((child) =>
+						transformNode(child),
+					);
+				}
+
+				return transformed;
+			};
+
+			// Create the tree structure
+			const treeData = {
+				name: 'server-storage',
+				label: 'Server Storage Breakdown',
+				children: [],
+			};
+
+			// Add benches data
+			if (message.benches) {
+				treeData.children.push(transformNode(message.benches, true));
+			}
+
+			// Add docker data as a separate node
+			if (message.docker) {
+				const dockerNode = {
+					name: 'docker',
+					label: 'Docker',
+					children: [
+						{
+							name: 'docker-images',
+							label: `Images (${message.docker.image})`,
+							children: [],
+						},
+						{
+							name: 'docker-containers',
+							label: `Containers (${message.docker.container})`,
+							children: [],
+						},
+					],
+				};
+				treeData.children.push(dockerNode);
+			}
+			console.log(treeData);
+			return treeData;
+		},
 		databaseStorageBreakdown() {
 			if (!this.$resources.databaseServerStorageBreakdown?.data?.message)
 				return {};

@@ -436,7 +436,6 @@ export default {
 							label: 'Storage Breakdown',
 							icon: 'pie-chart',
 							variant: 'ghost',
-							hidden: serverType !== 'Database Server',
 							onClick: () => {
 								this.showStorageBreakdownDialog(serverType);
 							},
