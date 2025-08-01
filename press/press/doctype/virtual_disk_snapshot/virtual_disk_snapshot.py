@@ -28,6 +28,7 @@ class VirtualDiskSnapshot(Document):
 		from frappe.types import DF
 
 		cluster: DF.Link | None
+		dedicated_snapshot: DF.Check
 		duration: DF.Duration | None
 		expired: DF.Check
 		mariadb_root_password: DF.Password | None
@@ -144,12 +145,22 @@ class VirtualDiskSnapshot(Document):
 				"yyyy-MM-dd HH:mm:ss",
 			)
 		self.save(ignore_version=True)
+		self.sync_server_snapshot()
 
 	@frappe.whitelist()
-	def delete_snapshot(self):
+	def delete_snapshot(self, ignore_validation: bool | None = None):  # noqa: C901
+		if ignore_validation is None:
+			ignore_validation = False
+
 		self.sync()
 		if self.status == "Unavailable":
 			return
+
+		if self.dedicated_snapshot and not ignore_validation:
+			frappe.throw(
+				"Dedicated snapshots cannot be deleted directly. Please delete from Server Snapshot.",
+			)
+
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		if cluster.cloud_provider == "AWS EC2":
 			try:
@@ -230,6 +241,25 @@ class VirtualDiskSnapshot(Document):
 		)
 		return response["VolumeId"]
 
+	def sync_server_snapshot(self):
+		if self.status not in ["Completed", "Unavailable"]:
+			return
+
+		if not self.dedicated_snapshot:
+			return
+
+		server_snapshot = frappe.db.get_value(
+			"Server Snapshot", filters={"app_server_snapshot": self.name}, pluck="name"
+		)
+		if not server_snapshot:
+			server_snapshot = frappe.db.get_value(
+				"Server Snapshot", filters={"database_server_snapshot": self.name}, pluck="name"
+			)
+		if not server_snapshot:
+			return
+
+		frappe.get_doc("Server Snapshot", server_snapshot).sync(now=True, trigger_snapshot_sync=False)
+
 	@property
 	def client(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
@@ -264,7 +294,8 @@ def sync_snapshots():
 
 def sync_rolling_snapshots():
 	snapshots = frappe.get_all(
-		"Virtual Disk Snapshot", {"status": "Pending", "physical_backup": 0, "rolling_snapshot": 1}
+		"Virtual Disk Snapshot",
+		{"status": "Pending", "physical_backup": 0, "rolling_snapshot": 1, "dedicated_snapshot": 0},
 	)
 	start_time = time.time()
 	for snapshot in snapshots:
@@ -285,7 +316,7 @@ def sync_rolling_snapshots():
 def sync_physical_backup_snapshots():
 	snapshots = frappe.get_all(
 		"Virtual Disk Snapshot",
-		{"status": "Pending", "physical_backup": 1, "rolling_snapshot": 0},
+		{"status": "Pending", "physical_backup": 1, "rolling_snapshot": 0, "dedicated_snapshot": 0},
 		order_by="modified asc",
 	)
 	start_time = time.time()
