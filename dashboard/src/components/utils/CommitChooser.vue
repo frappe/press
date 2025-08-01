@@ -18,8 +18,8 @@
 						v-for="option in options"
 						:key="option.value"
 						@click="selectOption(option, togglePopover)"
-						class="flex cursor-pointer items-center justify-between rounded px-2.5 py-1.5 text-base hover:bg-surface-gray-3"
-						:class="{ 'bg-gray-50': isSelected(option) }"
+						class="flex cursor-pointer items-center justify-between rounded px-2.5 py-1.5 text-base hover:bg-gray-50"
+						:class="{ 'bg-surface-gray-3': isSelected(option) }"
 					>
 						<div class="flex flex-1 gap-2 overflow-hidden items-center">
 							<div class="flex flex-shrink-0">
