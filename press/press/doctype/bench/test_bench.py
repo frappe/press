@@ -10,6 +10,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from press.agent import Agent
+from press.exceptions import ArchiveBenchError
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
@@ -118,8 +119,9 @@ class TestBench(FrappeTestCase):
 		bench.memory_max = high_memory_max
 		bench.save()
 
-		with patch.object(Bench, "get_free_memory", new=lambda x: low_prometheus_memeory), self.assertRaises(
-			frappe.ValidationError
+		with (
+			patch.object(Bench, "get_free_memory", new=lambda x: low_prometheus_memeory),
+			self.assertRaises(frappe.ValidationError),
 		):
 			# Should not rebuild due to low server mem
 			self.assertEqual(bench.get_memory_info(), (True, low_prometheus_memeory / (1024**3), 2))
@@ -446,3 +448,37 @@ class TestArchiveObsoleteBenches(unittest.TestCase):
 		benches_after = frappe.db.count("Bench", {"status": "Active"})
 		self.assertEqual(benches_before - benches_after, 2)
 		self.assertEqual(mock_archive_by_server.call_count, 2)
+
+	def test_check_archive_agent_job_is_succesful(self):
+		priv_group = create_test_release_group(apps=[create_test_app()], public=False)
+		bench = create_test_bench(group=priv_group, creation=frappe.utils.add_days(None, -10))
+		frappe.db.set_value("Bench", bench.name, "status", "Success")
+
+		with fake_agent_job("Archive Bench"):
+			bench.archive()
+
+		bench.reload()
+		self.assertEqual(bench.status, "Pending")
+
+	def test_unarchived_sites_before_archive(self):
+		priv_group = create_test_release_group(apps=[create_test_app()], public=False)
+		bench = create_test_bench(group=priv_group, creation=frappe.utils.add_days(None, -10))
+		site = create_test_site(bench=bench)
+		frappe.db.set_value("Site", site.name, "status", "Archived")
+
+		with fake_agent_job("Archive Bench"):
+			bench.archive()
+
+		site.reload()
+		bench.reload()
+		self.assertEqual(site.status, "Active")
+		self.assertEqual(bench.status, "Pending")
+
+	def test_ongoing_jobs(self):
+		with fake_agent_job("Archive Bench", "Running"), fake_agent_job("New Bench"):
+			bench = create_test_bench()
+			poll_pending_jobs()
+			bench.archive()
+			poll_pending_jobs()
+			self.assertRaises(ArchiveBenchError, bench.archive)
+			bench.reload()
