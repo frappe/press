@@ -33,6 +33,7 @@
   "virtual_machine_image",
   "machine_image",
   "ssh_key",
+  "data_disk_snapshot",
   "networking_section",
   "subnet_id",
   "private_ip_address",
@@ -338,9 +339,16 @@
    "read_only": 1
   },
   {
+<<<<<<< HEAD
    "fieldname": "kms_key_id",
    "fieldtype": "Data",
    "label": "KMS Key ID"
+=======
+   "fieldname": "data_disk_snapshot",
+   "fieldtype": "Link",
+   "label": "Data Disk Snapshot",
+   "options": "Virtual Disk Snapshot"
+>>>>>>> e65ac16e1 (feat(vm): Add support to create server from data disk snapshot)
   }
  ],
  "index_web_pages_for_search": 1,
@@ -376,7 +384,11 @@
    "link_fieldname": "virtual_machine"
   }
  ],
+<<<<<<< HEAD
  "modified": "2025-08-28 12:26:04.777772",
+=======
+ "modified": "2025-07-31 19:48:29.095589",
+>>>>>>> e65ac16e1 (feat(vm): Add support to create server from data disk snapshot)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
