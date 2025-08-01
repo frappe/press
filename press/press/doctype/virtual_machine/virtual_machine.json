@@ -32,6 +32,7 @@
   "virtual_machine_image",
   "machine_image",
   "ssh_key",
+  "data_disk_snapshot",
   "networking_section",
   "subnet_id",
   "private_ip_address",
@@ -335,6 +336,12 @@
    "fieldtype": "Check",
    "label": "Ready For Conversion",
    "read_only": 1
+  },
+  {
+   "fieldname": "data_disk_snapshot",
+   "fieldtype": "Link",
+   "label": "Data Disk Snapshot",
+   "options": "Virtual Disk Snapshot"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -370,7 +377,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2025-05-26 12:38:56.121666",
+ "modified": "2025-07-31 19:48:29.095589",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
