@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 from contextlib import contextmanager
-from typing import Callable, Literal
+from typing import TYPE_CHECKING, Literal
 from unittest.mock import Mock, patch
 
 import frappe
@@ -16,6 +16,9 @@ from press.press.doctype.agent_job.agent_job import AgentJob, lock_doc_updated_b
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.utils.test import foreground_enqueue, foreground_enqueue_doc
+
+if TYPE_CHECKING:
+	from collections.abc import Callable
 
 
 def fn_appender(before_insert: Callable, prepare_agent_responses: Callable):
@@ -135,23 +138,28 @@ def fake_agent_job(
 	data: dict | None = None,
 	steps: list[dict] | None = None,
 ):
-	"""Fakes agent job request and response. Also polls the job.
+	"""Fakes agent job request and response.
 
 	HEADS UP: Don't use this when you're mocking enqueue_http_request in your test context
 	"""
-	with responses.mock, patch.object(
-		AgentJob,
-		"before_insert",
-		fake_agent_job_req(job_type, status, data, steps),
-		create=True,
-	), patch(
-		"press.press.doctype.agent_job.agent_job.frappe.enqueue_doc",
-		new=foreground_enqueue_doc,
-	), patch(
-		"press.press.doctype.agent_job.agent_job.frappe.enqueue",
-		new=foreground_enqueue,
-	), patch("press.press.doctype.agent_job.agent_job.frappe.db.commit", new=Mock()), patch(
-		"press.press.doctype.agent_job.agent_job.frappe.db.rollback", new=Mock()
+	with (
+		responses.mock,
+		patch.object(
+			AgentJob,
+			"before_insert",
+			fake_agent_job_req(job_type, status, data, steps),
+			create=True,
+		),
+		patch(
+			"press.press.doctype.agent_job.agent_job.frappe.enqueue_doc",
+			new=foreground_enqueue_doc,
+		),
+		patch(
+			"press.press.doctype.agent_job.agent_job.frappe.enqueue",
+			new=foreground_enqueue,
+		),
+		patch("press.press.doctype.agent_job.agent_job.frappe.db.commit", new=Mock()),
+		patch("press.press.doctype.agent_job.agent_job.frappe.db.rollback", new=Mock()),
 	):
 		frappe.local.role_permissions = {}  # due to bug in FF related to only_if_creator docperm
 		yield
