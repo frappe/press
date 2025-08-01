@@ -24,7 +24,7 @@
   "callback_script": null,
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2025-07-01 12:06:58.478924",
+  "modified": "2025-08-01 18:29:05.498314",
   "name": "Create Server",
   "steps": [
    {
@@ -41,6 +41,16 @@
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.ping_ansible()\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Ping Server\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
     "step_name": "Wait for Server to be accessible",
     "wait_until_true": 1
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"AWS EC2\" and frappe.db.get_value(\"Virtual Machine\", server.virtual_machine, \"data_disk_snapshot\"):\n    try:\n        vm = frappe.get_doc(\"Virtual Machine\", server.virtual_machine)\n        vm.sync()\n        \n        if len(vm.volumes) == 0:\n            result = (False, False)\n        else:\n            server.reload()\n            server.validate_mounts()\n            server.save()\n            result = (True, False)\n    except frappe.exceptions.TimestampMismatchError:\n        pass\n    except Exception as e:\n        raise e\nelse:\n    result = (True, False)",
+    "step_name": "Sync Attached Volumes",
+    "wait_until_true": 1
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"AWS EC2\" and frappe.db.get_value(\"Virtual Machine\", server.virtual_machine, \"data_disk_snapshot\"):\n    server.mount_volumes(now=True, restart_services=True)\nelse:\n    result = (False, False)",
+    "step_name": "Mount Data Disk",
+    "wait_until_true": 0
    },
    {
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.update_tls_certificate()",

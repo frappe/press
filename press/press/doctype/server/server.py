@@ -1255,6 +1255,8 @@ class BaseServer(Document, TagHelpers):
 					"mount_type": "Bind",
 					"mount_point": "/var/lib/mysql",
 					"source": "/opt/volumes/mariadb/var/lib/mysql",
+					"mount_point_owner": "mysql",
+					"mount_point_group": "mysql",
 				},
 			)
 			self.append(
@@ -1263,6 +1265,8 @@ class BaseServer(Document, TagHelpers):
 					"mount_type": "Bind",
 					"mount_point": "/etc/mysql",
 					"source": "/opt/volumes/mariadb/etc/mysql",
+					"mount_point_owner": "mysql",
+					"mount_point_group": "mysql",
 				},
 			)
 
@@ -1425,17 +1429,33 @@ class BaseServer(Document, TagHelpers):
 			log_error("Start Benches Exception", server=self.as_dict())
 
 	@frappe.whitelist()
-	def mount_volumes(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_mount_volumes", queue="short", timeout=1200)
+	def mount_volumes(self, now: bool | None, restart_services: bool | None = None):
+		if not restart_services:
+			restart_services = False
 
-	def _mount_volumes(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_mount_volumes",
+			queue="short",
+			timeout=1200,
+			at_front=True,
+			now=now or False,
+			restart_services=restart_services,
+		)
+
+	def _mount_volumes(self, restart_services: bool = False):
 		try:
 			ansible = Ansible(
 				playbook="mount.yml",
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
-				variables={**self.get_mount_variables()},
+				variables={
+					"restart_docker": self.doctype == "Server" and restart_services,
+					"restart_mariadb": self.doctype == "Database Server" and restart_services,
+					**self.get_mount_variables(),
+				},
 			)
 			play = ansible.run()
 			self.reload()
