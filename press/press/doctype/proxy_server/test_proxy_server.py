@@ -37,8 +37,6 @@ def create_test_proxy_server(
 		{
 			"doctype": "Proxy Server",
 			"status": "Active",
-			"ip": frappe.mock("ipv4"),
-			"private_ip": frappe.mock("ipv4_private"),
 			"hostname": make_autoname(hostname + ".######"),
 			"cluster": cluster,
 			"domain": domain,
