@@ -110,7 +110,7 @@
 <script>
 import { toast } from 'vue-sonner';
 import { h, defineAsyncComponent } from 'vue';
-import { getCachedDocumentResource } from 'frappe-ui';
+import { getCachedDocumentResource, Progress } from 'frappe-ui';
 import { confirmDialog, renderDialog } from '../../utils/components';
 import { getToastErrorMessage } from '../../utils/toast';
 import ServerPlansDialog from './ServerPlansDialog.vue';
@@ -121,6 +121,7 @@ import { getDocResource } from '../../utils/resource';
 export default {
 	props: ['server'],
 	components: {
+		Progress,
 		ServerLoadAverage,
 		ServerPlansDialog,
 		StorageBreakdownDialog,
