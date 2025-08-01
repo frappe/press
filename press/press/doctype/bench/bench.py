@@ -1002,16 +1002,16 @@ class Bench(Document):
 			ignore_ifnull=True,
 			order_by="destination_bench",
 		):
-			frappe.throw("Cannot archive: Active Site Updates are in progress.", ArchiveBenchError)
+			frappe.throw("Cannot archive due ongoing active site update.", ArchiveBenchError)
 
 	def check_unarchived_sites(self):
 		frappe.db.commit()
 		if frappe.db.exists("Site", {"bench": self.name, "status": ("!=", "Archived")}):
-			frappe.throw("Unarchived Sites found", ArchiveBenchError)
+			frappe.throw("Cannot archive bench due to unarchived sites on bench.", ArchiveBenchError)
 
 	def is_reset_bench(self):
 		if self.resetting_bench:
-			frappe.throw("Cannot archive pending due to ongoing in-place updates.", ArchiveBenchError)
+			frappe.throw("Cannot archive bench due to ongoing in-place updates.", ArchiveBenchError)
 
 	def check_last_archive(self):
 		if self.last_archive_failure and self.last_archive_failure > frappe.utils.add_to_date(
