@@ -5,7 +5,8 @@
 		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 		<meta name="viewport" content="width=device-width,initial-scale=1.0" />
 		<title>Frappe Cloud</title>
-		<link rel="icon" href="/favicon.png" type="image/x-icon" />
+		<link rel="icon" href="/assets/press/dashboard/favicon.png" type="image/x-icon" />
+		<script async type="module" crossorigin src="/assets/press/dashboard/assets/index-CQkcjXU8.js"></script>
 	</head>
 
 	<body class="h-full">
@@ -23,7 +24,26 @@
 		<div id="modals"></div>
 		<div id="popovers"></div>
 
-		<!-- <script type="module" src="/src/main.js"></script> -->
-		<script type="module" src="/src2/main.js"></script>
-	</body>
+	
+          <script>
+              {% for key in boot %}
+              window["{{ key }}"] = {{ boot[key] | tojson }};
+              {% endfor %}
+          </script>
+          
+          <script>
+              {% for key in boot %}
+              window["{{ key }}"] = {{ boot[key] | tojson }};
+              {% endfor %}
+          </script>
+          
+          <script>
+              {% for key in boot %}
+              window["{{ key }}"] = {{ boot[key] | tojson }};
+              {% endfor %}
+          </script>
+          </body>
+          
+          
+          
 </html>

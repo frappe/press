@@ -2,7 +2,9 @@ import { toast } from 'vue-sonner';
 import { h } from 'vue';
 
 export function showErrorToast(error) {
-	let errorMessage = e.messages.length ? e.messages.join('\n') : e.message;
+	let errorMessage = error.messages?.length
+		? error.messages.join('\n')
+		: error.message;
 	toast.error(errorMessage);
 }
 
