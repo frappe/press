@@ -56,7 +56,7 @@
 				<b>Additional Disk Usage:</b> {{ data.otherUsages }}
 			</div>
 
-			<div class="prose prose-sm my-4 rounded border bg-gray-50 p-2">
+			<div class="prose-sm my-4 rounded border bg-gray-50 p-2">
 				The <b>Additional Disk Usage</b> value represents disk space consumed by
 				files and folders that are not included in the main bench size
 				calculation. These typically include:
