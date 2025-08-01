@@ -30,6 +30,14 @@
   "database_server_snapshot_press_job",
   "database_server_resume_service_press_job",
   "database_server_services_started",
+  "section_break_ibcr",
+  "app_server_vcpu",
+  "column_break_hvxs",
+  "app_server_ram",
+  "column_break_xeyh",
+  "database_server_vcpu",
+  "column_break_nyhu",
+  "database_server_ram",
   "section_break_ihux",
   "site_list",
   "traceback"
@@ -235,12 +243,52 @@
    "fieldname": "traceback",
    "fieldtype": "Text",
    "label": "Traceback"
+  },
+  {
+   "fieldname": "section_break_ibcr",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "app_server_vcpu",
+   "fieldtype": "Int",
+   "label": "App Server vCPU",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_hvxs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "app_server_ram",
+   "fieldtype": "Int",
+   "label": "App Server RAM",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_xeyh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "database_server_vcpu",
+   "fieldtype": "Int",
+   "label": "DB Server vCPU",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_nyhu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "database_server_ram",
+   "fieldtype": "Int",
+   "label": "DB Server RAM",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-01 21:31:58.299376",
+ "modified": "2025-08-01 22:10:57.171601",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Snapshot",

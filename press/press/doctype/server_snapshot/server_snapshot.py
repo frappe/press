@@ -3,10 +3,13 @@
 
 import contextlib
 import json
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import frappe
 from frappe.model.document import Document
+
+if TYPE_CHECKING:
+	from press.press.doctype.site_backup.site_backup import VirtualMachine
 
 
 class ServerSnapshot(Document):
@@ -19,17 +22,21 @@ class ServerSnapshot(Document):
 		from frappe.types import DF
 
 		app_server: DF.Link
+		app_server_ram: DF.Int
 		app_server_resume_service_press_job: DF.Link | None
 		app_server_services_started: DF.Check
 		app_server_snapshot: DF.Link | None
 		app_server_snapshot_press_job: DF.Link | None
+		app_server_vcpu: DF.Int
 		cluster: DF.Link
 		consistent: DF.Check
 		database_server: DF.Link
+		database_server_ram: DF.Int
 		database_server_resume_service_press_job: DF.Link | None
 		database_server_services_started: DF.Check
 		database_server_snapshot: DF.Link | None
 		database_server_snapshot_press_job: DF.Link | None
+		database_server_vcpu: DF.Int
 		locked: DF.Check
 		provider: DF.Literal["AWS EC2", "OCI"]
 		site_list: DF.JSON | None
@@ -71,23 +78,13 @@ class ServerSnapshot(Document):
 	def before_insert(self):
 		# Ensure both the server and database server isn't archived
 		allowed_statuses = ["Pending", "Running", "Stopped"]
-		if (
-			frappe.db.get_value(
-				"Virtual Machine", frappe.db.get_value("Server", self.app_server, "virtual_machine"), "status"
-			)
-			not in allowed_statuses
-		):
+		app_server_vm = frappe.db.get_value("Server", self.app_server, "virtual_machine")
+		db_server_vm = frappe.db.get_value("Database Server", self.database_server, "virtual_machine")
+		if frappe.db.get_value("Virtual Machine", app_server_vm, "status") not in allowed_statuses:
 			frappe.throw(
 				"App Server should be in a valid state [Pending, Running, Stopped] to create a snapshot"
 			)
-		if (
-			frappe.db.get_value(
-				"Virtual Machine",
-				frappe.db.get_value("Database Server", self.database_server, "virtual_machine"),
-				"status",
-			)
-			not in allowed_statuses
-		):
+		if frappe.db.get_value("Virtual Machine", db_server_vm, "status") not in allowed_statuses:
 			frappe.throw(
 				"Database Server should be in a valid state [Pending, Running, Stopped] to create a snapshot"
 			)
@@ -114,6 +111,15 @@ class ServerSnapshot(Document):
 			frappe.throw(
 				f"A snapshot for App Server {self.app_server} and Database Server {self.database_server} is already in Pending state."
 			)
+
+		# Set vCPU and RAM configuration
+		vm: VirtualMachine = frappe.get_doc("Virtual Machine", app_server_vm)
+		self.app_server_vcpu = vm.vcpu
+		self.app_server_ram = vm.ram
+
+		vm: VirtualMachine = frappe.get_doc("Virtual Machine", db_server_vm)
+		self.database_server_vcpu = vm.vcpu
+		self.database_server_ram = vm.ram
 
 	def after_insert(self):
 		try:
