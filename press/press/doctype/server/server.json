@@ -270,7 +270,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner",
    "set_only_once": 1
   },
   {
@@ -616,7 +616,7 @@
   }
  ],
  "links": [],
- "modified": "2025-07-29 17:35:06.128262",
+ "modified": "2025-08-01 16:34:13.404147",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
