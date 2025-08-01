@@ -31,8 +31,10 @@ class ServerSnapshot(Document):
 		database_server_snapshot_press_job: DF.Link | None
 		locked: DF.Check
 		provider: DF.Literal["AWS EC2", "OCI"]
+		site_list: DF.JSON | None
 		status: DF.Literal["Pending", "Failure", "Completed", "Unavailable"]
 		team: DF.Link
+		total_size_gb: DF.Int
 	# end: auto-generated types
 
 	@property
@@ -43,6 +45,15 @@ class ServerSnapshot(Document):
 		if self.database_server_snapshot:
 			snapshots.append(self.database_server_snapshot)
 		return snapshots
+
+	@property
+	def sites(self) -> list[str]:
+		if not self.site_list:
+			return []
+		try:
+			return json.loads(self.site_list)
+		except:  # noqa: E722
+			return []
 
 	@property
 	def arguments_for_press_job(self):
@@ -78,6 +89,16 @@ class ServerSnapshot(Document):
 			frappe.throw(
 				"Database Server should be in a valid state [Pending, Running, Stopped] to create a snapshot"
 			)
+
+		sites = (
+			frappe.get_all(
+				"Site",
+				filters={"server": self.app_server, "status": ("!=", "Archived")},
+				pluck="name",
+			)
+			or []
+		)
+		self.site_list = json.dumps(sites, indent=2, sort_keys=True)
 
 	def after_insert(self):
 		self.create_press_jobs()
@@ -164,44 +185,56 @@ class ServerSnapshot(Document):
 		)
 
 	@frappe.whitelist()
-	def sync(self, now: bool = False):
+	def sync(self, now: bool | None = None, trigger_snapshot_sync: bool | None = None):
+		if now is None:
+			now = False
+
+		if trigger_snapshot_sync is None:
+			trigger_snapshot_sync = True
+
 		frappe.enqueue_doc(
 			"Server Snapshot",
 			self.name,
 			"_sync",
 			enqueue_after_commit=True,
-			now=now or False,
+			now=now,
+			trigger_snapshot_sync=trigger_snapshot_sync,
 		)
 
-	def _sync(self):
+	def _sync(self, trigger_snapshot_sync):  # noqa: C901
 		if self.status not in ["Pending", "Completed"]:
 			# If snapshot is already marked as failure or unavailable, no need to sync
 			return
 
 		updated_status = self.status
+		total_size = 0
 		if len(self.snapshots) == 2:
 			completed = True
 			for s in self.snapshots:
-				snapshot_status = frappe.get_value("Virtual Disk Snapshot", s, "status")
-				if snapshot_status == "Unavailable":
+				snapshot_info = frappe.get_value("Virtual Disk Snapshot", s, ["status", "size"], as_dict=True)
+				if snapshot_info["status"] == "Unavailable":
 					updated_status = "Unavailable"
 					break
-				if snapshot_status != "Completed":
-					# If snapshot is not completed, enqueue the sync
-					frappe.enqueue_doc(
-						"Virtual Disk Snapshot",
-						s,
-						"sync",
-						enqueue_after_commit=True,
-					)
+				if snapshot_info["status"] != "Completed":
+					if trigger_snapshot_sync:
+						# If snapshot is not completed, enqueue the sync
+						frappe.enqueue_doc(
+							"Virtual Disk Snapshot",
+							s,
+							"sync",
+							enqueue_after_commit=True,
+						)
 					completed = False
 					break
+
+				total_size += snapshot_info["size"]
 
 			if completed:
 				updated_status = "Completed"
 
-		if self.status != updated_status:
+		if self.status != updated_status or self.total_size_gb != total_size:
 			self.status = updated_status
+			self.total_size_gb = total_size
 			self.save(ignore_version=True)
 
 	@frappe.whitelist()
@@ -215,7 +248,7 @@ class ServerSnapshot(Document):
 
 		for s in self.snapshots:
 			try:
-				frappe.get_doc("Virtual Disk Snapshot", s).delete_snapshot()
+				frappe.get_doc("Virtual Disk Snapshot", s).delete_snapshot(ignore_validation=True)
 			except frappe.exceptions.TimestampMismatchError:
 				# sync method of disk snapshot can raise version mismatch error
 				pass

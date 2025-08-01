@@ -12,6 +12,8 @@
   "provider",
   "column_break_hgps",
   "cluster",
+  "column_break_mwve",
+  "total_size_gb",
   "section_break_yuac",
   "consistent",
   "column_break_gviv",
@@ -27,7 +29,9 @@
   "database_server_snapshot",
   "database_server_snapshot_press_job",
   "database_server_resume_service_press_job",
-  "database_server_services_started"
+  "database_server_services_started",
+  "section_break_ihux",
+  "site_list"
  ],
  "fields": [
   {
@@ -55,6 +59,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "fetch_from": "app_server.database_server",
    "fieldname": "database_server",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -91,11 +96,13 @@
    "search_index": 1
   },
   {
+   "fetch_from": "app_server.team",
    "fieldname": "team",
    "fieldtype": "Link",
    "in_standard_filter": 1,
    "label": "Team",
    "options": "Team",
+   "read_only": 1,
    "reqd": 1,
    "set_only_once": 1
   },
@@ -109,10 +116,12 @@
   },
   {
    "default": "AWS EC2",
+   "fetch_from": "app_server.provider",
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
    "options": "AWS EC2\nOCI",
+   "read_only": 1,
    "reqd": 1,
    "set_only_once": 1
   },
@@ -146,10 +155,12 @@
    "fieldtype": "Column Break"
   },
   {
+   "fetch_from": "app_server.cluster",
    "fieldname": "cluster",
    "fieldtype": "Link",
    "label": "Cluster",
    "options": "Cluster",
+   "read_only": 1,
    "reqd": 1,
    "set_only_once": 1
   },
@@ -195,12 +206,34 @@
    "fieldtype": "Check",
    "label": "DB Server Services Started",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_break_ihux",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "site_list",
+   "fieldtype": "JSON",
+   "label": "Site List",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_mwve",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "total_size_gb",
+   "fieldtype": "Int",
+   "label": "Total Size (GB)",
+   "non_negative": 1,
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-31 01:18:00.864513",
+ "modified": "2025-08-01 20:06:59.588926",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Snapshot",
