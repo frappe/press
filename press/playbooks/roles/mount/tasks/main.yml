@@ -103,3 +103,15 @@
     opts: '{{ item.mount_options }}'
     state: mounted
   loop: '{{ bind_mounts }}'
+
+- name: Restart Docker
+  service:
+    name: docker
+    state: restarted
+  when: restart_docker | default(false) | bool
+
+- name: Restart MariaDB
+  service:
+    name: mysql
+    state: restarted
+  when: restart_mariadb | default(false) | bool
