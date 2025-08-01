@@ -1444,7 +1444,7 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Server Mount Exception", server=self.as_dict())
 
-	def _set_mount_status(self, play):
+	def _set_mount_status(self, play):  # noqa: C901
 		tasks = frappe.get_all(
 			"Ansible Task",
 			["result", "task"],
@@ -1461,7 +1461,18 @@ class BaseServer(Document, TagHelpers):
 				mount = find(self.mounts, lambda x: x.name == row.get("item", {}).get("name"))
 				if not mount:
 					mount = find(
+						self.mounts,
+						lambda x: x.name == row.get("item", {}).get("original_item", {}).get("name"),
+					)
+				if not mount:
+					mount = find(
 						self.mounts, lambda x: x.name == row.get("item", {}).get("item", {}).get("name")
+					)
+				if not mount:
+					mount = find(
+						self.mounts,
+						lambda x: x.name
+						== row.get("item", {}).get("item", {}).get("original_item", {}).get("name"),
 					)
 				if not mount:
 					continue

@@ -7,49 +7,99 @@
 
 - name: Create Mount Points
   file:
-    dest: "{{ item.mount_point }}"
+    dest: '{{ item.mount_point }}'
     state: directory
-    owner: "{{ item.mount_point_owner }}"
-    group: "{{ item.mount_point_group }}"
-    mode: "{{ item.mount_point_mode }}"
-  loop: "{{ all_mounts }}"
+    owner: '{{ item.mount_point_owner }}'
+    group: '{{ item.mount_point_group }}'
+    mode: '{{ item.mount_point_mode }}'
+  loop: '{{ all_mounts }}'
+
+- name: Find ext4 partitions on disks
+  shell: >-
+    if lsblk -no TYPE {{ item.source | quote }} | grep -q "^disk$"; then
+    lsblk {{ item.source | quote }} -rno NAME,FSTYPE | grep -E "(ext4|^[[:space:]]*$)" | head -1 | awk '{print "/dev/" $1}';
+    else
+    echo {{ item.source | quote }};
+    fi
+
+  register: target_devices
+  changed_when: false
+  loop: '{{ volume_mounts }}'
+  loop_control:
+    label: '{{ item.source }}'
+
+- name: Set target device facts
+  set_fact:
+    resolved_devices: >-
+      {{
+        resolved_devices | default([]) +
+        [{
+          'original_item': item.item,
+          'target_device': item.stdout.strip(),
+          'is_empty_partition': (item.stdout.strip() != item.item.source and item.stdout.strip() != "")
+        }]
+      }}
+  loop: '{{ target_devices.results }}'
+  loop_control:
+    label: '{{ item.item.source }}'
+
+- name: Check if filesystem exists on target devices
+  command: lsblk -rno FSTYPE {{ item.target_device }}
+  register: fs_check
+  changed_when: false
+  failed_when: false
+  loop: '{{ resolved_devices }}'
+  when: item.target_device != ""
+  loop_control:
+    label: '{{ item.target_device }}'
 
 - name: Format Volumes
   filesystem:
-    fstype: "{{ item.filesystem }}"
-    dev: "{{ item.source }}"
+    fstype: '{{ item.item.original_item.filesystem }}'
+    dev: '{{ item.item.target_device }}'
     force: false
-  loop: "{{ volume_mounts }}"
+  when:
+    - format_volumes | default(true)
+    - item.item.target_device != ""
+    - item.stdout == "" or item.rc != 0
+  loop: '{{ fs_check.results }}'
+  loop_control:
+    label: '{{ item.item.target_device }}'
 
 - name: Show Block Device UUIDs
-  command: 'lsblk {{ item.source }} -no UUID'
-  loop: "{{ volume_mounts }}"
+  command: 'lsblk {{ item.target_device }} -no UUID'
+  loop: '{{ resolved_devices }}'
+  when: item.target_device != ""
   register: block_devices
+  loop_control:
+    label: '{{ item.target_device }}'
 
 - name: Mount Volumes
   mount:
-    src: "UUID={{ item.stdout.strip() }}"
-    path: "{{ item.item.mount_point }}"
-    fstype: "{{ item.item.filesystem }}"
-    opts: "{{ item.item.mount_options }}"
+    src: 'UUID={{ item.stdout.strip() }}'
+    path: '{{ item.item.original_item.mount_point }}'
+    fstype: '{{ item.item.original_item.filesystem }}'
+    opts: '{{ item.item.original_item.mount_options }}'
     state: mounted
-  loop: "{{ block_devices.results }}"
+  loop: '{{ block_devices.results }}'
+  when: item.stdout.strip() != ""
+  loop_control:
+    label: '{{ item.item.original_item.mount_point }}'
 
 - name: Create Mount Source Directories
   file:
-    dest: "{{ item.source }}"
+    dest: '{{ item.source }}'
     state: directory
-    owner: "{{ item.mount_point_owner }}"
-    group: "{{ item.mount_point_group }}"
-    mode: "{{ item.mount_point_mode }}"
-  loop: "{{ bind_mounts }}"
+    owner: '{{ item.mount_point_owner }}'
+    group: '{{ item.mount_point_group }}'
+    mode: '{{ item.mount_point_mode }}'
+  loop: '{{ bind_mounts }}'
 
 - name: Mount Bind Mounts
   mount:
-    src: "{{ item.source }}"
-    path: "{{ item.mount_point }}"
+    src: '{{ item.source }}'
+    path: '{{ item.mount_point }}'
     fstype: none
-    opts: "{{ item.mount_options }}"
+    opts: '{{ item.mount_options }}'
     state: mounted
-  loop: "{{ bind_mounts }}"
-
+  loop: '{{ bind_mounts }}'
