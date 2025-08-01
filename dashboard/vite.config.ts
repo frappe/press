@@ -14,7 +14,7 @@ export default defineConfig({
 			jinjaBootData: true,
 			buildConfig: {
 				outDir: '../press/public/dashboard',
-				indexHtmlPath: './index.html',
+				indexHtmlPath: '../press/www/dashboard.html',
 				emptyOutDir: true,
 				sourcemap: true,
 			},
