@@ -405,7 +405,6 @@ class Bench(Document):
 		if unarchived_sites:
 			frappe.throw("Cannot archive bench with active sites.", ArchiveBenchError)
 
-		self.check_ongoing_job()
 		self._mark_applied_patch_as_archived()
 		agent = Agent(self.server)
 		agent.archive_bench(self)
@@ -417,13 +416,6 @@ class Bench(Document):
 		)
 		process_snapshot.insert()
 		return process_snapshot.name
-
-	def check_ongoing_job(self):
-		ongoing_jobs = frappe.db.exists(
-			"Agent Job", {"bench": self.name, "status": ("in", ["Running", "Pending"])}
-		)
-		if ongoing_jobs:
-			frappe.throw("Cannot archive bench with ongoing jobs.", ArchiveBenchError)
 
 	@frappe.whitelist()
 	def sync_info(self):
@@ -955,7 +947,9 @@ class Bench(Document):
 
 	def check_ongoing_jobs(self):
 		frappe.db.commit()
-		if frappe.db.exists("Agent Job", {"bench": self.name, "status": ("in", ["Running", "Pending"])}):
+		if frappe.db.exists(
+			"Agent Job", {"bench": self.name, "status": ("in", ["Running", "Pending", "Undelivered"])}
+		):
 			frappe.throw("Cannot archive bench because of on-going jobs.", ArchiveBenchError)
 
 	def check_active_site_updates(self):
