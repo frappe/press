@@ -788,7 +788,11 @@ class Cluster(Document):
 		domain: str,
 		series: str,
 		team: str,
+<<<<<<< HEAD
 		kms_key_id: str | None = None,
+=======
+		data_disk_snapshot: str | None = None,
+>>>>>>> 34deccac7 (refactor(cluster): Utility function to create vm with data disk snapshot)
 	) -> "VirtualMachine":
 		return frappe.get_doc(
 			{
@@ -801,7 +805,11 @@ class Cluster(Document):
 				"platform": platform,
 				"virtual_machine_image": self.get_available_vmi(series, platform=platform),
 				"team": team,
+<<<<<<< HEAD
 				"kms_key_id": kms_key_id,
+=======
+				"data_disk_snapshot": data_disk_snapshot,
+>>>>>>> 34deccac7 (refactor(cluster): Utility function to create vm with data disk snapshot)
 			},
 		).insert()
 
@@ -827,6 +835,7 @@ class Cluster(Document):
 		self,
 		doctype: str,
 		title: str,
+		data_disk_snapshot: str | None = None,
 		plan: "ServerPlan" = None,
 		domain: str | None = None,
 		team: str | None = None,
@@ -846,7 +855,11 @@ class Cluster(Document):
 			domain,
 			server_series[doctype],
 			team,
+<<<<<<< HEAD
 			kms_key_id=kms_key_id,
+=======
+			data_disk_snapshot=data_disk_snapshot,
+>>>>>>> 34deccac7 (refactor(cluster): Utility function to create vm with data disk snapshot)
 		)
 		server = None
 		match doctype:
