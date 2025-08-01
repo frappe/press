@@ -53,7 +53,7 @@
 		<div v-else-if="isTree && data.name">
 			<Tree nodeKey="name" :node="data" ref="tree" />
 			<div class="prose prose-sm my-4 p-2">
-				<b>Additional Disk Usage:</b> {{ data.otherUsages }}
+				<b>Additional Disk Usage:</b> {{ data.additionalUsage }}
 			</div>
 
 			<div class="prose-sm my-4 rounded border bg-gray-50 p-2">
