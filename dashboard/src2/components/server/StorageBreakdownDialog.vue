@@ -174,14 +174,18 @@ export default {
 			let message =
 				this.$resources.applicationServerStorageBreakdown.data.message;
 
-			console.log(message);
+			const getDisplaySize = (formattedSize) => {
+				var units = formattedSize.slice(-2);
+				var sizeFormatted = formattedSize.replace(units, '');
+				return `${sizeFormatted} ${units}`;
+			};
 
 			const transformNode = (node, isRoot = false) => {
 				const transformed = {
 					name: node.name,
 					label: isRoot
 						? `${node.name}`
-						: `${node.name} (${node.size_formatted})`,
+						: `${node.name} (${getDisplaySize(node.size_formatted)})`,
 					children: [],
 				};
 
@@ -194,7 +198,7 @@ export default {
 				return transformed;
 			};
 
-			const otherUsages = (
+			const additionalUsage = (
 				(message.total.size - (message.benches.size + message.docker.size)) /
 				1024 ** 3
 			).toFixed(2);
@@ -205,8 +209,8 @@ export default {
 
 			const treeData = {
 				name: 'server-storage',
-				label: `Server Storage Breakdown (${totalCalculatedSize}GB)`,
-				otherUsages: `${otherUsages}GB`,
+				label: `Server Storage Breakdown (${totalCalculatedSize} GB)`,
+				additionalUsage: `${additionalUsage} GB`,
 				children: [],
 			};
 
@@ -221,12 +225,12 @@ export default {
 					children: [
 						{
 							name: 'docker-images',
-							label: `Images (${message.docker.image})`,
+							label: `Images (${getDisplaySize(message.docker.image)})`,
 							children: [],
 						},
 						{
 							name: 'docker-containers',
-							label: `Containers (${message.docker.container})`,
+							label: `Containers (${getDisplaySize(message.docker.container)})`,
 							children: [],
 						},
 					],

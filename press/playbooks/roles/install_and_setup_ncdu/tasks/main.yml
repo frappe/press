@@ -5,14 +5,4 @@
   apt:
     name: ncdu=1.14.1-1
     state: present
-    update_cache: yes
-
-- name: Sudo Whitelist Ncdu
-  become: yes
-  become_user: root
-  lineinfile:
-    path: /etc/sudoers.d/frappe
-    line: 'frappe ALL=(root) NOPASSWD: /usr/bin/ncdu'
-    create: yes
-    mode: '0644'
-    validate: '/usr/sbin/visudo -cf %s'
+    update_cache: no
