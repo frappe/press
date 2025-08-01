@@ -476,7 +476,7 @@
   "callback_script": "snapshot = frappe.get_doc(\"Server Snapshot\", arguments.get(\"server_snapshot\"))\nif doc.server_type == \"Server\":\n\tsnapshot.resume_app_server_services()\nelif doc.server_type == \"Database Server\":\n\tsnapshot.resume_database_server_services()\n\nsnapshot.sync(now=False)\n\nif doc.status == \"Failure\":\n    snapshot.reload()\n    snapshot.status = \"Failure\"\n    snapshot.save()\n    \n    for s in snapshot.snapshots:\n        try:\n            frappe.get_doc(\"Virtual Disk Snapshot\", s).delete_snapshot()\n        except:\n            pass",
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2025-07-31 14:12:53.182402",
+  "modified": "2025-08-01 21:00:05.301461",
   "name": "Snapshot Disk",
   "steps": [
    {
@@ -500,7 +500,7 @@
     "wait_until_true": 0
    },
    {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.create_snapshots(exclude_boot_volume=True)\n\nfield_name = \"app_server_snapshot\" if doc.server_type == \"Server\" else \"database_server_snapshot\"\nno_of_snapshots = len(machine.flags.created_snapshots)\nif no_of_snapshots != 1:\n    raise Exception(\"Expected 1 disk snapshot. Found : \"+str(no_of_snapshots))\n    \nfrappe.db.set_value(\"Server Snapshot\", arguments.get(\"server_snapshot\"), field_name, machine.flags.created_snapshots[0], update_modified=False)",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.create_snapshots(exclude_boot_volume=True, dedicated_snapshot=True)\n\nfield_name = \"app_server_snapshot\" if doc.server_type == \"Server\" else \"database_server_snapshot\"\nno_of_snapshots = len(machine.flags.created_snapshots)\nif no_of_snapshots != 1:\n    raise Exception(\"Expected 1 disk snapshot. Found : \"+str(no_of_snapshots))\n    \nfrappe.db.set_value(\"Server Snapshot\", arguments.get(\"server_snapshot\"), field_name, machine.flags.created_snapshots[0], update_modified=False)",
     "step_name": "Snapshot Disk",
     "wait_until_true": 0
    }
