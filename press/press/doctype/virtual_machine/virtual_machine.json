@@ -246,7 +246,7 @@
    "fieldname": "series",
    "fieldtype": "Select",
    "label": "Series",
-   "options": "n\nf\nm\nc\np\ne\nr",
+   "options": "n\nf\nm\nc\np\ne\nr\nt",
    "reqd": 1
   },
   {
@@ -385,10 +385,14 @@
   }
  ],
 <<<<<<< HEAD
+<<<<<<< HEAD
  "modified": "2025-08-28 12:26:04.777772",
 =======
  "modified": "2025-07-31 19:48:29.095589",
 >>>>>>> e65ac16e1 (feat(vm): Add support to create server from data disk snapshot)
+=======
+ "modified": "2025-08-01 23:01:02.723293",
+>>>>>>> ad9374087 (feat(server-snapshot): Add option in dashboard to create servers easily)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
