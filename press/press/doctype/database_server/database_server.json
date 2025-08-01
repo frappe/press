@@ -234,7 +234,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner",
    "set_only_once": 1
   },
   {
@@ -614,7 +614,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-07-30 15:30:20.587642",
+ "modified": "2025-08-01 16:35:27.106445",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

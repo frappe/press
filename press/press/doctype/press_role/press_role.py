@@ -82,6 +82,14 @@ class PressRole(Document):
 			self.allow_server_creation = 1
 			self.allow_webhook_configuration = 1
 
+	def add_press_admin_role(self, user):
+		frappe.get_doc("User", user).add_roles("Press Admin")
+
+	def remove_press_admin_role(self, user):
+		if frappe.db.exists("Team", {"enabled": 1, "user": user}):
+			return
+		frappe.get_doc("User", user).remove_roles("Press Admin")
+
 	@dashboard_whitelist()
 	def add_user(self, user):
 		user_exists = self.get("users", {"user": user})
@@ -90,6 +98,8 @@ class PressRole(Document):
 
 		self.append("users", {"user": user})
 		self.save()
+		if self.admin_access or self.allow_billing:
+			self.add_press_admin_role(user)
 
 	@dashboard_whitelist()
 	def remove_user(self, user):
@@ -102,6 +112,8 @@ class PressRole(Document):
 				self.remove(row)
 				break
 		self.save()
+		if self.admin_access or self.allow_billing:
+			self.remove_press_admin_role(user)
 
 	@dashboard_whitelist()
 	def delete_permissions(self, permissions: list[str]) -> None:

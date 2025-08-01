@@ -131,6 +131,14 @@ class BaseServer(Document, TagHelpers):
 		return doc
 
 	@dashboard_whitelist()
+	def get_storage_usage(self):
+		"""Get storage usage of the application server"""
+		try:
+			return self.agent.get("/server/storage-breakdown")
+		except Exception:
+			frappe.throw("Failed to fetch storage usage. Try again later.")
+
+	@dashboard_whitelist()
 	def increase_disk_size_for_server(
 		self,
 		server: str | Server | DatabaseServer,
@@ -1861,7 +1869,7 @@ class Server(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner"]
 		proxy_server: DF.Link | None
 		public: DF.Check
 		ram: DF.Float
