@@ -2,20 +2,31 @@
 	<Dialog
 		v-if="source"
 		:options="{
-			title: 'Add New App Release',
+			title: 'Change Branch for ' + version + ' of ' + app,
 			actions: [
 				{
 					label: 'Change Branch',
 					variant: 'solid',
 					loading: $resources.changeBranch.loading,
-					onClick: () => $resources.changeBranch.submit()
-				}
-			]
+					onClick: () => changeBranch(),
+				},
+			],
 		}"
-		:modelValue="show"
+		v-model="show"
 	>
 		<template v-slot:body-content>
-			<select class="form-select block w-full" v-model="selectedBranch">
+			<div v-if="$resources.branches.loading" class="mt-2 flex justify-center">
+				<LoadingText />
+			</div>
+			<ErrorMessage
+				v-else-if="$resources.branches.error"
+				:message="$resources.branches.error"
+			/>
+			<select
+				v-else-if="$resources.branches.data"
+				class="form-select block w-full"
+				v-model="selectedBranch"
+			>
 				<option v-for="branch in branchList()" :key="branch">
 					{{ branch }}
 				</option>
@@ -25,22 +36,28 @@
 </template>
 
 <script>
+import { toast } from 'vue-sonner';
+import { getToastErrorMessage } from '../../utils/toast';
+import { DashboardError } from '../../utils/error';
+
 export default {
 	name: 'ChangeAppBranchDialog',
 	data() {
 		return {
-			selectedBranch: null
+			show: true,
+			selectedBranch: null,
 		};
 	},
-	props: ['show', 'app', 'source', 'version', 'activeBranch'],
+	props: ['app', 'source', 'version', 'activeBranch'],
+	emits: ['branch-changed'],
 	resources: {
 		branches() {
 			return {
 				url: 'press.api.marketplace.branches',
 				params: {
-					name: this.source
+					name: this.source,
 				},
-				auto: true
+				auto: true,
 			};
 		},
 		changeBranch() {
@@ -50,29 +67,37 @@ export default {
 					name: this.app,
 					source: this.source,
 					version: this.version,
-					to_branch: this.selectedBranch
-				},
-				onSuccess() {
-					window.location.reload();
+					to_branch: this.selectedBranch,
 				},
 				validate() {
 					if (this.selectedBranch == this.app.branch) {
-						return 'Please select a different branch';
+						throw new DashboardError('Please select a different branch');
 					}
-				}
+				},
 			};
-		}
+		},
 	},
 	methods: {
+		changeBranch() {
+			toast.promise(this.$resources.changeBranch.submit(), {
+				loading: 'Updating branch for version...',
+				success: () => {
+					this.show = false;
+					this.$emit('branch-changed');
+					return 'Branch changed successfully';
+				},
+				error: (e) => getToastErrorMessage(e),
+			});
+		},
 		branchList() {
 			if (this.$resources.branches.loading || !this.$resources.branches.data) {
 				return [];
 			}
-			return this.$resources.branches.data.map(d => d.name);
-		}
+			return this.$resources.branches.data.map((d) => d.name);
+		},
 	},
 	mounted() {
 		this.selectedBranch = this.activeBranch;
-	}
+	},
 };
 </script>
