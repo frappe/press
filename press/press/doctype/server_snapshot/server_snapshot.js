@@ -44,5 +44,81 @@ frappe.ui.form.on('Server Snapshot', {
 				);
 			}
 		});
+
+		if (frm.doc.status === 'Completed') {
+			frm.add_custom_button(
+				'Create Server',
+				() => {
+					frappe.prompt(
+						[
+							{
+								fieldtype: 'Link',
+								label: 'Team',
+								fieldname: 'team',
+								options: 'Team',
+								reqd: 1,
+								default: frm.doc.team,
+							},
+							{
+								fieldtype: 'Select',
+								label: 'Server Type',
+								fieldname: 'server_type',
+								options: ['Server', 'Database Server'],
+								reqd: 1,
+								default: 'Server',
+							},
+							{ fieldtype: 'Data', label: 'Server Name', fieldname: 'title' },
+							{
+								fieldtype: 'Link',
+								label: 'Server Plan',
+								fieldname: 'plan',
+								options: 'Server Plan',
+								reqd: 0,
+								get_query: function () {
+									return {
+										filters: {
+											cluster: frm.doc.cluster,
+											enabled: 1,
+											premium: 0,
+										},
+									};
+								},
+							},
+							{
+								fieldtype: 'Check',
+								label: 'Create Subscription',
+								fieldname: 'create_subscription',
+							},
+							{
+								fieldtype: 'Check',
+								label: 'Is Temporary Server ?',
+								fieldname: 'temporary_server',
+								default: 1,
+							},
+						],
+						({
+							team,
+							server_type,
+							title,
+							plan,
+							create_subscription,
+							temporary_server,
+						}) => {
+							frm
+								.call('create_server', {
+									team,
+									server_type,
+									title,
+									plan,
+									create_subscription,
+									temporary_server,
+								})
+								.then((r) => frm.refresh());
+						},
+					);
+				},
+				__('Actions'),
+			);
+		}
 	},
 });

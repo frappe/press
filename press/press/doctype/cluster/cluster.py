@@ -9,7 +9,7 @@ import re
 import time
 import typing
 from textwrap import wrap
-from typing import ClassVar
+from typing import ClassVar, Literal
 
 import boto3
 import frappe
@@ -765,13 +765,19 @@ class Cluster(Document):
 		series: str,
 		team: str,
 		data_disk_snapshot: str | None = None,
+		temporary_server: bool = False,
 	) -> "VirtualMachine":
+		"""Creates a Virtual Machine for the cluster
+		temporary_server: If you are creating a temporary server for some special purpose, set this to True.
+				This will use a different nameing series `t` for the server to avoid conflicts
+				with the regular servers.
+		"""
 		return frappe.get_doc(
 			{
 				"doctype": "Virtual Machine",
 				"cluster": self.name,
 				"domain": domain,
-				"series": series,
+				"series": "t" if temporary_server else series,
 				"disk_size": disk_size,
 				"machine_type": machine_type,
 				"platform": platform,
@@ -809,8 +815,15 @@ class Cluster(Document):
 		team: str | None = None,
 		create_subscription=True,
 		auto_increase_storage: bool = False,
+		temporary_server: bool = False,
 	):
-		"""Creates a server for the cluster"""
+		"""Creates a server for the cluster
+
+		temporary_server: If you are creating a temporary server for some special purpose, set this to True.
+			This will use a different nameing series `t` for the server to avoid conflicts
+			with the regular servers.
+		"""
+
 		domain = domain or frappe.db.get_single_value("Press Settings", "domain")
 		server_series = {**self.base_servers, **self.private_servers}
 		team = team or get_current_team()
@@ -823,6 +836,7 @@ class Cluster(Document):
 			server_series[doctype],
 			team,
 			data_disk_snapshot=data_disk_snapshot,
+			temporary_server=temporary_server,
 		)
 		server = None
 		match doctype:
@@ -868,3 +882,58 @@ class Cluster(Document):
 			filters={**filters, **extra_filters},
 			fields=["name", "title", "image", "beta"],
 		)
+
+	def find_server_plan_with_compute_config(
+		self,
+		server_type: Literal["Server", "Database Server"],
+		vcpu: int,
+		memory: int,
+		platform: Literal["arm64", "amd64", "x86_64"] | None = None,
+	) -> str | None:
+		platforms = [platform] if platform else ["arm64", "amd64", "x86_64"]  # Priority of platform
+		best_plan = None
+		best_score = float("inf")
+
+		for platform in platforms:
+			plans = frappe.get_all(
+				"Server Plan",
+				filters={
+					"enabled": True,
+					"legacy_plan": False,
+					"cluster": self.name,
+					"platform": platform,
+					"server_type": server_type,
+					"premium": False,
+				},
+				fields=["name", "vcpu", "memory", "platform"],
+			)
+
+			# Skip platform if no plans available
+			if not plans:
+				continue
+
+			# Find best plan for this platform
+			for plan in plans:
+				vcpu_diff = abs(plan.vcpu - vcpu) / max(vcpu, 1) * 100
+				memory_diff = abs(plan.memory - memory) / max(memory, 1) * 100
+
+				# Calculate weighted average difference (you can adjust weights as needed)
+				total_score = (vcpu_diff * 0.4) + (memory_diff * 0.2)
+
+				# Prefer plans that meet or exceed requirements rather than fall short
+				# Add penalty if plan doesn't meet minimum requirements
+				penalty = 0
+				if plan.vcpu < vcpu:
+					penalty += 50
+				if plan.memory < memory:
+					penalty += 50
+
+				final_score = total_score + penalty
+
+				# Update best plan if this one is better
+				if final_score < best_score:
+					best_score = final_score
+					best_plan = plan.name
+
+			return best_plan
+		return None

@@ -90,7 +90,7 @@ class VirtualMachine(Document):
 		region: DF.Link
 		root_disk_size: DF.Int
 		security_group_id: DF.Data | None
-		series: DF.Literal["n", "f", "m", "c", "p", "e", "r"]
+		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "t"]
 		skip_automated_snapshot: DF.Check
 		ssh_key: DF.Link
 		status: DF.Literal["Draft", "Pending", "Running", "Stopped", "Terminated"]
@@ -147,7 +147,7 @@ class VirtualMachine(Document):
 			if self.series == "n":
 				self.private_ip_address = str(ip + index)
 			else:
-				offset = ["f", "m", "c", "p", "e", "r"].index(self.series)
+				offset = ["f", "m", "c", "p", "e", "r", "t"].index(self.series)
 				self.private_ip_address = str(ip + 256 * (2 * (index // 256) + offset) + (index % 256))
 
 		self.validate_data_disk_snapshot()

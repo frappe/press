@@ -9,6 +9,7 @@ import frappe
 from frappe.model.document import Document
 
 if TYPE_CHECKING:
+	from press.press.doctype.cluster.cluster import Cluster
 	from press.press.doctype.site_backup.site_backup import VirtualMachine
 
 
@@ -329,3 +330,52 @@ class ServerSnapshot(Document):
 			frappe.get_doc("Virtual Disk Snapshot", s).unlock()
 		self.locked = False
 		self.save(ignore_version=True)
+
+	@frappe.whitelist()
+	def create_server(
+		self,
+		server_type: Literal["Server", "Database Server"],
+		title: str | None = None,
+		plan: str | None = None,
+		team: str | None = None,
+		create_subscription: bool | None = False,
+		temporary_server: bool | None = False,
+	) -> str:
+		if server_type not in ["Server", "Database Server"]:
+			frappe.throw("Invalid server type. Must be 'Server' or 'Database Server'.")
+
+		if create_subscription is None:
+			create_subscription = False
+
+		if temporary_server is None:
+			temporary_server = False
+
+		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+		if not plan:
+			plan = cluster.find_server_plan_with_compute_config(
+				server_type=server_type,
+				vcpu=self.app_server_vcpu if server_type == "Server" else self.database_server_vcpu,
+				memory=self.app_server_ram if server_type == "Server" else self.database_server_ram,
+			)
+
+		server, _ = cluster.create_server(
+			doctype=server_type,
+			title=title or f"SNAP-{self.name}",
+			team=team,
+			data_disk_snapshot=self.app_server_snapshot
+			if server_type == "Server"
+			else self.database_server_snapshot,
+			plan=frappe.get_doc("Server Plan", plan) if isinstance(plan, str) else plan,
+			create_subscription=create_subscription,
+			temporary_server=temporary_server,
+		)
+		server_name = ""
+		if server:
+			server_name = server.name
+
+		frappe.msgprint(
+			f"Server {server_name} created successfully from snapshot\n.<a href='/app/{server_type.lower().replace(' ', '-')}/{server_name}' target='_blank'>{server_name}</a>."
+			f" Please check the server for further actions."
+		)
+
+		return server_name
