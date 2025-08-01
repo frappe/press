@@ -180,7 +180,7 @@ class VirtualMachine(Document):
 		server_response = self.client().servers.create(
 			name=f"{self.name}",
 			server_type=server_type,
-			image=Image(name="ubuntu-22.04"),
+			image=Image(name="ubuntu-20.04"),
 			networks=[network],
 			location=location,
 			public_net=public_net,
