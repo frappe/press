@@ -86,6 +86,8 @@ class PressRole(Document):
 		frappe.get_doc("User", user).add_roles("Press Admin")
 
 	def remove_press_admin_role(self, user):
+		if frappe.db.exists("Team", {"enabled": 1, "user": user}):
+			return
 		frappe.get_doc("User", user).remove_roles("Press Admin")
 
 	@dashboard_whitelist()
