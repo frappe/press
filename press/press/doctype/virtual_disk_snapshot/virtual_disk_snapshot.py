@@ -242,7 +242,7 @@ class VirtualDiskSnapshot(Document):
 		return response["VolumeId"]
 
 	def sync_server_snapshot(self):
-		if self.status not in ["Completed", "Unavailable"]:
+		if self.status == "Completed":
 			return
 
 		if not self.dedicated_snapshot:
