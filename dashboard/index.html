@@ -6,7 +6,6 @@
 		<meta name="viewport" content="width=device-width,initial-scale=1.0" />
 		<title>Frappe Cloud</title>
 		<link rel="icon" href="/assets/press/dashboard/favicon.png" type="image/x-icon" />
-		<script async type="module" crossorigin src="/assets/press/dashboard/assets/index-CQkcjXU8.js"></script>
 	</head>
 
 	<body class="h-full">
@@ -23,27 +22,6 @@
 		<!-- For Teleports -->
 		<div id="modals"></div>
 		<div id="popovers"></div>
-
-	
-          <script>
-              {% for key in boot %}
-              window["{{ key }}"] = {{ boot[key] | tojson }};
-              {% endfor %}
-          </script>
-          
-          <script>
-              {% for key in boot %}
-              window["{{ key }}"] = {{ boot[key] | tojson }};
-              {% endfor %}
-          </script>
-          
-          <script>
-              {% for key in boot %}
-              window["{{ key }}"] = {{ boot[key] | tojson }};
-              {% endfor %}
-          </script>
-          </body>
-          
-          
-          
+		<script type="module" src="/src/main.js"></script>
+	</body>
 </html>
