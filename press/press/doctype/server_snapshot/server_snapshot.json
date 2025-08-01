@@ -31,7 +31,8 @@
   "database_server_resume_service_press_job",
   "database_server_services_started",
   "section_break_ihux",
-  "site_list"
+  "site_list",
+  "traceback"
  ],
  "fields": [
   {
@@ -228,12 +229,18 @@
    "label": "Total Size (GB)",
    "non_negative": 1,
    "read_only": 1
+  },
+  {
+   "depends_on": "eval: doc.status == \"Failure\"",
+   "fieldname": "traceback",
+   "fieldtype": "Text",
+   "label": "Traceback"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-01 20:06:59.588926",
+ "modified": "2025-08-01 21:31:58.299376",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Snapshot",

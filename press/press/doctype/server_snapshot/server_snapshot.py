@@ -1,6 +1,7 @@
 # Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
 
+import contextlib
 import json
 from typing import Literal
 
@@ -35,6 +36,7 @@ class ServerSnapshot(Document):
 		status: DF.Literal["Pending", "Failure", "Completed", "Unavailable"]
 		team: DF.Link
 		total_size_gb: DF.Int
+		traceback: DF.Text | None
 	# end: auto-generated types
 
 	@property
@@ -100,11 +102,41 @@ class ServerSnapshot(Document):
 		)
 		self.site_list = json.dumps(sites, indent=2, sort_keys=True)
 
-	def after_insert(self):
-		self.create_press_jobs()
+		# Ensure no other snapshot is in Pending state
+		if frappe.db.exists(
+			"Server Snapshot",
+			{
+				"status": "Pending",
+				"app_server": self.app_server,
+				"database_server": self.database_server,
+			},
+		):
+			frappe.throw(
+				f"A snapshot for App Server {self.app_server} and Database Server {self.database_server} is already in Pending state."
+			)
 
-	@frappe.whitelist()
+	def after_insert(self):
+		try:
+			self.create_press_jobs()
+		except Exception:
+			import traceback
+
+			self.traceback = traceback.format_exc()
+			self.status = "Failure"
+			self.save(ignore_version=True)
+
+			# Clear created press jobs (if any)
+			if (
+				hasattr(self, "flags")
+				and hasattr(self.flags, "created_press_jobs")
+				and isinstance(self.flags.created_press_jobs, list)
+			):
+				for job in self.flags.created_press_jobs:
+					with contextlib.suppress(Exception):
+						frappe.get_doc("Press Job", job).delete(ignore_permissions=True)
+
 	def create_press_jobs(self):
+		self.flags.created_press_jobs = []
 		self.app_server_snapshot_press_job = frappe.get_doc(
 			{
 				"doctype": "Press Job",
@@ -115,6 +147,7 @@ class ServerSnapshot(Document):
 				"arguments": json.dumps(self.arguments_for_press_job, indent=2, sort_keys=True),
 			}
 		).insert(ignore_permissions=True)
+		self.flags.created_press_jobs.append(self.app_server_snapshot_press_job.name)
 		self.database_server_snapshot_press_job = frappe.get_doc(
 			{
 				"doctype": "Press Job",
@@ -127,6 +160,7 @@ class ServerSnapshot(Document):
 				"arguments": json.dumps(self.arguments_for_press_job, indent=2, sort_keys=True),
 			}
 		).insert(ignore_permissions=True)
+		self.flags.created_press_jobs.append(self.database_server_snapshot_press_job.name)
 		self.save(ignore_version=True)
 
 	def resume_app_server_services(self):
