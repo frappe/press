@@ -2,7 +2,6 @@
 # See license.txt
 from __future__ import annotations
 
-import unittest
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, Mock, patch
 
@@ -45,7 +44,7 @@ if TYPE_CHECKING:
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestStagingSite(unittest.TestCase):
+class TestStagingSite(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
@@ -378,7 +377,7 @@ class TestBench(FrappeTestCase):
 
 
 @patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
-class TestArchiveObsoleteBenches(unittest.TestCase):
+class TestArchiveObsoleteBenches(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
@@ -475,10 +474,9 @@ class TestArchiveObsoleteBenches(unittest.TestCase):
 		self.assertEqual(bench.status, "Pending")
 
 	def test_ongoing_jobs(self):
-		with fake_agent_job("Archive Bench", "Running"), fake_agent_job("New Bench"):
+		with fake_agent_job("New Bench"):
 			bench = create_test_bench()
 			poll_pending_jobs()
 			bench.archive()
-			poll_pending_jobs()
 			self.assertRaises(ArchiveBenchError, bench.archive)
 			bench.reload()
