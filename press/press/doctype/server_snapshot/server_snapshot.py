@@ -281,13 +281,13 @@ class ServerSnapshot(Document):
 			frappe.throw("Snapshot is locked. Unlock the snapshot before deleting.")
 
 		for s in self.snapshots:
-			try:
-				frappe.get_doc("Virtual Disk Snapshot", s).delete_snapshot(ignore_validation=True)
-			except frappe.exceptions.TimestampMismatchError:
-				# sync method of disk snapshot can raise version mismatch error
-				pass
-			except Exception as e:
-				raise e
+			frappe.enqueue_doc(
+				"Virtual Disk Snapshot",
+				s,
+				"delete_snapshot",
+				enqueue_after_commit=True,
+				ignore_validation=True,
+			)
 
 		self.status = "Unavailable"
 		self.save()
