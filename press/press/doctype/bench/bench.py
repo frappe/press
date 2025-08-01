@@ -1226,6 +1226,9 @@ def try_archive(bench: str):
 		frappe.get_doc("Bench", bench).archive()
 		frappe.db.commit()
 		return True
+	except ArchiveBenchError:
+		frappe.db.rollback()
+		return False
 	except Exception:
 		log_error(
 			"Bench Archival Error",
