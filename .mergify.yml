@@ -1,0 +1,36 @@
+pull_request_rules:
+  - name: Auto-close PRs on stable branch
+    conditions:
+      - and:
+        - and:
+          - author!=frappe-pr-bot
+          - author!=mergify[bot]
+          - author!=github-actions
+        - or:
+          - base=master
+    actions:
+      close:
+      comment:
+          message: |
+            @{{author}}, thanks for the contribution, but we do not accept pull requests on a stable branch. Please raise PR on an develop branch.
+        
+  - name: backport to develop
+    conditions:
+      - label="backport-develop"
+    actions:
+      backport:
+        branches:
+          - develop
+        assignees:
+          - "{{ author }}"
+  
+  - name: backport to master
+    conditions:
+      - label="backport-master"
+    actions:
+      backport:
+        branches:
+          - master
+        assignees:
+          - "{{ author }}"
+

@@ -60,7 +60,7 @@ frappe.ui.form.on('Virtual Machine', {
 				__('Create Monitor Server'),
 				'create_monitor_server',
 				false,
-				frm.doc.series === 'm',
+				frm.doc.series === 'p',
 			],
 			[
 				__('Create Log Server'),
@@ -227,6 +227,50 @@ frappe.ui.form.on('Virtual Machine', {
 				);
 			}
 		});
+		if (frm.doc.platform == 'x86_64') {
+			frm.add_custom_button(
+				'Convert to AMD',
+				() => {
+					frappe.prompt(
+						[
+							{
+								fieldtype: 'Link',
+								label: 'Virtual Machine Image',
+								fieldname: 'virtual_machine_image',
+								options: 'Virtual Machine Image',
+								reqd: 1,
+								get_query: function () {
+									return {
+										filters: {
+											platform: 'x86_64',
+											cluster: frm.doc.cluster,
+											status: 'Available',
+											series: frm.doc.series,
+										},
+									};
+								},
+							},
+							{
+								fieldtype: 'Data',
+								label: 'Machine Type',
+								fieldname: 'machine_type',
+								reqd: 1,
+							},
+						],
+						({ virtual_machine_image, machine_type }) => {
+							frm
+								.call('convert_to_amd', {
+									virtual_machine_image,
+									machine_type,
+								})
+								.then((r) => frm.refresh());
+						},
+						__('Convert to AMD'),
+					);
+				},
+				__('Actions'),
+			);
+		}
 		if (frm.doc.status == 'Running') {
 			frm.add_custom_button(
 				'Attach New Volume',

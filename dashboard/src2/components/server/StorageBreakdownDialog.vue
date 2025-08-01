@@ -8,28 +8,43 @@
 	>
 		<template #body-content>
 			<div
-				v-if="this.$resources?.databaseServerStorageBreakdown?.loading"
+				v-if="
+					$resources?.databaseServerStorageBreakdown?.loading ||
+					$resources?.applicationServerStorageBreakdown?.loading
+				"
 				class="flex h-80 w-full items-center justify-center gap-2 text-base text-gray-700"
 			>
 				<Spinner class="w-4" /> Analyzing ...
 			</div>
 			<div
-				v-else-if="this.$resources?.databaseServerStorageBreakdown?.error"
+				v-else-if="
+					$resources?.databaseServerStorageBreakdown?.error ||
+					$resources?.applicationServerStorageBreakdown?.error
+				"
 				class="flex h-80 w-full items-center justify-center gap-2 text-base text-gray-700"
 			>
 				<ErrorMessage
-					:message="$resources.databaseServerStorageBreakdown.error"
+					:message="
+						$resources.databaseServerStorageBreakdown.error ||
+						$resources?.applicationServerStorageBreakdown?.error
+					"
 				/>
 			</div>
 			<div v-else>
 				<StorageBreakupChart
 					:colorPalette="colorPalette"
-					:data="databaseStorageBreakdown"
+					:data="
+						serverType == 'Database Server'
+							? databaseStorageBreakdown
+							: applicationServerBreakDown
+					"
 					:keyFormatter="keyFormatter"
 					:valueFormatter="(key, value) => formatSizeInKB(value)"
 					:stickyKeys="['free', 'os']"
 					:hiddenKeysInSlider="['free']"
+					:isTree="serverType === 'Server'"
 				/>
+
 				<div v-if="serverType === 'Database Server' && noOfDatabases">
 					<div
 						v-if="noOfDatabases > 1"
@@ -119,9 +134,24 @@ export default {
 	mounted() {
 		if (this.serverType == 'Database Server') {
 			this.$resources.databaseServerStorageBreakdown.submit();
+		} else {
+			this.$resources.applicationServerStorageBreakdown.submit();
 		}
 	},
 	resources: {
+		applicationServerStorageBreakdown() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				makeParams() {
+					return {
+						dt: 'Server',
+						dn: this.server,
+						method: 'get_storage_usage',
+					};
+				},
+				auto: false,
+			};
+		},
 		databaseServerStorageBreakdown() {
 			return {
 				url: 'press.api.client.run_doc_method',
@@ -132,14 +162,80 @@ export default {
 						method: 'get_storage_usage',
 					};
 				},
-				onSuccess: (_) => {
-					this.isDatabaseListVisible = true;
-				},
 				auto: false,
 			};
 		},
 	},
 	computed: {
+		applicationServerBreakDown() {
+			if (!this.$resources.applicationServerStorageBreakdown?.data?.message)
+				return {};
+
+			let message =
+				this.$resources.applicationServerStorageBreakdown.data.message;
+
+			console.log(message);
+
+			const transformNode = (node, isRoot = false) => {
+				const transformed = {
+					name: node.name,
+					label: isRoot
+						? `${node.name}`
+						: `${node.name} (${node.size_formatted})`,
+					children: [],
+				};
+
+				if (node.children && node.children.length > 0) {
+					transformed.children = node.children.map((child) =>
+						transformNode(child),
+					);
+				}
+
+				return transformed;
+			};
+
+			const otherUsages = (
+				(message.total.size - (message.benches.size + message.docker.size)) /
+				1024 ** 3
+			).toFixed(2);
+			const totalCalculatedSize = (
+				(message.benches.size + message.docker.size) /
+				1024 ** 3
+			).toFixed(2);
+
+			const treeData = {
+				name: 'server-storage',
+				label: `Server Storage Breakdown (${totalCalculatedSize}GB)`,
+				otherUsages: `${otherUsages}GB`,
+				children: [],
+			};
+
+			if (message.benches) {
+				treeData.children.push(transformNode(message.benches, true));
+			}
+
+			if (message.docker) {
+				const dockerNode = {
+					name: 'docker',
+					label: 'Docker',
+					children: [
+						{
+							name: 'docker-images',
+							label: `Images (${message.docker.image})`,
+							children: [],
+						},
+						{
+							name: 'docker-containers',
+							label: `Containers (${message.docker.container})`,
+							children: [],
+						},
+					],
+				};
+				treeData.children.push(dockerNode);
+			}
+
+			return treeData;
+		},
 		databaseStorageBreakdown() {
 			if (!this.$resources.databaseServerStorageBreakdown?.data?.message)
 				return {};

@@ -7,6 +7,7 @@ import re
 from typing import TYPE_CHECKING
 
 import frappe
+import frappe.utils
 import pyotp
 from frappe import _
 from frappe.core.doctype.user.user import update_password
@@ -101,7 +102,7 @@ def verify_otp_and_login(email: str, otp: str):
 
 	account_request = frappe.db.get_value("Account Request", {"email": email}, "name")
 
-	if not account_request or not frappe.db.exists("Team", {"user": email}):
+	if not account_request:
 		frappe.throw("Please sign up first")
 
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
@@ -119,7 +120,7 @@ def verify_otp_and_login(email: str, otp: str):
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60)
-def resend_otp(account_request: str):
+def resend_otp(account_request: str, for_2fa_keys: bool = False):
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
 
 	# if last OTP was sent less than 30 seconds ago, throw an error
@@ -133,12 +134,12 @@ def resend_otp(account_request: str):
 	if frappe.db.exists("Team", {"user": account_request.email}) and not account_request.product_trial:
 		frappe.throw("Invalid Email")
 	account_request.reset_otp()
-	account_request.send_verification_email()
+	account_request.send_otp_mail(for_login=not for_2fa_keys)
 
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60)
-def send_otp(email: str):
+def send_otp(email: str, for_2fa_keys: bool = False):
 	account_request = frappe.db.get_value("Account Request", {"email": email}, "name")
 
 	if not account_request:
@@ -154,7 +155,7 @@ def send_otp(email: str):
 		frappe.throw("Please wait for 30 seconds before requesting a new OTP")
 
 	account_request.reset_otp()
-	account_request.send_login_mail()
+	account_request.send_otp_mail(for_login=not for_2fa_keys)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -224,6 +225,29 @@ def setup_account(  # noqa: C901
 	frappe.local.login_manager.login_as(email)
 
 	return account_request.name
+
+
+@frappe.whitelist()
+@rate_limit(limit=5, seconds=60 * 60)
+def accept_team_invite(key: str):
+	account_request = get_account_request_from_key(key)
+
+	if not account_request:
+		frappe.throw("Invalid or Expired Key")
+
+	if not account_request.invited_by:
+		frappe.throw("You are not invited by any team")
+
+	team = account_request.team
+	first_name = account_request.first_name
+	last_name = account_request.last_name
+	email = account_request.email
+	password = None
+	role = account_request.role
+	press_roles = account_request.press_roles
+
+	team_doc = frappe.get_doc("Team", team)
+	return team_doc.create_user_for_member(first_name, last_name, email, password, role, press_roles)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -414,22 +438,16 @@ def set_country(country):
 	team_doc.create_stripe_customer()
 
 
-def get_account_request_from_key(key):
-	"""Find Account Request using `key` in the past 12 hours or if site is active"""
+def get_account_request_from_key(key: str):
+	"""Find Account Request using `key`"""
 
 	if not key or not isinstance(key, str):
 		frappe.throw(_("Invalid Key"))
 
-	hours = 12
-	ar = frappe.get_doc("Account Request", {"request_key": key})
-	if ar.creation > frappe.utils.add_to_date(None, hours=-hours):
-		return ar
-	if ar.subdomain and ar.saas_app:
-		domain = frappe.db.get_value("Saas Settings", ar.saas_app, "domain")
-		if frappe.db.get_value("Site", ar.subdomain + "." + domain, "status") == "Active":
-			return ar
-
-	return None
+	try:
+		return frappe.get_doc("Account Request", {"request_key": key})
+	except frappe.DoesNotExistError:
+		return None
 
 
 @frappe.whitelist()
@@ -1186,7 +1204,7 @@ def get_user_ssh_keys():
 
 
 @frappe.whitelist(allow_guest=True)
-@rate_limit(limit=10, seconds=60 * 60)
+@rate_limit(limit=20, seconds=60 * 60)
 def is_2fa_enabled(user: str) -> bool:
 	return bool(frappe.db.get_value("User 2FA", user, "enabled"))
 
@@ -1230,15 +1248,39 @@ def get_2fa_qr_code_url():
 def enable_2fa(totp_code):
 	"""Enable 2FA for the user after verifying the TOTP code"""
 
-	if frappe.db.exists("User 2FA", frappe.session.user):
-		user_totp_secret = get_decrypted_password("User 2FA", frappe.session.user, "totp_secret")
-	else:
-		frappe.throw(f"2FA is not enabled for {frappe.session.user}")
+	# Get the User 2FA document.
+	two_fa = frappe.get_doc("User 2FA", frappe.session.user)
 
-	if pyotp.totp.TOTP(user_totp_secret).verify(totp_code):
-		frappe.db.set_value("User 2FA", frappe.session.user, "enabled", 1)
-	else:
+	# Get decrypted TOTP secret for the user.
+	user_totp_secret = get_decrypted_password("User 2FA", frappe.session.user, "totp_secret")
+
+	# Handle invalid TOTP code.
+	if not pyotp.totp.TOTP(user_totp_secret).verify(totp_code):
 		frappe.throw("Invalid TOTP code")
+
+	# Enable 2FA for the user.
+	two_fa.enabled = 1
+
+	# Add recovery codes to the User 2FA document, if not already present.
+	if not two_fa.recovery_codes:
+		for recovery_code in two_fa.generate_recovery_codes():
+			two_fa.append(
+				"recovery_codes",
+				{"code": recovery_code},
+			)
+
+	# Update the last verified time.
+	two_fa.mark_recovery_codes_viewed()
+
+	# Save the document.
+	two_fa.save()
+
+	# Decrypt and return recovery codes for the user.
+	return [
+		get_decrypted_password("User 2FA Recovery Code", recovery_code.name, "code")
+		for recovery_code in two_fa.recovery_codes
+		if not recovery_code.used_at
+	]
 
 
 @frappe.whitelist()
@@ -1254,6 +1296,100 @@ def disable_2fa(totp_code):
 		frappe.db.set_value("User 2FA", frappe.session.user, "enabled", 0)
 	else:
 		frappe.throw("Invalid TOTP code")
+
+
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60 * 60)
+def recover_2fa(user: str, recovery_code: str):
+	"""Recover 2FA using a recovery code."""
+
+	# Get the User 2FA document.
+	two_fa = frappe.get_doc("User 2FA", user)
+
+	# Check if the user has 2FA enabled.
+	if not two_fa.enabled:
+		frappe.throw(f"2FA is not enabled for {user}")
+
+	# Get valid recovery code doc.
+	code = None
+	for code_doc in two_fa.recovery_codes:
+		decrypted_code = get_decrypted_password("User 2FA Recovery Code", code_doc.name, "code")
+		if decrypted_code == recovery_code and not code_doc.used_at:
+			code = code_doc
+			break
+
+	# If no valid recovery code found, throw an error.
+	if not code:
+		frappe.throw("Invalid or used recovery code")
+
+	# Mark the recovery code as used.
+	code.used_at = frappe.utils.now_datetime()
+
+	# Disable 2FA and save the document.
+	two_fa.enabled = 0
+	two_fa.save(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def get_2fa_recovery_codes(verification_code: int):
+	"""Get the recovery codes for the user."""
+
+	if not frappe.db.exists("User 2FA", {"user": frappe.session.user, "enabled": 1}):
+		frappe.throw("2FA is not enabled for this user")
+
+	account_request: "AccountRequest" = frappe.get_doc("Account Request", {"email": frappe.session.user})
+
+	if account_request.otp != verification_code:
+		frappe.throw("Invalid OTP. Please try again.")
+
+	account_request.reset_otp()
+
+	# Get the User 2FA document.
+	two_fa = frappe.get_doc("User 2FA", frappe.session.user)
+
+	# Decrypt recovery codes for the user.
+	recovery_codes = [
+		get_decrypted_password("User 2FA Recovery Code", recovery_code.name, "code")
+		for recovery_code in two_fa.recovery_codes
+		if not recovery_code.used_at
+	]
+
+	# Add a timestamp for when the recovery codes were last viewed.
+	two_fa.mark_recovery_codes_viewed()
+	two_fa.save()
+
+	# Return the recovery codes.
+	return recovery_codes
+
+
+@frappe.whitelist()
+def reset_2fa_recovery_codes():
+	"""Reset the recovery codes for the user."""
+
+	# Check if the user has 2FA enabled.
+	if not frappe.db.exists("User 2FA", frappe.session.user):
+		frappe.throw("2FA is not enabled for this user")
+
+	# Get the User 2FA document.
+	two_fa = frappe.get_doc("User 2FA", frappe.session.user)
+
+	# Clear existing recovery codes.
+	two_fa.recovery_codes = []
+	recovery_codes = list(two_fa.generate_recovery_codes())
+
+	# Add new recovery codes.
+	for recovery_code in recovery_codes:
+		two_fa.append(
+			"recovery_codes",
+			{"code": recovery_code},
+		)
+
+	# Update time and save the document.
+	two_fa.mark_recovery_codes_viewed()
+	two_fa.save()
+
+	# Return the new recovery codes.
+	return recovery_codes
 
 
 # Not available for Telangana, Ladakh, and Other Territory

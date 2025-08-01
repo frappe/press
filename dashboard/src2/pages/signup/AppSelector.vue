@@ -19,7 +19,7 @@
 			</div>
 			<div v-else>
 				<div
-					class="flex h-full max-h-96 flex-col items-center justify-center space-y-2 overflow-auto py-2"
+					class="flex h-full max-h-96 flex-col items-center space-y-2 overflow-auto py-2"
 				>
 					<div
 						v-for="app in $resources.availableApps.data"

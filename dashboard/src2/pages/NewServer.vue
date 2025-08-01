@@ -158,7 +158,14 @@
 									(planType === 'Standard'
 										? options.app_plans
 										: options.app_premium_plans
-									).filter((p) => p.cluster === serverRegion)
+									).filter((p) => {
+										const isARMSupportedCluster =
+											p.cluster === 'Mumbai' || p.cluster === 'Frankfurt';
+										return (
+											p.cluster === serverRegion &&
+											(!isARMSupportedCluster || p.platform === 'arm64')
+										);
+									})
 								"
 							/>
 						</div>
@@ -177,7 +184,14 @@
 									(planType === 'Standard'
 										? options.db_plans
 										: options.db_premium_plans
-									).filter((p) => p.cluster === serverRegion)
+									).filter((p) => {
+										const isARMSupportedCluster =
+											p.cluster === 'Mumbai' || p.cluster === 'Frankfurt';
+										return (
+											p.cluster === serverRegion &&
+											(!isARMSupportedCluster || p.platform === 'arm64')
+										);
+									})
 								"
 							/>
 						</div>
@@ -235,6 +249,52 @@
 					<ClickToCopy :textContent="$resources.hybridOptions.data.ssh_key" />
 				</div>
 			</div>
+			<div
+				class="flex flex-col space-y-3"
+				v-if="serverType === 'dedicated' && serverRegion"
+			>
+				<h2 class="text-base font-medium leading-6 text-gray-900">
+					Auto Add-on Storage
+				</h2>
+				<div class="my-4 rounded border bg-gray-50 p-2 prose-sm prose">
+					This feature will automatically increases the storage as it reaches
+					over <b>90%</b> of its capacity.
+
+					<br /><br />
+					With this feature disabled, disk capacity
+					<strong>will not increase automatically</strong> in the event your
+					server approaches or reaches its storage limit.
+
+					<br /><br />
+					<strong>Note :</strong>
+
+					<ul>
+						<li v-if="this.storagePlanRate">
+							• You will be charged at the rate of
+							<b>{{ this.$format.userCurrency(this.storagePlanRate) }}/mo</b>
+							for each additional GB of storage.
+						</li>
+
+						<li>
+							• Disabling this feature may result in
+							<strong>service degradation or downtime</strong> if storage is
+							exhausted.
+						</li>
+
+						<li>
+							• Storage can auto increase only once in <strong>6 hours</strong>.
+						</li>
+					</ul>
+				</div>
+				<div>
+					<FormControl
+						type="checkbox"
+						v-model="enableAutoAddStorage"
+						label="Enable Auto Add-on Storage for Application and Database Server"
+					/>
+				</div>
+			</div>
+
 			<Summary
 				:options="summaryOptions"
 				v-if="
@@ -273,6 +333,7 @@
 										cluster: serverRegion,
 										app_plan: appServerPlan?.name,
 										db_plan: dbServerPlan?.name,
+										auto_increase_storage: enableAutoAddStorage,
 									},
 								})
 							: $resources.createHybridServer.submit({
@@ -351,6 +412,7 @@ export default {
 			dbPrivateIP: '',
 			planType: 'Standard',
 			serverEnabled: true,
+			enableAutoAddStorage: false,
 			agreedToRegionConsent: false,
 		};
 	},
@@ -395,6 +457,7 @@ export default {
 						db_plans: data.db_plans.filter((p) => p.premium == 0),
 						app_premium_plans: data.app_plans.filter((p) => p.premium == 1),
 						db_premium_plans: data.db_plans.filter((p) => p.premium == 1),
+						storage_plan: data.storage_plan,
 					};
 				},
 				onError(error) {
@@ -573,6 +636,17 @@ export default {
 					condition: () => this._totalPerMonth,
 				},
 			];
+		},
+		storagePlanRate() {
+			if (!this.$team?.doc?.currency) return -1;
+			try {
+				let priceField =
+					this.$team.doc.currency === 'INR' ? 'price_inr' : 'price_usd';
+				console.log(this.options);
+				return this.options?.storage_plan?.[priceField] || 0;
+			} catch (error) {
+				return -1;
+			}
 		},
 	},
 	methods: {

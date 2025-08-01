@@ -1,11 +1,14 @@
 <template>
 	<div>
+		<!-- Loading. -->
 		<div
 			class="mt-6 flex items-center justify-center"
 			v-if="$resources.qrUrl.loading"
 		>
 			<LoadingText />
 		</div>
+
+		<!-- Disable if 2FA is enabled. -->
 		<div
 			v-else-if="is2FAEnabled && $route.name !== 'Enable2FA'"
 			class="space-y-4"
@@ -30,6 +33,7 @@
 			/>
 		</div>
 
+		<!-- Enable 2FA if not enabled. -->
 		<div v-else class="space-y-4">
 			<div class="w-full">
 				<VueQrcode
@@ -104,6 +108,7 @@
 		</div>
 
 		<div class="!mt-8 flex justify-center">
+			<!-- Enable 2FA if not enabled. -->
 			<Button
 				v-if="!is2FAEnabled"
 				class="w-full"
@@ -113,6 +118,8 @@
 				:loading="$resources.enable2FA.loading"
 				@click="enable2FA"
 			/>
+
+			<!-- Disable 2FA if already enabled. -->
 			<Button
 				v-else
 				class="w-full"
@@ -132,34 +139,34 @@ import { toast } from 'vue-sonner';
 import AlertBanner from '../AlertBanner.vue';
 
 export default {
-	emits: ['enabled', 'disabled'],
+	emits: ['enabled', 'disabled', 'update-recovery-codes'],
 	data() {
 		return {
 			qrUrl: '', // not storing as computed property to avoid re-fetching on dialog close
 			totpCode: '',
-			showSetupKey: false
+			showSetupKey: false,
 		};
 	},
 	components: {
 		AlertBanner,
-		VueQrcode
+		VueQrcode,
 	},
 	methods: {
 		enable2FA() {
 			toast.promise(
 				this.$resources.enable2FA.submit({
-					totp_code: this.totpCode
+					totp_code: this.totpCode,
 				}),
 				{
 					loading: 'Enabling 2FA...',
-					success: () => {
+					success: (recoveryCodes) => {
 						this.totpCode = '';
+						this.$emit('update-recovery-codes', recoveryCodes);
 
 						// avoid flickering of 2FA dialog
 						setTimeout(() => {
 							this.$team.reload();
 						}, 500);
-						this.$emit('enabled');
 
 						return '2FA enabled successfully';
 					},
@@ -173,14 +180,14 @@ export default {
 						} else {
 							return 'Failed to enable 2FA';
 						}
-					}
+					},
 				}
 			);
 		},
 		disable2FA() {
 			toast.promise(
 				this.$resources.disable2FA.submit({
-					totp_code: this.totpCode
+					totp_code: this.totpCode,
 				}),
 				{
 					loading: 'Disabling 2FA...',
@@ -206,10 +213,10 @@ export default {
 						} else {
 							return 'Failed to disable 2FA';
 						}
-					}
+					},
 				}
 			);
-		}
+		},
 	},
 	resources: {
 		qrUrl() {
@@ -218,19 +225,19 @@ export default {
 				auto: true,
 				onSuccess(qr_code_url) {
 					this.qrUrl = qr_code_url;
-				}
+				},
 			};
 		},
 		enable2FA() {
 			return {
-				url: 'press.api.account.enable_2fa'
+				url: 'press.api.account.enable_2fa',
 			};
 		},
 		disable2FA() {
 			return {
-				url: 'press.api.account.disable_2fa'
+				url: 'press.api.account.disable_2fa',
 			};
-		}
+		},
 	},
 	computed: {
 		setupKey() {
@@ -239,7 +246,7 @@ export default {
 		},
 		is2FAEnabled() {
 			return this.$team.doc?.user_info?.is_2fa_enabled;
-		}
-	}
+		},
+	},
 };
 </script>

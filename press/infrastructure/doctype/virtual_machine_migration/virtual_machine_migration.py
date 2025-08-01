@@ -239,7 +239,7 @@ class VirtualMachineMigration(Document):
 		matching_plans = frappe.get_all(
 			"Server Plan",
 			{
-				"enabled": True,
+				# "enabled": True,
 				"server_type": old_plan.server_type,
 				"cluster": old_plan.cluster,
 				"instance_type": self.machine_type,
@@ -318,6 +318,9 @@ class VirtualMachineMigration(Document):
 
 	def update_server_platform(self) -> StepStatus:
 		"""Update server platform"""
+		if "m6a" in self.machine.machine_type:
+			return StepStatus.Success
+
 		server = self.machine.get_server()
 		server.platform = "arm64"
 		server.save()
@@ -330,13 +333,14 @@ class VirtualMachineMigration(Document):
 			{"status": "Active", "server": self.machine.name},
 			pluck="name",
 		)
-		container_names = " ".join(container_names)
-		command = f"docker rm -f {container_names}"
-		result = self.ansible_run(command)
+		if container_names:
+			container_names = " ".join(container_names)
+			command = f"docker rm -f {container_names}"
+			result = self.ansible_run(command)
 
-		if result["status"] != "Success" or result["error"]:
-			self.add_comment(text=f"Error stoping docker: {result}")
-			return StepStatus.Failure
+			if result["status"] != "Success" or result["error"]:
+				self.add_comment(text=f"Error stoping docker: {result}")
+				return StepStatus.Failure
 
 		return StepStatus.Success
 

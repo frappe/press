@@ -55,6 +55,7 @@ class AccountRequest(Document):
 		referral_source: DF.Data | None
 		referrer_id: DF.Data | None
 		request_key: DF.Data | None
+		request_key_expiration_time: DF.Datetime | None
 		role: DF.Data | None
 		saas: DF.Check
 		saas_app: DF.Link | None
@@ -83,6 +84,7 @@ class AccountRequest(Document):
 
 		if not self.request_key:
 			self.request_key = random_string(32)
+			self.request_key_expiration_time = frappe.utils.add_to_date(minutes=10)
 
 		if not self.otp:
 			self.otp = generate_otp()
@@ -152,7 +154,6 @@ class AccountRequest(Document):
 
 	def reset_otp(self):
 		self.otp = generate_otp()
-		self.request_key = random_string(32)
 		if frappe.conf.developer_mode and frappe.local.dev_server:
 			self.otp = 111111
 		self.save(ignore_permissions=True)
@@ -233,20 +234,31 @@ class AccountRequest(Document):
 			template=template,
 			args=args,
 			now=True,
+			reference_doctype=self.doctype,
+			reference_name=self.name,
 		)
 
-	def send_login_mail(self):
+	def send_otp_mail(self, for_login: bool = True):
 		if frappe.conf.developer_mode and frappe.local.dev_server:
-			print(rf"\Login OTP for {self.email}:")
+			print(
+				f"Login OTP for {self.email}:"
+				if for_login
+				else f"OTP to view 2FA recovery codes for {self.email}:"
+			)
 			print(self.otp)
 			print()
 			return
 
-		subject = f"{self.otp} - OTP for Frappe Cloud Login"
+		if for_login:
+			template = "login_otp"
+			subject = f"{self.otp} - OTP for Frappe Cloud Login"
+		else:
+			template = "2fa_recovery_codes_otp"
+			subject = f"{self.otp} - OTP to view 2FA recovery codes for Frappe Cloud"
+
 		args = {
 			"otp": self.otp,
 		}
-		template = "login_otp"
 
 		frappe.sendmail(
 			recipients=self.email,
@@ -254,11 +266,11 @@ class AccountRequest(Document):
 			template=template,
 			args=args,
 			now=True,
+			reference_doctype=self.doctype,
+			reference_name=self.name,
 		)
 
 	def get_verification_url(self):
-		if self.saas:
-			return get_url(f"/api/method/press.api.saas.validate_account_request?key={self.request_key}")
 		return get_url(f"/dashboard/setup-account/{self.request_key}")
 
 	@property
@@ -273,3 +285,21 @@ class AccountRequest(Document):
 
 	def is_saas_signup(self):
 		return bool(self.saas_app or self.saas or self.erpnext or self.product_trial)
+
+
+def expire_request_key():
+	"""
+	Expire the request key requested 10 minutes ago.
+	"""
+	frappe.db.set_value(
+		"Account Request",
+		{
+			"request_key_expiration_time": ("<", frappe.utils.now_datetime()),
+			"request_key": ["is", "set"],
+		},
+		{
+			"request_key": "",
+			"request_key_expiration_time": None,
+		},
+		update_modified=False,
+	)

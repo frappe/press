@@ -31,6 +31,7 @@
   "plan",
   "auto_add_storage_min",
   "auto_add_storage_max",
+  "auto_increase_storage",
   "networking_section",
   "ip",
   "column_break_10",
@@ -591,6 +592,12 @@
    "fieldtype": "Check",
    "hidden": 1,
    "label": "Binlogs Removed"
+  },
+  {
+   "default": "1",
+   "fieldname": "auto_increase_storage",
+   "fieldtype": "Check",
+   "label": "Auto Increase Storage"
   }
  ],
  "grid_page_length": 50,
@@ -607,7 +614,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-06-13 12:51:58.756907",
+ "modified": "2025-07-30 15:30:20.587642",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

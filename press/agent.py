@@ -5,6 +5,7 @@ from __future__ import annotations
 import _io  # type: ignore
 import json
 import os
+import re
 from contextlib import suppress
 from datetime import date
 from typing import TYPE_CHECKING
@@ -34,6 +35,9 @@ if TYPE_CHECKING:
 	)
 	from press.press.doctype.site.site import Site
 	from press.press.doctype.site_backup.site_backup import SiteBackup
+
+
+APPS_LIST_REGEX = re.compile(r"\[.*\]")
 
 
 class Agent:
@@ -155,9 +159,11 @@ class Agent:
 		)
 
 	def restore_site(self, site: "Site", skip_failing_patches=False):
-		site.check_enough_space_on_server()
+		site.check_space_on_server_for_restore()
 		apps = [app.app for app in site.apps]
-		public_link, private_link = None, None
+		public_link, private_link, database_link = None, None, None
+		if site.remote_database_file:
+			database_link = frappe.get_doc("Remote File", site.remote_database_file).download_link
 		if site.remote_public_file:
 			public_link = frappe.get_doc("Remote File", site.remote_public_file).download_link
 		if site.remote_private_file:
@@ -167,7 +173,7 @@ class Agent:
 			"apps": apps,
 			"mariadb_root_password": get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
-			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
+			"database": database_link,
 			"public": public_link,
 			"private": private_link,
 			"skip_failing_patches": skip_failing_patches,
@@ -240,7 +246,7 @@ class Agent:
 		)
 
 	def new_site_from_backup(self, site: "Site", skip_failing_patches=False):
-		site.check_enough_space_on_server()
+		site.check_space_on_server_for_restore()
 		apps = [app.app for app in site.apps]
 
 		def sanitized_site_config(site):
@@ -536,9 +542,16 @@ class Agent:
 					"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
 				}
 				data.update({"offsite": {"bucket": bucket_name, "auth": auth, "path": backups_path}})
-
 			else:
 				log_error("Offsite Backups aren't set yet")
+
+			data.update(
+				{
+					"keep_files_locally_after_offsite_backup": bool(
+						frappe.get_value("Server", site.server, "keep_files_on_server_in_offsite_backup")
+					)
+				}
+			)
 
 		return self.create_agent_job(
 			"Backup Site",
@@ -1285,8 +1298,10 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		)
 
 		try:
-			apps: list[str] = json.loads(raw_apps_list["data"])
-		except json.JSONDecodeError:
+			raw_apps = raw_apps_list["data"]
+			apps = APPS_LIST_REGEX.findall(raw_apps)[0]
+			apps: list[str] = json.loads(apps)
+		except (json.JSONDecodeError, IndexError):
 			apps: list[str] = [line.split()[0] for line in raw_apps_list["data"].splitlines() if line]
 
 		return apps

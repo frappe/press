@@ -79,6 +79,37 @@ class ARMBuildRecord(Document):
 		return agent_job.status == "Success"
 
 	@frappe.whitelist()
+	def remove_build_from_deploy_candidate(self, build: str):
+		"""
+		Remove arm build field from deploy candidate.
+		(when new arm build record is attempted a fresh build will be created).
+		"""
+		deploy_candidate = frappe.db.get_value("Deploy Candidate Build", build, "deploy_candidate")
+		frappe.db.set_value("Deploy Candidate", deploy_candidate, "arm_build", None)
+		frappe.db.commit()
+
+	@frappe.whitelist()
+	def retry(self):
+		server: Server = frappe.get_doc("Server", self.server)
+		server.collect_arm_images()
+		self.delete(ignore_permissions=True)
+
+	@frappe.whitelist()
+	def cancel_all_jobs(self):
+		"""Cancel all current running jobs"""
+		self.sync_status()
+
+		for arm_image in self.arm_images:
+			if arm_image.status == "Running":
+				agent_job: "AgentJob" = frappe.get_doc(
+					"Agent Job",
+					{"reference_doctype": "Deploy Candidate Build", "reference_name": arm_image.build},
+				)
+				agent_job.cancel_job()
+
+		self.sync_status()
+
+	@frappe.whitelist()
 	def pull_images(self):
 		"""Pull images on app server using image tags"""
 		builds = []

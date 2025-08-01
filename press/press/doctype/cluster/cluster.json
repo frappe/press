@@ -13,6 +13,7 @@
   "public",
   "beta",
   "hybrid",
+  "has_arm_support",
   "column_break_fsht",
   "monitoring_password",
   "image",
@@ -283,6 +284,12 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team"
+  },
+  {
+   "default": "0",
+   "fieldname": "has_arm_support",
+   "fieldtype": "Check",
+   "label": "Has ARM Support"
   }
  ],
  "image_field": "image",
@@ -319,7 +326,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-09-14 13:52:58.308402",
+ "modified": "2025-06-16 16:47:37.016006",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
@@ -339,6 +346,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

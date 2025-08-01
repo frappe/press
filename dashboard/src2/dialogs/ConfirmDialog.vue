@@ -9,11 +9,21 @@
 							v-if="field.type == 'link'"
 							v-bind="field"
 							v-model="values[field.fieldname]"
+							v-show="
+								typeof field.condition === 'function'
+									? field.condition(this.values)
+									: true
+							"
 						/>
 						<FormControl
 							v-else
 							v-bind="field"
 							v-model="values[field.fieldname]"
+							v-show="
+								typeof field.condition === 'function'
+									? field.condition(this.values)
+									: true
+							"
 						/>
 					</template>
 				</div>
@@ -43,7 +53,7 @@ export default {
 				this.fields.reduce((acc, field) => {
 					acc[field.fieldname] = field.default || null;
 					return acc;
-				}, {})
+				}, {}),
 		};
 	},
 	components: { FormControl, ErrorMessage, LinkControl },
@@ -55,13 +65,13 @@ export default {
 					this.primaryAction?.onClick || this.onSuccess;
 				let result = primaryActionHandler({
 					hide: this.hide,
-					values: this.values
+					values: this.values,
 				});
 				if (result?.then) {
 					this.isLoading = true;
 					result
 						.then(() => (this.isLoading = false))
-						.catch(error => {
+						.catch((error) => {
 							this.error = error;
 							this.isLoading = false;
 						});
@@ -76,7 +86,19 @@ export default {
 		},
 		hide() {
 			this.showDialog = false;
-		}
+		},
+		handleKeydown(event) {
+			if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+				event.preventDefault();
+				this.onConfirm();
+			}
+		},
+	},
+	mounted() {
+		document.addEventListener('keydown', this.handleKeydown);
+	},
+	beforeUnmount() {
+		document.removeEventListener('keydown', this.handleKeydown);
 	},
 	computed: {
 		primaryActionProps() {
@@ -85,9 +107,9 @@ export default {
 				variant: 'solid',
 				...this.primaryAction,
 				loading: this.isLoading,
-				onClick: this.onConfirm
+				onClick: this.onConfirm,
 			};
-		}
-	}
+		},
+	},
 };
 </script>

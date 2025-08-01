@@ -1,25 +1,12 @@
 <template>
 	<Dialog
-		:options="{
-			title: 'Restore',
-			actions: [
-				{
-					label: 'Restore',
-					variant: 'solid',
-					theme: 'red',
-					loading: $resources.restoreBackup.loading,
-					onClick: () => {
-						$resources.restoreBackup.submit();
-						showRestoreDialog = false;
-					},
-				},
-			],
-		}"
 		v-model="showRestoreDialog"
+		:disableOutsideClickToClose="true"
+		:options="{ title: 'Restore' }"
 	>
 		<template v-slot:body-content>
 			<div class="space-y-4">
-				<p class="text-base">Restore your database using a previous backup.</p>
+				<p class="text-base">Restore your site using a previous backup.</p>
 				<div
 					class="flex items-center rounded border border-gray-200 bg-gray-100 p-4 text-sm text-gray-600"
 				>
@@ -29,7 +16,20 @@
 						those from the backup
 					</div>
 				</div>
-				<BackupFilesUploader v-model:backupFiles="selectedFiles" />
+				<BackupFilesUploader
+					ref="backupFilesUploader"
+					v-model:backupFiles="selectedFiles"
+					:site="this.site"
+					:disableUploadButton="this.uploadingFiles"
+					:onError="
+						(errorMessage) => {
+							this.errorMessageFromUploader = errorMessage;
+							this.uploadingFiles = false;
+						}
+					"
+					@uploadComplete="(files) => startRestore(files)"
+					@abortUpload="() => failureHandler()"
+				/>
 			</div>
 			<div class="mt-3">
 				<!-- Skip Failing Checkbox -->
@@ -43,12 +43,34 @@
 					Skip failing patches (if any patch fails)
 				</label>
 			</div>
-			<ErrorMessage class="mt-2" :message="$resources.restoreBackup.error" />
+			<ErrorMessage
+				class="mt-2"
+				:message="$resources.restoreBackup.error || errorMessageFromUploader"
+			/>
+		</template>
+		<template v-slot:actions>
+			<Button
+				class="w-full"
+				variant="solid"
+				theme="red"
+				:loading="$resources.restoreBackup.loading || uploadingFiles"
+				@click="() => startUploadFiles()"
+			>
+				{{
+					uploadingFiles
+						? 'Uploading Files...'
+						: $resources.restoreBackup.loading
+							? 'Triggering Restore...'
+							: 'Upload & Restore'
+				}}
+			</Button>
 		</template>
 	</Dialog>
 </template>
 <script>
+import Button from 'frappe-ui/src/components/Button/Button.vue';
 import { DashboardError } from '../utils/error';
+import { toast } from 'vue-sonner';
 
 export default {
 	name: 'SiteDatabaseRestoreDialog',
@@ -68,30 +90,53 @@ export default {
 				config: null,
 			},
 			skipFailingPatches: false,
+			errorMessageFromUploader: '',
+			uploadingFiles: false,
 		};
+	},
+	methods: {
+		async startUploadFiles() {
+			this.errorMessageFromUploader = '';
+			this.uploadingFiles = true;
+			const success = await this.$refs.backupFilesUploader.uploadFiles();
+			if (!success) {
+				this.uploadingFiles = false;
+			}
+			if (this.$refs.backupFilesUploader.isAllFilesUploaded()) {
+				this.startRestore(this.selectedFiles);
+			}
+		},
+		startRestore(files) {
+			this.uploadingFiles = false;
+			if (files) {
+				this.selectedFiles = files;
+			}
+			this.$resources.restoreBackup.submit({
+				name: this.site,
+				files: this.selectedFiles,
+				skip_failing_patches: this.skipFailingPatches,
+			});
+		},
+		failureHandler() {
+			this.uploadingFiles = false;
+			this.errorMessageFromUploader =
+				'Failed to upload files. Please try again.';
+			this.showRestoreDialog = false;
+			toast.error(this.errorMessageFromUploader);
+		},
 	},
 	resources: {
 		restoreBackup() {
 			return {
 				url: 'press.api.site.restore',
-				params: {
-					name: this.site,
-					files: this.selectedFiles,
-					skip_failing_patches: this.skipFailingPatches,
-				},
-				validate() {
-					if (!this.filesUploaded) {
-						throw new DashboardError(
-							'Please upload database, public and private files to restore.',
-						);
-					}
-				},
 				onSuccess() {
 					this.selectedFiles = {};
 					this.$router.push({
 						name: 'Site Jobs',
 						params: { name: this.site },
 					});
+					this.showRestoreDialog = false;
+					this.$toast.success('Restoration triggered successfully.');
 				},
 			};
 		},

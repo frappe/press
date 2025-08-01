@@ -54,6 +54,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
 		DeployCandidateApp,
 	)
+	from press.press.doctype.release_group_server.release_group_server import ReleaseGroupServer
 
 # build_duration, pending_duration are Time fields, >= 1 day is invalid
 MAX_DURATION = timedelta(hours=23, minutes=59, seconds=59)
@@ -194,6 +195,7 @@ class DeployCandidateBuild(Document):
 		build_steps: DF.Table[DeployCandidateBuildStep]
 		deploy_after_build: DF.Check
 		deploy_candidate: DF.Link
+		deploy_on_server: DF.Link | None
 		docker_image: DF.Data | None
 		docker_image_id: DF.Data | None
 		docker_image_repository: DF.Data | None
@@ -751,7 +753,7 @@ class DeployCandidateBuild(Document):
 
 		build_meta = {
 			"doctype": "Deploy Candidate Build",
-			"deploy_candidate": self.candidate,
+			"deploy_candidate": self.candidate.name,
 			"no_build": self.no_build,
 			"no_cache": self.no_cache,
 			"no_push": self.no_push,
@@ -783,6 +785,12 @@ class DeployCandidateBuild(Document):
 
 		if build.status == Status.SUCCESS.value:
 			build.update_deploy_candidate_with_build()
+
+			deploy_on_server = request_data.get("deploy_on_server")
+			if deploy_on_server:
+				build._create_deploy([deploy_on_server])
+				return
+
 			build.create_new_platform_build_if_required_and_deploy(
 				deploy_after_build=request_data.get("deploy_after_build")
 			)
@@ -962,6 +970,7 @@ class DeployCandidateBuild(Document):
 			# read in `process_run_build`
 			"deploy_candidate_build": self.name,
 			"deploy_after_build": self.deploy_after_build,
+			"deploy_on_server": self.deploy_on_server,
 		}
 		if self.platform == "arm64":
 			build_parameters.update({"platform": self.platform})
@@ -1157,8 +1166,10 @@ class DeployCandidateBuild(Document):
 		self._set_build_duration()
 
 	def create_deploy(self):
-		servers = frappe.get_doc("Release Group", self.group).servers
+		"""Create a new deploy for the servers of matching platform present on the release group"""
+		servers: list[ReleaseGroupServer] = frappe.get_doc("Release Group", self.group).servers
 		servers = [server.server for server in servers]
+
 		if not servers:
 			return None
 
@@ -1224,6 +1235,14 @@ def fail_and_redeploy(dn: str):
 	build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dn)
 
 	return build.redeploy()
+
+
+@frappe.whitelist()
+def fail_remote_job(dn: str):
+	agent_job: "AgentJob" = frappe.get_doc(
+		"Agent Job", {"reference_doctype": "Deploy Candidate Build", "reference_name": dn}
+	)
+	agent_job.cancel_job()
 
 
 def is_build_job(job: Job) -> bool:
@@ -1328,6 +1347,23 @@ def run_scheduled_builds(max_builds: int = 5):
 			log_error(title="Scheduled Deploy Candidate Error", doc=doc)
 
 
+def create_platform_build_and_deploy(deploy_candidate: str, server: str, platform: str) -> str:
+	"""Create an arm / intel build and trigger a deploy on the given server"""
+	deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
+		{
+			"doctype": "Deploy Candidate Build",
+			"deploy_candidate": deploy_candidate,
+			"no_build": False,
+			"no_cache": False,
+			"no_push": False,
+			"platform": platform,
+			"deploy_on_server": server,
+		}
+	)
+	build = deploy_candidate_build.insert()
+	return build.name
+
+
 def check_builds_status(
 	last_n_days=0,
 	last_n_hours=4,
@@ -1406,9 +1442,9 @@ def correct_false_positives(last_n_days=0, last_n_hours=1):
 		and    dcb.status != "Failure"
 	)
 	select dcb.name
-	from   dcb join `tabDeploy Candidate Build Step` as dcbs
-	on     dcb.name = dcbs.parent
-	where  dcbs.status = "Failure"
+	from   dcb join `tabDeploy Candidate Build Step` as deploy_candidate_build_step
+	on     dcb.name = deploy_candidate_build_step.parent
+	where  deploy_candidate_build_step.status = "Failure"
 	""",
 		(
 			last_n_days,

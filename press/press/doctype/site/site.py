@@ -15,6 +15,7 @@ import frappe
 import frappe.utils
 import pytz
 import requests
+import rq
 from frappe import _
 from frappe.core.utils import find
 from frappe.frappeclient import FrappeClient, FrappeException
@@ -43,6 +44,7 @@ from press.exceptions import (
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
+from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture
 from press.utils.webhook import create_webhook_event
 
@@ -100,6 +102,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server.server import BaseServer, Server
+	from press.press.doctype.tls_certificate.tls_certificate import TLSCertificate
 
 DOCTYPE_SERVER_TYPE_MAP = {
 	"Server": "Application",
@@ -143,6 +146,7 @@ class Site(Document, TagHelpers):
 		current_disk_usage: DF.Int
 		database_access_connection_limit: DF.Int
 		database_name: DF.Data | None
+		disable_site_usage_exceed_check: DF.Check
 		domain: DF.Link | None
 		erpnext_consultant: DF.Link | None
 		free: DF.Check
@@ -153,6 +157,7 @@ class Site(Document, TagHelpers):
 		hybrid_saas_pool: DF.Link | None
 		is_erpnext_setup: DF.Check
 		is_standby: DF.Check
+		last_site_usage_warning_mail_sent_on: DF.Datetime | None
 		logical_backup_times: DF.Table[SiteBackupTime]
 		notify_email: DF.Data | None
 		only_update_at_specified_time: DF.Check
@@ -170,6 +175,9 @@ class Site(Document, TagHelpers):
 		setup_wizard_status_check_next_retry_on: DF.Datetime | None
 		setup_wizard_status_check_retries: DF.Int
 		signup_time: DF.Datetime | None
+		site_usage_exceeded: DF.Check
+		site_usage_exceeded_last_checked_on: DF.Datetime | None
+		site_usage_exceeded_on: DF.Datetime | None
 		skip_auto_updates: DF.Check
 		skip_failing_patches: DF.Check
 		skip_scheduled_logical_backups: DF.Check
@@ -683,7 +691,7 @@ class Site(Document, TagHelpers):
 			row.type = key_type
 
 			if key_type == "Number":
-				key_value = int(row.value) if isinstance(row.value, (float, int)) else json.loads(row.value)
+				key_value = int(row.value) if isinstance(row.value, float | int) else json.loads(row.value)
 			elif key_type == "Boolean":
 				key_value = (
 					row.value if isinstance(row.value, bool) else bool(sbool(json.loads(cstr(row.value))))
@@ -843,7 +851,7 @@ class Site(Document, TagHelpers):
 		return group.is_version_14_or_higher()
 
 	@property
-	def space_required_on_app_server(self):
+	def restore_space_required_on_app(self):
 		db_size, public_size, private_size = (
 			frappe.get_doc("Remote File", file_name).size if file_name else 0
 			for file_name in (
@@ -852,23 +860,40 @@ class Site(Document, TagHelpers):
 				self.remote_private_file,
 			)
 		)
-		space_for_download = db_size + public_size + private_size
+		return self.get_restore_space_required_on_app(
+			db_file_size=db_size, public_file_size=public_size, private_file_size=private_size
+		)
+
+	@property
+	def restore_space_required_on_db(self):
+		if not self.remote_database_file:
+			return 0
+		db_size = frappe.get_doc("Remote File", self.remote_database_file).size
+		return self.get_restore_space_required_on_db(db_file_size=db_size)
+
+	def get_restore_space_required_on_app(
+		self, db_file_size: int = 0, public_file_size: int = 0, private_file_size: int = 0
+	) -> int:
+		space_for_download = db_file_size + public_file_size + private_file_size
 		space_for_extracted_files = (
-			(0 if self.is_version_14_or_higher() else (8 * db_size)) + public_size + private_size
+			(0 if self.is_version_14_or_higher() else (8 * db_file_size))
+			+ public_file_size
+			+ private_file_size
 		)  # 8 times db size for extraction; estimated
 		return space_for_download + space_for_extracted_files
 
-	@property
-	def space_required_on_db_server(self):
-		db_size = frappe.get_doc("Remote File", self.remote_database_file).size
-		return 8 * db_size * 2  # double extracted size for binlog
+	def get_restore_space_required_on_db(self, db_file_size: int = 0) -> int:
+		"""Returns the space required on the database server for restoration."""
+		return 8 * db_file_size * 2  # double for binlogs
 
-	def check_and_increase_disk(self, server: "BaseServer", space_required: int):
+	def check_and_increase_disk(
+		self, server: "BaseServer", space_required: int, no_increase=False, purpose="create site"
+	):
 		mountpoint = server.guess_data_disk_mountpoint()
 		free_space = server.free_space(mountpoint)
 		if (diff := free_space - space_required) <= 0:
-			msg = f"Insufficient estimated space on {DOCTYPE_SERVER_TYPE_MAP[server.doctype]} server to create site. Required: {human_readable(space_required)}, Available: {human_readable(free_space)} (Need {human_readable(abs(diff))})."
-			if server.public:
+			msg = f"Insufficient estimated space on {DOCTYPE_SERVER_TYPE_MAP[server.doctype]} server to {purpose}. Required: {human_readable(space_required)}, Available: {human_readable(free_space)} (Need {human_readable(abs(diff))})."
+			if server.public and not no_increase:
 				self.try_increasing_disk(server, mountpoint, diff, msg)
 			else:
 				frappe.throw(msg, InsufficientSpaceOnServer)
@@ -882,13 +907,36 @@ class Site(Document, TagHelpers):
 				InsufficientSpaceOnServer,
 			)
 
-	def check_enough_space_on_server(self):
+	@property
+	def backup_space_required_on_app(self) -> int:
+		"""Returns the space required on the app server for backup."""
+		db_size, public_size, private_size = (
+			frappe.get_doc("Remote File", file_name).size if file_name else 0
+			for file_name in (
+				self.remote_database_file,
+				self.remote_public_file,
+				self.remote_private_file,
+			)
+		)
+		return db_size + public_size + private_size
+
+	def check_space_on_server_for_backup(self):
+		provider = frappe.get_value("Cluster", self.cluster, "cloud_provider")
 		app: "Server" = frappe.get_doc("Server", self.server)
-		self.check_and_increase_disk(app, self.space_required_on_app_server)
+		no_increase = True
+		if app.auto_increase_storage or (app.public and provider in ["AWS EC2", "OCI"]):
+			no_increase = False
+		self.check_and_increase_disk(
+			app, self.backup_space_required_on_app, no_increase=no_increase, purpose="backup site"
+		)
+
+	def check_space_on_server_for_restore(self):
+		app: "Server" = frappe.get_doc("Server", self.server)
+		self.check_and_increase_disk(app, self.restore_space_required_on_app)
 
 		if app.database_server:
 			db: "DatabaseServer" = frappe.get_doc("Database Server", app.database_server)
-			self.check_and_increase_disk(db, self.space_required_on_db_server)
+			self.check_and_increase_disk(db, self.restore_space_required_on_db)
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
@@ -992,7 +1040,10 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def restore_site(self, skip_failing_patches=False):
-		if not frappe.get_doc("Remote File", self.remote_database_file).exists():
+		if (
+			self.remote_database_file
+			and not frappe.get_doc("Remote File", self.remote_database_file).exists()
+		):
 			raise Exception(f"Remote File {self.remote_database_file} is unavailable on S3")
 
 		agent = Agent(self.server)
@@ -1054,7 +1105,7 @@ class Site(Document, TagHelpers):
 		if physical and not self.allow_physical_backup_by_user:
 			frappe.throw(_("Physical backup is not enabled for this site. Please reach out to support."))
 
-		if frappe.db.get_single_value("Press Settings", "disable_physical_backup"):
+		if physical and frappe.db.get_single_value("Press Settings", "disable_physical_backup"):
 			frappe.throw(_("Physical backup is disabled system wide. Please try again later."))
 		# Site deactivation required only for physical backup
 		return self.backup(with_files=with_files, physical=physical, deactivate_site_during_backup=physical)
@@ -1635,6 +1686,16 @@ class Site(Document, TagHelpers):
 				)
 			elif f"User {user} does not exist" in str(e):
 				frappe.throw(f"User {user} does not exist in the site", frappe.ValidationError)
+			elif "certificate has expired" in str(e):
+				frappe.throw(
+					"SSL certificate for the site has expired. Please check the domains tab.",
+					frappe.ValidationError,
+				)
+			elif "no space left on device" in str(e):
+				frappe.throw(
+					"Site is unresponsive due to no space left on device. Please contact support.",
+					frappe.ValidationError,
+				)
 			elif frappe.db.exists(
 				"Incident",
 				{
@@ -1978,7 +2039,7 @@ class Site(Document, TagHelpers):
 
 		for d in config:
 			d = frappe._dict(d)
-			if isinstance(d.value, (dict, list)):
+			if isinstance(d.value, dict | list):
 				value = json.dumps(d.value)
 			else:
 				value = d.value
@@ -2044,11 +2105,11 @@ class Site(Document, TagHelpers):
 		if frappe.db.exists("Site Config Key", key):
 			return frappe.db.get_value("Site Config Key", key, "type")
 
-		if isinstance(value, (dict, list)):
+		if isinstance(value, dict | list):
 			return "JSON"
 		if isinstance(value, bool):
 			return "Boolean"
-		if isinstance(value, (int, float)):
+		if isinstance(value, int | float):
 			return "Number"
 		return "String"
 
@@ -2182,6 +2243,7 @@ class Site(Document, TagHelpers):
 
 	def change_plan(self, plan, ignore_card_setup=False):
 		self.can_change_plan(ignore_card_setup)
+		self.reset_disk_usage_exceeded_status(save=False)
 		plan_config = self.get_plan_config(plan)
 
 		self._update_configuration(plan_config)
@@ -2237,29 +2299,10 @@ class Site(Document, TagHelpers):
 		self.archive_site_database_users()
 
 	def unsuspend_if_applicable(self):
-		try:
-			usage = frappe.get_last_doc("Site Usage", {"site": self.name})
-		except frappe.DoesNotExistError:
-			# If no doc is found, it means the site was created a few moments before
-			# team was suspended, potentially due to failure in payment. Don't unsuspend
-			# site in that case. team.unsuspend_sites should handle that, then.
-			return
-
-		plan_name = self.plan
-		# get plan from subscription
-		if not plan_name:
-			subscription = self.subscription
-			if not subscription:
-				return
-			plan_name = subscription.plan
-
-		plan = frappe.get_doc("Site Plan", plan_name)
-
-		disk_usage = usage.public + usage.private
-		if usage.database < plan.max_database_usage and disk_usage < plan.max_storage_usage:
-			self.current_database_usage = (usage.database / plan.max_database_usage) * 100
-			self.current_disk_usage = ((usage.public + usage.private) / plan.max_storage_usage) * 100
-			self.unsuspend(reason="Plan Upgraded")
+		if self.site_usage_exceeded:
+			self.reset_disk_usage_exceeded_status()
+		else:
+			self.unsuspend("Plan Upgraded")
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
@@ -2280,6 +2323,8 @@ class Site(Document, TagHelpers):
 	@site_action(["Inactive", "Broken"])
 	def activate(self):
 		log_site_activity(self.name, "Activate Site")
+		if self.status == "Suspended":
+			self.reset_disk_usage_exceeded_status()
 		self.status = "Active"
 		self.update_site_config({"maintenance_mode": 0})
 		self.update_site_status_on_proxy("activated")
@@ -2297,6 +2342,16 @@ class Site(Document, TagHelpers):
 			from press.saas.doctype.product_trial.product_trial import send_suspend_mail
 
 			send_suspend_mail(self.name, self.standby_for_product)
+
+		if self.site_usage_exceeded and self.notify_email:
+			frappe.sendmail(
+				recipients=self.notify_email,
+				subject=f"Action Required: Site {self.host_name} suspended",
+				template="site_suspend_due_to_exceeding_disk_usage",
+				args={
+					"subject": f"Site {self.host_name} has been suspended",
+				},
+			)
 
 	def deactivate_app_subscriptions(self):
 		frappe.db.set_value(
@@ -2400,9 +2455,52 @@ class Site(Document, TagHelpers):
 			config["rate_limit"] = {}
 		return config
 
-	def set_latest_bench(self):
+	def _get_benches_for_(self, proxy_servers, release_group_names=None):
 		from pypika.terms import PseudoColumn
 
+		benches = frappe.qb.DocType("Bench")
+		servers = frappe.qb.DocType("Server")
+
+		bench_query = (
+			frappe.qb.from_(benches)
+			.select(
+				benches.name,
+				benches.server,
+				benches.group,
+				benches.cluster,
+				PseudoColumn(f"`tabBench`.`cluster` = '{self.cluster}' `in_primary_cluster`"),
+			)
+			.left_join(servers)
+			.on(benches.server == servers.name)
+			.where(servers.proxy_server.isin(proxy_servers))
+			.where(benches.status == "Active")
+			.orderby(PseudoColumn("in_primary_cluster"), order=frappe.qb.desc)
+			.orderby(servers.use_for_new_sites, order=frappe.qb.desc)
+			.orderby(benches.creation, order=frappe.qb.desc)
+			.limit(1)
+		)
+		if release_group_names:
+			groups = frappe.qb.DocType("Release Group")
+			bench_query = (
+				bench_query.where(benches.group.isin(release_group_names))
+				.join(groups)
+				.on(benches.group == groups.name)
+				.where(groups.version == self.version)
+			)
+		else:
+			restricted_release_group_names = frappe.db.get_all(
+				"Site Plan Release Group",
+				pluck="release_group",
+				filters={"parenttype": "Site Plan", "parentfield": "release_groups"},
+			)
+			if self.group in restricted_release_group_names:
+				frappe.throw(f"Site can't be deployed on this release group {self.group} due to restrictions")
+			bench_query = bench_query.where(benches.group == self.group)
+		if self.server:
+			bench_query = bench_query.where(servers.name == self.server)
+		return bench_query.run(as_dict=True)
+
+	def set_latest_bench(self):
 		if not (self.domain and self.cluster and self.group):
 			frappe.throw("domain, cluster and group are required to create site")
 
@@ -2414,6 +2512,10 @@ class Site(Document, TagHelpers):
 			{"status": "Active", "name": ("in", proxy_servers_names)},
 			pluck="name",
 		)
+		if not proxy_servers:
+			frappe.throw(
+				f"No active proxy servers found for domain {self.domain}. Please contact support.",
+			)
 
 		"""
 		For restricted plans, just choose any bench from the release groups and clusters combination
@@ -2432,49 +2534,20 @@ class Site(Document, TagHelpers):
 				},
 			)
 
-		Bench = frappe.qb.DocType("Bench")
-		Server = frappe.qb.DocType("Server")
-
-		bench_query = (
-			frappe.qb.from_(Bench)
-			.select(
-				Bench.name,
-				Bench.server,
-				Bench.group,
-				PseudoColumn(f"`tabBench`.`cluster` = '{self.cluster}' `in_primary_cluster`"),
-			)
-			.left_join(Server)
-			.on(Bench.server == Server.name)
-			.where(Server.proxy_server.isin(proxy_servers))
-			.where(Bench.status == "Active")
-			.orderby(PseudoColumn("in_primary_cluster"), order=frappe.qb.desc)
-			.orderby(Server.use_for_new_sites, order=frappe.qb.desc)
-			.orderby(Bench.creation, order=frappe.qb.desc)
-			.limit(1)
+		benches = self._get_benches_for_(
+			proxy_servers,
+			release_group_names,
 		)
-		if release_group_names:
-			bench_query = bench_query.where(Bench.group.isin(release_group_names))
-		else:
-			restricted_release_group_names = frappe.db.get_all(
-				"Site Plan Release Group",
-				pluck="release_group",
-				filters={"parenttype": "Site Plan", "parentfield": "release_groups"},
-			)
-			if self.group in restricted_release_group_names:
-				frappe.throw(f"Site can't be deployed on this release group {self.group} due to restrictions")
-			bench_query = bench_query.where(Bench.group == self.group)
-		if self.server:
-			bench_query = bench_query.where(Server.name == self.server)
-
-		result = bench_query.run(as_dict=True)
-		if len(result) == 0:
+		if len(benches) == 0:
 			frappe.throw("No bench available to deploy this site")
 			return
 
-		self.bench = result[0].name
-		self.server = result[0].server
+		self.bench = benches[0].name
+		self.server = benches[0].server
 		if release_group_names:
-			self.group = result[0].group
+			self.group = benches[0].group
+		if self.cluster != benches[0].cluster:
+			frappe.throw(f"Site cannot be deployed on {self.cluster} yet. Please contact support.")
 
 	def _create_initial_site_plan_change(self, plan):
 		frappe.get_doc(
@@ -2648,6 +2721,55 @@ class Site(Document, TagHelpers):
 		result["slow_queries"] = sorted(slow_queries, key=lambda x: x["rows_examined"], reverse=True)
 		result["is_performance_schema_enabled"] = is_performance_schema_enabled
 		return result
+
+	def check_if_disk_usage_exceeded(self, save=True):  # noqa: C901
+		if self.disable_site_usage_exceed_check:
+			# Flag to disable disk usage exceeded check
+			return
+
+		if self.free or frappe.get_cached_value("Team", self.team, "free_account"):
+			# Ignore for free sites and teams
+			return
+		if not frappe.db.get_value("Server", self.server, "public"):
+			# Don't check disk usage for dedicated servers
+			return
+
+		# Check if disk usage exceeded
+		disk_usage_exceeded = self.current_database_usage > 120 or self.current_disk_usage > 120
+		# If disk usage not exceeded, and site
+		if not disk_usage_exceeded and self.site_usage_exceeded:
+			# Reset site usage exceeded flags
+			self.reset_disk_usage_exceeded_status(save=save)
+			return
+
+		# If that's detected previously as well, just update the last checked time
+		if disk_usage_exceeded and self.site_usage_exceeded:
+			self.site_usage_exceeded_last_checked_on = now_datetime()
+			if save:
+				self.save()
+			return
+
+		if disk_usage_exceeded and not self.site_usage_exceeded:
+			# If disk usage exceeded, set the flags
+			self.site_usage_exceeded = True
+			self.site_usage_exceeded_on = now_datetime()
+			self.site_usage_exceeded_last_checked_on = now_datetime()
+			if save:
+				self.save()
+
+	def reset_disk_usage_exceeded_status(self, save=True):
+		self.site_usage_exceeded = False
+		self.site_usage_exceeded_on = None
+		self.site_usage_exceeded_last_checked_on = None
+		self.last_site_usage_warning_mail_sent_on = None
+
+		if self.status == "Suspended":
+			self.unsuspend(reason="Disk usage issue resolved")
+		elif self.status_before_update == "Suspended":
+			self.status_before_update = "Active"
+
+		if save:
+			self.save()
 
 	@property
 	def server_logs(self):
@@ -2920,28 +3042,28 @@ class Site(Document, TagHelpers):
 				"description": "Upgrade your site to a major version",
 				"button_label": "Upgrade",
 				"doc_method": "upgrade",
-				"condition": self.status == "Active",
+				"condition": self.status in ["Active", "Broken", "Inactive"],
 			},
 			{
 				"action": "Change region",
 				"description": "Move your site to a different region",
 				"button_label": "Change",
 				"doc_method": "change_region",
-				"condition": self.status == "Active",
+				"condition": self.status in ["Active", "Broken", "Inactive"],
 			},
 			{
 				"action": "Change bench group",
 				"description": "Move your site to a different bench group",
 				"button_label": "Change",
 				"doc_method": "change_bench",
-				"condition": self.status == "Active",
+				"condition": self.status in ["Active", "Broken", "Inactive"],
 			},
 			{
 				"action": "Change server",
 				"description": "Move your site to a different server",
 				"button_label": "Change",
 				"doc_method": "change_server",
-				"condition": self.status == "Active" and not is_group_public,
+				"condition": self.status in ["Active", "Broken", "Inactive"] and not is_group_public,
 			},
 			{
 				"action": "Clear cache",
@@ -3224,7 +3346,7 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active"])
 	def fetch_certificate(self, domain: str):
-		tls_certificate = frappe.get_last_doc("TLS Certificate", {"domain": domain})
+		tls_certificate: TLSCertificate = frappe.get_last_doc("TLS Certificate", {"domain": domain})
 		tls_certificate.obtain_certificate()
 
 	def fetch_database_name(self):
@@ -3303,8 +3425,8 @@ class Site(Document, TagHelpers):
 		table: str | None = None,
 		search_string: str | None = None,
 	):
-		if (end - start) > 60 * 60 * 2:
-			frappe.throw("Binlog search is limited to 2 hour. Please select a smaller time range.")
+		if (end - start) > 60 * 60 * 24:
+			frappe.throw("Binlog search is limited to 24 hours. Please select a smaller time range.")
 
 		if not table:
 			table = None
@@ -3580,6 +3702,30 @@ def get_remove_step_status(job):
 	)
 
 
+def get_backup_restoration_tests(site: str) -> list[str]:
+	return frappe.get_all(
+		"Backup Restoration Test",
+		dict(test_site=site, status=("in", ("Success", "Archive Failed"))),
+		pluck="name",
+	)
+
+
+def update_backup_restoration_test(site: str, status: str):
+	backup_tests = get_backup_restoration_tests(site)
+
+	if not backup_tests:
+		return
+	if status == "Archived":
+		frappe.db.set_value(
+			"Backup Restoration Test",
+			backup_tests[0],
+			"status",
+			"Archive Successful",
+		)
+	elif status == "Broken":
+		frappe.db.set_value("Backup Restoration Test", backup_tests[0], "status", "Archive Failed")
+
+
 def process_archive_site_job_update(job):
 	site_status = frappe.get_value("Site", job.site, "status", for_update=True)
 
@@ -3594,6 +3740,7 @@ def process_archive_site_job_update(job):
 			filters={"job_type": other_job_type, "site": job.site},
 			for_update=True,
 		)
+
 	except frappe.DoesNotExistError:
 		# Site is already renamed, the other job beat us to it
 		# Our work is done
@@ -3623,6 +3770,7 @@ def process_archive_site_job_update(job):
 			job.site,
 			{"status": updated_status, "archive_failed": updated_status != "Archived"},
 		)
+		update_backup_restoration_test(job.site, updated_status)
 		if updated_status == "Archived":
 			site_cleanup_after_archive(job.site)
 
@@ -4128,3 +4276,97 @@ def archive_suspended_sites():
 	agent = frappe.get_doc("Proxy Server", {"cluster": signup_cluster}).agent
 	if archived_now:
 		agent.reload_nginx()
+
+
+def send_warning_mail_regarding_sites_exceeding_disk_usage():
+	if not frappe.db.get_single_value("Press Settings", "enforce_storage_limits"):
+		return
+
+	free_teams = frappe.get_all("Team", filters={"free_account": True, "enabled": True}, pluck="name")
+	sites_with_no_mail_sent_previously = frappe.get_all(
+		"Site",
+		filters={
+			"status": "Active",
+			"free": False,
+			"team": ("not in", free_teams),
+			"site_usage_exceeded": 1,
+			"last_site_usage_warning_mail_sent_on": ("is", "not set"),
+		},
+		pluck="name",
+	)
+
+	sites_with_recurring_alerts = frappe.get_all(
+		"Site",
+		filters={
+			"status": "Active",
+			"free": False,
+			"team": ("not in", free_teams),
+			"site_usage_exceeded": 1,
+			"last_site_usage_warning_mail_sent_on": ("<", frappe.utils.nowdate()),
+		},
+		pluck="name",
+	)
+
+	sites = list(set(sites_with_no_mail_sent_previously + sites_with_recurring_alerts))
+
+	for site in sites:
+		if has_job_timeout_exceeded():
+			break
+		try:
+			site_info = frappe.get_value(
+				"Site",
+				site,
+				["notify_email", "current_disk_usage", "current_database_usage", "site_usage_exceeded_on"],
+				as_dict=True,
+			)
+			if not site_info.notify_email or (
+				site_info.current_disk_usage < 120 and site_info.current_database_usage < 120
+			):
+				# Final check if site is still exceeding limits
+				continue
+			frappe.sendmail(
+				recipients=site_info.notify_email,
+				subject=f"Action Required: Site {site} exceeded plan limits",
+				template="site_exceeded_disk_usage_warning",
+				args={
+					"site": site,
+					"current_disk_usage": site_info.current_disk_usage,
+					"current_database_usage": site_info.current_database_usage,
+					"no_of_days_left_to_suspend": 7
+					- (frappe.utils.date_diff(frappe.utils.nowdate(), site_info.site_usage_exceeded_on) or 0),
+				},
+			)
+			frappe.db.set_value("Site", site, "last_site_usage_warning_mail_sent_on", frappe.utils.now())
+			frappe.db.commit()
+		except rq.timeouts.JobTimeoutException:
+			frappe.db.rollback()
+			return
+		except Exception as e:
+			print(e)
+			frappe.db.rollback()
+
+
+def suspend_sites_exceeding_disk_usage_for_last_7_days():
+	"""Suspend sites if they have exceeded database or disk usage limits for the last 7 days."""
+
+	if not frappe.db.get_single_value("Press Settings", "enforce_storage_limits"):
+		return
+
+	free_teams = frappe.get_all("Team", filters={"free_account": True, "enabled": True}, pluck="name")
+	active_sites = frappe.get_all(
+		"Site",
+		filters={
+			"status": "Active",
+			"free": False,
+			"team": ("not in", free_teams),
+			"site_usage_exceeded": 1,
+			"site_usage_exceeded_on": ("<", frappe.utils.add_to_date(frappe.utils.now(), days=-7)),
+		},
+		fields=["name", "team", "current_database_usage", "current_disk_usage"],
+	)
+
+	for site in active_sites:
+		if site.current_database_usage > 120 or site.current_disk_usage > 120:
+			# Check once again and suspend if still exceeds limits
+			site: Site = frappe.get_doc("Site", site.name)
+			site.suspend(reason="Site Usage Exceeds Plan limits", skip_reload=True)

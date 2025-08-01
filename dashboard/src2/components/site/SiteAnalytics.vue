@@ -346,8 +346,8 @@ export default {
 	},
 	data() {
 		return {
-			duration: '24h',
-			showAdvancedAnalytics: false,
+			duration: '1h',
+			showAdvancedAnalytics: true,
 			localTimezone: dayjs.tz.guess(),
 			slowLogsDurationType: 'Denormalized',
 			slowLogsFrequencyType: 'Denormalized',

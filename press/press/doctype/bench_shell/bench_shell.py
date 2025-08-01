@@ -20,6 +20,7 @@ class BenchShell(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		as_root: DF.Check
 		bench: DF.Link | None
 		command: DF.Code | None
 		directory: DF.Data | None
@@ -36,11 +37,7 @@ class BenchShell(Document):
 
 		bench: "Bench" = frappe.get_doc("Bench", self.bench)
 		try:
-			result = bench.docker_execute(
-				self.command,
-				self.subdir,
-				self.save_output,
-			)
+			result = bench.docker_execute(self.command, self.subdir, self.save_output, as_root=self.as_root)
 		except Exception:
 			self.save_output = False
 			self.output = None

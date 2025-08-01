@@ -24,22 +24,22 @@ export default {
 	components: {
 		PerformanceReport,
 		AlertBanner,
-		SiteSlowQueryDialog
+		SiteSlowQueryDialog,
 	},
 	data() {
 		return {
 			show: false,
 			selectedQuery: '',
-			selectedQueryDuration: 0
+			selectedQueryDuration: 0,
 		};
 	},
 	computed: {
 		slowQueriesOptions() {
 			return {
 				experimental: true,
-				documentation: 'https://frappecloud.com/docs/performance-tuning',
+				documentation: 'https://docs.frappe.io/cloud/performance-tuning',
 				data: () => this.$resources.slowQueries.data.data,
-				onRowClick: row => {
+				onRowClick: (row) => {
 					this.selectedQuery = row.query;
 					this.selectedQueryDuration = row.duration;
 					this.show = true;
@@ -50,7 +50,7 @@ export default {
 						label: 'Query',
 						fieldname: 'query',
 						class: 'font-mono',
-						width: '600px'
+						width: '600px',
 					},
 					{
 						label: 'Duration',
@@ -58,44 +58,44 @@ export default {
 						class: 'text-gray-600',
 						width: 0.3,
 						align: 'right',
-						format: value => value.toFixed(2)
+						format: (value) => value.toFixed(2),
 					},
 					{
 						label: 'Rows Examined',
 						fieldname: 'rows_examined',
 						class: 'text-gray-600',
 						align: 'right',
-						width: 0.3
+						width: 0.3,
 					},
 					{
 						label: 'Rows Sent',
 						fieldname: 'rows_sent',
 						class: 'text-gray-600',
 						align: 'right',
-						width: 0.3
+						width: 0.3,
 					},
 					{
 						label: 'Count',
 						fieldname: 'count',
 						class: 'text-gray-600',
 						align: 'right',
-						width: 0.3
-					}
+						width: 0.3,
+					},
 				],
 				actions: () => [
 					{
 						label: 'Refresh',
 						icon: 'refresh-ccw',
 						loading: this.$resources.slowQueries.loading,
-						onClick: () => this.$resources.slowQueries.reload()
-					}
-				]
+						onClick: () => this.$resources.slowQueries.reload(),
+					},
+				],
 			};
-		}
+		},
 	},
 	methods: {
 		getDateTimeRange() {
-			const formatDateTime = date => {
+			const formatDateTime = (date) => {
 				return this.$dayjs(date).format('YYYY-MM-DD HH:mm:ss');
 			};
 
@@ -106,9 +106,9 @@ export default {
 
 			return {
 				startDateTime: startDateTimeFormatted,
-				endDateTime: endDateTime
+				endDateTime: endDateTime,
 			};
-		}
+		},
 	},
 	resources: {
 		slowQueries() {
@@ -122,12 +122,12 @@ export default {
 					max_lines: 10,
 					search_pattern: '.*',
 					normalize_queries: true,
-					analyze: false
+					analyze: false,
 				},
 				auto: true,
-				initialData: { columns: [], data: [] }
+				initialData: { columns: [], data: [] },
 			};
-		}
-	}
+		},
+	},
 };
 </script>

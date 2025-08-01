@@ -135,7 +135,11 @@ export default {
 					server:
 						serverType === 'Server'
 							? this.$appServer.name
-							: this.$dbServer.name,
+							: serverType === 'Database Server'
+								? this.$dbServer.name
+								: serverType === 'Replication Server'
+									? this.$dbReplicaServer?.name
+									: null,
 					serverType,
 				}),
 			);
@@ -149,7 +153,11 @@ export default {
 					server:
 						serverType === 'Server'
 							? this.$appServer.name
-							: this.$dbServer.name,
+							: serverType === 'Database Server'
+								? this.$dbServer.name
+								: serverType === 'Replication Server'
+									? this.$dbReplicaServer?.name
+									: null,
 					serverType,
 				}),
 			);
@@ -329,21 +337,33 @@ export default {
 							onClick: () => {
 								confirmDialog({
 									title: 'Configure Auto Increase Storage',
-									message: `<div class="rounded my-4 p-2 text-sm text-gray-700 bg-gray-100 border">
+									message: `<div class="rounded my-4 p-2 prose-sm prose bg-gray-50 border">
 
-									This feature automatically increases available storage as it reaches over <b>90%</b> of its capacity. It is enabled by default to avoid server/site downtime.
-
-									<br><br>
-									You can disable this entirely by setting minimum and maximum below to <b>0 GB</b>. But if you do, <strong>we may not be notified of incidents from this server</strong>.
+									This feature will automatically increases the storage as it reaches over <b>90%</b> of its capacity.
 
 									<br><br>
-									<strong>Note</strong>: Storage can auto increase only once in 6 hours.
+									With this feature disabled, disk capacity <strong>will not increase automatically</strong> in the event your server approaches or reaches its storage limit.
 
+									<br><br>
+									<strong>Note :</strong>
 
-									</div>Enter the maximum and minimum storage to increase for the server (each time) <b>${
-										doc.title || doc.name
-									}</b>.`,
+									<ul>
+										<li>
+											• Disabling this feature may result in <strong>service degradation or downtime</strong> if storage is exhausted.
+										</li>
+										<li>
+											• Storage can auto increase only once in <strong>6 hours</strong>.
+										</li>
+									</ul>
+`,
 									fields: [
+										{
+											fieldname: 'auto_increase_storage',
+											type: 'checkbox',
+											default: doc.auto_increase_storage,
+											label: 'Enable Auto Increase Storage',
+											variant: 'outline',
+										},
 										{
 											fieldname: 'min',
 											type: 'select',
@@ -355,6 +375,9 @@ export default {
 												label: `${i * 5} GB`,
 												value: i * 5,
 											})),
+											condition: (values) => {
+												return values.auto_increase_storage;
+											},
 										},
 										{
 											fieldname: 'max',
@@ -367,6 +390,9 @@ export default {
 												label: `${i * 5} GB`,
 												value: i * 5,
 											})),
+											condition: (values) => {
+												return values.auto_increase_storage;
+											},
 										},
 									],
 									onSuccess: ({ hide, values }) => {
@@ -374,6 +400,7 @@ export default {
 											this.$appServer.configureAutoAddStorage.submit(
 												{
 													server: doc.name,
+													enabled: values.auto_increase_storage,
 													min: Number(values.min),
 													max: Number(values.max),
 												},
@@ -409,7 +436,9 @@ export default {
 							label: 'Storage Breakdown',
 							icon: 'pie-chart',
 							variant: 'ghost',
-							hidden: serverType !== 'Database Server',
+							hidden:
+								this.$appServer.doc.cluster != 'Mumbai' &&
+								serverType === 'Server',
 							onClick: () => {
 								this.showStorageBreakdownDialog(serverType);
 							},

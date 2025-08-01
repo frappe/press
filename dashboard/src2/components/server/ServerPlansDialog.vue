@@ -100,7 +100,7 @@ export default {
 			return {
 				url: 'press.api.server.plans',
 				params: {
-					name: this.serverType,
+					name: this.cleanedServerType,
 					cluster: this.$server.doc.cluster,
 					platform: this.$server.doc.current_plan.platform,
 				},
@@ -133,7 +133,12 @@ export default {
 	},
 	computed: {
 		$server() {
-			return getCachedDocumentResource(this.serverType, this.server);
+			return getCachedDocumentResource(this.cleanedServerType, this.server);
+		},
+		cleanedServerType() {
+			return this.serverType === 'Replication Server'
+				? 'Database Server'
+				: this.serverType;
 		},
 	},
 };

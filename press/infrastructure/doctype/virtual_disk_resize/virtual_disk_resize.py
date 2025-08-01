@@ -448,6 +448,7 @@ class VirtualDiskResize(Document):
 		self.old_volume_status = "Deleted"
 		return StepStatus.Success
 
+	@frappe.whitelist()
 	def propagate_volume_id(self) -> StepStatus:
 		"Propagate volume id"
 		machine = self.machine
@@ -456,7 +457,7 @@ class VirtualDiskResize(Document):
 		if len(machine.volumes) == 2 and machine.has_data_volume:
 			# Clear the volumes list, it'll be repopulated on save
 			server = machine.get_server()
-			server.volumes = []
+			server.mounts = []
 			server.save()
 		return StepStatus.Success
 

@@ -549,7 +549,7 @@ export default {
 								onClick() {
 									confirmDialog({
 										title: `Redirect Domain`,
-										message: `Are you sure you want to redirect the domain <b>${row.domain}</b> to the primary domain of the site <b>${site.doc?.name}</b>?`,
+										message: `Are you sure you want to redirect the domain <b>${row.domain}</b> to the primary domain of the site <b>${site.doc?.host_name}</b>?`,
 										onSuccess({ hide }) {
 											if (site.redirectToPrimary.loading) return;
 											toast.promise(
@@ -578,7 +578,7 @@ export default {
 								onClick() {
 									confirmDialog({
 										title: `Remove Redirect`,
-										message: `Are you sure you want to remove the redirect from the domain <b>${row.domain}</b> to the primary domain of the site <b>${site.doc?.name}</b>?`,
+										message: `Are you sure you want to remove the redirect from the domain <b>${row.domain}</b> to the primary domain of the site <b>${site.doc?.host_name}</b>?`,
 										onSuccess({ hide }) {
 											if (site.removeRedirect.loading) return;
 											toast.promise(
@@ -603,7 +603,7 @@ export default {
 								condition: () =>
 									row.status === 'Broken' &&
 									site.doc.broken_domain_error &&
-									site.doc.tls_cert_retry_count < 5,
+									site.doc.tls_cert_retry_count < 8,
 								onClick() {
 									confirmDialog({
 										title: `Fetch Certificate`,
@@ -701,27 +701,27 @@ export default {
 							},
 						},
 						{
-							label: 'Backup with files',
+							label: 'Files',
 							fieldname: 'with_files',
 							type: 'Icon',
-							width: 0.5,
+							width: 0.25,
 							Icon(value) {
 								return value ? 'check' : '';
 							},
 						},
 						{
-							label: 'Offsite Backup',
+							label: 'Offsite',
 							fieldname: 'offsite',
-							width: 0.5,
+							width: 0.25,
 							type: 'Icon',
 							Icon(value) {
 								return value ? 'check' : '';
 							},
 						},
 						{
-							label: 'Physical Backup',
+							label: 'Physical',
 							fieldname: 'physical',
-							width: 0.5,
+							width: 0.25,
 							type: 'Icon',
 							Icon(value) {
 								return value ? 'check' : '';

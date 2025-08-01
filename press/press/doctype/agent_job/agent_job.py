@@ -35,15 +35,10 @@ from press.utils import has_role, log_error, timer
 
 AGENT_LOG_KEY = "agent-jobs"
 
-if TYPE_CHECKING:
-	from press.press.doctype.site.site import Site
-
 
 class AgentJob(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
-
-	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
@@ -120,7 +115,7 @@ class AgentJob(Document):
 		return results
 
 	def get_doc(self, doc):
-		if doc.status == "Undelivered":
+		if doc.status == "Undelivered" and not doc.output:
 			doc.status = "Pending"
 
 		doc["steps"] = frappe.get_all(
@@ -425,25 +420,6 @@ def publish_update(job):
 				"site": message["site"],
 			},
 		)
-
-
-def suspend_sites():
-	"""Suspend sites if they have exceeded database or disk limits"""
-
-	if not frappe.db.get_single_value("Press Settings", "enforce_storage_limits"):
-		return
-
-	free_teams = frappe.get_all("Team", filters={"free_account": True, "enabled": True}, pluck="name")
-	active_sites = frappe.get_all(
-		"Site",
-		filters={"status": "Active", "free": False, "team": ("not in", free_teams)},
-		fields=["name", "team", "current_database_usage", "current_disk_usage"],
-	)
-
-	for site in active_sites:
-		if site.current_database_usage > 100 or site.current_disk_usage > 100:
-			site: Site = frappe.get_doc("Site", site.name)
-			site.suspend(reason="Site Usage Exceeds Plan limits", skip_reload=True)
 
 
 @timer
