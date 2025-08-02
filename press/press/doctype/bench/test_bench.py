@@ -448,7 +448,7 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 		self.assertEqual(benches_before - benches_after, 2)
 		self.assertEqual(mock_archive_by_server.call_count, 2)
 
-	def test_check_archive_agent_job_is_succesful(self):
+	def test_check_if_archive_agent_job_is_successful(self):
 		priv_group = create_test_release_group(apps=[create_test_app()], public=False)
 		bench = create_test_bench(group=priv_group, creation=frappe.utils.add_days(None, -10))
 		frappe.db.set_value("Bench", bench.name, "status", "Success")
@@ -459,7 +459,7 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 		bench.reload()
 		self.assertEqual(bench.status, "Pending")
 
-	def test_unarchived_sites_before_archive(self):
+	def test_check_for_any_unarchived_sites_on_bench(self):
 		priv_group = create_test_release_group(apps=[create_test_app()], public=False)
 		bench = create_test_bench(group=priv_group, creation=frappe.utils.add_days(None, -10))
 		site = create_test_site(bench=bench)
@@ -473,7 +473,7 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 		self.assertEqual(site.status, "Active")
 		self.assertEqual(bench.status, "Pending")
 
-	def test_ongoing_jobs(self):
+	def test_if_any_ongoing_jobs_are_running_on_bench(self):
 		with fake_agent_job("New Bench"):
 			bench = create_test_bench()
 			poll_pending_jobs()
