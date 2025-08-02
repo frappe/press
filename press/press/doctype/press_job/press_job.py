@@ -5,7 +5,9 @@ import json
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import add_days
+from frappe.utils import add_days, add_to_date
+
+from press.press.doctype.press_job_step.press_job_step import safe_exec
 
 
 class PressJob(Document):
@@ -18,10 +20,16 @@ class PressJob(Document):
 		from frappe.types import DF
 
 		arguments: DF.Code
+		callback_executed: DF.Check
+		callback_failed: DF.Check
+		callback_failure_count: DF.Int
+		callback_failure_issue_resolved: DF.Check
+		callback_retry_limit_reached: DF.Check
 		duration: DF.Duration | None
 		end: DF.Datetime | None
 		job_type: DF.Link
 		name: DF.Int | None
+		next_callback_retry_at: DF.Datetime | None
 		server: DF.DynamicLink | None
 		server_type: DF.Link | None
 		start: DF.Datetime | None
@@ -49,6 +57,9 @@ class PressJob(Document):
 		self.execute()
 
 	def on_update(self):
+		self.process_callback(save=True)
+
+	def on_change(self):
 		self.publish_update()
 
 	def create_press_job_steps(self):
@@ -160,6 +171,51 @@ class PressJob(Document):
 			"press_job_update", doctype=self.doctype, docname=self.name, message=self.detail()
 		)
 
+	@frappe.whitelist()
+	def mark_callback_failure_issue_resolved(self):
+		self.callback_failure_issue_resolved = True
+		self.save()
+
+	def process_callback(self, save: bool = False):  # noqa: C901
+		if self.status not in ["Success", "Failure"]:
+			return
+
+		if self.callback_executed or self.callback_failure_issue_resolved:
+			return
+
+		job_type = frappe.db.get_value(
+			"Press Job Type", self.job_type, ["callback_script", "callback_max_retry"], as_dict=True
+		)
+		if not job_type.callback_script:
+			self.callback_executed = True
+			if save:
+				self.save()
+			# No callback script defined, so just mark as executed
+			return
+
+		if self.callback_failed and self.callback_failure_count >= (job_type.callback_max_retry or 0):
+			self.callback_retry_limit_reached = True
+			self.next_callback_retry_at = None
+			if save:
+				self.save()
+			return
+
+		local = {"arguments": frappe._dict(json.loads(self.arguments)), "doc": self}
+		try:
+			safe_exec(job_type.callback_script, _locals=local)
+			self.callback_failed = False
+			self.callback_executed = True
+			self.next_callback_retry_at = None
+			self.callback_failure_issue_resolved = False
+		except Exception:
+			frappe.log_error(f"Error executing callback script for {self.name}")
+			self.callback_failed = True
+			self.callback_failure_count += 1
+			self.next_callback_retry_at = add_to_date(None, minutes=5)
+
+		if save:
+			self.save()
+
 	def on_trash(self):
 		frappe.db.delete("Press Job Step", {"job": self.name})
 
@@ -178,3 +234,26 @@ def fail_stuck_press_jobs():
 		job = PressJob("Press Job", job_name)
 		job.force_fail()
 		frappe.db.commit()
+
+
+def process_failed_callbacks():
+	jobs = frappe.get_all(
+		"Press Job",
+		filters={
+			"status": ("in", ["Success", "Failure"]),
+			"callback_failed": True,
+			"callback_executed": False,
+			"callback_failure_issue_resolved": False,
+			"callback_retry_limit_reached": False,
+			"next_callback_retry_at": ("<", frappe.utils.now_datetime()),
+		},
+		pluck="name",
+	)
+	for job_name in jobs:
+		frappe.enqueue_doc(
+			"Press Job",
+			job_name,
+			"process_callback",
+			enqueue_after_commit=True,
+			save=True,
+		)
