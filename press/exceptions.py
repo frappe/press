@@ -79,3 +79,7 @@ class MultipleCNAMERecords(DNSValidationError):
 
 class TLSRetryLimitExceeded(ValidationError):
 	pass
+
+
+class ArchiveBenchError(ValidationError):
+	pass

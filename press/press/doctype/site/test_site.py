@@ -52,7 +52,7 @@ if typing.TYPE_CHECKING:
 @patch.object(DeployCandidateBuild, "pre_build", new=Mock())
 def create_test_bench(
 	user: str | None = None,
-	group: ReleaseGroup = None,
+	group: ReleaseGroup | None = None,
 	server: str | None = None,
 	apps: list[dict] | None = None,
 	creation: datetime | None = None,

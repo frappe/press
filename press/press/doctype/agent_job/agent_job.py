@@ -573,6 +573,9 @@ def filter_request_failures(servers):
 
 
 def poll_pending_jobs():
+	"""
+	Poll pending job fetches the status of Pending Jobs from all servers.
+	"""
 	filters = {"status": ("in", ["Pending", "Running", "Undelivered"])}
 	if random.random() > 0.1:
 		# Experimenting with fewer polls (only for backup jobs)
