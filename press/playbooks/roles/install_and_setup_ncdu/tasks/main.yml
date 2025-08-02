@@ -3,6 +3,6 @@
   become: yes
   become_user: root
   apt:
-    name: ncdu=1.14.1-1
+    name: ncdu
     state: present
     update_cache: no
