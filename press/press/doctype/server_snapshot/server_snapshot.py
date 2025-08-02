@@ -38,6 +38,7 @@ class ServerSnapshot(Document):
 		database_server_snapshot: DF.Link | None
 		database_server_snapshot_press_job: DF.Link | None
 		database_server_vcpu: DF.Int
+		free: DF.Check
 		locked: DF.Check
 		provider: DF.Literal["AWS EC2", "OCI"]
 		site_list: DF.JSON | None
@@ -71,6 +72,12 @@ class ServerSnapshot(Document):
 			"server_snapshot": self.name,
 			"is_consistent_snapshot": self.consistent,
 		}
+
+	@property
+	def subscription(self) -> str | None:
+		return frappe.db.get_value(
+			"Subscription", {"document_type": "Server Snapshot", "document_name": self.name}
+		)
 
 	def validate(self):
 		if self.provider != "AWS EC2":
@@ -141,6 +148,13 @@ class ServerSnapshot(Document):
 				for job in self.flags.created_press_jobs:
 					with contextlib.suppress(Exception):
 						frappe.get_doc("Press Job", job).delete(ignore_permissions=True)
+
+	def on_update(self):
+		if self.has_value_changed("status"):
+			if self.status == "Completed":
+				self._create_subscription()
+			elif self.status in ["Failure", "Unavailable"]:
+				self._disable_subscription()
 
 	def create_press_jobs(self):
 		self.flags.created_press_jobs = []
@@ -379,3 +393,41 @@ class ServerSnapshot(Document):
 		)
 
 		return server_name
+
+	def _create_subscription(self):
+		"""
+		Create a subscription for the server snapshot.
+		This method can be called after the server snapshot is completed.
+		"""
+		if self.free:
+			return
+
+		plan = frappe.get_value("Server Snapshot Plan", {"provider": self.provider, "enabled": 1}, "name")
+		if not plan:
+			frappe.throw(f"No active Server Snapshot Plan found for provider {self.provider}.")
+
+		frappe.get_doc(
+			{
+				"doctype": "Subscription",
+				"enabled": 1,
+				"team": self.team,
+				"document_type": "Server Snapshot",
+				"document_name": self.name,
+				"plan_type": "Server Snapshot Plan",
+				"plan": plan,
+				"interval": "Daily",
+			}
+		).insert(ignore_permissions=True)
+
+	def _disable_subscription(self):
+		"""
+		Delete the subscription for the server snapshot.
+		This method can be called when the server snapshot is archived or deleted.
+		"""
+		frappe.db.set_value(
+			"Subscription",
+			self.subscription,
+			"enabled",
+			0,
+			update_modified=True,
+		)
