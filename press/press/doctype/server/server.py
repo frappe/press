@@ -1625,7 +1625,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		current_disk_usage = round(current_disk_usage / 1024 / 1024 / 1024, 2)
 		disk_capacity = round(disk_capacity / 1024 / 1024 / 1024, 2)
 
-		if not server.auto_increase_storage and mountpoint != "/":
+		if not server.auto_increase_storage and (not server.has_data_volume or mountpoint != "/"):
 			telegram.send(
 				f"Not increasing disk (mount point {mountpoint}) on "
 				f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
