@@ -1,6 +1,6 @@
 {
  "actions": [],
- "allow_rename": 1,
+ "autoname": "format:snap-{#######}",
  "creation": "2025-07-30 16:05:51.738947",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -18,6 +18,8 @@
   "consistent",
   "column_break_gviv",
   "locked",
+  "column_break_pswb",
+  "free",
   "section_break_zgjz",
   "app_server",
   "app_server_snapshot",
@@ -283,15 +285,28 @@
    "fieldtype": "Int",
    "label": "DB Server RAM",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_pswb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "If free, user will not be charged for the snapshot",
+   "fieldname": "free",
+   "fieldtype": "Check",
+   "label": "Free",
+   "set_only_once": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-01 22:10:57.171601",
+ "modified": "2025-08-02 11:32:37.624098",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Snapshot",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {

@@ -348,6 +348,7 @@ fixtures = [
 	"Press Method Permission",
 	"Bench Dependency",
 	"Server Storage Plan",
+	"Server Snapshot Plan",
 	"Press Webhook Event",
 ]
 # Testing
