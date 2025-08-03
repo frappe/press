@@ -69,7 +69,7 @@
 </template>
 <script>
 import { Button } from 'frappe-ui';
-import { DashboardError } from '../utils/error';
+import BackupFilesUploader from './BackupFilesUploader.vue';
 import { toast } from 'vue-sonner';
 
 export default {
@@ -79,6 +79,10 @@ export default {
 			type: String,
 			required: true,
 		},
+	},
+	components: {
+		BackupFilesUploader,
+		Button,
 	},
 	data() {
 		return {
