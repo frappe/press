@@ -575,8 +575,8 @@ class VirtualMachine(Document):
 			try:
 				server_instance = self.client().servers.get_by_id(self.instance_id)
 			except APIException as e:
-				if "server not found" in str(e.message):
-					frappe.throw("Server Not Found")
+				if "server not found" in str(e):
+					frappe.throw(f"{self.name}: Server not found")
 				is_deleted = True
 		if server_instance and not is_deleted:
 			# cluster: Document = frappe.get_doc("Cluster", self.cluster)
