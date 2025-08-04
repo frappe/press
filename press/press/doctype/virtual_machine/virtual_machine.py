@@ -473,6 +473,9 @@ class VirtualMachine(Document):
 			self.client().reboot_instances(InstanceIds=[self.instance_id])
 		elif self.cloud_provider == "OCI":
 			self.client().instance_action(instance_id=self.instance_id, action="RESET")
+		elif self.cloud_provider == "Hetzner":
+			server_instance = self.client().servers.get_by_id(self.instance_id)
+			self.client().servers.reboot(server_instance)
 		self.sync()
 
 	@frappe.whitelist()
