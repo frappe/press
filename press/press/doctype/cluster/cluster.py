@@ -840,7 +840,7 @@ class Cluster(Document):
 			}
 		).insert(ignore_permissions=True, ignore_if_duplicate=True)
 
-	def create_server(
+	def create_server(  # noqa: C901
 		self,
 		doctype: str,
 		title: str,
@@ -895,8 +895,21 @@ class Cluster(Document):
 				server = vm.create_server()
 				server.title = f"{title} - Application"
 				server.ram = plan.memory
-				server.database_server = self.database_server
-				server.proxy_server = self.proxy_server
+				if not hasattr(self, "database_server") or not self.database_server:
+					frappe.throw(
+						"Please set the Database Server to Cluster record before creating the App Server",
+						frappe.ValidationError,
+					)
+				else:
+					server.database_server = self.database_server
+
+				if not hasattr(self, "proxy_server") or not self.proxy_server:
+					frappe.throw(
+						"Please set the Proxy Server to Cluster record before creating the App Server",
+						frappe.ValidationError,
+					)
+				else:
+					server.proxy_server = self.proxy_server
 				server.new_worker_allocation = True
 				server.auto_increase_storage = auto_increase_storage
 			case "Proxy Server":
