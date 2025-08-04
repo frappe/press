@@ -476,7 +476,8 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 	def test_if_any_ongoing_jobs_are_running_on_bench(self):
 		with fake_agent_job("New Bench"):
 			bench = create_test_bench()
+			frappe.db.set_value("Bench", bench.name, "status", "Pending")
 			poll_pending_jobs()
-			bench.archive()
-			self.assertRaises(ArchiveBenchError, bench.archive)
+			with self.assertRaises(ArchiveBenchError):
+				bench.archive()
 			bench.reload()
