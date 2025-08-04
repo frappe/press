@@ -645,7 +645,6 @@ class ReleaseGroup(Document, TagHelpers):
 			apps_to_update = self.apps
 
 		apps = []
-		last_deployed_bench = get_last_doc("Bench", {"group": self.name, "status": "Active"})
 
 		for app in self.deploy_information().apps:
 			app_to_update = find(apps_to_update, lambda x: x.get("app") == app.app)
@@ -663,18 +662,20 @@ class ReleaseGroup(Document, TagHelpers):
 				)
 			else:
 				# Either we don't want to update the app or there's no update available
-				if last_deployed_bench:
-					# Find the last deployed release and use it
-					app_to_keep = find(last_deployed_bench.apps, lambda x: x.app == app.app)
-					if app_to_keep:
-						apps.append(
-							{
-								"app": app_to_keep.app,
-								"source": app_to_keep.source,
-								"release": app_to_keep.release,
-								"hash": app_to_keep.hash,
-							}
-						)
+				# Select current apps in the release group instead of picking from last deployed bench
+				app_to_keep = find(self.apps, lambda x: x.app == app.app)
+				if app_to_keep:
+					app_release, hash = frappe.db.get_value(
+						"App Release", {"source": app_to_keep.source}, ["name", "hash"]
+					)
+					apps.append(
+						{
+							"app": app_to_keep.app,
+							"source": app_to_keep.source,
+							"release": app_release,
+							"hash": hash,
+						}
+					)
 
 		return self.get_sorted_based_on_rg_apps(apps)
 
