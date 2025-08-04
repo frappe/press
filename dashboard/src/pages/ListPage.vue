@@ -41,7 +41,7 @@
 			/>
 			<AlertUnpaidInvoices
 				class="mb-5"
-				v-if="hasUnpaidInvoices > 0"
+				v-if="hasUnpaidInvoices > 0 && $team.doc.payment_mode == 'Prepaid Credits'"
 				:amount="hasUnpaidInvoices"
 			/>
 			<ObjectList :options="listOptions" />
