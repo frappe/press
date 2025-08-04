@@ -1082,6 +1082,7 @@
 		"rivo",
 		"mergify",
 		"ncdu",
-		"interactjs"
+		"interactjs",
+		"ocpu"
 	]
 }
