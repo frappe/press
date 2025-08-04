@@ -30,7 +30,8 @@
 					<div v-if="tab.value === 'members'" class="text-base">
 						<div class="my-4 flex gap-2">
 							<div class="flex-1">
-								<Autocomplete
+								<FormControl
+									type="autocomplete"
 									:options="autoCompleteList"
 									v-model="member"
 									placeholder="Select a member to add"

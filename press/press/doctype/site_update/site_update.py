@@ -253,7 +253,7 @@ class SiteUpdate(Document):
 		# Check for last logical backup
 		last_logical_site_backups = frappe.db.get_list(
 			"Site Backup",
-			filters={"site": self.site, "physical": False},
+			filters={"site": self.site, "physical": False, "status": "Success"},
 			pluck="database_size",
 			limit=1,
 			order_by="creation desc",
