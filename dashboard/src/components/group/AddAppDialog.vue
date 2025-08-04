@@ -90,8 +90,9 @@
 												v-if="row.source.branch"
 												type="white"
 												icon-right="chevron-down"
+												class="max-w-48 truncate"
 											>
-												<span>{{ row.source.branch }}</span>
+												<span class="truncate">{{ row.source.branch }}</span>
 											</Button>
 										</template>
 									</Dropdown>
@@ -348,6 +349,7 @@ export default {
 		dropdownItems(row) {
 			return row.sources.map((source) => ({
 				label: `${source.repository_owner}/${source.repository}:${source.branch}`,
+				icon: row.source.name === source.name ? 'check' : null,
 				onClick: () => this.selectSource(row, source),
 			}));
 		},
