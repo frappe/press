@@ -950,6 +950,9 @@ class VirtualMachine(Document):
 			self.client().terminate_instances(InstanceIds=[self.instance_id])
 		elif self.cloud_provider == "OCI":
 			self.client().terminate_instance(instance_id=self.instance_id)
+		elif self.cloud_provider == "Hetzner":
+			server_instance = self.client().servers.get_by_id(self.instance_id)
+			self.client().servers.delete(server_instance)
 
 	@frappe.whitelist()
 	def resize(self, machine_type):
