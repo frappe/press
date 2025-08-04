@@ -424,14 +424,7 @@ class Bench(Document):
 		self.status = "Pending"
 		self.save()  # lock 1
 
-		unarchived_sites = frappe.db.get_value(
-			"Site",
-			{"bench": self.name, "status": ("!=", "Archived")},
-			"name",
-			for_update=True,  # lock 2
-		)
-		if unarchived_sites:
-			frappe.throw("Cannot archive bench with active sites.", ArchiveBenchError)
+		self.check_unarchived_sites()
 
 		self._mark_applied_patch_as_archived()
 		agent = Agent(self.server)
