@@ -204,12 +204,7 @@ class BaseServer(Document, TagHelpers):
 				mountpoint=mountpoint,
 				log=add_on_storage_log.name if add_on_storage_log else None,
 			)
-<<<<<<< HEAD
-			if mountpoint != "/" or not server.has_data_volume:
-				# Don't charge for root on servers with volume
-=======
 			if self.should_bill_add_on_storage(self, mountpoint=mountpoint):
->>>>>>> 895786b3d (chore(subscription): Add checks before creating/updating subscription doc)
 				self.create_subscription_for_storage(increment)
 		else:
 			server_doc: DatabaseServer = frappe.get_doc("Database Server", server)
@@ -246,12 +241,7 @@ class BaseServer(Document, TagHelpers):
 				mountpoint=mountpoint,
 				log=add_on_storage_log.name if add_on_storage_log else None,
 			)
-<<<<<<< HEAD
-			if mountpoint != "/" or not server_doc.has_data_volume:
-				# Don't charge for root on servers with volume
-=======
 			if self.should_bill_add_on_storage(server_doc, mountpoint):
->>>>>>> 895786b3d (chore(subscription): Add checks before creating/updating subscription doc)
 				server_doc.create_subscription_for_storage(increment)
 
 	@dashboard_whitelist()
