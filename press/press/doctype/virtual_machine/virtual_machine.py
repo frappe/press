@@ -967,8 +967,6 @@ class VirtualMachine(Document):
 			server_instance = self.client().servers.get_by_id(self.instance_id)
 			self.client().servers.delete(server_instance)
 
-		log_server_activity(self.series, self.name, action="Terminated", team=get_current_team())
-
 	@frappe.whitelist()
 	def resize(self, machine_type):
 		if self.cloud_provider == "AWS EC2":
