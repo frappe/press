@@ -353,7 +353,9 @@ class ServerSnapshot(Document):
 		plan: str | None = None,
 		team: str | None = None,
 		create_subscription: bool | None = False,
+		database_server: str | None = None,
 		temporary_server: bool | None = False,
+		is_for_recovery: bool = False,
 	) -> str:
 		if server_type not in ["Server", "Database Server"]:
 			frappe.throw("Invalid server type. Must be 'Server' or 'Database Server'.")
@@ -372,9 +374,19 @@ class ServerSnapshot(Document):
 				memory=self.app_server_ram if server_type == "Server" else self.database_server_ram,
 			)
 
+		cluster.proxy_server = frappe.get_all(
+			"Proxy Server",
+			{"status": "Active", "cluster": cluster.name, "is_primary": True},
+			pluck="name",
+			limit=1,
+		)[0]
+
+		if database_server:
+			cluster.database_server = database_server
+
 		server, _ = cluster.create_server(
 			doctype=server_type,
-			title=title or f"SNAP-{self.name}",
+			title=title or self.name,
 			team=team,
 			data_disk_snapshot=self.app_server_snapshot
 			if server_type == "Server"
@@ -382,6 +394,7 @@ class ServerSnapshot(Document):
 			plan=frappe.get_doc("Server Plan", plan) if isinstance(plan, str) else plan,
 			create_subscription=create_subscription,
 			temporary_server=temporary_server,
+			is_for_recovery=is_for_recovery,
 		)
 		server_name = ""
 		if server:

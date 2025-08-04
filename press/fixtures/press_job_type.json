@@ -38,6 +38,7 @@
 >>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
+<<<<<<< HEAD
   "modified": "2025-08-01 18:29:05.498314",
   "name": "Create Server",
   "steps": [
@@ -129,6 +130,8 @@
 >>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
+=======
+>>>>>>> 3a30f251a (feat(snapshot-recovery): Spawn up special servers)
   "modified": "2025-01-02 15:33:27.252601",
   "name": "Resize Server",
   "steps": [
@@ -221,11 +224,15 @@
 <<<<<<< HEAD
 =======
   "callback_max_retry": 0,
+<<<<<<< HEAD
   "callback_script": null,
 >>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
+=======
+  "callback_script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type in [\"Server\", \"Database Server\"] and server.is_for_recovery:\n    filter_field = \"app_server\" if doc.server_type == \"Server\" else \"database_server\"\n    recovery_record_name = frappe.db.get_value(\"Server Snapshot Recovery\", {filter_field: doc.server}, \"name\")\n    if recovery_record_name:\n        recovery_record = frappe.get_doc(\"Server Snapshot Recovery\", recovery_record_name, for_update=True)\n    \n        if doc.status == \"Success\":\n            if doc.server_type == \"Server\":\n                recovery_record.app_server_archived = True\n            else:\n                recovery_record.database_server_archived = True\n            recovery_record.save()",
+>>>>>>> 3a30f251a (feat(snapshot-recovery): Spawn up special servers)
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2022-11-01 14:35:52.936503",
+  "modified": "2025-08-04 18:20:49.856983",
   "name": "Archive Server",
   "steps": [
    {
@@ -470,6 +477,91 @@
   ]
 <<<<<<< HEAD
 =======
+ },
+ {
+  "callback_max_retry": 1,
+  "callback_script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type in [\"Server\", \"Database Server\"] and server.is_for_recovery:\n    filter_field = \"app_server\" if doc.server_type == \"Server\" else \"database_server\"\n    recovery_record_name = frappe.db.get_value(\"Server Snapshot Recovery\", {filter_field: doc.server}, \"name\")\n    if recovery_record_name:\n        recovery_record = frappe.get_doc(\"Server Snapshot Recovery\", recovery_record_name, for_update=True)\n    \n        if doc.status == \"Success\":\n            if doc.server_type == \"Server\":\n                recovery_record.is_app_server_ready = True\n            else:\n                recovery_record.is_database_server_ready = True\n            recovery_record.save()\n        else:\n            recovery_record.mark_server_provisioning_as_failed()",
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2025-08-04 19:11:43.435512",
+  "name": "Create Server",
+  "steps": [
+   {
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.provision()\n",
+    "step_name": "Create Server",
+    "wait_until_true": 0
+   },
+   {
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = (machine.status == \"Running\", False)\n",
+    "step_name": "Wait for Server to start",
+    "wait_until_true": 1
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.ping_ansible()\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Ping Server\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
+    "step_name": "Wait for Server to be accessible",
+    "wait_until_true": 1
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"AWS EC2\" and frappe.db.get_value(\"Virtual Machine\", server.virtual_machine, \"data_disk_snapshot\"):\n    try:\n        vm = frappe.get_doc(\"Virtual Machine\", server.virtual_machine)\n        vm.sync()\n        \n        if len(vm.volumes) == 0:\n            result = (False, False)\n        else:\n            server.reload()\n            server.validate_mounts()\n            server.save()\n            result = (True, False)\n    except frappe.exceptions.TimestampMismatchError:\n        pass\n    except Exception as e:\n        raise e\nelse:\n    result = (True, False)",
+    "step_name": "Sync Attached Volumes",
+    "wait_until_true": 1
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"AWS EC2\" and frappe.db.get_value(\"Virtual Machine\", server.virtual_machine, \"data_disk_snapshot\"):\n    cleanup_db_replication_files = False\n    if doc.server_type == \"Database Server\" and server.is_for_recovery:\n        cleanup_db_replication_files = True\n    server.mount_volumes(now=True, restart_services=True, cleanup_db_replication_files=cleanup_db_replication_files)\nelse:\n    result = (False, False)",
+    "step_name": "Mount Data Disk",
+    "wait_until_true": 0
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.update_tls_certificate()",
+    "step_name": "Update TLS Certificate",
+    "wait_until_true": 0
+   },
+   {
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Setup TLS Certificates\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
+    "step_name": "Wait for TLS Certificate to be updated",
+    "wait_until_true": 1
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.wait_for_cloud_init()",
+    "step_name": "Check Cloud Init status",
+    "wait_until_true": 0
+   },
+   {
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Wait for Cloud Init to finish\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
+    "step_name": "Wait for Cloud Init to finish",
+    "wait_until_true": 1
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.update_agent_ansible()",
+    "step_name": "Update Agent Ansible",
+    "wait_until_true": 0
+   },
+   {
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Update Agent\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
+    "step_name": "Wait for Agent to be updated",
+    "wait_until_true": 1
+   },
+   {
+    "script": "if doc.server_type == \"Database Server\":\n    server = frappe.get_doc(\"Database Server\", doc.server)\n    server.upgrade_mariadb()",
+    "step_name": "Upgrade MariaDB",
+    "wait_until_true": 0
+   },
+   {
+    "script": "if doc.server_type == \"Database Server\":\n    plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Upgrade MariaDB\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n    result = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\nelse:\n    result = (True,)",
+    "step_name": "Wait for MariaDB Upgrade to Complete",
+    "wait_until_true": 1
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.set_additional_config()",
+    "step_name": "Set additional config",
+    "wait_until_true": 0
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Server\" and server.cluster == 'Mumbai':\n    server.setup_archived_folder()\n\nserver.save()\n",
+    "step_name": "Setup archived folder",
+    "wait_until_true": 0
+   }
+  ]
  },
  {
   "callback_max_retry": 5,

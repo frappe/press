@@ -10,6 +10,7 @@ import frappe
 import frappe.utils
 from frappe.core.doctype.version.version import get_diff
 from frappe.core.utils import find
+from frappe.utils.password import get_decrypted_password
 
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
@@ -58,6 +59,7 @@ class DatabaseServer(BaseServer):
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
 		ip: DF.Data | None
+		is_for_recovery: DF.Check
 		is_performance_schema_enabled: DF.Check
 		is_primary: DF.Check
 		is_replication_setup: DF.Check
@@ -79,7 +81,7 @@ class DatabaseServer(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
 		public: DF.Check
 		ram: DF.Float
 		root_public_key: DF.Code | None
@@ -132,6 +134,19 @@ class DatabaseServer(BaseServer):
 		self.validate_mariadb_system_variables()
 
 	def validate_mariadb_root_password(self):
+		# Check if db server created from snapshot
+		if self.is_new() and self.virtual_machine and not self.mariadb_root_password:
+			data_disk_snapshot = frappe.get_value(
+				"Virtual Machine", self.virtual_machine, "data_disk_snapshot"
+			)
+			if data_disk_snapshot:
+				self.mariadb_root_password = get_decrypted_password(
+					"Virtual Disk Snapshot",
+					data_disk_snapshot,
+					"mariadb_root_password",
+				)
+
+		# Generate a random password if not set
 		if not self.mariadb_root_password:
 			self.mariadb_root_password = frappe.generate_hash(length=32)
 
@@ -1215,6 +1230,14 @@ class DatabaseServer(BaseServer):
 		self.add_or_update_mariadb_variable("innodb_log_file_size", "value_int", log_file_size, save=False)
 
 		self.save(ignore_permissions=True)
+
+	def set_innodb_force_recovery(self, value: int):
+		"""Set innodb_force_recovery to the given value"""
+		if value < 0 or value > 6:
+			frappe.throw("innodb_force_recovery value must be between 0 and 6")
+		self.add_or_update_mariadb_variable(
+			"innodb_force_recovery", "value_str", str(value), skip=False, persist=True, save=True
+		)
 
 	@frappe.whitelist()
 	def reconfigure_mariadb_exporter(self):

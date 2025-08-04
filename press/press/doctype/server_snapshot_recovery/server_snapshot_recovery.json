@@ -1,0 +1,134 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-08-04 10:34:26.272832",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "column_break_msoo",
+  "snapshot",
+  "section_break_ipfw",
+  "app_server",
+  "is_app_server_ready",
+  "app_server_archived",
+  "column_break_qsfq",
+  "database_server",
+  "is_database_server_ready",
+  "database_server_archived",
+  "section_break_ilwd",
+  "sites"
+ ],
+ "fields": [
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nCreating Servers\nRestoring\nRestored\nFailure"
+  },
+  {
+   "fieldname": "column_break_msoo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "snapshot",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Snapshot",
+   "options": "Server Snapshot",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_ilwd",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "sites",
+   "fieldtype": "Table",
+   "label": "Sites",
+   "options": "Server Snapshot Site Recovery"
+  },
+  {
+   "fieldname": "section_break_ipfw",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "app_server",
+   "fieldtype": "Link",
+   "label": "App Server",
+   "options": "Server",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_qsfq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "database_server",
+   "fieldtype": "Link",
+   "label": "Database Server",
+   "options": "Database Server",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_app_server_ready",
+   "fieldtype": "Check",
+   "label": "App Server Ready",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_database_server_ready",
+   "fieldtype": "Check",
+   "label": "Database Server Ready",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "app_server_archived",
+   "fieldtype": "Check",
+   "label": "App Server Archived",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "database_server_archived",
+   "fieldtype": "Check",
+   "label": "Database Server Archived",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-08-04 18:09:11.043180",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Server Snapshot Recovery",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

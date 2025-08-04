@@ -15,6 +15,7 @@ from frappe.core.utils import find
 from frappe.desk.utils import slug
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
+from frappe.utils.password import get_decrypted_password
 from hcloud import APIException, Client
 from hcloud.images import Image
 from hcloud.servers.domain import ServerCreatePublicNetwork
@@ -1312,9 +1313,15 @@ class VirtualMachine(Document):
 			document["is_server_prepared"] = True
 			document["is_server_setup"] = True
 			document["is_server_renamed"] = True
-			document["mariadb_root_password"] = frappe.get_doc(
-				"Virtual Machine Image", self.virtual_machine_image
-			).get_password("mariadb_root_password")
+			if self.data_disk_snapshot:
+				document["mariadb_root_password"] = get_decrypted_password(
+					"Virtual Disk Snapshot", self.data_disk_snapshot, "mariadb_root_password"
+				)
+			else:
+				document["mariadb_root_password"] = get_decrypted_password(
+					"Virtual Machine Image", self.virtual_machine_image, "mariadb_root_password"
+				)
+
 			if not document["mariadb_root_password"]:
 				frappe.throw(
 					f"Virtual Machine Image {self.virtual_machine_image} does not have a MariaDB root password set."

@@ -1445,9 +1445,17 @@ class BaseServer(Document, TagHelpers):
 			log_error("Start Benches Exception", server=self.as_dict())
 
 	@frappe.whitelist()
-	def mount_volumes(self, now: bool | None, restart_services: bool | None = None):
+	def mount_volumes(
+		self,
+		now: bool | None,
+		restart_services: bool | None = None,
+		cleanup_db_replication_files: bool | None = None,
+	):
 		if not restart_services:
 			restart_services = False
+
+		if not cleanup_db_replication_files:
+			cleanup_db_replication_files = False
 
 		frappe.enqueue_doc(
 			self.doctype,
@@ -1458,20 +1466,32 @@ class BaseServer(Document, TagHelpers):
 			at_front=True,
 			now=now or False,
 			restart_services=restart_services,
+			cleanup_db_replication_files=cleanup_db_replication_files,
 		)
 
-	def _mount_volumes(self, restart_services: bool = False):
+	def _mount_volumes(self, restart_services: bool = False, cleanup_db_replication_files: bool = False):
 		try:
+			variables = {
+				"stop_docker_before_mount": self.doctype == "Server" and restart_services,
+				"stop_mariadb_before_mount": self.doctype == "Database Server" and restart_services,
+				"start_docker_after_mount": self.doctype == "Server"
+				and restart_services
+				and not self.is_for_recovery,  # don't start docker if this is a recovery server
+				"start_mariadb_after_mount": self.doctype == "Database Server" and restart_services,
+				"cleanup_db_replication_files": cleanup_db_replication_files,
+				**self.get_mount_variables(),
+			}
+			if self.doctype == "Database Server" and self.provider != "Generic":
+				variables["mariadb_bind_address"] = frappe.get_value(
+					"Virtual Machine", self.virtual_machine, "private_ip_address"
+				)
+
 			ansible = Ansible(
 				playbook="mount.yml",
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
-				variables={
-					"restart_docker": self.doctype == "Server" and restart_services,
-					"restart_mariadb": self.doctype == "Database Server" and restart_services,
-					**self.get_mount_variables(),
-				},
+				variables=variables,
 			)
 			play = ansible.run()
 			self.reload()
@@ -1822,6 +1842,9 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				self.install_cadvisor_arm()
 
 		if self.doctype == "Database Server":
+			if self.is_for_recovery:
+				self.set_innodb_force_recovery(2)
+
 			self.adjust_memory_config()
 			self.setup_logrotate()
 
@@ -1861,6 +1884,7 @@ class Server(BaseServer):
 		ignore_incidents_since: DF.Datetime | None
 		ip: DF.Data | None
 		ipv6: DF.Data | None
+		is_for_recovery: DF.Check
 		is_managed_database: DF.Check
 		is_primary: DF.Check
 		is_pyspy_setup: DF.Check
@@ -1882,7 +1906,7 @@ class Server(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
 		proxy_server: DF.Link | None
 		public: DF.Check
 		ram: DF.Float
