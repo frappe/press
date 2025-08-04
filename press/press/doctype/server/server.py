@@ -138,6 +138,19 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			frappe.throw("Failed to fetch storage usage. Try again later.")
 
+	@staticmethod
+	def should_bill_add_on_storage(server_doc: Server | BaseServer, mountpoint: str) -> bool:
+		"""Check if storage addition should create/update subscription record"""
+		# Increasing data volume regardless of auto or manual increment
+		if mountpoint != "/":
+			return True
+
+		# Increasing root but no data disk is attached regardless of auto or manual increment
+		if mountpoint == "/" and not server_doc.has_data_volume:
+			return True
+
+		return False
+
 	@dashboard_whitelist()
 	def increase_disk_size_for_server(
 		self,
@@ -191,8 +204,7 @@ class BaseServer(Document, TagHelpers):
 				mountpoint=mountpoint,
 				log=add_on_storage_log.name if add_on_storage_log else None,
 			)
-			if mountpoint != "/" or not server.has_data_volume:
-				# Don't charge for root on servers with volume
+			if self.should_bill_add_on_storage(self, mountpoint=mountpoint):
 				self.create_subscription_for_storage(increment)
 		else:
 			server_doc: DatabaseServer = frappe.get_doc("Database Server", server)
@@ -229,8 +241,7 @@ class BaseServer(Document, TagHelpers):
 				mountpoint=mountpoint,
 				log=add_on_storage_log.name if add_on_storage_log else None,
 			)
-			if mountpoint != "/" or not server_doc.has_data_volume:
-				# Don't charge for root on servers with volume
+			if self.should_bill_add_on_storage(server_doc, mountpoint):
 				server_doc.create_subscription_for_storage(increment)
 
 	@dashboard_whitelist()
