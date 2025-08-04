@@ -38,10 +38,12 @@ if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 	from press.press.doctype.bench.bench import Bench
+	from press.press.doctype.cluster.cluster import Cluster
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.mariadb_variable.mariadb_variable import MariaDBVariable
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server_mount.server_mount import ServerMount
+	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 from typing import Literal, TypedDict
@@ -918,7 +920,7 @@ class BaseServer(Document, TagHelpers):
 		if add_on_storage_subscription:
 			add_on_storage_subscription.disable()
 
-	def can_change_plan(self, ignore_card_setup):
+	def can_change_plan(self, ignore_card_setup: bool, new_plan: ServerPlan) -> None:
 		if is_system_user(frappe.session.user):
 			return
 
@@ -939,10 +941,16 @@ class BaseServer(Document, TagHelpers):
 		if not (team.default_payment_method or team.get_balance()):
 			frappe.throw("Cannot change plan because you haven't added a card and not have enough balance")
 
+		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+		if not cluster.check_machine_availability(new_plan.instance_type):
+			frappe.throw(
+				f"Cannot change plan right now since the instance type {new_plan.instance_type} is not available. Try again later."
+			)
+
 	@dashboard_whitelist()
-	def change_plan(self, plan, ignore_card_setup=False):
-		self.can_change_plan(ignore_card_setup)
-		plan = frappe.get_doc("Server Plan", plan)
+	def change_plan(self, plan: str, ignore_card_setup=False):
+		plan: ServerPlan = frappe.get_doc("Server Plan", plan)
+		self.can_change_plan(ignore_card_setup, new_plan=plan)
 		self._change_plan(plan)
 		self.run_press_job("Resize Server", {"machine_type": plan.instance_type})
 
