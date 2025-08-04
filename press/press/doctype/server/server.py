@@ -191,7 +191,9 @@ class BaseServer(Document, TagHelpers):
 				mountpoint=mountpoint,
 				log=add_on_storage_log.name if add_on_storage_log else None,
 			)
-			self.create_subscription_for_storage(increment)
+			if mountpoint != "/" or not server.has_data_volume:
+				# Don't charge for root on servers with volume
+				self.create_subscription_for_storage(increment)
 		else:
 			server_doc: DatabaseServer = frappe.get_doc("Database Server", server)
 			mountpoint = (
@@ -227,7 +229,9 @@ class BaseServer(Document, TagHelpers):
 				mountpoint=mountpoint,
 				log=add_on_storage_log.name if add_on_storage_log else None,
 			)
-			server_doc.create_subscription_for_storage(increment)
+			if mountpoint != "/" or not server_doc.has_data_volume:
+				# Don't charge for root on servers with volume
+				server_doc.create_subscription_for_storage(increment)
 
 	@dashboard_whitelist()
 	def configure_auto_add_storage(self, server: str, enabled: bool, min: int = 0, max: int = 0) -> None:
