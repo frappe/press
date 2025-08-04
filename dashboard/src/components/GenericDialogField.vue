@@ -1,6 +1,7 @@
 <template>
-	<Autocomplete
+	<FormControl
 		v-if="field.fieldtype == 'Autocomplete'"
+		type="autocomplete"
 		:options="autocompleteOptions"
 		:placeholder="field.placeholder"
 	/>
@@ -10,13 +11,13 @@
 	/>
 </template>
 <script>
-import { Autocomplete, FormControl } from 'frappe-ui';
+import { FormControl } from 'frappe-ui';
 import ListSelection from './ListSelection.vue';
 
 export default {
 	name: 'GenericDialogField',
 	props: ['field'],
-	components: { Autocomplete, FormControl, ListSelection },
+	components: { FormControl, ListSelection },
 	computed: {
 		autocompleteOptions() {
 			let options = [];

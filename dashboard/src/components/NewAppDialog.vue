@@ -50,8 +50,9 @@
 										})
 									"
 								/>
-								<Autocomplete
+								<FormControl
 									v-else
+									type="autocomplete"
 									:options="branchOptions"
 									v-model="selectedBranch"
 								>
@@ -62,7 +63,7 @@
 											@click="() => togglePopover()"
 										/>
 									</template>
-								</Autocomplete>
+								</FormControl>
 							</div>
 						</div>
 						<div v-else-if="tab.value === 'your-github-app'" class="pt-4">
