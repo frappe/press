@@ -938,7 +938,7 @@ export default {
 					label: 'Impersonate Group Owner',
 					title: 'Impersonate Group Owner', // for label to pop-up on hover
 					slots: {
-						icon: icon(LucideVenetianMask, 'w-5 h-5'),
+						icon: icon(LucideVenetianMask),
 					},
 					condition: () =>
 						team.doc?.is_desk_user && group.doc.team !== team.name,
