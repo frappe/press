@@ -74,6 +74,18 @@
   loop_control:
     label: '{{ item.target_device }}'
 
+- name: Stop Docker
+  service:
+    name: docker
+    state: stopped
+  when: stop_docker_before_mount | default(false) | bool
+
+- name: Stop MariaDB
+  service:
+    name: mysql
+    state: stopped
+  when: stop_mariadb_before_mount | default(false) | bool
+
 - name: Mount Volumes
   mount:
     src: 'UUID={{ item.stdout.strip() }}'
@@ -104,14 +116,32 @@
     state: mounted
   loop: '{{ bind_mounts }}'
 
+- name: Cleanup DB Replication Files
+  file:
+    path: '{{ item }}'
+    state: absent
+  with_fileglob:
+    - /var/lib/mysql/master.info
+    - /var/lib/mysql/relay-log.info
+    - /var/lib/mysql/relay-log.*
+  ignore_errors: yes
+  when: cleanup_db_replication_files | default(false) | bool
+
+- name: Replace bind-address IP in config file
+  ansible.builtin.replace:
+    path: /etc/mysql/conf.d/frappe.cnf
+    regexp: '^bind-address\s*=\s*.*'
+    replace: 'bind-address = {{ mariadb_bind_address }}'
+  when: mariadb_bind_address is defined and mariadb_bind_address != ""
+
 - name: Restart Docker
   service:
     name: docker
-    state: restarted
-  when: restart_docker | default(false) | bool
+    state: started
+  when: start_docker_after_mount | default(false) | bool
 
 - name: Restart MariaDB
   service:
     name: mysql
-    state: restarted
-  when: restart_mariadb | default(false) | bool
+    state: started
+  when: start_mariadb_after_mount | default(false) | bool

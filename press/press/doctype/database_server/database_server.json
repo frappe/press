@@ -25,6 +25,7 @@
   "is_server_setup",
   "is_server_renamed",
   "is_server_prepared",
+  "is_for_recovery",
   "billing_section",
   "team",
   "column_break_11",
@@ -234,7 +235,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI",
    "set_only_once": 1
   },
   {
@@ -269,11 +270,11 @@
    "set_only_once": 1
   },
   {
-   "depends_on": "eval:[\"AWS EC2\", \"OCI\"].includes(doc.provider)",
+   "depends_on": "eval:doc.provider === \"AWS EC2\"",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
-   "mandatory_depends_on": "eval:[\"AWS EC2\", \"OCI\"].includes(doc.provider)",
+   "mandatory_depends_on": "eval:doc.provider === \"AWS EC2\"",
    "options": "Virtual Machine"
   },
   {
@@ -598,6 +599,12 @@
    "fieldname": "auto_increase_storage",
    "fieldtype": "Check",
    "label": "Auto Increase Storage"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_for_recovery",
+   "fieldtype": "Check",
+   "label": "Is For Recovery"
   }
  ],
  "grid_page_length": 50,
@@ -614,7 +621,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-08-01 16:35:27.106445",
+ "modified": "2025-08-04 13:05:11.427510",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

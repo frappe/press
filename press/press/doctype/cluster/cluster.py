@@ -816,6 +816,7 @@ class Cluster(Document):
 		create_subscription=True,
 		auto_increase_storage: bool = False,
 		temporary_server: bool = False,
+		is_for_recovery: bool = False,
 	):
 		"""Creates a server for the cluster
 
@@ -845,16 +846,12 @@ class Cluster(Document):
 				server.ram = plan.memory
 				server.title = f"{title} - Database"
 				server.auto_increase_storage = auto_increase_storage
+				server.is_for_recovery = is_for_recovery
 			case "Server":
 				server = vm.create_server()
 				server.title = f"{title} - Application"
 				server.ram = plan.memory
-				if not hasattr(self, "database_server") or not self.database_server:
-					frappe.throw(
-						"Please set the Database Server to Cluster record before creating the App Server",
-						frappe.ValidationError,
-					)
-				else:
+				if hasattr(self, "database_server") and self.database_server:
 					server.database_server = self.database_server
 
 				if not hasattr(self, "proxy_server") or not self.proxy_server:
@@ -866,6 +863,7 @@ class Cluster(Document):
 					server.proxy_server = self.proxy_server
 				server.new_worker_allocation = True
 				server.auto_increase_storage = auto_increase_storage
+				server.is_for_recovery = is_for_recovery
 			case "Proxy Server":
 				server = vm.create_proxy_server()
 				server.title = f"{title} - Proxy"
@@ -878,8 +876,12 @@ class Cluster(Document):
 
 		if create_subscription:
 			server.plan = plan.name
-			server.save()
+
+		server.save()
+
+		if create_subscription:
 			server.create_subscription(plan.name)
+
 		job = server.run_press_job("Create Server")
 
 		return server, job
