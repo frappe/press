@@ -925,6 +925,9 @@ class VirtualMachine(Document):
 			self.client().stop_instances(InstanceIds=[self.instance_id], Force=bool(force))
 		elif self.cloud_provider == "OCI":
 			self.client().instance_action(instance_id=self.instance_id, action="STOP")
+		elif self.cloud_provider == "Hetzner":
+			server_instance = self.client().servers.get_by_id(self.instance_id)
+			self.client().servers.shutdown(server_instance)
 		self.sync()
 
 	@frappe.whitelist()
