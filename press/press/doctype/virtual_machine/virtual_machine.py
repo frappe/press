@@ -477,9 +477,6 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "Hetzner":
 			server_instance = self.client().servers.get_by_id(self.instance_id)
 			self.client().servers.reboot(server_instance)
-
-		log_server_activity(self.series, self.name, action="Reboot", team=get_current_team())
-
 		self.sync()
 
 	@frappe.whitelist()
