@@ -63,9 +63,19 @@
 						<div v-else-if="d.type === 'progress'">
 							<div class="flex items-center justify-between space-x-2">
 								<div class="text-base text-gray-700">{{ d.label }}</div>
-								<div v-if="d.actions" class="flex space-x-2">
+								<div v-if="d.actions" class="flex items-center space-x-2">
+									<Badge
+										v-if="d.actionRequired"
+										theme="red"
+										size="sm"
+										:label="d.actionRequired"
+										variant="subtle"
+										ref-for
+									/>
+
 									<Button v-for="action in d.actions || []" v-bind="action" />
 								</div>
+
 								<div v-else class="h-8" />
 							</div>
 							<div class="mt-2">
@@ -117,6 +127,7 @@ import ServerPlansDialog from './ServerPlansDialog.vue';
 import ServerLoadAverage from './ServerLoadAverage.vue';
 import StorageBreakdownDialog from './StorageBreakdownDialog.vue';
 import { getDocResource } from '../../utils/resource';
+import Badge from '../global/Badge.vue';
 
 export default {
 	props: ['server'],
@@ -184,6 +195,8 @@ export default {
 			let currentUsage = doc.usage;
 			let diskSize = doc.disk_size;
 			let additionalStorage = diskSize - (currentPlan?.disk || 0);
+			let additionalStorageIncrementRecommendation =
+				doc.recommended_storage_increment;
 			let price = 0;
 			// not using $format.planTitle cuz of manual calculation of add-on storage plan
 			let priceField =
@@ -257,6 +270,9 @@ export default {
 				{
 					label: 'Storage',
 					type: 'progress',
+					actionRequired: additionalStorageIncrementRecommendation
+						? 'Low Storage'
+						: '',
 					progress_value: currentPlan
 						? (currentUsage.disk / (diskSize ? diskSize : currentPlan.disk)) *
 							100
@@ -280,9 +296,21 @@ export default {
 									title: 'Increase Storage',
 									message: `Enter the disk size you want to increase to the server <b>${
 										doc.title || doc.name
-									}</b><div class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border">You will be charged at the rate of <b>${this.$format.userCurrency(
-										doc.storage_plan[priceField],
-									)}/mo</b> for each additional GB of storage.</div><p class="mt-4 text-sm text-gray-700"><strong>Note</strong>: You can increase the storage size of the server only once in 6 hours.</div>`,
+									}</b>
+									<div class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border">
+									You will be charged at the rate of 
+									<strong>
+										${this.$format.userCurrency(doc.storage_plan[priceField])}/mo
+									</strong> 
+									for each additional GB of storage.
+									${
+										additionalStorageIncrementRecommendation
+											? `<br /> <br />Recommended storage increment: <strong>${additionalStorageIncrementRecommendation} GiB</strong>`
+											: ''
+									}
+									</div>
+									<p class="mt-4 text-sm text-gray-700"><strong>Note</strong>: You can increase the storage size of the server only once in 6 hours.
+										</div>`,
 									fields: [
 										{
 											fieldname: 'storage',
