@@ -128,11 +128,11 @@ class BaseServer(Document, TagHelpers):
 
 		try:
 			doc.recommended_storage_increment = (
-				0
-				if (doc.usage.get("disk", 0) >= warn_at_storage_percentage * doc.disk_size)
-				else self.size_to_increase_by_for_20_percent_available(
+				self.size_to_increase_by_for_20_percent_available(
 					mountpoint=self.guess_data_disk_mountpoint()
 				)
+				if (doc.usage.get("disk", 0) >= warn_at_storage_percentage * doc.disk_size)
+				else 0
 			)
 		except TypeError:
 			doc.recommended_storage_increment = 0
@@ -1588,6 +1588,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		return frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size") * 1024 * 1024 * 1024
 
 	def size_to_increase_by_for_20_percent_available(self, mountpoint: str):  # min 50 GB, max 250 GB
+		print("checking increment")
 		projected_usage = self.disk_capacity(mountpoint) - self.space_available_in_6_hours(mountpoint) * 5
 		projected_growth_gb = abs(projected_usage) / (4 * 1024 * 1024 * 1024)
 
