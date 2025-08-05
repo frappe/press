@@ -953,6 +953,11 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_update_nginx_job_update,
 		)
 		from press.press.doctype.server.server import process_new_server_job_update
+		from press.press.doctype.server_snapshot_recovery.server_snapshot_recovery import (
+			process_backup_database_from_snapshot_job_callback,
+			process_backup_files_from_snapshot_job_callback,
+			process_search_sites_in_snapshot_job_callback,
+		)
 		from press.press.doctype.site.erpnext_site import (
 			process_setup_erpnext_site_job_update,
 		)
@@ -1092,6 +1097,12 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_remove_binlogs_from_indexer_agent_job_update(job)
 		elif job.job_type == "Upload Binlogs To S3":
 			process_upload_binlogs_to_s3_job_update(job)
+		elif job.job_type == "Search Sites In Snapshot":
+			process_search_sites_in_snapshot_job_callback(job)
+		elif job.job_type == "Backup Database From Snapshot":
+			process_backup_database_from_snapshot_job_callback(job)
+		elif job.job_type == "Backup Files From Snapshot":
+			process_backup_files_from_snapshot_job_callback(job)
 
 		# send failure notification if job failed
 		if job.status == "Failure":
