@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import frappe
+
 from press.press.doctype.site_plan.plan import Plan
 
 
@@ -19,8 +21,9 @@ class ServerPlan(Plan):
 		disk: DF.Int
 		enabled: DF.Check
 		instance_type: DF.Data | None
+		legacy_plan: DF.Check
 		memory: DF.Int
-		platform: DF.Literal["x86_64", "arm64"]
+		platform: DF.Literal["x86_64", "arm64", "amd64"]
 		premium: DF.Check
 		price_inr: DF.Currency
 		price_usd: DF.Currency
@@ -45,3 +48,15 @@ class ServerPlan(Plan):
 		doc["price_per_day_inr"] = self.get_price_per_day("INR")
 		doc["price_per_day_usd"] = self.get_price_per_day("USD")
 		return doc
+
+	def validate(self):
+		self.validate_active_subscriptions()
+
+	def validate_active_subscriptions(self):
+		old_doc = self.get_doc_before_save()
+		if old_doc and old_doc.enabled and not self.enabled and not self.legacy_plan:
+			active_sub_count = frappe.db.count("Subscription", {"enabled": 1, "plan": self.name})
+			if active_sub_count > 0:
+				frappe.throw(
+					f"Cannot disable this plan. This plan is used in {active_sub_count} active subscription(s)."
+				)

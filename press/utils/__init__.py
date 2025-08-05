@@ -962,6 +962,7 @@ def get_nearest_cluster():
 		"UAE": {"latitude": 24.4539, "longitude": 54.3773},
 		"KSA": {"latitude": 24.7136, "longitude": 46.6753},
 		"Cape Town": {"latitude": -33.9249, "longitude": 18.4241},
+		"Johannesburg": {"latitude": -26.2041, "longitude": 28.0473},
 	}
 
 	def haversine_distance(lat1, lon1, lat2, lon2):

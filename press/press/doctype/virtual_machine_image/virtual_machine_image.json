@@ -20,6 +20,7 @@
   "series",
   "copied_from",
   "public",
+  "object_storage_uri",
   "credentials_section",
   "mariadb_root_password",
   "section_break_acrc",
@@ -40,7 +41,8 @@
    "fieldname": "platform",
    "fieldtype": "Data",
    "label": "Platform",
-   "read_only": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fetch_from": "cluster.region",
@@ -159,11 +161,17 @@
    "fieldtype": "Check",
    "label": "Has Data Volume",
    "read_only": 1
+  },
+  {
+   "fieldname": "object_storage_uri",
+   "fieldtype": "Small Text",
+   "label": "Object Storage URI"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-22 00:17:30.369440",
+ "modified": "2025-07-29 14:04:58.677541",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",

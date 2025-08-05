@@ -92,6 +92,7 @@ class Team(Document):
 		send_notifications: DF.Check
 		servers_enabled: DF.Check
 		skip_backups: DF.Check
+		skip_onboarding: DF.Check
 		ssh_access_enabled: DF.Check
 		stripe_customer_id: DF.Data | None
 		team_members: DF.Table[TeamMember]
@@ -126,6 +127,7 @@ class Team(Document):
 		"enable_performance_tuning",
 		"enable_inplace_updates",
 		"servers_enabled",
+		"benches_enabled",
 		"mpesa_tax_id",
 		"mpesa_phone_number",
 		"mpesa_enabled",
@@ -192,6 +194,7 @@ class Team(Document):
 		self.set_default_user()
 		self.set_billing_name()
 		self.set_partner_email()
+		self.unset_saas_team_type_if_required()
 		self.validate_disable()
 		self.validate_billing_team()
 
@@ -386,6 +389,10 @@ class Team(Document):
 	def set_billing_name(self):
 		if not self.billing_name:
 			self.billing_name = frappe.utils.get_fullname(self.user)
+
+	def unset_saas_team_type_if_required(self):
+		if (self.servers_enabled or self.benches_enabled) and self.is_saas_user:
+			self.is_saas_user = 0
 
 	def set_default_user(self):
 		if not self.user and self.team_members:
@@ -836,6 +843,8 @@ class Team(Document):
 	@dashboard_whitelist()
 	@rate_limit(limit=10, seconds=60 * 60)
 	def invite_team_member(self, email, roles=None):
+		from frappe.utils.user import is_system_user
+
 		PressRole = frappe.qb.DocType("Press Role")
 		PressRoleUser = frappe.qb.DocType("Press Role User")
 
@@ -848,8 +857,8 @@ class Team(Document):
 			.where(PressRole.admin_access == 1)
 		)
 
-		if frappe.session.user != self.user and not has_admin_access.run():
-			frappe.throw(_("Only team owner can invite team members"))
+		if not is_system_user() and frappe.session.user != self.user and not has_admin_access.run():
+			frappe.throw(_("Only team owner or admins can invite team members"))
 
 		frappe.utils.validate_email_address(email, True)
 
@@ -862,7 +871,7 @@ class Team(Document):
 				"email": email,
 				"team": self.name,
 				"invited_by": ("is", "set"),
-				"creation": (">", frappe.utils.add_days(None, -1)),
+				"request_key": ("is", "set"),
 			},
 		):
 			frappe.throw("User has already been invited recently. Please try again later.")
@@ -1031,7 +1040,8 @@ class Team(Document):
 
 		complete = False
 		if (
-			is_payment_mode_set
+			self.skip_onboarding
+			or is_payment_mode_set
 			or frappe.db.get_value("User", self.user, "user_type") == "System User"
 			or has_role("Press Support Agent")
 		):
@@ -1050,7 +1060,7 @@ class Team(Document):
 		)
 
 	def get_route_on_login(self):
-		if self.payment_mode:
+		if self.payment_mode or self.skip_onboarding:
 			return "/sites"
 
 		if self.is_saas_user:

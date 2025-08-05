@@ -44,6 +44,7 @@ class DatabaseServer(BaseServer):
 		agent_password: DF.Password | None
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
+		auto_increase_storage: DF.Check
 		binlog_retention_days: DF.Int
 		binlogs_removed: DF.Check
 		cluster: DF.Link | None
@@ -78,7 +79,7 @@ class DatabaseServer(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner"]
 		public: DF.Check
 		ram: DF.Float
 		root_public_key: DF.Code | None
@@ -473,7 +474,7 @@ class DatabaseServer(BaseServer):
 				self.is_performance_schema_enabled = False
 
 		if save:
-			self.save()
+			self.save(ignore_permissions=True)
 
 	@dashboard_whitelist()
 	def get_mariadb_variable_value(

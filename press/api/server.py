@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 from datetime import timezone as tz
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 import frappe
 import requests
@@ -22,6 +22,9 @@ from press.utils import get_current_team
 
 if TYPE_CHECKING:
 	from press.press.doctype.cluster.cluster import Cluster
+	from press.press.doctype.database_server.database_server import DatabaseServer
+	from press.press.doctype.server.server import Server
+	from press.press.doctype.server_plan.server_plan import ServerPlan
 
 
 def poly_get_doc(doctypes, name):
@@ -31,34 +34,15 @@ def poly_get_doc(doctypes, name):
 	return frappe.get_doc(doctypes[-1], name)
 
 
-def _get_arm_mount_point(series: Literal["f", "m"]) -> str:
-	"""Returns to arm64 mount points."""
-	match series:
-		case "f":
-			return "/opt/volumes/benches"
-		case "m":
-			return "/opt/volumes/mariadb"
-
-
-def _get_intel_mount_point(_: Literal["f", "m"]) -> str:
-	"""Returns the Intel mount point (same for all series)."""
-	return "/"
-
-
 def get_mount_point(server: str) -> str:
-	provider = frappe.get_value("Database Server" if server[0] == "m" else "Server", server, "provider")
-	if provider != "AWS EC2":
-		return "/"
-
-	platform, series, has_data_volume = frappe.get_value(
-		"Virtual Machine", server, ["platform", "series", "has_data_volume"]
+	"""Guess mount point from server"""
+	server: Server | DatabaseServer = frappe.get_doc(
+		"Database Server" if server[0] == "m" else "Server", server
 	)
-	if not has_data_volume:
+	if server.provider != "AWS EC2":
 		return "/"
 
-	if platform == "arm64":
-		return _get_arm_mount_point(series)
-	return _get_intel_mount_point(series)
+	return server.guess_data_disk_mountpoint()
 
 
 @frappe.whitelist()
@@ -193,6 +177,7 @@ def archive(name):
 def new(server):
 	server_plan_platform = frappe.get_value("Server Plan", server["app_plan"], "platform")
 	cluster_has_arm_support = frappe.get_value("Cluster", server["cluster"], "has_arm_support")
+	auto_increase_storage = server.get("auto_increase_storage", False)
 
 	if server_plan_platform == "arm64" and not cluster_has_arm_support:
 		frappe.throw(f"ARM Instances are currently unavailable in the {server['cluster']} region")
@@ -203,8 +188,19 @@ def new(server):
 
 	cluster: Cluster = frappe.get_doc("Cluster", server["cluster"])
 
-	db_plan = frappe.get_doc("Server Plan", server["db_plan"])
-	db_server, job = cluster.create_server("Database Server", server["title"], db_plan, team=team.name)
+	db_plan: ServerPlan = frappe.get_doc("Server Plan", server["db_plan"])
+	if not cluster.check_machine_availability(db_plan.instance_type):
+		frappe.throw(
+			f"No machines of {db_plan.instance_type} are currently available in the {cluster.name} region"
+		)
+
+	db_server, job = cluster.create_server(
+		"Database Server",
+		server["title"],
+		db_plan,
+		team=team.name,
+		auto_increase_storage=auto_increase_storage,
+	)
 
 	proxy_server = frappe.get_all(
 		"Proxy Server",
@@ -216,8 +212,15 @@ def new(server):
 	cluster.database_server = db_server.name
 	cluster.proxy_server = proxy_server.name
 
-	app_plan = frappe.get_doc("Server Plan", server["app_plan"])
-	app_server, job = cluster.create_server("Server", server["title"], app_plan, team=team.name)
+	app_plan: ServerPlan = frappe.get_doc("Server Plan", server["app_plan"])
+	if not cluster.check_machine_availability(app_plan.instance_type):
+		frappe.throw(
+			f"No machines of {app_plan.instance_type} are currently available in the {cluster.name} region"
+		)
+
+	app_server, job = cluster.create_server(
+		"Server", server["title"], app_plan, team=team.name, auto_increase_storage=auto_increase_storage
+	)
 
 	return {"server": app_server.name, "job": job.name}
 
@@ -466,10 +469,17 @@ def options():
 		{"cloud_provider": ("!=", "Generic"), "public": True},
 		["name", "title", "image", "beta"],
 	)
+	storage_plan = frappe.db.get_value(
+		"Server Storage Plan",
+		{"enabled": 1},
+		["price_inr", "price_usd"],
+		as_dict=True,
+	)
 	return {
 		"regions": regions,
 		"app_plans": plans("Server"),
 		"db_plans": plans("Database Server"),
+		"storage_plan": storage_plan,
 	}
 
 
@@ -498,6 +508,7 @@ def plans(name, cluster=None, platform=None):
 			"cluster",
 			"instance_type",
 			"premium",
+			"platform",
 		],
 		filters=filters,
 	)

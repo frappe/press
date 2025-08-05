@@ -41,43 +41,11 @@ class Deploy(Document):
 	def after_insert(self):
 		self.create_benches()
 
-	def _get_build_for_bench(self, server_platform: str) -> str:
+	def _get_build_for_bench(self, server_platform: str) -> DeployCandidateBuild:
 		"Fetch build from deploy candidate depending on the server platform"
 		build_field = {"arm64": "arm_build", "x86_64": "intel_build"}.get(server_platform)
-		return frappe.get_value("Deploy Candidate", self.candidate, build_field)
-
-	def _get_docker_image_for_bench(self, server_platform: str) -> str:
-		"""Fetch docker image for a particular server depending on the server platform"""
-		arm_build, intel_build = frappe.get_value(
-			"Deploy Candidate", self.candidate, ["arm_build", "intel_build"]
-		)
-		if not any([arm_build, intel_build]):
-			# Since migration has not been retrospectively patched as there is no easy
-			# Way to tell the platform of a build, we can currently just associate a single build
-			# To a deploy candidate and assume that build works since it is by default intel.
-			return frappe.get_value(
-				"Deploy Candidate Build",
-				{"deploy_candidate": self.candidate, "status": "Success"},
-				"docker_image",
-			)
-
-		DeployCandidate: DeployCandidate = frappe.qb.DocType("Deploy Candidate")
-		DeployCandidateBuild: DeployCandidateBuild = frappe.qb.DocType("Deploy Candidate Build")
-
-		build_field = {"arm64": DeployCandidate.arm_build, "x86_64": DeployCandidate.intel_build}.get(
-			server_platform
-		)
-
-		return (
-			frappe.qb.from_(DeployCandidate)
-			.join(DeployCandidateBuild)
-			.on(DeployCandidateBuild.deploy_candidate == DeployCandidate.name)
-			.where(DeployCandidate.name == self.candidate)
-			.where(DeployCandidateBuild.status == "Success")
-			.where(build_field == DeployCandidateBuild.name)
-			.select(DeployCandidateBuild.docker_image)
-			.run(pluck=True)
-		)[0]
+		build = frappe.get_value("Deploy Candidate", self.candidate, build_field)
+		return frappe.get_doc("Deploy Candidate Build", build)
 
 	def create_benches(self):
 		deploy_candidate: DeployCandidate = frappe.get_doc("Deploy Candidate", self.candidate)
@@ -97,13 +65,12 @@ class Deploy(Document):
 		for bench in self.benches:
 			server_platform = frappe.get_value("Server", bench.server, "platform")
 			build = self._get_build_for_bench(server_platform)
-			docker_image = self._get_docker_image_for_bench(server_platform)
 			new = frappe.get_doc(
 				{
 					"doctype": "Bench",
 					"server": bench.server,
-					"build": build,
-					"docker_image": docker_image,
+					"build": build.name,
+					"docker_image": build.docker_image,
 					"group": self.group,
 					"candidate": self.candidate,
 					"workers": 1,

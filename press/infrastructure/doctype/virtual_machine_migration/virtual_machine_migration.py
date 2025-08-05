@@ -239,7 +239,7 @@ class VirtualMachineMigration(Document):
 		matching_plans = frappe.get_all(
 			"Server Plan",
 			{
-				"enabled": True,
+				# "enabled": True,
 				"server_type": old_plan.server_type,
 				"cluster": old_plan.cluster,
 				"instance_type": self.machine_type,
@@ -304,7 +304,6 @@ class VirtualMachineMigration(Document):
 			methods.append((self.update_server_platform, Wait))
 			methods.append((self.update_agent_ansible, Wait))
 			methods.append((self.start_active_benches, Wait))
-			methods.append((self.post_init_configurations, Wait))
 
 		steps = []
 		for method, wait_for_completion in methods:
@@ -319,6 +318,9 @@ class VirtualMachineMigration(Document):
 
 	def update_server_platform(self) -> StepStatus:
 		"""Update server platform"""
+		if "m6a" in self.machine.machine_type:
+			return StepStatus.Success
+
 		server = self.machine.get_server()
 		server.platform = "arm64"
 		server.save()
@@ -331,24 +333,16 @@ class VirtualMachineMigration(Document):
 			{"status": "Active", "server": self.machine.name},
 			pluck="name",
 		)
-		container_names = " ".join(container_names)
-		command = f"docker rm -f {container_names}"
-		result = self.ansible_run(command)
+		if container_names:
+			container_names = " ".join(container_names)
+			command = f"docker rm -f {container_names}"
+			result = self.ansible_run(command)
 
-		if result["status"] != "Success" or result["error"]:
-			self.add_comment(text=f"Error stoping docker: {result}")
-			return StepStatus.Failure
+			if result["status"] != "Success" or result["error"]:
+				self.add_comment(text=f"Error stoping docker: {result}")
+				return StepStatus.Failure
 
 		return StepStatus.Success
-
-	def post_init_configurations(self) -> StepStatus:
-		"""Run post init configurations"""
-		server: Server = frappe.get_doc("Server", self.machine.name)
-		server.set_swappiness()
-		server.add_glass_file()
-		server.install_filebeat()
-		server.setup_mysqldump()
-		server.install_earlyoom()
 
 	def update_agent_ansible(self) -> StepStatus:
 		"""Update agent on server"""

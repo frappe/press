@@ -27,7 +27,7 @@ arm_machine_mappings = {
 	"c5": "c7g",
 }
 
-amd_machine_mappings = {"r6i": "m6a", "m6i": "m6a", "c6i": "m6a", "m5": "m6a", "r7i": "m6a"}
+amd_machine_mappings = {"r6i": "m6a", "m6i": "m6a", "c6i": "m6a", "m5": "m6a", "r7i": "m6a", "m7i": "m6a"}
 
 
 def has_arm_build_record(server: str) -> bool:
