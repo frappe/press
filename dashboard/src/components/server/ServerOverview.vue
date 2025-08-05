@@ -63,9 +63,19 @@
 						<div v-else-if="d.type === 'progress'">
 							<div class="flex items-center justify-between space-x-2">
 								<div class="text-base text-gray-700">{{ d.label }}</div>
-								<div v-if="d.actions" class="flex space-x-2">
+								<div v-if="d.actions" class="flex items-center space-x-2">
+									<Badge
+										v-if="d.actionRequired"
+										theme="red"
+										size="sm"
+										:label="d.actionRequired"
+										variant="subtle"
+										ref-for
+									/>
+
 									<Button v-for="action in d.actions || []" v-bind="action" />
 								</div>
+
 								<div v-else class="h-8" />
 							</div>
 							<div class="mt-2">
@@ -117,6 +127,7 @@ import ServerPlansDialog from './ServerPlansDialog.vue';
 import ServerLoadAverage from './ServerLoadAverage.vue';
 import StorageBreakdownDialog from './StorageBreakdownDialog.vue';
 import { getDocResource } from '../../utils/resource';
+import Badge from '../global/Badge.vue';
 
 export default {
 	props: ['server'],
@@ -259,6 +270,9 @@ export default {
 				{
 					label: 'Storage',
 					type: 'progress',
+					actionRequired: additionalStorageIncrementRecommendation
+						? 'Low Storage'
+						: '',
 					progress_value: currentPlan
 						? (currentUsage.disk / (diskSize ? diskSize : currentPlan.disk)) *
 							100
