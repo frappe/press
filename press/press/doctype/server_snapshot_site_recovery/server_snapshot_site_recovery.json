@@ -8,6 +8,7 @@
  "field_order": [
   "site",
   "database_name",
+  "bench",
   "column_break_zcab",
   "status",
   "section_break_hjbs",
@@ -34,8 +35,9 @@
    "default": "Draft",
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Status",
-   "options": "Draft\nPending\nRunning\nSuccess\nFailure",
+   "options": "Draft\nPending\nRunning\nSuccess\nFailure\nUnavailable",
    "read_only": 1
   },
   {
@@ -61,6 +63,7 @@
   {
    "fieldname": "public_remote_file",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Public Remote File",
    "options": "Remote File",
    "read_only": 1
@@ -68,6 +71,7 @@
   {
    "fieldname": "private_remote_file",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Private Remote File",
    "options": "Remote File",
    "read_only": 1
@@ -75,6 +79,7 @@
   {
    "fieldname": "database_remote_file",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Database Remote File",
    "options": "Remote File",
    "read_only": 1
@@ -102,13 +107,19 @@
   {
    "fieldname": "column_break_ccnx",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "bench",
+   "fieldtype": "Data",
+   "label": "Bench",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-08-04 11:01:35.988549",
+ "modified": "2025-08-05 23:24:31.033975",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Snapshot Site Recovery",

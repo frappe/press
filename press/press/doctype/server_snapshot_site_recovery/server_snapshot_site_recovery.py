@@ -14,6 +14,7 @@ class ServerSnapshotSiteRecovery(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		bench: DF.Data | None
 		database_backup_job: DF.Link | None
 		database_name: DF.Data | None
 		database_remote_file: DF.Link | None
@@ -24,7 +25,5 @@ class ServerSnapshotSiteRecovery(Document):
 		private_remote_file: DF.Link | None
 		public_remote_file: DF.Link | None
 		site: DF.Data
-		status: DF.Literal["Draft", "Pending", "Running", "Success", "Failure"]
+		status: DF.Literal["Draft", "Pending", "Running", "Success", "Failure", "Unavailable"]
 	# end: auto-generated types
-
-	pass
