@@ -17,7 +17,7 @@ from frappe.model.document import Document
 from hcloud import APIException, Client
 from hcloud.networks.domain import NetworkSubnet
 from oci.config import validate_config
-from oci.core import VirtualNetworkClient
+from oci.core import ComputeClient, VirtualNetworkClient
 from oci.core.models import (
 	AddNetworkSecurityGroupSecurityRulesDetails,
 	AddSecurityRuleDetails,
@@ -27,6 +27,7 @@ from oci.core.models import (
 	CreateVcnDetails,
 	PortRange,
 	RouteRule,
+	Shape,
 	TcpOptions,
 	UpdateRouteTableDetails,
 )
@@ -258,12 +259,7 @@ class Cluster(Document):
 			self.monitoring_password = frappe.generate_hash()
 
 	def provision_on_aws_ec2(self):
-		client = boto3.client(
-			"ec2",
-			region_name=self.region,
-			aws_access_key_id=self.aws_access_key_id,
-			aws_secret_access_key=self.get_password("aws_secret_access_key"),
-		)
+		client = self.get_aws_client()
 
 		response = client.create_vpc(
 			AmazonProvidedIpv6CidrBlock=False,
@@ -429,12 +425,7 @@ class Cluster(Document):
 		self.save()
 
 	def create_proxy_security_group(self):
-		client = boto3.client(
-			"ec2",
-			region_name=self.region,
-			aws_access_key_id=self.aws_access_key_id,
-			aws_secret_access_key=self.get_password("aws_secret_access_key"),
-		)
+		client = self.get_aws_client()
 		response = client.create_security_group(
 			GroupName=f"Frappe Cloud - {self.name} - Proxy - Security Group",
 			Description="Allow Everything on Proxy",
@@ -755,6 +746,52 @@ class Cluster(Document):
 				"Test",
 				create_subscription=False,
 			)
+
+	def get_aws_client(self) -> boto3.client:
+		return boto3.client(
+			"ec2",
+			region_name=self.region,
+			aws_access_key_id=self.aws_access_key_id,
+			aws_secret_access_key=self.get_password("aws_secret_access_key"),
+		)
+
+	def _check_aws_machine_availability(self, machine_type: str) -> bool:
+		"""Check if instance offering in the region is present"""
+		client = self.get_aws_client()
+		response = client.describe_instance_type_offerings(
+			Filters=[{"Name": "instance-type", "Values": [machine_type]}]
+		)
+		return bool(response.get("InstanceTypeOfferings"))
+
+	def _check_oci_machine_availability(self, machine_type: str) -> bool:
+		"""
+		We use machine type VM.Standard.E4.Flex or all OCI machines
+		This simply checks if VM.Standard.E4.Flex is present in the region
+		and the memory and cpu options are within supported limit.
+		"""
+		vcpu, ram_in_gbs = map(int, machine_type.split("x"))
+		client = ComputeClient(self.get_oci_config(), region=self.region)
+		all_shapes = client.list_shapes(self.oci_tenancy, availability_domain=self.availability_zone).data
+		shape_config: Shape = next((s for s in all_shapes if s.shape == "VM.Standard.E4.Flex"), None)
+
+		if not shape_config:
+			return False
+
+		return (
+			shape_config.ocpu_options["min"] < vcpu // 2 < shape_config.ocpu_options["max"]
+			and shape_config.memory_options["min_in_g_bs"]
+			< ram_in_gbs
+			< shape_config.memory_options["max_in_g_bs"]
+		)
+
+	def check_machine_availability(self, machine_type: str) -> bool:
+		"Check availability of machine in the region before allowing provision"
+		if self.cloud_provider == "AWS EC2":
+			return self._check_aws_machine_availability(machine_type)
+		if self.cloud_provider == "OCI":
+			return self._check_oci_machine_availability(machine_type)
+
+		return True
 
 	def create_vm(
 		self, machine_type: str, platform: str, disk_size: int, domain: str, series: str, team: str
