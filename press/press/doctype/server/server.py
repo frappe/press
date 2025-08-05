@@ -102,6 +102,8 @@ class BaseServer(Document, TagHelpers):
 		from press.api.client import get
 		from press.api.server import usage
 
+		minimum_buffer_storage_required = 30
+
 		if self.plan:
 			doc.current_plan = get("Server Plan", self.plan)
 		else:
@@ -127,11 +129,11 @@ class BaseServer(Document, TagHelpers):
 		try:
 			doc.recommended_storage_increment = (
 				0
-				if (doc.disk_size - doc.usage.get("disk")) >= 50
+				if (doc.disk_size - doc.usage.get("disk")) >= minimum_buffer_storage_required
 				else self.size_to_increase_by_for_20_percent_available(
 					mountpoint=self.guess_data_disk_mountpoint()
 				)
-			)  # Keeping recommended buffer of 50Gib.
+			)
 		except TypeError:
 			doc.recommended_storage_increment = None
 
