@@ -184,6 +184,8 @@ export default {
 			let currentUsage = doc.usage;
 			let diskSize = doc.disk_size;
 			let additionalStorage = diskSize - (currentPlan?.disk || 0);
+			let additionalStorageIncrementRecommendation =
+				doc.recommended_storage_increment;
 			let price = 0;
 			// not using $format.planTitle cuz of manual calculation of add-on storage plan
 			let priceField =
@@ -282,7 +284,9 @@ export default {
 										doc.title || doc.name
 									}</b><div class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border">You will be charged at the rate of <b>${this.$format.userCurrency(
 										doc.storage_plan[priceField],
-									)}/mo</b> for each additional GB of storage.</div><p class="mt-4 text-sm text-gray-700"><strong>Note</strong>: You can increase the storage size of the server only once in 6 hours.</div>`,
+									)}/mo</b> for each additional GB of storage.</div><p class="mt-4 text-sm text-gray-700"><strong>Note</strong>: You can increase the storage size of the server only once in 6 hours.
+										${`Recommended storage increment: ${additionalStorageIncrementRecommendation}` ? additionalStorageIncrementRecommendation : ''}
+										</div>`,
 									fields: [
 										{
 											fieldname: 'storage',
