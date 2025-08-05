@@ -102,7 +102,7 @@ class BaseServer(Document, TagHelpers):
 		from press.api.client import get
 		from press.api.server import usage
 
-		minimum_buffer_storage_required = 30
+		warn_at_storage_percentage = 0.8
 
 		if self.plan:
 			doc.current_plan = get("Server Plan", self.plan)
@@ -129,13 +129,13 @@ class BaseServer(Document, TagHelpers):
 		try:
 			doc.recommended_storage_increment = (
 				0
-				if (doc.disk_size - doc.usage.get("disk")) >= minimum_buffer_storage_required
+				if (doc.usage.get("disk", 0) >= warn_at_storage_percentage * doc.disk_size)
 				else self.size_to_increase_by_for_20_percent_available(
 					mountpoint=self.guess_data_disk_mountpoint()
 				)
 			)
 		except TypeError:
-			doc.recommended_storage_increment = None
+			doc.recommended_storage_increment = 0
 
 		doc.replication_server = frappe.db.get_value(
 			"Database Server",
