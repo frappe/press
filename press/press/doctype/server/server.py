@@ -125,13 +125,18 @@ class BaseServer(Document, TagHelpers):
 		doc.usage = usage(self.name)
 		doc.actions = self.get_actions()
 		doc.disk_size = frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size")
-		doc.recommended_storage_increment = (
-			0
-			if (doc.disk_size - doc.usage.get("disk")) >= 50
-			else self.size_to_increase_by_for_20_percent_available(
-				mountpoint=self.guess_data_disk_mountpoint()
-			)
-		)  # Keeping recommended buffer of 50Gib.
+
+		try:
+			doc.recommended_storage_increment = (
+				0
+				if (doc.disk_size - doc.usage.get("disk")) >= 50
+				else self.size_to_increase_by_for_20_percent_available(
+					mountpoint=self.guess_data_disk_mountpoint()
+				)
+			)  # Keeping recommended buffer of 50Gib.
+		except TypeError:
+			doc.recommended_storage_increment = None
+
 		doc.replication_server = frappe.db.get_value(
 			"Database Server",
 			{"primary": doc.database_server, "is_replication_setup": 1},
