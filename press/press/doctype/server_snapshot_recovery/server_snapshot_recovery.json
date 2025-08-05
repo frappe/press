@@ -8,6 +8,8 @@
   "status",
   "column_break_msoo",
   "snapshot",
+  "column_break_mqrc",
+  "cluster",
   "section_break_ipfw",
   "app_server",
   "is_app_server_ready",
@@ -26,7 +28,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Draft\nCreating Servers\nRestoring\nRestored\nFailure"
+   "options": "Draft\nCreating Servers\nGathering Site Data\nRestoring\nRestored\nFailure"
   },
   {
    "fieldname": "column_break_msoo",
@@ -103,12 +105,25 @@
    "fieldtype": "Check",
    "label": "Database Server Archived",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_mqrc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "snapshot.cluster",
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster",
+   "reqd": 1,
+   "set_only_once": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-04 18:09:11.043180",
+ "modified": "2025-08-06 00:27:20.282834",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Snapshot Recovery",
