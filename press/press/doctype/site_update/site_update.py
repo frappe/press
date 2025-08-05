@@ -289,7 +289,9 @@ class SiteUpdate(Document):
 
 		scripts = {}
 		for app_rename in frappe.get_all(
-			"App Rename", {"new_name": ["in", site_apps]}, ["old_name", "new_name", script_field]
+			"App Rename",
+			{"new_name": ["in", site_apps], "enabled": True},
+			["old_name", "new_name", script_field],
 		):
 			scripts[app_rename.old_name] = app_rename.get(script_field)
 
