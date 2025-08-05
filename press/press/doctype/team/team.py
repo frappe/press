@@ -724,23 +724,26 @@ class Team(Document):
 		stripe = get_stripe()
 		payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
 
-		doc = frappe.get_doc(
-			{
-				"doctype": "Stripe Payment Method",
-				"stripe_payment_method_id": payment_method["id"],
-				"last_4": payment_method["card"]["last4"],
-				"name_on_card": payment_method["billing_details"]["name"],
-				"expiry_month": payment_method["card"]["exp_month"],
-				"expiry_year": payment_method["card"]["exp_year"],
-				"brand": payment_method["card"]["brand"] or "",
-				"team": self.name,
-				"stripe_setup_intent_id": setup_intent_id,
-				"stripe_mandate_id": mandate_id if mandate_id else None,
-				"stripe_mandate_reference": mandate_reference if mandate_reference else None,
-				"is_verified_with_micro_charge": verified_with_micro_charge,
-			}
-		)
-		doc.insert()
+		try:
+			doc = frappe.get_doc(
+				{
+					"doctype": "Stripe Payment Method",
+					"stripe_payment_method_id": payment_method["id"],
+					"last_4": payment_method["card"]["last4"],
+					"name_on_card": payment_method["billing_details"]["name"],
+					"expiry_month": payment_method["card"]["exp_month"],
+					"expiry_year": payment_method["card"]["exp_year"],
+					"brand": payment_method["card"]["brand"] or "",
+					"team": self.name,
+					"stripe_setup_intent_id": setup_intent_id,
+					"stripe_mandate_id": mandate_id if mandate_id else None,
+					"stripe_mandate_reference": mandate_reference if mandate_reference else None,
+					"is_verified_with_micro_charge": verified_with_micro_charge,
+				}
+			)
+			doc.insert()
+		except Exception:
+			frappe.log_error("Failed to create new Stripe Payment Method")
 
 		# unsuspend sites on payment method added
 		self.unsuspend_sites(reason="Payment method added")
