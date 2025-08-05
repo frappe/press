@@ -19,7 +19,6 @@
 				<div v-if="step === 'select-apps'">
 					<h2 class="mb-4 text-lg font-medium">Select apps to update</h2>
 					<GenericList
-						class="max-h-[500px]"
 						v-if="benchDocResource.doc.deploy_information.update_available"
 						:options="updatableAppOptions"
 						@update:selections="handleAppSelection"
@@ -32,14 +31,13 @@
 				<!-- Remove Apps Step -->
 				<div v-else-if="step === 'removed-apps'">
 					<h2 class="mb-4 text-lg font-medium">These apps will be removed</h2>
-					<GenericList class="max-h-[500px]" :options="removedAppOptions" />
+					<GenericList :options="removedAppOptions" />
 				</div>
 
 				<!-- Select Site Step -->
 				<div v-else-if="step === 'select-sites'">
 					<h2 class="mb-4 text-lg font-medium">Select sites to update</h2>
 					<GenericList
-						class="max-h-[500px]"
 						v-if="benchDocResource.doc.deploy_information.sites.length"
 						:options="siteOptions"
 						@update:selections="handleSiteSelection"
