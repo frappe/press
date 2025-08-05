@@ -574,7 +574,7 @@ export default {
 					query: 'database_uptime',
 					duration: this.duration,
 				},
-				auto: this.isServerType('Database Server'),
+				auto: this.isServerType('Database Server') || this.isServerType('Replication Server'),
 			};
 		},
 		databaseCommandsCount() {
@@ -587,7 +587,7 @@ export default {
 					duration: this.duration,
 				},
 				auto:
-					this.showAdvancedAnalytics && this.isServerType('Database Server'),
+					this.showAdvancedAnalytics && (this.isServerType('Database Server') || this.isServerType('Replication Server')),
 			};
 		},
 		databaseConnections() {
@@ -600,7 +600,7 @@ export default {
 					duration: this.duration,
 				},
 				auto:
-					this.showAdvancedAnalytics && this.isServerType('Database Server'),
+					this.showAdvancedAnalytics && (this.isServerType('Database Server') || this.isServerType('Replication Server')),
 			};
 		},
 		innodbBufferPoolSize() {
@@ -613,7 +613,7 @@ export default {
 					duration: this.duration,
 				},
 				auto:
-					this.showAdvancedAnalytics && this.isServerType('Database Server'),
+					this.showAdvancedAnalytics && (this.isServerType('Database Server') || this.isServerType('Replication Server')),
 			};
 		},
 		innodbBufferPoolSizeOfTotalRam() {
@@ -626,7 +626,7 @@ export default {
 					duration: this.duration,
 				},
 				auto:
-					this.showAdvancedAnalytics && this.isServerType('Database Server'),
+					this.showAdvancedAnalytics && (this.isServerType('Database Server') || this.isServerType('Replication Server')),
 			};
 		},
 		innodbBufferPoolMissPercentage() {
@@ -639,7 +639,7 @@ export default {
 					duration: this.duration,
 				},
 				auto:
-					this.showAdvancedAnalytics && this.isServerType('Database Server'),
+					this.showAdvancedAnalytics && (this.isServerType('Database Server') || this.isServerType('Replication Server')),
 			};
 		},
 		innodbAvgRowLockTime() {
@@ -652,7 +652,7 @@ export default {
 					duration: this.duration,
 				},
 				auto:
-					this.showAdvancedAnalytics && this.isServerType('Database Server'),
+					this.showAdvancedAnalytics && (this.isServerType('Database Server') || this.isServerType('Replication Server')),
 			};
 		},
 	},
