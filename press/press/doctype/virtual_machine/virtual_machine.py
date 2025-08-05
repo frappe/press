@@ -465,7 +465,14 @@ class VirtualMachine(Document):
 				shape="VM.Standard3.Flex",
 				lifecycle_state="AVAILABLE",
 			).data
-			return images[0].id
+			if images:
+				return images[0].id
+		if self.cloud_provider == "Hetzner":
+			images = self.client().images.get_all(
+				name="ubuntu-20.04", architecture="x86", sort="created:desc", type="system"
+			)
+			if images:
+				return images[0].id
 		return None
 
 	@frappe.whitelist()
