@@ -296,20 +296,10 @@ export default {
 									title: 'Increase Storage',
 									message: `Enter the disk size you want to increase to the server <b>${
 										doc.title || doc.name
-									}</b>
-									<div class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border">
-									You will be charged at the rate of 
-									<strong>
-										${this.$format.userCurrency(doc.storage_plan[priceField])}/mo
-									</strong> 
-									for each additional GB of storage.
-									${
-										additionalStorageIncrementRecommendation
-											? `<br /> <br />Recommended storage increment: <strong>${additionalStorageIncrementRecommendation} GiB</strong>`
-											: ''
-									}
-									</div>
-									<p class="mt-4 text-sm text-gray-700"><strong>Note</strong>: You can increase the storage size of the server only once in 6 hours.
+									}</b><div class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border">You will be charged at the rate of <b>${this.$format.userCurrency(
+										doc.storage_plan[priceField],
+									)}/mo</b> for each additional GB of storage.</div><p class="mt-4 text-sm text-gray-700"><strong>Note</strong>: You can increase the storage size of the server only once in 6 hours.
+										${`Recommended storage increment: ${additionalStorageIncrementRecommendation}` ? additionalStorageIncrementRecommendation : ''}
 										</div>`,
 									fields: [
 										{
