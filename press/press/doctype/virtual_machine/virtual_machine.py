@@ -1394,12 +1394,7 @@ class VirtualMachine(Document):
 		self.wait_for_volume_to_be_available(volume_id)
 		self.attach_volume(volume_id)
 
-		log_server_activity(
-			self.series,
-			self.name,
-			action="Volume",
-			reason="Volume attached on server",
-		)
+		log_server_activity(self.series, self.name, action="Volume", reason="Volume attached on server")
 
 		return volume_id
 
