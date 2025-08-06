@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import add_to_date
 
 from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import AgentJob
@@ -38,8 +39,15 @@ class ServerSnapshotRecovery(Document):
 		sites: DF.Table[ServerSnapshotSiteRecovery]
 		snapshot: DF.Link
 		status: DF.Literal[
-			"Draft", "Creating Servers", "Gathering Site Data", "Restoring", "Restored", "Failure"
+			"Draft",
+			"Creating Servers",
+			"Gathering Site Data",
+			"Warming Up",
+			"Restoring",
+			"Restored",
+			"Failure",
 		]
+		warm_up_end_time: DF.Datetime | None
 	# end: auto-generated types
 
 	@property
@@ -91,9 +99,24 @@ class ServerSnapshotRecovery(Document):
 			and self.is_app_server_ready
 			and self.is_database_server_ready
 		):
-			self.status = "Restoring"
+			app_server_snaphot = frappe.get_value("Server Snapshot", self.snapshot, "app_server_snapshot")
+			database_server_snaphot = frappe.get_value(
+				"Server Snapshot", self.snapshot, "database_server_snapshot"
+			)
+			snapshot_warmup_minutes = int(
+				(
+					max(
+						frappe.get_value("Virtual Disk Snapshot", app_server_snaphot, "size"),
+						frappe.get_value("Virtual Disk Snapshot", database_server_snaphot, "size"),
+					)
+					* 1024
+				)
+				/ 300
+				/ 60
+			)  # Assuming 300 MB/s warmup speed
+			self.warm_up_end_time = add_to_date(minutes=snapshot_warmup_minutes)
+			self.status = "Warming Up"
 			self.save()
-			self.fetch_sites_data()
 
 		if self.has_value_changed("status") and self.status == "Restored":
 			self.archive_servers()
@@ -284,6 +307,25 @@ class ServerSnapshotRecovery(Document):
 		)
 		remote_file.save()
 		return remote_file
+
+
+def resume_warmed_up_restorations():
+	records = frappe.get_all(
+		"Server Snapshot Recovery",
+		filters={
+			"status": "Warming Up",
+			"warm_up_end_time": ("<=", frappe.utils.now_datetime()),
+		},
+		fields=["name"],
+	)
+
+	for record in records:
+		try:
+			snapshot_recovery = frappe.get_doc("Server Snapshot Recovery", record.name)
+			snapshot_recovery.fetch_sites_data()
+			frappe.db.commit()
+		except Exception:
+			frappe.log_error("Server Snapshot Recovery Resume Error")
 
 
 def process_search_sites_in_snapshot_job_callback(job: AgentJob):

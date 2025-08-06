@@ -269,6 +269,7 @@ scheduler_events = {
 			"press.press.doctype.telegram_message.telegram_message.send_telegram_message",
 			"press.press.doctype.agent_update.agent_update.process_bulk_agent_update",
 			"press.press.doctype.press_job.press_job.process_failed_callbacks",
+			"press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.resume_warmed_up_restorations",
 		],
 		"* * * * * 0/30": [
 			"press.press.doctype.account_request.account_request.expire_request_key",
