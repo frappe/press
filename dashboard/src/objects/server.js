@@ -519,6 +519,7 @@ export default {
 						};
 					},
 					orderBy: 'creation desc',
+					fields: ['owner'],
 					columns: [
 						{
 							label: 'Action',
