@@ -64,17 +64,7 @@
 				"script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.set_additional_config()",
 				"step_name": "Set additional config",
 				"wait_until_true": 0
-			},
-			{
-				"script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Server\" and server.cluster == 'Mumbai':\n    server.setup_archived_folder()\n\nserver.save()\n",
-				"step_name": "Setup archived folder",
-				"wait_until_true": 0
-			},
-			{
-				"script": "if doc.server_type == \"Server\":\n    server = frappe.get_doc(\"Server\", doc.server)\n    server.setup_ncdu()\n",
-				"step_name": "Setup Ncdu",
-				"wait_until_true": 0
-			}
+            }
 		]
 	},
 	{
