@@ -149,7 +149,6 @@ has_permission = {
 	"Press Webhook Attempt": "press.press.doctype.press_webhook_attempt.press_webhook_attempt.has_permission",
 	"SQL Playground Log": "press.overrides.has_permission",
 	"Site Database User": "press.overrides.has_permission",
-	"Server Activity": "press.overrides.has_permission",
 }
 
 # Document Events
