@@ -778,10 +778,8 @@ class Cluster(Document):
 			return False
 
 		return (
-			shape_config.ocpu_options["min"] < vcpu // 2 < shape_config.ocpu_options["max"]
-			and shape_config.memory_options["min_in_g_bs"]
-			< ram_in_gbs
-			< shape_config.memory_options["max_in_g_bs"]
+			shape_config.ocpu_options.min < vcpu // 2 < shape_config.ocpu_options.max
+			and shape_config.memory_options.min_in_g_bs < ram_in_gbs < shape_config.memory_options.max_in_g_bs
 		)
 
 	def check_machine_availability(self, machine_type: str) -> bool:
