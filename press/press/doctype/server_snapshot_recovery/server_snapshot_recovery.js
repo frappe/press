@@ -14,7 +14,8 @@ frappe.ui.form.on('Server Snapshot Recovery', {
 				'Archive Servers',
 				'archive_servers',
 				true,
-				!frm.doc.app_server_archived || !frm.doc.database_server_archived,
+				(frm.doc.app_server || frm.doc.database_server) &&
+					(!frm.doc.app_server_archived || !frm.doc.database_server_archived),
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
