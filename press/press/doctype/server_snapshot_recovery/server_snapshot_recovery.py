@@ -50,6 +50,9 @@ class ServerSnapshotRecovery(Document):
 		self.validate_snapshot_status()
 		self.validate_sites()
 
+	def after_insert(self):
+		self.provision_servers()
+
 	def validate_snapshot_status(self):
 		snapshot: ServerSnapshot = frappe.get_doc(
 			"Server Snapshot",
@@ -92,6 +95,21 @@ class ServerSnapshotRecovery(Document):
 			self.save()
 			self.fetch_sites_data()
 
+		if self.has_value_changed("status") and self.status == "Restored":
+			self.archive_servers()
+
+		if (
+			(
+				self.has_value_changed("app_server_archived")
+				or self.has_value_changed("database_server_archived")
+			)
+			and self.app_server_archived
+			and self.database_server_archived
+			and self.status != "Restored"
+		):
+			self.status = "Failure"
+			self.save()
+
 	@frappe.whitelist()
 	def provision_servers(self):
 		self.validate_snapshot_status()
@@ -118,12 +136,12 @@ class ServerSnapshotRecovery(Document):
 			frappe.throw("Servers are not provisioned yet.")
 
 		app_server_doc = frappe.get_doc("Server", self.app_server)
-		app_server_doc.archive()
+		if app_server_doc.status != "Archived":
+			app_server_doc.archive()
 
 		database_server_doc = frappe.get_doc("Database Server", self.database_server)
-		database_server_doc.archive()
-
-		self.save()
+		if database_server_doc.status != "Archived":
+			database_server_doc.archive()
 
 	def mark_server_provisioning_as_failed(self):
 		self.status = "Failure"
