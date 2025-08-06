@@ -1813,6 +1813,11 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		if self.doctype == "Server":
 			self.setup_mysqldump()
 			self.install_earlyoom()
+			self.setup_ncdu()
+
+			if self.has_data_volume:
+				self.setup_archived_folder()
+
 			if self.platform == "arm64":
 				self.install_cadvisor_arm()
 
