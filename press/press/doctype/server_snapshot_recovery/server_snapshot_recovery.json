@@ -10,6 +10,8 @@
   "snapshot",
   "column_break_mqrc",
   "cluster",
+  "column_break_yfgz",
+  "warm_up_end_time",
   "section_break_ipfw",
   "app_server",
   "is_app_server_ready",
@@ -28,7 +30,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Draft\nCreating Servers\nGathering Site Data\nRestoring\nRestored\nFailure"
+   "options": "Draft\nCreating Servers\nGathering Site Data\nWarming Up\nRestoring\nRestored\nFailure"
   },
   {
    "fieldname": "column_break_msoo",
@@ -118,12 +120,22 @@
    "options": "Cluster",
    "reqd": 1,
    "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_yfgz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "warm_up_end_time",
+   "fieldtype": "Datetime",
+   "label": "Warm Up End Time",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-06 00:27:20.282834",
+ "modified": "2025-08-06 12:14:38.143961",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Snapshot Recovery",
