@@ -99,7 +99,7 @@ class Subscription(Document):
 		self.validate_duplicate()
 
 	def on_update(self):
-		if self.plan_type == "Server Storage Plan":
+		if self.plan_type in ["Server Storage Plan", "Server Snapshot Plan"]:
 			return
 
 		doc = self.get_subscribed_document()
@@ -142,7 +142,7 @@ class Subscription(Document):
 		return False
 
 	@frappe.whitelist()
-	def create_usage_record(self, date: DF.Date | None = None):
+	def create_usage_record(self, date: DF.Date | None = None):  # noqa: C901
 		cannot_charge = not self.can_charge_for_subscription()
 		if cannot_charge:
 			return None
@@ -170,6 +170,16 @@ class Subscription(Document):
 			price = plan.price_inr if team.currency == "INR" else plan.price_usd
 			price_per_day = price / plan.period  # no rounding off to avoid discrepancies
 			amount = flt((price_per_day * cint(self.additional_storage)), 2)
+		elif self.plan_type == "Server Snapshot Plan":
+			price = plan.price_inr if team.currency == "INR" else plan.price_usd
+			price_per_day = price / plan.period  # no rounding off to avoid discrepancies
+			amount = flt(
+				(
+					price_per_day
+					* cint(frappe.get_value("Server Snapshot", self.document_name, "total_size_gb"))
+				),
+				2,
+			)
 		else:
 			amount = plan.get_price_for_interval(self.interval, team.currency)
 

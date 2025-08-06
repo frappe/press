@@ -7,7 +7,9 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "steps"
+  "steps",
+  "callback_script",
+  "callback_max_retry"
  ],
  "fields": [
   {
@@ -16,11 +18,26 @@
    "label": "Steps",
    "options": "Press Job Type Step",
    "reqd": 1
+  },
+  {
+   "description": "The callback function will be called once Press Job reaches the terminating state [Success, Failure].",
+   "fieldname": "callback_script",
+   "fieldtype": "Code",
+   "label": "Callback Script",
+   "options": "Python"
+  },
+  {
+   "default": "1",
+   "fieldname": "callback_max_retry",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Callback Max Retry"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-09-28 17:51:52.412510",
+ "modified": "2025-07-31 13:52:28.892322",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Job Type",
@@ -40,6 +57,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

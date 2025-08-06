@@ -1,0 +1,91 @@
+{
+ "actions": [],
+ "autoname": "prompt",
+ "creation": "2025-08-02 03:08:42.573683",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "title",
+  "column_break_nyns",
+  "provider",
+  "pricing_section",
+  "price_inr",
+  "column_break_vild",
+  "price_usd"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title"
+  },
+  {
+   "fieldname": "pricing_section",
+   "fieldtype": "Section Break",
+   "label": "Pricing"
+  },
+  {
+   "fieldname": "price_inr",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Price per GB (INR)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_vild",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "price_usd",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Price per GB (USD)"
+  },
+  {
+   "fieldname": "column_break_nyns",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "provider",
+   "fieldtype": "Select",
+   "label": "Provider",
+   "options": "AWS EC2",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-08-02 03:22:33.282950",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Server Snapshot Plan",
+ "naming_rule": "Set by user",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title"
+}

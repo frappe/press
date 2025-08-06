@@ -83,7 +83,11 @@ class BaseServer(Document, TagHelpers):
 	def get_list_query(query):
 		Server = frappe.qb.DocType("Server")
 
-		query = query.where(Server.status != "Archived").where(Server.team == frappe.local.team().name)
+		query = (
+			query.where(Server.status != "Archived")
+			.where(Server.is_for_recovery != 1)
+			.where(Server.team == frappe.local.team().name)
+		)
 		results = query.run(as_dict=True)
 
 		for result in results:
@@ -620,11 +624,16 @@ class BaseServer(Document, TagHelpers):
 
 	def _update_agent_ansible(self):
 		try:
+			agent_branch = frappe.get_value("Press Settings", "Press Settings", "branch")
+			if not agent_branch:
+				agent_branch = "upstream/master"
+			else:
+				agent_branch = f"upstream/{agent_branch}"
 			ansible = Ansible(
 				playbook="update_agent.yml",
 				variables={
 					"agent_repository_url": self.get_agent_repository_url(),
-					"agent_repository_branch_or_commit_ref": "upstream/master",
+					"agent_repository_branch_or_commit_ref": agent_branch,
 					"agent_update_args": "",
 				},
 				server=self,
@@ -1300,6 +1309,8 @@ class BaseServer(Document, TagHelpers):
 					"mount_type": "Bind",
 					"mount_point": "/var/lib/mysql",
 					"source": "/opt/volumes/mariadb/var/lib/mysql",
+					"mount_point_owner": "mysql",
+					"mount_point_group": "mysql",
 				},
 			)
 			self.append(
@@ -1308,6 +1319,8 @@ class BaseServer(Document, TagHelpers):
 					"mount_type": "Bind",
 					"mount_point": "/etc/mysql",
 					"source": "/opt/volumes/mariadb/etc/mysql",
+					"mount_point_owner": "mysql",
+					"mount_point_group": "mysql",
 				},
 			)
 
@@ -1470,17 +1483,53 @@ class BaseServer(Document, TagHelpers):
 			log_error("Start Benches Exception", server=self.as_dict())
 
 	@frappe.whitelist()
-	def mount_volumes(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_mount_volumes", queue="short", timeout=1200)
+	def mount_volumes(
+		self,
+		now: bool | None,
+		restart_services: bool | None = None,
+		cleanup_db_replication_files: bool | None = None,
+	):
+		if not restart_services:
+			restart_services = False
 
-	def _mount_volumes(self):
+		if not cleanup_db_replication_files:
+			cleanup_db_replication_files = False
+
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_mount_volumes",
+			queue="short",
+			timeout=1200,
+			at_front=True,
+			now=now or False,
+			restart_services=restart_services,
+			cleanup_db_replication_files=cleanup_db_replication_files,
+		)
+
+	def _mount_volumes(self, restart_services: bool = False, cleanup_db_replication_files: bool = False):
 		try:
+			variables = {
+				"stop_docker_before_mount": self.doctype == "Server" and restart_services,
+				"stop_mariadb_before_mount": self.doctype == "Database Server" and restart_services,
+				"start_docker_after_mount": self.doctype == "Server"
+				and restart_services
+				and not self.is_for_recovery,  # don't start docker if this is a recovery server
+				"start_mariadb_after_mount": self.doctype == "Database Server" and restart_services,
+				"cleanup_db_replication_files": cleanup_db_replication_files,
+				**self.get_mount_variables(),
+			}
+			if self.doctype == "Database Server" and self.provider != "Generic":
+				variables["mariadb_bind_address"] = frappe.get_value(
+					"Virtual Machine", self.virtual_machine, "private_ip_address"
+				)
+
 			ansible = Ansible(
 				playbook="mount.yml",
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
-				variables={**self.get_mount_variables()},
+				variables=variables,
 			)
 			play = ansible.run()
 			self.reload()
@@ -1489,7 +1538,7 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Server Mount Exception", server=self.as_dict())
 
-	def _set_mount_status(self, play):
+	def _set_mount_status(self, play):  # noqa: C901
 		tasks = frappe.get_all(
 			"Ansible Task",
 			["result", "task"],
@@ -1506,7 +1555,18 @@ class BaseServer(Document, TagHelpers):
 				mount = find(self.mounts, lambda x: x.name == row.get("item", {}).get("name"))
 				if not mount:
 					mount = find(
+						self.mounts,
+						lambda x: x.name == row.get("item", {}).get("original_item", {}).get("name"),
+					)
+				if not mount:
+					mount = find(
 						self.mounts, lambda x: x.name == row.get("item", {}).get("item", {}).get("name")
+					)
+				if not mount:
+					mount = find(
+						self.mounts,
+						lambda x: x.name
+						== row.get("item", {}).get("item", {}).get("original_item", {}).get("name"),
 					)
 				if not mount:
 					continue
@@ -1816,6 +1876,9 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				self.install_cadvisor_arm()
 
 		if self.doctype == "Database Server":
+			if self.is_for_recovery:
+				self.set_innodb_force_recovery(2)
+
 			self.adjust_memory_config()
 			self.setup_logrotate()
 
@@ -1855,6 +1918,7 @@ class Server(BaseServer):
 		ignore_incidents_since: DF.Datetime | None
 		ip: DF.Data | None
 		ipv6: DF.Data | None
+		is_for_recovery: DF.Check
 		is_managed_database: DF.Check
 		is_primary: DF.Check
 		is_pyspy_setup: DF.Check
@@ -1876,7 +1940,7 @@ class Server(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
 		proxy_server: DF.Link | None
 		public: DF.Check
 		ram: DF.Float
