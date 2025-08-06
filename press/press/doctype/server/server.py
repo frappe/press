@@ -589,11 +589,16 @@ class BaseServer(Document, TagHelpers):
 
 	def _update_agent_ansible(self):
 		try:
+			agent_branch = frappe.get_value("Press Settings", "Press Settings", "branch")
+			if not agent_branch:
+				agent_branch = "upstream/master"
+			else:
+				agent_branch = f"upstream/{agent_branch}"
 			ansible = Ansible(
 				playbook="update_agent.yml",
 				variables={
 					"agent_repository_url": self.get_agent_repository_url(),
-					"agent_repository_branch_or_commit_ref": "upstream/master",
+					"agent_repository_branch_or_commit_ref": agent_branch,
 					"agent_update_args": "",
 				},
 				server=self,
