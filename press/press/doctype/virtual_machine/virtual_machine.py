@@ -1394,12 +1394,16 @@ class VirtualMachine(Document):
 		self.wait_for_volume_to_be_available(volume_id)
 		self.attach_volume(volume_id)
 
+<<<<<<< HEAD
 		log_server_activity(
 			self.series,
 			self.name,
 			action="Volume",
 			reason="Volume attached on server",
 		)
+=======
+		log_server_activity(self.series, self.name, action="Volume", reason="Volume attached on server")
+>>>>>>> a9dde025a (feat(server-log): Add logs for basic server events)
 
 		return volume_id
 

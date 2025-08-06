@@ -23,19 +23,29 @@ class ServerActivity(Document):
 		team: DF.Link | None
 	# end: auto-generated types
 
+<<<<<<< HEAD
 	dashboard_fields = ("action", "reason", "document_name")
+=======
+	dashboard_fields = ("action", "reason", "site", "job")
+>>>>>>> a9dde025a (feat(server-log): Add logs for basic server events)
 
 
 def log_server_activity(
 	series: Literal["f", "m"],
 	server: str,
 	action: Literal["Created", "Reboot", "Volume", "Terminated", "Disk Size Change"],
+<<<<<<< HEAD
 	reason: str | None = None,
+=======
+	reason: str,
+	team: str,
+>>>>>>> a9dde025a (feat(server-log): Add logs for basic server events)
 ) -> None:
 	"""Create a log of server activity"""
 	if series not in ["f", "m"]:
 		return
 
+<<<<<<< HEAD
 	document_type = "Server" if series == "f" else "Database Server"
 	team = frappe.db.get_value(document_type, server, "team")
 
@@ -44,6 +54,13 @@ def log_server_activity(
 			"doctype": "Server Activity",
 			"document_type": document_type,
 			"document_name": server,
+=======
+	frappe.get_doc(
+		{
+			"doctype": "Server Activity",
+			"document_name": "Server" if series == "f" else "Database Server",
+			"document_type": server,
+>>>>>>> a9dde025a (feat(server-log): Add logs for basic server events)
 			"action": action,
 			"reason": reason,
 			"team": team,
