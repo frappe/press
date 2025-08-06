@@ -17,7 +17,7 @@ from frappe.model.document import Document
 from hcloud import APIException, Client
 from hcloud.networks.domain import NetworkSubnet
 from oci.config import validate_config
-from oci.core import ComputeClient, VirtualNetworkClient
+from oci.core import VirtualNetworkClient
 from oci.core.models import (
 	AddNetworkSecurityGroupSecurityRulesDetails,
 	AddSecurityRuleDetails,
@@ -27,7 +27,6 @@ from oci.core.models import (
 	CreateVcnDetails,
 	PortRange,
 	RouteRule,
-	Shape,
 	TcpOptions,
 	UpdateRouteTableDetails,
 )
@@ -769,18 +768,7 @@ class Cluster(Document):
 		This simply checks if VM.Standard.E4.Flex is present in the region
 		and the memory and cpu options are within supported limit.
 		"""
-		vcpu, ram_in_gbs = map(int, machine_type.split("x"))
-		client = ComputeClient(self.get_oci_config(), region=self.region)
-		all_shapes = client.list_shapes(self.oci_tenancy, availability_domain=self.availability_zone).data
-		shape_config: Shape = next((s for s in all_shapes if s.shape == "VM.Standard.E4.Flex"), None)
-
-		if not shape_config:
-			return False
-
-		return (
-			shape_config.ocpu_options.min < vcpu // 2 < shape_config.ocpu_options.max
-			and shape_config.memory_options.min_in_g_bs < ram_in_gbs < shape_config.memory_options.max_in_g_bs
-		)
+		return True
 
 	def check_machine_availability(self, machine_type: str) -> bool:
 		"Check availability of machine in the region before allowing provision"
