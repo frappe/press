@@ -473,6 +473,9 @@ class VirtualMachine(Document):
 			self.client().reboot_instances(InstanceIds=[self.instance_id])
 		elif self.cloud_provider == "OCI":
 			self.client().instance_action(instance_id=self.instance_id, action="RESET")
+		elif self.cloud_provider == "Hetzner":
+			server_instance = self.client().servers.get_by_id(self.instance_id)
+			self.client().servers.reboot(server_instance)
 		self.sync()
 
 	@frappe.whitelist()
@@ -560,7 +563,9 @@ class VirtualMachine(Document):
 		if not server_instance:
 			try:
 				server_instance = self.client().servers.get_by_id(self.instance_id)
-			except APIException:
+			except APIException as e:
+				if "server not found" in str(e):
+					frappe.throw(f"{self.name}: Server not found")
 				is_deleted = True
 		if server_instance and not is_deleted:
 			# cluster: Document = frappe.get_doc("Cluster", self.cluster)
@@ -922,6 +927,9 @@ class VirtualMachine(Document):
 			self.client().stop_instances(InstanceIds=[self.instance_id], Force=bool(force))
 		elif self.cloud_provider == "OCI":
 			self.client().instance_action(instance_id=self.instance_id, action="STOP")
+		elif self.cloud_provider == "Hetzner":
+			server_instance = self.client().servers.get_by_id(self.instance_id)
+			self.client().servers.shutdown(server_instance)
 		self.sync()
 
 	@frappe.whitelist()
@@ -944,6 +952,9 @@ class VirtualMachine(Document):
 			self.client().terminate_instances(InstanceIds=[self.instance_id])
 		elif self.cloud_provider == "OCI":
 			self.client().terminate_instance(instance_id=self.instance_id)
+		elif self.cloud_provider == "Hetzner":
+			server_instance = self.client().servers.get_by_id(self.instance_id)
+			self.client().servers.delete(server_instance)
 
 	@frappe.whitelist()
 	def resize(self, machine_type):
