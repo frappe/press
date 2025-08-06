@@ -36,7 +36,8 @@ from oci.core.models import (
 from oci.exceptions import TransientServiceError
 
 from press.overrides import get_permission_query_conditions_for_doctype
-from press.utils import log_error
+from press.press.doctype.server_activity.server_activity import log_server_activity
+from press.utils import get_current_team, log_error
 from press.utils.jobs import has_job_timeout_exceeded
 
 if typing.TYPE_CHECKING:
@@ -476,6 +477,9 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "Hetzner":
 			server_instance = self.client().servers.get_by_id(self.instance_id)
 			self.client().servers.reboot(server_instance)
+
+		log_server_activity(self.series, self.name, action="Reboot", team=get_current_team())
+
 		self.sync()
 
 	@frappe.whitelist()
@@ -489,6 +493,7 @@ class VirtualMachine(Document):
 		volume.size += int(increment)
 		self.disk_size = self.get_data_volume().size
 		self.root_disk_size = self.get_root_volume().size
+		is_root_volume = self.get_root_volume().volume_id == volume.volume_id
 		volume.last_updated_at = frappe.utils.now_datetime()
 		if self.cloud_provider == "AWS EC2":
 			self.client().modify_volume(VolumeId=volume.volume_id, Size=volume.size)
@@ -503,6 +508,15 @@ class VirtualMachine(Document):
 					volume_id=volume.volume_id,
 					update_volume_details=UpdateVolumeDetails(size_in_gbs=volume.size),
 				)
+
+		log_server_activity(
+			self.series,
+			self.name,
+			action="Disk Size Change",
+			reason=f"{'Root' if is_root_volume else 'Data'} volume increased by {increment}",
+			team=get_current_team(),
+		)
+
 		self.save()
 
 	def get_volumes(self):
@@ -956,6 +970,8 @@ class VirtualMachine(Document):
 			server_instance = self.client().servers.get_by_id(self.instance_id)
 			self.client().servers.delete(server_instance)
 
+		log_server_activity(self.series, self.name, action="Terminated", team=get_current_team())
+
 	@frappe.whitelist()
 	def resize(self, machine_type):
 		if self.cloud_provider == "AWS EC2":
@@ -1181,6 +1197,15 @@ class VirtualMachine(Document):
 	def reboot_with_serial_console(self):
 		if self.cloud_provider == "AWS EC2":
 			self.get_server().reboot_with_serial_console()
+
+		log_server_activity(
+			self.series,
+			self.name,
+			action="Reboot",
+			reason="Unable to reboot manually, rebooting with serial console",
+			team=get_current_team(),
+		)
+
 		self.sync()
 
 	@classmethod
@@ -1370,6 +1395,15 @@ class VirtualMachine(Document):
 		volume_id = self.client().create_volume(**volume_options)["VolumeId"]
 		self.wait_for_volume_to_be_available(volume_id)
 		self.attach_volume(volume_id)
+
+		log_server_activity(
+			self.series,
+			self.name,
+			action="Volume",
+			reason="Volume attached on server",
+			team=get_current_team(),
+		)
+
 		return volume_id
 
 	def wait_for_volume_to_be_available(self, volume_id):
