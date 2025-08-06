@@ -5,6 +5,7 @@ import ServerActions from '../components/server/ServerActions.vue';
 import { getTeam } from '../data/team';
 import router from '../router';
 import { icon } from '../utils/components';
+import { isMobile } from '../utils/device';
 import { duration, planTitle, userCurrency } from '../utils/format';
 import { trialDays } from '../utils/site';
 import { getJobsTab } from './common/jobs';
@@ -501,6 +502,59 @@ export default {
 				},
 			},
 			tagTab(),
+			{
+				label: 'Activity',
+				icon: icon('activity'),
+				route: 'activity',
+				type: 'list',
+				condition: (server) => server.doc?.status !== 'Archived',
+				list: {
+					doctype: 'Server Activity',
+					filters: (server) => {
+						return { document_name: server.doc?.name };
+					},
+					fields: ['owner'],
+					orderBy: 'creation desc',
+					columns: [
+						{
+							label: 'Action',
+							fieldname: 'action',
+							format(value, row) {
+								return `${row.action} by ${row.owner}`;
+							},
+						},
+						{
+							label: 'Description',
+							fieldname: 'reason',
+							class: 'text-gray-600',
+						},
+						{
+							label: '',
+							fieldname: 'creation',
+							type: 'Timestamp',
+							align: 'right',
+						},
+					],
+					filterControls() {
+						return [
+							{
+								type: 'select',
+								label: 'Action',
+								fieldname: 'action',
+								class: !isMobile() ? 'w-52' : '',
+								options: [
+									'',
+									'Created',
+									'Reboot',
+									'Volume',
+									'Terminated',
+									'Disk Size Change',
+								],
+							},
+						];
+					},
+				},
+			},
 		],
 	},
 	routes: [
