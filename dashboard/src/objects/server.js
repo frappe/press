@@ -3,11 +3,12 @@ import LucideAppWindow from '~icons/lucide/app-window';
 import ServerActions from '../components/server/ServerActions.vue';
 import { getTeam } from '../data/team';
 import router from '../router';
-import { icon } from '../utils/components';
-import { duration, planTitle, userCurrency } from '../utils/format';
+import { icon, renderDialog } from '../utils/components';
+import { date, duration, planTitle, userCurrency } from '../utils/format';
 import { trialDays } from '../utils/site';
 import { getJobsTab } from './common/jobs';
 import { tagTab } from './common/tags';
+import { format } from 'echarts';
 
 export default {
 	doctype: 'Server',
@@ -409,6 +410,142 @@ export default {
 								});
 							},
 						};
+					},
+				},
+			},
+			{
+				label: 'Snapshots',
+				icon: icon('camera'),
+				route: 'snapshots',
+				type: 'list',
+				list: {
+					doctype: 'Server Snapshot',
+					filters: (server) => {
+						return { server: server.doc.name, status: ['!=', 'Unavailable'] };
+					},
+					orderBy: 'creation desc',
+					fields: [
+						'name',
+						'status',
+						'creation',
+						'consistent',
+						'free',
+						'expire_at',
+						'total_size_gb',
+					],
+					columns: [
+						{
+							label: 'Snapshot',
+							fieldname: 'name',
+							width: 0.5,
+							class: 'font-medium',
+						},
+						{
+							label: 'Status',
+							fieldname: 'status',
+							type: 'Badge',
+							width: 0.5,
+							align: 'center',
+						},
+						{
+							label: 'Size',
+							fieldname: 'total_size_gb',
+							width: 0.5,
+							align: 'center',
+							format(value) {
+								if (!value) return '-';
+								return `${value} GB`;
+							},
+						},
+						{
+							label: 'Consistent',
+							fieldname: 'consistent',
+							width: 0.3,
+							type: 'Icon',
+							align: 'center',
+							Icon(value) {
+								return value ? 'check' : 'x';
+							},
+						},
+						{
+							label: 'Free',
+							fieldname: 'free',
+							width: 0.3,
+							type: 'Icon',
+							Icon(value) {
+								return value ? 'check' : 'x';
+							},
+						},
+						{
+							label: 'Locked',
+							fieldname: 'locked',
+							width: 0.3,
+							type: 'Icon',
+							align: 'center',
+							Icon(value) {
+								return value ? 'lock' : 'unlock';
+							},
+						},
+						{
+							label: 'Expire At',
+							fieldname: 'expire_at',
+							width: 1,
+							align: 'center',
+							format(value) {
+								if (!value) return 'No Expiry';
+								return date(value, 'llll');
+							},
+						},
+						{
+							label: 'Created At',
+							fieldname: 'creation',
+							width: 1,
+							align: 'right',
+							format(value) {
+								return date(value, 'llll');
+							},
+						},
+					],
+					primaryAction({ documentResource: server, listResource: snapshots }) {
+						return {
+							label: 'New Snapshot',
+							slots: {
+								prefix: icon('camera'),
+							},
+							onClick() {
+								renderDialog(
+									h(
+										defineAsyncComponent(
+											() =>
+												import(
+													'../components/server/ServerNewSnapshotDialog.vue'
+												),
+										),
+										{
+											server: server.name,
+											onSnapshotCreated: () => {
+												snapshots.reload();
+											},
+										},
+									),
+								);
+							},
+						};
+					},
+					onRowClick(row) {
+						renderDialog(
+							h(
+								defineAsyncComponent(
+									() =>
+										import(
+											'../components/server/ServerSnapshotDetailsDialog.vue'
+										),
+								),
+								{
+									name: row.name,
+								},
+							),
+						);
 					},
 				},
 			},

@@ -13,6 +13,12 @@ frappe.ui.form.on('Server Snapshot', {
 			],
 			[__('Unlock'), 'unlock', true, frm.doc.locked],
 			[__('Lock'), 'lock', true, !frm.doc.locked],
+			[
+				__('Recover All Sites'),
+				'recover_sites',
+				true,
+				frm.doc.status === 'Completed',
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

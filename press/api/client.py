@@ -81,6 +81,8 @@ ALLOWED_DOCTYPES = [
 	"Partner Payment Payout",
 	"Deploy Candidate Build",
 	"Account Request",
+	"Server Snapshot",
+	"Server Snapshot Recovery",
 ]
 
 ALLOWED_DOCTYPES_FOR_SUPPORT = [

@@ -9,11 +9,15 @@ from frappe.model.document import Document
 from frappe.utils import add_to_date
 
 from press.agent import Agent
+from press.api.client import dashboard_whitelist
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.site_backup.site_backup import get_backup_bucket
 
 if TYPE_CHECKING:
 	from press.press.doctype.server_snapshot.server_snapshot import ServerSnapshot
+	from press.press.doctype.server_snapshot_site_recovery.server_snapshot_site_recovery import (
+		ServerSnapshotSiteRecovery,
+	)
 
 
 class ServerSnapshotRecovery(Document):
@@ -24,10 +28,6 @@ class ServerSnapshotRecovery(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
-		from press.press.doctype.server_snapshot_site_recovery.server_snapshot_site_recovery import (
-			ServerSnapshotSiteRecovery,
-		)
 
 		app_server: DF.Link | None
 		app_server_archived: DF.Check
@@ -47,16 +47,38 @@ class ServerSnapshotRecovery(Document):
 			"Restored",
 			"Failure",
 		]
+		team: DF.Link
 		warm_up_end_time: DF.Datetime | None
 	# end: auto-generated types
+
+	dashboard_fields = (
+		"status",
+		"snapshot",
+	)
 
 	@property
 	def server_agent(self) -> Agent:
 		return frappe.get_doc("Server", self.app_server).agent
 
+	def get_doc(self, doc):
+		sites_data = []
+		for s in self.sites:
+			sites_data.append(
+				{
+					"site": s.site,
+					"status": s.status,
+					"database_backup_available": bool(s.database_remote_file),
+					"public_files_backup_available": bool(s.public_remote_file),
+					"private_files_backup_available": bool(s.private_remote_file),
+					"encryption_key_available": bool(s.encryption_key),
+				}
+			)
+		doc.sites_data = sites_data
+		return doc
+
 	def before_insert(self):
 		self.validate_snapshot_status()
-		self.validate_sites()
+		self.fill_site_list()
 
 	def after_insert(self):
 		self.provision_servers()
@@ -69,17 +91,17 @@ class ServerSnapshotRecovery(Document):
 		if snapshot.status != "Completed":
 			frappe.throw(f"Cannot recover from snapshot {snapshot.name} with status {snapshot.status}")
 
-	def validate_sites(self):
+	def fill_site_list(self):
+		sites_json = json.loads(
+			frappe.get_value(
+				"Server Snapshot",
+				self.snapshot,
+				"site_list",
+			)
+		)
 		if not self.sites:
 			self.sites = []
 
-			sites_json = json.loads(
-				frappe.get_value(
-					"Server Snapshot",
-					self.snapshot,
-					"site_list",
-				)
-			)
 			for site in sites_json:
 				self.append(
 					"sites",
@@ -88,6 +110,13 @@ class ServerSnapshotRecovery(Document):
 						"status": "Draft",
 					},
 				)
+		else:
+			for site in self.sites:
+				if site.site not in sites_json:
+					frappe.throw(f"Site {site.site} not available in snapshot {self.snapshot}")
+
+		if len(self.sites) == 0:
+			frappe.throw("Please choose at least one site to recover.")
 
 	def on_update(self):
 		if (
@@ -307,6 +336,48 @@ class ServerSnapshotRecovery(Document):
 		)
 		remote_file.save()
 		return remote_file
+
+	@dashboard_whitelist()
+	def download_backup(self, site: str, file_type: str):  # noqa: C901
+		"""
+		Download the backup file for the given site and file type.
+		"""
+		if file_type not in ["public", "private", "database", "encryption_key"]:
+			frappe.throw(
+				f"Invalid file type: {file_type}. Must be one of 'public', 'private', 'database', or 'encryption_key'."
+			)
+
+		site_record: ServerSnapshotSiteRecovery = None
+		for record in self.sites:
+			if record.site == site:
+				site_record = record
+				break
+
+		if not site_record:
+			frappe.throw(f"Site {site} not found in recovery sites.")
+
+		if (
+			(file_type == "public" and not site_record.public_remote_file)
+			or (file_type == "private" and not site_record.private_remote_file)
+			or (file_type == "database" and not site_record.database_remote_file)
+			or (file_type == "encryption_key" and not site_record.encryption_key)
+		):
+			frappe.throw(f"{file_type.capitalize()} backup not available for site {site}.")
+
+		try:
+			remote_file_name = ""
+			if file_type == "public":
+				remote_file_name = site_record.public_remote_file
+			elif file_type == "private":
+				remote_file_name = site_record.private_remote_file
+			elif file_type == "database":
+				remote_file_name = site_record.database_remote_file
+			elif file_type == "encryption_key":
+				return site_record.get_password("encryption_key")
+
+			return frappe.get_doc("Remote File", remote_file_name).download_link
+		except Exception:
+			frappe.throw(f"Error downloading {file_type} backup for site {site}. Please try again later.")
 
 
 def resume_warmed_up_restorations():

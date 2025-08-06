@@ -2576,6 +2576,19 @@ class Server(BaseServer):
 		bench_mount_points = set(["/home/frappe/benches"])
 		return bench_mount_points.issubset(mount_points)
 
+	@dashboard_whitelist()
+	def create_snapshot(self, consistent: bool = False):
+		doc = frappe.get_doc(
+			{
+				"doctype": "Server Snapshot",
+				"app_server": self.name,
+				"consistent": consistent,
+			}
+		).insert(ignore_permissions=True)
+		frappe.msgprint(
+			f"Snapshot created successfully. <a href='/app/server-snapshot/{doc.name}' target='_blank'>Check Here</a>"
+		)
+
 
 def scale_workers(now=False):
 	servers = frappe.get_all("Server", {"status": "Active", "is_primary": True})

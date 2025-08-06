@@ -8,6 +8,8 @@
   "status",
   "column_break_msoo",
   "snapshot",
+  "column_break_cvnn",
+  "team",
   "column_break_mqrc",
   "cluster",
   "column_break_yfgz",
@@ -130,12 +132,24 @@
    "fieldtype": "Datetime",
    "label": "Warm Up End Time",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_cvnn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "snapshot.team",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-06 12:14:38.143961",
+ "modified": "2025-08-06 13:37:55.432013",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Snapshot Recovery",
@@ -152,6 +166,26 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1
   }
  ],
  "row_format": "Dynamic",
