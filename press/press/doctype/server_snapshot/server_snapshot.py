@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING, Literal
 import frappe
 from frappe.model.document import Document
 
+from press.api.client import dashboard_whitelist
+
 if TYPE_CHECKING:
 	from press.press.doctype.cluster.cluster import Cluster
 	from press.press.doctype.site_backup.site_backup import VirtualMachine
@@ -38,15 +40,82 @@ class ServerSnapshot(Document):
 		database_server_snapshot: DF.Link | None
 		database_server_snapshot_press_job: DF.Link | None
 		database_server_vcpu: DF.Int
+		expire_at: DF.Datetime | None
 		free: DF.Check
 		locked: DF.Check
 		provider: DF.Literal["AWS EC2", "OCI"]
 		site_list: DF.JSON | None
-		status: DF.Literal["Pending", "Failure", "Completed", "Unavailable"]
+		status: DF.Literal["Pending", "Processing", "Failure", "Completed", "Unavailable"]
 		team: DF.Link
 		total_size_gb: DF.Int
 		traceback: DF.Text | None
 	# end: auto-generated types
+
+	dashboard_fields = (
+		"status",
+		"app_server",
+		"database_server",
+		"cluster",
+		"consistent",
+		"locked",
+		"free",
+		"total_size_gb",
+		"app_server_snapshot_press_job",
+		"database_server_snapshot_press_job",
+		"app_server_resume_service_press_job",
+		"database_server_resume_service_press_job",
+		"creation",
+		"expire_at",
+	)
+
+	def get_doc(self, doc: "ServerSnapshot"):
+		app_server_snapshot = {}
+		database_server_snapshot = {}
+
+		if self.status in ["Processing", "Completed"]:
+			if self.app_server_snapshot:
+				app_server_snapshot = frappe.get_value(
+					"Virtual Disk Snapshot",
+					self.app_server_snapshot,
+					["size", "progress", "status", "start_time"],
+					as_dict=True,
+				)
+				print(app_server_snapshot)
+			if self.database_server_snapshot:
+				database_server_snapshot = frappe.get_value(
+					"Virtual Disk Snapshot",
+					self.database_server_snapshot,
+					["size", "progress", "status", "start_time"],
+					as_dict=True,
+				)
+
+		doc.app_server_hostname = (
+			frappe.get_value("Server", self.app_server, "hostname") if self.app_server else ""
+		)
+		doc.app_server_title = frappe.get_value("Server", self.app_server, "title") if self.app_server else ""
+		doc.app_server_snapshot_size = app_server_snapshot.get("size", 0)
+		doc.app_server_snapshot_progress = int(app_server_snapshot.get("progress", "0%").strip("%"))
+		doc.app_server_snapshot_status = app_server_snapshot.get("status", "")
+		doc.app_server_snapshot_start_time = app_server_snapshot.get("start_time", None)
+
+		doc.database_server_title = (
+			frappe.get_value("Database Server", self.database_server, "title") if self.database_server else ""
+		)
+		doc.database_server_hostname = (
+			frappe.get_value("Database Server", self.database_server, "hostname")
+			if self.database_server
+			else ""
+		)
+		doc.database_server_snapshot_size = database_server_snapshot.get("size", 0)
+		doc.database_server_snapshot_progress = int(database_server_snapshot.get("progress", "0%").strip("%"))
+		doc.database_server_snapshot_status = database_server_snapshot.get("status", "")
+		doc.database_server_snapshot_start_time = database_server_snapshot.get("start_time", None)
+
+		doc.progress = int(((doc.app_server_snapshot_progress) + (doc.database_server_snapshot_progress)) / 2)
+
+		doc.site_list_json = self.sites
+
+		return doc
 
 	@property
 	def snapshots(self):
@@ -257,7 +326,7 @@ class ServerSnapshot(Document):
 		)
 
 	def _sync(self, trigger_snapshot_sync):  # noqa: C901
-		if self.status not in ["Pending", "Completed"]:
+		if self.status not in ["Processing", "Completed"]:
 			# If snapshot is already marked as failure or unavailable, no need to sync
 			return
 
@@ -292,7 +361,7 @@ class ServerSnapshot(Document):
 			self.total_size_gb = total_size
 			self.save(ignore_version=True)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def delete_snapshots(self):
 		if self.status in ["Unavailable", "Failure"]:
 			# If snapshot is already marked as failure or unavailable, no need to delete
@@ -313,14 +382,14 @@ class ServerSnapshot(Document):
 		self.status = "Unavailable"
 		self.save()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def lock(self, now: bool = False):
 		if self.locked:
 			return
 
 		frappe.enqueue_doc("Server Snapshot", self.name, "_lock", enqueue_after_commit=True, now=now or False)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def unlock(self, now: bool = False):
 		if not self.locked:
 			return
@@ -344,6 +413,26 @@ class ServerSnapshot(Document):
 			frappe.get_doc("Virtual Disk Snapshot", s).unlock()
 		self.locked = False
 		self.save(ignore_version=True)
+
+	@dashboard_whitelist()
+	def recover_sites(self, sites: list[str] | None = None):
+		if not sites:
+			sites = []
+
+		recover_record = frappe.get_doc(
+			{
+				"doctype": "Server Snapshot Recovery",
+				"snapshot": self.name,
+			}
+		)
+		for s in sites:
+			recover_record.append("sites", {"site": s})
+		recover_record.insert(ignore_permissions=True)
+		frappe.msgprint(
+			"Snapshot Recovery started successfully\n"
+			f"<a href='/app/server-snapshot-recovery/{recover_record.name}' target='_blank'>View Recovery Record</a>."
+		)
+		return recover_record.name
 
 	@frappe.whitelist()
 	def create_server(
@@ -444,3 +533,29 @@ class ServerSnapshot(Document):
 			0,
 			update_modified=True,
 		)
+
+
+def move_pending_snapshots_to_processing():
+	"""
+	Move all pending snapshots to processing state.
+	This is used to ensure that snapshots are processed in the correct order.
+	"""
+	pending_snapshots = frappe.get_all(
+		"Server Snapshot",
+		filters={
+			"status": "Pending",
+			"app_server_snapshot": ("is", "set"),
+			"database_server_snapshot": ("is", "set"),
+			"app_server_services_started": 1,
+			"database_server_services_started": 1,
+		},
+		pluck="name",
+	)
+
+	for snapshot in pending_snapshots:
+		with contextlib.suppress(Exception):
+			current_status = frappe.db.get_value("Server Snapshot", snapshot, "status")
+			if current_status == "Pending":
+				# If the snapshot is still pending, update its status to Processing
+				frappe.db.set_value("Server Snapshot", snapshot, "status", "Processing", update_modified=True)
+				frappe.db.commit()

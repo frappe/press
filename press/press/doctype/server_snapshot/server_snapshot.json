@@ -14,6 +14,8 @@
   "cluster",
   "column_break_mwve",
   "total_size_gb",
+  "column_break_jszb",
+  "expire_at",
   "section_break_yuac",
   "consistent",
   "column_break_gviv",
@@ -96,7 +98,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nFailure\nCompleted\nUnavailable",
+   "options": "Pending\nProcessing\nFailure\nCompleted\nUnavailable",
    "read_only": 1,
    "reqd": 1,
    "search_index": 1
@@ -297,6 +299,15 @@
    "fieldtype": "Check",
    "label": "Free",
    "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_jszb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "expire_at",
+   "fieldtype": "Datetime",
+   "label": "Expire At"
   }
  ],
  "grid_page_length": 50,
@@ -307,7 +318,7 @@
    "link_fieldname": "snapshot"
   }
  ],
- "modified": "2025-08-06 13:27:09.677852",
+ "modified": "2025-08-06 15:05:46.481065",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Snapshot",
@@ -325,6 +336,26 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1
   }
  ],
  "row_format": "Dynamic",
