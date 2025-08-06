@@ -36,6 +36,10 @@ from oci.core.models import (
 from oci.exceptions import TransientServiceError
 
 from press.overrides import get_permission_query_conditions_for_doctype
+<<<<<<< HEAD
+=======
+from press.press.doctype.server_activity.server_activity import log_server_activity
+>>>>>>> bb38db255 (chore(team): Set team to server team always)
 from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
 
@@ -476,6 +480,12 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "Hetzner":
 			server_instance = self.client().servers.get_by_id(self.instance_id)
 			self.client().servers.reboot(server_instance)
+<<<<<<< HEAD
+=======
+
+		log_server_activity(self.series, self.name, action="Reboot")
+
+>>>>>>> bb38db255 (chore(team): Set team to server team always)
 		self.sync()
 
 	@frappe.whitelist()
@@ -503,6 +513,17 @@ class VirtualMachine(Document):
 					volume_id=volume.volume_id,
 					update_volume_details=UpdateVolumeDetails(size_in_gbs=volume.size),
 				)
+<<<<<<< HEAD
+=======
+
+		log_server_activity(
+			self.series,
+			self.name,
+			action="Disk Size Change",
+			reason=f"{'Root' if is_root_volume else 'Data'} volume increased by {increment}",
+		)
+
+>>>>>>> bb38db255 (chore(team): Set team to server team always)
 		self.save()
 
 	def get_volumes(self):
@@ -956,6 +977,11 @@ class VirtualMachine(Document):
 			server_instance = self.client().servers.get_by_id(self.instance_id)
 			self.client().servers.delete(server_instance)
 
+<<<<<<< HEAD
+=======
+		log_server_activity(self.series, self.name, action="Terminated")
+
+>>>>>>> bb38db255 (chore(team): Set team to server team always)
 	@frappe.whitelist()
 	def resize(self, machine_type):
 		if self.cloud_provider == "AWS EC2":
@@ -1181,6 +1207,17 @@ class VirtualMachine(Document):
 	def reboot_with_serial_console(self):
 		if self.cloud_provider == "AWS EC2":
 			self.get_server().reboot_with_serial_console()
+<<<<<<< HEAD
+=======
+
+		log_server_activity(
+			self.series,
+			self.name,
+			action="Reboot",
+			reason="Unable to reboot manually, rebooting with serial console",
+		)
+
+>>>>>>> bb38db255 (chore(team): Set team to server team always)
 		self.sync()
 
 	@classmethod
@@ -1370,6 +1407,17 @@ class VirtualMachine(Document):
 		volume_id = self.client().create_volume(**volume_options)["VolumeId"]
 		self.wait_for_volume_to_be_available(volume_id)
 		self.attach_volume(volume_id)
+<<<<<<< HEAD
+=======
+
+		log_server_activity(
+			self.series,
+			self.name,
+			action="Volume",
+			reason="Volume attached on server",
+		)
+
+>>>>>>> bb38db255 (chore(team): Set team to server team always)
 		return volume_id
 
 	def wait_for_volume_to_be_available(self, volume_id):
