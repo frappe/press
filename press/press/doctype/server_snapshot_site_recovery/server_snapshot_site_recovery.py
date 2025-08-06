@@ -18,6 +18,7 @@ class ServerSnapshotSiteRecovery(Document):
 		database_backup_job: DF.Link | None
 		database_name: DF.Data | None
 		database_remote_file: DF.Link | None
+		encryption_key: DF.Password | None
 		file_backup_job: DF.Link | None
 		parent: DF.Data
 		parentfield: DF.Data

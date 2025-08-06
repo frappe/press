@@ -309,6 +309,7 @@ def process_search_sites_in_snapshot_job_callback(job: AgentJob):
 				site.status = "Pending"
 				site.bench = data[site.site].get("bench", "")
 				site.database_name = data[site.site].get("db_name", "")
+				site.encryption_key = data[site.site].get("encryption_key", "")
 
 		record.save()
 		record.backup_sites()
