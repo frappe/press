@@ -511,7 +511,12 @@ export default {
 				list: {
 					doctype: 'Server Activity',
 					filters: (server) => {
-						return { document_name: server.doc?.name };
+						return {
+							document_name: [
+								'in',
+								[server.doc?.name, server.doc?.database_server],
+							],
+						};
 					},
 					fields: ['owner'],
 					orderBy: 'creation desc',
