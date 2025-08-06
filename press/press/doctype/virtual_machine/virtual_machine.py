@@ -548,6 +548,9 @@ class VirtualMachine(Document):
 				)
 				.data
 			)
+		if self.cloud_provider == "Hetzner":
+			server_instance = self.client().servers.get_by_id(self.instance_id)
+			return self.client().volumes.get_by_id(server_instance.volumes)
 		return None
 
 	def convert_to_gp3(self):
@@ -905,7 +908,7 @@ class VirtualMachine(Document):
 		tmp_volume_ids = set()
 		tmp_volumes_devices = [x.device for x in self.temporary_volumes]
 
-		def get_volume_id_by_device(device):
+		def gid_by_device(device):
 			for volume in self.volumes:
 				if volume.device == device:
 					return volume.volume_id
