@@ -301,8 +301,13 @@
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-08-02 11:32:37.624098",
+ "links": [
+  {
+   "link_doctype": "Server Snapshot Recovery",
+   "link_fieldname": "snapshot"
+  }
+ ],
+ "modified": "2025-08-06 13:27:09.677852",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Snapshot",
