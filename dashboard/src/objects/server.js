@@ -518,7 +518,6 @@ export default {
 							],
 						};
 					},
-					fields: ['owner'],
 					orderBy: 'creation desc',
 					columns: [
 						{
@@ -527,6 +526,10 @@ export default {
 							format(value, row) {
 								return `${row.action} by ${row.owner}`;
 							},
+						},
+						{
+							label: 'Server',
+							fieldname: 'document_name',
 						},
 						{
 							label: 'Description',
