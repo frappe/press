@@ -37,7 +37,7 @@ from oci.exceptions import TransientServiceError
 
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.server_activity.server_activity import log_server_activity
-from press.utils import log_error
+from press.utils import get_current_team, log_error
 from press.utils.jobs import has_job_timeout_exceeded
 
 if typing.TYPE_CHECKING:
@@ -478,7 +478,7 @@ class VirtualMachine(Document):
 			server_instance = self.client().servers.get_by_id(self.instance_id)
 			self.client().servers.reboot(server_instance)
 
-		log_server_activity(self.series, self.name, action="Reboot")
+		log_server_activity(self.series, self.name, action="Reboot", team=get_current_team())
 
 		self.sync()
 
@@ -514,6 +514,7 @@ class VirtualMachine(Document):
 			self.name,
 			action="Disk Size Change",
 			reason=f"{'Root' if is_root_volume else 'Data'} volume increased by {increment}",
+			team=get_current_team(),
 		)
 
 		self.save()
@@ -969,7 +970,7 @@ class VirtualMachine(Document):
 			server_instance = self.client().servers.get_by_id(self.instance_id)
 			self.client().servers.delete(server_instance)
 
-		log_server_activity(self.series, self.name, action="Terminated")
+		log_server_activity(self.series, self.name, action="Terminated", team=get_current_team())
 
 	@frappe.whitelist()
 	def resize(self, machine_type):
@@ -1202,6 +1203,7 @@ class VirtualMachine(Document):
 			self.name,
 			action="Reboot",
 			reason="Unable to reboot manually, rebooting with serial console",
+			team=get_current_team(),
 		)
 
 		self.sync()
@@ -1394,7 +1396,13 @@ class VirtualMachine(Document):
 		self.wait_for_volume_to_be_available(volume_id)
 		self.attach_volume(volume_id)
 
-		log_server_activity(self.series, self.name, action="Volume", reason="Volume attached on server")
+		log_server_activity(
+			self.series,
+			self.name,
+			action="Volume",
+			reason="Volume attached on server",
+			team=get_current_team(),
+		)
 
 		return volume_id
 
