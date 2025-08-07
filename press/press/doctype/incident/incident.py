@@ -651,7 +651,11 @@ Incident URL: {incident_link}"""
 
 	def create_log_for_server(self, is_resolved: bool = False):
 		"""We will create a incident log on the server activity for confirmed incidents and their resolution"""
-		incidence_server: BaseServer = frappe.get_cached_doc(self.resource_type, self.resource)
+		try:
+			incidence_server: BaseServer = frappe.get_cached_doc(self.resource_type, self.resource)
+		except Exception:
+			incidence_server: Server = frappe.get_cached_doc("Server", self.server)
+
 		incidence_server.create_log(
 			"Incident",
 			f"{self.alert} resolved" if is_resolved else f"{self.alert} reported",
