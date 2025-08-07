@@ -487,9 +487,12 @@ class VirtualMachine(Document):
 
 		volume = find(self.volumes, lambda v: v.volume_id == volume_id)
 		volume.size += int(increment)
-		self.disk_size = self.get_data_volume().size
-		self.root_disk_size = self.get_root_volume().size
-		volume.last_updated_at = frappe.utils.now_datetime()
+		if self.cloud_provider != "Hetzner":
+			# These are AWS/OCI Specific checks. Hence, bypassing them
+			self.disk_size = self.get_data_volume().size
+			self.root_disk_size = self.get_root_volume().size
+			volume.last_updated_at = frappe.utils.now_datetime()
+
 		if self.cloud_provider == "AWS EC2":
 			self.client().modify_volume(VolumeId=volume.volume_id, Size=volume.size)
 		elif self.cloud_provider == "OCI":
@@ -503,6 +506,9 @@ class VirtualMachine(Document):
 					volume_id=volume.volume_id,
 					update_volume_details=UpdateVolumeDetails(size_in_gbs=volume.size),
 				)
+		elif self.cloud_provider == "Hetzner":
+			volume = self.client().volumes.get_by_id(volume_id)
+			self.client().volumes.resize(volume, increment)
 		self.save()
 
 	def get_volumes(self):
