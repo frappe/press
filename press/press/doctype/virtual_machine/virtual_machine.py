@@ -1422,8 +1422,6 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def attach_new_volume(self, size, iops=None, throughput=None):
-		if self.cloud_provider != "AWS EC2":
-			return None
 		volume_options = {
 			"AvailabilityZone": self.availability_zone,
 			"Size": size,
@@ -1482,26 +1480,42 @@ class VirtualMachine(Document):
 			if e.response.get("Error", {}).get("Code") == "InvalidVolumeModification.NotFound":
 				return None
 
-	def attach_volume(self, volume_id, is_temporary_volume: bool = False) -> str:
+	@frappe.whitelist()
+	def attach_volume(self, volume_id, is_temporary_volume: bool = False, size=None) -> str:
 		"""
 		temporary_volumes: If you are attaching a volume to an instance just for temporary use, then set this to True.
 
 		Then, snapshot and other stuff will be ignored for this volume.
 		"""
-		if self.cloud_provider != "AWS EC2":
+		if self.cloud_provider == "AWS EC2":
+			# Attach a volume to the instance and return the device name
+			device_name = self.get_next_volume_device_name()
+			self.client().attach_volume(
+				Device=device_name,
+				InstanceId=self.instance_id,
+				VolumeId=volume_id,
+			)
+			if is_temporary_volume:
+				# add the volume to the list of temporary volumes
+				self.append("temporary_volumes", {"device": device_name})
+		elif self.cloud_provider == "OCI":
 			raise NotImplementedError
-		# Attach a volume to the instance and return the device name
-		device_name = self.get_next_volume_device_name()
-		self.client().attach_volume(
-			Device=device_name,
-			InstanceId=self.instance_id,
-			VolumeId=volume_id,
-		)
-		if is_temporary_volume:
-			# add the volume to the list of temporary volumes
-			self.append("temporary_volumes", {"device": device_name})
+		elif self.cloud_provider == "Hetzner":
+			server_instance = self.client().servers.get_by_id(self.instance_id)
+			new_volume = self.client().volumes.create(
+				automount=True,
+				format="ext4",
+				name=f"{self.series}{self.index}-{slug(self.cluster)}",
+				size=size,
+				server=server_instance,
+			)
+			"""
+			This is a temporary assignment of linux_device from Hetzner API to
+			device_name. linux_device is actually the mountpoint of the volume.
+			Example: linux_device = /mnt/HC_Volume_103061048
+			"""
+			device_name = new_volume.linux_device
 		self.save()
-		# sync
 		self.sync()
 		return device_name
 
