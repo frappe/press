@@ -557,6 +557,7 @@ export default {
 									'Reboot',
 									'Volume',
 									'Terminated',
+									'Incident',
 									'Disk Size Change',
 								],
 							},
