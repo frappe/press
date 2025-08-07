@@ -612,6 +612,7 @@ class VirtualMachine(Document):
 				row.volume_id = volume.id
 				row.size = volume.size
 				row.device = volume.linux_device
+				self.termination_protection = volume.protection["delete"]
 				attached_volumes.append(row.volume_id)
 
 				if not existing_volume:
@@ -950,7 +951,13 @@ class VirtualMachine(Document):
 			self.client().modify_instance_attribute(
 				InstanceId=self.instance_id, DisableApiTermination={"Value": False}
 			)
-			self.sync()
+		elif self.cloud_provider == "Hetzner":
+			for volume in self.volumes:
+				volume = self.client().volumes.get_by_id(volume.volume_id)
+				self.termination_protection = self.client().volumes.change_protection(
+					volume=volume, delete=False
+				)
+		self.sync()
 
 	@frappe.whitelist()
 	def enable_termination_protection(self):
@@ -958,7 +965,13 @@ class VirtualMachine(Document):
 			self.client().modify_instance_attribute(
 				InstanceId=self.instance_id, DisableApiTermination={"Value": True}
 			)
-			self.sync()
+		elif self.cloud_provider == "Hetzner":
+			for volume in self.volumes:
+				volume = self.client().volumes.get_by_id(volume.volume_id)
+				self.termination_protection = self.client().volumes.change_protection(
+					volume=volume, delete=False
+				)
+		self.sync()
 
 	@frappe.whitelist()
 	def start(self):
