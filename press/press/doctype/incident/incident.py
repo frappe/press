@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 	)
 	from press.press.doctype.monitor_server.monitor_server import MonitorServer
 	from press.press.doctype.press_settings.press_settings import PressSettings
-	from press.press.doctype.server.server import Server
+	from press.press.doctype.server.server import BaseServer, Server
 
 INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere #
 INCIDENT_SCOPE = (
@@ -639,6 +639,7 @@ Incident URL: {incident_link}"""
 			return
 		else:
 			if not last_resolved.is_enough_firing:
+				self.create_log_for_server(is_resolved=True)
 				self.resolve()
 
 	def resolve(self):
@@ -647,6 +648,14 @@ Incident URL: {incident_link}"""
 		else:
 			self.status = "Resolved"
 		self.save()
+
+	def create_log_for_server(self, is_resolved: bool = False):
+		"""We will create a incident log on the server activity for confirmed incidents and their resolution"""
+		incidence_server: BaseServer = frappe.get_cached_doc(self.resource_type, self.resource)
+		incidence_server.create_log(
+			"Incident",
+			f"{self.alert} resolved" if is_resolved else f"{self.alert} reported",
+		)
 
 	@property
 	def time_to_call_for_help(self) -> bool:
@@ -733,6 +742,7 @@ def resolve_incidents():
 		incident = Incident("Incident", incident_name)
 		incident.check_resolved()
 		if incident.time_to_call_for_help or incident.time_to_call_for_help_again:
+			incident.create_log_for_server()
 			incident.call_humans()
 
 
