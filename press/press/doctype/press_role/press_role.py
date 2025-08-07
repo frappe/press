@@ -99,6 +99,9 @@ class PressRole(Document):
 	def is_team_member(self, user):
 		return bool(frappe.db.exists("Team Member", {"parent": self.team, "user": user}))
 
+	def is_team_member(self, user):
+		return bool(frappe.db.exists("Team Member", {"parent": self.team, "user": user}))
+	
 	@dashboard_whitelist()
 	def add_user(self, user):
 		user_exists = self.get("users", {"user": user})
