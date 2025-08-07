@@ -90,12 +90,18 @@ class PressRole(Document):
 			return
 		frappe.get_doc("User", user).remove_roles("Press Admin")
 
+	def is_team_member(self, user):
+		return bool(frappe.db.exists("Team Member", {"parent": self.team, "user": user}))
+	
 	@dashboard_whitelist()
 	def add_user(self, user):
 		user_exists = self.get("users", {"user": user})
 		if user_exists:
 			frappe.throw(f"{user} already belongs to {self.title}")
 
+		if not self.is_team_member(user):
+			frappe.throw(f"{user} is not a member of the team")
+		
 		self.append("users", {"user": user})
 		self.save()
 		if self.admin_access or self.allow_billing:
