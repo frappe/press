@@ -1457,12 +1457,12 @@ class BaseServer(Document, TagHelpers):
 	def mount_volumes(
 		self,
 		now: bool | None,
-		restart_services: bool | None = None,
+		stop_docker_before_mount: bool | None = None,
+		stop_mariadb_before_mount: bool | None = None,
+		start_docker_after_mount: bool | None = None,
+		start_mariadb_after_mount: bool | None = None,
 		cleanup_db_replication_files: bool | None = None,
 	):
-		if not restart_services:
-			restart_services = False
-
 		if not cleanup_db_replication_files:
 			cleanup_db_replication_files = False
 
@@ -1474,19 +1474,27 @@ class BaseServer(Document, TagHelpers):
 			timeout=1200,
 			at_front=True,
 			now=now or False,
-			restart_services=restart_services,
+			stop_docker_before_mount=stop_docker_before_mount or False,
+			stop_mariadb_before_mount=stop_mariadb_before_mount or False,
+			start_docker_after_mount=start_docker_after_mount or False,
+			start_mariadb_after_mount=start_mariadb_after_mount or False,
 			cleanup_db_replication_files=cleanup_db_replication_files,
 		)
 
-	def _mount_volumes(self, restart_services: bool = False, cleanup_db_replication_files: bool = False):
+	def _mount_volumes(
+		self,
+		stop_docker_before_mount: bool = False,
+		stop_mariadb_before_mount: bool = False,
+		start_docker_after_mount: bool = False,
+		start_mariadb_after_mount: bool = False,
+		cleanup_db_replication_files: bool = False,
+	):
 		try:
 			variables = {
-				"stop_docker_before_mount": self.doctype == "Server" and restart_services,
-				"stop_mariadb_before_mount": self.doctype == "Database Server" and restart_services,
-				"start_docker_after_mount": self.doctype == "Server"
-				and restart_services
-				and not self.is_for_recovery,  # don't start docker if this is a recovery server
-				"start_mariadb_after_mount": self.doctype == "Database Server" and restart_services,
+				"stop_docker_before_mount": self.doctype == "Server" and stop_docker_before_mount,
+				"stop_mariadb_before_mount": self.doctype == "Database Server" and stop_mariadb_before_mount,
+				"start_docker_after_mount": self.doctype == "Server" and start_docker_after_mount,
+				"start_mariadb_after_mount": self.doctype == "Database Server" and start_mariadb_after_mount,
 				"cleanup_db_replication_files": cleanup_db_replication_files,
 				**self.get_mount_variables(),
 			}
@@ -1851,9 +1859,6 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				self.install_cadvisor_arm()
 
 		if self.doctype == "Database Server":
-			if self.is_for_recovery:
-				self.set_innodb_force_recovery(2)
-
 			self.adjust_memory_config()
 			self.setup_logrotate()
 

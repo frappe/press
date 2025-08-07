@@ -44,11 +44,8 @@
   "mariadb_section",
   "self_hosted_mariadb_server",
   "mariadb_root_password",
-  "server_id",
-  "is_primary",
   "column_break_12",
-  "primary",
-  "is_replication_setup",
+  "server_id",
   "ssh_section",
   "frappe_user_password",
   "frappe_public_key",
@@ -89,7 +86,18 @@
   "stalk_sleep",
   "section_break_imng",
   "binlog_retention_days",
-  "binlogs_removed"
+  "binlogs_removed",
+  "replication_tab",
+  "is_primary",
+  "column_break_vajj",
+  "is_replication_setup",
+  "primary",
+  "section_break_qrcb",
+  "gtid_binlog_pos",
+  "column_break_clus",
+  "gtid_current_pos",
+  "column_break_gasc",
+  "gtid_slave_pos"
  ],
  "fields": [
   {
@@ -609,6 +617,45 @@
    "fieldname": "is_for_recovery",
    "fieldtype": "Check",
    "label": "Is For Recovery"
+  },
+  {
+   "fieldname": "replication_tab",
+   "fieldtype": "Tab Break",
+   "label": "Replication"
+  },
+  {
+   "fieldname": "column_break_vajj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_qrcb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "gtid_binlog_pos",
+   "fieldtype": "Data",
+   "label": "GTID Binlog Pos",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_clus",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "gtid_current_pos",
+   "fieldtype": "Data",
+   "label": "GTID Current Pos",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_gasc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "gtid_slave_pos",
+   "fieldtype": "Data",
+   "label": "GTID Slave Pos",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -626,10 +673,14 @@
   }
  ],
 <<<<<<< HEAD
+<<<<<<< HEAD
  "modified": "2025-08-14 02:08:52.404846",
 =======
  "modified": "2025-08-04 13:05:11.427510",
 >>>>>>> 3a30f251a (feat(snapshot-recovery): Spawn up special servers)
+=======
+ "modified": "2025-08-07 17:38:55.317338",
+>>>>>>> 14128fd80 (feat(database-server): Provision replica from server snapshot)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

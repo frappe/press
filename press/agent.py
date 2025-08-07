@@ -1491,6 +1491,50 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			},
 		)
 
+	def get_replication_status(self, database_server: DatabaseServer):
+		return self.post(
+			"/database/replication/status",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+			},
+		)
+
+	def configure_replication(
+		self,
+		database_server: DatabaseServer,
+		master_database_server: DatabaseServer,
+		gtid_slave_pos: str | None = None,
+	):
+		return self.post(
+			"/database/replication/config",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+				"master_private_ip": master_database_server.private_ip,
+				"master_mariadb_root_password": master_database_server.get_password("mariadb_root_password"),
+				"gtid_slave_pos": gtid_slave_pos,
+			},
+		)
+
+	def start_replication(self, database_server: DatabaseServer):
+		return self.post(
+			"/database/replication/start",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+			},
+		)
+
+	def stop_replication(self, database_server: DatabaseServer):
+		return self.post(
+			"/database/replication/stop",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+			},
+		)
+
 	# Snapshot Recovery Related Methods
 	def search_sites_in_snapshot(self, sites: list[str], reference_doctype=None, reference_name=None):
 		return self.create_agent_job(

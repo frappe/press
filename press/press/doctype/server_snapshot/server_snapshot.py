@@ -435,7 +435,7 @@ class ServerSnapshot(Document):
 		return recover_record.name
 
 	@frappe.whitelist()
-	def create_server(
+	def create_server(  # noqa: C901
 		self,
 		server_type: Literal["Server", "Database Server"],
 		title: str | None = None,
@@ -445,6 +445,8 @@ class ServerSnapshot(Document):
 		database_server: str | None = None,
 		temporary_server: bool | None = False,
 		is_for_recovery: bool = False,
+		provision_db_replica: bool = False,
+		master_db_server: str | None = None,
 	) -> str:
 		if server_type not in ["Server", "Database Server"]:
 			frappe.throw("Invalid server type. Must be 'Server' or 'Database Server'.")
@@ -454,6 +456,18 @@ class ServerSnapshot(Document):
 
 		if temporary_server is None:
 			temporary_server = False
+
+		if provision_db_replica is None:
+			provision_db_replica = False
+
+		if server_type != "Database Server" and provision_db_replica:
+			frappe.throw("Provisioning a database replica is only applicable for Database Servers.")
+
+		if provision_db_replica and not master_db_server:
+			frappe.throw("Master Database Server is required for provisioning a database replica.")
+
+		if temporary_server and provision_db_replica:
+			frappe.throw("Temporary server cannot be used for provisioning a database replica.")
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 		if not plan:
@@ -484,6 +498,8 @@ class ServerSnapshot(Document):
 			create_subscription=create_subscription,
 			temporary_server=temporary_server,
 			is_for_recovery=is_for_recovery,
+			setup_db_replication=provision_db_replica,
+			master_db_server=master_db_server if provision_db_replica else None,
 		)
 		server_name = ""
 		if server:
