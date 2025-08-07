@@ -30,6 +30,7 @@ from press.press.doctype.add_on_storage_log.add_on_storage_log import (
 )
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
+from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.runner import Ansible
 from press.telegram_utils import Telegram
 from press.utils import fmt_timedelta, log_error
@@ -97,6 +98,14 @@ class BaseServer(Document, TagHelpers):
 			)
 
 		return results
+
+	@property
+	def _series(self):
+		return self.name[0]
+
+	def create_log(self, action: str, reason: str):
+		"""Helper to log server activity"""
+		log_server_activity(self._series, self.name, action, reason)
 
 	def get_doc(self, doc):
 		from press.api.client import get
