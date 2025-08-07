@@ -187,6 +187,7 @@ scheduler_events = {
 	"daily_long": [
 		"press.press.audit.check_bench_fields",
 		"press.press.audit.check_offsite_backups",
+		"press.press.audit.plan_audit",
 		"press.press.audit.check_app_server_replica_benches",
 		"press.press.doctype.invoice.invoice.finalize_unpaid_prepaid_credit_invoices",
 		"press.press.doctype.bench.bench.sync_analytics",
