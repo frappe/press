@@ -17,6 +17,7 @@ frappe.ui.form.on('Server Snapshot Recovery', {
 				(frm.doc.app_server || frm.doc.database_server) &&
 					(!frm.doc.app_server_archived || !frm.doc.database_server_archived),
 			],
+			['Expire Backups', 'expire_backups', true, frm.doc.status === 'Restored'],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

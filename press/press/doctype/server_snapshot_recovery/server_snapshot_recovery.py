@@ -11,6 +11,7 @@ from frappe.utils import add_to_date
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.press.doctype.agent_job.agent_job import AgentJob
+from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
 from press.press.doctype.site_backup.site_backup import get_backup_bucket
 
 if TYPE_CHECKING:
@@ -29,13 +30,19 @@ class ServerSnapshotRecovery(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.server_snapshot_site_recovery.server_snapshot_site_recovery import (
+			ServerSnapshotSiteRecovery,
+		)
+
 		app_server: DF.Link | None
 		app_server_archived: DF.Check
 		cluster: DF.Link
 		database_server: DF.Link | None
 		database_server_archived: DF.Check
+		expire_backup_on: DF.Datetime | None
 		is_app_server_ready: DF.Check
 		is_database_server_ready: DF.Check
+		restored_on: DF.Datetime | None
 		sites: DF.Table[ServerSnapshotSiteRecovery]
 		snapshot: DF.Link
 		status: DF.Literal[
@@ -46,6 +53,7 @@ class ServerSnapshotRecovery(Document):
 			"Restoring",
 			"Restored",
 			"Failure",
+			"Unavailable",
 		]
 		team: DF.Link
 		warm_up_end_time: DF.Datetime | None
@@ -67,14 +75,19 @@ class ServerSnapshotRecovery(Document):
 				{
 					"site": s.site,
 					"status": s.status,
-					"database_backup_available": bool(s.database_remote_file),
-					"public_files_backup_available": bool(s.public_remote_file),
-					"private_files_backup_available": bool(s.private_remote_file),
+					"database_backup_available": self._is_remote_file_available(s.database_remote_file),
+					"public_files_backup_available": self._is_remote_file_available(s.public_remote_file),
+					"private_files_backup_available": self._is_remote_file_available(s.private_remote_file),
 					"encryption_key_available": bool(s.encryption_key),
 				}
 			)
 		doc.sites_data = sites_data
 		return doc
+
+	def _is_remote_file_available(self, remote_file: str | None) -> bool:
+		if not remote_file:
+			return False
+		return frappe.get_value("Remote File", remote_file, "status") == "Available"
 
 	def before_insert(self):
 		self.validate_snapshot_status()
@@ -150,6 +163,9 @@ class ServerSnapshotRecovery(Document):
 		if self.has_value_changed("status") and self.status == "Restored":
 			self.send_restoration_completion_email()
 			self.archive_servers()
+			self.restored_on = frappe.utils.now_datetime()
+			self.expire_backup_on = add_to_date(None, days=2)
+			self.save()
 
 		if (
 			(
@@ -388,6 +404,33 @@ class ServerSnapshotRecovery(Document):
 		except Exception:
 			frappe.throw(f"Error downloading {file_type} backup for site {site}. Please try again later.")
 
+	@frappe.whitelist()
+	def expire_backups(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_expire_backups",
+			enqueue_after_commit=True,
+		)
+
+	def _expire_backups(self):
+		if self.status != "Restored":
+			return
+
+		self.status = "Unavailable"
+		self.save()
+
+		remote_files = []
+		for site in self.sites:
+			if site.public_remote_file:
+				remote_files.append(site.public_remote_file)
+			if site.private_remote_file:
+				remote_files.append(site.private_remote_file)
+			if site.database_remote_file:
+				remote_files.append(site.database_remote_file)
+
+		delete_remote_backup_objects(remote_files)
+
 
 def resume_warmed_up_restorations():
 	records = frappe.get_all(
@@ -461,3 +504,23 @@ def process_backup_database_from_snapshot_job_callback(job: AgentJob):
 		"Server Snapshot Recovery", job.reference_name, for_update=True
 	)
 	record._process_backup_database_from_snapshot_job_callback(job)
+
+
+def expire_backups():
+	records = frappe.get_all(
+		"Server Snapshot Recovery",
+		filters={
+			"status": "Restored",
+			"expire_backup_on": ("<=", frappe.utils.now_datetime()),
+		},
+		fields=["name"],
+		limit_page_length=50,
+	)
+
+	for record in records:
+		try:
+			snapshot_recovery = frappe.get_doc("Server Snapshot Recovery", record.name)
+			snapshot_recovery.expire_backups()
+			frappe.db.commit()
+		except Exception:
+			frappe.log_error("Server Snapshot Recovery Expire Error")
