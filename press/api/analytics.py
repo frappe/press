@@ -571,14 +571,14 @@ def daily_usage(name, timezone):
 	}
 
 
-def rounded_time(dt=None, round_to=60):
+def rounded_time(dt: datetime | None = None, round_to=60):
 	"""Round a datetime object to any time lapse in seconds
 	dt : datetime.datetime object, default now.
 	round_to : Closest number of seconds to round to, default 1 minute.
 	ref: https://stackoverflow.com/questions/3463930/how-to-round-the-minute-of-a-datetime-object/10854034#10854034
 	"""
 	if dt is None:
-		dt = datetime.datetime.now()
+		dt = datetime.now()
 	seconds = (dt.replace(tzinfo=None) - dt.min).seconds
 	rounding = (seconds + round_to / 2) // round_to * round_to
 	return dt + timedelta(0, rounding - seconds, -dt.microsecond)
