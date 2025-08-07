@@ -148,6 +148,7 @@ class ServerSnapshotRecovery(Document):
 			self.save()
 
 		if self.has_value_changed("status") and self.status == "Restored":
+			self.send_restoration_completion_email()
 			self.archive_servers()
 
 		if (
@@ -194,6 +195,14 @@ class ServerSnapshotRecovery(Document):
 		database_server_doc = frappe.get_doc("Database Server", self.database_server)
 		if database_server_doc.status != "Archived":
 			database_server_doc.archive()
+
+	def send_restoration_completion_email(self):
+		frappe.sendmail(
+			subject="Snapshot Recovery Completed",
+			recipients=[frappe.get_value("Team", self.team, "notify_email")],
+			template="snapshot_recovery_completion",
+			args={"snapshot": self.snapshot},
+		)
 
 	def mark_server_provisioning_as_failed(self):
 		self.status = "Failure"
