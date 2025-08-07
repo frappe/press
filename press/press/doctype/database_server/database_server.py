@@ -54,6 +54,9 @@ class DatabaseServer(BaseServer):
 		enable_physical_backup: DF.Check
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
+		gtid_binlog_pos: DF.Data | None
+		gtid_current_pos: DF.Data | None
+		gtid_slave_pos: DF.Data | None
 		halt_agent_jobs: DF.Check
 		has_data_volume: DF.Check
 		hostname: DF.Data
@@ -873,6 +876,22 @@ class DatabaseServer(BaseServer):
 			log_error("Database Server Password Reset Exception", server=self.as_dict())
 			raise
 
+	@frappe.whitelist()
+	def sync_replication_config(self):
+		agent = self.agent
+		data = agent.get_replication_status(self)
+		if not data.get("success"):
+			frappe.throw(data.get("message", "Failed to fetch replication status"))
+		data = data.get("data", {})
+		if data.get("gtid_binlog_pos"):
+			self.gtid_binlog_pos = data.get("gtid_binlog_pos")
+		if data.get("gtid_current_pos"):
+			self.gtid_current_pos = data.get("gtid_current_pos")
+		if data.get("gtid_slave_pos"):
+			self.gtid_slave_pos = data.get("gtid_slave_pos")
+
+		self.save()
+
 	@dashboard_whitelist()
 	def enable_performance_schema(self):
 		self.add_or_update_mariadb_variable(
@@ -902,6 +921,76 @@ class DatabaseServer(BaseServer):
 		except Exception:
 			log_error("Database Server Password Reset Exception", server=self.as_dict())
 			raise
+
+	def prepare_mariadb_replica(self):
+		"""
+		Use this function only if you are starting a replica from a snapshot of a master server.
+		It will prepare the replica by setting up the necessary configurations.
+		"""
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_prepare_mariadb_replica", queue="long", timeout=1200, at_front=True
+		)
+
+	def _prepare_mariadb_replica(self):
+		if self.is_primary:
+			return
+
+		if self.is_replication_setup:
+			return
+
+		try:
+			ansible = Ansible(
+				playbook="mariadb_prepare_replica.yml",
+				server=self,
+				variables={
+					"mariadb_root_password": self.get_password("mariadb_root_password"),
+					"private_ip": self.private_ip,
+					"mariadb_server_id": self.server_id,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("MariaDB Prepare Replica Exception", server=self.as_dict())
+
+	def configure_replication(self, gtid_slave_pos: str | None = None):
+		if self.is_primary:
+			return
+
+		primary_db: "DatabaseServer" = frappe.get_doc("Database Server", self.primary)
+		if not gtid_slave_pos:
+			primary_db.sync_replication_config()
+			gtid_slave_pos = primary_db.gtid_current_pos
+
+		agent = self.agent
+		data = agent.configure_replication(
+			self,
+			primary_db,
+			gtid_slave_pos=gtid_slave_pos,
+		)
+		if not data.get("success"):
+			frappe.throw(data.get("message", "Failed to configure replication"))
+
+		if not self.is_replication_setup:
+			self.is_replication_setup = True
+			self.save()
+
+	def start_replication(self):
+		if self.is_primary:
+			return
+
+		agent = self.agent
+		data = agent.start_replication(self)
+		if not data.get("success"):
+			frappe.throw(data.get("message", "Failed to start replication"))
+
+	def stop_replication(self):
+		if self.is_primary:
+			return
+
+		agent = self.agent
+		data = agent.stop_replication(self)
+		if not data.get("success"):
+			frappe.throw(data.get("message", "Failed to stop replication"))
 
 	@frappe.whitelist()
 	def setup_deadlock_logger(self):

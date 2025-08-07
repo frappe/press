@@ -40,6 +40,7 @@ from press.utils import get_current_team, unique
 if typing.TYPE_CHECKING:
 	from collections.abc import Generator
 
+	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.press_settings.press_settings import PressSettings
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
@@ -817,6 +818,8 @@ class Cluster(Document):
 		auto_increase_storage: bool = False,
 		temporary_server: bool = False,
 		is_for_recovery: bool = False,
+		setup_db_replication: bool = False,
+		master_db_server: str | None = None,
 	):
 		"""Creates a server for the cluster
 
@@ -824,6 +827,22 @@ class Cluster(Document):
 			This will use a different nameing series `t` for the server to avoid conflicts
 			with the regular servers.
 		"""
+
+		if setup_db_replication:
+			if doctype != "Database Server":
+				frappe.throw(
+					"Replication can only be set up for Database Servers",
+					frappe.ValidationError,
+				)
+			if not master_db_server:
+				frappe.throw(
+					"Please provide the master database server for replication setup", frappe.ValidationError
+				)
+			if frappe.get_value("Database Server", master_db_server, "status") != "Active":
+				frappe.throw(
+					"Master Database Server is not active. Please check the status of the server before creating replication.",
+					frappe.ValidationError,
+				)
 
 		domain = domain or frappe.db.get_single_value("Press Settings", "domain")
 		server_series = {**self.base_servers, **self.private_servers}
@@ -842,11 +861,16 @@ class Cluster(Document):
 		server = None
 		match doctype:
 			case "Database Server":
-				server = vm.create_database_server()
+				server: "DatabaseServer" = vm.create_database_server()
 				server.ram = plan.memory
 				server.title = f"{title} - Database"
 				server.auto_increase_storage = auto_increase_storage
 				server.is_for_recovery = is_for_recovery
+
+				if setup_db_replication:
+					server.is_primary = False
+					server.primary = master_db_server
+
 			case "Server":
 				server = vm.create_server()
 				server.title = f"{title} - Application"
@@ -880,9 +904,13 @@ class Cluster(Document):
 		server.save()
 
 		if create_subscription:
-			server.create_subscription(plan.name)
+			server.create_subscription(plan.name, arguments={"setup_db_replication": setup_db_replication})
 
-		job = server.run_press_job("Create Server")
+		job_arguments = {}
+		if setup_db_replication:
+			job_arguments["master_db_server"] = master_db_server
+			job_arguments["setup_db_replication"] = True
+		job = server.run_press_job("Create Server", arguments=job_arguments)
 
 		return server, job
 

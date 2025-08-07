@@ -174,6 +174,12 @@ frappe.ui.form.on('Database Server', {
 				frm.doc.is_server_setup,
 			],
 			['Sync Binlogs Info', 'sync_binlogs_info', true, frm.doc.is_server_setup],
+			[
+				'Sync Replication Config',
+				'sync_replication_config',
+				true,
+				frm.doc.is_server_setup,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

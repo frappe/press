@@ -586,5 +586,19 @@
   "set_on_new_servers": 0,
   "skippable": 0,
   "title": null
+ },
+ {
+  "configurable_by_user": 0,
+  "datatype": "Str",
+  "default_value": "OFF",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 0,
+  "modified": "2025-08-07 18:07:57.776120",
+  "name": "read_only",
+  "set_on_new_servers": 0,
+  "skippable": 0,
+  "title": null
  }
 ]
