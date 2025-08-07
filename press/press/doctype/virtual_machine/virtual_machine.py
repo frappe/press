@@ -1533,9 +1533,13 @@ class VirtualMachine(Document):
 	@frappe.whitelist()
 	def delete_volume(self, volume_id):
 		if self.detach(volume_id):
-			self.wait_for_volume_to_be_available(volume_id)
-			self.client().delete_volume(VolumeId=volume_id)
-			self.sync()
+			if self.cloud_provider == "OCI":
+				self.wait_for_volume_to_be_available(volume_id)
+				self.client().delete_volume(VolumeId=volume_id)
+			if self.cloud_provider == "Hetzner":
+				vol = self.client().volumes.get_by_id(volume_id)
+				self.client().delete(vol)
+		self.sync()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")
