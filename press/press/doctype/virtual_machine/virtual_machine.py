@@ -596,7 +596,6 @@ class VirtualMachine(Document):
 					frappe.throw(f"{self.name}: Server not found")
 				is_deleted = True
 		if server_instance and not is_deleted:
-			# cluster: Document = frappe.get_doc("Cluster", self.cluster)
 			self.status = self.get_hetzner_status_map()[server_instance.status]
 			self.machine_type = server_instance.server_type.name
 			self.private_ip_address = server_instance.private_net[0].ip
@@ -1517,12 +1516,17 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def detach(self, volume_id):
-		volume = find(self.volumes, lambda v: v.volume_id == volume_id)
-		if not volume:
-			return False
-		self.client().detach_volume(
-			Device=volume.device, InstanceId=self.instance_id, VolumeId=volume.volume_id
-		)
+		if self.cloud_provider == "OCI":
+			volume = find(self.volumes, lambda v: v.volume_id == volume_id)
+			if not volume:
+				return False
+			self.client().detach_volume(
+				Device=volume.device, InstanceId=self.instance_id, VolumeId=volume.volume_id
+			)
+		elif self.cloud_provider == "Hetzner":
+			for volume in self.volumes:
+				volume = self.client().volumes.get_by_id(volume.volume_id)
+				self.client().volumes.detach(volume=volume)
 		self.sync()
 		return True
 
