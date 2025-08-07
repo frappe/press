@@ -654,7 +654,7 @@ Incident URL: {incident_link}"""
 		incidence_server: BaseServer = frappe.get_cached_doc(self.resource_type, self.resource)
 		incidence_server.create_log(
 			"Incident",
-			f"{self.alert} resolved on server" if is_resolved else f"{self.alert} reported on server",
+			f"{self.alert} resolved" if is_resolved else f"{self.alert} reported",
 		)
 
 	@property
