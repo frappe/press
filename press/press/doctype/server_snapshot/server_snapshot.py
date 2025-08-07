@@ -559,3 +559,24 @@ def move_pending_snapshots_to_processing():
 				# If the snapshot is still pending, update its status to Processing
 				frappe.db.set_value("Server Snapshot", snapshot, "status", "Processing", update_modified=True)
 				frappe.db.commit()
+
+
+def expire_snapshots():
+	records = frappe.get_all(
+		"Server Snapshot",
+		filters={
+			"status": "Completed",
+			"expire_at": ("<=", frappe.utils.now_datetime()),
+			"locked": 0,
+		},
+		pluck="name",
+		limit_page_length=50,
+	)
+
+	for record in records:
+		try:
+			snapshot = frappe.get_doc("Server Snapshot", record)
+			snapshot.delete_snapshots()
+			frappe.db.commit()
+		except Exception:
+			frappe.log_error("Server Snapshot Expire Error")
