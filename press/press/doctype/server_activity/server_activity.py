@@ -16,7 +16,14 @@ class ServerActivity(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		action: DF.Literal["Created", "Reboot", "Volume", "Disk Size Change", "Terminated"]
+		action: DF.Literal[
+			"Created",
+			"Reboot",
+			"Volume",
+			"Disk Size Change",
+			"Terminated",
+			"Incident",
+		]
 		document_name: DF.DynamicLink
 		document_type: DF.Link
 		reason: DF.SmallText | None
