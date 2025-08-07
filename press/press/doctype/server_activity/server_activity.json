@@ -27,7 +27,7 @@
    "fieldname": "action",
    "fieldtype": "Select",
    "label": "Action",
-   "options": "Created\nReboot\nVolume\nDisk Size Change\nTerminated",
+   "options": "Created\nReboot\nVolume\nDisk Size Change\nTerminated\nIncident",
    "reqd": 1
   },
   {
@@ -54,7 +54,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-06 15:24:33.006762",
+ "modified": "2025-08-07 12:09:37.291972",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Activity",
