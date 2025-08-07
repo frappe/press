@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 	)
 	from press.press.doctype.monitor_server.monitor_server import MonitorServer
 	from press.press.doctype.press_settings.press_settings import PressSettings
-	from press.press.doctype.server.server import Server
+	from press.press.doctype.server.server import BaseServer, Server
 
 INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere #
 INCIDENT_SCOPE = (
@@ -639,6 +639,7 @@ Incident URL: {incident_link}"""
 			return
 		else:
 			if not last_resolved.is_enough_firing:
+				self.create_log_for_server(is_resolved=True)
 				self.resolve()
 
 	def resolve(self):
@@ -648,8 +649,6 @@ Incident URL: {incident_link}"""
 			self.status = "Resolved"
 		self.save()
 
-<<<<<<< HEAD
-=======
 	def create_log_for_server(self, is_resolved: bool = False):
 		"""We will create a incident log on the server activity for confirmed incidents and their resolution"""
 		try:
@@ -662,7 +661,6 @@ Incident URL: {incident_link}"""
 			f"{self.alert} resolved" if is_resolved else f"{self.alert} reported",
 		)
 
->>>>>>> 4c7b6da4a (chore(incident): Incase the resource is not identified fallback to server)
 	@property
 	def time_to_call_for_help(self) -> bool:
 		return self.status == "Confirmed" and frappe.utils.now_datetime() - self.creation > timedelta(
@@ -748,6 +746,7 @@ def resolve_incidents():
 		incident = Incident("Incident", incident_name)
 		incident.check_resolved()
 		if incident.time_to_call_for_help or incident.time_to_call_for_help_again:
+			incident.create_log_for_server()
 			incident.call_humans()
 
 
