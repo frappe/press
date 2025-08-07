@@ -606,6 +606,10 @@ def check_app_server_replica_benches():
 	AppServerReplicaDirsCheck()
 
 
+def plan_audit():
+	PlanAudit()
+
+
 def billing_audit():
 	BillingAudit()
 
