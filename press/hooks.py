@@ -218,6 +218,7 @@ scheduler_events = {
 		"press.press.doctype.site.site.send_warning_mail_regarding_sites_exceeding_disk_usage",
 		"press.press.doctype.add_on_storage_log.add_on_storage_log.send_disk_extention_notification",
 		"press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.expire_backups",
+		"press.press.doctype.server_snapshot.server_snapshot.expire_snapshots",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
