@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta
+from typing import ClassVar, TypedDict
 
 import frappe
 from frappe.utils import add_days, rounded, today
@@ -15,6 +16,22 @@ from press.press.doctype.subscription.subscription import (
 	paid_plans,
 	sites_with_free_hosting,
 )
+
+
+class ServerPlanInfo(TypedDict):
+	name: str
+	plan: str
+	machine_type: str
+	vm_memory: float
+	plan_memory: float
+	vm_disk_size: float
+	plan_disk_size: float
+
+
+class Discrepancies(TypedDict):
+	machine_type: list[str]
+	memory: list[str]
+	disk_size: list[str]
 
 
 class Audit:
@@ -520,6 +537,57 @@ class PartnerBillingAudit(Audit):
 			},
 			pluck="name",
 		)
+
+
+class PlanAudit(Audit):
+	audit_type: ClassVar = "Server Plan Sanity Check"
+
+	def audit_plan_discrepancies(self, server_plan_info: list[ServerPlanInfo]) -> Discrepancies:
+		"""Check for discrepancies between plan details and actual virtual machine details"""
+
+		discrepancies = {"machine_type": [], "memory": [], "disk_size": []}
+
+		for info in server_plan_info:
+			expected_machine_type = info["plan"].split("-")[0]
+			if info["machine_type"] != expected_machine_type:
+				discrepancies["machine_type"].append(info["name"])
+			if info["vm_memory"] != info["plan_memory"]:
+				discrepancies["memory"].append(info["name"])
+			if info["vm_disk_size"] < info["plan_disk_size"]:
+				discrepancies["disk_size"].append(info["name"])
+
+		return discrepancies
+
+	def __init__(self):
+		"""Check for plan and virtual machine discrepancies"""
+		VirtualMachineDocType = frappe.qb.DocType("Virtual Machine")
+		ServerPlan = frappe.qb.DocType("Server Plan")
+		server_types = ["Server", "Database Server"]
+
+		for server_type in server_types:
+			ServerDoctype = frappe.qb.DocType(server_type)
+			query = (
+				frappe.qb.from_(ServerDoctype)
+				.select(
+					ServerDoctype.name,
+					ServerDoctype.plan,
+					VirtualMachineDocType.machine_type,
+					VirtualMachineDocType.ram.as_("vm_memory"),
+					VirtualMachineDocType.disk_size.as_("vm_disk_size"),
+					ServerPlan.disk.as_("plan_disk_size"),
+					ServerPlan.memory.as_("plan_memory"),
+				)
+				.join(VirtualMachineDocType)
+				.on(VirtualMachineDocType.name == ServerDoctype.name)
+				.join(ServerPlan)
+				.on(ServerDoctype.plan == ServerPlan.name)
+				.where(ServerDoctype.status == "Active")
+				.where(ServerDoctype.is_self_hosted == False)  # noqa: E712
+				.where(ServerDoctype.cluster != "Hybrid")
+			)
+			server_plan_info: list[ServerPlanInfo] = query.run(as_dict=True)
+			discrepancies = self.audit_plan_discrepancies(server_plan_info)
+			self.log(discrepancies, status="Failure" if any(discrepancies.values()) else "Success")
 
 
 def check_bench_fields():
