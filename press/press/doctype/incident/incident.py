@@ -186,8 +186,7 @@ class Incident(WebsiteGenerator):
 
 	def confirm(self):
 		self.status = "Confirmed"
-		pong = self.ping_sample_site()
-		self.identify_affected_resource(pong)  # assume 1 resource; Occam's razor
+		self.identify_affected_resource()  # assume 1 resource; Occam's razor
 		self.identify_problem()
 		self.take_grafana_screenshots()
 		self.save()
