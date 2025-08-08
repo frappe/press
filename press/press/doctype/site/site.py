@@ -3863,6 +3863,7 @@ def process_reinstall_site_job_update(job):
 	if job.status == "Success":
 		frappe.db.set_value("Site", job.site, "setup_wizard_complete", 0)
 		frappe.db.set_value("Site", job.site, "database_name", None)
+		frappe.db.set_value("Site", job.site, "additional_system_user_created", False)
 
 
 def process_migrate_site_job_update(job):

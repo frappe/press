@@ -117,6 +117,11 @@ def alert(*args, **kwargs):
 			raise frappe.ValidationError("Invalid credentials")
 
 		user = str(frappe.session.user)
+		monitor_token = frappe.db.get_single_value("Press Settings", "monitor_token", cache=True)
+
+		if frappe.request.args.get("monitor_token") != monitor_token:
+			raise Exception
+
 		frappe.set_user("Administrator")
 
 		doc = frappe.get_doc(
