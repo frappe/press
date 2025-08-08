@@ -435,8 +435,8 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 
 	try:
 		response = requests.get(url, params=query, auth=("frappe", str(password))).json()
-	except requests.exceptions.RequestException as e:
-		frappe.throw(f"Unable to connect to monitor server: {e!s}", MonitorServerDown)
+	except requests.exceptions.RequestException:
+		frappe.throw("Unable to connect to monitor server", MonitorServerDown)
 
 	datasets = []
 	labels = []
