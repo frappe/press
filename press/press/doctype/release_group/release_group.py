@@ -1302,7 +1302,7 @@ class ReleaseGroup(Document, TagHelpers):
 			return None
 
 	@frappe.whitelist()
-	def add_server(self, server: str, deploy=False):
+	def add_server(self, server: str, deploy=False, force_new_build: bool = False):
 		if not deploy:
 			return None
 
@@ -1311,7 +1311,7 @@ class ReleaseGroup(Document, TagHelpers):
 			platform=server_platform
 		)
 
-		if not last_successful_deploy_candidate_build:
+		if not last_successful_deploy_candidate_build or force_new_build:
 			# No build of this platform is available creating new build
 			last_candidate_build = self.get_last_successful_candidate_build()
 
