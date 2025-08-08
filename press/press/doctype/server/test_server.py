@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import typing
-import unittest
+from frappe.tests import IntegrationTestCase
 from unittest.mock import Mock, patch
 
 import frappe
@@ -70,7 +70,7 @@ def create_test_server(
 
 
 @patch.object(BaseServer, "after_insert", new=Mock())
-class TestServer(unittest.TestCase):
+class TestServer(IntegrationTestCase):
 	def test_create_generic_server(self):
 		create_test_press_settings()
 		proxy_server = create_test_proxy_server()

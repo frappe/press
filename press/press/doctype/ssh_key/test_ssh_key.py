@@ -1,7 +1,7 @@
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
 
-import unittest
+from frappe.tests import IntegrationTestCase
 
 import frappe
 
@@ -18,5 +18,5 @@ def create_test_ssh_key() -> SSHKey:
 	).insert(ignore_if_duplicate=True)
 
 
-class TestSSHKey(unittest.TestCase):
+class TestSSHKey(IntegrationTestCase):
 	pass

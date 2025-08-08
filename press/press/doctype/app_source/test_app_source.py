@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import typing
-import unittest
+from frappe.tests import IntegrationTestCase
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.tests import IntegrationTestCase
 
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.app_source import AppSource
@@ -36,7 +37,7 @@ def create_test_app_source(
 	return app.add_source(version, repository_url, branch, team)
 
 
-class TestAppSource(unittest.TestCase):
+class TestAppSource(IntegrationTestCase):
 	def create_app(self, name: str, title: str):
 		app: App = frappe.get_doc({"doctype": "App", "name": name, "title": title})
 		app.insert(ignore_if_duplicate=True)

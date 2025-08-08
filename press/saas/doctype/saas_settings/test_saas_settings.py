@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.release_group.test_release_group import (
@@ -40,5 +40,5 @@ def create_test_saas_settings(group: ReleaseGroup | None = None, apps: list[App]
 	).insert(ignore_permissions=True, ignore_links=True)
 
 
-class TestSaasSettings(FrappeTestCase):
+class TestSaasSettings(IntegrationTestCase):
 	pass

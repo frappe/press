@@ -1,10 +1,10 @@
 # Copyright (c) 2025, Frappe and Contributors
 # See license.txt
 import typing
-import unittest
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.tests import IntegrationTestCase
 
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.bench.test_bench import create_test_bench
@@ -18,7 +18,7 @@ if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
 
 
-class TestARMBuildRecord(unittest.TestCase):
+class TestARMBuildRecord(IntegrationTestCase):
 	@classmethod
 	def setUpClass(cls):
 		virtual_machine = create_test_virtual_machine(series="f")

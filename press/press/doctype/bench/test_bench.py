@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 from press.agent import Agent
 from press.exceptions import ArchiveBenchError
@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestStagingSite(FrappeTestCase):
+class TestStagingSite(IntegrationTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
@@ -63,7 +63,7 @@ class TestStagingSite(FrappeTestCase):
 @patch.object(AgentJob, "after_insert", new=Mock())
 @patch("press.press.doctype.server.server.frappe.enqueue_doc", new=foreground_enqueue_doc)
 @patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
-class TestBench(FrappeTestCase):
+class TestBench(IntegrationTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
@@ -377,7 +377,7 @@ class TestBench(FrappeTestCase):
 
 
 @patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
-class TestArchiveObsoleteBenches(FrappeTestCase):
+class TestArchiveObsoleteBenches(IntegrationTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 

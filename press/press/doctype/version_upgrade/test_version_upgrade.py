@@ -4,7 +4,7 @@
 from unittest.mock import Mock, patch
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
@@ -24,7 +24,7 @@ def create_test_version_upgrade(site: str, destination_group: str) -> VersionUpg
 
 
 @patch.object(AgentJob, "enqueue_http_request", Mock())
-class TestVersionUpgrade(FrappeTestCase):
+class TestVersionUpgrade(IntegrationTestCase):
 	def tearDown(self) -> None:
 		frappe.db.rollback()
 
@@ -69,9 +69,7 @@ class TestVersionUpgrade(FrappeTestCase):
 
 		group2.add_server(server.name)
 
-		create_test_site_update(
-			site.name, group2.name, "Recovered"
-		)  # cause of failure not resolved
+		create_test_site_update(site.name, group2.name, "Recovered")  # cause of failure not resolved
 		site_updates_before = frappe.db.count("Site Update", {"site": site.name})
 		version_upgrade = create_test_version_upgrade(site.name, group2.name)
 		version_upgrade.start()  # simulate scheduled one. User will be admin

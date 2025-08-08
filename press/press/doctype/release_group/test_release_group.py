@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import typing
-import unittest
+from frappe.tests import IntegrationTestCase
 from unittest.mock import Mock, patch
 
 import frappe
@@ -64,8 +64,10 @@ def create_test_release_group(
 
 
 @patch.object(AppSource, "create_release", create_test_app_release)
-class TestReleaseGroup(unittest.TestCase):
+class TestReleaseGroup(IntegrationTestCase):
 	def setUp(self):
+		super().setUp()
+
 		self.team = create_test_team().name
 
 	def tearDown(self):

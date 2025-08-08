@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import typing
-import unittest
+from frappe.tests import IntegrationTestCase
 from unittest.mock import Mock, patch
 
 import frappe
@@ -158,11 +158,8 @@ def create_test_site(
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 @patch("press.press.doctype.site.site._change_dns_record", new=Mock())
-class TestSite(unittest.TestCase):
+class TestSite(IntegrationTestCase):
 	"""Tests for Site Document methods."""
-
-	def setUp(self):
-		frappe.db.truncate("Agent Request Failure")
 
 	def tearDown(self):
 		frappe.db.rollback()

@@ -2,7 +2,6 @@
 # See license.txt
 from __future__ import annotations
 
-import unittest
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Literal
 from unittest.mock import Mock, patch
@@ -10,6 +9,7 @@ from unittest.mock import Mock, patch
 import frappe
 import responses
 from frappe.model.naming import make_autoname
+from frappe.tests import IntegrationTestCase
 
 from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import AgentJob, lock_doc_updated_by_job
@@ -168,8 +168,10 @@ def fake_agent_job(
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestAgentJob(unittest.TestCase):
+class TestAgentJob(IntegrationTestCase):
 	def setUp(self):
+		super().setUp()
+
 		self.team = create_test_press_admin_team()
 		self.team.allocate_credit_amount(1000, source="Prepaid Credits", remark="Test")
 		self.team.payment_mode = "Prepaid Credits"

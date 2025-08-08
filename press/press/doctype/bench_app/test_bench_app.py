@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019, Frappe and Contributors
 # See license.txt
 
 
 # import frappe
-import unittest
+from frappe.tests import IntegrationTestCase
+from frappe.tests import IntegrationTestCase
 
 
-class TestBenchApp(unittest.TestCase):
+class TestBenchApp(IntegrationTestCase):
 	pass
