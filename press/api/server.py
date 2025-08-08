@@ -16,6 +16,7 @@ from frappe.utils.password import get_decrypted_password
 from press.api.analytics import get_rounded_boundaries
 from press.api.bench import all as all_benches
 from press.api.site import protected
+from press.exceptions import MonitorServerDown
 from press.press.doctype.site_plan.plan import Plan
 from press.press.doctype.team.team import get_child_team_members
 from press.utils import get_current_team
@@ -432,7 +433,10 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 		"step": f"{timegrain}s",
 	}
 
-	response = requests.get(url, params=query, auth=("frappe", str(password))).json()
+	try:
+		response = requests.get(url, params=query, auth=("frappe", str(password))).json()
+	except requests.exceptions.RequestException:
+		frappe.throw("Unable to connect to monitor server", MonitorServerDown)
 
 	datasets = []
 	labels = []
