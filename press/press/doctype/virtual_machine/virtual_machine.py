@@ -557,6 +557,17 @@ class VirtualMachine(Document):
 			for volume in server_instance.volumes:
 				volume = self.client().volumes.get_by_id(volume.id)
 				volumes.append(volume)
+
+			volumes.append(
+				frappe._dict(
+					{
+						"id": "hetzner-root-disk",
+						"linux_device": "/dev/sda",
+						"size": server_instance.primary_disk_size,
+						"protection": {"delete": False},
+					}
+				)
+			)
 			return volumes
 		return None
 
@@ -614,6 +625,8 @@ class VirtualMachine(Document):
 				row.device = volume.linux_device
 				self.termination_protection = volume.protection["delete"]
 				self.append("volumes", row)
+
+			self.has_data_volume = 1
 		else:
 			self.status = "Terminated"
 		self.save()
@@ -766,6 +779,7 @@ class VirtualMachine(Document):
 		ROOT_VOLUME_FILTERS = {
 			"AWS EC2": lambda v: v.device == "/dev/sda1",
 			"OCI": lambda v: ".bootvolume." in v.volume_id,
+			"Hetzner": lambda v: v.device == "/dev/sda1",
 		}
 		root_volume_filter = ROOT_VOLUME_FILTERS.get(self.cloud_provider)
 		volume = find(self.volumes, root_volume_filter)
@@ -785,6 +799,7 @@ class VirtualMachine(Document):
 		DATA_VOLUME_FILTERS = {
 			"AWS EC2": lambda v: v.device != "/dev/sda1" and v.device not in temporary_volume_devices,
 			"OCI": lambda v: ".bootvolume." not in v.volume_id and v.device not in temporary_volume_devices,
+			"Hetzner": lambda v: v.device != "/dev/sda1" and v.device not in temporary_volume_devices,
 		}
 		data_volume_filter = DATA_VOLUME_FILTERS.get(self.cloud_provider)
 		volume = find(self.volumes, data_volume_filter)
