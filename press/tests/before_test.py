@@ -36,6 +36,7 @@ def execute():
 	Document.__eq__ = doc_equal
 
 	IntegrationTestCase.setUp = lambda self: frappe.db.truncate("Agent Request Failure")
+	IntegrationTestCase.tearDown = lambda self: frappe.db.rollback()
 
 	# patch frappe.set_user that
 	frappe.set_user = set_user_with_current_team
