@@ -1543,9 +1543,8 @@ class VirtualMachine(Document):
 		elif self.cloud_provide == "OCI":
 			raise NotImplementedError
 		elif self.cloud_provider == "Hetzner":
-			for volume in self.volumes:
-				volume = self.client().volumes.get_by_id(volume.volume_id)
-				self.client().volumes.detach(volume=volume)
+			volume = self.client().volumes.get_by_id(volume_id)
+			self.client().volumes.detach(volume)
 		self.sync()
 		return True
 
