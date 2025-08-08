@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
 
-import unittest
+from frappe.tests import IntegrationTestCase
 
 import frappe
 
@@ -46,5 +45,5 @@ def create_test_press_settings():
 	return settings
 
 
-class TestPressSettings(unittest.TestCase):
+class TestPressSettings(IntegrationTestCase):
 	pass

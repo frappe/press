@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
@@ -46,7 +46,7 @@ def create_test_virtual_machine(
 
 
 @patch.object(VirtualMachine, "client", new=MagicMock())
-class TestVirtualMachine(FrappeTestCase):
+class TestVirtualMachine(IntegrationTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 

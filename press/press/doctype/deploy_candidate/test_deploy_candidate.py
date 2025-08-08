@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import random
 import typing
-import unittest
 from unittest import skip
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.tests import IntegrationTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
@@ -74,8 +74,10 @@ def create_test_deploy_candidate_build(
 
 @patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestDeployCandidate(unittest.TestCase):
+class TestDeployCandidate(IntegrationTestCase):
 	def setUp(self):
+		super().setUp()
+
 		self.team = create_test_press_admin_team()
 		self.user: str = self.team.user
 

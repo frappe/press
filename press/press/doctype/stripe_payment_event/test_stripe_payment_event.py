@@ -2,8 +2,8 @@
 # See license.txt
 
 # import frappe
-import unittest
+from frappe.tests import IntegrationTestCase
 
 
-class TestStripePaymentEvent(unittest.TestCase):
+class TestStripePaymentEvent(IntegrationTestCase):
 	pass

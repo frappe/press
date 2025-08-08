@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 import frappe
 from frappe.model.naming import make_autoname
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 from moto import mock_aws
 
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
@@ -56,7 +56,7 @@ def create_test_proxy_server(
 	foreground_enqueue_doc,
 )
 @patch("press.press.doctype.proxy_server.proxy_server.Ansible", new=Mock())
-class TestProxyServer(FrappeTestCase):
+class TestProxyServer(IntegrationTestCase):
 	@fake_agent_job("Reload NGINX Job")
 	@mock_aws
 	@patch.object(

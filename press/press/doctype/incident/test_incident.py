@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import math
+import zoneinfo
 from contextlib import suppress
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
-import zoneinfo
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from twilio.base.exceptions import TwilioRestException
@@ -130,8 +130,10 @@ def get_total_firing_and_resolved_for_resolved_incident(draw) -> tuple[int, int,
 @patch("press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient)
 @patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
 @patch("tenacity.nap.time", new=Mock())  # no sleep
-class TestIncident(FrappeTestCase):
+class TestIncident(IntegrationTestCase):
 	def setUp(self):
+		super().setUp()
+
 		self.from_ = "+911234567892"
 		frappe.db.set_single_value("Press Settings", "twilio_account_sid", "test")
 		frappe.db.set_single_value("Press Settings", "twilio_api_key_sid", "test")
@@ -342,10 +344,13 @@ class TestIncident(FrappeTestCase):
 		alert = create_test_alertmanager_webhook_log()
 		total, firing = total_firing
 		firing_instances = [0] * firing
-		with patch.object(AlertmanagerWebhookLog, "total_instances", new=total), patch.object(
-			AlertmanagerWebhookLog,
-			"past_alert_instances",
-			new=lambda x, y: firing_instances,
+		with (
+			patch.object(AlertmanagerWebhookLog, "total_instances", new=total),
+			patch.object(
+				AlertmanagerWebhookLog,
+				"past_alert_instances",
+				new=lambda x, y: firing_instances,
+			),
 		):
 			self.assertTrue(alert.is_enough_firing)
 
@@ -357,10 +362,13 @@ class TestIncident(FrappeTestCase):
 		firing_instances = set(range(firing))
 		resolved_instances = set(range(resolved))
 
-		with patch.object(AlertmanagerWebhookLog, "total_instances", new=total), patch.object(
-			AlertmanagerWebhookLog,
-			"past_alert_instances",
-			side_effect=[firing_instances, resolved_instances],
+		with (
+			patch.object(AlertmanagerWebhookLog, "total_instances", new=total),
+			patch.object(
+				AlertmanagerWebhookLog,
+				"past_alert_instances",
+				side_effect=[firing_instances, resolved_instances],
+			),
 		):
 			self.assertFalse(alert.is_enough_firing)
 
@@ -469,9 +477,10 @@ class TestIncident(FrappeTestCase):
 	def test_telegram_message_is_sent_when_unable_to_reach_twilio(self, mock_telegram_send):
 		create_test_alertmanager_webhook_log()
 		incident = frappe.get_last_doc("Incident")
-		with patch.object(
-			MockTwilioCallList, "create", side_effect=TwilioRestException("test", 500)
-		), suppress(TwilioRestException):
+		with (
+			patch.object(MockTwilioCallList, "create", side_effect=TwilioRestException("test", 500)),
+			suppress(TwilioRestException),
+		):
 			incident.call_humans()
 		mock_telegram_send.assert_called_once()
 

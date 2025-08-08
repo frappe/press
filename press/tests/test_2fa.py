@@ -3,7 +3,7 @@
 
 import frappe
 import pyotp
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 from frappe.utils.password import update_password
 
 from press.api.account import (
@@ -16,13 +16,15 @@ from press.api.account import (
 )
 
 
-class Test2FA(FrappeTestCase):
+class Test2FA(IntegrationTestCase):
 	user = "Administrator"
 	password = "password"
 	recovery_codes_max = 9
 	recovery_codes_length = 16
 
 	def setUp(self):
+		super().setUp()
+
 		frappe.set_user(self.user)
 		update_password(self.user, self.password)
 

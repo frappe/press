@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019, Frappe and Contributors
 # See license.txt
 
 
-import unittest
+from frappe.tests import IntegrationTestCase
 
 
-class TestERPNextConsultant(unittest.TestCase):
+class TestERPNextConsultant(IntegrationTestCase):
 	pass
