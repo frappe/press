@@ -45,6 +45,10 @@ class SiteAlreadyArchived(ValidationError):
 	pass
 
 
+class SiteTooManyPendingBackups(ValidationError):
+	pass
+
+
 class InactiveDomains(ValidationError):
 	pass
 
