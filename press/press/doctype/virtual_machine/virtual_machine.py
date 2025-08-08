@@ -1533,13 +1533,15 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def detach(self, volume_id):
-		if self.cloud_provider == "OCI":
+		if self.cloud_provider == "AWS":
 			volume = find(self.volumes, lambda v: v.volume_id == volume_id)
 			if not volume:
 				return False
 			self.client().detach_volume(
 				Device=volume.device, InstanceId=self.instance_id, VolumeId=volume.volume_id
 			)
+		elif self.cloud_provide == "OCI":
+			raise NotImplementedError
 		elif self.cloud_provider == "Hetzner":
 			for volume in self.volumes:
 				volume = self.client().volumes.get_by_id(volume.volume_id)
