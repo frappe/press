@@ -2,10 +2,10 @@
 # See license.txt
 from __future__ import annotations
 
-from frappe.tests import IntegrationTestCase
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.tests import IntegrationTestCase
 from frappe.tests.ui_test_helpers import create_test_user
 
 from press.press.doctype.account_request.test_account_request import (
@@ -37,6 +37,8 @@ def create_test_team(email: str | None = None, country="India", free_account: bo
 		{"doctype": "Team", "user": user, "enabled": 1, "country": country, "free_account": free_account}
 	).insert(ignore_if_duplicate=True)
 	team.reload()
+	# Create a fake account request
+	create_test_account_request(frappe.mock("name"), email=email)
 	return team
 
 
