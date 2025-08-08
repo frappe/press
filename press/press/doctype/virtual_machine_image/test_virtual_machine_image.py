@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.virtual_machine_image.virtual_machine_image import (
@@ -46,5 +46,5 @@ def create_test_virtual_machine_image(
 	).insert(ignore_if_duplicate=True)
 
 
-class TestVirtualMachineImage(FrappeTestCase):
+class TestVirtualMachineImage(IntegrationTestCase):
 	pass

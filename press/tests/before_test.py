@@ -7,7 +7,7 @@ import os
 import frappe
 from frappe import set_user as _set_user
 from frappe.model.document import Document
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 from press.utils import _get_current_team, _system_user
 
@@ -22,6 +22,8 @@ def doc_equal(self: Document, other: Document) -> bool:
 
 
 def execute():
+	frappe.clear_cache()
+
 	settings = frappe.get_single("Press Settings")
 	if not (settings.stripe_secret_key and settings.stripe_publishable_key):
 		create_test_stripe_credentials()
@@ -33,7 +35,7 @@ def execute():
 	# Monkey patch certain methods for when tests are running
 	Document.__eq__ = doc_equal
 
-	FrappeTestCase.setUp = lambda self: frappe.db.truncate("Agent Request Failure")
+	IntegrationTestCase.setUp = lambda self: frappe.db.truncate("Agent Request Failure")
 
 	# patch frappe.set_user that
 	frappe.set_user = set_user_with_current_team
@@ -53,7 +55,5 @@ def create_test_stripe_credentials():
 	secret_key = os.environ.get("STRIPE_SECRET_KEY")
 
 	if publishable_key and secret_key:
-		frappe.db.set_single_value(
-			"Press Settings", "stripe_publishable_key", publishable_key
-		)
+		frappe.db.set_single_value("Press Settings", "stripe_publishable_key", publishable_key)
 		frappe.db.set_single_value("Press Settings", "stripe_secret_key", secret_key)

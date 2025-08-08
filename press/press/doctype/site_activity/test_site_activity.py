@@ -2,7 +2,7 @@
 # See license.txt
 from __future__ import annotations
 
-import unittest
+from frappe.tests import IntegrationTestCase
 from typing import TYPE_CHECKING
 
 import frappe
@@ -24,5 +24,5 @@ def create_test_site_activity(site: str, action: str) -> SiteActivity:
 	).insert()
 
 
-class TestSiteActivity(unittest.TestCase):
+class TestSiteActivity(IntegrationTestCase):
 	pass

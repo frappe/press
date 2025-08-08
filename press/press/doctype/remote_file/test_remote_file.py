@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
 
-import unittest
+from frappe.tests import IntegrationTestCase
 from datetime import datetime
 from typing import Optional
 
@@ -32,5 +31,5 @@ def create_test_remote_file(
 	return remote_file
 
 
-class TestRemoteFile(unittest.TestCase):
+class TestRemoteFile(IntegrationTestCase):
 	pass

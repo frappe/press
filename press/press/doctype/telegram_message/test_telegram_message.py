@@ -4,7 +4,7 @@
 from unittest.mock import Mock, patch
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 from telegram.error import RetryAfter, TimedOut
 
 from press.press.doctype.telegram_message.telegram_message import (
@@ -15,7 +15,7 @@ from press.telegram_utils import Telegram
 
 
 @patch.object(Telegram, "send")
-class TestTelegramMessage(FrappeTestCase):
+class TestTelegramMessage(IntegrationTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 

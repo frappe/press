@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import frappe
 from frappe.core.utils import find
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 from press.press.doctype.agent_job.agent_job import poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
@@ -58,7 +58,7 @@ BACKUP_JOB_RES = {
 
 
 @patch.object(RemoteFile, "download_link", new="http://test.com")
-class TestSiteMigration(FrappeTestCase):
+class TestSiteMigration(IntegrationTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
@@ -76,12 +76,18 @@ class TestSiteMigration(FrappeTestCase):
 			}
 		).insert()
 
-		with fake_agent_job("Update Site Configuration", "Success"), fake_agent_job(
-			"Backup Site",
-			data=BACKUP_JOB_RES,
-		), fake_agent_job("New Site from Backup"), fake_agent_job("Archive Site"), fake_agent_job(
-			"Remove Site from Upstream"
-		), fake_agent_job("Add Site to Upstream"), fake_agent_job("Update Site Configuration"):
+		with (
+			fake_agent_job("Update Site Configuration", "Success"),
+			fake_agent_job(
+				"Backup Site",
+				data=BACKUP_JOB_RES,
+			),
+			fake_agent_job("New Site from Backup"),
+			fake_agent_job("Archive Site"),
+			fake_agent_job("Remove Site from Upstream"),
+			fake_agent_job("Add Site to Upstream"),
+			fake_agent_job("Update Site Configuration"),
+		):
 			site_migration.start()
 			poll_pending_jobs()
 			poll_pending_jobs()
@@ -114,10 +120,15 @@ class TestSiteMigration(FrappeTestCase):
 			}
 		).insert()
 
-		with fake_agent_job("Update Site Configuration"), fake_agent_job(
-			"Backup Site",
-			data=BACKUP_JOB_RES,
-		), fake_agent_job("New Site from Backup", "Failure"), fake_agent_job("Archive Site"):
+		with (
+			fake_agent_job("Update Site Configuration"),
+			fake_agent_job(
+				"Backup Site",
+				data=BACKUP_JOB_RES,
+			),
+			fake_agent_job("New Site from Backup", "Failure"),
+			fake_agent_job("Archive Site"),
+		):
 			site_migration.start()
 			poll_pending_jobs()
 			poll_pending_jobs()
@@ -139,12 +150,18 @@ class TestSiteMigration(FrappeTestCase):
 			}
 		).insert()
 
-		with fake_agent_job("Update Site Configuration"), fake_agent_job(
-			"Backup Site",
-			data=BACKUP_JOB_RES,
-		), fake_agent_job("New Site from Backup", "Failure"), fake_agent_job(
-			"Archive Site",
-		), fake_agent_job("Update Site Configuration"):
+		with (
+			fake_agent_job("Update Site Configuration"),
+			fake_agent_job(
+				"Backup Site",
+				data=BACKUP_JOB_RES,
+			),
+			fake_agent_job("New Site from Backup", "Failure"),
+			fake_agent_job(
+				"Archive Site",
+			),
+			fake_agent_job("Update Site Configuration"),
+		):
 			site_migration.start()
 			poll_pending_jobs()
 			poll_pending_jobs()
@@ -169,12 +186,19 @@ class TestSiteMigration(FrappeTestCase):
 			}
 		).insert()
 
-		with fake_agent_job("Update Site Configuration"), fake_agent_job(
-			"Backup Site",
-			data=BACKUP_JOB_RES,
-		), fake_agent_job("New Site from Backup"), fake_agent_job(
-			"Archive Site",  # both archives
-		), fake_agent_job("Remove Site from Upstream"), fake_agent_job("Add Site to Upstream", "Failure"):
+		with (
+			fake_agent_job("Update Site Configuration"),
+			fake_agent_job(
+				"Backup Site",
+				data=BACKUP_JOB_RES,
+			),
+			fake_agent_job("New Site from Backup"),
+			fake_agent_job(
+				"Archive Site",  # both archives
+			),
+			fake_agent_job("Remove Site from Upstream"),
+			fake_agent_job("Add Site to Upstream", "Failure"),
+		):
 			site_migration.start()
 			poll_pending_jobs()
 			poll_pending_jobs()

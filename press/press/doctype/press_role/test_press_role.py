@@ -2,14 +2,16 @@
 # See license.txt
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_team
 
 
-class TestPressRole(FrappeTestCase):
+class TestPressRole(IntegrationTestCase):
 	def setUp(self):
+		super().setUp()
+
 		frappe.set_user("Administrator")
 		frappe.db.delete("Press Role")
 		self.team_user = create_user("team@example.com")

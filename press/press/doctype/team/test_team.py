@@ -2,7 +2,7 @@
 # See license.txt
 from __future__ import annotations
 
-import unittest
+from frappe.tests import IntegrationTestCase
 from unittest.mock import Mock, patch
 
 import frappe
@@ -40,7 +40,7 @@ def create_test_team(email: str | None = None, country="India", free_account: bo
 	return team
 
 
-class TestTeam(unittest.TestCase):
+class TestTeam(IntegrationTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
