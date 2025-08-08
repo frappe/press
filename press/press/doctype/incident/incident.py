@@ -106,7 +106,6 @@ class Incident(WebsiteGenerator):
 		subject: DF.Data | None
 		subtype: DF.Literal["High CPU: user", "High CPU: iowait", "Disk full"]
 		suggestions: DF.Table[IncidentSuggestion]
-		symptom: DF.Data | None
 		type: DF.Literal["Database Down", "Server Down", "Proxy Down"]
 		updates: DF.Table[IncidentUpdates]
 	# end: auto-generated types
