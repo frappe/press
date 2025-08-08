@@ -557,7 +557,6 @@ class VirtualMachine(Document):
 			for volume in server_instance.volumes:
 				volume = self.client().volumes.get_by_id(volume.id)
 				volumes.append(volume)
-
 			return volumes
 		return None
 
@@ -589,7 +588,7 @@ class VirtualMachine(Document):
 			return self._sync_hetzner(*args, **kwargs)
 		return None
 
-	def _sync_hetzner(self, server_instance=None):  # noqa: C901
+	def _sync_hetzner(self, server_instance=None):
 		is_deleted = False
 		if not server_instance:
 			try:
@@ -604,25 +603,17 @@ class VirtualMachine(Document):
 			self.private_ip_address = server_instance.private_net[0].ip
 			self.public_ip_address = server_instance.public_net.ipv4.ip
 
-			attached_volumes = []
+			existing_volumes = [(vol.volume_id) for vol in self.volumes]
 			for volume in self.get_volumes():
-				existing_volume = find(self.volumes, lambda v: v.volume_id == volume.id)
-				if existing_volume:
-					row = existing_volume
-				else:
-					row = frappe._dict()
+				if str(volume.id) in existing_volumes:
+					continue
+
+				row = frappe._dict()
 				row.volume_id = volume.id
 				row.size = volume.size
 				row.device = volume.linux_device
 				self.termination_protection = volume.protection["delete"]
-				attached_volumes.append(row.volume_id)
-
-				if not existing_volume:
-					self.append("volumes", row)
-
-			for volume in self.volumes:
-				if volume.volume_id not in attached_volumes:
-					self.remove(volume)
+				self.append("volumes", row)
 		else:
 			self.status = "Terminated"
 		self.save()
