@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import json
 import typing
-from frappe.tests import IntegrationTestCase
 from unittest.mock import Mock, patch
 
 import frappe
 import frappe.utils
 import responses
 from frappe.model.naming import make_autoname
+from frappe.tests import IntegrationTestCase
 
 from press.exceptions import InsufficientSpaceOnServer
 from press.press.doctype.agent_job.agent_job import AgentJob
