@@ -935,7 +935,7 @@ class VirtualMachine(Document):
 		tmp_volume_ids = set()
 		tmp_volumes_devices = [x.device for x in self.temporary_volumes]
 
-		def gid_by_device(device):
+		def get_volume_id_by_device(device):
 			for volume in self.volumes:
 				if volume.device == device:
 					return volume.volume_id
