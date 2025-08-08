@@ -64,6 +64,8 @@ class ARMDockerImageType(TypedDict):
 
 
 PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
+MARIADB_DATA_MNT_POINT = "/opt/volumes/mariadb"
+BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
 
 
 class BaseServer(Document, TagHelpers):
@@ -718,7 +720,12 @@ class BaseServer(Document, TagHelpers):
 				stderr=subprocess.STDOUT,
 			)
 		except subprocess.CalledProcessError as e:
-			log_error(f"Error removing glassfile: {e.output.decode()}")
+			frappe.log_error(
+				title="Error removing glassfile",
+				message=e.output.decode(),
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+			)
 
 	@frappe.whitelist()
 	def extend_ec2_volume(self, device=None, log: str | None = None):
@@ -800,9 +807,9 @@ class BaseServer(Document, TagHelpers):
 		if volumes or self.has_data_volume:
 			# Adding this condition since this method is called from both server and database server doctypes
 			if self.name[0] == "f":
-				mountpoint = "/opt/volumes/benches"
+				mountpoint = BENCH_DATA_MNT_POINT
 			elif self.name[0] == "m":
-				mountpoint = "/opt/volumes/mariadb"
+				mountpoint = MARIADB_DATA_MNT_POINT
 		else:
 			mountpoint = "/"
 		return mountpoint
@@ -1280,13 +1287,13 @@ class BaseServer(Document, TagHelpers):
 	def set_default_mount_points(self):
 		first = self.mounts[0]
 		if self.doctype == "Server":
-			first.mount_point = "/opt/volumes/benches"
+			first.mount_point = BENCH_DATA_MNT_POINT
 			self.append(
 				"mounts",
 				{
 					"mount_type": "Bind",
 					"mount_point": "/home/frappe/benches",
-					"source": "/opt/volumes/benches/home/frappe/benches",
+					"source": f"{BENCH_DATA_MNT_POINT}/home/frappe/benches",
 					"mount_point_owner": "frappe",
 					"mount_point_group": "frappe",
 				},
@@ -1296,19 +1303,19 @@ class BaseServer(Document, TagHelpers):
 				{
 					"mount_type": "Bind",
 					"mount_point": "/var/lib/docker",
-					"source": "/opt/volumes/benches/var/lib/docker",
+					"source": f"{BENCH_DATA_MNT_POINT}/var/lib/docker",
 					"mount_point_owner": "root",
 					"mount_point_group": "root",
 				},
 			)
 		elif self.doctype == "Database Server":
-			first.mount_point = "/opt/volumes/mariadb"
+			first.mount_point = MARIADB_DATA_MNT_POINT
 			self.append(
 				"mounts",
 				{
 					"mount_type": "Bind",
 					"mount_point": "/var/lib/mysql",
-					"source": "/opt/volumes/mariadb/var/lib/mysql",
+					"source": f"{MARIADB_DATA_MNT_POINT}/var/lib/mysql",
 				},
 			)
 			self.append(
@@ -1316,7 +1323,7 @@ class BaseServer(Document, TagHelpers):
 				{
 					"mount_type": "Bind",
 					"mount_point": "/etc/mysql",
-					"source": "/opt/volumes/mariadb/etc/mysql",
+					"source": f"{MARIADB_DATA_MNT_POINT}/etc/mysql",
 				},
 			)
 

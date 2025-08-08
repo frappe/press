@@ -45,6 +45,10 @@ class SiteAlreadyArchived(ValidationError):
 	pass
 
 
+class SiteTooManyPendingBackups(ValidationError):
+	pass
+
+
 class InactiveDomains(ValidationError):
 	pass
 
@@ -82,4 +86,8 @@ class TLSRetryLimitExceeded(ValidationError):
 
 
 class ArchiveBenchError(ValidationError):
+	pass
+
+
+class MonitorServerDown(ValidationError):
 	pass
