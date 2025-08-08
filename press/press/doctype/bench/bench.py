@@ -27,7 +27,7 @@ from press.press.doctype.bench_shell_log.bench_shell_log import (
 )
 from press.press.doctype.site.site import Site
 from press.runner import Ansible
-from press.utils import SupervisorProcess, flatten, log_error, parse_supervisor_status
+from press.utils import SupervisorProcess, flatten, get_datetime, log_error, parse_supervisor_status
 from press.utils.webhook import create_webhook_event
 
 if TYPE_CHECKING:
@@ -1001,7 +1001,7 @@ class Bench(Document):
 			frappe.throw("Cannot archive bench due to ongoing in-place updates.", ArchiveBenchError)
 
 	def check_last_archive(self):
-		if self.last_archive_failure and self.last_archive_failure > frappe.utils.add_to_date(
+		if self.last_archive_failure and get_datetime(self.last_archive_failure) > frappe.utils.add_to_date(
 			None, hours=-24
 		):
 			frappe.throw("Cannot archive as previous archive failed in the last 24 hours.", ArchiveBenchError)
