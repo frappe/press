@@ -21,6 +21,7 @@ from tenacity.retry import retry_if_not_result
 from twilio.base.exceptions import TwilioRestException
 
 from press.api.server import prometheus_query
+from press.press.doctype.server.server import MARIADB_DATA_MNT_POINT
 from press.telegram_utils import Telegram
 from press.utils import log_error
 
@@ -195,7 +196,10 @@ class Incident(WebsiteGenerator):
 		self.identify_affected_resource()
 		self.take_grafana_screenshots()
 
-	def get_cpu_state(self, resource: str):
+	def get_cpu_state(self, resource: str) -> tuple[str, float]:
+		"""
+		Returns the prominent CPU state and its percentage
+		"""
 		timespan = get_confirmation_threshold_duration()
 		cpu_info = prometheus_query(
 			f"""avg by (mode)(rate(node_cpu_seconds_total{{instance="{resource}", job="node"}}[{timespan}s])) * 100""",
@@ -248,7 +252,7 @@ class Incident(WebsiteGenerator):
 		self.add_corrective_suggestion("Reboot Server")
 		self.add_preventive_suggestion("Upgrade database server for more memory")
 
-	def categorize_db_issues(self, cpu_state):
+	def categorize_db_cpu_issues(self, cpu_state):
 		self.type = "Database Down"
 		if cpu_state == "user":
 			self.update_user_db_issue()
@@ -261,25 +265,43 @@ class Incident(WebsiteGenerator):
 	def update_high_io_server_issue(self):
 		pass
 
-	def categorize_server_issues(self, cpu_state):
+	def categorize_server_cpu_issues(self, cpu_state):
 		self.type = "Server Down"
 		if cpu_state == "user":
 			self.update_user_server_issue()
 		elif cpu_state == "iowait":
 			self.update_high_io_server_issue()
 
-	def identify_problem(self):
-		if site := self.get_down_site():
-			try:
-				ret = requests.get(f"https://{site}/api/method/ping", timeout=10)
-			except requests.RequestException as e:
-				self.add_description(f"Error pinging sample site {site}: {e!s}")
-			else:
-				self.add_description(f"Ping response for sample site {site}: {ret.status_code} {ret.reason}")
+	def ping_sample_site(self):
+		if not (site := self.get_down_site()):
+			return None
+		try:
+			ret = requests.get(f"https://{site}/api/method/ping", timeout=10)
+		except requests.RequestException as e:
+			self.add_description(f"Error pinging sample site {site}: {e!s}")
+			return None
+		else:
+			self.add_description(f"Ping response for sample site {site}: {ret.status_code} {ret.reason}")
+			return ret.status_code
 
+	def categorize_disk_full_issue(self):
+		self.likely_cause = "Disk is full"
+		self.add_corrective_suggestion("Add more storage")
+		self.add_preventive_suggestion("Enable automatic addition of storage")
+
+	def identify_problem(self):
 		if not self.resource:
-			return
-			# TODO: Try random shit if resource isn't identified
+			pong = self.ping_sample_site()
+			if pong and pong == 500:
+				db: DatabaseServer = frappe.get_doc("Database Server", self.database_server)
+				if db.is_disk_full(MARIADB_DATA_MNT_POINT):
+					self.resource_type = "Database Server"
+					self.resource = self.database_server
+					self.type = "Database Down"
+					self.subtype = "Disk full"
+					self.categorize_disk_full_issue()
+					return
+			# TODO: Try more random shit if resource isn't identified
 			# Eg: Check mysql up/ docker up/ container up
 			# Ping site for error code to guess more accurately
 			# 500 would mean mysql down or bug in app/config
@@ -291,11 +313,11 @@ class Incident(WebsiteGenerator):
 			return
 
 		if self.resource_type == "Database Server":
-			self.categorize_db_issues(state)
+			self.categorize_db_cpu_issues(state)
 		elif self.resource_type == "Server":
-			self.categorize_server_issues(state)
+			self.categorize_server_cpu_issues(state)
 
-			# TODO: categorize proxy issues #
+		# TODO: categorize proxy issues #
 
 	@property
 	def other_resource(self):
@@ -673,7 +695,7 @@ Incident URL: {incident_link}"""
 			seconds=get_call_repeat_interval()
 		)
 
-	@property
+	@cached_property
 	def sites_down(self) -> list[str]:
 		return self.monitor_server.get_sites_down_for_server(str(self.server))
 
