@@ -59,6 +59,14 @@ def successful_provision(self: VirtualMachine):
 	self.save()
 
 
+def available_check_machine_availability(self: Cluster, machine_type: str):
+	return True
+
+
+def unavailable_check_machine_availability(self: Cluster, machine_type: str):
+	return False
+
+
 def successful_sync(self: VirtualMachine):
 	self.status = "Running"
 	self.save()
@@ -102,6 +110,7 @@ def successful_wait_for_cloud_init(self: BaseServer):
 @patch.object(BaseServer, "wait_for_cloud_init", new=successful_wait_for_cloud_init)
 @patch.object(BaseServer, "update_tls_certificate", new=successful_tls_certificate)
 @patch.object(BaseServer, "update_agent_ansible", new=successful_update_agent_ansible)
+@patch.object(Cluster, "check_machine_availability", new=available_check_machine_availability)
 class TestAPIServer(FrappeTestCase):
 	@patch.object(Cluster, "provision_on_aws_ec2", new=Mock())
 	def setUp(self):
