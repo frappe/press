@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from twilio.base.exceptions import TwilioRestException
@@ -417,8 +417,8 @@ class TestIncident(IntegrationTestCase):
 		incident.reload()
 		self.assertEqual(incident.status, "Auto-Resolved")
 
-	@patch.object(Incident, "sites_down", return_value=["a.fc.com", "b.fc.com"])
-	def test_threshold_field_is_checked_before_calling(self, mock_sites_down):
+	@patch.object(Incident, "sites_down", new=[])
+	def test_threshold_field_is_checked_before_calling(self):
 		create_test_alertmanager_webhook_log()
 		incident = frappe.get_last_doc("Incident")
 		incident.db_set("creation", frappe.utils.add_to_date(frappe.utils.now(), minutes=-1))
@@ -523,8 +523,8 @@ class TestIncident(IntegrationTestCase):
 			],
 		}
 
-	@patch.object(Incident, "sites_down", return_value=["a.fc.com", "b.fc.com"])
-	def test_high_load_avg_on_resource_makes_it_affected(self, mock_sites_down):
+	@patch.object(Incident, "sites_down", new=[])
+	def test_high_load_avg_on_resource_makes_it_affected(self):
 		create_test_alertmanager_webhook_log()
 		incident: Incident = frappe.get_last_doc("Incident")
 		with patch(
@@ -539,8 +539,8 @@ class TestIncident(IntegrationTestCase):
 		self.assertEqual(incident.resource, incident.server)
 		self.assertEqual(incident.resource_type, "Server")
 
-	@patch.object(Incident, "sites_down", return_value=["a.fc.com", "b.fc.com"])
-	def test_no_response_from_monitor_on_resource_makes_it_affected(self, mock_sites_down):
+	@patch.object(Incident, "sites_down", new=[])
+	def test_no_response_from_monitor_on_resource_makes_it_affected(self):
 		create_test_alertmanager_webhook_log()
 		incident: Incident = frappe.get_last_doc("Incident")
 		incident.identify_affected_resource()
