@@ -83,16 +83,22 @@ class PressRole(Document):
 			self.allow_webhook_configuration = 1
 
 	def add_press_admin_role(self, user):
-		frappe.get_doc("User", user).add_roles("Press Admin")
+		user = frappe.get_doc("User", user)
+		user.append_roles("Press Admin")
+		user.save(ignore_permissions=True)
 
 	def remove_press_admin_role(self, user):
 		if frappe.db.exists("Team", {"enabled": 1, "user": user}):
 			return
-		frappe.get_doc("User", user).remove_roles("Press Admin")
+		user = frappe.get_doc("User", user)
+		existing_roles = {d.role: d for d in user.get("roles")}
+		if "Press Admin" in existing_roles:
+			user.get("roles").remove(existing_roles["Press Admin"])
+			user.save(ignore_permissions=True)
 
 	def is_team_member(self, user):
 		return bool(frappe.db.exists("Team Member", {"parent": self.team, "user": user}))
-	
+
 	@dashboard_whitelist()
 	def add_user(self, user):
 		user_exists = self.get("users", {"user": user})
@@ -101,7 +107,7 @@ class PressRole(Document):
 
 		if not self.is_team_member(user):
 			frappe.throw(f"{user} is not a member of the team")
-		
+
 		self.append("users", {"user": user})
 		self.save()
 		if self.admin_access or self.allow_billing:
