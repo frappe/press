@@ -451,7 +451,8 @@ class Incident(WebsiteGenerator):
 			return press_settings.twilio_client
 		except Exception:
 			log_error("Twilio Client not configured in Press Settings")
-			frappe.db.commit()
+			if not frappe.flags.in_test:
+				frappe.db.commit()
 			raise
 
 	@retry(
