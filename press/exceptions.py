@@ -83,3 +83,7 @@ class TLSRetryLimitExceeded(ValidationError):
 
 class ArchiveBenchError(ValidationError):
 	pass
+
+
+class MonitorServerDown(ValidationError):
+	pass
