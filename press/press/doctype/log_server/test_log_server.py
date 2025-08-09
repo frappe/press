@@ -2,8 +2,8 @@
 # See license.txt
 
 # import frappe
-import unittest
+from frappe.tests import IntegrationTestCase
 
 
-class TestLogServer(unittest.TestCase):
+class TestLogServer(IntegrationTestCase):
 	pass

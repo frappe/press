@@ -2,8 +2,8 @@
 # See license.txt
 
 # import frappe
-import unittest
+from frappe.tests import IntegrationTestCase
 
 
-class TestMailLog(unittest.TestCase):
+class TestMailLog(IntegrationTestCase):
 	pass

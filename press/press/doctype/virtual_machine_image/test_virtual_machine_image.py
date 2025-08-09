@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.virtual_machine_image.virtual_machine_image import (
@@ -20,9 +20,7 @@ if TYPE_CHECKING:
 @patch.object(VirtualMachineImage, "client", new=MagicMock())
 @patch.object(VirtualMachineImage, "after_insert", new=MagicMock())
 def create_test_virtual_machine_image(
-	ip: str | None = None,
-	cluster: Cluster = None,
-	series: str = "m",
+	ip: str | None = None, cluster: Cluster = None, series: str = "m", platform: str = "x86_64"
 ) -> VirtualMachineImage:
 	"""Create test Virtual Machine Image doc"""
 	if not ip:
@@ -33,7 +31,7 @@ def create_test_virtual_machine_image(
 		create_test_virtual_machine,
 	)
 
-	vm = create_test_virtual_machine(cluster=cluster, series=series)
+	vm = create_test_virtual_machine(cluster=cluster, series=series, platform=platform)
 
 	return frappe.get_doc(
 		{
@@ -43,9 +41,10 @@ def create_test_virtual_machine_image(
 			"status": "Available",
 			"image_id": "ami-1234567890",
 			"mariadb_root_password": "password",
+			"platform": platform,
 		}
 	).insert(ignore_if_duplicate=True)
 
 
-class TestVirtualMachineImage(FrappeTestCase):
+class TestVirtualMachineImage(IntegrationTestCase):
 	pass

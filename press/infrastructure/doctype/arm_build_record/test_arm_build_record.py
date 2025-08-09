@@ -1,10 +1,10 @@
 # Copyright (c) 2025, Frappe and Contributors
 # See license.txt
 import typing
-import unittest
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.tests import IntegrationTestCase
 
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.bench.test_bench import create_test_bench
@@ -18,21 +18,18 @@ if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
 
 
-class TestARMBuildRecord(unittest.TestCase):
-	@classmethod
-	def setUpClass(cls):
+class TestARMBuildRecord(IntegrationTestCase):
+	def setUp(self):
+		super().setUp()
+
 		virtual_machine = create_test_virtual_machine(series="f")
 		virtual_machine.create_server()
-		cls.server = frappe.get_last_doc("Server")
+		self.server = frappe.get_last_doc("Server")
 		app = create_test_app()
-		rg = create_test_release_group([app], servers=[cls.server])
-		cls.bench = create_test_bench(group=rg, server=cls.server)
-		cls.build = frappe.get_value("Deploy Candidate Build", {})
-		frappe.db.set_value("Deploy Candidate Build", {"name": cls.build}, field="status", val="Success")
-
-	@classmethod
-	def tearDownClass(cls):
-		frappe.db.rollback()
+		rg = create_test_release_group([app], servers=[self.server.name])
+		self.bench = create_test_bench(group=rg, server=self.server.name)
+		self.build = frappe.get_value("Deploy Candidate Build", {})
+		frappe.db.set_value("Deploy Candidate Build", {"name": self.build}, field="status", val="Success")
 
 	@patch.object(DeployCandidateBuild, "pre_build", new=Mock())
 	def test_build_trigger(self):

@@ -2,14 +2,14 @@
 # See license.txt
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
 )
 
 
-class TestMariaDBVariable(FrappeTestCase):
+class TestMariaDBVariable(IntegrationTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 

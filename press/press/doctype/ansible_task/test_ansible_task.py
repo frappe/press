@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
 
-import unittest
-
 import frappe
+from frappe.tests import IntegrationTestCase
 
 
 def create_test_ansible_play_task(
@@ -30,5 +28,5 @@ def create_test_ansible_play_task(
 	return play
 
 
-class TestAnsibleTask(unittest.TestCase):
+class TestAnsibleTask(IntegrationTestCase):
 	pass

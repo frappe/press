@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 from press.press.audit import BackupRecordCheck, OffsiteBackupCheck
 from press.press.doctype.agent_job.agent_job import AgentJob
@@ -17,11 +17,13 @@ from press.telegram_utils import Telegram
 
 @patch.object(Telegram, "send", new=Mock())
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestBackupRecordCheck(FrappeTestCase):
+class TestBackupRecordCheck(IntegrationTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
 	def setUp(self):
+		super().setUp()
+
 		self.yesterday = frappe.utils.now_datetime().date() - timedelta(days=1)
 		self._2_hrs_before_yesterday = datetime.combine(self.yesterday, datetime.min.time()) - timedelta(
 			hours=2
@@ -77,7 +79,7 @@ class TestBackupRecordCheck(FrappeTestCase):
 
 @patch.object(Telegram, "send", new=Mock())
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestOffsiteBackupCheck(FrappeTestCase):
+class TestOffsiteBackupCheck(IntegrationTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 

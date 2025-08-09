@@ -2,8 +2,8 @@
 # See license.txt
 
 # import frappe
-import unittest
+from frappe.tests import IntegrationTestCase
 
 
-class TestRazorpayPaymentRecord(unittest.TestCase):
+class TestRazorpayPaymentRecord(IntegrationTestCase):
 	pass

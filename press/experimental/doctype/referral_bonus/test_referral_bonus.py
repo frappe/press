@@ -2,8 +2,8 @@
 # See license.txt
 
 # import frappe
-import unittest
+from frappe.tests import IntegrationTestCase
 
 
-class TestReferralBonus(unittest.TestCase):
+class TestReferralBonus(IntegrationTestCase):
 	pass

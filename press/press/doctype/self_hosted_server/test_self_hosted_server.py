@@ -6,7 +6,8 @@ import json
 from unittest.mock import patch
 
 import frappe
-from frappe.tests.utils import FrappeTestCase, change_settings
+from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import change_settings
 
 from press.api.tests.test_server import create_test_server_plan
 from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
@@ -17,8 +18,10 @@ from press.press.doctype.self_hosted_server.self_hosted_server import SelfHosted
 from press.press.doctype.team.test_team import create_test_team
 
 
-class TestSelfHostedServer(FrappeTestCase):
+class TestSelfHostedServer(IntegrationTestCase):
 	def setUp(self):
+		super().setUp()
+
 		create_test_press_settings()
 
 	def tearDown(self):
@@ -263,9 +266,7 @@ class TestSelfHostedServer(FrappeTestCase):
 		self.assertEqual(pre_subscription_count, post_subscription_count - 2)
 
 
-def create_test_self_hosted_server(
-	host, database_plan=None, plan=None
-) -> SelfHostedServer:
+def create_test_self_hosted_server(host, database_plan=None, plan=None) -> SelfHostedServer:
 	"""
 	Plan: is a string that represents the application servers subscription plan name
 	Database Plan: is a string that represents the database servers subscription plan name

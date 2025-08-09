@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, Mock, patch
 import frappe
 from frappe.core.utils import find
 from frappe.model.naming import make_autoname
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 from press.press.doctype.database_server.database_server import DatabaseServer
 from press.press.doctype.server.server import BaseServer
@@ -39,7 +39,7 @@ def create_test_database_server(ip=None, cluster="Default") -> DatabaseServer:
 
 
 @patch.object(Ansible, "run", new=Mock())
-class TestDatabaseServer(FrappeTestCase):
+class TestDatabaseServer(IntegrationTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 

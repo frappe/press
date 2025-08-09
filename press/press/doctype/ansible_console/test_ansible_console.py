@@ -2,10 +2,10 @@
 # See license.txt
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 
-class TestAnsibleConsole(FrappeTestCase):
+class TestAnsibleConsole(IntegrationTestCase):
 	def test_ansible_console_run(self):
 		console = frappe.get_doc("Ansible Console")
 		console.inventory = "localhost,"

@@ -1,11 +1,13 @@
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
 
+from __future__ import annotations
+
 import cryptography
 import frappe
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 from press.press.doctype.team.test_team import create_test_press_admin_team
 
@@ -36,7 +38,7 @@ def create_ed25519_key() -> str:
 	return str_key[0].decode("utf-8")
 
 
-def create_test_user_ssh_key(user: str, str_key: str = None):
+def create_test_user_ssh_key(user: str, str_key: str | None = None):
 	"""Create a test SSH key for the given user."""
 	if not str_key:
 		str_key = create_rsa_key()
@@ -51,7 +53,7 @@ def create_test_user_ssh_key(user: str, str_key: str = None):
 	return ssh_key
 
 
-class TestUserSSHKey(FrappeTestCase):
+class TestUserSSHKey(IntegrationTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 

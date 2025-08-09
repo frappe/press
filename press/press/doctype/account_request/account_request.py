@@ -249,6 +249,9 @@ class AccountRequest(Document):
 			print()
 			return
 
+		if hasattr(frappe.flags, "in_test") and frappe.flags.in_test:
+			return
+
 		if for_login:
 			template = "login_otp"
 			subject = f"{self.otp} - OTP for Frappe Cloud Login"

@@ -4,7 +4,7 @@
 import typing
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.app.app import App
@@ -48,5 +48,5 @@ def create_test_product_trial(
 	return product_trial
 
 
-class TestProductTrial(FrappeTestCase):
+class TestProductTrial(IntegrationTestCase):
 	pass

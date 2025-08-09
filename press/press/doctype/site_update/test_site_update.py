@@ -6,7 +6,7 @@ import json
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
@@ -32,7 +32,7 @@ def create_test_site_update(site: str, destination_group: str, status: str):
 	).insert(ignore_if_duplicate=True)
 
 
-class TestSiteUpdate(FrappeTestCase):
+class TestSiteUpdate(IntegrationTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 

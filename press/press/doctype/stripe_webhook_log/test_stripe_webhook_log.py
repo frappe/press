@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
 
 # import frappe
-import unittest
+from frappe.tests import IntegrationTestCase
 
 
-class TestStripeWebhookLog(unittest.TestCase):
+class TestStripeWebhookLog(IntegrationTestCase):
 	pass
