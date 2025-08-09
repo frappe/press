@@ -4,7 +4,6 @@
 
 # import frappe
 from frappe.tests import IntegrationTestCase
-from frappe.tests import IntegrationTestCase
 
 
 class TestBenchApp(IntegrationTestCase):

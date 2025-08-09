@@ -1,11 +1,11 @@
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
-from frappe.tests import IntegrationTestCase
 from typing import Literal
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.tests import IntegrationTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.proxy_server.proxy_server import ProxyServer

@@ -2,10 +2,10 @@
 # See license.txt
 from __future__ import annotations
 
-from frappe.tests import IntegrationTestCase
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe.tests import IntegrationTestCase
 
 from press.utils import get_current_team
 

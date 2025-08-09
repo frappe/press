@@ -22,8 +22,7 @@ def create_test_marketplace_app_subscription(
 	plan = plan if plan else create_test_marketplace_app_plan().name
 	team = team if team else create_test_team().name
 	site = site if site else create_test_site(team=team).name
-	print(frappe.db.exists("Marketplace App Plan", plan))
-	subscription = frappe.get_doc(
+	return frappe.get_doc(
 		{
 			"doctype": "Subscription",
 			"document_type": "Marketplace App",
@@ -34,7 +33,6 @@ def create_test_marketplace_app_subscription(
 			"team": team,
 		}
 	).insert(ignore_if_duplicate=True)
-	return subscription
 
 
 class TestMarketplaceAppSubscription(IntegrationTestCase):
