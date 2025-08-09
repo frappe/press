@@ -4,11 +4,11 @@
 from __future__ import annotations
 
 import typing
-from frappe.tests import IntegrationTestCase
 from unittest.mock import Mock, patch
 
 import frappe
 from frappe.model.naming import make_autoname
+from frappe.tests import IntegrationTestCase
 
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
