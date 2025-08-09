@@ -23,9 +23,13 @@ def doc_equal(self: Document, other: Document) -> bool:
 	return False
 
 
-def execute():
+def IntegrationTestCase_setUp(self: IntegrationTestCase) -> None:
 	frappe.clear_cache()
+	frappe.db.truncate("Agent Request Failure")
+	frappe.local.conf.update({"throttle_user_limit": 600})
 
+
+def execute():
 	settings = frappe.get_single("Press Settings")
 	if not (settings.stripe_secret_key and settings.stripe_publishable_key):
 		create_test_stripe_credentials()
@@ -37,7 +41,7 @@ def execute():
 	# Monkey patch certain methods for when tests are running
 	Document.__eq__ = doc_equal
 
-	IntegrationTestCase.setUp = lambda self: frappe.db.truncate("Agent Request Failure")
+	IntegrationTestCase.setUp = IntegrationTestCase_setUp
 	IntegrationTestCase.tearDown = lambda self: frappe.db.rollback()
 	IntegrationTestCase.freeze_time = staticmethod(freeze_time)
 
