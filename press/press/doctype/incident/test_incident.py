@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import math
+import zoneinfo
 from contextlib import suppress
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
-import zoneinfo
 from frappe.tests.utils import FrappeTestCase
 from hypothesis import given, settings
 from hypothesis import strategies as st
@@ -342,10 +342,13 @@ class TestIncident(FrappeTestCase):
 		alert = create_test_alertmanager_webhook_log()
 		total, firing = total_firing
 		firing_instances = [0] * firing
-		with patch.object(AlertmanagerWebhookLog, "total_instances", new=total), patch.object(
-			AlertmanagerWebhookLog,
-			"past_alert_instances",
-			new=lambda x, y: firing_instances,
+		with (
+			patch.object(AlertmanagerWebhookLog, "total_instances", new=total),
+			patch.object(
+				AlertmanagerWebhookLog,
+				"past_alert_instances",
+				new=lambda x, y: firing_instances,
+			),
 		):
 			self.assertTrue(alert.is_enough_firing)
 
@@ -357,10 +360,13 @@ class TestIncident(FrappeTestCase):
 		firing_instances = set(range(firing))
 		resolved_instances = set(range(resolved))
 
-		with patch.object(AlertmanagerWebhookLog, "total_instances", new=total), patch.object(
-			AlertmanagerWebhookLog,
-			"past_alert_instances",
-			side_effect=[firing_instances, resolved_instances],
+		with (
+			patch.object(AlertmanagerWebhookLog, "total_instances", new=total),
+			patch.object(
+				AlertmanagerWebhookLog,
+				"past_alert_instances",
+				side_effect=[firing_instances, resolved_instances],
+			),
 		):
 			self.assertFalse(alert.is_enough_firing)
 
@@ -394,6 +400,7 @@ class TestIncident(FrappeTestCase):
 		incident.reload()
 		self.assertEqual(incident.status, "Auto-Resolved")
 
+	@patch.object(Incident, "sites_down", new=[])
 	def test_threshold_field_is_checked_before_calling(self):
 		create_test_alertmanager_webhook_log()
 		incident = frappe.get_last_doc("Incident")
@@ -469,9 +476,10 @@ class TestIncident(FrappeTestCase):
 	def test_telegram_message_is_sent_when_unable_to_reach_twilio(self, mock_telegram_send):
 		create_test_alertmanager_webhook_log()
 		incident = frappe.get_last_doc("Incident")
-		with patch.object(
-			MockTwilioCallList, "create", side_effect=TwilioRestException("test", 500)
-		), suppress(TwilioRestException):
+		with (
+			patch.object(MockTwilioCallList, "create", side_effect=TwilioRestException("test", 500)),
+			suppress(TwilioRestException),
+		):
 			incident.call_humans()
 		mock_telegram_send.assert_called_once()
 
@@ -493,6 +501,7 @@ class TestIncident(FrappeTestCase):
 			],
 		}
 
+	@patch.object(Incident, "sites_down", new=[])
 	def test_high_load_avg_on_resource_makes_it_affected(self):
 		create_test_alertmanager_webhook_log()
 		incident: Incident = frappe.get_last_doc("Incident")
@@ -508,6 +517,7 @@ class TestIncident(FrappeTestCase):
 		self.assertEqual(incident.resource, incident.server)
 		self.assertEqual(incident.resource_type, "Server")
 
+	@patch.object(Incident, "sites_down", new=[])
 	def test_no_response_from_monitor_on_resource_makes_it_affected(self):
 		create_test_alertmanager_webhook_log()
 		incident: Incident = frappe.get_last_doc("Incident")
