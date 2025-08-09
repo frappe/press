@@ -271,6 +271,11 @@ class SiteUpdate(Document):
 
 	@dashboard_whitelist()
 	def start(self):
+		previous_status = self.status
+
+		self.status = "Pending"
+		self.update_start = frappe.utils.now()
+		self.save()
 		site: "Site" = frappe.get_cached_doc("Site", self.site)
 		try:
 			site.ready_for_move()
@@ -280,11 +285,9 @@ class SiteUpdate(Document):
 		except SiteUnderMaintenance:
 			# Just ignore the update for now
 			# It will be retried later
+			update_status(self.name, previous_status)
 			return
 
-		self.status = "Pending"
-		self.update_start = frappe.utils.now()
-		self.save()
 		if self.use_physical_backup:
 			self.deactivate_site()
 		else:
