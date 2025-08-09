@@ -2,11 +2,11 @@
 # See license.txt
 
 import json
-from frappe.tests import IntegrationTestCase
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.tests import IntegrationTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.root_domain.root_domain import RootDomain

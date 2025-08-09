@@ -2,10 +2,10 @@
 # See license.txt
 
 
-from frappe.tests import IntegrationTestCase
 from unittest.mock import patch
 
 import frappe
+from frappe.tests import IntegrationTestCase
 
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.subscription.subscription import sites_with_free_hosting

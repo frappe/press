@@ -1,9 +1,8 @@
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
 
-from frappe.tests import IntegrationTestCase
-
 import frappe
+from frappe.tests import IntegrationTestCase
 
 from press.press.doctype.ssh_key.ssh_key import SSHKey
 
