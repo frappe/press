@@ -463,7 +463,7 @@ class TestSite(IntegrationTestCase):
 	def test_user_cannot_disable_auto_update_if_site_in_public_release_group(self):
 		rg = create_test_release_group([create_test_app()], public=True)
 		bench = create_test_bench(group=rg)
-		site = create_test_site("testsite", bench=bench)
+		site = create_test_site("testsite", bench=bench.name)
 		site.skip_auto_updates = True
 		with self.assertRaises(frappe.exceptions.ValidationError) as context:
 			site.save(ignore_permissions=True)
@@ -474,7 +474,7 @@ class TestSite(IntegrationTestCase):
 	def test_user_can_disable_auto_update_if_site_in_private_bench(self):
 		rg = create_test_release_group([create_test_app()], public=False)
 		bench = create_test_bench(group=rg)
-		site = create_test_site("testsite", bench=bench)
+		site = create_test_site("testsite", bench=bench.name)
 		site.skip_auto_updates = True
 		site.save(ignore_permissions=True)
 
@@ -485,7 +485,7 @@ class TestSite(IntegrationTestCase):
 		app2 = create_test_app("erpnext", "ERPNext")
 		group = create_test_release_group([app1, app2])
 		bench = create_test_bench(group=group)
-		site = create_test_site(bench=bench)
+		site = create_test_site(bench=bench.name)
 		responses.get(
 			f"https://{site.server}:443/agent/benches/{site.bench}/sites/{site.name}/apps",
 			json.dumps({"data": "frappe\nerpnext"}),
