@@ -45,6 +45,9 @@ if TYPE_CHECKING:
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
+@patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
+@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+@patch("press.api.bench.frappe.db.commit", new=MagicMock)
 class TestStagingSite(IntegrationTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
@@ -380,6 +383,8 @@ class TestBench(IntegrationTestCase):
 
 
 @patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
+@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+@patch("press.api.bench.frappe.db.commit", new=MagicMock)
 class TestArchiveObsoleteBenches(IntegrationTestCase):
 	def tearDown(self):
 		frappe.db.rollback()

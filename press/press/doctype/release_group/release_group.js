@@ -80,7 +80,7 @@ frappe.ui.form.on('Release Group', {
 							reqd: 0,
 						},
 					],
-					primary_action({ server }) {
+					primary_action({ server, force_new_build }) {
 						frm
 							.call('add_server', {
 								server,
