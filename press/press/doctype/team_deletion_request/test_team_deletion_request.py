@@ -1,22 +1,20 @@
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
 
-from frappe.tests import IntegrationTestCase
-
 import frappe
-import requests
+from frappe.tests import IntegrationTestCase
 
 from press.press.doctype.team.test_team import create_test_team
 from press.press.doctype.team_deletion_request.team_deletion_request import (
 	TeamDeletionRequest,
 )
+from press.utils.test import request_locally_with_host_rewrite
 
 
 class TestTeamDeletionRequest(IntegrationTestCase):
-	@classmethod
-	def setUpClass(cls) -> None:
-		cls.team = create_test_team()
-		return super().setUpClass()
+	def setUp(self) -> None:
+		super().setUp()
+		self.team = create_test_team()
 
 	@property
 	def team_deletion_request(self):
@@ -43,5 +41,5 @@ class TestTeamDeletionRequest(IntegrationTestCase):
 	def test_team_deletion_api(self):
 		# TODO: Test if the API flow actually sets the status
 		deletion_url = self.team_deletion_request.generate_url_for_confirmation()
-		res = requests.get(deletion_url, allow_redirects=True)
+		res = request_locally_with_host_rewrite(deletion_url, allow_redirects=True)
 		self.assertTrue(res.ok)
