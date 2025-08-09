@@ -540,6 +540,8 @@ class VirtualMachine(Document):
 				volume = self.client().volumes.get_by_id(volume.id)
 				volumes.append(volume)
 
+			# This is a dummy/mock representation to make the code compatible
+			# with root_volume code. No
 			volumes.append(
 				frappe._dict(
 					{
@@ -605,8 +607,10 @@ class VirtualMachine(Document):
 				row.volume_id = volume.id
 				row.size = volume.size
 				row.device = volume.linux_device
-				self.termination_protection = volume.protection["delete"]
 				self.append("volumes", row)
+
+			if volume.protection["delete"]:
+				self.termination_protection = volume.protection["delete"]
 
 			self.has_data_volume = 1
 		else:
