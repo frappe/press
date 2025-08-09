@@ -140,7 +140,7 @@ def create_test_site(
 		if not bench:
 			bench = create_test_bench(server=server, public_server=kwargs.get("public_server", False))
 		else:
-			bench = frappe.get_doc("Bench", bench.name)
+			bench = frappe.get_doc("Bench", bench)
 		group = frappe.get_doc("Release Group", bench.group)
 
 		status = "Pending" if new else "Active"
