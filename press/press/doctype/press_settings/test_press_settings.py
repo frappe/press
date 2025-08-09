@@ -2,9 +2,8 @@
 # See license.txt
 
 
-from frappe.tests import IntegrationTestCase
-
 import frappe
+from frappe.tests import IntegrationTestCase
 
 from press.press.doctype.cluster.test_cluster import create_test_cluster
 

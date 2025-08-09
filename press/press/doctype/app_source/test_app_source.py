@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import typing
-from frappe.tests import IntegrationTestCase
 from unittest.mock import Mock, patch
 
 import frappe

@@ -1,7 +1,7 @@
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
-from typing import Optional
+from __future__ import annotations
 
 import frappe
 from frappe.tests import IntegrationTestCase
@@ -12,7 +12,7 @@ from press.press.doctype.marketplace_app.utils import (
 )
 
 
-def create_test_marketplace_app(app: str, team: Optional[str] = None, sources: Optional[list[dict]] = None):
+def create_test_marketplace_app(app: str, team: str | None = None, sources: list[dict] | None = None):
 	marketplace_app = frappe.get_doc(
 		{
 			"doctype": "Marketplace App",

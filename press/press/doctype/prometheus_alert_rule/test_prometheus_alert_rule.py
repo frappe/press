@@ -1,10 +1,10 @@
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
 
-from frappe.tests import IntegrationTestCase
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.tests import IntegrationTestCase
 
 from press.agent import Agent
 from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import PrometheusAlertRule

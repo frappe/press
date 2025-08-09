@@ -4,11 +4,11 @@
 from __future__ import annotations
 
 import typing
-from frappe.tests import IntegrationTestCase
 from unittest.mock import Mock, patch
 
 import frappe
 from frappe.core.utils import find
+from frappe.tests import IntegrationTestCase
 
 from press.api.bench import deploy_information
 from press.api.client import get_list
