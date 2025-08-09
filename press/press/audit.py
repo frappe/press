@@ -593,7 +593,15 @@ class PlanAudit(Audit):
 			)
 			server_plan_info: list[ServerPlanInfo] = query.run(as_dict=True)
 			discrepancies = self.audit_plan_discrepancies(server_plan_info)
-			self.log(discrepancies, status="Failure" if any(discrepancies.values()) else "Success")
+			server_level_discrepancies[server_type] = discrepancies
+
+		self.log(
+			server_level_discrepancies,
+			status="Failure"
+			if any(value for category in server_level_discrepancies.values() for value in category.values())
+			else "Success",
+		)
+
 
 def check_bench_fields():
 	BenchFieldCheck()
