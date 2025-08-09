@@ -516,7 +516,7 @@ class TestArchiveObsoleteBenches(IntegrationTestCase):
 
 			poll_pending_jobs()
 
-		site = create_test_site(bench=bench, fake_agent_jobs=True)
+		site = create_test_site(bench=bench.name, fake_agent_jobs=True)
 
 		self.assertEqual(site.status, "Active")
 
