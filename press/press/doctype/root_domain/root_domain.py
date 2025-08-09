@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 
 import boto3
 import frappe
-from frappe.core.utils import find
 from frappe.model.document import Document
 
 from press.utils import log_error
@@ -34,8 +33,13 @@ class RootDomain(Document):
 		default_proxy_server: DF.Link | None
 		dns_provider: DF.Literal["AWS Route 53", "Generic"]
 		enabled: DF.Check
+		hosted_zone: DF.Data | None
+		parent_domain: DF.Link | None
 		team: DF.Link | None
 	# end: auto-generated types
+
+	def before_insert(self):
+		self.create_hosted_zone()
 
 	def after_insert(self):
 		if self.dns_provider != "Generic" and not frappe.db.exists(
@@ -47,6 +51,42 @@ class RootDomain(Document):
 				"obtain_root_domain_tls_certificate",
 				enqueue_after_commit=True,
 			)
+
+	def on_update(self):
+		if self.dns_provider == "Generic":
+			return
+
+		if self.has_value_changed("default_proxy_server") and self.default_proxy_server:
+			self.add_wildcard_dns_record()
+
+	def add_wildcard_dns_record(self):
+		if self.generic_dns_provider:
+			return
+
+		if not self.hosted_zone:
+			frappe.throw(f"Hosted Zone not found for {self.name}")
+
+		proxy_ip = frappe.db.get_value("Proxy Server", self.default_proxy_server, "ip")
+
+		if not proxy_ip:
+			frappe.throw(f"Proxy Server {self.default_proxy_server} does not have an IP address set.")
+
+		self.boto3_client.change_resource_record_sets(
+			ChangeBatch={
+				"Changes": [
+					{
+						"Action": "UPSERT",
+						"ResourceRecordSet": {
+							"Name": f"*.{self.name}",
+							"Type": "A",
+							"TTL": 600,
+							"ResourceRecords": [{"Value": proxy_ip}],
+						},
+					}
+				]
+			},
+			HostedZoneId=self.hosted_zone.split("/")[-1],
+		)
 
 	def obtain_root_domain_tls_certificate(self):
 		try:
@@ -80,10 +120,59 @@ class RootDomain(Document):
 			)
 		return self._boto3_client
 
+	def guess_hosted_zone(self) -> str | None:
+		zones = self.boto3_client.list_hosted_zones_by_name(DNSName=self.name)["HostedZones"]
+		if not zones:
+			return None
+		return zones[0]["Id"]
+
 	@property
-	def hosted_zone(self):
-		zones = self.boto3_client.list_hosted_zones_by_name()["HostedZones"]
-		return find(reversed(zones), lambda x: self.name.endswith(x["Name"][:-1]))["Id"]
+	def all_zones(self) -> list[str]:
+		"""Get all hosted zones for the root domain"""
+		if self.generic_dns_provider:
+			return []
+
+		return self.boto3_client.list_hosted_zones_by_name()["HostedZones"]
+
+	def add_hosted_zone_ns(self, ns_record: list[str]):
+		if not self.parent_domain:
+			return
+		parent_zone = frappe.get_doc("Root Domain", self.parent_domain).hosted_zone
+
+		self.boto3_client.change_resource_record_sets(
+			ChangeBatch={
+				"Changes": [
+					{
+						"Action": "CREATE",
+						"ResourceRecordSet": {
+							"Name": self.name,
+							"Type": "NS",
+							"TTL": 172800,
+							"ResourceRecords": [{"Value": ns} for ns in ns_record],
+						},
+					}
+				]
+			},
+			HostedZoneId=parent_zone,
+		)
+
+	def create_hosted_zone(self):
+		if self.generic_dns_provider:
+			return
+			# If the hosted zone already exists, we can safely ignore this error
+		if not self.hosted_zone:
+			zone = self.boto3_client.create_hosted_zone(
+				Name=self.name,
+				CallerReference=str(datetime.now()),
+				HostedZoneConfig={
+					"Comment": f"Press Root Domain for {self.default_cluster}",
+					"PrivateZone": False,
+				},
+			)
+			self.hosted_zone = zone["HostedZone"]["Id"]
+		else:
+			zone = self.boto3_client.get_hosted_zone(Id=self.hosted_zone.split("/")[-1])
+		self.add_hosted_zone_ns(zone["DelegationSet"]["NameServers"])
 
 	def get_dns_record_pages(self) -> Iterable:
 		try:
