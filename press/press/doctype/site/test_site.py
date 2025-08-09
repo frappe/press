@@ -13,7 +13,7 @@ from frappe.model.naming import make_autoname
 from frappe.tests import IntegrationTestCase
 
 from press.exceptions import InsufficientSpaceOnServer
-from press.press.doctype.agent_job.agent_job import AgentJob
+from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.database_server.test_database_server import (
@@ -100,7 +100,6 @@ def create_test_bench(
 	return bench
 
 
-@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 def create_test_site(
 	subdomain: str = "",
 	new: bool = False,
@@ -114,46 +113,64 @@ def create_test_site(
 	remote_public_file=None,
 	remote_private_file=None,
 	remote_config_file=None,
+	fake_agent_jobs: bool = False,
 	**kwargs,
 ) -> Site:
 	"""Create test Site doc.
 
 	Installs all apps present in bench.
 	"""
-	creation = creation or frappe.utils.now_datetime()
-	subdomain = subdomain or make_autoname("test-site-.#####")
-	apps = [{"app": app} for app in apps] if apps else None
-	if not bench:
-		bench = create_test_bench(server=server, public_server=kwargs.get("public_server", False))
+	from press.press.doctype.agent_job.test_agent_job import fake_agent_job
+
+	if fake_agent_jobs:
+		context = fake_agent_job(
+			{
+				"New Site": {"status": "Success"},
+				"Update Site Configuration": {"status": "Success"},
+				"Add Site to Upstream": {"status": "Success"},
+			}
+		)
 	else:
-		bench = frappe.get_doc("Bench", bench)
-	group = frappe.get_doc("Release Group", bench.group)
+		context = patch.object(AgentJob, "enqueue_http_request", new=Mock())
 
-	status = "Pending" if new else "Active"
-	# on_update checks won't be triggered if not Active
+	with context:
+		creation = creation or frappe.utils.now_datetime()
+		subdomain = subdomain or make_autoname("test-site-.#####")
+		apps = [{"app": app} for app in apps] if apps else None
+		if not bench:
+			bench = create_test_bench(server=server, public_server=kwargs.get("public_server", False))
+		else:
+			bench = frappe.get_doc("Bench", bench)
+		group = frappe.get_doc("Release Group", bench.group)
 
-	site = frappe.get_doc(
-		{
-			"doctype": "Site",
-			"status": status,
-			"subdomain": subdomain,
-			"server": bench.server,
-			"bench": bench.name,
-			"team": team or get_current_team(),
-			"apps": apps or [{"app": app.app} for app in group.apps],
-			"admin_password": "admin",
-			"standby_for_product": standby_for_product,
-			"remote_database_file": remote_database_file,
-			"remote_public_file": remote_public_file,
-			"remote_private_file": remote_private_file,
-			"remote_config_file": remote_config_file,
-		}
-	)
-	site.update(kwargs)
-	site.insert()
-	site.db_set("creation", creation)
-	site.reload()
-	return site
+		status = "Pending" if new else "Active"
+		# on_update checks won't be triggered if not Active
+
+		site = frappe.get_doc(
+			{
+				"doctype": "Site",
+				"status": status,
+				"subdomain": subdomain,
+				"server": bench.server,
+				"bench": bench.name,
+				"team": team or get_current_team(),
+				"apps": apps or [{"app": app.app} for app in group.apps],
+				"admin_password": "admin",
+				"standby_for_product": standby_for_product,
+				"remote_database_file": remote_database_file,
+				"remote_public_file": remote_public_file,
+				"remote_private_file": remote_private_file,
+				"remote_config_file": remote_config_file,
+			}
+		)
+		site.update(kwargs)
+		site.insert()
+		site.db_set("creation", creation)
+		site.reload()
+		if fake_agent_jobs:
+			poll_pending_jobs()
+			site.reload()
+		return site
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
