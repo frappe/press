@@ -19,20 +19,17 @@ if typing.TYPE_CHECKING:
 
 
 class TestARMBuildRecord(IntegrationTestCase):
-	@classmethod
-	def setUpClass(cls):
+	def setUp(self):
+		super().setUp()
+
 		virtual_machine = create_test_virtual_machine(series="f")
 		virtual_machine.create_server()
-		cls.server = frappe.get_last_doc("Server")
+		self.server = frappe.get_last_doc("Server")
 		app = create_test_app()
-		rg = create_test_release_group([app], servers=[cls.server])
-		cls.bench = create_test_bench(group=rg, server=cls.server)
-		cls.build = frappe.get_value("Deploy Candidate Build", {})
-		frappe.db.set_value("Deploy Candidate Build", {"name": cls.build}, field="status", val="Success")
-
-	@classmethod
-	def tearDownClass(cls):
-		frappe.db.rollback()
+		rg = create_test_release_group([app], servers=[self.server.name])
+		self.bench = create_test_bench(group=rg, server=self.server.name)
+		self.build = frappe.get_value("Deploy Candidate Build", {})
+		frappe.db.set_value("Deploy Candidate Build", {"name": self.build}, field="status", val="Success")
 
 	@patch.object(DeployCandidateBuild, "pre_build", new=Mock())
 	def test_build_trigger(self):
