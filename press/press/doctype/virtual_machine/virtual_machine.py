@@ -779,7 +779,7 @@ class VirtualMachine(Document):
 		ROOT_VOLUME_FILTERS = {
 			"AWS EC2": lambda v: v.device == "/dev/sda1",
 			"OCI": lambda v: ".bootvolume." in v.volume_id,
-			"Hetzner": lambda v: v.device == "/dev/sda1",
+			"Hetzner": lambda v: v.device == "/dev/sda",
 		}
 		root_volume_filter = ROOT_VOLUME_FILTERS.get(self.cloud_provider)
 		volume = find(self.volumes, root_volume_filter)
@@ -799,7 +799,7 @@ class VirtualMachine(Document):
 		DATA_VOLUME_FILTERS = {
 			"AWS EC2": lambda v: v.device != "/dev/sda1" and v.device not in temporary_volume_devices,
 			"OCI": lambda v: ".bootvolume." not in v.volume_id and v.device not in temporary_volume_devices,
-			"Hetzner": lambda v: v.device != "/dev/sda1" and v.device not in temporary_volume_devices,
+			"Hetzner": lambda v: v.device != "/dev/sda" and v.device not in temporary_volume_devices,
 		}
 		data_volume_filter = DATA_VOLUME_FILTERS.get(self.cloud_provider)
 		volume = find(self.volumes, data_volume_filter)
@@ -1539,14 +1539,14 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def detach(self, volume_id):
-		if self.cloud_provider == "AWS":
+		if self.cloud_provider == "AWS EC2":
 			volume = find(self.volumes, lambda v: v.volume_id == volume_id)
 			if not volume:
 				return False
 			self.client().detach_volume(
 				Device=volume.device, InstanceId=self.instance_id, VolumeId=volume.volume_id
 			)
-		elif self.cloud_provide == "OCI":
+		elif self.cloud_provider == "OCI":
 			raise NotImplementedError
 		elif self.cloud_provider == "Hetzner":
 			volume = self.client().volumes.get_by_id(volume_id)
@@ -1557,14 +1557,14 @@ class VirtualMachine(Document):
 	@frappe.whitelist()
 	def delete_volume(self, volume_id):
 		if self.detach(volume_id):
-			if self.cloud_provider == "AWS":
+			if self.cloud_provider == "AWS EC2":
 				self.wait_for_volume_to_be_available(volume_id)
 				self.client().delete_volume(VolumeId=volume_id)
 			if self.cloud_provider == "OCI":
 				raise NotImplementedError
 			if self.cloud_provider == "Hetzner":
 				vol = self.client().volumes.get_by_id(volume_id)
-				self.client().delete(vol)
+				self.client().volumes.delete(vol)
 		self.sync()
 
 
