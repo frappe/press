@@ -110,13 +110,13 @@ def targets(token=None):
 
 @frappe.whitelist(allow_guest=True, xss_safe=True)
 def alert(*args, **kwargs):
+	user = frappe.session.user
 	try:
 		monitor_token = frappe.db.get_single_value("Press Settings", "monitor_token", cache=True)
 
 		if frappe.request.args.get("key") != monitor_token:
 			raise frappe.ValidationError("Invalid credentials")
 
-		user = str(frappe.session.user)
 		monitor_token = frappe.db.get_single_value("Press Settings", "monitor_token", cache=True)
 
 		if frappe.request.args.get("monitor_token") != monitor_token:
