@@ -48,7 +48,7 @@ jobs:
 
       - name: Get commit details
         run: |
-          git fetch origin backport
+          git fetch origin develop
           COMMITS=$(git log origin/develop..origin/backport_master --pretty=format:"- %h %s")
           echo "$COMMITS" > commits.txt
 
