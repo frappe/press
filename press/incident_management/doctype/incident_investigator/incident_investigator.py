@@ -187,26 +187,26 @@ class IncidentInvestigator(Document):
 			doc_method="investigate",
 		)
 
-	def investigate_proxy_server(self):
-		"""Investigate issues on proxy server"""
-		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
-		for idx, (_, method) in enumerate(self.steps["proxy_investigation_steps"], 0):
-			self.proxy_investigation_steps[idx].is_likely_cause = method(instance=proxy_server)
+	def _investigate_component(self, component_field: str, step_key: str, step_attr: str):
+		"""Generic investigation method for f/n/m servers."""
+		component = frappe.db.get_value("Server", self.server, component_field)
+		for idx, (_, method) in enumerate(self.steps[step_key]):
+			getattr(self, step_attr)[idx].is_likely_cause = method(instance=component)
 			self.save()
+
+	def investigate_proxy_server(self):
+		"""Investigate potential issues with the proxy server."""
+		self._investigate_component("proxy_server", "proxy_investigation_steps", "proxy_investigation_steps")
 
 	def investigate_database_server(self):
-		"""Investigate issues on database server"""
-		database_server = frappe.db.get_value("Server", self.server, "database_server")
-		for idx, (_, method) in enumerate(self.steps["database_investigation_steps"], 0):
-			self.database_investigation_steps[idx].is_likely_cause = method(instance=database_server)
-			self.save()
+		"""Investigate potential issues with the database server."""
+		self._investigate_component(
+			"database_server", "database_investigation_steps", "database_investigation_steps"
+		)
 
 	def investigate_server(self):
-		"""Investigate issues on application server"""
-		server = frappe.db.get_value("Server", self.server, "name")
-		for idx, (_, method) in enumerate(self.steps["server_investigation_steps"], 0):
-			self.server_investigation_steps[idx].is_likely_cause = method(instance=server)
-			self.save()
+		"""Investigate potential issues with the main application server."""
+		self._investigate_component("name", "server_investigation_steps", "server_investigation_steps")
 
 	def investigate(self):
 		"""
