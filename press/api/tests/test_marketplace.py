@@ -241,8 +241,8 @@ class TestAPIMarketplace(FrappeTestCase):
 		self.assertEqual(apps[0].name, self.marketplace_app.name)
 
 	def test_get_app(self):
-		app = get_app("erpnext")
-		self.assertEqual(app.name, "erpnext")
+		app = get_app(self.app.name)
+		self.assertEqual(app.name, self.app.name)
 
 	def test_update_app_title(self):
 		frappe.set_user(self.team.user)
@@ -311,7 +311,7 @@ class TestAPIMarketplace(FrappeTestCase):
 			sources=[{"version": self.version, "source": group2.apps[0].source}],
 		)
 		create_app_plan(frappe_app.name, self.plan_data)
-		apps = get_apps_with_plans(["frappe", "erpnext"], group2.name)
+		apps = get_apps_with_plans(["frappe", self.app.name], group2.name)
 		self.assertEqual(apps[0].name, frappe_app.name)
 
 	def test_publisher_profile(self):
