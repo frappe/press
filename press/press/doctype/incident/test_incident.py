@@ -9,15 +9,7 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
-<<<<<<< HEAD
-<<<<<<< HEAD
 from frappe.tests.utils import FrappeTestCase
-=======
-from frappe.tests import IntegrationTestCase
->>>>>>> 8363870d5 (test: Replace FrappeTestCase with IntegrationTestCase and fix setUp)
-=======
-from frappe.tests.utils import FrappeTestCase
->>>>>>> 8d002f58b (test: Change IntegrationTestCase to FrappeTestCase)
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from twilio.base.exceptions import TwilioRestException
@@ -425,13 +417,8 @@ class TestIncident(FrappeTestCase):
 		incident.reload()
 		self.assertEqual(incident.status, "Auto-Resolved")
 
-<<<<<<< HEAD
 	@patch.object(Incident, "sites_down", new=[])
 	def test_threshold_field_is_checked_before_calling(self):
-=======
-	@patch.object(Incident, "sites_down", return_value=["a.fc.com", "b.fc.com"])
-	def test_threshold_field_is_checked_before_calling(self, mock_sites_down):
->>>>>>> 637a7bdd1 (test(incident): Fix the test cases)
 		create_test_alertmanager_webhook_log()
 		incident = frappe.get_last_doc("Incident")
 		incident.db_set("creation", frappe.utils.add_to_date(frappe.utils.now(), minutes=-1))
@@ -536,13 +523,8 @@ class TestIncident(FrappeTestCase):
 			],
 		}
 
-<<<<<<< HEAD
 	@patch.object(Incident, "sites_down", new=[])
 	def test_high_load_avg_on_resource_makes_it_affected(self):
-=======
-	@patch.object(Incident, "sites_down", return_value=["a.fc.com", "b.fc.com"])
-	def test_high_load_avg_on_resource_makes_it_affected(self, mock_sites_down):
->>>>>>> 637a7bdd1 (test(incident): Fix the test cases)
 		create_test_alertmanager_webhook_log()
 		incident: Incident = frappe.get_last_doc("Incident")
 		with patch(
@@ -557,13 +539,8 @@ class TestIncident(FrappeTestCase):
 		self.assertEqual(incident.resource, incident.server)
 		self.assertEqual(incident.resource_type, "Server")
 
-<<<<<<< HEAD
 	@patch.object(Incident, "sites_down", new=[])
 	def test_no_response_from_monitor_on_resource_makes_it_affected(self):
-=======
-	@patch.object(Incident, "sites_down", return_value=["a.fc.com", "b.fc.com"])
-	def test_no_response_from_monitor_on_resource_makes_it_affected(self, mock_sites_down):
->>>>>>> 637a7bdd1 (test(incident): Fix the test cases)
 		create_test_alertmanager_webhook_log()
 		incident: Incident = frappe.get_last_doc("Incident")
 		incident.identify_affected_resource()
