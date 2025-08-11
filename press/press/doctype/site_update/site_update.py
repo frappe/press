@@ -19,6 +19,7 @@ from frappe.utils.data import cint
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
+from press.exceptions import SiteAlreadyArchived, SiteUnderMaintenance
 from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
 	get_physical_backup_restoration_steps,
 )
@@ -270,11 +271,23 @@ class SiteUpdate(Document):
 
 	@dashboard_whitelist()
 	def start(self):
+		previous_status = self.status
+
 		self.status = "Pending"
 		self.update_start = frappe.utils.now()
 		self.save()
 		site: "Site" = frappe.get_cached_doc("Site", self.site)
-		site.ready_for_move()
+		try:
+			site.ready_for_move()
+		except SiteAlreadyArchived:
+			# There is no point in retrying the update if the site is already archived
+			update_status(self.name, "Fatal")
+		except SiteUnderMaintenance:
+			# Just ignore the update for now
+			# It will be retried later
+			update_status(self.name, previous_status)
+			return
+
 		if self.use_physical_backup:
 			self.deactivate_site()
 		else:

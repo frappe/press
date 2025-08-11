@@ -545,16 +545,22 @@ class PlanAudit(Audit):
 	def audit_plan_discrepancies(self, server_plan_info: list[ServerPlanInfo]) -> Discrepancies:
 		"""Check for discrepancies between plan details and actual virtual machine details"""
 
-		discrepancies = {"machine_type": [], "memory": [], "disk_size": []}
+		messages = {
+			"machine_type": "Incorrect machine type compared to server plan",
+			"memory": "Incorrect memory compared to server plan",
+			"disk_size": "Incorrect disk size compared to server plan",
+		}
+
+		discrepancies = {msg: [] for msg in messages.values()}
 
 		for info in server_plan_info:
 			expected_machine_type = info["plan"].split("-")[0]
 			if info["machine_type"] != expected_machine_type:
-				discrepancies["machine_type"].append(info["name"])
+				discrepancies[messages["machine_type"]].append(info["name"])
 			if info["vm_memory"] != info["plan_memory"]:
-				discrepancies["memory"].append(info["name"])
+				discrepancies[messages["memory"]].append(info["name"])
 			if info["vm_disk_size"] < info["plan_disk_size"]:
-				discrepancies["disk_size"].append(info["name"])
+				discrepancies[messages["disk_size"]].append(info["name"])
 
 		return discrepancies
 
@@ -596,7 +602,6 @@ class PlanAudit(Audit):
 			if any(value for category in server_level_discrepancies.values() for value in category.values())
 			else "Success",
 		)
-
 
 
 def check_bench_fields():

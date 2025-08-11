@@ -720,7 +720,12 @@ class BaseServer(Document, TagHelpers):
 				stderr=subprocess.STDOUT,
 			)
 		except subprocess.CalledProcessError as e:
-			log_error(f"Error removing glassfile: {e.output.decode()}")
+			frappe.log_error(
+				title="Error removing glassfile",
+				message=e.output.decode(),
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+			)
 
 	@frappe.whitelist()
 	def extend_ec2_volume(self, device=None, log: str | None = None):
@@ -1599,7 +1604,6 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		return frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size") * 1024 * 1024 * 1024
 
 	def size_to_increase_by_for_20_percent_available(self, mountpoint: str):  # min 50 GB, max 250 GB
-		print("checking increment")
 		projected_usage = self.disk_capacity(mountpoint) - self.space_available_in_6_hours(mountpoint) * 5
 		projected_growth_gb = abs(projected_usage) / (4 * 1024 * 1024 * 1024)
 

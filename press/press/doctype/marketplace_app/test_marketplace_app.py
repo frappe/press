@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
-import unittest
-from typing import Optional
+from __future__ import annotations
 
 import frappe
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.marketplace_app.utils import (
 	get_rating_percentage_distribution,
@@ -13,9 +12,7 @@ from press.press.doctype.marketplace_app.utils import (
 )
 
 
-def create_test_marketplace_app(
-	app: str, team: Optional[str] = None, sources: Optional[list[dict]] = None
-):
+def create_test_marketplace_app(app: str, team: str | None = None, sources: list[dict] | None = None):
 	marketplace_app = frappe.get_doc(
 		{
 			"doctype": "Marketplace App",
@@ -29,7 +26,7 @@ def create_test_marketplace_app(
 	return marketplace_app
 
 
-class TestMarketplaceApp(unittest.TestCase):
+class TestMarketplaceApp(FrappeTestCase):
 	def test_number_format_util(self):
 		test_cases_map = {
 			0: "0",

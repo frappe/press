@@ -1,14 +1,12 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
 
-import unittest
-
 import frappe
+from frappe.tests.utils import FrappeTestCase
 
 
-class TestFrappeVersion(unittest.TestCase):
+class TestFrappeVersion(FrappeTestCase):
 	def test_create_frappe_version_with_default_dependencies(self):
 		number = 99  # version with no fixtures
 		frappe_version = frappe.get_doc(
