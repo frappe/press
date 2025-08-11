@@ -3,7 +3,7 @@
 
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.cluster.test_cluster import create_test_cluster
 
@@ -44,5 +44,5 @@ def create_test_press_settings():
 	return settings
 
 
-class TestPressSettings(IntegrationTestCase):
+class TestPressSettings(FrappeTestCase):
 	pass

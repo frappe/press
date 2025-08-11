@@ -2,13 +2,13 @@
 # See license.txt
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_team
 
 
-class TestPressRole(IntegrationTestCase):
+class TestPressRole(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 

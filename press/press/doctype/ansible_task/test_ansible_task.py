@@ -3,7 +3,7 @@
 
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 
 def create_test_ansible_play_task(
@@ -28,5 +28,5 @@ def create_test_ansible_play_task(
 	return play
 
 
-class TestAnsibleTask(IntegrationTestCase):
+class TestAnsibleTask(FrappeTestCase):
 	pass

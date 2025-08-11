@@ -2,7 +2,7 @@
 # See license.txt
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.api.notifications import get_unread_count
 from press.press.doctype.agent_job.agent_job import poll_pending_jobs
@@ -17,7 +17,7 @@ from press.press.doctype.release_group.test_release_group import (
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 
 
-class TestPressNotification(IntegrationTestCase):
+class TestPressNotification(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 

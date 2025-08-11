@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import boto3
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 from moto import mock_aws
 
 from press.press.doctype.cluster.cluster import Cluster
@@ -54,7 +54,7 @@ def create_test_cluster(
 	return cluster
 
 
-class TestCluster(IntegrationTestCase):
+class TestCluster(FrappeTestCase):
 	@mock_aws
 	def _setup_fake_vmis(self, series: list[str], cluster: Cluster = None):
 		from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (

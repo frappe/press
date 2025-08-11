@@ -2,7 +2,7 @@
 # See license.txt
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.ssh_key.ssh_key import SSHKey
 
@@ -17,5 +17,5 @@ def create_test_ssh_key() -> SSHKey:
 	).insert(ignore_if_duplicate=True)
 
 
-class TestSSHKey(IntegrationTestCase):
+class TestSSHKey(FrappeTestCase):
 	pass

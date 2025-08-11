@@ -4,7 +4,7 @@
 import frappe
 import requests
 import responses
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.agent import Agent, AgentRequestSkippedException
 from press.press.doctype.agent_request_failure.agent_request_failure import (
@@ -25,7 +25,7 @@ def create_test_agent_request_failure(server, traceback="Traceback", error="Erro
 	return frappe.new_doc("Agent Request Failure", **fields).insert(ignore_permissions=True)
 
 
-class TestAgent(IntegrationTestCase):
+class TestAgent(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 

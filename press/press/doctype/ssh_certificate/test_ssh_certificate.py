@@ -4,7 +4,7 @@
 from unittest.mock import Mock, patch
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.site.test_site import create_test_bench
@@ -17,7 +17,7 @@ from press.press.doctype.user_ssh_key.test_user_ssh_key import create_test_user_
 @patch.object(SSHCertificate, "generate_certificate", new=Mock())
 @patch.object(SSHCertificate, "extract_certificate_details", new=Mock())
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestSSHCertificate(IntegrationTestCase):
+class TestSSHCertificate(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 

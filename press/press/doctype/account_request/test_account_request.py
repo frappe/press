@@ -6,7 +6,7 @@ from __future__ import annotations
 from unittest.mock import patch
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.account_request.account_request import AccountRequest
 
@@ -40,5 +40,5 @@ def create_test_account_request(
 		return account_request
 
 
-class TestAccountRequest(IntegrationTestCase):
+class TestAccountRequest(FrappeTestCase):
 	pass

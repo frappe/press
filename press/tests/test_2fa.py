@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import frappe
 import pyotp
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 from frappe.utils.password import update_password
 
 from press.api.account import (
@@ -21,7 +21,7 @@ from press.api.account import (
 from press.press.doctype.team.test_team import create_test_press_admin_team
 
 
-class Test2FA(IntegrationTestCase):
+class Test2FA(FrappeTestCase):
 	password = "password"
 	recovery_codes_max = 9
 	recovery_codes_length = 16

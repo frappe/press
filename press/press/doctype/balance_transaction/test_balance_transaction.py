@@ -3,12 +3,12 @@
 
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.team.test_team import create_test_team
 
 
-class TestBalanceTransaction(IntegrationTestCase):
+class TestBalanceTransaction(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 

@@ -2,7 +2,7 @@
 # See license.txt
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.team.test_team import create_test_team
 from press.press.doctype.team_deletion_request.team_deletion_request import (
@@ -11,7 +11,7 @@ from press.press.doctype.team_deletion_request.team_deletion_request import (
 from press.utils.test import request_locally_with_host_rewrite
 
 
-class TestTeamDeletionRequest(IntegrationTestCase):
+class TestTeamDeletionRequest(FrappeTestCase):
 	def setUp(self) -> None:
 		super().setUp()
 		self.team = create_test_team()

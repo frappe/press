@@ -11,7 +11,7 @@ from unittest.mock import Mock, patch
 import frappe
 import responses
 from frappe.model.naming import make_autoname
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import AgentJob, lock_doc_updated_by_job
@@ -206,7 +206,7 @@ def fake_agent_job(
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestAgentJob(IntegrationTestCase):
+class TestAgentJob(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 

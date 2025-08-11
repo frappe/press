@@ -2,7 +2,7 @@
 # See license.txt
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.press_user_permission.press_user_permission import (
 	has_user_permission,
@@ -11,7 +11,7 @@ from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_team
 
 
-class TestPressUserPermission(IntegrationTestCase):
+class TestPressUserPermission(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 

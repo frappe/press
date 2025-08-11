@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.root_domain.root_domain import RootDomain
@@ -31,7 +31,7 @@ def create_test_root_domain(
 
 
 @patch.object(AgentJob, "after_insert", new=Mock())
-class TestRootDomain(IntegrationTestCase):
+class TestRootDomain(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
