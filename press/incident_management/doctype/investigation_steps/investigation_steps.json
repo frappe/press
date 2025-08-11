@@ -8,6 +8,7 @@
  "field_order": [
   "column_break_yvnw",
   "step_name",
+  "method",
   "is_likely_cause"
  ],
  "fields": [
@@ -27,13 +28,19 @@
   {
    "fieldname": "column_break_yvnw",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "method",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "method"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-08-11 23:00:59.670285",
+ "modified": "2025-08-11 23:24:31.543050",
  "modified_by": "Administrator",
  "module": "Incident Management",
  "name": "Investigation Steps",

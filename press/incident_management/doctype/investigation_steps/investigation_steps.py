@@ -15,6 +15,7 @@ class InvestigationSteps(Document):
 		from frappe.types import DF
 
 		is_likely_cause: DF.Check
+		method: DF.Data | None
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
