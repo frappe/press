@@ -81,7 +81,7 @@ class TestAPIMarketplace(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 
-		self.app = create_test_app("erpnext", "ERPNext")
+		self.app = create_test_app(frappe.mock("name"), frappe.mock("name"))
 		self.team = create_test_press_admin_team()
 		self.version = "Version 14"
 		self.app_source = create_test_app_source(version=self.version, app=self.app, team=self.team.name)
