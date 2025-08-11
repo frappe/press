@@ -50,7 +50,7 @@ class IncidentInvestigator(Document):
 	def prometheus_client(self) -> PrometheusConnect:
 		return get_prometheus_client()
 
-	def unable_to_investigate(self, step: str, reasoning: str): ...
+	def unable_to_investigate(self, step: str): ...
 
 	def has_high_system_load(self, instance: str, threshold: float) -> bool:
 		"""Check number of processes waiting for cpu time
@@ -175,18 +175,38 @@ class IncidentInvestigator(Document):
 			for step in steps:
 				self.append(
 					steps_for,
-					{"step_name": step[0], "reasoning": "", "is_likely_cause": False},
+					{"step_name": step[0], "is_likely_cause": False},
 				)
 				self.save()
 
 	def after_insert(self):
 		self.add_investigation_steps()
+		frappe.enqueue_doc(
+			doctype=self.doctype,
+			name=self.name,
+			doc_method="investigate",
+		)
 
-	def investigate_proxy_server(self): ...
+	def investigate_proxy_server(self):
+		"""Investigate issues on proxy server"""
+		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
+		for idx, (_, method) in enumerate(self.steps["proxy_investigation_steps"], 0):
+			self.proxy_investigation_steps[idx].is_likely_cause = method(instance=proxy_server)
+			self.save()
 
-	def investigate_database_server(self): ...
+	def investigate_database_server(self):
+		"""Investigate issues on database server"""
+		database_server = frappe.db.get_value("Server", self.server, "database_server")
+		for idx, (_, method) in enumerate(self.steps["database_investigation_steps"], 0):
+			self.database_investigation_steps[idx].is_likely_cause = method(instance=database_server)
+			self.save()
 
-	def investigate_server(self): ...
+	def investigate_server(self):
+		"""Investigate issues on application server"""
+		server = frappe.db.get_value("Server", self.server, "name")
+		for idx, (_, method) in enumerate(self.steps["server_investigation_steps"], 0):
+			self.server_investigation_steps[idx].is_likely_cause = method(instance=server)
+			self.save()
 
 	def investigate(self):
 		"""
@@ -195,5 +215,10 @@ class IncidentInvestigator(Document):
 		Memory Usage - Is the server running out of RAM?
 		Disk Usage - Is storage full?
 		System Load - Are processes queuing up?
+
+		Proxy rules for investigation
+		In addition to able we ping sites need to fast exit in case of likely cause
 		"""
-		...
+		self.investigate_proxy_server()
+		self.investigate_database_server()
+		self.investigate_server()
