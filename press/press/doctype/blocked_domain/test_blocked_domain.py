@@ -2,8 +2,8 @@
 # See license.txt
 
 # import frappe
-import unittest
+from frappe.tests.utils import FrappeTestCase
 
 
-class TestBlockedDomain(unittest.TestCase):
+class TestBlockedDomain(FrappeTestCase):
 	pass

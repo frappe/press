@@ -50,7 +50,7 @@ Eg: We can mock all Agent Job creation calls by decorating the TestCase class li
 
 ```python
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestSite(unittest.TestCase):
+class TestSite(FrappeTestCase):
 ```
 
 We use `patch.object` decorator here so that every instance of `AgentJob`
@@ -145,7 +145,7 @@ from unittest.mock import MagicMock, patch
 
 # this will mock all the frappe.db.commit calls in server.py while in this test suite
 @patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
-class TestBench(unittest.TestCase):
+class TestBench(FrappeTestCase):
 ```
 
 You can also use the patch decorator on test methods too. Eg:
@@ -164,11 +164,10 @@ remote endpoint that's out of our control by adding the `new` argument to the
 method.
 
 > Note: When you use asserts on Mock object, Document comparisons will mostly
-> work as expected as we're overriding **__eq__** of Document class during
+> work as expected as we're overriding \***\*eq\*\*** of Document class during
 > tests (check before_test.py). This is because by default when 2 Document
 > objects are compared, only their `id()` is checked, which will return False
 > as the objects will be different in memory.
-
 
 > Note: If you need to mock some Callable while preserving it's function, (in
 > case you want to do asserts on it, you can use the `wraps` kwarg instead of
@@ -189,6 +188,8 @@ plugins are setup configured nicely, you can even do TDD with ease.
 
 ```python
 def setUp(self):
+   super().setUp()
+
    self.team = create_test_team()
 ```
 
