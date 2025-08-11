@@ -18,7 +18,6 @@ class InvestigationSteps(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		reasoning: DF.SmallText | None
 		step_name: DF.SmallText | None
 	# end: auto-generated types
 
