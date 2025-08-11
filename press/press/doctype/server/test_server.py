@@ -4,11 +4,11 @@
 from __future__ import annotations
 
 import typing
-import unittest
 from unittest.mock import Mock, patch
 
 import frappe
 from frappe.model.naming import make_autoname
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
@@ -70,7 +70,7 @@ def create_test_server(
 
 
 @patch.object(BaseServer, "after_insert", new=Mock())
-class TestServer(unittest.TestCase):
+class TestServer(FrappeTestCase):
 	def test_create_generic_server(self):
 		create_test_press_settings()
 		proxy_server = create_test_proxy_server()

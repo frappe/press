@@ -93,7 +93,6 @@ import { icon } from '../../utils/components';
 import { DashboardError } from '../../utils/error';
 import { DateTimePicker } from 'frappe-ui';
 import SQLResultTable from '../devtools/database/SQLResultTable.vue';
-import Spinner from '../Spinner.vue';
 
 export default {
 	name: 'SiteDatabaseUserLogs',
