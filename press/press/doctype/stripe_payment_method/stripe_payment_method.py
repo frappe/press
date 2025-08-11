@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import frappe
 from frappe.contacts.address_and_contact import load_address_and_contact
@@ -38,7 +37,7 @@ class StripePaymentMethod(Document):
 		team: DF.Link
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"is_default",
 		"expiry_month",
 		"expiry_year",
@@ -46,7 +45,7 @@ class StripePaymentMethod(Document):
 		"name_on_card",
 		"last_4",
 		"stripe_mandate_id",
-	]
+	)
 
 	def onload(self):
 		load_address_and_contact(self)
@@ -66,7 +65,7 @@ class StripePaymentMethod(Document):
 			.distinct()
 		)
 
-		return query
+		return query  # noqa: RET504
 
 	@dashboard_whitelist()
 	def delete(self):
@@ -152,10 +151,17 @@ class StripePaymentMethod(Document):
 		except Exception as e:
 			log_error("Failed to detach payment method from stripe", data=e)
 
+	@frappe.whitelist()
+	def check_mandate_status(self):
+		if not self.stripe_mandate_id:
+			return False
 
-get_permission_query_conditions = get_permission_query_conditions_for_doctype(
-	"Stripe Payment Method"
-)
+		stripe = get_stripe()
+		mandate = stripe.Mandate.retrieve(self.stripe_mandate_id)
+		return mandate.status
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Stripe Payment Method")
 
 
 def on_doctype_update():
