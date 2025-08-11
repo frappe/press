@@ -16,6 +16,11 @@ class TestTeamDeletionRequest(FrappeTestCase):
 		super().setUp()
 		self.team = create_test_team()
 
+	def tearDown(self) -> None:
+		super().tearDown()
+		frappe.db.delete("Team", {"name": self.team.name})
+		frappe.db.truncate("Team Deletion Request")
+
 	@property
 	def team_deletion_request(self):
 		if not getattr(self, "_tdr", None):
