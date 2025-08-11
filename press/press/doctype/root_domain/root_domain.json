@@ -13,7 +13,9 @@
   "column_break_4",
   "dns_provider",
   "aws_access_key_id",
-  "aws_secret_access_key"
+  "aws_secret_access_key",
+  "parent_domain",
+  "hosted_zone"
  ],
  "fields": [
   {
@@ -56,6 +58,7 @@
    "options": "Team"
   },
   {
+   "description": "Setting this will update wildcard record in its hosted zone",
    "fieldname": "default_proxy_server",
    "fieldtype": "Link",
    "label": "Default Proxy Server",
@@ -66,6 +69,21 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled"
+  },
+  {
+   "description": "Eg: frappe.cloud if this is x.frappe.cloud (creates NS record)",
+   "fieldname": "parent_domain",
+   "fieldtype": "Link",
+   "label": "Parent Domain",
+   "options": "Root Domain",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "hosted_zone",
+   "fieldtype": "Data",
+   "label": "Hosted Zone",
+   "placeholder": "If set, won't create on Route53",
+   "set_only_once": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -101,7 +119,7 @@
    "link_fieldname": "domain"
   }
  ],
- "modified": "2025-07-07 13:57:57.363562",
+ "modified": "2025-07-18 15:26:27.393675",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Root Domain",
