@@ -1,7 +1,7 @@
 # Copyright (c) 2025, Frappe and Contributors
 # See license.txt
 import typing
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
@@ -18,6 +18,9 @@ if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
 
 
+@patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
+@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+@patch("press.api.bench.frappe.db.commit", new=MagicMock)
 class TestARMBuildRecord(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
