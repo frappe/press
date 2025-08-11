@@ -1,0 +1,72 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-08-11 13:15:53.610517",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "incident",
+  "server",
+  "server_investigation_steps",
+  "proxy_investigation_steps",
+  "database_investigation_steps"
+ ],
+ "fields": [
+  {
+   "fieldname": "incident",
+   "fieldtype": "Link",
+   "label": "Incident",
+   "options": "Incident"
+  },
+  {
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "label": "Server",
+   "options": "Server"
+  },
+  {
+   "fieldname": "server_investigation_steps",
+   "fieldtype": "Table",
+   "label": "Server Investigation Steps",
+   "options": "Investigation Steps"
+  },
+  {
+   "fieldname": "proxy_investigation_steps",
+   "fieldtype": "Table",
+   "label": "Proxy Investigation Steps",
+   "options": "Investigation Steps"
+  },
+  {
+   "fieldname": "database_investigation_steps",
+   "fieldtype": "Table",
+   "label": "Database Investigation Steps",
+   "options": "Investigation Steps"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-08-11 19:07:43.297162",
+ "modified_by": "Administrator",
+ "module": "Incident Management",
+ "name": "Incident Investigator",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
