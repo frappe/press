@@ -127,7 +127,7 @@ class IncidentInvestigator(Document):
 
 		return mountpoint
 
-	def are_sites_down_proxy(self, instance: str, *_) -> bool:
+	def are_sites_on_proxy_down(self, instance: str, *_) -> bool:
 		"""Randomly sample and ping 10% of sites on proxy"""
 
 		def ping(url: str) -> int:
@@ -165,7 +165,7 @@ class IncidentInvestigator(Document):
 		]
 		return {
 			"proxy_investigation_steps": [
-				(self.are_sites_down_proxy.__doc__, self.are_sites_down_proxy.__name__),
+				(self.are_sites_on_proxy_down.__doc__, self.are_sites_on_proxy_down.__name__),
 				*investigation_steps[1:],
 			],  # Don't care about disk usage in proxy's case
 			"server_investigation_steps": investigation_steps,
