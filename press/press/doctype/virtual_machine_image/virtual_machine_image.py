@@ -180,7 +180,6 @@ class VirtualMachineImage(Document):
 			image = self.client.images.get_by_id(self.image_id)
 			self.status = self.get_hetzner_status_map(image.status)
 			self.size = image.image_size
-			self.root_size = image.disk_size  # This is primary disk size
 		self.save()
 		return self.status
 
