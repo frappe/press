@@ -2,11 +2,11 @@
 # See license.txt
 
 import datetime
-import unittest
 from unittest.mock import MagicMock, Mock, call, patch
 
 import frappe
 import responses
+from frappe.tests.utils import FrappeTestCase
 
 from press.api.site import all
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
@@ -32,10 +32,13 @@ from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.team.test_team import create_test_press_admin_team
+from press.utils.test import foreground_enqueue, foreground_enqueue_doc
 
 
-class TestAPISite(unittest.TestCase):
+class TestAPISite(FrappeTestCase):
 	def setUp(self):
+		super().setUp()
+
 		self.team = create_test_press_admin_team()
 		self.team.allocate_credit_amount(1000, source="Prepaid Credits", remark="Test")
 		self.team.payment_mode = "Prepaid Credits"
@@ -243,6 +246,7 @@ class TestAPISite(unittest.TestCase):
 				"apps": [frappe_app.name],
 				"cluster": cluster.name,
 				"domain": self.domain,
+				"version": "Version 15",
 			}
 		)["site"]
 		site = frappe.get_doc("Site", site_name)
@@ -468,7 +472,8 @@ class TestAPISite(unittest.TestCase):
 	def test_check_dns_(self):
 		pass
 
-	def test_install_app_adds_to_app_list_only_on_successful_job(self):
+	@patch("press.agent.Agent.get_site_apps")
+	def test_install_app_adds_to_app_list_only_on_successful_job(self, mock_get_site_apps):
 		from press.api.site import install_app
 
 		app = create_test_app()
@@ -480,6 +485,7 @@ class TestAPISite(unittest.TestCase):
 		site = create_test_site(bench=bench.name, apps=[app.name])
 		with fake_agent_job("Install App on Site", "Success"):
 			install_app(site.name, app2.name)
+			mock_get_site_apps.return_value = [app.name, app2.name]
 			poll_pending_jobs()
 		site.reload()
 		self.assertEqual(len(site.apps), 2)
@@ -488,12 +494,14 @@ class TestAPISite(unittest.TestCase):
 		site = create_test_site(bench=bench.name, apps=[app.name])
 		with fake_agent_job("Install App on Site", "Failure"):
 			install_app(site.name, app2.name)
+			mock_get_site_apps.return_value = [app.name]
 			poll_pending_jobs()
 		site.reload()
 		self.assertEqual(len(site.apps), 1)
 		self.assertEqual(site.status, "Active")
 
-	def test_uninstall_app_removes_from_list_only_on_success(self):
+	@patch("press.agent.Agent.get_site_apps")
+	def test_uninstall_app_removes_from_list_only_on_success(self, mock_get_site_apps):
 		from press.api.site import uninstall_app
 
 		app = create_test_app()
@@ -505,7 +513,9 @@ class TestAPISite(unittest.TestCase):
 		site = create_test_site(bench=bench.name, apps=[app.name, app2.name])
 		with fake_agent_job("Uninstall App from Site", "Success"):
 			uninstall_app(site.name, app2.name)
+			mock_get_site_apps.return_value = [app.name]
 			poll_pending_jobs()
+
 		site.reload()
 		self.assertEqual(len(site.apps), 1)
 		self.assertEqual(site.status, "Active")
@@ -513,6 +523,7 @@ class TestAPISite(unittest.TestCase):
 		site = create_test_site(bench=bench.name, apps=[app.name, app2.name])
 		with fake_agent_job("Uninstall App from Site", "Failure"):
 			uninstall_app(site.name, app2.name)
+			mock_get_site_apps.return_value = [app.name, app2.name]
 			poll_pending_jobs()
 		site.reload()
 		self.assertEqual(len(site.apps), 2)
@@ -673,17 +684,20 @@ insights 0.8.3	    HEAD
 		database = create_test_remote_file().name
 		public = create_test_remote_file().name
 		private = create_test_remote_file().name
-		with fake_agent_job(
-			"New Site from Backup",
-			"Success",
-			data=frappe._dict(
-				output="""frappe	15.0.0-dev HEAD
+		with (
+			fake_agent_job(
+				"New Site from Backup",
+				"Success",
+				data=frappe._dict(
+					output="""frappe	15.0.0-dev HEAD
 erpnext 0.8.3	    HEAD
 """
+				),
 			),
-		), fake_agent_job(
-			"Add Site to Upstream",
-			"Success",
+			fake_agent_job(
+				"Add Site to Upstream",
+				"Success",
+			),
 		):
 			new(
 				{
@@ -753,6 +767,8 @@ erpnext 0.8.3	    HEAD
 	)
 	@patch("press.press.doctype.site.site.create_dns_record", new=Mock())
 	@patch("press.press.doctype.site_migration.site_migration.frappe.db.commit", new=MagicMock)
+	@patch("press.press.doctype.agent_job.agent_job.frappe.enqueue_doc", new=foreground_enqueue_doc)
+	@patch("press.press.doctype.agent_job.agent_job.frappe.enqueue", new=foreground_enqueue)
 	def test_site_change_region(self):
 		from press.api.site import change_region, change_region_options
 
@@ -769,7 +785,8 @@ erpnext 0.8.3	    HEAD
 			},
 		)
 		group.save()
-		bench = create_test_bench(group=group, server=tokyo_server.name)
+		with fake_agent_job("New Bench"):
+			tokyo_server_bench = create_test_bench(group=group, server=tokyo_server.name)
 
 		group.append(
 			"servers",
@@ -778,9 +795,10 @@ erpnext 0.8.3	    HEAD
 			},
 		)
 		group.save()
+		with fake_agent_job("New Bench"):
+			create_test_bench(group=group, server=seoul_server.name)
 
-		create_test_bench(group=group, server=seoul_server.name)
-		site = create_test_site(bench=bench.name)
+		site = create_test_site(bench=tokyo_server_bench.name)
 
 		options = change_region_options(site.name)
 
@@ -790,7 +808,7 @@ erpnext 0.8.3	    HEAD
 		)
 		self.assertEqual(options["current_region"], tokyo_server.cluster)
 
-		with fake_agent_job("Update Site Migrate"):
+		with fake_agent_job("Update Site Migrate") and fake_agent_job("Backup Site"):
 			responses.post(
 				f"https://{site.server}:443/agent/benches/{site.bench}/sites/{site.host_name}/config",
 				json={"jobs": []},
@@ -911,7 +929,7 @@ erpnext 0.8.3	    HEAD
 			True,
 		)
 
-		with fake_agent_job("Update Site Migrate"):
+		with fake_agent_job("Update Site Migrate") and fake_agent_job("Backup Site"):
 			responses.post(
 				f"https://{site.server}:443/agent/benches/{site.bench}/sites/{site.host_name}/config",
 				json={"jobs": []},
@@ -932,10 +950,12 @@ erpnext 0.8.3	    HEAD
 		pass
 
 
-class TestAPISiteList(unittest.TestCase):
+class TestAPISiteList(FrappeTestCase):
 	def setUp(self):
 		from press.press.doctype.press_tag.test_press_tag import create_and_add_test_tag
 		from press.press.doctype.site.test_site import create_test_site
+
+		super().setUp()
 
 		app = create_test_app()
 		group = create_test_release_group([app])

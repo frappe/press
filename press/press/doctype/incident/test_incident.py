@@ -132,6 +132,8 @@ def get_total_firing_and_resolved_for_resolved_incident(draw) -> tuple[int, int,
 @patch("tenacity.nap.time", new=Mock())  # no sleep
 class TestIncident(FrappeTestCase):
 	def setUp(self):
+		super().setUp()
+
 		self.from_ = "+911234567892"
 		frappe.db.set_single_value("Press Settings", "twilio_account_sid", "test")
 		frappe.db.set_single_value("Press Settings", "twilio_api_key_sid", "test")
@@ -148,6 +150,11 @@ class TestIncident(FrappeTestCase):
 		user2 = create_test_press_admin_team().user
 		self.test_phno_1 = "+911234567890"
 		self.test_phno_2 = "+911234567891"
+
+		# Purge Incident Settings if exists
+		if frappe.db.exists("Incident Settings"):
+			frappe.delete_doc("Incident Settings", "Incident Settings")
+
 		frappe.get_doc(
 			{
 				"doctype": "Incident Settings",
@@ -164,9 +171,8 @@ class TestIncident(FrappeTestCase):
 			}
 		).insert()
 
-	@patch.object(
-		MockTwilioCallList,
-		"create",
+	@patch(
+		"press.press.doctype.incident.test_incident.MockTwilioCallList.create",
 		wraps=MockTwilioCallList("busy").create,
 	)
 	def test_incident_creation_places_phone_call_to_all_humans_in_incident_team_if_no_one_picks_up(
@@ -190,7 +196,10 @@ class TestIncident(FrappeTestCase):
 			url="http://demo.twilio.com/docs/voice.xml",
 		)
 
-	@patch.object(MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create)
+	@patch(
+		"press.press.doctype.incident.test_incident.MockTwilioCallList.create",
+		wraps=MockTwilioCallList("completed").create,
+	)
 	def test_incident_calls_only_one_person_if_first_person_picks_up(self, mock_calls_create: Mock):
 		frappe.get_doc(
 			{
@@ -200,7 +209,10 @@ class TestIncident(FrappeTestCase):
 		).insert().call_humans()
 		self.assertEqual(mock_calls_create.call_count, 1)
 
-	@patch.object(MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create)
+	@patch(
+		"press.press.doctype.incident.test_incident.MockTwilioCallList.create",
+		wraps=MockTwilioCallList("completed").create,
+	)
 	def test_incident_calls_stop_for_in_progress_state(self, mock_calls_create):
 		incident = frappe.get_doc(
 			{
@@ -213,7 +225,10 @@ class TestIncident(FrappeTestCase):
 		incident.reload()
 		self.assertEqual(len(incident.updates), 1)
 
-	@patch.object(MockTwilioCallList, "create", wraps=MockTwilioCallList("ringing").create)
+	@patch(
+		"press.press.doctype.incident.test_incident.MockTwilioCallList.create",
+		wraps=MockTwilioCallList("ringing").create,
+	)
 	def test_incident_calls_next_person_after_retry_limit(self, mock_calls_create):
 		frappe.get_doc(
 			{
@@ -272,7 +287,10 @@ class TestIncident(FrappeTestCase):
 			incident.reload()
 			self.assertEqual(len(incident.updates), 2)
 
-	@patch.object(MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create)
+	@patch(
+		"press.press.doctype.incident.test_incident.MockTwilioCallList.create",
+		wraps=MockTwilioCallList("completed").create,
+	)
 	def test_global_phone_call_alerts_disabled_wont_create_phone_calls(self, mock_calls_create):
 		frappe.db.set_single_value("Incident Settings", "phone_call_alerts", 0)
 		frappe.get_doc(
@@ -311,9 +329,8 @@ class TestIncident(FrappeTestCase):
 		create_test_alertmanager_webhook_log(site=site3)
 		self.assertEqual(frappe.db.count("Incident") - 2, incident_count_before)
 
-	@patch.object(
-		MockTwilioMessageList,
-		"create",
+	@patch(
+		"press.press.doctype.incident.test_incident.MockTwilioMessageList.create",
 		wraps=MockTwilioMessageList().create,
 	)
 	def test_incident_creation_sends_text_message(self, mock_messages_create: Mock):
@@ -420,7 +437,10 @@ class TestIncident(FrappeTestCase):
 		incident.reload()
 		self.assertEqual(incident.status, "Validating")
 
-	@patch.object(MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create)
+	@patch(
+		"press.press.doctype.incident.test_incident.MockTwilioCallList.create",
+		wraps=MockTwilioCallList("completed").create,
+	)
 	def test_calls_repeated_for_acknowledged_incidents(self, mock_calls_create):
 		create_test_alertmanager_webhook_log()
 		incident = frappe.get_last_doc("Incident")
@@ -449,23 +469,25 @@ class TestIncident(FrappeTestCase):
 			incident.creation
 			- timedelta(seconds=CONFIRMATION_THRESHOLD_SECONDS_NIGHT + CALL_THRESHOLD_SECONDS_NIGHT + 10),
 		)
-		with patch.object(
-			MockTwilioCallList,
-			"create",
+
+		with patch(
+			"press.press.doctype.incident.test_incident.MockTwilioCallList.create",
 			side_effect=[
 				MockTwilioCallList("busy").create(),
 				MockTwilioCallList("completed").create(),
 			],
-		) as mock_calls_create:
+		):
 			resolve_incidents()  # second guy picks up
+
 		incident.reload()
 		incident.db_set(
 			"modified",
 			incident.modified - timedelta(seconds=CALL_REPEAT_INTERVAL_NIGHT + 10),
 			update_modified=False,
 		)
-		with patch.object(
-			MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create
+		with patch(
+			"press.press.doctype.incident.test_incident.MockTwilioCallList.create",
+			wraps=MockTwilioCallList("completed").create,
 		) as mock_calls_create:
 			resolve_incidents()
 			mock_calls_create.assert_called_with(
