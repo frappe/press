@@ -186,6 +186,10 @@ class Incident(WebsiteGenerator):
 
 	def confirm(self):
 		self.status = "Confirmed"
+		incident_investigator = frappe.get_doc(
+			{"doctype": "Incident Investigator", "incident": self.name, "server": self.server}
+		)  # Start handing off to incident manager
+		incident_investigator.insert(ignore_permissions=True)
 		self.identify_affected_resource()  # assume 1 resource; Occam's razor
 		self.identify_problem()
 		self.take_grafana_screenshots()

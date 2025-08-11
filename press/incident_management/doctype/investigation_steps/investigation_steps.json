@@ -1,0 +1,53 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-08-11 13:35:40.818642",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "column_break_yvnw",
+  "step_name",
+  "reasoning",
+  "is_likely_cause"
+ ],
+ "fields": [
+  {
+   "fieldname": "step_name",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Step Name"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_likely_cause",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Likely Cause"
+  },
+  {
+   "fieldname": "column_break_yvnw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reasoning",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Reasoning"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-08-11 21:59:28.854815",
+ "modified_by": "Administrator",
+ "module": "Incident Management",
+ "name": "Investigation Steps",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
