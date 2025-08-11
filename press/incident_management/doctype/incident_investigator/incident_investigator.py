@@ -127,11 +127,14 @@ class IncidentInvestigator(Document):
 
 		return mountpoint
 
-	def are_sites_down_proxy(self, instance: str) -> bool:
+	def are_sites_down_proxy(self, instance: str, *_) -> bool:
 		"""Randomly sample and ping 10% of sites on proxy"""
 
 		def ping(url: str) -> int:
-			return requests.get(url).status_code
+			try:
+				return requests.get(f"https://{url}/api/method/ping", timeout=5).status_code
+			except requests.exceptions.ReadTimeout:
+				return 502
 
 		Site = frappe.qb.DocType("Site")
 		Server = frappe.qb.DocType("Server")
@@ -155,14 +158,14 @@ class IncidentInvestigator(Document):
 	@property
 	def steps(self) -> dict[str, list[tuple[str, "Callable"]]]:
 		investigation_steps = [
-			(self.has_high_disk_usage.__doc__, self.has_high_disk_usage),
-			(self.has_high_memory_usage.__doc__, self.has_high_memory_usage),
-			(self.has_high_cpu_load.__doc__, self.has_high_cpu_load),
-			(self.has_high_system_load.__doc__, self.has_high_system_load),
+			(self.has_high_disk_usage.__doc__, self.has_high_disk_usage.__name__),
+			(self.has_high_memory_usage.__doc__, self.has_high_memory_usage.__name__),
+			(self.has_high_cpu_load.__doc__, self.has_high_cpu_load.__name__),
+			(self.has_high_system_load.__doc__, self.has_high_system_load.__name__),
 		]
 		return {
 			"proxy_investigation_steps": [
-				(self.are_sites_down_proxy.__doc__, self.are_sites_down_proxy),
+				(self.are_sites_down_proxy.__doc__, self.are_sites_down_proxy.__name__),
 				*investigation_steps[1:],
 			],  # Don't care about disk usage in proxy's case
 			"server_investigation_steps": investigation_steps,
@@ -175,38 +178,32 @@ class IncidentInvestigator(Document):
 			for step in steps:
 				self.append(
 					steps_for,
-					{"step_name": step[0], "is_likely_cause": False},
+					{"step_name": step[0], "method": step[1], "is_likely_cause": False},
 				)
 				self.save()
 
 	def after_insert(self):
 		self.add_investigation_steps()
-		frappe.enqueue_doc(
-			doctype=self.doctype,
-			name=self.name,
-			doc_method="investigate",
-		)
 
-	def _investigate_component(self, component_field: str, step_key: str, step_attr: str):
+	def _investigate_component(self, component_field: str, step_key: str):
 		"""Generic investigation method for f/n/m servers."""
 		component = frappe.db.get_value("Server", self.server, component_field)
-		for idx, (_, method) in enumerate(self.steps[step_key]):
-			getattr(self, step_attr)[idx].is_likely_cause = method(instance=component)
+		for step in getattr(self, step_key):
+			method = getattr(self, step.method)
+			step.is_likely_cause = method(instance=component)
 			self.save()
 
 	def investigate_proxy_server(self):
 		"""Investigate potential issues with the proxy server."""
-		self._investigate_component("proxy_server", "proxy_investigation_steps", "proxy_investigation_steps")
+		self._investigate_component("proxy_server", "proxy_investigation_steps")
 
 	def investigate_database_server(self):
 		"""Investigate potential issues with the database server."""
-		self._investigate_component(
-			"database_server", "database_investigation_steps", "database_investigation_steps"
-		)
+		self._investigate_component("database_server", "database_investigation_steps")
 
 	def investigate_server(self):
 		"""Investigate potential issues with the main application server."""
-		self._investigate_component("name", "server_investigation_steps", "server_investigation_steps")
+		self._investigate_component("name", "server_investigation_steps")
 
 	def investigate(self):
 		"""
