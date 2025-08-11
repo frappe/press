@@ -504,7 +504,7 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 			poll_pending_jobs()
 		benches_after = frappe.db.count("Bench", {"status": "Active"})
 		self.assertEqual(benches_before - benches_after, 2)
-		self.assertEqual(mock_archive_by_server.call_count, 2)
+		self.assertEqual(mock_archive_by_server.call_count, 2, msg=f"{frappe.db.get_all('Server')}")
 
 	def test_check_if_archive_agent_job_is_successful(self):
 		with fake_agent_job("New Bench", "Success"):
