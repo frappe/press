@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.press_settings.test_press_settings import (
@@ -16,7 +16,7 @@ from press.utils.test import foreground_enqueue
 
 
 @patch.object(AgentJob, "after_insert", new=Mock())
-class TestGFS(IntegrationTestCase):
+class TestGFS(FrappeTestCase):
 	"""Test Grandfather-father-son rotation scheme of keeping backups."""
 
 	def tearDown(self):
@@ -211,7 +211,7 @@ class TestGFS(IntegrationTestCase):
 		self.assertEqual(len(args[0]), 3 * 2, msg=mock_del_remote_backup_objects.call_args)
 
 
-class TestFIFO(IntegrationTestCase):
+class TestFIFO(FrappeTestCase):
 	"""Test FIFO backup rotation scheme."""
 
 	def tearDown(self):
@@ -269,7 +269,7 @@ class TestFIFO(IntegrationTestCase):
 		self.assertEqual(fifo.offsite_backups_count, 2)
 
 
-class TestBackupRotationScheme(IntegrationTestCase):
+class TestBackupRotationScheme(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 

@@ -5,8 +5,8 @@ from __future__ import annotations
 from unittest.mock import Mock, patch
 
 import frappe
-from frappe.tests import IntegrationTestCase
 from frappe.tests.ui_test_helpers import create_test_user
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.account_request.test_account_request import (
 	create_test_account_request,
@@ -42,7 +42,7 @@ def create_test_team(email: str | None = None, country="India", free_account: bo
 	return team
 
 
-class TestTeam(IntegrationTestCase):
+class TestTeam(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 

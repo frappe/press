@@ -5,7 +5,7 @@
 from unittest.mock import Mock, call, patch
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import AgentJob
@@ -34,7 +34,7 @@ def create_test_site_domain(site: str, domain: str, status: str = "Active") -> S
 
 @patch.object(AgentJob, "after_insert", new=Mock())
 @patch("press.press.doctype.site.site._change_dns_record", new=Mock())
-class TestSiteDomain(IntegrationTestCase):
+class TestSiteDomain(FrappeTestCase):
 	"""Tests for Site Domain Document methods."""
 
 	def tearDown(self):

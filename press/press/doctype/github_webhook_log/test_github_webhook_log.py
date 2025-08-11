@@ -1,8 +1,8 @@
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 
-class TestGitHubWebhookLog(IntegrationTestCase):
+class TestGitHubWebhookLog(FrappeTestCase):
 	pass

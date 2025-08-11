@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import frappe
 from frappe.model.naming import make_autoname
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.api.server import all, change_plan, new
 from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
@@ -111,7 +111,7 @@ def successful_wait_for_cloud_init(self: BaseServer):
 @patch.object(BaseServer, "update_tls_certificate", new=successful_tls_certificate)
 @patch.object(BaseServer, "update_agent_ansible", new=successful_update_agent_ansible)
 @patch.object(Cluster, "check_machine_availability", new=available_check_machine_availability)
-class TestAPIServer(IntegrationTestCase):
+class TestAPIServer(FrappeTestCase):
 	@patch.object(Cluster, "provision_on_aws_ec2", new=Mock())
 	def setUp(self):
 		super().setUp()
@@ -287,7 +287,7 @@ class TestAPIServer(IntegrationTestCase):
 		self.assertEqual(db_server.plan, db_plan_2.name)
 
 
-class TestAPIServerList(IntegrationTestCase):
+class TestAPIServerList(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 

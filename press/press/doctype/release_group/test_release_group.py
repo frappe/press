@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch
 
 import frappe
 from frappe.core.utils import find
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.api.bench import deploy_information
 from press.api.client import get_list
@@ -64,7 +64,7 @@ def create_test_release_group(
 
 
 @patch.object(AppSource, "create_release", create_test_app_release)
-class TestReleaseGroup(IntegrationTestCase):
+class TestReleaseGroup(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 

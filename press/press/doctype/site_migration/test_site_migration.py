@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import frappe
 from frappe.core.utils import find
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.agent_job.agent_job import poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
@@ -58,7 +58,7 @@ BACKUP_JOB_RES = {
 
 
 @patch.object(RemoteFile, "download_link", new="http://test.com")
-class TestSiteMigration(IntegrationTestCase):
+class TestSiteMigration(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 

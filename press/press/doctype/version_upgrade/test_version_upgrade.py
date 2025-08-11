@@ -4,7 +4,7 @@
 from unittest.mock import Mock, patch
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
@@ -24,7 +24,7 @@ def create_test_version_upgrade(site: str, destination_group: str) -> VersionUpg
 
 
 @patch.object(AgentJob, "enqueue_http_request", Mock())
-class TestVersionUpgrade(IntegrationTestCase):
+class TestVersionUpgrade(FrappeTestCase):
 	def tearDown(self) -> None:
 		frappe.db.rollback()
 

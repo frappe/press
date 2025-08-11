@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from unittest.mock import Mock, patch
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob, process_job_updates
 from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
@@ -50,7 +50,7 @@ def create_test_site_backup(
 	return site_backup
 
 
-class TestSiteBackup(IntegrationTestCase):
+class TestSiteBackup(FrappeTestCase):
 	def setUp(self):
 		self.site = create_test_site(subdomain="breadshop")
 		self.site_backup = create_test_site_backup(

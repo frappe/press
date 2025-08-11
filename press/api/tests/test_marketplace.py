@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 import frappe
 import responses
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.api.marketplace import (
 	add_app,
@@ -77,7 +77,7 @@ PAYLOAD = [
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestAPIMarketplace(IntegrationTestCase):
+class TestAPIMarketplace(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 

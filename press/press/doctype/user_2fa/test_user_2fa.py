@@ -2,12 +2,12 @@
 # See license.txt
 
 # import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.user_2fa.user_2fa import User2FA
 
 
-class TestUser2FA(IntegrationTestCase):
+class TestUser2FA(FrappeTestCase):
 	def test_generate_secret(self):
 		recovery_codes = list(User2FA.generate_recovery_codes())
 		self.assertEqual(len(recovery_codes), User2FA.recovery_codes_max)

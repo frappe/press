@@ -8,7 +8,7 @@ from unittest import skip
 from unittest.mock import Mock, patch
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
@@ -74,7 +74,7 @@ def create_test_deploy_candidate_build(
 
 @patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestDeployCandidate(IntegrationTestCase):
+class TestDeployCandidate(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 

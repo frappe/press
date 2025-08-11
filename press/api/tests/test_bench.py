@@ -8,8 +8,7 @@ import docker
 import frappe
 import requests
 from frappe.core.utils import find
-from frappe.tests import IntegrationTestCase
-from frappe.tests.utils import timeout
+from frappe.tests.utils import FrappeTestCase, timeout
 
 from press.api.bench import (
 	all,
@@ -41,7 +40,7 @@ from press.utils.test import foreground_enqueue_doc
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestAPIBench(IntegrationTestCase):
+class TestAPIBench(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 
@@ -228,7 +227,7 @@ class TestAPIBench(IntegrationTestCase):
 			time.sleep(0.5)
 
 
-class TestAPIBenchConfig(IntegrationTestCase):
+class TestAPIBenchConfig(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 
@@ -545,7 +544,7 @@ class TestAPIBenchConfig(IntegrationTestCase):
 		self.assertEqual(job_data["vcpu"], 2)
 
 
-class TestAPIBenchList(IntegrationTestCase):
+class TestAPIBenchList(FrappeTestCase):
 	def setUp(self):
 		from press.press.doctype.press_tag.test_press_tag import create_and_add_test_tag
 

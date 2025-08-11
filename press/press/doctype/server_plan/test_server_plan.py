@@ -5,7 +5,7 @@ import typing
 
 import frappe
 from frappe.model.naming import make_autoname
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.server_plan.server_plan import ServerPlan
@@ -28,5 +28,5 @@ def create_test_server_plan(server_type: str = "Server") -> "ServerPlan":
 	return server_plan
 
 
-class TestServerPlan(IntegrationTestCase):
+class TestServerPlan(FrappeTestCase):
 	pass

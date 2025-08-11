@@ -4,7 +4,7 @@
 from unittest.mock import Mock, patch
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.agent import Agent
 from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import PrometheusAlertRule
@@ -29,5 +29,5 @@ def create_test_prometheus_alert_rule(name="Sites Down") -> PrometheusAlertRule:
 	).insert(ignore_if_duplicate=True)
 
 
-class TestPrometheusAlertRule(IntegrationTestCase):
+class TestPrometheusAlertRule(FrappeTestCase):
 	pass

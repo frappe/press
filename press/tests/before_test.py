@@ -9,7 +9,7 @@ from typing import Any
 import frappe
 from frappe import set_user as _set_user
 from frappe.model.document import Document
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.utils import _get_current_team, _system_user
 
@@ -23,7 +23,7 @@ def doc_equal(self: Document, other: Document) -> bool:
 	return False
 
 
-def IntegrationTestCase_setUp(self: IntegrationTestCase) -> None:
+def FrappeTestCase_setUp(self) -> None:
 	frappe.clear_cache()
 	frappe.db.truncate("Agent Request Failure")
 	frappe.local.conf.update({"throttle_user_limit": 600})
@@ -41,9 +41,9 @@ def execute():
 	# Monkey patch certain methods for when tests are running
 	Document.__eq__ = doc_equal
 
-	IntegrationTestCase.setUp = IntegrationTestCase_setUp
-	IntegrationTestCase.tearDown = lambda self: frappe.db.rollback()
-	IntegrationTestCase.freeze_time = staticmethod(freeze_time)
+	FrappeTestCase.setUp = FrappeTestCase_setUp
+	FrappeTestCase.tearDown = lambda self: frappe.db.rollback()
+	FrappeTestCase.freeze_time = staticmethod(freeze_time)
 
 	# patch frappe.set_user that
 	frappe.set_user = set_user_with_current_team

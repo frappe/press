@@ -2,8 +2,8 @@
 # See license.txt
 
 
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 
-class TestRegion(IntegrationTestCase):
+class TestRegion(FrappeTestCase):
 	pass

@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import frappe
 import responses
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.agent import Agent
 from press.exceptions import ArchiveBenchError
@@ -45,7 +45,10 @@ if TYPE_CHECKING:
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestStagingSite(IntegrationTestCase):
+@patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
+@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+@patch("press.api.bench.frappe.db.commit", new=MagicMock)
+class TestStagingSite(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
@@ -66,7 +69,7 @@ class TestStagingSite(IntegrationTestCase):
 @patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 @patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
 @patch("press.api.bench.frappe.db.commit", new=MagicMock)
-class TestBench(IntegrationTestCase):
+class TestBench(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
@@ -380,7 +383,9 @@ class TestBench(IntegrationTestCase):
 
 
 @patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
-class TestArchiveObsoleteBenches(IntegrationTestCase):
+@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+@patch("press.api.bench.frappe.db.commit", new=MagicMock)
+class TestArchiveObsoleteBenches(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 

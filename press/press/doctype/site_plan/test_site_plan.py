@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import frappe
 from frappe.model.naming import make_autoname
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 
 def create_test_plan(
@@ -59,7 +59,7 @@ def create_test_plan(
 	return plan
 
 
-class TestSitePlan(IntegrationTestCase):
+class TestSitePlan(FrappeTestCase):
 	def setUp(self):
 		self.plan = create_test_plan("Site")
 
