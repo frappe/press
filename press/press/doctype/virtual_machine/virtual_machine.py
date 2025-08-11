@@ -515,6 +515,9 @@ class VirtualMachine(Document):
 					volume_id=volume.volume_id,
 					update_volume_details=UpdateVolumeDetails(size_in_gbs=volume.size),
 				)
+		elif self.cloud_provider == "Hetzner":
+			volume = self.client().volumes.get_by_id(volume_id)
+			self.client().volumes.resize(volume, increment)
 
 		log_server_activity(
 			self.series,
