@@ -178,10 +178,14 @@ class VirtualMachine(Document):
 		public_net = ServerCreatePublicNetwork(enable_ipv4=True, enable_ipv6=False)
 		ssh_key_name = self.ssh_key
 		ssh_key = self.client().ssh_keys.get_by_name(ssh_key_name)
+
+		self.skip_automated_snapshot = True
+		vmi = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
+		image = self.client().images.get_by_id(vmi.image_id)
 		server_response = self.client().servers.create(
 			name=f"{self.name}",
 			server_type=server_type,
-			image=Image(name="ubuntu-20.04"),
+			image=image if self.virtual_machine_image else Image(name="ubuntu-20.04"),
 			networks=[network],
 			location=location,
 			public_net=public_net,
