@@ -2,7 +2,7 @@
 # See license.txt
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.team.test_team import create_test_team
 
@@ -21,5 +21,5 @@ def create_and_add_test_tag(name: str, doctype: str, tag: str = "test_tag"):
 	return test_tag
 
 
-class TestPressTag(IntegrationTestCase):
+class TestPressTag(FrappeTestCase):
 	pass

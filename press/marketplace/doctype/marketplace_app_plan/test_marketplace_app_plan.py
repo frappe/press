@@ -2,7 +2,7 @@
 # See license.txt
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.marketplace_app.test_marketplace_app import (
@@ -30,5 +30,5 @@ def create_test_marketplace_app_plan(app: str = "frappe"):
 	).insert(ignore_permissions=True)
 
 
-class TestMarketplaceAppPlan(IntegrationTestCase):
+class TestMarketplaceAppPlan(FrappeTestCase):
 	pass

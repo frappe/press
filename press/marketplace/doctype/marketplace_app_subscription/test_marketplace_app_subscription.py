@@ -1,7 +1,7 @@
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.marketplace.doctype.marketplace_app_plan.test_marketplace_app_plan import (
 	create_test_marketplace_app_plan,
@@ -35,5 +35,5 @@ def create_test_marketplace_app_subscription(
 	).insert(ignore_if_duplicate=True)
 
 
-class TestMarketplaceAppSubscription(IntegrationTestCase):
+class TestMarketplaceAppSubscription(FrappeTestCase):
 	pass

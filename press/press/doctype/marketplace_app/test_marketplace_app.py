@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.marketplace_app.utils import (
 	get_rating_percentage_distribution,
@@ -26,7 +26,7 @@ def create_test_marketplace_app(app: str, team: str | None = None, sources: list
 	return marketplace_app
 
 
-class TestMarketplaceApp(IntegrationTestCase):
+class TestMarketplaceApp(FrappeTestCase):
 	def test_number_format_util(self):
 		test_cases_map = {
 			0: "0",

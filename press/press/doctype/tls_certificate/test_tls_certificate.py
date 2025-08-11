@@ -5,7 +5,7 @@ from typing import Literal
 from unittest.mock import Mock, patch
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.proxy_server.proxy_server import ProxyServer
@@ -47,7 +47,7 @@ def fake_extract(self):
 @patch.object(LetsEncrypt, "_obtain", new=Mock())
 @patch.object(BaseCA, "_extract", new=fake_extract)
 @patch.object(TLSCertificate, "_extract_certificate_details", new=Mock())
-class TestTLSCertificate(IntegrationTestCase):
+class TestTLSCertificate(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 

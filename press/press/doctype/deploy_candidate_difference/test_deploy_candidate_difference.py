@@ -4,7 +4,7 @@
 
 from unittest.mock import Mock, patch
 
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.deploy.deploy import create_deploy_candidate_differences
 
@@ -14,5 +14,5 @@ def create_test_deploy_candidate_differences(*args, **kwargs):
 	return create_deploy_candidate_differences(*args, **kwargs)
 
 
-class TestDeployCandidateDifference(IntegrationTestCase):
+class TestDeployCandidateDifference(FrappeTestCase):
 	pass

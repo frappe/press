@@ -5,7 +5,7 @@
 from unittest.mock import patch
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.subscription.subscription import sites_with_free_hosting
@@ -34,7 +34,7 @@ def create_test_subscription(
 	return subscription
 
 
-class TestSubscription(IntegrationTestCase):
+class TestSubscription(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 

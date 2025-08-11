@@ -3,13 +3,13 @@
 
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 
 
-class TestSitePlanChange(IntegrationTestCase):
+class TestSitePlanChange(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 

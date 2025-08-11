@@ -2,7 +2,7 @@
 # See license.txt
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.press_permission_group.press_permission_group import (
 	get_all_restrictable_methods,
@@ -11,7 +11,7 @@ from press.press.doctype.press_permission_group.press_permission_group import (
 from press.press.doctype.team.test_team import create_test_team
 
 
-class TestPressPermissionGroup(IntegrationTestCase):
+class TestPressPermissionGroup(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 

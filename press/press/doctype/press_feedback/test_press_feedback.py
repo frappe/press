@@ -3,8 +3,8 @@
 
 
 # import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 
-class TestPressFeedback(IntegrationTestCase):
+class TestPressFeedback(FrappeTestCase):
 	pass

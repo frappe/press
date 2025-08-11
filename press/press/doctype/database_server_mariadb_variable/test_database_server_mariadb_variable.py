@@ -3,7 +3,7 @@
 from unittest.mock import Mock, patch
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
@@ -13,7 +13,7 @@ from press.utils.test import foreground_enqueue_doc
 
 
 @patch.object(Ansible, "run", new=Mock())
-class TestDatabaseServerMariaDBVariable(IntegrationTestCase):
+class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 

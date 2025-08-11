@@ -6,8 +6,7 @@ import json
 from unittest.mock import patch
 
 import frappe
-from frappe.tests import IntegrationTestCase
-from frappe.tests.utils import change_settings
+from frappe.tests.utils import FrappeTestCase, change_settings
 
 from press.api.tests.test_server import create_test_server_plan
 from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
@@ -18,7 +17,7 @@ from press.press.doctype.self_hosted_server.self_hosted_server import SelfHosted
 from press.press.doctype.team.test_team import create_test_team
 
 
-class TestSelfHostedServer(IntegrationTestCase):
+class TestSelfHostedServer(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 

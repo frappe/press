@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, Mock, call, patch
 
 import frappe
 import responses
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.api.site import all
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
@@ -35,7 +35,7 @@ from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.utils.test import foreground_enqueue, foreground_enqueue_doc
 
 
-class TestAPISite(IntegrationTestCase):
+class TestAPISite(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 
@@ -950,7 +950,7 @@ erpnext 0.8.3	    HEAD
 		pass
 
 
-class TestAPISiteList(IntegrationTestCase):
+class TestAPISiteList(FrappeTestCase):
 	def setUp(self):
 		from press.press.doctype.press_tag.test_press_tag import create_and_add_test_tag
 		from press.press.doctype.site.test_site import create_test_site

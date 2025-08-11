@@ -50,7 +50,7 @@ Eg: We can mock all Agent Job creation calls by decorating the TestCase class li
 
 ```python
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestSite(IntegrationTestCase):
+class TestSite(FrappeTestCase):
 ```
 
 We use `patch.object` decorator here so that every instance of `AgentJob`
@@ -145,7 +145,7 @@ from unittest.mock import MagicMock, patch
 
 # this will mock all the frappe.db.commit calls in server.py while in this test suite
 @patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
-class TestBench(IntegrationTestCase):
+class TestBench(FrappeTestCase):
 ```
 
 You can also use the patch decorator on test methods too. Eg:

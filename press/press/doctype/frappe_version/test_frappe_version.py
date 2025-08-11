@@ -3,10 +3,10 @@
 
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 
-class TestFrappeVersion(IntegrationTestCase):
+class TestFrappeVersion(FrappeTestCase):
 	def test_create_frappe_version_with_default_dependencies(self):
 		number = 99  # version with no fixtures
 		frappe_version = frappe.get_doc(

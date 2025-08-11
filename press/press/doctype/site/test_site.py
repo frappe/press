@@ -10,7 +10,7 @@ import frappe
 import frappe.utils
 import responses
 from frappe.model.naming import make_autoname
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.exceptions import InsufficientSpaceOnServer
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
@@ -175,7 +175,7 @@ def create_test_site(
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 @patch("press.press.doctype.site.site._change_dns_record", new=Mock())
-class TestSite(IntegrationTestCase):
+class TestSite(FrappeTestCase):
 	"""Tests for Site Document methods."""
 
 	def tearDown(self):

@@ -3,8 +3,8 @@
 
 
 # import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 
-class TestSiteConfigKeyBlacklist(IntegrationTestCase):
+class TestSiteConfigKeyBlacklist(FrappeTestCase):
 	pass

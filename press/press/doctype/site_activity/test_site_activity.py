@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.utils import get_current_team
 
@@ -24,5 +24,5 @@ def create_test_site_activity(site: str, action: str) -> SiteActivity:
 	).insert()
 
 
-class TestSiteActivity(IntegrationTestCase):
+class TestSiteActivity(FrappeTestCase):
 	pass

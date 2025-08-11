@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.audit import BackupRecordCheck, OffsiteBackupCheck
 from press.press.doctype.agent_job.agent_job import AgentJob
@@ -17,7 +17,7 @@ from press.telegram_utils import Telegram
 
 @patch.object(Telegram, "send", new=Mock())
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestBackupRecordCheck(IntegrationTestCase):
+class TestBackupRecordCheck(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
@@ -79,7 +79,7 @@ class TestBackupRecordCheck(IntegrationTestCase):
 
 @patch.object(Telegram, "send", new=Mock())
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestOffsiteBackupCheck(IntegrationTestCase):
+class TestOffsiteBackupCheck(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 

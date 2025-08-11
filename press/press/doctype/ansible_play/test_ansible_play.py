@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 if TYPE_CHECKING:
 	from frappe.types.DF import Data
@@ -37,5 +37,5 @@ def create_test_ansible_play(
 	return play
 
 
-class TestAnsiblePlay(IntegrationTestCase):
+class TestAnsiblePlay(FrappeTestCase):
 	pass

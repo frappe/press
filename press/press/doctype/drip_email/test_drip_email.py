@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.account_request.test_account_request import (
 	create_test_account_request,
@@ -46,7 +46,7 @@ def create_test_drip_email(
 	return drip_email
 
 
-class TestDripEmail(IntegrationTestCase):
+class TestDripEmail(FrappeTestCase):
 	def setUp(self) -> None:
 		self.trial_site_plan = create_test_plan("Site", is_trial_plan=True)
 		self.paid_site_plan = create_test_plan("Site", is_trial_plan=False)

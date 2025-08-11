@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from twilio.base.exceptions import TwilioRestException
@@ -130,7 +130,7 @@ def get_total_firing_and_resolved_for_resolved_incident(draw) -> tuple[int, int,
 @patch("press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient)
 @patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
 @patch("tenacity.nap.time", new=Mock())  # no sleep
-class TestIncident(IntegrationTestCase):
+class TestIncident(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 

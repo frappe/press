@@ -2,8 +2,8 @@
 # See license.txt
 
 # import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 
-class TestProductTrialRequest(IntegrationTestCase):
+class TestProductTrialRequest(FrappeTestCase):
 	pass

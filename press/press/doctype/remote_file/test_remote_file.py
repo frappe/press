@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 if TYPE_CHECKING:
 	from datetime import datetime
@@ -34,5 +34,5 @@ def create_test_remote_file(
 	return remote_file
 
 
-class TestRemoteFile(IntegrationTestCase):
+class TestRemoteFile(FrappeTestCase):
 	pass

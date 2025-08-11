@@ -2,12 +2,12 @@
 # For license information, please see license.txt
 from unittest.mock import MagicMock
 
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from backbone.hypervisor import Hypervisor
 
 
-class TestHypervisor(IntegrationTestCase):
+class TestHypervisor(FrappeTestCase):
 	def test_preinstall_pass(self):
 		shell = MagicMock()
 		shell.execute.return_value.returncode = 0

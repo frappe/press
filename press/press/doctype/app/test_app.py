@@ -5,7 +5,7 @@
 from typing import TYPE_CHECKING
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.team.test_team import create_test_team
 
@@ -17,7 +17,7 @@ def create_test_app(name: str = "frappe", title: str = "Frappe Framework") -> "A
 	return frappe.get_doc({"doctype": "App", "name": name, "title": title}).insert(ignore_if_duplicate=True)
 
 
-class TestApp(IntegrationTestCase):
+class TestApp(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
