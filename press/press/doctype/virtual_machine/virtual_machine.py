@@ -1500,7 +1500,7 @@ class VirtualMachine(Document):
 				return None
 
 	@frappe.whitelist()
-	def attach_volume(self, volume_id, is_temporary_volume: bool = False, size=None) -> str:
+	def attach_volume(self, volume_id=None, is_temporary_volume: bool = False, size: int | None = None):
 		"""
 		temporary_volumes: If you are attaching a volume to an instance just for temporary use, then set this to True.
 
@@ -1522,10 +1522,10 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "Hetzner":
 			server_instance = self.client().servers.get_by_id(self.instance_id)
 			new_volume = self.client().volumes.create(
-				automount=True,
-				format="ext4",
-				name=f"{self.series}{self.index}-{slug(self.cluster)}",
 				size=size,
+				name=f"{self.name}-{slug(self.cluster)}",
+				format="ext4",
+				automount=True,
 				server=server_instance,
 			)
 			"""
@@ -1533,7 +1533,7 @@ class VirtualMachine(Document):
 			device_name. linux_device is actually the mountpoint of the volume.
 			Example: linux_device = /mnt/HC_Volume_103061048
 			"""
-			device_name = new_volume.linux_device
+			device_name = new_volume.volume.linux_device
 		self.save()
 		self.sync()
 		return device_name
