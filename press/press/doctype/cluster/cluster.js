@@ -30,5 +30,35 @@ frappe.ui.form.on('Cluster', {
 				);
 			}
 		}
+		if (frm.doc.cloud_provider === 'AWS EC2' && frm.doc.status === 'Active') {
+			// add btn, when clicked creates a prompt and calls check_machine_availability with value input
+			frm.add_custom_button(__('Check Machine Availability'), () => {
+				frappe.prompt(
+					{
+						label: __('Machine Type'),
+						fieldname: 'machine_type',
+						fieldtype: 'Data',
+						reqd: 1,
+					},
+					(values) => {
+						frm.call('check_machine_availability', values).then((r) => {
+							if (r.message) {
+								frappe.show_alert({
+									message: __('Machine is available'),
+									indicator: 'green',
+								});
+							} else {
+								frappe.show_alert({
+									message: __('Machine is not available'),
+									indicator: 'red',
+								});
+							}
+						});
+					},
+					__('Check Machine Availability'),
+					__('Check'),
+				);
+			});
+		}
 	},
 });
