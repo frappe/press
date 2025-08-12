@@ -50,6 +50,7 @@ class IncidentInvestigator(Document):
 		proxy_investigation_steps: DF.Table[InvestigationSteps]
 		server: DF.Link | None
 		server_investigation_steps: DF.Table[InvestigationSteps]
+		status: DF.Literal["Pending", "Investigating", "Completed"]
 	# end: auto-generated types
 
 	@property
@@ -197,9 +198,21 @@ class IncidentInvestigator(Document):
 				)
 				self.save()
 
-	def after_insert(self):
+	def set_prerequisites(self):
+		"""Set investigation window and other thresholds"""
 		self.investigation_window_start_time = parse_datetime(INVESTIGATION_WINDOW)
 		self.investigation_window_end_time = parse_datetime("now")
+		self.high_system_load_threshold = 3 * (
+			frappe.db.get_value("Virtual Machine", self.server, "vcpu") or 4
+		)
+		self.high_disk_usage_threshold_in_gb = 2  # Minimum of 2GB free space should be available
+		self.high_memory_usage_threshold = 95
+		self.high_cpu_load_threshold = 95
+		self.status = "Pending"
+		self.save()
+
+	def after_insert(self):
+		self.set_prerequisites()
 		self.add_investigation_steps()
 
 	def _investigate_component(self, component_field: str, step_key: str):
@@ -233,6 +246,7 @@ class IncidentInvestigator(Document):
 		Proxy rules for investigation
 		In addition to able we ping sites need to fast exit in case of likely cause
 		"""
+		self.status = "Investigating"
 		self.investigate_proxy_server()
 		self.investigate_database_server()
 		self.investigate_server()
