@@ -118,6 +118,18 @@ export default {
 				},
 			};
 		},
+		banner({ listResource: servers }) {
+			if (!servers.data?.length) {
+				return {
+					title: 'Learn how to create a new dedicated server',
+					button: {
+						label: 'Read docs',
+						variant: 'outline',
+						link: 'https://docs.frappe.io/cloud/servers/new',
+					},
+				};
+			}
+		},
 	},
 	detail: {
 		titleField: 'name',
