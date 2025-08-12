@@ -324,13 +324,12 @@ frappe.ui.form.on('Virtual Machine', {
 									label: 'Size',
 									fieldname: 'size',
 									reqd: 1,
-									default: 10,
+									default: 100,
 								},
 							],
 							({ size }) => {
 								frm
-									.call('attach_volume', {
-										volume_id: null,
+									.call('attach_volume_job', {
 										size,
 									})
 									.then((r) => frm.refresh());

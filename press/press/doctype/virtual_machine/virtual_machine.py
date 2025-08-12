@@ -1500,6 +1500,11 @@ class VirtualMachine(Document):
 				return None
 
 	@frappe.whitelist()
+	def attach_volume_job(self):
+		server = frappe.get_doc("Server", self.name)
+		server.run_press_job("Attach Volume")
+
+	@frappe.whitelist()
 	def attach_volume(self, volume_id=None, is_temporary_volume: bool = False, size: int | None = None):
 		"""
 		temporary_volumes: If you are attaching a volume to an instance just for temporary use, then set this to True.
