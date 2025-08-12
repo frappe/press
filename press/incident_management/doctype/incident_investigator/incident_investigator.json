@@ -5,11 +5,21 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "configurations_section",
   "incident",
   "server",
+  "column_break_nl6k",
+  "investigation_window_start_time",
+  "investigation_window_end_time",
+  "investigation_section",
   "server_investigation_steps",
   "proxy_investigation_steps",
-  "database_investigation_steps"
+  "database_investigation_steps",
+  "thresholds_tab",
+  "high_system_load_threshold",
+  "high_disk_usage_threshold_in_gb",
+  "high_cpu_load_threshold",
+  "high_memory_usage_threshold"
  ],
  "fields": [
   {
@@ -41,12 +51,62 @@
    "fieldtype": "Table",
    "label": "Database Investigation Steps",
    "options": "Investigation Steps"
+  },
+  {
+   "fieldname": "thresholds_tab",
+   "fieldtype": "Tab Break",
+   "label": "Thresholds"
+  },
+  {
+   "description": "Minimum free space required on any of the mountpoint",
+   "fieldname": "high_disk_usage_threshold_in_gb",
+   "fieldtype": "Int",
+   "label": "High Disk Usage (GB)"
+  },
+  {
+   "fieldname": "investigation_window_start_time",
+   "fieldtype": "Datetime",
+   "label": "Investigation window start time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "investigation_window_end_time",
+   "fieldtype": "Datetime",
+   "label": "Investigation window end time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "high_system_load_threshold",
+   "fieldtype": "Int",
+   "label": "High System Load "
+  },
+  {
+   "fieldname": "high_cpu_load_threshold",
+   "fieldtype": "Int",
+   "label": "High CPU Load"
+  },
+  {
+   "fieldname": "high_memory_usage_threshold",
+   "fieldtype": "Int",
+   "label": "High Memory Usage"
+  },
+  {
+   "fieldname": "column_break_nl6k",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "investigation_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "configurations_section",
+   "fieldtype": "Section Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-11 19:07:43.297162",
+ "modified": "2025-08-12 14:19:57.734914",
  "modified_by": "Administrator",
  "module": "Incident Management",
  "name": "Incident Investigator",
