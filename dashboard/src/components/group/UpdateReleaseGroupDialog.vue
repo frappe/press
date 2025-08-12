@@ -350,6 +350,9 @@ export default {
 							return h(Checkbox, {
 								modelValue: row.skip_failing_patches,
 								disabled,
+								'onUpdate:modelValue': (val) => {
+									row.skip_failing_patches = val;
+								},
 							});
 						},
 					},
@@ -365,6 +368,9 @@ export default {
 							return h(Checkbox, {
 								modelValue: row.skip_backups,
 								disabled,
+								'onUpdate:modelValue': (val) => {
+									row.skip_backups = val;
+								},
 							});
 						},
 					},
