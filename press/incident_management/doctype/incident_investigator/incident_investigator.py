@@ -64,7 +64,7 @@ class IncidentInvestigator(Document):
 		step.is_unable_to_investigate = True
 		step.save()
 
-	def has_high_system_load(self, instance: str, step: "InvestigationStep") -> bool:
+	def has_high_system_load(self, instance: str, step: "InvestigationStep"):
 		"""Check number of processes waiting for cpu time
 		if the number is higher than 3 times the number of vcpus load is high
 		"""
@@ -84,7 +84,7 @@ class IncidentInvestigator(Document):
 		step.is_likely_cause = float(metric_data.value.mean()) > self.high_system_load_threshold
 		step.save()
 
-	def has_high_cpu_load(self, instance: str, step: "InvestigationStep") -> bool:
+	def has_high_cpu_load(self, instance: str, step: "InvestigationStep"):
 		"""Check high cpu rate during window"""
 		query = f'node_cpu_seconds_total{{instance="{instance}",mode="idle"}}'
 
@@ -108,7 +108,7 @@ class IncidentInvestigator(Document):
 		step.is_likely_cause = cpu_busy_percentage > self.high_cpu_load_threshold
 		step.save()
 
-	def has_high_memory_usage(self, instance: str, step: "InvestigationStep") -> bool:
+	def has_high_memory_usage(self, instance: str, step: "InvestigationStep"):
 		"Determine high memory usage over a period of investigation window"
 		query = f"""
 				(
@@ -135,7 +135,7 @@ class IncidentInvestigator(Document):
 		step.is_likely_cause = float(metric_data.value.mean()) > self.high_memory_usage_threshold
 		step.save()
 
-	def has_high_disk_usage(self, instance: str, step: "InvestigationStep") -> bool:
+	def has_high_disk_usage(self, instance: str, step: "InvestigationStep"):
 		"""Determined if disk is full in any of the relevant mountpoints at present"""
 		is_unreachable = True
 		mountpoints = {"/": False, "/opt/volumes/benches": False, "/opt/volumes/mariadb": False}
@@ -155,7 +155,7 @@ class IncidentInvestigator(Document):
 		step.is_likely_cause = any(mountpoint.values())
 		step.save()
 
-	def are_sites_on_proxy_down(self, instance: str, step: "InvestigationStep", *_) -> bool:
+	def are_sites_on_proxy_down(self, instance: str, step: "InvestigationStep"):
 		"""Randomly sample and ping 10% of sites on proxy"""
 
 		def ping(url: str) -> int:
