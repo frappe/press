@@ -770,6 +770,7 @@ class Cluster(Document):
 		"""
 		return True
 
+	@frappe.whitelist()
 	def check_machine_availability(self, machine_type: str) -> bool:
 		"Check availability of machine in the region before allowing provision"
 		if self.cloud_provider == "AWS EC2":
