@@ -178,10 +178,14 @@ class VirtualMachine(Document):
 		public_net = ServerCreatePublicNetwork(enable_ipv4=True, enable_ipv6=False)
 		ssh_key_name = self.ssh_key
 		ssh_key = self.client().ssh_keys.get_by_name(ssh_key_name)
+
+		self.skip_automated_snapshot = True
+		vmi = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
+		image = self.client().images.get_by_id(vmi.image_id)
 		server_response = self.client().servers.create(
 			name=f"{self.name}",
 			server_type=server_type,
-			image=Image(name="ubuntu-20.04"),
+			image=image if self.virtual_machine_image else Image(name="ubuntu-20.04"),
 			networks=[network],
 			location=location,
 			public_net=public_net,
@@ -465,7 +469,14 @@ class VirtualMachine(Document):
 				shape="VM.Standard3.Flex",
 				lifecycle_state="AVAILABLE",
 			).data
-			return images[0].id
+			if images:
+				return images[0].id
+		if self.cloud_provider == "Hetzner":
+			images = self.client().images.get_all(
+				name="ubuntu-20.04", architecture="x86", sort="created:desc", type="system"
+			)
+			if images:
+				return images[0].id
 		return None
 
 	@frappe.whitelist()
@@ -508,6 +519,11 @@ class VirtualMachine(Document):
 					volume_id=volume.volume_id,
 					update_volume_details=UpdateVolumeDetails(size_in_gbs=volume.size),
 				)
+		elif self.cloud_provider == "Hetzner":
+			if volume_id == "hetzner-root-disk":
+				frappe.throw("Cannot increase disk size for hetzner root disk.")
+			volume = self.client().volumes.get_by_id(volume_id)
+			self.client().volumes.resize(volume, increment)
 
 		log_server_activity(
 			self.series,
@@ -541,6 +557,26 @@ class VirtualMachine(Document):
 				)
 				.data
 			)
+		if self.cloud_provider == "Hetzner":
+			server_instance = self.client().servers.get_by_id(self.instance_id)
+			volumes = []
+			for volume in server_instance.volumes:
+				volume = self.client().volumes.get_by_id(volume.id)
+				volumes.append(volume)
+
+			# This is a dummy/mock representation to make the code compatible
+			# with root_volume code.
+			volumes.append(
+				frappe._dict(
+					{
+						"id": "hetzner-root-disk",
+						"linux_device": "/dev/sda",
+						"size": server_instance.primary_disk_size,
+						"protection": {"delete": False},
+					}
+				)
+			)
+			return volumes
 		return None
 
 	def convert_to_gp3(self):
@@ -581,11 +617,26 @@ class VirtualMachine(Document):
 					frappe.throw(f"{self.name}: Server not found")
 				is_deleted = True
 		if server_instance and not is_deleted:
-			# cluster: Document = frappe.get_doc("Cluster", self.cluster)
 			self.status = self.get_hetzner_status_map()[server_instance.status]
 			self.machine_type = server_instance.server_type.name
 			self.private_ip_address = server_instance.private_net[0].ip
 			self.public_ip_address = server_instance.public_net.ipv4.ip
+
+			existing_volumes = [(vol.volume_id) for vol in self.volumes]
+			for volume in self.get_volumes():
+				if str(volume.id) in existing_volumes:
+					continue
+
+				row = frappe._dict()
+				row.volume_id = volume.id
+				row.size = volume.size
+				row.device = volume.linux_device
+				self.append("volumes", row)
+
+			if volume.protection["delete"]:
+				self.termination_protection = volume.protection["delete"]
+
+			self.has_data_volume = 1
 		else:
 			self.status = "Terminated"
 		self.save()
@@ -738,6 +789,7 @@ class VirtualMachine(Document):
 		ROOT_VOLUME_FILTERS = {
 			"AWS EC2": lambda v: v.device == "/dev/sda1",
 			"OCI": lambda v: ".bootvolume." in v.volume_id,
+			"Hetzner": lambda v: v.device == "/dev/sda",
 		}
 		root_volume_filter = ROOT_VOLUME_FILTERS.get(self.cloud_provider)
 		volume = find(self.volumes, root_volume_filter)
@@ -757,6 +809,7 @@ class VirtualMachine(Document):
 		DATA_VOLUME_FILTERS = {
 			"AWS EC2": lambda v: v.device != "/dev/sda1" and v.device not in temporary_volume_devices,
 			"OCI": lambda v: ".bootvolume." not in v.volume_id and v.device not in temporary_volume_devices,
+			"Hetzner": lambda v: v.device != "/dev/sda" and v.device not in temporary_volume_devices,
 		}
 		data_volume_filter = DATA_VOLUME_FILTERS.get(self.cloud_provider)
 		volume = find(self.volumes, data_volume_filter)
@@ -916,7 +969,13 @@ class VirtualMachine(Document):
 			self.client().modify_instance_attribute(
 				InstanceId=self.instance_id, DisableApiTermination={"Value": False}
 			)
-			self.sync()
+		elif self.cloud_provider == "Hetzner":
+			for volume in self.volumes:
+				volume = self.client().volumes.get_by_id(volume.volume_id)
+				self.termination_protection = self.client().volumes.change_protection(
+					volume=volume, delete=False
+				)
+		self.sync()
 
 	@frappe.whitelist()
 	def enable_termination_protection(self):
@@ -924,7 +983,13 @@ class VirtualMachine(Document):
 			self.client().modify_instance_attribute(
 				InstanceId=self.instance_id, DisableApiTermination={"Value": True}
 			)
-			self.sync()
+		elif self.cloud_provider == "Hetzner":
+			for volume in self.volumes:
+				volume = self.client().volumes.get_by_id(volume.volume_id)
+				self.termination_protection = self.client().volumes.change_protection(
+					volume=volume, delete=False
+				)
+		self.sync()
 
 	@frappe.whitelist()
 	def start(self):
@@ -932,6 +997,9 @@ class VirtualMachine(Document):
 			self.client().start_instances(InstanceIds=[self.instance_id])
 		elif self.cloud_provider == "OCI":
 			self.client().instance_action(instance_id=self.instance_id, action="START")
+		elif self.cloud_provider == "Hetzner":
+			server_instance = self.client().servers.get_by_id(self.instance_id)
+			self.client().servers.power_on(server_instance)
 		self.sync()
 
 	@frappe.whitelist()
@@ -1373,8 +1441,6 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def attach_new_volume(self, size, iops=None, throughput=None):
-		if self.cloud_provider != "AWS EC2":
-			return None
 		volume_options = {
 			"AvailabilityZone": self.availability_zone,
 			"Size": size,
@@ -1433,26 +1499,47 @@ class VirtualMachine(Document):
 			if e.response.get("Error", {}).get("Code") == "InvalidVolumeModification.NotFound":
 				return None
 
-	def attach_volume(self, volume_id, is_temporary_volume: bool = False) -> str:
+	@frappe.whitelist()
+	def attach_volume_job(self):
+		server = frappe.get_doc("Server", self.name)
+		server.run_press_job("Attach Volume")
+
+	@frappe.whitelist()
+	def attach_volume(self, volume_id=None, is_temporary_volume: bool = False, size: int | None = None):
 		"""
 		temporary_volumes: If you are attaching a volume to an instance just for temporary use, then set this to True.
 
 		Then, snapshot and other stuff will be ignored for this volume.
 		"""
-		if self.cloud_provider != "AWS EC2":
+		if self.cloud_provider == "AWS EC2":
+			# Attach a volume to the instance and return the device name
+			device_name = self.get_next_volume_device_name()
+			self.client().attach_volume(
+				Device=device_name,
+				InstanceId=self.instance_id,
+				VolumeId=volume_id,
+			)
+			if is_temporary_volume:
+				# add the volume to the list of temporary volumes
+				self.append("temporary_volumes", {"device": device_name})
+		elif self.cloud_provider == "OCI":
 			raise NotImplementedError
-		# Attach a volume to the instance and return the device name
-		device_name = self.get_next_volume_device_name()
-		self.client().attach_volume(
-			Device=device_name,
-			InstanceId=self.instance_id,
-			VolumeId=volume_id,
-		)
-		if is_temporary_volume:
-			# add the volume to the list of temporary volumes
-			self.append("temporary_volumes", {"device": device_name})
+		elif self.cloud_provider == "Hetzner":
+			server_instance = self.client().servers.get_by_id(self.instance_id)
+			new_volume = self.client().volumes.create(
+				size=size,
+				name=f"{self.name}-{slug(self.cluster)}",
+				format="ext4",
+				automount=True,
+				server=server_instance,
+			)
+			"""
+			This is a temporary assignment of linux_device from Hetzner API to
+			device_name. linux_device is actually the mountpoint of the volume.
+			Example: linux_device = /mnt/HC_Volume_103061048
+			"""
+			device_name = new_volume.volume.linux_device
 		self.save()
-		# sync
 		self.sync()
 		return device_name
 
@@ -1470,21 +1557,37 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def detach(self, volume_id):
-		volume = find(self.volumes, lambda v: v.volume_id == volume_id)
-		if not volume:
-			return False
-		self.client().detach_volume(
-			Device=volume.device, InstanceId=self.instance_id, VolumeId=volume.volume_id
-		)
+		if self.cloud_provider == "AWS EC2":
+			volume = find(self.volumes, lambda v: v.volume_id == volume_id)
+			if not volume:
+				return False
+			self.client().detach_volume(
+				Device=volume.device, InstanceId=self.instance_id, VolumeId=volume.volume_id
+			)
+		elif self.cloud_provider == "OCI":
+			raise NotImplementedError
+		elif self.cloud_provider == "Hetzner":
+			if volume_id == "hetzner-root-disk":
+				frappe.throw("Cannot detach hetzner root disk.")
+			volume = self.client().volumes.get_by_id(volume_id)
+			self.client().volumes.detach(volume)
 		self.sync()
 		return True
 
 	@frappe.whitelist()
 	def delete_volume(self, volume_id):
 		if self.detach(volume_id):
-			self.wait_for_volume_to_be_available(volume_id)
-			self.client().delete_volume(VolumeId=volume_id)
-			self.sync()
+			if self.cloud_provider == "AWS EC2":
+				self.wait_for_volume_to_be_available(volume_id)
+				self.client().delete_volume(VolumeId=volume_id)
+			if self.cloud_provider == "OCI":
+				raise NotImplementedError
+			if self.cloud_provider == "Hetzner":
+				if volume_id == "hetzner-root-disk":
+					frappe.throw("Cannot delete hetzner root disk.")
+				vol = self.client().volumes.get_by_id(volume_id)
+				self.client().volumes.delete(vol)
+		self.sync()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")
