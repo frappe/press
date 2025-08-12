@@ -112,6 +112,18 @@ export default {
 				},
 			};
 		},
+		banner({ listResource: groups }) {
+			if (!groups.data?.length) {
+				return {
+					title: 'Learn how to create a new private bench group and sites',
+					button: {
+						label: 'Read docs',
+						variant: 'outline',
+						link: 'https://docs.frappe.io/cloud/benches/create-new',
+					},
+				};
+			}
+		},
 	},
 	detail: {
 		titleField: 'title',

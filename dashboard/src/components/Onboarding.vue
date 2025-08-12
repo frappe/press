@@ -10,7 +10,8 @@
 			</p>
 		</div>
 		<p class="mt-6 text-base text-gray-800">
-			You are just few steps away from creating your first site.
+			Complete the steps below to unlock sites, bench groups, dedicated servers
+			and more.
 		</p>
 		<div class="mt-6 space-y-6">
 			<div class="rounded-md">
