@@ -8,6 +8,7 @@
   "configurations_section",
   "incident",
   "server",
+  "status",
   "column_break_nl6k",
   "investigation_window_start_time",
   "investigation_window_end_time",
@@ -58,7 +59,7 @@
    "label": "Thresholds"
   },
   {
-   "description": "Minimum free space required on any of the mountpoint",
+   "description": "Minimum free space required on any of the mount point at any time.",
    "fieldname": "high_disk_usage_threshold_in_gb",
    "fieldtype": "Int",
    "label": "High Disk Usage (GB)"
@@ -76,16 +77,20 @@
    "read_only": 1
   },
   {
+   "description": "Maximum number of processes in queue for system to be under high load over the investigation window.",
    "fieldname": "high_system_load_threshold",
    "fieldtype": "Int",
-   "label": "High System Load "
+   "label": "High System Load ",
+   "read_only": 1
   },
   {
+   "description": "Percentage of busy CPU over the investigation window.",
    "fieldname": "high_cpu_load_threshold",
    "fieldtype": "Int",
    "label": "High CPU Load"
   },
   {
+   "description": "Percentage of memory used over the investigation window.",
    "fieldname": "high_memory_usage_threshold",
    "fieldtype": "Int",
    "label": "High Memory Usage"
@@ -101,12 +106,20 @@
   {
    "fieldname": "configurations_section",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nInvestigating\nCompleted",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-12 14:19:57.734914",
+ "modified": "2025-08-12 15:07:36.950088",
  "modified_by": "Administrator",
  "module": "Incident Management",
  "name": "Incident Investigator",
