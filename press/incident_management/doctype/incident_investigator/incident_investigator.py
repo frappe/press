@@ -40,7 +40,13 @@ class IncidentInvestigator(Document):
 		)
 
 		database_investigation_steps: DF.Table[InvestigationSteps]
+		high_cpu_load_threshold: DF.Int
+		high_disk_usage_threshold_in_gb: DF.Int
+		high_memory_usage_threshold: DF.Int
+		high_system_load_threshold: DF.Int
 		incident: DF.Link | None
+		investigation_window_end_time: DF.Datetime | None
+		investigation_window_start_time: DF.Datetime | None
 		proxy_investigation_steps: DF.Table[InvestigationSteps]
 		server: DF.Link | None
 		server_investigation_steps: DF.Table[InvestigationSteps]
@@ -50,21 +56,16 @@ class IncidentInvestigator(Document):
 	def prometheus_client(self) -> PrometheusConnect:
 		return get_prometheus_client()
 
-	def unable_to_investigate(self, step: str): ...
-
-	def has_high_system_load(self, instance: str, threshold: float) -> bool:
+	def has_high_system_load(self, instance: str) -> bool:
 		"""Check number of processes waiting for cpu time
 		if the number is higher than 3 times the number of vcpus load is high
 		"""
-		start_time = parse_datetime(INVESTIGATION_WINDOW)
-		end_time = parse_datetime("now")
-
 		metric_data = self.prometheus_client.get_metric_range_data(
 			metric_name="node_load5",
 			label_config={"instance": instance, "job": "node"},
-			start_time=start_time,
-			end_time=end_time,
-			chunk_size=(end_time - start_time),
+			start_time=self.investigation_window_start_time,
+			end_time=self.investigation_window_end_time,
+			chunk_size=(self.investigation_window_end_time - self.investigation_window_start_time),
 		)
 
 		if not metric_data:
@@ -73,26 +74,34 @@ class IncidentInvestigator(Document):
 			)
 
 		metric_data = MetricRangeDataFrame(metric_data)
-		return metric_data.value.mean() > threshold
+		return float(metric_data.value.mean()) > self.high_system_load_threshold
 
-	def has_high_cpu_load(self, instance: str, threshold: float) -> bool:
-		"""Check high cpu load"""
-		query = f"""
-				100 - (avg by (instance) (
-					rate(node_cpu_seconds_total{{instance="{instance}",mode="idle"}}[{INVESTIGATION_WINDOW}])
-				) * 100)
-				"""
+	def has_high_cpu_load(self, instance: str) -> bool:
+		"""Check high cpu rate during window"""
+		query = f'node_cpu_seconds_total{{instance="{instance}",mode="idle"}}'
 
-		metric_data = self.prometheus_client.get_current_metric_value(query)
-		if not metric_data:
+		metric_data = self.prometheus_client.custom_query_range(
+			query,
+			start_time=self.investigation_window_start_time,
+			end_time=self.investigation_window_end_time,
+			step="1m",
+		)
+
+		if not metric_data or len(metric_data[0]["values"]) < 2:
 			self.unable_to_investigate(
 				"CPU Usage", f"Unable to get node exporter values for instance {instance}"
 			)
 
-		return metric_data[0]["value"][-1] > threshold
+		values = metric_data[0]["values"]
+		cpu_idle_rate = (float(values[-1][1]) - float(values[0][1])) / (
+			self.investigation_window_end_time - self.investigation_window_start_time
+		).total_seconds()
+		cpu_busy_percentage = (1 - cpu_idle_rate) * 100
 
-	def has_high_memory_usage(self, instance: str, threshold: float) -> bool:
-		"Determine high memory usage"
+		return cpu_busy_percentage > self.high_cpu_load_threshold
+
+	def has_high_memory_usage(self, instance: str) -> bool:
+		"Determine high memory usage over a period of investigation window"
 		query = f"""
 				(
 					1 - (
@@ -103,17 +112,23 @@ class IncidentInvestigator(Document):
 				) * 100
 				"""
 
-		metric_data = self.prometheus_client.get_current_metric_value(query)
+		metric_data = self.prometheus_client.custom_query_range(
+			query,
+			start_time=self.investigation_window_start_time,
+			end_time=self.investigation_window_end_time,
+			step="1m",  # Since investigation window is of 5m resolution of 1m is fine for now
+		)
 
 		if not metric_data:
 			self.unable_to_investigate(
 				"Memory Usage", f"Unable to get node exporter values for instance {instance}"
 			)
 
-		return metric_data[0]["value"][-1] > threshold
+		metric_data = MetricRangeDataFrame(metric_data)
+		return float(metric_data.value.mean()) > self.high_memory_usage_threshold
 
-	def has_high_disk_usage(self, instance: str, threshold: float) -> dict[str, bool]:
-		"""Determined if disk is full in any of the relevant mountpoints"""
+	def has_high_disk_usage(self, instance: str) -> bool:
+		"""Determined if disk is full in any of the relevant mountpoints at present"""
 		mountpoints = {"/": False, "/opt/volumes/benches": False, "/opt/volumes/mariadb": False}
 
 		for mountpoint in mountpoints:
@@ -123,9 +138,9 @@ class IncidentInvestigator(Document):
 			metric_data = self.prometheus_client.get_current_metric_value(query)
 			if metric_data:
 				free_space = float(metric_data[0]["value"][-1]) / 1024**3
-				mountpoints[mountpoint] = free_space < threshold
+				mountpoints[mountpoint] = free_space < self.high_disk_usage_threshold_in_gb
 
-		return mountpoint
+		return any(mountpoint.values())
 
 	def are_sites_on_proxy_down(self, instance: str, *_) -> bool:
 		"""Randomly sample and ping 10% of sites on proxy"""
@@ -183,6 +198,8 @@ class IncidentInvestigator(Document):
 				self.save()
 
 	def after_insert(self):
+		self.investigation_window_start_time = parse_datetime(INVESTIGATION_WINDOW)
+		self.investigation_window_end_time = parse_datetime("now")
 		self.add_investigation_steps()
 
 	def _investigate_component(self, component_field: str, step_key: str):
