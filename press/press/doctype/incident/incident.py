@@ -290,17 +290,16 @@ class Incident(WebsiteGenerator):
 		self.add_preventive_suggestion("Enable automatic addition of storage")
 
 	def identify_problem(self):
-		if not self.resource:
-			pong = self.ping_sample_site()
-			if pong and pong == 500:
-				db: DatabaseServer = frappe.get_doc("Database Server", self.database_server)
-				if db.is_disk_full(MARIADB_DATA_MNT_POINT):
-					self.resource_type = "Database Server"
-					self.resource = self.database_server
-					self.type = "Database Down"
-					self.subtype = "Disk full"
-					self.categorize_disk_full_issue()
-					return
+		pong = self.ping_sample_site()
+		if not self.resource and pong and pong == 500:
+			db: DatabaseServer = frappe.get_doc("Database Server", self.database_server)
+			if db.is_disk_full(MARIADB_DATA_MNT_POINT):
+				self.resource_type = "Database Server"
+				self.resource = self.database_server
+				self.type = "Database Down"
+				self.subtype = "Disk full"
+				self.categorize_disk_full_issue()
+				return
 			# TODO: Try more random shit if resource isn't identified
 			# Eg: Check mysql up/ docker up/ container up
 			# Ping site for error code to guess more accurately
