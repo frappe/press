@@ -1,29 +1,31 @@
 # Copyright (c) 2025, Frappe and Contributors
 # See license.txt
 
-# import frappe
-from frappe.tests import IntegrationTestCase, UnitTestCase
 
-# On IntegrationTestCase, the doctype test records and all
-# link-field test record dependencies are recursively loaded
-# Use these module variables to add/remove to/from that list
-EXTRA_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
-IGNORE_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
+from unittest.mock import Mock, patch
 
+import frappe
+from frappe.tests.utils import FrappeTestCase
 
-class UnitTestIncidentInvestigator(UnitTestCase):
-	"""
-	Unit tests for IncidentInvestigator.
-	Use this class for testing individual functions and methods.
-	"""
-
-	pass
+from press.incident_management.doctype.incident_investigator.incident_investigator import (
+	IncidentInvestigator,
+)
+from press.press.doctype.incident.incident import Incident
 
 
-class IntegrationTestIncidentInvestigator(IntegrationTestCase):
-	"""
-	Integration tests for IncidentInvestigator.
-	Use this class for testing interactions between multiple components.
-	"""
+def create_test_incident() -> Incident:
+	return frappe.get_doc(
+		{"doctype": "Incident", "alertname": "Test Alert"},
+	).insert()
 
-	pass
+
+class TestIncidentInvestigator(FrappeTestCase):
+	@patch.object(IncidentInvestigator, "after_insert", Mock())
+	@patch.object(Incident, "identify_affected_resource", Mock())
+	@patch.object(Incident, "identify_problem", Mock())
+	@patch.object(Incident, "take_grafana_screenshots", Mock())
+	def test_investigation_creation_on_incident_confirmation(self):
+		test_incident = create_test_incident()
+		test_incident.confirm()
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+		self.assertEqual(investigator.incident, test_incident.name)
