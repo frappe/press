@@ -15,6 +15,10 @@ from prometheus_api_client.utils import parse_datetime
 if typing.TYPE_CHECKING:
 	from collections.abc import Callable
 
+	from apps.press.press.incident_management.doctype.investigation_step.investigation_step import (
+		InvestigationStep,
+	)
+
 
 INVESTIGATION_WINDOW = "5m"  # Use 5m timeframe
 
@@ -33,13 +37,12 @@ class IncidentInvestigator(Document):
 	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
+		from apps.press.press.incident_management.doctype.investigation_step.investigation_step import (
+			InvestigationStep,
+		)
 		from frappe.types import DF
 
-		from press.incident_management.doctype.investigation_steps.investigation_steps import (
-			InvestigationSteps,
-		)
-
-		database_investigation_steps: DF.Table[InvestigationSteps]
+		database_investigation_steps: DF.Table[InvestigationStep]
 		high_cpu_load_threshold: DF.Int
 		high_disk_usage_threshold_in_gb: DF.Int
 		high_memory_usage_threshold: DF.Int
@@ -47,9 +50,9 @@ class IncidentInvestigator(Document):
 		incident: DF.Link | None
 		investigation_window_end_time: DF.Datetime | None
 		investigation_window_start_time: DF.Datetime | None
-		proxy_investigation_steps: DF.Table[InvestigationSteps]
+		proxy_investigation_steps: DF.Table[InvestigationStep]
 		server: DF.Link | None
-		server_investigation_steps: DF.Table[InvestigationSteps]
+		server_investigation_steps: DF.Table[InvestigationStep]
 		status: DF.Literal["Pending", "Investigating", "Completed"]
 	# end: auto-generated types
 
@@ -57,7 +60,11 @@ class IncidentInvestigator(Document):
 	def prometheus_client(self) -> PrometheusConnect:
 		return get_prometheus_client()
 
-	def has_high_system_load(self, instance: str) -> bool:
+	def is_unable_to_investigate(self, step: "InvestigationStep"):
+		step.is_unable_to_investigate = True
+		step.save()
+
+	def has_high_system_load(self, instance: str, step: "InvestigationStep") -> bool:
 		"""Check number of processes waiting for cpu time
 		if the number is higher than 3 times the number of vcpus load is high
 		"""
@@ -70,14 +77,14 @@ class IncidentInvestigator(Document):
 		)
 
 		if not metric_data:
-			self.unable_to_investigate(
-				"System Load", f"Unable to get node exporter values for instance {instance}"
-			)
+			self.is_unable_to_investigate(step)
+			return
 
 		metric_data = MetricRangeDataFrame(metric_data)
-		return float(metric_data.value.mean()) > self.high_system_load_threshold
+		step.is_likely_cause = float(metric_data.value.mean()) > self.high_system_load_threshold
+		step.save()
 
-	def has_high_cpu_load(self, instance: str) -> bool:
+	def has_high_cpu_load(self, instance: str, step: "InvestigationStep") -> bool:
 		"""Check high cpu rate during window"""
 		query = f'node_cpu_seconds_total{{instance="{instance}",mode="idle"}}'
 
@@ -89,9 +96,8 @@ class IncidentInvestigator(Document):
 		)
 
 		if not metric_data or len(metric_data[0]["values"]) < 2:
-			self.unable_to_investigate(
-				"CPU Usage", f"Unable to get node exporter values for instance {instance}"
-			)
+			self.is_unable_to_investigate(step)
+			return
 
 		values = metric_data[0]["values"]
 		cpu_idle_rate = (float(values[-1][1]) - float(values[0][1])) / (
@@ -99,9 +105,10 @@ class IncidentInvestigator(Document):
 		).total_seconds()
 		cpu_busy_percentage = (1 - cpu_idle_rate) * 100
 
-		return cpu_busy_percentage > self.high_cpu_load_threshold
+		step.is_likely_cause = cpu_busy_percentage > self.high_cpu_load_threshold
+		step.save()
 
-	def has_high_memory_usage(self, instance: str) -> bool:
+	def has_high_memory_usage(self, instance: str, step: "InvestigationStep") -> bool:
 		"Determine high memory usage over a period of investigation window"
 		query = f"""
 				(
@@ -121,29 +128,34 @@ class IncidentInvestigator(Document):
 		)
 
 		if not metric_data:
-			self.unable_to_investigate(
-				"Memory Usage", f"Unable to get node exporter values for instance {instance}"
-			)
+			self.is_unable_to_investigate(step)
+			return
 
 		metric_data = MetricRangeDataFrame(metric_data)
-		return float(metric_data.value.mean()) > self.high_memory_usage_threshold
+		step.is_likely_cause = float(metric_data.value.mean()) > self.high_memory_usage_threshold
+		step.save()
 
-	def has_high_disk_usage(self, instance: str) -> bool:
+	def has_high_disk_usage(self, instance: str, step: "InvestigationStep") -> bool:
 		"""Determined if disk is full in any of the relevant mountpoints at present"""
+		is_unreachable = True
 		mountpoints = {"/": False, "/opt/volumes/benches": False, "/opt/volumes/mariadb": False}
 
 		for mountpoint in mountpoints:
-			query = (
-				f"""node_filesystem_avail_bytes{{instance="{instance}", job="node", mountpoint="{mountpoint}"}}""",
-			)
+			query = f"""node_filesystem_avail_bytes{{instance="{instance}", job="node", mountpoint="{mountpoint}"}}"""
 			metric_data = self.prometheus_client.get_current_metric_value(query)
 			if metric_data:
+				is_unreachable = False  # We need to get metric from atleast one mountpoint
 				free_space = float(metric_data[0]["value"][-1]) / 1024**3
 				mountpoints[mountpoint] = free_space < self.high_disk_usage_threshold_in_gb
 
-		return any(mountpoint.values())
+		if is_unreachable:
+			self.is_unable_to_investigate(step)
+			return
 
-	def are_sites_on_proxy_down(self, instance: str, *_) -> bool:
+		step.is_likely_cause = any(mountpoint.values())
+		step.save()
+
+	def are_sites_on_proxy_down(self, instance: str, step: "InvestigationStep", *_) -> bool:
 		"""Randomly sample and ping 10% of sites on proxy"""
 
 		def ping(url: str) -> int:
@@ -169,7 +181,8 @@ class IncidentInvestigator(Document):
 		sampled_sites = random.sample(sites, sample_size)
 		ping_results = [ping(site) for site in sampled_sites]
 
-		return all(status != 200 for status in ping_results)
+		step.is_likely_cause = all(status != 200 for status in ping_results)
+		step.save()
 
 	@property
 	def steps(self) -> dict[str, list[tuple[str, "Callable"]]]:
@@ -182,7 +195,7 @@ class IncidentInvestigator(Document):
 		return {
 			"proxy_investigation_steps": [
 				(self.are_sites_on_proxy_down.__doc__, self.are_sites_on_proxy_down.__name__),
-				*investigation_steps[1:],
+				# *investigation_steps[1:],
 			],  # Don't care about disk usage in proxy's case
 			"server_investigation_steps": investigation_steps,
 			"database_investigation_steps": investigation_steps,
@@ -194,7 +207,12 @@ class IncidentInvestigator(Document):
 			for step in steps:
 				self.append(
 					steps_for,
-					{"step_name": step[0], "method": step[1], "is_likely_cause": False},
+					{
+						"step_name": step[0],
+						"method": step[1],
+						"is_likely_cause": False,
+						"is_unable_to_investigate": False,
+					},
 				)
 				self.save()
 
@@ -218,10 +236,10 @@ class IncidentInvestigator(Document):
 	def _investigate_component(self, component_field: str, step_key: str):
 		"""Generic investigation method for f/n/m servers."""
 		component = frappe.db.get_value("Server", self.server, component_field)
-		for step in getattr(self, step_key):
+		steps: list[InvestigationStep] = getattr(self, step_key)
+		for step in steps:
 			method = getattr(self, step.method)
-			step.is_likely_cause = method(instance=component)
-			self.save()
+			method(instance=component, step=step)
 
 	def investigate_proxy_server(self):
 		"""Investigate potential issues with the proxy server."""

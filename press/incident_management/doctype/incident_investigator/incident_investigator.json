@@ -39,19 +39,19 @@
    "fieldname": "server_investigation_steps",
    "fieldtype": "Table",
    "label": "Server Investigation Steps",
-   "options": "Investigation Steps"
+   "options": "Investigation Step"
   },
   {
    "fieldname": "proxy_investigation_steps",
    "fieldtype": "Table",
    "label": "Proxy Investigation Steps",
-   "options": "Investigation Steps"
+   "options": "Investigation Step"
   },
   {
    "fieldname": "database_investigation_steps",
    "fieldtype": "Table",
    "label": "Database Investigation Steps",
-   "options": "Investigation Steps"
+   "options": "Investigation Step"
   },
   {
    "fieldname": "thresholds_tab",
@@ -119,7 +119,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-12 15:07:36.950088",
+ "modified": "2025-08-12 15:54:35.985148",
  "modified_by": "Administrator",
  "module": "Incident Management",
  "name": "Incident Investigator",
