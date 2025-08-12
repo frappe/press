@@ -6,26 +6,197 @@ from unittest.mock import Mock, patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from prometheus_api_client import PrometheusConnect
 
 from press.incident_management.doctype.incident_investigator.incident_investigator import (
 	IncidentInvestigator,
 )
 from press.press.doctype.incident.incident import Incident
+from press.press.doctype.server.test_server import (
+	create_test_database_server,
+	create_test_proxy_server,
+	create_test_server,
+)
 
 
-def create_test_incident() -> Incident:
-	return frappe.get_doc(
-		{"doctype": "Incident", "alertname": "Test Alert"},
-	).insert()
+def create_test_incident(server: str = "f1-mumbai.frappe.cloud") -> Incident:
+	return frappe.get_doc({"doctype": "Incident", "alertname": "Test Alert", "server": server}).insert()
 
 
+def get_mock_prometheus_client() -> PrometheusConnect:
+	monitor_server = "monitor.frappe.cloud"
+	password = frappe.mock("password")
+	return PrometheusConnect(f"https://{monitor_server}/prometheus", auth=("frappe", password))
+
+
+def mock_prometheus_connection(*args, **kwargs):
+	return None
+
+
+def mock_disk_usage(is_high: bool = False, mountpoint: str = "/opt/volumes/benches"):
+	def wrapper(*args, **kwargs):
+		return [
+			{
+				"metric": {
+					"__name__": "node_filesystem_avail_bytes",
+					"cluster": "Mumbai",
+					"device": "/dev/nvme1n1p1",
+					"fstype": "ext4",
+					"instance": "f1-mumbai.frappe.cloud",
+					"job": "node",
+					"mountpoint": mountpoint,
+				},
+				"value": [1755018815.605, "383623069" if is_high else "38362306900"],
+			}
+		]
+
+	return wrapper
+
+
+def mock_memory_usage(is_high: bool = False):
+	def wrapper(*args, **kwargs):
+		return [
+			{
+				"metric": {"cluster": "Mumbai", "instance": "f1-mumbai.frappe.cloud", "job": "node"},
+				"values": [
+					[1754985451, "95.2898590348854" if is_high else "25.2898590348854"],
+					[1754985511, "95.4377568478028" if is_high else "25.4377568478028"],
+					[1754985571, "95.52556306561247" if is_high else "25.52556306561247"],
+					[1754985631, "95.36888264068959" if is_high else "25.36888264068959"],
+					[1754985691, "95.46091957826147" if is_high else "25.46091957826147"],
+					[1754985751, "95.56957190519466" if is_high else "25.56957190519466"],
+				],
+			}
+		]
+
+	return wrapper()
+
+
+def mock_system_load(is_high: bool = False):
+	def wrapper(*args, **kwargs):
+		return [
+			{
+				"metric": {
+					"__name__": "node_load5",
+					"cluster": "Mumbai",
+					"instance": "f1-mumbai.frappe.cloud",
+					"job": "node",
+				},
+				"values": [
+					[1754985464.335, "13.95" if is_high else "3.95"],
+					[1754985524.335, "13.17" if is_high else "3.17"],
+					[1754985584.335, "13.8" if is_high else "3.8"],
+					[1754985644.335, "13.63" if is_high else "3.63"],
+					[1754985704.335, "13.01" if is_high else "3.01"],
+				],
+			}
+		]
+
+	return wrapper
+
+
+def mock_cpu_usage(is_high: bool = False):
+	def wrapper(*args, **kwargs):
+		return [
+			{
+				"metric": {
+					"__name__": "node_cpu_seconds_total",
+					"cluster": "Mumbai",
+					"cpu": "0",
+					"instance": "f1-mumbai.frappe.cloud",
+					"job": "node",
+					"mode": "idle",
+				},
+				"values": [
+					[1754985451, "1191266.01" if is_high else "1191166.01"],
+					[1754985751, "1191276.85"],
+				],
+			},
+			{
+				"metric": {
+					"__name__": "node_cpu_seconds_total",
+					"cluster": "Mumbai",
+					"cpu": "3",
+					"instance": "f1-mumbai.frappe.cloud",
+					"job": "node",
+					"mode": "idle",
+				},
+				"values": [[1754985451, "1204578.51"], [1754985751, "1204669.69"]],
+			},
+		]
+
+	return wrapper()
+
+
+def make_custom_query_range_side_effect(is_high: bool = False):
+	def custom_query_range_side_effect(*args, **kwargs):
+		query = args[1] if args else kwargs.get("query")
+
+		if "node_memory_MemAvailable_bytes" in query:
+			return mock_memory_usage(is_high=is_high)
+		if "node_cpu_seconds_total" in query:
+			return mock_cpu_usage(is_high=is_high)
+
+		return []
+
+	return custom_query_range_side_effect
+
+
+@patch(
+	"press.incident_management.doctype.incident_investigator.incident_investigator.get_prometheus_client",
+	get_mock_prometheus_client,
+)
+@patch.object(PrometheusConnect, "__init__", new=mock_prometheus_connection)
+@patch.object(Incident, "identify_affected_resource", Mock())
+@patch.object(Incident, "identify_problem", Mock())
+@patch.object(Incident, "take_grafana_screenshots", Mock())
 class TestIncidentInvestigator(FrappeTestCase):
+	@classmethod
+	def setUpClass(cls):
+		cls.database_server = create_test_database_server()
+		cls.proxy_server = create_test_proxy_server()
+		cls.server = create_test_server(proxy_server=cls.proxy_server, database_server=cls.database_server)
+
 	@patch.object(IncidentInvestigator, "after_insert", Mock())
-	@patch.object(Incident, "identify_affected_resource", Mock())
-	@patch.object(Incident, "identify_problem", Mock())
-	@patch.object(Incident, "take_grafana_screenshots", Mock())
 	def test_investigation_creation_on_incident_confirmation(self):
-		test_incident = create_test_incident()
+		test_incident = create_test_incident(server=self.server)
 		test_incident.confirm()
 		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
 		self.assertEqual(investigator.incident, test_incident.name)
+
+	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=True))
+	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=True))
+	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=True))
+	def test_all_high_metrics(self):
+		"""Since instance is not taken into account while mocking both database and sever will have same likely causes"""
+		test_incident = create_test_incident(self.server)
+		test_incident.confirm()
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+		investigator.investigate_server()
+		investigator.investigate_database_server()
+
+		for step in investigator.server_investigation_steps:
+			self.assertTrue(step.is_likely_cause)
+
+	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=False))
+	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=True))
+	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=False))
+	def test_varied_metrics(self):
+		"""Since instance is not taken into account while mocking both database and sever will have same likely causes"""
+		test_incident = create_test_incident(self.server)
+		test_incident.confirm()
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+		investigator.investigate_server()
+		investigator.investigate_database_server()
+
+		for step in investigator.server_investigation_steps:
+			if step.method == "has_high_disk_usage" or step.method == "has_high_system_load":
+				self.assertFalse(step.is_likely_cause)
+			else:
+				self.assertTrue(step.is_likely_cause)
+
+	@classmethod
+	def tearDownClass(cls):
+		frappe.db.delete("Database Server", cls.database_server)
+		frappe.db.delete("Proxy Server", cls.proxy_server)
+		frappe.db.delete("Server", cls.server)
