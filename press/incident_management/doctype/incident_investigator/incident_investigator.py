@@ -152,7 +152,7 @@ class IncidentInvestigator(Document):
 			self.is_unable_to_investigate(step)
 			return
 
-		step.is_likely_cause = any(mountpoint.values())
+		step.is_likely_cause = any(mountpoints.values())
 		step.save()
 
 	def are_sites_on_proxy_down(self, instance: str, step: "InvestigationStep"):
