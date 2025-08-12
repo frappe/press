@@ -232,6 +232,7 @@ class IncidentInvestigator(Document):
 	def after_insert(self):
 		self.set_prerequisites()
 		self.add_investigation_steps()
+		frappe.enqueue_doc(self.doctype, self.name, "investigate", queue="long")
 
 	def _investigate_component(self, component_field: str, step_key: str):
 		"""Generic investigation method for f/n/m servers."""
@@ -268,3 +269,5 @@ class IncidentInvestigator(Document):
 		self.investigate_proxy_server()
 		self.investigate_database_server()
 		self.investigate_server()
+		self.status = "Completed"
+		self.save()
