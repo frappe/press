@@ -313,6 +313,38 @@ frappe.ui.form.on('Virtual Machine', {
 				},
 				__('Actions'),
 			);
+
+			frm.add_custom_button(
+				'Attach Volume',
+				() => {
+					frappe.prompt(
+						[
+							{
+								fieldtype: 'Data',
+								label: 'Volume ID',
+								fieldname: 'volume_id',
+								reqd: 1,
+							},
+							{
+								fieldtype: 'Check',
+								label: 'Is Temporary Volume ?',
+								fieldname: 'is_temporary_volume',
+								default: 1,
+							},
+						],
+						({ volume_id, is_temporary_volume }) => {
+							frm
+								.call('attach_volume', {
+									volume_id,
+									is_temporary_volume,
+								})
+								.then((r) => frm.refresh());
+						},
+						__('Attach Volume'),
+					);
+				},
+				__('Actions'),
+			);
 		}
 		if (frm.doc.instance_id) {
 			if (frm.doc.cloud_provider === 'AWS EC2') {
