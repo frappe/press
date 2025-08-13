@@ -83,6 +83,7 @@ class Incident(WebsiteGenerator):
 		alert: DF.Link | None
 		alerts: DF.Table[IncidentAlerts]
 		cluster: DF.Link | None
+		corrective_suggestions: DF.Table[IncidentSuggestion]
 		description: DF.TextEditor | None
 		likely_cause: DF.Text | None
 		phone_call: DF.Check
@@ -105,7 +106,6 @@ class Incident(WebsiteGenerator):
 		]
 		subject: DF.Data | None
 		subtype: DF.Literal["High CPU: user", "High CPU: iowait", "Disk full"]
-		suggestions: DF.Table[IncidentSuggestion]
 		type: DF.Literal["Database Down", "Server Down", "Proxy Down"]
 		updates: DF.Table[IncidentUpdates]
 	# end: auto-generated types
