@@ -123,6 +123,14 @@ class Incident(WebsiteGenerator):
 		return bool(frappe.db.get_single_value("Incident Settings", "email_alerts", cache=True))
 
 	def after_insert(self):
+		"""
+		Start investigating the incident since we have already waited 5m before creating it
+		send sms and email notifications
+		"""
+		incident_investigator = frappe.get_doc(
+			{"doctype": "Incident Investigator", "incident": self.name, "server": self.server}
+		)
+		incident_investigator.insert(ignore_permissions=True)
 		self.send_sms_via_twilio()
 		self.send_email_notification()
 
@@ -186,10 +194,6 @@ class Incident(WebsiteGenerator):
 
 	def confirm(self):
 		self.status = "Confirmed"
-		incident_investigator = frappe.get_doc(
-			{"doctype": "Incident Investigator", "incident": self.name, "server": self.server}
-		)  # Start handing off to incident manager
-		incident_investigator.insert(ignore_permissions=True)
 		self.identify_affected_resource()  # assume 1 resource; Occam's razor
 		self.identify_problem()
 		self.take_grafana_screenshots()
