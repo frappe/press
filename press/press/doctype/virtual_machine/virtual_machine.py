@@ -160,6 +160,41 @@ class VirtualMachine(Document):
 				server.has_data_volume = self.has_data_volume
 				server.save()
 
+		if self.has_value_changed("disk_size"):
+			server = self.get_server()
+			server_plan_size = frappe.db.get_value("Server Plan", server.plan, "disk")
+
+			if server_plan_size and self.disk_size > server_plan_size:
+				# Add on storage was added or updated
+				increment = self.disk_size - server_plan_size
+				if frappe.db.exists(
+					"Subscription",
+					{"document_name": server.name, "team": server.team, "plan_type": "Server Storage Plan"},
+				):
+					# update the existing subscription
+					frappe.db.set_value(
+						"Subscription",
+						{
+							"document_name": server.name,
+							"team": server.team,
+							"plan_type": "Server Storage Plan",
+						},
+						"additional_storage",
+						increment,
+					)
+				else:
+					# create a new subscription
+					frappe.get_doc(
+						doctype="Subscription",
+						team=server.team,
+						plan_type="Server Storage Plan",
+						plan="Add-on Storage plan",
+						document_type=server.doctype,
+						document_name=server.name,
+						additional_storage=increment,
+						enabled=1,
+					).insert()
+
 	@frappe.whitelist()
 	def provision(self):
 		if self.cloud_provider == "AWS EC2":
