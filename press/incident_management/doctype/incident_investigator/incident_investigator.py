@@ -4,6 +4,7 @@
 
 import random
 import typing
+from enum import Enum
 
 import frappe
 import requests
@@ -21,6 +22,12 @@ if typing.TYPE_CHECKING:
 
 
 INVESTIGATION_WINDOW = "5m"  # Use 5m timeframe
+
+
+class Status(Enum):
+	PENDING = "Pending"
+	INVESTIGATING = "Investigating"
+	COMPLETED = "Completed"
 
 
 def get_prometheus_client() -> PrometheusConnect:
@@ -227,7 +234,7 @@ class IncidentInvestigator(Document):
 		self.high_system_load_threshold = 3 * (
 			frappe.db.get_value("Virtual Machine", self.server, "vcpu") or 4
 		)
-		self.status = "Pending"
+		self.set_status(Status.PENDING)
 		self.save()
 
 	def after_insert(self):
@@ -245,6 +252,11 @@ class IncidentInvestigator(Document):
 	def start_investigation(self):
 		if self.status == "Pending":
 			frappe.enqueue_doc(self.doctype, self.name, "investigate", queue="long")
+
+	def set_status(self, status: Status):
+		"Set/Update investigation status"
+		self.status = status.value
+		self.save(ignore_version=True)
 
 	def _investigate_component(self, component_field: str, step_key: str):
 		"""Generic investigation method for f/n/m servers."""
@@ -277,9 +289,8 @@ class IncidentInvestigator(Document):
 		Proxy rules for investigation
 		In addition to able we ping sites need to fast exit in case of likely cause
 		"""
-		self.status = "Investigating"
+		self.set_status(Status.INVESTIGATING)
 		self.investigate_proxy_server()
 		self.investigate_database_server()
 		self.investigate_server()
-		self.status = "Completed"
-		self.save()
+		self.set_status(Status.COMPLETED)
