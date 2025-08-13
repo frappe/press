@@ -62,6 +62,7 @@ class ProductTrial(Document):
 			frappe.throw("Not permitted")
 
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
+		doc.prefilled_subdomain = self.get_unique_site_name()
 		return doc
 
 	def validate(self):
