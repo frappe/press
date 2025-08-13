@@ -318,7 +318,7 @@
    "label": "Staging"
   },
   {
-   "depends_on": "eval:[\"AWS EC2\", \"OCI\"].includes(doc.provider)",
+   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\"].includes(doc.provider)",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
@@ -616,7 +616,7 @@
   }
  ],
  "links": [],
- "modified": "2025-08-01 16:34:13.404147",
+ "modified": "2025-08-14 02:08:11.441126",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
