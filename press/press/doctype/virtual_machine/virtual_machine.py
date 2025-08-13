@@ -179,8 +179,10 @@ class VirtualMachine(Document):
 							"team": server.team,
 							"plan_type": "Server Storage Plan",
 						},
-						"additional_storage",
-						increment,
+						{
+							"additional_storage": increment,
+							"enabled": 1,
+						},
 					)
 				else:
 					# create a new subscription
@@ -194,6 +196,23 @@ class VirtualMachine(Document):
 						additional_storage=increment,
 						enabled=1,
 					).insert()
+			elif self.disk_size == server_plan_size:
+				# Server was upgraded or downgraded from plan change
+				# Remove the existing add-on storage subscription
+				if frappe.db.exists(
+					"Subscription",
+					{"document_name": server.name, "team": server.team, "plan_type": "Server Storage Plan"},
+				):
+					frappe.db.set_value(
+						"Subscription",
+						{
+							"document_name": server.name,
+							"team": server.team,
+							"plan_type": "Server Storage Plan",
+						},
+						"enabled",
+						0,
+					)
 
 	@frappe.whitelist()
 	def provision(self):
