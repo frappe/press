@@ -1662,12 +1662,16 @@ class VirtualMachine(Document):
 				return None
 
 	@frappe.whitelist()
+<<<<<<< HEAD
 	def attach_volume_job(self):
 		server = frappe.get_doc("Server", self.name)
 		server.run_press_job("Attach Volume")
 
 	@frappe.whitelist()
 	def attach_volume(self, volume_id=None, is_temporary_volume: bool = False, size: int | None = None):
+=======
+	def attach_volume(self, volume_id, is_temporary_volume: bool = False) -> str:
+>>>>>>> 3d1496f8d (fix(vm): While creating vm image pass platform field)
 		"""
 		temporary_volumes: If you are attaching a volume to an instance just for temporary use, then set this to True.
 
