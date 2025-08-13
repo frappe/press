@@ -155,7 +155,9 @@ class TestIncidentInvestigator(FrappeTestCase):
 	def setUpClass(cls):
 		cls.database_server = create_test_database_server()
 		cls.proxy_server = create_test_proxy_server()
-		cls.server = create_test_server(proxy_server=cls.proxy_server, database_server=cls.database_server)
+		cls.server = create_test_server(
+			proxy_server=cls.proxy_server.name, database_server=cls.database_server.name
+		)
 
 	@patch.object(IncidentInvestigator, "after_insert", Mock())
 	def test_investigation_creation_on_incident_confirmation(self):
