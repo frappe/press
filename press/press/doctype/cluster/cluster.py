@@ -819,7 +819,11 @@ class Cluster(Document):
 				"kms_key_id": kms_key_id,
 =======
 				"data_disk_snapshot": data_disk_snapshot,
+<<<<<<< HEAD
 >>>>>>> 34deccac7 (refactor(cluster): Utility function to create vm with data disk snapshot)
+=======
+				"auto_attach_data_disk_snapshot": False,
+>>>>>>> 8c70ef14d (refactor(vm): Attach disk from snapshot after vm boot up)
 			},
 		).insert()
 

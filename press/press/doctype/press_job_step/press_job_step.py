@@ -50,7 +50,9 @@ class PressJobStep(Document):
 
 			if self.wait_until_true:
 				self.attempts = self.attempts + 1
-				if result[0]:
+				if result is None:
+					self.status = "Skipped"
+				elif result[0]:
 					self.status = "Success"
 				elif result[1]:
 					self.status = "Failure"
