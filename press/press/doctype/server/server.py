@@ -1454,6 +1454,7 @@ class BaseServer(Document, TagHelpers):
 		start_docker_after_mount: bool | None = None,
 		start_mariadb_after_mount: bool | None = None,
 		cleanup_db_replication_files: bool | None = None,
+		rotate_additional_volume_metadata: bool | None = None,
 	):
 		if not cleanup_db_replication_files:
 			cleanup_db_replication_files = False
@@ -1471,6 +1472,7 @@ class BaseServer(Document, TagHelpers):
 			start_docker_after_mount=start_docker_after_mount or False,
 			start_mariadb_after_mount=start_mariadb_after_mount or False,
 			cleanup_db_replication_files=cleanup_db_replication_files,
+			rotate_additional_volume_metadata=rotate_additional_volume_metadata or False,
 		)
 
 	def _mount_volumes(
@@ -1480,6 +1482,7 @@ class BaseServer(Document, TagHelpers):
 		start_docker_after_mount: bool = False,
 		start_mariadb_after_mount: bool = False,
 		cleanup_db_replication_files: bool = False,
+		rotate_additional_volume_metadata: bool = False,
 	):
 		try:
 			variables = {
@@ -1487,7 +1490,11 @@ class BaseServer(Document, TagHelpers):
 				"stop_mariadb_before_mount": self.doctype == "Database Server" and stop_mariadb_before_mount,
 				"start_docker_after_mount": self.doctype == "Server" and start_docker_after_mount,
 				"start_mariadb_after_mount": self.doctype == "Database Server" and start_mariadb_after_mount,
+				# If other services are stopped, we can skip filebeat restart
+				"stop_filebeat_before_mount": stop_docker_before_mount or stop_mariadb_before_mount,
+				"start_filebeat_after_mount": stop_docker_before_mount or stop_mariadb_before_mount,
 				"cleanup_db_replication_files": cleanup_db_replication_files,
+				"rotate_additional_volume_metadata": rotate_additional_volume_metadata,
 				**self.get_mount_variables(),
 			}
 			if self.doctype == "Database Server" and self.provider != "Generic":

@@ -1082,6 +1082,8 @@
 		"rivo",
 		"mergify",
 		"ncdu",
-		"gtid"
+		"gtid",
+		"VMI",
+		"efi"
 	]
 }
