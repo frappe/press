@@ -835,6 +835,7 @@ class VirtualMachine(Document):
 				"virtual_machine": self.name,
 				"public": public,
 				"has_data_volume": self.has_data_volume,
+				"platform": self.platform,
 			}
 		).insert()
 		return image.name
@@ -1466,6 +1467,7 @@ class VirtualMachine(Document):
 			if e.response.get("Error", {}).get("Code") == "InvalidVolumeModification.NotFound":
 				return None
 
+	@frappe.whitelist()
 	def attach_volume(self, volume_id, is_temporary_volume: bool = False) -> str:
 		"""
 		temporary_volumes: If you are attaching a volume to an instance just for temporary use, then set this to True.
