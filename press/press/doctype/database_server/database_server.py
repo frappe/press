@@ -993,9 +993,6 @@ class DatabaseServer(BaseServer):
 			return
 
 		primary_db: "DatabaseServer" = frappe.get_doc("Database Server", self.primary)
-		if not gtid_slave_pos:
-			primary_db.sync_replication_config()
-			gtid_slave_pos = primary_db.gtid_current_pos
 
 		agent = self.agent
 		data = agent.configure_replication(
