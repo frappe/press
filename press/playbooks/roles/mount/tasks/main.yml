@@ -48,7 +48,7 @@
   register: fs_check
   changed_when: false
   failed_when: false
-  loop: '{{ resolved_devices }}'
+  loop: '{{ resolved_devices | default([]) }}'
   when: item.target_device != ""
   loop_control:
     label: '{{ item.target_device }}'
@@ -68,7 +68,7 @@
 
 - name: Show Block Device UUIDs
   command: 'lsblk {{ item.target_device }} -no UUID'
-  loop: '{{ resolved_devices }}'
+  loop: '{{ resolved_devices | default([]) }}'
   when: item.target_device != ""
   register: block_devices
   loop_control:
