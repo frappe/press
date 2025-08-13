@@ -59,6 +59,7 @@
    "label": "Thresholds"
   },
   {
+   "default": "2",
    "description": "Minimum free space required on any of the mount point at any time.",
    "fieldname": "high_disk_usage_threshold_in_gb",
    "fieldtype": "Int",
@@ -84,12 +85,14 @@
    "read_only": 1
   },
   {
+   "default": "50",
    "description": "Percentage of busy CPU over the investigation window.",
    "fieldname": "high_cpu_load_threshold",
    "fieldtype": "Int",
    "label": "High CPU Load"
   },
   {
+   "default": "95",
    "description": "Percentage of memory used over the investigation window.",
    "fieldname": "high_memory_usage_threshold",
    "fieldtype": "Int",
@@ -119,7 +122,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-12 15:54:35.985148",
+ "modified": "2025-08-13 10:53:42.602566",
  "modified_by": "Administrator",
  "module": "Incident Management",
  "name": "Incident Investigator",

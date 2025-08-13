@@ -37,10 +37,9 @@ class IncidentInvestigator(Document):
 	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
-		from apps.press.press.incident_management.doctype.investigation_step.investigation_step import (
-			InvestigationStep,
-		)
 		from frappe.types import DF
+
+		from press.incident_management.doctype.investigation_step.investigation_step import InvestigationStep
 
 		database_investigation_steps: DF.Table[InvestigationStep]
 		high_cpu_load_threshold: DF.Int
@@ -223,9 +222,6 @@ class IncidentInvestigator(Document):
 		self.high_system_load_threshold = 3 * (
 			frappe.db.get_value("Virtual Machine", self.server, "vcpu") or 4
 		)
-		self.high_disk_usage_threshold_in_gb = 2  # Minimum of 2GB free space should be available
-		self.high_memory_usage_threshold = 95
-		self.high_cpu_load_threshold = 95
 		self.status = "Pending"
 		self.save()
 
