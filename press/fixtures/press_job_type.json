@@ -518,7 +518,7 @@
   "callback_script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type in [\"Server\", \"Database Server\"] and server.is_for_recovery:\n    filter_field = \"app_server\" if doc.server_type == \"Server\" else \"database_server\"\n    recovery_record_name = frappe.db.get_value(\"Server Snapshot Recovery\", {filter_field: doc.server}, \"name\")\n    if recovery_record_name:\n        recovery_record = frappe.get_doc(\"Server Snapshot Recovery\", recovery_record_name, for_update=True)\n    \n        if doc.status == \"Success\":\n            if doc.server_type == \"Server\":\n                recovery_record.is_app_server_ready = True\n            else:\n                recovery_record.is_database_server_ready = True\n            recovery_record.save()\n        else:\n            recovery_record.mark_server_provisioning_as_failed()",
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2025-08-13 18:42:35.674797",
+  "modified": "2025-08-13 21:43:13.662495",
   "name": "Create Server",
   "steps": [
    {
@@ -552,9 +552,14 @@
     "wait_until_true": 1
    },
    {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"AWS EC2\" and frappe.db.get_value(\"Virtual Machine\", server.virtual_machine, \"data_disk_snapshot\"):\n    cleanup_db_replication_files = False\n    if doc.server_type == \"Database Server\" and (server.is_for_recovery or arguments.get(\"setup_db_replication\", False)):\n        cleanup_db_replication_files = True\n    server.mount_volumes(\n        now=True,\n        stop_docker_before_mount=doc.server_type == \"Server\",\n        stop_mariadb_before_mount=doc.server_type == \"Database Server\",\n        # If server is in recovery mode, don't start docker and containers\n        # Because If site gets active, background job witll be started and that can modify data\n        start_docker_after_mount=doc.server_type == \"Server\" and not server.is_for_recovery,\n        # If goal is to create replica server, don't start database\n        # As we need to do some additional config before starting database\n        start_mariadb_after_mount=doc.server_type == \"Database Server\" and not arguments.get(\"setup_db_replication\", False),\n        cleanup_db_replication_files=cleanup_db_replication_files\n    )\nelse:\n    result = (False, False)",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"AWS EC2\" and frappe.db.get_value(\"Virtual Machine\", server.virtual_machine, \"data_disk_snapshot\"):\n    cleanup_db_replication_files = False\n    if doc.server_type == \"Database Server\" and (server.is_for_recovery or arguments.get(\"setup_db_replication\", False)):\n        cleanup_db_replication_files = True\n    server.mount_volumes(\n        now=False,\n        stop_docker_before_mount=doc.server_type == \"Server\",\n        stop_mariadb_before_mount=doc.server_type == \"Database Server\",\n        # If server is in recovery mode, don't start docker and containers\n        # Because If site gets active, background job witll be started and that can modify data\n        start_docker_after_mount=doc.server_type == \"Server\" and not server.is_for_recovery,\n        # If goal is to create replica server, don't start database\n        # As we need to do some additional config before starting database\n        start_mariadb_after_mount=doc.server_type == \"Database Server\" and not arguments.get(\"setup_db_replication\", False),\n        cleanup_db_replication_files=cleanup_db_replication_files,\n        # It's important to change uuid, labels of attached disk\n        # There is high chance that the root disk and data disk might have same disk info\n        rotate_additional_volume_metadata=True\n    )\nelse:\n    result = (False, False)",
     "step_name": "Mount Data Disk",
     "wait_until_true": 0
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"AWS EC2\" and frappe.db.get_value(\"Virtual Machine\", server.virtual_machine, \"data_disk_snapshot\"):\n    plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Mount Volumes\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n    result = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\nelse:\n    result = None",
+    "step_name": "Wait for Data Disk Mount to Complete",
+    "wait_until_true": 1
    },
    {
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.update_tls_certificate()",

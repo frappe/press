@@ -14,6 +14,28 @@
     mode: '{{ item.mount_point_mode }}'
   loop: '{{ all_mounts }}'
 
+- name: Find VFAT Partitions On Disks
+  shell: >-
+    if lsblk -no TYPE {{ item.source | quote }} | grep -q "^disk$"; then
+      lsblk {{ item.source | quote }} -rno NAME,FSTYPE | grep -i vfat | awk '{print "/dev/" $1}';
+    else
+      echo "";
+    fi
+  register: vfat_devices
+  changed_when: false
+  loop: '{{ volume_mounts }}'
+  loop_control:
+    label: '{{ item.source }}'
+  when: rotate_additional_volume_metadata | default(false) | bool
+
+- name: Wipe VFAT Filesystem Signatures
+  command: wipefs -a {{ item }}
+  loop: '{{ vfat_devices.results | map(attribute="stdout") | select("!=","") | list }}'
+  ignore_errors: true
+  loop_control:
+    label: '{{ item }}'
+  when: rotate_additional_volume_metadata | default(false) | bool
+
 - name: Find ext4 partitions on disks
   shell: >-
     if lsblk -no TYPE {{ item.source | quote }} | grep -q "^disk$"; then
@@ -66,6 +88,63 @@
   loop_control:
     label: '{{ item.item.target_device }}'
 
+- name: Force Unmount Volume Devices
+  ansible.posix.mount:
+    path: '{{ item.original_item.mount_point }}'
+    state: unmounted
+  loop: '{{ resolved_devices }}'
+  when:
+    - item.target_device != ""
+    - item.original_item.mount_point is defined
+  loop_control:
+    label: '{{ item.original_item.mount_point }}'
+  ignore_errors: true
+
+- name: Force Unmount Bind Mounts
+  ansible.posix.mount:
+    path: '{{ item.mount_point }}'
+    state: unmounted
+  loop: '{{ bind_mounts }}'
+  when: item.mount_point is defined
+  loop_control:
+    label: '{{ item.mount_point }}'
+
+- name: Generate Random UUIDs and Labels Per Device
+  set_fact:
+    randomized_devices: >-
+      {{
+        resolved_devices | map('combine', {
+          'new_uuid':  (1000000 | random | string) | to_uuid,
+          'new_label': 'disk' ~ 9999 | random
+        }) | list
+      }}
+  when: rotate_additional_volume_metadata | default(false) | bool
+
+- name: Force Check Filesystem on ext4 Devices
+  command: e2fsck -f -y {{ item.target_device }}
+  loop: '{{ randomized_devices | default([]) }}'
+  when:
+    - item.original_item.filesystem == 'ext4'
+    - item.target_device != ""
+    - rotate_additional_volume_metadata | default(false) | bool
+  loop_control:
+    label: '{{ item.target_device }}'
+  ignore_errors: true
+
+- name: Set New UUID and Label For ext4 Devices
+  command: tune2fs -U {{ item.new_uuid }} -L {{ item.new_label }} {{ item.target_device }}
+  loop: '{{ randomized_devices | default([]) }}'
+  when:
+    - item.original_item.filesystem == 'ext4'
+    - item.target_device != ""
+    - rotate_additional_volume_metadata | default(false) | bool
+  loop_control:
+    label: '{{ item.target_device }}'
+
+- name: Wait for udev to settle
+  command: udevadm settle
+  when: rotate_additional_volume_metadata | default(false) | bool
+
 - name: Show Block Device UUIDs
   command: 'lsblk {{ item.target_device }} -no UUID'
   loop: '{{ resolved_devices | default([]) }}'
@@ -73,6 +152,12 @@
   register: block_devices
   loop_control:
     label: '{{ item.target_device }}'
+
+- name: Stop Filebeat
+  service:
+    name: filebeat
+    state: stopped
+  when: stop_filebeat_before_mount | default(false) | bool
 
 - name: Stop Docker
   service:
@@ -133,6 +218,12 @@
     regexp: '^bind-address\s*=\s*.*'
     replace: 'bind-address = {{ mariadb_bind_address }}'
   when: mariadb_bind_address is defined and mariadb_bind_address != ""
+
+- name: Restart Filebeat
+  service:
+    name: filebeat
+    state: started
+  when: start_filebeat_after_mount | default(false) | bool
 
 - name: Restart Docker
   service:

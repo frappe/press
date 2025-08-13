@@ -1087,11 +1087,17 @@
 		"mergify",
 		"ncdu",
 <<<<<<< HEAD
+<<<<<<< HEAD
 		"interactjs",
 		"ocpu",
 		"Twillio"
 =======
 		"gtid"
 >>>>>>> 14128fd80 (feat(database-server): Provision replica from server snapshot)
+=======
+		"gtid",
+		"VMI",
+		"efi"
+>>>>>>> 5bf87e248 (fix(server): Reconfigure data disk uuid and labels before mounting)
 	]
 }
