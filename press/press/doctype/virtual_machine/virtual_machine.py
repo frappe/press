@@ -183,11 +183,13 @@ class VirtualMachine(Document):
 		if self.virtual_machine_image:
 			vmi = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
 			image = self.client().images.get_by_id(vmi.image_id)
+		else:
+			image = Image(id=67794396)  # ubuntu-20.04
 
 		server_response = self.client().servers.create(
 			name=f"{self.name}",
 			server_type=server_type,
-			image=image if self.virtual_machine_image else Image(name="ubuntu-20.04"),
+			image=image,
 			networks=[network],
 			location=location,
 			public_net=public_net,
