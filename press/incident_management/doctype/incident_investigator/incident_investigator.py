@@ -175,9 +175,14 @@ class IncidentInvestigator(Document):
 			.where(Site.status == "Active")
 			.run(pluck=True)
 		)
-
 		sample_size = max(1, int(len(sites) * 0.10))
-		sampled_sites = random.sample(sites, sample_size)
+
+		try:
+			sampled_sites = random.sample(sites, sample_size)
+		except ValueError:
+			self.is_unable_to_investigate(step)
+			return
+
 		ping_results = [ping(site) for site in sampled_sites]
 
 		step.is_likely_cause = all(status != 200 for status in ping_results)
@@ -228,7 +233,18 @@ class IncidentInvestigator(Document):
 	def after_insert(self):
 		self.set_prerequisites()
 		self.add_investigation_steps()
-		frappe.enqueue_doc(self.doctype, self.name, "investigate", queue="long")
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"investigate",
+			queue="long",
+			enqueue_after_commit=True,
+		)
+
+	@frappe.whitelist()
+	def start_investigation(self):
+		if self.status == "Pending":
+			frappe.enqueue_doc(self.doctype, self.name, "investigate", queue="long")
 
 	def _investigate_component(self, component_field: str, step_key: str):
 		"""Generic investigation method for f/n/m servers."""
