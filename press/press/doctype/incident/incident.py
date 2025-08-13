@@ -202,6 +202,7 @@ class Incident(WebsiteGenerator):
 	@frappe.whitelist()
 	def regather_info_and_screenshots(self):
 		self.identify_affected_resource()
+		self.identify_problem()
 		self.take_grafana_screenshots()
 
 	def get_cpu_state(self, resource: str) -> tuple[str, float]:
