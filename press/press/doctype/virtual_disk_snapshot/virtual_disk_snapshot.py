@@ -220,7 +220,13 @@ class VirtualDiskSnapshot(Document):
 				return
 			raise e
 
-	def create_volume(self, availability_zone: str, iops: int = 3000, throughput: int | None = None) -> str:
+	def create_volume(
+		self,
+		availability_zone: str,
+		iops: int = 3000,
+		throughput: int | None = None,
+		volume_initialization_rate: int | None = None,
+	) -> str:
 		self.sync()
 		if self.status != "Completed":
 			raise Exception("Snapshot is unavailable")
@@ -238,6 +244,7 @@ class VirtualDiskSnapshot(Document):
 			],
 			Iops=iops,
 			Throughput=throughput,
+			VolumeInitializationRate=volume_initialization_rate,
 		)
 		return response["VolumeId"]
 
