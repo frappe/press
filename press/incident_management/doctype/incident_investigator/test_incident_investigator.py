@@ -175,7 +175,6 @@ class TestIncidentInvestigator(FrappeTestCase):
 		test_incident.confirm()
 		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
 		investigator.investigate_server()
-		investigator.investigate_database_server()
 
 		for step in investigator.server_investigation_steps:
 			self.assertTrue(step.is_likely_cause)
@@ -189,7 +188,6 @@ class TestIncidentInvestigator(FrappeTestCase):
 		test_incident.confirm()
 		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
 		investigator.investigate_server()
-		investigator.investigate_database_server()
 
 		for step in investigator.server_investigation_steps:
 			if step.method == "has_high_disk_usage" or step.method == "has_high_system_load":
