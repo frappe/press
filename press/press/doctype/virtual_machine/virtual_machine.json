@@ -22,6 +22,7 @@
   "machine_type",
   "instance_id",
   "platform",
+  "ssh_key",
   "ready_for_conversion",
   "column_break_hgcr",
   "disk_size",
@@ -31,8 +32,10 @@
   "column_break_8",
   "virtual_machine_image",
   "machine_image",
-  "ssh_key",
   "data_disk_snapshot",
+  "data_disk_snapshot_volume_id",
+  "auto_attach_data_disk_snapshot",
+  "data_disk_snapshot_attached",
   "networking_section",
   "subnet_id",
   "private_ip_address",
@@ -342,6 +345,29 @@
    "fieldtype": "Link",
    "label": "Data Disk Snapshot",
    "options": "Virtual Disk Snapshot"
+  },
+  {
+   "depends_on": "eval: doc.data_disk_snapshot",
+   "fieldname": "data_disk_snapshot_volume_id",
+   "fieldtype": "Data",
+   "label": "Data Disk Snapshot Volume ID",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.data_disk_snapshot",
+   "fieldname": "data_disk_snapshot_attached",
+   "fieldtype": "Check",
+   "label": "Data Disk Snapshot Attached",
+   "read_only": 1
+  },
+  {
+   "default": "1",
+   "depends_on": "eval: doc.data_disk_snapshot",
+   "fieldname": "auto_attach_data_disk_snapshot",
+   "fieldtype": "Check",
+   "label": "Auto Attach Data Disk Snapshot",
+   "set_only_once": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -377,7 +403,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2025-08-01 23:01:02.723293",
+ "modified": "2025-08-13 18:11:31.965032",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

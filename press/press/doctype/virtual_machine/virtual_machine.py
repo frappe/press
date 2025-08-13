@@ -70,10 +70,13 @@ class VirtualMachine(Document):
 		)
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
+		auto_attach_data_disk_snapshot: DF.Check
 		availability_zone: DF.Data
 		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner"]
 		cluster: DF.Link
 		data_disk_snapshot: DF.Link | None
+		data_disk_snapshot_attached: DF.Check
+		data_disk_snapshot_volume_id: DF.Data | None
 		disk_size: DF.Int
 		domain: DF.Link
 		has_data_volume: DF.Check
@@ -195,6 +198,70 @@ class VirtualMachine(Document):
 				server.has_data_volume = self.has_data_volume
 				server.save()
 
+		if (
+			self.auto_attach_data_disk_snapshot
+			and self.has_value_changed("status")
+			and self.get_value_before_save("status") == "Pending"
+			and self.status == "Running"
+		):
+			self.auto_attach_snapshot_data_disk()
+
+	def auto_attach_snapshot_data_disk(self):
+		if self.data_disk_snapshot and self.data_disk_snapshot_attached:
+			return
+
+		if self.data_disk_snapshot_volume_id:
+			self.check_and_attach_data_disk_snapshot_volume()
+
+		if not self.data_disk_snapshot_volume_id:
+			self.create_data_disk_volume_from_snapshot()
+
+	def check_and_attach_data_disk_snapshot_volume(self):
+		if not self.data_disk_snapshot_volume_id:
+			frappe.throw("Data Disk Snapshot Volume ID is not set.")
+
+		volume_state = self.get_state_of_volume(self.data_disk_snapshot_volume_id)
+		if volume_state == "available":
+			self.attach_volume(self.data_disk_snapshot_volume_id)
+			self.data_disk_snapshot_attached = True
+			self.status = "Pending"
+			self.save()
+			return True
+
+		if volume_state == "deleted":
+			self.data_disk_snapshot_volume_id = None
+
+		self.status = "Pending"
+		self.save()
+		return False
+
+	def create_data_disk_volume_from_snapshot(self):
+		try:
+			datadisk_snapshot: VirtualDiskSnapshot = frappe.get_doc(
+				"Virtual Disk Snapshot", self.data_disk_snapshot
+			)
+			snapshot_volume = datadisk_snapshot.create_volume(
+				availability_zone=self.availability_zone, volume_initialization_rate=300
+			)
+			self.data_disk_snapshot_volume_id = snapshot_volume
+			self.status = "Pending"
+			self.save()
+			return True
+		except Exception:
+			log_error(
+				title="VM Data Disk Snapshot Volume Creation Failed",
+			)
+			if not self.data_disk_snapshot_volume_id:
+				return False
+			# If it fails for any reason, try to delete the volume
+			try:
+				self.delete_volume(self.data_disk_snapshot_volume_id)
+			except:  # noqa: E722
+				log_error(
+					title="VM Data Disk Snapshot Volume Cleanup Failed",
+				)
+			return False
+
 	@frappe.whitelist()
 	def provision(self):
 		if self.cloud_provider == "AWS EC2":
@@ -268,22 +335,7 @@ class VirtualMachine(Document):
 			additional_volumes.append(volume_options)
 
 		if self.data_disk_snapshot:
-			snapshot: VirtualDiskSnapshot = frappe.get_doc("Virtual Disk Snapshot", self.data_disk_snapshot)
-			device_name_index = chr(ord("f") + len(additional_volumes))
-			volume_options = {
-				"DeviceName": f"/dev/sd{device_name_index}",
-				"Ebs": {
-					"DeleteOnTermination": True,
-					"VolumeSize": self.disk_size,  # TODO: Add buffer space if server is getting created for extracting backup
-					"VolumeType": "gp3",
-					"SnapshotId": snapshot.snapshot_id,
-					# If we are creating the disk from a snapshot
-					# Set the throughput and VolumeInitializationRate higher to initialize faster
-					"Throughput": 300,  # MB/s
-					"VolumeInitializationRate": 300,  # MB/s
-				},
-			}
-			additional_volumes = [volume_options]
+			additional_volumes = []  # Don't attach any additional volumes if we are attaching a data disk snapshot
 
 		if not self.machine_image:
 			self.machine_image = self.get_latest_ubuntu_image()

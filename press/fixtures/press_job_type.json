@@ -374,7 +374,7 @@
   "callback_script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type in [\"Server\", \"Database Server\"] and server.is_for_recovery:\n    filter_field = \"app_server\" if doc.server_type == \"Server\" else \"database_server\"\n    recovery_record_name = frappe.db.get_value(\"Server Snapshot Recovery\", {filter_field: doc.server}, \"name\")\n    if recovery_record_name:\n        recovery_record = frappe.get_doc(\"Server Snapshot Recovery\", recovery_record_name, for_update=True)\n    \n        if doc.status == \"Success\":\n            if doc.server_type == \"Server\":\n                recovery_record.is_app_server_ready = True\n            else:\n                recovery_record.is_database_server_ready = True\n            recovery_record.save()\n        else:\n            recovery_record.mark_server_provisioning_as_failed()",
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2025-08-07 18:53:08.463912",
+  "modified": "2025-08-13 18:42:35.674797",
   "name": "Create Server",
   "steps": [
    {
@@ -393,7 +393,17 @@
     "wait_until_true": 1
    },
    {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"AWS EC2\" and frappe.db.get_value(\"Virtual Machine\", server.virtual_machine, \"data_disk_snapshot\"):\n    try:\n        vm = frappe.get_doc(\"Virtual Machine\", server.virtual_machine)\n        vm.sync()\n        \n        if len(vm.volumes) == 0:\n            result = (False, False)\n        else:\n            server.reload()\n            server.validate_mounts()\n            server.save()\n            result = (True, False)\n    except frappe.exceptions.TimestampMismatchError:\n        result = (False, False)\n    except Exception as e:\n        raise e\nelse:\n    result = (True, False)",
+    "script": "vm = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nif vm.data_disk_snapshot:\n    is_created = vm.create_data_disk_volume_from_snapshot()\n    if is_created:\n        result = (True, False)\n    else:\n        arguments.update({\"max_volume_creation_retries\": arguments.get(\"max_volume_creation_retries\", 6)-1})\n        if arguments.get(\"max_volume_creation_retries\") <= 0:\n            result (False, True)\n        result = (False, False)",
+    "step_name": "Create Volume From Snapshot",
+    "wait_until_true": 1
+   },
+   {
+    "script": "vm = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nif vm.data_disk_snapshot:\n    is_attached = vm.check_and_attach_data_disk_snapshot_volume()\n    if is_attached:\n        result = (True, False)\n    else:\n        result = (False, False)",
+    "step_name": "Attach Snapshotted Volume",
+    "wait_until_true": 1
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"AWS EC2\" and frappe.db.get_value(\"Virtual Machine\", server.virtual_machine, \"data_disk_snapshot\"):\n    try:\n        vm = frappe.get_doc(\"Virtual Machine\", server.virtual_machine)\n        vm.sync()\n        \n        if len(vm.volumes) == 0 or (vm.data_disk_snapshot_attached and len(vm.volumes) == 1):\n            result = (False, False)\n        else:\n            server.reload()\n            server.validate_mounts()\n            server.save()\n            result = (True, False)\n    except frappe.exceptions.TimestampMismatchError:\n        result = (False, False)\n    except Exception as e:\n        raise e\nelse:\n    result = (True, False)",
     "step_name": "Sync Attached Volumes",
     "wait_until_true": 1
    },
