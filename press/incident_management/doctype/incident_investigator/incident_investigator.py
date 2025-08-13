@@ -167,7 +167,7 @@ class IncidentInvestigator(Document):
 		def ping(url: str) -> int:
 			try:
 				return requests.get(f"https://{url}/api/method/ping", timeout=5).status_code
-			except requests.exceptions.ReadTimeout:
+			except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectTimeout):
 				return 502
 
 		Site = frappe.qb.DocType("Site")
