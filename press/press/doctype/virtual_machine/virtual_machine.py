@@ -180,8 +180,10 @@ class VirtualMachine(Document):
 		ssh_key = self.client().ssh_keys.get_by_name(ssh_key_name)
 
 		self.skip_automated_snapshot = True
-		vmi = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
-		image = self.client().images.get_by_id(vmi.image_id)
+		if self.virtual_machine_image:
+			vmi = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
+			image = self.client().images.get_by_id(vmi.image_id)
+
 		server_response = self.client().servers.create(
 			name=f"{self.name}",
 			server_type=server_type,
