@@ -161,9 +161,8 @@ class TestIncidentInvestigator(FrappeTestCase):
 		)
 
 	@patch.object(IncidentInvestigator, "after_insert", Mock())
-	def test_investigation_creation_on_incident_confirmation(self):
+	def test_investigation_creation_on_incident_creation(self):
 		test_incident = create_test_incident(server=self.server.name)
-		test_incident.confirm()
 		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
 		self.assertEqual(investigator.incident, test_incident.name)
 
@@ -179,8 +178,7 @@ class TestIncidentInvestigator(FrappeTestCase):
 	)  # We don't have any sites this will fail
 	def test_all_high_metrics(self):
 		"""Since instance is not taken into account while mocking both database and sever will have same likely causes"""
-		test_incident = create_test_incident(self.server.name)
-		test_incident.confirm()
+		create_test_incident(self.server.name)
 		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
 
 		for step in investigator.server_investigation_steps:
@@ -193,8 +191,7 @@ class TestIncidentInvestigator(FrappeTestCase):
 	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=False))
 	def test_varied_metrics(self):
 		"""Since instance is not taken into account while mocking both database and sever will have same likely causes"""
-		test_incident = create_test_incident(self.server.name)
-		test_incident.confirm()
+		create_test_incident(self.server.name)
 		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
 		investigator.investigate_server()
 
