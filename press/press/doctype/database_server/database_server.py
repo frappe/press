@@ -980,6 +980,8 @@ class DatabaseServer(BaseServer):
 		if not data.get("success"):
 			frappe.throw(data.get("message", "Failed to start replication"))
 
+		self.enable_read_only_mode()
+
 	def stop_replication(self):
 		if self.is_primary:
 			return
@@ -1277,6 +1279,30 @@ class DatabaseServer(BaseServer):
 			frappe.throw("innodb_force_recovery value must be between 0 and 6")
 		self.add_or_update_mariadb_variable(
 			"innodb_force_recovery", "value_str", str(value), skip=False, persist=True, save=True
+		)
+
+	@frappe.whitelist()
+	def toggle_read_only_mode(self):
+		read_only_mode_value = self.get_mariadb_variable_value("read_only", return_default_if_not_found=True)
+		read_only_mode_enabled = read_only_mode_value in (1, "1", "ON")
+
+		if read_only_mode_enabled:
+			self.disable_read_only_mode()
+		else:
+			self.enable_read_only_mode()
+
+	@frappe.whitelist()
+	def enable_read_only_mode(self):
+		"""Enable read-only mode for the database server"""
+		self.add_or_update_mariadb_variable(
+			"read_only", "value_str", "1", skip=False, persist=True, save=True
+		)
+
+	@frappe.whitelist()
+	def disable_read_only_mode(self):
+		"""Disable read-only mode for the database server"""
+		self.add_or_update_mariadb_variable(
+			"read_only", "value_str", "0", skip=False, persist=True, save=True
 		)
 
 	@frappe.whitelist()
