@@ -72,7 +72,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "IP",
-   "set_only_once": 1
+   "read_only": 1
   },
   {
    "fetch_from": "virtual_machine.private_ip_address",
@@ -85,7 +85,7 @@
    "fieldname": "agent_password",
    "fieldtype": "Password",
    "label": "Agent Password",
-   "set_only_once": 1
+   "read_only": 1
   },
   {
    "default": "Pending",
@@ -433,7 +433,7 @@
   }
  ],
  "links": [],
- "modified": "2025-08-01 16:34:58.128827",
+ "modified": "2025-08-14 11:29:20.520055",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
