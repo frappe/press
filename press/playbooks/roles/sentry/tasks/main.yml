@@ -12,7 +12,7 @@
   become: yes
   become_user: frappe
   unarchive:
-    src: https://github.com/getsentry/self-hosted/archive/refs/tags/24.6.0.tar.gz
+    src: https://github.com/getsentry/self-hosted/archive/refs/tags/25.7.0.tar.gz
     dest: /tmp
     remote_src: yes
 
@@ -20,7 +20,7 @@
   become: yes
   become_user: frappe
   copy:
-    src: /tmp/self-hosted-24.6.0/
+    src: /tmp/self-hosted-25.7.0/
     dest: /home/frappe/sentry
     remote_src: yes
 
@@ -52,7 +52,7 @@
   replace:
     path: /home/frappe/sentry/docker-compose.yml
     regexp: '^((\s+)image: "confluentinc/cp-(zookeeper|kafka):.*")$'
-    replace: '\1\n\2user: "0:0"'  # \1 matches the whole line. \2 matches the indentation.
+    replace: '\1\n\2user: "0:0"' # \1 matches the whole line. \2 matches the indentation.
 
 - name: Install Sentry
   become: yes
@@ -71,14 +71,14 @@
 - name: Create Sentry User
   become: yes
   become_user: frappe
-  command: docker-compose run --rm web createuser --no-input --superuser --email {{ sentry_admin_email }} --password {{ sentry_admin_password }} --force-update
+  command: docker compose run --rm web createuser --no-input --superuser --email {{ sentry_admin_email }} --password {{ sentry_admin_password }} --force-update
   args:
     chdir: /home/frappe/sentry
 
 - name: Start Sentry
   become: yes
   become_user: frappe
-  command: docker-compose --env-file /home/frappe/sentry/.env.custom up -d
+  command: docker compose --env-file /home/frappe/sentry/.env.custom up -d
   args:
     chdir: /home/frappe/sentry
 
