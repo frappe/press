@@ -17,14 +17,16 @@
    "fieldname": "step_name",
    "fieldtype": "Small Text",
    "in_list_view": 1,
-   "label": "Step Name"
+   "label": "Step Name",
+   "read_only": 1
   },
   {
    "default": "0",
    "fieldname": "is_likely_cause",
    "fieldtype": "Check",
    "in_list_view": 1,
-   "label": "Is Likely Cause"
+   "label": "Is Likely Cause",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_yvnw",
@@ -34,7 +36,8 @@
    "fieldname": "method",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "method"
+   "label": "method",
+   "read_only": 1
   },
   {
    "default": "0",
@@ -42,14 +45,15 @@
    "fieldname": "is_unable_to_investigate",
    "fieldtype": "Check",
    "in_list_view": 1,
-   "label": "Is Unable To Investigate"
+   "label": "Is Unable To Investigate",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-08-12 15:35:59.900755",
+ "modified": "2025-08-14 10:45:28.940710",
  "modified_by": "Administrator",
  "module": "Incident Management",
  "name": "Investigation Step",
