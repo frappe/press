@@ -44,12 +44,7 @@ class BuildMetric(Document):
 		"""If dates not specified take last week"""
 		self.start_from = self.start_from or frappe.utils.add_to_date(days=-7)
 		self.to = self.to or frappe.utils.now()
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"_get_metrics",
-			queue="long",
-		)
+		frappe.enqueue(self._get_metrics)
 
 	def _get_metrics(self):
 		build_metric = GenerateBuildMetric(self.start_from, self.to)
