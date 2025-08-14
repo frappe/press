@@ -79,13 +79,17 @@
    "fieldname": "private_ip",
    "fieldtype": "Data",
    "label": "Private IP",
+<<<<<<< HEAD
    "set_only_once": 1
+=======
+   "read_only": 1
+>>>>>>> a8b426f6b (fix(private-ip): Set field to read_only)
   },
   {
    "fieldname": "agent_password",
    "fieldtype": "Password",
    "label": "Agent Password",
-   "set_only_once": 1
+   "read_only": 1
   },
   {
    "default": "Pending",

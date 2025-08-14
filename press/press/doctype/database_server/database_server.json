@@ -121,7 +121,7 @@
    "fieldname": "private_ip",
    "fieldtype": "Data",
    "label": "Private IP",
-   "set_only_once": 1
+   "read_only": 1
   },
   {
    "fieldname": "mariadb_section",
