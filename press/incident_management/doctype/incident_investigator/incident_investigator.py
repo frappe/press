@@ -14,6 +14,7 @@ from prometheus_api_client import MetricRangeDataFrame, PrometheusConnect
 from prometheus_api_client.utils import parse_datetime
 
 if typing.TYPE_CHECKING:
+	import datetime
 	from collections.abc import Callable
 
 	from apps.press.press.incident_management.doctype.investigation_step.investigation_step import (
@@ -48,6 +49,7 @@ class IncidentInvestigator(Document):
 
 		from press.incident_management.doctype.investigation_step.investigation_step import InvestigationStep
 
+		cool_off_period: DF.Float
 		database_investigation_steps: DF.Table[InvestigationStep]
 		high_cpu_load_threshold: DF.Int
 		high_disk_usage_threshold_in_gb: DF.Int
@@ -236,6 +238,30 @@ class IncidentInvestigator(Document):
 		)
 		self.set_status(Status.PENDING)
 		self.save()
+
+	def before_insert(self):
+		"""
+		Do not trigger investigation on the same server if cool off period has not passed
+		Do not trigger investigation on self hosted servers
+		"""
+		if frappe.get_value("Server", self.server, "is_self_hosted"):
+			frappe.throw(
+				f"Ignoring investigation for self hosted server {self.server}", frappe.ValidationError
+			)
+
+		last_created_investigation = frappe.get_value(
+			"Incident Investigator", {"server": self.server}, "creation"
+		)
+
+		if not last_created_investigation:
+			return
+
+		time_since_last_investigation: datetime.timedelta = parse_datetime("now") - last_created_investigation
+		if time_since_last_investigation.total_seconds() < self.cool_off_period:
+			frappe.throw(
+				f"Investigation for {self.server} is in a cool off period",
+				frappe.ValidationError,
+			)
 
 	def after_insert(self):
 		self.set_prerequisites()

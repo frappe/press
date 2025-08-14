@@ -201,6 +201,24 @@ class TestIncidentInvestigator(FrappeTestCase):
 			else:
 				self.assertTrue(step.is_likely_cause)
 
+	@patch.object(IncidentInvestigator, "after_insert", Mock())
+	def test_investigation_cool_off_period(self):
+		test_incident_1 = create_test_incident(server=self.server.name)
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+		self.assertEqual(investigator.incident, test_incident_1.name)
+
+		# Cool off period
+		test_incident_2 = create_test_incident(server=self.server.name)
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+		self.assertEqual(investigator.incident, test_incident_1.name)
+		self.assertEqual(test_incident_1.server, test_incident_2.server)
+
+		# Ingore investigation on self hosted servers
+		self_hosted_server = create_test_server(is_self_hosted=True)
+		create_test_incident(self_hosted_server.name)
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+		self.assertEqual(investigator.incident, test_incident_1.name)
+
 	@classmethod
 	def tearDownClass(cls):
 		frappe.db.delete("Database Server", cls.database_server.name)
