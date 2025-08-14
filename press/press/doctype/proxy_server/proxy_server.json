@@ -79,13 +79,13 @@
    "fieldname": "private_ip",
    "fieldtype": "Data",
    "label": "Private IP",
-   "ready_only": 1
+   "read_only": 1
   },
   {
    "fieldname": "agent_password",
    "fieldtype": "Password",
    "label": "Agent Password",
-   "set_only_once": 1
+   "read_only": 1
   },
   {
    "default": "Pending",
