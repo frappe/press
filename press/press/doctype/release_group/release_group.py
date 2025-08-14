@@ -663,20 +663,32 @@ class ReleaseGroup(Document, TagHelpers):
 				)
 			else:
 				# Find the last deployed release and use it, if no deployed bench is present use the rg apps
-				app_to_keep = (
-					find(last_deployed_bench.apps, lambda x: x.app == app.app)
-					if last_deployed_bench
-					else find(self.apps, lambda x: x.app == app.app)
-				)
-				if app_to_keep:
-					apps.append(
-						{
-							"app": app_to_keep.app,
-							"source": app_to_keep.source,
-							"release": app_to_keep.release,
-							"hash": app_to_keep.hash,
-						}
-					)
+				if last_deployed_bench:
+					app_to_keep = find(last_deployed_bench.apps, lambda x: x.app == app.app)
+					if app_to_keep:
+						apps.append(
+							{
+								"app": app_to_keep.app,
+								"source": app_to_keep.source,
+								"release": app_to_keep.release,
+								"hash": app_to_keep.hash,
+							}
+						)
+
+				else:
+					app_to_keep = find(self.apps, lambda x: x.app == app.app)
+					if app_to_keep:
+						app_release, app_hash = frappe.db.get_value(
+							"App Release", {"source": app_to_keep.source}, ["name", "hash"]
+						)
+						apps.append(
+							{
+								"app": app_to_keep.app,
+								"source": app_to_keep.source,
+								"release": app_release,
+								"hash": app_hash,
+							}
+						)
 
 		return self.get_sorted_based_on_rg_apps(apps)
 
