@@ -630,7 +630,6 @@ class VirtualMachine(Document):
 			for volume in self.get_volumes():
 				if str(volume.id) in existing_volumes:
 					continue
-
 				row = frappe._dict()
 				row.volume_id = volume.id
 				row.size = volume.size
@@ -640,6 +639,8 @@ class VirtualMachine(Document):
 			if volume.protection["delete"]:
 				self.termination_protection = volume.protection["delete"]
 
+			self.vcpu = server_instance.server_type.cores
+			self.ram = server_instance.server_type.memory
 			self.has_data_volume = 1
 		else:
 			self.status = "Terminated"
