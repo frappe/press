@@ -40,9 +40,10 @@
 										: success
 											? formatBytes(fileObj.size)
 											: error
-												? error
+												? null
 												: file.description
 								}}
+								<span v-if="error" v-html="error" />
 							</span>
 						</template>
 						<template #actions>
@@ -144,7 +145,7 @@ export default {
 
 			if (file.size > 5 * 1024 * 1024 * 1024) {
 				throw new Error(
-					'File size exceeds the limit of 5 GiB. Please use the migrate script.',
+					'File size exceeds the limit of 5 GiB. Please try the <a href="https://docs.frappe.io/cloud/sites/migrate-an-existing-site#migrate-using-python-script" class=underline>migrate</a> script.',
 				);
 			}
 
@@ -221,7 +222,7 @@ export default {
 					errorMessage += ` Insufficient space on database server. Please add ${requiredGB} GB more storage.`;
 				}
 				if (!errorMessage) {
-					errorMessage = 'eee Failed to upload files. Please try again later.';
+					errorMessage = 'Failed to upload files. Please try again later.';
 				}
 				if (this.onError) {
 					this.onError(errorMessage);
