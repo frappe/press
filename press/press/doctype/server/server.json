@@ -98,7 +98,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "IP",
-   "set_only_once": 1
+   "read_only": 1
   },
   {
    "fieldname": "proxy_server",
@@ -116,7 +116,7 @@
    "fieldname": "agent_password",
    "fieldtype": "Password",
    "label": "Agent Password",
-   "set_only_once": 1
+   "read_only": 1
   },
   {
    "collapsible": 1,
