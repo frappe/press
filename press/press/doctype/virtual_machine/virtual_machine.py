@@ -856,6 +856,7 @@ class VirtualMachine(Document):
 				"virtual_machine": self.name,
 				"public": public,
 				"has_data_volume": self.has_data_volume,
+				"platform": self.platform,
 			}
 		).insert()
 		return image.name
