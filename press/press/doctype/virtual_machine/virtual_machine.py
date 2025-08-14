@@ -176,6 +176,8 @@ class VirtualMachine(Document):
 
 	def update_subscription_for_addon_storage(self):
 		server = self.get_server()
+		if not server:
+			return
 		server_plan_size = frappe.db.get_value("Server Plan", server.plan, "disk")
 
 		if server_plan_size and self.disk_size > server_plan_size:
