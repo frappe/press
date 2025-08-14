@@ -20,6 +20,7 @@
   "resource",
   "cluster",
   "resolved_by",
+  "investigation",
   "section_break_kjey",
   "subject",
   "description",
@@ -53,7 +54,8 @@
   },
   {
    "fieldname": "column_break_smnd",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "read_only": 1
   },
   {
    "default": "Validating",
@@ -203,13 +205,19 @@
    "fieldtype": "Table",
    "label": "Preventive Suggestions",
    "options": "Incident Suggestion"
+  },
+  {
+   "fieldname": "investigation",
+   "fieldtype": "Link",
+   "label": "Investigation",
+   "options": "Incident Investigator"
   }
  ],
  "has_web_view": 1,
  "index_web_pages_for_search": 1,
  "is_published_field": "show_in_website",
  "links": [],
- "modified": "2025-08-08 14:38:24.138410",
+ "modified": "2025-08-14 10:44:56.454503",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident",

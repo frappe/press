@@ -36,6 +36,7 @@ def create_test_server(
 	public: bool = False,
 	platform: str = "x86_64",
 	use_for_build: bool = False,
+	is_self_hosted: bool = False,
 ) -> "Server":
 	"""Create test Server doc."""
 	if not proxy_server:
@@ -63,6 +64,7 @@ def create_test_server(
 			"virtual_machine": create_test_virtual_machine().name,
 			"platform": platform,
 			"use_for_build": use_for_build,
+			"is_self_hosted": is_self_hosted,
 		}
 	).insert()
 	server.reload()
