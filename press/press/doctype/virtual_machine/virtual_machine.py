@@ -194,6 +194,7 @@ class VirtualMachine(Document):
 			location=location,
 			public_net=public_net,
 			ssh_keys=[ssh_key],
+			user_data=self.get_cloud_init() if self.virtual_machine_image else "",
 		)
 		server = server_response.server
 		# We assing only one private IP, so should be fine
@@ -645,6 +646,7 @@ class VirtualMachine(Document):
 		else:
 			self.status = "Terminated"
 		self.save()
+		self.update_servers()
 
 	def _sync_oci(self, instance=None):  # noqa: C901
 		if not instance:
