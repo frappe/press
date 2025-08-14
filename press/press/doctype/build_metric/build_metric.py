@@ -44,17 +44,16 @@ class BuildMetric(Document):
 		"""If dates not specified take last week"""
 		self.start_from = self.start_from or frappe.utils.add_to_date(days=-7)
 		self.to = self.to or frappe.utils.now()
-		build_metric = GenerateBuildMetric(self.start_from, self.to)
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
 			"_get_metrics",
-			build_metric=build_metric,
 			queue="long",
 		)
 
-	def _get_metrics(self, build_metric: GenerateBuildMetric):
-		build_metric.get_metric()
+	def _get_metrics(self):
+		build_metric = GenerateBuildMetric(self.start_from, self.to)
+		build_metric.get_metrics()
 		self.metric_dump = json.dumps(build_metric.dump_metrics(), indent=4)
 		self.save()
 
@@ -97,7 +96,7 @@ class GenerateBuildMetric:
 			"build_count_split": self.get_build_count_platform_split(),
 		}
 
-	def get_metric(self):
+	def get_metrics(self):
 		"""
 		- Get total builds
 		- Get total failed builds (user, fc, manually)
@@ -234,7 +233,7 @@ class GenerateBuildMetric:
 		for fc_failure in fc_failures:
 			step_name, step, output = frappe.db.get_value(
 				"Deploy Candidate Build Step",
-				{"parent": fc_failure, "status": "Failure"},
+				{"parent": fc_failure["name"], "status": "Failure"},
 				["stage", "step", "output"],
 			)
 
