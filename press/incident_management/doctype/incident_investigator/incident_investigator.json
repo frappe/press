@@ -12,6 +12,7 @@
   "column_break_nl6k",
   "investigation_window_start_time",
   "investigation_window_end_time",
+  "cool_off_period",
   "investigation_section",
   "server_investigation_steps",
   "proxy_investigation_steps",
@@ -117,12 +118,19 @@
    "label": "Status",
    "options": "Pending\nInvestigating\nCompleted",
    "read_only": 1
+  },
+  {
+   "default": "300",
+   "description": "Don't trigger investigation for this interval on the same server.",
+   "fieldname": "cool_off_period",
+   "fieldtype": "Float",
+   "label": "Cool off period"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-13 10:53:42.602566",
+ "modified": "2025-08-14 11:04:51.002555",
  "modified_by": "Administrator",
  "module": "Incident Management",
  "name": "Incident Investigator",
