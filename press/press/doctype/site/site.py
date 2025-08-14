@@ -367,6 +367,7 @@ class Site(Document, TagHelpers):
 			self.validate_site_name()
 		self.validate_bench()
 		self.set_site_admin_password()
+		self.validate_admin_password()
 		self.validate_installed_apps()
 		self.validate_host_name()
 		self.validate_site_config()
@@ -391,6 +392,17 @@ class Site(Document, TagHelpers):
 		# set site.admin_password if doesn't exist
 		if not self.admin_password:
 			self.admin_password = frappe.generate_hash(length=16)
+
+	def validate_admin_password(self):
+		# Shell characters can cause issues because they are not escaped
+		# https://stackoverflow.com/questions/15783701/which-characters-need-to-be-escaped-when-using-bash/44581064#44581064
+		if not self.is_new():
+			return  # Only validate on new sites, changing the password once created does nothing (yet)
+		if not self.admin_password or self.is_dummy_password(self.admin_password):
+			return
+		SHELL_CHARS = " !\"#$&'()*,;<>?[\\]^`{|}"
+		if any(c in SHELL_CHARS for c in self.admin_password):
+			frappe.throw("Admin password must not contain special characters")
 
 	def validate_bench(self):
 		if (
