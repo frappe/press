@@ -160,59 +160,73 @@ class VirtualMachine(Document):
 				server.has_data_volume = self.has_data_volume
 				server.save()
 
-		if self.has_value_changed("disk_size"):
-			server = self.get_server()
-			server_plan_size = frappe.db.get_value("Server Plan", server.plan, "disk")
+		if self.has_value_changed("disk_size") and self.should_bill_addon_storage():
+			self.update_subscription_for_addon_storage()
 
-			if server_plan_size and self.disk_size > server_plan_size:
-				# Add on storage was added or updated
-				increment = self.disk_size - server_plan_size
-				if frappe.db.exists(
+	def should_bill_addon_storage(self):
+		"""Check if storage addition should create/update subscription record"""
+		# Increasing data volume regardless of auto or manual increment
+		if not self.has_data_volume:
+			return True
+
+		if self.has_data_volume and not self.has_value_changed("root_disk_size"):
+			return True
+
+		return False
+
+	def update_subscription_for_addon_storage(self):
+		server = self.get_server()
+		server_plan_size = frappe.db.get_value("Server Plan", server.plan, "disk")
+
+		if server_plan_size and self.disk_size > server_plan_size:
+			# Add on storage was added or updated
+			increment = self.disk_size - server_plan_size
+			if frappe.db.exists(
+				"Subscription",
+				{"document_name": server.name, "team": server.team, "plan_type": "Server Storage Plan"},
+			):
+				# update the existing subscription
+				frappe.db.set_value(
 					"Subscription",
-					{"document_name": server.name, "team": server.team, "plan_type": "Server Storage Plan"},
-				):
-					# update the existing subscription
-					frappe.db.set_value(
-						"Subscription",
-						{
-							"document_name": server.name,
-							"team": server.team,
-							"plan_type": "Server Storage Plan",
-						},
-						{
-							"additional_storage": increment,
-							"enabled": 1,
-						},
-					)
-				else:
-					# create a new subscription
-					frappe.get_doc(
-						doctype="Subscription",
-						team=server.team,
-						plan_type="Server Storage Plan",
-						plan="Add-on Storage plan",
-						document_type=server.doctype,
-						document_name=server.name,
-						additional_storage=increment,
-						enabled=1,
-					).insert()
-			elif self.disk_size == server_plan_size:
-				# Server was upgraded or downgraded from plan change
-				# Remove the existing add-on storage subscription
-				if frappe.db.exists(
+					{
+						"document_name": server.name,
+						"team": server.team,
+						"plan_type": "Server Storage Plan",
+					},
+					{
+						"additional_storage": increment,
+						"enabled": 1,
+					},
+				)
+			else:
+				# create a new subscription
+				frappe.get_doc(
+					doctype="Subscription",
+					team=server.team,
+					plan_type="Server Storage Plan",
+					plan="Add-on Storage plan",
+					document_type=server.doctype,
+					document_name=server.name,
+					additional_storage=increment,
+					enabled=1,
+				).insert()
+		elif self.disk_size == server_plan_size:
+			# Server was upgraded or downgraded from plan change
+			# Remove the existing add-on storage subscription
+			if frappe.db.exists(
+				"Subscription",
+				{"document_name": server.name, "team": server.team, "plan_type": "Server Storage Plan"},
+			):
+				frappe.db.set_value(
 					"Subscription",
-					{"document_name": server.name, "team": server.team, "plan_type": "Server Storage Plan"},
-				):
-					frappe.db.set_value(
-						"Subscription",
-						{
-							"document_name": server.name,
-							"team": server.team,
-							"plan_type": "Server Storage Plan",
-						},
-						"enabled",
-						0,
-					)
+					{
+						"document_name": server.name,
+						"team": server.team,
+						"plan_type": "Server Storage Plan",
+					},
+					"enabled",
+					0,
+				)
 
 	@frappe.whitelist()
 	def provision(self):

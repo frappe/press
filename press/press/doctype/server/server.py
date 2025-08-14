@@ -17,7 +17,6 @@ from frappe import _
 from frappe.core.utils import find, find_all
 from frappe.installer import subprocess
 from frappe.model.document import Document
-from frappe.utils import cint
 from frappe.utils.synchronization import filelock
 from frappe.utils.user import is_system_user
 
@@ -165,19 +164,6 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			frappe.throw("Failed to fetch storage usage. Try again later.")
 
-	@staticmethod
-	def should_bill_add_on_storage(server_doc: Server | BaseServer, mountpoint: str) -> bool:
-		"""Check if storage addition should create/update subscription record"""
-		# Increasing data volume regardless of auto or manual increment
-		if mountpoint != "/":
-			return True
-
-		# Increasing root but no data disk is attached regardless of auto or manual increment
-		if mountpoint == "/" and not server_doc.has_data_volume:
-			return True
-
-		return False
-
 	@dashboard_whitelist()
 	def increase_disk_size_for_server(
 		self,
@@ -231,8 +217,6 @@ class BaseServer(Document, TagHelpers):
 				mountpoint=mountpoint,
 				log=add_on_storage_log.name if add_on_storage_log else None,
 			)
-			if self.should_bill_add_on_storage(self, mountpoint=mountpoint):
-				self.create_subscription_for_storage(increment)
 		else:
 			server_doc: DatabaseServer = frappe.get_doc("Database Server", server)
 			mountpoint = (
@@ -268,8 +252,6 @@ class BaseServer(Document, TagHelpers):
 				mountpoint=mountpoint,
 				log=add_on_storage_log.name if add_on_storage_log else None,
 			)
-			if self.should_bill_add_on_storage(server_doc, mountpoint):
-				server_doc.create_subscription_for_storage(increment)
 
 	@dashboard_whitelist()
 	def configure_auto_add_storage(self, server: str, enabled: bool, min: int = 0, max: int = 0) -> None:
@@ -877,41 +859,6 @@ class BaseServer(Document, TagHelpers):
 			},
 		)
 		return frappe.get_doc("Subscription", name) if name else None
-
-	def create_subscription_for_storage(self, increment: int) -> None:
-		plan_type = "Server Storage Plan"
-		plan = frappe.get_value(plan_type, {"enabled": 1}, "name")
-
-		if existing_subscription := frappe.db.get_value(
-			"Subscription",
-			{
-				"document_type": self.doctype,
-				"document_name": self.name,
-				"team": self.team or "team@erpnext.com",
-				"plan_type": plan_type,
-				"plan": plan,
-			},
-			["name", "additional_storage"],
-			as_dict=True,
-		):
-			frappe.db.set_value(
-				"Subscription",
-				existing_subscription.name,
-				"additional_storage",
-				increment + cint(existing_subscription.additional_storage),
-			)
-		else:
-			frappe.get_doc(
-				{
-					"doctype": "Subscription",
-					"document_type": self.doctype,
-					"document_name": self.name,
-					"team": self.team,
-					"plan_type": plan_type,
-					"plan": plan,
-					"additional_storage": increment,
-				}
-			).insert()
 
 	@frappe.whitelist()
 	def rename_server(self):
