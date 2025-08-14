@@ -114,14 +114,14 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "IP",
-   "set_only_once": 1
+   "read_only": 1
   },
   {
    "fetch_from": "virtual_machine.private_ip_address",
    "fieldname": "private_ip",
    "fieldtype": "Data",
    "label": "Private IP",
-   "set_only_once": 1
+   "read_only": 1
   },
   {
    "fieldname": "mariadb_section",
@@ -143,7 +143,7 @@
    "fieldname": "agent_password",
    "fieldtype": "Password",
    "label": "Agent Password",
-   "set_only_once": 1
+   "read_only": 1
   },
   {
    "fieldname": "server_id",
