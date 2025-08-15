@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 
+import json
 import random
 import typing
 
@@ -49,6 +50,8 @@ class IncidentInvestigator(Document):
 		high_memory_usage_threshold: DF.Int
 		high_system_load_threshold: DF.Int
 		incident: DF.Link | None
+		incident_frequency: DF.Int
+		investigation_findings: DF.JSON | None
 		investigation_window_end_time: DF.Datetime | None
 		investigation_window_start_time: DF.Datetime | None
 		proxy_investigation_steps: DF.Table[InvestigationStep]
@@ -64,6 +67,13 @@ class IncidentInvestigator(Document):
 	def is_unable_to_investigate(self, step: "InvestigationStep"):
 		step.is_unable_to_investigate = True
 		step.save()
+
+	def add_investigation_findings(self, step: str, data: dict[str : int | str] | list):
+		"""Add investigation findings from each step"""
+		findings = json.loads(self.investigation_findings) if self.investigation_findings else {}
+		findings[step] = data
+		self.investigation_findings = json.dumps(findings, indent=2)
+		self.save()
 
 	def has_high_system_load(self, instance: str, step: "InvestigationStep"):
 		"""Check number of processes waiting for cpu time
@@ -81,9 +91,11 @@ class IncidentInvestigator(Document):
 			self.is_unable_to_investigate(step)
 			return
 
-		metric_data = MetricRangeDataFrame(metric_data)
+		metric_data = MetricRangeDataFrame(metric_data, ts_as_datetime=False)
 		step.is_likely_cause = float(metric_data.value.mean()) > self.high_system_load_threshold
 		step.save()
+
+		self.add_investigation_findings(step.step_name, metric_data.to_dict())
 
 	def has_high_cpu_load(self, instance: str, step: "InvestigationStep"):
 		"""Check high cpu rate during window"""
@@ -109,6 +121,8 @@ class IncidentInvestigator(Document):
 		step.is_likely_cause = cpu_busy_percentage > self.high_cpu_load_threshold
 		step.save()
 
+		self.add_investigation_findings(step.step_name, metric_data)
+
 	def has_high_memory_usage(self, instance: str, step: "InvestigationStep"):
 		"Determine high memory usage over a period of investigation window"
 		query = f"""
@@ -132,9 +146,11 @@ class IncidentInvestigator(Document):
 			self.is_unable_to_investigate(step)
 			return
 
-		metric_data = MetricRangeDataFrame(metric_data)
+		metric_data = MetricRangeDataFrame(metric_data, ts_as_datetime=False)
 		step.is_likely_cause = float(metric_data.value.mean()) > self.high_memory_usage_threshold
 		step.save()
+
+		self.add_investigation_findings(step.step_name, metric_data.to_dict())
 
 	def has_high_disk_usage(self, instance: str, step: "InvestigationStep"):
 		"""Determined if disk is full in any of the relevant mountpoints at present"""
@@ -155,6 +171,8 @@ class IncidentInvestigator(Document):
 
 		step.is_likely_cause = any(mountpoints.values())
 		step.save()
+
+		self.add_investigation_findings(step.step_name, mountpoints)
 
 	def are_sites_on_proxy_down(self, instance: str, step: "InvestigationStep"):
 		"""Randomly sample and ping 10% of sites on proxy"""
@@ -189,6 +207,8 @@ class IncidentInvestigator(Document):
 
 		step.is_likely_cause = all(status != 200 for status in ping_results)
 		step.save()
+
+		self.add_investigation_findings(step.step_name, ping_results)
 
 	@property
 	def steps(self) -> dict[str, list[tuple[str, "Callable"]]]:
@@ -255,6 +275,21 @@ class IncidentInvestigator(Document):
 				f"Investigation for {self.server} is in a cool off period",
 				frappe.ValidationError,
 			)
+
+	def check_incident_frequency(self):
+		"""
+		Check number of incidents on the server in the last 10 days.
+		This is done so that we can get the most recent incident on the server and take actions
+		based on the incident counts.
+		"""
+		self.incident_frequency = frappe.db.count(
+			"Incident Investigator",
+			{
+				"server": self.server,
+				"creation": ("between", [frappe.utils.add_to_date(days=-10), frappe.utils.now()]),
+			},
+		)
+		self.save()
 
 	def after_insert(self):
 		self.set_prerequisites()
