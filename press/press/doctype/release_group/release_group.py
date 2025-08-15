@@ -645,7 +645,9 @@ class ReleaseGroup(Document, TagHelpers):
 			apps_to_update = self.apps
 
 		apps = []
-		last_deployed_bench = get_last_doc("Bench", {"group": self.name, "status": "Active"})
+		last_deployed_bench = get_last_doc(
+			"Bench", {"group": self.name, "status": ("in", ("Active", "Installing", "Pending"))}
+		)
 
 		for app in self.deploy_information().apps:
 			app_to_update = find(apps_to_update, lambda x: x.get("app") == app.app)
