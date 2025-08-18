@@ -1,0 +1,199 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-08-14 12:59:28.001429",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "server_snapshot",
+  "execution_stage",
+  "column_break_retn",
+  "site",
+  "server",
+  "database_server",
+  "section_break_aftx",
+  "start",
+  "column_break_vsbg",
+  "end",
+  "column_break_ojhl",
+  "duration",
+  "section_break_mudc",
+  "replication_enabled_on_site",
+  "section_break_jnca",
+  "site_replication_config",
+  "column_break_aawe",
+  "bench_replication_config",
+  "section_break_eagz",
+  "servers",
+  "pre_migrate_steps",
+  "post_migrate_steps",
+  "failover_steps"
+ ],
+ "fields": [
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailing Over\nFailed Over\nFailure",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_retn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "site.server",
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Server",
+   "options": "Server",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "server.database_server",
+   "fieldname": "database_server",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Database Server",
+   "options": "Database Server",
+   "reqd": 1
+  },
+  {
+   "fieldname": "server_snapshot",
+   "fieldtype": "Link",
+   "label": "Server Snapshot",
+   "options": "Server Snapshot"
+  },
+  {
+   "fieldname": "section_break_eagz",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "failover_steps",
+   "fieldtype": "Table",
+   "label": "Failover Steps",
+   "options": "Logical Replication Step"
+  },
+  {
+   "fieldname": "pre_migrate_steps",
+   "fieldtype": "Table",
+   "label": "Pre Migrate Steps",
+   "options": "Logical Replication Step"
+  },
+  {
+   "fieldname": "post_migrate_steps",
+   "fieldtype": "Table",
+   "label": "Post Migrate Steps",
+   "options": "Logical Replication Step"
+  },
+  {
+   "fieldname": "section_break_mudc",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_jnca",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "site_replication_config",
+   "fieldtype": "Small Text",
+   "label": "Site Replication Config",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_aawe",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "bench_replication_config",
+   "fieldtype": "Small Text",
+   "label": "Bench Replication Config",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "replication_enabled_on_site",
+   "fieldtype": "Check",
+   "label": "Replication Enabled on Site"
+  },
+  {
+   "fieldname": "servers",
+   "fieldtype": "Table",
+   "label": "Servers",
+   "options": "Logical Replication Server"
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "label": "Site",
+   "options": "Site",
+   "reqd": 1
+  },
+  {
+   "fieldname": "execution_stage",
+   "fieldtype": "Select",
+   "label": "Execution Stage",
+   "options": "Pre-Migrate\nPost-Migrate\nFailover"
+  },
+  {
+   "fieldname": "section_break_aftx",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "start",
+   "fieldtype": "Datetime",
+   "label": "Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_vsbg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "end",
+   "fieldtype": "Datetime",
+   "label": "End",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ojhl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Duration",
+   "label": "Duration",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-08-20 15:47:18.011266",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Logical Replication Backup",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

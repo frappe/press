@@ -493,6 +493,14 @@ class BaseServer(Document, TagHelpers):
 		return agent.ping()
 
 	@frappe.whitelist()
+	def ping_mariadb(self) -> bool:
+		try:
+			agent = Agent(self.name, self.doctype)
+			return agent.ping_database(self).get("reachable")
+		except Exception:
+			return False
+
+	@frappe.whitelist()
 	def ping_agent_job(self):
 		agent = Agent(self.name, self.doctype)
 		return agent.create_agent_job("Ping Job", "ping_job").name
@@ -2602,7 +2610,7 @@ class Server(BaseServer):
 		return bench_mount_points.issubset(mount_points)
 
 	@dashboard_whitelist()
-	def create_snapshot(self, consistent: bool = False):
+	def create_snapshot(self, consistent: bool = False) -> str:
 		doc = frappe.get_doc(
 			{
 				"doctype": "Server Snapshot",
@@ -2613,6 +2621,7 @@ class Server(BaseServer):
 		frappe.msgprint(
 			f"Snapshot created successfully. <a href='/app/server-snapshot/{doc.name}' target='_blank'>Check Here</a>"
 		)
+		return doc.name
 
 
 def scale_workers(now=False):

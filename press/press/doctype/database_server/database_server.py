@@ -322,6 +322,11 @@ class DatabaseServer(BaseServer):
 			queue="long",
 			enqueue_after_commit=True,
 			variables=self.get_variables_to_update(),
+			now=(
+				hasattr(self, "flags")
+				and hasattr(self.flags, "update_mariadb_system_variables_synchronously")
+				and self.flags.update_mariadb_system_variables_synchronously
+			),
 		)
 
 	def get_changed_variables(
@@ -467,10 +472,13 @@ class DatabaseServer(BaseServer):
 		persist: bool = True,
 		save: bool = True,
 		avoid_update_if_exists: bool = False,
+		update_variables_synchronously: bool = False,  # This will run the job in same thread
 	):
 		"""Add or update MariaDB variable on the server"""
 		if not skip and not value:
 			frappe.throw("For non-skippable variables, value is mandatory")
+
+		self.flags.update_mariadb_system_variables_synchronously = update_variables_synchronously
 
 		existing = find(self.mariadb_system_variables, lambda x: x.mariadb_variable == variable)
 		if existing:
@@ -912,10 +920,12 @@ class DatabaseServer(BaseServer):
 			log_error("Database Server Password Reset Exception", server=self.as_dict())
 			raise
 
+	def get_replication_status(self):
+		return self.agent.get_replication_status(self)
+
 	@frappe.whitelist()
 	def sync_replication_config(self):
-		agent = self.agent
-		data = agent.get_replication_status(self)
+		data = self.get_replication_status()
 		if not data.get("success"):
 			frappe.throw(data.get("message", "Failed to fetch replication status"))
 		data = data.get("data", {})
@@ -1338,17 +1348,29 @@ class DatabaseServer(BaseServer):
 			self.enable_read_only_mode()
 
 	@frappe.whitelist()
-	def enable_read_only_mode(self):
+	def enable_read_only_mode(self, update_variables_synchronously: bool = False):
 		"""Enable read-only mode for the database server"""
 		self.add_or_update_mariadb_variable(
-			"read_only", "value_str", "1", skip=False, persist=True, save=True
+			"read_only",
+			"value_str",
+			"1",
+			skip=False,
+			persist=True,
+			save=True,
+			update_variables_synchronously=update_variables_synchronously,
 		)
 
 	@frappe.whitelist()
-	def disable_read_only_mode(self):
+	def disable_read_only_mode(self, update_variables_synchronously: bool = False):
 		"""Disable read-only mode for the database server"""
 		self.add_or_update_mariadb_variable(
-			"read_only", "value_str", "0", skip=False, persist=True, save=True
+			"read_only",
+			"value_str",
+			"0",
+			skip=False,
+			persist=True,
+			save=True,
+			update_variables_synchronously=update_variables_synchronously,
 		)
 
 	@frappe.whitelist()
