@@ -256,6 +256,7 @@ class Site(Document, TagHelpers):
 					"Site",
 					filters={
 						"team": get_current_team(),
+						"status": ("!=", "Archived"),
 					},
 				)
 				> 3
