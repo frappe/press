@@ -486,12 +486,13 @@ class TestReleaseGroup(FrappeTestCase):
 		)
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	@patch.object(BaseServer, "calculated_increase_disk_size", Mock())
 	def test_insufficient_space(self):
 		from press.press.doctype.server.test_server import create_test_server
 		from press.press.doctype.site.test_site import create_test_bench
 
 		app = create_test_app()
-		server = create_test_server()
+		server = create_test_server(auto_increase_storage=False)
 		test_release_group = create_test_release_group([app], servers=[server.name])
 		create_test_bench(group=test_release_group)
 
@@ -509,18 +510,25 @@ class TestReleaseGroup(FrappeTestCase):
 			test_release_group.check_app_server_storage()
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
-	def test_insufficient_space_on_public_server(self):
+	@patch.object(BaseServer, "calculated_increase_disk_size", Mock())
+	@patch.object(Agent, "get", mock_image_size(60))
+	@patch.object(BaseServer, "free_space", mock_free_space(space_required=5400000000))
+	def test_insufficient_space_on_auto_add_storage_servers(self):
 		from press.press.doctype.server.test_server import create_test_server
 		from press.press.doctype.site.test_site import create_test_bench
 
-		app = create_test_app()
-		server = create_test_server(public=1)
-		test_release_group = create_test_release_group([app], servers=[server.name])
-		create_test_bench(group=test_release_group)
+		# In case of public and servers with auto increase storage
+		# We should avoid throwing space errors instead just increment it for them
 
-		with (
-			patch.object(Agent, "get", mock_image_size(6)),
-			patch.object(BaseServer, "free_space", mock_free_space(space_required=5400000000)),
-			patch.object(BaseServer, "calculated_increase_disk_size", Mock()),
-		):
-			test_release_group.check_app_server_storage()
+		app = create_test_app()
+		server_1 = create_test_server(public=1)
+		test_release_group_1 = create_test_release_group([app], servers=[server_1.name])
+		create_test_bench(group=test_release_group_1)
+
+		test_release_group_1.check_app_server_storage()
+
+		server_2 = create_test_server(auto_increase_storage=1)
+		test_release_group_2 = create_test_release_group([app], servers=[server_2.name])
+		create_test_bench(group=test_release_group_2)
+
+		test_release_group_2.check_app_server_storage()

@@ -21,6 +21,7 @@ from frappe.utils.caching import redis_cache
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
+from press.exceptions import InsufficientSpaceOnServer, VolumeResizeLimitError
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import new_app
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
@@ -29,6 +30,7 @@ from press.press.doctype.deploy_candidate_build.deploy_candidate_build import cr
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server import Server
 from press.utils import (
+	fmt_timedelta,
 	get_app_tag,
 	get_client_blacklisted_keys,
 	get_current_team,
@@ -573,6 +575,22 @@ class ReleaseGroup(Document, TagHelpers):
 		dc = self.create_deploy_candidate()
 		dc.schedule_build_and_deploy()
 
+	def _try_server_size_increase_or_throw(self, server: Server, mountpoint: str):
+		"""In case of low storage on the server try to either increase the storage (if allowed) or throw an error"""
+		if server.auto_increase_storage:
+			try:
+				server.calculated_increase_disk_size(mountpoint=mountpoint)
+			except VolumeResizeLimitError:
+				frappe.throw(
+					f"We are unable to increase server space right now for the deploy. Please wait "
+					f"{fmt_timedelta(server.time_to_wait_before_updating_volume)} before trying again.",
+					InsufficientSpaceOnServer,
+				)
+		else:
+			frappe.throw(
+				f"Not enough space on server {server.name} to create a new bench.", InsufficientSpaceOnServer
+			)
+
 	def check_app_server_storage(self):
 		"""
 		Check storage on the app server before deploying
@@ -591,10 +609,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 			last_image_size = Agent(server.name).get(f"server/image-size/{last_deployed_bench.build}")["size"]
 			if last_image_size and (free_space < last_image_size):
-				if server.public:
-					server.calculated_increase_disk_size(mountpoint)
-				else:
-					frappe.throw(f"Not enough space on server {server.name} to create new bench.")
+				self._try_server_size_increase_or_throw(server, mountpoint)
 
 	@frappe.whitelist()
 	def create_deploy_candidate(
