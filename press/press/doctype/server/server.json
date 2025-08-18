@@ -503,6 +503,7 @@
   },
   {
    "default": "0",
+   "description": "Public release groups will be deployed here",
    "fieldname": "public",
    "fieldtype": "Check",
    "label": "Public"
@@ -616,7 +617,7 @@
   }
  ],
  "links": [],
- "modified": "2025-08-14 02:08:11.441126",
+ "modified": "2025-08-18 13:14:31.778991",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
