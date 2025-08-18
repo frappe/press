@@ -298,6 +298,45 @@ class IncidentInvestigator(Document):
 		)
 		self.save()
 
+	def before_insert(self):
+		"""
+		Do not trigger investigation on the same server if cool off period has not passed
+		Do not trigger investigation on self hosted servers
+		"""
+		if frappe.get_value("Server", self.server, "is_self_hosted"):
+			frappe.throw(
+				f"Ignoring investigation for self hosted server {self.server}", frappe.ValidationError
+			)
+
+		last_created_investigation = frappe.get_value(
+			"Incident Investigator", {"server": self.server}, "creation"
+		)
+
+		if not last_created_investigation:
+			return
+
+		time_since_last_investigation: datetime.timedelta = parse_datetime("now") - last_created_investigation
+		if time_since_last_investigation.total_seconds() < self.cool_off_period:
+			frappe.throw(
+				f"Investigation for {self.server} is in a cool off period",
+				frappe.ValidationError,
+			)
+
+	def check_incident_frequency(self):
+		"""
+		Check number of incidents on the server in the last 10 days.
+		This is done so that we can get the most recent incident on the server and take actions
+		based on the incident counts.
+		"""
+		self.incident_frequency = frappe.db.count(
+			"Incident Investigator",
+			{
+				"server": self.server,
+				"creation": ("between", [frappe.utils.add_to_date(days=-10), frappe.utils.now()]),
+			},
+		)
+		self.save()
+
 	def after_insert(self):
 		self.set_prerequisites()
 		self.add_investigation_steps()
