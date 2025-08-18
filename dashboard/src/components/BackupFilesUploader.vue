@@ -8,7 +8,7 @@
 				:key="file.type"
 				:type="file.type"
 				@success="onFileUpload(file, $event)"
-				@failure="() => onFileUploadFailure()"
+				@failure="(e) => onFileUploadFailure(e)"
 				@setFile="file.file = $event"
 				:fileValidator="(f) => backupFileChecker(f, file.type)"
 				:s3="true"
@@ -40,9 +40,10 @@
 										: success
 											? formatBytes(fileObj.size)
 											: error
-												? error
+												? null
 												: file.description
 								}}
+								<span v-if="error" v-html="error" />
 							</span>
 						</template>
 						<template #actions>
@@ -136,11 +137,18 @@ export default {
 				this.$emit('uploadComplete', backupFiles);
 			}
 		},
-		onFileUploadFailure() {
-			this.$emit('abortUpload');
+		onFileUploadFailure(e) {
+			this.$emit('abortUpload', e);
 		},
 		async backupFileChecker(file, type) {
 			this.fileSize[type] = file?.size ?? 0;
+
+			if (file.size > 5 * 1024 * 1024 * 1024) {
+				throw new Error(
+					'File size exceeds the limit of 5 GiB. Please try the <a href="https://docs.frappe.io/cloud/sites/migrate-an-existing-site#migrate-using-python-script" class=underline>migrate</a> script.',
+				);
+			}
+
 			if (type === 'database') {
 				// valid strings are "database.sql.gz", "database.sql", "database.sql (1).gz", "database.sql (2).gz"
 				if (!/\.sql( \(\d\))?\.gz$|\.sql$/.test(file.name)) {

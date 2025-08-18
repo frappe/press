@@ -27,7 +27,7 @@
   "preliminary_investigation_section",
   "likely_cause",
   "column_break_jrzi",
-  "suggestions",
+  "corrective_suggestions",
   "preventive_suggestions",
   "section_break_bjjy",
   "updates",
@@ -195,15 +195,15 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "suggestions",
-   "fieldtype": "Table",
-   "label": "Corrective Suggestions",
-   "options": "Incident Suggestion"
-  },
-  {
    "fieldname": "preventive_suggestions",
    "fieldtype": "Table",
    "label": "Preventive Suggestions",
+   "options": "Incident Suggestion"
+  },
+  {
+   "fieldname": "corrective_suggestions",
+   "fieldtype": "Table",
+   "label": "Corrective Suggestions",
    "options": "Incident Suggestion"
   },
   {
