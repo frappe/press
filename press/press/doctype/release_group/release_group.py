@@ -582,7 +582,8 @@ class ReleaseGroup(Document, TagHelpers):
 		"""
 		for server in self.servers:
 			server: Server = frappe.get_cached_doc("Server", server.server)
-			free_space = server.free_space(server.guess_data_disk_mountpoint()) / 1024**3
+			mountpoint = server.guess_data_disk_mountpoint()
+			free_space = server.free_space(mountpoint) / 1024**3
 			last_deployed_bench = get_last_doc("Bench", {"group": self.name, "status": "Active"})
 
 			if not last_deployed_bench:
@@ -590,7 +591,10 @@ class ReleaseGroup(Document, TagHelpers):
 
 			last_image_size = Agent(server.name).get(f"server/image-size/{last_deployed_bench.build}")["size"]
 			if last_image_size and (free_space < last_image_size):
-				frappe.throw(f"Not enough space on server {server.name} to create new bench.")
+				if server.public:
+					server.calculated_increase_disk_size(mountpoint)
+				else:
+					frappe.throw(f"Not enough space on server {server.name} to create new bench.")
 
 	@frappe.whitelist()
 	def create_deploy_candidate(
