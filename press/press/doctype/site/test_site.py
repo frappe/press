@@ -423,7 +423,7 @@ class TestSite(FrappeTestCase):
 	@patch.object(RemoteFile, "download_link", new="http://test.com")
 	@patch.object(RemoteFile, "get_content", new=lambda _: {"a": "test"})
 	@patch.object(RemoteFile, "exists", lambda _: True)
-	@patch.object(BaseServer, "increase_disk_size")
+	@patch.object(BaseServer, "calculated_increase_disk_size")
 	@patch.object(BaseServer, "create_subscription_for_storage", new=Mock())
 	def test_restore_site_adds_storage_if_no_sufficient_storage_available_on_public_server(
 		self, mock_increase_disk_size: Mock

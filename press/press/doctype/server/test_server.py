@@ -37,6 +37,7 @@ def create_test_server(
 	platform: str = "x86_64",
 	use_for_build: bool = False,
 	is_self_hosted: bool = False,
+	auto_increase_storage: bool = False,
 ) -> "Server":
 	"""Create test Server doc."""
 	if not proxy_server:
@@ -65,6 +66,7 @@ def create_test_server(
 			"platform": platform,
 			"use_for_build": use_for_build,
 			"is_self_hosted": is_self_hosted,
+			"auto_increase_storage": auto_increase_storage,
 		}
 	).insert()
 	server.reload()
