@@ -1491,6 +1491,15 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			},
 		)
 
+	def ping_database(self, database_server: DatabaseServer):
+		return self.post(
+			"/database/ping",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+			},
+		)
+
 	def get_replication_status(self, database_server: DatabaseServer):
 		return self.post(
 			"/database/replication/status",

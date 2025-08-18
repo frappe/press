@@ -227,30 +227,38 @@ class ServerSnapshot(Document):
 
 	def create_press_jobs(self):
 		self.flags.created_press_jobs = []
-		self.app_server_snapshot_press_job = frappe.get_doc(
-			{
-				"doctype": "Press Job",
-				"job_type": "Snapshot Disk",
-				"server_type": "Server",
-				"server": self.app_server,
-				"virtual_machine": frappe.db.get_value("Server", self.app_server, "virtual_machine"),
-				"arguments": json.dumps(self.arguments_for_press_job, indent=2, sort_keys=True),
-			}
-		).insert(ignore_permissions=True)
-		self.flags.created_press_jobs.append(self.app_server_snapshot_press_job.name)
-		self.database_server_snapshot_press_job = frappe.get_doc(
-			{
-				"doctype": "Press Job",
-				"job_type": "Snapshot Disk",
-				"server_type": "Database Server",
-				"server": self.database_server,
-				"virtual_machine": frappe.db.get_value(
-					"Database Server", self.database_server, "virtual_machine"
-				),
-				"arguments": json.dumps(self.arguments_for_press_job, indent=2, sort_keys=True),
-			}
-		).insert(ignore_permissions=True)
-		self.flags.created_press_jobs.append(self.database_server_snapshot_press_job.name)
+		self.app_server_snapshot_press_job = (
+			frappe.get_doc(
+				{
+					"doctype": "Press Job",
+					"job_type": "Snapshot Disk",
+					"server_type": "Server",
+					"server": self.app_server,
+					"virtual_machine": frappe.db.get_value("Server", self.app_server, "virtual_machine"),
+					"arguments": json.dumps(self.arguments_for_press_job, indent=2, sort_keys=True),
+				}
+			)
+			.insert(ignore_permissions=True)
+			.name
+		)
+		self.flags.created_press_jobs.append(self.app_server_snapshot_press_job)
+		self.database_server_snapshot_press_job = (
+			frappe.get_doc(
+				{
+					"doctype": "Press Job",
+					"job_type": "Snapshot Disk",
+					"server_type": "Database Server",
+					"server": self.database_server,
+					"virtual_machine": frappe.db.get_value(
+						"Database Server", self.database_server, "virtual_machine"
+					),
+					"arguments": json.dumps(self.arguments_for_press_job, indent=2, sort_keys=True),
+				}
+			)
+			.insert(ignore_permissions=True)
+			.name
+		)
+		self.flags.created_press_jobs.append(self.database_server_snapshot_press_job)
 		self.save(ignore_version=True)
 
 	def resume_app_server_services(self):

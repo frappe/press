@@ -1,0 +1,818 @@
+# Copyright (c) 2025, Frappe and contributors
+# For license information, please see license.txt
+
+import json
+import time
+from enum import Enum
+from typing import TYPE_CHECKING, Literal
+
+import frappe
+from frappe.model.document import Document
+
+from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
+
+if TYPE_CHECKING:
+	from press.press.doctype.database_server.database_server import DatabaseServer
+	from press.press.doctype.logical_replication_step.logical_replication_step import LogicalReplicationStep
+	from press.press.doctype.release_group.release_group import ReleaseGroup
+	from press.press.doctype.server.server import BaseServer, Server
+	from press.press.doctype.server_snapshot.server_snapshot import ServerSnapshot
+	from press.press.doctype.site.site import Site
+
+
+StepStatus = Enum("StepStatus", ["Pending", "Running", "Skipped", "Success", "Failure"])
+
+VOLUME_INITIALIZATION_RATE = 300  # in MB/s, this is the rate at which the volume will be initialized
+MINIMUM_REPLICATION_LAG_FOR_TAKING_DOWNTIME = (
+	1200  # in seconds, this is the minimum replication lag required before taking downtime
+)
+
+"""
+Replication configuration keys
+- read_from_replica: bool
+- allow_reads_during_maintenance: bool
+- replica_host: str
+"""
+REPLICATION_CONFIG_KEYS = [
+	"read_from_replica",
+	"allow_reads_during_maintenance",
+	"replica_host",
+]
+
+
+def check_replication_lag(server: "DatabaseServer", target_lag: int) -> int:
+	# -1 -> Something wrong with replication, consider as failure
+	# 0 -> We haven't yet reached the targetted replication lag
+	# 1 -> We have reached the targetted replication lag
+	try:
+		replication_status = server.get_replication_status().get("data", {}).get("slave_status", {})
+		if not replication_status:
+			# No replication status available
+			# That means server is not replicating even
+			# Means failed replication setup
+			return -1
+
+		if (
+			# No replication status available
+			# That means server is not replicating even
+			# Means failed replication setup
+			not replication_status
+			# Usually `Seconds_Behind_Master` should be there
+			# If not there, then replication is not running and fail it
+			or "Seconds_Behind_Master" not in replication_status
+			# If any error in replication
+			# Mark the process as failure
+			# As it's not safe to proceed + not easy to automatically fix
+			or replication_status.get("Last_Errno", 0) != 0
+			or replication_status.get("Last_IO_Errno", 0) != 0
+			or replication_status.get("Last_SQL_Errno", 0) != 0
+			or replication_status.get("Slave_IO_Running") != "Yes"
+			or replication_status.get("Slave_SQL_Running") != "Yes"
+		):
+			# Replication is not running
+			return -1
+
+		if (
+			replication_status.get("Seconds_Behind_Master", 10000000000)  # Default to a large number
+			<= target_lag
+		):
+			# Replication lag is less than the minimum required
+			return 1
+
+		return 0
+
+	except Exception as e:
+		print(e)
+		return 0
+
+
+class LogicalReplicationBackup(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		from press.press.doctype.logical_replication_server.logical_replication_server import (
+			LogicalReplicationServer,
+		)
+		from press.press.doctype.logical_replication_step.logical_replication_step import (
+			LogicalReplicationStep,
+		)
+
+		bench_replication_config: DF.SmallText | None
+		database_server: DF.Link
+		duration: DF.Duration | None
+		end: DF.Datetime | None
+		execution_stage: DF.Literal["Pre-Migrate", "Post-Migrate", "Failover"]
+		failover_steps: DF.Table[LogicalReplicationStep]
+		post_migrate_steps: DF.Table[LogicalReplicationStep]
+		pre_migrate_steps: DF.Table[LogicalReplicationStep]
+		replication_enabled_on_site: DF.Check
+		server: DF.Link
+		server_snapshot: DF.Link | None
+		servers: DF.Table[LogicalReplicationServer]
+		site: DF.Link
+		site_replication_config: DF.SmallText | None
+		start: DF.Datetime | None
+		status: DF.Literal["Pending", "Running", "Success", "Failing Over", "Failed Over", "Failure"]
+		# end: auto-generated types
+
+		SyncStep = False
+		AsyncStep = True
+		Wait = True
+		NoWait = False
+
+	def get_steps__template(self, context: Literal["pre_migrate", "post_migrate", "failover"]):
+		SyncStep = False
+		AsyncStep = True  # some external job
+		Wait = True
+		NoWait = False
+		PreMigrateStep = "pre_migrate"
+		PostMigrateStep = "post_migrate"
+		FailoverStep = "failover"
+
+		methods = [
+			(self.pre__validate_existing_replica_health, SyncStep, NoWait, PreMigrateStep),
+			(self.pre__create_consistent_server_snapshot, SyncStep, NoWait, PreMigrateStep),
+			(self.pre__wait_for_servers_to_be_online, SyncStep, Wait, PreMigrateStep),
+			(self.pre__wait_for_server_snapshot_to_be_ready, AsyncStep, NoWait, PreMigrateStep),
+			(self.pre__provision_hot_standby_database_server, SyncStep, Wait, PreMigrateStep),
+			(self.pre__wait_for_hot_standby_volume_initialization, SyncStep, Wait, PreMigrateStep),
+			(self.pre__wait_for_hot_standby_database_server_to_be_ready, AsyncStep, NoWait, PreMigrateStep),
+			(self.pre__wait_for_minimal_replication_lag, SyncStep, Wait, PreMigrateStep),
+			(self.pre__enable_maintenance_mode_in_site, AsyncStep, NoWait, PreMigrateStep),
+			(self.pre__enable_read_only_mode_in_database_server, AsyncStep, NoWait, PreMigrateStep),
+			(self.pre__wait_for_database_server_to_be_available, SyncStep, Wait, PreMigrateStep),
+			(self.pre__remove_replication_configuration_from_site, SyncStep, NoWait, PreMigrateStep),
+			(self.pre__wait_for_complete_hot_standby_replica_syncing, SyncStep, Wait, PreMigrateStep),
+			(self.pre__wait_for_complete_other_replica_syncing, SyncStep, Wait, PreMigrateStep),
+			(self.pre__stop_hot_standby_database_replication, SyncStep, NoWait, PreMigrateStep),
+			(self.pre__stop_other_replica_database_replication, SyncStep, NoWait, PreMigrateStep),
+			(self.pre__disable_read_only_mode_from_database_server, SyncStep, NoWait, PreMigrateStep),
+			(self.pre__wait_for_database_server_to_be_available, SyncStep, Wait, PreMigrateStep),
+			####################################################################################
+			(self.post__archive_hot_standby_database_server, SyncStep, NoWait, PostMigrateStep),
+			(self.post__activate_sites, AsyncStep, NoWait, PostMigrateStep),
+			(self.post__enable_replication_on_replica, SyncStep, NoWait, PostMigrateStep),
+			(self.post__wait_for_minimal_replication_lag, SyncStep, Wait, PostMigrateStep),
+			(self.post__add_replication_configuration_to_site, AsyncStep, NoWait, PostMigrateStep),
+			####################################################################################
+			(self.failover__promote_hot_standby_database_server, SyncStep, NoWait, FailoverStep),
+			(self.failover__disable_read_only_mode_on_new_primary, SyncStep, NoWait, FailoverStep),
+			(self.failover__archive_old_primary_database_server, SyncStep, NoWait, FailoverStep),
+			(self.failover__join_other_replicas_to_new_primary, SyncStep, NoWait, FailoverStep),
+			(self.post__activate_sites, AsyncStep, NoWait, FailoverStep),
+			(self.post__wait_for_minimal_replication_lag, SyncStep, Wait, FailoverStep),
+			(self.post__add_replication_configuration_to_site, AsyncStep, NoWait, FailoverStep),
+		]
+
+		steps = []
+		for (
+			method,
+			is_async,
+			wait_for_completion,
+			step_context,
+		) in methods:
+			if step_context != context:
+				continue
+			steps.append(
+				{
+					"step": method.__doc__,
+					"method": method.__name__,
+					"is_async": is_async,
+					"wait_for_completion": wait_for_completion,
+				}
+			)
+		return steps
+
+	@property
+	def pre_migrate_steps__template(self):
+		return self.get_steps__template("pre_migrate")
+
+	@property
+	def post_migrate_steps__template(self):
+		return self.get_steps__template("post_migrate")
+
+	@property
+	def failover_steps__template(self):
+		return self.get_steps__template("failover")
+
+	@property
+	def site_doc(self) -> "Site":
+		return frappe.get_doc("Site", self.site)
+
+	@property
+	def release_group_doc(self) -> "ReleaseGroup":
+		return frappe.get_doc("Release Group", frappe.db.get_value("Site", self.site, "group"))
+
+	@property
+	def server_snapshot_doc(self) -> "ServerSnapshot":
+		return frappe.get_doc("Server Snapshot", self.server_snapshot)
+
+	@property
+	def app_server_doc(self) -> "Server":
+		return frappe.get_doc("Server", self.server)
+
+	@property
+	def database_server_doc(self) -> "DatabaseServer":
+		return frappe.get_doc("Database Server", self.database_server)
+
+	@property
+	def replica_database_servers(self) -> list[str]:
+		return [s.database_server for s in self.servers if s.current_role == "Replica"]
+
+	@property
+	def replica_database_server_docs(self) -> list["DatabaseServer"]:
+		replica_servers = []
+		for s in self.servers:
+			if s.current_role == "Replica":
+				replica_servers.append(frappe.get_doc("Database Server", s.database_server))
+		return replica_servers
+
+	@property
+	def hot_standby_database_server(self) -> "str | None":
+		server = None
+		for s in self.servers:
+			if s.current_role == "Hot Standby":
+				server = s.database_server
+
+		return server
+
+	@property
+	def hot_standby_database_server_doc(self) -> "DatabaseServer | None":
+		hot_standby_server = self.hot_standby_database_server
+		if not hot_standby_server:
+			return None
+		return frappe.get_doc("Database Server", hot_standby_server)
+
+	@property
+	def site_replication_config_dict(self) -> dict:
+		try:
+			return json.loads(self.site_replication_config or "{}")
+		except json.JSONDecodeError:
+			frappe.throw("Invalid site replication config JSON format.")
+
+	@property
+	def bench_replication_config_dict(self) -> dict:
+		try:
+			return json.loads(self.bench_replication_config or "{}")
+		except json.JSONDecodeError:
+			frappe.throw("Invalid bench replication config JSON format.")
+
+	def after_insert(self):
+		self.populate_server_infos()
+		self.add_steps()
+		self.store_db_replication_config_of_site(save=False)
+		self.store_replication_config_of_bench(save=False)
+		self.save()
+
+	#########################################################
+	#                Pre Migrate Steps                      #
+	#########################################################
+	def pre__validate_existing_replica_health(self):
+		"""Validate Existing Replica Health"""
+		return StepStatus.Success
+
+	def pre__create_consistent_server_snapshot(self):
+		"""Create Consistent Snapshot Of Servers"""
+		try:
+			self.server_snapshot = self.app_server_doc.create_snapshot(consistent=True)
+			self.save()
+			return StepStatus.Success
+		except Exception as e:
+			frappe.throw(f"Failed to create consistent server snapshot: {e}")
+			return StepStatus.Failure
+
+	def pre__wait_for_servers_to_be_online(self):
+		"""Wait For Servers To Be Online"""
+
+		servers = [["Server", self.server], ["Database Server", self.database_server]]
+		for doctype, name in servers:
+			server: "BaseServer" = frappe.get_doc(doctype, name)
+			if server.status != "Active":
+				time.sleep(1)
+				return StepStatus.Running
+
+			server.ping_ansible()
+
+			plays = frappe.get_all(
+				"Ansible Play",
+				{"server": name, "play": "Ping Server"},
+				["status"],
+				order_by="creation desc",
+				limit=1,
+			)
+
+			if not plays or plays[0].status in ["Pending", "Running", "Failure"]:
+				return StepStatus.Running
+
+		return StepStatus.Success
+
+	def pre__wait_for_server_snapshot_to_be_ready(self):
+		"""Wait For Snapshot To Be Ready"""
+		status = frappe.get_value(
+			"Server Snapshot",
+			self.server_snapshot,
+			"status",
+		)
+		if status in ["Pending", "Processing"]:
+			return StepStatus.Running
+		if status == "Completed":
+			return StepStatus.Success
+		return StepStatus.Failure
+
+	def pre__provision_hot_standby_database_server(self):
+		"""Provision Hot Standby Database Server"""
+		hot_standby_database_server: "DatabaseServer" = self.server_snapshot_doc.create_server(
+			server_type="Database Server",
+			provision_db_replica=True,
+			create_subscription=False,  # Don't charge hot standby database server
+			master_db_server=self.database_server,
+			title=self.database_server_doc.title + " (Hot Standby)",
+			team=self.database_server_doc.team,
+			plan=self.database_server_doc.plan,
+		)
+		self.append(
+			"servers",
+			{"current_role": "Hot Standby", "database_server": hot_standby_database_server, "new_role": ""},
+		)
+		self.save()
+		return StepStatus.Success
+
+	def pre__wait_for_hot_standby_volume_initialization(self):
+		"""Wait For Hot Standby Volume Initialization"""
+		# Can be optimized not to spawn up a bg job to just wait
+		db_server_snapshot_size = frappe.get_value(
+			"Virtual Disk Snapshot",
+			frappe.get_value("Server Snapshot", self.server_snapshot, "app_server_snapshot"),
+			"size",
+		)
+		required_initialization_time = db_server_snapshot_size * 1024 / VOLUME_INITIALIZATION_RATE
+		server_creation_time = frappe.get_value(
+			"Database Server",
+			self.hot_standby_database_server,
+			"creation",
+		)
+		if (frappe.utils.now_datetime() - server_creation_time).seconds > required_initialization_time:
+			return StepStatus.Success
+		return StepStatus.Running
+
+	def pre__wait_for_hot_standby_database_server_to_be_ready(self):
+		"""Wait For Hot Standby Database Server To Be Ready"""
+		server = self.hot_standby_database_server_doc
+		if server.status != "Active":
+			return StepStatus.Running
+
+		plays = frappe.get_all(
+			"Ansible Play",
+			{"server": server.name, "play": "Ping Server"},
+			["status"],
+			order_by="creation desc",
+			limit=1,
+		)
+
+		if not plays:
+			return StepStatus.Running
+
+		status = plays[0].status
+		if status in ["Pending", "Running"]:
+			return StepStatus.Running
+
+		if status == "Failure":
+			return StepStatus.Failure
+
+		if status == "Success":
+			return StepStatus.Success
+
+		return StepStatus.Failure
+
+	def pre__wait_for_minimal_replication_lag(self):
+		"""Wait For Minimal Replication Lag"""
+		lag_status = check_replication_lag(
+			self.hot_standby_database_server_doc, MINIMUM_REPLICATION_LAG_FOR_TAKING_DOWNTIME
+		)
+		if lag_status == -1:
+			return StepStatus.Failure
+		return StepStatus.Success if lag_status == 1 else StepStatus.Running
+
+	def pre__enable_maintenance_mode_in_site(self):
+		"""Enable Maintenance Mode For All Sites"""
+		status = self.deactivate_site()
+		if status == "Success":
+			return StepStatus.Success
+		if status == "Failure":
+			return StepStatus.Failure
+		return StepStatus.Running
+
+	def pre__enable_read_only_mode_in_database_server(self):
+		"""Enable Read Only Mode In Database Server"""
+		self.database_server_doc.enable_read_only_mode(update_variables_synchronously=True)
+		return StepStatus.Success
+
+	def pre__wait_for_database_server_to_be_available(self):
+		"""Wait For Database Server To Be Online"""
+		if self.database_server_doc.ping_mariadb():
+			return StepStatus.Success
+
+		return StepStatus.Running
+
+	def pre__remove_replication_configuration_from_site(self):
+		"""Remove Replication Configuration From Site"""
+		self.remove_replication_config_from_site_and_bench()
+		return StepStatus.Success
+
+	def pre__wait_for_complete_hot_standby_replica_syncing(self):
+		"""Wait For Complete Hot Standby Replica Syncing"""
+
+		lag_status = check_replication_lag(self.hot_standby_database_server_doc, 0)
+		if lag_status == -1:
+			return StepStatus.Failure
+		return StepStatus.Success if lag_status == 1 else StepStatus.Running
+
+	def pre__wait_for_complete_other_replica_syncing(self):
+		"""Wait For Complete Other Replica Syncing"""
+
+		for replica in self.replica_database_server_docs:
+			lag_status = check_replication_lag(replica, 0)
+			if lag_status == -1:
+				return StepStatus.Failure
+			if lag_status == 0:
+				return StepStatus.Running
+
+		return StepStatus.Success
+
+	def pre__stop_hot_standby_database_replication(self):
+		"""Stop Hot Standby Database Replication"""
+		self.hot_standby_database_server_doc.stop_replication()
+		return StepStatus.Success
+
+	def pre__stop_other_replica_database_replication(self):
+		"""Stop Other Replica Database Replication"""
+		for replica in self.replica_database_server_docs:
+			replica.stop_replication()
+		return StepStatus.Success
+
+	def pre__disable_read_only_mode_from_database_server(self):
+		"""Disable Read Only Mode From Database Server"""
+		self.database_server_doc.disable_read_only_mode(update_variables_synchronously=True)
+		return StepStatus.Success
+
+	#########################################################
+	#                Post Migrate Steps                     #
+	#########################################################
+	def post__archive_hot_standby_database_server(self):
+		"""Archive Hot Standby Database Server"""
+		pass
+
+	def post__activate_sites(self):
+		"""Activate Sites"""
+		pass
+
+	def post__enable_replication_on_replica(self):
+		"""Enable Replication On Replica"""
+		pass
+
+	def post__wait_for_minimal_replication_lag(self):
+		"""Wait For Minimal Replication Lag"""
+		"""
+		Failure in this should not trigger a site recovery
+		Just throw the replica.
+		"""
+		pass
+
+	def post__add_replication_configuration_to_site(self):
+		"""Add Replication Configuration To Site"""
+		pass
+
+	#########################################################
+	#                    Failover Steps                     #
+	#########################################################
+	def failover__promote_hot_standby_database_server(self):
+		"""Promote Hot Standby Database Server"""
+		pass
+
+	def failover__disable_read_only_mode_on_new_primary(self):
+		"""Disable Read Only Mode From New Primary Database Server"""
+		pass
+
+	def failover__archive_old_primary_database_server(self):
+		"""Archive Old Primary Database Server"""
+		pass
+
+	def failover__join_other_replicas_to_new_primary(self):
+		"""Join Other Replicas To New Primary"""
+		pass
+
+	#########################################################
+	#              Common Steps / Private Methods           #
+	#########################################################
+	def deactivate_site(self):
+		# Check if any deactivate site job already exists
+		if frappe.db.count(
+			"Agent Job",
+			{
+				"site": self.site,
+				"reference_doctype": self.doctype,
+				"reference_name": self.name,
+			},
+		):
+			return frappe.db.get_value(
+				"Agent Job",
+				{
+					"site": self.site,
+					"reference_doctype": self.doctype,
+					"reference_name": self.name,
+				},
+				"status",
+			)
+
+		# Deactivate the site
+		self.app_server_doc.agent.deactivate_site(
+			self.site_doc, reference_doctype=self.doctype, reference_name=self.name
+		)
+		return "Pending"
+
+	def store_db_replication_config_of_site(self, save: bool = True):
+		config = {}
+		site = self.site_doc
+		for key in REPLICATION_CONFIG_KEYS:
+			value = site.get_config_value_for_key(key)
+			if value is not None:
+				config[key] = value
+
+		if config.get("replica_host") and config.get("read_from_replica"):
+			self.replication_enabled_on_site = True
+
+		self.site_replication_config = json.dumps(config, indent=2)
+		if save:
+			self.save()
+
+	def store_replication_config_of_bench(self, save: bool = True):
+		config = {}
+		common_site_config: dict = json.loads(self.release_group_doc.common_site_config)
+		for key in REPLICATION_CONFIG_KEYS:
+			value = common_site_config.get(key)
+			if value is not None:
+				config[key] = value
+
+		if config.get("replica_host") and config.get("read_from_replica"):
+			self.replication_enabled_on_site = True
+
+		self.bench_replication_config = json.dumps(config, indent=2)
+		if save:
+			self.save()
+
+	def remove_replication_config_from_site_and_bench(self):
+		site = self.site_doc
+		release_group = self.release_group_doc
+
+		site.delete_multiple_config(self.site_replication_config_dict.keys())
+
+		for key in self.bench_replication_config_dict:
+			release_group.delete_config(key)
+
+	def add_replication_config_to_site_and_bench(self):
+		site = self.site_doc
+		release_group = self.release_group_doc
+
+		for key, value in self.site_replication_config_dict.items():
+			site.update_config(key, value)
+
+		release_group.update_config(self.bench_replication_config_dict)
+
+	#########################################################
+	#                 Internal Methods                      #
+	#########################################################
+	def populate_server_infos(self):
+		self.append(
+			"servers",
+			{"current_role": "Master", "database_server": self.database_server, "new_role": ""},
+		)
+		# Find the replica servers
+		replica_servers = frappe.get_all(
+			"Database Server",
+			{"is_primary": False, "primary": self.database_server, "status": "Active"},
+			pluck="name",
+		)
+		for replica in replica_servers:
+			self.append(
+				"servers",
+				{"current_role": "Replica", "database_server": replica, "new_role": ""},
+			)
+
+		# Do validation that the database server doesn't have any broken replication
+		if frappe.db.count(
+			"Database Server",
+			{
+				"primary": self.database_server,
+				"is_primary": 0,
+				"status": ("in", ["Pending", "Installing", "Broken"]),
+			},
+		):
+			frappe.throw(
+				f"Database Server {self.database_server} has few inactive replicas. Please fix it before proceeding."
+			)
+
+	def add_steps(self):
+		for step in self.pre_migrate_steps__template:
+			step.update({"status": "Pending"})
+			self.append("pre_migrate_steps", step)
+
+		for step in self.post_migrate_steps__template:
+			step.update({"status": "Pending"})
+			self.append("post_migrate_steps", step)
+
+		for step in self.failover_steps__template:
+			step.update({"status": "Pending"})
+			self.append("failover_steps", step)
+
+	@frappe.whitelist()
+	def execute(self):
+		if self.status == "Pending":
+			frappe.msgprint("Replication is already in Pending state. It will be executed soon.")
+			return
+		# Just set to Pending, scheduler will pick it up
+		self.status = "Pending"
+		self.start = frappe.utils.now_datetime()
+		self.save()
+
+	def fail(self, save: bool = True) -> None:
+		self.status = "Failure"
+		for step in self.current_execution_steps:
+			if step.status == "Pending":
+				step.status = "Skipped"
+		self.end = frappe.utils.now_datetime()
+		self.duration = frappe.utils.cint((self.end - self.start).total_seconds())
+		if save:
+			self.save(ignore_version=True)
+
+	def finish(self) -> None:
+		# if status is already Success or Failure, then don't update the status and durations
+		if self.status not in ("Success", "Failure"):
+			self.status = "Success" if self.is_restoration_steps_successful() else "Failure"
+			self.end = frappe.utils.now_datetime()
+			self.duration = frappe.utils.cint((self.end - self.start).total_seconds())
+
+		self.save()
+
+	@frappe.whitelist()
+	def next(self) -> None:
+		if self.status != "Running" and self.status not in ("Success", "Failure"):
+			self.status = "Running"
+			self.save(ignore_version=True)
+
+		next_step_to_run = None
+
+		# Check if current_step is running
+		current_running_step = self.current_running_step
+		if current_running_step:
+			next_step_to_run = current_running_step
+		elif self.next_step:
+			next_step_to_run = self.next_step
+
+		if not next_step_to_run:
+			# We've executed everything
+			self.finish()
+			return
+
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"execute_step",
+			step_name=next_step_to_run.name,
+			enqueue_after_commit=True,
+			deduplicate=next_step_to_run.wait_for_completion
+			is False,  # Don't deduplicate if wait_for_completion is True
+			job_id=f"logical_replication||{self.name}||{next_step_to_run.name}",
+			now=True,
+			timeout=600,
+		)
+
+	@frappe.whitelist(allow_guest=True)
+	def retry(self):
+		# Reset the states
+		self.status = "Pending"
+		self.start = frappe.utils.now_datetime()
+		self.end = None
+		self.duration = None
+		for step in self.current_execution_steps:
+			step.status = "Pending"
+		self.save(ignore_version=True)
+
+	@frappe.whitelist()
+	def force_continue(self) -> None:
+		# Mark all failed and skipped steps as pending
+		for step in self.current_execution_steps:
+			if step.status in ("Failure", "Skipped"):
+				step.status = "Pending"
+
+		self.status = "Running"
+		self.save()
+
+		self.next()
+
+	@frappe.whitelist()
+	def force_fail(self) -> None:
+		# Mark all pending steps as failure
+		for step in self.current_execution_steps:
+			if step.status == "Pending":
+				step.status = "Failure"
+		self.status = "Failure"
+		self.save()
+
+	@property
+	def current_execution_steps(self) -> list["LogicalReplicationStep"]:
+		if self.execution_stage == "Pre-Migrate":
+			return self.pre_migrate_steps
+		if self.execution_stage == "Post-Migrate":
+			return self.post_migrate_steps
+		if self.execution_stage == "Failover":
+			return self.failover_steps
+
+		frappe.throw(f"Invalid execution stage: {self.execution_stage}")
+		return None
+
+	@property
+	def current_running_step(self) -> "LogicalReplicationStep | None":
+		for step in self.current_execution_steps:
+			if step.status == "Running":
+				return step
+		return None
+
+	@property
+	def next_step(self) -> "LogicalReplicationStep | None":
+		for step in self.current_execution_steps:
+			if step.status == "Pending":
+				return step
+		return None
+
+	def is_restoration_steps_successful(self) -> bool:
+		return all(step.status == "Success" for step in self.current_execution_steps)
+
+	@frappe.whitelist()
+	def execute_step(self, step_name):
+		step = self.get_step(step_name)
+
+		if not step.start:
+			step.start = frappe.utils.now_datetime()
+		try:
+			result = getattr(self, step.method)()
+			step.status = result.name
+			"""
+			If the step is async and function has returned Running,
+			Then save the document and return
+
+			Some external process will resume the job later
+			"""
+			if step.is_async and result == StepStatus.Running:
+				self.save(ignore_version=True)
+				return
+
+			"""
+			If the step is sync and function is marked to wait for completion,
+			Then wait for the function to complete
+			"""
+			if step.wait_for_completion and result == StepStatus.Running:
+				step.attempts = step.attempts + 1 if step.attempts else 1
+				self.save(ignore_version=True)
+				time.sleep(1)
+
+		except Exception:
+			step.status = "Failure"
+			step.traceback = frappe.get_traceback(with_context=True)
+
+		step.end = frappe.utils.now_datetime()
+		step.duration = (step.end - step.start).total_seconds()
+
+		if step.status == "Failure":
+			self.fail(save=True)
+		else:
+			self.save(ignore_version=True)
+			print("Not running the next step, as this is a sync step")
+			# self.next()
+
+	def get_step(self, step_name) -> "LogicalReplicationStep | None":
+		for step in self.current_execution_steps:
+			if step.name == step_name:
+				return step
+		return None
+
+	def get_step_by_method(self, method_name) -> "LogicalReplicationStep | None":
+		for step in self.current_execution_steps:
+			if step.method == method_name:
+				return step
+		return None
+
+	def ansible_run(self, command):
+		inventory = f"{self.virtual_machine.public_ip_address},"
+		result = AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
+		self.add_command(command, result)
+		return result
+
+	def add_command(self, command, result):
+		pretty_result = json.dumps(result, indent=2, sort_keys=True, default=str)
+		comment = f"<pre><code>{command}</code></pre><pre><code>{pretty_result}</pre></code>"
+		self.add_comment(text=comment)
