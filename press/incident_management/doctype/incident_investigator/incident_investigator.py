@@ -102,7 +102,7 @@ class IncidentInvestigator(Document):
 		step.is_likely_cause = float(metric_data.value.mean()) > self.high_system_load_threshold
 		step.save()
 
-		self.add_investigation_findings(step.step_name, metric_data.to_dict())
+		self.add_investigation_findings(f"{step.parentfield}-{step.step_name}", metric_data.to_dict())
 
 	def has_high_cpu_load(self, instance: str, step: "InvestigationStep"):
 		"""Check high cpu rate during window"""
@@ -128,7 +128,7 @@ class IncidentInvestigator(Document):
 		step.is_likely_cause = cpu_busy_percentage > self.high_cpu_load_threshold
 		step.save()
 
-		self.add_investigation_findings(step.step_name, metric_data)
+		self.add_investigation_findings(f"{step.parentfield}-{step.step_name}", metric_data)
 
 	def has_high_memory_usage(self, instance: str, step: "InvestigationStep"):
 		"Determine high memory usage over a period of investigation window"
@@ -157,7 +157,7 @@ class IncidentInvestigator(Document):
 		step.is_likely_cause = float(metric_data.value.mean()) > self.high_memory_usage_threshold
 		step.save()
 
-		self.add_investigation_findings(step.step_name, metric_data.to_dict())
+		self.add_investigation_findings(f"{step.parentfield}-{step.step_name}", metric_data.to_dict())
 
 	def has_high_disk_usage(self, instance: str, step: "InvestigationStep"):
 		"""Determined if disk is full in any of the relevant mountpoints at present"""
@@ -179,7 +179,7 @@ class IncidentInvestigator(Document):
 		step.is_likely_cause = any(mountpoints.values())
 		step.save()
 
-		self.add_investigation_findings(step.step_name, mountpoints)
+		self.add_investigation_findings(f"{step.parentfield}-{step.step_name}", mountpoints)
 
 	def are_sites_on_proxy_down(self, instance: str, step: "InvestigationStep"):
 		"""Randomly sample and ping 10% of sites on proxy"""
@@ -215,7 +215,7 @@ class IncidentInvestigator(Document):
 		step.is_likely_cause = all(status != 200 for status in ping_results)
 		step.save()
 
-		self.add_investigation_findings(step.step_name, ping_results)
+		self.add_investigation_findings(f"{step.parentfield}-{step.step_name}", ping_results)
 
 	@property
 	def steps(self) -> dict[str, list[tuple[str, "Callable"]]]:
