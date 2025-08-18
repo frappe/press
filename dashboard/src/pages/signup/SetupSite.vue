@@ -88,7 +88,6 @@ import { toast } from 'vue-sonner';
 import { validateSubdomain } from '../../utils/site';
 import { DashboardError } from '../../utils/error';
 import LoginBox from '../../components/auth/LoginBox.vue';
-import dayjs from '../../utils/dayjs';
 
 export default {
 	name: 'SignupSetup',
@@ -162,6 +161,11 @@ export default {
 				doctype: 'Product Trial',
 				name: this.productId,
 				auto: true,
+				onSuccess: (data) => {
+					if (data.prefilled_subdomain) {
+						this.subdomain = data.prefilled_subdomain;
+					}
+				},
 			};
 		},
 		createSite() {

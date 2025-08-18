@@ -23,6 +23,7 @@ class ProductTrial(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.site.site import Site
 		from press.saas.doctype.hybrid_pool_item.hybrid_pool_item import HybridPoolItem
 		from press.saas.doctype.product_trial_app.product_trial_app import ProductTrialApp
 
@@ -62,6 +63,7 @@ class ProductTrial(Document):
 			frappe.throw("Not permitted")
 
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
+		doc.prefilled_subdomain = self.get_unique_site_name()
 		return doc
 
 	def validate(self):

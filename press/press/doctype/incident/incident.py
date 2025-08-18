@@ -83,6 +83,7 @@ class Incident(WebsiteGenerator):
 		alert: DF.Link | None
 		alerts: DF.Table[IncidentAlerts]
 		cluster: DF.Link | None
+		corrective_suggestions: DF.Table[IncidentSuggestion]
 		description: DF.TextEditor | None
 		investigation: DF.Link | None
 		likely_cause: DF.Text | None
@@ -106,7 +107,6 @@ class Incident(WebsiteGenerator):
 		]
 		subject: DF.Data | None
 		subtype: DF.Literal["High CPU: user", "High CPU: iowait", "Disk full"]
-		suggestions: DF.Table[IncidentSuggestion]
 		type: DF.Literal["Database Down", "Server Down", "Proxy Down"]
 		updates: DF.Table[IncidentUpdates]
 	# end: auto-generated types
@@ -208,6 +208,7 @@ class Incident(WebsiteGenerator):
 	@frappe.whitelist()
 	def regather_info_and_screenshots(self):
 		self.identify_affected_resource()
+		self.identify_problem()
 		self.take_grafana_screenshots()
 
 	def get_cpu_state(self, resource: str) -> tuple[str, float]:

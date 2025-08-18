@@ -3,7 +3,7 @@
 		class="flex h-screen w-screen flex-col items-center justify-center bg-gray-600 bg-opacity-50"
 		v-if="
 			$resources?.siteRequest?.doc?.status &&
-			!['Error', 'Site Created'].includes($resources?.siteRequest?.doc?.status)
+			!['Error'].includes($resources?.siteRequest?.doc?.status)
 		"
 	>
 		<SignupSpinner />

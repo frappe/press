@@ -1675,3 +1675,29 @@ def get_formatted_config_value(config_type: str, value: Any, key: str, name: str
 		return frappe.get_value("Site Config", {"key": key, "parent": name}, "value")
 
 	return value
+
+
+def add_public_servers_to_public_groups():
+	"""
+	Add public servers to public release groups.
+	Used when a new server is added to the system.
+	"""
+	public_groups = frappe.get_all(
+		"Release Group",
+		filters={"public": 1, "enabled": 1, "central_bench": 0},
+		fields=["name"],
+	)
+	public_servers = frappe.get_all(
+		"Server",
+		filters={"public": 1, "status": "Active"},
+		pluck="name",
+	)
+
+	for group in public_groups:
+		rg = ReleaseGroup("Release Group", group.name)
+		for server in public_servers:
+			if find(rg.servers, lambda x: x.server == server):
+				continue
+			rg.reload()
+			rg.append("servers", {"server": server, "default": False})
+			rg.save()

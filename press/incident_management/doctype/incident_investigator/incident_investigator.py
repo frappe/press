@@ -5,6 +5,7 @@
 import json
 import random
 import typing
+from enum import Enum
 
 import frappe
 import requests
@@ -23,6 +24,12 @@ if typing.TYPE_CHECKING:
 
 
 INVESTIGATION_WINDOW = "5m"  # Use 5m timeframe
+
+
+class Status(Enum):
+	PENDING = "Pending"
+	INVESTIGATING = "Investigating"
+	COMPLETED = "Completed"
 
 
 def get_prometheus_client() -> PrometheusConnect:
@@ -95,7 +102,7 @@ class IncidentInvestigator(Document):
 		step.is_likely_cause = float(metric_data.value.mean()) > self.high_system_load_threshold
 		step.save()
 
-		self.add_investigation_findings(step.step_name, metric_data.to_dict())
+		self.add_investigation_findings(f"{step.parentfield}-{step.step_name}", metric_data.to_dict())
 
 	def has_high_cpu_load(self, instance: str, step: "InvestigationStep"):
 		"""Check high cpu rate during window"""
@@ -121,7 +128,7 @@ class IncidentInvestigator(Document):
 		step.is_likely_cause = cpu_busy_percentage > self.high_cpu_load_threshold
 		step.save()
 
-		self.add_investigation_findings(step.step_name, metric_data)
+		self.add_investigation_findings(f"{step.parentfield}-{step.step_name}", metric_data)
 
 	def has_high_memory_usage(self, instance: str, step: "InvestigationStep"):
 		"Determine high memory usage over a period of investigation window"
@@ -150,7 +157,7 @@ class IncidentInvestigator(Document):
 		step.is_likely_cause = float(metric_data.value.mean()) > self.high_memory_usage_threshold
 		step.save()
 
-		self.add_investigation_findings(step.step_name, metric_data.to_dict())
+		self.add_investigation_findings(f"{step.parentfield}-{step.step_name}", metric_data.to_dict())
 
 	def has_high_disk_usage(self, instance: str, step: "InvestigationStep"):
 		"""Determined if disk is full in any of the relevant mountpoints at present"""
@@ -172,7 +179,7 @@ class IncidentInvestigator(Document):
 		step.is_likely_cause = any(mountpoints.values())
 		step.save()
 
-		self.add_investigation_findings(step.step_name, mountpoints)
+		self.add_investigation_findings(f"{step.parentfield}-{step.step_name}", mountpoints)
 
 	def are_sites_on_proxy_down(self, instance: str, step: "InvestigationStep"):
 		"""Randomly sample and ping 10% of sites on proxy"""
@@ -180,7 +187,7 @@ class IncidentInvestigator(Document):
 		def ping(url: str) -> int:
 			try:
 				return requests.get(f"https://{url}/api/method/ping", timeout=5).status_code
-			except requests.exceptions.ReadTimeout:
+			except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectTimeout):
 				return 502
 
 		Site = frappe.qb.DocType("Site")
@@ -208,7 +215,7 @@ class IncidentInvestigator(Document):
 		step.is_likely_cause = all(status != 200 for status in ping_results)
 		step.save()
 
-		self.add_investigation_findings(step.step_name, ping_results)
+		self.add_investigation_findings(f"{step.parentfield}-{step.step_name}", ping_results)
 
 	@property
 	def steps(self) -> dict[str, list[tuple[str, "Callable"]]]:
@@ -249,7 +256,7 @@ class IncidentInvestigator(Document):
 		self.high_system_load_threshold = 3 * (
 			frappe.db.get_value("Virtual Machine", self.server, "vcpu") or 4
 		)
-		self.status = "Pending"
+		self.set_status(Status.PENDING)
 		self.save()
 
 	def before_insert(self):
@@ -307,6 +314,11 @@ class IncidentInvestigator(Document):
 		if self.status == "Pending":
 			frappe.enqueue_doc(self.doctype, self.name, "investigate", queue="long")
 
+	def set_status(self, status: Status):
+		"Set/Update investigation status"
+		self.status = status.value
+		self.save(ignore_version=True)
+
 	def _investigate_component(self, component_field: str, step_key: str):
 		"""Generic investigation method for f/n/m servers."""
 		component = frappe.db.get_value("Server", self.server, component_field)
@@ -338,9 +350,8 @@ class IncidentInvestigator(Document):
 		Proxy rules for investigation
 		In addition to able we ping sites need to fast exit in case of likely cause
 		"""
-		self.status = "Investigating"
+		self.set_status(Status.INVESTIGATING)
 		self.investigate_proxy_server()
 		self.investigate_database_server()
 		self.investigate_server()
-		self.status = "Completed"
-		self.save()
+		self.set_status(Status.COMPLETED)

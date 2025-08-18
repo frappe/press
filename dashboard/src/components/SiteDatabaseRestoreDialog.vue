@@ -28,7 +28,7 @@
 						}
 					"
 					@uploadComplete="(files) => startRestore(files)"
-					@abortUpload="() => failureHandler()"
+					@abortUpload="(e) => failureHandler(e)"
 				/>
 			</div>
 			<div class="mt-3">
@@ -121,7 +121,8 @@ export default {
 				skip_failing_patches: this.skipFailingPatches,
 			});
 		},
-		failureHandler() {
+		failureHandler(e) {
+			if (e) return;
 			this.uploadingFiles = false;
 			this.errorMessageFromUploader =
 				'Failed to upload files. Please try again.';
