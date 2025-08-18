@@ -10,6 +10,7 @@ import frappe
 from frappe.core.utils import find
 from frappe.tests.utils import FrappeTestCase
 
+from press.agent import Agent
 from press.api.bench import deploy_information
 from press.api.client import get_list
 from press.press.doctype.agent_job.agent_job import AgentJob
@@ -21,10 +22,25 @@ from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
 )
+from press.press.doctype.server.server import BaseServer
 from press.press.doctype.team.test_team import create_test_team
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.app.app import App
+
+
+def mock_free_space(space_required: int):
+	def wrapper(*args, **kwargs):
+		return space_required
+
+	return wrapper
+
+
+def mock_image_size(image_size: int):
+	def wrapper(*args, **kwargs):
+		return {"size": image_size}
+
+	return wrapper
 
 
 def create_test_release_group(
@@ -468,3 +484,27 @@ class TestReleaseGroup(FrappeTestCase):
 		self.assertEqual(
 			frappe.get_value("Deploy Candidate Build", arm_build, "deploy_on_server"), f2_server.name
 		)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_insufficient_space(self):
+		from press.press.doctype.server.test_server import create_test_server
+		from press.press.doctype.site.test_site import create_test_bench
+
+		app = create_test_app()
+		server = create_test_server()
+		test_release_group = create_test_release_group([app], servers=[server.name])
+		create_test_bench(group=test_release_group)
+
+		with patch.object(
+			BaseServer, "free_space", mock_free_space(space_required=54000000000)
+		) and patch.object(
+			Agent, "get", mock_image_size(5.21)
+		):  # Image size is 5.2gb:  # mocking 50 gib of storage enough space!
+			test_release_group.check_app_server_storage()
+
+		with (
+			self.assertRaises(frappe.ValidationError)
+			and patch.object(BaseServer, "free_space", mock_free_space(space_required=5400000000))
+			and patch.object(Agent, "get", mock_image_size(6))
+		):  # Image size is 6gb:  # mocking 5 gib of storage enough space!
+			test_release_group.check_app_server_storage()

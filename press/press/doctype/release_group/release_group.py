@@ -19,6 +19,7 @@ from frappe.query_builder.functions import Count
 from frappe.utils import cstr, flt, get_url, sbool
 from frappe.utils.caching import redis_cache
 
+from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import new_app
@@ -572,6 +573,25 @@ class ReleaseGroup(Document, TagHelpers):
 		dc = self.create_deploy_candidate()
 		dc.schedule_build_and_deploy()
 
+	def check_app_server_storage(self):
+		"""
+		Check storage on the app server before deploying
+		Check if the free space on the server is more than the last
+		image deployed, assuming new image to be created will have the same or more
+		size than the last time.
+		"""
+		for server in self.servers:
+			server: Server = frappe.get_cached_doc("Server", server.server)
+			free_space = server.free_space(server.guess_data_disk_mountpoint()) / 1024**3
+			last_deployed_bench = get_last_doc("Bench", {"group": self.name, "status": "Active"})
+
+			if not last_deployed_bench:
+				continue
+
+			last_image_size = Agent(server.name).get(f"server/image-size/{last_deployed_bench.build}")["size"]
+			if last_image_size and (free_space < last_image_size):
+				frappe.throw(f"Not enough space on server {server.name} to create new bench.")
+
 	@frappe.whitelist()
 	def create_deploy_candidate(
 		self,
@@ -581,6 +601,7 @@ class ReleaseGroup(Document, TagHelpers):
 		if not self.enabled:
 			return None
 
+		self.check_app_server_storage()
 		apps = self.get_apps_to_update(apps_to_update)
 		if apps_to_update is None:
 			self.validate_dc_apps_against_rg(apps)
