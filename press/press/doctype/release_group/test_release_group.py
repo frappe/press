@@ -495,16 +495,32 @@ class TestReleaseGroup(FrappeTestCase):
 		test_release_group = create_test_release_group([app], servers=[server.name])
 		create_test_bench(group=test_release_group)
 
-		with patch.object(
-			BaseServer, "free_space", mock_free_space(space_required=54000000000)
-		) and patch.object(
-			Agent, "get", mock_image_size(5.21)
+		with (
+			patch.object(BaseServer, "free_space", mock_free_space(space_required=54000000000)),
+			patch.object(Agent, "get", mock_image_size(5.21)),
 		):  # Image size is 5.2gb:  # mocking 50 gib of storage enough space!
 			test_release_group.check_app_server_storage()
 
 		with (
-			self.assertRaises(frappe.ValidationError)
-			and patch.object(BaseServer, "free_space", mock_free_space(space_required=5400000000))
-			and patch.object(Agent, "get", mock_image_size(6))
+			self.assertRaises(frappe.ValidationError),
+			patch.object(BaseServer, "free_space", mock_free_space(space_required=5400000000)),
+			patch.object(Agent, "get", mock_image_size(6)),
 		):  # Image size is 6gb:  # mocking 5 gib of storage enough space!
+			test_release_group.check_app_server_storage()
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_insufficient_space_on_public_server(self):
+		from press.press.doctype.server.test_server import create_test_server
+		from press.press.doctype.site.test_site import create_test_bench
+
+		app = create_test_app()
+		server = create_test_server(public=1)
+		test_release_group = create_test_release_group([app], servers=[server.name])
+		create_test_bench(group=test_release_group)
+
+		with (
+			patch.object(Agent, "get", mock_image_size(6)),
+			patch.object(BaseServer, "free_space", mock_free_space(space_required=5400000000)),
+			patch.object(BaseServer, "calculated_increase_disk_size", Mock()),
+		):
 			test_release_group.check_app_server_storage()
