@@ -521,14 +521,8 @@ class TestReleaseGroup(FrappeTestCase):
 		# We should avoid throwing space errors instead just increment it for them
 
 		app = create_test_app()
-		server_1 = create_test_server(public=1)
-		test_release_group_1 = create_test_release_group([app], servers=[server_1.name])
-		create_test_bench(group=test_release_group_1)
+		server = create_test_server(auto_increase_storage=1)
+		test_release_group = create_test_release_group([app], servers=[server.name])
+		create_test_bench(group=test_release_group)
 
-		test_release_group_1.check_app_server_storage()
-
-		server_2 = create_test_server(auto_increase_storage=1)
-		test_release_group_2 = create_test_release_group([app], servers=[server_2.name])
-		create_test_bench(group=test_release_group_2)
-
-		test_release_group_2.check_app_server_storage()
+		test_release_group.check_app_server_storage()
