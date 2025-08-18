@@ -1627,6 +1627,19 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			reference_name=reference_name,
 		)
 
+	def update_database_host_in_all_benches(
+		self, db_host: str, reference_doctype: str | None = None, reference_name: str | None = None
+	):
+		return self.create_agent_job(
+			"Update Database Host",
+			"/benches/database_host",
+			data={
+				"db_host": db_host,
+			},
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
 
 class AgentCallbackException(Exception):
 	pass
