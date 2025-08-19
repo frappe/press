@@ -3684,8 +3684,13 @@ def process_add_domain_job_update(job):
 		site.set_redirect(auto_generated_domain)
 
 	elif job.status in ("Failure", "Delivery Failure"):
-		product_trial_request.status = "Error"
-		product_trial_request.save(ignore_permissions=True)
+		# temporarily retry to avoid race condition
+		if job.status == "Failure" and int(job.retry_count) < 1:
+			job.db_set("retry_count", job.retry_count + 1)
+			job.retry_in_place()
+		else:
+			product_trial_request.status = "Error"
+			product_trial_request.save(ignore_permissions=True)
 
 
 def get_remove_step_status(job):

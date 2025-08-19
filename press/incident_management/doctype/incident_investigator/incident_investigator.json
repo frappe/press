@@ -12,15 +12,19 @@
   "column_break_nl6k",
   "investigation_window_start_time",
   "investigation_window_end_time",
+  "cool_off_period",
   "investigation_section",
   "server_investigation_steps",
   "proxy_investigation_steps",
   "database_investigation_steps",
+  "investigation_findings",
   "thresholds_tab",
   "high_system_load_threshold",
   "high_disk_usage_threshold_in_gb",
   "high_cpu_load_threshold",
-  "high_memory_usage_threshold"
+  "high_memory_usage_threshold",
+  "incident_frequency",
+  "actions_tab"
  ],
  "fields": [
   {
@@ -117,12 +121,37 @@
    "label": "Status",
    "options": "Pending\nInvestigating\nCompleted",
    "read_only": 1
+  },
+  {
+   "default": "300",
+   "description": "Don't trigger investigation for this interval on the same server.",
+   "fieldname": "cool_off_period",
+   "fieldtype": "Float",
+   "label": "Cool off period"
+  },
+  {
+   "description": "How many such incidents occurred for this server in the last 10 days.",
+   "fieldname": "incident_frequency",
+   "fieldtype": "Int",
+   "label": "Incident Frequency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "actions_tab",
+   "fieldtype": "Tab Break",
+   "label": "Actions"
+  },
+  {
+   "fieldname": "investigation_findings",
+   "fieldtype": "JSON",
+   "label": "Investigation Findings",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-13 10:53:42.602566",
+ "modified": "2025-08-15 21:27:09.306592",
  "modified_by": "Administrator",
  "module": "Incident Management",
  "name": "Incident Investigator",

@@ -2,8 +2,10 @@
 # For license information, please see license.txt
 
 
+import json
 import random
 import typing
+from enum import Enum
 
 import frappe
 import requests
@@ -13,6 +15,7 @@ from prometheus_api_client import MetricRangeDataFrame, PrometheusConnect
 from prometheus_api_client.utils import parse_datetime
 
 if typing.TYPE_CHECKING:
+	import datetime
 	from collections.abc import Callable
 
 	from apps.press.press.incident_management.doctype.investigation_step.investigation_step import (
@@ -21,6 +24,12 @@ if typing.TYPE_CHECKING:
 
 
 INVESTIGATION_WINDOW = "5m"  # Use 5m timeframe
+
+
+class Status(Enum):
+	PENDING = "Pending"
+	INVESTIGATING = "Investigating"
+	COMPLETED = "Completed"
 
 
 def get_prometheus_client() -> PrometheusConnect:
@@ -41,12 +50,15 @@ class IncidentInvestigator(Document):
 
 		from press.incident_management.doctype.investigation_step.investigation_step import InvestigationStep
 
+		cool_off_period: DF.Float
 		database_investigation_steps: DF.Table[InvestigationStep]
 		high_cpu_load_threshold: DF.Int
 		high_disk_usage_threshold_in_gb: DF.Int
 		high_memory_usage_threshold: DF.Int
 		high_system_load_threshold: DF.Int
 		incident: DF.Link | None
+		incident_frequency: DF.Int
+		investigation_findings: DF.JSON | None
 		investigation_window_end_time: DF.Datetime | None
 		investigation_window_start_time: DF.Datetime | None
 		proxy_investigation_steps: DF.Table[InvestigationStep]
@@ -62,6 +74,13 @@ class IncidentInvestigator(Document):
 	def is_unable_to_investigate(self, step: "InvestigationStep"):
 		step.is_unable_to_investigate = True
 		step.save()
+
+	def add_investigation_findings(self, step: str, data: dict[str : int | str] | list):
+		"""Add investigation findings from each step"""
+		findings = json.loads(self.investigation_findings) if self.investigation_findings else {}
+		findings[step] = data
+		self.investigation_findings = json.dumps(findings, indent=2)
+		self.save()
 
 	def has_high_system_load(self, instance: str, step: "InvestigationStep"):
 		"""Check number of processes waiting for cpu time
@@ -79,9 +98,11 @@ class IncidentInvestigator(Document):
 			self.is_unable_to_investigate(step)
 			return
 
-		metric_data = MetricRangeDataFrame(metric_data)
+		metric_data = MetricRangeDataFrame(metric_data, ts_as_datetime=False)
 		step.is_likely_cause = float(metric_data.value.mean()) > self.high_system_load_threshold
 		step.save()
+
+		self.add_investigation_findings(f"{step.parentfield}-{step.step_name}", metric_data.to_dict())
 
 	def has_high_cpu_load(self, instance: str, step: "InvestigationStep"):
 		"""Check high cpu rate during window"""
@@ -107,6 +128,8 @@ class IncidentInvestigator(Document):
 		step.is_likely_cause = cpu_busy_percentage > self.high_cpu_load_threshold
 		step.save()
 
+		self.add_investigation_findings(f"{step.parentfield}-{step.step_name}", metric_data)
+
 	def has_high_memory_usage(self, instance: str, step: "InvestigationStep"):
 		"Determine high memory usage over a period of investigation window"
 		query = f"""
@@ -130,9 +153,11 @@ class IncidentInvestigator(Document):
 			self.is_unable_to_investigate(step)
 			return
 
-		metric_data = MetricRangeDataFrame(metric_data)
+		metric_data = MetricRangeDataFrame(metric_data, ts_as_datetime=False)
 		step.is_likely_cause = float(metric_data.value.mean()) > self.high_memory_usage_threshold
 		step.save()
+
+		self.add_investigation_findings(f"{step.parentfield}-{step.step_name}", metric_data.to_dict())
 
 	def has_high_disk_usage(self, instance: str, step: "InvestigationStep"):
 		"""Determined if disk is full in any of the relevant mountpoints at present"""
@@ -154,13 +179,15 @@ class IncidentInvestigator(Document):
 		step.is_likely_cause = any(mountpoints.values())
 		step.save()
 
+		self.add_investigation_findings(f"{step.parentfield}-{step.step_name}", mountpoints)
+
 	def are_sites_on_proxy_down(self, instance: str, step: "InvestigationStep"):
 		"""Randomly sample and ping 10% of sites on proxy"""
 
 		def ping(url: str) -> int:
 			try:
 				return requests.get(f"https://{url}/api/method/ping", timeout=5).status_code
-			except requests.exceptions.ReadTimeout:
+			except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectTimeout):
 				return 502
 
 		Site = frappe.qb.DocType("Site")
@@ -187,6 +214,8 @@ class IncidentInvestigator(Document):
 
 		step.is_likely_cause = all(status != 200 for status in ping_results)
 		step.save()
+
+		self.add_investigation_findings(f"{step.parentfield}-{step.step_name}", ping_results)
 
 	@property
 	def steps(self) -> dict[str, list[tuple[str, "Callable"]]]:
@@ -227,7 +256,46 @@ class IncidentInvestigator(Document):
 		self.high_system_load_threshold = 3 * (
 			frappe.db.get_value("Virtual Machine", self.server, "vcpu") or 4
 		)
-		self.status = "Pending"
+		self.set_status(Status.PENDING)
+		self.save()
+
+	def before_insert(self):
+		"""
+		Do not trigger investigation on the same server if cool off period has not passed
+		Do not trigger investigation on self hosted servers
+		"""
+		if frappe.get_value("Server", self.server, "is_self_hosted"):
+			frappe.throw(
+				f"Ignoring investigation for self hosted server {self.server}", frappe.ValidationError
+			)
+
+		last_created_investigation = frappe.get_value(
+			"Incident Investigator", {"server": self.server}, "creation"
+		)
+
+		if not last_created_investigation:
+			return
+
+		time_since_last_investigation: datetime.timedelta = parse_datetime("now") - last_created_investigation
+		if time_since_last_investigation.total_seconds() < self.cool_off_period:
+			frappe.throw(
+				f"Investigation for {self.server} is in a cool off period",
+				frappe.ValidationError,
+			)
+
+	def check_incident_frequency(self):
+		"""
+		Check number of incidents on the server in the last 10 days.
+		This is done so that we can get the most recent incident on the server and take actions
+		based on the incident counts.
+		"""
+		self.incident_frequency = frappe.db.count(
+			"Incident Investigator",
+			{
+				"server": self.server,
+				"creation": ("between", [frappe.utils.add_to_date(days=-10), frappe.utils.now()]),
+			},
+		)
 		self.save()
 
 	def after_insert(self):
@@ -245,6 +313,11 @@ class IncidentInvestigator(Document):
 	def start_investigation(self):
 		if self.status == "Pending":
 			frappe.enqueue_doc(self.doctype, self.name, "investigate", queue="long")
+
+	def set_status(self, status: Status):
+		"Set/Update investigation status"
+		self.status = status.value
+		self.save(ignore_version=True)
 
 	def _investigate_component(self, component_field: str, step_key: str):
 		"""Generic investigation method for f/n/m servers."""
@@ -277,9 +350,8 @@ class IncidentInvestigator(Document):
 		Proxy rules for investigation
 		In addition to able we ping sites need to fast exit in case of likely cause
 		"""
-		self.status = "Investigating"
+		self.set_status(Status.INVESTIGATING)
 		self.investigate_proxy_server()
 		self.investigate_database_server()
 		self.investigate_server()
-		self.status = "Completed"
-		self.save()
+		self.set_status(Status.COMPLETED)

@@ -264,6 +264,7 @@ class VirtualMachine(Document):
 			location=location,
 			public_net=public_net,
 			ssh_keys=[ssh_key],
+			user_data=self.get_cloud_init() if self.virtual_machine_image else "",
 		)
 		server = server_response.server
 		# We assing only one private IP, so should be fine
@@ -700,7 +701,6 @@ class VirtualMachine(Document):
 			for volume in self.get_volumes():
 				if str(volume.id) in existing_volumes:
 					continue
-
 				row = frappe._dict()
 				row.volume_id = volume.id
 				row.size = volume.size
@@ -710,10 +710,13 @@ class VirtualMachine(Document):
 			if volume.protection["delete"]:
 				self.termination_protection = volume.protection["delete"]
 
+			self.vcpu = server_instance.server_type.cores
+			self.ram = server_instance.server_type.memory
 			self.has_data_volume = 1
 		else:
 			self.status = "Terminated"
 		self.save()
+		self.update_servers()
 
 	def _sync_oci(self, instance=None):  # noqa: C901
 		if not instance:
