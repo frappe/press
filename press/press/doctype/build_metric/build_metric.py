@@ -274,17 +274,19 @@ def deploy_metrics(start_from: DateTimeLikeObject, to: DateTimeLikeObject) -> di
 
 	for agent_job in failed_new_bench_jobs:
 		output = frappe.db.get_value("Agent Job", agent_job, ["output"])
-		if output and "no space" in output.casefold():
+		output = output.casefold() if output else ""
+
+		if "no space" in output:
 			no_space.append(agent_job)
-		elif output and "port is already allocated" in output.casefold():
+		elif "port is already allocated" in output:
 			port_offset.append(agent_job)
-		elif output and "docker: unknown blob" in output.casefold():
+		elif "docker: unknown blob" in output:
 			missing_docker_layer.append(agent_job)
-		elif output and "manifest unknown" in output.casefold():
+		elif "manifest unknown" in output:
 			missing_docker_image.append(agent_job)
-		elif output and "tls handshake timeout" in output.casefold():
+		elif "tls handshake timeout" in output:
 			registry_timeout.append(agent_job)
-		elif output and "no such file or directory" in output.casefold():
+		elif "no such file or directory" in output:
 			missing_files.append(agent_job)
 		else:
 			others.append(agent_job)
