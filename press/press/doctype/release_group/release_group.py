@@ -61,6 +61,7 @@ class LastDeployInfo(TypedDict):
 
 if TYPE_CHECKING:
 	from press.press.doctype.app.app import App
+	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 
@@ -591,6 +592,14 @@ class ReleaseGroup(Document, TagHelpers):
 				f"Not enough space on server {server.name} to create a new bench.", InsufficientSpaceOnServer
 			)
 
+	@staticmethod
+	def _get_last_deployed_image_size(server: Server, last_deployed_bench: Bench) -> float | None:
+		"""Try and fetch the last deployed image size"""
+		try:
+			return Agent(server.name).get(f"server/image-size/{last_deployed_bench.build}").get("size")
+		except Exception as e:
+			log_error("Failed to fetch last image size", data=e)
+
 	def check_app_server_storage(self):
 		"""
 		Check storage on the app server before deploying
@@ -607,7 +616,8 @@ class ReleaseGroup(Document, TagHelpers):
 			if not last_deployed_bench:
 				continue
 
-			last_image_size = Agent(server.name).get(f"server/image-size/{last_deployed_bench.build}")["size"]
+			last_image_size = self._get_last_deployed_image_size(server, last_deployed_bench)
+
 			if last_image_size and (free_space < last_image_size):
 				self._try_server_size_increase_or_throw(server, mountpoint)
 
