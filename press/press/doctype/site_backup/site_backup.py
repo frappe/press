@@ -13,14 +13,15 @@ from frappe.desk.doctype.tag.tag import add_tag
 from frappe.model.document import Document
 
 from press.agent import Agent
+from press.exceptions import SiteTooManyPendingBackups
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 
 if TYPE_CHECKING:
 	from datetime import datetime
 
-	from apps.press.press.press.doctype.agent_job.agent_job import AgentJob
-	from apps.press.press.press.doctype.site_update.site_update import SiteUpdate
-	from apps.press.press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.site_update.site_update import SiteUpdate
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 class SiteBackup(Document):
@@ -145,7 +146,7 @@ class SiteBackup(Document):
 				"creation": (">", two_hours_ago),
 			},
 		):
-			frappe.throw("Too many pending backups")
+			frappe.throw("Too many pending backups", SiteTooManyPendingBackups)
 
 		if self.physical:
 			# validate physical backup enabled on database server

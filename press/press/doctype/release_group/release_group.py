@@ -19,7 +19,9 @@ from frappe.query_builder.functions import Count
 from frappe.utils import cstr, flt, get_url, sbool
 from frappe.utils.caching import redis_cache
 
+from press.agent import Agent
 from press.api.client import dashboard_whitelist
+from press.exceptions import InsufficientSpaceOnServer, VolumeResizeLimitError
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import new_app
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
@@ -28,6 +30,7 @@ from press.press.doctype.deploy_candidate_build.deploy_candidate_build import cr
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server import Server
 from press.utils import (
+	fmt_timedelta,
 	get_app_tag,
 	get_client_blacklisted_keys,
 	get_current_team,
@@ -572,6 +575,42 @@ class ReleaseGroup(Document, TagHelpers):
 		dc = self.create_deploy_candidate()
 		dc.schedule_build_and_deploy()
 
+	def _try_server_size_increase_or_throw(self, server: Server, mountpoint: str):
+		"""In case of low storage on the server try to either increase the storage (if allowed) or throw an error"""
+		if server.auto_increase_storage:
+			try:
+				server.calculated_increase_disk_size(mountpoint=mountpoint)
+			except VolumeResizeLimitError:
+				frappe.throw(
+					f"We are unable to increase server space right now for the deploy. Please wait "
+					f"{fmt_timedelta(server.time_to_wait_before_updating_volume)} before trying again.",
+					InsufficientSpaceOnServer,
+				)
+		else:
+			frappe.throw(
+				f"Not enough space on server {server.name} to create a new bench.", InsufficientSpaceOnServer
+			)
+
+	def check_app_server_storage(self):
+		"""
+		Check storage on the app server before deploying
+		Check if the free space on the server is more than the last
+		image deployed, assuming new image to be created will have the same or more
+		size than the last time.
+		"""
+		for server in self.servers:
+			server: Server = frappe.get_cached_doc("Server", server.server)
+			mountpoint = server.guess_data_disk_mountpoint()
+			free_space = server.free_space(mountpoint) / 1024**3
+			last_deployed_bench = get_last_doc("Bench", {"group": self.name, "status": "Active"})
+
+			if not last_deployed_bench:
+				continue
+
+			last_image_size = Agent(server.name).get(f"server/image-size/{last_deployed_bench.build}")["size"]
+			if last_image_size and (free_space < last_image_size):
+				self._try_server_size_increase_or_throw(server, mountpoint)
+
 	@frappe.whitelist()
 	def create_deploy_candidate(
 		self,
@@ -581,6 +620,7 @@ class ReleaseGroup(Document, TagHelpers):
 		if not self.enabled:
 			return None
 
+		self.check_app_server_storage()
 		apps = self.get_apps_to_update(apps_to_update)
 		if apps_to_update is None:
 			self.validate_dc_apps_against_rg(apps)
@@ -645,6 +685,9 @@ class ReleaseGroup(Document, TagHelpers):
 			apps_to_update = self.apps
 
 		apps = []
+		last_deployed_bench = get_last_doc(
+			"Bench", {"group": self.name, "status": ("in", ("Active", "Installing", "Pending"))}
+		)
 
 		for app in self.deploy_information().apps:
 			app_to_update = find(apps_to_update, lambda x: x.get("app") == app.app)
@@ -661,21 +704,33 @@ class ReleaseGroup(Document, TagHelpers):
 					}
 				)
 			else:
-				# Either we don't want to update the app or there's no update available
-				# Select current apps in the release group instead of picking from last deployed bench
-				app_to_keep = find(self.apps, lambda x: x.app == app.app)
-				if app_to_keep:
-					app_release, hash = frappe.db.get_value(
-						"App Release", {"source": app_to_keep.source}, ["name", "hash"]
-					)
-					apps.append(
-						{
-							"app": app_to_keep.app,
-							"source": app_to_keep.source,
-							"release": app_release,
-							"hash": hash,
-						}
-					)
+				# Find the last deployed release and use it, if no deployed bench is present use the rg apps
+				if last_deployed_bench:
+					app_to_keep = find(last_deployed_bench.apps, lambda x: x.app == app.app)
+					if app_to_keep:
+						apps.append(
+							{
+								"app": app_to_keep.app,
+								"source": app_to_keep.source,
+								"release": app_to_keep.release,
+								"hash": app_to_keep.hash,
+							}
+						)
+
+				else:
+					app_to_keep = find(self.apps, lambda x: x.app == app.app)
+					if app_to_keep:
+						app_release, app_hash = frappe.db.get_value(
+							"App Release", {"source": app_to_keep.source}, ["name", "hash"]
+						)
+						apps.append(
+							{
+								"app": app_to_keep.app,
+								"source": app_to_keep.source,
+								"release": app_release,
+								"hash": app_hash,
+							}
+						)
 
 		return self.get_sorted_based_on_rg_apps(apps)
 
@@ -1304,7 +1359,7 @@ class ReleaseGroup(Document, TagHelpers):
 			return None
 
 	@frappe.whitelist()
-	def add_server(self, server: str, deploy=False):
+	def add_server(self, server: str, deploy=False, force_new_build: bool = False):
 		if not deploy:
 			return None
 
@@ -1313,7 +1368,7 @@ class ReleaseGroup(Document, TagHelpers):
 			platform=server_platform
 		)
 
-		if not last_successful_deploy_candidate_build:
+		if not last_successful_deploy_candidate_build or force_new_build:
 			# No build of this platform is available creating new build
 			last_candidate_build = self.get_last_successful_candidate_build()
 
@@ -1635,3 +1690,29 @@ def get_formatted_config_value(config_type: str, value: Any, key: str, name: str
 		return frappe.get_value("Site Config", {"key": key, "parent": name}, "value")
 
 	return value
+
+
+def add_public_servers_to_public_groups():
+	"""
+	Add public servers to public release groups.
+	Used when a new server is added to the system.
+	"""
+	public_groups = frappe.get_all(
+		"Release Group",
+		filters={"public": 1, "enabled": 1, "central_bench": 0},
+		fields=["name"],
+	)
+	public_servers = frappe.get_all(
+		"Server",
+		filters={"public": 1, "status": "Active"},
+		pluck="name",
+	)
+
+	for group in public_groups:
+		rg = ReleaseGroup("Release Group", group.name)
+		for server in public_servers:
+			if find(rg.servers, lambda x: x.server == server):
+				continue
+			rg.reload()
+			rg.append("servers", {"server": server, "default": False})
+			rg.save()

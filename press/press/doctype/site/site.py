@@ -3684,8 +3684,13 @@ def process_add_domain_job_update(job):
 		site.set_redirect(auto_generated_domain)
 
 	elif job.status in ("Failure", "Delivery Failure"):
-		product_trial_request.status = "Error"
-		product_trial_request.save(ignore_permissions=True)
+		# temporarily retry to avoid race condition
+		if job.status == "Failure" and int(job.retry_count) < 1:
+			job.db_set("retry_count", job.retry_count + 1)
+			job.retry_in_place()
+		else:
+			product_trial_request.status = "Error"
+			product_trial_request.save(ignore_permissions=True)
 
 
 def get_remove_step_status(job):
@@ -3863,6 +3868,7 @@ def process_reinstall_site_job_update(job):
 	if job.status == "Success":
 		frappe.db.set_value("Site", job.site, "setup_wizard_complete", 0)
 		frappe.db.set_value("Site", job.site, "database_name", None)
+		frappe.db.set_value("Site", job.site, "additional_system_user_created", False)
 
 
 def process_migrate_site_job_update(job):

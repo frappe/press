@@ -1,16 +1,14 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
 
-import unittest
-
 import frappe
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.team.test_team import create_test_team
 
 
-class TestBalanceTransaction(unittest.TestCase):
+class TestBalanceTransaction(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 

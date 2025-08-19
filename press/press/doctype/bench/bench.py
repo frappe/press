@@ -27,7 +27,14 @@ from press.press.doctype.bench_shell_log.bench_shell_log import (
 )
 from press.press.doctype.site.site import Site
 from press.runner import Ansible
-from press.utils import SupervisorProcess, flatten, log_error, parse_supervisor_status
+from press.utils import (
+	SupervisorProcess,
+	flatten,
+	get_datetime,
+	is_in_test_environment,
+	log_error,
+	parse_supervisor_status,
+)
 from press.utils.webhook import create_webhook_event
 
 if TYPE_CHECKING:
@@ -1001,7 +1008,7 @@ class Bench(Document):
 			frappe.throw("Cannot archive bench due to ongoing in-place updates.", ArchiveBenchError)
 
 	def check_last_archive(self):
-		if self.last_archive_failure and self.last_archive_failure > frappe.utils.add_to_date(
+		if self.last_archive_failure and get_datetime(self.last_archive_failure) > frappe.utils.add_to_date(
 			None, hours=-24
 		):
 			frappe.throw("Cannot archive as previous archive failed in the last 24 hours.", ArchiveBenchError)
@@ -1213,7 +1220,10 @@ def try_archive(bench: str):
 		frappe.get_doc("Bench", bench).archive()
 		frappe.db.commit()
 		return True
-	except ArchiveBenchError:
+	except ArchiveBenchError as e:
+		if is_in_test_environment():
+			print(f"Bench Archival Error: {e}")
+
 		frappe.db.rollback()
 		return False
 	except Exception:
@@ -1262,12 +1272,14 @@ def archive_obsolete_benches(group: str | None = None, server: str | None = None
 
 def archive_obsolete_benches_for_server(benches: Iterable[dict]):
 	for bench in benches:
-		# If there isn't a Deploy Candidate Difference with this bench's candidate as source
-		# That means this is the most recent bench and should be skipped.
-		if (not bench.public and bench.central_bench) and bench.creation < frappe.utils.add_days(None, -3):
+		# If the bench is a private one and has been created more than 3 days ago,
+		# then we can attempt to archive it.
+		if not (bench.public or bench.central_bench) and bench.creation < frappe.utils.add_days(None, -3):
 			try_archive(bench.name)
 			continue
 
+		# If there isn't a Deploy Candidate Difference with this bench's candidate as source
+		# That means this is the most recent bench and should be skipped.
 		differences = frappe.db.get_all(
 			"Deploy Candidate Difference", ["destination"], {"source": bench.candidate}
 		)
@@ -1389,7 +1401,7 @@ def sort_supervisor_processes(processes: "list[SupervisorProcess]"):
 		sorted_process_groups.extend(group_grouped.values())
 		del status_grouped[status]
 
-	# Incase not all statuses have been accounted for
+	# In case not all statuses have been accounted for
 	for group_grouped in status_grouped.values():
 		sorted_process_groups.extend(group_grouped.values())
 

@@ -98,7 +98,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "IP",
-   "set_only_once": 1
+   "read_only": 1
   },
   {
    "fieldname": "proxy_server",
@@ -116,7 +116,7 @@
    "fieldname": "agent_password",
    "fieldtype": "Password",
    "label": "Agent Password",
-   "set_only_once": 1
+   "read_only": 1
   },
   {
    "collapsible": 1,
@@ -318,7 +318,7 @@
    "label": "Staging"
   },
   {
-   "depends_on": "eval:[\"AWS EC2\", \"OCI\"].includes(doc.provider)",
+   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\"].includes(doc.provider)",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
@@ -503,6 +503,7 @@
   },
   {
    "default": "0",
+   "description": "Public release groups will be deployed here",
    "fieldname": "public",
    "fieldtype": "Check",
    "label": "Public"
@@ -616,7 +617,7 @@
   }
  ],
  "links": [],
- "modified": "2025-08-01 16:34:13.404147",
+ "modified": "2025-08-18 13:14:31.778991",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

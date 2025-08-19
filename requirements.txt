@@ -29,3 +29,4 @@ wrapt~=1.15.0
 elasticsearch-dsl>=8.0.0,<9.0.0
 hcloud==2.2.1
 playwright==1.49.1
+prometheus-api-client==0.6.0

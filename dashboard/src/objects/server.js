@@ -5,6 +5,7 @@ import ServerActions from '../components/server/ServerActions.vue';
 import { getTeam } from '../data/team';
 import router from '../router';
 import { icon } from '../utils/components';
+import { isMobile } from '../utils/device';
 import { duration, planTitle, userCurrency } from '../utils/format';
 import { trialDays } from '../utils/site';
 import { getJobsTab } from './common/jobs';
@@ -116,6 +117,18 @@ export default {
 					router.push({ name: 'New Server' });
 				},
 			};
+		},
+		banner({ listResource: servers }) {
+			if (!servers.data?.length) {
+				return {
+					title: 'Learn how to create a new dedicated server',
+					button: {
+						label: 'Read docs',
+						variant: 'outline',
+						link: 'https://docs.frappe.io/cloud/servers/new',
+					},
+				};
+			}
 		},
 	},
 	detail: {
@@ -501,6 +514,69 @@ export default {
 				},
 			},
 			tagTab(),
+			{
+				label: 'Activity',
+				icon: icon('activity'),
+				route: 'activity',
+				type: 'list',
+				condition: (server) => server.doc?.status !== 'Archived',
+				list: {
+					doctype: 'Server Activity',
+					filters: (server) => {
+						return {
+							document_name: [
+								'in',
+								[server.doc?.name, server.doc?.database_server],
+							],
+						};
+					},
+					orderBy: 'creation desc',
+					fields: ['owner'],
+					columns: [
+						{
+							label: 'Action',
+							fieldname: 'action',
+							format(value, row) {
+								return `${row.action} by ${row.owner}`;
+							},
+						},
+						{
+							label: 'Server',
+							fieldname: 'document_name',
+						},
+						{
+							label: 'Description',
+							fieldname: 'reason',
+							class: 'text-gray-600',
+						},
+						{
+							label: '',
+							fieldname: 'creation',
+							type: 'Timestamp',
+							align: 'right',
+						},
+					],
+					filterControls() {
+						return [
+							{
+								type: 'select',
+								label: 'Action',
+								fieldname: 'action',
+								class: !isMobile() ? 'w-52' : '',
+								options: [
+									'',
+									'Created',
+									'Reboot',
+									'Volume',
+									'Terminated',
+									'Incident',
+									'Disk Size Change',
+								],
+							},
+						];
+					},
+				},
+			},
 		],
 	},
 	routes: [

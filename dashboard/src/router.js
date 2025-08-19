@@ -361,6 +361,16 @@ let router = createRouter({
 				import('./pages/devtools/database/DatabaseSQLPlayground.vue'),
 		},
 		{
+			path: '/enable-bench-groups',
+			name: 'Enable Bench Groups',
+			component: () => import('./pages/EnableBenchGroups.vue'),
+		},
+		{
+			path: '/enable-servers',
+			name: 'Enable Servers',
+			component: () => import('./pages/EnableServers.vue'),
+		},
+		{
 			path: '/database-analyzer',
 			name: 'DB Analyzer',
 			component: () => import('./pages/devtools/database/DatabaseAnalyzer.vue'),
@@ -427,12 +437,34 @@ router.beforeEach(async (to, from, next) => {
 			return;
 		}
 
-		if (
-			!onboardingComplete &&
-			(to.name.startsWith('Release Group') || to.name.startsWith('Server'))
-		) {
-			next({ name: onboardingRoute });
-			return;
+		if (to.name.startsWith('Release Group')) {
+			if (!$team.doc.benches_enabled)
+				try {
+					await $team.setValue.submit({ benches_enabled: 1 });
+				} catch (e) {
+					console.warn('Auto-enable benches failed:', e);
+				}
+			if (!onboardingComplete) {
+				next({ name: 'Enable Bench Groups' });
+				return;
+			}
+		} else if (to.name === 'Enable Bench Groups' && onboardingComplete) {
+			next({ name: 'Release Group List' });
+		}
+
+		if (to.name.startsWith('Server')) {
+			if (!$team.doc.servers_enabled)
+				try {
+					await $team.setValue.submit({ servers_enabled: 1 });
+				} catch (e) {
+					console.warn('Auto-enable servers failed:', e);
+				}
+			if (!onboardingComplete) {
+				next({ name: 'Enable Servers' });
+				return;
+			}
+		} else if (to.name === 'Enable Server' && onboardingComplete) {
+			next({ name: 'Server List' });
 		}
 
 		if (goingToLoginPage) {

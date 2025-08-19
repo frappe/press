@@ -21,6 +21,7 @@ from tenacity.retry import retry_if_not_result
 from twilio.base.exceptions import TwilioRestException
 
 from press.api.server import prometheus_query
+from press.press.doctype.server.server import MARIADB_DATA_MNT_POINT
 from press.telegram_utils import Telegram
 from press.utils import log_error
 
@@ -40,7 +41,7 @@ if TYPE_CHECKING:
 	)
 	from press.press.doctype.monitor_server.monitor_server import MonitorServer
 	from press.press.doctype.press_settings.press_settings import PressSettings
-	from press.press.doctype.server.server import Server
+	from press.press.doctype.server.server import BaseServer, Server
 
 INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere #
 INCIDENT_SCOPE = (
@@ -82,7 +83,9 @@ class Incident(WebsiteGenerator):
 		alert: DF.Link | None
 		alerts: DF.Table[IncidentAlerts]
 		cluster: DF.Link | None
+		corrective_suggestions: DF.Table[IncidentSuggestion]
 		description: DF.TextEditor | None
+		investigation: DF.Link | None
 		likely_cause: DF.Text | None
 		phone_call: DF.Check
 		preventive_suggestions: DF.Table[IncidentSuggestion]
@@ -104,7 +107,6 @@ class Incident(WebsiteGenerator):
 		]
 		subject: DF.Data | None
 		subtype: DF.Literal["High CPU: user", "High CPU: iowait", "Disk full"]
-		suggestions: DF.Table[IncidentSuggestion]
 		type: DF.Literal["Database Down", "Server Down", "Proxy Down"]
 		updates: DF.Table[IncidentUpdates]
 	# end: auto-generated types
@@ -122,6 +124,19 @@ class Incident(WebsiteGenerator):
 		return bool(frappe.db.get_single_value("Incident Settings", "email_alerts", cache=True))
 
 	def after_insert(self):
+		"""
+		Start investigating the incident since we have already waited 5m before creating it
+		send sms and email notifications
+		"""
+		try:
+			incident_investigator = frappe.get_doc(
+				{"doctype": "Incident Investigator", "incident": self.name, "server": self.server}
+			)
+			incident_investigator.insert(ignore_permissions=True)
+			self.investigation = incident_investigator.name
+		except frappe.ValidationError:
+			# Investigator in cool off period
+			pass
 		self.send_sms_via_twilio()
 		self.send_email_notification()
 
@@ -193,9 +208,13 @@ class Incident(WebsiteGenerator):
 	@frappe.whitelist()
 	def regather_info_and_screenshots(self):
 		self.identify_affected_resource()
+		self.identify_problem()
 		self.take_grafana_screenshots()
 
-	def get_cpu_state(self, resource: str):
+	def get_cpu_state(self, resource: str) -> tuple[str, float]:
+		"""
+		Returns the prominent CPU state and its percentage
+		"""
 		timespan = get_confirmation_threshold_duration()
 		cpu_info = prometheus_query(
 			f"""avg by (mode)(rate(node_cpu_seconds_total{{instance="{resource}", job="node"}}[{timespan}s])) * 100""",
@@ -248,7 +267,7 @@ class Incident(WebsiteGenerator):
 		self.add_corrective_suggestion("Reboot Server")
 		self.add_preventive_suggestion("Upgrade database server for more memory")
 
-	def categorize_db_issues(self, cpu_state):
+	def categorize_db_cpu_issues(self, cpu_state):
 		self.type = "Database Down"
 		if cpu_state == "user":
 			self.update_user_db_issue()
@@ -261,25 +280,42 @@ class Incident(WebsiteGenerator):
 	def update_high_io_server_issue(self):
 		pass
 
-	def categorize_server_issues(self, cpu_state):
+	def categorize_server_cpu_issues(self, cpu_state):
 		self.type = "Server Down"
 		if cpu_state == "user":
 			self.update_user_server_issue()
 		elif cpu_state == "iowait":
 			self.update_high_io_server_issue()
 
-	def identify_problem(self):
-		if site := self.get_down_site():
-			try:
-				ret = requests.get(f"https://{site}/api/method/ping", timeout=10)
-			except requests.RequestException as e:
-				self.add_description(f"Error pinging sample site {site}: {e!s}")
-			else:
-				self.add_description(f"Ping response for sample site {site}: {ret.status_code} {ret.reason}")
+	def ping_sample_site(self):
+		if not (site := self.get_down_site()):
+			return None
+		try:
+			ret = requests.get(f"https://{site}/api/method/ping", timeout=10)
+		except requests.RequestException as e:
+			self.add_description(f"Error pinging sample site {site}: {e!s}")
+			return None
+		else:
+			self.add_description(f"Ping response for sample site {site}: {ret.status_code} {ret.reason}")
+			return ret.status_code
 
-		if not self.resource:
-			return
-			# TODO: Try random shit if resource isn't identified
+	def categorize_disk_full_issue(self):
+		self.likely_cause = "Disk is full"
+		self.add_corrective_suggestion("Add more storage")
+		self.add_preventive_suggestion("Enable automatic addition of storage")
+
+	def identify_problem(self):
+		pong = self.ping_sample_site()
+		if not self.resource and pong and pong == 500:
+			db: DatabaseServer = frappe.get_doc("Database Server", self.database_server)
+			if db.is_disk_full(MARIADB_DATA_MNT_POINT):
+				self.resource_type = "Database Server"
+				self.resource = self.database_server
+				self.type = "Database Down"
+				self.subtype = "Disk full"
+				self.categorize_disk_full_issue()
+				return
+			# TODO: Try more random shit if resource isn't identified
 			# Eg: Check mysql up/ docker up/ container up
 			# Ping site for error code to guess more accurately
 			# 500 would mean mysql down or bug in app/config
@@ -291,11 +327,11 @@ class Incident(WebsiteGenerator):
 			return
 
 		if self.resource_type == "Database Server":
-			self.categorize_db_issues(state)
+			self.categorize_db_cpu_issues(state)
 		elif self.resource_type == "Server":
-			self.categorize_server_issues(state)
+			self.categorize_server_cpu_issues(state)
 
-			# TODO: categorize proxy issues #
+		# TODO: categorize proxy issues #
 
 	@property
 	def other_resource(self):
@@ -451,7 +487,8 @@ class Incident(WebsiteGenerator):
 			return press_settings.twilio_client
 		except Exception:
 			log_error("Twilio Client not configured in Press Settings")
-			frappe.db.commit()
+			if not frappe.flags.in_test:
+				frappe.db.commit()
 			raise
 
 	@retry(
@@ -639,6 +676,7 @@ Incident URL: {incident_link}"""
 			return
 		else:
 			if not last_resolved.is_enough_firing:
+				self.create_log_for_server(is_resolved=True)
 				self.resolve()
 
 	def resolve(self):
@@ -647,6 +685,18 @@ Incident URL: {incident_link}"""
 		else:
 			self.status = "Resolved"
 		self.save()
+
+	def create_log_for_server(self, is_resolved: bool = False):
+		"""We will create a incident log on the server activity for confirmed incidents and their resolution"""
+		try:
+			incidence_server: BaseServer = frappe.get_cached_doc(self.resource_type, self.resource)
+		except Exception:
+			incidence_server: Server = frappe.get_cached_doc("Server", self.server)
+
+		incidence_server.create_log(
+			"Incident",
+			f"{self.alert} resolved" if is_resolved else f"{self.alert} reported",
+		)
 
 	@property
 	def time_to_call_for_help(self) -> bool:
@@ -660,7 +710,7 @@ Incident URL: {incident_link}"""
 			seconds=get_call_repeat_interval()
 		)
 
-	@property
+	@cached_property
 	def sites_down(self) -> list[str]:
 		return self.monitor_server.get_sites_down_for_server(str(self.server))
 
@@ -733,6 +783,7 @@ def resolve_incidents():
 		incident = Incident("Incident", incident_name)
 		incident.check_resolved()
 		if incident.time_to_call_for_help or incident.time_to_call_for_help_again:
+			incident.create_log_for_server()
 			incident.call_humans()
 
 

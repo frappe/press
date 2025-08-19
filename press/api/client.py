@@ -26,6 +26,7 @@ ALLOWED_DOCTYPES = [
 	"Site Domain",
 	"Site Backup",
 	"Site Activity",
+	"Server Activity",
 	"Site Config",
 	"Site Plan",
 	"Site Update",
