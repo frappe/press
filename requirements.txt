@@ -3,7 +3,7 @@ beautifulsoup4
 boto3==1.29.7
 Click
 coverage
-dnspython==1.16.0
+dnspython==2.6.1
 docker==6.1.2
 dockerfile==3.2.0
 oci==2.116.0
