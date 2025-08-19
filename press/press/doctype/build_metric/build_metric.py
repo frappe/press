@@ -49,8 +49,11 @@ class BuildMetric(Document):
 	def _get_metrics(self):
 		build_metric = GenerateBuildMetric(self.start_from, self.to)
 		build_metric.get_metrics()
-		self.metric_dump = json.dumps(build_metric.dump_metrics(), indent=4)
-		self.metric_dump["deploy_metrics"] = deploy_metrics(self.start_from, self.to)
+		build_metric_dump = build_metric.dump_metrics()
+		deploy_metric_dump = deploy_metrics(self.start_from, self.to)
+		self.metric_dump = json.dumps(
+			{"build_metric": build_metric_dump, "deploy_metric": deploy_metric_dump}, indent=4
+		)
 		self.save()
 
 
@@ -77,21 +80,19 @@ class GenerateBuildMetric:
 
 	def dump_metrics(self) -> MetricsType:
 		return {
-			"build_metrics": {
-				"total_builds": self.total_builds,
-				"total_failures": {
-					"user_failure": len(self.total_failures["user_failure"]),
-					"fc_manual_failure": len(self.total_failures["fc_manual_failure"]),
-					"fc_failure": len(self.total_failures["fc_failure"]),
-				},
-				"median_pending_duration": self.duration_metrics["median_pending_duration"],
-				"median_build_duration": self.duration_metrics["median_build_duration"],
-				"median_upload_context_duration": self.context_durations["median_upload_duration"],
-				"median_package_context_duration": self.context_durations["median_package_duration"],
-				"failure_frequency": dict(self.failure_frequency.most_common()),
-				"fc_failure_metrics": self.fc_failure_metrics,
-				"build_count_split": self.get_build_count_platform_split(),
-			}
+			"total_builds": self.total_builds,
+			"total_failures": {
+				"user_failure": len(self.total_failures["user_failure"]),
+				"fc_manual_failure": len(self.total_failures["fc_manual_failure"]),
+				"fc_failure": len(self.total_failures["fc_failure"]),
+			},
+			"median_pending_duration": self.duration_metrics["median_pending_duration"],
+			"median_build_duration": self.duration_metrics["median_build_duration"],
+			"median_upload_context_duration": self.context_durations["median_upload_duration"],
+			"median_package_context_duration": self.context_durations["median_package_duration"],
+			"failure_frequency": dict(self.failure_frequency.most_common()),
+			"fc_failure_metrics": self.fc_failure_metrics,
+			"build_count_split": self.get_build_count_platform_split(),
 		}
 
 	def get_metrics(self):
