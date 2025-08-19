@@ -56,6 +56,11 @@ class BuildMetric(Document):
 		)
 		self.save()
 
+	@frappe.whitelist()
+	def get_metrics(self):
+		"""Retrigger metrics"""
+		frappe.enqueue(self._get_metrics)
+
 
 @dataclass
 class GenerateBuildMetric:
