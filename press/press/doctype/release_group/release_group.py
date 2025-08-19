@@ -602,7 +602,7 @@ class ReleaseGroup(Document, TagHelpers):
 			server: Server = frappe.get_cached_doc("Server", server.server)
 
 			if server.is_self_hosted:
-				return
+				continue
 
 			mountpoint = server.guess_data_disk_mountpoint()
 			free_space = server.free_space(mountpoint) / 1024**3
