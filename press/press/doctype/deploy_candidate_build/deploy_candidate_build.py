@@ -429,6 +429,8 @@ class DeployCandidateBuild(Document):
 		release: AppRelease = frappe.get_doc("App Release", release, for_update=True)
 		release._clone(force=True)
 
+		frappe.db.commit()  # Release lock taken for app clone
+
 		step.duration = get_duration(start_time)
 		step.output = release.output
 		step.status = "Success"
