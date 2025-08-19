@@ -50,6 +50,7 @@ class BuildMetric(Document):
 		build_metric = GenerateBuildMetric(self.start_from, self.to)
 		build_metric.get_metrics()
 		self.metric_dump = json.dumps(build_metric.dump_metrics(), indent=4)
+		self.metric_dump["deploy_metrics"] = deploy_metrics(self.start_from, self.to)
 		self.save()
 
 
@@ -76,19 +77,21 @@ class GenerateBuildMetric:
 
 	def dump_metrics(self) -> MetricsType:
 		return {
-			"total_builds": self.total_builds,
-			"total_failures": {
-				"user_failure": len(self.total_failures["user_failure"]),
-				"fc_manual_failure": len(self.total_failures["fc_manual_failure"]),
-				"fc_failure": len(self.total_failures["fc_failure"]),
-			},
-			"median_pending_duration": self.duration_metrics["median_pending_duration"],
-			"median_build_duration": self.duration_metrics["median_build_duration"],
-			"median_upload_context_duration": self.context_durations["median_upload_duration"],
-			"median_package_context_duration": self.context_durations["median_package_duration"],
-			"failure_frequency": dict(self.failure_frequency.most_common()),
-			"fc_failure_metrics": self.fc_failure_metrics,
-			"build_count_split": self.get_build_count_platform_split(),
+			"build_metrics": {
+				"total_builds": self.total_builds,
+				"total_failures": {
+					"user_failure": len(self.total_failures["user_failure"]),
+					"fc_manual_failure": len(self.total_failures["fc_manual_failure"]),
+					"fc_failure": len(self.total_failures["fc_failure"]),
+				},
+				"median_pending_duration": self.duration_metrics["median_pending_duration"],
+				"median_build_duration": self.duration_metrics["median_build_duration"],
+				"median_upload_context_duration": self.context_durations["median_upload_duration"],
+				"median_package_context_duration": self.context_durations["median_package_duration"],
+				"failure_frequency": dict(self.failure_frequency.most_common()),
+				"fc_failure_metrics": self.fc_failure_metrics,
+				"build_count_split": self.get_build_count_platform_split(),
+			}
 		}
 
 	def get_metrics(self):
@@ -240,6 +243,63 @@ class GenerateBuildMetric:
 					failure_output_frequency[key] += 1
 
 		return {"step_failures": failed_step_frequency, "known_output_failures": failure_output_frequency}
+
+
+def deploy_metrics(start_from: DateTimeLikeObject, to: DateTimeLikeObject) -> dict[str, int]:
+	"""Get deploy failure metrics"""
+
+	no_space = []
+	port_offset = []
+	missing_docker_layer = []
+	missing_docker_image = []
+	registry_timeout = []
+	missing_files = []
+	others = []
+
+	failed_new_bench_jobs = frappe.get_all(
+		"Agent Job",
+		{
+			"status": "Failure",
+			"job_type": "New Bench",
+			"creation": ("between", [start_from, to]),
+		},
+	)
+	all_new_bench_jobs = frappe.get_all(
+		"Agent Job",
+		{
+			"job_type": "New Bench",
+			"creation": ("between", [start_from, to]),
+		},
+	)
+
+	for agent_job in failed_new_bench_jobs:
+		output = frappe.db.get_value("Agent Job", agent_job, ["output"])
+		if output and "no space" in output.casefold():
+			no_space.append(agent_job)
+		elif output and "port is already allocated" in output.casefold():
+			port_offset.append(agent_job)
+		elif output and "docker: unknown blob" in output.casefold():
+			missing_docker_layer.append(agent_job)
+		elif output and "manifest unknown" in output.casefold():
+			missing_docker_image.append(agent_job)
+		elif output and "tls handshake timeout" in output.casefold():
+			registry_timeout.append(agent_job)
+		elif output and "no such file or directory" in output.casefold():
+			missing_files.append(agent_job)
+		else:
+			others.append(agent_job)
+
+	return {
+		"total_deploys": len(all_new_bench_jobs),
+		"failed_deploys": len(failed_new_bench_jobs),
+		"no_space": len(no_space),
+		"port_offset": len(port_offset),
+		"missing_docker_layer": len(missing_docker_layer),
+		"missing_docker_image": len(missing_docker_image),
+		"registry_timeout": len(registry_timeout),
+		"missing_files": len(missing_files),
+		"other": len(others),
+	}
 
 
 def create_build_metric():
