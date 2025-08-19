@@ -235,11 +235,15 @@ class GenerateBuildMetric:
 		failure_output_frequency = defaultdict(int)
 
 		for fc_failure in fc_failures:
-			step_name, step, output = frappe.db.get_value(
+			failed_build_step = frappe.db.get_value(
 				"Deploy Candidate Build Step",
 				{"parent": fc_failure["name"], "status": "Failure"},
 				["stage", "step", "output"],
 			)
+			if not failed_build_step:
+				continue
+
+			step_name, step, output = failed_build_step
 
 			failure_key = f"{step_name}-{step}"
 			failed_step_frequency[failure_key] += 1
