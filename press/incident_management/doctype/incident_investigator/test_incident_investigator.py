@@ -220,7 +220,6 @@ class TestIncidentInvestigator(FrappeTestCase):
 			self.assertTrue(step.is_likely_cause)
 
 		self.assertEqual(investigator.status, "Completed")
-		self.assertTrue(investigator.requires_human_intervention)
 		self.assertEqual(investigator.action_steps, [])
 
 	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=False))
@@ -244,8 +243,17 @@ class TestIncidentInvestigator(FrappeTestCase):
 			else:
 				self.assertTrue(step.is_likely_cause)
 
-		self.assertTrue(investigator.requires_human_intervention)
-		self.assertEqual(investigator.action_steps, [])
+		# Since database has high memory and high cpu add database action step
+		self.assertEqual(len(investigator.action_steps), 2)
+		first_step, second_step = investigator.action_steps
+		self.assertListEqual(
+			[first_step.reference_doctype, first_step.reference_name, first_step.method],
+			["Database Server", self.database_server.name, "_capture_process_list"],
+		)
+		self.assertListEqual(
+			[second_step.reference_doctype, second_step.reference_name, second_step.method],
+			["Database Server", self.database_server.name, "restart_mariadb"],
+		)
 
 	@patch.object(IncidentInvestigator, "after_insert", Mock())
 	def test_investigation_cool_off_period(self):
@@ -264,46 +272,6 @@ class TestIncidentInvestigator(FrappeTestCase):
 		create_test_incident(self_hosted_server.name)
 		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
 		self.assertEqual(investigator.incident, test_incident_1.name)
-
-	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=True))
-	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=False))
-	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=False))
-	@patch(
-		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
-		foreground_enqueue_doc,
-	)
-	@patch.object(IncidentInvestigator, "investigate_proxy_server", Mock())
-	def test_no_human_intervention_required(self):
-		"""In case of only high disk issues mark as no human intervention required"""
-		create_test_incident(self.server.name)
-		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
-		self.assertFalse(investigator.requires_human_intervention)
-
-	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=False))
-	@patch.object(
-		PrometheusConnect,
-		"custom_query_range",
-		make_custom_query_range_side_effect(is_high=False, only_for_server=True),
-	)
-	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=False))
-	@patch(
-		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
-		foreground_enqueue_doc,
-	)
-	@patch.object(IncidentInvestigator, "investigate_proxy_server", Mock())
-	def test_no_human_intervention_required_on_database_server(self):
-		create_test_incident(self.server.name)
-		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
-
-		# Assert we can handle this on our own.
-		self.assertFalse(investigator.requires_human_intervention)
-
-		# Assert reboot action is added for database server
-		self.assertEqual(len(investigator.action_steps), 1)
-		action_step = investigator.action_steps[0]
-		self.assertEqual(action_step.reference_doctype, "Database Server")
-		self.assertEqual(action_step.reference_name, self.server.database_server)
-		self.assertEqual(action_step.method, "restart_mariadb")
 
 	@classmethod
 	def tearDownClass(cls):
