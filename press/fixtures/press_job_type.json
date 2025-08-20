@@ -371,10 +371,10 @@
  },
  {
   "callback_max_retry": 1,
-  "callback_script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type in [\"Server\", \"Database Server\"] and server.is_for_recovery:\n    filter_field = \"app_server\" if doc.server_type == \"Server\" else \"database_server\"\n    recovery_record_name = frappe.db.get_value(\"Server Snapshot Recovery\", {filter_field: doc.server}, \"name\")\n    if recovery_record_name:\n        recovery_record = frappe.get_doc(\"Server Snapshot Recovery\", recovery_record_name, for_update=True)\n    \n        if doc.status == \"Success\":\n            if doc.server_type == \"Server\":\n                recovery_record.is_app_server_ready = True\n            else:\n                recovery_record.is_database_server_ready = True\n            recovery_record.save()\n        else:\n            recovery_record.mark_server_provisioning_as_failed()",
+  "callback_script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type in [\"Server\", \"Database Server\"] and server.is_for_recovery:\n    filter_field = \"app_server\" if doc.server_type == \"Server\" else \"database_server\"\n    recovery_record_name = frappe.db.get_value(\"Server Snapshot Recovery\", {filter_field: doc.server}, \"name\")\n    if recovery_record_name:\n        recovery_record = frappe.get_doc(\"Server Snapshot Recovery\", recovery_record_name, for_update=True)\n    \n        if doc.status == \"Success\":\n            if doc.server_type == \"Server\":\n                recovery_record.is_app_server_ready = True\n            else:\n                recovery_record.is_database_server_ready = True\n            recovery_record.save()\n        else:\n            recovery_record.mark_server_provisioning_as_failed()\n            \nif doc.server_type in [\"Server\", \"Database Server\"] and \"logical_replication_backup\" in arguments:\n    if doc.status == \"Success\":\n        frappe.get_doc(\"Logical Replication Backup\", arguments.get(\"logical_replication_backup\")).next()\n    if doc.status == \"Failure\":\n        frappe.get_doc(\"Logical Replication Backup\", arguments.get(\"logical_replication_backup\")).fail()",
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2025-08-13 21:43:13.662495",
+  "modified": "2025-08-20 23:28:56.910768",
   "name": "Create Server",
   "steps": [
    {

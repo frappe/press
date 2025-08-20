@@ -821,6 +821,7 @@ class Cluster(Document):
 		is_for_recovery: bool = False,
 		setup_db_replication: bool = False,
 		master_db_server: str | None = None,
+		press_job_arguments: dict[str, typing.Any] | None = None,
 	):
 		"""Creates a server for the cluster
 
@@ -828,6 +829,9 @@ class Cluster(Document):
 			This will use a different nameing series `t` for the server to avoid conflicts
 			with the regular servers.
 		"""
+
+		if press_job_arguments is None:
+			press_job_arguments = {}
 
 		if setup_db_replication:
 			if doctype != "Database Server":
@@ -911,6 +915,7 @@ class Cluster(Document):
 		if setup_db_replication:
 			job_arguments["master_db_server"] = master_db_server
 			job_arguments["setup_db_replication"] = True
+			job_arguments.update(press_job_arguments)
 		job = server.run_press_job("Create Server", arguments=job_arguments)
 
 		return server, job

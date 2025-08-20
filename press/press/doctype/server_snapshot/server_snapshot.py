@@ -3,6 +3,7 @@
 
 import contextlib
 import json
+import typing
 from typing import TYPE_CHECKING, Literal
 
 import frappe
@@ -222,6 +223,9 @@ class ServerSnapshot(Document):
 		if self.has_value_changed("status"):
 			if self.status == "Completed":
 				self._create_subscription()
+				# Continue execution of Logical Replication Backup if it exists
+				if frappe.db.exists("Logical Replication Backup", {"server_snapshot": self.name}):
+					frappe.get_doc("Logical Replication Backup", {"server_snapshot": self.name}).next()
 			elif self.status in ["Failure", "Unavailable"]:
 				self._disable_subscription()
 
@@ -391,23 +395,29 @@ class ServerSnapshot(Document):
 		self.save()
 
 	@dashboard_whitelist()
-	def lock(self, now: bool = False):
+	def lock(self, now: bool | None = False):
 		if self.locked:
 			return
 
-		frappe.enqueue_doc("Server Snapshot", self.name, "_lock", enqueue_after_commit=True, now=now or False)
+		if now is None:
+			now = False
+
+		frappe.enqueue_doc("Server Snapshot", self.name, "_lock", enqueue_after_commit=True, now=now)
 
 	@dashboard_whitelist()
-	def unlock(self, now: bool = False):
+	def unlock(self, now: bool | None = False):
 		if not self.locked:
 			return
+
+		if now is None:
+			now = False
 
 		frappe.enqueue_doc(
 			"Server Snapshot",
 			self.name,
 			"_unlock",
 			enqueue_after_commit=True,
-			now=now or False,
+			now=now,
 		)
 
 	def _lock(self):
@@ -455,6 +465,7 @@ class ServerSnapshot(Document):
 		is_for_recovery: bool = False,
 		provision_db_replica: bool = False,
 		master_db_server: str | None = None,
+		press_job_arguments: dict[str, typing.Any] | None = None,
 	) -> str:
 		if server_type not in ["Server", "Database Server"]:
 			frappe.throw("Invalid server type. Must be 'Server' or 'Database Server'.")
@@ -467,6 +478,9 @@ class ServerSnapshot(Document):
 
 		if provision_db_replica is None:
 			provision_db_replica = False
+
+		if press_job_arguments is None:
+			press_job_arguments = {}
 
 		if server_type != "Database Server" and provision_db_replica:
 			frappe.throw("Provisioning a database replica is only applicable for Database Servers.")
@@ -508,6 +522,7 @@ class ServerSnapshot(Document):
 			is_for_recovery=is_for_recovery,
 			setup_db_replication=provision_db_replica,
 			master_db_server=master_db_server if provision_db_replica else None,
+			press_job_arguments=press_job_arguments,
 		)
 		server_name = ""
 		if server:
@@ -531,6 +546,9 @@ class ServerSnapshot(Document):
 		plan = frappe.get_value("Server Snapshot Plan", {"provider": self.provider, "enabled": 1}, "name")
 		if not plan:
 			frappe.throw(f"No active Server Snapshot Plan found for provider {self.provider}.")
+
+		if frappe.db.exists("Subscription", {"document_type": "Server Snapshot", "document_name": self.name}):
+			return
 
 		frappe.get_doc(
 			{

@@ -45,7 +45,13 @@ def check_replication_lag(server: "DatabaseServer", target_lag: int) -> int:
 	# 0 -> We haven't yet reached the targetted replication lag
 	# 1 -> We have reached the targetted replication lag
 	try:
-		replication_status = server.get_replication_status().get("data", {}).get("slave_status", {})
+		data = server.get_replication_status()
+		if not data.get("success", False):
+			# If the replication status is not available
+			# Might be agent or db is not in a state to fetch the replication status
+			# Just keep trying
+			return 0
+		replication_status = data.get("data", {}).get("slave_status", {})
 		if not replication_status:
 			# No replication status available
 			# That means server is not replicating even
@@ -81,8 +87,7 @@ def check_replication_lag(server: "DatabaseServer", target_lag: int) -> int:
 
 		return 0
 
-	except Exception as e:
-		print(e)
+	except Exception:
 		return 0
 
 
@@ -345,6 +350,9 @@ class LogicalReplicationBackup(Document):
 			title=self.database_server_doc.title + " (Hot Standby)",
 			team=self.database_server_doc.team,
 			plan=self.database_server_doc.plan,
+			press_job_arguments={
+				"logical_replication_backup": self.name,
+			},
 		)
 		self.append(
 			"servers",
@@ -377,28 +385,27 @@ class LogicalReplicationBackup(Document):
 		if server.status != "Active":
 			return StepStatus.Running
 
-		plays = frappe.get_all(
-			"Ansible Play",
-			{"server": server.name, "play": "Ping Server"},
-			["status"],
-			order_by="creation desc",
-			limit=1,
+		# Check status of Create Server Press Job
+		press_job_status = frappe.db.get_value(
+			"Press Job",
+			{"server_type": "Database Server", "server": server.name, "job_type": "Create Server"},
+			"status",
 		)
-
-		if not plays:
+		if not press_job_status:
+			# Press Job might not have created yet
 			return StepStatus.Running
 
-		status = plays[0].status
-		if status in ["Pending", "Running"]:
+		if press_job_status in ["Pending", "Running"]:
 			return StepStatus.Running
 
-		if status == "Failure":
+		if press_job_status == "Failure":
 			return StepStatus.Failure
 
-		if status == "Success":
-			return StepStatus.Success
+		# Check if replication setup done
+		if not server.is_replication_setup:
+			return StepStatus.Running
 
-		return StepStatus.Failure
+		return StepStatus.Success
 
 	def pre__wait_for_minimal_replication_lag(self):
 		"""Wait For Minimal Replication Lag"""
@@ -705,13 +712,14 @@ class LogicalReplicationBackup(Document):
 
 	@frappe.whitelist()
 	def execute(self):
-		if self.status == "Pending":
-			frappe.msgprint("Replication is already in Pending state. It will be executed soon.")
+		if self.status == "Running":
+			frappe.msgprint("Replication is already in Running state. It will be executed soon.")
 			return
-		# Just set to Pending, scheduler will pick it up
-		self.status = "Pending"
+		# Just set to Running, scheduler will pick it up
+		self.status = "Running"
 		self.start = frappe.utils.now_datetime()
 		self.save()
+		self.next()
 
 	def fail(self, save: bool = True) -> None:
 		self.status = "Failure"
@@ -761,7 +769,6 @@ class LogicalReplicationBackup(Document):
 			deduplicate=next_step_to_run.wait_for_completion
 			is False,  # Don't deduplicate if wait_for_completion is True
 			job_id=f"logical_replication||{self.name}||{next_step_to_run.name}",
-			now=True,
 			timeout=600,
 		)
 
@@ -865,8 +872,7 @@ class LogicalReplicationBackup(Document):
 			self.fail(save=True)
 		else:
 			self.save(ignore_version=True)
-			print("Not running the next step, as this is a sync step")
-			# self.next()
+			self.next()
 
 	def get_step(self, step_name) -> "LogicalReplicationStep | None":
 		for step in self.current_execution_steps:
@@ -890,3 +896,21 @@ class LogicalReplicationBackup(Document):
 		pretty_result = json.dumps(result, indent=2, sort_keys=True, default=str)
 		comment = f"<pre><code>{command}</code></pre><pre><code>{pretty_result}</pre></code>"
 		self.add_comment(text=comment)
+
+
+def process_logical_replication_backup_deactivate_site_job_update(job):
+	if job.reference_doctype != "Logical Replication Backup":
+		return
+	if job.status not in ["Success", "Failure", "Delivery Failure"]:
+		return
+	doc: LogicalReplicationBackup = frappe.get_doc("Logical Replication Backup", job.reference_name)
+	doc.next()
+
+
+def process_logical_replication_backup_activate_site_job_update(job):
+	if job.reference_doctype != "Logical Replication Backup":
+		return
+	if job.status not in ["Success", "Failure", "Delivery Failure"]:
+		return
+	doc: LogicalReplicationBackup = frappe.get_doc("Logical Replication Backup", job.reference_name)
+	doc.next()
