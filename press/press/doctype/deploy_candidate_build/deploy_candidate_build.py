@@ -17,6 +17,7 @@ from enum import Enum
 from functools import cached_property
 
 import frappe
+import requests
 import semantic_version
 from frappe.core.utils import find
 from frappe.model.document import Document
@@ -26,6 +27,7 @@ from frappe.utils import rounded
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from press.agent import Agent
+from press.exceptions import ImageNotFoundInRegistry
 from press.press.doctype.deploy_candidate.deploy_notifications import (
 	create_build_failed_notification,
 )
@@ -1007,6 +1009,23 @@ class DeployCandidateBuild(Document):
 		self.docker_image_tag = self.name
 		self.docker_image = f"{self.docker_image_repository}:{self.docker_image_tag}"
 
+	def is_image_in_registry(self) -> bool:
+		"""Check if the image tag exists on registry"""
+		settings = self._fetch_registry_settings()
+		headers = {"Accept": "application/vnd.docker.distribution.manifest.v2+json"}
+		auth = (settings.docker_registry_username, settings.docker_registry_password)
+		repository = self.docker_image_repository.replace(settings.docker_registry_url, "")
+
+		response = requests.get(
+			f"https://{settings.docker_registry_url}/v2/{repository}/tags/list", auth=auth, headers=headers
+		)
+
+		if not response.ok:
+			return False
+
+		image_tags = response.json().get("tags")
+		return self.name in image_tags
+
 	def _start_build(self):
 		self._update_docker_image_metadata()
 		self._run_agent_jobs()
@@ -1184,7 +1203,10 @@ class DeployCandidateBuild(Document):
 
 		return self._create_deploy(servers).name
 
-	def _create_deploy(self, servers: list[str]):
+	def _create_deploy(self, servers: list[str], check_image_exists: bool = False):
+		if check_image_exists and not self.is_image_in_registry():
+			frappe.throw("Image not found in registry create a new build", ImageNotFoundInRegistry)
+
 		return frappe.get_doc(
 			{
 				"doctype": "Deploy",
