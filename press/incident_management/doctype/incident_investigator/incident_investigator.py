@@ -326,57 +326,68 @@ class IncidentInvestigator(Document):
 		"""Investigate potential issues with the main application server."""
 		self._investigate_component("name", "server_investigation_steps")
 
-	def add_action_and_take_action(self, reference_doctype: str, reference_name: str, method: str):
+	def add_action(self, reference_doctype: str, reference_name: str, method: str):
 		"""Add action in the action steps"""
 		self.append(
 			"action_steps",
-			{"reference_doctype": reference_doctype, "reference_name": reference_name, "method": method},
+			{
+				"reference_doctype": reference_doctype,
+				"reference_name": reference_name,
+				"method": method,
+				"is_taken": False,
+			},
 		)
 		self.save()
 
-	def mark_human_intervention_and_add_action(self):
-		"""
-		Check if human intervention is required, suggesting no human intervention for the listed cases
-			- Storage full on a specific mountpoint which is beyond human control.
-			- Database high_cpu_load, high_system_load, high_memory
+	def _initiate_database_reboot(self, database_server: str):
+		"""Trigger reboot depending on cloud provider"""
+		provider = frappe.db.get_value("Virtual Machine", database_server, "cloud_provider")
+		self.add_action(
+			"Virtual Machine", database_server, "reboot_with_serial_console"
+		) if provider == "AWS EC2" else self.add_action("Virtual Machine", database_server, "reboot")
 
-		If there are no other likely issues except high disk usage we can mark it as no intervention
+	def _initiate_process_list_capture_and_reboot(self, database_server: str):
+		"""Capture database process list and restart mariadb"""
+		self.add_action("Database Server", database_server, "_capture_process_list")
+		self.add_action("Database Server", database_server, "restart_mariadb")
+
+	def add_proxy_investigation_actions(self):
+		"""We currently do not add actions in case of proxy issues"""
+		pass
+
+	def add_server_investigation_actions(self):
+		"""We currently do not add actions in case of application server issues"""
+		pass
+
+	def add_database_server_investigation_actions(self):
 		"""
-		# Quick exit in case of proxy issues.
-		proxy_likely_causes = [step for step in self.proxy_investigation_steps if step.is_likely_cause]
-		if proxy_likely_causes:
-			self.requires_human_intervention = True
-			self.save()
+		In case of database resource incidents we do the following
+			- Unreachable or missing metrics from promethues results in a database server reboot
+			- Busy resources result in a mariadb reboot post a process list capture.
+		"""
+		database_server = frappe.db.get_value("Server", self.server, "database_server")
+
+		if any([step for step in self.database_investigation_steps if step.is_unable_to_investigate]):
+			self._initiate_database_reboot(database_server)
 			return
 
-		server_likely_causes = [step for step in self.server_investigation_steps if step.is_likely_cause]
 		database_likely_causes = [step for step in self.database_investigation_steps if step.is_likely_cause]
-
-		server_methods = {step.method for step in server_likely_causes}
 		database_methods = {step.method for step in database_likely_causes}
+		if database_methods.issubset(
+			{
+				self.has_high_cpu_load.__name__,
+				self.has_high_memory_usage.__name__,
+				self.has_high_system_load.__name__,
+			}
+		):
+			self._initiate_process_list_capture_and_reboot(database_server)
 
-		only_disk_space_issues = server_methods == {
-			self.has_high_disk_usage.__name__
-		} or database_methods == {self.has_high_disk_usage.__name__}
+	def add_post_investigation_actions(self):
+		if self.add_proxy_investigation_actions():
+			return
 
-		only_database_resource_issues = (
-			database_methods.issubset(
-				{
-					self.has_high_cpu_load.__name__,
-					self.has_high_memory_usage.__name__,
-					self.has_high_system_load.__name__,
-				}
-			)
-			and not server_methods
-		)
-
-		self.requires_human_intervention = not (only_disk_space_issues or only_database_resource_issues)
-
-		if only_database_resource_issues and not only_disk_space_issues:
-			database_server = frappe.db.get_value("Server", self.server, "database_server")
-			self.add_action_and_take_action("Database Server", database_server, "restart_mariadb")
-
-		self.save()
+		self.add_server_investigation_actions()
+		self.add_database_server_investigation_actions()
 
 	def investigate(self):
 		"""
@@ -395,4 +406,4 @@ class IncidentInvestigator(Document):
 		self.investigate_server()
 		self.set_status(Status.COMPLETED)
 
-		self.mark_human_intervention_and_add_action()
+		self.add_post_investigation_actions()
