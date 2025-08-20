@@ -1,0 +1,5142 @@
+{
+  "api.__init__": [
+    {
+      "function": "handle_suspended_site_redirection",
+      "fqname": "api.__init__.handle_suspended_site_redirection",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "script",
+      "fqname": "api.__init__.script",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "script_2",
+      "fqname": "api.__init__.script_2",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ],
+  "api.account": [
+    {
+      "function": "active_servers",
+      "fqname": "api.account.active_servers",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "add_key",
+      "fqname": "api.account.add_key",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "add_permission_group",
+      "fqname": "api.account.add_permission_group",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "add_permission_group_user",
+      "fqname": "api.account.add_permission_group_user",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "can_switch_to_team",
+      "fqname": "api.account.can_switch_to_team",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "country_list",
+      "fqname": "api.account.country_list",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "create_api_secret",
+      "fqname": "api.account.create_api_secret",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_child_team",
+      "fqname": "api.account.create_child_team",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "current_team",
+      "fqname": "api.account.current_team",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "delete_team",
+      "fqname": "api.account.delete_team",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "disable_2fa",
+      "fqname": "api.account.disable_2fa",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "disable_account",
+      "fqname": "api.account.disable_account",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "enable_2fa",
+      "fqname": "api.account.enable_2fa",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "enable_account",
+      "fqname": "api.account.enable_account",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "feedback",
+      "fqname": "api.account.feedback",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "fuse_list",
+      "fqname": "api.account.fuse_list",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get",
+      "fqname": "api.account.get",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_2fa_qr_code_url",
+      "fqname": "api.account.get_2fa_qr_code_url",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_2fa_recovery_codes",
+      "fqname": "api.account.get_2fa_recovery_codes",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_billing_information",
+      "fqname": "api.account.get_billing_information",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_emails",
+      "fqname": "api.account.get_emails",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_permission_options",
+      "fqname": "api.account.get_permission_options",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_permission_roles",
+      "fqname": "api.account.get_permission_roles",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_site_count",
+      "fqname": "api.account.get_site_count",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_user_for_reset_password_key",
+      "fqname": "api.account.get_user_for_reset_password_key",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "get_user_ssh_keys",
+      "fqname": "api.account.get_user_ssh_keys",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "groups",
+      "fqname": "api.account.groups",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "guest_feature_flags",
+      "fqname": "api.account.guest_feature_flags",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "has_active_servers",
+      "fqname": "api.account.has_active_servers",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "has_method_permission",
+      "fqname": "api.account.has_method_permission",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "is_2fa_enabled",
+      "fqname": "api.account.is_2fa_enabled",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "leave_team",
+      "fqname": "api.account.leave_team",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "login_using_key",
+      "fqname": "api.account.login_using_key",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "mark_key_as_default",
+      "fqname": "api.account.mark_key_as_default",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "me",
+      "fqname": "api.account.me",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "permission_group_users",
+      "fqname": "api.account.permission_group_users",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "recover_2fa",
+      "fqname": "api.account.recover_2fa",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "remove_child_team",
+      "fqname": "api.account.remove_child_team",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "remove_permission_group",
+      "fqname": "api.account.remove_permission_group",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "remove_permission_group_user",
+      "fqname": "api.account.remove_permission_group_user",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "remove_team_member",
+      "fqname": "api.account.remove_team_member",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "request_team_deletion",
+      "fqname": "api.account.request_team_deletion",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "resend_otp",
+      "fqname": "api.account.resend_otp",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "reset_2fa_recovery_codes",
+      "fqname": "api.account.reset_2fa_recovery_codes",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "reset_password",
+      "fqname": "api.account.reset_password",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "send_login_link",
+      "fqname": "api.account.send_login_link",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "send_otp",
+      "fqname": "api.account.send_otp",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "send_reset_password_email",
+      "fqname": "api.account.send_reset_password_email",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "set_country",
+      "fqname": "api.account.set_country",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_account",
+      "fqname": "api.account.setup_account",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "signup",
+      "fqname": "api.account.signup",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "signup_settings",
+      "fqname": "api.account.signup_settings",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "switch_team",
+      "fqname": "api.account.switch_team",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_billing_information",
+      "fqname": "api.account.update_billing_information",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_emails",
+      "fqname": "api.account.update_emails",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_feature_flags",
+      "fqname": "api.account.update_feature_flags",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_permissions",
+      "fqname": "api.account.update_permissions",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_profile",
+      "fqname": "api.account.update_profile",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_profile_picture",
+      "fqname": "api.account.update_profile_picture",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "user_prompts",
+      "fqname": "api.account.user_prompts",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "validate_request_key",
+      "fqname": "api.account.validate_request_key",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "verify_2fa",
+      "fqname": "api.account.verify_2fa",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "verify_otp",
+      "fqname": "api.account.verify_otp",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "verify_otp_and_login",
+      "fqname": "api.account.verify_otp_and_login",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ],
+  "api.analytics": [
+    {
+      "function": "binary_logs",
+      "fqname": "api.analytics.binary_logs",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "daily_usage",
+      "fqname": "api.analytics.daily_usage",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "deadlock_report",
+      "fqname": "api.analytics.deadlock_report",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get",
+      "fqname": "api.analytics.get",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_advanced_analytics",
+      "fqname": "api.analytics.get_advanced_analytics",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_slow_logs_by_query",
+      "fqname": "api.analytics.get_slow_logs_by_query",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "mariadb_add_suggested_index",
+      "fqname": "api.analytics.mariadb_add_suggested_index",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "mariadb_processlist",
+      "fqname": "api.analytics.mariadb_processlist",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "mariadb_slow_queries",
+      "fqname": "api.analytics.mariadb_slow_queries",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "plausible_analytics",
+      "fqname": "api.analytics.plausible_analytics",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "request_logs",
+      "fqname": "api.analytics.request_logs",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "api.app": [
+    {
+      "function": "new",
+      "fqname": "api.app.new",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "api.bench": [
+    {
+      "function": "add_app",
+      "fqname": "api.bench.add_app",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "add_apps",
+      "fqname": "api.bench.add_apps",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "add_region",
+      "fqname": "api.bench.add_region",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "all",
+      "fqname": "api.bench.all",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "all_apps",
+      "fqname": "api.bench.all_apps",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "apply_patch",
+      "fqname": "api.bench.apply_patch",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "apps",
+      "fqname": "api.bench.apps",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "archive",
+      "fqname": "api.bench.archive",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "available_regions",
+      "fqname": "api.bench.available_regions",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "bench_config",
+      "fqname": "api.bench.bench_config",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "bench_tags",
+      "fqname": "api.bench.bench_tags",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "branch_list",
+      "fqname": "api.bench.branch_list",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "candidate",
+      "fqname": "api.bench.candidate",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "candidates",
+      "fqname": "api.bench.candidates",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "certificate",
+      "fqname": "api.bench.certificate",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "change_branch",
+      "fqname": "api.bench.change_branch",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "confirm_bench_transfer",
+      "fqname": "api.bench.confirm_bench_transfer",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "create_deploy_candidate",
+      "fqname": "api.bench.create_deploy_candidate",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "dependencies",
+      "fqname": "api.bench.dependencies",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "deploy",
+      "fqname": "api.bench.deploy",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "deploy_and_update",
+      "fqname": "api.bench.deploy_and_update",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "deploy_information",
+      "fqname": "api.bench.deploy_information",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "exists",
+      "fqname": "api.bench.exists",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fail_and_redeploy",
+      "fqname": "api.bench.fail_and_redeploy",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fetch_latest_app_update",
+      "fqname": "api.bench.fetch_latest_app_update",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "generate_certificate",
+      "fqname": "api.bench.generate_certificate",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get",
+      "fqname": "api.bench.get",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_default_apps",
+      "fqname": "api.bench.get_default_apps",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_installed_apps_in_version",
+      "fqname": "api.bench.get_installed_apps_in_version",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_processes",
+      "fqname": "api.bench.get_processes",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_title_and_creation",
+      "fqname": "api.bench.get_title_and_creation",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "installable_apps",
+      "fqname": "api.bench.installable_apps",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "jobs",
+      "fqname": "api.bench.jobs",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "log",
+      "fqname": "api.bench.log",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "logs",
+      "fqname": "api.bench.logs",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "new",
+      "fqname": "api.bench.new",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "options",
+      "fqname": "api.bench.options",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "rebuild",
+      "fqname": "api.bench.rebuild",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "recent_deploys",
+      "fqname": "api.bench.recent_deploys",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "regions",
+      "fqname": "api.bench.regions",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "remove_app",
+      "fqname": "api.bench.remove_app",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "rename",
+      "fqname": "api.bench.rename",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "restart",
+      "fqname": "api.bench.restart",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "running_jobs",
+      "fqname": "api.bench.running_jobs",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update",
+      "fqname": "api.bench.update",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_all_sites",
+      "fqname": "api.bench.update_all_sites",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_config",
+      "fqname": "api.bench.update_config",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_dependencies",
+      "fqname": "api.bench.update_dependencies",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_inplace",
+      "fqname": "api.bench.update_inplace",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "versions",
+      "fqname": "api.bench.versions",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "api.billing": [
+    {
+      "function": "after_card_add",
+      "fqname": "api.billing.after_card_add",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "balances",
+      "fqname": "api.billing.balances",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "change_payment_mode",
+      "fqname": "api.billing.change_payment_mode",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_payment_intent_for_buying_credits",
+      "fqname": "api.billing.create_payment_intent_for_buying_credits",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_payment_intent_for_micro_debit",
+      "fqname": "api.billing.create_payment_intent_for_micro_debit",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_payment_intent_for_partnership_fees",
+      "fqname": "api.billing.create_payment_intent_for_partnership_fees",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_payment_intent_for_prepaid_app",
+      "fqname": "api.billing.create_payment_intent_for_prepaid_app",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_razorpay_order",
+      "fqname": "api.billing.create_razorpay_order",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "details",
+      "fqname": "api.billing.details",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fetch_invoice_items",
+      "fqname": "api.billing.fetch_invoice_items",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "finalize_invoices",
+      "fqname": "api.billing.finalize_invoices",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_balance_credit",
+      "fqname": "api.billing.get_balance_credit",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_customer_details",
+      "fqname": "api.billing.get_customer_details",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_invoice_usage",
+      "fqname": "api.billing.get_invoice_usage",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_latest_unpaid_invoice",
+      "fqname": "api.billing.get_latest_unpaid_invoice",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_payment_methods",
+      "fqname": "api.billing.get_payment_methods",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_publishable_key_and_setup_intent",
+      "fqname": "api.billing.get_publishable_key_and_setup_intent",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_summary",
+      "fqname": "api.billing.get_summary",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_unpaid_invoices",
+      "fqname": "api.billing.get_unpaid_invoices",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "handle_razorpay_payment_failed",
+      "fqname": "api.billing.handle_razorpay_payment_failed",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "handle_razorpay_payment_success",
+      "fqname": "api.billing.handle_razorpay_payment_success",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "invoices_and_payments",
+      "fqname": "api.billing.invoices_and_payments",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "past_invoices",
+      "fqname": "api.billing.past_invoices",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "prepaid_credits_via_onboarding",
+      "fqname": "api.billing.prepaid_credits_via_onboarding",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "refresh_invoice_link",
+      "fqname": "api.billing.refresh_invoice_link",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "remove_payment_method",
+      "fqname": "api.billing.remove_payment_method",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "request_for_payment",
+      "fqname": "api.billing.request_for_payment",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "set_as_default",
+      "fqname": "api.billing.set_as_default",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_intent_success",
+      "fqname": "api.billing.setup_intent_success",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "total_unpaid_amount",
+      "fqname": "api.billing.total_unpaid_amount",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "unpaid_invoices",
+      "fqname": "api.billing.unpaid_invoices",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "upcoming_invoice",
+      "fqname": "api.billing.upcoming_invoice",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "validate_gst",
+      "fqname": "api.billing.validate_gst",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "verify_m_pesa_transaction",
+      "fqname": "api.billing.verify_m_pesa_transaction",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ],
+  "api.callbacks": [
+    {
+      "function": "callback",
+      "fqname": "api.callbacks.callback",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ],
+  "api.central": [
+    {
+      "function": "account_request",
+      "fqname": "api.central.account_request",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "check_subdomain_availability",
+      "fqname": "api.central.check_subdomain_availability",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "get_trial_end_date",
+      "fqname": "api.central.get_trial_end_date",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "options_for_regional_data",
+      "fqname": "api.central.options_for_regional_data",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "send_login_link",
+      "fqname": "api.central.send_login_link",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "setup_account",
+      "fqname": "api.central.setup_account",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ],
+  "api.client": [
+    {
+      "function": "delete",
+      "fqname": "api.client.delete",
+      "http_method": "DELETE,POST",
+      "auth": ""
+    },
+    {
+      "function": "get",
+      "fqname": "api.client.get",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_list",
+      "fqname": "api.client.get_list",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "insert",
+      "fqname": "api.client.insert",
+      "http_method": "POST,PUT",
+      "auth": ""
+    },
+    {
+      "function": "run_doc_method",
+      "fqname": "api.client.run_doc_method",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "search_link",
+      "fqname": "api.client.search_link",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "set_value",
+      "fqname": "api.client.set_value",
+      "http_method": "POST,PUT",
+      "auth": ""
+    }
+  ],
+  "api.config": [
+    {
+      "function": "is_valid",
+      "fqname": "api.config.is_valid",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "standard_keys",
+      "fqname": "api.config.standard_keys",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "api.cookies": [
+    {
+      "function": "update_preferences",
+      "fqname": "api.cookies.update_preferences",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ],
+  "api.dashboard": [
+    {
+      "function": "add_tag",
+      "fqname": "api.dashboard.add_tag",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "all",
+      "fqname": "api.dashboard.all",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_new_tag",
+      "fqname": "api.dashboard.create_new_tag",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "remove_tag",
+      "fqname": "api.dashboard.remove_tag",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "api.developer.marketplace": [
+    {
+      "function": "change_site_plan",
+      "fqname": "api.developer.marketplace.change_site_plan",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "get_plans",
+      "fqname": "api.developer.marketplace.get_plans",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "get_publishable_key_and_setup_intent",
+      "fqname": "api.developer.marketplace.get_publishable_key_and_setup_intent",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "get_subscription",
+      "fqname": "api.developer.marketplace.get_subscription",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "get_subscription_info",
+      "fqname": "api.developer.marketplace.get_subscription_info",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "get_subscription_status",
+      "fqname": "api.developer.marketplace.get_subscription_status",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "send_login_link",
+      "fqname": "api.developer.marketplace.send_login_link",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "setup_intent_success",
+      "fqname": "api.developer.marketplace.setup_intent_success",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "update_billing_info",
+      "fqname": "api.developer.marketplace.update_billing_info",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ],
+  "api.developer.saas": [
+    {
+      "function": "get_plan_config",
+      "fqname": "api.developer.saas.get_plan_config",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "get_subscription_info",
+      "fqname": "api.developer.saas.get_subscription_info",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "get_subscription_status",
+      "fqname": "api.developer.saas.get_subscription_status",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "get_trial_expiry",
+      "fqname": "api.developer.saas.get_trial_expiry",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "login_to_fc",
+      "fqname": "api.developer.saas.login_to_fc",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "ping",
+      "fqname": "api.developer.saas.ping",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "send_verification_code",
+      "fqname": "api.developer.saas.send_verification_code",
+      "http_method": "POST",
+      "auth": "guest"
+    },
+    {
+      "function": "verify_verification_code",
+      "fqname": "api.developer.saas.verify_verification_code",
+      "http_method": "POST",
+      "auth": "guest"
+    }
+  ],
+  "api.email": [
+    {
+      "function": "email_ping",
+      "fqname": "api.email.email_ping",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "event_log",
+      "fqname": "api.email.event_log",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "get_analytics",
+      "fqname": "api.email.get_analytics",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "send_mime_mail",
+      "fqname": "api.email.send_mime_mail",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ],
+  "api.github": [
+    {
+      "function": "app",
+      "fqname": "api.github.app",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "branches",
+      "fqname": "api.github.branches",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "clear_token_and_get_installation_url",
+      "fqname": "api.github.clear_token_and_get_installation_url",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "hook",
+      "fqname": "api.github.hook",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "options",
+      "fqname": "api.github.options",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "repository",
+      "fqname": "api.github.repository",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "api.google": [
+    {
+      "function": "callback",
+      "fqname": "api.google.callback",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "login",
+      "fqname": "api.google.login",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ],
+  "api.log_browser": [
+    {
+      "function": "get_log",
+      "fqname": "api.log_browser.get_log",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "api.marketplace": [
+    {
+      "function": "add_app",
+      "fqname": "api.marketplace.add_app",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "add_app_screenshot",
+      "fqname": "api.marketplace.add_app_screenshot",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "add_code_review_comment",
+      "fqname": "api.marketplace.add_code_review_comment",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "add_reply",
+      "fqname": "api.marketplace.add_reply",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "add_version",
+      "fqname": "api.marketplace.add_version",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "analytics",
+      "fqname": "api.marketplace.analytics",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "become_publisher",
+      "fqname": "api.marketplace.become_publisher",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "branches",
+      "fqname": "api.marketplace.branches",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "cancel_approval_request",
+      "fqname": "api.marketplace.cancel_approval_request",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "change_app_plan",
+      "fqname": "api.marketplace.change_app_plan",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "change_branch",
+      "fqname": "api.marketplace.change_branch",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "communication",
+      "fqname": "api.marketplace.communication",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_app_plan",
+      "fqname": "api.marketplace.create_app_plan",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_approval_request",
+      "fqname": "api.marketplace.create_approval_request",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_site_for_app",
+      "fqname": "api.marketplace.create_site_for_app",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "deploy_information",
+      "fqname": "api.marketplace.deploy_information",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fetch_readme",
+      "fqname": "api.marketplace.fetch_readme",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "frappe_versions",
+      "fqname": "api.marketplace.frappe_versions",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get",
+      "fqname": "api.marketplace.get",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_app",
+      "fqname": "api.marketplace.get_app",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_app_info",
+      "fqname": "api.marketplace.get_app_info",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_app_plans",
+      "fqname": "api.marketplace.get_app_plans",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_app_source",
+      "fqname": "api.marketplace.get_app_source",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_apps",
+      "fqname": "api.marketplace.get_apps",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_apps_with_plans",
+      "fqname": "api.marketplace.get_apps_with_plans",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_install_app_options",
+      "fqname": "api.marketplace.get_install_app_options",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_marketplace_apps",
+      "fqname": "api.marketplace.get_marketplace_apps",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "get_marketplace_apps_for_onboarding",
+      "fqname": "api.marketplace.get_marketplace_apps_for_onboarding",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_marketplace_subscriptions_for_site",
+      "fqname": "api.marketplace.get_marketplace_subscriptions_for_site",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_payout_details",
+      "fqname": "api.marketplace.get_payout_details",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_payouts_list",
+      "fqname": "api.marketplace.get_payouts_list",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_promotional_banners",
+      "fqname": "api.marketplace.get_promotional_banners",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_publisher_profile_info",
+      "fqname": "api.marketplace.get_publisher_profile_info",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_subscriptions_list",
+      "fqname": "api.marketplace.get_subscriptions_list",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "latest_approved_release",
+      "fqname": "api.marketplace.latest_approved_release",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "login_via_token",
+      "fqname": "api.marketplace.login_via_token",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "mark_app_ready_for_review",
+      "fqname": "api.marketplace.mark_app_ready_for_review",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "new_app",
+      "fqname": "api.marketplace.new_app",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "options_for_marketplace_app",
+      "fqname": "api.marketplace.options_for_marketplace_app",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "options_for_quick_install",
+      "fqname": "api.marketplace.options_for_quick_install",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "options_for_version",
+      "fqname": "api.marketplace.options_for_version",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "profile_image_url",
+      "fqname": "api.marketplace.profile_image_url",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "reason_for_rejection",
+      "fqname": "api.marketplace.reason_for_rejection",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "releases",
+      "fqname": "api.marketplace.releases",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "remove_app_screenshot",
+      "fqname": "api.marketplace.remove_app_screenshot",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "remove_version",
+      "fqname": "api.marketplace.remove_version",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "review_steps",
+      "fqname": "api.marketplace.review_steps",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "submit_developer_reply",
+      "fqname": "api.marketplace.submit_developer_reply",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "submit_user_review",
+      "fqname": "api.marketplace.submit_user_review",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "subscriptions",
+      "fqname": "api.marketplace.subscriptions",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_app_description",
+      "fqname": "api.marketplace.update_app_description",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_app_image",
+      "fqname": "api.marketplace.update_app_image",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_app_links",
+      "fqname": "api.marketplace.update_app_links",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_app_plan",
+      "fqname": "api.marketplace.update_app_plan",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_app_summary",
+      "fqname": "api.marketplace.update_app_summary",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_app_title",
+      "fqname": "api.marketplace.update_app_title",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_publisher_profile",
+      "fqname": "api.marketplace.update_publisher_profile",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "api.monitoring": [
+    {
+      "function": "alert",
+      "fqname": "api.monitoring.alert",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "targets",
+      "fqname": "api.monitoring.targets",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ],
+  "api.notifications": [
+    {
+      "function": "get_notifications",
+      "fqname": "api.notifications.get_notifications",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_unread_count",
+      "fqname": "api.notifications.get_unread_count",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "mark_all_notifications_as_read",
+      "fqname": "api.notifications.mark_all_notifications_as_read",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "api.oauth": [
+    {
+      "function": "callback",
+      "fqname": "api.oauth.callback",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "google_login",
+      "fqname": "api.oauth.google_login",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "oauth_authorize_url",
+      "fqname": "api.oauth.oauth_authorize_url",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "saas_setup",
+      "fqname": "api.oauth.saas_setup",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ],
+  "api.partner": [
+    {
+      "function": "add_partner",
+      "fqname": "api.partner.add_partner",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "apply_for_certificate",
+      "fqname": "api.partner.apply_for_certificate",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "approve_partner_request",
+      "fqname": "api.partner.approve_partner_request",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "calculate_partner_tier",
+      "fqname": "api.partner.calculate_partner_tier",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_current_month_partner_contribution",
+      "fqname": "api.partner.get_current_month_partner_contribution",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_local_payment_setup",
+      "fqname": "api.partner.get_local_payment_setup",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_partner_contribution_list",
+      "fqname": "api.partner.get_partner_contribution_list",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_partner_customers",
+      "fqname": "api.partner.get_partner_customers",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_partner_details",
+      "fqname": "api.partner.get_partner_details",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_partner_members",
+      "fqname": "api.partner.get_partner_members",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_partner_name",
+      "fqname": "api.partner.get_partner_name",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_partner_request_status",
+      "fqname": "api.partner.get_partner_request_status",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_partner_teams",
+      "fqname": "api.partner.get_partner_teams",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_prev_month_partner_contribution",
+      "fqname": "api.partner.get_prev_month_partner_contribution",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_total_partner_contribution",
+      "fqname": "api.partner.get_total_partner_contribution",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "remove_partner",
+      "fqname": "api.partner.remove_partner",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "transfer_credits",
+      "fqname": "api.partner.transfer_credits",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_partnership_date",
+      "fqname": "api.partner.update_partnership_date",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "validate_partner_code",
+      "fqname": "api.partner.validate_partner_code",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "api.payment": [
+    {
+      "function": "all",
+      "fqname": "api.payment.all",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "api.product_trial": [
+    {
+      "function": "get_account_request_for_product_signup",
+      "fqname": "api.product_trial.get_account_request_for_product_signup",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "get_request",
+      "fqname": "api.product_trial.get_request",
+      "http_method": "POST",
+      "auth": ""
+    },
+    {
+      "function": "login_using_code",
+      "fqname": "api.product_trial.login_using_code",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "send_verification_code_for_login",
+      "fqname": "api.product_trial.send_verification_code_for_login",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "setup_account",
+      "fqname": "api.product_trial.setup_account",
+      "http_method": "POST",
+      "auth": "guest"
+    }
+  ],
+  "api.regional_payments.mpesa.utils": [
+    {
+      "function": "create_exchange_rate",
+      "fqname": "api.regional_payments.mpesa.utils.create_exchange_rate",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_invoice_partner_site",
+      "fqname": "api.regional_payments.mpesa.utils.create_invoice_partner_site",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "display_invoices_by_partner",
+      "fqname": "api.regional_payments.mpesa.utils.display_invoices_by_partner",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "display_mpesa_payment_partners",
+      "fqname": "api.regional_payments.mpesa.utils.display_mpesa_payment_partners",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "display_payment_gateway",
+      "fqname": "api.regional_payments.mpesa.utils.display_payment_gateway",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "display_payment_gateways",
+      "fqname": "api.regional_payments.mpesa.utils.display_payment_gateways",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "display_payment_partners",
+      "fqname": "api.regional_payments.mpesa.utils.display_payment_partners",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fetch_mpesa_setup",
+      "fqname": "api.regional_payments.mpesa.utils.fetch_mpesa_setup",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fetch_payments",
+      "fqname": "api.regional_payments.mpesa.utils.fetch_payments",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fetch_payouts",
+      "fqname": "api.regional_payments.mpesa.utils.fetch_payouts",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fetch_percentage_commission",
+      "fqname": "api.regional_payments.mpesa.utils.fetch_percentage_commission",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_exchange_rate",
+      "fqname": "api.regional_payments.mpesa.utils.get_exchange_rate",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_gateway_controller",
+      "fqname": "api.regional_payments.mpesa.utils.get_gateway_controller",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_payment_gateway_details",
+      "fqname": "api.regional_payments.mpesa.utils.get_payment_gateway_details",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_tax_percentage",
+      "fqname": "api.regional_payments.mpesa.utils.get_tax_percentage",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_mpesa_setup",
+      "fqname": "api.regional_payments.mpesa.utils.update_mpesa_setup",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_payment_gateway_settings",
+      "fqname": "api.regional_payments.mpesa.utils.update_payment_gateway_settings",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "api.saas": [
+    {
+      "function": "account_request",
+      "fqname": "api.saas.account_request",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "check_subdomain_availability",
+      "fqname": "api.saas.check_subdomain_availability",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "get_saas_site_status",
+      "fqname": "api.saas.get_saas_site_status",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_site_status",
+      "fqname": "api.saas.get_site_status",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "get_site_url_and_sid",
+      "fqname": "api.saas.get_site_url_and_sid",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "headless_setup_account",
+      "fqname": "api.saas.headless_setup_account",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "new_saas_site",
+      "fqname": "api.saas.new_saas_site",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_account",
+      "fqname": "api.saas.setup_account",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ],
+  "api.security": [
+    {
+      "function": "fetch_security_updates",
+      "fqname": "api.security.fetch_security_updates",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fetch_ssh_session_activity",
+      "fqname": "api.security.fetch_ssh_session_activity",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fetch_ssh_session_logs",
+      "fqname": "api.security.fetch_ssh_session_logs",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fetch_ssh_sessions",
+      "fqname": "api.security.fetch_ssh_sessions",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_security_update_details",
+      "fqname": "api.security.get_security_update_details",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_servers",
+      "fqname": "api.security.get_servers",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "api.selfhosted": [
+    {
+      "function": "check_dns",
+      "fqname": "api.selfhosted.check_dns",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_and_verify_selfhosted",
+      "fqname": "api.selfhosted.create_and_verify_selfhosted",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_plans",
+      "fqname": "api.selfhosted.get_plans",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "new",
+      "fqname": "api.selfhosted.new",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "options_for_new",
+      "fqname": "api.selfhosted.options_for_new",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup",
+      "fqname": "api.selfhosted.setup",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "sshkey",
+      "fqname": "api.selfhosted.sshkey",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "verify",
+      "fqname": "api.selfhosted.verify",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "api.server": [
+    {
+      "function": "all",
+      "fqname": "api.server.all",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "analytics",
+      "fqname": "api.server.analytics",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "archive",
+      "fqname": "api.server.archive",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "change_plan",
+      "fqname": "api.server.change_plan",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get",
+      "fqname": "api.server.get",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_request_by_site",
+      "fqname": "api.server.get_request_by_site",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_slow_logs_by_site",
+      "fqname": "api.server.get_slow_logs_by_site",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_title_and_cluster",
+      "fqname": "api.server.get_title_and_cluster",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "groups",
+      "fqname": "api.server.groups",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "jobs",
+      "fqname": "api.server.jobs",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "new",
+      "fqname": "api.server.new",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "options",
+      "fqname": "api.server.options",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "overview",
+      "fqname": "api.server.overview",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "plans",
+      "fqname": "api.server.plans",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "play",
+      "fqname": "api.server.play",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "plays",
+      "fqname": "api.server.plays",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "press_jobs",
+      "fqname": "api.server.press_jobs",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "reboot",
+      "fqname": "api.server.reboot",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "rename",
+      "fqname": "api.server.rename",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "server_tags",
+      "fqname": "api.server.server_tags",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "usage",
+      "fqname": "api.server.usage",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "api.site": [
+    {
+      "function": "activate",
+      "fqname": "api.site.activate",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "activities",
+      "fqname": "api.site.activities",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "add_domain",
+      "fqname": "api.site.add_domain",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "add_server_to_release_group",
+      "fqname": "api.site.add_server_to_release_group",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "all",
+      "fqname": "api.site.all",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "app_details_for_new_public_site",
+      "fqname": "api.site.app_details_for_new_public_site",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "archive",
+      "fqname": "api.site.archive",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "available_apps",
+      "fqname": "api.site.available_apps",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "backup",
+      "fqname": "api.site.backup",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "backups",
+      "fqname": "api.site.backups",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "change_auto_update",
+      "fqname": "api.site.change_auto_update",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "change_group",
+      "fqname": "api.site.change_group",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "change_group_options",
+      "fqname": "api.site.change_group_options",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "change_notify_email",
+      "fqname": "api.site.change_notify_email",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "change_plan",
+      "fqname": "api.site.change_plan",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "change_region",
+      "fqname": "api.site.change_region",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "change_region_options",
+      "fqname": "api.site.change_region_options",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "change_server",
+      "fqname": "api.site.change_server",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "change_server_options",
+      "fqname": "api.site.change_server_options",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "check_dns",
+      "fqname": "api.site.check_dns",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "check_for_updates",
+      "fqname": "api.site.check_for_updates",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "clear_cache",
+      "fqname": "api.site.clear_cache",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "clone_group",
+      "fqname": "api.site.clone_group",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "confirm_site_transfer",
+      "fqname": "api.site.confirm_site_transfer",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "current_plan",
+      "fqname": "api.site.current_plan",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "deactivate",
+      "fqname": "api.site.deactivate",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "disable_auto_update",
+      "fqname": "api.site.disable_auto_update",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "domain_exists",
+      "fqname": "api.site.domain_exists",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "domains",
+      "fqname": "api.site.domains",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "enable_auto_update",
+      "fqname": "api.site.enable_auto_update",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "exists",
+      "fqname": "api.site.exists",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "fetch_sites_data_for_export",
+      "fqname": "api.site.fetch_sites_data_for_export",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get",
+      "fqname": "api.site.get",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_auto_update_info",
+      "fqname": "api.site.get_auto_update_info",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_backup_link",
+      "fqname": "api.site.get_backup_link",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_backup_links",
+      "fqname": "api.site.get_backup_links",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_domain",
+      "fqname": "api.site.get_domain",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_job_status",
+      "fqname": "api.site.get_job_status",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_new_site_options",
+      "fqname": "api.site.get_new_site_options",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_plans",
+      "fqname": "api.site.get_plans",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_private_groups_for_upgrade",
+      "fqname": "api.site.get_private_groups_for_upgrade",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_site_config_standard_keys",
+      "fqname": "api.site.get_site_config_standard_keys",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_site_plans",
+      "fqname": "api.site.get_site_plans",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_trial_plan",
+      "fqname": "api.site.get_trial_plan",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_upload_link",
+      "fqname": "api.site.get_upload_link",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "install_app",
+      "fqname": "api.site.install_app",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "installed_apps",
+      "fqname": "api.site.installed_apps",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "is_server_added_in_group",
+      "fqname": "api.site.is_server_added_in_group",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "job",
+      "fqname": "api.site.job",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "jobs",
+      "fqname": "api.site.jobs",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "last_migrate_failed",
+      "fqname": "api.site.last_migrate_failed",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "log",
+      "fqname": "api.site.log",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "login",
+      "fqname": "api.site.login",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "logs",
+      "fqname": "api.site.logs",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "migrate",
+      "fqname": "api.site.migrate",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "multipart_exit",
+      "fqname": "api.site.multipart_exit",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "new",
+      "fqname": "api.site.new",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "options_for_new",
+      "fqname": "api.site.options_for_new",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "reinstall",
+      "fqname": "api.site.reinstall",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "remove_domain",
+      "fqname": "api.site.remove_domain",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "restore",
+      "fqname": "api.site.restore",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "retry_add_domain",
+      "fqname": "api.site.retry_add_domain",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "running_jobs",
+      "fqname": "api.site.running_jobs",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "send_change_team_request",
+      "fqname": "api.site.send_change_team_request",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "set_host_name",
+      "fqname": "api.site.set_host_name",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "set_redirect",
+      "fqname": "api.site.set_redirect",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_wizard_complete",
+      "fqname": "api.site.setup_wizard_complete",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "site_config",
+      "fqname": "api.site.site_config",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "site_tags",
+      "fqname": "api.site.site_tags",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "uninstall_app",
+      "fqname": "api.site.uninstall_app",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "unset_redirect",
+      "fqname": "api.site.unset_redirect",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update",
+      "fqname": "api.site.update",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_auto_update_info",
+      "fqname": "api.site.update_auto_update_info",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_config",
+      "fqname": "api.site.update_config",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "uploaded_backup_info",
+      "fqname": "api.site.uploaded_backup_info",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "validate_group_for_upgrade",
+      "fqname": "api.site.validate_group_for_upgrade",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "validate_restoration_space_requirements",
+      "fqname": "api.site.validate_restoration_space_requirements",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "version_upgrade",
+      "fqname": "api.site.version_upgrade",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "api.site_backup": [
+    {
+      "function": "create_snapshot",
+      "fqname": "api.site_backup.create_snapshot",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ],
+  "api.site_login": [
+    {
+      "function": "check_session_id",
+      "fqname": "api.site_login.check_session_id",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "get_product_sites_of_user",
+      "fqname": "api.site_login.get_product_sites_of_user",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "login_to_site",
+      "fqname": "api.site_login.login_to_site",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "send_otp",
+      "fqname": "api.site_login.send_otp",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "sync_product_site_user",
+      "fqname": "api.site_login.sync_product_site_user",
+      "http_method": "POST",
+      "auth": "guest"
+    },
+    {
+      "function": "verify_otp",
+      "fqname": "api.site_login.verify_otp",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ],
+  "api.spaces": [
+    {
+      "function": "code_server",
+      "fqname": "api.spaces.code_server",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "code_server_bench_options",
+      "fqname": "api.spaces.code_server_bench_options",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "code_server_domain",
+      "fqname": "api.spaces.code_server_domain",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "code_server_group_options",
+      "fqname": "api.spaces.code_server_group_options",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "code_server_jobs",
+      "fqname": "api.spaces.code_server_jobs",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "code_server_password",
+      "fqname": "api.spaces.code_server_password",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_code_server",
+      "fqname": "api.spaces.create_code_server",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "drop_code_server",
+      "fqname": "api.spaces.drop_code_server",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "exists",
+      "fqname": "api.spaces.exists",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "spaces",
+      "fqname": "api.spaces.spaces",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "start_code_server",
+      "fqname": "api.spaces.start_code_server",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "stop_code_server",
+      "fqname": "api.spaces.stop_code_server",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "api.telegram": [
+    {
+      "function": "hook",
+      "fqname": "api.telegram.hook",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ],
+  "api.webhook": [
+    {
+      "function": "add",
+      "fqname": "api.webhook.add",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "attempt",
+      "fqname": "api.webhook.attempt",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "attempts",
+      "fqname": "api.webhook.attempts",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "available_events",
+      "fqname": "api.webhook.available_events",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "update",
+      "fqname": "api.webhook.update",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "experimental.doctype.referral_bonus.referral_bonus": [
+    {
+      "function": "allocate_credits",
+      "fqname": "experimental.doctype.referral_bonus.referral_bonus.allocate_credits",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "infrastructure.doctype.arm_build_record.arm_build_record": [
+    {
+      "function": "cancel_all_jobs",
+      "fqname": "infrastructure.doctype.arm_build_record.arm_build_record.cancel_all_jobs",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "pull_images",
+      "fqname": "infrastructure.doctype.arm_build_record.arm_build_record.pull_images",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "remove_build_from_deploy_candidate",
+      "fqname": "infrastructure.doctype.arm_build_record.arm_build_record.remove_build_from_deploy_candidate",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "retry",
+      "fqname": "infrastructure.doctype.arm_build_record.arm_build_record.retry",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "sync_status",
+      "fqname": "infrastructure.doctype.arm_build_record.arm_build_record.sync_status",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_image_tags_on_benches",
+      "fqname": "infrastructure.doctype.arm_build_record.arm_build_record.update_image_tags_on_benches",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "infrastructure.doctype.ssh_access_audit.ssh_access_audit": [
+    {
+      "function": "run",
+      "fqname": "infrastructure.doctype.ssh_access_audit.ssh_access_audit.run",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "infrastructure.doctype.virtual_disk_resize.virtual_disk_resize": [
+    {
+      "function": "execute",
+      "fqname": "infrastructure.doctype.virtual_disk_resize.virtual_disk_resize.execute",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "execute_step",
+      "fqname": "infrastructure.doctype.virtual_disk_resize.virtual_disk_resize.execute_step",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "force_continue",
+      "fqname": "infrastructure.doctype.virtual_disk_resize.virtual_disk_resize.force_continue",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "force_fail",
+      "fqname": "infrastructure.doctype.virtual_disk_resize.virtual_disk_resize.force_fail",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "next",
+      "fqname": "infrastructure.doctype.virtual_disk_resize.virtual_disk_resize.next",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "infrastructure.doctype.virtual_machine_migration.virtual_machine_migration": [
+    {
+      "function": "execute",
+      "fqname": "infrastructure.doctype.virtual_machine_migration.virtual_machine_migration.execute",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "execute_step",
+      "fqname": "infrastructure.doctype.virtual_machine_migration.virtual_machine_migration.execute_step",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "force_continue",
+      "fqname": "infrastructure.doctype.virtual_machine_migration.virtual_machine_migration.force_continue",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "force_fail",
+      "fqname": "infrastructure.doctype.virtual_machine_migration.virtual_machine_migration.force_fail",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "next",
+      "fqname": "infrastructure.doctype.virtual_machine_migration.virtual_machine_migration.next",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "infrastructure.doctype.virtual_machine_replacement.virtual_machine_replacement": [
+    {
+      "function": "execute",
+      "fqname": "infrastructure.doctype.virtual_machine_replacement.virtual_machine_replacement.execute",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "execute_step",
+      "fqname": "infrastructure.doctype.virtual_machine_replacement.virtual_machine_replacement.execute_step",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "force_continue",
+      "fqname": "infrastructure.doctype.virtual_machine_replacement.virtual_machine_replacement.force_continue",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "force_fail",
+      "fqname": "infrastructure.doctype.virtual_machine_replacement.virtual_machine_replacement.force_fail",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "next",
+      "fqname": "infrastructure.doctype.virtual_machine_replacement.virtual_machine_replacement.next",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "marketplace.doctype.marketplace_app_subscription.marketplace_app_subscription": [
+    {
+      "function": "activate",
+      "fqname": "marketplace.doctype.marketplace_app_subscription.marketplace_app_subscription.activate",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "overrides": [
+    {
+      "function": "upload_file",
+      "fqname": "overrides.upload_file",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ],
+  "press.doctype.account_request.account_request": [
+    {
+      "function": "send_verification_email",
+      "fqname": "press.doctype.account_request.account_request.send_verification_email",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.add_on_settings.add_on_settings": [
+    {
+      "function": "init_etcd_data",
+      "fqname": "press.doctype.add_on_settings.add_on_settings.init_etcd_data",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.agent_job.agent_job": [
+    {
+      "function": "cancel_job",
+      "fqname": "press.doctype.agent_job.agent_job.cancel_job",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fail_and_process_job_updates",
+      "fqname": "press.doctype.agent_job.agent_job.fail_and_process_job_updates",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_status",
+      "fqname": "press.doctype.agent_job.agent_job.get_status",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "process_job_updates",
+      "fqname": "press.doctype.agent_job.agent_job.process_job_updates",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "retry",
+      "fqname": "press.doctype.agent_job.agent_job.retry",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "retry_in_place",
+      "fqname": "press.doctype.agent_job.agent_job.retry_in_place",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "retry_skip_failing_patches",
+      "fqname": "press.doctype.agent_job.agent_job.retry_skip_failing_patches",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "succeed_and_process_job_updates",
+      "fqname": "press.doctype.agent_job.agent_job.succeed_and_process_job_updates",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.agent_update.agent_update": [
+    {
+      "function": "create_execution_plan",
+      "fqname": "press.doctype.agent_update.agent_update.create_execution_plan",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "execute",
+      "fqname": "press.doctype.agent_update.agent_update.execute",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "pause",
+      "fqname": "press.doctype.agent_update.agent_update.pause",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "split_updates",
+      "fqname": "press.doctype.agent_update.agent_update.split_updates",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.analytics_server.analytics_server": [
+    {
+      "function": "show_plausible_password",
+      "fqname": "press.doctype.analytics_server.analytics_server.show_plausible_password",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.ansible_console.ansible_console": [
+    {
+      "function": "execute_command",
+      "fqname": "press.doctype.ansible_console.ansible_console.execute_command",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.app_patch.app_patch": [
+    {
+      "function": "delete_patch",
+      "fqname": "press.doctype.app_patch.app_patch.delete_patch",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "revert_all_patches",
+      "fqname": "press.doctype.app_patch.app_patch.revert_all_patches",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.app_release.app_release": [
+    {
+      "function": "cleanup",
+      "fqname": "press.doctype.app_release.app_release.cleanup",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "clone",
+      "fqname": "press.doctype.app_release.app_release.clone",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.app_release_approval_request.app_release_approval_request": [
+    {
+      "function": "start_screening",
+      "fqname": "press.doctype.app_release_approval_request.app_release_approval_request.start_screening",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.app_source.app_source": [
+    {
+      "function": "create_release",
+      "fqname": "press.doctype.app_source.app_source.create_release",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.bench.bench": [
+    {
+      "function": "add_ssh_user",
+      "fqname": "press.doctype.bench.bench.add_ssh_user",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "force_update_limits",
+      "fqname": "press.doctype.bench.bench.force_update_limits",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "generate_nginx_config",
+      "fqname": "press.doctype.bench.bench.generate_nginx_config",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "move_sites",
+      "fqname": "press.doctype.bench.bench.move_sites",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "remove_ssh_user",
+      "fqname": "press.doctype.bench.bench.remove_ssh_user",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "retry_bench",
+      "fqname": "press.doctype.bench.bench.retry_bench",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "sync_analytics",
+      "fqname": "press.doctype.bench.bench.sync_analytics",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "sync_info",
+      "fqname": "press.doctype.bench.bench.sync_info",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.bench_shell.bench_shell": [
+    {
+      "function": "run_command",
+      "fqname": "press.doctype.bench_shell.bench_shell.run_command",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.build_cache_shell.build_cache_shell": [
+    {
+      "function": "run_command",
+      "fqname": "press.doctype.build_cache_shell.build_cache_shell.run_command",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.cluster.cluster": [
+    {
+      "function": "add_images",
+      "fqname": "press.doctype.cluster.cluster.add_images",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_servers",
+      "fqname": "press.doctype.cluster.cluster.create_servers",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.code_server.code_server": [
+    {
+      "function": "archive",
+      "fqname": "press.doctype.code_server.code_server.archive",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup",
+      "fqname": "press.doctype.code_server.code_server.setup",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "start",
+      "fqname": "press.doctype.code_server.code_server.start",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "stop",
+      "fqname": "press.doctype.code_server.code_server.stop",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.database_server.database_server": [
+    {
+      "function": "adjust_memory_config",
+      "fqname": "press.doctype.database_server.database_server.adjust_memory_config",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "convert_from_frappe_server",
+      "fqname": "press.doctype.database_server.database_server.convert_from_frappe_server",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fetch_stalks",
+      "fqname": "press.doctype.database_server.database_server.fetch_stalks",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_binlog_summary",
+      "fqname": "press.doctype.database_server.database_server.get_binlog_summary",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "perform_physical_backup",
+      "fqname": "press.doctype.database_server.database_server.perform_physical_backup",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "purge_binlogs",
+      "fqname": "press.doctype.database_server.database_server.purge_binlogs",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "reconfigure_mariadb_exporter",
+      "fqname": "press.doctype.database_server.database_server.reconfigure_mariadb_exporter",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "reset_root_password",
+      "fqname": "press.doctype.database_server.database_server.reset_root_password",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "restart_mariadb",
+      "fqname": "press.doctype.database_server.database_server.restart_mariadb",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "run_upgrade_mariadb_job",
+      "fqname": "press.doctype.database_server.database_server.run_upgrade_mariadb_job",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_deadlock_logger",
+      "fqname": "press.doctype.database_server.database_server.setup_deadlock_logger",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_essentials",
+      "fqname": "press.doctype.database_server.database_server.setup_essentials",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_logrotate",
+      "fqname": "press.doctype.database_server.database_server.setup_logrotate",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_mariadb_debug_symbols",
+      "fqname": "press.doctype.database_server.database_server.setup_mariadb_debug_symbols",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_pt_stalk",
+      "fqname": "press.doctype.database_server.database_server.setup_pt_stalk",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_replication",
+      "fqname": "press.doctype.database_server.database_server.setup_replication",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "stop_mariadb",
+      "fqname": "press.doctype.database_server.database_server.stop_mariadb",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "sync_binlogs_info",
+      "fqname": "press.doctype.database_server.database_server.sync_binlogs_info",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "trigger_failover",
+      "fqname": "press.doctype.database_server.database_server.trigger_failover",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_mariadb",
+      "fqname": "press.doctype.database_server.database_server.update_mariadb",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_memory_allocator",
+      "fqname": "press.doctype.database_server.database_server.update_memory_allocator",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "upgrade_mariadb",
+      "fqname": "press.doctype.database_server.database_server.upgrade_mariadb",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "upgrade_mariadb_patched",
+      "fqname": "press.doctype.database_server.database_server.upgrade_mariadb_patched",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.deploy_candidate.deploy_candidate": [
+    {
+      "function": "build",
+      "fqname": "press.doctype.deploy_candidate.deploy_candidate.build",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "desk_app",
+      "fqname": "press.doctype.deploy_candidate.deploy_candidate.desk_app",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "schedule_build_and_deploy",
+      "fqname": "press.doctype.deploy_candidate.deploy_candidate.schedule_build_and_deploy",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "toggle_builds",
+      "fqname": "press.doctype.deploy_candidate.deploy_candidate.toggle_builds",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.deploy_candidate_build.deploy_candidate_build": [
+    {
+      "function": "cleanup_build_directory",
+      "fqname": "press.doctype.deploy_candidate_build.deploy_candidate_build.cleanup_build_directory",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "deploy",
+      "fqname": "press.doctype.deploy_candidate_build.deploy_candidate_build.deploy",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fail_and_redeploy",
+      "fqname": "press.doctype.deploy_candidate_build.deploy_candidate_build.fail_and_redeploy",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fail_remote_job",
+      "fqname": "press.doctype.deploy_candidate_build.deploy_candidate_build.fail_remote_job",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "redeploy",
+      "fqname": "press.doctype.deploy_candidate_build.deploy_candidate_build.redeploy",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "stop_and_fail",
+      "fqname": "press.doctype.deploy_candidate_build.deploy_candidate_build.stop_and_fail",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.drip_email.drip_email": [
+    {
+      "function": "send_test_email",
+      "fqname": "press.doctype.drip_email.drip_email.send_test_email",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "unsubscribe",
+      "fqname": "press.doctype.drip_email.drip_email.unsubscribe",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ],
+  "press.doctype.incident.incident": [
+    {
+      "function": "cancel_stuck_jobs",
+      "fqname": "press.doctype.incident.incident.cancel_stuck_jobs",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_down_site",
+      "fqname": "press.doctype.incident.incident.get_down_site",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "ignore_for_server",
+      "fqname": "press.doctype.incident.incident.ignore_for_server",
+      "http_method": "ANY",
+      "auth": "Don't call"
+    },
+    {
+      "function": "reboot_database_server",
+      "fqname": "press.doctype.incident.incident.reboot_database_server",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "regather_info_and_screenshots",
+      "fqname": "press.doctype.incident.incident.regather_info_and_screenshots",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "restart_down_benches",
+      "fqname": "press.doctype.incident.incident.restart_down_benches",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.inspect_trace_id.inspect_trace_id": [
+    {
+      "function": "fetch",
+      "fqname": "press.doctype.inspect_trace_id.inspect_trace_id.fetch",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.invoice.invoice": [
+    {
+      "function": "change_stripe_invoice_status",
+      "fqname": "press.doctype.invoice.invoice.change_stripe_invoice_status",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_invoice_on_frappeio",
+      "fqname": "press.doctype.invoice.invoice.create_invoice_on_frappeio",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fetch_invoice_pdf",
+      "fqname": "press.doctype.invoice.invoice.fetch_invoice_pdf",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fetch_mpesa_invoice_pdf",
+      "fqname": "press.doctype.invoice.invoice.fetch_mpesa_invoice_pdf",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "finalize_invoice",
+      "fqname": "press.doctype.invoice.invoice.finalize_invoice",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "finalize_stripe_invoice",
+      "fqname": "press.doctype.invoice.invoice.finalize_stripe_invoice",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "refresh_stripe_payment_link",
+      "fqname": "press.doctype.invoice.invoice.refresh_stripe_payment_link",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "refund",
+      "fqname": "press.doctype.invoice.invoice.refund",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.log_server.log_server": [
+    {
+      "function": "install_elasticsearch_exporter",
+      "fqname": "press.doctype.log_server.log_server.install_elasticsearch_exporter",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "show_kibana_password",
+      "fqname": "press.doctype.log_server.log_server.show_kibana_password",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.malware_scan.malware_scan": [
+    {
+      "function": "start",
+      "fqname": "press.doctype.malware_scan.malware_scan.start",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.managed_database_service.managed_database_service": [
+    {
+      "function": "show_root_password",
+      "fqname": "press.doctype.managed_database_service.managed_database_service.show_root_password",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.mariadb_binlog.mariadb_binlog": [
+    {
+      "function": "download_binlog",
+      "fqname": "press.doctype.mariadb_binlog.mariadb_binlog.download_binlog",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.mariadb_variable.mariadb_variable": [
+    {
+      "function": "set_on_all_servers",
+      "fqname": "press.doctype.mariadb_variable.mariadb_variable.set_on_all_servers",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.monitor_server.monitor_server": [
+    {
+      "function": "reconfigure_monitor_server",
+      "fqname": "press.doctype.monitor_server.monitor_server.reconfigure_monitor_server",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "show_grafana_password",
+      "fqname": "press.doctype.monitor_server.monitor_server.show_grafana_password",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.partner_payment_payout.partner_payment_payout": [
+    {
+      "function": "submit_payment_payout",
+      "fqname": "press.doctype.partner_payment_payout.partner_payment_payout.submit_payment_payout",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.payout_order.payout_order": [
+    {
+      "function": "create_payout_order_from_invoice_items",
+      "fqname": "press.doctype.payout_order.payout_order.create_payout_order_from_invoice_items",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.physical_backup_group.physical_backup_group": [
+    {
+      "function": "activate_all_sites",
+      "fqname": "press.doctype.physical_backup_group.physical_backup_group.activate_all_sites",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_duplicate_group",
+      "fqname": "press.doctype.physical_backup_group.physical_backup_group.create_duplicate_group",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "delete_backups",
+      "fqname": "press.doctype.physical_backup_group.physical_backup_group.delete_backups",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "retry_failed_backups",
+      "fqname": "press.doctype.physical_backup_group.physical_backup_group.retry_failed_backups",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "set_db_sizes",
+      "fqname": "press.doctype.physical_backup_group.physical_backup_group.set_db_sizes",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "sync",
+      "fqname": "press.doctype.physical_backup_group.physical_backup_group.sync",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "trigger_next_backup",
+      "fqname": "press.doctype.physical_backup_group.physical_backup_group.trigger_next_backup",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.physical_backup_restoration.physical_backup_restoration": [
+    {
+      "function": "cleanup",
+      "fqname": "press.doctype.physical_backup_restoration.physical_backup_restoration.cleanup",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "execute",
+      "fqname": "press.doctype.physical_backup_restoration.physical_backup_restoration.execute",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "execute_step",
+      "fqname": "press.doctype.physical_backup_restoration.physical_backup_restoration.execute_step",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "force_continue",
+      "fqname": "press.doctype.physical_backup_restoration.physical_backup_restoration.force_continue",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "force_fail",
+      "fqname": "press.doctype.physical_backup_restoration.physical_backup_restoration.force_fail",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "next",
+      "fqname": "press.doctype.physical_backup_restoration.physical_backup_restoration.next",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "retry",
+      "fqname": "press.doctype.physical_backup_restoration.physical_backup_restoration.retry",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ],
+  "press.doctype.physical_restoration_test.physical_restoration_test": [
+    {
+      "function": "reset_failed_restorations",
+      "fqname": "press.doctype.physical_restoration_test.physical_restoration_test.reset_failed_restorations",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "start",
+      "fqname": "press.doctype.physical_restoration_test.physical_restoration_test.start",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "sync",
+      "fqname": "press.doctype.physical_restoration_test.physical_restoration_test.sync",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.press_job.press_job": [
+    {
+      "function": "force_continue",
+      "fqname": "press.doctype.press_job.press_job.force_continue",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "force_fail",
+      "fqname": "press.doctype.press_job.press_job.force_fail",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "next",
+      "fqname": "press.doctype.press_job.press_job.next",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.press_job_step.press_job_step": [
+    {
+      "function": "execute",
+      "fqname": "press.doctype.press_job_step.press_job_step.execute",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.press_settings.press_settings": [
+    {
+      "function": "create_stripe_webhook",
+      "fqname": "press.doctype.press_settings.press_settings.create_stripe_webhook",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_github_app_manifest",
+      "fqname": "press.doctype.press_settings.press_settings.get_github_app_manifest",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.proxy_server.proxy_server": [
+    {
+      "function": "reload_wireguard",
+      "fqname": "press.doctype.proxy_server.proxy_server.reload_wireguard",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_fail2ban",
+      "fqname": "press.doctype.proxy_server.proxy_server.setup_fail2ban",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_proxysql",
+      "fqname": "press.doctype.proxy_server.proxy_server.setup_proxysql",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_proxysql_monitor",
+      "fqname": "press.doctype.proxy_server.proxy_server.setup_proxysql_monitor",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_replication",
+      "fqname": "press.doctype.proxy_server.proxy_server.setup_replication",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_ssh_proxy",
+      "fqname": "press.doctype.proxy_server.proxy_server.setup_ssh_proxy",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_wildcard_hosts",
+      "fqname": "press.doctype.proxy_server.proxy_server.setup_wildcard_hosts",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_wireguard",
+      "fqname": "press.doctype.proxy_server.proxy_server.setup_wireguard",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "trigger_failover",
+      "fqname": "press.doctype.proxy_server.proxy_server.trigger_failover",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.razorpay_payment_record.razorpay_payment_record": [
+    {
+      "function": "sync",
+      "fqname": "press.doctype.razorpay_payment_record.razorpay_payment_record.sync",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.razorpay_webhook_log.razorpay_webhook_log": [
+    {
+      "function": "razorpay_authorized_payment_handler",
+      "fqname": "press.doctype.razorpay_webhook_log.razorpay_webhook_log.razorpay_authorized_payment_handler",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "razorpay_webhook_handler",
+      "fqname": "press.doctype.razorpay_webhook_log.razorpay_webhook_log.razorpay_webhook_handler",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ],
+  "press.doctype.release_group.release_group": [
+    {
+      "function": "add_server",
+      "fqname": "press.doctype.release_group.release_group.add_server",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "archive",
+      "fqname": "press.doctype.release_group.release_group.archive",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "change_server",
+      "fqname": "press.doctype.release_group.release_group.change_server",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_deploy_candidate",
+      "fqname": "press.doctype.release_group.release_group.create_deploy_candidate",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_duplicate_deploy_candidate",
+      "fqname": "press.doctype.release_group.release_group.create_duplicate_deploy_candidate",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "deploy_information",
+      "fqname": "press.doctype.release_group.release_group.deploy_information",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_benches_config",
+      "fqname": "press.doctype.release_group.release_group.update_benches_config",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.remote_file.remote_file": [
+    {
+      "function": "delete_remote_object",
+      "fqname": "press.doctype.remote_file.remote_file.delete_remote_object",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "exists",
+      "fqname": "press.doctype.remote_file.remote_file.exists",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_download_link",
+      "fqname": "press.doctype.remote_file.remote_file.get_download_link",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.security_update_check.security_update_check": [
+    {
+      "function": "start",
+      "fqname": "press.doctype.security_update_check.security_update_check.start",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.self_hosted_server.self_hosted_server": [
+    {
+      "function": "create_application_server",
+      "fqname": "press.doctype.self_hosted_server.self_hosted_server.create_application_server",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_database_server",
+      "fqname": "press.doctype.self_hosted_server.self_hosted_server.create_database_server",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_new_rg",
+      "fqname": "press.doctype.self_hosted_server.self_hosted_server.create_new_rg",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_new_sites",
+      "fqname": "press.doctype.self_hosted_server.self_hosted_server.create_new_sites",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_proxy_server",
+      "fqname": "press.doctype.self_hosted_server.self_hosted_server.create_proxy_server",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_tls_certs",
+      "fqname": "press.doctype.self_hosted_server.self_hosted_server.create_tls_certs",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fetch_apps_and_sites",
+      "fqname": "press.doctype.self_hosted_server.self_hosted_server.fetch_apps_and_sites",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fetch_private_ip",
+      "fqname": "press.doctype.self_hosted_server.self_hosted_server.fetch_private_ip",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fetch_system_ram",
+      "fqname": "press.doctype.self_hosted_server.self_hosted_server.fetch_system_ram",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fetch_system_specifications",
+      "fqname": "press.doctype.self_hosted_server.self_hosted_server.fetch_system_specifications",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "ping_ansible",
+      "fqname": "press.doctype.self_hosted_server.self_hosted_server.ping_ansible",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "restore_files",
+      "fqname": "press.doctype.self_hosted_server.self_hosted_server.restore_files",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_tls",
+      "fqname": "press.doctype.self_hosted_server.self_hosted_server.update_tls",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.serial_console_log.serial_console_log": [
+    {
+      "function": "run_sysrq",
+      "fqname": "press.doctype.serial_console_log.serial_console_log.run_sysrq",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "run_sysrq",
+      "fqname": "press.doctype.serial_console_log.serial_console_log.run_sysrq",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.server.server": [
+    {
+      "function": "add_upstream_to_proxy",
+      "fqname": "press.doctype.server.server.add_upstream_to_proxy",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "agent_set_proxy_ip",
+      "fqname": "press.doctype.server.server.agent_set_proxy_ip",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "archive",
+      "fqname": "press.doctype.server.server.archive",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "auto_scale_workers",
+      "fqname": "press.doctype.server.server.auto_scale_workers",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "cleanup_unused_files",
+      "fqname": "press.doctype.server.server.cleanup_unused_files",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "collect_arm_images",
+      "fqname": "press.doctype.server.server.collect_arm_images",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "configure_ssh_logging",
+      "fqname": "press.doctype.server.server.configure_ssh_logging",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_image",
+      "fqname": "press.doctype.server.server.create_image",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "disable_server_for_new_benches_and_site",
+      "fqname": "press.doctype.server.server.disable_server_for_new_benches_and_site",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "enable_server_for_new_benches_and_site",
+      "fqname": "press.doctype.server.server.enable_server_for_new_benches_and_site",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "extend_ec2_volume",
+      "fqname": "press.doctype.server.server.extend_ec2_volume",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fetch_keys",
+      "fqname": "press.doctype.server.server.fetch_keys",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fetch_security_updates",
+      "fqname": "press.doctype.server.server.fetch_security_updates",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "increase_disk_size",
+      "fqname": "press.doctype.server.server.increase_disk_size",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "increase_swap",
+      "fqname": "press.doctype.server.server.increase_swap",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "install_exporters",
+      "fqname": "press.doctype.server.server.install_exporters",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "install_filebeat",
+      "fqname": "press.doctype.server.server.install_filebeat",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "install_nginx",
+      "fqname": "press.doctype.server.server.install_nginx",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "mount_volumes",
+      "fqname": "press.doctype.server.server.mount_volumes",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "ping_agent",
+      "fqname": "press.doctype.server.server.ping_agent",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "ping_agent_job",
+      "fqname": "press.doctype.server.server.ping_agent_job",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "ping_ansible",
+      "fqname": "press.doctype.server.server.ping_ansible",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "ping_ansible_unprepared",
+      "fqname": "press.doctype.server.server.ping_ansible_unprepared",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "prepare_server",
+      "fqname": "press.doctype.server.server.prepare_server",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "reboot_with_serial_console",
+      "fqname": "press.doctype.server.server.reboot_with_serial_console",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "reload_nginx",
+      "fqname": "press.doctype.server.server.reload_nginx",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "rename_server",
+      "fqname": "press.doctype.server.server.rename_server",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "reset_sites_usage",
+      "fqname": "press.doctype.server.server.reset_sites_usage",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "reset_swap",
+      "fqname": "press.doctype.server.server.reset_swap",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "set_additional_config",
+      "fqname": "press.doctype.server.server.set_additional_config",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "set_swappiness",
+      "fqname": "press.doctype.server.server.set_swappiness",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_agent_sentry",
+      "fqname": "press.doctype.server.server.setup_agent_sentry",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_fail2ban",
+      "fqname": "press.doctype.server.server.setup_fail2ban",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_mysqldump",
+      "fqname": "press.doctype.server.server.setup_mysqldump",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_pyspy",
+      "fqname": "press.doctype.server.server.setup_pyspy",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_replication",
+      "fqname": "press.doctype.server.server.setup_replication",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_server",
+      "fqname": "press.doctype.server.server.setup_server",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_standalone",
+      "fqname": "press.doctype.server.server.setup_standalone",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "show_agent_password",
+      "fqname": "press.doctype.server.server.show_agent_password",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "show_agent_version",
+      "fqname": "press.doctype.server.server.show_agent_version",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "start_active_benches",
+      "fqname": "press.doctype.server.server.start_active_benches",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_agent",
+      "fqname": "press.doctype.server.server.update_agent",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_agent_ansible",
+      "fqname": "press.doctype.server.server.update_agent_ansible",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_tls_certificate",
+      "fqname": "press.doctype.server.server.update_tls_certificate",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "whitelist_ipaddress",
+      "fqname": "press.doctype.server.server.whitelist_ipaddress",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.silenced_alert.silenced_alert": [
+    {
+      "function": "create_new_silence",
+      "fqname": "press.doctype.silenced_alert.silenced_alert.create_new_silence",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "preview_alerts",
+      "fqname": "press.doctype.silenced_alert.silenced_alert.preview_alerts",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.site.site": [
+    {
+      "function": "backup",
+      "fqname": "press.doctype.site.site.backup",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "cleanup_after_archive",
+      "fqname": "press.doctype.site.site.cleanup_after_archive",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_dns_record",
+      "fqname": "press.doctype.site.site.create_dns_record",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fetch_bench_from_agent",
+      "fqname": "press.doctype.site.site.fetch_bench_from_agent",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "forcefully_remove_site",
+      "fqname": "press.doctype.site.site.forcefully_remove_site",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_actions",
+      "fqname": "press.doctype.site.site.get_actions",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "last_migrate_failed",
+      "fqname": "press.doctype.site.site.last_migrate_failed",
+      "http_method": "ANY",
+      "auth": "`Migrate` deploy type"
+    },
+    {
+      "function": "login",
+      "fqname": "press.doctype.site.site.login",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "move_to_bench",
+      "fqname": "press.doctype.site.site.move_to_bench",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "move_to_group",
+      "fqname": "press.doctype.site.site.move_to_group",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "options_for_new",
+      "fqname": "press.doctype.site.site.options_for_new",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "physical_backup",
+      "fqname": "press.doctype.site.site.physical_backup",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "reset_site_usage",
+      "fqname": "press.doctype.site.site.reset_site_usage",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "restore_tables",
+      "fqname": "press.doctype.site.site.restore_tables",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "retry_archive",
+      "fqname": "press.doctype.site.site.retry_archive",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "retry_rename",
+      "fqname": "press.doctype.site.site.retry_rename",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "run_after_migrate_steps",
+      "fqname": "press.doctype.site.site.run_after_migrate_steps",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "set_status_based_on_ping",
+      "fqname": "press.doctype.site.site.set_status_based_on_ping",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "show_admin_password",
+      "fqname": "press.doctype.site.site.show_admin_password",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "suspend",
+      "fqname": "press.doctype.site.site.suspend",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "sync_apps",
+      "fqname": "press.doctype.site.site.sync_apps",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "sync_info",
+      "fqname": "press.doctype.site.site.sync_info",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "unsuspend",
+      "fqname": "press.doctype.site.site.unsuspend",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_dns_record",
+      "fqname": "press.doctype.site.site.update_dns_record",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_site_config",
+      "fqname": "press.doctype.site.site.update_site_config",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_without_backup",
+      "fqname": "press.doctype.site.site.update_without_backup",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.site_database_user.site_database_user": [
+    {
+      "function": "add_user_to_proxysql",
+      "fqname": "press.doctype.site_database_user.site_database_user.add_user_to_proxysql",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "apply_changes",
+      "fqname": "press.doctype.site_database_user.site_database_user.apply_changes",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_user",
+      "fqname": "press.doctype.site_database_user.site_database_user.create_user",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "modify_permissions",
+      "fqname": "press.doctype.site_database_user.site_database_user.modify_permissions",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "remove_user",
+      "fqname": "press.doctype.site_database_user.site_database_user.remove_user",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "remove_user_from_proxysql",
+      "fqname": "press.doctype.site_database_user.site_database_user.remove_user_from_proxysql",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.site_domain.site_domain": [
+    {
+      "function": "create_dns_record",
+      "fqname": "press.doctype.site_domain.site_domain.create_dns_record",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.site_migration.site_migration": [
+    {
+      "function": "cleanup_and_fail",
+      "fqname": "press.doctype.site_migration.site_migration.cleanup_and_fail",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "continue_from_next_pending",
+      "fqname": "press.doctype.site_migration.site_migration.continue_from_next_pending",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "run_next_step",
+      "fqname": "press.doctype.site_migration.site_migration.run_next_step",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "start",
+      "fqname": "press.doctype.site_migration.site_migration.start",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.site_update.site_update": [
+    {
+      "function": "set_cause_of_failure_is_resolved",
+      "fqname": "press.doctype.site_update.site_update.set_cause_of_failure_is_resolved",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "set_status",
+      "fqname": "press.doctype.site_update.site_update.set_status",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "sites_with_available_update",
+      "fqname": "press.doctype.site_update.site_update.sites_with_available_update",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "trigger_recovery_job",
+      "fqname": "press.doctype.site_update.site_update.trigger_recovery_job",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.ssh_certificate_authority.ssh_certificate_authority": [
+    {
+      "function": "build_image",
+      "fqname": "press.doctype.ssh_certificate_authority.ssh_certificate_authority.build_image",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.storage_integration_subscription.storage_integration_subscription": [
+    {
+      "function": "get_analytics",
+      "fqname": "press.doctype.storage_integration_subscription.storage_integration_subscription.get_analytics",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "toggle_user_status",
+      "fqname": "press.doctype.storage_integration_subscription.storage_integration_subscription.toggle_user_status",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.stripe_micro_charge_record.stripe_micro_charge_record": [
+    {
+      "function": "refund",
+      "fqname": "press.doctype.stripe_micro_charge_record.stripe_micro_charge_record.refund",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.stripe_webhook_log.stripe_webhook_log": [
+    {
+      "function": "stripe_webhook_handler",
+      "fqname": "press.doctype.stripe_webhook_log.stripe_webhook_log.stripe_webhook_handler",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ],
+  "press.doctype.subscription.subscription": [
+    {
+      "function": "create_usage_record",
+      "fqname": "press.doctype.subscription.subscription.create_usage_record",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.team.team": [
+    {
+      "function": "disable_erpnext_partner_privileges",
+      "fqname": "press.doctype.team.team.disable_erpnext_partner_privileges",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "enable_erpnext_partner_privileges",
+      "fqname": "press.doctype.team.team.enable_erpnext_partner_privileges",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_balance",
+      "fqname": "press.doctype.team.team.get_balance",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_home_data",
+      "fqname": "press.doctype.team.team.get_home_data",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "impersonate",
+      "fqname": "press.doctype.team.team.impersonate",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "send_email_for_failed_payment",
+      "fqname": "press.doctype.team.team.send_email_for_failed_payment",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "send_telegram_alert_for_failed_payment",
+      "fqname": "press.doctype.team.team.send_telegram_alert_for_failed_payment",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "suspend_sites",
+      "fqname": "press.doctype.team.team.suspend_sites",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "unsuspend_sites",
+      "fqname": "press.doctype.team.team.unsuspend_sites",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_billing_details",
+      "fqname": "press.doctype.team.team.update_billing_details",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.tls_certificate.tls_certificate": [
+    {
+      "function": "_obtain_certificate",
+      "fqname": "press.doctype.tls_certificate.tls_certificate._obtain_certificate",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "obtain_certificate",
+      "fqname": "press.doctype.tls_certificate.tls_certificate.obtain_certificate",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "trigger_server_tls_setup_callback",
+      "fqname": "press.doctype.tls_certificate.tls_certificate.trigger_server_tls_setup_callback",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "trigger_site_domain_callback",
+      "fqname": "press.doctype.tls_certificate.tls_certificate.trigger_site_domain_callback",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.trace_server.trace_server": [
+    {
+      "function": "show_sentry_password",
+      "fqname": "press.doctype.trace_server.trace_server.show_sentry_password",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "upgrade_server",
+      "fqname": "press.doctype.trace_server.trace_server.upgrade_server",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.user_ssh_certificate.user_ssh_certificate": [
+    {
+      "function": "read_certificate",
+      "fqname": "press.doctype.user_ssh_certificate.user_ssh_certificate.read_certificate",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.version_upgrade.version_upgrade": [
+    {
+      "function": "start",
+      "fqname": "press.doctype.version_upgrade.version_upgrade.start",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.virtual_disk_snapshot.virtual_disk_snapshot": [
+    {
+      "function": "delete_snapshot",
+      "fqname": "press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_snapshot",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "sync",
+      "fqname": "press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.virtual_machine.virtual_machine": [
+    {
+      "function": "attach_new_volume",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.attach_new_volume",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "convert_to_amd",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.convert_to_amd",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "convert_to_arm",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.convert_to_arm",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_database_server",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.create_database_server",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_image",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.create_image",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_log_server",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.create_log_server",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_monitor_server",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.create_monitor_server",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_proxy_server",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.create_proxy_server",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_registry_server",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.create_registry_server",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_server",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.create_server",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "create_snapshots",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.create_snapshots",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "delete_volume",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.delete_volume",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "detach",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.detach",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "disable_termination_protection",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.disable_termination_protection",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "enable_termination_protection",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.enable_termination_protection",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "force_stop",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.force_stop",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "force_terminate",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.force_terminate",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_ebs_performance",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.get_ebs_performance",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_oci_volume_performance",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.get_oci_volume_performance",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "get_serial_console_credentials",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.get_serial_console_credentials",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "increase_disk_size",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.increase_disk_size",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "provision",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.provision",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "reboot",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.reboot",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "reboot_with_serial_console",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.reboot_with_serial_console",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "resize",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.resize",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "start",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.start",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "stop",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.stop",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "sync",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.sync",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "sync_virtual_machines",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.sync_virtual_machines",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "terminate",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.terminate",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_ebs_performance",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.update_ebs_performance",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "update_oci_volume_performance",
+      "fqname": "press.doctype.virtual_machine.virtual_machine.update_oci_volume_performance",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.virtual_machine_image.virtual_machine_image": [
+    {
+      "function": "copy_image",
+      "fqname": "press.doctype.virtual_machine_image.virtual_machine_image.copy_image",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "delete_image",
+      "fqname": "press.doctype.virtual_machine_image.virtual_machine_image.delete_image",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "sync",
+      "fqname": "press.doctype.virtual_machine_image.virtual_machine_image.sync",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.doctype.wireguard_peer.wireguard_peer": [
+    {
+      "function": "download_config",
+      "fqname": "press.doctype.wireguard_peer.wireguard_peer.download_config",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "fetch_peer_private_network",
+      "fqname": "press.doctype.wireguard_peer.wireguard_peer.fetch_peer_private_network",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "generate_config",
+      "fqname": "press.doctype.wireguard_peer.wireguard_peer.generate_config",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "ping_peer",
+      "fqname": "press.doctype.wireguard_peer.wireguard_peer.ping_peer",
+      "http_method": "ANY",
+      "auth": ""
+    },
+    {
+      "function": "setup_wireguard",
+      "fqname": "press.doctype.wireguard_peer.wireguard_peer.setup_wireguard",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.report.agent_versions.agent_versions": [
+    {
+      "function": "update_agent",
+      "fqname": "press.report.agent_versions.agent_versions.update_agent",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.report.aws_rightsizing_recommendation.aws_rightsizing_recommendation": [
+    {
+      "function": "rightsize",
+      "fqname": "press.report.aws_rightsizing_recommendation.aws_rightsizing_recommendation.rightsize",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.report.mariadb_process_list.mariadb_process_list": [
+    {
+      "function": "kill",
+      "fqname": "press.report.mariadb_process_list.mariadb_process_list.kill",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "press.report.marketplace_app_repository_visibility.marketplace_app_repository_visibility": [
+    {
+      "function": "send_emails",
+      "fqname": "press.report.marketplace_app_repository_visibility.marketplace_app_repository_visibility.send_emails",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "saas.api.auth": [
+    {
+      "function": "is_access_token_valid",
+      "fqname": "saas.api.auth.is_access_token_valid",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ],
+  "saas.doctype.product_trial_request.product_trial_request": [
+    {
+      "function": "get_setup_wizard_payload",
+      "fqname": "saas.doctype.product_trial_request.product_trial_request.get_setup_wizard_payload",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "utils.dns": [
+    {
+      "function": "create_dns_record",
+      "fqname": "utils.dns.create_dns_record",
+      "http_method": "ANY",
+      "auth": ""
+    }
+  ],
+  "utils.telemetry": [
+    {
+      "function": "capture_read_event",
+      "fqname": "utils.telemetry.capture_read_event",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ],
+  "www.dashboard": [
+    {
+      "function": "get_context_for_dev",
+      "fqname": "www.dashboard.get_context_for_dev",
+      "http_method": "POST",
+      "auth": "guest"
+    }
+  ],
+  "www.marketplace.index": [
+    {
+      "function": "filter_by_category",
+      "fqname": "www.marketplace.index.filter_by_category",
+      "http_method": "ANY",
+      "auth": "guest"
+    },
+    {
+      "function": "search",
+      "fqname": "www.marketplace.index.search",
+      "http_method": "ANY",
+      "auth": "guest"
+    }
+  ]
+}
