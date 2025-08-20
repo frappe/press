@@ -1186,7 +1186,7 @@ class DeployCandidateBuild(Document):
 		self.set_status(Status.FAILURE)
 		self._set_build_duration()
 
-	def create_deploy(self):
+	def create_deploy(self, check_image_exists: bool = False):
 		"""Create a new deploy for the servers of matching platform present on the release group"""
 		servers: list[ReleaseGroupServer] = frappe.get_doc("Release Group", self.group).servers
 		servers = [server.server for server in servers]
@@ -1201,7 +1201,7 @@ class DeployCandidateBuild(Document):
 		if deploy_doc:
 			return str(deploy_doc)
 
-		return self._create_deploy(servers).name
+		return self._create_deploy(servers, check_image_exists=check_image_exists).name
 
 	def _create_deploy(self, servers: list[str], check_image_exists: bool = False):
 		if check_image_exists and not self.is_image_in_registry():
@@ -1219,7 +1219,9 @@ class DeployCandidateBuild(Document):
 	@frappe.whitelist()
 	def deploy(self):
 		try:
-			return dict(error=False, message=self.create_deploy())
+			return dict(
+				error=False, message=self.create_deploy(check_image_exists=True)
+			)  # In this case we can check if image is in registry since possible to deploy older builds
 		except Exception:
 			log_error("Deploy Creation Error", doc=self)
 
