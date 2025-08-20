@@ -251,19 +251,7 @@ class Site(Document, TagHelpers):
 			sites = query.where(Site.status == status).run(as_dict=1)
 		else:
 			benches_with_available_update = benches_with_available_update()
-			if (
-				frappe.db.count(
-					"Site",
-					filters={
-						"team": get_current_team(),
-						"status": ("!=", "Archived"),
-					},
-				)
-				> 3
-			):
-				query = query.where(Site.status != "Archived")
-
-			sites = query.select(Site.bench).run(as_dict=1)
+			sites = query.where(Site.status != "Archived").select(Site.bench).run(as_dict=1)
 
 			for site in sites:
 				if site.bench in benches_with_available_update:
