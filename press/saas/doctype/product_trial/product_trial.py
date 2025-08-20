@@ -97,7 +97,8 @@ class ProductTrial(Document):
 		from press.press.doctype.site.site import Site, get_plan_config
 
 		validate_subdomain(subdomain)
-		Site.exists(subdomain, domain)
+		if Site.exists(subdomain, domain):
+			frappe.throw("Site with this subdomain already exists")
 
 		site_domain = f"{subdomain}.{domain}"
 
