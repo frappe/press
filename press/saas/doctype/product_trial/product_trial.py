@@ -251,7 +251,7 @@ class ProductTrial(Document):
 				self.create_standby_sites(cluster)
 				frappe.db.commit()
 			except Exception as e:
-				frappe.log_error(
+				log_error(
 					"Unable to Create Standby Sites",
 					data=e,
 					reference_doctype="Product Trial",
