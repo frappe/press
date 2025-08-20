@@ -239,9 +239,6 @@ class ProductTrial(Document):
 		)
 		if sites:
 			return sites[0]
-		if cluster and account_request:
-			# if site is not found and account request was specified, try to find a site in any cluster
-			return self.get_standby_site(None, account_request)
 		return None
 
 	def create_standby_sites_in_each_cluster(self):
@@ -430,7 +427,7 @@ def replenish_standby_sites():
 	"""Create standby sites for all products with pooling enabled. This is called by the scheduler."""
 	products = frappe.get_all("Product Trial", {"enable_pooling": 1}, pluck="name")
 	for product in products:
-		product = frappe.get_doc("Product Trial", product)
+		product: ProductTrial = frappe.get_doc("Product Trial", product)
 		try:
 			product.create_standby_sites_in_each_cluster()
 			frappe.db.commit()
