@@ -48,8 +48,10 @@ class IncidentInvestigator(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.incident_management.doctype.action_step.action_step import ActionStep
 		from press.incident_management.doctype.investigation_step.investigation_step import InvestigationStep
 
+		action_steps: DF.Table[ActionStep]
 		cool_off_period: DF.Float
 		database_investigation_steps: DF.Table[InvestigationStep]
 		high_cpu_load_threshold: DF.Int
@@ -57,11 +59,11 @@ class IncidentInvestigator(Document):
 		high_memory_usage_threshold: DF.Int
 		high_system_load_threshold: DF.Int
 		incident: DF.Link | None
-		incident_frequency: DF.Int
 		investigation_findings: DF.JSON | None
 		investigation_window_end_time: DF.Datetime | None
 		investigation_window_start_time: DF.Datetime | None
 		proxy_investigation_steps: DF.Table[InvestigationStep]
+		requires_human_intervention: DF.Check
 		server: DF.Link | None
 		server_investigation_steps: DF.Table[InvestigationStep]
 		status: DF.Literal["Pending", "Investigating", "Completed"]
@@ -283,21 +285,6 @@ class IncidentInvestigator(Document):
 				frappe.ValidationError,
 			)
 
-	def check_incident_frequency(self):
-		"""
-		Check number of incidents on the server in the last 10 days.
-		This is done so that we can get the most recent incident on the server and take actions
-		based on the incident counts.
-		"""
-		self.incident_frequency = frappe.db.count(
-			"Incident Investigator",
-			{
-				"server": self.server,
-				"creation": ("between", [frappe.utils.add_to_date(days=-10), frappe.utils.now()]),
-			},
-		)
-		self.save()
-
 	def after_insert(self):
 		self.set_prerequisites()
 		self.add_investigation_steps()
@@ -339,6 +326,58 @@ class IncidentInvestigator(Document):
 		"""Investigate potential issues with the main application server."""
 		self._investigate_component("name", "server_investigation_steps")
 
+	def add_action_and_take_action(self, reference_doctype: str, reference_name: str, method: str):
+		"""Add action in the action steps"""
+		self.append(
+			"action_steps",
+			{"reference_doctype": reference_doctype, "reference_name": reference_name, "method": method},
+		)
+		self.save()
+
+	def mark_human_intervention_and_add_action(self):
+		"""
+		Check if human intervention is required, suggesting no human intervention for the listed cases
+			- Storage full on a specific mountpoint which is beyond human control.
+			- Database high_cpu_load, high_system_load, high_memory
+
+		If there are no other likely issues except high disk usage we can mark it as no intervention
+		"""
+		# Quick exit in case of proxy issues.
+		proxy_likely_causes = [step for step in self.proxy_investigation_steps if step.is_likely_cause]
+		if proxy_likely_causes:
+			self.requires_human_intervention = True
+			self.save()
+			return
+
+		server_likely_causes = [step for step in self.server_investigation_steps if step.is_likely_cause]
+		database_likely_causes = [step for step in self.database_investigation_steps if step.is_likely_cause]
+
+		server_methods = {step.method for step in server_likely_causes}
+		database_methods = {step.method for step in database_likely_causes}
+
+		only_disk_space_issues = server_methods == {
+			self.has_high_disk_usage.__name__
+		} or database_methods == {self.has_high_disk_usage.__name__}
+
+		only_database_resource_issues = (
+			database_methods.issubset(
+				{
+					self.has_high_cpu_load.__name__,
+					self.has_high_memory_usage.__name__,
+					self.has_high_system_load,
+				}
+			)
+			and not server_methods
+		)
+
+		self.requires_human_intervention = not (only_disk_space_issues or only_database_resource_issues)
+
+		if only_database_resource_issues and not only_disk_space_issues:
+			database_server = frappe.db.get_value("Server", self.server, "database_server")
+			self.add_action_and_take_action("Database Server", database_server, "restart_mariadb")
+
+		self.save()
+
 	def investigate(self):
 		"""
 		Rules for investigation
@@ -355,3 +394,5 @@ class IncidentInvestigator(Document):
 		self.investigate_database_server()
 		self.investigate_server()
 		self.set_status(Status.COMPLETED)
+
+		self.mark_human_intervention_and_add_action()

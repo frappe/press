@@ -2,6 +2,8 @@
 # See license.txt
 
 
+import re
+import typing
 from unittest.mock import Mock, patch
 
 import frappe
@@ -18,6 +20,9 @@ from press.press.doctype.server.test_server import (
 	create_test_server,
 )
 from press.utils.test import foreground_enqueue_doc
+
+if typing.TYPE_CHECKING:
+	from collections.abc import Callable
 
 
 def create_test_incident(server: str = "f1-mumbai.frappe.cloud") -> Incident:
@@ -109,7 +114,7 @@ def mock_cpu_usage(is_high: bool = False):
 					"mode": "idle",
 				},
 				"values": [
-					[1754985451, "1191266.01" if is_high else "1191166.01"],
+					[1754985451, "1191266.01" if is_high else "111166.01"],
 					[1754985751, "1191276.85"],
 				],
 			},
@@ -129,14 +134,44 @@ def mock_cpu_usage(is_high: bool = False):
 	return wrapper()
 
 
-def make_custom_query_range_side_effect(is_high: bool = False):
+def get_instance_type(query: str):
+	found = re.search(r'instance="([^"]+)"', query)
+	if found:
+		return "database" if found.group(1).startswith("m") else "server"
+	return "server"
+
+
+def decide_server_specific_high(
+	query: str, is_high: bool, only_for_database: bool, only_for_server: bool, func: "Callable"
+):
+	instance_type = get_instance_type(query)
+	if instance_type == "server" and only_for_database:
+		return func(is_high=not is_high)
+	if instance_type == "database" and only_for_database:
+		return func(is_high=is_high)
+	if instance_type == "database" and only_for_server:
+		return func(is_high=not is_high)
+	if instance_type == "server" and only_for_server:
+		return func(is_high=is_high)
+
+	return func(is_high=is_high)
+
+
+def make_custom_query_range_side_effect(
+	is_high: bool = False, only_for_database: bool = False, only_for_server: bool = False
+):
 	def custom_query_range_side_effect(*args, **kwargs):
 		query = args[1] if args else kwargs.get("query")
 
 		if "node_memory_MemAvailable_bytes" in query:
-			return mock_memory_usage(is_high=is_high)
+			return decide_server_specific_high(
+				query, is_high, only_for_database, only_for_server, mock_memory_usage
+			)
+
 		if "node_cpu_seconds_total" in query:
-			return mock_cpu_usage(is_high=is_high)
+			return decide_server_specific_high(
+				query, is_high, only_for_database, only_for_server, mock_cpu_usage
+			)
 
 		return []
 
@@ -185,21 +220,32 @@ class TestIncidentInvestigator(FrappeTestCase):
 			self.assertTrue(step.is_likely_cause)
 
 		self.assertEqual(investigator.status, "Completed")
+		self.assertTrue(investigator.requires_human_intervention)
+		self.assertEqual(investigator.action_steps, [])
 
 	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=False))
 	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=True))
 	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=False))
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
+		foreground_enqueue_doc,
+	)
+	@patch.object(
+		IncidentInvestigator, "investigate_proxy_server", Mock()
+	)  # We don't have any sites this will fail
 	def test_varied_metrics(self):
 		"""Since instance is not taken into account while mocking both database and sever will have same likely causes"""
 		create_test_incident(self.server.name)
 		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
-		investigator.investigate_server()
 
 		for step in investigator.server_investigation_steps:
 			if step.method == "has_high_disk_usage" or step.method == "has_high_system_load":
 				self.assertFalse(step.is_likely_cause)
 			else:
 				self.assertTrue(step.is_likely_cause)
+
+		self.assertTrue(investigator.requires_human_intervention)
+		self.assertEqual(investigator.action_steps, [])
 
 	@patch.object(IncidentInvestigator, "after_insert", Mock())
 	def test_investigation_cool_off_period(self):
@@ -218,6 +264,46 @@ class TestIncidentInvestigator(FrappeTestCase):
 		create_test_incident(self_hosted_server.name)
 		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
 		self.assertEqual(investigator.incident, test_incident_1.name)
+
+	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=True))
+	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=False))
+	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=False))
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
+		foreground_enqueue_doc,
+	)
+	@patch.object(IncidentInvestigator, "investigate_proxy_server", Mock())
+	def test_no_human_intervention_required(self):
+		"""In case of only high disk issues mark as no human intervention required"""
+		create_test_incident(self.server.name)
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+		self.assertFalse(investigator.requires_human_intervention)
+
+	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=False))
+	@patch.object(
+		PrometheusConnect,
+		"custom_query_range",
+		make_custom_query_range_side_effect(is_high=False, only_for_server=True),
+	)
+	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=False))
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
+		foreground_enqueue_doc,
+	)
+	@patch.object(IncidentInvestigator, "investigate_proxy_server", Mock())
+	def test_no_human_intervention_required_on_database_server(self):
+		create_test_incident(self.server.name)
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+
+		# Assert we can handle this on our own.
+		self.assertFalse(investigator.requires_human_intervention)
+
+		# Assert reboot action is added for database server
+		self.assertEqual(len(investigator.action_steps), 1)
+		action_step = investigator.action_steps[0]
+		self.assertEqual(action_step.reference_doctype, "Database Server")
+		self.assertEqual(action_step.reference_name, self.server.database_server)
+		self.assertEqual(action_step.method, "restart_mariadb")
 
 	@classmethod
 	def tearDownClass(cls):
