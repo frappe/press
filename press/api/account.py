@@ -28,7 +28,7 @@ from press.press.doctype.team.team import (
 	get_child_team_members,
 	get_team_members,
 )
-from press.utils import get_country_info, get_current_team, is_user_part_of_team
+from press.utils import get_country_info, get_current_team, is_user_part_of_team, log_error
 from press.utils.telemetry import capture
 
 if TYPE_CHECKING:
@@ -1248,20 +1248,15 @@ def get_2fa_qr_code_url():
 def enable_2fa(totp_code):
 	"""Enable 2FA for the user after verifying the TOTP code"""
 
-	# Get the User 2FA document.
 	two_fa = frappe.get_doc("User 2FA", frappe.session.user)
 
-	# Get decrypted TOTP secret for the user.
 	user_totp_secret = get_decrypted_password("User 2FA", frappe.session.user, "totp_secret")
 
-	# Handle invalid TOTP code.
 	if not pyotp.totp.TOTP(user_totp_secret).verify(totp_code):
 		frappe.throw("Invalid TOTP code")
 
-	# Enable 2FA for the user.
 	two_fa.enabled = 1
 
-	# Add recovery codes to the User 2FA document, if not already present.
 	if not two_fa.recovery_codes:
 		for recovery_code in two_fa.generate_recovery_codes():
 			two_fa.append(
@@ -1269,13 +1264,21 @@ def enable_2fa(totp_code):
 				{"code": recovery_code},
 			)
 
-	# Update the last verified time.
 	two_fa.mark_recovery_codes_viewed()
-
-	# Save the document.
 	two_fa.save()
 
-	# Decrypt and return recovery codes for the user.
+	try:
+		from frappe.sessions import clear_sessions
+
+		clear_sessions(keep_current=True)
+	except Exception as e:
+		log_error(
+			"2FA Enable: Failed clearing other sessions",
+			data=e,
+			reference_doctype="User 2FA",
+			reference_name=two_fa.name,
+		)
+
 	return [
 		get_decrypted_password("User 2FA Recovery Code", recovery_code.name, "code")
 		for recovery_code in two_fa.recovery_codes
