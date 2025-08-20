@@ -364,7 +364,7 @@ class IncidentInvestigator(Document):
 				{
 					self.has_high_cpu_load.__name__,
 					self.has_high_memory_usage.__name__,
-					self.has_high_system_load,
+					self.has_high_system_load.__name__,
 				}
 			)
 			and not server_methods
