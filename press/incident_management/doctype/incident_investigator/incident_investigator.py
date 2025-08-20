@@ -63,7 +63,6 @@ class IncidentInvestigator(Document):
 		investigation_window_end_time: DF.Datetime | None
 		investigation_window_start_time: DF.Datetime | None
 		proxy_investigation_steps: DF.Table[InvestigationStep]
-		requires_human_intervention: DF.Check
 		server: DF.Link | None
 		server_investigation_steps: DF.Table[InvestigationStep]
 		status: DF.Literal["Pending", "Investigating", "Completed"]

@@ -13,7 +13,6 @@
   "investigation_window_start_time",
   "investigation_window_end_time",
   "cool_off_period",
-  "requires_human_intervention",
   "investigation_section",
   "server_investigation_steps",
   "proxy_investigation_steps",
@@ -142,14 +141,6 @@
    "read_only": 1
   },
   {
-   "default": "0",
-   "description": "Do we need to call humans in case of incident confirmation",
-   "fieldname": "requires_human_intervention",
-   "fieldtype": "Check",
-   "label": "Requires Human Intervention",
-   "read_only": 1
-  },
-  {
    "fieldname": "action_steps",
    "fieldtype": "Table",
    "options": "Action Step"
@@ -158,7 +149,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-20 16:04:37.854590",
+ "modified": "2025-08-21 00:05:26.279942",
  "modified_by": "Administrator",
  "module": "Incident Management",
  "name": "Incident Investigator",
