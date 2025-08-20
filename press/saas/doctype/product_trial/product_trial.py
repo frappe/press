@@ -250,7 +250,17 @@ class ProductTrial(Document):
 
 		clusters = self.get_available_clusters()
 		for cluster in clusters:
-			self.create_standby_sites(cluster)
+			try:
+				self.create_standby_sites(cluster)
+				frappe.db.commit()
+			except Exception as e:
+				frappe.log_error(
+					"Unable to Create Standby Sites",
+					data=e,
+					reference_doctype="Product Trial",
+					reference_name=self.name,
+				)
+				frappe.db.rollback()
 
 	def create_standby_sites(self, cluster):
 		if not self.enable_pooling:
