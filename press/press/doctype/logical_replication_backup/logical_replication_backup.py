@@ -139,6 +139,7 @@ class LogicalReplicationBackup(Document):
 			(self.pre__create_consistent_server_snapshot, SyncStep, NoWait, PreMigrateStep),
 			(self.pre__wait_for_servers_to_be_online, SyncStep, Wait, PreMigrateStep),
 			(self.pre__wait_for_server_snapshot_to_be_ready, AsyncStep, NoWait, PreMigrateStep),
+			(self.pre__lock_server_snapshot, SyncStep, NoWait, PreMigrateStep),
 			(self.pre__provision_hot_standby_database_server, SyncStep, Wait, PreMigrateStep),
 			(self.pre__wait_for_hot_standby_volume_initialization, SyncStep, Wait, PreMigrateStep),
 			(self.pre__wait_for_hot_standby_database_server_to_be_ready, AsyncStep, NoWait, PreMigrateStep),
@@ -157,16 +158,21 @@ class LogicalReplicationBackup(Document):
 			(self.post__archive_hot_standby_database_server, SyncStep, NoWait, PostMigrateStep),
 			(self.post__activate_sites, AsyncStep, NoWait, PostMigrateStep),
 			(self.post__enable_replication_on_replica, SyncStep, NoWait, PostMigrateStep),
-			(self.post__wait_for_minimal_replication_lag, SyncStep, Wait, PostMigrateStep),
-			(self.post__add_replication_configuration_to_site, AsyncStep, NoWait, PostMigrateStep),
+			(self.post__wait_for_minimal_replication_lag_of_replica, SyncStep, Wait, PostMigrateStep),
+			(
+				self.post__restore_replication_configuration_of_site_and_bench,
+				AsyncStep,
+				NoWait,
+				PostMigrateStep,
+			),
 			####################################################################################
 			(self.failover__promote_hot_standby_database_server, SyncStep, NoWait, FailoverStep),
 			(self.failover__disable_read_only_mode_on_new_primary, SyncStep, NoWait, FailoverStep),
 			(self.failover__archive_old_primary_database_server, SyncStep, NoWait, FailoverStep),
 			(self.failover__join_other_replicas_to_new_primary, SyncStep, NoWait, FailoverStep),
 			(self.post__activate_sites, AsyncStep, NoWait, FailoverStep),
-			(self.post__wait_for_minimal_replication_lag, SyncStep, Wait, FailoverStep),
-			(self.post__add_replication_configuration_to_site, AsyncStep, NoWait, FailoverStep),
+			(self.post__wait_for_minimal_replication_lag_of_replica, SyncStep, Wait, FailoverStep),
+			(self.post__restore_replication_configuration_of_site_and_bench, AsyncStep, NoWait, FailoverStep),
 		]
 
 		steps = []
@@ -324,6 +330,11 @@ class LogicalReplicationBackup(Document):
 			return StepStatus.Success
 		return StepStatus.Failure
 
+	def pre__lock_server_snapshot(self):
+		"""Lock Server Snapshot"""
+		self.server_snapshot_doc.lock()
+		return StepStatus.Success
+
 	def pre__provision_hot_standby_database_server(self):
 		"""Provision Hot Standby Database Server"""
 		hot_standby_database_server: "DatabaseServer" = self.server_snapshot_doc.create_server(
@@ -465,27 +476,65 @@ class LogicalReplicationBackup(Document):
 	#########################################################
 	def post__archive_hot_standby_database_server(self):
 		"""Archive Hot Standby Database Server"""
-		pass
+
+		# Don't block the flow for archival failure
+		# TODO: Add some retry mechanism to archive the server later
+		try:
+			self.hot_standby_database_server_doc.archive()
+			row = None
+			for s in self.servers:
+				if s.current_role == "Hot Standby":
+					row = s
+					break
+			if row:
+				row.archived = 1
+				self.save()
+		except Exception:
+			self.add_comment(
+				"Comment",
+				"Error archiving hot standby database server - " + self.hot_standby_database_server,
+			)
+
+		return StepStatus.Success
 
 	def post__activate_sites(self):
 		"""Activate Sites"""
-		pass
+		status = self.activate_site()
+		if status == "Success":
+			return StepStatus.Success
+		if status == "Failure":
+			return StepStatus.Failure
+		return StepStatus.Running
 
 	def post__enable_replication_on_replica(self):
 		"""Enable Replication On Replica"""
-		pass
+		for replica in self.replica_database_server_docs:
+			replica.start_replication()
+		return StepStatus.Success
 
-	def post__wait_for_minimal_replication_lag(self):
-		"""Wait For Minimal Replication Lag"""
+	# change function name
+	def post__wait_for_minimal_replication_lag_of_replica(self):
+		"""Wait For Minimal Replication Lag Of Replica"""
+
 		"""
+		TODO:
 		Failure in this should not trigger a site recovery
 		Just throw the replica.
 		"""
-		pass
 
-	def post__add_replication_configuration_to_site(self):
-		"""Add Replication Configuration To Site"""
-		pass
+		for replica in self.replica_database_server_docs:
+			lag_status = check_replication_lag(replica, 300)
+			if lag_status == -1:
+				return StepStatus.Failure
+			if lag_status == 0:
+				return StepStatus.Running
+
+		return StepStatus.Success
+
+	def post__restore_replication_configuration_of_site_and_bench(self):
+		"""Restore Replication Configuration Of Site And Bench"""
+		self.add_replication_config_to_site_and_bench()
+		return StepStatus.Success
 
 	#########################################################
 	#                    Failover Steps                     #
@@ -515,6 +564,7 @@ class LogicalReplicationBackup(Document):
 			"Agent Job",
 			{
 				"site": self.site,
+				"job_type": "Deactivate Site",
 				"reference_doctype": self.doctype,
 				"reference_name": self.name,
 			},
@@ -523,14 +573,43 @@ class LogicalReplicationBackup(Document):
 				"Agent Job",
 				{
 					"site": self.site,
+					"job_type": "Deactivate Site",
 					"reference_doctype": self.doctype,
 					"reference_name": self.name,
 				},
 				"status",
+				order_by="modified desc",
 			)
 
 		# Deactivate the site
 		self.app_server_doc.agent.deactivate_site(
+			self.site_doc, reference_doctype=self.doctype, reference_name=self.name
+		)
+		return "Pending"
+
+	def activate_site(self):
+		if frappe.db.count(
+			"Agent Job",
+			{
+				"site": self.site,
+				"job_type": "Activate Site",
+				"reference_doctype": self.doctype,
+				"reference_name": self.name,
+			},
+		):
+			return frappe.db.get_value(
+				"Agent Job",
+				{
+					"site": self.site,
+					"job_type": "Activate Site",
+					"reference_doctype": self.doctype,
+					"reference_name": self.name,
+				},
+				"status",
+				order_by="modified desc",
+			)
+
+		self.app_server_doc.agent.activate_site(
 			self.site_doc, reference_doctype=self.doctype, reference_name=self.name
 		)
 		return "Pending"
@@ -575,13 +654,8 @@ class LogicalReplicationBackup(Document):
 			release_group.delete_config(key)
 
 	def add_replication_config_to_site_and_bench(self):
-		site = self.site_doc
-		release_group = self.release_group_doc
-
-		for key, value in self.site_replication_config_dict.items():
-			site.update_config(key, value)
-
-		release_group.update_config(self.bench_replication_config_dict)
+		self.site_doc.update_config(self.site_replication_config_dict)
+		self.release_group_doc.update_config(self.bench_replication_config_dict)
 
 	#########################################################
 	#                 Internal Methods                      #
