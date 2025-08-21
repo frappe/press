@@ -9,7 +9,7 @@
 				<Badge
 					variant="subtle"
 					:label="team.doc.partner_status"
-					:theme="team.doc.partner_status ? green : gray"
+					:theme="team.doc.partner_status ? 'green' : 'gray'"
 				/>
 			</div>
 		</div>
