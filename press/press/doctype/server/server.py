@@ -1192,7 +1192,9 @@ class BaseServer(Document, TagHelpers):
 	@frappe.whitelist()
 	def reboot_with_serial_console(self):
 		if self.provider != "AWS EC2":
-			raise NotImplementedError
+			print(self.provider)
+			# raise NotImplementedError
+			return
 		console = frappe.new_doc("Serial Console Log")
 		console.server_type = self.doctype
 		console.server = self.name
