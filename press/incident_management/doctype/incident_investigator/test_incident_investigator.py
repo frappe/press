@@ -59,6 +59,13 @@ def mock_disk_usage(is_high: bool = False, mountpoint: str = "/opt/volumes/bench
 	return wrapper
 
 
+def unreachable_metrics():
+	def wrapper(*args, **kwargs):
+		return []
+
+	return wrapper
+
+
 def mock_memory_usage(is_high: bool = False):
 	def wrapper(*args, **kwargs):
 		return [
@@ -254,6 +261,32 @@ class TestIncidentInvestigator(FrappeTestCase):
 			[second_step.reference_doctype, second_step.reference_name, second_step.method],
 			["Database Server", self.database_server.name, "restart_mariadb"],
 		)
+
+	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=False))
+	@patch.object(PrometheusConnect, "custom_query_range", unreachable_metrics())
+	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=False))
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
+		foreground_enqueue_doc,
+	)
+	@patch.object(
+		IncidentInvestigator, "investigate_proxy_server", Mock()
+	)  # We don't have any sites this will fail
+	def test_database_server_unreachable(self):
+		create_test_incident(self.server.name)
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+
+		for step in investigator.database_investigation_steps:
+			if step.method == "has_high_cpu_load" or step.method == "has_high_memory_load":
+				self.assertTrue(step.is_unable_to_investigate)
+
+		self.assertEqual(len(investigator.action_steps), 1)
+		step = investigator.action_steps[0]
+		self.assertListEqual(
+			[step.reference_doctype, step.reference_name],
+			["Virtual Machine", self.database_server.virtual_machine],
+		)
+		self.assertIn(step.method, ["reboot", "reboot_with_serial_console"])
 
 	@patch.object(IncidentInvestigator, "after_insert", Mock())
 	def test_investigation_cool_off_period(self):
