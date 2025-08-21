@@ -23,8 +23,8 @@
   "high_disk_usage_threshold_in_gb",
   "high_cpu_load_threshold",
   "high_memory_usage_threshold",
-  "incident_frequency",
-  "actions_tab"
+  "actions_tab",
+  "action_steps"
  ],
  "fields": [
   {
@@ -130,13 +130,6 @@
    "label": "Cool off period"
   },
   {
-   "description": "How many such incidents occurred for this server in the last 10 days.",
-   "fieldname": "incident_frequency",
-   "fieldtype": "Int",
-   "label": "Incident Frequency",
-   "read_only": 1
-  },
-  {
    "fieldname": "actions_tab",
    "fieldtype": "Tab Break",
    "label": "Actions"
@@ -146,12 +139,17 @@
    "fieldtype": "JSON",
    "label": "Investigation Findings",
    "read_only": 1
+  },
+  {
+   "fieldname": "action_steps",
+   "fieldtype": "Table",
+   "options": "Action Step"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-15 21:27:09.306592",
+ "modified": "2025-08-21 00:05:26.279942",
  "modified_by": "Administrator",
  "module": "Incident Management",
  "name": "Incident Investigator",

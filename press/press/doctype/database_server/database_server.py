@@ -902,6 +902,16 @@ class DatabaseServer(BaseServer):
 		except Exception:
 			log_error("Deadlock Logger Setup Exception", server=self.as_dict())
 
+	def _capture_process_list(self) -> str | None:
+		"""Capture full process list on the database server"""
+		try:
+			ansible = Ansible(playbook="capture_process_list.yml", server=self)
+			play = ansible.run()
+			task = frappe.get_doc("Ansible Task", {"play": play.name})
+			return task.output
+		except Exception:
+			log_error("Process List Capture Exception", server=self.as_dict())
+
 	@frappe.whitelist()
 	def setup_pt_stalk(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_pt_stalk", queue="long", timeout=1200)

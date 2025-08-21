@@ -216,6 +216,7 @@
   "disable_auto_retry",
   "disable_agent_job_deduplication",
   "enable_email_pre_verification",
+  "execute_incident_action",
   "section_break_jstu",
   "enable_app_grouping",
   "default_apps",
@@ -1444,11 +1445,17 @@
    "fieldname": "npo_discount",
    "fieldtype": "Float",
    "label": "NPO Discount"
+  },
+  {
+   "default": "0",
+   "fieldname": "execute_incident_action",
+   "fieldtype": "Check",
+   "label": "Execute Incident Action"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-05-28 10:07:18.507316",
+ "modified": "2025-08-21 15:21:44.680076",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
