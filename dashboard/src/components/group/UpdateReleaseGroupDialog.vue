@@ -617,11 +617,13 @@ export default {
 		},
 		setErrorMessage(error) {
 			this.ignoreWillFailCheck = false;
-			if (
-				error?.exc_type === 'BuildValidationError' ||
-				error?.exc_type === 'InsufficientSpaceOnServer'
-			) {
+			if (error?.exc_type === 'BuildValidationError') {
 				this.restrictMessage = error?.messages?.[0] ?? '';
+			}
+
+			if (error?.exc_type === 'InsufficientSpaceOnServer') {
+				this.errorMessage = error?.messages?.[0] ?? '';
+				return;
 			}
 
 			if (error?.exc_type === 'PermissionError') {
