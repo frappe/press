@@ -377,15 +377,17 @@ class IncidentInvestigator(Document):
 
 		database_likely_causes = [step for step in self.database_investigation_steps if step.is_likely_cause]
 		database_methods = {step.method for step in database_likely_causes}
-		if database_methods.issubset(
-			{
-				self.has_high_cpu_load.__name__,
-				self.has_high_memory_usage.__name__,
-				self.has_high_system_load.__name__,
-			}
-		) and database_methods != {
-			self.has_high_memory_usage.__name__
-		}:  # don't trigger this only for high memory issues
+		if (
+			database_methods
+			and database_methods.issubset(
+				{
+					self.has_high_cpu_load.__name__,
+					self.has_high_memory_usage.__name__,
+					self.has_high_system_load.__name__,
+				}
+			)
+			and database_methods != {self.has_high_memory_usage.__name__}
+		):  # don't trigger this only for high memory issues
 			self._initiate_process_list_capture_and_reboot_mariadb(database_server)
 
 	def add_post_investigation_actions(self):
