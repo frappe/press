@@ -229,6 +229,7 @@ class TestIncidentInvestigator(FrappeTestCase):
 			self.assertTrue(step.is_likely_cause)
 
 		self.assertEqual(investigator.status, "Completed")
+		# Since memory is a part of the high metrics we won't be taking any actions on db either
 		self.assertEqual(investigator.action_steps, [])
 
 	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=False))

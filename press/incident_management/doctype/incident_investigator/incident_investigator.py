@@ -341,7 +341,7 @@ class IncidentInvestigator(Document):
 		)
 		action_step.save()
 
-	def _initiate_database_reboot(self, database_server: str):
+	def _initiate_reboot_database(self, database_server: str):
 		"""Trigger reboot depending on cloud provider"""
 		# Explicitly getting the virtual machine in case of mismatches
 		virtual_machine = frappe.db.get_value("Database Server", database_server, "virtual_machine")
@@ -350,7 +350,7 @@ class IncidentInvestigator(Document):
 			"Virtual Machine", virtual_machine, "reboot_with_serial_console"
 		) if provider == "AWS EC2" else self.add_action("Virtual Machine", virtual_machine, "reboot")
 
-	def _initiate_process_list_capture_and_reboot(self, database_server: str):
+	def _initiate_process_list_capture_and_reboot_mariadb(self, database_server: str):
 		"""Capture database process list and restart mariadb"""
 		self.add_action("Database Server", database_server, "_capture_process_list")
 		self.add_action("Database Server", database_server, "restart_mariadb")
@@ -372,7 +372,7 @@ class IncidentInvestigator(Document):
 		database_server = frappe.db.get_value("Server", self.server, "database_server")
 
 		if any([step for step in self.database_investigation_steps if step.is_unable_to_investigate]):
-			self._initiate_database_reboot(database_server)
+			self._initiate_reboot_database(database_server)
 			return
 
 		database_likely_causes = [step for step in self.database_investigation_steps if step.is_likely_cause]
@@ -384,7 +384,7 @@ class IncidentInvestigator(Document):
 				self.has_high_system_load.__name__,
 			}
 		):
-			self._initiate_process_list_capture_and_reboot(database_server)
+			self._initiate_process_list_capture_and_reboot_mariadb(database_server)
 
 	def add_post_investigation_actions(self):
 		if self.add_proxy_investigation_actions():
