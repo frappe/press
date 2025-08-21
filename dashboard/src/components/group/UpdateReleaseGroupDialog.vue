@@ -617,7 +617,10 @@ export default {
 		},
 		setErrorMessage(error) {
 			this.ignoreWillFailCheck = false;
-			if (error?.exc_type === 'BuildValidationError') {
+			if (
+				error?.exc_type === 'BuildValidationError' ||
+				error?.exc_type === 'InsufficientSpaceOnServer'
+			) {
 				this.restrictMessage = error?.messages?.[0] ?? '';
 			}
 
