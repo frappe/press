@@ -281,7 +281,6 @@ scheduler_events = {
 			"press.press.doctype.site_update.site_update.schedule_updates",
 			"press.press.doctype.site.backups.schedule_logical_backups",
 			"press.press.doctype.site.backups.schedule_physical_backups",
-			"press.press.doctype.site_update.site_update.run_scheduled_updates",
 			"press.press.doctype.site_migration.site_migration.run_scheduled_migrations",
 			"press.press.doctype.version_upgrade.version_upgrade.run_scheduled_upgrades",
 			"press.press.doctype.subscription.subscription.create_usage_records",
@@ -295,6 +294,7 @@ scheduler_events = {
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_snapshots",
 			"press.press.doctype.site.site.sync_sites_setup_wizard_complete_status",
 			"press.press.doctype.drip_email.drip_email.send_welcome_email",
+			"press.press.doctype.site_update.site_update.run_scheduled_updates",
 		],
 		"* * * * *": [
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",
