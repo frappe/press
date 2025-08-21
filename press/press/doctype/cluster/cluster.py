@@ -909,7 +909,7 @@ class Cluster(Document):
 		server.save()
 
 		if create_subscription:
-			server.create_subscription(plan.name, arguments={"setup_db_replication": setup_db_replication})
+			server.create_subscription(plan.name)
 
 		job_arguments = {}
 		if setup_db_replication:

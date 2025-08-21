@@ -1509,6 +1509,15 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			},
 		)
 
+	def reset_replication(self, database_server: DatabaseServer):
+		return self.post(
+			"/database/replication/reset",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+			},
+		)
+
 	def configure_replication(
 		self,
 		database_server: DatabaseServer,

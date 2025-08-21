@@ -394,6 +394,10 @@ class Bench(Document):
 			self.update_bench_config_with_rg_config(bench_config)
 			self.save()  # triggers on_update
 			return
+
+		if hasattr(self, "flags") and hasattr(self.flags, "avoid_triggerring_update_bench_config_job"):
+			return
+
 		old = self.get_doc_before_save()
 		if old and (old.config != self.config or old.bench_config != self.bench_config):
 			agent = Agent(self.server)
@@ -1389,7 +1393,7 @@ def sort_supervisor_processes(processes: "list[SupervisorProcess]"):
 		sorted_process_groups.extend(group_grouped.values())
 		del status_grouped[status]
 
-	# Incase not all statuses have been accounted for
+	# In case not all statuses have been accounted for
 	for group_grouped in status_grouped.values():
 		sorted_process_groups.extend(group_grouped.values())
 

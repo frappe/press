@@ -17,7 +17,7 @@ class LogicalReplicationServer(Document):
 		archived: DF.Check
 		current_role: DF.Literal["Master", "Replica", "Hot Standby"]
 		database_server: DF.Link
-		new_role: DF.Literal["", "Master", "Replica", "Hot Standby"]
+		new_role: DF.Literal["", "Master", "Replica", "Hot Standby", "Retired"]
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data

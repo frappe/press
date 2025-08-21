@@ -35,7 +35,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "New Role",
-   "options": "\nMaster\nReplica\nHot Standby",
+   "options": "\nMaster\nReplica\nHot Standby\nRetired",
    "read_only": 1
   },
   {
@@ -51,7 +51,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-08-14 17:38:40.126850",
+ "modified": "2025-08-21 02:43:26.472015",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Logical Replication Server",
