@@ -945,6 +945,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 		from press.press.doctype.logical_replication_backup.logical_replication_backup import (
 			process_logical_replication_backup_activate_site_job_update,
 			process_logical_replication_backup_deactivate_site_job_update,
+			process_logical_replication_backup_update_database_host_job_update,
 		)
 		from press.press.doctype.mariadb_binlog.mariadb_binlog import (
 			process_upload_binlogs_to_s3_job_update,
@@ -1099,6 +1100,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_physical_backup_restoration_deactivate_site_job_update(job)
 		elif job.job_type == "Deactivate Site" and job.reference_doctype == "Logical Replication Backup":
 			process_logical_replication_backup_deactivate_site_job_update(job)
+		elif job.job_type == "Update Database Host" and job.reference_doctype == "Logical Replication Backup":
+			process_logical_replication_backup_update_database_host_job_update(job)
 		elif job.job_type == "Add Domain":
 			process_add_domain_job_update(job)
 		elif job.job_type == "Add Binlogs To Indexer":

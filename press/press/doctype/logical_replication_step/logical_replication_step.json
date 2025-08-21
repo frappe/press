@@ -26,7 +26,6 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Step",
-   "read_only": 1,
    "reqd": 1
   },
   {
@@ -41,7 +40,6 @@
    "fieldname": "method",
    "fieldtype": "Data",
    "label": "Method",
-   "read_only": 1,
    "reqd": 1
   },
   {
@@ -104,7 +102,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-08-19 00:20:10.784497",
+ "modified": "2025-08-21 10:56:47.022439",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Logical Replication Step",

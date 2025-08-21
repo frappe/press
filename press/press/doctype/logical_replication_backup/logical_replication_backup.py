@@ -12,6 +12,7 @@ from frappe.model.document import Document
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 
 if TYPE_CHECKING:
+	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.logical_replication_step.logical_replication_step import LogicalReplicationStep
 	from press.press.doctype.release_group.release_group import ReleaseGroup
@@ -113,6 +114,7 @@ class LogicalReplicationBackup(Document):
 		end: DF.Datetime | None
 		execution_stage: DF.Literal["Pre-Migrate", "Post-Migrate", "Failover"]
 		failover_steps: DF.Table[LogicalReplicationStep]
+		initial_binlog_position_of_new_primary_db: DF.Data | None
 		post_migrate_steps: DF.Table[LogicalReplicationStep]
 		pre_migrate_steps: DF.Table[LogicalReplicationStep]
 		replication_enabled_on_site: DF.Check
@@ -171,13 +173,32 @@ class LogicalReplicationBackup(Document):
 				PostMigrateStep,
 			),
 			####################################################################################
-			(self.failover__promote_hot_standby_database_server, SyncStep, NoWait, FailoverStep),
-			(self.failover__disable_read_only_mode_on_new_primary, SyncStep, NoWait, FailoverStep),
+			(self.failover__plan_and_assign_new_role_to_servers, SyncStep, NoWait, FailoverStep),
+			(
+				self.failover__configure_hot_standby_database_server_as_new_master,
+				SyncStep,
+				NoWait,
+				FailoverStep,
+			),
+			(self.failover__update_reference_to_new_master_database_server, SyncStep, NoWait, FailoverStep),
+			(self.failover__update_new_master_database_server_plan_and_team, SyncStep, NoWait, FailoverStep),
+			(self.failover__gather_binlog_position_from_new_master, SyncStep, Wait, FailoverStep),
+			(self.failover__update_master_database_ref_in_replica_servers, SyncStep, NoWait, FailoverStep),
+			(self.failover__disable_read_only_mode_on_new_master, SyncStep, NoWait, FailoverStep),
+			(self.failover__wait_for_master_database_server_to_be_available, SyncStep, Wait, FailoverStep),
+			(self.failover__configure_sites_with_new_master_database_server, AsyncStep, NoWait, FailoverStep),
+			(self.failover__activate_sites, AsyncStep, NoWait, FailoverStep),
+			(self.failover__join_other_replicas_to_new_master, SyncStep, NoWait, FailoverStep),
+			(self.failover__start_replication_on_replica, SyncStep, NoWait, FailoverStep),
+			(self.failover__wait_for_minimal_replication_lag_of_replica, SyncStep, Wait, FailoverStep),
+			(
+				self.failover__restore_replication_configuration_of_site_and_bench,
+				AsyncStep,
+				NoWait,
+				FailoverStep,
+			),
 			(self.failover__archive_old_primary_database_server, SyncStep, NoWait, FailoverStep),
-			(self.failover__join_other_replicas_to_new_primary, SyncStep, NoWait, FailoverStep),
-			(self.post__activate_sites, AsyncStep, NoWait, FailoverStep),
-			(self.post__wait_for_minimal_replication_lag_of_replica, SyncStep, Wait, FailoverStep),
-			(self.post__restore_replication_configuration_of_site_and_bench, AsyncStep, NoWait, FailoverStep),
+			(self.failover__create_subscription_for_new_master, SyncStep, NoWait, FailoverStep),
 		]
 
 		steps = []
@@ -236,12 +257,24 @@ class LogicalReplicationBackup(Document):
 		return [s.database_server for s in self.servers if s.current_role == "Replica"]
 
 	@property
+	def new_replica_database_servers(self) -> list[str]:
+		return [s.database_server for s in self.servers if s.new_role == "Replica"]
+
+	@property
 	def replica_database_server_docs(self) -> list["DatabaseServer"]:
 		replica_servers = []
 		for s in self.servers:
 			if s.current_role == "Replica":
 				replica_servers.append(frappe.get_doc("Database Server", s.database_server))
 		return replica_servers
+
+	@property
+	def new_replica_database_server_docs(self) -> list["DatabaseServer"]:
+		new_replica_servers = []
+		for s in self.servers:
+			if s.new_role == "Replica":
+				new_replica_servers.append(frappe.get_doc("Database Server", s.database_server))
+		return new_replica_servers
 
 	@property
 	def hot_standby_database_server(self) -> "str | None":
@@ -546,21 +579,184 @@ class LogicalReplicationBackup(Document):
 	#########################################################
 	#                    Failover Steps                     #
 	#########################################################
-	def failover__promote_hot_standby_database_server(self):
-		"""Promote Hot Standby Database Server"""
-		pass
+	def failover__plan_and_assign_new_role_to_servers(self):
+		"""Plan And Assign New Role To Servers"""
+		hot_standby_server = next((s for s in self.servers if s.current_role == "Hot Standby"), None)
+		if hot_standby_server:
+			hot_standby_server.new_role = "Master"
 
-	def failover__disable_read_only_mode_on_new_primary(self):
-		"""Disable Read Only Mode From New Primary Database Server"""
-		pass
+		old_primary_server = next((s for s in self.servers if s.current_role == "Master"), None)
+		if old_primary_server:
+			old_primary_server.new_role = "Retired"
+
+		replica_servers = [s for s in self.servers if s.current_role == "Replica"]
+		for s in replica_servers:
+			s.new_role = "Replica"
+
+		self.save()
+		return StepStatus.Success
+
+	def failover__configure_hot_standby_database_server_as_new_master(self):
+		"""Configure Hot Standby Database Server As New Master"""
+		self.hot_standby_database_server_doc.reset_replication()
+		return StepStatus.Success
+
+	def failover__update_reference_to_new_master_database_server(self):
+		"""Update Reference To New Master Database Server"""
+		server = self.app_server_doc
+		server.database_server = self.hot_standby_database_server
+		server.save()
+		return StepStatus.Success
+
+	def failover__update_new_master_database_server_plan_and_team(self):
+		"""Update New Master Database Server Plan And Team"""
+		# Update the plan and team of the new master database server
+		server = self.hot_standby_database_server_doc
+		old_db = self.database_server_doc
+		server.plan = old_db.plan  # Handle arm , x86_64 plans automatically
+		server.team = old_db.team
+		server.title = old_db.title
+		server.save()
+		return StepStatus.Success
+
+	def failover__gather_binlog_position_from_new_master(self):
+		"""Gather Binlog Position From New Master Database Server"""
+		self.initial_binlog_position_of_new_primary_db = (
+			self.hot_standby_database_server_doc.get_replication_status()
+			.get("data", {})
+			.get("gtid_current_pos", "")
+		)
+		if not self.initial_binlog_position_of_new_primary_db:
+			frappe.throw("Failed to gather initial binlog position from new master database server")
+		self.save()
+		return StepStatus.Success
+
+	def failover__update_master_database_ref_in_replica_servers(self):
+		"""Update Master Database Info In Replica Servers"""
+		for replica in self.replica_database_server_docs:
+			frappe.db.set_value("Database Server", replica.name, "primary", self.hot_standby_database_server)
+		return StepStatus.Success
+
+	def failover__disable_read_only_mode_on_new_master(self):
+		"""Disable Read Only Mode From New Master Database Server"""
+		self.hot_standby_database_server_doc.disable_read_only_mode(update_variables_synchronously=True)
+		return StepStatus.Success
+
+	def failover__wait_for_master_database_server_to_be_available(self):
+		"""Wait For Master Database Server To Be Available"""
+		if self.hot_standby_database_server_doc.ping_mariadb():
+			return StepStatus.Success
+
+		return StepStatus.Running
+
+	def failover__configure_sites_with_new_master_database_server(self):
+		"""Configure Sites With New Master Database Server"""
+
+		# Check if any deactivate site job already exists
+		if frappe.db.count(
+			"Agent Job",
+			{
+				"job_type": "Update Database Host",
+				"reference_doctype": self.doctype,
+				"reference_name": self.name,
+			},
+		):
+			status = frappe.db.get_value(
+				"Agent Job",
+				{
+					"job_type": "Update Database Host",
+					"reference_doctype": self.doctype,
+					"reference_name": self.name,
+				},
+				"status",
+				order_by="modified desc",
+			)
+			if status in ("Pending", "Running"):
+				return StepStatus.Running
+			if status == "Success":
+				return StepStatus.Success
+			if status == "Failure":
+				return StepStatus.Failure
+
+		agent = self.app_server_doc.agent
+		"""
+		On changing the database server on server doctype, it should automatically update the database host
+		in all the benches that are associated with this server.
+
+		Do a check here in this doctype as well to reduce chance of affecting by external changes.
+		"""
+
+		hot_standby_database_server = self.hot_standby_database_server
+
+		benches = frappe.get_all("Bench", {"server": self.server, "status": ("!=", "Archived")})
+		for bench in benches:
+			bench: "Bench" = frappe.get_doc("Bench", bench)
+			if bench.database_server != hot_standby_database_server:
+				# We will do a bulk update, So avoid automatically triggering update bench config job
+				bench.flags.avoid_triggerring_update_bench_config_job = True
+				bench.database_server = hot_standby_database_server
+				bench.save()
+
+		agent.update_database_host_in_all_benches(
+			self.hot_standby_database_server_doc.private_ip, self.doctype, self.name
+		)
+		return StepStatus.Running
+
+	def failover__activate_sites(self):
+		"""Activate Sites"""
+		return self.post__activate_sites()
+
+	def failover__join_other_replicas_to_new_master(self):
+		"""Join Other Replicas To New Master"""
+		for replica in self.new_replica_database_server_docs:
+			replica.configure_replication(gtid_slave_pos=self.initial_binlog_position_of_new_primary_db)
+		return StepStatus.Success
+
+	def failover__start_replication_on_replica(self):
+		"""Start Replication On Replica"""
+		for replica in self.new_replica_database_server_docs:
+			replica.start_replication()
+		return StepStatus.Success
+
+	def failover__wait_for_minimal_replication_lag_of_replica(self):
+		"""Wait For Minimal Replication Lag Of Replica"""
+
+		for replica in self.new_replica_database_server_docs:
+			lag_status = check_replication_lag(replica, 300)
+			if lag_status == -1:
+				return StepStatus.Failure
+			if lag_status == 0:
+				return StepStatus.Running
+
+		return StepStatus.Success
+
+	def failover__restore_replication_configuration_of_site_and_bench(self):
+		"""Restore Replication Configuration Of Site And Bench"""
+		return self.post__restore_replication_configuration_of_site_and_bench()
 
 	def failover__archive_old_primary_database_server(self):
 		"""Archive Old Primary Database Server"""
-		pass
+		# Just unset team / plan / disable subscription
+		try:
+			self.database_server_doc.archive()
+			row = None
+			for s in self.servers:
+				if s.current_role == "Master":
+					row = s
+					break
+			if row:
+				row.archived = 1
+				self.save()
+		except Exception:
+			self.add_comment(
+				"Comment",
+				"Error archiving primary database server - " + self.database_server,
+			)
+		return StepStatus.Success
 
-	def failover__join_other_replicas_to_new_primary(self):
-		"""Join Other Replicas To New Primary"""
-		pass
+	def failover__create_subscription_for_new_master(self):
+		"""Create Subscription For New Master Database Server"""
+		return StepStatus.Success
 
 	#########################################################
 	#              Common Steps / Private Methods           #
@@ -770,6 +966,7 @@ class LogicalReplicationBackup(Document):
 			is False,  # Don't deduplicate if wait_for_completion is True
 			job_id=f"logical_replication||{self.name}||{next_step_to_run.name}",
 			timeout=600,
+			now=True,
 		)
 
 	@frappe.whitelist(allow_guest=True)
@@ -872,7 +1069,7 @@ class LogicalReplicationBackup(Document):
 			self.fail(save=True)
 		else:
 			self.save(ignore_version=True)
-			self.next()
+			# self.next()
 
 	def get_step(self, step_name) -> "LogicalReplicationStep | None":
 		for step in self.current_execution_steps:
@@ -908,6 +1105,15 @@ def process_logical_replication_backup_deactivate_site_job_update(job):
 
 
 def process_logical_replication_backup_activate_site_job_update(job):
+	if job.reference_doctype != "Logical Replication Backup":
+		return
+	if job.status not in ["Success", "Failure", "Delivery Failure"]:
+		return
+	doc: LogicalReplicationBackup = frappe.get_doc("Logical Replication Backup", job.reference_name)
+	doc.next()
+
+
+def process_logical_replication_backup_update_database_host_job_update(job):
 	if job.reference_doctype != "Logical Replication Backup":
 		return
 	if job.status not in ["Success", "Failure", "Delivery Failure"]:

@@ -1017,6 +1017,20 @@ class DatabaseServer(BaseServer):
 			self.is_replication_setup = True
 			self.save()
 
+	def reset_replication(self):
+		if self.is_primary:
+			return
+
+		agent = self.agent
+		data = agent.reset_replication(self)
+		if not data.get("success"):
+			frappe.throw(data.get("message", "Failed to reset replication"))
+
+		self.is_replication_setup = False
+		self.is_primary = True
+		self.primary = None
+		self.save()
+
 	def start_replication(self):
 		if self.is_primary:
 			return
