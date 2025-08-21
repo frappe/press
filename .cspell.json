@@ -1097,7 +1097,12 @@
 =======
 		"gtid",
 		"VMI",
+<<<<<<< HEAD
 		"efi"
 >>>>>>> 5bf87e248 (fix(server): Reconfigure data disk uuid and labels before mounting)
+=======
+		"efi",
+		"interactjs"
+>>>>>>> 6e727e5d4 (feat: Added dedicated page for backups and snapshots)
 	]
 }

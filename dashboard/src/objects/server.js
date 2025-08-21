@@ -15,7 +15,7 @@ import { date, duration, planTitle, userCurrency } from '../utils/format';
 import { trialDays } from '../utils/site';
 import { getJobsTab } from './common/jobs';
 import { tagTab } from './common/tags';
-import { format } from 'echarts';
+import { getQueryParam, setQueryParam } from '../utils/index';
 
 export default {
 	doctype: 'Server',
@@ -49,7 +49,7 @@ export default {
 					type: 'select',
 					label: 'Status',
 					fieldname: 'status',
-					options: ['', 'Active', 'Pending'],
+					options: ['', 'Active', 'Pending', 'Archived'],
 				},
 				{
 					type: 'select',
@@ -160,6 +160,10 @@ export default {
 		actions({ documentResource: server }) {
 			let $team = getTeam();
 
+			if (server?.doc?.status === 'Archived') {
+				return [];
+			}
+
 			return [
 				{
 					label: 'Impersonate Server Owner',
@@ -214,6 +218,7 @@ export default {
 			{
 				label: 'Overview',
 				icon: icon('home'),
+				condition: (server) => server.doc?.status !== 'Archived',
 				route: 'overview',
 				type: 'Component',
 				component: defineAsyncComponent(
@@ -226,6 +231,7 @@ export default {
 			{
 				label: 'Analytics',
 				icon: icon('bar-chart-2'),
+				condition: (server) => server.doc?.status !== 'Archived',
 				route: 'analytics',
 				type: 'Component',
 				component: defineAsyncComponent(
@@ -240,6 +246,7 @@ export default {
 			{
 				label: 'Sites',
 				icon: icon(LucideAppWindow),
+				condition: (server) => server.doc?.status !== 'Archived',
 				route: 'sites',
 				type: 'list',
 				list: {
@@ -346,6 +353,7 @@ export default {
 			{
 				label: 'Bench Groups',
 				icon: icon('package'),
+				condition: (server) => server.doc?.status !== 'Archived',
 				route: 'groups',
 				type: 'list',
 				list: {
@@ -438,8 +446,41 @@ export default {
 				list: {
 					doctype: 'Server Snapshot',
 					filters: (server) => {
-						return { server: server.doc.name, status: ['!=', 'Unavailable'] };
+						let filters = {
+							app_server: server.doc?.name,
+							status: ['!=', 'Unavailable'],
+						};
+						const snapshot_name = getQueryParam('name');
+						if (snapshot_name) {
+							filters.name = snapshot_name;
+						}
+						return filters;
 					},
+					filterControls() {
+						const snapshot_name = getQueryParam('name');
+						let filters = snapshot_name
+							? [
+									{
+										type: 'text',
+										label: 'Snapshot Name',
+										fieldname: 'name',
+									},
+								]
+							: [];
+						filters = filters.concat([
+							{
+								type: 'checkbox',
+								label: 'Consistent',
+								fieldname: 'consistent',
+							},
+						]);
+						return filters;
+					},
+					searchField: getQueryParam('name') ? null : 'name',
+					updateFilters({ name }) {
+						setQueryParam('name', name);
+					},
+					autoReloadAfterUpdateFilterCallback: true,
 					orderBy: 'creation desc',
 					fields: [
 						'name',
@@ -524,6 +565,7 @@ export default {
 						},
 					],
 					primaryAction({ documentResource: server, listResource: snapshots }) {
+						if (server?.doc?.status === 'Archived') return;
 						return {
 							label: 'New Snapshot',
 							slots: {
@@ -570,6 +612,7 @@ export default {
 			{
 				label: 'Plays',
 				icon: icon('play'),
+				condition: (server) => server.doc?.status !== 'Archived',
 				childrenRoutes: ['Server Play'],
 				route: 'plays',
 				type: 'list',
@@ -648,6 +691,7 @@ export default {
 			{
 				label: 'Actions',
 				icon: icon('sliders'),
+				condition: (server) => server.doc?.status !== 'Archived',
 				route: 'actions',
 				type: 'Component',
 				component: ServerActions,
@@ -655,6 +699,7 @@ export default {
 					return { server: server.doc.name };
 				},
 			},
+<<<<<<< HEAD
 			tagTab(),
 			{
 				label: 'Activity',
@@ -719,6 +764,9 @@ export default {
 					},
 				},
 			},
+=======
+			tagTab('Server'),
+>>>>>>> 6e727e5d4 (feat: Added dedicated page for backups and snapshots)
 		],
 	},
 	routes: [
