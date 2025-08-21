@@ -20,6 +20,8 @@ import Globe from '~icons/lucide/globe';
 import Shield from '~icons/lucide/shield';
 import Notification from '~icons/lucide/inbox';
 import Code from '~icons/lucide/code';
+import Archive from '~icons/lucide/archive';
+import Camera from '~icons/lucide/camera';
 import FileSearch from '~icons/lucide/file-search';
 import { unreadNotificationsCount } from '../data/notifications';
 
@@ -110,6 +112,29 @@ export default {
 						['New Server'].includes(routeName) ||
 						routeName.startsWith('Server'),
 					condition: onboardingComplete && !isSaasUser && serversEnabled,
+					disabled: enforce2FA,
+				},
+				{
+					name: 'Backups',
+					icon: () => h(Archive),
+					route: '/backups',
+					condition: onboardingComplete && !isSaasUser,
+					disabled: enforce2FA,
+					children: [
+						{
+							name: 'Site Backups',
+							icon: () => h(PanelTopInactive),
+							route: '/backups/sites',
+							isActive: routeName === 'Site Backups',
+						},
+						{
+							name: 'Snapshots',
+							icon: () => h(Camera),
+							route: '/backups/snapshots',
+							isActive: routeName === 'Snapshots',
+						},
+					].filter((item) => item.condition ?? true),
+					isActive: ['Site Backups', 'Snapshots'].includes(routeName),
 					disabled: enforce2FA,
 				},
 				{

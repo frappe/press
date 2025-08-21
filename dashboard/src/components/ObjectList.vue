@@ -14,6 +14,7 @@
 			<slot name="header-left" v-bind="context">
 				<div v-if="showControls" class="flex items-center space-x-2">
 					<TextInput
+						v-if="this.options.searchField"
 						placeholder="Search"
 						class="max-w-[20rem]"
 						:debounce="500"
@@ -468,22 +469,27 @@ export default {
 				};
 				this.$list.update({ params });
 				this.$list.reload();
-			} else if (this.options.updateFilters) {
+				return;
+			}
+			if (this.options.updateFilters) {
 				this.options.updateFilters({
 					[control.fieldname]: control.value,
 				});
-			} else {
-				let filters = { ...this.$list.filters };
-				for (let c of this.filterControls) {
-					filters[c.fieldname] = c.value;
+				if (!this.options.autoReloadAfterUpdateFilterCallback) {
+					return;
 				}
-				this.$list.update({
-					filters,
-					start: 0,
-					pageLength: this.options.pageLength || 20,
-				});
-				this.$list.reload();
 			}
+
+			let filters = { ...this.$list.filters };
+			for (let c of this.filterControls) {
+				filters[c.fieldname] = c.value;
+			}
+			this.$list.update({
+				filters,
+				start: 0,
+				pageLength: this.options.pageLength || 20,
+			});
+			this.$list.reload();
 		},
 	},
 };

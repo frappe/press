@@ -1084,6 +1084,7 @@
 		"ncdu",
 		"gtid",
 		"VMI",
-		"efi"
+		"efi",
+		"interactjs"
 	]
 }

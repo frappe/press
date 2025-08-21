@@ -78,14 +78,16 @@ class BaseServer(Document, TagHelpers):
 	)
 
 	@staticmethod
-	def get_list_query(query):
+	def get_list_query(query, filters=None, **list_args):
 		Server = frappe.qb.DocType("Server")
 
-		query = (
-			query.where(Server.status != "Archived")
-			.where(Server.is_for_recovery != 1)
-			.where(Server.team == frappe.local.team().name)
-		)
+		status = filters.get("status")
+		if status == "Archived":
+			query = query.where(Server.status == status)
+		else:
+			query = query.where(Server.status != "Archived")
+
+		query = query.where(Server.is_for_recovery != 1).where(Server.team == frappe.local.team().name)
 		results = query.run(as_dict=True)
 
 		for result in results:
