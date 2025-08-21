@@ -1046,6 +1046,8 @@
 		"missingok",
 		"notifempty",
 		"nocompress",
+		"ntvs",
+		"njsproj",
 		"ibtmp",
 		"ibdata",
 		"recognise",
