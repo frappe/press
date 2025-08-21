@@ -76,6 +76,18 @@ def check_replication_lag(server: "DatabaseServer", target_lag: int) -> int:
 			or replication_status.get("Slave_IO_Running") != "Yes"
 			or replication_status.get("Slave_SQL_Running") != "Yes"
 		):
+			"""
+			During doing multiple stuffs like setting up different configurations and all
+			Replication can take some time to start
+
+			So, Ignore the network issues or connection issues
+			"""
+			if replication_status and (
+				replication_status.get("Last_IO_Errno") == 2003
+				or "error reconnecting to master" in replication_status.get("Last_SQL_Errno", "")
+			):
+				return 0
+
 			# Replication is not running
 			return -1
 
@@ -966,7 +978,6 @@ class LogicalReplicationBackup(Document):
 			is False,  # Don't deduplicate if wait_for_completion is True
 			job_id=f"logical_replication||{self.name}||{next_step_to_run.name}",
 			timeout=600,
-			now=True,
 		)
 
 	@frappe.whitelist(allow_guest=True)
@@ -1069,7 +1080,7 @@ class LogicalReplicationBackup(Document):
 			self.fail(save=True)
 		else:
 			self.save(ignore_version=True)
-			# self.next()
+			self.next()
 
 	def get_step(self, step_name) -> "LogicalReplicationStep | None":
 		for step in self.current_execution_steps:
