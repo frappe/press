@@ -18,7 +18,10 @@ if typing.TYPE_CHECKING:
 	import datetime
 	from collections.abc import Callable
 
-	from apps.press.press.incident_management.doctype.investigation_step.investigation_step import (
+	from press.press.incident_management.doctype.action_step.action_step import (
+		ActionStep,
+	)
+	from press.press.incident_management.doctype.investigation_step.investigation_step import (
 		InvestigationStep,
 	)
 
@@ -327,7 +330,7 @@ class IncidentInvestigator(Document):
 
 	def add_action(self, reference_doctype: str, reference_name: str, method: str):
 		"""Add action in the action steps"""
-		self.append(
+		action_step: ActionStep = self.append(
 			"action_steps",
 			{
 				"reference_doctype": reference_doctype,
@@ -336,7 +339,7 @@ class IncidentInvestigator(Document):
 				"is_taken": False,
 			},
 		)
-		self.save()
+		action_step.save()
 
 	def _initiate_database_reboot(self, database_server: str):
 		"""Trigger reboot depending on cloud provider"""

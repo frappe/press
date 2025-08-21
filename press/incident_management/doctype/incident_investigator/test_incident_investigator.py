@@ -19,6 +19,7 @@ from press.press.doctype.server.test_server import (
 	create_test_proxy_server,
 	create_test_server,
 )
+from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 from press.utils.test import foreground_enqueue_doc
 
 if typing.TYPE_CHECKING:
@@ -193,6 +194,7 @@ def make_custom_query_range_side_effect(
 @patch.object(Incident, "identify_affected_resource", Mock())
 @patch.object(Incident, "identify_problem", Mock())
 @patch.object(Incident, "take_grafana_screenshots", Mock())
+@patch.object(VirtualMachine, "reboot_with_serial_console", Mock())
 class TestIncidentInvestigator(FrappeTestCase):
 	@classmethod
 	def setUpClass(cls):
