@@ -55,6 +55,7 @@
   "database_server",
   "self_hosted_mariadb_server",
   "is_managed_database",
+  "enable_logical_replication_during_site_update",
   "column_break_jdiy",
   "self_hosted_mariadb_root_password",
   "managed_database_service",
@@ -620,10 +621,16 @@
    "fieldname": "is_for_recovery",
    "fieldtype": "Check",
    "label": "Is for Recovery"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_logical_replication_during_site_update",
+   "fieldtype": "Check",
+   "label": "Enable Logical Replication During Site Update"
   }
  ],
  "links": [],
- "modified": "2025-08-04 13:05:23.781650",
+ "modified": "2025-08-21 16:08:03.067516",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
