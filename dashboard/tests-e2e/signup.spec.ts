@@ -12,7 +12,7 @@ function fetchProductTrials(): string[] {
 
 function testEmail(product: string) {
   const rand = crypto.randomBytes(3).toString('hex');
-  return `playwright_${product}_${rand}@example.com`;
+  return `playwright_${product}_${rand}@signup.test`;
 }
 
 async function runSignupFlow(page: Page, product: string) {
