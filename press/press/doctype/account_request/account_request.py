@@ -162,7 +162,7 @@ class AccountRequest(Document):
 	def send_verification_email(self):  # noqa: C901
 		url = self.get_verification_url()
 
-		if frappe.conf.developer_mode:
+		if (frappe.conf.developer_mode and frappe.local.dev_server) or frappe.local.request_ip == "127.0.0.1":
 			print(f"\nSetup account URL for {self.email}:")
 			print(url)
 			print(f"\nOTP for {self.email}:")
