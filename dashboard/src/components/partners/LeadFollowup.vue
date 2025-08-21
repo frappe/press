@@ -11,6 +11,7 @@ import UpdateFollowupDialog from './UpdateFollowupDialog.vue';
 import { confirmDialog, renderDialog } from '../../utils/components';
 import { toast } from 'vue-sonner';
 import { createResource } from 'frappe-ui';
+import { date } from '../../utils/format';
 
 const route = useRoute();
 
@@ -27,6 +28,9 @@ const leadfollowups = computed(() => {
 				label: 'Date',
 				fieldname: 'date',
 				width: '100px',
+				format(value) {
+					return date(value, 'll');
+				},
 			},
 			{
 				label: 'Followup By',

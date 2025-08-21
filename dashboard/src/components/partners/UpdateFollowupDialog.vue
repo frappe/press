@@ -32,7 +32,8 @@
 </template>
 <script setup>
 import { createResource, Dialog, FormControl } from 'frappe-ui';
-import { computed, reactive } from 'vue';
+import { computed, reactive, ref } from 'vue';
+import { getTeam } from '../../data/team';
 
 const props = defineProps({
 	id: {
@@ -97,6 +98,15 @@ const communicationTypes = computed(() => {
 	}));
 });
 
+const team = getTeam();
+const members = ref([]);
+team.getTeamMembers.submit().then((data) => {
+	members.value = data.map((member) => ({
+		label: member.first_name + ' ' + member.last_name,
+		value: member.name,
+	}));
+});
+
 const sections = computed(() => {
 	return [
 		{
@@ -109,9 +119,10 @@ const sections = computed(() => {
 					fieldname: 'followup_date',
 				},
 				{
-					fieldtype: 'Data',
+					fieldtype: 'Select',
 					label: 'Followup By',
 					fieldname: 'followup_by',
+					options: members.value,
 				},
 			],
 		},

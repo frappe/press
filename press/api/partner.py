@@ -503,7 +503,7 @@ def update_followup_details(id, lead, followup_details):
 		doc = frappe.get_doc("Lead Followup", id)
 		doc.update(
 			{
-				"date": followup_details.date,
+				"date": frappe.utils.getdate(followup_details.followup_date),
 				"communication_type": followup_details.communication_type,
 				"followup_by": followup_details.followup_by,
 				"spoke_to": followup_details.spoke_to,
@@ -520,7 +520,7 @@ def update_followup_details(id, lead, followup_details):
 				"parent": lead,
 				"parenttype": "Partner Lead",
 				"parentfield": "followup",
-				"date": followup_details.date,
+				"date": frappe.utils.getdate(followup_details.followup_date),
 				"communication_type": followup_details.communication_type,
 				"followup_by": followup_details.followup_by,
 				"spoke_to": followup_details.spoke_to,
