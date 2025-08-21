@@ -85,22 +85,47 @@ async function runSignupFlow(page: Page, product: string) {
   await page.waitForURL(/.*\/dashboard\/(setup-account|saas|create-site)\//, { timeout: 60_000 });
 
   if (page.url().includes('/dashboard/setup-account/')) {
-    const firstName = page.getByLabel('First name');
-    const lastName = page.getByLabel('Last name');
+    await Promise.race([
+      page.waitForSelector('form button:has-text("Create account")', { timeout: 30000 }).catch(() => null),
+      page.waitForSelector('input[name="fname"], label:has-text("First name"), label:has-text("First Name")', { timeout: 30000 }).catch(() => null),
+    ]);
+
+    const firstName = page.locator('input[name="fname"]');
+    const lastName = page.locator('input[name="lname"]');
+
     if (await firstName.count()) {
-      const val = await firstName.inputValue().catch(() => '');
-      if (!val) await firstName.fill('Playwright');
+      await firstName.first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => null);
+      const val = await firstName.first().inputValue().catch(() => '');
+      if (!val) {
+        await firstName.first().fill('Playwright').catch(() => null);
+      }
     }
     if (await lastName.count()) {
-      const val = await lastName.inputValue().catch(() => '');
-      if (!val) await lastName.fill('Tester');
+      await lastName.first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => null);
+      const val = await lastName.first().inputValue().catch(() => '');
+      if (!val) {
+        await lastName.first().fill('Tester').catch(() => null);
+      }
     }
-    const countryLabel = page.getByLabel('Country');
+
+    const countryLabel = page.getByLabel(/country/i).first();
     if (await countryLabel.count()) {
       try {
-        const current = await countryLabel.inputValue().catch(() => '');
-        if (!current) {
-          await countryLabel.selectOption({ label: 'India' }).catch(() => {});
+        const tag = await countryLabel.evaluate(el => el.tagName.toLowerCase()).catch(() => '');
+        if (tag === 'select') {
+          const current = await countryLabel.inputValue().catch(() => '');
+          if (!current) {
+            await countryLabel.selectOption({ label: 'India' }).catch(() => null);
+          }
+        } else {
+          const existing = await countryLabel.inputValue().catch(() => '');
+          if (!existing) {
+            await countryLabel.click({ timeout: 5000 }).catch(() => null);
+            const indiaOption = page.locator('text=/^India$/');
+            if (await indiaOption.count()) {
+              await indiaOption.first().click({ timeout: 5000 }).catch(() => null);
+            }
+          }
         }
       } catch { /* ignore */ }
     }
