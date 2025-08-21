@@ -282,10 +282,23 @@ class SiteUpdate(Document):
 		except SiteAlreadyArchived:
 			# There is no point in retrying the update if the site is already archived
 			update_status(self.name, "Fatal")
+			return
 		except SiteUnderMaintenance:
 			# Just ignore the update for now
 			# It will be retried later
-			update_status(self.name, previous_status)
+			if previous_status == "Pending":
+				# During `Bench Update` and in some other cases
+				# Site Update get status `Pending` with no `scheduled_time`
+				# If we can't do the update right now in those cases
+				# Then we should set the status to `Scheduled`
+				# And set the `scheduled_time` to now
+				self.status = "Scheduled"
+				if not self.scheduled_time:
+					self.scheduled_time = frappe.utils.now_datetime()
+				self.save()
+			else:
+				update_status(self.name, previous_status)
+
 			return
 
 		if self.use_physical_backup:
