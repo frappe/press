@@ -6,10 +6,9 @@
  "engine": "InnoDB",
  "field_order": [
   "status",
-  "server_snapshot",
-  "execution_stage",
-  "column_break_retn",
   "site",
+  "server_snapshot",
+  "column_break_retn",
   "server",
   "database_server",
   "section_break_aftx",
@@ -18,14 +17,21 @@
   "end",
   "column_break_ojhl",
   "duration",
-  "section_break_mudc",
-  "replication_enabled_on_site",
   "section_break_jnca",
   "site_replication_config",
   "column_break_aawe",
   "bench_replication_config",
   "section_break_eagz",
   "servers",
+  "section_break_zzat",
+  "execution_stage",
+  "column_break_olbe",
+  "pre_migrate_stage_status",
+  "column_break_ookj",
+  "post_migrate_stage_status",
+  "column_break_ifmh",
+  "failover_stage_status",
+  "section_break_orav",
   "pre_migrate_steps",
   "post_migrate_steps",
   "failover_steps",
@@ -38,7 +44,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nRunning\nSuccess\nFailing Over\nFailed Over\nFailure",
+   "options": "Pending\nRunning\nSuccess\nFailure",
    "reqd": 1
   },
   {
@@ -95,10 +101,6 @@
    "options": "Logical Replication Step"
   },
   {
-   "fieldname": "section_break_mudc",
-   "fieldtype": "Section Break"
-  },
-  {
    "fieldname": "section_break_jnca",
    "fieldtype": "Section Break"
   },
@@ -119,12 +121,6 @@
    "read_only": 1
   },
   {
-   "default": "0",
-   "fieldname": "replication_enabled_on_site",
-   "fieldtype": "Check",
-   "label": "Replication Enabled on Site"
-  },
-  {
    "fieldname": "servers",
    "fieldtype": "Table",
    "label": "Servers",
@@ -138,10 +134,12 @@
    "reqd": 1
   },
   {
+   "default": "Pre-Migrate",
    "fieldname": "execution_stage",
    "fieldtype": "Select",
    "label": "Execution Stage",
-   "options": "Pre-Migrate\nPost-Migrate\nFailover"
+   "options": "Pre-Migrate\nPost-Migrate\nFailover",
+   "reqd": 1
   },
   {
    "fieldname": "section_break_aftx",
@@ -179,12 +177,56 @@
    "fieldtype": "Data",
    "label": "Initial Binlog Position of New Primary DB",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_break_zzat",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "pre_migrate_stage_status",
+   "fieldtype": "Select",
+   "label": "Pre-Migrate Stage Status",
+   "options": "Pending\nRunning\nSuccess\nFailure",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_olbe",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "post_migrate_stage_status",
+   "fieldtype": "Select",
+   "label": "Post-Migrate Stage Status",
+   "options": "Pending\nRunning\nSuccess\nFailure",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_ookj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "failover_stage_status",
+   "fieldtype": "Select",
+   "label": "Failover Stage Status",
+   "options": "Pending\nRunning\nSuccess\nFailure",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_orav",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_ifmh",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-21 10:17:00.584330",
+ "modified": "2025-08-21 16:54:30.994648",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Logical Replication Backup",

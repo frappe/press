@@ -125,18 +125,20 @@ class LogicalReplicationBackup(Document):
 		duration: DF.Duration | None
 		end: DF.Datetime | None
 		execution_stage: DF.Literal["Pre-Migrate", "Post-Migrate", "Failover"]
+		failover_stage_status: DF.Literal["Pending", "Running", "Success", "Failure"]
 		failover_steps: DF.Table[LogicalReplicationStep]
 		initial_binlog_position_of_new_primary_db: DF.Data | None
+		post_migrate_stage_status: DF.Literal["Pending", "Running", "Success", "Failure"]
 		post_migrate_steps: DF.Table[LogicalReplicationStep]
+		pre_migrate_stage_status: DF.Literal["Pending", "Running", "Success", "Failure"]
 		pre_migrate_steps: DF.Table[LogicalReplicationStep]
-		replication_enabled_on_site: DF.Check
 		server: DF.Link
 		server_snapshot: DF.Link | None
 		servers: DF.Table[LogicalReplicationServer]
 		site: DF.Link
 		site_replication_config: DF.SmallText | None
 		start: DF.Datetime | None
-		status: DF.Literal["Pending", "Running", "Success", "Failing Over", "Failed Over", "Failure"]
+		status: DF.Literal["Pending", "Running", "Success", "Failure"]
 		# end: auto-generated types
 
 		SyncStep = False
@@ -245,6 +247,28 @@ class LogicalReplicationBackup(Document):
 		return self.get_steps__template("failover")
 
 	@property
+	def stage_status(self):
+		if self.execution_stage == "Pre-Migrate":
+			return self.pre_migrate_stage_status
+		if self.execution_stage == "Post-Migrate":
+			return self.post_migrate_stage_status
+		if self.execution_stage == "Failover":
+			return self.failover_stage_status
+		frappe.throw("Invalid execution stage for getting stage status")
+		return None
+
+	@stage_status.setter
+	def stage_status(self, value: Literal["Pending", "Running", "Success", "Failure"]):
+		if self.execution_stage == "Pre-Migrate":
+			self.pre_migrate_stage_status = value
+		elif self.execution_stage == "Post-Migrate":
+			self.post_migrate_stage_status = value
+		elif self.execution_stage == "Failover":
+			self.failover_stage_status = value
+		else:
+			frappe.throw("Invalid execution stage for setting stage status.")
+
+	@property
 	def site_doc(self) -> "Site":
 		return frappe.get_doc("Site", self.site)
 
@@ -324,6 +348,43 @@ class LogicalReplicationBackup(Document):
 		self.store_db_replication_config_of_site(save=False)
 		self.store_replication_config_of_bench(save=False)
 		self.save()
+
+	def on_update(self):
+		stage_status_updated = (
+			self.has_value_changed("pre_migrate_stage_status")
+			or self.has_value_changed("post_migrate_stage_status")
+			or self.has_value_changed("failover_stage_status")
+		)
+		if self.has_value_changed("execution_stage") or stage_status_updated:
+			new_status = self.status
+			if self.execution_stage == "Pre-Migrate":
+				new_status = {
+					"Pending": "Pending",
+					"Running": "Running",
+					"Success": "Running",  # Because some other stage need to run for overall status
+					"Failure": "Failure",
+				}[self.pre_migrate_stage_status]
+			elif self.execution_stage == "Post-Migrate":
+				new_status = {
+					"Pending": "Pending",
+					"Running": "Running",
+					"Success": "Success",
+					"Failure": "Failure",
+				}[self.post_migrate_stage_status]
+			elif self.execution_stage == "Failover":
+				new_status = {
+					"Pending": "Pending",
+					"Running": "Running",
+					"Success": "Success",
+					"Failure": "Failure",
+				}[self.failover_stage_status]
+
+			if self.status != new_status:
+				self.status = new_status
+				self.save()
+
+		if stage_status_updated:
+			self.callback_to_linked_site_update()
 
 	#########################################################
 	#                Pre Migrate Steps                      #
@@ -837,9 +898,6 @@ class LogicalReplicationBackup(Document):
 			if value is not None:
 				config[key] = value
 
-		if config.get("replica_host") and config.get("read_from_replica"):
-			self.replication_enabled_on_site = True
-
 		self.site_replication_config = json.dumps(config, indent=2)
 		if save:
 			self.save()
@@ -851,9 +909,6 @@ class LogicalReplicationBackup(Document):
 			value = common_site_config.get(key)
 			if value is not None:
 				config[key] = value
-
-		if config.get("replica_host") and config.get("read_from_replica"):
-			self.replication_enabled_on_site = True
 
 		self.bench_replication_config = json.dumps(config, indent=2)
 		if save:
@@ -918,31 +973,39 @@ class LogicalReplicationBackup(Document):
 			step.update({"status": "Pending"})
 			self.append("failover_steps", step)
 
+	def callback_to_linked_site_update(self):
+		from press.press.doctype.site_update.site_update import (
+			process_callback_from_logical_replication_backup,
+		)
+
+		process_callback_from_logical_replication_backup(self)
+
 	@frappe.whitelist()
 	def execute(self):
-		if self.status == "Running":
+		if self.stage_status == "Running":
 			frappe.msgprint("Replication is already in Running state. It will be executed soon.")
 			return
 		# Just set to Running, scheduler will pick it up
-		self.status = "Running"
-		self.start = frappe.utils.now_datetime()
+		self.stage_status = "Running"
+		if not self.start:
+			self.start = frappe.utils.now_datetime()
 		self.save()
 		self.next()
 
 	def fail(self, save: bool = True) -> None:
-		self.status = "Failure"
+		self.stage_status = "Failure"
 		for step in self.current_execution_steps:
-			if step.status == "Pending":
-				step.status = "Skipped"
+			if step.stage_status == "Pending":
+				step.stage_status = "Skipped"
 		self.end = frappe.utils.now_datetime()
 		self.duration = frappe.utils.cint((self.end - self.start).total_seconds())
 		if save:
 			self.save(ignore_version=True)
 
 	def finish(self) -> None:
-		# if status is already Success or Failure, then don't update the status and durations
-		if self.status not in ("Success", "Failure"):
-			self.status = "Success" if self.is_restoration_steps_successful() else "Failure"
+		# if stage_status is already Success or Failure, then don't update the stage_status and durations
+		if self.stage_status not in ("Success", "Failure"):
+			self.stage_status = "Success" if self.is_restoration_steps_successful() else "Failure"
 			self.end = frappe.utils.now_datetime()
 			self.duration = frappe.utils.cint((self.end - self.start).total_seconds())
 
@@ -950,8 +1013,8 @@ class LogicalReplicationBackup(Document):
 
 	@frappe.whitelist()
 	def next(self) -> None:
-		if self.status != "Running" and self.status not in ("Success", "Failure"):
-			self.status = "Running"
+		if self.stage_status != "Running" and self.stage_status not in ("Success", "Failure"):
+			self.stage_status = "Running"
 			self.save(ignore_version=True)
 
 		next_step_to_run = None
@@ -983,8 +1046,9 @@ class LogicalReplicationBackup(Document):
 	@frappe.whitelist(allow_guest=True)
 	def retry(self):
 		# Reset the states
-		self.status = "Pending"
-		self.start = frappe.utils.now_datetime()
+		self.stage_status = "Pending"
+		if not self.start:
+			self.start = frappe.utils.now_datetime()
 		self.end = None
 		self.duration = None
 		for step in self.current_execution_steps:
@@ -998,7 +1062,7 @@ class LogicalReplicationBackup(Document):
 			if step.status in ("Failure", "Skipped"):
 				step.status = "Pending"
 
-		self.status = "Running"
+		self.stage_status = "Running"
 		self.save()
 
 		self.next()
@@ -1009,7 +1073,7 @@ class LogicalReplicationBackup(Document):
 		for step in self.current_execution_steps:
 			if step.status == "Pending":
 				step.status = "Failure"
-		self.status = "Failure"
+		self.stage_status = "Failure"
 		self.save()
 
 	@property
@@ -1131,3 +1195,42 @@ def process_logical_replication_backup_update_database_host_job_update(job):
 		return
 	doc: LogicalReplicationBackup = frappe.get_doc("Logical Replication Backup", job.reference_name)
 	doc.next()
+
+
+def get_logical_replication_backup_restoration_steps(
+	name: str, stage: Literal["Pre-Migrate", "Post-Migrate", "Failover"]
+) -> list[dict]:
+	"""
+	{
+		"title": "Step Name",
+		"status": "Success",
+		"output": "Output",
+		"stage": "Restore Backup"
+	}
+	"""
+	parent_field = {
+		"Pre-Migrate": "pre_migrate_steps",
+		"Post-Migrate": "post_migrate_steps",
+		"Failover": "failover_steps",
+	}[stage]
+	steps = frappe.get_all(
+		"Logical Replication Step",
+		{
+			"parent": name,
+			"parenttype": "Logical Replication Backup",
+			"parentfield": parent_field,
+		},
+		["name", "step", "status", "traceback"],
+		order_by="idx",
+	)
+
+	return [
+		{
+			"title": step["step"],
+			"status": step["status"],
+			"output": "" if not step.get("traceback") else step["traceback"],
+			"stage": stage.replace("-", " "),
+			"name": step["name"],
+		}
+		for step in steps
+	]
