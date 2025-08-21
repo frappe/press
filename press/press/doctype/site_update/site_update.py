@@ -43,7 +43,7 @@ class SiteUpdate(Document):
 		from frappe.types import DF
 
 		activate_site_job: DF.Link | None
-		backup_type: DF.Literal["Logical", "Physical"]
+		backup_type: DF.Literal["Logical", "Physical", "Logical Replication"]
 		cause_of_failure_is_resolved: DF.Check
 		deactivate_site_job: DF.Link | None
 		deploy_type: DF.Literal["", "Pull", "Migrate"]
@@ -53,6 +53,7 @@ class SiteUpdate(Document):
 		difference: DF.Link | None
 		difference_deploy_type: DF.Literal["", "Pull", "Migrate"]
 		group: DF.Link | None
+		logical_replication_backup: DF.Link | None
 		physical_backup_restoration: DF.Link | None
 		recover_job: DF.Link | None
 		scheduled_time: DF.Datetime | None
@@ -137,6 +138,7 @@ class SiteUpdate(Document):
 		self.validate_pending_updates()
 		self.validate_past_failed_updates()
 		self.set_physical_backup_mode_if_eligible()
+		self.set_logical_replication_backup_mode_if_eligible()
 
 	def validate_destination_bench(self, differences):
 		if not self.destination_bench:
@@ -274,6 +276,28 @@ class SiteUpdate(Document):
 		# Then only take physical backup
 		if db_backup_size > 314572800:
 			self.backup_type = "Physical"
+
+	def set_logical_replication_backup_mode_if_eligible(self):
+		if self.skipped_backups:
+			return
+
+		if self.deploy_type != "Migrate":
+			return
+
+		database_server = frappe.get_value("Server", self.server, "database_server")
+		if not database_server:
+			# It might be the case of configured RDS server and no self hosted database server
+			return
+
+		# Sanity check - Provider should be AWS EC2
+		provider = frappe.get_value("Database Server", database_server, "provider")
+		if provider != "AWS EC2":
+			return
+
+		if not frappe.get_value("Server", self.server, "enable_logical_replication_during_site_update"):
+			return
+
+		self.backup_type = "Logical Replication"
 
 	@dashboard_whitelist()
 	def start(self):

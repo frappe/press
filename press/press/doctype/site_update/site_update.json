@@ -21,19 +21,20 @@
   "difference",
   "difference_deploy_type",
   "deploy_type",
-  "backup_type",
-  "column_break_14",
-  "site_backup",
-  "skipped_backups",
   "skipped_failing_patches",
+  "column_break_14",
+  "skipped_backups",
+  "backup_type",
+  "site_backup",
+  "logical_replication_backup",
   "section_break_luvm",
   "deactivate_site_job",
   "update_job",
   "activate_site_job",
   "column_break_rcyp",
+  "physical_backup_restoration",
   "recover_job",
   "cause_of_failure_is_resolved",
-  "physical_backup_restoration",
   "section_break_gmrz",
   "update_start",
   "column_break_jtqs",
@@ -247,7 +248,7 @@
    "fieldname": "backup_type",
    "fieldtype": "Select",
    "label": "Backup Type",
-   "options": "Logical\nPhysical",
+   "options": "Logical\nPhysical\nLogical Replication",
    "set_only_once": 1
   },
   {
@@ -330,11 +331,22 @@
    "fieldtype": "Duration",
    "label": "Update Duration",
    "read_only": 1
+  },
+  {
+   "fieldname": "logical_replication_backup",
+   "fieldtype": "Link",
+   "label": "Logical Replication Backup",
+   "options": "Logical Replication Backup",
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
+<<<<<<< HEAD
  "modified": "2025-08-21 13:36:05.865486",
+=======
+ "modified": "2025-08-21 15:58:45.863368",
+>>>>>>> 245232a4d (feat: Add flags to chose Logical Replication backup mode)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",
