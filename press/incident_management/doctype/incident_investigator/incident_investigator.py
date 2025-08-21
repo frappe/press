@@ -340,10 +340,12 @@ class IncidentInvestigator(Document):
 
 	def _initiate_database_reboot(self, database_server: str):
 		"""Trigger reboot depending on cloud provider"""
-		provider = frappe.db.get_value("Virtual Machine", database_server, "cloud_provider")
+		# Explicitly getting the virtual machine in case of mismatches
+		virtual_machine = frappe.db.get_value("Database Server", database_server, "virtual_machine")
+		provider = frappe.db.get_value("Virtual Machine", virtual_machine, "cloud_provider")
 		self.add_action(
-			"Virtual Machine", database_server, "reboot_with_serial_console"
-		) if provider == "AWS EC2" else self.add_action("Virtual Machine", database_server, "reboot")
+			"Virtual Machine", virtual_machine, "reboot_with_serial_console"
+		) if provider == "AWS EC2" else self.add_action("Virtual Machine", virtual_machine, "reboot")
 
 	def _initiate_process_list_capture_and_reboot(self, database_server: str):
 		"""Capture database process list and restart mariadb"""
