@@ -650,6 +650,9 @@ def get_ssh_key(user):
 def update_profile(first_name=None, last_name=None, email=None):
 	if email:
 		frappe.utils.validate_email_address(email, True)
+	STR_FORMAT = re.compile("^[a-zA-Z']+$")
+	if (first_name and not STR_FORMAT.match(first_name)) or (last_name and not STR_FORMAT.match(last_name)):
+		frappe.throw("Names cannot contain invalid characters")
 	user = frappe.session.user
 	doc = frappe.get_doc("User", user)
 	doc.first_name = first_name
