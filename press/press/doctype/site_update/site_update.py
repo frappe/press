@@ -19,7 +19,13 @@ from frappe.utils.data import cint
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
+<<<<<<< HEAD
 from press.exceptions import SiteAlreadyArchived, SiteUnderMaintenance
+=======
+from press.press.doctype.logical_replication_backup.logical_replication_backup import (
+	get_logical_replication_backup_restoration_steps,
+)
+>>>>>>> 5410b51dd (feat(site-update): Add support for logical replication based backup)
 from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
 	get_physical_backup_restoration_steps,
 )
@@ -27,6 +33,9 @@ from press.utils import log_error
 
 if TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.logical_replication_backup.logical_replication_backup import (
+		LogicalReplicationBackup,
+	)
 	from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
 		PhysicalBackupRestoration,
 	)
@@ -192,6 +201,10 @@ class SiteUpdate(Document):
 	def use_physical_backup(self):
 		return self.backup_type == "Physical" and not self.skipped_backups
 
+	@property
+	def use_logical_replication_backup(self):
+		return self.backup_type == "Logical Replication" and not self.skipped_backups
+
 	def validate_past_failed_updates(self):
 		if getattr(self, "ignore_past_failures", False):
 			return
@@ -333,6 +346,8 @@ class SiteUpdate(Document):
 
 		if self.use_physical_backup:
 			self.deactivate_site()
+		elif self.use_logical_replication_backup:
+			self.create_logical_replication_backup_record()
 		else:
 			self.create_update_site_agent_request()
 
@@ -358,6 +373,35 @@ class SiteUpdate(Document):
 		version = frappe.get_cached_value("Release Group", self.destination_group, "version")
 		return frappe.get_cached_value("Frappe Version", version, "number") > 12
 
+	def create_logical_replication_backup_record(self):
+		record: "LogicalReplicationBackup" = frappe.get_doc(
+			{"doctype": "Logical Replication Backup", "site": self.site, "execution_stage": "Pre-Migrate"}
+		).insert(ignore_permissions=True)
+		frappe.db.set_value("Site Update", self.name, "logical_replication_backup", record.name)
+		record.execute()
+
+	def trigger_post_migration_stage_logical_replication_backup(self):
+		if not self.logical_replication_backup:
+			return
+		record: "LogicalReplicationBackup" = frappe.get_doc(
+			"Logical Replication Backup", self.logical_replication_backup
+		)
+		record.execution_stage = "Post-Migrate"
+		record.status = "Pending"
+		record.save()
+		record.execute()
+
+	def trigger_failover_stage_logical_replication_backup(self):
+		if not self.logical_replication_backup:
+			return
+		record: "LogicalReplicationBackup" = frappe.get_doc(
+			"Logical Replication Backup", self.logical_replication_backup
+		)
+		record.execution_stage = "Failover"
+		record.status = "Pending"
+		record.save()
+		record.execute()
+
 	def create_update_site_agent_request(self):
 		agent = Agent(self.server)
 		site = frappe.get_doc("Site", self.site)
@@ -366,7 +410,7 @@ class SiteUpdate(Document):
 			self.destination_bench,
 			self.deploy_type,
 			skip_failing_patches=self.skipped_failing_patches,
-			skip_backups=self.skipped_backups or self.backup_type == "Physical",
+			skip_backups=self.skipped_backups or self.backup_type in ["Physical", "Logical Replication"],
 			before_migrate_scripts=self.get_before_migrate_scripts(),
 			skip_search_index=self.is_destination_above_v12,
 		)
@@ -507,6 +551,17 @@ class SiteUpdate(Document):
 				# via site_update.process_physical_backup_restoration_status_update(...) method
 				return
 
+			# If logical replication backup is enabled, we need to first perform failover stage
+			if (
+				self.use_logical_replication_backup
+				and frappe.get_value(
+					"Logical Replication Backup", self.logical_replication_backup, "failover_stage_status"
+				)
+				== "Pending"
+			):
+				self.trigger_failover_stage_logical_replication_backup()
+				return
+
 			if not self.skipped_backups and self.physical_backup_restoration:
 				physical_backup_restoration_status = frappe.get_value(
 					"Physical Backup Restoration", self.physical_backup_restoration, "status"
@@ -552,7 +607,7 @@ class SiteUpdate(Document):
 				frappe.get_doc("Virtual Disk Snapshot", snapshot).delete_snapshot()
 
 	@dashboard_whitelist()
-	def get_steps(self):
+	def get_steps(self):  # noqa: C901
 		"""
 		{
 			"title": "Step Name",
@@ -586,12 +641,53 @@ class SiteUpdate(Document):
 						"stage": "Physical Backup",
 					}
 				)
+
+		if (
+			self.logical_replication_backup
+			and frappe.db.get_value(
+				"Logical Replication Backup", self.logical_replication_backup, "pre_migrate_stage_status"
+			)
+			!= "Pending"
+		):
+			steps.extend(
+				get_logical_replication_backup_restoration_steps(
+					self.logical_replication_backup, "Pre-Migrate"
+				)
+			)
+
 		if self.update_job:
 			steps.extend(self.get_job_steps(self.update_job, "Update Site"))
+
+		if (
+			self.logical_replication_backup
+			and frappe.db.get_value(
+				"Logical Replication Backup", self.logical_replication_backup, "post_migrate_stage_status"
+			)
+			!= "Pending"
+		):
+			steps.extend(
+				get_logical_replication_backup_restoration_steps(
+					self.logical_replication_backup, "Post-Migrate"
+				)
+			)
+
 		if self.physical_backup_restoration:
 			steps.extend(get_physical_backup_restoration_steps(self.physical_backup_restoration))
+
 		if self.recover_job:
 			steps.extend(self.get_job_steps(self.recover_job, "Recover Site"))
+
+		if (
+			self.logical_replication_backup
+			and frappe.db.get_value(
+				"Logical Replication Backup", self.logical_replication_backup, "failover_stage_status"
+			)
+			!= "Pending"
+		):
+			steps.extend(
+				get_logical_replication_backup_restoration_steps(self.logical_replication_backup, "Failover")
+			)
+
 		if self.activate_site_job:
 			steps.extend(self.get_job_steps(self.activate_site_job, "Activate Site"))
 		return steps
@@ -889,7 +985,7 @@ def process_update_site_job_update(job: AgentJob):  # noqa: C901
 	updated_status = {
 		# For physical backup, we have already deactivated site first
 		# So no point in setting status back to Pending
-		"Pending": "Running" if site_update.backup_type == "Physical" else "Pending",
+		"Pending": "Running" if site_update.backup_type in ["Physical", "Logical Replication"] else "Pending",
 		"Running": "Running",
 		"Success": "Success",
 		"Failure": "Failure",
@@ -918,7 +1014,8 @@ def process_update_site_job_update(job: AgentJob):  # noqa: C901
 		if site_enable_step_status == "Success":
 			SiteUpdate("Site Update", site_update.name).reallocate_workers()
 
-		update_status(site_update.name, updated_status)
+		if not (site_update.backup_type == "Logical Replication" and updated_status == "Success"):
+			update_status(site_update.name, updated_status)
 
 		if log_touched_tables_step and log_touched_tables_step.status == "Success":
 			frappe.db.set_value(
@@ -927,9 +1024,15 @@ def process_update_site_job_update(job: AgentJob):  # noqa: C901
 		if updated_status == "Running":
 			frappe.db.set_value("Site", job.site, "status", "Updating")
 		elif updated_status == "Success":
-			frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
+			if site_update.backup_type == "Logical Replication":
+				SiteUpdate(
+					"Site Update", site_update.name
+				).trigger_post_migration_stage_logical_replication_backup()
+			else:
+				frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
+
 		elif updated_status == "Fatal":
-			if site_update.backup_type == "Physical":
+			if site_update.backup_type in ["Physical", "Logical Replication"]:
 				# For Physical restore, just do activate site
 				# Because we have deactivated site first
 				frappe.get_doc("Site Update", site_update.name).activate_site()
@@ -1019,3 +1122,41 @@ def run_scheduled_updates():
 def on_doctype_update():
 	frappe.db.add_index("Site Update", ["site", "source_candidate", "destination_candidate"])
 	frappe.db.add_index("Site Update", ["server", "status"])
+
+
+def process_callback_from_logical_replication_backup(backup: "LogicalReplicationBackup"):  # noqa: C901
+	site_update_name = frappe.db.exists("Site Update", {"logical_replication_backup": backup.name})
+	if not site_update_name:
+		return
+	site_update: "SiteUpdate" = frappe.get_doc("Site Update", site_update_name)
+	"""
+	Site Update Statuses:
+
+	Pending > Stage before migration
+			During transitioning to Pending state, we create the logical replication backup record
+	Running > Steps during actual site migration
+	Success > Migration Done ! Run Post Migration Steps
+	Failure > Migration Failed ! Run Failover
+	"""
+	if site_update.status == "Pending":
+		if backup.pre_migrate_stage_status == "Success":
+			site_update.create_update_site_agent_request()
+		elif backup.pre_migrate_stage_status == "Failure":
+			site_update.activate_site(backup_failed=True)
+
+	elif site_update.status == "Running":
+		# Site update is in Running stage because
+		# After successful migration we will set `Site Update` status to `Running`
+		# And trigger post_migration
+
+		# Irrespective of post_migrate stage status,
+		# Site Update should be marked as Success
+		if backup.post_migrate_stage_status in ["Success", "Failure"]:
+			site_update.activate_site()
+
+	elif site_update.status == "Recovering":
+		if backup.failover_stage_status == "Success":
+			site_update.trigger_recovery_job()
+		elif backup.failover_stage_status == "Failure":
+			update_status(site_update.name, "Fatal")
+			frappe.db.set_value("Site", backup.site, "status", "Broken")
