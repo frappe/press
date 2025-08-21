@@ -41,7 +41,14 @@ class ActionStep(Document):
 
 	def after_insert(self):
 		"""We execute the step immediately we need to ensure the long functions are in a queue."""
-		# target_doc = frappe.get_doc(self.reference_doctype, self.reference_name)
-		# self.output = getattr(target_doc, self.method)()
-		# self.is_taken = True
-		# self.save()
+		execute_incident_action = frappe.db.get_single_value(
+			"Press Settings", "execute_incident_action", cache=True
+		)
+
+		if not execute_incident_action:
+			return
+
+		target_doc = frappe.get_doc(self.reference_doctype, self.reference_name)
+		self.output = getattr(target_doc, self.method)()
+		self.is_taken = True
+		self.save()
