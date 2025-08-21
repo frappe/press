@@ -54,6 +54,7 @@
   },
   {
    "fetch_from": "site.bench",
+   "fetch_if_empty": 1,
    "fieldname": "source_bench",
    "fieldtype": "Link",
    "hide_days": 1,
@@ -95,6 +96,7 @@
    "hide_seconds": 1
   },
   {
+   "fetch_if_empty": 1,
    "fieldname": "deploy_type",
    "fieldtype": "Select",
    "hide_days": 1,
@@ -107,6 +109,7 @@
   },
   {
    "fetch_from": "source_bench.candidate",
+   "fetch_if_empty": 1,
    "fieldname": "source_candidate",
    "fieldtype": "Link",
    "hide_days": 1,
@@ -117,6 +120,7 @@
   },
   {
    "fetch_from": "destination_bench.candidate",
+   "fetch_if_empty": 1,
    "fieldname": "destination_candidate",
    "fieldtype": "Link",
    "hide_days": 1,
@@ -135,6 +139,7 @@
   },
   {
    "fetch_from": "source_bench.group",
+   "fetch_if_empty": 1,
    "fieldname": "group",
    "fieldtype": "Link",
    "hide_days": 1,
@@ -145,6 +150,7 @@
   },
   {
    "fetch_from": "site.server",
+   "fetch_if_empty": 1,
    "fieldname": "server",
    "fieldtype": "Link",
    "hide_days": 1,
@@ -193,6 +199,7 @@
   },
   {
    "fetch_from": "difference.deploy_type",
+   "fetch_if_empty": 1,
    "fieldname": "difference_deploy_type",
    "fieldtype": "Select",
    "label": "Difference Deploy Type",
@@ -208,6 +215,7 @@
   },
   {
    "fetch_from": "destination_bench.group",
+   "fetch_if_empty": 1,
    "fieldname": "destination_group",
    "fieldtype": "Link",
    "label": "Destination Group",
@@ -326,7 +334,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-28 14:12:55.667576",
+ "modified": "2025-08-21 13:36:05.865486",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",
@@ -355,6 +363,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
