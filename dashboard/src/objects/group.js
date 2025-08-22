@@ -3,6 +3,7 @@ import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import LucideAppWindow from '~icons/lucide/app-window';
 import LucideHardDriveDownload from '~icons/lucide/hard-drive-download';
+import LucideVenetianMask from '~icons/lucide/venetian-mask';
 import LucideRocket from '~icons/lucide/rocket';
 import AddAppDialog from '../components/group/AddAppDialog.vue';
 import ChangeAppBranchDialog from '../components/group/ChangeAppBranchDialog.vue';
@@ -110,6 +111,18 @@ export default {
 					router.push({ name: 'New Release Group' });
 				},
 			};
+		},
+		banner({ listResource: groups }) {
+			if (!groups.data?.length) {
+				return {
+					title: 'Learn how to create a new private bench group and sites',
+					button: {
+						label: 'Read docs',
+						variant: 'outline',
+						link: 'https://docs.frappe.io/cloud/benches/create-new',
+					},
+				};
+			}
 		},
 	},
 	detail: {
@@ -937,9 +950,7 @@ export default {
 					label: 'Impersonate Group Owner',
 					title: 'Impersonate Group Owner', // for label to pop-up on hover
 					slots: {
-						icon: defineAsyncComponent(
-							() => import('~icons/lucide/venetian-mask'),
-						),
+						icon: icon(LucideVenetianMask),
 					},
 					condition: () =>
 						team.doc?.is_desk_user && group.doc.team !== team.name,
@@ -992,7 +1003,8 @@ export default {
 										}),
 										{
 											success: 'Deploy scheduled successfully',
-											error: 'Failed to schedule deploy',
+											error: (e) =>
+												getToastErrorMessage(e, 'Failed to schedule deploy'),
 											loading: 'Scheduling deploy...',
 										},
 									);

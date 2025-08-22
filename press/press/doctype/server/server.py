@@ -17,7 +17,6 @@ from frappe import _
 from frappe.core.utils import find, find_all
 from frappe.installer import subprocess
 from frappe.model.document import Document
-from frappe.utils import cint
 from frappe.utils.synchronization import filelock
 from frappe.utils.user import is_system_user
 
@@ -30,6 +29,7 @@ from press.press.doctype.add_on_storage_log.add_on_storage_log import (
 )
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
+from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.runner import Ansible
 from press.telegram_utils import Telegram
 from press.utils import fmt_timedelta, log_error
@@ -38,10 +38,12 @@ if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 	from press.press.doctype.bench.bench import Bench
+	from press.press.doctype.cluster.cluster import Cluster
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.mariadb_variable.mariadb_variable import MariaDBVariable
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server_mount.server_mount import ServerMount
+	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 from typing import Literal, TypedDict
@@ -61,6 +63,8 @@ class ARMDockerImageType(TypedDict):
 
 
 PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
+MARIADB_DATA_MNT_POINT = "/opt/volumes/mariadb"
+BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
 
 
 class BaseServer(Document, TagHelpers):
@@ -102,9 +106,19 @@ class BaseServer(Document, TagHelpers):
 
 		return results
 
+	@property
+	def _series(self):
+		return self.name[0]
+
+	def create_log(self, action: str, reason: str):
+		"""Helper to log server activity"""
+		log_server_activity(self._series, self.name, action, reason)
+
 	def get_doc(self, doc):
 		from press.api.client import get
 		from press.api.server import usage
+
+		warn_at_storage_percentage = 0.8
 
 		if self.plan:
 			doc.current_plan = get("Server Plan", self.plan)
@@ -127,6 +141,18 @@ class BaseServer(Document, TagHelpers):
 		doc.usage = usage(self.name)
 		doc.actions = self.get_actions()
 		doc.disk_size = frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size")
+
+		try:
+			doc.recommended_storage_increment = (
+				self.size_to_increase_by_for_20_percent_available(
+					mountpoint=self.guess_data_disk_mountpoint()
+				)
+				if (doc.usage.get("disk", 0) >= warn_at_storage_percentage * doc.disk_size)
+				else 0
+			)
+		except TypeError:
+			doc.recommended_storage_increment = 0
+
 		doc.replication_server = frappe.db.get_value(
 			"Database Server",
 			{"primary": doc.database_server, "is_replication_setup": 1},
@@ -197,7 +223,6 @@ class BaseServer(Document, TagHelpers):
 				mountpoint=mountpoint,
 				log=add_on_storage_log.name if add_on_storage_log else None,
 			)
-			self.create_subscription_for_storage(increment)
 		else:
 			server_doc: DatabaseServer = frappe.get_doc("Database Server", server)
 			mountpoint = (
@@ -233,7 +258,6 @@ class BaseServer(Document, TagHelpers):
 				mountpoint=mountpoint,
 				log=add_on_storage_log.name if add_on_storage_log else None,
 			)
-			server_doc.create_subscription_for_storage(increment)
 
 	@dashboard_whitelist()
 	def configure_auto_add_storage(self, server: str, enabled: bool, min: int = 0, max: int = 0) -> None:
@@ -697,7 +721,12 @@ class BaseServer(Document, TagHelpers):
 				stderr=subprocess.STDOUT,
 			)
 		except subprocess.CalledProcessError as e:
-			log_error(f"Error removing glassfile: {e.output.decode()}")
+			frappe.log_error(
+				title="Error removing glassfile",
+				message=e.output.decode(),
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+			)
 
 	@frappe.whitelist()
 	def extend_ec2_volume(self, device=None, log: str | None = None):
@@ -779,11 +808,9 @@ class BaseServer(Document, TagHelpers):
 		if volumes or self.has_data_volume:
 			# Adding this condition since this method is called from both server and database server doctypes
 			if self.doctype == "Server":
-				mountpoint = "/opt/volumes/benches"
+				mountpoint = BENCH_DATA_MNT_POINT
 			elif self.doctype == "Database Server":
-				mountpoint = "/opt/volumes/mariadb"
-			else:
-				mountpoint = "/"
+				mountpoint = MARIADB_DATA_MNT_POINT
 		else:
 			mountpoint = "/"
 		return mountpoint
@@ -852,41 +879,6 @@ class BaseServer(Document, TagHelpers):
 		)
 		return frappe.get_doc("Subscription", name) if name else None
 
-	def create_subscription_for_storage(self, increment: int) -> None:
-		plan_type = "Server Storage Plan"
-		plan = frappe.get_value(plan_type, {"enabled": 1}, "name")
-
-		if existing_subscription := frappe.db.get_value(
-			"Subscription",
-			{
-				"document_type": self.doctype,
-				"document_name": self.name,
-				"team": self.team or "team@erpnext.com",
-				"plan_type": plan_type,
-				"plan": plan,
-			},
-			["name", "additional_storage"],
-			as_dict=True,
-		):
-			frappe.db.set_value(
-				"Subscription",
-				existing_subscription.name,
-				"additional_storage",
-				increment + cint(existing_subscription.additional_storage),
-			)
-		else:
-			frappe.get_doc(
-				{
-					"doctype": "Subscription",
-					"document_type": self.doctype,
-					"document_name": self.name,
-					"team": self.team,
-					"plan_type": plan_type,
-					"plan": plan,
-					"additional_storage": increment,
-				}
-			).insert()
-
 	@frappe.whitelist()
 	def rename_server(self):
 		self.status = "Installing"
@@ -939,7 +931,7 @@ class BaseServer(Document, TagHelpers):
 		if add_on_storage_subscription:
 			add_on_storage_subscription.disable()
 
-	def can_change_plan(self, ignore_card_setup):
+	def can_change_plan(self, ignore_card_setup: bool, new_plan: ServerPlan) -> None:
 		if is_system_user(frappe.session.user):
 			return
 
@@ -960,10 +952,16 @@ class BaseServer(Document, TagHelpers):
 		if not (team.default_payment_method or team.get_balance()):
 			frappe.throw("Cannot change plan because you haven't added a card and not have enough balance")
 
+		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+		if not cluster.check_machine_availability(new_plan.instance_type):
+			frappe.throw(
+				f"Cannot change plan right now since the instance type {new_plan.instance_type} is not available. Try again later."
+			)
+
 	@dashboard_whitelist()
-	def change_plan(self, plan, ignore_card_setup=False):
-		self.can_change_plan(ignore_card_setup)
-		plan = frappe.get_doc("Server Plan", plan)
+	def change_plan(self, plan: str, ignore_card_setup=False):
+		plan: ServerPlan = frappe.get_doc("Server Plan", plan)
+		self.can_change_plan(ignore_card_setup, new_plan=plan)
 		self._change_plan(plan)
 		self.run_press_job("Resize Server", {"machine_type": plan.instance_type})
 
@@ -1255,13 +1253,13 @@ class BaseServer(Document, TagHelpers):
 	def set_default_mount_points(self):
 		first = self.mounts[0]
 		if self.doctype == "Server":
-			first.mount_point = "/opt/volumes/benches"
+			first.mount_point = BENCH_DATA_MNT_POINT
 			self.append(
 				"mounts",
 				{
 					"mount_type": "Bind",
 					"mount_point": "/home/frappe/benches",
-					"source": "/opt/volumes/benches/home/frappe/benches",
+					"source": f"{BENCH_DATA_MNT_POINT}/home/frappe/benches",
 					"mount_point_owner": "frappe",
 					"mount_point_group": "frappe",
 				},
@@ -1271,19 +1269,19 @@ class BaseServer(Document, TagHelpers):
 				{
 					"mount_type": "Bind",
 					"mount_point": "/var/lib/docker",
-					"source": "/opt/volumes/benches/var/lib/docker",
+					"source": f"{BENCH_DATA_MNT_POINT}/var/lib/docker",
 					"mount_point_owner": "root",
 					"mount_point_group": "root",
 				},
 			)
 		elif self.doctype == "Database Server":
-			first.mount_point = "/opt/volumes/mariadb"
+			first.mount_point = MARIADB_DATA_MNT_POINT
 			self.append(
 				"mounts",
 				{
 					"mount_type": "Bind",
 					"mount_point": "/var/lib/mysql",
-					"source": "/opt/volumes/mariadb/var/lib/mysql",
+					"source": f"{MARIADB_DATA_MNT_POINT}/var/lib/mysql",
 					"mount_point_owner": "mysql",
 					"mount_point_group": "mysql",
 				},
@@ -1293,7 +1291,7 @@ class BaseServer(Document, TagHelpers):
 				{
 					"mount_type": "Bind",
 					"mount_point": "/etc/mysql",
-					"source": "/opt/volumes/mariadb/etc/mysql",
+					"source": f"{MARIADB_DATA_MNT_POINT}/etc/mysql",
 					"mount_point_owner": "mysql",
 					"mount_point_group": "mysql",
 				},
@@ -1712,7 +1710,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		current_disk_usage = round(current_disk_usage / 1024 / 1024 / 1024, 2)
 		disk_capacity = round(disk_capacity / 1024 / 1024 / 1024, 2)
 
-		if not server.auto_increase_storage and mountpoint != "/":
+		if not server.auto_increase_storage and (not server.has_data_volume or mountpoint != "/"):
 			telegram.send(
 				f"Not increasing disk (mount point {mountpoint}) on "
 				f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "

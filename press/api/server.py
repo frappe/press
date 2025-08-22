@@ -16,6 +16,7 @@ from frappe.utils.password import get_decrypted_password
 from press.api.analytics import get_rounded_boundaries
 from press.api.bench import all as all_benches
 from press.api.site import protected
+from press.exceptions import MonitorServerDown
 from press.press.doctype.site_plan.plan import Plan
 from press.press.doctype.team.team import get_child_team_members
 from press.utils import get_current_team
@@ -24,6 +25,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.cluster.cluster import Cluster
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.server.server import Server
+	from press.press.doctype.server_plan.server_plan import ServerPlan
 
 
 def poly_get_doc(doctypes, name):
@@ -187,7 +189,12 @@ def new(server):
 
 	cluster: Cluster = frappe.get_doc("Cluster", server["cluster"])
 
-	db_plan = frappe.get_doc("Server Plan", server["db_plan"])
+	db_plan: ServerPlan = frappe.get_doc("Server Plan", server["db_plan"])
+	if not cluster.check_machine_availability(db_plan.instance_type):
+		frappe.throw(
+			f"No machines of {db_plan.instance_type} are currently available in the {cluster.name} region"
+		)
+
 	db_server, job = cluster.create_server(
 		"Database Server",
 		server["title"],
@@ -206,7 +213,12 @@ def new(server):
 	cluster.database_server = db_server.name
 	cluster.proxy_server = proxy_server.name
 
-	app_plan = frappe.get_doc("Server Plan", server["app_plan"])
+	app_plan: ServerPlan = frappe.get_doc("Server Plan", server["app_plan"])
+	if not cluster.check_machine_availability(app_plan.instance_type):
+		frappe.throw(
+			f"No machines of {app_plan.instance_type} are currently available in the {cluster.name} region"
+		)
+
 	app_server, job = cluster.create_server(
 		"Server", server["title"], app_plan, team=team.name, auto_increase_storage=auto_increase_storage
 	)
@@ -421,7 +433,10 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 		"step": f"{timegrain}s",
 	}
 
-	response = requests.get(url, params=query, auth=("frappe", str(password))).json()
+	try:
+		response = requests.get(url, params=query, auth=("frappe", str(password))).json()
+	except requests.exceptions.RequestException:
+		frappe.throw("Unable to connect to monitor server", MonitorServerDown)
 
 	datasets = []
 	labels = []

@@ -82,6 +82,7 @@
 		"COMPATBILITY",
 		"confs",
 		"Consolas",
+		"Containerised",
 		"cpath",
 		"cpcommerce",
 		"cpus",
@@ -1045,6 +1046,8 @@
 		"missingok",
 		"notifempty",
 		"nocompress",
+		"ntvs",
+		"njsproj",
 		"ibtmp",
 		"ibdata",
 		"recognise",
@@ -1085,6 +1088,8 @@
 		"gtid",
 		"VMI",
 		"efi",
-		"interactjs"
+		"interactjs",
+		"ocpu",
+		"Twillio"
 	]
 }

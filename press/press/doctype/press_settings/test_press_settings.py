@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
 
-import unittest
-
 import frappe
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.cluster.test_cluster import create_test_cluster
 
@@ -42,9 +40,11 @@ def create_test_press_settings():
 	settings.rsa_key_size = 2048
 	settings.certbot_directory = ".certbot"
 	settings.eff_registration_email = frappe.mock("email")
+	settings.max_concurrent_physical_restorations = 2
+	settings.minimum_rebuild_memory = 2
 	settings.save()
 	return settings
 
 
-class TestPressSettings(unittest.TestCase):
+class TestPressSettings(FrappeTestCase):
 	pass

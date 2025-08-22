@@ -426,7 +426,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2025-03-20 16:54:10.343806",
+ "modified": "2025-08-20 20:07:33.606376",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
@@ -441,6 +441,19 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Marketplace Manager",
+   "select": 1,
    "share": 1,
    "write": 1
   }

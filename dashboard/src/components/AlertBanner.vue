@@ -3,7 +3,11 @@
 		:class="`flex items-center rounded-md border border-${color}-200 bg-${color}-100 px-3.5 py-2.5`"
 	>
 		<lucide-alert-triangle
-			v-if="showIcon"
+			v-if="showIcon && (type === 'error' || type === 'warning')"
+			:class="`h-4 w-8 text-${color}-600`"
+		/>
+		<lucide-info
+			v-if="showIcon && type === 'info'"
 			:class="`h-4 w-8 text-${color}-600`"
 		/>
 		<div

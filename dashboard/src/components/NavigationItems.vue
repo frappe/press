@@ -34,8 +34,6 @@ export default {
 			const routeName = this.$route?.name || '';
 			const onboardingComplete = this.$team.doc.onboarding.complete;
 			const isSaasUser = this.$team.doc.is_saas_user;
-			const benchGroupsEnabled = this.$team.doc.benches_enabled;
-			const serversEnabled = this.$team.doc.servers_enabled;
 			const enforce2FA = Boolean(
 				!this.$team.doc.is_desk_user &&
 					this.$team.doc.enforce_2fa &&
@@ -91,7 +89,7 @@ export default {
 				{
 					name: 'Bench Groups',
 					icon: () => h(Boxes),
-					route: '/groups',
+					route: onboardingComplete ? '/groups' : '/enable-bench-groups',
 					isActive:
 						[
 							'Release Group List',
@@ -100,18 +98,18 @@ export default {
 							'Release Group New Site',
 							'Deploy Candidate',
 						].includes(routeName) ||
-						routeName.startsWith('Release Group Detail'),
-					condition: onboardingComplete && !isSaasUser && benchGroupsEnabled,
+						routeName.startsWith('Release Group Detail') ||
+						routeName === 'Enable Bench Groups',
 					disabled: enforce2FA,
 				},
 				{
 					name: 'Servers',
 					icon: () => h(Server),
-					route: '/servers',
+					route: onboardingComplete ? '/servers' : '/enable-servers',
 					isActive:
 						['New Server'].includes(routeName) ||
-						routeName.startsWith('Server'),
-					condition: onboardingComplete && !isSaasUser && serversEnabled,
+						routeName.startsWith('Server') ||
+						routeName === 'Enable Servers',
 					disabled: enforce2FA,
 				},
 				{

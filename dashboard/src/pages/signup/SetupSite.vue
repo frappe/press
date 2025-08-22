@@ -38,39 +38,20 @@
 							</div>
 						</div>
 						<div class="mt-1">
-							<div
-								v-if="$resources.subdomainExists.loading"
-								class="text-sm text-gray-600"
-							>
-								Checking...
+							<div v-if="!subdomain" class="text-xs text-ink-gray-5">
+								Enter a site name (5-32 chars, lowercase letters, numbers,
+								hyphens).
 							</div>
-							<template
-								v-else-if="
-									!$resources.subdomainExists.error &&
-									$resources.subdomainExists.fetched &&
-									subdomain
-								"
-							>
-								<div
-									v-if="$resources.subdomainExists.data"
-									class="text-sm text-green-600"
-								>
-									{{ subdomain }}.{{ domain }} is available
-								</div>
-								<div v-else class="text-sm text-red-600">
-									{{ subdomain }}.{{ domain }} is not available
-								</div>
-							</template>
-							<ErrorMessage :message="$resources.subdomainExists.error" />
+							<ErrorMessage v-else :message="subdomainError" />
 						</div>
 					</div>
 					<ErrorMessage class="mt-2" :message="$resources.createSite?.error" />
 					<Button
 						class="mt-8 w-full"
 						:disabled="
-							!!$resources.subdomainExists.error ||
-							!$resources.subdomainExists.data ||
-							!subdomain.length
+							!subdomain.length ||
+							subdomainError ||
+							$resources.createSite?.loading
 						"
 						variant="solid"
 						label="Create site"
@@ -83,12 +64,9 @@
 	</div>
 </template>
 <script>
-import { debounce } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import { validateSubdomain } from '../../utils/site';
-import { DashboardError } from '../../utils/error';
 import LoginBox from '../../components/auth/LoginBox.vue';
-import dayjs from '../../utils/dayjs';
 
 export default {
 	name: 'SignupSetup',
@@ -103,34 +81,7 @@ export default {
 			subdomain: '',
 		};
 	},
-	watch: {
-		subdomain: {
-			handler: debounce(function () {
-				this.$resources.subdomainExists.submit();
-			}, 500),
-		},
-	},
 	resources: {
-		subdomainExists() {
-			return {
-				url: 'press.api.site.exists',
-				makeParams() {
-					return {
-						domain: this.domain,
-						subdomain: this.subdomain,
-					};
-				},
-				validate() {
-					const error = validateSubdomain(this.subdomain);
-					if (error) {
-						throw new DashboardError(error);
-					}
-				},
-				transform(data) {
-					return !Boolean(data);
-				},
-			};
-		},
 		siteRequest() {
 			return {
 				url: 'press.api.product_trial.get_request',
@@ -162,6 +113,11 @@ export default {
 				doctype: 'Product Trial',
 				name: this.productId,
 				auto: true,
+				onSuccess: (data) => {
+					if (data.prefilled_subdomain) {
+						this.subdomain = data.prefilled_subdomain;
+					}
+				},
 			};
 		},
 		createSite() {
@@ -199,6 +155,9 @@ export default {
 			return (
 				this.$resources.siteRequest?.data?.domain || this.saasProduct?.domain
 			);
+		},
+		subdomainError() {
+			return validateSubdomain(this.subdomain);
 		},
 	},
 	methods: {

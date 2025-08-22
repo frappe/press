@@ -17,6 +17,7 @@ from enum import Enum
 from functools import cached_property
 
 import frappe
+import requests
 import semantic_version
 from frappe.core.utils import find
 from frappe.model.document import Document
@@ -26,6 +27,7 @@ from frappe.utils import rounded
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from press.agent import Agent
+from press.exceptions import ImageNotFoundInRegistry
 from press.press.doctype.deploy_candidate.deploy_notifications import (
 	create_build_failed_notification,
 )
@@ -428,6 +430,8 @@ class DeployCandidateBuild(Document):
 
 		release: AppRelease = frappe.get_doc("App Release", release, for_update=True)
 		release._clone(force=True)
+
+		frappe.db.commit()  # Release lock taken for app clone
 
 		step.duration = get_duration(start_time)
 		step.output = release.output
@@ -1005,6 +1009,23 @@ class DeployCandidateBuild(Document):
 		self.docker_image_tag = self.name
 		self.docker_image = f"{self.docker_image_repository}:{self.docker_image_tag}"
 
+	def is_image_in_registry(self) -> bool:
+		"""Check if the image tag exists on registry"""
+		settings = self._fetch_registry_settings()
+		headers = {"Accept": "application/vnd.docker.distribution.manifest.v2+json"}
+		auth = (settings.docker_registry_username, settings.docker_registry_password)
+		repository = self.docker_image_repository.replace(settings.docker_registry_url, "")
+
+		response = requests.get(
+			f"https://{settings.docker_registry_url}/v2/{repository}/tags/list", auth=auth, headers=headers
+		)
+
+		if not response.ok:
+			return False
+
+		image_tags = response.json().get("tags")
+		return self.name in image_tags
+
 	def _start_build(self):
 		self._update_docker_image_metadata()
 		self._run_agent_jobs()
@@ -1165,7 +1186,7 @@ class DeployCandidateBuild(Document):
 		self.set_status(Status.FAILURE)
 		self._set_build_duration()
 
-	def create_deploy(self):
+	def create_deploy(self, check_image_exists: bool = False):
 		"""Create a new deploy for the servers of matching platform present on the release group"""
 		servers: list[ReleaseGroupServer] = frappe.get_doc("Release Group", self.group).servers
 		servers = [server.server for server in servers]
@@ -1180,9 +1201,12 @@ class DeployCandidateBuild(Document):
 		if deploy_doc:
 			return str(deploy_doc)
 
-		return self._create_deploy(servers).name
+		return self._create_deploy(servers, check_image_exists=check_image_exists).name
 
-	def _create_deploy(self, servers: list[str]):
+	def _create_deploy(self, servers: list[str], check_image_exists: bool = False):
+		if check_image_exists and not self.is_image_in_registry():
+			frappe.throw("Image not found in registry create a new build", ImageNotFoundInRegistry)
+
 		return frappe.get_doc(
 			{
 				"doctype": "Deploy",
@@ -1195,7 +1219,9 @@ class DeployCandidateBuild(Document):
 	@frappe.whitelist()
 	def deploy(self):
 		try:
-			return dict(error=False, message=self.create_deploy())
+			return dict(
+				error=False, message=self.create_deploy(check_image_exists=True)
+			)  # In this case we can check if image is in registry since possible to deploy older builds
 		except Exception:
 			log_error("Deploy Creation Error", doc=self)
 

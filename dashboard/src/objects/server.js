@@ -1,9 +1,11 @@
 import { defineAsyncComponent, h } from 'vue';
 import LucideAppWindow from '~icons/lucide/app-window';
+import LucideVenetianMask from '~icons/lucide/venetian-mask';
 import ServerActions from '../components/server/ServerActions.vue';
 import { getTeam } from '../data/team';
 import router from '../router';
 import { icon, renderDialog } from '../utils/components';
+import { isMobile } from '../utils/device';
 import { date, duration, planTitle, userCurrency } from '../utils/format';
 import { trialDays } from '../utils/site';
 import { getJobsTab } from './common/jobs';
@@ -117,6 +119,18 @@ export default {
 				},
 			};
 		},
+		banner({ listResource: servers }) {
+			if (!servers.data?.length) {
+				return {
+					title: 'Learn how to create a new dedicated server',
+					button: {
+						label: 'Read docs',
+						variant: 'outline',
+						link: 'https://docs.frappe.io/cloud/servers/new',
+					},
+				};
+			}
+		},
 	},
 	detail: {
 		titleField: 'name',
@@ -150,9 +164,7 @@ export default {
 					label: 'Impersonate Server Owner',
 					title: 'Impersonate Server Owner', // for label to pop-up on hover
 					slots: {
-						icon: defineAsyncComponent(
-							() => import('~icons/lucide/venetian-mask'),
-						),
+						icon: icon(LucideVenetianMask),
 					},
 					condition: () =>
 						$team.doc?.is_desk_user && server.doc.team !== $team.name,
@@ -683,6 +695,69 @@ export default {
 				},
 			},
 			tagTab('Server'),
+			{
+				label: 'Activity',
+				icon: icon('activity'),
+				route: 'activity',
+				type: 'list',
+				condition: (server) => server.doc?.status !== 'Archived',
+				list: {
+					doctype: 'Server Activity',
+					filters: (server) => {
+						return {
+							document_name: [
+								'in',
+								[server.doc?.name, server.doc?.database_server],
+							],
+						};
+					},
+					orderBy: 'creation desc',
+					fields: ['owner'],
+					columns: [
+						{
+							label: 'Action',
+							fieldname: 'action',
+							format(value, row) {
+								return `${row.action} by ${row.owner}`;
+							},
+						},
+						{
+							label: 'Server',
+							fieldname: 'document_name',
+						},
+						{
+							label: 'Description',
+							fieldname: 'reason',
+							class: 'text-gray-600',
+						},
+						{
+							label: '',
+							fieldname: 'creation',
+							type: 'Timestamp',
+							align: 'right',
+						},
+					],
+					filterControls() {
+						return [
+							{
+								type: 'select',
+								label: 'Action',
+								fieldname: 'action',
+								class: !isMobile() ? 'w-52' : '',
+								options: [
+									'',
+									'Created',
+									'Reboot',
+									'Volume',
+									'Terminated',
+									'Incident',
+									'Disk Size Change',
+								],
+							},
+						];
+					},
+				},
+			},
 		],
 	},
 	routes: [

@@ -352,6 +352,9 @@ export default {
 							return h(Checkbox, {
 								modelValue: row.skip_failing_patches,
 								disabled,
+								'onUpdate:modelValue': (val) => {
+									row.skip_failing_patches = val;
+								},
 							});
 						},
 					},
@@ -367,6 +370,9 @@ export default {
 							return h(Checkbox, {
 								modelValue: row.skip_backups,
 								disabled,
+								'onUpdate:modelValue': (val) => {
+									row.skip_backups = val;
+								},
 							});
 						},
 					},
@@ -613,6 +619,11 @@ export default {
 			this.ignoreWillFailCheck = false;
 			if (error?.exc_type === 'BuildValidationError') {
 				this.restrictMessage = error?.messages?.[0] ?? '';
+			}
+
+			if (error?.exc_type === 'InsufficientSpaceOnServer') {
+				this.errorMessage = error?.messages?.[0] ?? '';
+				return;
 			}
 
 			if (error?.exc_type === 'PermissionError') {

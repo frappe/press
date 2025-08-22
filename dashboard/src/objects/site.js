@@ -3,6 +3,7 @@ import {
 	createResource,
 	LoadingIndicator,
 } from 'frappe-ui';
+import LucideVenetianMask from '~icons/lucide/venetian-mask';
 import { defineAsyncComponent, h } from 'vue';
 import { unparse } from 'papaparse';
 import { toast } from 'vue-sonner';
@@ -1020,11 +1021,30 @@ export default {
 							},
 						};
 					},
-					banner({ documentResource: site }) {
-						const bannerTitle =
-							'Your site is currently on a shared bench group. Upgrade plan for offsite backups and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
+					banner({ documentResource: site, listResource: backups }) {
+						if (site.doc?.status === 'Archived') {
+							if (backups?.data && backups.data.length > 0) {
+								return {
+									title: 'Need help with restoring your archived site.',
+									dismissable: true,
+									id: site.doc.name,
+									type: 'gray',
+									button: {
+										label: 'Contact Support',
+										variant: 'outline',
+										onClick() {
+											window.open('https://frappecloud.com/support', '_blank');
+										},
+									},
+								};
+							}
+							return;
+						}
 
-						return getUpsellBanner(site, bannerTitle);
+						return getUpsellBanner(
+							site,
+							'Your site is currently on a shared bench group. Upgrade plan for offsite backups and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.',
+						);
 					},
 				},
 			},
@@ -1646,9 +1666,7 @@ export default {
 					label: 'Impersonate Site Owner',
 					title: 'Impersonate Site Owner', // for label to pop-up on hover
 					slots: {
-						icon: defineAsyncComponent(
-							() => import('~icons/lucide/venetian-mask'),
-						),
+						icon: icon(LucideVenetianMask),
 					},
 					condition: () =>
 						$team.doc?.is_desk_user && site.doc.team !== $team.name,

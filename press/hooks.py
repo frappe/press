@@ -189,6 +189,7 @@ scheduler_events = {
 	"daily_long": [
 		"press.press.audit.check_bench_fields",
 		"press.press.audit.check_offsite_backups",
+		"press.press.audit.plan_audit",
 		"press.press.audit.check_app_server_replica_benches",
 		"press.press.doctype.invoice.invoice.finalize_unpaid_prepaid_credit_invoices",
 		"press.press.doctype.bench.bench.sync_analytics",
@@ -222,6 +223,7 @@ scheduler_events = {
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
+		"press.press.doctype.release_group.release_group.add_public_servers_to_public_groups",
 		"press.press.doctype.server.server.scale_workers",
 		"press.press.doctype.usage_record.usage_record.link_unlinked_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
@@ -238,6 +240,7 @@ scheduler_events = {
 		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
 		"press.press.doctype.press_webhook.press_webhook.auto_disable_high_delivery_failure_webhooks",
 		"press.saas.doctype.product_trial.product_trial.sync_product_site_users",
+		"press.signup_e2e.run_signup_e2e",
 	],
 	"all": [
 		"press.auth.flush",
@@ -285,7 +288,6 @@ scheduler_events = {
 			"press.press.doctype.site_update.site_update.schedule_updates",
 			"press.press.doctype.site.backups.schedule_logical_backups",
 			"press.press.doctype.site.backups.schedule_physical_backups",
-			"press.press.doctype.site_update.site_update.run_scheduled_updates",
 			"press.press.doctype.site_migration.site_migration.run_scheduled_migrations",
 			"press.press.doctype.version_upgrade.version_upgrade.run_scheduled_upgrades",
 			"press.press.doctype.subscription.subscription.create_usage_records",
@@ -299,6 +301,7 @@ scheduler_events = {
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_snapshots",
 			"press.press.doctype.site.site.sync_sites_setup_wizard_complete_status",
 			"press.press.doctype.drip_email.drip_email.send_welcome_email",
+			"press.press.doctype.site_update.site_update.run_scheduled_updates",
 		],
 		"* * * * *": [
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",

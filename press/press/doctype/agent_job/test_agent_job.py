@@ -2,20 +2,25 @@
 # See license.txt
 from __future__ import annotations
 
-import unittest
+import json
+import re
 from contextlib import contextmanager
-from typing import Callable, Literal
+from typing import TYPE_CHECKING, Literal
 from unittest.mock import Mock, patch
 
 import frappe
 import responses
 from frappe.model.naming import make_autoname
+from frappe.tests.utils import FrappeTestCase
 
 from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import AgentJob, lock_doc_updated_by_job
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.utils.test import foreground_enqueue, foreground_enqueue_doc
+
+if TYPE_CHECKING:
+	from collections.abc import Callable
 
 
 def fn_appender(before_insert: Callable, prepare_agent_responses: Callable):
@@ -31,39 +36,83 @@ def before_insert(self):
 
 
 def fake_agent_job_req(  # noqa: C901
-	job_type: str,
-	status: Literal["Success", "Pending", "Running", "Failure"],
-	data: dict,
-	steps: list[dict],
+	job_type: str | list[str] | dict,
+	status: Literal["Success", "Pending", "Running", "Failure"] | None = None,
+	data: dict | None = None,
+	steps: list[dict] | None = None,
 ) -> Callable:
-	data = data or {}
-	steps = steps or []
+	"""
+	Fake successful (or custom status) delivery for one or more job types.
+
+	Args:
+	    job_type:
+	        - str → single job type
+	        - list[str] → multiple job types (all share same status/data/steps)
+	        - dict → {job_type: {"status": ..., "data": ..., "steps": ...}}
+	    status: Status for single job type OR for all in list.
+	    data: Data for single job type OR for all in list.
+	    steps: Steps for single job type OR for all in list.
+	"""  # noqa: E101
+	# Normalize into dict form: {job_type: {"status": ..., "data": ..., "steps": ...}}
+	if isinstance(job_type, dict):
+		job_specs = {
+			jt: {
+				"status": spec.get("status", "Success"),
+				"data": spec.get("data", {}),
+				"steps": spec.get("steps", []),
+			}
+			for jt, spec in job_type.items()
+		}
+	elif isinstance(job_type, list):
+		job_specs = {jt: {"status": status, "data": data or {}, "steps": steps or []} for jt in job_type}
+	else:  # str
+		job_specs = {job_type: {"status": status, "data": data or {}, "steps": steps or []}}
+
+	if isinstance(job_type, dict) and data and steps:
+		raise ValueError(
+			"Cannot provide 'data' and 'steps' when job_type is a dict. "
+			"Use job_type['job_type'] = {'status': ..., 'data': ..., 'steps': ...} instead."
+		)
+
+	job_polling_response = dict()
+
+	def _fake_bulk_polling(request):
+		match = re.search(r"/agent/jobs/([\d,]+)", request.url)
+		if match:
+			job_ids_str = match.group(1)
+			job_ids = [int(j) for j in job_ids_str.split(",")]
+		else:
+			job_ids = []
+
+		output = []
+		for job_id in job_ids:
+			if job_id not in job_polling_response:
+				continue
+			output.append(job_polling_response[job_id])
+		return (200, {"Content-Type": "application/json"}, json.dumps(output))
+
+	responses.add_callback(
+		responses.GET, re.compile(r"^https://[^/]+:443/agent/jobs/\d+(?:,\d+)+$"), callback=_fake_bulk_polling
+	)
 
 	def prepare_agent_responses(self):
-		"""
-		Fake successful delivery with fake job id
-
-		Also return fake result on polling
-		steps: list of {"name": "Step name", "status": "status"} dictionaries
-		"""
-		nonlocal status
-		nonlocal job_type
-		if self.job_type != job_type:  # only fake the job we want to fake
+		# Only fake jobs we have specs for
+		if self.job_type not in job_specs:
 			return
-		job_id = int(make_autoname(".#"))
-		if steps:
-			needed_steps = frappe.get_all("Agent Job Type Step", {"parent": job_type}, pluck="step_name")
-			for step in needed_steps:
-				if not any(step == s["name"] for s in steps):
-					steps.append(
-						{
-							"name": step,
-							"status": "Success",
-							"data": {},
-						}
-					)
 
-		for step in steps:
+		spec = job_specs[self.job_type]
+		job_id = int(make_autoname(".#"))
+		steps_for_job = list(spec["steps"]) or []
+
+		# Fill missing steps for this job type
+		if steps_for_job:
+			needed_steps = frappe.get_all("Agent Job Type Step", {"parent": self.job_type}, pluck="step_name")
+			for step in needed_steps:
+				if not any(step == s["name"] for s in steps_for_job):
+					steps_for_job.append({"name": step, "status": "Success", "data": {}})
+
+		# Add timestamps and other fields
+		for step in steps_for_job:
 			step["start"] = "2023-08-20 18:24:28.024885"
 			step["data"] = {}
 			if step["status"] in ["Success", "Failure"]:
@@ -74,7 +123,7 @@ def fake_agent_job_req(  # noqa: C901
 				step["end"] = None
 				step["duration"] = None
 
-		# TODO: auto add response corresponding to request type #
+		# Fake POST and DELETE
 		responses.post(
 			f"https://{self.server}:443/agent/{self.request_path}",
 			json={"job": job_id},
@@ -85,41 +134,33 @@ def fake_agent_job_req(  # noqa: C901
 			json={"job": job_id},
 			status=200,
 		)
-		# TODO: make the next url regex for multiple job ids #
+
+		# Fake polling data
+		job_polling_response[job_id] = {
+			"data": spec["data"],
+			# TODO: uncomment lines as needed and make new parameters #
+			"duration": "00:00:13.496281",
+			"end": "2023-08-20 18:24:41.506067",
+			"id": job_id,
+			"start": "2023-08-20 18:24:28.009786",
+			"status": spec["status"],
+			"steps": steps_for_job
+			or [
+				{
+					"data": {},
+					"duration": "00:00:13.464445",
+					"end": "2023-08-20 18:24:41.489330",
+					"name": self.job_type,
+					"start": "2023-08-20 18:24:28.024885",
+					"status": spec["status"],
+				}
+			],
+		}
+		# Fake GET polling
 		responses.add(
 			responses.GET,
 			f"https://{self.server}:443/agent/jobs/{job_id!s}",
-			# TODO:  populate steps with data from agent job type #
-			json={
-				"data": data,
-				# TODO: uncomment lines as needed and make new parameters #
-				"duration": "00:00:13.496281",
-				"end": "2023-08-20 18:24:41.506067",
-				# "enqueue": "2023-08-20 18:24:27.907340",
-				"id": job_id,
-				# "name": "Install App on Site",
-				"start": "2023-08-20 18:24:28.009786",
-				"status": status,
-				"steps": steps
-				or [
-					{
-						"data": {
-							# "command": "docker exec -w /home/frappe/frappe-bench	bench-0001-000025-f1 bench --site fdesk-old.local.frappe.dev install-app helpdesk",
-							# "directory": "/home/frappe/benches/bench-0001-000025-f1",
-							# "duration": "0:00:13.447104",
-							# "end": "2023-08-20 18:24:41.482031",
-							# "output": "Installing helpdesk...\nUpdating DocTypes for helpdesk\t	 : [========================================] 100%\nUpdating Dashboard for helpdesk",
-							# "start": "2023-08-20 18:24:28.034927",
-						},
-						"duration": "00:00:13.464445",
-						"end": "2023-08-20 18:24:41.489330",
-						# "id": 1350,
-						"name": job_type,
-						"start": "2023-08-20 18:24:28.024885",
-						"status": status,
-					}
-				],
-			},
+			json=job_polling_response[job_id],
 			status=200,
 		)
 
@@ -135,23 +176,28 @@ def fake_agent_job(
 	data: dict | None = None,
 	steps: list[dict] | None = None,
 ):
-	"""Fakes agent job request and response. Also polls the job.
+	"""Fakes agent job request and response.
 
 	HEADS UP: Don't use this when you're mocking enqueue_http_request in your test context
 	"""
-	with responses.mock, patch.object(
-		AgentJob,
-		"before_insert",
-		fake_agent_job_req(job_type, status, data, steps),
-		create=True,
-	), patch(
-		"press.press.doctype.agent_job.agent_job.frappe.enqueue_doc",
-		new=foreground_enqueue_doc,
-	), patch(
-		"press.press.doctype.agent_job.agent_job.frappe.enqueue",
-		new=foreground_enqueue,
-	), patch("press.press.doctype.agent_job.agent_job.frappe.db.commit", new=Mock()), patch(
-		"press.press.doctype.agent_job.agent_job.frappe.db.rollback", new=Mock()
+	with (
+		responses.mock,
+		patch.object(
+			AgentJob,
+			"before_insert",
+			fake_agent_job_req(job_type, status, data, steps),
+			create=True,
+		),
+		patch(
+			"press.press.doctype.agent_job.agent_job.frappe.enqueue_doc",
+			new=foreground_enqueue_doc,
+		),
+		patch(
+			"press.press.doctype.agent_job.agent_job.frappe.enqueue",
+			new=foreground_enqueue,
+		),
+		patch("press.press.doctype.agent_job.agent_job.frappe.db.commit", new=Mock()),
+		patch("press.press.doctype.agent_job.agent_job.frappe.db.rollback", new=Mock()),
 	):
 		frappe.local.role_permissions = {}  # due to bug in FF related to only_if_creator docperm
 		yield
@@ -160,8 +206,10 @@ def fake_agent_job(
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestAgentJob(unittest.TestCase):
+class TestAgentJob(FrappeTestCase):
 	def setUp(self):
+		super().setUp()
+
 		self.team = create_test_press_admin_team()
 		self.team.allocate_credit_amount(1000, source="Prepaid Credits", remark="Test")
 		self.team.payment_mode = "Prepaid Credits"

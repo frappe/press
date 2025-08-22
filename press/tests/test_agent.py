@@ -13,9 +13,7 @@ from press.press.doctype.agent_request_failure.agent_request_failure import (
 from press.press.doctype.server.test_server import create_test_server
 
 
-def create_test_agent_request_failure(
-	server, traceback="Traceback", error="Error", failure_count=1
-):
+def create_test_agent_request_failure(server, traceback="Traceback", error="Error", failure_count=1):
 	fields = {
 		"server_type": server.doctype,
 		"server": server.name,
@@ -24,18 +22,12 @@ def create_test_agent_request_failure(
 		"failure_count": failure_count,
 	}
 
-	return frappe.new_doc("Agent Request Failure", **fields).insert(
-		ignore_permissions=True
-	)
+	return frappe.new_doc("Agent Request Failure", **fields).insert(ignore_permissions=True)
 
 
 class TestAgent(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
-		frappe.db.truncate("Agent Request Failure")
-
-	def setUp(self):
-		frappe.db.truncate("Agent Request Failure")
 
 	@responses.activate
 	def test_ping_request(self):

@@ -8,7 +8,10 @@
 		"build": "vite build",
 		"test": "vitest",
 		"coverage": "vitest run --coverage",
-		"lint": "eslint src"
+		"lint": "eslint src",
+		"test:e2e": "playwright test",
+		"test:e2e:headed": "playwright test --headed",
+		"test:e2e:report": "playwright show-report"
 	},
 	"dependencies": {
 		"@codemirror/autocomplete": "^6.18.1",
@@ -28,7 +31,7 @@
 		"echarts": "^5.4.3",
 		"feather-icons": "^4.26.0",
 		"frappe-charts": "2.0.0-rc22",
-		"frappe-ui": "0.1.178",
+		"frappe-ui": "0.1.168",
 		"fuse.js": "6.6.2",
 		"libarchive.js": "^1.3.0",
 		"lodash": "^4.17.19",
@@ -50,6 +53,7 @@
 	},
 	"devDependencies": {
 		"@iconify/json": "^2.2.123",
+		"@playwright/test": "^1.54.2",
 		"@tailwindcss/forms": "^0.4.0",
 		"@tailwindcss/postcss7-compat": "^2.0.2",
 		"@tailwindcss/typography": "^0.5.1",

@@ -19,6 +19,7 @@ from press.exceptions import (
 	MissingAppsInBench,
 	OngoingAgentJob,
 	SiteAlreadyArchived,
+	SiteUnderMaintenance,
 )
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
@@ -157,6 +158,7 @@ class SiteMigration(Document):
 	@frappe.whitelist()
 	def start(self):
 		self.check_for_ongoing_agent_jobs()  # has to be before setting state to pending so it gets retried
+		previous_status = self.status
 		self.status = "Pending"
 		self.save()
 		self.check_for_inactive_domains()
@@ -169,6 +171,13 @@ class SiteMigration(Document):
 			self.status = "Failure"
 			self.save()
 			return
+		except SiteUnderMaintenance:
+			# Just ignore the error for now
+			# It can be retried later once the site is out of maintenance
+			self.status = previous_status
+			self.save()
+			return
+
 		self.run_next_step()
 
 	@frappe.whitelist()

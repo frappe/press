@@ -1,47 +1,50 @@
 <template>
-	<ListView
-		:columns="columns"
-		:rows="rows"
-		:options="{
-			selectable: options.selectable || false,
-			onRowClick: (row) => (options.onRowClick ? options.onRowClick(row) : {}),
-			getRowRoute: options.route ? getRowRoute : null,
-		}"
-		row-key="name"
-		@update:selections="(e) => this.$emit('update:selections', e)"
-	>
-		<ListHeader>
-			<template v-for="column in columns" :key="column.field">
-				<ListHeaderItem :item="column">
-					<template #prefix>
-						<FeatherIcon
-							v-if="column.icon"
-							:name="column.icon"
-							class="h-4 w-4"
+	<div class="overflow-y-auto">
+		<ListView
+			:columns="columns"
+			:rows="rows"
+			:options="{
+				selectable: options.selectable || false,
+				onRowClick: (row) =>
+					options.onRowClick ? options.onRowClick(row) : {},
+				getRowRoute: options.route ? getRowRoute : null,
+			}"
+			row-key="name"
+			@update:selections="(e) => this.$emit('update:selections', e)"
+		>
+			<ListHeader>
+				<template v-for="column in columns" :key="column.field">
+					<ListHeaderItem :item="column">
+						<template #prefix>
+							<FeatherIcon
+								v-if="column.icon"
+								:name="column.icon"
+								class="h-4 w-4"
+							/>
+						</template>
+					</ListHeaderItem>
+				</template>
+			</ListHeader>
+			<ListRows>
+				<div
+					v-if="rows.length === 0"
+					class="text-center text-sm leading-10 text-gray-500"
+				>
+					No results found
+				</div>
+				<ListRow v-for="(row, i) in rows" :row="row" :key="row.name">
+					<template v-slot="{ column, item }">
+						<ObjectListCell
+							:row="row"
+							:column="column"
+							:idx="i"
+							:context="context"
 						/>
 					</template>
-				</ListHeaderItem>
-			</template>
-		</ListHeader>
-		<ListRows>
-			<div
-				v-if="rows.length === 0"
-				class="text-center text-sm leading-10 text-gray-500"
-			>
-				No results found
-			</div>
-			<ListRow v-for="(row, i) in rows" :row="row" :key="row.name">
-				<template v-slot="{ column, item }">
-					<ObjectListCell
-						:row="row"
-						:column="column"
-						:idx="i"
-						:context="context"
-					/>
-				</template>
-			</ListRow>
-		</ListRows>
-	</ListView>
+				</ListRow>
+			</ListRows>
+		</ListView>
+	</div>
 </template>
 
 <script>

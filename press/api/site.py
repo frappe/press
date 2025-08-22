@@ -266,7 +266,7 @@ def get_group_for_new_site_and_set_localisation_app(site, apps):
 		.where(ReleaseGroupApp.app == localisation_app)
 		.where(ReleaseGroup.public == 1)
 		.where(ReleaseGroup.enabled == 1)
-		.where(ReleaseGroup.name.notin(restricted_release_group_names))
+		.where(ReleaseGroup.name.notin(restricted_release_group_names or [""]))
 		.where(ReleaseGroup.version == site.get("version"))
 		.run(pluck="name")
 	)

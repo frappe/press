@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import json
 import typing
-import unittest
 
 import frappe
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.prometheus_alert_rule.test_prometheus_alert_rule import (
 	create_test_prometheus_alert_rule,
@@ -89,5 +89,5 @@ def create_test_alertmanager_webhook_log(
 	).insert()
 
 
-class TestAlertmanagerWebhookLog(unittest.TestCase):
+class TestAlertmanagerWebhookLog(FrappeTestCase):
 	pass

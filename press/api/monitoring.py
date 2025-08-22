@@ -110,8 +110,18 @@ def targets(token=None):
 
 @frappe.whitelist(allow_guest=True, xss_safe=True)
 def alert(*args, **kwargs):
+	user = frappe.session.user
 	try:
-		user = str(frappe.session.user)
+		monitor_token = frappe.db.get_single_value("Press Settings", "monitor_token", cache=True)
+
+		if frappe.request.args.get("monitor_token") != monitor_token:
+			raise frappe.AuthenticationError("Invalid credentials")
+
+		monitor_token = frappe.db.get_single_value("Press Settings", "monitor_token", cache=True)
+
+		if frappe.request.args.get("monitor_token") != monitor_token:
+			raise Exception
+
 		frappe.set_user("Administrator")
 
 		doc = frappe.get_doc(
@@ -123,8 +133,13 @@ def alert(*args, **kwargs):
 		doc.insert()
 	except AlertRuleNotEnabled:
 		pass
+
+	except frappe.AuthenticationError:
+		log_error("Alertmanager Webhook Authentication Error", args=args, kwargs=kwargs)
+
 	except Exception:
 		log_error("Alertmanager Webhook Error", args=args, kwargs=kwargs)
 		raise
+
 	finally:
 		frappe.set_user(user)

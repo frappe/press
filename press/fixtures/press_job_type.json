@@ -1,6 +1,21 @@
 [
  {
   "callback_max_retry": 0,
+  "callback_script": null,
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2025-08-12 16:24:10.555919",
+  "name": "Attach Volume",
+  "steps": [
+   {
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nprint(machine.as_dict())\nif machine.cloud_provider in [\"AWS EC2\", \"OCI\"]:\n    machine.attach_new_volume(machine.size, machine.iops, machine.throughput)\nelse:\n    machine.attach_volume(size=100)",
+    "step_name": "Attach Volume",
+    "wait_until_true": 0
+   }
+  ]
+ },
+ {
+  "callback_max_retry": 0,
   "callback_script": "",
   "docstatus": 0,
   "doctype": "Press Job Type",
