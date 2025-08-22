@@ -61,7 +61,6 @@ createResource({
 	},
 	onSuccess: (data) => {
 		if (!data) return '';
-		console.log('Fetched followup details:', data);
 		let res = data[0];
 		Object.assign(followup_details, {
 			followup_date: Date(res.followup_date) || '',
@@ -84,7 +83,6 @@ const updateFollowup = createResource({
 		};
 	},
 	onSuccess: () => {
-		console.log('Followup details updated successfully');
 		show.value = false;
 		window.location.reload();
 	},

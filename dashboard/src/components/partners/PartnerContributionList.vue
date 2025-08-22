@@ -37,7 +37,6 @@ const partnerInvoices = computed(() => {
 				auto: true,
 				initialData: [],
 				transform(data) {
-					// console.log(data)
 					return data.map((d) => {
 						return {
 							name: d.name,
@@ -101,7 +100,6 @@ const partnerInvoices = computed(() => {
 		},
 		orderBy: 'creation desc',
 		onRowClick(row) {
-			console.log(row);
 			showInvoice = row;
 			invoiceDialog.value = true;
 		},

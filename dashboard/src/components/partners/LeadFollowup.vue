@@ -88,7 +88,6 @@ const leadfollowups = computed(() => {
 								variant: 'solid',
 								theme: 'red',
 								onClick: ({ hide }) => {
-									console.log('Deleting followup with ID:', row.name);
 									return deleteFollowup
 										.submit({
 											id: row.name,

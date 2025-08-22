@@ -40,7 +40,6 @@
 							variant="subtle"
 							@click="
 								() => {
-									console.log('clicked');
 									showLeadDetailsDialog = true;
 								}
 							"

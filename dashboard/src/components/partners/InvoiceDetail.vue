@@ -161,12 +161,10 @@ export default {
 			return {
 				url: 'press.api.partner.get_invoice_items',
 				makeParams() {
-					console.log(this.invoiceId);
 					return { invoice: this.invoiceId };
 				},
 				auto: true,
 				onSuccess(data) {
-					console.log(data);
 					this._invoiceItems = data;
 				},
 			};
