@@ -226,6 +226,9 @@ class SiteBackup(Document):
 				frappe.get_doc("Site", self.site), reference_doctype=self.doctype, reference_name=self.name
 			)
 
+		if not self.physical and self.status == "Failure":
+			self.autocorrect_bench_permissions()
+
 	def _rollback_db_directory_permissions(self):
 		if not self.physical:
 			return
@@ -324,6 +327,25 @@ class SiteBackup(Document):
 		frappe.db.set_value(
 			"Site Backup", self.name, "database_snapshot", virtual_machine.flags.created_snapshots[0]
 		)
+
+	def autocorrect_bench_permissions(self):
+		"""
+		Run this whenever a Site Backup fails with the error
+		"[Errno 13]: Permission denied".
+		"""
+		job = frappe.db.get_value("Agent Job", self.job, filters={"status": "Failure"}, fields=["output"])
+		if job and "Permission denied" in job.output:
+			from press.press.doctype.bench.bench import correct_bench_permissions
+
+			try:
+				correct_bench_permissions()
+				frappe.logger().info(f"Bench permissions corrected for backup {self.name}")
+				self.start_backup()
+				return True
+			except Exception as e:
+				frappe.logger().error(f"Failed to correct bench permissions: {e!s}")
+				return False
+		return False
 
 	@classmethod
 	def offsite_backup_exists(cls, site: str, day: datetime.date) -> bool:
