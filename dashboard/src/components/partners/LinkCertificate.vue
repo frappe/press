@@ -93,7 +93,6 @@ const emailChange = debounce(async () => {
 			type: certificateType.value,
 		},
 	});
-	console.log(response, certificateType.value);
 	if (response > 0) {
 		certCount.value = response;
 		certExist.value = true;
