@@ -106,8 +106,8 @@ def protected(doctypes):
 
 
 def get_protected_doctype_name(args: list, kwargs: dict, doctypes: list[str]):
-	# 1. Name from kwargs["name"]
-	if name := kwargs.get("name"):
+	# 1. Name from kwargs["name"] or kwargs["doc_name"]
+	if name := (kwargs.get("name") or kwargs.get("doc_name")):
 		return name
 
 	# 2. Name from first value in filters
