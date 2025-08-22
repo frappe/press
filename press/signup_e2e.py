@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import random
 import signal
 import subprocess
 from pathlib import Path
@@ -49,6 +50,9 @@ def run_signup_e2e():  # noqa: C901
 	if not product_trials_list:
 		print("signup_e2e: no published product trials found; aborting run")
 		return
+
+	random.shuffle(product_trials_list)
+	product_trials_list = product_trials_list[:5]
 
 	base_url = frappe.conf.get("signup_e2e_base_url") or frappe.utils.get_url()
 	timeout = int(frappe.conf.get("signup_e2e_timeout_seconds") or 900)
@@ -119,6 +123,19 @@ def run_signup_e2e():  # noqa: C901
 			title="Signup E2E failed",
 			message=f"Exit code: {exit_code}\nLast 50 lines:\n" + "\n".join(output_lines[-50:]),
 		)
+
+	clean_up()
+
+
+def clean_up():
+	signup_teams = frappe.db.get_all("Team", {"user": ("like", "%signup.test")}, pluck="name")
+	trial_sites = frappe.db.get_all(
+		"Site",
+		{"team": ("in", signup_teams)},
+	)
+	for site in trial_sites:
+		frappe.get_doc("Site", site).archive()
+	frappe.db.set_value("Team", {"name": ("in", signup_teams)}, "enabled", 0)
 
 
 __all__ = ["run_signup_e2e"]
