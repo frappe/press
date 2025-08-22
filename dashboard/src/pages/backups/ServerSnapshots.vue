@@ -15,7 +15,7 @@
 
 <script>
 import ObjectList from '../../components/ObjectList.vue';
-import { bytes, date } from '../../utils/format';
+import { date } from '../../utils/format';
 
 export default {
 	name: 'Server Snapshots',
@@ -138,8 +138,26 @@ export default {
 							label: 'Database Server',
 							fieldname: 'database_server',
 							options: {
-								doctype: 'Server',
+								doctype: 'Database Server',
 							},
+						},
+						{
+							type: 'select',
+							label: 'Status',
+							fieldname: 'status',
+							options: [
+								'',
+								'Pending',
+								'Processing',
+								'Failure',
+								'Completed',
+								'Unavailable',
+							],
+						},
+						{
+							type: 'date',
+							label: 'Backup Date',
+							fieldname: 'backup_date',
 						},
 						{
 							type: 'checkbox',
