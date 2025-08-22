@@ -807,10 +807,19 @@ class BaseServer(Document, TagHelpers):
 		volumes = self.get_volume_mounts()
 		if volumes or self.has_data_volume:
 			# Adding this condition since this method is called from both server and database server doctypes
+<<<<<<< HEAD
 			if self.name[0] == "f":
 				mountpoint = BENCH_DATA_MNT_POINT
 			elif self.name[0] == "m":
 				mountpoint = MARIADB_DATA_MNT_POINT
+=======
+			if self.doctype == "Server":
+				mountpoint = "/opt/volumes/benches"
+			elif self.doctype == "Database Server":
+				mountpoint = "/opt/volumes/mariadb"
+			else:
+				mountpoint = "/"
+>>>>>>> 91bb583af (fix(server): Avoid using series name in guess_data_disk_mountpoint)
 		else:
 			mountpoint = "/"
 		return mountpoint
