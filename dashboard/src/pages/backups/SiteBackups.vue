@@ -54,14 +54,6 @@ export default {
 						width: 1,
 					},
 					{
-						label: 'Timestamp',
-						fieldname: 'creation',
-						width: 1,
-						format(value) {
-							return `${date(value, 'llll')}`;
-						},
-					},
-					{
 						label: 'Status',
 						fieldname: 'status',
 						width: '150px',
@@ -110,6 +102,15 @@ export default {
 							return value ? 'check' : '';
 						},
 					},
+
+					{
+						label: 'Timestamp',
+						fieldname: 'creation',
+						align: 'right',
+						format(value) {
+							return `${date(value, 'llll')}`;
+						},
+					},
 				],
 				filterControls() {
 					return [
@@ -122,9 +123,15 @@ export default {
 							},
 						},
 						{
+							type: 'select',
+							label: 'Status',
+							fieldname: 'status',
+							options: ['', 'Success', 'Pending', 'Failure'],
+						},
+						{
 							type: 'date',
 							label: 'Backup Date',
-							fieldname: 'creation',
+							fieldname: 'backup_date',
 						},
 						{
 							type: 'checkbox',

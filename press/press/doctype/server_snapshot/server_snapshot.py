@@ -69,6 +69,29 @@ class ServerSnapshot(Document):
 		"expire_at",
 	)
 
+	@staticmethod
+	def get_list_query(query, filters=None, **list_args):
+		Snapshot = frappe.qb.DocType("Server Snapshot")
+		status = filters.get("status")
+		if status:
+			query = query.where(Snapshot.status == status)
+		else:
+			query = query.where(Snapshot.status != "Unavailable")
+
+		if filters.get("backup_date"):
+			with contextlib.suppress(Exception):
+				date = frappe.utils.getdate(filters["backup_date"])
+				query = query.where(
+					Snapshot.creation.between(
+						frappe.utils.add_to_date(date, hours=0, minutes=0, seconds=0),
+						frappe.utils.add_to_date(date, hours=23, minutes=59, seconds=59),
+					)
+				)
+
+		print(query.get_sql())
+
+		return query.run(as_dict=1)
+
 	def get_doc(self, doc: "ServerSnapshot"):
 		app_server_snapshot = {}
 		database_server_snapshot = {}

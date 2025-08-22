@@ -443,7 +443,6 @@ export default {
 					filters: (server) => {
 						let filters = {
 							app_server: server.doc?.name,
-							status: ['!=', 'Unavailable'],
 						};
 						const snapshot_name = getQueryParam('name');
 						if (snapshot_name) {
@@ -461,7 +460,21 @@ export default {
 										fieldname: 'name',
 									},
 								]
-							: [];
+							: [
+									{
+										type: 'select',
+										label: 'Status',
+										fieldname: 'status',
+										options: [
+											'',
+											'Pending',
+											'Processing',
+											'Failure',
+											'Completed',
+											'Unavailable',
+										],
+									},
+								];
 						filters = filters.concat([
 							{
 								type: 'checkbox',
