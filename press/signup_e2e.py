@@ -120,5 +120,18 @@ def run_signup_e2e():  # noqa: C901
 			message=f"Exit code: {exit_code}\nLast 50 lines:\n" + "\n".join(output_lines[-50:]),
 		)
 
+	clean_up()
+
+
+def clean_up():
+	signup_teams = frappe.db.get_all("Team", {"user": ("like", "%signup.test")}, pluck="name")
+	trial_sites = frappe.db.get_all(
+		"Site",
+		{"team": ("in", signup_teams)},
+	)
+	for site in trial_sites:
+		frappe.get_doc("Site", site).archive()
+	frappe.db.set_value("Team", {"name": ("in", signup_teams)}, "enabled", 0)
+
 
 __all__ = ["run_signup_e2e"]
