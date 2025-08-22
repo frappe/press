@@ -1247,7 +1247,7 @@ class BaseServer(Document, TagHelpers):
 	def fetch_volumes_from_virtual_machine(self):
 		machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		for volume in machine.volumes:
-			if volume.device == "/dev/sda1":
+			if volume.device == "/dev/sda1" or (self.provider == "Hetzner" and volume.device == "/dev/sda"):
 				# Skip root volume. This is for AWS other providers may have different root volume
 				continue
 			self.append("mounts", {"volume_id": volume.volume_id})
