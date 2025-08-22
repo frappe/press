@@ -849,15 +849,18 @@ class Cluster(Document):
 		self,
 		doctype: str,
 		title: str,
-		data_disk_snapshot: str | None = None,
 		plan: "ServerPlan" = None,
 		domain: str | None = None,
 		team: str | None = None,
 		create_subscription=True,
 		auto_increase_storage: bool = False,
 <<<<<<< HEAD
+<<<<<<< HEAD
 		kms_key_id: str | None = None,
 =======
+=======
+		data_disk_snapshot: str | None = None,
+>>>>>>> f56183cd7 (fix(cluster): Keep position of plan arg as previous in create_server)
 		temporary_server: bool = False,
 <<<<<<< HEAD
 >>>>>>> ad9374087 (feat(server-snapshot): Add option in dashboard to create servers easily)
