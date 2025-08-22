@@ -1003,7 +1003,8 @@ export default {
 										}),
 										{
 											success: 'Deploy scheduled successfully',
-											error: 'Failed to schedule deploy',
+											error: (e) =>
+												getToastErrorMessage(e, 'Failed to schedule deploy'),
 											loading: 'Scheduling deploy...',
 										},
 									);

@@ -60,7 +60,7 @@ def run_signup_e2e():  # noqa: C901
 	if otp_helper:
 		env["OTP_HELPER_ENDPOINT"] = str(otp_helper)
 
-	cmd = ["yarn", "test:e2e"]
+	cmd = ["npm", "run", "test:e2e"]
 	print(
 		f"signup_e2e: starting Playwright test (products={env.get('PRODUCT_TRIALS')} base_url={env.get('BASE_URL')} timeout={timeout}s)"
 	)
