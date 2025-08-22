@@ -405,7 +405,11 @@ class Bench(Document):
 			self.save()  # triggers on_update
 			return
 
-		if hasattr(self, "flags") and hasattr(self.flags, "avoid_triggerring_update_bench_config_job"):
+		if (
+			hasattr(self, "flags")
+			and hasattr(self.flags, "avoid_triggerring_update_bench_config_job")
+			and self.flags.avoid_triggerring_update_bench_config_job
+		):
 			return
 
 		old = self.get_doc_before_save()

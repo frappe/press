@@ -370,7 +370,13 @@ def delete_old_snapshots():
 def delete_expired_snapshots():
 	snapshots = frappe.get_all(
 		"Virtual Disk Snapshot",
-		filters={"status": "Completed", "physical_backup": True, "rolling_snapshot": False, "expired": True},
+		filters={
+			"status": "Completed",
+			"physical_backup": True,
+			"rolling_snapshot": False,
+			"expired": True,
+			"dedicated_snapshot": False,
+		},
 		pluck="name",
 		order_by="creation asc",
 		limit=500,

@@ -436,9 +436,10 @@ export default {
 			{
 				label: 'Snapshots',
 				icon: icon('camera'),
-				// TODO: Not working always
-				condition: (server) =>
-					server?.documentResource?.doc?.provider === 'AWS EC2',
+				condition: (server) => {
+					if (!server?.doc) return true;
+					return server?.doc?.provider === 'AWS EC2';
+				},
 				route: 'snapshots',
 				type: 'list',
 				list: {

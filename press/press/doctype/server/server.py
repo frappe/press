@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import datetime
 import json
 import shlex
 import typing
@@ -2606,12 +2607,13 @@ class Server(BaseServer):
 		return bench_mount_points.issubset(mount_points)
 
 	@dashboard_whitelist()
-	def create_snapshot(self, consistent: bool = False) -> str:
+	def create_snapshot(self, consistent: bool = False, expire_at: datetime.datetime | None = None) -> str:
 		doc = frappe.get_doc(
 			{
 				"doctype": "Server Snapshot",
 				"app_server": self.name,
 				"consistent": consistent,
+				"expire_at": expire_at,
 			}
 		).insert(ignore_permissions=True)
 		frappe.msgprint(
