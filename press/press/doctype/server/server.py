@@ -72,6 +72,7 @@ class BaseServer(Document, TagHelpers):
 		"title",
 		"plan",
 		"cluster",
+		"provider",
 		"status",
 		"team",
 		"database_server",
