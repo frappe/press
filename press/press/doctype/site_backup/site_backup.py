@@ -112,6 +112,12 @@ class SiteBackup(Document):
 						frappe.utils.add_to_date(date, hours=23, minutes=59, seconds=59),
 					)
 				)
+
+		if filters.get("status"):
+			query = query.where(sb.status == filters["status"])
+		else:
+			query = query.where(sb.status == "Success")
+
 		results = [
 			result
 			for result in query.run(as_dict=True)

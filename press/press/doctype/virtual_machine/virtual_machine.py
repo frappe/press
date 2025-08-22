@@ -1819,8 +1819,10 @@ def sync_virtual_machines():
 	VirtualMachine.bulk_sync_oci()
 
 
-def snapshot_virtual_machines():
-	machines = frappe.get_all("Virtual Machine", {"status": "Running", "skip_automated_snapshot": 0})
+def snapshot_oci_virtual_machines():
+	machines = frappe.get_all(
+		"Virtual Machine", {"status": "Running", "skip_automated_snapshot": 0, "cloud_provider": "OCI"}
+	)
 	for machine in machines:
 		# Skip if a snapshot has already been created today
 		if frappe.get_all(
@@ -1840,6 +1842,63 @@ def snapshot_virtual_machines():
 		except Exception:
 			frappe.db.rollback()
 			log_error(title="Virtual Machine Snapshot Error", virtual_machine=machine.name)
+
+
+def snapshot_aws_internal_virtual_machines():
+	machines = frappe.get_all(
+		"Virtual Machine",
+		{
+			"status": "Running",
+			"skip_automated_snapshot": 0,
+			"cloud_provider": "AWS EC2",
+			"series": ("not in", ["f", "m"]),
+		},
+	)
+	for machine in machines:
+		# Skip if a snapshot has already been created today
+		if frappe.get_all(
+			"Virtual Disk Snapshot",
+			{
+				"virtual_machine": machine.name,
+				"physical_backup": 0,
+				"rolling_snapshot": 0,
+				"creation": (">=", frappe.utils.today()),
+			},
+			limit=1,
+		):
+			continue
+		try:
+			frappe.get_doc("Virtual Machine", machine.name).create_snapshots()
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			log_error(title="Virtual Machine Snapshot Error", virtual_machine=machine.name)
+
+
+def snapshot_aws_servers():
+	machines = frappe.get_all(
+		"Virtual Machine",
+		{"status": "Running", "skip_automated_snapshot": 0, "cloud_provider": "AWS EC2", "series": "f"},
+	)
+	for machine in machines:
+		app_server = frappe.get_value("Server", {"virtual_machine": machine.name}, "name")
+		# Skip if a snapshot has already been created today
+		if frappe.get_all(
+			"Server Snapshot",
+			{
+				"app_server": app_server,
+				"consistent": 0,
+				"creation": (">=", frappe.utils.today()),
+			},
+			limit=1,
+		):
+			continue
+		try:
+			frappe.get_doc("Server", app_server).create_snapshots(consistent=False)
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			log_error(title="Server Snapshot Error", virtual_machine=machine.name)
 
 
 def rolling_snapshot_database_server_virtual_machines():

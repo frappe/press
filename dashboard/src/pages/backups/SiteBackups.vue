@@ -26,11 +26,6 @@ export default {
 		listOptions() {
 			return {
 				doctype: 'Site Backup',
-				filters: () => {
-					return {
-						status: ['in', ['Pending', 'Running', 'Success']],
-					};
-				},
 				orderBy: 'creation desc',
 				fields: [
 					'name',
@@ -126,7 +121,7 @@ export default {
 							type: 'select',
 							label: 'Status',
 							fieldname: 'status',
-							options: ['', 'Success', 'Pending', 'Failure'],
+							options: ['', 'Success', 'Pending', 'Running', 'Failure'],
 						},
 						{
 							type: 'date',
