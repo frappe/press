@@ -1517,8 +1517,7 @@ class VirtualMachine(Document):
 	def convert_to_amd(self, virtual_machine_image, machine_type):
 		return self._create_vmm(virtual_machine_image, machine_type)
 
-	@frappe.whitelist()
-	def attach_new_volume(self, size, iops=None, throughput=None):
+	def attach_new_volume_aws_oci(self, size, iops=None, throughput=None):
 		volume_options = {
 			"AvailabilityZone": self.availability_zone,
 			"Size": size,
@@ -1546,6 +1545,13 @@ class VirtualMachine(Document):
 		)
 
 		return volume_id
+
+	@frappe.whitelist()
+	def attach_new_volume(self, size, iops=None, throughput=None):
+		if self.cloud_provider in ["AWS EC2", "OCI"]:
+			self.attach_new_volume_aws_oci(size, iops, throughput)
+		elif self.cloud_provider == "Hetzner":
+			self.attach_volume(size=size)
 
 	def wait_for_volume_to_be_available(self, volume_id):
 		# AWS EC2 specific
@@ -1576,11 +1582,6 @@ class VirtualMachine(Document):
 		except botocore.exceptions.ClientError as e:
 			if e.response.get("Error", {}).get("Code") == "InvalidVolumeModification.NotFound":
 				return None
-
-	@frappe.whitelist()
-	def attach_volume_job(self):
-		server = frappe.get_doc("Server", self.name)
-		server.run_press_job("Attach Volume")
 
 	@frappe.whitelist()
 	def attach_volume(self, volume_id=None, is_temporary_volume: bool = False, size: int | None = None):
