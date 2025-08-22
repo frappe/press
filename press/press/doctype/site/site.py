@@ -2131,14 +2131,13 @@ class Site(Document, TagHelpers):
 		# relies on self._keys_removed_in_last_update in self.validate
 		# used by https://frappecloud.com/app/marketplace-app/email_delivery_service
 		config_list: list[dict] = []
-		for key in self.configuration:
+		for row in self.configuration:
 			config = {}
-			if key.key in keys:
-				continue
-			config["key"] = key.key
-			config["value"] = key.value
-			config["type"] = key.type
-			config_list.append(config)
+			if row.key not in keys and not row.internal:
+				config["key"] = row.key
+				config["value"] = row.value
+				config["type"] = row.type
+				config_list.append(config)
 		self.update_site_config(config_list)
 
 	@frappe.whitelist()
