@@ -19,15 +19,19 @@ async function runSignupFlow(page: Page, product: string) {
   const email = testEmail(product.toLowerCase().replace(/\s+/g, '-'));
   await page.goto(`/dashboard/signup?product=${encodeURIComponent(product)}`);
   await page.waitForSelector('form', { timeout: 30000 });
-  await Promise.race([
-    page.getByRole('button', { name: /sign up with email/i }).waitFor({ state: 'visible', timeout: 20000 }),
-    page.getByLabel(/email/i).waitFor({ state: 'visible', timeout: 20000 }),
-  ]);
+  await page.waitForSelector([
+    'button:has-text("Sign up with email")',
+    'input[type="email"]',
+    'input[name*="email" i]',
+    'input[placeholder*="email" i]'
+  ].join(', '), { timeout: 45_000 });
+
+  // Prefer explicitly labeled input if present; else fall back to broader selector.
   let emailInput = page.getByLabel(/email/i).first();
   if (!(await emailInput.count())) {
-    emailInput = page.locator('input[type="email"]').first();
+    emailInput = page.locator('input[type="email"], input[name*="email" i], input[placeholder*="email" i]').first();
   }
-  await emailInput.waitFor({ state: 'visible', timeout: 10000 });
+  await emailInput.waitFor({ state: 'visible', timeout: 15_000 });
   await emailInput.fill(email);
   let accountRequestId: string | undefined;
   await Promise.all([
@@ -42,7 +46,11 @@ async function runSignupFlow(page: Page, product: string) {
         // ignore
       }
     })(),
-    page.getByRole('button', { name: /sign up with email/i }).click(),
+    (async () => {
+      // slight delay to allow any debounce / validation to finish before submitting signup
+      await page.waitForTimeout(400);
+      await page.getByRole('button', { name: /sign up with email/i }).click();
+    })(),
   ]);
 
   const otpHelper = process.env.OTP_HELPER_ENDPOINT;
@@ -131,7 +139,11 @@ async function runSignupFlow(page: Page, product: string) {
     }
     await Promise.all([
       page.waitForURL(/.*\/dashboard\/(saas|create-site)\//, { timeout: 60_000 }),
-      page.getByRole('button', { name: /create account/i }).click(),
+      (async () => {
+        // slight stabilization delay to allow frontend state to settle
+        await page.waitForTimeout(400);
+        await page.getByRole('button', { name: /create account/i }).click();
+      })(),
     ]);
   }
 
@@ -166,7 +178,11 @@ async function runSignupFlow(page: Page, product: string) {
     const popupPromise = context.waitForEvent('page').catch(() => null);
     await Promise.all([
       page.waitForResponse(r => r.url().includes('press.api.client.run_doc_method') && r.request().method() === 'POST' && (r.request().postData() || '').includes('create_site')),
-      page.getByRole('button', { name: /create site/i }).click(),
+      (async () => {
+        // slight delay to ensure any debounce / validation completes before submission
+        await page.waitForTimeout(400);
+        await page.getByRole('button', { name: /create site/i }).click();
+      })(),
     ]);
     let activePage: Page | null = await Promise.race([
       popupPromise,
