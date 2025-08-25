@@ -136,9 +136,9 @@ class ProductTrialRequest(Document):
 			if response.status_code == 200:
 				self.db_set("is_site_accessible", "Yes")
 			else:
-				self.db_set({"is_site_accessible": "No", "status": "Error"})
+				self.db_set({"is_site_accessible": "No"})
 		except Exception as e:
-			self.db_set({"is_site_accessible": "No", "status": "Error", "error": str(e)})
+			self.db_set({"is_site_accessible": "No", "error": str(e)})
 
 	def after_insert(self):
 		self.capture_posthog_event("product_trial_request_created")
