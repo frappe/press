@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import frappe
+from frappe.frappeclient import FrappeClient
 
 from press.press.doctype.deploy_candidate.deploy_candidate import toggle_builds
 from press.press.doctype.server.server import BaseServer
@@ -113,3 +114,90 @@ class RegistryServer(BaseServer):
 		except Exception:
 			log_error("Prune Docker Registry Exception", doc=self)
 		toggle_builds(False)
+
+
+def prune_registry():  # noqa: C901
+	"""Purge registry of older images"""
+	settings = frappe.get_doc("Press Settings", None)
+	registry = settings.docker_registry_url
+
+	requests = FrappeClient(registry).session
+
+	headers = {"Accept": "application/vnd.docker.distribution.manifest.v2+json"}
+	auth = (settings.docker_registry_username, settings.docker_registry_password)
+
+	# Traverse all pages
+	last = None
+	while True:
+		params = {"last": last} if last else {}
+		response = requests.get(f"https://{registry}/v2/_catalog", auth=auth, headers=headers, params=params)
+
+		if not response.ok:
+			return
+
+		repositories = response.json()["repositories"]
+		if not repositories:
+			break
+		last = repositories[-1]
+
+		for repository in repositories:
+			try:
+				# Skip non-bench images
+				if not frappe.db.exists("Release Group", repository.split("/")[-1]):
+					continue
+				tags = (
+					requests.get(f"https://{registry}/v2/{repository}/tags/list", auth=auth, headers=headers)
+					.json()
+					.get("tags", [])
+					or []
+				)
+				tags = sorted(tags)
+				for tag in tags:
+					if tag.startswith("deploy-"):
+						deploy_candidate = tag
+					else:
+						deploy_candidate = frappe.db.get_value(
+							"Deploy Candidate Build", tag, "deploy_candidate"
+						)
+
+					if not deploy_candidate:
+						in_use = False
+					else:
+						in_use = frappe.db.get_all(
+							"Bench",
+							["count(*) as count"],
+							{"status": "Active", "candidate": deploy_candidate},
+						)[0].count
+
+					if not in_use:
+						digest = requests.head(
+							f"https://{registry}/v2/{repository}/manifests/{tag}", auth=auth, headers=headers
+						).headers["Docker-Content-Digest"]
+						should_delete = False
+
+						# Delete all except the most recent candidates
+						if tags.index(tag) < len(tags) - 1:
+							should_delete = True
+						else:
+							# For most recent candidate delete the image if
+							# 1. It hasn't been in use for sometime OR
+							# 2. The Release Group is disabled
+
+							enabled = frappe.db.get_value(
+								"Release Group", repository.split("/")[-1], "enabled"
+							)
+							created = frappe.db.get_value("Deploy Candidate", deploy_candidate, "creation")
+							if not enabled or created < frappe.utils.add_days(None, -7):
+								# log(["DELETING", repository, tag, tags.index(tag) == len(tags) - 1, not enabled, created])
+								should_delete = True
+
+						if should_delete:
+							# DELETE the image
+							requests.delete(
+								f"https://{registry}/v2/{repository}/manifests/{digest}",
+								auth=auth,
+								headers=headers,
+							)
+
+			except Exception:
+				pass
