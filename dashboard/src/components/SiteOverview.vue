@@ -4,6 +4,36 @@
 		class="grid grid-cols-1 items-start gap-5 lg:grid-cols-2"
 	>
 		<AlertBanner
+			v-if="$site?.doc?.status === 'Suspended' && $site?.doc?.suspension_reason"
+			class="col-span-1 lg:col-span-2"
+			type="error"
+			:title="`Suspension Reason : ${$site?.doc?.suspension_reason || 'Not Specified'}`"
+		>
+			<Button
+				class="ml-auto min-w-[7rem]"
+				variant="outline"
+				link="https://docs.frappe.io/cloud/faq/site#my-site-is-suspended-what-do-i-do"
+			>
+				More Info
+			</Button>
+		</AlertBanner>
+
+		<AlertBanner
+			v-if="$site?.doc?.status === 'Active' && $site?.doc?.site_usage_exceeded"
+			class="col-span-1 lg:col-span-2"
+			type="warning"
+			title="Database or Disk usage limits exceeded. Upgrade plan or reduce usage to avoid suspension."
+		>
+			<Button
+				class="ml-auto min-w-[7rem]"
+				variant="outline"
+				link="https://docs.frappe.io/cloud/faq/site#my-site-is-suspended-what-do-i-do"
+			>
+				More Info
+			</Button>
+		</AlertBanner>
+
+		<AlertBanner
 			v-if="!isSetupWizardComplete"
 			class="col-span-1 lg:col-span-2"
 			title="Please login and complete the setup wizard on your site. Analytics will be
