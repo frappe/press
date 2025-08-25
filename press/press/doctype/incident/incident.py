@@ -571,6 +571,7 @@ Incident URL: {incident_link}"""
 			self.twilio_client.messages.create(
 				to=human.phone, from_=self.twilio_phone_number, body=message_body
 			)
+		self.reload()  # In case the phone call status is modified by the investigator before the sms is sent
 		self.sms_sent = 1
 		self.save()
 
