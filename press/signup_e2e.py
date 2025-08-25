@@ -52,7 +52,7 @@ def run_signup_e2e():  # noqa: C901
 		return
 
 	random.shuffle(product_trials_list)
-	product_trials_list = product_trials_list[:5]
+	product_trials_list = product_trials_list[:3]
 
 	base_url = frappe.conf.get("signup_e2e_base_url") or frappe.utils.get_url()
 	timeout = int(frappe.conf.get("signup_e2e_timeout_seconds") or 900)

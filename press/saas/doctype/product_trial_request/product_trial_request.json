@@ -135,13 +135,14 @@
   {
    "fieldname": "error",
    "fieldtype": "Code",
-   "label": "Error"
+   "label": "Error",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-25 10:55:36.640021",
+ "modified": "2025-08-25 11:10:51.808901",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial Request",
