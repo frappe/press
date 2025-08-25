@@ -249,7 +249,7 @@ class ServerSnapshotRecovery(Document):
 					site.bench,
 					reference_doctype=self.doctype,
 					reference_name=self.name,
-				)
+				).name
 				site.database_backup_job = self.server_agent.backup_site_database_from_snapshot(
 					self.cluster,
 					site.site,
@@ -257,7 +257,7 @@ class ServerSnapshotRecovery(Document):
 					self.database_server,
 					reference_doctype=self.doctype,
 					reference_name=self.name,
-				)
+				).name
 
 		self.save()
 

@@ -136,16 +136,6 @@ export default {
 					disabled: enforce2FA,
 				},
 				{
-					name: 'Marketplace',
-					icon: () => h(App),
-					route: '/apps',
-					isActive: routeName.startsWith('Marketplace'),
-					condition:
-						this.$team.doc?.is_desk_user ||
-						(!!this.$team.doc.is_developer && this.$session.hasAppsAccess),
-					disabled: enforce2FA,
-				},
-				{
 					name: 'Dev Tools',
 					icon: () => h(Code),
 					route: '/devtools',
@@ -185,6 +175,16 @@ export default {
 						'Log Browser',
 						'Binlog Browser',
 					].includes(routeName),
+					disabled: enforce2FA,
+				},
+				{
+					name: 'Marketplace',
+					icon: () => h(App),
+					route: '/apps',
+					isActive: routeName.startsWith('Marketplace'),
+					condition:
+						this.$team.doc?.is_desk_user ||
+						(!!this.$team.doc.is_developer && this.$session.hasAppsAccess),
 					disabled: enforce2FA,
 				},
 				{

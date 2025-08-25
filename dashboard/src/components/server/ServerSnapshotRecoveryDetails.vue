@@ -116,14 +116,14 @@ export default {
 									condition: () => row.database_backup_available,
 								},
 								{
-									label: 'Download Public',
+									label: 'Download Public Files',
 									onClick: () => {
 										return this.download(row, 'public');
 									},
 									condition: () => row.public_files_backup_available,
 								},
 								{
-									label: 'Download Private',
+									label: 'Download Private Files',
 									onClick: () => {
 										return this.download(row, 'private');
 									},

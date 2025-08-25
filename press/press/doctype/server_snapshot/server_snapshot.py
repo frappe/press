@@ -422,6 +422,9 @@ class ServerSnapshot(Document):
 		if self.locked:
 			return
 
+		if self.free:
+			frappe.throw("Non-chargeable snapshots cannot be locked")
+
 		if now is None:
 			now = False
 
