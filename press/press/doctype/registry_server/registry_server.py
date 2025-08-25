@@ -116,7 +116,7 @@ class RegistryServer(BaseServer):
 		toggle_builds(False)
 
 
-def prune_registry():  # noqa: C901
+def delete_old_images_from_registry():  # noqa: C901
 	"""Purge registry of older images"""
 	settings = frappe.get_doc("Press Settings", None)
 	registry = settings.docker_registry_url

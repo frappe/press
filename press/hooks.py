@@ -203,7 +203,7 @@ scheduler_events = {
 		"press.press.doctype.tls_certificate.tls_certificate.notify_custom_tls_renewal",
 		"press.press.doctype.site.site.suspend_sites_exceeding_disk_usage_for_last_7_days",
 		"press.press.doctype.user_2fa.user_2fa.yearly_2fa_recovery_code_reminder",
-		"press.press.doctype.registry_server.registry_server.prune_registry",
+		"press.press.doctype.registry_server.registry_server.delete_old_images_from_registry",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
