@@ -1808,7 +1808,7 @@ class VirtualMachine(Document):
 				size=size,
 				name=f"{self.name}-{slug(self.cluster)}",
 				format="ext4",
-				automount=True,
+				automount=False,
 				server=server_instance,
 			)
 			"""
