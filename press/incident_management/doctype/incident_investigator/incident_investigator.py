@@ -238,6 +238,14 @@ class IncidentInvestigator(Document):
 			"database_investigation_steps": investigation_steps,
 		}
 
+	@property
+	def likely_causes(self):
+		"""Return likely causes for database and server from investigation"""
+		return {
+			"database": [step.method for step in self.database_investigation_steps if step.is_likely_cause],
+			"server": [step.method for step in self.database_investigation_steps if step.is_likely_cause],
+		}
+
 	def add_investigation_steps(self):
 		"""Add Investigation steps for [f/m/n] server"""
 		for steps_for, steps in self.steps.items():
@@ -375,27 +383,38 @@ class IncidentInvestigator(Document):
 			self._initiate_reboot_database(database_server)
 			return
 
-		database_likely_causes = [step for step in self.database_investigation_steps if step.is_likely_cause]
-		database_methods = {step.method for step in database_likely_causes}
+		database_likely_causes = set(self.likely_causes["database"])
 		if (
-			database_methods
-			and database_methods.issubset(
+			database_likely_causes
+			and database_likely_causes.issubset(
 				{
 					self.has_high_cpu_load.__name__,
 					self.has_high_memory_usage.__name__,
 					self.has_high_system_load.__name__,
 				}
 			)
-			and database_methods != {self.has_high_memory_usage.__name__}
+			and database_likely_causes != {self.has_high_memory_usage.__name__}
 		):  # don't trigger this only for high memory issues
 			self._initiate_process_list_capture_and_reboot_mariadb(database_server)
 
-	def add_post_investigation_actions(self):
+	def add_investigation_actions(self):
 		if self.add_proxy_investigation_actions():
 			return
 
 		self.add_server_investigation_actions()
 		self.add_database_server_investigation_actions()
+
+	def stop_calls_on_high_disk_usage(self):
+		"""If the investigation shows high disk usage (only!) we can safely ignore calls"""
+		if [self.has_high_disk_usage.__name__] == self.likely_causes["database"] or [
+			self.has_high_disk_usage.__name__
+		] == self.likely_causes["server"]:
+			frappe.db.set_value("Incident", self.incident, "phone_call", False)
+
+	def post_investigation(self):
+		"""Stop calls in case of high disk usage & add investigation actions"""
+		self.stop_calls_on_high_disk_usage()
+		self.add_investigation_actions()
 
 	def investigate(self):
 		"""
@@ -414,4 +433,8 @@ class IncidentInvestigator(Document):
 		self.investigate_server()
 		self.set_status(Status.COMPLETED)
 
-		self.add_post_investigation_actions()
+		self.post_investigation()
+
+		"""
+		https://github.com/prometheus/blackbox_exporter/blob/master/blackbox.yml#L30-L46
+		"""
