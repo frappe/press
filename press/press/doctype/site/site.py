@@ -236,6 +236,7 @@ class Site(Document, TagHelpers):
 		"signup_time",
 		"account_request",
 		"allow_physical_backup_by_user",
+		"site_usage_exceeded",
 	)
 
 	@staticmethod
@@ -320,6 +321,11 @@ class Site(Document, TagHelpers):
 		doc.server_title = server.title
 		doc.inbound_ip = self.inbound_ip
 		doc.is_dedicated_server = is_dedicated_server(self.server)
+		doc.suspension_reason = (
+			frappe.db.get_value("Site Activity", {"site": self.name, "action": "Suspend Site"}, "reason")
+			if self.status == "Suspended"
+			else None
+		)
 
 		if doc.owner == "Administrator":
 			doc.signup_by = frappe.db.get_value("Account Request", doc.account_request, "email")
