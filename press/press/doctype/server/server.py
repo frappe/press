@@ -2638,6 +2638,27 @@ class Server(BaseServer):
 		)
 		return doc.name
 
+	@dashboard_whitelist()
+	def delete_snapshot(self, snapshot_name: str) -> None:
+		doc = frappe.get_doc("Server Snapshot", snapshot_name)
+		if doc.app_server != self.name:
+			frappe.throw("Snapshot does not belong to this server")
+		doc.delete_snapshots()
+
+	@dashboard_whitelist()
+	def lock_snapshot(self, snapshot_name: str) -> None:
+		doc = frappe.get_doc("Server Snapshot", snapshot_name)
+		if doc.app_server != self.name:
+			frappe.throw("Snapshot does not belong to this server")
+		doc.lock()
+
+	@dashboard_whitelist()
+	def unlock_snapshot(self, snapshot_name: str) -> None:
+		doc = frappe.get_doc("Server Snapshot", snapshot_name)
+		if doc.app_server != self.name:
+			frappe.throw("Snapshot does not belong to this server")
+		doc.unlock()
+
 
 def scale_workers(now=False):
 	servers = frappe.get_all("Server", {"status": "Active", "is_primary": True})

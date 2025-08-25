@@ -5,7 +5,11 @@ import ServerActions from '../components/server/ServerActions.vue';
 import { getTeam } from '../data/team';
 import router from '../router';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { icon } from '../utils/components';
+=======
+import { confirmDialog, icon, renderDialog } from '../utils/components';
+>>>>>>> da2d50780 (refactor(snapshot): Refactored the UX of snaphost page)
 import { isMobile } from '../utils/device';
 import { duration, planTitle, userCurrency } from '../utils/format';
 =======
@@ -16,6 +20,7 @@ import { trialDays } from '../utils/site';
 import { getJobsTab } from './common/jobs';
 import { tagTab } from './common/tags';
 import { getQueryParam, setQueryParam } from '../utils/index';
+import { toast } from 'vue-sonner';
 
 export default {
 	doctype: 'Server',
@@ -29,6 +34,9 @@ export default {
 		dropServer: 'drop_server',
 		addTag: 'add_resource_tag',
 		removeTag: 'remove_resource_tag',
+		deleteSnapshot: 'delete_snapshot',
+		lockSnapshot: 'lock_snapshot',
+		unlockSnapshot: 'unlock_snapshot',
 	},
 	list: {
 		route: '/servers',
@@ -608,20 +616,153 @@ export default {
 							},
 						};
 					},
-					onRowClick(row) {
-						renderDialog(
-							h(
-								defineAsyncComponent(
-									() =>
-										import(
-											'../components/server/ServerSnapshotDetailsDialog.vue'
-										),
-								),
-								{
-									name: row.name,
+					rowActions({ row, documentResource: server }) {
+						return [
+							{
+								label: 'View Details',
+								onClick() {
+									let ServerSnapshotDetailsDialog = defineAsyncComponent(
+										() =>
+											import(
+												'../components/server/ServerSnapshotDetailsDialog.vue'
+											),
+									);
+									renderDialog(
+										h(ServerSnapshotDetailsDialog, {
+											name: row.name,
+										}),
+									);
 								},
-							),
-						);
+							},
+							{
+								label: 'Recover Sites',
+								onClick() {
+									let ServerSnapshotRecoverSitesDialog = defineAsyncComponent(
+										() =>
+											import(
+												'../components/server/ServerSnapshotRecoverSitesDialog.vue'
+											),
+									);
+									renderDialog(
+										h(ServerSnapshotRecoverSitesDialog, {
+											name: row.name,
+										}),
+									);
+								},
+							},
+							{
+								label: 'Lock',
+								condition: () => row.status === 'Completed' && !row.locked,
+								onClick() {
+									confirmDialog({
+										title: 'Lock Snapshot',
+										message:
+											'Are you sure you want to lock this snapshot? This will prevent the snapshot from being deleted accidentally.',
+										primaryAction: {
+											label: 'Lock',
+											onClick: ({ hide }) => {
+												toast.promise(
+													server.lockSnapshot.submit(
+														{
+															snapshot_name: row.name,
+														},
+														{
+															onSuccess() {
+																hide();
+															},
+														},
+													),
+													{
+														loading: 'Locking snapshot...',
+														success: 'Snapshot will be locked shortly',
+														error: (err) => {
+															return err.messages?.length
+																? err.messages.join('\n')
+																: err.message || 'Failed to lock snapshot';
+														},
+													},
+												);
+											},
+										},
+									});
+								},
+							},
+							{
+								label: 'Unlock',
+								condition: () => row.status === 'Completed' && row.locked,
+								onClick() {
+									confirmDialog({
+										title: 'Unlock Snapshot',
+										message:
+											'Are you sure you want to unlock this snapshot ? After unlocking, the snapshot can be deleted by end-user.',
+										primaryAction: {
+											label: 'Unlock',
+											onClick: ({ hide }) => {
+												toast.promise(
+													server.unlockSnapshot.submit(
+														{
+															snapshot_name: row.name,
+														},
+														{
+															onSuccess() {
+																hide();
+															},
+														},
+													),
+													{
+														loading: 'Unlocking snapshot...',
+														success: 'Snapshot will be unlocked shortly',
+														error: (err) => {
+															return err.messages?.length
+																? err.messages.join('\n')
+																: err.message || 'Failed to unlock snapshot';
+														},
+													},
+												);
+											},
+										},
+									});
+								},
+							},
+							{
+								label: 'Delete',
+								condition: () => row.status === 'Completed',
+								onClick() {
+									confirmDialog({
+										title: 'Delete Snapshot',
+										message:
+											'Are you sure you want to delete this snapshot? This will delete the snapshot and all associated recovered data.',
+										primaryAction: {
+											label: 'Delete',
+											theme: 'red',
+											onClick: ({ hide }) => {
+												toast.promise(
+													server.deleteSnapshot.submit(
+														{
+															snapshot_name: row.name,
+														},
+														{
+															onSuccess() {
+																hide();
+															},
+														},
+													),
+													{
+														loading: 'Deleting snapshot...',
+														success: 'Snapshot deleted successfully',
+														error: (err) => {
+															return err.messages?.length
+																? err.messages.join('\n')
+																: err.message || 'Failed to delete snapshot';
+														},
+													},
+												);
+											},
+										},
+									});
+								},
+							},
+						];
 					},
 				},
 			},
