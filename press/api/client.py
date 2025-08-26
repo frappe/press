@@ -84,6 +84,7 @@ ALLOWED_DOCTYPES = [
 	"Partner Lead",
 	"Partner Lead Type",
 	"Lead Followup",
+	"Partner Consent",
 ]
 
 ALLOWED_DOCTYPES_FOR_SUPPORT = [

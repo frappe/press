@@ -224,7 +224,10 @@
 						variant: 'solid',
 						onClick: () => {
 							showRenewalConfirmationDialog = false;
-							showPartnerCreditsDialog = true;
+							partnerConsent.insert.submit({
+								agreed: true,
+								team: $team.doc?.name,
+							});
 						},
 					},
 				],
@@ -249,13 +252,20 @@
 <script setup>
 import { computed, inject, ref, watch } from 'vue';
 import dayjs from '../../utils/dayjs';
-import { FeatherIcon, Button, createResource, Progress } from 'frappe-ui';
+import {
+	FeatherIcon,
+	Button,
+	createResource,
+	Progress,
+	createListResource,
+} from 'frappe-ui';
 import PartnerContribution from './PartnerContribution.vue';
 import ClickToCopyField from '../ClickToCopyField.vue';
 import PartnerCreditsForm from './PartnerCreditsForm.vue';
 import PartnerMembers from './PartnerMembers.vue';
 import WebsiteInfoDialog from './WebsiteInfoDialog.vue';
 import { Dialog } from 'frappe-ui';
+import { toast } from 'vue-sonner';
 
 const team = inject('team');
 
@@ -274,6 +284,14 @@ const partnerDetails = createResource({
 	},
 	onSuccess(data) {
 		calculateNextTier(data.partner_type);
+	},
+});
+
+const partnerConsent = createListResource({
+	doctype: 'Partner Consent',
+	onSuccess() {
+		showPartnerCreditsDialog.value = true;
+		toast.success('Partner consent recorded successfully');
 	},
 });
 
