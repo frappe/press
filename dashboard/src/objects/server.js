@@ -636,6 +636,7 @@ export default {
 							},
 							{
 								label: 'Recover Sites',
+								condition: () => row.status === 'Completed',
 								onClick() {
 									let ServerSnapshotRecoverSitesDialog = defineAsyncComponent(
 										() =>
