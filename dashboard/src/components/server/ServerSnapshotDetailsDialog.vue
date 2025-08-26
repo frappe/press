@@ -29,7 +29,9 @@
 					<div>
 						<p class="text-xs text-gray-600">Size</p>
 						<p class="mt-2 text-sm text-gray-700">
-							{{ snapshot?.total_size_gb ? snapshot.total_size_gb : '--' }} GB
+							{{
+								snapshot?.total_size_gb ? `${snapshot.total_size_gb} GB` : '--'
+							}}
 						</p>
 					</div>
 				</div>
