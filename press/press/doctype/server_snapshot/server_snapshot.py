@@ -630,20 +630,26 @@ def move_pending_snapshots_to_processing():
 
 
 def expire_snapshots():
-	records = frappe.get_all(
-		"Server Snapshot",
-		filters={
-			"status": "Completed",
-			"expire_at": ("<=", frappe.utils.now_datetime()),
-			"locked": 0,
-		},
-		pluck="name",
-		limit_page_length=50,
+	Snapshot = frappe.qb.DocType("Server Snapshot")
+	records = (
+		frappe.qb.from_(Snapshot)
+		.select(Snapshot.name)
+		.where(
+			(Snapshot.status == "Completed")
+			& (Snapshot.expire_at.isnotnull())
+			& (Snapshot.expire_at <= frappe.utils.now_datetime())
+			& (Snapshot.locked == 0)
+			& (Snapshot.free == 1)
+		)
+		.limit(50)
+		.run(as_dict=True)
 	)
 
 	for record in records:
 		try:
-			snapshot = frappe.get_doc("Server Snapshot", record)
+			snapshot = frappe.get_doc("Server Snapshot", record.get("name"))
+			if not snapshot.expire_at:
+				continue
 			snapshot.delete_snapshots()
 			frappe.db.commit()
 		except Exception:

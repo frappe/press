@@ -396,7 +396,7 @@ class LogicalReplicationBackup(Document):
 	def pre__create_consistent_server_snapshot(self):
 		"""Create Consistent Snapshot Of Servers"""
 		try:
-			self.server_snapshot = self.app_server_doc.create_snapshot(consistent=True)
+			self.server_snapshot = self.app_server_doc._create_snapshot(consistent=True)
 			self.save()
 			return StepStatus.Success
 		except Exception as e:
