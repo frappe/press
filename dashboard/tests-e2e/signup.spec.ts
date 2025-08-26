@@ -10,31 +10,75 @@ function fetchProductTrials(): string[] {
   return products;
 }
 
+// Per-product timeout (default 5m) and optional inactivity watchdog (env overrides)
+const PER_PRODUCT_TIMEOUT_MS = parseInt(process.env.SIGNUP_PER_PRODUCT_TIMEOUT_MS || '300000', 10); // 5 minutes default
+const INACTIVITY_LIMIT_MS = parseInt(process.env.SIGNUP_INACTIVITY_MS || '0', 10); // disabled by default
+
 function testEmail(product: string) {
   const rand = crypto.randomBytes(3).toString('hex');
   return `playwright_${product}_${rand}@signup.test`;
 }
 
 async function runSignupFlow(page: Page, product: string) {
+  const flowStart = Date.now();
+  let lastActivity = Date.now();
+  function remaining() { return PER_PRODUCT_TIMEOUT_MS - (Date.now() - flowStart); }
+  function touch(label: string) { lastActivity = Date.now(); /* lightweight marker */ }
+  function ensureTime(label: string) {
+    if (remaining() <= 0) {
+      throw new Error(`Per-product timeout (${PER_PRODUCT_TIMEOUT_MS}ms) exceeded at phase: ${label}`);
+    }
+    if (INACTIVITY_LIMIT_MS > 0 && Date.now() - lastActivity > INACTIVITY_LIMIT_MS) {
+      throw new Error(`Inactivity > ${INACTIVITY_LIMIT_MS}ms detected at phase: ${label}`);
+    }
+  }
+  async function runStep<T>(label: string, fn: () => Promise<T>, stepCap?: number): Promise<T> {
+    ensureTime(label + ':before');
+    const budget = remaining();
+    const timeoutCap = Math.min(stepCap || budget, budget);
+    touch(label + ':start');
+    const result = await Promise.race([
+      fn(),
+      page.waitForTimeout(timeoutCap).then(() => {
+        throw new Error(`Step timeout (${label}) after ${timeoutCap}ms (remaining budget exhausted or step slow)`);
+      })
+    ]);
+    touch(label + ':done');
+    ensureTime(label + ':after');
+    return result;
+  }
+  // optional simple inactivity watcher (non-fatal; enforce via ensureTime on steps)
+  if (INACTIVITY_LIMIT_MS > 0) {
+    (async () => {
+      while (remaining() > 0) {
+        await page.waitForTimeout(Math.min(5000, Math.max(1000, INACTIVITY_LIMIT_MS / 4)));
+        if (Date.now() - lastActivity > INACTIVITY_LIMIT_MS) {
+          // Force a failure by triggering ensureTime on next step; or throw here if desired
+          throw new Error(`Inactivity watcher: no activity for ${INACTIVITY_LIMIT_MS}ms in product ${product}`);
+        }
+      }
+    })().catch(err => console.warn('[signup.spec] inactivity watcher error', err?.message));
+  }
+
   const email = testEmail(product.toLowerCase().replace(/\s+/g, '-'));
-  await page.goto(`/dashboard/signup?product=${encodeURIComponent(product)}`);
-  await page.waitForSelector('form', { timeout: 30000 });
-  await page.waitForSelector([
+  await runStep('goto', () => page.goto(`/dashboard/signup?product=${encodeURIComponent(product)}`));
+  await runStep('wait-form', () => page.waitForSelector('form', { timeout: Math.min(30000, remaining()) }));
+  await runStep('wait-email-selectors', () => page.waitForSelector([
     'button:has-text("Sign up with email")',
     'input[type="email"]',
     'input[name*="email" i]',
     'input[placeholder*="email" i]'
-  ].join(', '), { timeout: 45_000 });
+  ].join(', '), { timeout: Math.min(45_000, remaining()) }));
 
   // Prefer explicitly labeled input if present; else fall back to broader selector.
   let emailInput = page.getByLabel(/email/i).first();
   if (!(await emailInput.count())) {
     emailInput = page.locator('input[type="email"], input[name*="email" i], input[placeholder*="email" i]').first();
   }
-  await emailInput.waitFor({ state: 'visible', timeout: 15_000 });
-  await emailInput.fill(email);
+  await runStep('email-visible', () => emailInput.waitFor({ state: 'visible', timeout: Math.min(15_000, remaining()) }));
+  await runStep('email-fill', () => emailInput.fill(email));
   let accountRequestId: string | undefined;
-  await Promise.all([
+  await runStep('signup-submit-and-response', () => Promise.all([
     (async () => {
       const resp = await page.waitForResponse(
         (r) => r.url().includes('press.api.account.signup') && r.status() === 200,
@@ -51,7 +95,7 @@ async function runSignupFlow(page: Page, product: string) {
       await page.waitForTimeout(400);
       await page.getByRole('button', { name: /sign up with email/i }).click();
     })(),
-  ]);
+  ]));
 
   const otpHelper = process.env.OTP_HELPER_ENDPOINT;
   let code: string | undefined;
@@ -84,13 +128,13 @@ async function runSignupFlow(page: Page, product: string) {
     code = '111111';
   }
 
-  await page.getByLabel(/verification code/i).fill(code!);
-  await Promise.all([
+  await runStep('fill-otp', () => page.getByLabel(/verification code/i).fill(code!));
+  await runStep('verify-otp', () => Promise.all([
     page.waitForResponse((r) => r.url().includes('press.api.account.verify_otp') && r.status() === 200),
     page.getByRole('button', { name: /verify/i }).click(),
-  ]);
+  ]));
 
-  await page.waitForURL(/.*\/dashboard\/(setup-account|saas|create-site)\//, { timeout: 60_000 });
+  await runStep('post-verify-redirect', () => page.waitForURL(/.*\/dashboard\/(setup-account|saas|create-site)\//, { timeout: Math.min(60_000, remaining()) }));
 
   if (page.url().includes('/dashboard/setup-account/')) {
     await Promise.race([
@@ -137,21 +181,17 @@ async function runSignupFlow(page: Page, product: string) {
         }
       } catch { /* ignore */ }
     }
-    await Promise.all([
-      page.waitForURL(/.*\/dashboard\/(saas|create-site)\//, { timeout: 60_000 }),
-      (async () => {
-        // slight stabilization delay to allow frontend state to settle
-        await page.waitForTimeout(400);
-        await page.getByRole('button', { name: /create account/i }).click();
-      })(),
-    ]);
+    await runStep('create-account', () => Promise.all([
+      page.waitForURL(/.*\/dashboard\/(saas|create-site)\//, { timeout: Math.min(60_000, remaining()) }),
+      (async () => { await page.waitForTimeout(400); await page.getByRole('button', { name: /create account/i }).click(); })(),
+    ]));
   }
 
   expect(page.url()).toMatch(/dashboard\/(saas|create-site)\//);
 
   if (/\/dashboard\/create-site\/[^/]+\/setup/.test(page.url())) {
     const siteInput = page.locator('form input');
-    await siteInput.first().waitFor({ state: 'visible', timeout: 15000 });
+  await runStep('site-input-visible', () => siteInput.first().waitFor({ state: 'visible', timeout: Math.min(15000, remaining()) }));
     let currentVal = (await siteInput.first().inputValue().catch(() => ''))?.trim();
     if (!currentVal) {
       const base = product.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 15) || 'site';
@@ -176,22 +216,21 @@ async function runSignupFlow(page: Page, product: string) {
     const originHost = new URL(page.url()).host;
     const context = page.context();
     const popupPromise = context.waitForEvent('page').catch(() => null);
-    await Promise.all([
+    await runStep('create-site-submit', () => Promise.all([
       page.waitForResponse(r => r.url().includes('press.api.client.run_doc_method') && r.request().method() === 'POST' && (r.request().postData() || '').includes('create_site')),
-      (async () => {
-        // slight delay to ensure any debounce / validation completes before submission
-        await page.waitForTimeout(400);
-        await page.getByRole('button', { name: /create site/i }).click();
-      })(),
-    ]);
+      (async () => { await page.waitForTimeout(400); await page.getByRole('button', { name: /create site/i }).click(); })(),
+    ]));
     let activePage: Page | null = await Promise.race([
       popupPromise,
       (async () => { await page.waitForTimeout(4000); return null; })(),
     ]);
     if (!activePage) activePage = page;
-    const deadline = Date.now() + 240_000;
+    // Provisioning deadline capped by remaining product budget (max 4m internal cap)
+    const provisionCap = Math.min(240_000, Math.max(10_000, remaining()));
+    const deadline = Date.now() + provisionCap;
     let success = false;
     while (Date.now() < deadline && !success) {
+      ensureTime('provision-loop');
       const url = activePage.url();
       let host = '';
       try { host = new URL(url).host; } catch { /* ignore */ }
@@ -222,26 +261,12 @@ async function runSignupFlow(page: Page, product: string) {
   }
 }
 
-test.describe('Signup flow per product trial', () => {
-  test.beforeEach(async () => {
-  });
+test.describe.configure({ mode: 'parallel' });
 
-  test('dynamic product trials signup', async ({ page }) => {
-  test.setTimeout(15 * 60 * 1000);
-  const products = fetchProductTrials();
-  const browser = page.context().browser();
-    for (const product of products) {
-      await test.step(`signup flow for product: ${product}`, async () => {
-  const context = browser ? await browser.newContext() : page.context();
-  const p = browser ? await context.newPage() : page;
-        try {
-          await runSignupFlow(p, product);
-        } finally {
-          if (browser) {
-            await context.close();
-          }
-        }
-      });
-    }
+const products = fetchProductTrials();
+for (const product of products) {
+  test(`signup flow for product: ${product}`, async ({ page }) => {
+    test.setTimeout(PER_PRODUCT_TIMEOUT_MS + 30_000);
+    await runSignupFlow(page, product);
   });
-});
+}
