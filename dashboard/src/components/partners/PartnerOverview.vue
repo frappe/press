@@ -201,7 +201,15 @@
 			:options="{ title: 'Update Website Info', size: '2xl' }"
 		>
 			<template #body-content>
-				<WebsiteInfoDialog />
+				<WebsiteInfoDialog
+					v-model="partnerDetails.data"
+					@success="
+						() => {
+							partnerDetails.reload();
+							showUpdateWebsiteInfo = false;
+						}
+					"
+				/>
 			</template>
 		</Dialog>
 

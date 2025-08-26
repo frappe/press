@@ -46,6 +46,21 @@ def update_partnership_date(team, partnership_date):
 
 
 @frappe.whitelist()
+def update_website_info(website_info):
+	from press.utils.billing import get_frappe_io_connection, is_frappe_auth_disabled
+
+	if is_frappe_auth_disabled():
+		return
+
+	client = get_frappe_io_connection()
+	try:
+		website_info["doctype"] = "Partner"
+		client.update(website_info)
+	except Exception:
+		frappe.log_error("Error updating website info")
+
+
+@frappe.whitelist()
 def get_partner_details(partner_email):
 	from press.utils.billing import get_frappe_io_connection, is_frappe_auth_disabled
 
