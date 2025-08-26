@@ -14,6 +14,12 @@ frappe.ui.form.on('Server Snapshot', {
 			[__('Unlock'), 'unlock', true, frm.doc.locked],
 			[__('Lock'), 'lock', true, !frm.doc.locked],
 			[
+				__('Create Replica DB'),
+				'create_replica_db_server',
+				true,
+				frm.doc.status === 'Completed',
+			],
+			[
 				__('Recover All Sites'),
 				'recover_sites',
 				true,

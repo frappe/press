@@ -561,6 +561,36 @@ class ServerSnapshot(Document):
 
 		return server_name
 
+	@frappe.whitelist()
+	def create_replica_db_server(self) -> str:
+		"""
+		!!! CAUTION !!!
+		This function is meant to be called from desk.
+		And you should know what you are doing.
+
+		For any action for creating app/db server from snapshot,
+		use `create_server` method instead.
+		"""
+		if not self.database_server:
+			frappe.throw("Snapshot does not have a database server.")
+
+		if self.status != "Completed":
+			frappe.throw("Please wait for the snapshot to be completed.")
+
+		database_server = frappe.get_doc("Database Server", self.database_server)
+		if database_server.status != "Active":
+			frappe.throw("Master Database Server must be active to create a replica.")
+
+		return self.create_server(
+			server_type="Database Server",
+			title=f"{database_server.title} - Replica",
+			plan=database_server.plan,
+			team=database_server.team,
+			create_subscription=True,
+			provision_db_replica=True,
+			master_db_server=self.database_server,
+		)
+
 	def _create_subscription(self):
 		"""
 		Create a subscription for the server snapshot.
