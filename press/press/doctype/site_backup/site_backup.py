@@ -15,6 +15,7 @@ from frappe.model.document import Document
 from press.agent import Agent
 from press.exceptions import SiteTooManyPendingBackups
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
+from press.press.doctype.bench.bench import Bench
 
 if TYPE_CHECKING:
 	from datetime import datetime
@@ -335,10 +336,8 @@ class SiteBackup(Document):
 		"""
 		job = frappe.db.get_value("Agent Job", self.job, filters={"status": "Failure"}, fields=["output"])
 		if job and "Permission denied" in job.output:
-			from press.press.doctype.bench.bench import correct_bench_permissions
-
 			try:
-				correct_bench_permissions()
+				Bench.correct_bench_permissions()
 				frappe.logger().info(f"Bench permissions corrected for backup {self.name}")
 				self.start_backup()
 				return True
