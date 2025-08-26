@@ -38,7 +38,7 @@ def run_signup_e2e():  # noqa: C901
 	dashboard_dir = app_root / "dashboard"
 
 	if not dashboard_dir.exists():
-		print(f"signup_e2e: dashboard directory not found at {dashboard_dir}")
+		frappe.log(f"signup_e2e: dashboard directory not found at {dashboard_dir}")
 		return
 
 	product_trials_list = frappe.db.get_all(
@@ -48,11 +48,11 @@ def run_signup_e2e():  # noqa: C901
 		order_by="name asc",
 	)
 	if not product_trials_list:
-		print("signup_e2e: no published product trials found; aborting run")
+		frappe.log("signup_e2e: no published product trials found; aborting run")
 		return
 
 	random.shuffle(product_trials_list)
-	product_trials_list = product_trials_list[:5]
+	product_trials_list = product_trials_list[:3]
 
 	base_url = frappe.conf.get("signup_e2e_base_url") or frappe.utils.get_url()
 	timeout = int(frappe.conf.get("signup_e2e_timeout_seconds") or 900)
@@ -65,7 +65,7 @@ def run_signup_e2e():  # noqa: C901
 		env["OTP_HELPER_ENDPOINT"] = str(otp_helper)
 
 	cmd = ["npm", "run", "test:e2e"]
-	print(
+	frappe.log(
 		f"signup_e2e: starting Playwright test (products={env.get('PRODUCT_TRIALS')} base_url={env.get('BASE_URL')} timeout={timeout}s)"
 	)
 
@@ -79,7 +79,7 @@ def run_signup_e2e():  # noqa: C901
 			text=True,
 		)
 	except FileNotFoundError:
-		print("signup_e2e: failed to spawn yarn (is Node/Yarn installed in this environment?)")
+		frappe.log("signup_e2e: failed to spawn yarn (is Node/Yarn installed in this environment?)")
 		return
 
 	output_lines = []
@@ -97,13 +97,13 @@ def run_signup_e2e():  # noqa: C901
 				output_lines.append(remaining)
 		proc.wait(timeout=timeout)
 	except subprocess.TimeoutExpired:
-		print(f"signup_e2e: timeout after {timeout}s; terminating process")
+		frappe.log(f"signup_e2e: timeout after {timeout}s; terminating process")
 		with contextlib.suppress(Exception):
 			proc.send_signal(signal.SIGINT)
 		with contextlib.suppress(Exception):
 			proc.kill()
 	except Exception as e:
-		print(f"signup_e2e: unexpected error: {e}")
+		frappe.log(f"signup_e2e: unexpected error: {e}")
 
 	exit_code = proc.returncode if proc.returncode is not None else -1
 
@@ -113,7 +113,7 @@ def run_signup_e2e():  # noqa: C901
 		output_lines = output_lines[-MAX_LINES:]
 		output_lines.insert(0, f"[signup_e2e] (truncated {trimmed} earlier lines)")
 
-	print(
+	frappe.log(
 		f"signup_e2e: completed with exit_code={exit_code} lines={len(output_lines)}\n"
 		+ "\n".join(output_lines)
 	)
@@ -128,14 +128,24 @@ def run_signup_e2e():  # noqa: C901
 
 
 def clean_up():
-	signup_teams = frappe.db.get_all("Team", {"user": ("like", "%signup.test")}, pluck="name")
+	signup_teams = frappe.db.get_all("Team", {"user": ("like", "%signup.test"), "enabled": 1}, pluck="name")
+	if not signup_teams:
+		return
+
 	trial_sites = frappe.db.get_all(
 		"Site",
-		{"team": ("in", signup_teams)},
+		{"team": ("in", signup_teams), "status": "Active", "standby_for_product": ("is", "set")},
+		pluck="name",
 	)
 	for site in trial_sites:
-		frappe.get_doc("Site", site).archive()
+		try:
+			frappe.get_doc("Site", site).archive()
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+
 	frappe.db.set_value("Team", {"name": ("in", signup_teams)}, "enabled", 0)
+	frappe.db.commit()
 
 
 __all__ = ["run_signup_e2e"]

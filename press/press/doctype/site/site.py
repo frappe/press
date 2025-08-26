@@ -3623,7 +3623,9 @@ def process_new_site_job_update(job):  # noqa: C901
 		"Active",
 		"Broken",
 	):
-		update_product_trial_request_status_based_on_site_status(job.site, updated_status == "Active")
+		update_product_trial_request_status_based_on_site_status(
+			job.site, updated_status == "Active", job.data
+		)
 
 	# check if new bench related to a site group deploy
 	site_group_deploy = frappe.db.get_value(
@@ -3637,7 +3639,7 @@ def process_new_site_job_update(job):  # noqa: C901
 		frappe.get_doc("Site Group Deploy", site_group_deploy).update_site_group_deploy_on_process_job(job)
 
 
-def update_product_trial_request_status_based_on_site_status(site, is_site_active):
+def update_product_trial_request_status_based_on_site_status(site, is_site_active, error=None):
 	records = frappe.get_list("Product Trial Request", filters={"site": site}, fields=["name"])
 	if not records:
 		return
@@ -3648,6 +3650,7 @@ def update_product_trial_request_status_based_on_site_status(site, is_site_activ
 		product_trial_request.save(ignore_permissions=True)
 	else:
 		product_trial_request.status = "Error"
+		product_trial_request.error = error
 		product_trial_request.save(ignore_permissions=True)
 
 
@@ -4029,7 +4032,7 @@ def process_create_user_job_update(job):
 		frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
 		update_product_trial_request_status_based_on_site_status(job.site, True)
 	elif job.status in ("Failure", "Delivery Failure"):
-		update_product_trial_request_status_based_on_site_status(job.site, False)
+		update_product_trial_request_status_based_on_site_status(job.site, False, job.data)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")
