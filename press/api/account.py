@@ -743,12 +743,29 @@ def reset_password(key, password):
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=10, seconds=60 * 60)
 def get_user_for_reset_password_key(key):
 	if not key or not isinstance(key, str):
 		frappe.throw(_("Invalid Key"))
 
 	hashed_key = sha256_hash(key)
-	return frappe.db.get_value("User", {"reset_password_key": hashed_key}, "name")
+	user_doc = frappe.db.get_value(
+		"User",
+		{"reset_password_key": hashed_key},
+		["name", "last_reset_password_key_generated_on"],
+		as_dict=True,
+	)
+	if not user_doc:
+		frappe.throw(_("Invalid Key"))
+
+	from datetime import timedelta
+
+	if user_doc.last_reset_password_key_generated_on:
+		expiry_time = user_doc.last_reset_password_key_generated_on + timedelta(minutes=10)
+		if frappe.utils.now_datetime() > expiry_time:
+			frappe.throw(_("Key has expired. Please retry resetting your password."))
+
+	return user_doc.name
 
 
 @frappe.whitelist()
