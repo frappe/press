@@ -1874,12 +1874,15 @@ def snapshot_aws_servers():
 				"app_server": app_server,
 				"consistent": 0,
 				"creation": (">=", frappe.utils.today()),
+				"status": ["in", ["Pending", "Processing", "Completed"]],
 			},
 			limit=1,
 		):
 			continue
 		try:
-			frappe.get_doc("Server", app_server).create_snapshots(consistent=False)
+			frappe.get_doc("Server", app_server)._create_snapshot(
+				consistent=False, expire_at=frappe.utils.add_days(None, 2), free=True
+			)
 			frappe.db.commit()
 		except Exception:
 			frappe.db.rollback()

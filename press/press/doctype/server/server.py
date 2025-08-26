@@ -2607,13 +2607,19 @@ class Server(BaseServer):
 		return bench_mount_points.issubset(mount_points)
 
 	@dashboard_whitelist()
-	def create_snapshot(self, consistent: bool = False, expire_at: datetime.datetime | None = None) -> str:
+	def create_snapshot(self, consistent: bool = False) -> str:
+		return self._create_snapshot(consistent)
+
+	def _create_snapshot(
+		self, consistent: bool = False, expire_at: datetime.datetime | None = None, free: bool = False
+	) -> str:
 		doc = frappe.get_doc(
 			{
 				"doctype": "Server Snapshot",
 				"app_server": self.name,
 				"consistent": consistent,
 				"expire_at": expire_at,
+				"free": free,
 			}
 		).insert(ignore_permissions=True)
 		frappe.msgprint(

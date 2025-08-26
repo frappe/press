@@ -29,7 +29,7 @@
 					<div>
 						<p class="text-xs text-gray-600">Size</p>
 						<p class="mt-2 text-sm text-gray-700">
-							{{ snapshot?.total_size_gb }} GB
+							{{ snapshot?.total_size_gb ? snapshot.total_size_gb : '--' }} GB
 						</p>
 					</div>
 				</div>
@@ -123,7 +123,7 @@
 						</div>
 					</div>
 					<!-- list -->
-					<div class="flex flex-col mt-2 px-2" v-if="showSiteList">
+					<div class="flex flex-col mt-2 px-2 gap-1.5" v-if="showSiteList">
 						<span
 							v-for="site in snapshot?.site_list_json ?? []"
 							class="text-sm text-gray-800"
