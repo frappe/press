@@ -36,6 +36,7 @@
   "root_public_key",
   "monitoring_section",
   "monitoring_password",
+  "webhook_token",
   "column_break_nzet",
   "prometheus_data_directory"
  ],
@@ -231,8 +232,8 @@
    "fieldname": "prometheus_username",
    "fieldtype": "Data",
    "label": "Prometheus Username"
- },
- {
+  },
+  {
    "fieldname": "ssh_user",
    "fieldtype": "Data",
    "label": "SSH User"
@@ -242,6 +243,11 @@
    "fieldname": "ssh_port",
    "fieldtype": "Int",
    "label": "SSH Port"
+  },
+  {
+   "fieldname": "webhook_token",
+   "fieldtype": "Data",
+   "label": "Webhook Token"
   }
  ],
  "grid_page_length": 50,
@@ -251,7 +257,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2025-05-07 15:11:11.557419",
+ "modified": "2025-08-27 09:40:47.243453",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Monitor Server",

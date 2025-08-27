@@ -61,6 +61,7 @@ class MonitorServer(BaseServer):
 		ssh_user: DF.Data | None
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		virtual_machine: DF.Link | None
+		webhook_token: DF.Data | None
 	# end: auto-generated types
 
 	def validate(self):
