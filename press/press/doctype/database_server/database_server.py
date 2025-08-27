@@ -1465,21 +1465,24 @@ class DatabaseServer(BaseServer):
 	def get_binlogs_raw_data(self):
 		if self.agent.should_skip_requests():
 			frappe.throw("Server is not reachable. Please try again later.")
-		return self.agent.fetch_binlog_list().get("binlogs_in_disk", [])
+		return self.agent.fetch_binlog_list()
 
 	@dashboard_whitelist()
 	def get_binlogs_info(self):
-		binlogs = self.get_binlogs_raw_data()
+		data = self.get_binlogs_raw_data()
+		binlogs = data.get("binlogs_in_disk", [])
+		current_binlog = data.get("current_binlog", "")
 		for binlog in binlogs:
 			binlog["modified_at"] = datetime.fromtimestamp(int(binlog["modified_at"]))
 			binlog["size_mb"] = round((binlog.get("size", 0) / 1024 / 1024), 1)
 
 		# sort by modified_at
-		return sorted(binlogs, key=lambda x: x["modified_at"], reverse=True)
+		binlogs = sorted(binlogs, key=lambda x: x["modified_at"], reverse=True)
+		return [binlog for binlog in binlogs if binlog.get("name") != current_binlog]
 
 	@frappe.whitelist()
 	def get_binlog_summary(self):
-		binlogs_in_disk = self.get_binlogs_raw_data()
+		binlogs_in_disk = self.get_binlogs_raw_data().get("binlogs_in_disk", [])
 		no_of_binlogs = len(binlogs_in_disk)
 		size = sum(binlog.get("size", 0) for binlog in binlogs_in_disk)
 		size_gb = round(size / 1024 / 1024 / 1024, 1)
@@ -1504,8 +1507,19 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 
 	@dashboard_whitelist()
 	def purge_binlogs(self, to_binlog: str):
+		"""
+		!!!NOTE!!!
+		This will purge binlogs from disk.
+		to_binlog and older binlogs will be purged.
+		"""
 		try:
-			self.agent.purge_binlog(database_server=self, to_binlog=to_binlog)
+			binlogs_in_disk = [r["name"] for r in self.get_binlogs_raw_data().get("binlogs_in_disk", [])]
+			prefix = to_binlog.split(".")[0] + "."
+			new_binlog_than_requested = prefix + str(int(to_binlog.split(".")[-1]) + 1).zfill(6)
+			if new_binlog_than_requested not in binlogs_in_disk:
+				return
+
+			self.agent.purge_binlog(database_server=self, to_binlog=new_binlog_than_requested)
 			frappe.msgprint(f"Purged to {to_binlog}", "Successfully purged binlogs")
 			if self.enable_binlog_indexing:
 				self.sync_binlogs_info(index_binlogs=False, upload_binlogs=False)
