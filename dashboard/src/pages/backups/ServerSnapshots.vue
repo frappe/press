@@ -59,11 +59,25 @@ export default {
 						label: 'App Server',
 						fieldname: 'app_server',
 						width: 1,
+						format(value) {
+							if (!value) return '---';
+							if (value.indexOf('.') !== -1) {
+								return value.split('.')[0];
+							}
+							return value;
+						},
 					},
 					{
 						label: 'Database Server',
 						fieldname: 'database_server',
 						width: 1,
+						format(value) {
+							if (!value) return '---';
+							if (value.indexOf('.') !== -1) {
+								return value.split('.')[0];
+							}
+							return value;
+						},
 					},
 					{
 						label: 'Size',
