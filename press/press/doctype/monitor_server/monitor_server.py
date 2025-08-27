@@ -68,6 +68,7 @@ class MonitorServer(BaseServer):
 		self.validate_agent_password()
 		self.validate_grafana_password()
 		self.validate_monitoring_password()
+		self.validate_webhook_token()
 
 	def validate_monitoring_password(self):
 		if not self.monitoring_password:
@@ -76,6 +77,10 @@ class MonitorServer(BaseServer):
 	def validate_grafana_password(self):
 		if not self.grafana_password:
 			self.grafana_password = frappe.generate_hash(length=32)
+
+	def validate_webhook_token(self):
+		if not self.webhook_token:
+			self.webhook_token = frappe.generate_hash(length=32)
 
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
