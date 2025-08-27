@@ -117,11 +117,6 @@ def alert(*args, **kwargs):
 		if frappe.request.args.get("webhook_token") != webhook_token:
 			raise frappe.AuthenticationError("Invalid credentials")
 
-		webhook_token = frappe.db.get_single_value("Press Settings", "webhook_token", cache=True)
-
-		if frappe.request.args.get("webhook_token") != webhook_token:
-			raise Exception
-
 		frappe.set_user("Administrator")
 
 		doc = frappe.get_doc(
