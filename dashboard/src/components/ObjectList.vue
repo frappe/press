@@ -87,6 +87,7 @@
 			<ListView
 				:columns="columns"
 				:rows="filteredRows"
+				ref="listView"
 				:options="{
 					selectable: this.options.selectable || false,
 					onRowClick: this.options.onRowClick
@@ -142,7 +143,7 @@
 	</div>
 </template>
 <script>
-import { reactive } from 'vue';
+import { reactive, ref } from 'vue';
 import { throttle } from '../utils/throttle';
 import DismissableBanner from './DismissableBanner.vue';
 import AlertBanner from './AlertBanner.vue';
@@ -176,6 +177,15 @@ export default {
 		TextInput,
 		Tooltip,
 		ErrorMessage,
+	},
+	setup(_, { expose }) {
+		const listView = ref(null);
+		const toggleRowSelection = (row) => {
+			listView.value.toggleRow(row);
+		};
+
+		expose({ toggleRowSelection });
+		return { listView };
 	},
 	data() {
 		return {
