@@ -191,10 +191,14 @@ class DatabaseServer(BaseServer):
 			"max_connections": frappe.utils.cint(
 				self.get_mariadb_variable_value("max_connections", return_default_if_not_found=True)
 			),
+			"expire_logs_days": frappe.utils.cint(
+				self.get_mariadb_variable_value("expire_logs_days", return_default_if_not_found=True)
+			),
 		}
 		doc.mariadb_variables_recommended_values = {
 			"innodb_buffer_pool_size": self.recommended_innodb_buffer_pool_size,
 			"max_connections": max(50, self.recommended_max_db_connections),
+			"expire_logs_days": 14,
 		}
 		return doc
 
@@ -202,6 +206,30 @@ class DatabaseServer(BaseServer):
 		server_actions = super().get_actions()
 		server_type = "database server"
 		actions = [
+			{
+				"action": "View Database Configuration",
+				"description": "View Database Configuration",
+				"button_label": "View",
+				"condition": self.status == "Active",
+				"doc_method": "get_mariadb_variables",
+				"group": f"{server_type.title()} Actions",
+			},
+			{
+				"action": "Manage Database Binlogs",
+				"description": "View binlogs and purge old binlogs",
+				"button_label": "View",
+				"condition": self.status == "Active" and not self.enable_binlog_indexing,
+				"doc_method": "get_binlogs_info",
+				"group": f"{server_type.title()} Actions",
+			},
+			{
+				"action": "Update Binlog Retention",
+				"description": "Increase/Decrease Binlog Retention",
+				"button_label": "Update",
+				"condition": self.status == "Active",
+				"doc_method": "update_binlog_retention",
+				"group": f"{server_type.title()} Actions",
+			},
 			{
 				"action": "Enable Performance Schema",
 				"description": "Activate for enhanced database insights",
@@ -232,14 +260,6 @@ class DatabaseServer(BaseServer):
 				"button_label": "Update",
 				"condition": self.status == "Active",
 				"doc_method": "update_max_db_connections",
-				"group": f"{server_type.title()} Actions",
-			},
-			{
-				"action": "View Database Configuration",
-				"description": "View Database Configuration",
-				"button_label": "View",
-				"condition": self.status == "Active",
-				"doc_method": "get_mariadb_variables",
 				"group": f"{server_type.title()} Actions",
 			},
 		]
@@ -477,20 +497,18 @@ class DatabaseServer(BaseServer):
 			self.save(ignore_permissions=True)
 
 	@dashboard_whitelist()
-	def get_mariadb_variable_value(
+	def get_mariadb_variable_value(  # noqa: C901
 		self, variable: str, return_default_if_not_found: bool = False
 	) -> str | int | float | None:
 		existing = find(self.mariadb_system_variables, lambda x: x.mariadb_variable == variable)
-		if not existing:
-			return None
-
-		variable_datatype = frappe.db.get_value("MariaDB Variable", existing.mariadb_variable, "datatype")
-		if variable_datatype == "Int":
-			return existing.value_int
-		if variable_datatype == "Float":
-			return existing.value_float
-		if variable_datatype == "Str":
-			return existing.value_str
+		if existing:
+			variable_datatype = frappe.db.get_value("MariaDB Variable", existing.mariadb_variable, "datatype")
+			if variable_datatype == "Int":
+				return existing.value_int
+			if variable_datatype == "Float":
+				return existing.value_float
+			if variable_datatype == "Str":
+				return existing.value_str
 
 		if return_default_if_not_found:
 			# Ref : https://github.com/frappe/press/blob/master/press/playbooks/roles/mariadb/templates/mariadb.cnf
@@ -499,6 +517,8 @@ class DatabaseServer(BaseServer):
 					return int(self.ram_for_mariadb * 0.65)
 				case "max_connections":
 					return 200
+				case "expire_logs_days":
+					return 14
 		return None
 
 	@dashboard_whitelist()
@@ -513,6 +533,22 @@ class DatabaseServer(BaseServer):
 				f"InnoDB Buffer Size cannot be greater than {int(self.ram_for_mariadb * 0.70)}MB. If you need larger InnoDB Buffer Size, please increase memory of database server."
 			)
 		self.add_or_update_mariadb_variable("innodb_buffer_pool_size", "value_int", size_mb, save=True)
+
+	@dashboard_whitelist()
+	def update_binlog_retention(self, days: str | int):
+		if isinstance(days, str):
+			if not days.isdigit():
+				frappe.throw("Binlog retention days must be a positive integer")
+			days = int(days)
+		if days < 1:
+			frappe.throw("Binlog retention days cannot be less than 1")
+		if self.enable_binlog_indexing:
+			frappe.throw("Cannot update binlog retention days when binlog indexing is enabled.")
+
+		self.binlog_retention_days = days
+		# From MariaDB 10.6.1, expire_logs_days is alias of binlog_expire_logs_seconds
+		# https://mariadb.com/docs/server/ha-and-performance/standard-replication/replication-and-binary-log-system-variables#expire_logs_days
+		self.add_or_update_mariadb_variable("expire_logs_days", "value_str", str(days), save=True)
 
 	@dashboard_whitelist()
 	def update_max_db_connections(self, max_connections: int):
@@ -1251,9 +1287,24 @@ class DatabaseServer(BaseServer):
 		mariadb_mount_points = set(["/var/lib/mysql", "/etc/mysql"])
 		return mariadb_mount_points.issubset(mount_points)
 
+	def get_binlogs_raw_data(self):
+		if self.agent.should_skip_requests():
+			frappe.throw("Server is not reachable. Please try again later.")
+		return self.agent.fetch_binlog_list().get("binlogs_in_disk", [])
+
+	@dashboard_whitelist()
+	def get_binlogs_info(self):
+		binlogs = self.get_binlogs_raw_data()
+		for binlog in binlogs:
+			binlog["modified_at"] = datetime.fromtimestamp(int(binlog["modified_at"]))
+			binlog["size_mb"] = round((binlog.get("size", 0) / 1024 / 1024), 1)
+
+		# sort by modified_at
+		return sorted(binlogs, key=lambda x: x["modified_at"], reverse=True)
+
 	@frappe.whitelist()
 	def get_binlog_summary(self):
-		binlogs_in_disk = self.agent.fetch_binlog_list().get("binlogs_in_disk", [])
+		binlogs_in_disk = self.get_binlogs_raw_data()
 		no_of_binlogs = len(binlogs_in_disk)
 		size = sum(binlog.get("size", 0) for binlog in binlogs_in_disk)
 		size_gb = round(size / 1024 / 1024 / 1024, 1)
@@ -1276,17 +1327,15 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		"""
 		frappe.msgprint(message, "Binlog Summary")
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def purge_binlogs(self, to_binlog: str):
-		if not self.enable_binlog_indexing:
-			frappe.msgprint("Binlog Indexing is not enabled")
-			return
 		try:
 			self.agent.purge_binlog(database_server=self, to_binlog=to_binlog)
 			frappe.msgprint(f"Purged to {to_binlog}", "Successfully purged binlogs")
-			self.sync_binlogs_info(index_binlogs=False, upload_binlogs=False)
+			if self.enable_binlog_indexing:
+				self.sync_binlogs_info(index_binlogs=False, upload_binlogs=False)
 		except Exception as e:
-			frappe.msgprint(str(e), "Failed to purge binlog")
+			frappe.throw(f"Failed to purge binlogs. Please try again later. {e!s}")
 			raise e
 
 	@frappe.whitelist()
