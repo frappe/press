@@ -112,16 +112,28 @@ def targets(token=None):
 def alert(*args, **kwargs):
 	user = frappe.session.user
 	try:
+<<<<<<< HEAD
 		monitor_token = frappe.db.get_single_value("Press Settings", "monitor_token", cache=True)
+=======
+		webhook_token = frappe.db.get_value(
+			"Monitor Server",
+			frappe.db.get_single_value("Press Settings", "monitor_server", cache=True),
+			"webhook_token",
+			cache=True,
+		)
+>>>>>>> f57bd1c0d (feat(alertmanager-webhook): Set webhook callback token in config (#3068))
 
 		if frappe.request.args.get("monitor_token") != monitor_token:
 			raise frappe.AuthenticationError("Invalid credentials")
 
+<<<<<<< HEAD
 		monitor_token = frappe.db.get_single_value("Press Settings", "monitor_token", cache=True)
 
 		if frappe.request.args.get("monitor_token") != monitor_token:
 			raise Exception
 
+=======
+>>>>>>> f57bd1c0d (feat(alertmanager-webhook): Set webhook callback token in config (#3068))
 		frappe.set_user("Administrator")
 
 		doc = frappe.get_doc(
