@@ -251,6 +251,12 @@ class SiteUpdate(Document):
 		if provider != "AWS EC2":
 			return
 
+		# In case of ebs encryption don't proceed with physical backup
+		virtual_machine = frappe.get_value("Database Server", database_server, "virtual_machine")
+		has_kms_key_id = frappe.get_value("Virtual Machine", virtual_machine, "kms_key_id")
+		if has_kms_key_id:
+			return
+
 		# Check for last logical backup
 		last_logical_site_backups = frappe.db.get_list(
 			"Site Backup",
