@@ -388,18 +388,19 @@ class VirtualMachine(Document):
 			image = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
 			if image.has_data_volume:
 				volume = image.get_data_volume()
-				additional_volumes.append(
-					{
-						"DeviceName": volume.device,
-						"Ebs": {
-							"DeleteOnTermination": True,
-							"VolumeSize": max(self.disk_size, volume.size),
-							"VolumeType": volume.volume_type,
-							"KmsKeyId": self.kms_key_id,
-							"Encrypted": bool(self.kms_key_id),
-						},
-					}
-				)
+				data = {
+					"DeviceName": volume.device,
+					"Ebs": {
+						"DeleteOnTermination": True,
+						"VolumeSize": max(self.disk_size, volume.size),
+						"VolumeType": volume.volume_type,
+					},
+				}
+				if self.kms_key_id:
+					data["Ebs"]["Encrypted"] = True
+					data["Ebs"]["KmsKeyId"] = self.kms_key_id
+
+				additional_volumes.append(data)
 
 		for index, volume in enumerate(self.volumes, start=len(additional_volumes)):
 			device_name_index = chr(ord("f") + index)
@@ -409,14 +410,15 @@ class VirtualMachine(Document):
 					"DeleteOnTermination": True,
 					"VolumeSize": volume.size,
 					"VolumeType": volume.volume_type,
-					"KmsKeyId": self.kms_key_id,
-					"Encrypted": bool(self.kms_key_id),
 				},
 			}
 			if volume.iops:
 				volume_options["Ebs"]["Iops"] = volume.iops
 			if volume.throughput:
 				volume_options["Ebs"]["Throughput"] = volume.throughput
+			if self.kms_key_id:
+				volume_options["Ebs"]["Encrypted"] = True
+				volume_options["Ebs"]["KmsKeyId"] = self.kms_key_id
 			additional_volumes.append(volume_options)
 
 		if self.data_disk_snapshot:
@@ -426,20 +428,22 @@ class VirtualMachine(Document):
 			self.machine_image = self.get_latest_ubuntu_image()
 			self.save(ignore_version=True)
 
+		root_disk_data = {
+			"DeviceName": "/dev/sda1",
+			"Ebs": {
+				"DeleteOnTermination": True,
+				"VolumeSize": self.root_disk_size,  # This in GB. Fucking AWS!
+				"VolumeType": "gp3",
+			},
+		}
+
+		if self.kms_key_id:
+			root_disk_data["Ebs"]["Encrypted"] = True
+			root_disk_data["Ebs"]["KmsKeyId"] = self.kms_key_id
+
 		options = {
 			"BlockDeviceMappings": [
-				*[
-					{
-						"DeviceName": "/dev/sda1",
-						"Ebs": {
-							"DeleteOnTermination": True,
-							"VolumeSize": self.root_disk_size,  # This in GB. Fucking AWS!
-							"VolumeType": "gp3",
-							"KmsKeyId": self.kms_key_id,
-							"Encrypted": bool(self.kms_key_id),
-						},
-					}
-				],
+				*[root_disk_data],
 				*additional_volumes,
 			],
 			"ImageId": self.machine_image,
@@ -1663,13 +1667,15 @@ class VirtualMachine(Document):
 					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name}"}],
 				},
 			],
-			"KmsKeyId": self.kms_key_id,
-			"Encrypted": bool(self.kms_key_id),
 		}
 		if iops:
 			volume_options["Iops"] = iops
 		if throughput:
 			volume_options["Throughput"] = throughput
+
+		if self.kms_key_id:
+			volume_options["Encrypted"] = True
+			volume_options["KmsKeyId"] = self.kms_key_id
 		volume_id = self.client().create_volume(**volume_options)["VolumeId"]
 		self.wait_for_volume_to_be_available(volume_id)
 		self.attach_volume(volume_id)
