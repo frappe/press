@@ -343,7 +343,6 @@ class SiteBackup(Document):
 			try:
 				Bench.correct_bench_permissions()
 				frappe.logger().info(f"Bench permissions corrected for backup {self.name}")
-				self.start_backup()
 				return True
 			except Exception:
 				return False
