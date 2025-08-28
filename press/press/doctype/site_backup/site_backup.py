@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import time
 from typing import TYPE_CHECKING
@@ -96,12 +97,27 @@ class SiteBackup(Document):
 		return frappe.get_cached_value("Site", self.site, "server")
 
 	@staticmethod
-	def get_list_query(query):
+	def get_list_query(query, filters=None, **list_args):
 		"""
 		Remove records with `Success` but files_availability is `Unavailable`
 		"""
 		sb = frappe.qb.DocType("Site Backup")
 		query = query.where(~((sb.files_availability == "Unavailable") & (sb.status == "Success")))
+		if filters.get("backup_date"):
+			with contextlib.suppress(Exception):
+				date = frappe.utils.getdate(filters["backup_date"])
+				query = query.where(
+					sb.creation.between(
+						frappe.utils.add_to_date(date, hours=0, minutes=0, seconds=0),
+						frappe.utils.add_to_date(date, hours=23, minutes=59, seconds=59),
+					)
+				)
+
+		if filters.get("status"):
+			query = query.where(sb.status == filters["status"])
+		else:
+			query = query.where(sb.status == "Success")
+
 		results = [
 			result
 			for result in query.run(as_dict=True)
