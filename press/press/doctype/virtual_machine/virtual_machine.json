@@ -22,6 +22,7 @@
   "machine_type",
   "instance_id",
   "platform",
+  "kms_key_id",
   "ready_for_conversion",
   "column_break_hgcr",
   "disk_size",
@@ -335,6 +336,11 @@
    "fieldtype": "Check",
    "label": "Ready For Conversion",
    "read_only": 1
+  },
+  {
+   "fieldname": "kms_key_id",
+   "fieldtype": "Data",
+   "label": "KMS Key ID"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -370,7 +376,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2025-05-26 12:38:56.121666",
+ "modified": "2025-08-28 12:26:04.777772",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

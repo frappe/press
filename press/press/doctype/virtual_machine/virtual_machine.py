@@ -76,6 +76,7 @@ class VirtualMachine(Document):
 		has_data_volume: DF.Check
 		index: DF.Int
 		instance_id: DF.Data | None
+		kms_key_id: DF.Data | None
 		machine_image: DF.Data | None
 		machine_type: DF.Data
 		platform: DF.Literal["x86_64", "arm64"]
@@ -324,6 +325,7 @@ class VirtualMachine(Document):
 							"DeleteOnTermination": True,
 							"VolumeSize": self.root_disk_size,  # This in GB. Fucking AWS!
 							"VolumeType": "gp3",
+							"KmsKeyId": self.kms_key_id,
 						},
 					}
 				],
@@ -1529,6 +1531,7 @@ class VirtualMachine(Document):
 					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name}"}],
 				},
 			],
+			"KmsKeyId": self.kms_key_id,
 		}
 		if iops:
 			volume_options["Iops"] = iops
