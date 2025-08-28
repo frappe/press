@@ -237,7 +237,6 @@ scheduler_events = {
 		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
 		"press.press.doctype.press_webhook.press_webhook.auto_disable_high_delivery_failure_webhooks",
 		"press.saas.doctype.product_trial.product_trial.sync_product_site_users",
-		"press.signup_e2e.run_signup_e2e",
 	],
 	"all": [
 		"press.auth.flush",
@@ -273,6 +272,9 @@ scheduler_events = {
 		"* * * * * 0/30": [
 			"press.press.doctype.account_request.account_request.expire_request_key",
 			"press.press.doctype.physical_backup_restoration.physical_backup_restoration.process_scheduled_restorations",
+		],
+		"0 */2 * * *": [
+			"press.signup_e2e.run_signup_e2e",
 		],
 		"0 */6 * * *": [
 			"press.press.doctype.server.server.cleanup_unused_files",
