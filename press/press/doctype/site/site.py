@@ -390,6 +390,15 @@ class Site(Document, TagHelpers):
 		if not self.setup_wizard_status_check_next_retry_on:
 			self.setup_wizard_status_check_next_retry_on = now_datetime()
 
+		if (
+			self.server
+			and frappe.get_value("Server", self.server, "enable_logical_replication_during_site_update")
+			and frappe.db.count("Site", {"server": self.server, "status": ("!=", "Archived")}) >= 1
+		):
+			frappe.throw(
+				"Logical replication is enabled for this server. You can only deploy a single site on the server."
+			)
+
 	def validate_site_name(self):
 		validate_subdomain(self.subdomain)
 
@@ -576,7 +585,7 @@ class Site(Document, TagHelpers):
 	def capture_signup_event(self, event: str):
 		team = frappe.get_doc("Team", self.team)
 		if frappe.db.count("Site", {"team": team.name}) <= 1 and team.account_request:
-			account_request: AccountRequest = frappe.get_doc("Account Request", team.account_request)
+			account_request: "AccountRequest" = frappe.get_doc("Account Request", team.account_request)
 			if not (account_request.is_saas_signup() or account_request.invited_by_parent_team):
 				capture(event, "fc_signup", team.user)
 
@@ -2139,14 +2148,13 @@ class Site(Document, TagHelpers):
 		# relies on self._keys_removed_in_last_update in self.validate
 		# used by https://frappecloud.com/app/marketplace-app/email_delivery_service
 		config_list: list[dict] = []
-		for key in self.configuration:
+		for row in self.configuration:
 			config = {}
-			if key.key in keys:
-				continue
-			config["key"] = key.key
-			config["value"] = key.value
-			config["type"] = key.type
-			config_list.append(config)
+			if row.key not in keys and not row.internal:
+				config["key"] = row.key
+				config["value"] = row.value
+				config["type"] = row.type
+				config_list.append(config)
 		self.update_site_config(config_list)
 
 	@frappe.whitelist()

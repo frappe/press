@@ -479,11 +479,18 @@ def options():
 		["price_inr", "price_usd"],
 		as_dict=True,
 	)
+	snapshot_plan = frappe.db.get_value(
+		"Server Snapshot Plan",
+		{"enabled": 1},
+		["price_inr", "price_usd"],
+		as_dict=True,
+	)
 	return {
 		"regions": regions,
 		"app_plans": plans("Server"),
 		"db_plans": plans("Database Server"),
 		"storage_plan": storage_plan,
+		"snapshot_plan": snapshot_plan,
 	}
 
 

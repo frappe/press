@@ -15,6 +15,7 @@ from frappe.core.utils import find
 from frappe.desk.utils import slug
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
+from frappe.utils.password import get_decrypted_password
 from hcloud import APIException, Client
 from hcloud.images import Image
 from hcloud.servers.domain import ServerCreatePublicNetwork
@@ -41,9 +42,11 @@ from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
 
 if typing.TYPE_CHECKING:
-	from press.press.infrastructure.doctype.virtual_machine_migration.virtual_machine_migration import (
+	from press.infrastructure.doctype.virtual_machine_migration.virtual_machine_migration import (
 		VirtualMachineMigration,
 	)
+	from press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot import VirtualDiskSnapshot
+
 
 server_doctypes = [
 	"Server",
@@ -68,9 +71,13 @@ class VirtualMachine(Document):
 		)
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
+		auto_attach_data_disk_snapshot: DF.Check
 		availability_zone: DF.Data
 		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner"]
 		cluster: DF.Link
+		data_disk_snapshot: DF.Link | None
+		data_disk_snapshot_attached: DF.Check
+		data_disk_snapshot_volume_id: DF.Data | None
 		disk_size: DF.Int
 		domain: DF.Link
 		has_data_volume: DF.Check
@@ -89,7 +96,7 @@ class VirtualMachine(Document):
 		region: DF.Link
 		root_disk_size: DF.Int
 		security_group_id: DF.Data | None
-		series: DF.Literal["n", "f", "m", "c", "p", "e", "r"]
+		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "t"]
 		skip_automated_snapshot: DF.Check
 		ssh_key: DF.Link
 		status: DF.Literal["Draft", "Pending", "Running", "Stopped", "Terminated"]
@@ -121,8 +128,20 @@ class VirtualMachine(Document):
 				# We have only one volume. Both root and data are the same
 				self.disk_size = max(self.disk_size, image.size)
 				self.root_disk_size = self.disk_size
+				self.has_data_volume = False
+
 			self.machine_image = image.image_id
-			self.has_data_volume = image.has_data_volume
+
+			# If data disk snapshot is provided, that will attach as second disk
+			# Regardless of VMI supporting data disk or not
+			if self.data_disk_snapshot:
+				self.has_data_volume = True
+				self.root_disk_size = image.root_size
+				self.disk_size = max(
+					self.disk_size,
+					frappe.db.get_value("Virtual Disk Snapshot", self.data_disk_snapshot, "size"),
+				)
+
 		if not self.machine_image:
 			self.machine_image = self.get_latest_ubuntu_image()
 		self.save()
@@ -134,8 +153,28 @@ class VirtualMachine(Document):
 			if self.series == "n":
 				self.private_ip_address = str(ip + index)
 			else:
-				offset = ["f", "m", "c", "p", "e", "r"].index(self.series)
+				offset = ["f", "m", "c", "p", "e", "r", "t"].index(self.series)
 				self.private_ip_address = str(ip + 256 * (2 * (index // 256) + offset) + (index % 256))
+
+		self.validate_data_disk_snapshot()
+
+	def validate_data_disk_snapshot(self):
+		if not self.is_new() or not self.data_disk_snapshot:
+			return
+
+		if self.cloud_provider != "AWS EC2":
+			frappe.throw("Server Creation with Data Disk Snapshot is only supported on AWS EC2.")
+
+		# Ensure the disk snapshot is Completed
+		snapshot: VirtualDiskSnapshot = frappe.get_doc("Virtual Disk Snapshot", self.data_disk_snapshot)
+		if snapshot.status != "Completed":
+			frappe.throw("Disk Snapshot is not available.")
+
+		if snapshot.region != frappe.get_value("Cluster", self.cluster, "region"):
+			frappe.throw("Disk Snapshot is not available in the same region as the cluster")
+
+		if not self.virtual_machine_image:
+			frappe.throw("Virtual Machine Image is required to create a VM with Data Disk Snapshot")
 
 	def on_trash(self):
 		snapshots = frappe.get_all(
@@ -163,6 +202,70 @@ class VirtualMachine(Document):
 
 		if self.has_value_changed("disk_size") and self.should_bill_addon_storage():
 			self.update_subscription_for_addon_storage()
+
+		if (
+			self.auto_attach_data_disk_snapshot
+			and self.has_value_changed("status")
+			and self.get_value_before_save("status") == "Pending"
+			and self.status == "Running"
+		):
+			self.auto_attach_snapshot_data_disk()
+
+	def auto_attach_snapshot_data_disk(self):
+		if self.data_disk_snapshot and self.data_disk_snapshot_attached:
+			return
+
+		if self.data_disk_snapshot_volume_id:
+			self.check_and_attach_data_disk_snapshot_volume()
+
+		if not self.data_disk_snapshot_volume_id:
+			self.create_data_disk_volume_from_snapshot()
+
+	def check_and_attach_data_disk_snapshot_volume(self):
+		if not self.data_disk_snapshot_volume_id:
+			frappe.throw("Data Disk Snapshot Volume ID is not set.")
+
+		volume_state = self.get_state_of_volume(self.data_disk_snapshot_volume_id)
+		if volume_state == "available":
+			self.attach_volume(self.data_disk_snapshot_volume_id)
+			self.data_disk_snapshot_attached = True
+			self.status = "Pending"
+			self.save()
+			return True
+
+		if volume_state == "deleted":
+			self.data_disk_snapshot_volume_id = None
+
+		self.status = "Pending"
+		self.save()
+		return False
+
+	def create_data_disk_volume_from_snapshot(self):
+		try:
+			datadisk_snapshot: VirtualDiskSnapshot = frappe.get_doc(
+				"Virtual Disk Snapshot", self.data_disk_snapshot
+			)
+			snapshot_volume = datadisk_snapshot.create_volume(
+				availability_zone=self.availability_zone, volume_initialization_rate=300
+			)
+			self.data_disk_snapshot_volume_id = snapshot_volume
+			self.status = "Pending"
+			self.save()
+			return True
+		except Exception:
+			log_error(
+				title="VM Data Disk Snapshot Volume Creation Failed",
+			)
+			if not self.data_disk_snapshot_volume_id:
+				return False
+			# If it fails for any reason, try to delete the volume
+			try:
+				self.delete_volume(self.data_disk_snapshot_volume_id)
+			except:  # noqa: E722
+				log_error(
+					title="VM Data Disk Snapshot Volume Cleanup Failed",
+				)
+			return False
 
 	def should_bill_addon_storage(self):
 		"""Check if storage addition should create/update subscription record"""
@@ -279,7 +382,7 @@ class VirtualMachine(Document):
 
 		self.save()
 
-	def _provision_aws(self):
+	def _provision_aws(self):  # noqa: C901
 		additional_volumes = []
 		if self.virtual_machine_image:
 			image = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
@@ -315,6 +418,9 @@ class VirtualMachine(Document):
 			if volume.throughput:
 				volume_options["Ebs"]["Throughput"] = volume.throughput
 			additional_volumes.append(volume_options)
+
+		if self.data_disk_snapshot:
+			additional_volumes = []  # Don't attach any additional volumes if we are attaching a data disk snapshot
 
 		if not self.machine_image:
 			self.machine_image = self.get_latest_ubuntu_image()
@@ -942,7 +1048,13 @@ class VirtualMachine(Document):
 		return image.name
 
 	@frappe.whitelist()
-	def create_snapshots(self, exclude_boot_volume=False, physical_backup=False, rolling_snapshot=False):
+	def create_snapshots(
+		self,
+		exclude_boot_volume=False,
+		physical_backup=False,
+		rolling_snapshot=False,
+		dedicated_snapshot=False,
+	):
 		"""
 		exclude_boot_volume is applicable only for Servers with data volume
 		"""
@@ -953,11 +1065,19 @@ class VirtualMachine(Document):
 		# So that, we can get the correct reference of snapshots created in current session
 		self.flags.created_snapshots = []
 		if self.cloud_provider == "AWS EC2":
-			self._create_snapshots_aws(exclude_boot_volume, physical_backup, rolling_snapshot)
+			self._create_snapshots_aws(
+				exclude_boot_volume, physical_backup, rolling_snapshot, dedicated_snapshot
+			)
 		elif self.cloud_provider == "OCI":
 			self._create_snapshots_oci(exclude_boot_volume)
 
-	def _create_snapshots_aws(self, exclude_boot_volume: bool, physical_backup: bool, rolling_snapshot: bool):
+	def _create_snapshots_aws(
+		self,
+		exclude_boot_volume: bool,
+		physical_backup: bool,
+		rolling_snapshot: bool,
+		dedicated_snapshot: bool,
+	):
 		temporary_volume_ids = self.get_temporary_volume_ids()
 		instance_specification = {"InstanceId": self.instance_id, "ExcludeBootVolume": exclude_boot_volume}
 		if temporary_volume_ids:
@@ -982,6 +1102,7 @@ class VirtualMachine(Document):
 						"snapshot_id": snapshot["SnapshotId"],
 						"physical_backup": physical_backup,
 						"rolling_snapshot": rolling_snapshot,
+						"dedicated_snapshot": dedicated_snapshot,
 					}
 				).insert()
 				self.flags.created_snapshots.append(doc.name)
@@ -1244,9 +1365,15 @@ class VirtualMachine(Document):
 			document["is_server_prepared"] = True
 			document["is_server_setup"] = True
 			document["is_server_renamed"] = True
-			document["mariadb_root_password"] = frappe.get_doc(
-				"Virtual Machine Image", self.virtual_machine_image
-			).get_password("mariadb_root_password")
+			if self.data_disk_snapshot:
+				document["mariadb_root_password"] = get_decrypted_password(
+					"Virtual Disk Snapshot", self.data_disk_snapshot, "mariadb_root_password"
+				)
+			else:
+				document["mariadb_root_password"] = get_decrypted_password(
+					"Virtual Machine Image", self.virtual_machine_image, "mariadb_root_password"
+				)
+
 			if not document["mariadb_root_password"]:
 				frappe.throw(
 					f"Virtual Machine Image {self.virtual_machine_image} does not have a MariaDB root password set."
@@ -1686,8 +1813,10 @@ def sync_virtual_machines():
 	VirtualMachine.bulk_sync_oci()
 
 
-def snapshot_virtual_machines():
-	machines = frappe.get_all("Virtual Machine", {"status": "Running", "skip_automated_snapshot": 0})
+def snapshot_oci_virtual_machines():
+	machines = frappe.get_all(
+		"Virtual Machine", {"status": "Running", "skip_automated_snapshot": 0, "cloud_provider": "OCI"}
+	)
 	for machine in machines:
 		# Skip if a snapshot has already been created today
 		if frappe.get_all(
@@ -1707,6 +1836,66 @@ def snapshot_virtual_machines():
 		except Exception:
 			frappe.db.rollback()
 			log_error(title="Virtual Machine Snapshot Error", virtual_machine=machine.name)
+
+
+def snapshot_aws_internal_virtual_machines():
+	machines = frappe.get_all(
+		"Virtual Machine",
+		{
+			"status": "Running",
+			"skip_automated_snapshot": 0,
+			"cloud_provider": "AWS EC2",
+			"series": ("not in", ["f", "m"]),
+		},
+	)
+	for machine in machines:
+		# Skip if a snapshot has already been created today
+		if frappe.get_all(
+			"Virtual Disk Snapshot",
+			{
+				"virtual_machine": machine.name,
+				"physical_backup": 0,
+				"rolling_snapshot": 0,
+				"creation": (">=", frappe.utils.today()),
+			},
+			limit=1,
+		):
+			continue
+		try:
+			frappe.get_doc("Virtual Machine", machine.name).create_snapshots()
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			log_error(title="Virtual Machine Snapshot Error", virtual_machine=machine.name)
+
+
+def snapshot_aws_servers():
+	machines = frappe.get_all(
+		"Virtual Machine",
+		{"status": "Running", "skip_automated_snapshot": 0, "cloud_provider": "AWS EC2", "series": "f"},
+	)
+	for machine in machines:
+		app_server = frappe.get_value("Server", {"virtual_machine": machine.name}, "name")
+		# Skip if a snapshot has already been created today
+		if frappe.get_all(
+			"Server Snapshot",
+			{
+				"app_server": app_server,
+				"consistent": 0,
+				"creation": (">=", frappe.utils.today()),
+				"status": ["in", ["Pending", "Processing", "Completed"]],
+			},
+			limit=1,
+		):
+			continue
+		try:
+			frappe.get_doc("Server", app_server)._create_snapshot(
+				consistent=False, expire_at=frappe.utils.add_days(None, 2), free=True
+			)
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			log_error(title="Server Snapshot Error", virtual_machine=machine.name)
 
 
 def rolling_snapshot_database_server_virtual_machines():
