@@ -390,6 +390,15 @@ class Site(Document, TagHelpers):
 		if not self.setup_wizard_status_check_next_retry_on:
 			self.setup_wizard_status_check_next_retry_on = now_datetime()
 
+		if (
+			self.server
+			and frappe.get_value("Server", self.server, "enable_logical_replication_during_site_update")
+			and frappe.db.count("Site", {"server": self.server, "status": ("!=", "Archived")}) >= 1
+		):
+			frappe.throw(
+				"Logical replication is enabled for this server. You can only deploy a single site on the server."
+			)
+
 	def validate_site_name(self):
 		validate_subdomain(self.subdomain)
 
@@ -576,7 +585,7 @@ class Site(Document, TagHelpers):
 	def capture_signup_event(self, event: str):
 		team = frappe.get_doc("Team", self.team)
 		if frappe.db.count("Site", {"team": team.name}) <= 1 and team.account_request:
-			account_request: AccountRequest = frappe.get_doc("Account Request", team.account_request)
+			account_request: "AccountRequest" = frappe.get_doc("Account Request", team.account_request)
 			if not (account_request.is_saas_signup() or account_request.invited_by_parent_team):
 				capture(event, "fc_signup", team.user)
 
