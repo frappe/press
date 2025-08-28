@@ -640,7 +640,6 @@ export default {
 					filters: (site) => {
 						let filters = {
 							site: site.doc?.name,
-							status: ['in', ['Pending', 'Running', 'Success']],
 						};
 						const backup_name = getQueryParam('name');
 						if (backup_name) {
