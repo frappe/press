@@ -227,7 +227,11 @@ class SiteBackup(Document):
 				frappe.get_doc("Site", self.site), reference_doctype=self.doctype, reference_name=self.name
 			)
 
-		if not self.physical and self.status == "Failure":
+		if (
+			not self.physical
+			and self.has_value_changed("status")
+			and frappe.db.get_value("Agent Job", self.job, "status") == "Failure"
+		):
 			self.autocorrect_bench_permissions()
 
 	def _rollback_db_directory_permissions(self):
@@ -341,8 +345,7 @@ class SiteBackup(Document):
 				frappe.logger().info(f"Bench permissions corrected for backup {self.name}")
 				self.start_backup()
 				return True
-			except Exception as e:
-				frappe.logger().error(f"Failed to correct bench permissions: {e!s}")
+			except Exception:
 				return False
 		return False
 
