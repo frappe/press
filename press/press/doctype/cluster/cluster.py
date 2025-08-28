@@ -789,15 +789,9 @@ class Cluster(Document):
 		domain: str,
 		series: str,
 		team: str,
-<<<<<<< HEAD
-		kms_key_id: str | None = None,
-=======
 		data_disk_snapshot: str | None = None,
-<<<<<<< HEAD
->>>>>>> 34deccac7 (refactor(cluster): Utility function to create vm with data disk snapshot)
-=======
 		temporary_server: bool = False,
->>>>>>> ad9374087 (feat(server-snapshot): Add option in dashboard to create servers easily)
+		kms_key_id: str | None = None,
 	) -> "VirtualMachine":
 		"""Creates a Virtual Machine for the cluster
 		temporary_server: If you are creating a temporary server for some special purpose, set this to True.
@@ -815,15 +809,9 @@ class Cluster(Document):
 				"platform": platform,
 				"virtual_machine_image": self.get_available_vmi(series, platform=platform),
 				"team": team,
-<<<<<<< HEAD
-				"kms_key_id": kms_key_id,
-=======
 				"data_disk_snapshot": data_disk_snapshot,
-<<<<<<< HEAD
->>>>>>> 34deccac7 (refactor(cluster): Utility function to create vm with data disk snapshot)
-=======
 				"auto_attach_data_disk_snapshot": False,
->>>>>>> 8c70ef14d (refactor(vm): Attach disk from snapshot after vm boot up)
+				"kms_key_id": kms_key_id,
 			},
 		).insert()
 
@@ -854,28 +842,13 @@ class Cluster(Document):
 		team: str | None = None,
 		create_subscription=True,
 		auto_increase_storage: bool = False,
-<<<<<<< HEAD
-<<<<<<< HEAD
-		kms_key_id: str | None = None,
-=======
-=======
 		data_disk_snapshot: str | None = None,
->>>>>>> f56183cd7 (fix(cluster): Keep position of plan arg as previous in create_server)
 		temporary_server: bool = False,
-<<<<<<< HEAD
->>>>>>> ad9374087 (feat(server-snapshot): Add option in dashboard to create servers easily)
-=======
 		is_for_recovery: bool = False,
-<<<<<<< HEAD
->>>>>>> 3a30f251a (feat(snapshot-recovery): Spawn up special servers)
-=======
 		setup_db_replication: bool = False,
 		master_db_server: str | None = None,
-<<<<<<< HEAD
->>>>>>> 14128fd80 (feat(database-server): Provision replica from server snapshot)
-=======
 		press_job_arguments: dict[str, typing.Any] | None = None,
->>>>>>> 58e22139e (refactor(logical-replication): Add callbacks from different jobs and snapshot)
+		kms_key_id: str | None = None,
 	):
 		"""Creates a server for the cluster
 
@@ -914,15 +887,9 @@ class Cluster(Document):
 			domain,
 			server_series[doctype],
 			team,
-<<<<<<< HEAD
-			kms_key_id=kms_key_id,
-=======
 			data_disk_snapshot=data_disk_snapshot,
-<<<<<<< HEAD
->>>>>>> 34deccac7 (refactor(cluster): Utility function to create vm with data disk snapshot)
-=======
 			temporary_server=temporary_server,
->>>>>>> ad9374087 (feat(server-snapshot): Add option in dashboard to create servers easily)
+			kms_key_id=kms_key_id,
 		)
 		server = None
 		match doctype:

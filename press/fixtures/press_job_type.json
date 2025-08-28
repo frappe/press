@@ -1,6 +1,7 @@
 [
  {
-<<<<<<< HEAD
+  "callback_max_retry": 0,
+  "callback_script": null,
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2025-08-12 16:24:10.555919",
@@ -9,7 +10,11 @@
    {
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nprint(machine.as_dict())\nif machine.cloud_provider in [\"AWS EC2\", \"OCI\"]:\n    machine.attach_new_volume(machine.size, machine.iops, machine.throughput)\nelse:\n    machine.attach_volume(size=100)",
     "step_name": "Attach Volume",
-=======
+    "wait_until_true": 0
+   }
+  ]
+ },
+ {
   "callback_max_retry": 0,
   "callback_script": "",
   "docstatus": 0,
@@ -25,113 +30,15 @@
    {
     "script": "if doc.server_type == \"Database Server\" and arguments.get(\"is_consistent_snapshot\", False):\n    server = frappe.get_doc(\"Database Server\", doc.server)\n    output = server.ansible_run(\"systemctl start mariadb\")\n    if not (output and output.get(\"status\") == \"Success\"):\n        raise Exception(\"Failed to start mariadb service\")\n    frappe.db.set_value(\"Server Snapshot\", arguments.get(\"server_snapshot\"), \"database_server_services_started\", True, update_modified=False)\n\nelse:\n    result = (False, False) # Skipped\n    # As it wasn't a consistent snapshot services were never stopped\n    frappe.db.set_value(\"Server Snapshot\", arguments.get(\"server_snapshot\"), \"database_server_services_started\", True, update_modified=False)",
     "step_name": "Start MariaDB Service",
->>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
     "wait_until_true": 0
    }
   ]
  },
  {
-<<<<<<< HEAD
-=======
   "callback_max_retry": 0,
   "callback_script": null,
->>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
-<<<<<<< HEAD
-  "modified": "2025-08-01 18:29:05.498314",
-  "name": "Create Server",
-  "steps": [
-   {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.provision()\n",
-    "step_name": "Create Server",
-    "wait_until_true": 0
-   },
-   {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = (machine.status == \"Running\", False)\n",
-    "step_name": "Wait for Server to start",
-    "wait_until_true": 1
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.ping_ansible()\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Ping Server\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
-    "step_name": "Wait for Server to be accessible",
-    "wait_until_true": 1
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"AWS EC2\" and frappe.db.get_value(\"Virtual Machine\", server.virtual_machine, \"data_disk_snapshot\"):\n    try:\n        vm = frappe.get_doc(\"Virtual Machine\", server.virtual_machine)\n        vm.sync()\n        \n        if len(vm.volumes) == 0:\n            result = (False, False)\n        else:\n            server.reload()\n            server.validate_mounts()\n            server.save()\n            result = (True, False)\n    except frappe.exceptions.TimestampMismatchError:\n        pass\n    except Exception as e:\n        raise e\nelse:\n    result = (True, False)",
-    "step_name": "Sync Attached Volumes",
-    "wait_until_true": 1
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"AWS EC2\" and frappe.db.get_value(\"Virtual Machine\", server.virtual_machine, \"data_disk_snapshot\"):\n    server.mount_volumes(now=True, restart_services=True)\nelse:\n    result = (False, False)",
-    "step_name": "Mount Data Disk",
-    "wait_until_true": 0
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.update_tls_certificate()",
-    "step_name": "Update TLS Certificate",
-    "wait_until_true": 0
-   },
-   {
-    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Setup TLS Certificates\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
-    "step_name": "Wait for TLS Certificate to be updated",
-    "wait_until_true": 1
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.wait_for_cloud_init()",
-    "step_name": "Check Cloud Init status",
-    "wait_until_true": 0
-   },
-   {
-    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Wait for Cloud Init to finish\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
-    "step_name": "Wait for Cloud Init to finish",
-    "wait_until_true": 1
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.update_agent_ansible()",
-    "step_name": "Update Agent Ansible",
-    "wait_until_true": 0
-   },
-   {
-    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Update Agent\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
-    "step_name": "Wait for Agent to be updated",
-    "wait_until_true": 1
-   },
-   {
-    "script": "if doc.server_type == \"Database Server\":\n    server = frappe.get_doc(\"Database Server\", doc.server)\n    server.upgrade_mariadb()",
-    "step_name": "Upgrade MariaDB",
-    "wait_until_true": 0
-   },
-   {
-    "script": "if doc.server_type == \"Database Server\":\n    plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Upgrade MariaDB\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n    result = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\nelse:\n    result = (True,)",
-    "step_name": "Wait for MariaDB Upgrade to Complete",
-    "wait_until_true": 1
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.set_additional_config()",
-    "step_name": "Set additional config",
-    "wait_until_true": 0
-<<<<<<< HEAD
-=======
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Server\" and server.cluster == 'Mumbai':\n    server.setup_archived_folder()\n\nserver.save()\n",
-    "step_name": "Setup archived folder",
-    "wait_until_true": 0
->>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
-   }
-  ]
- },
- {
-<<<<<<< HEAD
-=======
-  "callback_max_retry": 0,
-  "callback_script": null,
->>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
-  "docstatus": 0,
-  "doctype": "Press Job Type",
-=======
->>>>>>> 3a30f251a (feat(snapshot-recovery): Spawn up special servers)
   "modified": "2025-01-02 15:33:27.252601",
   "name": "Resize Server",
   "steps": [
@@ -178,11 +85,8 @@
   ]
  },
  {
-<<<<<<< HEAD
-=======
   "callback_max_retry": 0,
   "callback_script": null,
->>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2024-02-05 17:08:00.514456",
@@ -221,15 +125,8 @@
   ]
  },
  {
-<<<<<<< HEAD
-=======
   "callback_max_retry": 0,
-<<<<<<< HEAD
-  "callback_script": null,
->>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
-=======
   "callback_script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type in [\"Server\", \"Database Server\"] and server.is_for_recovery:\n    filter_field = \"app_server\" if doc.server_type == \"Server\" else \"database_server\"\n    recovery_record_name = frappe.db.get_value(\"Server Snapshot Recovery\", {filter_field: doc.server}, \"name\")\n    if recovery_record_name:\n        recovery_record = frappe.get_doc(\"Server Snapshot Recovery\", recovery_record_name, for_update=True)\n    \n        if doc.status == \"Success\":\n            if doc.server_type == \"Server\":\n                recovery_record.app_server_archived = True\n            else:\n                recovery_record.database_server_archived = True\n            recovery_record.save()",
->>>>>>> 3a30f251a (feat(snapshot-recovery): Spawn up special servers)
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2025-08-04 18:20:49.856983",
@@ -253,11 +150,8 @@
   ]
  },
  {
-<<<<<<< HEAD
-=======
   "callback_max_retry": 0,
   "callback_script": null,
->>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2024-01-05 13:40:21.038901",
@@ -291,11 +185,8 @@
   ]
  },
  {
-<<<<<<< HEAD
-=======
   "callback_max_retry": 0,
   "callback_script": null,
->>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2025-02-14 14:30:00.676187",
@@ -334,11 +225,8 @@
   ]
  },
  {
-<<<<<<< HEAD
-=======
   "callback_max_retry": 0,
   "callback_script": null,
->>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2024-05-27 11:29:41.787719",
@@ -357,11 +245,8 @@
   ]
  },
  {
-<<<<<<< HEAD
-=======
   "callback_max_retry": 0,
   "callback_script": null,
->>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2024-06-18 16:03:25.166898",
@@ -380,11 +265,8 @@
   ]
  },
  {
-<<<<<<< HEAD
-=======
   "callback_max_retry": 0,
   "callback_script": null,
->>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2024-12-06 10:59:08.032149",
@@ -418,11 +300,8 @@
   ]
  },
  {
-<<<<<<< HEAD
-=======
   "callback_max_retry": 0,
   "callback_script": null,
->>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2025-03-30 17:33:29.170125",
@@ -441,11 +320,8 @@
   ]
  },
  {
-<<<<<<< HEAD
-=======
   "callback_max_retry": 0,
   "callback_script": null,
->>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2025-07-11 15:20:56.780290",
@@ -459,11 +335,8 @@
   ]
  },
  {
-<<<<<<< HEAD
-=======
   "callback_max_retry": 0,
   "callback_script": null,
->>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
   "docstatus": 0,
   "doctype": "Press Job Type",
   "modified": "2025-07-25 21:43:11.895128",
@@ -475,8 +348,6 @@
     "wait_until_true": 0
    }
   ]
-<<<<<<< HEAD
-=======
  },
  {
   "callback_max_retry": 5,
@@ -632,6 +503,5 @@
     "wait_until_true": 0
    }
   ]
->>>>>>> 092ed8dd7 (feat(snapshot): Implement Consistent & Inconsistent Snapshot Support)
  }
 ]

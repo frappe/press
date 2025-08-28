@@ -278,11 +278,7 @@
    "set_only_once": 1
   },
   {
-<<<<<<< HEAD
    "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\"].includes(doc.provider)",
-=======
-   "depends_on": "eval:doc.provider === \"AWS EC2\"",
->>>>>>> 3a30f251a (feat(snapshot-recovery): Spawn up special servers)
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
@@ -672,15 +668,7 @@
    "link_fieldname": "database_server"
   }
  ],
-<<<<<<< HEAD
-<<<<<<< HEAD
  "modified": "2025-08-14 02:08:52.404846",
-=======
- "modified": "2025-08-04 13:05:11.427510",
->>>>>>> 3a30f251a (feat(snapshot-recovery): Spawn up special servers)
-=======
- "modified": "2025-08-07 17:38:55.317338",
->>>>>>> 14128fd80 (feat(database-server): Provision replica from server snapshot)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

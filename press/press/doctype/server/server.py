@@ -809,19 +809,10 @@ class BaseServer(Document, TagHelpers):
 		volumes = self.get_volume_mounts()
 		if volumes or self.has_data_volume:
 			# Adding this condition since this method is called from both server and database server doctypes
-<<<<<<< HEAD
-			if self.name[0] == "f":
-				mountpoint = BENCH_DATA_MNT_POINT
-			elif self.name[0] == "m":
-				mountpoint = MARIADB_DATA_MNT_POINT
-=======
 			if self.doctype == "Server":
-				mountpoint = "/opt/volumes/benches"
+				mountpoint = BENCH_DATA_MNT_POINT
 			elif self.doctype == "Database Server":
-				mountpoint = "/opt/volumes/mariadb"
-			else:
-				mountpoint = "/"
->>>>>>> 91bb583af (fix(server): Avoid using series name in guess_data_disk_mountpoint)
+				mountpoint = MARIADB_DATA_MNT_POINT
 		else:
 			mountpoint = "/"
 		return mountpoint
@@ -1292,13 +1283,9 @@ class BaseServer(Document, TagHelpers):
 				{
 					"mount_type": "Bind",
 					"mount_point": "/var/lib/mysql",
-<<<<<<< HEAD
 					"source": f"{MARIADB_DATA_MNT_POINT}/var/lib/mysql",
-=======
-					"source": "/opt/volumes/mariadb/var/lib/mysql",
 					"mount_point_owner": "mysql",
 					"mount_point_group": "mysql",
->>>>>>> 0b35de08e (refactor(server): For disk snapshot based server handle mounts correctly)
 				},
 			)
 			self.append(
@@ -1306,13 +1293,9 @@ class BaseServer(Document, TagHelpers):
 				{
 					"mount_type": "Bind",
 					"mount_point": "/etc/mysql",
-<<<<<<< HEAD
 					"source": f"{MARIADB_DATA_MNT_POINT}/etc/mysql",
-=======
-					"source": "/opt/volumes/mariadb/etc/mysql",
 					"mount_point_owner": "mysql",
 					"mount_point_group": "mysql",
->>>>>>> 0b35de08e (refactor(server): For disk snapshot based server handle mounts correctly)
 				},
 			)
 

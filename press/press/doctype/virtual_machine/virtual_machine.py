@@ -200,9 +200,72 @@ class VirtualMachine(Document):
 				server.has_data_volume = self.has_data_volume
 				server.save()
 
-<<<<<<< HEAD
 		if self.has_value_changed("disk_size") and self.should_bill_addon_storage():
 			self.update_subscription_for_addon_storage()
+
+		if (
+			self.auto_attach_data_disk_snapshot
+			and self.has_value_changed("status")
+			and self.get_value_before_save("status") == "Pending"
+			and self.status == "Running"
+		):
+			self.auto_attach_snapshot_data_disk()
+
+	def auto_attach_snapshot_data_disk(self):
+		if self.data_disk_snapshot and self.data_disk_snapshot_attached:
+			return
+
+		if self.data_disk_snapshot_volume_id:
+			self.check_and_attach_data_disk_snapshot_volume()
+
+		if not self.data_disk_snapshot_volume_id:
+			self.create_data_disk_volume_from_snapshot()
+
+	def check_and_attach_data_disk_snapshot_volume(self):
+		if not self.data_disk_snapshot_volume_id:
+			frappe.throw("Data Disk Snapshot Volume ID is not set.")
+
+		volume_state = self.get_state_of_volume(self.data_disk_snapshot_volume_id)
+		if volume_state == "available":
+			self.attach_volume(self.data_disk_snapshot_volume_id)
+			self.data_disk_snapshot_attached = True
+			self.status = "Pending"
+			self.save()
+			return True
+
+		if volume_state == "deleted":
+			self.data_disk_snapshot_volume_id = None
+
+		self.status = "Pending"
+		self.save()
+		return False
+
+	def create_data_disk_volume_from_snapshot(self):
+		try:
+			datadisk_snapshot: VirtualDiskSnapshot = frappe.get_doc(
+				"Virtual Disk Snapshot", self.data_disk_snapshot
+			)
+			snapshot_volume = datadisk_snapshot.create_volume(
+				availability_zone=self.availability_zone, volume_initialization_rate=300
+			)
+			self.data_disk_snapshot_volume_id = snapshot_volume
+			self.status = "Pending"
+			self.save()
+			return True
+		except Exception:
+			log_error(
+				title="VM Data Disk Snapshot Volume Creation Failed",
+			)
+			if not self.data_disk_snapshot_volume_id:
+				return False
+			# If it fails for any reason, try to delete the volume
+			try:
+				self.delete_volume(self.data_disk_snapshot_volume_id)
+			except:  # noqa: E722
+				log_error(
+					title="VM Data Disk Snapshot Volume Cleanup Failed",
+				)
+			return False
 
 	def should_bill_addon_storage(self):
 		"""Check if storage addition should create/update subscription record"""
@@ -270,71 +333,6 @@ class VirtualMachine(Document):
 					"enabled",
 					0,
 				)
-=======
-		if (
-			self.auto_attach_data_disk_snapshot
-			and self.has_value_changed("status")
-			and self.get_value_before_save("status") == "Pending"
-			and self.status == "Running"
-		):
-			self.auto_attach_snapshot_data_disk()
-
-	def auto_attach_snapshot_data_disk(self):
-		if self.data_disk_snapshot and self.data_disk_snapshot_attached:
-			return
-
-		if self.data_disk_snapshot_volume_id:
-			self.check_and_attach_data_disk_snapshot_volume()
-
-		if not self.data_disk_snapshot_volume_id:
-			self.create_data_disk_volume_from_snapshot()
-
-	def check_and_attach_data_disk_snapshot_volume(self):
-		if not self.data_disk_snapshot_volume_id:
-			frappe.throw("Data Disk Snapshot Volume ID is not set.")
-
-		volume_state = self.get_state_of_volume(self.data_disk_snapshot_volume_id)
-		if volume_state == "available":
-			self.attach_volume(self.data_disk_snapshot_volume_id)
-			self.data_disk_snapshot_attached = True
-			self.status = "Pending"
-			self.save()
-			return True
-
-		if volume_state == "deleted":
-			self.data_disk_snapshot_volume_id = None
-
-		self.status = "Pending"
-		self.save()
-		return False
-
-	def create_data_disk_volume_from_snapshot(self):
-		try:
-			datadisk_snapshot: VirtualDiskSnapshot = frappe.get_doc(
-				"Virtual Disk Snapshot", self.data_disk_snapshot
-			)
-			snapshot_volume = datadisk_snapshot.create_volume(
-				availability_zone=self.availability_zone, volume_initialization_rate=300
-			)
-			self.data_disk_snapshot_volume_id = snapshot_volume
-			self.status = "Pending"
-			self.save()
-			return True
-		except Exception:
-			log_error(
-				title="VM Data Disk Snapshot Volume Creation Failed",
-			)
-			if not self.data_disk_snapshot_volume_id:
-				return False
-			# If it fails for any reason, try to delete the volume
-			try:
-				self.delete_volume(self.data_disk_snapshot_volume_id)
-			except:  # noqa: E722
-				log_error(
-					title="VM Data Disk Snapshot Volume Cleanup Failed",
-				)
-			return False
->>>>>>> 8c70ef14d (refactor(vm): Attach disk from snapshot after vm boot up)
 
 	@frappe.whitelist()
 	def provision(self):
@@ -1716,16 +1714,12 @@ class VirtualMachine(Document):
 				return None
 
 	@frappe.whitelist()
-<<<<<<< HEAD
 	def attach_volume_job(self):
 		server = frappe.get_doc("Server", self.name)
 		server.run_press_job("Attach Volume")
 
 	@frappe.whitelist()
 	def attach_volume(self, volume_id=None, is_temporary_volume: bool = False, size: int | None = None):
-=======
-	def attach_volume(self, volume_id, is_temporary_volume: bool = False) -> str:
->>>>>>> 3d1496f8d (fix(vm): While creating vm image pass platform field)
 		"""
 		temporary_volumes: If you are attaching a volume to an instance just for temporary use, then set this to True.
 

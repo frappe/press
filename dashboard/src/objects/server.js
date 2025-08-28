@@ -4,18 +4,9 @@ import LucideVenetianMask from '~icons/lucide/venetian-mask';
 import ServerActions from '../components/server/ServerActions.vue';
 import { getTeam } from '../data/team';
 import router from '../router';
-<<<<<<< HEAD
-<<<<<<< HEAD
-import { icon } from '../utils/components';
-=======
 import { confirmDialog, icon, renderDialog } from '../utils/components';
->>>>>>> da2d50780 (refactor(snapshot): Refactored the UX of snaphost page)
 import { isMobile } from '../utils/device';
-import { duration, planTitle, userCurrency } from '../utils/format';
-=======
-import { icon, renderDialog } from '../utils/components';
 import { date, duration, planTitle, userCurrency } from '../utils/format';
->>>>>>> c63196b8b (feat(snapshot): Show all snapshot actions in dashboard)
 import { trialDays } from '../utils/site';
 import { getJobsTab } from './common/jobs';
 import { tagTab } from './common/tags';
@@ -858,8 +849,7 @@ export default {
 					return { server: server.doc.name };
 				},
 			},
-<<<<<<< HEAD
-			tagTab(),
+			tagTab('Server'),
 			{
 				label: 'Activity',
 				icon: icon('activity'),
@@ -923,9 +913,6 @@ export default {
 					},
 				},
 			},
-=======
-			tagTab('Server'),
->>>>>>> 6e727e5d4 (feat: Added dedicated page for backups and snapshots)
 		],
 	},
 	routes: [

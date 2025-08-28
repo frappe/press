@@ -22,11 +22,8 @@
   "machine_type",
   "instance_id",
   "platform",
-<<<<<<< HEAD
   "kms_key_id",
-=======
   "ssh_key",
->>>>>>> 8c70ef14d (refactor(vm): Attach disk from snapshot after vm boot up)
   "ready_for_conversion",
   "column_break_hgcr",
   "disk_size",
@@ -345,18 +342,15 @@
    "read_only": 1
   },
   {
-<<<<<<< HEAD
    "fieldname": "kms_key_id",
    "fieldtype": "Data",
    "label": "KMS Key ID"
-=======
+  },
+  {
    "fieldname": "data_disk_snapshot",
    "fieldtype": "Link",
    "label": "Data Disk Snapshot",
    "options": "Virtual Disk Snapshot"
-<<<<<<< HEAD
->>>>>>> e65ac16e1 (feat(vm): Add support to create server from data disk snapshot)
-=======
   },
   {
    "depends_on": "eval: doc.data_disk_snapshot",
@@ -380,7 +374,6 @@
    "fieldtype": "Check",
    "label": "Auto Attach Data Disk Snapshot",
    "set_only_once": 1
->>>>>>> 8c70ef14d (refactor(vm): Attach disk from snapshot after vm boot up)
   }
  ],
  "index_web_pages_for_search": 1,
@@ -416,19 +409,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
  "modified": "2025-08-28 12:26:04.777772",
-=======
- "modified": "2025-07-31 19:48:29.095589",
->>>>>>> e65ac16e1 (feat(vm): Add support to create server from data disk snapshot)
-=======
- "modified": "2025-08-01 23:01:02.723293",
->>>>>>> ad9374087 (feat(server-snapshot): Add option in dashboard to create servers easily)
-=======
- "modified": "2025-08-13 18:11:31.965032",
->>>>>>> 8c70ef14d (refactor(vm): Attach disk from snapshot after vm boot up)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

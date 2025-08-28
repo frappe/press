@@ -19,13 +19,10 @@ from frappe.utils.data import cint
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
-<<<<<<< HEAD
 from press.exceptions import SiteAlreadyArchived, SiteUnderMaintenance
-=======
 from press.press.doctype.logical_replication_backup.logical_replication_backup import (
 	get_logical_replication_backup_restoration_steps,
 )
->>>>>>> 5410b51dd (feat(site-update): Add support for logical replication based backup)
 from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
 	get_physical_backup_restoration_steps,
 )
