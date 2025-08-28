@@ -781,7 +781,14 @@ class Cluster(Document):
 		return True
 
 	def create_vm(
-		self, machine_type: str, platform: str, disk_size: int, domain: str, series: str, team: str
+		self,
+		machine_type: str,
+		platform: str,
+		disk_size: int,
+		domain: str,
+		series: str,
+		team: str,
+		kms_key_id: str | None = None,
 	) -> "VirtualMachine":
 		return frappe.get_doc(
 			{
@@ -794,6 +801,7 @@ class Cluster(Document):
 				"platform": platform,
 				"virtual_machine_image": self.get_available_vmi(series, platform=platform),
 				"team": team,
+				"kms_key_id": kms_key_id,
 			},
 		).insert()
 
@@ -824,6 +832,7 @@ class Cluster(Document):
 		team: str | None = None,
 		create_subscription=True,
 		auto_increase_storage: bool = False,
+		kms_key_id: str | None = None,
 	):
 		"""Creates a server for the cluster"""
 		domain = domain or frappe.db.get_single_value("Press Settings", "domain")
@@ -831,7 +840,13 @@ class Cluster(Document):
 		team = team or get_current_team()
 		plan = plan or self.get_or_create_basic_plan(doctype)
 		vm = self.create_vm(
-			plan.instance_type, plan.platform, plan.disk, domain, server_series[doctype], team
+			plan.instance_type,
+			plan.platform,
+			plan.disk,
+			domain,
+			server_series[doctype],
+			team,
+			kms_key_id=kms_key_id,
 		)
 		server = None
 		match doctype:
