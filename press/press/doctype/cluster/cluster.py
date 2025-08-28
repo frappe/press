@@ -791,6 +791,7 @@ class Cluster(Document):
 		team: str,
 		data_disk_snapshot: str | None = None,
 		temporary_server: bool = False,
+		kms_key_id: str | None = None,
 	) -> "VirtualMachine":
 		"""Creates a Virtual Machine for the cluster
 		temporary_server: If you are creating a temporary server for some special purpose, set this to True.
@@ -810,6 +811,7 @@ class Cluster(Document):
 				"team": team,
 				"data_disk_snapshot": data_disk_snapshot,
 				"auto_attach_data_disk_snapshot": False,
+				"kms_key_id": kms_key_id,
 			},
 		).insert()
 
@@ -846,6 +848,7 @@ class Cluster(Document):
 		setup_db_replication: bool = False,
 		master_db_server: str | None = None,
 		press_job_arguments: dict[str, typing.Any] | None = None,
+		kms_key_id: str | None = None,
 	):
 		"""Creates a server for the cluster
 
@@ -886,6 +889,7 @@ class Cluster(Document):
 			team,
 			data_disk_snapshot=data_disk_snapshot,
 			temporary_server=temporary_server,
+			kms_key_id=kms_key_id,
 		)
 		server = None
 		match doctype:

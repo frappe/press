@@ -1116,7 +1116,7 @@ def get_permission_query_conditions(user):
 
 
 def has_permission(doc, ptype, user):
-	from press.utils import get_current_team, has_role
+	from press.utils import get_current_team
 
 	if not user:
 		user = frappe.session.user
@@ -1126,9 +1126,6 @@ def has_permission(doc, ptype, user):
 		return True
 
 	if ptype == "create":
-		return True
-
-	if has_role("Press Support Agent", user) and ptype == "read":
 		return True
 
 	team = get_current_team(True)

@@ -22,6 +22,7 @@
   "machine_type",
   "instance_id",
   "platform",
+  "kms_key_id",
   "ssh_key",
   "ready_for_conversion",
   "column_break_hgcr",
@@ -341,6 +342,11 @@
    "read_only": 1
   },
   {
+   "fieldname": "kms_key_id",
+   "fieldtype": "Data",
+   "label": "KMS Key ID"
+  },
+  {
    "fieldname": "data_disk_snapshot",
    "fieldtype": "Link",
    "label": "Data Disk Snapshot",
@@ -403,7 +409,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2025-08-13 18:11:31.965032",
+ "modified": "2025-08-28 12:26:04.777772",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
