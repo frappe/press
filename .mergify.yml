@@ -9,7 +9,6 @@ pull_request_rules:
         - or:
           - base=master
     actions:
-      close:
       comment:
           message: |
             @{{author}}, thanks for the contribution, but we do not accept pull requests on a stable branch. Please raise PR on an develop branch.
