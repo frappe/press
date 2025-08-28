@@ -89,7 +89,9 @@ def on_login(login_manager):
 	):
 		frappe.throw("Please re-login to verify your identity.")
 
-	if not frappe.db.exists("Team", {"user": frappe.session.user, "enabled": 1}) and frappe.db.exists("Team", {"user": frappe.session.user, "enabled": 0}):
+	if not frappe.db.exists("Team", {"user": frappe.session.user, "enabled": 1}) and frappe.db.exists(
+		"Team", {"user": frappe.session.user, "enabled": 0}
+	):
 		frappe.db.set_value("Team", {"user": frappe.session.user, "enabled": 0}, "enabled", 1)
 		frappe.db.commit()
 
@@ -136,7 +138,7 @@ def update_website_context(context):
 
 
 def has_permission(doc, ptype, user):
-	from press.utils import get_current_team, has_role
+	from press.utils import get_current_team
 
 	if not user:
 		user = frappe.session.user
@@ -146,9 +148,6 @@ def has_permission(doc, ptype, user):
 		return True
 
 	if ptype == "create":
-		return True
-
-	if has_role("Press Support Agent", user) and ptype == "read":
 		return True
 
 	team = get_current_team()
