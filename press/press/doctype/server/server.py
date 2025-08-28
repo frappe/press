@@ -1985,6 +1985,17 @@ class Server(BaseServer):
 		if self.public:
 			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
 
+		if (
+			not self.is_new()
+			and self.has_value_changed("enable_logical_replication_during_site_update")
+			and self.enable_logical_replication_during_site_update
+			and frappe.db.count("Site", {"server": self.name, "status": ("!=", "Archived")}) > 1
+		):
+			# Throw error if multiple sites are present on the server
+			frappe.throw(
+				"Cannot enable logical replication during site update if multiple sites are present on the server"
+			)
+
 	def after_insert(self):
 		from press.press.doctype.press_role.press_role import (
 			add_permission_for_newly_created_doc,
