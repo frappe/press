@@ -395,6 +395,8 @@ class VirtualMachine(Document):
 							"DeleteOnTermination": True,
 							"VolumeSize": max(self.disk_size, volume.size),
 							"VolumeType": volume.volume_type,
+							"KmsKeyId": self.kms_key_id,
+							"Encrypted": bool(self.kms_key_id),
 						},
 					}
 				)
@@ -407,6 +409,8 @@ class VirtualMachine(Document):
 					"DeleteOnTermination": True,
 					"VolumeSize": volume.size,
 					"VolumeType": volume.volume_type,
+					"KmsKeyId": self.kms_key_id,
+					"Encrypted": bool(self.kms_key_id),
 				},
 			}
 			if volume.iops:
@@ -432,6 +436,7 @@ class VirtualMachine(Document):
 							"VolumeSize": self.root_disk_size,  # This in GB. Fucking AWS!
 							"VolumeType": "gp3",
 							"KmsKeyId": self.kms_key_id,
+							"Encrypted": bool(self.kms_key_id),
 						},
 					}
 				],
@@ -1659,6 +1664,7 @@ class VirtualMachine(Document):
 				},
 			],
 			"KmsKeyId": self.kms_key_id,
+			"Encrypted": bool(self.kms_key_id),
 		}
 		if iops:
 			volume_options["Iops"] = iops
