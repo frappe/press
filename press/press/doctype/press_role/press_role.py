@@ -158,7 +158,6 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 	:param name: Document name
 	:return: List of permitted roles or None
 	"""
-	from press.utils import has_role
 
 	if doctype not in [
 		"Site",
@@ -171,9 +170,7 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 	]:
 		return []
 
-	if (hasattr(frappe.local, "system_user") and frappe.local.system_user()) or has_role(
-		"Press Support Agent"
-	):
+	if hasattr(frappe.local, "system_user") and frappe.local.system_user():
 		return []
 
 	PressRoleUser = frappe.qb.DocType("Press Role User")
