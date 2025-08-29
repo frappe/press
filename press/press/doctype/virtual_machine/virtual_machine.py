@@ -1879,8 +1879,11 @@ def snapshot_aws_servers():
 	machines = frappe.get_all(
 		"Virtual Machine",
 		{"status": "Running", "skip_automated_snapshot": 0, "cloud_provider": "AWS EC2", "series": "f"},
+		limit_page_length=50,
 	)
 	for machine in machines:
+		if has_job_timeout_exceeded():
+			return
 		app_server = frappe.get_value("Server", {"virtual_machine": machine.name}, "name")
 		# Skip if a snapshot has already been created today
 		if frappe.get_all(
