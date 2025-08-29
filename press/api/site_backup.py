@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 
+from press.api.site import protected
 from press.press.doctype.site_backup.site_backup import OngoingSnapshotError
 
 if TYPE_CHECKING:
@@ -11,6 +12,7 @@ from botocore.exceptions import ClientError
 
 
 @frappe.whitelist(allow_guest=True, methods="POST")
+@protected("Site Backup")
 def create_snapshot(name: str, key: str):
 	"""
 	This API will be called by agent during physical backup of database server.
