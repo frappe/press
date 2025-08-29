@@ -191,6 +191,7 @@ def convert_size(size_bytes):
 
 
 @frappe.whitelist()
+@protected("Storage Integration Subscription")
 def toggle_user_status(docname, status):
 	doc = frappe.get_doc("Storage Integration Subscription", docname)
 	status = int(status)
