@@ -57,7 +57,8 @@ class PressJob(Document):
 		self.execute()
 
 	def on_update(self):
-		self.process_callback(save=True)
+		if self.has_value_changed("status"):
+			self.process_callback(save=True)
 
 	def on_change(self):
 		self.publish_update()
