@@ -351,10 +351,10 @@
  },
  {
   "callback_max_retry": 5,
-  "callback_script": "snapshot = frappe.get_doc(\"Server Snapshot\", arguments.get(\"server_snapshot\"))\nif doc.server_type == \"Server\":\n\tsnapshot.resume_app_server_services()\nelif doc.server_type == \"Database Server\":\n\tsnapshot.resume_database_server_services()\n\nsnapshot.sync(now=False)\n\nif doc.status == \"Failure\":\n    snapshot.reload()\n    snapshot.status = \"Failure\"\n    snapshot.save()\n    \n    for s in snapshot.snapshots:\n        try:\n            frappe.get_doc(\"Virtual Disk Snapshot\", s).delete_snapshot()\n        except:\n            pass",
+  "callback_script": "snapshot = frappe.get_doc(\"Server Snapshot\", arguments.get(\"server_snapshot\"), for_update=True)\nif doc.server_type == \"Server\":\n\tsnapshot.resume_app_server_services()\nelif doc.server_type == \"Database Server\":\n\tsnapshot.resume_database_server_services()\n\nsnapshot.sync(now=False)\n\nif doc.status == \"Failure\":\n    snapshot.reload()\n    snapshot.status = \"Failure\"\n    snapshot.save()\n    \n    for s in snapshot.snapshots:\n        try:\n            frappe.get_doc(\"Virtual Disk Snapshot\", s).delete_snapshot()\n        except:\n            pass",
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2025-08-01 21:00:05.301461",
+  "modified": "2025-08-29 17:08:34.710921",
   "name": "Snapshot Disk",
   "steps": [
    {
