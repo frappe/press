@@ -113,9 +113,7 @@ class SiteBackup(Document):
 					)
 				)
 
-		if filters.get("status"):
-			query = query.where(sb.status == filters["status"])
-		else:
+		if not filters.get("status"):
 			query = query.where(sb.status == "Success")
 
 		results = [
