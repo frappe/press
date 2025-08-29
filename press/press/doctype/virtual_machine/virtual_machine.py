@@ -1874,7 +1874,7 @@ def snapshot_aws_internal_virtual_machines():
 		if frappe.get_all(
 			"Virtual Disk Snapshot",
 			{
-				"virtual_machine": machine.name,
+				"virtual_machine": machine,
 				"physical_backup": 0,
 				"rolling_snapshot": 0,
 				"creation": (">=", frappe.utils.today()),
@@ -1883,11 +1883,11 @@ def snapshot_aws_internal_virtual_machines():
 		):
 			continue
 		try:
-			frappe.get_doc("Virtual Machine", machine.name).create_snapshots()
+			frappe.get_doc("Virtual Machine", machine).create_snapshots()
 			frappe.db.commit()
 		except Exception:
 			frappe.db.rollback()
-			log_error(title="Virtual Machine Snapshot Error", virtual_machine=machine.name)
+			log_error(title="Virtual Machine Snapshot Error", virtual_machine=machine)
 
 
 def snapshot_aws_servers():
