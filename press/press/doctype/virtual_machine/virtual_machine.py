@@ -78,6 +78,7 @@ class VirtualMachine(Document):
 		data_disk_snapshot: DF.Link | None
 		data_disk_snapshot_attached: DF.Check
 		data_disk_snapshot_volume_id: DF.Data | None
+		disable_server_snapshot: DF.Check
 		disk_size: DF.Int
 		domain: DF.Link
 		has_data_volume: DF.Check
@@ -1853,7 +1854,21 @@ def snapshot_aws_internal_virtual_machines():
 			"cloud_provider": "AWS EC2",
 			"series": ("not in", ["f", "m"]),
 		},
+		pluck="name",
 	)
+	server_snapshot_disabled_vms = frappe.get_all(
+		"Virtual Machine",
+		{
+			"status": "Running",
+			"skip_automated_snapshot": 0,
+			"cloud_provider": "AWS EC2",
+			"disable_server_snapshot": 1,
+			"series": ("in", ["f", "m"]),
+		},
+		pluck="name",
+	)
+	machines.extend(server_snapshot_disabled_vms)
+
 	for machine in machines:
 		# Skip if a snapshot has already been created today
 		if frappe.get_all(
@@ -1878,7 +1893,13 @@ def snapshot_aws_internal_virtual_machines():
 def snapshot_aws_servers():
 	machines = frappe.get_all(
 		"Virtual Machine",
-		{"status": "Running", "skip_automated_snapshot": 0, "cloud_provider": "AWS EC2", "series": "f"},
+		{
+			"status": "Running",
+			"skip_automated_snapshot": 0,
+			"cloud_provider": "AWS EC2",
+			"series": "f",
+			"disable_server_snapshot": 0,
+		},
 		limit_page_length=50,
 	)
 	for machine in machines:
