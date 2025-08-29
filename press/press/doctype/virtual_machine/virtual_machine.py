@@ -1891,33 +1891,37 @@ def snapshot_aws_internal_virtual_machines():
 
 
 def snapshot_aws_servers():
+	servers_with_snapshot = frappe.get_all(
+		"Server Snapshot",
+		{
+			"status": ["in", ["Pending", "Processing", "Completed"]],
+			"consistent": 0,
+			"free": 1,
+			"creation": (">=", frappe.utils.today()),
+		},
+		pluck="app_server",
+	)
+	vms_with_snapshot = frappe.get_all(
+		"Server", {"name": ("in", servers_with_snapshot)}, pluck="virtual_machine"
+	)
 	machines = frappe.get_all(
 		"Virtual Machine",
 		{
+			"name": ("not in", vms_with_snapshot),
 			"status": "Running",
 			"skip_automated_snapshot": 0,
 			"cloud_provider": "AWS EC2",
 			"series": "f",
 			"disable_server_snapshot": 0,
 		},
+		order_by="RAND()",
+		pluck="name",
 		limit_page_length=50,
 	)
 	for machine in machines:
 		if has_job_timeout_exceeded():
 			return
-		app_server = frappe.get_value("Server", {"virtual_machine": machine.name}, "name")
-		# Skip if a snapshot has already been created today
-		if frappe.get_all(
-			"Server Snapshot",
-			{
-				"app_server": app_server,
-				"consistent": 0,
-				"creation": (">=", frappe.utils.today()),
-				"status": ["in", ["Pending", "Processing", "Completed"]],
-			},
-			limit=1,
-		):
-			continue
+		app_server = frappe.get_value("Server", {"virtual_machine": machine}, "name")
 		try:
 			frappe.get_doc("Server", app_server)._create_snapshot(
 				consistent=False, expire_at=frappe.utils.add_days(None, 2), free=True
@@ -1925,7 +1929,7 @@ def snapshot_aws_servers():
 			frappe.db.commit()
 		except Exception:
 			frappe.db.rollback()
-			log_error(title="Server Snapshot Error", virtual_machine=machine.name)
+			log_error(title="Server Snapshot Error", virtual_machine=machine)
 
 
 def rolling_snapshot_database_server_virtual_machines():
