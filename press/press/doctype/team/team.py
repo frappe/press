@@ -304,6 +304,9 @@ class Team(Document):
 			user.append_roles(account_request.role)
 			user.save(ignore_permissions=True)
 
+		if frappe.db.exists("Team", {"user": user.name}):
+			frappe.throw("You have already an account with same email. Please login using the same email.")
+
 		team.team_title = "Parent Team"
 		team.insert(ignore_permissions=True, ignore_links=True)
 		team.append("team_members", {"user": user.name})
