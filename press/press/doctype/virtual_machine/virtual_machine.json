@@ -54,7 +54,9 @@
   "volumes",
   "temporary_volumes",
   "snapshots_section",
-  "skip_automated_snapshot"
+  "skip_automated_snapshot",
+  "column_break_zozh",
+  "disable_server_snapshot"
  ],
  "fields": [
   {
@@ -374,6 +376,17 @@
    "fieldtype": "Check",
    "label": "Auto Attach Data Disk Snapshot",
    "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_zozh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "If you disable server snapshot, it will just take disk snapshot",
+   "fieldname": "disable_server_snapshot",
+   "fieldtype": "Check",
+   "label": "Disable Server Snapshot"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -409,7 +422,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2025-08-28 18:26:04.777772",
+ "modified": "2025-08-29 18:35:20.359750",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
