@@ -350,41 +350,6 @@
   ]
  },
  {
-  "callback_max_retry": 5,
-  "callback_script": "snapshot = frappe.get_doc(\"Server Snapshot\", arguments.get(\"server_snapshot\"), for_update=True)\nif doc.server_type == \"Server\":\n\tsnapshot.resume_app_server_services()\nelif doc.server_type == \"Database Server\":\n\tsnapshot.resume_database_server_services()\n\nsnapshot.sync(now=False)\n\nif doc.status == \"Failure\":\n    snapshot.reload()\n    snapshot.status = \"Failure\"\n    snapshot.save()\n    \n    for s in snapshot.snapshots:\n        try:\n            frappe.get_doc(\"Virtual Disk Snapshot\", s).delete_snapshot()\n        except:\n            pass",
-  "docstatus": 0,
-  "doctype": "Press Job Type",
-  "modified": "2025-08-29 17:08:34.710921",
-  "name": "Snapshot Disk",
-  "steps": [
-   {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n\nwhile True:\n    try:\n        machine.sync()\n    finally:\n        break\n\nif machine.status == \"Terminated\":\n    raise Exception(\"Can't snapshot terminated virtual machine\")\nelif machine.status == \"Draft\":\n    raise Exception(\"Can't snapshot draft virtual machine\")",
-    "step_name": "Verify Virtual Machine Status",
-    "wait_until_true": 0
-   },
-   {
-    "script": "if doc.server_type == \"Server\" and arguments.get(\"is_consistent_snapshot\", False):\n    server = frappe.get_doc(\"Server\", doc.server)\n    output = server.ansible_run(\"systemctl stop docker\")\n    if not (output and output.get(\"status\") == \"Success\"):\n        raise Exception(\"Failed to stop docker daemon\")\nelse:\n    result = (False, False) # Skipped\n",
-    "step_name": "Stop Docker Daemon",
-    "wait_until_true": 0
-   },
-   {
-    "script": "if doc.server_type == \"Database Server\" and arguments.get(\"is_consistent_snapshot\", False):\n    server = frappe.get_doc(\"Database Server\", doc.server)\n    output = server.ansible_run(\"systemctl stop mariadb\")\n    if not (output and output.get(\"status\") == \"Success\"):\n        raise Exception(\"Failed to stop mariadb service\")\n    result = (True, False)\nelse:\n    result = (False, False) # Skipped\n",
-    "step_name": "Stop MariaDB Service",
-    "wait_until_true": 0
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\noutput = server.ansible_run(\"sync\")\nif not (output and output.get(\"status\") == \"Success\"):\n    raise Exception(\"Failed to flush file system buffers to disk\")\n",
-    "step_name": "Flush File System Buffers to Disk",
-    "wait_until_true": 0
-   },
-   {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.create_snapshots(exclude_boot_volume=True, dedicated_snapshot=True)\n\nfield_name = \"app_server_snapshot\" if doc.server_type == \"Server\" else \"database_server_snapshot\"\nno_of_snapshots = len(machine.flags.created_snapshots)\nif no_of_snapshots != 1:\n    raise Exception(\"Expected 1 disk snapshot. Found : \"+str(no_of_snapshots))\n    \nfrappe.db.set_value(\"Server Snapshot\", arguments.get(\"server_snapshot\"), field_name, machine.flags.created_snapshots[0], update_modified=False)",
-    "step_name": "Snapshot Disk",
-    "wait_until_true": 0
-   }
-  ]
- },
- {
   "callback_max_retry": 1,
   "callback_script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type in [\"Server\", \"Database Server\"] and server.is_for_recovery:\n    filter_field = \"app_server\" if doc.server_type == \"Server\" else \"database_server\"\n    recovery_record_name = frappe.db.get_value(\"Server Snapshot Recovery\", {filter_field: doc.server}, \"name\")\n    if recovery_record_name:\n        recovery_record = frappe.get_doc(\"Server Snapshot Recovery\", recovery_record_name, for_update=True)\n    \n        if doc.status == \"Success\":\n            if doc.server_type == \"Server\":\n                recovery_record.is_app_server_ready = True\n            else:\n                recovery_record.is_database_server_ready = True\n            recovery_record.save()\n        else:\n            recovery_record.mark_server_provisioning_as_failed()\n            \nif doc.server_type in [\"Server\", \"Database Server\"] and \"logical_replication_backup\" in arguments:\n    if doc.status == \"Success\":\n        frappe.get_doc(\"Logical Replication Backup\", arguments.get(\"logical_replication_backup\")).next()\n    if doc.status == \"Failure\":\n        frappe.get_doc(\"Logical Replication Backup\", arguments.get(\"logical_replication_backup\")).fail()",
   "docstatus": 0,
@@ -500,6 +465,41 @@
    {
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.set_additional_config()",
     "step_name": "Set additional config",
+    "wait_until_true": 0
+   }
+  ]
+ },
+ {
+  "callback_max_retry": 5,
+  "callback_script": "snapshot = frappe.get_doc(\"Server Snapshot\", arguments.get(\"server_snapshot\"))\nif doc.server_type == \"Server\":\n\tsnapshot.resume_app_server_services()\nelif doc.server_type == \"Database Server\":\n\tsnapshot.resume_database_server_services()\n\nif doc.status == \"Failure\":\n    frappe.db.set_value(\"Server Snapshot\", snapshot.name, \"status\", \"Failure\", update_modified=False)\n    for s in snapshot.snapshots:\n        try:\n            frappe.get_doc(\"Virtual Disk Snapshot\", s).delete_snapshot()\n        except:\n            pass\n        \nelse:\n    snapshot.sync(now=False)",
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2025-08-29 19:42:16.344401",
+  "name": "Snapshot Disk",
+  "steps": [
+   {
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n\nwhile True:\n    try:\n        machine.sync()\n    finally:\n        break\n\nif machine.status == \"Terminated\":\n    raise Exception(\"Can't snapshot terminated virtual machine\")\nelif machine.status == \"Draft\":\n    raise Exception(\"Can't snapshot draft virtual machine\")",
+    "step_name": "Verify Virtual Machine Status",
+    "wait_until_true": 0
+   },
+   {
+    "script": "if doc.server_type == \"Server\" and arguments.get(\"is_consistent_snapshot\", False):\n    server = frappe.get_doc(\"Server\", doc.server)\n    output = server.ansible_run(\"systemctl stop docker\")\n    if not (output and output.get(\"status\") == \"Success\"):\n        raise Exception(\"Failed to stop docker daemon\")\nelse:\n    result = (False, False) # Skipped\n",
+    "step_name": "Stop Docker Daemon",
+    "wait_until_true": 0
+   },
+   {
+    "script": "if doc.server_type == \"Database Server\" and arguments.get(\"is_consistent_snapshot\", False):\n    server = frappe.get_doc(\"Database Server\", doc.server)\n    output = server.ansible_run(\"systemctl stop mariadb\")\n    if not (output and output.get(\"status\") == \"Success\"):\n        raise Exception(\"Failed to stop mariadb service\")\n    result = (True, False)\nelse:\n    result = (False, False) # Skipped\n",
+    "step_name": "Stop MariaDB Service",
+    "wait_until_true": 0
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\noutput = server.ansible_run(\"sync\")\nif not (output and output.get(\"status\") == \"Success\"):\n    raise Exception(\"Failed to flush file system buffers to disk\")\n",
+    "step_name": "Flush File System Buffers to Disk",
+    "wait_until_true": 0
+   },
+   {
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.create_snapshots(exclude_boot_volume=True, dedicated_snapshot=True)\n\nfield_name = \"app_server_snapshot\" if doc.server_type == \"Server\" else \"database_server_snapshot\"\nno_of_snapshots = len(machine.flags.created_snapshots)\nif no_of_snapshots != 1:\n    raise Exception(\"Expected 1 disk snapshot. Found : \"+str(no_of_snapshots))\n    \nfrappe.db.set_value(\"Server Snapshot\", arguments.get(\"server_snapshot\"), field_name, machine.flags.created_snapshots[0], update_modified=False)",
+    "step_name": "Snapshot Disk",
     "wait_until_true": 0
    }
   ]
