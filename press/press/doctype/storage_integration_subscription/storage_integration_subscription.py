@@ -54,9 +54,7 @@ class StorageIntegrationSubscription(Document):
 		self.secret_key = frappe.generate_hash(length=40)
 
 	def set_policy_json(self):
-		bucket_name = frappe.db.get_value(
-			"Storage Integration Bucket", self.minio_server_on, "bucket_name"
-		)
+		bucket_name = frappe.db.get_value("Storage Integration Bucket", self.minio_server_on, "bucket_name")
 		data = {
 			"Version": "2012-10-17",
 			"Statement": [
@@ -119,15 +117,13 @@ def create_after_insert(doc, method):
 		return
 
 	if doc.app == "storage_integration":
-		sub_exists = frappe.db.exists(
-			{"doctype": "Storage Integration Subscription", "site": doc.site}
-		)
+		sub_exists = frappe.db.exists({"doctype": "Storage Integration Subscription", "site": doc.site})
 		if sub_exists:
 			return
 
-		frappe.get_doc(
-			{"doctype": "Storage Integration Subscription", "site": doc.site}
-		).insert(ignore_permissions=True)
+		frappe.get_doc({"doctype": "Storage Integration Subscription", "site": doc.site}).insert(
+			ignore_permissions=True
+		)
 
 	if doc.app == "email_delivery_service":
 		# TODO: add a separate doctype to track email service setup completion
@@ -144,9 +140,7 @@ def monitor_storage():
 		"Storage Integration Subscription", fields=["site", "name"], filters={"enabled": 1}
 	)
 	access_key = frappe.db.get_value("Add On Settings", None, "aws_access_key")
-	secret_key = get_decrypted_password(
-		"Add On Settings", "Add On Settings", "aws_secret_key"
-	)
+	secret_key = get_decrypted_password("Add On Settings", "Add On Settings", "aws_secret_key")
 
 	for sub in active_subs:
 		usage, unit_u = get_size("bucket_name", sub["site"], access_key, secret_key)
@@ -170,9 +164,7 @@ def monitor_storage():
 
 
 def get_size(bucket, path, access_key, secret_key):
-	s3 = boto3.resource(
-		"s3", aws_access_key_id=access_key, aws_secret_access_key=secret_key
-	)
+	s3 = boto3.resource("s3", aws_access_key_id=access_key, aws_secret_access_key=secret_key)
 	my_bucket = s3.Bucket(bucket)
 	total_size = 0
 
@@ -185,7 +177,7 @@ def get_size(bucket, path, access_key, secret_key):
 def convert_size(size_bytes):
 	if size_bytes == 0:
 		return 0, "B"
-	i = int(math.floor(math.log(size_bytes, 1024)))
+	i = math.floor(math.log(size_bytes, 1024))
 	p = math.pow(1024, i)
 	s = round(size_bytes / p, 2)
 	return s, size_name[i]
@@ -210,15 +202,13 @@ def get_analytics(**data):
 	from press.api.developer.marketplace import get_subscription_status
 
 	if get_subscription_status(data["secret_key"]) != "Active":
-		return
+		return None
 
 	site, available = frappe.db.get_value(
 		"Storage Integration Subscription", data["access_key"], ["site", "limit"]
 	)
 	access_key = frappe.db.get_value("Add On Settings", None, "aws_access_key")
-	secret_key = get_decrypted_password(
-		"Add On Settings", "Add On Settings", "aws_secret_key"
-	)
+	secret_key = get_decrypted_password("Add On Settings", "Add On Settings", "aws_secret_key")
 	used, unit_u = get_size(data["bucket"], site, access_key, secret_key)
 
 	return {"used": f"{used} {unit_u}", "available": available}
