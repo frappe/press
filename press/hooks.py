@@ -237,7 +237,6 @@ scheduler_events = {
 		"press.press.doctype.deploy_candidate_build.deploy_candidate_build.check_builds_status",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_oci_virtual_machines",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_aws_internal_virtual_machines",
-		"press.press.doctype.virtual_machine.virtual_machine.snapshot_aws_servers",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_old_snapshots",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_expired_snapshots",
 		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
@@ -307,6 +306,7 @@ scheduler_events = {
 			"press.press.doctype.site.site.sync_sites_setup_wizard_complete_status",
 			"press.press.doctype.drip_email.drip_email.send_welcome_email",
 			"press.press.doctype.site_update.site_update.run_scheduled_updates",
+			"press.press.doctype.virtual_machine.virtual_machine.snapshot_aws_servers",
 		],
 		"* * * * *": [
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",
