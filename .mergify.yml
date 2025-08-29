@@ -11,7 +11,7 @@ pull_request_rules:
     actions:
       comment:
           message: |
-            @{{author}}, thanks for the contribution, but we do not accept pull requests on a stable branch. Please raise PR on an develop branch.
+            @{{author}}, thanks for the contribution, but we do not accept pull requests on a master. Please close this PR and raise PR on an develop branch.
         
   - name: backport to develop
     conditions:
@@ -33,3 +33,10 @@ pull_request_rules:
         assignees:
           - "{{ author }}"
 
+  - name: Label PRs targeting develop with 'backport-master'
+    conditions:
+      - base=develop
+    actions:
+      label:
+        add:
+          - backport-master
