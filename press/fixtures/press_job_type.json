@@ -15,7 +15,7 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2025-07-01 12:06:58.478924",
+  "modified": "2025-08-29 08:52:32.551780",
   "name": "Create Server",
   "steps": [
    {
@@ -34,16 +34,6 @@
     "wait_until_true": 1
    },
    {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.update_tls_certificate()",
-    "step_name": "Update TLS Certificate",
-    "wait_until_true": 0
-   },
-   {
-    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Setup TLS Certificates\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
-    "step_name": "Wait for TLS Certificate to be updated",
-    "wait_until_true": 1
-   },
-   {
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.wait_for_cloud_init()",
     "step_name": "Check Cloud Init status",
     "wait_until_true": 0
@@ -51,6 +41,31 @@
    {
     "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Wait for Cloud Init to finish\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
     "step_name": "Wait for Cloud Init to finish",
+    "wait_until_true": 1
+   },
+   {
+    "script": "if doc.provider == \"Hetzner\":\n    vm = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n    vm.attach_new_volume(100)\n    vm.sync()\n    server = frappe.get_doc(doc.server_type, doc.server)\n    server.mount_volumes()",
+    "step_name": "Create and mount volumes",
+    "wait_until_true": 0
+   },
+   {
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Mount Volumes\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
+    "step_name": "Wait for volumes to mount",
+    "wait_until_true": 1
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"Hetzner\":\n    # app server\n    server.validate_mounts()\n    server.save()\n    if server.doctype == \"Server\":\n        server.setup_docker()\n    elif server.doctype == \"Database Server\":\n        server.setup_maridb_mount_dependency()",
+    "step_name": "Configure apps for mounts",
+    "wait_until_true": 0
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.update_tls_certificate()",
+    "step_name": "Update TLS Certificate",
+    "wait_until_true": 0
+   },
+   {
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Setup TLS Certificates\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
+    "step_name": "Wait for TLS Certificate to be updated",
     "wait_until_true": 1
    },
    {
