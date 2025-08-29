@@ -19,8 +19,13 @@
   "callback_script": "",
   "docstatus": 0,
   "doctype": "Press Job Type",
+<<<<<<< HEAD
   "modified": "2025-07-31 11:57:10.194983",
   "name": "Resume Services After Snapshot",
+=======
+  "modified": "2025-08-29 08:52:32.551780",
+  "name": "Create Server",
+>>>>>>> ac55d8267 (fix(hetzner): Add extra steps for create server)
   "steps": [
    {
     "script": "if doc.server_type == \"Server\" and arguments.get(\"is_consistent_snapshot\", False):\n    server = frappe.get_doc(\"Server\", doc.server)\n    output = server.ansible_run(\"systemctl start docker\")\n    if not (output and output.get(\"status\") == \"Success\"):\n        raise Exception(\"Failed to start docker daemon\")\n\n    frappe.db.set_value(\"Server Snapshot\", arguments.get(\"server_snapshot\"), \"app_server_services_started\", True, update_modified=False)\nelse:\n    result = (False, False) # Skipped\n    # As it wasn't a consistent snapshot services were never stopped\n    frappe.db.set_value(\"Server Snapshot\", arguments.get(\"server_snapshot\"), \"app_server_services_started\", True, update_modified=False)",
@@ -28,8 +33,78 @@
     "wait_until_true": 0
    },
    {
+<<<<<<< HEAD
     "script": "if doc.server_type == \"Database Server\" and arguments.get(\"is_consistent_snapshot\", False):\n    server = frappe.get_doc(\"Database Server\", doc.server)\n    output = server.ansible_run(\"systemctl start mariadb\")\n    if not (output and output.get(\"status\") == \"Success\"):\n        raise Exception(\"Failed to start mariadb service\")\n    frappe.db.set_value(\"Server Snapshot\", arguments.get(\"server_snapshot\"), \"database_server_services_started\", True, update_modified=False)\n\nelse:\n    result = (False, False) # Skipped\n    # As it wasn't a consistent snapshot services were never stopped\n    frappe.db.set_value(\"Server Snapshot\", arguments.get(\"server_snapshot\"), \"database_server_services_started\", True, update_modified=False)",
     "step_name": "Start MariaDB Service",
+=======
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = (machine.status == \"Running\", False)\n",
+    "step_name": "Wait for Server to start",
+    "wait_until_true": 1
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.ping_ansible()\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Ping Server\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
+    "step_name": "Wait for Server to be accessible",
+    "wait_until_true": 1
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.wait_for_cloud_init()",
+    "step_name": "Check Cloud Init status",
+    "wait_until_true": 0
+   },
+   {
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Wait for Cloud Init to finish\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
+    "step_name": "Wait for Cloud Init to finish",
+    "wait_until_true": 1
+   },
+   {
+    "script": "if doc.provider == \"Hetzner\":\n    vm = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n    vm.attach_new_volume(100)\n    vm.sync()\n    server = frappe.get_doc(doc.server_type, doc.server)\n    server.mount_volumes()",
+    "step_name": "Create and mount volumes",
+    "wait_until_true": 0
+   },
+   {
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Mount Volumes\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
+    "step_name": "Wait for volumes to mount",
+    "wait_until_true": 1
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"Hetzner\":\n    # app server\n    server.validate_mounts()\n    server.save()\n    if server.doctype == \"Server\":\n        server.setup_docker()\n    elif server.doctype == \"Database Server\":\n        server.setup_maridb_mount_dependency()",
+    "step_name": "Configure apps for mounts",
+    "wait_until_true": 0
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.update_tls_certificate()",
+    "step_name": "Update TLS Certificate",
+    "wait_until_true": 0
+   },
+   {
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Setup TLS Certificates\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
+    "step_name": "Wait for TLS Certificate to be updated",
+    "wait_until_true": 1
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.update_agent_ansible()",
+    "step_name": "Update Agent Ansible",
+    "wait_until_true": 0
+   },
+   {
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Update Agent\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
+    "step_name": "Wait for Agent to be updated",
+    "wait_until_true": 1
+   },
+   {
+    "script": "if doc.server_type == \"Database Server\":\n    server = frappe.get_doc(\"Database Server\", doc.server)\n    server.upgrade_mariadb()",
+    "step_name": "Upgrade MariaDB",
+    "wait_until_true": 0
+   },
+   {
+    "script": "if doc.server_type == \"Database Server\":\n    plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Upgrade MariaDB\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n    result = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\nelse:\n    result = (True,)",
+    "step_name": "Wait for MariaDB Upgrade to Complete",
+    "wait_until_true": 1
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.set_additional_config()",
+    "step_name": "Set additional config",
+>>>>>>> ac55d8267 (fix(hetzner): Add extra steps for create server)
     "wait_until_true": 0
    }
   ]

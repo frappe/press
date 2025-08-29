@@ -2132,6 +2132,21 @@ class Server(BaseServer):
 		inventory = f"{self.ip},"
 		return AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
 
+	def setup_docker(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_docker", timeout=1200)
+
+	def _setup_docker(self):
+		try:
+			ansible = Ansible(
+				playbook="docker.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Docker Setup Exception", server=self.as_dict())
+
 	def setup_archived_folder(self):
 		frappe.enqueue_doc(
 			self.doctype,
