@@ -28,11 +28,6 @@ COLUMNS = [
 		"fieldtype": "Data",
 	},
 	{
-		"fieldname": "is_whitelisted",
-		"label": "Whitelisted",
-		"fieldtype": "Check",
-	},
-	{
 		"fieldname": "is_protected",
 		"label": "Protected",
 		"fieldtype": "Check",
@@ -60,7 +55,6 @@ class FunctionAnalysis:
 	file_path: str
 	function_name: str
 	line_number: int
-	is_whitelisted: bool = False
 	is_protected: bool = False
 	protected_doctypes: list[str] = field(default_factory=list)
 	has_get_doc_with_input: bool = False
@@ -71,7 +65,6 @@ class FunctionAnalysis:
 			"file_path": self.file_path,
 			"function_name": self.function_name,
 			"line_number": self.line_number,
-			"is_whitelisted": 1 if self.is_whitelisted else 0,
 			"is_protected": 1 if self.is_protected else 0,
 			"protected_doctypes": ", ".join(self.protected_doctypes),
 			"is_get_doc_with_input": 1 if self.has_get_doc_with_input else 0,
@@ -154,7 +147,10 @@ class EndpointAuditor:
 		self.root_directory = Path(root_directory).resolve()
 		self.analyzer = ASTAnalyzer()
 
-	def analyze_function(self, node: ast.FunctionDef, file_path: Path) -> FunctionAnalysis:
+	def analyze_function(self, node: ast.FunctionDef, file_path: Path) -> FunctionAnalysis | None:
+		if not self.analyzer.is_whitelisted_function(node):
+			return None
+
 		parameters = self.analyzer.get_function_parameters(node)
 		protected_doctypes = self.analyzer.get_protected_doctypes(node)
 
@@ -168,7 +164,6 @@ class EndpointAuditor:
 			file_path=relative_path,
 			function_name=node.name,
 			line_number=node.lineno,
-			is_whitelisted=self.analyzer.is_whitelisted_function(node),
 			is_protected=protected_doctypes is not None,
 			protected_doctypes=protected_doctypes or [],
 			has_get_doc_with_input=has_get_doc_with_input,
@@ -182,7 +177,9 @@ class EndpointAuditor:
 
 		for node in ast.walk(tree):
 			if isinstance(node, ast.FunctionDef):
-				yield self.analyze_function(node, file_path)
+				analysis = self.analyze_function(node, file_path)
+				if analysis is not None:
+					yield analysis
 
 	def audit_directory(self) -> Generator[FunctionAnalysis, None, None]:
 		try:
