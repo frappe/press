@@ -10,6 +10,7 @@ from frappe.model.document import Document
 from frappe.utils.password import get_decrypted_password
 
 from press.agent import Agent
+from press.api.site import protected
 
 
 class StorageIntegrationSubscription(Document):
