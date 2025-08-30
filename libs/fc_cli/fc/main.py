@@ -2,7 +2,6 @@ import json
 import os
 
 import typer
-from InquirerPy import inquirer
 from rich.console import Console
 
 from fc.authentication.login import OtpLogin, session_file_path
@@ -66,7 +65,7 @@ def requires_login(ctx: typer.Context):
 
 
 @server.command(help="List servers")
-def usage(ctx: typer.Context):
+def usage(ctx: typer.Context, name: str = typer.Option(None, "--name", "-n", help="Server name")):
 	session: CloudSession = ctx.obj
 	server_data = ClientList(
 		doctype="Server",
@@ -97,20 +96,21 @@ def usage(ctx: typer.Context):
 		"press.api.client.get_list", json=server_data, message="[bold green]Getting servers..."
 	)
 
-	selection = inquirer.fuzzy(
-		message="Select Release Group",
-		choices=[
-			{
-				"name": f"{res['title'] if res['title'] else res['name']} - {res['plan_title']}",
-				"value": res["name"],
-			}
-			for res in response
-		],
-		pointer="→",
-		instruction="(Type to search, ↑↓ to move, Enter to select)",
-	).execute()
+	values = [res["name"] for res in response]
+	values += [res["database_server"] for res in response]
+	if not values:
+		typer.secho("No servers found.", fg="red")
+		return
 
-	server_usage(selection, session, console)
+	if not name:
+		typer.secho("Please provide a server name using --name.", fg="yellow")
+		return
+
+	if name not in values:
+		typer.secho(f"Server '{name}' not found.", fg="red")
+		return
+
+	server_usage(name, session, console)
 
 
 def get_release_groups(session: CloudSession) -> list[dict[str, str]]:
@@ -135,14 +135,14 @@ def get_release_groups(session: CloudSession) -> list[dict[str, str]]:
 def create_deploy(ctx: typer.Context):
 	session: CloudSession = ctx.obj
 	release_groups = get_release_groups(session)
-
-	selection = inquirer.fuzzy(
-		message="Select Release Group",
-		choices=release_groups,
-		pointer="→",
-		instruction="(Type to search, ↑↓ to move, Enter to select)",
-	).execute()
-
+	if not release_groups:
+		typer.secho("No release groups found.", fg="red")
+		return
+	choices = [rg["name"] for rg in release_groups]
+	values = [rg["value"] for rg in release_groups]
+	selected_name = typer.prompt("Select Release Group", type=typer.Choice(choices, case_sensitive=False))
+	idx = choices.index(selected_name)
+	selection = values[idx]
 	get_deploy_information_and_deploy(selection, session, console)
 
 
@@ -150,15 +150,78 @@ def create_deploy(ctx: typer.Context):
 def show_deploy(ctx: typer.Context):
 	session: CloudSession = ctx.obj
 	release_groups = get_release_groups(session)
-
-	release_group = inquirer.fuzzy(
-		message="Select Release Group",
-		choices=release_groups,
-		pointer="→",
-		instruction="(Type to search, ↑↓ to move, Enter to select)",
-	).execute()
-
+	if not release_groups:
+		typer.secho("No release groups found.", fg="red")
+		return
+	choices = [rg["name"] for rg in release_groups]
+	values = [rg["value"] for rg in release_groups]
+	selected_name = typer.prompt("Select Release Group", type=typer.Choice(choices, case_sensitive=False))
+	idx = choices.index(selected_name)
+	release_group = values[idx]
 	get_deploys(release_group, session, console)
+
+
+@server.command(help="Show details for a single server")
+def show(ctx: typer.Context, name: str = typer.Option(..., "--name", "-n", help="Server name")):
+	session: CloudSession = ctx.obj
+	payload = {
+		"doctype": "Server",
+		"name": name,
+		"fields": [
+			"name",
+			"title",
+			"database_server",
+			"plan.title as plan_title",
+			"plan.price_usd as price_usd",
+			"plan.price_inr as price_inr",
+			"cluster.image as cluster_image",
+			"cluster.title as cluster_title",
+			"status",
+			"db_plan",
+			"cluster",
+		],
+		"debug": 0,
+	}
+	response = session.post(
+		"press.api.client.get", json=payload, message="[bold green]Getting server details..."
+	)
+	if not response:
+		typer.secho(f"Server '{name}' not found.", fg="red")
+		return
+	console.print_json(data=response)
+
+
+@server.command(help="Show details for a single database server")
+def show_db(ctx: typer.Context, name: str = typer.Option(..., "--name", "-n", help="Database Server name")):
+	session: CloudSession = ctx.obj
+	payload = {
+		"doctype": "Database Server",
+		"name": name,
+		"fields": [
+			"name",
+			"title",
+			"owner",
+			"cluster",
+			"creation",
+			"current_plan",
+			"disk_size",
+			"status",
+			"plan",
+			"provider",
+			"storage_plan",
+			"team",
+			"usage",
+			# add other fields as needed
+		],
+		"debug": 0,
+	}
+	response = session.post(
+		"press.api.client.get", json=payload, message="[bold green]Getting database server details..."
+	)
+	if not response:
+		typer.secho(f"Database Server '{name}' not found.", fg="red")
+		return
+	console.print_json(data=response)
 
 
 app.add_typer(deploy, name="deploy")
