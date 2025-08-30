@@ -232,6 +232,8 @@ class VirtualDiskSnapshot(Document):
 			raise Exception("Snapshot is unavailable")
 		if throughput is None:
 			throughput = 125
+		if volume_initialization_rate is None:
+			volume_initialization_rate = 100
 		response = self.client.create_volume(
 			SnapshotId=self.snapshot_id,
 			AvailabilityZone=availability_zone,
