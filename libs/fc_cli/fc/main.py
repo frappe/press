@@ -161,67 +161,35 @@ def show_deploy(ctx: typer.Context):
 	get_deploys(release_group, session, console)
 
 
-@server.command(help="Show details for a single server")
-def show(ctx: typer.Context, name: str = typer.Option(..., "--name", "-n", help="Server name")):
-	session: CloudSession = ctx.obj
-	payload = {
-		"doctype": "Server",
-		"name": name,
-		"fields": [
-			"name",
-			"title",
-			"database_server",
-			"plan.title as plan_title",
-			"plan.price_usd as price_usd",
-			"plan.price_inr as price_inr",
-			"cluster.image as cluster_image",
-			"cluster.title as cluster_title",
-			"status",
-			"db_plan",
-			"cluster",
-		],
-		"debug": 0,
-	}
-	response = session.post(
-		"press.api.client.get", json=payload, message="[bold green]Getting server details..."
-	)
-	if not response:
-		typer.secho(f"Server '{name}' not found.", fg="red")
-		return
-	console.print_json(data=response)
-
-
-@server.command(help="Show details for a single database server")
+@server.command(help="Show current plan for a single database server")
 def show_db(ctx: typer.Context, name: str = typer.Option(..., "--name", "-n", help="Database Server name")):
 	session: CloudSession = ctx.obj
 	payload = {
 		"doctype": "Database Server",
 		"name": name,
 		"fields": [
-			"name",
-			"title",
-			"owner",
-			"cluster",
-			"creation",
 			"current_plan",
-			"disk_size",
-			"status",
-			"plan",
-			"provider",
-			"storage_plan",
-			"team",
-			"usage",
-			# add other fields as needed
 		],
 		"debug": 0,
 	}
 	response = session.post(
 		"press.api.client.get", json=payload, message="[bold green]Getting database server details..."
 	)
-	if not response:
-		typer.secho(f"Database Server '{name}' not found.", fg="red")
+	if not response or "current_plan" not in response:
+		typer.secho(f"Database Server '{name}' or its current plan not found.", fg="red")
 		return
-	console.print_json(data=response)
+
+	plan = response["current_plan"]
+	console.print("[bold cyan]Current Plan[/bold cyan]")
+	console.print(f"[bold]Title:[/bold] {plan.get('title', '-')}")
+	console.print(f"[bold]Name:[/bold] {plan.get('name', '-')}")
+	console.print(f"[bold]Owner:[/bold] {plan.get('owner', '-')}")
+	console.print(f"[bold]Modified By:[/bold] {plan.get('modified_by', '-')}")
+	console.print(f"[bold]Price INR:[/bold] {plan.get('price_inr', '-')}")
+	console.print(f"[bold]Price USD:[/bold] {plan.get('price_usd', '-')}")
+	console.print(f"[bold]Premium:[/bold] {plan.get('premium', '-')}")
+	console.print(f"[bold]Price/Day INR:[/bold] {plan.get('price_per_day_inr', '-')}")
+	console.print(f"[bold]Price/Day USD:[/bold] {plan.get('price_per_day_usd', '-')}")
 
 
 app.add_typer(deploy, name="deploy")
