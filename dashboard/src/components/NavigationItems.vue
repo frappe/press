@@ -112,29 +112,29 @@ export default {
 						routeName === 'Enable Servers',
 					disabled: enforce2FA,
 				},
-				// {
-				// 	name: 'Backups',
-				// 	icon: () => h(Archive),
-				// 	route: '/backups',
-				// 	condition: onboardingComplete && !isSaasUser,
-				// 	disabled: enforce2FA,
-				// 	children: [
-				// 		{
-				// 			name: 'Site Backups',
-				// 			icon: () => h(PanelTopInactive),
-				// 			route: '/backups/sites',
-				// 			isActive: routeName === 'Site Backups',
-				// 		},
-				// 		{
-				// 			name: 'Snapshots',
-				// 			icon: () => h(Camera),
-				// 			route: '/backups/snapshots',
-				// 			isActive: routeName === 'Snapshots',
-				// 		},
-				// 	].filter((item) => item.condition ?? true),
-				// 	isActive: ['Site Backups', 'Snapshots'].includes(routeName),
-				// 	disabled: enforce2FA,
-				// },
+				{
+					name: 'Backups',
+					icon: () => h(Archive),
+					route: '/backups',
+					condition: onboardingComplete && !isSaasUser,
+					disabled: enforce2FA,
+					children: [
+						{
+							name: 'Site Backups',
+							icon: () => h(PanelTopInactive),
+							route: '/backups/sites',
+							isActive: routeName === 'Site Backups',
+						},
+						{
+							name: 'Snapshots',
+							icon: () => h(Camera),
+							route: '/backups/snapshots',
+							isActive: routeName === 'Snapshots',
+						},
+					].filter((item) => item.condition ?? true),
+					isActive: ['Site Backups', 'Snapshots'].includes(routeName),
+					disabled: enforce2FA,
+				},
 				{
 					name: 'Dev Tools',
 					icon: () => h(Code),
