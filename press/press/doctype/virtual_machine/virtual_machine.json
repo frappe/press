@@ -35,7 +35,6 @@
   "machine_image",
   "data_disk_snapshot",
   "data_disk_snapshot_volume_id",
-  "auto_attach_data_disk_snapshot",
   "data_disk_snapshot_attached",
   "networking_section",
   "subnet_id",
@@ -370,14 +369,6 @@
    "read_only": 1
   },
   {
-   "default": "0",
-   "depends_on": "eval: doc.data_disk_snapshot",
-   "fieldname": "auto_attach_data_disk_snapshot",
-   "fieldtype": "Check",
-   "label": "Auto Attach Data Disk Snapshot",
-   "set_only_once": 1
-  },
-  {
    "fieldname": "column_break_zozh",
    "fieldtype": "Column Break"
   },
@@ -422,7 +413,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2025-08-29 18:35:20.359750",
+ "modified": "2025-08-31 20:40:23.989997",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
