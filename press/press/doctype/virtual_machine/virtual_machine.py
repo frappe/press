@@ -222,7 +222,7 @@ class VirtualMachine(Document):
 		self.save()
 		return False
 
-	def ensure_no_data_disk_attached_before_attaching_snapshot_disk(self):
+	def ensure_no_data_disk_attached_before_attaching_snapshot_disk(self):  # noqa: C901
 		"""
 		returns status: bool
 			- True, if parent function should assume this function has did it's part
@@ -249,6 +249,9 @@ class VirtualMachine(Document):
 			!!NOTE!! : Don't remove until unless we have stricter check somewhere else
 			"""
 			return
+
+		if len(self.volumes) == 0:
+			frappe.throw("Sync the VM before checking data disk for snapshot recovery")
 
 		if len(self.volumes) == 1:
 			return
