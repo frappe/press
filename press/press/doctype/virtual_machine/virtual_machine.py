@@ -1806,7 +1806,7 @@ class VirtualMachine(Document):
 			server_instance = self.client().servers.get_by_id(self.instance_id)
 			new_volume = self.client().volumes.create(
 				size=size,
-				name=f"{self.name}-{slug(self.cluster)}",
+				name=f"{self.name}-vol-{len(self.volumes) + len(self.temporary_volumes) + 1}",
 				format="ext4",
 				automount=False,
 				server=server_instance,
