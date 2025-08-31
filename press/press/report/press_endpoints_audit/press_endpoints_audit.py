@@ -28,6 +28,11 @@ COLUMNS = [
 		"fieldtype": "Data",
 	},
 	{
+		"fieldname": "allow_guest",
+		"label": "Allow Guest",
+		"fieldtype": "Check",
+	},
+	{
 		"fieldname": "is_protected",
 		"label": "Protected",
 		"fieldtype": "Check",
@@ -59,6 +64,7 @@ class FunctionAnalysis:
 	protected_doctypes: list[str] = field(default_factory=list)
 	has_get_doc_with_input: bool = False
 	parameters: list[str] = field(default_factory=list)
+	allow_guest: bool = False
 
 	def to_dict(self) -> dict[str, Any]:
 		return {
@@ -69,6 +75,7 @@ class FunctionAnalysis:
 			"protected_doctypes": ", ".join(self.protected_doctypes),
 			"is_get_doc_with_input": 1 if self.has_get_doc_with_input else 0,
 			"parameters": ", ".join(self.parameters),
+			"allow_guest": 1 if self.allow_guest else 0,
 		}
 
 
@@ -123,6 +130,25 @@ class ASTAnalyzer:
 		return None
 
 	@staticmethod
+	def get_allow_guest(node: ast.FunctionDef) -> bool:
+		for decorator in node.decorator_list:
+			if not ASTAnalyzer.is_function_call_decorator(decorator):
+				continue
+
+			func = decorator.func
+			if (
+				hasattr(func, "value")
+				and isinstance(func.value, ast.Name)
+				and func.value.id == "frappe"
+				and func.attr == "whitelist"
+			):
+				for kw in getattr(decorator, "keywords", []):
+					if kw.arg == "allow_guest" and isinstance(kw.value, ast.Constant):
+						return bool(kw.value.value)
+				return False
+		return False
+
+	@staticmethod
 	def get_function_parameters(node: ast.FunctionDef) -> list[str]:
 		return [arg.arg for arg in node.args.args]
 
@@ -153,6 +179,7 @@ class EndpointAuditor:
 
 		parameters = self.analyzer.get_function_parameters(node)
 		protected_doctypes = self.analyzer.get_protected_doctypes(node)
+		allow_guest = self.analyzer.get_allow_guest(node)
 
 		has_get_doc_with_input = any(
 			self.analyzer.uses_get_doc_with_input(n, parameters) for n in ast.walk(node)
@@ -168,6 +195,7 @@ class EndpointAuditor:
 			protected_doctypes=protected_doctypes or [],
 			has_get_doc_with_input=has_get_doc_with_input,
 			parameters=parameters,
+			allow_guest=allow_guest,
 		)
 
 	def analyze_file(self, file_path: Path) -> Generator[FunctionAnalysis, None, None]:
@@ -191,7 +219,7 @@ class EndpointAuditor:
 			frappe.throw(f"Failed to access directory: {e}")
 
 
-def execute() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def execute(filters) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
 	bench_root = Path(frappe.utils.get_bench_path()).resolve()
 	audit_directory = bench_root.joinpath("apps", "press", "press")
 	auditor = EndpointAuditor(audit_directory)
