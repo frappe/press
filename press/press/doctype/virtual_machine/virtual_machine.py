@@ -71,7 +71,6 @@ class VirtualMachine(Document):
 		)
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
-		auto_attach_data_disk_snapshot: DF.Check
 		availability_zone: DF.Data
 		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner"]
 		cluster: DF.Link
@@ -195,16 +194,6 @@ class VirtualMachine(Document):
 			frappe.delete_doc("Virtual Machine Image", image)
 
 	def on_update(self):
-		if (
-			self.auto_attach_data_disk_snapshot
-			and self.data_disk_snapshot
-			and not self.data_disk_snapshot_attached
-			and self.has_value_changed("status")
-			and self.get_value_before_save("status") == "Pending"
-			and self.status == "Running"
-		):
-			self.auto_attach_snapshot_data_disk()
-
 		if self.has_value_changed("has_data_volume"):
 			server = self.get_server()
 			if server:
@@ -213,25 +202,6 @@ class VirtualMachine(Document):
 
 		if self.has_value_changed("disk_size") and self.should_bill_addon_storage():
 			self.update_subscription_for_addon_storage()
-
-	def auto_attach_snapshot_data_disk(self):
-		if self.data_disk_snapshot and self.data_disk_snapshot_attached:
-			return
-
-		if len(self.volumes) == 0:
-			if self.status == "Running":
-				# Probably volumes data hasn't synced yet
-				self.status = "Pending"
-				self.save()
-			return
-
-		# Create data disk
-		if not self.data_disk_snapshot_volume_id:
-			self.create_data_disk_volume_from_snapshot()
-			return
-
-		# Attach the created disk
-		self.check_and_attach_data_disk_snapshot_volume()
 
 	def check_and_attach_data_disk_snapshot_volume(self):
 		if not self.data_disk_snapshot_volume_id:
