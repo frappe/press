@@ -118,7 +118,6 @@
    "label": "Team",
    "options": "Team",
    "read_only": 1,
-   "reqd": 1,
    "set_only_once": 1
   },
   {
@@ -322,7 +321,7 @@
    "link_fieldname": "snapshot"
   }
  ],
- "modified": "2025-08-31 22:04:11.654103",
+ "modified": "2025-08-31 22:10:52.060768",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Snapshot",
