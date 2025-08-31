@@ -810,7 +810,7 @@ class Cluster(Document):
 				"virtual_machine_image": self.get_available_vmi(series, platform=platform),
 				"team": team,
 				"data_disk_snapshot": data_disk_snapshot,
-				"auto_attach_data_disk_snapshot": False,
+				"auto_attach_data_disk_snapshot": bool(data_disk_snapshot),
 				"kms_key_id": kms_key_id,
 			},
 		).insert()
