@@ -1724,9 +1724,9 @@ class VirtualMachine(Document):
 	@frappe.whitelist()
 	def attach_new_volume(self, size, iops=None, throughput=None):
 		if self.cloud_provider in ["AWS EC2", "OCI"]:
-			self.attach_new_volume_aws_oci(size, iops, throughput)
+			return self.attach_new_volume_aws_oci(size, iops, throughput)
 		elif self.cloud_provider == "Hetzner":
-			self.attach_volume(size=size)
+			return self.attach_volume(size=size)
 
 	def wait_for_volume_to_be_available(self, volume_id):
 		# AWS EC2 specific
