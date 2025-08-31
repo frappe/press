@@ -47,7 +47,7 @@ class ServerSnapshot(Document):
 		provider: DF.Literal["AWS EC2", "OCI"]
 		site_list: DF.JSON | None
 		status: DF.Literal["Pending", "Processing", "Failure", "Completed", "Unavailable"]
-		team: DF.Link
+		team: DF.Link | None
 		total_size_gb: DF.Int
 		traceback: DF.Text | None
 	# end: auto-generated types
