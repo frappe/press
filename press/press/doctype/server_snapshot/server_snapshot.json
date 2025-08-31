@@ -73,6 +73,7 @@
   },
   {
    "fetch_from": "app_server.database_server",
+   "fetch_if_empty": 1,
    "fieldname": "database_server",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -110,6 +111,7 @@
   },
   {
    "fetch_from": "app_server.team",
+   "fetch_if_empty": 1,
    "fieldname": "team",
    "fieldtype": "Link",
    "in_standard_filter": 1,
@@ -130,6 +132,7 @@
   {
    "default": "AWS EC2",
    "fetch_from": "app_server.provider",
+   "fetch_if_empty": 1,
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
@@ -169,6 +172,7 @@
   },
   {
    "fetch_from": "app_server.cluster",
+   "fetch_if_empty": 1,
    "fieldname": "cluster",
    "fieldtype": "Link",
    "label": "Cluster",
@@ -318,7 +322,7 @@
    "link_fieldname": "snapshot"
   }
  ],
- "modified": "2025-08-06 15:05:46.481065",
+ "modified": "2025-08-31 22:04:11.654103",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Snapshot",
