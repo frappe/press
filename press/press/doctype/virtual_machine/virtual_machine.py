@@ -1725,8 +1725,9 @@ class VirtualMachine(Document):
 	def attach_new_volume(self, size, iops=None, throughput=None):
 		if self.cloud_provider in ["AWS EC2", "OCI"]:
 			return self.attach_new_volume_aws_oci(size, iops, throughput)
-		elif self.cloud_provider == "Hetzner":
+		if self.cloud_provider == "Hetzner":
 			return self.attach_volume(size=size)
+		return None
 
 	def wait_for_volume_to_be_available(self, volume_id):
 		# AWS EC2 specific
