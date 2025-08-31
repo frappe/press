@@ -463,6 +463,12 @@ class ServerSnapshot(Document):
 		if not sites:
 			sites = []
 
+		if len(sites) == 0:
+			frappe.throw("Please select at least one site to recover.")
+
+		if not frappe.db.get_single_value("Press Settings", "enable_server_snapshot_recovery"):
+			frappe.throw("Server Snapshot Recovery is currently disabled. Please try again later.")
+
 		recover_record = frappe.get_doc(
 			{
 				"doctype": "Server Snapshot Recovery",
