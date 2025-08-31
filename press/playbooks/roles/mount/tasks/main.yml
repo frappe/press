@@ -5,6 +5,24 @@
     volume_mounts: '{{ volume_mounts_json | from_json }}'
     bind_mounts: '{{ bind_mounts_json | from_json }}'
 
+- name: Stop Filebeat
+  service:
+    name: filebeat
+    state: stopped
+  when: stop_filebeat_before_mount | default(false) | bool
+
+- name: Stop Docker
+  service:
+    name: docker
+    state: stopped
+  when: stop_docker_before_mount | default(false) | bool
+
+- name: Stop MariaDB
+  service:
+    name: mysql
+    state: stopped
+  when: stop_mariadb_before_mount | default(false) | bool
+
 - name: Create Mount Points
   file:
     dest: '{{ item.mount_point }}'
@@ -152,24 +170,6 @@
   register: block_devices
   loop_control:
     label: '{{ item.target_device }}'
-
-- name: Stop Filebeat
-  service:
-    name: filebeat
-    state: stopped
-  when: stop_filebeat_before_mount | default(false) | bool
-
-- name: Stop Docker
-  service:
-    name: docker
-    state: stopped
-  when: stop_docker_before_mount | default(false) | bool
-
-- name: Stop MariaDB
-  service:
-    name: mysql
-    state: stopped
-  when: stop_mariadb_before_mount | default(false) | bool
 
 - name: Mount Volumes
   mount:
