@@ -195,6 +195,16 @@ class VirtualMachine(Document):
 			frappe.delete_doc("Virtual Machine Image", image)
 
 	def on_update(self):
+		if (
+			self.auto_attach_data_disk_snapshot
+			and self.data_disk_snapshot
+			and not self.data_disk_snapshot_attached
+			and self.has_value_changed("status")
+			and self.get_value_before_save("status") == "Pending"
+			and self.status == "Running"
+		):
+			self.auto_attach_snapshot_data_disk()
+
 		if self.has_value_changed("has_data_volume"):
 			server = self.get_server()
 			if server:
@@ -204,23 +214,24 @@ class VirtualMachine(Document):
 		if self.has_value_changed("disk_size") and self.should_bill_addon_storage():
 			self.update_subscription_for_addon_storage()
 
-		if (
-			self.auto_attach_data_disk_snapshot
-			and self.has_value_changed("status")
-			and self.get_value_before_save("status") == "Pending"
-			and self.status == "Running"
-		):
-			self.auto_attach_snapshot_data_disk()
-
 	def auto_attach_snapshot_data_disk(self):
 		if self.data_disk_snapshot and self.data_disk_snapshot_attached:
 			return
 
-		if self.data_disk_snapshot_volume_id:
-			self.check_and_attach_data_disk_snapshot_volume()
+		if len(self.volumes) == 0:
+			if self.status == "Running":
+				# Probably volumes data hasn't synced yet
+				self.status = "Pending"
+				self.save()
+			return
 
+		# Create data disk
 		if not self.data_disk_snapshot_volume_id:
 			self.create_data_disk_volume_from_snapshot()
+			return
+
+		# Attach the created disk
+		self.check_and_attach_data_disk_snapshot_volume()
 
 	def check_and_attach_data_disk_snapshot_volume(self):
 		if not self.data_disk_snapshot_volume_id:
@@ -241,13 +252,61 @@ class VirtualMachine(Document):
 		self.save()
 		return False
 
+	def ensure_no_data_disk_attached_before_attaching_snapshot_disk(self):
+		"""
+		returns status: bool
+			- True, if parent function should assume this function has did it's part
+			- False, parent function should call it again
+
+		"""
+		if (
+			not self.data_disk_snapshot  # vm doesn't have dependency on disk snapshot, so no point of dont this check
+			# These two below checks are there to prevent
+			# Any accidental call to this function
+			or self.data_disk_snapshot_volume_id  # volume from snapshot has been created
+			or self.data_disk_snapshot_attached  # data disk attached already
+		):
+			"""
+			Sanity Check
+
+			In dual disk (root + data) VMIs, we can't create the machine with the root disk only
+
+			So, once the VM spawned the first task is to detach and delete the extra disk
+			Once, that's done we can move ahead.
+
+			As it dealing with disk deletion, this check serve as a safeguard.
+
+			!!NOTE!! : Don't remove until unless we have stricter check somewhere else
+			"""
+			return
+
+		if len(self.volumes) == 1:
+			return
+
+		# For more volumes, found out other volume ids
+		additional_volume_ids = []
+		for volume_id in self.volumes:
+			if volume_id.device in ["/dev/xvda1", "/dev/sda1"]:
+				continue
+			if volume_id.volume_id == self.data_disk_snapshot_volume_id:
+				continue
+			additional_volume_ids.append(volume_id.volume_id)
+
+		for volume_id in additional_volume_ids:
+			# Don't do syncing multiple times
+			self.delete_volume(volume_id, sync=False)
+
+		if len(additional_volume_ids):
+			self.sync()
+
 	def create_data_disk_volume_from_snapshot(self):
 		try:
+			self.ensure_no_data_disk_attached_before_attaching_snapshot_disk()
 			datadisk_snapshot: VirtualDiskSnapshot = frappe.get_doc(
 				"Virtual Disk Snapshot", self.data_disk_snapshot
 			)
 			snapshot_volume = datadisk_snapshot.create_volume(
-				availability_zone=self.availability_zone, volume_initialization_rate=300
+				availability_zone=self.availability_zone, volume_initialization_rate=300, size=self.disk_size
 			)
 			self.data_disk_snapshot_volume_id = snapshot_volume
 			self.status = "Pending"
@@ -1777,7 +1836,7 @@ class VirtualMachine(Document):
 		return None
 
 	@frappe.whitelist()
-	def detach(self, volume_id):
+	def detach(self, volume_id, sync: bool | None = None):
 		if self.cloud_provider == "AWS EC2":
 			volume = find(self.volumes, lambda v: v.volume_id == volume_id)
 			if not volume:
@@ -1792,15 +1851,19 @@ class VirtualMachine(Document):
 				frappe.throw("Cannot detach hetzner root disk.")
 			volume = self.client().volumes.get_by_id(volume_id)
 			self.client().volumes.detach(volume)
-		self.sync()
+		if sync:
+			self.sync()
 		return True
 
 	@frappe.whitelist()
-	def delete_volume(self, volume_id):
-		if self.detach(volume_id):
+	def delete_volume(self, volume_id, sync: bool | None = None):
+		if sync is None:
+			sync = True
+		if self.detach(volume_id, sync=sync):
 			if self.cloud_provider == "AWS EC2":
 				self.wait_for_volume_to_be_available(volume_id)
 				self.client().delete_volume(VolumeId=volume_id)
+				self.add_comment("Comment", f"Volume Deleted - {volume_id}")
 			if self.cloud_provider == "OCI":
 				raise NotImplementedError
 			if self.cloud_provider == "Hetzner":
@@ -1808,7 +1871,9 @@ class VirtualMachine(Document):
 					frappe.throw("Cannot delete hetzner root disk.")
 				vol = self.client().volumes.get_by_id(volume_id)
 				self.client().volumes.delete(vol)
-		self.sync()
+
+		if sync:
+			self.sync()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")
