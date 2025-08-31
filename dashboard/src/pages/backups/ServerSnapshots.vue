@@ -58,11 +58,14 @@ export default {
 					{
 						label: 'App Server',
 						fieldname: 'app_server',
-						width: 1,
+						width: 0.5,
 						format(value) {
 							if (!value) return '---';
 							if (value.indexOf('.') !== -1) {
 								return value.split('.')[0];
+							}
+							if (value.length > 10) {
+								return `${value.substring(0, 10)}`;
 							}
 							return value;
 						},
@@ -70,11 +73,14 @@ export default {
 					{
 						label: 'Database Server',
 						fieldname: 'database_server',
-						width: 1,
+						width: 0.5,
 						format(value) {
 							if (!value) return '---';
 							if (value.indexOf('.') !== -1) {
 								return value.split('.')[0];
+							}
+							if (value.length > 10) {
+								return `${value.substring(0, 10)}`;
 							}
 							return value;
 						},
@@ -121,7 +127,6 @@ export default {
 					{
 						label: 'Expire At',
 						fieldname: 'expire_at',
-						width: 0.5,
 						align: 'center',
 						format(value) {
 							if (!value) return 'No Expiry';
