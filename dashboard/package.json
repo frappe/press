@@ -8,7 +8,10 @@
 		"build": "vite build",
 		"test": "vitest",
 		"coverage": "vitest run --coverage",
-		"lint": "eslint src"
+		"lint": "eslint src",
+		"test:e2e": "playwright test",
+		"test:e2e:headed": "playwright test --headed",
+		"test:e2e:report": "playwright show-report"
 	},
 	"dependencies": {
 		"@codemirror/autocomplete": "^6.18.1",
@@ -50,6 +53,7 @@
 	},
 	"devDependencies": {
 		"@iconify/json": "^2.2.123",
+		"@playwright/test": "^1.54.2",
 		"@tailwindcss/forms": "^0.4.0",
 		"@tailwindcss/postcss7-compat": "^2.0.2",
 		"@tailwindcss/typography": "^0.5.1",

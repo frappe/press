@@ -80,6 +80,7 @@ class PressSettings(Document):
 		erpnext_group: DF.Link | None
 		erpnext_plan: DF.Link | None
 		erpnext_url: DF.Data | None
+		execute_incident_action: DF.Check
 		frappe_url: DF.Data | None
 		frappeio_api_key: DF.Data | None
 		frappeio_api_secret: DF.Password | None

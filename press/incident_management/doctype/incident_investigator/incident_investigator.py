@@ -18,7 +18,10 @@ if typing.TYPE_CHECKING:
 	import datetime
 	from collections.abc import Callable
 
-	from apps.press.press.incident_management.doctype.investigation_step.investigation_step import (
+	from press.press.incident_management.doctype.action_step.action_step import (
+		ActionStep,
+	)
+	from press.press.incident_management.doctype.investigation_step.investigation_step import (
 		InvestigationStep,
 	)
 
@@ -48,8 +51,10 @@ class IncidentInvestigator(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.incident_management.doctype.action_step.action_step import ActionStep
 		from press.incident_management.doctype.investigation_step.investigation_step import InvestigationStep
 
+		action_steps: DF.Table[ActionStep]
 		cool_off_period: DF.Float
 		database_investigation_steps: DF.Table[InvestigationStep]
 		high_cpu_load_threshold: DF.Int
@@ -57,7 +62,6 @@ class IncidentInvestigator(Document):
 		high_memory_usage_threshold: DF.Int
 		high_system_load_threshold: DF.Int
 		incident: DF.Link | None
-		incident_frequency: DF.Int
 		investigation_findings: DF.JSON | None
 		investigation_window_end_time: DF.Datetime | None
 		investigation_window_start_time: DF.Datetime | None
@@ -187,7 +191,7 @@ class IncidentInvestigator(Document):
 		def ping(url: str) -> int:
 			try:
 				return requests.get(f"https://{url}/api/method/ping", timeout=5).status_code
-			except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectTimeout):
+			except Exception:
 				return 502
 
 		Site = frappe.qb.DocType("Site")
@@ -232,6 +236,14 @@ class IncidentInvestigator(Document):
 			],  # Don't care about disk usage in proxy's case
 			"server_investigation_steps": investigation_steps,
 			"database_investigation_steps": investigation_steps,
+		}
+
+	@property
+	def likely_causes(self):
+		"""Return likely causes for database and server from investigation"""
+		return {
+			"database": [step.method for step in self.database_investigation_steps if step.is_likely_cause],
+			"server": [step.method for step in self.database_investigation_steps if step.is_likely_cause],
 		}
 
 	def add_investigation_steps(self):
@@ -283,21 +295,6 @@ class IncidentInvestigator(Document):
 				frappe.ValidationError,
 			)
 
-	def check_incident_frequency(self):
-		"""
-		Check number of incidents on the server in the last 10 days.
-		This is done so that we can get the most recent incident on the server and take actions
-		based on the incident counts.
-		"""
-		self.incident_frequency = frappe.db.count(
-			"Incident Investigator",
-			{
-				"server": self.server,
-				"creation": ("between", [frappe.utils.add_to_date(days=-10), frappe.utils.now()]),
-			},
-		)
-		self.save()
-
 	def after_insert(self):
 		self.set_prerequisites()
 		self.add_investigation_steps()
@@ -339,6 +336,86 @@ class IncidentInvestigator(Document):
 		"""Investigate potential issues with the main application server."""
 		self._investigate_component("name", "server_investigation_steps")
 
+	def add_action(self, reference_doctype: str, reference_name: str, method: str):
+		"""Add action in the action steps"""
+		action_step: ActionStep = self.append(
+			"action_steps",
+			{
+				"reference_doctype": reference_doctype,
+				"reference_name": reference_name,
+				"method": method,
+				"is_taken": False,
+			},
+		)
+		action_step.save()
+
+	def _initiate_reboot_database(self, database_server: str):
+		"""Trigger reboot depending on cloud provider"""
+		# Explicitly getting the virtual machine in case of mismatches
+		virtual_machine = frappe.db.get_value("Database Server", database_server, "virtual_machine")
+		provider = frappe.db.get_value("Virtual Machine", virtual_machine, "cloud_provider")
+		self.add_action(
+			"Virtual Machine", virtual_machine, "reboot_with_serial_console"
+		) if provider == "AWS EC2" else self.add_action("Virtual Machine", virtual_machine, "reboot")
+
+	def _initiate_process_list_capture_and_reboot_mariadb(self, database_server: str):
+		"""Capture database process list and restart mariadb"""
+		self.add_action("Database Server", database_server, "_capture_process_list")
+		self.add_action("Database Server", database_server, "restart_mariadb")
+
+	def add_proxy_investigation_actions(self):
+		"""We currently do not add actions in case of proxy issues"""
+		pass
+
+	def add_server_investigation_actions(self):
+		"""We currently do not add actions in case of application server issues"""
+		pass
+
+	def add_database_server_investigation_actions(self):
+		"""
+		In case of database resource incidents we do the following
+			- Unreachable or missing metrics from promethues results in a database server reboot
+			- Busy resources result in a mariadb reboot post a process list capture.
+		"""
+		database_server = frappe.db.get_value("Server", self.server, "database_server")
+
+		if any([step for step in self.database_investigation_steps if step.is_unable_to_investigate]):
+			self._initiate_reboot_database(database_server)
+			return
+
+		database_likely_causes = set(self.likely_causes["database"])
+		if (
+			database_likely_causes
+			and database_likely_causes.issubset(
+				{
+					self.has_high_cpu_load.__name__,
+					self.has_high_memory_usage.__name__,
+					self.has_high_system_load.__name__,
+				}
+			)
+			and database_likely_causes != {self.has_high_memory_usage.__name__}
+		):  # don't trigger this only for high memory issues
+			self._initiate_process_list_capture_and_reboot_mariadb(database_server)
+
+	def add_investigation_actions(self):
+		if self.add_proxy_investigation_actions():
+			return
+
+		self.add_server_investigation_actions()
+		self.add_database_server_investigation_actions()
+
+	def stop_calls_on_high_disk_usage(self):
+		"""If the investigation shows high disk usage (only!) we can safely ignore calls"""
+		if [self.has_high_disk_usage.__name__] == self.likely_causes["database"] or [
+			self.has_high_disk_usage.__name__
+		] == self.likely_causes["server"]:
+			frappe.db.set_value("Incident", self.incident, "phone_call", False)
+
+	def post_investigation(self):
+		"""Stop calls in case of high disk usage & add investigation actions"""
+		self.stop_calls_on_high_disk_usage()
+		self.add_investigation_actions()
+
 	def investigate(self):
 		"""
 		Rules for investigation
@@ -355,3 +432,9 @@ class IncidentInvestigator(Document):
 		self.investigate_database_server()
 		self.investigate_server()
 		self.set_status(Status.COMPLETED)
+
+		self.post_investigation()
+
+		"""
+		https://github.com/prometheus/blackbox_exporter/blob/master/blackbox.yml#L30-L46
+		"""

@@ -1016,6 +1016,9 @@ class DeployCandidateBuild(Document):
 		auth = (settings.docker_registry_username, settings.docker_registry_password)
 		repository = self.docker_image_repository.replace(settings.docker_registry_url, "")
 
+		if settings.docker_registry_url != "registry.frappe.cloud":
+			return True
+
 		response = requests.get(
 			f"https://{settings.docker_registry_url}/v2/{repository}/tags/list", auth=auth, headers=headers
 		)

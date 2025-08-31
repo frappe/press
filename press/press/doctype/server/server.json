@@ -22,12 +22,13 @@
   "is_server_renamed",
   "is_self_hosted",
   "keep_files_on_server_in_offsite_backup",
-  "column_break_laiq",
   "public",
+  "column_break_laiq",
   "use_agent_job_callbacks",
   "is_pyspy_setup",
   "halt_agent_jobs",
   "stop_deployments",
+  "is_for_recovery",
   "billing_section",
   "team",
   "column_break_11",
@@ -54,6 +55,7 @@
   "database_server",
   "self_hosted_mariadb_server",
   "is_managed_database",
+  "enable_logical_replication_during_site_update",
   "column_break_jdiy",
   "self_hosted_mariadb_root_password",
   "managed_database_service",
@@ -270,7 +272,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI",
    "set_only_once": 1
   },
   {
@@ -614,10 +616,22 @@
    "fieldname": "keep_files_on_server_in_offsite_backup",
    "fieldtype": "Check",
    "label": "Keep Backup Files Onsite"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_for_recovery",
+   "fieldtype": "Check",
+   "label": "Is for Recovery"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_logical_replication_during_site_update",
+   "fieldtype": "Check",
+   "label": "Enable Logical Replication During Site Update"
   }
  ],
  "links": [],
- "modified": "2025-08-18 13:14:31.778991",
+ "modified": "2025-08-21 16:08:03.067516",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

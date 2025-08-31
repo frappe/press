@@ -9,7 +9,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import get_url, random_string
 
-from press.utils import get_country_info, is_valid_email_address
+from press.utils import get_country_info, is_valid_email_address, log_error
 from press.utils.otp import generate_otp
 from press.utils.telemetry import capture
 
@@ -162,7 +162,7 @@ class AccountRequest(Document):
 	def send_verification_email(self):  # noqa: C901
 		url = self.get_verification_url()
 
-		if frappe.conf.developer_mode:
+		if frappe.conf.developer_mode and frappe.local.dev_server:
 			print(f"\nSetup account URL for {self.email}:")
 			print(url)
 			print(f"\nOTP for {self.email}:")
@@ -227,16 +227,26 @@ class AccountRequest(Document):
 			# Telemetry: Verification Email Sent for new saas flow when coming from product page
 			capture("verification_email_sent", "fc_product_trial", self.name)
 
-		frappe.sendmail(
-			sender=sender,
-			recipients=self.email,
-			subject=subject,
-			template=template,
-			args=args,
-			now=True,
-			reference_doctype=self.doctype,
-			reference_name=self.name,
-		)
+		try:
+			frappe.sendmail(
+				sender=sender,
+				recipients=self.email,
+				subject=subject,
+				template=template,
+				args=args,
+				now=True,
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+			)
+		except frappe.ValidationError:
+			pass
+		except Exception as e:
+			log_error(
+				"Error sending verification email",
+				data=e,
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+			)
 
 	def send_otp_mail(self, for_login: bool = True):
 		if frappe.conf.developer_mode and frappe.local.dev_server:

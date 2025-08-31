@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import datetime
 import json
 import shlex
 import typing
@@ -72,6 +73,7 @@ class BaseServer(Document, TagHelpers):
 		"title",
 		"plan",
 		"cluster",
+		"provider",
 		"status",
 		"team",
 		"database_server",
@@ -82,10 +84,16 @@ class BaseServer(Document, TagHelpers):
 	)
 
 	@staticmethod
-	def get_list_query(query):
+	def get_list_query(query, filters=None, **list_args):
 		Server = frappe.qb.DocType("Server")
 
-		query = query.where(Server.status != "Archived").where(Server.team == frappe.local.team().name)
+		status = filters.get("status")
+		if status == "Archived":
+			query = query.where(Server.status == status)
+		else:
+			query = query.where(Server.status != "Archived")
+
+		query = query.where(Server.is_for_recovery != 1).where(Server.team == frappe.local.team().name)
 		results = query.run(as_dict=True)
 
 		for result in results:
@@ -489,6 +497,14 @@ class BaseServer(Document, TagHelpers):
 		return agent.ping()
 
 	@frappe.whitelist()
+	def ping_mariadb(self) -> bool:
+		try:
+			agent = Agent(self.name, self.doctype)
+			return agent.ping_database(self).get("reachable")
+		except Exception:
+			return False
+
+	@frappe.whitelist()
 	def ping_agent_job(self):
 		agent = Agent(self.name, self.doctype)
 		return agent.create_agent_job("Ping Job", "ping_job").name
@@ -613,11 +629,16 @@ class BaseServer(Document, TagHelpers):
 
 	def _update_agent_ansible(self):
 		try:
+			agent_branch = frappe.get_value("Press Settings", "Press Settings", "branch")
+			if not agent_branch:
+				agent_branch = "upstream/master"
+			else:
+				agent_branch = f"upstream/{agent_branch}"
 			ansible = Ansible(
 				playbook="update_agent.yml",
 				variables={
 					"agent_repository_url": self.get_agent_repository_url(),
-					"agent_repository_branch_or_commit_ref": "upstream/master",
+					"agent_repository_branch_or_commit_ref": agent_branch,
 					"agent_update_args": "",
 				},
 				server=self,
@@ -788,9 +809,9 @@ class BaseServer(Document, TagHelpers):
 		volumes = self.get_volume_mounts()
 		if volumes or self.has_data_volume:
 			# Adding this condition since this method is called from both server and database server doctypes
-			if self.name[0] == "f":
+			if self.doctype == "Server":
 				mountpoint = BENCH_DATA_MNT_POINT
-			elif self.name[0] == "m":
+			elif self.doctype == "Database Server":
 				mountpoint = MARIADB_DATA_MNT_POINT
 		else:
 			mountpoint = "/"
@@ -1263,6 +1284,8 @@ class BaseServer(Document, TagHelpers):
 					"mount_type": "Bind",
 					"mount_point": "/var/lib/mysql",
 					"source": f"{MARIADB_DATA_MNT_POINT}/var/lib/mysql",
+					"mount_point_owner": "mysql",
+					"mount_point_group": "mysql",
 				},
 			)
 			self.append(
@@ -1271,6 +1294,8 @@ class BaseServer(Document, TagHelpers):
 					"mount_type": "Bind",
 					"mount_point": "/etc/mysql",
 					"source": f"{MARIADB_DATA_MNT_POINT}/etc/mysql",
+					"mount_point_owner": "mysql",
+					"mount_point_group": "mysql",
 				},
 			)
 
@@ -1435,17 +1460,68 @@ class BaseServer(Document, TagHelpers):
 			log_error("Start Benches Exception", server=self.as_dict())
 
 	@frappe.whitelist()
-	def mount_volumes(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_mount_volumes", queue="short", timeout=1200)
+	def mount_volumes(
+		self,
+		now: bool | None,
+		stop_docker_before_mount: bool | None = None,
+		stop_mariadb_before_mount: bool | None = None,
+		start_docker_after_mount: bool | None = None,
+		start_mariadb_after_mount: bool | None = None,
+		cleanup_db_replication_files: bool | None = None,
+		rotate_additional_volume_metadata: bool | None = None,
+	):
+		if not cleanup_db_replication_files:
+			cleanup_db_replication_files = False
 
-	def _mount_volumes(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_mount_volumes",
+			queue="short",
+			timeout=1200,
+			at_front=True,
+			now=now or False,
+			stop_docker_before_mount=stop_docker_before_mount or False,
+			stop_mariadb_before_mount=stop_mariadb_before_mount or False,
+			start_docker_after_mount=start_docker_after_mount or False,
+			start_mariadb_after_mount=start_mariadb_after_mount or False,
+			cleanup_db_replication_files=cleanup_db_replication_files,
+			rotate_additional_volume_metadata=rotate_additional_volume_metadata or False,
+		)
+
+	def _mount_volumes(
+		self,
+		stop_docker_before_mount: bool = False,
+		stop_mariadb_before_mount: bool = False,
+		start_docker_after_mount: bool = False,
+		start_mariadb_after_mount: bool = False,
+		cleanup_db_replication_files: bool = False,
+		rotate_additional_volume_metadata: bool = False,
+	):
 		try:
+			variables = {
+				"stop_docker_before_mount": self.doctype == "Server" and stop_docker_before_mount,
+				"stop_mariadb_before_mount": self.doctype == "Database Server" and stop_mariadb_before_mount,
+				"start_docker_after_mount": self.doctype == "Server" and start_docker_after_mount,
+				"start_mariadb_after_mount": self.doctype == "Database Server" and start_mariadb_after_mount,
+				# If other services are stopped, we can skip filebeat restart
+				"stop_filebeat_before_mount": stop_docker_before_mount or stop_mariadb_before_mount,
+				"start_filebeat_after_mount": stop_docker_before_mount or stop_mariadb_before_mount,
+				"cleanup_db_replication_files": cleanup_db_replication_files,
+				"rotate_additional_volume_metadata": rotate_additional_volume_metadata,
+				**self.get_mount_variables(),
+			}
+			if self.doctype == "Database Server" and self.provider != "Generic":
+				variables["mariadb_bind_address"] = frappe.get_value(
+					"Virtual Machine", self.virtual_machine, "private_ip_address"
+				)
+
 			ansible = Ansible(
 				playbook="mount.yml",
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
-				variables={**self.get_mount_variables()},
+				variables=variables,
 			)
 			play = ansible.run()
 			self.reload()
@@ -1454,7 +1530,7 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Server Mount Exception", server=self.as_dict())
 
-	def _set_mount_status(self, play):
+	def _set_mount_status(self, play):  # noqa: C901
 		tasks = frappe.get_all(
 			"Ansible Task",
 			["result", "task"],
@@ -1471,7 +1547,18 @@ class BaseServer(Document, TagHelpers):
 				mount = find(self.mounts, lambda x: x.name == row.get("item", {}).get("name"))
 				if not mount:
 					mount = find(
+						self.mounts,
+						lambda x: x.name == row.get("item", {}).get("original_item", {}).get("name"),
+					)
+				if not mount:
+					mount = find(
 						self.mounts, lambda x: x.name == row.get("item", {}).get("item", {}).get("name")
+					)
+				if not mount:
+					mount = find(
+						self.mounts,
+						lambda x: x.name
+						== row.get("item", {}).get("item", {}).get("original_item", {}).get("name"),
 					)
 				if not mount:
 					continue
@@ -1815,6 +1902,7 @@ class Server(BaseServer):
 		database_server: DF.Link | None
 		disable_agent_job_auto_retry: DF.Check
 		domain: DF.Link | None
+		enable_logical_replication_during_site_update: DF.Check
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
 		halt_agent_jobs: DF.Check
@@ -1824,6 +1912,7 @@ class Server(BaseServer):
 		ignore_incidents_since: DF.Datetime | None
 		ip: DF.Data | None
 		ipv6: DF.Data | None
+		is_for_recovery: DF.Check
 		is_managed_database: DF.Check
 		is_primary: DF.Check
 		is_pyspy_setup: DF.Check
@@ -1845,7 +1934,7 @@ class Server(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
 		proxy_server: DF.Link | None
 		public: DF.Check
 		ram: DF.Float
@@ -1897,6 +1986,17 @@ class Server(BaseServer):
 		self.set_bench_memory_limits_if_needed(save=False)
 		if self.public:
 			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
+
+		if (
+			not self.is_new()
+			and self.has_value_changed("enable_logical_replication_during_site_update")
+			and self.enable_logical_replication_during_site_update
+			and frappe.db.count("Site", {"server": self.name, "status": ("!=", "Archived")}) > 1
+		):
+			# Throw error if multiple sites are present on the server
+			frappe.throw(
+				"Cannot enable logical replication during site update if multiple sites are present on the server"
+			)
 
 	def after_insert(self):
 		from press.press.doctype.press_role.press_role import (
@@ -2533,6 +2633,48 @@ class Server(BaseServer):
 		mount_points = set(mount.mount_point for mount in self.mounts)
 		bench_mount_points = set(["/home/frappe/benches"])
 		return bench_mount_points.issubset(mount_points)
+
+	@dashboard_whitelist()
+	def create_snapshot(self, consistent: bool = False) -> str:
+		return self._create_snapshot(consistent)
+
+	def _create_snapshot(
+		self, consistent: bool = False, expire_at: datetime.datetime | None = None, free: bool = False
+	) -> str:
+		doc = frappe.get_doc(
+			{
+				"doctype": "Server Snapshot",
+				"app_server": self.name,
+				"consistent": consistent,
+				"expire_at": expire_at,
+				"free": free,
+			}
+		).insert(ignore_permissions=True)
+		frappe.msgprint(
+			f"Snapshot created successfully. <a href='/app/server-snapshot/{doc.name}' target='_blank'>Check Here</a>"
+		)
+		return doc.name
+
+	@dashboard_whitelist()
+	def delete_snapshot(self, snapshot_name: str) -> None:
+		doc = frappe.get_doc("Server Snapshot", snapshot_name)
+		if doc.app_server != self.name:
+			frappe.throw("Snapshot does not belong to this server")
+		doc.delete_snapshots()
+
+	@dashboard_whitelist()
+	def lock_snapshot(self, snapshot_name: str) -> None:
+		doc = frappe.get_doc("Server Snapshot", snapshot_name)
+		if doc.app_server != self.name:
+			frappe.throw("Snapshot does not belong to this server")
+		doc.lock()
+
+	@dashboard_whitelist()
+	def unlock_snapshot(self, snapshot_name: str) -> None:
+		doc = frappe.get_doc("Server Snapshot", snapshot_name)
+		if doc.app_server != self.name:
+			frappe.throw("Snapshot does not belong to this server")
+		doc.unlock()
 
 
 def scale_workers(now=False):

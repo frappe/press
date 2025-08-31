@@ -609,8 +609,17 @@ class ReleaseGroup(Document, TagHelpers):
 		"""
 		for server in self.servers:
 			server: Server = frappe.get_cached_doc("Server", server.server)
+
+			if server.is_self_hosted:
+				continue
+
 			mountpoint = server.guess_data_disk_mountpoint()
-			free_space = server.free_space(mountpoint) / 1024**3
+			# If prometheus acts up
+			try:
+				free_space = server.free_space(mountpoint) / 1024**3
+			except Exception:
+				continue
+
 			last_deployed_bench = get_last_doc("Bench", {"group": self.name, "status": "Active"})
 
 			if not last_deployed_bench:
