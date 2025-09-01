@@ -343,7 +343,9 @@ class SiteBackup(Document):
 		job = frappe.db.get_value(
 			"Agent Job", self.job, filters={"status": "Failure"}, fields=["bench", "output"]
 		)
-		if job and "Permission denied" in job.output:
+		import re
+
+		if job and re.search(r"\b[Errno 13] Permission denied\b", job.output):
 			try:
 				bench = frappe.get_doc("Bench", job.bench)
 				bench.correct_bench_permissions()
