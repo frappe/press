@@ -172,7 +172,7 @@ export default {
 							};
 						},
 						onSuccess: (data) => {
-							if (data.status === 'Site Created') {
+							if (data.current_step === 'Site Created') {
 								return this.loginToSite();
 							}
 
