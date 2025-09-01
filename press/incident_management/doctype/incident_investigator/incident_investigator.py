@@ -299,19 +299,19 @@ class IncidentInvestigator(Document):
 				f"Ignoring investigation for self hosted server {self.server}", frappe.ValidationError
 			)
 
-		last_created_investigation = frappe.get_value(
-			"Incident Investigator", {"server": self.server}, "creation"
-		)
-
-		if not last_created_investigation:
-			return
-
 		if self.is_cluster_spam():
 			cluster = frappe.db.get_value("Server", self.server, "cluster")
 			frappe.throw(
 				f"Investigation for {cluster} is in a cool off period",
 				frappe.ValidationError,
 			)
+
+		last_created_investigation = frappe.get_value(
+			"Incident Investigator", {"server": self.server}, "creation"
+		)
+
+		if not last_created_investigation:
+			return
 
 		time_since_last_investigation: datetime.timedelta = parse_datetime("now") - last_created_investigation
 		if time_since_last_investigation.total_seconds() < self.cool_off_period:
@@ -459,7 +459,3 @@ class IncidentInvestigator(Document):
 		self.set_status(Status.COMPLETED)
 
 		self.post_investigation()
-
-		"""
-		https://github.com/prometheus/blackbox_exporter/blob/master/blackbox.yml#L30-L46
-		"""
