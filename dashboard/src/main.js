@@ -105,12 +105,15 @@ getInitialData().then(() => {
 					'ValidationError',
 					'PermissionError',
 					'SecurityException',
-					'AAAARecordExists',
 					'AuthenticationError',
 					'RateLimitExceededError',
 					'InsufficientSpaceOnServer',
+					'AAAARecordExists',
+					'ConflictingCAARecord',
 					'ConflictingDNSRecord',
+					'DomainProxied',
 					'MultipleARecords',
+					'MultipleCNAMERecords',
 				];
 				const error = hint.originalException;
 

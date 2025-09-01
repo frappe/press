@@ -85,6 +85,10 @@ class MultipleCNAMERecords(DNSValidationError):
 	pass
 
 
+class DomainNoLongerPointed(DNSValidationError):
+	pass
+
+
 class TLSRetryLimitExceeded(ValidationError):
 	pass
 
