@@ -334,7 +334,7 @@ RUN if [ -f "/home/frappe/custom_assets/terms.csv" ]; then \
       echo "Performing string replacements from terms.csv..."; \
       while IFS=, read -r old_term new_term; do \
         echo "Replacing '$old_term' with '$new_term'"; \
-        find /home/frappe/frappe-bench -type f \( -name "*.vue" -o -name "*.html" -o -name "*.js" -o -name "*.py" \) -print0 | \
+        find /home/frappe/frappe-bench -type f \( -name "*.vue" -o -name "*.html" -o -name "*.js" \) -print0 | \
         xargs -0 sed -i "s/$old_term/$new_term/g"; \
       done < /home/frappe/custom_assets/terms.csv; \
     fi
