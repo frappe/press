@@ -325,8 +325,6 @@ class SiteBackup(Document):
 			"Site Backup", self.name, "database_snapshot", virtual_machine.flags.created_snapshots[0]
 		)
 
-<<<<<<< HEAD
-=======
 	def autocorrect_bench_permissions(self):
 		"""
 		Run this whenever a Site Backup fails with the error
@@ -348,7 +346,6 @@ class SiteBackup(Document):
 				return False
 		return True
 
->>>>>>> edd524634 (fix(permission-denied): More verbose cond)
 	@classmethod
 	def offsite_backup_exists(cls, site: str, day: datetime.date) -> bool:
 		return cls.backup_exists(site, day, {"offsite": True})
