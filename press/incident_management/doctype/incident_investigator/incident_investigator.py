@@ -271,14 +271,39 @@ class IncidentInvestigator(Document):
 		self.set_status(Status.PENDING)
 		self.save()
 
+	def is_cluster_spam(self) -> bool:
+		"""Check if another server in the same cluster has been effected"""
+		Server = frappe.qb.DocType("Server")
+		Investigator = frappe.qb.DocType("Incident Investigator")
+		incident_cluster = frappe.db.get_value("Server", self.server, "cluster")
+
+		# Getting the last reported incident on the cluster created in the last minute
+		return bool(
+			frappe.qb.from_(Investigator)
+			.join(Server)
+			.on(Server.name == Investigator.server)
+			.select(Investigator.name)
+			.where(Server.cluster == incident_cluster)
+			.where(Investigator.creation[frappe.utils.add_to_date(minutes=-1) : frappe.utils.now()])
+			.run(pluck=True)
+		)
+
 	def before_insert(self):
 		"""
 		Do not trigger investigation on the same server if cool off period has not passed
 		Do not trigger investigation on self hosted servers
+		Do not trigger investigation if same cluster spams
 		"""
 		if frappe.get_value("Server", self.server, "is_self_hosted"):
 			frappe.throw(
 				f"Ignoring investigation for self hosted server {self.server}", frappe.ValidationError
+			)
+
+		if self.is_cluster_spam():
+			cluster = frappe.db.get_value("Server", self.server, "cluster")
+			frappe.throw(
+				f"Investigation for {cluster} is in a cool off period",
+				frappe.ValidationError,
 			)
 
 		last_created_investigation = frappe.get_value(
@@ -434,7 +459,3 @@ class IncidentInvestigator(Document):
 		self.set_status(Status.COMPLETED)
 
 		self.post_investigation()
-
-		"""
-		https://github.com/prometheus/blackbox_exporter/blob/master/blackbox.yml#L30-L46
-		"""
