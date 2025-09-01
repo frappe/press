@@ -14,11 +14,8 @@ from press.runner import constants
 from press.utils import _get_current_team, _system_user
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def upload_file():
-	if frappe.session.user == "Guest":
-		return None
-
 	files = frappe.request.files
 	is_private = frappe.form_dict.is_private
 	doctype = frappe.form_dict.doctype
