@@ -390,6 +390,15 @@ class Site(Document, TagHelpers):
 		if not self.setup_wizard_status_check_next_retry_on:
 			self.setup_wizard_status_check_next_retry_on = now_datetime()
 
+		if (
+			self.server
+			and frappe.get_value("Server", self.server, "enable_logical_replication_during_site_update")
+			and frappe.db.count("Site", {"server": self.server, "status": ("!=", "Archived")}) >= 1
+		):
+			frappe.throw(
+				"Logical replication is enabled for this server. You can only deploy a single site on the server."
+			)
+
 	def validate_site_name(self):
 		validate_subdomain(self.subdomain)
 
@@ -576,7 +585,7 @@ class Site(Document, TagHelpers):
 	def capture_signup_event(self, event: str):
 		team = frappe.get_doc("Team", self.team)
 		if frappe.db.count("Site", {"team": team.name}) <= 1 and team.account_request:
-			account_request: AccountRequest = frappe.get_doc("Account Request", team.account_request)
+			account_request: "AccountRequest" = frappe.get_doc("Account Request", team.account_request)
 			if not (account_request.is_saas_signup() or account_request.invited_by_parent_team):
 				capture(event, "fc_signup", team.user)
 
@@ -2139,14 +2148,13 @@ class Site(Document, TagHelpers):
 		# relies on self._keys_removed_in_last_update in self.validate
 		# used by https://frappecloud.com/app/marketplace-app/email_delivery_service
 		config_list: list[dict] = []
-		for key in self.configuration:
+		for row in self.configuration:
 			config = {}
-			if key.key in keys:
-				continue
-			config["key"] = key.key
-			config["value"] = key.value
-			config["type"] = key.type
-			config_list.append(config)
+			if row.key not in keys and not row.internal:
+				config["key"] = row.key
+				config["value"] = row.value
+				config["type"] = row.type
+				config_list.append(config)
 		self.update_site_config(config_list)
 
 	@frappe.whitelist()
@@ -3623,7 +3631,9 @@ def process_new_site_job_update(job):  # noqa: C901
 		"Active",
 		"Broken",
 	):
-		update_product_trial_request_status_based_on_site_status(job.site, updated_status == "Active")
+		update_product_trial_request_status_based_on_site_status(
+			job.site, updated_status == "Active", job.data
+		)
 
 	# check if new bench related to a site group deploy
 	site_group_deploy = frappe.db.get_value(
@@ -3637,7 +3647,7 @@ def process_new_site_job_update(job):  # noqa: C901
 		frappe.get_doc("Site Group Deploy", site_group_deploy).update_site_group_deploy_on_process_job(job)
 
 
-def update_product_trial_request_status_based_on_site_status(site, is_site_active):
+def update_product_trial_request_status_based_on_site_status(site, is_site_active, error=None):
 	records = frappe.get_list("Product Trial Request", filters={"site": site}, fields=["name"])
 	if not records:
 		return
@@ -3648,6 +3658,7 @@ def update_product_trial_request_status_based_on_site_status(site, is_site_activ
 		product_trial_request.save(ignore_permissions=True)
 	else:
 		product_trial_request.status = "Error"
+		product_trial_request.error = error
 		product_trial_request.save(ignore_permissions=True)
 
 
@@ -4029,7 +4040,7 @@ def process_create_user_job_update(job):
 		frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
 		update_product_trial_request_status_based_on_site_status(job.site, True)
 	elif job.status in ("Failure", "Delivery Failure"):
-		update_product_trial_request_status_based_on_site_status(job.site, False)
+		update_product_trial_request_status_based_on_site_status(job.site, False, job.data)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")

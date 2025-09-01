@@ -939,7 +939,7 @@ export default {
 					},
 				},
 			},
-			tagTab(),
+			tagTab('Release Group'),
 		],
 		actions(context) {
 			let { documentResource: group } = context;

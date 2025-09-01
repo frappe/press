@@ -23,6 +23,7 @@ import { trialDays } from '../utils/site';
 import { clusterOptions, getUpsellBanner } from './common';
 import { getAppsTab } from './common/apps';
 import { isMobile } from '../utils/device';
+import { getQueryParam, setQueryParam } from '../utils/index';
 
 export default {
 	doctype: 'Site',
@@ -273,11 +274,7 @@ export default {
 					route: `/servers/${site.doc?.server}`,
 				});
 			}
-			if (
-				site.doc.group_team == $team.doc?.name ||
-				$team.doc?.is_desk_user ||
-				$team.doc?.is_support_agent
-			) {
+			if (site.doc.group_team == $team.doc?.name || $team.doc?.is_desk_user) {
 				breadcrumbs.push(
 					{
 						label: site.doc?.group_title,
@@ -641,13 +638,18 @@ export default {
 				list: {
 					doctype: 'Site Backup',
 					filters: (site) => {
-						return {
+						let filters = {
 							site: site.doc?.name,
-							status: ['in', ['Pending', 'Running', 'Success']],
 						};
+						const backup_name = getQueryParam('name');
+						if (backup_name) {
+							filters.name = backup_name;
+						}
+						return filters;
 					},
 					orderBy: 'creation desc',
 					fields: [
+						'name',
 						'job',
 						'status',
 						'database_url',
@@ -729,8 +731,23 @@ export default {
 							},
 						},
 					],
+					searchField: getQueryParam('name') ? null : 'name',
+					updateFilters({ name }) {
+						setQueryParam('name', name);
+					},
+					autoReloadAfterUpdateFilterCallback: true,
 					filterControls() {
-						return [
+						const backup_name = getQueryParam('name');
+						let filters = backup_name
+							? [
+									{
+										type: 'text',
+										label: 'Backup Record',
+										fieldname: 'name',
+									},
+								]
+							: [];
+						filters = filters.concat([
 							{
 								type: 'checkbox',
 								label: 'Physical Backups',
@@ -741,7 +758,8 @@ export default {
 								label: 'Offsite Backups',
 								fieldname: 'offsite',
 							},
-						];
+						]);
+						return filters;
 					},
 					rowActions({ row, documentResource: site }) {
 						if (row.status != 'Success') return;

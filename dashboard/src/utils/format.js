@@ -101,6 +101,11 @@ export function pricePerDay(price) {
 	return price / daysInThisMonth;
 }
 
+export function utcDate(dateTimeString, format = 'LLLL') {
+	if (!dateTimeString) return;
+	return dayjs.utc(dateTimeString).local().format(format);
+}
+
 export function date(dateTimeString, format = 'LLLL') {
 	if (!dateTimeString) return;
 	return dayjsLocal(dateTimeString).format(format);

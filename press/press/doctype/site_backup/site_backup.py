@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import time
 from typing import TYPE_CHECKING
@@ -96,12 +97,25 @@ class SiteBackup(Document):
 		return frappe.get_cached_value("Site", self.site, "server")
 
 	@staticmethod
-	def get_list_query(query):
+	def get_list_query(query, filters=None, **list_args):
 		"""
 		Remove records with `Success` but files_availability is `Unavailable`
 		"""
 		sb = frappe.qb.DocType("Site Backup")
 		query = query.where(~((sb.files_availability == "Unavailable") & (sb.status == "Success")))
+		if filters.get("backup_date"):
+			with contextlib.suppress(Exception):
+				date = frappe.utils.getdate(filters["backup_date"])
+				query = query.where(
+					sb.creation.between(
+						frappe.utils.add_to_date(date, hours=0, minutes=0, seconds=0),
+						frappe.utils.add_to_date(date, hours=23, minutes=59, seconds=59),
+					)
+				)
+
+		if not filters.get("status"):
+			query = query.where(sb.status == "Success")
+
 		results = [
 			result
 			for result in query.run(as_dict=True)
@@ -226,6 +240,16 @@ class SiteBackup(Document):
 				frappe.get_doc("Site", self.site), reference_doctype=self.doctype, reference_name=self.name
 			)
 
+		try:
+			if (
+				not self.physical
+				and self.has_value_changed("status")
+				and frappe.db.get_value("Agent Job", self.job, "status") == "Failure"
+			):
+				self.autocorrect_bench_permissions()
+		except Exception as e:
+			frappe.throw("Failed to correct bench permissions", {str(e)})
+
 	def _rollback_db_directory_permissions(self):
 		if not self.physical:
 			return
@@ -324,6 +348,25 @@ class SiteBackup(Document):
 		frappe.db.set_value(
 			"Site Backup", self.name, "database_snapshot", virtual_machine.flags.created_snapshots[0]
 		)
+
+	def autocorrect_bench_permissions(self):
+		"""
+		Run this whenever a Site Backup fails with the error
+		"[Errno 13]: Permission denied".
+		"""
+		job = frappe.db.get_value(
+			"Agent Job", self.job, filters={"status": "Failure"}, fields=["bench", "output"]
+		)
+		if job and "Permission denied" in job.output:
+			try:
+				bench = frappe.get_doc("Bench", job.bench)
+				bench.correct_bench_permissions()
+				frappe.logger().info(f"Bench permissions corrected for backup {self.name}")
+				return True
+			except Exception as e:
+				frappe.logger().info("Failed to correct bench permissions.", {str(e)})
+				return False
+		return True
 
 	@classmethod
 	def offsite_backup_exists(cls, site: str, day: datetime.date) -> bool:
