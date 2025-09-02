@@ -449,6 +449,64 @@ class SlowLogGroupByChart(StackedGroupByChart):
 		return res
 
 
+def _query_prometheus(query: dict[str, str]) -> dict[str, float | str]:
+	import requests
+	from frappe.utils.password import get_decrypted_password
+
+	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
+	url = f"https://{monitor_server}/prometheus/api/v1/query_range"
+	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
+	return requests.get(url, params=query, auth=("frappe", password)).json()
+
+
+def _parse_datetime_in_metrics(timestamp: float, timezone: str) -> str:
+	return str(datetime.fromtimestamp(timestamp, tz=pytz_timezone(timezone)))
+
+
+def get_cadvisor_memory_usage(
+	server: str, benches: list[str], timezone: str, timespan: int, timegrain: int
+) -> dict[str, float | str]:
+	bench_wise_memory = {}
+
+	end = datetime.now(pytz_timezone(timezone))
+	start = frappe.utils.add_to_date(end, seconds=-timespan)
+
+	for bench in benches:
+		promql_query = (
+			f"(avg_over_time(container_memory_usage_bytes{{"
+			f'job="cadvisor", '
+			f'name="{bench}", '
+			f'instance="{server}"'
+			f"}}[5m]) / 1024 / 1024 / 1024)"
+		)
+
+		query = {
+			"query": promql_query,
+			"start": start.timestamp(),
+			"end": end.timestamp(),
+			"step": f"{timegrain}s",
+		}
+
+		result = _query_prometheus(query)["data"]["result"]
+		if result:
+			metrics = result[0]["values"]
+			bench_wise_memory[bench] = [
+				{"date": _parse_datetime_in_metrics(metric[0], timezone), "value": float(metric[1])}
+				for metric in metrics
+			]
+		else:
+			bench_wise_memory[bench] = [{}]
+
+	return bench_wise_memory
+
+
+@frappe.whitelist()
+def get_cadvisor(server: str, timezone: str, duration: str = "24h"):
+	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
+	benches = frappe.get_all("Bench", {"status": "Active", "server": server}, pluck="name")
+	memory_usage = get_cadvisor_memory_usage(server, benches, timezone, timespan, timegrain)
+
+
 @frappe.whitelist()
 @protected("Site")
 @redis_cache(ttl=10 * 60)
