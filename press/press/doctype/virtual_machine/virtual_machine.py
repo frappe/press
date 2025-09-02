@@ -1615,6 +1615,7 @@ class VirtualMachine(Document):
 			frappe.enqueue_doc(
 				"Virtual Machine",
 				machines[0],
+				cluster=cluster,
 				method="bulk_sync_oci_cluster",
 				queue="sync",
 				job_id=f"bulk_sync_oci:{cluster}",
