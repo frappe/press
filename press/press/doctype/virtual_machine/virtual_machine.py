@@ -1818,6 +1818,8 @@ class VirtualMachine(Document):
 			Example: linux_device = /mnt/HC_Volume_103061048
 			"""
 			device_name = new_volume.volume.linux_device
+			time.sleep(15)  # wait for a while to let Hetzner attach the volume
+			# might need a better way to do this considering reliability issues
 		self.save()
 		self.sync()
 		return device_name
