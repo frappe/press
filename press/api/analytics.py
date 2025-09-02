@@ -59,6 +59,10 @@ if TYPE_CHECKING:
 		key: str
 		histogram_of_method: HistogramOfMethod
 
+	class MetricType(TypedDict):
+		date: str
+		value: float
+
 
 class ResourceType(Enum):
 	SITE = "site"
@@ -462,7 +466,7 @@ def _parse_datetime_in_metrics(timestamp: float, timezone: str) -> str:
 
 def get_cadvisor_memory_usage(
 	server: str, benches: list[str], timezone: str, timespan: int, timegrain: int
-) -> dict[str, float | str]:
+) -> dict[str, list[MetricType]]:
 	bench_wise_memory = {}
 
 	end = datetime.now(pytz_timezone(timezone))
@@ -491,17 +495,21 @@ def get_cadvisor_memory_usage(
 				{"date": _parse_datetime_in_metrics(metric[0], timezone), "value": float(metric[1])}
 				for metric in metrics
 			]
-		else:
-			bench_wise_memory[bench] = [{}]
 
 	return bench_wise_memory
 
 
 @frappe.whitelist()
-def get_cadvisor(server: str, timezone: str, duration: str = "24h"):
+def get_cadvisor(
+	server: str,
+	timezone: str,
+	duration: str = "24h",
+) -> dict[str, list[MetricType]]:
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
 	benches = frappe.get_all("Bench", {"status": "Active", "server": server}, pluck="name")
-	get_cadvisor_memory_usage(server, benches, timezone, timespan, timegrain)
+	return {
+		"memory": get_cadvisor_memory_usage(server, benches, timezone, timespan, timegrain),
+	}
 
 
 @frappe.whitelist()
