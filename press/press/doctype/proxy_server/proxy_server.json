@@ -10,6 +10,7 @@
   "hostname_abbreviation",
   "domain",
   "self_hosted_server_domain",
+  "tls_certificate_renewal_failed",
   "column_break_3",
   "cluster",
   "provider",
@@ -430,10 +431,17 @@
    "fieldname": "halt_agent_jobs",
    "fieldtype": "Check",
    "label": "Halt Agent Jobs"
+  },
+  {
+   "default": "0",
+   "fieldname": "tls_certificate_renewal_failed",
+   "fieldtype": "Check",
+   "label": "TLS Certificate Renewal Failed",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2025-08-14 02:14:31.867455",
+ "modified": "2025-09-02 16:42:27.412427",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
