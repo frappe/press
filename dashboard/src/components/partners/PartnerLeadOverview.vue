@@ -163,6 +163,12 @@
 				}
 			"
 		/>
+		<ChangePartnerDialog
+			v-if="showChangePartnerDialog"
+			v-model="showChangePartnerDialog"
+			:lead_id="lead.name"
+			@update="updatePartner()"
+		/>
 	</div>
 </template>
 <script>
@@ -173,6 +179,8 @@ import { h } from 'vue';
 import DropdownItem from '../billing/DropdownItem.vue';
 import UpdateEngagementStageDialog from './UpdateEngagementStageDialog.vue';
 import UpdateLostDialog from './UpdateLostDialog.vue';
+import ChangePartnerDialog from './ChangePartnerDialog.vue';
+import router from '../../router';
 export default {
 	name: 'PartnerLeadOverview',
 	components: {
@@ -182,6 +190,7 @@ export default {
 		DropdownItem,
 		UpdateEngagementStageDialog,
 		UpdateLostDialog,
+		ChangePartnerDialog,
 	},
 	data() {
 		return {
@@ -190,6 +199,7 @@ export default {
 			showUpdateEngagementStageDialog: false,
 			showUpdateWonDialog: false,
 			showUpdateLostDialog: false,
+			showChangePartnerDialog: false,
 		};
 	},
 	emits: ['success'],
@@ -370,9 +380,15 @@ export default {
 				this.showUpdateWonDialog = true;
 			} else if (status === 'Lost') {
 				this.showUpdateLostDialog = true;
+			} else if (status === 'Passed to Other Partner') {
+				this.showChangePartnerDialog = true;
 			} else {
 				this.$resources.updateStatus.submit({ status: status });
 			}
+		},
+		updatePartner() {
+			this.showChangePartnerDialog = false;
+			this.$router.push({ name: 'PartnerLeads' });
 		},
 	},
 };
