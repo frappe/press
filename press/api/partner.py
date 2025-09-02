@@ -161,6 +161,79 @@ def get_partner_contribution_list(partner_email):
 
 
 @frappe.whitelist()
+def get_partner_mrr(partner_email):
+	partner_currency = frappe.db.get_value(
+		"Team", {"erpnext_partner": 1, "partner_email": partner_email}, "currency"
+	)
+	query = frappe.db.sql(
+		f"""
+			SELECT
+				i.due_date,
+				SUM(
+					CASE
+						WHEN '{partner_currency}' = i.currency THEN i.total_before_discount
+						WHEN '{partner_currency}' = 'INR' AND i.currency = 'USD' THEN i.total_before_discount * 83
+						WHEN '{partner_currency}' = 'USD' AND i.currency = 'INR' THEN i.total_before_discount / 83
+						ELSE i.total_before_discount
+					END
+				) as total_amount
+			FROM tabInvoice as i
+			WHERE
+				i.partner_email = '{partner_email}'
+				AND i.type = 'Subscription'
+				AND i.status = 'Paid'
+			GROUP BY
+				i.due_date
+			ORDER BY i.due_date DESC
+			LIMIT 12
+		""",
+		as_dict=True,
+	)
+	return [d for d in query]
+
+
+@frappe.whitelist()
+def get_dashboard_stats():
+	team = get_current_team(get_doc=True)
+	data = frappe.db.sql(
+		f"""
+			SELECT
+				site.plan as plan,
+				COUNT(site.name) as count
+			FROM
+				tabSite as site JOIN tabTeam as team ON site.team = team.name
+			WHERE
+				team.name = '{team.name}'
+				AND site.status = 'Active'
+			GROUP BY
+				site.plan
+		""",
+		as_dict=True,
+	)
+	return [d for d in data]
+
+
+@frappe.whitelist()
+def get_lead_stats():
+	team = get_current_team(get_doc=True)
+	data = frappe.db.sql(
+		f"""
+			SELECT
+				COUNT(name) as total,
+				SUM(CASE WHEN status in ('Open', 'In Process') THEN 1 ELSE 0 END) as open,
+				SUM(CASE WHEN status = 'Won' THEN 1 ELSE 0 END) as won,
+				SUM(CASE WHEN status = 'Lost' THEN 1 ELSE 0 END) as lost
+			FROM
+				`tabPartner Lead`
+			WHERE
+				partner_team = '{team.name}'
+		""",
+		as_dict=True,
+	)
+	return data[0] if data else {}
+
+
+@frappe.whitelist()
 def get_partner_invoices(due_date=None):
 	partner_email = get_current_team(get_doc=True).partner_email
 	# partner_currency = frappe.db.get_value(

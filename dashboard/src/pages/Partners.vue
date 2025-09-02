@@ -48,6 +48,11 @@ export default {
 					condition: () => Boolean(this.$team.doc.erpnext_partner),
 				},
 				{
+					label: 'Dashboard',
+					route: { name: 'PartnerDashboard' },
+					condition: () => Boolean(this.$team.doc.erpnext_partner),
+				},
+				{
 					label: 'Customers',
 					route: { name: 'PartnerCustomers' },
 					condition: () =>

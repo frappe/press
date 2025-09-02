@@ -240,6 +240,7 @@ import {
 	createResource,
 	Progress,
 	createListResource,
+	Dialog,
 } from 'frappe-ui';
 import PartnerContribution from './PartnerContribution.vue';
 import ClickToCopyField from '../ClickToCopyField.vue';
