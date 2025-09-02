@@ -68,19 +68,23 @@ const partnerInvoices = computed(() => {
 						day: 'numeric',
 					}).format(new Date(value));
 				},
-			},
-			{
-				label: 'Amount',
-				fieldname: 'total_before_discount',
+				align: 'center',
 			},
 			{
 				label: 'Status',
 				fieldname: 'status',
 				type: 'Badge',
+				align: 'center',
 			},
 			{
 				label: 'Currency',
 				fieldname: 'currency',
+				align: 'center',
+			},
+			{
+				label: 'Amount',
+				fieldname: 'total_before_discount',
+				align: 'center',
 			},
 		],
 		filterControls() {
