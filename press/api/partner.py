@@ -434,6 +434,18 @@ def get_partner_leads(status=None, engagement_stage=None):
 
 
 @frappe.whitelist()
+def change_partner(lead_name, partner):
+	team = get_current_team()
+	doc = frappe.get_doc("Partner Lead", lead_name)
+	if doc.partner_team != team:
+		frappe.throw("You are not allowed to change the partner for this lead")
+
+	doc.partner_team = partner
+	doc.status = "Open"
+	doc.save()
+
+
+@frappe.whitelist()
 def remove_partner():
 	team = get_current_team(get_doc=True)
 	if team.payment_mode == "Paid By Partner":
@@ -470,7 +482,7 @@ def get_partner_teams():
 	teams = frappe.get_all(
 		"Team",
 		{"enabled": 1, "erpnext_partner": 1},
-		["partner_email", "billing_name", "country", "partner_tier"],
+		["partner_email", "billing_name", "country", "partner_tier", "name"],
 	)
 	return teams  # noqa: RET504
 
@@ -630,6 +642,7 @@ def add_new_lead(lead_details):
 			"partner_team": get_current_team(),
 			"lead_source": lead_details.lead_source or "Partner Owned",
 			"lead_type": lead_details.lead_type,
+			"status": "Open",
 		}
 	)
 	doc.insert(ignore_permissions=True)
