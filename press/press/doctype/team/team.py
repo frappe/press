@@ -16,7 +16,7 @@ from frappe.utils import get_fullname, get_url_to_form, random_string
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
-from press.utils import get_valid_teams_for_user, has_role, log_error
+from press.utils import get_valid_teams_for_user, log_error
 from press.utils.billing import (
 	get_frappe_io_connection,
 	get_stripe,
@@ -91,6 +91,7 @@ class Team(Document):
 		send_notifications: DF.Check
 		servers_enabled: DF.Check
 		skip_backups: DF.Check
+		skip_onboarding: DF.Check
 		ssh_access_enabled: DF.Check
 		stripe_customer_id: DF.Data | None
 		team_members: DF.Table[TeamMember]
@@ -125,6 +126,7 @@ class Team(Document):
 		"enable_performance_tuning",
 		"enable_inplace_updates",
 		"servers_enabled",
+		"benches_enabled",
 		"mpesa_tax_id",
 		"mpesa_phone_number",
 		"mpesa_enabled",
@@ -149,7 +151,6 @@ class Team(Document):
 		doc.user_info = user
 		doc.balance = self.get_balance()
 		doc.is_desk_user = user.user_type == "System User"
-		doc.is_support_agent = has_role("Press Support Agent")
 		doc.valid_teams = get_valid_teams_for_user(frappe.session.user)
 		doc.onboarding = self.get_onboarding()
 		doc.billing_info = self.billing_info()
@@ -190,6 +191,7 @@ class Team(Document):
 		self.set_default_user()
 		self.set_billing_name()
 		self.set_partner_email()
+		self.unset_saas_team_type_if_required()
 		self.validate_disable()
 		self.validate_billing_team()
 
@@ -302,6 +304,9 @@ class Team(Document):
 			user.append_roles(account_request.role)
 			user.save(ignore_permissions=True)
 
+		if frappe.db.exists("Team", {"user": user.name}):
+			frappe.throw("You have already an account with same email. Please login using the same email.")
+
 		team.team_title = "Parent Team"
 		team.insert(ignore_permissions=True, ignore_links=True)
 		team.append("team_members", {"user": user.name})
@@ -384,6 +389,10 @@ class Team(Document):
 	def set_billing_name(self):
 		if not self.billing_name:
 			self.billing_name = frappe.utils.get_fullname(self.user)
+
+	def unset_saas_team_type_if_required(self):
+		if (self.servers_enabled or self.benches_enabled) and self.is_saas_user:
+			self.is_saas_user = 0
 
 	def set_default_user(self):
 		if not self.user and self.team_members:
@@ -717,23 +726,26 @@ class Team(Document):
 		stripe = get_stripe()
 		payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
 
-		doc = frappe.get_doc(
-			{
-				"doctype": "Stripe Payment Method",
-				"stripe_payment_method_id": payment_method["id"],
-				"last_4": payment_method["card"]["last4"],
-				"name_on_card": payment_method["billing_details"]["name"],
-				"expiry_month": payment_method["card"]["exp_month"],
-				"expiry_year": payment_method["card"]["exp_year"],
-				"brand": payment_method["card"]["brand"] or "",
-				"team": self.name,
-				"stripe_setup_intent_id": setup_intent_id,
-				"stripe_mandate_id": mandate_id if mandate_id else None,
-				"stripe_mandate_reference": mandate_reference if mandate_reference else None,
-				"is_verified_with_micro_charge": verified_with_micro_charge,
-			}
-		)
-		doc.insert()
+		try:
+			doc = frappe.get_doc(
+				{
+					"doctype": "Stripe Payment Method",
+					"stripe_payment_method_id": payment_method["id"],
+					"last_4": payment_method["card"]["last4"],
+					"name_on_card": payment_method["billing_details"]["name"],
+					"expiry_month": payment_method["card"]["exp_month"],
+					"expiry_year": payment_method["card"]["exp_year"],
+					"brand": payment_method["card"]["brand"] or "",
+					"team": self.name,
+					"stripe_setup_intent_id": setup_intent_id,
+					"stripe_mandate_id": mandate_id if mandate_id else None,
+					"stripe_mandate_reference": mandate_reference if mandate_reference else None,
+					"is_verified_with_micro_charge": verified_with_micro_charge,
+				}
+			)
+			doc.insert()
+		except Exception:
+			frappe.log_error("Failed to create new Stripe Payment Method")
 
 		# unsuspend sites on payment method added
 		self.unsuspend_sites(reason="Payment method added")
@@ -1031,9 +1043,9 @@ class Team(Document):
 
 		complete = False
 		if (
-			is_payment_mode_set
+			self.skip_onboarding
+			or is_payment_mode_set
 			or frappe.db.get_value("User", self.user, "user_type") == "System User"
-			or has_role("Press Support Agent")
 		):
 			complete = True
 		elif saas_site_request:
@@ -1050,7 +1062,7 @@ class Team(Document):
 		)
 
 	def get_route_on_login(self):
-		if self.payment_mode:
+		if self.payment_mode or self.skip_onboarding:
 			return "/sites"
 
 		if self.is_saas_user:

@@ -45,7 +45,8 @@ class TestVersionUpgrade(FrappeTestCase):
 		site = create_test_site(bench=source_bench.name)
 		site.install_app(app2.name)
 
-		group2.add_server(server.name)
+		group2.append("servers", {"server": server.name})
+		group2.save()
 
 		self.assertRaisesRegex(
 			frappe.ValidationError,
@@ -67,11 +68,10 @@ class TestVersionUpgrade(FrappeTestCase):
 
 		site = create_test_site(bench=source_bench.name)
 
-		group2.add_server(server.name)
+		group2.append("servers", {"server": server.name})
+		group2.save()
 
-		create_test_site_update(
-			site.name, group2.name, "Recovered"
-		)  # cause of failure not resolved
+		create_test_site_update(site.name, group2.name, "Recovered")  # cause of failure not resolved
 		site_updates_before = frappe.db.count("Site Update", {"site": site.name})
 		version_upgrade = create_test_version_upgrade(site.name, group2.name)
 		version_upgrade.start()  # simulate scheduled one. User will be admin

@@ -50,8 +50,8 @@ import {
 	MarkLineComponent,
 } from 'echarts/components';
 import VChart from 'vue-echarts';
-import theme from '../../../tailwind.theme.json';
-import { formatBytes, getUnit } from './utils';
+import { theme } from '../../utils/theme';
+import { bytes, getUnit } from '../../utils/format';
 
 const props = defineProps({
 	showCard: {
@@ -165,7 +165,7 @@ const options = ref({
 		axisLabel: {
 			formatter: (value) => {
 				if (unit.value === 'bytes') {
-					return formatBytes(value, 0);
+					return bytes(value, 0);
 				} else {
 					if (value >= 1000000000) return `${value / 1000000000}B`;
 					else if (value >= 1000000) return `${value / 1000000}M`;

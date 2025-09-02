@@ -1,0 +1,8 @@
+---
+- name: Install Ncdu
+  become: yes
+  become_user: root
+  apt:
+    name: ncdu
+    state: present
+    update_cache: no

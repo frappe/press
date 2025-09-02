@@ -4,18 +4,17 @@ from __future__ import annotations
 
 import random
 import typing
-import unittest
 from unittest import skip
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.test_app_source import create_test_app_source
 from press.press.doctype.bench.test_bench import create_test_bench
-from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
@@ -33,6 +32,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.app.app import App
 	from press.press.doctype.app_release.app_release import AppRelease
 	from press.press.doctype.app_source.app_source import AppSource
+	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.team.team import Team
 
@@ -74,8 +74,10 @@ def create_test_deploy_candidate_build(
 
 @patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestDeployCandidate(unittest.TestCase):
+class TestDeployCandidate(FrappeTestCase):
 	def setUp(self):
+		super().setUp()
+
 		self.team = create_test_press_admin_team()
 		self.user: str = self.team.user
 
@@ -188,9 +190,14 @@ class TestDeployCandidate(unittest.TestCase):
 		self.assertEqual(candidate.apps[1].app, app.name)
 		self.assertEqual(candidate.apps[1].release, release.name)
 
-	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
-	@patch.object(DeployCandidate, "schedule_build_and_deploy", new=Mock())
-	def test_creating_new_app_release_with_auto_deploy_deploys_that_app(self, mock_enqueue_doc, mock_commit):
+	@patch(
+		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc", new=foreground_enqueue_doc
+	)
+	@patch(
+		"press.press.doctype.deploy_candidate.deploy_candidate.DeployCandidate.schedule_build_and_deploy",
+		new=Mock(),
+	)
+	def test_creating_new_app_release_with_auto_deploy_deploys_that_app(self, mock_enqueue_doc):
 		"""
 		Test if creating a new app release with auto deploy creates a Deploy Candidate with most recent release of that app
 		"""

@@ -22,6 +22,8 @@
   "machine_type",
   "instance_id",
   "platform",
+  "kms_key_id",
+  "ssh_key",
   "ready_for_conversion",
   "column_break_hgcr",
   "disk_size",
@@ -31,7 +33,10 @@
   "column_break_8",
   "virtual_machine_image",
   "machine_image",
-  "ssh_key",
+  "data_disk_snapshot",
+  "data_disk_snapshot_volume_id",
+  "auto_attach_data_disk_snapshot",
+  "data_disk_snapshot_attached",
   "networking_section",
   "subnet_id",
   "private_ip_address",
@@ -49,7 +54,9 @@
   "volumes",
   "temporary_volumes",
   "snapshots_section",
-  "skip_automated_snapshot"
+  "skip_automated_snapshot",
+  "column_break_zozh",
+  "disable_server_snapshot"
  ],
  "fields": [
   {
@@ -244,7 +251,7 @@
    "fieldname": "series",
    "fieldtype": "Select",
    "label": "Series",
-   "options": "n\nf\nm\nc\np\ne\nr",
+   "options": "n\nf\nm\nc\np\ne\nr\nt",
    "reqd": 1
   },
   {
@@ -335,6 +342,51 @@
    "fieldtype": "Check",
    "label": "Ready For Conversion",
    "read_only": 1
+  },
+  {
+   "fieldname": "kms_key_id",
+   "fieldtype": "Data",
+   "label": "KMS Key ID"
+  },
+  {
+   "fieldname": "data_disk_snapshot",
+   "fieldtype": "Link",
+   "label": "Data Disk Snapshot",
+   "options": "Virtual Disk Snapshot"
+  },
+  {
+   "depends_on": "eval: doc.data_disk_snapshot",
+   "fieldname": "data_disk_snapshot_volume_id",
+   "fieldtype": "Data",
+   "label": "Data Disk Snapshot Volume ID",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.data_disk_snapshot",
+   "fieldname": "data_disk_snapshot_attached",
+   "fieldtype": "Check",
+   "label": "Data Disk Snapshot Attached",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.data_disk_snapshot",
+   "fieldname": "auto_attach_data_disk_snapshot",
+   "fieldtype": "Check",
+   "label": "Auto Attach Data Disk Snapshot",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_zozh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "If you disable server snapshot, it will just take disk snapshot",
+   "fieldname": "disable_server_snapshot",
+   "fieldtype": "Check",
+   "label": "Disable Server Snapshot"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -370,7 +422,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2025-05-26 12:38:56.121666",
+ "modified": "2025-08-29 18:35:20.359750",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

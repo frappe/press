@@ -1,6 +1,6 @@
 ansible==3.4.0
 beautifulsoup4
-boto3==1.29.7
+boto3==1.39.14
 Click
 coverage
 dnspython==1.16.0
@@ -29,3 +29,4 @@ wrapt~=1.15.0
 elasticsearch-dsl>=8.0.0,<9.0.0
 hcloud==2.2.1
 playwright==1.49.1
+prometheus-api-client==0.6.0

@@ -93,6 +93,12 @@ frappe.ui.form.on('Database Server', {
 				true,
 				frm.doc.is_server_setup && frm.doc.is_performance_schema_enabled,
 			],
+			[
+				__('Toggle Read-Only Mode'),
+				'toggle_read_only_mode',
+				true,
+				frm.doc.is_server_setup,
+			],
 			[__('Restart MariaDB'), 'restart_mariadb', true, frm.doc.is_server_setup],
 			[__('Stop MariaDB'), 'stop_mariadb', true, frm.doc.is_server_setup],
 			[
@@ -174,6 +180,12 @@ frappe.ui.form.on('Database Server', {
 				frm.doc.is_server_setup,
 			],
 			['Sync Binlogs Info', 'sync_binlogs_info', true, frm.doc.is_server_setup],
+			[
+				'Sync Replication Config',
+				'sync_replication_config',
+				true,
+				frm.doc.is_server_setup,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

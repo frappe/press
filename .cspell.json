@@ -82,6 +82,7 @@
 		"COMPATBILITY",
 		"confs",
 		"Consolas",
+		"Containerised",
 		"cpath",
 		"cpcommerce",
 		"cpus",
@@ -305,6 +306,7 @@
 		"nistp",
 		"nofail",
 		"NOPASSWD",
+		"NOFORK",
 		"Noronha",
 		"Norte",
 		"notin",
@@ -1045,6 +1047,8 @@
 		"missingok",
 		"notifempty",
 		"nocompress",
+		"ntvs",
+		"njsproj",
 		"ibtmp",
 		"ibdata",
 		"recognise",
@@ -1079,8 +1083,6 @@
 		"mattn",
 		"sahilm",
 		"Rsya",
-		"rivo",
-		"typer",
-		"inquirerpy"
+		"rivo"
 	]
 }

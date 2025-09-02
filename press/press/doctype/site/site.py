@@ -236,6 +236,7 @@ class Site(Document, TagHelpers):
 		"signup_time",
 		"account_request",
 		"allow_physical_backup_by_user",
+		"site_usage_exceeded",
 	)
 
 	@staticmethod
@@ -320,6 +321,11 @@ class Site(Document, TagHelpers):
 		doc.server_title = server.title
 		doc.inbound_ip = self.inbound_ip
 		doc.is_dedicated_server = is_dedicated_server(self.server)
+		doc.suspension_reason = (
+			frappe.db.get_value("Site Activity", {"site": self.name, "action": "Suspend Site"}, "reason")
+			if self.status == "Suspended"
+			else None
+		)
 
 		if doc.owner == "Administrator":
 			doc.signup_by = frappe.db.get_value("Account Request", doc.account_request, "email")
@@ -383,6 +389,15 @@ class Site(Document, TagHelpers):
 			self.notify_email = frappe.db.get_value("Team", self.team, "notify_email")
 		if not self.setup_wizard_status_check_next_retry_on:
 			self.setup_wizard_status_check_next_retry_on = now_datetime()
+
+		if (
+			self.server
+			and frappe.get_value("Server", self.server, "enable_logical_replication_during_site_update")
+			and frappe.db.count("Site", {"server": self.server, "status": ("!=", "Archived")}) >= 1
+		):
+			frappe.throw(
+				"Logical replication is enabled for this server. You can only deploy a single site on the server."
+			)
 
 	def validate_site_name(self):
 		validate_subdomain(self.subdomain)
@@ -508,14 +523,16 @@ class Site(Document, TagHelpers):
 			plan = frappe.db.get_value(
 				"Site Plan",
 				self.subscription_plan,
-				["dedicated_server_plan", "price_inr", "price_usd"],
+				["dedicated_server_plan", "price_inr", "price_usd", "is_trial_plan"],
 				as_dict=True,
 			)
 			is_site_on_public_server = frappe.db.get_value("Server", self.server, "public")
 
 			# Don't allow free plan for non-system users
 			if not is_system_user():
-				is_plan_free = (plan.price_inr == 0 or plan.price_usd == 0) and not plan.dedicated_server_plan
+				is_plan_free = (plan.price_inr == 0 or plan.price_usd == 0) and not (
+					plan.dedicated_server_plan or plan.is_trial_plan
+				)
 				if is_plan_free:
 					frappe.throw("You can't select a free plan!")
 
@@ -568,7 +585,7 @@ class Site(Document, TagHelpers):
 	def capture_signup_event(self, event: str):
 		team = frappe.get_doc("Team", self.team)
 		if frappe.db.count("Site", {"team": team.name}) <= 1 and team.account_request:
-			account_request: AccountRequest = frappe.get_doc("Account Request", team.account_request)
+			account_request: "AccountRequest" = frappe.get_doc("Account Request", team.account_request)
 			if not (account_request.is_saas_signup() or account_request.invited_by_parent_team):
 				capture(event, "fc_signup", team.user)
 
@@ -851,7 +868,7 @@ class Site(Document, TagHelpers):
 		return group.is_version_14_or_higher()
 
 	@property
-	def space_required_on_app_server(self):
+	def restore_space_required_on_app(self):
 		db_size, public_size, private_size = (
 			frappe.get_doc("Remote File", file_name).size if file_name else 0
 			for file_name in (
@@ -860,18 +877,18 @@ class Site(Document, TagHelpers):
 				self.remote_private_file,
 			)
 		)
-		return self.space_required_for_restoration_on_app_server(
+		return self.get_restore_space_required_on_app(
 			db_file_size=db_size, public_file_size=public_size, private_file_size=private_size
 		)
 
 	@property
-	def space_required_on_db_server(self):
+	def restore_space_required_on_db(self):
 		if not self.remote_database_file:
 			return 0
 		db_size = frappe.get_doc("Remote File", self.remote_database_file).size
-		return self.space_required_for_restoration_on_db_server(db_file_size=db_size)
+		return self.get_restore_space_required_on_db(db_file_size=db_size)
 
-	def space_required_for_restoration_on_app_server(
+	def get_restore_space_required_on_app(
 		self, db_file_size: int = 0, public_file_size: int = 0, private_file_size: int = 0
 	) -> int:
 		space_for_download = db_file_size + public_file_size + private_file_size
@@ -882,16 +899,18 @@ class Site(Document, TagHelpers):
 		)  # 8 times db size for extraction; estimated
 		return space_for_download + space_for_extracted_files
 
-	def space_required_for_restoration_on_db_server(self, db_file_size: int = 0) -> int:
+	def get_restore_space_required_on_db(self, db_file_size: int = 0) -> int:
 		"""Returns the space required on the database server for restoration."""
 		return 8 * db_file_size * 2  # double for binlogs
 
-	def check_and_increase_disk(self, server: "BaseServer", space_required: int):
+	def check_and_increase_disk(
+		self, server: "BaseServer", space_required: int, no_increase=False, purpose="create site"
+	):
 		mountpoint = server.guess_data_disk_mountpoint()
 		free_space = server.free_space(mountpoint)
 		if (diff := free_space - space_required) <= 0:
-			msg = f"Insufficient estimated space on {DOCTYPE_SERVER_TYPE_MAP[server.doctype]} server to create site. Required: {human_readable(space_required)}, Available: {human_readable(free_space)} (Need {human_readable(abs(diff))})."
-			if server.public:
+			msg = f"Insufficient estimated space on {DOCTYPE_SERVER_TYPE_MAP[server.doctype]} server to {purpose}. Required: {human_readable(space_required)}, Available: {human_readable(free_space)} (Need {human_readable(abs(diff))})."
+			if server.public and not no_increase:
 				self.try_increasing_disk(server, mountpoint, diff, msg)
 			else:
 				frappe.throw(msg, InsufficientSpaceOnServer)
@@ -905,13 +924,36 @@ class Site(Document, TagHelpers):
 				InsufficientSpaceOnServer,
 			)
 
-	def check_enough_space_on_server(self):
+	@property
+	def backup_space_required_on_app(self) -> int:
+		"""Returns the space required on the app server for backup."""
+		db_size, public_size, private_size = (
+			frappe.get_doc("Remote File", file_name).size if file_name else 0
+			for file_name in (
+				self.remote_database_file,
+				self.remote_public_file,
+				self.remote_private_file,
+			)
+		)
+		return db_size + public_size + private_size
+
+	def check_space_on_server_for_backup(self):
+		provider = frappe.get_value("Cluster", self.cluster, "cloud_provider")
 		app: "Server" = frappe.get_doc("Server", self.server)
-		self.check_and_increase_disk(app, self.space_required_on_app_server)
+		no_increase = True
+		if app.auto_increase_storage or (app.public and provider in ["AWS EC2", "OCI"]):
+			no_increase = False
+		self.check_and_increase_disk(
+			app, self.backup_space_required_on_app, no_increase=no_increase, purpose="backup site"
+		)
+
+	def check_space_on_server_for_restore(self):
+		app: "Server" = frappe.get_doc("Server", self.server)
+		self.check_and_increase_disk(app, self.restore_space_required_on_app)
 
 		if app.database_server:
 			db: "DatabaseServer" = frappe.get_doc("Database Server", app.database_server)
-			self.check_and_increase_disk(db, self.space_required_on_db_server)
+			self.check_and_increase_disk(db, self.restore_space_required_on_db)
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
@@ -1080,7 +1122,7 @@ class Site(Document, TagHelpers):
 		if physical and not self.allow_physical_backup_by_user:
 			frappe.throw(_("Physical backup is not enabled for this site. Please reach out to support."))
 
-		if frappe.db.get_single_value("Press Settings", "disable_physical_backup"):
+		if physical and frappe.db.get_single_value("Press Settings", "disable_physical_backup"):
 			frappe.throw(_("Physical backup is disabled system wide. Please try again later."))
 		# Site deactivation required only for physical backup
 		return self.backup(with_files=with_files, physical=physical, deactivate_site_during_backup=physical)
@@ -2106,14 +2148,13 @@ class Site(Document, TagHelpers):
 		# relies on self._keys_removed_in_last_update in self.validate
 		# used by https://frappecloud.com/app/marketplace-app/email_delivery_service
 		config_list: list[dict] = []
-		for key in self.configuration:
+		for row in self.configuration:
 			config = {}
-			if key.key in keys:
-				continue
-			config["key"] = key.key
-			config["value"] = key.value
-			config["type"] = key.type
-			config_list.append(config)
+			if row.key not in keys and not row.internal:
+				config["key"] = row.key
+				config["value"] = row.value
+				config["type"] = row.type
+				config_list.append(config)
 		self.update_site_config(config_list)
 
 	@frappe.whitelist()
@@ -2455,7 +2496,13 @@ class Site(Document, TagHelpers):
 			.limit(1)
 		)
 		if release_group_names:
-			bench_query = bench_query.where(benches.group.isin(release_group_names))
+			groups = frappe.qb.DocType("Release Group")
+			bench_query = (
+				bench_query.where(benches.group.isin(release_group_names))
+				.join(groups)
+				.on(benches.group == groups.name)
+				.where(groups.version == self.version)
+			)
 		else:
 			restricted_release_group_names = frappe.db.get_all(
 				"Site Plan Release Group",
@@ -3011,28 +3058,28 @@ class Site(Document, TagHelpers):
 				"description": "Upgrade your site to a major version",
 				"button_label": "Upgrade",
 				"doc_method": "upgrade",
-				"condition": self.status == "Active",
+				"condition": self.status in ["Active", "Broken", "Inactive"],
 			},
 			{
 				"action": "Change region",
 				"description": "Move your site to a different region",
 				"button_label": "Change",
 				"doc_method": "change_region",
-				"condition": self.status == "Active",
+				"condition": self.status in ["Active", "Broken", "Inactive"],
 			},
 			{
 				"action": "Change bench group",
 				"description": "Move your site to a different bench group",
 				"button_label": "Change",
 				"doc_method": "change_bench",
-				"condition": self.status == "Active",
+				"condition": self.status in ["Active", "Broken", "Inactive"],
 			},
 			{
 				"action": "Change server",
 				"description": "Move your site to a different server",
 				"button_label": "Change",
 				"doc_method": "change_server",
-				"condition": self.status == "Active" and not is_group_public,
+				"condition": self.status in ["Active", "Broken", "Inactive"] and not is_group_public,
 			},
 			{
 				"action": "Clear cache",
@@ -3584,7 +3631,9 @@ def process_new_site_job_update(job):  # noqa: C901
 		"Active",
 		"Broken",
 	):
-		update_product_trial_request_status_based_on_site_status(job.site, updated_status == "Active")
+		update_product_trial_request_status_based_on_site_status(
+			job.site, updated_status == "Active", job.data
+		)
 
 	# check if new bench related to a site group deploy
 	site_group_deploy = frappe.db.get_value(
@@ -3598,7 +3647,7 @@ def process_new_site_job_update(job):  # noqa: C901
 		frappe.get_doc("Site Group Deploy", site_group_deploy).update_site_group_deploy_on_process_job(job)
 
 
-def update_product_trial_request_status_based_on_site_status(site, is_site_active):
+def update_product_trial_request_status_based_on_site_status(site, is_site_active, error=None):
 	records = frappe.get_list("Product Trial Request", filters={"site": site}, fields=["name"])
 	if not records:
 		return
@@ -3609,6 +3658,7 @@ def update_product_trial_request_status_based_on_site_status(site, is_site_activ
 		product_trial_request.save(ignore_permissions=True)
 	else:
 		product_trial_request.status = "Error"
+		product_trial_request.error = error
 		product_trial_request.save(ignore_permissions=True)
 
 
@@ -3653,8 +3703,13 @@ def process_add_domain_job_update(job):
 		site.set_redirect(auto_generated_domain)
 
 	elif job.status in ("Failure", "Delivery Failure"):
-		product_trial_request.status = "Error"
-		product_trial_request.save(ignore_permissions=True)
+		# temporarily retry to avoid race condition
+		if job.status == "Failure" and int(job.retry_count) < 1:
+			job.db_set("retry_count", job.retry_count + 1)
+			job.retry_in_place()
+		else:
+			product_trial_request.status = "Error"
+			product_trial_request.save(ignore_permissions=True)
 
 
 def get_remove_step_status(job):
@@ -3671,6 +3726,30 @@ def get_remove_step_status(job):
 	)
 
 
+def get_backup_restoration_tests(site: str) -> list[str]:
+	return frappe.get_all(
+		"Backup Restoration Test",
+		dict(test_site=site, status=("in", ("Success", "Archive Failed"))),
+		pluck="name",
+	)
+
+
+def update_backup_restoration_test(site: str, status: str):
+	backup_tests = get_backup_restoration_tests(site)
+
+	if not backup_tests:
+		return
+	if status == "Archived":
+		frappe.db.set_value(
+			"Backup Restoration Test",
+			backup_tests[0],
+			"status",
+			"Archive Successful",
+		)
+	elif status == "Broken":
+		frappe.db.set_value("Backup Restoration Test", backup_tests[0], "status", "Archive Failed")
+
+
 def process_archive_site_job_update(job):
 	site_status = frappe.get_value("Site", job.site, "status", for_update=True)
 
@@ -3685,6 +3764,7 @@ def process_archive_site_job_update(job):
 			filters={"job_type": other_job_type, "site": job.site},
 			for_update=True,
 		)
+
 	except frappe.DoesNotExistError:
 		# Site is already renamed, the other job beat us to it
 		# Our work is done
@@ -3714,6 +3794,7 @@ def process_archive_site_job_update(job):
 			job.site,
 			{"status": updated_status, "archive_failed": updated_status != "Archived"},
 		)
+		update_backup_restoration_test(job.site, updated_status)
 		if updated_status == "Archived":
 			site_cleanup_after_archive(job.site)
 
@@ -3806,6 +3887,7 @@ def process_reinstall_site_job_update(job):
 	if job.status == "Success":
 		frappe.db.set_value("Site", job.site, "setup_wizard_complete", 0)
 		frappe.db.set_value("Site", job.site, "database_name", None)
+		frappe.db.set_value("Site", job.site, "additional_system_user_created", False)
 
 
 def process_migrate_site_job_update(job):
@@ -3958,7 +4040,7 @@ def process_create_user_job_update(job):
 		frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
 		update_product_trial_request_status_based_on_site_status(job.site, True)
 	elif job.status in ("Failure", "Delivery Failure"):
-		update_product_trial_request_status_based_on_site_status(job.site, False)
+		update_product_trial_request_status_based_on_site_status(job.site, False, job.data)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")

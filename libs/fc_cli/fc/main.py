@@ -161,11 +161,18 @@ def show_deploy(ctx: typer.Context):
 	get_deploys(release_group, session, console)
 
 
-@server.command(help="Show current plan for a single database server")
-def show_db(ctx: typer.Context, name: str = typer.Option(..., "--name", "-n", help="Database Server name")):
+@server.command(help="Shows the current plan for a server")
+def server_plan(ctx: typer.Context, name: str = typer.Option(..., "--name", "-n", help="Server name")):
 	session: CloudSession = ctx.obj
+	doctype = None
+	if name and name.startswith("f"):
+		doctype = "Server"
+	elif name and name.startswith("m"):
+		doctype = "Database Server"
+	else:
+		doctype = "Database Server"
 	payload = {
-		"doctype": "Database Server",
+		"doctype": doctype,
 		"name": name,
 		"fields": [
 			"current_plan",
@@ -176,7 +183,7 @@ def show_db(ctx: typer.Context, name: str = typer.Option(..., "--name", "-n", he
 		"press.api.client.get", json=payload, message="[bold green]Getting database server details..."
 	)
 	if not response or "current_plan" not in response:
-		typer.secho(f"Database Server '{name}' or its current plan not found.", fg="red")
+		typer.secho(f"{doctype} '{name}' or its current plan not found.", fg="red")
 		return
 
 	plan = response["current_plan"]

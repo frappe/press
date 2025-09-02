@@ -72,20 +72,20 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "IP",
-   "set_only_once": 1
+   "read_only": 1
   },
   {
    "fetch_from": "virtual_machine.private_ip_address",
    "fieldname": "private_ip",
    "fieldtype": "Data",
    "label": "Private IP",
-   "set_only_once": 1
+   "read_only": 1
   },
   {
    "fieldname": "agent_password",
    "fieldtype": "Password",
    "label": "Agent Password",
-   "set_only_once": 1
+   "read_only": 1
   },
   {
    "default": "Pending",
@@ -164,7 +164,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner",
    "set_only_once": 1
   },
   {
@@ -210,7 +210,7 @@
    "options": "Proxy Server Domain"
   },
   {
-   "depends_on": "eval:[\"AWS EC2\", \"OCI\"].includes(doc.provider)",
+   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\"].includes(doc.provider)",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
@@ -433,7 +433,7 @@
   }
  ],
  "links": [],
- "modified": "2025-06-13 12:52:19.785213",
+ "modified": "2025-08-14 02:14:31.867455",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",

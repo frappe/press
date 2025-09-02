@@ -1,0 +1,139 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-08-04 10:43:26.520507",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "site",
+  "database_name",
+  "bench",
+  "column_break_zcab",
+  "status",
+  "encryption_key",
+  "section_break_hjbs",
+  "public_remote_file",
+  "column_break_molt",
+  "private_remote_file",
+  "column_break_whas",
+  "database_remote_file",
+  "section_break_earz",
+  "file_backup_job",
+  "column_break_ccnx",
+  "database_backup_job"
+ ],
+ "fields": [
+  {
+   "fieldname": "site",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Site",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Draft\nPending\nRunning\nSuccess\nFailure\nUnavailable",
+   "read_only": 1
+  },
+  {
+   "fieldname": "database_name",
+   "fieldtype": "Data",
+   "label": "Database Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "file_backup_job",
+   "fieldtype": "Link",
+   "label": "File Backup Job",
+   "options": "Agent Job",
+   "read_only": 1
+  },
+  {
+   "fieldname": "database_backup_job",
+   "fieldtype": "Link",
+   "label": "Database Backup Job",
+   "options": "Agent Job",
+   "read_only": 1
+  },
+  {
+   "fieldname": "public_remote_file",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Public Remote File",
+   "options": "Remote File",
+   "read_only": 1
+  },
+  {
+   "fieldname": "private_remote_file",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Private Remote File",
+   "options": "Remote File",
+   "read_only": 1
+  },
+  {
+   "fieldname": "database_remote_file",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Database Remote File",
+   "options": "Remote File",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_zcab",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_hjbs",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_molt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_whas",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_earz",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_ccnx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "bench",
+   "fieldtype": "Data",
+   "label": "Bench",
+   "read_only": 1
+  },
+  {
+   "fieldname": "encryption_key",
+   "fieldtype": "Password",
+   "label": "Encryption Key",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-08-07 00:01:51.962501",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Server Snapshot Site Recovery",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

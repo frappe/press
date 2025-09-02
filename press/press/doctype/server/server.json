@@ -21,18 +21,21 @@
   "is_server_prepared",
   "is_server_renamed",
   "is_self_hosted",
-  "column_break_laiq",
+  "keep_files_on_server_in_offsite_backup",
   "public",
+  "column_break_laiq",
   "use_agent_job_callbacks",
   "is_pyspy_setup",
   "halt_agent_jobs",
   "stop_deployments",
+  "is_for_recovery",
   "billing_section",
   "team",
   "column_break_11",
   "plan",
   "auto_add_storage_min",
   "auto_add_storage_max",
+  "auto_increase_storage",
   "networking_section",
   "ip",
   "ipv6",
@@ -52,6 +55,7 @@
   "database_server",
   "self_hosted_mariadb_server",
   "is_managed_database",
+  "enable_logical_replication_during_site_update",
   "column_break_jdiy",
   "self_hosted_mariadb_root_password",
   "managed_database_service",
@@ -96,7 +100,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "IP",
-   "set_only_once": 1
+   "read_only": 1
   },
   {
    "fieldname": "proxy_server",
@@ -114,7 +118,7 @@
    "fieldname": "agent_password",
    "fieldtype": "Password",
    "label": "Agent Password",
-   "set_only_once": 1
+   "read_only": 1
   },
   {
    "collapsible": 1,
@@ -316,7 +320,7 @@
    "label": "Staging"
   },
   {
-   "depends_on": "eval:[\"AWS EC2\", \"OCI\"].includes(doc.provider)",
+   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\"].includes(doc.provider)",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
@@ -501,6 +505,7 @@
   },
   {
    "default": "0",
+   "description": "Public release groups will be deployed here",
    "fieldname": "public",
    "fieldtype": "Check",
    "label": "Public"
@@ -594,15 +599,39 @@
    "options": "x86_64\narm64"
   },
   {
+   "default": "1",
+   "fieldname": "auto_increase_storage",
+   "fieldtype": "Check",
+   "label": "Auto Increase Storage"
+  },
+  {
    "default": "0",
-   "description": "Stop all new builds for the server",
+   "description": "Stop all deployments on this server.",
    "fieldname": "stop_deployments",
    "fieldtype": "Check",
-   "label": "Stop deployments"
+   "label": "Stop Deployments"
+  },
+  {
+   "default": "0",
+   "fieldname": "keep_files_on_server_in_offsite_backup",
+   "fieldtype": "Check",
+   "label": "Keep Backup Files Onsite"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_for_recovery",
+   "fieldtype": "Check",
+   "label": "Is for Recovery"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_logical_replication_during_site_update",
+   "fieldtype": "Check",
+   "label": "Enable Logical Replication During Site Update"
   }
  ],
  "links": [],
- "modified": "2025-06-02 09:43:06.619945",
+ "modified": "2025-08-21 16:08:03.067516",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

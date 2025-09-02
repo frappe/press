@@ -4,11 +4,11 @@
 from __future__ import annotations
 
 import typing
-import unittest
 from unittest.mock import Mock, patch
 
 import frappe
 from frappe.model.naming import make_autoname
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
@@ -36,6 +36,8 @@ def create_test_server(
 	public: bool = False,
 	platform: str = "x86_64",
 	use_for_build: bool = False,
+	is_self_hosted: bool = False,
+	auto_increase_storage: bool = False,
 ) -> "Server":
 	"""Create test Server doc."""
 	if not proxy_server:
@@ -63,6 +65,8 @@ def create_test_server(
 			"virtual_machine": create_test_virtual_machine().name,
 			"platform": platform,
 			"use_for_build": use_for_build,
+			"is_self_hosted": is_self_hosted,
+			"auto_increase_storage": auto_increase_storage,
 		}
 	).insert()
 	server.reload()
@@ -70,7 +74,7 @@ def create_test_server(
 
 
 @patch.object(BaseServer, "after_insert", new=Mock())
-class TestServer(unittest.TestCase):
+class TestServer(FrappeTestCase):
 	def test_create_generic_server(self):
 		create_test_press_settings()
 		proxy_server = create_test_proxy_server()
