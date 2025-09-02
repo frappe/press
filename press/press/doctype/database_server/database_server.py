@@ -105,6 +105,7 @@ class DatabaseServer(BaseServer):
 		tags: DF.Table[ResourceTag]
 		team: DF.Link | None
 		title: DF.Data | None
+		tls_certificate_renewal_failed: DF.Check
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
 
