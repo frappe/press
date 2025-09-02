@@ -814,6 +814,15 @@ class Cluster(Document):
 			},
 		).insert()
 
+	def get_default_instance_type(self):
+		if self.cloud_provider == "AWS EC2":
+			return "t3.medium"
+		if self.cloud_provider == "OCI":
+			return "VM.Standard.E4.Flex"
+		if self.cloud_provider == "Hetzner":
+			return "cpx21"
+		return None
+
 	def get_or_create_basic_plan(self, server_type):
 		plan = frappe.db.exists("Server Plan", f"Basic Cluster - {server_type}")
 		if plan:
@@ -823,7 +832,7 @@ class Cluster(Document):
 				"doctype": "Server Plan",
 				"name": f"Basic Cluster - {server_type}",
 				"title": f"Basic Cluster - {server_type}",
-				"instance_type": "t2.medium",
+				"instance_type": self.get_default_instance_type(),
 				"price_inr": 0,
 				"price_usd": 0,
 				"vcpu": 2,

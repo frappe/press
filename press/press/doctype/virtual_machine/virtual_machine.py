@@ -1711,8 +1711,7 @@ class VirtualMachine(Document):
 	def convert_to_amd(self, virtual_machine_image, machine_type):
 		return self._create_vmm(virtual_machine_image, machine_type)
 
-	@frappe.whitelist()
-	def attach_new_volume(self, size, iops=None, throughput=None):
+	def attach_new_volume_aws_oci(self, size, iops=None, throughput=None):
 		volume_options = {
 			"AvailabilityZone": self.availability_zone,
 			"Size": size,
@@ -1745,6 +1744,14 @@ class VirtualMachine(Document):
 
 		return volume_id
 
+	@frappe.whitelist()
+	def attach_new_volume(self, size, iops=None, throughput=None):
+		if self.cloud_provider in ["AWS EC2", "OCI"]:
+			return self.attach_new_volume_aws_oci(size, iops, throughput)
+		if self.cloud_provider == "Hetzner":
+			return self.attach_volume(size=size)
+		return None
+
 	def wait_for_volume_to_be_available(self, volume_id):
 		# AWS EC2 specific
 		while self.get_state_of_volume(volume_id) != "available":
@@ -1776,11 +1783,6 @@ class VirtualMachine(Document):
 				return None
 
 	@frappe.whitelist()
-	def attach_volume_job(self):
-		server = frappe.get_doc("Server", self.name)
-		server.run_press_job("Attach Volume")
-
-	@frappe.whitelist()
 	def attach_volume(self, volume_id=None, is_temporary_volume: bool = False, size: int | None = None):
 		"""
 		temporary_volumes: If you are attaching a volume to an instance just for temporary use, then set this to True.
@@ -1804,9 +1806,9 @@ class VirtualMachine(Document):
 			server_instance = self.client().servers.get_by_id(self.instance_id)
 			new_volume = self.client().volumes.create(
 				size=size,
-				name=f"{self.name}-{slug(self.cluster)}",
+				name=f"{self.name}-vol-{len(self.volumes) + len(self.temporary_volumes) + 1}",
 				format="ext4",
-				automount=True,
+				automount=False,
 				server=server_instance,
 			)
 			"""
@@ -1815,6 +1817,8 @@ class VirtualMachine(Document):
 			Example: linux_device = /mnt/HC_Volume_103061048
 			"""
 			device_name = new_volume.volume.linux_device
+			time.sleep(15)  # wait for a while to let Hetzner attach the volume
+			# might need a better way to do this considering reliability issues
 		self.save()
 		self.sync()
 		return device_name
