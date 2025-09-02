@@ -404,7 +404,13 @@ def retrigger_failed_wildcard_tls_callbacks():
 		"Trace Server",
 	]
 	for server_doctype in server_doctypes:
+<<<<<<< HEAD
 		servers = frappe.get_all(server_doctype, {"status": "Active"}, pluck="name")
+=======
+		servers = frappe.get_all(
+			server_doctype, filters={"status": "Active"}, fields=["name", "tls_certificate_renewal_failed"]
+		)
+>>>>>>> 8ed8ef7d1 (fix(tls-cert): Add explicit filters params)
 		for server in servers:
 			plays = frappe.get_all(
 				"Ansible Play",
