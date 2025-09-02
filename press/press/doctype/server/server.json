@@ -272,7 +272,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner",
    "set_only_once": 1
   },
   {
@@ -638,7 +638,11 @@
   }
  ],
  "links": [],
+<<<<<<< HEAD
  "modified": "2025-09-02 16:43:19.885050",
+=======
+ "modified": "2025-09-02 10:35:35.774635",
+>>>>>>> 7d40c709e (fix(server): Add back lost Hetzner provider option)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
