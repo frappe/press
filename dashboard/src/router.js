@@ -277,6 +277,11 @@ let router = createRouter({
 					path: 'payment-payout',
 					component: () => import('./components/partners/PartnerPayout.vue'),
 				},
+				{
+					name: 'PartnerDashboard',
+					path: 'partner-dashboard',
+					component: () => import('./components/partners/PartnerDashboard.vue'),
+				},
 			],
 		},
 		{

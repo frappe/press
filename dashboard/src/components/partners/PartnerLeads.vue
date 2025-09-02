@@ -1,5 +1,39 @@
 <template>
 	<div class="p-4">
+		<div class="grid grid-cols-4 gap-5 pb-4">
+			<NumberChart
+				:config="{
+					title: 'Total Leads',
+					value: $resources.leadStats.data?.total || 0,
+				}"
+				class="border rounded-md"
+			/>
+
+			<NumberChart
+				:config="{
+					title: 'Open',
+					value: $resources.leadStats.data?.open || 0,
+				}"
+				class="border rounded-md"
+			/>
+
+			<NumberChart
+				:config="{
+					title: 'Won',
+					value: $resources.leadStats.data?.won || 0,
+				}"
+				class="border rounded-md"
+			/>
+
+			<NumberChart
+				:config="{
+					title: 'Lost',
+					value: $resources.leadStats.data?.lost || 0,
+				}"
+				class="border rounded-md"
+			/>
+		</div>
+
 		<div v-if="partnerLeadsList">
 			<ObjectList :options="partnerLeadsList" />
 		</div>
@@ -12,11 +46,21 @@
 import ObjectList from '../ObjectList.vue';
 import { icon, renderDialog } from '../../utils/components';
 import NewPartnerLead from './NewPartnerLead.vue';
+import { NumberChart } from 'frappe-ui';
 import { h } from 'vue';
 export default {
 	name: 'PartnerLeads',
 	components: {
 		ObjectList,
+		NumberChart,
+	},
+	resources: {
+		leadStats() {
+			return {
+				url: 'press.api.partner.get_lead_stats',
+				auto: true,
+			};
+		},
 	},
 	computed: {
 		partnerLeadsList() {
