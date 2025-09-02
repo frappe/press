@@ -77,7 +77,14 @@ class VirtualDiskResize(Document):
 
 	def after_insert(self):
 		"""Enqueue current volume attribute fetch and volume creation"""
-		frappe.enqueue_doc(self.doctype, self.name, "run_prerequisites", queue="long", timeout=2400)
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"run_prerequisites",
+			queue="long",
+			timeout=2400,
+			enqueue_after_commit=True,
+		)
 
 	def run_prerequisites(self):
 		self.set_filesystem_attributes()
