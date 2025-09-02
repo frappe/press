@@ -33,7 +33,7 @@
 								</span>
 							</td>
 							<td class="py-1 pl-2 pr-2 text-right">
-								{{ formatCurrency(row.rate) }}
+								{{ row.rate }}
 							</td>
 							<td class="py-1 pl-2 pr-2 text-right">
 								{{ row.quantity }}
@@ -49,93 +49,13 @@
 								}}
 							</td>
 							<td class="py-1 pl-2 pr-2 text-right font-medium">
-								{{ formatCurrency(row.amount) }}
+								{{ row.amount }}
 							</td>
 						</tr>
 					</template>
 				</tbody>
-				<!-- <tfoot>
-					<tr v-if="doc.total_discount_amount > 0">
-						<td></td>
-						<td></td>
-						<td class="pb-2 pr-2 pt-4 text-right font-medium">
-							Total Without Discount
-						</td>
-						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
-							{{ formatCurrency(doc.total_before_discount) }}
-						</td>
-					</tr>
-					<tr v-if="doc.total_discount_amount > 0">
-						<td></td>
-						<td></td>
-						<td class="pb-2 pr-2 pt-4 text-right font-medium">
-							Total Discount Amount
-						</td>
-						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
-							{{
-								$team.doc.erpnext_partner
-									? formatCurrency(doc.total_discount_amount)
-									: formatCurrency(0)
-							}}
-						</td>
-					</tr>
-					<tr v-if="doc.gst > 0">
-						<td></td>
-						<td></td>
-						<td class="pb-2 pr-2 pt-4 text-right font-medium">
-							Total (Without Tax)
-						</td>
-						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
-							{{ formatCurrency(doc.total) }}
-						</td>
-					</tr>
-					<tr v-if="doc.gst > 0">
-						<td></td>
-						<td></td>
-						<td class="pb-2 pr-2 pt-4 text-right font-medium">
-							IGST @ {{ Number(gstPercentage * 100) }}%
-						</td>
-						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
-							{{ doc.gst }}
-						</td>
-					</tr>
-					<tr>
-						<td></td>
-						<td></td>
-						<td class="pb-2 pr-2 pt-4 text-right font-medium">Grand Total</td>
-						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
-							{{ formatCurrency(doc.total + doc.gst) }}
-						</td>
-					</tr>
-					<template
-						v-if="
-							doc.total !== doc.amount_due &&
-							['Paid', 'Unpaid'].includes(doc.status)
-						"
-					>
-						<tr>
-							<td></td>
-							<td></td>
-							<td class="pr-2 text-right font-medium">Applied Balance</td>
-							<td class="whitespace-nowrap py-3 pr-2 text-right font-medium">
-								- {{ formatCurrency(doc.applied_credits) }}
-							</td>
-						</tr>
-						<tr>
-							<td></td>
-							<td></td>
-							<td class="pr-2 text-right font-medium">Amount Due</td>
-							<td class="whitespace-nowrap py-3 pr-2 text-right font-medium">
-								{{ formatCurrency(doc.amount_due) }}
-							</td>
-						</tr>
-					</template>
-				</tfoot> -->
 			</table>
 		</div>
-		<!-- <div class="py-20 text-center" v-if="$resources.invoice.loading">
-			<Button :loading="true">Loading</Button>
-		</div> -->
 	</div>
 </template>
 <script>
@@ -150,13 +70,6 @@ export default {
 		};
 	},
 	resources: {
-		// invoice() {
-		// 	return {
-		// 		type: 'document',
-		// 		doctype: 'Invoice',
-		// 		name: this.invoiceId,
-		// 	};
-		// },
 		invoiceItems() {
 			return {
 				url: 'press.api.partner.get_invoice_items',
@@ -180,12 +93,6 @@ export default {
 			}
 			return groupedLineItems;
 		},
-		// 	doc() {
-		// 		return this.$resources.invoice.doc;
-		// 	},
-		// 	gstPercentage() {
-		// 		return this.$team.doc.billing_info.gst_percentage;
-		// 	},
 	},
 	methods: {
 		formatPlan(plan) {
@@ -197,12 +104,6 @@ export default {
 				);
 			}
 			return plan;
-		},
-		formatCurrency(value) {
-			// if (!this.doc) return;
-			// let currency = this.doc.currency;
-			// return this.$format.currency(value, currency);
-			return value;
 		},
 	},
 };
