@@ -199,6 +199,35 @@ def server_plan(ctx: typer.Context, name: str = typer.Option(..., "--name", "-n"
 	console.print(f"[bold]Price/Day USD:[/bold] {plan.get('price_per_day_usd', '-')}")
 
 
+@server.command(help="Increase storage for a server")
+def increase_storage(
+	ctx: typer.Context,
+	name: str = typer.Option(..., "--name", "-n", help="Server name"),
+	increment: int = typer.Option(..., "--increment", "-i", help="Increment size in GB"),
+):
+	session: CloudSession = ctx.obj
+	if name.startswith("f"):
+		doctype = "Server"
+	else:
+		doctype = "Database Server"
+	payload = {
+		"dt": doctype,
+		"dn": name,
+		"method": "increase_disk_size_for_server",
+		"args": {"server": name, "increment": increment},
+	}
+	response = session.post(
+		"press.api.client.run_doc_method",
+		json=payload,
+		message=f"[bold green]Increasing storage for {name} by {increment}GB...",
+	)
+
+	console.print(
+		f"Storage increased for server [bold blue]{name}[/bold blue] by [bold blue]{increment}[/bold blue] GB",
+		style="bold",
+	)
+
+
 app.add_typer(deploy, name="deploy")
 app.add_typer(server, name="server")
 
