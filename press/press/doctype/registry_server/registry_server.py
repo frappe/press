@@ -39,6 +39,7 @@ class RegistryServer(BaseServer):
 		ssh_port: DF.Int
 		ssh_user: DF.Data | None
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		tls_certificate_renewal_failed: DF.Check
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
 
