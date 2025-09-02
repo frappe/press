@@ -531,12 +531,12 @@ def update_lead_details(lead_name, lead_details):
 
 
 @frappe.whitelist()
-def update_lead_status(lead_name, status, engagement_stage=None, conversion_date=None, reason=None, **kwargs):
+def update_lead_status(lead_name, status, **kwargs):
 	status_dict = {"status": status}
 	if status == "In Process":
 		status_dict.update(
 			{
-				"engagement_stage": engagement_stage,
+				"engagement_stage": kwargs.get("engagement_stage"),
 			}
 		)
 		if kwargs.get("proposed_plan") and kwargs.get("expected_close_date"):
@@ -549,7 +549,7 @@ def update_lead_status(lead_name, status, engagement_stage=None, conversion_date
 	elif status == "Won":
 		status_dict.update(
 			{
-				"conversion_date": conversion_date,
+				"conversion_date": kwargs.get("conversion_date"),
 				"hosting": kwargs.get("hosting"),
 				"site_url": kwargs.get("site_url"),
 			}
@@ -557,7 +557,8 @@ def update_lead_status(lead_name, status, engagement_stage=None, conversion_date
 	elif status == "Lost":
 		status_dict.update(
 			{
-				"lost_reason": reason,
+				"lost_reason": kwargs.get("lost_reason"),
+				"lost_reason_specify": kwargs.get("other_reason"),
 			}
 		)
 
