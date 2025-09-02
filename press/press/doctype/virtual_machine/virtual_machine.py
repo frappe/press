@@ -19,6 +19,7 @@ from frappe.utils.password import get_decrypted_password
 from hcloud import APIException, Client
 from hcloud.images import Image
 from hcloud.servers.domain import ServerCreatePublicNetwork
+from oci import pagination as oci_pagination
 from oci.core import BlockstorageClient, ComputeClient, VirtualNetworkClient
 from oci.core.models import (
 	CreateBootVolumeBackupDetails,
@@ -1596,62 +1597,68 @@ class VirtualMachine(Document):
 
 	@classmethod
 	def bulk_sync_oci(cls):
-		for cluster in frappe.get_all(
-			"Virtual Machine",
-			["cluster", "cloud_provider", "max(`index`) as max_index"],
-			{
-				"status": ("not in", ("Terminated", "Draft")),
-				"cloud_provider": "OCI",
-			},
-			group_by="cluster",
-		):
-			CHUNK_SIZE = 15  # Each call will pick up ~30 machines (2 x CHUNK_SIZE)
-			# Generate closed bounds for 15 indexes at a time
-			# (1, 15), (16, 30), (31, 45), ...
-			# We might have uneven chunks because of missing indexes
-			chunks = [(ii, ii + CHUNK_SIZE - 1) for ii in range(1, cluster.max_index, CHUNK_SIZE)]
-			for start, end in chunks:
-				# Pick a random machine
-				# TODO: This probably should be a method on the Cluster
-				machines = cls._get_active_machines_within_chunk_range(
-					cluster.cloud_provider, cluster.cluster, start, end
-				)
-				if not machines:
-					# There might not be any running machines in the chunk range
-					continue
-
-				frappe.enqueue_doc(
-					"Virtual Machine",
-					machines[0].name,
-					method="bulk_sync_oci_cluster",
-					start=start,
-					end=end,
-					queue="sync",
-					job_id=f"bulk_sync_oci:{cluster.cluster}:{start}-{end}",
-					deduplicate=True,
-				)
-
-	def bulk_sync_oci_cluster(self, start, end):
-		cluster = frappe.get_doc("Cluster", self.cluster)
-		machines = self.__class__._get_active_machines_within_chunk_range(
-			self.cloud_provider, self.cluster, start, end
-		)
-		instance_ids = set([machine.instance_id for machine in machines])
-		response = self.client().list_instances(compartment_id=cluster.oci_tenancy).data
-		for instance in response:
-			if instance.id not in instance_ids:
+		for cluster in frappe.get_all("Cluster", {"cloud_provider": "OCI"}, pluck="name"):
+			# pick any random non-terminated machine from the cluster
+			machines = frappe.get_all(
+				"Virtual Machine",
+				filters={
+					"status": ("not in", ("Terminated", "Draft")),
+					"cloud_provider": "OCI",
+					"cluster": cluster,
+					"instance_id": ("is", "set"),
+				},
+				pluck="name",
+				limit=1,
+			)
+			if not machines:
 				continue
-			machine: VirtualMachine = frappe.get_doc("Virtual Machine", {"instance_id": instance.id})
-			if has_job_timeout_exceeded():
-				return
-			try:
-				machine.sync(instance)
-				frappe.db.commit()  # release lock
-			except rq.timeouts.JobTimeoutException:
-				return
-			except Exception:
-				log_error("Virtual Machine Sync Error", virtual_machine=machine.name)
-				frappe.db.rollback()
+			frappe.enqueue_doc(
+				"Virtual Machine",
+				machines[0],
+				method="bulk_sync_oci_cluster",
+				queue="sync",
+				job_id=f"bulk_sync_oci:{cluster}",
+				deduplicate=True,
+			)
+
+	def bulk_sync_oci_cluster(self, cluster: str):
+		cluster = frappe.get_doc("Cluster", cluster)
+		client: "ComputeClient" = self.client()
+
+		try:
+			response = oci_pagination.list_call_get_all_results(
+				client.list_instances, compartment_id=cluster.oci_tenancy
+			).data
+
+			instance_ids = frappe.get_all(
+				"Virtual Machine",
+				filters={
+					"status": ("not in", ("Terminated", "Draft")),
+					"cloud_provider": "OCI",
+					"cluster": cluster.name,
+					"instance_id": ("is", "set"),
+				},
+				pluck="instance_id",
+			)
+			instance_ids = set(instance_ids)
+
+			for instance in response:
+				if instance.id not in instance_ids:
+					continue
+				machine: VirtualMachine = frappe.get_doc("Virtual Machine", {"instance_id": instance.id})
+				if has_job_timeout_exceeded():
+					return
+				try:
+					machine.sync(instance)
+					frappe.db.commit()  # release lock
+				except rq.timeouts.JobTimeoutException:
+					return
+				except Exception:
+					log_error("Virtual Machine Sync Error", virtual_machine=machine.name)
+					frappe.db.rollback()
+		except Exception:
+			log_error("Virtual Machine OCI Bulk Sync Error", cluster=cluster.name)
+			frappe.db.rollback()
 
 	def disable_delete_on_termination_for_all_volumes(self):
 		attached_volumes = self.client().describe_instance_attribute(
