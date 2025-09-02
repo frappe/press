@@ -243,6 +243,17 @@ export default {
 					value: this.lead?.conversion_date,
 					condition: this.lead?.status === 'Won',
 				},
+				{
+					label: 'Lost Reason',
+					value: this.lead?.lost_reason,
+					condition: this.lead?.status === 'Lost',
+				},
+				{
+					label: 'Other Reason',
+					value: this.lead?.lost_reason_specify,
+					condition:
+						this.lead?.status === 'Lost' && this.lead?.lost_reason === 'Other',
+				},
 			].filter((d) => d.condition ?? true);
 		},
 		contact_info() {

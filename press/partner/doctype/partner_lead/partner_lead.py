@@ -66,7 +66,7 @@ class PartnerLead(Document):
 			"Not Interested Anymore",
 			"Other",
 		]
-		lost_reason_specify: DF.Data | None
+		lost_reason_specify: DF.SmallText | None
 		need_demo_before_implementation: DF.Check
 		next_action_date: DF.Date | None
 		organization_name: DF.Data | None
@@ -106,4 +106,6 @@ class PartnerLead(Document):
 		"requirement",
 		"partner_team",
 		"discussion",
+		"lost_reason",
+		"lost_reason_specify",
 	)
