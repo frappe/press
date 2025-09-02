@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import time
+import typing
 from enum import Enum
 
 import botocore
@@ -13,6 +14,9 @@ from frappe.core.utils import find, find_all
 from frappe.model.document import Document
 
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
+
+if typing.TYPE_CHECKING:
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 SUPPORTED_FILESYSTEMS = ["ext4"]
 
@@ -476,8 +480,16 @@ class VirtualDiskResize(Document):
 			server.save()
 		return StepStatus.Success
 
+	def restart_machine(self) -> StepStatus:
+		"""Restart machine (in case of f servers)"""
+		if self.machine.series != "f":
+			return StepStatus.Success
+
+		self.machine.reboot()
+		return StepStatus.Success
+
 	@property
-	def machine(self):
+	def machine(self) -> "VirtualMachine":
 		return frappe.get_doc("Virtual Machine", self.virtual_machine)
 
 	@property
@@ -504,6 +516,7 @@ class VirtualDiskResize(Document):
 			(self.reduce_performance_of_new_volume, NoWait),
 			(self.delete_old_volume, NoWait),
 			(self.propagate_volume_id, NoWait),
+			(self.restart_machine, NoWait),
 		]
 
 		steps = []
