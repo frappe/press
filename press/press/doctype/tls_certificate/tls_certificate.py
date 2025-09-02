@@ -433,7 +433,7 @@ def retrigger_failed_wildcard_tls_callbacks():
 	]
 	for server_doctype in server_doctypes:
 		servers = frappe.get_all(
-			server_doctype, {"status": "Active"}, fields=["name", "tls_certificate_renewal_failed"]
+			server_doctype, filters={"status": "Active"}, fields=["name", "tls_certificate_renewal_failed"]
 		)
 		for server in servers:
 			previous_attempt_failed = server.tls_certificate_renewal_failed
