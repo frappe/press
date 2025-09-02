@@ -1615,11 +1615,11 @@ class VirtualMachine(Document):
 			frappe.enqueue_doc(
 				"Virtual Machine",
 				machines[0],
-				cluster=cluster,
 				method="bulk_sync_oci_cluster",
 				queue="sync",
 				job_id=f"bulk_sync_oci:{cluster}",
 				deduplicate=True,
+				cluster=cluster,
 			)
 
 	def bulk_sync_oci_cluster(self, cluster: str):
@@ -1642,24 +1642,39 @@ class VirtualMachine(Document):
 				pluck="instance_id",
 			)
 			instance_ids = set(instance_ids)
+			# filter out non-existing instances
+			response = [instance for instance in response if instance.id in instance_ids]
 
-			for instance in response:
-				if instance.id not in instance_ids:
-					continue
-				machine: VirtualMachine = frappe.get_doc("Virtual Machine", {"instance_id": instance.id})
-				if has_job_timeout_exceeded():
-					return
-				try:
-					machine.sync(instance)
-					frappe.db.commit()  # release lock
-				except rq.timeouts.JobTimeoutException:
-					return
-				except Exception:
-					log_error("Virtual Machine Sync Error", virtual_machine=machine.name)
-					frappe.db.rollback()
+			# Split into batches
+			BATCH_SIZE = 15
+			for i in range(0, len(response), BATCH_SIZE):
+				frappe.enqueue_doc(
+					"Virtual Machine",
+					self.name,
+					method="bulk_sync_oci_cluster_in_batch",
+					queue="sync",
+					job_id=f"bulk_sync_oci_batch:{cluster.name}:{i}-{i + BATCH_SIZE}",
+					deduplicate=True,
+					enqueue_after_commit=True,
+					instances=response[i : i + BATCH_SIZE],
+				)
 		except Exception:
 			log_error("Virtual Machine OCI Bulk Sync Error", cluster=cluster.name)
 			frappe.db.rollback()
+
+	def bulk_sync_oci_cluster_in_batch(self, instances: list[dict]):
+		for instance in instances:
+			machine: VirtualMachine = frappe.get_doc("Virtual Machine", {"instance_id": instance.id})
+			if has_job_timeout_exceeded():
+				return
+			try:
+				machine.sync(instance=instance)
+				frappe.db.commit()  # release lock
+			except rq.timeouts.JobTimeoutException:
+				return
+			except Exception:
+				log_error("Virtual Machine Sync Error", virtual_machine=machine.name)
+				frappe.db.rollback()
 
 	def disable_delete_on_termination_for_all_volumes(self):
 		attached_volumes = self.client().describe_instance_attribute(
