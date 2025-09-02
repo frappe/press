@@ -73,7 +73,7 @@ class VirtualDiskResize(Document):
 
 	def after_insert(self):
 		"""Enqueue current volume attribute fetch and volume creation"""
-		frappe.enqueue_doc(self.doctype, self.name, "run_prerequisites")
+		frappe.enqueue_doc(self.doctype, self.name, "run_prerequisites", queue="long", timeout=2400)
 
 	def run_prerequisites(self):
 		self.set_filesystem_attributes()
@@ -229,12 +229,23 @@ class VirtualDiskResize(Document):
 		if device["mountpoint"] != filesystem["mount_point"]:
 			frappe.throw("Device and Filesystem mount point don't match. Can't shrink")
 
+	def reaffirm_old_filesystem_used(self, mountpoint: str):
+		"""Reaffirm file system usage using du"""
+		output = self.ansible_run(f"du -s {mountpoint}")["output"]
+
+		if not output:
+			frappe.throw("Error occurred while fetching filesystem size")
+
+		size = float(output.split()[0])
+		size *= 512  # du measures size in units of 512-byte blocks
+		return size / 1024**3
+
 	def set_old_filesystem_attributes(self, device, filesystem):
 		self.filesystem_mount_point = device["mountpoint"]
 		self.filesystem_type = device["fstype"]
 		self.old_filesystem_uuid = device["uuid"]
 		self.old_filesystem_size = filesystem["size"]
-		self.old_filesystem_used = filesystem["used"]
+		self.old_filesystem_used = self.reaffirm_old_filesystem_used(device["mountpoint"])
 
 		SERVICES = {
 			"/opt/volumes/benches": "docker",
