@@ -450,9 +450,6 @@ class SlowLogGroupByChart(StackedGroupByChart):
 
 
 def _query_prometheus(query: dict[str, str]) -> dict[str, float | str]:
-	import requests
-	from frappe.utils.password import get_decrypted_password
-
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	url = f"https://{monitor_server}/prometheus/api/v1/query_range"
 	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
@@ -504,7 +501,7 @@ def get_cadvisor_memory_usage(
 def get_cadvisor(server: str, timezone: str, duration: str = "24h"):
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
 	benches = frappe.get_all("Bench", {"status": "Active", "server": server}, pluck="name")
-	memory_usage = get_cadvisor_memory_usage(server, benches, timezone, timespan, timegrain)
+	get_cadvisor_memory_usage(server, benches, timezone, timespan, timegrain)
 
 
 @frappe.whitelist()
