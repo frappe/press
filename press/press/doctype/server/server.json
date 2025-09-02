@@ -5,12 +5,13 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "title",
   "status",
   "hostname",
   "hostname_abbreviation",
   "domain",
   "self_hosted_server_domain",
-  "title",
+  "tls_certificate_renewal_failed",
   "column_break_4",
   "cluster",
   "provider",
@@ -99,8 +100,7 @@
    "fieldname": "ip",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "IP",
-   "read_only": 1
+   "label": "IP"
   },
   {
    "fieldname": "proxy_server",
@@ -628,10 +628,17 @@
    "fieldname": "enable_logical_replication_during_site_update",
    "fieldtype": "Check",
    "label": "Enable Logical Replication During Site Update"
+  },
+  {
+   "default": "0",
+   "fieldname": "tls_certificate_renewal_failed",
+   "fieldtype": "Check",
+   "label": "TLS Certificate Renewal Failed",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2025-08-21 16:08:03.067516",
+ "modified": "2025-09-02 16:43:19.885050",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

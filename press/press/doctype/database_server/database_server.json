@@ -10,6 +10,7 @@
   "hostname_abbreviation",
   "domain",
   "title",
+  "tls_certificate_renewal_failed",
   "column_break_4",
   "cluster",
   "provider",
@@ -652,6 +653,13 @@
    "fieldtype": "Data",
    "label": "GTID Slave Pos",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "tls_certificate_renewal_failed",
+   "fieldtype": "Check",
+   "label": "TLS Certificate Renewal Failed",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -668,7 +676,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-08-14 02:08:52.404846",
+ "modified": "2025-09-02 16:43:24.080843",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
