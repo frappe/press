@@ -538,6 +538,9 @@ class VirtualDiskResize(Document):
 
 	@frappe.whitelist()
 	def execute(self):
+		if not self.old_filesystem_used:
+			frappe.throw("Please wait while we fetch volume details", frappe.ValidationError)
+
 		self.status = Status.Running
 		self.start = frappe.utils.now_datetime()
 		self.save()
