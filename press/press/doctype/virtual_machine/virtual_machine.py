@@ -46,6 +46,7 @@ if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.virtual_machine_migration.virtual_machine_migration import (
 		VirtualMachineMigration,
 	)
+	from press.press.doctype.server.server import Server
 	from press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot import VirtualDiskSnapshot
 
 
@@ -1984,9 +1985,34 @@ def snapshot_aws_servers():
 			return
 		app_server = frappe.get_value("Server", {"virtual_machine": machine}, "name")
 		try:
-			frappe.get_doc("Server", app_server)._create_snapshot(
-				consistent=False, expire_at=frappe.utils.add_days(None, 2), free=True
-			)
+			server: "Server" = frappe.get_doc("Server", app_server)
+			servers = [
+				["Server", server.name],
+				["Database Server", server.database_server],
+			]
+			# Check if any press job is running on the server or the db server
+			is_press_job_running = False
+			for server_type, name in servers:
+				if (
+					frappe.db.count(
+						"Press Job",
+						filters={
+							"status": ("in", ["Pending", "Running"]),
+							"server_type": server_type,
+							"server": name,
+						},
+					)
+					> 0
+				):
+					is_press_job_running = True
+					break
+
+			# Also skip if the server was created within last 1 hour
+			# to avoid snapshotting a blank server which is still being setup
+			if is_press_job_running or server.creation > frappe.utils.add_to_date(None, hours=-1):
+				continue
+
+			server._create_snapshot(consistent=False, expire_at=frappe.utils.add_days(None, 2), free=True)
 			frappe.db.commit()
 		except Exception:
 			frappe.db.rollback()
