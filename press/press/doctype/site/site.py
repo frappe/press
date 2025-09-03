@@ -16,7 +16,7 @@ import frappe.utils
 import pytz
 import requests
 import rq
-from frappe import _
+from frappe import _, has_permission
 from frappe.core.utils import find
 from frappe.frappeclient import FrappeClient, FrappeException
 from frappe.model.document import Document
@@ -3051,7 +3051,7 @@ class Site(Document, TagHelpers):
 				"description": "Manage users and permissions for your site database",
 				"button_label": "Manage",
 				"doc_method": "dummy",
-				"condition": not self.hybrid_site,
+				"condition": not self.hybrid_site and has_permission("Site Database User"),
 			},
 			{
 				"action": "Schedule backup",
