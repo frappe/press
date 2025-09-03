@@ -22,7 +22,8 @@ import type {
 	List,
 	RouteDetail,
 	Row,
-	Tab
+	Tab,
+	DocumentResource,
 } from './common/types';
 import { getLogsTab } from './tabs/site/logs';
 import { getPatchesTab } from './common/patches';
@@ -84,7 +85,8 @@ function getTabs() {
 		getJobsTab('Bench'),
 		getProcessesTab(),
 		getLogsTab(false),
-		getPatchesTab(true)
+		getPatchesTab(true),
+		getAnalysisTab()
 	] satisfies Tab[] as Tab[];
 }
 
@@ -293,6 +295,23 @@ export function getSitesTab() {
 	} satisfies Tab;
 }
 
+export function getAnalysisTab() {
+	return {
+		label: 'Analytics',
+		icon: icon('bar-chart-2'),
+		route: 'analytics',
+		type: 'Component',
+		component: defineAsyncComponent(
+			() => import('../components/group/BenchCharts.vue'),
+		),
+		props: (bench: DocumentResource) => {
+			return {
+				benchName: bench.name,
+			};
+		},		
+	} satisfies Tab;
+}
+
 export function getProcessesTab() {
 	const url = 'press.api.bench.get_processes';
 	return {
@@ -302,6 +321,7 @@ export function getProcessesTab() {
 		type: 'list',
 		list: {
 			resource({ documentResource: res }) {
+				console.log(res.name)
 				return {
 					params: {
 						name: res.name
