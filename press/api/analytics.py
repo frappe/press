@@ -465,50 +465,45 @@ def _parse_datetime_in_metrics(timestamp: float, timezone: str) -> str:
 
 
 def get_cadvisor_memory_usage(
-	server: str, benches: list[str], timezone: str, timespan: int, timegrain: int
+	bench, timezone: str, timespan: int, timegrain: int
 ) -> dict[str, list[MetricType]]:
-	bench_wise_memory = {}
-
 	end = datetime.now(pytz_timezone(timezone))
 	start = frappe.utils.add_to_date(end, seconds=-timespan)
 
-	for bench in benches:
-		promql_query = (
-			f"(avg_over_time(container_memory_usage_bytes{{"
-			f'job="cadvisor", '
-			f'name="{bench}", '
-			f'instance="{server}"'
-			f"}}[5m]) / 1024 / 1024 / 1024)"
-		)
+	promql_query = (
+		f"(avg_over_time(container_memory_usage_bytes{{"
+		f'job="cadvisor", '
+		f'name="{bench}", '
+		f"}}[5m]) / 1024 / 1024 / 1024)"
+	)
 
-		query = {
-			"query": promql_query,
-			"start": start.timestamp(),
-			"end": end.timestamp(),
-			"step": f"{timegrain}s",
-		}
+	query = {
+		"query": promql_query,
+		"start": start.timestamp(),
+		"end": end.timestamp(),
+		"step": f"{timegrain}s",
+	}
 
-		result = _query_prometheus(query)["data"]["result"]
-		if result:
-			metrics = result[0]["values"]
-			bench_wise_memory[bench] = [
-				{"date": _parse_datetime_in_metrics(metric[0], timezone), "value": float(metric[1])}
-				for metric in metrics
-			]
+	result = _query_prometheus(query)["data"]["result"]
+	if result:
+		metrics = result[0]["values"]
+		return [
+			{"date": _parse_datetime_in_metrics(metric[0], timezone), "value": float(metric[1])}
+			for metric in metrics
+		]
 
-	return bench_wise_memory
+	return [{}]
 
 
 @frappe.whitelist()
-def get_cadvisor(
-	server: str,
+def cadvisor(
+	bench: str,
 	timezone: str,
 	duration: str = "24h",
 ) -> dict[str, list[MetricType]]:
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
-	benches = frappe.get_all("Bench", {"status": "Active", "server": server}, pluck="name")
 	return {
-		"memory": get_cadvisor_memory_usage(server, benches, timezone, timespan, timegrain),
+		"memory": get_cadvisor_memory_usage(bench, timezone, timespan, timegrain),
 	}
 
 
