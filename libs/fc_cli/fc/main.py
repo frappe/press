@@ -233,3 +233,67 @@ app.add_typer(server, name="server")
 
 if __name__ == "__main__":
 	app()
+
+
+@server.command(help="Show details about a specific plan for a server")
+def show_plan(
+	ctx: typer.Context,
+	name: str = typer.Option(..., "--name", "-n", help="Server name"),
+	plan: str = typer.Option(..., "--plan", "-p", help="Plan name"),
+):
+	session: CloudSession = ctx.obj
+	doctype = "Server" if name.startswith("f") else "Database Server"
+	payload = {"name": doctype, "cluster": "Mumbai", "platform": "arm64"}
+	plans = session.post(
+		"press.api.server.plans", json=payload, message="[bold green]Fetching available server plans..."
+	)
+	selected_plan = next((p for p in plans if p.get("name") == plan), None)
+	if not selected_plan:
+		typer.secho(f"Plan '{plan}' not found for server '{name}'", fg="red")
+		return
+	console.print("[bold]Plan Details:[/bold]")
+	console.print(f"[bold]Name:[/bold] [bold]{selected_plan.get('name', '-')}")
+	console.print(f"[bold]Price:[/bold] [bold]₹{selected_plan.get('price_inr', '-')} /mo")
+	console.print(
+		f"[bold]vCPUs:[/bold] [bold]{selected_plan.get('vcpu', '-')}\n[bold]Memory:[/bold] [bold]{selected_plan.get('memory', '-')} GB\n[bold]Disk:[/bold] [bold]{selected_plan.get('disk', '-')} GB"
+	)
+
+
+@server.command(help="Show current plan and choose available server plans")
+def choose_plan(
+	ctx: typer.Context,
+	name: str = typer.Option(..., "--name", "-n", help="Name of the server"),
+	plan: str = typer.Option(..., "--plan", "-o", help="Name of the plan"),
+):
+	session: CloudSession = ctx.obj
+	doctype = "Server" if name.startswith("f") else "Database Server"
+
+	payload = {"name": doctype, "cluster": "Mumbai", "platform": "arm64"}
+	plans = session.post(
+		"press.api.server.plans", json=payload, message="[bold green]Fetching available server plans..."
+	)
+	selected_plan = next((p for p in plans if p.get("name") == plan), None)
+	if not selected_plan:
+		typer.secho(f"Plan '{plan}' not found for server '{name}'", fg="red")
+		return
+	change_payload = {
+		"dt": doctype,
+		"dn": name,
+		"method": "change_plan",
+		"args": {"plan": selected_plan.get("name")},
+	}
+	response = session.post(
+		"press.api.client.run_doc_method",
+		json=change_payload,
+		message=f"[bold green]Changing plan for {name} to {selected_plan.get('name')}...",
+	)
+	if response and response.get("success") is False:
+		typer.secho(f"Failed to change plan: {response.get('message', 'Unknown error')}", fg="red")
+		return
+	console.print("[bold]Successfully changed plan![/bold]")
+	console.print("[bold]Plan Details:[/bold]")
+	console.print(f"[bold]Name:[/bold] [bold]{selected_plan.get('name', '-')}")
+	console.print(f"[bold]Price:[/bold] [bold]₹{selected_plan.get('price_inr', '-')} /mo")
+	console.print(f"[bold]vCPUs:[/bold] [bold]{selected_plan.get('vcpu', '-')}")
+	console.print(f"[bold]Memory:[/bold] [bold]{selected_plan.get('memory', '-')} GB")
+	console.print(f"[bold]Disk:[/bold] [bold]{selected_plan.get('disk', '-')} GB")
