@@ -23,7 +23,6 @@ import type {
 	RouteDetail,
 	Row,
 	Tab,
-	DocumentResource,
 } from './common/types';
 import { getLogsTab } from './tabs/site/logs';
 import { getPatchesTab } from './common/patches';
@@ -86,7 +85,6 @@ function getTabs() {
 		getProcessesTab(),
 		getLogsTab(false),
 		getPatchesTab(true),
-		getAnalysisTab()
 	] satisfies Tab[] as Tab[];
 }
 
@@ -292,23 +290,6 @@ export function getSitesTab() {
 				}
 			]
 		}
-	} satisfies Tab;
-}
-
-export function getAnalysisTab() {
-	return {
-		label: 'Analytics',
-		icon: icon('bar-chart-2'),
-		route: 'analytics',
-		type: 'Component',
-		component: defineAsyncComponent(
-			() => import('../components/group/BenchCharts.vue'),
-		),
-		props: (bench: DocumentResource) => {
-			return {
-				benchName: bench.name,
-			};
-		},		
 	} satisfies Tab;
 }
 

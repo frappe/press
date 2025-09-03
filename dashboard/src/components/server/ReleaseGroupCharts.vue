@@ -1,13 +1,13 @@
 <template>
 	<div class="space-y-4">
 		<div class="flex space-x-2">
-			<!-- <FormControl
+			<FormControl
 				class="w-40"
-				label="Server"
+				label="Bench Group"
 				type="select"
-				:options="serverOptions"
-				v-model="chosenBench"
-			/> -->
+				:options="releaseGroupOptions"
+				v-model="chosenGroup"
+			/>
 			<FormControl
 				class="w-32"
 				label="Duration"
@@ -33,64 +33,17 @@
 					class="h-[15.55rem] p-2 pb-3"
 				/>
 			</AnalyticsCard>
-
-			<!-- <AnalyticsCard title="Disk Space">
-				<LineChart
-					type="time"
-					title="Disk Space"
-					:key="spaceData"
-					:data="spaceData"
-					unit="%"
-					:chartTheme="[$theme.colors.red[500], $theme.colors.yellow[400]]"
-					:loading="$resources.space.loading"
-					:error="$resources.space.error"
-					:showCard="false"
-					class="h-[15.55rem] p-2 pb-3"
-				/>
-			</AnalyticsCard>
-
-			<AnalyticsCard title="Network">
-				<LineChart
-					type="time"
-					title="Network"
-					:key="networkData"
-					:data="networkData"
-					unit="bytes"
-					:chartTheme="[$theme.colors.blue[500]]"
-					:loading="$resources.network.loading"
-					:error="$resources.network.error"
-					:showCard="false"
-					class="h-[15.55rem] p-2 pb-3"
-				/>
-			</AnalyticsCard> -->
-
-			<!-- <AnalyticsCard title="Disk I/O">
-				<LineChart
-					type="time"
-					title="Disk I/O"
-					:key="iopsData"
-					:data="iopsData"
-					unit="I0ps"
-					:chartTheme="[$theme.colors.purple[500], $theme.colors.blue[500]]"
-					:loading="$resources.iops.loading"
-					:error="$resources.iops.error"
-					:showCard="false"
-					class="h-[15.55rem] p-2 pb-3"
-				/>
-			</AnalyticsCard> -->
 		</div>
 	</div>
 </template>
 
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
 import LineChart from '@/components/charts/LineChart.vue';
 import BarChart from '@/components/charts/BarChart.vue';
 import AnalyticsCard from '../site/AnalyticsCard.vue';
-import dayjs from '../../utils/dayjs';
 
 export default {
-	props: ['benchName'],
+	props: ['serverName'],
 	components: {
 		AnalyticsCard,
 		BarChart,
@@ -100,7 +53,7 @@ export default {
 		return {
 			duration: '1h',
 			localTimezone: dayjs.tz.guess(),
-			chosenBench: this.$route.query.bench ?? this.benchName,
+			chosenGroup: this.$route.query.group ?? '',
 			durationOptions: ['1h', '6h', '24h', '7d', '15d'],
 			chartColors: [
 				this.$theme.colors.green[500],
@@ -117,10 +70,10 @@ export default {
 		};
 	},
 	watch: {
-		chosenBench() {
+		chosenGroup() {
 			this.$router.push({
 				query: {
-					server: this.chosenBench,
+					group: this.chosenGroup,
 				},
 			});
 		},
@@ -130,25 +83,74 @@ export default {
 			return {
 				url: 'press.api.analytics.cadvisor',
 				params: {
-					bench: this.chosenBench,
+					group: this.chosenGroup,
 					timezone: this.localTimezone,
 					duration: this.duration,
 				},
 				auto: true,
 			};
 		},
+		groups() {
+			return {
+				url: 'press.api.client.get_list',
+				params: {
+					doctype: 'Release Group',
+					fields: ['title', 'name'],
+					filters: { server: this.serverName, enabled: 1 },
+				},
+				auto: true,
+			};
+		},
 	},
 	computed: {
-		$bench() {
-			return getCachedDocumentResource('Bench', this.serverName);
+		releaseGroupOptions() {
+			let groups = this.$resources.groups.data;
+
+			if (!groups) {
+				return null;
+			}
+
+			return groups
+				.filter((group) => group.active_benches > 0)
+				.map((group) => ({
+					label: group.title,
+					value: group.name,
+				}));
 		},
 		memoryData() {
 			let memory = this.$resources.cadvisor.data?.memory;
 			if (!memory) return;
 
-			return {
-				datasets: [memory.map((d) => [+new Date(d.date), d.value])],
-			};
+			return this.transformMultiLineChartData(memory);
+		},
+	},
+	methods: {
+		transformMultiLineChartData(data, stack = null, percentage = false) {
+			if (!data.datasets?.length) return;
+
+			let total = [];
+			if (percentage) {
+				// the sum of each cpu values tends to differ by few values
+				// so we need to calculate the total for each timestamp
+				for (let i = 0; i < data.datasets[0].values.length; i++) {
+					for (let j = 0; j < data.datasets.length; j++) {
+						if (!total[i]) total[i] = 0;
+						total[i] += data.datasets[j].values[i];
+					}
+				}
+			}
+			const datasets = data.datasets.map(({ name, values }) => {
+				let dataset = [];
+				for (let i = 0; i < values.length; i++) {
+					dataset.push([
+						+new Date(data.labels[i]),
+						percentage ? (values[i] / total[i]) * 100 : values[i],
+					]);
+				}
+				return { name, dataset, stack };
+			});
+
+			return { datasets, yMax: percentage ? 100 : null };
 		},
 	},
 };
