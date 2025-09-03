@@ -41,6 +41,7 @@
 import LineChart from '@/components/charts/LineChart.vue';
 import BarChart from '@/components/charts/BarChart.vue';
 import AnalyticsCard from '../site/AnalyticsCard.vue';
+import dayjs from '../../utils/dayjs';
 
 export default {
 	props: ['serverName'],
