@@ -26,9 +26,25 @@
 					:key="memoryData"
 					:data="memoryData"
 					unit="bytes"
-					:chartTheme="[$theme.colors.yellow[500]]"
-					:loading="$resources.cadvisor.loading"
-					:error="$resources.cadvisor.error"
+					:chartTheme="$data.chartColors"
+					:loading="$resources.memory.loading"
+					:error="$resources.memory.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+		</div>
+		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+			<AnalyticsCard title="CPU">
+				<LineChart
+					type="time"
+					title="CPU"
+					:key="cpuData"
+					:data="cpuData"
+					unit="seconds"
+					:chartTheme="$data.chartColors"
+					:loading="$resources.memory.loading"
+					:error="$resources.memory.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -80,9 +96,20 @@ export default {
 		},
 	},
 	resources: {
-		cadvisor() {
+		memory() {
 			return {
-				url: 'press.api.analytics.cadvisor',
+				url: 'press.api.analytics.get_memory_usage',
+				params: {
+					group: this.chosenGroup,
+					timezone: this.localTimezone,
+					duration: this.duration,
+				},
+				auto: true,
+			};
+		},
+		cpu() {
+			return {
+				url: 'press.api.analytics.get_cpu_usage',
 				params: {
 					group: this.chosenGroup,
 					timezone: this.localTimezone,
@@ -119,10 +146,16 @@ export default {
 				}));
 		},
 		memoryData() {
-			let memory = this.$resources.cadvisor.data?.memory;
+			let memory = this.$resources.memory.data?.memory;
 			if (!memory) return;
 
 			return this.transformMultiLineChartData(memory);
+		},
+		cpuData() {
+			let cpu = this.$resources.cpu.data?.cpu;
+			if (!cpu) return;
+
+			return this.transformMultiLineChartData(cpu);
 		},
 	},
 	methods: {

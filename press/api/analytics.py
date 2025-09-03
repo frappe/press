@@ -464,9 +464,7 @@ def _parse_datetime_in_metrics(timestamp: float, timezone: str) -> str:
 	return str(datetime.fromtimestamp(timestamp, tz=pytz_timezone(timezone)))
 
 
-def get_cadvisor_memory_usage(
-	benches: list[str], timezone: str, timespan: int, timegrain: int
-) -> dict[str, list[MetricType]]:
+def _get_cadvisor_data(promql_query: str, benches: list[str], timezone: str, timespan: int, timegrain: int):
 	end = datetime.now(pytz_timezone(timezone))
 	start = frappe.utils.add_to_date(end, seconds=-timespan)
 	datasets = []
@@ -475,15 +473,8 @@ def get_cadvisor_memory_usage(
 	for idx, bench in enumerate(benches):
 		datasets.append({"name": bench, "values": []})
 
-		promql_query = (
-			f"(avg_over_time(container_memory_usage_bytes{{"
-			f'job="cadvisor", '
-			f'name="{bench}", '
-			f"}}[5m]) / 1024 / 1024 / 1024)"
-		)
-
 		query = {
-			"query": promql_query,
+			"query": promql_query.format(bench),
 			"start": start.timestamp(),
 			"end": end.timestamp(),
 			"step": f"{timegrain}s",
@@ -503,18 +494,29 @@ def get_cadvisor_memory_usage(
 
 
 @frappe.whitelist()
-def cadvisor(
-	timezone: str,
-	group: str | None = None,
-	bench: str | None = None,
-	duration: str = "24h",
-) -> dict[str, list[MetricType]]:
+def get_memory_usage(
+	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
+):
 	benches = (
 		frappe.get_all("Bench", {"status": "Active", "group": group}, pluck="name") if group else [bench]
 	)
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
-	datasets, labels = get_cadvisor_memory_usage(benches, timezone, timespan, timegrain)
+	promql_query = (
+		'(avg_over_time(container_memory_usage_bytes{job="cadvisor", name="{0}", }[5m]) / 1024 / 1024 / 1024)'
+	)
+	datasets, labels = _get_cadvisor_data(promql_query, benches, timezone, timespan, timegrain)
 	return {"memory": {"datasets": datasets, "labels": labels}}
+
+
+@frappe.whitelist()
+def get_cpu_usage(timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"):
+	benches = (
+		frappe.get_all("Bench", {"status": "Active", "group": group}, pluck="name") if group else [bench]
+	)
+	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
+	promql_query = 'sum by (name) ( rate(container_cpu_usage_seconds_total{job="cadvisor", name=~"{0}"}[5m]))'
+	datasets, labels = _get_cadvisor_data(promql_query, benches, timezone, timespan, timegrain)
+	return {"cpu": {"datasets": datasets, "labels": labels}}
 
 
 @frappe.whitelist()
