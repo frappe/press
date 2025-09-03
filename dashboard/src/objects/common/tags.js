@@ -3,10 +3,13 @@ import { confirmDialog, icon, renderDialog } from '../../utils/components';
 import { toast } from 'vue-sonner';
 import { getToastErrorMessage } from '../../utils/toast';
 
-export function tagTab() {
+export function tagTab(doctype) {
 	return {
 		label: 'Tags',
 		icon: icon('tag'),
+		condition: (record) =>
+			doctype != 'Server' ||
+			(doctype == 'Server' && record.doc?.status !== 'Archived'),
 		route: 'tags',
 		type: 'list',
 		list: {

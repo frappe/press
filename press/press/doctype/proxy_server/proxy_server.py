@@ -65,6 +65,7 @@ class ProxyServer(BaseServer):
 		ssh_user: DF.Data | None
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		team: DF.Link | None
+		tls_certificate_renewal_failed: DF.Check
 		virtual_machine: DF.Link | None
 		wireguard_interface_id: DF.Data | None
 		wireguard_network: DF.Data | None

@@ -133,7 +133,8 @@ func (s *Session) GenerateMultipartUploadLink(filePath string) (*MultipartUpload
 		},
 		bufferPool: sync.Pool{
 			New: func() interface{} {
-				return make([]byte, 32*1024) // 32KB buffer
+				buf := make([]byte, 32*1024) // 32KB buffer
+				return &buf
 			},
 		},
 	}
@@ -224,13 +225,13 @@ func (m *MultipartUpload) uploadPart(partNumber int, start, end int64) (string, 
 
 	go func() {
 		defer pw.Close()
-		buf := m.bufferPool.Get().([]byte)
-		defer m.bufferPool.Put(&buf)
+		bufPtr := m.bufferPool.Get().(*[]byte)
+		defer m.bufferPool.Put(bufPtr)
 
 		_, err := io.CopyBuffer(pw, &progressTracker{
 			Reader: io.LimitReader(file, end-start+1),
 			size:   &m.UploadedSize,
-		}, buf)
+		}, *bufPtr)
 		if err != nil {
 			pw.CloseWithError(err)
 		}

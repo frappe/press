@@ -61,5 +61,18 @@
   "timeline": 0,
   "two_factor_auth": 0,
   "view_switcher": 0
+ },
+ {
+  "desk_access": 1,
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Role",
+  "home_page": null,
+  "is_custom": 0,
+  "modified": "2025-08-20 19:55:50.325493",
+  "name": "Press Marketplace Manager",
+  "restrict_to_domain": null,
+  "role_name": "Press Marketplace Manager",
+  "two_factor_auth": 0
  }
 ]

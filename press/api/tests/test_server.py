@@ -69,6 +69,10 @@ def unavailable_check_machine_availability(self: Cluster, machine_type: str):
 
 def successful_sync(self: VirtualMachine):
 	self.status = "Running"
+	if not self.volumes:
+		self.append(
+			"volumes", {"volume_id": "vol-123456", "size": 20, "volume_type": "gp2", "device": "/dev/sda1"}
+		)
 	self.save()
 	self.update_servers()
 
