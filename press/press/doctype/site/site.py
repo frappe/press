@@ -2035,8 +2035,19 @@ class Site(Document, TagHelpers):
 				self.status = "Active"
 				self.save()
 
+	def is_responsive(self):
+		try:
+			response = self.ping()
+			if response.status_code != requests.codes.ok:
+				return False
+			if response.json().get("message") != "pong":
+				return False
+			return True
+		except Exception:
+			return False
+
 	def ping(self):
-		return requests.get(f"https://{self.name}/api/method/ping")
+		return requests.get(f"https://{self.name}/api/method/ping", timeout=5)
 
 	def _set_configuration(self, config: list[dict]):
 		"""Similar to _update_configuration but will replace full configuration at once
@@ -2341,7 +2352,8 @@ class Site(Document, TagHelpers):
 		log_site_activity(self.name, "Activate Site")
 		if self.status == "Suspended":
 			self.reset_disk_usage_exceeded_status()
-		self.status = "Active"
+		# If site was broken, check if it's responsive before marking it as active
+		self.status = "Broken" if (self.status == "Broken" and not self.is_responsive()) else "Active"
 		self.update_site_config({"maintenance_mode": 0})
 		self.update_site_status_on_proxy("activated")
 		self.reactivate_app_subscriptions()
