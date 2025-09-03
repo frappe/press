@@ -240,6 +240,16 @@ class SiteBackup(Document):
 				frappe.get_doc("Site", self.site), reference_doctype=self.doctype, reference_name=self.name
 			)
 
+		try:
+			if (
+				not self.physical
+				and self.has_value_changed("status")
+				and frappe.db.get_value("Agent Job", self.job, "status") == "Failure"
+			):
+				self.autocorrect_bench_permissions()
+		except Exception as e:
+			frappe.throw("Failed to correct bench permissions", {str(e)})
+
 	def _rollback_db_directory_permissions(self):
 		if not self.physical:
 			return
@@ -345,6 +355,7 @@ class SiteBackup(Document):
 		"[Errno 13]: Permission denied".
 		"""
 <<<<<<< HEAD
+<<<<<<< HEAD
 		job = frappe.db.get_value(
 			"Agent Job", self.job, filters={"status": "Failure"}, fields=["bench", "output"]
 		)
@@ -357,13 +368,24 @@ class SiteBackup(Document):
 
 		if job and re.search(r"\b[Errno 13] Permission denied\b", str(job)):
 >>>>>>> 5dd2ed67a (fix(site-backup): Badly tested code)
+=======
+		job = frappe.db.get_value(
+			"Agent Job", self.job, ["bench", "output"], {"status": "Failure"}, as_dict=True
+		)
+		import re
+
+		if job and re.search(r"\b[Errno 13] Permission denied\b", job.output):
+>>>>>>> e587999da (fix(error): Use frappe.log_error)
 			try:
 				bench = frappe.get_doc("Bench", job.bench)
 				bench.correct_bench_permissions()
-				frappe.logger().info(f"Bench permissions corrected for backup {self.name}")
 				return True
-			except Exception as e:
-				frappe.logger().info("Failed to correct bench permissions.", {str(e)})
+			except Exception:
+				frappe.log_error(
+					"Failed to correct bench permissions.",
+					reference_doctype=self.doctype,
+					reference_name=self.name,
+				)
 				return False
 <<<<<<< HEAD
 		return True
