@@ -464,30 +464,30 @@ def _parse_datetime_in_metrics(timestamp: float, timezone: str) -> str:
 	return str(datetime.fromtimestamp(timestamp, tz=pytz_timezone(timezone)))
 
 
-def _get_cadvisor_data(promql_query: str, benches: list[str], timezone: str, timespan: int, timegrain: int):
+def _get_cadvisor_data(promql_query: str, timezone: str, timespan: int, timegrain: int):
 	end = datetime.now(pytz_timezone(timezone))
 	start = frappe.utils.add_to_date(end, seconds=-timespan)
 	datasets = []
 	labels = []
 
-	for idx, bench in enumerate(benches):
-		datasets.append({"name": bench, "values": []})
+	query = {
+		"query": promql_query,
+		"start": start.timestamp(),
+		"end": end.timestamp(),
+		"step": f"{timegrain}s",
+	}
 
-		query = {
-			"query": promql_query.format(bench),
-			"start": start.timestamp(),
-			"end": end.timestamp(),
-			"step": f"{timegrain}s",
-		}
+	result = _query_prometheus(query)["data"]["result"]
 
-		result = _query_prometheus(query)["data"]["result"]
-		if result:
-			metrics = result[0]["values"]
+	if not result:
+		return None
 
-			for metric in metrics:
-				datasets[idx]["values"].append(float(metric[1]))
+	for res in result:
+		datasets.append(
+			{"name": res["metric"]["name"], "values": [float(value[1]) for value in res["values"]]}
+		)
 
-	for metric in metrics:
+	for metric in res:
 		labels.append(_parse_datetime_in_metrics(metric[0], timezone))
 
 	return datasets, labels
@@ -500,11 +500,11 @@ def get_memory_usage(
 	benches = (
 		frappe.get_all("Bench", {"status": "Active", "group": group}, pluck="name") if group else [bench]
 	)
+	benches = "|".join(benches)
+
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
-	promql_query = (
-		'(avg_over_time(container_memory_usage_bytes{job="cadvisor", name="{0}", }[5m]) / 1024 / 1024 / 1024)'
-	)
-	datasets, labels = _get_cadvisor_data(promql_query, benches, timezone, timespan, timegrain)
+	promql_query = f'(avg_over_time(container_memory_usage_bytes{{job="cadvisor", name=~"{benches}"}}[5m]) / 1024 / 1024 / 1024)'
+	datasets, labels = _get_cadvisor_data(promql_query, timezone, timespan, timegrain)
 	return {"memory": {"datasets": datasets, "labels": labels}}
 
 
@@ -513,9 +513,12 @@ def get_cpu_usage(timezone: str, group: str | None = None, bench: str | None = N
 	benches = (
 		frappe.get_all("Bench", {"status": "Active", "group": group}, pluck="name") if group else [bench]
 	)
+	benches = "|".join(benches)
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
-	promql_query = 'sum by (name) ( rate(container_cpu_usage_seconds_total{job="cadvisor", name=~"{0}"}[5m]))'
-	datasets, labels = _get_cadvisor_data(promql_query, benches, timezone, timespan, timegrain)
+	promql_query = (
+		f'sum by (name) ( rate(container_cpu_usage_seconds_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
+	)
+	datasets, labels = _get_cadvisor_data(promql_query, timezone, timespan, timegrain)
 	return {"cpu": {"datasets": datasets, "labels": labels}}
 
 
