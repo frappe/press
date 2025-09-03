@@ -243,6 +243,19 @@ export default {
 				},
 			},
 			{
+				label: 'Bench Group Analytics',
+				icon: icon('bar-chart-2'),
+				condition: (server) => server.doc?.status !== 'Archived',
+				route: 'bench-group-analytics',
+				type: 'Component',
+				component: defineAsyncComponent(
+					() => import('../components/server/ReleaseGroupCharts.vue'),
+				),
+				props: (server) => {
+					return { serverName: server.doc.name };
+				},
+			},
+			{
 				label: 'Sites',
 				icon: icon(LucideAppWindow),
 				condition: (server) => server.doc?.status !== 'Archived',
