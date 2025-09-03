@@ -22,7 +22,7 @@ import type {
 	List,
 	RouteDetail,
 	Row,
-	Tab,
+	Tab
 } from './common/types';
 import { getLogsTab } from './tabs/site/logs';
 import { getPatchesTab } from './common/patches';
@@ -84,7 +84,7 @@ function getTabs() {
 		getJobsTab('Bench'),
 		getProcessesTab(),
 		getLogsTab(false),
-		getPatchesTab(true),
+		getPatchesTab(true)
 	] satisfies Tab[] as Tab[];
 }
 
@@ -302,7 +302,6 @@ export function getProcessesTab() {
 		type: 'list',
 		list: {
 			resource({ documentResource: res }) {
-				console.log(res.name)
 				return {
 					params: {
 						name: res.name
