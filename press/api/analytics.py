@@ -465,46 +465,56 @@ def _parse_datetime_in_metrics(timestamp: float, timezone: str) -> str:
 
 
 def get_cadvisor_memory_usage(
-	bench, timezone: str, timespan: int, timegrain: int
+	benches: list[str], timezone: str, timespan: int, timegrain: int
 ) -> dict[str, list[MetricType]]:
 	end = datetime.now(pytz_timezone(timezone))
 	start = frappe.utils.add_to_date(end, seconds=-timespan)
+	datasets = []
+	labels = []
 
-	promql_query = (
-		f"(avg_over_time(container_memory_usage_bytes{{"
-		f'job="cadvisor", '
-		f'name="{bench}", '
-		f"}}[5m]) / 1024 / 1024 / 1024)"
-	)
+	for idx, bench in enumerate(benches):
+		datasets.append({"name": bench, "values": []})
 
-	query = {
-		"query": promql_query,
-		"start": start.timestamp(),
-		"end": end.timestamp(),
-		"step": f"{timegrain}s",
-	}
+		promql_query = (
+			f"(avg_over_time(container_memory_usage_bytes{{"
+			f'job="cadvisor", '
+			f'name="{bench}", '
+			f"}}[5m]) / 1024 / 1024 / 1024)"
+		)
 
-	result = _query_prometheus(query)["data"]["result"]
-	if result:
-		metrics = result[0]["values"]
-		return [
-			{"date": _parse_datetime_in_metrics(metric[0], timezone), "value": float(metric[1])}
-			for metric in metrics
-		]
+		query = {
+			"query": promql_query,
+			"start": start.timestamp(),
+			"end": end.timestamp(),
+			"step": f"{timegrain}s",
+		}
 
-	return [{}]
+		result = _query_prometheus(query)["data"]["result"]
+		if result:
+			metrics = result[0]["values"]
+
+			for metric in metrics:
+				datasets[idx]["values"].append(float(metric[1]))
+
+	for metric in metrics:
+		labels.append(_parse_datetime_in_metrics(metric[0], timezone))
+
+	return datasets, labels
 
 
 @frappe.whitelist()
 def cadvisor(
-	bench: str,
 	timezone: str,
+	group: str | None = None,
+	bench: str | None = None,
 	duration: str = "24h",
 ) -> dict[str, list[MetricType]]:
+	benches = (
+		frappe.get_all("Bench", {"status": "Active", "group": group}, pluck="name") if group else [bench]
+	)
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
-	return {
-		"memory": get_cadvisor_memory_usage(bench, timezone, timespan, timegrain),
-	}
+	datasets, labels = get_cadvisor_memory_usage(benches, timezone, timespan, timegrain)
+	return {"memory": {"datasets": datasets, "labels": labels}}
 
 
 @frappe.whitelist()
