@@ -10,6 +10,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob, process_job_updates
+from press.press.doctype.bench.test_bench import create_test_bench
 from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
 from press.press.doctype.site.test_site import create_test_site
 
@@ -233,3 +234,12 @@ class TestSiteBackup(FrappeTestCase):
 		self.assertTrue(self.site_backup.remote_public_file)
 		self.assertTrue(self.site_backup.remote_private_file)
 		self.assertTrue(self.site_backup.remote_config_file)
+
+	def test_autocorrect_bench_directory_permissions(self):
+		bench = create_test_bench()
+		self.job.db_set("status", "Failure")
+		self.job.db_set("output", "[Errno 13] Permission denied")
+		self.job.db_set("bench", bench.name)
+		sb = frappe.get_last_doc("Site Backup")
+		result = sb.autocorrect_bench_permissions()
+		self.assertEqual(result, False)
