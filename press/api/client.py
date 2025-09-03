@@ -15,7 +15,6 @@ from frappe.utils import cstr
 from pypika.queries import QueryBuilder
 
 from press.exceptions import TeamHeaderNotInRequestError
-from press.utils import has_role
 
 if typing.TYPE_CHECKING:
 	from frappe.model.meta import Meta
@@ -85,12 +84,9 @@ ALLOWED_DOCTYPES = [
 	"Partner Lead Type",
 	"Lead Followup",
 	"Partner Consent",
-]
-
-ALLOWED_DOCTYPES_FOR_SUPPORT = [
-	"Site",
-	"Bench",
-	"Release Group",
+	"Account Request",
+	"Server Snapshot",
+	"Server Snapshot Recovery",
 ]
 
 whitelisted_methods = set()
@@ -123,8 +119,7 @@ def get_list(
 		frappe.throw("parenttype and parent are required to get child records")
 
 	apply_team_filter = not (
-		filters.get("skip_team_filter_for_system_user_and_support_agent")
-		and (frappe.local.system_user() or has_role("Press Support Agent"))
+		filters.get("skip_team_filter_for_system_user_and_support_agent") and (frappe.local.system_user())
 	)
 	if apply_team_filter and meta.has_field("team"):
 		valid_filters.team = frappe.local.team().name
@@ -218,7 +213,7 @@ def get(doctype, name):
 		raise
 
 	if (
-		not (frappe.local.system_user() or has_role("Press Support Agent"))
+		not (frappe.local.system_user())
 		and frappe.get_meta(doctype).has_field("team")
 		and doc.team != frappe.local.team().name
 	):
@@ -363,9 +358,6 @@ def search_link(
 
 def check_document_access(doctype: str, name: str):
 	if frappe.local.system_user():
-		return
-
-	if has_role("Press Support Agent") and doctype in ALLOWED_DOCTYPES_FOR_SUPPORT:
 		return
 
 	team = ""

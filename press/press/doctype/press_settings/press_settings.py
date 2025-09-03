@@ -69,6 +69,7 @@ class PressSettings(Document):
 		enable_app_grouping: DF.Check
 		enable_email_pre_verification: DF.Check
 		enable_google_oauth: DF.Check
+		enable_server_snapshot_recovery: DF.Check
 		enable_site_pooling: DF.Check
 		enable_spam_check: DF.Check
 		enforce_storage_limits: DF.Check
@@ -80,6 +81,7 @@ class PressSettings(Document):
 		erpnext_group: DF.Link | None
 		erpnext_plan: DF.Link | None
 		erpnext_url: DF.Data | None
+		execute_incident_action: DF.Check
 		frappe_url: DF.Data | None
 		frappeio_api_key: DF.Data | None
 		frappeio_api_secret: DF.Password | None

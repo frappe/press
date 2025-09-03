@@ -41,7 +41,6 @@ from press.utils import (
 	get_current_team,
 	get_frappe_backups,
 	get_last_doc,
-	has_role,
 	log_error,
 	unique,
 )
@@ -96,7 +95,7 @@ def protected(doctypes):
 		for doctype in doctypes:
 			owner = frappe.db.get_value(doctype, name, "team")
 
-			if owner == team or has_role("Press Support Agent"):
+			if owner == team:
 				return wrapped(*args, **kwargs)
 
 		frappe.throw("Not Permitted", frappe.PermissionError)
@@ -106,8 +105,8 @@ def protected(doctypes):
 
 
 def get_protected_doctype_name(args: list, kwargs: dict, doctypes: list[str]):
-	# 1. Name from kwargs["name"]
-	if name := kwargs.get("name"):
+	# 1. Name from kwargs["name"] or kwargs["doc_name"]
+	if name := (kwargs.get("name") or kwargs.get("doc_name")):
 		return name
 
 	# 2. Name from first value in filters

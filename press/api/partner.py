@@ -102,7 +102,7 @@ def get_partner_name(partner_email):
 @frappe.whitelist()
 def transfer_credits(amount, customer, partner):
 	# partner discount map
-	DISCOUNT_MAP = {"Entry": 0, "Bronze": 0.05, "Silver": 0.1, "Gold": 0.15}
+	DISCOUNT_MAP = {"Entry": 0, "Emerging": 0.10, "Bronze": 0.10, "Silver": 0.15, "Gold": 0.20}
 
 	amt = frappe.utils.flt(amount)
 	partner_doc = frappe.get_doc("Team", partner)

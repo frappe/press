@@ -111,7 +111,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-26 15:51:19.122128",
+ "modified": "2025-08-28 23:13:02.340747",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Role",
@@ -143,18 +143,16 @@
    "write": 1
   },
   {
-   "create": 1,
-   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
    "report": 1,
    "role": "Press Member",
-   "share": 1,
-   "write": 1
+   "share": 1
   }
  ],
+ "row_format": "Dynamic",
  "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",

@@ -345,17 +345,24 @@ function calculateNextTier(tier) {
 		Gold: 575000,
 		Silver: 230000,
 		Bronze: 57500,
+		Emerging: 30000,
 	};
 	const target_usd = {
 		Gold: 6900,
 		Silver: 2875,
 		Bronze: 690,
+		Emerging: 350,
 	};
 
 	const current_tier = partnerDetails.data?.partner_type;
 	let next_tier = '';
 	switch (current_tier) {
 		case 'Entry':
+			next_tier = 'Emerging';
+			nextTierTarget.value =
+				team.doc.currency === 'INR' ? target_inr.Emerging : target_usd.Emerging;
+			break;
+		case 'Emerging':
 			next_tier = 'Bronze';
 			nextTierTarget.value =
 				team.doc.currency === 'INR' ? target_inr.Bronze : target_usd.Bronze;

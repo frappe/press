@@ -317,6 +317,34 @@ frappe.ui.form.on('Server', {
 				},
 				__('Actions'),
 			);
+
+			frm.add_custom_button(
+				__('Snapshot Both Servers'),
+				() => {
+					const dialog = new frappe.ui.Dialog({
+						title: __('Snapshot Both Servers'),
+						fields: [
+							{
+								fieldtype: 'Check',
+								label: 'Consistent Snapshot',
+								description:
+									'This will stop the running services during snapshot creation.',
+								fieldname: 'consistent',
+								default: 1,
+							},
+						],
+					});
+
+					dialog.set_primary_action(__('Submit'), (args) => {
+						frm.call('create_snapshot', args).then(() => {
+							dialog.hide();
+							frm.refresh();
+						});
+					});
+					dialog.show();
+				},
+				__('Actions'),
+			);
 		}
 	},
 

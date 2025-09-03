@@ -25,6 +25,10 @@ class InsufficientSpaceOnServer(ValidationError):
 	pass
 
 
+class ImageNotFoundInRegistry(ValidationError):
+	pass
+
+
 class VolumeResizeLimitError(ValidationError):
 	pass
 
