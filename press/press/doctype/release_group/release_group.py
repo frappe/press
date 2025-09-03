@@ -950,10 +950,11 @@ class ReleaseGroup(Document, TagHelpers):
 		)
 
 	@dashboard_whitelist()
-	def generate_certificate(self):
+	def generate_certificate(self, user=None):
+		user = user if user else frappe.session.user
 		ssh_key = frappe.get_all(
 			"User SSH Key",
-			{"user": frappe.session.user, "is_default": True},
+			{"user": user, "is_default": True},
 			pluck="name",
 			limit=1,
 		)
@@ -969,23 +970,22 @@ class ReleaseGroup(Document, TagHelpers):
 				"doctype": "SSH Certificate",
 				"certificate_type": "User",
 				"group": self.name,
-				"user": frappe.session.user,
+				"user": user,
 				"user_ssh_key": ssh_key[0],
 				"validity": "6h",
 			}
 		).insert()
 
 	@dashboard_whitelist()
-	def get_certificate(self):
-		user_ssh_key = frappe.db.get_all(
-			"User SSH Key", {"user": frappe.session.user, "is_default": True}, pluck="name"
-		)
+	def get_certificate(self, user=None):
+		user = user if user else frappe.session.user
+		user_ssh_key = frappe.db.get_all("User SSH Key", {"user": user, "is_default": True}, pluck="name")
 		if not len(user_ssh_key):
 			return False
 		certificates = frappe.db.get_all(
 			"SSH Certificate",
 			{
-				"user": frappe.session.user,
+				"user": user,
 				"valid_until": [">", frappe.utils.now()],
 				"group": self.name,
 				"user_ssh_key": user_ssh_key[0],
