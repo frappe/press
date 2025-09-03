@@ -4,7 +4,7 @@
 			<NumberChart
 				:config="{
 					title: 'Current Tier',
-					value: partnerDetails.data?.partner_type,
+					value: partnerDetails.data?.partner_type || '',
 				}"
 				class="border rounded-md"
 			/>

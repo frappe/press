@@ -1,174 +1,187 @@
 <template>
-	<div v-if="lead">
-		<div class="flex flex-col gap-5 overflow-y-auto px-60 py-6">
-			<div class="flex justify-between">
-				<div class="flex gap-3">
-					<div>
-						<h1 class="text-3xl font-semibold">
-							{{ lead?.organization_name }}
-						</h1>
+	<div>
+		<div
+			v-if="
+				lead && (lead.partner_team == $team.doc.name || $team.doc.is_desk_user)
+			"
+		>
+			<div class="flex flex-col gap-5 overflow-y-auto px-60 py-6">
+				<div class="flex justify-between">
+					<div class="flex gap-3">
+						<div>
+							<h1 class="text-3xl font-semibold">
+								{{ lead?.organization_name }}
+							</h1>
+						</div>
+						<div>
+							<Badge
+								variant="subtle"
+								:theme="themeMap[lead?.status]"
+								size="lg"
+								:label="lead?.status"
+							/>
+						</div>
 					</div>
-					<div>
-						<Badge
-							variant="subtle"
-							:theme="themeMap[lead?.status]"
-							size="lg"
-							:label="lead?.status"
-						/>
+					<div class="shrink-0">
+						<Dropdown :options="statusOptions">
+							<template #default="{ open }">
+								<Button :label="lead?.status || 'Status'" variant="solid">
+									<template #suffix>
+										<FeatherIcon
+											:name="open ? 'chevron-up' : 'chevron-down'"
+											class="h-4"
+										/>
+									</template>
+								</Button>
+							</template>
+						</Dropdown>
 					</div>
 				</div>
-				<div class="shrink-0">
-					<Dropdown :options="statusOptions">
-						<template #default="{ open }">
-							<Button :label="lead?.status || 'Status'" variant="solid">
-								<template #suffix>
-									<FeatherIcon
-										:name="open ? 'chevron-up' : 'chevron-down'"
-										class="h-4"
-									/>
-								</template>
+				<div class="rounded-lg text-base text-gray-900 border">
+					<div class="p-4">
+						<div class="flex items-center justify-between pb-2">
+							<div class="font-semibold text-xl">Company Information</div>
+							<Button
+								variant="subtle"
+								@click="
+									() => {
+										showLeadDetailsDialog = true;
+									}
+								"
+							>
+								Edit
 							</Button>
-						</template>
-					</Dropdown>
-				</div>
-			</div>
-			<div class="rounded-lg text-base text-gray-900 border">
-				<div class="p-4">
-					<div class="flex items-center justify-between pb-2">
-						<div class="font-semibold text-xl">Company Information</div>
-						<Button
-							variant="subtle"
-							@click="
-								() => {
-									showLeadDetailsDialog = true;
-								}
-							"
-						>
-							Edit
-						</Button>
-					</div>
-					<div class="my-1 h-px bg-gray-100" />
-					<div class="pt-2">
-						<div class="grid grid-cols-2 gap-4">
-							<div v-for="item in company_info" class="flex-1">
-								<div class="text-sm text-gray-600">
-									{{ item.label }}
-								</div>
-								<div class="text-lg font-medium py-2">
-									{{ item.value }}
-								</div>
-							</div>
 						</div>
-					</div>
-				</div>
-			</div>
-
-			<div class="rounded-lg text-base text-gray-900 border">
-				<div class="p-4">
-					<div class="flex items-center justify-between pb-2">
-						<div class="font-semibold text-xl">Contact Info</div>
-					</div>
-					<div class="my-1 h-px bg-gray-100" />
-					<div class="pt-2">
-						<div class="grid grid-cols-2 gap-4">
-							<div v-for="item in contact_info" class="flex-1">
-								<div class="text-sm text-gray-600">
-									{{ item.label }}
-								</div>
-								<div class="text-lg font-medium py-2">
-									{{ item.value }}
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<div class="rounded-lg text-base text-gray-900 border">
-				<div class="p-4">
-					<div class="flex items-center justify-between pb-2">
-						<div class="font-semibold text-xl">Deal Info</div>
-					</div>
-					<div class="my-1 h-px bg-gray-100" />
-					<div class="pt-2">
-						<div class="grid grid-cols-2 gap-4">
-							<div v-for="item in deal_info" class="flex-1">
-								<div class="text-sm text-gray-600">
-									{{ item.label }}
-								</div>
-								<div v-if="item.label === 'Probability'" class="py-1">
-									<Badge
-										variant="outline"
-										:theme="probabilityTheme[item.value]"
-										size="lg"
-										:label="item.value"
-									/>
-								</div>
-								<div v-else class="text-lg font-medium py-2">
-									{{ item.value }}
-								</div>
-							</div>
-						</div>
-						<!-- <div class="my-1 h-px bg-gray-100" /> -->
+						<div class="my-1 h-px bg-gray-100" />
 						<div class="pt-2">
-							<div class="text-sm text-gray-600">Requirement</div>
-							<div class="text-base leading-6 font-normal py-2">
-								{{ lead?.requirement }}
+							<div class="grid grid-cols-2 gap-4">
+								<div v-for="item in company_info" class="flex-1">
+									<div class="text-sm text-gray-600">
+										{{ item.label }}
+									</div>
+									<div class="text-lg font-medium py-2">
+										{{ item.value }}
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="rounded-lg text-base text-gray-900 border">
+					<div class="p-4">
+						<div class="flex items-center justify-between pb-2">
+							<div class="font-semibold text-xl">Contact Info</div>
+						</div>
+						<div class="my-1 h-px bg-gray-100" />
+						<div class="pt-2">
+							<div class="grid grid-cols-2 gap-4">
+								<div v-for="item in contact_info" class="flex-1">
+									<div class="text-sm text-gray-600">
+										{{ item.label }}
+									</div>
+									<div class="text-lg font-medium py-2">
+										{{ item.value }}
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="rounded-lg text-base text-gray-900 border">
+					<div class="p-4">
+						<div class="flex items-center justify-between pb-2">
+							<div class="font-semibold text-xl">Deal Info</div>
+						</div>
+						<div class="my-1 h-px bg-gray-100" />
+						<div class="pt-2">
+							<div class="grid grid-cols-2 gap-4">
+								<div v-for="item in deal_info" class="flex-1">
+									<div class="text-sm text-gray-600">
+										{{ item.label }}
+									</div>
+									<div v-if="item.label === 'Probability'" class="py-1">
+										<Badge
+											variant="outline"
+											:theme="probabilityTheme[item.value]"
+											size="lg"
+											:label="item.value"
+										/>
+									</div>
+									<div v-else class="text-lg font-medium py-2">
+										{{ item.value }}
+									</div>
+								</div>
+							</div>
+							<!-- <div class="my-1 h-px bg-gray-100" /> -->
+							<div class="pt-2">
+								<div class="text-sm text-gray-600">Requirement</div>
+								<div class="text-base leading-6 font-normal py-2">
+									{{ lead?.requirement }}
+								</div>
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
+			<LeadDetailsDialog
+				v-if="showLeadDetailsDialog"
+				v-model="showLeadDetailsDialog"
+				@success="
+					() => {
+						$resources.lead.reload();
+						showLeadDetailsDialog = false;
+					}
+				"
+			/>
+			<UpdateEngagementStageDialog
+				v-if="showUpdateEngagementStageDialog"
+				v-model="showUpdateEngagementStageDialog"
+				:lead_id="lead.name"
+				@update="
+					() => {
+						$resources.lead.reload();
+						showUpdateEngagementStageDialog = false;
+					}
+				"
+			/>
+			<UpdateWonDialog
+				v-if="showUpdateWonDialog"
+				v-model="showUpdateWonDialog"
+				:lead_id="lead.name"
+				@update="
+					() => {
+						$resources.lead.reload();
+						showUpdateWonDialog = false;
+					}
+				"
+			/>
+			<UpdateLostDialog
+				v-if="showUpdateLostDialog"
+				v-model="showUpdateLostDialog"
+				:lead_id="lead.name"
+				@update="
+					() => {
+						$resources.lead.reload();
+						showUpdateLostDialog = false;
+					}
+				"
+			/>
+			<ChangePartnerDialog
+				v-if="showChangePartnerDialog"
+				v-model="showChangePartnerDialog"
+				:lead_id="lead.name"
+				@update="updatePartner()"
+			/>
 		</div>
-		<LeadDetailsDialog
-			v-if="showLeadDetailsDialog"
-			v-model="showLeadDetailsDialog"
-			@success="
-				() => {
-					$resources.lead.reload();
-					showLeadDetailsDialog = false;
-				}
-			"
-		/>
-		<UpdateEngagementStageDialog
-			v-if="showUpdateEngagementStageDialog"
-			v-model="showUpdateEngagementStageDialog"
-			:lead_id="lead.name"
-			@update="
-				() => {
-					$resources.lead.reload();
-					showUpdateEngagementStageDialog = false;
-				}
-			"
-		/>
-		<UpdateWonDialog
-			v-if="showUpdateWonDialog"
-			v-model="showUpdateWonDialog"
-			:lead_id="lead.name"
-			@update="
-				() => {
-					$resources.lead.reload();
-					showUpdateWonDialog = false;
-				}
-			"
-		/>
-		<UpdateLostDialog
-			v-if="showUpdateLostDialog"
-			v-model="showUpdateLostDialog"
-			:lead_id="lead.name"
-			@update="
-				() => {
-					$resources.lead.reload();
-					showUpdateLostDialog = false;
-				}
-			"
-		/>
-		<ChangePartnerDialog
-			v-if="showChangePartnerDialog"
-			v-model="showChangePartnerDialog"
-			:lead_id="lead.name"
-			@update="updatePartner()"
-		/>
+		<div
+			v-else
+			class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
+		>
+			<lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
+			<ErrorMessage message="You aren't permitted to view the this page" />
+		</div>
 	</div>
 </template>
 <script>
@@ -180,7 +193,6 @@ import DropdownItem from '../billing/DropdownItem.vue';
 import UpdateEngagementStageDialog from './UpdateEngagementStageDialog.vue';
 import UpdateLostDialog from './UpdateLostDialog.vue';
 import ChangePartnerDialog from './ChangePartnerDialog.vue';
-import router from '../../router';
 export default {
 	name: 'PartnerLeadOverview',
 	components: {
