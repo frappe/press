@@ -487,7 +487,7 @@ def _get_cadvisor_data(promql_query: str, timezone: str, timespan: int, timegrai
 			{"name": res["metric"]["name"], "values": [float(value[1]) for value in res["values"]]}
 		)
 
-	for metric in res:
+	for metric in res["values"]:
 		labels.append(_parse_datetime_in_metrics(metric[0], timezone))
 
 	return datasets, labels
