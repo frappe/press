@@ -225,6 +225,7 @@ class VirtualDiskSnapshot(Document):
 		availability_zone: str,
 		iops: int = 3000,
 		throughput: int | None = None,
+		size: int | None = None,
 		volume_initialization_rate: int | None = None,
 	) -> str:
 		self.sync()
@@ -234,10 +235,15 @@ class VirtualDiskSnapshot(Document):
 			throughput = 125
 		if volume_initialization_rate is None:
 			volume_initialization_rate = 100
+		if size is None:
+			size = 0
+
+		size = max(self.size, size)  # Sanity
 		response = self.client.create_volume(
 			SnapshotId=self.snapshot_id,
 			AvailabilityZone=availability_zone,
 			VolumeType="gp3",
+			Size=size,
 			TagSpecifications=[
 				{
 					"ResourceType": "volume",

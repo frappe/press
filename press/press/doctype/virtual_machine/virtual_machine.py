@@ -19,6 +19,7 @@ from frappe.utils.password import get_decrypted_password
 from hcloud import APIException, Client
 from hcloud.images import Image
 from hcloud.servers.domain import ServerCreatePublicNetwork
+from oci import pagination as oci_pagination
 from oci.core import BlockstorageClient, ComputeClient, VirtualNetworkClient
 from oci.core.models import (
 	CreateBootVolumeBackupDetails,
@@ -45,6 +46,7 @@ if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.virtual_machine_migration.virtual_machine_migration import (
 		VirtualMachineMigration,
 	)
+	from press.press.doctype.server.server import Server
 	from press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot import VirtualDiskSnapshot
 
 
@@ -71,7 +73,6 @@ class VirtualMachine(Document):
 		)
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
-		auto_attach_data_disk_snapshot: DF.Check
 		availability_zone: DF.Data
 		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner"]
 		cluster: DF.Link
@@ -204,24 +205,6 @@ class VirtualMachine(Document):
 		if self.has_value_changed("disk_size") and self.should_bill_addon_storage():
 			self.update_subscription_for_addon_storage()
 
-		if (
-			self.auto_attach_data_disk_snapshot
-			and self.has_value_changed("status")
-			and self.get_value_before_save("status") == "Pending"
-			and self.status == "Running"
-		):
-			self.auto_attach_snapshot_data_disk()
-
-	def auto_attach_snapshot_data_disk(self):
-		if self.data_disk_snapshot and self.data_disk_snapshot_attached:
-			return
-
-		if self.data_disk_snapshot_volume_id:
-			self.check_and_attach_data_disk_snapshot_volume()
-
-		if not self.data_disk_snapshot_volume_id:
-			self.create_data_disk_volume_from_snapshot()
-
 	def check_and_attach_data_disk_snapshot_volume(self):
 		if not self.data_disk_snapshot_volume_id:
 			frappe.throw("Data Disk Snapshot Volume ID is not set.")
@@ -241,13 +224,64 @@ class VirtualMachine(Document):
 		self.save()
 		return False
 
+	def ensure_no_data_disk_attached_before_attaching_snapshot_disk(self):  # noqa: C901
+		"""
+		returns status: bool
+			- True, if parent function should assume this function has did it's part
+			- False, parent function should call it again
+
+		"""
+		if (
+			not self.data_disk_snapshot  # vm doesn't have dependency on disk snapshot, so no point of dont this check
+			# These two below checks are there to prevent
+			# Any accidental call to this function
+			or self.data_disk_snapshot_volume_id  # volume from snapshot has been created
+			or self.data_disk_snapshot_attached  # data disk attached already
+		):
+			"""
+			Sanity Check
+
+			In dual disk (root + data) VMIs, we can't create the machine with the root disk only
+
+			So, once the VM spawned the first task is to detach and delete the extra disk
+			Once, that's done we can move ahead.
+
+			As it dealing with disk deletion, this check serve as a safeguard.
+
+			!!NOTE!! : Don't remove until unless we have stricter check somewhere else
+			"""
+			return
+
+		if len(self.volumes) == 0:
+			frappe.throw("Sync the VM before checking data disk for snapshot recovery")
+
+		if len(self.volumes) == 1:
+			return
+
+		# For more volumes, found out other volume ids
+		additional_volume_ids = []
+		for volume_id in self.volumes:
+			if volume_id.device in ["/dev/xvda1", "/dev/sda1"]:
+				continue
+			if volume_id.volume_id == self.data_disk_snapshot_volume_id:
+				continue
+			additional_volume_ids.append(volume_id.volume_id)
+
+		for volume_id in additional_volume_ids:
+			# Don't do syncing multiple times
+			self.delete_volume(volume_id, sync=False)
+
+		if len(additional_volume_ids):
+			self.sync()
+
 	def create_data_disk_volume_from_snapshot(self):
 		try:
+			self.ensure_no_data_disk_attached_before_attaching_snapshot_disk()
 			datadisk_snapshot: VirtualDiskSnapshot = frappe.get_doc(
 				"Virtual Disk Snapshot", self.data_disk_snapshot
 			)
 			snapshot_volume = datadisk_snapshot.create_volume(
-				availability_zone=self.availability_zone, volume_initialization_rate=300
+				availability_zone=self.availability_zone, volume_initialization_rate=300, size=self.disk_size
 			)
 			self.data_disk_snapshot_volume_id = snapshot_volume
 			self.status = "Pending"
@@ -1564,56 +1598,78 @@ class VirtualMachine(Document):
 
 	@classmethod
 	def bulk_sync_oci(cls):
-		for cluster in frappe.get_all(
-			"Virtual Machine",
-			["cluster", "cloud_provider", "max(`index`) as max_index"],
-			{
-				"status": ("not in", ("Terminated", "Draft")),
-				"cloud_provider": "OCI",
-			},
-			group_by="cluster",
-		):
-			CHUNK_SIZE = 15  # Each call will pick up ~30 machines (2 x CHUNK_SIZE)
-			# Generate closed bounds for 15 indexes at a time
-			# (1, 15), (16, 30), (31, 45), ...
-			# We might have uneven chunks because of missing indexes
-			chunks = [(ii, ii + CHUNK_SIZE - 1) for ii in range(1, cluster.max_index, CHUNK_SIZE)]
-			for start, end in chunks:
-				# Pick a random machine
-				# TODO: This probably should be a method on the Cluster
-				machines = cls._get_active_machines_within_chunk_range(
-					cluster.cloud_provider, cluster.cluster, start, end
-				)
-				if not machines:
-					# There might not be any running machines in the chunk range
-					continue
+		for cluster in frappe.get_all("Cluster", {"cloud_provider": "OCI"}, pluck="name"):
+			# pick any random non-terminated machine from the cluster
+			machines = frappe.get_all(
+				"Virtual Machine",
+				filters={
+					"status": ("not in", ("Terminated", "Draft")),
+					"cloud_provider": "OCI",
+					"cluster": cluster,
+					"instance_id": ("is", "set"),
+				},
+				pluck="name",
+				limit=1,
+			)
+			if not machines:
+				continue
+			frappe.enqueue_doc(
+				"Virtual Machine",
+				machines[0],
+				method="bulk_sync_oci_cluster",
+				queue="sync",
+				job_id=f"bulk_sync_oci:{cluster}",
+				deduplicate=True,
+				cluster=cluster,
+			)
 
+	def bulk_sync_oci_cluster(self, cluster: str):
+		cluster = frappe.get_doc("Cluster", cluster)
+		client: "ComputeClient" = self.client()
+
+		try:
+			response = oci_pagination.list_call_get_all_results(
+				client.list_instances, compartment_id=cluster.oci_tenancy
+			).data
+
+			instance_ids = frappe.get_all(
+				"Virtual Machine",
+				filters={
+					"status": ("not in", ("Terminated", "Draft")),
+					"cloud_provider": "OCI",
+					"cluster": cluster.name,
+					"instance_id": ("is", "set"),
+				},
+				pluck="instance_id",
+			)
+			instance_ids = set(instance_ids)
+			# filter out non-existing instances
+			response = [instance for instance in response if instance.id in instance_ids]
+
+			# Split into batches
+			BATCH_SIZE = 15
+			for i in range(0, len(response), BATCH_SIZE):
 				frappe.enqueue_doc(
 					"Virtual Machine",
-					machines[0].name,
-					method="bulk_sync_oci_cluster",
-					start=start,
-					end=end,
+					self.name,
+					method="bulk_sync_oci_cluster_in_batch",
 					queue="sync",
-					job_id=f"bulk_sync_oci:{cluster.cluster}:{start}-{end}",
+					job_id=f"bulk_sync_oci_batch:{cluster.name}:{i}-{i + BATCH_SIZE}",
 					deduplicate=True,
+					enqueue_after_commit=True,
+					instances=response[i : i + BATCH_SIZE],
 				)
+		except Exception:
+			log_error("Virtual Machine OCI Bulk Sync Error", cluster=cluster.name)
+			frappe.db.rollback()
 
-	def bulk_sync_oci_cluster(self, start, end):
-		cluster = frappe.get_doc("Cluster", self.cluster)
-		machines = self.__class__._get_active_machines_within_chunk_range(
-			self.cloud_provider, self.cluster, start, end
-		)
-		instance_ids = set([machine.instance_id for machine in machines])
-		response = self.client().list_instances(compartment_id=cluster.oci_tenancy).data
-		for instance in response:
-			if instance.id not in instance_ids:
-				continue
+	def bulk_sync_oci_cluster_in_batch(self, instances: list[dict]):
+		for instance in instances:
 			machine: VirtualMachine = frappe.get_doc("Virtual Machine", {"instance_id": instance.id})
 			if has_job_timeout_exceeded():
 				return
 			try:
-				machine.sync(instance)
+				machine.sync(instance=instance)
 				frappe.db.commit()  # release lock
 			except rq.timeouts.JobTimeoutException:
 				return
@@ -1777,7 +1833,7 @@ class VirtualMachine(Document):
 		return None
 
 	@frappe.whitelist()
-	def detach(self, volume_id):
+	def detach(self, volume_id, sync: bool | None = None):
 		if self.cloud_provider == "AWS EC2":
 			volume = find(self.volumes, lambda v: v.volume_id == volume_id)
 			if not volume:
@@ -1792,15 +1848,19 @@ class VirtualMachine(Document):
 				frappe.throw("Cannot detach hetzner root disk.")
 			volume = self.client().volumes.get_by_id(volume_id)
 			self.client().volumes.detach(volume)
-		self.sync()
+		if sync:
+			self.sync()
 		return True
 
 	@frappe.whitelist()
-	def delete_volume(self, volume_id):
-		if self.detach(volume_id):
+	def delete_volume(self, volume_id, sync: bool | None = None):
+		if sync is None:
+			sync = True
+		if self.detach(volume_id, sync=sync):
 			if self.cloud_provider == "AWS EC2":
 				self.wait_for_volume_to_be_available(volume_id)
 				self.client().delete_volume(VolumeId=volume_id)
+				self.add_comment("Comment", f"Volume Deleted - {volume_id}")
 			if self.cloud_provider == "OCI":
 				raise NotImplementedError
 			if self.cloud_provider == "Hetzner":
@@ -1808,7 +1868,9 @@ class VirtualMachine(Document):
 					frappe.throw("Cannot delete hetzner root disk.")
 				vol = self.client().volumes.get_by_id(volume_id)
 				self.client().volumes.delete(vol)
-		self.sync()
+
+		if sync:
+			self.sync()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")
@@ -1923,9 +1985,34 @@ def snapshot_aws_servers():
 			return
 		app_server = frappe.get_value("Server", {"virtual_machine": machine}, "name")
 		try:
-			frappe.get_doc("Server", app_server)._create_snapshot(
-				consistent=False, expire_at=frappe.utils.add_days(None, 2), free=True
-			)
+			server: "Server" = frappe.get_doc("Server", app_server)
+			servers = [
+				["Server", server.name],
+				["Database Server", server.database_server],
+			]
+			# Check if any press job is running on the server or the db server
+			is_press_job_running = False
+			for server_type, name in servers:
+				if (
+					frappe.db.count(
+						"Press Job",
+						filters={
+							"status": ("in", ["Pending", "Running"]),
+							"server_type": server_type,
+							"server": name,
+						},
+					)
+					> 0
+				):
+					is_press_job_running = True
+					break
+
+			# Also skip if the server was created within last 1 hour
+			# to avoid snapshotting a blank server which is still being setup
+			if is_press_job_running or server.creation > frappe.utils.add_to_date(None, hours=-1):
+				continue
+
+			server._create_snapshot(consistent=False, expire_at=frappe.utils.add_days(None, 2), free=True)
 			frappe.db.commit()
 		except Exception:
 			frappe.db.rollback()

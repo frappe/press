@@ -343,6 +343,27 @@ class TestIncidentInvestigator(FrappeTestCase):
 		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
 		self.assertEqual(investigator.incident, test_incident_1.name)
 
+	@patch.object(IncidentInvestigator, "after_insert", Mock())
+	def test_cluster_level_cool_off_period(self):
+		"""Two incidents on different servers in same cluster within one minute"""
+		another_server_same_cluster = create_test_server(cluster=self.server.cluster)
+
+		test_incident_1 = create_test_incident(server=self.server.name)
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+		self.assertEqual(investigator.incident, test_incident_1.name)
+
+		create_test_incident(server=another_server_same_cluster.name)
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+
+		self.assertEqual(investigator.incident, test_incident_1.name)
+
+		another_server_diff_cluster = create_test_server(cluster="Mumbai")
+
+		# Should work for other clusters
+		test_incident_2 = create_test_incident(server=another_server_diff_cluster.name)
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+		self.assertEqual(investigator.incident, test_incident_2.name)
+
 	@classmethod
 	def tearDownClass(cls):
 		frappe.db.delete("Database Server", cls.database_server.name)

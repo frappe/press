@@ -81,6 +81,7 @@ class Team(Document):
 		partner_commission: DF.Percent
 		partner_email: DF.Data | None
 		partner_referral_code: DF.Data | None
+		partner_status: DF.Literal["Active", "Inactive"]
 		partner_tier: DF.Data | None
 		partnership_date: DF.Date | None
 		payment_mode: DF.Literal["", "Card", "Prepaid Credits", "Paid By Partner"]
@@ -131,6 +132,7 @@ class Team(Document):
 		"mpesa_phone_number",
 		"mpesa_enabled",
 		"account_request",
+		"partner_status",
 	)
 
 	def get_doc(self, doc):

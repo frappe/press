@@ -355,18 +355,23 @@ class SiteBackup(Document):
 		"[Errno 13]: Permission denied".
 		"""
 		job = frappe.db.get_value(
-			"Agent Job", self.job, filters={"status": "Failure"}, fields=["bench", "output"]
+			"Agent Job", self.job, ["bench", "output"], {"status": "Failure"}, as_dict=True
 		)
-		if job and "Permission denied" in job.output:
+		import re
+
+		if job and re.search(r"\b[Errno 13] Permission denied\b", job.output):
 			try:
 				bench = frappe.get_doc("Bench", job.bench)
 				bench.correct_bench_permissions()
-				frappe.logger().info(f"Bench permissions corrected for backup {self.name}")
 				return True
-			except Exception as e:
-				frappe.logger().info("Failed to correct bench permissions.", {str(e)})
+			except Exception:
+				frappe.log_error(
+					"Failed to correct bench permissions.",
+					reference_doctype=self.doctype,
+					reference_name=self.name,
+				)
 				return False
-		return True
+		return False
 
 	@classmethod
 	def offsite_backup_exists(cls, site: str, day: datetime.date) -> bool:
