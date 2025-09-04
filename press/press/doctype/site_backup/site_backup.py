@@ -249,7 +249,7 @@ class SiteBackup(Document):
 			):
 				self.autocorrect_bench_permissions()
 		except Exception as e:
-			frappe.throw("Failed to correct bench permissions", {str(e)})
+			frappe.throw("Failed to correct bench permissions", str(e))
 
 	def _rollback_db_directory_permissions(self):
 		if not self.physical:
