@@ -216,7 +216,7 @@ def increase_storage(
 		"method": "increase_disk_size_for_server",
 		"args": {"server": name, "increment": increment},
 	}
-	response = session.post(
+	session.post(
 		"press.api.client.run_doc_method",
 		json=payload,
 		message=f"[bold green]Increasing storage for {name} by {increment}GB...",
@@ -226,13 +226,6 @@ def increase_storage(
 		f"Storage increased for server [bold blue]{name}[/bold blue] by [bold blue]{increment}[/bold blue] GB",
 		style="bold",
 	)
-
-
-app.add_typer(deploy, name="deploy")
-app.add_typer(server, name="server")
-
-if __name__ == "__main__":
-	app()
 
 
 @server.command(help="Show details about a specific plan for a server")
@@ -297,3 +290,60 @@ def choose_plan(
 	console.print(f"[bold]vCPUs:[/bold] [bold]{selected_plan.get('vcpu', '-')}")
 	console.print(f"[bold]Memory:[/bold] [bold]{selected_plan.get('memory', '-')} GB")
 	console.print(f"[bold]Disk:[/bold] [bold]{selected_plan.get('disk', '-')} GB")
+
+
+@server.command(help="Create a new server")
+def create_server(
+	ctx: typer.Context,
+	cluster: str = typer.Option(..., "--cluster", help="Cluster name"),
+	title: str = typer.Option(..., "--title", help="Server title"),
+	app_plan: str = typer.Option(..., "--app-plan", help="App server plan name"),
+	db_plan: str = typer.Option(..., "--db-plan", help="Database server plan name"),
+	auto_increase_storage: bool = typer.Option(
+		False, "--auto-increase-storage", is_flag=True, help="Auto increase storage"
+	),
+):
+	session: CloudSession = ctx.obj
+	server_payload = {
+		"cluster": cluster,
+		"title": title,
+		"app_plan": app_plan,
+		"db_plan": db_plan,
+		"auto_increase_storage": auto_increase_storage,
+	}
+	response = session.post(
+		"press.api.server.new",
+		json={"server": server_payload},
+		message=f"[bold green]Creating server '{title}' in cluster '{cluster}'...",
+	)
+	if not response or not response.get("server"):
+		typer.secho(
+			f"Failed to create server: {response.get('message', 'Unknown error') if response else 'No response from backend.'}",
+			fg="red",
+		)
+		return
+	typer.secho(f"Successfully created server: {response['server']}", fg="green")
+	if response.get("job"):
+		typer.secho(f"Job started: {response['job']}", fg="cyan")
+
+
+@server.command(help="Delete a server (archive)")
+def delete_server(
+	ctx: typer.Context,
+	name: str = typer.Option(..., "--name", help="Name of the server to delete"),
+):
+	session: CloudSession = ctx.obj
+	response = session.post(
+		"press.api.server.archive", json={"name": name}, message=f"[bold red]Archiving server '{name}'..."
+	)
+	if response and response.get("exc_type"):
+		typer.secho(f"Failed to delete server: {response.get('exception', 'Unknown error')}", fg="red")
+		return
+	typer.secho(f"Successfully deleted (archived) server: {name}", fg="green")
+
+
+app.add_typer(deploy, name="deploy")
+app.add_typer(server, name="server")
+
+if __name__ == "__main__":
+	app()
