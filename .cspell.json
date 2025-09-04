@@ -1057,6 +1057,8 @@
 		"vagrant",
 		"2.4.6",
 		"unsuspension",
+		"dcbs",
+		"probability",
 		"fcrestore",
 		"vasile",
 		"Xpai",
@@ -1083,6 +1085,16 @@
 		"mattn",
 		"sahilm",
 		"Rsya",
-		"rivo"
+		"rivo",
+		"mergify",
+		"ncdu",
+		"gtid",
+		"VMI",
+		"efi",
+		"interactjs",
+		"ocpu",
+		"NOFORK",
+		"Incase",
+		"Twillio"
 	]
 }

@@ -47,7 +47,7 @@ class ServerSnapshot(Document):
 		provider: DF.Literal["AWS EC2", "OCI"]
 		site_list: DF.JSON | None
 		status: DF.Literal["Pending", "Processing", "Failure", "Completed", "Unavailable"]
-		team: DF.Link
+		team: DF.Link | None
 		total_size_gb: DF.Int
 		traceback: DF.Text | None
 	# end: auto-generated types
@@ -462,6 +462,9 @@ class ServerSnapshot(Document):
 	def recover_sites(self, sites: list[str] | None = None):
 		if not sites:
 			sites = []
+
+		if not frappe.db.get_single_value("Press Settings", "enable_server_snapshot_recovery"):
+			frappe.throw("Server Snapshot Recovery is currently disabled. Please try again later.")
 
 		recover_record = frappe.get_doc(
 			{

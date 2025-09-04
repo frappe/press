@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
 
 import json
 import re
+import typing
 
 import frappe
 from frappe.model.document import Document
@@ -33,13 +33,38 @@ class AppReleaseDifference(Document):
 		source_release: DF.Link
 	# end: auto-generated types
 
-	dashboard_fields = ["github_diff_url", "source_hash", "destination_hash"]
+	dashboard_fields: typing.ClassVar = ["github_diff_url", "source_hash", "destination_hash"]
 
 	def validate(self):
 		if self.source_release == self.destination_release:
-			frappe.throw(
-				"Destination Release must be different from Source Release", frappe.ValidationError
-			)
+			frappe.throw("Destination Release must be different from Source Release", frappe.ValidationError)
+
+	def _get_branch_from_app_source(self, release: str) -> str | None:
+		AppRelease = frappe.qb.DocType("App Release")
+		AppSource = frappe.qb.DocType("App Source")
+
+		branch = (
+			frappe.qb.from_(AppRelease)
+			.join(AppSource)
+			.on(AppRelease.source == AppSource.name)
+			.select(AppSource.branch)
+			.where(AppRelease.name == release)
+			.run(pluck=True)
+		)
+
+		if branch:
+			return branch[0]
+
+		return None
+
+	def has_branch_changed(self) -> bool:
+		source_branch = self._get_branch_from_app_source(self.source_release)
+		destination_branch = self._get_branch_from_app_source(self.destination_release)
+
+		if source_branch and destination_branch:
+			return source_branch != destination_branch
+
+		return False
 
 	def set_deploy_type(self):
 		if self.deploy_type != "Pending":
@@ -51,7 +76,7 @@ class AppReleaseDifference(Document):
 			try:
 				github_access_token = get_access_token(source.github_installation_id)
 			except KeyError:
-				frappe.throw("Could not get access token for app source {0}".format(source.name))
+				frappe.throw(f"Could not get access token for app source {source.name}")
 		else:
 			github_access_token = frappe.get_value("Press Settings", None, "github_access_token")
 
@@ -61,9 +86,7 @@ class AppReleaseDifference(Document):
 		except Exception:
 			self.add_comment(
 				"Info",
-				"Could not get repository {0}, so assuming migrate required".format(
-					source.repository
-				),
+				f"Could not get repository {source.repository}, so assuming migrate required",
 			)
 			self.deploy_type = "Migrate"  # fallback to migrate
 			self.save()
@@ -77,6 +100,10 @@ class AppReleaseDifference(Document):
 			files = ["frappe/geo/languages.json"]
 
 		if is_migrate_needed(files):
+			self.deploy_type = "Migrate"
+
+		# We migrate if branch has changed
+		if self.has_branch_changed():
 			self.deploy_type = "Migrate"
 
 		self.files = json.dumps(files, indent=4)
