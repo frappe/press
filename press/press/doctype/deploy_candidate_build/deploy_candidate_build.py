@@ -1026,7 +1026,7 @@ class DeployCandidateBuild(Document):
 		if not response.ok:
 			return False
 
-		image_tags = response.json().get("tags")
+		image_tags = response.json().get("tags", [])
 		return self.name in image_tags
 
 	def _start_build(self):
