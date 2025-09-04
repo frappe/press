@@ -8,6 +8,7 @@
   "status",
   "hostname",
   "domain",
+  "tls_certificate_renewal_failed",
   "column_break_4",
   "provider",
   "virtual_machine",
@@ -259,15 +260,23 @@
   {
    "fieldname": "column_break_33",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "tls_certificate_renewal_failed",
+   "fieldtype": "Check",
+   "label": "TLS Certificate Renewal Failed",
+   "read_only": 1
   }
  ],
+ "grid_page_length": 50,
  "links": [
   {
    "link_doctype": "Ansible Play",
    "link_fieldname": "server"
   }
  ],
- "modified": "2023-12-13 15:09:34.499141",
+ "modified": "2025-09-02 16:44:01.317526",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Trace Server",
@@ -286,6 +295,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

@@ -35,6 +35,8 @@ class ProductTrialRequest(Document):
 		agent_job: DF.Link | None
 		cluster: DF.Link | None
 		domain: DF.Data | None
+		error: DF.Code | None
+		is_site_accessible: DF.Literal["Not Checked", "Yes", "No"]
 		is_standby_site: DF.Check
 		product_trial: DF.Link | None
 		site: DF.Link | None
@@ -120,6 +122,23 @@ class ProductTrialRequest(Document):
 		ph = getattr(frappe.local, "posthog", None)
 		with suppress(Exception):
 			ph and ph.alias(previous_id=self.account_request, distinct_id=new_alias)
+
+	def check_site_accessible(self):
+		"""
+		Checks if the site is accessible (HTTP 200, no redirects).
+		Sets self.is_site_accessible to Yes, No, or Not Checked.
+		"""
+		import requests
+
+		url = f"https://{self.domain or self.site}"
+		try:
+			response = requests.get(url, allow_redirects=False, timeout=5)
+			if response.status_code == 200:
+				self.db_set("is_site_accessible", "Yes")
+			else:
+				self.db_set({"is_site_accessible": "No"})
+		except Exception as e:
+			self.db_set({"is_site_accessible": "No", "error": str(e)})
 
 	def after_insert(self):
 		self.capture_posthog_event("product_trial_request_created")
@@ -248,6 +267,7 @@ class ProductTrialRequest(Document):
 				reference_name=self.name,
 			)
 			self.status = "Error"
+			self.error = str(e)
 			self.save()
 
 	@dashboard_whitelist()
@@ -264,7 +284,7 @@ class ProductTrialRequest(Document):
 		)
 		if status == "Success":
 			if self.status == "Site Created":
-				return {"progress": 100}
+				return {"progress": 100, "current_step": self.status}
 			if self.status == "Adding Domain":
 				return {"progress": 90, "current_step": self.status}
 			return {"progress": 80, "current_step": self.status}
@@ -331,6 +351,7 @@ class ProductTrialRequest(Document):
 			return f"https://{self.domain or self.site}{redirect_to_after_login}?sid={sid}"
 
 		sid = site.get_login_sid()
+		self.check_site_accessible()
 		return f"https://{self.domain or self.site}/desk?sid={sid}"
 
 

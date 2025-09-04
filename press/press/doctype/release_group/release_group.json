@@ -72,6 +72,7 @@
   },
   {
    "default": "0",
+   "description": "Will be deployed on all public servers",
    "fieldname": "public",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -384,7 +385,7 @@
   }
  ],
  "links": [],
- "modified": "2025-05-17 19:02:50.399380",
+ "modified": "2025-08-18 13:14:55.281010",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

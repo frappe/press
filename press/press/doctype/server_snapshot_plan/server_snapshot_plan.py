@@ -1,11 +1,10 @@
-# Copyright (c) 2021, Frappe and contributors
+# Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
 
-# import frappe
-from frappe.model.document import Document
+from press.press.doctype.site_plan.plan import Plan
 
 
-class PartnerLead(Document):
+class ServerSnapshotPlan(Plan):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -14,9 +13,11 @@ class PartnerLead(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		frappe_lead: DF.Data | None
-		site: DF.Link | None
-		team: DF.Link
+		enabled: DF.Check
+		price_inr: DF.Currency
+		price_usd: DF.Currency
+		provider: DF.Literal["AWS EC2"]
+		title: DF.Data | None
 	# end: auto-generated types
 
 	pass

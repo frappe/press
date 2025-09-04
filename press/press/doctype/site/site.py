@@ -16,7 +16,7 @@ import frappe.utils
 import pytz
 import requests
 import rq
-from frappe import _
+from frappe import _, has_permission
 from frappe.core.utils import find
 from frappe.frappeclient import FrappeClient, FrappeException
 from frappe.model.document import Document
@@ -236,6 +236,7 @@ class Site(Document, TagHelpers):
 		"signup_time",
 		"account_request",
 		"allow_physical_backup_by_user",
+		"site_usage_exceeded",
 	)
 
 	@staticmethod
@@ -320,6 +321,11 @@ class Site(Document, TagHelpers):
 		doc.server_title = server.title
 		doc.inbound_ip = self.inbound_ip
 		doc.is_dedicated_server = is_dedicated_server(self.server)
+		doc.suspension_reason = (
+			frappe.db.get_value("Site Activity", {"site": self.name, "action": "Suspend Site"}, "reason")
+			if self.status == "Suspended"
+			else None
+		)
 
 		if doc.owner == "Administrator":
 			doc.signup_by = frappe.db.get_value("Account Request", doc.account_request, "email")
@@ -383,6 +389,15 @@ class Site(Document, TagHelpers):
 			self.notify_email = frappe.db.get_value("Team", self.team, "notify_email")
 		if not self.setup_wizard_status_check_next_retry_on:
 			self.setup_wizard_status_check_next_retry_on = now_datetime()
+
+		if (
+			self.server
+			and frappe.get_value("Server", self.server, "enable_logical_replication_during_site_update")
+			and frappe.db.count("Site", {"server": self.server, "status": ("!=", "Archived")}) >= 1
+		):
+			frappe.throw(
+				"Logical replication is enabled for this server. You can only deploy a single site on the server."
+			)
 
 	def validate_site_name(self):
 		validate_subdomain(self.subdomain)
@@ -508,14 +523,16 @@ class Site(Document, TagHelpers):
 			plan = frappe.db.get_value(
 				"Site Plan",
 				self.subscription_plan,
-				["dedicated_server_plan", "price_inr", "price_usd"],
+				["dedicated_server_plan", "price_inr", "price_usd", "is_trial_plan"],
 				as_dict=True,
 			)
 			is_site_on_public_server = frappe.db.get_value("Server", self.server, "public")
 
 			# Don't allow free plan for non-system users
 			if not is_system_user():
-				is_plan_free = (plan.price_inr == 0 or plan.price_usd == 0) and not plan.dedicated_server_plan
+				is_plan_free = (plan.price_inr == 0 or plan.price_usd == 0) and not (
+					plan.dedicated_server_plan or plan.is_trial_plan
+				)
 				if is_plan_free:
 					frappe.throw("You can't select a free plan!")
 
@@ -568,7 +585,7 @@ class Site(Document, TagHelpers):
 	def capture_signup_event(self, event: str):
 		team = frappe.get_doc("Team", self.team)
 		if frappe.db.count("Site", {"team": team.name}) <= 1 and team.account_request:
-			account_request: AccountRequest = frappe.get_doc("Account Request", team.account_request)
+			account_request: "AccountRequest" = frappe.get_doc("Account Request", team.account_request)
 			if not (account_request.is_saas_signup() or account_request.invited_by_parent_team):
 				capture(event, "fc_signup", team.user)
 
@@ -2018,8 +2035,19 @@ class Site(Document, TagHelpers):
 				self.status = "Active"
 				self.save()
 
+	def is_responsive(self):
+		try:
+			response = self.ping()
+			if response.status_code != requests.codes.ok:
+				return False
+			if response.json().get("message") != "pong":
+				return False
+			return True
+		except Exception:
+			return False
+
 	def ping(self):
-		return requests.get(f"https://{self.name}/api/method/ping")
+		return requests.get(f"https://{self.name}/api/method/ping", timeout=5)
 
 	def _set_configuration(self, config: list[dict]):
 		"""Similar to _update_configuration but will replace full configuration at once
@@ -2131,14 +2159,13 @@ class Site(Document, TagHelpers):
 		# relies on self._keys_removed_in_last_update in self.validate
 		# used by https://frappecloud.com/app/marketplace-app/email_delivery_service
 		config_list: list[dict] = []
-		for key in self.configuration:
+		for row in self.configuration:
 			config = {}
-			if key.key in keys:
-				continue
-			config["key"] = key.key
-			config["value"] = key.value
-			config["type"] = key.type
-			config_list.append(config)
+			if row.key not in keys and not row.internal:
+				config["key"] = row.key
+				config["value"] = row.value
+				config["type"] = row.type
+				config_list.append(config)
 		self.update_site_config(config_list)
 
 	@frappe.whitelist()
@@ -2325,7 +2352,8 @@ class Site(Document, TagHelpers):
 		log_site_activity(self.name, "Activate Site")
 		if self.status == "Suspended":
 			self.reset_disk_usage_exceeded_status()
-		self.status = "Active"
+		# If site was broken, check if it's responsive before marking it as active
+		self.status = "Broken" if (self.status == "Broken" and not self.is_responsive()) else "Active"
 		self.update_site_config({"maintenance_mode": 0})
 		self.update_site_status_on_proxy("activated")
 		self.reactivate_app_subscriptions()
@@ -3023,7 +3051,7 @@ class Site(Document, TagHelpers):
 				"description": "Manage users and permissions for your site database",
 				"button_label": "Manage",
 				"doc_method": "dummy",
-				"condition": not self.hybrid_site,
+				"condition": not self.hybrid_site and has_permission("Site Database User"),
 			},
 			{
 				"action": "Schedule backup",
@@ -3615,7 +3643,9 @@ def process_new_site_job_update(job):  # noqa: C901
 		"Active",
 		"Broken",
 	):
-		update_product_trial_request_status_based_on_site_status(job.site, updated_status == "Active")
+		update_product_trial_request_status_based_on_site_status(
+			job.site, updated_status == "Active", job.data
+		)
 
 	# check if new bench related to a site group deploy
 	site_group_deploy = frappe.db.get_value(
@@ -3629,7 +3659,7 @@ def process_new_site_job_update(job):  # noqa: C901
 		frappe.get_doc("Site Group Deploy", site_group_deploy).update_site_group_deploy_on_process_job(job)
 
 
-def update_product_trial_request_status_based_on_site_status(site, is_site_active):
+def update_product_trial_request_status_based_on_site_status(site, is_site_active, error=None):
 	records = frappe.get_list("Product Trial Request", filters={"site": site}, fields=["name"])
 	if not records:
 		return
@@ -3640,6 +3670,7 @@ def update_product_trial_request_status_based_on_site_status(site, is_site_activ
 		product_trial_request.save(ignore_permissions=True)
 	else:
 		product_trial_request.status = "Error"
+		product_trial_request.error = error
 		product_trial_request.save(ignore_permissions=True)
 
 
@@ -3684,8 +3715,13 @@ def process_add_domain_job_update(job):
 		site.set_redirect(auto_generated_domain)
 
 	elif job.status in ("Failure", "Delivery Failure"):
-		product_trial_request.status = "Error"
-		product_trial_request.save(ignore_permissions=True)
+		# temporarily retry to avoid race condition
+		if job.status == "Failure" and int(job.retry_count) < 1:
+			job.db_set("retry_count", job.retry_count + 1)
+			job.retry_in_place()
+		else:
+			product_trial_request.status = "Error"
+			product_trial_request.save(ignore_permissions=True)
 
 
 def get_remove_step_status(job):
@@ -4016,7 +4052,7 @@ def process_create_user_job_update(job):
 		frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
 		update_product_trial_request_status_based_on_site_status(job.site, True)
 	elif job.status in ("Failure", "Delivery Failure"):
-		update_product_trial_request_status_based_on_site_status(job.site, False)
+		update_product_trial_request_status_based_on_site_status(job.site, False, job.data)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")

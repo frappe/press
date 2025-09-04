@@ -23,6 +23,7 @@ class ProductTrial(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.site.site import Site
 		from press.saas.doctype.hybrid_pool_item.hybrid_pool_item import HybridPoolItem
 		from press.saas.doctype.product_trial_app.product_trial_app import ProductTrialApp
 
@@ -96,7 +97,8 @@ class ProductTrial(Document):
 		from press.press.doctype.site.site import Site, get_plan_config
 
 		validate_subdomain(subdomain)
-		Site.exists(subdomain, domain)
+		if Site.exists(subdomain, domain):
+			frappe.throw("Site with this subdomain already exists")
 
 		site_domain = f"{subdomain}.{domain}"
 
@@ -237,9 +239,6 @@ class ProductTrial(Document):
 		)
 		if sites:
 			return sites[0]
-		if cluster and account_request:
-			# if site is not found and account request was specified, try to find a site in any cluster
-			return self.get_standby_site(None, account_request)
 		return None
 
 	def create_standby_sites_in_each_cluster(self):
@@ -248,7 +247,17 @@ class ProductTrial(Document):
 
 		clusters = self.get_available_clusters()
 		for cluster in clusters:
-			self.create_standby_sites(cluster)
+			try:
+				self.create_standby_sites(cluster)
+				frappe.db.commit()
+			except Exception as e:
+				log_error(
+					"Unable to Create Standby Sites",
+					data=e,
+					reference_doctype="Product Trial",
+					reference_name=self.name,
+				)
+				frappe.db.rollback()
 
 	def create_standby_sites(self, cluster):
 		if not self.enable_pooling:
@@ -418,7 +427,7 @@ def replenish_standby_sites():
 	"""Create standby sites for all products with pooling enabled. This is called by the scheduler."""
 	products = frappe.get_all("Product Trial", {"enable_pooling": 1}, pluck="name")
 	for product in products:
-		product = frappe.get_doc("Product Trial", product)
+		product: ProductTrial = frappe.get_doc("Product Trial", product)
 		try:
 			product.create_standby_sites_in_each_cluster()
 			frappe.db.commit()

@@ -5,12 +5,13 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "title",
   "status",
   "hostname",
   "hostname_abbreviation",
   "domain",
   "self_hosted_server_domain",
-  "title",
+  "tls_certificate_renewal_failed",
   "column_break_4",
   "cluster",
   "provider",
@@ -22,12 +23,13 @@
   "is_server_renamed",
   "is_self_hosted",
   "keep_files_on_server_in_offsite_backup",
-  "column_break_laiq",
   "public",
+  "column_break_laiq",
   "use_agent_job_callbacks",
   "is_pyspy_setup",
   "halt_agent_jobs",
   "stop_deployments",
+  "is_for_recovery",
   "billing_section",
   "team",
   "column_break_11",
@@ -54,6 +56,7 @@
   "database_server",
   "self_hosted_mariadb_server",
   "is_managed_database",
+  "enable_logical_replication_during_site_update",
   "column_break_jdiy",
   "self_hosted_mariadb_root_password",
   "managed_database_service",
@@ -97,8 +100,7 @@
    "fieldname": "ip",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "IP",
-   "set_only_once": 1
+   "label": "IP"
   },
   {
    "fieldname": "proxy_server",
@@ -116,7 +118,7 @@
    "fieldname": "agent_password",
    "fieldtype": "Password",
    "label": "Agent Password",
-   "set_only_once": 1
+   "read_only": 1
   },
   {
    "collapsible": 1,
@@ -270,7 +272,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI",
    "set_only_once": 1
   },
   {
@@ -318,7 +320,7 @@
    "label": "Staging"
   },
   {
-   "depends_on": "eval:[\"AWS EC2\", \"OCI\"].includes(doc.provider)",
+   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\"].includes(doc.provider)",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
@@ -503,6 +505,7 @@
   },
   {
    "default": "0",
+   "description": "Public release groups will be deployed here",
    "fieldname": "public",
    "fieldtype": "Check",
    "label": "Public"
@@ -613,10 +616,29 @@
    "fieldname": "keep_files_on_server_in_offsite_backup",
    "fieldtype": "Check",
    "label": "Keep Backup Files Onsite"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_for_recovery",
+   "fieldtype": "Check",
+   "label": "Is for Recovery"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_logical_replication_during_site_update",
+   "fieldtype": "Check",
+   "label": "Enable Logical Replication During Site Update"
+  },
+  {
+   "default": "0",
+   "fieldname": "tls_certificate_renewal_failed",
+   "fieldtype": "Check",
+   "label": "TLS Certificate Renewal Failed",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2025-08-01 16:34:13.404147",
+ "modified": "2025-09-02 16:43:19.885050",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

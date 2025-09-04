@@ -4,12 +4,14 @@ import LucideVenetianMask from '~icons/lucide/venetian-mask';
 import ServerActions from '../components/server/ServerActions.vue';
 import { getTeam } from '../data/team';
 import router from '../router';
-import { icon } from '../utils/components';
+import { confirmDialog, icon, renderDialog } from '../utils/components';
 import { isMobile } from '../utils/device';
-import { duration, planTitle, userCurrency } from '../utils/format';
+import { date, duration, planTitle, userCurrency } from '../utils/format';
 import { trialDays } from '../utils/site';
 import { getJobsTab } from './common/jobs';
 import { tagTab } from './common/tags';
+import { getQueryParam, setQueryParam } from '../utils/index';
+import { toast } from 'vue-sonner';
 
 export default {
 	doctype: 'Server',
@@ -23,6 +25,9 @@ export default {
 		dropServer: 'drop_server',
 		addTag: 'add_resource_tag',
 		removeTag: 'remove_resource_tag',
+		deleteSnapshot: 'delete_snapshot',
+		lockSnapshot: 'lock_snapshot',
+		unlockSnapshot: 'unlock_snapshot',
 	},
 	list: {
 		route: '/servers',
@@ -43,7 +48,7 @@ export default {
 					type: 'select',
 					label: 'Status',
 					fieldname: 'status',
-					options: ['', 'Active', 'Pending'],
+					options: ['', 'Active', 'Pending', 'Archived'],
 				},
 				{
 					type: 'select',
@@ -154,6 +159,10 @@ export default {
 		actions({ documentResource: server }) {
 			let $team = getTeam();
 
+			if (server?.doc?.status === 'Archived') {
+				return [];
+			}
+
 			return [
 				{
 					label: 'Impersonate Server Owner',
@@ -208,6 +217,7 @@ export default {
 			{
 				label: 'Overview',
 				icon: icon('home'),
+				condition: (server) => server.doc?.status !== 'Archived',
 				route: 'overview',
 				type: 'Component',
 				component: defineAsyncComponent(
@@ -220,6 +230,7 @@ export default {
 			{
 				label: 'Analytics',
 				icon: icon('bar-chart-2'),
+				condition: (server) => server.doc?.status !== 'Archived',
 				route: 'analytics',
 				type: 'Component',
 				component: defineAsyncComponent(
@@ -232,8 +243,22 @@ export default {
 				},
 			},
 			{
+				label: 'Bench Group Analytics',
+				icon: icon('bar-chart-2'),
+				condition: (server) => server.doc?.status !== 'Archived',
+				route: 'bench-group-analytics',
+				type: 'Component',
+				component: defineAsyncComponent(
+					() => import('../components/server/ReleaseGroupCharts.vue'),
+				),
+				props: (server) => {
+					return { serverName: server.doc.name };
+				},
+			},
+			{
 				label: 'Sites',
 				icon: icon(LucideAppWindow),
+				condition: (server) => server.doc?.status !== 'Archived',
 				route: 'sites',
 				type: 'list',
 				list: {
@@ -340,6 +365,7 @@ export default {
 			{
 				label: 'Bench Groups',
 				icon: icon('package'),
+				condition: (server) => server.doc?.status !== 'Archived',
 				route: 'groups',
 				type: 'list',
 				list: {
@@ -424,10 +450,332 @@ export default {
 					},
 				},
 			},
+			{
+				label: 'Snapshots',
+				icon: icon('camera'),
+				condition: (server) => {
+					if (!server?.doc) return true;
+					return server?.doc?.provider === 'AWS EC2';
+				},
+				route: 'snapshots',
+				type: 'list',
+				list: {
+					doctype: 'Server Snapshot',
+					filters: (server) => {
+						let filters = {
+							app_server: server.doc?.name,
+						};
+						const snapshot_name = getQueryParam('name');
+						if (snapshot_name) {
+							filters.name = snapshot_name;
+						}
+						return filters;
+					},
+					filterControls() {
+						const snapshot_name = getQueryParam('name');
+						let filters = snapshot_name
+							? [
+									{
+										type: 'text',
+										label: 'Snapshot Name',
+										fieldname: 'name',
+									},
+								]
+							: [
+									{
+										type: 'select',
+										label: 'Status',
+										fieldname: 'status',
+										options: [
+											'',
+											'Pending',
+											'Processing',
+											'Failure',
+											'Completed',
+											'Unavailable',
+										],
+									},
+								];
+						filters = filters.concat([
+							{
+								type: 'checkbox',
+								label: 'Consistent',
+								fieldname: 'consistent',
+							},
+						]);
+						return filters;
+					},
+					searchField: getQueryParam('name') ? null : 'name',
+					updateFilters({ name }) {
+						setQueryParam('name', name);
+					},
+					autoReloadAfterUpdateFilterCallback: true,
+					orderBy: 'creation desc',
+					fields: [
+						'name',
+						'status',
+						'creation',
+						'consistent',
+						'free',
+						'expire_at',
+						'total_size_gb',
+					],
+					columns: [
+						{
+							label: 'Snapshot',
+							fieldname: 'name',
+							width: 0.5,
+							class: 'font-medium',
+						},
+						{
+							label: 'Status',
+							fieldname: 'status',
+							type: 'Badge',
+							width: 0.5,
+							align: 'center',
+						},
+						{
+							label: 'Size',
+							fieldname: 'total_size_gb',
+							width: 0.5,
+							align: 'center',
+							format(value) {
+								if (!value) return '-';
+								return `${value} GB`;
+							},
+						},
+						{
+							label: 'Consistent',
+							fieldname: 'consistent',
+							width: 0.3,
+							type: 'Icon',
+							align: 'center',
+							Icon(value) {
+								return value ? 'check' : 'x';
+							},
+						},
+						{
+							label: 'Free',
+							fieldname: 'free',
+							width: 0.3,
+							type: 'Icon',
+							Icon(value) {
+								return value ? 'check' : 'x';
+							},
+						},
+						{
+							label: 'Locked',
+							fieldname: 'locked',
+							width: 0.3,
+							type: 'Icon',
+							align: 'center',
+							Icon(value) {
+								return value ? 'lock' : 'unlock';
+							},
+						},
+						{
+							label: 'Expire At',
+							fieldname: 'expire_at',
+							width: 1,
+							align: 'center',
+							format(value) {
+								if (!value) return 'No Expiry';
+								return date(value, 'llll');
+							},
+						},
+						{
+							label: 'Created At',
+							fieldname: 'creation',
+							width: 1,
+							align: 'right',
+							format(value) {
+								return date(value, 'llll');
+							},
+						},
+					],
+					primaryAction({ documentResource: server, listResource: snapshots }) {
+						if (server?.doc?.status === 'Archived') return;
+						return {
+							label: 'New Snapshot',
+							slots: {
+								prefix: icon('camera'),
+							},
+							onClick() {
+								renderDialog(
+									h(
+										defineAsyncComponent(
+											() =>
+												import(
+													'../components/server/ServerNewSnapshotDialog.vue'
+												),
+										),
+										{
+											server: server.name,
+											onSnapshotCreated: () => {
+												snapshots.reload();
+											},
+										},
+									),
+								);
+							},
+						};
+					},
+					rowActions({ row, documentResource: server }) {
+						return [
+							{
+								label: 'View Details',
+								onClick() {
+									let ServerSnapshotDetailsDialog = defineAsyncComponent(
+										() =>
+											import(
+												'../components/server/ServerSnapshotDetailsDialog.vue'
+											),
+									);
+									renderDialog(
+										h(ServerSnapshotDetailsDialog, {
+											name: row.name,
+										}),
+									);
+								},
+							},
+							{
+								label: 'Recover Sites',
+								condition: () => row.status === 'Completed',
+								onClick() {
+									let ServerSnapshotRecoverSitesDialog = defineAsyncComponent(
+										() =>
+											import(
+												'../components/server/ServerSnapshotRecoverSitesDialog.vue'
+											),
+									);
+									renderDialog(
+										h(ServerSnapshotRecoverSitesDialog, {
+											name: row.name,
+										}),
+									);
+								},
+							},
+							{
+								label: 'Lock',
+								condition: () => row.status === 'Completed' && !row.locked,
+								onClick() {
+									confirmDialog({
+										title: 'Lock Snapshot',
+										message:
+											'Are you sure you want to lock this snapshot? This will prevent the snapshot from being deleted accidentally.',
+										primaryAction: {
+											label: 'Lock',
+											onClick: ({ hide }) => {
+												toast.promise(
+													server.lockSnapshot.submit(
+														{
+															snapshot_name: row.name,
+														},
+														{
+															onSuccess() {
+																hide();
+															},
+														},
+													),
+													{
+														loading: 'Locking snapshot...',
+														success: 'Snapshot will be locked shortly',
+														error: (err) => {
+															return err.messages?.length
+																? err.messages.join('\n')
+																: err.message || 'Failed to lock snapshot';
+														},
+													},
+												);
+											},
+										},
+									});
+								},
+							},
+							{
+								label: 'Unlock',
+								condition: () => row.status === 'Completed' && row.locked,
+								onClick() {
+									confirmDialog({
+										title: 'Unlock Snapshot',
+										message:
+											'Are you sure you want to unlock this snapshot ? After unlocking, the snapshot can be deleted by end-user.',
+										primaryAction: {
+											label: 'Unlock',
+											onClick: ({ hide }) => {
+												toast.promise(
+													server.unlockSnapshot.submit(
+														{
+															snapshot_name: row.name,
+														},
+														{
+															onSuccess() {
+																hide();
+															},
+														},
+													),
+													{
+														loading: 'Unlocking snapshot...',
+														success: 'Snapshot will be unlocked shortly',
+														error: (err) => {
+															return err.messages?.length
+																? err.messages.join('\n')
+																: err.message || 'Failed to unlock snapshot';
+														},
+													},
+												);
+											},
+										},
+									});
+								},
+							},
+							{
+								label: 'Delete',
+								condition: () => row.status === 'Completed',
+								onClick() {
+									confirmDialog({
+										title: 'Delete Snapshot',
+										message:
+											'Are you sure you want to delete this snapshot? This will delete the snapshot and all associated recovered data.',
+										primaryAction: {
+											label: 'Delete',
+											theme: 'red',
+											onClick: ({ hide }) => {
+												toast.promise(
+													server.deleteSnapshot.submit(
+														{
+															snapshot_name: row.name,
+														},
+														{
+															onSuccess() {
+																hide();
+															},
+														},
+													),
+													{
+														loading: 'Deleting snapshot...',
+														success: 'Snapshot deleted successfully',
+														error: (err) => {
+															return err.messages?.length
+																? err.messages.join('\n')
+																: err.message || 'Failed to delete snapshot';
+														},
+													},
+												);
+											},
+										},
+									});
+								},
+							},
+						];
+					},
+				},
+			},
 			getJobsTab('Server'),
 			{
 				label: 'Plays',
 				icon: icon('play'),
+				condition: (server) => server.doc?.status !== 'Archived',
 				childrenRoutes: ['Server Play'],
 				route: 'plays',
 				type: 'list',
@@ -506,6 +854,7 @@ export default {
 			{
 				label: 'Actions',
 				icon: icon('sliders'),
+				condition: (server) => server.doc?.status !== 'Archived',
 				route: 'actions',
 				type: 'Component',
 				component: ServerActions,
@@ -513,7 +862,7 @@ export default {
 					return { server: server.doc.name };
 				},
 			},
-			tagTab(),
+			tagTab('Server'),
 			{
 				label: 'Activity',
 				icon: icon('activity'),

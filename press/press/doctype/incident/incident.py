@@ -85,6 +85,7 @@ class Incident(WebsiteGenerator):
 		cluster: DF.Link | None
 		corrective_suggestions: DF.Table[IncidentSuggestion]
 		description: DF.TextEditor | None
+		investigation: DF.Link | None
 		likely_cause: DF.Text | None
 		phone_call: DF.Check
 		preventive_suggestions: DF.Table[IncidentSuggestion]
@@ -127,10 +128,15 @@ class Incident(WebsiteGenerator):
 		Start investigating the incident since we have already waited 5m before creating it
 		send sms and email notifications
 		"""
-		incident_investigator = frappe.get_doc(
-			{"doctype": "Incident Investigator", "incident": self.name, "server": self.server}
-		)
-		incident_investigator.insert(ignore_permissions=True)
+		try:
+			incident_investigator = frappe.get_doc(
+				{"doctype": "Incident Investigator", "incident": self.name, "server": self.server}
+			)
+			incident_investigator.insert(ignore_permissions=True)
+			self.investigation = incident_investigator.name
+		except frappe.ValidationError:
+			# Investigator in cool off period
+			pass
 		self.send_sms_via_twilio()
 		self.send_email_notification()
 
@@ -565,6 +571,7 @@ Incident URL: {incident_link}"""
 			self.twilio_client.messages.create(
 				to=human.phone, from_=self.twilio_phone_number, body=message_body
 			)
+		self.reload()  # In case the phone call status is modified by the investigator before the sms is sent
 		self.sms_sent = 1
 		self.save()
 

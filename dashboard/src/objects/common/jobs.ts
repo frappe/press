@@ -13,6 +13,7 @@ export function getJobsTab(doctype: JobDocTypes) {
 	return {
 		label: 'Jobs',
 		icon: icon('truck'),
+		condition: (record) => (doctype === 'Server' && record.doc?.status !== 'Archived') || doctype !== 'Server',
 		childrenRoutes: [jobRoute],
 		route: 'jobs',
 		type: 'list',
