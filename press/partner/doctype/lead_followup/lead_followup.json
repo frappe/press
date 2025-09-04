@@ -1,0 +1,76 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-05-23 11:41:16.770087",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "date",
+  "followup_by",
+  "communication_type",
+  "no_show",
+  "spoke_to",
+  "designation",
+  "discussion"
+ ],
+ "fields": [
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date"
+  },
+  {
+   "fieldname": "followup_by",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Followup By",
+   "options": "User"
+  },
+  {
+   "fieldname": "communication_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Communication Type",
+   "options": "\nQFC\nDC\nDemo\nPhone call\nEmail\nOnline session\nTelecon\nWhatsApp\nOnsite visit"
+  },
+  {
+   "default": "0",
+   "fieldname": "no_show",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "No Show"
+  },
+  {
+   "fieldname": "spoke_to",
+   "fieldtype": "Data",
+   "label": "Spoke To"
+  },
+  {
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "label": "Designation"
+  },
+  {
+   "fieldname": "discussion",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Discussion"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-05-23 11:45:16.393330",
+ "modified_by": "Administrator",
+ "module": "Partner",
+ "name": "Lead Followup",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
