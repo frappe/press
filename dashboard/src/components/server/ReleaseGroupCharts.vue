@@ -240,12 +240,18 @@ export default {
 				return null;
 			}
 
-			return groups
+			let filteredGroups = groups
 				.filter((group) => group.active_benches > 0)
 				.map((group) => ({
 					label: group.title,
 					value: group.name,
 				}));
+
+			if (!this.chosenGroup) {
+				this.chosenGroup = filteredGroups[0].value;
+			}
+
+			return filteredGroups;
 		},
 		memoryData() {
 			let memory = this.$resources.memory.data?.memory;
