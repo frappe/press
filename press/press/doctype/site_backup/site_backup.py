@@ -354,12 +354,24 @@ class SiteBackup(Document):
 		Run this whenever a Site Backup fails with the error
 		"[Errno 13]: Permission denied".
 		"""
+<<<<<<< HEAD
 		job = frappe.db.get_value(
 			"Agent Job", self.job, ["bench", "output"], {"status": "Failure"}, as_dict=True
 		)
 		import re
 
 		if job and re.search(r"\b[Errno 13] Permission denied\b", job.output):
+=======
+		job = frappe.db.get_value("Agent Job", self.job, ["bench", "output"], as_dict=True)
+		import re
+
+		play_exists = frappe.db.get_value(
+			"Ansible Play",
+			filters={"status": "Success", "variables": ["like", "%job%.%bench%"]},
+		)
+
+		if job and not play_exists and re.search(r"\[Errno 13\] Permission denied", job.output):
+>>>>>>> 12921f483 (fix(site-backup): Un-complex regex and check if play_exists)
 			try:
 				bench = frappe.get_doc("Bench", job.bench)
 				bench.correct_bench_permissions()
