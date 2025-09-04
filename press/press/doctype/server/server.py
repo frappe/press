@@ -1509,6 +1509,7 @@ class BaseServer(Document, TagHelpers):
 				"start_filebeat_after_mount": stop_docker_before_mount or stop_mariadb_before_mount,
 				"cleanup_db_replication_files": cleanup_db_replication_files,
 				"rotate_additional_volume_metadata": rotate_additional_volume_metadata,
+				"hetzner_cloud": self.provider == "Hetzner",
 				**self.get_mount_variables(),
 			}
 			if self.doctype == "Database Server" and self.provider != "Generic":
