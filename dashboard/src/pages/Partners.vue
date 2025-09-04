@@ -1,10 +1,12 @@
 <template>
-	<div class="sticky top-0 z-10 shrink-0">
-		<Header>
-			<FBreadcrumbs
-				:items="[{ label: 'Partnership', route: { name: 'Partnership' } }]"
-			/>
-		</Header>
+	<div class="flex h-full flex-col">
+		<div class="sticky top-0 z-10 shrink-0">
+			<Header>
+				<FBreadcrumbs
+					:items="[{ label: 'Partnership', route: { name: 'Partnership' } }]"
+				/>
+			</Header>
+		</div>
 		<TabsWithRouter
 			v-if="
 				Boolean(this.$team.doc.erpnext_partner) && $session.hasPartnerAccess
@@ -40,15 +42,60 @@ export default {
 		return {
 			currentTab: 0,
 			tabs: [
-				{ label: 'Overview', route: { name: 'PartnerOverview' } },
-				{ label: 'Customers', route: { name: 'PartnerCustomers' } },
 				{
-					label: 'Approval Requests',
-					route: { name: 'PartnerApprovalRequests' },
+					label: 'Overview',
+					route: { name: 'PartnerOverview' },
+					condition: () => Boolean(this.$team.doc.erpnext_partner),
 				},
 				{
-					label: 'Partner  Certificates',
+					label: 'Dashboard',
+					route: { name: 'PartnerDashboard' },
+					condition: () => Boolean(this.$team.doc.erpnext_partner),
+				},
+				{
+					label: 'Customers',
+					route: { name: 'PartnerCustomers' },
+					condition: () =>
+						Boolean(
+							this.$team.doc.erpnext_partner &&
+								this.$team.doc.partner_status === 'Active',
+						),
+				},
+				{
+					label: 'Customer Approval Requests',
+					route: { name: 'PartnerApprovalRequests' },
+					condition: () =>
+						Boolean(
+							this.$team.doc.erpnext_partner &&
+								this.$team.doc.partner_status === 'Active',
+						),
+				},
+				{
+					label: 'Leads',
+					route: { name: 'PartnerLeads' },
+					condition: () =>
+						Boolean(
+							this.$team.doc.erpnext_partner &&
+								this.$team.doc.partner_status === 'Active',
+						),
+				},
+				{
+					label: 'Certificates',
 					route: { name: 'PartnerCertificates' },
+					condition: () =>
+						Boolean(
+							this.$team.doc.erpnext_partner &&
+								this.$team.doc.partner_status === 'Active',
+						),
+				},
+				{
+					label: 'Contributions',
+					route: { name: 'PartnerContributions' },
+					condition: () =>
+						Boolean(
+							this.$team.doc.erpnext_partner &&
+								this.$team.doc.partner_status === 'Active',
+						),
 				},
 				{
 					label: 'Local Payment Setup',
@@ -56,7 +103,9 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.country === 'Kenya' &&
-								this.$team.doc.mpesa_enabled,
+								this.$team.doc.mpesa_enabled &&
+								this.$team.doc.erpnext_partner &&
+								this.$team.doc.partner_status === 'Active',
 						),
 				},
 				{

@@ -54,6 +54,16 @@ export default {
 				onRowClick(row) {
 					console.log('clicked', row);
 				},
+				filterControls() {
+					return [
+						{
+							type: 'select',
+							label: 'Tier',
+							fieldname: 'tier',
+							options: ['', 'Bronze', 'Silver', 'Gold'],
+						},
+					];
+				},
 			};
 		},
 	},
