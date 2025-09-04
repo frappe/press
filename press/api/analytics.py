@@ -59,6 +59,10 @@ if TYPE_CHECKING:
 		key: str
 		histogram_of_method: HistogramOfMethod
 
+	class MetricType(TypedDict):
+		date: str
+		value: float
+
 
 class ResourceType(Enum):
 	SITE = "site"
@@ -449,8 +453,6 @@ class SlowLogGroupByChart(StackedGroupByChart):
 		return res
 
 
-<<<<<<< HEAD
-=======
 def _query_prometheus(query: dict[str, str]) -> dict[str, float | str]:
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	url = f"https://{monitor_server}/prometheus/api/v1/query_range"
@@ -590,7 +592,6 @@ def get_cpu_usage(timezone: str, group: str | None = None, bench: str | None = N
 	return {"cpu": {"datasets": datasets, "labels": labels}}
 
 
->>>>>>> 603d201ff (feat(cadvisor): Add network and io usage apis)
 @frappe.whitelist()
 @protected("Site")
 @redis_cache(ttl=10 * 60)
