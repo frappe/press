@@ -1,11 +1,11 @@
-# Copyright (c) 2021, Frappe and contributors
+# Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
 
 # import frappe
 from frappe.model.document import Document
 
 
-class PartnerLead(Document):
+class PartnerConsent(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -14,9 +14,9 @@ class PartnerLead(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		frappe_lead: DF.Data | None
-		site: DF.Link | None
-		team: DF.Link
+		agreed: DF.Check
+		date: DF.Date | None
+		team: DF.Link | None
 	# end: auto-generated types
 
 	pass
