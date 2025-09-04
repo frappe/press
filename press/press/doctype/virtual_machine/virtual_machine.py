@@ -35,6 +35,8 @@ from oci.core.models import (
 	UpdateVolumeDetails,
 )
 from oci.exceptions import TransientServiceError
+from tenacity import retry, stop_after_attempt, wait_fixed
+from tenacity.retry import retry_if_not_result
 
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.server_activity.server_activity import log_server_activity
@@ -42,6 +44,8 @@ from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
 
 if typing.TYPE_CHECKING:
+	from hcloud.servers.client import BoundServer
+
 	from press.infrastructure.doctype.virtual_machine_migration.virtual_machine_migration import (
 		VirtualMachineMigration,
 	)
@@ -146,15 +150,17 @@ class VirtualMachine(Document):
 			self.machine_image = self.get_latest_ubuntu_image()
 		self.save()
 
+	def get_private_ip(self):
+		ip = ipaddress.IPv4Interface(self.subnet_cidr_block).ip
+		index = self.index + 356
+		if self.series == "n":
+			return str(ip + index)
+		offset = ["f", "m", "c", "p", "e", "r", "t"].index(self.series)
+		return str(ip + 256 * (2 * (index // 256) + offset) + (index % 256))
+
 	def validate(self):
 		if not self.private_ip_address:
-			ip = ipaddress.IPv4Interface(self.subnet_cidr_block).ip
-			index = self.index + 356
-			if self.series == "n":
-				self.private_ip_address = str(ip + index)
-			else:
-				offset = ["f", "m", "c", "p", "e", "r", "t"].index(self.series)
-				self.private_ip_address = str(ip + 256 * (2 * (index // 256) + offset) + (index % 256))
+			self.private_ip_address = self.get_private_ip()
 
 		self.validate_data_disk_snapshot()
 
@@ -404,9 +410,8 @@ class VirtualMachine(Document):
 			user_data=self.get_cloud_init() if self.virtual_machine_image else "",
 		)
 		server = server_response.server
-		# We assing only one private IP, so should be fine
+		# We assign only one private IP, so should be fine
 		self.private_ip_address = server.private_net[0].ip
-
 		self.public_ip_address = server.public_net.ipv4.ip
 
 		self.instance_id = server.id
@@ -1056,6 +1061,7 @@ class VirtualMachine(Document):
 			if server:
 				server = server[0]
 				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
+				frappe.db.set_value(doctype, server, "private_ip", self.private_ip_address)
 				if doctype in ["Server", "Database Server"]:
 					frappe.db.set_value(doctype, server, "ram", self.ram)
 				if self.public_ip_address and self.has_value_changed("public_ip_address"):
@@ -1759,6 +1765,49 @@ class VirtualMachine(Document):
 			if e.response.get("Error", {}).get("Code") == "InvalidVolumeModification.NotFound":
 				return None
 
+	@retry(
+		retry=retry_if_not_result(lambda result: result is True),
+		wait=wait_fixed(1),
+		stop=stop_after_attempt(30),
+	)
+	def wait_for_detach(self, server: BoundServer):
+		# TODO: Delete this method
+		if self.cloud_provider != "Hetzner":
+			raise NotImplementedError
+		server.reload()
+		return bool(server.private_net)
+
+	def correct_private_ip(self):
+		"""
+		We don't get to set private ip on instance creation.
+		So, we need to detach and attach the instance to the network with the desired private ip
+		Otherwise, too many config files need to be updated
+		"""
+		if self.cloud_provider != "Hetzner":
+			raise NotImplementedError
+		vpc_id = frappe.db.get_value("Cluster", self.cluster, "vpc_id")
+		server = self.client().servers.get_by_id(self.instance_id)
+		network = self.client().networks.get_by_id(vpc_id)
+		try:
+			action = server.detach_from_network(network)
+		except APIException as e:  # for retry
+			if "resource not found" in str(e):
+				pass
+			else:
+				raise e
+		else:
+			action.wait_until_finished(30)
+		try:
+			action = server.attach_to_network(network, ip=self.get_private_ip())
+		except APIException as e:
+			if "already attached" in str(e):
+				pass
+			else:
+				raise e
+		else:
+			action.wait_until_finished(30)
+		self.sync()
+
 	@frappe.whitelist()
 	def attach_volume(self, volume_id=None, is_temporary_volume: bool = False, size: int | None = None):
 		"""
@@ -1794,8 +1843,9 @@ class VirtualMachine(Document):
 			Example: linux_device = /mnt/HC_Volume_103061048
 			"""
 			device_name = new_volume.volume.linux_device
-			time.sleep(15)  # wait for a while to let Hetzner attach the volume
-			# might need a better way to do this considering reliability issues
+			new_volume.action.wait_until_finished(30)  # wait until volume is created
+			for action in new_volume.next_actions:
+				action.wait_until_finished(30)  # wait until volume is attached
 		self.save()
 		self.sync()
 		return device_name
