@@ -542,7 +542,7 @@ def get_outgoing_network_traffic(
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
 	promql_query = f'sum by (name) (rate(container_network_transmit_bytes_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
 	datasets, labels = _get_cadvisor_data(promql_query, timezone, timespan, timegrain)
-	return {"network_traffic_inward": {"datasets": datasets, "labels": labels}}
+	return {"network_traffic_outward": {"datasets": datasets, "labels": labels}}
 
 
 @frappe.whitelist()
