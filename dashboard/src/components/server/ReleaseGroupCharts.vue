@@ -25,7 +25,7 @@
 					title="Memory"
 					:key="memoryData"
 					:data="memoryData"
-					unit="bytes"
+					unit="GB"
 					:chartTheme="$data.chartColors"
 					:loading="$resources.memory.loading"
 					:error="$resources.memory.error"
@@ -33,8 +33,6 @@
 					class="h-[15.55rem] p-2 pb-3"
 				/>
 			</AnalyticsCard>
-		</div>
-		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
 			<AnalyticsCard title="CPU">
 				<LineChart
 					type="time"
@@ -43,8 +41,68 @@
 					:data="cpuData"
 					unit="seconds"
 					:chartTheme="$data.chartColors"
-					:loading="$resources.memory.loading"
-					:error="$resources.memory.error"
+					:loading="$resources.cpu.loading"
+					:error="$resources.cpu.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+		</div>
+		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+			<AnalyticsCard title="Incoming Network">
+				<LineChart
+					type="time"
+					title="Memory"
+					:key="incomingNetwork"
+					:data="incomingNetwork"
+					unit="bytes"
+					:chartTheme="$data.chartColors"
+					:loading="$resources.incomingNetwork.loading"
+					:error="$resources.incomingNetwork.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+			<AnalyticsCard title="Outgoing Network">
+				<LineChart
+					type="time"
+					title="CPU"
+					:key="outgoingNetwork"
+					:data="outgoingNetwork"
+					unit="bytes"
+					:chartTheme="$data.chartColors"
+					:loading="$resources.outgoingNetwork.loading"
+					:error="$resources.outgoingNetwork.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+		</div>
+		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+			<AnalyticsCard title="Read Bytes">
+				<LineChart
+					type="time"
+					title="Memory"
+					:key="readBytesFs"
+					:data="readBytesFs"
+					unit="bytes"
+					:chartTheme="$data.chartColors"
+					:loading="$resources.readBytesFs.loading"
+					:error="$resources.readBytesFs.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+			<AnalyticsCard title="Write Bytes">
+				<LineChart
+					type="time"
+					title="CPU"
+					:key="writeBytesFs"
+					:data="writeBytesFs"
+					unit="bytes"
+					:chartTheme="$data.chartColors"
+					:loading="$resources.writeBytesFs.loading"
+					:error="$resources.writeBytesFs.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -118,6 +176,50 @@ export default {
 				auto: true,
 			};
 		},
+		incomingNetwork() {
+			return {
+				url: 'press.api.analytics.get_incoming_network_traffic',
+				params: {
+					group: this.chosenGroup,
+					timezone: this.localTimezone,
+					duration: this.duration,
+				},
+				auto: true,
+			};
+		},
+		outgoingNetwork() {
+			return {
+				url: 'press.api.analytics.get_outgoing_network_traffic',
+				params: {
+					group: this.chosenGroup,
+					timezone: this.localTimezone,
+					duration: this.duration,
+				},
+				auto: true,
+			};
+		},
+		readBytesFs() {
+			return {
+				url: 'press.api.analytics.get_fs_read_bytes',
+				params: {
+					group: this.chosenGroup,
+					timezone: this.localTimezone,
+					duration: this.duration,
+				},
+				auto: true,
+			};
+		},
+		writeBytesFs() {
+			return {
+				url: 'press.api.analytics.get_fs_write_bytes',
+				params: {
+					group: this.chosenGroup,
+					timezone: this.localTimezone,
+					duration: this.duration,
+				},
+				auto: true,
+			};
+		},
 		groups() {
 			return {
 				url: 'press.api.client.get_list',
@@ -156,6 +258,32 @@ export default {
 			if (!cpu) return;
 
 			return this.transformMultiLineChartData(cpu);
+		},
+		incomingNetwork() {
+			let traffic =
+				this.$resources.incomingNetwork.data?.network_traffic_inward;
+			if (!traffic) return;
+
+			return this.transformMultiLineChartData(traffic);
+		},
+		outgoingNetwork() {
+			let network_traffic_outward =
+				this.$resources.outgoingNetwork.data?.network_traffic_outward;
+			if (!network_traffic_outward) return;
+
+			return this.transformMultiLineChartData(network_traffic_outward);
+		},
+		readBytesFs() {
+			let read_bytes_fs = this.$resources.readBytesFs.data?.read_bytes_fs;
+			if (!read_bytes_fs) return;
+
+			return this.transformMultiLineChartData(read_bytes_fs);
+		},
+		writeBytesFs() {
+			let write_bytes_fs = this.$resources.writeBytesFs.data?.write_bytes_fs;
+			if (!write_bytes_fs) return;
+
+			return this.transformMultiLineChartData(write_bytes_fs);
 		},
 	},
 	methods: {

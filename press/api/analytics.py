@@ -494,6 +494,75 @@ def _get_cadvisor_data(promql_query: str, timezone: str, timespan: int, timegrai
 
 
 @frappe.whitelist()
+@protected("Server")
+def get_fs_read_bytes(
+	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
+):
+	benches = (
+		frappe.get_all("Bench", {"status": "Active", "group": group}, pluck="name") if group else [bench]
+	)
+	benches = "|".join(benches)
+
+	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
+	promql_query = (
+		f'sum by (name) (rate(container_fs_reads_bytes_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
+	)
+	datasets, labels = _get_cadvisor_data(promql_query, timezone, timespan, timegrain)
+	return {"read_bytes_fs": {"datasets": datasets, "labels": labels}}
+
+
+@frappe.whitelist()
+@protected("Server")
+def get_fs_write_bytes(
+	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
+):
+	benches = (
+		frappe.get_all("Bench", {"status": "Active", "group": group}, pluck="name") if group else [bench]
+	)
+	benches = "|".join(benches)
+
+	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
+	promql_query = (
+		f'sum by (name) (rate(container_fs_writes_bytes_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
+	)
+	datasets, labels = _get_cadvisor_data(promql_query, timezone, timespan, timegrain)
+	return {"write_bytes_fs": {"datasets": datasets, "labels": labels}}
+
+
+@frappe.whitelist()
+@protected("Server")
+def get_outgoing_network_traffic(
+	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
+):
+	benches = (
+		frappe.get_all("Bench", {"status": "Active", "group": group}, pluck="name") if group else [bench]
+	)
+	benches = "|".join(benches)
+
+	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
+	promql_query = f'sum by (name) (rate(container_network_transmit_bytes_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
+	datasets, labels = _get_cadvisor_data(promql_query, timezone, timespan, timegrain)
+	return {"network_traffic_inward": {"datasets": datasets, "labels": labels}}
+
+
+@frappe.whitelist()
+@protected("Server")
+def get_incoming_network_traffic(
+	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
+):
+	benches = (
+		frappe.get_all("Bench", {"status": "Active", "group": group}, pluck="name") if group else [bench]
+	)
+	benches = "|".join(benches)
+
+	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
+	promql_query = f'sum by (name) (rate(container_network_receive_bytes_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
+	datasets, labels = _get_cadvisor_data(promql_query, timezone, timespan, timegrain)
+	return {"network_traffic_inward": {"datasets": datasets, "labels": labels}}
+
+
+@frappe.whitelist()
+@protected("Server")
 def get_memory_usage(
 	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
 ):
@@ -503,12 +572,13 @@ def get_memory_usage(
 	benches = "|".join(benches)
 
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
-	promql_query = f'(avg_over_time(container_memory_usage_bytes{{job="cadvisor", name=~"{benches}"}}[5m]) / 1024 / 1024 / 1024)'
+	promql_query = f'sum by (name) (avg_over_time(container_memory_usage_bytes{{job="cadvisor", name=~"{benches}"}}[5m]) / 1024 / 1024 / 1024)'
 	datasets, labels = _get_cadvisor_data(promql_query, timezone, timespan, timegrain)
 	return {"memory": {"datasets": datasets, "labels": labels}}
 
 
 @frappe.whitelist()
+@protected("Server")
 def get_cpu_usage(timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"):
 	benches = (
 		frappe.get_all("Bench", {"status": "Active", "group": group}, pluck="name") if group else [bench]
