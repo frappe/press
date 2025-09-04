@@ -15,6 +15,7 @@ from frappe.model.document import Document
 
 from press.agent import Agent
 from press.exceptions import SiteTooManyPendingBackups
+from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 
 if TYPE_CHECKING:
@@ -397,6 +398,9 @@ class SiteBackup(Document):
 	@classmethod
 	def file_backup_exists(cls, site: str, day: datetime.date) -> bool:
 		return cls.backup_exists(site, day, {"with_files": True})
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site Backup")
 
 
 class OngoingSnapshotError(Exception):
