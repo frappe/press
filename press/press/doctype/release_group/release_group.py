@@ -951,6 +951,9 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def generate_certificate(self, user=None):
+		if user and not frappe.get_doc("User", user).has_role("Press Support Agent"):
+			return None
+
 		user = user if user else frappe.session.user
 		ssh_key = frappe.get_all(
 			"User SSH Key",
@@ -978,6 +981,9 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def get_certificate(self, user=None):
+		if user and not frappe.get_doc("User", user).has_role("Press Support Agent"):
+			return None
+
 		user = user if user else frappe.session.user
 		user_ssh_key = frappe.db.get_all("User SSH Key", {"user": user, "is_default": True}, pluck="name")
 		if not len(user_ssh_key):
