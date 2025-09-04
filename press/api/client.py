@@ -160,7 +160,7 @@ def get_list_query(
 	limit: int,
 	order_by: str | None,
 ):
-	from press.press.doctype.press_role.press_role import check_role_permissions
+	from press.press.doctype.press_role.press_role import LINKED_DOCTYPE_PERMISSIONS, check_role_permissions
 
 	query = frappe.qb.get_query(
 		doctype,
@@ -185,12 +185,20 @@ def get_list_query(
 		PressRolePermission = frappe.qb.DocType("Press Role Permission")
 		QueriedDocType = frappe.qb.DocType(doctype)
 
-		field = doctype.lower().replace(" ", "_")
+		if doctype in LINKED_DOCTYPE_PERMISSIONS:
+			field = LINKED_DOCTYPE_PERMISSIONS[doctype].get("parent_doctype", "").lower().replace(" ", "_")
+			doctype_field = QueriedDocType[LINKED_DOCTYPE_PERMISSIONS[doctype].get("parent_field")]
+		else:
+			field = doctype.lower().replace(" ", "_")
+			doctype_field = QueriedDocType.name
+
 		query = (
 			query.join(PressRolePermission)
-			.on(PressRolePermission[field] == QueriedDocType.name & PressRolePermission.role.isin(roles))
+			.on(PressRolePermission[field] == doctype_field & PressRolePermission.role.isin(roles))
 			.distinct()
 		)
+
+	print(query.get_sql())
 
 	return query
 
