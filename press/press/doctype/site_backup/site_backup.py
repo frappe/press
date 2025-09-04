@@ -361,9 +361,9 @@ class SiteBackup(Document):
 			"Ansible Play",
 			filters={
 				"play": "Correct Bench Permissions",
-				"status": ["in", ["Success", "Failure", "Pending"]],
+				"status": ["in", ["Pending", "Running"]],
 				"server": job.server,
-				"variables": ["like", "%job%.%bench%"],
+				"variables": ["like", "f%{job.bench}%"],
 			},
 		)
 
