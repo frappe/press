@@ -202,8 +202,6 @@ def get_list_query(
 			.distinct()
 		)
 
-	print(query.get_sql())
-
 	return query
 
 
