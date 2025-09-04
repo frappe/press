@@ -104,6 +104,7 @@ notification_config = "press.notifications.get_notification_config"
 
 permission_query_conditions = {
 	"Site": "press.press.doctype.site.site.get_permission_query_conditions",
+	"Site Backup": "press.press.doctype.site_backup.site_backup.get_permission_query_conditions",
 	"Site Domain": ("press.press.doctype.site_domain.site_domain.get_permission_query_conditions"),
 	"TLS Certificate": "press.press.doctype.tls_certificate.tls_certificate.get_permission_query_conditions",
 	"Team": "press.press.doctype.team.team.get_permission_query_conditions",
@@ -125,9 +126,12 @@ permission_query_conditions = {
 	"Press Webhook Log": "press.press.doctype.press_webhook_log.press_webhook_log.get_permission_query_conditions",
 	"SQL Playground Log": "press.press.doctype.sql_playground_log.sql_playground_log.get_permission_query_conditions",
 	"Site Database User": "press.press.doctype.site_database_user.site_database_user.get_permission_query_conditions",
+	"Server Snapshot": "press.press.doctype.server_snapshot.server_snapshot.get_permission_query_conditions",
+	"Server Snapshot Recovery": "press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.get_permission_query_conditions",
 }
 has_permission = {
 	"Site": "press.overrides.has_permission",
+	"Site Backup": "press.overrides.has_permission",
 	"Site Domain": "press.overrides.has_permission",
 	"TLS Certificate": "press.overrides.has_permission",
 	"Team": "press.press.doctype.team.team.has_permission",
