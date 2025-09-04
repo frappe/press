@@ -325,6 +325,33 @@ class SiteBackup(Document):
 			"Site Backup", self.name, "database_snapshot", virtual_machine.flags.created_snapshots[0]
 		)
 
+	def autocorrect_bench_permissions(self):
+		"""
+		Run this whenever a Site Backup fails with the error
+		"[Errno 13]: Permission denied".
+		"""
+		job = frappe.db.get_value("Agent Job", self.job, ["bench", "output"], as_dict=True)
+		import re
+
+		play_exists = frappe.db.get_value(
+			"Ansible Play",
+			filters={"status": "Success", "variables": ["like", "%job%.%bench%"]},
+		)
+
+		if job and not play_exists and re.search(r"\[Errno 13\] Permission denied", job.output):
+			try:
+				bench = frappe.get_doc("Bench", job.bench)
+				bench.correct_bench_permissions()
+				return True
+			except Exception:
+				frappe.log_error(
+					"Failed to correct bench permissions.",
+					reference_doctype=self.doctype,
+					reference_name=self.name,
+				)
+				return False
+		return False
+
 	@classmethod
 	def offsite_backup_exists(cls, site: str, day: datetime.date) -> bool:
 		return cls.backup_exists(site, day, {"offsite": True})
