@@ -10,6 +10,7 @@ import frappe
 from frappe.model.document import Document
 
 from press.api.client import dashboard_whitelist
+from press.overrides import get_permission_query_conditions_for_doctype
 
 if TYPE_CHECKING:
 	from press.press.doctype.cluster.cluster import Cluster
@@ -87,8 +88,6 @@ class ServerSnapshot(Document):
 						frappe.utils.add_to_date(date, hours=23, minutes=59, seconds=59),
 					)
 				)
-
-		print(query.get_sql())
 
 		return query.run(as_dict=1)
 
@@ -634,6 +633,9 @@ class ServerSnapshot(Document):
 			0,
 			update_modified=True,
 		)
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Server Snapshot")
 
 
 def move_pending_snapshots_to_processing():
