@@ -355,6 +355,7 @@ class SiteBackup(Document):
 		"[Errno 13]: Permission denied".
 		"""
 <<<<<<< HEAD
+<<<<<<< HEAD
 		job = frappe.db.get_value(
 			"Agent Job", self.job, ["bench", "output"], {"status": "Failure"}, as_dict=True
 		)
@@ -363,11 +364,19 @@ class SiteBackup(Document):
 		if job and re.search(r"\b[Errno 13] Permission denied\b", job.output):
 =======
 		job = frappe.db.get_value("Agent Job", self.job, ["bench", "output"], as_dict=True)
+=======
+		job = frappe.db.get_value("Agent Job", self.job, ["bench", "server", "output"], as_dict=True)
+>>>>>>> e08d76b64 (chore(ansible-play): More verbose filtering)
 		import re
 
 		play_exists = frappe.db.get_value(
 			"Ansible Play",
-			filters={"status": "Success", "variables": ["like", "%job%.%bench%"]},
+			filters={
+				"play": "Correct Bench Permissions",
+				"status": ["in", ["Success", "Failure", "Pending"]],
+				"server": job.server,
+				"variables": ["like", "%job%.%bench%"],
+			},
 		)
 
 		if job and not play_exists and re.search(r"\[Errno 13\] Permission denied", job.output):
