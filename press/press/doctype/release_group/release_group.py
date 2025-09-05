@@ -576,7 +576,7 @@ class ReleaseGroup(Document, TagHelpers):
 		dc = self.create_deploy_candidate()
 		dc.schedule_build_and_deploy()
 
-	def _try_server_size_increase_or_throw(self, server: Server, mountpoint: str):
+	def _try_server_size_increase_or_throw(self, server: Server, mountpoint: str, required_size: int):
 		"""In case of low storage on the server try to either increase the storage (if allowed) or throw an error"""
 		if server.auto_increase_storage:
 			try:
@@ -589,7 +589,8 @@ class ReleaseGroup(Document, TagHelpers):
 				)
 		else:
 			frappe.throw(
-				f"Not enough space on server {server.name} to create a new bench.", InsufficientSpaceOnServer
+				f"Not enough space on server {server.name} to create a new bench. {required_size}G is required.",
+				InsufficientSpaceOnServer,
 			)
 
 	@staticmethod
@@ -628,7 +629,9 @@ class ReleaseGroup(Document, TagHelpers):
 			last_image_size = self._get_last_deployed_image_size(server, last_deployed_bench)
 
 			if last_image_size and (free_space < last_image_size):
-				self._try_server_size_increase_or_throw(server, mountpoint)
+				self._try_server_size_increase_or_throw(
+					server, mountpoint, required_size=last_image_size - free_space
+				)
 
 	@frappe.whitelist()
 	def create_deploy_candidate(
