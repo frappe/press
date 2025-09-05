@@ -1632,7 +1632,7 @@ class Site(Document, TagHelpers):
 	@site_action(["Active", "Broken"])
 	def login_as_admin(self, reason=None):
 		sid = self.login(reason=reason)
-		return f"https://{self.host_name or self.name}/desk?sid={sid}"
+		return f"https://{self.host_name or self.name}/app?sid={sid}"
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
@@ -1643,10 +1643,10 @@ class Site(Document, TagHelpers):
 			if self.standby_for_product and self.is_setup_wizard_complete:
 				redirect_route = (
 					frappe.db.get_value("Product Trial", self.standby_for_product, "redirect_to_after_login")
-					or "/desk"
+					or "/app"
 				)
 			else:
-				redirect_route = "/desk"
+				redirect_route = "/app"
 			return f"https://{self.host_name or self.name}{redirect_route}?sid={sid}"
 
 		frappe.throw("No additional system user created for this site")
@@ -1659,10 +1659,10 @@ class Site(Document, TagHelpers):
 			if self.standby_for_product:
 				redirect_route = (
 					frappe.db.get_value("Product Trial", self.standby_for_product, "redirect_to_after_login")
-					or "/desk"
+					or "/app"
 				)
 			else:
-				redirect_route = "/desk"
+				redirect_route = "/app"
 			return f"https://{self.host_name or self.name}{redirect_route}?sid={sid}"
 		except Exception as e:
 			frappe.throw(str(e))
