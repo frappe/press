@@ -433,7 +433,7 @@ function login_as_admin(site_name, reason = null) {
 				console.log(site_name, res.message.sid);
 				if (res) {
 					window.open(
-						`https://${site_name}/desk?sid=${res.message.sid}`,
+						`https://${site_name}/app?sid=${res.message.sid}`,
 						'_blank',
 					);
 				}
