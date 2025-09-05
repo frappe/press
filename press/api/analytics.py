@@ -501,7 +501,7 @@ def get_metrics(
 	bench: str | None = None,
 	duration: str = "24h",
 ):
-	if not group and not bench:
+	if not group or not bench:
 		frappe.throw("Group / Bench not passed")
 
 	benches = (
