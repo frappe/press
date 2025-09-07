@@ -104,7 +104,7 @@ def usage(ctx: typer.Context, name: str = typer.Option(None, "--name", "-n", hel
 			return
 
 	except Exception as e:
-		typer.secho(f"Error fetching servers: {str(e)}", fg="red")
+		typer.secho(f"Error fetching servers: {e!s}", fg="red")
 		return
 
 	values = [res["name"] for res in response]
@@ -125,7 +125,7 @@ def usage(ctx: typer.Context, name: str = typer.Option(None, "--name", "-n", hel
 	try:
 		server_usage(name, session, console)
 	except Exception as e:
-		typer.secho(f"Error getting server usage: {str(e)}", fg="red")
+		typer.secho(f"Error getting server usage: {e!s}", fg="red")
 
 
 def get_release_groups(session: CloudSession) -> list[dict[str, str]]:
@@ -218,7 +218,7 @@ def server_plan(ctx: typer.Context, name: str = typer.Option(..., "--name", "-n"
 		console.print(f"[bold]Price/Day USD:[/bold] {plan.get('price_per_day_usd', '-')}")
 
 	except Exception as e:
-		typer.secho(f"Error getting server plan: {str(e)}", fg="red")
+		typer.secho(f"Error getting server plan: {e!s}", fg="red")
 
 
 @server.command(help="Increase storage for a server")
@@ -261,7 +261,7 @@ def increase_storage(
 		)
 
 	except Exception as e:
-		typer.secho(f"Error increasing storage: {str(e)}", fg="red")
+		typer.secho(f"Error increasing storage: {e!s}", fg="red")
 
 
 @server.command(help="Show details about a specific plan for a server")
@@ -293,7 +293,7 @@ def show_plan(
 		)
 
 	except Exception as e:
-		typer.secho(f"Error fetching plan details: {str(e)}", fg="red")
+		typer.secho(f"Error fetching plan details: {e!s}", fg="red")
 
 
 @server.command(help="Show current plan and choose available server plans")
@@ -343,7 +343,7 @@ def choose_plan(
 		console.print(f"[bold]Disk:[/bold] [bold]{selected_plan.get('disk', '-')} GB")
 
 	except Exception as e:
-		typer.secho(f"Error changing plan: {str(e)}", fg="red")
+		typer.secho(f"Error changing plan: {e!s}", fg="red")
 
 
 @server.command(help="Create a new server")
@@ -386,7 +386,7 @@ def create_server(
 			typer.secho(f"Job started: {response['job']}", fg="cyan")
 
 	except Exception as e:
-		typer.secho(f"Error creating server: {str(e)}", fg="red")
+		typer.secho(f"Error creating server: {e!s}", fg="red")
 
 
 @server.command(help="Delete a server (archive)")
@@ -408,7 +408,7 @@ def delete_server(
 		typer.secho(f"Successfully deleted (archived) server: {name}", fg="green")
 
 	except Exception as e:
-		typer.secho(f"Error deleting server: {str(e)}", fg="red")
+		typer.secho(f"Error deleting server: {e!s}", fg="red")
 
 
 app.add_typer(deploy, name="deploy")
