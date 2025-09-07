@@ -14,6 +14,7 @@ app = typer.Typer(help="FC CLI")
 deploy = typer.Typer(help="Manage deploys")
 server = typer.Typer(help="Server Info")
 
+
 console = Console()
 
 
@@ -67,37 +68,48 @@ def requires_login(ctx: typer.Context):
 @server.command(help="List servers")
 def usage(ctx: typer.Context, name: str = typer.Option(None, "--name", "-n", help="Server name")):
 	session: CloudSession = ctx.obj
-	server_data = ClientList(
-		doctype="Server",
-		fields=[
-			"name",
-			"title",
-			"database_server",
-			"plan.title as plan_title",
-			"plan.price_usd as price_usd",
-			"plan.price_inr as price_inr",
-			"cluster.image as cluster_image",
-			"cluster.title as cluster_title",
-			"name",
-			"status",
-			"db_plan",
-			"cluster",
-		],
-		filters={},
-		order_by="creation desc",
-		start=0,
-		limit=20,
-		limit_start=0,
-		limit_page_length=20,
-		debug=0,
-	)
 
-	response = session.post(
-		"press.api.client.get_list", json=server_data, message="[bold green]Getting servers..."
-	)
+	try:
+		server_data = ClientList(
+			doctype="Server",
+			fields=[
+				"name",
+				"title",
+				"database_server",
+				"plan.title as plan_title",
+				"plan.price_usd as price_usd",
+				"plan.price_inr as price_inr",
+				"cluster.image as cluster_image",
+				"cluster.title as cluster_title",
+				"name",
+				"status",
+				"db_plan",
+				"cluster",
+			],
+			filters={},
+			order_by="creation desc",
+			start=0,
+			limit=20,
+			limit_start=0,
+			limit_page_length=20,
+			debug=0,
+		)
+
+		response = session.post(
+			"press.api.client.get_list", json=server_data, message="[bold green]Getting servers..."
+		)
+
+		if not response:
+			typer.secho("Failed to retrieve servers.", fg="red")
+			return
+
+	except Exception as e:
+		typer.secho(f"Error fetching servers: {str(e)}", fg="red")
+		return
 
 	values = [res["name"] for res in response]
 	values += [res["database_server"] for res in response]
+
 	if not values:
 		typer.secho("No servers found.", fg="red")
 		return
@@ -110,7 +122,10 @@ def usage(ctx: typer.Context, name: str = typer.Option(None, "--name", "-n", hel
 		typer.secho(f"Server '{name}' not found.", fg="red")
 		return
 
-	server_usage(name, session, console)
+	try:
+		server_usage(name, session, console)
+	except Exception as e:
+		typer.secho(f"Error getting server usage: {str(e)}", fg="red")
 
 
 def get_release_groups(session: CloudSession) -> list[dict[str, str]]:
@@ -164,39 +179,46 @@ def show_deploy(ctx: typer.Context):
 @server.command(help="Shows the current plan for a server")
 def server_plan(ctx: typer.Context, name: str = typer.Option(..., "--name", "-n", help="Server name")):
 	session: CloudSession = ctx.obj
-	doctype = None
-	if name and name.startswith("f"):
-		doctype = "Server"
-	elif name and name.startswith("m"):
-		doctype = "Database Server"
-	else:
-		doctype = "Database Server"
-	payload = {
-		"doctype": doctype,
-		"name": name,
-		"fields": [
-			"current_plan",
-		],
-		"debug": 0,
-	}
-	response = session.post(
-		"press.api.client.get", json=payload, message="[bold green]Getting database server details..."
-	)
-	if not response or "current_plan" not in response:
-		typer.secho(f"{doctype} '{name}' or its current plan not found.", fg="red")
-		return
 
-	plan = response["current_plan"]
-	console.print("[bold cyan]Current Plan[/bold cyan]")
-	console.print(f"[bold]Title:[/bold] {plan.get('title', '-')}")
-	console.print(f"[bold]Name:[/bold] {plan.get('name', '-')}")
-	console.print(f"[bold]Owner:[/bold] {plan.get('owner', '-')}")
-	console.print(f"[bold]Modified By:[/bold] {plan.get('modified_by', '-')}")
-	console.print(f"[bold]Price INR:[/bold] {plan.get('price_inr', '-')}")
-	console.print(f"[bold]Price USD:[/bold] {plan.get('price_usd', '-')}")
-	console.print(f"[bold]Premium:[/bold] {plan.get('premium', '-')}")
-	console.print(f"[bold]Price/Day INR:[/bold] {plan.get('price_per_day_inr', '-')}")
-	console.print(f"[bold]Price/Day USD:[/bold] {plan.get('price_per_day_usd', '-')}")
+	try:
+		doctype = None
+		if name and name.startswith("f"):
+			doctype = "Server"
+
+		else:
+			doctype = "Database Server"
+
+		payload = {
+			"doctype": doctype,
+			"name": name,
+			"fields": [
+				"current_plan",
+			],
+			"debug": 0,
+		}
+
+		response = session.post(
+			"press.api.client.get", json=payload, message="[bold green]Getting database server details..."
+		)
+
+		if not response or "current_plan" not in response:
+			typer.secho(f"{doctype} '{name}' or its current plan not found.", fg="red")
+			return
+
+		plan = response["current_plan"]
+		console.print("[bold cyan]Current Plan[/bold cyan]")
+		console.print(f"[bold]Title:[/bold] {plan.get('title', '-')}")
+		console.print(f"[bold]Name:[/bold] {plan.get('name', '-')}")
+		console.print(f"[bold]Owner:[/bold] {plan.get('owner', '-')}")
+		console.print(f"[bold]Modified By:[/bold] {plan.get('modified_by', '-')}")
+		console.print(f"[bold]Price INR:[/bold] {plan.get('price_inr', '-')}")
+		console.print(f"[bold]Price USD:[/bold] {plan.get('price_usd', '-')}")
+		console.print(f"[bold]Premium:[/bold] {plan.get('premium', '-')}")
+		console.print(f"[bold]Price/Day INR:[/bold] {plan.get('price_per_day_inr', '-')}")
+		console.print(f"[bold]Price/Day USD:[/bold] {plan.get('price_per_day_usd', '-')}")
+
+	except Exception as e:
+		typer.secho(f"Error getting server plan: {str(e)}", fg="red")
 
 
 @server.command(help="Increase storage for a server")
@@ -206,26 +228,40 @@ def increase_storage(
 	increment: int = typer.Option(..., "--increment", "-i", help="Increment size in GB"),
 ):
 	session: CloudSession = ctx.obj
-	if name.startswith("f"):
-		doctype = "Server"
-	else:
-		doctype = "Database Server"
-	payload = {
-		"dt": doctype,
-		"dn": name,
-		"method": "increase_disk_size_for_server",
-		"args": {"server": name, "increment": increment},
-	}
-	session.post(
-		"press.api.client.run_doc_method",
-		json=payload,
-		message=f"[bold green]Increasing storage for {name} by {increment}GB...",
-	)
+	if not name.endswith("frappe.cloud"):
+		typer.secho(f"Invalid server name: '{name}'. Server name must end with 'frappe.cloud'", fg="red")
+		return
 
-	console.print(
-		f"Storage increased for server [bold blue]{name}[/bold blue] by [bold blue]{increment}[/bold blue] GB",
-		style="bold",
-	)
+	try:
+		if name.startswith("f"):
+			doctype = "Server"
+		else:
+			doctype = "Database Server"
+
+		payload = {
+			"dt": doctype,
+			"dn": name,
+			"method": "increase_disk_size_for_server",
+			"args": {"server": name, "increment": increment},
+		}
+
+		response = session.post(
+			"press.api.client.run_doc_method",
+			json=payload,
+			message=f"[bold green]Increasing storage for {name} by {increment}GB...",
+		)
+
+		if response and response.get("success") is False:
+			typer.secho(f"Failed to increase storage: {response.get('message', 'Unknown error')}", fg="red")
+			return
+
+		console.print(
+			f"Storage increased for server [bold blue]{name}[/bold blue] by [bold blue]{increment}[/bold blue] GB",
+			style="bold",
+		)
+
+	except Exception as e:
+		typer.secho(f"Error increasing storage: {str(e)}", fg="red")
 
 
 @server.command(help="Show details about a specific plan for a server")
@@ -235,21 +271,29 @@ def show_plan(
 	plan: str = typer.Option(..., "--plan", "-p", help="Plan name"),
 ):
 	session: CloudSession = ctx.obj
-	doctype = "Server" if name.startswith("f") else "Database Server"
-	payload = {"name": doctype, "cluster": "Mumbai", "platform": "arm64"}
-	plans = session.post(
-		"press.api.server.plans", json=payload, message="[bold green]Fetching available server plans..."
-	)
-	selected_plan = next((p for p in plans if p.get("name") == plan), None)
-	if not selected_plan:
-		typer.secho(f"Plan '{plan}' not found for server '{name}'", fg="red")
-		return
-	console.print("[bold]Plan Details:[/bold]")
-	console.print(f"[bold]Name:[/bold] [bold]{selected_plan.get('name', '-')}")
-	console.print(f"[bold]Price:[/bold] [bold]₹{selected_plan.get('price_inr', '-')} /mo")
-	console.print(
-		f"[bold]vCPUs:[/bold] [bold]{selected_plan.get('vcpu', '-')}\n[bold]Memory:[/bold] [bold]{selected_plan.get('memory', '-')} GB\n[bold]Disk:[/bold] [bold]{selected_plan.get('disk', '-')} GB"
-	)
+
+	try:
+		doctype = "Server" if name.startswith("f") else "Database Server"
+		payload = {"name": doctype, "cluster": "Mumbai", "platform": "arm64"}
+
+		plans = session.post(
+			"press.api.server.plans", json=payload, message="[bold green]Fetching available server plans..."
+		)
+
+		selected_plan = next((p for p in plans if p.get("name") == plan), None)
+		if not selected_plan:
+			typer.secho(f"Plan '{plan}' not found for server '{name}'", fg="red")
+			return
+
+		console.print("[bold]Plan Details:[/bold]")
+		console.print(f"[bold]Name:[/bold] [bold]{selected_plan.get('name', '-')}")
+		console.print(f"[bold]Price:[/bold] [bold]₹{selected_plan.get('price_inr', '-')} /mo")
+		console.print(
+			f"[bold]vCPUs:[/bold] [bold]{selected_plan.get('vcpu', '-')}\n[bold]Memory:[/bold] [bold]{selected_plan.get('memory', '-')} GB\n[bold]Disk:[/bold] [bold]{selected_plan.get('disk', '-')} GB"
+		)
+
+	except Exception as e:
+		typer.secho(f"Error fetching plan details: {str(e)}", fg="red")
 
 
 @server.command(help="Show current plan and choose available server plans")
@@ -259,37 +303,47 @@ def choose_plan(
 	plan: str = typer.Option(..., "--plan", "-o", help="Name of the plan"),
 ):
 	session: CloudSession = ctx.obj
-	doctype = "Server" if name.startswith("f") else "Database Server"
 
-	payload = {"name": doctype, "cluster": "Mumbai", "platform": "arm64"}
-	plans = session.post(
-		"press.api.server.plans", json=payload, message="[bold green]Fetching available server plans..."
-	)
-	selected_plan = next((p for p in plans if p.get("name") == plan), None)
-	if not selected_plan:
-		typer.secho(f"Plan '{plan}' not found for server '{name}'", fg="red")
-		return
-	change_payload = {
-		"dt": doctype,
-		"dn": name,
-		"method": "change_plan",
-		"args": {"plan": selected_plan.get("name")},
-	}
-	response = session.post(
-		"press.api.client.run_doc_method",
-		json=change_payload,
-		message=f"[bold green]Changing plan for {name} to {selected_plan.get('name')}...",
-	)
-	if response and response.get("success") is False:
-		typer.secho(f"Failed to change plan: {response.get('message', 'Unknown error')}", fg="red")
-		return
-	console.print("[bold]Successfully changed plan![/bold]")
-	console.print("[bold]Plan Details:[/bold]")
-	console.print(f"[bold]Name:[/bold] [bold]{selected_plan.get('name', '-')}")
-	console.print(f"[bold]Price:[/bold] [bold]₹{selected_plan.get('price_inr', '-')} /mo")
-	console.print(f"[bold]vCPUs:[/bold] [bold]{selected_plan.get('vcpu', '-')}")
-	console.print(f"[bold]Memory:[/bold] [bold]{selected_plan.get('memory', '-')} GB")
-	console.print(f"[bold]Disk:[/bold] [bold]{selected_plan.get('disk', '-')} GB")
+	try:
+		doctype = "Server" if name.startswith("f") else "Database Server"
+
+		payload = {"name": doctype, "cluster": "Mumbai", "platform": "arm64"}
+		plans = session.post(
+			"press.api.server.plans", json=payload, message="[bold green]Fetching available server plans..."
+		)
+
+		selected_plan = next((p for p in plans if p.get("name") == plan), None)
+		if not selected_plan:
+			typer.secho(f"Plan '{plan}' not found for server '{name}'", fg="red")
+			return
+
+		change_payload = {
+			"dt": doctype,
+			"dn": name,
+			"method": "change_plan",
+			"args": {"plan": selected_plan.get("name")},
+		}
+
+		response = session.post(
+			"press.api.client.run_doc_method",
+			json=change_payload,
+			message=f"[bold green]Changing plan for {name} to {selected_plan.get('name')}...",
+		)
+
+		if response and response.get("success") is False:
+			typer.secho(f"Failed to change plan: {response.get('message', 'Unknown error')}", fg="red")
+			return
+
+		console.print("[bold]Successfully changed plan![/bold]")
+		console.print("[bold]Plan Details:[/bold]")
+		console.print(f"[bold]Name:[/bold] [bold]{selected_plan.get('name', '-')}")
+		console.print(f"[bold]Price:[/bold] [bold]₹{selected_plan.get('price_inr', '-')} /mo")
+		console.print(f"[bold]vCPUs:[/bold] [bold]{selected_plan.get('vcpu', '-')}")
+		console.print(f"[bold]Memory:[/bold] [bold]{selected_plan.get('memory', '-')} GB")
+		console.print(f"[bold]Disk:[/bold] [bold]{selected_plan.get('disk', '-')} GB")
+
+	except Exception as e:
+		typer.secho(f"Error changing plan: {str(e)}", fg="red")
 
 
 @server.command(help="Create a new server")
@@ -304,27 +358,35 @@ def create_server(
 	),
 ):
 	session: CloudSession = ctx.obj
-	server_payload = {
-		"cluster": cluster,
-		"title": title,
-		"app_plan": app_plan,
-		"db_plan": db_plan,
-		"auto_increase_storage": auto_increase_storage,
-	}
-	response = session.post(
-		"press.api.server.new",
-		json={"server": server_payload},
-		message=f"[bold green]Creating server '{title}' in cluster '{cluster}'...",
-	)
-	if not response or not response.get("server"):
-		typer.secho(
-			f"Failed to create server: {response.get('message', 'Unknown error') if response else 'No response from backend.'}",
-			fg="red",
+
+	try:
+		server_payload = {
+			"cluster": cluster,
+			"title": title,
+			"app_plan": app_plan,
+			"db_plan": db_plan,
+			"auto_increase_storage": auto_increase_storage,
+		}
+
+		response = session.post(
+			"press.api.server.new",
+			json={"server": server_payload},
+			message=f"[bold green]Creating server '{title}' in cluster '{cluster}'...",
 		)
-		return
-	typer.secho(f"Successfully created server: {response['server']}", fg="green")
-	if response.get("job"):
-		typer.secho(f"Job started: {response['job']}", fg="cyan")
+
+		if not response or not response.get("server"):
+			typer.secho(
+				f"Failed to create server: {response.get('message', 'Unknown error') if response else 'No response from backend.'}",
+				fg="red",
+			)
+			return
+
+		typer.secho(f"Successfully created server: {response['server']}", fg="green")
+		if response.get("job"):
+			typer.secho(f"Job started: {response['job']}", fg="cyan")
+
+	except Exception as e:
+		typer.secho(f"Error creating server: {str(e)}", fg="red")
 
 
 @server.command(help="Delete a server (archive)")
@@ -333,17 +395,25 @@ def delete_server(
 	name: str = typer.Option(..., "--name", help="Name of the server to delete"),
 ):
 	session: CloudSession = ctx.obj
-	response = session.post(
-		"press.api.server.archive", json={"name": name}, message=f"[bold red]Archiving server '{name}'..."
-	)
-	if response and response.get("exc_type"):
-		typer.secho(f"Failed to delete server: {response.get('exception', 'Unknown error')}", fg="red")
-		return
-	typer.secho(f"Successfully deleted (archived) server: {name}", fg="green")
+
+	try:
+		response = session.post(
+			"press.api.server.archive", json={"name": name}, message=f"[bold red]Archiving server '{name}'..."
+		)
+
+		if response and response.get("exc_type"):
+			typer.secho(f"Failed to delete server: {response.get('exception', 'Unknown error')}", fg="red")
+			return
+
+		typer.secho(f"Successfully deleted (archived) server: {name}", fg="green")
+
+	except Exception as e:
+		typer.secho(f"Error deleting server: {str(e)}", fg="red")
 
 
 app.add_typer(deploy, name="deploy")
 app.add_typer(server, name="server")
+
 
 if __name__ == "__main__":
 	app()
