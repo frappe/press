@@ -21,19 +21,20 @@
   "difference",
   "difference_deploy_type",
   "deploy_type",
-  "backup_type",
-  "column_break_14",
-  "site_backup",
-  "skipped_backups",
   "skipped_failing_patches",
+  "column_break_14",
+  "skipped_backups",
+  "backup_type",
+  "site_backup",
+  "logical_replication_backup",
   "section_break_luvm",
   "deactivate_site_job",
   "update_job",
   "activate_site_job",
   "column_break_rcyp",
+  "physical_backup_restoration",
   "recover_job",
   "cause_of_failure_is_resolved",
-  "physical_backup_restoration",
   "section_break_gmrz",
   "update_start",
   "column_break_jtqs",
@@ -54,6 +55,7 @@
   },
   {
    "fetch_from": "site.bench",
+   "fetch_if_empty": 1,
    "fieldname": "source_bench",
    "fieldtype": "Link",
    "hide_days": 1,
@@ -95,6 +97,7 @@
    "hide_seconds": 1
   },
   {
+   "fetch_if_empty": 1,
    "fieldname": "deploy_type",
    "fieldtype": "Select",
    "hide_days": 1,
@@ -107,6 +110,7 @@
   },
   {
    "fetch_from": "source_bench.candidate",
+   "fetch_if_empty": 1,
    "fieldname": "source_candidate",
    "fieldtype": "Link",
    "hide_days": 1,
@@ -117,6 +121,7 @@
   },
   {
    "fetch_from": "destination_bench.candidate",
+   "fetch_if_empty": 1,
    "fieldname": "destination_candidate",
    "fieldtype": "Link",
    "hide_days": 1,
@@ -135,6 +140,7 @@
   },
   {
    "fetch_from": "source_bench.group",
+   "fetch_if_empty": 1,
    "fieldname": "group",
    "fieldtype": "Link",
    "hide_days": 1,
@@ -145,6 +151,7 @@
   },
   {
    "fetch_from": "site.server",
+   "fetch_if_empty": 1,
    "fieldname": "server",
    "fieldtype": "Link",
    "hide_days": 1,
@@ -193,6 +200,7 @@
   },
   {
    "fetch_from": "difference.deploy_type",
+   "fetch_if_empty": 1,
    "fieldname": "difference_deploy_type",
    "fieldtype": "Select",
    "label": "Difference Deploy Type",
@@ -208,6 +216,7 @@
   },
   {
    "fetch_from": "destination_bench.group",
+   "fetch_if_empty": 1,
    "fieldname": "destination_group",
    "fieldtype": "Link",
    "label": "Destination Group",
@@ -239,7 +248,7 @@
    "fieldname": "backup_type",
    "fieldtype": "Select",
    "label": "Backup Type",
-   "options": "Logical\nPhysical",
+   "options": "Logical\nPhysical\nLogical Replication",
    "set_only_once": 1
   },
   {
@@ -322,11 +331,18 @@
    "fieldtype": "Duration",
    "label": "Update Duration",
    "read_only": 1
+  },
+  {
+   "fieldname": "logical_replication_backup",
+   "fieldtype": "Link",
+   "label": "Logical Replication Backup",
+   "options": "Logical Replication Backup",
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-28 14:12:55.667576",
+ "modified": "2025-08-21 15:58:45.863368",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",
@@ -355,6 +371,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

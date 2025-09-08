@@ -1,0 +1,175 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-08-11 13:15:53.610517",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "configurations_section",
+  "incident",
+  "server",
+  "status",
+  "column_break_nl6k",
+  "investigation_window_start_time",
+  "investigation_window_end_time",
+  "cool_off_period",
+  "investigation_section",
+  "server_investigation_steps",
+  "proxy_investigation_steps",
+  "database_investigation_steps",
+  "investigation_findings",
+  "thresholds_tab",
+  "high_system_load_threshold",
+  "high_disk_usage_threshold_in_gb",
+  "high_cpu_load_threshold",
+  "high_memory_usage_threshold",
+  "actions_tab",
+  "action_steps"
+ ],
+ "fields": [
+  {
+   "fieldname": "incident",
+   "fieldtype": "Link",
+   "label": "Incident",
+   "options": "Incident"
+  },
+  {
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "label": "Server",
+   "options": "Server"
+  },
+  {
+   "fieldname": "server_investigation_steps",
+   "fieldtype": "Table",
+   "label": "Server Investigation Steps",
+   "options": "Investigation Step"
+  },
+  {
+   "fieldname": "proxy_investigation_steps",
+   "fieldtype": "Table",
+   "label": "Proxy Investigation Steps",
+   "options": "Investigation Step"
+  },
+  {
+   "fieldname": "database_investigation_steps",
+   "fieldtype": "Table",
+   "label": "Database Investigation Steps",
+   "options": "Investigation Step"
+  },
+  {
+   "fieldname": "thresholds_tab",
+   "fieldtype": "Tab Break",
+   "label": "Thresholds"
+  },
+  {
+   "default": "2",
+   "description": "Minimum free space required on any of the mount point at any time.",
+   "fieldname": "high_disk_usage_threshold_in_gb",
+   "fieldtype": "Int",
+   "label": "High Disk Usage (GB)"
+  },
+  {
+   "fieldname": "investigation_window_start_time",
+   "fieldtype": "Datetime",
+   "label": "Investigation window start time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "investigation_window_end_time",
+   "fieldtype": "Datetime",
+   "label": "Investigation window end time",
+   "read_only": 1
+  },
+  {
+   "description": "Maximum number of processes in queue for system to be under high load over the investigation window.",
+   "fieldname": "high_system_load_threshold",
+   "fieldtype": "Int",
+   "label": "High System Load ",
+   "read_only": 1
+  },
+  {
+   "default": "50",
+   "description": "Percentage of busy CPU over the investigation window.",
+   "fieldname": "high_cpu_load_threshold",
+   "fieldtype": "Int",
+   "label": "High CPU Load"
+  },
+  {
+   "default": "95",
+   "description": "Percentage of memory used over the investigation window.",
+   "fieldname": "high_memory_usage_threshold",
+   "fieldtype": "Int",
+   "label": "High Memory Usage"
+  },
+  {
+   "fieldname": "column_break_nl6k",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "investigation_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "configurations_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nInvestigating\nCompleted",
+   "read_only": 1
+  },
+  {
+   "default": "300",
+   "description": "Don't trigger investigation for this interval on the same server.",
+   "fieldname": "cool_off_period",
+   "fieldtype": "Float",
+   "label": "Cool off period"
+  },
+  {
+   "fieldname": "actions_tab",
+   "fieldtype": "Tab Break",
+   "label": "Actions"
+  },
+  {
+   "fieldname": "investigation_findings",
+   "fieldtype": "JSON",
+   "label": "Investigation Findings",
+   "read_only": 1
+  },
+  {
+   "fieldname": "action_steps",
+   "fieldtype": "Table",
+   "options": "Action Step"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-09-08 10:21:50.989190",
+ "modified_by": "Administrator",
+ "module": "Incident Management",
+ "name": "Incident Investigator",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

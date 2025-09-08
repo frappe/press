@@ -82,14 +82,36 @@ class PressRole(Document):
 			self.allow_server_creation = 1
 			self.allow_webhook_configuration = 1
 
+	def add_press_admin_role(self, user):
+		user = frappe.get_doc("User", user)
+		user.append_roles("Press Admin")
+		user.save(ignore_permissions=True)
+
+	def remove_press_admin_role(self, user):
+		if frappe.db.exists("Team", {"enabled": 1, "user": user}):
+			return
+		user = frappe.get_doc("User", user)
+		existing_roles = {d.role: d for d in user.get("roles")}
+		if "Press Admin" in existing_roles:
+			user.get("roles").remove(existing_roles["Press Admin"])
+			user.save(ignore_permissions=True)
+
+	def is_team_member(self, user):
+		return bool(frappe.db.exists("Team Member", {"parent": self.team, "user": user}))
+
 	@dashboard_whitelist()
 	def add_user(self, user):
 		user_exists = self.get("users", {"user": user})
 		if user_exists:
 			frappe.throw(f"{user} already belongs to {self.title}")
 
+		if not self.is_team_member(user):
+			frappe.throw(f"{user} is not a member of the team")
+
 		self.append("users", {"user": user})
 		self.save()
+		if self.admin_access or self.allow_billing:
+			self.add_press_admin_role(user)
 
 	@dashboard_whitelist()
 	def remove_user(self, user):
@@ -102,6 +124,8 @@ class PressRole(Document):
 				self.remove(row)
 				break
 		self.save()
+		if self.admin_access or self.allow_billing:
+			self.remove_press_admin_role(user)
 
 	@dashboard_whitelist()
 	def delete_permissions(self, permissions: list[str]) -> None:
@@ -124,6 +148,34 @@ class PressRole(Document):
 		frappe.db.delete("Account Request Press Role", {"press_role": self.name})
 
 
+"""
+Explanation of LINKED_DOCTYPE_PERMISSIONS:
+
+Example -
+"Site Backup": {
+	"parent_doctype": "Site",
+	"parent_field": "site",
+}
+
+Site Backup doctype has a field named 'site' which is a link to Site doctype.
+
+If Someone doesn't have access to a particular Site through role permissions,
+then they shouldn't be able to access the Site Backup listview either.
+
+"""
+
+LINKED_DOCTYPE_PERMISSIONS = {
+	"Site Backup": {
+		"parent_doctype": "Site",
+		"parent_field": "site",
+	},
+	"Server Snapshot": {
+		"parent_doctype": "Server",
+		"parent_field": "app_server",
+	},
+}
+
+
 def check_role_permissions(doctype: str, name: str | None = None) -> list[str] | None:  # noqa: C901
 	"""
 	Check if the user is permitted to access the document based on the role permissions
@@ -134,7 +186,6 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 	:param name: Document name
 	:return: List of permitted roles or None
 	"""
-	from press.utils import has_role
 
 	if doctype not in [
 		"Site",
@@ -144,12 +195,11 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 		"Press Webhook",
 		"Press Webhook Log",
 		"Press Webhook Attempt",
+		*LINKED_DOCTYPE_PERMISSIONS.keys(),
 	]:
 		return []
 
-	if (hasattr(frappe.local, "system_user") and frappe.local.system_user()) or has_role(
-		"Press Support Agent"
-	):
+	if hasattr(frappe.local, "system_user") and frappe.local.system_user():
 		return []
 
 	PressRoleUser = frappe.qb.DocType("Press Role User")
@@ -197,6 +247,36 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 				# throw error if the user is not permitted for the document
 				frappe.throw(
 					f"You don't have permission to this {doctype if doctype != 'Release Group' else 'Bench'}",
+					frappe.PermissionError,
+				)
+			else:
+				return role_names
+
+	elif doctype in LINKED_DOCTYPE_PERMISSIONS:
+		field = LINKED_DOCTYPE_PERMISSIONS[doctype]["parent_doctype"].lower().replace(" ", "_")
+		roles = query.select(PressRole.admin_access).run(as_dict=1)
+
+		# this is an admin that can access all sites, release groups, and servers
+		if any(perm.admin_access for perm in roles):
+			return []
+
+		if roles:
+			role_names = [perm.name for perm in roles]
+			perms = frappe.db.get_all(
+				"Press Role Permission",
+				filters={
+					"role": ["in", role_names],
+					field: frappe.db.get_value(
+						doctype, name, LINKED_DOCTYPE_PERMISSIONS[doctype].get("parent_field")
+					)
+					if name
+					else None,
+				},
+			)
+			if not perms and name:
+				# throw error if the user is not permitted for the document
+				frappe.throw(
+					f"You don't have permission to this {doctype}",
 					frappe.PermissionError,
 				)
 			else:

@@ -22,6 +22,8 @@ def create_test_virtual_machine(
 	ip: str | None = None,
 	cluster: Cluster = None,
 	series: str = "m",
+	platform: str = "x86_64",
+	cloud_provider: str = "AWS EC2",
 ) -> VirtualMachine:
 	"""Create test Virtual Machine doc"""
 	if not ip:
@@ -39,6 +41,8 @@ def create_test_virtual_machine(
 			"cluster": cluster.name,
 			"instance_id": "i-1234567890",
 			"vcpu": 4,
+			"platform": platform,
+			"cloud_provider": cloud_provider,
 		}
 	).insert(ignore_if_duplicate=True)
 

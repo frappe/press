@@ -28,7 +28,7 @@ from press.press.doctype.team.team import (
 	get_child_team_members,
 	get_team_members,
 )
-from press.utils import get_country_info, get_current_team, is_user_part_of_team
+from press.utils import get_country_info, get_current_team, is_user_part_of_team, log_error
 from press.utils.telemetry import capture
 
 if TYPE_CHECKING:
@@ -225,6 +225,29 @@ def setup_account(  # noqa: C901
 	frappe.local.login_manager.login_as(email)
 
 	return account_request.name
+
+
+@frappe.whitelist()
+@rate_limit(limit=5, seconds=60 * 60)
+def accept_team_invite(key: str):
+	account_request = get_account_request_from_key(key)
+
+	if not account_request:
+		frappe.throw("Invalid or Expired Key")
+
+	if not account_request.invited_by:
+		frappe.throw("You are not invited by any team")
+
+	team = account_request.team
+	first_name = account_request.first_name
+	last_name = account_request.last_name
+	email = account_request.email
+	password = None
+	role = account_request.role
+	press_roles = account_request.press_roles
+
+	team_doc = frappe.get_doc("Team", team)
+	return team_doc.create_user_for_member(first_name, last_name, email, password, role, press_roles)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -627,6 +650,9 @@ def get_ssh_key(user):
 def update_profile(first_name=None, last_name=None, email=None):
 	if email:
 		frappe.utils.validate_email_address(email, True)
+	STR_FORMAT = re.compile("^[a-zA-Z']+$")
+	if (first_name and not STR_FORMAT.match(first_name)) or (last_name and not STR_FORMAT.match(last_name)):
+		frappe.throw("Names cannot contain invalid characters")
 	user = frappe.session.user
 	doc = frappe.get_doc("User", user)
 	doc.first_name = first_name
@@ -717,12 +743,29 @@ def reset_password(key, password):
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=10, seconds=60 * 60)
 def get_user_for_reset_password_key(key):
 	if not key or not isinstance(key, str):
 		frappe.throw(_("Invalid Key"))
 
 	hashed_key = sha256_hash(key)
-	return frappe.db.get_value("User", {"reset_password_key": hashed_key}, "name")
+	user_doc = frappe.db.get_value(
+		"User",
+		{"reset_password_key": hashed_key},
+		["name", "last_reset_password_key_generated_on"],
+		as_dict=True,
+	)
+	if not user_doc:
+		frappe.throw(_("Invalid Key"))
+
+	from datetime import timedelta
+
+	if user_doc.last_reset_password_key_generated_on:
+		expiry_time = user_doc.last_reset_password_key_generated_on + timedelta(minutes=10)
+		if frappe.utils.now_datetime() > expiry_time:
+			frappe.throw(_("Key has expired. Please retry resetting your password."))
+
+	return user_doc.name
 
 
 @frappe.whitelist()
@@ -1181,7 +1224,7 @@ def get_user_ssh_keys():
 
 
 @frappe.whitelist(allow_guest=True)
-@rate_limit(limit=10, seconds=60 * 60)
+@rate_limit(limit=20, seconds=60 * 60)
 def is_2fa_enabled(user: str) -> bool:
 	return bool(frappe.db.get_value("User 2FA", user, "enabled"))
 
@@ -1225,20 +1268,15 @@ def get_2fa_qr_code_url():
 def enable_2fa(totp_code):
 	"""Enable 2FA for the user after verifying the TOTP code"""
 
-	# Get the User 2FA document.
 	two_fa = frappe.get_doc("User 2FA", frappe.session.user)
 
-	# Get decrypted TOTP secret for the user.
 	user_totp_secret = get_decrypted_password("User 2FA", frappe.session.user, "totp_secret")
 
-	# Handle invalid TOTP code.
 	if not pyotp.totp.TOTP(user_totp_secret).verify(totp_code):
 		frappe.throw("Invalid TOTP code")
 
-	# Enable 2FA for the user.
 	two_fa.enabled = 1
 
-	# Add recovery codes to the User 2FA document, if not already present.
 	if not two_fa.recovery_codes:
 		for recovery_code in two_fa.generate_recovery_codes():
 			two_fa.append(
@@ -1246,13 +1284,21 @@ def enable_2fa(totp_code):
 				{"code": recovery_code},
 			)
 
-	# Update the last verified time.
 	two_fa.mark_recovery_codes_viewed()
-
-	# Save the document.
 	two_fa.save()
 
-	# Decrypt and return recovery codes for the user.
+	try:
+		from frappe.sessions import clear_sessions
+
+		clear_sessions(keep_current=True)
+	except Exception as e:
+		log_error(
+			"2FA Enable: Failed clearing other sessions",
+			data=e,
+			reference_doctype="User 2FA",
+			reference_name=two_fa.name,
+		)
+
 	return [
 		get_decrypted_password("User 2FA Recovery Code", recovery_code.name, "code")
 		for recovery_code in two_fa.recovery_codes

@@ -7,6 +7,8 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "enabled",
+  "section_break_kiiw",
   "old_name",
   "column_break_ccmj",
   "new_name",
@@ -50,11 +52,22 @@
    "label": "Before Migrate Script",
    "options": "Python",
    "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "section_break_kiiw",
+   "fieldtype": "Section Break"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-04 14:11:07.271889",
+ "modified": "2025-08-05 15:27:10.390732",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Rename",
@@ -73,6 +86,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

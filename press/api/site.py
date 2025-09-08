@@ -23,6 +23,7 @@ from press.exceptions import (
 	AAAARecordExists,
 	ConflictingCAARecord,
 	ConflictingDNSRecord,
+	DomainNoLongerPointed,
 	DomainProxied,
 	MultipleARecords,
 	MultipleCNAMERecords,
@@ -41,7 +42,6 @@ from press.utils import (
 	get_current_team,
 	get_frappe_backups,
 	get_last_doc,
-	has_role,
 	log_error,
 	unique,
 )
@@ -56,6 +56,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
 		DeployCandidateApp,
 	)
+	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.site.site import Site
 
@@ -95,7 +96,7 @@ def protected(doctypes):
 		for doctype in doctypes:
 			owner = frappe.db.get_value(doctype, name, "team")
 
-			if owner == team or has_role("Press Support Agent"):
+			if owner == team:
 				return wrapped(*args, **kwargs)
 
 		frappe.throw("Not Permitted", frappe.PermissionError)
@@ -105,8 +106,8 @@ def protected(doctypes):
 
 
 def get_protected_doctype_name(args: list, kwargs: dict, doctypes: list[str]):
-	# 1. Name from kwargs["name"]
-	if name := kwargs.get("name"):
+	# 1. Name from kwargs["name"] or kwargs["doc_name"]
+	if name := (kwargs.get("name") or kwargs.get("doc_name")):
 		return name
 
 	# 2. Name from first value in filters
@@ -265,7 +266,7 @@ def get_group_for_new_site_and_set_localisation_app(site, apps):
 		.where(ReleaseGroupApp.app == localisation_app)
 		.where(ReleaseGroup.public == 1)
 		.where(ReleaseGroup.enabled == 1)
-		.where(ReleaseGroup.name.notin(restricted_release_group_names))
+		.where(ReleaseGroup.name.notin(restricted_release_group_names or [""]))
 		.where(ReleaseGroup.version == site.get("version"))
 		.run(pluck="name")
 	)
@@ -1612,10 +1613,10 @@ def validate_restoration_space_requirements(
 	server: Server = frappe.get_cached_doc("Server", site.server)
 	database_server: DatabaseServer = frappe.get_cached_doc("Database Server", server.database_server)
 
-	required_space_on_app_server = site.space_required_for_restoration_on_app_server(
+	required_space_on_app_server = site.get_restore_space_required_on_app(
 		db_file_size=db_file_size, public_file_size=public_file_size, private_file_size=private_file_size
 	)
-	required_space_on_db_server = site.space_required_for_restoration_on_db_server(db_file_size=db_file_size)
+	required_space_on_db_server = site.get_restore_space_required_on_db(db_file_size=db_file_size)
 
 	free_space_on_app_server = server.free_space(server.guess_data_disk_mountpoint())
 	free_space_on_db_server = database_server.free_space(database_server.guess_data_disk_mountpoint())
@@ -1704,7 +1705,7 @@ def check_dns_cname(name, domain):
 	except MultipleCNAMERecords:
 		multiple_domains = ", ".join(part.to_text() for part in answer)
 		frappe.throw(
-			f"Domain {domain} has multiple CNAME records: {multiple_domains}. Please keep only one.",
+			f"Domain <b>{domain}</b> has multiple CNAME records: <b>{multiple_domains}</b>. Please keep only one.",
 			MultipleCNAMERecords,
 		)
 	except dns.resolver.NoAnswer as e:
@@ -1786,24 +1787,35 @@ def ensure_dns_aaaa_record_doesnt_exist(domain: str):
 		pass  # We have other problems
 
 
-def check_domain_proxied(domain) -> str | None:
+def get_proxy_and_redirected_status(domain) -> tuple[str | None, bool]:
 	try:
-		res = requests.head(f"http://{domain}", timeout=3)
+		res = requests.head(f"http://{domain}/.well-known/acme-challenge/random", timeout=3)
 	except requests.exceptions.RequestException as e:
 		frappe.throw("Unable to connect to the domain. Is the DNS correct?\n\n" + str(e))
 	else:
-		if (server := res.headers.get("server")) not in ("Frappe Cloud", None):  # eg: cloudflare
-			return server
+		redirected = (
+			res.headers.get("location") == "http://ssl.frappe.cloud/.well-known/acme-challenge/random"
+		)
+		server = res.headers.get("server")  # eg: cloudflare
+		server = None if server == "Frappe Cloud" else server
+		return server, redirected
 
 
 def check_dns_cname_a(name, domain, ignore_proxying=False):
 	check_domain_allows_letsencrypt_certs(domain)
-	proxy = check_domain_proxied(domain)
+	proxy, redirected = get_proxy_and_redirected_status(domain)
 	if proxy:
-		if ignore_proxying:  # no point checking the rest if proxied
-			return {"CNAME": {}, "A": {}, "matched": True, "type": "A"}  # assume A
+		if ignore_proxying:
+			if redirected:  # pointed to Frappe Cloud servers at least
+				return {"CNAME": {}, "A": {}, "matched": True, "type": "A"}  # assume A
+			frappe.throw(
+				f"Domain <b>{domain}</b> doesn't point to Frappe Cloud servers anymore (server: <b>{proxy}</b>).",
+				DomainNoLongerPointed,
+			)
+
 		frappe.throw(
-			f"Domain {domain} appears to be proxied (server: {proxy}). Please turn off proxying and try again in some time. You may enable it once the domain is verified.",
+			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.
+			<br>You may enable it again, once the domain is verified.""",
 			DomainProxied,
 		)
 	ensure_dns_aaaa_record_doesnt_exist(domain)
@@ -1815,12 +1827,18 @@ def check_dns_cname_a(name, domain, ignore_proxying=False):
 
 	if cname["matched"] and a["exists"] and not a["matched"]:
 		frappe.throw(
-			f"Domain {domain} has correct CNAME record ({cname['answer'].strip().split()[-1]}), but also an A record that points to an incorrect IP address ({a['answer'].strip().split()[-1]}). Please remove the same or update the record.",
+			f"""
+			Domain <b>{domain}</b> has correct CNAME record <b>{cname["answer"].strip().split()[-1]}</b>, but also an A record that points to an incorrect IP address <b>{a["answer"].strip().split()[-1]}</b>.
+			<br>Please remove the same or update the record.
+			""",
 			ConflictingDNSRecord,
 		)
 	if a["matched"] and cname["exists"] and not cname["matched"]:
 		frappe.throw(
-			f"Domain {domain} has correct A record ({a['answer'].strip().split()[-1]}), but also a CNAME record that points to an incorrect domain ({cname['answer'].strip().split()[-1]}). Please remove the same or update the record.",
+			"""
+			f"Domain <b>{domain}</b> has correct A record <b>{a['answer'].strip().split()[-1]}</b>, but also a CNAME record that points to an incorrect domain <b>{cname['answer'].strip().split()[-1]}</b>.
+			<br>Please remove the same or update the record.
+			""",
 			ConflictingDNSRecord,
 		)
 
@@ -2162,14 +2180,21 @@ def add_server_to_release_group(name, group_name, server=None):
 	if not server:
 		server = frappe.db.get_value("Site", name, "server")
 
-	rg = frappe.get_doc("Release Group", group_name)
+	rg: ReleaseGroup = frappe.get_doc("Release Group", group_name)
 
 	if not frappe.db.exists("Deploy Candidate Build", {"status": "Success", "group": group_name}):
 		frappe.throw(
 			f"There should be atleast one deploy in the bench {frappe.bold(rg.title)} to do a site migration or a site version upgrade."
 		)
-
-	deploy = rg.add_server(server, deploy=True)
+	try:
+		deploy = rg.add_server(server, deploy=True)
+	except PermissionError as e:
+		if f"does not have access to this document: Release Group - {group_name}" in str(e):
+			frappe.throw(
+				f"Bench group is owned by a team you (<strong>{frappe.session.user}</strong>) are not a member of. Please contact the team owner or transfer the bench group to your team.",
+			)
+		else:
+			frappe.throw(str(e), type(e))
 
 	bench = find(deploy.benches, lambda bench: bench.server == server).bench
 	return frappe.get_value("Agent Job", {"bench": bench, "job_type": "New Bench"}, "name")

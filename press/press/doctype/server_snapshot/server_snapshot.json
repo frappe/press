@@ -1,0 +1,368 @@
+{
+ "actions": [],
+ "autoname": "format:snap-{#######}",
+ "creation": "2025-07-30 16:05:51.738947",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "column_break_gcvn",
+  "team",
+  "column_break_unjj",
+  "provider",
+  "column_break_hgps",
+  "cluster",
+  "column_break_mwve",
+  "total_size_gb",
+  "column_break_jszb",
+  "expire_at",
+  "section_break_yuac",
+  "consistent",
+  "column_break_gviv",
+  "locked",
+  "column_break_pswb",
+  "free",
+  "section_break_zgjz",
+  "app_server",
+  "app_server_snapshot",
+  "app_server_snapshot_press_job",
+  "app_server_resume_service_press_job",
+  "app_server_services_started",
+  "column_break_dcyz",
+  "database_server",
+  "database_server_snapshot",
+  "database_server_snapshot_press_job",
+  "database_server_resume_service_press_job",
+  "database_server_services_started",
+  "section_break_ibcr",
+  "app_server_vcpu",
+  "column_break_hvxs",
+  "app_server_ram",
+  "column_break_xeyh",
+  "database_server_vcpu",
+  "column_break_nyhu",
+  "database_server_ram",
+  "section_break_ihux",
+  "site_list",
+  "traceback"
+ ],
+ "fields": [
+  {
+   "fieldname": "app_server",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "App Server",
+   "options": "Server",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "app_server_snapshot",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "App Server Snapshot",
+   "options": "Virtual Disk Snapshot",
+   "read_only": 1,
+   "search_index": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_dcyz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "app_server.database_server",
+   "fetch_if_empty": 1,
+   "fieldname": "database_server",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "DB Server",
+   "options": "Database Server",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "database_server_snapshot",
+   "fieldtype": "Link",
+   "label": "DB Server Snapshot",
+   "options": "Virtual Disk Snapshot",
+   "read_only": 1,
+   "search_index": 1,
+   "set_only_once": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nProcessing\nFailure\nCompleted\nUnavailable",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_gcvn",
+   "fieldtype": "Column Break",
+   "search_index": 1
+  },
+  {
+   "fetch_from": "app_server.team",
+   "fetch_if_empty": 1,
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Team",
+   "options": "Team",
+   "read_only": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_zgjz",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_unjj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "AWS EC2",
+   "fetch_from": "app_server.provider",
+   "fetch_if_empty": 1,
+   "fieldname": "provider",
+   "fieldtype": "Select",
+   "label": "Provider",
+   "options": "AWS EC2\nOCI",
+   "read_only": 1,
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_yuac",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "description": "The services on the server will be stopped during snapshotting",
+   "fieldname": "consistent",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Consistent",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_gviv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Locked snapshots can't be deleted by any user",
+   "fieldname": "locked",
+   "fieldtype": "Check",
+   "label": "Locked",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_hgps",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "app_server.cluster",
+   "fetch_if_empty": 1,
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster",
+   "read_only": 1,
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "app_server_resume_service_press_job",
+   "fieldtype": "Link",
+   "label": "App Server Resume Service Press Job",
+   "options": "Press Job",
+   "read_only": 1
+  },
+  {
+   "fieldname": "app_server_snapshot_press_job",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "App Server Snapshot Press Job",
+   "options": "Press Job",
+   "read_only": 1
+  },
+  {
+   "fieldname": "database_server_snapshot_press_job",
+   "fieldtype": "Link",
+   "label": "DB Server Snapshot Press Job",
+   "options": "Press Job",
+   "read_only": 1
+  },
+  {
+   "fieldname": "database_server_resume_service_press_job",
+   "fieldtype": "Link",
+   "label": "DB Server Resume Service Press Job",
+   "options": "Press Job",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "app_server_services_started",
+   "fieldtype": "Check",
+   "label": "App Server Services Started",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "database_server_services_started",
+   "fieldtype": "Check",
+   "label": "DB Server Services Started",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_ihux",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "site_list",
+   "fieldtype": "JSON",
+   "label": "Site List",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_mwve",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "total_size_gb",
+   "fieldtype": "Int",
+   "label": "Total Size (GB)",
+   "non_negative": 1,
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval: doc.status == \"Failure\"",
+   "fieldname": "traceback",
+   "fieldtype": "Text",
+   "label": "Traceback"
+  },
+  {
+   "fieldname": "section_break_ibcr",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "app_server_vcpu",
+   "fieldtype": "Int",
+   "label": "App Server vCPU",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_hvxs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "app_server_ram",
+   "fieldtype": "Int",
+   "label": "App Server RAM",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_xeyh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "database_server_vcpu",
+   "fieldtype": "Int",
+   "label": "DB Server vCPU",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_nyhu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "database_server_ram",
+   "fieldtype": "Int",
+   "label": "DB Server RAM",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_pswb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "If free, user will not be charged for the snapshot",
+   "fieldname": "free",
+   "fieldtype": "Check",
+   "label": "Free",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_jszb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "expire_at",
+   "fieldtype": "Datetime",
+   "label": "Expire At"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "link_doctype": "Server Snapshot Recovery",
+   "link_fieldname": "snapshot"
+  }
+ ],
+ "modified": "2025-08-31 22:10:52.060768",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Server Snapshot",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

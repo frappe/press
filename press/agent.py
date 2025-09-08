@@ -26,10 +26,9 @@ from press.utils import (
 if TYPE_CHECKING:
 	from io import BufferedReader
 
-	from apps.press.press.press.doctype.database_server.database_server import DatabaseServer
-
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_patch.app_patch import AgentPatchConfig, AppPatch
+	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
 		PhysicalBackupRestoration,
 	)
@@ -159,7 +158,7 @@ class Agent:
 		)
 
 	def restore_site(self, site: "Site", skip_failing_patches=False):
-		site.check_enough_space_on_server()
+		site.check_space_on_server_for_restore()
 		apps = [app.app for app in site.apps]
 		public_link, private_link, database_link = None, None, None
 		if site.remote_database_file:
@@ -246,7 +245,7 @@ class Agent:
 		)
 
 	def new_site_from_backup(self, site: "Site", skip_failing_patches=False):
-		site.check_enough_space_on_server()
+		site.check_space_on_server_for_restore()
 		apps = [app.app for app in site.apps]
 
 		def sanitized_site_config(site):
@@ -539,9 +538,16 @@ class Agent:
 					"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
 				}
 				data.update({"offsite": {"bucket": bucket_name, "auth": auth, "path": backups_path}})
-
 			else:
 				log_error("Offsite Backups aren't set yet")
+
+			data.update(
+				{
+					"keep_files_locally_after_offsite_backup": bool(
+						frappe.get_value("Server", site.server, "keep_files_on_server_in_offsite_backup")
+					)
+				}
+			)
 
 		return self.create_agent_job(
 			"Backup Site",
@@ -1480,6 +1486,173 @@ Response: {reason or getattr(result, "text", "Unknown")}
 				"row_ids": row_ids,
 				"database": database,
 			},
+		)
+
+	def ping_database(self, database_server: DatabaseServer):
+		return self.post(
+			"/database/ping",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+			},
+		)
+
+	def get_replication_status(self, database_server: DatabaseServer):
+		return self.post(
+			"/database/replication/status",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+			},
+		)
+
+	def reset_replication(self, database_server: DatabaseServer):
+		return self.post(
+			"/database/replication/reset",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+			},
+		)
+
+	def configure_replication(
+		self,
+		database_server: DatabaseServer,
+		master_database_server: DatabaseServer,
+		gtid_slave_pos: str | None = None,
+	):
+		return self.post(
+			"/database/replication/config",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+				"master_private_ip": master_database_server.private_ip,
+				"master_mariadb_root_password": master_database_server.get_password("mariadb_root_password"),
+				"gtid_slave_pos": gtid_slave_pos,
+			},
+		)
+
+	def start_replication(self, database_server: DatabaseServer):
+		return self.post(
+			"/database/replication/start",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+			},
+		)
+
+	def stop_replication(self, database_server: DatabaseServer):
+		return self.post(
+			"/database/replication/stop",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+			},
+		)
+
+	# Snapshot Recovery Related Methods
+	def search_sites_in_snapshot(self, sites: list[str], reference_doctype=None, reference_name=None):
+		return self.create_agent_job(
+			"Search Sites In Snapshot",
+			"/snapshot_recovery/search_sites",
+			data={"sites": sites},
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def backup_site_database_from_snapshot(
+		self,
+		cluster: str,
+		site: str,
+		database_name: str,
+		database_server: str,
+		reference_doctype=None,
+		reference_name=None,
+	):
+		from press.press.doctype.site_backup.site_backup import get_backup_bucket
+
+		database_server: DatabaseServer = frappe.get_doc("Database Server", database_server)
+		data = {
+			"site": site,
+			"database_name": database_name,
+			"database_ip": frappe.get_value(
+				"Virtual Machine", database_server.virtual_machine, "private_ip_address"
+			),
+			"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+		}
+
+		# offsite config
+		settings = frappe.get_single("Press Settings")
+		backups_path = os.path.join(site, str(date.today()))
+		backup_bucket = get_backup_bucket(cluster, region=True)
+		bucket_name = backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
+		if settings.aws_s3_bucket or bucket_name:
+			auth = {
+				"ACCESS_KEY": settings.offsite_backups_access_key_id,
+				"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
+				"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
+			}
+			data.update({"offsite": {"bucket": bucket_name, "auth": auth, "path": backups_path}})
+		else:
+			frappe.throw("Offsite Backups aren't setup yet")
+
+		return self.create_agent_job(
+			"Backup Database From Snapshot",
+			"/snapshot_recovery/backup_database",
+			data=data,
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def backup_site_files_from_snapshot(
+		self,
+		cluster: str,
+		site: str,
+		bench: str,
+		reference_doctype=None,
+		reference_name=None,
+	):
+		from press.press.doctype.site_backup.site_backup import get_backup_bucket
+
+		data = {
+			"site": site,
+			"bench": bench,
+		}
+
+		# offsite config
+		settings = frappe.get_single("Press Settings")
+		backups_path = os.path.join(site, str(date.today()))
+		backup_bucket = get_backup_bucket(cluster, region=True)
+		bucket_name = backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
+		if settings.aws_s3_bucket or bucket_name:
+			auth = {
+				"ACCESS_KEY": settings.offsite_backups_access_key_id,
+				"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
+				"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
+			}
+			data.update({"offsite": {"bucket": bucket_name, "auth": auth, "path": backups_path}})
+		else:
+			frappe.throw("Offsite Backups aren't setup yet")
+
+		return self.create_agent_job(
+			"Backup Files From Snapshot",
+			"/snapshot_recovery/backup_files",
+			data=data,
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def update_database_host_in_all_benches(
+		self, db_host: str, reference_doctype: str | None = None, reference_name: str | None = None
+	):
+		return self.create_agent_job(
+			"Update Database Host",
+			"/benches/database_host",
+			data={
+				"db_host": db_host,
+			},
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
 		)
 
 
