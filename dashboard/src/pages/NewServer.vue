@@ -270,19 +270,19 @@
 
 					<ul>
 						<li v-if="this.storagePlanRate">
-							• You will be charged at the rate of
+							You will be charged at the rate of
 							<b>{{ this.$format.userCurrency(this.storagePlanRate) }}/mo</b>
 							for each additional GB of storage.
 						</li>
 
 						<li>
-							• Disabling this feature may result in
+							Disabling this feature may result in
 							<strong>service degradation or downtime</strong> if storage is
 							exhausted.
 						</li>
 
 						<li>
-							• Storage can auto increase only once in <strong>6 hours</strong>.
+							Storage can auto increase only once in <strong>6 hours</strong>.
 						</li>
 					</ul>
 				</div>
