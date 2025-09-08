@@ -82,6 +82,7 @@ def get_partner_details(partner_email):
 			"partner_website",
 			"introduction",
 			"customers",
+			"custom_process_maturity_level",
 		],
 	)
 	if data:

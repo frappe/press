@@ -20,7 +20,7 @@
 			<NumberChart
 				:config="{
 					title: 'PMM Rating',
-					value: 4,
+					value: partnerDetails.data?.custom_process_maturity_level || '0',
 				}"
 				class="border rounded-md"
 			/>
@@ -30,8 +30,6 @@
 					title: 'Contribution',
 					value: currentMonthContribution.data || 0,
 					prefix: team.doc.currency == 'INR' ? '₹' : '$',
-					delta: 10,
-					deltaSuffix: '%',
 				}"
 				class="border rounded-md"
 			/>
