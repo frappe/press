@@ -4,7 +4,7 @@
 frappe.ui.form.on('Virtual Disk Resize', {
 	refresh(frm) {
 		[
-			[__('Start'), 'execute', frm.doc.status === 'Pending'],
+			[__('Start'), 'execute', frm.doc.status === 'Ready'],
 			[__('Force Continue'), 'force_continue', frm.doc.status === 'Failure'],
 			[__('Force Fail'), 'force_fail', frm.doc.status === 'Running'],
 			[__('Propagate Volume ID'), 'propagate_volume_id'],
