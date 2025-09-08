@@ -4,6 +4,7 @@
 
 import json
 import random
+import time
 import typing
 from enum import Enum
 
@@ -361,7 +362,34 @@ class IncidentInvestigator(Document):
 		"""Investigate potential issues with the main application server."""
 		self._investigate_component("name", "server_investigation_steps")
 
-	def add_action(self, reference_doctype: str, reference_name: str, method: str):
+	def _check_process_list_capture(self) -> tuple[bool, bool]:
+		"""Check if process list capture is completed first bool is for termination second is for status"""
+		database_server = frappe.db.get_value("Server", self.server, "database_server")
+		play_status = frappe.db.get_value(
+			"Ansible Play",
+			{
+				"play": "Capture Process List",
+				"server": database_server,
+				"creation": (">", self.creation),
+			},
+			"status",
+		)
+		if not play_status:
+			return False, False
+
+		if play_status and play_status not in ("Success", "Failure"):
+			return False, False
+
+		# Terminated check status
+		return True, play_status == "Success"
+
+	def add_action(
+		self,
+		reference_doctype: str,
+		reference_name: str,
+		method: str,
+		wait: bool = False,
+	):
 		"""Add action in the action steps"""
 		action_step: ActionStep = self.append(
 			"action_steps",
@@ -370,6 +398,7 @@ class IncidentInvestigator(Document):
 				"reference_name": reference_name,
 				"method": method,
 				"is_taken": False,
+				"wait": wait,
 			},
 		)
 		action_step.save()
@@ -385,7 +414,8 @@ class IncidentInvestigator(Document):
 
 	def _initiate_process_list_capture_and_reboot_mariadb(self, database_server: str):
 		"""Capture database process list and restart mariadb"""
-		self.add_action("Database Server", database_server, "_capture_process_list")
+		self.add_action("Database Server", database_server, "capture_process_list")
+		self.add_action("Incident Investigator", self.name, "_check_process_list_capture", wait=True)
 		self.add_action("Database Server", database_server, "restart_mariadb")
 
 	def add_proxy_investigation_actions(self):
@@ -440,6 +470,41 @@ class IncidentInvestigator(Document):
 		"""Stop calls in case of high disk usage & add investigation actions"""
 		self.stop_calls_on_high_disk_usage()
 		self.add_investigation_actions()
+		execute_action_steps = frappe.db.get_single_value(
+			"Press Settings", "execute_incident_action", cache=True
+		)
+		if self.action_steps and execute_action_steps:
+			frappe.enqueue_doc(self.doctype, self.name, "execute_action_steps", queue="long")
+
+	def execute_action_steps(self, max_retries: int = 60):
+		"""
+		Execute all action steps sequentially max retries of 60 with interval 5 (5 minutes)
+		"""
+		for step in self.action_steps:
+			target_doc = frappe.get_doc(step.reference_doctype, step.reference_name)
+
+			method = getattr(target_doc, step.method)
+			if not step.wait:
+				# Fire-and-forget execution
+				method()
+				self.add_comment(text=f"Called {step.method}")
+				continue
+
+			retries = 0
+			while retries < max_retries:
+				is_terminated, is_successful = method()
+
+				if is_terminated and is_successful:
+					# Step succeeded, continue to next step
+					break
+				if is_terminated and not is_successful:
+					# Don't execute anything further
+					return
+				if not is_terminated:
+					time.sleep(5)
+					retries += 1
+			else:
+				frappe.throw(f"Step {step.method} did not terminate after {max_retries * 5} seconds")
 
 	def investigate(self):
 		"""
