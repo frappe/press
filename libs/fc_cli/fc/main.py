@@ -6,12 +6,10 @@ from rich.console import Console
 
 from fc.authentication.login import OtpLogin, session_file_path
 from fc.authentication.session import CloudSession
-from fc.commands.deploy import get_deploy_information_and_deploy, get_deploys
 from fc.commands.servers import server_usage
 from fc.models import ClientList
 
 app = typer.Typer(help="FC CLI")
-deploy = typer.Typer(help="Manage deploys")
 server = typer.Typer(help="Server Info")
 
 
@@ -126,54 +124,6 @@ def usage(ctx: typer.Context, name: str = typer.Option(None, "--name", "-n", hel
 		server_usage(name, session, console)
 	except Exception as e:
 		typer.secho(f"Error getting server usage: {e!s}", fg="red")
-
-
-def get_release_groups(session: CloudSession) -> list[dict[str, str]]:
-	"""Get all release groups in for a user"""
-	release_group_data = ClientList(
-		doctype="Release Group",
-		filters={},
-		fields=["name", "title"],
-		start=0,
-		limit=99999,
-		limit_start=0,
-		limit_page_length=99999,
-		debug=0,
-	)
-	message = session.post(
-		"press.api.client.get_list", json=release_group_data, message="[bold green]Getting bench groups..."
-	)
-	return [{"name": info["title"], "value": info["name"]} for info in message]
-
-
-@deploy.command(help="Create a new deploy")
-def create_deploy(ctx: typer.Context):
-	session: CloudSession = ctx.obj
-	release_groups = get_release_groups(session)
-	if not release_groups:
-		typer.secho("No release groups found.", fg="red")
-		return
-	choices = [rg["name"] for rg in release_groups]
-	values = [rg["value"] for rg in release_groups]
-	selected_name = typer.prompt("Select Release Group", type=typer.Choice(choices, case_sensitive=False))
-	idx = choices.index(selected_name)
-	selection = values[idx]
-	get_deploy_information_and_deploy(selection, session, console)
-
-
-@deploy.command(help="Get deploys of bench group")
-def show_deploy(ctx: typer.Context):
-	session: CloudSession = ctx.obj
-	release_groups = get_release_groups(session)
-	if not release_groups:
-		typer.secho("No release groups found.", fg="red")
-		return
-	choices = [rg["name"] for rg in release_groups]
-	values = [rg["value"] for rg in release_groups]
-	selected_name = typer.prompt("Select Release Group", type=typer.Choice(choices, case_sensitive=False))
-	idx = choices.index(selected_name)
-	release_group = values[idx]
-	get_deploys(release_group, session, console)
 
 
 @server.command(help="Shows the current plan for a server")
@@ -411,7 +361,6 @@ def delete_server(
 		typer.secho(f"Error deleting server: {e!s}", fg="red")
 
 
-app.add_typer(deploy, name="deploy")
 app.add_typer(server, name="server")
 
 
