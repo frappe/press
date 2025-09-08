@@ -192,6 +192,17 @@
     mode: '{{ item.mount_point_mode }}'
   loop: '{{ bind_mounts }}'
 
+- name: Copy existing data to bind mount source if needed
+  command: cp -a {{ item.mount_point }}/. {{ item.source }}/
+  when:
+    - item.mount_point is defined
+    - item.source is defined
+    - hetzner_cloud | default(false) | bool
+    - item.mount_point != item.source
+    - item.mount_point_owner is defined
+    - item.mount_point_group is defined
+  loop: '{{ bind_mounts }}'
+
 - name: Mount Bind Mounts
   mount:
     src: '{{ item.source }}'

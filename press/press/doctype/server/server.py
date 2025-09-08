@@ -1247,7 +1247,7 @@ class BaseServer(Document, TagHelpers):
 	def fetch_volumes_from_virtual_machine(self):
 		machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		for volume in machine.volumes:
-			if volume.device == "/dev/sda1":
+			if volume.device == "/dev/sda1" or (self.provider == "Hetzner" and volume.device == "/dev/sda"):
 				# Skip root volume. This is for AWS other providers may have different root volume
 				continue
 			self.append("mounts", {"volume_id": volume.volume_id})
@@ -1328,6 +1328,8 @@ class BaseServer(Document, TagHelpers):
 					mount.mount_point = f"/mnt/{stripped_id}"
 
 	def get_device_from_volume_id(self, volume_id):
+		if self.provider == "Hetzner":
+			return f"/dev/disk/by-id/scsi-0HC_Volume_{volume_id}"
 		stripped_id = volume_id.replace("-", "")
 		return f"/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_{stripped_id}"
 
@@ -1507,6 +1509,7 @@ class BaseServer(Document, TagHelpers):
 				"start_filebeat_after_mount": stop_docker_before_mount or stop_mariadb_before_mount,
 				"cleanup_db_replication_files": cleanup_db_replication_files,
 				"rotate_additional_volume_metadata": rotate_additional_volume_metadata,
+				"hetzner_cloud": self.provider == "Hetzner",
 				**self.get_mount_variables(),
 			}
 			if self.doctype == "Database Server" and self.provider != "Generic":
@@ -1932,7 +1935,7 @@ class Server(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner"]
 		proxy_server: DF.Link | None
 		public: DF.Check
 		ram: DF.Float
@@ -2129,6 +2132,21 @@ class Server(BaseServer):
 	def ansible_run(self, command: str) -> dict[str, str]:
 		inventory = f"{self.ip},"
 		return AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
+
+	def setup_docker(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_docker", timeout=1200)
+
+	def _setup_docker(self):
+		try:
+			ansible = Ansible(
+				playbook="docker.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Docker Setup Exception", server=self.as_dict())
 
 	def setup_archived_folder(self):
 		frappe.enqueue_doc(
