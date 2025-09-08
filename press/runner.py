@@ -16,6 +16,8 @@ from ansible.vars.manager import VariableManager
 from frappe.utils import cstr
 from frappe.utils import now_datetime as now
 
+from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
+
 
 def reconnect_on_failure():
 	@wrapt.decorator
@@ -208,7 +210,7 @@ class Ansible:
 		TaskExecutor._poll_async_result = self._poll_async_result
 		ActionModule.run = self.action_module_run
 
-	def run(self):
+	def run(self) -> AnsiblePlay:
 		self.executor = PlaybookExecutor(
 			playbooks=[self.playbook_path],
 			inventory=self.inventory,
