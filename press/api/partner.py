@@ -66,6 +66,13 @@ def get_partner_details(partner_email):
 			"partner_name",
 			"custom_number_of_certified_members",
 			"end_date",
+<<<<<<< HEAD
+=======
+			"partner_website",
+			"introduction",
+			"customers",
+			"custom_process_maturity_level",
+>>>>>>> 267a95543 (fix(prm): Fetch maturity Level)
 		],
 	)
 	if data:
