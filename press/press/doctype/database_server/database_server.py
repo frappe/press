@@ -84,7 +84,7 @@ class DatabaseServer(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner"]
 		public: DF.Check
 		ram: DF.Float
 		root_public_key: DF.Code | None
@@ -1889,6 +1889,23 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			}
 		except Exception:
 			frappe.throw("Failed to fetch storage usage. Try again later.")
+
+	def set_mariadb_mount_dependency(self):
+		if not self.mariadb_depends_on_mounts:
+			return
+		frappe.enqueue_doc(self.doctype, self.name, "_set_mariadb_mount_dependency", timeout=1800)
+
+	def _set_mariadb_mount_dependency(self):
+		try:
+			ansible = Ansible(
+				playbook="set_mariadb_mount_dependency.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Set MariaDB Mount Dependency Exception", server=self.as_dict())
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Database Server")
