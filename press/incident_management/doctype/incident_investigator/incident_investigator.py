@@ -470,17 +470,16 @@ class IncidentInvestigator(Document):
 		"""Stop calls in case of high disk usage & add investigation actions"""
 		self.stop_calls_on_high_disk_usage()
 		self.add_investigation_actions()
-
-		if self.action_steps:
-			self.execute_action_steps()
+		execute_action_steps = frappe.db.get_single_value(
+			"Press Settings", "execute_incident_action", cache=True
+		)
+		if self.action_steps and execute_action_steps:
+			frappe.enqueue_doc(self.doctype, self.name, "execute_action_steps", queue="long")
 
 	def execute_action_steps(self, max_retries: int = 60):
 		"""
 		Execute all action steps sequentially max retries of 60 with interval 5 (5 minutes)
 		"""
-		if not frappe.db.get_single_value("Press Settings", "execute_incident_action", cache=True):
-			return
-
 		for step in self.action_steps:
 			target_doc = frappe.get_doc(step.reference_doctype, step.reference_name)
 
