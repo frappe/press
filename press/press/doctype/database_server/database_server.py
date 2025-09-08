@@ -1070,6 +1070,9 @@ class DatabaseServer(BaseServer):
 		except Exception:
 			log_error("Deadlock Logger Setup Exception", server=self.as_dict())
 
+	def capture_process_list(self) -> None:
+		frappe.enqueue_doc(self.doctype, self.name, "_capture_process_list")
+
 	def _capture_process_list(self) -> str | None:
 		"""Capture full process list on the database server"""
 		try:
