@@ -50,7 +50,6 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Username",
-   "not_nullable": 1,
    "read_only": 1,
    "set_only_once": 1,
    "unique": 1
@@ -59,7 +58,6 @@
    "fieldname": "password",
    "fieldtype": "Password",
    "label": "Password",
-   "not_nullable": 1,
    "read_only": 1,
    "set_only_once": 1
   },
@@ -117,8 +115,7 @@
   {
    "fieldname": "failure_reason",
    "fieldtype": "Small Text",
-   "label": "Failure Reason",
-   "not_nullable": 1
+   "label": "Failure Reason"
   },
   {
    "fieldname": "team",
@@ -151,7 +148,7 @@
    "link_fieldname": "reference_name"
   }
  ],
- "modified": "2024-11-29 16:29:57.632579",
+ "modified": "2025-09-01 13:44:51.350883",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Database User",
@@ -180,20 +177,9 @@
    "role": "Press Admin",
    "share": 1,
    "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Press Member",
-   "share": 1,
-   "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": []

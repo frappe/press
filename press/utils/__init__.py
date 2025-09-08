@@ -118,9 +118,7 @@ def get_current_team(get_doc=False):
 	# `team_name` getting injected by press.saas.api.whitelist_saas_api decorator
 	team = x_press_team if x_press_team else getattr(frappe.local, "team_name", "")
 
-	user_is_press_admin = frappe.db.exists("Has Role", {"parent": frappe.session.user, "role": "Press Admin"})
-
-	if not team and user_is_press_admin and frappe.db.exists("Team", {"user": frappe.session.user}):
+	if not team and has_role("Press Admin") and frappe.db.exists("Team", {"user": frappe.session.user}):
 		# if user has_role of Press Admin then just return current user as default team
 		return (
 			frappe.get_doc("Team", {"user": frappe.session.user, "enabled": 1})

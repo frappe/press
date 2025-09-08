@@ -284,7 +284,7 @@ class ProductTrialRequest(Document):
 		)
 		if status == "Success":
 			if self.status == "Site Created":
-				return {"progress": 100}
+				return {"progress": 100, "current_step": self.status}
 			if self.status == "Adding Domain":
 				return {"progress": 90, "current_step": self.status}
 			return {"progress": 80, "current_step": self.status}
@@ -352,7 +352,7 @@ class ProductTrialRequest(Document):
 
 		sid = site.get_login_sid()
 		self.check_site_accessible()
-		return f"https://{self.domain or self.site}/desk?sid={sid}"
+		return f"https://{self.domain or self.site}/app?sid={sid}"
 
 
 def get_app_trial_page_url():

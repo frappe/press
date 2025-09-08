@@ -9,6 +9,7 @@ import subprocess
 import time
 from contextlib import suppress
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import frappe
 import OpenSSL
@@ -23,6 +24,9 @@ from press.exceptions import (
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.runner import Ansible
 from press.utils import get_current_team, log_error
+
+if TYPE_CHECKING:
+	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 
 AUTO_RETRY_LIMIT = 5
 MANUAL_RETRY_LIMIT = 8
@@ -188,14 +192,30 @@ class TLSCertificate(Document):
 
 		for server_doctype in server_doctypes:
 			servers = frappe.get_all(
-				server_doctype, {"status": "Active", "name": ("like", f"%.{self.domain}")}
+				server_doctype,
+				filters={
+					"status": ("not in", ["Archived", "Installing"]),
+					"name": ("like", f"%.{self.domain}"),
+				},
+				fields=["name", "status"],
 			)
 			for server in servers:
-				frappe.enqueue(
-					"press.press.doctype.tls_certificate.tls_certificate.update_server_tls_certifcate",
-					server=frappe.get_doc(server_doctype, server),
-					certificate=self,
-				)
+				if server.status == "Active":
+					frappe.enqueue(
+						"press.press.doctype.tls_certificate.tls_certificate.update_server_tls_certifcate",
+						server=frappe.get_doc(server_doctype, server.name),
+						certificate=self,
+						enqueue_after_commit=True,
+					)
+				else:
+					# If server is not active, mark the tls_certificate_renewal_failed field as True
+					frappe.db.set_value(
+						server_doctype,
+						server.name,
+						"tls_certificate_renewal_failed",
+						1,
+						update_modified=False,
+					)
 
 	@frappe.whitelist()
 	def trigger_site_domain_callback(self):
@@ -387,7 +407,15 @@ def update_server_tls_certifcate(server, certificate):
 				"proxysql_admin_password": proxysql_admin_password,
 			},
 		)
-		ansible.run()
+		play: "AnsiblePlay" = ansible.run()
+		frappe.db.set_value(
+			server.doctype,
+			server.name,
+			"tls_certificate_renewal_failed",
+			play.status != "Success",
+			# to avoid causing TimestampMismatchError in other important tasks
+			update_modified=False,
+		)
 	except Exception:
 		log_error("TLS Setup Exception", server=server.as_dict())
 
@@ -404,16 +432,23 @@ def retrigger_failed_wildcard_tls_callbacks():
 		"Trace Server",
 	]
 	for server_doctype in server_doctypes:
-		servers = frappe.get_all(server_doctype, {"status": "Active"}, pluck="name")
+		servers = frappe.get_all(
+			server_doctype, filters={"status": "Active"}, fields=["name", "tls_certificate_renewal_failed"]
+		)
 		for server in servers:
-			plays = frappe.get_all(
-				"Ansible Play",
-				{"play": "Setup TLS Certificates", "server": server},
-				pluck="status",
-				limit=1,
-				order_by="creation DESC",
-			)
-			if plays and plays[0] != "Success":
+			previous_attempt_failed = server.tls_certificate_renewal_failed
+			if not previous_attempt_failed:
+				plays = frappe.get_all(
+					"Ansible Play",
+					{"play": "Setup TLS Certificates", "server": server.name},
+					pluck="status",
+					limit=1,
+					order_by="creation DESC",
+				)
+				if plays and plays[0] != "Success":
+					previous_attempt_failed = True
+
+			if previous_attempt_failed:
 				server_doc = frappe.get_doc(server_doctype, server)
 				frappe.enqueue(
 					"press.press.doctype.tls_certificate.tls_certificate.update_server_tls_certifcate",

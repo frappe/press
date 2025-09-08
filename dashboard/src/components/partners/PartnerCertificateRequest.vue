@@ -3,36 +3,43 @@
 		<Dialog
 			:show="show"
 			v-model="show"
-			:options="{ title: 'Apply for Certification' }"
+			:options="{ title: 'Apply for Free Certification' }"
 		>
 			<template #body-content>
-				<p class="pb-3 text-p-base">
-					Enter the details to apply for a certificate.
-				</p>
-				<FormControl
-					class="py-2"
-					name="certificate_type"
-					type="select"
-					:options="courseTypes"
-					label="Certificate Type"
-					v-model="certificateType"
-				/>
-				<FormControl
-					class="pt-2"
-					name="member_name"
-					type="select"
-					:options="memberList"
-					label="Member Name"
-					v-model="userName"
-				/>
-
-				<div class="pt-4">
-					<Button
-						class="w-full"
-						variant="solid"
-						label="Apply for Certificate"
-						@click="applyForCertificate.submit()"
+				<div v-if="canApply">
+					<p class="pb-3 text-p-base">
+						Enter the details to apply for a certificate.
+					</p>
+					<FormControl
+						class="py-2"
+						name="certificate_type"
+						type="select"
+						:options="courseTypes"
+						label="Certificate Type"
+						v-model="certificateType"
 					/>
+					<FormControl
+						class="pt-2"
+						name="member_name"
+						type="select"
+						:options="memberList"
+						label="Member Name"
+						v-model="userName"
+					/>
+
+					<div class="pt-4">
+						<Button
+							class="w-full"
+							variant="solid"
+							label="Apply for Certificate"
+							@click="applyForCertificate.submit()"
+						/>
+					</div>
+				</div>
+				<div v-else>
+					<p class="text-p-base">
+						You can only apply for a maximum of 2 free certificates.
+					</p>
 				</div>
 			</template>
 		</Dialog>
@@ -41,7 +48,7 @@
 
 <script setup>
 import { defineEmits, onMounted, ref } from 'vue';
-import { createResource } from 'frappe-ui';
+import { createResource, createListResource } from 'frappe-ui';
 import { getTeam } from '../../data/team';
 
 const courseTypes = [
@@ -83,6 +90,21 @@ const applyForCertificate = createResource({
 	},
 	onError: (error) => {
 		console.error(error);
+	},
+});
+
+const canApply = ref(true);
+createListResource({
+	doctype: 'Partner Certificate',
+	fields: ['name'],
+	filters: {
+		team: team.name,
+		free: 1,
+	},
+	cache: 'freeCertificates',
+	auto: true,
+	onSuccess: (data) => {
+		canApply.value = Boolean(data.length < 2);
 	},
 });
 

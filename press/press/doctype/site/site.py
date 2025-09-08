@@ -16,7 +16,7 @@ import frappe.utils
 import pytz
 import requests
 import rq
-from frappe import _
+from frappe import _, has_permission
 from frappe.core.utils import find
 from frappe.frappeclient import FrappeClient, FrappeException
 from frappe.model.document import Document
@@ -1632,7 +1632,7 @@ class Site(Document, TagHelpers):
 	@site_action(["Active", "Broken"])
 	def login_as_admin(self, reason=None):
 		sid = self.login(reason=reason)
-		return f"https://{self.host_name or self.name}/desk?sid={sid}"
+		return f"https://{self.host_name or self.name}/app?sid={sid}"
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
@@ -1643,10 +1643,10 @@ class Site(Document, TagHelpers):
 			if self.standby_for_product and self.is_setup_wizard_complete:
 				redirect_route = (
 					frappe.db.get_value("Product Trial", self.standby_for_product, "redirect_to_after_login")
-					or "/desk"
+					or "/app"
 				)
 			else:
-				redirect_route = "/desk"
+				redirect_route = "/app"
 			return f"https://{self.host_name or self.name}{redirect_route}?sid={sid}"
 
 		frappe.throw("No additional system user created for this site")
@@ -1659,10 +1659,10 @@ class Site(Document, TagHelpers):
 			if self.standby_for_product:
 				redirect_route = (
 					frappe.db.get_value("Product Trial", self.standby_for_product, "redirect_to_after_login")
-					or "/desk"
+					or "/app"
 				)
 			else:
-				redirect_route = "/desk"
+				redirect_route = "/app"
 			return f"https://{self.host_name or self.name}{redirect_route}?sid={sid}"
 		except Exception as e:
 			frappe.throw(str(e))
@@ -2035,8 +2035,19 @@ class Site(Document, TagHelpers):
 				self.status = "Active"
 				self.save()
 
+	def is_responsive(self):
+		try:
+			response = self.ping()
+			if response.status_code != requests.codes.ok:
+				return False
+			if response.json().get("message") != "pong":
+				return False
+			return True
+		except Exception:
+			return False
+
 	def ping(self):
-		return requests.get(f"https://{self.name}/api/method/ping")
+		return requests.get(f"https://{self.name}/api/method/ping", timeout=5)
 
 	def _set_configuration(self, config: list[dict]):
 		"""Similar to _update_configuration but will replace full configuration at once
@@ -2341,7 +2352,8 @@ class Site(Document, TagHelpers):
 		log_site_activity(self.name, "Activate Site")
 		if self.status == "Suspended":
 			self.reset_disk_usage_exceeded_status()
-		self.status = "Active"
+		# If site was broken, check if it's responsive before marking it as active
+		self.status = "Broken" if (self.status == "Broken" and not self.is_responsive()) else "Active"
 		self.update_site_config({"maintenance_mode": 0})
 		self.update_site_status_on_proxy("activated")
 		self.reactivate_app_subscriptions()
@@ -3039,7 +3051,7 @@ class Site(Document, TagHelpers):
 				"description": "Manage users and permissions for your site database",
 				"button_label": "Manage",
 				"doc_method": "dummy",
-				"condition": not self.hybrid_site,
+				"condition": not self.hybrid_site and has_permission("Site Database User"),
 			},
 			{
 				"action": "Schedule backup",

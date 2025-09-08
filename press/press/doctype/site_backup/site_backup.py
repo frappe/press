@@ -15,6 +15,7 @@ from frappe.model.document import Document
 
 from press.agent import Agent
 from press.exceptions import SiteTooManyPendingBackups
+from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 
 if TYPE_CHECKING:
@@ -248,7 +249,7 @@ class SiteBackup(Document):
 			):
 				self.autocorrect_bench_permissions()
 		except Exception as e:
-			frappe.throw("Failed to correct bench permissions", {str(e)})
+			frappe.throw("Failed to correct bench permissions", str(e))
 
 	def _rollback_db_directory_permissions(self):
 		if not self.physical:
@@ -354,19 +355,32 @@ class SiteBackup(Document):
 		Run this whenever a Site Backup fails with the error
 		"[Errno 13]: Permission denied".
 		"""
-		job = frappe.db.get_value(
-			"Agent Job", self.job, filters={"status": "Failure"}, fields=["bench", "output"]
+		job = frappe.db.get_value("Agent Job", self.job, ["bench", "server", "output"], as_dict=True)
+		import re
+
+		play_exists = frappe.db.get_value(
+			"Ansible Play",
+			filters={
+				"play": "Correct Bench Permissions",
+				"status": ["in", ["Pending", "Running"]],
+				"server": job.server,
+				"variables": ["like", "f%{job.bench}%"],
+			},
 		)
-		if job and "Permission denied" in job.output:
+
+		if job and not play_exists and re.search(r"\[Errno 13\] Permission denied", job.output):
 			try:
 				bench = frappe.get_doc("Bench", job.bench)
 				bench.correct_bench_permissions()
-				frappe.logger().info(f"Bench permissions corrected for backup {self.name}")
 				return True
-			except Exception as e:
-				frappe.logger().info("Failed to correct bench permissions.", {str(e)})
+			except Exception:
+				frappe.log_error(
+					"Failed to correct bench permissions.",
+					reference_doctype=self.doctype,
+					reference_name=self.name,
+				)
 				return False
-		return True
+		return False
 
 	@classmethod
 	def offsite_backup_exists(cls, site: str, day: datetime.date) -> bool:
@@ -384,6 +398,9 @@ class SiteBackup(Document):
 	@classmethod
 	def file_backup_exists(cls, site: str, day: datetime.date) -> bool:
 		return cls.backup_exists(site, day, {"with_files": True})
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site Backup")
 
 
 class OngoingSnapshotError(Exception):

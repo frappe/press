@@ -7,6 +7,7 @@ from typing import TypedDict
 
 import frappe
 import requests
+from frappe.utils.caching import redis_cache
 from requests.auth import HTTPBasicAuth
 
 from press.press.doctype.server.server import BaseServer
@@ -60,6 +61,7 @@ class MonitorServer(BaseServer):
 		ssh_port: DF.Int
 		ssh_user: DF.Data | None
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		tls_certificate_renewal_failed: DF.Check
 		virtual_machine: DF.Link | None
 		webhook_token: DF.Data | None
 	# end: auto-generated types
@@ -285,3 +287,17 @@ class MonitorServer(BaseServer):
 			if alert["labels"]["server"] == server:
 				benches.append(alert["labels"]["bench"])
 		return set(benches)
+
+
+@redis_cache(ttl=3600)
+def get_monitor_server_ips():
+	servers = frappe.get_all(
+		"Monitor Server", filters={"status": ["!=", "Archived"]}, fields=["ip", "private_ip"]
+	)
+	ips = []
+	for server in servers:
+		if server.ip:
+			ips.append(server.ip)
+		if server.private_ip:
+			ips.append(server.private_ip)
+	return ips
