@@ -756,7 +756,7 @@ class VirtualMachine(Document):
 			self.series,
 			self.name,
 			action="Disk Size Change",
-			reason=f"{'Root' if is_root_volume else 'Data'} volume increased by {increment}",
+			reason=f"{'Root' if is_root_volume else 'Data'} volume increased by {increment} GB",
 		)
 
 		self.save()
