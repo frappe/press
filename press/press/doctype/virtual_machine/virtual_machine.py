@@ -36,8 +36,6 @@ from oci.core.models import (
 	UpdateVolumeDetails,
 )
 from oci.exceptions import TransientServiceError
-from tenacity import retry, stop_after_attempt, wait_fixed
-from tenacity.retry import retry_if_not_result
 
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.server_activity.server_activity import log_server_activity
@@ -45,8 +43,6 @@ from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
 
 if typing.TYPE_CHECKING:
-	from hcloud.servers.client import BoundServer
-
 	from press.infrastructure.doctype.virtual_machine_migration.virtual_machine_migration import (
 		VirtualMachineMigration,
 	)
@@ -1788,18 +1784,6 @@ class VirtualMachine(Document):
 		except botocore.exceptions.ClientError as e:
 			if e.response.get("Error", {}).get("Code") == "InvalidVolumeModification.NotFound":
 				return None
-
-	@retry(
-		retry=retry_if_not_result(lambda result: result is True),
-		wait=wait_fixed(1),
-		stop=stop_after_attempt(30),
-	)
-	def wait_for_detach(self, server: BoundServer):
-		# TODO: Delete this method
-		if self.cloud_provider != "Hetzner":
-			raise NotImplementedError
-		server.reload()
-		return bool(server.private_net)
 
 	def correct_private_ip(self):
 		"""
