@@ -381,13 +381,6 @@ class Incident(WebsiteGenerator):
 		self.save()
 
 	@frappe.whitelist()
-	def ignore_for_server(self):
-		"""
-		Ignore incidents on server (Don't call)
-		"""
-		frappe.db.set_value("Server", self.server, "ignore_incidents_since", frappe.utils.now_datetime())
-
-	@frappe.whitelist()
 	def reboot_database_server(self):
 		db_server_name: Server = frappe.db.get_value("Server", self.server, "database_server")
 		if not db_server_name:
@@ -525,8 +518,8 @@ Likely due to insufficient balance or incorrect credentials""",
 		if not self.phone_call or not self.global_phone_call_enabled:
 			return
 		if (
-			ignore_since := frappe.db.get_value("Server", self.server, "ignore_incidents_since")
-		) and ignore_since < frappe.utils.now_datetime():
+			ignore_till := frappe.db.get_value("Server", self.server, "ignore_incidents_till")
+		) and ignore_till > frappe.utils.now_datetime():
 			return
 		for human in self.get_humans():
 			if not (call := self.call_human(human)):
@@ -792,16 +785,16 @@ def notify_ignored_servers():
 	servers = frappe.qb.DocType("Server")
 	if not (
 		ignored_servers := frappe.qb.from_(servers)
-		.select(servers.name, servers.ignore_incidents_since)
+		.select(servers.name, servers.ignore_incidents_till)
 		.where(servers.status == "Active")
-		.where(servers.ignore_incidents_since.isnotnull())
+		.where(servers.ignore_incidents_till.isnotnull())
 		.run(as_dict=True)
 	):
 		return
 
 	message = "The following servers are being ignored for incidents:\n\n"
 	for server in ignored_servers:
-		message += f"{server.name} since {frappe.utils.pretty_date(server.ignore_incidents_since)}\n"
+		message += f"{server.name} till {frappe.utils.pretty_date(server.ignore_incidents_till)}\n"
 	message += "\n@adityahase @balamurali27 @saurabh6790\n"
 	telegram = Telegram()
 	telegram.send(message)

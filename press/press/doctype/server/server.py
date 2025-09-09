@@ -1907,7 +1907,7 @@ class Server(BaseServer):
 		has_data_volume: DF.Check
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
-		ignore_incidents_since: DF.Datetime | None
+		ignore_incidents_till: DF.Datetime | None
 		ip: DF.Data | None
 		ipv6: DF.Data | None
 		is_for_recovery: DF.Check
