@@ -408,9 +408,6 @@ class VirtualMachine(Document):
 			user_data=self.get_cloud_init() if self.virtual_machine_image else "",
 		)
 		server = server_response.server
-		# We assign only one private IP, so should be fine
-		self.private_ip_address = server.private_net[0].ip
-		self.public_ip_address = server.public_net.ipv4.ip
 
 		self.instance_id = server.id
 
