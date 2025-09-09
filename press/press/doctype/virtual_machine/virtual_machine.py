@@ -861,7 +861,7 @@ class VirtualMachine(Document):
 				self.termination_protection = volume.protection["delete"]
 
 			self.vcpu = server_instance.server_type.cores
-			self.ram = server_instance.server_type.memory
+			self.ram = server_instance.server_type.memory * 1024
 			self.has_data_volume = 1
 		else:
 			self.status = "Terminated"
