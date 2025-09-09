@@ -406,10 +406,13 @@ class VirtualMachine(Document):
 			user_data=self.get_cloud_init() if self.virtual_machine_image else "",
 		)
 		server = server_response.server
+<<<<<<< HEAD
 		# We assing only one private IP, so should be fine
 		self.private_ip_address = server.private_net[0].ip
 
 		self.public_ip_address = server.public_net.ipv4.ip
+=======
+>>>>>>> cbf700e03 (fix(hetzner): Don't set public ip at provision time)
 
 		self.instance_id = server.id
 
