@@ -597,7 +597,7 @@ class VirtualMachine(Document):
 		}
 		if server.doctype == "Database Server":
 			memory = frappe.db.get_value("Server Plan", server.plan, "memory") or 1024
-			if memory <= 1024:
+			if memory < 1024:
 				frappe.throw("MariaDB cannot be installed on a server plan with less than 1GB RAM.")
 			mariadb_context = {
 				"server_id": server.server_id,
