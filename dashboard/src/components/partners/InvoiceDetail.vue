@@ -88,8 +88,9 @@ export default {
 			if (!this._invoiceItems) return {};
 			const groupedLineItems = {};
 			for (let item of this._invoiceItems) {
-				groupedLineItems[item.user] = groupedLineItems[item.user] || [];
-				groupedLineItems[item.user].push(item);
+				let key = item.billing_name + ' (' + item.user + ')';
+				groupedLineItems[key] = groupedLineItems[key] || [];
+				groupedLineItems[key].push(item);
 			}
 			return groupedLineItems;
 		},
