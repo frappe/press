@@ -84,7 +84,7 @@
 	</div>
 </template>
 <script setup>
-import { inject, reactive } from 'vue';
+import { inject, computed } from 'vue';
 import { createResource, NumberChart, AxisChart, DonutChart } from 'frappe-ui';
 const team = inject('team');
 
@@ -106,54 +106,51 @@ const currentMonthContribution = createResource({
 	},
 });
 
-let axisConfigData = reactive([]);
-createResource({
+let partnerInvoices = createResource({
 	url: 'press.api.partner.get_partner_mrr',
 	auto: true,
 	cache: 'partnerInvoices',
 	params: {
 		partner_email: team.doc.partner_email,
 	},
-	onSuccess: (data) => {
-		data.forEach((d) => {
-			axisConfigData.push({
-				date: d.due_date,
-				amount: d.total_amount || 0,
-			});
-		});
-	},
 });
 
-let sitePlanData = reactive([]);
-createResource({
+let axisConfigData = computed(
+	() =>
+		partnerInvoices.data?.map((d) => ({
+			date: d.due_date,
+			amount: d.total_amount || 0,
+		})) || [],
+);
+
+let dashboardStats = createResource({
 	url: 'press.api.partner.get_dashboard_stats',
 	auto: true,
 	cache: 'dashboardStats',
-	onSuccess: (data) => {
-		data.forEach((d) => {
-			sitePlanData.push({
-				plans: d.plan,
-				count: d.count || 0,
-			});
-		});
-	},
 });
 
-let partnerCustomerData = reactive([]);
-createResource({
+let sitePlanData = computed(
+	() =>
+		dashboardStats.data?.map((d) => ({
+			plans: d.plan,
+			count: d.count,
+		})) || [],
+);
+
+let partnerCustomerDistribution = createResource({
 	url: 'press.api.partner.get_partner_contribution_list',
 	auto: true,
 	cache: 'partnerCustomerDistribution',
 	params: {
 		partner_email: team.doc.partner_email,
 	},
-	onSuccess: (data) => {
-		data.forEach((d) => {
-			partnerCustomerData.push({
-				team: d.customer_name,
-				amount: d.partner_total || 0,
-			});
-		});
-	},
 });
+
+let partnerCustomerData = computed(
+	() =>
+		partnerCustomerDistribution.data?.map((d) => ({
+			team: d.customer_name,
+			amount: d.partner_total || 0,
+		})) || [],
+);
 </script>
