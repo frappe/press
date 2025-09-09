@@ -445,6 +445,9 @@ export default {
 					timezone: this.localTimezone,
 					query: 'loadavg',
 					duration: this.duration,
+					server_type: this.serverOptions.find(
+						(s) => s.value === this.chosenServer,
+					)?.label,
 				},
 				auto: true,
 			};
@@ -457,6 +460,9 @@ export default {
 					timezone: this.localTimezone,
 					query: 'cpu',
 					duration: this.duration,
+					server_type: this.serverOptions.find(
+						(s) => s.value === this.chosenServer,
+					)?.label,
 				},
 				auto: true,
 			};
@@ -469,6 +475,9 @@ export default {
 					timezone: this.localTimezone,
 					query: 'memory',
 					duration: this.duration,
+					server_type: this.serverOptions.find(
+						(s) => s.value === this.chosenServer,
+					)?.label,
 				},
 				auto: true,
 			};
@@ -481,6 +490,9 @@ export default {
 					timezone: this.localTimezone,
 					query: 'network',
 					duration: this.duration,
+					server_type: this.serverOptions.find(
+						(s) => s.value === this.chosenServer,
+					)?.label,
 				},
 				auto: true,
 			};
@@ -493,6 +505,9 @@ export default {
 					timezone: this.localTimezone,
 					query: 'iops',
 					duration: this.duration,
+					server_type: this.serverOptions.find(
+						(s) => s.value === this.chosenServer,
+					)?.label,
 				},
 				auto: true,
 			};
@@ -505,6 +520,9 @@ export default {
 					timezone: this.localTimezone,
 					query: 'space',
 					duration: this.duration,
+					server_type: this.serverOptions.find(
+						(s) => s.value === this.chosenServer,
+					)?.label,
 				},
 				auto: true,
 			};
@@ -574,7 +592,9 @@ export default {
 					query: 'database_uptime',
 					duration: this.duration,
 				},
-				auto: this.isServerType('Database Server') || this.isServerType('Replication Server'),
+				auto:
+					this.isServerType('Database Server') ||
+					this.isServerType('Replication Server'),
 			};
 		},
 		databaseCommandsCount() {
@@ -587,7 +607,9 @@ export default {
 					duration: this.duration,
 				},
 				auto:
-					this.showAdvancedAnalytics && (this.isServerType('Database Server') || this.isServerType('Replication Server')),
+					this.showAdvancedAnalytics &&
+					(this.isServerType('Database Server') ||
+						this.isServerType('Replication Server')),
 			};
 		},
 		databaseConnections() {
@@ -600,7 +622,9 @@ export default {
 					duration: this.duration,
 				},
 				auto:
-					this.showAdvancedAnalytics && (this.isServerType('Database Server') || this.isServerType('Replication Server')),
+					this.showAdvancedAnalytics &&
+					(this.isServerType('Database Server') ||
+						this.isServerType('Replication Server')),
 			};
 		},
 		innodbBufferPoolSize() {
@@ -613,7 +637,9 @@ export default {
 					duration: this.duration,
 				},
 				auto:
-					this.showAdvancedAnalytics && (this.isServerType('Database Server') || this.isServerType('Replication Server')),
+					this.showAdvancedAnalytics &&
+					(this.isServerType('Database Server') ||
+						this.isServerType('Replication Server')),
 			};
 		},
 		innodbBufferPoolSizeOfTotalRam() {
@@ -626,7 +652,9 @@ export default {
 					duration: this.duration,
 				},
 				auto:
-					this.showAdvancedAnalytics && (this.isServerType('Database Server') || this.isServerType('Replication Server')),
+					this.showAdvancedAnalytics &&
+					(this.isServerType('Database Server') ||
+						this.isServerType('Replication Server')),
 			};
 		},
 		innodbBufferPoolMissPercentage() {
@@ -639,7 +667,9 @@ export default {
 					duration: this.duration,
 				},
 				auto:
-					this.showAdvancedAnalytics && (this.isServerType('Database Server') || this.isServerType('Replication Server')),
+					this.showAdvancedAnalytics &&
+					(this.isServerType('Database Server') ||
+						this.isServerType('Replication Server')),
 			};
 		},
 		innodbAvgRowLockTime() {
@@ -652,7 +682,9 @@ export default {
 					duration: this.duration,
 				},
 				auto:
-					this.showAdvancedAnalytics && (this.isServerType('Database Server') || this.isServerType('Replication Server')),
+					this.showAdvancedAnalytics &&
+					(this.isServerType('Database Server') ||
+						this.isServerType('Replication Server')),
 			};
 		},
 	},
