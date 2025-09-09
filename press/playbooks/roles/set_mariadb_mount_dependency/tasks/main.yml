@@ -1,0 +1,14 @@
+- name: Set MariaDB to depend on Mounts
+  template:
+    src: mounts.conf
+    dest: /etc/systemd/system/mariadb.service.d/mounts.conf
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Restart MariaDB Service
+  systemd:
+    daemon_reload: true
+    name: mysql
+    state: restarted
+    enabled: yes
