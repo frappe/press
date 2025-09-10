@@ -204,7 +204,11 @@ func (m *MultipartUpload) UploadParts(s *Session) error {
 	}
 
 	if len(m.errors) > 0 {
-		return fmt.Errorf("%d parts failed", len(m.errors))
+		errorString := ""
+		for _, err := range m.errors {
+			errorString += fmt.Sprintf("- %v\n", err)
+		}
+		return fmt.Errorf("%d parts failed:\n%s", len(m.errors), errorString)
 	}
 	return nil
 }
