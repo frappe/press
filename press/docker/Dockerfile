@@ -1,4 +1,4 @@
-# syntax = docker/dockerfile:experimental
+# syntax = docker/dockerfile:1
 FROM ubuntu:20.04
 
 ENV FRAPPE_DOCKER_BUILD True
