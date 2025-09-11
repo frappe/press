@@ -8,7 +8,7 @@ import json
 import os
 import time
 from enum import Enum
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 import frappe
 import frappe.utils
@@ -20,11 +20,12 @@ from press.press.doctype.physical_restoration_test.physical_restoration_test imp
 from press.utils import log_error
 
 if TYPE_CHECKING:
-	from apps.press.press.press.doctype.site.site import Site
+	from collections.abc import Callable
 
 	from press.press.doctype.physical_backup_restoration_step.physical_backup_restoration_step import (
 		PhysicalBackupRestorationStep,
 	)
+	from press.press.doctype.site.site import Site
 	from press.press.doctype.site_backup.site_backup import SiteBackup
 	from press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot import VirtualDiskSnapshot
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
@@ -94,6 +95,7 @@ class PhysicalBackupRestoration(Document):
 			(self.attach_volume_to_instance, SyncStep, NoWait, GeneralStep),
 			(self.create_mount_point, SyncStep, NoWait, GeneralStep),
 			(self.mount_volume_to_instance, SyncStep, NoWait, GeneralStep),
+			(self.allow_user_to_modify_db_files_permissions, SyncStep, NoWait, GeneralStep),
 			(self.change_permission_of_backup_directory, SyncStep, NoWait, GeneralStep),
 			(self.change_permission_of_database_directory, SyncStep, NoWait, GeneralStep),
 			(self.restore_database, AsyncStep, NoWait, GeneralStep),
@@ -415,6 +417,21 @@ class PhysicalBackupRestoration(Document):
 		if mount_response["status"] != "Success":
 			return StepStatus.Failure
 		return StepStatus.Success
+
+	def allow_user_to_modify_db_files_permissions(self) -> StepStatus:
+		"""Allow user to modify db files permissions"""
+
+		result = self.ansible_run("""bash -c 'FILE=/etc/sudoers.d/frappe-mysql
+if [ ! -f "$FILE" ]; then
+  {
+    echo "frappe ALL=(ALL) NOPASSWD: /bin/chown mysql\\:mysql /var/lib/mysql/*/*"
+  } > "$FILE"
+  chmod 440 "$FILE"
+fi'
+""")
+		if result["status"] == "Success":
+			return StepStatus.Success
+		return StepStatus.Failure
 
 	def change_permission_of_backup_directory(self) -> StepStatus:
 		"""Change permission of backup files"""
