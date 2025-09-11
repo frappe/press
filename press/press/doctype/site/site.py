@@ -1637,9 +1637,10 @@ class Site(Document, TagHelpers):
 				"Site Login Consent",
 				{
 					"site": self.name,
+					"status": "Approved",
 					"requested_by": frappe.session.user,
 					"approved_by": ("is", "set"),
-					"approved_until": [">", frappe.utils.now_datetime()],
+					"until": [">", frappe.utils.now_datetime()],
 				},
 			)
 			if not has_consent:

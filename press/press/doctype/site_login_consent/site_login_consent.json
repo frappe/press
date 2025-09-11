@@ -1,26 +1,42 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "hash",
- "creation": "2025-09-08 16:16:17.342208",
+ "creation": "2025-09-09 20:09:41.640083",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "section_break_0zvh",
   "expired",
   "site",
   "requested_by",
   "approved_by",
-  "approved_on",
-  "approved_until",
-  "column_break_axje",
-  "reason",
-  "amended_from"
+  "until",
+  "status",
+  "column_break_wcgp",
+  "reason"
  ],
  "fields": [
   {
-   "fieldname": "section_break_0zvh",
-   "fieldtype": "Section Break"
+   "default": "0",
+   "fieldname": "expired",
+   "fieldtype": "Check",
+   "in_filter": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "is_virtual": 1,
+   "label": "Expired"
+  },
+  {
+   "fieldname": "column_break_wcgp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Text",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Reason",
+   "reqd": 1
   },
   {
    "fieldname": "site",
@@ -30,8 +46,7 @@
    "in_standard_filter": 1,
    "label": "Site",
    "options": "Site",
-   "reqd": 1,
-   "search_index": 1
+   "reqd": 1
   },
   {
    "fieldname": "requested_by",
@@ -50,56 +65,37 @@
    "in_preview": 1,
    "in_standard_filter": 1,
    "label": "Approved By",
-   "options": "User"
-  },
-  {
-   "fieldname": "reason",
-   "fieldtype": "Text",
-   "label": "Reason",
+   "options": "User",
    "reqd": 1
   },
   {
-   "fieldname": "column_break_axje",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "amended_from",
-   "fieldtype": "Link",
-   "label": "Amended From",
-   "no_copy": 1,
-   "options": "Site Login Consent",
-   "print_hide": 1,
-   "read_only": 1,
-   "search_index": 1
-  },
-  {
-   "fieldname": "approved_until",
-   "fieldtype": "Datetime",
-   "label": "Approved Until"
-  },
-  {
-   "default": "0",
-   "fieldname": "expired",
-   "fieldtype": "Check",
-   "is_virtual": 1,
-   "label": "Expired"
-  },
-  {
-   "fieldname": "approved_on",
+   "fieldname": "until",
    "fieldtype": "Datetime",
    "in_list_view": 1,
-   "label": "Approved On",
-   "set_only_once": 1
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Until",
+   "reqd": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nApproved\nRejected",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
- "is_submittable": 1,
+ "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-08 17:44:10.579258",
+ "modified": "2025-09-11 11:19:08.353074",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Login Consent",
- "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [
   {
@@ -112,11 +108,9 @@
    "report": 1,
    "role": "System Manager",
    "share": 1,
-   "submit": 1,
    "write": 1
   },
   {
-   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,
@@ -124,11 +118,9 @@
    "report": 1,
    "role": "Press Admin",
    "share": 1,
-   "submit": 1,
    "write": 1
   },
   {
-   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,
@@ -136,14 +128,24 @@
    "report": 1,
    "role": "Press Member",
    "share": 1,
-   "submit": 1,
    "write": 1
   }
  ],
  "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": [],
- "track_changes": 1,
- "track_seen": 1
+ "states": [
+  {
+   "color": "Gray",
+   "title": "Pending"
+  },
+  {
+   "color": "Green",
+   "title": "Approved"
+  },
+  {
+   "color": "Red",
+   "title": "Rejected"
+  }
+ ]
 }
