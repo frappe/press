@@ -328,14 +328,17 @@ RUN if [ -d "/home/frappe/custom_assets/frappe" ]; then \
 # CUSTOM CODE: This block performs string replacements based on a `terms.csv` file found in the
 # custom assets repository. It reads the CSV file line by line, where each line contains a pair of
 # comma-separated terms. For each pair, it performs a case-sensitive search for the first term and
-# replaces it with the second term in all `.vue`, `.html`, `.js`, and `.py` files within the bench.
+# replaces it with the second term in all `.vue`, `.html` and `.js` files within the bench.
+#
+# By surrounding `$old_term` with `\b`, we ensure that `sed` will only match terms when it appears as whole
+# words, not as part of a larger string, e.g. term 'Frappe' would not be replaced in `X-Frappe-CSRF-Token`.
 # ========================================================================================================
 RUN if [ -f "/home/frappe/custom_assets/terms.csv" ]; then \
       echo "Performing string replacements from terms.csv..."; \
       while IFS=, read -r old_term new_term; do \
         echo "Replacing '$old_term' with '$new_term'"; \
         find /home/frappe/frappe-bench -type f \( -name "*.vue" -o -name "*.html" -o -name "*.js" \) -print0 | \
-        xargs -0 sed -i "s/$old_term/$new_term/g"; \
+        xargs -0 sed -i "s/\b$old_term\b/$new_term/g"; \
       done < /home/frappe/custom_assets/terms.csv; \
     fi
 # ========================================================================================================
