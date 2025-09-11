@@ -421,14 +421,10 @@ class PhysicalBackupRestoration(Document):
 	def allow_user_to_modify_db_files_permissions(self) -> StepStatus:
 		"""Allow user to modify db files permissions"""
 
-		result = self.ansible_run("""bash -c 'FILE=/etc/sudoers.d/frappe-mysql
-if [ ! -f "$FILE" ]; then
-  {
-    echo "frappe ALL=(ALL) NOPASSWD: /bin/chown mysql\\:mysql /var/lib/mysql/*/*"
-  } > "$FILE"
-  chmod 440 "$FILE"
-fi'
-""")
+		result = self.ansible_run(
+			r'echo "frappe ALL=(ALL) NOPASSWD: /bin/chown mysql\:mysql /var/lib/mysql/*/*" > /etc/sudoers.d/frappe-mysql',
+			raw_params=True,
+		)
 		if result["status"] == "Success":
 			return StepStatus.Success
 		return StepStatus.Failure
@@ -828,9 +824,9 @@ fi'
 				return step
 		return None
 
-	def ansible_run(self, command):
+	def ansible_run(self, command, raw_params: bool = False):
 		inventory = f"{self.virtual_machine.public_ip_address},"
-		result = AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
+		result = AnsibleAdHoc(sources=inventory).run(command, self.name, raw_params=raw_params)[0]
 		self.add_command(command, result)
 		return result
 
