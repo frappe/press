@@ -1776,10 +1776,43 @@ class VirtualMachine(Document):
 			if e.response.get("Error", {}).get("Code") == "InvalidVolumeModification.NotFound":
 				return None
 
+<<<<<<< HEAD
 	@frappe.whitelist()
 	def attach_volume_job(self):
 		server = frappe.get_doc("Server", self.name)
 		server.run_press_job("Attach Volume")
+=======
+	def correct_private_ip(self):
+		"""
+		We don't get to set private ip on instance creation.
+		So, we need to detach and attach the instance to the network with the desired private ip
+		Otherwise, too many config files need to be updated
+		"""
+		if self.cloud_provider != "Hetzner":
+			raise NotImplementedError
+		vpc_id = frappe.db.get_value("Cluster", self.cluster, "vpc_id")
+		server = self.client().servers.get_by_id(self.instance_id)
+		network = self.client().networks.get_by_id(vpc_id)
+		try:
+			action = server.detach_from_network(network)
+		except APIException as e:  # for retry
+			if "resource not found" in str(e):
+				pass
+			else:
+				raise e
+		else:
+			action.wait_until_finished(30)
+		try:
+			action = server.attach_to_network(network, ip=self.get_private_ip())
+		except APIException as e:
+			if "already attached" in str(e):
+				pass
+			else:
+				raise e
+		else:
+			action.wait_until_finished(30)
+		self.sync()
+>>>>>>> 3cd08e6fd (fix(virtual-machine): Remove unused method)
 
 	@frappe.whitelist()
 	def attach_volume(self, volume_id=None, is_temporary_volume: bool = False, size: int | None = None):
