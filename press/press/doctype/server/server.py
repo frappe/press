@@ -393,6 +393,7 @@ class BaseServer(Document, TagHelpers):
 			self.create_dns_record()
 			self.update_virtual_machine_name()
 
+	@frappe.whitelist()
 	def create_dns_record(self):
 		try:
 			domain = frappe.get_doc("Root Domain", self.domain)
