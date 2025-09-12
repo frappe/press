@@ -145,8 +145,120 @@ def get_partner_contribution_list(partner_email):
 
 
 @frappe.whitelist()
+<<<<<<< HEAD
 def get_total_partner_contribution(partner_email):
 	return
+=======
+def get_partner_mrr(partner_email):
+	partner_currency = frappe.db.get_value(
+		"Team", {"erpnext_partner": 1, "partner_email": partner_email}, "currency"
+	)
+	query = frappe.db.sql(
+		f"""
+			SELECT
+				i.due_date,
+				SUM(
+					CASE
+						WHEN '{partner_currency}' = i.currency THEN i.total_before_discount
+						WHEN '{partner_currency}' = 'INR' AND i.currency = 'USD' THEN i.total_before_discount * 83
+						WHEN '{partner_currency}' = 'USD' AND i.currency = 'INR' THEN i.total_before_discount / 83
+						ELSE i.total_before_discount
+					END
+				) as total_amount
+			FROM tabInvoice as i
+			WHERE
+				i.partner_email = '{partner_email}'
+				AND i.type = 'Subscription'
+				AND i.status = 'Paid'
+			GROUP BY
+				i.due_date
+			ORDER BY i.due_date DESC
+			LIMIT 12
+		""",
+		as_dict=True,
+	)
+	return [d for d in query]
+
+
+@frappe.whitelist()
+def get_dashboard_stats():
+	team = get_current_team(get_doc=True)
+	data = frappe.db.sql(
+		f"""
+			SELECT
+				site.plan as plan,
+				COUNT(site.name) as count
+			FROM
+				tabSite as site JOIN tabTeam as team ON site.team = team.name
+			WHERE
+				team.name = '{team.name}'
+				AND site.status = 'Active'
+			GROUP BY
+				site.plan
+		""",
+		as_dict=True,
+	)
+	return [d for d in data]
+
+
+@frappe.whitelist()
+def get_lead_stats():
+	team = get_current_team(get_doc=True)
+	data = frappe.db.sql(
+		f"""
+			SELECT
+				COUNT(name) as total,
+				SUM(CASE WHEN status in ('Open', 'In Process') THEN 1 ELSE 0 END) as open,
+				SUM(CASE WHEN status = 'Won' THEN 1 ELSE 0 END) as won,
+				SUM(CASE WHEN status = 'Lost' THEN 1 ELSE 0 END) as lost
+			FROM
+				`tabPartner Lead`
+			WHERE
+				partner_team = '{team.name}'
+		""",
+		as_dict=True,
+	)
+	return data[0] if data else {}
+
+
+@frappe.whitelist()
+def get_partner_invoices(due_date=None, status=None):
+	partner_email = get_current_team(get_doc=True).partner_email
+
+	filters = {
+		"partner_email": partner_email,
+		"type": "Subscription",
+	}
+	if due_date:
+		filters["due_date"] = due_date
+	if status:
+		filters["status"] = status
+
+	invoices = frappe.get_all(
+		"Invoice",
+		filters,
+		["name", "due_date", "customer_name", "total_before_discount", "currency", "status"],
+		order_by="due_date desc",
+	)
+
+	return invoices  # noqa: RET504
+
+
+@frappe.whitelist()
+def get_invoice_items(invoice):
+	data = frappe.get_all(
+		"Invoice Item",
+		{"parent": invoice},
+		["document_type", "document_name", "rate", "plan", "quantity", "amount"],
+	)
+	for d in data:
+		team = frappe.db.get_value(d.document_type, d.document_name, "team")
+		values = frappe.db.get_value("Team", team, ["user", "billing_name"], as_dict=True)
+		d["user"] = values.user
+		d["billing_name"] = values.billing_name
+
+	return data
+>>>>>>> 1daa4ab78 (chore(ui): Show billing name in team wise breakup)
 
 
 @frappe.whitelist()
