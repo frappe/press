@@ -3071,6 +3071,12 @@ class Site(Document, TagHelpers):
 				"condition": not self.hybrid_site and has_permission("Site Database User"),
 			},
 			{
+				"action": "Login access requests",
+				"description": "Accept or reject login requests to your site",
+				"button_label": "Manage",
+				"doc_method": "dummy",
+			},
+			{
 				"action": "Schedule backup",
 				"description": "Schedule a backup for this site",
 				"button_label": "Schedule",

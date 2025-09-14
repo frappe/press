@@ -65,8 +65,7 @@
    "in_preview": 1,
    "in_standard_filter": 1,
    "label": "Approved By",
-   "options": "User",
-   "reqd": 1
+   "options": "User"
   },
   {
    "fieldname": "until",
@@ -74,8 +73,7 @@
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Until",
-   "reqd": 1
+   "label": "Until"
   },
   {
    "default": "Pending",
@@ -92,7 +90,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-11 11:19:08.353074",
+ "modified": "2025-09-12 12:28:28.486694",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Login Consent",

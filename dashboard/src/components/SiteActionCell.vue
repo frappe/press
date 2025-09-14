@@ -51,6 +51,9 @@ function getSiteActionHandler(action) {
 		'Manage database users': defineAsyncComponent(
 			() => import('./SiteDatabaseAccessDialog.vue'),
 		),
+		'Login access requests': defineAsyncComponent(
+			() => import('./SiteLoginRequestDialog.vue'),
+		),
 		'Version upgrade': defineAsyncComponent(
 			() => import('./site/SiteVersionUpgradeDialog.vue'),
 		),
@@ -67,6 +70,7 @@ function getSiteActionHandler(action) {
 			() => import('./site/SiteScheduleBackup.vue'),
 		),
 	};
+
 	if (actionDialogs[action]) {
 		const dialog = h(actionDialogs[action], { site: site.doc.name });
 		renderDialog(dialog);
@@ -82,6 +86,7 @@ function getSiteActionHandler(action) {
 		'Reset site': onSiteReset,
 		'Clear cache': onClearCache,
 	};
+
 	if (actionHandlers[action]) {
 		actionHandlers[action].call(this);
 	}
