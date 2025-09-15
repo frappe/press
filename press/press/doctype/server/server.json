@@ -16,7 +16,7 @@
   "cluster",
   "provider",
   "virtual_machine",
-  "ignore_incidents_since",
+  "ignore_incidents_till",
   "section_break_mequ",
   "is_server_setup",
   "is_server_prepared",
@@ -511,11 +511,6 @@
    "label": "Public"
   },
   {
-   "fieldname": "ignore_incidents_since",
-   "fieldtype": "Datetime",
-   "label": "Ignore Incidents Since"
-  },
-  {
    "default": "0",
    "description": "If checked, server will be used to run Docker builds.",
    "fieldname": "use_for_build",
@@ -629,6 +624,12 @@
    "fieldtype": "Check",
    "label": "Enable Logical Replication During Site Update"
   },
+
+  {
+   "fieldname": "ignore_incidents_till",
+   "fieldtype": "Datetime",
+   "label": "Ignore Incidents Till"
+  },
   {
    "default": "0",
    "fieldname": "tls_certificate_renewal_failed",
@@ -638,7 +639,7 @@
   }
  ],
  "links": [],
- "modified": "2025-09-02 16:43:19.885050",
+ "modified": "2025-09-09 10:34:01.505133",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
