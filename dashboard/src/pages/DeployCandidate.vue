@@ -207,6 +207,20 @@ export default {
 					condition: () => this.showFailAndRedeploy,
 					onClick: () => this.failAndRedeploy(),
 				},
+				{
+					label: 'Fail Build',
+					icon: 'x',
+					condition: this.deploy.status == 'Running',
+					onClick: () => {
+						createResource({
+							url: 'press.api.bench.fail_build',
+							params: { dn: this.deploy.name },
+							onError: () => {
+								toast.error('Unable to fail job!');
+							},
+						}).fetch();
+					},
+				},
 			].filter((option) => option.condition?.() ?? true);
 		},
 		showFailAndRedeploy() {
