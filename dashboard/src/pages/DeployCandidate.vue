@@ -210,7 +210,9 @@ export default {
 				{
 					label: 'Fail Build',
 					icon: 'x',
-					condition: this.deploy.status == 'Running',
+					condition: () => {
+						return this.deploy.status == 'Running';
+					},
 					onClick: () => {
 						createResource({
 							url: 'press.api.bench.fail_build',
