@@ -76,7 +76,7 @@ class AggType(Enum):
 
 
 TIMESPAN_TIMEGRAIN_MAP: Final[dict[str, tuple[int, int]]] = {
-	"1h": (60 * 60, 60),
+	"1h": (60 * 60, 2 * 60),
 	"6h": (6 * 60 * 60, 5 * 60),
 	"24h": (24 * 60 * 60, 30 * 60),
 	"7d": (7 * 24 * 60 * 60, 2 * 60 * 60),
