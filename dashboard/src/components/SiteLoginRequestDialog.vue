@@ -84,7 +84,6 @@ export default {
 									primaryAction: {
 										label: 'Approve',
 										variant: 'solid',
-										theme: 'green',
 										onClick: ({ hide }) => {
 											createResource({
 												url: 'press.api.client.run_doc_method',
