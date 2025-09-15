@@ -28,11 +28,11 @@
 				<Badge class="ml-2" :label="deploy.status" />
 				<div class="ml-auto flex items-center space-x-2">
 					<Button
-						@click="failBuild"
-						v-if="deploy && deploy.status === 'Running'"
-						class="bg-red-50 text-red-600 hover:bg-red-100 border border-red-400"
+						@click="stopBuild"
+						v-if="deploy && deploy.status === 'Failure'"
+						theme="red"
 					>
-						Fail Build
+						Stop Build
 					</Button>
 					<Button
 						@click="$resources.deploy.reload()"
@@ -251,7 +251,7 @@ export default {
 			}
 			return deploy;
 		},
-		failBuild() {
+		stopBuild() {
 			const deploy = this.deploy;
 
 			confirmDialog({
@@ -266,7 +266,7 @@ export default {
 				</div>
 				`,
 				primaryAction: {
-					label: 'Fail Build',
+					label: 'Stop Build',
 					variant: 'solid',
 					theme: 'red',
 					onClick({ hide }) {
@@ -280,7 +280,9 @@ export default {
 							})
 							.catch(() => {
 								hide();
-								toast.error('Unable to fail running build');
+								toast.error(
+									'Unable to stop build please wait for the status to be updated',
+								);
 							});
 					},
 				},
