@@ -29,7 +29,7 @@
 				<div class="ml-auto flex items-center space-x-2">
 					<Button
 						@click="stopBuild"
-						v-if="deploy && deploy.status === 'Failure'"
+						v-if="deploy && deploy.status === 'Running'"
 						theme="red"
 					>
 						Stop Build
