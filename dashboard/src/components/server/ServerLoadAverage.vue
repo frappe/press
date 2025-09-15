@@ -50,7 +50,7 @@ export default {
 					name: this.server,
 					timezone: localTimezone,
 					query: 'loadavg',
-					duration: '6 Hour',
+					duration: '6h',
 				},
 				auto: true,
 			};
