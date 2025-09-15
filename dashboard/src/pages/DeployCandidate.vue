@@ -217,9 +217,6 @@ export default {
 						createResource({
 							url: 'press.api.bench.fail_build',
 							params: { dn: this.deploy.name },
-							onError: () => {
-								toast.error('Unable to fail job!');
-							},
 						}).fetch();
 					},
 				},
