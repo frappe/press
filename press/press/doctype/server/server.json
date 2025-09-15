@@ -624,12 +624,6 @@
    "fieldtype": "Check",
    "label": "Enable Logical Replication During Site Update"
   },
-
-  {
-   "fieldname": "ignore_incidents_till",
-   "fieldtype": "Datetime",
-   "label": "Ignore Incidents Till"
-  },
   {
    "fieldname": "ignore_incidents_till",
    "fieldtype": "Datetime",
