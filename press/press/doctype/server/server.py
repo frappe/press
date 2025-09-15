@@ -760,7 +760,9 @@ class BaseServer(Document, TagHelpers):
 			log_error("EC2 Volume Extend Exception", server=self.as_dict())
 
 	def enqueue_extend_ec2_volume(self, device, log):
-		frappe.enqueue_doc(self.doctype, self.name, "extend_ec2_volume", device=device, log=log)
+		frappe.enqueue_doc(
+			self.doctype, self.name, "extend_ec2_volume", device=device, log=log, at_front=True, queue="long"
+		)
 
 	@cached_property
 	def time_to_wait_before_updating_volume(self) -> timedelta | int:
@@ -1907,7 +1909,7 @@ class Server(BaseServer):
 		has_data_volume: DF.Check
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
-		ignore_incidents_since: DF.Datetime | None
+		ignore_incidents_till: DF.Datetime | None
 		ip: DF.Data | None
 		ipv6: DF.Data | None
 		is_for_recovery: DF.Check
