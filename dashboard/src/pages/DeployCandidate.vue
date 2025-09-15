@@ -217,7 +217,11 @@ export default {
 						createResource({
 							url: 'press.api.bench.fail_build',
 							params: { dn: this.deploy.name },
-						}).fetch();
+						})
+							.fetch()
+							.catch(() => {
+								toast.error('Unable to fail running build');
+							});
 					},
 				},
 			].filter((option) => option.condition?.() ?? true);
