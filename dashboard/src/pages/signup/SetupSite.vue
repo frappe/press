@@ -29,7 +29,7 @@
 								:placeholder="
 									saasProduct ? `${saasProduct?.name}-site` : 'company-name'
 								"
-								v-model="subdomain"
+								v-model="subdomain" data-record="true"
 							/>
 							<div
 								class="flex cursor-default items-center rounded-r bg-gray-100 px-2 text-base"
