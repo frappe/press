@@ -37,6 +37,7 @@ from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
+	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.cluster.cluster import Cluster
@@ -46,6 +47,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.server_mount.server_mount import ServerMount
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+
 
 from typing import Literal, TypedDict
 
@@ -321,8 +323,14 @@ class BaseServer(Document, TagHelpers):
 				"doc_method": "reboot",
 				"group": f"{server_type.title()} Actions",
 			},
-		]
-		actions.append(
+			{
+				"action": "Cleanup Server",
+				"description": f"Cleanup unused files on the {server_type}",
+				"button_label": "Cleanup",
+				"condition": self.status == "Active" and self.doctype == "Server",
+				"doc_method": "cleanup_unused_files",
+				"group": f"{server_type.title()} Actions",
+			},
 			{
 				"action": "Drop server",
 				"description": "Drop both the application and database servers",
@@ -331,7 +339,7 @@ class BaseServer(Document, TagHelpers):
 				"doc_method": "drop_server",
 				"group": "Dangerous Actions",
 			},
-		)
+		]
 
 		for action in actions:
 			action["server_doctype"] = self.doctype
@@ -671,12 +679,22 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Unprepared Server Ping Exception", server=self.as_dict())
 
+	@dashboard_whitelist()
 	@frappe.whitelist()
-	def cleanup_unused_files(self):
+	def cleanup_unused_files(self, force: bool = False):
 		if self.is_build_server():
 			return
 
-		frappe.enqueue_doc(self.doctype, self.name, "_cleanup_unused_files", queue="long", timeout=2400)
+		with suppress(frappe.DoesNotExistError):
+			cleanup_job: "AgentJob" = frappe.get_last_doc(
+				"Agent Job", {"server": self.name, "job_type": "Cleanup Unused Files"}
+			)
+			if cleanup_job.status == "Running":
+				frappe.throw("Cleanup job is already running")
+
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_cleanup_unused_files", force=force, queue="long", timeout=2400
+		)
 
 	def is_build_server(self) -> bool:
 		# Not a field in all subclasses
@@ -699,11 +717,11 @@ class BaseServer(Document, TagHelpers):
 			return count > 0
 		return False
 
-	def _cleanup_unused_files(self):
+	def _cleanup_unused_files(self, force: bool = False):
 		agent = Agent(self.name, self.doctype)
 		if agent.should_skip_requests():
 			return
-		agent.cleanup_unused_files()
+		agent.cleanup_unused_files(force)
 
 	def on_trash(self):
 		plays = frappe.get_all("Ansible Play", filters={"server": self.name})
