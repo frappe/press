@@ -145,8 +145,7 @@ getInitialData().then(() => {
 			disable_session_recording: true,
 			session_recording: {
 				maskAllInputs: true,
-				maskTextSelector: "*", 
-				maskTextFn: (text, element) => {
+				maskInputFn: (text, element) => {
 					if (element?.dataset['record'] === 'true') {
 						return text
 					}
