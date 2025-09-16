@@ -29,7 +29,7 @@
 								:placeholder="
 									saasProduct ? `${saasProduct?.name}-site` : 'company-name'
 								"
-								v-model="subdomain"
+								v-model="subdomain" data-record="true"
 							/>
 							<div
 								class="flex cursor-default items-center rounded-r bg-gray-100 px-2 text-base"
@@ -159,6 +159,17 @@ export default {
 		subdomainError() {
 			return validateSubdomain(this.subdomain);
 		},
+	},
+	mounted() {
+		this.email = localStorage.getItem('login_email');
+		if (window.posthog?.__loaded) {
+			window.posthog.identify(this.email || window.posthog.get_distinct_id(), {
+				app: 'frappe_cloud',
+				action: 'login_signup'
+			});
+
+			window.posthog.startSessionRecording();
+		}
 	},
 	methods: {
 		async createSite() {
