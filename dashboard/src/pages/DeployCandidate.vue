@@ -32,7 +32,7 @@
 						v-if="deploy && deploy.status === 'Running'"
 						theme="red"
 					>
-						Stop Build
+						Stop Deploy
 					</Button>
 					<Button
 						@click="$resources.deploy.reload()"
