@@ -265,7 +265,6 @@ class Bench(Document):
 
 		if self.is_new():
 			self.port_offset = self.get_unused_port_offset()
-			frappe.db.commit()  # Release lock taken above
 
 		config = {
 			"monitor": True,
