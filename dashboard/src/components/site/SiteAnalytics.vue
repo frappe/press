@@ -327,6 +327,7 @@
 </template>
 
 <script>
+import { TabButtons } from 'frappe-ui';
 import dayjs from '../../utils/dayjs';
 import LineChart from '@/components/charts/LineChart.vue';
 import BarChart from '@/components/charts/BarChart.vue';
@@ -340,6 +341,7 @@ export default {
 	components: {
 		BarChart,
 		LineChart,
+		TabButtons,
 		SiteUptime,
 		AlertBanner,
 		AnalyticsCard,
