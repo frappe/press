@@ -47,6 +47,7 @@ function getServerActionHandler(action) {
 		'Reboot server': onRebootServer,
 		'Rename server': onRenameServer,
 		'Drop server': onDropServer,
+		'Cleanup Server': onCleanupServer,
 		'Enable Performance Schema': onEnablePerformanceSchema,
 		'Disable Performance Schema': onDisablePerformanceSchema,
 		'Update InnoDB Buffer Pool Size': onUpdateInnodbBufferPoolSize,
@@ -58,6 +59,55 @@ function getServerActionHandler(action) {
 	if (actionHandlers[action]) {
 		actionHandlers[action].call(this);
 	}
+}
+
+function onCleanupServer() {
+	confirmDialog({
+		title: 'Cleanup Server',
+		message: `
+			Are you sure you want to trigger a force cleanup on server <b>${server.doc.title || server.doc.name}</b>?<br></br>
+			<div class="text-bg-base bg-gray-100 p-2 rounded-md">
+				This action will <strong>permanently remove</strong> the following:
+
+				<ul class="list-disc ml-5 mt-2 space-y-1">
+					<li>
+						Archived folder containing recently archived benches and sites. 
+						<strong>Sites can not be restored from this deleted.</strong>
+					</li>
+					<li>
+						Temporary files that were previously created.
+					</li>
+					<li>
+						All unused Docker images. 
+						<strong>Bench can not be restored once the images are cleaned</strong>
+					</li>
+				</ul>
+			</div>
+		`,
+		primaryAction: {
+			label: 'Cleanup Server',
+		},
+		onSuccess({ hide, _ }) {
+			if (server.cleanup.loading) return;
+			toast.promise(
+				server.cleanup.submit(
+					{
+						force: true,
+					},
+					{
+						onSuccess() {
+							hide();
+						},
+					},
+				),
+				{
+					loading: 'Starting cleanup...',
+					success: 'Cleanup started',
+					error: 'Failed to cleanup server',
+				},
+			);
+		},
+	});
 }
 
 function onRebootServer() {
