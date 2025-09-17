@@ -692,9 +692,7 @@ class BaseServer(Document, TagHelpers):
 			if cleanup_job.status in ["Running", "Pending"]:
 				frappe.throw("Cleanup job is already running")
 
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_cleanup_unused_files", force=force, queue="long", timeout=2400
-		)
+		self._cleanup_unused_files(force=force)
 
 	def is_build_server(self) -> bool:
 		# Not a field in all subclasses
