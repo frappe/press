@@ -869,8 +869,8 @@ class Agent:
 	def reload_nginx(self):
 		return self.create_agent_job("Reload NGINX Job", "proxy/reload")
 
-	def cleanup_unused_files(self):
-		return self.create_agent_job("Cleanup Unused Files", "server/cleanup", {})
+	def cleanup_unused_files(self, force: bool = False):
+		return self.create_agent_job("Cleanup Unused Files", "server/cleanup", {"force": force})
 
 	def get(self, path, raises=True):
 		return self.request("GET", path, raises=raises)
