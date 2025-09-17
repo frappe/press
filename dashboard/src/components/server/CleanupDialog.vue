@@ -22,10 +22,19 @@
 			</div>
 			<div v-else-if="parsedData" class="flex flex-col gap-4 text-gray-800">
 				<AlertBanner
-					title="Force cleanup is only allowed if the reclaimable space is more than or equal to 500MB."
+					title="Force cleanup is only allowed if the total reclaimable space is more than or equal to 500MB."
 					type="info"
 					:showIcon="false"
 					v-if="parsedData.total < 0.5"
+				>
+				</AlertBanner>
+				<AlertBanner
+					title="
+                    Once a cleanup is run it can take some time to reflect in the server
+                    overview and the server storage breakdown."
+					type="info"
+					:showIcon="false"
+					v-if="parsedData.total >= 0.5"
 				>
 				</AlertBanner>
 				<div class="rounded-md">
