@@ -496,19 +496,78 @@ def _should_skip_snapshot(snapshot):
 
 def delete_duplicate_snapshot_docs(snapshot):
 	# Delete all except one snapshot document
-	# It doesn't matter which one we keep
 	snapshot_id = snapshot["SnapshotId"]
 	snapshot_count = frappe.db.count("Virtual Disk Snapshot", {"snapshot_id": snapshot_id})
 	if snapshot_count > 1:
-		frappe.db.sql(
-			"""
-				DELETE
-				FROM `tabVirtual Disk Snapshot`
-				WHERE snapshot_id=%s
-				LIMIT %s
-			""",
-			(snapshot_id, snapshot_count - 1),
-		)
+		tags = snapshot.get("Tags", [])
+		physical_backup = any(tag["Key"] == "Physical Backup" and tag["Value"] == "Yes" for tag in tags)
+		server_snapshot = any(tag["Key"] == "Dedicated Snapshot" and tag["Value"] == "Yes" for tag in tags)
+
+		snapshot_to_keep = None
+		existing_snapshots = []
+		if physical_backup or server_snapshot:
+			existing_snapshots = frappe.get_all(
+				"Virtual Disk Snapshot",
+				filters={"snapshot_id": snapshot_id},
+				order_by="creation desc",
+				pluck="name",
+			)
+
+		if (
+			physical_backup
+			and existing_snapshots
+			and (
+				site_backup := frappe.db.exists(
+					"Site Backup",
+					{
+						"database_snapshot": ("in", existing_snapshots),
+						"files_availability": ("!=", "Unavailable"),
+					},
+				)
+			)
+		):
+			snapshot_to_keep = frappe.get_value("Site Backup", site_backup, "database_snapshot")
+
+		if server_snapshot and existing_snapshots:
+			if not snapshot_to_keep:
+				snapshot_to_keep = frappe.db.get_value(
+					"Server Snapshot",
+					{
+						"app_server_snapshot": ("in", existing_snapshots),
+						"status": ("!=", "Unavailable"),
+					},
+					"app_server_snapshot",
+				)
+
+			if not snapshot_to_keep:
+				snapshot_to_keep = frappe.db.get_value(
+					"Server Snapshot",
+					{
+						"database_server_snapshot": ("in", existing_snapshots),
+						"status": ("!=", "Unavailable"),
+					},
+					"database_server_snapshot",
+				)
+
+		if snapshot_to_keep:
+			frappe.db.sql(
+				"""
+					DELETE
+					FROM `tabVirtual Disk Snapshot`
+					WHERE snapshot_id=%s AND name!=%s
+				""",
+				(snapshot_id, snapshot_to_keep),
+			)
+		else:
+			frappe.db.sql(
+				"""
+					DELETE
+					FROM `tabVirtual Disk Snapshot`
+					WHERE snapshot_id=%s
+					LIMIT %s
+				""",
+				(snapshot_id, snapshot_count - 1),
+			)
 
 
 def _update_snapshot_if_exists(snapshot, random_snapshot):

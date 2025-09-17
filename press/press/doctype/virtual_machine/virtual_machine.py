@@ -1130,7 +1130,12 @@ class VirtualMachine(Document):
 			TagSpecifications=[
 				{
 					"ResourceType": "snapshot",
-					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - {frappe.utils.now()}"}],
+					"Tags": [
+						{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - {frappe.utils.now()}"},
+						{"Key": "Physical Backup", "Value": "Yes" if physical_backup else "No"},
+						{"Key": "Rolling Snapshot", "Value": "Yes" if rolling_snapshot else "No"},
+						{"Key": "Dedicated Snapshot", "Value": "Yes" if dedicated_snapshot else "No"},
+					],
 				},
 			],
 		)
