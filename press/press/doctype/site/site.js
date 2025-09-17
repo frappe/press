@@ -96,13 +96,8 @@ frappe.ui.form.on('Site', {
 			);
 		});
 		[
-			[__('Archive'), 'archive', frm.doc.status !== 'Archived'],
-			[__('Cleanup after Archive'), 'cleanup_after_archive'],
 			[__('Sync Apps'), 'sync_apps'],
 			[__('Migrate'), 'migrate'],
-			[__('Reinstall'), 'reinstall'],
-			[__('Restore'), 'restore_site'],
-			[__('Restore Tables'), 'restore_tables'],
 			[__('Update'), 'schedule_update'],
 			[__('Deactivate'), 'deactivate'],
 			[__('Activate'), 'activate', frm.doc.status !== 'Archived'],
@@ -416,6 +411,20 @@ ${r.message.error}
 			},
 			__('Dangerous Actions'),
 		);
+
+		[
+			[__('Reinstall'), 'reinstall'],
+			[__('Restore'), 'restore_site'],
+			[__('Restore Tables'), 'restore_tables'],
+			[__('Archive'), 'archive', frm.doc.status !== 'Archived'],
+			[__('Cleanup after Archive'), 'cleanup_after_archive'],
+		].forEach(([label, method]) => {
+			frm.add_custom_button(
+				label,
+				() => frm.call(method).then((r) => frm.refresh()),
+				__('Dangerous Actions'),
+			);
+		});
 	},
 });
 
