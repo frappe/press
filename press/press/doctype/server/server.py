@@ -689,7 +689,7 @@ class BaseServer(Document, TagHelpers):
 			cleanup_job: "AgentJob" = frappe.get_last_doc(
 				"Agent Job", {"server": self.name, "job_type": "Cleanup Unused Files"}
 			)
-			if cleanup_job.status == "Running":
+			if cleanup_job.status in ["Running", "Pending"]:
 				frappe.throw("Cleanup job is already running")
 
 		frappe.enqueue_doc(
