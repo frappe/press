@@ -60,8 +60,7 @@
 						:title="`
                         <ul class=${'ml-2 space-y-1'}>
 							<li>• Archived folders: ${parsedData.archived}</li>
-							<li>• Docker images: ${parsedData.docker.images}</li>
-							<li>• Docker containers: ${parsedData.docker.containers}</li>
+							<li>• Docker images: ${parsedData.images}</li>
 						</ul>
 
 						<div class=${'mt-3'}>
@@ -151,10 +150,7 @@ export default {
 			if (!raw) return null;
 			return {
 				archived: raw.archived ?? '0.0B',
-				docker: {
-					containers: raw.docker?.containers ?? '0.0B',
-					images: raw.docker?.images ?? '0.0B',
-				},
+				images: raw.images ?? '0.0B',
 				total: raw.total ?? 0,
 			};
 		},
