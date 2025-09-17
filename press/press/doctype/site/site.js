@@ -423,7 +423,7 @@ ${r.message.error}
 				label,
 				() => {
 					frappe.confirm(
-						`Are you sure you want to ${label.toLowerCase()} this site?`,
+						`Are you sure you want to perform the action on this site ?`,
 						() => frm.call(method).then((r) => frm.refresh()),
 					);
 				},
