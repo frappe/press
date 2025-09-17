@@ -175,6 +175,13 @@ def archive(name):
 
 
 @frappe.whitelist()
+@protected(["Server"])
+def get_reclaimable_size(name):
+	server: Server = frappe.get_doc("Server", name)
+	return server.agent.get("server/reclaimable-size")
+
+
+@frappe.whitelist()
 def new(server):
 	server_plan_platform = frappe.get_value("Server Plan", server["app_plan"], "platform")
 	cluster_has_arm_support = frappe.get_value("Cluster", server["cluster"], "has_arm_support")
