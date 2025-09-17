@@ -173,7 +173,7 @@ class AccountRequest(Document):
 		subject = f"{self.otp} - OTP for Frappe Cloud Account Verification"
 		args = {}
 		sender = ""
-
+		inline_images = []
 		custom_template = self.saas_app and frappe.db.get_value(
 			"Marketplace App", self.saas_app, "custom_verify_template"
 		)
@@ -181,6 +181,7 @@ class AccountRequest(Document):
 			subject = "Verify your email for Frappe"
 			template = "saas_verify_account"
 			# If product trial(new saas flow), get the product trial details
+
 			if self.product_trial:
 				template = "product_trial_verify_account"
 				product_trial = frappe.get_doc("Product Trial", self.product_trial)
@@ -190,6 +191,23 @@ class AccountRequest(Document):
 					sender = frappe.get_value("Email Account", product_trial.email_account, "email_id")
 				if product_trial.email_full_logo:
 					args.update({"image_path": get_url(product_trial.email_full_logo, True)})
+					try:
+						logo_name = product_trial.email_full_logo[1:]
+						args.update({"logo_name": logo_name})
+						with open(frappe.utils.get_site_path("public", logo_name), "rb") as logo_file:
+							inline_images.append(
+								{
+									"filename": logo_name,
+									"filecontent": logo_file.read(),
+								}
+							)
+					except Exception as ex:
+						log_error(
+							"Error reading logo for inline images in email",
+							data=ex,
+							reference_doctype=self.doctype,
+							reference_name=self.name,
+						)
 				args.update({"header_content": product_trial.email_header_content or ""})
 			# If saas_app is set, check for email account in saas settings of that app
 			elif self.saas_app:
@@ -198,7 +216,6 @@ class AccountRequest(Document):
 					sender = frappe.get_value("Email Account", email_account, "email_id")
 		else:
 			template = "verify_account"
-
 			if self.invited_by and self.role != "Press Admin":
 				subject = f"You are invited by {self.invited_by} to join Frappe Cloud"
 				template = "invite_team_member"
@@ -237,6 +254,7 @@ class AccountRequest(Document):
 				now=True,
 				reference_doctype=self.doctype,
 				reference_name=self.name,
+				inline_images=inline_images,
 			)
 		except frappe.ValidationError:
 			pass
