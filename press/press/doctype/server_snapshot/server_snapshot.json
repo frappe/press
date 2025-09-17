@@ -300,8 +300,7 @@
    "description": "If free, user will not be charged for the snapshot",
    "fieldname": "free",
    "fieldtype": "Check",
-   "label": "Free",
-   "set_only_once": 1
+   "label": "Free"
   },
   {
    "fieldname": "column_break_jszb",
@@ -321,7 +320,7 @@
    "link_fieldname": "snapshot"
   }
  ],
- "modified": "2025-08-31 22:10:52.060768",
+ "modified": "2025-09-17 10:45:57.691000",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Snapshot",
