@@ -381,10 +381,14 @@ class Bench(Document):
 		agent.force_update_bench_limits(self.name, self.get_limits())
 
 	def get_unused_port_offset(self):
-		benches = frappe.get_all(
-			"Bench",
-			fields=["port_offset"],
-			filters={"server": self.server, "status": ("!=", "Archived")},
+		benches = frappe.db.sql(
+			"""SELECT `port_offset` FROM `tabBench`
+			WHERE `tabBench`.server = %s
+			AND `tabBench`.status != 'Archived'
+			FOR UPDATE;
+			""",
+			(self.server,),
+			as_dict=True,
 		)
 		all_offsets = range(0, 1000)
 		used_offsets = map(lambda x: x.port_offset, benches)
@@ -404,6 +408,14 @@ class Bench(Document):
 			self.update_bench_config_with_rg_config(bench_config)
 			self.save()  # triggers on_update
 			return
+
+		if (
+			hasattr(self, "flags")
+			and hasattr(self.flags, "avoid_triggerring_update_bench_config_job")
+			and self.flags.avoid_triggerring_update_bench_config_job
+		):
+			return
+
 		old = self.get_doc_before_save()
 		if old and (old.config != self.config or old.bench_config != self.bench_config):
 			agent = Agent(self.server)

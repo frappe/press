@@ -198,7 +198,7 @@
    "link_fieldname": "destination_release"
   }
  ],
- "modified": "2024-05-09 11:30:20.907001",
+ "modified": "2025-08-22 22:42:45.172216",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release",
@@ -227,8 +227,20 @@
    "read": 1,
    "role": "Press Member",
    "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Marketplace Manager",
+   "share": 1,
+   "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],

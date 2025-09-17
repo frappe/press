@@ -14,6 +14,7 @@
 			<slot name="header-left" v-bind="context">
 				<div v-if="showControls" class="flex items-center space-x-2">
 					<TextInput
+						v-if="this.options.searchField"
 						placeholder="Search"
 						class="max-w-[20rem]"
 						:debounce="500"
@@ -86,6 +87,7 @@
 			<ListView
 				:columns="columns"
 				:rows="filteredRows"
+				ref="listView"
 				:options="{
 					selectable: this.options.selectable || false,
 					onRowClick: this.options.onRowClick
@@ -141,7 +143,7 @@
 	</div>
 </template>
 <script>
-import { reactive } from 'vue';
+import { reactive, ref } from 'vue';
 import { throttle } from '../utils/throttle';
 import DismissableBanner from './DismissableBanner.vue';
 import AlertBanner from './AlertBanner.vue';
@@ -175,6 +177,15 @@ export default {
 		TextInput,
 		Tooltip,
 		ErrorMessage,
+	},
+	setup(_, { expose }) {
+		const listView = ref(null);
+		const toggleRowSelection = (row) => {
+			listView.value.toggleRow(row);
+		};
+
+		expose({ toggleRowSelection });
+		return { listView };
 	},
 	data() {
 		return {
@@ -468,22 +479,27 @@ export default {
 				};
 				this.$list.update({ params });
 				this.$list.reload();
-			} else if (this.options.updateFilters) {
+				return;
+			}
+			if (this.options.updateFilters) {
 				this.options.updateFilters({
 					[control.fieldname]: control.value,
 				});
-			} else {
-				let filters = { ...this.$list.filters };
-				for (let c of this.filterControls) {
-					filters[c.fieldname] = c.value;
+				if (!this.options.autoReloadAfterUpdateFilterCallback) {
+					return;
 				}
-				this.$list.update({
-					filters,
-					start: 0,
-					pageLength: this.options.pageLength || 20,
-				});
-				this.$list.reload();
 			}
+
+			let filters = { ...this.$list.filters };
+			for (let c of this.filterControls) {
+				filters[c.fieldname] = c.value;
+			}
+			this.$list.update({
+				filters,
+				start: 0,
+				pageLength: this.options.pageLength || 20,
+			});
+			this.$list.reload();
 		},
 	},
 };

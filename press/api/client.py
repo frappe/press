@@ -15,7 +15,6 @@ from frappe.utils import cstr
 from pypika.queries import QueryBuilder
 
 from press.exceptions import TeamHeaderNotInRequestError
-from press.utils import has_role
 
 if typing.TYPE_CHECKING:
 	from frappe.model.meta import Meta
@@ -81,13 +80,13 @@ ALLOWED_DOCTYPES = [
 	"Partner Certificate",
 	"Partner Payment Payout",
 	"Deploy Candidate Build",
+	"Partner Lead",
+	"Partner Lead Type",
+	"Lead Followup",
+	"Partner Consent",
 	"Account Request",
-]
-
-ALLOWED_DOCTYPES_FOR_SUPPORT = [
-	"Site",
-	"Bench",
-	"Release Group",
+	"Server Snapshot",
+	"Server Snapshot Recovery",
 ]
 
 whitelisted_methods = set()
@@ -120,8 +119,7 @@ def get_list(
 		frappe.throw("parenttype and parent are required to get child records")
 
 	apply_team_filter = not (
-		filters.get("skip_team_filter_for_system_user_and_support_agent")
-		and (frappe.local.system_user() or has_role("Press Support Agent"))
+		filters.get("skip_team_filter_for_system_user_and_support_agent") and (frappe.local.system_user())
 	)
 	if apply_team_filter and meta.has_field("team"):
 		valid_filters.team = frappe.local.team().name
@@ -166,7 +164,7 @@ def get_list_query(
 	limit: int,
 	order_by: str | None,
 ):
-	from press.press.doctype.press_role.press_role import check_role_permissions
+	from press.press.doctype.press_role.press_role import LINKED_DOCTYPE_PERMISSIONS, check_role_permissions
 
 	query = frappe.qb.get_query(
 		doctype,
@@ -191,10 +189,16 @@ def get_list_query(
 		PressRolePermission = frappe.qb.DocType("Press Role Permission")
 		QueriedDocType = frappe.qb.DocType(doctype)
 
-		field = doctype.lower().replace(" ", "_")
+		if doctype in LINKED_DOCTYPE_PERMISSIONS:
+			field = LINKED_DOCTYPE_PERMISSIONS[doctype].get("parent_doctype", "").lower().replace(" ", "_")
+			doctype_field = QueriedDocType[LINKED_DOCTYPE_PERMISSIONS[doctype].get("parent_field")]
+		else:
+			field = doctype.lower().replace(" ", "_")
+			doctype_field = QueriedDocType.name
+
 		query = (
 			query.join(PressRolePermission)
-			.on(PressRolePermission[field] == QueriedDocType.name & PressRolePermission.role.isin(roles))
+			.on(PressRolePermission[field] == doctype_field & PressRolePermission.role.isin(roles))
 			.distinct()
 		)
 
@@ -215,7 +219,7 @@ def get(doctype, name):
 		raise
 
 	if (
-		not (frappe.local.system_user() or has_role("Press Support Agent"))
+		not (frappe.local.system_user())
 		and frappe.get_meta(doctype).has_field("team")
 		and doc.team != frappe.local.team().name
 	):
@@ -360,9 +364,6 @@ def search_link(
 
 def check_document_access(doctype: str, name: str):
 	if frappe.local.system_user():
-		return
-
-	if has_role("Press Support Agent") and doctype in ALLOWED_DOCTYPES_FOR_SUPPORT:
 		return
 
 	team = ""

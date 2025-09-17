@@ -20,6 +20,7 @@ from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
 	fail_and_redeploy as fail_and_redeploy_build,
 )
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import fail_remote_job
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_total_installs_by_app,
 )
@@ -395,6 +396,7 @@ def update_dependencies(name: str, dependencies: str):
 	for dep, new in zip(
 		sorted(rg.dependencies, key=lambda x: x.dependency),
 		sorted(dependencies, key=lambda x: x["key"]),
+		strict=False,
 	):
 		if dep.dependency != new["key"]:
 			frappe.throw(f"Invalid dependency: {new['key']}")
@@ -1034,6 +1036,15 @@ def apply_patch(release_group: str, app: str, patch_config: dict) -> list[str]:
 		team,
 		patch_config,
 	)
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def fail_build(dn: str):
+	failed = fail_remote_job(dn)
+
+	if not failed:
+		frappe.throw("No running job found!")
 
 
 @frappe.whitelist()

@@ -19,7 +19,9 @@ from frappe.query_builder.functions import Count
 from frappe.utils import cstr, flt, get_url, sbool
 from frappe.utils.caching import redis_cache
 
+from press.agent import Agent
 from press.api.client import dashboard_whitelist
+from press.exceptions import ImageNotFoundInRegistry, InsufficientSpaceOnServer, VolumeResizeLimitError
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import new_app
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
@@ -28,6 +30,7 @@ from press.press.doctype.deploy_candidate_build.deploy_candidate_build import cr
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server import Server
 from press.utils import (
+	fmt_timedelta,
 	get_app_tag,
 	get_client_blacklisted_keys,
 	get_current_team,
@@ -58,6 +61,7 @@ class LastDeployInfo(TypedDict):
 
 if TYPE_CHECKING:
 	from press.press.doctype.app.app import App
+	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 
@@ -572,6 +576,63 @@ class ReleaseGroup(Document, TagHelpers):
 		dc = self.create_deploy_candidate()
 		dc.schedule_build_and_deploy()
 
+	def _try_server_size_increase_or_throw(self, server: Server, mountpoint: str, required_size: int):
+		"""In case of low storage on the server try to either increase the storage (if allowed) or throw an error"""
+		if server.auto_increase_storage:
+			try:
+				server.calculated_increase_disk_size(mountpoint=mountpoint)
+			except VolumeResizeLimitError:
+				frappe.throw(
+					f"We are unable to increase server space right now for the deploy. Please wait "
+					f"{fmt_timedelta(server.time_to_wait_before_updating_volume)} before trying again.",
+					InsufficientSpaceOnServer,
+				)
+		else:
+			frappe.throw(
+				f"Not enough space on server {server.name} to create a new bench. {required_size}G is required.",
+				InsufficientSpaceOnServer,
+			)
+
+	@staticmethod
+	def _get_last_deployed_image_size(server: Server, last_deployed_bench: Bench) -> float | None:
+		"""Try and fetch the last deployed image size"""
+		try:
+			return Agent(server.name).get(f"server/image-size/{last_deployed_bench.build}").get("size")
+		except Exception as e:
+			log_error("Failed to fetch last image size", data=e)
+
+	def check_app_server_storage(self):
+		"""
+		Check storage on the app server before deploying
+		Check if the free space on the server is more than the last
+		image deployed, assuming new image to be created will have the same or more
+		size than the last time.
+		"""
+		for server in self.servers:
+			server: Server = frappe.get_cached_doc("Server", server.server)
+
+			if server.is_self_hosted:
+				continue
+
+			mountpoint = server.guess_data_disk_mountpoint()
+			# If prometheus acts up
+			try:
+				free_space = server.free_space(mountpoint) / 1024**3
+			except Exception:
+				continue
+
+			last_deployed_bench = get_last_doc("Bench", {"group": self.name, "status": "Active"})
+
+			if not last_deployed_bench:
+				continue
+
+			last_image_size = self._get_last_deployed_image_size(server, last_deployed_bench)
+
+			if last_image_size and (free_space < last_image_size):
+				self._try_server_size_increase_or_throw(
+					server, mountpoint, required_size=last_image_size - free_space
+				)
+
 	@frappe.whitelist()
 	def create_deploy_candidate(
 		self,
@@ -581,6 +642,7 @@ class ReleaseGroup(Document, TagHelpers):
 		if not self.enabled:
 			return None
 
+		self.check_app_server_storage()
 		apps = self.get_apps_to_update(apps_to_update)
 		if apps_to_update is None:
 			self.validate_dc_apps_against_rg(apps)
@@ -1320,6 +1382,11 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def add_server(self, server: str, deploy=False, force_new_build: bool = False):
+		"""
+		Add a server to the release group in case last successful deploy candidate exists
+		create a deploy check if the image has not been pruned from the registry in case of
+		missing image create new build.
+		"""
 		if not deploy:
 			return None
 
@@ -1330,7 +1397,9 @@ class ReleaseGroup(Document, TagHelpers):
 
 		if not last_successful_deploy_candidate_build or force_new_build:
 			# No build of this platform is available creating new build
-			last_candidate_build = self.get_last_successful_candidate_build()
+			last_candidate_build = (
+				self.get_last_successful_candidate_build()
+			)  # Checking for any platform build
 
 			if not last_candidate_build:
 				frappe.throw("No build present for this release group", frappe.ValidationError)
@@ -1347,7 +1416,13 @@ class ReleaseGroup(Document, TagHelpers):
 		self.append("servers", {"server": server, "default": False})
 		self.save()
 
-		return last_successful_deploy_candidate_build._create_deploy([server])
+		try:
+			return last_successful_deploy_candidate_build._create_deploy(
+				[server],
+				check_image_exists=True,
+			)
+		except ImageNotFoundInRegistry:
+			self.add_server(server=server, deploy=True, force_new_build=True)
 
 	@frappe.whitelist()
 	def change_server(self, server: str):

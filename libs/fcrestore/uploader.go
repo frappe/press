@@ -133,7 +133,8 @@ func (s *Session) GenerateMultipartUploadLink(filePath string) (*MultipartUpload
 		},
 		bufferPool: sync.Pool{
 			New: func() interface{} {
-				return make([]byte, 32*1024) // 32KB buffer
+				buf := make([]byte, 32*1024) // 32KB buffer
+				return &buf
 			},
 		},
 	}
@@ -203,7 +204,11 @@ func (m *MultipartUpload) UploadParts(s *Session) error {
 	}
 
 	if len(m.errors) > 0 {
-		return fmt.Errorf("%d parts failed", len(m.errors))
+		errorString := ""
+		for _, err := range m.errors {
+			errorString += fmt.Sprintf("- %v\n", err)
+		}
+		return fmt.Errorf("%d parts failed:\n%s", len(m.errors), errorString)
 	}
 	return nil
 }
@@ -224,13 +229,13 @@ func (m *MultipartUpload) uploadPart(partNumber int, start, end int64) (string, 
 
 	go func() {
 		defer pw.Close()
-		buf := m.bufferPool.Get().([]byte)
-		defer m.bufferPool.Put(&buf)
+		bufPtr := m.bufferPool.Get().(*[]byte)
+		defer m.bufferPool.Put(bufPtr)
 
 		_, err := io.CopyBuffer(pw, &progressTracker{
 			Reader: io.LimitReader(file, end-start+1),
 			size:   &m.UploadedSize,
-		}, buf)
+		}, *bufPtr)
 		if err != nil {
 			pw.CloseWithError(err)
 		}
@@ -284,9 +289,13 @@ func (m *MultipartUpload) calculatePartRanges() []partRange {
 }
 
 func (m *MultipartUpload) Complete(s *Session) error {
+	// If it's already uploaded, silently ignore
 	if m.IsUploaded() {
-		// If it's already uploaded, silently ignore
 		return nil
+	}
+	// Check if context was cancelled
+	if m.ctx.Err() != nil {
+		return fmt.Errorf("upload cancelled")
 	}
 	parts := make([]map[string]any, 0, len(m.Etags))
 	for i, etag := range m.Etags {
@@ -336,6 +345,12 @@ func (m *MultipartUpload) Complete(s *Session) error {
 }
 
 func (m *MultipartUpload) Abort(s *Session) {
+	// Don't abort if already uploaded
+	// It's added to prevent some race condition between progressbar quitting and upload
+	// Anyway uploaded parts will expire in a week automatically
+	if m.IsUploaded() || m.UploadProgress() >= 1.0 {
+		return
+	}
 	m.Cancel()
 	m.abortPresignedURLs(s)
 }
@@ -361,7 +376,14 @@ func (m *MultipartUpload) Progress() (float64, string, string) {
 	if m.TotalSize == 0 {
 		return 0, "", ""
 	}
-	return float64(atomic.LoadInt64(&m.UploadedSize)) / float64(m.TotalSize), formatBytes(m.UploadedSize), formatBytes(m.TotalSize)
+	return m.UploadProgress(), formatBytes(m.UploadedSize), formatBytes(m.TotalSize)
+}
+
+func (m *MultipartUpload) UploadProgress() float64 {
+	if m.TotalSize == 0 {
+		return 0
+	}
+	return float64(atomic.LoadInt64(&m.UploadedSize)) / float64(m.TotalSize)
 }
 
 func (m *MultipartUpload) Errors() []error {

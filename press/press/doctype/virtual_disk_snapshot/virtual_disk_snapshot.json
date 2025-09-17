@@ -25,7 +25,9 @@
   "snapshot_purpose_section",
   "physical_backup",
   "column_break_xgrp",
-  "rolling_snapshot"
+  "rolling_snapshot",
+  "column_break_jyxw",
+  "dedicated_snapshot"
  ],
  "fields": [
   {
@@ -91,7 +93,8 @@
    "fieldname": "start_time",
    "fieldtype": "Datetime",
    "label": "Start Time",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "section_break_12",
@@ -161,6 +164,16 @@
    "fieldtype": "Check",
    "hidden": 1,
    "label": "Expired"
+  },
+  {
+   "fieldname": "column_break_jyxw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "dedicated_snapshot",
+   "fieldtype": "Check",
+   "label": "Dedicated Snapshot"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -170,7 +183,7 @@
    "link_fieldname": "database_snapshot"
   }
  ],
- "modified": "2025-04-16 14:48:54.212097",
+ "modified": "2025-09-12 18:31:18.904020",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Disk Snapshot",
@@ -187,8 +200,30 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

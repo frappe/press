@@ -79,6 +79,22 @@
 						"
 					/>
 				</div>
+
+				<div v-if="serverType === 'Database Server'" class="mt-4">
+					<AlertBanner
+						title="Are you looking to purge binary logs or reduce retention to free up space ?"
+						type="info"
+						:showIcon="false"
+					>
+						<Button
+							class="ml-auto"
+							variant="outline"
+							link="https://docs.frappe.io/cloud/database-server-actions#view--purge-binlogs"
+						>
+							Docs
+						</Button>
+					</AlertBanner>
+				</div>
 			</div>
 		</template>
 	</Dialog>

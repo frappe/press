@@ -15,7 +15,6 @@ from subprocess import Popen
 from typing import Literal
 
 import frappe
-import frappe.utils
 import semantic_version
 from frappe.core.utils import find
 from frappe.model.document import Document

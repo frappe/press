@@ -4,7 +4,6 @@
 frappe.ui.form.on('Incident', {
 	refresh(frm) {
 		[
-			[__('Ignore Incidents on Server'), 'ignore_for_server'],
 			[__('Reboot Database Server'), 'reboot_database_server'],
 			[__('Restart Down Benches'), 'restart_down_benches'],
 			[__('Cancel Stuck Jobs'), 'cancel_stuck_jobs'],

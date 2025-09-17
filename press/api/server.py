@@ -35,11 +35,19 @@ def poly_get_doc(doctypes, name):
 	return frappe.get_doc(doctypes[-1], name)
 
 
-def get_mount_point(server: str) -> str:
+def get_mount_point(server: str, server_type=None) -> str:
 	"""Guess mount point from server"""
-	server: Server | DatabaseServer = frappe.get_doc(
-		"Database Server" if server[0] == "m" else "Server", server
-	)
+	print(server_type)
+	if server_type is None:
+		server_type = "Database Server" if server[0] == "m" else "Server"
+
+	elif server_type == "Application Server":
+		server_type = "Server"
+
+	elif server_type == "Replication Server":
+		server_type = "Database Server"
+
+	server: Server | DatabaseServer = frappe.get_doc(server_type, server)
 	if server.provider != "AWS EC2":
 		return "/"
 
@@ -321,8 +329,8 @@ def calculate_swap(name):
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 @redis_cache(ttl=10 * 60)
-def analytics(name, query, timezone, duration):
-	mount_point = get_mount_point(name)
+def analytics(name, query, timezone, duration, server_type=None):
+	mount_point = get_mount_point(name, server_type)
 	timespan, timegrain = get_timespan_timegrain(duration)
 
 	query_map = {
@@ -479,11 +487,18 @@ def options():
 		["price_inr", "price_usd"],
 		as_dict=True,
 	)
+	snapshot_plan = frappe.db.get_value(
+		"Server Snapshot Plan",
+		{"enabled": 1},
+		["price_inr", "price_usd"],
+		as_dict=True,
+	)
 	return {
 		"regions": regions,
 		"app_plans": plans("Server"),
 		"db_plans": plans("Database Server"),
 		"storage_plan": storage_plan,
+		"snapshot_plan": snapshot_plan,
 	}
 
 

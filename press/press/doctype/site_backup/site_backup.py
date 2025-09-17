@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import time
 from typing import TYPE_CHECKING
@@ -14,6 +15,7 @@ from frappe.model.document import Document
 
 from press.agent import Agent
 from press.exceptions import SiteTooManyPendingBackups
+from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 
 if TYPE_CHECKING:
@@ -96,12 +98,25 @@ class SiteBackup(Document):
 		return frappe.get_cached_value("Site", self.site, "server")
 
 	@staticmethod
-	def get_list_query(query):
+	def get_list_query(query, filters=None, **list_args):
 		"""
 		Remove records with `Success` but files_availability is `Unavailable`
 		"""
 		sb = frappe.qb.DocType("Site Backup")
 		query = query.where(~((sb.files_availability == "Unavailable") & (sb.status == "Success")))
+		if filters.get("backup_date"):
+			with contextlib.suppress(Exception):
+				date = frappe.utils.getdate(filters["backup_date"])
+				query = query.where(
+					sb.creation.between(
+						frappe.utils.add_to_date(date, hours=0, minutes=0, seconds=0),
+						frappe.utils.add_to_date(date, hours=23, minutes=59, seconds=59),
+					)
+				)
+
+		if not filters.get("status"):
+			query = query.where(sb.status == "Success")
+
 		results = [
 			result
 			for result in query.run(as_dict=True)
@@ -339,6 +354,38 @@ class SiteBackup(Document):
 			"Site Backup", self.name, "database_snapshot", virtual_machine.flags.created_snapshots[0]
 		)
 
+	def autocorrect_bench_permissions(self):
+		"""
+		Run this whenever a Site Backup fails with the error
+		"[Errno 13]: Permission denied".
+		"""
+		job = frappe.db.get_value("Agent Job", self.job, ["bench", "server", "output"], as_dict=True)
+		import re
+
+		play_exists = frappe.db.get_value(
+			"Ansible Play",
+			filters={
+				"play": "Correct Bench Permissions",
+				"status": ["in", ["Pending", "Running"]],
+				"server": job.server,
+				"variables": ["like", "f%{job.bench}%"],
+			},
+		)
+
+		if job and not play_exists and re.search(r"\[Errno 13\] Permission denied", job.output):
+			try:
+				bench = frappe.get_doc("Bench", job.bench)
+				bench.correct_bench_permissions()
+				return True
+			except Exception:
+				frappe.log_error(
+					"Failed to correct bench permissions.",
+					reference_doctype=self.doctype,
+					reference_name=self.name,
+				)
+				return False
+		return False
+
 	@classmethod
 	def offsite_backup_exists(cls, site: str, day: datetime.date) -> bool:
 		return cls.backup_exists(site, day, {"offsite": True})
@@ -355,6 +402,9 @@ class SiteBackup(Document):
 	@classmethod
 	def file_backup_exists(cls, site: str, day: datetime.date) -> bool:
 		return cls.backup_exists(site, day, {"with_files": True})
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site Backup")
 
 
 class OngoingSnapshotError(Exception):

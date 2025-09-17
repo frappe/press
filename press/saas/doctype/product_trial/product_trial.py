@@ -97,7 +97,8 @@ class ProductTrial(Document):
 		from press.press.doctype.site.site import Site, get_plan_config
 
 		validate_subdomain(subdomain)
-		Site.exists(subdomain, domain)
+		if Site.exists(subdomain, domain):
+			frappe.throw("Site with this subdomain already exists")
 
 		site_domain = f"{subdomain}.{domain}"
 
@@ -125,7 +126,7 @@ class ProductTrial(Document):
 			self.set_site_domain(site, site_domain)
 		else:
 			# Create a site in the cluster, if standby site is not available
-			apps = [{"app": d.app} for d in self.apps]
+			apps = self.get_site_apps(account_request)
 			is_frappe_app_present = any(d["app"] == "frappe" for d in apps)
 			if not is_frappe_app_present:
 				apps.insert(0, {"app": "frappe"})
@@ -153,6 +154,36 @@ class ProductTrial(Document):
 			agent_job_name = site.flags.get("new_site_agent_job_name", None)
 
 		return site, agent_job_name, bool(standby_site)
+
+	def get_site_apps(self, account_request: str | None = None):
+		"""Get the list of site apps to include in the site creation
+		Also includes hybrid apps if account request has relevant fields
+		"""
+		apps = [{"app": d.app} for d in self.apps]
+
+		if account_request and self.enable_hybrid_pooling:
+			fields = [rule.field for rule in self.hybrid_pool_rules]
+			acc_req = (
+				frappe.db.get_value(
+					"Account Request",
+					account_request,
+					fields,
+					as_dict=True,
+				)
+				if account_request
+				else None
+			)
+
+			for rule in self.hybrid_pool_rules:
+				value = acc_req.get(rule.field) if acc_req else None
+				if not value:
+					break
+
+				if rule.value == value:
+					apps += [{"app": rule.app}]
+					break
+
+		return apps
 
 	def get_proxy_servers_for_available_clusters(self):
 		clusters = self.get_available_clusters()
@@ -238,9 +269,6 @@ class ProductTrial(Document):
 		)
 		if sites:
 			return sites[0]
-		if cluster and account_request:
-			# if site is not found and account request was specified, try to find a site in any cluster
-			return self.get_standby_site(None, account_request)
 		return None
 
 	def create_standby_sites_in_each_cluster(self):
@@ -249,7 +277,17 @@ class ProductTrial(Document):
 
 		clusters = self.get_available_clusters()
 		for cluster in clusters:
-			self.create_standby_sites(cluster)
+			try:
+				self.create_standby_sites(cluster)
+				frappe.db.commit()
+			except Exception as e:
+				log_error(
+					"Unable to Create Standby Sites",
+					data=e,
+					reference_doctype="Product Trial",
+					reference_name=self.name,
+				)
+				frappe.db.rollback()
 
 	def create_standby_sites(self, cluster):
 		if not self.enable_pooling:
@@ -419,7 +457,7 @@ def replenish_standby_sites():
 	"""Create standby sites for all products with pooling enabled. This is called by the scheduler."""
 	products = frappe.get_all("Product Trial", {"enable_pooling": 1}, pluck="name")
 	for product in products:
-		product = frappe.get_doc("Product Trial", product)
+		product: ProductTrial = frappe.get_doc("Product Trial", product)
 		try:
 			product.create_standby_sites_in_each_cluster()
 			frappe.db.commit()
