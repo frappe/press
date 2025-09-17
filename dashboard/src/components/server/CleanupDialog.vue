@@ -21,6 +21,13 @@
 				Failed to fetch cleanup data.
 			</div>
 			<div v-else-if="parsedData" class="flex flex-col gap-4 text-gray-800">
+				<AlertBanner
+					title="Force cleanup is only allowed if the reclaimable space is more than or equal to 500MB."
+					type="info"
+					:showIcon="false"
+					v-if="parsedData.total < 0.5"
+				>
+				</AlertBanner>
 				<div class="rounded-md">
 					<p>
 						This action will <strong>permanently remove</strong> the following:
@@ -40,23 +47,26 @@
 						</li>
 					</ul>
 
-					<div class="mt-4 text-sm bg-gray-50 rounded-md p-3">
-						<div class="font-medium mb-2">Reclaimable Space</div>
-						<ul class="ml-2 space-y-1">
-							<li>• Archived folders: {{ parsedData.archived }}</li>
-							<li>• Docker images: {{ parsedData.docker.images }}</li>
-							<li>• Docker containers: {{ parsedData.docker.containers }}</li>
+					<AlertBanner
+						:title="`
+                        <ul class=${'ml-2 space-y-1'}>
+							<li>• Archived folders: ${parsedData.archived}</li>
+							<li>• Docker images: ${parsedData.docker.images}</li>
+							<li>• Docker containers: ${parsedData.docker.containers}</li>
 						</ul>
 
-						<div class="mt-3 text-green-700">
-							Total reclaimable: {{ parsedData.total }}GB
+						<div class=${'mt-3'}>
+							<strong>Total reclaimable: ${parsedData.total}GB</strong>
 						</div>
-					</div>
+                        `"
+						type="gray"
+						:showIcon="false"
+						class="mt-4"
+					/>
 
-					<div
-						class="text-sm bg-red-50 border border-red-200 text-red-700 rounded-md p-4 mt-2"
-					>
-						<ul>
+					<AlertBanner
+						title="
+                        <ul>
 							<li>
 								• Sites and benches cannot be restored if archived by accident.
 							</li>
@@ -64,23 +74,23 @@
 								• Benches cannot be restored once Docker images are cleaned.
 							</li>
 						</ul>
-					</div>
-				</div>
+                        "
+						type="error"
+						:showIcon="true"
+						class="mb-2 mt-2"
+					/>
 
-				<!-- Action -->
-				<div v-if="parsedData.total > 0.5">
-					<Button
-						variant="solid"
-						iconLeft="trash-2"
-						theme="red"
-						@click="onCleanup()"
-						class="w-full rounded"
-					>
-						Start Cleanup
-					</Button>
-				</div>
-				<div v-else class="text-center py-2 text-gray-600">
-					Nothing to cleanup
+					<div v-if="parsedData.total >= 0.5">
+						<Button
+							variant="solid"
+							iconLeft="trash-2"
+							theme="red"
+							@click="onCleanup()"
+							class="w-full rounded"
+						>
+							Start Cleanup
+						</Button>
+					</div>
 				</div>
 			</div>
 		</template>
