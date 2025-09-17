@@ -359,6 +359,7 @@ export default {
 				{ label: '1 hour', value: '1h' },
 				{ label: '6 hours', value: '6h' },
 				{ label: '24 hours', value: '24h' },
+				{ label: '3 days', value: '3d' },
 				{ label: '7 days', value: '7d' },
 				{ label: '15 days', value: '15d' },
 			],
