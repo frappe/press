@@ -355,10 +355,14 @@
   "docstatus": 0,
   "doctype": "Press Job Type",
 <<<<<<< HEAD
+<<<<<<< HEAD
   "modified": "2025-09-03 17:50:41.210887",
 =======
   "modified": "2025-09-18 16:55:27.959089",
 >>>>>>> 8d459d9e3 (fix(virtual-machine): Don't set field not in other doctypes)
+=======
+  "modified": "2025-09-18 18:40:28.380844",
+>>>>>>> fa88fcd81 (fix(press-job): Throw errors during tests)
   "name": "Create Server",
   "steps": [
    {
@@ -367,7 +371,7 @@
     "wait_until_true": 0
    },
    {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\ntry:\n    # Usually machine sync never fails\n    # It can fail weirdly due to TimestampMismatchError or lock timeout\n    # Don't fail this whole thing just because of that\n    # Ignore the errors of sync and keep retrying\n    machine.sync()\nexcept (frappe.QueryDeadlockError, frappe.QueryTimeoutError, frappe.exceptions.TimestampMismatchError):\n    pass\nresult = (machine.status == \"Running\", False)\n",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\ntry:\n    # Usually machine sync never fails\n    # It can fail weirdly due to TimestampMismatchError or lock timeout\n    # Don't fail this whole thing just because of that\n    # Ignore the errors of sync and keep retrying\n    machine.sync()\n\nexcept (frappe.QueryDeadlockError, frappe.QueryTimeoutError, frappe.TimestampMismatchError):\n    result = (False, False)\nelse:\n    result = (machine.status == \"Running\", False)\n",
     "step_name": "Wait for Server to start",
     "wait_until_true": 1
    },
@@ -377,7 +381,7 @@
     "wait_until_true": 1
    },
    {
-    "script": "try:\n    vm = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n    vm.sync()\n    if len(vm.volumes) > 0:\n        result = (True, False)\n    else:\n        result = (False, False)\nexcept (frappe.QueryDeadlockError, frappe.QueryTimeoutError, frappe.exceptions.TimestampMismatchError):\n    result = (False, False)\nexcept Exception as e:\n    raise e",
+    "script": "try:\n    vm = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n    vm.sync()\n    if len(vm.volumes) > 0:\n        result = (True, False)\n    else:\n        result = (False, False)\nexcept (frappe.QueryDeadlockError, frappe.QueryTimeoutError, frappe.TimestampMismatchError):\n    result = (False, False)\nexcept Exception as e:\n    raise e",
     "step_name": "Sync Default Volumes",
     "wait_until_true": 1
    },
