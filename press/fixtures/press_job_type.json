@@ -439,7 +439,7 @@
   "callback_script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type in [\"Server\", \"Database Server\"] and server.is_for_recovery:\n    filter_field = \"app_server\" if doc.server_type == \"Server\" else \"database_server\"\n    recovery_record_name = frappe.db.get_value(\"Server Snapshot Recovery\", {filter_field: doc.server}, \"name\")\n    if recovery_record_name:\n        recovery_record = frappe.get_doc(\"Server Snapshot Recovery\", recovery_record_name, for_update=True)\n    \n        if doc.status == \"Success\":\n            if doc.server_type == \"Server\":\n                recovery_record.is_app_server_ready = True\n            else:\n                recovery_record.is_database_server_ready = True\n            recovery_record.save()\n        else:\n            recovery_record.mark_server_provisioning_as_failed()\n            \nif doc.server_type in [\"Server\", \"Database Server\"] and \"logical_replication_backup\" in arguments:\n    if doc.status == \"Success\":\n        frappe.get_doc(\"Logical Replication Backup\", arguments.get(\"logical_replication_backup\")).next()\n    if doc.status == \"Failure\":\n        frappe.get_doc(\"Logical Replication Backup\", arguments.get(\"logical_replication_backup\")).fail()",
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2025-09-18 16:55:27.959089",
+  "modified": "2025-09-18 18:40:28.380844",
   "name": "Create Server",
   "steps": [
    {
@@ -448,7 +448,7 @@
     "wait_until_true": 0
    },
    {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\ntry:\n    # Usually machine sync never fails\n    # It can fail weirdly due to TimestampMismatchError or lock timeout\n    # Don't fail this whole thing just because of that\n    # Ignore the errors of sync and keep retrying\n    machine.sync()\nexcept (frappe.QueryDeadlockError, frappe.QueryTimeoutError, frappe.exceptions.TimestampMismatchError):\n    pass\nresult = (machine.status == \"Running\", False)\n",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\ntry:\n    # Usually machine sync never fails\n    # It can fail weirdly due to TimestampMismatchError or lock timeout\n    # Don't fail this whole thing just because of that\n    # Ignore the errors of sync and keep retrying\n    machine.sync()\n\nexcept (frappe.QueryDeadlockError, frappe.QueryTimeoutError, frappe.TimestampMismatchError):\n    result = (False, False)\nelse:\n    result = (machine.status == \"Running\", False)\n",
     "step_name": "Wait for Server to start",
     "wait_until_true": 1
    },
@@ -463,7 +463,7 @@
     "wait_until_true": 1
    },
    {
-    "script": "try:\n    vm = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n    vm.sync()\n    if len(vm.volumes) > 0:\n        result = (True, False)\n    else:\n        result = (False, False)\nexcept (frappe.QueryDeadlockError, frappe.QueryTimeoutError, frappe.exceptions.TimestampMismatchError):\n    result = (False, False)\nexcept Exception as e:\n    raise e",
+    "script": "try:\n    vm = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n    vm.sync()\n    if len(vm.volumes) > 0:\n        result = (True, False)\n    else:\n        result = (False, False)\nexcept (frappe.QueryDeadlockError, frappe.QueryTimeoutError, frappe.TimestampMismatchError):\n    result = (False, False)\nexcept Exception as e:\n    raise e",
     "step_name": "Sync Default Volumes",
     "wait_until_true": 1
    },
