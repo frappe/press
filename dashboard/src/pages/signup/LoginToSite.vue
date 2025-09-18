@@ -11,7 +11,7 @@
 			{{
 				$resources?.siteRequest?.doc?.status === 'Site Created'
 					? 'Logging you in'
-					: 'Completing setup'
+					: 'It might take few minutes for completing setup'
 			}}
 		</p>
 	</div>
@@ -158,8 +158,7 @@ export default {
 						setTimeout(() => {
 							this.loginToSite();
 						}, 2000);
-					}
-					else if (
+					} else if (
 						doc.status == 'Wait for Site' ||
 						doc.status == 'Prefilling Setup Wizard'
 					) {
