@@ -58,6 +58,14 @@
  {
   "docstatus": 0,
   "doctype": "Cloud Region",
+  "modified": "2025-07-12 12:34:59.528123",
+  "name": "us-west-1",
+  "provider": "AWS EC2",
+  "region_name": "us-west-1"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Cloud Region",
   "modified": "2023-08-08 12:34:33.152010",
   "name": "eu-central-1",
   "provider": "AWS EC2",

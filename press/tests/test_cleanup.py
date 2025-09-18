@@ -1,9 +1,9 @@
 import json
-import unittest
 from datetime import date, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.press_settings.test_press_settings import (
@@ -16,7 +16,7 @@ from press.utils.test import foreground_enqueue
 
 
 @patch.object(AgentJob, "after_insert", new=Mock())
-class TestGFS(unittest.TestCase):
+class TestGFS(FrappeTestCase):
 	"""Test Grandfather-father-son rotation scheme of keeping backups."""
 
 	def tearDown(self):
@@ -182,9 +182,7 @@ class TestGFS(unittest.TestCase):
 
 	@patch("press.press.doctype.site.backups.delete_remote_backup_objects")
 	@patch("press.press.doctype.site.backups.frappe.db.commit")
-	def test_delete_remote_backup_objects_called(
-		self, mock_frappe_commit, mock_del_remote_backup_objects
-	):
+	def test_delete_remote_backup_objects_called(self, mock_frappe_commit, mock_del_remote_backup_objects):
 		"""
 		Ensure delete_remote_backup_objects is called when backup is to be deleted.
 
@@ -213,7 +211,7 @@ class TestGFS(unittest.TestCase):
 		self.assertEqual(len(args[0]), 3 * 2, msg=mock_del_remote_backup_objects.call_args)
 
 
-class TestFIFO(unittest.TestCase):
+class TestFIFO(FrappeTestCase):
 	"""Test FIFO backup rotation scheme."""
 
 	def tearDown(self):
@@ -240,9 +238,7 @@ class TestFIFO(unittest.TestCase):
 
 	@patch("press.press.doctype.site.backups.delete_remote_backup_objects")
 	@patch("press.press.doctype.site.backups.frappe.db.commit")
-	def test_delete_remote_backup_objects_called(
-		self, mock_frappe_commit, mock_del_remote_backup_objects
-	):
+	def test_delete_remote_backup_objects_called(self, mock_frappe_commit, mock_del_remote_backup_objects):
 		"""
 		Ensure delete_remote_backup_objects is called when backup is to be deleted.
 
@@ -273,7 +269,7 @@ class TestFIFO(unittest.TestCase):
 		self.assertEqual(fifo.offsite_backups_count, 2)
 
 
-class TestBackupRotationScheme(unittest.TestCase):
+class TestBackupRotationScheme(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
@@ -300,9 +296,7 @@ class TestBackupRotationScheme(unittest.TestCase):
 
 	@patch("press.press.doctype.site.backups.delete_remote_backup_objects")
 	@patch("press.press.doctype.site.backups.frappe.db.commit")
-	def test_local_backups_are_expired(
-		self, mock_frappe_commit, mock_del_remote_backup_objects
-	):
+	def test_local_backups_are_expired(self, mock_frappe_commit, mock_del_remote_backup_objects):
 		"""
 		Ensure onsite backups are marked unavailable.
 
@@ -311,13 +305,9 @@ class TestBackupRotationScheme(unittest.TestCase):
 		site = create_test_site("testsubdomain")
 		site2 = create_test_site("testsubdomain2")
 
-		backup_1_1 = create_test_site_backup(
-			site.name, frappe.utils.getdate() - timedelta(1), offsite=False
-		)
+		backup_1_1 = create_test_site_backup(site.name, frappe.utils.getdate() - timedelta(1), offsite=False)
 		backup_1_2 = create_test_site_backup(site.name)
-		backup_2_1 = create_test_site_backup(
-			site2.name, frappe.utils.getdate() - timedelta(2), offsite=False
-		)
+		backup_2_1 = create_test_site_backup(site2.name, frappe.utils.getdate() - timedelta(2), offsite=False)
 		backup_2_2 = create_test_site_backup(site2.name)
 
 		GFS().expire_local_backups()
@@ -344,13 +334,9 @@ class TestBackupRotationScheme(unittest.TestCase):
 		config = json.dumps({"keep_backups_for_hours": 50})
 		frappe.db.set_value("Bench", site.bench, "config", config)
 
-		backup_1_1 = create_test_site_backup(
-			site.name, frappe.utils.getdate() - timedelta(1), offsite=False
-		)
+		backup_1_1 = create_test_site_backup(site.name, frappe.utils.getdate() - timedelta(1), offsite=False)
 		backup_1_2 = create_test_site_backup(site.name)
-		backup_2_1 = create_test_site_backup(
-			site2.name, frappe.utils.getdate() - timedelta(2), offsite=False
-		)
+		backup_2_1 = create_test_site_backup(site2.name, frappe.utils.getdate() - timedelta(2), offsite=False)
 		backup_2_2 = create_test_site_backup(site2.name)
 
 		GFS().expire_local_backups()

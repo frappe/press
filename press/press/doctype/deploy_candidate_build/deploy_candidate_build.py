@@ -17,6 +17,7 @@ from enum import Enum
 from functools import cached_property
 
 import frappe
+import requests
 import semantic_version
 from frappe.core.utils import find
 from frappe.model.document import Document
@@ -26,6 +27,7 @@ from frappe.utils import rounded
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from press.agent import Agent
+from press.exceptions import ImageNotFoundInRegistry
 from press.press.doctype.deploy_candidate.deploy_notifications import (
 	create_build_failed_notification,
 )
@@ -54,6 +56,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
 		DeployCandidateApp,
 	)
+	from press.press.doctype.release_group_server.release_group_server import ReleaseGroupServer
 
 # build_duration, pending_duration are Time fields, >= 1 day is invalid
 MAX_DURATION = timedelta(hours=23, minutes=59, seconds=59)
@@ -194,6 +197,7 @@ class DeployCandidateBuild(Document):
 		build_steps: DF.Table[DeployCandidateBuildStep]
 		deploy_after_build: DF.Check
 		deploy_candidate: DF.Link
+		deploy_on_server: DF.Link | None
 		docker_image: DF.Data | None
 		docker_image_id: DF.Data | None
 		docker_image_repository: DF.Data | None
@@ -356,9 +360,7 @@ class DeployCandidateBuild(Document):
 
 		with open(conf_file, "w") as f:
 			content = frappe.render_template(
-				template.value,
-				{"doc": self.candidate},
-				is_path=True,
+				template.value, {"doc": self.candidate, "platform": self.platform}, is_path=True
 			)
 			f.write(content)
 
@@ -428,6 +430,8 @@ class DeployCandidateBuild(Document):
 
 		release: AppRelease = frappe.get_doc("App Release", release, for_update=True)
 		release._clone(force=True)
+
+		frappe.db.commit()  # Release lock taken for app clone
 
 		step.duration = get_duration(start_time)
 		step.output = release.output
@@ -753,7 +757,7 @@ class DeployCandidateBuild(Document):
 
 		build_meta = {
 			"doctype": "Deploy Candidate Build",
-			"deploy_candidate": self.candidate,
+			"deploy_candidate": self.candidate.name,
 			"no_build": self.no_build,
 			"no_cache": self.no_cache,
 			"no_push": self.no_push,
@@ -785,6 +789,12 @@ class DeployCandidateBuild(Document):
 
 		if build.status == Status.SUCCESS.value:
 			build.update_deploy_candidate_with_build()
+
+			deploy_on_server = request_data.get("deploy_on_server")
+			if deploy_on_server:
+				build._create_deploy([deploy_on_server])
+				return
+
 			build.create_new_platform_build_if_required_and_deploy(
 				deploy_after_build=request_data.get("deploy_after_build")
 			)
@@ -964,6 +974,7 @@ class DeployCandidateBuild(Document):
 			# read in `process_run_build`
 			"deploy_candidate_build": self.name,
 			"deploy_after_build": self.deploy_after_build,
+			"deploy_on_server": self.deploy_on_server,
 		}
 		if self.platform == "arm64":
 			build_parameters.update({"platform": self.platform})
@@ -997,6 +1008,26 @@ class DeployCandidateBuild(Document):
 		self.docker_image_repository = f"{settings.docker_registry_url}/{namespace}/{self.group}"
 		self.docker_image_tag = self.name
 		self.docker_image = f"{self.docker_image_repository}:{self.docker_image_tag}"
+
+	def is_image_in_registry(self) -> bool:
+		"""Check if the image tag exists on registry"""
+		settings = self._fetch_registry_settings()
+		headers = {"Accept": "application/vnd.docker.distribution.manifest.v2+json"}
+		auth = (settings.docker_registry_username, settings.docker_registry_password)
+		repository = self.docker_image_repository.replace(settings.docker_registry_url, "")
+
+		if settings.docker_registry_url != "registry.frappe.cloud":
+			return True
+
+		response = requests.get(
+			f"https://{settings.docker_registry_url}/v2/{repository}/tags/list", auth=auth, headers=headers
+		)
+
+		if not response.ok:
+			return False
+
+		image_tags = response.json().get("tags")
+		return self.name in image_tags
 
 	def _start_build(self):
 		self._update_docker_image_metadata()
@@ -1158,9 +1189,11 @@ class DeployCandidateBuild(Document):
 		self.set_status(Status.FAILURE)
 		self._set_build_duration()
 
-	def create_deploy(self):
-		servers = frappe.get_doc("Release Group", self.group).servers
+	def create_deploy(self, check_image_exists: bool = False):
+		"""Create a new deploy for the servers of matching platform present on the release group"""
+		servers: list[ReleaseGroupServer] = frappe.get_doc("Release Group", self.group).servers
 		servers = [server.server for server in servers]
+
 		if not servers:
 			return None
 
@@ -1171,9 +1204,12 @@ class DeployCandidateBuild(Document):
 		if deploy_doc:
 			return str(deploy_doc)
 
-		return self._create_deploy(servers).name
+		return self._create_deploy(servers, check_image_exists=check_image_exists).name
 
-	def _create_deploy(self, servers: list[str]):
+	def _create_deploy(self, servers: list[str], check_image_exists: bool = False):
+		if check_image_exists and not self.is_image_in_registry():
+			frappe.throw("Image not found in registry create a new build", ImageNotFoundInRegistry)
+
 		return frappe.get_doc(
 			{
 				"doctype": "Deploy",
@@ -1186,7 +1222,9 @@ class DeployCandidateBuild(Document):
 	@frappe.whitelist()
 	def deploy(self):
 		try:
-			return dict(error=False, message=self.create_deploy())
+			return dict(
+				error=False, message=self.create_deploy(check_image_exists=True)
+			)  # In this case we can check if image is in registry since possible to deploy older builds
 		except Exception:
 			log_error("Deploy Creation Error", doc=self)
 
@@ -1226,6 +1264,28 @@ def fail_and_redeploy(dn: str):
 	build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dn)
 
 	return build.redeploy()
+
+
+@frappe.whitelist()
+def fail_remote_job(dn: str) -> bool:
+	agent_job: "AgentJob" = frappe.get_doc(
+		"Agent Job", {"reference_doctype": "Deploy Candidate Build", "reference_name": dn}
+	)
+
+	agent_job.get_status()
+	agent_job = agent_job.reload()
+
+	if agent_job.status != "Running":
+		return False
+
+	# Cancel build and set status with for_update and commit to avoid timestamp errors
+	agent_job.cancel_job()
+	build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dn, for_update=True)
+	build.manually_failed = True
+	build.set_status(Status.FAILURE)
+	frappe.db.commit()
+
+	return True
 
 
 def is_build_job(job: Job) -> bool:
@@ -1330,6 +1390,23 @@ def run_scheduled_builds(max_builds: int = 5):
 			log_error(title="Scheduled Deploy Candidate Error", doc=doc)
 
 
+def create_platform_build_and_deploy(deploy_candidate: str, server: str, platform: str) -> str:
+	"""Create an arm / intel build and trigger a deploy on the given server"""
+	deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
+		{
+			"doctype": "Deploy Candidate Build",
+			"deploy_candidate": deploy_candidate,
+			"no_build": False,
+			"no_cache": False,
+			"no_push": False,
+			"platform": platform,
+			"deploy_on_server": server,
+		}
+	)
+	build = deploy_candidate_build.insert()
+	return build.name
+
+
 def check_builds_status(
 	last_n_days=0,
 	last_n_hours=4,
@@ -1408,9 +1485,9 @@ def correct_false_positives(last_n_days=0, last_n_hours=1):
 		and    dcb.status != "Failure"
 	)
 	select dcb.name
-	from   dcb join `tabDeploy Candidate Build Step` as dcbs
-	on     dcb.name = dcbs.parent
-	where  dcbs.status = "Failure"
+	from   dcb join `tabDeploy Candidate Build Step` as deploy_candidate_build_step
+	on     dcb.name = deploy_candidate_build_step.parent
+	where  deploy_candidate_build_step.status = "Failure"
 	""",
 		(
 			last_n_days,

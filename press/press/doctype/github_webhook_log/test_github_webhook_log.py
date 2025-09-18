@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
-import unittest
+from frappe.tests.utils import FrappeTestCase
 
 
-class TestGitHubWebhookLog(unittest.TestCase):
+class TestGitHubWebhookLog(FrappeTestCase):
 	pass

@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils.caching import redis_cache
 from frappe.utils.data import add_to_date, now_datetime
 from frappe.utils.telemetry import init_telemetry
 
@@ -34,6 +35,8 @@ class ProductTrialRequest(Document):
 		agent_job: DF.Link | None
 		cluster: DF.Link | None
 		domain: DF.Data | None
+		error: DF.Code | None
+		is_site_accessible: DF.Literal["Not Checked", "Yes", "No"]
 		is_standby_site: DF.Check
 		product_trial: DF.Link | None
 		site: DF.Link | None
@@ -77,24 +80,73 @@ class ProductTrialRequest(Document):
 	def get_email(self):
 		return frappe.db.get_value("Team", self.team, "user")
 
+	@redis_cache(ttl=2 * 60)
+	def is_first_trial_request(self) -> bool:
+		return (
+			frappe.db.count(
+				"Product Trial Request",
+				filters={
+					"account_request": self.account_request,
+					"name": ("!=", self.name),
+					"status": ("not in", ["Expired", "Error", "Pending"]),
+				},
+			)
+			< 1
+		)
+
 	def capture_posthog_event(self, event_name):
+		if not self.is_first_trial_request():
+			# Only capture events for the first trial request
+			return
+
 		init_telemetry()
 		ph = getattr(frappe.local, "posthog", None)
 		with suppress(Exception):
 			ph and ph.capture(
-				distinct_id=self.get_email(),
-				event=f"fc_saas_{event_name}",
+				distinct_id=self.account_request,
+				event=f"fc_product_trial_{event_name}",
 				properties={
+					"product_trial": True,
 					"product_trial_request_id": self.name,
-					"product_trial": self.product_trial,
+					"product_trial_id": self.product_trial,
 					"email": self.get_email(),
 				},
 			)
+
+	def set_posthog_alias(self, new_alias: str):
+		if not self.is_first_trial_request():
+			# Only set alias for the first trial request
+			return
+
+		init_telemetry()
+		ph = getattr(frappe.local, "posthog", None)
+		with suppress(Exception):
+			ph and ph.alias(previous_id=self.account_request, distinct_id=new_alias)
+
+	def check_site_accessible(self):
+		"""
+		Checks if the site is accessible (HTTP 200, no redirects).
+		Sets self.is_site_accessible to Yes, No, or Not Checked.
+		"""
+		import requests
+
+		url = f"https://{self.domain or self.site}"
+		try:
+			response = requests.get(url, allow_redirects=False, timeout=5)
+			if response.status_code == 200:
+				self.db_set("is_site_accessible", "Yes")
+			else:
+				self.db_set({"is_site_accessible": "No"})
+		except Exception as e:
+			self.db_set({"is_site_accessible": "No", "error": str(e)})
 
 	def after_insert(self):
 		self.capture_posthog_event("product_trial_request_created")
 
 	def on_update(self):
+		if self.has_value_changed("site") and self.site:
+			self.set_posthog_alias(self.site)
+
 		if self.has_value_changed("status"):
 			match self.status:
 				case "Error":
@@ -161,12 +213,12 @@ class ProductTrialRequest(Document):
 			frappe.throw(f"Failed to generate payload for Setup Wizard: {e}")
 
 	@dashboard_whitelist()
-	def create_site(self, subdomain: str, cluster: str | None = None):
+	def create_site(self, subdomain: str, domain: str):
 		"""
 		Trigger the site creation process for the product trial request.
 		Args:
 			subdomain (str): The subdomain for the new site.
-			cluster (str | None): The cluster to use for site creation.
+			domain (str): The domain for the new site.
 		"""
 		if self.status != "Pending":
 			return
@@ -178,10 +230,15 @@ class ProductTrialRequest(Document):
 			product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
 			self.status = "Wait for Site"
 			self.site_creation_started_on = now_datetime()
-			self.domain = f"{subdomain}.{product.domain}"
+			self.domain = f"{subdomain}.{domain}"
+			cluster = frappe.db.get_value("Root Domain", domain, "default_cluster")
 			self.cluster = cluster
 			site, agent_job_name, is_standby_site = product.setup_trial_site(
-				subdomain=subdomain, team=self.team, cluster=cluster, account_request=self.account_request
+				subdomain=subdomain,
+				domain=domain,
+				team=self.team,
+				cluster=cluster,
+				account_request=self.account_request,
 			)
 			self.is_standby_site = is_standby_site
 			self.agent_job = agent_job_name
@@ -210,6 +267,7 @@ class ProductTrialRequest(Document):
 				reference_name=self.name,
 			)
 			self.status = "Error"
+			self.error = str(e)
 			self.save()
 
 	@dashboard_whitelist()
@@ -226,7 +284,7 @@ class ProductTrialRequest(Document):
 		)
 		if status == "Success":
 			if self.status == "Site Created":
-				return {"progress": 100}
+				return {"progress": 100, "current_step": self.status}
 			if self.status == "Adding Domain":
 				return {"progress": 90, "current_step": self.status}
 			return {"progress": 80, "current_step": self.status}
@@ -290,10 +348,11 @@ class ProductTrialRequest(Document):
 			# they'll log in as user after setup wizard
 			email = frappe.db.get_value("Team", self.team, "user")
 			sid = site.get_login_sid(user=email)
-			return f"https://{self.domain}{redirect_to_after_login}?sid={sid}"
+			return f"https://{self.domain or self.site}{redirect_to_after_login}?sid={sid}"
 
 		sid = site.get_login_sid()
-		return f"https://{self.domain}/desk?sid={sid}"
+		self.check_site_accessible()
+		return f"https://{self.domain or self.site}/app?sid={sid}"
 
 
 def get_app_trial_page_url():

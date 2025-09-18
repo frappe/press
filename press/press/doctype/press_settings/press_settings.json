@@ -216,6 +216,8 @@
   "disable_auto_retry",
   "disable_agent_job_deduplication",
   "enable_email_pre_verification",
+  "execute_incident_action",
+  "enable_server_snapshot_recovery",
   "section_break_jstu",
   "enable_app_grouping",
   "default_apps",
@@ -1444,11 +1446,23 @@
    "fieldname": "npo_discount",
    "fieldtype": "Float",
    "label": "NPO Discount"
+  },
+  {
+   "default": "0",
+   "fieldname": "execute_incident_action",
+   "fieldtype": "Check",
+   "label": "Execute Incident Action"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_server_snapshot_recovery",
+   "fieldtype": "Check",
+   "label": "Enable Server Snapshot Recovery"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-05-28 10:07:18.507316",
+ "modified": "2025-08-31 22:46:48.576273",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

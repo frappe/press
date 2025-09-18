@@ -6,7 +6,7 @@ from __future__ import annotations
 from contextlib import suppress
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import TYPE_CHECKING, Callable, ClassVar, Final, TypedDict
+from typing import TYPE_CHECKING, ClassVar, Final, TypedDict
 
 import frappe
 import requests
@@ -31,6 +31,8 @@ from press.press.report.binary_log_browser.binary_log_browser import (
 from press.press.report.mariadb_slow_queries.mariadb_slow_queries import execute, normalize_query
 
 if TYPE_CHECKING:
+	from collections.abc import Callable
+
 	from elasticsearch_dsl.response import AggResponse
 	from elasticsearch_dsl.response.aggs import FieldBucket, FieldBucketData
 
@@ -56,6 +58,10 @@ if TYPE_CHECKING:
 	class PathBucket(FieldBucket):
 		key: str
 		histogram_of_method: HistogramOfMethod
+
+	class MetricType(TypedDict):
+		date: str
+		value: float
 
 
 class ResourceType(Enum):
@@ -117,8 +123,10 @@ class StackedGroupByChart:
 		self.setup_search_aggs()
 
 	def setup_search_filters(self):
-		es = Elasticsearch(self.url, basic_auth=("frappe", self.password))
-		self.start, self.end = get_rounded_boundaries(self.timespan, self.timegrain, self.timezone)
+		es = Elasticsearch(self.url, basic_auth=("frappe", self.password), request_timeout=120)
+		self.start, self.end = get_rounded_boundaries(
+			self.timespan, self.timegrain, self.timezone
+		)  # we pass timezone to ES query in get_histogram_chart
 		self.search = (
 			Search(using=es, index="filebeat-*")
 			.filter(
@@ -218,7 +226,7 @@ class StackedGroupByChart:
 	):
 		path_data = {
 			"path": path_bucket.key,
-			"values": [0] * len(labels),
+			"values": [None] * len(labels),
 			"stack": "path",
 		}
 		hist_bucket: HistBucket
@@ -445,6 +453,177 @@ class SlowLogGroupByChart(StackedGroupByChart):
 		return res
 
 
+def _query_prometheus(query: dict[str, str]) -> dict[str, float | str]:
+	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
+	url = f"https://{monitor_server}/prometheus/api/v1/query_range"
+	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
+	return requests.get(url, params=query, auth=("frappe", password)).json()
+
+
+def _parse_datetime_in_metrics(timestamp: float, timezone: str) -> str:
+	return str(datetime.fromtimestamp(timestamp, tz=pytz_timezone(timezone)))
+
+
+def _get_cadvisor_data(promql_query: str, timezone: str, timespan: int, timegrain: int):
+	end = datetime.now(pytz_timezone(timezone))
+	start = frappe.utils.add_to_date(end, seconds=-timespan)
+	datasets = []
+	labels = []
+
+	query = {
+		"query": promql_query,
+		"start": start.timestamp(),
+		"end": end.timestamp(),
+		"step": f"{timegrain}s",
+	}
+
+	result = _query_prometheus(query)["data"]["result"]
+
+	if not result:
+		return None
+
+	for res in result:
+		datasets.append(
+			{"name": res["metric"]["name"], "values": [float(value[1]) for value in res["values"]]}
+		)
+
+	for metric in res["values"]:
+		labels.append(_parse_datetime_in_metrics(metric[0], timezone))
+
+	return datasets, labels
+
+
+def get_metrics(
+	promql_query: str,
+	timezone: str,
+	response_key: str,
+	group: str | None = None,
+	bench: str | None = None,
+	duration: str = "24h",
+):
+	if not group and not bench:
+		frappe.throw("Group / Bench not passed")
+
+	benches = (
+		frappe.get_all("Bench", {"status": "Active", "group": group}, pluck="name") if group else [bench]
+	)
+
+	if not benches:
+		frappe.throw("No active benches found!")
+
+	benches = "|".join(benches)
+	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
+
+	try:
+		promql_query = promql_query.format(benches=benches)
+		datasets, labels = _get_cadvisor_data(promql_query, timezone, timespan, timegrain)
+		return {response_key: {"datasets": datasets, "labels": labels}}
+	except ValueError:
+		frappe.throw("Unable to fetch metrics")
+
+
+@frappe.whitelist()
+@protected("Server")
+def get_fs_read_bytes(
+	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
+):
+	promql_query = (
+		'sum by (name) (rate(container_fs_reads_bytes_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
+	)
+	return get_metrics(
+		promql_query=promql_query,
+		timezone=timezone,
+		response_key="read_bytes_fs",
+		group=group,
+		bench=bench,
+		duration=duration,
+	)
+
+
+@frappe.whitelist()
+@protected("Server")
+def get_fs_write_bytes(
+	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
+):
+	promql_query = (
+		'sum by (name) (rate(container_fs_writes_bytes_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
+	)
+	return get_metrics(
+		promql_query=promql_query,
+		timezone=timezone,
+		response_key="write_bytes_fs",
+		group=group,
+		bench=bench,
+		duration=duration,
+	)
+
+
+@frappe.whitelist()
+@protected("Server")
+def get_outgoing_network_traffic(
+	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
+):
+	promql_query = 'sum by (name) (rate(container_network_transmit_bytes_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
+	return get_metrics(
+		promql_query=promql_query,
+		timezone=timezone,
+		response_key="network_traffic_outward",
+		group=group,
+		bench=bench,
+		duration=duration,
+	)
+
+
+@frappe.whitelist()
+@protected("Server")
+def get_incoming_network_traffic(
+	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
+):
+	promql_query = (
+		'sum by (name) (rate(container_network_receive_bytes_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
+	)
+	return get_metrics(
+		promql_query=promql_query,
+		timezone=timezone,
+		response_key="network_traffic_inward",
+		group=group,
+		bench=bench,
+		duration=duration,
+	)
+
+
+@frappe.whitelist()
+@protected("Server")
+def get_memory_usage(
+	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
+):
+	promql_query = 'sum by (name) (avg_over_time(container_memory_usage_bytes{{job="cadvisor", name=~"{benches}"}}[5m]) / 1024 / 1024 / 1024)'
+	return get_metrics(
+		promql_query=promql_query,
+		timezone=timezone,
+		response_key="memory",
+		group=group,
+		bench=bench,
+		duration=duration,
+	)
+
+
+@frappe.whitelist()
+@protected("Server")
+def get_cpu_usage(timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"):
+	promql_query = (
+		'sum by (name) ( rate(container_cpu_usage_seconds_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
+	)
+	return get_metrics(
+		promql_query=promql_query,
+		timezone=timezone,
+		response_key="cpu",
+		group=group,
+		bench=bench,
+		duration=duration,
+	)
+
+
 @frappe.whitelist()
 @protected("Site")
 @redis_cache(ttl=10 * 60)
@@ -567,19 +746,20 @@ def daily_usage(name, timezone):
 	}
 
 
-def rounded_time(dt=None, round_to=60):
+def rounded_time(dt: datetime | None = None, round_to=60):
 	"""Round a datetime object to any time lapse in seconds
 	dt : datetime.datetime object, default now.
 	round_to : Closest number of seconds to round to, default 1 minute.
 	ref: https://stackoverflow.com/questions/3463930/how-to-round-the-minute-of-a-datetime-object/10854034#10854034
 	"""
 	if dt is None:
-		dt = datetime.datetime.now()
+		dt = datetime.now()
 	seconds = (dt.replace(tzinfo=None) - dt.min).seconds
 	rounding = (seconds + round_to / 2) // round_to * round_to
 	return dt + timedelta(0, rounding - seconds, -dt.microsecond)
 
 
+@redis_cache(ttl=10 * 60)
 def get_rounded_boundaries(timespan: int, timegrain: int, timezone: str = "UTC"):
 	"""
 	Round the start and end time to the nearest interval, because Elasticsearch does this
@@ -633,7 +813,7 @@ def normalize_datasets(datasets: list[Dataset]) -> list[Dataset]:
 		n_query = normalize_query(data_dict["path"])
 		if n_datasets.get(n_query):
 			n_datasets[n_query]["values"] = [
-				x + y for x, y in zip(n_datasets[n_query]["values"], data_dict["values"])
+				x + y for x, y in zip(n_datasets[n_query]["values"], data_dict["values"], strict=False)
 			]
 		else:
 			data_dict["path"] = n_query

@@ -1,13 +1,13 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-import unittest
 from unittest.mock import MagicMock
+
+from frappe.tests.utils import FrappeTestCase
 
 from backbone.hypervisor import Hypervisor
 
 
-class TestHypervisor(unittest.TestCase):
+class TestHypervisor(FrappeTestCase):
 	def test_preinstall_pass(self):
 		shell = MagicMock()
 		shell.execute.return_value.returncode = 0

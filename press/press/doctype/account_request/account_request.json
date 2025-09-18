@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "request_key",
+  "request_key_expiration_time",
   "team",
   "email",
   "oauth_signup",
@@ -290,12 +291,19 @@
    "fieldname": "continent",
    "fieldtype": "Data",
    "label": "Continent"
+  },
+  {
+   "depends_on": "eval: doc.request_key",
+   "fieldname": "request_key_expiration_time",
+   "fieldtype": "Datetime",
+   "label": "Request Key Expiration Time",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-29 15:31:57.451420",
+ "modified": "2025-06-27 18:14:39.244905",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

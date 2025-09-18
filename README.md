@@ -17,7 +17,7 @@
 <div align="center">
 	<a href="https://frappe.io/press">Website</a>
 	-
-	<a href="https://frappecloud.com/docs/">Documentation</a>
+	<a href="https://docs.frappe.io/cloud/">Documentation</a>
 </div>
 
 ## Press
@@ -50,6 +50,7 @@ Additionally, customers lacked full control over their servers—no SSH access, 
 ![Permissions](https://github.com/user-attachments/assets/60da6b5e-8f48-4483-99cf-67886ccc8bd6)
 ![Bench Group Update](https://github.com/user-attachments/assets/2be6b0ee-084d-4949-8d13-218b5a218d3d)
 ![Marketplace](https://github.com/user-attachments/assets/2f325737-7929-485d-a670-549f986fd07e)
+
 </details>
 
 ### Under the Hood
@@ -66,13 +67,21 @@ Additionally, customers lacked full control over their servers—no SSH access, 
 
 ## Setup
 
-To self host or to setup Press locally follow the steps in the [Local Development Environment Setup Guide](https://frappecloud.com/docs/local-fc-setup) or [this YouTube video](https://www.youtube.com/watch?v=Xb9QHnUrIEk)
+To self host or to setup Press locally follow the steps in the [Local Development Environment Setup Guide](https://docs.frappe.io/cloud/local-fc-setup) or [this YouTube video](https://www.youtube.com/watch?v=Xb9QHnUrIEk)
 
+### Pre-commit
+
+There's a [pre-commit](https://pre-commit.com/) hook included in the repo. You can set it up by doing
+
+```bash
+pip install pre-commit
+pre-commit install
+```
 ## Learn and connect
 
 - [Telegram Public Group](https://t.me/frappecloud)
 - [Discuss Forum](https://discuss.frappe.io/c/frappe-cloud/77)
-- [Documentation](https://frappecloud.com/docs)
+- [Documentation](https://docs.frappe.io/cloud)
 
 <br/>
 <br/>

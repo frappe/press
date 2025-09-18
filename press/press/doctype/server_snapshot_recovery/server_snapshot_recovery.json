@@ -1,0 +1,219 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-08-04 10:34:26.272832",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "column_break_msoo",
+  "snapshot",
+  "column_break_cvnn",
+  "team",
+  "column_break_mqrc",
+  "cluster",
+  "section_break_nhfa",
+  "warm_up_end_time",
+  "column_break_eawo",
+  "restored_on",
+  "column_break_rdjy",
+  "expire_backup_on",
+  "section_break_ipfw",
+  "app_server",
+  "is_app_server_ready",
+  "app_server_archived",
+  "column_break_qsfq",
+  "database_server",
+  "is_database_server_ready",
+  "database_server_archived",
+  "section_break_ilwd",
+  "sites"
+ ],
+ "fields": [
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nCreating Servers\nGathering Site Data\nWarming Up\nRestoring\nRestored\nFailure\nUnavailable"
+  },
+  {
+   "fieldname": "column_break_msoo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "snapshot",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Snapshot",
+   "options": "Server Snapshot",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_ilwd",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "sites",
+   "fieldtype": "Table",
+   "label": "Sites",
+   "options": "Server Snapshot Site Recovery"
+  },
+  {
+   "fieldname": "section_break_ipfw",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "app_server",
+   "fieldtype": "Link",
+   "label": "App Server",
+   "options": "Server",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_qsfq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "database_server",
+   "fieldtype": "Link",
+   "label": "Database Server",
+   "options": "Database Server",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_app_server_ready",
+   "fieldtype": "Check",
+   "label": "App Server Ready",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_database_server_ready",
+   "fieldtype": "Check",
+   "label": "Database Server Ready",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "app_server_archived",
+   "fieldtype": "Check",
+   "label": "App Server Archived",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "database_server_archived",
+   "fieldtype": "Check",
+   "label": "Database Server Archived",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_mqrc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "snapshot.cluster",
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "warm_up_end_time",
+   "fieldtype": "Datetime",
+   "label": "Warm Up End Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_cvnn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "snapshot.team",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_nhfa",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_eawo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "restored_on",
+   "fieldtype": "Datetime",
+   "label": "Restored On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_rdjy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "expire_backup_on",
+   "fieldtype": "Datetime",
+   "label": "Expire Backup On",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-08-07 10:50:25.752688",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Server Snapshot Recovery",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -5,6 +5,7 @@ import base64
 import shlex
 import struct
 import subprocess
+from typing import ClassVar
 
 import frappe
 from frappe.model.document import Document
@@ -36,9 +37,9 @@ class UserSSHKey(Document):
 		user: DF.Link
 	# end: auto-generated types
 
-	dashboard_fields = ["ssh_fingerprint", "is_default", "user", "is_removed"]
+	dashboard_fields: ClassVar = ["ssh_fingerprint", "is_default", "user", "is_removed"]
 
-	valid_key_types = [
+	valid_key_types: ClassVar = [
 		"ssh-rsa",
 		"ssh-ed25519",
 		"ecdsa-sha2-nistp256",
@@ -56,19 +57,19 @@ class UserSSHKey(Document):
 			raise SSHKeyValueError(f"Key type {key_type} does not match key")
 
 	def validate(self):
+		if self.is_removed:  # to allow removing invalid keys
+			return
 		msg = "You must supply a key in OpenSSH public key format. Please try copy/pasting the key using one of the commands in documentation."
 		try:
 			key_type, key, *comment = self.ssh_public_key.strip().split()
 			if key_type not in self.valid_key_types:
-				raise SSHKeyValueError(
-					f"Key type has to be one of {', '.join(self.valid_key_types)}"
-				)
+				raise SSHKeyValueError(f"Key type has to be one of {', '.join(self.valid_key_types)}")
 			key_bytes = base64.b64decode(key)
 			self.check_embedded_key_type(key_type, key_bytes)
 			self.generate_ssh_fingerprint(self.ssh_public_key.encode())
 		except SSHKeyValueError as e:
 			frappe.throw(
-				f"{str(e)}\n{msg}",
+				f"{e!s}\n{msg}",
 			)
 		except Exception:
 			frappe.throw(msg)
@@ -119,4 +120,4 @@ class UserSSHKey(Document):
 				.split(":")[1]
 			)
 		except subprocess.CalledProcessError as e:
-			raise SSHKeyValueError(f"Error generating fingerprint: {e.output.decode()}")
+			raise SSHKeyValueError(f"Error generating fingerprint: {e.output.decode()}") from e

@@ -19,14 +19,18 @@ from frappe.query_builder.functions import Count
 from frappe.utils import cstr, flt, get_url, sbool
 from frappe.utils.caching import redis_cache
 
+from press.agent import Agent
 from press.api.client import dashboard_whitelist
+from press.exceptions import ImageNotFoundInRegistry, InsufficientSpaceOnServer, VolumeResizeLimitError
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import new_app
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
 from press.press.doctype.deploy_candidate.utils import is_suspended
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import create_platform_build_and_deploy
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server import Server
 from press.utils import (
+	fmt_timedelta,
 	get_app_tag,
 	get_client_blacklisted_keys,
 	get_current_team,
@@ -37,6 +41,8 @@ from press.utils import (
 if TYPE_CHECKING:
 	from datetime import datetime
 	from typing import Any
+
+	from press.press.doctype.user_ssh_key.user_ssh_key import UserSSHKey
 
 DEFAULT_DEPENDENCIES = [
 	{"dependency": "NVM_VERSION", "version": "0.36.0"},
@@ -55,6 +61,7 @@ class LastDeployInfo(TypedDict):
 
 if TYPE_CHECKING:
 	from press.press.doctype.app.app import App
+	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 
@@ -286,13 +293,6 @@ class ReleaseGroup(Document, TagHelpers):
 			frappe.delete_doc("Deploy Candidate", candidate.name)
 
 	def before_save(self):
-		has_arm_server = frappe.get_value(
-			"Server", {"name": ("in", [server.server for server in self.servers]), "platform": "arm64"}
-		)
-
-		if has_arm_server and self.is_redisearch_enabled:
-			frappe.throw("Redisearch is currently disabled for ARM based servers!")
-
 		self.update_common_site_config_preview()
 
 	def update_common_site_config_preview(self):
@@ -576,6 +576,63 @@ class ReleaseGroup(Document, TagHelpers):
 		dc = self.create_deploy_candidate()
 		dc.schedule_build_and_deploy()
 
+	def _try_server_size_increase_or_throw(self, server: Server, mountpoint: str, required_size: int):
+		"""In case of low storage on the server try to either increase the storage (if allowed) or throw an error"""
+		if server.auto_increase_storage:
+			try:
+				server.calculated_increase_disk_size(mountpoint=mountpoint)
+			except VolumeResizeLimitError:
+				frappe.throw(
+					f"We are unable to increase server space right now for the deploy. Please wait "
+					f"{fmt_timedelta(server.time_to_wait_before_updating_volume)} before trying again.",
+					InsufficientSpaceOnServer,
+				)
+		else:
+			frappe.throw(
+				f"Not enough space on server {server.name} to create a new bench. {required_size}G is required.",
+				InsufficientSpaceOnServer,
+			)
+
+	@staticmethod
+	def _get_last_deployed_image_size(server: Server, last_deployed_bench: Bench) -> float | None:
+		"""Try and fetch the last deployed image size"""
+		try:
+			return Agent(server.name).get(f"server/image-size/{last_deployed_bench.build}").get("size")
+		except Exception as e:
+			log_error("Failed to fetch last image size", data=e)
+
+	def check_app_server_storage(self):
+		"""
+		Check storage on the app server before deploying
+		Check if the free space on the server is more than the last
+		image deployed, assuming new image to be created will have the same or more
+		size than the last time.
+		"""
+		for server in self.servers:
+			server: Server = frappe.get_cached_doc("Server", server.server)
+
+			if server.is_self_hosted:
+				continue
+
+			mountpoint = server.guess_data_disk_mountpoint()
+			# If prometheus acts up
+			try:
+				free_space = server.free_space(mountpoint) / 1024**3
+			except Exception:
+				continue
+
+			last_deployed_bench = get_last_doc("Bench", {"group": self.name, "status": "Active"})
+
+			if not last_deployed_bench:
+				continue
+
+			last_image_size = self._get_last_deployed_image_size(server, last_deployed_bench)
+
+			if last_image_size and (free_space < last_image_size):
+				self._try_server_size_increase_or_throw(
+					server, mountpoint, required_size=last_image_size - free_space
+				)
+
 	@frappe.whitelist()
 	def create_deploy_candidate(
 		self,
@@ -585,6 +642,7 @@ class ReleaseGroup(Document, TagHelpers):
 		if not self.enabled:
 			return None
 
+		self.check_app_server_storage()
 		apps = self.get_apps_to_update(apps_to_update)
 		if apps_to_update is None:
 			self.validate_dc_apps_against_rg(apps)
@@ -649,7 +707,9 @@ class ReleaseGroup(Document, TagHelpers):
 			apps_to_update = self.apps
 
 		apps = []
-		last_deployed_bench = get_last_doc("Bench", {"group": self.name, "status": "Active"})
+		last_deployed_bench = get_last_doc(
+			"Bench", {"group": self.name, "status": ("in", ("Active", "Installing", "Pending"))}
+		)
 
 		for app in self.deploy_information().apps:
 			app_to_update = find(apps_to_update, lambda x: x.get("app") == app.app)
@@ -666,9 +726,8 @@ class ReleaseGroup(Document, TagHelpers):
 					}
 				)
 			else:
-				# Either we don't want to update the app or there's no update available
+				# Find the last deployed release and use it, if no deployed bench is present use the rg apps
 				if last_deployed_bench:
-					# Find the last deployed release and use it
 					app_to_keep = find(last_deployed_bench.apps, lambda x: x.app == app.app)
 					if app_to_keep:
 						apps.append(
@@ -677,6 +736,21 @@ class ReleaseGroup(Document, TagHelpers):
 								"source": app_to_keep.source,
 								"release": app_to_keep.release,
 								"hash": app_to_keep.hash,
+							}
+						)
+
+				else:
+					app_to_keep = find(self.apps, lambda x: x.app == app.app)
+					if app_to_keep:
+						app_release, app_hash = frappe.db.get_value(
+							"App Release", {"source": app_to_keep.source}, ["name", "hash"]
+						)
+						apps.append(
+							{
+								"app": app_to_keep.app,
+								"source": app_to_keep.source,
+								"release": app_release,
+								"hash": app_hash,
 							}
 						)
 
@@ -880,15 +954,18 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def generate_certificate(self):
-		user_ssh_key = frappe.get_all(
+		ssh_key = frappe.get_all(
 			"User SSH Key",
 			{"user": frappe.session.user, "is_default": True},
 			pluck="name",
 			limit=1,
 		)
 
-		if not user_ssh_key:
+		if not ssh_key:
 			frappe.throw(_("Please set a SSH key to generate certificate"))
+
+		user_ssh_key: UserSSHKey = frappe.get_doc("User SSH Key", ssh_key[0])
+		user_ssh_key.validate()  # user may have already added invalid ssh key. Validate again
 
 		return frappe.get_doc(
 			{
@@ -896,7 +973,7 @@ class ReleaseGroup(Document, TagHelpers):
 				"certificate_type": "User",
 				"group": self.name,
 				"user": frappe.session.user,
-				"user_ssh_key": user_ssh_key[0],
+				"user_ssh_key": ssh_key[0],
 				"validity": "6h",
 			}
 		).insert()
@@ -1196,12 +1273,25 @@ class ReleaseGroup(Document, TagHelpers):
 		required_app_source = frappe.get_all(
 			"App Source",
 			filters={"repository_url": current_app_source.repository_url, "branch": to_branch},
-			or_filters={"team": current_app_source.team, "public": 1},
+			or_filters={"team": get_current_team(), "public": 1},
 			limit=1,
+			fields=["name", "team", "public"],
 		)
 
 		if required_app_source:
 			required_app_source = required_app_source[0]
+			if not required_app_source.public:
+				required_app_source = frappe.get_doc("App Source", required_app_source.name)
+				# check if the version already exists
+				if not any(vs.version == self.version for vs in required_app_source.versions):
+					required_app_source.append(
+						"versions",
+						{
+							"version": self.version,
+						},
+					)
+					required_app_source.save()
+
 		else:
 			versions = frappe.get_all(
 				"App Source Version", filters={"parent": current_app_source.name}, pluck="version"
@@ -1265,33 +1355,74 @@ class ReleaseGroup(Document, TagHelpers):
 	def add_cluster(self, cluster: str):
 		"""
 		Add new server belonging to cluster.
-
-		Deploys bench if no update available
 		"""
 		server = Server.get_prod_for_new_bench({"cluster": cluster})
+
 		if not server:
 			log_error("No suitable server for new bench")
 			frappe.throw(f"No suitable server for new bench in {cluster}")
-		app_update_available = self.deploy_information().update_available
-		self.add_server(server, deploy=not app_update_available)
 
-	def get_last_successful_candidate_build(self) -> "DeployCandidateBuild":
-		return frappe.get_last_doc("Deploy Candidate Build", {"status": "Success", "group": self.name})
+		self.add_server(server, deploy=True)
 
-	def get_last_deploy_candidate_build(self):
+	def get_last_successful_candidate_build(self, platform: str | None = None) -> DeployCandidateBuild | None:
 		try:
-			dc: "DeployCandidateBuild" = frappe.get_last_doc("Deploy Candidate Build", {"group": self.name})
-			return dc
+			filters = {"status": "Success", "group": self.name}
+			if platform:
+				filters.update({"platform": platform})
+
+			return frappe.get_last_doc("Deploy Candidate Build", filters)
+		except frappe.DoesNotExistError:
+			return None
+
+	def get_last_deploy_candidate_build(self) -> DeployCandidateBuild:
+		try:
+			return frappe.get_last_doc("Deploy Candidate Build", {"group": self.name})
 		except frappe.DoesNotExistError:
 			return None
 
 	@frappe.whitelist()
-	def add_server(self, server: str, deploy=False):
+	def add_server(self, server: str, deploy=False, force_new_build: bool = False):
+		"""
+		Add a server to the release group in case last successful deploy candidate exists
+		create a deploy check if the image has not been pruned from the registry in case of
+		missing image create new build.
+		"""
+		if not deploy:
+			return None
+
+		server_platform = frappe.get_value("Server", server, "platform")
+		last_successful_deploy_candidate_build = self.get_last_successful_candidate_build(
+			platform=server_platform
+		)
+
+		if not last_successful_deploy_candidate_build or force_new_build:
+			# No build of this platform is available creating new build
+			last_candidate_build = (
+				self.get_last_successful_candidate_build()
+			)  # Checking for any platform build
+
+			if not last_candidate_build:
+				frappe.throw("No build present for this release group", frappe.ValidationError)
+
+			self.append("servers", {"server": server, "default": False})
+			self.save()
+
+			return create_platform_build_and_deploy(
+				deploy_candidate=last_candidate_build.candidate.name,
+				server=server,
+				platform=server_platform,
+			)
+
 		self.append("servers", {"server": server, "default": False})
 		self.save()
-		if deploy:
-			return self.get_last_successful_candidate_build()._create_deploy([server])
-		return None
+
+		try:
+			return last_successful_deploy_candidate_build._create_deploy(
+				[server],
+				check_image_exists=True,
+			)
+		except ImageNotFoundInRegistry:
+			self.add_server(server=server, deploy=True, force_new_build=True)
 
 	@frappe.whitelist()
 	def change_server(self, server: str):
@@ -1594,3 +1725,29 @@ def get_formatted_config_value(config_type: str, value: Any, key: str, name: str
 		return frappe.get_value("Site Config", {"key": key, "parent": name}, "value")
 
 	return value
+
+
+def add_public_servers_to_public_groups():
+	"""
+	Add public servers to public release groups.
+	Used when a new server is added to the system.
+	"""
+	public_groups = frappe.get_all(
+		"Release Group",
+		filters={"public": 1, "enabled": 1, "central_bench": 0},
+		fields=["name"],
+	)
+	public_servers = frappe.get_all(
+		"Server",
+		filters={"public": 1, "status": "Active"},
+		pluck="name",
+	)
+
+	for group in public_groups:
+		rg = ReleaseGroup("Release Group", group.name)
+		for server in public_servers:
+			if find(rg.servers, lambda x: x.server == server):
+				continue
+			rg.reload()
+			rg.append("servers", {"server": server, "default": False})
+			rg.save()

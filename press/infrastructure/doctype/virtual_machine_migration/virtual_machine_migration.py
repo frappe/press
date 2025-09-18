@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 	from press.infrastructure.doctype.virtual_machine_migration_step.virtual_machine_migration_step import (
 		VirtualMachineMigrationStep,
 	)
+	from press.press.doctype.server.server import Server
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
@@ -238,7 +239,7 @@ class VirtualMachineMigration(Document):
 		matching_plans = frappe.get_all(
 			"Server Plan",
 			{
-				"enabled": True,
+				# "enabled": True,
 				"server_type": old_plan.server_type,
 				"cluster": old_plan.cluster,
 				"instance_type": self.machine_type,
@@ -301,6 +302,8 @@ class VirtualMachineMigration(Document):
 		if self.server_type == "Server":
 			methods.insert(0, (self.remove_docker_containers, Wait))
 			methods.append((self.update_server_platform, Wait))
+			methods.append((self.update_agent_ansible, Wait))
+			methods.append((self.start_active_benches, Wait))
 
 		steps = []
 		for method, wait_for_completion in methods:
@@ -315,6 +318,9 @@ class VirtualMachineMigration(Document):
 
 	def update_server_platform(self) -> StepStatus:
 		"""Update server platform"""
+		if "m6a" in self.machine.machine_type:
+			return StepStatus.Success
+
 		server = self.machine.get_server()
 		server.platform = "arm64"
 		server.save()
@@ -327,14 +333,27 @@ class VirtualMachineMigration(Document):
 			{"status": "Active", "server": self.machine.name},
 			pluck="name",
 		)
-		container_names = " ".join(container_names)
-		command = f"docker rm -f {container_names}"
-		result = self.ansible_run(command)
+		if container_names:
+			container_names = " ".join(container_names)
+			command = f"docker rm -f {container_names}"
+			result = self.ansible_run(command)
 
-		if result["status"] != "Success" or result["error"]:
-			self.add_comment(text=f"Error stoping docker: {result}")
-			return StepStatus.Failure
+			if result["status"] != "Success" or result["error"]:
+				self.add_comment(text=f"Error stoping docker: {result}")
+				return StepStatus.Failure
 
+		return StepStatus.Success
+
+	def update_agent_ansible(self) -> StepStatus:
+		"""Update agent on server"""
+		server: Server = frappe.get_doc("Server", self.machine.name)
+		server._update_agent_ansible()
+		return StepStatus.Success
+
+	def start_active_benches(self) -> StepStatus:
+		"""Start active benches on the server"""
+		server: Server = frappe.get_doc("Server", self.machine.name)
+		server.start_active_benches()
 		return StepStatus.Success
 
 	def update_partition_labels(self) -> StepStatus:

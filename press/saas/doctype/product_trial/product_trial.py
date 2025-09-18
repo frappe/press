@@ -23,6 +23,7 @@ class ProductTrial(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.site.site import Site
 		from press.saas.doctype.hybrid_pool_item.hybrid_pool_item import HybridPoolItem
 		from press.saas.doctype.product_trial_app.product_trial_app import ProductTrialApp
 
@@ -62,6 +63,7 @@ class ProductTrial(Document):
 			frappe.throw("Not permitted")
 
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
+		doc.prefilled_subdomain = self.get_unique_site_name()
 		return doc
 
 	def validate(self):
@@ -85,14 +87,20 @@ class ProductTrial(Document):
 				)
 
 	def setup_trial_site(
-		self, subdomain: str, team: str, cluster: str | None = None, account_request: str | None = None
+		self,
+		subdomain: str,
+		domain: str,
+		team: str,
+		cluster: str | None = None,
+		account_request: str | None = None,
 	):
 		from press.press.doctype.site.site import Site, get_plan_config
 
 		validate_subdomain(subdomain)
-		Site.exists(subdomain, self.domain)
+		if Site.exists(subdomain, domain):
+			frappe.throw("Site with this subdomain already exists")
 
-		site_domain = f"{subdomain}.{self.domain}"
+		site_domain = f"{subdomain}.{domain}"
 
 		standby_site = self.get_standby_site(cluster, account_request)
 
@@ -118,7 +126,7 @@ class ProductTrial(Document):
 			self.set_site_domain(site, site_domain)
 		else:
 			# Create a site in the cluster, if standby site is not available
-			apps = [{"app": d.app} for d in self.apps]
+			apps = self.get_site_apps(account_request)
 			is_frappe_app_present = any(d["app"] == "frappe" for d in apps)
 			if not is_frappe_app_present:
 				apps.insert(0, {"app": "frappe"})
@@ -126,7 +134,7 @@ class ProductTrial(Document):
 			site = frappe.get_doc(
 				doctype="Site",
 				subdomain=subdomain,
-				domain=self.domain,
+				domain=domain,
 				group=self.release_group,
 				cluster=cluster,
 				account_request=account_request,
@@ -146,6 +154,36 @@ class ProductTrial(Document):
 			agent_job_name = site.flags.get("new_site_agent_job_name", None)
 
 		return site, agent_job_name, bool(standby_site)
+
+	def get_site_apps(self, account_request: str | None = None):
+		"""Get the list of site apps to include in the site creation
+		Also includes hybrid apps if account request has relevant fields
+		"""
+		apps = [{"app": d.app} for d in self.apps]
+
+		if account_request and self.enable_hybrid_pooling:
+			fields = [rule.field for rule in self.hybrid_pool_rules]
+			acc_req = (
+				frappe.db.get_value(
+					"Account Request",
+					account_request,
+					fields,
+					as_dict=True,
+				)
+				if account_request
+				else None
+			)
+
+			for rule in self.hybrid_pool_rules:
+				value = acc_req.get(rule.field) if acc_req else None
+				if not value:
+					break
+
+				if rule.value == value:
+					apps += [{"app": rule.app}]
+					break
+
+		return apps
 
 	def get_proxy_servers_for_available_clusters(self):
 		clusters = self.get_available_clusters()
@@ -202,12 +240,19 @@ class ProductTrial(Document):
 		if cluster:
 			filters["cluster"] = cluster
 
-		for rule in self.hybrid_pool_rules:
-			value = (
-				frappe.db.get_value("Account Request", account_request, rule.field)
-				if account_request
-				else None
+		fields = [rule.field for rule in self.hybrid_pool_rules]
+		acc_req = (
+			frappe.db.get_value(
+				"Account Request",
+				account_request,
+				fields,
+				as_dict=True,
 			)
+			if account_request
+			else None
+		)
+		for rule in self.hybrid_pool_rules:
+			value = acc_req.get(rule.field) if acc_req else None
 			if not value:
 				break
 
@@ -224,12 +269,6 @@ class ProductTrial(Document):
 		)
 		if sites:
 			return sites[0]
-		if cluster and account_request:
-			# if site is not found and account request was specified, try to find a site in any cluster
-			return self.get_standby_site(None, account_request)
-		if cluster:
-			# if site is not found and cluster was specified, try to find a site in any cluster
-			return self.get_standby_site()
 		return None
 
 	def create_standby_sites_in_each_cluster(self):
@@ -238,7 +277,17 @@ class ProductTrial(Document):
 
 		clusters = self.get_available_clusters()
 		for cluster in clusters:
-			self.create_standby_sites(cluster)
+			try:
+				self.create_standby_sites(cluster)
+				frappe.db.commit()
+			except Exception as e:
+				log_error(
+					"Unable to Create Standby Sites",
+					data=e,
+					reference_doctype="Product Trial",
+					reference_name=self.name,
+				)
+				frappe.db.rollback()
 
 	def create_standby_sites(self, cluster):
 		if not self.enable_pooling:
@@ -268,6 +317,8 @@ class ProductTrial(Document):
 			frappe.db.commit()
 
 	def create_standby_site(self, cluster: str, rule: dict | None = None):
+		from frappe.core.utils import find
+
 		administrator = frappe.db.get_value("Team", {"user": "Administrator"}, "name")
 		apps = [{"app": d.app} for d in self.apps]
 
@@ -275,10 +326,18 @@ class ProductTrial(Document):
 			apps += [{"app": rule.app}]
 
 		server = self.get_server_from_cluster(cluster)
+		cluster_domains = frappe.db.get_all(
+			"Root Domain", {"name": ("like", f"%.{self.domain}")}, ["name", "default_cluster as cluster"]
+		)
+		cluster_domain = find(
+			cluster_domains,
+			lambda d: d.cluster == cluster if cluster else False,
+		)
+		domain = cluster_domain.name if cluster_domain else self.domain
 		site = frappe.get_doc(
 			doctype="Site",
 			subdomain=self.get_unique_site_name(),
-			domain=self.domain,
+			domain=domain,
 			group=self.release_group,
 			cluster=cluster,
 			server=server,
@@ -398,7 +457,7 @@ def replenish_standby_sites():
 	"""Create standby sites for all products with pooling enabled. This is called by the scheduler."""
 	products = frappe.get_all("Product Trial", {"enable_pooling": 1}, pluck="name")
 	for product in products:
-		product = frappe.get_doc("Product Trial", product)
+		product: ProductTrial = frappe.get_doc("Product Trial", product)
 		try:
 			product.create_standby_sites_in_each_cluster()
 			frappe.db.commit()
@@ -427,8 +486,24 @@ def send_verification_mail_for_login(email: str, product: str, code: str):
 		"header_content": f"<p>You have requested a verification code to login to your {product_trial.title} site. The code is valid for 5 minutes.</p>",
 		"otp": code,
 	}
+	inline_images = []
 	if product_trial.email_full_logo:
 		args.update({"image_path": get_url(product_trial.email_full_logo, True)})
+		try:
+			logo_name = product_trial.email_full_logo[1:]
+			args.update({"logo_name": logo_name})
+			with open(frappe.utils.get_site_path("public", logo_name), "rb") as logo_file:
+				inline_images.append(
+					{
+						"filename": logo_name,
+						"filecontent": logo_file.read(),
+					}
+				)
+		except Exception as ex:
+			log_error(
+				"Error reading logo for inline images in email",
+				data=ex,
+			)
 	if product_trial.email_account:
 		sender = frappe.get_value("Email Account", product_trial.email_account, "email_id")
 
@@ -439,6 +514,7 @@ def send_verification_mail_for_login(email: str, product: str, code: str):
 		template="product_trial_verify_account",
 		args=args,
 		now=True,
+		inline_images=inline_images,
 	)
 
 

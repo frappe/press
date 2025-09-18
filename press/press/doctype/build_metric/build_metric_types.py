@@ -60,3 +60,5 @@ class MetricsType(typing.TypedDict):
 	median_upload_context_duration: float
 	median_package_context_duration: float
 	failure_frequency: dict[str, int]
+	build_count_split: dict[str, int]
+	fc_failure_metrics: dict[str, dict[str, int]]

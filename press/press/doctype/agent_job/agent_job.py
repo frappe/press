@@ -31,19 +31,14 @@ from press.press.doctype.site_migration.site_migration import (
 	get_ongoing_migration,
 	process_site_migration_job_update,
 )
-from press.utils import has_role, log_error, timer
+from press.utils import log_error, timer
 
 AGENT_LOG_KEY = "agent-jobs"
-
-if TYPE_CHECKING:
-	from press.press.doctype.site.site import Site
 
 
 class AgentJob(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
-
-	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
@@ -100,12 +95,11 @@ class AgentJob(Document):
 		if not (site or group or server or bench):
 			frappe.throw("Not permitted", frappe.PermissionError)
 
-		if site and not has_role("Press Support Agent"):
+		if site:
 			is_owned_by_team("Site", site, raise_exception=True)
 
 		if group:
-			if not has_role("Press Support Agent"):
-				is_owned_by_team("Release Group", group, raise_exception=True)
+			is_owned_by_team("Release Group", group, raise_exception=True)
 
 			AgentJob = frappe.qb.DocType("Agent Job")
 			Bench = frappe.qb.DocType("Bench")
@@ -120,7 +114,7 @@ class AgentJob(Document):
 		return results
 
 	def get_doc(self, doc):
-		if doc.status == "Undelivered":
+		if doc.status == "Undelivered" and not doc.output:
 			doc.status = "Pending"
 
 		doc["steps"] = frappe.get_all(
@@ -427,25 +421,6 @@ def publish_update(job):
 		)
 
 
-def suspend_sites():
-	"""Suspend sites if they have exceeded database or disk limits"""
-
-	if not frappe.db.get_single_value("Press Settings", "enforce_storage_limits"):
-		return
-
-	free_teams = frappe.get_all("Team", filters={"free_account": True, "enabled": True}, pluck="name")
-	active_sites = frappe.get_all(
-		"Site",
-		filters={"status": "Active", "free": False, "team": ("not in", free_teams)},
-		fields=["name", "team", "current_database_usage", "current_disk_usage"],
-	)
-
-	for site in active_sites:
-		if site.current_database_usage > 100 or site.current_disk_usage > 100:
-			site: Site = frappe.get_doc("Site", site.name)
-			site.suspend(reason="Site Usage Exceeds Plan limits", skip_reload=True)
-
-
 @timer
 def poll_random_jobs(agent, pending_ids):
 	random_pending_ids = random.sample(pending_ids, k=min(100, len(pending_ids)))
@@ -597,6 +572,9 @@ def filter_request_failures(servers):
 
 
 def poll_pending_jobs():
+	"""
+	Poll pending job fetches the status of Pending Jobs from all servers.
+	"""
 	filters = {"status": ("in", ["Pending", "Running", "Undelivered"])}
 	if random.random() > 0.1:
 		# Experimenting with fewer polls (only for backup jobs)
@@ -964,6 +942,11 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_remove_binlogs_from_indexer_agent_job_update,
 		)
 		from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
+		from press.press.doctype.logical_replication_backup.logical_replication_backup import (
+			process_logical_replication_backup_activate_site_job_update,
+			process_logical_replication_backup_deactivate_site_job_update,
+			process_logical_replication_backup_update_database_host_job_update,
+		)
 		from press.press.doctype.mariadb_binlog.mariadb_binlog import (
 			process_upload_binlogs_to_s3_job_update,
 		)
@@ -977,6 +960,11 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_update_nginx_job_update,
 		)
 		from press.press.doctype.server.server import process_new_server_job_update
+		from press.press.doctype.server_snapshot_recovery.server_snapshot_recovery import (
+			process_backup_database_from_snapshot_job_callback,
+			process_backup_files_from_snapshot_job_callback,
+			process_search_sites_in_snapshot_job_callback,
+		)
 		from press.press.doctype.site.erpnext_site import (
 			process_setup_erpnext_site_job_update,
 		)
@@ -1104,10 +1092,16 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_deactivate_site_job_update(job)
 		elif job.job_type == "Activate Site" and job.reference_doctype == "Site Update":
 			process_activate_site_job_update(job)
+		elif job.job_type == "Activate Site" and job.reference_doctype == "Logical Replication Backup":
+			process_logical_replication_backup_activate_site_job_update(job)
 		elif job.job_type == "Deactivate Site" and job.reference_doctype == "Site Backup":
 			process_site_backup_deactivate_site_job_update(job)
 		elif job.job_type == "Deactivate Site" and job.reference_doctype == "Physical Backup Restoration":
 			process_physical_backup_restoration_deactivate_site_job_update(job)
+		elif job.job_type == "Deactivate Site" and job.reference_doctype == "Logical Replication Backup":
+			process_logical_replication_backup_deactivate_site_job_update(job)
+		elif job.job_type == "Update Database Host" and job.reference_doctype == "Logical Replication Backup":
+			process_logical_replication_backup_update_database_host_job_update(job)
 		elif job.job_type == "Add Domain":
 			process_add_domain_job_update(job)
 		elif job.job_type == "Add Binlogs To Indexer":
@@ -1116,6 +1110,12 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_remove_binlogs_from_indexer_agent_job_update(job)
 		elif job.job_type == "Upload Binlogs To S3":
 			process_upload_binlogs_to_s3_job_update(job)
+		elif job.job_type == "Search Sites In Snapshot":
+			process_search_sites_in_snapshot_job_callback(job)
+		elif job.job_type == "Backup Database From Snapshot":
+			process_backup_database_from_snapshot_job_callback(job)
+		elif job.job_type == "Backup Files From Snapshot":
+			process_backup_files_from_snapshot_job_callback(job)
 
 		# send failure notification if job failed
 		if job.status == "Failure":

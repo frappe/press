@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 
 import boto3
+import botocore
 import frappe
 import frappe.utils
 import pytz
@@ -27,6 +28,7 @@ class VirtualDiskSnapshot(Document):
 		from frappe.types import DF
 
 		cluster: DF.Link | None
+		dedicated_snapshot: DF.Check
 		duration: DF.Duration | None
 		expired: DF.Check
 		mariadb_root_password: DF.Password | None
@@ -143,12 +145,22 @@ class VirtualDiskSnapshot(Document):
 				"yyyy-MM-dd HH:mm:ss",
 			)
 		self.save(ignore_version=True)
+		self.sync_server_snapshot()
 
 	@frappe.whitelist()
-	def delete_snapshot(self):
+	def delete_snapshot(self, ignore_validation: bool | None = None):  # noqa: C901
+		if ignore_validation is None:
+			ignore_validation = False
+
 		self.sync()
 		if self.status == "Unavailable":
 			return
+
+		if self.dedicated_snapshot and not ignore_validation:
+			frappe.throw(
+				"Dedicated snapshots cannot be deleted directly. Please delete from Server Snapshot.",
+			)
+
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		if cluster.cloud_provider == "AWS EC2":
 			try:
@@ -184,16 +196,54 @@ class VirtualDiskSnapshot(Document):
 			"REQUEST_RECEIVED": "Pending",
 		}.get(status, "Unavailable")
 
-	def create_volume(self, availability_zone: str, iops: int = 3000, throughput: int | None = None) -> str:
+	def lock(self):
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		if cluster.cloud_provider != "AWS EC2":
+			frappe.throw("Only AWS Provider is supported for now")
+
+		self.client.lock_snapshot(
+			SnapshotId=self.snapshot_id,
+			LockMode="governance",
+			LockDuration=365,  # Lock for 1 year
+			# After this period, the snapshot will be automatically unlocked
+		)
+
+	def unlock(self):
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		if cluster.cloud_provider != "AWS EC2":
+			frappe.throw("Only AWS Provider is supported for now")
+
+		try:
+			self.client.unlock_snapshot(SnapshotId=self.snapshot_id)
+		except botocore.exceptions.ClientError as e:
+			if e.response.get("Error", {}).get("Code") == "SnapshotLockNotFound":
+				return
+			raise e
+
+	def create_volume(
+		self,
+		availability_zone: str,
+		iops: int = 3000,
+		throughput: int | None = None,
+		size: int | None = None,
+		volume_initialization_rate: int | None = None,
+	) -> str:
 		self.sync()
 		if self.status != "Completed":
 			raise Exception("Snapshot is unavailable")
 		if throughput is None:
 			throughput = 125
+		if volume_initialization_rate is None:
+			volume_initialization_rate = 100
+		if size is None:
+			size = 0
+
+		size = max(self.size, size)  # Sanity
 		response = self.client.create_volume(
 			SnapshotId=self.snapshot_id,
 			AvailabilityZone=availability_zone,
 			VolumeType="gp3",
+			Size=size,
 			TagSpecifications=[
 				{
 					"ResourceType": "volume",
@@ -202,8 +252,25 @@ class VirtualDiskSnapshot(Document):
 			],
 			Iops=iops,
 			Throughput=throughput,
+			VolumeInitializationRate=volume_initialization_rate,
 		)
 		return response["VolumeId"]
+
+	def sync_server_snapshot(self):
+		if not self.dedicated_snapshot:
+			return
+
+		server_snapshot = frappe.db.get_value(
+			"Server Snapshot", filters={"app_server_snapshot": self.name}, pluck="name"
+		)
+		if not server_snapshot:
+			server_snapshot = frappe.db.get_value(
+				"Server Snapshot", filters={"database_server_snapshot": self.name}, pluck="name"
+			)
+		if not server_snapshot:
+			return
+
+		frappe.get_doc("Server Snapshot", server_snapshot).sync(now=True, trigger_snapshot_sync=False)
 
 	@property
 	def client(self):
@@ -239,7 +306,8 @@ def sync_snapshots():
 
 def sync_rolling_snapshots():
 	snapshots = frappe.get_all(
-		"Virtual Disk Snapshot", {"status": "Pending", "physical_backup": 0, "rolling_snapshot": 1}
+		"Virtual Disk Snapshot",
+		{"status": "Pending", "physical_backup": 0, "rolling_snapshot": 1, "dedicated_snapshot": 0},
 	)
 	start_time = time.time()
 	for snapshot in snapshots:
@@ -260,7 +328,7 @@ def sync_rolling_snapshots():
 def sync_physical_backup_snapshots():
 	snapshots = frappe.get_all(
 		"Virtual Disk Snapshot",
-		{"status": "Pending", "physical_backup": 1, "rolling_snapshot": 0},
+		{"status": "Pending", "physical_backup": 1, "rolling_snapshot": 0, "dedicated_snapshot": 0},
 		order_by="modified asc",
 	)
 	start_time = time.time()
@@ -292,6 +360,7 @@ def delete_old_snapshots():
 			"creation": ("<=", frappe.utils.add_days(None, -2)),
 			"physical_backup": False,
 			"rolling_snapshot": False,
+			"dedicated_snapshot": False,
 		},
 		pluck="name",
 		order_by="creation asc",
@@ -309,7 +378,13 @@ def delete_old_snapshots():
 def delete_expired_snapshots():
 	snapshots = frappe.get_all(
 		"Virtual Disk Snapshot",
-		filters={"status": "Completed", "physical_backup": True, "rolling_snapshot": False, "expired": True},
+		filters={
+			"status": "Completed",
+			"physical_backup": True,
+			"rolling_snapshot": False,
+			"expired": True,
+			"dedicated_snapshot": False,
+		},
 		pluck="name",
 		order_by="creation asc",
 		limit=500,
@@ -421,19 +496,78 @@ def _should_skip_snapshot(snapshot):
 
 def delete_duplicate_snapshot_docs(snapshot):
 	# Delete all except one snapshot document
-	# It doesn't matter which one we keep
 	snapshot_id = snapshot["SnapshotId"]
 	snapshot_count = frappe.db.count("Virtual Disk Snapshot", {"snapshot_id": snapshot_id})
 	if snapshot_count > 1:
-		frappe.db.sql(
-			"""
-				DELETE
-				FROM `tabVirtual Disk Snapshot`
-				WHERE snapshot_id=%s
-				LIMIT %s
-			""",
-			(snapshot_id, snapshot_count - 1),
-		)
+		tags = snapshot.get("Tags", [])
+		physical_backup = any(tag["Key"] == "Physical Backup" and tag["Value"] == "Yes" for tag in tags)
+		server_snapshot = any(tag["Key"] == "Dedicated Snapshot" and tag["Value"] == "Yes" for tag in tags)
+
+		snapshot_to_keep = None
+		existing_snapshots = []
+		if physical_backup or server_snapshot:
+			existing_snapshots = frappe.get_all(
+				"Virtual Disk Snapshot",
+				filters={"snapshot_id": snapshot_id},
+				order_by="creation desc",
+				pluck="name",
+			)
+
+		if (
+			physical_backup
+			and existing_snapshots
+			and (
+				site_backup := frappe.db.exists(
+					"Site Backup",
+					{
+						"database_snapshot": ("in", existing_snapshots),
+						"files_availability": ("!=", "Unavailable"),
+					},
+				)
+			)
+		):
+			snapshot_to_keep = frappe.get_value("Site Backup", site_backup, "database_snapshot")
+
+		if server_snapshot and existing_snapshots:
+			if not snapshot_to_keep:
+				snapshot_to_keep = frappe.db.get_value(
+					"Server Snapshot",
+					{
+						"app_server_snapshot": ("in", existing_snapshots),
+						"status": ("!=", "Unavailable"),
+					},
+					"app_server_snapshot",
+				)
+
+			if not snapshot_to_keep:
+				snapshot_to_keep = frappe.db.get_value(
+					"Server Snapshot",
+					{
+						"database_server_snapshot": ("in", existing_snapshots),
+						"status": ("!=", "Unavailable"),
+					},
+					"database_server_snapshot",
+				)
+
+		if snapshot_to_keep:
+			frappe.db.sql(
+				"""
+					DELETE
+					FROM `tabVirtual Disk Snapshot`
+					WHERE snapshot_id=%s AND name!=%s
+				""",
+				(snapshot_id, snapshot_to_keep),
+			)
+		else:
+			frappe.db.sql(
+				"""
+					DELETE
+					FROM `tabVirtual Disk Snapshot`
+					WHERE snapshot_id=%s
+					LIMIT %s
+				""",
+				(snapshot_id, snapshot_count - 1),
+			)
 
 
 def _update_snapshot_if_exists(snapshot, random_snapshot):
