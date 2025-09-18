@@ -32,6 +32,7 @@
     is_mirror: "{{ is_mirror | bool}}"
     username: "{{ registry_username }}"
     password: "{{ registry_password }}"
+    is_disk_storage: "{{ is_disk_storage | bool }}"
 
 
 - name: Deploy Docker Compose file
@@ -44,7 +45,15 @@
   vars:
     docker_data_mountpoint: "{{ docker_data_mountpoint }}"
     container_registry_config_path: "{{ container_registry_config_path }}"
-    registry_url: "http://{{ registry_url }}"
+    is_mirror: "{{ is_mirror | bool}}"
+    registry_url: "{{ registry_url }}"
+    is_s3_storage: "{{ is_s3_storage | bool }}"
+    access_key: "{{ access_key }}"
+    secret_key: "{{ secret_key }}"
+    region_endpoint: "{{ region_endpoint }}"
+    region: "{{ region }}"
+    bucket_name: "{{ bucket_name }}"
+
 
 - name: Start Docker registry with docker compose
   command: docker compose up -d

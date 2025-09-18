@@ -22,7 +22,6 @@ class PressSettings(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.app_group.app_group import AppGroup
 		from press.press.doctype.erpnext_app.erpnext_app import ERPNextApp
 
@@ -63,6 +62,8 @@ class PressSettings(Document):
 		docker_registry_password: DF.Data | None
 		docker_registry_url: DF.Data | None
 		docker_registry_username: DF.Data | None
+		docker_s3_access_key: DF.Data | None
+		docker_s3_secret_key: DF.Password | None
 		domain: DF.Link | None
 		eff_registration_email: DF.Data
 		email_recipients: DF.SmallText | None

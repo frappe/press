@@ -36,7 +36,12 @@
   "column_break_20",
   "root_public_key",
   "monitoring_section",
-  "monitoring_password"
+  "monitoring_password",
+  "storage_section",
+  "region_endpoint",
+  "region",
+  "bucket_name",
+  "is_disk_storage"
  ],
  "fields": [
   {
@@ -236,6 +241,32 @@
    "fieldtype": "Check",
    "label": "TLS Certificate Renewal Failed",
    "read_only": 1
+  },
+  {
+   "fieldname": "storage_section",
+   "fieldtype": "Section Break",
+   "label": "Storage"
+  },
+  {
+   "fieldname": "region_endpoint",
+   "fieldtype": "Data",
+   "label": "Region Endpoint"
+  },
+  {
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "label": "Region"
+  },
+  {
+   "fieldname": "bucket_name",
+   "fieldtype": "Data",
+   "label": "Bucket Name"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_disk_storage",
+   "fieldtype": "Check",
+   "label": "Is Disk Storage"
   }
  ],
  "links": [
@@ -244,7 +275,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2025-09-18 14:54:00.130740",
+ "modified": "2025-09-18 22:16:49.160322",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Registry Server",
