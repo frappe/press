@@ -97,7 +97,6 @@ class RegistryServer(BaseServer):
 			"container_registry_config_path": self.container_registry_config_path,
 			"registry_url": f"https://{self.name}",
 			"is_disk_storage": bool(self.is_disk_storage),
-			"is_s3_storage": not self.is_disk_storage,
 			"access_key": access_key,
 			"secret_key": secret_key,
 			"region_endpoint": self.region_endpoint,

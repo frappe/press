@@ -47,7 +47,6 @@
     container_registry_config_path: "{{ container_registry_config_path }}"
     is_mirror: "{{ is_mirror | bool}}"
     registry_url: "{{ registry_url }}"
-    is_s3_storage: "{{ is_s3_storage | bool }}"
     access_key: "{{ access_key }}"
     secret_key: "{{ secret_key }}"
     region_endpoint: "{{ region_endpoint }}"

@@ -7,7 +7,7 @@ services:
       REGISTRY_LOG_ACCESSLOG_DISABLED: "false"
       REGISTRY_HTTP_DEBUG_ADDR: ":5001"
       REGISTRY_HTTP_DEBUG_PROMETHEUS_ENABLED: "true"
-{%- if is_s3_storage %}
+{%- if not is_mirror %}
 
       REGISTRY_STORAGE: s3
       REGISTRY_STORAGE_S3_ACCESSKEY: {{ access_key }}
@@ -23,7 +23,8 @@ services:
       - "5000:5000"
       - "5001:5001"
     volumes:
-{%- if not is_s3_storage %}
+{%- if is_mirror %}
+
       - type: bind
         source: {{ docker_data_mountpoint }}
         target: /var/lib/registry
@@ -34,6 +35,7 @@ services:
         target: {{ container_registry_config_path }}
 
 {%- if not is_mirror %}
+
   registry-ui:
     image: joxit/docker-registry-ui:latest
     environment:
@@ -47,3 +49,4 @@ services:
     depends_on:
       - registry
 {%- endif %}
+
