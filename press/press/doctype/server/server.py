@@ -1907,7 +1907,6 @@ class Server(BaseServer):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 		from press.press.doctype.server_mount.server_mount import ServerMount
 
@@ -1940,7 +1939,7 @@ class Server(BaseServer):
 		is_server_setup: DF.Check
 		is_standalone: DF.Check
 		is_standalone_setup: DF.Check
-		is_static_ip_setup: DF.Check
+		is_static_ip: DF.Check
 		is_upstream_setup: DF.Check
 		keep_files_on_server_in_offsite_backup: DF.Check
 		managed_database_service: DF.Link | None
@@ -2360,58 +2359,40 @@ class Server(BaseServer):
 
 	@frappe.whitelist()
 	def get_aws_static_ip(self):
-		try:
-			vm_doc = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		vm_doc = frappe.get_doc("Virtual Machine", self.virtual_machine)
 
-			if vm_doc.cloud_provider != "AWS EC2":
-				frappe.throw("Failed to proceed as VM is not AWS EC2")
+		if vm_doc.cloud_provider != "AWS EC2":
+			frappe.throw("Failed to proceed as VM is not AWS EC2")
 
-			print(f"[AWS] Starting static IP allocation for VM {self.virtual_machine}")
+		cluster_doc = frappe.get_doc("Cluster", self.cluster)
+		region_name = cluster_doc.region
+		aws_access_key_id = cluster_doc.aws_access_key_id
+		aws_secret_access_key = get_decrypted_password(
+			"Cluster", self.cluster, fieldname="aws_secret_access_key", raise_exception=False
+		)
 
-			cluster_doc = frappe.get_doc("Cluster", self.cluster)
-			print(f"[AWS] Using Cluster: {cluster_doc.name}, Region: {cluster_doc.region}")
+		instance_id = vm_doc.instance_id
 
-			region_name = cluster_doc.region
-			aws_access_key_id = cluster_doc.aws_access_key_id
-			aws_secret_access_key = get_decrypted_password(
-				"Cluster", self.cluster, fieldname="aws_secret_access_key", raise_exception=False
-			)
+		# Initialize EC2 client
+		ec2_client = boto3.client(
+			"ec2",
+			aws_access_key_id=aws_access_key_id,
+			aws_secret_access_key=aws_secret_access_key,
+			region_name=region_name,
+		)
 
-			instance_id = vm_doc.instance_id
-			print(f"[AWS] Target Instance ID: {instance_id}")
+		# Allocate new Elastic IP
+		allocation = ec2_client.allocate_address(Domain="vpc")
+		allocation_id = allocation["AllocationId"]
+		public_ip = allocation["PublicIp"]
 
-			# Initialize EC2 client
-			ec2_client = boto3.client(
-				"ec2",
-				aws_access_key_id=aws_access_key_id,
-				aws_secret_access_key=aws_secret_access_key,
-				region_name=region_name,
-			)
-			print("[AWS] EC2 client initialized successfully")
+		# Associate with instance
+		ec2_client.associate_address(InstanceId=instance_id, AllocationId=allocation_id)
 
-			# Allocate new Elastic IP
-			allocation = ec2_client.allocate_address(Domain="vpc")
-			allocation_id = allocation["AllocationId"]
-			public_ip = allocation["PublicIp"]
-			print(f"[AWS] Allocated Elastic IP: {public_ip} (AllocationId: {allocation_id})")
+		# Trigger VM sync
+		vm_doc.sync()
 
-			# Associate with instance
-			ec2_client.associate_address(InstanceId=instance_id, AllocationId=allocation_id)
-			print(f"[AWS] Associated Elastic IP {public_ip} with Instance {instance_id}")
-
-			# Trigger VM sync
-			vm_doc.sync()
-			print(f"[AWS] Cluster {cluster_doc.name} synced after IP allocation")
-
-			return f"Static IP {public_ip} alloted to the VM (Allocation ID: {allocation_id})"
-
-		except Exception as e:
-			frappe.log_error(
-				message=f"Failed to allocate static IP to EC2 instance {getattr(self, 'virtual_machine', None)}\n{frappe.get_traceback()}",
-				title="AWS Elastic IP Allocation Failed",
-			)
-			print(f"[AWS] Exception occurred: {e}")
-			raise
+		return f"Static IP {public_ip} alloted to the VM (Allocation ID: {allocation_id})"
 
 	@frappe.whitelist()
 	def setup_replication(self):
