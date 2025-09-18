@@ -26,6 +26,7 @@
   "public",
   "column_break_laiq",
   "use_agent_job_callbacks",
+  "is_static_ip_setup",
   "is_pyspy_setup",
   "halt_agent_jobs",
   "stop_deployments",
@@ -635,10 +636,17 @@
    "fieldtype": "Check",
    "label": "TLS Certificate Renewal Failed",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_static_ip_setup",
+   "fieldtype": "Check",
+   "label": "Is Static IP Setup",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2025-09-09 10:34:01.505133",
+ "modified": "2025-09-17 22:55:23.023365",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
