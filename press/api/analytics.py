@@ -85,6 +85,7 @@ TIMESPAN_TIMEGRAIN_MAP: Final[dict[str, tuple[int, int]]] = {
 }
 
 MAX_NO_OF_PATHS: Final[int] = 10
+MAX_QUERIES: Final[int] = 25
 MAX_MAX_NO_OF_PATHS: Final[int] = 50
 
 
@@ -93,7 +94,6 @@ class StackedGroupByChart:
 	to_s_divisor: float = 1e6
 	normalize_slow_logs: bool = False
 	group_by_field: str
-	max_no_of_paths: int = 10
 
 	def __init__(
 		self,
@@ -869,7 +869,7 @@ def get_slow_logs_by_query(
 	timezone: str,
 	duration: str = "24h",
 	normalize: bool = False,
-	max_no_of_paths: int = MAX_NO_OF_PATHS,
+	max_no_of_paths: int = MAX_QUERIES,
 ):
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
 
