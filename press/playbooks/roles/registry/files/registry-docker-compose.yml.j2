@@ -1,0 +1,34 @@
+version: "3.8"
+services:
+  registry:
+    image: registry:latest
+    environment:
+      REGISTRY_STORAGE_DELETE_ENABLED: "true"
+      REGISTRY_LOG_LEVEL: "info"
+      REGISTRY_LOG_ACCESSLOG_DISABLED: "false"
+      REGISTRY_HTTP_DEBUG_ADDR: ":5001"
+      REGISTRY_HTTP_DEBUG_PROMETHEUS_ENABLED: "true"
+      REGISTRY_STORAGE_FILESYSTEM_MAXTHREADS: "300"
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+    volumes:
+      - type: bind
+        source: /mnt/registry_frappe_cloud/data
+        target: /var/lib/registry
+      - type: bind
+        source: /home/frappe/registry/config.yml
+        target: {{ registry_config }}
+
+  registry-ui:
+    image: joxit/docker-registry-ui:latest
+    environment:
+      REGISTRY_TITLE: Frappe Cloud Registry
+      REGISTRY_URL: {{ registry_url }}
+      NGINX_PROXY_PASS_URL: http://registry:5000
+      DELETE_IMAGES: "true"
+      SINGLE_REGISTRY: "true"
+    ports:
+      - "127.0.0.1:6000:80"
+    depends_on:
+      - registry
