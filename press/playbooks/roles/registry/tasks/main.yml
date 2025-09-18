@@ -35,7 +35,7 @@
     is_disk_storage: "{{ is_disk_storage | bool }}"
 
 
-- name: Deploy Docker Compose file
+- name: Copy docker compose file
   template:
     src: files/registry-docker-compose.yml.j2
     dest: /home/frappe/registry/docker-compose.yml
@@ -55,7 +55,7 @@
     bucket_name: "{{ bucket_name }}"
 
 
-- name: Start Docker registry with docker compose
+- name: Start docker registry with docker compose
   command: docker compose up -d
   args:
     chdir: /home/frappe/registry
