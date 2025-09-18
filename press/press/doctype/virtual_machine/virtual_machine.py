@@ -966,6 +966,14 @@ class VirtualMachine(Document):
 			self.private_dns_name = instance.get("PrivateDnsName")
 			self.platform = instance.get("Architecture", "x86_64")
 
+			# Check if EC2 instance has Elastic IP and update all associated "Server" docs
+			servers = frappe.get_all("Server", filters={"virtual_machine": self.name}, pluck="name")
+			for server_name in servers:
+				server_doc = frappe.get_doc("Server", server_name)
+				server_doc.is_static_ip_setup = 1
+				server_doc.save(ignore_permissions=True)
+			frappe.db.commit()
+
 			attached_volumes = []
 			attached_devices = []
 			for volume_index, volume in enumerate(self.get_volumes(), start=1):  # idx starts from 1
