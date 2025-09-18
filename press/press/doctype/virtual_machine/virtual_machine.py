@@ -67,10 +67,7 @@ class VirtualMachine(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
-		from press.press.doctype.virtual_machine_temporary_volume.virtual_machine_temporary_volume import (
-			VirtualMachineTemporaryVolume,
-		)
+		from press.press.doctype.virtual_machine_temporary_volume.virtual_machine_temporary_volume import VirtualMachineTemporaryVolume
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
 		availability_zone: DF.Data
@@ -965,15 +962,6 @@ class VirtualMachine(Document):
 			self.public_dns_name = instance.get("PublicDnsName")
 			self.private_dns_name = instance.get("PrivateDnsName")
 			self.platform = instance.get("Architecture", "x86_64")
-
-			# Check if EC2 instance has Elastic IP and update all associated "Server" docs
-			servers = frappe.get_all("Server", filters={"virtual_machine": self.name}, pluck="name")
-			for server_name in servers:
-				server_doc = frappe.get_doc("Server", server_name)
-				server_doc.is_static_ip_setup = 1
-				server_doc.save(ignore_permissions=True)
-			frappe.db.commit()
-
 			attached_volumes = []
 			attached_devices = []
 			for volume_index, volume in enumerate(self.get_volumes(), start=1):  # idx starts from 1
@@ -1055,6 +1043,25 @@ class VirtualMachine(Document):
 			return volume
 		return frappe._dict({"size": 0})
 
+	def is_elastic_ip_aws(self) -> bool:
+		instance_id = self.instance_id
+		ec2 = self.client()
+
+		reservations = ec2.describe_instances(InstanceIds=[instance_id])["Reservations"]
+		instance = reservations[0]["Instances"][0]
+		eni_id = instance["NetworkInterfaces"][0]["NetworkInterfaceId"]
+
+		eni = ec2.describe_network_interfaces(NetworkInterfaceIds=[eni_id])["NetworkInterfaces"][0]
+
+		association = eni.get("Association", {})
+		allocation_id = association.get("AllocationId")
+
+		ip_type = "dynamic"
+		if allocation_id:
+			ip_type = "elastic"
+
+		return ip_type == "elastic"
+
 	def update_servers(self):
 		status_map = {
 			"Pending": "Pending",
@@ -1068,6 +1075,7 @@ class VirtualMachine(Document):
 				server = server[0]
 				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
 				frappe.db.set_value(doctype, server, "private_ip", self.private_ip_address)
+				frappe.db.set_value(doctype, server, "is_static_ip", self.is_elastic_ip_aws())
 				if doctype in ["Server", "Database Server"]:
 					frappe.db.set_value(doctype, server, "ram", self.ram)
 				if self.public_ip_address and self.has_value_changed("public_ip_address"):
