@@ -263,7 +263,7 @@
    "label": "Bucket Name"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "is_disk_storage",
    "fieldtype": "Check",
    "label": "Is Disk Storage"
@@ -275,7 +275,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2025-09-18 22:16:49.160322",
+ "modified": "2025-09-18 23:10:19.218423",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Registry Server",
