@@ -22,11 +22,14 @@ class RegistryServer(BaseServer):
 		from frappe.types import DF
 
 		agent_password: DF.Password | None
+		container_registry_config_path: DF.Data | None
+		docker_data_mountpoint: DF.Data | None
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
 		hostname: DF.Data
 		ip: DF.Data
+		is_mirror: DF.Check
 		is_server_setup: DF.Check
 		monitoring_password: DF.Password | None
 		private_ip: DF.Data
@@ -69,26 +72,31 @@ class RegistryServer(BaseServer):
 			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
 		)
 		certificate = frappe.get_doc("TLS Certificate", certificate_name)
+		variables = {
+			"server": self.name,
+			"workers": 1,
+			"domain": self.domain,
+			"agent_password": agent_password,
+			"agent_repository_url": agent_repository_url,
+			"monitoring_password": monitoring_password,
+			"private_ip": self.private_ip,
+			"registry_username": self.registry_username,
+			"registry_password": self.get_password("registry_password"),
+			"certificate_private_key": certificate.private_key,
+			"certificate_full_chain": certificate.full_chain,
+			"mirror": self.is_mirror,
+			"docker_data_mountpoint": self.docker_data_mountpoint,
+			"certificate_intermediate_chain": certificate.intermediate_chain,
+			"container_registry_config_path": self.container_registry_config_path,
+			"registry_url": self.name,
+		}
 		try:
 			ansible = Ansible(
 				playbook="registry.yml",
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
-				variables={
-					"server": self.name,
-					"workers": 1,
-					"domain": self.domain,
-					"agent_password": agent_password,
-					"agent_repository_url": agent_repository_url,
-					"monitoring_password": monitoring_password,
-					"private_ip": self.private_ip,
-					"registry_username": self.registry_username,
-					"registry_password": self.get_password("registry_password"),
-					"certificate_private_key": certificate.private_key,
-					"certificate_full_chain": certificate.full_chain,
-					"certificate_intermediate_chain": certificate.intermediate_chain,
-				},
+				variables=variables,
 			)
 			play = ansible.run()
 			self.reload()
@@ -100,6 +108,7 @@ class RegistryServer(BaseServer):
 		except Exception:
 			self.status = "Broken"
 			log_error("Registry Server Setup Exception", server=self.as_dict())
+
 		self.save()
 
 	def _prune_docker_system(self):
@@ -115,6 +124,36 @@ class RegistryServer(BaseServer):
 		except Exception:
 			log_error("Prune Docker Registry Exception", doc=self)
 		toggle_builds(False)
+
+	@frappe.whitelist()
+	def show_registry_password(self):
+		"""Show registry password"""
+		frappe.msgprint(self.get_password("registry_password"))
+
+	@frappe.whitelist()
+	def create_registry_mirror(
+		self,
+		hostname: str,
+		docker_data_mountpoint: str,
+		container_registry_config_path: str,
+		public_ip: str,
+		private_ip: str,
+	):
+		registry: RegistryServer = frappe.get_doc(
+			{
+				"doctype": "Registry Server",
+				"ip": public_ip,
+				"private_ip": private_ip,
+				"docker_data_mountpoint": docker_data_mountpoint,
+				"container_registry_config_path": container_registry_config_path,
+				"hostname": hostname,
+				"is_mirror": True,
+				"provider": "Generic",
+				"registry_username": self.registry_username,
+				"registry_password": self.get_password("registry_password"),
+			}
+		)
+		registry.insert()
 
 
 def delete_old_images_from_registry():  # noqa: C901
