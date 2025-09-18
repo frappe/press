@@ -654,7 +654,6 @@ def add_commonly_slow_path_to_reports(
 			reports[slow_path["id"]] = slow_path["function"](
 				name, "duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
 			)
-			break
 
 
 def get_additional_duration_reports(
@@ -940,6 +939,54 @@ def get_query_report_run_reports(*args, **kwargs):
 	return QueryReportRunReports(*args, **kwargs).run()
 
 
+class SaveDocsDoctypes(RequestGroupByChart):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+	def setup_search_filters(self):
+		super().setup_search_filters()
+		self.group_by_field = "json.doctype"
+		self.search = self.search.filter(
+			"match_phrase", json__request__path="/api/method/frappe.desk.form.save.savedocs"
+		)
+
+	def exclude_top_k_data(self, datasets: list[Dataset]):
+		if ResourceType(self.resource_type) is ResourceType.SITE:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__doctype=path)
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:  # not used atp
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__site=path)
+
+
+def get_save_docs_doctypes(*args, **kwargs):
+	return SaveDocsDoctypes(*args, **kwargs).run()
+
+
+class SaveDocsActions(RequestGroupByChart):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+	def setup_search_filters(self):
+		super().setup_search_filters()
+		self.group_by_field = "json.action"
+		self.search = self.search.filter(
+			"match_phrase", json__request__path="/api/method/frappe.desk.form.save.savedocs"
+		)
+
+	def exclude_top_k_data(self, datasets: list[Dataset]):
+		if ResourceType(self.resource_type) is ResourceType.SITE:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__action=path)
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:  # not used atp
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__site=path)
+
+
+def get_save_docs_actions(*args, **kwargs):
+	return SaveDocsActions(*args, **kwargs).run()
+
+
 def get_generate_report_reports(*args, **kwargs):
 	return GenerateReportReports(*args, **kwargs).run()
 
@@ -960,6 +1007,16 @@ COMMONLY_SLOW_PATHS: list[CommonSlowPath] = [
 		"path": "/api/method/frappe.desk.query_report.run",
 		"id": "query_report_run_reports",
 		"function": get_query_report_run_reports,
+	},
+	{
+		"path": "/api/method/frappe.desk.form.save.savedocs",
+		"id": "save_docs_doctypes",
+		"function": get_save_docs_doctypes,
+	},
+	{
+		"path": "/api/method/frappe.desk.form.save.savedocs",
+		"id": "save_docs_actions",
+		"function": get_save_docs_actions,
 	},
 ]
 
