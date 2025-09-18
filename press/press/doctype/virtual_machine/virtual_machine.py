@@ -67,7 +67,10 @@ class VirtualMachine(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-		from press.press.doctype.virtual_machine_temporary_volume.virtual_machine_temporary_volume import VirtualMachineTemporaryVolume
+
+		from press.press.doctype.virtual_machine_temporary_volume.virtual_machine_temporary_volume import (
+			VirtualMachineTemporaryVolume,
+		)
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
 		availability_zone: DF.Data
@@ -1075,7 +1078,8 @@ class VirtualMachine(Document):
 				server = server[0]
 				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
 				frappe.db.set_value(doctype, server, "private_ip", self.private_ip_address)
-				frappe.db.set_value(doctype, server, "is_static_ip", self.is_elastic_ip_aws())
+				if doctype == "Server":
+					frappe.db.set_value(doctype, server, "is_static_ip", self.is_elastic_ip_aws())
 				if doctype in ["Server", "Database Server"]:
 					frappe.db.set_value(doctype, server, "ram", self.ram)
 				if self.public_ip_address and self.has_value_changed("public_ip_address"):
