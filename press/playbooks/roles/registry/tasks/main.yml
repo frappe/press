@@ -30,8 +30,8 @@
     mode: '0644'
   vars:
     is_mirror: "{{ is_mirror | bool}}"
-    username: "{{ username }}"
-    password: "{{ password }}"
+    username: "{{ registry_username }}"
+    password: "{{ registry_password }}"
 
 
 - name: Deploy Docker Compose file
@@ -42,7 +42,8 @@
     group: frappe
     mode: '0644'
   vars:
-    registry_config: "{{ registry_config }}"
+    docker_data_mountpoint: "{{ docker_data_mountpoint }}"
+    container_registry_config_path: "{{ container_registry_config_path }}"
     registry_url: "http://{{ registry_url }}"
 
 - name: Start Docker registry with docker compose

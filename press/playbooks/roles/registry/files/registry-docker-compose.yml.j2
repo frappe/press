@@ -14,11 +14,11 @@ services:
       - "5001:5001"
     volumes:
       - type: bind
-        source: /mnt/registry_frappe_cloud/data
+        source: {{ docker_data_mountpoint }}
         target: /var/lib/registry
       - type: bind
         source: /home/frappe/registry/config.yml
-        target: {{ registry_config }}
+        target: {{ container_registry_config_path }}
 
   registry-ui:
     image: joxit/docker-registry-ui:latest
