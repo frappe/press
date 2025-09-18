@@ -84,7 +84,7 @@ class RegistryServer(BaseServer):
 			"registry_password": self.get_password("registry_password"),
 			"certificate_private_key": certificate.private_key,
 			"certificate_full_chain": certificate.full_chain,
-			"mirror": self.is_mirror,
+			"is_mirror": self.is_mirror,
 			"docker_data_mountpoint": self.docker_data_mountpoint,
 			"certificate_intermediate_chain": certificate.intermediate_chain,
 			"container_registry_config_path": self.container_registry_config_path,
