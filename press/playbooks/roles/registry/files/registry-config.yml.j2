@@ -2,16 +2,21 @@ version: 0.1
 log:
   fields:
     service: registry
+
+{% if is_disk_storage %}
 storage:
   cache:
     blobdescriptor: inmemory
   filesystem:
     rootdirectory: /var/lib/registry
     maxthreads: 300
+{% endif %}
+
 http:
   addr: :5000
   headers:
     X-Content-Type-Options: [nosniff]
+
 health:
   storagedriver:
     enabled: true

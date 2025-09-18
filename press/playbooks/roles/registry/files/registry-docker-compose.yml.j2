@@ -3,23 +3,35 @@ services:
   registry:
     image: registry:latest
     environment:
-      REGISTRY_STORAGE_DELETE_ENABLED: "true"
       REGISTRY_LOG_LEVEL: "info"
       REGISTRY_LOG_ACCESSLOG_DISABLED: "false"
       REGISTRY_HTTP_DEBUG_ADDR: ":5001"
       REGISTRY_HTTP_DEBUG_PROMETHEUS_ENABLED: "true"
-      REGISTRY_STORAGE_FILESYSTEM_MAXTHREADS: "300"
+      {% if is_s3_storage %}
+      REGISTRY_STORAGE: s3
+      REGISTRY_STORAGE_S3_ACCESSKEY: {{ access_key }}
+      REGISTRY_STORAGE_S3_SECRETKEY: "{{ secret_key }}"
+      REGISTRY_STORAGE_S3_REGIONENDPOINT: {{ region_endpoint }}
+      REGISTRY_STORAGE_S3_REGION: {{ region }}
+      REGISTRY_STORAGE_S3_BUCKET: {{ bucket_name }}
+      REGISTRY_STORAGE_S3_V4AUTH: "true"
+      REGISTRY_STORAGE_DELETE_ENABLED: "true"
+      {% endif %}
+
     ports:
       - "5000:5000"
       - "5001:5001"
     volumes:
+      {% if not is_s3_storage %}
       - type: bind
         source: {{ docker_data_mountpoint }}
         target: /var/lib/registry
+      {% endif %}
       - type: bind
         source: /home/frappe/registry/config.yml
         target: {{ container_registry_config_path }}
 
+  {% if not is_mirror %}
   registry-ui:
     image: joxit/docker-registry-ui:latest
     environment:
@@ -32,3 +44,4 @@ services:
       - "127.0.0.1:6000:80"
     depends_on:
       - registry
+  {% endif %}

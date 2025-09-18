@@ -22,6 +22,7 @@ class RegistryServer(BaseServer):
 		from frappe.types import DF
 
 		agent_password: DF.Password | None
+		bucket_name: DF.Data | None
 		container_registry_config_path: DF.Data | None
 		docker_data_mountpoint: DF.Data | None
 		domain: DF.Link | None
@@ -29,6 +30,7 @@ class RegistryServer(BaseServer):
 		frappe_user_password: DF.Password | None
 		hostname: DF.Data
 		ip: DF.Data
+		is_disk_storage: DF.Check
 		is_mirror: DF.Check
 		is_server_setup: DF.Check
 		monitoring_password: DF.Password | None
@@ -36,6 +38,8 @@ class RegistryServer(BaseServer):
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
 		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+		region: DF.Data | None
+		region_endpoint: DF.Data | None
 		registry_password: DF.Password | None
 		registry_username: DF.Data | None
 		root_public_key: DF.Code | None
@@ -65,6 +69,7 @@ class RegistryServer(BaseServer):
 			self.monitoring_password = frappe.generate_hash()
 
 	def _setup_server(self):
+		settings = frappe.get_cached_doc("Press Settings")
 		agent_password = self.get_password("agent_password")
 		agent_repository_url = self.get_agent_repository_url()
 		monitoring_password = self.get_password("monitoring_password")
@@ -72,6 +77,8 @@ class RegistryServer(BaseServer):
 			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
 		)
 		certificate = frappe.get_doc("TLS Certificate", certificate_name)
+		access_key = settings.docker_s3_access_key
+		secret_key = settings.get_password("docker_s3_secret_key")
 		variables = {
 			"server": self.name,
 			"workers": 1,
@@ -88,7 +95,14 @@ class RegistryServer(BaseServer):
 			"docker_data_mountpoint": self.docker_data_mountpoint,
 			"certificate_intermediate_chain": certificate.intermediate_chain,
 			"container_registry_config_path": self.container_registry_config_path,
-			"registry_url": self.name,
+			"registry_url": f"https://{self.name}",
+			"is_disk_storage": self.is_disk_storage,
+			"is_s3_storage": not self.is_disk_storage,
+			"access_key": access_key,
+			"secret_key": secret_key,
+			"region_endpoint": self.region_endpoint,
+			"region": self.region,
+			"bucket_name": self.bucket_name,
 		}
 		try:
 			ansible = Ansible(
