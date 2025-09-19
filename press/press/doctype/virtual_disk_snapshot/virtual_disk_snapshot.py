@@ -270,7 +270,8 @@ class VirtualDiskSnapshot(Document):
 		if not server_snapshot:
 			return
 
-		frappe.get_doc("Server Snapshot", server_snapshot).sync(now=True, trigger_snapshot_sync=False)
+		doc = frappe.get_doc("Server Snapshot", server_snapshot, for_update=True)
+		doc.sync(now=True, trigger_snapshot_sync=False)
 
 	@property
 	def client(self):
