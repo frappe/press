@@ -2,10 +2,14 @@
 # For license information, please see license.txt
 
 import json
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
 from frappe.utils.safe_exec import safe_exec
+
+if TYPE_CHECKING:
+	from press.press.doctype.press_job.press_job import PressJob
 
 
 class PressJobStep(Document):
@@ -41,7 +45,7 @@ class PressJobStep(Document):
 			{"parent": self.job_type, "step_name": self.step_name},
 			"script",
 		)
-		job = frappe.get_doc("Press Job", self.job)
+		job: PressJob = frappe.get_doc("Press Job", self.job)
 		arguments = json.loads(job.arguments)
 		try:
 			local = {"arguments": frappe._dict(arguments), "result": None, "doc": job}
@@ -72,6 +76,8 @@ class PressJobStep(Document):
 		except Exception:
 			self.status = "Failure"
 			self.traceback = frappe.get_traceback(with_context=True)
+			if frappe.flags.in_test:
+				raise
 
 		self.end = frappe.utils.now_datetime()
 		self.duration = (self.end - self.start).total_seconds()
