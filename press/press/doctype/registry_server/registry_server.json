@@ -33,16 +33,12 @@
   "column_break_20",
   "root_public_key",
   "monitoring_section",
-<<<<<<< HEAD
-  "monitoring_password"
-=======
   "monitoring_password",
   "storage_section",
   "region_endpoint",
   "region",
   "bucket_name",
   "proxy_pass"
->>>>>>> 588f01082 (feat(registry): Add configurable upstream & remove disk storage)
  ],
  "fields": [
   {
@@ -226,8 +222,6 @@
    "fieldtype": "Check",
    "label": "TLS Certificate Renewal Failed",
    "read_only": 1
-<<<<<<< HEAD
-=======
   },
   {
    "fieldname": "storage_section",
@@ -253,7 +247,6 @@
    "fieldname": "proxy_pass",
    "fieldtype": "Data",
    "label": "Proxy Pass"
->>>>>>> 588f01082 (feat(registry): Add configurable upstream & remove disk storage)
   }
  ],
  "links": [
@@ -262,11 +255,7 @@
    "link_fieldname": "server"
   }
  ],
-<<<<<<< HEAD
- "modified": "2025-09-02 16:43:47.166808",
-=======
  "modified": "2025-09-19 16:11:40.237095",
->>>>>>> 588f01082 (feat(registry): Add configurable upstream & remove disk storage)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Registry Server",

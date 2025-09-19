@@ -290,8 +290,6 @@
    "fieldname": "has_arm_support",
    "fieldtype": "Check",
    "label": "Has ARM Support"
-<<<<<<< HEAD
-=======
   },
   {
    "fieldname": "docker_section",
@@ -302,7 +300,6 @@
    "fieldname": "repository",
    "fieldtype": "Data",
    "label": "Repository"
->>>>>>> 11d8d5187 (feat(registry): Add fallback to press settings docker registry url)
   }
  ],
  "image_field": "image",
@@ -339,11 +336,7 @@
    "link_fieldname": "document_name"
   }
  ],
-<<<<<<< HEAD
- "modified": "2025-06-16 16:47:37.016006",
-=======
  "modified": "2025-09-19 16:27:01.820199",
->>>>>>> 11d8d5187 (feat(registry): Add fallback to press settings docker registry url)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",

@@ -51,8 +51,6 @@ frappe.ui.form.on('Registry Server', {
 					__('Actions'),
 				);
 			}
-<<<<<<< HEAD
-=======
 			if (method == 'create_registry_mirror') {
 				frm.add_custom_button(
 					label,
@@ -121,7 +119,6 @@ frappe.ui.form.on('Registry Server', {
 					__('Actions'),
 				);
 			}
->>>>>>> 588f01082 (feat(registry): Add configurable upstream & remove disk storage)
 		});
 	},
 });
