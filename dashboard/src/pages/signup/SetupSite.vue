@@ -25,11 +25,13 @@
 						</div>
 						<div class="col-span-2 flex w-full">
 							<input
+								id="subdomain"
 								class="dark:[color-scheme:dark] z-10 h-7 w-full rounded rounded-r-none border border-outline-gray-2 bg-surface-white py-1.5 pl-2 pr-2 text-base text-ink-gray-8 placeholder-ink-gray-4 transition-colors hover:border-outline-gray-3 hover:shadow-sm focus:border-outline-gray-4 focus:bg-surface-white focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-outline-gray-3"
 								:placeholder="
 									saasProduct ? `${saasProduct?.name}-site` : 'company-name'
 								"
-								v-model="subdomain" data-record="true"
+								v-model="subdomain"
+								data-record="true"
 							/>
 							<div
 								class="flex cursor-default items-center rounded-r bg-gray-100 px-2 text-base"
@@ -165,7 +167,7 @@ export default {
 		if (window.posthog?.__loaded) {
 			window.posthog.identify(this.email || window.posthog.get_distinct_id(), {
 				app: 'frappe_cloud',
-				action: 'login_signup'
+				action: 'login_signup',
 			});
 
 			window.posthog.startSessionRecording();
