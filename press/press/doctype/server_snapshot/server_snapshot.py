@@ -706,7 +706,7 @@ def sync_ongoing_server_snapshots():
 			(Snapshot.status == "Processing")
 			& (Snapshot.modified < frappe.utils.add_to_date(frappe.utils.now_datetime(), minutes=-10))
 		)
-		.limit(10)
+		.limit(50)
 		.run(as_dict=True)
 	)
 
