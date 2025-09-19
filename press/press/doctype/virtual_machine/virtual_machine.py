@@ -845,7 +845,7 @@ class VirtualMachine(Document):
 			except APIException as e:
 				if "server not found" in str(e):
 					pass
-		if server_instance and not is_deleted:
+		if server_instance:
 			self.status = self.get_hetzner_status_map()[server_instance.status]
 			self.machine_type = server_instance.server_type.name
 			self.private_ip_address = server_instance.private_net[0].ip
