@@ -59,13 +59,15 @@ class Agent:
 			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
 			as_dict=True,
 		)
+		cluster = frappe.db.get_value(self.server_type, self.server, "cluster")
+		registry_url = frappe.db.get_value("Cluster", cluster, "repository")
 
 		data = {
 			"name": bench.name,
 			"bench_config": json.loads(bench.bench_config),
 			"common_site_config": json.loads(bench.config),
 			"registry": {
-				"url": settings.docker_registry_url,
+				"url": registry_url,
 				"username": settings.docker_registry_username,
 				"password": settings.docker_registry_password,
 			},
