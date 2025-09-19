@@ -29,10 +29,10 @@
     group: frappe
     mode: '0644'
   vars:
-    is_mirror: "{{ is_mirror | bool}}"
+    is_mirror: "{{ is_mirror }}"
     username: "{{ registry_username }}"
     password: "{{ registry_password }}"
-    is_disk_storage: "{{ is_disk_storage | bool }}"
+    is_disk_storage: "{{ is_disk_storage }}"
 
 
 - name: Copy docker compose file
@@ -45,7 +45,7 @@
   vars:
     docker_data_mountpoint: "{{ docker_data_mountpoint }}"
     container_registry_config_path: "{{ container_registry_config_path }}"
-    is_mirror: "{{ is_mirror | bool}}"
+    is_mirror: "{{ is_mirror }}"
     registry_url: "{{ registry_url }}"
     access_key: "{{ access_key }}"
     secret_key: "{{ secret_key }}"

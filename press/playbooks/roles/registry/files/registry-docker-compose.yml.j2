@@ -7,7 +7,7 @@ services:
       REGISTRY_LOG_ACCESSLOG_DISABLED: "false"
       REGISTRY_HTTP_DEBUG_ADDR: ":5001"
       REGISTRY_HTTP_DEBUG_PROMETHEUS_ENABLED: "true"
-{%- if not is_mirror %}
+{%- if not (is_mirror | string == '1') %}
 
       REGISTRY_STORAGE: s3
       REGISTRY_STORAGE_S3_ACCESSKEY: {{ access_key }}
@@ -23,7 +23,7 @@ services:
       - "5000:5000"
       - "5001:5001"
     volumes:
-{%- if is_mirror %}
+{%- if (is_mirror | string == '1') %}
 
       - type: bind
         source: {{ docker_data_mountpoint }}
@@ -34,7 +34,7 @@ services:
         source: /home/frappe/registry/config.yml
         target: {{ container_registry_config_path }}
 
-{%- if not is_mirror %}
+{%- if not (is_mirror | string == '1') %}
 
   registry-ui:
     image: joxit/docker-registry-ui:latest
