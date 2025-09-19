@@ -409,14 +409,14 @@ class VirtualMachine(Document):
 			user_data=self.get_cloud_init() if self.virtual_machine_image else "",
 		)
 		server = server_response.server
-		server_response.action.wait_until_finished(30)
-		server.change_protection(delete=True, rebuild=True)
-
 		self.instance_id = server.id
 
 		self.status = self.get_hetzner_status_map()[server.status]
 
 		self.save()
+		frappe.db.commit()
+		server_response.action.wait_until_finished(30)
+		server.change_protection(delete=True, rebuild=True)
 
 	def _provision_aws(self):  # noqa: C901
 		additional_volumes = []
@@ -1297,6 +1297,7 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "Hetzner":
 			for volume in self.volumes:
 				volume = self.client().volumes.get_by_id(volume.volume_id)
+				volume.detach().wait_until_finished(30)
 				volume.delete()
 			server_instance = self.client().servers.get_by_id(self.instance_id)
 			self.client().servers.delete(server_instance)
@@ -1814,23 +1815,19 @@ class VirtualMachine(Document):
 		server_instance = self.client().servers.get_by_id(self.instance_id)
 		network = self.client().networks.get_by_id(vpc_id)
 		try:
-			action = server_instance.detach_from_network(network)
+			server_instance.detach_from_network(network).wait_until_finished(30)
 		except APIException as e:  # for retry
 			if "resource not found" in str(e):
 				pass
 			else:
 				raise e
-		else:
-			action.wait_until_finished(30)
 		try:
-			action = server_instance.attach_to_network(network, ip=self.get_private_ip())
+			server_instance.attach_to_network(network, ip=self.get_private_ip()).wait_until_finished(30)
 		except APIException as e:
 			if "already attached" in str(e):
 				pass
 			else:
 				raise e
-		else:
-			action.wait_until_finished(30)
 		self.sync()
 
 	@frappe.whitelist()
