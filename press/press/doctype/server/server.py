@@ -1900,6 +1900,35 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		self.validate_mounts()
 		self.save(ignore_permissions=True)
 
+	def get_wildcard_domains(self):
+		wildcard_domains = []
+		for domain in self.domains:
+			if domain.domain == self.domain and self.doctype == "Proxy Server":
+				# self.domain certs are symlinks
+				continue
+			certificate_name = frappe.db.get_value(
+				"TLS Certificate", {"wildcard": True, "domain": domain.domain}, "name"
+			)
+			certificate = frappe.get_doc("TLS Certificate", certificate_name)
+			wildcard_domains.append(
+				{
+					"domain": domain.domain,
+					"certificate": {
+						"privkey.pem": certificate.private_key,
+						"fullchain.pem": certificate.full_chain,
+						"chain.pem": certificate.intermediate_chain,
+					},
+					"code_server": domain.code_server,
+				}
+			)
+		return wildcard_domains
+
+	@frappe.whitelist()
+	def setup_wildcard_hosts(self):
+		agent = Agent(self.name, server_type=self.doctype)
+		wildcards = self.get_wildcard_domains()
+		agent.setup_wildcard_hosts(wildcards)
+
 
 class Server(BaseServer):
 	# begin: auto-generated types
@@ -2260,6 +2289,7 @@ class Server(BaseServer):
 			self.reload()
 			if play.status == "Success":
 				self.is_standalone_setup = True
+				self.setup_wildcard_hosts()
 		except Exception:
 			log_error("Standalone Server Setup Exception", server=self.as_dict())
 		self.save()
@@ -2733,6 +2763,17 @@ class Server(BaseServer):
 		if doc.app_server != self.name:
 			frappe.throw("Snapshot does not belong to this server")
 		doc.unlock()
+
+	@property
+	def domains(self):
+		return [
+			{"domain": domain.name}
+			for domain in frappe.get_all(
+				"Root Domain",
+				filters={"enabled": 1},
+				fields=["name"],
+			)
+		]  # To avoid adding child table in server doc
 
 
 def scale_workers(now=False):

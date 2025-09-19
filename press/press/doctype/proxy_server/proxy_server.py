@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 import frappe
 from frappe.utils import unique
 
-from press.agent import Agent
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
@@ -98,35 +97,6 @@ class ProxyServer(BaseServer):
 	def validate_proxysql_admin_password(self):
 		if not self.proxysql_admin_password:
 			self.proxysql_admin_password = frappe.generate_hash(length=32)
-
-	def get_wildcard_domains(self):
-		wildcard_domains = []
-		for domain in self.domains:
-			if domain.domain == self.domain:
-				# self.domain certs are symlinks
-				continue
-			certificate_name = frappe.db.get_value(
-				"TLS Certificate", {"wildcard": True, "domain": domain.domain}, "name"
-			)
-			certificate = frappe.get_doc("TLS Certificate", certificate_name)
-			wildcard_domains.append(
-				{
-					"domain": domain.domain,
-					"certificate": {
-						"privkey.pem": certificate.private_key,
-						"fullchain.pem": certificate.full_chain,
-						"chain.pem": certificate.intermediate_chain,
-					},
-					"code_server": domain.code_server,
-				}
-			)
-		return wildcard_domains
-
-	@frappe.whitelist()
-	def setup_wildcard_hosts(self):
-		agent = Agent(self.name, server_type="Proxy Server")
-		wildcards = self.get_wildcard_domains()
-		agent.setup_wildcard_hosts(wildcards)
 
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
