@@ -9,6 +9,13 @@ frappe.ui.form.on('Registry Server', {
 			[__('Prepare Server'), 'prepare_server', true, !frm.doc.is_server_setup],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
 			[
+				__('Show Registry Password'),
+				'show_registry_password',
+				false,
+				frm.doc.is_server_Setup,
+			],
+			[__('Create Mirror'), 'create_registry_mirror', true, !frm.doc.is_mirror],
+			[
 				__('Update TLS Certificate'),
 				'update_tls_certificate',
 				true,
@@ -22,7 +29,10 @@ frappe.ui.form.on('Registry Server', {
 					(!frm.doc.frappe_public_key || !frm.doc.root_public_key),
 			],
 		].forEach(([label, method, confirm, condition]) => {
-			if (typeof condition === 'undefined' || condition) {
+			if (
+				typeof condition === 'undefined' ||
+				(condition && method != 'create_registry_mirror')
+			) {
 				frm.add_custom_button(
 					label,
 					() => {

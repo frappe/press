@@ -67,7 +67,7 @@ class Agent:
 			"bench_config": json.loads(bench.bench_config),
 			"common_site_config": json.loads(bench.config),
 			"registry": {
-				"url": settings.docker_registry_url,
+				"url": registry_url,
 				"username": settings.docker_registry_username,
 				"password": settings.docker_registry_password,
 			},

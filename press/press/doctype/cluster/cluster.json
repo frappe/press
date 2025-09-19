@@ -44,7 +44,9 @@
   "security_group_id",
   "proxy_security_group_id",
   "network_acl_id",
-  "route_table_id"
+  "route_table_id",
+  "docker_section",
+  "repository"
  ],
  "fields": [
   {
