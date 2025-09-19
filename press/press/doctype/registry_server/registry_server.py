@@ -27,12 +27,22 @@ class RegistryServer(BaseServer):
 		frappe_user_password: DF.Password | None
 		hostname: DF.Data
 		ip: DF.Data
+<<<<<<< HEAD
+=======
+		is_mirror: DF.Check
+>>>>>>> 588f01082 (feat(registry): Add configurable upstream & remove disk storage)
 		is_server_setup: DF.Check
 		monitoring_password: DF.Password | None
 		private_ip: DF.Data
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
 		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+<<<<<<< HEAD
+=======
+		proxy_pass: DF.Data | None
+		region: DF.Data | None
+		region_endpoint: DF.Data | None
+>>>>>>> 588f01082 (feat(registry): Add configurable upstream & remove disk storage)
 		registry_password: DF.Password | None
 		registry_username: DF.Data | None
 		root_public_key: DF.Code | None
@@ -69,6 +79,35 @@ class RegistryServer(BaseServer):
 			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
 		)
 		certificate = frappe.get_doc("TLS Certificate", certificate_name)
+<<<<<<< HEAD
+=======
+		access_key = settings.docker_s3_access_key
+		secret_key = settings.get_password("docker_s3_secret_key")
+		variables = {
+			"server": self.name,
+			"workers": 1,
+			"domain": self.domain,
+			"agent_password": agent_password,
+			"agent_repository_url": agent_repository_url,
+			"monitoring_password": monitoring_password,
+			"private_ip": self.private_ip,
+			"registry_username": self.registry_username,
+			"registry_password": self.get_password("registry_password"),
+			"certificate_private_key": certificate.private_key,
+			"certificate_full_chain": certificate.full_chain,
+			"is_mirror": self.is_mirror,
+			"docker_data_mountpoint": self.docker_data_mountpoint,
+			"certificate_intermediate_chain": certificate.intermediate_chain,
+			"container_registry_config_path": self.container_registry_config_path,
+			"registry_url": f"https://{self.name}",
+			"access_key": access_key,
+			"secret_key": secret_key,
+			"region_endpoint": self.region_endpoint,
+			"region": self.region,
+			"bucket_name": self.bucket_name,
+			"proxy_pass": self.proxy_pass,
+		}
+>>>>>>> 588f01082 (feat(registry): Add configurable upstream & remove disk storage)
 		try:
 			ansible = Ansible(
 				playbook="registry.yml",
@@ -116,6 +155,42 @@ class RegistryServer(BaseServer):
 			log_error("Prune Docker Registry Exception", doc=self)
 		toggle_builds(False)
 
+<<<<<<< HEAD
+=======
+	@frappe.whitelist()
+	def show_registry_password(self):
+		"""Show registry password"""
+		frappe.msgprint(self.get_password("registry_password"))
+
+	@frappe.whitelist()
+	def create_registry_mirror(
+		self,
+		hostname: str,
+		docker_data_mountpoint: str,
+		container_registry_config_path: str,
+		public_ip: str,
+		private_ip: str,
+		proxy_pass: str,
+	):
+		"""Create a registry mirror"""
+		registry: RegistryServer = frappe.get_doc(
+			{
+				"doctype": "Registry Server",
+				"ip": public_ip,
+				"private_ip": private_ip,
+				"docker_data_mountpoint": docker_data_mountpoint,
+				"container_registry_config_path": container_registry_config_path,
+				"hostname": hostname,
+				"is_mirror": True,
+				"provider": "Generic",
+				"registry_username": self.registry_username,
+				"registry_password": self.get_password("registry_password"),
+				"proxy_pass": proxy_pass,
+			}
+		)
+		registry.insert()
+
+>>>>>>> 588f01082 (feat(registry): Add configurable upstream & remove disk storage)
 
 def delete_old_images_from_registry():  # noqa: C901
 	"""Purge registry of older images"""

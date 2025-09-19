@@ -51,6 +51,77 @@ frappe.ui.form.on('Registry Server', {
 					__('Actions'),
 				);
 			}
+<<<<<<< HEAD
+=======
+			if (method == 'create_registry_mirror') {
+				frm.add_custom_button(
+					label,
+					() => {
+						frappe.prompt(
+							[
+								{
+									fieldtype: 'Data',
+									label: 'Hostname',
+									fieldname: 'hostname',
+									reqd: 1,
+								},
+								{
+									fieldtype: 'Data',
+									label: 'Mount Point',
+									fieldname: 'docker_data_mountpoint',
+									reqd: 1,
+								},
+								{
+									fieldtype: 'Data',
+									label: 'Container Registry Config Path',
+									fieldname: 'container_registry_config_path',
+									reqd: 1,
+								},
+								{
+									fieldtype: 'Data',
+									label: 'Public IP',
+									fieldname: 'public_ip',
+									reqd: 1,
+								},
+								{
+									fieldtype: 'Data',
+									label: 'Private IP',
+									fieldname: 'private_ip',
+									reqd: 1,
+								},
+								{
+									fieldname: 'Data',
+									label: 'Proxy Pass',
+									fieldname: 'proxy_pass',
+									reqd: 1,
+								},
+							],
+							({
+								hostname,
+								docker_data_mountpoint,
+								container_registry_config_path,
+								public_ip,
+								private_ip,
+								proxy_pass,
+							}) => {
+								frm
+									.call(method, {
+										hostname,
+										docker_data_mountpoint,
+										container_registry_config_path,
+										public_ip,
+										private_ip,
+										proxy_pass,
+									})
+									.then((r) => frm.refresh());
+							},
+							__('Create Mirror Registry'),
+						);
+					},
+					__('Actions'),
+				);
+			}
+>>>>>>> 588f01082 (feat(registry): Add configurable upstream & remove disk storage)
 		});
 	},
 });
