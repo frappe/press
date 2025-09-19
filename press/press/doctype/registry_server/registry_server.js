@@ -98,7 +98,7 @@ frappe.ui.form.on('Registry Server', {
 									reqd: 1,
 								},
 								{
-									fieldname: 'Data',
+									fieldtype: 'Data',
 									label: 'Proxy Pass',
 									fieldname: 'proxy_pass',
 									reqd: 1,
