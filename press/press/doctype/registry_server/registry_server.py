@@ -125,7 +125,8 @@ class RegistryServer(BaseServer):
 		self.save()
 
 	def _prune_docker_system(self):
-		toggle_builds(True)
+		if not self.is_mirror:
+			toggle_builds(True)
 		try:
 			ansible = Ansible(
 				playbook="docker_registry_prune.yml",
