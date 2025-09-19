@@ -1047,23 +1047,17 @@ class VirtualMachine(Document):
 		return frappe._dict({"size": 0})
 
 	def is_elastic_ip_aws(self) -> bool:
-		instance_id = self.instance_id
-		ec2 = self.client()
+		try:
+			instance_id = self.instance_id
+			ec2 = self.client()
 
-		reservations = ec2.describe_instances(InstanceIds=[instance_id])["Reservations"]
-		instance = reservations[0]["Instances"][0]
-		eni_id = instance["NetworkInterfaces"][0]["NetworkInterfaceId"]
+			reservations = ec2.describe_instances(InstanceIds=[instance_id])["Reservations"]
+			instance = reservations[0]["Instances"][0]
+			ip_owner_id = instance["NetworkInterfaces"][0]["Association"]["IpOwnerId"]
 
-		eni = ec2.describe_network_interfaces(NetworkInterfaceIds=[eni_id])["NetworkInterfaces"][0]
-
-		association = eni.get("Association", {})
-		allocation_id = association.get("AllocationId")
-
-		ip_type = "dynamic"
-		if allocation_id:
-			ip_type = "elastic"
-
-		return ip_type == "elastic"
+			return ip_owner_id.lower() != "amazon"
+		except KeyError:
+			return False
 
 	def update_servers(self):
 		status_map = {
