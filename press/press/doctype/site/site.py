@@ -102,6 +102,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server.server import BaseServer, Server
+	from press.press.doctype.site_domain.site_domain import SiteDomain
 	from press.press.doctype.tls_certificate.tls_certificate import TLSCertificate
 
 DOCTYPE_SERVER_TYPE_MAP = {
@@ -1455,27 +1456,33 @@ class Site(Document, TagHelpers):
 
 	def set_redirects_in_proxy(self, domains: list[str]):
 		target = self.host_name
-		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
-		agent = Agent(proxy_server, server_type="Proxy Server")
+		if self.is_on_standalone:
+			agent = Agent(self.server)
+		else:
+			proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
+			agent = Agent(proxy_server, server_type="Proxy Server")
 		return agent.setup_redirects(self.name, domains, target)
 
 	def unset_redirects_in_proxy(self, domains: list[str]):
-		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
-		agent = Agent(proxy_server, server_type="Proxy Server")
+		if self.is_on_standalone:
+			agent = Agent(self.server)
+		else:
+			proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
+			agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.remove_redirects(self.name, domains)
 
 	@dashboard_whitelist()
 	def set_redirect(self, domain: str):
 		"""Enable redirect to primary for domain."""
 		self._check_if_domain_belongs_to_site(domain)
-		site_domain = frappe.get_doc("Site Domain", domain)
+		site_domain: SiteDomain = frappe.get_doc("Site Domain", domain)
 		site_domain.setup_redirect()
 
 	@dashboard_whitelist()
 	def unset_redirect(self, domain: str):
 		"""Disable redirect to primary for domain."""
 		self._check_if_domain_belongs_to_site(domain)
-		site_domain = frappe.get_doc("Site Domain", domain)
+		site_domain: SiteDomain = frappe.get_doc("Site Domain", domain)
 		site_domain.remove_redirect()
 
 	@dashboard_whitelist()
@@ -3504,6 +3511,10 @@ class Site(Document, TagHelpers):
 		site_backups = frappe.qb.DocType("Site Backup")
 		return self.recent_offsite_backups_.where(site_backups.status.isin(["Pending", "Running"])).run()
 
+	@property
+	def is_on_standalone(self):
+		return bool(frappe.db.get_value("Server", self.server, "is_standalone"))
+
 
 def site_cleanup_after_archive(site):
 	delete_site_domains(site)
@@ -3513,8 +3524,7 @@ def site_cleanup_after_archive(site):
 
 def delete_site_subdomain(site_name):
 	site: Site = frappe.get_doc("Site", site_name)
-	is_standalone = frappe.get_value("Server", site.server, "is_standalone")
-	if is_standalone:
+	if site.is_on_standalone:
 		proxy_server = site.server
 	else:
 		proxy_server = frappe.get_value("Server", site.server, "proxy_server")
@@ -3710,7 +3720,7 @@ def process_add_domain_job_update(job):
 		product_trial_request.save(ignore_permissions=True)
 
 		site_domain = json.loads(job.request_data).get("domain")
-		site = frappe.get_doc("Site", job.site)
+		site = Site("Site", job.site)
 		auto_generated_domain = site.host_name
 		site.host_name = site_domain
 		site.save()
