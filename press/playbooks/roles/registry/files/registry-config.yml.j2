@@ -3,7 +3,7 @@ log:
   fields:
     service: registry
 
-{% if is_disk_storage %}
+{% if (is_disk_storage | string == '1') %}
 storage:
   cache:
     blobdescriptor: inmemory
@@ -26,7 +26,7 @@ health:
     readonly:
       enabled: true
 
-{% if is_mirror %}
+{% if (is_mirror | string == '1') %}
 proxy:
   remoteurl: https://registry.frappe.cloud/production
   username: {{ username }}
