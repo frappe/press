@@ -12,6 +12,7 @@ from moto import mock_aws
 from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.proxy_server.proxy_server import ProxyServer
 from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
+from press.press.doctype.server.server import BaseServer
 from press.press.doctype.ssh_key.test_ssh_key import create_test_ssh_key
 from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 from press.press.doctype.virtual_machine_image.virtual_machine_image import (
@@ -65,7 +66,7 @@ class TestCluster(FrappeTestCase):
 		for s in series:
 			create_test_virtual_machine_image(cluster=cluster, series=s)
 
-	@patch.object(ProxyServer, "validate", new=MagicMock())  # avoid TLSCertificate validation
+	@patch.object(ProxyServer, "validate_domains", new=MagicMock())  # avoid TLSCertificate validation
 	def _create_cluster(
 		self,
 		aws_access_key_id,
@@ -74,7 +75,7 @@ class TestCluster(FrappeTestCase):
 		add_default_servers=False,
 	) -> Cluster:
 		"""Simulate creation of cluster without AWS credentials"""
-		cluster = frappe.get_doc(
+		cluster: Cluster = frappe.get_doc(
 			{
 				"doctype": "Cluster",
 				"name": "Mumbai 2",
@@ -97,6 +98,7 @@ class TestCluster(FrappeTestCase):
 		frappe.db.rollback()
 
 
+@patch.object(BaseServer, "run_press_job", new=MagicMock())
 @patch.object(VirtualMachine, "get_latest_ubuntu_image", new=lambda x: "ami-123")
 @patch.object(VirtualMachineImage, "wait_for_availability", new=MagicMock())
 @patch.object(VirtualMachineImage, "after_insert", new=MagicMock())
@@ -171,6 +173,7 @@ class TestPrivateCluster(TestCluster):
 		)
 
 
+@patch.object(BaseServer, "run_press_job", new=MagicMock())
 @patch.object(VirtualMachineImage, "wait_for_availability", new=MagicMock())
 @patch("press.press.doctype.cluster.cluster.frappe.db.commit", new=MagicMock())
 @patch("press.press.doctype.cluster.cluster.frappe.enqueue_doc", new=foreground_enqueue_doc)
