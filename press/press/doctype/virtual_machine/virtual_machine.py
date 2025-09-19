@@ -837,14 +837,12 @@ class VirtualMachine(Document):
 		return None
 
 	def _sync_hetzner(self, server_instance=None):
-		is_deleted = False
 		if not server_instance:
 			try:
 				server_instance = self.client().servers.get_by_id(self.instance_id)
 			except APIException as e:
 				if "server not found" in str(e):
-					frappe.throw(f"{self.name}: Server not found")
-				is_deleted = True
+					pass
 		if server_instance and not is_deleted:
 			self.status = self.get_hetzner_status_map()[server_instance.status]
 			self.machine_type = server_instance.server_type.name
