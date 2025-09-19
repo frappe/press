@@ -102,6 +102,7 @@ export default {
 						},
 					},
 				],
+<<<<<<< HEAD
 				primaryAction() {
 					return {
 						label: 'Apply for Certification',
@@ -119,6 +120,44 @@ export default {
 									},
 								}),
 							);
+=======
+				documentation: 'https://frappe.io',
+				actions() {
+					return [
+						{
+							label: 'Apply for Free Certification',
+							disabled: true,
+							slots: {
+								prefix: icon('plus'),
+							},
+							onClick: () => {
+								renderDialog(
+									h(PartnerCertificateRequest, {
+										show: true,
+										onSuccess: () => {
+											console.log('success');
+										},
+									}),
+								);
+							},
+						},
+						{
+							label: 'Link Certificate',
+							disabled: true,
+							slots: {
+								prefix: icon('link'),
+							},
+							onClick: (row) => {
+								renderDialog(
+									h(LinkCertificate, {
+										show: true,
+										onSuccess: () => {
+											console.log('Certificate linked successfully');
+										},
+									}),
+								);
+							},
+>>>>>>> c480b5865 (chore(prm): Disable input actions)
 						},
 					};
 				},

@@ -112,6 +112,55 @@
 			</div>
 		</div>
 
+<<<<<<< HEAD
+=======
+		<div class="rounded-lg text-base text-gray-900 border">
+			<div class="flex h-full flex-col justify-between p-4 gap-2">
+				<div class="flex justify-between items-center">
+					<h3 class="font-semibold text-lg">Website Info</h3>
+					<Button
+						label="Edit"
+						@click="showUpdateWebsiteInfo = true"
+						:disabled="true"
+					/>
+				</div>
+				<div class="my-1 h-px bg-gray-100" />
+				<div class="flex flex-col">
+					<div class="pb-4">
+						<div class="text-sm text-gray-600">Partner Website</div>
+						<div class="text-base font-medium text-gray-700 py-2">
+							{{ partnerDetails.data?.partner_website }}
+						</div>
+					</div>
+					<div class="flex gap-4">
+						<div class="flex-1">
+							<div class="text-sm text-gray-600 pb-3">Introduction</div>
+							<div class="text-base leading-5 text-gray-700 py-1">
+								<div v-html="partnerDetails.data?.introduction"></div>
+							</div>
+						</div>
+						<div class="mx-1 w-px border-r" />
+						<div class="flex-1">
+							<div class="text-sm text-gray-600 pb-3">Customers</div>
+							<div
+								v-for="customer in customerList.slice(0, 10)"
+								class="text-base text-gray-700 py-1"
+							>
+								<li>{{ customer }}</li>
+							</div>
+							<div
+								v-if="customerList.length > 10"
+								class="text-sm text-gray-600 py-3"
+							>
+								... And many more
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+>>>>>>> c480b5865 (chore(prm): Disable input actions)
 		<Dialog
 			:show="showPartnerContributionDialog"
 			v-model="showPartnerContributionDialog"
