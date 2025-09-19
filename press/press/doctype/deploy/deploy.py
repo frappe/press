@@ -63,9 +63,9 @@ class Deploy(Document):
 			for v in group.mounts
 		]
 		for bench in self.benches:
-			image = build.docker_image
 			server_platform = frappe.get_value("Server", bench.server, "platform")
 			build = self._get_build_for_bench(server_platform)
+			image = build.docker_image
 			cluster = frappe.get_value("Server", bench.server, "cluster")
 			cluster_docker_repository = frappe.db.get_value("Cluster", cluster, "repository")
 
