@@ -44,7 +44,9 @@
   "security_group_id",
   "proxy_security_group_id",
   "network_acl_id",
-  "route_table_id"
+  "route_table_id",
+  "docker_section",
+  "repository"
  ],
  "fields": [
   {
@@ -290,6 +292,17 @@
    "fieldname": "has_arm_support",
    "fieldtype": "Check",
    "label": "Has ARM Support"
+  },
+  {
+   "fieldname": "docker_section",
+   "fieldtype": "Section Break",
+   "label": "Docker"
+  },
+  {
+   "default": "registry.frappe.cloud",
+   "fieldname": "repository",
+   "fieldtype": "Data",
+   "label": "Repository"
   }
  ],
  "image_field": "image",
@@ -326,7 +339,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2025-06-16 16:47:37.016006",
+ "modified": "2025-09-19 11:47:53.571766",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
