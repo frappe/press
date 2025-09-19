@@ -114,14 +114,14 @@ class TestPrivateCluster(TestCluster):
 
 	def test_add_images_throws_err_if_no_vmis_to_copy(self):
 		cluster = create_test_cluster(name="Frankfurt", region="eu-central-1")
-		self.assertRaises(Exception, cluster.add_images)
+		self.assertRaises(frappe.ValidationError, cluster.add_images)
 
 	def test_add_images_throws_err_if_some_vmis_are_unavailable(self):
 		self._setup_fake_vmis(["m", "f"])  # another cluster with n missing
 
 		cluster = create_test_cluster(name="Frankfurt", region="eu-central-1", public=True)
 		self._setup_fake_vmis(["m", "f"], cluster=cluster)  # n is missing
-		self.assertRaises(Exception, cluster.add_images)
+		self.assertRaises(frappe.ValidationError, cluster.add_images)
 
 	@mock_aws
 	def test_creation_of_cluster_in_same_region_reuses_VMIs(self):
@@ -164,7 +164,7 @@ class TestPrivateCluster(TestCluster):
 		self,
 	):
 		self.assertRaises(
-			Exception,
+			frappe.ValidationError,
 			self._create_cluster,
 			aws_access_key_id=None,
 			aws_secret_access_key=None,
@@ -186,7 +186,7 @@ class TestPublicCluster(TestCluster):
 		database_server_count_before = frappe.db.count("Database Server")
 		proxy_server_count_before = frappe.db.count("Proxy Server")
 		cluster = create_test_cluster(name="Mumbai", region="ap-south-1", public=True)
-		self.assertRaises(Exception, cluster.create_servers)
+		self.assertRaises(frappe.ValidationError, cluster.create_servers)
 		server_count_after = frappe.db.count("Server")
 		database_server_count_after = frappe.db.count("Database Server")
 		proxy_server_count_after = frappe.db.count("Proxy Server")
