@@ -63,20 +63,22 @@ class Deploy(Document):
 			for v in group.mounts
 		]
 		for bench in self.benches:
+			image = build.docker_image
 			server_platform = frappe.get_value("Server", bench.server, "platform")
 			build = self._get_build_for_bench(server_platform)
 			cluster = frappe.get_value("Server", bench.server, "cluster")
-			docker_repository = frappe.get_value("Cluster", cluster, "repository")
-			hub_registry_url = frappe.db.get_value("Press Settings", None, "docker_registry_url")
-			image = build.docker_image
-			new_image = image.replace(hub_registry_url, docker_repository)
+			cluster_docker_repository = frappe.db.get_value("Cluster", cluster, "repository")
+
+			if cluster_docker_repository:
+				hub_registry_url = frappe.db.get_value("Press Settings", None, "docker_registry_url")
+				image = image.replace(hub_registry_url, cluster_docker_repository)
 
 			new = frappe.get_doc(
 				{
 					"doctype": "Bench",
 					"server": bench.server,
 					"build": build.name,
-					"docker_image": new_image,
+					"docker_image": image,
 					"group": self.group,
 					"candidate": self.candidate,
 					"workers": 1,
