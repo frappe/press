@@ -414,9 +414,6 @@ class VirtualMachine(Document):
 		self.status = self.get_hetzner_status_map()[server.status]
 
 		self.save()
-		frappe.db.commit()
-		server_response.action.wait_until_finished(30)
-		server.change_protection(delete=True, rebuild=True)
 
 	def _provision_aws(self):  # noqa: C901
 		additional_volumes = []
@@ -1245,11 +1242,8 @@ class VirtualMachine(Document):
 				InstanceId=self.instance_id, DisableApiTermination={"Value": True}
 			)
 		elif self.cloud_provider == "Hetzner":
-			for volume in self.volumes:
-				volume = self.client().volumes.get_by_id(volume.volume_id)
-				self.termination_protection = self.client().volumes.change_protection(
-					volume=volume, delete=False
-				)
+			server_instance = self.client().servers.get_by_id(self.instance_id)
+			server_instance.change_protection(delete=True, rebuild=True)
 		self.sync()
 
 	@frappe.whitelist()
