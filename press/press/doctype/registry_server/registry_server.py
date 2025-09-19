@@ -30,7 +30,6 @@ class RegistryServer(BaseServer):
 		frappe_user_password: DF.Password | None
 		hostname: DF.Data
 		ip: DF.Data
-		is_disk_storage: DF.Check
 		is_mirror: DF.Check
 		is_server_setup: DF.Check
 		monitoring_password: DF.Password | None
@@ -38,6 +37,7 @@ class RegistryServer(BaseServer):
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
 		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+		proxy_pass: DF.Data | None
 		region: DF.Data | None
 		region_endpoint: DF.Data | None
 		registry_password: DF.Password | None
@@ -96,12 +96,12 @@ class RegistryServer(BaseServer):
 			"certificate_intermediate_chain": certificate.intermediate_chain,
 			"container_registry_config_path": self.container_registry_config_path,
 			"registry_url": f"https://{self.name}",
-			"is_disk_storage": self.is_disk_storage,
 			"access_key": access_key,
 			"secret_key": secret_key,
 			"region_endpoint": self.region_endpoint,
 			"region": self.region,
 			"bucket_name": self.bucket_name,
+			"proxy_pass": self.proxy_pass,
 		}
 		try:
 			ansible = Ansible(
@@ -152,7 +152,9 @@ class RegistryServer(BaseServer):
 		container_registry_config_path: str,
 		public_ip: str,
 		private_ip: str,
+		proxy_pass: str,
 	):
+		"""Create a registry mirror"""
 		registry: RegistryServer = frappe.get_doc(
 			{
 				"doctype": "Registry Server",
@@ -165,6 +167,7 @@ class RegistryServer(BaseServer):
 				"provider": "Generic",
 				"registry_username": self.registry_username,
 				"registry_password": self.get_password("registry_password"),
+				"proxy_pass": proxy_pass,
 			}
 		)
 		registry.insert()

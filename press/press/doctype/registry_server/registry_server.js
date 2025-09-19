@@ -97,6 +97,12 @@ frappe.ui.form.on('Registry Server', {
 									fieldname: 'private_ip',
 									reqd: 1,
 								},
+								{
+									fieldname: 'Data',
+									label: 'Proxy Pass',
+									fieldname: 'proxy_pass',
+									reqd: 1,
+								},
 							],
 							({
 								hostname,
@@ -104,6 +110,7 @@ frappe.ui.form.on('Registry Server', {
 								container_registry_config_path,
 								public_ip,
 								private_ip,
+								proxy_pass,
 							}) => {
 								frm
 									.call(method, {
@@ -112,6 +119,7 @@ frappe.ui.form.on('Registry Server', {
 										container_registry_config_path,
 										public_ip,
 										private_ip,
+										proxy_pass,
 									})
 									.then((r) => frm.refresh());
 							},

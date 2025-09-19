@@ -41,7 +41,7 @@
   "region_endpoint",
   "region",
   "bucket_name",
-  "is_disk_storage"
+  "proxy_pass"
  ],
  "fields": [
   {
@@ -263,10 +263,9 @@
    "label": "Bucket Name"
   },
   {
-   "default": "0",
-   "fieldname": "is_disk_storage",
-   "fieldtype": "Check",
-   "label": "Is Disk Storage"
+   "fieldname": "proxy_pass",
+   "fieldtype": "Data",
+   "label": "Proxy Pass"
   }
  ],
  "links": [
@@ -275,7 +274,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2025-09-18 23:10:19.218423",
+ "modified": "2025-09-19 16:11:40.237095",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Registry Server",
