@@ -2,7 +2,7 @@
 # See license.txt
 
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import boto3
 import frappe
@@ -177,7 +177,7 @@ class TestPrivateCluster(TestCluster):
 @patch.object(VirtualMachineImage, "after_insert", new=MagicMock())
 class TestPublicCluster(TestCluster):
 	@mock_aws
-	@patch.object(ProxyServer, "validate", new=MagicMock())
+	@patch.object(ProxyServer, "validate_domains", new=Mock())
 	def test_create_servers_without_vmis_throws_err(self):
 		root_domain = create_test_root_domain("local.fc.frappe.dev")
 		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
@@ -205,7 +205,7 @@ class TestPublicCluster(TestCluster):
 		self.assertEqual(vm_count_after, vm_count_before + 3)
 
 	@mock_aws
-	@patch.object(ProxyServer, "validate", new=MagicMock())
+	@patch.object(ProxyServer, "validate_domains", new=Mock())
 	def test_creation_of_public_cluster_with_servers_creates_3(self):
 		root_domain = create_test_root_domain("local.fc.frappe.dev")
 		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
