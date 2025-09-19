@@ -88,7 +88,17 @@ const updateFollowup = createResource({
 	},
 });
 
-const _communicationTypes = ['Email', 'Call', 'Meeting', 'WhatsApp', 'Other'];
+const _communicationTypes = [
+	'Email',
+	'Phone call',
+	'Onsite visit',
+	'WhatsApp',
+	'Telecon',
+	'QFC',
+	'Demo',
+	'DC',
+	'Online session',
+];
 const communicationTypes = computed(() => {
 	return _communicationTypes.map((type) => ({
 		label: type,
