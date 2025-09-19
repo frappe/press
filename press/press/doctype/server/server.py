@@ -2689,7 +2689,7 @@ class Server(BaseServer):
 	@property
 	def domains(self):
 		return [
-			{"domain": domain.name}
+			frappe._dict({"domain": domain.name, "code_server": False})
 			for domain in frappe.get_all(
 				"Root Domain",
 				filters={"enabled": 1},
