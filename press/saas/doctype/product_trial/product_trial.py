@@ -486,8 +486,24 @@ def send_verification_mail_for_login(email: str, product: str, code: str):
 		"header_content": f"<p>You have requested a verification code to login to your {product_trial.title} site. The code is valid for 5 minutes.</p>",
 		"otp": code,
 	}
+	inline_images = []
 	if product_trial.email_full_logo:
 		args.update({"image_path": get_url(product_trial.email_full_logo, True)})
+		try:
+			logo_name = product_trial.email_full_logo[1:]
+			args.update({"logo_name": logo_name})
+			with open(frappe.utils.get_site_path("public", logo_name), "rb") as logo_file:
+				inline_images.append(
+					{
+						"filename": logo_name,
+						"filecontent": logo_file.read(),
+					}
+				)
+		except Exception as ex:
+			log_error(
+				"Error reading logo for inline images in email",
+				data=ex,
+			)
 	if product_trial.email_account:
 		sender = frappe.get_value("Email Account", product_trial.email_account, "email_id")
 
@@ -498,6 +514,7 @@ def send_verification_mail_for_login(email: str, product: str, code: str):
 		template="product_trial_verify_account",
 		args=args,
 		now=True,
+		inline_images=inline_images,
 	)
 
 
