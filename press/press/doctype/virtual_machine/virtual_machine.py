@@ -1056,7 +1056,7 @@ class VirtualMachine(Document):
 			ip_owner_id = instance["NetworkInterfaces"][0]["Association"]["IpOwnerId"]
 
 			return ip_owner_id.lower() != "amazon"
-		except KeyError:
+		except (KeyError, IndexError):
 			return False
 
 	def update_servers(self):
