@@ -60,7 +60,7 @@ class Agent:
 			as_dict=True,
 		)
 		cluster = frappe.db.get_value(self.server_type, self.server, "cluster")
-		registry_url = frappe.db.get_value("Cluster", cluster, "repository")
+		registry_url = frappe.db.get_value("Cluster", cluster, "repository") or settings.docker_registry_url
 
 		data = {
 			"name": bench.name,

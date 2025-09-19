@@ -32,7 +32,7 @@
     is_mirror: "{{ is_mirror }}"
     username: "{{ registry_username }}"
     password: "{{ registry_password }}"
-    is_disk_storage: "{{ is_disk_storage }}"
+    proxy_pass: "{{ proxy_pass }}"
 
 
 - name: Copy docker compose file
