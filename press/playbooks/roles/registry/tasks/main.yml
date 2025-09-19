@@ -21,8 +21,23 @@
   shell: docker stop registry; docker rm registry
   ignore_errors: true
 
+<<<<<<< HEAD
 - name: Start Docker Registry
   script: files/registry.sh
+=======
+- name: Copy registry config file
+  template:
+    src: files/registry-config.yml.j2
+    dest: /home/frappe/registry/config.yml
+    owner: frappe
+    group: frappe
+    mode: '0644'
+  vars:
+    is_mirror: "{{ is_mirror }}"
+    username: "{{ registry_username }}"
+    password: "{{ registry_password }}"
+    proxy_pass: "{{ proxy_pass }}"
+>>>>>>> 11d8d5187 (feat(registry): Add fallback to press settings docker registry url)
 
 - name: Start Docker Registry UI
   script: files/registry-ui.sh

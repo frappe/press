@@ -59,6 +59,11 @@ class Agent:
 			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
 			as_dict=True,
 		)
+<<<<<<< HEAD
+=======
+		cluster = frappe.db.get_value(self.server_type, self.server, "cluster")
+		registry_url = frappe.db.get_value("Cluster", cluster, "repository") or settings.docker_registry_url
+>>>>>>> 11d8d5187 (feat(registry): Add fallback to press settings docker registry url)
 
 		data = {
 			"name": bench.name,
