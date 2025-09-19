@@ -85,6 +85,7 @@ class VirtualMachine(Document):
 		has_data_volume: DF.Check
 		index: DF.Int
 		instance_id: DF.Data | None
+		is_static_ip: DF.Check
 		kms_key_id: DF.Data | None
 		machine_image: DF.Data | None
 		machine_type: DF.Data
@@ -946,6 +947,15 @@ class VirtualMachine(Document):
 		self.save()
 		self.update_servers()
 
+	def has_static_ip(self, instance) -> bool:
+		sip = False
+		try:
+			ip_owner_id = instance["NetworkInterfaces"][0]["Association"]["IpOwnerId"]
+			sip = ip_owner_id.lower() != "amazon"
+		except (KeyError, IndexError):
+			pass
+		return sip
+
 	def _sync_aws(self, response=None):  # noqa: C901
 		if not response:
 			try:
@@ -961,6 +971,7 @@ class VirtualMachine(Document):
 
 			self.public_ip_address = instance.get("PublicIpAddress")
 			self.private_ip_address = instance.get("PrivateIpAddress")
+			self.is_static_ip = self.has_static_ip(instance)
 
 			self.public_dns_name = instance.get("PublicDnsName")
 			self.private_dns_name = instance.get("PrivateDnsName")
@@ -1046,19 +1057,6 @@ class VirtualMachine(Document):
 			return volume
 		return frappe._dict({"size": 0})
 
-	def is_elastic_ip_aws(self) -> bool:
-		try:
-			instance_id = self.instance_id
-			ec2 = self.client()
-
-			reservations = ec2.describe_instances(InstanceIds=[instance_id])["Reservations"]
-			instance = reservations[0]["Instances"][0]
-			ip_owner_id = instance["NetworkInterfaces"][0]["Association"]["IpOwnerId"]
-
-			return ip_owner_id.lower() != "amazon"
-		except (KeyError, IndexError):
-			return False
-
 	def update_servers(self):
 		status_map = {
 			"Pending": "Pending",
@@ -1073,7 +1071,7 @@ class VirtualMachine(Document):
 				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
 				frappe.db.set_value(doctype, server, "private_ip", self.private_ip_address)
 				if doctype == "Server":
-					frappe.db.set_value(doctype, server, "is_static_ip", self.is_elastic_ip_aws())
+					frappe.db.set_value(doctype, server, "is_static_ip", self.is_static_ip)
 				if doctype in ["Server", "Database Server"]:
 					frappe.db.set_value(doctype, server, "ram", self.ram)
 				if self.public_ip_address and self.has_value_changed("public_ip_address"):
