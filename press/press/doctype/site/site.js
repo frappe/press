@@ -421,7 +421,12 @@ ${r.message.error}
 		].forEach(([label, method]) => {
 			frm.add_custom_button(
 				label,
-				() => frm.call(method).then((r) => frm.refresh()),
+				() => {
+					frappe.confirm(
+						`Are you sure you want to perform the action on this site ?`,
+						() => frm.call(method).then((r) => frm.refresh()),
+					);
+				},
 				__('Dangerous Actions'),
 			);
 		});
