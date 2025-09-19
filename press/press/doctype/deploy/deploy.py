@@ -67,15 +67,16 @@ class Deploy(Document):
 			build = self._get_build_for_bench(server_platform)
 			cluster = frappe.get_value("Server", bench.server, "cluster")
 			docker_repository = frappe.get_value("Cluster", cluster, "repository")
-			hub_registry_url = frappe.db.get_value("Press Settings", None, ["docker_registry_url"])
-			image = build.docker_image.replace(hub_registry_url, docker_repository)
+			hub_registry_url = frappe.db.get_value("Press Settings", None, "docker_registry_url")
+			image = build.docker_image
+			new_image = image.replace(hub_registry_url, docker_repository)
 
 			new = frappe.get_doc(
 				{
 					"doctype": "Bench",
 					"server": bench.server,
 					"build": build.name,
-					"docker_image": image,
+					"docker_image": new_image,
 					"group": self.group,
 					"candidate": self.candidate,
 					"workers": 1,
