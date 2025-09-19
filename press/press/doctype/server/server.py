@@ -2290,9 +2290,18 @@ class Server(BaseServer):
 			if play.status == "Success":
 				self.is_standalone_setup = True
 				self.setup_wildcard_hosts()
+				self.update_benches_nginx()
 		except Exception:
 			log_error("Standalone Server Setup Exception", server=self.as_dict())
 		self.save()
+
+	@frappe.whitelist()
+	def update_benches_nginx(self):
+		"""Update benches config for all benches in the server"""
+		benches = frappe.get_all("Bench", "name", {"server": self.name, "status": "Active"}, pluck="name")
+		for bench_name in benches:
+			bench: Bench = frappe.get_doc("Bench", bench_name)
+			bench.generate_nginx_config()
 
 	@frappe.whitelist()
 	def setup_agent_sentry(self):
