@@ -74,6 +74,7 @@ class Cluster(Document):
 		proxy_security_group_id: DF.Data | None
 		public: DF.Check
 		region: DF.Link | None
+		repository: DF.Data | None
 		route_table_id: DF.Data | None
 		security_group_id: DF.Data | None
 		ssh_key: DF.Link | None

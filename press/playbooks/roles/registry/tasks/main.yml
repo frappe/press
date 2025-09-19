@@ -21,11 +21,43 @@
   shell: docker stop registry; docker rm registry
   ignore_errors: true
 
-- name: Start Docker Registry
-  script: files/registry.sh
+- name: Copy registry config file
+  template:
+    src: files/registry-config.yml.j2
+    dest: /home/frappe/registry/config.yml
+    owner: frappe
+    group: frappe
+    mode: '0644'
+  vars:
+    is_mirror: "{{ is_mirror }}"
+    username: "{{ registry_username }}"
+    password: "{{ registry_password }}"
+    is_disk_storage: "{{ is_disk_storage }}"
 
-- name: Start Docker Registry UI
-  script: files/registry-ui.sh
+
+- name: Copy docker compose file
+  template:
+    src: files/registry-docker-compose.yml.j2
+    dest: /home/frappe/registry/docker-compose.yml
+    owner: frappe
+    group: frappe
+    mode: '0644'
+  vars:
+    docker_data_mountpoint: "{{ docker_data_mountpoint }}"
+    container_registry_config_path: "{{ container_registry_config_path }}"
+    is_mirror: "{{ is_mirror }}"
+    registry_url: "{{ registry_url }}"
+    access_key: "{{ access_key }}"
+    secret_key: "{{ secret_key }}"
+    region_endpoint: "{{ region_endpoint }}"
+    region: "{{ region }}"
+    bucket_name: "{{ bucket_name }}"
+
+
+- name: Start docker registry with docker compose
+  command: docker compose up -d
+  args:
+    chdir: /home/frappe/registry
 
 - name: Setup Registry Authentication
   become: yes

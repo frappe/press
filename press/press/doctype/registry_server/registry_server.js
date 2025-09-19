@@ -9,6 +9,13 @@ frappe.ui.form.on('Registry Server', {
 			[__('Prepare Server'), 'prepare_server', true, !frm.doc.is_server_setup],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
 			[
+				__('Show Registry Password'),
+				'show_registry_password',
+				false,
+				frm.doc.is_server_Setup,
+			],
+			[__('Create Mirror'), 'create_registry_mirror', true, !frm.doc.is_mirror],
+			[
 				__('Update TLS Certificate'),
 				'update_tls_certificate',
 				true,
@@ -22,7 +29,10 @@ frappe.ui.form.on('Registry Server', {
 					(!frm.doc.frappe_public_key || !frm.doc.root_public_key),
 			],
 		].forEach(([label, method, confirm, condition]) => {
-			if (typeof condition === 'undefined' || condition) {
+			if (
+				typeof condition === 'undefined' ||
+				(condition && method != 'create_registry_mirror')
+			) {
 				frm.add_custom_button(
 					label,
 					() => {
@@ -47,6 +57,66 @@ frappe.ui.form.on('Registry Server', {
 								}
 							});
 						}
+					},
+					__('Actions'),
+				);
+			}
+			if (method == 'create_registry_mirror') {
+				frm.add_custom_button(
+					label,
+					() => {
+						frappe.prompt(
+							[
+								{
+									fieldtype: 'Data',
+									label: 'Hostname',
+									fieldname: 'hostname',
+									reqd: 1,
+								},
+								{
+									fieldtype: 'Data',
+									label: 'Mount Point',
+									fieldname: 'docker_data_mountpoint',
+									reqd: 1,
+								},
+								{
+									fieldtype: 'Data',
+									label: 'Container Registry Config Path',
+									fieldname: 'container_registry_config_path',
+									reqd: 1,
+								},
+								{
+									fieldtype: 'Data',
+									label: 'Public IP',
+									fieldname: 'public_ip',
+									reqd: 1,
+								},
+								{
+									fieldtype: 'Data',
+									label: 'Private IP',
+									fieldname: 'private_ip',
+									reqd: 1,
+								},
+							],
+							({
+								hostname,
+								docker_data_mountpoint,
+								container_registry_config_path,
+								public_ip,
+								private_ip,
+							}) => {
+								frm
+									.call(method, {
+										hostname,
+										docker_data_mountpoint,
+										container_registry_config_path,
+										public_ip,
+										private_ip,
+									})
+									.then((r) => frm.refresh());
+							},
+							__('Create Mirror Registry'),
+						);
 					},
 					__('Actions'),
 				);

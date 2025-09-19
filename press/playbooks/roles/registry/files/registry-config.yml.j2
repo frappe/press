@@ -1,0 +1,35 @@
+version: 0.1
+log:
+  fields:
+    service: registry
+
+{% if (is_disk_storage | string == '1') %}
+storage:
+  cache:
+    blobdescriptor: inmemory
+  filesystem:
+    rootdirectory: /var/lib/registry
+    maxthreads: 300
+{% endif %}
+
+http:
+  addr: :5000
+  headers:
+    X-Content-Type-Options: [nosniff]
+
+health:
+  storagedriver:
+    enabled: true
+    interval: 10s
+    threshold: 3
+  maintenance:
+    readonly:
+      enabled: true
+
+{% if (is_mirror | string == '1') %}
+proxy:
+  remoteurl: https://registry.frappe.cloud/production
+  username: {{ username }}
+  password: {{ password }}
+  ttl: 168h
+{% endif %}

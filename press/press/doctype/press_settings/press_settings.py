@@ -63,6 +63,8 @@ class PressSettings(Document):
 		docker_registry_password: DF.Data | None
 		docker_registry_url: DF.Data | None
 		docker_registry_username: DF.Data | None
+		docker_s3_access_key: DF.Data | None
+		docker_s3_secret_key: DF.Password | None
 		domain: DF.Link | None
 		eff_registration_email: DF.Data
 		email_recipients: DF.SmallText | None

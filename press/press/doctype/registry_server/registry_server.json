@@ -13,6 +13,7 @@
   "provider",
   "virtual_machine",
   "is_server_setup",
+  "is_mirror",
   "networking_section",
   "ip",
   "column_break_9",
@@ -23,8 +24,10 @@
   "agent_password",
   "registry_section",
   "registry_username",
+  "docker_data_mountpoint",
   "column_break_10",
   "registry_password",
+  "container_registry_config_path",
   "ssh_section",
   "ssh_user",
   "ssh_port",
@@ -33,7 +36,12 @@
   "column_break_20",
   "root_public_key",
   "monitoring_section",
-  "monitoring_password"
+  "monitoring_password",
+  "storage_section",
+  "region_endpoint",
+  "region",
+  "bucket_name",
+  "is_disk_storage"
  ],
  "fields": [
   {
@@ -213,10 +221,52 @@
   },
   {
    "default": "0",
+   "fieldname": "is_mirror",
+   "fieldtype": "Check",
+   "label": "Is Mirror"
+  },
+  {
+   "fieldname": "docker_data_mountpoint",
+   "fieldtype": "Data",
+   "label": "Docker Data Mountpoint"
+  },
+  {
+   "fieldname": "container_registry_config_path",
+   "fieldtype": "Data",
+   "label": "Container Registry Config Path"
+  },
+  {
+   "default": "0",
    "fieldname": "tls_certificate_renewal_failed",
    "fieldtype": "Check",
    "label": "TLS Certificate Renewal Failed",
    "read_only": 1
+  },
+  {
+   "fieldname": "storage_section",
+   "fieldtype": "Section Break",
+   "label": "Storage"
+  },
+  {
+   "fieldname": "region_endpoint",
+   "fieldtype": "Data",
+   "label": "Region Endpoint"
+  },
+  {
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "label": "Region"
+  },
+  {
+   "fieldname": "bucket_name",
+   "fieldtype": "Data",
+   "label": "Bucket Name"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_disk_storage",
+   "fieldtype": "Check",
+   "label": "Is Disk Storage"
   }
  ],
  "links": [
@@ -225,7 +275,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2025-09-02 16:43:47.166808",
+ "modified": "2025-09-18 23:10:19.218423",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Registry Server",
