@@ -121,7 +121,11 @@
 			<div class="flex h-full flex-col justify-between p-4 gap-2">
 				<div class="flex justify-between items-center">
 					<h3 class="font-semibold text-lg">Website Info</h3>
-					<Button label="Edit" @click="showUpdateWebsiteInfo = true" />
+					<Button
+						label="Edit"
+						@click="showUpdateWebsiteInfo = true"
+						:disabled="true"
+					/>
 				</div>
 				<div class="my-1 h-px bg-gray-100" />
 				<div class="flex flex-col">
