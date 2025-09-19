@@ -1929,10 +1929,27 @@ class VirtualMachine(Document):
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")
 
 
+def sync_virtual_machines_hetzner():
+	for machine in frappe.get_all(
+		"Virtual Machine",
+		{"status": ("not in", ("Draft")), "cloud_provider": "Hetzner"},
+		pluck="name",
+	):
+		if has_job_timeout_exceeded():
+			return
+		try:
+			VirtualMachine("Virtual Machine", machine).sync()
+			frappe.db.commit()  # release lock
+		except Exception:
+			log_error(title="Virtual Machine Sync Error", virtual_machine=machine)
+			frappe.db.rollback()
+
+
 @frappe.whitelist()
 def sync_virtual_machines():
 	VirtualMachine.bulk_sync_aws()
 	VirtualMachine.bulk_sync_oci()
+	sync_virtual_machines_hetzner()
 
 
 def snapshot_oci_virtual_machines():
