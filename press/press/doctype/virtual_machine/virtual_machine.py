@@ -1296,6 +1296,8 @@ class VirtualMachine(Document):
 			self.client().terminate_instance(instance_id=self.instance_id)
 		elif self.cloud_provider == "Hetzner":
 			for volume in self.volumes:
+				if volume.volume_id == "hetzner-root-disk":
+					continue
 				volume = self.client().volumes.get_by_id(volume.volume_id)
 				volume.detach().wait_until_finished(30)
 				volume.delete()
