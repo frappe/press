@@ -153,9 +153,6 @@ class Subscription(Document):
 		if not self.is_valid_subscription(date):
 			return None
 
-		if not self.is_valid_subscription(date):
-			return None
-
 		team = frappe.get_cached_doc("Team", self.team)
 
 		if team.parent_team:
