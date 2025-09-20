@@ -577,6 +577,12 @@
    "label": "Apply NPO Discount"
   },
   {
+   "fieldname": "partner_status",
+   "fieldtype": "Select",
+   "label": "Partner Status",
+   "options": "Active\nInactive"
+  },
+  {
    "default": "0",
    "description": "If checked, members will not be forced to go through the onboarding",
    "fieldname": "skip_onboarding",
