@@ -523,7 +523,7 @@ def get_metrics(
 
 
 @frappe.whitelist()
-@protected("Server")
+@protected("Release Group")
 def get_fs_read_bytes(
 	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
 ):
@@ -541,7 +541,7 @@ def get_fs_read_bytes(
 
 
 @frappe.whitelist()
-@protected("Server")
+@protected("Release Group")
 def get_fs_write_bytes(
 	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
 ):
@@ -559,7 +559,7 @@ def get_fs_write_bytes(
 
 
 @frappe.whitelist()
-@protected("Server")
+@protected("Release Group")
 def get_outgoing_network_traffic(
 	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
 ):
@@ -575,7 +575,7 @@ def get_outgoing_network_traffic(
 
 
 @frappe.whitelist()
-@protected("Server")
+@protected("Release Group")
 def get_incoming_network_traffic(
 	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
 ):
@@ -593,7 +593,7 @@ def get_incoming_network_traffic(
 
 
 @frappe.whitelist()
-@protected("Server")
+@protected("Release Group")
 def get_memory_usage(
 	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
 ):
@@ -609,7 +609,7 @@ def get_memory_usage(
 
 
 @frappe.whitelist()
-@protected("Server")
+@protected("Release Group")
 def get_cpu_usage(timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"):
 	promql_query = (
 		'sum by (name) ( rate(container_cpu_usage_seconds_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
