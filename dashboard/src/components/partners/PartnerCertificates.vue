@@ -102,25 +102,6 @@ export default {
 						},
 					},
 				],
-<<<<<<< HEAD
-				primaryAction() {
-					return {
-						label: 'Apply for Certification',
-						variant: 'solid',
-						slots: {
-							prefix: icon('plus'),
-						},
-						disabled: true,
-						onClick: () => {
-							renderDialog(
-								h(PartnerCertificateRequest, {
-									show: true,
-									onSuccess: () => {
-										console.log('success');
-									},
-								}),
-							);
-=======
 				documentation: 'https://frappe.io',
 				actions() {
 					return [
@@ -157,7 +138,6 @@ export default {
 									}),
 								);
 							},
->>>>>>> c480b5865 (chore(prm): Disable input actions)
 						},
 					};
 				},

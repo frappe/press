@@ -112,8 +112,6 @@
 			</div>
 		</div>
 
-<<<<<<< HEAD
-=======
 		<div class="rounded-lg text-base text-gray-900 border">
 			<div class="flex h-full flex-col justify-between p-4 gap-2">
 				<div class="flex justify-between items-center">
@@ -160,7 +158,6 @@
 			</div>
 		</div>
 
->>>>>>> c480b5865 (chore(prm): Disable input actions)
 		<Dialog
 			:show="showPartnerContributionDialog"
 			v-model="showPartnerContributionDialog"
