@@ -1,0 +1,67 @@
+{
+ "actions": [],
+ "creation": "2025-07-15 11:14:36.592329",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "date",
+  "agreed",
+  "column_break_blyu",
+  "team"
+ ],
+ "fields": [
+  {
+   "default": "Today",
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date"
+  },
+  {
+   "default": "0",
+   "description": "If Agreed, that means the Partner has given their consent to the Frappe Partnership Agreement",
+   "fieldname": "agreed",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Agreed"
+  },
+  {
+   "fieldname": "column_break_blyu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-08-26 13:06:43.452758",
+ "modified_by": "Administrator",
+ "module": "Partner",
+ "name": "Partner Consent",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "show_title_field_in_link": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "team"
+}
