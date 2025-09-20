@@ -58,6 +58,8 @@ server_doctypes = [
 	"Log Server",
 ]
 
+HETZNER_ROOT_DISK_ID = "hetzner-root-disk"
+
 
 class VirtualMachine(Document):
 	# begin: auto-generated types
@@ -748,7 +750,7 @@ class VirtualMachine(Document):
 					update_volume_details=UpdateVolumeDetails(size_in_gbs=volume.size),
 				)
 		elif self.cloud_provider == "Hetzner":
-			if volume_id == "hetzner-root-disk":
+			if volume_id == HETZNER_ROOT_DISK_ID:
 				frappe.throw("Cannot increase disk size for hetzner root disk.")
 			volume = self.client().volumes.get_by_id(volume_id)
 			self.client().volumes.resize(volume, increment)
@@ -797,7 +799,7 @@ class VirtualMachine(Document):
 			volumes.append(
 				frappe._dict(
 					{
-						"id": "hetzner-root-disk",
+						"id": HETZNER_ROOT_DISK_ID,
 						"linux_device": "/dev/sda",
 						"size": server_instance.primary_disk_size,
 						"protection": {"delete": False},
@@ -842,6 +844,8 @@ class VirtualMachine(Document):
 			except APIException as e:
 				if "server not found" in str(e):
 					pass
+				else:
+					raise e
 		if server_instance:
 			self.status = self.get_hetzner_status_map()[server_instance.status]
 			self.machine_type = server_instance.server_type.name
@@ -1290,7 +1294,7 @@ class VirtualMachine(Document):
 			self.client().terminate_instance(instance_id=self.instance_id)
 		elif self.cloud_provider == "Hetzner":
 			for volume in self.volumes:
-				if volume.volume_id == "hetzner-root-disk":
+				if volume.volume_id == HETZNER_ROOT_DISK_ID:
 					continue
 				volume = self.client().volumes.get_by_id(volume.volume_id)
 				volume.detach().wait_until_finished(30)
@@ -1892,7 +1896,7 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "OCI":
 			raise NotImplementedError
 		elif self.cloud_provider == "Hetzner":
-			if volume_id == "hetzner-root-disk":
+			if volume_id == HETZNER_ROOT_DISK_ID:
 				frappe.throw("Cannot detach hetzner root disk.")
 			volume = self.client().volumes.get_by_id(volume_id)
 			self.client().volumes.detach(volume)
@@ -1912,7 +1916,7 @@ class VirtualMachine(Document):
 			if self.cloud_provider == "OCI":
 				raise NotImplementedError
 			if self.cloud_provider == "Hetzner":
-				if volume_id == "hetzner-root-disk":
+				if volume_id == HETZNER_ROOT_DISK_ID:
 					frappe.throw("Cannot delete hetzner root disk.")
 				vol = self.client().volumes.get_by_id(volume_id)
 				self.client().volumes.delete(vol)
