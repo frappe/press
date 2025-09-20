@@ -1634,6 +1634,23 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def login_as_admin(self, reason=None):
+		team = get_current_team()
+		if team and team != self.team:
+			has_consent = frappe.db.get_value(
+				"Site Login Consent",
+				{
+					"site": self.name,
+					"status": "Approved",
+					"requested_by": frappe.session.user,
+					"approved_by": ("is", "set"),
+					"until": [">", frappe.utils.now_datetime()],
+				},
+			)
+			if not has_consent:
+				frappe.throw(
+					"Cannot login as Administrator without consent from the site owning team",
+					frappe.PermissionError,
+				)
 		sid = self.login(reason=reason)
 		return f"https://{self.host_name or self.name}/app?sid={sid}"
 
@@ -3057,6 +3074,12 @@ class Site(Document, TagHelpers):
 				"button_label": "Manage",
 				"doc_method": "dummy",
 				"condition": not self.hybrid_site and has_permission("Site Database User") and is_team_owner,
+			},
+			{
+				"action": "Login access requests",
+				"description": "Accept or reject login requests to your site",
+				"button_label": "Manage",
+				"doc_method": "dummy",
 			},
 			{
 				"action": "Schedule backup",
