@@ -10,11 +10,13 @@ import { FeatherIcon, Tooltip } from 'frappe-ui';
 import { icon, renderDialog } from '../../utils/components';
 import ObjectList from '../ObjectList.vue';
 import PartnerCertificateRequest from './PartnerCertificateRequest.vue';
+import LinkCertificate from './LinkCertificate.vue';
 export default {
 	name: 'PartnerCertificates',
 	components: {
 		ObjectList,
 		PartnerCertificateRequest,
+		LinkCertificate,
 	},
 	data() {
 		return {
@@ -139,10 +141,20 @@ export default {
 								);
 							},
 						},
-					};
+					];
 				},
 				filters: {
 					team: this.$team.doc.name,
+				},
+				filterControls() {
+					return [
+						{
+							type: 'select',
+							fieldname: 'course',
+							label: 'Course',
+							options: ['', 'Framework', 'ERPNext'],
+						},
+					];
 				},
 				orderBy: 'creation desc',
 			};

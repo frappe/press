@@ -39,6 +39,7 @@ class TestDeployCandidateBuild(FrappeTestCase):
 		self.create_build_servers()
 		group = create_test_release_group([app], self.user)
 		group.db_set("team", self.team.name)
+		frappe.db.set_single_value("Press Settings", "docker_registry_url", "registry.digitalocean.com")
 		frappe.set_user(self.user)
 		self.deploy_candidate = create_test_deploy_candidate(group)
 		self.deploy_candidate_build = create_test_deploy_candidate_build(self.deploy_candidate)

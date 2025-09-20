@@ -54,6 +54,7 @@
   "erpnext_partner",
   "partner_email",
   "column_break_ooyo",
+  "partner_status",
   "partner_tier",
   "website_info_section",
   "company_logo",
@@ -574,6 +575,12 @@
    "fieldname": "apply_npo_discount",
    "fieldtype": "Check",
    "label": "Apply NPO Discount"
+  },
+  {
+   "fieldname": "partner_status",
+   "fieldtype": "Select",
+   "label": "Partner Status",
+   "options": "Active\nInactive"
   },
   {
    "default": "0",

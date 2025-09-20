@@ -2,13 +2,19 @@
 	<div class="flex flex-col gap-5 overflow-y-auto px-60 py-6">
 		<div class="flex flex-col">
 			<div class="text-gray-500">Welcome back!</div>
-			<div>
+			<div class="flex items-center gap-3">
 				<h1 class="text-3xl font-semibold">
 					{{ partnerDetails.data?.company_name }}
 				</h1>
+				<Badge
+					variant="subtle"
+					:label="team.doc.partner_status"
+					:theme="team.doc.partner_status ? 'green' : 'gray'"
+				/>
 			</div>
 		</div>
-		<div class="rounded-lg text-base text-gray-900 shadow">
+
+		<div class="rounded-lg text-base text-gray-900 border">
 			<div class="flex flex-col gap-2.5 p-4">
 				<div class="flex">
 					<div class="flex items-center gap-0.5">
@@ -32,7 +38,6 @@
 						</template>
 					</Progress>
 				</div>
-				<div class="my-1 h-px bg-gray-100" />
 
 				<div class="flex justify-between gap-4">
 					<div class="flex-1">
@@ -74,7 +79,7 @@
 		</div>
 
 		<div class="flex justify-between gap-4">
-			<div class="rounded-lg text-base flex-1 text-gray-900 p-4 shadow">
+			<div class="rounded-lg text-base flex-1 text-gray-900 p-4 border">
 				<div class="flex h-full flex-col justify-between gap-2">
 					<div class="flex">
 						<h3 class="font-semibold text-lg">Partner Referral Code</h3>
@@ -85,7 +90,7 @@
 					>
 				</div>
 			</div>
-			<div class="rounded-lg text-base flex-1 text-gray-900 p-4 shadow">
+			<div class="rounded-lg text-base flex-1 text-gray-900 p-4 border">
 				<div class="flex h-full flex-col justify-between">
 					<div class="flex">
 						<h3 class="font-semibold text-lg">Renewal Details</h3>
@@ -205,7 +210,10 @@
 						variant: 'solid',
 						onClick: () => {
 							showRenewalConfirmationDialog = false;
-							showPartnerCreditsDialog = true;
+							partnerConsent.insert.submit({
+								agreed: true,
+								team: $team.doc?.name,
+							});
 						},
 					},
 				],
@@ -230,12 +238,19 @@
 <script setup>
 import { computed, inject, ref, watch } from 'vue';
 import dayjs from '../../utils/dayjs';
-import { FeatherIcon, Button, createResource, Progress } from 'frappe-ui';
+import {
+	FeatherIcon,
+	Button,
+	createResource,
+	Progress,
+	createListResource,
+	Dialog,
+} from 'frappe-ui';
 import PartnerContribution from './PartnerContribution.vue';
 import ClickToCopyField from '../ClickToCopyField.vue';
 import PartnerCreditsForm from './PartnerCreditsForm.vue';
 import PartnerMembers from './PartnerMembers.vue';
-import { Dialog } from 'frappe-ui';
+import { toast } from 'vue-sonner';
 
 const team = inject('team');
 
@@ -251,10 +266,22 @@ const partnerDetails = createResource({
 	params: {
 		partner_email: team.doc.partner_email,
 	},
-	onSuccess() {
-		calculateNextTier(partnerDetails.data.partner_type);
+	onSuccess(data) {
+		calculateNextTier(data.partner_type);
 	},
 });
+
+const partnerConsent = createListResource({
+	doctype: 'Partner Consent',
+	onSuccess() {
+		showPartnerCreditsDialog.value = true;
+		toast.success('Partner consent recorded successfully');
+	},
+});
+
+const customerList = computed(
+	() => partnerDetails?.data?.customers?.split(',') || [],
+);
 
 const daysUntilRenewal = computed(() => {
 	const today = new Date();
