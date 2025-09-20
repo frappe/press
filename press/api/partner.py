@@ -46,6 +46,22 @@ def update_partnership_date(team, partnership_date):
 
 
 @frappe.whitelist()
+def update_website_info(website_info):
+	from press.utils.billing import get_frappe_io_connection, is_frappe_auth_disabled
+
+	if is_frappe_auth_disabled():
+		return
+
+	client = get_frappe_io_connection()
+	try:
+		website_info["doctype"] = "Partner"
+		client.update(website_info)
+	except Exception:
+		frappe.log_error("Error updating website info")
+
+
+
+@frappe.whitelist()
 def get_partner_details(partner_email):
 	from press.utils.billing import get_frappe_io_connection, is_frappe_auth_disabled
 
@@ -61,11 +77,13 @@ def get_partner_details(partner_email):
 			"email",
 			"partner_type",
 			"company_name",
-			"custom_ongoing_period_fc_invoice_contribution",
-			"custom_fc_invoice_contribution",
 			"partner_name",
 			"custom_number_of_certified_members",
 			"end_date",
+			"partner_website",
+			"introduction",
+			"customers",
+			"custom_process_maturity_level",
 		],
 	)
 	if data:
@@ -91,7 +109,7 @@ def transfer_credits(amount, customer, partner):
 	amt = frappe.utils.flt(amount)
 	partner_doc = frappe.get_doc("Team", partner)
 	credits_available = partner_doc.get_balance()
-	partner_level, certificates = partner_doc.get_partner_level()
+	partner_level, _ = partner_doc.get_partner_level()
 	discount_percent = DISCOUNT_MAP.get(partner_level)
 
 	if credits_available < amt:
@@ -133,6 +151,7 @@ def get_partner_contribution_list(partner_email):
 		{"partner_email": partner_email, "due_date": month_end, "type": "Subscription"},
 		["due_date", "customer_name", "total_before_discount", "currency", "status"],
 	)
+
 	for d in invoices:
 		if partner_currency != d.currency:
 			if partner_currency == "USD":
@@ -145,10 +164,6 @@ def get_partner_contribution_list(partner_email):
 
 
 @frappe.whitelist()
-<<<<<<< HEAD
-def get_total_partner_contribution(partner_email):
-	return
-=======
 def get_partner_mrr(partner_email):
 	partner_currency = frappe.db.get_value(
 		"Team", {"erpnext_partner": 1, "partner_email": partner_email}, "currency"
@@ -258,7 +273,6 @@ def get_invoice_items(invoice):
 		d["billing_name"] = values.billing_name
 
 	return data
->>>>>>> 1daa4ab78 (chore(ui): Show billing name in team wise breakup)
 
 
 @frappe.whitelist()
@@ -409,6 +423,33 @@ def get_partner_members(partner):
 
 
 @frappe.whitelist()
+def get_partner_leads(status=None, engagement_stage=None):
+	team = get_current_team()
+	filters = {"partner_team": team}
+	if status:
+		filters["status"] = status
+	if engagement_stage:
+		filters["engagement_stage"] = engagement_stage
+	return frappe.get_all(
+		"Partner Lead",
+		filters,
+		["name", "organization_name", "lead_name", "status", "lead_source", "partner_team"],
+	)
+
+
+@frappe.whitelist()
+def change_partner(lead_name, partner):
+	team = get_current_team()
+	doc = frappe.get_doc("Partner Lead", lead_name)
+	if doc.partner_team != team:
+		frappe.throw("You are not allowed to change the partner for this lead")
+
+	doc.partner_team = partner
+	doc.status = "Open"
+	doc.save()
+
+
+@frappe.whitelist()
 def remove_partner():
 	team = get_current_team(get_doc=True)
 	if team.payment_mode == "Paid By Partner":
@@ -445,7 +486,7 @@ def get_partner_teams():
 	teams = frappe.get_all(
 		"Team",
 		{"enabled": 1, "erpnext_partner": 1},
-		["partner_email", "billing_name", "country", "partner_tier"],
+		["partner_email", "billing_name", "country", "partner_tier", "name"],
 	)
 	return teams  # noqa: RET504
 
@@ -457,3 +498,162 @@ def get_local_payment_setup():
 	data.mpesa_setup = frappe.db.get_value("Mpesa Setup", {"team": team}, "mpesa_setup_id") or None
 	data.payment_gateway = frappe.db.get_value("Payment Gateway", {"team": team}, "name") or None
 	return data
+
+
+@frappe.whitelist()
+def get_certificate_users():
+	users = frappe.get_all("Partner Certificate", ["partner_member_email", "partner_member_name"])
+	return users  # noqa: RET504
+
+
+@frappe.whitelist()
+def get_lead_details(lead_id):
+	return frappe.get_doc("Partner Lead", lead_id).as_dict()
+
+
+@frappe.whitelist()
+def update_lead_details(lead_name, lead_details):
+	lead_details = frappe._dict(lead_details)
+	doc = frappe.get_doc("Partner Lead", lead_name)
+	doc.update(
+		{
+			"organization_name": lead_details.organization_name,
+			"status": lead_details.status,
+			"full_name": lead_details.full_name,
+			"domain": lead_details.domain,
+			"email": lead_details.email,
+			"contact_no": lead_details.contact_no,
+			"state": lead_details.state,
+			"country": lead_details.country,
+			"plan_proposed": lead_details.plan_proposed,
+			"requirement": lead_details.requirement,
+			"probability": lead_details.probability,
+		}
+	)
+	doc.save(ignore_permissions=True)
+	doc.reload()
+
+
+@frappe.whitelist()
+def update_lead_status(lead_name, status, **kwargs):
+	status_dict = {"status": status}
+	if status == "In Process":
+		status_dict.update(
+			{
+				"engagement_stage": kwargs.get("engagement_stage"),
+			}
+		)
+		if kwargs.get("proposed_plan") and kwargs.get("expected_close_date"):
+			status_dict.update(
+				{
+					"plan_proposed": kwargs.get("proposed_plan"),
+					"estimated_closure_date": kwargs.get("expected_close_date"),
+				}
+			)
+	elif status == "Won":
+		status_dict.update(
+			{
+				"conversion_date": kwargs.get("conversion_date"),
+				"hosting": kwargs.get("hosting"),
+				"site_url": kwargs.get("site_url"),
+			}
+		)
+	elif status == "Lost":
+		status_dict.update(
+			{
+				"lost_reason": kwargs.get("lost_reason"),
+				"lost_reason_specify": kwargs.get("other_reason"),
+			}
+		)
+
+	frappe.db.set_value("Partner Lead", lead_name, status_dict)
+
+
+@frappe.whitelist()
+def fetch_followup_details(id, lead):
+	return frappe.get_all(
+		"Lead Followup",
+		{"parent": lead, "name": id, "parenttype": "Partner Lead"},
+		[
+			"name",
+			"date",
+			"communication_type",
+			"followup_by",
+			"spoke_to",
+			"designation",
+			"discussion",
+			"no_show",
+		],
+	)
+
+
+@frappe.whitelist()
+def check_certificate_exists(email, type):
+	return frappe.db.count("Partner Certificate", {"partner_member_email": email})
+
+
+@frappe.whitelist()
+def update_followup_details(id, lead, followup_details):
+	followup_details = frappe._dict(followup_details)
+	if id:
+		doc = frappe.get_doc("Lead Followup", id)
+		doc.update(
+			{
+				"date": frappe.utils.getdate(followup_details.followup_date),
+				"communication_type": followup_details.communication_type,
+				"followup_by": followup_details.followup_by,
+				"spoke_to": followup_details.spoke_to,
+				"designation": followup_details.designation,
+				"discussion": followup_details.discussion,
+				"no_show": followup_details.no_show,
+			}
+		)
+		doc.save(ignore_permissions=True)
+	else:
+		doc = frappe.new_doc("Lead Followup")
+		doc.update(
+			{
+				"parent": lead,
+				"parenttype": "Partner Lead",
+				"parentfield": "followup",
+				"date": frappe.utils.getdate(followup_details.followup_date),
+				"communication_type": followup_details.communication_type,
+				"followup_by": followup_details.followup_by,
+				"spoke_to": followup_details.spoke_to,
+				"designation": followup_details.designation,
+				"discussion": followup_details.discussion,
+				"no_show": followup_details.no_show,
+			}
+		)
+		doc.insert(ignore_permissions=True)
+	doc.reload()
+
+
+@frappe.whitelist()
+def add_new_lead(lead_details):
+	lead_details = frappe._dict(lead_details)
+	doc = frappe.new_doc("Partner Lead")
+	doc.update(
+		{
+			"organization_name": lead_details.organization_name,
+			"full_name": lead_details.full_name,
+			"domain": lead_details.domain,
+			"email": lead_details.email,
+			"lead_name": lead_details.lead_name,
+			"contact_no": lead_details.contact_no,
+			"state": lead_details.state,
+			"country": lead_details.country,
+			"requirement": lead_details.requirement,
+			"partner_team": get_current_team(),
+			"lead_source": lead_details.lead_source or "Partner Owned",
+			"lead_type": lead_details.lead_type,
+			"status": "Open",
+		}
+	)
+	doc.insert(ignore_permissions=True)
+	doc.reload()
+
+
+@frappe.whitelist()
+def delete_followup(id, lead_name):
+	frappe.delete_doc("Lead Followup", id)

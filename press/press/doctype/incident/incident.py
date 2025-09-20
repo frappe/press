@@ -549,7 +549,7 @@ Likely due to insufficient balance or incorrect credentials""",
 		Ref: https://support.twilio.com/hc/en-us/articles/223181548-Can-I-set-up-one-API-call-to-send-messages-to-a-list-of-people-
 		"""
 		if (
-			ignore_since := frappe.db.get_value("Server", self.server, "ignore_incidents_since")
+			ignore_since := frappe.db.get_value("Server", self.server, "ignore_incidents_till")
 		) and ignore_since < frappe.utils.now_datetime():
 			return
 		domain = frappe.db.get_value("Press Settings", None, "domain")

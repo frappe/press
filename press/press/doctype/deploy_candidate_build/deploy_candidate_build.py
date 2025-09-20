@@ -1267,11 +1267,25 @@ def fail_and_redeploy(dn: str):
 
 
 @frappe.whitelist()
-def fail_remote_job(dn: str):
+def fail_remote_job(dn: str) -> bool:
 	agent_job: "AgentJob" = frappe.get_doc(
 		"Agent Job", {"reference_doctype": "Deploy Candidate Build", "reference_name": dn}
 	)
+
+	agent_job.get_status()
+	agent_job = agent_job.reload()
+
+	if agent_job.status != "Running":
+		return False
+
+	# Cancel build and set status with for_update and commit to avoid timestamp errors
 	agent_job.cancel_job()
+	build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dn, for_update=True)
+	build.manually_failed = True
+	build.set_status(Status.FAILURE)
+	frappe.db.commit()
+
+	return True
 
 
 def is_build_job(job: Job) -> bool:

@@ -113,6 +113,17 @@ export default {
 			next();
 		}
 	},
+	mounted() {
+		this.email = localStorage.getItem('login_email');
+		if (window.posthog?.__loaded) {
+			window.posthog.identify(this.email || window.posthog.get_distinct_id(), {
+				app: 'frappe_cloud',
+				action: 'login_signup'
+			});
+
+			window.posthog.startSessionRecording();
+		}
+	},
 	methods: {
 		openInstallAppPage(app) {
 			this.$resources.getAccountRequestForProductSignup

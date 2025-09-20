@@ -204,7 +204,6 @@ scheduler_events = {
 		"press.press.doctype.remote_file.remote_file.poll_file_statuses",
 		"press.press.doctype.site_domain.site_domain.update_dns_type",
 		"press.press.doctype.press_webhook_log.press_webhook_log.clean_logs_older_than_24_hours",
-		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_all_snapshots_from_aws",
 		"press.press.doctype.payment_due_extension.payment_due_extension.remove_payment_due_extension",
 		"press.press.doctype.tls_certificate.tls_certificate.notify_custom_tls_renewal",
 		"press.press.doctype.site.site.suspend_sites_exceeding_disk_usage_for_last_7_days",
@@ -271,6 +270,7 @@ scheduler_events = {
 		],
 		"0 3 * * *": [
 			"press.press.doctype.drip_email.drip_email.send_drip_emails",
+			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_all_snapshots_from_aws",
 		],
 		"* * * * * 0/5": [
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs",
@@ -317,6 +317,7 @@ scheduler_events = {
 			"press.press.doctype.deploy_candidate_build.deploy_candidate_build.run_scheduled_builds",
 			"press.press.doctype.agent_request_failure.agent_request_failure.remove_old_failures",
 			"press.saas.doctype.site_access_token.site_access_token.cleanup_expired_access_tokens",
+			"press.press.doctype.server_snapshot.server_snapshot.sync_ongoing_server_snapshots",
 		],
 		"*/10 * * * *": [
 			"press.saas.doctype.product_trial.product_trial.replenish_standby_sites",
