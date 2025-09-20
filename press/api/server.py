@@ -13,7 +13,7 @@ from frappe.utils import convert_utc_to_timezone, flt
 from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 
-from press.api.analytics import get_rounded_boundaries
+from press.api.analytics import TIMESPAN_TIMEGRAIN_MAP, get_rounded_boundaries
 from press.api.bench import all as all_benches
 from press.api.site import protected
 from press.exceptions import MonitorServerDown
@@ -172,6 +172,13 @@ def overview(name):
 def archive(name):
 	server = poly_get_doc(["Server", "Database Server"], name)
 	server.drop_server()
+
+
+@frappe.whitelist()
+@protected(["Server"])
+def get_reclaimable_size(name):
+	server: Server = frappe.get_doc("Server", name)
+	return server.agent.get("server/reclaimable-size")
 
 
 @frappe.whitelist()
@@ -629,12 +636,4 @@ def rename(name, title):
 
 
 def get_timespan_timegrain(duration: str) -> tuple[int, int]:
-	timespan, timegrain = {
-		"1 Hour": (60 * 60, 2 * 60),
-		"6 Hour": (6 * 60 * 60, 5 * 60),
-		"24 Hour": (24 * 60 * 60, 30 * 60),
-		"7 Days": (7 * 24 * 60 * 60, 2 * 30 * 60),
-		"15 Days": (15 * 24 * 60 * 60, 3 * 30 * 60),
-	}[duration]
-
-	return timespan, timegrain
+	return TIMESPAN_TIMEGRAIN_MAP[duration]

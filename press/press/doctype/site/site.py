@@ -838,9 +838,12 @@ class Site(Document, TagHelpers):
 
 		if hasattr(self, "share_details_consent") and self.share_details_consent:
 			# create partner lead
-			frappe.get_doc(doctype="Partner Lead", team=self.team, site=self.name).insert(
-				ignore_permissions=True
-			)
+			frappe.get_doc(
+				doctype="Site Partner Lead",
+				team=self.team,
+				site=self.name,
+				created_on=frappe.utils.now_datetime(),
+			).insert(ignore_permissions=True)
 
 		add_permission_for_newly_created_doc(self)
 
@@ -3037,6 +3040,8 @@ class Site(Document, TagHelpers):
 	@frappe.whitelist()
 	def get_actions(self):
 		is_group_public = frappe.get_cached_value("Release Group", self.group, "public")
+		team_owner = frappe.get_value("Team", self.team, "user")
+		is_team_owner = team_owner == frappe.session.user or frappe.local.system_user()
 
 		actions = [
 			{
@@ -3051,7 +3056,7 @@ class Site(Document, TagHelpers):
 				"description": "Manage users and permissions for your site database",
 				"button_label": "Manage",
 				"doc_method": "dummy",
-				"condition": not self.hybrid_site and has_permission("Site Database User"),
+				"condition": not self.hybrid_site and has_permission("Site Database User") and is_team_owner,
 			},
 			{
 				"action": "Schedule backup",

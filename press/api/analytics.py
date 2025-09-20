@@ -76,14 +76,16 @@ class AggType(Enum):
 
 
 TIMESPAN_TIMEGRAIN_MAP: Final[dict[str, tuple[int, int]]] = {
-	"1h": (60 * 60, 60),
+	"1h": (60 * 60, 2 * 60),
 	"6h": (6 * 60 * 60, 5 * 60),
 	"24h": (24 * 60 * 60, 30 * 60),
-	"7d": (7 * 24 * 60 * 60, 3 * 60 * 60),
-	"15d": (15 * 24 * 60 * 60, 6 * 60 * 60),
+	"3d": (3 * 24 * 60 * 60, 60 * 60),
+	"7d": (7 * 24 * 60 * 60, 2 * 60 * 60),
+	"15d": (15 * 24 * 60 * 60, 3 * 60 * 60),
 }
 
 MAX_NO_OF_PATHS: Final[int] = 10
+MAX_QUERIES: Final[int] = 25
 MAX_MAX_NO_OF_PATHS: Final[int] = 50
 
 
@@ -92,7 +94,6 @@ class StackedGroupByChart:
 	to_s_divisor: float = 1e6
 	normalize_slow_logs: bool = False
 	group_by_field: str
-	max_no_of_paths: int = 10
 
 	def __init__(
 		self,
@@ -523,7 +524,7 @@ def get_metrics(
 
 
 @frappe.whitelist()
-@protected("Server")
+@protected("Release Group")
 def get_fs_read_bytes(
 	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
 ):
@@ -541,7 +542,7 @@ def get_fs_read_bytes(
 
 
 @frappe.whitelist()
-@protected("Server")
+@protected("Release Group")
 def get_fs_write_bytes(
 	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
 ):
@@ -559,7 +560,7 @@ def get_fs_write_bytes(
 
 
 @frappe.whitelist()
-@protected("Server")
+@protected("Release Group")
 def get_outgoing_network_traffic(
 	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
 ):
@@ -575,7 +576,7 @@ def get_outgoing_network_traffic(
 
 
 @frappe.whitelist()
-@protected("Server")
+@protected("Release Group")
 def get_incoming_network_traffic(
 	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
 ):
@@ -593,7 +594,7 @@ def get_incoming_network_traffic(
 
 
 @frappe.whitelist()
-@protected("Server")
+@protected("Release Group")
 def get_memory_usage(
 	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
 ):
@@ -609,7 +610,7 @@ def get_memory_usage(
 
 
 @frappe.whitelist()
-@protected("Server")
+@protected("Release Group")
 def get_cpu_usage(timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"):
 	promql_query = (
 		'sum by (name) ( rate(container_cpu_usage_seconds_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
@@ -653,7 +654,6 @@ def add_commonly_slow_path_to_reports(
 			reports[slow_path["id"]] = slow_path["function"](
 				name, "duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
 			)
-			break
 
 
 def get_additional_duration_reports(
@@ -813,7 +813,8 @@ def normalize_datasets(datasets: list[Dataset]) -> list[Dataset]:
 		n_query = normalize_query(data_dict["path"])
 		if n_datasets.get(n_query):
 			n_datasets[n_query]["values"] = [
-				x + y for x, y in zip(n_datasets[n_query]["values"], data_dict["values"], strict=False)
+				x + y if x and y else x or y
+				for x, y in zip(n_datasets[n_query]["values"], data_dict["values"], strict=True)
 			]
 		else:
 			data_dict["path"] = n_query
@@ -867,7 +868,7 @@ def get_slow_logs_by_query(
 	timezone: str,
 	duration: str = "24h",
 	normalize: bool = False,
-	max_no_of_paths: int = MAX_NO_OF_PATHS,
+	max_no_of_paths: int = MAX_QUERIES,
 ):
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
 
@@ -938,6 +939,54 @@ def get_query_report_run_reports(*args, **kwargs):
 	return QueryReportRunReports(*args, **kwargs).run()
 
 
+class SaveDocsDoctypes(RequestGroupByChart):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+	def setup_search_filters(self):
+		super().setup_search_filters()
+		self.group_by_field = "json.doctype"
+		self.search = self.search.filter(
+			"match_phrase", json__request__path="/api/method/frappe.desk.form.save.savedocs"
+		)
+
+	def exclude_top_k_data(self, datasets: list[Dataset]):
+		if ResourceType(self.resource_type) is ResourceType.SITE:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__doctype=path)
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:  # not used atp
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__site=path)
+
+
+def get_save_docs_doctypes(*args, **kwargs):
+	return SaveDocsDoctypes(*args, **kwargs).run()
+
+
+class SaveDocsActions(RequestGroupByChart):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+	def setup_search_filters(self):
+		super().setup_search_filters()
+		self.group_by_field = "json.action"
+		self.search = self.search.filter(
+			"match_phrase", json__request__path="/api/method/frappe.desk.form.save.savedocs"
+		)
+
+	def exclude_top_k_data(self, datasets: list[Dataset]):
+		if ResourceType(self.resource_type) is ResourceType.SITE:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__action=path)
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:  # not used atp
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__site=path)
+
+
+def get_save_docs_actions(*args, **kwargs):
+	return SaveDocsActions(*args, **kwargs).run()
+
+
 def get_generate_report_reports(*args, **kwargs):
 	return GenerateReportReports(*args, **kwargs).run()
 
@@ -958,6 +1007,16 @@ COMMONLY_SLOW_PATHS: list[CommonSlowPath] = [
 		"path": "/api/method/frappe.desk.query_report.run",
 		"id": "query_report_run_reports",
 		"function": get_query_report_run_reports,
+	},
+	{
+		"path": "/api/method/frappe.desk.form.save.savedocs",
+		"id": "save_docs_doctypes",
+		"function": get_save_docs_doctypes,
+	},
+	{
+		"path": "/api/method/frappe.desk.form.save.savedocs",
+		"id": "save_docs_actions",
+		"function": get_save_docs_actions,
 	},
 ]
 
