@@ -10,11 +10,13 @@ import { FeatherIcon, Tooltip } from 'frappe-ui';
 import { icon, renderDialog } from '../../utils/components';
 import ObjectList from '../ObjectList.vue';
 import PartnerCertificateRequest from './PartnerCertificateRequest.vue';
+import LinkCertificate from './LinkCertificate.vue';
 export default {
 	name: 'PartnerCertificates',
 	components: {
 		ObjectList,
 		PartnerCertificateRequest,
+		LinkCertificate,
 	},
 	data() {
 		return {
@@ -102,28 +104,55 @@ export default {
 						},
 					},
 				],
-				primaryAction() {
-					return {
-						label: 'Apply for Certification',
-						variant: 'solid',
-						slots: {
-							prefix: icon('plus'),
+				documentation: 'https://frappe.io',
+				actions() {
+					return [
+						{
+							label: 'Apply for Free Certification',
+							slots: {
+								prefix: icon('plus'),
+							},
+							onClick: () => {
+								renderDialog(
+									h(PartnerCertificateRequest, {
+										show: true,
+										onSuccess: () => {
+											console.log('success');
+										},
+									}),
+								);
+							},
 						},
-						disabled: true,
-						onClick: () => {
-							renderDialog(
-								h(PartnerCertificateRequest, {
-									show: true,
-									onSuccess: () => {
-										console.log('success');
-									},
-								}),
-							);
+						{
+							label: 'Link Certificate',
+							slots: {
+								prefix: icon('link'),
+							},
+							onClick: (row) => {
+								renderDialog(
+									h(LinkCertificate, {
+										show: true,
+										onSuccess: () => {
+											console.log('Certificate linked successfully');
+										},
+									}),
+								);
+							},
 						},
-					};
+					];
 				},
 				filters: {
 					team: this.$team.doc.name,
+				},
+				filterControls() {
+					return [
+						{
+							type: 'select',
+							fieldname: 'course',
+							label: 'Course',
+							options: ['', 'Framework', 'ERPNext'],
+						},
+					];
 				},
 				orderBy: 'creation desc',
 			};
