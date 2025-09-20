@@ -109,6 +109,7 @@ export default {
 					return [
 						{
 							label: 'Apply for Free Certification',
+							disabled: true,
 							slots: {
 								prefix: icon('plus'),
 							},
@@ -125,6 +126,7 @@ export default {
 						},
 						{
 							label: 'Link Certificate',
+							disabled: true,
 							slots: {
 								prefix: icon('link'),
 							},
