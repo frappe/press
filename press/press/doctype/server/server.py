@@ -885,7 +885,6 @@ class BaseServer(Document, TagHelpers):
 				"enabled": 1,
 			},
 		)
-		print(name)
 		return frappe.get_doc("Subscription", name) if name else None
 
 	@property
@@ -2048,9 +2047,11 @@ class Server(BaseServer):
 		if save:
 			self.save()
 
-	def update_subscription(self):
+	def update_subscription(self):  # noqa: C901
 		subscription = self.subscription
-		if subscription and subscription.team != self.team:
+		if subscription:
+			if subscription.team == self.team:
+				return
 			# enable existing subscription if present
 			# else change team on existing subscription
 			if sub := frappe.db.get_value(
@@ -2084,7 +2085,9 @@ class Server(BaseServer):
 				frappe.log_error("Server Subscription Creation Error")
 
 		add_on_storage_subscription = self.add_on_storage_subscription
-		if add_on_storage_subscription and add_on_storage_subscription.team != self.team:
+		if add_on_storage_subscription:
+			if add_on_storage_subscription.team == self.team:
+				return
 			if existing_subscription := frappe.db.get_value(
 				"Subscription",
 				filters={

@@ -170,16 +170,16 @@ class DatabaseServer(BaseServer):
 		):
 			self.update_memory_limits()
 
-		print(self.subscription, self.subscription.team, self.team)
 		if not self.is_new() and self.has_value_changed("team"):
 			self.update_subscription()
 
 		if self.public:
 			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
 
-	def update_subscription(self):
-		print(subscription.name)
-		if self.subscription and self.subscription.team != self.team:
+	def update_subscription(self):  # noqa: C901
+		if self.subscription:
+			if self.subscription.team == self.team:
+				return
 			# enable subscription if exists
 			if subscription := frappe.db.get_value(
 				"Subscription",
@@ -203,6 +203,7 @@ class DatabaseServer(BaseServer):
 						"document_type": self.doctype,
 						"document_name": self.name,
 						"team": self.team,
+						"plan_type": "Server Plan",
 						"plan": self.plan,
 					}
 				).insert()
@@ -210,7 +211,10 @@ class DatabaseServer(BaseServer):
 				frappe.log_error("Database Subscription Creation Error")
 
 		add_on_storage_subscription = self.add_on_storage_subscription
-		if add_on_storage_subscription and add_on_storage_subscription.team != self.team:
+		if add_on_storage_subscription:
+			if add_on_storage_subscription.team == self.team:
+				return
+
 			if existing_subscription := frappe.db.get_value(
 				"Subscription",
 				filters={
