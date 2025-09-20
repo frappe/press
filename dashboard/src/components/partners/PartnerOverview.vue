@@ -246,7 +246,6 @@ import PartnerContribution from './PartnerContribution.vue';
 import ClickToCopyField from '../ClickToCopyField.vue';
 import PartnerCreditsForm from './PartnerCreditsForm.vue';
 import PartnerMembers from './PartnerMembers.vue';
-import { Dialog } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 
 const team = inject('team');
