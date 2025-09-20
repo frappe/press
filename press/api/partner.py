@@ -60,6 +60,7 @@ def update_website_info(website_info):
 		frappe.log_error("Error updating website info")
 
 
+
 @frappe.whitelist()
 def get_partner_details(partner_email):
 	from press.utils.billing import get_frappe_io_connection, is_frappe_auth_disabled
@@ -82,6 +83,7 @@ def get_partner_details(partner_email):
 			"partner_website",
 			"introduction",
 			"customers",
+			"custom_process_maturity_level",
 		],
 	)
 	if data:
