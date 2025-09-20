@@ -16,6 +16,7 @@ class SitePartnerLead(Document):
 
 		company: DF.Data | None
 		country: DF.Link | None
+		created_on: DF.Date | None
 		currency: DF.Link | None
 		domain: DF.Data | None
 		email: DF.Data | None
