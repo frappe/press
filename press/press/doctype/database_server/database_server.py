@@ -135,6 +135,7 @@ class DatabaseServer(BaseServer):
 		super().validate()
 		self.validate_mariadb_root_password()
 		self.validate_server_id()
+		self.validate_server_team()
 		self.validate_mariadb_system_variables()
 
 	def validate_mariadb_root_password(self):
@@ -158,6 +159,16 @@ class DatabaseServer(BaseServer):
 		variable: DatabaseServerMariaDBVariable
 		for variable in self.mariadb_system_variables:
 			variable.validate()
+
+	def validate_server_team(self):
+		server_team = frappe.db.get_value(
+			"Server", {"database_server": self.name, "status": "Active"}, "team"
+		)
+		if server_team and self.team != server_team:
+			frappe.throw(
+				"App server and Database server team must be same.",
+				title="Team Change Not Allowed",
+			)
 
 	def on_update(self):
 		if self.flags.in_insert or self.is_new():
