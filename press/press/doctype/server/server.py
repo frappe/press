@@ -2061,6 +2061,7 @@ class Server(BaseServer):
 			):
 				frappe.db.set_value("Subscription", subscription, "enabled", 1)
 			else:
+<<<<<<< HEAD
 				try:
 					# create new subscription
 					frappe.get_doc(
@@ -2075,6 +2076,15 @@ class Server(BaseServer):
 					).insert()
 				except Exception:
 					frappe.log_error("Server Subscription Creation Error")
+=======
+				frappe.db.set_value("Subscription", subscription.name, {"team": self.team, "enabled": 1})
+		else:
+			try:
+				# create new subscription
+				self.create_subscription(self.plan)
+			except Exception:
+				frappe.log_error("Server Subscription Creation Error")
+>>>>>>> 04bb1ad0b (fix(subscription): Pass correct values for sub)
 
 		add_on_storage_subscription = frappe.db.get_value(
 			"Subscription",
@@ -2108,6 +2118,7 @@ class Server(BaseServer):
 					},
 				)
 			else:
+<<<<<<< HEAD
 				try:
 					# create new subscription
 					frappe.get_doc(
@@ -2122,6 +2133,26 @@ class Server(BaseServer):
 					).insert()
 				except Exception:
 					frappe.log_error("Server Storage Subscription Creation Error")
+=======
+				frappe.db.set_value(
+					"Subscription", add_on_storage_subscription.name, {"team": self.team, "enabled": 1}
+				)
+		else:
+			try:
+				# create new subscription
+				frappe.get_doc(
+					{
+						"doctype": "Subscription",
+						"document_type": self.doctype,
+						"document_name": self.name,
+						"team": self.team,
+						"plan_type": "Server Storage Plan",
+						"plan": "Add-on Storage plan",
+					}
+				).insert()
+			except Exception:
+				frappe.log_error("Server Storage Subscription Creation Error")
+>>>>>>> 04bb1ad0b (fix(subscription): Pass correct values for sub)
 
 	@frappe.whitelist()
 	def setup_ncdu(self):
