@@ -244,7 +244,7 @@ class DatabaseServer(BaseServer):
 						"document_name": self.name,
 						"team": self.team,
 						"plan_type": "Server Storage Plan",
-						"plan": add_on_storage_subscription.plan,
+						"plan": "Add-on Storage plan",
 					}
 				).insert()
 			except Exception:
