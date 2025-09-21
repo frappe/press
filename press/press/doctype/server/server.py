@@ -2086,6 +2086,7 @@ class Server(BaseServer):
 				frappe.log_error("Server Subscription Creation Error")
 >>>>>>> 04bb1ad0b (fix(subscription): Pass correct values for sub)
 
+<<<<<<< HEAD
 		add_on_storage_subscription = frappe.db.get_value(
 			"Subscription",
 			{
@@ -2154,6 +2155,8 @@ class Server(BaseServer):
 				frappe.log_error("Server Storage Subscription Creation Error")
 >>>>>>> 04bb1ad0b (fix(subscription): Pass correct values for sub)
 
+=======
+>>>>>>> 0fc8bd940 (fix(storage): Remove redundant method)
 	@frappe.whitelist()
 	def setup_ncdu(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_ncdu")

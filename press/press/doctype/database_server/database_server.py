@@ -210,6 +210,7 @@ class DatabaseServer(BaseServer):
 			except Exception:
 				frappe.log_error("Database Subscription Creation Error")
 
+<<<<<<< HEAD
 		add_on_storage_subscription = self.add_on_storage_subscription
 		if add_on_storage_subscription:
 			if add_on_storage_subscription.team == self.team:
@@ -252,6 +253,8 @@ class DatabaseServer(BaseServer):
 				frappe.log_error("Server Storage Subscription Creation Error")
 >>>>>>> 04bb1ad0b (fix(subscription): Pass correct values for sub)
 
+=======
+>>>>>>> 0fc8bd940 (fix(storage): Remove redundant method)
 	def get_doc(self, doc):
 		doc = super().get_doc(doc)
 		doc.mariadb_variables = {
