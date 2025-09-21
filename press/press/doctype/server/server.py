@@ -2022,6 +2022,8 @@ class Server(BaseServer):
 			)
 
 	def update_db_server(self):
+		if not self.database_server:
+			return
 		db_server = frappe.get_doc("Database Server", self.database_server)
 		if self.team == db_server.team:
 			return
