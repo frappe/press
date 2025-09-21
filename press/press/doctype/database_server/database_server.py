@@ -187,11 +187,8 @@ class DatabaseServer(BaseServer):
 		if self.public:
 			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
 
-	def update_subscription(self):  # noqa: C901
+	def update_subscription(self):
 		if self.subscription:
-			if self.subscription.team == self.team:
-				return
-			# enable subscription if exists
 			if subscription := frappe.db.get_value(
 				"Subscription",
 				{
@@ -204,20 +201,11 @@ class DatabaseServer(BaseServer):
 				frappe.db.set_value("Subscription", subscription, "enabled", 1)
 				self.subscription.disable()
 			else:
-				frappe.db.set_value("Subscription", self.subscription.name, "team", self.team)
+				frappe.db.set_value("Subscription", self.subscription.name, {"team": self.team, "enabled": 1})
 		else:
 			try:
 				# create new subscription
-				frappe.get_doc(
-					{
-						"doctype": "Subscription",
-						"document_type": self.doctype,
-						"document_name": self.name,
-						"team": self.team,
-						"plan_type": "Server Plan",
-						"plan": self.plan,
-					}
-				).insert()
+				self.create_subscription(self.plan)
 			except Exception:
 				frappe.log_error("Database Subscription Creation Error")
 

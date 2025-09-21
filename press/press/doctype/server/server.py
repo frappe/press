@@ -882,7 +882,6 @@ class BaseServer(Document, TagHelpers):
 				"document_name": self.name,
 				"plan_type": "Server Plan",
 				"plan": self.plan,
-				"enabled": 1,
 			},
 		)
 		return frappe.get_doc("Subscription", name) if name else None
@@ -895,7 +894,6 @@ class BaseServer(Document, TagHelpers):
 				"document_type": self.doctype,
 				"document_name": self.name,
 				"plan_type": "Server Storage Plan",
-				"enabled": 1,
 			},
 		)
 		return frappe.get_doc("Subscription", name) if name else None
@@ -2045,13 +2043,9 @@ class Server(BaseServer):
 		if save:
 			self.save()
 
-	def update_subscription(self):  # noqa: C901
+	def update_subscription(self):
 		subscription = self.subscription
 		if subscription:
-			if subscription.team == self.team:
-				return
-			# enable existing subscription if present
-			# else change team on existing subscription
 			if sub := frappe.db.get_value(
 				"Subscription",
 				{
@@ -2065,27 +2059,16 @@ class Server(BaseServer):
 				frappe.db.set_value("Subscription", sub, "enabled", 1)
 				subscription.disable()
 			else:
-				frappe.db.set_value("Subscription", subscription.name, "team", self.team)
+				frappe.db.set_value("Subscription", subscription.name, {"team": self.team, "enabled": 1})
 		else:
 			try:
 				# create new subscription
-				frappe.get_doc(
-					{
-						"doctype": "Subscription",
-						"document_type": self.doctype,
-						"document_name": self.name,
-						"team": self.team,
-						"plan_type": "Server Plan",
-						"plan": self.plan,
-					}
-				).insert()
+				self.create_subscription()
 			except Exception:
 				frappe.log_error("Server Subscription Creation Error")
 
 		add_on_storage_subscription = self.add_on_storage_subscription
 		if add_on_storage_subscription:
-			if add_on_storage_subscription.team == self.team:
-				return
 			if existing_subscription := frappe.db.get_value(
 				"Subscription",
 				filters={
@@ -2105,7 +2088,9 @@ class Server(BaseServer):
 				)
 				add_on_storage_subscription.disable()
 			else:
-				frappe.db.set_value("Subscription", add_on_storage_subscription.name, "team", self.team)
+				frappe.db.set_value(
+					"Subscription", add_on_storage_subscription.name, {"team": self.team, "enabled": 1}
+				)
 		else:
 			try:
 				# create new subscription
