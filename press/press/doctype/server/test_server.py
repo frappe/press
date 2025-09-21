@@ -127,7 +127,7 @@ class TestServer(FrappeTestCase):
 		self.assertEqual(server.team, subscription.team)
 		self.assertEqual(server.plan, subscription.plan)
 
-	def test_new_subscription_on_server_team_update(self):
+	def test_subscription_team_update_on_server_team_update(self):
 		create_test_press_settings()
 		server_plan = create_test_server_plan()
 		server = create_test_server(plan=server_plan.name)
@@ -143,12 +143,28 @@ class TestServer(FrappeTestCase):
 		team2 = create_test_team()
 		server.team = team2.name
 		server.save()
-		subscription = frappe.get_doc(
-			"Subscription",
-			{"document_type": "Server", "document_name": server.name, "enabled": 1},
-		)
 		self.assertEqual(server.team, subscription.team)
-		self.assertEqual(server.plan, subscription.plan)
+
+	def test_db_server_team_update_on_server_team_update(self):
+		create_test_press_settings()
+		server_plan = create_test_server_plan()
+		db_server_plan = create_test_server_plan("Database Server")
+		server = create_test_server(plan=server_plan.name)
+		db_server = frappe.get_doc("Database Server", server.database_server)
+		db_server.plan = db_server_plan.name
+		db_server.save()
+
+		server.create_subscription(server.plan)
+		db_server.create_subscription(db_server.plan)
+		self.assertEqual(server.team, db_server.team)
+
+		# update server team
+		team2 = create_test_team()
+		server.team = team2.name
+		server.save()
+		db_server.reload()
+		self.assertEqual(server.team, db_server.team)
+		self.assertEqual(server.subscription.team, db_server.subscription.team)
 
 	def tearDown(self):
 		frappe.db.rollback()
