@@ -38,6 +38,7 @@ class ProductTrialRequest(Document):
 		error: DF.Code | None
 		is_site_accessible: DF.Literal["Not Checked", "Yes", "No"]
 		is_standby_site: DF.Check
+		is_subscription_created: DF.Check
 		product_trial: DF.Link | None
 		site: DF.Link | None
 		site_creation_completed_on: DF.Datetime | None
@@ -243,6 +244,8 @@ class ProductTrialRequest(Document):
 			self.is_standby_site = is_standby_site
 			self.agent_job = agent_job_name
 			self.site = site.name
+			if not is_standby_site:
+				self.is_subscription_created = 1
 			self.save()
 
 			if is_standby_site:
