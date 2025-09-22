@@ -172,6 +172,34 @@ class RegistryServer(BaseServer):
 		)
 		registry.insert()
 
+	def _rewrite_config(self):
+		try:
+			ansible = Ansible(
+				playbook="rewrite_registry_config.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={
+					"is_mirror": self.is_mirror,
+					"proxy_pass": self.proxy_pass,
+					"docker_data_mountpoint": self.docker_data_mountpoint,
+					"container_registry_config_path": self.container_registry_config_path,
+					"registry_username": self.registry_username,
+					"registry_password": self.get_password("registry_password"),
+				},
+			)
+			ansible.run()
+		except Exception as e:
+			log_error("Error during mirror config rewrite", e)
+
+	@frappe.whitelist()
+	def rewrite_config(self):
+		"""Rewrite mirror's config"""
+		if not self.is_mirror:
+			frappe.throw("Config can not be update for the hub registry")
+
+		frappe.enqueue_doc(self.doctype, self.name, "_rewrite_config")
+
 
 def delete_old_images_from_registry():  # noqa: C901
 	"""Purge registry of older images"""
