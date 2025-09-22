@@ -145,7 +145,7 @@ class TestServer(FrappeTestCase):
 		db_server.plan = db_server_plan.name
 		db_server.save()
 
-    self.assertEqual(server.team, db_server.team)
+    	self.assertEqual(server.team, db_server.team)
 
 		# update server team
 		team2 = create_test_team()
