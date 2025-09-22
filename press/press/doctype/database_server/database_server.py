@@ -201,6 +201,31 @@ class DatabaseServer(BaseServer):
 		if self.public:
 			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
 
+		add_on_storage_subscription = self.add_on_storage_subscription
+		if add_on_storage_subscription:
+			if existing_subscription := frappe.db.get_value(
+				"Subscription",
+				filters={
+					"document_type": self.doctype,
+					"document_name": self.name,
+					"team": self.team,
+					"plan_type": "Server Storage Plan",
+				},
+			):
+				frappe.db.set_value(
+					"Subscription",
+					existing_subscription,
+					{
+						"enabled": 1,
+						"additional_storage": add_on_storage_subscription.additional_storage,
+					},
+				)
+				add_on_storage_subscription.disable()
+			else:
+				frappe.db.set_value(
+					"Subscription", add_on_storage_subscription.name, {"team": self.team, "enabled": 1}
+				)
+
 	def get_doc(self, doc):
 		doc = super().get_doc(doc)
 		doc.mariadb_variables = {
