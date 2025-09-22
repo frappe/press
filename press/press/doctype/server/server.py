@@ -2063,49 +2063,9 @@ class Server(BaseServer):
 		else:
 			try:
 				# create new subscription
-				self.create_subscription()
+				self.create_subscription(self.plan)
 			except Exception:
 				frappe.log_error("Server Subscription Creation Error")
-
-		add_on_storage_subscription = self.add_on_storage_subscription
-		if add_on_storage_subscription:
-			if existing_subscription := frappe.db.get_value(
-				"Subscription",
-				filters={
-					"document_type": self.doctype,
-					"document_name": self.name,
-					"team": self.team,
-					"plan_type": "Server Storage Plan",
-				},
-			):
-				frappe.db.set_value(
-					"Subscription",
-					existing_subscription,
-					{
-						"enabled": 1,
-						"additional_storage": add_on_storage_subscription.additional_storage,
-					},
-				)
-				add_on_storage_subscription.disable()
-			else:
-				frappe.db.set_value(
-					"Subscription", add_on_storage_subscription.name, {"team": self.team, "enabled": 1}
-				)
-		else:
-			try:
-				# create new subscription
-				frappe.get_doc(
-					{
-						"doctype": "Subscription",
-						"document_type": self.doctype,
-						"document_name": self.name,
-						"team": self.team,
-						"plan_type": "Server Storage Plan",
-						"plan": add_on_storage_subscription.plan,
-					}
-				).insert()
-			except Exception:
-				frappe.log_error("Server Storage Subscription Creation Error")
 
 	@frappe.whitelist()
 	def setup_ncdu(self):

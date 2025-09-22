@@ -440,7 +440,6 @@ class SelfHostedServer(Document):
 				},
 			).insert()
 
-			server.create_subscription(self.plan)
 			self.server = server.name
 			self.status = "Active"
 			self.server_created = True

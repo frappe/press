@@ -119,7 +119,6 @@ class TestServer(FrappeTestCase):
 		create_test_press_settings()
 		server_plan = create_test_server_plan()
 		server = create_test_server(plan=server_plan.name)
-		server.create_subscription(server_plan.name)
 		self.assertEqual(server.team, server.subscription.team)
 		self.assertEqual(server.plan, server.subscription.plan)
 
@@ -127,7 +126,6 @@ class TestServer(FrappeTestCase):
 		create_test_press_settings()
 		server_plan = create_test_server_plan()
 		server = create_test_server(plan=server_plan.name)
-		server.create_subscription(server_plan.name)
 
 		self.assertEqual(server.team, server.subscription.team)
 		self.assertEqual(server.plan, server.subscription.plan)
@@ -146,9 +144,6 @@ class TestServer(FrappeTestCase):
 		db_server = frappe.get_doc("Database Server", server.database_server)
 		db_server.plan = db_server_plan.name
 		db_server.save()
-
-		server.create_subscription(server_plan.name)
-		db_server.create_subscription(db_server_plan.name)
 
 		self.assertEqual(server.team, db_server.team)
 
