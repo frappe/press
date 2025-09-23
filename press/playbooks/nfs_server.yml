@@ -1,0 +1,23 @@
+---
+- name: Setup NFS Server
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  roles:
+    - role: essentials
+    - role: user
+    - role: nginx
+    - role: agent
+    - role: mount
+    - role: node_exporter
+    - role: filebeat
+    - role: clamav
+    - role: warning_banners
+    - role: auditd
+    - role: sshd_hardening
+    - role: pam
+    - role: gpg_config
+    - role: aide
+    - role: additional_process_hardening
+    - role: nfs_server

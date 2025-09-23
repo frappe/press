@@ -1,0 +1,16 @@
+---
+- name: Update APT cache
+  apt:
+    update_cache: yes
+
+- name: Install NFS Kernel
+  apt:
+    name: nfs-kernel-server
+    state: present
+
+- name: Enable and start NFS Server
+  service:
+    name: nfs-server
+    enabled: yes
+    state: started
+
