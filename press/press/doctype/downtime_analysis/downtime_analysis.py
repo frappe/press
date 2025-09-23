@@ -136,3 +136,6 @@ class DowntimeAnalysis(Document):
 
 	def check_if_latest(self):
 		pass
+
+	def _validate_links(self):
+		pass
