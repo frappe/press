@@ -188,8 +188,14 @@ class Ansible:
 		self.create_ansible_play()
 
 	def _get_ssh_proxy_commad(self, server):
+		# Note: ProxyCommand must be enclosed in double quotes
+		# because it contains spaces
+		# and the entire argument must be enclosed in single quotes
+		# because it is passed via the CLI
+		# See https://docs.ansible.com/ansible/latest/user_guide/connection_details.html#ssh-args
+		# and https://unix.stackexchange.com/a/303717
+		# for details
 		proxy_command = None
-
 		if hasattr(self.server, "bastion_host") and self.server.bastion_host:
 			proxy_command = f'-o ProxyCommand="ssh -W %h:%p \
 					{server.bastion_host.ssh_user}@{server.bastion_host.ip} \
