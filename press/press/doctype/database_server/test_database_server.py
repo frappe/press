@@ -32,6 +32,7 @@ def create_test_database_server(ip=None, cluster="Default") -> DatabaseServer:
 			"cluster": cluster,
 			"ram": 16384,
 			"virtual_machine": create_test_virtual_machine().name,
+			"provider": "AWS EC2",
 		}
 	).insert(ignore_if_duplicate=True)
 	server.reload()

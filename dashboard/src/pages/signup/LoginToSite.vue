@@ -154,7 +154,11 @@ export default {
 				realtime: true,
 				auto: true,
 				onSuccess(doc) {
-					if (doc.status == 'Site Created') this.loginToSite();
+					if (doc.status == 'Site Created') {
+						setTimeout(() => {
+							this.loginToSite();
+						}, 2000);
+					}
 					else if (
 						doc.status == 'Wait for Site' ||
 						doc.status == 'Prefilling Setup Wizard'
@@ -172,8 +176,11 @@ export default {
 							};
 						},
 						onSuccess: (data) => {
-							if (data.status === 'Site Created') {
-								return this.loginToSite();
+							if (data.current_step === 'Site Created') {
+								setTimeout(() => {
+									this.loginToSite();
+								}, 2000);
+								return;
 							}
 
 							const currentStepMap = {

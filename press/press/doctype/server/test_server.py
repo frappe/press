@@ -37,6 +37,7 @@ def create_test_server(
 	platform: str = "x86_64",
 	use_for_build: bool = False,
 	is_self_hosted: bool = False,
+	auto_increase_storage: bool = False,
 ) -> "Server":
 	"""Create test Server doc."""
 	if not proxy_server:
@@ -65,6 +66,7 @@ def create_test_server(
 			"platform": platform,
 			"use_for_build": use_for_build,
 			"is_self_hosted": is_self_hosted,
+			"auto_increase_storage": auto_increase_storage,
 		}
 	).insert()
 	server.reload()
@@ -117,36 +119,43 @@ class TestServer(FrappeTestCase):
 		create_test_press_settings()
 		server_plan = create_test_server_plan()
 		server = create_test_server(plan=server_plan.name)
-		server.create_subscription(server.plan)
-		subscription = frappe.get_doc(
-			"Subscription",
-			{"document_type": "Server", "document_name": server.name, "enabled": 1},
-		)
-		self.assertEqual(server.team, subscription.team)
-		self.assertEqual(server.plan, subscription.plan)
+		self.assertEqual(server.team, server.subscription.team)
+		self.assertEqual(server.plan, server.subscription.plan)
 
-	def test_new_subscription_on_server_team_update(self):
+	def test_subscription_team_update_on_server_team_update(self):
 		create_test_press_settings()
 		server_plan = create_test_server_plan()
 		server = create_test_server(plan=server_plan.name)
-		server.create_subscription(server.plan)
-		subscription = frappe.get_doc(
-			"Subscription",
-			{"document_type": "Server", "document_name": server.name, "enabled": 1},
-		)
-		self.assertEqual(server.team, subscription.team)
-		self.assertEqual(server.plan, subscription.plan)
+
+		self.assertEqual(server.team, server.subscription.team)
+		self.assertEqual(server.plan, server.subscription.plan)
 
 		# update server team
 		team2 = create_test_team()
 		server.team = team2.name
 		server.save()
-		subscription = frappe.get_doc(
-			"Subscription",
-			{"document_type": "Server", "document_name": server.name, "enabled": 1},
-		)
-		self.assertEqual(server.team, subscription.team)
-		self.assertEqual(server.plan, subscription.plan)
+		self.assertEqual(server.team, server.subscription.team)
+
+	def test_db_server_team_update_on_server_team_update(self):
+		create_test_press_settings()
+		server_plan = create_test_server_plan()
+		db_server_plan = create_test_server_plan("Database Server")
+		server = create_test_server(plan=server_plan.name)
+		db_server = frappe.get_doc("Database Server", server.database_server)
+		db_server.plan = db_server_plan.name
+		db_server.save()
+
+		self.assertEqual(server.team, db_server.team)
+
+		# update server team
+		team2 = create_test_team()
+		server.team = team2.name
+		server.save()
+		server.reload()
+		db_server.reload()
+		self.assertEqual(server.team, db_server.team)
+		self.assertEqual(server.subscription.team, server.team)
+		self.assertEqual(server.subscription.team, db_server.subscription.team)
 
 	def tearDown(self):
 		frappe.db.rollback()

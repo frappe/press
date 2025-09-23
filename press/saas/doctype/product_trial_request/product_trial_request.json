@@ -20,7 +20,10 @@
   "site_creation_started_on",
   "is_standby_site",
   "column_break_bvut",
-  "site_creation_completed_on"
+  "site_creation_completed_on",
+  "is_site_accessible",
+  "errors_tab",
+  "error"
  ],
  "fields": [
   {
@@ -115,12 +118,31 @@
    "fieldname": "is_standby_site",
    "fieldtype": "Check",
    "label": "Is Standby Site"
+  },
+  {
+   "default": "Not Checked",
+   "fieldname": "is_site_accessible",
+   "fieldtype": "Select",
+   "label": "Is Site Accessible",
+   "options": "Not Checked\nYes\nNo",
+   "read_only": 1
+  },
+  {
+   "fieldname": "errors_tab",
+   "fieldtype": "Tab Break",
+   "label": "Errors"
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Code",
+   "label": "Error",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-29 15:49:08.389380",
+ "modified": "2025-08-25 11:10:51.808901",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial Request",

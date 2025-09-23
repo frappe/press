@@ -35,7 +35,8 @@
    "label": "Server Type",
    "options": "DocType",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "server",
@@ -45,7 +46,8 @@
    "label": "Server",
    "options": "server_type",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "playbook",
@@ -78,7 +80,8 @@
    "in_standard_filter": 1,
    "label": "Play",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "statistics_section",
@@ -140,7 +143,8 @@
    "label": "Status",
    "options": "Pending\nRunning\nSuccess\nFailure",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "section_break_7",
@@ -169,10 +173,11 @@
    "read_only": 1
   }
  ],
+ "grid_page_length": 50,
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-11-01 18:41:41.302964",
+ "modified": "2025-09-16 14:55:11.607375",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Ansible Play",
@@ -201,6 +206,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

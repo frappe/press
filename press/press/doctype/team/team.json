@@ -54,6 +54,7 @@
   "erpnext_partner",
   "partner_email",
   "column_break_ooyo",
+  "partner_status",
   "partner_tier",
   "website_info_section",
   "company_logo",
@@ -576,6 +577,12 @@
    "label": "Apply NPO Discount"
   },
   {
+   "fieldname": "partner_status",
+   "fieldtype": "Select",
+   "label": "Partner Status",
+   "options": "Active\nInactive"
+  },
+  {
    "default": "0",
    "description": "If checked, members will not be forced to go through the onboarding",
    "fieldname": "skip_onboarding",
@@ -646,7 +653,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2025-07-16 09:33:39.442432",
+ "modified": "2025-08-20 20:17:16.581425",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
@@ -670,6 +677,15 @@
    "read": 1,
    "role": "Press Admin",
    "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "role": "Press Marketplace Manager",
+   "select": 1,
+   "share": 1
   }
  ],
  "quick_entry": 1,

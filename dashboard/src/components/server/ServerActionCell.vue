@@ -23,14 +23,12 @@
 <script setup>
 import { getCachedDocumentResource, createDocumentResource } from 'frappe-ui';
 import { toast } from 'vue-sonner';
-import {
-	confirmDialog,
-	renderDialog,
-	renderInDialog,
-} from '../../utils/components';
+import { confirmDialog, renderDialog } from '../../utils/components';
 import router from '../../router';
 import { getToastErrorMessage } from '../../utils/toast';
 import DatabaseConfigurationDialog from './DatabaseConfigurationDialog.vue';
+import DatabaseBinlogsDialog from './DatabaseBinlogsDialog.vue';
+import CleanupDialog from './CleanupDialog.vue';
 import { h } from 'vue';
 
 const props = defineProps({
@@ -50,15 +48,27 @@ function getServerActionHandler(action) {
 		'Reboot server': onRebootServer,
 		'Rename server': onRenameServer,
 		'Drop server': onDropServer,
+		'Cleanup Server': onCleanupServer,
 		'Enable Performance Schema': onEnablePerformanceSchema,
 		'Disable Performance Schema': onDisablePerformanceSchema,
 		'Update InnoDB Buffer Pool Size': onUpdateInnodbBufferPoolSize,
 		'Update Max DB Connections': onUpdateMaxDBConnections,
 		'View Database Configuration': onViewDatabaseConfiguration,
+		'Update Binlog Retention': onUpdateBinlogRetention,
+		'Manage Database Binlogs': onViewMariaDBBinlogs,
 	};
 	if (actionHandlers[action]) {
 		actionHandlers[action].call(this);
 	}
+}
+
+function onCleanupServer() {
+	renderDialog(
+		h(CleanupDialog, {
+			server: server,
+			title: 'Server Cleanup',
+		}),
+	);
 }
 
 function onRebootServer() {
@@ -343,6 +353,59 @@ function onUpdateInnodbBufferPoolSize() {
 			);
 		},
 	});
+}
+
+function onUpdateBinlogRetention() {
+	if (!server.updateBinlogRetention) return;
+	confirmDialog({
+		title: 'Update Binlog Retention',
+		message: `Are you sure you want to change the Binlog Retention of the database server <b>${server.doc.name}</b> ? <br><br> Recommended Binlog Retention is <b>${server.doc.mariadb_variables_recommended_values.expire_logs_days} days</b>`,
+		fields: [
+			{
+				label: 'Enter the new Binlog Retention (days)',
+				fieldname: 'days',
+				type: 'number',
+				default: server.doc.mariadb_variables.expire_logs_days,
+			},
+		],
+		primaryAction: {
+			label: 'Update Binlog Retention',
+		},
+		onSuccess({ hide, values }) {
+			if (server.updateBinlogRetention.loading) return;
+			toast.promise(
+				server.updateBinlogRetention.submit(
+					{
+						days: parseInt(values.days),
+					},
+					{
+						onSuccess() {
+							hide();
+						},
+					},
+				),
+				{
+					loading: 'Updating Binlog Retention...',
+					success: 'Binlog Retention updated',
+					error: () =>
+						getToastErrorMessage(
+							server.updateBinlogRetention.error ||
+								'Failed to update Binlog Retention',
+						),
+					duration: 5000,
+				},
+			);
+		},
+	});
+}
+
+function onViewMariaDBBinlogs() {
+	if (!server.getBinlogsInfo) return;
+	renderDialog(
+		h(DatabaseBinlogsDialog, {
+			databaseServer: server.doc.name,
+		}),
+	);
 }
 
 function onUpdateMaxDBConnections() {

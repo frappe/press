@@ -32,6 +32,6 @@ def get_context(context):
 		except Exception:
 			log_error("GitHub App Creation Error", code=code, response=response)
 
-	redirect_url = frappe.utils.get_url("/desk#Form/Press Settings")
+	redirect_url = frappe.utils.get_url("/app#Form/Press Settings")
 	frappe.flags.redirect_location = redirect_url
 	raise frappe.Redirect

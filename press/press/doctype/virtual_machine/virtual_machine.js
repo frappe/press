@@ -275,68 +275,73 @@ frappe.ui.form.on('Virtual Machine', {
 			frm.add_custom_button(
 				__('Attach New Volume'),
 				() => {
-					if (frm.doc.cloud_provider == 'AWS') {
-						frappe.prompt(
-							[
-								{
-									fieldtype: 'Int',
-									label: 'Size',
-									fieldname: 'size',
-									reqd: 1,
-									default: 10,
-								},
-								{
-									fieldtype: 'Int',
-									label: 'IOPS',
-									fieldname: 'iops',
-									reqd: 1,
-									default: 3000,
-								},
-								{
-									fieldtype: 'Int',
-									label: 'Throughput (MB/s)',
-									fieldname: 'throughput',
-									reqd: 1,
-									default: 125,
-								},
-							],
-							({ size, iops, throughput }) => {
-								frm
-									.call('attach_new_volume', {
-										size,
-										iops,
-										throughput,
-									})
-									.then((r) => frm.refresh());
+					frappe.prompt(
+						[
+							{
+								fieldtype: 'Int',
+								label: 'Size',
+								fieldname: 'size',
+								reqd: 1,
+								default: 10,
 							},
-							__('Attach New Volume'),
-						);
-					} else if (frm.doc.cloud_provider == 'Hetzner') {
-						// This code directly jumps to attach_volume
-						// instead of attach_new_volume. Because, unlike AWS
-						// Hetzner allows you to create a volume and then directly
-						// attach it to a server. Hence, this clause chucks nonsense
-						// (Yes, I'm talking about you AWS!).
-						frappe.prompt(
-							[
-								{
-									fieldtype: 'Int',
-									label: 'Size',
-									fieldname: 'size',
-									reqd: 1,
-									default: 100,
-								},
-							],
-							({ size }) => {
-								frm
-									.call('attach_volume_job', {
-										size,
-									})
-									.then((r) => frm.refresh());
+							{
+								fieldtype: 'Int',
+								label: 'IOPS',
+								fieldname: 'iops',
+								reqd: 1,
+								default: 3000,
 							},
-							__('Attach New Volume'),
-						);
-					}
+							{
+								fieldtype: 'Int',
+								label: 'Throughput (MB/s)',
+								fieldname: 'throughput',
+								reqd: 1,
+								default: 125,
+							},
+						],
+						({ size, iops, throughput }) => {
+							frm
+								.call('attach_new_volume', {
+									size,
+									iops,
+									throughput,
+								})
+								.then((r) => frm.refresh());
+						},
+						__('Attach New Volume'),
+					);
+				},
+				__('Actions'),
+			);
+
+			frm.add_custom_button(
+				'Attach Volume',
+				() => {
+					frappe.prompt(
+						[
+							{
+								fieldtype: 'Data',
+								label: 'Volume ID',
+								fieldname: 'volume_id',
+								reqd: 1,
+							},
+							{
+								fieldtype: 'Check',
+								label: 'Is Temporary Volume ?',
+								fieldname: 'is_temporary_volume',
+								default: 1,
+							},
+						],
+						({ volume_id, is_temporary_volume }) => {
+							frm
+								.call('attach_volume', {
+									volume_id,
+									is_temporary_volume,
+								})
+								.then((r) => frm.refresh());
+						},
+						__('Attach Volume'),
+					);
 				},
 				__('Actions'),
 			);

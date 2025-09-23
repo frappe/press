@@ -95,14 +95,20 @@ class PrometheusAlertRule(Document):
 		return rules_dict
 
 	def get_routes(self):
+		webhook_token = frappe.db.get_value(
+			"Monitor Server", frappe.db.get_single_value("Press Settings", "monitor_server"), "webhook_token"
+		)
+
+		callback_url = frappe.utils.get_url("api/method/press.api.monitoring.alert")
+		if webhook_token:
+			callback_url = f"{callback_url}?webhook_token={webhook_token}"
+
 		routes_dict = {
 			"route": {"receiver": "web.hook", "routes": []},
 			"receivers": [
 				{
 					"name": "web.hook",
-					"webhook_configs": [
-						{"url": frappe.utils.get_url("api/method/press.api.monitoring.alert")}
-					],
+					"webhook_configs": [{"url": callback_url}],
 				}
 			],
 		}

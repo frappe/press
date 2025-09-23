@@ -10,6 +10,7 @@
   "hostname_abbreviation",
   "domain",
   "self_hosted_server_domain",
+  "tls_certificate_renewal_failed",
   "column_break_3",
   "cluster",
   "provider",
@@ -208,7 +209,7 @@
    "options": "Proxy Server Domain"
   },
   {
-   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\"].includes(doc.provider)depends_on",
+   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\"].includes(doc.provider)",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
@@ -428,6 +429,13 @@
    "fieldname": "halt_agent_jobs",
    "fieldtype": "Check",
    "label": "Halt Agent Jobs"
+  },
+  {
+   "default": "0",
+   "fieldname": "tls_certificate_renewal_failed",
+   "fieldtype": "Check",
+   "label": "TLS Certificate Renewal Failed",
+   "read_only": 1
   }
  ],
  "links": [],
