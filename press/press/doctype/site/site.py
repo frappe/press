@@ -838,9 +838,12 @@ class Site(Document, TagHelpers):
 
 		if hasattr(self, "share_details_consent") and self.share_details_consent:
 			# create partner lead
-			frappe.get_doc(doctype="Partner Lead", team=self.team, site=self.name).insert(
-				ignore_permissions=True
-			)
+			frappe.get_doc(
+				doctype="Site Partner Lead",
+				team=self.team,
+				site=self.name,
+				created_on=frappe.utils.now_datetime(),
+			).insert(ignore_permissions=True)
 
 		add_permission_for_newly_created_doc(self)
 

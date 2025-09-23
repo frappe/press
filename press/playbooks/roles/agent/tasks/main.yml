@@ -6,6 +6,8 @@
     repo: '{{ agent_repository_url }}'
     dest: /home/frappe/agent/repo
     remote: upstream
+    version: master
+    update: yes
 
 - name: Install Agent
   become: yes
