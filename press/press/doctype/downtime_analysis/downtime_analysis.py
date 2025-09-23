@@ -133,6 +133,3 @@ class DowntimeAnalysis(Document):
 	@staticmethod
 	def get_stats(**kwargs):
 		pass
-
-	def check_if_latest(self):
-		pass
