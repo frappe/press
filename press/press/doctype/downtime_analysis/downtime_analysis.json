@@ -100,6 +100,7 @@
   {
    "fieldname": "raw_data",
    "fieldtype": "Long Text",
+   "hidden": 1,
    "label": "Raw Data",
    "read_only": 1
   }
@@ -110,7 +111,7 @@
  "is_virtual": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-09-23 13:26:16.001874",
+ "modified": "2025-09-23 14:57:02.949448",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Downtime Analysis",
