@@ -2688,6 +2688,10 @@ class Server(BaseServer):
 
 	@property
 	def domains(self):
+		if (
+			self.is_self_hosted
+		):  # to avoid pushing certificates to self hosted servers on setup_wildcard_hosts
+			return []
 		return [
 			frappe._dict({"domain": domain.name, "code_server": False})
 			for domain in frappe.get_all(
