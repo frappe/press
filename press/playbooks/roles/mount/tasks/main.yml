@@ -147,7 +147,7 @@
     - rotate_additional_volume_metadata | default(false) | bool
   loop_control:
     label: '{{ item.target_device }}'
-  ignore_errors: true
+  failed_when: false
 
 - name: Set New UUID and Label For ext4 Devices
   command: tune2fs -U {{ item.new_uuid }} -L {{ item.new_label }} {{ item.target_device }}
