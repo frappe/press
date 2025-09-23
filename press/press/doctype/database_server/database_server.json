@@ -123,15 +123,13 @@
    "fieldname": "ip",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "IP",
-   "read_only": 1
+   "label": "IP"
   },
   {
    "fetch_from": "virtual_machine.private_ip_address",
    "fieldname": "private_ip",
    "fieldtype": "Data",
-   "label": "Private IP",
-   "read_only": 1
+   "label": "Private IP"
   },
   {
    "fieldname": "mariadb_section",
@@ -676,7 +674,11 @@
    "link_fieldname": "database_server"
   }
  ],
+<<<<<<< HEAD
  "modified": "2025-09-02 16:43:24.080843",
+=======
+ "modified": "2025-09-23 18:38:12.734001",
+>>>>>>> 168e576a5 (fix: Remove `ro` for IP fields)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
