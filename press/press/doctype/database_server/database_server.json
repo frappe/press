@@ -113,15 +113,13 @@
    "fieldname": "ip",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "IP",
-   "read_only": 1
+   "label": "IP"
   },
   {
    "fetch_from": "virtual_machine.private_ip_address",
    "fieldname": "private_ip",
    "fieldtype": "Data",
-   "label": "Private IP",
-   "read_only": 1
+   "label": "Private IP"
   },
   {
    "fieldname": "mariadb_section",
@@ -614,7 +612,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-08-14 02:08:52.404846",
+ "modified": "2025-09-23 18:38:12.734001",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
