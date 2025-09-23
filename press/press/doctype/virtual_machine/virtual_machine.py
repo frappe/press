@@ -1068,20 +1068,11 @@ class VirtualMachine(Document):
 			if server:
 				server = server[0]
 				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
-<<<<<<< HEAD
-=======
 				frappe.db.set_value(doctype, server, "private_ip", self.private_ip_address)
-<<<<<<< HEAD
 				frappe.db.set_value(doctype, server, "is_static_ip", self.is_elastic_ip_aws())
->>>>>>> 8607f04bb (refactor(cluster): Offload elastic ip check logic to a member function (#3288))
-=======
 				if doctype == "Server":
-<<<<<<< HEAD
 					frappe.db.set_value(doctype, server, "is_static_ip", self.is_elastic_ip_aws())
->>>>>>> 8d459d9e3 (fix(virtual-machine): Don't set field not in other doctypes)
-=======
 					frappe.db.set_value(doctype, server, "is_static_ip", self.is_static_ip)
->>>>>>> 5caadd70d (refactor(vm): Remove redundant ec2 describe call)
 				if doctype in ["Server", "Database Server"]:
 					frappe.db.set_value(doctype, server, "ram", self.ram)
 				if self.public_ip_address and self.has_value_changed("public_ip_address"):
