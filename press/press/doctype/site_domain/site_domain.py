@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 import frappe
 import rq
@@ -18,6 +18,9 @@ from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
 from press.utils.dns import create_dns_record
 from press.utils.jobs import has_job_timeout_exceeded
+
+if TYPE_CHECKING:
+	from press.press.doctype.site.site import Site
 
 
 class SiteDomain(Document):
@@ -105,7 +108,7 @@ class SiteDomain(Document):
 		return bool(frappe.db.exists("Root Domain", self.domain.split(".", 1)[1], "name"))
 
 	def setup_redirect_in_proxy(self):
-		site = frappe.get_doc("Site", self.site)
+		site: Site = frappe.get_doc("Site", self.site)
 		target = site.host_name
 		if target == self.name:
 			frappe.throw("Primary domain can't be redirected.", exc=frappe.exceptions.ValidationError)
