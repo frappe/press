@@ -44,7 +44,7 @@ class NFSServer(BaseServer):
 
 	def validate(self):
 		self.validate_agent_password()
-		# self.validate_monitoring_password()
+		self.validate_monitoring_password()
 
 	def validate_monitoring_password(self):
 		if not self.monitoring_password:
@@ -111,16 +111,16 @@ class NFSServer(BaseServer):
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
-			"_mount_fs_on_client_and_copy_sites",
+			"_mount_fs_on_client_and_copy_benches",
 			client_server=server,
 			using_fs_of_server=use_file_system_of_server or server,
 			queue="long",
 		)
 
-	def _mount_fs_on_client_and_copy_sites(self, client_server: str, using_fs_of_server: str) -> None:
+	def _mount_fs_on_client_and_copy_benches(self, client_server: str, using_fs_of_server: str) -> None:
 		try:
 			ansible = Ansible(
-				playbook="share_sites_on_nfs.yml",
+				playbook="share_benches_on_nfs.yml",
 				server=frappe.get_doc("Server", client_server),
 				user=self._ssh_user(),
 				port=self._ssh_port(),

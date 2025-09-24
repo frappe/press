@@ -1,0 +1,41 @@
+---
+- name: Find bench directories
+  find:
+    paths: /home/frappe/benches/
+    file_type: directory
+    depth: 1
+  register: bench_dirs
+
+- name: Compress All Assets
+  shell: tar -czvf {{ item.path }}/sites/transfer-ready-assets.tar.gz -C {{ item.path }}/sites assets
+  loop: "{{ bench_dirs.files }}"
+
+
+- name: Move Benches to Shared Directory
+  shell: rsync -av --inplace --sparse --no-whole-file --exclude='assets/' /home/frappe/benches/* /shared/
+  become: yes
+  become_user: frappe
+
+- name: Find transferred bench directories
+  find:
+    paths: /shared/
+    file_type: directory
+    depth: 1
+  register: shared_bench_dirs
+
+- name: Inflate All Assets
+  unarchive:
+    src: "{{ item.path }}/sites/transfer-ready-assets.tar.gz"
+    dest: "{{ item.path }}/sites/"
+    remote_src: yes
+  loop: "{{ shared_bench_dirs.files }}"
+  become: yes
+  become_user: frappe
+
+- name: Delete Transfer Files
+  file:
+    path: "{{ item.path }}/sites/transfer-ready-assets.tar.gz"
+    state: absent
+  loop: "{{ shared_bench_dirs.files }}"
+  become: yes
+  become_user: frappe
