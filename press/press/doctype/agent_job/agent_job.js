@@ -14,7 +14,7 @@ frappe.ui.form.on('Agent Job', {
 			__('Visit Dashboard'),
 		);
 
-		if (!['Success', 'Failure', 'Delivery Failure'].includes(frm.doc.status)) {
+		if (!['Success', 'Delivery Failure'].includes(frm.doc.status)) {
 			frm.add_custom_button(
 				__('Get Status'),
 				() => {
@@ -52,7 +52,11 @@ frappe.ui.form.on('Agent Job', {
 				__('Succeed and Process Job Updates'),
 				'succeed_and_process_job_updates',
 			],
-			[__('Cancel Job'), 'cancel_job', ['Pending', "Running"].includes(frm.doc.status)],
+			[
+				__('Cancel Job'),
+				'cancel_job',
+				['Pending', 'Running'].includes(frm.doc.status),
+			],
 		].forEach(([label, method, condition]) => {
 			frm.add_custom_button(
 				label,

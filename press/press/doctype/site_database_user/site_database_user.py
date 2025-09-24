@@ -58,6 +58,11 @@ class SiteDatabaseUser(Document):
 		"max_connections",
 	)
 
+	def has_permission(self, perm_type):
+		team = frappe.get_value("Site", self.site, "team")
+		owner = frappe.get_value("Team", team, "user")
+		return frappe.session.user == owner or frappe.local.system_user()
+
 	def validate(self):
 		if not self.has_value_changed("status"):
 			self._raise_error_if_archived()

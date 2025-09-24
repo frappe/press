@@ -89,6 +89,7 @@ class VirtualMachine(Document):
 		has_data_volume: DF.Check
 		index: DF.Int
 		instance_id: DF.Data | None
+		is_static_ip: DF.Check
 		kms_key_id: DF.Data | None
 		machine_image: DF.Data | None
 		machine_type: DF.Data
@@ -761,7 +762,7 @@ class VirtualMachine(Document):
 			self.series,
 			self.name,
 			action="Disk Size Change",
-			reason=f"{'Root' if is_root_volume else 'Data'} volume increased by {increment}",
+			reason=f"{'Root' if is_root_volume else 'Data'} volume increased by {increment} GB",
 		)
 
 		self.save()
@@ -950,6 +951,15 @@ class VirtualMachine(Document):
 		self.save()
 		self.update_servers()
 
+	def has_static_ip(self, instance) -> bool:
+		sip = False
+		try:
+			ip_owner_id = instance["NetworkInterfaces"][0]["Association"]["IpOwnerId"]
+			sip = ip_owner_id.lower() != "amazon"
+		except (KeyError, IndexError):
+			pass
+		return sip
+
 	def _sync_aws(self, response=None):  # noqa: C901
 		if not response:
 			try:
@@ -965,11 +975,11 @@ class VirtualMachine(Document):
 
 			self.public_ip_address = instance.get("PublicIpAddress")
 			self.private_ip_address = instance.get("PrivateIpAddress")
+			self.is_static_ip = self.has_static_ip(instance)
 
 			self.public_dns_name = instance.get("PublicDnsName")
 			self.private_dns_name = instance.get("PrivateDnsName")
 			self.platform = instance.get("Architecture", "x86_64")
-
 			attached_volumes = []
 			attached_devices = []
 			for volume_index, volume in enumerate(self.get_volumes(), start=1):  # idx starts from 1
@@ -1064,6 +1074,8 @@ class VirtualMachine(Document):
 				server = server[0]
 				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
 				frappe.db.set_value(doctype, server, "private_ip", self.private_ip_address)
+				if doctype == "Server":
+					frappe.db.set_value(doctype, server, "is_static_ip", self.is_static_ip)
 				if doctype in ["Server", "Database Server"]:
 					frappe.db.set_value(doctype, server, "ram", self.ram)
 				if self.public_ip_address and self.has_value_changed("public_ip_address"):
@@ -1134,7 +1146,12 @@ class VirtualMachine(Document):
 			TagSpecifications=[
 				{
 					"ResourceType": "snapshot",
-					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - {frappe.utils.now()}"}],
+					"Tags": [
+						{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - {frappe.utils.now()}"},
+						{"Key": "Physical Backup", "Value": "Yes" if physical_backup else "No"},
+						{"Key": "Rolling Snapshot", "Value": "Yes" if rolling_snapshot else "No"},
+						{"Key": "Dedicated Snapshot", "Value": "Yes" if dedicated_snapshot else "No"},
+					],
 				},
 			],
 		)
