@@ -42,5 +42,27 @@ frappe.ui.form.on('NFS Server', {
 				);
 			}
 		});
+		if (frm.doc.status === 'Active') {
+			frm.add_custom_button('Add Mount Enabled Server', () => {
+				frappe.prompt(
+					[
+						{
+							fieldtype: 'Link',
+							fieldname: 'server',
+							label: 'Server',
+							options: 'Server',
+							reqd: 1,
+						},
+					],
+					({ server }) => {
+						frm
+							.call('add_mount_enabled_server', { server: server })
+							.then((r) => {
+								frm.refresh();
+							});
+					},
+				);
+			});
+		}
 	},
 });

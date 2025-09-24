@@ -6,8 +6,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "server",
-  "private_ip"
+  "server"
  ],
  "fields": [
   {
@@ -17,20 +16,13 @@
    "label": "Server",
    "options": "Server",
    "reqd": 1
-  },
-  {
-   "fieldname": "private_ip",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Private IP",
-   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-09-24 00:28:13.750998",
+ "modified": "2025-09-24 10:46:14.406295",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mount Enabled Server",
