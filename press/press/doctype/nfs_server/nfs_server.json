@@ -217,9 +217,13 @@
   {
    "link_doctype": "Ansible Play",
    "link_fieldname": "server"
+  },
+  {
+   "link_doctype": "Agent Job",
+   "link_fieldname": "server"
   }
  ],
- "modified": "2025-09-24 00:50:31.651670",
+ "modified": "2025-09-24 14:55:56.963201",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "NFS Server",

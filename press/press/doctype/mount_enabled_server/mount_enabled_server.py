@@ -23,6 +23,8 @@ class MountEnabledServer(Document):
 		parentfield: DF.Data
 		parenttype: DF.Data
 		server: DF.Link
+		share_file_system: DF.Check
+		use_file_system_of_server: DF.Link | None
 	# end: auto-generated types
 
 	def after_insert(self):
@@ -30,5 +32,12 @@ class MountEnabledServer(Document):
 		private_ip = frappe.db.get_value("Server", self.server, "private_ip")
 		nfs_server.agent.post(
 			"/nfs/exports",
-			data={"server": self.server, "private_ip": private_ip},
+			data={
+				"server": self.server,
+				"private_ip": private_ip,
+				"share_file_system": self.share_file_system,
+				"use_file_system_of_server": self.use_file_system_of_server,
+			},
 		)
+
+	def on_delete(self): ...
