@@ -33,11 +33,7 @@ repos:
       - id: check-yaml
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-<<<<<<< HEAD
-    rev: v0.11.10
-=======
     rev: v0.13.1
->>>>>>> a413b97ee (test(cluster): Don't assert on empty Exception)
     hooks:
       - id: ruff
         args: [--fix]
