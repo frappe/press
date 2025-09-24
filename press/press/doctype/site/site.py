@@ -4422,3 +4422,35 @@ def suspend_sites_exceeding_disk_usage_for_last_7_days():
 			# Check once again and suspend if still exceeds limits
 			site: Site = frappe.get_doc("Site", site.name)
 			site.suspend(reason="Site Usage Exceeds Plan limits", skip_reload=True)
+
+
+def create_subscription_for_trial_sites():
+	# Get sites that are in "Site Created" status and has no entry in "Site Plan Change"
+	# For those sites, invoke "Create Subscription" that puts entry into "Site Plan Change" and "Subscription"
+	active_sites = frappe.db.sql(
+		"""
+		SELECT trial.site, producttrial.trial_plan
+		FROM `tabProduct Trial Request` trial
+		LEFT JOIN `tabSite Plan Change` siteplanchange
+		ON trial.site = siteplanchange.name
+		LEFT JOIN `tabProduct Trial`  producttrial ON trial.product_trial = producttrial.name WHERE trial.is_subscription_created = 0 AND siteplanchange.name is NULL AND trial.status="Site Created" LIMIT 25;
+		""",
+		as_dict=True,
+	)
+	frappe.log(f"Creating subscription for the sites {active_sites}")
+	for trial_site in active_sites:
+		if has_job_timeout_exceeded():
+			return
+		try:
+			site: Site = frappe.get_doc("Site", trial_site.site)
+			site.create_subscription(trial_site.trial_plan)
+			frappe.db.set_value(
+				"Product Trial Request",
+				{"site": trial_site.site},
+				{"is_subscription_created": 1},
+				update_modified=False,
+			)
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			log_error(title="Creating subscription for trial sites", site=trial_site)
