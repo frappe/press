@@ -8,6 +8,7 @@ import frappe
 import responses
 from frappe.tests.utils import FrappeTestCase
 
+from press.agent import Agent
 from press.api.site import all
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
@@ -24,6 +25,7 @@ from press.press.doctype.marketplace_app.test_marketplace_app import (
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
+	mock_image_size,
 )
 from press.press.doctype.remote_file.remote_file import RemoteFile
 from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
@@ -769,6 +771,7 @@ erpnext 0.8.3	    HEAD
 	@patch("press.press.doctype.site_migration.site_migration.frappe.db.commit", new=MagicMock)
 	@patch("press.press.doctype.agent_job.agent_job.frappe.enqueue_doc", new=foreground_enqueue_doc)
 	@patch("press.press.doctype.agent_job.agent_job.frappe.enqueue", new=foreground_enqueue)
+	@patch.object(Agent, "get", mock_image_size(3))
 	def test_site_change_region(self):
 		from press.api.site import change_region, change_region_options
 
@@ -884,6 +887,7 @@ erpnext 0.8.3	    HEAD
 		new=Mock(),
 	)
 	@patch("press.press.doctype.site_migration.site_migration.frappe.db.commit", new=MagicMock)
+	@patch.object(Agent, "get", mock_image_size(3))
 	def test_site_change_server(self):
 		from press.api.site import (
 			change_server,

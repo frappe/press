@@ -41,6 +41,7 @@ class AnalyticsServer(BaseServer):
 		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
 		root_public_key: DF.Code | None
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		tls_certificate_renewal_failed: DF.Check
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
 
@@ -66,9 +67,7 @@ class AnalyticsServer(BaseServer):
 
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
 		if log_server:
-			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
-				"kibana_password"
-			)
+			kibana_password = frappe.get_doc("Log Server", log_server).get_password("kibana_password")
 		else:
 			kibana_password = None
 

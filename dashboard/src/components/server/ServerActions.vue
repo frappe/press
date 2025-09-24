@@ -87,6 +87,8 @@ export default {
 					getMariadbVariables: 'get_mariadb_variables',
 					updateInnodbBufferPoolSize: 'update_innodb_buffer_pool_size',
 					updateMaxDbConnections: 'update_max_db_connections',
+					updateBinlogRetention: 'update_binlog_retention',
+					getBinlogsInfo: 'get_binlogs_info',
 				},
 			});
 		},

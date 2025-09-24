@@ -1,0 +1,4 @@
+---
+- name: Run show full process list
+  shell: mysql -e "SHOW FULL PROCESSLIST"
+  register: processlist_output

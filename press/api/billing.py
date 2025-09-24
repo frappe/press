@@ -219,6 +219,10 @@ def details():
 
 @frappe.whitelist()
 def fetch_invoice_items(invoice):
+	team = get_current_team()
+	if frappe.db.get_value("Invoice", invoice, "team") != team:
+		frappe.throw("Only team owners and members are permitted to download Invoice")
+
 	return frappe.get_all(
 		"Invoice Item",
 		{"parent": invoice, "parenttype": "Invoice"},

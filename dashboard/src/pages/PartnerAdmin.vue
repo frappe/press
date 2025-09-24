@@ -32,8 +32,9 @@ export default {
 		return {
 			currentTab: 0,
 			tabs: [
-				{ label: 'Partner List', route: { name: 'PartnerList' } },
+				{ label: 'Partner', route: { name: 'PartnerList' } },
 				{ label: 'Certificates', route: { name: 'CertificateList' } },
+				{ label: 'Partner Lead', route: { name: 'PartnerLeadList' } },
 			],
 		};
 	},

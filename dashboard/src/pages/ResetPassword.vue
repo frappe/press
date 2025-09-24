@@ -30,10 +30,19 @@
 					autocomplete="new-password"
 					required
 				/>
+				<FormControl
+					label="Confirm Password"
+					type="password"
+					v-model="confirmPassword"
+					name="confirm_password"
+					autocomplete="new-password"
+					required
+				/>
 			</div>
 			<ErrorMessage
 				class="mt-6"
 				:message="
+					passwordError ||
 					$resources.resetPassword.error ||
 					$resources.verify2FA.error ||
 					$resources.is2FAEnabled.error
@@ -76,6 +85,8 @@ export default {
 			email: null,
 			ask2FA: false,
 			password: null,
+			confirmPassword: null,
+			passwordError: null,
 		};
 	},
 	resources: {
@@ -119,6 +130,11 @@ export default {
 	},
 	methods: {
 		handleSubmit() {
+			this.passwordError = null;
+			if (!this.ask2FA && this.password !== this.confirmPassword) {
+				this.passwordError = 'Passwords do not match';
+				return;
+			}
 			if (this.ask2FA) {
 				this.$resources.verify2FA.submit({
 					user: this.email,

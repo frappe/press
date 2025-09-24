@@ -14,10 +14,10 @@ class PressJobType(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.press_job_type_step.press_job_type_step import (
-			PressJobTypeStep,
-		)
+		from press.press.doctype.press_job_type_step.press_job_type_step import PressJobTypeStep
 
+		callback_max_retry: DF.Int
+		callback_script: DF.Code | None
 		steps: DF.Table[PressJobTypeStep]
 	# end: auto-generated types
 

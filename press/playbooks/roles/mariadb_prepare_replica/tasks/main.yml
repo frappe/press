@@ -1,0 +1,83 @@
+---
+- name: Wait For MariaDB To Be Ready Before Preparing Replica
+  ansible.builtin.wait_for:
+    host: '{{ private_ip }}'
+    port: 3306
+    delay: 5
+    timeout: 600
+    state: started
+
+- name: Wait Until MariaDB Responds To Query
+  community.mysql.mysql_query:
+    login_user: root
+    login_password: '{{ mariadb_root_password }}'
+    login_host: '{{ private_ip }}'
+    login_port: 3306
+    query: 'SELECT 1;'
+  register: db_ready
+  retries: 20
+  delay: 3
+  until:
+    - db_ready.query_result is defined
+    - db_ready.query_result | length > 0
+    - db_ready.query_result[0] | length > 0
+    - "'1' in db_ready.query_result[0][0]"
+    - db_ready.query_result[0][0]['1'] == 1
+
+- name: Get Current GTID from MariaDB
+  community.mysql.mysql_query:
+    login_user: root
+    login_password: '{{ mariadb_root_password }}'
+    login_host: '{{ private_ip }}'
+    login_port: 3306
+    query: 'SELECT @@GLOBAL.gtid_binlog_pos;'
+  register: gtid_result
+
+- name: Set GTID fact
+  set_fact:
+    current_gtid_pos: '{{ gtid_result.query_result[0][0]["@@GLOBAL.gtid_binlog_pos"] }}'
+
+- name: Check If server-id Exists In MariaDB config
+  ansible.builtin.shell: "grep -E '^server-id\\s*=' /etc/mysql/conf.d/frappe.cnf"
+  register: server_id_line
+  failed_when: false
+  changed_when: false
+
+- name: Configure New MariaDB Server ID
+  ansible.builtin.lineinfile:
+    path: /etc/mysql/conf.d/frappe.cnf
+    regexp: '^server-id\s*='
+    line: 'server-id = {{ mariadb_server_id }}'
+    state: present
+  when: server_id_line.rc == 0
+
+- name: Restart MariaDB Service
+  ansible.builtin.systemd:
+    daemon_reload: true
+    name: mariadb
+    state: restarted
+    enabled: yes
+
+- name: Wait for MariaDB to be ready
+  ansible.builtin.wait_for:
+    host: '{{ private_ip }}'
+    port: 3306
+    delay: 5
+    timeout: 600
+    state: started
+
+- name: Reset Replica
+  community.mysql.mysql_replication:
+    mode: resetreplica
+    login_user: root
+    login_password: '{{ mariadb_root_password }}'
+    login_host: '{{ private_ip }}'
+    login_port: 3306
+
+- name: Set Slave GTID Position
+  community.mysql.mysql_query:
+    login_user: root
+    login_password: '{{ mariadb_root_password }}'
+    login_host: '{{ private_ip }}'
+    login_port: 3306
+    query: 'SET GLOBAL gtid_slave_pos = "{{ current_gtid_pos }}";'

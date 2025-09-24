@@ -509,7 +509,7 @@ class MarketplaceApp(WebsiteGenerator):
 
 	def get_payout_amount(self, status: str = "", total_for: str = "net_amount"):
 		"""Return the payout amount for this app"""
-		filters = {"recipient": self.team}
+		filters = {"team": self.team}
 		if status:
 			filters["status"] = status
 		payout_orders = frappe.get_all("Payout Order", filters=filters, pluck="name")

@@ -1,0 +1,9 @@
+---
+- name: Prepare MariaDB Replica
+  hosts: all
+  become: yes
+  become_user: root
+  roles:
+    - role: mariadb_add_skip_slave_start
+    - role: mariadb_prepare_replica
+    - role: mariadb_remove_skip_slave_start

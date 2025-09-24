@@ -49,8 +49,17 @@ class BuildMetric(Document):
 	def _get_metrics(self):
 		build_metric = GenerateBuildMetric(self.start_from, self.to)
 		build_metric.get_metrics()
-		self.metric_dump = json.dumps(build_metric.dump_metrics(), indent=4)
+		build_metric_dump = build_metric.dump_metrics()
+		deploy_metric_dump = deploy_metrics(self.start_from, self.to)
+		self.metric_dump = json.dumps(
+			{"build_metric": build_metric_dump, "deploy_metric": deploy_metric_dump}, indent=4
+		)
 		self.save()
+
+	@frappe.whitelist()
+	def get_metrics(self):
+		"""Retrigger metrics"""
+		frappe.enqueue(self._get_metrics)
 
 
 @dataclass
@@ -226,11 +235,15 @@ class GenerateBuildMetric:
 		failure_output_frequency = defaultdict(int)
 
 		for fc_failure in fc_failures:
-			step_name, step, output = frappe.db.get_value(
+			failed_build_step = frappe.db.get_value(
 				"Deploy Candidate Build Step",
 				{"parent": fc_failure["name"], "status": "Failure"},
 				["stage", "step", "output"],
 			)
+			if not failed_build_step:
+				continue
+
+			step_name, step, output = failed_build_step
 
 			failure_key = f"{step_name}-{step}"
 			failed_step_frequency[failure_key] += 1
@@ -240,6 +253,65 @@ class GenerateBuildMetric:
 					failure_output_frequency[key] += 1
 
 		return {"step_failures": failed_step_frequency, "known_output_failures": failure_output_frequency}
+
+
+def deploy_metrics(start_from: DateTimeLikeObject, to: DateTimeLikeObject) -> dict[str, int]:
+	"""Get deploy failure metrics"""
+
+	no_space = []
+	port_offset = []
+	missing_docker_layer = []
+	missing_docker_image = []
+	registry_timeout = []
+	missing_files = []
+	others = []
+
+	failed_new_bench_jobs = frappe.get_all(
+		"Agent Job",
+		{
+			"status": "Failure",
+			"job_type": "New Bench",
+			"creation": ("between", [start_from, to]),
+		},
+	)
+	all_new_bench_jobs = frappe.get_all(
+		"Agent Job",
+		{
+			"job_type": "New Bench",
+			"creation": ("between", [start_from, to]),
+		},
+	)
+
+	for agent_job in failed_new_bench_jobs:
+		output = frappe.db.get_value("Agent Job", agent_job, ["output"])
+		output = output.casefold() if output else ""
+
+		if "no space" in output:
+			no_space.append(agent_job)
+		elif "port is already allocated" in output:
+			port_offset.append(agent_job)
+		elif "docker: unknown blob" in output:
+			missing_docker_layer.append(agent_job)
+		elif "manifest unknown" in output:
+			missing_docker_image.append(agent_job)
+		elif "tls handshake timeout" in output:
+			registry_timeout.append(agent_job)
+		elif "no such file or directory" in output:
+			missing_files.append(agent_job)
+		else:
+			others.append(agent_job)
+
+	return {
+		"total_deploys": len(all_new_bench_jobs),
+		"failed_deploys": len(failed_new_bench_jobs),
+		"no_space": len(no_space),
+		"port_offset": len(port_offset),
+		"missing_docker_layer": len(missing_docker_layer),
+		"missing_docker_image": len(missing_docker_image),
+		"registry_timeout": len(registry_timeout),
+		"missing_files": len(missing_files),
+		"other": len(others),
+	}
 
 
 def create_build_metric():

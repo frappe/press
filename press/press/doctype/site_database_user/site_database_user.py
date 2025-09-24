@@ -31,18 +31,18 @@ class SiteDatabaseUser(Document):
 		)
 
 		failed_agent_job: DF.Link | None
-		failure_reason: DF.SmallText
+		failure_reason: DF.SmallText | None
 		label: DF.Data
 		max_connections: DF.Int
 		mode: DF.Literal["read_only", "read_write", "granular"]
-		password: DF.Password
+		password: DF.Password | None
 		permissions: DF.Table[SiteDatabaseTablePermission]
 		site: DF.Link
 		status: DF.Literal["Pending", "Active", "Failed", "Archived"]
 		team: DF.Link
 		user_added_in_proxysql: DF.Check
 		user_created_in_database: DF.Check
-		username: DF.Data
+		username: DF.Data | None
 	# end: auto-generated types
 
 	dashboard_fields = (
@@ -57,6 +57,11 @@ class SiteDatabaseUser(Document):
 		"permissions",
 		"max_connections",
 	)
+
+	def has_permission(self, perm_type):
+		team = frappe.get_value("Site", self.site, "team")
+		owner = frappe.get_value("Team", team, "user")
+		return frappe.session.user == owner or frappe.local.system_user()
 
 	def validate(self):
 		if not self.has_value_changed("status"):

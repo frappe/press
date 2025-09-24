@@ -4,6 +4,8 @@ from enum import Enum
 
 import frappe
 
+from press.api.site import protected
+
 
 class LOG_TYPE(Enum):
 	SITE = "site"
@@ -314,6 +316,7 @@ FORMATTER_MAP = {
 
 
 @frappe.whitelist()
+@protected(["Site", "Bench"])
 def get_log(log_type: LOG_TYPE, doc_name: str, log_name: str) -> list:
 	MULTILINE_LOGS = ("database.log", "scheduler.log", "worker", "ipython", "frappe.log")
 
