@@ -6,3 +6,4 @@
   gather_facts: yes
   roles:
     - role: mount_shared_fs
+    - role: move_bench_to_shared_directory
