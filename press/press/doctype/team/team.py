@@ -660,7 +660,8 @@ class Team(Document):
 		self.save()
 		self.reload()
 
-		self.update_billing_details_on_stripe(address_doc)
+		# Only update Stripe if it's configured
+		self._safely_update_stripe_billing(address_doc)
 		self.update_billing_details_on_frappeio()
 		self.update_billing_details_on_draft_invoices()
 
@@ -698,6 +699,17 @@ class Team(Document):
 				frappe.msgprint(f"Renamed customer from {previous_billing_name} to {self.billing_name}")
 			except Exception:
 				log_error("Failed to rename customer on frappe.io", traceback=frappe.get_traceback())
+
+	def _safely_update_stripe_billing(self, address_doc):
+		"""Safely update Stripe billing details if Stripe is configured and needed"""
+		from press.utils.billing import should_update_stripe_for_team
+		
+		if should_update_stripe_for_team(self):
+			try:
+				self.update_billing_details_on_stripe(address_doc)
+			except Exception as e:
+				# Log error but don't fail the billing update process
+				log_error(f"Failed to update Stripe billing for team {self.name}: {str(e)}")
 
 	def update_billing_details_on_stripe(self, address=None):
 		stripe = get_stripe()
