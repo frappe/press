@@ -1,5 +1,7 @@
 # Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
+
+
 import frappe
 
 from press.press.doctype.server.server import BaseServer
@@ -42,7 +44,7 @@ class NFSServer(BaseServer):
 
 	def validate(self):
 		self.validate_agent_password()
-		self.validate_monitoring_password()
+		# self.validate_monitoring_password()
 
 	def validate_monitoring_password(self):
 		if not self.monitoring_password:
@@ -82,10 +84,10 @@ class NFSServer(BaseServer):
 				self.is_server_setup = True
 			else:
 				self.status = "Broken"
-			self.save()
 		except Exception:
-			log_error("Agent Sentry Setup Exception", server=self.as_dict())
-			self.save()
+			log_error("Agent NFS Setup Exception", server=self.as_dict())
+
+		self.save()
 
 	@frappe.whitelist()
 	def add_mount_enabled_server(
@@ -105,3 +107,31 @@ class NFSServer(BaseServer):
 		)
 
 		mount_enabled_server.save()
+		# Sharing it's directory or using someone elses directory, first preference to someone elses
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_mount_fs_on_client_and_copy_sites",
+			client_server=server,
+			using_fs_of_server=use_file_system_of_server or server,
+			queue="long",
+		)
+
+	def _mount_fs_on_client_and_copy_sites(self, client_server: str, using_fs_of_server: str) -> None:
+		try:
+			ansible = Ansible(
+				playbook="share_sites_on_nfs.yml",
+				server=frappe.get_doc("Server", client_server),
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={
+					"nfs_server_private_ip": self.private_ip,
+					"using_fs_of_server": using_fs_of_server,
+					"shared_directory": "/shared",
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Client Mount Exception", server=self.as_dict())
+
+		self.save()
