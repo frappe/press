@@ -75,7 +75,6 @@ class NFSServer(BaseServer):
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 				},
 			)
-			ansible.run()
 			play = ansible.run()
 			self.reload()
 			if play.status == "Success":
@@ -83,5 +82,16 @@ class NFSServer(BaseServer):
 				self.is_server_setup = True
 			else:
 				self.status = "Broken"
+			self.save()
 		except Exception:
 			log_error("Agent Sentry Setup Exception", server=self.as_dict())
+			self.save()
+
+	@frappe.whitelist()
+	def add_mount_enabled_server(self, server: str) -> None:
+		"""Add server to nfs servers ACL"""
+		if server in self.mount_enabled_servers:
+			frappe.throw("Server is already mount enabled", frappe.ValidationError)
+
+		mount_enabled_server = self.append("mount_enabled_servers", {"server": server})
+		mount_enabled_server.save()

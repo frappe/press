@@ -1,8 +1,13 @@
 # Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
 
-# import frappe
+import typing
+
+import frappe
 from frappe.model.document import Document
+
+if typing.TYPE_CHECKING:
+	from press.press.doctype.nfs_server.nfs_server import NFSServer
 
 
 class MountEnabledServer(Document):
@@ -17,8 +22,13 @@ class MountEnabledServer(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		private_ip: DF.Data
 		server: DF.Link
 	# end: auto-generated types
 
-	pass
+	def after_insert(self):
+		nfs_server: NFSServer = frappe.get_doc("NFS Server", self.parent)
+		private_ip = frappe.db.get_value("Server", self.server, "private_ip")
+		nfs_server.agent.post(
+			"/nfs/exports",
+			data={"server": self.server, "private_ip": private_ip},
+		)
