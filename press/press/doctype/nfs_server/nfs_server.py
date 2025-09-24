@@ -88,10 +88,20 @@ class NFSServer(BaseServer):
 			self.save()
 
 	@frappe.whitelist()
-	def add_mount_enabled_server(self, server: str) -> None:
-		"""Add server to nfs servers ACL"""
+	def add_mount_enabled_server(
+		self, server: str, use_file_system_of_server: str | None = None, share_file_system: bool = False
+	) -> None:
+		"""Add server to nfs servers ACL and create a shared directory"""
 		if server in self.mount_enabled_servers:
 			frappe.throw("Server is already mount enabled", frappe.ValidationError)
 
-		mount_enabled_server = self.append("mount_enabled_servers", {"server": server})
+		mount_enabled_server = self.append(
+			"mount_enabled_servers",
+			{
+				"server": server,
+				"use_file_system_of_server": use_file_system_of_server,
+				"share_file_system": share_file_system,
+			},
+		)
+
 		mount_enabled_server.save()

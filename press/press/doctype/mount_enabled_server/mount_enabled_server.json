@@ -6,7 +6,9 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "server"
+  "server",
+  "use_file_system_of_server",
+  "share_file_system"
  ],
  "fields": [
   {
@@ -16,13 +18,27 @@
    "label": "Server",
    "options": "Server",
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "share_file_system",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Share File System"
+  },
+  {
+   "fieldname": "use_file_system_of_server",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Use File System of Server",
+   "options": "Server"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-09-24 10:46:14.406295",
+ "modified": "2025-09-24 17:16:05.027222",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mount Enabled Server",

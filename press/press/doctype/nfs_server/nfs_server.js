@@ -53,10 +53,25 @@ frappe.ui.form.on('NFS Server', {
 							options: 'Server',
 							reqd: 1,
 						},
+						{
+							fieldtype: 'Check',
+							fieldname: 'share_file_system',
+							label: 'Share File System',
+						},
+						{
+							fieldtype: 'Link',
+							fieldname: 'use_file_system_of_server',
+							label: 'Use File System of Server',
+							options: 'Server',
+						},
 					],
-					({ server }) => {
+					({ server, share_file_system, use_file_system_of_server }) => {
 						frm
-							.call('add_mount_enabled_server', { server: server })
+							.call('add_mount_enabled_server', {
+								server: server,
+								share_file_system: share_file_system,
+								use_file_system_of_server: use_file_system_of_server,
+							})
 							.then((r) => {
 								frm.refresh();
 							});
