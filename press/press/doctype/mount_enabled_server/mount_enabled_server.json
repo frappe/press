@@ -8,6 +8,7 @@
  "field_order": [
   "server",
   "use_file_system_of_server",
+  "using_volume",
   "share_file_system"
  ],
  "fields": [
@@ -32,13 +33,21 @@
    "in_list_view": 1,
    "label": "Use File System of Server",
    "options": "Server"
+  },
+  {
+   "fieldname": "using_volume",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Using Volume",
+   "options": "Virtual Machine Volume",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-09-24 17:16:05.027222",
+ "modified": "2025-09-25 13:23:02.792001",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mount Enabled Server",
