@@ -17,6 +17,9 @@
     state: mounted
     backup: yes
 
+- name: Remove Lost and Found
+  shell: rm -rf "{{ shared_directory }}/lost+found"
+
 - name: Change Ownership of Shared Directory
   file:
     path: "{{ shared_directory }}"

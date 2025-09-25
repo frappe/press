@@ -28,6 +28,7 @@ class MountEnabledServer(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
+		ready_to_share_file_system: DF.Check
 		server: DF.Link
 		share_file_system: DF.Check
 		use_file_system_of_server: DF.Link | None
@@ -47,6 +48,21 @@ class MountEnabledServer(Document):
 			},
 		)
 
+	def before_insert(self):
+		if self.share_file_system:
+			return
+
+		is_ready = frappe.db.get_value(
+			"Mount Enabled Server",
+			{"parent": self.parent, "server": self.use_file_system_of_server},
+			"ready_to_share_file_system",
+		)
+
+		if not is_ready:
+			frappe.throw(
+				f"Server {self.use_file_system_of_server} is not ready to share the file system, wait for sometime"
+			)
+
 	def after_insert(self):
 		try:
 			self.add_server_to_nfs_acl()
@@ -62,6 +78,7 @@ class MountEnabledServer(Document):
 			using_fs_of_server=self.use_file_system_of_server or self.server,
 			share_file_system=self.share_file_system,
 			queue="long",
+			timeout=18000,
 		)
 
 	def _attach_volume_on_nfs_server(self, volume_size: int) -> str:
@@ -157,5 +174,8 @@ class MountEnabledServer(Document):
 			self.mount_shared_folder(
 				client_server=client_server, using_fs_of_server=using_fs_of_server, move_benches=True
 			)
+
+			self.ready_to_share_file_system = True
+			self.save()
 
 	def on_delete(self): ...
