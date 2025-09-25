@@ -65,6 +65,7 @@ class MountEnabledServer(Document):
 
 	def after_insert(self):
 		try:
+			# Need to eventually convert this to a agent job so that we are able to take filelocks
 			self.add_server_to_nfs_acl()
 		except HTTPError:
 			frappe.throw("Unable to add server to ACL")
@@ -82,25 +83,30 @@ class MountEnabledServer(Document):
 		)
 
 	def _attach_volume_on_nfs_server(self, volume_size: int) -> str:
+		"""Attach volume on NFS Server"""
 		virtual_machine: VirtualMachine = frappe.get_cached_doc("Virtual Machine", self.parent)
 		return virtual_machine.attach_new_volume(volume_size, iops=3000, throughput=124, log_activity=False)
 
 	def _format_and_mount_fs(self, volume_id: str) -> None:
 		"""Create a filesystem from newly mounted volume and mount shared directory on it"""
 		nfs_server: NFSServer = frappe.get_cached_doc("NFS Server", self.parent)
-		ansible = Ansible(
-			playbook="mount_ebs_on_nfs_server.yml",
-			server=nfs_server,  # Mounting on NFS Server
-			user=nfs_server._ssh_user(),
-			port=nfs_server._ssh_port(),
-			variables={
-				"shared_directory": f"/home/frappe/nfs/{self.use_file_system_of_server or self.server}",
-				"volume_id": volume_id.replace("vol-", ""),
-			},
-		)
-		ansible.run()
+		try:
+			ansible = Ansible(
+				playbook="mount_ebs_on_nfs_server.yml",
+				server=nfs_server,  # Mounting on NFS Server
+				user=nfs_server._ssh_user(),
+				port=nfs_server._ssh_port(),
+				variables={
+					"shared_directory": f"/home/frappe/nfs/{self.use_file_system_of_server or self.server}",
+					"volume_id": volume_id.replace("vol-", ""),
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Exception While Mounting Volume on NFS Server", server=self.as_dict())
 
-	def _mount_shared_folder(self, client_server: str, using_fs_of_server: str) -> None:
+	def _mount_shared_folder_on_client_server(self, client_server: str, using_fs_of_server: str) -> None:
+		"""Mount shared folder on client server utilizing the shared filesystem"""
 		client_server: Server = frappe.get_cached_doc("Server", client_server)
 		nfs_server_private_ip = frappe.db.get_value("NFS Server", self.parent, "private_ip")
 		try:
@@ -120,6 +126,7 @@ class MountEnabledServer(Document):
 			log_error("Exception While Mounting Shared FS", server=self.as_dict())
 
 	def _move_benches_to_shared(self, client_server: str) -> None:
+		"""Start to move the benches on the shared directory"""
 		client_server: Server = frappe.get_cached_doc("Server", client_server)
 		try:
 			ansible = Ansible(
@@ -132,10 +139,23 @@ class MountEnabledServer(Document):
 		except Exception:
 			log_error("Exception While Moving Benches to Shared FS", server=self.as_dict())
 
+	def _get_volume_from_sharing_server(self, using_fs_of_server: str) -> str | None:
+		"""Return the volume id used by another 'sharing' server."""
+		return frappe.db.get_value(
+			"Mount Enabled Server", {"parent": self.parent, "server": using_fs_of_server}, "using_volume"
+		)
+
+	def _create_and_attach_volume_on_nfs_server(self, using_fs_of_server: str) -> str:
+		"""Create/attach a new EBS volume and format/mount filesystem on the nfs server."""
+		volume_size = frappe.db.get_value("Virtual Machine", using_fs_of_server, "disk_size")
+		volume_id = self._attach_volume_on_nfs_server(volume_size=volume_size)
+		self._format_and_mount_fs(volume_id)
+		return volume_id
+
 	def mount_shared_folder(
 		self, client_server: str, using_fs_of_server: str, move_benches: bool = False
 	) -> None:
-		self._mount_shared_folder(client_server, using_fs_of_server)
+		self._mount_shared_folder_on_client_server(client_server, using_fs_of_server)
 
 		if move_benches:
 			self._move_benches_to_shared(client_server)
@@ -147,35 +167,21 @@ class MountEnabledServer(Document):
 		Attach an EBS volume to the NFS server for the client sharing their file system,
 		or update the volume name on servers using a shared volume.
 		"""
-		if not share_file_system:
-			# Get existing volume from the server that is already sharing its fs
-			# If using someone elses fs then we don't need to move our data to it
-			volume_name = frappe.db.get_value(
-				"Mount Enabled Server",
-				{"parent": self.parent, "server": using_fs_of_server},
-				"using_volume",
-			)
+		move_benches = share_file_system
+		# Get existing volume from the server that is already sharing its fs
+		# If using someone elses fs then we don't need to move our data to it
+		self.using_volume = (
+			self._create_and_attach_volume_on_nfs_server(using_fs_of_server)
+			if share_file_system
+			else self._get_volume_from_sharing_server(using_fs_of_server)
+		)
+		# At this point we are ready to share but the benches might not be moved
+		self.ready_to_share_file_system = share_file_system
 
-			self.using_volume = volume_name
-			self.save()
+		self.save()
 
-			self.mount_shared_folder(
-				client_server=client_server, using_fs_of_server=using_fs_of_server, move_benches=False
-			)
-		else:
-			# Create & attach a new volume for the NFS server
-			volume_size = frappe.db.get_value("Virtual Machine", using_fs_of_server, "disk_size")
-			volume_id = self._attach_volume_on_nfs_server(volume_size=volume_size)
-			self._format_and_mount_fs(volume_id)
-
-			self.using_volume = volume_id
-			self.save()
-
-			self.mount_shared_folder(
-				client_server=client_server, using_fs_of_server=using_fs_of_server, move_benches=True
-			)
-
-			self.ready_to_share_file_system = True
-			self.save()
+		self.mount_shared_folder(
+			client_server=client_server, using_fs_of_server=using_fs_of_server, move_benches=move_benches
+		)
 
 	def on_delete(self): ...
