@@ -68,6 +68,7 @@
     dest: /usr/share/filebeat/module/proxysql/
     recursive: yes
     archive: false
+    use_ssh_args: yes
 
 - name: Setup Filebeat Modules
   template:
