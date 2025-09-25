@@ -32,11 +32,11 @@
   "is_for_recovery",
   "billing_section",
   "team",
-  "column_break_11",
   "plan",
+  "column_break_11",
+  "auto_increase_storage",
   "auto_add_storage_min",
   "auto_add_storage_max",
-  "auto_increase_storage",
   "networking_section",
   "ip",
   "is_static_ip",
@@ -93,7 +93,9 @@
   "tags",
   "mounts_section",
   "has_data_volume",
-  "mounts"
+  "mounts",
+  "notifications_section",
+  "communication_info"
  ],
  "fields": [
   {
@@ -643,10 +645,21 @@
    "fieldtype": "Check",
    "label": "Is Static IP",
    "read_only": 1
+  },
+  {
+   "fieldname": "notifications_section",
+   "fieldtype": "Section Break",
+   "label": "Notifications"
+  },
+  {
+   "fieldname": "communication_info",
+   "fieldtype": "Table",
+   "label": "Communication Info",
+   "options": "Communication Info"
   }
  ],
  "links": [],
- "modified": "2025-09-18 13:45:30.860124",
+ "modified": "2025-09-25 15:32:23.872335",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

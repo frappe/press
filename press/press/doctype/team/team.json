@@ -43,12 +43,10 @@
   "notification_tab",
   "section_break_9",
   "send_notifications",
-  "notify_email",
-  "billing_email",
   "column_break_9",
   "last_used_team",
   "section_break_28",
-  "communication_emails",
+  "communication_info",
   "partner_tab",
   "partner_details_section",
   "erpnext_partner",
@@ -222,13 +220,6 @@
    "options": "\nCard\nPrepaid Credits\nPaid By Partner"
   },
   {
-   "fetch_from": "user.email",
-   "fetch_if_empty": 1,
-   "fieldname": "notify_email",
-   "fieldtype": "Data",
-   "label": "Notify Email"
-  },
-  {
    "fieldname": "column_break_9",
    "fieldtype": "Column Break"
   },
@@ -247,12 +238,6 @@
    "fieldtype": "Data",
    "label": "Referrer ID",
    "read_only": 1
-  },
-  {
-   "fieldname": "communication_emails",
-   "fieldtype": "Table",
-   "label": "Communication Emails",
-   "options": "Communication Email"
   },
   {
    "fieldname": "section_break_28",
@@ -451,11 +436,6 @@
    "label": "Enable In Place Updates"
   },
   {
-   "fieldname": "billing_email",
-   "fieldtype": "Data",
-   "label": "Billing Email"
-  },
-  {
    "default": "0",
    "fieldname": "mpesa_enabled",
    "fieldtype": "Check",
@@ -588,6 +568,12 @@
    "fieldname": "skip_onboarding",
    "fieldtype": "Check",
    "label": "Skip Onboarding"
+  },
+  {
+   "fieldname": "communication_info",
+   "fieldtype": "Table",
+   "label": "Communication Info",
+   "options": "Communication Info"
   }
  ],
  "grid_page_length": 50,
@@ -653,7 +639,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2025-08-20 20:17:16.581425",
+ "modified": "2025-09-25 13:47:19.886909",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
