@@ -267,14 +267,19 @@ export default {
 			if (
 				(site.doc.server_team == $team.doc?.name &&
 					site.doc.group_team == $team.doc?.name) ||
-				$team.doc?.is_desk_user
+				$team.doc?.is_desk_user ||
+				$team.doc?.is_support_agent
 			) {
 				breadcrumbs.push({
 					label: site.doc?.server_title || site.doc?.server,
 					route: `/servers/${site.doc?.server}`,
 				});
 			}
-			if (site.doc.group_team == $team.doc?.name || $team.doc?.is_desk_user) {
+			if (
+				site.doc.group_team == $team.doc?.name ||
+				$team.doc?.is_desk_user ||
+				$team.doc?.is_support_agent
+			) {
 				breadcrumbs.push(
 					{
 						label: site.doc?.group_title,
@@ -398,7 +403,12 @@ export default {
 				icon: icon('external-link'),
 				route: 'domains',
 				type: 'list',
-				condition: (site) => site.doc?.status !== 'Archived',
+				condition: (site) => {
+					let $team = getTeam();
+					return (
+						site.doc?.status !== 'Archived' && !$team.doc?.is_support_agent
+					);
+				},
 				list: {
 					doctype: 'Site Domain',
 					fields: ['redirect_to_primary'],
@@ -635,6 +645,10 @@ export default {
 				icon: icon('archive'),
 				route: 'backups',
 				type: 'list',
+				condition: () => {
+					let $team = getTeam();
+					return !$team.doc?.is_support_agent;
+				},
 				list: {
 					doctype: 'Site Backup',
 					filters: (site) => {
@@ -1048,7 +1062,12 @@ export default {
 				icon: icon('settings'),
 				route: 'site-config',
 				type: 'list',
-				condition: (site) => site.doc?.status !== 'Archived',
+				condition: (site) => {
+					let $team = getTeam();
+					return (
+						site.doc?.status !== 'Archived' && !$team.doc?.is_support_agent
+					);
+				},
 				list: {
 					doctype: 'Site Config',
 					filters: (site) => {
@@ -1177,7 +1196,12 @@ export default {
 				icon: icon('sliders'),
 				route: 'actions',
 				type: 'Component',
-				condition: (site) => site.doc?.status !== 'Archived',
+				condition: (site) => {
+					let $team = getTeam();
+					return (
+						site.doc?.status !== 'Archived' && !$team.doc?.is_support_agent
+					);
+				},
 				component: SiteActions,
 				props: (site) => {
 					return { site: site.doc?.name };
@@ -1188,7 +1212,12 @@ export default {
 				icon: icon('arrow-up-circle'),
 				route: 'updates',
 				type: 'list',
-				condition: (site) => site.doc?.status !== 'Archived',
+				condition: (site) => {
+					let $team = getTeam();
+					return (
+						site.doc?.status !== 'Archived' && !$team.doc?.is_support_agent
+					);
+				},
 				childrenRoutes: ['Site Update'],
 				list: {
 					doctype: 'Site Update',
@@ -1547,6 +1576,10 @@ export default {
 							slots: {
 								prefix: icon('mail'),
 							},
+							disabled: () => {
+								let $team = getTeam();
+								return $team.doc?.is_support_agent;
+							},
 							onClick: () => {
 								confirmDialog({
 									title: 'Change Notification Email',
@@ -1633,7 +1666,8 @@ export default {
 							site.doc.update_information?.update_available &&
 							['Active', 'Inactive', 'Suspended', 'Broken'].includes(
 								site.doc.status,
-							)
+							) &&
+							!$team.doc?.is_support_agent
 						);
 					},
 
@@ -1664,7 +1698,9 @@ export default {
 						icon: icon(LucideVenetianMask),
 					},
 					condition: () =>
-						$team.doc?.is_desk_user && site.doc.team !== $team.name,
+						$team.doc?.is_desk_user &&
+						site.doc.team !== $team.name &&
+						!$team.doc?.is_support_agent,
 					onClick() {
 						switchToTeam(site.doc.team);
 					},
@@ -1694,7 +1730,9 @@ export default {
 					variant: 'solid',
 					loading: site.loginAsAdmin.loading || site.loginAsTeam.loading,
 					condition: () =>
-						site.doc.status === 'Active' && !site.doc?.setup_wizard_complete,
+						site.doc.status === 'Active' &&
+						!site.doc?.setup_wizard_complete &&
+						!$team.doc?.is_support_agent,
 					onClick() {
 						if (site.doc.additional_system_user_created) {
 							site.loginAsTeam
@@ -1725,7 +1763,9 @@ export default {
 						{
 							label: 'Login As Administrator',
 							icon: 'external-link',
-							condition: () => ['Active', 'Broken'].includes(site.doc.status),
+							condition: () =>
+								['Active', 'Broken'].includes(site.doc.status) &&
+								!$team.doc?.is_support_agent,
 							onClick: () => {
 								confirmDialog({
 									title: 'Login as Administrator',

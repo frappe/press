@@ -15,6 +15,7 @@ from frappe.utils import cstr
 from pypika.queries import QueryBuilder
 
 from press.exceptions import TeamHeaderNotInRequestError
+from press.utils import has_role
 
 if typing.TYPE_CHECKING:
 	from frappe.model.meta import Meta
@@ -119,7 +120,8 @@ def get_list(
 		frappe.throw("parenttype and parent are required to get child records")
 
 	apply_team_filter = not (
-		filters.get("skip_team_filter_for_system_user_and_support_agent") and (frappe.local.system_user())
+		filters.get("skip_team_filter_for_system_user_and_support_agent")
+		and (frappe.local.system_user() or has_role("Press Support Agent"))
 	)
 	if apply_team_filter and meta.has_field("team"):
 		valid_filters.team = frappe.local.team().name
@@ -219,7 +221,7 @@ def get(doctype, name):
 		raise
 
 	if (
-		not (frappe.local.system_user())
+		not (frappe.local.system_user() or has_role("Press Support Agent"))
 		and frappe.get_meta(doctype).has_field("team")
 		and doc.team != frappe.local.team().name
 	):
