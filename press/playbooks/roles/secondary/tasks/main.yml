@@ -9,7 +9,7 @@
     state: absent
 
 - name: Add Primary to Known Hosts
-  shell: ssh-keyscan {{ primary_private_ip }} >> /root/.ssh/known_hosts
+  shell: ssh-keyscan -p {{ primary_ssh_port }} {{ primary_private_ip }} >> /root/.ssh/known_hosts
 
 - name: Create Directory for RSync
   file:
@@ -17,7 +17,7 @@
     state: directory
 
 - name: RSync Backup Directory From Primary
-  command: rsync -avpPR -e ssh\ -p22 root@{{ primary_private_ip }}:/tmp/replica /
+  command: rsync -avpPR -e ssh\ -p{{ primary_ssh_port }} root@{{ primary_private_ip }}:/tmp/replica /
   async: 7200
   poll: 5
 
