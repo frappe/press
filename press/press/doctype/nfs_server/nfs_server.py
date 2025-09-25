@@ -107,31 +107,3 @@ class NFSServer(BaseServer):
 		)
 
 		mount_enabled_server.save()
-		# Sharing it's directory or using someone elses directory, first preference to someone elses
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"_mount_fs_on_client_and_copy_benches",
-			client_server=server,
-			using_fs_of_server=use_file_system_of_server or server,
-			queue="long",
-		)
-
-	def _mount_fs_on_client_and_copy_benches(self, client_server: str, using_fs_of_server: str) -> None:
-		try:
-			ansible = Ansible(
-				playbook="share_benches_on_nfs.yml",
-				server=frappe.get_doc("Server", client_server),
-				user=self._ssh_user(),
-				port=self._ssh_port(),
-				variables={
-					"nfs_server_private_ip": self.private_ip,
-					"using_fs_of_server": using_fs_of_server,
-					"shared_directory": "/shared",
-				},
-			)
-			ansible.run()
-		except Exception:
-			log_error("Client Mount Exception", server=self.as_dict())
-
-		self.save()
