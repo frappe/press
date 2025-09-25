@@ -39,15 +39,14 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Using Volume",
-   "options": "Virtual Machine Volume",
-   "reqd": 1
+   "options": "Virtual Machine Volume"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-09-25 13:23:02.792001",
+ "modified": "2025-09-25 14:10:33.954736",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mount Enabled Server",

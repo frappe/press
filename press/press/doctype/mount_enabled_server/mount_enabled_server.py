@@ -30,7 +30,7 @@ class MountEnabledServer(Document):
 		server: DF.Link
 		share_file_system: DF.Check
 		use_file_system_of_server: DF.Link | None
-		using_volume: DF.Link
+		using_volume: DF.Link | None
 	# end: auto-generated types
 
 	def add_server_to_nfs_acl(self):
@@ -64,7 +64,7 @@ class MountEnabledServer(Document):
 		)
 
 	def _attach_volume_on_nfs_server(self, volume_size: int) -> str:
-		virtual_machine: VirtualMachine = frappe.get_cached_doc("Virtual Machine", self.name)
+		virtual_machine: VirtualMachine = frappe.get_cached_doc("Virtual Machine", self.parent)
 		return virtual_machine.attach_new_volume(volume_size, iops=3000, throughput=124)
 
 	def attach_volume_and_move_data(
@@ -92,7 +92,6 @@ class MountEnabledServer(Document):
 				"using_volume",
 			)
 			_update_volume_mapping(client_server, volume_name)
-			self._mount_fs_on_client_and_copy_benches(client_server, using_fs_of_server)
 
 		else:
 			# Create & attach a new volume for the NFS server
@@ -107,6 +106,7 @@ class MountEnabledServer(Document):
 			_update_volume_mapping(client_server, volume_name)
 
 		frappe.db.commit()
+		self._mount_fs_on_client_and_copy_benches(client_server, using_fs_of_server)
 
 	def _mount_fs_on_client_and_copy_benches(self, client_server: str, using_fs_of_server: str) -> None:
 		try:
