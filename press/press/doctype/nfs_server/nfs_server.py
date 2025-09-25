@@ -44,7 +44,7 @@ class NFSServer(BaseServer):
 
 	def validate(self):
 		self.validate_agent_password()
-		self.validate_monitoring_password()
+		# self.validate_monitoring_password()
 
 	def validate_monitoring_password(self):
 		if not self.monitoring_password:
