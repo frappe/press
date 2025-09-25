@@ -83,16 +83,17 @@ class MountEnabledServer(Document):
 				"using_volume",
 				volume_name,
 			)
+			frappe.db.commit()
 
 		if not share_file_system:
 			# Get existing volume from the server that is already sharing its fs
+			# If using someone elses fs then we don't need to move our data to it
 			volume_name = frappe.db.get_value(
 				"Mount Enabled Server",
 				{"parent": self.name, "server": using_fs_of_server},
 				"using_volume",
 			)
 			_update_volume_mapping(client_server, volume_name)
-
 		else:
 			# Create & attach a new volume for the NFS server
 			volume_size = frappe.db.get_value("Virtual Machine", using_fs_of_server, "disk_size")
@@ -104,9 +105,7 @@ class MountEnabledServer(Document):
 			)
 
 			_update_volume_mapping(client_server, volume_name)
-
-		frappe.db.commit()
-		self._mount_fs_on_client_and_copy_benches(client_server, using_fs_of_server)
+			self._mount_fs_on_client_and_copy_benches(client_server, using_fs_of_server)
 
 	def _mount_fs_on_client_and_copy_benches(self, client_server: str, using_fs_of_server: str) -> None:
 		try:
