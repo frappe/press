@@ -9,6 +9,12 @@ frappe.ui.form.on('Registry Server', {
 			[__('Prepare Server'), 'prepare_server', true, !frm.doc.is_server_setup],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
 			[
+				__('Rewrite Config'),
+				'rewrite_config',
+				true,
+				frm.doc.is_server_setup && frm.doc.is_mirror,
+			],
+			[
 				__('Show Registry Password'),
 				'show_registry_password',
 				false,
