@@ -1947,6 +1947,7 @@ class Server(BaseServer):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.communication_info.communication_info import CommunicationInfo
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 		from press.press.doctype.server_mount.server_mount import ServerMount
 
@@ -1956,6 +1957,7 @@ class Server(BaseServer):
 		auto_increase_storage: DF.Check
 		bastion_server: DF.Link | None
 		cluster: DF.Link | None
+		communication_info: DF.Table[CommunicationInfo]
 		database_server: DF.Link | None
 		disable_agent_job_auto_retry: DF.Check
 		domain: DF.Link | None

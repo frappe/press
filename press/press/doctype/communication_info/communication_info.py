@@ -5,7 +5,7 @@
 from frappe.model.document import Document
 
 
-class CommunicationEmail(Document):
+class CommunicationInfo(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -14,11 +14,12 @@ class CommunicationEmail(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		channel: DF.Literal["Email", "Phone Call"]
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		type: DF.Data | None
-		value: DF.Data | None
+		type: DF.Literal["General", "Billing", "Incident", "Server Activity", "Site Activity", "Marketplace"]
+		value: DF.Data
 	# end: auto-generated types
 
 	pass

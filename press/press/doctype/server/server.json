@@ -32,11 +32,11 @@
   "is_for_recovery",
   "billing_section",
   "team",
-  "column_break_11",
   "plan",
+  "column_break_11",
+  "auto_increase_storage",
   "auto_add_storage_min",
   "auto_add_storage_max",
-  "auto_increase_storage",
   "networking_section",
   "ip",
   "is_static_ip",
@@ -94,7 +94,9 @@
   "tags",
   "mounts_section",
   "has_data_volume",
-  "mounts"
+  "mounts",
+  "notifications_section",
+  "communication_info"
  ],
  "fields": [
   {
@@ -646,6 +648,7 @@
    "read_only": 1
   },
   {
+<<<<<<< HEAD
    "fieldname": "bastion_server",
    "fieldtype": "Link",
    "label": "Bastion Server",
@@ -654,6 +657,21 @@
  ],
  "links": [],
  "modified": "2025-09-24 12:18:04.983230",
+=======
+   "fieldname": "notifications_section",
+   "fieldtype": "Section Break",
+   "label": "Notifications"
+  },
+  {
+   "fieldname": "communication_info",
+   "fieldtype": "Table",
+   "label": "Communication Info",
+   "options": "Communication Info"
+  }
+ ],
+ "links": [],
+ "modified": "2025-09-25 15:32:23.872335",
+>>>>>>> f79d3a5d2 (feat(notification): Add Communication Info table to site/team/server)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

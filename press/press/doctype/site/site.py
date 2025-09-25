@@ -123,7 +123,7 @@ class Site(Document, TagHelpers):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.account_request.account_request import AccountRequest
+		from press.press.doctype.communication_info.communication_info import CommunicationInfo
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 		from press.press.doctype.site_app.site_app import SiteApp
 		from press.press.doctype.site_backup_time.site_backup_time import SiteBackupTime
@@ -140,6 +140,7 @@ class Site(Document, TagHelpers):
 		auto_update_last_triggered_on: DF.Datetime | None
 		bench: DF.Link
 		cluster: DF.Link
+		communication_info: DF.Table[CommunicationInfo]
 		config: DF.Code | None
 		configuration: DF.Table[SiteConfig]
 		current_cpu_usage: DF.Int
@@ -160,7 +161,6 @@ class Site(Document, TagHelpers):
 		is_standby: DF.Check
 		last_site_usage_warning_mail_sent_on: DF.Datetime | None
 		logical_backup_times: DF.Table[SiteBackupTime]
-		notify_email: DF.Data | None
 		only_update_at_specified_time: DF.Check
 		physical_backup_times: DF.Table[SiteBackupTime]
 		plan: DF.Link | None

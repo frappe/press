@@ -36,7 +36,7 @@ class Team(Document):
 		from frappe.types import DF
 
 		from press.press.doctype.child_team_member.child_team_member import ChildTeamMember
-		from press.press.doctype.communication_email.communication_email import CommunicationEmail
+		from press.press.doctype.communication_info.communication_info import CommunicationEmail
 		from press.press.doctype.invoice_discount.invoice_discount import InvoiceDiscount
 		from press.press.doctype.team_member.team_member import TeamMember
 
@@ -44,12 +44,11 @@ class Team(Document):
 		apply_npo_discount: DF.Check
 		benches_enabled: DF.Check
 		billing_address: DF.Link | None
-		billing_email: DF.Data | None
 		billing_name: DF.Data | None
 		billing_team: DF.Link | None
 		child_team_members: DF.Table[ChildTeamMember]
 		code_servers_enabled: DF.Check
-		communication_emails: DF.Table[CommunicationEmail]
+		communication_info: DF.Table[CommunicationEmail]
 		company_logo: DF.Attach | None
 		country: DF.Link | None
 		currency: DF.Link | None
@@ -76,7 +75,6 @@ class Team(Document):
 		mpesa_enabled: DF.Check
 		mpesa_phone_number: DF.Data | None
 		mpesa_tax_id: DF.Data | None
-		notify_email: DF.Data | None
 		parent_team: DF.Link | None
 		partner_commission: DF.Percent
 		partner_email: DF.Data | None
@@ -1226,7 +1224,7 @@ class Team(Document):
 	def send_email_for_failed_payment(self, invoice, sites=None):
 		invoice = frappe.get_doc("Invoice", invoice)
 		email = (
-			frappe.db.get_value("Communication Email", {"parent": self.name, "type": "invoices"}, "value")
+			frappe.db.get_value("Communication Info", {"parent": self.name, "type": "invoices"}, "value")
 			or self.user
 		)
 		payment_method = self.default_payment_method
