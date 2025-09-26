@@ -49,11 +49,13 @@ class SSHAccessAudit(Document):
 
 		hosts: DF.Table[SSHAccessAuditHost]
 		inventory: DF.Code | None
+		known_violations: DF.Table[SSHAccessAuditViolation]
 		name: DF.Int | None
 		reachable_hosts: DF.Int
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
 		suspicious_users: DF.Code | None
 		total_hosts: DF.Int
+		total_known_violations: DF.Int
 		total_violations: DF.Int
 		user_violations: DF.Int
 		violations: DF.Table[SSHAccessAuditViolation]
@@ -205,13 +207,13 @@ class SSHAccessAudit(Document):
 				for key in user["keys"]:
 					if key in self.acceptable_keys:
 						continue
-					# Todo! Remove
-					if self.is_system_manager_key(key):
-						continue
 					violation = {"host": host.host, "user": user["user"], "key": key}
 					if key_info := self.known_keys.get(key):
 						violation.update(key_info)
-					self.append("violations", violation)
+					if self.is_system_manager_key(key):
+						self.append("known_violations", violation)
+					else:
+						self.append("violations", violation)
 
 	def check_user_violations(self):
 		suspicious_users = []
@@ -225,6 +227,7 @@ class SSHAccessAudit(Document):
 	def set_statistics(self):
 		self.total_hosts = len(self.hosts)
 		self.reachable_hosts = len([host for host in self.hosts if host.status == "Completed"])
+		self.total_known_violations = len(self.known_violations)
 		self.total_violations = len(self.violations)
 		self.user_violations = len(json.loads(self.suspicious_users))
 
