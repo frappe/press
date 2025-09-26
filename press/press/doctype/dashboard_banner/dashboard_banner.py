@@ -101,5 +101,4 @@ def get_user_banners():
 		if not banner_dismissals_by_user:
 			user_specific_banners.append(banner)
 
-	print(user_specific_banners)
 	return user_specific_banners
