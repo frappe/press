@@ -366,7 +366,7 @@ class TestAPISite(FrappeTestCase):
 				),
 				"can_change_plan": True,
 				"hide_config": site.hide_config,
-				"notify_email": site.notify_email,
+				"communication_infos": [{"channel": "Email", "type": "General", "value": self.team.user}],
 				"info": {
 					"auto_updates_enabled": True,
 					"created_on": site.creation,

@@ -72,7 +72,7 @@
   "allow_physical_backup_by_user",
   "tab_break_46",
   "notifications_section",
-  "communication_info",
+  "communication_infos",
   "auto_updates_section",
   "skip_auto_updates",
   "only_update_at_specified_time",
@@ -709,9 +709,9 @@
    "label": "Disable Site Usage Exceed Check"
   },
   {
-   "fieldname": "communication_info",
+   "fieldname": "communication_infos",
    "fieldtype": "Table",
-   "label": "Communication Info",
+   "label": "Communication Infos",
    "options": "Communication Info"
   }
  ],
@@ -792,7 +792,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2025-09-25 16:49:15.650395",
+ "modified": "2025-09-26 17:32:30.628404",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

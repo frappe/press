@@ -21,6 +21,7 @@ from tenacity.retry import retry_if_not_result
 from twilio.base.exceptions import TwilioRestException
 
 from press.api.server import prometheus_query
+from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.server.server import MARIADB_DATA_MNT_POINT
 from press.telegram_utils import Telegram
 from press.utils import log_error
@@ -583,7 +584,7 @@ Incident URL: {incident_link}"""
 			subject = self.get_email_subject()
 			message = self.get_email_message()
 			frappe.sendmail(
-				recipients=[frappe.db.get_value("Team", team, "notify_email")],
+				recipients=get_communication_info("Email", "Server Activity", "Server", self.server),
 				subject=subject,
 				template="incident",
 				args={

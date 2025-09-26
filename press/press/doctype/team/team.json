@@ -46,7 +46,7 @@
   "column_break_9",
   "last_used_team",
   "section_break_28",
-  "communication_info",
+  "communication_infos",
   "partner_tab",
   "partner_details_section",
   "erpnext_partner",
@@ -572,6 +572,7 @@
   },
   {
 <<<<<<< HEAD
+<<<<<<< HEAD
    "default": "0",
    "depends_on": "razorpay_enabled",
    "description": "Enable via RazorPay dashboard",
@@ -580,8 +581,11 @@
    "label": "Paypal Enabled"
 =======
    "fieldname": "communication_info",
+=======
+   "fieldname": "communication_infos",
+>>>>>>> d80dade59 (refactor: Move notify_email to communication infos child table)
    "fieldtype": "Table",
-   "label": "Communication Info",
+   "label": "Communication Infos",
    "options": "Communication Info"
 >>>>>>> f79d3a5d2 (feat(notification): Add Communication Info table to site/team/server)
   }
@@ -650,10 +654,14 @@
   }
  ],
 <<<<<<< HEAD
+<<<<<<< HEAD
  "modified": "2025-09-29 11:09:45.344674",
  "modified_by": "aysha@frappe.io",
 =======
  "modified": "2025-09-25 13:47:19.886909",
+=======
+ "modified": "2025-09-26 17:07:41.315041",
+>>>>>>> d80dade59 (refactor: Move notify_email to communication infos child table)
  "modified_by": "Administrator",
 >>>>>>> f79d3a5d2 (feat(notification): Add Communication Info table to site/team/server)
  "module": "Press",

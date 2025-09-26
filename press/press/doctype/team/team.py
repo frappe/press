@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from hashlib import blake2b
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe import _
@@ -15,6 +16,7 @@ from frappe.utils import get_fullname, get_url_to_form, random_string
 
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
+from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import get_valid_teams_for_user, log_error
 from press.utils.billing import (
@@ -24,6 +26,9 @@ from press.utils.billing import (
 	process_micro_debit_test_charge,
 )
 from press.utils.telemetry import capture
+
+if TYPE_CHECKING:
+	from press.press.doctype.account_request.account_request import AccountRequest
 
 
 class Team(Document):
@@ -36,7 +41,7 @@ class Team(Document):
 		from frappe.types import DF
 
 		from press.press.doctype.child_team_member.child_team_member import ChildTeamMember
-		from press.press.doctype.communication_info.communication_info import CommunicationEmail
+		from press.press.doctype.communication_info.communication_info import CommunicationInfo
 		from press.press.doctype.invoice_discount.invoice_discount import InvoiceDiscount
 		from press.press.doctype.team_member.team_member import TeamMember
 
@@ -48,7 +53,7 @@ class Team(Document):
 		billing_team: DF.Link | None
 		child_team_members: DF.Table[ChildTeamMember]
 		code_servers_enabled: DF.Check
-		communication_info: DF.Table[CommunicationEmail]
+		communication_infos: DF.Table[CommunicationInfo]
 		company_logo: DF.Attach | None
 		country: DF.Link | None
 		currency: DF.Link | None
@@ -110,7 +115,6 @@ class Team(Document):
 		"billing_team",
 		"team_members",
 		"child_team_members",
-		"notify_email",
 		"country",
 		"currency",
 		"payment_mode",
@@ -173,6 +177,11 @@ class Team(Document):
 			],
 			as_dict=True,
 		)
+		doc.communication_infos = (
+			([{"channel": c.channel, "type": c.type, "value": c.value} for c in self.communication_infos],)
+			if hasattr(self, "communication_infos")
+			else []
+		)
 
 	def onload(self):
 		load_address_and_contact(self)
@@ -198,19 +207,10 @@ class Team(Document):
 		self.validate_billing_team()
 
 	def before_insert(self):
-		self.set_notification_emails()
-
 		self.currency = "INR" if self.country == "India" else "USD"
 
 		if not self.referrer_id:
 			self.set_referrer_id()
-
-	def set_notification_emails(self):
-		if not self.notify_email:
-			self.notify_email = self.user
-
-		if not self.billing_email:
-			self.billing_email = self.user
 
 	def set_referrer_id(self):
 		h = blake2b(digest_size=4)
@@ -1205,14 +1205,6 @@ class Team(Document):
 			doctype="Invoice", team=self.name, period_start=today, type="Subscription"
 		).insert()
 
-	def notify_with_email(self, recipients: list[str], **kwargs):
-		if not self.send_notifications:
-			return
-		if not recipients:
-			recipients = [self.notify_email]
-
-		frappe.sendmail(recipients=recipients, **kwargs)
-
 	@frappe.whitelist()
 	def send_telegram_alert_for_failed_payment(self, invoice):
 		team_url = get_url_to_form("Team", self.name)
@@ -1223,10 +1215,7 @@ class Team(Document):
 	@frappe.whitelist()
 	def send_email_for_failed_payment(self, invoice, sites=None):
 		invoice = frappe.get_doc("Invoice", invoice)
-		email = (
-			frappe.db.get_value("Communication Info", {"parent": self.name, "type": "invoices"}, "value")
-			or self.user
-		)
+		email = get_communication_info("Email", "Billing", "Team", self.name)
 		payment_method = self.default_payment_method
 		last_4 = frappe.db.get_value("Stripe Payment Method", payment_method, "last_4")
 		account_update_link = frappe.utils.get_url("/dashboard")
