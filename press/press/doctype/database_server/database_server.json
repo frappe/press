@@ -63,6 +63,8 @@
   "mounts_section",
   "has_data_volume",
   "mounts",
+  "notifications_section",
+  "communication_info",
   "mariadb_settings_tab",
   "memory_limits_section",
   "memory_high",
@@ -661,6 +663,17 @@
    "read_only": 1
   },
   {
+   "fieldname": "notifications_section",
+   "fieldtype": "Section Break",
+   "label": "Notifications"
+  },
+  {
+   "fieldname": "communication_info",
+   "fieldtype": "Table",
+   "label": "Communication Info",
+   "options": "Communication Info"
+  },
+  { 
    "fieldname": "bastion_server",
    "fieldtype": "Link",
    "label": "Bastion Server",
@@ -681,7 +694,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-09-24 12:28:12.800021",
+ "modified": "2025-09-25 15:33:11.744857",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

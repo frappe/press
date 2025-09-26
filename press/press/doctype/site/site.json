@@ -72,7 +72,7 @@
   "allow_physical_backup_by_user",
   "tab_break_46",
   "notifications_section",
-  "notify_email",
+  "communication_infos",
   "auto_updates_section",
   "skip_auto_updates",
   "only_update_at_specified_time",
@@ -185,7 +185,8 @@
    "in_standard_filter": 1,
    "label": "Team",
    "options": "Team",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "collapsible": 1,
@@ -280,7 +281,8 @@
    "fieldname": "domain",
    "fieldtype": "Link",
    "label": "Domain",
-   "options": "Root Domain"
+   "options": "Root Domain",
+   "search_index": 1
   },
   {
    "fieldname": "_site_usages",
@@ -381,11 +383,6 @@
    "fieldname": "skip_auto_updates",
    "fieldtype": "Check",
    "label": "Skip Auto Updates"
-  },
-  {
-   "fieldname": "notify_email",
-   "fieldtype": "Data",
-   "label": "Notify Email"
   },
   {
    "collapsible": 1,
@@ -550,7 +547,8 @@
    "fieldname": "standby_for_product",
    "fieldtype": "Link",
    "label": "Standby for Product",
-   "options": "Product Trial"
+   "options": "Product Trial",
+   "search_index": 1
   },
   {
    "default": "0",
@@ -709,6 +707,12 @@
    "fieldname": "disable_site_usage_exceed_check",
    "fieldtype": "Check",
    "label": "Disable Site Usage Exceed Check"
+  },
+  {
+   "fieldname": "communication_infos",
+   "fieldtype": "Table",
+   "label": "Communication Infos",
+   "options": "Communication Info"
   }
  ],
  "links": [
@@ -788,7 +792,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2025-06-24 15:48:14.796986",
+ "modified": "2025-09-26 17:32:30.628404",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

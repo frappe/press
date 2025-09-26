@@ -6,6 +6,11 @@ from __future__ import annotations
 import frappe
 from frappe.model.document import Document
 
+from press.press.doctype.communication_info.communication_info import (
+	delete_communication_info,
+	update_communication_infos,
+)
+
 
 class TeamChange(Document):
 	# begin: auto-generated types
@@ -32,9 +37,19 @@ class TeamChange(Document):
 
 	def on_update(self):
 		if self.document_type == "Site" and self.transfer_completed:
-			notify_email = frappe.get_value("Team", self.to_team, "user")
-			frappe.db.set_value(
-				"Site", self.document_name, {"team": self.to_team, "notify_email": notify_email}
+			# Delete existing communication info
+			delete_communication_info("Site", self.document_name)
+			# Add new communication info
+			update_communication_infos(
+				"Site",
+				self.document_name,
+				[
+					{
+						"channel": "Email",
+						"type": "General",
+						"value": frappe.get_value("Team", self.to_team, "user"),
+					}
+				],
 			)
 			frappe.db.set_value(
 				"Subscription",

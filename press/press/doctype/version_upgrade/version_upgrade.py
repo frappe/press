@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 import frappe
 from frappe.model.document import Document
 
+from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
@@ -166,11 +167,9 @@ def update_from_site_update():
 				version_upgrade.last_traceback = last_traceback
 				version_upgrade.last_output = last_output
 				version_upgrade.status = "Failure"
-				site = frappe.get_doc("Site", version_upgrade.site)
-				recipient = site.notify_email or frappe.get_doc("Team", site.team).user
 
 				frappe.sendmail(
-					recipients=[recipient],
+					recipients=get_communication_info("Email", "Site Activity", "Site", version_upgrade.site),
 					subject=f"Automated Version Upgrade Failed for {version_upgrade.site}",
 					reference_doctype="Version Upgrade",
 					reference_name=version_upgrade.name,

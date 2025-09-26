@@ -6,6 +6,7 @@ import frappe
 from frappe.model.document import Document
 
 from press.api.client import dashboard_whitelist
+from press.press.doctype.communication_info.communication_info import get_communication_info
 
 
 class PressNotification(Document):
@@ -64,15 +65,14 @@ class PressNotification(Document):
 			return
 
 		if self.type == "Bench Deploy":
-			recipient = frappe.db.get_value("Team", self.team, "notify_email") or user
-			self.send_bench_deploy_failed(recipient)
+			self.send_bench_deploy_failed(get_communication_info("Email", "General", "Team", self.team))
 
-	def send_bench_deploy_failed(self, user: str):
+	def send_bench_deploy_failed(self, mails: list[str]):
 		group_name = frappe.db.get_value("Deploy Candidate Build", self.document_name, "group")
 		rg_title = frappe.db.get_value("Release Group", group_name, "title")
 
 		frappe.sendmail(
-			recipients=[user],
+			recipients=mails,
 			subject=f"Bench Deploy Failed - {rg_title}",
 			template="bench_deploy_failure",
 			args={
