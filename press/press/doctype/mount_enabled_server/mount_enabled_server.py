@@ -123,8 +123,6 @@ class MountEnabledServer(Document):
 
 	def after_insert(self):
 		try:
-			# Need to eventually convert this to a agent job so that we are able to take filelocks
-			print("RUNNING THIS!")
 			self.add_server_to_nfs_acl()
 		except HTTPError:
 			frappe.throw("Unable to add server to ACL")
