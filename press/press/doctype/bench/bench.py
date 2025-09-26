@@ -365,10 +365,13 @@ class Bench(Document):
 
 	def _correct_bench_permissions(self):
 		try:
+			server = frappe.get_cached_doc("Server", self.server)
+
 			ansible = Ansible(
 				playbook="correct_bench_permissions.yml",
-				server=frappe.get_cached_doc("Server", self.server),
-				user="root",
+				server=server,
+				user=server._ssh_user(),
+				port=server._ssh_port(),
 				variables={"bench_name": self.name},
 			)
 			ansible.run()

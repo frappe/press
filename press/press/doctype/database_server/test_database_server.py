@@ -108,6 +108,8 @@ class TestDatabaseServer(FrappeTestCase):
 		Mock_Ansible.assert_called_with(
 			playbook="reconfigure_mysqld_exporter.yml",
 			server=server,
+			user=server.ssh_user or "root",
+			port=server.ssh_port or 22,
 			variables={
 				"private_ip": server.private_ip,
 				"mariadb_root_password": server.get_password("mariadb_root_password"),
@@ -124,7 +126,7 @@ class TestDatabaseServer(FrappeTestCase):
 	def test_exception_on_failed_reconfigure_fn_call(self, Mock_Ansible: Mock):
 		Mock_Ansible.side_effect = Exception()
 		server = create_test_database_server()
-		self.assertRaises(Exception, server.reconfigure_mariadb_exporter)
+		self.assertRaises(Exception, server.reconfigure_mariadb_exporter)  # noqa
 
 	@patch("press.press.doctype.database_server.database_server.Ansible", new=Mock())
 	@patch(
