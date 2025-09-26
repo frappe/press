@@ -2,11 +2,16 @@
 # For license information, please see license.txt
 
 
+import typing
+
 import frappe
 
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
+
+if typing.TYPE_CHECKING:
+	from press.press.doctype.mount_enabled_server.mount_enabled_server import MountEnabledServer
 
 
 class NFSServer(BaseServer):
@@ -107,3 +112,10 @@ class NFSServer(BaseServer):
 		)
 
 		mount_enabled_server.save()
+
+	@frappe.whitelist()
+	def remove_mount_enabled(self, server: str) -> None:
+		mount_enabled_server: MountEnabledServer = frappe.get_doc(
+			"Mount Enabled Server", {"parent": self.name, "server": server}
+		)
+		mount_enabled_server.delete()

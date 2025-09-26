@@ -6,7 +6,6 @@ import typing
 import frappe
 from frappe.model.document import Document
 
-from press.agent import HTTPError
 from press.runner import Ansible
 from press.utils import log_error
 
@@ -36,7 +35,7 @@ class MountEnabledServer(Document):
 	# end: auto-generated types
 
 	def add_server_to_nfs_acl(self):
-		nfs_server: NFSServer = frappe.get_doc("NFS Server", self.parent)
+		nfs_server: NFSServer = frappe.get_cached_doc("NFS Server", self.parent)
 		private_ip = frappe.db.get_value("Server", self.server, "private_ip")
 		nfs_server.agent.post(
 			"/nfs/exports",
@@ -46,6 +45,28 @@ class MountEnabledServer(Document):
 				"share_file_system": self.share_file_system,
 				"use_file_system_of_server": self.use_file_system_of_server,
 			},
+		)
+
+	def remove_server_from_nfs_acl(self):
+		nfs_server: NFSServer = frappe.get_cached_doc("NFS Server", self.parent)
+
+		if self.share_file_system:
+			raise NotImplementedError("Need to delete volume first!")
+
+		private_ip = frappe.db.get_value("Server", self.server, "private_ip")
+		nfs_server.agent.delete(
+			"/nfs/exports",
+			data={"file_system": self.use_file_system_of_server, "private_ip": private_ip},
+		)
+
+	def on_trash(self):
+		self.remove_server_from_nfs_acl()
+		frappe.enqueue(
+			"press.press.doctype.mount_enabled_server.mount_enabled_server.umount_and_delete_shared_directory",
+			client_server=self.server,
+			nfs_server=self.parent,
+			shared_directory=self.use_file_system_of_server or self.server,
+			queue="long",
 		)
 
 	def before_insert(self):
@@ -184,4 +205,21 @@ class MountEnabledServer(Document):
 			client_server=client_server, using_fs_of_server=using_fs_of_server, move_benches=move_benches
 		)
 
-	def on_delete(self): ...
+
+def umount_and_delete_shared_directory(client_server: str, nfs_server: str, shared_directory: str):
+	client_server: Server = frappe.get_cached_doc("Server", client_server)
+	nfs_server_private_ip = frappe.db.get_value("NFS Server", nfs_server, "private_ip")
+	try:
+		ansible = Ansible(
+			playbook="umount_and_cleanup_shared.yml",
+			server=client_server,
+			user=client_server._ssh_user(),
+			port=client_server._ssh_port(),
+			variables={
+				"nfs_server_private_ip": nfs_server_private_ip,
+				"shared_directory": f"/home/frappe/nfs/{shared_directory}",
+			},
+		)
+		ansible.run()
+	except Exception:
+		log_error("Exception While Cleaning Up Shared Directory")
