@@ -37,7 +37,7 @@ require (
 	github.com/duckdb/duckdb-go-bindings/linux-arm64 v0.1.9 // indirect
 	github.com/duckdb/duckdb-go-bindings/windows-amd64 v0.1.9 // indirect
 	github.com/go-mysql-org/go-mysql v1.12.0
-	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/golang/glog v1.2.4 // indirect
 	github.com/google/flatbuffers v25.1.24+incompatible // indirect
