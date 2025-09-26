@@ -35,6 +35,20 @@ class MountEnabledServer(Document):
 		using_volume: DF.Data | None
 	# end: auto-generated types
 
+	@property
+	def is_file_system_being_shared(self) -> bool:
+		"""Check if any other server is currently using the filesystem"""
+		return bool(
+			frappe.db.get_value(
+				"Mount Enabled Server",
+				{
+					"parent": self.parent,
+					"server": ("!=", self.use_file_system_of_server),
+					"use_file_system_of_server": self.server,
+				},
+			)
+		)
+
 	def add_server_to_nfs_acl(self):
 		nfs_server: NFSServer = frappe.get_cached_doc("NFS Server", self.parent)
 		private_ip = frappe.db.get_value("Server", self.server, "private_ip")
@@ -51,8 +65,8 @@ class MountEnabledServer(Document):
 	def remove_server_from_nfs_acl(self):
 		nfs_server: NFSServer = frappe.get_cached_doc("NFS Server", self.parent)
 
-		if self.share_file_system:
-			raise NotImplementedError("Need to delete volume first!")
+		if self.share_file_system and self.is_file_system_being_shared:
+			frappe.throw("File system is being used by another server please unmount that first!")
 
 		private_ip = frappe.db.get_value("Server", self.server, "private_ip")
 		nfs_server.agent.delete(
@@ -66,11 +80,20 @@ class MountEnabledServer(Document):
 		except HTTPError:
 			frappe.throw("Unable to remove server from ACL")
 
+		if self.share_file_system:
+			frappe.enqueue(
+				"press.press.doctype.mount_enabled_server.mount_enabled_server.detach_umount_and_delete_volume_on_nfs",
+				nfs_server=self.parent,
+				volume_id=self.using_volume,
+				shared_directory=self.server,
+				queue="long",
+			)
+
 		frappe.enqueue(
-			"press.press.doctype.mount_enabled_server.mount_enabled_server.umount_and_delete_shared_directory",
+			"press.press.doctype.mount_enabled_server.mount_enabled_server.umount_and_delete_shared_directory_on_client",
 			client_server=self.server,
 			nfs_server=self.parent,
-			shared_directory=self.use_file_system_of_server or self.server,
+			shared_directory=self.use_file_system_of_server,
 			queue="long",
 		)
 
@@ -211,7 +234,7 @@ class MountEnabledServer(Document):
 		)
 
 
-def umount_and_delete_shared_directory(client_server: str, nfs_server: str, shared_directory: str):
+def umount_and_delete_shared_directory_on_client(client_server: str, nfs_server: str, shared_directory: str):
 	client_server: Server = frappe.get_cached_doc("Server", client_server)
 	nfs_server_private_ip = frappe.db.get_value("NFS Server", nfs_server, "private_ip")
 	try:
@@ -228,3 +251,26 @@ def umount_and_delete_shared_directory(client_server: str, nfs_server: str, shar
 		ansible.run()
 	except Exception:
 		log_error("Exception While Cleaning Up Shared Directory")
+
+
+def detach_umount_and_delete_volume_on_nfs(nfs_server: str, volume_id: str, shared_directory: str):
+	virtual_machine: VirtualMachine = frappe.get_cached_doc("Virtual Machine", nfs_server)
+
+	virtual_machine.detach(volume_id)
+	virtual_machine.delete_volume(volume_id)
+
+	nfs_server: NFSServer = frappe.get_cached_doc("NFS Server", nfs_server)
+
+	try:
+		ansible = Ansible(
+			playbook="umount_volume_nfs_server.yml",
+			server=nfs_server,
+			user=nfs_server._ssh_user(),
+			port=nfs_server._ssh_port(),
+			variables={
+				"shared_directory": f"/home/frappe/nfs/{shared_directory}",
+			},
+		)
+		ansible.run()
+	except Exception:
+		log_error("Exception While Cleaning Up NFS Server")
