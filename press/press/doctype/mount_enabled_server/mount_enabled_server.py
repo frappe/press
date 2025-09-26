@@ -5,6 +5,7 @@ import typing
 
 import frappe
 from frappe.model.document import Document
+from requests.exceptions import HTTPError
 
 from press.runner import Ansible
 from press.utils import log_error
@@ -60,7 +61,11 @@ class MountEnabledServer(Document):
 		)
 
 	def on_trash(self):
-		self.remove_server_from_nfs_acl()
+		try:
+			self.remove_server_from_nfs_acl()
+		except HTTPError:
+			frappe.throw("Unable to remove server from ACL")
+
 		frappe.enqueue(
 			"press.press.doctype.mount_enabled_server.mount_enabled_server.umount_and_delete_shared_directory",
 			client_server=self.server,
