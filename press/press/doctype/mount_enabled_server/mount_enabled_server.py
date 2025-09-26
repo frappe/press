@@ -25,6 +25,7 @@ class MountEnabledServer(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		move_benches: DF.Check
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
@@ -33,6 +34,7 @@ class MountEnabledServer(Document):
 		share_file_system: DF.Check
 		use_file_system_of_server: DF.Link | None
 		using_volume: DF.Data | None
+		volume_size: DF.Int
 	# end: auto-generated types
 
 	@property
@@ -73,6 +75,13 @@ class MountEnabledServer(Document):
 			"/nfs/exports",
 			data={"file_system": self.use_file_system_of_server, "private_ip": private_ip},
 		)
+
+	def validate(self):
+		if not self.share_file_system and self.move_benches:
+			frappe.throw("Can not move benches if server is not sharing the file system")
+
+		if not self.share_file_system and self.volume_size:
+			frappe.throw("No new volume being created since server is not sharing it's the file system")
 
 	def on_trash(self):
 		try:
@@ -115,6 +124,7 @@ class MountEnabledServer(Document):
 	def after_insert(self):
 		try:
 			# Need to eventually convert this to a agent job so that we are able to take filelocks
+			print("RUNNING THIS!")
 			self.add_server_to_nfs_acl()
 		except HTTPError:
 			frappe.throw("Unable to add server to ACL")
@@ -196,17 +206,17 @@ class MountEnabledServer(Document):
 
 	def _create_and_attach_volume_on_nfs_server(self, using_fs_of_server: str) -> str:
 		"""Create/attach a new EBS volume and format/mount filesystem on the nfs server."""
-		volume_size = frappe.db.get_value("Virtual Machine", using_fs_of_server, "disk_size")
+		volume_size = self.volume_size or frappe.db.get_value(
+			"Virtual Machine", using_fs_of_server, "disk_size"
+		)
 		volume_id = self._attach_volume_on_nfs_server(volume_size=volume_size)
 		self._format_and_mount_fs(volume_id)
 		return volume_id
 
-	def mount_shared_folder(
-		self, client_server: str, using_fs_of_server: str, move_benches: bool = False
-	) -> None:
+	def mount_shared_folder(self, client_server: str, using_fs_of_server: str) -> None:
 		self._mount_shared_folder_on_client_server(client_server, using_fs_of_server)
 
-		if move_benches:
+		if self.move_benches:
 			self._move_benches_to_shared(client_server)
 
 	def attach_volume_and_move_data(
@@ -216,7 +226,6 @@ class MountEnabledServer(Document):
 		Attach an EBS volume to the NFS server for the client sharing their file system,
 		or update the volume name on servers using a shared volume.
 		"""
-		move_benches = share_file_system
 		# Get existing volume from the server that is already sharing its fs
 		# If using someone elses fs then we don't need to move our data to it
 		self.using_volume = (
@@ -226,12 +235,9 @@ class MountEnabledServer(Document):
 		)
 		# At this point we are ready to share but the benches might not be moved
 		self.ready_to_share_file_system = share_file_system
-
 		self.save()
 
-		self.mount_shared_folder(
-			client_server=client_server, using_fs_of_server=using_fs_of_server, move_benches=move_benches
-		)
+		self.mount_shared_folder(client_server=client_server, using_fs_of_server=using_fs_of_server)
 
 
 def umount_and_delete_shared_directory_on_client(client_server: str, nfs_server: str, shared_directory: str):

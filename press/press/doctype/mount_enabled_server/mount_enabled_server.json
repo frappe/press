@@ -9,8 +9,10 @@
   "server",
   "use_file_system_of_server",
   "using_volume",
+  "volume_size",
   "share_file_system",
-  "ready_to_share_file_system"
+  "ready_to_share_file_system",
+  "move_benches"
  ],
  "fields": [
   {
@@ -39,6 +41,7 @@
    "read_only": 1
   },
   {
+   "description": "Volume ID being used.",
    "fieldname": "using_volume",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -52,13 +55,28 @@
    "in_list_view": 1,
    "label": "Ready To Share File System",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Move benches to shared folder.",
+   "fieldname": "move_benches",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Move Benches"
+  },
+  {
+   "description": "Volume size on the NFS server.",
+   "fieldname": "volume_size",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Volume Size"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-09-25 18:32:58.525176",
+ "modified": "2025-09-26 17:35:57.094497",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mount Enabled Server",
