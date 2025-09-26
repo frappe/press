@@ -52,6 +52,7 @@
   "frappe_public_key",
   "column_break_18",
   "ssh_user",
+  "bastion_server",
   "ssh_port",
   "root_public_key",
   "section_break_cees",
@@ -671,6 +672,12 @@
    "fieldtype": "Table",
    "label": "Communication Info",
    "options": "Communication Info"
+  },
+  { 
+   "fieldname": "bastion_server",
+   "fieldtype": "Link",
+   "label": "Bastion Server",
+   "options": "Bastion Server"
   }
  ],
  "grid_page_length": 50,

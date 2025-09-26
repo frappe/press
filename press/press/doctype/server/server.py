@@ -1945,6 +1945,14 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		wildcards = self.get_wildcard_domains()
 		agent.setup_wildcard_hosts(wildcards)
 
+	@property
+	def bastion_host(self):
+		if self.bastion_server:
+			return frappe.get_cached_value(
+				"Bastion Server", self.bastion_server, ["ssh_user", "ssh_port", "ip"], as_dict=True
+			)
+		return frappe._dict()
+
 
 class Server(BaseServer):
 	# begin: auto-generated types
@@ -1963,6 +1971,7 @@ class Server(BaseServer):
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
 		auto_increase_storage: DF.Check
+		bastion_server: DF.Link | None
 		cluster: DF.Link | None
 		communication_infos: DF.Table[CommunicationInfo]
 		database_server: DF.Link | None
