@@ -25,11 +25,25 @@
 				"
 			/>
 			<AlertBanner
-				v-if="banner?.enabled"
+				v-for="banner in localBanners"
 				class="mb-5"
+				:key="banner.name"
 				:title="`<b>${banner.title}:</b> ${banner.message}`"
 				:type="banner.type.toLowerCase()"
-			/>
+				:isDismissible="banner.is_dismissible"
+				@dismissBanner="closeBanner(banner.name)"
+			>
+				<template v-if="!!banner.help_url">
+					<Button
+						class="ml-auto flex flex-row items-center gap-1"
+						@click="openHelp(banner.help_url)"
+						variant="outline"
+					>
+						Open help
+						<lucide-external-link class="inline h-4 w-3 pb-0.5" />
+					</Button>
+				</template>
+			</AlertBanner>
 			<AlertMandateInfo
 				class="mb-5"
 				v-if="
@@ -41,7 +55,9 @@
 			/>
 			<AlertUnpaidInvoices
 				class="mb-5"
-				v-if="hasUnpaidInvoices > 0 && $team.doc.payment_mode == 'Prepaid Credits'"
+				v-if="
+					hasUnpaidInvoices > 0 && $team.doc.payment_mode == 'Prepaid Credits'
+				"
 				:amount="hasUnpaidInvoices"
 			/>
 			<ObjectList :options="listOptions" />
@@ -89,6 +105,11 @@ export default {
 			required: true,
 		},
 	},
+	data() {
+		return {
+			localBanners: [],
+		};
+	},
 	methods: {
 		getRoute(row) {
 			return {
@@ -97,6 +118,17 @@ export default {
 					name: row.name,
 				},
 			};
+		},
+		closeBanner(bannerName) {
+			this.localBanners = this.localBanners.filter(
+				(b) => b.name !== bannerName,
+			);
+			this.$resources.dismissBanner.submit({
+				banner_name: bannerName,
+			});
+		},
+		openHelp(url) {
+			window.open(url, '_blank');
 		},
 	},
 	computed: {
@@ -122,8 +154,8 @@ export default {
 				return false;
 			}
 		},
-		banner() {
-			return this.$resources.banner.doc;
+		banners() {
+			return this.$resources.banners.data || [];
 		},
 		isMandateNotSet() {
 			return !this.$team.doc?.payment_method?.stripe_mandate_id;
@@ -133,17 +165,25 @@ export default {
 		},
 	},
 	resources: {
-		banner() {
+		banners() {
 			return {
-				type: 'document',
-				doctype: 'Dashboard Banner',
-				name: 'Dashboard Banner',
+				url: 'press.press.doctype.dashboard_banner.dashboard_banner.get_user_banners',
+				auto: true,
+				onSuccess: (data) => {
+					this.localBanners = data;
+				},
 			};
 		},
 		getAmountDue() {
 			return {
 				url: 'press.api.billing.total_unpaid_amount',
 				auto: true,
+			};
+		},
+		dismissBanner() {
+			return {
+				url: 'press.press.doctype.dashboard_banner.dashboard_banner.dismiss_banner',
+				auto: false,
 			};
 		},
 	},
