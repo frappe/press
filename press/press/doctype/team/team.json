@@ -46,7 +46,7 @@
   "column_break_9",
   "last_used_team",
   "section_break_28",
-  "communication_info",
+  "communication_infos",
   "partner_tab",
   "partner_details_section",
   "erpnext_partner",
@@ -570,9 +570,9 @@
    "label": "Skip Onboarding"
   },
   {
-   "fieldname": "communication_info",
+   "fieldname": "communication_infos",
    "fieldtype": "Table",
-   "label": "Communication Info",
+   "label": "Communication Infos",
    "options": "Communication Info"
   }
  ],
@@ -639,7 +639,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2025-09-25 13:47:19.886909",
+ "modified": "2025-09-26 17:07:41.315041",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

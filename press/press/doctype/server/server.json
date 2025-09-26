@@ -95,7 +95,7 @@
   "has_data_volume",
   "mounts",
   "notifications_section",
-  "communication_info"
+  "communication_infos"
  ],
  "fields": [
   {
@@ -652,14 +652,14 @@
    "label": "Notifications"
   },
   {
-   "fieldname": "communication_info",
+   "fieldname": "communication_infos",
    "fieldtype": "Table",
-   "label": "Communication Info",
+   "label": "Communication Infos",
    "options": "Communication Info"
   }
  ],
  "links": [],
- "modified": "2025-09-25 15:32:23.872335",
+ "modified": "2025-09-26 18:12:36.754235",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
