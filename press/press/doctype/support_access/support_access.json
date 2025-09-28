@@ -1,0 +1,144 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-09-25 15:21:55.641624",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "access_expired",
+  "requested_by",
+  "requested_for",
+  "allowed_for",
+  "reason",
+  "column_break_vrkb",
+  "all_access",
+  "dashboard_access",
+  "bench_ssh_access",
+  "access_allowed_till",
+  "status"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "access_expired",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Access Expired"
+  },
+  {
+   "fieldname": "requested_by",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Requested By",
+   "options": "Team"
+  },
+  {
+   "description": "in hours",
+   "fieldname": "allowed_for",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Allowed for",
+   "options": "3\n6\n12\n24"
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason"
+  },
+  {
+   "fieldname": "column_break_vrkb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "dashboard_access",
+   "fieldtype": "Check",
+   "label": "Dashboard Access",
+   "read_only_depends_on": "eval:doc.all_access==1"
+  },
+  {
+   "default": "0",
+   "fieldname": "bench_ssh_access",
+   "fieldtype": "Check",
+   "label": "Bench SSH Access",
+   "read_only_depends_on": "eval:doc.all_access==1"
+  },
+  {
+   "fieldname": "access_allowed_till",
+   "fieldtype": "Datetime",
+   "label": "Access allowed till",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "all_access",
+   "fieldtype": "Check",
+   "label": "All Access"
+  },
+  {
+   "fieldname": "requested_for",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Requested for",
+   "options": "Team"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nAccepted\nRejected"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-09-26 13:14:26.520915",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Support Access",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
