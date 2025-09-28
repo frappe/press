@@ -3047,8 +3047,6 @@ class Site(Document, TagHelpers):
 	@frappe.whitelist()
 	def get_actions(self):
 		is_group_public = frappe.get_cached_value("Release Group", self.group, "public")
-		team_owner = frappe.get_value("Team", self.team, "user")
-		is_team_owner = team_owner == frappe.session.user or frappe.local.system_user()
 
 		actions = [
 			{
@@ -3063,7 +3061,7 @@ class Site(Document, TagHelpers):
 				"description": "Manage users and permissions for your site database",
 				"button_label": "Manage",
 				"doc_method": "dummy",
-				"condition": not self.hybrid_site and has_permission("Site Database User") and is_team_owner,
+				"condition": not self.hybrid_site and has_permission("Site Database User"),
 			},
 			{
 				"action": "Schedule backup",
