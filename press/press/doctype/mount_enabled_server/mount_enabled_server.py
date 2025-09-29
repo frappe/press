@@ -45,7 +45,6 @@ class MountEnabledServer(Document):
 				"Mount Enabled Server",
 				{
 					"parent": self.parent,
-					"server": ("!=", self.use_file_system_of_server),
 					"use_file_system_of_server": self.server,
 				},
 			)
