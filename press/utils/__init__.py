@@ -925,6 +925,8 @@ def timer(f):
 
 def validate_subdomain(subdomain: str):
 	site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+	if not subdomain:
+		frappe.throw("Subdomain is required to create a site.")
 	if not re.match(site_regex, subdomain):
 		frappe.throw("Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens")
 	if len(subdomain) > 32:
