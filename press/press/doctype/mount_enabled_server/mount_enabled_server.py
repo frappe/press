@@ -72,7 +72,10 @@ class MountEnabledServer(Document):
 		private_ip = frappe.db.get_value("Server", self.server, "private_ip")
 		nfs_server.agent.delete(
 			"/nfs/exports",
-			data={"file_system": self.use_file_system_of_server, "private_ip": private_ip},
+			data={
+				"private_ip": private_ip,
+				"file_system": self.use_file_system_of_server if not self.share_file_system else self.server,
+			},
 		)
 
 	def validate(self):
