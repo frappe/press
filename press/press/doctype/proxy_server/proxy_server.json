@@ -44,6 +44,7 @@
   "frappe_user_password",
   "frappe_public_key",
   "column_break_18",
+  "bastion_server",
   "root_public_key",
   "section_break_21",
   "domains",
@@ -436,10 +437,16 @@
    "fieldtype": "Check",
    "label": "TLS Certificate Renewal Failed",
    "read_only": 1
+  },
+  {
+   "fieldname": "bastion_server",
+   "fieldtype": "Link",
+   "label": "Bastion Server",
+   "options": "Bastion Server"
   }
  ],
  "links": [],
- "modified": "2025-09-02 16:42:27.412427",
+ "modified": "2025-09-24 12:16:20.589165",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
