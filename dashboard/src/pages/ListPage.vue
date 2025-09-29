@@ -24,26 +24,7 @@
 					$team.doc.payment_mode
 				"
 			/>
-			<AlertBanner
-				v-for="banner in localBanners"
-				class="mb-5"
-				:key="banner.name"
-				:title="`<b>${banner.title}:</b> ${banner.message}`"
-				:type="banner.type.toLowerCase()"
-				:isDismissible="banner.is_dismissible"
-				@dismissBanner="closeBanner(banner.name)"
-			>
-				<template v-if="!!banner.help_url">
-					<Button
-						class="ml-auto flex flex-row items-center gap-1"
-						@click="openHelp(banner.help_url)"
-						variant="outline"
-					>
-						Open help
-						<lucide-external-link class="inline h-4 w-3 pb-0.5" />
-					</Button>
-				</template>
-			</AlertBanner>
+			<ServerAlerts />
 			<AlertMandateInfo
 				class="mb-5"
 				v-if="
@@ -72,7 +53,6 @@ import { Breadcrumbs, Button, Dropdown, TextInput } from 'frappe-ui';
 import { getObject } from '../objects';
 import { defineAsyncComponent } from 'vue';
 import dayjs from '../utils/dayjs';
-import AlertBanner from '../components/AlertBanner.vue';
 
 export default {
 	components: {
@@ -82,7 +62,6 @@ export default {
 		Button,
 		Dropdown,
 		TextInput,
-		AlertBanner,
 		AlertAddPaymentMode: defineAsyncComponent(
 			() => import('../components/AlertAddPaymentMode.vue'),
 		),
@@ -98,17 +77,15 @@ export default {
 		AlertUnpaidInvoices: defineAsyncComponent(
 			() => import('../components/AlertUnpaidInvoices.vue'),
 		),
+		ServerAlerts: defineAsyncComponent(
+			() => import('../components/ServerAlerts.vue'),
+		),
 	},
 	props: {
 		objectType: {
 			type: String,
 			required: true,
 		},
-	},
-	data() {
-		return {
-			localBanners: [],
-		};
 	},
 	methods: {
 		getRoute(row) {
@@ -118,17 +95,6 @@ export default {
 					name: row.name,
 				},
 			};
-		},
-		closeBanner(bannerName) {
-			this.localBanners = this.localBanners.filter(
-				(b) => b.name !== bannerName,
-			);
-			this.$resources.dismissBanner.submit({
-				banner_name: bannerName,
-			});
-		},
-		openHelp(url) {
-			window.open(url, '_blank');
 		},
 	},
 	computed: {
@@ -154,9 +120,6 @@ export default {
 				return false;
 			}
 		},
-		banners() {
-			return this.$resources.banners.data || [];
-		},
 		isMandateNotSet() {
 			return !this.$team.doc?.payment_method?.stripe_mandate_id;
 		},
@@ -165,25 +128,10 @@ export default {
 		},
 	},
 	resources: {
-		banners() {
-			return {
-				url: 'press.press.doctype.dashboard_banner.dashboard_banner.get_user_banners',
-				auto: true,
-				onSuccess: (data) => {
-					this.localBanners = data;
-				},
-			};
-		},
 		getAmountDue() {
 			return {
 				url: 'press.api.billing.total_unpaid_amount',
 				auto: true,
-			};
-		},
-		dismissBanner() {
-			return {
-				url: 'press.press.doctype.dashboard_banner.dashboard_banner.dismiss_banner',
-				auto: false,
 			};
 		},
 	},

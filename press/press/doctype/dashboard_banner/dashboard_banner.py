@@ -82,10 +82,10 @@ def get_user_banners():
 		.select("*")
 		.where(DashboardBanner.enabled == 1)
 		.where(
-			((DashboardBanner.type_of_scope == "Site") & (DashboardBanner.site.isin(sites)))
+			(DashboardBanner.is_global == 1)
+			| ((DashboardBanner.type_of_scope == "Site") & (DashboardBanner.site.isin(sites)))
 			| ((DashboardBanner.type_of_scope == "Server") & (DashboardBanner.server.isin(servers)))
 			| ((DashboardBanner.type_of_scope == "Team") & (DashboardBanner.team == team))
-			| (DashboardBanner.is_global == 1)
 		)
 		.run(as_dict=True)
 	)

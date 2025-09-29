@@ -3,6 +3,13 @@
 		v-if="$site?.doc"
 		class="grid grid-cols-1 items-start gap-5 lg:grid-cols-2"
 	>
+		<ServerAlerts
+			:disable-last-child-bottom-margin="true"
+			container-class="col-span-1 lg:col-span-2"
+			ctx_type="Site"
+			:ctx_name="$site?.doc?.name"
+		/>
+
 		<AlertBanner
 			v-if="$site?.doc?.status === 'Suspended' && $site?.doc?.suspension_reason"
 			class="col-span-1 lg:col-span-2"
@@ -313,6 +320,7 @@ import { renderDialog } from '../utils/components';
 import SiteDailyUsage from './SiteDailyUsage.vue';
 import AlertBanner from './AlertBanner.vue';
 import { trialDays } from '../utils/site';
+import ServerAlerts from './ServerAlerts.vue';
 
 export default {
 	name: 'SiteOverview',
@@ -322,6 +330,7 @@ export default {
 		Progress,
 		AlertBanner,
 		DismissableBanner,
+		ServerAlerts,
 	},
 	data() {
 		return {
