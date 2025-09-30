@@ -169,14 +169,15 @@ export default {
 						`Server ${this.targetServer.value} added to the bench. Please wait for the deploy to be completed.`,
 					);
 
-					this.$router.push({
-						name: 'Release Group Job',
-						params: {
-							name: this.$site.doc?.group,
-							id: data,
-						},
-					});
-
+					if (data) {
+						this.$router.push({
+							name: 'Release Group Job',
+							params: {
+								name: this.$site.doc?.group,
+								id: data,
+							},
+						});
+					}
 					this.show = false;
 				},
 			};
