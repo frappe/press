@@ -80,9 +80,15 @@ export default {
 				onSuccess: (data) => {
 					this.localBanners =
 						this.ctx_type === 'Server'
-							? data.filter((banner) => banner.server === this.ctx_name)
+							? data.filter(
+									(banner) =>
+										banner.server === this.ctx_name || banner.is_global,
+								)
 							: this.ctx_type === 'Site'
-								? data.filter((banner) => banner.site === this.ctx_name)
+								? data.filter(
+										(banner) =>
+											banner.site === this.ctx_name || banner.is_global,
+									)
 								: data;
 				},
 			};
