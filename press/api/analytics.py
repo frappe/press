@@ -502,11 +502,7 @@ def get_metrics(
 	duration: str = "24h",
 ):
 	if not group:
-<<<<<<< HEAD
-		frappe.throw("Bench group not found!")
-=======
 		frappe.throw("No release group found!")
->>>>>>> c63e9e4a7 (fix(analytics): Correct metric permissions)
 
 	benches = frappe.get_all("Bench", {"status": "Active", "group": group}, pluck="name")
 
