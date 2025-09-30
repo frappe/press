@@ -89,7 +89,8 @@ def get_communication_info(  # noqa: C901
 	# If nothing found, pick team user email
 	if not infos:
 		if resource_type == "Team":
-			infos.append({"type": "General", "value": frappe.get_value("Team", resource_name, "user")})
+			if channel == "Email":
+				infos.append({"type": "General", "value": frappe.get_value("Team", resource_name, "user")})
 		elif resource_type in ("Site", "Server", "Database Server"):
 			team = frappe.get_value(resource_type, resource_name, "team")
 			if team:

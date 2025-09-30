@@ -462,7 +462,6 @@ class Team(Document):
 
 		self.validate_payment_mode()
 		self.update_draft_invoice_payment_mode()
-		self.set_notification_emails()
 
 		if (
 			not self.is_new()
