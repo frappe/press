@@ -104,12 +104,7 @@
 				class="mt-2 w-full"
 				variant="solid"
 				:loading="$resources.checkDNS.loading"
-				@click="
-					$resources.checkDNS.submit({
-						name: site.name,
-						domain: newDomain,
-					})
-				"
+				@click="preprocessAndVerifyDns()"
 			>
 				Verify DNS
 			</Button>
@@ -147,6 +142,20 @@ export default {
 			showDialog: true,
 			newDomain: null,
 		};
+	},
+	methods: {
+		preprocessAndVerifyDns() {
+			if (this.newDomain) {
+				// Remove scheme if present
+				this.newDomain = this.newDomain.replace(/(^\w+:|^)\/\//, '');
+				// Take only the first segment before any `/`
+				this.newDomain = this.newDomain.split('/')[0];
+			}
+			this.$resources.checkDNS.submit({
+				name: this.site.name,
+				domain: this.newDomain,
+			});
+		},
 	},
 	resources: {
 		checkDNS: {
