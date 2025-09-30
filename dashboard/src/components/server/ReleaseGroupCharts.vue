@@ -148,7 +148,7 @@ export default {
 		chosenGroup() {
 			this.$router.push({
 				query: {
-					group: this.chosenGroup,
+					name: this.chosenGroup,
 				},
 			});
 		},
@@ -158,7 +158,7 @@ export default {
 			return {
 				url: 'press.api.analytics.get_memory_usage',
 				params: {
-					group: this.chosenGroup,
+					name: this.chosenGroup,
 					timezone: this.localTimezone,
 					duration: this.duration,
 				},
@@ -169,7 +169,7 @@ export default {
 			return {
 				url: 'press.api.analytics.get_cpu_usage',
 				params: {
-					group: this.chosenGroup,
+					name: this.chosenGroup,
 					timezone: this.localTimezone,
 					duration: this.duration,
 				},
@@ -180,7 +180,7 @@ export default {
 			return {
 				url: 'press.api.analytics.get_incoming_network_traffic',
 				params: {
-					group: this.chosenGroup,
+					name: this.chosenGroup,
 					timezone: this.localTimezone,
 					duration: this.duration,
 				},
@@ -191,7 +191,7 @@ export default {
 			return {
 				url: 'press.api.analytics.get_outgoing_network_traffic',
 				params: {
-					group: this.chosenGroup,
+					name: this.chosenGroup,
 					timezone: this.localTimezone,
 					duration: this.duration,
 				},
@@ -202,7 +202,7 @@ export default {
 			return {
 				url: 'press.api.analytics.get_fs_read_bytes',
 				params: {
-					group: this.chosenGroup,
+					name: this.chosenGroup,
 					timezone: this.localTimezone,
 					duration: this.duration,
 				},
@@ -213,7 +213,7 @@ export default {
 			return {
 				url: 'press.api.analytics.get_fs_write_bytes',
 				params: {
-					group: this.chosenGroup,
+					name: this.chosenGroup,
 					timezone: this.localTimezone,
 					duration: this.duration,
 				},
@@ -240,12 +240,18 @@ export default {
 				return null;
 			}
 
-			return groups
+			let filteredGroups = groups
 				.filter((group) => group.active_benches > 0)
 				.map((group) => ({
 					label: group.title,
 					value: group.name,
 				}));
+
+			if (!this.chosenGroup) {
+				this.chosenGroup = filteredGroups[0].value;
+			}
+
+			return filteredGroups;
 		},
 		memoryData() {
 			let memory = this.$resources.memory.data?.memory;

@@ -3,6 +3,7 @@
 		v-if="$appServer?.doc"
 		class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2"
 	>
+		<CustomAlerts ctx_type="Server" :ctx_name="$appServer?.doc?.name" />
 		<div
 			v-for="server in !!$dbReplicaServer?.doc
 				? ['Server', 'Database Server', 'Replication Server']
@@ -128,6 +129,7 @@ import ServerLoadAverage from './ServerLoadAverage.vue';
 import StorageBreakdownDialog from './StorageBreakdownDialog.vue';
 import { getDocResource } from '../../utils/resource';
 import Badge from '../global/Badge.vue';
+import CustomAlerts from '../CustomAlerts.vue';
 
 export default {
 	props: ['server'],
@@ -136,6 +138,7 @@ export default {
 		ServerLoadAverage,
 		ServerPlansDialog,
 		StorageBreakdownDialog,
+		CustomAlerts,
 	},
 	methods: {
 		showPlanChangeDialog(serverType) {

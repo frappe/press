@@ -206,8 +206,7 @@ class ProxyServer(BaseServer):
 	def _setup_fail2ban(self):
 		try:
 			ansible = Ansible(
-				playbook="fail2ban.yml",
-				server=self,
+				playbook="fail2ban.yml", server=self, user=self._ssh_user(), port=self._ssh_port()
 			)
 			play = ansible.run()
 			self.reload()
@@ -235,6 +234,8 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="proxysql.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"proxysql_admin_password": self.get_password("proxysql_admin_password"),
@@ -270,6 +271,8 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="primary_proxy.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={"secondary_private_ip": secondary_private_ip},
 			)
 			play = ansible.run()
@@ -288,6 +291,8 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="secondary_proxy.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={"primary_public_key": self.get_primary_frappe_public_key()},
 			)
 			play = ansible.run()
@@ -316,6 +321,8 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="failover_prepare_primary_proxy.yml",
 				server=primary,
+				user=primary._ssh_user(),
+				port=primary._ssh_port(),
 			)
 			ansible.run()
 		except Exception:
@@ -341,6 +348,8 @@ class ProxyServer(BaseServer):
 		ansible = Ansible(
 			playbook="failover_remove_primary_access.yml",
 			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
 			variables={
 				"primary_public_key": frappe.db.get_value("Proxy Server", self.primary, "frappe_public_key")
 			},
@@ -348,7 +357,12 @@ class ProxyServer(BaseServer):
 		ansible.run()
 
 	def up_secondary(self):
-		ansible = Ansible(playbook="failover_up_secondary_proxy.yml", server=self)
+		ansible = Ansible(
+			playbook="failover_up_secondary_proxy.yml",
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+		)
 		ansible.run()
 
 	def update_dns_records_for_all_sites(self):
@@ -422,6 +436,8 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="proxysql_monitor.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"proxysql_admin_password": self.get_password("proxysql_admin_password"),
@@ -451,6 +467,8 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="wireguard.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"wireguard_port": self.wireguard_port,
@@ -496,6 +514,8 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="reload_wireguard.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"wireguard_port": self.wireguard_port,
