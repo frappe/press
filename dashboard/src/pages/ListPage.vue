@@ -24,7 +24,7 @@
 					$team.doc.payment_mode
 				"
 			/>
-			<ServerAlerts />
+			<CustomAlerts />
 			<AlertMandateInfo
 				class="mb-5"
 				v-if="
@@ -77,8 +77,8 @@ export default {
 		AlertUnpaidInvoices: defineAsyncComponent(
 			() => import('../components/AlertUnpaidInvoices.vue'),
 		),
-		ServerAlerts: defineAsyncComponent(
-			() => import('../components/ServerAlerts.vue'),
+		CustomAlerts: defineAsyncComponent(
+			() => import('../components/CustomAlerts.vue'),
 		),
 	},
 	props: {
