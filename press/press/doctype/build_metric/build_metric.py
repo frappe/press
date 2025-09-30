@@ -91,10 +91,11 @@ class GenerateBuildMetric:
 				"fc_manual_failure": len(self.total_failures["fc_manual_failure"]),
 				"fc_failure": len(self.total_failures["fc_failure"]),
 			},
-			"median_pending_duration": self.duration_metrics["median_pending_duration"],
-			"median_build_duration": self.duration_metrics["median_build_duration"],
+			"median_pending_duration": self.build_duration_metrics["median_pending_duration"],
+			"median_build_duration": self.build_duration_metrics["median_build_duration"],
 			"median_upload_context_duration": self.context_durations["median_upload_duration"],
 			"median_package_context_duration": self.context_durations["median_package_duration"],
+			"median_deploy_duration": self.deploy_duration_metrics,
 			"failure_frequency": dict(self.failure_frequency.most_common()),
 			"fc_failure_metrics": self.fc_failure_metrics,
 			"build_count_split": self.get_build_count_platform_split(),
@@ -110,7 +111,8 @@ class GenerateBuildMetric:
 		"""
 		self.total_builds = self.get_total_builds()
 		self.total_failures = self.get_total_failures()
-		self.duration_metrics = self.get_build_duration_metrics()
+		self.build_duration_metrics = self.get_build_duration_metrics()
+		self.deploy_duration_metrics = self.get_deploy_duration_metrics()
 		self.context_durations = self.get_context_durations()
 		self.failure_frequency = self.get_error_frequency(
 			self.total_failures["user_failure"],
@@ -172,6 +174,18 @@ class GenerateBuildMetric:
 			"median_build_duration": median_build_duration,
 			"median_pending_duration": median_pending_duration,
 		}
+
+	def get_deploy_duration_metrics(self) -> float:
+		deploy_durations = frappe.db.get_all(
+			"Agent Job",
+			{
+				"job_type": "New Bench",
+				"creation": ("between", [self.from_date, self.end_date]),
+				"status": "Success",
+			},
+			pluck="duration",
+		)
+		return median([deploy_duration.total_seconds() / 60 for deploy_duration in deploy_durations])
 
 	def get_total_failures(self) -> FailedBuildType:
 		"""User failures, fc failures and manual failures"""
