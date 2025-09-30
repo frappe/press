@@ -104,7 +104,7 @@
 				class="mt-2 w-full"
 				variant="solid"
 				:loading="$resources.checkDNS.loading"
-				@click="preprocessAndVerifyDns()"
+				@click="preprocessDomain()"
 			>
 				Verify DNS
 			</Button>
@@ -144,13 +144,19 @@ export default {
 		};
 	},
 	methods: {
-		preprocessAndVerifyDns() {
+		preprocessDomain() {
 			if (this.newDomain) {
-				// Remove scheme if present
+				// Remove the URL protocol if present (http://, https://, wss://)
+				// Example: "https://cooldomain.in" → "cooldomain.in"
 				this.newDomain = this.newDomain.replace(/(^\w+:|^)\/\//, '');
-				// Take only the first segment before any `/`
+
+				// Remove everything after the first '/' to keep only the root domain
+				// Example: "cooldomain.in/path/to/glory" → "cooldomain.in"
 				this.newDomain = this.newDomain.split('/')[0];
+				this.verifyDns();
 			}
+		},
+		verifyDns() {
 			this.$resources.checkDNS.submit({
 				name: this.site.name,
 				domain: this.newDomain,
