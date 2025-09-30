@@ -24,10 +24,12 @@
 </template>
 
 <script>
+import AlertBanner from '../components/AlertBanner.vue';
+
 export default {
-	name: 'ServerAlerts',
+	name: 'CustomAlerts',
 	components: {
-		AlertBanner: () => import('../components/AlertBanner.vue'),
+		AlertBanner,
 	},
 	props: {
 		ctx_type: {

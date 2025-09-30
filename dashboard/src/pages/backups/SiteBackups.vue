@@ -7,7 +7,7 @@
 				/>
 			</Header>
 		</div>
-		<ServerAlerts
+		<CustomAlerts
 			:disable-last-child-bottom-margin="true"
 			container-class="p-5 pb-0"
 		/>
@@ -19,14 +19,14 @@
 
 <script>
 import ObjectList from '../../components/ObjectList.vue';
-import ServerAlerts from '../../components/ServerAlerts.vue';
+import CustomAlerts from '../../components/CustomAlerts.vue';
 import { bytes, date } from '../../utils/format';
 
 export default {
 	name: 'SiteBackups',
 	components: {
 		ObjectList,
-		ServerAlerts,
+		CustomAlerts,
 	},
 	computed: {
 		listOptions() {
