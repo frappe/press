@@ -29,6 +29,8 @@ class TestScheduledBackupJob(FrappeTestCase):
 		return frappe.db.count("Site Backup", {"site": site, "with_files": True})
 
 	def setUp(self):
+		super().setUp()
+
 		self.interval = 6
 		frappe.db.set_single_value("Press Settings", "backup_interval", 6)
 

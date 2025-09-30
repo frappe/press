@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
+  "legacy_plan",
   "title",
   "pricing_section",
   "price_inr",
@@ -125,13 +126,19 @@
    "fieldname": "platform",
    "fieldtype": "Select",
    "label": "Platform",
-   "options": "x86_64\narm64",
+   "options": "x86_64\narm64\namd64",
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "legacy_plan",
+   "fieldtype": "Check",
+   "label": "Legacy Plan"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-21 13:49:02.682602",
+ "modified": "2025-07-10 23:10:18.403862",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Plan",
@@ -151,6 +158,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

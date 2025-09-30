@@ -3,12 +3,12 @@
 
 from __future__ import annotations
 
-import unittest
 from datetime import date, timedelta
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import frappe
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.account_request.test_account_request import (
 	create_test_account_request,
@@ -46,7 +46,7 @@ def create_test_drip_email(
 	return drip_email
 
 
-class TestDripEmail(unittest.TestCase):
+class TestDripEmail(FrappeTestCase):
 	def setUp(self) -> None:
 		self.trial_site_plan = create_test_plan("Site", is_trial_plan=True)
 		self.paid_site_plan = create_test_plan("Site", is_trial_plan=False)

@@ -5,8 +5,10 @@
 from itertools import groupby
 
 import frappe
+from frappe.rate_limiter import rate_limit
 
 from press.exceptions import AlertRuleNotEnabled
+from press.press.doctype.monitor_server.monitor_server import get_monitor_server_ips
 from press.utils import log_error, servers_using_alternative_port_for_communication
 
 
@@ -95,9 +97,25 @@ def get_tls():
 	return tls
 
 
+def get_targets_method_rate_limit() -> int:
+	if (
+		frappe.local
+		and hasattr(frappe.local, "request_ip")
+		and frappe.local.request_ip in get_monitor_server_ips()
+	):
+		# Allow no limit for known monitor servers
+		return 1000
+
+	# For unknown IPs, allow only 2 request per minute
+	return 2
+
+
 @frappe.whitelist(allow_guest=True)
-def targets(token):
-	monitor_token = frappe.db.get_single_value("Press Settings", "monitor_token")
+@rate_limit(limit=get_targets_method_rate_limit, seconds=60)
+def targets(token=None):
+	if not token:
+		frappe.throw_permission_error()
+	monitor_token = frappe.db.get_single_value("Press Settings", "monitor_token", cache=True)
 	if token != monitor_token:
 		return None
 
@@ -106,8 +124,18 @@ def targets(token):
 
 @frappe.whitelist(allow_guest=True, xss_safe=True)
 def alert(*args, **kwargs):
+	user = frappe.session.user
 	try:
-		user = str(frappe.session.user)
+		webhook_token = frappe.db.get_value(
+			"Monitor Server",
+			frappe.db.get_single_value("Press Settings", "monitor_server", cache=True),
+			"webhook_token",
+			cache=True,
+		)
+
+		if frappe.request.args.get("webhook_token") != webhook_token:
+			raise frappe.AuthenticationError("Invalid credentials")
+
 		frappe.set_user("Administrator")
 
 		doc = frappe.get_doc(
@@ -119,8 +147,13 @@ def alert(*args, **kwargs):
 		doc.insert()
 	except AlertRuleNotEnabled:
 		pass
+
+	except frappe.AuthenticationError:
+		log_error("Alertmanager Webhook Authentication Error", args=args, kwargs=kwargs)
+
 	except Exception:
 		log_error("Alertmanager Webhook Error", args=args, kwargs=kwargs)
 		raise
+
 	finally:
 		frappe.set_user(user)

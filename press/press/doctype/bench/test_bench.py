@@ -2,14 +2,15 @@
 # See license.txt
 from __future__ import annotations
 
-import unittest
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
+import responses
 from frappe.tests.utils import FrappeTestCase
 
 from press.agent import Agent
+from press.exceptions import ArchiveBenchError
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
@@ -44,7 +45,10 @@ if TYPE_CHECKING:
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestStagingSite(unittest.TestCase):
+@patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
+@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+@patch("press.api.bench.frappe.db.commit", new=MagicMock)
+class TestStagingSite(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
@@ -63,6 +67,8 @@ class TestStagingSite(unittest.TestCase):
 @patch.object(AgentJob, "after_insert", new=Mock())
 @patch("press.press.doctype.server.server.frappe.enqueue_doc", new=foreground_enqueue_doc)
 @patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+@patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
+@patch("press.api.bench.frappe.db.commit", new=MagicMock)
 class TestBench(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
@@ -118,8 +124,9 @@ class TestBench(FrappeTestCase):
 		bench.memory_max = high_memory_max
 		bench.save()
 
-		with patch.object(Bench, "get_free_memory", new=lambda x: low_prometheus_memeory), self.assertRaises(
-			frappe.ValidationError
+		with (
+			patch.object(Bench, "get_free_memory", new=lambda x: low_prometheus_memeory),
+			self.assertRaises(frappe.ValidationError),
 		):
 			# Should not rebuild due to low server mem
 			self.assertEqual(bench.get_memory_info(), (True, low_prometheus_memeory / (1024**3), 2))
@@ -376,16 +383,26 @@ class TestBench(FrappeTestCase):
 
 
 @patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
-class TestArchiveObsoleteBenches(unittest.TestCase):
+@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+@patch("press.api.bench.frappe.db.commit", new=MagicMock)
+class TestArchiveObsoleteBenches(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
 	def test_private_obsolete_benches_archived(self):
 		priv_group = create_test_release_group(apps=[create_test_app()], public=False)
 
-		create_test_bench(group=priv_group, creation=frappe.utils.add_days(None, -10))
+		with fake_agent_job("New Bench", "Success"):
+			create_test_bench(group=priv_group, creation=frappe.utils.add_days(None, -10))
+			poll_pending_jobs()
+
 		benches_before = frappe.db.count("Bench", {"status": "Active"})
-		with fake_agent_job("Archive Bench"):
+		with fake_agent_job(
+			{
+				"Archive Bench": {"status": "Success"},
+				"Update Bench Configuration": {"status": "Success"},
+			}
+		):
 			archive_obsolete_benches()
 			poll_pending_jobs()
 		benches_after = frappe.db.count("Bench", {"status": "Active"})
@@ -397,29 +414,50 @@ class TestArchiveObsoleteBenches(unittest.TestCase):
 	def test_old_public_benches_without_sites_archived(self):
 		pub_group = create_test_release_group(apps=[create_test_app()], public=True)
 
-		bench1 = create_test_bench(group=pub_group, creation=frappe.utils.add_days(None, -10))
+		with fake_agent_job("New Bench", "Success"):
+			bench1 = create_test_bench(group=pub_group, creation=frappe.utils.add_days(None, -10))
+			poll_pending_jobs()
+
 		benches_before = frappe.db.count("Bench", {"status": "Active"})
 		with fake_agent_job("Archive Bench"):
 			archive_obsolete_benches()
 			poll_pending_jobs()
+
 		benches_after = frappe.db.count("Bench", {"status": "Active"})
 		self.assertEqual(benches_after, benches_before)  # nothing got archived
-		bench2 = create_test_bench(group=pub_group, server=bench1.server)
+
+		with fake_agent_job("New Bench", "Success"):
+			bench2 = create_test_bench(group=pub_group, server=bench1.server)
+			poll_pending_jobs()
+
 		create_test_deploy_candidate_differences(bench2.candidate)
-		with fake_agent_job("Archive Bench"):
+		with fake_agent_job(
+			{
+				"Archive Bench": {"status": "Success"},
+				"Update Bench Configuration": {"status": "Success"},
+			}
+		):
 			archive_obsolete_benches()
 			poll_pending_jobs()
+
 		benches_after = frappe.db.count("Bench", {"status": "Active"})
 		self.assertEqual(benches_after, benches_before)  # older bench got archived
 
 	def test_private_benches_where_version_upgrade_scheduled_is_not_archived(self):
 		priv_group = create_test_release_group(apps=[create_test_app()], public=False)
-		bench = create_test_bench(group=priv_group, creation=frappe.utils.add_days(None, -10))
+		with fake_agent_job("New Bench", "Success"):
+			bench = create_test_bench(group=priv_group, creation=frappe.utils.add_days(None, -10))
+			poll_pending_jobs()
 
-		bench2 = create_test_bench(server=bench.server)  # same server, different group
-		site = create_test_site(bench=bench2.name)
+		with fake_agent_job("New Bench", "Success"):
+			bench2 = create_test_bench(server=bench.server)  # same server, different group
+			poll_pending_jobs()
 
-		priv_group.add_server(bench.server, deploy=False)  # version upgrade validation
+		site = create_test_site(bench=bench2.name, fake_agent_jobs=True)
+
+		priv_group.append("servers", {"server": bench.server, "default": False})  # version upgrade validation
+		priv_group.save()
+
 		create_test_version_upgrade(site.name, priv_group.name)
 		benches_before = frappe.db.count("Bench", {"status": "Active"})
 		with fake_agent_job("Archive Bench"):
@@ -434,15 +472,76 @@ class TestArchiveObsoleteBenches(unittest.TestCase):
 	)
 	@patch("press.press.doctype.bench.bench.frappe.enqueue", new=foreground_enqueue)
 	def test_benches_archived_for_multiple_servers_via_multiple_jobs(self, mock_archive_by_server: MagicMock):
-		priv_group = create_test_release_group(apps=[create_test_app()], public=False)
-		create_test_bench(group=priv_group, creation=frappe.utils.add_days(None, -10))
-		priv_group2 = create_test_release_group(apps=[create_test_app()], public=False)
-		create_test_bench(group=priv_group2, creation=frappe.utils.add_days(None, -10))
+		with fake_agent_job("New Bench", "Success"):
+			priv_group = create_test_release_group(apps=[create_test_app()], public=False)
+			priv_bench1 = create_test_bench(group=priv_group, creation=frappe.utils.add_days(None, -10))
+			priv_group2 = create_test_release_group(apps=[create_test_app()], public=False)
+			priv_bench2 = create_test_bench(group=priv_group2, creation=frappe.utils.add_days(None, -10))
+
+			poll_pending_jobs()
 
 		benches_before = frappe.db.count("Bench", {"status": "Active"})
-		with fake_agent_job("Archive Bench"):
+		with fake_agent_job("Archive Bench") and patch(
+			"press.utils.jobs.stop_background_job", return_value=True
+		):
+			for bench in [priv_bench1, priv_bench2]:
+				responses.add(
+					responses.POST,
+					f"https://{bench.server}:443/agent/benches/{bench.name}/config",
+					json={},
+					status=200,
+				)
+
 			archive_obsolete_benches()
 			poll_pending_jobs()
 		benches_after = frappe.db.count("Bench", {"status": "Active"})
 		self.assertEqual(benches_before - benches_after, 2)
-		self.assertEqual(mock_archive_by_server.call_count, 2)
+		self.assertEqual(mock_archive_by_server.call_count, 2, msg=f"{frappe.db.get_all('Server')}")
+
+	def test_check_if_archive_agent_job_is_successful(self):
+		with fake_agent_job("New Bench", "Success"):
+			priv_group = create_test_release_group(apps=[create_test_app()], public=False)
+			bench = create_test_bench(group=priv_group, creation=frappe.utils.add_days(None, -10))
+
+			poll_pending_jobs()
+
+		with fake_agent_job("Archive Bench") and patch(
+			"press.utils.jobs.stop_background_job", return_value=True
+		):
+			bench.archive()
+
+		bench.reload()
+		self.assertEqual(bench.status, "Pending")
+
+	@patch("press.press.doctype.bench.bench.frappe.enqueue", new=foreground_enqueue)
+	def test_check_for_any_unarchived_sites_on_bench(self):
+		with fake_agent_job("New Bench", "Success"):
+			priv_group = create_test_release_group(apps=[create_test_app()], public=False)
+			bench = create_test_bench(group=priv_group, creation=frappe.utils.add_days(None, -10))
+
+			poll_pending_jobs()
+
+		site = create_test_site(bench=bench.name, fake_agent_jobs=True)
+
+		self.assertEqual(site.status, "Active")
+
+		with fake_agent_job("Archive Bench", "Success") and patch(
+			"press.utils.jobs.stop_background_job", return_value=True
+		):
+			with self.assertRaises(ArchiveBenchError) as e:
+				bench.archive()
+			self.assertIn(
+				"Cannot archive bench due to unarchived sites on bench",
+				str(e.exception),
+			)
+
+		self.assertEqual(site.status, "Active")
+
+	def test_if_any_ongoing_jobs_are_running_on_bench(self):
+		with fake_agent_job({"New Bench": {"status": "Success"}, "Add User to Proxy": {"status": "Success"}}):
+			bench = create_test_bench()
+			frappe.db.set_value("Bench", bench.name, "status", "Pending")
+			poll_pending_jobs()
+			with self.assertRaises(ArchiveBenchError):
+				bench.archive()
+			bench.reload()

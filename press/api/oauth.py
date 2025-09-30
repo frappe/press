@@ -167,7 +167,6 @@ def saas_setup(key, app, country, subdomain):
 			first_name=account_request.first_name,
 			last_name=account_request.last_name,
 			country=country,
-			accepted_user_terms=True,
 			oauth_signup=True,
 		)
 

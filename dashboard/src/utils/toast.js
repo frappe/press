@@ -1,15 +1,18 @@
-import { ref } from 'vue';
+import { toast } from 'vue-sonner';
+import { h } from 'vue';
 
-export const notifications = ref([]);
+export function showErrorToast(error) {
+	let errorMessage = error.messages?.length
+		? error.messages.join('\n')
+		: error.message;
+	toast.error(errorMessage);
+}
 
-export const hideNotification = id => {
-	notifications.value = notifications.value.filter(props => props.id !== id);
-};
-
-export const notify = props => {
-	// TODO: remove the line below once the frappe-ui bug (onError triggers twice) is fixed
-	if (notifications.value.some(n => n.message === props.message)) return;
-	props.id = Math.floor(Math.random() * 1000 + Date.now());
-	notifications.value.push(props);
-	setTimeout(() => hideNotification(props.id), props.timeout || 5000);
-};
+export function getToastErrorMessage(e, fallbackMessage = 'An error occurred') {
+	const errorMessage = e.messages?.length
+		? e.messages.join('<br>')
+		: e.message || fallbackMessage;
+	return h('div', {
+		innerHTML: errorMessage,
+	});
+}

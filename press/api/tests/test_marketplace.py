@@ -1,13 +1,12 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019, Frappe and Contributors
 # See license.txt
 
 
-import unittest
 from unittest.mock import Mock, patch
 
 import frappe
 import responses
+from frappe.tests.utils import FrappeTestCase
 
 from press.api.marketplace import (
 	add_app,
@@ -78,14 +77,14 @@ PAYLOAD = [
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestAPIMarketplace(unittest.TestCase):
+class TestAPIMarketplace(FrappeTestCase):
 	def setUp(self):
-		self.app = create_test_app("erpnext", "ERPNext")
+		super().setUp()
+
+		self.app = create_test_app(frappe.mock("name"), frappe.mock("name"))
 		self.team = create_test_press_admin_team()
 		self.version = "Version 14"
-		self.app_source = create_test_app_source(
-			version=self.version, app=self.app, team=self.team.name
-		)
+		self.app_source = create_test_app_source(version=self.version, app=self.app, team=self.team.name)
 		self.app_release = create_test_app_release(self.app_source)
 		self.marketplace_app = create_test_marketplace_app(
 			app=self.app.name,
@@ -242,8 +241,8 @@ class TestAPIMarketplace(unittest.TestCase):
 		self.assertEqual(apps[0].name, self.marketplace_app.name)
 
 	def test_get_app(self):
-		app = get_app("erpnext")
-		self.assertEqual(app.name, "erpnext")
+		app = get_app(self.app.name)
+		self.assertEqual(app.name, self.app.name)
 
 	def test_update_app_title(self):
 		frappe.set_user(self.team.user)
@@ -306,15 +305,13 @@ class TestAPIMarketplace(unittest.TestCase):
 
 	def test_get_apps_with_plans(self):
 		frappe_app = create_test_app()
-		group2 = create_test_release_group(
-			[frappe_app, self.app], frappe_version=self.version
-		)
+		group2 = create_test_release_group([frappe_app, self.app], frappe_version=self.version)
 		create_test_marketplace_app(
 			app=frappe_app.name,
 			sources=[{"version": self.version, "source": group2.apps[0].source}],
 		)
 		create_app_plan(frappe_app.name, self.plan_data)
-		apps = get_apps_with_plans(["frappe", "erpnext"], group2.name)
+		apps = get_apps_with_plans(["frappe", self.app.name], group2.name)
 		self.assertEqual(apps[0].name, frappe_app.name)
 
 	def test_publisher_profile(self):
@@ -342,9 +339,7 @@ class TestAPIMarketplace(unittest.TestCase):
 
 	def test_change_branch(self):
 		old_branch = self.app_source.branch
-		change_branch(
-			self.marketplace_app.name, self.app_source.name, "Version 14", "develop"
-		)
+		change_branch(self.marketplace_app.name, self.app_source.name, "Version 14", "develop")
 		self.app_source.reload()
 		self.assertNotEqual(old_branch, self.app_source.branch)
 

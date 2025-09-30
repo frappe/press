@@ -1,9 +1,7 @@
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
-
-import unittest
-
 import frappe
+from frappe.tests.utils import FrappeTestCase
 
 from press.marketplace.doctype.marketplace_app_plan.test_marketplace_app_plan import (
 	create_test_marketplace_app_plan,
@@ -17,17 +15,14 @@ from press.press.doctype.team.test_team import create_test_team
 
 
 def create_test_marketplace_app_subscription(
-	site: str = None, app: str = None, plan: str = None, team: str = None
+	site: str | None = None, app: str | None = None, plan: str | None = None, team: str | None = None
 ):
-	app = (
-		app if app and frappe.db.exists("Marketplace App", app) else create_test_app().name
-	)
+	app = app if app and frappe.db.exists("Marketplace App", app) else create_test_app().name
 	create_test_marketplace_app(app)
 	plan = plan if plan else create_test_marketplace_app_plan().name
 	team = team if team else create_test_team().name
 	site = site if site else create_test_site(team=team).name
-	print(frappe.db.exists("Marketplace App Plan", plan))
-	subscription = frappe.get_doc(
+	return frappe.get_doc(
 		{
 			"doctype": "Subscription",
 			"document_type": "Marketplace App",
@@ -38,8 +33,7 @@ def create_test_marketplace_app_subscription(
 			"team": team,
 		}
 	).insert(ignore_if_duplicate=True)
-	return subscription
 
 
-class TestMarketplaceAppSubscription(unittest.TestCase):
+class TestMarketplaceAppSubscription(FrappeTestCase):
 	pass

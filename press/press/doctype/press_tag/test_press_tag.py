@@ -12,11 +12,11 @@ def create_and_add_test_tag(name: str, doctype: str, tag: str = "test_tag"):
 		{
 			"doctype": "Press Tag",
 			"doctype_name": doctype,
-			"team": create_test_team(),
+			"team": create_test_team().name,
 			"tag": tag,
 		}
 	).insert(ignore_permissions=True)
-	doc = frappe.get_doc(doctype, name).append("tags", {"tag": test_tag})
+	doc = frappe.get_doc(doctype, name).append("tags", {"tag": test_tag.name})
 	doc.save()
 	return test_tag
 

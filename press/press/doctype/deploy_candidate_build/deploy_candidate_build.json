@@ -18,6 +18,7 @@
   "deploy_after_build",
   "run_build",
   "scheduled_time",
+  "deploy_on_server",
   "section_break_bfxt",
   "build_steps",
   "docker_meta_section",
@@ -284,6 +285,13 @@
    "fieldname": "run_build",
    "fieldtype": "Check",
    "label": "Run Build"
+  },
+  {
+   "fieldname": "deploy_on_server",
+   "fieldtype": "Link",
+   "label": "Deploy On Server",
+   "options": "Server",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -302,15 +310,11 @@
    "link_fieldname": "document_name"
   },
   {
-   "link_doctype": "Deploy",
-   "link_fieldname": "build"
-  },
-  {
    "link_doctype": "Bench",
    "link_fieldname": "build"
   }
  ],
- "modified": "2025-05-27 23:08:21.433327",
+ "modified": "2025-07-02 17:15:11.366578",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Build",

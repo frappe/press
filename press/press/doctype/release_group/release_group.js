@@ -73,16 +73,28 @@ frappe.ui.form.on('Release Group', {
 							options: 'Server',
 							reqd: 1,
 						},
+						{
+							fieldtype: 'Check',
+							fieldname: 'force_new_build',
+							label: 'Force New Build',
+							reqd: 0,
+						},
 					],
-					primary_action({ server }) {
-						frm.call('add_server', { server, deploy: true }).then((r) => {
-							if (!r.exc) {
-								frappe.show_alert(
-									`Added ${server} and deployed last successful candidate`,
-								);
-							}
-							d.hide();
-						});
+					primary_action({ server, force_new_build }) {
+						frm
+							.call('add_server', {
+								server,
+								deploy: true,
+								force_new_build: force_new_build,
+							})
+							.then((r) => {
+								if (!r.exc) {
+									frappe.show_alert(
+										`Added ${server} and deployed last successful candidate`,
+									);
+								}
+								d.hide();
+							});
 					},
 				});
 				d.show();

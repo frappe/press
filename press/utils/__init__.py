@@ -118,9 +118,7 @@ def get_current_team(get_doc=False):
 	# `team_name` getting injected by press.saas.api.whitelist_saas_api decorator
 	team = x_press_team if x_press_team else getattr(frappe.local, "team_name", "")
 
-	user_is_press_admin = frappe.db.exists("Has Role", {"parent": frappe.session.user, "role": "Press Admin"})
-
-	if not team and user_is_press_admin and frappe.db.exists("Team", {"user": frappe.session.user}):
+	if not team and has_role("Press Admin") and frappe.db.exists("Team", {"user": frappe.session.user}):
 		# if user has_role of Press Admin then just return current user as default team
 		return (
 			frappe.get_doc("Team", {"user": frappe.session.user, "enabled": 1})
@@ -347,7 +345,8 @@ class RemoteFrappeSite:
 			frappe.throw("Invalid Frappe Site")
 
 		if res.json().get("message") == "pong":
-			url = res.url.split("/api")[0]
+			# Get final redirect URL
+			url = res.url.split("/api/method")[0]
 			self._site = url
 
 	def _validate_user_permissions(self):
@@ -471,6 +470,15 @@ def is_json(string):
 	if isinstance(string, (dict, list)):
 		return True
 	return None
+
+
+def is_list(string):
+	if isinstance(string, list):
+		return True
+	if isinstance(string, str):
+		string = string.strip()
+		return string.startswith("[") and string.endswith("]")
+	return False
 
 
 def guess_type(value):
@@ -952,6 +960,7 @@ def get_nearest_cluster():
 		"UAE": {"latitude": 24.4539, "longitude": 54.3773},
 		"KSA": {"latitude": 24.7136, "longitude": 46.6753},
 		"Cape Town": {"latitude": -33.9249, "longitude": 18.4241},
+		"Johannesburg": {"latitude": -26.2041, "longitude": 28.0473},
 	}
 
 	def haversine_distance(lat1, lon1, lat2, lon2):
@@ -994,3 +1003,9 @@ def get_nearest_cluster():
 			nearest_cluster = cluster_name
 
 	return nearest_cluster
+
+
+def is_in_test_environment():
+	if not hasattr(frappe.local, "in_test"):
+		return False
+	return frappe.local.in_test

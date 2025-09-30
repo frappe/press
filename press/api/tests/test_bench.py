@@ -42,6 +42,8 @@ from press.utils.test import foreground_enqueue_doc
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestAPIBench(FrappeTestCase):
 	def setUp(self):
+		super().setUp()
+
 		self.team = create_test_press_admin_team()
 		self.version = "Version 15"
 		self.app = create_test_app()
@@ -227,6 +229,8 @@ class TestAPIBench(FrappeTestCase):
 
 class TestAPIBenchConfig(FrappeTestCase):
 	def setUp(self):
+		super().setUp()
+
 		app = create_test_app()
 		self.rg = create_test_release_group([app])
 
@@ -543,6 +547,8 @@ class TestAPIBenchConfig(FrappeTestCase):
 class TestAPIBenchList(FrappeTestCase):
 	def setUp(self):
 		from press.press.doctype.press_tag.test_press_tag import create_and_add_test_tag
+
+		super().setUp()
 
 		app = create_test_app()
 

@@ -22,6 +22,7 @@ from press.api.regional_payments.mpesa.utils import (
 from press.press.doctype.mpesa_setup.mpesa_connector import MpesaConnector
 from press.press.doctype.team.team import (
 	has_unsettled_invoices,
+	_enqueue_finalize_unpaid_invoices_for_team,
 )
 from press.utils import get_current_team
 from press.utils.billing import (
@@ -218,6 +219,10 @@ def details():
 
 @frappe.whitelist()
 def fetch_invoice_items(invoice):
+	team = get_current_team()
+	if frappe.db.get_value("Invoice", invoice, "team") != team:
+		frappe.throw("Only team owners and members are permitted to download Invoice")
+
 	return frappe.get_all(
 		"Invoice Item",
 		{"parent": invoice, "parenttype": "Invoice"},
@@ -975,6 +980,8 @@ def create_balance_transaction_and_invoice(team, amount, mpesa_details):
 		)
 		invoice.insert(ignore_permissions=True)
 		invoice.submit()
+
+		_enqueue_finalize_unpaid_invoices_for_team(team)
 	except Exception:
 		frappe.log_error("Mpesa: Failed to create balance transaction and invoice")
 

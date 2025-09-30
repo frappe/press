@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta
-from typing import Iterable
+from typing import TYPE_CHECKING
 
 import boto3
 import frappe
@@ -12,6 +12,11 @@ from frappe.core.utils import find
 from frappe.model.document import Document
 
 from press.utils import log_error
+
+if TYPE_CHECKING:
+	from collections.abc import Iterable
+
+	from press.press.doctype.proxy_server.proxy_server import ProxyServer
 
 
 class RootDomain(Document):
@@ -28,6 +33,7 @@ class RootDomain(Document):
 		default_cluster: DF.Link
 		default_proxy_server: DF.Link | None
 		dns_provider: DF.Literal["AWS Route 53", "Generic"]
+		enabled: DF.Check
 		team: DF.Link | None
 	# end: auto-generated types
 
@@ -183,6 +189,15 @@ class RootDomain(Document):
 			self.boto3_client.change_resource_record_sets(
 				ChangeBatch={"Changes": changes}, HostedZoneId=self.hosted_zone
 			)
+
+	@frappe.whitelist()
+	def add_to_proxies(self):
+		proxies = frappe.get_all("Proxy Server", {"status": "Active"}, pluck="name")
+		for proxy_name in proxies:
+			proxy: ProxyServer = frappe.get_doc("Proxy Server", proxy_name)
+			proxy.append("domains", {"domain": self.name})
+			proxy.save()
+			proxy.setup_wildcard_hosts()
 
 
 def cleanup_cname_records():

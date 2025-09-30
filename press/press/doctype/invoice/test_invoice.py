@@ -2,10 +2,10 @@
 # See license.txt
 
 
-import unittest
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.tests.utils import FrappeTestCase
 from frappe.utils.data import add_days, today
 
 from press.press.doctype.team.test_team import create_test_team
@@ -14,8 +14,10 @@ from .invoice import Invoice
 
 
 @patch.object(Invoice, "create_invoice_on_frappeio", new=Mock())
-class TestInvoice(unittest.TestCase):
+class TestInvoice(FrappeTestCase):
 	def setUp(self):
+		super().setUp()
+
 		self.team = create_test_team()
 
 	def tearDown(self):

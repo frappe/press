@@ -20,6 +20,7 @@
   "bench",
   "column_break_lqmy",
   "save_output",
+  "as_root",
   "section_break_vhzg",
   "command",
   "subdir",
@@ -121,13 +122,20 @@
   {
    "fieldname": "column_break_lqmy",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "as_root",
+   "fieldtype": "Check",
+   "label": "As Root",
+   "options": "This will run the bench command as root user."
   }
  ],
  "hide_toolbar": 1,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-03-22 12:26:17.147623",
+ "modified": "2025-07-21 11:46:10.327341",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench Shell",
@@ -144,6 +152,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

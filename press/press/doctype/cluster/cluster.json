@@ -13,6 +13,7 @@
   "public",
   "beta",
   "hybrid",
+  "has_arm_support",
   "column_break_fsht",
   "monitoring_password",
   "image",
@@ -43,7 +44,9 @@
   "security_group_id",
   "proxy_security_group_id",
   "network_acl_id",
-  "route_table_id"
+  "route_table_id",
+  "docker_section",
+  "repository"
  ],
  "fields": [
   {
@@ -283,6 +286,22 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team"
+  },
+  {
+   "default": "0",
+   "fieldname": "has_arm_support",
+   "fieldtype": "Check",
+   "label": "Has ARM Support"
+  },
+  {
+   "fieldname": "docker_section",
+   "fieldtype": "Section Break",
+   "label": "Docker"
+  },
+  {
+   "fieldname": "repository",
+   "fieldtype": "Data",
+   "label": "Repository"
   }
  ],
  "image_field": "image",
@@ -319,7 +338,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-09-14 13:52:58.308402",
+ "modified": "2025-09-19 16:27:01.820199",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
@@ -339,6 +358,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

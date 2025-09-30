@@ -1,0 +1,5 @@
+---
+- name: Correct Bench Permissions
+  become: yes
+  become_user: root
+  command: docker exec -u root -w /home/frappe {{ bench_name }} chown -R frappe:frappe .

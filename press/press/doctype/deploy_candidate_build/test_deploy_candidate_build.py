@@ -3,10 +3,10 @@
 
 
 import typing
-import unittest
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
@@ -29,14 +29,17 @@ if typing.TYPE_CHECKING:
 
 @patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestDeployCandidateBuild(unittest.TestCase):
+class TestDeployCandidateBuild(FrappeTestCase):
 	def setUp(self):
+		super().setUp()
+
 		self.team = create_test_press_admin_team()
 		self.user: str = self.team.user
 		app = create_test_app()
 		self.create_build_servers()
 		group = create_test_release_group([app], self.user)
 		group.db_set("team", self.team.name)
+		frappe.db.set_single_value("Press Settings", "docker_registry_url", "registry.digitalocean.com")
 		frappe.set_user(self.user)
 		self.deploy_candidate = create_test_deploy_candidate(group)
 		self.deploy_candidate_build = create_test_deploy_candidate_build(self.deploy_candidate)
@@ -58,7 +61,9 @@ class TestDeployCandidateBuild(unittest.TestCase):
 
 		app = create_test_app()
 
-		group = create_test_release_group([app], servers=[self.x86_build_server, self.arm_build_server])
+		group = create_test_release_group(
+			[app], servers=[self.x86_build_server.name, self.arm_build_server.name]
+		)
 
 		dc: DeployCandidate = group.create_deploy_candidate()
 		deploy_candidate_build_name = dc.build().get("message")
@@ -112,7 +117,9 @@ class TestDeployCandidateBuild(unittest.TestCase):
 
 		app = create_test_app()
 
-		group = create_test_release_group([app], servers=[self.x86_build_server, self.arm_build_server])
+		group = create_test_release_group(
+			[app], servers=[self.x86_build_server.name, self.arm_build_server.name]
+		)
 
 		dc: DeployCandidate = group.create_deploy_candidate()
 		deploy_candidate_build_name = dc.build_and_deploy()

@@ -96,13 +96,8 @@ frappe.ui.form.on('Site', {
 			);
 		});
 		[
-			[__('Archive'), 'archive', frm.doc.status !== 'Archived'],
-			[__('Cleanup after Archive'), 'cleanup_after_archive'],
 			[__('Sync Apps'), 'sync_apps'],
 			[__('Migrate'), 'migrate'],
-			[__('Reinstall'), 'reinstall'],
-			[__('Restore'), 'restore_site'],
-			[__('Restore Tables'), 'restore_tables'],
 			[__('Update'), 'schedule_update'],
 			[__('Deactivate'), 'deactivate'],
 			[__('Activate'), 'activate', frm.doc.status !== 'Archived'],
@@ -146,6 +141,14 @@ frappe.ui.form.on('Site', {
 				);
 			}
 		});
+
+		frm.add_custom_button(
+			__('Update Skip Failing Patches'),
+			() => {
+				frm.call('schedule_update', { skip_failing_patches: true });
+			},
+			__('Actions'),
+		);
 
 		frm.add_custom_button(
 			__('Force Archive'),
@@ -408,6 +411,25 @@ ${r.message.error}
 			},
 			__('Dangerous Actions'),
 		);
+
+		[
+			[__('Reinstall'), 'reinstall'],
+			[__('Restore'), 'restore_site'],
+			[__('Restore Tables'), 'restore_tables'],
+			[__('Archive'), 'archive', frm.doc.status !== 'Archived'],
+			[__('Cleanup after Archive'), 'cleanup_after_archive'],
+		].forEach(([label, method]) => {
+			frm.add_custom_button(
+				label,
+				() => {
+					frappe.confirm(
+						`Are you sure you want to perform the action on this site ?`,
+						() => frm.call(method).then((r) => frm.refresh()),
+					);
+				},
+				__('Dangerous Actions'),
+			);
+		});
 	},
 });
 
@@ -425,7 +447,7 @@ function login_as_admin(site_name, reason = null) {
 				console.log(site_name, res.message.sid);
 				if (res) {
 					window.open(
-						`https://${site_name}/desk?sid=${res.message.sid}`,
+						`https://${site_name}/app?sid=${res.message.sid}`,
 						'_blank',
 					);
 				}

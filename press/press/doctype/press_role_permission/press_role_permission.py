@@ -27,11 +27,10 @@ class PressRolePermission(Document):
 	dashboard_fields = ("site", "release_group", "server", "role")
 
 	def before_insert(self):
-		is_admin_role = frappe.db.get_value("Press Role", self.role, "admin_access")
 		if (
 			not frappe.local.system_user()
 			and frappe.session.user != frappe.db.get_value("Team", self.team, "user")
-			and not is_admin_role
+			and not is_user_part_of_admin_role()
 		):
 			frappe.throw("Only the team owner or admin can create role permissions")
 
@@ -49,12 +48,35 @@ class PressRolePermission(Document):
 
 	@dashboard_whitelist()
 	def delete(self):
-		is_admin_role = frappe.db.get_value("Press Role", self.role, "admin_access")
 		if (
 			not frappe.local.system_user()
 			and frappe.session.user != frappe.get_cached_value("Team", self.team, "user")
-			and not is_admin_role
+			and not is_user_part_of_admin_role()
 		):
 			frappe.throw("Only the team owner or admin can delete this role permission")
 
 		super().delete()
+
+
+def is_user_part_of_admin_role(user: str | None = None) -> bool:
+	"""Check if the user is part of any admin role."""
+	from press.utils import get_current_team
+
+	if not user:
+		user = frappe.session.user
+
+	team = get_current_team()
+
+	admin_roles = frappe.get_all(
+		"Press Role",
+		filters={"team": team, "admin_access": 1},
+		fields=["name"],
+	)
+
+	users = frappe.get_all(
+		"Press Role User",
+		filters={"parent": ["in", [role.name for role in admin_roles]], "user": user},
+		fields=["name"],
+	)
+
+	return bool(users)

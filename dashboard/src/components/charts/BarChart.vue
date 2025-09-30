@@ -46,8 +46,8 @@ import {
 } from 'echarts/components';
 import VChart from 'vue-echarts';
 import Card from '../global/Card.vue';
-import theme from '../../../tailwind.theme.json';
-import { formatBytes, getUnit } from './utils';
+import { theme } from '../../utils/theme';
+import { bytes, getUnit } from '../../utils/format';
 
 const props = defineProps({
 	showCard: {
@@ -133,9 +133,8 @@ const options = ref({
 			).toLocaleString(DateTime.DATETIME_MED)}</p>`;
 
 			params.forEach(({ value, seriesName }, i) => {
-				if (value === 0) {
-					return;
-				}
+				if (!value) return;
+
 				let colorSpan = (color) =>
 					'<span style="display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:' +
 					color +
@@ -166,7 +165,7 @@ const options = ref({
 		axisLabel: {
 			formatter: (value) => {
 				if (unit.value === 'bytes') {
-					return formatBytes(value, 0);
+					return bytes(value, 0);
 				} else {
 					if (value >= 1000000000) return `${value / 1000000000}B`;
 					else if (value >= 1000000) return `${value / 1000000}M`;

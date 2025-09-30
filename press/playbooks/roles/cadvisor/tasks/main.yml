@@ -19,7 +19,7 @@
     checksum: sha256:37c998d54dc0e8b1635d9be4c0ab15dfc3123aa41805ad0bd909c896d5a1a89b
     dest: /opt/cadvisor/cadvisor
     mode: 0755
-  when: ansible_architecture == "arm64"
+  when: ansible_architecture == "aarch64"
 
 - name: Create cAdvisor Systemd Service File
   template:

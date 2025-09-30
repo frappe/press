@@ -2,11 +2,11 @@
 # See license.txt
 from __future__ import annotations
 
-import unittest
 from unittest.mock import Mock, patch
 
 import frappe
 from frappe.tests.ui_test_helpers import create_test_user
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.account_request.test_account_request import (
 	create_test_account_request,
@@ -27,20 +27,22 @@ def create_test_press_admin_team(email: str | None = None) -> Team:
 
 @patch.object(Team, "update_billing_details_on_frappeio", new=Mock())
 @patch.object(Team, "create_stripe_customer", new=Mock())
-def create_test_team(email: str | None = None, country="India") -> Team:
+def create_test_team(email: str | None = None, country="India", free_account: bool | None = None) -> Team:
 	"""Create test team doc."""
 	if not email:
 		email = frappe.mock("email")
 	create_test_user(email)  # ignores if user already exists
 	user = frappe.get_value("User", {"email": email}, "name")
-	team = frappe.get_doc({"doctype": "Team", "user": user, "enabled": 1, "country": country}).insert(
-		ignore_if_duplicate=True
-	)
+	team = frappe.get_doc(
+		{"doctype": "Team", "user": user, "enabled": 1, "country": country, "free_account": free_account}
+	).insert(ignore_if_duplicate=True)
 	team.reload()
+	# Create a fake account request
+	create_test_account_request(frappe.mock("name"), email=email)
 	return team
 
 
-class TestTeam(unittest.TestCase):
+class TestTeam(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 

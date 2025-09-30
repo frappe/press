@@ -1,18 +1,18 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
 
-import unittest
-
 import frappe
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 
 
-class TestSitePlanChange(unittest.TestCase):
+class TestSitePlanChange(FrappeTestCase):
 	def setUp(self):
+		super().setUp()
+
 		self.tiny_plan = create_test_plan(
 			"Site",
 			plan_name="Tiny Plan",
@@ -75,6 +75,4 @@ class TestSitePlanChange(unittest.TestCase):
 				"to_plan": self.nano_plan.name,
 			}
 		).insert(ignore_permissions=True)
-		self.assertEqual(
-			frappe.db.get_value("Site", self.site.name, "plan"), self.nano_plan.name
-		)
+		self.assertEqual(frappe.db.get_value("Site", self.site.name, "plan"), self.nano_plan.name)

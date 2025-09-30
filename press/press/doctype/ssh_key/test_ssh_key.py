@@ -1,9 +1,8 @@
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
 
-import unittest
-
 import frappe
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.ssh_key.ssh_key import SSHKey
 
@@ -18,5 +17,5 @@ def create_test_ssh_key() -> SSHKey:
 	).insert(ignore_if_duplicate=True)
 
 
-class TestSSHKey(unittest.TestCase):
+class TestSSHKey(FrappeTestCase):
 	pass

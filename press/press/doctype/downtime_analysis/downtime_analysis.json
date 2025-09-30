@@ -1,0 +1,134 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-09-23 11:48:50.039942",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "report_details_tab",
+  "start_date",
+  "status",
+  "column_break_yldd",
+  "end_date",
+  "rq_job_id",
+  "section_break_lmfs",
+  "raw_data",
+  "server_downtime_tab",
+  "server_downtime",
+  "site_downtime_tab",
+  "site_downtime",
+  "problematic_sites_tab",
+  "problematic_sites"
+ ],
+ "fields": [
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Start Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_yldd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "End Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "label": "Status",
+   "read_only": 1
+  },
+  {
+   "fieldname": "report_details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Report Details"
+  },
+  {
+   "depends_on": "eval: doc.status == \"Report Available\"",
+   "fieldname": "server_downtime_tab",
+   "fieldtype": "Tab Break",
+   "label": "Server Downtime"
+  },
+  {
+   "fieldname": "server_downtime",
+   "fieldtype": "HTML",
+   "label": "Server Downtime",
+   "options": "<div id=\"server_downtime_report\"></div>"
+  },
+  {
+   "depends_on": "eval: doc.status == \"Report Available\"",
+   "fieldname": "site_downtime_tab",
+   "fieldtype": "Tab Break",
+   "label": "Site Downtime"
+  },
+  {
+   "fieldname": "site_downtime",
+   "fieldtype": "HTML",
+   "label": "Site Downtime",
+   "options": "<div id=\"site_downtime_report\"></div>"
+  },
+  {
+   "fieldname": "rq_job_id",
+   "fieldtype": "Data",
+   "label": "RQ Job ID",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval: doc.status == \"Report Available\"",
+   "fieldname": "problematic_sites_tab",
+   "fieldtype": "Tab Break",
+   "label": "Problematic Sites"
+  },
+  {
+   "fieldname": "problematic_sites",
+   "fieldtype": "HTML",
+   "label": "Problematic Sites",
+   "options": "<div id=\"problematic_sites_report\"></div>"
+  },
+  {
+   "fieldname": "section_break_lmfs",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "raw_data",
+   "fieldtype": "Long Text",
+   "hidden": 1,
+   "label": "Raw Data",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "hide_toolbar": 1,
+ "index_web_pages_for_search": 1,
+ "is_virtual": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-09-23 14:57:02.949448",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Downtime Analysis",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

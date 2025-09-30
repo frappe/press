@@ -1,25 +1,10 @@
 # Copyright (c) 2025, Frappe and Contributors
 # See license.txt
 
-from frappe.tests import IntegrationTestCase, UnitTestCase
-
-# On IntegrationTestCase, the doctype test records and all
-# link-field test record dependencies are recursively loaded
-# Use these module variables to add/remove to/from that list
-EXTRA_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
-IGNORE_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
+from frappe.tests.utils import FrappeTestCase
 
 
-class UnitTestInspectTraceID(UnitTestCase):
-	"""
-	Unit tests for InspectTraceID.
-	Use this class for testing individual functions and methods.
-	"""
-
-	pass
-
-
-class IntegrationTestInspectTraceID(IntegrationTestCase):
+class IntegrationTestInspectTraceID(FrappeTestCase):
 	"""
 	Integration tests for InspectTraceID.
 	Use this class for testing interactions between multiple components.

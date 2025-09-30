@@ -20,13 +20,14 @@
   "resource",
   "cluster",
   "resolved_by",
+  "investigation",
   "section_break_kjey",
   "subject",
   "description",
   "preliminary_investigation_section",
   "likely_cause",
   "column_break_jrzi",
-  "suggestions",
+  "corrective_suggestions",
   "preventive_suggestions",
   "section_break_bjjy",
   "updates",
@@ -53,7 +54,8 @@
   },
   {
    "fieldname": "column_break_smnd",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "read_only": 1
   },
   {
    "default": "Validating",
@@ -193,23 +195,29 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "suggestions",
+   "fieldname": "preventive_suggestions",
+   "fieldtype": "Table",
+   "label": "Preventive Suggestions",
+   "options": "Incident Suggestion"
+  },
+  {
+   "fieldname": "corrective_suggestions",
    "fieldtype": "Table",
    "label": "Corrective Suggestions",
    "options": "Incident Suggestion"
   },
   {
-   "fieldname": "preventive_suggestions",
-   "fieldtype": "Table",
-   "label": "Preventive Suggestions",
-   "options": "Incident Suggestion"
+   "fieldname": "investigation",
+   "fieldtype": "Link",
+   "label": "Investigation",
+   "options": "Incident Investigator"
   }
  ],
  "has_web_view": 1,
  "index_web_pages_for_search": 1,
  "is_published_field": "show_in_website",
  "links": [],
- "modified": "2025-01-17 18:37:16.040363",
+ "modified": "2025-08-14 10:44:56.454503",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident",
@@ -229,6 +237,7 @@
   }
  ],
  "route": "incidents",
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

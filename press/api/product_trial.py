@@ -168,6 +168,7 @@ def get_request(product: str, account_request: str | None = None) -> dict:
 	from press.utils import get_nearest_cluster
 
 	team = frappe.local.team()
+	cluster = "Default"
 
 	# validate if there is already a site
 	if site := _get_active_site(product, team.name):
@@ -177,16 +178,41 @@ def get_request(product: str, account_request: str | None = None) -> dict:
 	elif request := _get_existing_trial_request(product, team.name):
 		site_request = frappe.get_doc("Product Trial Request", request.name)
 	else:
-		is_valid_account_request = frappe.get_value("Account Request", account_request, "email") == team.user
-
 		site_request = frappe.new_doc(
 			"Product Trial Request",
 			product_trial=product,
 			team=team.name,
-			account_request=account_request if is_valid_account_request else None,
+			account_request=account_request,
 		).insert(ignore_permissions=True)
 
-	cluster = get_nearest_cluster()
+	product_trial = frappe.get_doc("Product Trial", product)
+	if product_trial.enable_hybrid_pooling:
+		cluster = None
+		fields = [rule.field for rule in product_trial.hybrid_pool_rules]
+		acc_req = (
+			frappe.db.get_value(
+				"Account Request",
+				account_request,
+				fields,
+				as_dict=True,
+			)
+			if account_request
+			else None
+		)
+
+		for rule in product_trial.hybrid_pool_rules:
+			value = acc_req.get(rule.field) if acc_req else None
+			if not value:
+				break
+
+			if rule.value == value:
+				cluster = rule.preferred_cluster
+				break
+
+		if not cluster:
+			cluster = get_nearest_cluster()
+	else:
+		cluster = get_nearest_cluster()
 	domain = frappe.db.get_value("Product Trial", product, "domain")
 	cluster_domains = frappe.db.get_all(
 		"Root Domain", {"name": ("like", f"%.{domain}")}, ["name", "default_cluster as cluster"]

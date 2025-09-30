@@ -9,6 +9,7 @@ from functools import cached_property
 from typing import TYPE_CHECKING
 
 import frappe
+import requests
 from frappe.types.DF import Phone
 from frappe.utils import cint
 from frappe.utils.background_jobs import enqueue_doc
@@ -20,12 +21,14 @@ from tenacity.retry import retry_if_not_result
 from twilio.base.exceptions import TwilioRestException
 
 from press.api.server import prometheus_query
+from press.press.doctype.server.server import MARIADB_DATA_MNT_POINT
 from press.telegram_utils import Telegram
 from press.utils import log_error
 
 if TYPE_CHECKING:
 	from twilio.rest.api.v2010.account.call import CallInstance
 
+	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import AlertmanagerWebhookLog
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.database_server.database_server import DatabaseServer
@@ -38,7 +41,7 @@ if TYPE_CHECKING:
 	)
 	from press.press.doctype.monitor_server.monitor_server import MonitorServer
 	from press.press.doctype.press_settings.press_settings import PressSettings
-	from press.press.doctype.server.server import Server
+	from press.press.doctype.server.server import BaseServer, Server
 
 INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere #
 INCIDENT_SCOPE = (
@@ -80,7 +83,9 @@ class Incident(WebsiteGenerator):
 		alert: DF.Link | None
 		alerts: DF.Table[IncidentAlerts]
 		cluster: DF.Link | None
+		corrective_suggestions: DF.Table[IncidentSuggestion]
 		description: DF.TextEditor | None
+		investigation: DF.Link | None
 		likely_cause: DF.Text | None
 		phone_call: DF.Check
 		preventive_suggestions: DF.Table[IncidentSuggestion]
@@ -102,7 +107,6 @@ class Incident(WebsiteGenerator):
 		]
 		subject: DF.Data | None
 		subtype: DF.Literal["High CPU: user", "High CPU: iowait", "Disk full"]
-		suggestions: DF.Table[IncidentSuggestion]
 		type: DF.Literal["Database Down", "Server Down", "Proxy Down"]
 		updates: DF.Table[IncidentUpdates]
 	# end: auto-generated types
@@ -120,6 +124,19 @@ class Incident(WebsiteGenerator):
 		return bool(frappe.db.get_single_value("Incident Settings", "email_alerts", cache=True))
 
 	def after_insert(self):
+		"""
+		Start investigating the incident since we have already waited 5m before creating it
+		send sms and email notifications
+		"""
+		try:
+			incident_investigator = frappe.get_doc(
+				{"doctype": "Incident Investigator", "incident": self.name, "server": self.server}
+			)
+			incident_investigator.insert(ignore_permissions=True)
+			self.investigation = incident_investigator.name
+		except frappe.ValidationError:
+			# Investigator in cool off period
+			pass
 		self.send_sms_via_twilio()
 		self.send_email_notification()
 
@@ -169,6 +186,7 @@ class Incident(WebsiteGenerator):
 		"""
 		Identify the affected resource and set the resource field
 		"""
+		self.add_description(f"{len(self.sites_down)} / {self.total_instances} sites down")
 
 		for resource_type, resource in [
 			("Database Server", self.database_server),
@@ -187,7 +205,16 @@ class Incident(WebsiteGenerator):
 		self.take_grafana_screenshots()
 		self.save()
 
-	def get_cpu_state(self, resource: str):
+	@frappe.whitelist()
+	def regather_info_and_screenshots(self):
+		self.identify_affected_resource()
+		self.identify_problem()
+		self.take_grafana_screenshots()
+
+	def get_cpu_state(self, resource: str) -> tuple[str, float]:
+		"""
+		Returns the prominent CPU state and its percentage
+		"""
 		timespan = get_confirmation_threshold_duration()
 		cpu_info = prometheus_query(
 			f"""avg by (mode)(rate(node_cpu_seconds_total{{instance="{resource}", job="node"}}[{timespan}s])) * 100""",
@@ -207,7 +234,7 @@ class Incident(WebsiteGenerator):
 		self.add_description(f"CPU Usage: {max_mode} {max_cpu if max_cpu > 0 else 'No data'}")
 		return max_mode, mode_cpus[max_mode]
 
-	def add_description(self, description):
+	def add_description(self, description: str):
 		if not self.description:
 			self.description = ""
 		self.description += "<p>" + description + "</p>"
@@ -240,7 +267,7 @@ class Incident(WebsiteGenerator):
 		self.add_corrective_suggestion("Reboot Server")
 		self.add_preventive_suggestion("Upgrade database server for more memory")
 
-	def categorize_db_issues(self, cpu_state):
+	def categorize_db_cpu_issues(self, cpu_state):
 		self.type = "Database Down"
 		if cpu_state == "user":
 			self.update_user_db_issue()
@@ -253,17 +280,42 @@ class Incident(WebsiteGenerator):
 	def update_high_io_server_issue(self):
 		pass
 
-	def categorize_server_issues(self, cpu_state):
+	def categorize_server_cpu_issues(self, cpu_state):
 		self.type = "Server Down"
 		if cpu_state == "user":
 			self.update_user_server_issue()
 		elif cpu_state == "iowait":
 			self.update_high_io_server_issue()
 
+	def ping_sample_site(self):
+		if not (site := self.get_down_site()):
+			return None
+		try:
+			ret = requests.get(f"https://{site}/api/method/ping", timeout=10)
+		except requests.RequestException as e:
+			self.add_description(f"Error pinging sample site {site}: {e!s}")
+			return None
+		else:
+			self.add_description(f"Ping response for sample site {site}: {ret.status_code} {ret.reason}")
+			return ret.status_code
+
+	def categorize_disk_full_issue(self):
+		self.likely_cause = "Disk is full"
+		self.add_corrective_suggestion("Add more storage")
+		self.add_preventive_suggestion("Enable automatic addition of storage")
+
 	def identify_problem(self):
-		if not self.resource:
-			return
-			# TODO: Try random shit if resource isn't identified
+		pong = self.ping_sample_site()
+		if not self.resource and pong and pong == 500:
+			db: DatabaseServer = frappe.get_doc("Database Server", self.database_server)
+			if db.is_disk_full(MARIADB_DATA_MNT_POINT):
+				self.resource_type = "Database Server"
+				self.resource = self.database_server
+				self.type = "Database Down"
+				self.subtype = "Disk full"
+				self.categorize_disk_full_issue()
+				return
+			# TODO: Try more random shit if resource isn't identified
 			# Eg: Check mysql up/ docker up/ container up
 			# Ping site for error code to guess more accurately
 			# 500 would mean mysql down or bug in app/config
@@ -275,11 +327,11 @@ class Incident(WebsiteGenerator):
 			return
 
 		if self.resource_type == "Database Server":
-			self.categorize_db_issues(state)
+			self.categorize_db_cpu_issues(state)
 		elif self.resource_type == "Server":
-			self.categorize_server_issues(state)
+			self.categorize_server_cpu_issues(state)
 
-			# TODO: categorize proxy issues #
+		# TODO: categorize proxy issues #
 
 	@property
 	def other_resource(self):
@@ -314,7 +366,6 @@ class Incident(WebsiteGenerator):
 		token = b64encode(f"{username}:{password}".encode()).decode("ascii")
 		return f"Basic {token}"
 
-	@frappe.whitelist()
 	@filelock("grafana_screenshots")  # prevent 100 chromes from opening
 	def take_grafana_screenshots(self):
 		if not frappe.db.get_single_value("Incident Settings", "grafana_screenshots"):
@@ -330,13 +381,6 @@ class Incident(WebsiteGenerator):
 		self.save()
 
 	@frappe.whitelist()
-	def ignore_for_server(self):
-		"""
-		Ignore incidents on server (Don't call)
-		"""
-		frappe.db.set_value("Server", self.server, "ignore_incidents_since", frappe.utils.now_datetime())
-
-	@frappe.whitelist()
 	def reboot_database_server(self):
 		db_server_name: Server = frappe.db.get_value("Server", self.server, "database_server")
 		if not db_server_name:
@@ -347,10 +391,34 @@ class Incident(WebsiteGenerator):
 		except NotImplementedError:
 			db_server.reboot()
 		self.add_likely_cause("Rebooted database server.")
+		self.save()
+
+	@frappe.whitelist()
+	def cancel_stuck_jobs(self):
+		"""
+		During db reboot/upgrade some jobs tend to get stuck. This is a hack to cancel those jobs
+		"""
+		stuck_jobs = frappe.get_all(
+			"Agent Job",
+			{
+				"status": "Running",
+				INCIDENT_SCOPE: self.incident_scope,
+				"job_type": (
+					"in",
+					["Fetch Database Table Schema", "Backup Site", "Restore Site"],
+				),  # to be safe
+			},
+			["name", "job_type"],
+			limit=2,
+		)  # only 2 workers
+		for stuck_job in stuck_jobs:
+			job: AgentJob = frappe.get_doc("Agent Job", stuck_job.name)
+			job.cancel_job()
+			self.add_likely_cause(f"Cancelled stuck {stuck_job.job_type} job {stuck_job.name}")
+		self.save()
 
 	def add_likely_cause(self, cause: str):
 		self.likely_cause = self.likely_cause + cause + "\n" if self.likely_cause else cause + "\n"
-		self.save()
 
 	@frappe.whitelist()
 	def restart_down_benches(self):
@@ -412,7 +480,8 @@ class Incident(WebsiteGenerator):
 			return press_settings.twilio_client
 		except Exception:
 			log_error("Twilio Client not configured in Press Settings")
-			frappe.db.commit()
+			if not frappe.flags.in_test:
+				frappe.db.commit()
 			raise
 
 	@retry(
@@ -449,8 +518,8 @@ Likely due to insufficient balance or incorrect credentials""",
 		if not self.phone_call or not self.global_phone_call_enabled:
 			return
 		if (
-			ignore_since := frappe.db.get_value("Server", self.server, "ignore_incidents_since")
-		) and ignore_since < frappe.utils.now_datetime():
+			ignore_till := frappe.db.get_value("Server", self.server, "ignore_incidents_till")
+		) and ignore_till > frappe.utils.now_datetime():
 			return
 		for human in self.get_humans():
 			if not (call := self.call_human(human)):
@@ -479,6 +548,10 @@ Likely due to insufficient balance or incorrect credentials""",
 		Sending one SMS to one number
 		Ref: https://support.twilio.com/hc/en-us/articles/223181548-Can-I-set-up-one-API-call-to-send-messages-to-a-list-of-people-
 		"""
+		if (
+			ignore_since := frappe.db.get_value("Server", self.server, "ignore_incidents_till")
+		) and ignore_since < frappe.utils.now_datetime():
+			return
 		domain = frappe.db.get_value("Press Settings", None, "domain")
 		incident_link = f"{domain}{self.get_url()}"
 
@@ -491,6 +564,7 @@ Incident URL: {incident_link}"""
 			self.twilio_client.messages.create(
 				to=human.phone, from_=self.twilio_phone_number, body=message_body
 			)
+		self.reload()  # In case the phone call status is modified by the investigator before the sms is sent
 		self.sms_sent = 1
 		self.save()
 
@@ -575,6 +649,13 @@ Incident URL: {incident_link}"""
 	def incident_scope(self):
 		return getattr(self, INCIDENT_SCOPE)
 
+	@property
+	def total_instances(self) -> int:
+		return frappe.db.count(
+			"Site",
+			{"status": "Active", INCIDENT_SCOPE: self.incident_scope},
+		)
+
 	def check_resolved(self):
 		try:
 			last_resolved: AlertmanagerWebhookLog = frappe.get_last_doc(
@@ -589,6 +670,7 @@ Incident URL: {incident_link}"""
 			return
 		else:
 			if not last_resolved.is_enough_firing:
+				self.create_log_for_server(is_resolved=True)
 				self.resolve()
 
 	def resolve(self):
@@ -597,6 +679,18 @@ Incident URL: {incident_link}"""
 		else:
 			self.status = "Resolved"
 		self.save()
+
+	def create_log_for_server(self, is_resolved: bool = False):
+		"""We will create a incident log on the server activity for confirmed incidents and their resolution"""
+		try:
+			incidence_server: BaseServer = frappe.get_cached_doc(self.resource_type, self.resource)
+		except Exception:
+			incidence_server: Server = frappe.get_cached_doc("Server", self.server)
+
+		incidence_server.create_log(
+			"Incident",
+			f"{self.alert} resolved" if is_resolved else f"{self.alert} reported",
+		)
 
 	@property
 	def time_to_call_for_help(self) -> bool:
@@ -610,10 +704,13 @@ Incident URL: {incident_link}"""
 			seconds=get_call_repeat_interval()
 		)
 
+	@cached_property
+	def sites_down(self) -> list[str]:
+		return self.monitor_server.get_sites_down_for_server(str(self.server))
+
 	@frappe.whitelist()
 	def get_down_site(self):
-		sites_down = self.monitor_server.get_sites_down_for_server(str(self.server))
-		return sites_down[0] if sites_down else None
+		return self.sites_down[0] if self.sites_down else None
 
 
 def get_confirmation_threshold_duration():
@@ -680,6 +777,7 @@ def resolve_incidents():
 		incident = Incident("Incident", incident_name)
 		incident.check_resolved()
 		if incident.time_to_call_for_help or incident.time_to_call_for_help_again:
+			incident.create_log_for_server()
 			incident.call_humans()
 
 
@@ -687,16 +785,16 @@ def notify_ignored_servers():
 	servers = frappe.qb.DocType("Server")
 	if not (
 		ignored_servers := frappe.qb.from_(servers)
-		.select(servers.name, servers.ignore_incidents_since)
+		.select(servers.name, servers.ignore_incidents_till)
 		.where(servers.status == "Active")
-		.where(servers.ignore_incidents_since.isnotnull())
+		.where(servers.ignore_incidents_till.isnotnull())
 		.run(as_dict=True)
 	):
 		return
 
 	message = "The following servers are being ignored for incidents:\n\n"
 	for server in ignored_servers:
-		message += f"{server.name} since {frappe.utils.pretty_date(server.ignore_incidents_since)}\n"
+		message += f"{server.name} till {frappe.utils.pretty_date(server.ignore_incidents_till)}\n"
 	message += "\n@adityahase @balamurali27 @saurabh6790\n"
 	telegram = Telegram()
 	telegram.send(message)

@@ -16,7 +16,7 @@ from press.api.github import get_access_token, get_auth_headers
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import get_current_team, log_error
 
-REQUIRED_APPS_PATTERN = re.compile(r"required_apps = \[(.*?)\]")
+REQUIRED_APPS_PATTERN = re.compile(r"^\s*(?!#)\s*required_apps\s*=\s*\[(.*?)\]", re.DOTALL | re.MULTILINE)
 
 if TYPE_CHECKING:
 	from press.press.doctype.app_release.app_release import AppRelease
@@ -82,9 +82,12 @@ class AppSource(Document):
 				return
 
 			required_apps = REQUIRED_APPS_PATTERN.findall(response.text)
+			required_apps = [required_app for required_app in required_apps if required_app]
+
 			if required_apps:
 				required_apps = required_apps[0]
 				self.set_required_apps(match=required_apps)
+
 		except Exception as e:
 			frappe.log_error(f"Error fetching hooks.py: {e}", "App Source Dependency Check")
 			return  # Continue with the save process even if validation fails

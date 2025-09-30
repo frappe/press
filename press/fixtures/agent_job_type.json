@@ -4,6 +4,21 @@
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 3,
+  "modified": "2024-09-18 11:29:00.663542",
+  "name": "Fetch Performance Report",
+  "request_method": "POST",
+  "request_path": "/database/performance_report",
+  "steps": [
+   {
+    "step_name": "Fetch Performance Report"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
   "modified": "2024-08-20 12:32:56.100866",
   "name": "Update In Place",
   "request_method": "POST",
@@ -575,21 +590,6 @@
    },
    {
     "step_name": "Disable Maintenance Mode"
-   }
-  ]
- },
- {
-  "disabled_auto_retry": 0,
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "max_retry_count": 6,
-  "modified": "2025-05-22 18:31:51.223187",
-  "name": "Remove Host from Proxy",
-  "request_method": "DELETE",
-  "request_path": "/proxy/hosts/{host}",
-  "steps": [
-   {
-    "step_name": "Remove Host from Proxy"
    }
   ]
  },
@@ -1279,7 +1279,7 @@
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 6,
-  "modified": "2023-11-06 07:28:19.470276",
+  "modified": "2025-06-30 07:28:18.839292",
   "name": "Restore Site",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/restore",
@@ -1289,6 +1289,9 @@
    },
    {
     "step_name": "Restore Site"
+   },
+   {
+    "step_name": "Restore Files"
    },
    {
     "step_name": "Checksum of Downloaded Backup Files"
@@ -1769,6 +1772,102 @@
   "steps": [
    {
     "step_name": "Remove Binlogs From Indexer"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 0,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2025-08-05 14:07:23.501949",
+  "name": "Backup Files From Snapshot",
+  "request_method": "POST",
+  "request_path": "/snapshot_recovery/backup_files",
+  "steps": [
+   {
+    "step_name": "Backup Files"
+   },
+   {
+    "step_name": "Upload Backup Files to S3"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 0,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2025-08-05 14:07:58.293257",
+  "name": "Backup Database From Snapshot",
+  "request_method": "POST",
+  "request_path": "/snapshot_recovery/backup_database",
+  "steps": [
+   {
+    "step_name": "Backup Database"
+   },
+   {
+    "step_name": "Upload Backup Files to S3"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 0,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2025-08-05 20:16:42.601645",
+  "name": "Search Sites In Snapshot",
+  "request_method": "POST",
+  "request_path": "/snapshot_recovery/search_sites",
+  "steps": [
+   {
+    "step_name": "Search Sites"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 0,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 6,
+  "modified": "2025-05-22 18:31:51.223187",
+  "name": "Remove Host from Proxy",
+  "request_method": "DELETE",
+  "request_path": "/proxy/hosts/{host}",
+  "steps": [
+   {
+    "step_name": "Remove Host from Proxy"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2025-02-05 19:21:12.508888",
+  "name": "Run SQL Queries",
+  "request_method": "POST",
+  "request_path": "/database/sql/execute",
+  "steps": [
+   {
+    "step_name": "Run SQL Queries"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 0,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2025-08-18 11:45:06.868487",
+  "name": "Update Database Host",
+  "request_method": "POST",
+  "request_path": "/benches/database_host",
+  "steps": [
+   {
+    "step_name": "Update Database Host"
    }
   ]
  }

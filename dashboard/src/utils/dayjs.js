@@ -1,62 +1,30 @@
-import dayjs from 'dayjs';
+import dayjs from 'dayjs/esm';
 import relativeTime from 'dayjs/esm/plugin/relativeTime';
-import localizedFormat from 'dayjs/plugin/localizedFormat';
-import updateLocale from 'dayjs/plugin/updateLocale';
-import isToday from 'dayjs/plugin/isToday';
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
+import localizedFormat from 'dayjs/esm/plugin/localizedFormat';
+import updateLocale from 'dayjs/esm/plugin/updateLocale';
+import isToday from 'dayjs/esm/plugin/isToday';
+import duration from 'dayjs/esm/plugin/duration';
+import utc from 'dayjs/esm/plugin/utc';
+import timezone from 'dayjs/esm/plugin/timezone';
+import advancedFormat from 'dayjs/plugin/advancedFormat';
 
 dayjs.extend(updateLocale);
 dayjs.extend(relativeTime);
 dayjs.extend(localizedFormat);
 dayjs.extend(isToday);
+dayjs.extend(duration);
 dayjs.extend(utc);
 dayjs.extend(timezone);
+dayjs.extend(advancedFormat);
 
-dayjs.shortFormating = (s, ago = false) => {
-	if (s === 'now' || s === 'now ago') {
-		return 'now';
-	}
+export function dayjsLocal(dateTimeString) {
+	let localTimezone = dayjs.tz.guess();
+	// dates are stored in Asia/Calcutta timezone on the server
+	return dayjs.tz(dateTimeString, 'Asia/Calcutta').tz(localTimezone);
+}
 
-	const prefix = s.split(' ')[0];
-	const posfix = s.split(' ')[1];
-	const isPast = s.includes('ago');
-	let newPostfix = '';
-	switch (posfix) {
-		case 'minute':
-			newPostfix = 'm';
-			break;
-		case 'minutes':
-			newPostfix = 'm';
-			break;
-		case 'hour':
-			newPostfix = 'h';
-			break;
-		case 'hours':
-			newPostfix = 'h';
-			break;
-		case 'day':
-			newPostfix = 'd';
-			break;
-		case 'days':
-			newPostfix = 'd';
-			break;
-		case 'month':
-			newPostfix = 'M';
-			break;
-		case 'months':
-			newPostfix = 'M';
-			break;
-		case 'year':
-			newPostfix = 'Y';
-			break;
-		case 'years':
-			newPostfix = 'Y';
-			break;
-	}
-	return `${['a', 'an'].includes(prefix) ? '1' : prefix} ${newPostfix}${
-		isPast ? (ago ? ' ago' : '') : ''
-	}`;
-};
+export function dayjsIST(dateTimeString) {
+	return dayjs(dateTimeString).tz('Asia/Calcutta');
+}
 
 export default dayjs;

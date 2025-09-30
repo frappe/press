@@ -2,8 +2,8 @@
 # See license.txt
 
 # import frappe
-import unittest
+from frappe.tests.utils import FrappeTestCase
 
 
-class TestScheduledAutoUpdateLog(unittest.TestCase):
+class TestScheduledAutoUpdateLog(FrappeTestCase):
 	pass

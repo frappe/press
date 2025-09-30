@@ -1,0 +1,123 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-07-11 11:12:51.772222",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "annotations_section",
+  "server",
+  "database_server",
+  "column_break_dlfs",
+  "available_disk_space",
+  "current_disk_usage",
+  "mountpoint",
+  "adding_storage",
+  "extend_ec2_play",
+  "storage_settings_section",
+  "notification_sent",
+  "is_auto_triggered",
+  "is_warning"
+ ],
+ "fields": [
+  {
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "label": "Server",
+   "options": "Server",
+   "read_only": 1
+  },
+  {
+   "fieldname": "database_server",
+   "fieldtype": "Link",
+   "label": "Database Server",
+   "options": "Database Server",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_dlfs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mountpoint",
+   "fieldtype": "Data",
+   "label": "Mount Point",
+   "read_only": 1
+  },
+  {
+   "fieldname": "current_disk_usage",
+   "fieldtype": "Float",
+   "label": "Current Disk Usage"
+  },
+  {
+   "fieldname": "available_disk_space",
+   "fieldtype": "Float",
+   "label": "Available Disk Space",
+   "read_only": 1
+  },
+  {
+   "fieldname": "adding_storage",
+   "fieldtype": "Float",
+   "label": "Adding storage"
+  },
+  {
+   "fieldname": "annotations_section",
+   "fieldtype": "Section Break",
+   "label": "Annotations"
+  },
+  {
+   "fieldname": "storage_settings_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "notification_sent",
+   "fieldtype": "Check",
+   "label": "Notification Sent"
+  },
+  {
+   "fieldname": "extend_ec2_play",
+   "fieldtype": "Link",
+   "label": "Extend EC2 Play",
+   "options": "Ansible Play"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_auto_triggered",
+   "fieldtype": "Check",
+   "label": "Is auto triggered"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_warning",
+   "fieldtype": "Check",
+   "label": "Is Warning"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-07-17 21:51:34.568795",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Add On Storage Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -5,7 +5,7 @@
 		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 		<meta name="viewport" content="width=device-width,initial-scale=1.0" />
 		<title>Frappe Cloud</title>
-		<link rel="icon" href="/favicon.png" type="image/x-icon" />
+		<link rel="icon" href="/assets/press/dashboard/favicon.png" type="image/x-icon" />
 	</head>
 
 	<body class="h-full">
@@ -22,13 +22,6 @@
 		<!-- For Teleports -->
 		<div id="modals"></div>
 		<div id="popovers"></div>
-
-		<script>
-			{% for key in boot %}
-			window["{{ key }}"] = {{ boot[key] | tojson }};
-			{% endfor %}
-		</script>
-		<!-- <script type="module" src="/src/main.js"></script> -->
-		<script type="module" src="/src2/main.js"></script>
+		<script type="module" src="/src/main.js"></script>
 	</body>
 </html>

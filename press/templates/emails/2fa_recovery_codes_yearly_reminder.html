@@ -1,0 +1,14 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+<div class="p-8 bg-white text-base leading-6 text-gray-900">
+	<div class="from-markdown">
+		<h2>Security Alert</h2>
+		<p>Hey there!</p>
+		<p>It's been a year since you last reviewed your two-factor authentication recovery codes.</p>
+		<p>Please verify that you still have access to these codes. They are essential for account recovery if you lose access to your authentication device.</p>
+        {{ utils.button('View Your Recovery Codes ', link, true) }}
+	</div>
+</div>
+{% endblock %}

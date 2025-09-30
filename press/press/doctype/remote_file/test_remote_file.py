@@ -1,19 +1,21 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
+from __future__ import annotations
 
-import unittest
-from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING
 
 import frappe
+from frappe.tests.utils import FrappeTestCase
+
+if TYPE_CHECKING:
+	from datetime import datetime
 
 
 def create_test_remote_file(
-	site: Optional[str] = None,
-	creation: datetime = None,
-	file_path: str = None,
+	site: str | None = None,
+	creation: datetime | None = None,
+	file_path: str | None = None,
 	file_size: int = 1024,
 ):
 	"""Create test remote file doc for required timestamp."""
@@ -32,5 +34,5 @@ def create_test_remote_file(
 	return remote_file
 
 
-class TestRemoteFile(unittest.TestCase):
+class TestRemoteFile(FrappeTestCase):
 	pass

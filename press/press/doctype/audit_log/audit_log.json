@@ -24,7 +24,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Audit Type",
-   "options": "Bench Field Check\nBackup Record Check\nOffsite Backup Check\nRestore Offsite Backup of Site\nApp Server Replica Dirs Check\nUnbilled Subscription Check\nBilling Audit\nPartner Billing Audit",
+   "options": "Bench Field Check\nBackup Record Check\nOffsite Backup Check\nRestore Offsite Backup of Site\nApp Server Replica Dirs Check\nUnbilled Subscription Check\nBilling Audit\nServer Plan Sanity Check\nPartner Billing Audit",
    "read_only": 1
   },
   {
@@ -49,7 +49,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-12-15 12:15:11.614291",
+ "modified": "2025-08-07 21:50:25.321975",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Audit Log",
@@ -68,6 +68,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

@@ -59,8 +59,20 @@ def successful_provision(self: VirtualMachine):
 	self.save()
 
 
+def available_check_machine_availability(self: Cluster, machine_type: str):
+	return True
+
+
+def unavailable_check_machine_availability(self: Cluster, machine_type: str):
+	return False
+
+
 def successful_sync(self: VirtualMachine):
 	self.status = "Running"
+	if not self.volumes:
+		self.append(
+			"volumes", {"volume_id": "vol-123456", "size": 20, "volume_type": "gp2", "device": "/dev/sda1"}
+		)
 	self.save()
 	self.update_servers()
 
@@ -102,9 +114,12 @@ def successful_wait_for_cloud_init(self: BaseServer):
 @patch.object(BaseServer, "wait_for_cloud_init", new=successful_wait_for_cloud_init)
 @patch.object(BaseServer, "update_tls_certificate", new=successful_tls_certificate)
 @patch.object(BaseServer, "update_agent_ansible", new=successful_update_agent_ansible)
+@patch.object(Cluster, "check_machine_availability", new=available_check_machine_availability)
 class TestAPIServer(FrappeTestCase):
 	@patch.object(Cluster, "provision_on_aws_ec2", new=Mock())
 	def setUp(self):
+		super().setUp()
+
 		self.team = create_test_press_admin_team()
 
 		self.app_plan = create_test_server_plan("Server")
@@ -278,6 +293,8 @@ class TestAPIServer(FrappeTestCase):
 
 class TestAPIServerList(FrappeTestCase):
 	def setUp(self):
+		super().setUp()
+
 		from press.press.doctype.database_server.test_database_server import (
 			create_test_database_server,
 		)

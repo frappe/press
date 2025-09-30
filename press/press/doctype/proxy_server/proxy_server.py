@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 import frappe
 from frappe.utils import unique
 
-from press.agent import Agent
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
@@ -31,6 +30,7 @@ class ProxyServer(BaseServer):
 		agent_password: DF.Password | None
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
+		bastion_server: DF.Link | None
 		cluster: DF.Link | None
 		disable_agent_job_auto_retry: DF.Check
 		domain: DF.Link | None
@@ -54,7 +54,7 @@ class ProxyServer(BaseServer):
 		private_ip_interface_id: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner"]
 		proxysql_admin_password: DF.Password | None
 		proxysql_monitor_password: DF.Password | None
 		public: DF.Check
@@ -65,6 +65,7 @@ class ProxyServer(BaseServer):
 		ssh_user: DF.Data | None
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		team: DF.Link | None
+		tls_certificate_renewal_failed: DF.Check
 		virtual_machine: DF.Link | None
 		wireguard_interface_id: DF.Data | None
 		wireguard_network: DF.Data | None
@@ -97,35 +98,6 @@ class ProxyServer(BaseServer):
 	def validate_proxysql_admin_password(self):
 		if not self.proxysql_admin_password:
 			self.proxysql_admin_password = frappe.generate_hash(length=32)
-
-	def get_wildcard_domains(self):
-		wildcard_domains = []
-		for domain in self.domains:
-			if domain.domain == self.domain:
-				# self.domain certs are symlinks
-				continue
-			certificate_name = frappe.db.get_value(
-				"TLS Certificate", {"wildcard": True, "domain": domain.domain}, "name"
-			)
-			certificate = frappe.get_doc("TLS Certificate", certificate_name)
-			wildcard_domains.append(
-				{
-					"domain": domain.domain,
-					"certificate": {
-						"privkey.pem": certificate.private_key,
-						"fullchain.pem": certificate.full_chain,
-						"chain.pem": certificate.intermediate_chain,
-					},
-					"code_server": domain.code_server,
-				}
-			)
-		return wildcard_domains
-
-	@frappe.whitelist()
-	def setup_wildcard_hosts(self):
-		agent = Agent(self.name, server_type="Proxy Server")
-		wildcards = self.get_wildcard_domains()
-		agent.setup_wildcard_hosts(wildcards)
 
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
@@ -234,8 +206,7 @@ class ProxyServer(BaseServer):
 	def _setup_fail2ban(self):
 		try:
 			ansible = Ansible(
-				playbook="fail2ban.yml",
-				server=self,
+				playbook="fail2ban.yml", server=self, user=self._ssh_user(), port=self._ssh_port()
 			)
 			play = ansible.run()
 			self.reload()
@@ -263,6 +234,8 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="proxysql.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"proxysql_admin_password": self.get_password("proxysql_admin_password"),
@@ -298,6 +271,8 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="primary_proxy.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={"secondary_private_ip": secondary_private_ip},
 			)
 			play = ansible.run()
@@ -316,6 +291,8 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="secondary_proxy.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={"primary_public_key": self.get_primary_frappe_public_key()},
 			)
 			play = ansible.run()
@@ -344,6 +321,8 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="failover_prepare_primary_proxy.yml",
 				server=primary,
+				user=primary._ssh_user(),
+				port=primary._ssh_port(),
 			)
 			ansible.run()
 		except Exception:
@@ -369,6 +348,8 @@ class ProxyServer(BaseServer):
 		ansible = Ansible(
 			playbook="failover_remove_primary_access.yml",
 			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
 			variables={
 				"primary_public_key": frappe.db.get_value("Proxy Server", self.primary, "frappe_public_key")
 			},
@@ -376,7 +357,12 @@ class ProxyServer(BaseServer):
 		ansible.run()
 
 	def up_secondary(self):
-		ansible = Ansible(playbook="failover_up_secondary_proxy.yml", server=self)
+		ansible = Ansible(
+			playbook="failover_up_secondary_proxy.yml",
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+		)
 		ansible.run()
 
 	def update_dns_records_for_all_sites(self):
@@ -450,6 +436,8 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="proxysql_monitor.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"proxysql_admin_password": self.get_password("proxysql_admin_password"),
@@ -479,6 +467,8 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="wireguard.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"wireguard_port": self.wireguard_port,
@@ -524,6 +514,8 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="reload_wireguard.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"wireguard_port": self.wireguard_port,

@@ -1,0 +1,37 @@
+---
+- name: Ensure source and destination directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+    owner: frappe
+    group: frappe
+  loop:
+    - /home/frappe/archived
+    - /opt/volumes/benches/archived
+
+- name: Move existing files from old archive to new location
+  command: mv /home/frappe/archived/* /opt/volumes/benches/archived/
+  args:
+    removes: /home/frappe/archived/*
+  ignore_errors: yes
+
+- name: Set ownership recursively
+  file:
+    path: "{{ item }}"
+    owner: frappe
+    group: frappe
+    recurse: true
+  loop:
+    - /opt/volumes/benches/archived
+    - /home/frappe/archived
+
+- name: Add bind mount to /etc/fstab
+  lineinfile:
+    path: /etc/fstab
+    line: "/opt/volumes/benches/archived /home/frappe/archived none defaults,nofail,bind 0 0"
+    state: present
+    create: yes
+
+- name: Mount all from fstab
+  command: mount -av

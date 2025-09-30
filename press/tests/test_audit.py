@@ -22,6 +22,8 @@ class TestBackupRecordCheck(FrappeTestCase):
 		frappe.db.rollback()
 
 	def setUp(self):
+		super().setUp()
+
 		self.yesterday = frappe.utils.now_datetime().date() - timedelta(days=1)
 		self._2_hrs_before_yesterday = datetime.combine(self.yesterday, datetime.min.time()) - timedelta(
 			hours=2

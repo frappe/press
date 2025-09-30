@@ -1,18 +1,18 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
 
 
-import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import boto3
 import frappe
+from frappe.tests.utils import FrappeTestCase
 from moto import mock_aws
 
 from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.proxy_server.proxy_server import ProxyServer
 from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
+from press.press.doctype.server.server import BaseServer
 from press.press.doctype.ssh_key.test_ssh_key import create_test_ssh_key
 from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 from press.press.doctype.virtual_machine_image.virtual_machine_image import (
@@ -55,7 +55,7 @@ def create_test_cluster(
 	return cluster
 
 
-class TestCluster(unittest.TestCase):
+class TestCluster(FrappeTestCase):
 	@mock_aws
 	def _setup_fake_vmis(self, series: list[str], cluster: Cluster = None):
 		from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (
@@ -66,9 +66,7 @@ class TestCluster(unittest.TestCase):
 		for s in series:
 			create_test_virtual_machine_image(cluster=cluster, series=s)
 
-	@patch.object(
-		ProxyServer, "validate", new=MagicMock()
-	)  # avoid TLSCertificate validation
+	@patch.object(ProxyServer, "validate_domains", new=MagicMock())  # avoid TLSCertificate validation
 	def _create_cluster(
 		self,
 		aws_access_key_id,
@@ -77,7 +75,7 @@ class TestCluster(unittest.TestCase):
 		add_default_servers=False,
 	) -> Cluster:
 		"""Simulate creation of cluster without AWS credentials"""
-		cluster = frappe.get_doc(
+		cluster: Cluster = frappe.get_doc(
 			{
 				"doctype": "Cluster",
 				"name": "Mumbai 2",
@@ -100,12 +98,11 @@ class TestCluster(unittest.TestCase):
 		frappe.db.rollback()
 
 
+@patch.object(BaseServer, "run_press_job", new=MagicMock())
 @patch.object(VirtualMachine, "get_latest_ubuntu_image", new=lambda x: "ami-123")
 @patch.object(VirtualMachineImage, "wait_for_availability", new=MagicMock())
 @patch.object(VirtualMachineImage, "after_insert", new=MagicMock())
-@patch(
-	"press.press.doctype.cluster.cluster.frappe.enqueue_doc", new=foreground_enqueue_doc
-)
+@patch("press.press.doctype.cluster.cluster.frappe.enqueue_doc", new=foreground_enqueue_doc)
 @patch("press.press.doctype.cluster.cluster.frappe.db.commit", new=MagicMock())
 class TestPrivateCluster(TestCluster):
 	@mock_aws
@@ -119,14 +116,14 @@ class TestPrivateCluster(TestCluster):
 
 	def test_add_images_throws_err_if_no_vmis_to_copy(self):
 		cluster = create_test_cluster(name="Frankfurt", region="eu-central-1")
-		self.assertRaises(Exception, cluster.add_images)
+		self.assertRaises(frappe.ValidationError, cluster.add_images)
 
 	def test_add_images_throws_err_if_some_vmis_are_unavailable(self):
 		self._setup_fake_vmis(["m", "f"])  # another cluster with n missing
 
 		cluster = create_test_cluster(name="Frankfurt", region="eu-central-1", public=True)
 		self._setup_fake_vmis(["m", "f"], cluster=cluster)  # n is missing
-		self.assertRaises(Exception, cluster.add_images)
+		self.assertRaises(frappe.ValidationError, cluster.add_images)
 
 	@mock_aws
 	def test_creation_of_cluster_in_same_region_reuses_VMIs(self):
@@ -155,9 +152,7 @@ class TestPrivateCluster(TestCluster):
 		boto3.client("iam").create_group(GroupName="fc-vpc-customer")
 
 		Cluster.wait_for_aws_creds_seconds = 0
-		self._create_cluster(
-			aws_access_key_id=None, aws_secret_access_key=None, add_default_servers=True
-		)
+		self._create_cluster(aws_access_key_id=None, aws_secret_access_key=None, add_default_servers=True)
 
 		server_count_after = frappe.db.count("Server")
 		database_server_count_after = frappe.db.count("Database Server")
@@ -171,22 +166,21 @@ class TestPrivateCluster(TestCluster):
 		self,
 	):
 		self.assertRaises(
-			Exception,
+			frappe.ValidationError,
 			self._create_cluster,
 			aws_access_key_id=None,
 			aws_secret_access_key=None,
 		)
 
 
+@patch.object(BaseServer, "run_press_job", new=MagicMock())
 @patch.object(VirtualMachineImage, "wait_for_availability", new=MagicMock())
 @patch("press.press.doctype.cluster.cluster.frappe.db.commit", new=MagicMock())
-@patch(
-	"press.press.doctype.cluster.cluster.frappe.enqueue_doc", new=foreground_enqueue_doc
-)
+@patch("press.press.doctype.cluster.cluster.frappe.enqueue_doc", new=foreground_enqueue_doc)
 @patch.object(VirtualMachineImage, "after_insert", new=MagicMock())
 class TestPublicCluster(TestCluster):
 	@mock_aws
-	@patch.object(ProxyServer, "validate", new=MagicMock())
+	@patch.object(ProxyServer, "validate_domains", new=Mock())
 	def test_create_servers_without_vmis_throws_err(self):
 		root_domain = create_test_root_domain("local.fc.frappe.dev")
 		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
@@ -195,7 +189,7 @@ class TestPublicCluster(TestCluster):
 		database_server_count_before = frappe.db.count("Database Server")
 		proxy_server_count_before = frappe.db.count("Proxy Server")
 		cluster = create_test_cluster(name="Mumbai", region="ap-south-1", public=True)
-		self.assertRaises(Exception, cluster.create_servers)
+		self.assertRaises(frappe.ValidationError, cluster.create_servers)
 		server_count_after = frappe.db.count("Server")
 		database_server_count_after = frappe.db.count("Database Server")
 		proxy_server_count_after = frappe.db.count("Proxy Server")
@@ -214,7 +208,7 @@ class TestPublicCluster(TestCluster):
 		self.assertEqual(vm_count_after, vm_count_before + 3)
 
 	@mock_aws
-	@patch.object(ProxyServer, "validate", new=MagicMock())
+	@patch.object(ProxyServer, "validate_domains", new=Mock())
 	def test_creation_of_public_cluster_with_servers_creates_3(self):
 		root_domain = create_test_root_domain("local.fc.frappe.dev")
 		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
@@ -224,9 +218,7 @@ class TestPublicCluster(TestCluster):
 		database_server_count_before = frappe.db.count("Database Server")
 		proxy_server_count_before = frappe.db.count("Proxy Server")
 
-		create_test_cluster(
-			name="Mumbai 2", region="ap-south-1", public=True, add_default_servers=True
-		)
+		create_test_cluster(name="Mumbai 2", region="ap-south-1", public=True, add_default_servers=True)
 
 		server_count_after = frappe.db.count("Server")
 		database_server_count_after = frappe.db.count("Database Server")
@@ -249,9 +241,7 @@ class TestPublicCluster(TestCluster):
 		settings.aws_access_key_id = key_pairs["AccessKey"]["AccessKeyId"]
 		settings.aws_secret_access_key = key_pairs["AccessKey"]["SecretAccessKey"]
 		settings.save()
-		cluster = self._create_cluster(
-			aws_access_key_id=None, aws_secret_access_key=None, public=True
-		)
+		cluster = self._create_cluster(aws_access_key_id=None, aws_secret_access_key=None, public=True)
 		self.assertEqual(cluster.aws_access_key_id, key_pairs["AccessKey"]["AccessKeyId"])
 		self.assertEqual(
 			cluster.get_password("aws_secret_access_key"),
