@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import urllib.parse
 from base64 import b64encode
 from datetime import timedelta
 from functools import cached_property
@@ -83,6 +84,7 @@ class Incident(WebsiteGenerator):
 		acknowledged_by: DF.Link | None
 		alert: DF.Link | None
 		alerts: DF.Table[IncidentAlerts]
+		called_customer: DF.Check
 		cluster: DF.Link | None
 		corrective_suggestions: DF.Table[IncidentSuggestion]
 		description: DF.TextEditor | None
@@ -144,6 +146,8 @@ class Incident(WebsiteGenerator):
 	def on_update(self):
 		if self.has_value_changed("status"):
 			self.send_email_notification()
+			if self.status == "Confirmed" and not self.called_customer:
+				self.call_customers()
 
 	def vcpu(self, server_type, server_name):
 		vm_name = frappe.db.get_value(server_type, server_name, "virtual_machine")
@@ -613,6 +617,62 @@ Incident URL: {incident_link}"""
 			"Acknowledged": f"{acknowledged_by} from our team has acknowledged the incident and is actively investigating. Please allow them some time to diagnose and address the issue.",
 			"Resolved": f"Your sites are now up! {acknowledged_by} has resolved this incident. We will keep monitoring your sites for any further issues",
 		}[self.status]
+
+	def call_customers(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_call_customers",
+			queue="default",
+			enqueue_after_commit=True,
+			at_front=True,
+			job_id=f"incident||call_customers||{self.name}",
+			deduplicate=True,
+		)
+
+	def _call_customers(self):
+		if not self.phone_call:
+			return
+
+		phone_nos = get_communication_info("Phone Call", "Incident", "Server", self.server)
+		if not phone_nos:
+			return
+
+		for phone_no in phone_nos:
+			frappe.enqueue_doc(
+				self.doctype,
+				self.name,
+				"_call_customer",
+				queue="default",
+				timeout=1800,
+				enqueue_after_commit=True,
+				phone_no=phone_no,
+			)
+
+		self.add_comment("Comment", f"Called customers at {', '.join(phone_nos)}")
+
+		self.called_customer = 1
+		self.save()
+
+	def _call_customer(self, phone_no: str):
+		twilio_client = self.twilio_client
+		if not twilio_client:
+			return
+		from_phone = self.twilio_phone_number
+		server_title = frappe.db.get_value("Server", self.server, "title") or self.server
+		if not from_phone or not server_title:
+			return
+
+		server_title_encoded = urllib.parse.quote(server_title)
+
+		# TODO Better message for Disk Full incidents
+
+		press_public_base_url = frappe.utils.get_url()
+		twilio_client.calls.create(
+			url=f"{press_public_base_url}/api/method/press.api.message.confirmed_incident?server_title={server_title_encoded}",
+			to=phone_no,
+			from_=from_phone,
+		)
 
 	def add_acknowledgment_update(
 		self,

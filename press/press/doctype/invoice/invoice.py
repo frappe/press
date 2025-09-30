@@ -11,6 +11,7 @@ from frappe.utils.data import fmt_money
 
 from press.api.billing import get_stripe
 from press.api.client import dashboard_whitelist
+from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.utils import log_error
 from press.utils.billing import (
 	convert_stripe_money,
@@ -520,7 +521,11 @@ class Invoice(Document):
 
 		self.customer_name = team.billing_name or frappe.utils.get_fullname(self.team)
 		self.customer_email = team.user
-		self.billing_email = team.billing_email or self.customer_email
+		billing_emails = get_communication_info("Email", "Billing", "Team", self.team)
+		if billing_emails:
+			self.billing_email = billing_emails[0]
+		else:
+			self.billing_email = self.customer_email
 		self.currency = team.currency
 		if not self.payment_mode:
 			self.payment_mode = team.payment_mode
