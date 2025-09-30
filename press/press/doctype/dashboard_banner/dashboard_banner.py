@@ -92,13 +92,13 @@ def get_user_banners():
 
 	# filter out dismissed banners
 	user = frappe.session.user
-	user_specific_banners = []
+	visible_banners = []
 	for banner in all_enabled_banners:
 		banner_dismissals_by_user = frappe.get_all(
 			"Dashboard Banner Dismissal",
 			filters={"user": user, "parent": banner["name"]},
 		)
 		if not banner_dismissals_by_user:
-			user_specific_banners.append(banner)
+			visible_banners.append(banner)
 
-	return user_specific_banners
+	return visible_banners
