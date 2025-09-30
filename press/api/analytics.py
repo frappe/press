@@ -499,15 +499,12 @@ def get_metrics(
 	timezone: str,
 	response_key: str,
 	group: str | None = None,
-	bench: str | None = None,
 	duration: str = "24h",
 ):
 	if not group:
-		frappe.throw("Bench group not found!")
+		frappe.throw("No release group found!")
 
-	benches = (
-		frappe.get_all("Bench", {"status": "Active", "group": group}, pluck="name") if group else [bench]
-	)
+	benches = frappe.get_all("Bench", {"status": "Active", "group": group}, pluck="name")
 
 	if not benches:
 		frappe.throw("No active benches found!")
@@ -525,9 +522,7 @@ def get_metrics(
 
 @frappe.whitelist()
 @protected("Release Group")
-def get_fs_read_bytes(
-	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
-):
+def get_fs_read_bytes(group: str, timezone: str, duration: str = "24h"):
 	promql_query = (
 		'sum by (name) (rate(container_fs_reads_bytes_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
 	)
@@ -536,16 +531,13 @@ def get_fs_read_bytes(
 		timezone=timezone,
 		response_key="read_bytes_fs",
 		group=group,
-		bench=bench,
 		duration=duration,
 	)
 
 
 @frappe.whitelist()
 @protected("Release Group")
-def get_fs_write_bytes(
-	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
-):
+def get_fs_write_bytes(group: str, timezone: str, duration: str = "24h"):
 	promql_query = (
 		'sum by (name) (rate(container_fs_writes_bytes_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
 	)
@@ -554,32 +546,26 @@ def get_fs_write_bytes(
 		timezone=timezone,
 		response_key="write_bytes_fs",
 		group=group,
-		bench=bench,
 		duration=duration,
 	)
 
 
 @frappe.whitelist()
 @protected("Release Group")
-def get_outgoing_network_traffic(
-	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
-):
+def get_outgoing_network_traffic(group: str, timezone: str, duration: str = "24h"):
 	promql_query = 'sum by (name) (rate(container_network_transmit_bytes_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
 	return get_metrics(
 		promql_query=promql_query,
 		timezone=timezone,
 		response_key="network_traffic_outward",
 		group=group,
-		bench=bench,
 		duration=duration,
 	)
 
 
 @frappe.whitelist()
 @protected("Release Group")
-def get_incoming_network_traffic(
-	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
-):
+def get_incoming_network_traffic(group: str, timezone: str, duration: str = "24h"):
 	promql_query = (
 		'sum by (name) (rate(container_network_receive_bytes_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
 	)
@@ -588,30 +574,26 @@ def get_incoming_network_traffic(
 		timezone=timezone,
 		response_key="network_traffic_inward",
 		group=group,
-		bench=bench,
 		duration=duration,
 	)
 
 
 @frappe.whitelist()
 @protected("Release Group")
-def get_memory_usage(
-	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
-):
+def get_memory_usage(group: str, timezone: str, duration: str = "24h"):
 	promql_query = 'sum by (name) (avg_over_time(container_memory_usage_bytes{{job="cadvisor", name=~"{benches}"}}[5m]) / 1024 / 1024 / 1024)'
 	return get_metrics(
 		promql_query=promql_query,
 		timezone=timezone,
 		response_key="memory",
 		group=group,
-		bench=bench,
 		duration=duration,
 	)
 
 
 @frappe.whitelist()
 @protected("Release Group")
-def get_cpu_usage(timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"):
+def get_cpu_usage(group: str, timezone: str, duration: str = "24h"):
 	promql_query = (
 		'sum by (name) ( rate(container_cpu_usage_seconds_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
 	)
@@ -620,7 +602,6 @@ def get_cpu_usage(timezone: str, group: str | None = None, bench: str | None = N
 		timezone=timezone,
 		response_key="cpu",
 		group=group,
-		bench=bench,
 		duration=duration,
 	)
 
