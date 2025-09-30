@@ -5,7 +5,7 @@ from typing import Literal
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import validate_email_address
+from frappe.utils import validate_email_address, validate_phone_number
 from frappe.utils.caching import redis_cache
 
 COMMUNICATION_TYPE_LITERAL = Literal[
@@ -48,16 +48,17 @@ class CommunicationInfo(Document):
 		if self.channel == "Email":
 			validate_email_address(self.value, throw=True)
 
-		# TODO: validate phone number if channel is Phone Call
+		if self.channel == "Phone Call":
+			validate_phone_number(self.value, throw=True)
 
 		# With every resource, all type of communication info is not allowed
 
 		# For Team, all types are allowed
 
-		if self.parenttype == "Server" and self.type not in ("Server Activity", "Incident"):
+		if self.parenttype == "Server" and self.type not in ("General", "Server Activity", "Incident"):
 			frappe.throw(f"Communication type '{self.type}' is not allowed for '{self.parenttype}'")
 
-		if self.parenttype == "Site" and self.type != "Site Activity":
+		if self.parenttype == "Site" and self.type not in ("General", "Site Activity"):
 			frappe.throw(f"Communication type '{self.type}' is not allowed for 'Site'")
 
 
@@ -137,6 +138,16 @@ def update_communication_infos(  # noqa: C901
 	if resource_type not in ("Team", "Site", "Server"):
 		frappe.throw("resource_type must be one of 'Team', 'Site', 'Server'")
 
+	# Remove values with empty value
+	values = [value for value in values if value.get("value")]
+
+	# Remove duplicates in values
+	unique_values = []
+	for value in values:
+		if value not in unique_values:
+			unique_values.append(value)
+	values = unique_values
+
 	# Fetch existing records
 	records = frappe.get_all(
 		"Communication Info",
@@ -176,6 +187,12 @@ def update_communication_infos(  # noqa: C901
 				break
 		if not found:
 			to_add.append(value)
+
+	# Validate no multiple `Billing` type of communication info
+	if resource_type == "Team":
+		billing_count = sum(1 for value in values if value.get("type") == "Billing")
+		if billing_count > 1:
+			frappe.throw("For Billing, only one email can be configured")
 
 	# Delete unwanted
 	if to_delete:

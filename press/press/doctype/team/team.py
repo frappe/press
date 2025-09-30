@@ -175,11 +175,7 @@ class Team(Document):
 			],
 			as_dict=True,
 		)
-		doc.communication_infos = (
-			([{"channel": c.channel, "type": c.type, "value": c.value} for c in self.communication_infos],)
-			if hasattr(self, "communication_infos")
-			else []
-		)
+		doc.communication_infos = self.get_communication_infos()
 
 	def onload(self):
 		load_address_and_contact(self)
@@ -615,6 +611,14 @@ class Team(Document):
 			customer = stripe.Customer.create(email=self.user, name=get_fullname(self.user))
 			self.stripe_customer_id = customer.id
 			self.save()
+
+	@dashboard_whitelist()
+	def get_communication_infos(self):
+		return (
+			[{"channel": c.channel, "type": c.type, "value": c.value} for c in self.communication_infos]
+			if hasattr(self, "communication_infos")
+			else []
+		)
 
 	@dashboard_whitelist()
 	def update_communication_infos(self, values: list[dict]):
