@@ -2179,6 +2179,9 @@ def add_server_to_release_group(name, group_name, server=None):
 		else:
 			frappe.throw(str(e), type(e))
 
+	if isinstance(deploy, str):
+		return None
+
 	bench = find(deploy.benches, lambda bench: bench.server == server).bench
 	return frappe.get_value("Agent Job", {"bench": bench, "job_type": "New Bench"}, "name")
 

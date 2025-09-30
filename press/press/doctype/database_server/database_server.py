@@ -760,6 +760,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="primary.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"backup_path": "/tmp/replica",
 					"mariadb_root_password": mariadb_root_password,
@@ -784,9 +786,12 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="secondary.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"mariadb_root_password": mariadb_root_password,
 					"primary_private_ip": primary.private_ip,
+					"primary_ssh_port": primary.ssh_port,
 					"private_ip": self.private_ip,
 				},
 			)
@@ -836,6 +841,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="mariadb_physical_backup.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"mariadb_root_password": mariadb_root_password,
 					"backup_path": path,
@@ -849,6 +856,8 @@ class DatabaseServer(BaseServer):
 		try:
 			ansible = Ansible(
 				playbook="failover.yml",
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				server=self,
 				variables={"mariadb_root_password": self.get_password("mariadb_root_password")},
 			)
@@ -921,6 +930,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="database_exporters.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"private_ip": self.private_ip,
 					"mariadb_root_password": mariadb_root_password,
@@ -945,6 +956,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="mariadb_change_root_password.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"mariadb_old_root_password": old_password,
 					"mariadb_root_password": self.mariadb_root_password,
@@ -994,6 +1007,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="mariadb_change_root_password_secondary.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"mariadb_root_password": self.mariadb_root_password,
 					"private_ip": self.private_ip,
@@ -1025,6 +1040,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="mariadb_prepare_replica.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"mariadb_root_password": self.get_password("mariadb_root_password"),
 					"private_ip": self.private_ip,
@@ -1097,6 +1114,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="deadlock_logger.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"mariadb_root_password": self.get_password("mariadb_root_password"),
@@ -1113,7 +1132,9 @@ class DatabaseServer(BaseServer):
 	def _capture_process_list(self) -> str | None:
 		"""Capture full process list on the database server"""
 		try:
-			ansible = Ansible(playbook="capture_process_list.yml", server=self)
+			ansible = Ansible(
+				playbook="capture_process_list.yml", server=self, user=self._ssh_user(), port=self._ssh_port()
+			)
 			play = ansible.run()
 			task = frappe.get_doc("Ansible Task", {"play": play.name})
 			return task.output
@@ -1163,7 +1184,9 @@ class DatabaseServer(BaseServer):
 
 	def _setup_logrotate(self):
 		try:
-			ansible = Ansible(playbook="rotate_mariadb_logs.yml", server=self)
+			ansible = Ansible(
+				playbook="rotate_mariadb_logs.yml", server=self, user=self._ssh_user(), port=self._ssh_port()
+			)
 			ansible.run()
 		except Exception:
 			log_error("Logrotate Setup Exception", server=self.as_dict())
@@ -1179,6 +1202,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="mariadb_debug_symbols.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			ansible.run()
 		except Exception:
@@ -1440,6 +1465,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="reconfigure_mysqld_exporter.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"private_ip": self.private_ip,
 					"mariadb_root_password": mariadb_root_password,
@@ -1463,6 +1490,8 @@ class DatabaseServer(BaseServer):
 		ansible = Ansible(
 			playbook="mariadb_memory_allocator.yml",
 			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
 			variables={
 				"server": self.name,
 				"allocator": memory_allocator.lower(),

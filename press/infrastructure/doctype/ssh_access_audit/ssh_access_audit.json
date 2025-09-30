@@ -9,10 +9,12 @@
   "total_hosts",
   "reachable_hosts",
   "column_break_knsp",
+  "total_known_violations",
   "total_violations",
   "user_violations",
   "inventory",
   "section_break_sqln",
+  "known_violations",
   "violations",
   "suspicious_users",
   "hosts"
@@ -91,11 +93,25 @@
    "in_list_view": 1,
    "label": "Reachable Hosts",
    "read_only": 1
+  },
+  {
+   "fieldname": "known_violations",
+   "fieldtype": "Table",
+   "label": "Known Violations",
+   "options": "SSH Access Audit Violation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_known_violations",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Total Known Violations",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-30 18:16:46.869475",
+ "modified": "2025-09-26 23:46:31.388390",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "SSH Access Audit",
@@ -115,6 +131,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": []

@@ -96,7 +96,7 @@ def verify_otp(account_request: str, otp: str) -> str:
 
 
 @frappe.whitelist(allow_guest=True)
-@rate_limit(limit=5, seconds=60)
+@rate_limit(limit=5, seconds=60 * 60)
 def verify_otp_and_login(email: str, otp: str):
 	from frappe.auth import get_login_attempt_tracker
 
