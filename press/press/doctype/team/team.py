@@ -618,6 +618,14 @@ class Team(Document):
 			self.stripe_customer_id = customer.id
 			self.save()
 
+	@dashboard_whitelist()
+	def update_communication_infos(self, values: list[dict]):
+		from press.press.doctype.communication_info.communication_info import (
+			update_communication_infos as update_infos,
+		)
+
+		update_infos("Team", self.name, values)
+
 	@frappe.whitelist()
 	def update_billing_details(self, billing_details):
 		if self.billing_address:

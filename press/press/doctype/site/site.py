@@ -327,6 +327,11 @@ class Site(Document, TagHelpers):
 			if self.status == "Suspended"
 			else None
 		)
+		doc.communication_infos = (
+			([{"channel": c.channel, "type": c.type, "value": c.value} for c in self.communication_infos],)
+			if hasattr(self, "communication_infos")
+			else []
+		)
 
 		if doc.owner == "Administrator":
 			doc.signup_by = frappe.db.get_value("Account Request", doc.account_request, "email")
