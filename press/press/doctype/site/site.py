@@ -327,12 +327,7 @@ class Site(Document, TagHelpers):
 			if self.status == "Suspended"
 			else None
 		)
-		doc.communication_infos = (
-			([{"channel": c.channel, "type": c.type, "value": c.value} for c in self.communication_infos],)
-			if hasattr(self, "communication_infos")
-			else []
-		)
-
+		doc.communication_infos = self.get_communication_infos()
 		if doc.owner == "Administrator":
 			doc.signup_by = frappe.db.get_value("Account Request", doc.account_request, "email")
 
@@ -3068,6 +3063,12 @@ class Site(Document, TagHelpers):
 				"condition": not self.hybrid_site and has_permission("Site Database User"),
 			},
 			{
+				"action": "Notification Settings",
+				"description": "Manage notification settings for your site",
+				"button_label": "Manage",
+				"doc_method": "dummy",
+			},
+			{
 				"action": "Schedule backup",
 				"description": "Schedule a backup for this site",
 				"button_label": "Schedule",
@@ -3488,6 +3489,14 @@ class Site(Document, TagHelpers):
 	def fetch_queries_from_binlog(self, row_ids: dict[str, list[int]]):
 		return self.database_server_agent.get_binlog_queries(
 			row_ids=row_ids, database=self.fetch_database_name()
+		)
+
+	@dashboard_whitelist()
+	def get_communication_infos(self):
+		return (
+			[{"channel": c.channel, "type": c.type, "value": c.value} for c in self.communication_infos]
+			if hasattr(self, "communication_infos")
+			else []
 		)
 
 	@dashboard_whitelist()

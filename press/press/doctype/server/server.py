@@ -147,11 +147,7 @@ class BaseServer(Document, TagHelpers):
 		doc.usage = usage(self.name)
 		doc.actions = self.get_actions()
 		doc.disk_size = frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size")
-		doc.communication_infos = (
-			([{"channel": c.channel, "type": c.type, "value": c.value} for c in self.communication_infos],)
-			if hasattr(self, "communication_infos")
-			else []
-		)
+		doc.communication_infos = self.get_communication_infos()
 
 		try:
 			doc.recommended_storage_increment = (
@@ -172,6 +168,14 @@ class BaseServer(Document, TagHelpers):
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 
 		return doc
+
+	@dashboard_whitelist()
+	def get_communication_infos(self):
+		return (
+			[{"channel": c.channel, "type": c.type, "value": c.value} for c in self.communication_infos]
+			if hasattr(self, "communication_infos")
+			else []
+		)
 
 	@dashboard_whitelist()
 	def update_communication_infos(self, values: list[dict]):
@@ -2104,6 +2108,22 @@ class Server(BaseServer):
 
 		if save:
 			self.save()
+
+	def get_actions(self):
+		server_actions = super().get_actions()
+
+		return [
+			{
+				"action": "Notification Settings",
+				"description": "Manage notification channels",
+				"button_label": "Manage",
+				"doc_method": "dummy",
+				"group": "Application Server Actions",
+				"server_doctype": "Server",
+				"server_name": self.name,
+			},
+			*server_actions,
+		]
 
 	def update_subscription(self):
 		subscription = self.subscription
