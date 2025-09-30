@@ -310,10 +310,7 @@ class Team(Document):
 		team.team_title = "Parent Team"
 		team.insert(ignore_permissions=True, ignore_links=True)
 		team.append("team_members", {"user": user.name})
-		if not account_request.invited_by_parent_team:
-			team.append("communication_emails", {"type": "invoices", "value": user.name})
-			team.append("communication_emails", {"type": "marketplace_notifications", "value": user.name})
-		else:
+		if account_request.invited_by_parent_team:
 			team.parent_team = account_request.invited_by
 
 		if account_request.product_trial:
