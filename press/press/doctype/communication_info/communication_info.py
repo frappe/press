@@ -15,8 +15,6 @@ COMMUNICATION_TYPE_LITERAL = Literal[
 
 CHANNEL_TYPE_LITERAL = Literal["Email", "Phone Call"]
 
-ALLOWED_TYPES_FOR_PHONE_CALL = ("Incident",)
-
 
 class CommunicationInfo(Document):
 	# begin: auto-generated types
@@ -38,11 +36,29 @@ class CommunicationInfo(Document):
 	# NOTE: For any changes in type, channel please update the same in helpers method
 
 	def validate(self):
-		if self.channel == "Phone Call" and self.type not in ALLOWED_TYPES_FOR_PHONE_CALL:
+		if not self.parenttype or not self.parent:
+			frappe.throw("parenttype and parent are required")
+
+		if self.parenttype not in ("Team", "Site", "Server"):
+			frappe.throw("parenttype must be one of 'Team', 'Site', 'Server'")
+
+		if self.channel == "Phone Call" and self.type != "Incident":
 			frappe.throw("Phone Call is available only for 'Incident'")
 
 		if self.channel == "Email":
 			validate_email_address(self.value, throw=True)
+
+		# TODO: validate phone number if channel is Phone Call
+
+		# With every resource, all type of communication info is not allowed
+
+		# For Team, all types are allowed
+
+		if self.parenttype == "Server" and self.type not in ("Server Activity", "Incident"):
+			frappe.throw(f"Communication type '{self.type}' is not allowed for '{self.parenttype}'")
+
+		if self.parenttype == "Site" and self.type != "Site Activity":
+			frappe.throw(f"Communication type '{self.type}' is not allowed for 'Site'")
 
 
 @redis_cache(ttl=10 * 60)
