@@ -386,16 +386,6 @@ class Site(Document, TagHelpers):
 			self.set_latest_bench()
 		# initialize site.config based on plan
 		self._update_configuration(self.get_plan_config(), save=False)
-		if self.team != "Administrator":
-			for email in get_communication_info("Email", "General", "Team", self.team):
-				self.append(
-					"communication_infos",
-					{
-						"channel": "Email",
-						"type": "General",
-						"value": email,
-					},
-				)
 
 		if not self.setup_wizard_status_check_next_retry_on:
 			self.setup_wizard_status_check_next_retry_on = now_datetime()
