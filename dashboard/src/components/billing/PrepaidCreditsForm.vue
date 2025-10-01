@@ -55,14 +55,19 @@
 			<div class="text-xs text-gray-600">Select Payment Gateway</div>
 			<div class="mt-1.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
 				<Button
-					v-if="team.doc.currency === 'INR' || team.doc.razorpay_enabled"
+					v-if="
+						team.doc.razorpay_enabled ||
+						team.doc.currency === 'INR' ||
+						(team.doc.currency === 'USD' && team.doc.paypal_enabled)
+					"
 					size="lg"
 					:class="{
 						'border-[1.5px] border-gray-700': paymentGateway === 'Razorpay',
 					}"
 					@click="paymentGateway = 'Razorpay'"
 				>
-					<RazorpayLogo class="w-24" />
+					<RazorpayLogo v-if="team.doc.currency === 'INR'" class="w-24" />
+					<PayPalLogo v-if="team.doc.currency === 'USD'" class="h-7 w-20" />
 				</Button>
 				<Button
 					size="lg"
@@ -122,6 +127,7 @@
 import BuyCreditsStripe from './BuyCreditsStripe.vue';
 import BuyCreditsRazorpay from './BuyCreditsRazorpay.vue';
 import RazorpayLogo from '../../logo/RazorpayLogo.vue';
+import PayPalLogo from '../../logo/PayPalLogo.vue';
 import StripeLogo from '../../logo/StripeLogo.vue';
 import BuyPrepaidCreditsMpesa from './mpesa/BuyPrepaidCreditsMpesa.vue';
 import { FormControl, Button, createResource } from 'frappe-ui';
