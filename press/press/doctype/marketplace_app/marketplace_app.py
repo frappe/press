@@ -38,10 +38,17 @@ class MarketplaceApp(WebsiteGenerator):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-		from press.press.doctype.marketplace_app_categories.marketplace_app_categories import MarketplaceAppCategories
-		from press.press.doctype.marketplace_app_screenshot.marketplace_app_screenshot import MarketplaceAppScreenshot
+
+		from press.press.doctype.marketplace_app_categories.marketplace_app_categories import (
+			MarketplaceAppCategories,
+		)
+		from press.press.doctype.marketplace_app_screenshot.marketplace_app_screenshot import (
+			MarketplaceAppScreenshot,
+		)
 		from press.press.doctype.marketplace_app_version.marketplace_app_version import MarketplaceAppVersion
-		from press.press.doctype.marketplace_localisation_app.marketplace_localisation_app import MarketplaceLocalisationApp
+		from press.press.doctype.marketplace_localisation_app.marketplace_localisation_app import (
+			MarketplaceLocalisationApp,
+		)
 
 		after_install_script: DF.Code | None
 		after_uninstall_script: DF.Code | None
@@ -63,7 +70,15 @@ class MarketplaceApp(WebsiteGenerator):
 		privacy_policy: DF.Data | None
 		published: DF.Check
 		published_on: DF.Date | None
-		review_stage: DF.Literal["Not Started", "Description Missing", "Logo Missing", "App Release Not Reviewed", "Ready for Review", "Ready to Publish", "Rejected"]
+		review_stage: DF.Literal[
+			"Not Started",
+			"Description Missing",
+			"Logo Missing",
+			"App Release Not Reviewed",
+			"Ready for Review",
+			"Ready to Publish",
+			"Rejected",
+		]
 		route: DF.Data | None
 		run_after_install_script: DF.Check
 		run_after_uninstall_script: DF.Check
