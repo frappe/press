@@ -211,6 +211,7 @@ def get_list_query(
 def get(doctype, name):
 	from press.press.doctype.press_role.press_role import check_role_permissions
 
+	# breakpoint()
 	check_permissions(doctype)
 	try:
 		doc = frappe.get_doc(doctype, name)
@@ -236,6 +237,7 @@ def get(doctype, name):
 	_doc = frappe._dict()
 	for fieldname in fields:
 		_doc[fieldname] = doc.get(fieldname)
+	# breakpoint()
 
 	if hasattr(doc, "get_doc"):
 		result = doc.get_doc(_doc)

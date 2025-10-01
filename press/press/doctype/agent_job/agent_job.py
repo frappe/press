@@ -31,7 +31,7 @@ from press.press.doctype.site_migration.site_migration import (
 	get_ongoing_migration,
 	process_site_migration_job_update,
 )
-from press.utils import has_role, log_error, timer
+from press.utils import has_support_access, log_error, timer
 
 AGENT_LOG_KEY = "agent-jobs"
 
@@ -95,11 +95,14 @@ class AgentJob(Document):
 		if not (site or group or server or bench):
 			frappe.throw("Not permitted", frappe.PermissionError)
 
-		if site and not has_role("Press Support Agent"):
-			is_owned_by_team("Site", site, raise_exception=True)
+		if site:
+			site_team = frappe.db.get_value("Site", site, "team")
+			if not has_support_access(site_team):
+				is_owned_by_team("Site", site, raise_exception=True)
 
 		if group:
-			if not has_role("Press Support Agent"):
+			group_team = frappe.db.get_value("Release Group", group, "team")
+			if not has_support_access(group_team):
 				is_owned_by_team("Release Group", group, raise_exception=True)
 
 			AgentJob = frappe.qb.DocType("Agent Job")

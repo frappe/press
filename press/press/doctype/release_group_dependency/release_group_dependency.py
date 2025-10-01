@@ -5,7 +5,7 @@ import frappe
 from frappe.model.document import Document
 
 from press.api.client import is_owned_by_team
-from press.utils import has_role
+from press.utils import has_support_access
 
 
 class ReleaseGroupDependency(Document):
@@ -29,7 +29,8 @@ class ReleaseGroupDependency(Document):
 	def get_list_query(query, filters=None, **list_args):
 		if not filters or not (group := filters.get("parent")):
 			return None
-		if not has_role("Press Support Agent"):
+		group_team = frappe.db.get_value("Release Group", group, "team")
+		if not has_support_access(group_team):
 			is_owned_by_team("Release Group", group, raise_exception=True)
 
 		RGDependency = frappe.qb.DocType("Release Group Dependency")

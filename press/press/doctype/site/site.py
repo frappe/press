@@ -82,7 +82,7 @@ from press.utils import (
 	get_client_blacklisted_keys,
 	get_current_team,
 	guess_type,
-	has_role,
+	has_support_access,
 	human_readable,
 	is_list,
 	log_error,
@@ -347,7 +347,11 @@ class Site(Document, TagHelpers):
 				user_type = frappe.session.data.user_type or frappe.get_cached_value(
 					"User", frappe.session.user, "user_type"
 				)
-				if user_type == "System User" or has_role("Press Support Agent"):
+				if user_type == "System User":
+					return func(inst, *args, **kwargs)
+
+				site_team = frappe.get_value(inst.doctype, inst.name, "team")
+				if has_support_access(site_team):
 					return func(inst, *args, **kwargs)
 				status = frappe.get_value(inst.doctype, inst.name, "status", for_update=True)
 				if status not in allowed_status:

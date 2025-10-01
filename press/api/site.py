@@ -41,7 +41,7 @@ from press.utils import (
 	get_current_team,
 	get_frappe_backups,
 	get_last_doc,
-	has_role,
+	has_support_access,
 	log_error,
 	unique,
 )
@@ -96,7 +96,7 @@ def protected(doctypes):
 		for doctype in doctypes:
 			owner = frappe.db.get_value(doctype, name, "team")
 
-			if owner == team or has_role("Press Support Agent"):
+			if owner == team or has_support_agent_access(doctype, name, owner):
 				return wrapped(*args, **kwargs)
 
 		frappe.throw("Not Permitted", frappe.PermissionError)
@@ -138,6 +138,20 @@ def get_name_from_filters(filters: dict):
 		return value
 
 	return None
+
+
+def has_support_agent_access(doctypes, name, owner):
+	support_access = has_support_access(owner)
+	if not support_access:
+		return False
+
+	for access in support_access:
+		doc = frappe.get_doc("Support Access", access)
+		for resource in doc.resources:
+			if resource.document_type in doctypes and resource.document_name == name:
+				return True
+
+	return False
 
 
 def _new(site, server: str | None = None, ignore_plan_validation: bool = False):

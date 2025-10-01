@@ -11,11 +11,14 @@
   "allowed_for",
   "reason",
   "column_break_vrkb",
+  "status",
   "all_access",
+  "site_access",
   "dashboard_access",
   "bench_ssh_access",
   "access_allowed_till",
-  "status"
+  "section_break_lwpm",
+  "resources"
  ],
  "fields": [
   {
@@ -91,12 +94,28 @@
    "in_standard_filter": 1,
    "label": "Status",
    "options": "Pending\nAccepted\nRejected"
+  },
+  {
+   "fieldname": "section_break_lwpm",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "resources",
+   "fieldtype": "Table",
+   "label": "Resources",
+   "options": "Resources"
+  },
+  {
+   "default": "0",
+   "fieldname": "site_access",
+   "fieldtype": "Check",
+   "label": "Site Access"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-26 13:14:26.520915",
+ "modified": "2025-09-28 18:48:06.178290",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Support Access",
