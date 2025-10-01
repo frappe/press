@@ -75,8 +75,8 @@ export default {
 	resources: {
 		banners() {
 			return {
-				url: 'press.press.doctype.dashboard_banner.dashboard_banner.get_user_banners',
-				auto: true,
+				url: 'press.api.account.get_user_banners',
+				auto: !!this.$team?.doc,
 				onSuccess: (data) => {
 					this.localBanners =
 						this.ctx_type === 'Server'
@@ -95,7 +95,7 @@ export default {
 		},
 		dismissBanner() {
 			return {
-				url: 'press.press.doctype.dashboard_banner.dashboard_banner.dismiss_banner',
+				url: 'press.api.account.dismiss_banner',
 				auto: false,
 			};
 		},
