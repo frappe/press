@@ -213,5 +213,5 @@ def cleanup_cname_records():
 
 @redis_cache(ttl=3600)
 def get_domains():
-	domains = frappe.get_all("Root Domain", filters={"enabled": ["=", "1"]}, fields=["name"])
+	domains = frappe.get_all("Root Domain", filters={"enabled": ["=", "1"]}, pluck="name")
 	return [domain["name"] for domain in domains]

@@ -214,11 +214,10 @@ class ProductTrialRequest(Document):
 			)
 			frappe.throw(f"Failed to generate payload for Setup Wizard: {e}")
 
-	@staticmethod
-	def validate_subdomain_domain(subdomain: str, domain: str):
+	def validate_subdomain_and_domain(self, subdomain: str, domain: str):
 		validate_subdomain(subdomain)
 		if domain not in get_domains():
-			frappe.throw("Domain used is invalid")
+			frappe.throw("Invalid domain")
 
 	@dashboard_whitelist()
 	def create_site(self, subdomain: str, domain: str):
@@ -231,7 +230,7 @@ class ProductTrialRequest(Document):
 		if self.status != "Pending":
 			return
 
-		ProductTrialRequest.validate_subdomain_domain(subdomain, domain)
+		self.validate_subdomain_and_domain(subdomain, domain)
 
 		try:
 			product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
