@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 # syntax = docker/dockerfile:1.4.0
 FROM ubuntu:20.04
+=======
+# syntax = docker/dockerfile:experimental
+FROM ubuntu:22.04
+>>>>>>> acb456a96 (feat(docker): Pull from ubuntu 22.04)
 
 ENV FRAPPE_DOCKER_BUILD True
 ENV LANG C.UTF-8
