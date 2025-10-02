@@ -1,5 +1,5 @@
 # syntax = docker/dockerfile:experimental
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 ENV FRAPPE_DOCKER_BUILD True
 ENV LANG C.UTF-8
