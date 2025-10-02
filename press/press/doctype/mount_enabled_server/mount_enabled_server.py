@@ -285,8 +285,11 @@ def umount_and_delete_shared_directory_on_client(client_server: str, nfs_server:
 def detach_umount_and_delete_volume_on_nfs(nfs_server: str, volume_id: str, shared_directory: str):
 	virtual_machine: VirtualMachine = frappe.get_cached_doc("Virtual Machine", nfs_server)
 
-	virtual_machine.detach(volume_id)
-	virtual_machine.delete_volume(volume_id)
+	try:
+		virtual_machine.detach(volume_id)
+		virtual_machine.delete_volume(volume_id)
+	except Exception:
+		pass  # Generally throws unable to detach volume, but the volume is detached
 
 	nfs_server: NFSServer = frappe.get_cached_doc("NFS Server", nfs_server)
 
