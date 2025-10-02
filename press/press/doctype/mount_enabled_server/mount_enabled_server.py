@@ -193,6 +193,7 @@ class MountEnabledServer(Document):
 				server=client_server,
 				user=client_server._ssh_user(),
 				port=client_server._ssh_port(),
+				variables={"nfs_server": self.parent, "client_server": client_server.name},
 			)
 			ansible.run()
 		except Exception:
@@ -212,6 +213,24 @@ class MountEnabledServer(Document):
 		volume_id = self._attach_volume_on_nfs_server(volume_size=volume_size)
 		self._format_and_mount_fs(volume_id)
 		return volume_id
+
+	def _allow_ssh_access_to_nfs_server(self, client_server: str):
+		client_server: Server = frappe.get_cached_doc("Server", client_server)
+		try:
+			ansible = Ansible(
+				playbook="ssh_access_to_rsync.yml",
+				server=client_server,
+				user=client_server._ssh_user(),
+				port=client_server._ssh_port(),
+				variables={
+					"ssh_user": client_server._ssh_user(),
+					"ssh_key_path": "/root/.ssh/id_ed25519",
+					"destination_host": self.parent,  # This is the nfs server
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Exception While Giving SSH Access", server=self.as_dict())
 
 	def mount_shared_folder(self, client_server: str, using_fs_of_server: str) -> None:
 		self._mount_shared_folder_on_client_server(client_server, using_fs_of_server)
@@ -234,6 +253,10 @@ class MountEnabledServer(Document):
 			else self._get_volume_from_sharing_server(using_fs_of_server)
 		)
 		# At this point we are ready to share but the benches might not be moved
+		if self.share_file_system:
+			# Need to give ssh access to the server for rsync to work
+			self._allow_ssh_access_to_nfs_server(client_server=client_server)
+
 		self.ready_to_share_file_system = share_file_system
 		self.save()
 
