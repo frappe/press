@@ -31,7 +31,6 @@ from press.utils import (
 	SupervisorProcess,
 	flatten,
 	get_datetime,
-	is_in_test_environment,
 	log_error,
 	parse_supervisor_status,
 )
@@ -1259,9 +1258,9 @@ def try_archive(bench: str):
 		Bench("Bench", bench).archive()
 		frappe.db.commit()
 		return True
-	except ArchiveBenchError as e:
-		if is_in_test_environment():
-			print(f"Bench Archival Error: {e}")
+	except ArchiveBenchError:
+		if frappe.flags.in_test:
+			raise
 
 		frappe.db.rollback()
 		return False
