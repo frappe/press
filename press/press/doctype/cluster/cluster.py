@@ -673,18 +673,20 @@ class Cluster(Document):
 			server_doctypes = {**server_doctypes, **self.private_servers}
 		return server_doctypes
 
-	def get_same_region_vmis(self, get_series=False):
+	def get_same_region_vmis(self, platform="x86_64", get_series=False):
 		return frappe.get_all(
 			"Virtual Machine Image",
 			filters={
 				"region": self.region,
 				"series": ("in", list(self.server_doctypes.values())),
 				"status": "Available",
+				"public": True,
+				"platform": platform,
 			},
 			pluck="name" if not get_series else "series",
 		)
 
-	def get_other_region_vmis(self, get_series=False):
+	def get_other_region_vmis(self, platform="x86_64", get_series=False):
 		vmis = []
 		for series in list(self.server_doctypes.values()):
 			vmis.extend(
@@ -695,6 +697,8 @@ class Cluster(Document):
 						"region": ("!=", self.region),
 						"series": series,
 						"status": "Available",
+						"public": True,
+						"platform": platform,
 					},
 					limit=1,
 					order_by="creation DESC",
@@ -709,7 +713,7 @@ class Cluster(Document):
 		copies = []
 		for vmi in self.get_other_region_vmis():
 			copies.append(
-				frappe.get_doc(
+				VirtualMachineImage(
 					"Virtual Machine Image",
 					vmi,
 				).copy_image(self.name)

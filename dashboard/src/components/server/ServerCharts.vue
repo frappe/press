@@ -185,6 +185,42 @@
 			<AnalyticsCard
 				v-if="isServerType('Application Server')"
 				class="sm:col-span-2"
+				title="Background job frequency by site"
+			>
+				<BarChart
+					title="Background job frequency by site"
+					:key="backgroundJobCountBySiteData"
+					:data="backgroundJobCountBySiteData"
+					unit="jobs"
+					:chartTheme="chartColors"
+					:loading="$resources.backgroundJobCountBySiteData.loading"
+					:error="$resources.backgroundJobCountBySiteData.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				v-if="isServerType('Application Server')"
+				class="sm:col-span-2"
+				title="Slowest background jobs by site"
+			>
+				<BarChart
+					title="Slowest background jobs by site"
+					:key="backgroundJobDurationBySiteData"
+					:data="backgroundJobDurationBySiteData"
+					unit="seconds"
+					:chartTheme="chartColors"
+					:loading="$resources.backgroundJobDurationBySiteData.loading"
+					:error="$resources.backgroundJobDurationBySiteData.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				v-if="isServerType('Application Server')"
+				class="sm:col-span-2"
 				title="Slowest request by site"
 			>
 				<BarChart
@@ -543,6 +579,32 @@ export default {
 		requestDurationBySite() {
 			return {
 				url: 'press.api.server.get_request_by_site',
+				params: {
+					name: this.chosenServer,
+					query: 'duration',
+					timezone: this.localTimezone,
+					duration: this.duration,
+				},
+				auto:
+					this.showAdvancedAnalytics && this.isServerType('Application Server'),
+			};
+		},
+		backgroundJobCountBySiteData() {
+			return {
+				url: 'press.api.server.get_background_job_by_site',
+				params: {
+					name: this.chosenServer,
+					query: 'count',
+					timezone: this.localTimezone,
+					duration: this.duration,
+				},
+				auto:
+					this.showAdvancedAnalytics && this.isServerType('Application Server'),
+			};
+		},
+		backgroundJobDurationBySiteData() {
+			return {
+				url: 'press.api.server.get_background_job_by_site',
 				params: {
 					name: this.chosenServer,
 					query: 'duration',

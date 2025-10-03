@@ -1003,9 +1003,3 @@ def get_nearest_cluster():
 			nearest_cluster = cluster_name
 
 	return nearest_cluster
-
-
-def is_in_test_environment():
-	if not hasattr(frappe.local, "in_test"):
-		return False
-	return frappe.local.in_test

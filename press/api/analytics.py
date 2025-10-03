@@ -666,8 +666,8 @@ def get_advanced_analytics(name, timezone, duration="7d", max_no_of_paths=MAX_NO
 		name, "duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
 	)
 
-	background_job_duration_by_method = get_background_job_by_method(
-		name, "duration", timezone, timespan, timegrain, max_no_of_paths
+	background_job_duration_by_method = get_background_job_by_(
+		name, "duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
 	)
 
 	return (
@@ -682,12 +682,12 @@ def get_advanced_analytics(name, timezone, duration="7d", max_no_of_paths=MAX_NO
 			"request_count_by_ip": get_nginx_request_by_(
 				name, "count", timezone, timespan, timegrain, max_no_of_paths
 			),
-			"background_job_count_by_method": get_background_job_by_method(
-				name, "count", timezone, timespan, timegrain, max_no_of_paths
+			"background_job_count_by_method": get_background_job_by_(
+				name, "count", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
 			),
 			"background_job_duration_by_method": background_job_duration_by_method,
-			"average_background_job_duration_by_method": get_background_job_by_method(
-				name, "average_duration", timezone, timespan, timegrain, max_no_of_paths
+			"average_background_job_duration_by_method": get_background_job_by_(
+				name, "average_duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
 			),
 			"job_count": [{"value": r.count, "date": r.date} for r in job_data],
 			"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
@@ -835,9 +835,17 @@ def get_nginx_request_by_(
 
 
 @redis_cache(ttl=10 * 60)
-def get_background_job_by_method(site, agg_type, timezone, timespan, timegrain, max_no_of_paths):
+def get_background_job_by_(
+	site,
+	agg_type,
+	timezone,
+	timespan,
+	timegrain,
+	resource_type=ResourceType.SITE,
+	max_no_of_paths=MAX_NO_OF_PATHS,
+):
 	return BackgroundJobGroupByChart(
-		site, agg_type, timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+		site, agg_type, timezone, timespan, timegrain, resource_type, max_no_of_paths
 	).run()
 
 
