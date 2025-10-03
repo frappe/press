@@ -880,6 +880,9 @@ class Agent:
 	def post(self, path, data=None, raises=True):
 		return self.request("POST", path, data, raises=raises)
 
+	def delete(self, path, data=None, raises=True):
+		return self.request("DELETE", path, data, raises=raises)
+
 	def _make_req(self, method, path, data, files, agent_job_id):
 		password = get_decrypted_password(self.server_type, self.server, "agent_password")
 		headers = {"Authorization": f"bearer {password}", "X-Agent-Job-Id": agent_job_id}
