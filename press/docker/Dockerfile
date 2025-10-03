@@ -1,5 +1,5 @@
 # syntax = docker/dockerfile:experimental
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 ENV FRAPPE_DOCKER_BUILD True
 ENV LANG C.UTF-8
@@ -63,7 +63,7 @@ COPY --chown=root:root supervisord.conf /etc/supervisor/supervisord.conf
 
 # Install Redis from PPA
 RUN --mount=type=cache,target=/var/cache/apt curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg \
-  && echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb focal main" | tee /etc/apt/sources.list.d/redis.list \
+  && echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb jammy main" | tee /etc/apt/sources.list.d/redis.list \
   && apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
   redis-server \
@@ -97,7 +97,7 @@ ENV {{ doc.get_dependency_version("wkhtmltopdf", True) }}
   {% endif %}
 
   {% if doc.get_dependency_version("wkhtmltopdf") == '0.12.6' %}
-  RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_arm64.deb \
+  RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_arm64.deb  \
     && dpkg -i wkhtmltox_0.12.6-1.focal_arm64.deb \
     && rm wkhtmltox_0.12.6-1.focal_arm64.deb \
     `#stage-pre-wkhtmltopdf`
@@ -105,7 +105,7 @@ ENV {{ doc.get_dependency_version("wkhtmltopdf", True) }}
 {% else %}
   # Intel setup
   {% if doc.get_dependency_version("wkhtmltopdf") == '0.12.6' %}
-  RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_amd64.deb \
+  RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_amd64.deb  \
     && dpkg -i wkhtmltox_0.12.6-1.focal_amd64.deb \
     && rm wkhtmltox_0.12.6-1.focal_amd64.deb \
     `#stage-pre-wkhtmltopdf`

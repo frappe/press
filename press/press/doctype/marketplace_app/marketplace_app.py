@@ -69,6 +69,7 @@ class MarketplaceApp(WebsiteGenerator):
 		poll_method: DF.Data | None
 		privacy_policy: DF.Data | None
 		published: DF.Check
+		published_on: DF.Date | None
 		review_stage: DF.Literal[
 			"Not Started",
 			"Description Missing",
@@ -198,6 +199,17 @@ class MarketplaceApp(WebsiteGenerator):
 		max_allowed_screenshots = frappe.db.get_single_value("Press Settings", "max_allowed_screenshots")
 		if len(self.screenshots) > max_allowed_screenshots:
 			frappe.throw(f"You cannot add more than {max_allowed_screenshots} screenshots for an app.")
+
+	def on_update(self):
+		self.set_published_on_date()
+
+	def set_published_on_date(self):
+		if self.published_on:
+			return
+
+		doc_before_save = self.get_doc_before_save()
+		if self.status == "Published" and doc_before_save.status != "Published":
+			self.published_on = frappe.utils.nowdate()
 
 	def change_branch(self, source, version, to_branch):
 		existing_source = frappe.db.exists(
