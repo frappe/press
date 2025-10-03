@@ -26,9 +26,7 @@
   "type_of_scope",
   "team",
   "server",
-  "site",
-  "section_break_dtsz",
-  "user_dismissals"
+  "site"
  ],
  "fields": [
   {
@@ -154,18 +152,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "List of recipient users who dismissed this banner",
-   "fieldname": "section_break_dtsz",
-   "fieldtype": "Section Break",
-   "label": "Dismissals"
-  },
-  {
-   "fieldname": "user_dismissals",
-   "fieldtype": "Table",
-   "label": "User Dismissals",
-   "options": "Dashboard Banner Dismissal"
-  },
-  {
    "depends_on": "eval:!doc.is_global",
    "fieldname": "type_of_scope",
    "fieldtype": "Select",
@@ -180,7 +166,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-26 11:49:59.672134",
+ "modified": "2025-10-03 18:28:50.639317",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Dashboard Banner",

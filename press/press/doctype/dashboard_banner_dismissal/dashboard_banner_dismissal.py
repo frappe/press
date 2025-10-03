@@ -16,9 +16,6 @@ class DashboardBannerDismissal(Document):
 
 		dashboard_banner: DF.Link
 		dismissed_at: DF.Datetime
-		parent: DF.Data
-		parentfield: DF.Data
-		parenttype: DF.Data
 		user: DF.Link
 	# end: auto-generated types
 
