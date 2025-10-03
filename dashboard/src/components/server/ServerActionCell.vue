@@ -30,6 +30,7 @@ import DatabaseConfigurationDialog from './DatabaseConfigurationDialog.vue';
 import DatabaseBinlogsDialog from './DatabaseBinlogsDialog.vue';
 import CleanupDialog from './CleanupDialog.vue';
 import { h } from 'vue';
+import CommunicationInfoDialog from '../CommunicationInfoDialog.vue';
 
 const props = defineProps({
 	serverName: { type: String, required: true },
@@ -45,6 +46,7 @@ const server = getCachedDocumentResource(props.serverType, props.serverName);
 
 function getServerActionHandler(action) {
 	const actionHandlers = {
+		'Notification Settings': onNotificationSettings,
 		'Reboot server': onRebootServer,
 		'Rename server': onRenameServer,
 		'Drop server': onDropServer,
@@ -60,6 +62,16 @@ function getServerActionHandler(action) {
 	if (actionHandlers[action]) {
 		actionHandlers[action].call(this);
 	}
+}
+
+function onNotificationSettings() {
+	if (!server?.doc) return;
+	return renderDialog(
+		h(CommunicationInfoDialog, {
+			referenceDoctype: 'Server',
+			referenceName: server.doc.name,
+		}),
+	);
 }
 
 function onCleanupServer() {

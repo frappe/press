@@ -31,6 +31,7 @@
   "preventive_suggestions",
   "section_break_bjjy",
   "updates",
+  "called_customer",
   "updates_tab",
   "alerts",
   "section_break_aevb",
@@ -211,13 +212,19 @@
    "fieldtype": "Link",
    "label": "Investigation",
    "options": "Incident Investigator"
+  },
+  {
+   "default": "0",
+   "fieldname": "called_customer",
+   "fieldtype": "Check",
+   "label": "Called Customer"
   }
  ],
  "has_web_view": 1,
  "index_web_pages_for_search": 1,
  "is_published_field": "show_in_website",
  "links": [],
- "modified": "2025-08-14 10:44:56.454503",
+ "modified": "2025-09-30 17:33:41.729833",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident",

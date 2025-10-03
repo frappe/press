@@ -95,7 +95,6 @@
    "label": "Customer Name"
   },
   {
-   "fetch_from": "team.user",
    "fieldname": "customer_email",
    "fieldtype": "Data",
    "label": "Customer Email",
@@ -461,7 +460,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "team.billing_email",
    "fieldname": "billing_email",
    "fieldtype": "Data",
    "label": "Billing Email"
@@ -519,6 +517,7 @@
    "label": "Mpesa Invoice PDF"
   }
  ],
+ "grid_page_length": 50,
  "is_submittable": 1,
  "links": [
   {
@@ -542,7 +541,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2025-02-02 19:05:05.300386",
+ "modified": "2025-09-30 19:07:43.931883",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
@@ -584,6 +583,7 @@
    "role": "Site Manager"
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

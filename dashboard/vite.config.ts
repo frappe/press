@@ -30,6 +30,9 @@ export default defineConfig({
 			authToken: process.env.SENTRY_AUTH_TOKEN,
 		}),
 	],
+	server: {
+		allowedHosts: true
+	},
 	resolve: {
 		alias: {
 			'@': path.resolve(__dirname, 'src'),
