@@ -326,10 +326,13 @@ class Bench(Document):
 	def update_bench_config_with_rq_port(self, bench_config):
 		if self.is_new():
 			bench_config["rq_port"] = 11000 + self.port_offset
+			bench_config["rq_cache_port"] = 13000 + self.port_offset
 		elif old := self.get_doc_before_save():
 			config = json.loads(old.bench_config)
 			if config.get("rq_port"):
 				bench_config["rq_port"] = config["rq_port"]
+			if config.get("rq_cache_port"):
+				bench_config["rq_cache_port"] = config["rq_cache_port"]
 
 	def add_limits(self, bench_config):
 		if any([self.memory_high, self.memory_max, self.memory_swap]):
