@@ -3,7 +3,7 @@ import re
 import frappe
 import razorpay
 import stripe
-from frappe.utils import fmt_money
+from frappe.utils import fmt_money, now_datetime
 
 from press.exceptions import CentralServerNotSet, FrappeioServerNotSet
 from press.utils import get_current_team, log_error
@@ -142,7 +142,7 @@ def get_setup_intent(team):
 						"amount_type": "maximum",
 						"amount": 1500000,
 						"currency": currency.lower(),
-						"start_date": int(frappe.utils.get_timestamp()),
+						"start_date": int(frappe.utils.get_timestamp(now_datetime())),
 						"interval": "sporadic",
 						"supported_types": ["india"],
 					},
