@@ -7,6 +7,7 @@ import frappe
 from frappe.model.document import Document
 from requests.exceptions import HTTPError
 
+from press.agent import Agent
 from press.runner import Ansible
 from press.utils import log_error
 
@@ -306,3 +307,9 @@ def detach_umount_and_delete_volume_on_nfs(nfs_server: str, volume_id: str, shar
 		ansible.run()
 	except Exception:
 		log_error("Exception While Cleaning Up NFS Server")
+
+
+def run_benches_on_shared_fs(primary_server: str):
+	return Agent(primary_server).run_benches_on_shared_fs(
+		reference_doctype="Server", reference_name=primary_server
+	)

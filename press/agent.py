@@ -1663,6 +1663,16 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			reference_name=reference_name,
 		)
 
+	def run_benches_on_shared_fs(
+		self, reference_name: str | None = None, reference_doctype: str | None = None
+	):
+		return self.create_agent_job(
+			"Run Benches on Shared FS",
+			"/server/run-benches-on-shared-fs",
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
 
 class AgentCallbackException(Exception):
 	pass
