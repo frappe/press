@@ -184,6 +184,7 @@ export default {
 						slots: {
 							icon: icon('more-horizontal'),
 						},
+						disabled: $team.doc?.is_support_agent,
 					},
 					options: [
 						{
@@ -218,7 +219,12 @@ export default {
 			{
 				label: 'Overview',
 				icon: icon('home'),
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					let $team = getTeam();
+					return (
+						server.doc?.status !== 'Archived' && !$team.doc?.is_support_agent
+					);
+				},
 				route: 'overview',
 				type: 'Component',
 				component: defineAsyncComponent(
@@ -259,7 +265,12 @@ export default {
 			{
 				label: 'Sites',
 				icon: icon(LucideAppWindow),
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					let $team = getTeam();
+					return (
+						server.doc?.status !== 'Archived' && !$team.doc?.is_support_agent
+					);
+				},
 				route: 'sites',
 				type: 'list',
 				list: {
@@ -366,7 +377,12 @@ export default {
 			{
 				label: 'Bench Groups',
 				icon: icon('package'),
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					let $team = getTeam();
+					return (
+						server.doc?.status !== 'Archived' && !$team.doc?.is_support_agent
+					);
+				},
 				route: 'groups',
 				type: 'list',
 				list: {
@@ -456,7 +472,10 @@ export default {
 				icon: icon('camera'),
 				condition: (server) => {
 					if (!server?.doc) return true;
-					return server?.doc?.provider === 'AWS EC2';
+					let $team = getTeam();
+					return (
+						server?.doc?.provider === 'AWS EC2' && !$team.doc?.is_support_agent
+					);
 				},
 				route: 'snapshots',
 				type: 'list',
@@ -776,7 +795,12 @@ export default {
 			{
 				label: 'Plays',
 				icon: icon('play'),
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					let $team = getTeam();
+					return (
+						server.doc?.status !== 'Archived' && !$team.doc?.is_support_agent
+					);
+				},
 				childrenRoutes: ['Server Play'],
 				route: 'plays',
 				type: 'list',
@@ -855,7 +879,12 @@ export default {
 			{
 				label: 'Actions',
 				icon: icon('sliders'),
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					let $team = getTeam();
+					return (
+						server.doc?.status !== 'Archived' && !$team.doc?.is_support_agent
+					);
+				},
 				route: 'actions',
 				type: 'Component',
 				component: ServerActions,
@@ -869,7 +898,12 @@ export default {
 				icon: icon('activity'),
 				route: 'activity',
 				type: 'list',
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					let $team = getTeam();
+					return (
+						server.doc?.status !== 'Archived' && !$team.doc?.is_support_agent
+					);
+				},
 				list: {
 					doctype: 'Server Activity',
 					filters: (server) => {

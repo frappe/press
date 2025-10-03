@@ -21,6 +21,10 @@ export function getPatchesTab(forBench: boolean) {
 		icon: icon('hash'),
 		route: 'patches',
 		type: 'list',
+		condition: () => {
+			let team = getTeam();
+			return !team.doc?.is_support_agent;
+		},
 		list: {
 			experimental: true, // If removing this, uncheck App Patch doctype beta flag.
 			documentation: 'https://docs.frappe.io/cloud/benches/app-patches',

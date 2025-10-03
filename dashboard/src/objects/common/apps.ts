@@ -21,8 +21,10 @@ export function getAppsTab(forSite: boolean) {
 		icon: icon('grid'),
 		route: 'apps',
 		type: 'list',
-		condition: (docResource) =>
-			forSite && docResource.doc?.status !== 'Archived',
+		condition: (docResource) => {
+			let $team = getTeam();
+			return forSite && docResource.doc?.status !== 'Archived' && !$team.doc?.is_support_agent;
+		},
 		list: getAppsTabList(forSite),
 	} satisfies Tab as Tab;
 }

@@ -311,6 +311,19 @@ def is_allowed_access_performance_tuning():
 	return team.enable_performance_tuning
 
 
+def has_support_access(team):
+	if not has_role("Press Support Agent"):
+		return False
+
+	support_team = get_current_team()
+
+	return frappe.get_all(
+		"Support Access",
+		{"access_expired": 0, "requested_for": team, "requested_by": support_team, "status": "Accepted"},
+		pluck="name",
+	)
+
+
 class RemoteFrappeSite:
 	def __init__(self, url, usr, pwd):
 		if not url.startswith("http"):
