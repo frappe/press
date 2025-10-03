@@ -412,6 +412,17 @@ def get_request_by_site(name, query, timezone, duration):
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 @redis_cache(ttl=10 * 60)
+def get_background_job_by_site(name, query, timezone, duration):
+	from press.api.analytics import ResourceType, get_background_job_by_
+
+	timespan, timegrain = get_timespan_timegrain(duration)
+
+	return get_background_job_by_(name, query, timezone, timespan, timegrain, ResourceType.SERVER)
+
+
+@frappe.whitelist()
+@protected(["Server", "Database Server"])
+@redis_cache(ttl=10 * 60)
 def get_slow_logs_by_site(name, query, timezone, duration, normalize=False):
 	from press.api.analytics import ResourceType, get_slow_logs
 
