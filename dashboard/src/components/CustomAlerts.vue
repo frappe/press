@@ -65,7 +65,9 @@ export default {
 				(b) => b.name !== bannerName,
 			);
 			this.$resources.dismissBanner.submit({
-				banner_name: bannerName,
+				dt: 'Dashboard Banner',
+				dn: bannerName,
+				method: 'dismiss',
 			});
 		},
 		openHelp(url) {
@@ -95,8 +97,7 @@ export default {
 		},
 		dismissBanner() {
 			return {
-				url: 'press.api.account.dismiss_banner',
-				auto: false,
+				url: 'press.api.client.run_doc_method',
 			};
 		},
 	},
