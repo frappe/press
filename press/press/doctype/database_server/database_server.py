@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import frappe
 import frappe.utils
+import rq
 from frappe.core.doctype.version.version import get_diff
 from frappe.core.utils import find
 from frappe.utils.password import get_decrypted_password
@@ -22,6 +23,7 @@ from press.press.doctype.server.server import PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN
 from press.runner import Ansible
 from press.utils import log_error
 from press.utils.database import find_db_disk_info, parse_du_output_of_mysql_directory
+from press.utils.jobs import has_job_timeout_exceeded
 
 if TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
@@ -46,6 +48,7 @@ class DatabaseServer(BaseServer):
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
 		auto_increase_storage: DF.Check
+		auto_purge_binlog_based_on_size: DF.Check
 		bastion_server: DF.Link | None
 		binlog_retention_days: DF.Int
 		binlogs_removed: DF.Check
@@ -74,6 +77,7 @@ class DatabaseServer(BaseServer):
 		is_stalk_setup: DF.Check
 		mariadb_root_password: DF.Password | None
 		mariadb_system_variables: DF.Table[DatabaseServerMariaDBVariable]
+		max_binlog_size_gb: DF.Int
 		memory_allocator: DF.Literal["System", "jemalloc", "TCMalloc"]
 		memory_allocator_version: DF.Data | None
 		memory_high: DF.Float
@@ -139,6 +143,9 @@ class DatabaseServer(BaseServer):
 		self.validate_server_team()
 		self.validate_mariadb_system_variables()
 
+		if self.enable_binlog_indexing and self.auto_purge_binlog_based_on_size:
+			frappe.throw("Cannot enable both binlog indexing and auto purge based on size.")
+
 	def validate_mariadb_root_password(self):
 		# Check if db server created from snapshot
 		if self.is_new() and self.virtual_machine and not self.mariadb_root_password:
@@ -187,6 +194,12 @@ class DatabaseServer(BaseServer):
 
 		if self.public:
 			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
+
+		if (
+			self.has_value_changed("auto_purge_binlog_based_on_size")
+			or self.has_value_changed("max_binlog_size_gb")
+		) and self.max_binlog_size_gb < 1:
+			self.auto_purge_binlog_based_on_size = False
 
 	def update_subscription(self):
 		if self.subscription:
@@ -1595,6 +1608,14 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			frappe.throw(f"Failed to purge binlogs. Please try again later. {e!s}")
 			raise e
 
+	def purge_binlogs_by_configured_size_limit(self):
+		if not self.max_binlog_size_gb:
+			return
+		if self.enable_binlog_indexing:
+			return
+
+		self.agent.purge_binlogs_by_size_limit(self, max_binlog_gb=self.max_binlog_size_gb)
+
 	@frappe.whitelist()
 	def sync_binlogs_info(self, index_binlogs: bool = True, upload_binlogs: bool = True):
 		if not self.enable_binlog_indexing:
@@ -2143,3 +2164,30 @@ def process_remove_binlogs_from_indexer_agent_job_update(job: AgentJob):
 		"indexed",
 		0,
 	)
+
+
+def auto_purge_binlogs_by_size_limit():
+	databases = frappe.db.get_all(
+		"Database Server",
+		filters={
+			"status": "Active",
+			"auto_purge_binlog_based_on_size": 1,
+			"is_self_hosted": 0,
+			"enable_binlog_indexing": 0,
+		},
+		pluck="name",
+	)
+
+	for database in databases:
+		if has_job_timeout_exceeded():
+			return
+		try:
+			server: DatabaseServer = frappe.get_doc("Database Server", database)
+			if not server.auto_purge_binlog_based_on_size:
+				continue
+			server.purge_binlogs_by_configured_size_limit()
+		except rq.timeouts.JobTimeoutException:
+			frappe.db.rollback()
+			return
+		except Exception:
+			frappe.db.rollback()
