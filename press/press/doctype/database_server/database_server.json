@@ -90,8 +90,11 @@
   "stalk_cycles",
   "stalk_sleep",
   "section_break_imng",
-  "binlog_retention_days",
+  "auto_purge_binlog_based_on_size",
+  "max_binlog_size_gb",
+  "column_break_hrsi",
   "binlogs_removed",
+  "binlog_retention_days",
   "replication_tab",
   "is_primary",
   "column_break_vajj",
@@ -594,6 +597,7 @@
   },
   {
    "default": "14",
+   "description": "Only works with Binlog Indexer",
    "fieldname": "binlog_retention_days",
    "fieldtype": "Int",
    "label": "Binlog Retention (days)"
@@ -682,10 +686,27 @@
   },
   {
    "default": "0",
+<<<<<<< HEAD
    "fieldname": "is_monitoring_disabled",
    "fieldtype": "Check",
    "label": "Is Monitoring Disabled",
    "search_index": 1
+=======
+   "fieldname": "auto_purge_binlog_based_on_size",
+   "fieldtype": "Check",
+   "label": "Auto Purge Binlog Based on Size",
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_hrsi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "max_binlog_size_gb",
+   "fieldtype": "Int",
+   "label": "Max Binlog Size (GB)",
+   "non_negative": 1
+>>>>>>> 1065467bd (feat(database): Auto purge binlogs based on size limit)
   }
  ],
  "grid_page_length": 50,
@@ -702,7 +723,11 @@
    "link_fieldname": "database_server"
   }
  ],
+<<<<<<< HEAD
  "modified": "2025-10-06 17:08:00.975558",
+=======
+ "modified": "2025-10-03 22:55:44.870368",
+>>>>>>> 1065467bd (feat(database): Auto purge binlogs based on size limit)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
