@@ -4454,7 +4454,6 @@ def create_subscription_for_trial_sites():
 		""",
 		as_dict=True,
 	)
-	frappe.log(f"Creating subscription for the sites {active_sites}")
 	for trial_site in active_sites:
 		if has_job_timeout_exceeded():
 			return
