@@ -579,7 +579,7 @@ export default {
 		},
 		backgroundJobCountBySiteData() {
 			return {
-				url: 'press.api.server.get_background_jobs_by_site',
+				url: 'press.api.server.get_background_job_by_site',
 				params: {
 					name: this.chosenServer,
 					query: 'count',
@@ -592,7 +592,7 @@ export default {
 		},
 		backgroundJobDurationBySiteData() {
 			return {
-				url: 'press.api.server.get_background_jobs_by_site',
+				url: 'press.api.server.get_background_job_by_site',
 				params: {
 					name: this.chosenServer,
 					query: 'duration',
