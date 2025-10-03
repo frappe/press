@@ -23,16 +23,6 @@
 
 				<div class="flex justify-end gap-2">
 					<Button
-						variant="subtle"
-						class="mb-3"
-						iconLeft="refresh-cw"
-						:loading="$resources.getCommunicationInfos.loading"
-						loadingText="Refreshing..."
-						@click="$resources.getCommunicationInfos.submit"
-					>
-						Refresh
-					</Button>
-					<Button
 						variant="solid"
 						class="mb-3"
 						iconLeft="plus"
@@ -44,7 +34,16 @@
 							})
 						"
 					>
-						Add New
+						New
+					</Button>
+					<Button
+						variant="subtle"
+						class="mb-3"
+						icon="refresh-cw"
+						:loading="$resources.getCommunicationInfos.loading"
+						@click="$resources.getCommunicationInfos.submit"
+					>
+						Refresh
 					</Button>
 				</div>
 				<div
@@ -153,59 +152,75 @@ export default {
 					{
 						fieldname: 'type',
 						label: 'Type',
-						width: '120px',
+						width: '2fr',
 						type: 'Component',
+						component_width: '100%',
 						component: ({ row }) => {
-							return h(Select, {
-								class: 'min-w-[100px]',
-								options: this.filteredCommunicationTypes.map((type) => ({
-									label: type,
-									value: type,
-								})),
-								modelValue: row.type,
-								'onUpdate:modelValue': (value) => {
-									row.type = value;
+							return h(
+								'div',
+								{
+									class: 'w-full',
 								},
-							});
+								[
+									h(Select, {
+										style: { width: '100%' },
+										options: this.filteredCommunicationTypes.map((type) => ({
+											label: type,
+											value: type,
+										})),
+										modelValue: row.type,
+										'onUpdate:modelValue': (value) => {
+											row.type = value;
+										},
+									}),
+								],
+							);
 						},
 					},
 					{
 						fieldname: 'channel',
 						label: 'Channel',
-						width: '150px',
+						width: '2fr',
 						type: 'Component',
 						component: ({ row }) => {
-							return h(Select, {
-								class: 'min-w-[120px]',
-								options:
-									row.type == 'Incident'
-										? [
-												{
-													label: 'Email',
-													value: 'Email',
-												},
-												{
-													label: 'Phone Call',
-													value: 'Phone Call',
-												},
-											]
-										: [
-												{
-													label: 'Email',
-													value: 'Email',
-												},
-											],
-								modelValue: row.channel,
-								'onUpdate:modelValue': (value) => {
-									row.channel = value;
+							return h(
+								'div',
+								{
+									class: 'w-full',
 								},
-							});
+								[
+									h(Select, {
+										options:
+											row.type == 'Incident'
+												? [
+														{
+															label: 'Email',
+															value: 'Email',
+														},
+														{
+															label: 'Phone Call',
+															value: 'Phone Call',
+														},
+													]
+												: [
+														{
+															label: 'Email',
+															value: 'Email',
+														},
+													],
+										modelValue: row.channel,
+										'onUpdate:modelValue': (value) => {
+											row.channel = value;
+										},
+									}),
+								],
+							);
 						},
 					},
 					{
 						fieldname: 'value',
 						label: 'Email / Phone No',
-						width: '300px',
+						width: '5fr',
 						type: 'Component',
 						component({ row }) {
 							return h(TextInput, {
@@ -218,13 +233,15 @@ export default {
 						},
 					},
 					{
-						label: 'Remove',
+						label: '',
 						type: 'Button',
 						align: 'right',
+						width: '0.5fr',
 						Button: ({ row }) => {
 							return {
 								label: 'Remove',
 								variant: 'subtle',
+								icon: 'x',
 								// theme: 'red',
 								onClick: () => {
 									this.removeCommunicationInfo(row);
