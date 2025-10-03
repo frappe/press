@@ -1827,6 +1827,30 @@
   ]
  },
  {
+    "disabled_auto_retry": 1,
+    "docstatus": 0,
+    "doctype": "Agent Job Type",
+    "max_retry_count": 3,
+    "modified": "2025-10-03 18:02:49.847351",
+    "name": "Run Benches on Shared FS",
+    "request_method": "POST",
+    "request_path": "server/run-benches-on-shared-fs",
+    "steps": [
+     {
+      "step_name": "Change Bench Directory"
+     },
+     {
+      "step_name": "Update Agent Nginx Conf File"
+     },
+     {
+      "step_name": "Update Bench Nginx Conf File"
+     },
+     {
+      "step_name": "Restart Benches"
+     }
+    ]
+ },
+ {
   "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
