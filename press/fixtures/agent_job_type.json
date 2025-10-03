@@ -4,6 +4,24 @@
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 3,
+  "modified": "2025-10-03 22:47:23.455192",
+  "name": "Purge Binlogs By Size Limit",
+  "request_method": "POST",
+  "request_path": "/database/binlogs/purge_by_size_limit",
+  "steps": [
+   {
+    "step_name": "Find Binlogs To Purge By Size Limit"
+   },
+   {
+    "step_name": "Purge Binlog"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
   "modified": "2024-09-18 11:29:00.663542",
   "name": "Fetch Performance Report",
   "request_method": "POST",
