@@ -451,6 +451,9 @@ export default {
 					timezone: this.localTimezone,
 					query: 'loadavg',
 					duration: this.duration,
+					server_type: this.serverOptions.find(
+						(s) => s.value === this.chosenServer,
+					)?.label,
 				},
 				auto: true,
 			};
@@ -463,6 +466,9 @@ export default {
 					timezone: this.localTimezone,
 					query: 'cpu',
 					duration: this.duration,
+					server_type: this.serverOptions.find(
+						(s) => s.value === this.chosenServer,
+					)?.label,
 				},
 				auto: true,
 			};
@@ -475,6 +481,9 @@ export default {
 					timezone: this.localTimezone,
 					query: 'memory',
 					duration: this.duration,
+					server_type: this.serverOptions.find(
+						(s) => s.value === this.chosenServer,
+					)?.label,
 				},
 				auto: true,
 			};
@@ -487,6 +496,9 @@ export default {
 					timezone: this.localTimezone,
 					query: 'network',
 					duration: this.duration,
+					server_type: this.serverOptions.find(
+						(s) => s.value === this.chosenServer,
+					)?.label,
 				},
 				auto: true,
 			};
@@ -499,6 +511,9 @@ export default {
 					timezone: this.localTimezone,
 					query: 'iops',
 					duration: this.duration,
+					server_type: this.serverOptions.find(
+						(s) => s.value === this.chosenServer,
+					)?.label,
 				},
 				auto: true,
 			};
@@ -511,6 +526,9 @@ export default {
 					timezone: this.localTimezone,
 					query: 'space',
 					duration: this.duration,
+					server_type: this.serverOptions.find(
+						(s) => s.value === this.chosenServer,
+					)?.label,
 				},
 				auto: true,
 			};
