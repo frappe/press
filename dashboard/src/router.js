@@ -37,12 +37,6 @@ let router = createRouter({
 			meta: { isLoginPage: true },
 		},
 		{
-			path: '/site-login',
-			name: 'Site Login',
-			component: () => import('./pages/SiteLogin.vue'),
-			meta: { hideSidebar: true },
-		},
-		{
 			path: '/setup-account/:requestKey/:joinRequest?',
 			name: 'Setup Account',
 			component: () => import('./pages/SetupAccount.vue'),

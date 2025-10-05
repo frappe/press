@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import frappe
-from frappe import _
 from frappe.rate_limiter import rate_limit
 
 
@@ -142,28 +141,6 @@ def verify_otp(email: str, otp: str):
 	return frappe.local.cookie_manager.set_cookie(
 		"site_user_sid", session.session_id, max_age=five_days_in_seconds, httponly=True
 	)
-
-
-@frappe.whitelist(allow_guest=True)
-@rate_limit(limit=5, seconds=60)
-def login_to_site(email: str, site: str):
-	"""
-	Login to the product site
-	"""
-	session_id = frappe.local.request.cookies.get("site_user_sid")
-	if not session_id or not isinstance(session_id, str):
-		if frappe.session.user == "Guest":
-			return frappe.throw("Invalid session")
-		frappe.get_doc({"doctype": "Site User Session", "user": email}).insert(ignore_permissions=True)
-
-	site_user_name = frappe.db.get_value("Site User", {"user": email, "site": site}, "name")
-	if not site_user_name:
-		return frappe.throw(f"User {email} not found in site {site}")
-	site_user = frappe.get_doc("Site User", site_user_name)
-	if not site_user.enabled:
-		frappe.throw(_(f"User is disabled for the site {site}"))
-
-	return site_user.login_to_site()
 
 
 @frappe.whitelist(allow_guest=True)

@@ -13,12 +13,7 @@
 						v-if="!isSignupFlow && $isMobile && !isHideSidebar && $session.user"
 					/>
 					<div
-						v-if="
-							!isSignupFlow &&
-							!isSiteLogin &&
-							!$session.user &&
-							!$route.meta.isLoginPage
-						"
+						v-if="!isSignupFlow && !$session.user && !$route.meta.isLoginPage"
 						class="border bg-red-200 px-5 py-3 text-base text-red-900"
 					>
 						You are not logged in.
@@ -53,19 +48,10 @@ const route = useRoute();
 const team = getTeam();
 
 const isHideSidebar = computed(() => {
-	const alwaysHideSidebarRoutes = [
-		'Site Login',
-		'SignupLoginToSite',
-		'SignupSetup',
-	];
-	const alwaysHideSidebarPaths = ['/dashboard/site-login'];
+	const alwaysHideSidebarRoutes = ['SignupLoginToSite', 'SignupSetup'];
 
 	if (!session.user) return false;
-	if (
-		alwaysHideSidebarRoutes.includes(route.name) ||
-		alwaysHideSidebarPaths.includes(window.location.pathname)
-	)
-		return true;
+	if (alwaysHideSidebarRoutes.includes(route.name)) return true;
 
 	return (
 		route.meta.hideSidebar && session.user && team?.doc?.hide_sidebar === true
@@ -75,10 +61,8 @@ const isHideSidebar = computed(() => {
 const isSignupFlow = ref(
 	window.location.pathname.startsWith('/dashboard/create-site') ||
 		window.location.pathname.startsWith('/dashboard/setup-account') ||
-		window.location.pathname.startsWith('/dashboard/site-login') ||
 		window.location.pathname.startsWith('/dashboard/signup'),
 );
-const isSiteLogin = ref(window.location.pathname.endsWith('/site-login'));
 
 watch(
 	() => route.name,
@@ -86,7 +70,6 @@ watch(
 		isSignupFlow.value =
 			window.location.pathname.startsWith('/dashboard/create-site') ||
 			window.location.pathname.startsWith('/dashboard/setup-account') ||
-			window.location.pathname.startsWith('/dashboard/site-login') ||
 			window.location.pathname.startsWith('/dashboard/signup');
 	},
 );
