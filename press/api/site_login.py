@@ -59,41 +59,6 @@ def sync_product_site_user(**data):
 
 
 @frappe.whitelist(allow_guest=True)
-@rate_limit(limit=10, seconds=60)
-def get_product_sites_of_user(user: str):
-	"""
-	Get all product sites of a user
-	"""
-	if not frappe.db.exists("Site User", {"user": user}):
-		return []
-
-	session_id = frappe.local.request.cookies.get("site_user_sid")
-	if (
-		not session_id
-		or not isinstance(session_id, str)
-		or not frappe.db.exists("Site User Session", {"user": user, "session_id": session_id})
-	) and (frappe.session.user == "Guest"):
-		return frappe.throw("Invalid session")
-
-	sites = frappe.db.get_all(
-		"Site User", filters={"user": user, "enabled": 1}, fields=["site"], pluck="site"
-	)
-
-	return frappe.db.get_all(
-		"Site",
-		filters={"name": ["in", sites], "status": "Active"},
-		fields=[
-			"name",
-			"trial_end_date",
-			"plan.plan_title as plan_title",
-			"plan.price_usd as price_usd",
-			"plan.price_inr as price_inr",
-			"host_name",
-		],
-	)
-
-
-@frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 5)
 def send_otp(email: str):
 	"""
@@ -141,21 +106,3 @@ def verify_otp(email: str, otp: str):
 	return frappe.local.cookie_manager.set_cookie(
 		"site_user_sid", session.session_id, max_age=five_days_in_seconds, httponly=True
 	)
-
-
-@frappe.whitelist(allow_guest=True)
-@rate_limit(limit=5, seconds=60)
-def check_session_id():
-	"""
-	Check if the session id is valid
-	"""
-
-	session_id = frappe.local.request.cookies.get("site_user_sid")
-	if not session_id or not isinstance(session_id, str):
-		return False
-
-	session_user = frappe.db.get_value("Site User Session", {"session_id": session_id}, "user")
-	if not session_user:
-		return False
-
-	return session_user
