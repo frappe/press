@@ -96,7 +96,6 @@ export default {
 		dismissBanner() {
 			return {
 				url: 'press.api.account.dismiss_banner',
-				auto: false,
 			};
 		},
 	},
