@@ -153,6 +153,9 @@ class AccountRequest(Document):
 		return False
 
 	def reset_otp(self):
+		if not self.request_key:
+			self.request_key = random_string(32)
+			self.request_key_expiration_time = frappe.utils.add_to_date(minutes=10)
 		self.otp = generate_otp()
 		if frappe.conf.developer_mode and frappe.local.dev_server:
 			self.otp = 111111
