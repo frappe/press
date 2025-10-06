@@ -27,7 +27,7 @@
   "team",
   "server",
   "site",
-  "section_break_dtsz",
+  "dismissals_section",
   "user_dismissals"
  ],
  "fields": [
@@ -154,12 +154,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "List of recipient users who dismissed this banner",
-   "fieldname": "section_break_dtsz",
-   "fieldtype": "Section Break",
-   "label": "Dismissals"
-  },
-  {
    "fieldname": "user_dismissals",
    "fieldtype": "Table",
    "label": "User Dismissals",
@@ -176,11 +170,16 @@
   {
    "fieldname": "column_break_udzz",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "dismissals_section",
+   "fieldtype": "Section Break",
+   "label": "Dismissals"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-26 11:49:59.672134",
+ "modified": "2025-10-06 15:42:11.392361",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Dashboard Banner",
