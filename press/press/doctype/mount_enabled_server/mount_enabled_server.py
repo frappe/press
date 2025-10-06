@@ -7,7 +7,6 @@ import frappe
 from frappe.model.document import Document
 from requests.exceptions import HTTPError
 
-from press.agent import Agent
 from press.runner import Ansible
 from press.utils import log_error
 
@@ -263,6 +262,9 @@ class MountEnabledServer(Document):
 
 		self.mount_shared_folder(client_server=client_server, using_fs_of_server=using_fs_of_server)
 
+		if not self.share_file_system:
+			frappe.db.set_value("Server", using_fs_of_server, "secondary_server", client_server)
+
 
 def umount_and_delete_shared_directory_on_client(client_server: str, nfs_server: str, shared_directory: str):
 	client_server: Server = frappe.get_cached_doc("Server", client_server)
@@ -307,9 +309,3 @@ def detach_umount_and_delete_volume_on_nfs(nfs_server: str, volume_id: str, shar
 		ansible.run()
 	except Exception:
 		log_error("Exception While Cleaning Up NFS Server")
-
-
-def run_benches_on_shared_fs(primary_server: str):
-	return Agent(primary_server).run_benches_on_shared_fs(
-		reference_doctype="Server", reference_name=primary_server
-	)

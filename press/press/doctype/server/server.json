@@ -66,6 +66,9 @@
   "is_replication_setup",
   "column_break_24",
   "primary",
+  "auto_scale_section",
+  "secondary_server",
+  "auto_scale",
   "ssh_section",
   "ssh_user",
   "ssh_port",
@@ -650,10 +653,28 @@
    "fieldtype": "Link",
    "label": "Bastion Server",
    "options": "Bastion Server"
+  },
+  {
+   "default": "0",
+   "fieldname": "auto_scale",
+   "fieldtype": "Check",
+   "label": "Auto Scale"
+  },
+  {
+   "description": "Used during horizontal scaling.",
+   "fieldname": "secondary_server",
+   "fieldtype": "Link",
+   "label": "Secondary Server",
+   "options": "Server"
+  },
+  {
+   "fieldname": "auto_scale_section",
+   "fieldtype": "Section Break",
+   "label": "Auto Scale"
   }
  ],
  "links": [],
- "modified": "2025-09-24 12:18:04.983230",
+ "modified": "2025-10-06 10:46:55.670252",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

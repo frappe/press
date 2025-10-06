@@ -6,11 +6,13 @@ import typing
 
 import frappe
 
+from press.agent import Agent
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
 
 if typing.TYPE_CHECKING:
+	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.mount_enabled_server.mount_enabled_server import MountEnabledServer
 
 
@@ -126,3 +128,66 @@ class NFSServer(BaseServer):
 			"Mount Enabled Server", {"parent": self.name, "server": server}
 		)
 		mount_enabled_server.delete()
+
+
+class SwitchServers:
+	def __init__(self, primary_server: str, secondary_server: str) -> None:
+		self.primary_server = primary_server
+		self.secondary_server = secondary_server
+		self.primary_server_private_ip = frappe.db.get_value("Server", self.primary_server, "private_ip")
+		self.secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
+
+	@property
+	def have_workers_stopped_on_primary_server(self) -> bool:
+		status = frappe.get_value(
+			"Agent Job", {"server": self.primary_server, "job_type": "Stop Bench Workers"}, "status"
+		)
+		return status == "Success"
+
+	def run_primary_server_benches_on_shared_fs(self) -> "AgentJob":
+		"""
+		Runs the following steps:
+			1. Changes benches_directory to `/shared`
+			2. Updates agent nginx config file to include `/shared/*/nginx.conf`
+			3. Updates benches nginx config file update the root dir
+			4. Restarts benches
+		"""
+		return Agent(self.primary_server).run_benches_on_shared_fs(
+			primary_server_private_ip=self.primary_server_private_ip,
+			secondary_server_private_ip=self.secondary_server_private_ip,
+			is_primary=True,
+			restart_benches=True,
+			reference_doctype="Server",
+			reference_name=self.primary_server,
+		)
+
+	def stop_workers_on_primary_server(self) -> "AgentJob":
+		return Agent(self.primary_server).stop_bench_workers("Server", self.primary_server)
+
+	def switch_to_secondary(self):
+		"""
+		Stop all workers except redis running on primary server
+		"""
+		settings = frappe.db.get_value(
+			"Press Settings",
+			None,
+			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
+			as_dict=True,
+		)
+
+		if not self.have_workers_stopped_on_primary_server:
+			raise RuntimeError("Benches on primary server are still running all workers")
+
+		return Agent(self.secondary_server).run_benches_on_shared_fs(
+			primary_server_private_ip=self.primary_server_private_ip,
+			secondary_server_private_ip=self.secondary_server_private_ip,
+			is_primary=False,
+			registry_settings={
+				"url": settings.docker_registry_url,
+				"username": settings.docker_registry_username,
+				"password": settings.docker_registry_password,
+			},
+			restart_benches=True,
+			reference_doctype="Server",
+			reference_name=self.secondary_server,
+		)
