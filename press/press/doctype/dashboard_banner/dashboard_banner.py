@@ -4,8 +4,11 @@
 import frappe
 from frappe.model.document import Document
 
+<<<<<<< HEAD
 from press.utils import get_current_team
 
+=======
+>>>>>>> e3c36be84 (Revert "refactor(dashboard-banner): Move dismiss_banner to controller")
 
 class DashboardBanner(Document):
 	# begin: auto-generated types
@@ -40,6 +43,7 @@ class DashboardBanner(Document):
 	def validate(self):
 		if self.is_global and self.is_dismissible:
 			frappe.throw("Global banners cannot be dismissible.")
+<<<<<<< HEAD
 
 
 @frappe.whitelist()
@@ -102,3 +106,5 @@ def get_user_banners():
 			visible_banners.append(banner)
 
 	return visible_banners
+=======
+>>>>>>> e3c36be84 (Revert "refactor(dashboard-banner): Move dismiss_banner to controller")
