@@ -571,23 +571,18 @@
    "label": "Skip Onboarding"
   },
   {
-<<<<<<< HEAD
-<<<<<<< HEAD
+   "fieldname": "communication_infos",
+   "fieldtype": "Table",
+   "label": "Communication Infos",
+   "options": "Communication Info"  
+  }, 
+  {
    "default": "0",
    "depends_on": "razorpay_enabled",
    "description": "Enable via RazorPay dashboard",
    "fieldname": "paypal_enabled",
    "fieldtype": "Check",
    "label": "Paypal Enabled"
-=======
-   "fieldname": "communication_info",
-=======
-   "fieldname": "communication_infos",
->>>>>>> d80dade59 (refactor: Move notify_email to communication infos child table)
-   "fieldtype": "Table",
-   "label": "Communication Infos",
-   "options": "Communication Info"
->>>>>>> f79d3a5d2 (feat(notification): Add Communication Info table to site/team/server)
   }
  ],
  "grid_page_length": 50,
@@ -653,17 +648,8 @@
    "link_fieldname": "team"
   }
  ],
-<<<<<<< HEAD
-<<<<<<< HEAD
  "modified": "2025-09-29 11:09:45.344674",
- "modified_by": "aysha@frappe.io",
-=======
- "modified": "2025-09-25 13:47:19.886909",
-=======
- "modified": "2025-09-26 17:07:41.315041",
->>>>>>> d80dade59 (refactor: Move notify_email to communication infos child table)
  "modified_by": "Administrator",
->>>>>>> f79d3a5d2 (feat(notification): Add Communication Info table to site/team/server)
  "module": "Press",
  "name": "Team",
  "naming_rule": "Random",

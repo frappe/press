@@ -663,12 +663,6 @@
    "read_only": 1
   },
   {
-<<<<<<< HEAD
-   "fieldname": "bastion_server",
-   "fieldtype": "Link",
-   "label": "Bastion Server",
-   "options": "Bastion Server"
-=======
    "fieldname": "notifications_section",
    "fieldtype": "Section Break",
    "label": "Notifications"
@@ -678,7 +672,12 @@
    "fieldtype": "Table",
    "label": "Communication Info",
    "options": "Communication Info"
->>>>>>> f79d3a5d2 (feat(notification): Add Communication Info table to site/team/server)
+  },
+  { 
+   "fieldname": "bastion_server",
+   "fieldtype": "Link",
+   "label": "Bastion Server",
+   "options": "Bastion Server"
   }
  ],
  "grid_page_length": 50,
@@ -695,11 +694,7 @@
    "link_fieldname": "database_server"
   }
  ],
-<<<<<<< HEAD
- "modified": "2025-09-24 12:28:12.800021",
-=======
  "modified": "2025-09-25 15:33:11.744857",
->>>>>>> f79d3a5d2 (feat(notification): Add Communication Info table to site/team/server)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

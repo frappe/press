@@ -648,16 +648,6 @@
    "read_only": 1
   },
   {
-<<<<<<< HEAD
-   "fieldname": "bastion_server",
-   "fieldtype": "Link",
-   "label": "Bastion Server",
-   "options": "Bastion Server"
-  }
- ],
- "links": [],
- "modified": "2025-09-24 12:18:04.983230",
-=======
    "fieldname": "notifications_section",
    "fieldtype": "Section Break",
    "label": "Notifications"
@@ -667,15 +657,16 @@
    "fieldtype": "Table",
    "label": "Communication Infos",
    "options": "Communication Info"
+  },
+  {
+   "fieldname": "bastion_server",
+   "fieldtype": "Link",
+   "label": "Bastion Server",
+   "options": "Bastion Server"
   }
  ],
- "links": [],
-<<<<<<< HEAD
- "modified": "2025-09-25 15:32:23.872335",
->>>>>>> f79d3a5d2 (feat(notification): Add Communication Info table to site/team/server)
-=======
  "modified": "2025-09-26 18:12:36.754235",
->>>>>>> d80dade59 (refactor: Move notify_email to communication infos child table)
+ "links": [],
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
