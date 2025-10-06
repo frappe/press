@@ -30,6 +30,7 @@
   "halt_agent_jobs",
   "stop_deployments",
   "is_for_recovery",
+  "is_monitoring_disabled",
   "billing_section",
   "team",
   "plan",
@@ -663,10 +664,22 @@
    "fieldtype": "Link",
    "label": "Bastion Server",
    "options": "Bastion Server"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_monitoring_disabled",
+   "fieldtype": "Check",
+   "label": "Is Monitoring Disabled",
+   "search_index": 1
   }
  ],
+<<<<<<< HEAD
  "modified": "2025-09-26 18:12:36.754235",
  "links": [],
+=======
+ "links": [],
+ "modified": "2025-10-06 17:08:11.706019",
+>>>>>>> 56bd93456 (feat(monitoring): Add feature flag to disable monitoring for certain resource)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

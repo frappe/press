@@ -18,6 +18,7 @@
   "cluster",
   "admin_password",
   "additional_system_user_created",
+  "is_monitoring_disabled",
   "config_tab",
   "hide_config",
   "host_name",
@@ -713,6 +714,13 @@
    "fieldtype": "Table",
    "label": "Communication Infos",
    "options": "Communication Info"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_monitoring_disabled",
+   "fieldtype": "Check",
+   "label": "Is Monitoring Disabled",
+   "search_index": 1
   }
  ],
  "links": [
@@ -792,7 +800,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2025-09-26 17:32:30.628404",
+ "modified": "2025-10-06 18:36:56.940236",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

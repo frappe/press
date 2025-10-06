@@ -27,6 +27,7 @@
   "is_server_renamed",
   "is_server_prepared",
   "is_for_recovery",
+  "is_monitoring_disabled",
   "billing_section",
   "team",
   "column_break_11",
@@ -673,11 +674,18 @@
    "label": "Communication Info",
    "options": "Communication Info"
   },
-  { 
+  {
    "fieldname": "bastion_server",
    "fieldtype": "Link",
    "label": "Bastion Server",
    "options": "Bastion Server"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_monitoring_disabled",
+   "fieldtype": "Check",
+   "label": "Is Monitoring Disabled",
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
@@ -694,7 +702,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-09-25 15:33:11.744857",
+ "modified": "2025-10-06 17:08:00.975558",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
