@@ -30,6 +30,7 @@ from press.press.doctype.add_on_storage_log.add_on_storage_log import (
 	insert_addon_storage_log,
 )
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
+from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.runner import Ansible
@@ -146,6 +147,7 @@ class BaseServer(Document, TagHelpers):
 		doc.usage = usage(self.name)
 		doc.actions = self.get_actions()
 		doc.disk_size = frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size")
+		doc.communication_infos = self.get_communication_infos()
 
 		try:
 			doc.recommended_storage_increment = (
@@ -166,6 +168,26 @@ class BaseServer(Document, TagHelpers):
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 
 		return doc
+
+	@dashboard_whitelist()
+	def get_communication_infos(self):
+		return (
+			[{"channel": c.channel, "type": c.type, "value": c.value} for c in self.communication_infos]
+			if hasattr(self, "communication_infos")
+			else []
+		)
+
+	@dashboard_whitelist()
+	def update_communication_infos(self, values: list[dict]):
+		if self.doctype != "Server":
+			frappe.throw("Setting up communication info is only allowed for App Server")
+			return
+
+		from press.press.doctype.communication_info.communication_info import (
+			update_communication_infos as update_infos,
+		)
+
+		update_infos("Server", self.name, values)
 
 	@dashboard_whitelist()
 	def get_storage_usage(self):
@@ -1676,7 +1698,6 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		if server.auto_increase_storage:
 			return
 
-		notify_email = frappe.get_value("Team", server.team, notify_email)
 		disk_capacity = self.disk_capacity(mountpoint)
 		current_disk_usage = disk_capacity - self.free_space(mountpoint)
 		recommended_increase = (
@@ -1691,7 +1712,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		disk_capacity = disk_capacity / 1024 / 1024 / 1024
 
 		frappe.sendmail(
-			recipients=notify_email,
+			recipients=get_communication_info("Email", "Incident", self.doctype, self.name),
 			subject=f"Important: Server {server.name} has used 80% of the available space",
 			template="disabled_auto_disk_expansion",
 			args={
@@ -1946,6 +1967,7 @@ class Server(BaseServer):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.communication_info.communication_info import CommunicationInfo
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 		from press.press.doctype.server_mount.server_mount import ServerMount
 
@@ -1956,6 +1978,7 @@ class Server(BaseServer):
 		auto_scale: DF.Check
 		bastion_server: DF.Link | None
 		cluster: DF.Link | None
+		communication_infos: DF.Table[CommunicationInfo]
 		database_server: DF.Link | None
 		disable_agent_job_auto_retry: DF.Check
 		domain: DF.Link | None
@@ -2086,6 +2109,22 @@ class Server(BaseServer):
 
 		if save:
 			self.save()
+
+	def get_actions(self):
+		server_actions = super().get_actions()
+
+		return [
+			{
+				"action": "Notification Settings",
+				"description": "Manage notification channels",
+				"button_label": "Manage",
+				"doc_method": "dummy",
+				"group": "Application Server Actions",
+				"server_doctype": "Server",
+				"server_name": self.name,
+			},
+			*server_actions,
+		]
 
 	def update_subscription(self):
 		subscription = self.subscription

@@ -1096,7 +1096,7 @@ def get(name):
 
 	team = get_current_team()
 	try:
-		site = frappe.get_doc("Site", name)
+		site: "Site" = frappe.get_doc("Site", name)
 	except frappe.DoesNotExistError:
 		# If name is a custom domain then redirect to the site name
 		site_name = frappe.db.get_value("Site Domain", name, "site")
@@ -1170,7 +1170,9 @@ def get(name):
 		"server_region_info": get_server_region_info(site),
 		"can_change_plan": server.team != team or (on_dedicated_server and server.team == team),
 		"hide_config": site.hide_config,
-		"notify_email": site.notify_email,
+		"communication_infos": [
+			{"channel": c.channel, "type": c.type, "value": c.value} for c in site.communication_infos
+		],
 		"ip": ip,
 		"site_tags": [{"name": x.tag, "tag": x.tag_name} for x in site.tags],
 		"tags": frappe.get_all("Press Tag", {"team": team, "doctype_name": "Site"}, ["name", "tag"]),
@@ -2096,14 +2098,6 @@ def update_auto_update_info(name, info=None):
 @frappe.whitelist()
 def get_job_status(job_name):
 	return {"status": frappe.db.get_value("Agent Job", job_name, "status")}
-
-
-@frappe.whitelist()
-@protected("Site")
-def change_notify_email(name, email):
-	site_doc = frappe.get_doc("Site", name)
-	site_doc.notify_email = email
-	site_doc.save(ignore_permissions=True)
 
 
 @frappe.whitelist()

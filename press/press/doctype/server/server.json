@@ -32,11 +32,11 @@
   "is_for_recovery",
   "billing_section",
   "team",
-  "column_break_11",
   "plan",
+  "column_break_11",
+  "auto_increase_storage",
   "auto_add_storage_min",
   "auto_add_storage_max",
-  "auto_increase_storage",
   "networking_section",
   "ip",
   "is_static_ip",
@@ -97,7 +97,9 @@
   "tags",
   "mounts_section",
   "has_data_volume",
-  "mounts"
+  "mounts",
+  "notifications_section",
+  "communication_infos"
  ],
  "fields": [
   {
@@ -647,6 +649,17 @@
    "fieldtype": "Check",
    "label": "Is Static IP",
    "read_only": 1
+  },
+  {
+   "fieldname": "notifications_section",
+   "fieldtype": "Section Break",
+   "label": "Notifications"
+  },
+  {
+   "fieldname": "communication_infos",
+   "fieldtype": "Table",
+   "label": "Communication Infos",
+   "options": "Communication Info"
   },
   {
    "fieldname": "bastion_server",
