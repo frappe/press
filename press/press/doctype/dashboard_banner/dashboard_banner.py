@@ -4,8 +4,6 @@
 import frappe
 from frappe.model.document import Document
 
-from press.api.client import dashboard_whitelist
-
 
 class DashboardBanner(Document):
 	# begin: auto-generated types
@@ -15,6 +13,10 @@ class DashboardBanner(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
+		from press.press.doctype.dashboard_banner_dismissal.dashboard_banner_dismissal import (
+			DashboardBannerDismissal,
+		)
 
 		action: DF.Data | None
 		action_label: DF.Data | None
@@ -30,23 +32,9 @@ class DashboardBanner(Document):
 		title: DF.Data | None
 		type: DF.Literal["Info", "Success", "Error", "Warning"]
 		type_of_scope: DF.Literal["Team", "Server", "Site"]
+		user_dismissals: DF.Table[DashboardBannerDismissal]
 	# end: auto-generated types
 
 	def validate(self):
 		if self.is_global and self.is_dismissible:
 			frappe.throw("Global banners cannot be dismissible.")
-
-	@dashboard_whitelist()
-	def dismiss(self):
-		user = frappe.session.user
-		if self.is_dismissible:
-			frappe.get_doc(
-				{
-					"doctype": "Dashboard Banner Dismissal",
-					"user": user,
-					"dismissed_at": frappe.utils.now(),
-					"dashboard_banner": self.name,
-				}
-			).insert()
-			return True
-		return False
