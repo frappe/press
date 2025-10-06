@@ -41,6 +41,7 @@
 		<ListItem
 			title="Notification Settings"
 			subtitle="Manage notification channels"
+			v-if="$team?.doc?.user === $session?.user"
 		>
 			<template #actions>
 				<Button @click="showCommunicationInfoDialog = true"> Manage </Button>
