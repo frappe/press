@@ -99,8 +99,11 @@ export default {
 				url: 'press.press.doctype.dashboard_banner.dashboard_banner.dismiss_banner',
 =======
 				url: 'press.api.account.dismiss_banner',
+<<<<<<< HEAD
 >>>>>>> e3c36be84 (Revert "refactor(dashboard-banner): Move dismiss_banner to controller")
 				auto: false,
+=======
+>>>>>>> da5028d83 (refactor(dashboard-banner): Remove redundant auto:false on dismiss API call)
 			};
 		},
 	},
