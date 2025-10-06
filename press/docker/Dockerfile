@@ -175,7 +175,7 @@ RUN  --mount=type=cache,target=/var/cache/apt {{ p.after_install }} \
 
 
 # symlink mysqldump to mariadb-dump
-RUN ln -s /usr/bin/mysqldump /usr/bin/mariadb-dump
+# RUN ln -s /usr/bin/mysqldump /usr/bin/mariadb-dump
 
 # Switch to frappe
 USER frappe
