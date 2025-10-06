@@ -1,6 +1,7 @@
 import json
 import os
 
+import requests
 import typer
 from rich.console import Console
 
@@ -359,6 +360,103 @@ def delete_server(
 
 	except Exception as e:
 		typer.secho(f"Error deleting server: {e!s}", fg="red")
+
+
+@server.command(help="Create bench group")
+def create_bench_group(
+	ctx: typer.Context,
+	version: str = typer.Option(..., "--version", help="Frappe Framework Version (e.g. Version 15)"),
+	region: str = typer.Option(..., "--region", help="Region (cluster name, e.g. Mumbai)"),
+	title: str = typer.Option(..., "--title", help="Bench Group Title (e.g. cli-test-bench)"),
+	server: str = typer.Option(..., "--server", help="Server name (required)"),
+):
+	session: CloudSession = ctx.obj
+	try:
+		base_url = session.base_url.rstrip("/")
+		if base_url.endswith("/api/method"):
+			base_url = base_url[: -len("/api/method")]
+		options_url = f"{base_url}/api/method/press.api.bench.options"
+		options = session.get(options_url)
+		frappe_source = None
+		for v in options["versions"]:
+			if v["name"] == version:
+				for app in v["apps"]:
+					if app["name"] == "frappe":
+						frappe_source = app["source"]["name"]
+						break
+		if not frappe_source:
+			typer.secho(
+				f"[red]Could not find valid source for frappe in version '{version}'.[/red]", fg="red"
+			)
+			return
+		if server.endswith("\\") or server.strip() != server:
+			typer.secho(
+				f"[red]Warning: Server name contains trailing backslash or spaces. Please check your input.[/red]",
+				fg="red",
+			)
+		bench_payload = {
+			"title": title,
+			"version": version,
+			"cluster": region,
+			"apps": [{"name": "frappe", "source": frappe_source}],
+			"saas_app": "",
+			"server": server.strip().rstrip("\\"),
+		}
+		try:
+			response = session.post(
+				"press.api.bench.new",
+				json={"bench": bench_payload},
+				message=f"[bold green]Creating bench group '{title}' for version '{version}', region '{region}', and server '{server}'...",
+			)
+			if isinstance(response, dict) and response.get("success"):
+				typer.secho(f"Successfully created bench group: {title}", fg="green")
+			elif isinstance(response, dict):
+				typer.secho(f"Failed to create bench group: {response}", fg="red")
+			elif isinstance(response, str):
+				typer.secho(f"Successfully created bench group: {response}", fg="green")
+			else:
+				typer.secho(f"Backend error: {response}", fg="red")
+		except Exception as req_exc:
+			typer.secho(f"[red]Request error: {req_exc}[/red]", fg="red")
+			if hasattr(req_exc, "response") and req_exc.response is not None:
+				typer.secho(f"[red]Backend response:[/red] {req_exc.response.text}", fg="red")
+			return
+	except Exception as e:
+		typer.secho(f"Error creating bench group: {e!s}", fg="red")
+
+
+@server.command(help="Drop (archive) a bench group")
+def drop_bench_group(
+	ctx: typer.Context,
+	name: str = typer.Option(..., "--name", help="Bench group name to drop/archive"),
+):
+	session: CloudSession = ctx.obj
+	try:
+		payload = {"doctype": "Release Group", "name": name}
+		full_url = "https://cloud.frappe.io/api/method/press.api.client.delete"
+		response = session.request(
+			"POST",
+			full_url,
+			json=payload,
+			message=f"[bold red]Dropping bench group '{name}'...",
+		)
+		if response and response.get("exc_type"):
+			typer.secho(f"Failed to drop bench group: {response.get('exception', 'Unknown error')}", fg="red")
+			return
+		# Consider success if no error and either 'success' is True or no error but response is present
+		# if response.get("success") or (response and not response.get("exc_type")):
+		# typer.secho(f"Successfully dropped bench group: {name}", fg="green")
+		# else:
+		# error_msg = response.get("message") or response.get("exception") or "Unknown error"
+		# typer.secho(f"Failed to drop bench group: {error_msg}", fg="red")
+	except requests.HTTPError as e:
+		typer.secho(f"HTTP Error: {e}", fg="red")
+		if hasattr(e, "response") and e.response is not None:
+			typer.secho(f"Status Code: {e.response.status_code}", fg="red")
+			typer.secho(f"Response Text: {e.response.text}", fg="red")
+			typer.secho(f"Headers: {e.response.headers}", fg="red")
+	except Exception as e:
+		typer.secho(f"Error dropping bench group: {e!s}", fg="red")
 
 
 app.add_typer(server, name="server")
