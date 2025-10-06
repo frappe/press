@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 # syntax = docker/dockerfile:1.4.0
+=======
+# syntax = docker/dockerfile:experimental
+>>>>>>> 1f3a005e0 (Revert "feat(docker): Pull from ubuntu 22.04")
 FROM ubuntu:20.04
 
 ENV FRAPPE_DOCKER_BUILD True
