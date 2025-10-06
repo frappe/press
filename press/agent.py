@@ -1665,11 +1665,11 @@ Response: {reason or getattr(result, "text", "Unknown")}
 
 	def run_benches_on_shared_fs(
 		self,
-		primary_server_private_ip: str,
 		secondary_server_private_ip: str,
 		is_primary: bool,
 		restart_benches: bool,
 		reference_name: str | None = None,
+		redis_connection_string_ip: str | None = None,
 		reference_doctype: str | None = None,
 		registry_settings: dict | None = None,
 	) -> AgentJob:
@@ -1678,7 +1678,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			"/server/run-benches-on-shared-fs",
 			data={
 				"restart_benches": restart_benches,
-				"primary_server_private_ip": primary_server_private_ip,
+				"redis_connection_string_ip": redis_connection_string_ip,
 				"is_primary": is_primary,
 				"secondary_server_private_ip": secondary_server_private_ip,
 				"registry_settings": registry_settings,
@@ -1693,6 +1693,26 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		return self.create_agent_job(
 			"Stop Bench Workers",
 			"/server/stop-bench-workers",
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def start_bench_workers(
+		self, reference_doctype: str | None = None, reference_name: str | None = None
+	) -> AgentJob:
+		return self.create_agent_job(
+			"Start Bench Workers",
+			"/server/start-bench-workers",
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def force_remove_all_benches(
+		self, reference_doctype: str | None = None, reference_name: str | None = None
+	) -> AgentJob:
+		return self.create_agent_job(
+			"Force Remove All Benches",
+			"/server/force-remove-all-benches",
 			reference_doctype=reference_doctype,
 			reference_name=reference_name,
 		)

@@ -153,7 +153,7 @@ class SwitchServers:
 			4. Restarts benches
 		"""
 		return Agent(self.primary_server).run_benches_on_shared_fs(
-			primary_server_private_ip=self.primary_server_private_ip,
+			redis_connection_string_ip=None,
 			secondary_server_private_ip=self.secondary_server_private_ip,
 			is_primary=True,
 			restart_benches=True,
@@ -164,10 +164,20 @@ class SwitchServers:
 	def stop_workers_on_primary_server(self) -> "AgentJob":
 		return Agent(self.primary_server).stop_bench_workers("Server", self.primary_server)
 
+	def start_workers_on_primary_server(self) -> "AgentJob":
+		return Agent(self.primary_server).start_bench_workers("Server", self.primary_server)
+
+	def switch_to_primary(self) -> "AgentJob":
+		return Agent(self.primary_server).run_benches_on_shared_fs(
+			redis_connection_string_ip="localhost",
+			secondary_server_private_ip=self.secondary_server_private_ip,
+			is_primary=True,
+			restart_benches=False,
+			reference_doctype="Server",
+			reference_name=self.primary_server,
+		)
+
 	def switch_to_secondary(self):
-		"""
-		Stop all workers except redis running on primary server
-		"""
 		settings = frappe.db.get_value(
 			"Press Settings",
 			None,
@@ -179,7 +189,7 @@ class SwitchServers:
 			raise RuntimeError("Benches on primary server are still running all workers")
 
 		return Agent(self.secondary_server).run_benches_on_shared_fs(
-			primary_server_private_ip=self.primary_server_private_ip,
+			redis_connection_string_ip=self.primary_server_private_ip,
 			secondary_server_private_ip=self.secondary_server_private_ip,
 			is_primary=False,
 			registry_settings={
@@ -191,3 +201,6 @@ class SwitchServers:
 			reference_doctype="Server",
 			reference_name=self.secondary_server,
 		)
+
+	def force_remove_all_benches(self) -> "AgentJob":
+		return Agent(self.secondary_server).force_remove_all_benches("Server", self.secondary_server)
