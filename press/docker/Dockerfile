@@ -98,16 +98,16 @@ ENV {{ doc.get_dependency_version("wkhtmltopdf", True) }}
 
   {% if doc.get_dependency_version("wkhtmltopdf") == '0.12.6' %}
   RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_arm64.deb  \
-    && dpkg -i wkhtmltox_0.12.6-1.focal_arm64.deb \
-    && rm wkhtmltox_0.12.6-1.focal_arm64.deb \
+    && dpkg -i wkhtmltox_0.12.6.1-2.jammy_arm64.deb \
+    && rm wkhtmltox_0.12.6.1-2.jammy_arm64.deb \
     `#stage-pre-wkhtmltopdf`
   {% endif %}
 {% else %}
   # Intel setup
   {% if doc.get_dependency_version("wkhtmltopdf") == '0.12.6' %}
   RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_amd64.deb  \
-    && dpkg -i wkhtmltox_0.12.6-1.focal_amd64.deb \
-    && rm wkhtmltox_0.12.6-1.focal_amd64.deb \
+    && dpkg -i wkhtmltox_0.12.6.1-2.jammy_amd64.deb \
+    && rm wkhtmltox_0.12.6.1-2.jammy_amd64.deb \
     `#stage-pre-wkhtmltopdf`
   {% elif doc.get_dependency_version("wkhtmltopdf") == '0.12.5' %}
   RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.focal_amd64.deb \
@@ -175,7 +175,7 @@ RUN  --mount=type=cache,target=/var/cache/apt {{ p.after_install }} \
 
 
 # symlink mysqldump to mariadb-dump
-RUN ln -s /usr/bin/mysqldump /usr/bin/mariadb-dump
+RUN test -f /usr/bin/mariadb-dump || ln -s /usr/bin/mysqldump /usr/bin/mariadb-dump
 
 # Switch to frappe
 USER frappe
