@@ -1868,6 +1868,36 @@
     }
    ]
 },
+{
+   "disabled_auto_retry": 1,
+   "docstatus": 0,
+   "doctype": "Agent Job Type",
+   "max_retry_count": 3,
+   "modified": "2025-10-03 18:02:49.847351",
+   "name": "Start Bench Workers",
+   "request_method": "POST",
+   "request_path": "server/start-bench-workers",
+   "steps": [
+    {
+     "step_name": "Start Bench Workers"
+    }
+   ]
+},
+{
+   "disabled_auto_retry": 1,
+   "docstatus": 0,
+   "doctype": "Agent Job Type",
+   "max_retry_count": 3,
+   "modified": "2025-10-03 18:02:49.847351",
+   "name": "Force Remove All Benches",
+   "request_method": "POST",
+   "request_path": "server/force-remove-all-benches",
+   "steps": [
+    {
+     "step_name": "Force Remove All Benches"
+    }
+   ]
+},
  {
   "disabled_auto_retry": 0,
   "docstatus": 0,
