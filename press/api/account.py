@@ -960,17 +960,16 @@ def get_frappe_io_auth_url() -> str | None:
 
 @frappe.whitelist()
 def get_emails():
-	team = get_current_team(get_doc=True)
-	return [
-		{
-			"type": "billing_email",
-			"value": team.billing_email,
+	team = get_current_team(get_doc=False)
+	return frappe.get_all(
+		"Communication Info",
+		filters={
+			"parent": team,
+			"parenttype": "Team",
+			"parentfield": "emails",
 		},
-		{
-			"type": "notify_email",
-			"value": team.notify_email,
-		},
-	]
+		fields=["channel", "type", "value"],
+	)
 
 
 @frappe.whitelist()
@@ -982,9 +981,6 @@ def update_emails(data):
 		validate_email_address(value, throw=True)
 
 	team_doc = get_current_team(get_doc=True)
-
-	team_doc.billing_email = data["billing_email"]
-	team_doc.notify_email = data["notify_email"]
 
 	team_doc.save()
 

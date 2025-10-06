@@ -38,6 +38,7 @@ class DatabaseServer(BaseServer):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.communication_info.communication_info import CommunicationInfo
 		from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
 			DatabaseServerMariaDBVariable,
 		)
@@ -53,6 +54,7 @@ class DatabaseServer(BaseServer):
 		binlog_retention_days: DF.Int
 		binlogs_removed: DF.Check
 		cluster: DF.Link | None
+		communication_info: DF.Table[CommunicationInfo]
 		domain: DF.Link | None
 		enable_binlog_indexing: DF.Check
 		enable_physical_backup: DF.Check

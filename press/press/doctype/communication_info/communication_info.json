@@ -7,32 +7,47 @@
  "engine": "InnoDB",
  "field_order": [
   "type",
+  "channel",
   "value"
  ],
  "fields": [
   {
    "fieldname": "type",
-   "fieldtype": "Data",
+   "fieldtype": "Select",
    "in_list_view": 1,
-   "label": "Type"
+   "label": "Type",
+   "options": "General\nBilling\nIncident\nServer Activity\nSite Activity\nMarketplace",
+   "reqd": 1
   },
   {
    "fieldname": "value",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Value"
+   "label": "Value",
+   "reqd": 1
+  },
+  {
+   "fieldname": "channel",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Channel",
+   "options": "Email\nPhone Call",
+   "reqd": 1
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2022-01-03 13:46:29.756678",
+ "modified": "2025-09-26 16:54:55.748655",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "Communication Email",
+ "name": "Communication Info",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

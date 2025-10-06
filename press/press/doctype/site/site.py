@@ -44,6 +44,7 @@ from press.exceptions import (
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
+from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture
 from press.utils.webhook import create_webhook_event
@@ -123,7 +124,7 @@ class Site(Document, TagHelpers):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.account_request.account_request import AccountRequest
+		from press.press.doctype.communication_info.communication_info import CommunicationInfo
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 		from press.press.doctype.site_app.site_app import SiteApp
 		from press.press.doctype.site_backup_time.site_backup_time import SiteBackupTime
@@ -140,6 +141,7 @@ class Site(Document, TagHelpers):
 		auto_update_last_triggered_on: DF.Datetime | None
 		bench: DF.Link
 		cluster: DF.Link
+		communication_infos: DF.Table[CommunicationInfo]
 		config: DF.Code | None
 		configuration: DF.Table[SiteConfig]
 		current_cpu_usage: DF.Int
@@ -160,7 +162,6 @@ class Site(Document, TagHelpers):
 		is_standby: DF.Check
 		last_site_usage_warning_mail_sent_on: DF.Datetime | None
 		logical_backup_times: DF.Table[SiteBackupTime]
-		notify_email: DF.Data | None
 		only_update_at_specified_time: DF.Check
 		physical_backup_times: DF.Table[SiteBackupTime]
 		plan: DF.Link | None
@@ -218,7 +219,6 @@ class Site(Document, TagHelpers):
 		"ip",
 		"status",
 		"group",
-		"notify_email",
 		"team",
 		"plan",
 		"setup_wizard_complete",
@@ -327,7 +327,7 @@ class Site(Document, TagHelpers):
 			if self.status == "Suspended"
 			else None
 		)
-
+		doc.communication_infos = self.get_communication_infos()
 		if doc.owner == "Administrator":
 			doc.signup_by = frappe.db.get_value("Account Request", doc.account_request, "email")
 
@@ -386,8 +386,7 @@ class Site(Document, TagHelpers):
 			self.set_latest_bench()
 		# initialize site.config based on plan
 		self._update_configuration(self.get_plan_config(), save=False)
-		if not self.notify_email and self.team != "Administrator":
-			self.notify_email = frappe.db.get_value("Team", self.team, "notify_email")
+
 		if not self.setup_wizard_status_check_next_retry_on:
 			self.setup_wizard_status_check_next_retry_on = now_datetime()
 
@@ -2381,9 +2380,9 @@ class Site(Document, TagHelpers):
 
 			send_suspend_mail(self.name, self.standby_for_product)
 
-		if self.site_usage_exceeded and self.notify_email:
+		if self.site_usage_exceeded:
 			frappe.sendmail(
-				recipients=self.notify_email,
+				recipients=get_communication_info("Email", "Site Activity", "Site", self.name),
 				subject=f"Action Required: Site {self.host_name} suspended",
 				template="site_suspend_due_to_exceeding_disk_usage",
 				args={
@@ -3064,6 +3063,12 @@ class Site(Document, TagHelpers):
 				"condition": not self.hybrid_site and has_permission("Site Database User"),
 			},
 			{
+				"action": "Notification Settings",
+				"description": "Manage notification settings for your site",
+				"button_label": "Manage",
+				"doc_method": "dummy",
+			},
+			{
 				"action": "Schedule backup",
 				"description": "Schedule a backup for this site",
 				"button_label": "Schedule",
@@ -3485,6 +3490,22 @@ class Site(Document, TagHelpers):
 		return self.database_server_agent.get_binlog_queries(
 			row_ids=row_ids, database=self.fetch_database_name()
 		)
+
+	@dashboard_whitelist()
+	def get_communication_infos(self):
+		return (
+			[{"channel": c.channel, "type": c.type, "value": c.value} for c in self.communication_infos]
+			if hasattr(self, "communication_infos")
+			else []
+		)
+
+	@dashboard_whitelist()
+	def update_communication_infos(self, values: list[dict]):
+		from press.press.doctype.communication_info.communication_info import (
+			update_communication_infos as update_infos,
+		)
+
+		update_infos("Site", self.name, values)
 
 	@property
 	def recent_offsite_backups_(self):
@@ -4366,16 +4387,14 @@ def send_warning_mail_regarding_sites_exceeding_disk_usage():
 			site_info = frappe.get_value(
 				"Site",
 				site,
-				["notify_email", "current_disk_usage", "current_database_usage", "site_usage_exceeded_on"],
+				["current_disk_usage", "current_database_usage", "site_usage_exceeded_on"],
 				as_dict=True,
 			)
-			if not site_info.notify_email or (
-				site_info.current_disk_usage < 120 and site_info.current_database_usage < 120
-			):
+			if site_info.current_disk_usage < 120 and site_info.current_database_usage < 120:
 				# Final check if site is still exceeding limits
 				continue
 			frappe.sendmail(
-				recipients=site_info.notify_email,
+				recipients=get_communication_info("Email", "Site Activity", "Site", site),
 				subject=f"Action Required: Site {site} exceeded plan limits",
 				template="site_exceeded_disk_usage_warning",
 				args={
