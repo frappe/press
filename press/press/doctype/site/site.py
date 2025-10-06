@@ -159,6 +159,7 @@ class Site(Document, TagHelpers):
 		hybrid_for: DF.Link | None
 		hybrid_saas_pool: DF.Link | None
 		is_erpnext_setup: DF.Check
+		is_monitoring_disabled: DF.Check
 		is_standby: DF.Check
 		last_site_usage_warning_mail_sent_on: DF.Datetime | None
 		logical_backup_times: DF.Table[SiteBackupTime]

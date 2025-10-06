@@ -1993,6 +1993,7 @@ class Server(BaseServer):
 		ipv6: DF.Data | None
 		is_for_recovery: DF.Check
 		is_managed_database: DF.Check
+		is_monitoring_disabled: DF.Check
 		is_primary: DF.Check
 		is_pyspy_setup: DF.Check
 		is_replication_setup: DF.Check
