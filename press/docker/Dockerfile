@@ -169,7 +169,11 @@ RUN  --mount=type=cache,target=/var/cache/apt {{ p.after_install }} \
 
 
 # symlink mysqldump to mariadb-dump
+<<<<<<< HEAD
 RUN test -f /usr/bin/mariadb-dump || ln -s /usr/bin/mysqldump /usr/bin/mariadb-dump
+=======
+# RUN ln -s /usr/bin/mysqldump /usr/bin/mariadb-dump
+>>>>>>> e10712160 (chore(mysqldump): Stop symlink on 22.04)
 
 # Switch to frappe
 USER frappe
