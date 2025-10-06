@@ -1411,8 +1411,6 @@ def reset_2fa_recovery_codes():
 	return recovery_codes
 
 
-<<<<<<< HEAD
-=======
 @frappe.whitelist()
 def get_user_banners():
 	team = get_current_team()
@@ -1475,7 +1473,6 @@ def dismiss_banner(banner_name):
 	return False
 
 
->>>>>>> e3c36be84 (Revert "refactor(dashboard-banner): Move dismiss_banner to controller")
 # Not available for Telangana, Ladakh, and Other Territory
 STATE_PINCODE_MAPPING = {
 	"Jammu and Kashmir": (180, 194),
