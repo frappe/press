@@ -2014,6 +2014,7 @@ class Server(BaseServer):
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
 		auto_increase_storage: DF.Check
+		auto_scale: DF.Check
 		bastion_server: DF.Link | None
 		cluster: DF.Link | None
 		communication_infos: DF.Table[CommunicationInfo]
@@ -2059,6 +2060,7 @@ class Server(BaseServer):
 		public: DF.Check
 		ram: DF.Float
 		root_public_key: DF.Code | None
+		secondary_server: DF.Link | None
 		self_hosted_mariadb_root_password: DF.Password | None
 		self_hosted_mariadb_server: DF.Data | None
 		self_hosted_server_domain: DF.Data | None

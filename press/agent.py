@@ -1664,11 +1664,35 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		)
 
 	def run_benches_on_shared_fs(
-		self, reference_name: str | None = None, reference_doctype: str | None = None
-	):
+		self,
+		primary_server_private_ip: str,
+		secondary_server_private_ip: str,
+		is_primary: bool,
+		restart_benches: bool,
+		reference_name: str | None = None,
+		reference_doctype: str | None = None,
+		registry_settings: dict | None = None,
+	) -> AgentJob:
 		return self.create_agent_job(
 			"Run Benches on Shared FS",
 			"/server/run-benches-on-shared-fs",
+			data={
+				"restart_benches": restart_benches,
+				"primary_server_private_ip": primary_server_private_ip,
+				"is_primary": is_primary,
+				"secondary_server_private_ip": secondary_server_private_ip,
+				"registry_settings": registry_settings,
+			},
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def stop_bench_workers(
+		self, reference_doctype: str | None = None, reference_name: str | None = None
+	) -> AgentJob:
+		return self.create_agent_job(
+			"Stop Bench Workers",
+			"/server/stop-bench-workers",
 			reference_doctype=reference_doctype,
 			reference_name=reference_name,
 		)
