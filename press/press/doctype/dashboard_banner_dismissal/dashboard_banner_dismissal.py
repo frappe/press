@@ -14,7 +14,6 @@ class DashboardBannerDismissal(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		dashboard_banner: DF.Link
 		dismissed_at: DF.Datetime
 		parent: DF.Data
 		parentfield: DF.Data

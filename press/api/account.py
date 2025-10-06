@@ -1467,10 +1467,10 @@ def dismiss_banner(banner_name):
 			{
 				"user": user,
 				"dismissed_at": frappe.utils.now(),
-				"dashboard_banner": banner_name,
+				"parent": banner_name,
 			},
 		)
-		banner.save(ignore_permissions=True)
+		banner.save()
 		return True
 	return False
 
