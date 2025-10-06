@@ -7,6 +7,8 @@ import frappe
 from frappe import _
 from frappe.rate_limiter import rate_limit
 
+from press.utils.extra import disabled
+
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 def sync_product_site_user(**data):
@@ -61,6 +63,7 @@ def sync_product_site_user(**data):
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=10, seconds=60)
+@disabled
 def get_product_sites_of_user(user: str):
 	"""
 	Get all product sites of a user
@@ -146,6 +149,7 @@ def verify_otp(email: str, otp: str):
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60)
+@disabled
 def login_to_site(email: str, site: str):
 	"""
 	Login to the product site
