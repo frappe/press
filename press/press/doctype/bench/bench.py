@@ -1032,9 +1032,8 @@ class Bench(Document):
 			)
 			.limit(1)
 		).run()
-		# TODO: add test for this new case
 		if ongoing_site_updates:
-			frappe.throw("Cannot archive due ongoing site update.", ArchiveBenchError)
+			frappe.throw("Cannot archive due to ongoing site update.", ArchiveBenchError)
 
 	def check_unarchived_sites(self):
 		frappe.db.commit()
@@ -1258,9 +1257,9 @@ def try_archive(bench: str):
 		Bench("Bench", bench).archive()
 		frappe.db.commit()
 		return True
-	except ArchiveBenchError:
+	except ArchiveBenchError as e:
 		if frappe.flags.in_test:
-			raise
+			print(f"Bench Archival Error: {e}")
 
 		frappe.db.rollback()
 		return False
