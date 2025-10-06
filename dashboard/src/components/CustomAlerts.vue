@@ -65,7 +65,9 @@ export default {
 				(b) => b.name !== bannerName,
 			);
 			this.$resources.dismissBanner.submit({
-				banner_name: bannerName,
+				dt: 'Dashboard Banner',
+				dn: bannerName,
+				method: 'dismiss',
 			});
 		},
 		openHelp(url) {
@@ -75,8 +77,8 @@ export default {
 	resources: {
 		banners() {
 			return {
-				url: 'press.press.doctype.dashboard_banner.dashboard_banner.get_user_banners',
-				auto: true,
+				url: 'press.api.account.get_user_banners',
+				auto: !!this.$team?.doc,
 				onSuccess: (data) => {
 					this.localBanners =
 						this.ctx_type === 'Server'
@@ -95,8 +97,7 @@ export default {
 		},
 		dismissBanner() {
 			return {
-				url: 'press.press.doctype.dashboard_banner.dashboard_banner.dismiss_banner',
-				auto: false,
+				url: 'press.api.client.run_doc_method',
 			};
 		},
 	},
