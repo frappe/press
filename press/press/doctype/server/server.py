@@ -1454,7 +1454,7 @@ class BaseServer(Document, TagHelpers):
 		)
 
 		if not benches:
-			frappe.throw(f"No active benches found on <a href='/app/server/{self.name}'> Server")
+			frappe.throw(f"No active benches found on <a href='/app/server/{self.name}'>Server</a>")
 
 		for bench in benches:
 			raw_bench_version = self._get_dependency_version(bench["candidate"], "BENCH_VERSION")

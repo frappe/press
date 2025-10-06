@@ -113,6 +113,7 @@ DOCTYPE_SERVER_TYPE_MAP = {
 }
 
 ARCHIVE_AFTER_SUSPEND_DAYS = 21
+PRIVATE_BENCH_DOC = "https://docs.frappe.io/cloud/sites/move-site-to-private-bench"
 
 
 class Site(Document, TagHelpers):
@@ -480,9 +481,10 @@ class Site(Document, TagHelpers):
 		if not (1 <= self.update_on_day_of_month <= 31):
 			frappe.throw("Day of the month must be between 1 and 31 (included)!")
 		# If site is on public bench, don't allow to disable auto updates
-		is_group_public = frappe.get_cached_value("Release Group", self.group, "public")
-		if self.skip_auto_updates and is_group_public:
-			frappe.throw("Auto updates can't be disabled for sites on public benches!")
+		if self.skip_auto_updates and self.is_group_public:
+			frappe.throw(
+				f'Auto updates can\'t be disabled for sites on public benches! Please move to a <a class="underline" href="{PRIVATE_BENCH_DOC}">private bench</a>.'
+			)
 
 	def validate_site_plan(self):  # noqa: C901
 		if hasattr(self, "subscription_plan") and self.subscription_plan:
@@ -714,6 +716,10 @@ class Site(Document, TagHelpers):
 			if key_type == "Number":
 				key_value = int(row.value) if isinstance(row.value, float | int) else json.loads(row.value)
 			elif key_type == "Boolean":
+				if row.key == "server_script_enabled" and self.is_group_public:
+					frappe.throw(
+						f'You <a class="underline" href="https://docs.frappe.io/cloud/enable-server-script">cannot enable server scripts</a> on public benches. Please move to a <a class="underline" href="{PRIVATE_BENCH_DOC}">private bench</a>.'
+					)
 				key_value = (
 					row.value if isinstance(row.value, bool) else bool(sbool(json.loads(cstr(row.value))))
 				)
@@ -3161,10 +3167,12 @@ class Site(Document, TagHelpers):
 		agent = Agent(self.server)
 		agent.run_after_migrate_steps(self)
 
+	@cached_property
+	def is_group_public(self):
+		return bool(frappe.get_cached_value("Release Group", self.group, "public"))
+
 	@frappe.whitelist()
 	def get_actions(self):
-		is_group_public = frappe.get_cached_value("Release Group", self.group, "public")
-
 		actions = [
 			{
 				"action": "Activate site",
@@ -3224,7 +3232,7 @@ class Site(Document, TagHelpers):
 				"description": "Move your site to a different server",
 				"button_label": "Change",
 				"doc_method": "change_server",
-				"condition": self.status in ["Active", "Broken", "Inactive"] and not is_group_public,
+				"condition": self.status in ["Active", "Broken", "Inactive"] and not self.is_group_public,
 			},
 			{
 				"action": "Clear cache",
