@@ -95,8 +95,7 @@ export default {
 		},
 		dismissBanner() {
 			return {
-				url: 'press.press.doctype.dashboard_banner.dashboard_banner.dismiss_banner',
-				auto: false,
+				url: 'press.api.account.dismiss_banner',
 			};
 		},
 	},
