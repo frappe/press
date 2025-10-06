@@ -7,6 +7,7 @@ import typing
 import frappe
 
 from press.agent import Agent
+from press.press.doctype.nfs_volume_attachment.nfs_volume_attachment import NFSVolumeAttachment
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
@@ -100,27 +101,20 @@ class NFSServer(BaseServer):
 	def add_mount_enabled_server(
 		self,
 		server: str,
-		use_file_system_of_server: str | None = None,
-		share_file_system: bool = False,
-		move_benches: bool = False,
 		volume_size: int | None = None,
-	) -> None:
+	) -> NFSVolumeAttachment:
 		"""Add server to nfs servers ACL and create a shared directory"""
-		if server in self.mount_enabled_servers:
-			frappe.throw("Server is already mount enabled", frappe.ValidationError)
 
-		mount_enabled_server: MountEnabledServer = self.append(
-			"mount_enabled_servers",
+		nfs_volume_attachment: NFSVolumeAttachment = frappe.get_doc(
 			{
-				"server": server,
-				"use_file_system_of_server": use_file_system_of_server,
-				"share_file_system": share_file_system,
-				"move_benches": move_benches,
+				"doctype": "NFS Volume Attachment",
+				"nfs_server": self.name,
+				"primary_server": server,
+				"secondary_server": frappe.get_value("Server", server, "secondary_server"),
 				"volume_size": volume_size,
-			},
+			}
 		)
-
-		mount_enabled_server.save()
+		return nfs_volume_attachment.insert()
 
 	@frappe.whitelist()
 	def remove_mount_enabled(self, server: str) -> None:
@@ -168,6 +162,10 @@ class SwitchServers:
 		return Agent(self.primary_server).start_bench_workers("Server", self.primary_server)
 
 	def switch_to_primary(self) -> "AgentJob":
+		"""
+		Updates common site config with redis connection string and
+		bench directories in all the configs.
+		"""
 		return Agent(self.primary_server).run_benches_on_shared_fs(
 			redis_connection_string_ip="localhost",
 			secondary_server_private_ip=self.secondary_server_private_ip,
@@ -178,6 +176,10 @@ class SwitchServers:
 		)
 
 	def switch_to_secondary(self):
+		"""
+		Updates common site config with redis connection string and
+		bench directories in all the configs.
+		"""
 		settings = frappe.db.get_value(
 			"Press Settings",
 			None,

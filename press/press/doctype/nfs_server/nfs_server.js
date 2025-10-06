@@ -54,22 +54,6 @@ frappe.ui.form.on('NFS Server', {
 							reqd: 1,
 						},
 						{
-							fieldtype: 'Check',
-							fieldname: 'share_file_system',
-							label: 'Share File System',
-						},
-						{
-							fieldtype: 'Check',
-							fieldname: 'move_benches',
-							label: 'Move Benches',
-						},
-						{
-							fieldtype: 'Link',
-							fieldname: 'use_file_system_of_server',
-							label: 'Use File System of Server',
-							options: 'Server',
-						},
-						{
 							fieldtype: 'Int',
 							fieldname: 'volume_size',
 							label: 'Volume Size',
