@@ -12,6 +12,9 @@ from press.utils import log_error
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.nfs_server.nfs_server import NFSServer
+	from press.press.doctype.nfs_volume_attachment_step.nfs_volume_attachment_step import (
+		NFSVolumeAttachmentStep,
+	)
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
@@ -88,48 +91,86 @@ class NFSVolumeAttachment(Document):
 			for method in methods
 		]
 
-	def allow_servers_to_mount(self):
+	def allow_servers_to_mount(self, step: "NFSVolumeAttachmentStep"):
 		"""Allow primary and secondary server to share fs"""
 		nfs_server: NFSServer = frappe.get_cached_doc("NFS Server", self.nfs_server)
 		primary_server_private_ip = frappe.db.get_value("Server", self.primary_server, "private_ip")
 		secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
 
-		# Allow primary server to mount
-		nfs_server.agent.post(
-			"/nfs/exports",
-			data={
-				"server": self.primary_server,
-				"private_ip": primary_server_private_ip,
-				"share_file_system": True,
-				"use_file_system_of_server": None,
-			},
-		)
+		step.status = Status.Running
+		step.save()
+		try:
+			# Allow primary server to mount
+			nfs_server.agent.post(
+				"/nfs/exports",
+				data={
+					"server": self.primary_server,
+					"private_ip": primary_server_private_ip,
+					"share_file_system": True,
+					"use_file_system_of_server": None,
+				},
+			)
 
-		# Allow secondary server to mount
-		nfs_server.agent.post(
-			"/nfs/exports",
-			data={
-				"server": self.secondary_server,
-				"private_ip": secondary_server_private_ip,
-				"share_file_system": False,
-				"use_file_system_of_server": self.primary_server,
-			},
-		)
+			# Allow secondary server to mount
+			nfs_server.agent.post(
+				"/nfs/exports",
+				data={
+					"server": self.secondary_server,
+					"private_ip": secondary_server_private_ip,
+					"share_file_system": False,
+					"use_file_system_of_server": self.primary_server,
+				},
+			)
 
-	def attach_volume_on_nfs_server(self) -> None:
+			step.status = Status.Success
+			step.save()
+		except Exception as e:
+			step.status = Status.Failure
+			step.output = str(e)
+			step.save()
+			raise
+
+	def attach_volume_on_nfs_server(self, step: "NFSVolumeAttachmentStep") -> None:
 		"""Attach a new volume on the NFS server."""
-		virtual_machine: VirtualMachine = frappe.get_cached_doc("Virtual Machine", self.nfs_server)
-		self.volume_id = virtual_machine.attach_new_volume(
-			self.volume_size,
-			iops=3000,
-			throughput=124,
-			log_activity=False,
-		)
-		self.save()
+		step.status = Status.Running
+		step.save()
 
-	def format_and_mount_fs(self) -> None:
+		virtual_machine: VirtualMachine = frappe.get_cached_doc("Virtual Machine", self.nfs_server)
+		try:
+			self.volume_id = virtual_machine.attach_new_volume(
+				self.volume_size,
+				iops=3000,
+				throughput=124,
+				log_activity=False,
+			)
+
+			step.status = Status.Success
+			self.save()
+		except Exception as e:
+			step.status = Status.Failure
+			step.output = str(e)
+			step.save()
+			raise
+
+	def _run_ansible_step(step: NFSVolumeAttachmentStep, ansible: Ansible) -> None:
+		step.play = ansible.play
+		step.save()
+		ansible.run()
+		step.status = Status.Success
+		step.save()
+
+	def _fail_ansible_step(step: NFSVolumeAttachmentStep, ansible: Ansible, e: str | None = None) -> None:
+		step.play = getattr(ansible, "play", None)
+		step.status = Status.Failure
+		step.output = str(e)
+		step.save()
+
+	def format_and_mount_fs(self, step: "NFSVolumeAttachmentStep") -> None:
 		"""Create a filesystem on the new volume and mount the shared directory."""
 		nfs_server: NFSServer = frappe.get_cached_doc("NFS Server", self.nfs_server)
+
+		step.status = Status.Running
+		step.save()
 
 		try:
 			ansible = Ansible(
@@ -142,9 +183,11 @@ class NFSVolumeAttachment(Document):
 					"volume_id": self.volume_id.replace("vol-", ""),
 				},
 			)
-			ansible.run()
 
+			self._run_ansible_step(step, ansible)
 		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+
 			log_error(
 				title="Error mounting volume on NFS server",
 				message=str(e),
@@ -152,9 +195,13 @@ class NFSVolumeAttachment(Document):
 			)
 			raise
 
-	def allow_ssh_access_to_primary_server(self):
+	def allow_ssh_access_to_primary_server(self, step: "NFSVolumeAttachmentStep"):
 		"""Add primary server keys to nfs server"""
 		primary_server: Server = frappe.get_cached_doc("Server", self.primary_server)
+
+		step.status = Status.Running
+		step.save()
+
 		try:
 			ansible = Ansible(
 				playbook="ssh_access_to_rsync.yml",
@@ -167,15 +214,22 @@ class NFSVolumeAttachment(Document):
 					"destination_host": self.nfs_server,  # This is the nfs server
 				},
 			)
-			ansible.run()
-		except Exception:
+
+			self._run_ansible_step(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+
 			log_error("Exception While Giving SSH Access", server=self.as_dict())
 			raise
 
-	def mount_shared_folder_on_primary_server(self) -> None:
+	def mount_shared_folder_on_primary_server(self, step: "NFSVolumeAttachmentStep") -> None:
 		"""Mount shared folder on primary server"""
 		primary_server: Server = frappe.get_cached_doc("Server", self.primary_server)
 		nfs_server_private_ip = frappe.db.get_value("NFS Server", self.nfs_server, "private_ip")
+
+		step.status = Status.Running
+		step.save()
+
 		try:
 			ansible = Ansible(
 				playbook="mount_shared_folder.yml",
@@ -188,15 +242,22 @@ class NFSVolumeAttachment(Document):
 					"shared_directory": "/shared",
 				},
 			)
-			ansible.run()
-		except Exception:
+
+			self._run_ansible_step(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+
 			log_error("Exception While Mounting Shared FS", server=self.as_dict())
 			raise
 
-	def mount_shared_folder_on_secondary_server(self) -> None:
+	def mount_shared_folder_on_secondary_server(self, step: "NFSVolumeAttachmentStep") -> None:
 		"""Mount shared folder on secondary server"""
 		secondary_server: Server = frappe.get_cached_doc("Server", self.secondary_server)
 		nfs_server_private_ip = frappe.db.get_value("NFS Server", self.nfs_server, "private_ip")
+
+		step.status = Status.Running
+		step.save()
+
 		try:
 			ansible = Ansible(
 				playbook="mount_shared_folder.yml",
@@ -209,25 +270,42 @@ class NFSVolumeAttachment(Document):
 					"shared_directory": "/shared",
 				},
 			)
-			ansible.run()
-		except Exception:
+
+			self._run_ansible_step(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+
 			log_error("Exception While Mounting Shared FS", server=self.as_dict())
 			raise
 
-	def move_benches_to_shared(self) -> None:
-		"""Start to move the benches on the shared directory"""
+	def move_benches_to_shared(self, step: "NFSVolumeAttachmentStep") -> None:
+		"""Move benches to the shared NFS directory."""
 		primary_server: Server = frappe.get_cached_doc("Server", self.primary_server)
+
+		step.status = Status.Running
+		step.save()
+
 		try:
 			ansible = Ansible(
 				playbook="share_benches_on_nfs.yml",
 				server=primary_server,
 				user=primary_server._ssh_user(),
 				port=primary_server._ssh_port(),
-				variables={"nfs_server": self.nfs_server, "client_server": primary_server.name},
+				variables={
+					"nfs_server": self.nfs_server,
+					"client_server": primary_server.name,
+				},
 			)
-			ansible.run()
-		except Exception:
-			log_error("Exception While Moving Benches to Shared FS", server=self.as_dict())
+
+			self._run_ansible_step(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+
+			log_error(
+				"Exception while moving benches to shared FS",
+				message=str(e),
+				server=self.as_dict(),
+			)
 			raise
 
 	def fail(self):
@@ -254,23 +332,17 @@ class NFSVolumeAttachment(Document):
 		"""Sequentially execute defined NFS attachment steps."""
 		self.status = Status.Running
 		self.save()
+		frappe.db.commit()
 
 		for step in self.nfs_volume_attachment_steps:
-			step.status = Status.Running
-			step.save()  # Mark step as running
-
 			method = self._get_method(step.method_name)
 
 			try:
-				method()  # Call method with no arguments
-				step.status = Status.Success
-				step.save()  # Mark step as successful
-			except Exception as e:
-				step.status = Status.Failure
-				step.output = str(e)
-				step.save()  # Mark step as failed
+				method(step)  # Each step updates its own state
+			except Exception:
 				self.fail()
-				return  # Stop execution on first failure
+				frappe.db.commit()
+				return  # Stop on first failure
 
 			frappe.db.commit()
 
