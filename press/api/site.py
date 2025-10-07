@@ -85,18 +85,19 @@ def protected(doctypes):
 		user_type = frappe.session.data.user_type or frappe.get_cached_value(
 			"User", frappe.session.user, "user_type"
 		)
+
+		# System users have access to all endpoints.
 		if user_type == "System User":
 			return wrapped(*args, **kwargs)
 
-		name = get_protected_doctype_name(args, kwargs, doctypes)
-		if not name:
+		# Get the name of the document being accessed.
+		if not (docname := get_protected_doctype_name(args, kwargs, doctypes)):
 			frappe.throw("Name not found, API access not permitted", frappe.PermissionError)
 
-		team = get_current_team()
+		current_team = get_current_team()
 		for doctype in doctypes:
-			owner = frappe.db.get_value(doctype, name, "team")
-
-			if owner == team or has_support_agent_access(doctype, name, owner):
+			document_team = frappe.db.get_value(doctype, docname, "team")
+			if document_team == current_team or has_support_agent_access(doctype, docname, document_team):
 				return wrapped(*args, **kwargs)
 
 		frappe.throw("Not Permitted", frappe.PermissionError)
@@ -140,15 +141,15 @@ def get_name_from_filters(filters: dict):
 	return None
 
 
-def has_support_agent_access(doctypes, name, owner):
-	support_access = has_support_access(owner)
+def has_support_agent_access(doctypes, docname, team):
+	support_access = has_support_access(team)
 	if not support_access:
 		return False
 
 	for access in support_access:
 		doc = frappe.get_doc("Support Access", access)
 		for resource in doc.resources:
-			if resource.document_type in doctypes and resource.document_name == name:
+			if resource.document_type in doctypes and resource.document_name == docname:
 				return True
 
 	return False
