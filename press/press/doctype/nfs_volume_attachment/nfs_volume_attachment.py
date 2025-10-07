@@ -91,6 +91,28 @@ class NFSVolumeAttachment(Document):
 			for method in methods
 		]
 
+	def _run_ansible_step(step: "NFSVolumeAttachmentStep", ansible: Ansible) -> None:
+		step.play = ansible.play
+		step.save()
+		ansible.run()
+		step.status = Status.Success
+		step.save()
+
+	def _fail_ansible_step(
+		step: "NFSVolumeAttachmentStep",
+		ansible: Ansible,
+		e: Exception | None = None,
+	) -> None:
+		step.play = getattr(ansible, "play", None)
+		step.status = Status.Failure
+		step.output = str(e)
+		step.save()
+
+	def _fail_job_step(self, step: "NFSVolumeAttachmentStep", e: Exception | None = None) -> None:
+		step.status = Status.Failure
+		step.output = str(e)
+		step.save()
+
 	def allow_servers_to_mount(self, step: "NFSVolumeAttachmentStep"):
 		"""Allow primary and secondary server to share fs"""
 		nfs_server: NFSServer = frappe.get_cached_doc("NFS Server", self.nfs_server)
@@ -125,9 +147,7 @@ class NFSVolumeAttachment(Document):
 			step.status = Status.Success
 			step.save()
 		except Exception as e:
-			step.status = Status.Failure
-			step.output = str(e)
-			step.save()
+			self._fail_job_step(step, e)
 			raise
 
 	def attach_volume_on_nfs_server(self, step: "NFSVolumeAttachmentStep") -> None:
@@ -147,23 +167,8 @@ class NFSVolumeAttachment(Document):
 			step.status = Status.Success
 			self.save()
 		except Exception as e:
-			step.status = Status.Failure
-			step.output = str(e)
-			step.save()
+			self._fail_job_step(step, e)
 			raise
-
-	def _run_ansible_step(step: "NFSVolumeAttachmentStep", ansible: Ansible) -> None:
-		step.play = ansible.play
-		step.save()
-		ansible.run()
-		step.status = Status.Success
-		step.save()
-
-	def _fail_ansible_step(step: "NFSVolumeAttachmentStep", ansible: Ansible, e: str | None = None) -> None:
-		step.play = getattr(ansible, "play", None)
-		step.status = Status.Failure
-		step.output = str(e)
-		step.save()
 
 	def format_and_mount_fs(self, step: "NFSVolumeAttachmentStep") -> None:
 		"""Create a filesystem on the new volume and mount the shared directory."""
