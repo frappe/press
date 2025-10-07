@@ -1,10 +1,5 @@
-<<<<<<< HEAD
-# syntax = docker/dockerfile:1.4.0
-FROM ubuntu:20.04
-=======
 # syntax = docker/dockerfile:experimental
 FROM ubuntu:22.04
->>>>>>> cd2f49d43 (feat(ubuntu): Use 22.04 for builds)
 
 ENV FRAPPE_DOCKER_BUILD True
 ENV LANG C.UTF-8
