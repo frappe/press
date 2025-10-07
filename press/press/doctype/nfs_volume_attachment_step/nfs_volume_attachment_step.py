@@ -19,6 +19,7 @@ class NFSVolumeAttachmentStep(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
+		play: DF.Link | None
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
 		step_name: DF.Data | None
 	# end: auto-generated types
