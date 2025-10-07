@@ -63,7 +63,7 @@ class VirtualDiskResize(Document):
 		old_volume_throughput: DF.Int
 		service: DF.Data | None
 		start: DF.Datetime | None
-		status: DF.Literal["Pending", "Running", "Success", "Failure"]
+		status: DF.Literal["Pending", "Preparing", "Ready", "Running", "Success", "Failure"]
 		steps: DF.Table[VirtualMachineMigrationStep]
 		virtual_disk_snapshot: DF.Link | None
 		virtual_machine: DF.Link
@@ -80,9 +80,12 @@ class VirtualDiskResize(Document):
 		frappe.enqueue_doc(self.doctype, self.name, "run_prerequisites", queue="long", timeout=2400)
 
 	def run_prerequisites(self):
+		self.status = Status.Preparing
+		self.save()
 		self.set_filesystem_attributes()
 		self.set_new_volume_attributes()
 		self.create_new_volume()
+		self.status = Status.Ready
 		self.save()
 
 	def add_steps(self):
@@ -121,6 +124,7 @@ class VirtualDiskResize(Document):
 
 		self.devices = json.dumps(devices, indent=2)
 		self.filesystems = json.dumps(filesystems, indent=2)
+		self.save()
 
 	def fetch_devices(self):
 		device_name = self._get_device_from_volume_id(self.old_volume_id)
@@ -282,7 +286,17 @@ class VirtualDiskResize(Document):
 		new_size = int(self.old_filesystem_used * 100 / 85)
 		self.new_filesystem_size = max(new_size, 10)  # Minimum 10 GB
 		self.new_volume_size = max(self.new_filesystem_size, self.expected_disk_size)
+
+		if self.new_volume_size != self.expected_disk_size:
+			self.status = Status.Failure
+			self.save()
+			frappe.throw(
+				f"Volume size mismatch expected: {self.expected_disk_size} resolved: {self.new_volume_size}",
+				frappe.ValidationError,
+			)
+
 		self.new_volume_iops, self.new_volume_throughput = self.get_optimal_performance_attributes()
+		self.save()
 
 	def create_new_volume(self):
 		# Create new volume
@@ -290,6 +304,7 @@ class VirtualDiskResize(Document):
 			self.new_volume_size, iops=self.new_volume_iops, throughput=self.new_volume_throughput
 		)
 		self.new_volume_status = "Attached"
+		self.save()
 
 	def get_optimal_performance_attributes(self):
 		MAX_THROUGHPUT = 1000  # 1000 MB/s
@@ -663,6 +678,8 @@ class StepStatus(str, Enum):
 
 class Status(str, Enum):
 	Pending = "Pending"
+	Preparing = "Preparing"
+	Ready = "Ready"
 	Running = "Running"
 	Success = "Success"
 	Failure = "Failure"

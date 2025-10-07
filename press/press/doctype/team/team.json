@@ -43,12 +43,10 @@
   "notification_tab",
   "section_break_9",
   "send_notifications",
-  "notify_email",
-  "billing_email",
   "column_break_9",
   "last_used_team",
   "section_break_28",
-  "communication_emails",
+  "communication_infos",
   "partner_tab",
   "partner_details_section",
   "erpnext_partner",
@@ -78,6 +76,7 @@
   "database_access_enabled",
   "enable_performance_tuning",
   "razorpay_enabled",
+  "paypal_enabled",
   "servers_enabled",
   "code_servers_enabled",
   "self_hosted_servers_enabled",
@@ -222,13 +221,6 @@
    "options": "\nCard\nPrepaid Credits\nPaid By Partner"
   },
   {
-   "fetch_from": "user.email",
-   "fetch_if_empty": 1,
-   "fieldname": "notify_email",
-   "fieldtype": "Data",
-   "label": "Notify Email"
-  },
-  {
    "fieldname": "column_break_9",
    "fieldtype": "Column Break"
   },
@@ -247,12 +239,6 @@
    "fieldtype": "Data",
    "label": "Referrer ID",
    "read_only": 1
-  },
-  {
-   "fieldname": "communication_emails",
-   "fieldtype": "Table",
-   "label": "Communication Emails",
-   "options": "Communication Email"
   },
   {
    "fieldname": "section_break_28",
@@ -451,11 +437,6 @@
    "label": "Enable In Place Updates"
   },
   {
-   "fieldname": "billing_email",
-   "fieldtype": "Data",
-   "label": "Billing Email"
-  },
-  {
    "default": "0",
    "fieldname": "mpesa_enabled",
    "fieldtype": "Check",
@@ -588,6 +569,20 @@
    "fieldname": "skip_onboarding",
    "fieldtype": "Check",
    "label": "Skip Onboarding"
+  },
+  {
+   "fieldname": "communication_infos",
+   "fieldtype": "Table",
+   "label": "Communication Infos",
+   "options": "Communication Info"  
+  }, 
+  {
+   "default": "0",
+   "depends_on": "razorpay_enabled",
+   "description": "Enable via RazorPay dashboard",
+   "fieldname": "paypal_enabled",
+   "fieldtype": "Check",
+   "label": "Paypal Enabled"
   }
  ],
  "grid_page_length": 50,
@@ -653,7 +648,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2025-08-20 20:17:16.581425",
+ "modified": "2025-09-29 11:09:45.344674",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

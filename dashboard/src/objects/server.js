@@ -22,6 +22,7 @@ export default {
 		toggleAutoIncreaseStorage: 'toggle_auto_increase_storage',
 		reboot: 'reboot',
 		rename: 'rename',
+		cleanup: 'cleanup_unused_files',
 		dropServer: 'drop_server',
 		addTag: 'add_resource_tag',
 		removeTag: 'remove_resource_tag',

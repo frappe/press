@@ -8,6 +8,7 @@ import frappe
 from frappe.rate_limiter import rate_limit
 
 from press.exceptions import AlertRuleNotEnabled
+from press.press.doctype.monitor_server.monitor_server import get_monitor_server_ips
 from press.utils import log_error, servers_using_alternative_port_for_communication
 
 
@@ -96,8 +97,21 @@ def get_tls():
 	return tls
 
 
+def get_targets_method_rate_limit() -> int:
+	if (
+		frappe.local
+		and hasattr(frappe.local, "request_ip")
+		and frappe.local.request_ip in get_monitor_server_ips()
+	):
+		# Allow no limit for known monitor servers
+		return 1000
+
+	# For unknown IPs, allow only 2 request per minute
+	return 2
+
+
 @frappe.whitelist(allow_guest=True)
-@rate_limit(limit=5, seconds=60)
+@rate_limit(limit=get_targets_method_rate_limit, seconds=60)
 def targets(token=None):
 	if not token:
 		frappe.throw_permission_error()

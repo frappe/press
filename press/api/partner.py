@@ -82,6 +82,7 @@ def get_partner_details(partner_email):
 			"partner_website",
 			"introduction",
 			"customers",
+			"custom_process_maturity_level",
 		],
 	)
 	if data:
@@ -266,7 +267,9 @@ def get_invoice_items(invoice):
 	)
 	for d in data:
 		team = frappe.db.get_value(d.document_type, d.document_name, "team")
-		d["user"] = frappe.db.get_value("Team", team, "user")
+		values = frappe.db.get_value("Team", team, ["user", "billing_name"], as_dict=True)
+		d["user"] = values.user
+		d["billing_name"] = values.billing_name
 
 	return data
 

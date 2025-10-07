@@ -78,9 +78,11 @@
   "section_break_59",
   "docker_registry_url",
   "docker_registry_namespace",
+  "docker_s3_access_key",
   "column_break_64",
   "docker_registry_username",
   "docker_registry_password",
+  "docker_s3_secret_key",
   "docker_build_section",
   "suspend_builds",
   "clone_directory",
@@ -1458,11 +1460,21 @@
    "fieldname": "enable_server_snapshot_recovery",
    "fieldtype": "Check",
    "label": "Enable Server Snapshot Recovery"
+  },
+  {
+   "fieldname": "docker_s3_access_key",
+   "fieldtype": "Data",
+   "label": "Docker S3 Access Key"
+  },
+  {
+   "fieldname": "docker_s3_secret_key",
+   "fieldtype": "Password",
+   "label": "Docker S3 Secret Key"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-08-31 22:46:48.576273",
+ "modified": "2025-09-18 22:27:41.701498",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

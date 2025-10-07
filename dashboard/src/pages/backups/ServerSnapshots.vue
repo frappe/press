@@ -7,6 +7,10 @@
 				/>
 			</Header>
 		</div>
+		<CustomAlerts
+			:disable-last-child-bottom-margin="true"
+			container-class="p-5 pb-0"
+		/>
 		<div class="p-5">
 			<ObjectList :options="listOptions" />
 		</div>
@@ -15,12 +19,14 @@
 
 <script>
 import ObjectList from '../../components/ObjectList.vue';
+import CustomAlerts from '../../components/CustomAlerts.vue';
 import { date } from '../../utils/format';
 
 export default {
 	name: 'Server Snapshots',
 	components: {
 		ObjectList,
+		CustomAlerts,
 	},
 	computed: {
 		listOptions() {

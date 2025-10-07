@@ -52,6 +52,7 @@
   "frappe_public_key",
   "column_break_18",
   "ssh_user",
+  "bastion_server",
   "ssh_port",
   "root_public_key",
   "section_break_cees",
@@ -62,6 +63,8 @@
   "mounts_section",
   "has_data_volume",
   "mounts",
+  "notifications_section",
+  "communication_info",
   "mariadb_settings_tab",
   "memory_limits_section",
   "memory_high",
@@ -123,15 +126,13 @@
    "fieldname": "ip",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "IP",
-   "read_only": 1
+   "label": "IP"
   },
   {
    "fetch_from": "virtual_machine.private_ip_address",
    "fieldname": "private_ip",
    "fieldtype": "Data",
-   "label": "Private IP",
-   "read_only": 1
+   "label": "Private IP"
   },
   {
    "fieldname": "mariadb_section",
@@ -244,7 +245,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner",
    "set_only_once": 1
   },
   {
@@ -660,6 +661,23 @@
    "fieldtype": "Check",
    "label": "TLS Certificate Renewal Failed",
    "read_only": 1
+  },
+  {
+   "fieldname": "notifications_section",
+   "fieldtype": "Section Break",
+   "label": "Notifications"
+  },
+  {
+   "fieldname": "communication_info",
+   "fieldtype": "Table",
+   "label": "Communication Info",
+   "options": "Communication Info"
+  },
+  { 
+   "fieldname": "bastion_server",
+   "fieldtype": "Link",
+   "label": "Bastion Server",
+   "options": "Bastion Server"
   }
  ],
  "grid_page_length": 50,
@@ -676,7 +694,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-09-02 16:43:24.080843",
+ "modified": "2025-09-25 15:33:11.744857",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

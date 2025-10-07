@@ -429,6 +429,8 @@ class SiteMigration(Document):
 			and site.status_before_update != "Inactive"
 		):
 			site.activate()
+		if self.is_standalone_migration:
+			site.create_dns_record()
 		if self.migration_type == "Cluster":
 			if site.cluster == frappe.db.get_value(
 				"Root Domain", site.domain, "default_cluster"
@@ -628,6 +630,8 @@ class SiteMigration(Document):
 			if self.destination_cluster == frappe.db.get_value("Root Domain", site.domain, "default_cluster"):
 				source_proxy = str(frappe.db.get_value("Server", self.source_server, "proxy_server"))
 				site.remove_dns_record(source_proxy)
+		elif self.is_standalone_migration:
+			site.create_dns_record()
 		return agent.new_site_from_backup(site, skip_failing_patches=self.skip_failing_patches)
 
 	def restore_site_on_destination_proxy(self):
@@ -675,9 +679,15 @@ class SiteMigration(Document):
 		self.update_next_step_status("Success")
 		self.run_next_step()
 
+	@property
+	def is_standalone_migration(self) -> bool:
+		return frappe.db.get_value("Server", self.destination_server, "is_standalone") or frappe.db.get_value(
+			"Server", self.source_server, "is_standalone"
+		)
+
 	def reset_site_status_on_destination(self):
 		"""Reset site status on destination"""
-		site = frappe.get_doc("Site", self.site)
+		site: Site = frappe.get_doc("Site", self.site)
 		if site.status_before_update in ["Inactive", "Suspended"]:
 			self.update_next_step_status("Skipped")
 			job = None

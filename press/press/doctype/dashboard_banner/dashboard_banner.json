@@ -5,10 +5,30 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "content_section",
   "enabled",
+  "type",
   "title",
   "message",
-  "type"
+  "column_break_mycc",
+  "help_url",
+  "action_section",
+  "column_break_onof",
+  "has_action",
+  "action_label",
+  "action",
+  "column_break_adad",
+  "is_dismissible",
+  "scope_section",
+  "column_break_fits",
+  "is_global",
+  "column_break_udzz",
+  "type_of_scope",
+  "team",
+  "server",
+  "site",
+  "dismissals_section",
+  "user_dismissals"
  ],
  "fields": [
   {
@@ -32,12 +52,134 @@
    "fieldname": "title",
    "fieldtype": "Data",
    "label": "Title"
+  },
+  {
+   "fieldname": "content_section",
+   "fieldtype": "Section Break",
+   "label": "Content"
+  },
+  {
+   "description": "Select the audience segment to enable the banner for",
+   "fieldname": "scope_section",
+   "fieldtype": "Section Break",
+   "label": "Scope"
+  },
+  {
+   "default": "0",
+   "description": "Whether to display the banner for all sites across all regions",
+   "fieldname": "is_global",
+   "fieldtype": "Check",
+   "label": "Is Global"
+  },
+  {
+   "depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Team\"",
+   "description": "Recipients are users part of this Team",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "mandatory_depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Team\"",
+   "options": "Team"
+  },
+  {
+   "depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Server\"",
+   "description": "Recipients are users with Sites on this Server",
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "label": "Server",
+   "mandatory_depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Server\"",
+   "options": "Server"
+  },
+  {
+   "depends_on": "eval:!doc.is_global & doc.type_of_scope == \"Site\"",
+   "description": "Recipients are users with this Site",
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "label": "Site",
+   "mandatory_depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Site\"",
+   "options": "Site"
+  },
+  {
+   "fieldname": "column_break_fits",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "help_url",
+   "fieldtype": "Data",
+   "label": "Help URL"
+  },
+  {
+   "depends_on": "eval:!!doc.has_action",
+   "fieldname": "action",
+   "fieldtype": "Data",
+   "label": "Action Endpoint",
+   "mandatory_depends_on": "eval:!!doc.has_action"
+  },
+  {
+   "default": "0",
+   "description": "Whether user can dismiss the banner",
+   "fieldname": "is_dismissible",
+   "fieldtype": "Check",
+   "label": "Is Dismissible"
+  },
+  {
+   "description": "Enables action and dismiss buttons on the banner",
+   "fieldname": "action_section",
+   "fieldtype": "Section Break",
+   "label": "Actions"
+  },
+  {
+   "default": "0",
+   "description": "Whether the banner includes an action button",
+   "fieldname": "has_action",
+   "fieldtype": "Check",
+   "label": "Has Action"
+  },
+  {
+   "depends_on": "eval:!!doc.has_action",
+   "fieldname": "action_label",
+   "fieldtype": "Data",
+   "label": "Action Label",
+   "mandatory_depends_on": "eval:!!doc.has_action"
+  },
+  {
+   "fieldname": "column_break_onof",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_mycc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_adad",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "user_dismissals",
+   "fieldtype": "Table",
+   "label": "User Dismissals",
+   "options": "Dashboard Banner Dismissal"
+  },
+  {
+   "depends_on": "eval:!doc.is_global",
+   "fieldname": "type_of_scope",
+   "fieldtype": "Select",
+   "label": "Type of scope",
+   "mandatory_depends_on": "eval:!doc.is_global",
+   "options": "Team\nServer\nSite"
+  },
+  {
+   "fieldname": "column_break_udzz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "dismissals_section",
+   "fieldtype": "Section Break",
+   "label": "Dismissals"
   }
  ],
  "index_web_pages_for_search": 1,
- "issingle": 1,
  "links": [],
- "modified": "2024-06-24 09:36:26.970846",
+ "modified": "2025-10-06 15:42:11.392361",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Dashboard Banner",
@@ -54,6 +196,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": []

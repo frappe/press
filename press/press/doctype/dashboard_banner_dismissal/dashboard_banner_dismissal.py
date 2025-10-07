@@ -1,11 +1,11 @@
-# Copyright (c) 2021, Frappe and contributors
+# Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
 
 # import frappe
 from frappe.model.document import Document
 
 
-class CommunicationEmail(Document):
+class DashboardBannerDismissal(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -14,11 +14,11 @@ class CommunicationEmail(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		dismissed_at: DF.Datetime
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		type: DF.Data | None
-		value: DF.Data | None
+		user: DF.Link
 	# end: auto-generated types
 
 	pass

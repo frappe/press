@@ -65,6 +65,12 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup,
 			],
 			[
+				__('Get AWS Static IP'),
+				'get_aws_static_ip',
+				false,
+				frm.doc.provider === 'AWS EC2',
+			],
+			[
 				__('Setup PySpy'),
 				'setup_pyspy',
 				false,
