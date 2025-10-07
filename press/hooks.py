@@ -233,7 +233,6 @@ scheduler_events = {
 		"press.press.doctype.usage_record.usage_record.link_unlinked_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
 		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
-		"press.press.doctype.app.app.poll_new_releases",
 		"press.press.doctype.agent_job.agent_job.fail_old_jobs",
 		"press.press.doctype.press_job.press_job.fail_stuck_press_jobs",
 		"press.press.doctype.site_update.site_update.mark_stuck_updates_as_fatal",
@@ -311,6 +310,7 @@ scheduler_events = {
 			"press.press.doctype.drip_email.drip_email.send_welcome_email",
 			"press.press.doctype.site_update.site_update.run_scheduled_updates",
 			"press.press.doctype.virtual_machine.virtual_machine.snapshot_aws_servers",
+			"press.press.doctype.app.app.poll_new_releases",
 		],
 		"* * * * *": [
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",
