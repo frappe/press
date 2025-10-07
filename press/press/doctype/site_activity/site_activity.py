@@ -36,11 +36,14 @@ class SiteActivity(Document):
 			"Update",
 			"Update Configuration",
 			"Drop Offsite Backups",
+			"Drop Physical Backups",
 			"Enable Database Access",
 			"Disable Database Access",
 			"Create Database User",
 			"Remove Database User",
 			"Modify Database User Permissions",
+			"Disable Monitoring And Alerts",
+			"Enable Monitoring And Alerts",
 		]
 		job: DF.Link | None
 		reason: DF.SmallText | None
@@ -59,6 +62,18 @@ class SiteActivity(Document):
 					subject="Administrator login to your site",
 					template="admin_login",
 					args={"site": self.site, "user": self.owner, "reason": self.reason},
+					reference_doctype=self.doctype,
+					reference_name=self.name,
+				)
+
+		if self.action == "Disable Monitoring And Alerts" and self.reason:
+			recipients = get_communication_info("Email", "Site Activity", "Site", self.site)
+			if recipients:
+				frappe.sendmail(
+					recipients=recipients,
+					subject="Site Monitoring Disabled",
+					template="disabled_site_monitoring",
+					args={"site": self.site, "reason": self.reason},
 					reference_doctype=self.doctype,
 					reference_name=self.name,
 				)

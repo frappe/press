@@ -85,6 +85,7 @@ class BaseServer(Document, TagHelpers):
 		"auto_add_storage_min",
 		"auto_add_storage_max",
 		"auto_increase_storage",
+		"is_monitoring_disabled",
 	)
 
 	@staticmethod
