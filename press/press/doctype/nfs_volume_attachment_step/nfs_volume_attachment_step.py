@@ -14,11 +14,13 @@ class NFSVolumeAttachmentStep(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		name1: DF.Data | None
+		method_name: DF.Data | None
+		output: DF.Text | None
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
+		step_name: DF.Data | None
 	# end: auto-generated types
 
 	pass
