@@ -95,14 +95,11 @@ class AgentJob(Document):
 		if not (site or group or server or bench):
 			frappe.throw("Not permitted", frappe.PermissionError)
 
-		if site:
-			site_team = frappe.db.get_value("Site", site, "team")
-			if not has_support_access(site_team):
-				is_owned_by_team("Site", site, raise_exception=True)
+		if site and not has_support_access("Site", site):
+			is_owned_by_team("Site", site, raise_exception=True)
 
 		if group:
-			group_team = frappe.db.get_value("Release Group", group, "team")
-			if not has_support_access(group_team):
+			if not has_support_access("Release Group", group):
 				is_owned_by_team("Release Group", group, raise_exception=True)
 
 			AgentJob = frappe.qb.DocType("Agent Job")

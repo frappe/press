@@ -29,8 +29,7 @@ class ReleaseGroupDependency(Document):
 	def get_list_query(query, filters=None, **list_args):
 		if not filters or not (group := filters.get("parent")):
 			return None
-		group_team = frappe.db.get_value("Release Group", group, "team")
-		if not has_support_access(group_team):
+		if not has_support_access("Release Group", group):
 			is_owned_by_team("Release Group", group, raise_exception=True)
 
 		RGDependency = frappe.qb.DocType("Release Group Dependency")

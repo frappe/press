@@ -349,9 +349,7 @@ class Site(Document, TagHelpers):
 				)
 				if user_type == "System User":
 					return func(inst, *args, **kwargs)
-
-				site_team = frappe.get_value(inst.doctype, inst.name, "team")
-				if has_support_access(site_team):
+				if has_support_access(inst.doctype, inst.name):
 					return func(inst, *args, **kwargs)
 				status = frappe.get_value(inst.doctype, inst.name, "status", for_update=True)
 				if status not in allowed_status:

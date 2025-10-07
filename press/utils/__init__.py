@@ -311,17 +311,33 @@ def is_allowed_access_performance_tuning():
 	return team.enable_performance_tuning
 
 
-def has_support_access(team):
-	if not has_role("Press Support Agent"):
-		return False
+def has_support_access(doctype: str, docname: str) -> bool:
+	"""
+	Checks if current team has support access to given document.
+	"""
 
-	support_team = get_current_team()
-
-	return frappe.get_all(
+	accesses = frappe.get_all(
 		"Support Access",
-		{"access_expired": 0, "requested_for": team, "requested_by": support_team, "status": "Accepted"},
+		{
+			"access_expired": 0,
+			"requested_by": get_current_team(),
+			"status": "Accepted",
+		},
 		pluck="name",
 	)
+
+	for access in accesses:
+		if frappe.db.exists(
+			"Support Access Resource",
+			{
+				"parent": access,
+				"document_type": doctype,
+				"document_name": docname,
+			},
+		):
+			return True
+
+	return False
 
 
 class RemoteFrappeSite:
@@ -636,7 +652,7 @@ def parse_supervisor_status(output: str) -> list["SupervisorProcess"]:
 	# example lines:
 	# ```
 	#   frappe-bench-web:frappe-bench-frappe-web            RUNNING   pid 1327, uptime 23:13:00
-	# 	frappe-bench-workers:frappe-bench-frappe-worker-4   RUNNING   pid 3794915, uptime 68 days, 6:10:37
+	#   frappe-bench-workers:frappe-bench-frappe-worker-4   RUNNING   pid 3794915, uptime 68 days, 6:10:37
 	#   sshd                                                FATAL     Exited too quickly (process log may have details)
 	# ```
 

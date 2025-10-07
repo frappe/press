@@ -15,7 +15,7 @@ from frappe.utils import cstr
 from pypika.queries import QueryBuilder
 
 from press.exceptions import TeamHeaderNotInRequestError
-from press.utils import has_role
+from press.utils import has_role, has_support_access
 
 if typing.TYPE_CHECKING:
 	from frappe.model.meta import Meta
@@ -222,7 +222,7 @@ def get(doctype, name):
 		raise
 
 	if (
-		not (frappe.local.system_user() or has_role("Press Support Agent"))
+		not (frappe.local.system_user() or has_support_access(doctype, name))
 		and frappe.get_meta(doctype).has_field("team")
 		and doc.team != frappe.local.team().name
 	):
