@@ -152,14 +152,14 @@ class NFSVolumeAttachment(Document):
 			step.save()
 			raise
 
-	def _run_ansible_step(step: NFSVolumeAttachmentStep, ansible: Ansible) -> None:
+	def _run_ansible_step(step: "NFSVolumeAttachmentStep", ansible: Ansible) -> None:
 		step.play = ansible.play
 		step.save()
 		ansible.run()
 		step.status = Status.Success
 		step.save()
 
-	def _fail_ansible_step(step: NFSVolumeAttachmentStep, ansible: Ansible, e: str | None = None) -> None:
+	def _fail_ansible_step(step: "NFSVolumeAttachmentStep", ansible: Ansible, e: str | None = None) -> None:
 		step.play = getattr(ansible, "play", None)
 		step.status = Status.Failure
 		step.output = str(e)
