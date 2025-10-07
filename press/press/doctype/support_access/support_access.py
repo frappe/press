@@ -15,7 +15,7 @@ class SupportAccess(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.resources.resources import Resources
+		from press.press.doctype.support_access_resource.support_access_resource import SupportAccessResource
 
 		access_allowed_till: DF.Datetime | None
 		access_expired: DF.Check
@@ -26,7 +26,7 @@ class SupportAccess(Document):
 		reason: DF.SmallText | None
 		requested_by: DF.Link | None
 		requested_for: DF.Link | None
-		resources: DF.Table[Resources]
+		resources: DF.Table[SupportAccessResource]
 		site_access: DF.Check
 		status: DF.Literal["Pending", "Accepted", "Rejected"]
 	# end: auto-generated types
