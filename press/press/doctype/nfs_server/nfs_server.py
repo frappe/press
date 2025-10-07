@@ -14,7 +14,6 @@ from press.utils import log_error
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
-	from press.press.doctype.mount_enabled_server.mount_enabled_server import MountEnabledServer
 
 
 class NFSServer(BaseServer):
@@ -110,13 +109,6 @@ class NFSServer(BaseServer):
 			}
 		)
 		return nfs_volume_attachment.insert()
-
-	@frappe.whitelist()
-	def remove_mount_enabled(self, server: str) -> None:
-		mount_enabled_server: MountEnabledServer = frappe.get_doc(
-			"Mount Enabled Server", {"parent": self.name, "server": server}
-		)
-		mount_enabled_server.delete()
 
 
 class SwitchServers:
