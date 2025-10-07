@@ -30,9 +30,7 @@
   "column_break_20",
   "root_public_key",
   "monitoring_section",
-  "monitoring_password",
-  "mount_enabled_servers_tab",
-  "mount_enabled_servers"
+  "monitoring_password"
  ],
  "fields": [
   {
@@ -201,16 +199,6 @@
    "fieldname": "is_server_prepared",
    "fieldtype": "Check",
    "label": "Is Server Prepared"
-  },
-  {
-   "fieldname": "mount_enabled_servers_tab",
-   "fieldtype": "Tab Break",
-   "label": "Mount Enabled Servers"
-  },
-  {
-   "fieldname": "mount_enabled_servers",
-   "fieldtype": "Table",
-   "options": "Mount Enabled Server"
   }
  ],
  "links": [
@@ -221,9 +209,13 @@
   {
    "link_doctype": "Agent Job",
    "link_fieldname": "server"
+  },
+  {
+   "link_doctype": "NFS Volume Attachment",
+   "link_fieldname": "nfs_server"
   }
  ],
- "modified": "2025-10-03 13:42:44.883862",
+ "modified": "2025-10-07 13:53:59.585967",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "NFS Server",

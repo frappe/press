@@ -26,8 +26,6 @@ class NFSServer(BaseServer):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.mount_enabled_server.mount_enabled_server import MountEnabledServer
-
 		agent_password: DF.Password | None
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None
@@ -37,7 +35,6 @@ class NFSServer(BaseServer):
 		is_server_prepared: DF.Check
 		is_server_setup: DF.Check
 		monitoring_password: DF.Password | None
-		mount_enabled_servers: DF.Table[MountEnabledServer]
 		private_ip: DF.Data
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
@@ -101,17 +98,15 @@ class NFSServer(BaseServer):
 	def add_mount_enabled_server(
 		self,
 		server: str,
-		volume_size: int | None = None,
 	) -> NFSVolumeAttachment:
 		"""Add server to nfs servers ACL and create a shared directory"""
-
+		secondary_server = frappe.get_value("Server", server, "secondary_server")
 		nfs_volume_attachment: NFSVolumeAttachment = frappe.get_doc(
 			{
 				"doctype": "NFS Volume Attachment",
 				"nfs_server": self.name,
 				"primary_server": server,
-				"secondary_server": frappe.get_value("Server", server, "secondary_server"),
-				"volume_size": volume_size,
+				"secondary_server": secondary_server,
 			}
 		)
 		return nfs_volume_attachment.insert()

@@ -13,7 +13,6 @@
   "volume_section",
   "volume_id",
   "volume_size",
-  "shared_directory",
   "steps_section",
   "nfs_volume_attachment_steps"
  ],
@@ -37,15 +36,16 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Primary Server",
-   "options": "NFS Server",
+   "options": "Server",
    "reqd": 1
   },
   {
    "description": "Server that is using the primary server's file system.",
    "fieldname": "secondary_server",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Secondary Server",
-   "options": "NFS Server",
+   "options": "Server",
    "reqd": 1
   },
   {
@@ -56,8 +56,7 @@
   {
    "fieldname": "volume_id",
    "fieldtype": "Data",
-   "label": "Volume Id",
-   "reqd": 1
+   "label": "Volume Id"
   },
   {
    "fieldname": "volume_size",
@@ -65,14 +64,9 @@
    "label": "Volume Size"
   },
   {
-   "description": "Mount path on the NFS server.",
-   "fieldname": "shared_directory",
-   "fieldtype": "Data",
-   "label": "Shared Directory"
-  },
-  {
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Status",
    "options": "Pending\nRunning\nSuccess\nFailure",
    "read_only": 1
@@ -91,7 +85,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-06 18:52:07.653383",
+ "modified": "2025-10-07 13:52:21.998963",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "NFS Volume Attachment",
@@ -113,5 +107,6 @@
  "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "primary_server"
 }

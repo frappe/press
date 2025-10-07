@@ -6,29 +6,41 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "name1",
-  "status"
+  "step_name",
+  "method_name",
+  "status",
+  "output"
  ],
  "fields": [
-  {
-   "fieldname": "name1",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Name"
-  },
   {
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
    "options": "Pending\nRunning\nSuccess\nFailure"
+  },
+  {
+   "fieldname": "output",
+   "fieldtype": "Text",
+   "label": "Output"
+  },
+  {
+   "fieldname": "step_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Name"
+  },
+  {
+   "fieldname": "method_name",
+   "fieldtype": "Data",
+   "label": "Method"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-06 18:32:06.439112",
+ "modified": "2025-10-07 10:28:57.918555",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "NFS Volume Attachment Step",
