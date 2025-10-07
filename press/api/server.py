@@ -242,7 +242,7 @@ def new(server):
 
 
 @frappe.whitelist()
-# @protected(["Server", "Database Server"])
+@protected(["Server", "Database Server"])
 def usage(name):
 	mount_point = get_mount_point(name)
 	query_map = {
