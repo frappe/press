@@ -1447,12 +1447,30 @@ def get_user_banners():
 	for banner in all_enabled_banners:
 		banner_dismissals_by_user = frappe.get_all(
 			"Dashboard Banner Dismissal",
-			filters={"user": user, "dashboard_banner": banner["name"]},
+			filters={"user": user, "parent": banner["name"]},
 		)
 		if not banner_dismissals_by_user:
 			visible_banners.append(banner)
 
 	return visible_banners
+
+
+@frappe.whitelist()
+def dismiss_banner(banner_name):
+	user = frappe.session.user
+	banner = frappe.get_doc("Dashboard Banner", banner_name)
+	if banner and banner.is_dismissible:
+		banner.append(
+			"user_dismissals",
+			{
+				"user": user,
+				"dismissed_at": frappe.utils.now(),
+				"parent": banner_name,
+			},
+		)
+		banner.save()
+		return True
+	return False
 
 
 # Not available for Telangana, Ladakh, and Other Territory

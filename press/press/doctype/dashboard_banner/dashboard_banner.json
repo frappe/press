@@ -26,7 +26,9 @@
   "type_of_scope",
   "team",
   "server",
-  "site"
+  "site",
+  "dismissals_section",
+  "user_dismissals"
  ],
  "fields": [
   {
@@ -152,6 +154,12 @@
    "fieldtype": "Column Break"
   },
   {
+   "fieldname": "user_dismissals",
+   "fieldtype": "Table",
+   "label": "User Dismissals",
+   "options": "Dashboard Banner Dismissal"
+  },
+  {
    "depends_on": "eval:!doc.is_global",
    "fieldname": "type_of_scope",
    "fieldtype": "Select",
@@ -162,11 +170,16 @@
   {
    "fieldname": "column_break_udzz",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "dismissals_section",
+   "fieldtype": "Section Break",
+   "label": "Dismissals"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-03 18:28:50.639317",
+ "modified": "2025-10-06 15:42:11.392361",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Dashboard Banner",
