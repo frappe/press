@@ -15,6 +15,7 @@ class NFSVolumeDetachmentStep(Document):
 		from frappe.types import DF
 
 		attempt: DF.Int
+		is_waiting: DF.Check
 		job: DF.DynamicLink | None
 		job_type: DF.Link | None
 		method_name: DF.Data | None

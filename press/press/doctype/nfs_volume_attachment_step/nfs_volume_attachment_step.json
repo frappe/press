@@ -12,6 +12,7 @@
   "job_type",
   "job",
   "attempt",
+  "is_waiting",
   "output"
  ],
  "fields": [
@@ -54,13 +55,19 @@
    "fieldname": "attempt",
    "fieldtype": "Int",
    "label": "Attempt"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_waiting",
+   "fieldtype": "Check",
+   "label": "Wait"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-08 15:58:14.539442",
+ "modified": "2025-10-08 16:59:37.964663",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "NFS Volume Attachment Step",

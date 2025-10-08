@@ -2,7 +2,6 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
-import time
 import typing
 from enum import Enum
 
@@ -14,10 +13,12 @@ from press.press.doctype.nfs_volume_attachment.nfs_volume_attachment import Step
 from press.runner import Ansible
 
 if typing.TYPE_CHECKING:
+	from press.press.doctype.nfs_server.nfs_server import NFSServer
 	from press.press.doctype.nfs_volume_detachment_step.nfs_volume_detachment_step import (
 		NFSVolumeDetachmentStep,
 	)
 	from press.press.doctype.server.server import Server
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 class Status(str, Enum):
@@ -108,7 +109,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 			reference_name=self.primary_server,
 		)
 
-		step.status = Status.Running
+		step.status = Status.Success
 		step.job_type = "Agent Job"
 		step.job = agent_job.name
 		step.save()
@@ -116,6 +117,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 	def wait_for_job_completion(self, step: "NFSVolumeDetachmentStep") -> None:
 		"""Wait for agent job completion"""
 		step.status = Status.Running
+		step.is_waiting = True
 		step.save()
 
 		job = frappe.db.get_value(
@@ -133,14 +135,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 			"Undelivered": Status.Pending,
 		}
 		job_status = status_map.get(job_status, job_status)
-
-		if job_status not in (Status.Success, Status.Failure):
-			step.attempt += 1
-			step.save()
-			time.sleep(5)
-			frappe.db.commit()  # avoid long-running transactions
-			self.wait_for_job_completion(step)
-			return
+		step.attempt = 1 if not step.attempt else step.attempt + 1
 
 		step.status = job_status
 		step.save()
@@ -148,7 +143,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 		if step.status == Status.Failure:
 			raise
 
-	def umount_from_primary_server(self, step: "NFSVolumeDetachmentStep"):
+	def umount_from_primary_server(self, step: "NFSVolumeDetachmentStep") -> None:
 		"""Umount /shared from primary server and remove from fstab"""
 		primary_server: Server = frappe.get_cached_doc("Server", self.primary_server)
 		nfs_server_private_ip = frappe.db.get_value("NFS Server", self.nfs_server, "private_ip")
@@ -171,7 +166,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 			self._fail_ansible_step(step, ansible, e)
 			raise
 
-	def umount_from_secondary_server(self, step: "NFSVolumeDetachmentStep"):
+	def umount_from_secondary_server(self, step: "NFSVolumeDetachmentStep") -> None:
 		"""Umount /shared from secondary server and remove from fstab"""
 		secondary_server: Server = frappe.get_cached_doc("Server", self.secondary_server)
 		nfs_server_private_ip = frappe.db.get_value("NFS Server", self.nfs_server, "private_ip")
@@ -194,6 +189,79 @@ class NFSVolumeDetachment(Document, StepHandler):
 			self._fail_ansible_step(step, ansible, e)
 			raise
 
+	def remove_servers_from_acl(self, step: "NFSVolumeDetachmentStep") -> None:
+		"""Remove primary and secondary servers from acl"""
+		step.status = Status.Running
+		step.save()
+
+		nfs_server: NFSServer = frappe.get_cached_doc("NFS Server", self.nfs_server)
+		primary_server_private_ip = frappe.db.get_value("Server", self.primary_server, "private_ip")
+		secondary_server_private_ip = frappe.db.get_value("Server", self.primary_server, "private_ip")
+
+		try:
+			# Remove primary server from acl
+			nfs_server.agent.delete(
+				"/nfs/exports",
+				data={
+					"private_ip": primary_server_private_ip,
+					"file_system": self.primary_server,
+				},
+			)
+			# Remove secondary server from acl
+			nfs_server.agent.delete(
+				"/nfs/exports",
+				data={
+					"private_ip": secondary_server_private_ip,
+					"file_system": self.primary_server,
+				},
+			)
+			step.status = Status.Success
+			step.save()
+		except Exception as e:
+			self._fail_job_step(step, e)
+			raise
+
+	def umount_volume_from_nfs_server(self, step: "NFSVolumeDetachmentStep") -> None:
+		"""Umount volume from NFS Server"""
+		step.status = Status.Running
+		step.save()
+
+		nfs_server: NFSServer = frappe.get_cached_doc("NFS Server", self.nfs_server)
+
+		try:
+			ansible = Ansible(
+				playbook="umount_volume_nfs_server.yml",
+				server=nfs_server,
+				user=nfs_server._ssh_user(),
+				port=nfs_server._ssh_port(),
+				variables={
+					"shared_directory": f"/home/frappe/nfs/{self.primary_server}",
+				},
+			)
+			self._run_ansible_step(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+			raise
+
+	def detach_and_delete_volume_from_nfs_server(self, step: "NFSVolumeDetachmentStep") -> None:
+		"""Detach and delete volume from nfs server"""
+		step.status = Status.Running
+		step.save()
+
+		virtual_machine: VirtualMachine = frappe.get_cached_doc("Virtual Machine", self.nfs_server)
+		volume_id = frappe.get_value(
+			"NFS Volume Attachment", {"primary_server": self.primary_server}, "volume_id"
+		)
+
+		try:
+			virtual_machine.detach(volume_id)
+			virtual_machine.delete_volume(volume_id)
+			step.status = Status.Success
+			step.save()
+		except Exception as e:
+			self._fail_job_step(step, e)
+			raise
+
 	def before_insert(self):
 		"""Append defined steps to the document before saving."""
 		for step in self.get_steps(
@@ -204,6 +272,9 @@ class NFSVolumeDetachment(Document, StepHandler):
 				self.wait_for_job_completion,
 				self.umount_from_primary_server,
 				self.umount_from_secondary_server,
+				self.remove_servers_from_acl,
+				self.umount_volume_from_nfs_server,
+				self.detach_and_delete_volume_from_nfs_server,
 			]
 		):
 			self.append("nfs_volume_detachment_steps", step)
@@ -214,16 +285,16 @@ class NFSVolumeDetachment(Document, StepHandler):
 			frappe.throw("Benches are currently being run on the secondary server!")
 
 	def execute_mount_steps(self):
-		self._execute_steps(steps=self.nfs_volume_detachment_steps)
-		# frappe.enqueue_doc(
-		# 	self.doctype,
-		# 	self.name,
-		# 	"_execute_steps",
-		# 	steps=self.nfs_volume_detachment_steps,
-		# 	timeout=18000,
-		# 	at_front=True,
-		# 	queue="long",
-		# )
+		# self._execute_steps(steps=self.nfs_volume_detachment_steps)
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_execute_steps",
+			steps=self.nfs_volume_detachment_steps,
+			timeout=18000,
+			at_front=True,
+			queue="long",
+		)
 
 	def after_insert(self):
 		self.execute_mount_steps()
