@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import time
 import typing
 from enum import Enum
 
@@ -119,6 +120,7 @@ class StepHandler:
 
 			self.reload()
 			frappe.db.commit()
+			time.sleep(1)
 
 		self.succeed()
 
