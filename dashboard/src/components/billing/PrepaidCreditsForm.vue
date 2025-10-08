@@ -58,7 +58,7 @@
 					v-if="
 						team.doc.razorpay_enabled ||
 						team.doc.currency === 'INR' ||
-						(team.doc.currency === 'USD' && team.doc.paypal_enabled)
+						(team.doc.currency === 'USD' && paypalEnabled.data)
 					"
 					size="lg"
 					:class="{
@@ -108,6 +108,7 @@
 			v-if="paymentGateway === 'Razorpay'"
 			:amount="creditsToBuy"
 			:minimumAmount="minimumAmount"
+			:paypalEnabled="paypalEnabled.data"
 			@success="() => emit('success')"
 			@cancel="show = false"
 		/>
@@ -138,6 +139,12 @@ const emit = defineEmits(['success']);
 const team = inject('team');
 const props = defineProps({
 	minimumAmount: Number,
+});
+
+const paypalEnabled = createResource({
+	url: 'press.api.billing.is_paypal_enabled',
+	cache: 'paypalEnabled',
+	auto: true,
 });
 
 const totalUnpaidAmount = createResource({
