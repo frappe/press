@@ -17,6 +17,7 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.test_app_source import create_test_app_source
 from press.press.doctype.bench.bench import (
+	EMPTY_BENCH_COURTESY_DAYS,
 	MAX_BACKGROUND_WORKERS,
 	MAX_GUNICORN_WORKERS,
 	Bench,
@@ -476,7 +477,7 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 		app_source = create_test_app_source(version=version, app=app)
 		group = create_test_release_group([app], frappe_version=version)
 
-		with fake_agent_job("New Bench", "Success"):
+		with fake_agent_job("New Bench"):
 			bench1 = create_test_bench(group=group)
 			poll_pending_jobs()
 
@@ -485,14 +486,33 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 			app_source=app_source
 		)  # creates pull type release diff only but args are same
 
-		with fake_agent_job("New Bench", "Success"):
+		with fake_agent_job("New Bench"):
 			bench2 = create_test_bench(group=group, server=bench1.server)
 			poll_pending_jobs()
 
 		create_test_deploy_candidate_differences(bench2.candidate)  # for site update to be available
 
-		create_test_site_update(site.name, site.group, "Fatal")
-		archive_obsolete_benches()
+		update = create_test_site_update(site.name, site.group, "Fatal")  # recent site update
+		site.db_set(
+			"bench", bench2.name
+		)  # simulate site moved to new bench, but not rolled back. This makes bench1 a potential archival candidate
+
+		benches_before = frappe.db.count("Bench", {"status": "Active"})  # 2
+
+		with fake_agent_job("Archive Bench"):
+			archive_obsolete_benches()
+			poll_pending_jobs()
+
+		benches_after = frappe.db.count("Bench", {"status": "Active"})  # 2
+		self.assertEqual(benches_after, benches_before)
+
+		update.db_set("creation", frappe.utils.add_days(None, -EMPTY_BENCH_COURTESY_DAYS - 1))
+		with fake_agent_job("Archive Bench"):
+			archive_obsolete_benches()
+			poll_pending_jobs()
+
+		benches_after = frappe.db.count("Bench", {"status": "Active"})  # 1
+		self.assertEqual(benches_after, benches_before - 1)
 
 	@patch(
 		"press.press.doctype.bench.bench.archive_obsolete_benches_for_server",
