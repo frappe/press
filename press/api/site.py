@@ -1803,7 +1803,7 @@ def get_proxy_and_redirected_status(domain) -> tuple[str | None, bool]:
 		return server, redirected
 
 
-def check_dns_cname_a(name, domain, ignore_proxying=False):
+def _check_dns_cname_a(name, domain, ignore_proxying=False, throw_proxy_validation_early=True):
 	check_domain_allows_letsencrypt_certs(domain)
 	proxy, redirected = get_proxy_and_redirected_status(domain)
 	if proxy:
@@ -1815,11 +1815,12 @@ def check_dns_cname_a(name, domain, ignore_proxying=False):
 				DomainNoLongerPointed,
 			)
 
-		frappe.throw(
-			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.
-			<br>You may enable it again, once the domain is verified.""",
-			DomainProxied,
-		)
+		if throw_proxy_validation_early:
+			frappe.throw(
+				f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.""",
+				DomainProxied,
+			)
+
 	ensure_dns_aaaa_record_doesnt_exist(domain)
 	cname = check_dns_cname(name, domain)
 	result = {"CNAME": cname} | cname
@@ -1843,6 +1844,31 @@ def check_dns_cname_a(name, domain, ignore_proxying=False):
 			""",
 			ConflictingDNSRecord,
 		)
+
+	if proxy and not throw_proxy_validation_early:
+		frappe.throw(
+			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.""",
+			DomainProxied,
+		)
+
+	result["valid"] = cname["matched"] or a["matched"]
+	return result
+
+
+def check_dns_cname_a(
+	name, domain, ignore_proxying=False, throw_error=True, throw_proxy_validation_early=True
+):
+	if throw_error:
+		return _check_dns_cname_a(name, domain, ignore_proxying, throw_proxy_validation_early)
+
+	result = {}
+	try:
+		result = _check_dns_cname_a(name, domain, ignore_proxying, throw_proxy_validation_early)
+
+	except Exception as e:
+		result["exc_type"] = e.__class__.__name__
+		result["exc_message"] = str(e)
+		result["valid"] = False
 
 	return result
 

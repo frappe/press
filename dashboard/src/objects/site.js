@@ -81,6 +81,7 @@ export default {
 			'cluster.title as cluster_title',
 			'trial_end_date',
 			'creation',
+			'is_monitoring_disabled',
 		],
 		orderBy: 'creation desc',
 		searchField: 'host_name',
@@ -1603,6 +1604,21 @@ export default {
 							name: 'Site Detail Updates',
 							params: { name: site.name },
 						});
+					},
+				},
+				{
+					label: 'Enable Monitoring',
+					slots: {
+						prefix: icon('activity'),
+					},
+					condition: () => site.doc?.is_monitoring_disabled,
+					onClick() {
+						let SiteEnableMonitoringDialog = defineAsyncComponent(
+							() => import('../components/site/SiteEnableMonitoringDialog.vue'),
+						);
+						renderDialog(
+							h(SiteEnableMonitoringDialog, { site: site.doc?.name }),
+						);
 					},
 				},
 				{
