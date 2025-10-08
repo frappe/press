@@ -113,10 +113,11 @@ class StepHandler:
 			try:
 				method(step)  # Each step updates its own state
 			except Exception:
+				self.reload()
 				self.fail()
-				frappe.db.commit()
 				return  # Stop on first failure
 
+			self.reload()
 			frappe.db.commit()
 
 		self.succeed()
@@ -163,6 +164,46 @@ class NFSVolumeAttachment(Document, StepHandler):
 		if not self.secondary_server:
 			frappe.throw("Please select a primary server that has a secondary server provisioned!")
 
+	def stop_all_benches(self, step: "NFSVolumeDetachmentStep"):
+		"""Stop all benches running on /shared"""
+		server: Server = frappe.get_doc("Server", self.primary_server)
+		step.status = Status.Running
+		step.save()
+
+		try:
+			ansible = Ansible(
+				playbook="stop_benches.yml",
+				server=server,
+				user=server._ssh_user(),
+				port=server._ssh_port(),
+			)
+			self._run_ansible_step(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+			raise
+
+	def attach_volume_on_nfs_server(self, step: "NFSVolumeAttachmentStep") -> None:
+		"""Attach a new volume on the NFS server."""
+		step.status = Status.Running
+		step.save()
+
+		virtual_machine: VirtualMachine = frappe.get_cached_doc("Virtual Machine", self.nfs_server)
+		try:
+			volume_id = virtual_machine.attach_new_volume(
+				self.volume_size,
+				iops=3000,
+				throughput=124,
+				log_activity=False,
+			)
+			frappe.db.set_value(
+				"NFS Volume Attachment", self.name, "volume_id", volume_id
+			)  # Need to do this otherwise a reload is required
+			step.status = Status.Success
+			step.save()
+		except Exception as e:
+			self._fail_job_step(step, e)
+			raise
+
 	def allow_servers_to_mount(self, step: "NFSVolumeAttachmentStep"):
 		"""Allow primary and secondary server to share fs"""
 		nfs_server: NFSServer = frappe.get_cached_doc("NFS Server", self.nfs_server)
@@ -196,26 +237,6 @@ class NFSVolumeAttachment(Document, StepHandler):
 
 			step.status = Status.Success
 			step.save()
-		except Exception as e:
-			self._fail_job_step(step, e)
-			raise
-
-	def attach_volume_on_nfs_server(self, step: "NFSVolumeAttachmentStep") -> None:
-		"""Attach a new volume on the NFS server."""
-		step.status = Status.Running
-		step.save()
-
-		virtual_machine: VirtualMachine = frappe.get_cached_doc("Virtual Machine", self.nfs_server)
-		try:
-			self.volume_id = virtual_machine.attach_new_volume(
-				self.volume_size,
-				iops=3000,
-				throughput=124,
-				log_activity=False,
-			)
-
-			step.status = Status.Success
-			self.save()
 		except Exception as e:
 			self._fail_job_step(step, e)
 			raise
@@ -405,6 +426,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 		self.volume_size = frappe.db.get_value("Virtual Machine", self.primary_server, "disk_size")
 		for step in self.get_steps(
 			[
+				self.stop_all_benches,
 				self.attach_volume_on_nfs_server,
 				self.allow_servers_to_mount,
 				self.format_and_mount_fs,
