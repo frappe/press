@@ -1499,6 +1499,18 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Start Benches Exception", server=self.as_dict())
 
+	def _stop_active_benches(self):
+		try:
+			ansible = Ansible(
+				playbook="stop_benches.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Start Benches Exception", server=self.as_dict())
+
 	@frappe.whitelist()
 	def mount_volumes(
 		self,

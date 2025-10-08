@@ -1,6 +1,8 @@
 # Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
+import time
 import typing
 from enum import Enum
 
@@ -12,10 +14,12 @@ from press.runner import Ansible
 from press.utils import log_error
 
 if typing.TYPE_CHECKING:
-	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.nfs_server.nfs_server import NFSServer
 	from press.press.doctype.nfs_volume_attachment_step.nfs_volume_attachment_step import (
 		NFSVolumeAttachmentStep,
+	)
+	from press.press.doctype.nfs_volume_detachment_step.nfs_volume_detachment_step import (
+		NFSVolumeDetachmentStep,
 	)
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
@@ -31,7 +35,84 @@ class Status(str, Enum):
 		return self.value
 
 
-class NFSVolumeAttachment(Document):
+class StepHandler:
+	def _run_ansible_step(
+		self, step: "NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep", ansible: Ansible
+	) -> None:
+		step.job_type = "Ansible Play"
+		step.job = ansible.play
+		step.save()
+		ansible.run()
+		step.status = Status.Success
+		step.save()
+
+	def _fail_ansible_step(
+		self,
+		step: "NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep",
+		ansible: Ansible,
+		e: Exception | None = None,
+	) -> None:
+		step.job = getattr(ansible, "play", None)
+		step.status = Status.Failure
+		step.output = str(e)
+		step.save()
+
+	def _fail_job_step(
+		self, step: "NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep", e: Exception | None = None
+	) -> None:
+		step.status = Status.Failure
+		step.output = str(e)
+		step.save()
+
+	def fail(self):
+		self.status = Status.Failure
+		self.save()
+		frappe.db.commit()
+
+	def succeed(self):
+		self.status = Status.Success
+		self.save()
+		frappe.db.commit()
+
+	def get_steps(self, methods: list) -> list[dict]:
+		"""Generate a list of steps to be executed for NFS volume attachment."""
+		return [
+			{
+				"step_name": method.__doc__,
+				"method_name": method.__name__,
+				"status": "Pending",
+			}
+			for method in methods
+		]
+
+	def _get_method(self, method_name: str):
+		"""Retrieve a method object by name."""
+		return getattr(self, method_name)
+
+	def _execute_steps(
+		self,
+		steps: list["NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep"],
+	):
+		"""Sequentially execute defined NFS attachment steps."""
+		self.status = Status.Running
+		self.save()
+		frappe.db.commit()
+
+		for step in steps:
+			method = self._get_method(step.method_name)
+
+			try:
+				method(step)  # Each step updates its own state
+			except Exception:
+				self.fail()  # We can however fail here
+				return  # Stop on first failure
+
+			frappe.db.commit()
+
+		self.succeed()
+
+
+class NFSVolumeAttachment(Document, StepHandler):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -71,51 +152,6 @@ class NFSVolumeAttachment(Document):
 
 		if not self.secondary_server:
 			frappe.throw("Please select a primary server that has a secondary server provisioned!")
-
-	def get_steps(self) -> list[dict]:
-		"""Generate a list of steps to be executed for NFS volume attachment."""
-		methods = [
-			self.attach_volume_on_nfs_server,
-			self.allow_servers_to_mount,
-			self.format_and_mount_fs,
-			self.allow_ssh_access_to_primary_server,
-			self.mount_shared_folder_on_primary_server,
-			self.mount_shared_folder_on_secondary_server,
-			self.move_benches_to_shared,
-			self.run_primary_server_benches_on_shared_fs,
-		]
-
-		return [
-			{
-				"step_name": method.__doc__,
-				"method_name": method.__name__,
-				"status": "Pending",
-			}
-			for method in methods
-		]
-
-	def _run_ansible_step(step: "NFSVolumeAttachmentStep", ansible: Ansible) -> None:
-		step.job_type = "Ansible Play"
-		step.job = ansible.play
-		step.save()
-		ansible.run()
-		step.status = Status.Success
-		step.save()
-
-	def _fail_ansible_step(
-		step: "NFSVolumeAttachmentStep",
-		ansible: Ansible,
-		e: Exception | None = None,
-	) -> None:
-		step.job = getattr(ansible, "play", None)
-		step.status = Status.Failure
-		step.output = str(e)
-		step.save()
-
-	def _fail_job_step(self, step: "NFSVolumeAttachmentStep", e: Exception | None = None) -> None:
-		step.status = Status.Failure
-		step.output = str(e)
-		step.save()
 
 	def allow_servers_to_mount(self, step: "NFSVolumeAttachmentStep"):
 		"""Allow primary and secondary server to share fs"""
@@ -196,12 +232,6 @@ class NFSVolumeAttachment(Document):
 			self._run_ansible_step(step, ansible)
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
-
-			log_error(
-				title="Error mounting volume on NFS server",
-				message=str(e),
-				server=self.as_dict(),
-			)
 			raise
 
 	def allow_ssh_access_to_primary_server(self, step: "NFSVolumeAttachmentStep"):
@@ -227,8 +257,6 @@ class NFSVolumeAttachment(Document):
 			self._run_ansible_step(step, ansible)
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
-
-			log_error("Exception While Giving SSH Access", server=self.as_dict())
 			raise
 
 	def mount_shared_folder_on_primary_server(self, step: "NFSVolumeAttachmentStep") -> None:
@@ -255,8 +283,6 @@ class NFSVolumeAttachment(Document):
 			self._run_ansible_step(step, ansible)
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
-
-			log_error("Exception While Mounting Shared FS", server=self.as_dict())
 			raise
 
 	def mount_shared_folder_on_secondary_server(self, step: "NFSVolumeAttachmentStep") -> None:
@@ -283,8 +309,6 @@ class NFSVolumeAttachment(Document):
 			self._run_ansible_step(step, ansible)
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
-
-			log_error("Exception While Mounting Shared FS", server=self.as_dict())
 			raise
 
 	def move_benches_to_shared(self, step: "NFSVolumeAttachmentStep") -> None:
@@ -309,26 +333,13 @@ class NFSVolumeAttachment(Document):
 			self._run_ansible_step(step, ansible)
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
-
-			log_error(
-				"Exception while moving benches to shared FS",
-				message=str(e),
-				server=self.as_dict(),
-			)
 			raise
 
 	def run_primary_server_benches_on_shared_fs(
 		self,
 		step: "NFSVolumeAttachmentStep",
 	) -> None:
-		"""
-		Run benches on shared volume
-		"""
-		# Runs the following steps:
-		# 	1. Changes benches_directory to `/shared`
-		# 	2. Updates agent nginx config file to include `/shared/*/nginx.conf`
-		# 	3. Updates benches nginx config file update the root dir
-		# 	4. Restarts benches
+		"""Run benches on shared volume"""
 		secondary_server_private_ip = frappe.db.get_value(
 			"Server",
 			self.secondary_server,
@@ -350,76 +361,68 @@ class NFSVolumeAttachment(Document):
 		step.job = agent_job.name
 		step.save()
 
-	def fail(self):
-		self.status = Status.Failure
-		self.save()
-		frappe.db.commit()
-
-	def succeed(self):
-		self.status = Status.Success
-		self.save()
-		frappe.db.commit()
-
-	def before_insert(self):
-		"""Append defined steps to the document before saving."""
-		self.volume_size = frappe.db.get_value("Virtual Machine", self.primary_server, "disk_size")
-		for step in self.get_steps():
-			self.append("nfs_volume_attachment_steps", step)
-
-	def _get_method(self, method_name: str):
-		"""Retrieve a method object by name."""
-		return getattr(self, method_name)
-
-	def _execute_steps(self):
-		"""Sequentially execute defined NFS attachment steps."""
-		self.status = Status.Running
-		self.save()
-		frappe.db.commit()
-
-		for step in self.nfs_volume_attachment_steps:
-			method = self._get_method(step.method_name)
-
-			try:
-				method(step)  # Each step updates its own state
-			except Exception:
-				self.fail()  # We can however fail here
-				return  # Stop on first failure
-
-			frappe.db.commit()
-
-	def execute_mount_steps(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_execute_steps", timeout=18000, at_front=True, queue="long"
+	def wait_for_job_completion(self, step: "NFSVolumeAttachmentStep"):
+		job = frappe.db.get_value(
+			"NFS Volume Attachment Step",
+			{
+				"parent": self.name,
+				"step_name": "Run benches on shared volume",
+			},
+			"job",
 		)
-
-	def after_insert(self):
-		self.execute_mount_steps()
-
-	@classmethod
-	def process_run_shared_benches_job(cls, job: "AgentJob") -> None:
-		"""Since this is the last job it can decide the status of the NFS volume attachment"""
-		try:
-			nfs_volume_attachment: NFSVolumeAttachment = frappe.get_doc(
-				"NFS Volume Attachment", {"primary_server": job.reference_name, "status": "Running"}
-			)
-		except frappe.DoesNotExistError:
-			return
+		job_status = frappe.db.get_value("Agent Job", job, "status")
 
 		status_map = {
 			"Delivery Failure": Status.Failure,
 			"Undelivered": Status.Pending,
 		}
-		job_status = status_map.get(job.status, job.status)
+		job_status = status_map.get(job_status, job_status)
 
-		last_step = nfs_volume_attachment.nfs_volume_attachment_steps[-1]
-		last_step.status = job_status
-		last_step.save()
+		if job_status not in (Status.Success, Status.Failure):
+			step.attempt += 1
+			step.save()
+			time.sleep(5)
+			frappe.db.commit()  # avoid long-running transactions
+			self.wait_for_job_completion(step)
+			return
 
-		if job.status == Status.Success:
-			nfs_volume_attachment.succeed()
+		step.status = job_status
+		step.save()
 
-		elif job.status == Status.Failure:
-			nfs_volume_attachment.fail()
+		if step.status == Status.Failure:
+			raise
+
+	def before_insert(self):
+		"""Append defined steps to the document before saving."""
+		self.volume_size = frappe.db.get_value("Virtual Machine", self.primary_server, "disk_size")
+		for step in self.get_steps(
+			[
+				self.attach_volume_on_nfs_server,
+				self.allow_servers_to_mount,
+				self.format_and_mount_fs,
+				self.allow_ssh_access_to_primary_server,
+				self.mount_shared_folder_on_primary_server,
+				self.mount_shared_folder_on_secondary_server,
+				self.move_benches_to_shared,
+				self.run_primary_server_benches_on_shared_fs,
+				self.wait_for_job_completion,
+			]
+		):
+			self.append("nfs_volume_attachment_steps", step)
+
+	def execute_mount_steps(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_execute_steps",
+			steps=self.nfs_volume_attachment_steps,
+			timeout=18000,
+			at_front=True,
+			queue="long",
+		)
+
+	def after_insert(self):
+		self.execute_mount_steps()
 
 
 ### Umount (No support for this currently)

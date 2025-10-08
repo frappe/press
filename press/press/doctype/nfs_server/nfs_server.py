@@ -8,6 +8,7 @@ import frappe
 
 from press.agent import Agent
 from press.press.doctype.nfs_volume_attachment.nfs_volume_attachment import NFSVolumeAttachment
+from press.press.doctype.nfs_volume_detachment.nfs_volume_detachment import NFSVolumeDetachment
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
@@ -109,6 +110,19 @@ class NFSServer(BaseServer):
 			}
 		)
 		return nfs_volume_attachment.insert()
+
+	@frappe.whitelist()
+	def remove_mount_enabled_server(self, server: str) -> NFSVolumeDetachment:
+		secondary_server = frappe.get_value("Server", server, "secondary_server")
+		nfs_volume_detachment: NFSVolumeDetachment = frappe.get_doc(
+			{
+				"doctype": "NFS Volume Detachment",
+				"nfs_server": self.name,
+				"primary_server": server,
+				"secondary_server": secondary_server,
+			}
+		)
+		return nfs_volume_detachment.insert()
 
 
 class SwitchServers:

@@ -213,9 +213,13 @@
   {
    "link_doctype": "NFS Volume Attachment",
    "link_fieldname": "nfs_server"
+  },
+  {
+   "link_doctype": "NFS Volume Detachment",
+   "link_fieldname": "nfs_server"
   }
  ],
- "modified": "2025-10-07 13:53:59.585967",
+ "modified": "2025-10-08 15:35:16.146492",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "NFS Server",
