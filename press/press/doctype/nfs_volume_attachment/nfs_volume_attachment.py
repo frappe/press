@@ -82,6 +82,7 @@ class NFSVolumeAttachment(Document):
 			self.mount_shared_folder_on_primary_server,
 			self.mount_shared_folder_on_secondary_server,
 			self.move_benches_to_shared,
+			self.run_primary_server_benches_on_shared_fs,
 		]
 
 		return [
