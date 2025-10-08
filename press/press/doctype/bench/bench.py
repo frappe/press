@@ -31,7 +31,6 @@ from press.utils import (
 	SupervisorProcess,
 	flatten,
 	get_datetime,
-	is_in_test_environment,
 	log_error,
 	parse_supervisor_status,
 )
@@ -44,6 +43,8 @@ if TYPE_CHECKING:
 
 TRANSITORY_STATES = ["Pending", "Installing"]
 FINAL_STATES = ["Active", "Broken", "Archived"]
+
+EMPTY_BENCH_COURTESY_DAYS = 3
 
 MAX_GUNICORN_WORKERS = 36
 MIN_GUNICORN_WORKERS = 2
@@ -191,7 +192,7 @@ class Bench(Document):
 
 	@staticmethod
 	def with_sites(name: str):
-		bench = frappe.get_doc("Bench", name)
+		bench = Bench("Bench", name)
 		sites = frappe.get_all("Site", filters={"bench": name}, pluck="name")
 		bench.sites = [frappe.get_doc("Site", s) for s in sites]
 
@@ -881,7 +882,7 @@ class Bench(Document):
 
 	@staticmethod
 	def process_update_inplace(job: "AgentJob"):
-		bench: "Bench" = frappe.get_doc("Bench", job.bench)
+		bench: "Bench" = Bench("Bench", job.bench)
 		bench._process_update_inplace(job)
 		bench.save()
 
@@ -941,7 +942,7 @@ class Bench(Document):
 
 	@staticmethod
 	def process_recover_update_inplace(job: "AgentJob"):
-		bench: "Bench" = frappe.get_doc("Bench", job.bench)
+		bench: "Bench" = Bench("Bench", job.bench)
 		bench._process_recover_update_inplace(job)
 		bench.save()
 
@@ -1010,31 +1011,36 @@ class Bench(Document):
 		if frappe.db.exists(
 			"Agent Job", {"bench": self.name, "status": ("in", ["Running", "Pending", "Undelivered"])}
 		):
-			frappe.throw("Cannot archive bench because of on-going jobs.", ArchiveBenchError)
+			frappe.throw("Cannot archive bench because of ongoing jobs.", ArchiveBenchError)
 
-	def check_active_site_updates(self):
+	def check_ongoing_site_updates(self):
 		frappe.db.commit()
-		if frappe.get_all(
-			"Site Update",
-			{
-				"status": ("in", ["Pending", "Running", "Failure", "Recovering", "Scheduled"]),
-			},
-			or_filters={
-				"source_bench": self.name,
-				"destination_bench": self.name,
-			},
-			limit=1,
-			ignore_ifnull=True,
-			order_by="destination_bench",
-		):
-			frappe.throw("Cannot archive due ongoing active site update.", ArchiveBenchError)
+		site_updates = frappe.qb.DocType("Site Update")
+		ongoing_site_updates = (
+			frappe.qb.from_(site_updates)
+			.select(site_updates.name)
+			.where((site_updates.source_bench == self.name) | (site_updates.destination_bench == self.name))
+			.where(
+				(site_updates.status.isin(["Pending", "Running", "Failure", "Recovering", "Scheduled"]))
+				| (
+					(site_updates.status == "Fatal")
+					& (
+						site_updates.creation
+						> frappe.utils.add_to_date(None, days=-EMPTY_BENCH_COURTESY_DAYS)
+					)
+				)
+			)
+			.limit(1)
+		).run()
+		if ongoing_site_updates:
+			frappe.throw("Cannot archive due to ongoing site update.", ArchiveBenchError)
 
 	def check_unarchived_sites(self):
 		frappe.db.commit()
 		if frappe.db.exists("Site", {"bench": self.name, "status": ("!=", "Archived")}):
 			frappe.throw("Cannot archive bench due to unarchived sites on bench.", ArchiveBenchError)
 
-	def is_reset_bench(self):
+	def check_bench_resetting(self):
 		if self.resetting_bench:
 			frappe.throw("Cannot archive bench due to ongoing in-place updates.", ArchiveBenchError)
 
@@ -1045,11 +1051,11 @@ class Bench(Document):
 			frappe.throw("Cannot archive as previous archive failed in the last 24 hours.", ArchiveBenchError)
 
 	def ready_to_archive(self):
-		self.is_reset_bench()
+		self.check_bench_resetting()
 		self.check_last_archive()
-		self.check_archive_jobs()  # already being archived
+		self.check_archive_jobs()
 		self.check_ongoing_jobs()
-		self.check_active_site_updates()
+		self.check_ongoing_site_updates()
 		self.check_unarchived_sites()
 		if get_scheduled_version_upgrades(self):
 			frappe.throw("Cannot archive bench due to ongoing scheduled version upgrades", ArchiveBenchError)
@@ -1126,7 +1132,7 @@ def archive_staging_sites():
 
 
 def process_new_bench_job_update(job):
-	bench = frappe.get_doc("Bench", job.bench)
+	bench = Bench("Bench", job.bench)
 
 	updated_status = {
 		"Pending": "Pending",
@@ -1159,7 +1165,7 @@ def process_new_bench_job_update(job):
 		return
 
 	StagingSite.create_if_needed(bench)
-	bench = frappe.get_doc("Bench", job.bench)
+	bench = Bench("Bench", job.bench)
 	frappe.enqueue(
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
 		enqueue_after_commit=True,
@@ -1186,7 +1192,7 @@ def process_new_bench_job_update(job):
 
 
 def process_archive_bench_job_update(job):
-	bench = frappe.get_doc("Bench", job.bench)
+	bench = Bench("Bench", job.bench)
 
 	updated_status = {
 		"Pending": "Pending",
@@ -1205,7 +1211,7 @@ def process_archive_bench_job_update(job):
 		frappe.db.set_value("Bench", job.bench, "status", updated_status)
 		is_ssh_proxy_setup = frappe.db.get_value("Bench", job.bench, "is_ssh_proxy_setup")
 		if updated_status == "Archived" and is_ssh_proxy_setup:
-			frappe.get_doc("Bench", job.bench).remove_ssh_user()
+			Bench("Bench", job.bench).remove_ssh_user()
 
 		if bench.team != "Administrator":
 			bench.status = updated_status  # just to ensure the status got changed in webhook payload, reload_doc is costly here
@@ -1248,11 +1254,11 @@ def get_unfinished_site_migrations(bench: dict):
 
 def try_archive(bench: str):
 	try:
-		frappe.get_doc("Bench", bench).archive()
+		Bench("Bench", bench).archive()
 		frappe.db.commit()
 		return True
 	except ArchiveBenchError as e:
-		if is_in_test_environment():
+		if frappe.flags.in_test:
 			print(f"Bench Archival Error: {e}")
 
 		frappe.db.rollback()
@@ -1303,9 +1309,11 @@ def archive_obsolete_benches(group: str | None = None, server: str | None = None
 
 def archive_obsolete_benches_for_server(benches: Iterable[dict]):
 	for bench in benches:
-		# If the bench is a private one and has been created more than 3 days ago,
+		# If the bench is a private one and has been created more than EMPTY_BENCH_COURTESY_DAYS ago,
 		# then we can attempt to archive it.
-		if not (bench.public or bench.central_bench) and bench.creation < frappe.utils.add_days(None, -3):
+		if not (bench.public or bench.central_bench) and bench.creation < frappe.utils.add_days(
+			None, -EMPTY_BENCH_COURTESY_DAYS
+		):
 			try_archive(bench.name)
 			continue
 
@@ -1385,7 +1393,7 @@ def sync_analytics():
 
 
 def sync_bench_analytics(name):
-	bench = frappe.get_doc("Bench", name)
+	bench = Bench("Bench", name)
 	# Skip syncing analytics for benches that have been archived (after the job was enqueued)
 	if bench.status != "Active":
 		return
