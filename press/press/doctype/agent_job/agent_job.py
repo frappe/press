@@ -950,6 +950,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 		from press.press.doctype.mariadb_binlog.mariadb_binlog import (
 			process_upload_binlogs_to_s3_job_update,
 		)
+		from press.press.doctype.nfs_volume_attachment.nfs_volume_attachment import NFSVolumeAttachment
 		from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
 			process_job_update as process_physical_backup_restoration_job_update,
 		)
@@ -1068,6 +1069,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_move_site_to_bench_job_update(job)
 		elif job.job_type == "Patch App":
 			AppPatch.process_patch_app(job)
+		elif job.job_type == "Run Benches on Shared FS":
+			NFSVolumeAttachment.process_run_shared_benches_job(job)
 		elif job.job_type == "Run Remote Builder":
 			DeployCandidateBuild.process_run_build(job, response_data)
 		elif job.job_type == "Create User":

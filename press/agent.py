@@ -1663,10 +1663,11 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			reference_name=reference_name,
 		)
 
-	def run_benches_on_shared_fs(
+	def change_bench_directory(
 		self,
 		secondary_server_private_ip: str,
 		is_primary: bool,
+		directory: str,
 		restart_benches: bool,
 		reference_name: str | None = None,
 		redis_connection_string_ip: str | None = None,
@@ -1674,12 +1675,13 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		registry_settings: dict | None = None,
 	) -> AgentJob:
 		return self.create_agent_job(
-			"Run Benches on Shared FS",
-			"/server/run-benches-on-shared-fs",
+			"Change Bench Directory",
+			"/server/change-bench-directory",
 			data={
 				"restart_benches": restart_benches,
 				"redis_connection_string_ip": redis_connection_string_ip,
 				"is_primary": is_primary,
+				"directory": directory,
 				"secondary_server_private_ip": secondary_server_private_ip,
 				"registry_settings": registry_settings,
 			},
