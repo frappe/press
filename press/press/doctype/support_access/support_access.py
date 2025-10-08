@@ -43,18 +43,18 @@ class SupportAccess(Document):
 		"access_allowed_till",
 	)
 
-	def get_list_query(query):
+	def get_list_query(query, filters: dict | None, **args):
+		filters = filters or {}
 		team = get_current_team()
 		Access = frappe.qb.DocType("Support Access")
-		return query.where(
-			Criterion.any(
-				[
-					Access.requested_by == frappe.session.user,
-					Access.requested_team == team,
-					Access.target_team == team,
-				]
-			)
-		).run(as_dict=True)
+		conditions = []
+		match filters.get("source"):
+			case "Received":
+				conditions.append(Access.target_team == team)
+			case "Sent":
+				conditions.append(Access.requested_by == frappe.session.user)
+				conditions.append(Access.requested_team == team)
+		return query.where(Criterion.any(conditions)).run(as_dict=True)
 
 	@property
 	def access_expired(self):

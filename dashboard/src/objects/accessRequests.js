@@ -5,6 +5,19 @@ export default {
 		route: '/access-requests',
 		title: 'Access Requests',
 		orderBy: 'creation desc',
+		filters: {
+			source: 'Received',
+		},
+		filterControls() {
+			return [
+				{
+					type: 'tab',
+					fieldname: 'source',
+					options: ['Received', 'Sent'],
+					default: 'Received',
+				},
+			];
+		},
 		columns: [
 			{
 				label: 'Requested By',
