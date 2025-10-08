@@ -73,6 +73,9 @@
   "tab_break_46",
   "notifications_section",
   "communication_infos",
+  "monitoring_section",
+  "is_monitoring_disabled",
+  "reason_for_disabling_monitoring",
   "auto_updates_section",
   "skip_auto_updates",
   "only_update_at_specified_time",
@@ -713,6 +716,25 @@
    "fieldtype": "Table",
    "label": "Communication Infos",
    "options": "Communication Info"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_monitoring_disabled",
+   "fieldtype": "Check",
+   "label": "Is Monitoring Disabled",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "monitoring_section",
+   "fieldtype": "Section Break",
+   "label": "Monitoring"
+  },
+  {
+   "fieldname": "reason_for_disabling_monitoring",
+   "fieldtype": "Data",
+   "label": "Reason for Disabling Monitoring",
+   "read_only": 1
   }
  ],
  "links": [
@@ -792,7 +814,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2025-09-26 17:32:30.628404",
+ "modified": "2025-10-07 19:14:24.341019",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

@@ -66,8 +66,23 @@
 			</Button>
 		</AlertBanner>
 
+		<AlertBanner
+			v-if="$site.doc.is_monitoring_disabled && $site.doc.status !== 'Archived'"
+			class="col-span-1 lg:col-span-2"
+			title="Site monitoring is disabled, which means we won’t be able to notify you of any downtime. Please re-enable monitoring at your earliest convenience."
+			:id="$site.name"
+			type="warning"
+		>
+			<Button
+				class="ml-auto"
+				variant="outline"
+				@click="showEnableMonitoringDialog"
+			>
+				Actions
+			</Button>
+		</AlertBanner>
 		<DismissableBanner
-			v-if="$site.doc.eol_versions.includes($site.doc.version)"
+			v-else-if="$site.doc.eol_versions.includes($site.doc.version)"
 			class="col-span-1 lg:col-span-2"
 			title="Your site is on an End of Life version. Upgrade to the latest version to get support, latest features and security updates."
 			:id="`${$site.name}-eol`"
@@ -350,6 +365,12 @@ export default {
 				() => import('../components/ManageSitePlansDialog.vue'),
 			);
 			renderDialog(h(SitePlansDialog, { site: this.site }));
+		},
+		showEnableMonitoringDialog() {
+			let SiteEnableMonitoringDialog = defineAsyncComponent(
+				() => import('./site/SiteEnableMonitoringDialog.vue'),
+			);
+			renderDialog(h(SiteEnableMonitoringDialog, { site: this.site }));
 		},
 		formatBytes(v) {
 			return this.$format.bytes(v, 2, 2);
