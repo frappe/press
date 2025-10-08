@@ -10,7 +10,7 @@ import frappe.utils
 from frappe.model.document import Document
 from frappe.utils.data import get_url
 
-from press.utils import log_error, validate_subdomain
+from press.utils import log_error
 from press.utils.unique_name_generator import generate as generate_random_name
 
 
@@ -96,7 +96,6 @@ class ProductTrial(Document):
 	):
 		from press.press.doctype.site.site import Site, get_plan_config
 
-		validate_subdomain(subdomain)
 		if Site.exists(subdomain, domain):
 			frappe.throw("Site with this subdomain already exists")
 
@@ -526,34 +525,16 @@ def sync_product_site_users():
 	product_benches = frappe.get_all(
 		"Bench", {"group": ("in", product_groups), "status": "Active"}, pluck="name"
 	)
-	frappe.enqueue(
-		"press.saas.doctype.product_trial.product_trial._sync_product_site_users",
-		queue="short",
-		product_benches=product_benches,
-		job_id="sync_product_site_users",
-		deduplicate=True,
-		enqueue_after_commit=True,
-	)
-	frappe.db.commit()
-
-
-def _sync_product_site_users(product_benches):
 	for bench_name in product_benches:
-		bench = frappe.get_doc("Bench", bench_name)
-		# Skip syncing analytics for benches that have been archived (after the job was enqueued)
-		if bench.status != "Active":
-			return
-		try:
-			bench.sync_product_site_users()
-			frappe.db.commit()
-		except Exception:
-			log_error(
-				"Bench Analytics Sync Error",
-				bench=bench.name,
-				reference_doctype="Bench",
-				reference_name=bench.name,
-			)
-			frappe.db.rollback()
+		frappe.enqueue_doc(
+			"Bench",
+			bench_name,
+			"sync_product_site_users",
+			queue="sync",
+			job_id=f"sync_product_site_users||{bench_name}",
+			deduplicate=True,
+			enqueue_after_commit=True,
+		)
 
 
 def send_suspend_mail(site: str, product: str) -> None:
