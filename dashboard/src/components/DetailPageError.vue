@@ -1,17 +1,15 @@
 <template>
-	<template v-if="error">
-		<div class="mx-auto space-y-4 text-center w-fit">
-			<p class="text-sm font-medium">
-				You do not have permission to view this resource
-			</p>
-			<Button
-				v-if="canRequestAccess"
-				variant="solid"
-				label="Request Access"
-				@click="() => request.submit()"
-			/>
-		</div>
-	</template>
+	<div v-if="error" class="mx-auto space-y-4 text-center w-fit">
+		<p class="text-sm font-medium">
+			You do not have permission to view this resource
+		</p>
+		<Button
+			v-if="canRequestAccess"
+			variant="solid"
+			label="Request Access"
+			@click="() => request.submit()"
+		/>
+	</div>
 </template>
 
 <script setup lang="ts">
