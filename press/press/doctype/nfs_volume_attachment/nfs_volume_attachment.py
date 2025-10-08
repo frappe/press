@@ -41,8 +41,8 @@ class StepHandler:
 		step.job_type = "Ansible Play"
 		step.job = ansible.play
 		step.save()
-		ansible.run()
-		step.status = Status.Success
+		ansible_play = ansible.run()
+		step.status = ansible_play.status
 		step.save()
 
 	def _fail_ansible_step(
@@ -214,6 +214,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 
 		step.status = Status.Running
 		step.save()
+		# THIS NEEDS TO BE EITHER A AGENT JOB OR AN ANSIBLE PLAY
 		try:
 			# Allow primary server to mount
 			nfs_server.agent.post(

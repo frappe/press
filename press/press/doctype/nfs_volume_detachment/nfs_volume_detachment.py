@@ -197,7 +197,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 		nfs_server: NFSServer = frappe.get_cached_doc("NFS Server", self.nfs_server)
 		primary_server_private_ip = frappe.db.get_value("Server", self.primary_server, "private_ip")
 		secondary_server_private_ip = frappe.db.get_value("Server", self.primary_server, "private_ip")
-
+		# THIS NEEDS TO BE EITHER A AGENT JOB OR AN ANSIBLE PLAY
 		try:
 			# Remove primary server from acl
 			nfs_server.agent.delete(
