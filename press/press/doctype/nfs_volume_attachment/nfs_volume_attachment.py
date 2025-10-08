@@ -345,6 +345,7 @@ class NFSVolumeAttachment(Document):
 			reference_name=self.primary_server,
 		)
 
+		step.status = Status.Pending
 		step.job_type = "Agent Job"
 		step.job = agent_job.name
 		step.save()
