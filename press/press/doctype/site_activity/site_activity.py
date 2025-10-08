@@ -54,6 +54,9 @@ class SiteActivity(Document):
 	dashboard_fields = ("action", "reason", "site", "job")
 
 	def after_insert(self):
+		if self.team == "Administrator":
+			return
+
 		if self.action == "Login as Administrator" and self.reason:
 			recipients = get_communication_info("Email", "Site Activity", "Site", self.site)
 			if recipients:
