@@ -1,22 +1,23 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "hash",
  "creation": "2025-09-25 15:21:55.641624",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "access_expired",
-  "requested_by",
-  "requested_for",
-  "allowed_for",
-  "reason",
-  "column_break_vrkb",
   "status",
+  "requested_by",
+  "requested_team",
+  "allowed_for",
+  "access_allowed_till",
+  "column_break_vrkb",
   "all_access",
   "site_access",
   "dashboard_access",
   "bench_ssh_access",
-  "access_allowed_till",
+  "reason",
   "section_break_lwpm",
   "resources"
  ],
@@ -34,7 +35,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Requested By",
-   "options": "Team"
+   "options": "User",
+   "read_only": 1
   },
   {
    "description": "in hours",
@@ -42,7 +44,8 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Allowed for",
-   "options": "3\n6\n12\n24"
+   "options": "3\n6\n12\n24",
+   "set_only_once": 1
   },
   {
    "fieldname": "reason",
@@ -80,13 +83,6 @@
    "label": "All Access"
   },
   {
-   "fieldname": "requested_for",
-   "fieldtype": "Link",
-   "in_standard_filter": 1,
-   "label": "Requested for",
-   "options": "Team"
-  },
-  {
    "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
@@ -110,15 +106,24 @@
    "fieldname": "site_access",
    "fieldtype": "Check",
    "label": "Site Access"
+  },
+  {
+   "fieldname": "requested_team",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Requested Team",
+   "options": "Team",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-08 14:32:38.297924",
+ "modified": "2025-10-08 16:04:59.523575",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Support Access",
+ "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [
   {

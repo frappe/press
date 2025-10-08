@@ -3,7 +3,8 @@
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import cint
+
+from press.utils import get_current_team
 
 
 class SupportAccess(Document):
@@ -25,30 +26,24 @@ class SupportAccess(Document):
 		dashboard_access: DF.Check
 		reason: DF.SmallText | None
 		requested_by: DF.Link | None
-		requested_for: DF.Link | None
+		requested_team: DF.Link | None
 		resources: DF.Table[SupportAccessResource]
 		site_access: DF.Check
 		status: DF.Literal["Pending", "Accepted", "Rejected"]
 	# end: auto-generated types
 
-	def before_insert(self):
-		if self.all_access:
-			self.bench_ssh_access = 1
-			self.dashboard_access = 1
+	def before_validate(self):
+		self.requested_by = self.requested_by or frappe.session.user
+		self.requested_team = self.requested_team or get_current_team()
 
-	@frappe.whitelist()
-	def accept_access(self):
-		self.status = "Accepted"
-		self.access_allowed_till = frappe.utils.add_to_date(
-			frappe.utils.getdate(), hours=cint(self.allowed_for)
-		)
-		self.save()
+	def validate(self):
+		self.validate_expiry()
 
-	@frappe.whitelist()
-	def reject_access(self):
-		self.status = "Rejected"
-		self.access_expired = 1
-		self.save()
+	def validate_expiry(self):
+		if self.access_allowed_till and self.access_allowed_till < frappe.utils.now_datetime():
+			frappe.throw("Access expiry must be in the future")
+		if self.status != "Accepted" and self.access_allowed_till:
+			frappe.throw("Access expiry can only be set if access is accepted")
 
 
 def expire_support_access():

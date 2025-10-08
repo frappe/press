@@ -320,7 +320,7 @@ def has_support_access(doctype: str, docname: str) -> bool:
 		"Support Access",
 		{
 			"access_expired": 0,
-			"requested_by": get_current_team(),
+			"requested_team": get_current_team(),
 			"status": "Accepted",
 		},
 		pluck="name",
