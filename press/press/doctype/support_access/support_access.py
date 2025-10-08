@@ -65,7 +65,7 @@ class SupportAccess(Document):
 		if self.access_expired:
 			frappe.throw("Access expiry must be in the future")
 		if self.status != "Accepted" and self.access_allowed_till:
-			frappe.throw("Access expiry can only be set if access is accepted")
+			frappe.throw("Access expiry can only be set if request is accepted")
 
 	def validate_target_team(self):
 		teams = set()
