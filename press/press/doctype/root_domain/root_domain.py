@@ -10,6 +10,7 @@ import boto3
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
+from frappe.utils.caching import redis_cache
 
 from press.utils import log_error
 
@@ -208,3 +209,8 @@ def cleanup_cname_records():
 			continue
 
 		domain.remove_unused_cname_records()
+
+
+@redis_cache(ttl=3600)
+def get_domains():
+	return frappe.get_all("Root Domain", filters={"enabled": ["=", "1"]}, pluck="name")
