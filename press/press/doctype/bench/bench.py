@@ -539,7 +539,7 @@ class Bench(Document):
 		if not data:
 			return
 
-		items = len(data.items())
+		items = list(data.items())
 
 		# Split into chunk, so that bg job ends faster
 		chunk_size = 20
