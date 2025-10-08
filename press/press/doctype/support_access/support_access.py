@@ -4,6 +4,7 @@
 import frappe
 import frappe.utils
 from frappe.model.document import Document
+from frappe.query_builder import Criterion
 
 from press.utils import get_current_team
 
@@ -41,6 +42,19 @@ class SupportAccess(Document):
 		"allowed_for",
 		"access_allowed_till",
 	)
+
+	def get_list_query(query):
+		team = get_current_team()
+		Access = frappe.qb.DocType("Support Access")
+		return query.where(
+			Criterion.any(
+				[
+					Access.requested_by == frappe.session.user,
+					Access.requested_team == team,
+					Access.target_team == team,
+				]
+			)
+		).run(as_dict=True)
 
 	@property
 	def access_expired(self):
