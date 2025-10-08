@@ -42,19 +42,19 @@
 				/>
 			</template>
 		</TabsWithRouter>
-		<div
-			v-else-if="$resources.document.get.error"
-			class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
-		>
-			<lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
-			<ErrorMessage :message="$resources.document.get.error" />
-		</div>
+		<DetailPageError
+			class="mt-60"
+			:doctype="object.doctype"
+			:docname="name"
+			:error="$resources.document.get.error"
+		/>
 	</div>
 </template>
 
 <script>
 import Header from '../components/Header.vue';
 import ActionButton from '../components/ActionButton.vue';
+import DetailPageError from '../components/DetailPageError.vue';
 import { Breadcrumbs } from 'frappe-ui';
 import { getObject } from '../objects';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
