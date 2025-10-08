@@ -52,13 +52,16 @@ const props = defineProps({
 		type: Number,
 		default: 0,
 	},
+	paypalEnabled: {
+		type: Boolean,
+		default: false,
+	},
 });
 
 const emit = defineEmits(['success']);
 const team = inject('team');
 
-const paypalEnabled = team.doc.currency == 'USD' && team.doc.paypal_enabled;
-
+const paypalEnabled = team.doc.currency === 'USD' && props.paypalEnabled;
 const isPaymentComplete = ref(false);
 const isVerifyingPayment = ref(false);
 
