@@ -65,6 +65,29 @@ frappe.ui.form.on('NFS Server', {
 					},
 				);
 			});
+
+			frm.add_custom_button('Remove Mount Enabled Server', () => {
+				frappe.prompt(
+					[
+						{
+							fieldtype: 'Link',
+							fieldname: 'server',
+							label: 'Server',
+							options: 'Server',
+							reqd: 1,
+						},
+					],
+					({ server }) => {
+						frm
+							.call('remove_mount_enabled_server', {
+								server: server,
+							})
+							.then((r) => {
+								frm.refresh();
+							});
+					},
+				);
+			});
 		}
 	},
 });
