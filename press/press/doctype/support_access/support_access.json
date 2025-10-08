@@ -10,6 +10,7 @@
   "status",
   "requested_by",
   "requested_team",
+  "target_team",
   "allowed_for",
   "access_allowed_till",
   "column_break_vrkb",
@@ -115,12 +116,20 @@
    "label": "Requested Team",
    "options": "Team",
    "read_only": 1
+  },
+  {
+   "fieldname": "target_team",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Target Team",
+   "options": "Team",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-08 16:42:46.062549",
+ "modified": "2025-10-08 17:25:46.808347",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Support Access",

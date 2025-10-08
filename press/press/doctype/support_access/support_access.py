@@ -30,6 +30,7 @@ class SupportAccess(Document):
 		resources: DF.Table[SupportAccessResource]
 		site_access: DF.Check
 		status: DF.Literal["Pending", "Accepted", "Rejected"]
+		target_team: DF.Link | None
 	# end: auto-generated types
 
 	@property
@@ -53,6 +54,7 @@ class SupportAccess(Document):
 	def validate(self):
 		self.validate_status_change()
 		self.validate_expiry()
+		self.validate_target_team()
 
 	def validate_status_change(self):
 		doc_before = self.get_doc_before_save()
@@ -64,3 +66,12 @@ class SupportAccess(Document):
 			frappe.throw("Access expiry must be in the future")
 		if self.status != "Accepted" and self.access_allowed_till:
 			frappe.throw("Access expiry can only be set if access is accepted")
+
+	def validate_target_team(self):
+		teams = set()
+		for resource in self.resources:
+			team = frappe.get_value(resource.document_type, resource.document_name, "team")
+			teams.add(team)
+		if len(teams) != 1:
+			frappe.throw("Resources must belong to the same team")
+		self.target_team = teams.pop()
