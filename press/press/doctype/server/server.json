@@ -30,6 +30,7 @@
   "halt_agent_jobs",
   "stop_deployments",
   "is_for_recovery",
+  "is_monitoring_disabled",
   "billing_section",
   "team",
   "plan",
@@ -688,6 +689,14 @@
  ],
  "links": [],
  "modified": "2025-10-06 10:46:55.670252",
+   "fieldname": "is_monitoring_disabled",
+   "fieldtype": "Check",
+   "label": "Is Monitoring Disabled",
+   "search_index": 1
+  }
+ ],
+ "links": [],
+ "modified": "2025-10-06 17:08:11.706019",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

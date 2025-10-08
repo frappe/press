@@ -35,6 +35,7 @@ from press.utils import (
 	log_error,
 	parse_supervisor_status,
 )
+from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.webhook import create_webhook_event
 
 if TYPE_CHECKING:
@@ -540,8 +541,23 @@ class Bench(Document):
 		data = agent.get_sites_analytics(self)
 		if not data:
 			return
+		items = data.items()
+		# Split into chunk, so that bg job ends faster
+		chunk_size = 20
+		for i in range(0, len(items), chunk_size):
+			frappe.enqueue_doc(
+				"Bench",
+				self.name,
+				"_process_sync_product_site_user_data",
+				enqueue_after_commit=True,
+				data=dict(items=items[i : i + chunk_size]),
+			)
+
+	def _process_sync_product_site_user_data(self, data: dict):
 		for site, analytics in data.items():
 			if not frappe.db.exists("Site", site):
+				return
+			if has_job_timeout_exceeded():
 				return
 			try:
 				frappe.get_doc("Site", site).sync_users_to_product_site(analytics)

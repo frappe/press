@@ -85,6 +85,7 @@ class BaseServer(Document, TagHelpers):
 		"auto_add_storage_min",
 		"auto_add_storage_max",
 		"auto_increase_storage",
+		"is_monitoring_disabled",
 	)
 
 	@staticmethod
@@ -1994,6 +1995,7 @@ class Server(BaseServer):
 		ipv6: DF.Data | None
 		is_for_recovery: DF.Check
 		is_managed_database: DF.Check
+		is_monitoring_disabled: DF.Check
 		is_primary: DF.Check
 		is_pyspy_setup: DF.Check
 		is_replication_setup: DF.Check
