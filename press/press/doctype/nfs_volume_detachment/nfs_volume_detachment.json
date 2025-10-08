@@ -22,6 +22,7 @@
   {
    "fieldname": "nfs_server",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "NFS Server",
    "options": "NFS Server"
   },
@@ -34,12 +35,14 @@
   {
    "fieldname": "secondary_server",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Secondary Server",
    "options": "Server"
   },
   {
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Status",
    "options": "Pending\nRunning\nSuccess\nFailure"
   },
@@ -57,7 +60,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-08 13:30:05.454432",
+ "modified": "2025-10-08 16:35:51.975932",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "NFS Volume Detachment",
@@ -79,5 +82,6 @@
  "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "primary_server"
 }

@@ -2,7 +2,6 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
-import time
 import typing
 from enum import Enum
 
@@ -11,7 +10,6 @@ from frappe.model.document import Document
 
 from press.agent import Agent
 from press.runner import Ansible
-from press.utils import log_error
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.nfs_server.nfs_server import NFSServer
@@ -89,22 +87,34 @@ class StepHandler:
 		"""Retrieve a method object by name."""
 		return getattr(self, method_name)
 
-	def _execute_steps(
-		self,
-		steps: list["NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep"],
-	):
+	def next_step(
+		self, steps: list["NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep"]
+	) -> "NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep" | None:
+		for step in steps:
+			if step.status not in (Status.Success, Status.Failure):
+				return step
+
+		return None
+
+	def _execute_steps(self, steps: list["NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep"]):
 		"""Sequentially execute defined NFS attachment steps."""
 		self.status = Status.Running
 		self.save()
 		frappe.db.commit()
 
-		for step in steps:
+		while True:
+			step = self.next_step(steps)
+			if not step:
+				break  # We are done here
+
+			step = step.reload()
 			method = self._get_method(step.method_name)
 
 			try:
 				method(step)  # Each step updates its own state
 			except Exception:
-				self.fail()  # We can however fail here
+				self.fail()
+				frappe.db.commit()
 				return  # Stop on first failure
 
 			frappe.db.commit()
@@ -356,12 +366,17 @@ class NFSVolumeAttachment(Document, StepHandler):
 			reference_name=self.primary_server,
 		)
 
-		step.status = Status.Pending
+		step.status = Status.Success
 		step.job_type = "Agent Job"
 		step.job = agent_job.name
 		step.save()
 
 	def wait_for_job_completion(self, step: "NFSVolumeAttachmentStep"):
+		"""Wait for agent job completion"""
+		step.status = Status.Running
+		step.is_waiting = True
+		step.save()
+
 		job = frappe.db.get_value(
 			"NFS Volume Attachment Step",
 			{
@@ -377,14 +392,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 			"Undelivered": Status.Pending,
 		}
 		job_status = status_map.get(job_status, job_status)
-
-		if job_status not in (Status.Success, Status.Failure):
-			step.attempt += 1
-			step.save()
-			time.sleep(5)
-			frappe.db.commit()  # avoid long-running transactions
-			self.wait_for_job_completion(step)
-			return
+		step.attempt = 1 if not step.attempt else step.attempt + 1
 
 		step.status = job_status
 		step.save()
@@ -423,65 +431,3 @@ class NFSVolumeAttachment(Document, StepHandler):
 
 	def after_insert(self):
 		self.execute_mount_steps()
-
-
-### Umount (No support for this currently)
-def remove_server_from_nfs_acl(self):
-	nfs_server: NFSServer = frappe.get_cached_doc("NFS Server", self.parent)
-
-	if self.share_file_system and self.is_file_system_being_shared:
-		frappe.throw("File system is being used by another server please unmount that first!")
-
-	private_ip = frappe.db.get_value("Server", self.server, "private_ip")
-	nfs_server.agent.delete(
-		"/nfs/exports",
-		data={
-			"private_ip": private_ip,
-			"file_system": self.use_file_system_of_server if not self.share_file_system else self.server,
-		},
-	)
-
-
-def umount_and_delete_shared_directory_on_client(client_server: str, nfs_server: str, shared_directory: str):
-	client_server: Server = frappe.get_cached_doc("Server", client_server)
-	nfs_server_private_ip = frappe.db.get_value("NFS Server", nfs_server, "private_ip")
-	try:
-		ansible = Ansible(
-			playbook="umount_and_cleanup_shared.yml",
-			server=client_server,
-			user=client_server._ssh_user(),
-			port=client_server._ssh_port(),
-			variables={
-				"nfs_server_private_ip": nfs_server_private_ip,
-				"shared_directory": f"/home/frappe/nfs/{shared_directory}",
-			},
-		)
-		ansible.run()
-	except Exception:
-		log_error("Exception While Cleaning Up Shared Directory")
-
-
-def detach_umount_and_delete_volume_on_nfs(nfs_server: str, volume_id: str, shared_directory: str):
-	virtual_machine: VirtualMachine = frappe.get_cached_doc("Virtual Machine", nfs_server)
-
-	try:
-		virtual_machine.detach(volume_id)
-		virtual_machine.delete_volume(volume_id)
-	except Exception:
-		pass  # Generally throws unable to detach volume, but the volume is detached
-
-	nfs_server: NFSServer = frappe.get_cached_doc("NFS Server", nfs_server)
-
-	try:
-		ansible = Ansible(
-			playbook="umount_volume_nfs_server.yml",
-			server=nfs_server,
-			user=nfs_server._ssh_user(),
-			port=nfs_server._ssh_port(),
-			variables={
-				"shared_directory": f"/home/frappe/nfs/{shared_directory}",
-			},
-		)
-		ansible.run()
-	except Exception:
-		log_error("Exception While Cleaning Up NFS Server")
