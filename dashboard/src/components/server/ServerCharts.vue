@@ -163,18 +163,7 @@
 					:key="requestCountBySiteData"
 					:data="requestCountBySiteData"
 					unit="requests"
-					:chartTheme="[
-						this.$theme.colors.green[500],
-						this.$theme.colors.red[500],
-						this.$theme.colors.yellow[500],
-						this.$theme.colors.pink[500],
-						this.$theme.colors.purple[500],
-						this.$theme.colors.blue[500],
-						this.$theme.colors.teal[500],
-						this.$theme.colors.cyan[500],
-						this.$theme.colors.gray[500],
-						this.$theme.colors.orange[500],
-					]"
+					:chartTheme="chartColors"
 					:loading="$resources.requestCountBySite.loading"
 					:error="$resources.requestCountBySite.error"
 					:showCard="false"
@@ -195,6 +184,42 @@
 					:chartTheme="chartColors"
 					:loading="$resources.requestDurationBySite.loading"
 					:error="$resources.requestDurationBySite.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				v-if="isServerType('Application Server')"
+				class="sm:col-span-2"
+				title="Background job frequency by site"
+			>
+				<BarChart
+					title="Background job frequency by site"
+					:key="backgroundJobCountBySiteData"
+					:data="backgroundJobCountBySiteData"
+					unit="jobs"
+					:chartTheme="chartColors"
+					:loading="$resources.backgroundJobCountBySite.loading"
+					:error="$resources.backgroundJobCountBySite.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				v-if="isServerType('Application Server')"
+				class="sm:col-span-2"
+				title="Slowest background jobs by site"
+			>
+				<BarChart
+					title="Slowest background jobs by site"
+					:key="backgroundJobDurationBySiteData"
+					:data="backgroundJobDurationBySiteData"
+					unit="seconds"
+					:chartTheme="chartColors"
+					:loading="$resources.backgroundJobDurationBySite.loading"
+					:error="$resources.backgroundJobDurationBySite.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -553,6 +578,32 @@ export default {
 					this.showAdvancedAnalytics && this.isServerType('Application Server'),
 			};
 		},
+		backgroundJobCountBySite() {
+			return {
+				url: 'press.api.server.get_background_job_by_site',
+				params: {
+					name: this.chosenServer,
+					query: 'count',
+					timezone: this.localTimezone,
+					duration: this.duration,
+				},
+				auto:
+					this.showAdvancedAnalytics && this.isServerType('Application Server'),
+			};
+		},
+		backgroundJobDurationBySite() {
+			return {
+				url: 'press.api.server.get_background_job_by_site',
+				params: {
+					name: this.chosenServer,
+					query: 'duration',
+					timezone: this.localTimezone,
+					duration: this.duration,
+				},
+				auto:
+					this.showAdvancedAnalytics && this.isServerType('Application Server'),
+			};
+		},
 		slowLogsCount() {
 			return {
 				url: 'press.api.server.get_slow_logs_by_site',
@@ -773,6 +824,18 @@ export default {
 			if (!requests) return;
 
 			return requests;
+		},
+		backgroundJobCountBySiteData() {
+			const jobs = this.$resources.backgroundJobCountBySite.data;
+			if (!jobs) return;
+
+			return jobs;
+		},
+		backgroundJobDurationBySiteData() {
+			const jobs = this.$resources.backgroundJobDurationBySite.data;
+			if (!jobs) return;
+
+			return jobs;
 		},
 		slowLogsDurationData() {
 			const slowLogs = this.$resources.slowLogsDuration.data;

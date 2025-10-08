@@ -1453,7 +1453,7 @@ class BaseServer(Document, TagHelpers):
 		)
 
 		if not benches:
-			frappe.throw(f"No active benches found on <a href='/app/server/{self.name}'> Server")
+			frappe.throw(f"No active benches found on <a href='/app/server/{self.name}'>Server</a>")
 
 		for bench in benches:
 			raw_bench_version = self._get_dependency_version(bench["candidate"], "BENCH_VERSION")
@@ -1870,13 +1870,14 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		except Exception:
 			log_error("Sever File Copy Exception", server=self.as_dict())
 
-	def install_cadvisor_arm(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_install_cadvisor_arm")
+	@frappe.whitelist()
+	def install_cadvisor(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_install_cadvisor")
 
-	def _install_cadvisor_arm(self):
+	def _install_cadvisor(self):
 		try:
 			ansible = Ansible(
-				playbook="install_cadvisor_arm.yml",
+				playbook="install_cadvisor.yml",
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
@@ -1908,8 +1909,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			if self.has_data_volume:
 				self.setup_archived_folder()
 
-			if self.platform == "arm64":
-				self.install_cadvisor_arm()
+			self.install_cadvisor()
 
 		if self.doctype == "Database Server":
 			self.adjust_memory_config()
