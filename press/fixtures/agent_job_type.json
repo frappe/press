@@ -1832,9 +1832,9 @@
     "doctype": "Agent Job Type",
     "max_retry_count": 3,
     "modified": "2025-10-03 18:02:49.847351",
-    "name": "Run Benches on Shared FS",
+    "name": "Change Bench Directory",
     "request_method": "POST",
-    "request_path": "server/run-benches-on-shared-fs",
+    "request_path": "server/change-bench-directory",
     "steps": [
      {
       "step_name": "Change Bench Directory"

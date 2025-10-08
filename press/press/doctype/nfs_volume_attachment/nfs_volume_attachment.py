@@ -7,10 +7,12 @@ from enum import Enum
 import frappe
 from frappe.model.document import Document
 
+from press.agent import Agent
 from press.runner import Ansible
 from press.utils import log_error
 
 if typing.TYPE_CHECKING:
+	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.nfs_server.nfs_server import NFSServer
 	from press.press.doctype.nfs_volume_attachment_step.nfs_volume_attachment_step import (
 		NFSVolumeAttachmentStep,
@@ -92,7 +94,8 @@ class NFSVolumeAttachment(Document):
 		]
 
 	def _run_ansible_step(step: "NFSVolumeAttachmentStep", ansible: Ansible) -> None:
-		step.play = ansible.play
+		step.job_type = "Ansible Play"
+		step.job = ansible.play
 		step.save()
 		ansible.run()
 		step.status = Status.Success
@@ -103,7 +106,7 @@ class NFSVolumeAttachment(Document):
 		ansible: Ansible,
 		e: Exception | None = None,
 	) -> None:
-		step.play = getattr(ansible, "play", None)
+		step.job = getattr(ansible, "play", None)
 		step.status = Status.Failure
 		step.output = str(e)
 		step.save()
@@ -313,6 +316,38 @@ class NFSVolumeAttachment(Document):
 			)
 			raise
 
+	def run_primary_server_benches_on_shared_fs(
+		self,
+		step: "NFSVolumeAttachmentStep",
+	) -> None:
+		"""
+		Run benches on shared volume
+		"""
+		# Runs the following steps:
+		# 	1. Changes benches_directory to `/shared`
+		# 	2. Updates agent nginx config file to include `/shared/*/nginx.conf`
+		# 	3. Updates benches nginx config file update the root dir
+		# 	4. Restarts benches
+		secondary_server_private_ip = frappe.db.get_value(
+			"Server",
+			self.secondary_server,
+			"private_ip",
+		)
+
+		agent_job = Agent(self.primary_server).change_bench_directory(
+			redis_connection_string_ip=None,
+			directory="/shared",
+			secondary_server_private_ip=secondary_server_private_ip,
+			is_primary=True,
+			restart_benches=True,
+			reference_doctype="Server",
+			reference_name=self.primary_server,
+		)
+
+		step.job_type = "Agent Job"
+		step.job = agent_job.name
+		step.save()
+
 	def fail(self):
 		self.status = Status.Failure
 		self.save()
@@ -345,21 +380,44 @@ class NFSVolumeAttachment(Document):
 			try:
 				method(step)  # Each step updates its own state
 			except Exception:
-				self.fail()
-				frappe.db.commit()
+				self.fail()  # We can however fail here
 				return  # Stop on first failure
 
 			frappe.db.commit()
 
-		self.succeed()
-
-	def execute_steps(self):
+	def execute_mount_steps(self):
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_execute_steps", timeout=18000, at_front=True, queue="long"
 		)
 
 	def after_insert(self):
-		self.execute_steps()
+		self.execute_mount_steps()
+
+	@classmethod
+	def process_run_shared_benches_job(cls, job: "AgentJob") -> None:
+		"""Since this is the last job it can decide the status of the NFS volume attachment"""
+		try:
+			nfs_volume_attachment: NFSVolumeAttachment = frappe.get_doc(
+				"NFS Volume Attachment", {"primary_server": job.reference_name, "status": "Running"}
+			)
+		except frappe.DoesNotExistError:
+			return
+
+		status_map = {
+			"Delivery Failure": Status.Failure,
+			"Undelivered": Status.Pending,
+		}
+		job_status = status_map.get(job.status, job.status)
+
+		last_step = nfs_volume_attachment.nfs_volume_attachment_steps[-1]
+		last_step.status = job_status
+		last_step.save()
+
+		if job.status == Status.Success:
+			nfs_volume_attachment.succeed()
+
+		elif job.status == Status.Failure:
+			nfs_volume_attachment.fail()
 
 
 ### Umount (No support for this currently)
