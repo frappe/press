@@ -76,7 +76,6 @@
   "database_access_enabled",
   "enable_performance_tuning",
   "razorpay_enabled",
-  "paypal_enabled",
   "servers_enabled",
   "code_servers_enabled",
   "self_hosted_servers_enabled",
@@ -574,15 +573,7 @@
    "fieldname": "communication_infos",
    "fieldtype": "Table",
    "label": "Communication Infos",
-   "options": "Communication Info"  
-  }, 
-  {
-   "default": "0",
-   "depends_on": "razorpay_enabled",
-   "description": "Enable via RazorPay dashboard",
-   "fieldname": "paypal_enabled",
-   "fieldtype": "Check",
-   "label": "Paypal Enabled"
+   "options": "Communication Info"
   }
  ],
  "grid_page_length": 50,
@@ -648,8 +639,8 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2025-09-29 11:09:45.344674",
- "modified_by": "Administrator",
+ "modified": "2025-10-08 10:25:21.095258",
+ "modified_by": "aysha@frappe.io",
  "module": "Press",
  "name": "Team",
  "naming_rule": "Random",
