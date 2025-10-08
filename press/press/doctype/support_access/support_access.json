@@ -26,7 +26,7 @@
    "default": "0",
    "fieldname": "access_expired",
    "fieldtype": "Check",
-   "in_standard_filter": 1,
+   "is_virtual": 1,
    "label": "Access Expired"
   },
   {
@@ -89,7 +89,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nAccepted\nRejected"
+   "options": "Pending\nAccepted\nRejected",
+   "permlevel": 1
   },
   {
    "fieldname": "section_break_lwpm",
@@ -119,7 +120,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-08 16:04:59.523575",
+ "modified": "2025-10-08 16:42:46.062549",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Support Access",
@@ -140,13 +141,51 @@
   },
   {
    "create": 1,
-   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
    "report": 1,
    "role": "Press Support Agent",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "permlevel": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "permlevel": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
    "share": 1,
    "write": 1
   }

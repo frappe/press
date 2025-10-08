@@ -319,9 +319,9 @@ def has_support_access(doctype: str, docname: str) -> bool:
 	accesses = frappe.get_all(
 		"Support Access",
 		{
-			"access_expired": 0,
-			"requested_team": get_current_team(),
 			"status": "Accepted",
+			"requested_team": get_current_team(),
+			"access_allowed_till": (">", frappe.utils.now_datetime()),
 		},
 		pluck="name",
 	)
