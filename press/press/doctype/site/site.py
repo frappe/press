@@ -2246,7 +2246,9 @@ class Site(Document, TagHelpers):
 		result = {"enabled": False, "reason": "", "solution": ""}
 
 		# First validate DNS records
-		dns_result = check_dns_cname_a(self.name, self.host_name, throw_error=False)
+		dns_result = check_dns_cname_a(
+			self.name, self.host_name, throw_error=False, throw_proxy_validation_early=False
+		)
 		if not dns_result.get("valid"):
 			msg = f"DNS record of {self.host_name} are not pointing correctly\n"
 			msg += f"  Type: {dns_result.get('exc_type')}\n"

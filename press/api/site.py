@@ -1803,9 +1803,8 @@ def get_proxy_and_redirected_status(domain) -> tuple[str | None, bool]:
 		return server, redirected
 
 
-def _check_dns_cname_a(name, domain, ignore_proxying=False):
+def _check_dns_cname_a(name, domain, ignore_proxying=False, throw_proxy_validation_early=True):
 	check_domain_allows_letsencrypt_certs(domain)
-<<<<<<< HEAD
 	proxy, redirected = get_proxy_and_redirected_status(domain)
 	if proxy:
 		if ignore_proxying:
@@ -1816,13 +1815,12 @@ def _check_dns_cname_a(name, domain, ignore_proxying=False):
 				DomainNoLongerPointed,
 			)
 
-		frappe.throw(
-			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.
-			<br>You may enable it again, once the domain is verified.""",
-			DomainProxied,
-		)
-=======
->>>>>>> 95748d39e (feat(monitoring): Added support to enable monitoring by end-user)
+		if throw_proxy_validation_early:
+			frappe.throw(
+				f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.""",
+				DomainProxied,
+			)
+
 	ensure_dns_aaaa_record_doesnt_exist(domain)
 	cname = check_dns_cname(name, domain)
 	result = {"CNAME": cname} | cname
@@ -1847,13 +1845,9 @@ def _check_dns_cname_a(name, domain, ignore_proxying=False):
 			ConflictingDNSRecord,
 		)
 
-	proxy = check_domain_proxied(domain)
-	if proxy:
-		if ignore_proxying:  # no point checking the rest if proxied
-			return {"CNAME": {}, "A": {}, "matched": True, "type": "A"}  # assume A
+	if proxy and not throw_proxy_validation_early:
 		frappe.throw(
-			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.
-			<br>You may enable it once the domain is verified.""",
+			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.""",
 			DomainProxied,
 		)
 
@@ -1861,13 +1855,15 @@ def _check_dns_cname_a(name, domain, ignore_proxying=False):
 	return result
 
 
-def check_dns_cname_a(name, domain, ignore_proxying=False, throw_error=True):
+def check_dns_cname_a(
+	name, domain, ignore_proxying=False, throw_error=True, throw_proxy_validation_early=True
+):
 	if throw_error:
-		return _check_dns_cname_a(name, domain, ignore_proxying)
+		return _check_dns_cname_a(name, domain, ignore_proxying, throw_proxy_validation_early)
 
 	result = {}
 	try:
-		result = _check_dns_cname_a(name, domain, ignore_proxying)
+		result = _check_dns_cname_a(name, domain, ignore_proxying, throw_proxy_validation_early)
 
 	except Exception as e:
 		result["exc_type"] = e.__class__.__name__
