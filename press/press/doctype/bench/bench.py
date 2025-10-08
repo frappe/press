@@ -539,7 +539,9 @@ class Bench(Document):
 		data = agent.get_sites_analytics(self)
 		if not data:
 			return
-		items = data.items()
+
+		items = len(data.items())
+
 		# Split into chunk, so that bg job ends faster
 		chunk_size = 20
 		for i in range(0, len(items), chunk_size):
@@ -548,11 +550,11 @@ class Bench(Document):
 				self.name,
 				"_process_sync_product_site_user_data",
 				enqueue_after_commit=True,
-				data=dict(items=items[i : i + chunk_size]),
+				data=items[i : i + chunk_size],
 			)
 
-	def _process_sync_product_site_user_data(self, data: dict):
-		for site, analytics in data.items():
+	def _process_sync_product_site_user_data(self, data: list):
+		for site, analytics in data:
 			if not frappe.db.exists("Site", site):
 				return
 			if has_job_timeout_exceeded():
