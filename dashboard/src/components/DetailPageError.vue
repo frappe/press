@@ -36,7 +36,7 @@ const request = createResource({
 	auto: false,
 	params: {
 		doc: {
-			doctype: 'Support Access Request',
+			doctype: 'Support Access',
 			resources: [
 				{
 					doctype: props.doctype,
