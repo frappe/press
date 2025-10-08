@@ -14,6 +14,13 @@ export default {
 				label: 'Status',
 				fieldname: 'status',
 				type: 'Badge',
+				theme: (value) => {
+					return {
+						Pending: 'gray',
+						Accepted: 'green',
+						Rejected: 'red',
+					}[value];
+				},
 			},
 			{
 				label: 'Hours',
