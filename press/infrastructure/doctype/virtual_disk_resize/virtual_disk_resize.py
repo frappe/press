@@ -12,6 +12,7 @@ import botocore
 import frappe
 from frappe.core.utils import find, find_all
 from frappe.model.document import Document
+from frappe.utils.error import log_error
 
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 
@@ -61,9 +62,10 @@ class VirtualDiskResize(Document):
 		old_volume_size: DF.Int
 		old_volume_status: DF.Literal["Attached", "Deleted"]
 		old_volume_throughput: DF.Int
+		scheduled_time: DF.Datetime | None
 		service: DF.Data | None
 		start: DF.Datetime | None
-		status: DF.Literal["Pending", "Preparing", "Ready", "Running", "Success", "Failure"]
+		status: DF.Literal["Scheduled", "Pending", "Preparing", "Ready", "Running", "Success", "Failure"]
 		steps: DF.Table[VirtualMachineMigrationStep]
 		virtual_disk_snapshot: DF.Link | None
 		virtual_machine: DF.Link
@@ -77,14 +79,10 @@ class VirtualDiskResize(Document):
 
 	def after_insert(self):
 		"""Enqueue current volume attribute fetch and volume creation"""
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"run_prerequisites",
-			queue="long",
-			timeout=2400,
-			enqueue_after_commit=True,
-		)
+		if not self.scheduled_time:
+			self.status = "Pending"
+			self.save()
+			frappe.enqueue_doc(self.doctype, self.name, "run_prerequisites", queue="long", timeout=2400)
 
 	def run_prerequisites(self):
 		self.status = Status.Preparing
@@ -94,6 +92,8 @@ class VirtualDiskResize(Document):
 		self.create_new_volume()
 		self.status = Status.Ready
 		self.save()
+		if self.scheduled_time:
+			self.execute()
 
 	def add_steps(self):
 		for step in self.shrink_steps:
@@ -272,8 +272,10 @@ class VirtualDiskResize(Document):
 		root_volume = machine.get_root_volume()
 
 		volumes = find_all(machine.volumes, lambda v: v.volume_id != root_volume.volume_id)
-		if len(volumes) != 1:
-			frappe.throw("Multiple volumes found. Please select the volume to shrink")
+		if len(volumes) == 0:
+			frappe.throw("No additional volumes found. Cannot shrink any volume.")
+		elif len(volumes) > 1:
+			frappe.throw("Multiple volumes found. Please select the volume to shrink.")
 
 		self.old_volume_id = volumes[0].volume_id
 
@@ -695,3 +697,21 @@ class Status(str, Enum):
 
 	def __str__(self):
 		return self.value
+
+
+def run_scheduled_resizes():
+	resize_tasks = frappe.get_all(
+		"Virtual Disk Resize",
+		{"scheduled_time": ("<=", frappe.utils.now()), "status": "Scheduled"},
+	)
+	for task in resize_tasks:
+		try:
+			frappe.enqueue_doc(
+				task.doctype,
+				task.name,
+				"run_prerequisites",
+				queue="long",
+				timeout=2400,
+			)
+		except Exception as e:
+			log_error("Virtual Disk Resize Start Error", exception=e)
