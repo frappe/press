@@ -88,6 +88,7 @@ ALLOWED_DOCTYPES = [
 	"Account Request",
 	"Server Snapshot",
 	"Server Snapshot Recovery",
+	"Support Access",
 ]
 
 whitelisted_methods = set()

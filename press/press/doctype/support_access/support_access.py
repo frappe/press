@@ -33,6 +33,15 @@ class SupportAccess(Document):
 		target_team: DF.Link | None
 	# end: auto-generated types
 
+	dashboard_fields = (
+		"requested_by",
+		"requested_team",
+		"target_team",
+		"status",
+		"allowed_for",
+		"access_allowed_till",
+	)
+
 	@property
 	def access_expired(self):
 		return bool(
