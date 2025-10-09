@@ -10,7 +10,7 @@ import frappe.utils
 from frappe.model.document import Document
 from frappe.utils.data import get_url
 
-from press.utils import log_error, validate_subdomain
+from press.utils import log_error
 from press.utils.unique_name_generator import generate as generate_random_name
 
 
@@ -96,7 +96,6 @@ class ProductTrial(Document):
 	):
 		from press.press.doctype.site.site import Site, get_plan_config
 
-		validate_subdomain(subdomain)
 		if Site.exists(subdomain, domain):
 			frappe.throw("Site with this subdomain already exists")
 
