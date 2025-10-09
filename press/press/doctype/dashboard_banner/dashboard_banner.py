@@ -1,7 +1,6 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
 from frappe.model.document import Document
 
 
@@ -37,6 +36,7 @@ class DashboardBanner(Document):
 		type_of_scope: DF.Literal["Team", "Server", "Site"]
 		user_dismissals: DF.Table[DashboardBannerDismissal]
 	# end: auto-generated types
+<<<<<<< HEAD
 
 	def validate(self):
 		if self.is_global and self.is_dismissible:
@@ -53,3 +53,5 @@ def run_scheduled_publish_unpublish():
 	frappe.db.set_value(
 		"Dashboard Banner", {"is_scheduled": 1, "scheduled_end_time": ("<", frappe.utils.now())}, "enabled", 0
 	)
+=======
+>>>>>>> 1bb1b0b77 (feat(dashboard-banner): Dismiss global banners to user's local storage)
