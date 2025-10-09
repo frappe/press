@@ -3,7 +3,7 @@
 		<div class="sticky top-0 z-10 shrink-0">
 			<Header>
 				<Breadcrumbs
-					:items="[{ label: 'Site Backups', route: '/backups/sites' }]"
+					:items="[{ label: 'Server Snapshots', route: '/backups/sites' }]"
 				/>
 			</Header>
 		</div>
