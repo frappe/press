@@ -80,8 +80,12 @@ class SupportAccess(Document):
 		self.validate_target_team()
 
 	def validate_status_change(self):
+		team = get_current_team()
 		doc_before = self.get_doc_before_save()
-		if doc_before and doc_before.status != "Pending" and doc_before.status != self.status:
+		status_changed = doc_before and doc_before.status != self.status
+		if status_changed and self.target_team != team:
+			frappe.throw("Only the target team can change the status")
+		if status_changed and doc_before.status != "Pending":
 			frappe.throw("Status can only be changed if it is Pending")
 
 	def validate_expiry(self):
