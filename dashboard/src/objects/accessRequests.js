@@ -36,7 +36,15 @@ export default {
 				},
 			},
 			{
-				label: 'Hours',
+				label: 'Resource Type',
+				fieldname: 'resource_type',
+			},
+			{
+				label: 'Resource Name',
+				fieldname: 'resource_name',
+			},
+			{
+				label: 'Duration in Hours',
 				fieldname: 'allowed_for',
 			},
 			{

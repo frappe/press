@@ -47,6 +47,13 @@ class SupportAccess(Document):
 		filters = filters or {}
 		team = get_current_team()
 		Access = frappe.qb.DocType("Support Access")
+		AccessResource = frappe.qb.DocType("Support Access Resource")
+		query = (
+			query.join(AccessResource)
+			.on(AccessResource.parent == Access.name)
+			.select(AccessResource.document_type.as_("resource_type"))
+			.select(AccessResource.document_name.as_("resource_name"))
+		)
 		conditions = []
 		match filters.get("source"):
 			case "Received":
