@@ -204,7 +204,6 @@ scheduler_events = {
 		"press.press.doctype.remote_file.remote_file.poll_file_statuses",
 		"press.press.doctype.site_domain.site_domain.update_dns_type",
 		"press.press.doctype.press_webhook_log.press_webhook_log.clean_logs_older_than_24_hours",
-		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_all_snapshots_from_aws",
 		"press.press.doctype.payment_due_extension.payment_due_extension.remove_payment_due_extension",
 		"press.press.doctype.tls_certificate.tls_certificate.notify_custom_tls_renewal",
 		"press.press.doctype.site.site.suspend_sites_exceeding_disk_usage_for_last_7_days",
@@ -225,6 +224,7 @@ scheduler_events = {
 		"press.press.doctype.add_on_storage_log.add_on_storage_log.send_disk_extention_notification",
 		"press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.expire_backups",
 		"press.press.doctype.server_snapshot.server_snapshot.expire_snapshots",
+		"press.saas.doctype.product_trial.product_trial.sync_product_site_users",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
@@ -233,7 +233,6 @@ scheduler_events = {
 		"press.press.doctype.usage_record.usage_record.link_unlinked_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
 		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
-		"press.press.doctype.app.app.poll_new_releases",
 		"press.press.doctype.agent_job.agent_job.fail_old_jobs",
 		"press.press.doctype.press_job.press_job.fail_stuck_press_jobs",
 		"press.press.doctype.site_update.site_update.mark_stuck_updates_as_fatal",
@@ -245,7 +244,6 @@ scheduler_events = {
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_expired_snapshots",
 		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
 		"press.press.doctype.press_webhook.press_webhook.auto_disable_high_delivery_failure_webhooks",
-		"press.saas.doctype.product_trial.product_trial.sync_product_site_users",
 	],
 	"all": [
 		"press.auth.flush",
@@ -271,6 +269,7 @@ scheduler_events = {
 		],
 		"0 3 * * *": [
 			"press.press.doctype.drip_email.drip_email.send_drip_emails",
+			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_all_snapshots_from_aws",
 		],
 		"* * * * * 0/5": [
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs",
@@ -311,12 +310,15 @@ scheduler_events = {
 			"press.press.doctype.drip_email.drip_email.send_welcome_email",
 			"press.press.doctype.site_update.site_update.run_scheduled_updates",
 			"press.press.doctype.virtual_machine.virtual_machine.snapshot_aws_servers",
+			"press.press.doctype.app.app.poll_new_releases",
 		],
 		"* * * * *": [
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",
 			"press.press.doctype.deploy_candidate_build.deploy_candidate_build.run_scheduled_builds",
 			"press.press.doctype.agent_request_failure.agent_request_failure.remove_old_failures",
 			"press.saas.doctype.site_access_token.site_access_token.cleanup_expired_access_tokens",
+			"press.press.doctype.server_snapshot.server_snapshot.sync_ongoing_server_snapshots",
+			"press.press.doctype.site.site.create_subscription_for_trial_sites",
 		],
 		"*/10 * * * *": [
 			"press.saas.doctype.product_trial.product_trial.replenish_standby_sites",

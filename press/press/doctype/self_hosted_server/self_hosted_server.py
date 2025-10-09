@@ -158,7 +158,7 @@ class SelfHostedServer(Document):
 				playbook="get_sites.yml",
 				server=self,
 				user=self.ssh_user or "root",
-				port=self.ssh_port or "22",
+				port=self.ssh_port or 22,
 				variables={"bench_path": self.bench_directory},
 			)
 			play = ansible.run()
@@ -440,7 +440,6 @@ class SelfHostedServer(Document):
 				},
 			).insert()
 
-			server.create_subscription(self.plan)
 			self.server = server.name
 			self.status = "Active"
 			self.server_created = True
@@ -609,7 +608,7 @@ class SelfHostedServer(Document):
 				playbook="self_hosted_nginx.yml",
 				server=server,
 				user=server.ssh_user or "root",
-				port=server.ssh_port or "22",
+				port=server.ssh_port or 22,
 				variables={
 					"domain": self.name,
 					"press_domain": frappe.db.get_single_value("Press Settings", "domain"),  # for ssl renewal

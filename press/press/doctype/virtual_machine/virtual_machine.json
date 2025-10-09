@@ -40,6 +40,7 @@
   "subnet_id",
   "private_ip_address",
   "public_ip_address",
+  "is_static_ip",
   "column_break_15",
   "subnet_cidr_block",
   "public_dns_name",
@@ -378,6 +379,13 @@
    "fieldname": "disable_server_snapshot",
    "fieldtype": "Check",
    "label": "Disable Server Snapshot"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_static_ip",
+   "fieldtype": "Check",
+   "label": "Is Static IP",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -413,7 +421,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2025-08-31 20:40:23.989997",
+ "modified": "2025-09-19 11:58:46.269416",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

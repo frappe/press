@@ -16,6 +16,8 @@ from ansible.vars.manager import VariableManager
 from frappe.utils import cstr
 from frappe.utils import now_datetime as now
 
+from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
+
 
 def reconnect_on_failure():
 	@wrapt.decorator
@@ -170,6 +172,7 @@ class Ansible:
 			start_at_task=None,
 			syntax=False,
 			verbosity=1,
+			ssh_common_args=self._get_ssh_proxy_commad(server),
 		)
 
 		self.loader = DataLoader()
@@ -183,6 +186,22 @@ class Ansible:
 		self.display = Display()
 		self.display.verbosity = 1
 		self.create_ansible_play()
+
+	def _get_ssh_proxy_commad(self, server):
+		# Note: ProxyCommand must be enclosed in double quotes
+		# because it contains spaces
+		# and the entire argument must be enclosed in single quotes
+		# because it is passed via the CLI
+		# See https://docs.ansible.com/ansible/latest/user_guide/connection_details.html#ssh-args
+		# and https://unix.stackexchange.com/a/303717
+		# for details
+		proxy_command = None
+		if hasattr(self.server, "bastion_host") and self.server.bastion_host:
+			proxy_command = f'-o ProxyCommand="ssh -W %h:%p \
+					{server.bastion_host.ssh_user}@{server.bastion_host.ip} \
+						-p {server.bastion_host.ssh_port}"'
+
+		return proxy_command
 
 	def patch(self):
 		def modified_action_module_run(*args, **kwargs):
@@ -208,7 +227,7 @@ class Ansible:
 		TaskExecutor._poll_async_result = self._poll_async_result
 		ActionModule.run = self.action_module_run
 
-	def run(self):
+	def run(self) -> AnsiblePlay:
 		self.executor = PlaybookExecutor(
 			playbooks=[self.playbook_path],
 			inventory=self.inventory,

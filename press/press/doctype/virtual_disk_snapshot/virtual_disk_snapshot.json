@@ -183,7 +183,7 @@
    "link_fieldname": "database_snapshot"
   }
  ],
- "modified": "2025-08-01 20:58:15.255697",
+ "modified": "2025-09-12 18:31:18.904020",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Disk Snapshot",
@@ -200,6 +200,27 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1
   }
  ],
  "row_format": "Dynamic",
