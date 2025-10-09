@@ -17,6 +17,7 @@
   "cluster",
   "region",
   "platform",
+  "cloud_provider",
   "series",
   "copied_from",
   "public",
@@ -38,6 +39,8 @@
    "set_only_once": 1
   },
   {
+   "fetch_from": "virtual_machine.platform",
+   "fetch_if_empty": 1,
    "fieldname": "platform",
    "fieldtype": "Data",
    "label": "Platform",
@@ -166,12 +169,20 @@
    "fieldname": "object_storage_uri",
    "fieldtype": "Small Text",
    "label": "Object Storage URI"
+  },
+  {
+   "fetch_from": "virtual_machine.cloud_provider",
+   "fetch_if_empty": 1,
+   "fieldname": "cloud_provider",
+   "fieldtype": "Data",
+   "label": "Cloud Provider",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-29 14:04:58.677541",
+ "modified": "2025-10-09 12:15:34.639707",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",

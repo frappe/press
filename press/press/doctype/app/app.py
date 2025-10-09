@@ -1,13 +1,13 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
 
 import typing
 
-import rq
 import frappe
+import rq
 from frappe.model.document import Document
+
 from press.utils.jobs import has_job_timeout_exceeded
 
 if typing.TYPE_CHECKING:
@@ -38,7 +38,7 @@ class App(Document):
 		url: DF.Data | None
 	# end: auto-generated types
 
-	dashboard_fields = ["title"]
+	dashboard_fields = ("title",)
 
 	def add_source(
 		self,
@@ -90,7 +90,8 @@ def poll_new_releases():
 	for source in frappe.get_all(
 		"App Source",
 		{"enabled": True, "last_github_poll_failed": False},
-		order_by="last_synced",
+		order_by="last_synced asc",
+		limit=300,
 	):
 		if has_job_timeout_exceeded():
 			return
