@@ -719,14 +719,6 @@ class Site(Document, TagHelpers):
 			if key_type == "Number":
 				key_value = int(row.value) if isinstance(row.value, float | int) else json.loads(row.value)
 			elif key_type == "Boolean":
-				if (
-					row.key == "server_script_enabled"
-					and self.is_group_public
-					and self.is_this_version_or_above(SERVER_SCRIPT_DISABLED_VERSION)
-				):
-					frappe.throw(
-						f'You <a class="underline" href="https://docs.frappe.io/cloud/enable-server-script">cannot enable server scripts</a> on public benches. Please move to a <a class="underline" href="{PRIVATE_BENCH_DOC}">private bench</a>.'
-					)
 				key_value = (
 					row.value if isinstance(row.value, bool) else bool(sbool(json.loads(cstr(row.value))))
 				)
@@ -2127,6 +2119,16 @@ class Site(Document, TagHelpers):
 		if save:
 			self.save()
 
+	def check_server_script_enabled_on_public_bench(self, key: str):
+		if (
+			key == "server_script_enabled"
+			and self.is_group_public
+			and self.is_this_version_or_above(SERVER_SCRIPT_DISABLED_VERSION)
+		):
+			frappe.throw(
+				f'You <a class="underline" href="https://docs.frappe.io/cloud/enable-server-script">cannot enable server scripts</a> on public benches. Please move to a <a class="underline" href="{PRIVATE_BENCH_DOC}">private bench</a>.'
+			)
+
 	@dashboard_whitelist()
 	@site_action(["Active"])
 	def update_config(self, config=None):
@@ -2140,6 +2142,7 @@ class Site(Document, TagHelpers):
 		for key, value in config.items():
 			if key in get_client_blacklisted_keys():
 				frappe.throw(_(f"The key <b>{key}</b> is blacklisted or internal and cannot be updated"))
+			self.check_server_script_enabled_on_public_bench(key)
 
 			_type = self._site_config_key_type(key, value)
 
