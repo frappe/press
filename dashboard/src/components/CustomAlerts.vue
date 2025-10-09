@@ -89,7 +89,12 @@ export default {
 										(banner) =>
 											banner.site === this.ctx_name || banner.is_global,
 									)
-								: data;
+								: this.ctx_type === 'List Page'
+									? data.filter(
+											(banner) =>
+												banner.type_of_scope === 'Team' || banner.is_global,
+										)
+									: data;
 				},
 			};
 		},
