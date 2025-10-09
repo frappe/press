@@ -129,7 +129,7 @@
     "parent": "Nightly",
     "parentfield": "dependencies",
     "parenttype": "Frappe Version",
-    "version": "5.25.1"
+    "version": "5.25.10"
    }
   ],
   "docstatus": 0,
@@ -176,7 +176,7 @@
     "parent": "Version 14",
     "parentfield": "dependencies",
     "parenttype": "Frappe Version",
-    "version": "5.25.1"
+    "version": "5.25.10"
    }
   ],
   "docstatus": 0,
@@ -223,7 +223,7 @@
     "parent": "Version 15",
     "parentfield": "dependencies",
     "parenttype": "Frappe Version",
-    "version": "5.25.1"
+    "version": "5.25.10"
    }
   ],
   "docstatus": 0,
