@@ -31,14 +31,13 @@ const canRequestAccess = isPermissionError && team.doc.can_request_access;
 
 const request = createResource({
 	url: 'press.api.client.insert',
-	auto: false,
 	params: {
 		doc: {
 			doctype: 'Support Access',
 			resources: [
 				{
-					doctype: props.doctype,
-					docname: props.docname,
+					document_type: props.doctype,
+					document_name: props.docname,
 				},
 			],
 		},
