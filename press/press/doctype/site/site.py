@@ -114,6 +114,9 @@ DOCTYPE_SERVER_TYPE_MAP = {
 
 ARCHIVE_AFTER_SUSPEND_DAYS = 21
 PRIVATE_BENCH_DOC = "https://docs.frappe.io/cloud/sites/move-site-to-private-bench"
+SERVER_SCRIPT_DISABLED_VERSION = (
+	15  # version from which server scripts were disabled on public benches. No longer set in site
+)
 
 
 class Site(Document, TagHelpers):
@@ -716,10 +719,6 @@ class Site(Document, TagHelpers):
 			if key_type == "Number":
 				key_value = int(row.value) if isinstance(row.value, float | int) else json.loads(row.value)
 			elif key_type == "Boolean":
-				if row.key == "server_script_enabled" and self.is_group_public:
-					frappe.throw(
-						f'You <a class="underline" href="https://docs.frappe.io/cloud/enable-server-script">cannot enable server scripts</a> on public benches. Please move to a <a class="underline" href="{PRIVATE_BENCH_DOC}">private bench</a>.'
-					)
 				key_value = (
 					row.value if isinstance(row.value, bool) else bool(sbool(json.loads(cstr(row.value))))
 				)
@@ -876,9 +875,9 @@ class Site(Document, TagHelpers):
 					record_name=domain,
 				)
 
-	def is_version_14_or_higher(self) -> bool:
+	def is_this_version_or_above(self, version: int) -> bool:
 		group: ReleaseGroup = frappe.get_cached_doc("Release Group", self.group)
-		return group.is_version_14_or_higher()
+		return group.is_this_version_or_above(version)
 
 	@property
 	def restore_space_required_on_app(self):
@@ -906,7 +905,7 @@ class Site(Document, TagHelpers):
 	) -> int:
 		space_for_download = db_file_size + public_file_size + private_file_size
 		space_for_extracted_files = (
-			(0 if self.is_version_14_or_higher() else (8 * db_file_size))
+			(0 if self.is_this_version_or_above(14) else (8 * db_file_size))
 			+ public_file_size
 			+ private_file_size
 		)  # 8 times db size for extraction; estimated
@@ -2120,6 +2119,16 @@ class Site(Document, TagHelpers):
 		if save:
 			self.save()
 
+	def check_server_script_enabled_on_public_bench(self, key: str):
+		if (
+			key == "server_script_enabled"
+			and self.is_group_public
+			and self.is_this_version_or_above(SERVER_SCRIPT_DISABLED_VERSION)
+		):
+			frappe.throw(
+				f'You <a class="underline" href="https://docs.frappe.io/cloud/enable-server-script">cannot enable server scripts</a> on public benches. Please move to a <a class="underline" href="{PRIVATE_BENCH_DOC}">private bench</a>.'
+			)
+
 	@dashboard_whitelist()
 	@site_action(["Active"])
 	def update_config(self, config=None):
@@ -2133,6 +2142,7 @@ class Site(Document, TagHelpers):
 		for key, value in config.items():
 			if key in get_client_blacklisted_keys():
 				frappe.throw(_(f"The key <b>{key}</b> is blacklisted or internal and cannot be updated"))
+			self.check_server_script_enabled_on_public_bench(key)
 
 			_type = self._site_config_key_type(key, value)
 
