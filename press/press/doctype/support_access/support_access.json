@@ -40,6 +40,7 @@
    "read_only": 1
   },
   {
+   "default": "24",
    "description": "in hours",
    "fieldname": "allowed_for",
    "fieldtype": "Select",
@@ -130,7 +131,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-09 11:18:21.319191",
+ "modified": "2025-10-09 15:42:57.194474",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Support Access",
