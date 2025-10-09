@@ -95,12 +95,6 @@ frappe.ui.form.on('Team', {
 			);
 		}
 	},
-
-	razorpay_enabled: (frm) => {
-		if (!frm.doc.razorpay_enabled) {
-			frm.set_value('paypal_enabled', 0);
-		}
-	},
 });
 
 frappe.ui.form.on('Team Member', {

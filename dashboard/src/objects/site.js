@@ -959,33 +959,61 @@ export default {
 											renderDialog(
 												h(SelectSiteForRestore, {
 													site: site.name,
-													onRestore(siteName) {
+													database_backup_exists: Boolean(
+														row.remote_database_file,
+													),
+													public_backup_exists: Boolean(row.remote_public_file),
+													private_backup_exists: Boolean(
+														row.remote_private_file,
+													),
+													config_backup_exists: Boolean(row.remote_config_file),
+													onRestore({
+														selectedSite,
+														restoreDatabase,
+														restorePublic,
+														restorePrivate,
+														restoreConfig,
+													}) {
 														const restoreSite = createResource({
 															url: 'press.api.site.restore',
 														});
 
-														return toast.promise(
-															restoreSite.submit({
-																name: siteName,
-																files: {
-																	database: row.remote_database_file,
-																	public: row.remote_public_file,
-																	private: row.remote_private_file,
-																	config: row.remote_config_file,
-																},
-															}),
-															{
-																loading: 'Scheduling backup restore...',
-																success: (jobId) => {
-																	router.push({
-																		name: 'Site Job',
-																		params: { name: siteName, id: jobId },
-																	});
-																	return 'Backup restore scheduled successfully.';
-																},
-																error: (e) => getToastErrorMessage(e),
+														let payload = {
+															name: selectedSite,
+															files: {},
+														};
+														if (restoreDatabase) {
+															payload.files.database = row.remote_database_file;
+														}
+														if (restorePublic) {
+															payload.files.public = row.remote_public_file;
+														}
+														if (restorePrivate) {
+															payload.files.private = row.remote_private_file;
+														}
+														if (restoreConfig) {
+															payload.files.config = row.remote_config_file;
+														}
+
+														// check if any file is selected
+														if (Object.keys(payload.files).length === 0) {
+															toast.error(
+																'Please select at least one file to restore.',
+															);
+															return;
+														}
+
+														return toast.promise(restoreSite.submit(payload), {
+															loading: 'Scheduling backup restore...',
+															success: (jobId) => {
+																router.push({
+																	name: 'Site Job',
+																	params: { name: selectedSite, id: jobId },
+																});
+																return 'Backup restore scheduled successfully.';
 															},
-														);
+															error: (e) => getToastErrorMessage(e),
+														});
 													},
 												}),
 											);

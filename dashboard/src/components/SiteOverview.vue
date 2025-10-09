@@ -73,13 +73,6 @@
 			:id="$site.name"
 			type="warning"
 		>
-			<Button
-				class="ml-auto"
-				variant="outline"
-				@click="showEnableMonitoringDialog"
-			>
-				Actions
-			</Button>
 		</AlertBanner>
 		<DismissableBanner
 			v-else-if="$site.doc.eol_versions.includes($site.doc.version)"
