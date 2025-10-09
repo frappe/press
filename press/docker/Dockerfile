@@ -39,8 +39,6 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   libharfbuzz0b \
   libpangoft2-1.0-0 \
   libpangocairo-1.0-0 \
-  # Chromium and dependencies
-  chromium \
   # wkhtmltopdf dependencies
   ca-certificates \
   fontconfig \
