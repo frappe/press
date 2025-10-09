@@ -2,18 +2,15 @@ import { h, defineAsyncComponent } from 'vue';
 import { confirmDialog, icon, renderDialog } from '../../utils/components';
 import { toast } from 'vue-sonner';
 import { getToastErrorMessage } from '../../utils/toast';
-import { getTeam } from '../../data/team';
 
 export function tagTab(doctype) {
 	return {
 		label: 'Tags',
 		icon: icon('tag'),
 		condition: (record) => {
-			let $team = getTeam();
 			return (
-				!$team.doc?.is_support_agent &&
-				(doctype != 'Server' ||
-					(doctype == 'Server' && record.doc?.status !== 'Archived'))
+				doctype != 'Server' ||
+				(doctype == 'Server' && record.doc?.status !== 'Archived')
 			);
 		},
 		route: 'tags',

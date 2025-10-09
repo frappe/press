@@ -159,10 +159,6 @@ export default {
 				icon: icon(LucideAppWindow),
 				route: 'sites',
 				type: 'Component',
-				condition: () => {
-					let team = getTeam();
-					return !team.doc?.is_support_agent;
-				},
 				component: defineAsyncComponent(
 					() => import('../pages/ReleaseGroupBenchSites.vue'),
 				),
@@ -175,10 +171,6 @@ export default {
 				icon: icon('grid'),
 				route: 'apps',
 				type: 'list',
-				condition: () => {
-					let team = getTeam();
-					return !team.doc?.is_support_agent;
-				},
 				list: {
 					doctype: 'Release Group App',
 					filters: (releaseGroup) => {
@@ -568,10 +560,6 @@ export default {
 				icon: icon('settings'),
 				route: 'bench-config',
 				type: 'list',
-				condition: () => {
-					let team = getTeam();
-					return !team.doc?.is_support_agent;
-				},
 				list: {
 					doctype: 'Common Site Config',
 					filters: (releaseGroup) => {
@@ -708,10 +696,6 @@ export default {
 				icon: icon('sliders'),
 				route: 'actions',
 				type: 'Component',
-				condition: () => {
-					let team = getTeam();
-					return !team.doc?.is_support_agent;
-				},
 				component: defineAsyncComponent(
 					() => import('../components/group/ReleaseGroupActions.vue'),
 				),
@@ -724,10 +708,6 @@ export default {
 				icon: icon('globe'),
 				route: 'regions',
 				type: 'list',
-				condition: () => {
-					let team = getTeam();
-					return !team.doc?.is_support_agent;
-				},
 				list: {
 					doctype: 'Cluster',
 					filters: (releaseGroup) => {
@@ -854,10 +834,6 @@ export default {
 				icon: icon('tool'),
 				route: 'bench-environment-variable',
 				type: 'list',
-				condition: () => {
-					let team = getTeam();
-					return !team.doc?.is_support_agent;
-				},
 				list: {
 					doctype: 'Release Group Variable',
 					filters: (releaseGroup) => {

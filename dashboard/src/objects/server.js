@@ -184,7 +184,6 @@ export default {
 						slots: {
 							icon: icon('more-horizontal'),
 						},
-						disabled: $team.doc?.is_support_agent,
 					},
 					options: [
 						{
@@ -220,10 +219,7 @@ export default {
 				label: 'Overview',
 				icon: icon('home'),
 				condition: (server) => {
-					let $team = getTeam();
-					return (
-						server.doc?.status !== 'Archived' && !$team.doc?.is_support_agent
-					);
+					return server.doc?.status !== 'Archived';
 				},
 				route: 'overview',
 				type: 'Component',
@@ -266,10 +262,7 @@ export default {
 				label: 'Sites',
 				icon: icon(LucideAppWindow),
 				condition: (server) => {
-					let $team = getTeam();
-					return (
-						server.doc?.status !== 'Archived' && !$team.doc?.is_support_agent
-					);
+					return server.doc?.status !== 'Archived';
 				},
 				route: 'sites',
 				type: 'list',
@@ -378,10 +371,7 @@ export default {
 				label: 'Bench Groups',
 				icon: icon('package'),
 				condition: (server) => {
-					let $team = getTeam();
-					return (
-						server.doc?.status !== 'Archived' && !$team.doc?.is_support_agent
-					);
+					return server.doc?.status !== 'Archived';
 				},
 				route: 'groups',
 				type: 'list',
@@ -472,10 +462,7 @@ export default {
 				icon: icon('camera'),
 				condition: (server) => {
 					if (!server?.doc) return true;
-					let $team = getTeam();
-					return (
-						server?.doc?.provider === 'AWS EC2' && !$team.doc?.is_support_agent
-					);
+					return server?.doc?.provider === 'AWS EC2';
 				},
 				route: 'snapshots',
 				type: 'list',
@@ -796,10 +783,7 @@ export default {
 				label: 'Plays',
 				icon: icon('play'),
 				condition: (server) => {
-					let $team = getTeam();
-					return (
-						server.doc?.status !== 'Archived' && !$team.doc?.is_support_agent
-					);
+					return server.doc?.status !== 'Archived';
 				},
 				childrenRoutes: ['Server Play'],
 				route: 'plays',
@@ -880,10 +864,7 @@ export default {
 				label: 'Actions',
 				icon: icon('sliders'),
 				condition: (server) => {
-					let $team = getTeam();
-					return (
-						server.doc?.status !== 'Archived' && !$team.doc?.is_support_agent
-					);
+					return server.doc?.status !== 'Archived';
 				},
 				route: 'actions',
 				type: 'Component',
@@ -899,10 +880,7 @@ export default {
 				route: 'activity',
 				type: 'list',
 				condition: (server) => {
-					let $team = getTeam();
-					return (
-						server.doc?.status !== 'Archived' && !$team.doc?.is_support_agent
-					);
+					return server.doc?.status !== 'Archived';
 				},
 				list: {
 					doctype: 'Server Activity',

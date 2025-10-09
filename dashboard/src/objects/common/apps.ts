@@ -22,8 +22,7 @@ export function getAppsTab(forSite: boolean) {
 		route: 'apps',
 		type: 'list',
 		condition: (docResource) => {
-			let $team = getTeam();
-			return forSite && docResource.doc?.status !== 'Archived' && !$team.doc?.is_support_agent;
+			return forSite && docResource.doc?.status !== 'Archived'
 		},
 		list: getAppsTabList(forSite),
 	} satisfies Tab as Tab;

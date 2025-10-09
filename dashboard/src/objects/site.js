@@ -404,10 +404,7 @@ export default {
 				route: 'domains',
 				type: 'list',
 				condition: (site) => {
-					let $team = getTeam();
-					return (
-						site.doc?.status !== 'Archived' && !$team.doc?.is_support_agent
-					);
+					return site.doc?.status !== 'Archived';
 				},
 				list: {
 					doctype: 'Site Domain',
@@ -645,10 +642,6 @@ export default {
 				icon: icon('archive'),
 				route: 'backups',
 				type: 'list',
-				condition: () => {
-					let $team = getTeam();
-					return !$team.doc?.is_support_agent;
-				},
 				list: {
 					doctype: 'Site Backup',
 					filters: (site) => {
@@ -794,7 +787,7 @@ export default {
 									site.doc?.host_name || site.doc?.name
 								}</b> that was created on ${date(backup.creation, 'llll')}.${
 									!backup.offsite
-										? '<br><br><div class="p-2 bg-gray-100 border-gray-200 rounded">You have to be logged in as a <b>System Manager</b> <em>in your site</em> to download the backup.<div>'
+										? '<br><br><div class="p-2 bg-gray-100 rounded border-gray-200">You have to be logged in as a <b>System Manager</b> <em>in your site</em> to download the backup.<div>'
 										: ''
 								}`,
 								onSuccess() {
@@ -1063,10 +1056,7 @@ export default {
 				route: 'site-config',
 				type: 'list',
 				condition: (site) => {
-					let $team = getTeam();
-					return (
-						site.doc?.status !== 'Archived' && !$team.doc?.is_support_agent
-					);
+					return site.doc?.status !== 'Archived';
 				},
 				list: {
 					doctype: 'Site Config',
@@ -1197,10 +1187,7 @@ export default {
 				route: 'actions',
 				type: 'Component',
 				condition: (site) => {
-					let $team = getTeam();
-					return (
-						site.doc?.status !== 'Archived' && !$team.doc?.is_support_agent
-					);
+					return site.doc?.status !== 'Archived';
 				},
 				component: SiteActions,
 				props: (site) => {
@@ -1213,10 +1200,7 @@ export default {
 				route: 'updates',
 				type: 'list',
 				condition: (site) => {
-					let $team = getTeam();
-					return (
-						site.doc?.status !== 'Archived' && !$team.doc?.is_support_agent
-					);
+					return site.doc?.status !== 'Archived';
 				},
 				childrenRoutes: ['Site Update'],
 				list: {
@@ -1576,10 +1560,6 @@ export default {
 							slots: {
 								prefix: icon('mail'),
 							},
-							disabled: () => {
-								let $team = getTeam();
-								return $team.doc?.is_support_agent;
-							},
 							onClick: () => {
 								confirmDialog({
 									title: 'Change Notification Email',
@@ -1666,8 +1646,7 @@ export default {
 							site.doc.update_information?.update_available &&
 							['Active', 'Inactive', 'Suspended', 'Broken'].includes(
 								site.doc.status,
-							) &&
-							!$team.doc?.is_support_agent
+							)
 						);
 					},
 
@@ -1698,9 +1677,7 @@ export default {
 						icon: icon(LucideVenetianMask),
 					},
 					condition: () =>
-						$team.doc?.is_desk_user &&
-						site.doc.team !== $team.name &&
-						!$team.doc?.is_support_agent,
+						$team.doc?.is_desk_user && site.doc.team !== $team.name,
 					onClick() {
 						switchToTeam(site.doc.team);
 					},
@@ -1730,9 +1707,7 @@ export default {
 					variant: 'solid',
 					loading: site.loginAsAdmin.loading || site.loginAsTeam.loading,
 					condition: () =>
-						site.doc.status === 'Active' &&
-						!site.doc?.setup_wizard_complete &&
-						!$team.doc?.is_support_agent,
+						site.doc.status === 'Active' && !site.doc?.setup_wizard_complete,
 					onClick() {
 						if (site.doc.additional_system_user_created) {
 							site.loginAsTeam
@@ -1763,9 +1738,7 @@ export default {
 						{
 							label: 'Login As Administrator',
 							icon: 'external-link',
-							condition: () =>
-								['Active', 'Broken'].includes(site.doc.status) &&
-								!$team.doc?.is_support_agent,
+							condition: () => ['Active', 'Broken'].includes(site.doc.status),
 							onClick: () => {
 								confirmDialog({
 									title: 'Login as Administrator',
