@@ -301,7 +301,7 @@ scheduler_events = {
 			"press.press.doctype.virtual_machine.virtual_machine.sync_virtual_machines",
 			"press.press.doctype.mariadb_stalk.mariadb_stalk.fetch_stalks",
 			"press.press.doctype.virtual_machine.virtual_machine.rolling_snapshot_database_server_virtual_machines",
-			"press.press.infrastructure.doctype.virtual_disk_resize.virtual_disk_resize.run_scheduled_resizes",
+			"press.infrastructure.doctype.virtual_disk_resize.virtual_disk_resize.run_scheduled_resizes",
 		],
 		"*/5 * * * *": [
 			"press.press.doctype.version_upgrade.version_upgrade.update_from_site_update",
