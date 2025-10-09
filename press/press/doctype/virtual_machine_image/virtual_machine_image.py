@@ -31,6 +31,7 @@ class VirtualMachineImage(Document):
 			VirtualMachineImageVolume,
 		)
 
+		cloud_provider: DF.Data
 		cluster: DF.Link
 		copied_from: DF.Link | None
 		has_data_volume: DF.Check
