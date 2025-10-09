@@ -101,7 +101,8 @@
    "fieldname": "resources",
    "fieldtype": "Table",
    "label": "Resources",
-   "options": "Support Access Resource"
+   "options": "Support Access Resource",
+   "reqd": 1
   },
   {
    "default": "0",
@@ -129,7 +130,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-08 17:34:36.891503",
+ "modified": "2025-10-09 11:18:21.319191",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Support Access",
