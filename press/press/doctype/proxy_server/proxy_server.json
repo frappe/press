@@ -23,6 +23,7 @@
   "storage_section",
   "auto_add_storage_min",
   "auto_add_storage_max",
+  "auto_increase_storage",
   "section_break_8",
   "ip",
   "enabled_default_routing",
@@ -443,10 +444,16 @@
    "fieldtype": "Link",
    "label": "Bastion Server",
    "options": "Bastion Server"
+  },
+  {
+   "default": "1",
+   "fieldname": "auto_increase_storage",
+   "fieldtype": "Check",
+   "label": "Auto Increase Storage"
   }
  ],
  "links": [],
- "modified": "2025-09-24 12:16:20.589165",
+ "modified": "2025-10-09 13:00:56.817210",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
