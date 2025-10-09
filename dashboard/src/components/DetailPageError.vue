@@ -15,7 +15,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { getTeam } from '../data/team';
-import { createResource, toast } from 'frappe-ui';
+import { createResource } from 'frappe-ui';
+import { toast } from 'vue-sonner';
 
 const props = defineProps<{
 	doctype: string;
