@@ -296,13 +296,13 @@ function loginToSite(siteName) {
 	// avoid toast if user is coming from their site to login
 	if (pickedSite.value)
 		login.submit({
-			email: email.value || session.user,
+			// email: email.value || session.user,
 			site: siteName,
 		});
 	else
 		toast.promise(
 			login.submit({
-				email: email.value || session.user,
+				// email: email.value || session.user,
 				site: siteName,
 			}),
 			{
