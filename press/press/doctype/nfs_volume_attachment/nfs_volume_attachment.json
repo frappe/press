@@ -68,7 +68,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nRunning\nSuccess\nFailure",
+   "options": "Pending\nRunning\nSuccess\nFailure\nArchived",
    "read_only": 1
   },
   {
@@ -85,7 +85,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-07 13:52:21.998963",
+ "modified": "2025-10-09 11:11:10.670740",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "NFS Volume Attachment",

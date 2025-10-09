@@ -35,6 +35,22 @@ class Status(str, Enum):
 
 
 class StepHandler:
+	def handle_async_job(self, step: "NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep", job: str) -> None:
+		job_status = frappe.db.get_value("Agent Job", job, "status")
+
+		status_map = {
+			"Delivery Failure": Status.Failure,
+			"Undelivered": Status.Pending,
+		}
+		job_status = status_map.get(job_status, job_status)
+		step.attempt = 1 if not step.attempt else step.attempt + 1
+
+		step.status = job_status
+		step.save()
+
+		if step.status == Status.Failure:
+			raise
+
 	def _run_ansible_step(
 		self, step: "NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep", ansible: Ansible
 	) -> None:
@@ -142,7 +158,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 		nfs_volume_attachment_steps: DF.Table[NFSVolumeAttachmentStep]
 		primary_server: DF.Link
 		secondary_server: DF.Link
-		status: DF.Literal["Pending", "Running", "Success", "Failure"]
+		status: DF.Literal["Pending", "Running", "Success", "Failure", "Archived"]
 		volume_id: DF.Data | None
 		volume_size: DF.Int
 	# end: auto-generated types
@@ -212,37 +228,35 @@ class NFSVolumeAttachment(Document, StepHandler):
 		primary_server_private_ip = frappe.db.get_value("Server", self.primary_server, "private_ip")
 		secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
 
-		step.status = Status.Running
-		step.save()
-		# THIS NEEDS TO BE EITHER A AGENT JOB OR AN ANSIBLE PLAY
 		try:
-			# Allow primary server to mount
-			nfs_server.agent.post(
-				"/nfs/exports",
-				data={
-					"server": self.primary_server,
-					"private_ip": primary_server_private_ip,
-					"share_file_system": True,
-					"use_file_system_of_server": None,
-				},
+			agent_job = nfs_server.agent.add_servers_to_acl(
+				primary_server_private_ip=primary_server_private_ip,
+				secondary_server_private_ip=secondary_server_private_ip,
+				shared_directory=self.primary_server,
 			)
-
-			# Allow secondary server to mount
-			nfs_server.agent.post(
-				"/nfs/exports",
-				data={
-					"server": self.secondary_server,
-					"private_ip": secondary_server_private_ip,
-					"share_file_system": False,
-					"use_file_system_of_server": self.primary_server,
-				},
-			)
-
+			step.job_type = "Agent Job"
+			step.job = agent_job.name
 			step.status = Status.Success
 			step.save()
 		except Exception as e:
 			self._fail_job_step(step, e)
 			raise
+
+	def wait_for_acl_addition(self, step: "NFSVolumeAttachmentStep"):
+		"""Wait for servers to be added to ACL"""
+		step.status = Status.Running
+		step.is_waiting = True
+		step.save()
+
+		job = frappe.db.get_value(
+			"NFS Volume Attachment Step",
+			{
+				"parent": self.name,
+				"step_name": "Allow primary and secondary server to share fs",
+			},
+			"job",
+		)
+		self.handle_async_job(step, job)
 
 	def format_and_mount_fs(self, step: "NFSVolumeAttachmentStep") -> None:
 		"""Create a filesystem on the new volume and mount the shared directory."""
@@ -395,8 +409,8 @@ class NFSVolumeAttachment(Document, StepHandler):
 		step.job = agent_job.name
 		step.save()
 
-	def wait_for_job_completion(self, step: "NFSVolumeAttachmentStep"):
-		"""Wait for agent job completion"""
+	def wait_for_benches_to_run_on_shared(self, step: "NFSVolumeAttachmentStep"):
+		"""Wait for benches to run on shared volume"""
 		step.status = Status.Running
 		step.is_waiting = True
 		step.save()
@@ -409,20 +423,8 @@ class NFSVolumeAttachment(Document, StepHandler):
 			},
 			"job",
 		)
-		job_status = frappe.db.get_value("Agent Job", job, "status")
 
-		status_map = {
-			"Delivery Failure": Status.Failure,
-			"Undelivered": Status.Pending,
-		}
-		job_status = status_map.get(job_status, job_status)
-		step.attempt = 1 if not step.attempt else step.attempt + 1
-
-		step.status = job_status
-		step.save()
-
-		if step.status == Status.Failure:
-			raise
+		self.handle_async_job(step, job)
 
 	def before_insert(self):
 		"""Append defined steps to the document before saving."""
@@ -432,13 +434,14 @@ class NFSVolumeAttachment(Document, StepHandler):
 				self.stop_all_benches,
 				self.attach_volume_on_nfs_server,
 				self.allow_servers_to_mount,
+				self.wait_for_acl_addition,
 				self.format_and_mount_fs,
 				self.allow_ssh_access_to_primary_server,
 				self.mount_shared_folder_on_primary_server,
 				self.mount_shared_folder_on_secondary_server,
 				self.move_benches_to_shared,
 				self.run_primary_server_benches_on_shared_fs,
-				self.wait_for_job_completion,
+				self.wait_for_benches_to_run_on_shared,
 			]
 		):
 			self.append("nfs_volume_attachment_steps", step)

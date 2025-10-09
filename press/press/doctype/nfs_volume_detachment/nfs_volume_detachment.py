@@ -128,20 +128,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 			},
 			"job",
 		)
-		job_status = frappe.db.get_value("Agent Job", job, "status")
-
-		status_map = {
-			"Delivery Failure": Status.Failure,
-			"Undelivered": Status.Pending,
-		}
-		job_status = status_map.get(job_status, job_status)
-		step.attempt = 1 if not step.attempt else step.attempt + 1
-
-		step.status = job_status
-		step.save()
-
-		if step.status == Status.Failure:
-			raise
+		self.handle_async_job(step, job)
 
 	def umount_from_primary_server(self, step: "NFSVolumeDetachmentStep") -> None:
 		"""Umount /shared from primary server and remove from fstab"""
@@ -191,35 +178,39 @@ class NFSVolumeDetachment(Document, StepHandler):
 
 	def remove_servers_from_acl(self, step: "NFSVolumeDetachmentStep") -> None:
 		"""Remove primary and secondary servers from acl"""
-		step.status = Status.Running
-		step.save()
-
 		nfs_server: NFSServer = frappe.get_cached_doc("NFS Server", self.nfs_server)
 		primary_server_private_ip = frappe.db.get_value("Server", self.primary_server, "private_ip")
-		secondary_server_private_ip = frappe.db.get_value("Server", self.primary_server, "private_ip")
-		# THIS NEEDS TO BE EITHER A AGENT JOB OR AN ANSIBLE PLAY
+		secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
+
 		try:
-			# Remove primary server from acl
-			nfs_server.agent.delete(
-				"/nfs/exports",
-				data={
-					"private_ip": primary_server_private_ip,
-					"file_system": self.primary_server,
-				},
+			agent_job = nfs_server.agent.remove_servers_from_acl(
+				primary_server_private_ip=primary_server_private_ip,
+				secondary_server_private_ip=secondary_server_private_ip,
+				shared_directory=self.primary_server,
 			)
-			# Remove secondary server from acl
-			nfs_server.agent.delete(
-				"/nfs/exports",
-				data={
-					"private_ip": secondary_server_private_ip,
-					"file_system": self.primary_server,
-				},
-			)
+			step.job_type = "Agent Job"
+			step.job = agent_job.name
 			step.status = Status.Success
 			step.save()
 		except Exception as e:
 			self._fail_job_step(step, e)
 			raise
+
+	def wait_for_acl_deletion(self, step: "NFSVolumeDetachmentStep"):
+		"""Wait for servers to be remove from the ACL"""
+		step.status = Status.Running
+		step.is_waiting = True
+		step.save()
+
+		job = frappe.db.get_value(
+			"NFS Volume Detachment Step",
+			{
+				"parent": self.name,
+				"step_name": "Remove primary and secondary servers from acl",
+			},
+			"job",
+		)
+		self.handle_async_job(step, job)
 
 	def umount_volume_from_nfs_server(self, step: "NFSVolumeDetachmentStep") -> None:
 		"""Umount volume from NFS Server"""
@@ -262,6 +253,18 @@ class NFSVolumeDetachment(Document, StepHandler):
 			self._fail_job_step(step, e)
 			raise
 
+	def mark_attachment_as_archived(self, step: "NFSVolumeDetachmentStep") -> None:
+		"""Mark the attachment doc as archived"""
+		step.status = Status.Running
+		step.save()
+
+		frappe.db.set_value(
+			"NFS Volume Attachment", {"primary_server": self.primary_server}, "status", "Archived"
+		)
+
+		step.status = Status.Success
+		step.save()
+
 	def before_insert(self):
 		"""Append defined steps to the document before saving."""
 		for step in self.get_steps(
@@ -273,8 +276,10 @@ class NFSVolumeDetachment(Document, StepHandler):
 				self.umount_from_primary_server,
 				self.umount_from_secondary_server,
 				self.remove_servers_from_acl,
+				self.wait_for_acl_deletion,
 				self.umount_volume_from_nfs_server,
 				self.detach_and_delete_volume_from_nfs_server,
+				self.mark_attachment_as_archived,
 			]
 		):
 			self.append("nfs_volume_detachment_steps", step)
