@@ -1874,6 +1874,36 @@
    "doctype": "Agent Job Type",
    "max_retry_count": 3,
    "modified": "2025-10-03 18:02:49.847351",
+   "name": "Add Servers to ACL",
+   "request_method": "POST",
+   "request_path": "nfs/add-to-acl",
+   "steps": [
+    {
+     "step_name": "Add Servers to ACL"
+    }
+   ]
+},
+{
+   "disabled_auto_retry": 1,
+   "docstatus": 0,
+   "doctype": "Agent Job Type",
+   "max_retry_count": 3,
+   "modified": "2025-10-03 18:02:49.847351",
+   "name": "Remove Servers from ACL",
+   "request_method": "POST",
+   "request_path": "nfs/remove-from-acl",
+   "steps": [
+    {
+     "step_name": "Remove Servers from ACL"
+    }
+   ]
+},
+{
+   "disabled_auto_retry": 1,
+   "docstatus": 0,
+   "doctype": "Agent Job Type",
+   "max_retry_count": 3,
+   "modified": "2025-10-03 18:02:49.847351",
    "name": "Start Bench Workers",
    "request_method": "POST",
    "request_path": "server/start-bench-workers",

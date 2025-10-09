@@ -1689,6 +1689,46 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			reference_name=reference_name,
 		)
 
+	def add_servers_to_acl(
+		self,
+		primary_server_private_ip: str,
+		secondary_server_private_ip: str,
+		shared_directory: str,
+		reference_doctype: str | None = None,
+		reference_name: str | None = None,
+	) -> AgentJob:
+		return self.create_agent_job(
+			"Add Servers to ACL",
+			"/nfs/add-to-acl",
+			data={
+				"primary_server_private_ip": primary_server_private_ip,
+				"secondary_server_private_ip": secondary_server_private_ip,
+				"shared_directory": shared_directory,
+			},
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def remove_servers_from_acl(
+		self,
+		primary_server_private_ip: str,
+		secondary_server_private_ip: str,
+		shared_directory: str,
+		reference_doctype: str | None = None,
+		reference_name: str | None = None,
+	) -> AgentJob:
+		return self.create_agent_job(
+			"Remove Servers from ACL",
+			"/nfs/remove-from-acl",
+			data={
+				"primary_server_private_ip": primary_server_private_ip,
+				"secondary_server_private_ip": secondary_server_private_ip,
+				"shared_directory": shared_directory,
+			},
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
 	def stop_bench_workers(
 		self, reference_doctype: str | None = None, reference_name: str | None = None
 	) -> AgentJob:
