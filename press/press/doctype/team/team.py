@@ -134,7 +134,6 @@ class Team(Document):
 		"mpesa_phone_number",
 		"mpesa_enabled",
 		"razorpay_enabled",
-		"paypal_enabled",
 		"account_request",
 		"partner_status",
 	)

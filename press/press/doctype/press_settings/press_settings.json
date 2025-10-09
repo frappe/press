@@ -41,6 +41,7 @@
   "razorpay_settings_section",
   "razorpay_key_id",
   "razorpay_webhook_secret",
+  "paypal_enabled",
   "column_break_123",
   "razorpay_key_secret",
   "erpnext_authentication",
@@ -1470,12 +1471,19 @@
    "fieldname": "docker_s3_secret_key",
    "fieldtype": "Password",
    "label": "Docker S3 Secret Key"
+  },
+  {
+   "default": "0",
+   "description": "Enable via RazorPay dashboard",
+   "fieldname": "paypal_enabled",
+   "fieldtype": "Check",
+   "label": "PayPal Enabled"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-09-18 22:27:41.701498",
- "modified_by": "Administrator",
+ "modified": "2025-10-08 10:25:15.575950",
+ "modified_by": "aysha@frappe.io",
  "module": "Press",
  "name": "Press Settings",
  "owner": "Administrator",
