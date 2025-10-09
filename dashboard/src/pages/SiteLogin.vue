@@ -310,7 +310,7 @@ function loginToSite(siteName) {
 				success: 'Logged in',
 				error: (e) => {
 					loginError.value = true;
-					getToastErrorMessage(e);
+					return getToastErrorMessage(e);
 				},
 			},
 		);
