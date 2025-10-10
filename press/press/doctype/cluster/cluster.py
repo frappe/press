@@ -45,6 +45,8 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
+DEFAULT_SERVER_TITLE = "First"
+
 
 class Cluster(Document):
 	# begin: auto-generated types
@@ -684,7 +686,7 @@ class Cluster(Document):
 						"series": series,
 						"status": "Available",
 						"public": True,
-						"platform": platform,
+						"platform": "x86_64" if series == "n" else platform,
 						"cloud_provider": self.cloud_provider,
 					},
 					limit=1,
@@ -706,7 +708,7 @@ class Cluster(Document):
 						"series": series,
 						"status": "Available",
 						"public": True,
-						"platform": platform,
+						"platform": "x86_64" if series == "n" else platform,
 						"cloud_provider": self.cloud_provider,
 					},
 					limit=1,
@@ -731,6 +733,19 @@ class Cluster(Document):
 		yield from copies
 
 	@frappe.whitelist()
+	def create_proxy(self):
+		"""Creates a proxy server for the cluster"""
+		if self.images_available < 1:
+			frappe.throw(
+				"Images are not available. Add them or wait for copy to complete",
+				frappe.ValidationError,
+			)
+		if self.status != "Active":
+			frappe.throw("Cluster is not active", frappe.ValidationError)
+
+		self.create_server("Proxy Server", DEFAULT_SERVER_TITLE)
+
+	@frappe.whitelist()
 	def create_servers(self):
 		"""Creates servers for the cluster"""
 		if self.images_available < 1:
@@ -745,7 +760,7 @@ class Cluster(Document):
 			# TODO: remove Test title #
 			server, _ = self.create_server(
 				doctype,
-				"Test",
+				DEFAULT_SERVER_TITLE,
 			)
 			match doctype:  # for populating Server doc's fields; assume the trio is created together
 				case "Database Server":
@@ -757,7 +772,7 @@ class Cluster(Document):
 		for doctype, _ in self.private_servers.items():
 			self.create_server(
 				doctype,
-				"Test",
+				DEFAULT_SERVER_TITLE,
 				create_subscription=False,
 			)
 
