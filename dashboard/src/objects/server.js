@@ -245,7 +245,9 @@ export default {
 			{
 				label: 'Overview',
 				icon: icon('home'),
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					return server.doc?.status !== 'Archived';
+				},
 				route: 'overview',
 				type: 'Component',
 				component: defineAsyncComponent(
@@ -286,7 +288,9 @@ export default {
 			{
 				label: 'Sites',
 				icon: icon(LucideAppWindow),
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					return server.doc?.status !== 'Archived';
+				},
 				route: 'sites',
 				type: 'list',
 				list: {
@@ -393,7 +397,9 @@ export default {
 			{
 				label: 'Bench Groups',
 				icon: icon('package'),
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					return server.doc?.status !== 'Archived';
+				},
 				route: 'groups',
 				type: 'list',
 				list: {
@@ -803,7 +809,9 @@ export default {
 			{
 				label: 'Plays',
 				icon: icon('play'),
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					return server.doc?.status !== 'Archived';
+				},
 				childrenRoutes: ['Server Play'],
 				route: 'plays',
 				type: 'list',
@@ -882,7 +890,9 @@ export default {
 			{
 				label: 'Actions',
 				icon: icon('sliders'),
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					return server.doc?.status !== 'Archived';
+				},
 				route: 'actions',
 				type: 'Component',
 				component: ServerActions,
@@ -896,7 +906,9 @@ export default {
 				icon: icon('activity'),
 				route: 'activity',
 				type: 'list',
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					return server.doc?.status !== 'Archived';
+				},
 				list: {
 					doctype: 'Server Activity',
 					filters: (server) => {

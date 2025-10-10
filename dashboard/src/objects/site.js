@@ -268,14 +268,19 @@ export default {
 			if (
 				(site.doc.server_team == $team.doc?.name &&
 					site.doc.group_team == $team.doc?.name) ||
-				$team.doc?.is_desk_user
+				$team.doc?.is_desk_user ||
+				$team.doc?.is_support_agent
 			) {
 				breadcrumbs.push({
 					label: site.doc?.server_title || site.doc?.server,
 					route: `/servers/${site.doc?.server}`,
 				});
 			}
-			if (site.doc.group_team == $team.doc?.name || $team.doc?.is_desk_user) {
+			if (
+				site.doc.group_team == $team.doc?.name ||
+				$team.doc?.is_desk_user ||
+				$team.doc?.is_support_agent
+			) {
 				breadcrumbs.push(
 					{
 						label: site.doc?.group_title,
@@ -399,7 +404,9 @@ export default {
 				icon: icon('external-link'),
 				route: 'domains',
 				type: 'list',
-				condition: (site) => site.doc?.status !== 'Archived',
+				condition: (site) => {
+					return site.doc?.status !== 'Archived';
+				},
 				list: {
 					doctype: 'Site Domain',
 					fields: ['redirect_to_primary'],
@@ -781,7 +788,7 @@ export default {
 									site.doc?.host_name || site.doc?.name
 								}</b> that was created on ${date(backup.creation, 'llll')}.${
 									!backup.offsite
-										? '<br><br><div class="p-2 bg-gray-100 border-gray-200 rounded">You have to be logged in as a <b>System Manager</b> <em>in your site</em> to download the backup.<div>'
+										? '<br><br><div class="p-2 bg-gray-100 rounded border-gray-200">You have to be logged in as a <b>System Manager</b> <em>in your site</em> to download the backup.<div>'
 										: ''
 								}`,
 								onSuccess() {
@@ -1077,7 +1084,9 @@ export default {
 				icon: icon('settings'),
 				route: 'site-config',
 				type: 'list',
-				condition: (site) => site.doc?.status !== 'Archived',
+				condition: (site) => {
+					return site.doc?.status !== 'Archived';
+				},
 				list: {
 					doctype: 'Site Config',
 					filters: (site) => {
@@ -1206,7 +1215,9 @@ export default {
 				icon: icon('sliders'),
 				route: 'actions',
 				type: 'Component',
-				condition: (site) => site.doc?.status !== 'Archived',
+				condition: (site) => {
+					return site.doc?.status !== 'Archived';
+				},
 				component: SiteActions,
 				props: (site) => {
 					return { site: site.doc?.name };
@@ -1217,7 +1228,9 @@ export default {
 				icon: icon('arrow-up-circle'),
 				route: 'updates',
 				type: 'list',
-				condition: (site) => site.doc?.status !== 'Archived',
+				condition: (site) => {
+					return site.doc?.status !== 'Archived';
+				},
 				childrenRoutes: ['Site Update'],
 				list: {
 					doctype: 'Site Update',
