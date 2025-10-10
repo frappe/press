@@ -1,23 +1,43 @@
 <template>
 	<div
-		:class="`flex items-center rounded-md border border-${color}-200 bg-${color}-100 px-3.5 py-2.5`"
+		:class="`flex items-center justify-between rounded-md border border-${color}-200 bg-${color}-100 px-3.5 py-2.5`"
 	>
-		<lucide-alert-triangle
-			v-if="showIcon && (type === 'error' || type === 'warning')"
-			:class="`h-4 w-8 text-${color}-600`"
-		/>
-		<lucide-info
-			v-if="showIcon && type === 'info'"
-			:class="`h-4 w-8 text-${color}-600`"
-		/>
-		<div
-			:class="{ 'ml-3': showIcon }"
-			class="text-p-base font-medium text-gray-800"
-			v-html="title"
-		></div>
+		<div class="flex items-center">
+			<lucide-alert-triangle
+				v-if="showIcon && (type === 'error' || type === 'warning')"
+				:class="`h-4 w-8 text-${color}-600`"
+			/>
+			<lucide-info
+				v-if="showIcon && type === 'info'"
+				:class="`h-4 w-8 text-${color}-600`"
+			/>
+			<div
+				:class="{ 'ml-3': showIcon }"
+				class="text-p-base font-medium text-gray-800"
+				v-html="title"
+			/>
+		</div>
 
-		<!-- Button Slot -->
-		<slot></slot>
+		<div class="flex items-center">
+			<!-- Button Slot -->
+			<slot></slot>
+
+			<div
+				class="ml-3 flex items-center justify-center overflow-hidden rounded-sm"
+				v-if="isDismissible"
+			>
+				<Button
+					class="ml-1"
+					variant="ghost"
+					theme="colors"
+					@click="$emit('dismissBanner')"
+				>
+					<template #icon>
+						<lucide-x class="h-4 w-4" />
+					</template>
+				</Button>
+			</div>
+		</div>
 	</div>
 </template>
 <script>
@@ -26,6 +46,7 @@ const colors = {
 	success: 'green',
 	error: 'red',
 	warning: 'amber',
+	general: 'gray',
 };
 
 export default {
@@ -39,6 +60,10 @@ export default {
 		showIcon: {
 			type: Boolean,
 			default: true,
+		},
+		isDismissible: {
+			type: Number,
+			default: 0,
 		},
 	},
 	computed: {

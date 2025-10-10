@@ -72,7 +72,10 @@
   "allow_physical_backup_by_user",
   "tab_break_46",
   "notifications_section",
-  "notify_email",
+  "communication_infos",
+  "monitoring_section",
+  "is_monitoring_disabled",
+  "reason_for_disabling_monitoring",
   "auto_updates_section",
   "skip_auto_updates",
   "only_update_at_specified_time",
@@ -185,7 +188,8 @@
    "in_standard_filter": 1,
    "label": "Team",
    "options": "Team",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "collapsible": 1,
@@ -280,7 +284,8 @@
    "fieldname": "domain",
    "fieldtype": "Link",
    "label": "Domain",
-   "options": "Root Domain"
+   "options": "Root Domain",
+   "search_index": 1
   },
   {
    "fieldname": "_site_usages",
@@ -381,11 +386,6 @@
    "fieldname": "skip_auto_updates",
    "fieldtype": "Check",
    "label": "Skip Auto Updates"
-  },
-  {
-   "fieldname": "notify_email",
-   "fieldtype": "Data",
-   "label": "Notify Email"
   },
   {
    "collapsible": 1,
@@ -550,7 +550,8 @@
    "fieldname": "standby_for_product",
    "fieldtype": "Link",
    "label": "Standby for Product",
-   "options": "Product Trial"
+   "options": "Product Trial",
+   "search_index": 1
   },
   {
    "default": "0",
@@ -709,6 +710,31 @@
    "fieldname": "disable_site_usage_exceed_check",
    "fieldtype": "Check",
    "label": "Disable Site Usage Exceed Check"
+  },
+  {
+   "fieldname": "communication_infos",
+   "fieldtype": "Table",
+   "label": "Communication Infos",
+   "options": "Communication Info"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_monitoring_disabled",
+   "fieldtype": "Check",
+   "label": "Is Monitoring Disabled",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "monitoring_section",
+   "fieldtype": "Section Break",
+   "label": "Monitoring"
+  },
+  {
+   "fieldname": "reason_for_disabling_monitoring",
+   "fieldtype": "Data",
+   "label": "Reason for Disabling Monitoring",
+   "read_only": 1
   }
  ],
  "links": [
@@ -788,7 +814,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2025-06-24 15:48:14.796986",
+ "modified": "2025-10-07 19:14:24.341019",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

@@ -14,7 +14,10 @@ from press.exceptions import ArchiveBenchError
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.app_release.test_app_release import create_test_app_release
+from press.press.doctype.app_source.test_app_source import create_test_app_source
 from press.press.doctype.bench.bench import (
+	EMPTY_BENCH_COURTESY_DAYS,
 	MAX_BACKGROUND_WORKERS,
 	MAX_GUNICORN_WORKERS,
 	Bench,
@@ -32,6 +35,7 @@ from press.press.doctype.release_group.test_release_group import (
 from press.press.doctype.server.server import Server, scale_workers
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
+from press.press.doctype.site_update.test_site_update import create_test_site_update
 from press.press.doctype.subscription.test_subscription import create_test_subscription
 from press.press.doctype.version_upgrade.test_version_upgrade import (
 	create_test_version_upgrade,
@@ -465,6 +469,50 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 			poll_pending_jobs()
 		benches_after = frappe.db.count("Bench", {"status": "Active"})
 		self.assertEqual(benches_after, benches_before)
+
+	@patch("press.press.doctype.bench.bench.frappe.enqueue", new=foreground_enqueue)
+	def test_if_fatal_site_update_with_source_bench_blocks_archival(self):
+		version = "Version 15"
+		app = create_test_app()
+		app_source = create_test_app_source(version=version, app=app)
+		group = create_test_release_group([app], frappe_version=version)
+
+		with fake_agent_job("New Bench"):
+			bench1 = create_test_bench(group=group)
+			poll_pending_jobs()
+
+		site = create_test_site(bench=bench1.name, fake_agent_jobs=True)
+		create_test_app_release(
+			app_source=app_source
+		)  # creates pull type release diff only but args are same
+
+		with fake_agent_job("New Bench"):
+			bench2 = create_test_bench(group=group, server=bench1.server)
+			poll_pending_jobs()
+
+		create_test_deploy_candidate_differences(bench2.candidate)  # for site update to be available
+
+		update = create_test_site_update(site.name, site.group, "Fatal")  # recent site update
+		site.db_set(
+			"bench", bench2.name
+		)  # simulate site moved to new bench, but not rolled back. This makes bench1 a potential archival candidate
+
+		benches_before = frappe.db.count("Bench", {"status": "Active"})  # 2
+
+		with fake_agent_job("Archive Bench"):
+			archive_obsolete_benches()
+			poll_pending_jobs()
+
+		benches_after = frappe.db.count("Bench", {"status": "Active"})  # 2
+		self.assertEqual(benches_after, benches_before)
+
+		update.db_set("creation", frappe.utils.add_days(None, -EMPTY_BENCH_COURTESY_DAYS - 1))
+		with fake_agent_job("Archive Bench"):
+			archive_obsolete_benches()
+			poll_pending_jobs()
+
+		benches_after = frappe.db.count("Bench", {"status": "Active"})  # 1
+		self.assertEqual(benches_after, benches_before - 1)
 
 	@patch(
 		"press.press.doctype.bench.bench.archive_obsolete_benches_for_server",

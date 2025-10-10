@@ -28,7 +28,9 @@ import router from '../../router';
 import { getToastErrorMessage } from '../../utils/toast';
 import DatabaseConfigurationDialog from './DatabaseConfigurationDialog.vue';
 import DatabaseBinlogsDialog from './DatabaseBinlogsDialog.vue';
-import { h, render } from 'vue';
+import CleanupDialog from './CleanupDialog.vue';
+import { h } from 'vue';
+import CommunicationInfoDialog from '../CommunicationInfoDialog.vue';
 
 const props = defineProps({
 	serverName: { type: String, required: true },
@@ -44,9 +46,11 @@ const server = getCachedDocumentResource(props.serverType, props.serverName);
 
 function getServerActionHandler(action) {
 	const actionHandlers = {
+		'Notification Settings': onNotificationSettings,
 		'Reboot server': onRebootServer,
 		'Rename server': onRenameServer,
 		'Drop server': onDropServer,
+		'Cleanup Server': onCleanupServer,
 		'Enable Performance Schema': onEnablePerformanceSchema,
 		'Disable Performance Schema': onDisablePerformanceSchema,
 		'Update InnoDB Buffer Pool Size': onUpdateInnodbBufferPoolSize,
@@ -58,6 +62,25 @@ function getServerActionHandler(action) {
 	if (actionHandlers[action]) {
 		actionHandlers[action].call(this);
 	}
+}
+
+function onNotificationSettings() {
+	if (!server?.doc) return;
+	return renderDialog(
+		h(CommunicationInfoDialog, {
+			referenceDoctype: 'Server',
+			referenceName: server.doc.name,
+		}),
+	);
+}
+
+function onCleanupServer() {
+	renderDialog(
+		h(CleanupDialog, {
+			server: server,
+			title: 'Server Cleanup',
+		}),
+	);
 }
 
 function onRebootServer() {

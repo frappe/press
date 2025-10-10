@@ -1097,7 +1097,7 @@ def get(name):
 
 	team = get_current_team()
 	try:
-		site = frappe.get_doc("Site", name)
+		site: "Site" = frappe.get_doc("Site", name)
 	except frappe.DoesNotExistError:
 		# If name is a custom domain then redirect to the site name
 		site_name = frappe.db.get_value("Site Domain", name, "site")
@@ -1171,7 +1171,9 @@ def get(name):
 		"server_region_info": get_server_region_info(site),
 		"can_change_plan": server.team != team or (on_dedicated_server and server.team == team),
 		"hide_config": site.hide_config,
-		"notify_email": site.notify_email,
+		"communication_infos": [
+			{"channel": c.channel, "type": c.type, "value": c.value} for c in site.communication_infos
+		],
 		"ip": ip,
 		"site_tags": [{"name": x.tag, "tag": x.tag_name} for x in site.tags],
 		"tags": frappe.get_all("Press Tag", {"team": team, "doctype_name": "Site"}, ["name", "tag"]),
@@ -1679,7 +1681,7 @@ def check_domain_allows_letsencrypt_certs(domain):
 	except dns.resolver.NoAnswer:
 		pass  # no CAA record. Anything goes
 	except dns.exception.DNSException:
-		pass  # We have other probems
+		pass  # We have other problems
 	else:
 		frappe.throw(
 			f"Domain {naked_domain} does not allow Let's Encrypt certificates. Please review CAA record for the same.",
@@ -1801,7 +1803,7 @@ def get_proxy_and_redirected_status(domain) -> tuple[str | None, bool]:
 		return server, redirected
 
 
-def check_dns_cname_a(name, domain, ignore_proxying=False):
+def _check_dns_cname_a(name, domain, ignore_proxying=False, throw_proxy_validation_early=True):
 	check_domain_allows_letsencrypt_certs(domain)
 	proxy, redirected = get_proxy_and_redirected_status(domain)
 	if proxy:
@@ -1813,11 +1815,12 @@ def check_dns_cname_a(name, domain, ignore_proxying=False):
 				DomainNoLongerPointed,
 			)
 
-		frappe.throw(
-			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.
-			<br>You may enable it again, once the domain is verified.""",
-			DomainProxied,
-		)
+		if throw_proxy_validation_early:
+			frappe.throw(
+				f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.""",
+				DomainProxied,
+			)
+
 	ensure_dns_aaaa_record_doesnt_exist(domain)
 	cname = check_dns_cname(name, domain)
 	result = {"CNAME": cname} | cname
@@ -1835,12 +1838,37 @@ def check_dns_cname_a(name, domain, ignore_proxying=False):
 		)
 	if a["matched"] and cname["exists"] and not cname["matched"]:
 		frappe.throw(
-			"""
-			f"Domain <b>{domain}</b> has correct A record <b>{a['answer'].strip().split()[-1]}</b>, but also a CNAME record that points to an incorrect domain <b>{cname['answer'].strip().split()[-1]}</b>.
+			f"""
+			Domain <b>{domain}</b> has correct A record <b>{a["answer"].strip().split()[-1]}</b>, but also a CNAME record that points to an incorrect domain <b>{cname["answer"].strip().split()[-1]}</b>.
 			<br>Please remove the same or update the record.
 			""",
 			ConflictingDNSRecord,
 		)
+
+	if proxy and not throw_proxy_validation_early:
+		frappe.throw(
+			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.""",
+			DomainProxied,
+		)
+
+	result["valid"] = cname["matched"] or a["matched"]
+	return result
+
+
+def check_dns_cname_a(
+	name, domain, ignore_proxying=False, throw_error=True, throw_proxy_validation_early=True
+):
+	if throw_error:
+		return _check_dns_cname_a(name, domain, ignore_proxying, throw_proxy_validation_early)
+
+	result = {}
+	try:
+		result = _check_dns_cname_a(name, domain, ignore_proxying, throw_proxy_validation_early)
+
+	except Exception as e:
+		result["exc_type"] = e.__class__.__name__
+		result["exc_message"] = str(e)
+		result["valid"] = False
 
 	return result
 
@@ -2111,14 +2139,6 @@ def get_job_status(job_name):
 
 @frappe.whitelist()
 @protected("Site")
-def change_notify_email(name, email):
-	site_doc = frappe.get_doc("Site", name)
-	site_doc.notify_email = email
-	site_doc.save(ignore_permissions=True)
-
-
-@frappe.whitelist()
-@protected("Site")
 def send_change_team_request(name, team_mail_id, reason):
 	frappe.get_doc("Site", name).send_change_team_request(team_mail_id, reason)
 
@@ -2195,6 +2215,9 @@ def add_server_to_release_group(name, group_name, server=None):
 			)
 		else:
 			frappe.throw(str(e), type(e))
+
+	if isinstance(deploy, str):
+		return None
 
 	bench = find(deploy.benches, lambda bench: bench.server == server).bench
 	return frappe.get_value("Agent Job", {"bench": bench, "job_type": "New Bench"}, "name")

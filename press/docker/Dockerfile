@@ -1,5 +1,5 @@
 # syntax = docker/dockerfile:experimental
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 ENV FRAPPE_DOCKER_BUILD True
 ENV LANG C.UTF-8
@@ -63,7 +63,7 @@ COPY --chown=root:root supervisord.conf /etc/supervisor/supervisord.conf
 
 # Install Redis from PPA
 RUN --mount=type=cache,target=/var/cache/apt curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg \
-  && echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb focal main" | tee /etc/apt/sources.list.d/redis.list \
+  && echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb jammy main" | tee /etc/apt/sources.list.d/redis.list \
   && apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
   redis-server \
@@ -90,35 +90,29 @@ ENV {{ doc.get_dependency_version("wkhtmltopdf", True) }}
 {% if is_arm_build %}
   # ARM setup (0.12.5) & (0.12.6)
   {% if doc.get_dependency_version("wkhtmltopdf") == '0.12.5' %}
-  RUN wget https://github.com/adityahase/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.focal_arm64.deb \
-    && dpkg -i wkhtmltox_0.12.5-1.focal_arm64.deb \
-    && rm wkhtmltox_0.12.5-1.focal_arm64.deb \
+  RUN wget https://github.com/Aradhya-Tripathi/wkhtmltopdf/releases/download/0.12.5-arm/wkhtmltox_0.12.5-1.jammy_arm64.deb \
+    && dpkg -i wkhtmltox_0.12.5-1.jammy_arm64.deb \
+    && rm wkhtmltox_0.12.5-1.jammy_arm64.deb \
     `#stage-pre-wkhtmltopdf`
   {% endif %}
 
   {% if doc.get_dependency_version("wkhtmltopdf") == '0.12.6' %}
-  RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_arm64.deb \
-    && dpkg -i wkhtmltox_0.12.6-1.focal_arm64.deb \
-    && rm wkhtmltox_0.12.6-1.focal_arm64.deb \
+  RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_arm64.deb  \
+    && dpkg -i wkhtmltox_0.12.6.1-2.jammy_arm64.deb \
+    && rm wkhtmltox_0.12.6.1-2.jammy_arm64.deb \
     `#stage-pre-wkhtmltopdf`
   {% endif %}
 {% else %}
   # Intel setup
   {% if doc.get_dependency_version("wkhtmltopdf") == '0.12.6' %}
-  RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_amd64.deb \
-    && dpkg -i wkhtmltox_0.12.6-1.focal_amd64.deb \
-    && rm wkhtmltox_0.12.6-1.focal_amd64.deb \
+  RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_amd64.deb  \
+    && dpkg -i wkhtmltox_0.12.6.1-2.jammy_amd64.deb \
+    && rm wkhtmltox_0.12.6.1-2.jammy_amd64.deb \
     `#stage-pre-wkhtmltopdf`
   {% elif doc.get_dependency_version("wkhtmltopdf") == '0.12.5' %}
-  RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.focal_amd64.deb \
-    && dpkg -i wkhtmltox_0.12.5-1.focal_amd64.deb \
-    && rm wkhtmltox_0.12.5-1.focal_amd64.deb \
-    `#stage-pre-wkhtmltopdf`
-  {% elif doc.get_dependency_version("wkhtmltopdf") == '0.12.4' %}
-  RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz \
-    && tar -xvf wkhtmltox-0.12.4_linux-generic-amd64.tar.xz \
-    && mv wkhtmltox/bin/wkhtmlto* /usr/local/bin/ \
-    && rm -rf wkhtmltox-0.12.4_linux-generic-amd64.tar.xz wkhtmltox \
+  RUN wget https://github.com/Aradhya-Tripathi/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.jammy_amd64.deb  \
+    && dpkg -i wkhtmltox_0.12.5-1.jammy_amd64.deb \
+    && rm wkhtmltox_0.12.5-1.jammy_amd64.deb \
     `#stage-pre-wkhtmltopdf`
   {% endif %}
 {% endif %}
@@ -175,7 +169,7 @@ RUN  --mount=type=cache,target=/var/cache/apt {{ p.after_install }} \
 
 
 # symlink mysqldump to mariadb-dump
-RUN ln -s /usr/bin/mysqldump /usr/bin/mariadb-dump
+RUN test -f /usr/bin/mariadb-dump || ln -s /usr/bin/mysqldump /usr/bin/mariadb-dump
 
 # Switch to frappe
 USER frappe
