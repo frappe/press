@@ -264,6 +264,7 @@
 		"ikxn",
 		"ILIKE",
 		"imds",
+		"inmemory",
 		"innodb",
 		"innoterra",
 		"inodes",
@@ -678,4 +679,3 @@
 		"Zvkq"
 	]
 }
-

@@ -76,14 +76,16 @@ class AggType(Enum):
 
 
 TIMESPAN_TIMEGRAIN_MAP: Final[dict[str, tuple[int, int]]] = {
-	"1h": (60 * 60, 60),
+	"1h": (60 * 60, 2 * 60),
 	"6h": (6 * 60 * 60, 5 * 60),
 	"24h": (24 * 60 * 60, 30 * 60),
+	"3d": (3 * 24 * 60 * 60, 60 * 60),
 	"7d": (7 * 24 * 60 * 60, 2 * 60 * 60),
 	"15d": (15 * 24 * 60 * 60, 3 * 60 * 60),
 }
 
 MAX_NO_OF_PATHS: Final[int] = 10
+MAX_QUERIES: Final[int] = 25
 MAX_MAX_NO_OF_PATHS: Final[int] = 50
 
 
@@ -92,7 +94,6 @@ class StackedGroupByChart:
 	to_s_divisor: float = 1e6
 	normalize_slow_logs: bool = False
 	group_by_field: str
-	max_no_of_paths: int = 10
 
 	def __init__(
 		self,
@@ -497,16 +498,13 @@ def get_metrics(
 	promql_query: str,
 	timezone: str,
 	response_key: str,
-	group: str | None = None,
-	bench: str | None = None,
+	name: str | None = None,
 	duration: str = "24h",
 ):
-	if not group:
-		frappe.throw("Bench group not found!")
+	if not name:
+		frappe.throw("No release group found!")
 
-	benches = (
-		frappe.get_all("Bench", {"status": "Active", "group": group}, pluck="name") if group else [bench]
-	)
+	benches = frappe.get_all("Bench", {"status": "Active", "group": name}, pluck="name")
 
 	if not benches:
 		frappe.throw("No active benches found!")
@@ -523,10 +521,8 @@ def get_metrics(
 
 
 @frappe.whitelist()
-@protected("Server")
-def get_fs_read_bytes(
-	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
-):
+@protected("Release Group")
+def get_fs_read_bytes(name: str, timezone: str, duration: str = "24h"):
 	promql_query = (
 		'sum by (name) (rate(container_fs_reads_bytes_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
 	)
@@ -534,17 +530,14 @@ def get_fs_read_bytes(
 		promql_query=promql_query,
 		timezone=timezone,
 		response_key="read_bytes_fs",
-		group=group,
-		bench=bench,
+		name=name,
 		duration=duration,
 	)
 
 
 @frappe.whitelist()
-@protected("Server")
-def get_fs_write_bytes(
-	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
-):
+@protected("Release Group")
+def get_fs_write_bytes(name: str, timezone: str, duration: str = "24h"):
 	promql_query = (
 		'sum by (name) (rate(container_fs_writes_bytes_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
 	)
@@ -552,33 +545,27 @@ def get_fs_write_bytes(
 		promql_query=promql_query,
 		timezone=timezone,
 		response_key="write_bytes_fs",
-		group=group,
-		bench=bench,
+		name=name,
 		duration=duration,
 	)
 
 
 @frappe.whitelist()
-@protected("Server")
-def get_outgoing_network_traffic(
-	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
-):
+@protected("Release Group")
+def get_outgoing_network_traffic(name: str, timezone: str, duration: str = "24h"):
 	promql_query = 'sum by (name) (rate(container_network_transmit_bytes_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
 	return get_metrics(
 		promql_query=promql_query,
 		timezone=timezone,
 		response_key="network_traffic_outward",
-		group=group,
-		bench=bench,
+		name=name,
 		duration=duration,
 	)
 
 
 @frappe.whitelist()
-@protected("Server")
-def get_incoming_network_traffic(
-	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
-):
+@protected("Release Group")
+def get_incoming_network_traffic(name: str, timezone: str, duration: str = "24h"):
 	promql_query = (
 		'sum by (name) (rate(container_network_receive_bytes_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
 	)
@@ -586,31 +573,27 @@ def get_incoming_network_traffic(
 		promql_query=promql_query,
 		timezone=timezone,
 		response_key="network_traffic_inward",
-		group=group,
-		bench=bench,
+		name=name,
 		duration=duration,
 	)
 
 
 @frappe.whitelist()
-@protected("Server")
-def get_memory_usage(
-	timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"
-):
+@protected("Release Group")
+def get_memory_usage(name: str, timezone: str, duration: str = "24h"):
 	promql_query = 'sum by (name) (avg_over_time(container_memory_usage_bytes{{job="cadvisor", name=~"{benches}"}}[5m]) / 1024 / 1024 / 1024)'
 	return get_metrics(
 		promql_query=promql_query,
 		timezone=timezone,
 		response_key="memory",
-		group=group,
-		bench=bench,
+		name=name,
 		duration=duration,
 	)
 
 
 @frappe.whitelist()
-@protected("Server")
-def get_cpu_usage(timezone: str, group: str | None = None, bench: str | None = None, duration: str = "24h"):
+@protected("Release Group")
+def get_cpu_usage(name: str, timezone: str, duration: str = "24h"):
 	promql_query = (
 		'sum by (name) ( rate(container_cpu_usage_seconds_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
 	)
@@ -618,8 +601,7 @@ def get_cpu_usage(timezone: str, group: str | None = None, bench: str | None = N
 		promql_query=promql_query,
 		timezone=timezone,
 		response_key="cpu",
-		group=group,
-		bench=bench,
+		name=name,
 		duration=duration,
 	)
 
@@ -653,7 +635,6 @@ def add_commonly_slow_path_to_reports(
 			reports[slow_path["id"]] = slow_path["function"](
 				name, "duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
 			)
-			break
 
 
 def get_additional_duration_reports(
@@ -685,8 +666,8 @@ def get_advanced_analytics(name, timezone, duration="7d", max_no_of_paths=MAX_NO
 		name, "duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
 	)
 
-	background_job_duration_by_method = get_background_job_by_method(
-		name, "duration", timezone, timespan, timegrain, max_no_of_paths
+	background_job_duration_by_method = get_background_job_by_(
+		name, "duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
 	)
 
 	return (
@@ -701,12 +682,12 @@ def get_advanced_analytics(name, timezone, duration="7d", max_no_of_paths=MAX_NO
 			"request_count_by_ip": get_nginx_request_by_(
 				name, "count", timezone, timespan, timegrain, max_no_of_paths
 			),
-			"background_job_count_by_method": get_background_job_by_method(
-				name, "count", timezone, timespan, timegrain, max_no_of_paths
+			"background_job_count_by_method": get_background_job_by_(
+				name, "count", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
 			),
 			"background_job_duration_by_method": background_job_duration_by_method,
-			"average_background_job_duration_by_method": get_background_job_by_method(
-				name, "average_duration", timezone, timespan, timegrain, max_no_of_paths
+			"average_background_job_duration_by_method": get_background_job_by_(
+				name, "average_duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
 			),
 			"job_count": [{"value": r.count, "date": r.date} for r in job_data],
 			"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
@@ -813,7 +794,8 @@ def normalize_datasets(datasets: list[Dataset]) -> list[Dataset]:
 		n_query = normalize_query(data_dict["path"])
 		if n_datasets.get(n_query):
 			n_datasets[n_query]["values"] = [
-				x + y for x, y in zip(n_datasets[n_query]["values"], data_dict["values"], strict=False)
+				x + y if x and y else x or y
+				for x, y in zip(n_datasets[n_query]["values"], data_dict["values"], strict=True)
 			]
 		else:
 			data_dict["path"] = n_query
@@ -854,9 +836,17 @@ def get_nginx_request_by_(
 
 
 @redis_cache(ttl=10 * 60)
-def get_background_job_by_method(site, agg_type, timezone, timespan, timegrain, max_no_of_paths):
+def get_background_job_by_(
+	site,
+	agg_type,
+	timezone,
+	timespan,
+	timegrain,
+	resource_type=ResourceType.SITE,
+	max_no_of_paths=MAX_NO_OF_PATHS,
+):
 	return BackgroundJobGroupByChart(
-		site, agg_type, timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+		site, agg_type, timezone, timespan, timegrain, resource_type, max_no_of_paths
 	).run()
 
 
@@ -867,7 +857,7 @@ def get_slow_logs_by_query(
 	timezone: str,
 	duration: str = "24h",
 	normalize: bool = False,
-	max_no_of_paths: int = MAX_NO_OF_PATHS,
+	max_no_of_paths: int = MAX_QUERIES,
 ):
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
 
@@ -938,6 +928,54 @@ def get_query_report_run_reports(*args, **kwargs):
 	return QueryReportRunReports(*args, **kwargs).run()
 
 
+class SaveDocsDoctypes(RequestGroupByChart):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+	def setup_search_filters(self):
+		super().setup_search_filters()
+		self.group_by_field = "json.doctype"
+		self.search = self.search.filter(
+			"match_phrase", json__request__path="/api/method/frappe.desk.form.save.savedocs"
+		)
+
+	def exclude_top_k_data(self, datasets: list[Dataset]):
+		if ResourceType(self.resource_type) is ResourceType.SITE:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__doctype=path)
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:  # not used atp
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__site=path)
+
+
+def get_save_docs_doctypes(*args, **kwargs):
+	return SaveDocsDoctypes(*args, **kwargs).run()
+
+
+class SaveDocsActions(RequestGroupByChart):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+	def setup_search_filters(self):
+		super().setup_search_filters()
+		self.group_by_field = "json.action"
+		self.search = self.search.filter(
+			"match_phrase", json__request__path="/api/method/frappe.desk.form.save.savedocs"
+		)
+
+	def exclude_top_k_data(self, datasets: list[Dataset]):
+		if ResourceType(self.resource_type) is ResourceType.SITE:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__action=path)
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:  # not used atp
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__site=path)
+
+
+def get_save_docs_actions(*args, **kwargs):
+	return SaveDocsActions(*args, **kwargs).run()
+
+
 def get_generate_report_reports(*args, **kwargs):
 	return GenerateReportReports(*args, **kwargs).run()
 
@@ -958,6 +996,16 @@ COMMONLY_SLOW_PATHS: list[CommonSlowPath] = [
 		"path": "/api/method/frappe.desk.query_report.run",
 		"id": "query_report_run_reports",
 		"function": get_query_report_run_reports,
+	},
+	{
+		"path": "/api/method/frappe.desk.form.save.savedocs",
+		"id": "save_docs_doctypes",
+		"function": get_save_docs_doctypes,
+	},
+	{
+		"path": "/api/method/frappe.desk.form.save.savedocs",
+		"id": "save_docs_actions",
+		"function": get_save_docs_actions,
 	},
 ]
 

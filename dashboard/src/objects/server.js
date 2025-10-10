@@ -22,6 +22,7 @@ export default {
 		toggleAutoIncreaseStorage: 'toggle_auto_increase_storage',
 		reboot: 'reboot',
 		rename: 'rename',
+		cleanup: 'cleanup_unused_files',
 		dropServer: 'drop_server',
 		addTag: 'add_resource_tag',
 		removeTag: 'remove_resource_tag',
@@ -196,6 +197,33 @@ export default {
 									}/app/${server.doctype.replace(' ', '-').toLowerCase()}/${
 										server.doc.name
 									}`,
+									'_blank',
+								);
+							},
+						},
+						{
+							label: 'View DB in Desk',
+							icon: icon('external-link'),
+							condition: () => $team.doc?.is_desk_user,
+							onClick() {
+								window.open(
+									`${window.location.protocol}//${
+										window.location.host
+									}/app/database-server/${server.doc.database_server}`,
+									'_blank',
+								);
+							},
+						},
+						{
+							label: 'View Replication DB in Desk',
+							icon: icon('external-link'),
+							condition: () =>
+								$team.doc?.is_desk_user && server.doc.replication_server,
+							onClick() {
+								window.open(
+									`${window.location.protocol}//${
+										window.location.host
+									}/app/database-server/${server.doc.replication_server}`,
 									'_blank',
 								);
 							},

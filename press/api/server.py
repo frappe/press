@@ -175,6 +175,13 @@ def archive(name):
 
 
 @frappe.whitelist()
+@protected(["Server"])
+def get_reclaimable_size(name):
+	server: Server = frappe.get_doc("Server", name)
+	return server.agent.get("server/reclaimable-size")
+
+
+@frappe.whitelist()
 def new(server):
 	server_plan_platform = frappe.get_value("Server Plan", server["app_plan"], "platform")
 	cluster_has_arm_support = frappe.get_value("Cluster", server["cluster"], "has_arm_support")
@@ -400,6 +407,17 @@ def get_request_by_site(name, query, timezone, duration):
 	timespan, timegrain = get_timespan_timegrain(duration)
 
 	return get_request_by_(name, query, timezone, timespan, timegrain, ResourceType.SERVER)
+
+
+@frappe.whitelist()
+@protected(["Server", "Database Server"])
+@redis_cache(ttl=10 * 60)
+def get_background_job_by_site(name, query, timezone, duration):
+	from press.api.analytics import ResourceType, get_background_job_by_
+
+	timespan, timegrain = get_timespan_timegrain(duration)
+
+	return get_background_job_by_(name, query, timezone, timespan, timegrain, ResourceType.SERVER)
 
 
 @frappe.whitelist()

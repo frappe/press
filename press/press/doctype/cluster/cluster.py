@@ -45,6 +45,8 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
+DEFAULT_SERVER_TITLE = "First"
+
 
 class Cluster(Document):
 	# begin: auto-generated types
@@ -74,6 +76,7 @@ class Cluster(Document):
 		proxy_security_group_id: DF.Data | None
 		public: DF.Check
 		region: DF.Link | None
+		repository: DF.Data | None
 		route_table_id: DF.Data | None
 		security_group_id: DF.Data | None
 		ssh_key: DF.Link | None
@@ -672,28 +675,41 @@ class Cluster(Document):
 			server_doctypes = {**server_doctypes, **self.private_servers}
 		return server_doctypes
 
-	def get_same_region_vmis(self, get_series=False):
-		return frappe.get_all(
-			"Virtual Machine Image",
-			filters={
-				"region": self.region,
-				"series": ("in", list(self.server_doctypes.values())),
-				"status": "Available",
-			},
-			pluck="name" if not get_series else "series",
-		)
-
-	def get_other_region_vmis(self, get_series=False):
+	def get_same_region_vmis(self, platform="x86_64", get_series=False) -> list[str]:
 		vmis = []
 		for series in list(self.server_doctypes.values()):
 			vmis.extend(
 				frappe.get_all(
 					"Virtual Machine Image",
-					["name", "series", "creation"],
+					filters={
+						"region": self.region,
+						"series": series,
+						"status": "Available",
+						"public": True,
+						"platform": "x86_64" if series == "n" else platform,
+						"cloud_provider": self.cloud_provider,
+					},
+					limit=1,
+					order_by="creation DESC",
+					pluck="name" if not get_series else "series",
+				)
+			)
+
+		return vmis
+
+	def get_other_region_vmis(self, platform="x86_64", get_series=False) -> list[str]:
+		vmis = []
+		for series in list(self.server_doctypes.values()):
+			vmis.extend(
+				frappe.get_all(
+					"Virtual Machine Image",
 					filters={
 						"region": ("!=", self.region),
 						"series": series,
 						"status": "Available",
+						"public": True,
+						"platform": "x86_64" if series == "n" else platform,
+						"cloud_provider": self.cloud_provider,
 					},
 					limit=1,
 					order_by="creation DESC",
@@ -706,15 +722,28 @@ class Cluster(Document):
 	def copy_virtual_machine_images(self) -> Generator[VirtualMachineImage, None, None]:
 		"""Creates VMIs required for the cluster"""
 		copies = []
-		for vmi in self.get_other_region_vmis():
+		for vmi in set(self.get_other_region_vmis()) - set(self.get_same_region_vmis()):
 			copies.append(
-				frappe.get_doc(
+				VirtualMachineImage(
 					"Virtual Machine Image",
 					vmi,
-				).copy_image(self.name)
+				).copy_image(str(self.name))
 			)
 			frappe.db.commit()
 		yield from copies
+
+	@frappe.whitelist()
+	def create_proxy(self):
+		"""Creates a proxy server for the cluster"""
+		if self.images_available < 1:
+			frappe.throw(
+				"Images are not available. Add them or wait for copy to complete",
+				frappe.ValidationError,
+			)
+		if self.status != "Active":
+			frappe.throw("Cluster is not active", frappe.ValidationError)
+
+		self.create_server("Proxy Server", DEFAULT_SERVER_TITLE)
 
 	@frappe.whitelist()
 	def create_servers(self):
@@ -731,7 +760,7 @@ class Cluster(Document):
 			# TODO: remove Test title #
 			server, _ = self.create_server(
 				doctype,
-				"Test",
+				DEFAULT_SERVER_TITLE,
 			)
 			match doctype:  # for populating Server doc's fields; assume the trio is created together
 				case "Database Server":
@@ -743,7 +772,7 @@ class Cluster(Document):
 		for doctype, _ in self.private_servers.items():
 			self.create_server(
 				doctype,
-				"Test",
+				DEFAULT_SERVER_TITLE,
 				create_subscription=False,
 			)
 
@@ -814,6 +843,15 @@ class Cluster(Document):
 			},
 		).insert()
 
+	def get_default_instance_type(self):
+		if self.cloud_provider == "AWS EC2":
+			return "t3.medium"
+		if self.cloud_provider == "OCI":
+			return "VM.Standard.E4.Flex"
+		if self.cloud_provider == "Hetzner":
+			return "cpx21"
+		return None
+
 	def get_or_create_basic_plan(self, server_type):
 		plan = frappe.db.exists("Server Plan", f"Basic Cluster - {server_type}")
 		if plan:
@@ -823,7 +861,7 @@ class Cluster(Document):
 				"doctype": "Server Plan",
 				"name": f"Basic Cluster - {server_type}",
 				"title": f"Basic Cluster - {server_type}",
-				"instance_type": "t2.medium",
+				"instance_type": self.get_default_instance_type(),
 				"price_inr": 0,
 				"price_usd": 0,
 				"vcpu": 2,

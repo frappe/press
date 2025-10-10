@@ -59,13 +59,15 @@ class Agent:
 			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
 			as_dict=True,
 		)
+		cluster = frappe.db.get_value(self.server_type, self.server, "cluster")
+		registry_url = frappe.db.get_value("Cluster", cluster, "repository") or settings.docker_registry_url
 
 		data = {
 			"name": bench.name,
 			"bench_config": json.loads(bench.bench_config),
 			"common_site_config": json.loads(bench.config),
 			"registry": {
-				"url": settings.docker_registry_url,
+				"url": registry_url,
 				"username": settings.docker_registry_username,
 				"password": settings.docker_registry_password,
 			},
@@ -866,8 +868,8 @@ class Agent:
 	def reload_nginx(self):
 		return self.create_agent_job("Reload NGINX Job", "proxy/reload")
 
-	def cleanup_unused_files(self):
-		return self.create_agent_job("Cleanup Unused Files", "server/cleanup", {})
+	def cleanup_unused_files(self, force: bool = False):
+		return self.create_agent_job("Cleanup Unused Files", "server/cleanup", {"force": force})
 
 	def get(self, path, raises=True):
 		return self.request("GET", path, raises=raises)
