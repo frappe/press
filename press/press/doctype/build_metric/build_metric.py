@@ -331,3 +331,45 @@ def deploy_metrics(start_from: DateTimeLikeObject, to: DateTimeLikeObject) -> di
 def create_build_metric():
 	"""Create build metric triggered from hooks."""
 	frappe.new_doc("Build Metric").insert(ignore_permissions=True)
+
+
+build_failures = frappe.get_all(
+	"Deploy Candidate Build",
+	{
+		"creation": ("between", [start_from, to]),
+		"status": "Failure",
+		"user_addressable_failure": False,
+		"manually_failed": False,
+		"deploy_after_build": 1,
+	},
+)
+
+for failure in build_failures:
+	failed_build_step = frappe.db.get_value(
+		"Deploy Candidate Build Step",
+		{"parent": failure["name"], "status": "Failure"},
+		["stage", "step", "output"],
+	)
+	if not failed_build_step:
+		continue
+
+	step_name, step, output = failed_build_step
+	failure_key = f"{step_name}-{step}"
+	if failure_key in failed_step_frequency:
+		failed_step_frequency[failure_key] = failed_step_frequency[failure_key] + 1
+	else:
+		failed_step_frequency[failure_key] = 1
+
+	for key, error_key in {
+		"Node not found": "npm: not found",
+		"Permission issue": "permission denied",
+		"Timed out": "timeout",
+		"Check sum failed": "failed to calculate checksum",
+	}:
+		if output and error_key in output:
+			if key not in failure_output_frequency:
+				failure_output_frequency[key] = 1
+			else:
+				failure_output_frequency[key] = failure_output_frequency[key] + 1
+
+	print(failed_step_frequency, failure_output_frequency)
