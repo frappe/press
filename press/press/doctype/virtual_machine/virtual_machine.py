@@ -1074,7 +1074,7 @@ class VirtualMachine(Document):
 				server = server[0]
 				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
 				frappe.db.set_value(doctype, server, "private_ip", self.private_ip_address)
-				if doctype == "Server":
+				if doctype in ["Server", "Proxy Server"]:
 					frappe.db.set_value(doctype, server, "is_static_ip", self.is_static_ip)
 				if doctype in ["Server", "Database Server"]:
 					frappe.db.set_value(doctype, server, "ram", self.ram)
