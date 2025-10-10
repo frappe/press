@@ -1079,10 +1079,16 @@ def billing_forecast():
 
 	last_month_cost = last_month_invoice.total if last_month_invoice else 0
 
+	# Calculate percentage change from last month to current month
+	month_over_month_change = 0
+	if last_month_cost > 0:
+		month_over_month_change = ((forecasted_month_end - last_month_cost) / last_month_cost) * 100
+
 	return {
 		"current_month_cost": current_month_cost,
 		"forecasted_month_end": forecasted_month_end,
 		"last_month_cost": last_month_cost,
 		"usage_breakdown": usage_breakdown,
+		"month_over_month_change": month_over_month_change,
 		"currency": team.currency,
 	}
