@@ -23,6 +23,12 @@ frappe.ui.form.on('Proxy Server', {
 			[__('Prepare Server'), 'prepare_server', true, !frm.doc.is_server_setup],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
 			[
+				__('Get AWS Static IP'),
+				'get_aws_static_ip',
+				false,
+				frm.doc.provider === 'AWS EC2',
+			],
+			[
 				__('Setup SSH Proxy'),
 				'setup_ssh_proxy',
 				true,
