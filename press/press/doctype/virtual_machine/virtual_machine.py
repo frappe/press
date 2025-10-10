@@ -1456,6 +1456,7 @@ class VirtualMachine(Document):
 		}
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
+			document["is_primary"] = True
 
 		return frappe.get_doc(document).insert()
 
