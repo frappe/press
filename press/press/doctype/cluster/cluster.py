@@ -735,9 +735,9 @@ class Cluster(Document):
 	@frappe.whitelist()
 	def create_proxy(self):
 		"""Creates a proxy server for the cluster"""
-		if self.images_available < 1:
+		if self.get_same_region_vmis(get_series=True).count("n") < 1:
 			frappe.throw(
-				"Images are not available. Add them or wait for copy to complete",
+				"Proxy Image not available in this region. Add them or wait for copy to complete",
 				frappe.ValidationError,
 			)
 		if self.status != "Active":
