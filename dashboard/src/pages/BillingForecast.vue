@@ -12,33 +12,24 @@
 		</div>
 
 		<div v-else-if="forecastData" class="space-y-8">
-			<!-- Summary Cards -->
-			<div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-				<!-- Current Month Cost -->
-				<div class="flex items-center">
-					<div class="flex-1">
-						<p class="text-sm font-medium text-gray-500">Current Month Costs</p>
-						<p class="text-2xl font-bold text-gray-900">
-							{{ currencySymbol
-							}}{{ (forecastData?.current_month_cost || 0).toFixed(2) }}
-						</p>
-					</div>
-				</div>
-
-				<!-- Forecasted Month End -->
-				<div class="flex items-center">
-					<div class="flex-1">
-						<p class="text-sm font-medium text-gray-500">
-							Forecasted Month End
-						</p>
-						<p class="text-2xl font-bold text-gray-900">
-							{{ currencySymbol
-							}}{{ (forecastData?.forecasted_month_end || 0).toFixed(2) }}
-						</p>
-					</div>
-				</div>
+			<div class="flex gap-2 items-start border">
+				<NumberChart
+					:config="{
+						title: 'Current Month Cost',
+						value: forecastData?.current_month_cost,
+						prefix: currencySymbol,
+					}"
+				/>
+				<NumberChart
+					:config="{
+						title: 'Forecasted Month End',
+						value: forecastData?.forecasted_month_end,
+						prefix: currencySymbol,
+						delta: forecastData?.month_over_month_change,
+						deltaSuffix: '% MoM',
+					}"
+				/>
 			</div>
-
 			<!-- Charts Section -->
 			<div>
 				<div
@@ -71,6 +62,7 @@ import {
 	createResource,
 	AxisChart,
 	DonutChart,
+	NumberChart,
 } from 'frappe-ui';
 import { inject, computed } from 'vue';
 
@@ -81,6 +73,7 @@ export default {
 		ErrorMessage,
 		AxisChart,
 		DonutChart,
+		NumberChart,
 	},
 	setup() {
 		const team = inject('team');
