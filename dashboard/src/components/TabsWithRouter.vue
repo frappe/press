@@ -20,6 +20,7 @@ export default {
 		visibleTabs() {
 			return this.tabs.filter((tab) => {
 				if (
+					this.document?.tabs_access &&
 					tab.label in this.document.tabs_access &&
 					!this.document.tabs_access[tab.label]
 				) {
