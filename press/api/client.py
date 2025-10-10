@@ -14,6 +14,7 @@ from frappe.model.base_document import get_controller
 from frappe.utils import cstr
 from pypika.queries import QueryBuilder
 
+from press.access.actions import add_actions_access
 from press.access.tabs import add_tabs_access
 from press.exceptions import TeamHeaderNotInRequestError
 from press.utils import has_role, has_support_access
@@ -244,7 +245,7 @@ def get(doctype, name):
 		if isinstance(result, dict):
 			_doc.update(result)
 
-	return add_tabs_access(_doc)
+	return add_actions_access(add_tabs_access(_doc))
 
 
 @frappe.whitelist(methods=["POST", "PUT"])
