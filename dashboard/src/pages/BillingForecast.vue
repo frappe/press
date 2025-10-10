@@ -50,6 +50,11 @@
 						<AxisChart :config="axisChartConfig" />
 					</div>
 					<!-- Pie Chart -->
+					<div class="border">
+						<div v-if="forecastData?.usage_breakdown?.length > 0">
+							<DonutChart :config="donutConfig" />
+						</div>
+					</div>
 				</div>
 				<div v-else class="flex h-64 items-center justify-center text-gray-500">
 					No usage data available for this month
@@ -160,6 +165,27 @@ export default {
 			};
 		});
 
+		const pieChartData = computed(() => {
+			if (!forecastData.value || !forecastData.value.usage_breakdown) {
+				return [];
+			}
+
+			const chartData = forecastData.value.usage_breakdown.map((item) => ({
+				service: item.service,
+				amount: item.amount,
+			}));
+
+			return chartData;
+		});
+
+		const donutConfig = computed(() => {
+			return {
+				data: pieChartData.value,
+				title: 'Month To Date Cost Breakdown',
+				categoryColumn: 'service',
+				valueColumn: 'amount',
+			};
+		});
 
 		return {
 			$resources: {
@@ -168,7 +194,9 @@ export default {
 			team,
 			currencySymbol,
 			forecastData,
+			pieChartData,
 			axisChartConfig,
+			donutConfig,
 		};
 	},
 };
