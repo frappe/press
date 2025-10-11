@@ -230,7 +230,7 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 		# Catch app install failures in cases of malformed package structure etc, etc.
 		# https://github.com/frappe/bench/pull/1665/files
 		(
-			"exit code: 167",
+			"Error occured during app install",
 			update_with_invalid_app_structure,
 			None,
 		),
