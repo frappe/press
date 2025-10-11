@@ -15,14 +15,16 @@
 			<div class="flex gap-2 items-start border">
 				<NumberChart
 					:config="{
-						title: 'Current Month Cost',
-						value: forecastData?.current_month_cost,
+						title: 'Month-To-Date Cost',
+						value: forecastData?.current_month_to_date_cost,
 						prefix: currencySymbol,
+						delta: forecastData?.mtd_change,
+						deltaSuffix: '% MTD',
 					}"
 				/>
 				<NumberChart
 					:config="{
-						title: 'Forecasted Month End',
+						title: 'Forecasted Month End Cost',
 						value: forecastData?.forecasted_month_end,
 						prefix: currencySymbol,
 						delta: forecastData?.month_over_month_change,
@@ -33,7 +35,10 @@
 			<!-- Charts Section -->
 			<div>
 				<div
-					v-if="forecastData.last_month_cost || forecastData.current_month_cost"
+					v-if="
+						forecastData.last_month_cost ||
+						forecastData.current_month_to_date_cost
+					"
 					class="grid grid-cols-1 gap-6 md:grid-cols-2"
 				>
 					<!-- Bar Chart -->
@@ -94,7 +99,8 @@ export default {
 
 		const axisChartConfig = computed(() => {
 			const lastMonthCost = forecastData.value.last_month_cost || 0;
-			const currentMonthCost = forecastData.value.current_month_cost || 0;
+			const currentMonthCost =
+				forecastData.value.current_month_to_date_cost || 0;
 			const forecastedCost = forecastData.value.forecasted_month_end || 0;
 
 			if (!lastMonthCost && !currentMonthCost && !forecastedCost) {
@@ -117,11 +123,6 @@ export default {
 			});
 
 			const currency = team.doc?.currency === 'INR' ? '₹' : '$';
-			const maxAmount = Math.max(
-				lastMonthCost,
-				currentMonthCost,
-				forecastedCost,
-			);
 
 			const data = [
 				{
@@ -158,23 +159,10 @@ export default {
 			};
 		});
 
-		const pieChartData = computed(() => {
-			if (!forecastData.value || !forecastData.value.usage_breakdown) {
-				return [];
-			}
-
-			const chartData = forecastData.value.usage_breakdown.map((item) => ({
-				service: item.service,
-				amount: item.amount,
-			}));
-
-			return chartData;
-		});
-
 		const donutConfig = computed(() => {
 			return {
-				data: pieChartData.value,
-				title: 'Month To Date Cost Breakdown',
+				data: [...forecastData.value.usage_breakdown] || [],
+				title: 'Month-To-Date Cost Breakdown',
 				categoryColumn: 'service',
 				valueColumn: 'amount',
 			};
@@ -187,7 +175,6 @@ export default {
 			team,
 			currencySymbol,
 			forecastData,
-			pieChartData,
 			axisChartConfig,
 			donutConfig,
 		};
