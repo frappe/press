@@ -34,6 +34,8 @@ from frappe.utils import (
 	time_diff_in_hours,
 )
 
+from press.access.actions import SiteActions
+from press.access.decorators import action_guard
 from press.exceptions import (
 	CannotChangePlan,
 	InsufficientSpaceOnServer,
@@ -1636,6 +1638,7 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
+	@action_guard(SiteActions.LOGIN_AS_ADMINISTRATOR)
 	def login_as_admin(self, reason=None):
 		sid = self.login(reason=reason)
 		return f"https://{self.host_name or self.name}/app?sid={sid}"
