@@ -8,6 +8,7 @@
 			</Header>
 		</div>
 		<CustomAlerts
+			ctx_type="List Page"
 			:disable-last-child-bottom-margin="true"
 			container-class="p-5 pb-0"
 		/>

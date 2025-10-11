@@ -1459,7 +1459,7 @@ def get_user_banners():
 def dismiss_banner(banner_name):
 	user = frappe.session.user
 	banner = frappe.get_doc("Dashboard Banner", banner_name)
-	if banner and banner.is_dismissible:
+	if banner and banner.is_dismissible and not banner.is_global:
 		banner.append(
 			"user_dismissals",
 			{
