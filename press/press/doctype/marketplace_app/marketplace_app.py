@@ -180,6 +180,11 @@ class MarketplaceApp(WebsiteGenerator):
 		self.published = self.status == "Published"
 		self.validate_sources()
 		self.validate_number_of_screenshots()
+		self.validate_summary()
+
+	def validate_summary(self):
+		if len(self.description) > 140:
+			frappe.throw("Marketplace App summary cannot be more than 140 characters.")
 
 	def validate_sources(self):
 		for source in self.sources:
