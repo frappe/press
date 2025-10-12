@@ -670,12 +670,13 @@
   },
   {
    "default": "0",
-<<<<<<< HEAD
    "fieldname": "is_monitoring_disabled",
    "fieldtype": "Check",
    "label": "Is Monitoring Disabled",
    "search_index": 1
-=======
+  },
+  {
+   "default": "0",
    "fieldname": "auto_scale",
    "fieldtype": "Check",
    "label": "Auto Scale"
@@ -691,29 +692,10 @@
    "fieldname": "auto_scale_section",
    "fieldtype": "Section Break",
    "label": "Auto Scale"
-<<<<<<< HEAD
->>>>>>> a8b4d7654 (wip(auto-scale): Utility to switch to secondary server)
   }
- ],
- "modified": "2025-09-26 18:12:36.754235",
- "links": [],
-<<<<<<< HEAD
-=======
- "modified": "2025-10-06 10:46:55.670252",
->>>>>>> a8b4d7654 (wip(auto-scale): Utility to switch to secondary server)
-=======
-  },
-  {
-    "default": "0",
-    "fieldname": "is_monitoring_disabled",
-    "fieldtype": "Check",
-    "label": "Is Monitoring Disabled",
-    "search_index": 1
-   }
  ],
  "links": [],
  "modified": "2025-10-06 17:08:11.706019",
->>>>>>> b2d387caf (fix(conflict): Fix conflicts)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
