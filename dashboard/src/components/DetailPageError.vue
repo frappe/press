@@ -7,16 +7,24 @@
 			v-if="canRequestAccess"
 			variant="solid"
 			label="Request Access"
-			@click="() => request.submit()"
+			@click="
+				() =>
+					renderDialog(
+						h(AccessRequestDialog, {
+							doctype,
+							docname,
+						}),
+					)
+			"
 		/>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, h } from 'vue';
 import { getTeam } from '../data/team';
-import { createResource } from 'frappe-ui';
-import { toast } from 'vue-sonner';
+import { renderDialog } from '../utils/components';
+import AccessRequestDialog from './AccessRequestDialog.vue';
 
 const props = defineProps<{
 	doctype: string;
@@ -29,21 +37,4 @@ const isPermissionError = computed(() => {
 	return props.error?.message.endsWith('PermissionError');
 });
 const canRequestAccess = isPermissionError && team.doc.can_request_access;
-
-const request = createResource({
-	url: 'press.api.client.insert',
-	params: {
-		doc: {
-			doctype: 'Support Access',
-			resources: [
-				{
-					document_type: props.doctype,
-					document_name: props.docname,
-				},
-			],
-		},
-	},
-	onSuccess: () => toast.success('Access request submitted'),
-	onError: () => toast.error('There was an error submitting your request'),
-});
 </script>
