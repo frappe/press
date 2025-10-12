@@ -4,8 +4,8 @@
 import frappe
 from frappe.model.document import Document
 
+from press.access.support_access import has_support_access
 from press.api.client import is_owned_by_team
-from press.utils import has_support_access
 
 
 class ReleaseGroupDependency(Document):

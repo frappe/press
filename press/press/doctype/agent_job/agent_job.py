@@ -21,6 +21,7 @@ from frappe.utils import (
 	now_datetime,
 )
 
+from press.access.support_access import has_support_access
 from press.agent import Agent, AgentCallbackException, AgentRequestSkippedException
 from press.api.client import is_owned_by_team
 from press.press.doctype.agent_job_type.agent_job_type import (
@@ -31,7 +32,7 @@ from press.press.doctype.site_migration.site_migration import (
 	get_ongoing_migration,
 	process_site_migration_job_update,
 )
-from press.utils import has_support_access, log_error, timer
+from press.utils import log_error, timer
 
 AGENT_LOG_KEY = "agent-jobs"
 

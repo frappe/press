@@ -15,8 +15,9 @@ from frappe.utils import cstr
 from pypika.queries import QueryBuilder
 
 from press.access import dashboard_access_rules
+from press.access.support_access import has_support_access
 from press.exceptions import TeamHeaderNotInRequestError
-from press.utils import has_role, has_support_access
+from press.utils import has_role
 
 if typing.TYPE_CHECKING:
 	from frappe.model.meta import Meta

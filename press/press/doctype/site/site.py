@@ -36,6 +36,7 @@ from frappe.utils import (
 
 from press.access.actions import SiteActions
 from press.access.decorators import action_guard
+from press.access.support_access import has_support_access
 from press.exceptions import (
 	CannotChangePlan,
 	InsufficientSpaceOnServer,
@@ -84,7 +85,6 @@ from press.utils import (
 	get_client_blacklisted_keys,
 	get_current_team,
 	guess_type,
-	has_support_access,
 	human_readable,
 	is_list,
 	log_error,

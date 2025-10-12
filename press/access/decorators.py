@@ -3,9 +3,10 @@ import functools
 import frappe
 from frappe.model.document import Document
 
-from press.utils import get_current_team, has_support_access
+from press.utils import get_current_team
 
 from .actions import ACTIONS_RULES
+from .support_access import has_support_access
 
 
 def action_guard(action: str):
@@ -29,8 +30,8 @@ def action_guard(action: str):
 			if instance_team and instance_team == current_team:
 				return fn(instance, *args, **kwargs)
 
-			if not has_support_access(instance.doctype, instance.name):
-				throw_err()
+			if has_support_access(instance.doctype, instance.name, action):
+				return fn(instance, *args, **kwargs)
 
 			doctype_rules = ACTIONS_RULES.get(instance.doctype, {})
 			action_allowed = doctype_rules.get(action, True)

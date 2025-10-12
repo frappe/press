@@ -19,6 +19,7 @@ from frappe.utils import flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
 
+from press.access.support_access import has_support_access
 from press.exceptions import (
 	AAAARecordExists,
 	ConflictingCAARecord,
@@ -41,7 +42,6 @@ from press.utils import (
 	get_current_team,
 	get_frappe_backups,
 	get_last_doc,
-	has_support_access,
 	log_error,
 	unique,
 )

@@ -17,6 +17,7 @@ from urllib.parse import urljoin
 from urllib.request import urlopen
 
 import frappe
+import frappe.utils
 import pytz
 import requests
 import wrapt
@@ -309,35 +310,6 @@ def get_frappe_backups(url, email, password):
 def is_allowed_access_performance_tuning():
 	team = get_current_team(get_doc=True)
 	return team.enable_performance_tuning
-
-
-def has_support_access(doctype: str, docname: str) -> bool:
-	"""
-	Checks if current team has support access to given document.
-	"""
-
-	accesses = frappe.get_all(
-		"Support Access",
-		{
-			"status": "Accepted",
-			"requested_team": get_current_team(),
-			"access_allowed_till": (">", frappe.utils.now_datetime()),
-		},
-		pluck="name",
-	)
-
-	for access in accesses:
-		if frappe.db.exists(
-			"Support Access Resource",
-			{
-				"parent": access,
-				"document_type": doctype,
-				"document_name": docname,
-			},
-		):
-			return True
-
-	return False
 
 
 class RemoteFrappeSite:
