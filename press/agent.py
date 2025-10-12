@@ -880,6 +880,9 @@ class Agent:
 	def post(self, path, data=None, raises=True):
 		return self.request("POST", path, data, raises=raises)
 
+	def delete(self, path, data=None, raises=True):
+		return self.request("DELETE", path, data, raises=raises)
+
 	def _make_req(self, method, path, data, files, agent_job_id):
 		password = get_decrypted_password(self.server_type, self.server, "agent_password")
 		headers = {"Authorization": f"bearer {password}", "X-Agent-Job-Id": agent_job_id}
@@ -1656,6 +1659,102 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			data={
 				"db_host": db_host,
 			},
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def change_bench_directory(
+		self,
+		secondary_server_private_ip: str,
+		is_primary: bool,
+		directory: str,
+		restart_benches: bool,
+		reference_name: str | None = None,
+		redis_connection_string_ip: str | None = None,
+		reference_doctype: str | None = None,
+		registry_settings: dict | None = None,
+	) -> AgentJob:
+		return self.create_agent_job(
+			"Change Bench Directory",
+			"/server/change-bench-directory",
+			data={
+				"restart_benches": restart_benches,
+				"redis_connection_string_ip": redis_connection_string_ip,
+				"is_primary": is_primary,
+				"directory": directory,
+				"secondary_server_private_ip": secondary_server_private_ip,
+				"registry_settings": registry_settings,
+			},
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def add_servers_to_acl(
+		self,
+		primary_server_private_ip: str,
+		secondary_server_private_ip: str,
+		shared_directory: str,
+		reference_doctype: str | None = None,
+		reference_name: str | None = None,
+	) -> AgentJob:
+		return self.create_agent_job(
+			"Add Servers to ACL",
+			"/nfs/add-to-acl",
+			data={
+				"primary_server_private_ip": primary_server_private_ip,
+				"secondary_server_private_ip": secondary_server_private_ip,
+				"shared_directory": shared_directory,
+			},
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def remove_servers_from_acl(
+		self,
+		primary_server_private_ip: str,
+		secondary_server_private_ip: str,
+		shared_directory: str,
+		reference_doctype: str | None = None,
+		reference_name: str | None = None,
+	) -> AgentJob:
+		return self.create_agent_job(
+			"Remove Servers from ACL",
+			"/nfs/remove-from-acl",
+			data={
+				"primary_server_private_ip": primary_server_private_ip,
+				"secondary_server_private_ip": secondary_server_private_ip,
+				"shared_directory": shared_directory,
+			},
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def stop_bench_workers(
+		self, reference_doctype: str | None = None, reference_name: str | None = None
+	) -> AgentJob:
+		return self.create_agent_job(
+			"Stop Bench Workers",
+			"/server/stop-bench-workers",
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def start_bench_workers(
+		self, reference_doctype: str | None = None, reference_name: str | None = None
+	) -> AgentJob:
+		return self.create_agent_job(
+			"Start Bench Workers",
+			"/server/start-bench-workers",
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def force_remove_all_benches(
+		self, reference_doctype: str | None = None, reference_name: str | None = None
+	) -> AgentJob:
+		return self.create_agent_job(
+			"Force Remove All Benches",
+			"/server/force-remove-all-benches",
 			reference_doctype=reference_doctype,
 			reference_name=reference_name,
 		)

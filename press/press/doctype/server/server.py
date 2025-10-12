@@ -1500,6 +1500,18 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Start Benches Exception", server=self.as_dict())
 
+	def _stop_active_benches(self):
+		try:
+			ansible = Ansible(
+				playbook="stop_benches.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Start Benches Exception", server=self.as_dict())
+
 	@frappe.whitelist()
 	def mount_volumes(
 		self,
@@ -2014,6 +2026,7 @@ class Server(BaseServer):
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
 		auto_increase_storage: DF.Check
+		auto_scale: DF.Check
 		bastion_server: DF.Link | None
 		cluster: DF.Link | None
 		communication_infos: DF.Table[CommunicationInfo]
@@ -2059,6 +2072,7 @@ class Server(BaseServer):
 		public: DF.Check
 		ram: DF.Float
 		root_public_key: DF.Code | None
+		secondary_server: DF.Link | None
 		self_hosted_mariadb_root_password: DF.Password | None
 		self_hosted_mariadb_server: DF.Data | None
 		self_hosted_server_domain: DF.Data | None

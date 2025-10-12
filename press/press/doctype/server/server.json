@@ -67,6 +67,9 @@
   "is_replication_setup",
   "column_break_24",
   "primary",
+  "auto_scale_section",
+  "secondary_server",
+  "auto_scale",
   "ssh_section",
   "ssh_user",
   "ssh_port",
@@ -671,10 +674,28 @@
    "fieldtype": "Check",
    "label": "Is Monitoring Disabled",
    "search_index": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "auto_scale",
+   "fieldtype": "Check",
+   "label": "Auto Scale"
+  },
+  {
+   "description": "Used during horizontal scaling.",
+   "fieldname": "secondary_server",
+   "fieldtype": "Link",
+   "label": "Secondary Server",
+   "options": "Server"
+  },
+  {
+   "fieldname": "auto_scale_section",
+   "fieldtype": "Section Break",
+   "label": "Auto Scale"
   }
  ],
- "modified": "2025-09-26 18:12:36.754235",
  "links": [],
+ "modified": "2025-10-06 17:08:11.706019",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
