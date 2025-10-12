@@ -18,23 +18,36 @@
 		}"
 	>
 		<template #body-content>
-			<p class="mb-4 text-base">
-				Are you sure you want to request access to this resource?
-			</p>
-			<p class="mb-2 text-base">
-				<span class="font-medium">Type:</span> {{ props.doctype }}
-			</p>
-			<p class="text-base">
-				<span class="font-medium">Resource:</span> {{ props.docname }}
-			</p>
+			<div class="space-y-4 text-base">
+				<p>Are you sure you want to request access to this resource?</p>
+				<div class="space-y-2">
+					<p><span class="font-medium">Type:</span> {{ props.doctype }}</p>
+					<p><span class="font-medium">Resource:</span> {{ props.docname }}</p>
+				</div>
+				<Textarea
+					size="sm"
+					placeholder="Why do you need access?"
+					v-model="extra.reason"
+				/>
+				<div class="space-y-2">
+					<p class="font-medium">Permissions:</p>
+					<div class="grid grid-cols-2 gap-2">
+						<Checkbox
+							label="Login as Administrator"
+							v-model="extra.loginAsAdministrator"
+						/>
+					</div>
+				</div>
+			</div>
 		</template>
 	</Dialog>
 </template>
 
 <script setup lang="ts">
 import { createResource } from 'frappe-ui';
-import { ref } from 'vue';
+import { reactive, ref } from 'vue';
 import { toast } from 'vue-sonner';
+import { Checkbox, Textarea } from 'frappe-ui';
 
 const props = defineProps<{
 	doctype: string;
@@ -43,11 +56,18 @@ const props = defineProps<{
 
 const open = ref(true);
 
+const extra = reactive({
+	reason: '',
+	loginAsAdministrator: false,
+});
+
 const request = createResource({
 	url: 'press.api.client.insert',
-	params: {
+	makeParams: () => ({
 		doc: {
 			doctype: 'Support Access',
+			login_as_administrator: extra.loginAsAdministrator,
+			reason: extra.reason,
 			resources: [
 				{
 					document_type: props.doctype,
@@ -55,7 +75,7 @@ const request = createResource({
 				},
 			],
 		},
-	},
+	}),
 	onSuccess: () => {
 		open.value = false;
 		toast.success('Access request submitted');

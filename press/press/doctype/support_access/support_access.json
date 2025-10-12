@@ -14,10 +14,7 @@
   "allowed_for",
   "access_allowed_till",
   "column_break_vrkb",
-  "all_access",
-  "site_access",
-  "dashboard_access",
-  "bench_ssh_access",
+  "login_as_administrator",
   "reason",
   "section_break_lwpm",
   "resources"
@@ -59,30 +56,10 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "0",
-   "fieldname": "dashboard_access",
-   "fieldtype": "Check",
-   "label": "Dashboard Access",
-   "read_only_depends_on": "eval:doc.all_access==1"
-  },
-  {
-   "default": "0",
-   "fieldname": "bench_ssh_access",
-   "fieldtype": "Check",
-   "label": "Bench SSH Access",
-   "read_only_depends_on": "eval:doc.all_access==1"
-  },
-  {
    "fieldname": "access_allowed_till",
    "fieldtype": "Datetime",
    "label": "Access allowed till",
    "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "all_access",
-   "fieldtype": "Check",
-   "label": "All Access"
   },
   {
    "default": "Pending",
@@ -106,12 +83,6 @@
    "reqd": 1
   },
   {
-   "default": "0",
-   "fieldname": "site_access",
-   "fieldtype": "Check",
-   "label": "Site Access"
-  },
-  {
    "fieldname": "requested_team",
    "fieldtype": "Link",
    "in_standard_filter": 1,
@@ -126,12 +97,19 @@
    "label": "Target Team",
    "options": "Team",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "login_as_administrator",
+   "fieldtype": "Check",
+   "label": "Login as Administrator",
+   "set_only_once": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-09 15:42:57.194474",
+ "modified": "2025-10-12 14:55:57.156610",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Support Access",

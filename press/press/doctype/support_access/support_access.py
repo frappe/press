@@ -21,26 +21,25 @@ class SupportAccess(Document):
 		from press.press.doctype.support_access_resource.support_access_resource import SupportAccessResource
 
 		access_allowed_till: DF.Datetime | None
-		all_access: DF.Check
 		allowed_for: DF.Literal["3", "6", "12", "24"]
-		bench_ssh_access: DF.Check
-		dashboard_access: DF.Check
+		login_as_administrator: DF.Check
 		reason: DF.SmallText | None
 		requested_by: DF.Link | None
 		requested_team: DF.Link | None
 		resources: DF.Table[SupportAccessResource]
-		site_access: DF.Check
 		status: DF.Literal["Pending", "Accepted", "Rejected"]
 		target_team: DF.Link | None
 	# end: auto-generated types
 
 	dashboard_fields = (
+		"access_allowed_till",
+		"allowed_for",
+		"login_as_administrator",
+		"reason",
 		"requested_by",
 		"requested_team",
-		"target_team",
 		"status",
-		"allowed_for",
-		"access_allowed_till",
+		"target_team",
 	)
 
 	def get_list_query(query, filters: dict | None, **args):
