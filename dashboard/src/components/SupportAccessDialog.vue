@@ -19,7 +19,7 @@
 				>
 					{{ banner.message }}
 				</div>
-				<p class="leading-normal">
+				<p v-if="isReceived" class="leading-normal">
 					Do you want to accept or reject this access request from
 					<span class="font-medium">{{ requestedBy }}</span>
 					for
@@ -105,12 +105,12 @@ const banner = computed(() => {
 	if (props.status === 'Accepted') {
 		return {
 			type: 'success',
-			message: 'You have accepted this request.',
+			message: 'This request has been accepted.',
 		};
 	} else if (props.status === 'Rejected') {
 		return {
 			type: 'error',
-			message: 'You have rejected this request.',
+			message: 'This request has been rejected.',
 		};
 	}
 });
