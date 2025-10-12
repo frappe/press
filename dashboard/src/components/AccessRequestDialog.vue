@@ -2,7 +2,7 @@
 	<Dialog
 		v-model="open"
 		:options="{
-			title: 'Request Access',
+			title: 'Access Request',
 			actions: [
 				{
 					label: 'Cancel',
