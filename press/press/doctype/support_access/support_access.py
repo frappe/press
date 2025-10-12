@@ -27,6 +27,7 @@ class SupportAccess(Document):
 		requested_by: DF.Link | None
 		requested_team: DF.Link | None
 		resources: DF.Table[SupportAccessResource]
+		site_domains: DF.Check
 		status: DF.Literal["Pending", "Accepted", "Rejected"]
 		target_team: DF.Link | None
 	# end: auto-generated types
@@ -38,6 +39,7 @@ class SupportAccess(Document):
 		"reason",
 		"requested_by",
 		"requested_team",
+		"site_domains",
 		"status",
 		"target_team",
 	)

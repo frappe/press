@@ -36,6 +36,7 @@
 							label="Login as Administrator"
 							v-model="extra.loginAsAdministrator"
 						/>
+						<Checkbox label="Site Domains" v-model="extra.siteDomains" />
 					</div>
 				</div>
 			</div>
@@ -59,6 +60,7 @@ const open = ref(true);
 const extra = reactive({
 	reason: '',
 	loginAsAdministrator: false,
+	siteDomains: false,
 });
 
 const request = createResource({
@@ -66,8 +68,9 @@ const request = createResource({
 	makeParams: () => ({
 		doc: {
 			doctype: 'Support Access',
-			login_as_administrator: extra.loginAsAdministrator,
 			reason: extra.reason,
+			login_as_administrator: extra.loginAsAdministrator,
+			site_domains: extra.siteDomains,
 			resources: [
 				{
 					document_type: props.doctype,

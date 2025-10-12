@@ -14,6 +14,7 @@
   "allowed_for",
   "access_allowed_till",
   "column_break_vrkb",
+  "site_domains",
   "login_as_administrator",
   "reason",
   "section_break_lwpm",
@@ -104,12 +105,19 @@
    "fieldtype": "Check",
    "label": "Login as Administrator",
    "set_only_once": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "site_domains",
+   "fieldtype": "Check",
+   "label": "Domains",
+   "set_only_once": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-12 14:55:57.156610",
+ "modified": "2025-10-12 23:28:36.396570",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Support Access",

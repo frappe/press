@@ -4,6 +4,12 @@ import frappe.utils
 from press.access.actions import SiteActions
 from press.utils import get_current_team
 
+TAB_DF_MAP = {
+	"Site": {
+		"Domains": "site_domains",
+	},
+}
+
 ACTION_DF_MAP = {
 	"Site": {
 		SiteActions.LOGIN_AS_ADMINISTRATOR: "login_as_administrator",

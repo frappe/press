@@ -60,6 +60,7 @@ const props = defineProps<{
 	resourceName: string;
 	status: 'Pending' | 'Accepted' | 'Rejected';
 	reason: string;
+	siteDomains: boolean;
 	loginAsAdministrator: boolean;
 	isReceived: boolean;
 }>();
@@ -71,6 +72,10 @@ const permissions = computed(() =>
 		{
 			label: 'Login as Administrator',
 			requested: props.loginAsAdministrator,
+		},
+		{
+			label: 'Site Domains',
+			requested: props.siteDomains,
 		},
 	].filter((p) => p.requested),
 );

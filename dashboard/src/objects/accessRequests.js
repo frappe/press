@@ -10,7 +10,7 @@ export default {
 		route: '/access-requests',
 		title: 'Access Requests',
 		orderBy: 'creation desc',
-		fields: ['target_team', 'reason', 'login_as_administrator'],
+		fields: ['target_team', 'reason', 'site_domains', 'login_as_administrator'],
 		filters: {
 			source: 'Received',
 		},
@@ -47,6 +47,7 @@ export default {
 					status: row.status,
 					reason: row.reason,
 					loginAsAdministrator: row.login_as_administrator,
+					siteDomains: row.site_domains,
 					isReceived,
 				}),
 			);
