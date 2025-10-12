@@ -37,20 +37,19 @@ export default {
 		},
 		onRowClick(row) {
 			const team = getTeam();
-			const isPending = row.status === 'Pending';
 			const isReceived = row.target_team === team.doc?.name;
-			isPending &&
-				isReceived &&
-				renderDialog(
-					h(SupportAccessDialog, {
-						name: row.name,
-						requestedBy: row.requested_by,
-						resourceType: row.resource_type,
-						resourceName: row.resource_name,
-						reason: row.reason,
-						loginAsAdministrator: row.login_as_administrator,
-					}),
-				);
+			renderDialog(
+				h(SupportAccessDialog, {
+					name: row.name,
+					requestedBy: row.requested_by,
+					resourceType: row.resource_type,
+					resourceName: row.resource_name,
+					status: row.status,
+					reason: row.reason,
+					loginAsAdministrator: row.login_as_administrator,
+					isReceived,
+				}),
+			);
 		},
 		columns: [
 			{

@@ -3,23 +3,22 @@
 		v-model="open"
 		:options="{
 			title: 'Access Request',
-			actions: [
-				{
-					label: 'Reject',
-					variant: 'subtle',
-					theme: 'red',
-					onClick: () => reject.submit(),
-				},
-				{
-					label: 'Accept',
-					variant: 'solid',
-					onClick: () => accept.submit(),
-				},
-			],
+			actions,
 		}"
 	>
 		<template #body-content>
 			<div class="space-y-4 text-base">
+				<div
+					v-if="banner"
+					class="py-3 px-4 font-medium rounded border"
+					:class="{
+						'bg-green-50 border-green-200 text-green-800':
+							banner.type === 'success',
+						'bg-red-50 border-red-200 text-red-800': banner.type === 'error',
+					}"
+				>
+					{{ banner.message }}
+				</div>
 				<p class="leading-normal">
 					Do you want to accept or reject this access request from
 					<span class="font-medium">{{ requestedBy }}</span>
@@ -59,8 +58,10 @@ const props = defineProps<{
 	requestedBy: string;
 	resourceType: string;
 	resourceName: string;
+	status: 'Pending' | 'Accepted' | 'Rejected';
 	reason: string;
 	loginAsAdministrator: boolean;
+	isReceived: boolean;
 }>();
 
 const open = ref(true);
@@ -98,5 +99,39 @@ const reject = createResource({
 	onSuccess: () => {
 		open.value = false;
 	},
+});
+
+const banner = computed(() => {
+	if (props.status === 'Accepted') {
+		return {
+			type: 'success',
+			message: 'You have accepted this request.',
+		};
+	} else if (props.status === 'Rejected') {
+		return {
+			type: 'error',
+			message: 'You have rejected this request.',
+		};
+	}
+});
+
+const actions = computed(() => {
+	if (props.status !== 'Pending' || !props.isReceived) {
+		return [];
+	}
+
+	return [
+		{
+			label: 'Reject',
+			variant: 'subtle',
+			theme: 'red',
+			onClick: () => reject.submit(),
+		},
+		{
+			label: 'Accept',
+			variant: 'solid',
+			onClick: () => accept.submit(),
+		},
+	];
 });
 </script>
