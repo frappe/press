@@ -154,7 +154,7 @@ class VirtualMachine(Document):
 		index = self.index + 356
 		if self.series == "n":
 			return str(ip + index)
-		offset = ["f", "m", "c", "p", "e", "r", "t"].index(self.series)
+		offset = ["f", "m", "c", "p", "e", "r", "t", "nfs"].index(self.series)
 		return str(ip + 256 * (2 * (index // 256) + offset) + (index % 256))
 
 	def validate(self):
