@@ -36,10 +36,9 @@
 			<div>
 				<div
 					v-if="
-						forecastData.last_month_cost ||
-						forecastData.current_month_to_date_cost
+						forecastData.last_month_cost || forecastData.forecasted_month_end
 					"
-					class="grid grid-cols-1 gap-6 md:grid-cols-2"
+					class="grid grid-cols-1 gap-6 lg:grid-cols-2"
 				>
 					<!-- Bar Chart -->
 					<div class="border">
@@ -98,70 +97,85 @@ export default {
 		});
 
 		const axisChartConfig = computed(() => {
-			const lastMonthCost = forecastData.value.last_month_cost || 0;
-			const currentMonthCost =
-				forecastData.value.current_month_to_date_cost || 0;
-			const forecastedCost = forecastData.value.forecasted_month_end || 0;
-
-			if (!lastMonthCost && !currentMonthCost && !forecastedCost) {
+			if (
+				!forecastData.value.last_month_cost &&
+				!forecastData.value.forecasted_month_end &&
+				!forecastData.value.current_month_to_date_cost
+			) {
 				return {};
 			}
 
-			// Get current date for proper label
+			// Month Labels
 			const now = new Date();
-			const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-			const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-			// Format month names
-			const lastMonthName = lastMonth.toLocaleDateString('en-US', {
+			const formatter = new Intl.DateTimeFormat('en-US', {
 				month: 'long',
 				year: 'numeric',
 			});
-			const currentMonthName = currentMonth.toLocaleDateString('en-US', {
-				month: 'long',
-				year: 'numeric',
-			});
+			const currentMonthName = formatter.format(now);
+			const lastMonthName = formatter.format(
+				new Date(now.getFullYear(), now.getMonth() - 1, 1),
+			);
 
-			const currency = team.doc?.currency === 'INR' ? '₹' : '$';
+			const {
+				last_month_usage_breakdown = {},
+				month_to_date_usage_breakdown = {},
+				forecasted_usage_breakdown = {},
+			} = forecastData.value.billing_comparison_data;
 
 			const data = [
 				{
 					period: `Last Month\n(${lastMonthName})`,
-					amount: Number(lastMonthCost),
+					...last_month_usage_breakdown,
 				},
 				{
 					period: `Month To Date\n(${currentMonthName})`,
-					amount: Number(currentMonthCost),
+					...month_to_date_usage_breakdown,
 				},
 				{
 					period: `Forecast\n(${currentMonthName})`,
-					amount: Number(forecastedCost),
+					...forecasted_usage_breakdown,
 				},
 			];
 
+			// set of unique services from all breakdowns
+			const uniqueServices = new Set([
+				...Object.keys(last_month_usage_breakdown),
+				...Object.keys(month_to_date_usage_breakdown),
+				...Object.keys(forecasted_usage_breakdown),
+			]);
+
+			const series = Array.from(uniqueServices, (service) => ({
+				name: service,
+				type: 'bar',
+			}));
+
 			return {
-				data: data,
 				title: 'Billing Comparison',
+				data,
+				stacked: true,
 				xAxis: {
 					key: 'period',
 					title: 'Time Period',
 					type: 'category',
 				},
 				yAxis: {
-					title: `Amount (${currency})`,
+					title: `Amount (${currencySymbol.value})`,
 				},
-				series: [
-					{
-						name: 'amount',
-						type: 'bar',
-					},
-				],
+				series,
 			};
 		});
 
 		const donutConfig = computed(() => {
+			const data = [];
+			let usage_breakdown =
+				forecastData.value?.billing_comparison_data
+					?.month_to_date_usage_breakdown || {};
+			for (let key in usage_breakdown) {
+				data.push({ service: key, amount: usage_breakdown[key] });
+			}
+			console.log(data);
 			return {
-				data: [...forecastData.value.usage_breakdown] || [],
+				data,
 				title: 'Month-To-Date Cost Breakdown',
 				categoryColumn: 'service',
 				valueColumn: 'amount',
