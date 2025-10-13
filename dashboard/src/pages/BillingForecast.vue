@@ -35,20 +35,16 @@
 			<!-- Charts Section -->
 			<div>
 				<div
-					v-if="
-						forecastData.last_month_cost || forecastData.forecasted_month_end
-					"
+					v-if="axisChartConfig.data.length || donutConfig.data.length"
 					class="grid grid-cols-1 gap-6 lg:grid-cols-2"
 				>
-					<!-- Bar Chart -->
-					<div class="border">
+					<!-- Stacked Bar Chart for last month, mtd, and forecasted month end -->
+					<div class="border" v-if="axisChartConfig.data.length">
 						<AxisChart :config="axisChartConfig" />
 					</div>
-					<!-- Pie Chart -->
-					<div class="border">
-						<div v-if="forecastData?.usage_breakdown?.length > 0">
-							<DonutChart :config="donutConfig" />
-						</div>
+					<!-- Donut Chart for current month's usage -->
+					<div class="border" v-if="donutConfig.data.length">
+						<DonutChart :config="donutConfig" />
 					</div>
 				</div>
 				<div v-else class="flex h-64 items-center justify-center text-gray-500">
@@ -120,7 +116,7 @@ export default {
 				last_month_usage_breakdown = {},
 				month_to_date_usage_breakdown = {},
 				forecasted_usage_breakdown = {},
-			} = forecastData.value.billing_comparison_data;
+			} = forecastData.value.usage_breakdown;
 
 			const data = [
 				{
@@ -168,12 +164,11 @@ export default {
 		const donutConfig = computed(() => {
 			const data = [];
 			let usage_breakdown =
-				forecastData.value?.billing_comparison_data
-					?.month_to_date_usage_breakdown || {};
+				forecastData.value?.usage_breakdown?.month_to_date_usage_breakdown ||
+				{};
 			for (let key in usage_breakdown) {
 				data.push({ service: key, amount: usage_breakdown[key] });
 			}
-			console.log(data);
 			return {
 				data,
 				title: 'Month-To-Date Cost Breakdown',
