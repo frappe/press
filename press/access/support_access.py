@@ -17,6 +17,16 @@ ACTION_DF_MAP = {
 }
 
 
+def get_extra_field(doctype: str, perm: str | None) -> str | None:
+	if not perm:
+		return None
+	if field := TAB_DF_MAP.get(doctype, {}).get(perm):
+		return field
+	if field := ACTION_DF_MAP.get(doctype, {}).get(perm):
+		return field
+	return None
+
+
 def has_support_access(doctype: str, docname: str, action: str | None = None) -> bool:
 	"""
 	Checks if current team has support access to given document.
@@ -28,10 +38,7 @@ def has_support_access(doctype: str, docname: str, action: str | None = None) ->
 		"access_allowed_till": (">", frappe.utils.now_datetime()),
 	}
 
-	# If action is provided, get relevant field.
-	field = ACTION_DF_MAP.get(doctype, {}).get(action) if action else None
-
-	if field:
+	if field := get_extra_field(doctype, action):
 		filters[field] = 1
 
 	accesses = frappe.get_all("Support Access", filters=filters, pluck="name")
