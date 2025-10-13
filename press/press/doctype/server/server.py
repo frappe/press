@@ -1921,6 +1921,11 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				self.setup_archived_folder()
 
 			self.install_cadvisor()
+			if self.is_secondary:
+				frappe.db.set_value(
+					"Server", {"secondary_server": self.name}, "status", self.status
+				)  # Update the status of the primary server
+				frappe.db.commit()
 
 		if self.doctype == "Database Server":
 			self.adjust_memory_config()
@@ -1930,13 +1935,6 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			self.setup_wildcard_hosts()
 
 		self.validate_mounts()
-
-		if self.is_secondary:
-			frappe.db.set_value(
-				"Server", {"secondary_server": self.name}, "status", self.status
-			)  # Update the status of the primary server
-			frappe.db.commit()
-
 		self.save(ignore_permissions=True)
 
 	def get_wildcard_domains(self):
@@ -2277,7 +2275,7 @@ class Server(BaseServer):
 	@frappe.whitelist()
 	def setup_secondary_server(self, server_plan: str):
 		"""Setup secondary server"""
-		if self.is_secondary or self.doctype == "Database Server":
+		if self.doctype == "Database Server" or self.is_secondary:
 			return
 
 		self.status = "Installing"
