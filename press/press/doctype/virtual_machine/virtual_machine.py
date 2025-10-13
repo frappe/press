@@ -1385,7 +1385,7 @@ class VirtualMachine(Document):
 		return None
 
 	@frappe.whitelist()
-	def create_server(self, is_secondary: bool = False):
+	def create_server(self, is_secondary: bool = False, primary: str | None = None):
 		document = {
 			"doctype": "Server",
 			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
@@ -1395,7 +1395,9 @@ class VirtualMachine(Document):
 			"virtual_machine": self.name,
 			"team": self.team,
 			"is_primary": not is_secondary,
+			"is_secondary": is_secondary,
 			"platform": self.platform,
+			"primary": primary,
 		}
 
 		if self.virtual_machine_image:
