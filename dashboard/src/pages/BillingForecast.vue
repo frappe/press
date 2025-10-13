@@ -12,25 +12,29 @@
 		</div>
 
 		<div v-else-if="forecastData" class="space-y-8">
-			<div class="flex gap-2 items-start border">
-				<NumberChart
-					:config="{
-						title: 'Month-To-Date Cost',
-						value: forecastData?.current_month_to_date_cost,
-						prefix: currencySymbol,
-						delta: forecastData?.mtd_change,
-						deltaSuffix: '% MTD',
-					}"
-				/>
-				<NumberChart
-					:config="{
-						title: 'Forecasted Month End Cost',
-						value: forecastData?.forecasted_month_end,
-						prefix: currencySymbol,
-						delta: forecastData?.month_over_month_change,
-						deltaSuffix: '% MoM',
-					}"
-				/>
+			<div class="flex gap-8 items-start flex-col md:flex-row">
+				<div class="border rounded-md p-2 h-[8rem] w-[16rem]">
+					<NumberChart
+						:config="{
+							title: 'Month-To-Date Cost',
+							value: forecastData?.current_month_to_date_cost,
+							prefix: currencySymbol,
+							delta: forecastData?.mtd_change,
+							deltaSuffix: '% MTD',
+						}"
+					/>
+				</div>
+				<div class="border rounded-md p-2 h-[8rem] w-[16rem]">
+					<NumberChart
+						:config="{
+							title: 'Forecasted Month End Cost',
+							value: forecastData?.forecasted_month_end,
+							prefix: currencySymbol,
+							delta: forecastData?.month_over_month_change,
+							deltaSuffix: '% MoM',
+						}"
+					/>
+				</div>
 			</div>
 			<!-- Charts Section -->
 			<div>
@@ -39,11 +43,11 @@
 					class="grid grid-cols-1 gap-6 lg:grid-cols-2"
 				>
 					<!-- Stacked Bar Chart for last month, mtd, and forecasted month end -->
-					<div class="border" v-if="axisChartConfig.data.length">
+					<div class="rounded-md border" v-if="axisChartConfig.data.length">
 						<AxisChart :config="axisChartConfig" />
 					</div>
 					<!-- Donut Chart for current month's usage -->
-					<div class="border" v-if="donutConfig.data.length">
+					<div class="rounded-md border" v-if="donutConfig.data.length">
 						<DonutChart :config="donutConfig" />
 					</div>
 				</div>
@@ -93,10 +97,11 @@ export default {
 		});
 
 		const axisChartConfig = computed(() => {
+			const forecastDataValue = forecastData.value;
 			if (
-				!forecastData.value.last_month_cost &&
-				!forecastData.value.forecasted_month_end &&
-				!forecastData.value.current_month_to_date_cost
+				!forecastDataValue.last_month_cost &&
+				!forecastDataValue.forecasted_month_end &&
+				!forecastDataValue.current_month_to_date_cost
 			) {
 				return {};
 			}
@@ -116,7 +121,7 @@ export default {
 				last_month_usage_breakdown = {},
 				month_to_date_usage_breakdown = {},
 				forecasted_usage_breakdown = {},
-			} = forecastData.value.usage_breakdown;
+			} = forecastDataValue.usage_breakdown;
 
 			const data = [
 				{
