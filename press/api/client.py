@@ -387,6 +387,9 @@ def check_document_access(doctype: str, name: str):
 	if team == frappe.local.team().name:
 		return
 
+	if has_support_access(doctype, name):
+		return
+
 	raise_not_permitted()
 
 
