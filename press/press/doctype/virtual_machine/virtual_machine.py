@@ -103,7 +103,7 @@ class VirtualMachine(Document):
 		region: DF.Link
 		root_disk_size: DF.Int
 		security_group_id: DF.Data | None
-		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "t"]
+		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "t", "nfs"]
 		skip_automated_snapshot: DF.Check
 		ssh_key: DF.Link
 		status: DF.Literal["Draft", "Pending", "Running", "Stopped", "Terminated"]
