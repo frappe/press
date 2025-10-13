@@ -1921,6 +1921,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				self.setup_archived_folder()
 
 			self.install_cadvisor()
+
 			if self.is_secondary:
 				frappe.db.set_value(
 					"Server", {"secondary_server": self.name}, "status", self.status
