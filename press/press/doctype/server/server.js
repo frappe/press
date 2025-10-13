@@ -271,7 +271,7 @@ frappe.ui.form.on('Server', {
 		if (
 			(frm.doc.is_server_setup,
 			frm.doc.is_primary,
-			frm.doc.secondary_server === null)
+			frm.doc.secondary_server === '')
 		) {
 			frm.add_custom_button(
 				'Setup Secondary Server',
