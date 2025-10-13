@@ -106,6 +106,10 @@ class VirtualDiskResize(Document):
 			self.save()
 			if self.scheduled_time:
 				self.execute()
+		except frappe.QueryTimeoutError:
+			frappe.db.rollback()
+			self.status = Status.Scheduled
+			self.save()
 		except Exception:
 			self.status = Status.Failure
 			self.save()
@@ -321,16 +325,14 @@ class VirtualDiskResize(Document):
 		self.save()
 
 	def create_new_volume(self):
-		# Create new volume
-		try:
-			self.new_volume_id = self.machine.attach_new_volume(
-				self.new_volume_size, iops=self.new_volume_iops, throughput=self.new_volume_throughput
-			)
-			self.new_volume_status = "Attached"
-			self.save()
-		except frappe.TimestampMismatchError:
-			frappe.db.rollback()
-			self.machine.sync()
+		# Lock the row to prevent concurrent modifications
+		frappe.get_value("Virtual Machine", self.virtual_machine, "status", for_update=True)
+
+		self.new_volume_id = self.machine.attach_new_volume(
+			self.new_volume_size, iops=self.new_volume_iops, throughput=self.new_volume_throughput
+		)
+		self.new_volume_status = "Attached"
+		self.save()
 
 	def get_optimal_performance_attributes(self):
 		MAX_THROUGHPUT = 1000  # 1000 MB/s
@@ -706,6 +708,7 @@ class StepStatus(str, Enum):
 
 
 class Status(str, Enum):
+	Scheduled = "Scheduled"
 	Pending = "Pending"
 	Preparing = "Preparing"
 	Ready = "Ready"
