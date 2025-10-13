@@ -24,7 +24,7 @@
 					$team.doc.payment_mode
 				"
 			/>
-			<CustomAlerts />
+			<CustomAlerts ctx_type="List Page" />
 			<AlertMandateInfo
 				class="mb-5"
 				v-if="
