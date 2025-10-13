@@ -1017,7 +1017,9 @@ def billing_forecast():
 	usage_breakdown = _get_usage_data_breakdown(invoice_data, forecast_data, date_info["days_remaining"])
 
 	# Calculate month-over-month and month-to-date changes
-	changes = _calculate_percentage_changes(team.name, invoice_data, date_info)
+	changes = _calculate_percentage_changes(
+		team.name, invoice_data, forecast_data["forecasted_total"], date_info
+	)
 
 	return {
 		"current_month_to_date_cost": invoice_data["current_month_total"],
@@ -1180,18 +1182,15 @@ def _get_forecasted_usage_breakdown(
 	return forecasted_usage_breakdown
 
 
-def _calculate_percentage_changes(team_name: str, invoice_data: dict, date_info: dict):
+def _calculate_percentage_changes(team_name: str, invoice_data: dict, forecasted_total, date_info: dict):
 	"""Calculate month-over-month and MTD changes."""
 	from frappe.utils import flt
 
 	# Month-over-month change
 	month_over_month_change = 0
-	if invoice_data["last_month_total"] > 0:
-		month_over_month_change = (
-			(invoice_data["current_month_total"] - invoice_data["last_month_total"])
-			/ invoice_data["last_month_total"]
-			* 100
-		)
+	last_month_total = invoice_data["last_month_total"]
+	if last_month_total > 0:
+		month_over_month_change = (forecasted_total - last_month_total) / last_month_total * 100
 
 	# Month-to-date change
 	mtd_change = _calculate_mtd_change(
