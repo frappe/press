@@ -61,6 +61,9 @@ class StepHandler:
 		step.status = ansible_play.status
 		step.save()
 
+		if step.status == Status.Failure:
+			raise
+
 	def _fail_ansible_step(
 		self,
 		step: "NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep",
