@@ -2297,7 +2297,7 @@ class Server(BaseServer):
 	def _install_nfs_common(self):
 		try:
 			ansible = Ansible(
-				playbook="install_nfs_common", server=self, user=self._ssh_user(), port=self._ssh_port()
+				playbook="install_nfs_common.yml", server=self, user=self._ssh_user(), port=self._ssh_port()
 			)
 			ansible.run()
 		except Exception:
