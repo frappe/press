@@ -19,6 +19,7 @@ from frappe.utils import flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
 
+from press.access.support_access import has_support_access
 from press.exceptions import (
 	AAAARecordExists,
 	ConflictingCAARecord,
@@ -85,18 +86,19 @@ def protected(doctypes):
 		user_type = frappe.session.data.user_type or frappe.get_cached_value(
 			"User", frappe.session.user, "user_type"
 		)
+
+		# System users have access to all endpoints.
 		if user_type == "System User":
 			return wrapped(*args, **kwargs)
 
-		name = get_protected_doctype_name(args, kwargs, doctypes)
-		if not name:
+		# Get the name of the document being accessed.
+		if not (docname := get_protected_doctype_name(args, kwargs, doctypes)):
 			frappe.throw("Name not found, API access not permitted", frappe.PermissionError)
 
-		team = get_current_team()
+		current_team = get_current_team()
 		for doctype in doctypes:
-			owner = frappe.db.get_value(doctype, name, "team")
-
-			if owner == team:
+			document_team = frappe.db.get_value(doctype, docname, "team")
+			if document_team == current_team or has_support_access(doctype, docname):
 				return wrapped(*args, **kwargs)
 
 		frappe.throw("Not Permitted", frappe.PermissionError)

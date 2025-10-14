@@ -18,9 +18,19 @@ export default {
 	},
 	computed: {
 		visibleTabs() {
-			return this.tabs.filter((tab) =>
-				tab.condition ? tab.condition({ doc: this.document }) : true,
-			);
+			return this.tabs.filter((tab) => {
+				if (
+					this.document?.tabs_access &&
+					tab.label in this.document.tabs_access &&
+					!this.document.tabs_access[tab.label]
+				) {
+					return false;
+				} else if (tab.condition) {
+					return tab.condition({ doc: this.document });
+				} else {
+					return true;
+				}
+			});
 		},
 		currentTab: {
 			get() {
