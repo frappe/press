@@ -672,7 +672,6 @@
   },
   {
    "default": "0",
-<<<<<<< HEAD
    "fieldname": "is_monitoring_disabled",
    "fieldtype": "Check",
    "label": "Is Monitoring Disabled",
@@ -680,9 +679,7 @@
   },
   {
    "default": "0",
-=======
    "description": "Are the benches running on a shared volume",
->>>>>>> 1bade7294 (feat(server): Secondary server setup)
    "fieldname": "auto_scale",
    "fieldtype": "Check",
    "label": "Running on Shared Volume"
@@ -699,8 +696,6 @@
    "fieldname": "auto_scale_section",
    "fieldtype": "Section Break",
    "label": "Auto Scale"
-<<<<<<< HEAD
-=======
   },
   {
    "default": "0",
@@ -722,7 +717,6 @@
    "fieldname": "running_benches_on_secondary",
    "fieldtype": "Check",
    "label": "Running Benches on Secondary"
->>>>>>> 1bade7294 (feat(server): Secondary server setup)
   }
  ],
  "links": [],
