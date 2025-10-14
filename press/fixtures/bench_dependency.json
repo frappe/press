@@ -152,46 +152,6 @@
     "parentfield": "supported_versions",
     "parenttype": "Bench Dependency",
     "supported_frappe_version": "Nightly",
-    "version": "0.12.4"
-   },
-   {
-    "is_custom": 0,
-    "parent": "WKHTMLTOPDF_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
-    "supported_frappe_version": "Version 12",
-    "version": "0.12.4"
-   },
-   {
-    "is_custom": 0,
-    "parent": "WKHTMLTOPDF_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
-    "supported_frappe_version": "Version 13",
-    "version": "0.12.4"
-   },
-   {
-    "is_custom": 0,
-    "parent": "WKHTMLTOPDF_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
-    "supported_frappe_version": "Version 14",
-    "version": "0.12.4"
-   },
-   {
-    "is_custom": 0,
-    "parent": "WKHTMLTOPDF_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
-    "supported_frappe_version": "Version 15",
-    "version": "0.12.4"
-   },
-   {
-    "is_custom": 0,
-    "parent": "WKHTMLTOPDF_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
-    "supported_frappe_version": "Nightly",
     "version": "0.12.5"
    },
    {

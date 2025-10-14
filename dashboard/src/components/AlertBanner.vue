@@ -46,6 +46,7 @@ const colors = {
 	success: 'green',
 	error: 'red',
 	warning: 'amber',
+	general: 'gray',
 };
 
 export default {

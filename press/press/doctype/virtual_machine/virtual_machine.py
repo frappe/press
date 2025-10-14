@@ -99,7 +99,7 @@ class VirtualMachine(Document):
 		region: DF.Link
 		root_disk_size: DF.Int
 		security_group_id: DF.Data | None
-		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "t"]
+		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "t", "nfs", "fs"]
 		skip_automated_snapshot: DF.Check
 		ssh_key: DF.Link
 		status: DF.Literal["Draft", "Pending", "Running", "Stopped", "Terminated"]
@@ -154,7 +154,7 @@ class VirtualMachine(Document):
 		index = self.index + 356
 		if self.series == "n":
 			return str(ip + index)
-		offset = ["f", "m", "c", "p", "e", "r", "t"].index(self.series)
+		offset = ["f", "m", "c", "p", "e", "r", "t", "nfs", "fs"].index(self.series)
 		return str(ip + 256 * (2 * (index // 256) + offset) + (index % 256))
 
 	def validate(self):
@@ -1070,7 +1070,7 @@ class VirtualMachine(Document):
 				server = server[0]
 				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
 				frappe.db.set_value(doctype, server, "private_ip", self.private_ip_address)
-				if doctype == "Server":
+				if doctype in ["Server", "Proxy Server"]:
 					frappe.db.set_value(doctype, server, "is_static_ip", self.is_static_ip)
 				if doctype in ["Server", "Database Server"]:
 					frappe.db.set_value(doctype, server, "ram", self.ram)
@@ -1385,7 +1385,7 @@ class VirtualMachine(Document):
 		return None
 
 	@frappe.whitelist()
-	def create_server(self):
+	def create_server(self, is_secondary: bool = False, primary: str | None = None):
 		document = {
 			"doctype": "Server",
 			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
@@ -1394,7 +1394,10 @@ class VirtualMachine(Document):
 			"provider": self.cloud_provider,
 			"virtual_machine": self.name,
 			"team": self.team,
+			"is_primary": not is_secondary,
+			"is_secondary": is_secondary,
 			"platform": self.platform,
+			"primary": primary,
 		}
 
 		if self.virtual_machine_image:
@@ -1731,7 +1734,7 @@ class VirtualMachine(Document):
 	def convert_to_amd(self, virtual_machine_image, machine_type):
 		return self._create_vmm(virtual_machine_image, machine_type)
 
-	def attach_new_volume_aws_oci(self, size, iops=None, throughput=None):
+	def attach_new_volume_aws_oci(self, size, iops=None, throughput=None, log_activity: bool = True):
 		volume_options = {
 			"AvailabilityZone": self.availability_zone,
 			"Size": size,
@@ -1755,19 +1758,20 @@ class VirtualMachine(Document):
 		self.wait_for_volume_to_be_available(volume_id)
 		self.attach_volume(volume_id)
 
-		log_server_activity(
-			self.series,
-			self.name,
-			action="Volume",
-			reason="Volume attached on server",
-		)
+		if log_activity:
+			log_server_activity(
+				self.series,
+				self.name,
+				action="Volume",
+				reason="Volume attached on server",
+			)
 
 		return volume_id
 
 	@frappe.whitelist()
-	def attach_new_volume(self, size, iops=None, throughput=None):
+	def attach_new_volume(self, size, iops=None, throughput=None, log_activity: bool = True):
 		if self.cloud_provider in ["AWS EC2", "OCI"]:
-			return self.attach_new_volume_aws_oci(size, iops, throughput)
+			return self.attach_new_volume_aws_oci(size, iops, throughput, log_activity)
 		if self.cloud_provider == "Hetzner":
 			return self.attach_volume(size=size)
 		return None

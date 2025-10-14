@@ -202,6 +202,33 @@ export default {
 							},
 						},
 						{
+							label: 'View DB in Desk',
+							icon: icon('external-link'),
+							condition: () => $team.doc?.is_desk_user,
+							onClick() {
+								window.open(
+									`${window.location.protocol}//${
+										window.location.host
+									}/app/database-server/${server.doc.database_server}`,
+									'_blank',
+								);
+							},
+						},
+						{
+							label: 'View Replication DB in Desk',
+							icon: icon('external-link'),
+							condition: () =>
+								$team.doc?.is_desk_user && server.doc.replication_server,
+							onClick() {
+								window.open(
+									`${window.location.protocol}//${
+										window.location.host
+									}/app/database-server/${server.doc.replication_server}`,
+									'_blank',
+								);
+							},
+						},
+						{
 							label: 'Visit Server',
 							icon: icon('external-link'),
 							condition: () =>

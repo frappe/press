@@ -1,0 +1,112 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-10-06 18:23:22.045154",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "nfs_settings_section",
+  "nfs_server",
+  "primary_server",
+  "secondary_server",
+  "status",
+  "volume_section",
+  "volume_id",
+  "volume_size",
+  "steps_section",
+  "nfs_volume_attachment_steps"
+ ],
+ "fields": [
+  {
+   "fieldname": "nfs_settings_section",
+   "fieldtype": "Section Break",
+   "label": "NFS Settings"
+  },
+  {
+   "fieldname": "nfs_server",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "NFS Server",
+   "options": "NFS Server",
+   "reqd": 1
+  },
+  {
+   "description": "Server that is sharing it's file system.",
+   "fieldname": "primary_server",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Primary Server",
+   "options": "Server",
+   "reqd": 1
+  },
+  {
+   "description": "Server that is using the primary server's file system.",
+   "fieldname": "secondary_server",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Secondary Server",
+   "options": "Server",
+   "reqd": 1
+  },
+  {
+   "fieldname": "volume_section",
+   "fieldtype": "Section Break",
+   "label": "Volume"
+  },
+  {
+   "fieldname": "volume_id",
+   "fieldtype": "Data",
+   "label": "Volume Id"
+  },
+  {
+   "fieldname": "volume_size",
+   "fieldtype": "Int",
+   "label": "Volume Size"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure\nArchived",
+   "read_only": 1
+  },
+  {
+   "fieldname": "steps_section",
+   "fieldtype": "Section Break",
+   "label": "Steps"
+  },
+  {
+   "fieldname": "nfs_volume_attachment_steps",
+   "fieldtype": "Table",
+   "options": "NFS Volume Attachment Step"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-10-09 11:11:10.670740",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "NFS Volume Attachment",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "primary_server"
+}

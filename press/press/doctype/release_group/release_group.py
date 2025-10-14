@@ -54,6 +54,8 @@ DEFAULT_DEPENDENCIES = [
 	{"dependency": "BENCH_VERSION", "version": "5.25.1"},
 ]
 
+SUPPORTED_WKHTMLTOPDF_VERSIONS = ["0.12.5", "0.12.6"]
+
 
 class LastDeployInfo(TypedDict):
 	name: str
@@ -232,6 +234,7 @@ class ReleaseGroup(Document, TagHelpers):
 		self.validate_rq_queues()
 		self.validate_max_min_workers()
 		self.validate_feature_flags()
+		self.validate_dependencies()
 		if self.check_dependent_apps:
 			self.validate_dependent_apps()
 
@@ -542,6 +545,29 @@ class ReleaseGroup(Document, TagHelpers):
 	def validate_feature_flags(self) -> None:
 		if self.use_app_cache and not self.can_use_get_app_cache():
 			frappe.throw(_("Use App Cache cannot be set, BENCH_VERSION must be 5.22.1 or later"))
+
+	def _validate_dependency_format(self, dependency: str, version: str):
+		# Append patch version
+		if version.count(".") == 1:
+			version += ".0"
+
+		try:
+			sv.Version(version)
+		except ValueError as e:
+			frappe.throw(f"{dependency}: {e}")
+
+	def _validate_supported_wkhtmltopdf_version(self, version):
+		if version not in SUPPORTED_WKHTMLTOPDF_VERSIONS:
+			frappe.throw(
+				f"Unsupported wkhtmltopdf version {version}\n"
+				f"Supported versions: {', '.join(SUPPORTED_WKHTMLTOPDF_VERSIONS)}"
+			)
+
+	def validate_dependencies(self):
+		for dependency in self.dependencies:
+			self._validate_dependency_format(dependency.dependency, dependency.version)
+			if dependency.dependency == "WKHTMLTOPDF_VERSION":
+				self._validate_supported_wkhtmltopdf_version(dependency.version)
 
 	def can_use_get_app_cache(self) -> bool:
 		version = find(
@@ -1525,8 +1551,8 @@ class ReleaseGroup(Document, TagHelpers):
 
 		self.use_delta_builds = 0
 
-	def is_version_14_or_higher(self):
-		return frappe.get_cached_value("Frappe Version", self.version, "number") >= 14
+	def is_this_version_or_above(self, version: int) -> bool:
+		return frappe.get_cached_value("Frappe Version", self.version, "number") >= version
 
 	def setup_default_feature_flags(self):
 		DEFAULT_FEATURE_FLAGS = {

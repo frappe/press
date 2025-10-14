@@ -55,10 +55,19 @@
 			<div class="text-xs text-gray-600">Select Payment Gateway</div>
 			<div class="mt-1.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
 				<Button
+					size="lg"
+					:class="{
+						'border-[1.5px] border-gray-700': paymentGateway === 'Stripe',
+					}"
+					@click="paymentGateway = 'Stripe'"
+				>
+					<StripeLogo class="h-7 w-24" />
+				</Button>
+				<Button
 					v-if="
 						team.doc.razorpay_enabled ||
 						team.doc.currency === 'INR' ||
-						(team.doc.currency === 'USD' && team.doc.paypal_enabled)
+						(team.doc.currency === 'USD' && paypalEnabled.data)
 					"
 					size="lg"
 					:class="{
@@ -68,15 +77,6 @@
 				>
 					<RazorpayLogo v-if="team.doc.currency === 'INR'" class="w-24" />
 					<PayPalLogo v-if="team.doc.currency === 'USD'" class="h-7 w-20" />
-				</Button>
-				<Button
-					size="lg"
-					:class="{
-						'border-[1.5px] border-gray-700': paymentGateway === 'Stripe',
-					}"
-					@click="paymentGateway = 'Stripe'"
-				>
-					<StripeLogo class="h-7 w-24" />
 				</Button>
 				<Button
 					v-if="team.doc.country === 'Kenya'"
@@ -108,6 +108,7 @@
 			v-if="paymentGateway === 'Razorpay'"
 			:amount="creditsToBuy"
 			:minimumAmount="minimumAmount"
+			:paypalEnabled="paypalEnabled.data"
 			@success="() => emit('success')"
 			@cancel="show = false"
 		/>
@@ -138,6 +139,12 @@ const emit = defineEmits(['success']);
 const team = inject('team');
 const props = defineProps({
 	minimumAmount: Number,
+});
+
+const paypalEnabled = createResource({
+	url: 'press.api.billing.is_paypal_enabled',
+	cache: 'paypalEnabled',
+	auto: true,
 });
 
 const totalUnpaidAmount = createResource({

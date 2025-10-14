@@ -30,6 +30,7 @@
   "halt_agent_jobs",
   "stop_deployments",
   "is_for_recovery",
+  "is_monitoring_disabled",
   "billing_section",
   "team",
   "plan",
@@ -66,6 +67,11 @@
   "is_replication_setup",
   "column_break_24",
   "primary",
+  "auto_scale_section",
+  "secondary_server",
+  "auto_scale",
+  "is_secondary",
+  "running_benches_on_secondary",
   "ssh_section",
   "ssh_user",
   "ssh_port",
@@ -663,10 +669,51 @@
    "fieldtype": "Link",
    "label": "Bastion Server",
    "options": "Bastion Server"
+  },
+  {
+   "default": "0",
+   "description": "Are the benches running on a shared volume",
+   "fieldname": "auto_scale",
+   "fieldtype": "Check",
+   "label": "Running on Shared Volume"
+  },
+  {
+   "description": "Used during horizontal scaling.",
+   "fieldname": "secondary_server",
+   "fieldtype": "Link",
+   "label": "Secondary Server",
+   "options": "Server"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "auto_scale_section",
+   "fieldtype": "Section Break",
+   "label": "Auto Scale"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_monitoring_disabled",
+   "fieldtype": "Check",
+   "label": "Is Monitoring Disabled",
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "description": "Is this a secondary server",
+   "fieldname": "is_secondary",
+   "fieldtype": "Check",
+   "label": "Is Secondary"
+  },
+  {
+   "default": "0",
+   "description": "Check if the benches are running on the secondary server",
+   "fieldname": "running_benches_on_secondary",
+   "fieldtype": "Check",
+   "label": "Running Benches on Secondary"
   }
  ],
  "links": [],
- "modified": "2025-09-26 18:12:36.754235",
+ "modified": "2025-10-13 14:30:54.086913",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

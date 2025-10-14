@@ -30,6 +30,7 @@ class ProxyServer(BaseServer):
 		agent_password: DF.Password | None
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
+		auto_increase_storage: DF.Check
 		bastion_server: DF.Link | None
 		cluster: DF.Link | None
 		disable_agent_job_auto_retry: DF.Check
@@ -48,6 +49,7 @@ class ProxyServer(BaseServer):
 		is_self_hosted: DF.Check
 		is_server_setup: DF.Check
 		is_ssh_proxy_setup: DF.Check
+		is_static_ip: DF.Check
 		is_wireguard_setup: DF.Check
 		primary: DF.Link | None
 		private_ip: DF.Data | None

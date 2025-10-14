@@ -4,7 +4,6 @@
 import frappe
 from frappe.model.document import Document
 
-from press.access.support_access import has_support_access
 from press.api.client import is_owned_by_team
 
 
@@ -29,8 +28,7 @@ class ReleaseGroupDependency(Document):
 	def get_list_query(query, filters=None, **list_args):
 		if not filters or not (group := filters.get("parent")):
 			return None
-		if not has_support_access("Release Group", group):
-			is_owned_by_team("Release Group", group, raise_exception=True)
+		is_owned_by_team("Release Group", group, raise_exception=True)
 
 		RGDependency = frappe.qb.DocType("Release Group Dependency")
 		BenchDependency = frappe.qb.DocType("Bench Dependency")
@@ -46,5 +44,4 @@ class ReleaseGroupDependency(Document):
 				RGDependency.is_custom,
 			)
 		)
-		dependencies = query.run(as_dict=True)
-		return dependencies  # noqa: RET504
+		return query.run(as_dict=True)
