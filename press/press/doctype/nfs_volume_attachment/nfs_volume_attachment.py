@@ -164,6 +164,12 @@ class NFSVolumeAttachment(Document, StepHandler):
 	# end: auto-generated types
 
 	def validate(self):
+		"""Check if the primary server has a secondary server provisioned with no existing attachments"""
+		secondary_server_status = frappe.db.get_value("Server", self.secondary_server, "status")
+
+		if not secondary_server_status or secondary_server_status != "Active":
+			frappe.throw("Please select a primary server that has a secondary server provisioned!")
+
 		has_shared_volume_setup = frappe.db.exists(
 			"NFS Volume Attachment",
 			{
@@ -178,9 +184,6 @@ class NFSVolumeAttachment(Document, StepHandler):
 			frappe.throw(
 				f"{self.primary_server} is already sharing benches with {self.secondary_server}!",
 			)
-
-		if not self.secondary_server:
-			frappe.throw("Please select a primary server that has a secondary server provisioned!")
 
 	def stop_all_benches(self, step: "NFSVolumeDetachmentStep"):
 		"""Stop all benches running on /shared"""
