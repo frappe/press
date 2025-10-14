@@ -290,7 +290,6 @@ class NFSVolumeDetachment(Document, StepHandler):
 			frappe.throw("Benches are currently being run on the secondary server!")
 
 	def execute_mount_steps(self):
-		# self._execute_steps(steps=self.nfs_volume_detachment_steps)
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
