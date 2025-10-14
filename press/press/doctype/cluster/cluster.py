@@ -96,7 +96,6 @@ class Cluster(Document):
 		"Proxy Server": "n",
 		"Database Server": "m",
 		"Server": "f",  # App server is last as it needs both proxy and db server
-		"Secondary Server": "fs",
 	}
 
 	private_servers: ClassVar[dict] = {
@@ -104,6 +103,8 @@ class Cluster(Document):
 		# "Monitor Server": "p",
 		# "Log Server": "e,
 	}
+
+	secondary_server_series: ClassVar[str] = "fs"
 
 	wait_for_aws_creds_seconds = 20
 
@@ -927,7 +928,7 @@ class Cluster(Document):
 			plan.platform,
 			plan.disk,
 			domain,
-			server_series[doctype] if not is_secondary else self.base_servers["Secondary Server"],
+			server_series[doctype] if not is_secondary else self.secondary_server_series,
 			team,
 			data_disk_snapshot=data_disk_snapshot,
 			temporary_server=temporary_server,

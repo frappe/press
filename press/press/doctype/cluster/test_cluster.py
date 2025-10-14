@@ -138,7 +138,7 @@ class TestPrivateCluster(TestCluster):
 	def test_create_private_cluster_without_aws_access_key_and_secret_creates_user_in_predefined_group_and_adds_servers(
 		self,
 	):
-		self._setup_fake_vmis(["m", "f", "n", "p", "e"])
+		self._setup_fake_vmis(["m", "f", "n", "p", "e", "fs"])
 
 		root_domain = create_test_root_domain("local.fc.frappe.dev")
 		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
@@ -212,7 +212,7 @@ class TestPublicCluster(TestCluster):
 	def test_creation_of_public_cluster_with_servers_creates_3(self):
 		root_domain = create_test_root_domain("local.fc.frappe.dev")
 		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
-		self._setup_fake_vmis(["m", "f", "n"])
+		self._setup_fake_vmis(["m", "f", "n", "fs"])
 
 		server_count_before = frappe.db.count("Server")
 		database_server_count_before = frappe.db.count("Database Server")
