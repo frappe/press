@@ -2293,7 +2293,7 @@ class Server(BaseServer):
 	@frappe.whitelist()
 	def install_nfs_common(self):
 		"""Install nfs common on this server"""
-		self._install_nfs_common()
+		frappe.enqueue_doc(self.doctype, self.name, "_install_nfs_common")
 
 	def _install_nfs_common(self):
 		try:
