@@ -38,10 +38,6 @@ class DashboardBanner(Document):
 		user_dismissals: DF.Table[DashboardBannerDismissal]
 	# end: auto-generated types
 
-	def validate(self):
-		if self.is_global and self.is_dismissible:
-			frappe.throw("Global banners cannot be dismissible.")
-
 
 def run_scheduled_publish_unpublish():
 	frappe.db.set_value(
