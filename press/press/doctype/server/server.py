@@ -1913,6 +1913,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		self.install_filebeat()
 
 		if self.doctype == "Server":
+			self.install_nfs_common()
 			self.setup_mysqldump()
 			self.install_earlyoom()
 			self.setup_ncdu()
@@ -2287,6 +2288,20 @@ class Server(BaseServer):
 	@frappe.whitelist()
 	def setup_ncdu(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_ncdu")
+
+	@frappe.whitelist()
+	def install_nfs_common(self):
+		"""Install nfs common on this server"""
+		self._install_nfs_common()
+
+	def _install_nfs_common(self):
+		try:
+			ansible = Ansible(
+				playbook="install_nfs_common.yml", server=self, user=self._ssh_user(), port=self._ssh_port()
+			)
+			ansible.run()
+		except Exception:
+			log_error("Unable to install nfs common", server=self.as_dict())
 
 	def _setup_ncdu(self):
 		try:

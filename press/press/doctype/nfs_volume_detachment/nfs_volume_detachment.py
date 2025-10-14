@@ -243,9 +243,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 		volume_id = frappe.get_value(
 			"NFS Volume Attachment", {"primary_server": self.primary_server}, "volume_id"
 		)
-
 		try:
-			virtual_machine.detach(volume_id)
 			virtual_machine.delete_volume(volume_id)
 			step.status = Status.Success
 			step.save()
