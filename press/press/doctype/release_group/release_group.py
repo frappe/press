@@ -19,6 +19,8 @@ from frappe.query_builder.functions import Count
 from frappe.utils import cstr, flt, get_url, sbool
 from frappe.utils.caching import redis_cache
 
+from press.access.actions import ReleaseGroupActions
+from press.access.decorators import action_guard
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.exceptions import ImageNotFoundInRegistry, InsufficientSpaceOnServer, VolumeResizeLimitError
@@ -979,6 +981,7 @@ class ReleaseGroup(Document, TagHelpers):
 		)
 
 	@dashboard_whitelist()
+	@action_guard(ReleaseGroupActions.GENERATE_SSH_CERTIFICATE)
 	def generate_certificate(self):
 		ssh_key = frappe.get_all(
 			"User SSH Key",
