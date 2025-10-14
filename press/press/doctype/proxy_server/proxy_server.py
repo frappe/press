@@ -49,6 +49,7 @@ class ProxyServer(BaseServer):
 		is_self_hosted: DF.Check
 		is_server_setup: DF.Check
 		is_ssh_proxy_setup: DF.Check
+		is_static_ip: DF.Check
 		is_wireguard_setup: DF.Check
 		primary: DF.Link | None
 		private_ip: DF.Data | None

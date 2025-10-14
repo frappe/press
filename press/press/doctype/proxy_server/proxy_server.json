@@ -27,6 +27,7 @@
   "section_break_8",
   "ip",
   "enabled_default_routing",
+  "is_static_ip",
   "column_break_10",
   "private_ip",
   "private_mac_address",
@@ -450,10 +451,17 @@
    "fieldname": "auto_increase_storage",
    "fieldtype": "Check",
    "label": "Auto Increase Storage"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_static_ip",
+   "fieldtype": "Check",
+   "label": "Is Static IP",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2025-10-09 13:00:56.817210",
+ "modified": "2025-10-10 09:35:03.473042",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",

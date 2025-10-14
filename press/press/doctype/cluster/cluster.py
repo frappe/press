@@ -41,9 +41,13 @@ if typing.TYPE_CHECKING:
 	from collections.abc import Generator
 
 	from press.press.doctype.database_server.database_server import DatabaseServer
+	from press.press.doctype.press_job.press_job import PressJob
 	from press.press.doctype.press_settings.press_settings import PressSettings
+	from press.press.doctype.server.server import Server
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+
+DEFAULT_SERVER_TITLE = "First"
 
 
 class Cluster(Document):
@@ -99,6 +103,8 @@ class Cluster(Document):
 		# "Monitor Server": "p",
 		# "Log Server": "e,
 	}
+
+	secondary_server_series: ClassVar[str] = "fs"
 
 	wait_for_aws_creds_seconds = 20
 
@@ -684,7 +690,7 @@ class Cluster(Document):
 						"series": series,
 						"status": "Available",
 						"public": True,
-						"platform": platform,
+						"platform": "x86_64" if series == "n" else platform,
 						"cloud_provider": self.cloud_provider,
 					},
 					limit=1,
@@ -706,7 +712,7 @@ class Cluster(Document):
 						"series": series,
 						"status": "Available",
 						"public": True,
-						"platform": platform,
+						"platform": "x86_64" if series == "n" else platform,
 						"cloud_provider": self.cloud_provider,
 					},
 					limit=1,
@@ -731,6 +737,19 @@ class Cluster(Document):
 		yield from copies
 
 	@frappe.whitelist()
+	def create_proxy(self):
+		"""Creates a proxy server for the cluster"""
+		if self.images_available < 1:
+			frappe.throw(
+				"Images are not available. Add them or wait for copy to complete",
+				frappe.ValidationError,
+			)
+		if self.status != "Active":
+			frappe.throw("Cluster is not active", frappe.ValidationError)
+
+		self.create_server("Proxy Server", DEFAULT_SERVER_TITLE)
+
+	@frappe.whitelist()
 	def create_servers(self):
 		"""Creates servers for the cluster"""
 		if self.images_available < 1:
@@ -745,7 +764,7 @@ class Cluster(Document):
 			# TODO: remove Test title #
 			server, _ = self.create_server(
 				doctype,
-				"Test",
+				DEFAULT_SERVER_TITLE,
 			)
 			match doctype:  # for populating Server doc's fields; assume the trio is created together
 				case "Database Server":
@@ -757,7 +776,7 @@ class Cluster(Document):
 		for doctype, _ in self.private_servers.items():
 			self.create_server(
 				doctype,
-				"Test",
+				DEFAULT_SERVER_TITLE,
 				create_subscription=False,
 			)
 
@@ -871,7 +890,9 @@ class Cluster(Document):
 		master_db_server: str | None = None,
 		press_job_arguments: dict[str, typing.Any] | None = None,
 		kms_key_id: str | None = None,
-	):
+		is_secondary: bool = False,
+		primary: str | None = None,
+	) -> tuple["Server", "PressJob"]:
 		"""Creates a server for the cluster
 
 		temporary_server: If you are creating a temporary server for some special purpose, set this to True.
@@ -907,7 +928,7 @@ class Cluster(Document):
 			plan.platform,
 			plan.disk,
 			domain,
-			server_series[doctype],
+			server_series[doctype] if not is_secondary else self.secondary_server_series,
 			team,
 			data_disk_snapshot=data_disk_snapshot,
 			temporary_server=temporary_server,
@@ -927,7 +948,7 @@ class Cluster(Document):
 					server.primary = master_db_server
 
 			case "Server":
-				server = vm.create_server()
+				server: "Server" = vm.create_server(is_secondary=is_secondary, primary=primary)
 				server.title = f"{title} - Application"
 				server.ram = plan.memory
 				if hasattr(self, "database_server") and self.database_server:

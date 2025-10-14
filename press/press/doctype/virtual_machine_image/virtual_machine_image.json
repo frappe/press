@@ -74,7 +74,7 @@
    "fieldname": "series",
    "fieldtype": "Select",
    "label": "Series",
-   "options": "n\nf\nm\nc\np\ne\nr",
+   "options": "n\nf\nm\nc\np\ne\nr\nnfs\nfs",
    "read_only": 1,
    "reqd": 1
   },
@@ -182,7 +182,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-09 12:15:34.639707",
+ "modified": "2025-10-13 14:56:47.398186",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",

@@ -50,7 +50,6 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
-
 from typing import Literal, TypedDict
 
 
@@ -1499,6 +1498,18 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Start Benches Exception", server=self.as_dict())
 
+	def _stop_active_benches(self):
+		try:
+			ansible = Ansible(
+				playbook="stop_benches.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Start Benches Exception", server=self.as_dict())
+
 	@frappe.whitelist()
 	def mount_volumes(
 		self,
@@ -1911,6 +1922,12 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 			self.install_cadvisor()
 
+			if self.is_secondary:
+				frappe.db.set_value(
+					"Server", {"secondary_server": self.name}, "status", self.status
+				)  # Update the status of the primary server
+				frappe.db.commit()
+
 		if self.doctype == "Database Server":
 			self.adjust_memory_config()
 			self.setup_logrotate()
@@ -1958,6 +1975,43 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			)
 		return frappe._dict()
 
+	@frappe.whitelist()
+	def get_aws_static_ip(self):
+		if self.provider != "AWS EC2":
+			frappe.throw("Failed to proceed as VM is not AWS EC2")
+
+		vm_doc = frappe.get_doc("Virtual Machine", self.virtual_machine)
+
+		cluster_doc = frappe.get_doc("Cluster", self.cluster)
+		region_name = cluster_doc.region
+		aws_access_key_id = cluster_doc.aws_access_key_id
+		aws_secret_access_key = get_decrypted_password(
+			"Cluster", self.cluster, fieldname="aws_secret_access_key"
+		)
+
+		instance_id = vm_doc.instance_id
+
+		# Initialize EC2 client
+		ec2_client = boto3.client(
+			"ec2",
+			aws_access_key_id=aws_access_key_id,
+			aws_secret_access_key=aws_secret_access_key,
+			region_name=region_name,
+		)
+
+		# Allocate new Elastic IP
+		allocation = ec2_client.allocate_address(Domain="vpc")
+		allocation_id = allocation["AllocationId"]
+		public_ip = allocation["PublicIp"]
+
+		# Associate with instance
+		ec2_client.associate_address(InstanceId=instance_id, AllocationId=allocation_id)
+
+		# Trigger VM sync
+		vm_doc.sync()
+
+		return f"Static IP {public_ip} alloted to the VM (Allocation ID: {allocation_id})"
+
 
 class Server(BaseServer):
 	# begin: auto-generated types
@@ -1976,6 +2030,7 @@ class Server(BaseServer):
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
 		auto_increase_storage: DF.Check
+		auto_scale: DF.Check
 		bastion_server: DF.Link | None
 		cluster: DF.Link | None
 		communication_infos: DF.Table[CommunicationInfo]
@@ -1998,6 +2053,7 @@ class Server(BaseServer):
 		is_primary: DF.Check
 		is_pyspy_setup: DF.Check
 		is_replication_setup: DF.Check
+		is_secondary: DF.Check
 		is_self_hosted: DF.Check
 		is_server_prepared: DF.Check
 		is_server_renamed: DF.Check
@@ -2021,6 +2077,8 @@ class Server(BaseServer):
 		public: DF.Check
 		ram: DF.Float
 		root_public_key: DF.Code | None
+		running_benches_on_secondary: DF.Check
+		secondary_server: DF.Link | None
 		self_hosted_mariadb_root_password: DF.Password | None
 		self_hosted_mariadb_server: DF.Data | None
 		self_hosted_server_domain: DF.Data | None
@@ -2174,6 +2232,57 @@ class Server(BaseServer):
 				frappe.db.set_value(
 					"Subscription", add_on_storage_subscription.name, {"team": self.team, "enabled": 1}
 				)
+
+	def validate_more_memory_in_secondary_server(self, secondary_server_plan: str) -> None:
+		"""Ensure secondary server has more memory than the primary server"""
+		current_plan_memory: int = frappe.db.get_value("Server Plan", self.plan, "memory")
+		secondary_server_plan_memory: int = frappe.db.get_value(
+			"Server Plan", secondary_server_plan, "memory"
+		)
+
+		if secondary_server_plan_memory <= current_plan_memory:
+			frappe.throw(
+				"Please select a plan with more memory than the "
+				f"existing server plan. Current memory: {current_plan_memory}"
+			)
+
+	def create_secondary_server(self, secondary_server_plan: str) -> None:
+		"""Create a secondary server for this server"""
+		self.validate_more_memory_in_secondary_server(secondary_server_plan)
+
+		secondary_server_plan: ServerPlan = frappe.get_cached_doc("Server Plan", secondary_server_plan)
+		team_name = frappe.db.get_value("Server", self.name, "team", "name")
+		cluster: "Cluster" = frappe.get_cached_doc("Cluster", self.cluster)
+		server_title = f"Secondary - {self.title or self.name}"
+
+		# This is horrible code, however it seems to be the standard
+		# https://github.com/frappe/press/blob/28c9ba67b15b5d8ba64e302d084d3289ea744c39/press/api/server.py/#L228-L229
+		cluster.database_server = self.database_server
+		cluster.proxy_server = self.proxy_server
+
+		secondary_server, _ = cluster.create_server(
+			"Server",
+			server_title,
+			secondary_server_plan,
+			team=team_name,
+			auto_increase_storage=self.auto_increase_storage,
+			is_secondary=True,
+			primary=self.name,
+		)
+
+		self.secondary_server = secondary_server.name
+		self.save()
+
+	@frappe.whitelist()
+	def setup_secondary_server(self, server_plan: str):
+		"""Setup secondary server"""
+		if self.doctype == "Database Server" or self.is_secondary:
+			return
+
+		self.status = "Installing"
+		self.save()
+
+		self.create_secondary_server(server_plan)
 
 	@frappe.whitelist()
 	def setup_ncdu(self):
@@ -2432,43 +2541,6 @@ class Server(BaseServer):
 			self.save()
 		except Exception:
 			log_error("Setup PySpy Exception", server=self.as_dict())
-
-	@frappe.whitelist()
-	def get_aws_static_ip(self):
-		vm_doc = frappe.get_doc("Virtual Machine", self.virtual_machine)
-
-		if vm_doc.cloud_provider != "AWS EC2":
-			frappe.throw("Failed to proceed as VM is not AWS EC2")
-
-		cluster_doc = frappe.get_doc("Cluster", self.cluster)
-		region_name = cluster_doc.region
-		aws_access_key_id = cluster_doc.aws_access_key_id
-		aws_secret_access_key = get_decrypted_password(
-			"Cluster", self.cluster, fieldname="aws_secret_access_key", raise_exception=False
-		)
-
-		instance_id = vm_doc.instance_id
-
-		# Initialize EC2 client
-		ec2_client = boto3.client(
-			"ec2",
-			aws_access_key_id=aws_access_key_id,
-			aws_secret_access_key=aws_secret_access_key,
-			region_name=region_name,
-		)
-
-		# Allocate new Elastic IP
-		allocation = ec2_client.allocate_address(Domain="vpc")
-		allocation_id = allocation["AllocationId"]
-		public_ip = allocation["PublicIp"]
-
-		# Associate with instance
-		ec2_client.associate_address(InstanceId=instance_id, AllocationId=allocation_id)
-
-		# Trigger VM sync
-		vm_doc.sync()
-
-		return f"Static IP {public_ip} alloted to the VM (Allocation ID: {allocation_id})"
 
 	@frappe.whitelist()
 	def setup_replication(self):
