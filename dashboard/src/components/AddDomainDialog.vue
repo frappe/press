@@ -104,12 +104,7 @@
 				class="mt-2 w-full"
 				variant="solid"
 				:loading="$resources.checkDNS.loading"
-				@click="
-					$resources.checkDNS.submit({
-						name: site.name,
-						domain: newDomain,
-					})
-				"
+				@click="preprocessDomain()"
 			>
 				Verify DNS
 			</Button>
@@ -147,6 +142,26 @@ export default {
 			showDialog: true,
 			newDomain: null,
 		};
+	},
+	methods: {
+		preprocessDomain() {
+			if (this.newDomain) {
+				// Remove the URL protocol if present (http://, https://, wss://)
+				// Example: "https://cooldomain.in" → "cooldomain.in"
+				this.newDomain = this.newDomain.replace(/(^\w+:|^)\/\//, '');
+
+				// Remove everything after the first '/' to keep only the root domain
+				// Example: "cooldomain.in/path/to/glory" → "cooldomain.in"
+				this.newDomain = this.newDomain.split('/')[0];
+				this.verifyDns();
+			}
+		},
+		verifyDns() {
+			this.$resources.checkDNS.submit({
+				name: this.site.name,
+				domain: this.newDomain,
+			});
+		},
 	},
 	resources: {
 		checkDNS: {

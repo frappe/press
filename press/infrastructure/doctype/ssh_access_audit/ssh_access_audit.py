@@ -49,11 +49,13 @@ class SSHAccessAudit(Document):
 
 		hosts: DF.Table[SSHAccessAuditHost]
 		inventory: DF.Code | None
+		known_violations: DF.Table[SSHAccessAuditViolation]
 		name: DF.Int | None
 		reachable_hosts: DF.Int
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
 		suspicious_users: DF.Code | None
 		total_hosts: DF.Int
+		total_known_violations: DF.Int
 		total_violations: DF.Int
 		user_violations: DF.Int
 		violations: DF.Table[SSHAccessAuditViolation]
@@ -181,38 +183,51 @@ class SSHAccessAudit(Document):
 				}
 		return keys
 
+	def parse_users(self, json_str):
+		if not json_str:
+			return []
+		return json.loads(json_str)
+
+	def is_system_manager_key(self, key) -> bool:
+		key_info = self.known_keys.get(key, {})
+		key_doctype = key_info.get("key_doctype")
+		key_document = key_info.get("key_document")
+		if not (key_doctype and key_document):
+			return False
+		document = frappe.get_doc(key_doctype, key_document)
+		if not document.user:
+			return False
+		if "System Manager" in frappe.get_roles(document.user):
+			return True
+		return False
+
 	def check_key_violations(self):
-		known_keys = self.known_keys
-		acceptable_keys = self.acceptable_keys
 		for host in self.hosts:
-			if not host.users:
-				continue
-			users = json.loads(host.users)
-			for user in users:
+			for user in self.parse_users(host.users):
 				for key in user["keys"]:
-					if key in acceptable_keys:
+					if key in self.acceptable_keys:
 						continue
 					violation = {"host": host.host, "user": user["user"], "key": key}
-					if key in known_keys:
-						violation.update(known_keys[key])
-					self.append("violations", violation)
+					if key_info := self.known_keys.get(key):
+						violation.update(key_info)
+					if self.is_system_manager_key(key):
+						self.append("known_violations", violation)
+					else:
+						self.append("violations", violation)
 
 	def check_user_violations(self):
 		suspicious_users = []
 		acceptable_users = set(["frappe", "root"])
 		for host in self.hosts:
-			if not host.users:
-				continue
-			users = json.loads(host.users)
-			for user in users:
+			for user in self.parse_users(host.users):
 				if user["user"] not in acceptable_users:
 					suspicious_users.append((host.host, user["user"]))
-
 		self.suspicious_users = json.dumps(suspicious_users, indent=1, sort_keys=True)
 
 	def set_statistics(self):
 		self.total_hosts = len(self.hosts)
 		self.reachable_hosts = len([host for host in self.hosts if host.status == "Completed"])
+		self.total_known_violations = len(self.known_violations)
 		self.total_violations = len(self.violations)
 		self.user_violations = len(json.loads(self.suspicious_users))
 

@@ -372,7 +372,7 @@ class SiteBackup(Document):
 			},
 		)
 
-		if job and not play_exists and re.search(r"\[Errno 13\] Permission denied", job.output):
+		if job.output and not play_exists and re.search(r"\[Errno 13\] Permission denied", job.output):
 			try:
 				bench = frappe.get_doc("Bench", job.bench)
 				bench.correct_bench_permissions()

@@ -30,6 +30,7 @@ from press.press.doctype.add_on_storage_log.add_on_storage_log import (
 	insert_addon_storage_log,
 )
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
+from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.runner import Ansible
@@ -146,6 +147,7 @@ class BaseServer(Document, TagHelpers):
 		doc.usage = usage(self.name)
 		doc.actions = self.get_actions()
 		doc.disk_size = frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size")
+		doc.communication_infos = self.get_communication_infos()
 
 		try:
 			doc.recommended_storage_increment = (
@@ -166,6 +168,26 @@ class BaseServer(Document, TagHelpers):
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 
 		return doc
+
+	@dashboard_whitelist()
+	def get_communication_infos(self):
+		return (
+			[{"channel": c.channel, "type": c.type, "value": c.value} for c in self.communication_infos]
+			if hasattr(self, "communication_infos")
+			else []
+		)
+
+	@dashboard_whitelist()
+	def update_communication_infos(self, values: list[dict]):
+		if self.doctype != "Server":
+			frappe.throw("Setting up communication info is only allowed for App Server")
+			return
+
+		from press.press.doctype.communication_info.communication_info import (
+			update_communication_infos as update_infos,
+		)
+
+		update_infos("Server", self.name, values)
 
 	@dashboard_whitelist()
 	def get_storage_usage(self):
@@ -1494,8 +1516,8 @@ class BaseServer(Document, TagHelpers):
 			self.doctype,
 			self.name,
 			"_mount_volumes",
-			queue="short",
-			timeout=1200,
+			queue="long",
+			timeout=7200,
 			at_front=True,
 			now=now or False,
 			stop_docker_before_mount=stop_docker_before_mount or False,
@@ -1676,7 +1698,6 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		if server.auto_increase_storage:
 			return
 
-		notify_email = frappe.get_value("Team", server.team, notify_email)
 		disk_capacity = self.disk_capacity(mountpoint)
 		current_disk_usage = disk_capacity - self.free_space(mountpoint)
 		recommended_increase = (
@@ -1691,7 +1712,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		disk_capacity = disk_capacity / 1024 / 1024 / 1024
 
 		frappe.sendmail(
-			recipients=notify_email,
+			recipients=get_communication_info("Email", "Incident", self.doctype, self.name),
 			subject=f"Important: Server {server.name} has used 80% of the available space",
 			template="disabled_auto_disk_expansion",
 			args={
@@ -1899,6 +1920,43 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		self.validate_mounts()
 		self.save(ignore_permissions=True)
 
+	def get_wildcard_domains(self):
+		wildcard_domains = []
+		for domain in self.domains:
+			if domain.domain == self.domain and self.doctype == "Proxy Server":
+				# self.domain certs are symlinks
+				continue
+			certificate_name = frappe.db.get_value(
+				"TLS Certificate", {"wildcard": True, "domain": domain.domain}, "name"
+			)
+			certificate = frappe.get_doc("TLS Certificate", certificate_name)
+			wildcard_domains.append(
+				{
+					"domain": domain.domain,
+					"certificate": {
+						"privkey.pem": certificate.private_key,
+						"fullchain.pem": certificate.full_chain,
+						"chain.pem": certificate.intermediate_chain,
+					},
+					"code_server": domain.code_server,
+				}
+			)
+		return wildcard_domains
+
+	@frappe.whitelist()
+	def setup_wildcard_hosts(self):
+		agent = Agent(self.name, server_type=self.doctype)
+		wildcards = self.get_wildcard_domains()
+		agent.setup_wildcard_hosts(wildcards)
+
+	@property
+	def bastion_host(self):
+		if self.bastion_server:
+			return frappe.get_cached_value(
+				"Bastion Server", self.bastion_server, ["ssh_user", "ssh_port", "ip"], as_dict=True
+			)
+		return frappe._dict()
+
 
 class Server(BaseServer):
 	# begin: auto-generated types
@@ -1909,6 +1967,7 @@ class Server(BaseServer):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.communication_info.communication_info import CommunicationInfo
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 		from press.press.doctype.server_mount.server_mount import ServerMount
 
@@ -1916,7 +1975,9 @@ class Server(BaseServer):
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
 		auto_increase_storage: DF.Check
+		bastion_server: DF.Link | None
 		cluster: DF.Link | None
+		communication_infos: DF.Table[CommunicationInfo]
 		database_server: DF.Link | None
 		disable_agent_job_auto_retry: DF.Check
 		domain: DF.Link | None
@@ -2046,6 +2107,22 @@ class Server(BaseServer):
 
 		if save:
 			self.save()
+
+	def get_actions(self):
+		server_actions = super().get_actions()
+
+		return [
+			{
+				"action": "Notification Settings",
+				"description": "Manage notification channels",
+				"button_label": "Manage",
+				"doc_method": "dummy",
+				"group": "Application Server Actions",
+				"server_doctype": "Server",
+				"server_name": self.name,
+			},
+			*server_actions,
+		]
 
 	def update_subscription(self):
 		subscription = self.subscription
@@ -2229,9 +2306,19 @@ class Server(BaseServer):
 			self.reload()
 			if play.status == "Success":
 				self.is_standalone_setup = True
+				self.setup_wildcard_hosts()
+				self.update_benches_nginx()
 		except Exception:
 			log_error("Standalone Server Setup Exception", server=self.as_dict())
 		self.save()
+
+	@frappe.whitelist()
+	def update_benches_nginx(self):
+		"""Update benches config for all benches in the server"""
+		benches = frappe.get_all("Bench", "name", {"server": self.name, "status": "Active"}, pluck="name")
+		for bench_name in benches:
+			bench: Bench = frappe.get_doc("Bench", bench_name)
+			bench.generate_nginx_config()
 
 	@frappe.whitelist()
 	def setup_agent_sentry(self):
@@ -2702,6 +2789,21 @@ class Server(BaseServer):
 		if doc.app_server != self.name:
 			frappe.throw("Snapshot does not belong to this server")
 		doc.unlock()
+
+	@property
+	def domains(self):
+		if (
+			self.is_self_hosted
+		):  # to avoid pushing certificates to self hosted servers on setup_wildcard_hosts
+			return []
+		return [
+			frappe._dict({"domain": domain.name, "code_server": False})
+			for domain in frappe.get_all(
+				"Root Domain",
+				filters={"enabled": 1},
+				fields=["name"],
+			)
+		]  # To avoid adding child table in server doc
 
 
 def scale_workers(now=False):

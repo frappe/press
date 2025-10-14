@@ -1425,7 +1425,7 @@ class ReleaseGroup(Document, TagHelpers):
 				check_image_exists=True,
 			)
 		except ImageNotFoundInRegistry:
-			self.add_server(server=server, deploy=True, force_new_build=True)
+			return self.add_server(server=server, deploy=True, force_new_build=True)
 
 	@frappe.whitelist()
 	def change_server(self, server: str):
