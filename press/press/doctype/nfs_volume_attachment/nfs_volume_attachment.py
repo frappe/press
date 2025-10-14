@@ -185,6 +185,14 @@ class NFSVolumeAttachment(Document, StepHandler):
 				f"{self.primary_server} is already sharing benches with {self.secondary_server}!",
 			)
 
+	def install_nfs_common(self):
+		"""Install nfs common on both primary and secondary servers"""
+		primary_server: Server = frappe.get_doc("Server", self.primary_server)
+		secondary_server: Server = frappe.get_doc("Server", self.secondary_server)
+
+		primary_server.install_nfs_common()
+		secondary_server.install_nfs_common()
+
 	def stop_all_benches(self, step: "NFSVolumeDetachmentStep"):
 		"""Stop all benches running on /shared"""
 		server: Server = frappe.get_doc("Server", self.primary_server)
@@ -434,6 +442,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 		self.volume_size = frappe.db.get_value("Virtual Machine", self.primary_server, "disk_size")
 		for step in self.get_steps(
 			[
+				self.install_nfs_common,
 				self.stop_all_benches,
 				self.attach_volume_on_nfs_server,
 				self.allow_servers_to_mount,
