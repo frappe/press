@@ -949,7 +949,7 @@ class Cluster(Document):
 
 			case "Server":
 				server: "Server" = vm.create_server(is_secondary=is_secondary, primary=primary)
-				server.title = f"{title} - Application"
+				server.title = f"{title} - Application" if not is_secondary else title
 				server.ram = plan.memory
 				if hasattr(self, "database_server") and self.database_server:
 					server.database_server = self.database_server
