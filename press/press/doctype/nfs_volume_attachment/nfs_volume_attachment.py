@@ -458,6 +458,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 			timeout=18000,
 			at_front=True,
 			queue="long",
+			enqueue_after_commit=True,
 		)
 
 	def after_insert(self):
