@@ -57,6 +57,7 @@ function getServerActionHandler(action) {
 		'Update Max DB Connections': onUpdateMaxDBConnections,
 		'View Database Configuration': onViewDatabaseConfiguration,
 		'Update Binlog Retention': onUpdateBinlogRetention,
+		'Update Binlog Size Limit': onUpdateBinlogSizeLimit,
 		'Manage Database Binlogs': onViewMariaDBBinlogs,
 	};
 	if (actionHandlers[action]) {
@@ -403,6 +404,58 @@ function onUpdateBinlogRetention() {
 						getToastErrorMessage(
 							server.updateBinlogRetention.error ||
 								'Failed to update Binlog Retention',
+						),
+					duration: 5000,
+				},
+			);
+		},
+	});
+}
+
+function onUpdateBinlogSizeLimit() {
+	if (!server.updateBinlogSizeLimit) return;
+	confirmDialog({
+		title: 'Update Binlog Size Limit',
+		message: `You can limit the amount of space that binlog can use at max. If the size exceeds the limit, the oldest binlog files will be deleted automatically.`,
+		fields: [
+			{
+				label: 'Enable Binlog Auto Purging',
+				fieldname: 'enabled',
+				type: 'checkbox',
+				default: server.doc.auto_purge_binlog_based_on_size,
+			},
+			{
+				label: 'Percent of disk space can be used by binlog (10-90)',
+				fieldname: 'size',
+				type: 'number',
+				default: server.doc.binlog_max_disk_usage_percent,
+				condition: (values) => values.enabled,
+			},
+		],
+		primaryAction: {
+			label: 'Update Binlog Size Limit',
+		},
+		onSuccess({ hide, values }) {
+			if (server.updateBinlogSizeLimit.loading) return;
+			toast.promise(
+				server.updateBinlogSizeLimit.submit(
+					{
+						enabled: values.enabled,
+						percent_of_disk_size: parseInt(values.size),
+					},
+					{
+						onSuccess() {
+							hide();
+						},
+					},
+				),
+				{
+					loading: 'Updating Binlog Size Limit...',
+					success: 'Binlog Size Limit updated',
+					error: () =>
+						getToastErrorMessage(
+							server.updateBinlogSizeLimit.error ||
+								'Failed to update Binlog Size Limit',
 						),
 					duration: 5000,
 				},
