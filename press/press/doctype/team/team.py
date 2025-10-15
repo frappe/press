@@ -77,6 +77,7 @@ class Team(Document):
 		is_saas_user: DF.Check
 		is_us_eu: DF.Check
 		last_used_team: DF.Link | None
+		monthly_alert_limit: DF.Currency
 		mpesa_enabled: DF.Check
 		mpesa_phone_number: DF.Data | None
 		mpesa_tax_id: DF.Data | None
@@ -89,6 +90,7 @@ class Team(Document):
 		partnership_date: DF.Date | None
 		payment_mode: DF.Literal["", "Card", "Prepaid Credits", "Paid By Partner"]
 		razorpay_enabled: DF.Check
+		receive_budget_alerts: DF.Check
 		referrer_id: DF.Data | None
 		security_portal_enabled: DF.Check
 		self_hosted_servers_enabled: DF.Check
@@ -136,6 +138,8 @@ class Team(Document):
 		"razorpay_enabled",
 		"account_request",
 		"partner_status",
+		"receive_budget_alerts",
+		"monthly_alert_limit",
 	)
 
 	def get_doc(self, doc):
