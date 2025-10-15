@@ -60,6 +60,7 @@ const saveSettings = async () => {
 			? parseFloat(monthlyAlertLimit.value) || 0
 			: 0;
 
+		// If saved without any changes, just close the dialog
 		if (
 			receiveBudgetAlerts.value === currentAlerts &&
 			newLimit === currentLimit
