@@ -1653,7 +1653,9 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			return
 
 		disk_size = frappe.get_value("Virtual Machine", self.virtual_machine, "disk_size")
-		binlog_limit_in_gb = int(self.binlog_max_disk_usage_percent / 100) * disk_size
+		binlog_limit_in_gb = int(self.binlog_max_disk_usage_percent / 100 * disk_size)
+		if binlog_limit_in_gb == 0:
+			return
 
 		self.agent.purge_binlogs_by_size_limit(self, max_binlog_gb=binlog_limit_in_gb)
 
