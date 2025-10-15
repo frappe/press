@@ -9,7 +9,10 @@ import frappe
 from frappe.model.document import Document
 
 from press.agent import Agent
-from press.press.doctype.nfs_volume_attachment.nfs_volume_attachment import StepHandler
+from press.press.doctype.nfs_volume_attachment.nfs_volume_attachment import (
+	StepHandler,
+	get_restart_benches_play,
+)
 from press.runner import Ansible
 
 if typing.TYPE_CHECKING:
@@ -104,7 +107,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 			directory="/home/frappe/benches/",
 			secondary_server_private_ip=secondary_server_private_ip,
 			is_primary=True,
-			restart_benches=True,
+			restart_benches=False,
 			reference_doctype="Server",
 			reference_name=self.primary_server,
 		)
@@ -129,6 +132,19 @@ class NFSVolumeDetachment(Document, StepHandler):
 			"job",
 		)
 		self.handle_async_job(step, job)
+
+	def update_benches_with_new_mounts(self, step: "NFSVolumeDetachmentStep"):
+		"""Restart all benches via agent for mounts to reload"""
+		step.status = Status.Running
+		step.save()
+
+		ansible = get_restart_benches_play(self.primary_server)
+
+		try:
+			self._run_ansible_step(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+			raise
 
 	def umount_from_primary_server(self, step: "NFSVolumeDetachmentStep") -> None:
 		"""Umount /shared from primary server and remove from fstab"""
@@ -271,6 +287,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 				self.sync_data,
 				self.run_bench_on_primary_server,
 				self.wait_for_job_completion,
+				self.update_benches_with_new_mounts,
 				self.umount_from_primary_server,
 				self.umount_from_secondary_server,
 				self.remove_servers_from_acl,
