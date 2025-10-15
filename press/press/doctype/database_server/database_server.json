@@ -685,22 +685,6 @@
    "options": "Bastion Server"
   },
   {
-<<<<<<< HEAD
-   "default": "0",
-<<<<<<< HEAD
-   "fieldname": "is_monitoring_disabled",
-   "fieldtype": "Check",
-   "label": "Is Monitoring Disabled",
-   "search_index": 1
-=======
-   "fieldname": "auto_purge_binlog_based_on_size",
-   "fieldtype": "Check",
-   "label": "Auto Purge Binlog Based on Size",
-   "search_index": 1
-  },
-  {
-=======
->>>>>>> 24a654eaf (feat(database): From UI allow to set binlog size limit)
    "fieldname": "column_break_hrsi",
    "fieldtype": "Column Break"
   },
@@ -710,9 +694,6 @@
    "fieldtype": "Int",
    "label": "Binlog Max Disk Usage Percent (%)",
    "non_negative": 1
-<<<<<<< HEAD
->>>>>>> 1065467bd (feat(database): Auto purge binlogs based on size limit)
-=======
   },
   {
    "default": "0",
@@ -726,7 +707,6 @@
    "fieldtype": "Check",
    "label": "Is Monitoring Disabled",
    "search_index": 1
->>>>>>> 24a654eaf (feat(database): From UI allow to set binlog size limit)
   }
  ],
  "grid_page_length": 50,
@@ -743,15 +723,7 @@
    "link_fieldname": "database_server"
   }
  ],
-<<<<<<< HEAD
-<<<<<<< HEAD
- "modified": "2025-10-06 17:08:00.975558",
-=======
- "modified": "2025-10-03 22:55:44.870368",
->>>>>>> 1065467bd (feat(database): Auto purge binlogs based on size limit)
-=======
  "modified": "2025-10-15 17:54:37.526993",
->>>>>>> 24a654eaf (feat(database): From UI allow to set binlog size limit)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
