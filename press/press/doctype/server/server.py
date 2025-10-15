@@ -809,7 +809,7 @@ class BaseServer(Document, TagHelpers):
 		if self.provider != "AWS EC2":
 			return 0
 
-		if self.benches_on_shared:
+		if self.benches_on_shared_volume:
 			last_updated_at = frappe.get_value(
 				"Virtual Machine Volume",
 				{
@@ -880,7 +880,7 @@ class BaseServer(Document, TagHelpers):
 			volume_id = self.volume_virtual_machine.volume_id
 
 		machine: "VirtualMachine" = frappe.get_doc(
-			"NFS Server",
+			"Virtual Machine",
 			self.volume_virtual_machine.nfs_server if self.benches_on_shared_volume else self.virtual_machine,
 		)
 
@@ -1684,7 +1684,7 @@ class BaseServer(Document, TagHelpers):
 	def volume_virtual_machine(self) -> "VirtualMachine":
 		return frappe.db.get_value(
 			"NFS Volume Attachment",
-			{"primary_server": self.name, "status": "Active"},
+			{"primary_server": self.name, "status": "Success"},
 			["volume_id", "nfs_server"],
 			as_dict=True,
 		)
