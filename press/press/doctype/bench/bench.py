@@ -337,7 +337,7 @@ class Bench(Document):
 				bench_config["rq_cache_port"] = config["rq_cache_port"]
 
 	@cached_property
-	def get_max_possible_memory_limit(self):
+	def max_possible_memory_limit(self):
 		return int(frappe.db.get_value("Server", self.server, "ram")) or 0
 
 	def add_limits(self, bench_config):
@@ -359,9 +359,9 @@ class Bench(Document):
 	def get_limits(self, max_possible=False) -> dict:
 		if max_possible:
 			return {
-				"memory_high": self.get_max_possible_memory_limit,
-				"memory_max": self.get_max_possible_memory_limit,
-				"memory_swap": self.get_max_possible_memory_limit * 2,
+				"memory_high": self.max_possible_memory_limit,
+				"memory_max": self.max_possible_memory_limit,
+				"memory_swap": self.max_possible_memory_limit * 2,
 				"vcpu": self.vcpu,
 			}
 		return {
@@ -791,7 +791,7 @@ class Bench(Document):
 			self.background_workers = MIN_BACKGROUND_WORKERS
 		if set_memory_limits:
 			if self.skip_memory_limits:
-				self.memory_max = self.get_max_possible_memory_limit
+				self.memory_max = self.max_possible_memory_limit
 				self.memory_high = self.memory_max - 1024
 			else:
 				self.memory_high = 512 + (
