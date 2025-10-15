@@ -14,7 +14,10 @@ from frappe.model.base_document import get_controller
 from frappe.utils import cstr
 from pypika.queries import QueryBuilder
 
+from press.access import dashboard_access_rules
+from press.access.support_access import has_support_access
 from press.exceptions import TeamHeaderNotInRequestError
+from press.utils import has_role
 
 if typing.TYPE_CHECKING:
 	from frappe.model.meta import Meta
@@ -87,6 +90,7 @@ ALLOWED_DOCTYPES = [
 	"Partner Lead Type",
 	"Lead Followup",
 	"Partner Consent",
+	"Support Access",
 ]
 
 whitelisted_methods = set()
@@ -119,7 +123,8 @@ def get_list(
 		frappe.throw("parenttype and parent are required to get child records")
 
 	apply_team_filter = not (
-		filters.get("skip_team_filter_for_system_user_and_support_agent") and (frappe.local.system_user())
+		filters.get("skip_team_filter_for_system_user_and_support_agent")
+		and (frappe.local.system_user() or has_role("Press Support Agent"))
 	)
 	if apply_team_filter and meta.has_field("team"):
 		valid_filters.team = frappe.local.team().name
@@ -219,7 +224,7 @@ def get(doctype, name):
 		raise
 
 	if (
-		not (frappe.local.system_user())
+		not (frappe.local.system_user() or has_support_access(doctype, name))
 		and frappe.get_meta(doctype).has_field("team")
 		and doc.team != frappe.local.team().name
 	):
@@ -240,7 +245,7 @@ def get(doctype, name):
 		if isinstance(result, dict):
 			_doc.update(result)
 
-	return _doc
+	return dashboard_access_rules(_doc)
 
 
 @frappe.whitelist(methods=["POST", "PUT"])
@@ -380,6 +385,9 @@ def check_document_access(doctype: str, name: str):
 		return
 
 	if team == frappe.local.team().name:
+		return
+
+	if has_support_access(doctype, name):
 		return
 
 	raise_not_permitted()
