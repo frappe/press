@@ -90,13 +90,7 @@ ALLOWED_DOCTYPES = [
 	"Partner Lead Type",
 	"Lead Followup",
 	"Partner Consent",
-<<<<<<< HEAD
-=======
-	"Account Request",
-	"Server Snapshot",
-	"Server Snapshot Recovery",
 	"Support Access",
->>>>>>> d4951038f (feat(dashboard): Strict restricted dashboard access (#3432))
 ]
 
 whitelisted_methods = set()
