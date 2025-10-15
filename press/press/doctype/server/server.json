@@ -671,23 +671,6 @@
    "options": "Bastion Server"
   },
   {
-<<<<<<< HEAD
-   "default": "0",
-   "fieldname": "is_monitoring_disabled",
-   "fieldtype": "Check",
-   "label": "Is Monitoring Disabled",
-   "search_index": 1
-  },
-  {
-   "default": "0",
-   "description": "Are the benches running on a shared volume",
-   "fieldname": "auto_scale",
-   "fieldtype": "Check",
-   "label": "Running on Shared Volume"
-  },
-  {
-=======
->>>>>>> 8820b2c7b (chore(server): Update flags on server when ready)
    "description": "Used during horizontal scaling.",
    "fieldname": "secondary_server",
    "fieldtype": "Link",
