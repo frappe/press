@@ -1643,7 +1643,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		if self.enable_binlog_indexing:
 			return
 
-		if not auto_purge_binlogs_by_size_limit:
+		if not self.auto_purge_binlog_based_on_size:
 			return
 
 		if not self.binlog_max_disk_usage_percent:

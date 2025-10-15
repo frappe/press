@@ -1488,7 +1488,8 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		)
 
 	def purge_binlogs_by_size_limit(self, database_server: DatabaseServer, max_binlog_gb: int):
-		return self.post(
+		return self.create_agent_job(
+			"Purge Binlogs By Size Limit",
 			"/database/binlogs/purge_by_size_limit",
 			data={
 				"private_ip": database_server.private_ip,
