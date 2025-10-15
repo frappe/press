@@ -69,9 +69,9 @@
   "primary",
   "auto_scale_section",
   "secondary_server",
-  "auto_scale",
+  "benches_on_shared_volume",
   "is_secondary",
-  "running_benches_on_secondary",
+  "auto_scaled",
   "ssh_section",
   "ssh_user",
   "ssh_port",
@@ -671,13 +671,6 @@
    "options": "Bastion Server"
   },
   {
-   "default": "0",
-   "description": "Are the benches running on a shared volume",
-   "fieldname": "auto_scale",
-   "fieldtype": "Check",
-   "label": "Running on Shared Volume"
-  },
-  {
    "description": "Used during horizontal scaling.",
    "fieldname": "secondary_server",
    "fieldtype": "Link",
@@ -706,14 +699,21 @@
   },
   {
    "default": "0",
-   "description": "Check if the benches are running on the secondary server",
-   "fieldname": "running_benches_on_secondary",
+   "description": "Are the benches running on a shared volume",
+   "fieldname": "benches_on_shared_volume",
    "fieldtype": "Check",
-   "label": "Running Benches on Secondary"
+   "label": "Benches on Shared Volume"
+  },
+  {
+   "default": "0",
+   "description": "Check if the benches are running on the secondary server",
+   "fieldname": "auto_scaled",
+   "fieldtype": "Check",
+   "label": "Auto Scaled"
   }
  ],
  "links": [],
- "modified": "2025-10-13 14:30:54.086913",
+ "modified": "2025-10-15 17:37:56.449501",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
