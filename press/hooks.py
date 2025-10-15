@@ -181,6 +181,7 @@ doc_events = {
 scheduler_events = {
 	"weekly_long": ["press.press.doctype.marketplace_app.events.auto_review_for_missing_steps"],
 	"daily": [
+		"press.api.billing.check_budget_alerts",
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 		"press.press.doctype.log_counter.log_counter.record_counts",
 		"press.press.doctype.incident.incident.notify_ignored_servers",
