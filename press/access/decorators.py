@@ -24,6 +24,9 @@ def action_guard(action: str):
 	def decorator(fn):
 		@functools.wraps(fn)
 		def wrapper(instance: Document, *args, **kwargs):
+			if frappe.local.system_user():
+				return fn(instance, *args, **kwargs)
+
 			current_team = get_current_team()
 			instance_team = getattr(instance, "team", None)
 
