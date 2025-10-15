@@ -50,6 +50,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
+
 from typing import Literal, TypedDict
 
 
@@ -832,14 +833,26 @@ class BaseServer(Document, TagHelpers):
 	def time_to_wait_before_updating_volume(self) -> timedelta | int:
 		if self.provider != "AWS EC2":
 			return 0
-		if not (
-			last_updated_at := frappe.get_value(
+
+		if self.benches_on_shared:
+			last_updated_at = frappe.get_value(
+				"Virtual Machine Volume",
+				{
+					"parent": self.volume_virtual_machine.nfs_server,
+					"volume_id": self.volume_virtual_machine.volume_id,
+				},
+				"last_updated_at",
+			)
+		else:
+			last_updated_at = frappe.get_value(
 				"Virtual Machine Volume",
 				{"parent": self.virtual_machine, "idx": 1},  # first volume is likely main
 				"last_updated_at",
 			)
-		):
+
+		if not last_updated_at:
 			return 0
+
 		diff = frappe.utils.now_datetime() - last_updated_at
 		return diff if diff < timedelta(hours=6) else 0
 
@@ -857,7 +870,10 @@ class BaseServer(Document, TagHelpers):
 
 		volume = self.find_mountpoint_volume(mountpoint)
 
-		virtual_machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		virtual_machine: "VirtualMachine" = frappe.get_doc(
+			"Virtual Machine",
+			self.volume_virtual_machine.nfs_server if self.benches_on_shared_volume else self.virtual_machine,
+		)
 		virtual_machine.increase_disk_size(volume.volume_id, increment)
 		if self.provider == "AWS EC2":
 			device = self.get_device_from_volume_id(volume.volume_id)
@@ -873,7 +889,7 @@ class BaseServer(Document, TagHelpers):
 			return "/"
 
 		volumes = self.get_volume_mounts()
-		if volumes or self.has_data_volume:
+		if volumes or self.has_data_volume or self.benches_on_shared_volume:
 			# Adding this condition since this method is called from both server and database server doctypes
 			if self.doctype == "Server":
 				mountpoint = BENCH_DATA_MNT_POINT if not self.benches_on_shared_volume else SHARED_MNT_POINT
@@ -884,7 +900,18 @@ class BaseServer(Document, TagHelpers):
 		return mountpoint
 
 	def find_mountpoint_volume(self, mountpoint):
-		machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		volume_id = None
+		if self.benches_on_shared_volume:
+			volume_id = self.volume_virtual_machine.volume_id
+
+		machine: "VirtualMachine" = frappe.get_doc(
+			"NFS Server",
+			self.volume_virtual_machine.nfs_server if self.benches_on_shared_volume else self.virtual_machine,
+		)
+
+		if volume_id:
+			# Return the volume doc immediately
+			return find(machine.volumes, lambda x: x.volume_id == volume_id)
 
 		if len(machine.volumes) == 1:
 			# If there is only one volume,
@@ -1670,11 +1697,28 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Cloud Init Wait Exception", server=self.as_dict())
 
+	def _get_instance_name(self) -> str:
+		"""Get name or nfs name in case of shared benches"""
+		return (
+			self.name
+			if not self.benches_on_shared_volume
+			else frappe.db.get_value("NFS Volume Attachment", {"primary_server": self.name}, "nfs_server")
+		)
+
+	@property
+	def volume_virtual_machine(self) -> "VirtualMachine":
+		return frappe.db.get_value(
+			"NFS Volume Attachment",
+			{"primary_server": self.name, "status": "Active"},
+			["volume_id", "nfs_server"],
+			as_dict=True,
+		)
+
 	def free_space(self, mountpoint: str) -> int:
 		from press.api.server import prometheus_query
 
 		response = prometheus_query(
-			f"""node_filesystem_avail_bytes{{instance="{self.name}", job="node", mountpoint="{mountpoint}"}}""",
+			f"""node_filesystem_avail_bytes{{instance="{self._get_instance_name()}", job="node", mountpoint="{mountpoint}"}}""",
 			lambda x: x["mountpoint"],
 			"Asia/Kolkata",
 			60,
@@ -1692,7 +1736,7 @@ class BaseServer(Document, TagHelpers):
 
 		response = prometheus_query(
 			f"""predict_linear(
-node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}[3h], 6*3600
+node_filesystem_avail_bytes{{instance="{self._get_instance_name()}", mountpoint="{mountpoint}"}}[3h], 6*3600
 			)""",
 			lambda x: x["mountpoint"],
 			"Asia/Kolkata",
@@ -1707,7 +1751,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		from press.api.server import prometheus_query
 
 		response = prometheus_query(
-			f"""node_filesystem_size_bytes{{instance="{self.name}", job="node", mountpoint="{mountpoint}"}}""",
+			f"""node_filesystem_size_bytes{{instance="{self._get_instance_name()}", job="node", mountpoint="{mountpoint}"}}""",
 			lambda x: x["mountpoint"],
 			"Asia/Kolkata",
 			120,
