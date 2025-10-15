@@ -51,6 +51,7 @@ class DatabaseServer(BaseServer):
 		auto_increase_storage: DF.Check
 		auto_purge_binlog_based_on_size: DF.Check
 		bastion_server: DF.Link | None
+		binlog_max_disk_usage_percent: DF.Int
 		binlog_retention_days: DF.Int
 		binlogs_removed: DF.Check
 		cluster: DF.Link | None
@@ -79,7 +80,6 @@ class DatabaseServer(BaseServer):
 		is_stalk_setup: DF.Check
 		mariadb_root_password: DF.Password | None
 		mariadb_system_variables: DF.Table[DatabaseServerMariaDBVariable]
-		max_binlog_size_gb: DF.Int
 		memory_allocator: DF.Literal["System", "jemalloc", "TCMalloc"]
 		memory_allocator_version: DF.Data | None
 		memory_high: DF.Float
@@ -145,9 +145,6 @@ class DatabaseServer(BaseServer):
 		self.validate_server_team()
 		self.validate_mariadb_system_variables()
 
-		if self.enable_binlog_indexing and self.auto_purge_binlog_based_on_size:
-			frappe.throw("Cannot enable both binlog indexing and auto purge based on size.")
-
 	def validate_mariadb_root_password(self):
 		# Check if db server created from snapshot
 		if self.is_new() and self.virtual_machine and not self.mariadb_root_password:
@@ -181,8 +178,20 @@ class DatabaseServer(BaseServer):
 			)
 
 	def on_update(self):
+		if self.is_new():
+			if self.auto_increase_storage:
+				self.auto_purge_binlog_based_on_size = True
+				self.binlog_max_disk_usage_percent = 50
+			else:
+				self.auto_purge_binlog_based_on_size = True
+				self.binlog_max_disk_usage_percent = 20
+
 		if self.flags.in_insert or self.is_new():
 			return
+
+		if self.is_replication_setup and self.auto_purge_binlog_based_on_size:
+			frappe.throw("Cannot enable binlog auto purge for replication configured servers")
+
 		self.update_mariadb_system_variables()
 		if (
 			self.has_value_changed("memory_high")
@@ -196,12 +205,6 @@ class DatabaseServer(BaseServer):
 
 		if self.public:
 			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
-
-		if (
-			self.has_value_changed("auto_purge_binlog_based_on_size")
-			or self.has_value_changed("max_binlog_size_gb")
-		) and self.max_binlog_size_gb < 1:
-			self.auto_purge_binlog_based_on_size = False
 
 	def update_subscription(self):
 		if self.subscription:
@@ -268,6 +271,8 @@ class DatabaseServer(BaseServer):
 			"max_connections": max(50, self.recommended_max_db_connections),
 			"expire_logs_days": 14,
 		}
+		doc.auto_purge_binlog_based_on_size = self.auto_purge_binlog_based_on_size
+		doc.binlog_max_disk_usage_percent = self.binlog_max_disk_usage_percent
 		return doc
 
 	def get_actions(self):
@@ -294,8 +299,16 @@ class DatabaseServer(BaseServer):
 				"action": "Update Binlog Retention",
 				"description": "Increase/Decrease Binlog Retention",
 				"button_label": "Update",
-				"condition": self.status == "Active",
+				"condition": self.status == "Active" and not self.is_replication_setup,
 				"doc_method": "update_binlog_retention",
+				"group": f"{server_type.title()} Actions",
+			},
+			{
+				"action": "Update Binlog Size Limit",
+				"description": "Limit the amount of disk space used by binlogs",
+				"button_label": "Update",
+				"condition": self.status == "Active" and not self.is_replication_setup,
+				"doc_method": "update_binlog_size_limit",
 				"group": f"{server_type.title()} Actions",
 			},
 			{
@@ -625,6 +638,21 @@ class DatabaseServer(BaseServer):
 		# From MariaDB 10.6.1, expire_logs_days is alias of binlog_expire_logs_seconds
 		# https://mariadb.com/docs/server/ha-and-performance/standard-replication/replication-and-binary-log-system-variables#expire_logs_days
 		self.add_or_update_mariadb_variable("expire_logs_days", "value_str", str(days), save=True)
+
+	@dashboard_whitelist()
+	def update_binlog_size_limit(self, enabled: bool, percent_of_disk_size: int):
+		if percent_of_disk_size is None:
+			percent_of_disk_size = 0
+		if enabled:
+			if percent_of_disk_size < 10 or percent_of_disk_size > 90:
+				frappe.throw("Percent of disk space  must be between 10 and 90")
+			self.binlog_max_disk_usage_percent = percent_of_disk_size
+			self.auto_purge_binlog_based_on_size = True
+		else:
+			self.auto_purge_binlog_based_on_size = False
+			self.binlog_max_disk_usage_percent = 100
+
+		self.save(ignore_permissions=True)
 
 	@dashboard_whitelist()
 	def update_max_db_connections(self, max_connections: int):
@@ -1611,12 +1639,22 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			raise e
 
 	def purge_binlogs_by_configured_size_limit(self):
-		if not self.max_binlog_size_gb:
-			return
 		if self.enable_binlog_indexing:
 			return
 
-		self.agent.purge_binlogs_by_size_limit(self, max_binlog_gb=self.max_binlog_size_gb)
+		if not auto_purge_binlogs_by_size_limit:
+			return
+
+		if not self.binlog_max_disk_usage_percent:
+			return
+
+		if not self.virtual_machine:
+			return
+
+		disk_size = frappe.get_value("Virtual Machine", self.virtual_machine, "disk_size")
+		binlog_limit_in_gb = int(self.binlog_max_disk_usage_percent / 100) * disk_size
+
+		self.agent.purge_binlogs_by_size_limit(self, max_binlog_gb=binlog_limit_in_gb)
 
 	@frappe.whitelist()
 	def sync_binlogs_info(self, index_binlogs: bool = True, upload_binlogs: bool = True):
@@ -2188,6 +2226,7 @@ def auto_purge_binlogs_by_size_limit():
 			if not server.auto_purge_binlog_based_on_size:
 				continue
 			server.purge_binlogs_by_configured_size_limit()
+			frappe.db.commit()
 		except rq.timeouts.JobTimeoutException:
 			frappe.db.rollback()
 			return
