@@ -110,3 +110,59 @@ class SupportAccess(Document):
 		if len(teams) != 1:
 			frappe.throw("Resources must belong to the same team")
 		self.target_team = teams.pop()
+
+	def after_insert(self):
+		self.notify_on_request()
+
+	def on_update(self):
+		doc_before = self.get_doc_before_save()
+		if doc_before and doc_before.status != self.status:
+			self.notify_on_status_change()
+
+	def notify_on_status_change(self):
+		title = f"Access Request {self.status}"
+		message = f"Your request for support access has been {self.status.lower()}."
+
+		frappe.get_doc(
+			{
+				"doctype": "Press Notification",
+				"team": self.requested_team,
+				"type": "Support Access",
+				"document_type": "Support Access",
+				"document_name": self.name,
+				"title": title,
+				"message": message,
+			}
+		).insert()
+
+		frappe.publish_realtime(
+			"press_notification",
+			doctype="Press Notification",
+			message={
+				"team": self.requested_team,
+			},
+		)
+
+	def notify_on_request(self):
+		title = "New Access Request"
+		message = f"{self.requested_by} has requested support access for one of your resources."
+
+		frappe.get_doc(
+			{
+				"doctype": "Press Notification",
+				"team": self.target_team,
+				"type": "Support Access",
+				"document_type": "Support Access",
+				"document_name": self.name,
+				"title": title,
+				"message": message,
+			}
+		).insert()
+
+		frappe.publish_realtime(
+			"press_notification",
+			doctype="Press Notification",
+			message={
+				"team": self.target_team,
+			},
+		)
