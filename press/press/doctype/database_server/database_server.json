@@ -91,7 +91,7 @@
   "stalk_sleep",
   "section_break_imng",
   "auto_purge_binlog_based_on_size",
-  "max_binlog_size_gb",
+  "binlog_max_disk_usage_percent",
   "column_break_hrsi",
   "binlogs_removed",
   "binlog_retention_days",
@@ -685,6 +685,7 @@
    "options": "Bastion Server"
   },
   {
+<<<<<<< HEAD
    "default": "0",
 <<<<<<< HEAD
    "fieldname": "is_monitoring_disabled",
@@ -698,15 +699,34 @@
    "search_index": 1
   },
   {
+=======
+>>>>>>> 24a654eaf (feat(database): From UI allow to set binlog size limit)
    "fieldname": "column_break_hrsi",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "max_binlog_size_gb",
+   "default": "100",
+   "fieldname": "binlog_max_disk_usage_percent",
    "fieldtype": "Int",
-   "label": "Max Binlog Size (GB)",
+   "label": "Binlog Max Disk Usage Percent (%)",
    "non_negative": 1
+<<<<<<< HEAD
 >>>>>>> 1065467bd (feat(database): Auto purge binlogs based on size limit)
+=======
+  },
+  {
+   "default": "0",
+   "fieldname": "auto_purge_binlog_based_on_size",
+   "fieldtype": "Check",
+   "label": "Auto Purge binlog Based on Size"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_monitoring_disabled",
+   "fieldtype": "Check",
+   "label": "Is Monitoring Disabled",
+   "search_index": 1
+>>>>>>> 24a654eaf (feat(database): From UI allow to set binlog size limit)
   }
  ],
  "grid_page_length": 50,
@@ -724,10 +744,14 @@
   }
  ],
 <<<<<<< HEAD
+<<<<<<< HEAD
  "modified": "2025-10-06 17:08:00.975558",
 =======
  "modified": "2025-10-03 22:55:44.870368",
 >>>>>>> 1065467bd (feat(database): Auto purge binlogs based on size limit)
+=======
+ "modified": "2025-10-15 17:54:37.526993",
+>>>>>>> 24a654eaf (feat(database): From UI allow to set binlog size limit)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
