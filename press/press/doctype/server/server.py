@@ -45,6 +45,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.cluster.cluster import Cluster
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.mariadb_variable.mariadb_variable import MariaDBVariable
+	from press.press.doctype.nfs_server.nfs_server import NFSServer
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server_mount.server_mount import ServerMount
 	from press.press.doctype.server_plan.server_plan import ServerPlan
@@ -810,11 +811,16 @@ class BaseServer(Document, TagHelpers):
 			volume = self.find_mountpoint_volume(mountpoint)
 			device = self.get_device_from_volume_id(volume.volume_id)
 		try:
+			server: "BaseServer" | "NFSServer" = (
+				self
+				if self.doctype == "Database Server" or not self.benches_on_shared_volume
+				else frappe.get_doc("NFS Server", self._get_instance_name())
+			)
 			ansible = Ansible(
 				playbook="extend_ec2_volume.yml",
-				server=self,
-				user=self._ssh_user(),
-				port=self._ssh_port(),
+				server=server,
+				user=server._ssh_user(),
+				port=server._ssh_port(),
 				variables={"restart_mariadb": restart_mariadb, "device": device},
 			)
 			play = ansible.run()
@@ -822,7 +828,7 @@ class BaseServer(Document, TagHelpers):
 				frappe.db.set_value("Add On Storage Log", log, "extend_ec2_play", play.name)
 				frappe.db.commit()
 		except Exception:
-			log_error("EC2 Volume Extend Exception", server=self.as_dict())
+			log_error("EC2 Volume Extend Exception", server=server.as_dict())
 
 	def enqueue_extend_ec2_volume(self, device, log):
 		frappe.enqueue_doc(
