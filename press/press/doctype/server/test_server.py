@@ -160,7 +160,7 @@ class TestServer(FrappeTestCase):
 		self.assertEqual(server.subscription.team, server.team)
 		self.assertEqual(server.subscription.team, db_server.subscription.team)
 
-	def test_remove_server_from_public_groups(self):
+	def test_remove_from_public_groups_removes_server_from_release_groups_child_table(self):
 		# Create three public release groups, add server to all
 		server = create_test_server(public=True)
 		apps = [create_test_app()]
@@ -176,7 +176,7 @@ class TestServer(FrappeTestCase):
 		self.assertTrue(any(s.server == server.name for s in group3.servers))
 		self.assertTrue(any(s.server == server.name for s in group1.servers))
 
-		server.remove_server_from_public_groups()
+		server.remove_from_public_groups()
 
 		# Reload groups
 		group1.reload()
@@ -189,7 +189,7 @@ class TestServer(FrappeTestCase):
 		# Assert server still present in group2 (has active bench)
 		self.assertTrue(any(s.server == server.name for s in group2.servers))
 
-		self.remove_server_from_public_groups(force=True)
+		server.remove_from_public_groups(force=True)
 		group2.reload()
 		# Assert server removed from group2
 		self.assertFalse(any(s.server == server.name for s in group2.servers))
