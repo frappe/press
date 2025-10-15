@@ -144,6 +144,19 @@ class StepHandler:
 		self.succeed()
 
 
+def get_restart_benches_play(server: str) -> Ansible:
+	"""Get restart benches play"""
+	primary_server: Server = frappe.get_cached_doc("Server", server)
+	benches = frappe.get_all("Bench", {"server": server, "status": "Active"}, pluck="name")
+	return Ansible(
+		playbook="start_benches.yml",
+		server=primary_server,
+		user=primary_server._ssh_user(),
+		port=primary_server._ssh_port(),
+		variables={"benches": " ".join(benches)},
+	)
+
+
 class NFSVolumeAttachment(Document, StepHandler):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
@@ -405,7 +418,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 			directory="/shared",
 			secondary_server_private_ip=secondary_server_private_ip,
 			is_primary=True,
-			restart_benches=True,
+			restart_benches=False,
 			reference_doctype="Server",
 			reference_name=self.primary_server,
 		)
@@ -432,6 +445,19 @@ class NFSVolumeAttachment(Document, StepHandler):
 
 		self.handle_async_job(step, job)
 
+	def update_benches_with_new_mounts(self, step: "NFSVolumeAttachmentStep"):
+		"""Restart all benches via agent for mounts to reload"""
+		step.status = Status.Running
+		step.save()
+
+		ansible = get_restart_benches_play(self.primary_server)
+
+		try:
+			self._run_ansible_step(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+			raise
+
 	def before_insert(self):
 		"""Append defined steps to the document before saving."""
 		self.volume_size = frappe.db.get_value("Virtual Machine", self.primary_server, "disk_size")
@@ -448,6 +474,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 				self.move_benches_to_shared,
 				self.run_primary_server_benches_on_shared_fs,
 				self.wait_for_benches_to_run_on_shared,
+				self.update_benches_with_new_mounts,
 			]
 		):
 			self.append("nfs_volume_attachment_steps", step)
