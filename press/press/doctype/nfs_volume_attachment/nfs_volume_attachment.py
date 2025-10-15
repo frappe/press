@@ -458,6 +458,16 @@ class NFSVolumeAttachment(Document, StepHandler):
 			self._fail_ansible_step(step, ansible, e)
 			raise
 
+	def ready_to_auto_scale(self, step: "NFSVolumeAttachmentStep"):
+		"""Mark server as ready to auto scale"""
+		step.status = Status.Running
+		step.save()
+
+		frappe.db.set_value("Server", self.primary_server, "benches_on_shared_volume", True)
+
+		step.status = Status.Success
+		step.save()
+
 	def before_insert(self):
 		"""Append defined steps to the document before saving."""
 		self.volume_size = frappe.db.get_value("Virtual Machine", self.primary_server, "disk_size")
@@ -475,6 +485,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 				self.run_primary_server_benches_on_shared_fs,
 				self.wait_for_benches_to_run_on_shared,
 				self.update_benches_with_new_mounts,
+				self.ready_to_auto_scale,
 			]
 		):
 			self.append("nfs_volume_attachment_steps", step)

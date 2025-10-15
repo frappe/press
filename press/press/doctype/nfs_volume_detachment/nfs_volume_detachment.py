@@ -279,6 +279,16 @@ class NFSVolumeDetachment(Document, StepHandler):
 		step.status = Status.Success
 		step.save()
 
+	def not_ready_to_auto_scale(self, step: "NFSVolumeDetachmentStep"):
+		"""Mark server as not ready to auto scale"""
+		step.status = Status.Running
+		step.save()
+
+		frappe.db.set_value("Server", self.primary_server, "benches_on_shared_volume", False)
+
+		step.status = Status.Success
+		step.save()
+
 	def before_insert(self):
 		"""Append defined steps to the document before saving."""
 		for step in self.get_steps(
@@ -295,6 +305,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 				self.umount_volume_from_nfs_server,
 				self.detach_and_delete_volume_from_nfs_server,
 				self.mark_attachment_as_archived,
+				self.not_ready_to_auto_scale,
 			]
 		):
 			self.append("nfs_volume_detachment_steps", step)
