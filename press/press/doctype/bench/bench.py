@@ -554,6 +554,7 @@ class Bench(Document):
 				"_process_sync_product_site_user_data",
 				enqueue_after_commit=True,
 				data=items[i : i + chunk_size],
+				queue="sync",
 			)
 
 	def _process_sync_product_site_user_data(self, data: list):
