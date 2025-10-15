@@ -20,6 +20,9 @@ def dashboard_access_rules(data: frappe._dict):
 	data.tabs_access = {}
 	data.actions_access = {}
 
+	if frappe.local.system_user():
+		return data
+
 	if hasattr(data, "team") and data.team == get_current_team():
 		return data
 

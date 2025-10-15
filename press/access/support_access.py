@@ -32,6 +32,9 @@ def has_support_access(doctype: str, docname: str, action: str | None = None) ->
 	Checks if current team has support access to given document.
 	"""
 
+	if frappe.local.system_user():
+		return True
+
 	filters = {
 		"status": "Accepted",
 		"requested_team": get_current_team(),
