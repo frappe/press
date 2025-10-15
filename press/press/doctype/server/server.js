@@ -268,6 +268,35 @@ frappe.ui.form.on('Server', {
 			}
 		});
 
+		if ((frm.doc.is_server_setup, frm.doc.is_primary)) {
+			frm.add_custom_button(
+				'Setup Secondary Server',
+				() => {
+					frappe.prompt(
+						[
+							{
+								fieldtype: 'Link',
+								fieldname: 'server_plan',
+								label: __('Server Plan'),
+								options: 'Server Plan',
+								reqd: 1,
+							},
+						],
+						({ server_plan }) => {
+							frm
+								.call('setup_secondary_server', {
+									server_plan: server_plan,
+								})
+								.then((r) => {
+									frm.refresh();
+								});
+						},
+					);
+				},
+				__('Actions'),
+			);
+		}
+
 		if (frm.doc.is_server_setup) {
 			frm.add_custom_button(
 				__('Increase Swap'),

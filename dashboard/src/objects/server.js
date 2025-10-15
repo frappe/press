@@ -202,6 +202,33 @@ export default {
 							},
 						},
 						{
+							label: 'View DB in Desk',
+							icon: icon('external-link'),
+							condition: () => $team.doc?.is_desk_user,
+							onClick() {
+								window.open(
+									`${window.location.protocol}//${
+										window.location.host
+									}/app/database-server/${server.doc.database_server}`,
+									'_blank',
+								);
+							},
+						},
+						{
+							label: 'View Replication DB in Desk',
+							icon: icon('external-link'),
+							condition: () =>
+								$team.doc?.is_desk_user && server.doc.replication_server,
+							onClick() {
+								window.open(
+									`${window.location.protocol}//${
+										window.location.host
+									}/app/database-server/${server.doc.replication_server}`,
+									'_blank',
+								);
+							},
+						},
+						{
 							label: 'Visit Server',
 							icon: icon('external-link'),
 							condition: () =>
@@ -218,7 +245,9 @@ export default {
 			{
 				label: 'Overview',
 				icon: icon('home'),
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					return server.doc?.status !== 'Archived';
+				},
 				route: 'overview',
 				type: 'Component',
 				component: defineAsyncComponent(
@@ -259,7 +288,9 @@ export default {
 			{
 				label: 'Sites',
 				icon: icon(LucideAppWindow),
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					return server.doc?.status !== 'Archived';
+				},
 				route: 'sites',
 				type: 'list',
 				list: {
@@ -366,7 +397,9 @@ export default {
 			{
 				label: 'Bench Groups',
 				icon: icon('package'),
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					return server.doc?.status !== 'Archived';
+				},
 				route: 'groups',
 				type: 'list',
 				list: {
@@ -776,7 +809,9 @@ export default {
 			{
 				label: 'Plays',
 				icon: icon('play'),
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					return server.doc?.status !== 'Archived';
+				},
 				childrenRoutes: ['Server Play'],
 				route: 'plays',
 				type: 'list',
@@ -855,7 +890,9 @@ export default {
 			{
 				label: 'Actions',
 				icon: icon('sliders'),
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					return server.doc?.status !== 'Archived';
+				},
 				route: 'actions',
 				type: 'Component',
 				component: ServerActions,
@@ -869,7 +906,9 @@ export default {
 				icon: icon('activity'),
 				route: 'activity',
 				type: 'list',
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					return server.doc?.status !== 'Archived';
+				},
 				list: {
 					doctype: 'Server Activity',
 					filters: (server) => {

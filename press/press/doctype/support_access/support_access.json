@@ -1,0 +1,207 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "hash",
+ "creation": "2025-09-25 15:21:55.641624",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "access_expired",
+  "status",
+  "requested_by",
+  "requested_team",
+  "target_team",
+  "allowed_for",
+  "access_allowed_till",
+  "column_break_vrkb",
+  "site_domains",
+  "login_as_administrator",
+  "reason",
+  "section_break_lwpm",
+  "resources"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "access_expired",
+   "fieldtype": "Check",
+   "is_virtual": 1,
+   "label": "Access Expired"
+  },
+  {
+   "fieldname": "requested_by",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Requested By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "default": "24",
+   "description": "in hours",
+   "fieldname": "allowed_for",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Allowed for",
+   "options": "3\n6\n12\n24",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason"
+  },
+  {
+   "fieldname": "column_break_vrkb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "access_allowed_till",
+   "fieldtype": "Datetime",
+   "label": "Access allowed till",
+   "read_only": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nAccepted\nRejected",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "section_break_lwpm",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "resources",
+   "fieldtype": "Table",
+   "label": "Resources",
+   "options": "Support Access Resource",
+   "reqd": 1
+  },
+  {
+   "fieldname": "requested_team",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Requested Team",
+   "options": "Team",
+   "read_only": 1
+  },
+  {
+   "fieldname": "target_team",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Target Team",
+   "options": "Team",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "login_as_administrator",
+   "fieldtype": "Check",
+   "label": "Login as Administrator",
+   "set_only_once": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "site_domains",
+   "fieldtype": "Check",
+   "label": "Domains",
+   "set_only_once": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-10-12 23:28:36.396570",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Support Access",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Support Agent",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "permlevel": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "permlevel": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [
+  {
+   "color": "Gray",
+   "title": "Pending"
+  },
+  {
+   "color": "Green",
+   "title": "Accepted"
+  },
+  {
+   "color": "Red",
+   "title": "Rejected"
+  }
+ ]
+}

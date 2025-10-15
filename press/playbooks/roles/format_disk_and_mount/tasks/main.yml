@@ -1,0 +1,29 @@
+---
+# https://docs.aws.amazon.com/ebs/latest/userguide/identify-nvme-ebs-device.html
+- name: Get Filesystem Name
+  shell: echo "/dev/$(lsblk -o NAME,SERIAL | grep {{ volume_id }} | awk '{print $1}')"
+  register: device_name
+  changed_when: false
+
+- name: Format and Create Filesystem
+  shell: mkfs -t ext4 "{{ device_name.stdout }}"
+
+- name: Mount filesystem and add to fstab
+  mount:
+    path: "{{ shared_directory }}"
+    src: "{{ device_name.stdout }}"
+    fstype: ext4
+    opts: defaults
+    state: mounted
+    backup: yes
+
+- name: Remove Lost and Found
+  shell: rm -rf "{{ shared_directory }}/lost+found"
+
+- name: Change Ownership of Shared Directory
+  file:
+    path: "{{ shared_directory }}"
+    owner: frappe
+    group: frappe
+    state: directory
+    recurse: yes

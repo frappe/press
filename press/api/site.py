@@ -19,6 +19,7 @@ from frappe.utils import flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
 
+from press.access.support_access import has_support_access
 from press.exceptions import (
 	AAAARecordExists,
 	ConflictingCAARecord,
@@ -84,18 +85,19 @@ def protected(doctypes):
 		user_type = frappe.session.data.user_type or frappe.get_cached_value(
 			"User", frappe.session.user, "user_type"
 		)
+
+		# System users have access to all endpoints.
 		if user_type == "System User":
 			return wrapped(*args, **kwargs)
 
-		name = get_protected_doctype_name(args, kwargs, doctypes)
-		if not name:
+		# Get the name of the document being accessed.
+		if not (docname := get_protected_doctype_name(args, kwargs, doctypes)):
 			frappe.throw("Name not found, API access not permitted", frappe.PermissionError)
 
-		team = get_current_team()
+		current_team = get_current_team()
 		for doctype in doctypes:
-			owner = frappe.db.get_value(doctype, name, "team")
-
-			if owner == team:
+			document_team = frappe.db.get_value(doctype, docname, "team")
+			if document_team == current_team or has_support_access(doctype, docname):
 				return wrapped(*args, **kwargs)
 
 		frappe.throw("Not Permitted", frappe.PermissionError)
@@ -1798,17 +1800,8 @@ def check_domain_proxied(domain) -> str | None:
 			return server
 
 
-def check_dns_cname_a(name, domain, ignore_proxying=False):
+def _check_dns_cname_a(name, domain, ignore_proxying=False):
 	check_domain_allows_letsencrypt_certs(domain)
-	proxy = check_domain_proxied(domain)
-	if proxy:
-		if ignore_proxying:  # no point checking the rest if proxied
-			return {"CNAME": {}, "A": {}, "matched": True, "type": "A"}  # assume A
-		frappe.throw(
-			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.
-			<br>You may enable it once the domain is verified.""",
-			DomainProxied,
-		)
 	ensure_dns_aaaa_record_doesnt_exist(domain)
 	cname = check_dns_cname(name, domain)
 	result = {"CNAME": cname} | cname
@@ -1832,6 +1825,33 @@ def check_dns_cname_a(name, domain, ignore_proxying=False):
 			""",
 			ConflictingDNSRecord,
 		)
+
+	proxy = check_domain_proxied(domain)
+	if proxy:
+		if ignore_proxying:  # no point checking the rest if proxied
+			return {"CNAME": {}, "A": {}, "matched": True, "type": "A"}  # assume A
+		frappe.throw(
+			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.
+			<br>You may enable it once the domain is verified.""",
+			DomainProxied,
+		)
+
+	result["valid"] = cname["matched"] or a["matched"]
+	return result
+
+
+def check_dns_cname_a(name, domain, ignore_proxying=False, throw_error=True):
+	if throw_error:
+		return _check_dns_cname_a(name, domain, ignore_proxying)
+
+	result = {}
+	try:
+		result = _check_dns_cname_a(name, domain, ignore_proxying)
+
+	except Exception as e:
+		result["exc_type"] = e.__class__.__name__
+		result["exc_message"] = str(e)
+		result["valid"] = False
 
 	return result
 
