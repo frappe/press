@@ -41,7 +41,9 @@ if typing.TYPE_CHECKING:
 	from collections.abc import Generator
 
 	from press.press.doctype.database_server.database_server import DatabaseServer
+	from press.press.doctype.press_job.press_job import PressJob
 	from press.press.doctype.press_settings.press_settings import PressSettings
+	from press.press.doctype.server.server import Server
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
@@ -101,6 +103,8 @@ class Cluster(Document):
 		# "Monitor Server": "p",
 		# "Log Server": "e,
 	}
+
+	secondary_server_series: ClassVar[str] = "fs"
 
 	wait_for_aws_creds_seconds = 20
 
@@ -886,7 +890,9 @@ class Cluster(Document):
 		master_db_server: str | None = None,
 		press_job_arguments: dict[str, typing.Any] | None = None,
 		kms_key_id: str | None = None,
-	):
+		is_secondary: bool = False,
+		primary: str | None = None,
+	) -> tuple["Server", "PressJob"]:
 		"""Creates a server for the cluster
 
 		temporary_server: If you are creating a temporary server for some special purpose, set this to True.
@@ -922,7 +928,7 @@ class Cluster(Document):
 			plan.platform,
 			plan.disk,
 			domain,
-			server_series[doctype],
+			server_series[doctype] if not is_secondary else self.secondary_server_series,
 			team,
 			data_disk_snapshot=data_disk_snapshot,
 			temporary_server=temporary_server,
@@ -942,8 +948,8 @@ class Cluster(Document):
 					server.primary = master_db_server
 
 			case "Server":
-				server = vm.create_server()
-				server.title = f"{title} - Application"
+				server: "Server" = vm.create_server(is_secondary=is_secondary, primary=primary)
+				server.title = f"{title} - Application" if not is_secondary else title
 				server.ram = plan.memory
 				if hasattr(self, "database_server") and self.database_server:
 					server.database_server = self.database_server

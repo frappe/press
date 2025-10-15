@@ -17,6 +17,7 @@ from urllib.parse import urljoin
 from urllib.request import urlopen
 
 import frappe
+import frappe.utils
 import pytz
 import requests
 import wrapt
@@ -623,7 +624,7 @@ def parse_supervisor_status(output: str) -> list["SupervisorProcess"]:
 	# example lines:
 	# ```
 	#   frappe-bench-web:frappe-bench-frappe-web            RUNNING   pid 1327, uptime 23:13:00
-	# 	frappe-bench-workers:frappe-bench-frappe-worker-4   RUNNING   pid 3794915, uptime 68 days, 6:10:37
+	#   frappe-bench-workers:frappe-bench-frappe-worker-4   RUNNING   pid 3794915, uptime 68 days, 6:10:37
 	#   sshd                                                FATAL     Exited too quickly (process log may have details)
 	# ```
 

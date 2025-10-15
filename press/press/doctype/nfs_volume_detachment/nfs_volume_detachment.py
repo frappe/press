@@ -243,9 +243,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 		volume_id = frappe.get_value(
 			"NFS Volume Attachment", {"primary_server": self.primary_server}, "volume_id"
 		)
-
 		try:
-			virtual_machine.detach(volume_id)
 			virtual_machine.delete_volume(volume_id)
 			step.status = Status.Success
 			step.save()
@@ -290,7 +288,6 @@ class NFSVolumeDetachment(Document, StepHandler):
 			frappe.throw("Benches are currently being run on the secondary server!")
 
 	def execute_mount_steps(self):
-		# self._execute_steps(steps=self.nfs_volume_detachment_steps)
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
@@ -299,6 +296,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 			timeout=18000,
 			at_front=True,
 			queue="long",
+			enqueue_after_commit=True,
 		)
 
 	def after_insert(self):

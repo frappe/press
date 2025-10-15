@@ -34,6 +34,9 @@ from frappe.utils import (
 	time_diff_in_hours,
 )
 
+from press.access.actions import SiteActions
+from press.access.decorators import action_guard
+from press.access.support_access import has_support_access
 from press.exceptions import (
 	CannotChangePlan,
 	InsufficientSpaceOnServer,
@@ -356,6 +359,8 @@ class Site(Document, TagHelpers):
 					"User", frappe.session.user, "user_type"
 				)
 				if user_type == "System User":
+					return func(inst, *args, **kwargs)
+				if has_support_access(inst.doctype, inst.name):
 					return func(inst, *args, **kwargs)
 				status = frappe.get_value(inst.doctype, inst.name, "status", for_update=True)
 				if status not in allowed_status:
@@ -1648,6 +1653,7 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
+	@action_guard(SiteActions.LOGIN_AS_ADMINISTRATOR)
 	def login_as_admin(self, reason=None):
 		sid = self.login(reason=reason)
 		return f"https://{self.host_name or self.name}/app?sid={sid}"
