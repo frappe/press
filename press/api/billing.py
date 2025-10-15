@@ -997,6 +997,116 @@ def parse_datetime(date):
 	return datetime.strptime(str(date), "%Y%m%d%H%M%S")
 
 
+def check_budget_alerts():
+	"""
+	Daily background job to check if teams have exceeded their monthly budget alert limits.
+	Sends email notifications for invoices that have crossed the set limit.
+	"""
+	from frappe.utils import today
+
+	# Get all teams with budget alerts enabled and a valid limit
+	teams_with_alert_enabled = frappe.get_all(
+		"Team",
+		filters={"receive_budget_alerts": 1, "monthly_alert_limit": (">", 0), "enabled": 1},
+		fields=["name", "monthly_alert_limit", "currency"],
+	)
+
+	if not teams_with_alert_enabled:
+		return
+
+	team_names = [team["name"] for team in teams_with_alert_enabled]
+	team_data = {team["name"]: team for team in teams_with_budget_enabled}
+
+	current_month_end = frappe.utils.get_last_day(today())
+
+	# Fetch all current month invoices for all teams in a single query
+	current_invoices = frappe.get_all(
+		"Invoice",
+		filters={
+			"team": ("in", team_names),
+			"due_date": current_month_end,
+			"status": "Draft",
+			"budget_alert_sent": 0,  # Only check invoices where alert hasn't been sent
+		},
+		fields=[
+			"name",
+			"team",
+			"total",
+			"currency",
+			"period_start",
+			"period_end",
+			"customer_email",
+			"billing_email",
+			"customer_name",
+		],
+		order_by="creation desc",
+	)
+
+	# Process each team with their corresponding invoice
+	invoices_to_update = []
+	for invoice in current_invoices:
+		team_name = invoice["team"]
+		monthly_limit = team_data[team_name]["monthly_alert_limit"]
+		# invoice = invoice["name"]
+		if invoice["total"] > monthly_limit:
+			# Send email alert
+			send_budget_alert_email(team_data[team_name], invoice)
+			# Collect invoice names for batch update
+			invoices_to_update.append(invoice["name"])
+
+	# Batch update all invoices that had alerts sent
+	if invoices_to_update:
+		Invoice = DocType("Invoice")
+		(
+			frappe.qb.update(Invoice)
+			.set(Invoice.budget_alert_sent, 1)
+			.where(Invoice.name.isin(invoices_to_update))
+		).run()
+
+		frappe.db.commit()
+
+
+def send_budget_alert_email(team_info, invoice):
+	"""
+	Send budget alert email to team members.
+
+	Args:
+		team_info (dict): Team information
+		invoice (dict): Invoice that exceeded the limit
+	"""
+
+	# Prepare email details
+	emails = [invoice.get("billing_email"), invoice.get("customer_email")]
+	currency = "₹" if team_info["currency"] == "INR" else "$"
+
+	# Format amounts for display
+	invoice_amount = f"{currency}{invoice['total']}"
+	budget_limit = f"{currency}{team_info['monthly_alert_limit']}"
+	excess_amount = f"{currency}{invoice['total'] - team_info['monthly_alert_limit']}"
+
+	# Email content
+	subject = f"Frappe Cloud Budget Alert for {invoice['customer_email']}"
+
+	try:
+		frappe.sendmail(
+			recipients=emails,
+			subject=subject,
+			template="budget_alert",
+			args={
+				"team_user": invoice["customer_email"],
+				"invoice_amount": invoice_amount,
+				"budget_limit": budget_limit,
+				"excess_amount": excess_amount,
+				"period_start": invoice["period_start"],
+				"period_end": invoice["period_end"],
+			},
+			reference_doctype="Invoice",
+			reference_name=invoice["name"],
+		)
+	except Exception as e:
+		frappe.log_error(f"Failed to send budget alert email to {emails}: {e!s}", "Budget Alert Email")
+
+
 @frappe.whitelist()
 def billing_forecast():
 	"""
@@ -1004,19 +1114,19 @@ def billing_forecast():
 	"""
 	team = get_current_team(True)
 
-	# Get date context
+	# Get dates and related info
 	date_info = _get_date_context()
 
-	# Get last and current month invoice data
+	# Get last and current month invoice currency and totals
 	invoice_data = _get_invoice_data(team.name, date_info)
 
 	# Calculate month-end forecast amount and per-service breakdown of forecasts
 	forecast_data = _calculate_forecast_data(team.name, team.currency, date_info)
 
-	# Get usage breakdowns
+	# Get usage breakdowns for last month, current month-to-date and forecasted month-end
 	usage_breakdown = _get_usage_data_breakdown(invoice_data, forecast_data, date_info["days_remaining"])
 
-	# Calculate month-over-month and month-to-date changes
+	# Calculate month-over-month and month-to-date % changes
 	changes = _calculate_percentage_changes(
 		team.name, invoice_data, forecast_data["forecasted_total"], date_info
 	)
