@@ -475,7 +475,7 @@ class BaseServer(Document, TagHelpers):
 			frappe.throw("Action only allowed for public servers")
 
 		server = self.get_server_enabled_for_new_benches_and_sites()
-
+		self.add_server_to_public_groups()
 		if server:
 			frappe.msgprint(_("Server {0} is already enabled for new benches and sites").format(server))
 
@@ -504,6 +504,25 @@ class BaseServer(Document, TagHelpers):
 		self.use_for_new_benches = False
 		self.use_for_new_sites = False
 		self.save()
+
+	def remove_server_from_public_groups(self, force=False):
+		groups = frappe.get_all(
+			"Release Group",
+			{
+				"public": True,
+				"enabled": True,
+			},
+			pluck="name",
+		)
+		active_benches_groups = frappe.get_all(
+			"Bench", {"status": "Active", "group": ("in", groups), "server": self.name}, pluck="group"
+		)
+		extra = {}
+		if not force:
+			extra = {"parent": ("not in", active_benches_groups)}
+		frappe.db.delete(
+			"Release Group Server", {"server": self.name, "parent": ("in", groups), **extra}, pluck="name"
+		)
 
 	def validate_cluster(self):
 		if not self.cluster:
