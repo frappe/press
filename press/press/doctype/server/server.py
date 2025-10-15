@@ -84,6 +84,8 @@ class BaseServer(Document, TagHelpers):
 		"auto_add_storage_min",
 		"auto_add_storage_max",
 		"auto_increase_storage",
+		"auto_purge_binlog_based_on_size",
+		"binlog_max_disk_usage_percent",
 		"is_monitoring_disabled",
 	)
 
