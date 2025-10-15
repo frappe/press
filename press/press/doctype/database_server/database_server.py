@@ -178,16 +178,15 @@ class DatabaseServer(BaseServer):
 				title="Team Change Not Allowed",
 			)
 
-	def on_update(self):
-		if self.is_new():
-			if self.auto_increase_storage:
-				self.auto_purge_binlog_based_on_size = True
-				self.binlog_max_disk_usage_percent = 75
-			else:
-				self.auto_purge_binlog_based_on_size = True
-				self.binlog_max_disk_usage_percent = 20
-			self.save(ignore_permissions=True)
+	def before_insert(self):
+		if self.auto_increase_storage:
+			self.auto_purge_binlog_based_on_size = True
+			self.binlog_max_disk_usage_percent = 75
+		else:
+			self.auto_purge_binlog_based_on_size = True
+			self.binlog_max_disk_usage_percent = 20
 
+	def on_update(self):
 		if self.flags.in_insert or self.is_new():
 			return
 
