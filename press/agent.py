@@ -1489,7 +1489,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 
 	def purge_binlogs_by_size_limit(self, database_server: DatabaseServer, max_binlog_gb: int):
 		return self.post(
-			"/database/binlogs/purge",
+			"/database/binlogs/purge_binlogs_by_size_limit",
 			data={
 				"private_ip": database_server.private_ip,
 				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
