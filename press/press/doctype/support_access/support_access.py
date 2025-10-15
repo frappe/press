@@ -139,7 +139,7 @@ class SupportAccess(Document):
 			"press_notification",
 			doctype="Press Notification",
 			message={
-				"team": self.target_team,
+				"team": self.requested_team,
 			},
 		)
 
