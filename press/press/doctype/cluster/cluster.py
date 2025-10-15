@@ -947,6 +947,13 @@ class Cluster(Document):
 					server.is_primary = False
 					server.primary = master_db_server
 
+				if server.auto_increase_storage:
+					server.auto_purge_binlog_based_on_size = True
+					server.binlog_max_disk_usage_percent = 75
+				else:
+					server.auto_purge_binlog_based_on_size = True
+					server.binlog_max_disk_usage_percent = 20
+
 			case "Server":
 				server: "Server" = vm.create_server(is_secondary=is_secondary, primary=primary)
 				server.title = f"{title} - Application" if not is_secondary else title
