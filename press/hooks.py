@@ -181,7 +181,6 @@ doc_events = {
 scheduler_events = {
 	"weekly_long": ["press.press.doctype.marketplace_app.events.auto_review_for_missing_steps"],
 	"daily": [
-		"press.api.billing.check_budget_alerts",
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 		"press.press.doctype.log_counter.log_counter.record_counts",
 		"press.press.doctype.incident.incident.notify_ignored_servers",
@@ -190,6 +189,7 @@ scheduler_events = {
 		"press.press.doctype.database_server.database_server.remove_uploaded_binlogs_from_s3",
 		"press.press.doctype.mariadb_binlog.mariadb_binlog.cleanup_old_records",
 		"press.press.doctype.database_server.database_server.delete_mariadb_binlog_for_archived_servers",
+		"press.press.doctype.team.team.check_budget_alerts",
 	],
 	"daily_long": [
 		"press.press.audit.check_bench_fields",

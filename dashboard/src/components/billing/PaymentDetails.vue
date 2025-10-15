@@ -129,8 +129,8 @@
 						v-if="team.doc.receive_budget_alerts"
 						class="leading-5 text-gray-700"
 					>
-						Alert limit is set at {{ team.doc.currency }}
-						{{ team.doc.monthly_alert_limit }} per month
+						Alert threshold is set at {{ currency
+						}}{{ team.doc.monthly_alert_limit }} per month
 					</div>
 					<div v-else class="text-gray-700">
 						Receive an email alert if monthly total exceeds limit set
