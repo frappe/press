@@ -69,6 +69,7 @@ class ARMDockerImageType(TypedDict):
 PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
 MARIADB_DATA_MNT_POINT = "/opt/volumes/mariadb"
 BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
+SHARED_MNT_POINT = "/shared"
 
 
 class BaseServer(Document, TagHelpers):
@@ -850,7 +851,7 @@ class BaseServer(Document, TagHelpers):
 		if volumes or self.has_data_volume:
 			# Adding this condition since this method is called from both server and database server doctypes
 			if self.doctype == "Server":
-				mountpoint = BENCH_DATA_MNT_POINT
+				mountpoint = BENCH_DATA_MNT_POINT if not self.benches_on_shared_volume else SHARED_MNT_POINT
 			elif self.doctype == "Database Server":
 				mountpoint = MARIADB_DATA_MNT_POINT
 		else:
