@@ -34,7 +34,7 @@ class SitePlanChange(Document):
 			self.type = "Initial Plan"
 
 		if self.from_plan and self.to_plan and self.from_plan == self.to_plan:
-			frappe.throw("From Plan and To Plan cannot be the same")
+			frappe.log(f"From Plan and To Plan cannot be the same {self.from_plan}, {self.to_plan}")
 
 		if self.from_plan and not self.type:
 			from_plan_value = frappe.db.get_value("Site Plan", self.from_plan, "price_usd")
