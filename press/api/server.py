@@ -35,7 +35,7 @@ def poly_get_doc(doctypes, name):
 	return frappe.get_doc(doctypes[-1], name)
 
 
-def get_mount_point(server: str, server_type=None) -> tuple[str, str]:
+def get_mount_point(server: str, server_type=None) -> str:
 	"""Guess mount point from server"""
 	if server_type is None:
 		server_type = "Database Server" if server[0] == "m" else "Server"
@@ -50,7 +50,7 @@ def get_mount_point(server: str, server_type=None) -> tuple[str, str]:
 	if server.provider != "AWS EC2":
 		return "/"
 
-	return server._get_volume_host_server_name(), server.guess_data_disk_mountpoint()
+	return server.guess_data_disk_mountpoint()
 
 
 @frappe.whitelist()
@@ -243,14 +243,14 @@ def new(server):
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 def usage(name):
-	volume_host_name, mount_point = get_mount_point(name)
+	mount_point = get_mount_point(name)
 	query_map = {
 		"vcpu": (
 			f"""((count(count(node_cpu_seconds_total{{instance="{name}",job="node"}}) by (cpu))) - avg(sum by (mode)(rate(node_cpu_seconds_total{{mode='idle',instance="{name}",job="node"}}[120s])))) / count(count(node_cpu_seconds_total{{instance="{name}",job="node"}}) by (cpu))""",
 			lambda x: x,
 		),
 		"disk": (
-			f"""sum(node_filesystem_size_bytes{{instance="{volume_host_name}", job="node", mountpoint=~"{mount_point}"}} - node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}}) by ()/ (1024 * 1024 * 1024)""",
+			f"""sum(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}} - node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}}) by ()/ (1024 * 1024 * 1024)""",
 			lambda x: x,
 		),
 		"memory": (
@@ -273,14 +273,14 @@ def usage(name):
 
 @protected(["Server", "Database Server"])
 def total_resource(name):
-	volume_host_name, mount_point = get_mount_point(name)
+	mount_point = get_mount_point(name)
 	query_map = {
 		"vcpu": (
 			f"""(count(count(node_cpu_seconds_total{{instance="{name}",job="node"}}) by (cpu)))""",
 			lambda x: x,
 		),
 		"disk": (
-			f"""sum(node_filesystem_size_bytes{{instance="{volume_host_name}", job="node", mountpoint=~"{mount_point}"}}) by () / (1024 * 1024 * 1024)""",
+			f"""sum(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}}) by () / (1024 * 1024 * 1024)""",
 			lambda x: x,
 		),
 		"memory": (
@@ -336,7 +336,7 @@ def calculate_swap(name):
 @protected(["Server", "Database Server"])
 @redis_cache(ttl=10 * 60)
 def analytics(name, query, timezone, duration, server_type=None):
-	volume_host_name, mount_point = get_mount_point(name, server_type)
+	mount_point = get_mount_point(name, server_type)
 	timespan, timegrain = get_timespan_timegrain(duration)
 
 	query_map = {
@@ -353,7 +353,7 @@ def analytics(name, query, timezone, duration, server_type=None):
 			lambda x: x["device"],
 		),
 		"space": (
-			f"""100 - ((node_filesystem_avail_bytes{{instance="{volume_host_name}", job="node", mountpoint=~"{mount_point}"}} * 100) / node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}})""",
+			f"""100 - ((node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}} * 100) / node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}})""",
 			lambda x: x["mountpoint"],
 		),
 		"loadavg": (
