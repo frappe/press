@@ -174,8 +174,7 @@
    "in_standard_filter": 1,
    "label": "Primary",
    "mandatory_depends_on": "eval: !doc.is_primary",
-   "options": "Database Server",
-   "search_index": 1
+   "options": "Database Server"
   },
   {
    "default": "1",
