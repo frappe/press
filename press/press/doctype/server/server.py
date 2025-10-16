@@ -49,6 +49,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.server_mount.server_mount import ServerMount
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+	from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
 
 from typing import Literal, TypedDict
@@ -150,7 +151,7 @@ class BaseServer(Document, TagHelpers):
 		)
 		doc.usage = usage(self.name)
 		doc.actions = self.get_actions()
-		doc.disk_size = frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size")
+		doc.disk_size = self.get_data_disk_size()
 		doc.communication_infos = self.get_communication_infos()
 
 		try:
@@ -373,6 +374,12 @@ class BaseServer(Document, TagHelpers):
 			action["server_name"] = self.name
 
 		return [action for action in actions if action.get("condition", True)]
+
+	def get_data_disk_size(self) -> int:
+		"""Get servers data disk size"""
+		mountpoint = self.guess_data_disk_mountpoint()
+		volume = self.find_mountpoint_volume(mountpoint)
+		return frappe.db.get_value("Virtual Machine Volume", {"volume_id": volume.volume_id}, "size")
 
 	def _get_app_and_database_servers(self) -> tuple[Server, DatabaseServer]:
 		if self.doctype == "Database Server":
@@ -918,7 +925,7 @@ class BaseServer(Document, TagHelpers):
 			mountpoint = "/"
 		return mountpoint
 
-	def find_mountpoint_volume(self, mountpoint):
+	def find_mountpoint_volume(self, mountpoint) -> "VirtualMachineVolume":
 		volume_id = None
 		if self.has_shared_volume and mountpoint == SHARED_MNT_POINT:
 			volume_id = self.volume_host_info.volume_id
