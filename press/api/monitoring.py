@@ -101,6 +101,7 @@ def get_tls():
 		"Monitor Server",
 		"Analytics Server",
 		"Trace Server",
+		"NFS Server",
 	]
 	for server_type in server_types:
 		filters = {"status": ("!=", "Archived")}
