@@ -174,7 +174,8 @@
    "in_standard_filter": 1,
    "label": "Primary",
    "mandatory_depends_on": "eval: !doc.is_primary",
-   "options": "Database Server"
+   "options": "Database Server",
+   "search_index": 1
   },
   {
    "default": "1",
@@ -211,7 +212,8 @@
    "fieldname": "is_replication_setup",
    "fieldtype": "Check",
    "label": "Replication Setup",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "column_break_18",
@@ -723,7 +725,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-10-15 17:54:37.526993",
+ "modified": "2025-10-16 12:36:58.465662",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
