@@ -45,7 +45,6 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.cluster.cluster import Cluster
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.mariadb_variable.mariadb_variable import MariaDBVariable
-	from press.press.doctype.nfs_server.nfs_server import NFSServer
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server_mount.server_mount import ServerMount
 	from press.press.doctype.server_plan.server_plan import ServerPlan
@@ -826,11 +825,7 @@ class BaseServer(Document, TagHelpers):
 			volume = self.find_mountpoint_volume(mountpoint)
 			device = self.get_device_from_volume_id(volume.volume_id)
 
-		server: "BaseServer" | "NFSServer" = (
-			self
-			if self.doctype == "Database Server" or not self.has_shared_volume
-			else frappe.get_doc("NFS Server", self._get_volume_host_server_name())
-		)
+		server = self.get_server_from_device(device)
 
 		try:
 			ansible = Ansible(
