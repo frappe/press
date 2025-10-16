@@ -811,12 +811,14 @@ class BaseServer(Document, TagHelpers):
 			# Try the best guess. Try extending the data volume
 			volume = self.find_mountpoint_volume(mountpoint)
 			device = self.get_device_from_volume_id(volume.volume_id)
+
+		server: "BaseServer" | "NFSServer" = (
+			self
+			if self.doctype == "Database Server" or not self.has_shared_volume
+			else frappe.get_doc("NFS Server", self._get_volume_host_server_name())
+		)
+
 		try:
-			server: "BaseServer" | "NFSServer" = (
-				self
-				if self.doctype == "Database Server" or not self.benches_on_shared_volume
-				else frappe.get_doc("NFS Server", self._get_instance_name())
-			)
 			ansible = Ansible(
 				playbook="extend_ec2_volume.yml",
 				server=server,
@@ -839,12 +841,12 @@ class BaseServer(Document, TagHelpers):
 		if self.provider != "AWS EC2":
 			return 0
 
-		if self.benches_on_shared_volume:
+		if self.has_shared_volume:
 			last_updated_at = frappe.get_value(
 				"Virtual Machine Volume",
 				{
-					"parent": self.volume_virtual_machine.nfs_server,
-					"volume_id": self.volume_virtual_machine.volume_id,
+					"parent": self.volume_host_info.nfs_server,
+					"volume_id": self.volume_host_info.volume_id,
 				},
 				"last_updated_at",
 			)
@@ -877,7 +879,7 @@ class BaseServer(Document, TagHelpers):
 
 		virtual_machine: "VirtualMachine" = frappe.get_doc(
 			"Virtual Machine",
-			self.volume_virtual_machine.nfs_server if self.benches_on_shared_volume else self.virtual_machine,
+			self.volume_host_info.nfs_server if self.has_shared_volume else self.virtual_machine,
 		)
 		virtual_machine.increase_disk_size(volume.volume_id, increment)
 		if self.provider == "AWS EC2":
@@ -894,10 +896,10 @@ class BaseServer(Document, TagHelpers):
 			return "/"
 
 		volumes = self.get_volume_mounts()
-		if volumes or self.has_data_volume or self.benches_on_shared_volume:
+		if volumes or self.has_data_volume or self.has_shared_volume:
 			# Adding this condition since this method is called from both server and database server doctypes
 			if self.doctype == "Server":
-				mountpoint = BENCH_DATA_MNT_POINT if not self.benches_on_shared_volume else SHARED_MNT_POINT
+				mountpoint = BENCH_DATA_MNT_POINT if not self.has_shared_volume else SHARED_MNT_POINT
 			elif self.doctype == "Database Server":
 				mountpoint = MARIADB_DATA_MNT_POINT
 		else:
@@ -906,12 +908,12 @@ class BaseServer(Document, TagHelpers):
 
 	def find_mountpoint_volume(self, mountpoint):
 		volume_id = None
-		if self.benches_on_shared_volume:
-			volume_id = self.volume_virtual_machine.volume_id
+		if self.has_shared_volume:
+			volume_id = self.volume_host_info.volume_id
 
 		machine: "VirtualMachine" = frappe.get_doc(
 			"Virtual Machine",
-			self.volume_virtual_machine.nfs_server if self.benches_on_shared_volume else self.virtual_machine,
+			self.volume_host_info.nfs_server if self.has_shared_volume else self.virtual_machine,
 		)
 
 		if volume_id:
@@ -1702,16 +1704,8 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Cloud Init Wait Exception", server=self.as_dict())
 
-	def _get_instance_name(self) -> str:
-		"""Get name or nfs name in case of shared benches"""
-		return (
-			self.name
-			if not self.benches_on_shared_volume
-			else frappe.db.get_value("NFS Volume Attachment", {"primary_server": self.name}, "nfs_server")
-		)
-
 	@property
-	def volume_virtual_machine(self) -> "VirtualMachine":
+	def volume_host_info(self) -> "VirtualMachine":
 		return frappe.db.get_value(
 			"NFS Volume Attachment",
 			{"primary_server": self.name, "status": "Success"},
@@ -1719,11 +1713,24 @@ class BaseServer(Document, TagHelpers):
 			as_dict=True,
 		)
 
+	@property
+	def has_shared_volume(self) -> bool:
+		"""Return True if benches_on_shared_volume exists and is True."""
+		return bool(getattr(self, "benches_on_shared_volume", False))
+
+	def _get_volume_host_server_name(self) -> str:
+		"""Get name or nfs name in case of shared benches"""
+		return (
+			self.name
+			if not self.has_shared_volume
+			else frappe.db.get_value("NFS Volume Attachment", {"primary_server": self.name}, "nfs_server")
+		)
+
 	def free_space(self, mountpoint: str) -> int:
 		from press.api.server import prometheus_query
 
 		response = prometheus_query(
-			f"""node_filesystem_avail_bytes{{instance="{self._get_instance_name()}", job="node", mountpoint="{mountpoint}"}}""",
+			f"""node_filesystem_avail_bytes{{instance="{self._get_volume_host_server_name()}", job="node", mountpoint="{mountpoint}"}}""",
 			lambda x: x["mountpoint"],
 			"Asia/Kolkata",
 			60,
@@ -1741,7 +1748,7 @@ class BaseServer(Document, TagHelpers):
 
 		response = prometheus_query(
 			f"""predict_linear(
-node_filesystem_avail_bytes{{instance="{self._get_instance_name()}", mountpoint="{mountpoint}"}}[3h], 6*3600
+node_filesystem_avail_bytes{{instance="{self._get_volume_host_server_name()}", mountpoint="{mountpoint}"}}[3h], 6*3600
 			)""",
 			lambda x: x["mountpoint"],
 			"Asia/Kolkata",
@@ -1756,7 +1763,7 @@ node_filesystem_avail_bytes{{instance="{self._get_instance_name()}", mountpoint=
 		from press.api.server import prometheus_query
 
 		response = prometheus_query(
-			f"""node_filesystem_size_bytes{{instance="{self._get_instance_name()}", job="node", mountpoint="{mountpoint}"}}""",
+			f"""node_filesystem_size_bytes{{instance="{self._get_volume_host_server_name()}", job="node", mountpoint="{mountpoint}"}}""",
 			lambda x: x["mountpoint"],
 			"Asia/Kolkata",
 			120,
