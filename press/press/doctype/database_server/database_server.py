@@ -139,6 +139,21 @@ class DatabaseServer(BaseServer):
 	In hindsight, persist should be on by default
 	"""
 
+	@property
+	def is_part_of_replica(self) -> bool:
+		if self.is_replication_setup:
+			return True
+		return bool(
+			self.is_primary
+			and frappe.db.exists(
+				"Database Server",
+				{
+					"is_replication_setup": 1,
+					"primary": self.name,
+				},
+			)
+		)
+
 	def validate(self):
 		super().validate()
 		self.validate_mariadb_root_password()
@@ -308,7 +323,7 @@ class DatabaseServer(BaseServer):
 				"action": "Update Binlog Size Limit",
 				"description": "Limit the amount of disk space used by binlogs",
 				"button_label": "Update",
-				"condition": self.status == "Active" and not self.is_replication_setup,
+				"condition": self.status == "Active" and not self.is_part_of_replica,
 				"doc_method": "update_binlog_size_limit",
 				"group": f"{server_type.title()} Actions",
 			},
@@ -642,6 +657,9 @@ class DatabaseServer(BaseServer):
 
 	@dashboard_whitelist()
 	def update_binlog_size_limit(self, enabled: bool, percent_of_disk_size: int):
+		if self.is_part_of_replica:
+			frappe.throw("Cannot update binlog size limit for database replicas")
+
 		if percent_of_disk_size is None:
 			percent_of_disk_size = 0
 		if enabled:
@@ -1650,6 +1668,9 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			return
 
 		if not self.virtual_machine:
+			return
+
+		if self.is_part_of_replica:
 			return
 
 		disk_size = frappe.get_value("Virtual Machine", self.virtual_machine, "disk_size")
