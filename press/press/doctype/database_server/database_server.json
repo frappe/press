@@ -174,8 +174,7 @@
    "in_standard_filter": 1,
    "label": "Primary",
    "mandatory_depends_on": "eval: !doc.is_primary",
-   "options": "Database Server",
-   "search_index": 1
+   "options": "Database Server"
   },
   {
    "default": "1",
@@ -725,7 +724,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-10-16 12:36:58.465662",
+ "modified": "2025-10-16 13:05:27.907941",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
