@@ -27,6 +27,7 @@ class NFSServer(BaseServer):
 		from frappe.types import DF
 
 		agent_password: DF.Password | None
+		cluster: DF.Link | None
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None

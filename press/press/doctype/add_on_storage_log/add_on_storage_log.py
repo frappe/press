@@ -68,7 +68,7 @@ def insert_addon_storage_log(
 ) -> AddOnStorageLog | None:
 	doctype = "Server" if server else "Database Server"
 	name = server or database_server
-	base_server: BaseServer = frappe.get_cached_doc(doctype, name)
+	base_server: BaseServer = frappe.get_doc(doctype, name)
 
 	if (
 		(base_server.provider not in ("AWS EC2", "OCI"))
