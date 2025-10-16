@@ -343,6 +343,7 @@ class Bench(Document):
 	def add_limits(self, bench_config):
 		if self.skip_memory_limits:
 			bench_config.update(self.get_limits(max_possible=True))
+			return
 
 		if any([self.memory_high, self.memory_max, self.memory_swap]):
 			if not all([self.memory_high, self.memory_max, self.memory_swap]):
@@ -356,10 +357,14 @@ class Bench(Document):
 
 		bench_config.update(self.get_limits())
 
+	@cached_property
+	def max_possible_memory_high_limit(self):
+		return max(self.max_possible_memory_limit - 1024, 0)  # avoid negative value
+
 	def get_limits(self, max_possible=False) -> dict:
 		if max_possible:
 			return {
-				"memory_high": self.max_possible_memory_limit,
+				"memory_high": self.max_possible_memory_high_limit,
 				"memory_max": self.max_possible_memory_limit,
 				"memory_swap": self.max_possible_memory_limit * 2,
 				"vcpu": self.vcpu,
@@ -792,7 +797,7 @@ class Bench(Document):
 		if set_memory_limits:
 			if self.skip_memory_limits:
 				self.memory_max = self.max_possible_memory_limit
-				self.memory_high = self.memory_max - 1024
+				self.memory_high = self.max_possible_memory_high_limit
 			else:
 				self.memory_high = 512 + (
 					self.gunicorn_workers * gunicorn_memory + self.background_workers * bg_memory
