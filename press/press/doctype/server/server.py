@@ -87,6 +87,8 @@ class BaseServer(Document, TagHelpers):
 		"auto_add_storage_min",
 		"auto_add_storage_max",
 		"auto_increase_storage",
+		"auto_purge_binlog_based_on_size",
+		"binlog_max_disk_usage_percent",
 		"is_monitoring_disabled",
 	)
 
@@ -464,7 +466,7 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Route 53 Record Creation Error", domain=domain.name, server=self.name)
 
-	def add_server_to_public_groups(self):
+	def add_to_public_groups(self):
 		groups = frappe.get_all("Release Group", {"public": True, "enabled": True}, "name")
 		for group_name in groups:
 			group: ReleaseGroup = frappe.get_doc("Release Group", group_name)
@@ -472,12 +474,12 @@ class BaseServer(Document, TagHelpers):
 				group.add_server(str(self.name), deploy=True)
 
 	@frappe.whitelist()
-	def enable_server_for_new_benches_and_site(self):
+	def enable_for_new_benches_and_sites(self):
 		if not self.public:
 			frappe.throw("Action only allowed for public servers")
 
 		server = self.get_server_enabled_for_new_benches_and_sites()
-
+		self.add_to_public_groups()
 		if server:
 			frappe.msgprint(_("Server {0} is already enabled for new benches and sites").format(server))
 
@@ -502,10 +504,32 @@ class BaseServer(Document, TagHelpers):
 		)
 
 	@frappe.whitelist()
-	def disable_server_for_new_benches_and_site(self):
+	def disable_for_new_benches_and_sites(self):
 		self.use_for_new_benches = False
 		self.use_for_new_sites = False
 		self.save()
+
+	def remove_from_public_groups(self, force=False):
+		groups: list[str] = frappe.get_all(
+			"Release Group",
+			{
+				"public": True,
+				"enabled": True,
+			},
+			pluck="name",
+		)
+		active_benches_groups: list[str] = frappe.get_all(
+			"Bench", {"status": "Active", "group": ("in", groups), "server": self.name}, pluck="group"
+		)
+		parent_filter = {"parent": ("in", groups)}
+		if not force:
+			parent_filter = {"parent": ("in", set(groups) - set(active_benches_groups))}
+
+		frappe.db.delete(
+			"Release Group Server",
+			{"server": self.name, **parent_filter},
+			pluck="parent",
+		)
 
 	def validate_cluster(self):
 		if not self.cluster:

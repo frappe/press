@@ -739,9 +739,9 @@ class Cluster(Document):
 	@frappe.whitelist()
 	def create_proxy(self):
 		"""Creates a proxy server for the cluster"""
-		if self.images_available < 1:
+		if self.get_same_region_vmis(get_series=True).count("n") < 1:
 			frappe.throw(
-				"Images are not available. Add them or wait for copy to complete",
+				"Proxy Image not available in this region. Add them or wait for copy to complete",
 				frappe.ValidationError,
 			)
 		if self.status != "Active":
@@ -946,6 +946,13 @@ class Cluster(Document):
 				if setup_db_replication:
 					server.is_primary = False
 					server.primary = master_db_server
+
+				if server.auto_increase_storage:
+					server.auto_purge_binlog_based_on_size = True
+					server.binlog_max_disk_usage_percent = 75
+				else:
+					server.auto_purge_binlog_based_on_size = True
+					server.binlog_max_disk_usage_percent = 20
 
 			case "Server":
 				server: "Server" = vm.create_server(is_secondary=is_secondary, primary=primary)

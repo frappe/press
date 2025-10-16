@@ -113,6 +113,13 @@ class VirtualMachine(Document):
 		volumes: DF.Table[VirtualMachineVolume]
 	# end: auto-generated types
 
+	@property
+	def is_database_server(self) -> bool:
+		if self.series == "m":
+			return True
+
+		return frappe.db.exists("Database Server", {"virtual_machine": self.name})
+
 	def autoname(self):
 		series = f"{self.series}-{slug(self.cluster)}.#####"
 		self.index = int(make_autoname(series)[-5:])
@@ -1459,6 +1466,7 @@ class VirtualMachine(Document):
 		}
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
+			document["is_primary"] = True
 
 		return frappe.get_doc(document).insert()
 
