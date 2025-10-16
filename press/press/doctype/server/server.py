@@ -808,7 +808,8 @@ class BaseServer(Document, TagHelpers):
 		if virtual_machine == self.virtual_machine:
 			return self
 
-		return frappe.get_doc("NFS Server", virtual_machine)
+		nfs_server_name = frappe.get_value("NFS Server", {"virtual_machine": virtual_machine}, "name")
+		return frappe.get_doc("NFS Server", nfs_server_name)
 
 	@frappe.whitelist()
 	def extend_ec2_volume(self, device=None, log: str | None = None):
