@@ -35,13 +35,6 @@ def poly_get_doc(doctypes, name):
 	return frappe.get_doc(doctypes[-1], name)
 
 
-<<<<<<< HEAD
-def get_mount_point(server: str) -> str:
-	"""Guess mount point from server"""
-	server: Server | DatabaseServer = frappe.get_doc(
-		"Database Server" if server[0] == "m" else "Server", server
-	)
-=======
 def get_mount_point(server: str, server_type=None) -> tuple[str, str]:
 	"""Guess mount point from server"""
 	if server_type is None:
@@ -54,7 +47,6 @@ def get_mount_point(server: str, server_type=None) -> tuple[str, str]:
 		server_type = "Database Server"
 
 	server: Server | DatabaseServer = frappe.get_doc(server_type, server)
->>>>>>> d9e1ea0dd (feat(monitoring): Update volume host name in server analytics for space PromQL)
 	if server.provider != "AWS EC2":
 		return "/"
 
@@ -343,13 +335,8 @@ def calculate_swap(name):
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 @redis_cache(ttl=10 * 60)
-<<<<<<< HEAD
-def analytics(name, query, timezone, duration):
-	mount_point = get_mount_point(name)
-=======
 def analytics(name, query, timezone, duration, server_type=None):
 	volume_host_name, mount_point = get_mount_point(name, server_type)
->>>>>>> d9e1ea0dd (feat(monitoring): Update volume host name in server analytics for space PromQL)
 	timespan, timegrain = get_timespan_timegrain(duration)
 
 	query_map = {
