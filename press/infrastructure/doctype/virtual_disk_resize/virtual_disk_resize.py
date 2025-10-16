@@ -12,7 +12,6 @@ import botocore
 import frappe
 from frappe.core.utils import find, find_all
 from frappe.model.document import Document
-from frappe.utils.error import log_error
 
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 
@@ -85,15 +84,23 @@ class VirtualDiskResize(Document):
 			frappe.enqueue_doc(self.doctype, self.name, "run_prerequisites", queue="long", timeout=2400)
 
 	def run_prerequisites(self):
-		self.status = Status.Preparing
-		self.save()
-		self.set_filesystem_attributes()
-		self.set_new_volume_attributes()
-		self.create_new_volume()
-		self.status = Status.Ready
-		self.save()
-		if self.scheduled_time:
-			self.execute()
+		try:
+			self.status = Status.Preparing
+			self.save()
+			self.set_filesystem_attributes()
+			self.set_new_volume_attributes()
+			self.create_new_volume()
+			self.status = Status.Ready
+			self.save()
+			if self.scheduled_time:
+				self.execute()
+		except frappe.QueryTimeoutError:
+			frappe.db.rollback()
+			self.status = Status.Scheduled
+			self.save()
+		except Exception:
+			self.status = Status.Failure
+			self.save()
 
 	def add_steps(self):
 		for step in self.shrink_steps:
@@ -308,7 +315,9 @@ class VirtualDiskResize(Document):
 		self.save()
 
 	def create_new_volume(self):
-		# Create new volume
+		# Lock the row to prevent concurrent modifications
+		frappe.get_value("Virtual Machine", self.virtual_machine, "status", for_update=True)
+
 		self.new_volume_id = self.machine.attach_new_volume(
 			self.new_volume_size, iops=self.new_volume_iops, throughput=self.new_volume_throughput
 		)
@@ -686,6 +695,7 @@ class StepStatus(str, Enum):
 
 
 class Status(str, Enum):
+	Scheduled = "Scheduled"
 	Pending = "Pending"
 	Preparing = "Preparing"
 	Ready = "Ready"
@@ -703,13 +713,12 @@ def run_scheduled_resizes():
 		{"scheduled_time": ("<=", frappe.utils.now()), "status": "Scheduled"},
 	)
 	for task in resize_tasks:
-		try:
-			frappe.enqueue_doc(
-				task.doctype,
-				task.name,
-				"run_prerequisites",
-				queue="long",
-				timeout=2400,
-			)
-		except Exception as e:
-			log_error("Virtual Disk Resize Start Error", exception=e)
+		frappe.enqueue_doc(
+			task.doctype,
+			task.name,
+			"run_prerequisites",
+			queue="long",
+			timeout=2400,
+			deduplicate=True,
+			job_id=f"resize_job:{task.virtual_machine}",
+		)

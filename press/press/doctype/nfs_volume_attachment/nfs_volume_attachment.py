@@ -61,6 +61,9 @@ class StepHandler:
 		step.status = ansible_play.status
 		step.save()
 
+		if step.status == Status.Failure:
+			raise
+
 	def _fail_ansible_step(
 		self,
 		step: "NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep",
@@ -141,6 +144,19 @@ class StepHandler:
 		self.succeed()
 
 
+def get_restart_benches_play(server: str) -> Ansible:
+	"""Get restart benches play"""
+	primary_server: Server = frappe.get_cached_doc("Server", server)
+	benches = frappe.get_all("Bench", {"server": server, "status": "Active"}, pluck="name")
+	return Ansible(
+		playbook="start_benches.yml",
+		server=primary_server,
+		user=primary_server._ssh_user(),
+		port=primary_server._ssh_port(),
+		variables={"benches": " ".join(benches)},
+	)
+
+
 class NFSVolumeAttachment(Document, StepHandler):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
@@ -164,6 +180,12 @@ class NFSVolumeAttachment(Document, StepHandler):
 	# end: auto-generated types
 
 	def validate(self):
+		"""Check if the primary server has a secondary server provisioned with no existing attachments"""
+		secondary_server_status = frappe.db.get_value("Server", self.secondary_server, "status")
+
+		if not secondary_server_status or secondary_server_status != "Active":
+			frappe.throw("Please select a primary server that has a secondary server provisioned!")
+
 		has_shared_volume_setup = frappe.db.exists(
 			"NFS Volume Attachment",
 			{
@@ -179,10 +201,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 				f"{self.primary_server} is already sharing benches with {self.secondary_server}!",
 			)
 
-		if not self.secondary_server:
-			frappe.throw("Please select a primary server that has a secondary server provisioned!")
-
-	def stop_all_benches(self, step: "NFSVolumeDetachmentStep"):
+	def stop_all_benches(self, step: "NFSVolumeAttachmentStep"):
 		"""Stop all benches running on /shared"""
 		server: Server = frappe.get_doc("Server", self.primary_server)
 		step.status = Status.Running
@@ -399,7 +418,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 			directory="/shared",
 			secondary_server_private_ip=secondary_server_private_ip,
 			is_primary=True,
-			restart_benches=True,
+			restart_benches=False,
 			reference_doctype="Server",
 			reference_name=self.primary_server,
 		)
@@ -426,6 +445,29 @@ class NFSVolumeAttachment(Document, StepHandler):
 
 		self.handle_async_job(step, job)
 
+	def update_benches_with_new_mounts(self, step: "NFSVolumeAttachmentStep"):
+		"""Restart all benches via agent for mounts to reload"""
+		step.status = Status.Running
+		step.save()
+
+		ansible = get_restart_benches_play(self.primary_server)
+
+		try:
+			self._run_ansible_step(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+			raise
+
+	def ready_to_auto_scale(self, step: "NFSVolumeAttachmentStep"):
+		"""Mark server as ready to auto scale"""
+		step.status = Status.Running
+		step.save()
+
+		frappe.db.set_value("Server", self.primary_server, "benches_on_shared_volume", True)
+
+		step.status = Status.Success
+		step.save()
+
 	def before_insert(self):
 		"""Append defined steps to the document before saving."""
 		self.volume_size = frappe.db.get_value("Virtual Machine", self.primary_server, "disk_size")
@@ -442,6 +484,8 @@ class NFSVolumeAttachment(Document, StepHandler):
 				self.move_benches_to_shared,
 				self.run_primary_server_benches_on_shared_fs,
 				self.wait_for_benches_to_run_on_shared,
+				self.update_benches_with_new_mounts,
+				self.ready_to_auto_scale,
 			]
 		):
 			self.append("nfs_volume_attachment_steps", step)
@@ -455,6 +499,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 			timeout=18000,
 			at_front=True,
 			queue="long",
+			enqueue_after_commit=True,
 		)
 
 	def after_insert(self):

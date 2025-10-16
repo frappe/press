@@ -70,6 +70,7 @@ class ARMDockerImageType(TypedDict):
 PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
 MARIADB_DATA_MNT_POINT = "/opt/volumes/mariadb"
 BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
+SHARED_MNT_POINT = "/shared"
 
 
 class BaseServer(Document, TagHelpers):
@@ -85,6 +86,8 @@ class BaseServer(Document, TagHelpers):
 		"auto_add_storage_min",
 		"auto_add_storage_max",
 		"auto_increase_storage",
+		"auto_purge_binlog_based_on_size",
+		"binlog_max_disk_usage_percent",
 		"is_monitoring_disabled",
 	)
 
@@ -462,7 +465,7 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Route 53 Record Creation Error", domain=domain.name, server=self.name)
 
-	def add_server_to_public_groups(self):
+	def add_to_public_groups(self):
 		groups = frappe.get_all("Release Group", {"public": True, "enabled": True}, "name")
 		for group_name in groups:
 			group: ReleaseGroup = frappe.get_doc("Release Group", group_name)
@@ -470,12 +473,12 @@ class BaseServer(Document, TagHelpers):
 				group.add_server(str(self.name), deploy=True)
 
 	@frappe.whitelist()
-	def enable_server_for_new_benches_and_site(self):
+	def enable_for_new_benches_and_sites(self):
 		if not self.public:
 			frappe.throw("Action only allowed for public servers")
 
 		server = self.get_server_enabled_for_new_benches_and_sites()
-
+		self.add_to_public_groups()
 		if server:
 			frappe.msgprint(_("Server {0} is already enabled for new benches and sites").format(server))
 
@@ -500,10 +503,32 @@ class BaseServer(Document, TagHelpers):
 		)
 
 	@frappe.whitelist()
-	def disable_server_for_new_benches_and_site(self):
+	def disable_for_new_benches_and_sites(self):
 		self.use_for_new_benches = False
 		self.use_for_new_sites = False
 		self.save()
+
+	def remove_from_public_groups(self, force=False):
+		groups: list[str] = frappe.get_all(
+			"Release Group",
+			{
+				"public": True,
+				"enabled": True,
+			},
+			pluck="name",
+		)
+		active_benches_groups: list[str] = frappe.get_all(
+			"Bench", {"status": "Active", "group": ("in", groups), "server": self.name}, pluck="group"
+		)
+		parent_filter = {"parent": ("in", groups)}
+		if not force:
+			parent_filter = {"parent": ("in", set(groups) - set(active_benches_groups))}
+
+		frappe.db.delete(
+			"Release Group Server",
+			{"server": self.name, **parent_filter},
+			pluck="parent",
+		)
 
 	def validate_cluster(self):
 		if not self.cluster:
@@ -771,6 +796,22 @@ class BaseServer(Document, TagHelpers):
 				reference_name=self.name,
 			)
 
+	def get_server_from_device(self, device: str) -> "BaseServer":
+		if self.provider == "Hetzner":
+			volume_id = device.removeprefix("/dev/disk/by-id/scsi-0HC_Volume_")
+		else:
+			volume_id = device.removeprefix("/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_")
+			if not volume_id.startswith("vol-"):
+				volume_id = volume_id.replace("vol", "vol-", 1)
+
+		virtual_machine = frappe.get_value("Virtual Machine Volume", {"volume_id": volume_id}, "parent")
+
+		if virtual_machine == self.virtual_machine:
+			return self
+
+		nfs_server_name = frappe.get_value("NFS Server", {"virtual_machine": virtual_machine}, "name")
+		return frappe.get_doc("NFS Server", nfs_server_name)
+
 	@frappe.whitelist()
 	def extend_ec2_volume(self, device=None, log: str | None = None):
 		if self.provider not in ("AWS EC2", "OCI"):
@@ -785,12 +826,15 @@ class BaseServer(Document, TagHelpers):
 			# Try the best guess. Try extending the data volume
 			volume = self.find_mountpoint_volume(mountpoint)
 			device = self.get_device_from_volume_id(volume.volume_id)
+
+		server = self.get_server_from_device(device)
+
 		try:
 			ansible = Ansible(
 				playbook="extend_ec2_volume.yml",
-				server=self,
-				user=self._ssh_user(),
-				port=self._ssh_port(),
+				server=server,
+				user=server._ssh_user(),
+				port=server._ssh_port(),
 				variables={"restart_mariadb": restart_mariadb, "device": device},
 			)
 			play = ansible.run()
@@ -798,7 +842,7 @@ class BaseServer(Document, TagHelpers):
 				frappe.db.set_value("Add On Storage Log", log, "extend_ec2_play", play.name)
 				frappe.db.commit()
 		except Exception:
-			log_error("EC2 Volume Extend Exception", server=self.as_dict())
+			log_error("EC2 Volume Extend Exception", server=server.as_dict())
 
 	def enqueue_extend_ec2_volume(self, device, log):
 		frappe.enqueue_doc(self.doctype, self.name, "extend_ec2_volume", device=device, log=log)
@@ -807,14 +851,26 @@ class BaseServer(Document, TagHelpers):
 	def time_to_wait_before_updating_volume(self) -> timedelta | int:
 		if self.provider != "AWS EC2":
 			return 0
-		if not (
-			last_updated_at := frappe.get_value(
+
+		if self.has_shared_volume:
+			last_updated_at = frappe.get_value(
+				"Virtual Machine Volume",
+				{
+					"parent": self.volume_host_info.nfs_server,
+					"volume_id": self.volume_host_info.volume_id,
+				},
+				"last_updated_at",
+			)
+		else:
+			last_updated_at = frappe.get_value(
 				"Virtual Machine Volume",
 				{"parent": self.virtual_machine, "idx": 1},  # first volume is likely main
 				"last_updated_at",
 			)
-		):
+
+		if not last_updated_at:
 			return 0
+
 		diff = frappe.utils.now_datetime() - last_updated_at
 		return diff if diff < timedelta(hours=6) else 0
 
@@ -832,7 +888,10 @@ class BaseServer(Document, TagHelpers):
 
 		volume = self.find_mountpoint_volume(mountpoint)
 
-		virtual_machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		virtual_machine: "VirtualMachine" = frappe.get_doc(
+			"Virtual Machine",
+			self.volume_host_info.nfs_server if self.has_shared_volume else self.virtual_machine,
+		)
 		virtual_machine.increase_disk_size(volume.volume_id, increment)
 		if self.provider == "AWS EC2":
 			device = self.get_device_from_volume_id(volume.volume_id)
@@ -848,10 +907,10 @@ class BaseServer(Document, TagHelpers):
 			return "/"
 
 		volumes = self.get_volume_mounts()
-		if volumes or self.has_data_volume:
+		if volumes or self.has_data_volume or self.has_shared_volume:
 			# Adding this condition since this method is called from both server and database server doctypes
 			if self.doctype == "Server":
-				mountpoint = BENCH_DATA_MNT_POINT
+				mountpoint = BENCH_DATA_MNT_POINT if not self.has_shared_volume else SHARED_MNT_POINT
 			elif self.doctype == "Database Server":
 				mountpoint = MARIADB_DATA_MNT_POINT
 		else:
@@ -859,7 +918,20 @@ class BaseServer(Document, TagHelpers):
 		return mountpoint
 
 	def find_mountpoint_volume(self, mountpoint):
-		machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		volume_id = None
+		if self.has_shared_volume and mountpoint == SHARED_MNT_POINT:
+			volume_id = self.volume_host_info.volume_id
+
+		machine: "VirtualMachine" = frappe.get_doc(
+			"Virtual Machine",
+			self.volume_host_info.nfs_server
+			if self.has_shared_volume and mountpoint == SHARED_MNT_POINT
+			else self.virtual_machine,
+		)
+
+		if volume_id:
+			# Return the volume doc immediately
+			return find(machine.volumes, lambda x: x.volume_id == volume_id)
 
 		if len(machine.volumes) == 1:
 			# If there is only one volume,
@@ -1645,11 +1717,33 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Cloud Init Wait Exception", server=self.as_dict())
 
+	@property
+	def volume_host_info(self) -> "VirtualMachine":
+		return frappe.db.get_value(
+			"NFS Volume Attachment",
+			{"primary_server": self.name, "status": "Success"},
+			["volume_id", "nfs_server"],
+			as_dict=True,
+		)
+
+	@property
+	def has_shared_volume(self) -> bool:
+		"""Return True if benches_on_shared_volume exists and is True."""
+		return bool(getattr(self, "benches_on_shared_volume", False))
+
+	def _get_volume_host_server_name(self) -> str:
+		"""Get name or nfs name in case of shared benches"""
+		return (
+			self.name
+			if not self.has_shared_volume
+			else frappe.db.get_value("NFS Volume Attachment", {"primary_server": self.name}, "nfs_server")
+		)
+
 	def free_space(self, mountpoint: str) -> int:
 		from press.api.server import prometheus_query
 
 		response = prometheus_query(
-			f"""node_filesystem_avail_bytes{{instance="{self.name}", job="node", mountpoint="{mountpoint}"}}""",
+			f"""node_filesystem_avail_bytes{{instance="{self._get_volume_host_server_name()}", job="node", mountpoint="{mountpoint}"}}""",
 			lambda x: x["mountpoint"],
 			"Asia/Kolkata",
 			60,
@@ -1667,7 +1761,7 @@ class BaseServer(Document, TagHelpers):
 
 		response = prometheus_query(
 			f"""predict_linear(
-node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}[3h], 6*3600
+node_filesystem_avail_bytes{{instance="{self._get_volume_host_server_name()}", mountpoint="{mountpoint}"}}[3h], 6*3600
 			)""",
 			lambda x: x["mountpoint"],
 			"Asia/Kolkata",
@@ -1682,7 +1776,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		from press.api.server import prometheus_query
 
 		response = prometheus_query(
-			f"""node_filesystem_size_bytes{{instance="{self.name}", job="node", mountpoint="{mountpoint}"}}""",
+			f"""node_filesystem_size_bytes{{instance="{self._get_volume_host_server_name()}", job="node", mountpoint="{mountpoint}"}}""",
 			lambda x: x["mountpoint"],
 			"Asia/Kolkata",
 			120,
@@ -1914,6 +2008,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		self.install_filebeat()
 
 		if self.doctype == "Server":
+			self.install_nfs_common()
 			self.setup_mysqldump()
 			self.install_earlyoom()
 			self.setup_ncdu()
@@ -1922,6 +2017,12 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				self.setup_archived_folder()
 
 			self.install_cadvisor()
+
+			if self.is_secondary:
+				frappe.db.set_value(
+					"Server", {"secondary_server": self.name}, "status", self.status
+				)  # Update the status of the primary server
+				frappe.db.commit()
 
 		if self.doctype == "Database Server":
 			self.adjust_memory_config()
@@ -2025,8 +2126,9 @@ class Server(BaseServer):
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
 		auto_increase_storage: DF.Check
-		auto_scale: DF.Check
+		auto_scaled: DF.Check
 		bastion_server: DF.Link | None
+		benches_on_shared_volume: DF.Check
 		cluster: DF.Link | None
 		communication_infos: DF.Table[CommunicationInfo]
 		database_server: DF.Link | None
@@ -2048,6 +2150,7 @@ class Server(BaseServer):
 		is_primary: DF.Check
 		is_pyspy_setup: DF.Check
 		is_replication_setup: DF.Check
+		is_secondary: DF.Check
 		is_self_hosted: DF.Check
 		is_server_prepared: DF.Check
 		is_server_renamed: DF.Check
@@ -2226,9 +2329,74 @@ class Server(BaseServer):
 					"Subscription", add_on_storage_subscription.name, {"team": self.team, "enabled": 1}
 				)
 
+	def validate_more_memory_in_secondary_server(self, secondary_server_plan: str) -> None:
+		"""Ensure secondary server has more memory than the primary server"""
+		current_plan_memory: int = frappe.db.get_value("Server Plan", self.plan, "memory")
+		secondary_server_plan_memory: int = frappe.db.get_value(
+			"Server Plan", secondary_server_plan, "memory"
+		)
+
+		if secondary_server_plan_memory <= current_plan_memory:
+			frappe.throw(
+				"Please select a plan with more memory than the "
+				f"existing server plan. Current memory: {current_plan_memory}"
+			)
+
+	def create_secondary_server(self, secondary_server_plan: str) -> None:
+		"""Create a secondary server for this server"""
+		self.validate_more_memory_in_secondary_server(secondary_server_plan)
+
+		secondary_server_plan: ServerPlan = frappe.get_cached_doc("Server Plan", secondary_server_plan)
+		team_name = frappe.db.get_value("Server", self.name, "team", "name")
+		cluster: "Cluster" = frappe.get_cached_doc("Cluster", self.cluster)
+		server_title = f"Secondary - {self.title or self.name}"
+
+		# This is horrible code, however it seems to be the standard
+		# https://github.com/frappe/press/blob/28c9ba67b15b5d8ba64e302d084d3289ea744c39/press/api/server.py/#L228-L229
+		cluster.database_server = self.database_server
+		cluster.proxy_server = self.proxy_server
+
+		secondary_server, _ = cluster.create_server(
+			"Server",
+			server_title,
+			secondary_server_plan,
+			team=team_name,
+			auto_increase_storage=self.auto_increase_storage,
+			is_secondary=True,
+			primary=self.name,
+		)
+
+		self.secondary_server = secondary_server.name
+		self.save()
+
+	@frappe.whitelist()
+	def setup_secondary_server(self, server_plan: str):
+		"""Setup secondary server"""
+		if self.doctype == "Database Server" or self.is_secondary:
+			return
+
+		self.status = "Installing"
+		self.save()
+
+		self.create_secondary_server(server_plan)
+
 	@frappe.whitelist()
 	def setup_ncdu(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_ncdu")
+
+	@frappe.whitelist()
+	def install_nfs_common(self):
+		"""Install nfs common on this server"""
+		frappe.enqueue_doc(self.doctype, self.name, "_install_nfs_common")
+
+	def _install_nfs_common(self):
+		try:
+			ansible = Ansible(
+				playbook="install_nfs_common.yml", server=self, user=self._ssh_user(), port=self._ssh_port()
+			)
+			ansible.run()
+		except Exception:
+			log_error("Unable to install nfs common", server=self.as_dict())
 
 	def _setup_ncdu(self):
 		try:

@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import frappe
 import frappe.utils
+import rq
 from frappe.core.doctype.version.version import get_diff
 from frappe.core.utils import find
 from frappe.utils.password import get_decrypted_password
@@ -22,6 +23,7 @@ from press.press.doctype.server.server import PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN
 from press.runner import Ansible
 from press.utils import log_error
 from press.utils.database import find_db_disk_info, parse_du_output_of_mysql_directory
+from press.utils.jobs import has_job_timeout_exceeded
 
 if TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
@@ -47,7 +49,9 @@ class DatabaseServer(BaseServer):
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
 		auto_increase_storage: DF.Check
+		auto_purge_binlog_based_on_size: DF.Check
 		bastion_server: DF.Link | None
+		binlog_max_disk_usage_percent: DF.Int
 		binlog_retention_days: DF.Int
 		binlogs_removed: DF.Check
 		cluster: DF.Link | None
@@ -135,6 +139,21 @@ class DatabaseServer(BaseServer):
 	In hindsight, persist should be on by default
 	"""
 
+	@property
+	def is_part_of_replica(self) -> bool:
+		if self.is_replication_setup:
+			return True
+		return bool(
+			self.is_primary
+			and frappe.db.exists(
+				"Database Server",
+				{
+					"is_replication_setup": 1,
+					"primary": self.name,
+				},
+			)
+		)
+
 	def validate(self):
 		super().validate()
 		self.validate_mariadb_root_password()
@@ -174,9 +193,21 @@ class DatabaseServer(BaseServer):
 				title="Team Change Not Allowed",
 			)
 
+	def before_insert(self):
+		if self.auto_increase_storage:
+			self.auto_purge_binlog_based_on_size = True
+			self.binlog_max_disk_usage_percent = 75
+		else:
+			self.auto_purge_binlog_based_on_size = True
+			self.binlog_max_disk_usage_percent = 20
+
 	def on_update(self):
 		if self.flags.in_insert or self.is_new():
 			return
+
+		if self.is_replication_setup and self.auto_purge_binlog_based_on_size:
+			frappe.throw("Cannot enable binlog auto purge for replication configured servers")
+
 		self.update_mariadb_system_variables()
 		if (
 			self.has_value_changed("memory_high")
@@ -256,6 +287,8 @@ class DatabaseServer(BaseServer):
 			"max_connections": max(50, self.recommended_max_db_connections),
 			"expire_logs_days": 14,
 		}
+		doc.auto_purge_binlog_based_on_size = self.auto_purge_binlog_based_on_size
+		doc.binlog_max_disk_usage_percent = self.binlog_max_disk_usage_percent
 		return doc
 
 	def get_actions(self):
@@ -282,8 +315,16 @@ class DatabaseServer(BaseServer):
 				"action": "Update Binlog Retention",
 				"description": "Increase/Decrease Binlog Retention",
 				"button_label": "Update",
-				"condition": self.status == "Active",
+				"condition": self.status == "Active" and not self.is_replication_setup,
 				"doc_method": "update_binlog_retention",
+				"group": f"{server_type.title()} Actions",
+			},
+			{
+				"action": "Update Binlog Size Limit",
+				"description": "Limit the amount of disk space used by binlogs",
+				"button_label": "Update",
+				"condition": self.status == "Active" and not self.is_part_of_replica,
+				"doc_method": "update_binlog_size_limit",
 				"group": f"{server_type.title()} Actions",
 			},
 			{
@@ -613,6 +654,24 @@ class DatabaseServer(BaseServer):
 		# From MariaDB 10.6.1, expire_logs_days is alias of binlog_expire_logs_seconds
 		# https://mariadb.com/docs/server/ha-and-performance/standard-replication/replication-and-binary-log-system-variables#expire_logs_days
 		self.add_or_update_mariadb_variable("expire_logs_days", "value_str", str(days), save=True)
+
+	@dashboard_whitelist()
+	def update_binlog_size_limit(self, enabled: bool, percent_of_disk_size: int):
+		if self.is_part_of_replica:
+			frappe.throw("Cannot update binlog size limit for database replicas")
+
+		if percent_of_disk_size is None:
+			percent_of_disk_size = 0
+		if enabled:
+			if percent_of_disk_size < 10 or percent_of_disk_size > 90:
+				frappe.throw("Percent of disk space  must be between 10 and 90")
+			self.binlog_max_disk_usage_percent = percent_of_disk_size
+			self.auto_purge_binlog_based_on_size = True
+		else:
+			self.auto_purge_binlog_based_on_size = False
+			self.binlog_max_disk_usage_percent = 100
+
+		self.save(ignore_permissions=True)
 
 	@dashboard_whitelist()
 	def update_max_db_connections(self, max_connections: int):
@@ -1598,6 +1657,29 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			frappe.throw(f"Failed to purge binlogs. Please try again later. {e!s}")
 			raise e
 
+	def purge_binlogs_by_configured_size_limit(self):
+		if self.enable_binlog_indexing:
+			return
+
+		if not self.auto_purge_binlog_based_on_size:
+			return
+
+		if not self.binlog_max_disk_usage_percent:
+			return
+
+		if not self.virtual_machine:
+			return
+
+		if self.is_part_of_replica:
+			return
+
+		disk_size = frappe.get_value("Virtual Machine", self.virtual_machine, "disk_size")
+		binlog_limit_in_gb = int(self.binlog_max_disk_usage_percent / 100 * disk_size)
+		if binlog_limit_in_gb == 0:
+			return
+
+		self.agent.purge_binlogs_by_size_limit(self, max_binlog_gb=binlog_limit_in_gb)
+
 	@frappe.whitelist()
 	def sync_binlogs_info(self, index_binlogs: bool = True, upload_binlogs: bool = True):
 		if not self.enable_binlog_indexing:
@@ -2146,3 +2228,31 @@ def process_remove_binlogs_from_indexer_agent_job_update(job: AgentJob):
 		"indexed",
 		0,
 	)
+
+
+def auto_purge_binlogs_by_size_limit():
+	databases = frappe.db.get_all(
+		"Database Server",
+		filters={
+			"status": "Active",
+			"auto_purge_binlog_based_on_size": 1,
+			"is_self_hosted": 0,
+			"enable_binlog_indexing": 0,
+		},
+		pluck="name",
+	)
+
+	for database in databases:
+		if has_job_timeout_exceeded():
+			return
+		try:
+			server: DatabaseServer = frappe.get_doc("Database Server", database)
+			if not server.auto_purge_binlog_based_on_size:
+				continue
+			server.purge_binlogs_by_configured_size_limit()
+			frappe.db.commit()
+		except rq.timeouts.JobTimeoutException:
+			frappe.db.rollback()
+			return
+		except Exception:
+			frappe.db.rollback()

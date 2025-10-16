@@ -90,8 +90,11 @@
   "stalk_cycles",
   "stalk_sleep",
   "section_break_imng",
-  "binlog_retention_days",
+  "auto_purge_binlog_based_on_size",
+  "binlog_max_disk_usage_percent",
+  "column_break_hrsi",
   "binlogs_removed",
+  "binlog_retention_days",
   "replication_tab",
   "is_primary",
   "column_break_vajj",
@@ -208,7 +211,8 @@
    "fieldname": "is_replication_setup",
    "fieldtype": "Check",
    "label": "Replication Setup",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "column_break_18",
@@ -594,6 +598,7 @@
   },
   {
    "default": "14",
+   "description": "Only works with Binlog Indexer",
    "fieldname": "binlog_retention_days",
    "fieldtype": "Int",
    "label": "Binlog Retention (days)"
@@ -681,6 +686,23 @@
    "options": "Bastion Server"
   },
   {
+   "fieldname": "column_break_hrsi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "100",
+   "fieldname": "binlog_max_disk_usage_percent",
+   "fieldtype": "Int",
+   "label": "Binlog Max Disk Usage Percent (%)",
+   "non_negative": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "auto_purge_binlog_based_on_size",
+   "fieldtype": "Check",
+   "label": "Auto Purge binlog Based on Size"
+  },
+  {
    "default": "0",
    "fieldname": "is_monitoring_disabled",
    "fieldtype": "Check",
@@ -702,7 +724,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-10-06 17:08:00.975558",
+ "modified": "2025-10-16 13:11:58.465662",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

@@ -119,6 +119,7 @@ class ProductTrial(Document):
 			site._update_configuration(get_plan_config(plan), save=False)
 			site.signup_time = frappe.utils.now()
 			site.generate_saas_communication_secret(create_agent_job=True, save=False)
+			site.plan = plan
 			site.save()  # Save is needed for create_subscription to work TODO: remove this
 			site.reload()
 			self.set_site_domain(site, site_domain)
@@ -229,6 +230,33 @@ class ProductTrial(Document):
 			"Cluster", {"name": ("in", clusters), "public": 1}, order_by="name asc", pluck="name"
 		)
 
+	def get_preferred_site(filters) -> str | None:
+		sites = frappe.db.get_all(
+			"Site",
+			filters=filters,
+			pluck="name",
+			order_by="creation asc",
+			limit=10,
+		)
+		if not sites:
+			return None
+		Site = frappe.qb.DocType("Site")
+		Incident = frappe.qb.DocType("Incident")
+		sites_without_incident = (
+			frappe.qb.from_(Site)
+			.select(Site.name)
+			.left_join(Incident)
+			.on(
+				(Site.server == Incident.server)
+				& (Incident.status.isin(["Confirmed", "Validating", "Acknowledged"]))
+			)
+			.where(Site.name.isin(sites))
+			.where(Incident.name.isnull())
+			.run(as_dict=True)
+		)
+		sites_without_incident = [site["name"] for site in sites_without_incident]
+		return sites_without_incident[0] if sites_without_incident else sites[0]
+
 	def get_standby_site(self, cluster: str | None = None, account_request: str | None = None) -> str | None:
 		filters = {
 			"is_standby": True,
@@ -258,16 +286,7 @@ class ProductTrial(Document):
 				filters["hybrid_for"] = rule.app
 				break
 
-		sites = frappe.db.get_all(
-			"Site",
-			filters=filters,
-			pluck="name",
-			order_by="creation asc",
-			limit=1,
-		)
-		if sites:
-			return sites[0]
-		return None
+		return ProductTrial.get_preferred_site(filters)
 
 	def create_standby_sites_in_each_cluster(self):
 		if not self.enable_pooling:

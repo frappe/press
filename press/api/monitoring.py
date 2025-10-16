@@ -59,10 +59,13 @@ def get_clusters():
 		{"status": ("!=", "Archived"), "is_monitoring_disabled": False},
 		["name", "cluster"],
 	)
+	servers["nfs"] = frappe.get_all("NFS Server", {"status": ("!=", "Archived")}, ["name", "cluster"])
+
 	clusters = frappe.get_all("Cluster")
 	job_map = {
 		"proxy": ["node", "nginx", "proxysql", "mariadb_proxy"],
 		"app": ["node", "nginx", "docker", "cadvisor", "gunicorn", "rq"],
+		"nfs": ["node", "nginx", "docker", "cadvisor", "gunicorn", "rq"],
 		"database": ["node", "mariadb"],
 	}
 	servers_using_alternative_port = servers_using_alternative_port_for_communication()

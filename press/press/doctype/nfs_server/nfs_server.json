@@ -10,6 +10,7 @@
   "domain",
   "tls_certificate_renewal_failed",
   "column_break_4",
+  "cluster",
   "provider",
   "virtual_machine",
   "is_server_prepared",
@@ -199,6 +200,12 @@
    "fieldname": "is_server_prepared",
    "fieldtype": "Check",
    "label": "Is Server Prepared"
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster"
   }
  ],
  "links": [
@@ -219,7 +226,7 @@
    "link_fieldname": "nfs_server"
   }
  ],
- "modified": "2025-10-08 15:35:16.146492",
+ "modified": "2025-10-15 23:20:56.419708",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "NFS Server",

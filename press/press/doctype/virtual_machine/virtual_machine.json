@@ -251,7 +251,7 @@
    "fieldname": "series",
    "fieldtype": "Select",
    "label": "Series",
-   "options": "n\nf\nm\nc\np\ne\nr\nt\nnfs",
+   "options": "n\nf\nm\nc\np\ne\nr\nt\nnfs\nfs",
    "reqd": 1
   },
   {
@@ -426,7 +426,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2025-10-13 10:26:57.306181",
+ "modified": "2025-10-13 14:56:34.498409",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

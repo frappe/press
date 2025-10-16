@@ -9,7 +9,10 @@ import frappe
 from frappe.model.document import Document
 
 from press.agent import Agent
-from press.press.doctype.nfs_volume_attachment.nfs_volume_attachment import StepHandler
+from press.press.doctype.nfs_volume_attachment.nfs_volume_attachment import (
+	StepHandler,
+	get_restart_benches_play,
+)
 from press.runner import Ansible
 
 if typing.TYPE_CHECKING:
@@ -104,7 +107,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 			directory="/home/frappe/benches/",
 			secondary_server_private_ip=secondary_server_private_ip,
 			is_primary=True,
-			restart_benches=True,
+			restart_benches=False,
 			reference_doctype="Server",
 			reference_name=self.primary_server,
 		)
@@ -129,6 +132,19 @@ class NFSVolumeDetachment(Document, StepHandler):
 			"job",
 		)
 		self.handle_async_job(step, job)
+
+	def update_benches_with_new_mounts(self, step: "NFSVolumeDetachmentStep"):
+		"""Restart all benches via agent for mounts to reload"""
+		step.status = Status.Running
+		step.save()
+
+		ansible = get_restart_benches_play(self.primary_server)
+
+		try:
+			self._run_ansible_step(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+			raise
 
 	def umount_from_primary_server(self, step: "NFSVolumeDetachmentStep") -> None:
 		"""Umount /shared from primary server and remove from fstab"""
@@ -243,9 +259,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 		volume_id = frappe.get_value(
 			"NFS Volume Attachment", {"primary_server": self.primary_server}, "volume_id"
 		)
-
 		try:
-			virtual_machine.detach(volume_id)
 			virtual_machine.delete_volume(volume_id)
 			step.status = Status.Success
 			step.save()
@@ -265,6 +279,16 @@ class NFSVolumeDetachment(Document, StepHandler):
 		step.status = Status.Success
 		step.save()
 
+	def not_ready_to_auto_scale(self, step: "NFSVolumeDetachmentStep"):
+		"""Mark server as not ready to auto scale"""
+		step.status = Status.Running
+		step.save()
+
+		frappe.db.set_value("Server", self.primary_server, "benches_on_shared_volume", False)
+
+		step.status = Status.Success
+		step.save()
+
 	def before_insert(self):
 		"""Append defined steps to the document before saving."""
 		for step in self.get_steps(
@@ -273,6 +297,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 				self.sync_data,
 				self.run_bench_on_primary_server,
 				self.wait_for_job_completion,
+				self.update_benches_with_new_mounts,
 				self.umount_from_primary_server,
 				self.umount_from_secondary_server,
 				self.remove_servers_from_acl,
@@ -280,6 +305,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 				self.umount_volume_from_nfs_server,
 				self.detach_and_delete_volume_from_nfs_server,
 				self.mark_attachment_as_archived,
+				self.not_ready_to_auto_scale,
 			]
 		):
 			self.append("nfs_volume_detachment_steps", step)
@@ -290,7 +316,6 @@ class NFSVolumeDetachment(Document, StepHandler):
 			frappe.throw("Benches are currently being run on the secondary server!")
 
 	def execute_mount_steps(self):
-		# self._execute_steps(steps=self.nfs_volume_detachment_steps)
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
@@ -299,6 +324,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 			timeout=18000,
 			at_front=True,
 			queue="long",
+			enqueue_after_commit=True,
 		)
 
 	def after_insert(self):
