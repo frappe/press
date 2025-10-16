@@ -119,7 +119,6 @@ class ProductTrial(Document):
 			site._update_configuration(get_plan_config(plan), save=False)
 			site.signup_time = frappe.utils.now()
 			site.generate_saas_communication_secret(create_agent_job=True, save=False)
-			site.plan = plan
 			site.save()  # Save is needed for create_subscription to work TODO: remove this
 			site.reload()
 			self.set_site_domain(site, site_domain)
