@@ -59,7 +59,7 @@ def get_clusters():
 		{"status": ("!=", "Archived"), "is_monitoring_disabled": False},
 		["name", "cluster"],
 	)
-	server["nfs"] = frappe.get_all("NFS Server", {"status": ("!=", "Archived")}, ["name", "cluster"])
+	servers["nfs"] = frappe.get_all("NFS Server", {"status": ("!=", "Archived")}, ["name", "cluster"])
 
 	clusters = frappe.get_all("Cluster")
 	job_map = {
