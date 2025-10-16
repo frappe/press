@@ -796,6 +796,21 @@ class BaseServer(Document, TagHelpers):
 				reference_name=self.name,
 			)
 
+	def get_server_from_device(self, device: str) -> "BaseServer":
+		if self.provider == "Hetzner":
+			volume_id = device.removeprefix("/dev/disk/by-id/scsi-0HC_Volume_")
+		else:
+			volume_id = device.removeprefix("/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_")
+			if not volume_id.startswith("vol-"):
+				volume_id = volume_id.replace("vol", "vol-", 1)
+
+		virtual_machine = frappe.get_value("Virtual Machine Volume", {"volume_id": volume_id}, "parent")
+
+		if virtual_machine == self.virtual_machine:
+			return self
+
+		return frappe.get_doc("NFS Server", virtual_machine)
+
 	@frappe.whitelist()
 	def extend_ec2_volume(self, device=None, log: str | None = None):
 		if self.provider not in ("AWS EC2", "OCI"):
@@ -909,12 +924,14 @@ class BaseServer(Document, TagHelpers):
 
 	def find_mountpoint_volume(self, mountpoint):
 		volume_id = None
-		if self.has_shared_volume:
+		if self.has_shared_volume and mountpoint == SHARED_MNT_POINT:
 			volume_id = self.volume_host_info.volume_id
 
 		machine: "VirtualMachine" = frappe.get_doc(
 			"Virtual Machine",
-			self.volume_host_info.nfs_server if self.has_shared_volume else self.virtual_machine,
+			self.volume_host_info.nfs_server
+			if self.has_shared_volume and mountpoint == SHARED_MNT_POINT
+			else self.virtual_machine,
 		)
 
 		if volume_id:
