@@ -506,7 +506,7 @@ class BaseServer(Document, TagHelpers):
 		self.save()
 
 	def remove_from_public_groups(self, force=False):
-		groups = frappe.get_all(
+		groups: list[str] = frappe.get_all(
 			"Release Group",
 			{
 				"public": True,
@@ -514,13 +514,18 @@ class BaseServer(Document, TagHelpers):
 			},
 			pluck="name",
 		)
-		active_benches_groups = frappe.get_all(
+		active_benches_groups: list[str] = frappe.get_all(
 			"Bench", {"status": "Active", "group": ("in", groups), "server": self.name}, pluck="group"
 		)
-		extra = {}
+		parent_filter = {"parent": ("in", groups)}
 		if not force:
-			extra = {"parent": ("not in", active_benches_groups)}
-		frappe.db.delete("Release Group Server", {"server": self.name, "parent": ("in", groups), **extra})
+			parent_filter = {"parent": ("in", set(groups) - set(active_benches_groups))}
+
+		frappe.db.delete(
+			"Release Group Server",
+			{"server": self.name, **parent_filter},
+			pluck="parent",
+		)
 
 	def validate_cluster(self):
 		if not self.cluster:
