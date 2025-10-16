@@ -336,7 +336,14 @@ class Bench(Document):
 			if config.get("rq_cache_port"):
 				bench_config["rq_cache_port"] = config["rq_cache_port"]
 
+	@cached_property
+	def max_possible_memory_limit(self):
+		return int(frappe.db.get_value("Server", self.server, "ram")) or 0
+
 	def add_limits(self, bench_config):
+		if self.skip_memory_limits:
+			bench_config.update(self.get_limits(max_possible=True))
+
 		if any([self.memory_high, self.memory_max, self.memory_swap]):
 			if not all([self.memory_high, self.memory_max, self.memory_swap]):
 				frappe.throw("All memory limits need to be set")
@@ -349,7 +356,14 @@ class Bench(Document):
 
 		bench_config.update(self.get_limits())
 
-	def get_limits(self) -> dict:
+	def get_limits(self, max_possible=False) -> dict:
+		if max_possible:
+			return {
+				"memory_high": self.max_possible_memory_limit,
+				"memory_max": self.max_possible_memory_limit,
+				"memory_swap": self.max_possible_memory_limit * 2,
+				"vcpu": self.vcpu,
+			}
 		return {
 			"memory_high": self.memory_high,
 			"memory_max": self.memory_max,
@@ -777,7 +791,7 @@ class Bench(Document):
 			self.background_workers = MIN_BACKGROUND_WORKERS
 		if set_memory_limits:
 			if self.skip_memory_limits:
-				self.memory_max = frappe.db.get_value("Server", self.server, "ram")
+				self.memory_max = self.max_possible_memory_limit
 				self.memory_high = self.memory_max - 1024
 			else:
 				self.memory_high = 512 + (
