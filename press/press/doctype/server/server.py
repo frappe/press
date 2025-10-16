@@ -1732,19 +1732,11 @@ class BaseServer(Document, TagHelpers):
 		"""Return True if benches_on_shared_volume exists and is True."""
 		return bool(getattr(self, "benches_on_shared_volume", False))
 
-	def _get_volume_host_server_name(self) -> str:
-		"""Get name or nfs name in case of shared benches"""
-		return (
-			self.name
-			if not self.has_shared_volume
-			else frappe.db.get_value("NFS Volume Attachment", {"primary_server": self.name}, "nfs_server")
-		)
-
 	def free_space(self, mountpoint: str) -> int:
 		from press.api.server import prometheus_query
 
 		response = prometheus_query(
-			f"""node_filesystem_avail_bytes{{instance="{self._get_volume_host_server_name()}", job="node", mountpoint="{mountpoint}"}}""",
+			f"""node_filesystem_avail_bytes{{instance="{self.name}", job="node", mountpoint="{mountpoint}"}}""",
 			lambda x: x["mountpoint"],
 			"Asia/Kolkata",
 			60,
@@ -1762,7 +1754,7 @@ class BaseServer(Document, TagHelpers):
 
 		response = prometheus_query(
 			f"""predict_linear(
-node_filesystem_avail_bytes{{instance="{self._get_volume_host_server_name()}", mountpoint="{mountpoint}"}}[3h], 6*3600
+node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}[3h], 6*3600
 			)""",
 			lambda x: x["mountpoint"],
 			"Asia/Kolkata",
@@ -1777,7 +1769,7 @@ node_filesystem_avail_bytes{{instance="{self._get_volume_host_server_name()}", m
 		from press.api.server import prometheus_query
 
 		response = prometheus_query(
-			f"""node_filesystem_size_bytes{{instance="{self._get_volume_host_server_name()}", job="node", mountpoint="{mountpoint}"}}""",
+			f"""node_filesystem_size_bytes{{instance="{self.name}", job="node", mountpoint="{mountpoint}"}}""",
 			lambda x: x["mountpoint"],
 			"Asia/Kolkata",
 			120,
