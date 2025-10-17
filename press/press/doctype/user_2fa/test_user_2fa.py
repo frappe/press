@@ -12,4 +12,9 @@ class TestUser2FA(FrappeTestCase):
 		recovery_codes = list(User2FA.generate_recovery_codes())
 		self.assertEqual(len(recovery_codes), User2FA.recovery_codes_max)
 		self.assertTrue(all(len(code) == User2FA.recovery_codes_length for code in recovery_codes))
-		self.assertTrue(all(code.isupper() for code in recovery_codes))
+		self.assertTrue(
+			all(
+				(code.isupper() if any(c.isalpha() for c in code) else code.isnumeric())
+				for code in recovery_codes
+			)
+		)
