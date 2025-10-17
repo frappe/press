@@ -10,20 +10,20 @@ from press.saas.api import whitelist_saas_api
 @whitelist_saas_api
 def info():
 	is_fc_user = False
-	site = frappe.get_value(
-		"Site", frappe.local.site_name, ["trial_end_date", "standby_for_product", "team"], as_dict=True
-	)
+	site = frappe.get_value("Site", frappe.local.site_name, ["plan", "trial_end_date", "team"], as_dict=True)
 	site_user = frappe.request.headers.get("x-site-user")
 
 	team_members = frappe.get_doc("Team", site.team).get_user_list()
 	if site_user and site_user in team_members:
 		is_fc_user = True
-	plan = frappe.db.get_value("Product Trial", site.standby_for_product, "trial_plan")
+
 	return {
 		"is_fc_user": is_fc_user,
 		"name": frappe.local.site_name,
 		"trial_end_date": site.trial_end_date,
-		"plan": {"is_trial_plan": 1} if plan else None,
+		"plan": frappe.db.get_value("Site Plan", site.plan, ["is_trial_plan"], as_dict=True)
+		if site.plan
+		else None,
 	}
 
 
