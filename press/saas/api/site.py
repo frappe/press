@@ -26,7 +26,6 @@ def info():
 		if site.plan
 		else frappe.db.get_value("Product Trial", site.standby_for_product, "trial_plan")
 	)
-	plan = frappe.db.get_value("Product Trial", site.standby_for_product, "trial_plan")
 	return {
 		"is_fc_user": is_fc_user,
 		"name": frappe.local.site_name,
