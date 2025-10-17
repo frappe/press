@@ -288,8 +288,8 @@ class NFSVolumeDetachment(Document, StepHandler):
 		frappe.db.set_value("Server", self.primary_server, "benches_on_shared_volume", False)
 
 		# Drop secondary server
-		secondary_server: "Server" = frappe.get_doc("Server", self.secondary_server)
-		secondary_server.drop_secondary_server()
+		primary_server: "Server" = frappe.get_doc("Server", self.primary_server)
+		primary_server.drop_secondary_server()
 
 		step.status = Status.Success
 		step.save()
