@@ -280,11 +280,16 @@ class NFSVolumeDetachment(Document, StepHandler):
 		step.save()
 
 	def not_ready_to_auto_scale(self, step: "NFSVolumeDetachmentStep"):
-		"""Mark server as not ready to auto scale"""
+		"""Mark server as not ready to auto scale & drop secondary server"""
 		step.status = Status.Running
 		step.save()
 
+		# Mark primary as not ready to auto scale
 		frappe.db.set_value("Server", self.primary_server, "benches_on_shared_volume", False)
+
+		# Drop secondary server
+		secondary_server: "Server" = frappe.get_doc("Server", self.secondary_server)
+		secondary_server.drop_secondary_server()
 
 		step.status = Status.Success
 		step.save()
