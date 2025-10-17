@@ -153,6 +153,29 @@ def get_setup_intent(team):
 
 	return intent
 
+def is_stripe_configured():
+	"""Check if Stripe is properly configured in Press Settings"""
+	try:
+		from frappe.utils.password import get_decrypted_password
+		stripe_secret_key = get_decrypted_password(
+			"Press Settings",
+			"Press Settings", 
+			"stripe_secret_key",
+			raise_exception=False,
+		)
+		return bool(stripe_secret_key)
+	except Exception:
+		return False
+
+
+def should_update_stripe_for_team(team_doc):
+	"""Check if Stripe billing update is needed for a team"""
+	if not is_stripe_configured():
+		return False
+	
+	# Check if team uses Stripe payment method or has Stripe customer ID
+	return team_doc.payment_mode == "Card" or team_doc.stripe_customer_id
+
 
 def get_stripe():
 	from frappe.utils.password import get_decrypted_password
