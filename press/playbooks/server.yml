@@ -27,3 +27,4 @@
     - role: user_ssh_certificate
     - role: earlyoom_memory_limits
     - role: install_and_setup_ncdu
+    - role: iptables

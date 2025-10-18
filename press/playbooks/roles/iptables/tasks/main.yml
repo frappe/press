@@ -1,0 +1,31 @@
+---
+- name: Install iptables
+  package:
+    name: iptables
+    state: present
+
+- name: Install iptables-persistent
+  package:
+    name: iptables-persistent
+    state: present
+
+- name: Block metadata server from docker containers (AWS)
+  iptables:
+    chain: FORWARD
+    in_interface: docker0
+    protocol: tcp
+    destination: 169.254.169.254
+    destination_port: '80, 443'
+    match: multiport
+    action: insert
+    rule_num: 1
+    jump: DROP
+
+- name: Save iptables rules
+  shell: iptables-save > /etc/iptables/rules.v4
+
+- name: Ensure netfilter-persistent service is enabled
+  service:
+    name: netfilter-persistent
+    enabled: yes
+    state: started
