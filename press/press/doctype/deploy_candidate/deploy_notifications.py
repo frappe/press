@@ -78,6 +78,7 @@ DOC_URLS = {
 	"required-app-not-found": "https://docs.frappe.io/cloud/common-issues/required-app-not-found",
 	"debugging-app-installs-locally": "https://docs.frappe.io/cloud/common-issues/debugging-app-installs-locally",
 	"vite-not-found": "https://docs.frappe.io/cloud/common-issues/vite-not-found",
+	"invalid-project-structure": "https://docs.frappe.io/framework/user/en/tutorial/create-an-app#app-directory-structure",
 }
 
 
@@ -225,6 +226,13 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 			"ERROR: yarn install --check-files",
 			update_with_yarn_install_failed,
 			check_if_app_updated,
+		),
+		# Catch app install failures in cases of malformed package structure etc, etc.
+		# https://github.com/frappe/bench/pull/1665/files
+		(
+			"Error occured during app install",
+			update_with_invalid_app_structure,
+			None,
 		),
 	]
 
@@ -516,6 +524,33 @@ def update_with_invalid_pyproject_error(
 	"""
 	details["message"] = fmt(message)
 	details["assistance_url"] = DOC_URLS["invalid-pyproject-file"]
+	return True
+
+
+def update_with_invalid_app_structure(
+	details: "Details",
+	dc: "DeployCandidate",
+	dcb: "DeployCandidateBuild",
+	exc: BaseException,
+):
+	if len(exc.args) <= 1 or not (app := exc.args[1]):
+		return False
+
+	build_step = get_ct_row(dcb, app, "build_steps", "step_slug")
+	app_name = build_step.step
+
+	details["title"] = "App Installation Failed"
+	message = f"""
+	<p>The installation of <b>{app_name}</b> failed because its structure does not
+	conform to the expected Python package format.</p>
+
+	<p>Please ensure that the repository contains a valid <b>setup.py</b> or
+	<b>pyproject.toml</b> file and that all dependencies are correctly defined.</p>
+
+	<p>For further guidance, refer to the <i>Help</i> documentation.</p>
+	"""
+	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["invalid-project-structure"]
 	return True
 
 

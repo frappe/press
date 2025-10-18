@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import frappe
 import frappe.utils
+import rq
 from frappe.core.doctype.version.version import get_diff
 from frappe.core.utils import find
 from frappe.utils.password import get_decrypted_password
@@ -22,6 +23,7 @@ from press.press.doctype.server.server import PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN
 from press.runner import Ansible
 from press.utils import log_error
 from press.utils.database import find_db_disk_info, parse_du_output_of_mysql_directory
+from press.utils.jobs import has_job_timeout_exceeded
 
 if TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
@@ -36,6 +38,7 @@ class DatabaseServer(BaseServer):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.communication_info.communication_info import CommunicationInfo
 		from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
 			DatabaseServerMariaDBVariable,
 		)
@@ -46,9 +49,13 @@ class DatabaseServer(BaseServer):
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
 		auto_increase_storage: DF.Check
+		auto_purge_binlog_based_on_size: DF.Check
+		bastion_server: DF.Link | None
+		binlog_max_disk_usage_percent: DF.Int
 		binlog_retention_days: DF.Int
 		binlogs_removed: DF.Check
 		cluster: DF.Link | None
+		communication_info: DF.Table[CommunicationInfo]
 		domain: DF.Link | None
 		enable_binlog_indexing: DF.Check
 		enable_physical_backup: DF.Check
@@ -63,6 +70,7 @@ class DatabaseServer(BaseServer):
 		hostname_abbreviation: DF.Data | None
 		ip: DF.Data | None
 		is_for_recovery: DF.Check
+		is_monitoring_disabled: DF.Check
 		is_performance_schema_enabled: DF.Check
 		is_primary: DF.Check
 		is_replication_setup: DF.Check
@@ -84,7 +92,7 @@ class DatabaseServer(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner"]
 		public: DF.Check
 		ram: DF.Float
 		root_public_key: DF.Code | None
@@ -131,10 +139,26 @@ class DatabaseServer(BaseServer):
 	In hindsight, persist should be on by default
 	"""
 
+	@property
+	def is_part_of_replica(self) -> bool:
+		if self.is_replication_setup:
+			return True
+		return bool(
+			self.is_primary
+			and frappe.db.exists(
+				"Database Server",
+				{
+					"is_replication_setup": 1,
+					"primary": self.name,
+				},
+			)
+		)
+
 	def validate(self):
 		super().validate()
 		self.validate_mariadb_root_password()
 		self.validate_server_id()
+		self.validate_server_team()
 		self.validate_mariadb_system_variables()
 
 	def validate_mariadb_root_password(self):
@@ -159,9 +183,31 @@ class DatabaseServer(BaseServer):
 		for variable in self.mariadb_system_variables:
 			variable.validate()
 
+	def validate_server_team(self):
+		server_team = frappe.db.get_value(
+			"Server", {"database_server": self.name, "status": "Active"}, "team"
+		)
+		if server_team and self.team != server_team:
+			frappe.throw(
+				"App server and Database server team must be same.",
+				title="Team Change Not Allowed",
+			)
+
+	def before_insert(self):
+		if self.auto_increase_storage:
+			self.auto_purge_binlog_based_on_size = True
+			self.binlog_max_disk_usage_percent = 75
+		else:
+			self.auto_purge_binlog_based_on_size = True
+			self.binlog_max_disk_usage_percent = 20
+
 	def on_update(self):
 		if self.flags.in_insert or self.is_new():
 			return
+
+		if self.is_replication_setup and self.auto_purge_binlog_based_on_size:
+			frappe.throw("Cannot enable binlog auto purge for replication configured servers")
+
 		self.update_mariadb_system_variables()
 		if (
 			self.has_value_changed("memory_high")
@@ -170,10 +216,14 @@ class DatabaseServer(BaseServer):
 		):
 			self.update_memory_limits()
 
-		if self.has_value_changed("team") and self.subscription and self.subscription.team != self.team:
-			self.subscription.disable()
+		if not self.is_new() and self.has_value_changed("team"):
+			self.update_subscription()
 
-			# enable subscription if exists
+		if self.public:
+			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
+
+	def update_subscription(self):
+		if self.subscription:
 			if subscription := frappe.db.get_value(
 				"Subscription",
 				{
@@ -184,22 +234,40 @@ class DatabaseServer(BaseServer):
 				},
 			):
 				frappe.db.set_value("Subscription", subscription, "enabled", 1)
+				self.subscription.disable()
 			else:
-				try:
-					# create new subscription
-					frappe.get_doc(
-						{
-							"doctype": "Subscription",
-							"document_type": self.doctype,
-							"document_name": self.name,
-							"team": self.team,
-							"plan": self.plan,
-						}
-					).insert()
-				except Exception:
-					frappe.log_error("Database Subscription Creation Error")
-		if self.public:
-			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
+				frappe.db.set_value("Subscription", self.subscription.name, {"team": self.team, "enabled": 1})
+		else:
+			try:
+				# create new subscription
+				self.create_subscription(self.plan)
+			except Exception:
+				frappe.log_error("Database Subscription Creation Error")
+
+		add_on_storage_subscription = self.add_on_storage_subscription
+		if add_on_storage_subscription:
+			if existing_subscription := frappe.db.get_value(
+				"Subscription",
+				filters={
+					"document_type": self.doctype,
+					"document_name": self.name,
+					"team": self.team,
+					"plan_type": "Server Storage Plan",
+				},
+			):
+				frappe.db.set_value(
+					"Subscription",
+					existing_subscription,
+					{
+						"enabled": 1,
+						"additional_storage": add_on_storage_subscription.additional_storage,
+					},
+				)
+				add_on_storage_subscription.disable()
+			else:
+				frappe.db.set_value(
+					"Subscription", add_on_storage_subscription.name, {"team": self.team, "enabled": 1}
+				)
 
 	def get_doc(self, doc):
 		doc = super().get_doc(doc)
@@ -219,6 +287,8 @@ class DatabaseServer(BaseServer):
 			"max_connections": max(50, self.recommended_max_db_connections),
 			"expire_logs_days": 14,
 		}
+		doc.auto_purge_binlog_based_on_size = self.auto_purge_binlog_based_on_size
+		doc.binlog_max_disk_usage_percent = self.binlog_max_disk_usage_percent
 		return doc
 
 	def get_actions(self):
@@ -245,8 +315,16 @@ class DatabaseServer(BaseServer):
 				"action": "Update Binlog Retention",
 				"description": "Increase/Decrease Binlog Retention",
 				"button_label": "Update",
-				"condition": self.status == "Active",
+				"condition": self.status == "Active" and not self.is_replication_setup,
 				"doc_method": "update_binlog_retention",
+				"group": f"{server_type.title()} Actions",
+			},
+			{
+				"action": "Update Binlog Size Limit",
+				"description": "Limit the amount of disk space used by binlogs",
+				"button_label": "Update",
+				"condition": self.status == "Active" and not self.is_part_of_replica,
+				"doc_method": "update_binlog_size_limit",
 				"group": f"{server_type.title()} Actions",
 			},
 			{
@@ -578,6 +656,24 @@ class DatabaseServer(BaseServer):
 		self.add_or_update_mariadb_variable("expire_logs_days", "value_str", str(days), save=True)
 
 	@dashboard_whitelist()
+	def update_binlog_size_limit(self, enabled: bool, percent_of_disk_size: int):
+		if self.is_part_of_replica:
+			frappe.throw("Cannot update binlog size limit for database replicas")
+
+		if percent_of_disk_size is None:
+			percent_of_disk_size = 0
+		if enabled:
+			if percent_of_disk_size < 10 or percent_of_disk_size > 90:
+				frappe.throw("Percent of disk space  must be between 10 and 90")
+			self.binlog_max_disk_usage_percent = percent_of_disk_size
+			self.auto_purge_binlog_based_on_size = True
+		else:
+			self.auto_purge_binlog_based_on_size = False
+			self.binlog_max_disk_usage_percent = 100
+
+		self.save(ignore_permissions=True)
+
+	@dashboard_whitelist()
 	def update_max_db_connections(self, max_connections: int):
 		max_possible_connections = int(self.ram_for_mariadb / self.memory_per_db_connection)
 		if max_connections > max_possible_connections:
@@ -724,6 +820,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="primary.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"backup_path": "/tmp/replica",
 					"mariadb_root_password": mariadb_root_password,
@@ -748,9 +846,12 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="secondary.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"mariadb_root_password": mariadb_root_password,
 					"primary_private_ip": primary.private_ip,
+					"primary_ssh_port": primary.ssh_port,
 					"private_ip": self.private_ip,
 				},
 			)
@@ -800,6 +901,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="mariadb_physical_backup.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"mariadb_root_password": mariadb_root_password,
 					"backup_path": path,
@@ -813,6 +916,8 @@ class DatabaseServer(BaseServer):
 		try:
 			ansible = Ansible(
 				playbook="failover.yml",
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				server=self,
 				variables={"mariadb_root_password": self.get_password("mariadb_root_password")},
 			)
@@ -885,6 +990,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="database_exporters.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"private_ip": self.private_ip,
 					"mariadb_root_password": mariadb_root_password,
@@ -909,6 +1016,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="mariadb_change_root_password.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"mariadb_old_root_password": old_password,
 					"mariadb_root_password": self.mariadb_root_password,
@@ -958,6 +1067,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="mariadb_change_root_password_secondary.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"mariadb_root_password": self.mariadb_root_password,
 					"private_ip": self.private_ip,
@@ -989,6 +1100,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="mariadb_prepare_replica.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"mariadb_root_password": self.get_password("mariadb_root_password"),
 					"private_ip": self.private_ip,
@@ -1061,9 +1174,12 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="deadlock_logger.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"mariadb_root_password": self.get_password("mariadb_root_password"),
+					"private_ip": self.private_ip,
 				},
 			)
 			ansible.run()
@@ -1076,7 +1192,9 @@ class DatabaseServer(BaseServer):
 	def _capture_process_list(self) -> str | None:
 		"""Capture full process list on the database server"""
 		try:
-			ansible = Ansible(playbook="capture_process_list.yml", server=self)
+			ansible = Ansible(
+				playbook="capture_process_list.yml", server=self, user=self._ssh_user(), port=self._ssh_port()
+			)
 			play = ansible.run()
 			task = frappe.get_doc("Ansible Task", {"play": play.name})
 			return task.output
@@ -1126,7 +1244,9 @@ class DatabaseServer(BaseServer):
 
 	def _setup_logrotate(self):
 		try:
-			ansible = Ansible(playbook="rotate_mariadb_logs.yml", server=self)
+			ansible = Ansible(
+				playbook="rotate_mariadb_logs.yml", server=self, user=self._ssh_user(), port=self._ssh_port()
+			)
 			ansible.run()
 		except Exception:
 			log_error("Logrotate Setup Exception", server=self.as_dict())
@@ -1142,6 +1262,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="mariadb_debug_symbols.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			ansible.run()
 		except Exception:
@@ -1403,6 +1525,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="reconfigure_mysqld_exporter.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"private_ip": self.private_ip,
 					"mariadb_root_password": mariadb_root_password,
@@ -1426,6 +1550,8 @@ class DatabaseServer(BaseServer):
 		ansible = Ansible(
 			playbook="mariadb_memory_allocator.yml",
 			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
 			variables={
 				"server": self.name,
 				"allocator": memory_allocator.lower(),
@@ -1530,6 +1656,29 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		except Exception as e:
 			frappe.throw(f"Failed to purge binlogs. Please try again later. {e!s}")
 			raise e
+
+	def purge_binlogs_by_configured_size_limit(self):
+		if self.enable_binlog_indexing:
+			return
+
+		if not self.auto_purge_binlog_based_on_size:
+			return
+
+		if not self.binlog_max_disk_usage_percent:
+			return
+
+		if not self.virtual_machine:
+			return
+
+		if self.is_part_of_replica:
+			return
+
+		disk_size = frappe.get_value("Virtual Machine", self.virtual_machine, "disk_size")
+		binlog_limit_in_gb = int(self.binlog_max_disk_usage_percent / 100 * disk_size)
+		if binlog_limit_in_gb == 0:
+			return
+
+		self.agent.purge_binlogs_by_size_limit(self, max_binlog_gb=binlog_limit_in_gb)
 
 	@frappe.whitelist()
 	def sync_binlogs_info(self, index_binlogs: bool = True, upload_binlogs: bool = True):
@@ -1893,6 +2042,23 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		except Exception:
 			frappe.throw("Failed to fetch storage usage. Try again later.")
 
+	def set_mariadb_mount_dependency(self):
+		if not self.mariadb_depends_on_mounts:
+			return
+		frappe.enqueue_doc(self.doctype, self.name, "_set_mariadb_mount_dependency", timeout=1800)
+
+	def _set_mariadb_mount_dependency(self):
+		try:
+			ansible = Ansible(
+				playbook="set_mariadb_mount_dependency.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Set MariaDB Mount Dependency Exception", server=self.as_dict())
+
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Database Server")
 
@@ -2062,3 +2228,31 @@ def process_remove_binlogs_from_indexer_agent_job_update(job: AgentJob):
 		"indexed",
 		0,
 	)
+
+
+def auto_purge_binlogs_by_size_limit():
+	databases = frappe.db.get_all(
+		"Database Server",
+		filters={
+			"status": "Active",
+			"auto_purge_binlog_based_on_size": 1,
+			"is_self_hosted": 0,
+			"enable_binlog_indexing": 0,
+		},
+		pluck="name",
+	)
+
+	for database in databases:
+		if has_job_timeout_exceeded():
+			return
+		try:
+			server: DatabaseServer = frappe.get_doc("Database Server", database)
+			if not server.auto_purge_binlog_based_on_size:
+				continue
+			server.purge_binlogs_by_configured_size_limit()
+			frappe.db.commit()
+		except rq.timeouts.JobTimeoutException:
+			frappe.db.rollback()
+			return
+		except Exception:
+			frappe.db.rollback()

@@ -85,6 +85,7 @@ class VirtualMachine(Document):
 		has_data_volume: DF.Check
 		index: DF.Int
 		instance_id: DF.Data | None
+		is_static_ip: DF.Check
 		kms_key_id: DF.Data | None
 		machine_image: DF.Data | None
 		machine_type: DF.Data
@@ -98,7 +99,7 @@ class VirtualMachine(Document):
 		region: DF.Link
 		root_disk_size: DF.Int
 		security_group_id: DF.Data | None
-		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "t"]
+		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "t", "nfs", "fs"]
 		skip_automated_snapshot: DF.Check
 		ssh_key: DF.Link
 		status: DF.Literal["Draft", "Pending", "Running", "Stopped", "Terminated"]
@@ -111,6 +112,13 @@ class VirtualMachine(Document):
 		virtual_machine_image: DF.Link | None
 		volumes: DF.Table[VirtualMachineVolume]
 	# end: auto-generated types
+
+	@property
+	def is_database_server(self) -> bool:
+		if self.series == "m":
+			return True
+
+		return frappe.db.exists("Database Server", {"virtual_machine": self.name})
 
 	def autoname(self):
 		series = f"{self.series}-{slug(self.cluster)}.#####"
@@ -148,15 +156,17 @@ class VirtualMachine(Document):
 			self.machine_image = self.get_latest_ubuntu_image()
 		self.save()
 
+	def get_private_ip(self):
+		ip = ipaddress.IPv4Interface(self.subnet_cidr_block).ip
+		index = self.index + 356
+		if self.series == "n":
+			return str(ip + index)
+		offset = ["f", "m", "c", "p", "e", "r", "t", "nfs", "fs"].index(self.series)
+		return str(ip + 256 * (2 * (index // 256) + offset) + (index % 256))
+
 	def validate(self):
 		if not self.private_ip_address:
-			ip = ipaddress.IPv4Interface(self.subnet_cidr_block).ip
-			index = self.index + 356
-			if self.series == "n":
-				self.private_ip_address = str(ip + index)
-			else:
-				offset = ["f", "m", "c", "p", "e", "r", "t"].index(self.series)
-				self.private_ip_address = str(ip + 256 * (2 * (index // 256) + offset) + (index % 256))
+			self.private_ip_address = self.get_private_ip()
 
 		self.validate_data_disk_snapshot()
 
@@ -941,6 +951,15 @@ class VirtualMachine(Document):
 		self.save()
 		self.update_servers()
 
+	def has_static_ip(self, instance) -> bool:
+		sip = False
+		try:
+			ip_owner_id = instance["NetworkInterfaces"][0]["Association"]["IpOwnerId"]
+			sip = ip_owner_id.lower() != "amazon"
+		except (KeyError, IndexError):
+			pass
+		return sip
+
 	def _sync_aws(self, response=None):  # noqa: C901
 		if not response:
 			try:
@@ -956,11 +975,11 @@ class VirtualMachine(Document):
 
 			self.public_ip_address = instance.get("PublicIpAddress")
 			self.private_ip_address = instance.get("PrivateIpAddress")
+			self.is_static_ip = self.has_static_ip(instance)
 
 			self.public_dns_name = instance.get("PublicDnsName")
 			self.private_dns_name = instance.get("PrivateDnsName")
 			self.platform = instance.get("Architecture", "x86_64")
-
 			attached_volumes = []
 			attached_devices = []
 			for volume_index, volume in enumerate(self.get_volumes(), start=1):  # idx starts from 1
@@ -1054,6 +1073,9 @@ class VirtualMachine(Document):
 			if server:
 				server = server[0]
 				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
+				frappe.db.set_value(doctype, server, "private_ip", self.private_ip_address)
+				if doctype in ["Server", "Proxy Server"]:
+					frappe.db.set_value(doctype, server, "is_static_ip", self.is_static_ip)
 				if doctype in ["Server", "Database Server"]:
 					frappe.db.set_value(doctype, server, "ram", self.ram)
 				if self.public_ip_address and self.has_value_changed("public_ip_address"):
@@ -1124,7 +1146,12 @@ class VirtualMachine(Document):
 			TagSpecifications=[
 				{
 					"ResourceType": "snapshot",
-					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - {frappe.utils.now()}"}],
+					"Tags": [
+						{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - {frappe.utils.now()}"},
+						{"Key": "Physical Backup", "Value": "Yes" if physical_backup else "No"},
+						{"Key": "Rolling Snapshot", "Value": "Yes" if rolling_snapshot else "No"},
+						{"Key": "Dedicated Snapshot", "Value": "Yes" if dedicated_snapshot else "No"},
+					],
 				},
 			],
 		)
@@ -1362,7 +1389,7 @@ class VirtualMachine(Document):
 		return None
 
 	@frappe.whitelist()
-	def create_server(self):
+	def create_server(self, is_secondary: bool = False, primary: str | None = None):
 		document = {
 			"doctype": "Server",
 			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
@@ -1371,7 +1398,10 @@ class VirtualMachine(Document):
 			"provider": self.cloud_provider,
 			"virtual_machine": self.name,
 			"team": self.team,
+			"is_primary": not is_secondary,
+			"is_secondary": is_secondary,
 			"platform": self.platform,
+			"primary": primary,
 		}
 
 		if self.virtual_machine_image:
@@ -1433,6 +1463,7 @@ class VirtualMachine(Document):
 		}
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
+			document["is_primary"] = True
 
 		return frappe.get_doc(document).insert()
 
@@ -1708,8 +1739,7 @@ class VirtualMachine(Document):
 	def convert_to_amd(self, virtual_machine_image, machine_type):
 		return self._create_vmm(virtual_machine_image, machine_type)
 
-	@frappe.whitelist()
-	def attach_new_volume(self, size, iops=None, throughput=None):
+	def attach_new_volume_aws_oci(self, size, iops=None, throughput=None, log_activity: bool = True):
 		volume_options = {
 			"AvailabilityZone": self.availability_zone,
 			"Size": size,
@@ -1733,14 +1763,23 @@ class VirtualMachine(Document):
 		self.wait_for_volume_to_be_available(volume_id)
 		self.attach_volume(volume_id)
 
-		log_server_activity(
-			self.series,
-			self.name,
-			action="Volume",
-			reason="Volume attached on server",
-		)
+		if log_activity:
+			log_server_activity(
+				self.series,
+				self.name,
+				action="Volume",
+				reason="Volume attached on server",
+			)
 
 		return volume_id
+
+	@frappe.whitelist()
+	def attach_new_volume(self, size, iops=None, throughput=None, log_activity: bool = True):
+		if self.cloud_provider in ["AWS EC2", "OCI"]:
+			return self.attach_new_volume_aws_oci(size, iops, throughput, log_activity)
+		if self.cloud_provider == "Hetzner":
+			return self.attach_volume(size=size)
+		return None
 
 	def wait_for_volume_to_be_available(self, volume_id):
 		# AWS EC2 specific
@@ -1772,10 +1811,36 @@ class VirtualMachine(Document):
 			if e.response.get("Error", {}).get("Code") == "InvalidVolumeModification.NotFound":
 				return None
 
-	@frappe.whitelist()
-	def attach_volume_job(self):
-		server = frappe.get_doc("Server", self.name)
-		server.run_press_job("Attach Volume")
+	def correct_private_ip(self):
+		"""
+		We don't get to set private ip on instance creation.
+		So, we need to detach and attach the instance to the network with the desired private ip
+		Otherwise, too many config files need to be updated
+		"""
+		if self.cloud_provider != "Hetzner":
+			raise NotImplementedError
+		vpc_id = frappe.db.get_value("Cluster", self.cluster, "vpc_id")
+		server = self.client().servers.get_by_id(self.instance_id)
+		network = self.client().networks.get_by_id(vpc_id)
+		try:
+			action = server.detach_from_network(network)
+		except APIException as e:  # for retry
+			if "resource not found" in str(e):
+				pass
+			else:
+				raise e
+		else:
+			action.wait_until_finished(30)
+		try:
+			action = server.attach_to_network(network, ip=self.get_private_ip())
+		except APIException as e:
+			if "already attached" in str(e):
+				pass
+			else:
+				raise e
+		else:
+			action.wait_until_finished(30)
+		self.sync()
 
 	@frappe.whitelist()
 	def attach_volume(self, volume_id=None, is_temporary_volume: bool = False, size: int | None = None):
@@ -1801,9 +1866,9 @@ class VirtualMachine(Document):
 			server_instance = self.client().servers.get_by_id(self.instance_id)
 			new_volume = self.client().volumes.create(
 				size=size,
-				name=f"{self.name}-{slug(self.cluster)}",
+				name=f"{self.name}-vol-{len(self.volumes) + len(self.temporary_volumes) + 1}",
 				format="ext4",
-				automount=True,
+				automount=False,
 				server=server_instance,
 			)
 			"""
@@ -1812,6 +1877,9 @@ class VirtualMachine(Document):
 			Example: linux_device = /mnt/HC_Volume_103061048
 			"""
 			device_name = new_volume.volume.linux_device
+			new_volume.action.wait_until_finished(30)  # wait until volume is created
+			for action in new_volume.next_actions:
+				action.wait_until_finished(30)  # wait until volume is attached
 		self.save()
 		self.sync()
 		return device_name

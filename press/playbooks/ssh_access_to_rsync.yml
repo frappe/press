@@ -1,0 +1,7 @@
+- name: Give SSH Access to NFS Server
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  roles:
+    - role: give_ssh_access_to_nfs_server

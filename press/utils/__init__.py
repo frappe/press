@@ -17,6 +17,7 @@ from urllib.parse import urljoin
 from urllib.request import urlopen
 
 import frappe
+import frappe.utils
 import pytz
 import requests
 import wrapt
@@ -623,7 +624,7 @@ def parse_supervisor_status(output: str) -> list["SupervisorProcess"]:
 	# example lines:
 	# ```
 	#   frappe-bench-web:frappe-bench-frappe-web            RUNNING   pid 1327, uptime 23:13:00
-	# 	frappe-bench-workers:frappe-bench-frappe-worker-4   RUNNING   pid 3794915, uptime 68 days, 6:10:37
+	#   frappe-bench-workers:frappe-bench-frappe-worker-4   RUNNING   pid 3794915, uptime 68 days, 6:10:37
 	#   sshd                                                FATAL     Exited too quickly (process log may have details)
 	# ```
 
@@ -925,11 +926,12 @@ def timer(f):
 
 def validate_subdomain(subdomain: str):
 	site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+	if not subdomain:
+		frappe.throw("Subdomain is required to create a site.")
 	if not re.match(site_regex, subdomain):
 		frappe.throw("Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens")
 	if len(subdomain) > 32:
 		frappe.throw("Subdomain too long. Use 32 or less characters")
-
 	if len(subdomain) < 5:
 		frappe.throw("Subdomain too short. Use 5 or more characters")
 
@@ -1003,9 +1005,3 @@ def get_nearest_cluster():
 			nearest_cluster = cluster_name
 
 	return nearest_cluster
-
-
-def is_in_test_environment():
-	if not hasattr(frappe.local, "in_test"):
-		return False
-	return frappe.local.in_test

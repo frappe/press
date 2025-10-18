@@ -23,9 +23,11 @@
   "storage_section",
   "auto_add_storage_min",
   "auto_add_storage_max",
+  "auto_increase_storage",
   "section_break_8",
   "ip",
   "enabled_default_routing",
+  "is_static_ip",
   "column_break_10",
   "private_ip",
   "private_mac_address",
@@ -44,6 +46,7 @@
   "frappe_user_password",
   "frappe_public_key",
   "column_break_18",
+  "bastion_server",
   "root_public_key",
   "section_break_21",
   "domains",
@@ -72,15 +75,13 @@
    "fieldname": "ip",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "IP",
-   "read_only": 1
+   "label": "IP"
   },
   {
    "fetch_from": "virtual_machine.private_ip_address",
    "fieldname": "private_ip",
    "fieldtype": "Data",
-   "label": "Private IP",
-   "read_only": 1
+   "label": "Private IP"
   },
   {
    "fieldname": "agent_password",
@@ -438,10 +439,29 @@
    "fieldtype": "Check",
    "label": "TLS Certificate Renewal Failed",
    "read_only": 1
+  },
+  {
+   "fieldname": "bastion_server",
+   "fieldtype": "Link",
+   "label": "Bastion Server",
+   "options": "Bastion Server"
+  },
+  {
+   "default": "1",
+   "fieldname": "auto_increase_storage",
+   "fieldtype": "Check",
+   "label": "Auto Increase Storage"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_static_ip",
+   "fieldtype": "Check",
+   "label": "Is Static IP",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2025-09-02 16:42:27.412427",
+ "modified": "2025-10-10 09:35:03.473042",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",

@@ -63,6 +63,8 @@ class PressSettings(Document):
 		docker_registry_password: DF.Data | None
 		docker_registry_url: DF.Data | None
 		docker_registry_username: DF.Data | None
+		docker_s3_access_key: DF.Data | None
+		docker_s3_secret_key: DF.Password | None
 		domain: DF.Link | None
 		eff_registration_email: DF.Data
 		email_recipients: DF.SmallText | None
@@ -117,6 +119,7 @@ class PressSettings(Document):
 		offsite_backups_secret_access_key: DF.Password | None
 		partnership_fee_inr: DF.Int
 		partnership_fee_usd: DF.Int
+		paypal_enabled: DF.Check
 		plausible_api_key: DF.Password | None
 		plausible_site_id: DF.Data | None
 		plausible_url: DF.Data | None
