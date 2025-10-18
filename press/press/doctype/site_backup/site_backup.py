@@ -248,8 +248,12 @@ class SiteBackup(Document):
 				and frappe.db.get_value("Agent Job", self.job, "status") == "Failure"
 			):
 				self.autocorrect_bench_permissions()
-		except Exception as e:
-			frappe.throw("Failed to correct bench permissions", str(e))
+		except Exception:
+			frappe.log_error(
+				"Failed to correct bench permissions",
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+			)
 
 	def _rollback_db_directory_permissions(self):
 		if not self.physical:
@@ -368,7 +372,7 @@ class SiteBackup(Document):
 			},
 		)
 
-		if job and not play_exists and re.search(r"\[Errno 13\] Permission denied", job.output):
+		if job.output and not play_exists and re.search(r"\[Errno 13\] Permission denied", job.output):
 			try:
 				bench = frappe.get_doc("Bench", job.bench)
 				bench.correct_bench_permissions()

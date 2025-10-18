@@ -46,6 +46,7 @@ from press.press.doctype.deploy_candidate.utils import (
 from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.utils import get_current_team, log_error
 from press.utils.jobs import get_background_jobs, stop_background_job
+from press.utils.webhook import create_webhook_event
 
 if typing.TYPE_CHECKING:
 	from rq.job import Job
@@ -1167,9 +1168,8 @@ class DeployCandidateBuild(Document):
 				docname=self.name,
 			)
 
-		# TODO: remove
-		# if self.has_value_changed("status") and self.team != "Administrator":
-		# 	create_webhook_event("Bench Deploy Status Update", self, self.team)
+		if self.has_value_changed("status") and self.team != "Administrator":
+			create_webhook_event("Bench Deploy Status Update", self, self.team)
 
 	def run_scheduled_build_and_deploy(self):
 		self.set_status(Status.DRAFT)
@@ -1267,11 +1267,25 @@ def fail_and_redeploy(dn: str):
 
 
 @frappe.whitelist()
-def fail_remote_job(dn: str):
+def fail_remote_job(dn: str) -> bool:
 	agent_job: "AgentJob" = frappe.get_doc(
 		"Agent Job", {"reference_doctype": "Deploy Candidate Build", "reference_name": dn}
 	)
+
+	agent_job.get_status()
+	agent_job = agent_job.reload()
+
+	if agent_job.status != "Running":
+		return False
+
+	# Cancel build and set status with for_update and commit to avoid timestamp errors
 	agent_job.cancel_job()
+	build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dn, for_update=True)
+	build.manually_failed = True
+	build.set_status(Status.FAILURE)
+	frappe.db.commit()
+
+	return True
 
 
 def is_build_job(job: Job) -> bool:

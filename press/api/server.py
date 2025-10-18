@@ -13,7 +13,7 @@ from frappe.utils import convert_utc_to_timezone, flt
 from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 
-from press.api.analytics import get_rounded_boundaries
+from press.api.analytics import TIMESPAN_TIMEGRAIN_MAP, get_rounded_boundaries
 from press.api.bench import all as all_benches
 from press.api.site import protected
 from press.exceptions import MonitorServerDown
@@ -35,11 +35,18 @@ def poly_get_doc(doctypes, name):
 	return frappe.get_doc(doctypes[-1], name)
 
 
-def get_mount_point(server: str) -> str:
+def get_mount_point(server: str, server_type=None) -> str:
 	"""Guess mount point from server"""
-	server: Server | DatabaseServer = frappe.get_doc(
-		"Database Server" if server[0] == "m" else "Server", server
-	)
+	if server_type is None:
+		server_type = "Database Server" if server[0] == "m" else "Server"
+
+	elif server_type == "Application Server":
+		server_type = "Server"
+
+	elif server_type == "Replication Server":
+		server_type = "Database Server"
+
+	server: Server | DatabaseServer = frappe.get_doc(server_type, server)
 	if server.provider != "AWS EC2":
 		return "/"
 
@@ -172,6 +179,13 @@ def overview(name):
 def archive(name):
 	server = poly_get_doc(["Server", "Database Server"], name)
 	server.drop_server()
+
+
+@frappe.whitelist()
+@protected(["Server"])
+def get_reclaimable_size(name):
+	server: Server = frappe.get_doc("Server", name)
+	return server.agent.get("server/reclaimable-size")
 
 
 @frappe.whitelist()
@@ -321,8 +335,8 @@ def calculate_swap(name):
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 @redis_cache(ttl=10 * 60)
-def analytics(name, query, timezone, duration):
-	mount_point = get_mount_point(name)
+def analytics(name, query, timezone, duration, server_type=None):
+	mount_point = get_mount_point(name, server_type)
 	timespan, timegrain = get_timespan_timegrain(duration)
 
 	query_map = {
@@ -400,6 +414,17 @@ def get_request_by_site(name, query, timezone, duration):
 	timespan, timegrain = get_timespan_timegrain(duration)
 
 	return get_request_by_(name, query, timezone, timespan, timegrain, ResourceType.SERVER)
+
+
+@frappe.whitelist()
+@protected(["Server", "Database Server"])
+@redis_cache(ttl=10 * 60)
+def get_background_job_by_site(name, query, timezone, duration):
+	from press.api.analytics import ResourceType, get_background_job_by_
+
+	timespan, timegrain = get_timespan_timegrain(duration)
+
+	return get_background_job_by_(name, query, timezone, timespan, timegrain, ResourceType.SERVER)
 
 
 @frappe.whitelist()
@@ -629,12 +654,4 @@ def rename(name, title):
 
 
 def get_timespan_timegrain(duration: str) -> tuple[int, int]:
-	timespan, timegrain = {
-		"1 Hour": (60 * 60, 2 * 60),
-		"6 Hour": (6 * 60 * 60, 5 * 60),
-		"24 Hour": (24 * 60 * 60, 30 * 60),
-		"7 Days": (7 * 24 * 60 * 60, 2 * 30 * 60),
-		"15 Days": (15 * 24 * 60 * 60, 3 * 30 * 60),
-	}[duration]
-
-	return timespan, timegrain
+	return TIMESPAN_TIMEGRAIN_MAP[duration]

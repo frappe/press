@@ -34,6 +34,9 @@ from frappe.utils import (
 	time_diff_in_hours,
 )
 
+from press.access.actions import SiteActions
+from press.access.decorators import action_guard
+from press.access.support_access import has_support_access
 from press.exceptions import (
 	CannotChangePlan,
 	InsufficientSpaceOnServer,
@@ -44,6 +47,7 @@ from press.exceptions import (
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
+from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture
 from press.utils.webhook import create_webhook_event
@@ -62,7 +66,7 @@ from frappe.utils.password import get_decrypted_password
 
 from press.agent import Agent, AgentRequestSkippedException
 from press.api.client import dashboard_whitelist
-from press.api.site import check_dns, get_updates_between_current_and_next_apps
+from press.api.site import check_dns, check_dns_cname_a, get_updates_between_current_and_next_apps
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
@@ -102,6 +106,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server.server import BaseServer, Server
+	from press.press.doctype.site_domain.site_domain import SiteDomain
 	from press.press.doctype.tls_certificate.tls_certificate import TLSCertificate
 
 DOCTYPE_SERVER_TYPE_MAP = {
@@ -111,6 +116,10 @@ DOCTYPE_SERVER_TYPE_MAP = {
 }
 
 ARCHIVE_AFTER_SUSPEND_DAYS = 21
+PRIVATE_BENCH_DOC = "https://docs.frappe.io/cloud/sites/move-site-to-private-bench"
+SERVER_SCRIPT_DISABLED_VERSION = (
+	15  # version from which server scripts were disabled on public benches. No longer set in site
+)
 
 
 class Site(Document, TagHelpers):
@@ -122,7 +131,7 @@ class Site(Document, TagHelpers):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.account_request.account_request import AccountRequest
+		from press.press.doctype.communication_info.communication_info import CommunicationInfo
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 		from press.press.doctype.site_app.site_app import SiteApp
 		from press.press.doctype.site_backup_time.site_backup_time import SiteBackupTime
@@ -139,6 +148,7 @@ class Site(Document, TagHelpers):
 		auto_update_last_triggered_on: DF.Datetime | None
 		bench: DF.Link
 		cluster: DF.Link
+		communication_infos: DF.Table[CommunicationInfo]
 		config: DF.Code | None
 		configuration: DF.Table[SiteConfig]
 		current_cpu_usage: DF.Int
@@ -156,13 +166,14 @@ class Site(Document, TagHelpers):
 		hybrid_for: DF.Link | None
 		hybrid_saas_pool: DF.Link | None
 		is_erpnext_setup: DF.Check
+		is_monitoring_disabled: DF.Check
 		is_standby: DF.Check
 		last_site_usage_warning_mail_sent_on: DF.Datetime | None
 		logical_backup_times: DF.Table[SiteBackupTime]
-		notify_email: DF.Data | None
 		only_update_at_specified_time: DF.Check
 		physical_backup_times: DF.Table[SiteBackupTime]
 		plan: DF.Link | None
+		reason_for_disabling_monitoring: DF.Data | None
 		remote_config_file: DF.Link | None
 		remote_database_file: DF.Link | None
 		remote_private_file: DF.Link | None
@@ -217,7 +228,6 @@ class Site(Document, TagHelpers):
 		"ip",
 		"status",
 		"group",
-		"notify_email",
 		"team",
 		"plan",
 		"setup_wizard_complete",
@@ -237,6 +247,8 @@ class Site(Document, TagHelpers):
 		"account_request",
 		"allow_physical_backup_by_user",
 		"site_usage_exceeded",
+		"is_monitoring_disabled",
+		"reason_for_disabling_monitoring",
 	)
 
 	@staticmethod
@@ -326,7 +338,7 @@ class Site(Document, TagHelpers):
 			if self.status == "Suspended"
 			else None
 		)
-
+		doc.communication_infos = self.get_communication_infos()
 		if doc.owner == "Administrator":
 			doc.signup_by = frappe.db.get_value("Account Request", doc.account_request, "email")
 
@@ -347,6 +359,8 @@ class Site(Document, TagHelpers):
 					"User", frappe.session.user, "user_type"
 				)
 				if user_type == "System User":
+					return func(inst, *args, **kwargs)
+				if has_support_access(inst.doctype, inst.name):
 					return func(inst, *args, **kwargs)
 				status = frappe.get_value(inst.doctype, inst.name, "status", for_update=True)
 				if status not in allowed_status:
@@ -385,8 +399,7 @@ class Site(Document, TagHelpers):
 			self.set_latest_bench()
 		# initialize site.config based on plan
 		self._update_configuration(self.get_plan_config(), save=False)
-		if not self.notify_email and self.team != "Administrator":
-			self.notify_email = frappe.db.get_value("Team", self.team, "notify_email")
+
 		if not self.setup_wizard_status_check_next_retry_on:
 			self.setup_wizard_status_check_next_retry_on = now_datetime()
 
@@ -476,9 +489,10 @@ class Site(Document, TagHelpers):
 		if not (1 <= self.update_on_day_of_month <= 31):
 			frappe.throw("Day of the month must be between 1 and 31 (included)!")
 		# If site is on public bench, don't allow to disable auto updates
-		is_group_public = frappe.get_cached_value("Release Group", self.group, "public")
-		if self.skip_auto_updates and is_group_public:
-			frappe.throw("Auto updates can't be disabled for sites on public benches!")
+		if self.skip_auto_updates and self.is_group_public:
+			frappe.throw(
+				f'Auto updates can\'t be disabled for sites on public benches! Please move to a <a class="underline" href="{PRIVATE_BENCH_DOC}">private bench</a>.'
+			)
 
 	def validate_site_plan(self):  # noqa: C901
 		if hasattr(self, "subscription_plan") and self.subscription_plan:
@@ -838,9 +852,12 @@ class Site(Document, TagHelpers):
 
 		if hasattr(self, "share_details_consent") and self.share_details_consent:
 			# create partner lead
-			frappe.get_doc(doctype="Partner Lead", team=self.team, site=self.name).insert(
-				ignore_permissions=True
-			)
+			frappe.get_doc(
+				doctype="Site Partner Lead",
+				team=self.team,
+				site=self.name,
+				created_on=frappe.utils.now_datetime(),
+			).insert(ignore_permissions=True)
 
 		add_permission_for_newly_created_doc(self)
 
@@ -863,9 +880,9 @@ class Site(Document, TagHelpers):
 					record_name=domain,
 				)
 
-	def is_version_14_or_higher(self) -> bool:
+	def is_this_version_or_above(self, version: int) -> bool:
 		group: ReleaseGroup = frappe.get_cached_doc("Release Group", self.group)
-		return group.is_version_14_or_higher()
+		return group.is_this_version_or_above(version)
 
 	@property
 	def restore_space_required_on_app(self):
@@ -893,7 +910,7 @@ class Site(Document, TagHelpers):
 	) -> int:
 		space_for_download = db_file_size + public_file_size + private_file_size
 		space_for_extracted_files = (
-			(0 if self.is_version_14_or_higher() else (8 * db_file_size))
+			(0 if self.is_this_version_or_above(14) else (8 * db_file_size))
 			+ public_file_size
 			+ private_file_size
 		)  # 8 times db size for extraction; estimated
@@ -1455,27 +1472,33 @@ class Site(Document, TagHelpers):
 
 	def set_redirects_in_proxy(self, domains: list[str]):
 		target = self.host_name
-		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
-		agent = Agent(proxy_server, server_type="Proxy Server")
+		if self.is_on_standalone:
+			agent = Agent(self.server)
+		else:
+			proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
+			agent = Agent(proxy_server, server_type="Proxy Server")
 		return agent.setup_redirects(self.name, domains, target)
 
 	def unset_redirects_in_proxy(self, domains: list[str]):
-		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
-		agent = Agent(proxy_server, server_type="Proxy Server")
+		if self.is_on_standalone:
+			agent = Agent(self.server)
+		else:
+			proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
+			agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.remove_redirects(self.name, domains)
 
 	@dashboard_whitelist()
 	def set_redirect(self, domain: str):
 		"""Enable redirect to primary for domain."""
 		self._check_if_domain_belongs_to_site(domain)
-		site_domain = frappe.get_doc("Site Domain", domain)
+		site_domain: SiteDomain = frappe.get_doc("Site Domain", domain)
 		site_domain.setup_redirect()
 
 	@dashboard_whitelist()
 	def unset_redirect(self, domain: str):
 		"""Disable redirect to primary for domain."""
 		self._check_if_domain_belongs_to_site(domain)
-		site_domain = frappe.get_doc("Site Domain", domain)
+		site_domain: SiteDomain = frappe.get_doc("Site Domain", domain)
 		site_domain.remove_redirect()
 
 	@dashboard_whitelist()
@@ -1630,6 +1653,7 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
+	@action_guard(SiteActions.LOGIN_AS_ADMINISTRATOR)
 	def login_as_admin(self, reason=None):
 		sid = self.login(reason=reason)
 		return f"https://{self.host_name or self.name}/app?sid={sid}"
@@ -2101,6 +2125,16 @@ class Site(Document, TagHelpers):
 		if save:
 			self.save()
 
+	def check_server_script_enabled_on_public_bench(self, key: str):
+		if (
+			key == "server_script_enabled"
+			and self.is_group_public
+			and self.is_this_version_or_above(SERVER_SCRIPT_DISABLED_VERSION)
+		):
+			frappe.throw(
+				f'You <a class="underline" href="https://docs.frappe.io/cloud/enable-server-script">cannot enable server scripts</a> on public benches. Please move to a <a class="underline" href="{PRIVATE_BENCH_DOC}">private bench</a>.'
+			)
+
 	@dashboard_whitelist()
 	@site_action(["Active"])
 	def update_config(self, config=None):
@@ -2114,6 +2148,7 @@ class Site(Document, TagHelpers):
 		for key, value in config.items():
 			if key in get_client_blacklisted_keys():
 				frappe.throw(_(f"The key <b>{key}</b> is blacklisted or internal and cannot be updated"))
+			self.check_server_script_enabled_on_public_bench(key)
 
 			_type = self._site_config_key_type(key, value)
 
@@ -2204,6 +2239,120 @@ class Site(Document, TagHelpers):
 			if subscription:
 				subscription.team = self.team
 				subscription.save(ignore_permissions=True)
+
+	@frappe.whitelist()
+	def disable_monitoring(self, reason=None):
+		if self.is_monitoring_disabled:
+			return
+
+		self.is_monitoring_disabled = True
+		if not reason:
+			reason = f"Monitoring disabled by user ({frappe.session.user})"
+		self.reason_for_disabling_monitoring = reason
+		self.save()
+
+		log_site_activity(
+			self.name, "Disable Monitoring And Alerts", reason=self.reason_for_disabling_monitoring
+		)
+		frappe.msgprint("Monitoring has been disabled")
+
+	@dashboard_whitelist()
+	def enable_monitoring(self):  # noqa: C901
+		if not self.is_monitoring_disabled:
+			frappe.throw("Monitoring is already enabled")
+
+		if self.status != "Active":
+			frappe.throw("Make sure site is Active before trying to enable monitoring")
+
+		# Check ping before enabling monitoring
+		result = {"enabled": False, "reason": "", "solution": ""}
+
+		# First validate DNS records
+		dns_result = check_dns_cname_a(
+			self.name, self.host_name, throw_error=False, throw_proxy_validation_early=False
+		)
+		if not dns_result.get("valid"):
+			msg = f"DNS record of {self.host_name} are not pointing correctly\n"
+			msg += f"  Type: {dns_result.get('exc_type')}\n"
+			msg += f"  Details: {dns_result.get('exc_message')}\n"
+
+			dns_record_exists = dns_result.get("A", {}).get("exists") or dns_result.get("CNAME", {}).get(
+				"exists"
+			)
+			if dns_record_exists:
+				msg += "Current DNS Records:\n"
+				if dns_result.get("A", {}).get("exists"):
+					msg += f"  A: {', '.join(dns_result.get('A').get('answer'))}\n"
+
+				if dns_result.get("CNAME", {}).get("exists"):
+					msg += f"  CNAME: {', '.join(dns_result.get('CNAME').get('answer'))}\n"
+			else:
+				msg += f"No Correct DNS records found for {self.host_name}\n"
+
+			solution = "Required DNS Records:\n"
+			solution += f"  A record with value {self.inbound_ip}\n"
+			solution += f"  Or, CNAME record with value {self.name}\n"
+			solution += (
+				"Please check with your Domain Registrar / DNS provider to add the required records.\n"
+			)
+
+			result.update(
+				{
+					"enabled": False,
+					"reason": msg,
+					"solution": solution,
+				}
+			)
+			return result
+
+		# Send ping request
+		try:
+			resp = requests.get(f"https://{self.host_name}/api/method/ping", timeout=5, verify=True)
+			is_pingable = resp.status_code == 200
+			if not is_pingable:
+				result.update(
+					{
+						"enabled": False,
+						"reason": f"Site not pingable, status code: {resp.status_code}",
+						"solution": "Please ensure site is up and try again. If you are still facing issues, please contact support.",
+					}
+				)
+				return result
+		except requests.exceptions.SSLError:
+			result.update(
+				{
+					"enabled": False,
+					"reason": "SSL Certificate Error",
+					"solution": f"Try removing and adding {self.host_name} domain again. If you are still facing issues, please contact support.",
+				}
+			)
+			return result
+		except requests.exceptions.Timeout as e:
+			result.update(
+				{
+					"enabled": False,
+					"reason": f"Timeout Error\n: {e}",
+					"solution": "Please ensure site is up and try again. If you are still facing issues, please contact support.",
+				}
+			)
+			return result
+
+		log_site_activity(self.name, "Enable Monitoring And Alerts")
+
+		self.is_monitoring_disabled = False
+		self.reason_for_disabling_monitoring = ""
+		self.save()
+		result["enabled"] = True
+		return result
+
+	def is_site_pingable(self):
+		try:
+			response = self.ping()
+			if response.status_code == requests.codes.ok:
+				return True
+		except Exception:
+			return False
+		return False
 
 	def enable_subscription(self):
 		subscription = self.subscription
@@ -2371,9 +2520,9 @@ class Site(Document, TagHelpers):
 
 			send_suspend_mail(self.name, self.standby_for_product)
 
-		if self.site_usage_exceeded and self.notify_email:
+		if self.site_usage_exceeded:
 			frappe.sendmail(
-				recipients=self.notify_email,
+				recipients=get_communication_info("Email", "Site Activity", "Site", self.name),
 				subject=f"Action Required: Site {self.host_name} suspended",
 				template="site_suspend_due_to_exceeding_disk_usage",
 				args={
@@ -3034,10 +3183,12 @@ class Site(Document, TagHelpers):
 		agent = Agent(self.server)
 		agent.run_after_migrate_steps(self)
 
+	@cached_property
+	def is_group_public(self):
+		return bool(frappe.get_cached_value("Release Group", self.group, "public"))
+
 	@frappe.whitelist()
 	def get_actions(self):
-		is_group_public = frappe.get_cached_value("Release Group", self.group, "public")
-
 		actions = [
 			{
 				"action": "Activate site",
@@ -3052,6 +3203,12 @@ class Site(Document, TagHelpers):
 				"button_label": "Manage",
 				"doc_method": "dummy",
 				"condition": not self.hybrid_site and has_permission("Site Database User"),
+			},
+			{
+				"action": "Notification Settings",
+				"description": "Manage notification settings for your site",
+				"button_label": "Manage",
+				"doc_method": "dummy",
 			},
 			{
 				"action": "Schedule backup",
@@ -3091,7 +3248,7 @@ class Site(Document, TagHelpers):
 				"description": "Move your site to a different server",
 				"button_label": "Change",
 				"doc_method": "change_server",
-				"condition": self.status in ["Active", "Broken", "Inactive"] and not is_group_public,
+				"condition": self.status in ["Active", "Broken", "Inactive"] and not self.is_group_public,
 			},
 			{
 				"action": "Clear cache",
@@ -3476,6 +3633,22 @@ class Site(Document, TagHelpers):
 			row_ids=row_ids, database=self.fetch_database_name()
 		)
 
+	@dashboard_whitelist()
+	def get_communication_infos(self):
+		return (
+			[{"channel": c.channel, "type": c.type, "value": c.value} for c in self.communication_infos]
+			if hasattr(self, "communication_infos")
+			else []
+		)
+
+	@dashboard_whitelist()
+	def update_communication_infos(self, values: list[dict]):
+		from press.press.doctype.communication_info.communication_info import (
+			update_communication_infos as update_infos,
+		)
+
+		update_infos("Site", self.name, values)
+
 	@property
 	def recent_offsite_backups_(self):
 		site_backups = frappe.qb.DocType("Site Backup")
@@ -3502,6 +3675,10 @@ class Site(Document, TagHelpers):
 		site_backups = frappe.qb.DocType("Site Backup")
 		return self.recent_offsite_backups_.where(site_backups.status.isin(["Pending", "Running"])).run()
 
+	@property
+	def is_on_standalone(self):
+		return bool(frappe.db.get_value("Server", self.server, "is_standalone"))
+
 
 def site_cleanup_after_archive(site):
 	delete_site_domains(site)
@@ -3511,8 +3688,7 @@ def site_cleanup_after_archive(site):
 
 def delete_site_subdomain(site_name):
 	site: Site = frappe.get_doc("Site", site_name)
-	is_standalone = frappe.get_value("Server", site.server, "is_standalone")
-	if is_standalone:
+	if site.is_on_standalone:
 		proxy_server = site.server
 	else:
 		proxy_server = frappe.get_value("Server", site.server, "proxy_server")
@@ -3708,7 +3884,7 @@ def process_add_domain_job_update(job):
 		product_trial_request.save(ignore_permissions=True)
 
 		site_domain = json.loads(job.request_data).get("domain")
-		site = frappe.get_doc("Site", job.site)
+		site = Site("Site", job.site)
 		auto_generated_domain = site.host_name
 		site.host_name = site_domain
 		site.save()
@@ -4353,16 +4529,14 @@ def send_warning_mail_regarding_sites_exceeding_disk_usage():
 			site_info = frappe.get_value(
 				"Site",
 				site,
-				["notify_email", "current_disk_usage", "current_database_usage", "site_usage_exceeded_on"],
+				["current_disk_usage", "current_database_usage", "site_usage_exceeded_on"],
 				as_dict=True,
 			)
-			if not site_info.notify_email or (
-				site_info.current_disk_usage < 120 and site_info.current_database_usage < 120
-			):
+			if site_info.current_disk_usage < 120 and site_info.current_database_usage < 120:
 				# Final check if site is still exceeding limits
 				continue
 			frappe.sendmail(
-				recipients=site_info.notify_email,
+				recipients=get_communication_info("Email", "Site Activity", "Site", site),
 				subject=f"Action Required: Site {site} exceeded plan limits",
 				template="site_exceeded_disk_usage_warning",
 				args={
@@ -4407,3 +4581,34 @@ def suspend_sites_exceeding_disk_usage_for_last_7_days():
 			# Check once again and suspend if still exceeds limits
 			site: Site = frappe.get_doc("Site", site.name)
 			site.suspend(reason="Site Usage Exceeds Plan limits", skip_reload=True)
+
+
+def create_subscription_for_trial_sites():
+	# Get sites that are in "Site Created" status and has no entry in "Site Plan Change"
+	# For those sites, invoke "Create Subscription" that puts entry into "Site Plan Change" and "Subscription"
+	active_sites = frappe.db.sql(
+		"""
+		SELECT trial.site, producttrial.trial_plan
+		FROM `tabProduct Trial Request` trial
+		LEFT JOIN `tabSite Plan Change` siteplanchange
+		ON trial.site = siteplanchange.name
+		LEFT JOIN `tabProduct Trial`  producttrial ON trial.product_trial = producttrial.name WHERE trial.is_subscription_created = 0 AND siteplanchange.name is NULL AND trial.status="Site Created" LIMIT 25;
+		""",
+		as_dict=True,
+	)
+	for trial_site in active_sites:
+		if has_job_timeout_exceeded():
+			return
+		try:
+			site: Site = frappe.get_doc("Site", trial_site.site)
+			site.create_subscription(trial_site.trial_plan)
+			frappe.db.set_value(
+				"Product Trial Request",
+				{"site": trial_site.site},
+				{"is_subscription_created": 1},
+				update_modified=False,
+			)
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			log_error(title="Creating subscription for trial sites", site=trial_site)

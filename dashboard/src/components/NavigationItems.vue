@@ -11,6 +11,7 @@ import Package from '~icons/lucide/package';
 import Boxes from '~icons/lucide/boxes';
 import Server from '~icons/lucide/server';
 import WalletCards from '~icons/lucide/wallet-cards';
+import Key from '~icons/lucide/key';
 import Settings from '~icons/lucide/settings';
 import App from '~icons/lucide/layout-grid';
 import DatabaseZap from '~icons/lucide/database-zap';
@@ -194,6 +195,13 @@ export default {
 					isActive: routeName.startsWith('Billing'),
 					condition:
 						this.$team.doc?.is_desk_user || this.$session.hasBillingAccess,
+					disabled: enforce2FA,
+				},
+				{
+					name: 'Access Requests',
+					icon: () => h(Key),
+					route: '/access-requests',
+					isActive: routeName === 'Access Requests',
 					disabled: enforce2FA,
 				},
 				{

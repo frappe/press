@@ -10,7 +10,7 @@
   "reference_name",
   "method",
   "output",
-  "is_taken"
+  "wait"
  ],
  "fields": [
   {
@@ -35,24 +35,23 @@
    "options": "reference_doctype"
   },
   {
-   "default": "0",
-   "fieldname": "is_taken",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "label": "Is Taken",
-   "read_only": 1
-  },
-  {
    "fieldname": "output",
    "fieldtype": "Code",
    "label": "Output"
+  },
+  {
+   "default": "0",
+   "description": "Wait at this step till a given condition is met with a retry at every 1 second",
+   "fieldname": "wait",
+   "fieldtype": "Check",
+   "label": "Wait"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-08-21 12:54:26.205151",
+ "modified": "2025-09-08 11:11:54.450396",
  "modified_by": "Administrator",
  "module": "Incident Management",
  "name": "Action Step",

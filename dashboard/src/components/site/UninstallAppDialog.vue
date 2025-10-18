@@ -7,6 +7,7 @@
 				{
 					label: 'Uninstall',
 					variant: 'solid',
+					theme: 'red',
 					onClick: handleConfirm,
 				},
 			],
@@ -15,13 +16,20 @@
 		<template #body-content>
 			<div class="space-y-4">
 				<p class="text-p-base text-gray-800">
-					Are you sure you want to uninstall the app
-					<b>{{ app.title || app.app_title }}</b> from the site
+					Are you sure you want to uninstall the
+					<b>{{ app.title || app.app_title }}</b> app from the site
 					<b>{{ site.doc?.host_name || site.doc?.name }}</b>
 					?
-					<br />
-					All doctypes and modules related to this app will be removed.
 				</p>
+				<div
+					class="flex items-center rounded border border-gray-200 bg-gray-100 p-4 text-sm text-gray-600"
+				>
+					<lucide-alert-triangle class="mr-4 inline-block h-6 w-6" />
+					<div>
+						All <b>doctypes</b> & <b>modules</b>, along with all the
+						<b>data</b> within this app will be removed from the site.
+					</div>
+				</div>
 				<div v-if="app.collect_feedback" class="space-y-4">
 					<FormControl
 						type="checkbox"

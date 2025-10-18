@@ -81,6 +81,7 @@ export default {
 			'cluster.title as cluster_title',
 			'trial_end_date',
 			'creation',
+			'is_monitoring_disabled',
 		],
 		orderBy: 'creation desc',
 		searchField: 'host_name',
@@ -267,14 +268,19 @@ export default {
 			if (
 				(site.doc.server_team == $team.doc?.name &&
 					site.doc.group_team == $team.doc?.name) ||
-				$team.doc?.is_desk_user
+				$team.doc?.is_desk_user ||
+				$team.doc?.is_support_agent
 			) {
 				breadcrumbs.push({
 					label: site.doc?.server_title || site.doc?.server,
 					route: `/servers/${site.doc?.server}`,
 				});
 			}
-			if (site.doc.group_team == $team.doc?.name || $team.doc?.is_desk_user) {
+			if (
+				site.doc.group_team == $team.doc?.name ||
+				$team.doc?.is_desk_user ||
+				$team.doc?.is_support_agent
+			) {
 				breadcrumbs.push(
 					{
 						label: site.doc?.group_title,
@@ -398,7 +404,9 @@ export default {
 				icon: icon('external-link'),
 				route: 'domains',
 				type: 'list',
-				condition: (site) => site.doc?.status !== 'Archived',
+				condition: (site) => {
+					return site.doc?.status !== 'Archived';
+				},
 				list: {
 					doctype: 'Site Domain',
 					fields: ['redirect_to_primary'],
@@ -780,7 +788,7 @@ export default {
 									site.doc?.host_name || site.doc?.name
 								}</b> that was created on ${date(backup.creation, 'llll')}.${
 									!backup.offsite
-										? '<br><br><div class="p-2 bg-gray-100 border-gray-200 rounded">You have to be logged in as a <b>System Manager</b> <em>in your site</em> to download the backup.<div>'
+										? '<br><br><div class="p-2 bg-gray-100 rounded border-gray-200">You have to be logged in as a <b>System Manager</b> <em>in your site</em> to download the backup.<div>'
 										: ''
 								}`,
 								onSuccess() {
@@ -958,33 +966,61 @@ export default {
 											renderDialog(
 												h(SelectSiteForRestore, {
 													site: site.name,
-													onRestore(siteName) {
+													database_backup_exists: Boolean(
+														row.remote_database_file,
+													),
+													public_backup_exists: Boolean(row.remote_public_file),
+													private_backup_exists: Boolean(
+														row.remote_private_file,
+													),
+													config_backup_exists: Boolean(row.remote_config_file),
+													onRestore({
+														selectedSite,
+														restoreDatabase,
+														restorePublic,
+														restorePrivate,
+														restoreConfig,
+													}) {
 														const restoreSite = createResource({
 															url: 'press.api.site.restore',
 														});
 
-														return toast.promise(
-															restoreSite.submit({
-																name: siteName,
-																files: {
-																	database: row.remote_database_file,
-																	public: row.remote_public_file,
-																	private: row.remote_private_file,
-																	config: row.remote_config_file,
-																},
-															}),
-															{
-																loading: 'Scheduling backup restore...',
-																success: (jobId) => {
-																	router.push({
-																		name: 'Site Job',
-																		params: { name: siteName, id: jobId },
-																	});
-																	return 'Backup restore scheduled successfully.';
-																},
-																error: (e) => getToastErrorMessage(e),
+														let payload = {
+															name: selectedSite,
+															files: {},
+														};
+														if (restoreDatabase) {
+															payload.files.database = row.remote_database_file;
+														}
+														if (restorePublic) {
+															payload.files.public = row.remote_public_file;
+														}
+														if (restorePrivate) {
+															payload.files.private = row.remote_private_file;
+														}
+														if (restoreConfig) {
+															payload.files.config = row.remote_config_file;
+														}
+
+														// check if any file is selected
+														if (Object.keys(payload.files).length === 0) {
+															toast.error(
+																'Please select at least one file to restore.',
+															);
+															return;
+														}
+
+														return toast.promise(restoreSite.submit(payload), {
+															loading: 'Scheduling backup restore...',
+															success: (jobId) => {
+																router.push({
+																	name: 'Site Job',
+																	params: { name: selectedSite, id: jobId },
+																});
+																return 'Backup restore scheduled successfully.';
 															},
-														);
+															error: (e) => getToastErrorMessage(e),
+														});
 													},
 												}),
 											);
@@ -1048,7 +1084,9 @@ export default {
 				icon: icon('settings'),
 				route: 'site-config',
 				type: 'list',
-				condition: (site) => site.doc?.status !== 'Archived',
+				condition: (site) => {
+					return site.doc?.status !== 'Archived';
+				},
 				list: {
 					doctype: 'Site Config',
 					filters: (site) => {
@@ -1177,7 +1215,9 @@ export default {
 				icon: icon('sliders'),
 				route: 'actions',
 				type: 'Component',
-				condition: (site) => site.doc?.status !== 'Archived',
+				condition: (site) => {
+					return site.doc?.status !== 'Archived';
+				},
 				component: SiteActions,
 				props: (site) => {
 					return { site: site.doc?.name };
@@ -1188,7 +1228,9 @@ export default {
 				icon: icon('arrow-up-circle'),
 				route: 'updates',
 				type: 'list',
-				condition: (site) => site.doc?.status !== 'Archived',
+				condition: (site) => {
+					return site.doc?.status !== 'Archived';
+				},
 				childrenRoutes: ['Site Update'],
 				list: {
 					doctype: 'Site Update',
@@ -1541,58 +1583,6 @@ export default {
 							},
 						];
 					},
-					primaryAction({ documentResource: site }) {
-						return {
-							label: 'Change Notification Email',
-							slots: {
-								prefix: icon('mail'),
-							},
-							onClick: () => {
-								confirmDialog({
-									title: 'Change Notification Email',
-									fields: [
-										{
-											type: 'email',
-											label: 'Email',
-											fieldname: 'email',
-											default: site.doc.notify_email,
-										},
-									],
-									onSuccess({ hide, values }) {
-										return site.setValue.submit(
-											{
-												notify_email: values.email,
-											},
-											{
-												validate: (doc) => {
-													function validateEmail(email) {
-														const re = /\S+@\S+\.\S+/;
-														return re.test(email);
-													}
-
-													let email = doc?.fieldname?.notify_email;
-													if (!email) {
-														return 'Email is required';
-													} else if (!validateEmail(email)) {
-														return 'Enter a valid email address';
-													}
-												},
-												onSuccess() {
-													hide();
-													toast.success('Email updated successfully');
-												},
-												onError(e) {
-													toast.error(
-														getToastErrorMessage(e, 'Error updating email'),
-													);
-												},
-											},
-										);
-									},
-								});
-							},
-						};
-					},
 				},
 			},
 		],
@@ -1655,6 +1645,21 @@ export default {
 							name: 'Site Detail Updates',
 							params: { name: site.name },
 						});
+					},
+				},
+				{
+					label: 'Enable Monitoring',
+					slots: {
+						prefix: icon('activity'),
+					},
+					condition: () => site.doc?.is_monitoring_disabled,
+					onClick() {
+						let SiteEnableMonitoringDialog = defineAsyncComponent(
+							() => import('../components/site/SiteEnableMonitoringDialog.vue'),
+						);
+						renderDialog(
+							h(SiteEnableMonitoringDialog, { site: site.doc?.name }),
+						);
 					},
 				},
 				{

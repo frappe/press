@@ -1,6 +1,6 @@
 <template>
 	<Header class="sticky top-0 z-10 bg-white">
-		<div class="w-full sm:flex sm:items-center sm:justify-between">
+		<div class="w-full sm:flex sm:justify-between sm:items-center">
 			<div class="flex items-center space-x-2">
 				<FBreadcrumbs :items="breadcrumbs" />
 				<Badge
@@ -10,7 +10,7 @@
 				/>
 			</div>
 			<div
-				class="mt-1 flex items-center justify-between space-x-2 sm:mt-0"
+				class="flex justify-between items-center mt-1 space-x-2 sm:mt-0"
 				v-if="$resources.document?.doc"
 			>
 				<div class="sm:hidden">
@@ -18,9 +18,10 @@
 				</div>
 				<div class="space-x-2">
 					<ActionButton
-						v-for="button in actions"
-						v-bind="button"
-						:key="button.label"
+						v-for="action in actions"
+						v-bind="action"
+						:actionsAccess="$resources.document?.doc?.actions_access"
+						:key="action.label"
 					/>
 				</div>
 			</div>
@@ -42,19 +43,19 @@
 				/>
 			</template>
 		</TabsWithRouter>
-		<div
-			v-else-if="$resources.document.get.error"
-			class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
-		>
-			<lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
-			<ErrorMessage :message="$resources.document.get.error" />
-		</div>
+		<DetailPageError
+			class="mt-60"
+			:doctype="object.doctype"
+			:docname="name"
+			:error="$resources.document.get.error"
+		/>
 	</div>
 </template>
 
 <script>
 import Header from '../components/Header.vue';
 import ActionButton from '../components/ActionButton.vue';
+import DetailPageError from '../components/DetailPageError.vue';
 import { Breadcrumbs } from 'frappe-ui';
 import { getObject } from '../objects';
 import TabsWithRouter from '../components/TabsWithRouter.vue';

@@ -21,6 +21,7 @@ from frappe.utils import (
 	now_datetime,
 )
 
+from press.access.support_access import has_support_access
 from press.agent import Agent, AgentCallbackException, AgentRequestSkippedException
 from press.api.client import is_owned_by_team
 from press.press.doctype.agent_job_type.agent_job_type import (
@@ -95,11 +96,12 @@ class AgentJob(Document):
 		if not (site or group or server or bench):
 			frappe.throw("Not permitted", frappe.PermissionError)
 
-		if site:
+		if site and not has_support_access("Site", site):
 			is_owned_by_team("Site", site, raise_exception=True)
 
 		if group:
-			is_owned_by_team("Release Group", group, raise_exception=True)
+			if not has_support_access("Release Group", group):
+				is_owned_by_team("Release Group", group, raise_exception=True)
 
 			AgentJob = frappe.qb.DocType("Agent Job")
 			Bench = frappe.qb.DocType("Bench")

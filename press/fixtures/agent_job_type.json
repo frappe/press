@@ -4,6 +4,24 @@
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 3,
+  "modified": "2025-10-03 22:47:23.455192",
+  "name": "Purge Binlogs By Size Limit",
+  "request_method": "POST",
+  "request_path": "/database/binlogs/purge_by_size_limit",
+  "steps": [
+   {
+    "step_name": "Find Binlogs To Purge By Size Limit"
+   },
+   {
+    "step_name": "Purge Binlog"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
   "modified": "2024-09-18 11:29:00.663542",
   "name": "Fetch Performance Report",
   "request_method": "POST",
@@ -1826,6 +1844,108 @@
    }
   ]
  },
+ {
+    "disabled_auto_retry": 1,
+    "docstatus": 0,
+    "doctype": "Agent Job Type",
+    "max_retry_count": 3,
+    "modified": "2025-10-03 18:02:49.847351",
+    "name": "Change Bench Directory",
+    "request_method": "POST",
+    "request_path": "server/change-bench-directory",
+    "steps": [
+     {
+      "step_name": "Change Bench Directory"
+     },
+     {
+      "step_name": "Update Agent Nginx Conf File"
+     },
+     {
+      "step_name": "Update Bench Nginx Conf File"
+     },
+     {
+      "step_name": "Configure Site with Redis Private IP"
+     },
+     {
+      "step_name": "Restart Benches"
+     }
+    ]
+ },
+ {
+   "disabled_auto_retry": 1,
+   "docstatus": 0,
+   "doctype": "Agent Job Type",
+   "max_retry_count": 3,
+   "modified": "2025-10-03 18:02:49.847351",
+   "name": "Stop Bench Workers",
+   "request_method": "POST",
+   "request_path": "server/stop-bench-workers",
+   "steps": [
+    {
+     "step_name": "Stop Bench Workers"
+    }
+   ]
+},
+{
+   "disabled_auto_retry": 1,
+   "docstatus": 0,
+   "doctype": "Agent Job Type",
+   "max_retry_count": 3,
+   "modified": "2025-10-03 18:02:49.847351",
+   "name": "Add Servers to ACL",
+   "request_method": "POST",
+   "request_path": "nfs/add-to-acl",
+   "steps": [
+    {
+     "step_name": "Add Servers to ACL"
+    }
+   ]
+},
+{
+   "disabled_auto_retry": 1,
+   "docstatus": 0,
+   "doctype": "Agent Job Type",
+   "max_retry_count": 3,
+   "modified": "2025-10-03 18:02:49.847351",
+   "name": "Remove Servers from ACL",
+   "request_method": "POST",
+   "request_path": "nfs/remove-from-acl",
+   "steps": [
+    {
+     "step_name": "Remove Servers from ACL"
+    }
+   ]
+},
+{
+   "disabled_auto_retry": 1,
+   "docstatus": 0,
+   "doctype": "Agent Job Type",
+   "max_retry_count": 3,
+   "modified": "2025-10-03 18:02:49.847351",
+   "name": "Start Bench Workers",
+   "request_method": "POST",
+   "request_path": "server/start-bench-workers",
+   "steps": [
+    {
+     "step_name": "Start Bench Workers"
+    }
+   ]
+},
+{
+   "disabled_auto_retry": 1,
+   "docstatus": 0,
+   "doctype": "Agent Job Type",
+   "max_retry_count": 3,
+   "modified": "2025-10-03 18:02:49.847351",
+   "name": "Force Remove All Benches",
+   "request_method": "POST",
+   "request_path": "server/force-remove-all-benches",
+   "steps": [
+    {
+     "step_name": "Force Remove All Benches"
+    }
+   ]
+},
  {
   "disabled_auto_retry": 0,
   "docstatus": 0,
