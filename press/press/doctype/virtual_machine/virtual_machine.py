@@ -1776,12 +1776,11 @@ class VirtualMachine(Document):
 			if e.response.get("Error", {}).get("Code") == "InvalidVolumeModification.NotFound":
 				return None
 
-<<<<<<< HEAD
 	@frappe.whitelist()
 	def attach_volume_job(self):
 		server = frappe.get_doc("Server", self.name)
 		server.run_press_job("Attach Volume")
-=======
+
 	def correct_private_ip(self):
 		"""
 		We don't get to set private ip on instance creation.
@@ -1812,7 +1811,6 @@ class VirtualMachine(Document):
 		else:
 			action.wait_until_finished(30)
 		self.sync()
->>>>>>> 3cd08e6fd (fix(virtual-machine): Remove unused method)
 
 	@frappe.whitelist()
 	def attach_volume(self, volume_id=None, is_temporary_volume: bool = False, size: int | None = None):
