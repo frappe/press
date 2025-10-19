@@ -58,6 +58,8 @@ server_doctypes = [
 	"Log Server",
 ]
 
+HETZNER_ROOT_DISK_ID = "hetzner-root-disk"
+
 
 class VirtualMachine(Document):
 	# begin: auto-generated types
@@ -416,7 +418,6 @@ class VirtualMachine(Document):
 			user_data=self.get_cloud_init() if self.virtual_machine_image else "",
 		)
 		server = server_response.server
-
 		self.instance_id = server.id
 
 		self.status = self.get_hetzner_status_map()[server.status]
@@ -756,7 +757,7 @@ class VirtualMachine(Document):
 					update_volume_details=UpdateVolumeDetails(size_in_gbs=volume.size),
 				)
 		elif self.cloud_provider == "Hetzner":
-			if volume_id == "hetzner-root-disk":
+			if volume_id == HETZNER_ROOT_DISK_ID:
 				frappe.throw("Cannot increase disk size for hetzner root disk.")
 			volume = self.client().volumes.get_by_id(volume_id)
 			self.client().volumes.resize(volume, increment)
@@ -805,7 +806,7 @@ class VirtualMachine(Document):
 			volumes.append(
 				frappe._dict(
 					{
-						"id": "hetzner-root-disk",
+						"id": HETZNER_ROOT_DISK_ID,
 						"linux_device": "/dev/sda",
 						"size": server_instance.primary_disk_size,
 						"protection": {"delete": False},
@@ -844,15 +845,15 @@ class VirtualMachine(Document):
 		return None
 
 	def _sync_hetzner(self, server_instance=None):
-		is_deleted = False
 		if not server_instance:
 			try:
 				server_instance = self.client().servers.get_by_id(self.instance_id)
 			except APIException as e:
 				if "server not found" in str(e):
-					frappe.throw(f"{self.name}: Server not found")
-				is_deleted = True
-		if server_instance and not is_deleted:
+					pass
+				else:
+					raise e
+		if server_instance:
 			self.status = self.get_hetzner_status_map()[server_instance.status]
 			self.machine_type = server_instance.server_type.name
 			self.private_ip_address = server_instance.private_net[0].ip
@@ -1241,11 +1242,8 @@ class VirtualMachine(Document):
 				InstanceId=self.instance_id, DisableApiTermination={"Value": False}
 			)
 		elif self.cloud_provider == "Hetzner":
-			for volume in self.volumes:
-				volume = self.client().volumes.get_by_id(volume.volume_id)
-				self.termination_protection = self.client().volumes.change_protection(
-					volume=volume, delete=False
-				)
+			server_instance = self.client().servers.get_by_id(self.instance_id)
+			server_instance.change_protection(delete=False)
 		self.sync()
 
 	@frappe.whitelist()
@@ -1255,11 +1253,8 @@ class VirtualMachine(Document):
 				InstanceId=self.instance_id, DisableApiTermination={"Value": True}
 			)
 		elif self.cloud_provider == "Hetzner":
-			for volume in self.volumes:
-				volume = self.client().volumes.get_by_id(volume.volume_id)
-				self.termination_protection = self.client().volumes.change_protection(
-					volume=volume, delete=False
-				)
+			server_instance = self.client().servers.get_by_id(self.instance_id)
+			server_instance.change_protection(delete=True, rebuild=True)
 		self.sync()
 
 	@frappe.whitelist()
@@ -1305,6 +1300,12 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "OCI":
 			self.client().terminate_instance(instance_id=self.instance_id)
 		elif self.cloud_provider == "Hetzner":
+			for volume in self.volumes:
+				if volume.volume_id == HETZNER_ROOT_DISK_ID:
+					continue
+				volume = self.client().volumes.get_by_id(volume.volume_id)
+				volume.detach().wait_until_finished(30)
+				volume.delete()
 			server_instance = self.client().servers.get_by_id(self.instance_id)
 			self.client().servers.delete(server_instance)
 
@@ -1823,26 +1824,22 @@ class VirtualMachine(Document):
 		if self.cloud_provider != "Hetzner":
 			raise NotImplementedError
 		vpc_id = frappe.db.get_value("Cluster", self.cluster, "vpc_id")
-		server = self.client().servers.get_by_id(self.instance_id)
+		server_instance = self.client().servers.get_by_id(self.instance_id)
 		network = self.client().networks.get_by_id(vpc_id)
 		try:
-			action = server.detach_from_network(network)
+			server_instance.detach_from_network(network).wait_until_finished(30)
 		except APIException as e:  # for retry
 			if "resource not found" in str(e):
 				pass
 			else:
 				raise e
-		else:
-			action.wait_until_finished(30)
 		try:
-			action = server.attach_to_network(network, ip=self.get_private_ip())
+			server_instance.attach_to_network(network, ip=self.get_private_ip()).wait_until_finished(30)
 		except APIException as e:
 			if "already attached" in str(e):
 				pass
 			else:
 				raise e
-		else:
-			action.wait_until_finished(30)
 		self.sync()
 
 	@frappe.whitelist()
@@ -1911,7 +1908,7 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "OCI":
 			raise NotImplementedError
 		elif self.cloud_provider == "Hetzner":
-			if volume_id == "hetzner-root-disk":
+			if volume_id == HETZNER_ROOT_DISK_ID:
 				frappe.throw("Cannot detach hetzner root disk.")
 			volume = self.client().volumes.get_by_id(volume_id)
 			self.client().volumes.detach(volume)
@@ -1931,7 +1928,7 @@ class VirtualMachine(Document):
 			if self.cloud_provider == "OCI":
 				raise NotImplementedError
 			if self.cloud_provider == "Hetzner":
-				if volume_id == "hetzner-root-disk":
+				if volume_id == HETZNER_ROOT_DISK_ID:
 					frappe.throw("Cannot delete hetzner root disk.")
 				vol = self.client().volumes.get_by_id(volume_id)
 				self.client().volumes.delete(vol)
@@ -1943,10 +1940,27 @@ class VirtualMachine(Document):
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")
 
 
+def sync_virtual_machines_hetzner():
+	for machine in frappe.get_all(
+		"Virtual Machine",
+		{"status": ("not in", ("Draft")), "cloud_provider": "Hetzner"},
+		pluck="name",
+	):
+		if has_job_timeout_exceeded():
+			return
+		try:
+			VirtualMachine("Virtual Machine", machine).sync()
+			frappe.db.commit()  # release lock
+		except Exception:
+			log_error(title="Virtual Machine Sync Error", virtual_machine=machine)
+			frappe.db.rollback()
+
+
 @frappe.whitelist()
 def sync_virtual_machines():
 	VirtualMachine.bulk_sync_aws()
 	VirtualMachine.bulk_sync_oci()
+	sync_virtual_machines_hetzner()
 
 
 def snapshot_oci_virtual_machines():
