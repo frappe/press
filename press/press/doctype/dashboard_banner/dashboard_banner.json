@@ -10,8 +10,11 @@
   "type",
   "title",
   "message",
-  "column_break_mycc",
   "help_url",
+  "column_break_mycc",
+  "is_scheduled",
+  "scheduled_start_time",
+  "scheduled_end_time",
   "action_section",
   "column_break_onof",
   "has_action",
@@ -27,7 +30,7 @@
   "team",
   "server",
   "site",
-  "section_break_dtsz",
+  "dismissals_section",
   "user_dismissals"
  ],
  "fields": [
@@ -154,12 +157,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "List of recipient users who dismissed this banner",
-   "fieldname": "section_break_dtsz",
-   "fieldtype": "Section Break",
-   "label": "Dismissals"
-  },
-  {
    "fieldname": "user_dismissals",
    "fieldtype": "Table",
    "label": "User Dismissals",
@@ -176,11 +173,40 @@
   {
    "fieldname": "column_break_udzz",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "dismissals_section",
+   "fieldtype": "Section Break",
+   "label": "Dismissals"
+  },
+  {
+   "default": "0",
+   "description": "This toggles the enabled flag at the start and end of schedule",
+   "fieldname": "is_scheduled",
+   "fieldtype": "Check",
+   "label": "Is Scheduled",
+   "search_index": 1
+  },
+  {
+   "depends_on": "eval:!!doc.is_scheduled",
+   "fieldname": "scheduled_start_time",
+   "fieldtype": "Datetime",
+   "label": "Scheduled Start Time",
+   "mandatory_depends_on": "eval:!!doc.is_scheduled",
+   "search_index": 1
+  },
+  {
+   "depends_on": "eval:!!doc.is_scheduled",
+   "fieldname": "scheduled_end_time",
+   "fieldtype": "Datetime",
+   "label": "Scheduled End Time",
+   "mandatory_depends_on": "eval:!!doc.is_scheduled",
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-26 11:49:59.672134",
+ "modified": "2025-10-09 13:12:32.469281",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Dashboard Banner",

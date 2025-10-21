@@ -174,7 +174,13 @@
 </template>
 <script>
 import Header from '../../../components/Header.vue';
-import { Tabs, Breadcrumbs, Select, FeatherIcon } from 'frappe-ui';
+import {
+	Tabs,
+	Breadcrumbs,
+	Select,
+	FeatherIcon,
+	DateTimePicker,
+} from 'frappe-ui';
 import { formatValue } from '../../../utils/format';
 import LinkControl from '../../../components/LinkControl.vue';
 import BinlogResultTable from '../../../components/devtools/database/BinlogResultTable.vue';
@@ -188,6 +194,7 @@ export default {
 		LinkControl,
 		Select,
 		BinlogResultTable,
+		DateTimePicker,
 	},
 	data() {
 		return {

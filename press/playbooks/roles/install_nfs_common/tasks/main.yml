@@ -1,0 +1,8 @@
+---
+- name: Install NFS Common
+  become: yes
+  become_user: root
+  apt:
+    name: nfs-common
+    state: present
+    update_cache: yes

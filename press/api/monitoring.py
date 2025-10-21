@@ -18,10 +18,14 @@ def get_benches():
 		{"is_standalone": True, "is_self_hosted": True, "status": "Active"},
 		pluck="name",
 	)
+	monitoring_disabled_servers = frappe.get_all(
+		"Server", {"is_monitoring_disabled": True, "status": ("!=", "Archived")}, pluck="name"
+	)
+	excluded_servers = set(self_hosted_stand_alone_servers + monitoring_disabled_servers)
 	sites = frappe.get_all(
 		"Site",
 		["name", "bench"],
-		{"status": "Active", "server": ("not in", self_hosted_stand_alone_servers)},
+		{"status": "Active", "server": ("not in", excluded_servers), "is_monitoring_disabled": False},
 		ignore_ifnull=True,
 	)
 	sites.sort(key=lambda x: (x.bench, x.name))
@@ -47,14 +51,21 @@ def get_benches():
 def get_clusters():
 	servers = {}
 	servers["proxy"] = frappe.get_all("Proxy Server", {"status": ("!=", "Archived")}, ["name", "cluster"])
-	servers["app"] = frappe.get_all("Server", {"status": ("!=", "Archived")}, ["name", "cluster"])
-	servers["database"] = frappe.get_all(
-		"Database Server", {"status": ("!=", "Archived")}, ["name", "cluster"]
+	servers["app"] = frappe.get_all(
+		"Server", {"status": ("!=", "Archived"), "is_monitoring_disabled": False}, ["name", "cluster"]
 	)
+	servers["database"] = frappe.get_all(
+		"Database Server",
+		{"status": ("!=", "Archived"), "is_monitoring_disabled": False},
+		["name", "cluster"],
+	)
+	servers["nfs"] = frappe.get_all("NFS Server", {"status": ("!=", "Archived")}, ["name", "cluster"])
+
 	clusters = frappe.get_all("Cluster")
 	job_map = {
 		"proxy": ["node", "nginx", "proxysql", "mariadb_proxy"],
 		"app": ["node", "nginx", "docker", "cadvisor", "gunicorn", "rq"],
+		"nfs": ["node", "nginx", "docker", "cadvisor", "gunicorn", "rq"],
 		"database": ["node", "mariadb"],
 	}
 	servers_using_alternative_port = servers_using_alternative_port_for_communication()
@@ -90,9 +101,14 @@ def get_tls():
 		"Monitor Server",
 		"Analytics Server",
 		"Trace Server",
+		"NFS Server",
 	]
 	for server_type in server_types:
-		tls += frappe.get_all(server_type, {"status": ("!=", "Archived")}, ["name"])
+		filters = {"status": ("!=", "Archived")}
+		if server_type in ("Server", "Database Server"):
+			filters["is_monitoring_disabled"] = False
+			filters["is_for_recovery"] = False
+		tls += frappe.get_all(server_type, filters, ["name"])
 
 	return tls
 

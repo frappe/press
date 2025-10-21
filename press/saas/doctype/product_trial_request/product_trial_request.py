@@ -15,7 +15,8 @@ from frappe.utils.data import add_to_date, now_datetime
 from frappe.utils.telemetry import init_telemetry
 
 from press.api.client import dashboard_whitelist
-from press.utils import log_error
+from press.press.doctype.root_domain.root_domain import get_domains
+from press.utils import log_error, validate_subdomain
 
 if TYPE_CHECKING:
 	from press.press.doctype.site.site import Site
@@ -213,6 +214,11 @@ class ProductTrialRequest(Document):
 			)
 			frappe.throw(f"Failed to generate payload for Setup Wizard: {e}")
 
+	def validate_subdomain_and_domain(self, subdomain: str, domain: str):
+		validate_subdomain(subdomain)
+		if domain not in get_domains():
+			frappe.throw("Invalid domain")
+
 	@dashboard_whitelist()
 	def create_site(self, subdomain: str, domain: str):
 		"""
@@ -224,8 +230,7 @@ class ProductTrialRequest(Document):
 		if self.status != "Pending":
 			return
 
-		if not subdomain:
-			frappe.throw("Subdomain is required to create a site.")
+		self.validate_subdomain_and_domain(subdomain, domain)
 
 		try:
 			product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)

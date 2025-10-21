@@ -8,8 +8,8 @@
  "engine": "InnoDB",
  "field_order": [
   "unique_token",
-  "message_id",
   "status",
+  "message_id",
   "column_break_drnq",
   "site",
   "subscription_key",
@@ -77,7 +77,7 @@
   },
   {
    "fieldname": "message_id",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Message Id",
    "read_only": 1
   },
@@ -106,9 +106,10 @@
    "fieldtype": "Section Break"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-02 16:54:57.203891",
+ "modified": "2025-10-06 16:21:14.518847",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mail Log",
@@ -128,6 +129,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

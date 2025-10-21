@@ -37,7 +37,6 @@ def poly_get_doc(doctypes, name):
 
 def get_mount_point(server: str, server_type=None) -> str:
 	"""Guess mount point from server"""
-	print(server_type)
 	if server_type is None:
 		server_type = "Database Server" if server[0] == "m" else "Server"
 
@@ -415,6 +414,17 @@ def get_request_by_site(name, query, timezone, duration):
 	timespan, timegrain = get_timespan_timegrain(duration)
 
 	return get_request_by_(name, query, timezone, timespan, timegrain, ResourceType.SERVER)
+
+
+@frappe.whitelist()
+@protected(["Server", "Database Server"])
+@redis_cache(ttl=10 * 60)
+def get_background_job_by_site(name, query, timezone, duration):
+	from press.api.analytics import ResourceType, get_background_job_by_
+
+	timespan, timegrain = get_timespan_timegrain(duration)
+
+	return get_background_job_by_(name, query, timezone, timespan, timegrain, ResourceType.SERVER)
 
 
 @frappe.whitelist()

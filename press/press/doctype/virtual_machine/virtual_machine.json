@@ -251,7 +251,7 @@
    "fieldname": "series",
    "fieldtype": "Select",
    "label": "Series",
-   "options": "n\nf\nm\nc\np\ne\nr\nt",
+   "options": "n\nf\nm\nc\np\ne\nr\nt\nnfs\nfs",
    "reqd": 1
   },
   {
@@ -406,6 +406,11 @@
    "link_fieldname": "virtual_machine"
   },
   {
+   "group": "Servers",
+   "link_doctype": "NFS Server",
+   "link_fieldname": "virtual_machine"
+  },
+  {
    "group": "Snapshots",
    "link_doctype": "Virtual Disk Snapshot",
    "link_fieldname": "virtual_machine"
@@ -421,7 +426,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2025-09-19 11:58:46.269416",
+ "modified": "2025-10-13 14:56:34.498409",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
