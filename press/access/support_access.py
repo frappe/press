@@ -12,7 +12,7 @@ TAB_DF_MAP = {
 
 ACTION_DF_MAP = {
 	"Site": {
-		SiteActions.LOGIN_AS_ADMINISTRATOR: "login_as_administrator",
+		SiteActions.LOGIN_AS_ADMINISTRATOR.value: "login_as_administrator",
 	}
 }
 
