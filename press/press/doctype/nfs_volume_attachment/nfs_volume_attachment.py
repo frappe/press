@@ -92,6 +92,8 @@ class StepHandler:
 		self.save()
 		frappe.db.commit()
 
+	def handle_step_failure(self): ...
+
 	def get_steps(self, methods: list) -> list[dict]:
 		"""Generate a list of steps to be executed for NFS volume attachment."""
 		return [
@@ -132,9 +134,10 @@ class StepHandler:
 
 			try:
 				method(step)  # Each step updates its own state
-			except Exception:
+			except Exception as e:
 				self.reload()
 				self.fail()
+				self.handle_step_failure(e)
 				return  # Stop on first failure
 
 			self.reload()
