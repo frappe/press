@@ -89,14 +89,6 @@ class VirtualDiskResize(Document):
 		if not self.scheduled_time:
 			self.status = Status.Pending
 			self.save()
-			frappe.enqueue_doc(
-				self.doctype,
-				self.name,
-				"execute",
-				queue="long",
-				timeout=2400,
-				enqueue_after_commit=True,
-			)
 
 	def run_prerequisites(self):
 		try:
