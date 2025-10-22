@@ -6,6 +6,7 @@ import base64
 import ipaddress
 import time
 import typing
+from functools import cached_property
 
 import boto3
 import botocore
@@ -724,8 +725,7 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "OCI":
 			self.client().instance_action(instance_id=self.instance_id, action="RESET")
 		elif self.cloud_provider == "Hetzner":
-			server_instance = self.client().servers.get_by_id(self.instance_id)
-			self.client().servers.reboot(server_instance)
+			self.client().servers.reboot(self.server_instance)
 
 		log_server_activity(self.series, self.name, action="Reboot")
 
@@ -796,9 +796,8 @@ class VirtualMachine(Document):
 				.data
 			)
 		if self.cloud_provider == "Hetzner":
-			server_instance = self.client().servers.get_by_id(self.instance_id)
 			volumes = []
-			for volume in server_instance.volumes:
+			for volume in self.server_instance.volumes:
 				volume = self.client().volumes.get_by_id(volume.id)
 				volumes.append(volume)
 
@@ -809,7 +808,7 @@ class VirtualMachine(Document):
 					{
 						"id": HETZNER_ROOT_DISK_ID,
 						"linux_device": "/dev/sda",
-						"size": server_instance.primary_disk_size,
+						"size": self.server_instance.primary_disk_size,
 						"protection": {"delete": False},
 					}
 				)
@@ -848,7 +847,7 @@ class VirtualMachine(Document):
 	def _sync_hetzner(self, server_instance=None):
 		if not server_instance:
 			try:
-				server_instance = self.client().servers.get_by_id(self.instance_id)
+				server_instance = self.server_instance
 			except APIException as e:
 				if "server not found" in str(e):
 					pass
@@ -861,6 +860,7 @@ class VirtualMachine(Document):
 			self.public_ip_address = server_instance.public_net.ipv4.ip
 
 			existing_volumes = [vol.volume_id for vol in self.volumes]
+			self.has_data_volume = 0
 			for volume in self.get_volumes():
 				if str(volume.id) in existing_volumes:
 					continue
@@ -869,13 +869,10 @@ class VirtualMachine(Document):
 				row.size = volume.size
 				row.device = volume.linux_device
 				self.append("volumes", row)
-
-			if volume.protection["delete"]:
-				self.termination_protection = volume.protection["delete"]
+				self.has_data_volume = 1
 
 			self.vcpu = server_instance.server_type.cores
 			self.ram = server_instance.server_type.memory * 1024
-			self.has_data_volume = 1
 		else:
 			self.status = "Terminated"
 		self.save()
@@ -1243,8 +1240,7 @@ class VirtualMachine(Document):
 				InstanceId=self.instance_id, DisableApiTermination={"Value": False}
 			)
 		elif self.cloud_provider == "Hetzner":
-			server_instance = self.client().servers.get_by_id(self.instance_id)
-			server_instance.change_protection(delete=False)
+			self.server_instance.change_protection(delete=False)
 		self.sync()
 
 	@frappe.whitelist()
@@ -1254,8 +1250,7 @@ class VirtualMachine(Document):
 				InstanceId=self.instance_id, DisableApiTermination={"Value": True}
 			)
 		elif self.cloud_provider == "Hetzner":
-			server_instance = self.client().servers.get_by_id(self.instance_id)
-			server_instance.change_protection(delete=True, rebuild=True)
+			self.server_instance.change_protection(delete=True, rebuild=True)
 		self.sync()
 
 	@frappe.whitelist()
@@ -1265,8 +1260,7 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "OCI":
 			self.client().instance_action(instance_id=self.instance_id, action="START")
 		elif self.cloud_provider == "Hetzner":
-			server_instance = self.client().servers.get_by_id(self.instance_id)
-			self.client().servers.power_on(server_instance)
+			self.client().servers.power_on(self.server_instance)
 		self.sync()
 
 	@frappe.whitelist()
@@ -1276,8 +1270,7 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "OCI":
 			self.client().instance_action(instance_id=self.instance_id, action="STOP")
 		elif self.cloud_provider == "Hetzner":
-			server_instance = self.client().servers.get_by_id(self.instance_id)
-			self.client().servers.shutdown(server_instance)
+			self.client().servers.shutdown(self.server_instance)
 		self.sync()
 
 	@frappe.whitelist()
@@ -1307,8 +1300,7 @@ class VirtualMachine(Document):
 				volume = self.client().volumes.get_by_id(volume.volume_id)
 				volume.detach().wait_until_finished(HETZNER_ACTION_TIMEOUT)
 				volume.delete()
-			server_instance = self.client().servers.get_by_id(self.instance_id)
-			self.client().servers.delete(server_instance)
+			self.client().servers.delete(self.server_instance)
 
 		log_server_activity(self.series, self.name, action="Terminated")
 
@@ -1816,6 +1808,12 @@ class VirtualMachine(Document):
 			if e.response.get("Error", {}).get("Code") == "InvalidVolumeModification.NotFound":
 				return None
 
+	@cached_property
+	def server_instance(self):
+		if self.cloud_provider != "Hetzner":
+			raise NotImplementedError
+		return self.client().servers.get_by_id(self.instance_id)
+
 	def correct_private_ip(self):
 		"""
 		We don't get to set private ip on instance creation.
@@ -1825,17 +1823,16 @@ class VirtualMachine(Document):
 		if self.cloud_provider != "Hetzner":
 			raise NotImplementedError
 		vpc_id = frappe.db.get_value("Cluster", self.cluster, "vpc_id")
-		server_instance = self.client().servers.get_by_id(self.instance_id)
 		network = self.client().networks.get_by_id(vpc_id)
 		try:
-			server_instance.detach_from_network(network).wait_until_finished(HETZNER_ACTION_TIMEOUT)
+			self.server_instance.detach_from_network(network).wait_until_finished(HETZNER_ACTION_TIMEOUT)
 		except APIException as e:  # for retry
 			if "resource not found" in str(e):
 				pass
 			else:
 				raise e
 		try:
-			server_instance.attach_to_network(network, ip=self.get_private_ip()).wait_until_finished(
+			self.server_instance.attach_to_network(network, ip=self.get_private_ip()).wait_until_finished(
 				HETZNER_ACTION_TIMEOUT
 			)
 		except APIException as e:
@@ -1866,13 +1863,12 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "OCI":
 			raise NotImplementedError
 		elif self.cloud_provider == "Hetzner":
-			server_instance = self.client().servers.get_by_id(self.instance_id)
 			new_volume = self.client().volumes.create(
 				size=size,
 				name=f"{self.name}-vol-{len(self.volumes) + len(self.temporary_volumes) + 1}",
 				format="ext4",
 				automount=False,
-				server=server_instance,
+				server=self.server_instance,
 			)
 			"""
 			This is a temporary assignment of linux_device from Hetzner API to
