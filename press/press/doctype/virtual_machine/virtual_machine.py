@@ -860,7 +860,7 @@ class VirtualMachine(Document):
 			self.private_ip_address = server_instance.private_net[0].ip
 			self.public_ip_address = server_instance.public_net.ipv4.ip
 
-			existing_volumes = [(vol.volume_id) for vol in self.volumes]
+			existing_volumes = [vol.volume_id for vol in self.volumes]
 			for volume in self.get_volumes():
 				if str(volume.id) in existing_volumes:
 					continue
