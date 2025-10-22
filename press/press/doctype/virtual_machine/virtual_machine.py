@@ -17,7 +17,7 @@ from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils.password import get_decrypted_password
 from hcloud import APIException, Client
-from hcloud.images import Image
+from hcloud.images.domain import Image
 from hcloud.servers.domain import ServerCreatePublicNetwork
 from oci import pagination as oci_pagination
 from oci.core import BlockstorageClient, ComputeClient, VirtualNetworkClient
@@ -59,6 +59,7 @@ server_doctypes = [
 ]
 
 HETZNER_ROOT_DISK_ID = "hetzner-root-disk"
+HETZNER_ACTION_TIMEOUT = 60  # seconds; shouldn't be longer than default RQ job timeout of 300 seconds
 
 
 class VirtualMachine(Document):
@@ -1304,7 +1305,7 @@ class VirtualMachine(Document):
 				if volume.volume_id == HETZNER_ROOT_DISK_ID:
 					continue
 				volume = self.client().volumes.get_by_id(volume.volume_id)
-				volume.detach().wait_until_finished(30)
+				volume.detach().wait_until_finished(HETZNER_ACTION_TIMEOUT)
 				volume.delete()
 			server_instance = self.client().servers.get_by_id(self.instance_id)
 			self.client().servers.delete(server_instance)
@@ -1827,14 +1828,16 @@ class VirtualMachine(Document):
 		server_instance = self.client().servers.get_by_id(self.instance_id)
 		network = self.client().networks.get_by_id(vpc_id)
 		try:
-			server_instance.detach_from_network(network).wait_until_finished(30)
+			server_instance.detach_from_network(network).wait_until_finished(HETZNER_ACTION_TIMEOUT)
 		except APIException as e:  # for retry
 			if "resource not found" in str(e):
 				pass
 			else:
 				raise e
 		try:
-			server_instance.attach_to_network(network, ip=self.get_private_ip()).wait_until_finished(30)
+			server_instance.attach_to_network(network, ip=self.get_private_ip()).wait_until_finished(
+				HETZNER_ACTION_TIMEOUT
+			)
 		except APIException as e:
 			if "already attached" in str(e):
 				pass
@@ -1877,9 +1880,9 @@ class VirtualMachine(Document):
 			Example: linux_device = /mnt/HC_Volume_103061048
 			"""
 			device_name = new_volume.volume.linux_device
-			new_volume.action.wait_until_finished(30)  # wait until volume is created
+			new_volume.action.wait_until_finished(HETZNER_ACTION_TIMEOUT)  # wait until volume is created
 			for action in new_volume.next_actions:
-				action.wait_until_finished(30)  # wait until volume is attached
+				action.wait_until_finished(HETZNER_ACTION_TIMEOUT)  # wait until volume is attached
 		self.save()
 		self.sync()
 		return device_name
