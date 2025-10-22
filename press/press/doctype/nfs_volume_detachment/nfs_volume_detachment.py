@@ -169,29 +169,6 @@ class NFSVolumeDetachment(Document, StepHandler):
 			self._fail_ansible_step(step, ansible, e)
 			raise
 
-	def umount_from_secondary_server(self, step: "NFSVolumeDetachmentStep") -> None:
-		"""Umount /shared from secondary server and remove from fstab"""
-		secondary_server: Server = frappe.get_cached_doc("Server", self.secondary_server)
-		nfs_server_private_ip = frappe.db.get_value("NFS Server", self.nfs_server, "private_ip")
-		step.status = Status.Running
-		step.save()
-
-		try:
-			ansible = Ansible(
-				playbook="umount_and_cleanup_shared.yml",
-				server=secondary_server,
-				user=secondary_server._ssh_user(),
-				port=secondary_server._ssh_port(),
-				variables={
-					"nfs_server_private_ip": nfs_server_private_ip,
-					"shared_directory": f"/home/frappe/nfs/{self.primary_server}",
-				},
-			)
-			self._run_ansible_step(step, ansible)
-		except Exception as e:
-			self._fail_ansible_step(step, ansible, e)
-			raise
-
 	def remove_servers_from_acl(self, step: "NFSVolumeDetachmentStep") -> None:
 		"""Remove primary and secondary servers from acl"""
 		nfs_server: NFSServer = frappe.get_cached_doc("NFS Server", self.nfs_server)
@@ -280,14 +257,25 @@ class NFSVolumeDetachment(Document, StepHandler):
 		step.save()
 
 	def not_ready_to_auto_scale(self, step: "NFSVolumeDetachmentStep"):
-		"""Mark server as not ready to auto scale"""
+		"""Mark server as not ready to auto scale & drop secondary server"""
 		step.status = Status.Running
 		step.save()
 
-		frappe.db.set_value("Server", self.primary_server, "benches_on_shared_volume", False)
+		try:
+			# Mark primary as not ready to auto scale
+			frappe.db.set_value("Server", self.primary_server, "benches_on_shared_volume", False)
 
-		step.status = Status.Success
-		step.save()
+			# Drop secondary server
+			primary_server: "Server" = frappe.get_doc("Server", self.primary_server)
+			primary_server.drop_secondary_server()
+
+			# Mark secondary server field as empty on the primary server
+			frappe.db.set_value("Server", self.primary_server, "secondary_server", None)
+
+			step.status = Status.Success
+			step.save()
+		except Exception:
+			raise
 
 	def before_insert(self):
 		"""Append defined steps to the document before saving."""
@@ -299,7 +287,6 @@ class NFSVolumeDetachment(Document, StepHandler):
 				self.wait_for_job_completion,
 				self.update_benches_with_new_mounts,
 				self.umount_from_primary_server,
-				self.umount_from_secondary_server,
 				self.remove_servers_from_acl,
 				self.wait_for_acl_deletion,
 				self.umount_volume_from_nfs_server,
