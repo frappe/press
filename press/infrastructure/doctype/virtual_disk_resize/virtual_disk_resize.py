@@ -720,6 +720,7 @@ def run_scheduled_resizes():
 	resize_tasks = frappe.get_all(
 		"Virtual Disk Resize",
 		{"scheduled_time": ("<=", frappe.utils.now()), "status": "Scheduled"},
+		fields=["name", "doctype", "virtual_machine"],
 	)
 	for task in resize_tasks:
 		frappe.enqueue_doc(
