@@ -12,7 +12,6 @@
   "status",
   "volume_section",
   "volume_id",
-  "volume_size",
   "steps_section",
   "nfs_volume_attachment_steps"
  ],
@@ -54,16 +53,6 @@
    "label": "Volume"
   },
   {
-   "fieldname": "volume_id",
-   "fieldtype": "Data",
-   "label": "Volume Id"
-  },
-  {
-   "fieldname": "volume_size",
-   "fieldtype": "Int",
-   "label": "Volume Size"
-  },
-  {
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -80,12 +69,22 @@
    "fieldname": "nfs_volume_attachment_steps",
    "fieldtype": "Table",
    "options": "NFS Volume Attachment Step"
+  },
+  {
+   "fieldname": "volume_id",
+   "fieldtype": "Data",
+   "label": "Volume Id"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-10-09 11:11:10.670740",
+ "links": [
+  {
+   "link_doctype": "Press Notification",
+   "link_fieldname": "document_name"
+  }
+ ],
+ "modified": "2025-10-22 10:31:34.461465",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "NFS Volume Attachment",

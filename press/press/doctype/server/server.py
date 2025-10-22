@@ -2386,6 +2386,11 @@ class Server(BaseServer):
 		self.secondary_server = secondary_server.name
 		self.save()
 
+	def drop_secondary_server(self) -> None:
+		"""Drop secondary server"""
+		server: "Server" = frappe.get_doc("Server", self.secondary_server)
+		server.archive()
+
 	@frappe.whitelist()
 	def setup_secondary_server(self, server_plan: str):
 		"""Setup secondary server"""
