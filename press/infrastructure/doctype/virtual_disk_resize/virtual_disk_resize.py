@@ -81,6 +81,7 @@ class VirtualDiskResize(Document):
 		if not self.scheduled_time:
 			self.status = "Pending"
 			self.save()
+<<<<<<< HEAD
 			frappe.enqueue_doc(
 				self.doctype,
 				self.name,
@@ -89,6 +90,8 @@ class VirtualDiskResize(Document):
 				timeout=2400,
 				enqueue_after_commit=True,
 			)
+=======
+>>>>>>> 95eb9555b (fix(virtual-disk-resize): Do not invoke execute resize for undefined scheduled time on insert)
 
 	def run_prerequisites(self):
 		try:
