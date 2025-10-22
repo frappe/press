@@ -85,8 +85,9 @@ const accept = createResource({
 	params: {
 		doctype: 'Support Access',
 		name: props.name,
-		fieldname: 'status',
-		value: 'Accepted',
+		fieldname: {
+			status: 'Accepted',
+		},
 	},
 	onSuccess: () => {
 		open.value = false;
@@ -98,8 +99,9 @@ const reject = createResource({
 	params: {
 		doctype: 'Support Access',
 		name: props.name,
-		fieldname: 'status',
-		value: 'Rejected',
+		fieldname: {
+			status: 'Rejected',
+		},
 	},
 	onSuccess: () => {
 		open.value = false;

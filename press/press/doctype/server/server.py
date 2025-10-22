@@ -1257,6 +1257,21 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("MySQLdump Setup Exception", doc=self)
 
+	def setup_iptables(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_iptables")
+
+	def _setup_iptables(self):
+		try:
+			ansible = Ansible(
+				playbook="iptables.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Iptables Setup Exception", doc=self)
+
 	@frappe.whitelist()
 	def set_swappiness(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_set_swappiness")
@@ -2011,6 +2026,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			self.setup_mysqldump()
 			self.install_earlyoom()
 			self.setup_ncdu()
+			self.setup_iptables()
 
 			if self.has_data_volume:
 				self.setup_archived_folder()
