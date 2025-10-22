@@ -733,12 +733,8 @@ class Status(str, Enum):
 def run_scheduled_resizes():
 	resize_tasks = frappe.get_all(
 		"Virtual Disk Resize",
-<<<<<<< HEAD
-		{"scheduled_time": ("<=", frappe.utils.now()), "status": "Scheduled"},
-=======
 		filters={"scheduled_time": ("<=", frappe.utils.now()), "status": Status.Scheduled},
 		fields=["name", "virtual_machine"],
->>>>>>> 81f39a447 (fix(virtual-disk-resize): Fix get_all arguments and error handling)
 	)
 	for task in resize_tasks:
 		frappe.enqueue_doc(
