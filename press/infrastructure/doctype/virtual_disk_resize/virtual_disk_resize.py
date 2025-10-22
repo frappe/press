@@ -64,7 +64,15 @@ class VirtualDiskResize(Document):
 		scheduled_time: DF.Datetime | None
 		service: DF.Data | None
 		start: DF.Datetime | None
-		status: DF.Literal["Scheduled", "Pending", "Preparing", "Ready", "Running", "Success", "Failure"]
+		status: DF.Literal[
+			"Scheduled",
+			"Pending",
+			"Preparing",
+			"Ready",
+			"Running",
+			"Success",
+			"Failure",
+		]
 		steps: DF.Table[VirtualMachineMigrationStep]
 		virtual_disk_snapshot: DF.Link | None
 		virtual_machine: DF.Link
@@ -105,7 +113,8 @@ class VirtualDiskResize(Document):
 			frappe.db.rollback()
 			self.status = Status.Scheduled
 			self.save()
-		except Exception:
+		except Exception as e:
+			frappe.log_error(message=str(e), title="Virtual Disk Resize Prerequisites Failed")
 			self.status = Status.Failure
 			self.save()
 
@@ -325,7 +334,9 @@ class VirtualDiskResize(Document):
 		frappe.get_value("Virtual Machine", self.virtual_machine, "status", for_update=True)
 
 		self.new_volume_id = self.machine.attach_new_volume(
-			self.new_volume_size, iops=self.new_volume_iops, throughput=self.new_volume_throughput
+			self.new_volume_size,
+			iops=self.new_volume_iops,
+			throughput=self.new_volume_throughput,
 		)
 		self.new_volume_status = "Attached"
 		self.save()
@@ -417,7 +428,10 @@ class VirtualDiskResize(Document):
 
 		snapshots = frappe.get_all(
 			"Virtual Disk Snapshot",
-			{"name": ("in", machine.flags.created_snapshots), "volume_id": self.old_volume_id},
+			{
+				"name": ("in", machine.flags.created_snapshots),
+				"volume_id": self.old_volume_id,
+			},
 			pluck="name",
 		)
 		if len(snapshots) == 0:
@@ -719,11 +733,16 @@ class Status(str, Enum):
 def run_scheduled_resizes():
 	resize_tasks = frappe.get_all(
 		"Virtual Disk Resize",
+<<<<<<< HEAD
 		{"scheduled_time": ("<=", frappe.utils.now()), "status": "Scheduled"},
+=======
+		filters={"scheduled_time": ("<=", frappe.utils.now()), "status": Status.Scheduled},
+		fields=["name", "virtual_machine"],
+>>>>>>> 81f39a447 (fix(virtual-disk-resize): Fix get_all arguments and error handling)
 	)
 	for task in resize_tasks:
 		frappe.enqueue_doc(
-			task.doctype,
+			"Virtual Disk Resize",
 			task.name,
 			"run_prerequisites",
 			queue="long",
