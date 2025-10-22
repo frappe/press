@@ -98,6 +98,7 @@ class VirtualDiskResize(Document):
 				enqueue_after_commit=True,
 			)
 
+	@frappe.whitelist()
 	def run_prerequisites(self):
 		try:
 			self.status = Status.Preparing
