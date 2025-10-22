@@ -5,7 +5,7 @@ class ReleaseGroupActions(Enum):
 	GENERATE_SSH_CERTIFICATE = "Generate SSH Certificate"
 
 
-class SiteActions(Enum):
+class SiteActions(str, Enum):
 	VISIT_SITE = "Visit Site"
 	VIEW_IN_DESK = "View in Desk"
 	LOGIN_AS_ADMINISTRATOR = "Login As Administrator"
