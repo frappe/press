@@ -92,7 +92,22 @@ class StepHandler:
 		self.save()
 		frappe.db.commit()
 
-	def handle_step_failure(self): ...
+	def handle_step_failure(self):
+		team = frappe.db.get_value("Server", self.primary_server, "team")
+		press_notification = frappe.get_doc(
+			{
+				"doctype": "Press Notification",
+				"team": team,
+				"type": "Auto Scale",
+				"document_type": self.doctype,
+				"document_name": self.name,
+				"class": "Error",
+				"traceback": frappe.get_traceback(with_context=False),
+				"message": f"Error occurred during auto scale {'setup' if self.doctype == 'NFS Volume Attachment' else 'teardown'}",
+			}
+		)
+		press_notification.insert()
+		frappe.db.commit()
 
 	def get_steps(self, methods: list) -> list[dict]:
 		"""Generate a list of steps to be executed for NFS volume attachment."""
@@ -134,10 +149,10 @@ class StepHandler:
 
 			try:
 				method(step)  # Each step updates its own state
-			except Exception as e:
+			except Exception:
 				self.reload()
 				self.fail()
-				self.handle_step_failure(e)
+				self.handle_step_failure()
 				return  # Stop on first failure
 
 			self.reload()
