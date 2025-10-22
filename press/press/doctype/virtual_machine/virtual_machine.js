@@ -4,7 +4,7 @@
 frappe.ui.form.on('Virtual Machine', {
 	refresh: function (frm) {
 		[
-			[__('Sync'), 'sync'],
+			[__('Sync'), 'sync', false, frm.doc.status != 'Draft'],
 			[__('Provision'), 'provision', true, frm.doc.status == 'Draft'],
 			[__('Reboot'), 'reboot', true, frm.doc.status == 'Running'],
 			[__('Stop'), 'stop', true, frm.doc.status == 'Running'],
