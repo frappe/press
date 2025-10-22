@@ -79,12 +79,12 @@ class VirtualDiskResize(Document):
 	def after_insert(self):
 		"""Enqueue current volume attribute fetch and volume creation"""
 		if not self.scheduled_time:
-			self.status = "Pending"
+			self.status = Status.Pending
 			self.save()
 			frappe.enqueue_doc(
 				self.doctype,
 				self.name,
-				"run_prerequisites",
+				"execute",
 				queue="long",
 				timeout=2400,
 				enqueue_after_commit=True,
@@ -99,8 +99,6 @@ class VirtualDiskResize(Document):
 			self.create_new_volume()
 			self.status = Status.Ready
 			self.save()
-			if self.scheduled_time:
-				self.execute()
 		except frappe.QueryTimeoutError:
 			frappe.db.rollback()
 			self.status = Status.Scheduled
@@ -108,6 +106,14 @@ class VirtualDiskResize(Document):
 		except Exception:
 			self.status = Status.Failure
 			self.save()
+
+	@frappe.whitelist()
+	def execute(self):
+		self.run_prerequisites()
+		self.status = Status.Running
+		self.start = frappe.utils.now_datetime()
+		self.save()
+		self.next()
 
 	def add_steps(self):
 		for step in self.shrink_steps:
@@ -569,6 +575,7 @@ class VirtualDiskResize(Document):
 			)
 		return steps
 
+<<<<<<< HEAD
 	@frappe.whitelist()
 	def execute(self):
 		if not self.old_filesystem_used:
@@ -579,6 +586,8 @@ class VirtualDiskResize(Document):
 		self.save()
 		self.next()
 
+=======
+>>>>>>> 4169d100d (fix(virtual-disk-resize): Update action method from run_prerequisites to execute and adjust status handling)
 	def fail(self) -> None:
 		self.status = Status.Failure
 		for step in self.steps:
@@ -725,7 +734,7 @@ def run_scheduled_resizes():
 		frappe.enqueue_doc(
 			task.doctype,
 			task.name,
-			"run_prerequisites",
+			"execute",
 			queue="long",
 			timeout=2400,
 			deduplicate=True,
