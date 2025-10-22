@@ -169,29 +169,6 @@ class NFSVolumeDetachment(Document, StepHandler):
 			self._fail_ansible_step(step, ansible, e)
 			raise
 
-	def umount_from_secondary_server(self, step: "NFSVolumeDetachmentStep") -> None:
-		"""Umount /shared from secondary server and remove from fstab"""
-		secondary_server: Server = frappe.get_cached_doc("Server", self.secondary_server)
-		nfs_server_private_ip = frappe.db.get_value("NFS Server", self.nfs_server, "private_ip")
-		step.status = Status.Running
-		step.save()
-
-		try:
-			ansible = Ansible(
-				playbook="umount_and_cleanup_shared.yml",
-				server=secondary_server,
-				user=secondary_server._ssh_user(),
-				port=secondary_server._ssh_port(),
-				variables={
-					"nfs_server_private_ip": nfs_server_private_ip,
-					"shared_directory": f"/home/frappe/nfs/{self.primary_server}",
-				},
-			)
-			self._run_ansible_step(step, ansible)
-		except Exception as e:
-			self._fail_ansible_step(step, ansible, e)
-			raise
-
 	def remove_servers_from_acl(self, step: "NFSVolumeDetachmentStep") -> None:
 		"""Remove primary and secondary servers from acl"""
 		nfs_server: NFSServer = frappe.get_cached_doc("NFS Server", self.nfs_server)
@@ -310,7 +287,6 @@ class NFSVolumeDetachment(Document, StepHandler):
 				self.wait_for_job_completion,
 				self.update_benches_with_new_mounts,
 				self.umount_from_primary_server,
-				self.umount_from_secondary_server,
 				self.remove_servers_from_acl,
 				self.wait_for_acl_deletion,
 				self.umount_volume_from_nfs_server,
