@@ -1685,7 +1685,7 @@ def check_domain_allows_letsencrypt_certs(domain):
 		pass  # We have other problems
 	else:
 		frappe.throw(
-			f"Domain {naked_domain} does not allow Let's Encrypt certificates. Please review CAA record for the same.",
+			f"Domain {naked_domain} does not allow Let's Encrypt certificates. Please update or remove <b>CAA</b> record for the same.",
 			ConflictingCAARecord,
 		)
 
@@ -1813,7 +1813,7 @@ def _check_dns_cname_a(name, domain, ignore_proxying=False):
 		frappe.throw(
 			f"""
 			Domain <b>{domain}</b> has correct CNAME record <b>{cname["answer"].strip().split()[-1]}</b>, but also an A record that points to an incorrect IP address <b>{a["answer"].strip().split()[-1]}</b>.
-			<br>Please remove the same or update the record.
+			<br>Please remove or update the <b>A</b> record.
 			""",
 			ConflictingDNSRecord,
 		)
@@ -1821,7 +1821,7 @@ def _check_dns_cname_a(name, domain, ignore_proxying=False):
 		frappe.throw(
 			f"""
 			Domain <b>{domain}</b> has correct A record <b>{a["answer"].strip().split()[-1]}</b>, but also a CNAME record that points to an incorrect domain <b>{cname["answer"].strip().split()[-1]}</b>.
-			<br>Please remove the same or update the record.
+			<br>Please remove or update the <b>CNAME</b> record.
 			""",
 			ConflictingDNSRecord,
 		)
