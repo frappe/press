@@ -1,7 +1,6 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
 from frappe.model.document import Document
 
 
@@ -37,24 +36,3 @@ class DashboardBanner(Document):
 		type_of_scope: DF.Literal["Team", "Server", "Site"]
 		user_dismissals: DF.Table[DashboardBannerDismissal]
 	# end: auto-generated types
-
-
-def run_scheduled_publish_unpublish():
-	now = frappe.utils.now()
-	frappe.db.set_value(
-		"Dashboard Banner",
-		{
-			"enabled": 0,
-			"is_scheduled": 1,
-			"scheduled_start_time": ("<=", now),
-			"scheduled_end_time": (">=", now),
-		},
-		"enabled",
-		1,
-	)
-	frappe.db.set_value(
-		"Dashboard Banner",
-		{"enabled": 1, "is_scheduled": 1, "scheduled_end_time": ("<", now)},
-		"enabled",
-		0,
-	)
