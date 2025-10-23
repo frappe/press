@@ -82,6 +82,39 @@ frappe.ui.form.on('Site', {
 			);
 		}
 
+		if (!site.is_monitoring_disabled) {
+			frm.add_custom_button(
+				__('Disable Monitoring'),
+				() => {
+					frappe.prompt(
+						{
+							fieldtype: 'Data',
+							label: 'Reason',
+							fieldname: 'reason',
+							reqd: 1,
+						},
+						({ reason }) => {
+							frm
+								.call('disable_monitoring', {
+									reason,
+								})
+								.then((r) => frm.refresh());
+						},
+						__('Provide Reason'),
+					);
+				},
+				__('Actions'),
+			);
+		} else {
+			frm.add_custom_button(
+				__('Enable Monitoring'),
+				() => {
+					frappe.msgprint('Go to Dashboard to re-enable monitoring.');
+				},
+				__('Actions'),
+			);
+		}
+
 		[
 			[__('Backup'), 'backup'],
 			[__('Physical Backup'), 'physical_backup'],
@@ -96,13 +129,8 @@ frappe.ui.form.on('Site', {
 			);
 		});
 		[
-			[__('Archive'), 'archive', frm.doc.status !== 'Archived'],
-			[__('Cleanup after Archive'), 'cleanup_after_archive'],
 			[__('Sync Apps'), 'sync_apps'],
 			[__('Migrate'), 'migrate'],
-			[__('Reinstall'), 'reinstall'],
-			[__('Restore'), 'restore_site'],
-			[__('Restore Tables'), 'restore_tables'],
 			[__('Update'), 'schedule_update'],
 			[__('Deactivate'), 'deactivate'],
 			[__('Activate'), 'activate', frm.doc.status !== 'Archived'],
@@ -416,6 +444,25 @@ ${r.message.error}
 			},
 			__('Dangerous Actions'),
 		);
+
+		[
+			[__('Reinstall'), 'reinstall'],
+			[__('Restore'), 'restore_site'],
+			[__('Restore Tables'), 'restore_tables'],
+			[__('Archive'), 'archive', frm.doc.status !== 'Archived'],
+			[__('Cleanup after Archive'), 'cleanup_after_archive'],
+		].forEach(([label, method]) => {
+			frm.add_custom_button(
+				label,
+				() => {
+					frappe.confirm(
+						`Are you sure you want to perform the action on this site ?`,
+						() => frm.call(method).then((r) => frm.refresh()),
+					);
+				},
+				__('Dangerous Actions'),
+			);
+		});
 	},
 });
 
@@ -433,7 +480,7 @@ function login_as_admin(site_name, reason = null) {
 				console.log(site_name, res.message.sid);
 				if (res) {
 					window.open(
-						`https://${site_name}/desk?sid=${res.message.sid}`,
+						`https://${site_name}/app?sid=${res.message.sid}`,
 						'_blank',
 					);
 				}

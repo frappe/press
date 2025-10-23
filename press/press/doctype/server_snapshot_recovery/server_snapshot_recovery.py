@@ -10,7 +10,9 @@ from frappe.utils import add_to_date
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
+from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.agent_job.agent_job import AgentJob
+from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
 from press.press.doctype.site_backup.site_backup import get_backup_bucket
 
@@ -215,7 +217,7 @@ class ServerSnapshotRecovery(Document):
 	def send_restoration_completion_email(self):
 		frappe.sendmail(
 			subject="Snapshot Recovery Completed",
-			recipients=[frappe.get_value("Team", self.team, "notify_email")],
+			recipients=get_communication_info("Email", "Server Activity", "Server", self.app_server),
 			template="snapshot_recovery_completion",
 			args={"snapshot": self.snapshot},
 		)
@@ -430,6 +432,9 @@ class ServerSnapshotRecovery(Document):
 				remote_files.append(site.database_remote_file)
 
 		delete_remote_backup_objects(remote_files)
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Server Snapshot Recovery")
 
 
 def resume_warmed_up_restorations():

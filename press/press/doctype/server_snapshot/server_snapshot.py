@@ -10,6 +10,8 @@ import frappe
 from frappe.model.document import Document
 
 from press.api.client import dashboard_whitelist
+from press.overrides import get_permission_query_conditions_for_doctype
+from press.utils.jobs import has_job_timeout_exceeded
 
 if TYPE_CHECKING:
 	from press.press.doctype.cluster.cluster import Cluster
@@ -87,8 +89,6 @@ class ServerSnapshot(Document):
 						frappe.utils.add_to_date(date, hours=23, minutes=59, seconds=59),
 					)
 				)
-
-		print(query.get_sql())
 
 		return query.run(as_dict=1)
 
@@ -636,6 +636,9 @@ class ServerSnapshot(Document):
 		)
 
 
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Server Snapshot")
+
+
 def move_pending_snapshots_to_processing():
 	"""
 	Move all pending snapshots to processing state.
@@ -687,3 +690,30 @@ def expire_snapshots():
 			frappe.db.commit()
 		except Exception:
 			frappe.log_error("Server Snapshot Expire Error")
+
+
+def sync_ongoing_server_snapshots():
+	# Usually when Virtual Disk Snapshot's status updated
+	# It should trigger the Server Snapshot sync as well.
+	# But in case if it missed for any reason, this function will ensure
+	# that the Server Snapshot's status is in sync with its Virtual Disk Snapshots
+
+	Snapshot = frappe.qb.DocType("Server Snapshot")
+	records = (
+		frappe.qb.from_(Snapshot)
+		.select(Snapshot.name)
+		.where(
+			(Snapshot.status == "Processing")
+			& (Snapshot.modified < frappe.utils.add_to_date(frappe.utils.now_datetime(), minutes=-10))
+		)
+		.limit(50)
+		.run(as_dict=True)
+	)
+
+	for record in records:
+		if has_job_timeout_exceeded():
+			break
+		with contextlib.suppress(Exception):
+			snapshot: ServerSnapshot = frappe.get_doc("Server Snapshot", record.get("name"), for_update=True)
+			snapshot.sync(now=True, trigger_snapshot_sync=False)
+			frappe.db.commit()

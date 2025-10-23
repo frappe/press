@@ -40,6 +40,7 @@ import {
 } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import { computed, ref } from 'vue';
+import { DashboardError } from '../../utils/error';
 
 const leadInfo = ref({
 	organization_name: '',

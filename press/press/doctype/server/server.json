@@ -16,7 +16,7 @@
   "cluster",
   "provider",
   "virtual_machine",
-  "ignore_incidents_since",
+  "ignore_incidents_till",
   "section_break_mequ",
   "is_server_setup",
   "is_server_prepared",
@@ -30,15 +30,17 @@
   "halt_agent_jobs",
   "stop_deployments",
   "is_for_recovery",
+  "is_monitoring_disabled",
   "billing_section",
   "team",
-  "column_break_11",
   "plan",
+  "column_break_11",
+  "auto_increase_storage",
   "auto_add_storage_min",
   "auto_add_storage_max",
-  "auto_increase_storage",
   "networking_section",
   "ip",
+  "is_static_ip",
   "ipv6",
   "column_break_3",
   "private_ip",
@@ -65,12 +67,18 @@
   "is_replication_setup",
   "column_break_24",
   "primary",
+  "auto_scale_section",
+  "secondary_server",
+  "benches_on_shared_volume",
+  "is_secondary",
+  "auto_scaled",
   "ssh_section",
   "ssh_user",
   "ssh_port",
   "frappe_user_password",
   "frappe_public_key",
   "column_break_20",
+  "bastion_server",
   "root_public_key",
   "section_break_22",
   "use_for_new_benches",
@@ -92,7 +100,9 @@
   "tags",
   "mounts_section",
   "has_data_volume",
-  "mounts"
+  "mounts",
+  "notifications_section",
+  "communication_infos"
  ],
  "fields": [
   {
@@ -272,7 +282,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner",
    "set_only_once": 1
   },
   {
@@ -511,11 +521,6 @@
    "label": "Public"
   },
   {
-   "fieldname": "ignore_incidents_since",
-   "fieldtype": "Datetime",
-   "label": "Ignore Incidents Since"
-  },
-  {
    "default": "0",
    "description": "If checked, server will be used to run Docker builds.",
    "fieldname": "use_for_build",
@@ -630,15 +635,85 @@
    "label": "Enable Logical Replication During Site Update"
   },
   {
+   "fieldname": "ignore_incidents_till",
+   "fieldtype": "Datetime",
+   "label": "Ignore Incidents Till"
+  },
+  {
    "default": "0",
    "fieldname": "tls_certificate_renewal_failed",
    "fieldtype": "Check",
    "label": "TLS Certificate Renewal Failed",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_static_ip",
+   "fieldtype": "Check",
+   "label": "Is Static IP",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notifications_section",
+   "fieldtype": "Section Break",
+   "label": "Notifications"
+  },
+  {
+   "fieldname": "communication_infos",
+   "fieldtype": "Table",
+   "label": "Communication Infos",
+   "options": "Communication Info"
+  },
+  {
+   "fieldname": "bastion_server",
+   "fieldtype": "Link",
+   "label": "Bastion Server",
+   "options": "Bastion Server"
+  },
+  {
+   "description": "Used during horizontal scaling.",
+   "fieldname": "secondary_server",
+   "fieldtype": "Link",
+   "label": "Secondary Server",
+   "options": "Server"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "auto_scale_section",
+   "fieldtype": "Section Break",
+   "label": "Auto Scale"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_monitoring_disabled",
+   "fieldtype": "Check",
+   "label": "Is Monitoring Disabled",
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "description": "Is this a secondary server",
+   "fieldname": "is_secondary",
+   "fieldtype": "Check",
+   "label": "Is Secondary"
+  },
+  {
+   "default": "0",
+   "description": "Are the benches running on a shared volume",
+   "fieldname": "benches_on_shared_volume",
+   "fieldtype": "Check",
+   "label": "Benches on Shared Volume"
+  },
+  {
+   "default": "0",
+   "description": "Check if the benches are running on the secondary server",
+   "fieldname": "auto_scaled",
+   "fieldtype": "Check",
+   "label": "Auto Scaled"
   }
  ],
  "links": [],
- "modified": "2025-09-02 16:43:19.885050",
+ "modified": "2025-10-15 17:37:56.449501",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

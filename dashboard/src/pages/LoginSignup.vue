@@ -462,6 +462,14 @@ export default {
 	},
 	mounted() {
 		this.email = localStorage.getItem('login_email');
+		if (window.posthog?.__loaded) {
+			window.posthog.identify(this.email || window.posthog.get_distinct_id(), {
+				app: 'frappe_cloud',
+				action: 'login_signup'
+			});
+
+			window.posthog.startSessionRecording();
+		}
 		setInterval(() => {
 			if (this.otpResendCountdown > 0) {
 				this.otpResendCountdown -= 1;

@@ -1,8 +1,8 @@
 ---
-- name: Install cAdvisor (ARM)
+- name: Stop Benches
   hosts: all
   become: yes
   become_user: root
   gather_facts: yes
   roles:
-    - role: cadvisor
+    - role: stop_benches

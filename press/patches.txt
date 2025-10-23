@@ -147,3 +147,5 @@ press.press.doctype.drip_email.patches.migrate_to_product_trial_field
 press.press.doctype.mpesa_payment_record.patches.add_unique_constraint
 press.press.doctype.user_2fa.patches.generate_recovery_codes
 press.press.doctype.account_request.patches.generate_expiration_time_for_request_key
+press.saas.doctype.product_trial_request.patches.set_subscription_created_flag
+press.patches.v0_8_0.move_notify_billing_email_of_team_to_child_doc

@@ -55,6 +55,7 @@ class TotalFailuresDict(typing.TypedDict):
 class MetricsType(typing.TypedDict):
 	total_builds: int
 	total_failures: TotalFailuresDict
+	median_deploy_duration: float
 	median_pending_duration: float
 	median_build_duration: float
 	median_upload_context_duration: float

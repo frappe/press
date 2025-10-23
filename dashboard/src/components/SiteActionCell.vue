@@ -28,6 +28,7 @@ import { confirmDialog, renderDialog } from '../utils/components';
 import { getToastErrorMessage } from '../utils/toast';
 import router from '../router';
 import { isLastSite } from '../data/team';
+import CommunicationInfoDialog from './CommunicationInfoDialog.vue';
 
 const props = defineProps({
 	siteName: { type: String, required: true },
@@ -74,6 +75,7 @@ function getSiteActionHandler(action) {
 	}
 
 	const actionHandlers = {
+		'Notification Settings': onNotificationSettings,
 		'Activate site': onActivateSite,
 		'Deactivate site': onDeactivateSite,
 		'Drop site': onDropSite,
@@ -85,6 +87,15 @@ function getSiteActionHandler(action) {
 	if (actionHandlers[action]) {
 		actionHandlers[action].call(this);
 	}
+}
+
+function onNotificationSettings() {
+	return renderDialog(
+		h(CommunicationInfoDialog, {
+			referenceDoctype: 'Site',
+			referenceName: site.doc.name,
+		}),
+	);
 }
 
 function onDeactivateSite() {

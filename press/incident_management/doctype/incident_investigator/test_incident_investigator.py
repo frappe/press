@@ -257,11 +257,15 @@ class TestIncidentInvestigator(FrappeTestCase):
 				self.assertTrue(step.is_likely_cause)
 
 		# Since database has high memory and high cpu add database action step
-		self.assertEqual(len(investigator.action_steps), 2)
-		first_step, second_step = investigator.action_steps
+		self.assertEqual(len(investigator.action_steps), 3)
+		first_step, wait_step, second_step = investigator.action_steps
+		self.assertListEqual(
+			[wait_step.reference_doctype, wait_step.reference_name, wait_step.method],
+			["Incident Investigator", investigator.name, "_check_process_list_capture"],
+		)
 		self.assertListEqual(
 			[first_step.reference_doctype, first_step.reference_name, first_step.method],
-			["Database Server", self.database_server.name, "_capture_process_list"],
+			["Database Server", self.database_server.name, "capture_process_list"],
 		)
 		self.assertListEqual(
 			[second_step.reference_doctype, second_step.reference_name, second_step.method],

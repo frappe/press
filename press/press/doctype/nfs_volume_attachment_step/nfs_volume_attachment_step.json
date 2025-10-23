@@ -1,0 +1,81 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-10-06 18:30:54.878299",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "step_name",
+  "method_name",
+  "status",
+  "job_type",
+  "job",
+  "attempt",
+  "is_waiting",
+  "output"
+ ],
+ "fields": [
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure"
+  },
+  {
+   "fieldname": "output",
+   "fieldtype": "Text",
+   "label": "Output"
+  },
+  {
+   "fieldname": "step_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Name"
+  },
+  {
+   "fieldname": "method_name",
+   "fieldtype": "Data",
+   "label": "Method"
+  },
+  {
+   "fieldname": "job_type",
+   "fieldtype": "Link",
+   "label": "Job Type",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "job",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Job",
+   "options": "job_type"
+  },
+  {
+   "fieldname": "attempt",
+   "fieldtype": "Int",
+   "label": "Attempt"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_waiting",
+   "fieldtype": "Check",
+   "label": "Wait"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-10-08 17:38:30.784005",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "NFS Volume Attachment Step",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

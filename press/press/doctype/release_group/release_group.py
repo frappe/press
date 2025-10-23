@@ -19,6 +19,8 @@ from frappe.query_builder.functions import Count
 from frappe.utils import cstr, flt, get_url, sbool
 from frappe.utils.caching import redis_cache
 
+from press.access.actions import ReleaseGroupActions
+from press.access.decorators import action_guard
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.exceptions import ImageNotFoundInRegistry, InsufficientSpaceOnServer, VolumeResizeLimitError
@@ -51,6 +53,8 @@ DEFAULT_DEPENDENCIES = [
 	{"dependency": "WKHTMLTOPDF_VERSION", "version": "0.12.5"},
 	{"dependency": "BENCH_VERSION", "version": "5.25.1"},
 ]
+
+SUPPORTED_WKHTMLTOPDF_VERSIONS = ["0.12.5", "0.12.6"]
 
 
 class LastDeployInfo(TypedDict):
@@ -230,6 +234,7 @@ class ReleaseGroup(Document, TagHelpers):
 		self.validate_rq_queues()
 		self.validate_max_min_workers()
 		self.validate_feature_flags()
+		self.validate_dependencies()
 		if self.check_dependent_apps:
 			self.validate_dependent_apps()
 
@@ -541,6 +546,29 @@ class ReleaseGroup(Document, TagHelpers):
 		if self.use_app_cache and not self.can_use_get_app_cache():
 			frappe.throw(_("Use App Cache cannot be set, BENCH_VERSION must be 5.22.1 or later"))
 
+	def _validate_dependency_format(self, dependency: str, version: str):
+		# Append patch version
+		if version.count(".") == 1:
+			version += ".0"
+
+		try:
+			sv.Version(version)
+		except ValueError as e:
+			frappe.throw(f"{dependency}: {e}")
+
+	def _validate_supported_wkhtmltopdf_version(self, version):
+		if version not in SUPPORTED_WKHTMLTOPDF_VERSIONS:
+			frappe.throw(
+				f"Unsupported wkhtmltopdf version {version}\n"
+				f"Supported versions: {', '.join(SUPPORTED_WKHTMLTOPDF_VERSIONS)}"
+			)
+
+	def validate_dependencies(self):
+		for dependency in self.dependencies:
+			self._validate_dependency_format(dependency.dependency, dependency.version)
+			if dependency.dependency == "WKHTMLTOPDF_VERSION":
+				self._validate_supported_wkhtmltopdf_version(dependency.version)
+
 	def can_use_get_app_cache(self) -> bool:
 		version = find(
 			self.dependencies,
@@ -577,7 +605,7 @@ class ReleaseGroup(Document, TagHelpers):
 		response = dc.schedule_build_and_deploy()
 		return response.get("name")
 
-	def _try_server_size_increase_or_throw(self, server: Server, mountpoint: str):
+	def _try_server_size_increase_or_throw(self, server: Server, mountpoint: str, required_size: int):
 		"""In case of low storage on the server try to either increase the storage (if allowed) or throw an error"""
 		if server.auto_increase_storage:
 			try:
@@ -590,7 +618,8 @@ class ReleaseGroup(Document, TagHelpers):
 				)
 		else:
 			frappe.throw(
-				f"Not enough space on server {server.name} to create a new bench.", InsufficientSpaceOnServer
+				f"Not enough space on server {server.name} to create a new bench. {required_size}G is required.",
+				InsufficientSpaceOnServer,
 			)
 
 	@staticmethod
@@ -629,7 +658,9 @@ class ReleaseGroup(Document, TagHelpers):
 			last_image_size = self._get_last_deployed_image_size(server, last_deployed_bench)
 
 			if last_image_size and (free_space < last_image_size):
-				self._try_server_size_increase_or_throw(server, mountpoint)
+				self._try_server_size_increase_or_throw(
+					server, mountpoint, required_size=last_image_size - free_space
+				)
 
 	@frappe.whitelist()
 	def create_deploy_candidate(
@@ -951,6 +982,7 @@ class ReleaseGroup(Document, TagHelpers):
 		)
 
 	@dashboard_whitelist()
+	@action_guard(ReleaseGroupActions.GENERATE_SSH_CERTIFICATE)
 	def generate_certificate(self):
 		ssh_key = frappe.get_all(
 			"User SSH Key",
@@ -1420,7 +1452,7 @@ class ReleaseGroup(Document, TagHelpers):
 				check_image_exists=True,
 			)
 		except ImageNotFoundInRegistry:
-			self.add_server(server=server, deploy=True, force_new_build=True)
+			return self.add_server(server=server, deploy=True, force_new_build=True)
 
 	@frappe.whitelist()
 	def change_server(self, server: str):
@@ -1520,8 +1552,8 @@ class ReleaseGroup(Document, TagHelpers):
 
 		self.use_delta_builds = 0
 
-	def is_version_14_or_higher(self):
-		return frappe.get_cached_value("Frappe Version", self.version, "number") >= 14
+	def is_this_version_or_above(self, version: int) -> bool:
+		return frappe.get_cached_value("Frappe Version", self.version, "number") >= version
 
 	def setup_default_feature_flags(self):
 		DEFAULT_FEATURE_FLAGS = {

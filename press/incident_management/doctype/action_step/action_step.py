@@ -14,7 +14,6 @@ class ActionStep(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		is_taken: DF.Check
 		method: DF.Data | None
 		output: DF.Code | None
 		parent: DF.Data
@@ -22,6 +21,7 @@ class ActionStep(Document):
 		parenttype: DF.Data
 		reference_doctype: DF.Link | None
 		reference_name: DF.DynamicLink | None
+		wait: DF.Check
 	# end: auto-generated types
 
 	def before_save(self):
@@ -38,17 +38,3 @@ class ActionStep(Document):
 				f"Method '{self.method}' does not exist on document '{target_doc.name}'",
 				frappe.ValidationError,
 			)
-
-	def after_insert(self):
-		"""We execute the step immediately we need to ensure the long functions are in a queue."""
-		execute_incident_action = frappe.db.get_single_value(
-			"Press Settings", "execute_incident_action", cache=True
-		)
-
-		if not execute_incident_action:
-			return
-
-		target_doc = frappe.get_doc(self.reference_doctype, self.reference_name)
-		self.output = getattr(target_doc, self.method)()
-		self.is_taken = True
-		self.save()

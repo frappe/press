@@ -26,6 +26,7 @@
 import ObjectList from '../ObjectList.vue';
 import { computed, ref } from 'vue';
 import InvoiceDetail from './InvoiceDetail.vue';
+import { currency } from '../../utils/format';
 
 let showInvoice = ref(null);
 const invoiceDialog = ref(false);
@@ -71,6 +72,11 @@ const partnerInvoices = computed(() => {
 				align: 'center',
 			},
 			{
+				label: 'Invoice ID',
+				fieldname: 'name',
+				align: 'center',
+			},
+			{
 				label: 'Status',
 				fieldname: 'status',
 				type: 'Badge',
@@ -84,7 +90,10 @@ const partnerInvoices = computed(() => {
 			{
 				label: 'Amount',
 				fieldname: 'total_before_discount',
-				align: 'center',
+				align: 'right',
+				format(value, row) {
+					return currency(value, row.currency);
+				},
 			},
 		],
 		filterControls() {

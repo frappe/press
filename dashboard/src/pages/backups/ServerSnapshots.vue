@@ -3,10 +3,15 @@
 		<div class="sticky top-0 z-10 shrink-0">
 			<Header>
 				<Breadcrumbs
-					:items="[{ label: 'Site Backups', route: '/backups/sites' }]"
+					:items="[{ label: 'Server Snapshots', route: '/backups/sites' }]"
 				/>
 			</Header>
 		</div>
+		<CustomAlerts
+			ctx_type="List Page"
+			:disable-last-child-bottom-margin="true"
+			container-class="p-5 pb-0"
+		/>
 		<div class="p-5">
 			<ObjectList :options="listOptions" />
 		</div>
@@ -15,12 +20,14 @@
 
 <script>
 import ObjectList from '../../components/ObjectList.vue';
+import CustomAlerts from '../../components/CustomAlerts.vue';
 import { date } from '../../utils/format';
 
 export default {
 	name: 'Server Snapshots',
 	components: {
 		ObjectList,
+		CustomAlerts,
 	},
 	computed: {
 		listOptions() {

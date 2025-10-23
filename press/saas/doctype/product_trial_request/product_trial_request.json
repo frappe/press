@@ -19,6 +19,7 @@
   "section_break_zlzx",
   "site_creation_started_on",
   "is_standby_site",
+  "is_subscription_created",
   "column_break_bvut",
   "site_creation_completed_on",
   "is_site_accessible",
@@ -137,12 +138,18 @@
    "fieldtype": "Code",
    "label": "Error",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_subscription_created",
+   "fieldtype": "Check",
+   "label": "Is Subscription Created"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-25 11:10:51.808901",
+ "modified": "2025-09-22 14:10:22.140755",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial Request",
