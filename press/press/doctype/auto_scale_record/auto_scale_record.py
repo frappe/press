@@ -55,6 +55,8 @@ class AutoScaleRecord(Document):
 		secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
 		frappe.db.set_value("Server", self.primary_server, "scaled_up", True)
 
+		self.setup_secondary_upstream()
+
 		return Agent(self.secondary_server).change_bench_directory(
 			redis_connection_string_ip=primary_server_private_ip,
 			secondary_server_private_ip=secondary_server_private_ip,
@@ -78,6 +80,8 @@ class AutoScaleRecord(Document):
 		secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
 		frappe.db.set_value("Server", self.primary_server, "scaled_up", False)
 
+		self.setup_primary_upstream()
+
 		return Agent(self.primary_server).change_bench_directory(
 			redis_connection_string_ip="localhost",
 			secondary_server_private_ip=secondary_server_private_ip,
@@ -87,6 +91,30 @@ class AutoScaleRecord(Document):
 			reference_doctype="Server",
 			reference_name=self.primary_server,
 		)
+
+	def setup_secondary_upstream(self) -> "AgentJob":
+		"""Update proxy server with secondary as upstream"""
+		proxy_server = frappe.get_value("Server", self.secondary_server, "proxy_server")
+		agent = Agent(proxy_server, server_type="Proxy Server")
+		active_sites = frappe.get_all("Site", {"server": self.primary_server}, pluck="name")
+
+		for site in active_sites:
+			agent.new_upstream_file(server=self.secondary_server, site=site)
+			frappe.db.set_value("Site", site, "server", self.secondary_server)
+
+		frappe.db.commit()  # Commit for sanity
+
+	def setup_primary_upstream(self) -> "AgentJob":
+		"""Fallback to older primary servers upstream by removing the secondary servers upstream"""
+		proxy_server = frappe.get_value("Server", self.secondary_server, "proxy_server")
+		agent = Agent(proxy_server, server_type="Proxy Server")
+		active_sites = frappe.get_all("Site", {"server": self.secondary_server}, pluck="name")
+
+		for site in active_sites:
+			agent.remove_upstream_file(server=self.secondary_server, site=site)
+			frappe.db.set_value("Site", site, "server", self.primary_server)
+
+		frappe.db.commit()  # Commit for sanity
 
 
 class SwitchServers:
