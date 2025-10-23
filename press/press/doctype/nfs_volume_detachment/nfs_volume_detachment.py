@@ -300,7 +300,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 	def validate(self):
 		is_server_auto_scaled = frappe.db.get_value("Server", self.primary_server, "auto_scale")
 		if is_server_auto_scaled:
-			frappe.throw("Benches are currently being run on the secondary server!")
+			frappe.throw("Benches are currently running on the secondary server!")
 
 	def execute_mount_steps(self):
 		frappe.enqueue_doc(
