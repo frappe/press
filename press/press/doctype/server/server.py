@@ -41,6 +41,7 @@ if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
+	from press.press.doctype.auto_scale_record.auto_scale_record import AutoScaleRecord
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.cluster.cluster import Cluster
 	from press.press.doctype.database_server.database_server import DatabaseServer
@@ -3003,27 +3004,31 @@ class Server(BaseServer):
 		if not self.can_scale:
 			frappe.throw("Server is not configured for auto scaling", frappe.ValidationError)
 
-		auto_scale_record = frappe.get_doc(
-			{
-				"doctype": "Auto Scale Record",
-				"scale_up": True,
-				"primary_server": self.name,
-			}
-		)
+		auto_scale_record = self._create_auto_scale_record(scale_up=True)
+		auto_scale_record.insert()
 
+	@frappe.whitelist()
+	def scale_down(self):
+		if not self.can_scale:
+			frappe.throw("Server is not configured for auto scaling", frappe.ValidationError)
+
+		auto_scale_record = self._create_auto_scale_record(scale_up=False)
 		auto_scale_record.insert()
 
 	@property
 	def can_scale(self) -> bool:
 		"""Check if server is configured for auto scaling"""
-		if self.is_secondary or not self.secondary_server:
-			return False
+		return self.benches_on_shared_volume
 
-		return bool(
-			frappe.db.get_value(
-				"NFS Volume Attachment",
-				{"status": "Active", "primary_server": self.name, "secondary_server": self.secondary_server},
-			)
+	def _create_auto_scale_record(self, scale_up: bool) -> "AutoScaleRecord":
+		"""Create up/down scale record"""
+		return frappe.get_doc(
+			{
+				"doctype": "Auto Scale Record",
+				"scale_up": scale_up,
+				"scale_down": not scale_up,
+				"primary_server": self.name,
+			}
 		)
 
 	@property

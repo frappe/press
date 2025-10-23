@@ -30,7 +30,6 @@ class AutoScaleRecord(Document):
 	def before_insert(self):
 		"""Set metadata attributes"""
 		self.secondary_server = frappe.db.get_value("Server", self.primary_server, "secondary_server")
-		self.save()
 
 	def after_insert(self):
 		"""Trigger auto scaling"""
@@ -53,10 +52,13 @@ class AutoScaleRecord(Document):
 			as_dict=True,
 		)
 		primary_server_private_ip = frappe.db.get_value("Server", self.primary_server, "private_ip")
+		secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
+		frappe.db.set_value("Server", self.primary_server, "scaled_up", True)
 
 		return Agent(self.secondary_server).change_bench_directory(
 			redis_connection_string_ip=primary_server_private_ip,
-			secondary_server_private_ip=self.secondary_server_private_ip,
+			secondary_server_private_ip=secondary_server_private_ip,
+			directory="/shared",
 			is_primary=False,
 			registry_settings={
 				"url": settings.docker_registry_url,
@@ -74,10 +76,13 @@ class AutoScaleRecord(Document):
 		bench directories in all the configs.
 		"""
 		secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
+		frappe.db.set_value("Server", self.primary_server, "scaled_up", False)
+
 		return Agent(self.primary_server).change_bench_directory(
 			redis_connection_string_ip="localhost",
 			secondary_server_private_ip=secondary_server_private_ip,
 			is_primary=True,
+			directory="/shared",
 			restart_benches=True,
 			reference_doctype="Server",
 			reference_name=self.primary_server,
