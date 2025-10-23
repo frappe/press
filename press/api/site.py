@@ -14,6 +14,7 @@ from botocore.exceptions import ClientError
 from dns.resolver import Resolver
 from frappe.core.utils import find
 from frappe.desk.doctype.tag.tag import add_tag
+from frappe.query_builder import Case
 from frappe.rate_limiter import rate_limit
 from frappe.utils import flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
@@ -180,7 +181,7 @@ def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 		.where(Server.proxy_server.isin(proxy_servers))
 		.where(Bench.status == "Active")
 		.where(Bench.group == site["group"])
-		.orderby(Bench.cluster == cluster, order=frappe.qb.desc)
+		.orderby(Case().when(Bench.cluster == cluster, 1).else_(0), order=frappe.qb.desc)
 		.orderby(Server.use_for_new_sites, order=frappe.qb.desc)
 		.orderby(Bench.creation, order=frappe.qb.desc)
 		.limit(1)
