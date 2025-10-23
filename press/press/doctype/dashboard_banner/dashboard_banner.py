@@ -26,7 +26,7 @@ class DashboardBanner(Document):
 		is_dismissible: DF.Check
 		is_global: DF.Check
 		is_scheduled: DF.Check
-		message: DF.Data | None
+		message: DF.LongText | None
 		scheduled_end_time: DF.Datetime | None
 		scheduled_start_time: DF.Datetime | None
 		server: DF.Link | None
@@ -47,5 +47,8 @@ def run_scheduled_publish_unpublish():
 		1,
 	)
 	frappe.db.set_value(
-		"Dashboard Banner", {"is_scheduled": 1, "scheduled_end_time": ("<", frappe.utils.now())}, "enabled", 0
+		"Dashboard Banner",
+		{"is_scheduled": 1, "scheduled_end_time": ("<", frappe.utils.now())},
+		"enabled",
+		0,
 	)
