@@ -40,15 +40,21 @@ class DashboardBanner(Document):
 
 
 def run_scheduled_publish_unpublish():
+	now = frappe.utils.now()
 	frappe.db.set_value(
 		"Dashboard Banner",
-		{"is_scheduled": 1, "scheduled_start_time": ("<=", frappe.utils.now())},
+		{
+			"enabled": 0,
+			"is_scheduled": 1,
+			"scheduled_start_time": ("<=", now),
+			"scheduled_end_time": (">=", now),
+		},
 		"enabled",
 		1,
 	)
 	frappe.db.set_value(
 		"Dashboard Banner",
-		{"is_scheduled": 1, "scheduled_end_time": ("<", frappe.utils.now())},
+		{"enabled": 1, "is_scheduled": 1, "scheduled_end_time": ("<", now)},
 		"enabled",
 		0,
 	)
