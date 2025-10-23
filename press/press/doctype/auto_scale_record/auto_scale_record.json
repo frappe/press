@@ -30,12 +30,14 @@
    "default": "0",
    "fieldname": "scale_up",
    "fieldtype": "Check",
+   "in_list_view": 1,
    "label": "Scale Up"
   },
   {
    "default": "0",
    "fieldname": "scale_down",
    "fieldtype": "Check",
+   "in_list_view": 1,
    "label": "Scale Down"
   },
   {
@@ -52,7 +54,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-23 11:36:33.955492",
+ "modified": "2025-10-23 20:34:40.233178",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Auto Scale Record",
@@ -74,5 +76,6 @@
  "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "primary_server"
 }
