@@ -406,6 +406,7 @@ class ProductTrial(Document):
 
 		ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
 		Server = frappe.qb.DocType("Server")
+		Bench = frappe.qb.DocType("Bench")
 
 		servers = (
 			frappe.qb.from_(ReleaseGroupServer)
@@ -414,6 +415,11 @@ class ProductTrial(Document):
 			.join(Server)
 			.on(Server.name == ReleaseGroupServer.server)
 			.where(Server.cluster == cluster)
+			.where(
+				frappe.qb.exists(
+					frappe.qb.from_(Bench).select(Bench.name).where(Bench.server == ReleaseGroupServer.server)
+				)
+			)
 			.run(pluck="server")
 		)
 
