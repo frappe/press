@@ -71,6 +71,7 @@ class Agent:
 				"username": settings.docker_registry_username,
 				"password": settings.docker_registry_password,
 			},
+			"agent_password": frappe.get_cached_doc("Server", self.server).get_password("agent_password"),
 		}
 
 		if bench.mounts:
