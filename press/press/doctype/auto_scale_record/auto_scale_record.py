@@ -115,27 +115,3 @@ class AutoScaleRecord(Document):
 			frappe.db.set_value("Site", site, "server", self.primary_server)
 
 		frappe.db.commit()  # Commit for sanity
-
-
-class SwitchServers:
-	def __init__(self, primary_server: str, secondary_server: str) -> None:
-		self.primary_server = primary_server
-		self.secondary_server = secondary_server
-		self.primary_server_private_ip = frappe.db.get_value("Server", self.primary_server, "private_ip")
-		self.secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
-
-	@property
-	def have_workers_stopped_on_primary_server(self) -> bool:
-		status = frappe.get_value(
-			"Agent Job", {"server": self.primary_server, "job_type": "Stop Bench Workers"}, "status"
-		)
-		return status == "Success"
-
-	def stop_workers_on_primary_server(self) -> "AgentJob":
-		return Agent(self.primary_server).stop_bench_workers("Server", self.primary_server)
-
-	def start_workers_on_primary_server(self) -> "AgentJob":
-		return Agent(self.primary_server).start_bench_workers("Server", self.primary_server)
-
-	def force_remove_all_benches(self) -> "AgentJob":
-		return Agent(self.secondary_server).force_remove_all_benches("Server", self.secondary_server)
