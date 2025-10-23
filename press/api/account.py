@@ -1426,12 +1426,21 @@ def get_user_banners():
 	servers = list(set([pair["server"] for pair in site_server_pairs if pair.get("server")]))
 
 	DashboardBanner = frappe.qb.DocType("Dashboard Banner")
+	now = frappe.utils.now()
 
 	# fetch all enabled banners for this user
 	all_enabled_banners = (
 		frappe.qb.from_(DashboardBanner)
 		.select("*")
-		.where(DashboardBanner.enabled == 1)
+		.where(
+			((DashboardBanner.enabled == 1) & (DashboardBanner.is_scheduled == 0))
+			| (
+				(DashboardBanner.enabled == 1)
+				& (DashboardBanner.is_scheduled == 1)
+				& (DashboardBanner.scheduled_start_time <= now)
+				& (DashboardBanner.scheduled_end_time >= now)
+			)
+		)
 		.where(
 			(DashboardBanner.is_global == 1)
 			| ((DashboardBanner.type_of_scope == "Site") & (DashboardBanner.site.isin(sites or [""])))
