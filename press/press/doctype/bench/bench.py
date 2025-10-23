@@ -15,7 +15,6 @@ from frappe.exceptions import DoesNotExistError
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists, make_autoname
 from frappe.utils import get_system_timezone
-from passlib.hash import pbkdf2_sha256 as pbkdf2
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
@@ -269,8 +268,8 @@ class Bench(Document):
 		if self.is_new():
 			self.port_offset = self.get_unused_port_offset()
 
-		agent_password_raw = frappe.get_cached_doc("Server", self.server).get_password("agent_password")
-		agent_password = pbkdf2.hash(agent_password_raw)
+		agent_password = frappe.get_cached_doc("Server", self.server).get_password("agent_password")
+
 		config = {
 			"monitor": True,
 			"redis_cache": f"redis://:{agent_password}@localhost:13000",
