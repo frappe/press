@@ -54,12 +54,14 @@ class AutoScaleRecord(Document):
 		primary_server_private_ip = frappe.db.get_value("Server", self.primary_server, "private_ip")
 		secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
 		frappe.db.set_value("Server", self.primary_server, "scaled_up", True)
+		agent_password = frappe.get_cached_doc("Server", self.primary_server).get_password("agent_password")
 
 		self.setup_secondary_upstream()
 
 		return Agent(self.secondary_server).change_bench_directory(
 			redis_connection_string_ip=primary_server_private_ip,
 			secondary_server_private_ip=secondary_server_private_ip,
+			agent_password=agent_password,
 			directory="/shared",
 			is_primary=False,
 			registry_settings={
@@ -79,12 +81,14 @@ class AutoScaleRecord(Document):
 		"""
 		secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
 		frappe.db.set_value("Server", self.primary_server, "scaled_up", False)
+		agent_password = frappe.get_cached_doc("Server", self.primary_server).get_password("agent_password")
 
 		self.setup_primary_upstream()
 
 		return Agent(self.primary_server).change_bench_directory(
 			redis_connection_string_ip="localhost",
 			secondary_server_private_ip=secondary_server_private_ip,
+			agent_password=agent_password,
 			is_primary=True,
 			directory="/shared",
 			restart_benches=True,
