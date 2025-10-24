@@ -100,12 +100,12 @@ class NFSVolumeDetachment(Document, StepHandler):
 			self.secondary_server,
 			"private_ip",
 		)
-		agent_password = frappe.get_cached_doc("Server", self.primary_server).get_password("agent_password")
+		redis_password = frappe.get_cached_doc("Server", self.primary_server).get_redis_password()
 
 		agent_job = Agent(self.primary_server).change_bench_directory(
 			redis_connection_string_ip="localhost",
 			directory="/home/frappe/benches/",
-			agent_password=agent_password,
+			redis_password=redis_password,
 			secondary_server_private_ip=secondary_server_private_ip,
 			is_primary=True,
 			restart_benches=True,

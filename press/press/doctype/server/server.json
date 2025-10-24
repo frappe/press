@@ -48,6 +48,7 @@
   "private_vlan_id",
   "agent_section",
   "agent_password",
+  "redis_password",
   "column_break_pdbx",
   "disable_agent_job_auto_retry",
   "reverse_proxy_section",
@@ -722,6 +723,11 @@
   {
    "fieldname": "column_break_ywnx",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "redis_password",
+   "fieldtype": "Password",
+   "label": "Redis Password"
   }
  ],
  "links": [
@@ -730,7 +736,7 @@
    "link_fieldname": "primary_server"
   }
  ],
- "modified": "2025-10-23 10:56:32.953573",
+ "modified": "2025-10-24 16:05:46.468706",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
