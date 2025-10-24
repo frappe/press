@@ -268,7 +268,7 @@ class TestAPIMarketplace(FrappeTestCase):
 
 	def test_update_app_summary(self):
 		frappe.set_user(self.team.user)
-		summary = frappe.mock("paragraph")
+		summary = frappe.mock("paragraph")[:140]
 		update_app_summary(self.marketplace_app.name, summary)
 		self.marketplace_app.reload()
 		self.assertEqual(self.marketplace_app.description, summary)
