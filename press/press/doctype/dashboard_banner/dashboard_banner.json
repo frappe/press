@@ -42,7 +42,7 @@
   },
   {
    "fieldname": "message",
-   "fieldtype": "Data",
+   "fieldtype": "Long Text",
    "label": "Message"
   },
   {
@@ -206,7 +206,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-09 13:12:32.469281",
+ "modified": "2025-10-23 12:19:53.314950",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Dashboard Banner",
