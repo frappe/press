@@ -602,7 +602,8 @@ class ReleaseGroup(Document, TagHelpers):
 	@dashboard_whitelist()
 	def initial_deploy(self):
 		dc = self.create_deploy_candidate()
-		dc.schedule_build_and_deploy()
+		response = dc.schedule_build_and_deploy()
+		return response.get("name")
 
 	def _try_server_size_increase_or_throw(self, server: Server, mountpoint: str, required_size: int):
 		"""In case of low storage on the server try to either increase the storage (if allowed) or throw an error"""
