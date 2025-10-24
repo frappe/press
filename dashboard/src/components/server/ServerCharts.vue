@@ -12,9 +12,7 @@
 				class="w-32"
 				label="Duration"
 				type="select"
-				:options="
-					durationOptions.map((option) => ({ label: option, value: option }))
-				"
+				:options="durationOptions"
 				v-model="duration"
 			/>
 		</div>
@@ -431,13 +429,21 @@ export default {
 	},
 	data() {
 		return {
-			duration: '1 Hour',
+			duration: '1h',
 			showAdvancedAnalytics: false,
 			localTimezone: dayjs.tz.guess(),
 			slowLogsDurationType: 'Denormalized',
 			slowLogsFrequencyType: 'Denormalized',
 			chosenServer: this.$route.query.server ?? this.serverName,
-			durationOptions: ['1 Hour', '6 Hour', '24 Hour', '7 Days', '15 Days'],
+			durationOptions: [
+				{ label: 'Duration', value: null, disabled: true },
+				{ label: '1 hour', value: '1h' },
+				{ label: '6 hours', value: '6h' },
+				{ label: '24 hours', value: '24h' },
+				{ label: '3 days', value: '3d' },
+				{ label: '7 days', value: '7d' },
+				{ label: '15 days', value: '15d' },
+			],
 			chartColors: [
 				this.$theme.colors.green[500],
 				this.$theme.colors.red[500],

@@ -60,6 +60,7 @@ def update_website_info(website_info):
 		frappe.log_error("Error updating website info")
 
 
+
 @frappe.whitelist()
 def get_partner_details(partner_email):
 	from press.utils.billing import get_frappe_io_connection, is_frappe_auth_disabled
@@ -108,7 +109,7 @@ def transfer_credits(amount, customer, partner):
 	amt = frappe.utils.flt(amount)
 	partner_doc = frappe.get_doc("Team", partner)
 	credits_available = partner_doc.get_balance()
-	partner_level, certificates = partner_doc.get_partner_level()
+	partner_level, _ = partner_doc.get_partner_level()
 	discount_percent = DISCOUNT_MAP.get(partner_level)
 
 	if credits_available < amt:

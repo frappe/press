@@ -24,6 +24,7 @@ from press.exceptions import (
 	AAAARecordExists,
 	ConflictingCAARecord,
 	ConflictingDNSRecord,
+	DomainNoLongerPointed,
 	DomainProxied,
 	MultipleARecords,
 	MultipleCNAMERecords,
@@ -1790,18 +1791,38 @@ def ensure_dns_aaaa_record_doesnt_exist(domain: str):
 		pass  # We have other problems
 
 
-def check_domain_proxied(domain) -> str | None:
+def get_proxy_and_redirected_status(domain) -> tuple[str | None, bool]:
 	try:
-		res = requests.head(f"http://{domain}", timeout=3)
+		res = requests.head(f"http://{domain}/.well-known/acme-challenge/random", timeout=3)
 	except requests.exceptions.RequestException as e:
 		frappe.throw("Unable to connect to the domain. Is the DNS correct?\n\n" + str(e))
 	else:
-		if (server := res.headers.get("server")) not in ("Frappe Cloud", None):  # eg: cloudflare
-			return server
+		redirected = (
+			res.headers.get("location") == "http://ssl.frappe.cloud/.well-known/acme-challenge/random"
+		)
+		server = res.headers.get("server")  # eg: cloudflare
+		server = None if server == "Frappe Cloud" else server
+		return server, redirected
 
 
-def _check_dns_cname_a(name, domain, ignore_proxying=False):
+def _check_dns_cname_a(name, domain, ignore_proxying=False, throw_proxy_validation_early=True):
 	check_domain_allows_letsencrypt_certs(domain)
+	proxy, redirected = get_proxy_and_redirected_status(domain)
+	if proxy:
+		if ignore_proxying:
+			if redirected:  # pointed to Frappe Cloud servers at least
+				return {"CNAME": {}, "A": {}, "matched": True, "type": "A"}  # assume A
+			frappe.throw(
+				f"Domain <b>{domain}</b> doesn't point to Frappe Cloud servers anymore (server: <b>{proxy}</b>).",
+				DomainNoLongerPointed,
+			)
+
+		if throw_proxy_validation_early:
+			frappe.throw(
+				f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.""",
+				DomainProxied,
+			)
+
 	ensure_dns_aaaa_record_doesnt_exist(domain)
 	cname = check_dns_cname(name, domain)
 	result = {"CNAME": cname} | cname
@@ -1826,13 +1847,9 @@ def _check_dns_cname_a(name, domain, ignore_proxying=False):
 			ConflictingDNSRecord,
 		)
 
-	proxy = check_domain_proxied(domain)
-	if proxy:
-		if ignore_proxying:  # no point checking the rest if proxied
-			return {"CNAME": {}, "A": {}, "matched": True, "type": "A"}  # assume A
+	if proxy and not throw_proxy_validation_early:
 		frappe.throw(
-			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.
-			<br>You may enable it once the domain is verified.""",
+			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.""",
 			DomainProxied,
 		)
 
@@ -1840,13 +1857,15 @@ def _check_dns_cname_a(name, domain, ignore_proxying=False):
 	return result
 
 
-def check_dns_cname_a(name, domain, ignore_proxying=False, throw_error=True):
+def check_dns_cname_a(
+	name, domain, ignore_proxying=False, throw_error=True, throw_proxy_validation_early=True
+):
 	if throw_error:
-		return _check_dns_cname_a(name, domain, ignore_proxying)
+		return _check_dns_cname_a(name, domain, ignore_proxying, throw_proxy_validation_early)
 
 	result = {}
 	try:
-		result = _check_dns_cname_a(name, domain, ignore_proxying)
+		result = _check_dns_cname_a(name, domain, ignore_proxying, throw_proxy_validation_early)
 
 	except Exception as e:
 		result["exc_type"] = e.__class__.__name__

@@ -87,9 +87,9 @@ class BaseServer(Document, TagHelpers):
 		"auto_add_storage_min",
 		"auto_add_storage_max",
 		"auto_increase_storage",
+		"is_monitoring_disabled",
 		"auto_purge_binlog_based_on_size",
 		"binlog_max_disk_usage_percent",
-		"is_monitoring_disabled",
 	)
 
 	@staticmethod
@@ -97,7 +97,7 @@ class BaseServer(Document, TagHelpers):
 		Server = frappe.qb.DocType("Server")
 
 		status = filters.get("status")
-		if status == "Archived":
+		if status == "Archived":git diff --no-index
 			query = query.where(Server.status == status)
 		else:
 			query = query.where(Server.status != "Archived")
@@ -852,7 +852,9 @@ class BaseServer(Document, TagHelpers):
 			log_error("EC2 Volume Extend Exception", server=server.as_dict())
 
 	def enqueue_extend_ec2_volume(self, device, log):
-		frappe.enqueue_doc(self.doctype, self.name, "extend_ec2_volume", device=device, log=log)
+		frappe.enqueue_doc(
+			self.doctype, self.name, "extend_ec2_volume", device=device, log=log, at_front=True, queue="long"
+		)
 
 	@cached_property
 	def time_to_wait_before_updating_volume(self) -> timedelta | int:
