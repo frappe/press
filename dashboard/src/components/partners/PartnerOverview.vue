@@ -200,6 +200,24 @@
 		</Dialog>
 
 		<Dialog
+			:show="showUpdateWebsiteInfo"
+			v-model="showUpdateWebsiteInfo"
+			:options="{ title: 'Update Website Info', size: '2xl' }"
+		>
+			<template #body-content>
+				<WebsiteInfoDialog
+					v-model="partnerDetails.data"
+					@success="
+						() => {
+							partnerDetails.reload();
+							showUpdateWebsiteInfo = false;
+						}
+					"
+				/>
+			</template>
+		</Dialog>
+
+		<Dialog
 			:show="showRenewalConfirmationDialog"
 			v-model="showRenewalConfirmationDialog"
 			:options="{
@@ -250,6 +268,7 @@ import PartnerContribution from './PartnerContribution.vue';
 import ClickToCopyField from '../ClickToCopyField.vue';
 import PartnerCreditsForm from './PartnerCreditsForm.vue';
 import PartnerMembers from './PartnerMembers.vue';
+import WebsiteInfoDialog from './WebsiteInfoDialog.vue';
 import { toast } from 'vue-sonner';
 
 const team = inject('team');
@@ -257,6 +276,7 @@ const team = inject('team');
 const showPartnerContributionDialog = ref(false);
 const showPartnerCreditsDialog = ref(false);
 const showPartnerMembersDialog = ref(false);
+const showUpdateWebsiteInfo = ref(false);
 const showRenewalConfirmationDialog = ref(false);
 
 const partnerDetails = createResource({
