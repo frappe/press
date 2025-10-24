@@ -115,6 +115,7 @@ class AutoScaleRecord(Document):
 		active_sites = frappe.get_all("Site", {"server": self.secondary_server}, pluck="name")
 
 		for site in active_sites:
+			agent.new_upstream_file(server=self.primary_server, site=site)
 			agent.remove_upstream_file(server=self.secondary_server, site=site)
 			frappe.db.set_value("Site", site, "server", self.primary_server)
 
