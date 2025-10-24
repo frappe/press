@@ -236,6 +236,8 @@ frappe.ui.form.on('Server', {
 					frm.doc.status === 'Active' &&
 					frm.doc.platform === 'x86_64',
 			],
+			[__('Scale Up'), 'scale_up', true, !frm.doc.scaled_up],
+			[__('Scale Down'), 'scale_down', true, frm.doc.scaled_up],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

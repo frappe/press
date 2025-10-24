@@ -1,0 +1,81 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-10-23 10:27:46.053961",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "server_section",
+  "primary_server",
+  "secondary_server",
+  "column_break_nxd6",
+  "scale_up",
+  "scale_down"
+ ],
+ "fields": [
+  {
+   "fieldname": "server_section",
+   "fieldtype": "Section Break",
+   "label": "Metadata"
+  },
+  {
+   "fieldname": "primary_server",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Primary Server",
+   "options": "Server",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "scale_up",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Scale Up"
+  },
+  {
+   "default": "0",
+   "fieldname": "scale_down",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Scale Down"
+  },
+  {
+   "fieldname": "column_break_nxd6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "secondary_server",
+   "fieldtype": "Link",
+   "label": "Secondary Server",
+   "options": "Server"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-10-23 20:34:40.233178",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Auto Scale Record",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "primary_server"
+}
