@@ -1680,6 +1680,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		secondary_server_private_ip: str,
 		is_primary: bool,
 		directory: str,
+		agent_password: str,
 		restart_benches: bool,
 		reference_name: str | None = None,
 		redis_connection_string_ip: str | None = None,
@@ -1692,6 +1693,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			data={
 				"restart_benches": restart_benches,
 				"redis_connection_string_ip": redis_connection_string_ip,
+				"agent_password": agent_password,
 				"is_primary": is_primary,
 				"directory": directory,
 				"secondary_server_private_ip": secondary_server_private_ip,
