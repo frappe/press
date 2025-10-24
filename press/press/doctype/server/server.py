@@ -97,7 +97,7 @@ class BaseServer(Document, TagHelpers):
 		Server = frappe.qb.DocType("Server")
 
 		status = filters.get("status")
-		if status == "Archived":git diff --no-index
+		if status == "Archived":
 			query = query.where(Server.status == status)
 		else:
 			query = query.where(Server.status != "Archived")
