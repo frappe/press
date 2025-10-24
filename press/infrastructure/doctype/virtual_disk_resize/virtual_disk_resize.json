@@ -304,12 +304,13 @@
   {
    "fieldname": "scheduled_time",
    "fieldtype": "Datetime",
-   "label": "Scheduled Time"
+   "label": "Scheduled Time",
+   "set_only_once": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-08 16:03:38.197547",
+ "modified": "2025-10-22 22:43:41.435999",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Virtual Disk Resize",
