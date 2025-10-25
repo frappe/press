@@ -40,6 +40,10 @@
   "free_credits_allocated",
   "column_break_12",
   "address_html",
+  "section_break_jzok",
+  "receive_budget_alerts",
+  "monthly_alert_limit",
+  "column_break_hunh",
   "notification_tab",
   "section_break_9",
   "send_notifications",
@@ -574,6 +578,28 @@
    "fieldtype": "Table",
    "label": "Communication Infos",
    "options": "Communication Info"
+  },
+  {
+   "fieldname": "section_break_jzok",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "receive_budget_alerts",
+   "description": "Email alert when monthly spend exceeds limit",
+   "fieldname": "monthly_alert_limit",
+   "fieldtype": "Currency",
+   "label": "Monthly Alert Limit",
+   "mandatory_depends_on": "receive_budget_alerts"
+  },
+  {
+   "fieldname": "column_break_hunh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "receive_budget_alerts",
+   "fieldtype": "Check",
+   "label": "Receive Budget Alerts"
   }
  ],
  "grid_page_length": 50,
@@ -639,7 +665,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2025-10-08 10:25:21.095258",
+ "modified": "2025-10-14 17:03:15.098652",
  "modified_by": "aysha@frappe.io",
  "module": "Press",
  "name": "Team",
