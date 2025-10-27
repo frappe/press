@@ -40,6 +40,8 @@ from press.utils.webhook import create_webhook_event
 if TYPE_CHECKING:
 	from collections.abc import Generator, Iterable
 
+	from press.press.doctype.server.server import Server
+
 
 TRANSITORY_STATES = ["Pending", "Installing"]
 FINAL_STATES = ["Active", "Broken", "Archived"]
@@ -256,6 +258,14 @@ class Bench(Document):
 					"hash": app_hash,
 				},
 			)
+
+	def set_redis_password(self):
+		server: "Server" = frappe.get_cached_doc("Server", self.server)
+		redis_password = server.get_redis_password()
+
+		agent = Agent(self.server)
+		agent.set_redis_password(bench_name=self.name, redis_password=redis_password)
+		self.save()  # Should trigger common site config update
 
 	def validate(self):
 		if not self.candidate:
