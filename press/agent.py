@@ -114,6 +114,14 @@ class Agent:
 			"Update Bench Configuration", f"benches/{bench.name}/config", data, bench=bench.name
 		)
 
+	def set_redis_password(self, bench_name: str, redis_password: str):
+		return self.create_agent_job(
+			"Set Redis Password",
+			f"benches/{bench_name}/set-redis-password",
+			{"redis_password": redis_password},
+			bench=bench_name,
+		)
+
 	def _get_managed_db_config(self, site):
 		managed_database_service = frappe.get_cached_value("Bench", site.bench, "managed_database_service")
 
