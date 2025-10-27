@@ -146,6 +146,18 @@ class SupportAccess(Document):
 	def notify_on_request(self):
 		title = "New Access Request"
 		message = f"{self.requested_by} has requested support access for one of your resources."
+		team_email = frappe.get_value("Team", self.target_team, "user")
+
+		frappe.sendmail(
+			subject=title,
+			message=message,
+			recipients=team_email,
+			template="access_request",
+			args={
+				"requested_by": self.requested_by,
+				"reason": self.reason,
+			},
+		)
 
 		frappe.get_doc(
 			{
