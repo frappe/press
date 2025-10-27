@@ -379,6 +379,8 @@ class BaseServer(Document, TagHelpers):
 		"""Get servers data disk size"""
 		mountpoint = self.guess_data_disk_mountpoint()
 		volume = self.find_mountpoint_volume(mountpoint)
+		if not volume:  # Volume might not be attached as soon as the server is created
+			return 0
 		return frappe.db.get_value("Virtual Machine Volume", {"volume_id": volume.volume_id}, "size")
 
 	def _get_app_and_database_servers(self) -> tuple[Server, DatabaseServer]:
