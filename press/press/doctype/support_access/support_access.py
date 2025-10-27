@@ -123,6 +123,16 @@ class SupportAccess(Document):
 		title = f"Access Request {self.status}"
 		message = f"Your request for support access has been {self.status.lower()}."
 
+		frappe.sendmail(
+			subject=title,
+			message=message,
+			recipients=self.requested_by,
+			template="access_request_update",
+			args={
+				"message": message,
+			},
+		)
+
 		frappe.get_doc(
 			{
 				"doctype": "Press Notification",
