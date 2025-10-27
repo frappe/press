@@ -183,6 +183,8 @@ class Team(Document):
 			as_dict=True,
 		)
 		doc.communication_infos = self.get_communication_infos()
+		doc.receive_budget_alerts = self.receive_budget_alerts
+		doc.monthly_alert_threshold = self.monthly_alert_threshold
 
 	def onload(self):
 		load_address_and_contact(self)
@@ -1260,98 +1262,6 @@ class Team(Document):
 			},
 		)
 
-	def check_budget_alerts(self):
-		"""
-		Daily background job to check if teams have exceeded their monthly budget alert limits.
-		Sends email notifications for invoices that have crossed the set limit.
-		"""
-
-		teams_with_budget_alert_enabled = frappe.get_all(
-			"Team",
-			filters={"receive_budget_alerts": 1, "monthly_alert_threshold": (">", 0), "enabled": 1},
-			fields=["name", "monthly_alert_threshold", "currency", "user"],
-		)
-
-		if not teams_with_budget_alert_enabled:
-			return
-
-		team_names = [team["name"] for team in teams_with_budget_alert_enabled]
-		team_dict = {team["name"]: team for team in teams_with_budget_alert_enabled}
-
-		current_month_end = get_last_day(frappe.utils.today())
-
-		# Fetch current month invoices for all teams, filter out invoices that have already sent alerts
-		current_invoices = frappe.get_all(
-			"Invoice",
-			filters={
-				"team": ("in", team_names),
-				"due_date": current_month_end,
-				"status": "Draft",
-				"budget_alert_sent": 0,
-			},
-			fields=[
-				"name",
-				"team",
-				"total",
-				"period_start",
-				"period_end",
-			],
-			order_by="creation desc",
-		)
-
-		invoices_to_update = []  # To keep track of invoices that need budget_alert_sent field update
-		for invoice in current_invoices:
-			team_name = invoice["team"]
-			monthly_limit = team_dict[team_name]["monthly_alert_threshold"]
-			if invoice["total"] > monthly_limit:
-				email_sent = self.send_budget_alert_email(team_dict[team_name], invoice)
-				if email_sent:
-					invoices_to_update.append(invoice["name"])
-
-		if invoices_to_update:
-			Invoice = frappe.qb.DocType("Invoice")
-			(
-				frappe.qb.update(Invoice)
-				.set(Invoice.budget_alert_sent, 1)
-				.where(Invoice.name.isin(invoices_to_update))
-			).run()
-
-	def send_budget_alert_email(self, team_info, invoice):
-		"""
-		Args:
-			team_info (dict): Team information
-			invoice (dict): Invoice that exceeded the limit
-		"""
-		try:
-			team_user = team_info["user"]
-			currency = "₹" if team_info["currency"] == "INR" else "$"
-
-			invoice_amount = f"{currency}{invoice['total']}"
-			alert_threshold = f"{currency}{team_info['monthly_alert_threshold']}"
-			excess_amount = f"{currency}{invoice['total'] - team_info['monthly_alert_threshold']}"
-
-			subject = f"Frappe Cloud Budget Alert for {team_user}"
-
-			frappe.sendmail(
-				recipients=team_user,
-				subject=subject,
-				template="budget_alert",
-				args={
-					"team_user": team_user,
-					"invoice_amount": invoice_amount,
-					"alert_threshold": alert_threshold,
-					"excess_amount": excess_amount,
-					"period_start": invoice["period_start"],
-					"period_end": invoice["period_end"],
-				},
-				reference_doctype="Invoice",
-				reference_name=invoice["name"],
-			)
-			return True
-		except Exception as e:
-			frappe.log_error(f"Failed to send budget alert email: {team_info['user']}", {e})
-			return False
-
 
 def get_team_members(team):
 	if not frappe.db.exists("Team", team):
@@ -1771,8 +1681,8 @@ def check_budget_alerts():
 def send_budget_alert_email(team_info, invoice):
 	"""
 	Args:
-		team_info (dict): Team information
-		invoice (dict): Invoice that exceeded the limit
+		team_info (dict)
+		invoice (dict): Invoice that exceeded the budget alert threshold
 	"""
 	try:
 		team_user = team_info["user"]
@@ -1780,7 +1690,7 @@ def send_budget_alert_email(team_info, invoice):
 
 		invoice_amount = f"{currency}{invoice['total']}"
 		alert_threshold = f"{currency}{team_info['monthly_alert_threshold']}"
-		excess_amount = f"{currency}{invoice['total'] - team_info['monthly_alert_threshold']}"
+		excess_amount = f"{currency}{round(invoice['total'] - team_info['monthly_alert_threshold'], 2)}"
 
 		subject = f"Frappe Cloud Budget Alert for {team_user}"
 

@@ -731,6 +731,21 @@ def total_unpaid_amount():
 	) + negative_balance
 
 
+@frappe.whitelist()
+def get_current_billing_amount():
+	team = get_current_team(get_doc=True)
+	due_date = frappe.utils.get_last_day(frappe.utils.getdate())
+
+	return (
+		frappe.get_value(
+			"Invoice",
+			{"team": team.name, "due_date": due_date, "docstatus": 0},
+			"total",
+		)
+		or 0
+	)
+
+
 # Mpesa integrations, mpesa express
 """Send stk push to the user"""
 
