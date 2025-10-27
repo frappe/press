@@ -134,19 +134,6 @@ class NFSVolumeDetachment(Document, StepHandler):
 		)
 		self.handle_async_job(step, job)
 
-	# def update_benches_with_new_mounts(self, step: "NFSVolumeDetachmentStep"):
-	# 	"""Restart all benches via agent for mounts to reload"""
-	# 	step.status = Status.Running
-	# 	step.save()
-
-	# 	ansible = get_restart_benches_play(self.primary_server)
-
-	# 	try:
-	# 		self._run_ansible_step(step, ansible)
-	# 	except Exception as e:
-	# 		self._fail_ansible_step(step, ansible, e)
-	# 		raise
-
 	def umount_from_primary_server(self, step: "NFSVolumeDetachmentStep") -> None:
 		"""Umount /shared from primary server and remove from fstab"""
 		primary_server: Server = frappe.get_cached_doc("Server", self.primary_server)
