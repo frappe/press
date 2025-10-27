@@ -5,16 +5,16 @@
 				<Switch
 					v-model="receiveBudgetAlerts"
 					label="Enable Budget Alerts"
-					description="Receive an email alert when monthly spend exceeds limit"
+					:description="`Receive an email alert when monthly spend exceeds limit`"
 				/>
 				<div v-if="receiveBudgetAlerts">
-					<Input
+					<FormControl
 						v-model="monthlyAlertLimit"
 						:label="`Monthly Alert Limit (${team?.doc?.currency})`"
 						:placeholder="`Enter amount in ${team?.doc?.currency}`"
 						type="number"
 						:min="0"
-						:step="0.01"
+						:step="1000"
 					/>
 				</div>
 				<ErrorMessage class="mt-2" :message="errorMessage" />
@@ -30,7 +30,7 @@
 	</Dialog>
 </template>
 <script setup>
-import { Dialog, Switch, Input, Button, ErrorMessage } from 'frappe-ui';
+import { Dialog, Switch, Button, ErrorMessage, FormControl } from 'frappe-ui';
 import { ref, inject } from 'vue';
 
 const props = defineProps({
@@ -48,14 +48,14 @@ const team = inject('team');
 let errorMessage = ref('');
 
 const receiveBudgetAlerts = ref(Boolean(team?.doc?.receive_budget_alerts));
-const monthlyAlertLimit = ref(team?.doc?.monthly_alert_limit || '');
+const monthlyAlertLimit = ref(team?.doc?.monthly_alert_threshold || '');
 const saving = ref(false);
 
 const saveSettings = async () => {
 	try {
 		// Check if no changes were made
-		const currentAlerts = Boolean(team.doc.receive_budget_alerts);
-		const currentLimit = team.doc.monthly_alert_limit || 0;
+		const currentAlerts = !!team.doc.receive_budget_alerts;
+		const currentLimit = team.doc.monthly_alert_threshold || 0;
 		const newLimit = receiveBudgetAlerts.value
 			? parseFloat(monthlyAlertLimit.value) || 0
 			: 0;
@@ -83,13 +83,13 @@ const saveSettings = async () => {
 			// Update both fields
 			await team.setValue.submit({
 				receive_budget_alerts: true,
-				monthly_alert_limit: numValue,
+				monthly_alert_threshold: numValue,
 			});
 		} else {
 			// Disable alerts and clear limit
 			await team.setValue.submit({
 				receive_budget_alerts: false,
-				monthly_alert_limit: 0,
+				monthly_alert_threshold: 0,
 			});
 		}
 

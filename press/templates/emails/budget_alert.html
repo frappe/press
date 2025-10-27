@@ -44,7 +44,7 @@
 						Invoice Period:
 					</td>
 					<td>
-						{{ period_start }} to {{ period_end }}
+						{{ frappe.format_date(period_start) }} to {{ frappe.format_date(period_end) }}
 					</td>
 				</tr>
 			</table>

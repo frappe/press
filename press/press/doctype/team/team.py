@@ -12,7 +12,7 @@ from frappe.contacts.address_and_contact import load_address_and_contact
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.rate_limiter import rate_limit
-from frappe.utils import get_fullname, get_url_to_form, random_string
+from frappe.utils import get_fullname, get_last_day, get_url_to_form, getdate, random_string
 
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
@@ -77,7 +77,7 @@ class Team(Document):
 		is_saas_user: DF.Check
 		is_us_eu: DF.Check
 		last_used_team: DF.Link | None
-		monthly_alert_limit: DF.Currency
+		monthly_alert_threshold: DF.Currency
 		mpesa_enabled: DF.Check
 		mpesa_phone_number: DF.Data | None
 		mpesa_tax_id: DF.Data | None
@@ -139,7 +139,7 @@ class Team(Document):
 		"account_request",
 		"partner_status",
 		"receive_budget_alerts",
-		"monthly_alert_limit",
+		"monthly_alert_threshold",
 	)
 
 	def get_doc(self, doc):
@@ -462,6 +462,7 @@ class Team(Document):
 
 		self.validate_payment_mode()
 		self.update_draft_invoice_payment_mode()
+		self.check_budget_alert_threshold()
 
 		if (
 			not self.is_new()
@@ -479,6 +480,15 @@ class Team(Document):
 
 			for invoice in draft_invoices:
 				frappe.db.set_value("Invoice", invoice, "payment_mode", self.payment_mode)
+
+	def check_budget_alert_threshold(self):
+		if self.receive_budget_alerts and self.has_value_changed("monthly_alert_threshold"):
+			frappe.db.set_value(
+				"Invoice",
+				{"team": self.name, "docstatus": 0, "due_date": get_last_day(getdate())},
+				"budget_alert_sent",
+				0,
+			)
 
 	@frappe.whitelist()
 	def impersonate(self, member, reason):
@@ -1250,6 +1260,98 @@ class Team(Document):
 			},
 		)
 
+	def check_budget_alerts(self):
+		"""
+		Daily background job to check if teams have exceeded their monthly budget alert limits.
+		Sends email notifications for invoices that have crossed the set limit.
+		"""
+
+		teams_with_budget_alert_enabled = frappe.get_all(
+			"Team",
+			filters={"receive_budget_alerts": 1, "monthly_alert_threshold": (">", 0), "enabled": 1},
+			fields=["name", "monthly_alert_threshold", "currency", "user"],
+		)
+
+		if not teams_with_budget_alert_enabled:
+			return
+
+		team_names = [team["name"] for team in teams_with_budget_alert_enabled]
+		team_dict = {team["name"]: team for team in teams_with_budget_alert_enabled}
+
+		current_month_end = get_last_day(frappe.utils.today())
+
+		# Fetch current month invoices for all teams, filter out invoices that have already sent alerts
+		current_invoices = frappe.get_all(
+			"Invoice",
+			filters={
+				"team": ("in", team_names),
+				"due_date": current_month_end,
+				"status": "Draft",
+				"budget_alert_sent": 0,
+			},
+			fields=[
+				"name",
+				"team",
+				"total",
+				"period_start",
+				"period_end",
+			],
+			order_by="creation desc",
+		)
+
+		invoices_to_update = []  # To keep track of invoices that need budget_alert_sent field update
+		for invoice in current_invoices:
+			team_name = invoice["team"]
+			monthly_limit = team_dict[team_name]["monthly_alert_threshold"]
+			if invoice["total"] > monthly_limit:
+				email_sent = self.send_budget_alert_email(team_dict[team_name], invoice)
+				if email_sent:
+					invoices_to_update.append(invoice["name"])
+
+		if invoices_to_update:
+			Invoice = frappe.qb.DocType("Invoice")
+			(
+				frappe.qb.update(Invoice)
+				.set(Invoice.budget_alert_sent, 1)
+				.where(Invoice.name.isin(invoices_to_update))
+			).run()
+
+	def send_budget_alert_email(self, team_info, invoice):
+		"""
+		Args:
+			team_info (dict): Team information
+			invoice (dict): Invoice that exceeded the limit
+		"""
+		try:
+			team_user = team_info["user"]
+			currency = "₹" if team_info["currency"] == "INR" else "$"
+
+			invoice_amount = f"{currency}{invoice['total']}"
+			alert_threshold = f"{currency}{team_info['monthly_alert_threshold']}"
+			excess_amount = f"{currency}{invoice['total'] - team_info['monthly_alert_threshold']}"
+
+			subject = f"Frappe Cloud Budget Alert for {team_user}"
+
+			frappe.sendmail(
+				recipients=team_user,
+				subject=subject,
+				template="budget_alert",
+				args={
+					"team_user": team_user,
+					"invoice_amount": invoice_amount,
+					"alert_threshold": alert_threshold,
+					"excess_amount": excess_amount,
+					"period_start": invoice["period_start"],
+					"period_end": invoice["period_end"],
+				},
+				reference_doctype="Invoice",
+				reference_name=invoice["name"],
+			)
+			return True
+		except Exception as e:
+			frappe.log_error(f"Failed to send budget alert email: {team_info['user']}", {e})
+			return False
+
 
 def get_team_members(team):
 	if not frappe.db.exists("Team", team):
@@ -1615,12 +1717,10 @@ def check_budget_alerts():
 	Daily background job to check if teams have exceeded their monthly budget alert limits.
 	Sends email notifications for invoices that have crossed the set limit.
 	"""
-	from frappe.utils import get_last_day, today
-
 	teams_with_budget_alert_enabled = frappe.get_all(
 		"Team",
-		filters={"receive_budget_alerts": 1, "monthly_alert_limit": (">", 0), "enabled": 1},
-		fields=["name", "monthly_alert_limit", "currency", "user"],
+		filters={"receive_budget_alerts": 1, "monthly_alert_threshold": (">", 0), "enabled": 1},
+		fields=["name", "monthly_alert_threshold", "currency", "user"],
 	)
 
 	if not teams_with_budget_alert_enabled:
@@ -1629,7 +1729,7 @@ def check_budget_alerts():
 	team_names = [team["name"] for team in teams_with_budget_alert_enabled]
 	team_dict = {team["name"]: team for team in teams_with_budget_alert_enabled}
 
-	current_month_end = get_last_day(today())
+	current_month_end = get_last_day(getdate())
 
 	# Fetch current month invoices for all teams, filter out invoices that have already sent alerts
 	current_invoices = frappe.get_all(
@@ -1653,7 +1753,7 @@ def check_budget_alerts():
 	invoices_to_update = []  # To keep track of invoices that need budget_alert_sent field update
 	for invoice in current_invoices:
 		team_name = invoice["team"]
-		monthly_limit = team_dict[team_name]["monthly_alert_limit"]
+		monthly_limit = team_dict[team_name]["monthly_alert_threshold"]
 		if invoice["total"] > monthly_limit:
 			email_sent = send_budget_alert_email(team_dict[team_name], invoice)
 			if email_sent:
@@ -1679,8 +1779,8 @@ def send_budget_alert_email(team_info, invoice):
 		currency = "₹" if team_info["currency"] == "INR" else "$"
 
 		invoice_amount = f"{currency}{invoice['total']}"
-		alert_threshold = f"{currency}{team_info['monthly_alert_limit']}"
-		excess_amount = f"{currency}{invoice['total'] - team_info['monthly_alert_limit']}"
+		alert_threshold = f"{currency}{team_info['monthly_alert_threshold']}"
+		excess_amount = f"{currency}{invoice['total'] - team_info['monthly_alert_threshold']}"
 
 		subject = f"Frappe Cloud Budget Alert for {team_user}"
 
