@@ -1,7 +1,7 @@
 <template>
 	<div v-if="error" class="mx-auto space-y-4 text-center w-fit">
 		<p class="text-sm font-medium">
-			You do not have permission to view this resource
+			{{ errorMessage }}
 		</p>
 		<Button
 			v-if="canRequestAccess"
@@ -37,4 +37,11 @@ const isPermissionError = computed(() => {
 	return props.error?.message.endsWith('PermissionError');
 });
 const canRequestAccess = isPermissionError && team.doc.can_request_access;
+const errorMessage = computed(() => {
+	if (isPermissionError.value) {
+		return 'You do not have permission to view this resource';
+	} else {
+		return props.error?.message || 'An unexpected error occurred';
+	}
+});
 </script>
