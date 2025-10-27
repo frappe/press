@@ -129,7 +129,7 @@ class SupportAccess(Document):
 			recipients=self.requested_by,
 			template="access_request_update",
 			args={
-				"message": message,
+				"status": self.status,
 			},
 		)
 
