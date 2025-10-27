@@ -21,7 +21,7 @@ class SupportAccess(Document):
 		from press.press.doctype.support_access_resource.support_access_resource import SupportAccessResource
 
 		access_allowed_till: DF.Datetime | None
-		allowed_for: DF.Literal["3", "6", "12", "24"]
+		allowed_for: DF.Literal["3", "6", "12", "24", "72"]
 		login_as_administrator: DF.Check
 		reason: DF.SmallText | None
 		requested_by: DF.Link | None
