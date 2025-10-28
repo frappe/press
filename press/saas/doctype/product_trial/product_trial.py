@@ -292,7 +292,6 @@ class ProductTrial(Document):
 			return
 
 		clusters = self.get_available_clusters()
-		print("The available clusters are:", clusters)
 		for cluster in clusters:
 			try:
 				self.create_standby_sites(cluster)
