@@ -482,7 +482,7 @@ def replenish_standby_sites():
 		except Exception as e:
 			log_error(
 				"Replenish Standby Sites Error",
-				data=e,
+				message=str(e),
 				reference_doctype="Product Trial",
 				reference_name=product.name,
 			)
