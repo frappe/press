@@ -3,11 +3,12 @@
 		<div class="sticky top-0 z-10 shrink-0">
 			<Header>
 				<Breadcrumbs
-					:items="[{ label: 'Site Backups', route: '/backups/sites' }]"
+					:items="[{ label: 'Server Snapshots', route: '/backups/sites' }]"
 				/>
 			</Header>
 		</div>
 		<CustomAlerts
+			ctx_type="List Page"
 			:disable-last-child-bottom-margin="true"
 			container-class="p-5 pb-0"
 		/>

@@ -1,7 +1,6 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
 from frappe.model.document import Document
 
 
@@ -25,7 +24,10 @@ class DashboardBanner(Document):
 		help_url: DF.Data | None
 		is_dismissible: DF.Check
 		is_global: DF.Check
-		message: DF.Data | None
+		is_scheduled: DF.Check
+		message: DF.LongText | None
+		scheduled_end_time: DF.Datetime | None
+		scheduled_start_time: DF.Datetime | None
 		server: DF.Link | None
 		site: DF.Link | None
 		team: DF.Link | None
@@ -34,7 +36,3 @@ class DashboardBanner(Document):
 		type_of_scope: DF.Literal["Team", "Server", "Site"]
 		user_dismissals: DF.Table[DashboardBannerDismissal]
 	# end: auto-generated types
-
-	def validate(self):
-		if self.is_global and self.is_dismissible:
-			frappe.throw("Global banners cannot be dismissible.")

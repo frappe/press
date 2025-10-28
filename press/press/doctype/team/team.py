@@ -18,7 +18,7 @@ from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
-from press.utils import get_valid_teams_for_user, log_error
+from press.utils import get_valid_teams_for_user, has_role, log_error
 from press.utils.billing import (
 	get_frappe_io_connection,
 	get_stripe,
@@ -134,7 +134,6 @@ class Team(Document):
 		"mpesa_phone_number",
 		"mpesa_enabled",
 		"razorpay_enabled",
-		"paypal_enabled",
 		"account_request",
 		"partner_status",
 	)
@@ -157,6 +156,8 @@ class Team(Document):
 		doc.user_info = user
 		doc.balance = self.get_balance()
 		doc.is_desk_user = user.user_type == "System User"
+		doc.is_support_agent = has_role("Press Support Agent")
+		doc.can_request_access = has_role("Press Support Agent")
 		doc.valid_teams = get_valid_teams_for_user(frappe.session.user)
 		doc.onboarding = self.get_onboarding()
 		doc.billing_info = self.billing_info()

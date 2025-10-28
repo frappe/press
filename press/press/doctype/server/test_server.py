@@ -10,6 +10,7 @@ import frappe
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 
+from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
 )
@@ -17,8 +18,10 @@ from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
+from press.press.doctype.release_group.test_release_group import create_test_release_group
 from press.press.doctype.server.server import BaseServer
 from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
+from press.press.doctype.site.test_site import create_test_bench
 from press.press.doctype.team.test_team import create_test_team
 from press.press.doctype.virtual_machine.test_virtual_machine import create_test_virtual_machine
 
@@ -157,5 +160,36 @@ class TestServer(FrappeTestCase):
 		self.assertEqual(server.subscription.team, server.team)
 		self.assertEqual(server.subscription.team, db_server.subscription.team)
 
-	def tearDown(self):
-		frappe.db.rollback()
+	def test_remove_from_public_groups_removes_server_from_release_groups_child_table(self):
+		# Create three public release groups, add server to all
+		server = create_test_server(public=True)
+		apps = [create_test_app()]
+		group1 = create_test_release_group(apps, public=True, servers=[server.name])
+		group2 = create_test_release_group(apps, public=True, servers=[server.name])
+		group3 = create_test_release_group(apps, public=True, servers=[server.name])
+
+		# Add an active bench to group2 on the server
+		bench = create_test_bench(group=group2, server=server.name)
+		frappe.db.set_value("Bench", bench.name, "status", "Active")
+
+		self.assertTrue(any(s.server == server.name for s in group2.servers))
+		self.assertTrue(any(s.server == server.name for s in group3.servers))
+		self.assertTrue(any(s.server == server.name for s in group1.servers))
+
+		server.remove_from_public_groups()
+
+		# Reload groups
+		group1.reload()
+		group2.reload()
+		group3.reload()
+
+		# Assert server removed from groups without active benches
+		self.assertFalse(any(s.server == server.name for s in group1.servers))
+		self.assertFalse(any(s.server == server.name for s in group3.servers))
+		# Assert server still present in group2 (has active bench)
+		self.assertTrue(any(s.server == server.name for s in group2.servers))
+
+		server.remove_from_public_groups(force=True)
+		group2.reload()
+		# Assert server removed from group2
+		self.assertFalse(any(s.server == server.name for s in group2.servers))

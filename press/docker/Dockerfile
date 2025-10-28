@@ -39,6 +39,8 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   libharfbuzz0b \
   libpangoft2-1.0-0 \
   libpangocairo-1.0-0 \
+  # Chromium and dependencies
+  chromium-browser \
   # wkhtmltopdf dependencies
   ca-certificates \
   fontconfig \
@@ -200,10 +202,12 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 npm install 
 # Install Bench
 ENV PATH "$PATH:/home/frappe/.local/bin"
 
+ENV {{ doc.get_dependency_version("pip", True) }}
+
 {% if requires_version_based_get_pip %}
 RUN wget https://bootstrap.pypa.io/pip/${PYTHON_VERSION}/get-pip.py && python${PYTHON_VERSION} get-pip.py `#stage-pre-pip`
 {% else %}
-RUN wget https://bootstrap.pypa.io/get-pip.py && python${PYTHON_VERSION} get-pip.py `#stage-pre-pip`
+RUN wget https://bootstrap.pypa.io/get-pip.py && python${PYTHON_VERSION} get-pip.py pip==${PIP_VERSION} `#stage-pre-pip`
 {% endif %}
 
 ENV {{ doc.get_dependency_version("bench", True) }}

@@ -14,11 +14,13 @@ from botocore.exceptions import ClientError
 from dns.resolver import Resolver
 from frappe.core.utils import find
 from frappe.desk.doctype.tag.tag import add_tag
+from frappe.query_builder import Case
 from frappe.rate_limiter import rate_limit
 from frappe.utils import flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
 
+from press.access.support_access import has_support_access
 from press.exceptions import (
 	AAAARecordExists,
 	ConflictingCAARecord,
@@ -84,18 +86,19 @@ def protected(doctypes):
 		user_type = frappe.session.data.user_type or frappe.get_cached_value(
 			"User", frappe.session.user, "user_type"
 		)
+
+		# System users have access to all endpoints.
 		if user_type == "System User":
 			return wrapped(*args, **kwargs)
 
-		name = get_protected_doctype_name(args, kwargs, doctypes)
-		if not name:
+		# Get the name of the document being accessed.
+		if not (docname := get_protected_doctype_name(args, kwargs, doctypes)):
 			frappe.throw("Name not found, API access not permitted", frappe.PermissionError)
 
-		team = get_current_team()
+		current_team = get_current_team()
 		for doctype in doctypes:
-			owner = frappe.db.get_value(doctype, name, "team")
-
-			if owner == team:
+			document_team = frappe.db.get_value(doctype, docname, "team")
+			if document_team == current_team or has_support_access(doctype, docname):
 				return wrapped(*args, **kwargs)
 
 		frappe.throw("Not Permitted", frappe.PermissionError)
@@ -155,39 +158,40 @@ def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 
 	cluster = site.get("cluster") or frappe.db.get_single_value("Press Settings", "cluster")
 
-	proxy_servers = frappe.get_all("Proxy Server Domain", {"domain": domain}, pluck="parent")
-	proxy_servers = frappe.get_all(
-		"Proxy Server",
-		{"status": "Active", "name": ("in", proxy_servers)},
-		pluck="name",
+	Bench = frappe.qb.DocType("Bench")
+	Server = frappe.qb.DocType("Server")
+	ProxyServer = frappe.qb.DocType("Proxy Server")
+	ProxyServerDomain = frappe.qb.DocType("Proxy Server Domain")
+
+	proxy_servers = (
+		frappe.qb.from_(ProxyServer)
+		.join(ProxyServerDomain)
+		.on(ProxyServer.name == ProxyServerDomain.parent)
+		.select(ProxyServer.name)
+		.where(ProxyServerDomain.domain == domain)
+		.where(ProxyServer.status == "Active")
+	).run(as_dict=True)
+	proxy_servers = [d.name for d in proxy_servers]
+
+	bench_query = (
+		frappe.qb.from_(Bench)
+		.join(Server)
+		.on(Bench.server == Server.name)
+		.select(Bench.name, Bench.server)
+		.where(Server.proxy_server.isin(proxy_servers))
+		.where(Bench.status == "Active")
+		.where(Bench.group == site["group"])
+		.orderby(Case().when(Bench.cluster == cluster, 1).else_(0), order=frappe.qb.desc)
+		.orderby(Server.use_for_new_sites, order=frappe.qb.desc)
+		.orderby(Bench.creation, order=frappe.qb.desc)
+		.limit(1)
 	)
-	proxy_servers = tuple(proxy_servers) if len(proxy_servers) > 1 else f"('{proxy_servers[0]}')"
 
-	query_sub_str = ""
 	if server:
-		query_sub_str = f"AND server.name = '{server}'"
+		bench_query = bench_query.where(Server.name == server)
 
-	bench = frappe.db.sql(
-		f"""
-	SELECT
-		bench.name, bench.server, bench.cluster = '{cluster}' as in_primary_cluster
-	FROM
-		tabBench bench
-	LEFT JOIN
-		tabServer server
-	ON
-		bench.server = server.name
-	WHERE
-		server.proxy_server in {proxy_servers} AND
-		bench.status = "Active" AND
-		bench.group = '{site["group"]}'
-		{query_sub_str}
-	ORDER BY
-		in_primary_cluster DESC, server.use_for_new_sites DESC, bench.creation DESC
-	LIMIT 1
-	""",
-		as_dict=True,
-	)[0]
+	bench = bench_query.run(as_dict=True).pop()
+
 	plan = site["plan"]
 	app_plans = site.get("selected_app_plans")
 	if not ignore_plan_validation:
@@ -1798,17 +1802,8 @@ def check_domain_proxied(domain) -> str | None:
 			return server
 
 
-def check_dns_cname_a(name, domain, ignore_proxying=False):
+def _check_dns_cname_a(name, domain, ignore_proxying=False):
 	check_domain_allows_letsencrypt_certs(domain)
-	proxy = check_domain_proxied(domain)
-	if proxy:
-		if ignore_proxying:  # no point checking the rest if proxied
-			return {"CNAME": {}, "A": {}, "matched": True, "type": "A"}  # assume A
-		frappe.throw(
-			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.
-			<br>You may enable it once the domain is verified.""",
-			DomainProxied,
-		)
 	ensure_dns_aaaa_record_doesnt_exist(domain)
 	cname = check_dns_cname(name, domain)
 	result = {"CNAME": cname} | cname
@@ -1832,6 +1827,33 @@ def check_dns_cname_a(name, domain, ignore_proxying=False):
 			""",
 			ConflictingDNSRecord,
 		)
+
+	proxy = check_domain_proxied(domain)
+	if proxy:
+		if ignore_proxying:  # no point checking the rest if proxied
+			return {"CNAME": {}, "A": {}, "matched": True, "type": "A"}  # assume A
+		frappe.throw(
+			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.
+			<br>You may enable it once the domain is verified.""",
+			DomainProxied,
+		)
+
+	result["valid"] = cname["matched"] or a["matched"]
+	return result
+
+
+def check_dns_cname_a(name, domain, ignore_proxying=False, throw_error=True):
+	if throw_error:
+		return _check_dns_cname_a(name, domain, ignore_proxying)
+
+	result = {}
+	try:
+		result = _check_dns_cname_a(name, domain, ignore_proxying)
+
+	except Exception as e:
+		result["exc_type"] = e.__class__.__name__
+		result["exc_message"] = str(e)
+		result["valid"] = False
 
 	return result
 

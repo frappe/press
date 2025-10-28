@@ -61,9 +61,18 @@ class VirtualDiskResize(Document):
 		old_volume_size: DF.Int
 		old_volume_status: DF.Literal["Attached", "Deleted"]
 		old_volume_throughput: DF.Int
+		scheduled_time: DF.Datetime | None
 		service: DF.Data | None
 		start: DF.Datetime | None
-		status: DF.Literal["Pending", "Preparing", "Ready", "Running", "Success", "Failure"]
+		status: DF.Literal[
+			"Scheduled",
+			"Pending",
+			"Preparing",
+			"Ready",
+			"Running",
+			"Success",
+			"Failure",
+		]
 		steps: DF.Table[VirtualMachineMigrationStep]
 		virtual_disk_snapshot: DF.Link | None
 		virtual_machine: DF.Link
@@ -77,16 +86,35 @@ class VirtualDiskResize(Document):
 
 	def after_insert(self):
 		"""Enqueue current volume attribute fetch and volume creation"""
-		frappe.enqueue_doc(self.doctype, self.name, "run_prerequisites", queue="long", timeout=2400)
+		if not self.scheduled_time:
+			self.status = Status.Pending
+			self.save()
 
 	def run_prerequisites(self):
-		self.status = Status.Preparing
+		try:
+			self.status = Status.Preparing
+			self.save()
+			self.set_filesystem_attributes()
+			self.set_new_volume_attributes()
+			self.create_new_volume()
+			self.status = Status.Ready
+			self.save()
+		except frappe.QueryTimeoutError:
+			frappe.db.rollback()
+			self.status = Status.Scheduled
+			self.save()
+		except Exception as e:
+			frappe.log_error(message=str(e), title="Virtual Disk Resize Prerequisites Failed")
+			self.status = Status.Failure
+			self.save()
+
+	@frappe.whitelist()
+	def execute(self):
+		self.run_prerequisites()
+		self.status = Status.Running
+		self.start = frappe.utils.now_datetime()
 		self.save()
-		self.set_filesystem_attributes()
-		self.set_new_volume_attributes()
-		self.create_new_volume()
-		self.status = Status.Ready
-		self.save()
+		self.next()
 
 	def add_steps(self):
 		for step in self.shrink_steps:
@@ -266,8 +294,10 @@ class VirtualDiskResize(Document):
 		root_volume = machine.get_root_volume()
 
 		volumes = find_all(machine.volumes, lambda v: v.volume_id != root_volume.volume_id)
-		if len(volumes) != 1:
-			frappe.throw("Multiple volumes found. Please select the volume to shrink")
+		if len(volumes) == 0:
+			frappe.throw("No additional volumes found. Cannot shrink any volume.")
+		elif len(volumes) > 1:
+			frappe.throw("Multiple volumes found. Please select the volume to shrink.")
 
 		self.old_volume_id = volumes[0].volume_id
 
@@ -299,9 +329,13 @@ class VirtualDiskResize(Document):
 		self.save()
 
 	def create_new_volume(self):
-		# Create new volume
+		# Lock the row to prevent concurrent modifications
+		frappe.get_value("Virtual Machine", self.virtual_machine, "status", for_update=True)
+
 		self.new_volume_id = self.machine.attach_new_volume(
-			self.new_volume_size, iops=self.new_volume_iops, throughput=self.new_volume_throughput
+			self.new_volume_size,
+			iops=self.new_volume_iops,
+			throughput=self.new_volume_throughput,
 		)
 		self.new_volume_status = "Attached"
 		self.save()
@@ -393,7 +427,10 @@ class VirtualDiskResize(Document):
 
 		snapshots = frappe.get_all(
 			"Virtual Disk Snapshot",
-			{"name": ("in", machine.flags.created_snapshots), "volume_id": self.old_volume_id},
+			{
+				"name": ("in", machine.flags.created_snapshots),
+				"volume_id": self.old_volume_id,
+			},
 			pluck="name",
 		)
 		if len(snapshots) == 0:
@@ -545,13 +582,6 @@ class VirtualDiskResize(Document):
 			)
 		return steps
 
-	@frappe.whitelist()
-	def execute(self):
-		self.status = Status.Running
-		self.start = frappe.utils.now_datetime()
-		self.save()
-		self.next()
-
 	def fail(self) -> None:
 		self.status = Status.Failure
 		for step in self.steps:
@@ -677,6 +707,7 @@ class StepStatus(str, Enum):
 
 
 class Status(str, Enum):
+	Scheduled = "Scheduled"
 	Pending = "Pending"
 	Preparing = "Preparing"
 	Ready = "Ready"
@@ -686,3 +717,21 @@ class Status(str, Enum):
 
 	def __str__(self):
 		return self.value
+
+
+def run_scheduled_resizes():
+	resize_tasks = frappe.get_all(
+		"Virtual Disk Resize",
+		filters={"scheduled_time": ("<=", frappe.utils.now()), "status": Status.Scheduled},
+		fields=["name", "virtual_machine"],
+	)
+	for task in resize_tasks:
+		frappe.enqueue_doc(
+			"Virtual Disk Resize",
+			task.name,
+			"execute",
+			queue="long",
+			timeout=2400,
+			deduplicate=True,
+			job_id=f"resize_job:{task.virtual_machine}",
+		)

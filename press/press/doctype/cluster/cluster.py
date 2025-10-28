@@ -41,9 +41,13 @@ if typing.TYPE_CHECKING:
 	from collections.abc import Generator
 
 	from press.press.doctype.database_server.database_server import DatabaseServer
+	from press.press.doctype.press_job.press_job import PressJob
 	from press.press.doctype.press_settings.press_settings import PressSettings
+	from press.press.doctype.server.server import Server
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+
+DEFAULT_SERVER_TITLE = "First"
 
 
 class Cluster(Document):
@@ -99,6 +103,8 @@ class Cluster(Document):
 		# "Monitor Server": "p",
 		# "Log Server": "e,
 	}
+
+	secondary_server_series: ClassVar[str] = "fs"
 
 	wait_for_aws_creds_seconds = 20
 
@@ -673,28 +679,41 @@ class Cluster(Document):
 			server_doctypes = {**server_doctypes, **self.private_servers}
 		return server_doctypes
 
-	def get_same_region_vmis(self, get_series=False):
-		return frappe.get_all(
-			"Virtual Machine Image",
-			filters={
-				"region": self.region,
-				"series": ("in", list(self.server_doctypes.values())),
-				"status": "Available",
-			},
-			pluck="name" if not get_series else "series",
-		)
-
-	def get_other_region_vmis(self, get_series=False):
+	def get_same_region_vmis(self, platform="x86_64", get_series=False) -> list[str]:
 		vmis = []
 		for series in list(self.server_doctypes.values()):
 			vmis.extend(
 				frappe.get_all(
 					"Virtual Machine Image",
-					["name", "series", "creation"],
+					filters={
+						"region": self.region,
+						"series": series,
+						"status": "Available",
+						"public": True,
+						"platform": "x86_64" if series == "n" else platform,
+						"cloud_provider": self.cloud_provider,
+					},
+					limit=1,
+					order_by="creation DESC",
+					pluck="name" if not get_series else "series",
+				)
+			)
+
+		return vmis
+
+	def get_other_region_vmis(self, platform="x86_64", get_series=False) -> list[str]:
+		vmis = []
+		for series in list(self.server_doctypes.values()):
+			vmis.extend(
+				frappe.get_all(
+					"Virtual Machine Image",
 					filters={
 						"region": ("!=", self.region),
 						"series": series,
 						"status": "Available",
+						"public": True,
+						"platform": "x86_64" if series == "n" else platform,
+						"cloud_provider": self.cloud_provider,
 					},
 					limit=1,
 					order_by="creation DESC",
@@ -707,15 +726,28 @@ class Cluster(Document):
 	def copy_virtual_machine_images(self) -> Generator[VirtualMachineImage, None, None]:
 		"""Creates VMIs required for the cluster"""
 		copies = []
-		for vmi in self.get_other_region_vmis():
+		for vmi in set(self.get_other_region_vmis()) - set(self.get_same_region_vmis()):
 			copies.append(
-				frappe.get_doc(
+				VirtualMachineImage(
 					"Virtual Machine Image",
 					vmi,
-				).copy_image(self.name)
+				).copy_image(str(self.name))
 			)
 			frappe.db.commit()
 		yield from copies
+
+	@frappe.whitelist()
+	def create_proxy(self):
+		"""Creates a proxy server for the cluster"""
+		if self.get_same_region_vmis(get_series=True).count("n") < 1:
+			frappe.throw(
+				"Proxy Image not available in this region. Add them or wait for copy to complete",
+				frappe.ValidationError,
+			)
+		if self.status != "Active":
+			frappe.throw("Cluster is not active", frappe.ValidationError)
+
+		self.create_server("Proxy Server", DEFAULT_SERVER_TITLE)
 
 	@frappe.whitelist()
 	def create_servers(self):
@@ -732,7 +764,7 @@ class Cluster(Document):
 			# TODO: remove Test title #
 			server, _ = self.create_server(
 				doctype,
-				"Test",
+				DEFAULT_SERVER_TITLE,
 			)
 			match doctype:  # for populating Server doc's fields; assume the trio is created together
 				case "Database Server":
@@ -744,7 +776,7 @@ class Cluster(Document):
 		for doctype, _ in self.private_servers.items():
 			self.create_server(
 				doctype,
-				"Test",
+				DEFAULT_SERVER_TITLE,
 				create_subscription=False,
 			)
 
@@ -858,7 +890,9 @@ class Cluster(Document):
 		master_db_server: str | None = None,
 		press_job_arguments: dict[str, typing.Any] | None = None,
 		kms_key_id: str | None = None,
-	):
+		is_secondary: bool = False,
+		primary: str | None = None,
+	) -> tuple["Server", "PressJob"]:
 		"""Creates a server for the cluster
 
 		temporary_server: If you are creating a temporary server for some special purpose, set this to True.
@@ -894,7 +928,7 @@ class Cluster(Document):
 			plan.platform,
 			plan.disk,
 			domain,
-			server_series[doctype],
+			server_series[doctype] if not is_secondary else self.secondary_server_series,
 			team,
 			data_disk_snapshot=data_disk_snapshot,
 			temporary_server=temporary_server,
@@ -913,9 +947,16 @@ class Cluster(Document):
 					server.is_primary = False
 					server.primary = master_db_server
 
+				if server.auto_increase_storage:
+					server.auto_purge_binlog_based_on_size = True
+					server.binlog_max_disk_usage_percent = 75
+				else:
+					server.auto_purge_binlog_based_on_size = True
+					server.binlog_max_disk_usage_percent = 20
+
 			case "Server":
-				server = vm.create_server()
-				server.title = f"{title} - Application"
+				server: "Server" = vm.create_server(is_secondary=is_secondary, primary=primary)
+				server.title = f"{title} - Application" if not is_secondary else title
 				server.ram = plan.memory
 				if hasattr(self, "database_server") and self.database_server:
 					server.database_server = self.database_server

@@ -7,6 +7,7 @@
  "field_order": [
   "virtual_machine",
   "status",
+  "scheduled_time",
   "expected_disk_size",
   "column_break_tjrh",
   "start",
@@ -61,13 +62,13 @@
    "set_only_once": 1
   },
   {
-   "default": "Pending",
+   "default": "Scheduled",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nPreparing\nReady\nRunning\nSuccess\nFailure",
+   "options": "Scheduled\nPending\nPreparing\nReady\nRunning\nSuccess\nFailure",
    "read_only": 1,
    "reqd": 1
   },
@@ -299,11 +300,17 @@
    "fieldtype": "Int",
    "label": "Expected Disk Size",
    "set_only_once": 1
+  },
+  {
+   "fieldname": "scheduled_time",
+   "fieldtype": "Datetime",
+   "label": "Scheduled Time",
+   "set_only_once": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-08 13:12:58.357141",
+ "modified": "2025-10-22 22:43:41.435999",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Virtual Disk Resize",

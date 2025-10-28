@@ -206,13 +206,13 @@ frappe.ui.form.on('Server', {
 			],
 			[
 				__('Enable Public Bench and Site Creation'),
-				'enable_server_for_new_benches_and_site',
+				'enable_for_new_benches_and_sites',
 				true,
 				frm.doc.virtual_machine,
 			],
 			[
 				__('Disable Public Bench and Site Creation'),
-				'disable_server_for_new_benches_and_site',
+				'disable_for_new_benches_and_sites',
 				true,
 				frm.doc.virtual_machine,
 			],
@@ -267,6 +267,35 @@ frappe.ui.form.on('Server', {
 				);
 			}
 		});
+
+		if ((frm.doc.is_server_setup, frm.doc.is_primary)) {
+			frm.add_custom_button(
+				'Setup Secondary Server',
+				() => {
+					frappe.prompt(
+						[
+							{
+								fieldtype: 'Link',
+								fieldname: 'server_plan',
+								label: __('Server Plan'),
+								options: 'Server Plan',
+								reqd: 1,
+							},
+						],
+						({ server_plan }) => {
+							frm
+								.call('setup_secondary_server', {
+									server_plan: server_plan,
+								})
+								.then((r) => {
+									frm.refresh();
+								});
+						},
+					);
+				},
+				__('Actions'),
+			);
+		}
 
 		if (frm.doc.is_server_setup) {
 			frm.add_custom_button(

@@ -10,7 +10,7 @@ import frappe.utils
 from frappe.model.document import Document
 from frappe.utils.data import get_url
 
-from press.utils import log_error, validate_subdomain
+from press.utils import log_error
 from press.utils.unique_name_generator import generate as generate_random_name
 
 
@@ -96,7 +96,6 @@ class ProductTrial(Document):
 	):
 		from press.press.doctype.site.site import Site, get_plan_config
 
-		validate_subdomain(subdomain)
 		if Site.exists(subdomain, domain):
 			frappe.throw("Site with this subdomain already exists")
 
@@ -230,6 +229,33 @@ class ProductTrial(Document):
 			"Cluster", {"name": ("in", clusters), "public": 1}, order_by="name asc", pluck="name"
 		)
 
+	def get_preferred_site(filters) -> str | None:
+		sites = frappe.db.get_all(
+			"Site",
+			filters=filters,
+			pluck="name",
+			order_by="creation asc",
+			limit=10,
+		)
+		if not sites:
+			return None
+		Site = frappe.qb.DocType("Site")
+		Incident = frappe.qb.DocType("Incident")
+		sites_without_incident = (
+			frappe.qb.from_(Site)
+			.select(Site.name)
+			.left_join(Incident)
+			.on(
+				(Site.server == Incident.server)
+				& (Incident.status.isin(["Confirmed", "Validating", "Acknowledged"]))
+			)
+			.where(Site.name.isin(sites))
+			.where(Incident.name.isnull())
+			.run(as_dict=True)
+		)
+		sites_without_incident = [site["name"] for site in sites_without_incident]
+		return sites_without_incident[0] if sites_without_incident else sites[0]
+
 	def get_standby_site(self, cluster: str | None = None, account_request: str | None = None) -> str | None:
 		filters = {
 			"is_standby": True,
@@ -259,16 +285,7 @@ class ProductTrial(Document):
 				filters["hybrid_for"] = rule.app
 				break
 
-		sites = frappe.db.get_all(
-			"Site",
-			filters=filters,
-			pluck="name",
-			order_by="creation asc",
-			limit=1,
-		)
-		if sites:
-			return sites[0]
-		return None
+		return ProductTrial.get_preferred_site(filters)
 
 	def create_standby_sites_in_each_cluster(self):
 		if not self.enable_pooling:
@@ -386,10 +403,9 @@ class ProductTrial(Document):
 
 	def get_server_from_cluster(self, cluster):
 		"""Return the server with the least number of standby sites in the cluster"""
-
 		ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
 		Server = frappe.qb.DocType("Server")
-
+		Bench = frappe.qb.DocType("Bench")
 		servers = (
 			frappe.qb.from_(ReleaseGroupServer)
 			.select(ReleaseGroupServer.server)
@@ -397,9 +413,10 @@ class ProductTrial(Document):
 			.join(Server)
 			.on(Server.name == ReleaseGroupServer.server)
 			.where(Server.cluster == cluster)
+			.join(Bench)
+			.on(Bench.server == ReleaseGroupServer.server)
 			.run(pluck="server")
 		)
-
 		server_sites = {}
 		for server in servers:
 			server_sites[server] = frappe.db.count(
@@ -526,34 +543,16 @@ def sync_product_site_users():
 	product_benches = frappe.get_all(
 		"Bench", {"group": ("in", product_groups), "status": "Active"}, pluck="name"
 	)
-	frappe.enqueue(
-		"press.saas.doctype.product_trial.product_trial._sync_product_site_users",
-		queue="short",
-		product_benches=product_benches,
-		job_id="sync_product_site_users",
-		deduplicate=True,
-		enqueue_after_commit=True,
-	)
-	frappe.db.commit()
-
-
-def _sync_product_site_users(product_benches):
 	for bench_name in product_benches:
-		bench = frappe.get_doc("Bench", bench_name)
-		# Skip syncing analytics for benches that have been archived (after the job was enqueued)
-		if bench.status != "Active":
-			return
-		try:
-			bench.sync_product_site_users()
-			frappe.db.commit()
-		except Exception:
-			log_error(
-				"Bench Analytics Sync Error",
-				bench=bench.name,
-				reference_doctype="Bench",
-				reference_name=bench.name,
-			)
-			frappe.db.rollback()
+		frappe.enqueue_doc(
+			"Bench",
+			bench_name,
+			"sync_product_site_users",
+			queue="sync",
+			job_id=f"sync_product_site_users||{bench_name}",
+			deduplicate=True,
+			enqueue_after_commit=True,
+		)
 
 
 def send_suspend_mail(site: str, product: str) -> None:
