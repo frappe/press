@@ -475,7 +475,6 @@ def replenish_standby_sites():
 	for product in products:
 		product: ProductTrial = frappe.get_doc("Product Trial", product)
 		try:
-			print("Going to replenish standby site for:", product)
 			product.create_standby_sites_in_each_cluster()
 			frappe.db.commit()
 		except Exception as e:
