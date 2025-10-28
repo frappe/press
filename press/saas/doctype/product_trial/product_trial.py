@@ -292,6 +292,7 @@ class ProductTrial(Document):
 			return
 
 		clusters = self.get_available_clusters()
+		print("The available clusters are:", clusters)
 		for cluster in clusters:
 			try:
 				self.create_standby_sites(cluster)
@@ -403,7 +404,6 @@ class ProductTrial(Document):
 
 	def get_server_from_cluster(self, cluster):
 		"""Return the server with the least number of standby sites in the cluster"""
-		print("Getting server from cluster")
 		ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
 		Server = frappe.qb.DocType("Server")
 		Bench = frappe.qb.DocType("Bench")
@@ -418,7 +418,6 @@ class ProductTrial(Document):
 			.on(Bench.server == ReleaseGroupServer.server)
 			.run(pluck="server")
 		)
-		print("Retrieved servers:", servers)
 		server_sites = {}
 		for server in servers:
 			server_sites[server] = frappe.db.count(
@@ -477,12 +476,13 @@ def replenish_standby_sites():
 	for product in products:
 		product: ProductTrial = frappe.get_doc("Product Trial", product)
 		try:
+			print("Going to replenish standby site for:", product)
 			product.create_standby_sites_in_each_cluster()
 			frappe.db.commit()
 		except Exception as e:
 			log_error(
 				"Replenish Standby Sites Error",
-				message=str(e),
+				data=e,
 				reference_doctype="Product Trial",
 				reference_name=product.name,
 			)
