@@ -79,6 +79,7 @@ DOC_URLS = {
 	"debugging-app-installs-locally": "https://docs.frappe.io/cloud/common-issues/debugging-app-installs-locally",
 	"vite-not-found": "https://docs.frappe.io/cloud/common-issues/vite-not-found",
 	"invalid-project-structure": "https://docs.frappe.io/framework/user/en/tutorial/create-an-app#app-directory-structure",
+	"frappe-not-found": "https://pip.pypa.io/en/stable/news/#v25-3",
 }
 
 
@@ -336,7 +337,7 @@ def update_with_unsupported_init_file(
 	<p><strong>How to fix:</strong> Update your custom app's <code>__init__.py</code> to not import <code>frappe</code>
 	"""
 	details["message"] = fmt(message)
-	details["assistance_url"] = DOC_URLS["debugging-app-installs-locally"]
+	details["assistance_url"] = DOC_URLS["frappe-not-found"]
 	return True
 
 
