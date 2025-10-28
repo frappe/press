@@ -2942,6 +2942,18 @@ class Server(BaseServer):
 				bench.save()
 
 	@frappe.whitelist()
+	def set_redis_password(self):
+		"""Set redis password on all the benches on this server and update common site config"""
+		redis_password = self.get_redis_password()
+		self.agent.set_redis_password(redis_password=redis_password)
+		# Update site config either ways
+
+		benches = frappe.get_all("Bench", {"status": "Active", "server": self.name}, pluck="name")
+		for bench in benches:
+			bench: "Bench" = frappe.get_cached_doc("Bench", bench)
+			bench.save()  # Trigger common site config update
+
+	@frappe.whitelist()
 	def reset_sites_usage(self):
 		sites = frappe.get_all(
 			"Site",

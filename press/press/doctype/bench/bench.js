@@ -48,11 +48,6 @@ frappe.ui.form.on('Bench', {
 				'correct_bench_permissions',
 				frm.doc.status === 'Active',
 			],
-			[
-				__('Set Redis Password'),
-				'set_redis_password',
-				frm.doc.status === 'Active',
-			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
