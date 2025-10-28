@@ -162,7 +162,7 @@ export default {
 			return {
 				url: 'press.api.billing.get_current_billing_amount',
 				auto: true,
-				cache: true,
+				cache: 'Current Billing Amount',
 			};
 		},
 	},

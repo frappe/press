@@ -22,7 +22,7 @@
 					class="w-full mt-4"
 					variant="solid"
 					label="Save"
-					:loading="saving"
+					:loading="team.setValue.loading"
 					@click="saveSettings"
 				/>
 			</div>
@@ -49,7 +49,6 @@ let errorMessage = ref('');
 
 const receiveBudgetAlerts = ref(Boolean(team?.doc?.receive_budget_alerts));
 const monthlyAlertLimit = ref(team?.doc?.monthly_alert_threshold || '');
-const saving = ref(false);
 
 const saveSettings = async () => {
 	try {
@@ -68,8 +67,6 @@ const saveSettings = async () => {
 			show.value = false;
 			return;
 		}
-
-		saving.value = true;
 
 		// Validate monthly limit if budget alerts are enabled
 		if (receiveBudgetAlerts.value) {
@@ -98,8 +95,6 @@ const saveSettings = async () => {
 		console.error('Error saving budget alert settings:', error);
 		errorMessage.value =
 			'An error occurred while saving settings. Please try again.';
-	} finally {
-		saving.value = false;
 	}
 };
 </script>
