@@ -86,6 +86,8 @@ class SupportAccess(Document):
 	def add_bench(self):
 		if not self.site_bench:
 			return
+		if not self.is_new():
+			return
 		site = None
 		for resource in self.resources:
 			if resource.document_type == "Site":
