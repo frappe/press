@@ -1,0 +1,13 @@
+{% import "templates/emails/macros.html" as utils %}
+
+{% extends "templates/emails/base.html" %}
+{% block content %}
+<td class="text-base leading-6 text-gray-900">
+    <div class="p-8 bg-white from-markdown">
+        <p>Your request for support access has been {{ status.lower() }}.</p>
+        {{ utils.button('View Access Requests', 'dashboard/access-requests') }}
+        {{ utils.separator() }}
+        <p class="my-0">Team Frappe</p>
+    </div>
+</td>
+{% endblock %}
