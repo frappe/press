@@ -80,8 +80,8 @@ const isReceived = computed(() => {
 const permissions = computed(() =>
 	[
 		{
-			label: 'Bench',
-			requested: request.doc?.site_bench,
+			label: 'Release Group',
+			requested: request.doc?.site_release_group,
 			color: 'red',
 		},
 		{

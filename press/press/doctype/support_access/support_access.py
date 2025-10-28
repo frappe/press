@@ -29,8 +29,8 @@ class SupportAccess(Document):
 		requested_by: DF.Link | None
 		requested_team: DF.Link | None
 		resources: DF.Table[SupportAccessResource]
-		site_bench: DF.Check
 		site_domains: DF.Check
+		site_release_group: DF.Check
 		status: DF.Literal["Pending", "Accepted", "Rejected"]
 		target_team: DF.Link | None
 	# end: auto-generated types
@@ -46,7 +46,7 @@ class SupportAccess(Document):
 		"site_domains",
 		"status",
 		"target_team",
-		"site_bench",
+		"site_release_group",
 	)
 
 	def get_list_query(query, filters: dict | None, **args):
@@ -84,7 +84,7 @@ class SupportAccess(Document):
 		self.add_bench()
 
 	def add_bench(self):
-		if not self.site_bench:
+		if not self.site_release_group:
 			return
 		if not self.is_new():
 			return

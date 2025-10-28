@@ -18,7 +18,7 @@
   "site_permissions_section",
   "login_as_administrator",
   "site_domains",
-  "site_bench",
+  "site_release_group",
   "bench_permissions_section",
   "bench_ssh",
   "section_break_lwpm",
@@ -134,15 +134,15 @@
   },
   {
    "default": "0",
-   "fieldname": "site_bench",
+   "fieldname": "site_release_group",
    "fieldtype": "Check",
-   "label": "Bench",
+   "label": "Release Group",
    "set_only_once": 1
   }
  ],
  "grid_page_length": 50,
  "links": [],
- "modified": "2025-10-28 14:03:24.109023",
+ "modified": "2025-10-28 23:09:17.856081",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Support Access",
