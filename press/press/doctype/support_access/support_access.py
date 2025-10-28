@@ -4,7 +4,8 @@
 import frappe
 import frappe.utils
 from frappe.model.document import Document
-from frappe.query_builder import Criterion
+from frappe.query_builder import Criterion, JoinType
+from frappe.query_builder.functions import Count
 
 from press.utils import get_current_team
 
@@ -22,11 +23,13 @@ class SupportAccess(Document):
 
 		access_allowed_till: DF.Datetime | None
 		allowed_for: DF.Literal["3", "6", "12", "24", "72"]
+		bench_ssh: DF.Check
 		login_as_administrator: DF.Check
 		reason: DF.SmallText | None
 		requested_by: DF.Link | None
 		requested_team: DF.Link | None
 		resources: DF.Table[SupportAccessResource]
+		site_bench: DF.Check
 		site_domains: DF.Check
 		status: DF.Literal["Pending", "Accepted", "Rejected"]
 		target_team: DF.Link | None
@@ -39,9 +42,11 @@ class SupportAccess(Document):
 		"reason",
 		"requested_by",
 		"requested_team",
+		"resources",
 		"site_domains",
 		"status",
 		"target_team",
+		"site_bench",
 	)
 
 	def get_list_query(query, filters: dict | None, **args):
@@ -50,9 +55,10 @@ class SupportAccess(Document):
 		Access = frappe.qb.DocType("Support Access")
 		AccessResource = frappe.qb.DocType("Support Access Resource")
 		query = (
-			query.join(AccessResource)
+			query.join(AccessResource, JoinType.left)
 			.on(AccessResource.parent == Access.name)
-			.select(AccessResource.document_type.as_("resource_type"))
+			.select(Count(AccessResource.name).as_("resource_count"))
+			.groupby(Access.name)
 			.select(AccessResource.document_name.as_("resource_name"))
 		)
 		conditions = []
@@ -75,6 +81,29 @@ class SupportAccess(Document):
 		self.requested_by = self.requested_by or frappe.session.user
 		self.requested_team = self.requested_team or get_current_team()
 		self.set_expiry()
+		self.add_bench()
+
+	def add_bench(self):
+		if not self.site_bench:
+			return
+		site = None
+		for resource in self.resources:
+			if resource.document_type == "Site":
+				site = resource.document_name
+				break
+		if not site:
+			return
+		site = frappe.get_doc("Site", site)
+		release_group = frappe.get_doc("Release Group", site.group)
+		if site.team != release_group.team:
+			return
+		self.append(
+			"resources",
+			{
+				"document_type": "Release Group",
+				"document_name": release_group.name,
+			},
+		)
 
 	def set_expiry(self):
 		doc_before = self.get_doc_before_save()

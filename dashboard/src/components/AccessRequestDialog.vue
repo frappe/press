@@ -78,7 +78,11 @@ const permissionsMeta = computed(() => ({
 		enabled: props.doctype === 'Site',
 	},
 	site_domains: {
-		label: 'Site Domains',
+		label: 'Domains',
+		enabled: props.doctype === 'Site',
+	},
+	site_bench: {
+		label: 'Bench',
 		enabled: props.doctype === 'Site',
 	},
 }));

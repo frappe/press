@@ -36,19 +36,9 @@ export default {
 			].filter(({ condition }) => !!condition);
 		},
 		onRowClick(row) {
-			const team = getTeam();
-			const isReceived = row.target_team === team.doc?.name;
 			renderDialog(
 				h(SupportAccessDialog, {
 					name: row.name,
-					requestedBy: row.requested_by,
-					resourceType: row.resource_type,
-					resourceName: row.resource_name,
-					status: row.status,
-					reason: row.reason,
-					loginAsAdministrator: row.login_as_administrator,
-					siteDomains: row.site_domains,
-					isReceived,
 				}),
 			);
 		},
@@ -72,6 +62,13 @@ export default {
 			{
 				label: 'Resource',
 				fieldname: 'resource_name',
+				format: (_, row) => {
+					if (row.resource_count > 1) {
+						return row.resource_count + ' Resources';
+					} else {
+						return row.resource_name;
+					}
+				},
 			},
 			{
 				label: 'Expiry',

@@ -11,12 +11,16 @@
   "requested_by",
   "requested_team",
   "target_team",
-  "allowed_for",
   "access_allowed_till",
   "column_break_vrkb",
-  "site_domains",
-  "login_as_administrator",
+  "allowed_for",
   "reason",
+  "site_permissions_section",
+  "login_as_administrator",
+  "site_domains",
+  "site_bench",
+  "bench_permissions_section",
+  "bench_ssh",
   "section_break_lwpm",
   "resources"
  ],
@@ -111,12 +115,34 @@
    "fieldtype": "Check",
    "label": "Domains",
    "set_only_once": 1
+  },
+  {
+   "fieldname": "site_permissions_section",
+   "fieldtype": "Section Break",
+   "label": "Site Permissions"
+  },
+  {
+   "fieldname": "bench_permissions_section",
+   "fieldtype": "Section Break",
+   "label": "Bench Permissions"
+  },
+  {
+   "default": "0",
+   "fieldname": "bench_ssh",
+   "fieldtype": "Check",
+   "label": "SSH"
+  },
+  {
+   "default": "0",
+   "fieldname": "site_bench",
+   "fieldtype": "Check",
+   "label": "Bench",
+   "set_only_once": 1
   }
  ],
  "grid_page_length": 50,
- "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-27 11:12:15.676923",
+ "modified": "2025-10-28 14:03:24.109023",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Support Access",
