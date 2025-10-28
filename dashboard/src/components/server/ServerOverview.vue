@@ -1,10 +1,7 @@
 <template>
-	<div class="wl-100">
+	<div class="w-100" v-if="$appServer?.doc">
 		<CustomAlerts ctx_type="Server" :ctx_name="$appServer?.doc?.name" />
-		<div
-			v-if="$appServer?.doc"
-			class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2"
-		>
+		<div class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2">
 			<div
 				v-for="server in !!$dbReplicaServer?.doc
 					? ['Server', 'Database Server', 'Replication Server']
