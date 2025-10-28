@@ -69,9 +69,11 @@
   "primary",
   "auto_scale_section",
   "secondary_server",
-  "benches_on_shared_volume",
   "is_secondary",
-  "auto_scaled",
+  "benches_on_shared_volume",
+  "scaled_up",
+  "column_break_ywnx",
+  "auto_scale_trigger",
   "ssh_section",
   "ssh_user",
   "ssh_port",
@@ -705,15 +707,30 @@
    "label": "Benches on Shared Volume"
   },
   {
+   "fieldname": "auto_scale_trigger",
+   "fieldtype": "Table",
+   "label": "Auto Scale Trigger",
+   "options": "Auto Scale Trigger"
+  },
+  {
    "default": "0",
    "description": "Check if the benches are running on the secondary server",
-   "fieldname": "auto_scaled",
+   "fieldname": "scaled_up",
    "fieldtype": "Check",
-   "label": "Auto Scaled"
+   "label": "Scaled Up"
+  },
+  {
+   "fieldname": "column_break_ywnx",
+   "fieldtype": "Column Break"
   }
  ],
- "links": [],
- "modified": "2025-10-15 17:37:57.449501",
+ "links": [
+  {
+   "link_doctype": "Auto Scale Record",
+   "link_fieldname": "primary_server"
+  }
+ ],
+ "modified": "2025-10-23 10:56:32.953573",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
