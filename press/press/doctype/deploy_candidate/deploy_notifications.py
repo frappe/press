@@ -163,6 +163,11 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 			None,
 		),
 		(
+			"ModuleNotFoundError: No module named 'frappe'",
+			update_with_unsupported_init_file,
+			check_if_app_updated,
+		),
+		(
 			"ModuleNotFoundError: No module named",
 			update_with_module_not_found,
 			check_if_app_updated,
@@ -230,10 +235,12 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 		# Catch app install failures in cases of malformed package structure etc, etc.
 		# https://github.com/frappe/bench/pull/1665/files
 		(
-			"Error occured during app install",
+			"Error occurred during app install",
 			update_with_invalid_app_structure,
 			None,
 		),
+		# Catch errors due to https://pypi.org/project/pip/25.3/
+		(""),
 	]
 
 
@@ -310,6 +317,27 @@ def get_details(
 		details["assistance_url"] = None
 
 	return details
+
+
+def update_with_unsupported_init_file(
+	details: "Details",
+	dc: "DeployCandidate",
+	dcb: "DeployCandidateBuild",
+	exc: BaseException,
+):
+	details["title"] = "[Action Required] App installation failed due to unsupported code in __init__.py"
+
+	message = """
+	<p><strong>Installation failed:</strong> Your custom app's <code>__init__.py</code> file contains code that imports <code>frappe</code>.
+	This behavior is no longer supported and causes installation to fail.</p>
+
+	<p>For more information, see the <a href="https://pip.pypa.io/en/stable/news/" target="_blank">pip release notes</a>.</p>
+
+	<p><strong>How to fix:</strong> Update your custom app's <code>__init__.py</code> to not import <code>frappe</code>
+	"""
+	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["debugging-app-installs-locally"]
+	return True
 
 
 def update_with_vue_build_failed(
