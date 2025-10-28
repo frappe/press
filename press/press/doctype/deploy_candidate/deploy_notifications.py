@@ -240,8 +240,6 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 			update_with_invalid_app_structure,
 			None,
 		),
-		# Catch errors due to https://pypi.org/project/pip/25.3/
-		(""),
 	]
 
 
