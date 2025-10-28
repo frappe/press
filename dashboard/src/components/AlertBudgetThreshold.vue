@@ -1,6 +1,5 @@
 <template>
-	<AlertBanner :title="budgetAlertMessage" type="warning">
-	</AlertBanner>
+	<AlertBanner :title="budgetAlertMessage" type="warning"> </AlertBanner>
 </template>
 <script>
 import AlertBanner from './AlertBanner.vue';

@@ -75,7 +75,6 @@ const saveSettings = async () => {
 		if (receiveBudgetAlerts.value) {
 			const numValue = parseFloat(monthlyAlertLimit.value);
 			if (isNaN(numValue) || numValue <= 0) {
-				// You might want to show a toast notification here instead of throwing
 				errorMessage.value = 'Please enter a valid positive amount';
 				return;
 			}
