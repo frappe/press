@@ -14,6 +14,7 @@ from botocore.exceptions import ClientError
 from dns.resolver import Resolver
 from frappe.core.utils import find
 from frappe.desk.doctype.tag.tag import add_tag
+from frappe.query_builder import Case
 from frappe.rate_limiter import rate_limit
 from frappe.utils import flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
@@ -158,39 +159,40 @@ def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 
 	cluster = site.get("cluster") or frappe.db.get_single_value("Press Settings", "cluster")
 
-	proxy_servers = frappe.get_all("Proxy Server Domain", {"domain": domain}, pluck="parent")
-	proxy_servers = frappe.get_all(
-		"Proxy Server",
-		{"status": "Active", "name": ("in", proxy_servers)},
-		pluck="name",
+	Bench = frappe.qb.DocType("Bench")
+	Server = frappe.qb.DocType("Server")
+	ProxyServer = frappe.qb.DocType("Proxy Server")
+	ProxyServerDomain = frappe.qb.DocType("Proxy Server Domain")
+
+	proxy_servers = (
+		frappe.qb.from_(ProxyServer)
+		.join(ProxyServerDomain)
+		.on(ProxyServer.name == ProxyServerDomain.parent)
+		.select(ProxyServer.name)
+		.where(ProxyServerDomain.domain == domain)
+		.where(ProxyServer.status == "Active")
+	).run(as_dict=True)
+	proxy_servers = [d.name for d in proxy_servers]
+
+	bench_query = (
+		frappe.qb.from_(Bench)
+		.join(Server)
+		.on(Bench.server == Server.name)
+		.select(Bench.name, Bench.server)
+		.where(Server.proxy_server.isin(proxy_servers))
+		.where(Bench.status == "Active")
+		.where(Bench.group == site["group"])
+		.orderby(Case().when(Bench.cluster == cluster, 1).else_(0), order=frappe.qb.desc)
+		.orderby(Server.use_for_new_sites, order=frappe.qb.desc)
+		.orderby(Bench.creation, order=frappe.qb.desc)
+		.limit(1)
 	)
-	proxy_servers = tuple(proxy_servers) if len(proxy_servers) > 1 else f"('{proxy_servers[0]}')"
 
-	query_sub_str = ""
 	if server:
-		query_sub_str = f"AND server.name = '{server}'"
+		bench_query = bench_query.where(Server.name == server)
 
-	bench = frappe.db.sql(
-		f"""
-	SELECT
-		bench.name, bench.server, bench.cluster = '{cluster}' as in_primary_cluster
-	FROM
-		tabBench bench
-	LEFT JOIN
-		tabServer server
-	ON
-		bench.server = server.name
-	WHERE
-		server.proxy_server in {proxy_servers} AND
-		bench.status = "Active" AND
-		bench.group = '{site["group"]}'
-		{query_sub_str}
-	ORDER BY
-		in_primary_cluster DESC, server.use_for_new_sites DESC, bench.creation DESC
-	LIMIT 1
-	""",
-		as_dict=True,
-	)[0]
+	bench = bench_query.run(as_dict=True).pop()
+
 	plan = site["plan"]
 	app_plans = site.get("selected_app_plans")
 	if not ignore_plan_validation:
