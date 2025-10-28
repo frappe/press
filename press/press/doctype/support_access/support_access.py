@@ -81,9 +81,9 @@ class SupportAccess(Document):
 		self.requested_by = self.requested_by or frappe.session.user
 		self.requested_team = self.requested_team or get_current_team()
 		self.set_expiry()
-		self.add_bench()
+		self.add_release_group()
 
-	def add_bench(self):
+	def add_release_group(self):
 		if not self.site_release_group:
 			return
 		if not self.is_new():
