@@ -21,7 +21,7 @@ class SupportAccess(Document):
 		from press.press.doctype.support_access_resource.support_access_resource import SupportAccessResource
 
 		access_allowed_till: DF.Datetime | None
-		allowed_for: DF.Literal["3", "6", "12", "24"]
+		allowed_for: DF.Literal["3", "6", "12", "24", "72"]
 		login_as_administrator: DF.Check
 		reason: DF.SmallText | None
 		requested_by: DF.Link | None
@@ -123,6 +123,16 @@ class SupportAccess(Document):
 		title = f"Access Request {self.status}"
 		message = f"Your request for support access has been {self.status.lower()}."
 
+		frappe.sendmail(
+			subject=title,
+			message=message,
+			recipients=self.requested_by,
+			template="access_request_update",
+			args={
+				"status": self.status,
+			},
+		)
+
 		frappe.get_doc(
 			{
 				"doctype": "Press Notification",
@@ -146,6 +156,18 @@ class SupportAccess(Document):
 	def notify_on_request(self):
 		title = "New Access Request"
 		message = f"{self.requested_by} has requested support access for one of your resources."
+		team_email = frappe.get_value("Team", self.target_team, "user")
+
+		frappe.sendmail(
+			subject=title,
+			message=message,
+			recipients=team_email,
+			template="access_request",
+			args={
+				"requested_by": self.requested_by,
+				"reason": self.reason,
+			},
+		)
 
 		frappe.get_doc(
 			{

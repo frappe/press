@@ -38,13 +38,13 @@
    "read_only": 1
   },
   {
-   "default": "24",
+   "default": "72",
    "description": "in hours",
    "fieldname": "allowed_for",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Allowed for",
-   "options": "3\n6\n12\n24",
+   "options": "3\n6\n12\n24\n72",
    "set_only_once": 1
   },
   {
@@ -116,7 +116,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-21 19:05:59.702665",
+ "modified": "2025-10-27 11:12:15.676923",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Support Access",
