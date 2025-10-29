@@ -28,6 +28,7 @@ class AccountRequest(Document):
 		)
 
 		agreed_to_partner_consent: DF.Check
+		agreed_to_terms: DF.Check
 		company: DF.Data | None
 		continent: DF.Data | None
 		country: DF.Data | None

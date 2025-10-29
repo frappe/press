@@ -63,6 +63,7 @@ def signup(email: str, product: str | None = None, referrer: str | None = None) 
 				"referrer_id": referrer,
 				"send_email": True,
 				"product_trial": product,
+				"agreed_to_terms": 1,
 			}
 		).insert(ignore_permissions=True)
 		account_request = account_request_doc.name
