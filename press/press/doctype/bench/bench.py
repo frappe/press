@@ -268,7 +268,7 @@ class Bench(Document):
 		if self.is_new():
 			self.port_offset = self.get_unused_port_offset()
 
-		redis_password = frappe.get_cached_doc("Server", self.server).get_redis_password()
+		redis_password = frappe.get_cached_doc("Release Group", self.group).get_redis_password()
 
 		config = {
 			"monitor": True,
