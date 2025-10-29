@@ -75,19 +75,34 @@ class PressRole(Document):
 			message = _("Role with title {0} already exists in this team").format(self.title)
 			frappe.throw(message, frappe.DuplicateEntryError)
 
-	def add_press_admin_role(self, user):
+	def add_press_role(self, user, role):
 		user = frappe.get_doc("User", user)
-		user.append_roles("Press Admin")
+		user.append_roles(role)
 		user.save(ignore_permissions=True)
 
-	def remove_press_admin_role(self, user):
+	def add_press_billing_manager_role(self, user):
+		self.add_press_role(user, "Press Billing Manager")
+
+	def add_press_admin_role(self, user):
+		self.add_press_role(user, "Press Admin")
+
+	def remove_press_role(self, user, role):
 		if frappe.db.exists("Team", {"enabled": 1, "user": user}):
 			return
 		user = frappe.get_doc("User", user)
 		existing_roles = {d.role: d for d in user.get("roles")}
-		if "Press Admin" in existing_roles:
-			user.get("roles").remove(existing_roles["Press Admin"])
+		if role in existing_roles:
+			user.get("roles").remove(existing_roles[role])
 			user.save(ignore_permissions=True)
+
+	def remove_press_admin_role(self, user):
+		self.remove_press_role(user, "Press Admin")
+
+	def remove_press_billing_manager_role(self, user):
+		self.remove_press_role(user, "Press Billing Manager")
+
+	def is_team_member(self, user):
+		return bool(frappe.db.exists("Team Member", {"parent": self.team, "user": user}))
 
 	@dashboard_whitelist()
 	@team_guard.only_admin(skip=lambda _, args: args.get("skip_validations", False))
@@ -102,8 +117,10 @@ class PressRole(Document):
 			frappe.throw(message, frappe.ValidationError)
 		self.append("users", user_dict)
 		self.save()
-		if self.admin_access or self.allow_billing:
+		if self.admin_access:
 			self.add_press_admin_role(user)
+		if self.allow_billing:
+			self.add_press_billing_manager_role(user)
 
 	@dashboard_whitelist()
 	@team_guard.only_admin()
@@ -114,8 +131,10 @@ class PressRole(Document):
 			frappe.throw(message, frappe.ValidationError)
 		self.remove(users.pop())
 		self.save()
-		if self.admin_access or self.allow_billing:
+		if self.admin_access:
 			self.remove_press_admin_role(user)
+		if self.allow_billing:
+			self.remove_press_billing_manager_role(user)
 
 	@dashboard_whitelist()
 	@team_guard.only_admin(skip=lambda _, args: args.get("skip_validations", False))
