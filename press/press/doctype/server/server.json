@@ -48,7 +48,6 @@
   "private_vlan_id",
   "agent_section",
   "agent_password",
-  "redis_password",
   "column_break_pdbx",
   "disable_agent_job_auto_retry",
   "reverse_proxy_section",
@@ -70,11 +69,9 @@
   "primary",
   "auto_scale_section",
   "secondary_server",
-  "is_secondary",
   "benches_on_shared_volume",
-  "scaled_up",
-  "column_break_ywnx",
-  "auto_scale_trigger",
+  "is_secondary",
+  "auto_scaled",
   "ssh_section",
   "ssh_user",
   "ssh_port",
@@ -708,35 +705,15 @@
    "label": "Benches on Shared Volume"
   },
   {
-   "fieldname": "auto_scale_trigger",
-   "fieldtype": "Table",
-   "label": "Auto Scale Trigger",
-   "options": "Auto Scale Trigger"
-  },
-  {
    "default": "0",
    "description": "Check if the benches are running on the secondary server",
-   "fieldname": "scaled_up",
+   "fieldname": "auto_scaled",
    "fieldtype": "Check",
-   "label": "Scaled Up"
-  },
-  {
-   "fieldname": "column_break_ywnx",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "redis_password",
-   "fieldtype": "Password",
-   "label": "Redis Password"
+   "label": "Auto Scaled"
   }
  ],
- "links": [
-  {
-   "link_doctype": "Auto Scale Record",
-   "link_fieldname": "primary_server"
-  }
- ],
- "modified": "2025-10-24 16:05:46.468706",
+ "links": [],
+ "modified": "2025-10-15 17:37:57.449501",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
