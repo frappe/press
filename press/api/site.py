@@ -1892,12 +1892,8 @@ def _check_dns_cname_a(name, domain, ignore_proxying=False, throw_proxy_validati
 
 	if proxy and not throw_proxy_validation_early:
 		frappe.throw(
-<<<<<<< HEAD
-			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.""",
-=======
 			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying{get_dns_provider_link_substr(domain)} and try again in some time.
 			<br>You may enable it once the domain is verified.""",
->>>>>>> a4b960f31 (feat(dns): Give hint about DNS provider)
 			DomainProxied,
 		)
 
