@@ -117,6 +117,7 @@ class ReleaseGroup(Document, TagHelpers):
 		packages: DF.Table[ReleaseGroupPackage]
 		public: DF.Check
 		redis_cache_size: DF.Int
+		redis_password: DF.Password | None
 		saas_app: DF.Link | None
 		saas_bench: DF.Check
 		servers: DF.Table[ReleaseGroupServer]
@@ -589,6 +590,15 @@ class ReleaseGroup(Document, TagHelpers):
 		required_arm_build = "arm64" in platforms
 		required_intel_build = "x86_64" in platforms
 		return required_arm_build, required_intel_build
+
+	def get_redis_password(self) -> str:
+		"""Get redis password create and update password if not present"""
+		try:
+			return self.get_password("redis_password")
+		except frappe.AuthenticationError:
+			self.redis_password = frappe.generate_hash(length=32)
+			self.save(ignore_permissions=True)
+			return self.get_password("redis_password")
 
 	@frappe.whitelist()
 	def create_duplicate_deploy_candidate(self):
