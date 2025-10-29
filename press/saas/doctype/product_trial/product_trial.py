@@ -432,37 +432,41 @@ class ProductTrial(Document):
 		return min(server_sites, key=server_sites.get)
 
 
-def get_app_subscriptions_site_config(apps: list[str], site: str | None = None) -> dict:
+def create_free_app_subscription(app: str, site: str | None = None):
 	from press.utils import get_current_team
 
+	free_plan = frappe.get_all(
+		"Marketplace App Plan",
+		{"enabled": 1, "price_usd": ("<=", 0), "app": app},
+		pluck="name",
+	)
+	if not free_plan:
+		return None
+	return frappe.get_doc(
+		{
+			"doctype": "Subscription",
+			"document_type": "Marketplace App",
+			"document_name": app,
+			"plan_type": "Marketplace App Plan",
+			"plan": free_plan[0],
+			"site": site,
+			"enabled": 1,
+			"team": get_current_team(),
+		}
+	).insert(ignore_permissions=True)
+
+
+def get_app_subscriptions_site_config(apps: list[str], site: str | None = None) -> dict:
 	subscriptions = []
 	site_config = {}
 
 	for app in apps:
-		free_plan = frappe.get_all(
-			"Marketplace App Plan",
-			{"enabled": 1, "price_usd": ("<=", 0), "app": app},
-			pluck="name",
-		)
-		if free_plan:
-			new_subscription = frappe.get_doc(
-				{
-					"doctype": "Subscription",
-					"document_type": "Marketplace App",
-					"document_name": app,
-					"plan_type": "Marketplace App Plan",
-					"plan": free_plan[0],
-					"site": site,
-					"enabled": 1,
-					"team": get_current_team(),
-				}
-			).insert(ignore_permissions=True)
-
-			subscriptions.append(new_subscription)
-			config = frappe.db.get_value("Marketplace App", app, "site_config")
-			config = json.loads(config) if config else {}
-			site_config.update(config)
-
+		if not (s := create_free_app_subscription(app, site)):
+			continue
+		subscriptions.append(s)
+		config = frappe.db.get_value("Marketplace App", app, "site_config")
+		config = json.loads(config) if config else {}
+		site_config.update(config)
 	for s in subscriptions:
 		site_config.update({"sk_" + s.document_name: s.secret_key})
 
