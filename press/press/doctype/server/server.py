@@ -379,6 +379,8 @@ class BaseServer(Document, TagHelpers):
 		"""Get servers data disk size"""
 		mountpoint = self.guess_data_disk_mountpoint()
 		volume = self.find_mountpoint_volume(mountpoint)
+		if not volume:  # Volume might not be attached as soon as the server is created
+			return 0
 		return frappe.db.get_value("Virtual Machine Volume", {"volume_id": volume.volume_id}, "size")
 
 	def _get_app_and_database_servers(self) -> tuple[Server, DatabaseServer]:
@@ -1257,6 +1259,21 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("MySQLdump Setup Exception", doc=self)
 
+	def setup_iptables(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_iptables")
+
+	def _setup_iptables(self):
+		try:
+			ansible = Ansible(
+				playbook="iptables.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Iptables Setup Exception", doc=self)
+
 	@frappe.whitelist()
 	def set_swappiness(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_set_swappiness")
@@ -2014,6 +2031,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			self.setup_mysqldump()
 			self.install_earlyoom()
 			self.setup_ncdu()
+			self.setup_iptables()
 
 			if self.has_data_volume:
 				self.setup_archived_folder()
@@ -2370,6 +2388,11 @@ class Server(BaseServer):
 
 		self.secondary_server = secondary_server.name
 		self.save()
+
+	def drop_secondary_server(self) -> None:
+		"""Drop secondary server"""
+		server: "Server" = frappe.get_doc("Server", self.secondary_server)
+		server.archive()
 
 	@frappe.whitelist()
 	def setup_secondary_server(self, server_plan: str):

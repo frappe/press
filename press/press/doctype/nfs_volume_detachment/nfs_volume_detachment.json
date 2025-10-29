@@ -59,8 +59,13 @@
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-10-08 16:35:51.975932",
+ "links": [
+  {
+   "link_doctype": "Press Notification",
+   "link_fieldname": "document_name"
+  }
+ ],
+ "modified": "2025-10-22 10:32:02.790635",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "NFS Volume Detachment",

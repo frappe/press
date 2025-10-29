@@ -39,6 +39,7 @@ class PressNotification(Document):
 			"Agent Job Failure",
 			"Downtime/Performance",
 			"Support Access",
+			"Auto Scale",
 		]
 	# end: auto-generated types
 

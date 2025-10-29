@@ -39,7 +39,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Type",
-   "options": "Site Update\nSite Migrate\nVersion Upgrade\nBench Deploy\nSite Recovery\nAgent Job Failure\nDowntime/Performance\nSupport Access",
+   "options": "Site Update\nSite Migrate\nVersion Upgrade\nBench Deploy\nSite Recovery\nAgent Job Failure\nDowntime/Performance\nSupport Access\nAuto Scale",
    "read_only": 1,
    "reqd": 1
   },
@@ -161,7 +161,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-15 18:12:03.212217",
+ "modified": "2025-10-22 11:00:39.063349",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Notification",

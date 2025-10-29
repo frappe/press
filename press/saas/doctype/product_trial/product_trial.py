@@ -403,10 +403,9 @@ class ProductTrial(Document):
 
 	def get_server_from_cluster(self, cluster):
 		"""Return the server with the least number of standby sites in the cluster"""
-
 		ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
 		Server = frappe.qb.DocType("Server")
-
+		Bench = frappe.qb.DocType("Bench")
 		servers = (
 			frappe.qb.from_(ReleaseGroupServer)
 			.select(ReleaseGroupServer.server)
@@ -414,9 +413,10 @@ class ProductTrial(Document):
 			.join(Server)
 			.on(Server.name == ReleaseGroupServer.server)
 			.where(Server.cluster == cluster)
+			.join(Bench)
+			.on(Bench.server == ReleaseGroupServer.server)
 			.run(pluck="server")
 		)
-
 		server_sites = {}
 		for server in servers:
 			server_sites[server] = frappe.db.count(

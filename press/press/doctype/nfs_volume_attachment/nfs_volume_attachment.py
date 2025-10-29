@@ -92,6 +92,23 @@ class StepHandler:
 		self.save()
 		frappe.db.commit()
 
+	def handle_step_failure(self):
+		team = frappe.db.get_value("Server", self.primary_server, "team")
+		press_notification = frappe.get_doc(
+			{
+				"doctype": "Press Notification",
+				"team": team,
+				"type": "Auto Scale",
+				"document_type": self.doctype,
+				"document_name": self.name,
+				"class": "Error",
+				"traceback": frappe.get_traceback(with_context=False),
+				"message": f"Error occurred during auto scale {'setup' if self.doctype == 'NFS Volume Attachment' else 'teardown'}",
+			}
+		)
+		press_notification.insert()
+		frappe.db.commit()
+
 	def get_steps(self, methods: list) -> list[dict]:
 		"""Generate a list of steps to be executed for NFS volume attachment."""
 		return [
@@ -135,6 +152,7 @@ class StepHandler:
 			except Exception:
 				self.reload()
 				self.fail()
+				self.handle_step_failure()
 				return  # Stop on first failure
 
 			self.reload()
@@ -176,7 +194,6 @@ class NFSVolumeAttachment(Document, StepHandler):
 		secondary_server: DF.Link
 		status: DF.Literal["Pending", "Running", "Success", "Failure", "Archived"]
 		volume_id: DF.Data | None
-		volume_size: DF.Int
 	# end: auto-generated types
 
 	def validate(self):
@@ -224,10 +241,11 @@ class NFSVolumeAttachment(Document, StepHandler):
 		step.status = Status.Running
 		step.save()
 
+		volume_size = frappe.db.get_value("Virtual Machine", self.primary_server, "disk_size")
 		virtual_machine: VirtualMachine = frappe.get_cached_doc("Virtual Machine", self.nfs_server)
 		try:
 			volume_id = virtual_machine.attach_new_volume(
-				self.volume_size,
+				volume_size,
 				iops=3000,
 				throughput=124,
 				log_activity=False,
@@ -470,7 +488,6 @@ class NFSVolumeAttachment(Document, StepHandler):
 
 	def before_insert(self):
 		"""Append defined steps to the document before saving."""
-		self.volume_size = frappe.db.get_value("Virtual Machine", self.primary_server, "disk_size")
 		for step in self.get_steps(
 			[
 				self.stop_all_benches,
