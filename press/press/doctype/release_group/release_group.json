@@ -31,6 +31,7 @@
   "bench_config",
   "gunicorn_threads_per_worker",
   "redis_cache_size",
+  "redis_password",
   "automatic_worker_allocation_section",
   "min_gunicorn_workers",
   "min_background_workers",
@@ -382,10 +383,15 @@
    "fieldname": "check_dependent_apps",
    "fieldtype": "Check",
    "label": "Check Dependent Apps"
+  },
+  {
+   "fieldname": "redis_password",
+   "fieldtype": "Password",
+   "label": "Redis Password"
   }
  ],
  "links": [],
- "modified": "2025-10-24 16:04:52.229784",
+ "modified": "2025-10-29 12:54:56.657680",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
