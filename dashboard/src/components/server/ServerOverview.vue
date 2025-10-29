@@ -1,120 +1,119 @@
 <template>
-	<div
-		v-if="$appServer?.doc"
-		class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2"
-	>
+	<div class="w-100" v-if="$appServer?.doc">
 		<CustomAlerts ctx_type="Server" :ctx_name="$appServer?.doc?.name" />
-		<div
-			v-for="server in !!$dbReplicaServer?.doc
-				? ['Server', 'Database Server', 'Replication Server']
-				: ['Server', 'Database Server']"
-			class="col-span-1 rounded-md border lg:col-span-2"
-		>
-			<div class="grid grid-cols-2 lg:grid-cols-4">
-				<template v-for="(d, i) in currentUsage(server)" :key="d.value">
-					<div
-						class="border-b p-5 lg:border-b-0"
-						:class="{ 'border-r': i + 1 != currentUsage(server).length }"
-					>
+		<div class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2">
+			<div
+				v-for="server in !!$dbReplicaServer?.doc
+					? ['Server', 'Database Server', 'Replication Server']
+					: ['Server', 'Database Server']"
+				class="col-span-1 rounded-md border lg:col-span-2"
+			>
+				<div class="grid grid-cols-2 lg:grid-cols-4">
+					<template v-for="(d, i) in currentUsage(server)" :key="d.value">
 						<div
-							v-if="d.type === 'header'"
-							class="m-auto flex h-full items-center justify-between"
+							class="border-b p-5 lg:border-b-0"
+							:class="{ 'border-r': i + 1 != currentUsage(server).length }"
 						>
 							<div
 								v-if="d.type === 'header'"
-								class="mt-2 flex flex-col space-y-2"
+								class="m-auto flex h-full items-center justify-between"
 							>
-								<div class="text-base text-gray-700">{{ d.label }}</div>
-								<div class="space-y-1">
-									<div class="flex items-center text-base text-gray-900">
-										{{ d.value }}
-										<Tooltip v-if="d.isPremium" text="Premium Server">
-											<!-- this icon isn't available in unplugin package yet -->
-											<svg
-												xmlns="http://www.w3.org/2000/svg"
-												width="24"
-												height="24"
-												viewBox="0 0 24 24"
-												fill="none"
-												stroke="currentColor"
-												stroke-width="2"
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												class="lucide lucide-circle-parking ml-2 h-4 w-4 text-gray-600"
-											>
-												<circle cx="12" cy="12" r="10" />
-												<path d="M9 17V7h4a3 3 0 0 1 0 6H9" />
-											</svg>
-										</Tooltip>
-									</div>
-									<div class="flex space-x-1">
-										<div class="text-sm text-gray-600" v-html="d.subValue" />
-										<Tooltip v-if="d.help" :text="d.help">
-											<lucide-info class="h-3.5 w-3.5 text-gray-500" />
-										</Tooltip>
-									</div>
-								</div>
-							</div>
-							<Button
-								v-if="d.type === 'header' && !$appServer.doc.is_self_hosted"
-								@click="showPlanChangeDialog(server)"
-								label="Change"
-							/>
-						</div>
-						<div v-else-if="d.type === 'progress'">
-							<div class="flex items-center justify-between space-x-2">
-								<div class="text-base text-gray-700">{{ d.label }}</div>
-								<div v-if="d.actions" class="flex items-center space-x-2">
-									<Badge
-										v-if="d.actionRequired"
-										theme="red"
-										size="sm"
-										:label="d.actionRequired"
-										variant="subtle"
-										ref-for
-									/>
-
-									<Button v-for="action in d.actions || []" v-bind="action" />
-								</div>
-
-								<div v-else class="h-8" />
-							</div>
-							<div class="mt-2">
-								<Progress size="md" :value="d.progress_value || 0" />
-								<div class="flex space-x-2">
-									<div class="mt-2 flex justify-between">
-										<div class="text-sm text-gray-600">
+								<div
+									v-if="d.type === 'header'"
+									class="mt-2 flex flex-col space-y-2"
+								>
+									<div class="text-base text-gray-700">{{ d.label }}</div>
+									<div class="space-y-1">
+										<div class="flex items-center text-base text-gray-900">
 											{{ d.value }}
+											<Tooltip v-if="d.isPremium" text="Premium Server">
+												<!-- this icon isn't available in unplugin package yet -->
+												<svg
+													xmlns="http://www.w3.org/2000/svg"
+													width="24"
+													height="24"
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2"
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													class="lucide lucide-circle-parking ml-2 h-4 w-4 text-gray-600"
+												>
+													<circle cx="12" cy="12" r="10" />
+													<path d="M9 17V7h4a3 3 0 0 1 0 6H9" />
+												</svg>
+											</Tooltip>
+										</div>
+										<div class="flex space-x-1">
+											<div class="text-sm text-gray-600" v-html="d.subValue" />
+											<Tooltip v-if="d.help" :text="d.help">
+												<lucide-info class="h-3.5 w-3.5 text-gray-500" />
+											</Tooltip>
 										</div>
 									</div>
-									<Tooltip v-if="d.help" :text="d.help">
-										<lucide-info class="mt-2 h-4 w-4 text-gray-500" />
-									</Tooltip>
+								</div>
+								<Button
+									v-if="d.type === 'header' && !$appServer.doc.is_self_hosted"
+									@click="showPlanChangeDialog(server)"
+									label="Change"
+								/>
+							</div>
+							<div v-else-if="d.type === 'progress'">
+								<div class="flex items-center justify-between space-x-2">
+									<div class="text-base text-gray-700">{{ d.label }}</div>
+									<div v-if="d.actions" class="flex items-center space-x-2">
+										<Badge
+											v-if="d.actionRequired"
+											theme="red"
+											size="sm"
+											:label="d.actionRequired"
+											variant="subtle"
+											ref-for
+										/>
+
+										<Button v-for="action in d.actions || []" v-bind="action" />
+									</div>
+
+									<div v-else class="h-8" />
+								</div>
+								<div class="mt-2">
+									<Progress size="md" :value="d.progress_value || 0" />
+									<div class="flex space-x-2">
+										<div class="mt-2 flex justify-between">
+											<div class="text-sm text-gray-600">
+												{{ d.value }}
+											</div>
+										</div>
+										<Tooltip v-if="d.help" :text="d.help">
+											<lucide-info class="mt-2 h-4 w-4 text-gray-500" />
+										</Tooltip>
+									</div>
 								</div>
 							</div>
 						</div>
-					</div>
-				</template>
-			</div>
-		</div>
-
-		<div class="rounded-md border">
-			<div class="h-12 border-b px-5 py-4">
-				<h2 class="text-lg font-medium text-gray-900">Server Information</h2>
-			</div>
-			<div>
-				<div
-					v-for="d in serverInformation"
-					:key="d.label"
-					class="flex items-center px-5 py-3 last:pb-5 even:bg-gray-50/70"
-				>
-					<div class="w-1/3 text-base text-gray-700">{{ d.label }}</div>
-					<div class="w-2/3 text-base font-medium">{{ d.value }}</div>
+					</template>
 				</div>
 			</div>
-		</div>
 
-		<ServerLoadAverage :server="server" />
+			<div class="rounded-md border">
+				<div class="h-12 border-b px-5 py-4">
+					<h2 class="text-lg font-medium text-gray-900">Server Information</h2>
+				</div>
+				<div>
+					<div
+						v-for="d in serverInformation"
+						:key="d.label"
+						class="flex items-center px-5 py-3 last:pb-5 even:bg-gray-50/70"
+					>
+						<div class="w-1/3 text-base text-gray-700">{{ d.label }}</div>
+						<div class="w-2/3 text-base font-medium">{{ d.value }}</div>
+					</div>
+				</div>
+			</div>
+
+			<ServerLoadAverage :server="server" />
+		</div>
 	</div>
 </template>
 
