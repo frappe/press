@@ -430,15 +430,13 @@ class NFSVolumeAttachment(Document, StepHandler):
 			self.secondary_server,
 			"private_ip",
 		)
-		redis_password = frappe.get_cached_doc("Server", self.primary_server).get_redis_password()
 
 		agent_job = Agent(self.primary_server).change_bench_directory(
-			redis_connection_string_ip="localhost",
+			redis_connection_string_ip=None,
 			directory="/shared",
-			redis_password=redis_password,
 			secondary_server_private_ip=secondary_server_private_ip,
 			is_primary=True,
-			restart_benches=True,
+			restart_benches=False,
 			reference_doctype="Server",
 			reference_name=self.primary_server,
 		)
@@ -465,6 +463,19 @@ class NFSVolumeAttachment(Document, StepHandler):
 
 		self.handle_async_job(step, job)
 
+	def update_benches_with_new_mounts(self, step: "NFSVolumeAttachmentStep"):
+		"""Restart all benches via agent for mounts to reload"""
+		step.status = Status.Running
+		step.save()
+
+		ansible = get_restart_benches_play(self.primary_server)
+
+		try:
+			self._run_ansible_step(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+			raise
+
 	def ready_to_auto_scale(self, step: "NFSVolumeAttachmentStep"):
 		"""Mark server as ready to auto scale"""
 		step.status = Status.Running
@@ -490,6 +501,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 				self.move_benches_to_shared,
 				self.run_primary_server_benches_on_shared_fs,
 				self.wait_for_benches_to_run_on_shared,
+				self.update_benches_with_new_mounts,
 				self.ready_to_auto_scale,
 			]
 		):
