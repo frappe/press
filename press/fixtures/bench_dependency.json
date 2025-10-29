@@ -150,6 +150,14 @@
 			},
 			{
 				"supported_frappe_version": "Version 15",
+				"version": "5.26.0"
+			},
+			{
+				"supported_frappe_version": "Nightly",
+				"version": "5.26.0"
+			},
+			{
+				"supported_frappe_version": "Version 15",
 				"version": "5.16.0"
 			},
 			{

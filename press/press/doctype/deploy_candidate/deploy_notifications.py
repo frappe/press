@@ -327,14 +327,20 @@ def update_with_unsupported_init_file(
 	details["title"] = "[Action Required] App installation failed due to unsupported code in __init__.py"
 
 	message = """
-		<p><strong>Installation failed:</strong> Your custom app's <code>__init__.py</code> file contains code that imports <code>frappe</code>.
-		This behavior is no longer supported and causes installation to fail.</p>
+    <p><strong>Installation Failed:</strong> Your custom app's <code>__init__.py</code> file contains an import statement for <code>frappe</code>.
+    This behavior is no longer supported and is preventing the installation from completing.</p>
 
-		<p>We recommend removing any code that imports <code>frappe</code> from your <code>__init__.py</code> file.</p>
+    <p>Please remove any <code>frappe</code> import statements from your <code>__init__.py</code> file to proceed.</p>
 
-		<p>As an immediate workaround, you can downgrade the <strong>pip</strong> version to <strong>25.2</strong> in the <em>Bench Dependencies</em> tab.</p>
+    <p><strong>Temporary Workarounds:</strong></p>
+    <ul>
+        <li>Downgrade <strong>pip</strong> to version <strong>25.2</strong> in the <em>Bench Dependencies</em> tab.</li>
+        <li>Upgrade Bench to version <strong>5.26.0</strong> from the same tab.</li>
+    </ul>
 
-		<p>For more information, see the <a href="https://pip.pypa.io/en/stable/news/" target="_blank">pip release notes</a>.</p>
+    <p>For additional details, you may refer to the
+        <a href="https://pip.pypa.io/en/stable/news/" target="_blank">pip release notes</a>.
+    </p>
 	"""
 
 	details["message"] = fmt(message)
