@@ -268,13 +268,11 @@ class Bench(Document):
 		if self.is_new():
 			self.port_offset = self.get_unused_port_offset()
 
-		redis_password = frappe.get_cached_doc("Server", self.server).get_redis_password()
-
 		config = {
 			"monitor": True,
-			"redis_cache": f"redis://:{redis_password}@localhost:13000",
-			"redis_queue": f"redis://:{redis_password}@localhost:11000",
-			"redis_socketio": f"redis://:{redis_password}@localhost:13000",
+			"redis_cache": "redis://localhost:13000",
+			"redis_queue": "redis://localhost:11000",
+			"redis_socketio": "redis://localhost:13000",
 			"socketio_port": 9000,
 			"webserver_port": 8000,
 			"restart_supervisor_on_update": True,
