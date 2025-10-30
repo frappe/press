@@ -172,12 +172,104 @@ def remove_app(
 		handle_exception(e, "Error removing app")
 
 
+@deploy.command(help="Update an app by calling press.api.bench.deploy_and_update")
+def update_app(
+	ctx: typer.Context,
+	name: Annotated[
+		str | None,
+		typer.Option(
+			"--name", help="Bench or release group name (optional, will auto-detect if not provided)"
+		),
+	] = None,
+	app: Annotated[str, typer.Option("--app", help="App name to update")] = ...,
+	hash: Annotated[str, typer.Option("--hash", help="Commit hash to deploy")] = ...,
+	branch: Annotated[
+		str | None, typer.Option("--branch", help="App branch (e.g. 'version-15-beta')")
+	] = None,
+):
+	"""Trigger a deploy+update for a single app.
+
+	- If --name isn't provided, the bench is auto-detected by scanning benches containing the app.
+	- Source and release are auto-resolved from bench apps (optionally filtered by --branch).
+	"""
+	session: CloudSession = ctx.obj
+
+	bench_name = name or _auto_detect_bench_for_app(session, app)
+	if not bench_name:
+		print_error(f"Could not find a bench containing app '{app}'")
+		return
+
+	source, release = _get_source_and_release(session, bench_name, app, branch)
+	if not source or not release:
+		missing = []
+		if not source:
+			missing.append("source")
+		if not release:
+			missing.append("release")
+		suffix = f" and branch '{branch}'" if branch else ""
+		print_error(f"Could not resolve {', '.join(missing)} for app '{app}'{suffix}")
+		return
+
+	payload = {
+		"name": bench_name,
+		"apps": [{"app": app, "hash": hash, "source": source, "release": release}],
+	}
+
+	try:
+		resp = session.post(
+			"press.api.bench.deploy_and_update",
+			json=payload,
+			message=f"[bold green]Updating app '{app}' to hash '{hash}' on '{bench_name}'...",
+		)
+		if isinstance(resp, dict) and resp.get("success") is False:
+			backend_msg = resp.get("message") or resp.get("exception") or resp.get("exc") or str(resp)
+			print_error(f"Failed to update app: {backend_msg}")
+			return
+		print_success(
+			f"Update triggered for app '{app}' with hash '{hash}' on '{bench_name}'. Result: {resp}"
+		)
+	except Exception as e:
+		print_error(f"Exception: {e}")
+		if hasattr(e, "response") and e.response is not None:
+			print_error(f"Backend response: {e.response.text}")
+		handle_exception(e, f"Error updating app '{app}'")
+
+
 if __name__ == "__main__":
 	pass
 
 # --------------------
 # Internal helpers (no behavior change, reduce complexity)
 # --------------------
+
+
+def _auto_detect_bench_for_app(session: "CloudSession", app: str) -> str | None:
+	"""Return the first bench name that contains the given app, else None."""
+	benches_url = _build_method_url(session, "press.api.bench.all")
+	benches = session.get(benches_url) or []
+	for bench in benches:
+		for app_entry in bench.get("apps", []) or []:
+			if app_entry.get("app") == app:
+				return bench.get("name")
+	return None
+
+
+def _get_source_and_release(
+	session: "CloudSession", bench_name: str, app: str, branch: str | None
+) -> tuple[str | None, str | None]:
+	"""Resolve (source, release) for app on a bench, optionally filtering by branch."""
+	apps_url = _build_method_url(session, "press.api.bench.all_apps")
+	apps_response = session.post(apps_url, json={"name": bench_name})
+	if not isinstance(apps_response, list):
+		return None, None
+	for entry in apps_response:
+		if entry.get("app") != app:
+			continue
+		for src in entry.get("sources", []) or []:
+			if branch and src.get("branch") != branch:
+				continue
+			return src.get("name"), src.get("release")
+	return None, None
 
 
 def _find_frappe_source(options: dict, version: str) -> str | None:
