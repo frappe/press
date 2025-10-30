@@ -44,7 +44,6 @@ class Invoice(Document):
 		amount_paid: DF.Currency
 		applied_credits: DF.Currency
 		billing_email: DF.Data | None
-		budget_alert_sent: DF.Check
 		credit_allocations: DF.Table[InvoiceCreditAllocation]
 		currency: DF.Link | None
 		customer_email: DF.Data | None
