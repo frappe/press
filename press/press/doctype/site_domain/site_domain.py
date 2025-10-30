@@ -15,6 +15,7 @@ from press.exceptions import (
 	DNSValidationError,
 )
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.utils import log_error
 from press.utils.dns import create_dns_record
 from press.utils.jobs import has_job_timeout_exceeded
@@ -99,6 +100,9 @@ class SiteDomain(Document):
 				self.setup_redirect_in_proxy()
 			elif not self.is_new():
 				self.remove_redirect_in_proxy()
+
+	def on_update(self):
+		self.handle_custom_domain_status_change()
 
 	@frappe.whitelist()
 	def create_dns_record(self):
@@ -198,6 +202,61 @@ class SiteDomain(Document):
 		if site_doc.status == "Archived":
 			return
 		site_doc.remove_domain_from_config(self.domain)
+
+	def handle_custom_domain_status_change(self):
+		"""
+		Handle TLS certificate expiry for sites with custom primary domains.
+		- On expiry: Redirect to default *.frappe.cloud domain and notify user
+		- On activation: Restore custom domain as primary if it was previously the primary domain
+		"""
+		if not self.has_value_changed("status"):
+			return
+
+		is_custom_domain = self.domain != self.site
+		if not is_custom_domain:
+			return
+
+		tls_certificate = frappe.db.get_value(
+			"TLS Certificate", self.tls_certificate, ["name", "status", "expires_on"]
+		)
+		if not tls_certificate:
+			return
+
+		current_host_name = frappe.db.get_value("Site", self.site, "host_name")
+
+		has_primary_domain_expired = (
+			self.status == "Broken"
+			and current_host_name == self.domain  # is primary domain
+			and tls_certificate.status != "Active"
+			and tls_certificate.expires_on
+			and tls_certificate.expires_on < frappe.utils.getdate()
+		)
+
+		# Handle tls expiry - redirect to default domain if this was the primary domain
+		if has_primary_domain_expired:
+			frappe.db.set_value("Site", self.site, "host_name", self.site)
+			self._notify_custom_domain_tls_failure(tls_certificate.expires_on)
+
+		# Handle tls renewal  - restore custom domain as primary only if it was primary before
+		if (
+			self.status == "Active"
+			and not self.redirect_to_primary  # means it WAS the primary domain before tls failure
+			and current_host_name != self.domain  # but host_name was changed to default due to tls failure
+		):
+			frappe.db.set_value("Site", self.site, "host_name", self.domain)
+
+	def _notify_custom_domain_tls_failure(self, expiry_date):
+		frappe.sendmail(
+			recipients=get_communication_info("Email", "Site Activity", "Team", self.team),
+			subject=f"Frappe Cloud Alert: TLS Certificate Expired for {self.domain}",
+			template="tls_expiry_and_redirect",
+			args={
+				"tls_certificate": self.tls_certificate,
+				"custom_domain": self.domain,
+				"expiry_date": expiry_date,
+				"site": self.site,
+			},
+		)
 
 
 def process_new_host_job_update(job):
