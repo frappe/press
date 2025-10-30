@@ -155,11 +155,6 @@ let router = createRouter({
 					component: () => import('./pages/BillingOverview.vue'),
 				},
 				{
-					name: 'BillingForecast',
-					path: 'forecast',
-					component: () => import('./pages/BillingForecast.vue'),
-				},
-				{
 					name: 'BillingInvoices',
 					path: 'invoices',
 					component: () => import('./pages/BillingInvoices.vue'),
