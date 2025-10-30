@@ -79,6 +79,7 @@ DOC_URLS = {
 	"debugging-app-installs-locally": "https://docs.frappe.io/cloud/common-issues/debugging-app-installs-locally",
 	"vite-not-found": "https://docs.frappe.io/cloud/common-issues/vite-not-found",
 	"invalid-project-structure": "https://docs.frappe.io/framework/user/en/tutorial/create-an-app#app-directory-structure",
+	"frappe-not-found": "https://pip.pypa.io/en/stable/news/#v25-3",
 }
 
 
@@ -163,6 +164,11 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 			None,
 		),
 		(
+			"ModuleNotFoundError: No module named 'frappe'",
+			update_with_unsupported_init_file,
+			check_if_app_updated,
+		),
+		(
 			"ModuleNotFoundError: No module named",
 			update_with_module_not_found,
 			check_if_app_updated,
@@ -230,7 +236,7 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 		# Catch app install failures in cases of malformed package structure etc, etc.
 		# https://github.com/frappe/bench/pull/1665/files
 		(
-			"Error occured during app install",
+			"Error occurred during app install",
 			update_with_invalid_app_structure,
 			None,
 		),
@@ -310,6 +316,36 @@ def get_details(
 		details["assistance_url"] = None
 
 	return details
+
+
+def update_with_unsupported_init_file(
+	details: "Details",
+	dc: "DeployCandidate",
+	dcb: "DeployCandidateBuild",
+	exc: BaseException,
+):
+	details["title"] = "[Action Required] App installation failed due to unsupported code in __init__.py"
+
+	message = """
+    <p><strong>Installation Failed:</strong> Your custom app's <code>__init__.py</code> file contains an import statement for <code>frappe</code>.
+    This behavior is no longer supported and is preventing the installation from completing.</p>
+
+    <p>Please remove any <code>frappe</code> import statements from your <code>__init__.py</code> file to proceed.</p>
+
+    <p><strong>Temporary Workarounds:</strong></p>
+    <ul>
+        <li>Downgrade <strong>pip</strong> to version <strong>25.2</strong> in the <em>Bench Dependencies</em> tab.</li>
+        <li>Upgrade Bench to version <strong>5.26.0</strong> from the same tab.</li>
+    </ul>
+
+    <p>For additional details, you may refer to the
+        <a href="https://pip.pypa.io/en/stable/news/" target="_blank">pip release notes</a>.
+    </p>
+	"""
+
+	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["frappe-not-found"]
+	return True
 
 
 def update_with_vue_build_failed(

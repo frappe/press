@@ -17,6 +17,7 @@ from frappe.desk.doctype.tag.tag import add_tag
 from frappe.query_builder import Case
 from frappe.rate_limiter import rate_limit
 from frappe.utils import flt, sbool, time_diff_in_hours
+from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
 
@@ -1668,6 +1669,44 @@ def setup_wizard_complete(name):
 	return frappe.get_doc("Site", name).is_setup_wizard_complete()
 
 
+def get_dns_provider_mname_rname(domain):
+	from tldextract import extract
+
+	resolver = Resolver(configure=False)
+	resolver.nameservers = NAMESERVERS
+	try:
+		answer = resolver.query(domain, "SOA")
+		if len(answer) > 0:
+			mname = answer[0].mname.to_text()
+			rname = answer[0].rname.to_text()
+			return extract(mname).registered_domain, extract(rname).registered_domain
+	except dns.resolver.NoAnswer:
+		pass
+	except dns.exception.DNSException:
+		pass
+	return None
+
+
+def accessible_link_substr(provider: str):
+	try:
+		res = requests.head(f"http://{provider}", timeout=3)
+		res.raise_for_status()
+	except requests.RequestException:
+		return None
+	else:
+		return f'<a class=underline href="http://{provider}" target="_blank">{provider}</a>'
+
+
+@redis_cache()
+def get_dns_provider_link_substr(domain: str):
+	# get link to dns provider as html a tag if link is accessible
+	provider = get_dns_provider_mname_rname(domain)
+	if not provider:
+		return ""
+	mname, rname = provider
+	return f" at your DNS provider (hint: {accessible_link_substr(mname) or accessible_link_substr(rname) or rname})"  # likely rname has meaningful link
+
+
 def check_domain_allows_letsencrypt_certs(domain):
 	# Check if domain is allowed to get letsencrypt certificates
 	# This is a security measure to prevent unauthorized certificate issuance
@@ -1687,7 +1726,7 @@ def check_domain_allows_letsencrypt_certs(domain):
 		pass  # We have other problems
 	else:
 		frappe.throw(
-			f"Domain {naked_domain} does not allow Let's Encrypt certificates. Please review CAA record for the same.",
+			f"Domain {naked_domain} does not allow Let's Encrypt certificates. Please update or remove <b>CAA</b> record{get_dns_provider_link_substr(domain)}.",
 			ConflictingCAARecord,
 		)
 
@@ -1710,7 +1749,7 @@ def check_dns_cname(name, domain):
 	except MultipleCNAMERecords:
 		multiple_domains = ", ".join(part.to_text() for part in answer)
 		frappe.throw(
-			f"Domain <b>{domain}</b> has multiple CNAME records: <b>{multiple_domains}</b>. Please keep only one.",
+			f"Domain <b>{domain}</b> has multiple CNAME records: <b>{multiple_domains}</b>. Please keep only one{get_dns_provider_link_substr(domain)}.",
 			MultipleCNAMERecords,
 		)
 	except dns.resolver.NoAnswer as e:
@@ -1756,7 +1795,7 @@ def check_dns_a(name, domain):
 	except MultipleARecords:
 		multiple_ips = ", ".join(part.to_text() for part in answer)
 		frappe.throw(
-			f"Domain {domain} has multiple A records: {multiple_ips}. Please keep only one.",
+			f"Domain {domain} has multiple A records: {multiple_ips}. Please keep only one{get_dns_provider_link_substr(domain)}.",
 			MultipleARecords,
 		)
 	except dns.resolver.NoAnswer as e:
@@ -1783,7 +1822,7 @@ def ensure_dns_aaaa_record_doesnt_exist(domain: str):
 		answer = resolver.query(domain, "AAAA")
 		if answer:
 			frappe.throw(
-				f"Domain {domain} has an AAAA record. This causes issues with https certificate generation. Please remove the same to proceed.",
+				f"Domain {domain} has an AAAA record. This causes issues with https certificate generation. Please remove the same{get_dns_provider_link_substr(domain)}.",
 				AAAARecordExists,
 			)
 	except dns.resolver.NoAnswer:
@@ -1796,7 +1835,9 @@ def check_domain_proxied(domain) -> str | None:
 	try:
 		res = requests.head(f"http://{domain}", timeout=3)
 	except requests.exceptions.RequestException as e:
-		frappe.throw("Unable to connect to the domain. Is the DNS correct?\n\n" + str(e))
+		frappe.throw(
+			f"Unable to connect to the domain. Is the DNS correct{get_dns_provider_link_substr(domain)}?\n\n{e!s}"
+		)
 	else:
 		if (server := res.headers.get("server")) not in ("Frappe Cloud", None):  # eg: cloudflare
 			return server
@@ -1815,7 +1856,7 @@ def _check_dns_cname_a(name, domain, ignore_proxying=False):
 		frappe.throw(
 			f"""
 			Domain <b>{domain}</b> has correct CNAME record <b>{cname["answer"].strip().split()[-1]}</b>, but also an A record that points to an incorrect IP address <b>{a["answer"].strip().split()[-1]}</b>.
-			<br>Please remove the same or update the record.
+			<br>Please remove or update the <b>A</b> record{get_dns_provider_link_substr(domain)}.
 			""",
 			ConflictingDNSRecord,
 		)
@@ -1823,7 +1864,7 @@ def _check_dns_cname_a(name, domain, ignore_proxying=False):
 		frappe.throw(
 			f"""
 			Domain <b>{domain}</b> has correct A record <b>{a["answer"].strip().split()[-1]}</b>, but also a CNAME record that points to an incorrect domain <b>{cname["answer"].strip().split()[-1]}</b>.
-			<br>Please remove the same or update the record.
+			<br>Please remove or update the <b>CNAME</b> record{get_dns_provider_link_substr(domain)}.
 			""",
 			ConflictingDNSRecord,
 		)
@@ -1833,7 +1874,7 @@ def _check_dns_cname_a(name, domain, ignore_proxying=False):
 		if ignore_proxying:  # no point checking the rest if proxied
 			return {"CNAME": {}, "A": {}, "matched": True, "type": "A"}  # assume A
 		frappe.throw(
-			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.
+			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying{get_dns_provider_link_substr(domain)} and try again in some time.
 			<br>You may enable it once the domain is verified.""",
 			DomainProxied,
 		)

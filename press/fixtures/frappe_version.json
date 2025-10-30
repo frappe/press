@@ -36,6 +36,13 @@
     "parentfield": "dependencies",
     "parenttype": "Frappe Version",
     "version": "5.15.2"
+   },
+   {
+    "dependency": "PIP_VERSION",
+    "parent": "Version 12",
+    "parentfield": "dependencies",
+    "parenttype": "Frappe Version",
+    "version": "25.3"
    }
   ],
   "docstatus": 0,
@@ -83,6 +90,13 @@
     "parentfield": "dependencies",
     "parenttype": "Frappe Version",
     "version": "5.23.0"
+   },
+   {
+    "dependency": "PIP_VERSION",
+    "parent": "Version 13",
+    "parentfield": "dependencies",
+    "parenttype": "Frappe Version",
+    "version": "25.3"
    }
   ],
   "docstatus": 0,
@@ -130,6 +144,13 @@
     "parentfield": "dependencies",
     "parenttype": "Frappe Version",
     "version": "5.25.11"
+   },
+   {
+    "dependency": "PIP_VERSION",
+    "parent": "Nightly",
+    "parentfield": "dependencies",
+    "parenttype": "Frappe Version",
+    "version": "25.3"
    }
   ],
   "docstatus": 0,
@@ -177,6 +198,13 @@
     "parentfield": "dependencies",
     "parenttype": "Frappe Version",
     "version": "5.25.11"
+   },
+   {
+    "dependency": "PIP_VERSION",
+    "parent": "Version 14",
+    "parentfield": "dependencies",
+    "parenttype": "Frappe Version",
+    "version": "25.3"
    }
   ],
   "docstatus": 0,
@@ -224,6 +252,13 @@
     "parentfield": "dependencies",
     "parenttype": "Frappe Version",
     "version": "5.25.11"
+   },
+   {
+    "dependency": "PIP_VERSION",
+    "parent": "Version 15",
+    "parentfield": "dependencies",
+    "parenttype": "Frappe Version",
+    "version": "25.3"
    }
   ],
   "docstatus": 0,

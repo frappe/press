@@ -1621,6 +1621,9 @@ class BaseServer(Document, TagHelpers):
 		if not cleanup_db_replication_files:
 			cleanup_db_replication_files = False
 
+		if self.provider == "Hetzner" and not any(self.get_mount_variables().values()):
+			frappe.throw(_("No mounts defined to mount"))
+
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
