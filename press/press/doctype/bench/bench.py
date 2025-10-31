@@ -272,9 +272,9 @@ class Bench(Document):
 
 		config = {
 			"monitor": True,
-			"redis_cache": "redis://localhost:13000",
-			"redis_queue": "redis://localhost:11000",
-			"redis_socketio": "redis://localhost:13000",
+			"redis_cache": f"redis://:{redis_password}@localhost:13000",
+			"redis_queue": f"redis://:{redis_password}@localhost:11000",
+			"redis_socketio": f"redis://:{redis_password}@localhost:13000",
 			"socketio_port": 9000,
 			"webserver_port": 8000,
 			"restart_supervisor_on_update": True,
