@@ -130,7 +130,8 @@
    "default": "0",
    "fieldname": "bench_ssh",
    "fieldtype": "Check",
-   "label": "SSH"
+   "label": "SSH",
+   "set_only_once": 1
   },
   {
    "default": "0",
@@ -142,7 +143,7 @@
  ],
  "grid_page_length": 50,
  "links": [],
- "modified": "2025-10-28 23:09:17.856081",
+ "modified": "2025-10-31 13:39:07.345916",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Support Access",
