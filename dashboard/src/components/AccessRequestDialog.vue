@@ -39,7 +39,7 @@
 				>
 					<p class="font-medium">Permissions:</p>
 					<div class="grid grid-cols-2 gap-2">
-						<div v-for="(permission, key) in permissionsMeta" :key="key">
+						<template v-for="(permission, key) in permissionsMeta" :key="key">
 							<Checkbox
 								v-if="permission.enabled"
 								:model-value="permissionsState[key]"
@@ -50,7 +50,7 @@
 									}
 								"
 							/>
-						</div>
+						</template>
 					</div>
 				</div>
 			</div>
