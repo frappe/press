@@ -1,5 +1,6 @@
 <template>
 	<div>
+		<CustomAlerts ctx_type="List Page" />
 		<DismissableBanner
 			v-if="$releaseGroup.doc.eol_versions.includes($releaseGroup.doc.version)"
 			class="col-span-1 lg:col-span-2"
@@ -45,11 +46,12 @@ import {
 import { confirmDialog, icon, renderDialog } from '../utils/components';
 import { getToastErrorMessage } from '../utils/toast';
 import DismissableBanner from '../components/DismissableBanner.vue';
+import CustomAlerts from '../components/CustomAlerts.vue';
 
 export default {
 	name: 'ReleaseGroupBenchSites',
 	props: ['releaseGroup'],
-	components: { ObjectList, DismissableBanner },
+	components: { ObjectList, DismissableBanner, CustomAlerts },
 	data() {
 		return {
 			showAppVersionDialog: false,
