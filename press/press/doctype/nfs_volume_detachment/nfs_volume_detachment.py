@@ -11,7 +11,6 @@ from frappe.model.document import Document
 from press.agent import Agent
 from press.press.doctype.nfs_volume_attachment.nfs_volume_attachment import (
 	StepHandler,
-	get_restart_benches_play,
 )
 from press.runner import Ansible
 
@@ -101,13 +100,15 @@ class NFSVolumeDetachment(Document, StepHandler):
 			self.secondary_server,
 			"private_ip",
 		)
+		redis_password = frappe.get_cached_doc("Server", self.primary_server).get_redis_password()
 
 		agent_job = Agent(self.primary_server).change_bench_directory(
-			redis_connection_string_ip=None,
+			redis_connection_string_ip="localhost",
 			directory="/home/frappe/benches/",
+			redis_password=redis_password,
 			secondary_server_private_ip=secondary_server_private_ip,
 			is_primary=True,
-			restart_benches=False,
+			restart_benches=True,
 			reference_doctype="Server",
 			reference_name=self.primary_server,
 		)
@@ -132,19 +133,6 @@ class NFSVolumeDetachment(Document, StepHandler):
 			"job",
 		)
 		self.handle_async_job(step, job)
-
-	def update_benches_with_new_mounts(self, step: "NFSVolumeDetachmentStep"):
-		"""Restart all benches via agent for mounts to reload"""
-		step.status = Status.Running
-		step.save()
-
-		ansible = get_restart_benches_play(self.primary_server)
-
-		try:
-			self._run_ansible_step(step, ansible)
-		except Exception as e:
-			self._fail_ansible_step(step, ansible, e)
-			raise
 
 	def umount_from_primary_server(self, step: "NFSVolumeDetachmentStep") -> None:
 		"""Umount /shared from primary server and remove from fstab"""
@@ -285,7 +273,6 @@ class NFSVolumeDetachment(Document, StepHandler):
 				self.sync_data,
 				self.run_bench_on_primary_server,
 				self.wait_for_job_completion,
-				self.update_benches_with_new_mounts,
 				self.umount_from_primary_server,
 				self.remove_servers_from_acl,
 				self.wait_for_acl_deletion,
@@ -300,7 +287,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 	def validate(self):
 		is_server_auto_scaled = frappe.db.get_value("Server", self.primary_server, "auto_scale")
 		if is_server_auto_scaled:
-			frappe.throw("Benches are currently being run on the secondary server!")
+			frappe.throw("Benches are currently running on the secondary server!")
 
 	def execute_mount_steps(self):
 		frappe.enqueue_doc(
