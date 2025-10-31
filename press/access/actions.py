@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class ReleaseGroupActions(str, Enum):
-	GenerateSSHCertificate = "Generate SSH Certificate"
+	SSHAccess = "SSH Access"
 
 
 class SiteActions(str, Enum):
@@ -13,11 +13,11 @@ class SiteActions(str, Enum):
 
 ACTIONS_RULES = {
 	"Release Group": {
-		ReleaseGroupActions.GenerateSSHCertificate: False,
+		ReleaseGroupActions.SSHAccess.value: False,
 	},
 	"Site": {
-		SiteActions.VisitSite: True,
-		SiteActions.ViewInDesk: False,
-		SiteActions.LoginAsAdmin: False,
+		SiteActions.VisitSite.value: True,
+		SiteActions.ViewInDesk.value: False,
+		SiteActions.LoginAsAdmin.value: False,
 	},
 }
