@@ -27,7 +27,7 @@
 				v-if="isDismissible"
 			>
 				<Button
-					class="ml-1"
+					class="ml-1 transition-colors focus:outline-none text-ink-gray-8 bg-gray-700 bg-opacity-0 hover:bg-opacity-[4%] active:bg-opacity-[8%] h-7 w-7 rounded"
 					variant="ghost"
 					theme="colors"
 					@click="$emit('dismissBanner')"
