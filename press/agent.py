@@ -72,7 +72,6 @@ class Agent:
 				"username": settings.docker_registry_username,
 				"password": settings.docker_registry_password,
 			},
-			"redis_password": frappe.get_cached_doc("Server", bench.server).get_redis_password(),
 		}
 
 		if bench.mounts:
@@ -112,13 +111,6 @@ class Agent:
 		}
 		return self.create_agent_job(
 			"Update Bench Configuration", f"benches/{bench.name}/config", data, bench=bench.name
-		)
-
-	def set_redis_password(self, redis_password: str):
-		return self.create_agent_job(
-			"Set Redis Password",
-			"/server/set-redis-password",
-			{"redis_password": redis_password},
 		)
 
 	def _get_managed_db_config(self, site):

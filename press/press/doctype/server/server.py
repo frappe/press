@@ -2197,7 +2197,6 @@ class Server(BaseServer):
 		proxy_server: DF.Link | None
 		public: DF.Check
 		ram: DF.Float
-		redis_password: DF.Password | None
 		root_public_key: DF.Code | None
 		scaled_up: DF.Check
 		secondary_server: DF.Link | None
@@ -2271,23 +2270,6 @@ class Server(BaseServer):
 
 		db_server.team = self.team
 		db_server.save()
-
-	def validate(self):
-		super().validate()
-		self.validate_redis_password()
-
-	def validate_redis_password(self):
-		if not self.redis_password:
-			self.redis_password = frappe.generate_hash(length=32)
-
-	def get_redis_password(self) -> str:
-		"""Get redis password create and update password if not present"""
-		try:
-			return self.get_password("redis_password")
-		except frappe.AuthenticationError:
-			self.redis_password = frappe.generate_hash(length=32)
-			self.save(ignore_permissions=True)
-			return self.get_password("redis_password")
 
 	def after_insert(self):
 		from press.press.doctype.press_role.press_role import (
@@ -2943,18 +2925,6 @@ class Server(BaseServer):
 					gunicorn_workers,
 				)
 				bench.save()
-
-	@frappe.whitelist()
-	def set_redis_password(self):
-		"""Set redis password on all the benches on this server and update common site config"""
-		redis_password = self.get_redis_password()
-		self.agent.set_redis_password(redis_password=redis_password)
-		# Update site config either ways
-
-		benches = frappe.get_all("Bench", {"status": "Active", "server": self.name}, pluck="name")
-		for bench in benches:
-			bench: "Bench" = frappe.get_cached_doc("Bench", bench)
-			bench.save()  # Trigger common site config update
 
 	@frappe.whitelist()
 	def reset_sites_usage(self):
