@@ -44,9 +44,10 @@ class SupportAccess(Document):
 		"requested_team",
 		"resources",
 		"site_domains",
+		"site_release_group",
 		"status",
 		"target_team",
-		"site_release_group",
+		"bench_ssh",
 	)
 
 	def get_list_query(query, filters: dict | None, **args):
