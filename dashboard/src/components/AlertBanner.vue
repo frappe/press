@@ -23,7 +23,7 @@
 			<slot></slot>
 
 			<div
-				class="ml-3 flex items-center justify-center overflow-hidden rounded-sm"
+				class="flex items-center justify-center overflow-hidden rounded-sm"
 				v-if="isDismissible"
 			>
 				<Button
