@@ -32,7 +32,7 @@ def dashboard_access_rules(data: frappe._dict):
 	actions = ACTIONS_RULES.get(doctype, {})
 	actions_maps = ACTION_DF_MAP.get(doctype, {})
 	for rule, value in actions.items():
-		data.actions_access[str(rule)] = value
+		data.actions_access[rule] = value
 		if rule in actions_maps:
 			data.actions_access[rule] = has_support_access(doctype, docname, rule)
 

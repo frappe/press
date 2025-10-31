@@ -163,7 +163,10 @@ export default {
 					() => import('../pages/ReleaseGroupBenchSites.vue'),
 				),
 				props: (releaseGroup) => {
-					return { releaseGroup: releaseGroup.doc.name };
+					return {
+						releaseGroup: releaseGroup.doc.name,
+						actionsAccess: releaseGroup.doc.actions_access,
+					};
 				},
 			},
 			{
