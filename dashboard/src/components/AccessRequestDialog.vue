@@ -72,6 +72,13 @@ const props = defineProps<{
 const open = ref(true);
 const reason = ref('');
 
+const permissionsState = reactive({
+	login_as_administrator: false,
+	site_domains: false,
+	site_release_group: false,
+	bench_ssh: false,
+});
+
 const permissionsMeta = computed(() => ({
 	login_as_administrator: {
 		label: 'Login as Administrator',
@@ -85,12 +92,12 @@ const permissionsMeta = computed(() => ({
 		label: 'Release Group',
 		enabled: props.doctype === 'Site',
 	},
+	bench_ssh: {
+		label: 'SSH Access',
+		enabled:
+			props.doctype === 'Release Group' || permissionsState.site_release_group,
+	},
 }));
-
-const permissionsState = reactive({
-	login_as_administrator: false,
-	site_domains: false,
-});
 
 const request = createResource({
 	url: 'press.api.client.insert',

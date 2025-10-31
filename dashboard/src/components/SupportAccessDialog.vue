@@ -85,6 +85,11 @@ const permissions = computed(() =>
 			color: 'red',
 		},
 		{
+			label: 'SSH',
+			requested: request.doc?.bench_ssh,
+			color: 'red',
+		},
+		{
 			label: 'Login as Administrator',
 			requested: request.doc?.login_as_administrator,
 			color: 'orange',
