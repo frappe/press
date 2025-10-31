@@ -28,7 +28,7 @@ dynamic = [
 ]
 
 [project.scripts]
-fc-cli = "fc.main:app"
+press = "fc.main:app"
 
 [project.urls]
 Changelog = "https://github.com/frappe/press/releases"
