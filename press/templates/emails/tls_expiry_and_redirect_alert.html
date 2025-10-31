@@ -1,0 +1,19 @@
+{% extends "templates/emails/base.html" %}
+{% import "templates/emails/macros.html" as utils %}
+{% block content %}
+<td class="text-base leading-6 text-gray-900">
+	<div class="p-8 bg-white">
+		<div class="from-markdown">
+			<p>Hello {team_user},</p>
+
+        <p>The renewal of the TLS certificate {{tls_certificate}} for the domain {{custom_domain}} has failed and has now expired as of {{expiry_date}}.</p>
+
+        <p>Until the certificate is renewed, your site will be redirected to {{site}}.</p>
+
+
+        {{ utils.separator() }}
+        {{ utils.signature() }}
+		</div>
+	</div>
+</td>
+{% endblock %}
