@@ -1044,7 +1044,7 @@ class BaseServer(Document, TagHelpers):
 			if vm_status == "Terminated":
 				self.status = "Archived"
 				self.save()
-				frappe.throw(_("Server has already been terminated. Archive Server job not required."))
+				return
 
 		self.status = "Pending"
 		self.save()
