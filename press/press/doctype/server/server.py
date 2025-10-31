@@ -1029,6 +1029,26 @@ class BaseServer(Document, TagHelpers):
 			frappe.throw(
 				_("Cannot archive server with benches. Please drop them from their respective dashboards.")
 			)
+
+		if frappe.db.exists(
+			"Press Job",
+			{
+				"job_type": "Archive Server",
+				"server": self.name,
+				"server_type": self.doctype,
+				"status": "Success",
+				"creation": (">", frappe.utils.add_to_date(None, days=-1)),
+			},
+		):
+			frappe.throw(_("Archive Server job already completed successfully recently."))
+
+		if self.virtual_machine:
+			vm_status = frappe.db.get_value("Virtual Machine", self.virtual_machine, "status")
+			if vm_status == "Terminated":
+				self.status = "Archived"
+				self.save()
+				frappe.throw(_("Server has already been terminated. Archive Server job not required."))
+
 		self.status = "Pending"
 		self.save()
 		if self.is_self_hosted:
