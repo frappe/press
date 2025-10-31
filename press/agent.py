@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_patch.app_patch import AgentPatchConfig, AppPatch
+	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
 		PhysicalBackupRestoration,
@@ -52,7 +53,7 @@ class Agent:
 		self.server = server
 		self.port = 443 if self.server not in servers_using_alternative_port_for_communication() else 8443
 
-	def new_bench(self, bench):
+	def new_bench(self, bench: "Bench"):
 		settings = frappe.db.get_value(
 			"Press Settings",
 			None,
@@ -71,6 +72,7 @@ class Agent:
 				"username": settings.docker_registry_username,
 				"password": settings.docker_registry_password,
 			},
+			"redis_password": frappe.get_cached_doc("Server", bench.server).get_redis_password(),
 		}
 
 		if bench.mounts:
@@ -110,6 +112,13 @@ class Agent:
 		}
 		return self.create_agent_job(
 			"Update Bench Configuration", f"benches/{bench.name}/config", data, bench=bench.name
+		)
+
+	def set_redis_password(self, redis_password: str):
+		return self.create_agent_job(
+			"Set Redis Password",
+			"/server/set-redis-password",
+			{"redis_password": redis_password},
 		)
 
 	def _get_managed_db_config(self, site):
@@ -1679,6 +1688,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		secondary_server_private_ip: str,
 		is_primary: bool,
 		directory: str,
+		redis_password: str,
 		restart_benches: bool,
 		reference_name: str | None = None,
 		redis_connection_string_ip: str | None = None,
@@ -1691,6 +1701,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			data={
 				"restart_benches": restart_benches,
 				"redis_connection_string_ip": redis_connection_string_ip,
+				"redis_password": redis_password,
 				"is_primary": is_primary,
 				"directory": directory,
 				"secondary_server_private_ip": secondary_server_private_ip,
