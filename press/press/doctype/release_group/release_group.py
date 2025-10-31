@@ -981,7 +981,7 @@ class ReleaseGroup(Document, TagHelpers):
 		)
 
 	@dashboard_whitelist()
-	@action_guard(ReleaseGroupActions.GENERATE_SSH_CERTIFICATE)
+	@action_guard(ReleaseGroupActions.SSHAccess)
 	def generate_certificate(self):
 		ssh_key = frappe.get_all(
 			"User SSH Key",
