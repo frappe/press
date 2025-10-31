@@ -238,6 +238,11 @@ class ReleaseGroup(Document, TagHelpers):
 		self.validate_dependencies()
 		if self.check_dependent_apps:
 			self.validate_dependent_apps()
+		if not self.redis_password:
+			self.set_redis_password()
+
+	def set_redis_password(self):
+		self.redis_password = frappe.generate_hash(length=32)
 
 	def validate_dependent_apps(self):
 		required_repository_urls = set()
