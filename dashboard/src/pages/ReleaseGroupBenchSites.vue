@@ -48,7 +48,7 @@ import DismissableBanner from '../components/DismissableBanner.vue';
 
 export default {
 	name: 'ReleaseGroupBenchSites',
-	props: ['releaseGroup'],
+	props: ['releaseGroup', 'actionsAccess'],
 	components: { ObjectList, DismissableBanner },
 	data() {
 		return {
@@ -116,7 +116,7 @@ export default {
 						<div class="flex items-center">
 							<Tooltip text="View bench details">
 								<a
-									class="cursor-pointer text-base font-medium leading-6 text-gray-900"
+									class="text-base font-medium leading-6 text-gray-900 cursor-pointer"
 									href={`/dashboard/benches/${bench.name}`}
 								>
 									{bench.group}
@@ -128,7 +128,7 @@ export default {
 							{bench.has_app_patch_applied && (
 								<Tooltip text="Apps in this bench may have been patched">
 									<a
-										class="ml-2 rounded bg-gray-100 p-1 text-gray-700"
+										class="p-1 ml-2 text-gray-700 bg-gray-100 rounded"
 										href="https://docs.frappe.io/cloud/benches/app-patches"
 										target="_blank"
 									>
@@ -139,7 +139,7 @@ export default {
 							{bench.has_updated_inplace && (
 								<Tooltip text="This bench has been updated in place">
 									<a
-										class="ml-2 rounded bg-gray-100 p-1 text-gray-700"
+										class="p-1 ml-2 text-gray-700 bg-gray-100 rounded"
 										href="https://docs.frappe.io/cloud/in-place-updates"
 										target="_blank"
 									>
@@ -429,7 +429,12 @@ export default {
 						);
 					},
 				},
-			];
+			].filter((option) => {
+				const hasAccess = this.actionsAccess[option.label] ?? true;
+				if (!hasAccess) return false;
+				if (!option.condition?.()) return false;
+				return true;
+			});
 		},
 		runBenchMethod(name, methodName) {
 			const method = createResource({

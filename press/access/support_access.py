@@ -1,7 +1,7 @@
 import frappe
 import frappe.utils
 
-from press.access.actions import SiteActions
+from press.access.actions import ReleaseGroupActions, SiteActions
 from press.utils import get_current_team
 
 TAB_DF_MAP = {
@@ -11,9 +11,12 @@ TAB_DF_MAP = {
 }
 
 ACTION_DF_MAP = {
+	"Release Group": {
+		ReleaseGroupActions.SSHAccess.value: "bench_ssh",
+	},
 	"Site": {
-		SiteActions.LOGIN_AS_ADMINISTRATOR.value: "login_as_administrator",
-	}
+		SiteActions.LoginAsAdmin.value: "login_as_administrator",
+	},
 }
 
 
