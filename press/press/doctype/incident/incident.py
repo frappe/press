@@ -737,6 +737,7 @@ Incident URL: {incident_link}"""
 	def resolve(self):
 		if self.status == "Validating":
 			self.status = "Auto-Resolved"
+			self.take_grafana_screenshots()
 		else:
 			self.status = "Resolved"
 		self.save()
