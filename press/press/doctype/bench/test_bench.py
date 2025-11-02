@@ -2,8 +2,10 @@
 # See license.txt
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, Mock, patch
+from urllib.parse import urlparse
 
 import frappe
 import responses
@@ -593,3 +595,15 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 			with self.assertRaises(ArchiveBenchError):
 				bench.archive()
 			bench.reload()
+
+	def test_bench_and_release_group_redis_password(self):
+		with fake_agent_job({"New Bench": {"status": "Success"}, "Add User to Proxy": {"status": "Success"}}):
+			bench = create_test_bench()
+			release_group = frappe.get_doc("Release Group", bench.group)
+
+			common_site_config = json.loads(bench.config)
+			redis_cache_uri = urlparse(common_site_config["redis_cache"])
+			redis_queue_uri = urlparse(common_site_config["redis_queue"])
+
+			self.assertEqual(redis_cache_uri.password, redis_queue_uri.password)
+			self.assertEqual(redis_cache_uri.password, release_group.get_password("redis_password"))
