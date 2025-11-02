@@ -387,11 +387,12 @@
   {
    "fieldname": "redis_password",
    "fieldtype": "Password",
-   "label": "Redis Password"
+   "label": "Redis Password",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2025-10-29 12:54:56.657680",
+ "modified": "2025-11-02 15:12:26.835798",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
