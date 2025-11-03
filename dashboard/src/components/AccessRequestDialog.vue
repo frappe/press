@@ -27,16 +27,30 @@
 				<Textarea
 					size="sm"
 					placeholder="Why do you need access?"
-					v-model="extra.reason"
+					v-model="reason"
 				/>
-				<div class="space-y-2">
+				<div
+					v-if="
+						Object.values(permissionsMeta).find(
+							(permission) => permission.enabled,
+						)
+					"
+					class="space-y-2"
+				>
 					<p class="font-medium">Permissions:</p>
 					<div class="grid grid-cols-2 gap-2">
-						<Checkbox
-							label="Login as Administrator"
-							v-model="extra.loginAsAdministrator"
-						/>
-						<Checkbox label="Site Domains" v-model="extra.siteDomains" />
+						<template v-for="(permission, key) in permissionsMeta" :key="key">
+							<Checkbox
+								v-if="permission.enabled"
+								:model-value="permissionsState[key]"
+								:label="permission.label"
+								@update:model-value="
+									(value: boolean) => {
+										permissionsState[key] = value;
+									}
+								"
+							/>
+						</template>
 					</div>
 				</div>
 			</div>
@@ -46,7 +60,7 @@
 
 <script setup lang="ts">
 import { createResource } from 'frappe-ui';
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import { Checkbox, Textarea } from 'frappe-ui';
 
@@ -56,29 +70,61 @@ const props = defineProps<{
 }>();
 
 const open = ref(true);
+const reason = ref('');
 
-const extra = reactive({
-	reason: '',
-	loginAsAdministrator: false,
-	siteDomains: false,
+const permissionsState = reactive({
+	login_as_administrator: false,
+	site_domains: false,
+	site_release_group: false,
+	bench_ssh: false,
 });
+
+const permissionsMeta = computed(() => ({
+	login_as_administrator: {
+		label: 'Login as Administrator',
+		enabled: props.doctype === 'Site',
+	},
+	site_domains: {
+		label: 'Domains',
+		enabled: props.doctype === 'Site',
+	},
+	site_release_group: {
+		label: 'Release Group',
+		enabled: props.doctype === 'Site',
+	},
+	bench_ssh: {
+		label: 'SSH Access',
+		enabled:
+			props.doctype === 'Release Group' || permissionsState.site_release_group,
+	},
+}));
 
 const request = createResource({
 	url: 'press.api.client.insert',
-	makeParams: () => ({
-		doc: {
-			doctype: 'Support Access',
-			reason: extra.reason,
-			login_as_administrator: extra.loginAsAdministrator,
-			site_domains: extra.siteDomains,
-			resources: [
-				{
-					document_type: props.doctype,
-					document_name: props.docname,
-				},
-			],
-		},
-	}),
+	makeParams: () => {
+		const permission = Object.keys(permissionsMeta.value).reduce(
+			(acc, permission) => {
+				// @ts-ignore
+				acc[permission] = permissionsState[permission];
+				return acc;
+			},
+			{} as Record<string, boolean>,
+		);
+
+		return {
+			doc: {
+				doctype: 'Support Access',
+				reason: reason.value,
+				resources: [
+					{
+						document_type: props.doctype,
+						document_name: props.docname,
+					},
+				],
+				...permission,
+			},
+		};
+	},
 	onSuccess: () => {
 		open.value = false;
 		toast.success('Access request submitted');
