@@ -198,6 +198,7 @@
   "ssh_certificate_authority",
   "bench_section",
   "redis_cache_size",
+  "set_redis_password",
   "monitoring_section",
   "monitor_server",
   "monitor_token",
@@ -1478,12 +1479,19 @@
    "fieldname": "paypal_enabled",
    "fieldtype": "Check",
    "label": "PayPal Enabled"
+  },
+  {
+   "default": "1",
+   "description": "Set redis password common site config and redis configs at release group level",
+   "fieldname": "set_redis_password",
+   "fieldtype": "Check",
+   "label": "Set Redis Password"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-10-08 10:25:15.575950",
- "modified_by": "aysha@frappe.io",
+ "modified": "2025-11-03 10:28:59.626610",
+ "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
  "owner": "Administrator",
