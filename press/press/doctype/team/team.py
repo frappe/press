@@ -499,6 +499,7 @@ class Team(Document):
 			self.partner_email = self.user
 		self.frappe_partnership_date = self.get_partnership_start_date()
 		self.servers_enabled = 1
+		self.partner_status = "Active"
 		self.save(ignore_permissions=True)
 		self.create_partner_referral_code()
 		self.create_new_invoice()
@@ -506,6 +507,7 @@ class Team(Document):
 	@frappe.whitelist()
 	def disable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 0
+		self.partner_status = "Inactive"
 		self.save(ignore_permissions=True)
 
 	def create_partner_referral_code(self):
