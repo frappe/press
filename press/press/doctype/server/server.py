@@ -41,6 +41,7 @@ if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
+	from press.press.doctype.auto_scale_record.auto_scale_record import AutoScaleRecord
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.cluster.cluster import Cluster
 	from press.press.doctype.database_server.database_server import DatabaseServer
@@ -2140,6 +2141,7 @@ class Server(BaseServer):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.auto_scale_trigger.auto_scale_trigger import AutoScaleTrigger
 		from press.press.doctype.communication_info.communication_info import CommunicationInfo
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 		from press.press.doctype.server_mount.server_mount import ServerMount
@@ -2148,7 +2150,7 @@ class Server(BaseServer):
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
 		auto_increase_storage: DF.Check
-		auto_scaled: DF.Check
+		auto_scale_trigger: DF.Table[AutoScaleTrigger]
 		bastion_server: DF.Link | None
 		benches_on_shared_volume: DF.Check
 		cluster: DF.Link | None
@@ -2196,6 +2198,7 @@ class Server(BaseServer):
 		public: DF.Check
 		ram: DF.Float
 		root_public_key: DF.Code | None
+		scaled_up: DF.Check
 		secondary_server: DF.Link | None
 		self_hosted_mariadb_root_password: DF.Password | None
 		self_hosted_mariadb_server: DF.Data | None
@@ -3000,6 +3003,38 @@ class Server(BaseServer):
 		if doc.app_server != self.name:
 			frappe.throw("Snapshot does not belong to this server")
 		doc.unlock()
+
+	@frappe.whitelist()
+	def scale_up(self):
+		if not self.can_scale:
+			frappe.throw("Server is not configured for auto scaling", frappe.ValidationError)
+
+		auto_scale_record = self._create_auto_scale_record(scale_up=True)
+		auto_scale_record.insert()
+
+	@frappe.whitelist()
+	def scale_down(self):
+		if not self.can_scale:
+			frappe.throw("Server is not configured for auto scaling", frappe.ValidationError)
+
+		auto_scale_record = self._create_auto_scale_record(scale_up=False)
+		auto_scale_record.insert()
+
+	@property
+	def can_scale(self) -> bool:
+		"""Check if server is configured for auto scaling"""
+		return self.benches_on_shared_volume
+
+	def _create_auto_scale_record(self, scale_up: bool) -> "AutoScaleRecord":
+		"""Create up/down scale record"""
+		return frappe.get_doc(
+			{
+				"doctype": "Auto Scale Record",
+				"scale_up": scale_up,
+				"scale_down": not scale_up,
+				"primary_server": self.name,
+			}
+		)
 
 	@property
 	def domains(self):
