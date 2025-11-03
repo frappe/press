@@ -236,6 +236,13 @@ frappe.ui.form.on('Server', {
 					frm.doc.status === 'Active' &&
 					frm.doc.platform === 'x86_64',
 			],
+			[__('Scale Up'), 'scale_up', true, !frm.doc.scaled_up],
+			[__('Scale Down'), 'scale_down', true, frm.doc.scaled_up],
+			[
+				__('Set Redis Password'),
+				'set_redis_password',
+				frm.doc.status === 'Active',
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
