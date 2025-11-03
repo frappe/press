@@ -257,6 +257,16 @@ class Bench(Document):
 				},
 			)
 
+	def build_redis_uri(self, port: int) -> str:
+		"""Get passworded protected redis uri if configured"""
+		set_redis_password = frappe.get_cached_value("Press Settings", None, "set_redis_password")
+
+		if not set_redis_password:
+			return f"redis://localhost:{port}"
+
+		redis_password = frappe.get_cached_doc("Release Group", self.group).get_redis_password()
+		return f"redis://:{redis_password}@localhost:{port}"
+
 	def validate(self):
 		if not self.candidate:
 			candidate = frappe.get_all("Deploy Candidate", filters={"group": self.group})[0]
@@ -268,13 +278,11 @@ class Bench(Document):
 		if self.is_new():
 			self.port_offset = self.get_unused_port_offset()
 
-		redis_password = frappe.get_cached_doc("Release Group", self.group).get_redis_password()
-
 		config = {
 			"monitor": True,
-			"redis_cache": f"redis://:{redis_password}@localhost:13000",
-			"redis_queue": f"redis://:{redis_password}@localhost:11000",
-			"redis_socketio": f"redis://:{redis_password}@localhost:13000",
+			"redis_cache": self.build_redis_uri(13000),
+			"redis_queue": self.build_redis_uri(11000),
+			"redis_socketio": self.build_redis_uri(13000),
 			"socketio_port": 9000,
 			"webserver_port": 8000,
 			"restart_supervisor_on_update": True,
