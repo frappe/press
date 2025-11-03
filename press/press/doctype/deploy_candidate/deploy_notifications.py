@@ -983,7 +983,7 @@ def update_with_installation_file_not_found(
 	dcb: "DeployCandidateBuild",
 	exc: BaseException,
 ):
-	details["title"] = "Missing package configuration file"
+	details["title"] = "Missing or misconfigured package configuration file"
 
 	failed_step = get_failed_step(dcb)
 	if not failed_step or failed_step.stage_slug != "apps":
