@@ -103,6 +103,7 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 		("gzip: stdin: unexpected end of file", update_with_gzip_tar_err),
 		("tar: Unexpected EOF in archive", update_with_gzip_tar_err),
 		("Unknown command '\\-'.", update_with_unknown_command_hyphen_err),
+		('redis_host, redis_port = redis_url.split(":")', update_with_redis_unpack_error),
 	]
 
 
@@ -222,6 +223,23 @@ def update_with_data_truncated_for_column_err(details: Details, job: AgentJob):
 	"""
 
 	details["assistance_url"] = DOC_URLS[JobErr.DATA_TRUNCATED_FOR_COLUMN]
+
+	return True
+
+
+def update_with_redis_unpack_error(details: Details, job: AgentJob) -> bool:
+	if job.job_type != "Update Site Migrate":
+		return False
+
+	details["title"] = "Framework version bump required"
+
+	details["message"] = (
+		"<p>This job failed because the current framework version is outdated.</p>"
+		"<p>To maintain security and compatibility, an upgrade to at least "
+		"<strong>v14.99.4</strong> for v14 benches is required.</p>"
+		"<p>Please update the framework version to <strong>v14.99.4</strong> (or newer) "
+		"and try again.</p>"
+	)
 
 	return True
 
