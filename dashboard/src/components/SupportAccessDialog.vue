@@ -32,7 +32,22 @@
 						<div class="col-span-1 py-2 px-3 font-medium">
 							{{ resource.document_type }}
 						</div>
-						<div class="col-span-2 py-2 px-3">{{ resource.document_name }}</div>
+						<div class="col-span-2 py-2 px-3">
+							<Link
+								:to="
+									resourceLink(resource.document_type, resource.document_name)
+								"
+								@click="
+									() =>
+										resourceLink(
+											resource.document_type,
+											resource.document_name,
+										) && (open = false)
+								"
+							>
+								{{ resource.document_name }}
+							</Link>
+						</div>
 					</div>
 				</div>
 				<div v-if="request.doc?.reason" class="space-y-2">
@@ -163,4 +178,30 @@ const actions = computed(() => {
 		},
 	];
 });
+
+const resourceLink = (documentType: string, documentName: string) => {
+	switch (documentType) {
+		case 'Site':
+			return {
+				name: 'Site Detail',
+				params: {
+					name: documentName,
+				},
+			};
+		case 'Release Group':
+			return {
+				name: 'Release Group Detail',
+				params: {
+					name: documentName,
+				},
+			};
+		case 'Bench':
+			return {
+				name: 'Bench Detail',
+				params: {
+					name: documentName,
+				},
+			};
+	}
+};
 </script>
