@@ -103,6 +103,7 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 		("gzip: stdin: unexpected end of file", update_with_gzip_tar_err),
 		("tar: Unexpected EOF in archive", update_with_gzip_tar_err),
 		("Unknown command '\\-'.", update_with_unknown_command_hyphen_err),
+		('redis_host, redis_port = redis_url.split(":")', update_with_redis_unpack_error),
 	]
 
 
@@ -222,6 +223,20 @@ def update_with_data_truncated_for_column_err(details: Details, job: AgentJob):
 	"""
 
 	details["assistance_url"] = DOC_URLS[JobErr.DATA_TRUNCATED_FOR_COLUMN]
+
+	return True
+
+
+def update_with_redis_unpack_error(details: Details, _: AgentJob) -> bool:
+	"""Add this message for every job that faces redis unpack issue"""
+	details["title"] = "Framework version bump required"
+
+	details["message"] = (
+		"<p>This job failed because the current framework version is outdated.</p>"
+		"<p>To maintain security and compatibility, please update your framework:</p>"
+		"<p><strong>v14 benches:</strong> upgrade to <strong>v14.99.4</strong> or newer.<br>"
+		"<strong>v13 benches:</strong> upgrade to <strong>v13.58.22</strong> or newer.</p>"
+	)
 
 	return True
 
