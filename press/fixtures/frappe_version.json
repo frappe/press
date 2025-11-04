@@ -143,7 +143,7 @@
     "parent": "Nightly",
     "parentfield": "dependencies",
     "parenttype": "Frappe Version",
-    "version": "5.25.11"
+    "version": "5.27.0"
    },
    {
     "dependency": "PIP_VERSION",
@@ -197,7 +197,7 @@
     "parent": "Version 14",
     "parentfield": "dependencies",
     "parenttype": "Frappe Version",
-    "version": "5.25.11"
+    "version": "5.27.0"
    },
    {
     "dependency": "PIP_VERSION",
@@ -251,7 +251,7 @@
     "parent": "Version 15",
     "parentfield": "dependencies",
     "parenttype": "Frappe Version",
-    "version": "5.25.11"
+    "version": "5.27.0"
    },
    {
     "dependency": "PIP_VERSION",

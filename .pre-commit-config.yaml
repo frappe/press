@@ -67,3 +67,10 @@ repos:
         language: script
         stages: [pre-commit]
         verbose: true
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.18.2
+    hooks:
+      - id: mypy
+        args: [--strict, --ignore-missing-imports]
+        exclude: ^tests/|test_.*\.py$ # Exclude the 'tests/' directory and files starting with 'test_'

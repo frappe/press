@@ -52,6 +52,7 @@ DEFAULT_DEPENDENCIES = [
 	{"dependency": "PYTHON_VERSION", "version": "3.7"},
 	{"dependency": "WKHTMLTOPDF_VERSION", "version": "0.12.5"},
 	{"dependency": "BENCH_VERSION", "version": "5.25.1"},
+	{"dependency": "PIP_VERSION", "version": "25.2"},
 ]
 
 SUPPORTED_WKHTMLTOPDF_VERSIONS = ["0.12.5", "0.12.6"]
@@ -117,6 +118,7 @@ class ReleaseGroup(Document, TagHelpers):
 		packages: DF.Table[ReleaseGroupPackage]
 		public: DF.Check
 		redis_cache_size: DF.Int
+		redis_password: DF.Password | None
 		saas_app: DF.Link | None
 		saas_bench: DF.Check
 		servers: DF.Table[ReleaseGroupServer]
@@ -237,6 +239,11 @@ class ReleaseGroup(Document, TagHelpers):
 		self.validate_dependencies()
 		if self.check_dependent_apps:
 			self.validate_dependent_apps()
+		if not self.redis_password:
+			self.set_redis_password()
+
+	def set_redis_password(self):
+		self.redis_password = frappe.generate_hash(length=32)
 
 	def validate_dependent_apps(self):
 		required_repository_urls = set()
@@ -589,6 +596,15 @@ class ReleaseGroup(Document, TagHelpers):
 		required_arm_build = "arm64" in platforms
 		required_intel_build = "x86_64" in platforms
 		return required_arm_build, required_intel_build
+
+	def get_redis_password(self) -> str:
+		"""Get redis password create and update password if not present"""
+		try:
+			return self.get_password("redis_password")
+		except frappe.AuthenticationError:
+			self.redis_password = frappe.generate_hash(length=32)
+			self.save(ignore_permissions=True)
+			return self.get_password("redis_password")
 
 	@frappe.whitelist()
 	def create_duplicate_deploy_candidate(self):
@@ -982,7 +998,7 @@ class ReleaseGroup(Document, TagHelpers):
 		)
 
 	@dashboard_whitelist()
-	@action_guard(ReleaseGroupActions.GENERATE_SSH_CERTIFICATE)
+	@action_guard(ReleaseGroupActions.SSHAccess)
 	def generate_certificate(self):
 		ssh_key = frappe.get_all(
 			"User SSH Key",

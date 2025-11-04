@@ -169,6 +169,11 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 			check_if_app_updated,
 		),
 		(
+			"Could not determine the package name. Checked pyproject.toml, setup.cfg, and setup.py.",
+			update_with_installation_file_not_found,
+			check_if_app_updated,
+		),
+		(
 			"ModuleNotFoundError: No module named",
 			update_with_module_not_found,
 			check_if_app_updated,
@@ -972,6 +977,29 @@ def update_with_yarn_build_failed(
 	return True
 
 
+def update_with_installation_file_not_found(
+	details: "Details",
+	dc: "DeployCandidate",
+	dcb: "DeployCandidateBuild",
+	exc: BaseException,
+):
+	details["title"] = "Missing or misconfigured package configuration file"
+
+	failed_step = get_failed_step(dcb)
+	if not failed_step or failed_step.stage_slug != "apps":
+		return False
+
+	message = f"""
+                <p><b>{failed_step.step}</b> is missing a valid installation configuration file.</p>
+				<p>Please add or correct a <code>pyproject.toml</code> (or <code>setup.cfg</code> / <code>setup.py</code>) with the required project metadata</p>
+				<p>This issue is caused by the app's configuration and is not related to Frappe Cloud.</p>
+            """
+
+	details["message"] = fmt(message)
+	details["traceback"] = None
+	return True
+
+
 def update_with_file_not_found(
 	details: "Details",
 	dc: "DeployCandidate",
@@ -996,6 +1024,13 @@ def update_with_file_not_found(
 			continue
 		if app_name in line:
 			break
+		# In case of bad directory structure we can catch it using this since install always looks for init
+		if (
+			f"ERROR: [Errno 2] No such file or directory: './apps/{failed_step.step_slug}/{failed_step.step_slug}/__init__.py'"
+			in line
+		):
+			break
+
 	else:
 		return False
 
