@@ -467,8 +467,6 @@ class BaseCA:
 		self._obtain()
 		return self._extract()
 
-<<<<<<< HEAD
-=======
 	def _read_latest_certificate_file(self, file_path):
 		import glob
 		import os
@@ -495,17 +493,11 @@ class BaseCA:
 		with open(latest_path) as f:
 			return f.read()
 
->>>>>>> e3ac42549 (fix(tls-certificate): Check the numbered folder, as file same (#3769))
 	def _extract(self):
-		with open(self.certificate_file) as f:
-			certificate = f.read()
-		with open(self.full_chain_file) as f:
-			full_chain = f.read()
-		with open(self.intermediate_chain_file) as f:
-			intermediate_chain = f.read()
-		with open(self.private_key_file) as f:
-			private_key = f.read()
-
+		certificate = self._read_latest_certificate_file(self.certificate_file)
+		full_chain = self._read_latest_certificate_file(self.full_chain_file)
+		intermediate_chain = self._read_latest_certificate_file(self.intermediate_chain_file)
+		private_key = self._read_latest_certificate_file(self.private_key_file)
 		return certificate, full_chain, intermediate_chain, private_key
 
 
