@@ -73,6 +73,7 @@
 </template>
 
 <script setup lang="ts">
+import Link from './Link.vue';
 import { Badge, createDocumentResource, createResource } from 'frappe-ui';
 import { computed, ref } from 'vue';
 import { getTeam } from '../data/team';
