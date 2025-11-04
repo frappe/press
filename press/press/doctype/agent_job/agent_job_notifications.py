@@ -227,10 +227,8 @@ def update_with_data_truncated_for_column_err(details: Details, job: AgentJob):
 	return True
 
 
-def update_with_redis_unpack_error(details: Details, job: AgentJob) -> bool:
-	if job.job_type != "Update Site Migrate":
-		return False
-
+def update_with_redis_unpack_error(details: Details, _: AgentJob) -> bool:
+	"""Add this message for every job that faces redis unpack issue"""
 	details["title"] = "Framework version bump required"
 
 	details["message"] = (
