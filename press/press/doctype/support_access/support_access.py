@@ -85,10 +85,18 @@ class SupportAccess(Document):
 		self.add_release_group()
 
 	def add_release_group(self):
+		"""
+		Add release group and bench as resources if `site_release_group` is checked.
+		"""
+
 		if not self.site_release_group:
 			return
+
+		# Only add release group and bench for new requests. Meaning, do not
+		# add them on updates.
 		if not self.is_new():
 			return
+
 		site = None
 		for resource in self.resources:
 			if resource.document_type == "Site":
@@ -96,15 +104,29 @@ class SupportAccess(Document):
 				break
 		if not site:
 			return
+
 		site = frappe.get_doc("Site", site)
 		release_group = frappe.get_doc("Release Group", site.group)
+
+		# Ensure release group and site belong to the same team.
 		if site.team != release_group.team:
 			return
+
+		# Add release group as a resource.
 		self.append(
 			"resources",
 			{
 				"document_type": "Release Group",
 				"document_name": release_group.name,
+			},
+		)
+
+		# Add bench as a resource.
+		self.append(
+			"resources",
+			{
+				"document_type": "Bench",
+				"document_name": site.bench,
 			},
 		)
 
