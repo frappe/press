@@ -469,14 +469,22 @@ class BaseCA:
 
 	def _read_latest_certificate_file(self, file_path):
 		import glob
+		import os
 		import re
 
-		# Look for indexed files first
-		indexed_files = glob.glob(f"{file_path}-[0-9][0-9][0-9][0-9]")
+		# Split path into directory and filename
+		dir_path = os.path.dirname(file_path)
+		file_name = os.path.basename(file_path)
+		parent_dir = os.path.dirname(dir_path)
+		base_dir_name = os.path.basename(dir_path)
 
-		if indexed_files:
-			# Extract the numeric suffix and find the one with highest integer
-			latest_path = max(indexed_files, key=lambda p: int(re.search(r"-(\d+)$", p).group(1)))
+		# Look for indexed directories first (e.g., dir-0000, dir-0001, etc.)
+		indexed_dirs = glob.glob(os.path.join(parent_dir, f"{base_dir_name}-[0-9][0-9][0-9][0-9]"))
+
+		if indexed_dirs:
+			# Find directory with highest index
+			latest_dir = max(indexed_dirs, key=lambda p: int(re.search(r"-(\d+)$", p).group(1)))
+			latest_path = os.path.join(latest_dir, file_name)
 		elif os.path.exists(file_path):
 			latest_path = file_path
 		else:
