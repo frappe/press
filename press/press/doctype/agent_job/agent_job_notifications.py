@@ -235,10 +235,9 @@ def update_with_redis_unpack_error(details: Details, job: AgentJob) -> bool:
 
 	details["message"] = (
 		"<p>This job failed because the current framework version is outdated.</p>"
-		"<p>To maintain security and compatibility, an upgrade to at least "
-		"<strong>v14.99.4</strong> for v14 benches is required.</p>"
-		"<p>Please update the framework version to <strong>v14.99.4</strong> (or newer) "
-		"and try again.</p>"
+		"<p>To maintain security and compatibility, please update your framework:</p>"
+		"<p><strong>v14 benches:</strong> upgrade to <strong>v14.99.4</strong> or newer.<br>"
+		"<strong>v13 benches:</strong> upgrade to <strong>v13.58.22</strong> or newer.</p>"
 	)
 
 	return True
