@@ -467,6 +467,35 @@ class BaseCA:
 		self._obtain()
 		return self._extract()
 
+<<<<<<< HEAD
+=======
+	def _read_latest_certificate_file(self, file_path):
+		import glob
+		import os
+		import re
+
+		# Split path into directory and filename
+		dir_path = os.path.dirname(file_path)
+		file_name = os.path.basename(file_path)
+		parent_dir = os.path.dirname(dir_path)
+		base_dir_name = os.path.basename(dir_path)
+
+		# Look for indexed directories first (e.g., dir-0000, dir-0001, etc.)
+		indexed_dirs = glob.glob(os.path.join(parent_dir, f"{base_dir_name}-[0-9][0-9][0-9][0-9]"))
+
+		if indexed_dirs:
+			# Find directory with highest index
+			latest_dir = max(indexed_dirs, key=lambda p: int(re.search(r"-(\d+)$", p).group(1)))
+			latest_path = os.path.join(latest_dir, file_name)
+		elif os.path.exists(file_path):
+			latest_path = file_path
+		else:
+			raise FileNotFoundError(f"Certificate file not found: {file_path}")
+
+		with open(latest_path) as f:
+			return f.read()
+
+>>>>>>> e3ac42549 (fix(tls-certificate): Check the numbered folder, as file same (#3769))
 	def _extract(self):
 		with open(self.certificate_file) as f:
 			certificate = f.read()
