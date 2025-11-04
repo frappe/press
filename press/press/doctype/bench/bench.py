@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 
 TRANSITORY_STATES = ["Pending", "Installing"]
 FINAL_STATES = ["Active", "Broken", "Archived"]
-
+SUPPORTED_REDIS_PASSWORD_VERSIONS = ["Nightly", "Version 15"]
 EMPTY_BENCH_COURTESY_DAYS = 3
 
 MAX_GUNICORN_WORKERS = 36
@@ -260,8 +260,9 @@ class Bench(Document):
 	def build_redis_uri(self, port: int) -> str:
 		"""Get passworded protected redis uri if configured"""
 		set_redis_password = frappe.get_cached_value("Press Settings", None, "set_redis_password")
+		bench_group_version = frappe.db.get_value("Release Group", self.group, "version")
 
-		if not set_redis_password:
+		if not set_redis_password or bench_group_version not in SUPPORTED_REDIS_PASSWORD_VERSIONS:
 			return f"redis://localhost:{port}"
 
 		redis_password = frappe.get_cached_doc("Release Group", self.group).get_redis_password()
