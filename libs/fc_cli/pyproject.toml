@@ -1,8 +1,8 @@
 [project]
-name = "Press CLI"
+name = "Press-CLI"
 description = "CLI to manage frappe cloud"
 readme = "README.md"
-license = "GPL-3.0-only"
+license = "AGPL-3.0-only"
 requires-python = ">=3.10"
 authors = [
     { name = "Frappe Technologies Pvt Ltd", email = "developers@frappe.io" },
