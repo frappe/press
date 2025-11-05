@@ -677,7 +677,8 @@
    "fieldname": "secondary_server",
    "fieldtype": "Link",
    "label": "Secondary Server",
-   "options": "Server"
+   "options": "Server",
+   "read_only": 1
   },
   {
    "collapsible": 1,
@@ -730,7 +731,7 @@
    "link_fieldname": "primary_server"
   }
  ],
- "modified": "2025-10-29 12:52:24.484964",
+ "modified": "2025-11-05 14:24:18.240520",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
