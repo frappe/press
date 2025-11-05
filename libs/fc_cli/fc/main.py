@@ -5,7 +5,7 @@ import typer
 from fc.authentication.login import session_file_path
 from fc.authentication.session import CloudSession
 from fc.commands.auth import auth
-from fc.commands.servers import server
+from fc.commands.server import server
 
 app = typer.Typer(help="FC CLI")
 

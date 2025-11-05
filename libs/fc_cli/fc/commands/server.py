@@ -5,15 +5,8 @@ from typing import TYPE_CHECKING, Annotated
 import typer
 from rich.console import Console
 
-from fc.commands.utils import (
-	get_doctype,
-	handle_exception,
-	print_error,
-	print_full_plan_details,
-	print_info,
-	print_success,
-	validate_server_name,
-)
+from fc.commands.utils import get_doctype, validate_server_name
+from fc.printer import Print, print_full_plan_details, print_plan_details, show_usage
 
 if TYPE_CHECKING:
 	from fc.authentication.session import CloudSession
@@ -30,7 +23,7 @@ def usage(
 	session: CloudSession = ctx.obj
 
 	if not name:
-		print_info("Please provide a server name using --name.")
+		Print.info("Please provide a server name using --name.")
 		return
 
 	try:
@@ -42,7 +35,7 @@ def usage(
 
 		console.print("[bold cyan]Usage (latest sample)[/bold cyan]")
 		if not isinstance(usage_data, dict) or not usage_data:
-			print_info("No usage data returned.")
+			Print.info("No usage data returned.")
 			return
 
 		vcpu = usage_data.get("vcpu")
@@ -50,29 +43,16 @@ def usage(
 		mem_mb = usage_data.get("memory")  # MB
 		free_mem_bytes = usage_data.get("free_memory")  # bytes (avg 10m)
 
-		console.print(
-			f"[bold]vCPU:[/bold] {vcpu:.2f}"
-			if isinstance(vcpu, (int, float))
-			else f"[bold]vCPU:[/bold] {vcpu}"
-		)
-		console.print(
-			f"[bold]Memory Used:[/bold] {mem_mb:.0f} MB"
-			if isinstance(mem_mb, (int, float))
-			else f"[bold]Memory Used:[/bold] {mem_mb}"
-		)
-		console.print(
-			f"[bold]Disk Used:[/bold] {disk_gb:.0f} GB"
-			if isinstance(disk_gb, (int, float))
-			else f"[bold]Disk Used:[/bold] {disk_gb}"
-		)
-		console.print(
-			f"[bold]Free Memory (avg 10m):[/bold] {free_mem_bytes / 1024 / 1024:.0f} MB"
-			if isinstance(free_mem_bytes, (int, float))
-			else f"[bold]Free Memory (avg 10m):[/bold] {free_mem_bytes}"
+		show_usage(
+			vcpu=vcpu,
+			mem_mb=mem_mb,
+			disk_gb=disk_gb,
+			free_mem_bytes=free_mem_bytes,
+			console=console,
 		)
 
 	except Exception as e:
-		handle_exception(e, "Error getting server usage")
+		Print.error(console, e)
 
 
 def _noop() -> None:
@@ -98,7 +78,7 @@ def show_plan(
 
 		selected_plan = next((p for p in plans if p.get("name") == plan), None)
 		if not selected_plan:
-			print_error(f"Plan '{plan}' not found for server '{name}'")
+			Print.error(console, f"Plan '{plan}' not found for server '{name}'")
 			return
 
 		console.print("[bold]Plan Details:[/bold]")
@@ -109,7 +89,7 @@ def show_plan(
 		)
 
 	except Exception as e:
-		handle_exception(e, "Error fetching plan details")
+		Print.error(console, e)
 
 
 @server.command(help="Shows the current plan for a server")
@@ -131,12 +111,12 @@ def server_plan(
 			"press.api.client.get", json=payload, message="[bold green]Getting server details..."
 		)
 		if not response or "current_plan" not in response:
-			print_error(f"{doctype} '{name}' or its current plan not found.")
+			Print.error(console, f"{doctype} '{name}' or its current plan not found.")
 			return
 		plan = response["current_plan"]
-		print_full_plan_details(plan, console)
+		print_full_plan_details(console, plan)
 	except Exception as e:
-		handle_exception(e, "Error getting server plan")
+		Print.error(console, e)
 
 
 @server.command(help="Increase storage for a server")
@@ -148,7 +128,7 @@ def increase_storage(
 	session: CloudSession = ctx.obj
 	is_valid, err = validate_server_name(name)
 	if not is_valid:
-		print_error(err)
+		Print.error(console, err)
 		return
 
 	try:
@@ -168,16 +148,13 @@ def increase_storage(
 		)
 
 		if response and response.get("success") is False:
-			print_error(f"Failed to increase storage: {response.get('message', 'Unknown error')}")
+			Print.error(console, f"Failed to increase storage: {response.get('message', 'Unknown error')}")
 			return
 
-		console.print(
-			f"Storage increased for server [bold blue]{name}[/bold blue] by [bold blue]{increment}[/bold blue] GB",
-			style="bold",
-		)
+		Print.success(f"Storage increased for server {name} by {increment} GB", style="bold")
 
 	except Exception as e:
-		handle_exception(e, "Error increasing storage")
+		Print.error(console, e)
 
 
 @server.command(help="Show current plan and choose available server plans")
@@ -197,7 +174,7 @@ def choose_plan(
 
 		selected_plan = next((p for p in plans if p.get("name") == plan), None)
 		if not selected_plan:
-			print_error(f"Plan '{plan}' not found for server '{name}'")
+			Print.error(console, f"Plan '{plan}' not found for server '{name}'")
 			return
 
 		change_payload = {
@@ -214,19 +191,13 @@ def choose_plan(
 		)
 
 		if response and response.get("success") is False:
-			print_error(f"Failed to change plan: {response.get('message', 'Unknown error')}")
+			Print.error(console, f"Failed to change plan: {response.get('message', 'Unknown error')}")
 			return
 
-		console.print("[bold]Successfully changed plan![/bold]")
-		console.print("[bold]Plan Details:[/bold]")
-		console.print(f"[bold]Name:[/bold] [bold]{selected_plan.get('name', '-')}")
-		console.print(f"[bold]Price:[/bold] [bold]₹{selected_plan.get('price_inr', '-')} /mo")
-		console.print(f"[bold]vCPUs:[/bold] [bold]{selected_plan.get('vcpu', '-')}")
-		console.print(f"[bold]Memory:[/bold] [bold]{selected_plan.get('memory', '-')} GB")
-		console.print(f"[bold]Disk:[/bold] [bold]{selected_plan.get('disk', '-')} GB")
+		print_plan_details(selected_plan, console)
 
 	except Exception as e:
-		handle_exception(e, "Error changing plan")
+		Print.error(console, e)
 
 
 @server.command(help="Create a new server")
@@ -258,17 +229,18 @@ def create_server(
 		)
 
 		if not response or not response.get("server"):
-			print_error(
-				f"Failed to create server: {response.get('message', 'Unknown error') if response else 'No response from backend.'}"
+			Print.error(
+				console,
+				f"Failed to create server: {response.get('message', 'Unknown error') if response else 'No response from backend.'}",
 			)
 			return
 
-		print_success(f"Successfully created server: {response['server']}")
+		Print.success(f"Successfully created server: {response['server']}")
 		if response.get("job"):
-			print_info(f"Job started: {response['job']}")
+			Print.info(f"Server creation job started: {response['job']}")
 
 	except Exception as e:
-		handle_exception(e, "Error creating server")
+		Print.error(console, e)
 
 
 @server.command(help="Delete a server (archive)")
@@ -286,10 +258,10 @@ def delete_server(
 		)
 
 		if response and response.get("exc_type"):
-			print_error(f"Failed to delete server: {response.get('exception', 'Unknown error')}")
+			Print.error(console, f"Failed to delete server: {response.get('exception', 'Unknown error')}")
 			return
 
-		print_success(f"Successfully deleted (archived) server: {name}")
+		Print.success(f"Successfully deleted (archived) server: {name}")
 
 	except Exception as e:
-		handle_exception(e, "Error deleting server")
+		Print.error(console, e)
