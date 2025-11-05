@@ -26,10 +26,10 @@ from press.utils import (
 if TYPE_CHECKING:
 	from io import BufferedReader
 
-	from apps.press.press.press.doctype.database_server.database_server import DatabaseServer
-
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_patch.app_patch import AgentPatchConfig, AppPatch
+	from press.press.doctype.bench.bench import Bench
+	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
 		PhysicalBackupRestoration,
 	)
@@ -53,20 +53,22 @@ class Agent:
 		self.server = server
 		self.port = 443 if self.server not in servers_using_alternative_port_for_communication() else 8443
 
-	def new_bench(self, bench):
+	def new_bench(self, bench: "Bench"):
 		settings = frappe.db.get_value(
 			"Press Settings",
 			None,
 			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
 			as_dict=True,
 		)
+		cluster = frappe.db.get_value(self.server_type, self.server, "cluster")
+		registry_url = frappe.db.get_value("Cluster", cluster, "repository") or settings.docker_registry_url
 
 		data = {
 			"name": bench.name,
 			"bench_config": json.loads(bench.bench_config),
 			"common_site_config": json.loads(bench.config),
 			"registry": {
-				"url": settings.docker_registry_url,
+				"url": registry_url,
 				"username": settings.docker_registry_username,
 				"password": settings.docker_registry_password,
 			},
@@ -870,14 +872,17 @@ class Agent:
 	def reload_nginx(self):
 		return self.create_agent_job("Reload NGINX Job", "proxy/reload")
 
-	def cleanup_unused_files(self):
-		return self.create_agent_job("Cleanup Unused Files", "server/cleanup", {})
+	def cleanup_unused_files(self, force: bool = False):
+		return self.create_agent_job("Cleanup Unused Files", "server/cleanup", {"force": force})
 
 	def get(self, path, raises=True):
 		return self.request("GET", path, raises=raises)
 
 	def post(self, path, data=None, raises=True):
 		return self.request("POST", path, data, raises=raises)
+
+	def delete(self, path, data=None, raises=True):
+		return self.request("DELETE", path, data, raises=raises)
 
 	def _make_req(self, method, path, data, files, agent_job_id):
 		password = get_decrypted_password(self.server_type, self.server, "agent_password")
@@ -1483,6 +1488,17 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			},
 		)
 
+	def purge_binlogs_by_size_limit(self, database_server: DatabaseServer, max_binlog_gb: int):
+		return self.create_agent_job(
+			"Purge Binlogs By Size Limit",
+			"/database/binlogs/purge_by_size_limit",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+				"max_binlog_gb": max_binlog_gb,
+			},
+		)
+
 	def get_binlog_queries(self, row_ids: dict[str, list[int]], database: str):
 		return self.post(
 			"/database/binlogs/indexer/query",
@@ -1490,6 +1506,269 @@ Response: {reason or getattr(result, "text", "Unknown")}
 				"row_ids": row_ids,
 				"database": database,
 			},
+		)
+
+	def ping_database(self, database_server: DatabaseServer):
+		return self.post(
+			"/database/ping",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+			},
+		)
+
+	def get_replication_status(self, database_server: DatabaseServer):
+		return self.post(
+			"/database/replication/status",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+			},
+		)
+
+	def reset_replication(self, database_server: DatabaseServer):
+		return self.post(
+			"/database/replication/reset",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+			},
+		)
+
+	def configure_replication(
+		self,
+		database_server: DatabaseServer,
+		master_database_server: DatabaseServer,
+		gtid_slave_pos: str | None = None,
+	):
+		return self.post(
+			"/database/replication/config",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+				"master_private_ip": master_database_server.private_ip,
+				"master_mariadb_root_password": master_database_server.get_password("mariadb_root_password"),
+				"gtid_slave_pos": gtid_slave_pos,
+			},
+		)
+
+	def start_replication(self, database_server: DatabaseServer):
+		return self.post(
+			"/database/replication/start",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+			},
+		)
+
+	def stop_replication(self, database_server: DatabaseServer):
+		return self.post(
+			"/database/replication/stop",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+			},
+		)
+
+	# Snapshot Recovery Related Methods
+	def search_sites_in_snapshot(self, sites: list[str], reference_doctype=None, reference_name=None):
+		return self.create_agent_job(
+			"Search Sites In Snapshot",
+			"/snapshot_recovery/search_sites",
+			data={"sites": sites},
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def backup_site_database_from_snapshot(
+		self,
+		cluster: str,
+		site: str,
+		database_name: str,
+		database_server: str,
+		reference_doctype=None,
+		reference_name=None,
+	):
+		from press.press.doctype.site_backup.site_backup import get_backup_bucket
+
+		database_server: DatabaseServer = frappe.get_doc("Database Server", database_server)
+		data = {
+			"site": site,
+			"database_name": database_name,
+			"database_ip": frappe.get_value(
+				"Virtual Machine", database_server.virtual_machine, "private_ip_address"
+			),
+			"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+		}
+
+		# offsite config
+		settings = frappe.get_single("Press Settings")
+		backups_path = os.path.join(site, str(date.today()))
+		backup_bucket = get_backup_bucket(cluster, region=True)
+		bucket_name = backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
+		if settings.aws_s3_bucket or bucket_name:
+			auth = {
+				"ACCESS_KEY": settings.offsite_backups_access_key_id,
+				"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
+				"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
+			}
+			data.update({"offsite": {"bucket": bucket_name, "auth": auth, "path": backups_path}})
+		else:
+			frappe.throw("Offsite Backups aren't setup yet")
+
+		return self.create_agent_job(
+			"Backup Database From Snapshot",
+			"/snapshot_recovery/backup_database",
+			data=data,
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def backup_site_files_from_snapshot(
+		self,
+		cluster: str,
+		site: str,
+		bench: str,
+		reference_doctype=None,
+		reference_name=None,
+	):
+		from press.press.doctype.site_backup.site_backup import get_backup_bucket
+
+		data = {
+			"site": site,
+			"bench": bench,
+		}
+
+		# offsite config
+		settings = frappe.get_single("Press Settings")
+		backups_path = os.path.join(site, str(date.today()))
+		backup_bucket = get_backup_bucket(cluster, region=True)
+		bucket_name = backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
+		if settings.aws_s3_bucket or bucket_name:
+			auth = {
+				"ACCESS_KEY": settings.offsite_backups_access_key_id,
+				"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
+				"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
+			}
+			data.update({"offsite": {"bucket": bucket_name, "auth": auth, "path": backups_path}})
+		else:
+			frappe.throw("Offsite Backups aren't setup yet")
+
+		return self.create_agent_job(
+			"Backup Files From Snapshot",
+			"/snapshot_recovery/backup_files",
+			data=data,
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def update_database_host_in_all_benches(
+		self, db_host: str, reference_doctype: str | None = None, reference_name: str | None = None
+	):
+		return self.create_agent_job(
+			"Update Database Host",
+			"/benches/database_host",
+			data={
+				"db_host": db_host,
+			},
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def change_bench_directory(
+		self,
+		secondary_server_private_ip: str,
+		is_primary: bool,
+		directory: str,
+		restart_benches: bool,
+		reference_name: str | None = None,
+		redis_connection_string_ip: str | None = None,
+		reference_doctype: str | None = None,
+		registry_settings: dict | None = None,
+	) -> AgentJob:
+		return self.create_agent_job(
+			"Change Bench Directory",
+			"/server/change-bench-directory",
+			data={
+				"restart_benches": restart_benches,
+				"redis_connection_string_ip": redis_connection_string_ip,
+				"is_primary": is_primary,
+				"directory": directory,
+				"secondary_server_private_ip": secondary_server_private_ip,
+				"registry_settings": registry_settings,
+			},
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def add_servers_to_acl(
+		self,
+		primary_server_private_ip: str,
+		secondary_server_private_ip: str,
+		shared_directory: str,
+		reference_doctype: str | None = None,
+		reference_name: str | None = None,
+	) -> AgentJob:
+		return self.create_agent_job(
+			"Add Servers to ACL",
+			"/nfs/add-to-acl",
+			data={
+				"primary_server_private_ip": primary_server_private_ip,
+				"secondary_server_private_ip": secondary_server_private_ip,
+				"shared_directory": shared_directory,
+			},
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def remove_servers_from_acl(
+		self,
+		primary_server_private_ip: str,
+		secondary_server_private_ip: str,
+		shared_directory: str,
+		reference_doctype: str | None = None,
+		reference_name: str | None = None,
+	) -> AgentJob:
+		return self.create_agent_job(
+			"Remove Servers from ACL",
+			"/nfs/remove-from-acl",
+			data={
+				"primary_server_private_ip": primary_server_private_ip,
+				"secondary_server_private_ip": secondary_server_private_ip,
+				"shared_directory": shared_directory,
+			},
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def stop_bench_workers(
+		self, reference_doctype: str | None = None, reference_name: str | None = None
+	) -> AgentJob:
+		return self.create_agent_job(
+			"Stop Bench Workers",
+			"/server/stop-bench-workers",
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def start_bench_workers(
+		self, reference_doctype: str | None = None, reference_name: str | None = None
+	) -> AgentJob:
+		return self.create_agent_job(
+			"Start Bench Workers",
+			"/server/start-bench-workers",
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def force_remove_all_benches(
+		self, reference_doctype: str | None = None, reference_name: str | None = None
+	) -> AgentJob:
+		return self.create_agent_job(
+			"Force Remove All Benches",
+			"/server/force-remove-all-benches",
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
 		)
 
 

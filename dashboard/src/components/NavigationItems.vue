@@ -11,6 +11,7 @@ import Package from '~icons/lucide/package';
 import Boxes from '~icons/lucide/boxes';
 import Server from '~icons/lucide/server';
 import WalletCards from '~icons/lucide/wallet-cards';
+import Key from '~icons/lucide/key';
 import Settings from '~icons/lucide/settings';
 import App from '~icons/lucide/layout-grid';
 import DatabaseZap from '~icons/lucide/database-zap';
@@ -20,6 +21,8 @@ import Globe from '~icons/lucide/globe';
 import Shield from '~icons/lucide/shield';
 import Notification from '~icons/lucide/inbox';
 import Code from '~icons/lucide/code';
+import Archive from '~icons/lucide/archive';
+import Camera from '~icons/lucide/camera';
 import FileSearch from '~icons/lucide/file-search';
 import { unreadNotificationsCount } from '../data/notifications';
 
@@ -111,13 +114,26 @@ export default {
 					disabled: enforce2FA,
 				},
 				{
-					name: 'Marketplace',
-					icon: () => h(App),
-					route: '/apps',
-					isActive: routeName.startsWith('Marketplace'),
-					condition:
-						this.$team.doc?.is_desk_user ||
-						(!!this.$team.doc.is_developer && this.$session.hasAppsAccess),
+					name: 'Backups',
+					icon: () => h(Archive),
+					route: '/backups',
+					condition: onboardingComplete && !isSaasUser,
+					disabled: enforce2FA,
+					children: [
+						{
+							name: 'Site Backups',
+							icon: () => h(PanelTopInactive),
+							route: '/backups/sites',
+							isActive: routeName === 'Site Backups',
+						},
+						{
+							name: 'Snapshots',
+							icon: () => h(Camera),
+							route: '/backups/snapshots',
+							isActive: routeName === 'Snapshots',
+						},
+					].filter((item) => item.condition ?? true),
+					isActive: ['Site Backups', 'Snapshots'].includes(routeName),
 					disabled: enforce2FA,
 				},
 				{
@@ -163,12 +179,29 @@ export default {
 					disabled: enforce2FA,
 				},
 				{
+					name: 'Marketplace',
+					icon: () => h(App),
+					route: '/apps',
+					isActive: routeName.startsWith('Marketplace'),
+					condition:
+						this.$team.doc?.is_desk_user ||
+						(!!this.$team.doc.is_developer && this.$session.hasAppsAccess),
+					disabled: enforce2FA,
+				},
+				{
 					name: 'Billing',
 					icon: () => h(WalletCards),
 					route: '/billing',
 					isActive: routeName.startsWith('Billing'),
 					condition:
 						this.$team.doc?.is_desk_user || this.$session.hasBillingAccess,
+					disabled: enforce2FA,
+				},
+				{
+					name: 'Access Requests',
+					icon: () => h(Key),
+					route: '/access-requests',
+					isActive: routeName === 'Access Requests',
 					disabled: enforce2FA,
 				},
 				{

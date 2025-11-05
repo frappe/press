@@ -9,6 +9,7 @@ import subprocess
 import time
 from contextlib import suppress
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import frappe
 import OpenSSL
@@ -21,8 +22,12 @@ from press.exceptions import (
 	TLSRetryLimitExceeded,
 )
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.runner import Ansible
 from press.utils import get_current_team, log_error
+
+if TYPE_CHECKING:
+	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 
 AUTO_RETRY_LIMIT = 5
 MANUAL_RETRY_LIMIT = 8
@@ -188,14 +193,30 @@ class TLSCertificate(Document):
 
 		for server_doctype in server_doctypes:
 			servers = frappe.get_all(
-				server_doctype, {"status": "Active", "name": ("like", f"%.{self.domain}")}
+				server_doctype,
+				filters={
+					"status": ("not in", ["Archived", "Installing"]),
+					"name": ("like", f"%.{self.domain}"),
+				},
+				fields=["name", "status"],
 			)
 			for server in servers:
-				frappe.enqueue(
-					"press.press.doctype.tls_certificate.tls_certificate.update_server_tls_certifcate",
-					server=frappe.get_doc(server_doctype, server),
-					certificate=self,
-				)
+				if server.status == "Active":
+					frappe.enqueue(
+						"press.press.doctype.tls_certificate.tls_certificate.update_server_tls_certifcate",
+						server=frappe.get_doc(server_doctype, server.name),
+						certificate=self,
+						enqueue_after_commit=True,
+					)
+				else:
+					# If server is not active, mark the tls_certificate_renewal_failed field as True
+					frappe.db.set_value(
+						server_doctype,
+						server.name,
+						"tls_certificate_renewal_failed",
+						1,
+						update_modified=False,
+					)
 
 	@frappe.whitelist()
 	def trigger_site_domain_callback(self):
@@ -360,10 +381,8 @@ def notify_custom_tls_renewal():
 
 	for certificate in pending:
 		if certificate.team:
-			notify_email = frappe.get_value("Team", certificate.team, "notify_email")
-
 			frappe.sendmail(
-				recipients=notify_email,
+				recipients=get_communication_info("Email", "Site Activity", "Team", certificate.team),
 				subject=f"TLS Certificate Renewal Required: {certificate.name}",
 				message=f"TLS Certificate {certificate.name} is due for renewal on {certificate.expires_on}. Please renew the certificate to avoid service disruption.",
 			)
@@ -387,7 +406,15 @@ def update_server_tls_certifcate(server, certificate):
 				"proxysql_admin_password": proxysql_admin_password,
 			},
 		)
-		ansible.run()
+		play: "AnsiblePlay" = ansible.run()
+		frappe.db.set_value(
+			server.doctype,
+			server.name,
+			"tls_certificate_renewal_failed",
+			play.status != "Success",
+			# to avoid causing TimestampMismatchError in other important tasks
+			update_modified=False,
+		)
 	except Exception:
 		log_error("TLS Setup Exception", server=server.as_dict())
 
@@ -404,16 +431,23 @@ def retrigger_failed_wildcard_tls_callbacks():
 		"Trace Server",
 	]
 	for server_doctype in server_doctypes:
-		servers = frappe.get_all(server_doctype, {"status": "Active"}, pluck="name")
+		servers = frappe.get_all(
+			server_doctype, filters={"status": "Active"}, fields=["name", "tls_certificate_renewal_failed"]
+		)
 		for server in servers:
-			plays = frappe.get_all(
-				"Ansible Play",
-				{"play": "Setup TLS Certificates", "server": server},
-				pluck="status",
-				limit=1,
-				order_by="creation DESC",
-			)
-			if plays and plays[0] != "Success":
+			previous_attempt_failed = server.tls_certificate_renewal_failed
+			if not previous_attempt_failed:
+				plays = frappe.get_all(
+					"Ansible Play",
+					{"play": "Setup TLS Certificates", "server": server.name},
+					pluck="status",
+					limit=1,
+					order_by="creation DESC",
+				)
+				if plays and plays[0] != "Success":
+					previous_attempt_failed = True
+
+			if previous_attempt_failed:
 				server_doc = frappe.get_doc(server_doctype, server)
 				frappe.enqueue(
 					"press.press.doctype.tls_certificate.tls_certificate.update_server_tls_certifcate",
@@ -433,16 +467,37 @@ class BaseCA:
 		self._obtain()
 		return self._extract()
 
-	def _extract(self):
-		with open(self.certificate_file) as f:
-			certificate = f.read()
-		with open(self.full_chain_file) as f:
-			full_chain = f.read()
-		with open(self.intermediate_chain_file) as f:
-			intermediate_chain = f.read()
-		with open(self.private_key_file) as f:
-			private_key = f.read()
+	def _read_latest_certificate_file(self, file_path):
+		import glob
+		import os
+		import re
 
+		# Split path into directory and filename
+		dir_path = os.path.dirname(file_path)
+		file_name = os.path.basename(file_path)
+		parent_dir = os.path.dirname(dir_path)
+		base_dir_name = os.path.basename(dir_path)
+
+		# Look for indexed directories first (e.g., dir-0000, dir-0001, etc.)
+		indexed_dirs = glob.glob(os.path.join(parent_dir, f"{base_dir_name}-[0-9][0-9][0-9][0-9]"))
+
+		if indexed_dirs:
+			# Find directory with highest index
+			latest_dir = max(indexed_dirs, key=lambda p: int(re.search(r"-(\d+)$", p).group(1)))
+			latest_path = os.path.join(latest_dir, file_name)
+		elif os.path.exists(file_path):
+			latest_path = file_path
+		else:
+			raise FileNotFoundError(f"Certificate file not found: {file_path}")
+
+		with open(latest_path) as f:
+			return f.read()
+
+	def _extract(self):
+		certificate = self._read_latest_certificate_file(self.certificate_file)
+		full_chain = self._read_latest_certificate_file(self.full_chain_file)
+		intermediate_chain = self._read_latest_certificate_file(self.intermediate_chain_file)
+		private_key = self._read_latest_certificate_file(self.private_key_file)
 		return certificate, full_chain, intermediate_chain, private_key
 
 

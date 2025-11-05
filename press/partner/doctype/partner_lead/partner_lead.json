@@ -1,0 +1,415 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "PRM-LEAD-.#####",
+ "creation": "2025-05-14 16:23:41.502914",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "details_tab",
+  "lead_details_section",
+  "organization_name",
+  "lead_name",
+  "domain",
+  "column_break_wbzh",
+  "origin",
+  "lead_source",
+  "lead_type",
+  "column_break_fyau",
+  "status",
+  "engagement_stage",
+  "conversion_date",
+  "lost_reason",
+  "lost_reason_specify",
+  "contact_info_section",
+  "full_name",
+  "country",
+  "column_break_wsxo",
+  "email",
+  "state",
+  "column_break_glyz",
+  "contact_no",
+  "territory",
+  "deal_details_section",
+  "plan_proposed",
+  "estimated_closure_date",
+  "column_break_jtbg",
+  "probability",
+  "success_pack_section",
+  "erpnext_success_pack_interested_in",
+  "need_demo_before_implementation",
+  "additional_comments",
+  "section_break_uzlc",
+  "next_action_date",
+  "followup",
+  "requirement_details_section",
+  "requirement",
+  "partner_tab",
+  "partner_details_section",
+  "partner_team",
+  "company_name",
+  "partner_territory",
+  "column_break_jonl",
+  "partner_email",
+  "partner_manager",
+  "feedback_tab",
+  "lead_rating",
+  "feedback_to_partner",
+  "column_break_sjll",
+  "feedback_for_frappe",
+  "more_info_tab",
+  "hosting",
+  "column_break_rdxj",
+  "site_url"
+ ],
+ "fields": [
+  {
+   "fieldname": "lead_details_section",
+   "fieldtype": "Section Break",
+   "label": "Lead Details"
+  },
+  {
+   "fieldname": "organization_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Organization Name"
+  },
+  {
+   "fieldname": "lead_name",
+   "fieldtype": "Data",
+   "label": "Lead Name"
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Select",
+   "label": "Domain",
+   "options": "\nDistribution\nManufacturing\nRetail\nEducation\nAgriculture\nHealthcare\nServices\nNon Profit\nOther"
+  },
+  {
+   "fieldname": "column_break_wbzh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "origin",
+   "fieldtype": "Link",
+   "label": "Origin",
+   "options": "Partner Lead Origin"
+  },
+  {
+   "fieldname": "lead_source",
+   "fieldtype": "Select",
+   "label": "Lead Source",
+   "options": "\nPartner Owned\nPassed to Partner\nPartner Listing"
+  },
+  {
+   "fieldname": "lead_type",
+   "fieldtype": "Link",
+   "label": "Lead Type",
+   "options": "Partner Lead Type"
+  },
+  {
+   "fieldname": "column_break_fyau",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Open",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Open\nIn Process\nWon\nLost\nJunk\nPass to Other Partner"
+  },
+  {
+   "depends_on": "eval:in_list(['In Process'], doc.status)",
+   "fieldname": "engagement_stage",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Engagement Stage",
+   "options": "\nDemo\nQualification\nLearning\nFollow-up\nQuotation\nNegotiation\nReady for Closing"
+  },
+  {
+   "fieldname": "contact_info_section",
+   "fieldtype": "Section Break",
+   "label": "Contact Info"
+  },
+  {
+   "fieldname": "full_name",
+   "fieldtype": "Data",
+   "label": "Full Name"
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "label": "Country",
+   "options": "Country"
+  },
+  {
+   "fieldname": "column_break_wsxo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email"
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "Data",
+   "label": "State"
+  },
+  {
+   "fieldname": "column_break_glyz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "contact_no",
+   "fieldtype": "Data",
+   "label": "Contact No",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "territory",
+   "fieldtype": "Data",
+   "label": "Territory"
+  },
+  {
+   "fieldname": "deal_details_section",
+   "fieldtype": "Section Break",
+   "label": "Deal Details"
+  },
+  {
+   "fieldname": "plan_proposed",
+   "fieldtype": "Data",
+   "label": "Plan Proposed"
+  },
+  {
+   "fieldname": "estimated_closure_date",
+   "fieldtype": "Date",
+   "label": "Estimated Closure Date"
+  },
+  {
+   "fieldname": "requirement_details_section",
+   "fieldtype": "Section Break",
+   "label": "Requirement Details"
+  },
+  {
+   "fieldname": "requirement",
+   "fieldtype": "Text",
+   "label": "Requirement"
+  },
+  {
+   "fieldname": "partner_tab",
+   "fieldtype": "Tab Break",
+   "label": "Partner"
+  },
+  {
+   "fieldname": "partner_details_section",
+   "fieldtype": "Section Break",
+   "label": "Partner Details"
+  },
+  {
+   "fieldname": "partner_team",
+   "fieldtype": "Link",
+   "label": "Partner Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "company_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Company Name"
+  },
+  {
+   "fieldname": "partner_territory",
+   "fieldtype": "Data",
+   "label": "Partner Territory"
+  },
+  {
+   "fieldname": "column_break_jonl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "partner_email",
+   "fieldtype": "Data",
+   "label": "Partner Email"
+  },
+  {
+   "fieldname": "partner_manager",
+   "fieldtype": "Data",
+   "label": "Partner Manager"
+  },
+  {
+   "fieldname": "feedback_tab",
+   "fieldtype": "Tab Break",
+   "label": "Feedback"
+  },
+  {
+   "fieldname": "lead_rating",
+   "fieldtype": "Rating",
+   "label": "Lead Rating"
+  },
+  {
+   "fieldname": "feedback_to_partner",
+   "fieldtype": "Small Text",
+   "label": "Feedback to Partner"
+  },
+  {
+   "fieldname": "column_break_sjll",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "feedback_for_frappe",
+   "fieldtype": "Small Text",
+   "label": "Feedback for Frappe"
+  },
+  {
+   "fieldname": "more_info_tab",
+   "fieldtype": "Tab Break",
+   "label": "More Info"
+  },
+  {
+   "fieldname": "hosting",
+   "fieldtype": "Select",
+   "label": "Hosting",
+   "options": "Frappe Cloud\nSelf Hosted"
+  },
+  {
+   "fieldname": "site_url",
+   "fieldtype": "Data",
+   "label": "Site URL"
+  },
+  {
+   "default": "Cold",
+   "fieldname": "probability",
+   "fieldtype": "Select",
+   "label": "Probability",
+   "options": "Hot\nCold\nWarm"
+  },
+  {
+   "fieldname": "column_break_jtbg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_rdxj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.status === 'Won';",
+   "fieldname": "conversion_date",
+   "fieldtype": "Date",
+   "label": "Conversion Date"
+  },
+  {
+   "depends_on": "eval:doc.status===\"Lost\"",
+   "fieldname": "lost_reason",
+   "fieldtype": "Select",
+   "label": "Lost Reason",
+   "options": "Lost to Competitor\nNo Response\nBudget Constraints\nPartner Rejected\nTrash Lead\nFree User\nNot Interested Anymore\nOther"
+  },
+  {
+   "depends_on": "eval:doc.lost_reason == 'Other'",
+   "fieldname": "lost_reason_specify",
+   "fieldtype": "Small Text",
+   "label": "Lost Reason (Specify)"
+  },
+  {
+   "depends_on": "eval:doc.origin == 'Success Pack'",
+   "fieldname": "success_pack_section",
+   "fieldtype": "Section Break",
+   "label": "Success Pack"
+  },
+  {
+   "fieldname": "erpnext_success_pack_interested_in",
+   "fieldtype": "Data",
+   "label": "ERPNext Success Pack Interested In"
+  },
+  {
+   "default": "0",
+   "fieldname": "need_demo_before_implementation",
+   "fieldtype": "Check",
+   "label": "Need Demo before Implementation"
+  },
+  {
+   "fieldname": "additional_comments",
+   "fieldtype": "Small Text",
+   "label": "Additional Comments"
+  },
+  {
+   "fieldname": "section_break_uzlc",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "followup",
+   "fieldtype": "Table",
+   "label": "Followup",
+   "options": "Lead Followup"
+  },
+  {
+   "fieldname": "next_action_date",
+   "fieldtype": "Date",
+   "label": "Next Action Date"
+  },
+  {
+   "fieldname": "details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Details"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-09-09 23:40:23.690200",
+ "modified_by": "Administrator",
+ "module": "Partner",
+ "name": "Partner Lead",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "lead_name",
+ "track_changes": 1,
+ "track_views": 1
+}

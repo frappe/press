@@ -306,6 +306,9 @@ def event_log():
 			f"https://{host_name}/api/method/email_delivery_service.controller.update_status",
 			data=data,
 		)
+	except requests.exceptions.ConnectionError:
+		# site might be down or unreachable
+		pass
 	except Exception as e:
 		log_error("Mail App: Email status update error", data=e)
 

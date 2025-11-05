@@ -14,11 +14,14 @@ from botocore.exceptions import ClientError
 from dns.resolver import Resolver
 from frappe.core.utils import find
 from frappe.desk.doctype.tag.tag import add_tag
+from frappe.query_builder import Case
 from frappe.rate_limiter import rate_limit
 from frappe.utils import flt, sbool, time_diff_in_hours
+from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
 
+from press.access.support_access import has_support_access
 from press.exceptions import (
 	AAAARecordExists,
 	ConflictingCAARecord,
@@ -41,7 +44,6 @@ from press.utils import (
 	get_current_team,
 	get_frappe_backups,
 	get_last_doc,
-	has_role,
 	log_error,
 	unique,
 )
@@ -85,18 +87,19 @@ def protected(doctypes):
 		user_type = frappe.session.data.user_type or frappe.get_cached_value(
 			"User", frappe.session.user, "user_type"
 		)
+
+		# System users have access to all endpoints.
 		if user_type == "System User":
 			return wrapped(*args, **kwargs)
 
-		name = get_protected_doctype_name(args, kwargs, doctypes)
-		if not name:
+		# Get the name of the document being accessed.
+		if not (docname := get_protected_doctype_name(args, kwargs, doctypes)):
 			frappe.throw("Name not found, API access not permitted", frappe.PermissionError)
 
-		team = get_current_team()
+		current_team = get_current_team()
 		for doctype in doctypes:
-			owner = frappe.db.get_value(doctype, name, "team")
-
-			if owner == team or has_role("Press Support Agent"):
+			document_team = frappe.db.get_value(doctype, docname, "team")
+			if document_team == current_team or has_support_access(doctype, docname):
 				return wrapped(*args, **kwargs)
 
 		frappe.throw("Not Permitted", frappe.PermissionError)
@@ -106,8 +109,8 @@ def protected(doctypes):
 
 
 def get_protected_doctype_name(args: list, kwargs: dict, doctypes: list[str]):
-	# 1. Name from kwargs["name"]
-	if name := kwargs.get("name"):
+	# 1. Name from kwargs["name"] or kwargs["doc_name"]
+	if name := (kwargs.get("name") or kwargs.get("doc_name")):
 		return name
 
 	# 2. Name from first value in filters
@@ -156,39 +159,40 @@ def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 
 	cluster = site.get("cluster") or frappe.db.get_single_value("Press Settings", "cluster")
 
-	proxy_servers = frappe.get_all("Proxy Server Domain", {"domain": domain}, pluck="parent")
-	proxy_servers = frappe.get_all(
-		"Proxy Server",
-		{"status": "Active", "name": ("in", proxy_servers)},
-		pluck="name",
+	Bench = frappe.qb.DocType("Bench")
+	Server = frappe.qb.DocType("Server")
+	ProxyServer = frappe.qb.DocType("Proxy Server")
+	ProxyServerDomain = frappe.qb.DocType("Proxy Server Domain")
+
+	proxy_servers = (
+		frappe.qb.from_(ProxyServer)
+		.join(ProxyServerDomain)
+		.on(ProxyServer.name == ProxyServerDomain.parent)
+		.select(ProxyServer.name)
+		.where(ProxyServerDomain.domain == domain)
+		.where(ProxyServer.status == "Active")
+	).run(as_dict=True)
+	proxy_servers = [d.name for d in proxy_servers]
+
+	bench_query = (
+		frappe.qb.from_(Bench)
+		.join(Server)
+		.on(Bench.server == Server.name)
+		.select(Bench.name, Bench.server)
+		.where(Server.proxy_server.isin(proxy_servers))
+		.where(Bench.status == "Active")
+		.where(Bench.group == site["group"])
+		.orderby(Case().when(Bench.cluster == cluster, 1).else_(0), order=frappe.qb.desc)
+		.orderby(Server.use_for_new_sites, order=frappe.qb.desc)
+		.orderby(Bench.creation, order=frappe.qb.desc)
+		.limit(1)
 	)
-	proxy_servers = tuple(proxy_servers) if len(proxy_servers) > 1 else f"('{proxy_servers[0]}')"
 
-	query_sub_str = ""
 	if server:
-		query_sub_str = f"AND server.name = '{server}'"
+		bench_query = bench_query.where(Server.name == server)
 
-	bench = frappe.db.sql(
-		f"""
-	SELECT
-		bench.name, bench.server, bench.cluster = '{cluster}' as in_primary_cluster
-	FROM
-		tabBench bench
-	LEFT JOIN
-		tabServer server
-	ON
-		bench.server = server.name
-	WHERE
-		server.proxy_server in {proxy_servers} AND
-		bench.status = "Active" AND
-		bench.group = '{site["group"]}'
-		{query_sub_str}
-	ORDER BY
-		in_primary_cluster DESC, server.use_for_new_sites DESC, bench.creation DESC
-	LIMIT 1
-	""",
-		as_dict=True,
-	)[0]
+	bench = bench_query.run(as_dict=True).pop()
+
 	plan = site["plan"]
 	app_plans = site.get("selected_app_plans")
 	if not ignore_plan_validation:
@@ -1097,7 +1101,7 @@ def get(name):
 
 	team = get_current_team()
 	try:
-		site = frappe.get_doc("Site", name)
+		site: "Site" = frappe.get_doc("Site", name)
 	except frappe.DoesNotExistError:
 		# If name is a custom domain then redirect to the site name
 		site_name = frappe.db.get_value("Site Domain", name, "site")
@@ -1171,7 +1175,9 @@ def get(name):
 		"server_region_info": get_server_region_info(site),
 		"can_change_plan": server.team != team or (on_dedicated_server and server.team == team),
 		"hide_config": site.hide_config,
-		"notify_email": site.notify_email,
+		"communication_infos": [
+			{"channel": c.channel, "type": c.type, "value": c.value} for c in site.communication_infos
+		],
 		"ip": ip,
 		"site_tags": [{"name": x.tag, "tag": x.tag_name} for x in site.tags],
 		"tags": frappe.get_all("Press Tag", {"team": team, "doctype_name": "Site"}, ["name", "tag"]),
@@ -1663,6 +1669,44 @@ def setup_wizard_complete(name):
 	return frappe.get_doc("Site", name).is_setup_wizard_complete()
 
 
+def get_dns_provider_mname_rname(domain):
+	from tldextract import extract
+
+	resolver = Resolver(configure=False)
+	resolver.nameservers = NAMESERVERS
+	try:
+		answer = resolver.query(domain, "SOA")
+		if len(answer) > 0:
+			mname = answer[0].mname.to_text()
+			rname = answer[0].rname.to_text()
+			return extract(mname).registered_domain, extract(rname).registered_domain
+	except dns.resolver.NoAnswer:
+		pass
+	except dns.exception.DNSException:
+		pass
+	return None
+
+
+def accessible_link_substr(provider: str):
+	try:
+		res = requests.head(f"http://{provider}", timeout=3)
+		res.raise_for_status()
+	except requests.RequestException:
+		return None
+	else:
+		return f'<a class=underline href="http://{provider}" target="_blank">{provider}</a>'
+
+
+@redis_cache()
+def get_dns_provider_link_substr(domain: str):
+	# get link to dns provider as html a tag if link is accessible
+	provider = get_dns_provider_mname_rname(domain)
+	if not provider:
+		return ""
+	mname, rname = provider
+	return f" at your DNS provider (hint: {accessible_link_substr(mname) or accessible_link_substr(rname) or rname})"  # likely rname has meaningful link
+
+
 def check_domain_allows_letsencrypt_certs(domain):
 	# Check if domain is allowed to get letsencrypt certificates
 	# This is a security measure to prevent unauthorized certificate issuance
@@ -1679,10 +1723,10 @@ def check_domain_allows_letsencrypt_certs(domain):
 	except dns.resolver.NoAnswer:
 		pass  # no CAA record. Anything goes
 	except dns.exception.DNSException:
-		pass  # We have other probems
+		pass  # We have other problems
 	else:
 		frappe.throw(
-			f"Domain {naked_domain} does not allow Let's Encrypt certificates. Please review CAA record for the same.",
+			f"Domain {naked_domain} does not allow Let's Encrypt certificates. Please update or remove <b>CAA</b> record{get_dns_provider_link_substr(domain)}.",
 			ConflictingCAARecord,
 		)
 
@@ -1705,7 +1749,7 @@ def check_dns_cname(name, domain):
 	except MultipleCNAMERecords:
 		multiple_domains = ", ".join(part.to_text() for part in answer)
 		frappe.throw(
-			f"Domain <b>{domain}</b> has multiple CNAME records: <b>{multiple_domains}</b>. Please keep only one.",
+			f"Domain <b>{domain}</b> has multiple CNAME records: <b>{multiple_domains}</b>. Please keep only one{get_dns_provider_link_substr(domain)}.",
 			MultipleCNAMERecords,
 		)
 	except dns.resolver.NoAnswer as e:
@@ -1751,7 +1795,7 @@ def check_dns_a(name, domain):
 	except MultipleARecords:
 		multiple_ips = ", ".join(part.to_text() for part in answer)
 		frappe.throw(
-			f"Domain {domain} has multiple A records: {multiple_ips}. Please keep only one.",
+			f"Domain {domain} has multiple A records: {multiple_ips}. Please keep only one{get_dns_provider_link_substr(domain)}.",
 			MultipleARecords,
 		)
 	except dns.resolver.NoAnswer as e:
@@ -1778,7 +1822,7 @@ def ensure_dns_aaaa_record_doesnt_exist(domain: str):
 		answer = resolver.query(domain, "AAAA")
 		if answer:
 			frappe.throw(
-				f"Domain {domain} has an AAAA record. This causes issues with https certificate generation. Please remove the same to proceed.",
+				f"Domain {domain} has an AAAA record. This causes issues with https certificate generation. Please remove the same{get_dns_provider_link_substr(domain)}.",
 				AAAARecordExists,
 			)
 	except dns.resolver.NoAnswer:
@@ -1791,23 +1835,16 @@ def check_domain_proxied(domain) -> str | None:
 	try:
 		res = requests.head(f"http://{domain}", timeout=3)
 	except requests.exceptions.RequestException as e:
-		frappe.throw("Unable to connect to the domain. Is the DNS correct?\n\n" + str(e))
+		frappe.throw(
+			f"Unable to connect to the domain. Is the DNS correct{get_dns_provider_link_substr(domain)}?\n\n{e!s}"
+		)
 	else:
 		if (server := res.headers.get("server")) not in ("Frappe Cloud", None):  # eg: cloudflare
 			return server
 
 
-def check_dns_cname_a(name, domain, ignore_proxying=False):
+def _check_dns_cname_a(name, domain, ignore_proxying=False):
 	check_domain_allows_letsencrypt_certs(domain)
-	proxy = check_domain_proxied(domain)
-	if proxy:
-		if ignore_proxying:  # no point checking the rest if proxied
-			return {"CNAME": {}, "A": {}, "matched": True, "type": "A"}  # assume A
-		frappe.throw(
-			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.
-			<br>You may enable it once the domain is verified.""",
-			DomainProxied,
-		)
 	ensure_dns_aaaa_record_doesnt_exist(domain)
 	cname = check_dns_cname(name, domain)
 	result = {"CNAME": cname} | cname
@@ -1819,18 +1856,45 @@ def check_dns_cname_a(name, domain, ignore_proxying=False):
 		frappe.throw(
 			f"""
 			Domain <b>{domain}</b> has correct CNAME record <b>{cname["answer"].strip().split()[-1]}</b>, but also an A record that points to an incorrect IP address <b>{a["answer"].strip().split()[-1]}</b>.
-			<br>Please remove the same or update the record.
+			<br>Please remove or update the <b>A</b> record{get_dns_provider_link_substr(domain)}.
 			""",
 			ConflictingDNSRecord,
 		)
 	if a["matched"] and cname["exists"] and not cname["matched"]:
 		frappe.throw(
-			"""
-			f"Domain <b>{domain}</b> has correct A record <b>{a['answer'].strip().split()[-1]}</b>, but also a CNAME record that points to an incorrect domain <b>{cname['answer'].strip().split()[-1]}</b>.
-			<br>Please remove the same or update the record.
+			f"""
+			Domain <b>{domain}</b> has correct A record <b>{a["answer"].strip().split()[-1]}</b>, but also a CNAME record that points to an incorrect domain <b>{cname["answer"].strip().split()[-1]}</b>.
+			<br>Please remove or update the <b>CNAME</b> record{get_dns_provider_link_substr(domain)}.
 			""",
 			ConflictingDNSRecord,
 		)
+
+	proxy = check_domain_proxied(domain)
+	if proxy:
+		if ignore_proxying:  # no point checking the rest if proxied
+			return {"CNAME": {}, "A": {}, "matched": True, "type": "A"}  # assume A
+		frappe.throw(
+			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying{get_dns_provider_link_substr(domain)} and try again in some time.
+			<br>You may enable it once the domain is verified.""",
+			DomainProxied,
+		)
+
+	result["valid"] = cname["matched"] or a["matched"]
+	return result
+
+
+def check_dns_cname_a(name, domain, ignore_proxying=False, throw_error=True):
+	if throw_error:
+		return _check_dns_cname_a(name, domain, ignore_proxying)
+
+	result = {}
+	try:
+		result = _check_dns_cname_a(name, domain, ignore_proxying)
+
+	except Exception as e:
+		result["exc_type"] = e.__class__.__name__
+		result["exc_message"] = str(e)
+		result["valid"] = False
 
 	return result
 
@@ -2101,14 +2165,6 @@ def get_job_status(job_name):
 
 @frappe.whitelist()
 @protected("Site")
-def change_notify_email(name, email):
-	site_doc = frappe.get_doc("Site", name)
-	site_doc.notify_email = email
-	site_doc.save(ignore_permissions=True)
-
-
-@frappe.whitelist()
-@protected("Site")
 def send_change_team_request(name, team_mail_id, reason):
 	frappe.get_doc("Site", name).send_change_team_request(team_mail_id, reason)
 
@@ -2185,6 +2241,9 @@ def add_server_to_release_group(name, group_name, server=None):
 			)
 		else:
 			frappe.throw(str(e), type(e))
+
+	if isinstance(deploy, str):
+		return None
 
 	bench = find(deploy.benches, lambda bench: bench.server == server).bench
 	return frappe.get_value("Agent Job", {"bench": bench, "job_type": "New Bench"}, "name")

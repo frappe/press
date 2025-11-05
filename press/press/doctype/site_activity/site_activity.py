@@ -5,6 +5,8 @@ from __future__ import annotations
 import frappe
 from frappe.model.document import Document
 
+from press.press.doctype.communication_info.communication_info import get_communication_info
+
 
 class SiteActivity(Document):
 	# begin: auto-generated types
@@ -34,11 +36,14 @@ class SiteActivity(Document):
 			"Update",
 			"Update Configuration",
 			"Drop Offsite Backups",
+			"Drop Physical Backups",
 			"Enable Database Access",
 			"Disable Database Access",
 			"Create Database User",
 			"Remove Database User",
 			"Modify Database User Permissions",
+			"Disable Monitoring And Alerts",
+			"Enable Monitoring And Alerts",
 		]
 		job: DF.Link | None
 		reason: DF.SmallText | None
@@ -49,16 +54,29 @@ class SiteActivity(Document):
 	dashboard_fields = ("action", "reason", "site", "job")
 
 	def after_insert(self):
+		if self.team == "Administrator":
+			return
+
 		if self.action == "Login as Administrator" and self.reason:
-			d = frappe.get_all("Site", {"name": self.site}, ["notify_email", "team"])[0]
-			recipient = d.notify_email or frappe.get_doc("Team", d.team).user
-			if recipient:
-				team = frappe.get_doc("Team", d.team)
-				team.notify_with_email(
-					[recipient],
+			recipients = get_communication_info("Email", "Site Activity", "Site", self.site)
+			if recipients:
+				frappe.sendmail(
+					recipients=recipients,
 					subject="Administrator login to your site",
 					template="admin_login",
 					args={"site": self.site, "user": self.owner, "reason": self.reason},
+					reference_doctype=self.doctype,
+					reference_name=self.name,
+				)
+
+		if self.action == "Disable Monitoring And Alerts" and self.reason:
+			recipients = get_communication_info("Email", "Site Activity", "Site", self.site)
+			if recipients:
+				frappe.sendmail(
+					recipients=recipients,
+					subject="Site Monitoring Disabled",
+					template="disabled_site_monitoring",
+					args={"site": self.site, "reason": self.reason},
 					reference_doctype=self.doctype,
 					reference_name=self.name,
 				)

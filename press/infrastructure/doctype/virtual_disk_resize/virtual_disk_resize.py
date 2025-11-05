@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import time
+import typing
 from enum import Enum
 
 import botocore
@@ -13,6 +14,9 @@ from frappe.core.utils import find, find_all
 from frappe.model.document import Document
 
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
+
+if typing.TYPE_CHECKING:
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 SUPPORTED_FILESYSTEMS = ["ext4"]
 
@@ -57,9 +61,18 @@ class VirtualDiskResize(Document):
 		old_volume_size: DF.Int
 		old_volume_status: DF.Literal["Attached", "Deleted"]
 		old_volume_throughput: DF.Int
+		scheduled_time: DF.Datetime | None
 		service: DF.Data | None
 		start: DF.Datetime | None
-		status: DF.Literal["Pending", "Running", "Success", "Failure"]
+		status: DF.Literal[
+			"Scheduled",
+			"Pending",
+			"Preparing",
+			"Ready",
+			"Running",
+			"Success",
+			"Failure",
+		]
 		steps: DF.Table[VirtualMachineMigrationStep]
 		virtual_disk_snapshot: DF.Link | None
 		virtual_machine: DF.Link
@@ -72,10 +85,36 @@ class VirtualDiskResize(Document):
 		self.add_steps()
 
 	def after_insert(self):
-		self.set_filesystem_attributes()
-		self.set_new_volume_attributes()
-		self.create_new_volume()
+		"""Enqueue current volume attribute fetch and volume creation"""
+		if not self.scheduled_time:
+			self.status = Status.Pending
+			self.save()
+
+	def run_prerequisites(self):
+		try:
+			self.status = Status.Preparing
+			self.save()
+			self.set_filesystem_attributes()
+			self.set_new_volume_attributes()
+			self.create_new_volume()
+			self.status = Status.Ready
+			self.save()
+		except frappe.QueryTimeoutError:
+			frappe.db.rollback()
+			self.status = Status.Scheduled
+			self.save()
+		except Exception as e:
+			frappe.log_error(message=str(e), title="Virtual Disk Resize Prerequisites Failed")
+			self.status = Status.Failure
+			self.save()
+
+	@frappe.whitelist()
+	def execute(self):
+		self.run_prerequisites()
+		self.status = Status.Running
+		self.start = frappe.utils.now_datetime()
 		self.save()
+		self.next()
 
 	def add_steps(self):
 		for step in self.shrink_steps:
@@ -113,6 +152,7 @@ class VirtualDiskResize(Document):
 
 		self.devices = json.dumps(devices, indent=2)
 		self.filesystems = json.dumps(filesystems, indent=2)
+		self.save()
 
 	def fetch_devices(self):
 		device_name = self._get_device_from_volume_id(self.old_volume_id)
@@ -225,12 +265,23 @@ class VirtualDiskResize(Document):
 		if device["mountpoint"] != filesystem["mount_point"]:
 			frappe.throw("Device and Filesystem mount point don't match. Can't shrink")
 
+	def reaffirm_old_filesystem_used(self, mountpoint: str):
+		"""Reaffirm file system usage using du"""
+		output = self.ansible_run(f"du -s {mountpoint}")["output"]
+
+		if not output:
+			frappe.throw("Error occurred while fetching filesystem size")
+
+		size = float(output.split()[0])
+		size *= 512  # du measures size in units of 512-byte blocks
+		return size / 1024**3
+
 	def set_old_filesystem_attributes(self, device, filesystem):
 		self.filesystem_mount_point = device["mountpoint"]
 		self.filesystem_type = device["fstype"]
 		self.old_filesystem_uuid = device["uuid"]
 		self.old_filesystem_size = filesystem["size"]
-		self.old_filesystem_used = filesystem["used"]
+		self.old_filesystem_used = self.reaffirm_old_filesystem_used(device["mountpoint"])
 
 		SERVICES = {
 			"/opt/volumes/benches": "docker",
@@ -243,8 +294,10 @@ class VirtualDiskResize(Document):
 		root_volume = machine.get_root_volume()
 
 		volumes = find_all(machine.volumes, lambda v: v.volume_id != root_volume.volume_id)
-		if len(volumes) != 1:
-			frappe.throw("Multiple volumes found. Please select the volume to shrink")
+		if len(volumes) == 0:
+			frappe.throw("No additional volumes found. Cannot shrink any volume.")
+		elif len(volumes) > 1:
+			frappe.throw("Multiple volumes found. Please select the volume to shrink.")
 
 		self.old_volume_id = volumes[0].volume_id
 
@@ -263,14 +316,29 @@ class VirtualDiskResize(Document):
 		new_size = int(self.old_filesystem_used * 100 / 85)
 		self.new_filesystem_size = max(new_size, 10)  # Minimum 10 GB
 		self.new_volume_size = max(self.new_filesystem_size, self.expected_disk_size)
+
+		if self.new_volume_size != self.expected_disk_size:
+			self.status = Status.Failure
+			self.save()
+			frappe.throw(
+				f"Volume size mismatch expected: {self.expected_disk_size} resolved: {self.new_volume_size}",
+				frappe.ValidationError,
+			)
+
 		self.new_volume_iops, self.new_volume_throughput = self.get_optimal_performance_attributes()
+		self.save()
 
 	def create_new_volume(self):
-		# Create new volume
+		# Lock the row to prevent concurrent modifications
+		frappe.get_value("Virtual Machine", self.virtual_machine, "status", for_update=True)
+
 		self.new_volume_id = self.machine.attach_new_volume(
-			self.new_volume_size, iops=self.new_volume_iops, throughput=self.new_volume_throughput
+			self.new_volume_size,
+			iops=self.new_volume_iops,
+			throughput=self.new_volume_throughput,
 		)
 		self.new_volume_status = "Attached"
+		self.save()
 
 	def get_optimal_performance_attributes(self):
 		MAX_THROUGHPUT = 1000  # 1000 MB/s
@@ -359,7 +427,10 @@ class VirtualDiskResize(Document):
 
 		snapshots = frappe.get_all(
 			"Virtual Disk Snapshot",
-			{"name": ("in", machine.flags.created_snapshots), "volume_id": self.old_volume_id},
+			{
+				"name": ("in", machine.flags.created_snapshots),
+				"volume_id": self.old_volume_id,
+			},
 			pluck="name",
 		)
 		if len(snapshots) == 0:
@@ -461,8 +532,16 @@ class VirtualDiskResize(Document):
 			server.save()
 		return StepStatus.Success
 
+	def restart_machine(self) -> StepStatus:
+		"""Restart machine (in case of f servers)"""
+		if self.machine.series != "f":
+			return StepStatus.Success
+
+		self.machine.reboot()
+		return StepStatus.Success
+
 	@property
-	def machine(self):
+	def machine(self) -> "VirtualMachine":
 		return frappe.get_doc("Virtual Machine", self.virtual_machine)
 
 	@property
@@ -489,6 +568,7 @@ class VirtualDiskResize(Document):
 			(self.reduce_performance_of_new_volume, NoWait),
 			(self.delete_old_volume, NoWait),
 			(self.propagate_volume_id, NoWait),
+			(self.restart_machine, NoWait),
 		]
 
 		steps = []
@@ -501,13 +581,6 @@ class VirtualDiskResize(Document):
 				}
 			)
 		return steps
-
-	@frappe.whitelist()
-	def execute(self):
-		self.status = Status.Running
-		self.start = frappe.utils.now_datetime()
-		self.save()
-		self.next()
 
 	def fail(self) -> None:
 		self.status = Status.Failure
@@ -634,10 +707,31 @@ class StepStatus(str, Enum):
 
 
 class Status(str, Enum):
+	Scheduled = "Scheduled"
 	Pending = "Pending"
+	Preparing = "Preparing"
+	Ready = "Ready"
 	Running = "Running"
 	Success = "Success"
 	Failure = "Failure"
 
 	def __str__(self):
 		return self.value
+
+
+def run_scheduled_resizes():
+	resize_tasks = frappe.get_all(
+		"Virtual Disk Resize",
+		filters={"scheduled_time": ("<=", frappe.utils.now()), "status": Status.Scheduled},
+		fields=["name", "virtual_machine"],
+	)
+	for task in resize_tasks:
+		frappe.enqueue_doc(
+			"Virtual Disk Resize",
+			task.name,
+			"execute",
+			queue="long",
+			timeout=2400,
+			deduplicate=True,
+			job_id=f"resize_job:{task.virtual_machine}",
+		)

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 import frappe
 import rq
@@ -18,6 +18,9 @@ from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
 from press.utils.dns import create_dns_record
 from press.utils.jobs import has_job_timeout_exceeded
+
+if TYPE_CHECKING:
+	from press.press.doctype.site.site import Site
 
 
 class SiteDomain(Document):
@@ -68,16 +71,24 @@ class SiteDomain(Document):
 		if site:
 			frappe.throw(f"Domain {self.domain} is already taken. Please choose a different domain.")
 
+	@property
+	def agent(self):
+		server = frappe.db.get_value("Site", self.site, "server")
+		is_standalone = frappe.db.get_value("Server", server, "is_standalone")
+		if is_standalone:
+			agent = Agent(server, server_type="Server")
+		else:
+			proxy_server = frappe.db.get_value("Server", server, "proxy_server")
+			agent = Agent(proxy_server, server_type="Proxy Server")
+		return agent
+
 	def after_insert(self):
 		if self.default:
 			return
 
 		if self.has_root_tls_certificate:
 			server = frappe.db.get_value("Site", self.site, "server")
-			proxy_server = frappe.db.get_value("Server", server, "proxy_server")
-
-			agent = Agent(server=proxy_server, server_type="Proxy Server")
-			agent.add_domain_to_upstream(server=server, site=self.site, domain=self.domain)
+			self.agent.add_domain_to_upstream(server=server, site=self.site, domain=self.domain)
 			return
 
 		self.create_tls_certificate()
@@ -105,7 +116,7 @@ class SiteDomain(Document):
 		return bool(frappe.db.exists("Root Domain", self.domain.split(".", 1)[1], "name"))
 
 	def setup_redirect_in_proxy(self):
-		site = frappe.get_doc("Site", self.site)
+		site: Site = frappe.get_doc("Site", self.site)
 		target = site.host_name
 		if target == self.name:
 			frappe.throw("Primary domain can't be redirected.", exc=frappe.exceptions.ValidationError)
@@ -146,24 +157,10 @@ class SiteDomain(Document):
 			self.save()
 
 	def create_agent_request(self):
-		server = frappe.db.get_value("Site", self.site, "server")
-		is_standalone = frappe.db.get_value("Server", server, "is_standalone")
-		if is_standalone:
-			agent = Agent(server, server_type="Server")
-		else:
-			proxy_server = frappe.db.get_value("Server", server, "proxy_server")
-			agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.new_host(self)
+		self.agent.new_host(self)
 
 	def create_remove_host_agent_request(self):
-		server = frappe.db.get_value("Site", self.site, "server")
-		is_standalone = frappe.db.get_value("Server", server, "is_standalone")
-		if is_standalone:
-			agent = Agent(server, server_type="Server")
-		else:
-			proxy_server = frappe.db.get_value("Server", server, "proxy_server")
-			agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.remove_host(self)
+		self.agent.remove_host(self)
 
 	def retry(self):
 		self.status = "Pending"

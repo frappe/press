@@ -38,6 +38,15 @@
 				</Button>
 			</div>
 		</div>
+		<ListItem
+			title="Notification Settings"
+			subtitle="Manage notification channels"
+			v-if="$team?.doc?.user === $session?.user"
+		>
+			<template #actions>
+				<Button @click="showCommunicationInfoDialog = true"> Manage </Button>
+			</template>
+		</ListItem>
 		<div>
 			<ListItem
 				title="Become Marketplace Developer"
@@ -195,6 +204,14 @@
 			v-model="showAddPrepaidCreditsDialog"
 			@success="reloadAccount"
 		/>
+
+		<CommunicationInfoDialog
+			v-if="showCommunicationInfoDialog"
+			v-model="showCommunicationInfoDialog"
+			@close="showCommunicationInfoDialog = false"
+			reference-doctype="Team"
+			:reference-name="$team.doc.name"
+		/>
 	</Card>
 	<TFADialog v-model="show2FADialog" />
 	<TFARecoveryCodesDialog v-model="show2FARecoveryCodesDialog" />
@@ -209,6 +226,7 @@ import TFADialog from './TFADialog.vue';
 import TFARecoveryCodesDialog from './TFARecoveryCodesDialog.vue';
 import router from '../../../router';
 import AddPrepaidCreditsDialog from '../../billing/AddPrepaidCreditsDialog.vue';
+import CommunicationInfoDialog from '../../CommunicationInfoDialog.vue';
 
 export default {
 	name: 'AccountProfile',
@@ -227,6 +245,7 @@ export default {
 			showEnableAccountDialog: false,
 			showDisableAccountDialog: false,
 			showAddPrepaidCreditsDialog: false,
+			showCommunicationInfoDialog: false,
 			showActiveServersDialog: false,
 			showMessage: false,
 			draftInvoice: {},

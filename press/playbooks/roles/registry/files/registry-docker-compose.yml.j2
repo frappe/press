@@ -1,0 +1,52 @@
+version: "3.8"
+services:
+  registry:
+    image: registry:latest
+    environment:
+      REGISTRY_LOG_LEVEL: "info"
+      REGISTRY_LOG_ACCESSLOG_DISABLED: "false"
+      REGISTRY_HTTP_DEBUG_ADDR: ":5001"
+      REGISTRY_HTTP_DEBUG_PROMETHEUS_ENABLED: "true"
+{%- if not (is_mirror | string == '1') %}
+
+      REGISTRY_STORAGE: s3
+      REGISTRY_STORAGE_S3_ACCESSKEY: {{ access_key }}
+      REGISTRY_STORAGE_S3_SECRETKEY: "{{ secret_key }}"
+      REGISTRY_STORAGE_S3_REGIONENDPOINT: {{ region_endpoint }}
+      REGISTRY_STORAGE_S3_REGION: {{ region }}
+      REGISTRY_STORAGE_S3_BUCKET: {{ bucket_name }}
+      REGISTRY_STORAGE_S3_V4AUTH: "true"
+      REGISTRY_STORAGE_DELETE_ENABLED: "true"
+{%- endif %}
+
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+    volumes:
+{%- if (is_mirror | string == '1') %}
+
+      - type: bind
+        source: {{ docker_data_mountpoint }}
+        target: /var/lib/registry
+{%- endif %}
+
+      - type: bind
+        source: /home/frappe/registry/config.yml
+        target: {{ container_registry_config_path }}
+
+{%- if not (is_mirror | string == '1') %}
+
+  registry-ui:
+    image: joxit/docker-registry-ui:latest
+    environment:
+      REGISTRY_TITLE: Frappe Cloud Registry
+      REGISTRY_URL: {{ registry_url }}
+      NGINX_PROXY_PASS_URL: http://registry:5000
+      DELETE_IMAGES: "true"
+      SINGLE_REGISTRY: "true"
+    ports:
+      - "127.0.0.1:6000:80"
+    depends_on:
+      - registry
+{%- endif %}
+

@@ -15,7 +15,8 @@ from frappe.utils.data import add_to_date, now_datetime
 from frappe.utils.telemetry import init_telemetry
 
 from press.api.client import dashboard_whitelist
-from press.utils import log_error
+from press.press.doctype.root_domain.root_domain import get_domains
+from press.utils import log_error, validate_subdomain
 
 if TYPE_CHECKING:
 	from press.press.doctype.site.site import Site
@@ -35,7 +36,10 @@ class ProductTrialRequest(Document):
 		agent_job: DF.Link | None
 		cluster: DF.Link | None
 		domain: DF.Data | None
+		error: DF.Code | None
+		is_site_accessible: DF.Literal["Not Checked", "Yes", "No"]
 		is_standby_site: DF.Check
+		is_subscription_created: DF.Check
 		product_trial: DF.Link | None
 		site: DF.Link | None
 		site_creation_completed_on: DF.Datetime | None
@@ -121,6 +125,23 @@ class ProductTrialRequest(Document):
 		with suppress(Exception):
 			ph and ph.alias(previous_id=self.account_request, distinct_id=new_alias)
 
+	def check_site_accessible(self):
+		"""
+		Checks if the site is accessible (HTTP 200, no redirects).
+		Sets self.is_site_accessible to Yes, No, or Not Checked.
+		"""
+		import requests
+
+		url = f"https://{self.domain or self.site}"
+		try:
+			response = requests.get(url, allow_redirects=False, timeout=5)
+			if response.status_code == 200:
+				self.db_set("is_site_accessible", "Yes")
+			else:
+				self.db_set({"is_site_accessible": "No"})
+		except Exception as e:
+			self.db_set({"is_site_accessible": "No", "error": str(e)})
+
 	def after_insert(self):
 		self.capture_posthog_event("product_trial_request_created")
 
@@ -193,6 +214,11 @@ class ProductTrialRequest(Document):
 			)
 			frappe.throw(f"Failed to generate payload for Setup Wizard: {e}")
 
+	def validate_subdomain_and_domain(self, subdomain: str, domain: str):
+		validate_subdomain(subdomain)
+		if domain not in get_domains():
+			frappe.throw("Invalid domain")
+
 	@dashboard_whitelist()
 	def create_site(self, subdomain: str, domain: str):
 		"""
@@ -204,8 +230,7 @@ class ProductTrialRequest(Document):
 		if self.status != "Pending":
 			return
 
-		if not subdomain:
-			frappe.throw("Subdomain is required to create a site.")
+		self.validate_subdomain_and_domain(subdomain, domain)
 
 		try:
 			product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
@@ -224,6 +249,8 @@ class ProductTrialRequest(Document):
 			self.is_standby_site = is_standby_site
 			self.agent_job = agent_job_name
 			self.site = site.name
+			if not is_standby_site:
+				self.is_subscription_created = 1
 			self.save()
 
 			if is_standby_site:
@@ -248,6 +275,7 @@ class ProductTrialRequest(Document):
 				reference_name=self.name,
 			)
 			self.status = "Error"
+			self.error = str(e)
 			self.save()
 
 	@dashboard_whitelist()
@@ -264,7 +292,7 @@ class ProductTrialRequest(Document):
 		)
 		if status == "Success":
 			if self.status == "Site Created":
-				return {"progress": 100}
+				return {"progress": 100, "current_step": self.status}
 			if self.status == "Adding Domain":
 				return {"progress": 90, "current_step": self.status}
 			return {"progress": 80, "current_step": self.status}
@@ -331,7 +359,8 @@ class ProductTrialRequest(Document):
 			return f"https://{self.domain or self.site}{redirect_to_after_login}?sid={sid}"
 
 		sid = site.get_login_sid()
-		return f"https://{self.domain or self.site}/desk?sid={sid}"
+		self.check_site_accessible()
+		return f"https://{self.domain or self.site}/app?sid={sid}"
 
 
 def get_app_trial_page_url():

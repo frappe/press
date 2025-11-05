@@ -24,12 +24,7 @@
 					$team.doc.payment_mode
 				"
 			/>
-			<AlertBanner
-				v-if="banner?.enabled"
-				class="mb-5"
-				:title="`<b>${banner.title}:</b> ${banner.message}`"
-				:type="banner.type.toLowerCase()"
-			/>
+			<CustomAlerts ctx_type="List Page" />
 			<AlertMandateInfo
 				class="mb-5"
 				v-if="
@@ -41,7 +36,9 @@
 			/>
 			<AlertUnpaidInvoices
 				class="mb-5"
-				v-if="hasUnpaidInvoices > 0 && $team.doc.payment_mode == 'Prepaid Credits'"
+				v-if="
+					hasUnpaidInvoices > 0 && $team.doc.payment_mode == 'Prepaid Credits'
+				"
 				:amount="hasUnpaidInvoices"
 			/>
 			<ObjectList :options="listOptions" />
@@ -56,7 +53,6 @@ import { Breadcrumbs, Button, Dropdown, TextInput } from 'frappe-ui';
 import { getObject } from '../objects';
 import { defineAsyncComponent } from 'vue';
 import dayjs from '../utils/dayjs';
-import AlertBanner from '../components/AlertBanner.vue';
 
 export default {
 	components: {
@@ -66,7 +62,6 @@ export default {
 		Button,
 		Dropdown,
 		TextInput,
-		AlertBanner,
 		AlertAddPaymentMode: defineAsyncComponent(
 			() => import('../components/AlertAddPaymentMode.vue'),
 		),
@@ -81,6 +76,9 @@ export default {
 		),
 		AlertUnpaidInvoices: defineAsyncComponent(
 			() => import('../components/AlertUnpaidInvoices.vue'),
+		),
+		CustomAlerts: defineAsyncComponent(
+			() => import('../components/CustomAlerts.vue'),
 		),
 	},
 	props: {
@@ -122,9 +120,6 @@ export default {
 				return false;
 			}
 		},
-		banner() {
-			return this.$resources.banner.doc;
-		},
 		isMandateNotSet() {
 			return !this.$team.doc?.payment_method?.stripe_mandate_id;
 		},
@@ -133,13 +128,6 @@ export default {
 		},
 	},
 	resources: {
-		banner() {
-			return {
-				type: 'document',
-				doctype: 'Dashboard Banner',
-				name: 'Dashboard Banner',
-			};
-		},
 		getAmountDue() {
 			return {
 				url: 'press.api.billing.total_unpaid_amount',

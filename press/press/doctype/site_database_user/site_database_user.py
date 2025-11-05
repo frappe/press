@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter
+from typing import TYPE_CHECKING
 
 import frappe
 import frappe.utils
@@ -15,6 +16,9 @@ from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.site_activity.site_activity import log_site_activity
+
+if TYPE_CHECKING:
+	from press.press.doctype.site.site import Site
 
 
 class SiteDatabaseUser(Document):
@@ -31,18 +35,18 @@ class SiteDatabaseUser(Document):
 		)
 
 		failed_agent_job: DF.Link | None
-		failure_reason: DF.SmallText
+		failure_reason: DF.SmallText | None
 		label: DF.Data
 		max_connections: DF.Int
 		mode: DF.Literal["read_only", "read_write", "granular"]
-		password: DF.Password
+		password: DF.Password | None
 		permissions: DF.Table[SiteDatabaseTablePermission]
 		site: DF.Link
 		status: DF.Literal["Pending", "Active", "Failed", "Archived"]
 		team: DF.Link
 		user_added_in_proxysql: DF.Check
 		user_created_in_database: DF.Check
-		username: DF.Data
+		username: DF.Data | None
 	# end: auto-generated types
 
 	dashboard_fields = (
@@ -74,7 +78,7 @@ class SiteDatabaseUser(Document):
 			)
 
 	def before_insert(self):
-		site = frappe.get_doc("Site", self.site)
+		site: Site = frappe.get_doc("Site", self.site)
 		if not site.has_permission():
 			frappe.throw("You don't have permission to create database user")
 		if not frappe.db.get_value("Site Plan", site.plan, "database_access"):

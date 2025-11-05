@@ -59,6 +59,10 @@ if TYPE_CHECKING:
 		key: str
 		histogram_of_method: HistogramOfMethod
 
+	class MetricType(TypedDict):
+		date: str
+		value: float
+
 
 class ResourceType(Enum):
 	SITE = "site"
@@ -449,6 +453,158 @@ class SlowLogGroupByChart(StackedGroupByChart):
 		return res
 
 
+def _query_prometheus(query: dict[str, str]) -> dict[str, float | str]:
+	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
+	url = f"https://{monitor_server}/prometheus/api/v1/query_range"
+	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
+	return requests.get(url, params=query, auth=("frappe", password)).json()
+
+
+def _parse_datetime_in_metrics(timestamp: float, timezone: str) -> str:
+	return str(datetime.fromtimestamp(timestamp, tz=pytz_timezone(timezone)))
+
+
+def _get_cadvisor_data(promql_query: str, timezone: str, timespan: int, timegrain: int):
+	end = datetime.now(pytz_timezone(timezone))
+	start = frappe.utils.add_to_date(end, seconds=-timespan)
+	datasets = []
+	labels = []
+
+	query = {
+		"query": promql_query,
+		"start": start.timestamp(),
+		"end": end.timestamp(),
+		"step": f"{timegrain}s",
+	}
+
+	result = _query_prometheus(query)["data"]["result"]
+
+	if not result:
+		return None
+
+	for res in result:
+		datasets.append(
+			{"name": res["metric"]["name"], "values": [float(value[1]) for value in res["values"]]}
+		)
+
+	for metric in res["values"]:
+		labels.append(_parse_datetime_in_metrics(metric[0], timezone))
+
+	return datasets, labels
+
+
+def get_metrics(
+	promql_query: str,
+	timezone: str,
+	response_key: str,
+	name: str | None = None,
+	duration: str = "24h",
+):
+	if not name:
+		frappe.throw("No release group found!")
+
+	benches = frappe.get_all("Bench", {"status": "Active", "group": name}, pluck="name")
+
+	if not benches:
+		frappe.throw("No active benches found!")
+
+	benches = "|".join(benches)
+	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
+
+	try:
+		promql_query = promql_query.format(benches=benches)
+		datasets, labels = _get_cadvisor_data(promql_query, timezone, timespan, timegrain)
+		return {response_key: {"datasets": datasets, "labels": labels}}
+	except ValueError:
+		frappe.throw("Unable to fetch metrics")
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def get_fs_read_bytes(name: str, timezone: str, duration: str = "24h"):
+	promql_query = (
+		'sum by (name) (rate(container_fs_reads_bytes_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
+	)
+	return get_metrics(
+		promql_query=promql_query,
+		timezone=timezone,
+		response_key="read_bytes_fs",
+		name=name,
+		duration=duration,
+	)
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def get_fs_write_bytes(name: str, timezone: str, duration: str = "24h"):
+	promql_query = (
+		'sum by (name) (rate(container_fs_writes_bytes_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
+	)
+	return get_metrics(
+		promql_query=promql_query,
+		timezone=timezone,
+		response_key="write_bytes_fs",
+		name=name,
+		duration=duration,
+	)
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def get_outgoing_network_traffic(name: str, timezone: str, duration: str = "24h"):
+	promql_query = 'sum by (name) (rate(container_network_transmit_bytes_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
+	return get_metrics(
+		promql_query=promql_query,
+		timezone=timezone,
+		response_key="network_traffic_outward",
+		name=name,
+		duration=duration,
+	)
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def get_incoming_network_traffic(name: str, timezone: str, duration: str = "24h"):
+	promql_query = (
+		'sum by (name) (rate(container_network_receive_bytes_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
+	)
+	return get_metrics(
+		promql_query=promql_query,
+		timezone=timezone,
+		response_key="network_traffic_inward",
+		name=name,
+		duration=duration,
+	)
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def get_memory_usage(name: str, timezone: str, duration: str = "24h"):
+	promql_query = 'sum by (name) (avg_over_time(container_memory_usage_bytes{{job="cadvisor", name=~"{benches}"}}[5m]) / 1024 / 1024 / 1024)'
+	return get_metrics(
+		promql_query=promql_query,
+		timezone=timezone,
+		response_key="memory",
+		name=name,
+		duration=duration,
+	)
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def get_cpu_usage(name: str, timezone: str, duration: str = "24h"):
+	promql_query = (
+		'sum by (name) ( rate(container_cpu_usage_seconds_total{{job="cadvisor", name=~"{benches}"}}[5m]))'
+	)
+	return get_metrics(
+		promql_query=promql_query,
+		timezone=timezone,
+		response_key="cpu",
+		name=name,
+		duration=duration,
+	)
+
+
 @frappe.whitelist()
 @protected("Site")
 @redis_cache(ttl=10 * 60)
@@ -510,8 +666,8 @@ def get_advanced_analytics(name, timezone, duration="7d", max_no_of_paths=MAX_NO
 		name, "duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
 	)
 
-	background_job_duration_by_method = get_background_job_by_method(
-		name, "duration", timezone, timespan, timegrain, max_no_of_paths
+	background_job_duration_by_method = get_background_job_by_(
+		name, "duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
 	)
 
 	return (
@@ -526,12 +682,12 @@ def get_advanced_analytics(name, timezone, duration="7d", max_no_of_paths=MAX_NO
 			"request_count_by_ip": get_nginx_request_by_(
 				name, "count", timezone, timespan, timegrain, max_no_of_paths
 			),
-			"background_job_count_by_method": get_background_job_by_method(
-				name, "count", timezone, timespan, timegrain, max_no_of_paths
+			"background_job_count_by_method": get_background_job_by_(
+				name, "count", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
 			),
 			"background_job_duration_by_method": background_job_duration_by_method,
-			"average_background_job_duration_by_method": get_background_job_by_method(
-				name, "average_duration", timezone, timespan, timegrain, max_no_of_paths
+			"average_background_job_duration_by_method": get_background_job_by_(
+				name, "average_duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
 			),
 			"job_count": [{"value": r.count, "date": r.date} for r in job_data],
 			"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
@@ -679,9 +835,17 @@ def get_nginx_request_by_(
 
 
 @redis_cache(ttl=10 * 60)
-def get_background_job_by_method(site, agg_type, timezone, timespan, timegrain, max_no_of_paths):
+def get_background_job_by_(
+	site,
+	agg_type,
+	timezone,
+	timespan,
+	timegrain,
+	resource_type=ResourceType.SITE,
+	max_no_of_paths=MAX_NO_OF_PATHS,
+):
 	return BackgroundJobGroupByChart(
-		site, agg_type, timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+		site, agg_type, timezone, timespan, timegrain, resource_type, max_no_of_paths
 	).run()
 
 

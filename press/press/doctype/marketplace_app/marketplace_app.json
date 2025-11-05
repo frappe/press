@@ -13,6 +13,7 @@
   "column_break_3",
   "team",
   "route",
+  "published_on",
   "section_break_7",
   "frappe_approved",
   "subscription_type",
@@ -55,9 +56,10 @@
   "run_after_uninstall_script",
   "after_uninstall_script",
   "review_tab",
+  "status",
+  "column_break_bcjk",
   "stop_auto_review",
   "review_stage",
-  "status",
   "dashboard_tab",
   "onboarding_related_section",
   "show_for_site_creation",
@@ -402,6 +404,15 @@
    "fieldname": "collect_feedback",
    "fieldtype": "Check",
    "label": "Collect Feedback"
+  },
+  {
+   "fieldname": "column_break_bcjk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "published_on",
+   "fieldtype": "Date",
+   "label": "Published On"
   }
  ],
  "grid_page_length": 50,
@@ -426,7 +437,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2025-03-20 16:54:10.343806",
+ "modified": "2025-09-30 11:48:31.952469",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
@@ -441,6 +452,19 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Marketplace Manager",
+   "select": 1,
    "share": 1,
    "write": 1
   }

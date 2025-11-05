@@ -23,15 +23,14 @@
 <script setup>
 import { getCachedDocumentResource, createDocumentResource } from 'frappe-ui';
 import { toast } from 'vue-sonner';
-import {
-	confirmDialog,
-	renderDialog,
-	renderInDialog,
-} from '../../utils/components';
+import { confirmDialog, renderDialog } from '../../utils/components';
 import router from '../../router';
 import { getToastErrorMessage } from '../../utils/toast';
 import DatabaseConfigurationDialog from './DatabaseConfigurationDialog.vue';
+import DatabaseBinlogsDialog from './DatabaseBinlogsDialog.vue';
+import CleanupDialog from './CleanupDialog.vue';
 import { h } from 'vue';
+import CommunicationInfoDialog from '../CommunicationInfoDialog.vue';
 
 const props = defineProps({
 	serverName: { type: String, required: true },
@@ -47,18 +46,42 @@ const server = getCachedDocumentResource(props.serverType, props.serverName);
 
 function getServerActionHandler(action) {
 	const actionHandlers = {
+		'Notification Settings': onNotificationSettings,
 		'Reboot server': onRebootServer,
 		'Rename server': onRenameServer,
 		'Drop server': onDropServer,
+		'Cleanup Server': onCleanupServer,
 		'Enable Performance Schema': onEnablePerformanceSchema,
 		'Disable Performance Schema': onDisablePerformanceSchema,
 		'Update InnoDB Buffer Pool Size': onUpdateInnodbBufferPoolSize,
 		'Update Max DB Connections': onUpdateMaxDBConnections,
 		'View Database Configuration': onViewDatabaseConfiguration,
+		'Update Binlog Retention': onUpdateBinlogRetention,
+		'Update Binlog Size Limit': onUpdateBinlogSizeLimit,
+		'Manage Database Binlogs': onViewMariaDBBinlogs,
 	};
 	if (actionHandlers[action]) {
 		actionHandlers[action].call(this);
 	}
+}
+
+function onNotificationSettings() {
+	if (!server?.doc) return;
+	return renderDialog(
+		h(CommunicationInfoDialog, {
+			referenceDoctype: 'Server',
+			referenceName: server.doc.name,
+		}),
+	);
+}
+
+function onCleanupServer() {
+	renderDialog(
+		h(CleanupDialog, {
+			server: server,
+			title: 'Server Cleanup',
+		}),
+	);
 }
 
 function onRebootServer() {
@@ -343,6 +366,111 @@ function onUpdateInnodbBufferPoolSize() {
 			);
 		},
 	});
+}
+
+function onUpdateBinlogRetention() {
+	if (!server.updateBinlogRetention) return;
+	confirmDialog({
+		title: 'Update Binlog Retention',
+		message: `Are you sure you want to change the Binlog Retention of the database server <b>${server.doc.name}</b> ? <br><br> Recommended Binlog Retention is <b>${server.doc.mariadb_variables_recommended_values.expire_logs_days} days</b>`,
+		fields: [
+			{
+				label: 'Enter the new Binlog Retention (days)',
+				fieldname: 'days',
+				type: 'number',
+				default: server.doc.mariadb_variables.expire_logs_days,
+			},
+		],
+		primaryAction: {
+			label: 'Update Binlog Retention',
+		},
+		onSuccess({ hide, values }) {
+			if (server.updateBinlogRetention.loading) return;
+			toast.promise(
+				server.updateBinlogRetention.submit(
+					{
+						days: parseInt(values.days),
+					},
+					{
+						onSuccess() {
+							hide();
+						},
+					},
+				),
+				{
+					loading: 'Updating Binlog Retention...',
+					success: 'Binlog Retention updated',
+					error: () =>
+						getToastErrorMessage(
+							server.updateBinlogRetention.error ||
+								'Failed to update Binlog Retention',
+						),
+					duration: 5000,
+				},
+			);
+		},
+	});
+}
+
+function onUpdateBinlogSizeLimit() {
+	if (!server.updateBinlogSizeLimit) return;
+	confirmDialog({
+		title: 'Update Binlog Size Limit',
+		message: `You can limit the amount of space that binlog can use at max. If the size exceeds the limit, the oldest binlog files will be deleted automatically.`,
+		fields: [
+			{
+				label: 'Enable Binlog Auto Purging',
+				fieldname: 'enabled',
+				type: 'checkbox',
+				default: server.doc.auto_purge_binlog_based_on_size,
+			},
+			{
+				label: 'Percent of disk space can be used by binlog (10-90)',
+				fieldname: 'size',
+				type: 'number',
+				default: server.doc.binlog_max_disk_usage_percent,
+				condition: (values) => values.enabled,
+			},
+		],
+		primaryAction: {
+			label: 'Update Binlog Size Limit',
+		},
+		onSuccess({ hide, values }) {
+			if (server.updateBinlogSizeLimit.loading) return;
+			toast.promise(
+				server.updateBinlogSizeLimit.submit(
+					{
+						enabled: values.enabled,
+						percent_of_disk_size: parseInt(values.size),
+					},
+					{
+						onSuccess() {
+							hide();
+						},
+					},
+				),
+				{
+					loading: 'Updating Binlog Size Limit...',
+					success: 'Binlog Size Limit updated',
+					error: () =>
+						getToastErrorMessage(
+							server.updateBinlogSizeLimit.error ||
+								'Failed to update Binlog Size Limit',
+						),
+					duration: 5000,
+				},
+			);
+		},
+	});
+}
+
+function onViewMariaDBBinlogs() {
+	if (!server.getBinlogsInfo) return;
+	renderDialog(
+		h(DatabaseBinlogsDialog, {
+			databaseServer: server.doc.name,
+		}),
+	);
 }
 
 function onUpdateMaxDBConnections() {

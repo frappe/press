@@ -28,7 +28,7 @@ from press.press.doctype.team.team import (
 	get_child_team_members,
 	get_team_members,
 )
-from press.utils import get_country_info, get_current_team, is_user_part_of_team
+from press.utils import get_country_info, get_current_team, is_user_part_of_team, log_error
 from press.utils.telemetry import capture
 
 if TYPE_CHECKING:
@@ -63,6 +63,7 @@ def signup(email: str, product: str | None = None, referrer: str | None = None) 
 				"referrer_id": referrer,
 				"send_email": True,
 				"product_trial": product,
+				"agreed_to_terms": 1,
 			}
 		).insert(ignore_permissions=True)
 		account_request = account_request_doc.name
@@ -96,7 +97,7 @@ def verify_otp(account_request: str, otp: str) -> str:
 
 
 @frappe.whitelist(allow_guest=True)
-@rate_limit(limit=5, seconds=60)
+@rate_limit(limit=5, seconds=60 * 60)
 def verify_otp_and_login(email: str, otp: str):
 	from frappe.auth import get_login_attempt_tracker
 
@@ -650,6 +651,9 @@ def get_ssh_key(user):
 def update_profile(first_name=None, last_name=None, email=None):
 	if email:
 		frappe.utils.validate_email_address(email, True)
+	STR_FORMAT = re.compile("^[a-zA-Z']+$")
+	if (first_name and not STR_FORMAT.match(first_name)) or (last_name and not STR_FORMAT.match(last_name)):
+		frappe.throw("Names cannot contain invalid characters")
 	user = frappe.session.user
 	doc = frappe.get_doc("User", user)
 	doc.first_name = first_name
@@ -740,12 +744,29 @@ def reset_password(key, password):
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=10, seconds=60 * 60)
 def get_user_for_reset_password_key(key):
 	if not key or not isinstance(key, str):
 		frappe.throw(_("Invalid Key"))
 
 	hashed_key = sha256_hash(key)
-	return frappe.db.get_value("User", {"reset_password_key": hashed_key}, "name")
+	user_doc = frappe.db.get_value(
+		"User",
+		{"reset_password_key": hashed_key},
+		["name", "last_reset_password_key_generated_on"],
+		as_dict=True,
+	)
+	if not user_doc:
+		frappe.throw(_("Invalid Key"))
+
+	from datetime import timedelta
+
+	if user_doc.last_reset_password_key_generated_on:
+		expiry_time = user_doc.last_reset_password_key_generated_on + timedelta(minutes=10)
+		if frappe.utils.now_datetime() > expiry_time:
+			frappe.throw(_("Key has expired. Please retry resetting your password."))
+
+	return user_doc.name
 
 
 @frappe.whitelist()
@@ -821,14 +842,21 @@ def get_billing_information(timezone=None):
 
 @frappe.whitelist()
 def update_billing_information(billing_details):
-	billing_details = frappe._dict(billing_details)
-	team = get_current_team(get_doc=True)
-	validate_pincode(billing_details)
-	if (team.country != billing_details.country) and (
-		team.country == "India" or billing_details.country == "India"
-	):
-		frappe.throw("Cannot change country after registration")
-	team.update_billing_details(billing_details)
+	try:
+		billing_details = frappe._dict(billing_details)
+		team = get_current_team(get_doc=True)
+		validate_pincode(billing_details)
+		if (team.country != billing_details.country) and (
+			team.country == "India" or billing_details.country == "India"
+		):
+			frappe.throw("Cannot change country after registration")
+		team.update_billing_details(billing_details)
+	except Exception as ex:
+		log_error(
+			"Billing update failing",
+			data=ex,
+			reference_doctype="Team",
+		)
 
 
 def validate_pincode(billing_details):
@@ -940,17 +968,16 @@ def get_frappe_io_auth_url() -> str | None:
 
 @frappe.whitelist()
 def get_emails():
-	team = get_current_team(get_doc=True)
-	return [
-		{
-			"type": "billing_email",
-			"value": team.billing_email,
+	team = get_current_team(get_doc=False)
+	return frappe.get_all(
+		"Communication Info",
+		filters={
+			"parent": team,
+			"parenttype": "Team",
+			"parentfield": "emails",
 		},
-		{
-			"type": "notify_email",
-			"value": team.notify_email,
-		},
-	]
+		fields=["channel", "type", "value"],
+	)
 
 
 @frappe.whitelist()
@@ -962,9 +989,6 @@ def update_emails(data):
 		validate_email_address(value, throw=True)
 
 	team_doc = get_current_team(get_doc=True)
-
-	team_doc.billing_email = data["billing_email"]
-	team_doc.notify_email = data["notify_email"]
 
 	team_doc.save()
 
@@ -1248,20 +1272,15 @@ def get_2fa_qr_code_url():
 def enable_2fa(totp_code):
 	"""Enable 2FA for the user after verifying the TOTP code"""
 
-	# Get the User 2FA document.
 	two_fa = frappe.get_doc("User 2FA", frappe.session.user)
 
-	# Get decrypted TOTP secret for the user.
 	user_totp_secret = get_decrypted_password("User 2FA", frappe.session.user, "totp_secret")
 
-	# Handle invalid TOTP code.
 	if not pyotp.totp.TOTP(user_totp_secret).verify(totp_code):
 		frappe.throw("Invalid TOTP code")
 
-	# Enable 2FA for the user.
 	two_fa.enabled = 1
 
-	# Add recovery codes to the User 2FA document, if not already present.
 	if not two_fa.recovery_codes:
 		for recovery_code in two_fa.generate_recovery_codes():
 			two_fa.append(
@@ -1269,13 +1288,21 @@ def enable_2fa(totp_code):
 				{"code": recovery_code},
 			)
 
-	# Update the last verified time.
 	two_fa.mark_recovery_codes_viewed()
-
-	# Save the document.
 	two_fa.save()
 
-	# Decrypt and return recovery codes for the user.
+	try:
+		from frappe.sessions import clear_sessions
+
+		clear_sessions(keep_current=True)
+	except Exception as e:
+		log_error(
+			"2FA Enable: Failed clearing other sessions",
+			data=e,
+			reference_doctype="User 2FA",
+			reference_name=two_fa.name,
+		)
+
 	return [
 		get_decrypted_password("User 2FA Recovery Code", recovery_code.name, "code")
 		for recovery_code in two_fa.recovery_codes
@@ -1390,6 +1417,77 @@ def reset_2fa_recovery_codes():
 
 	# Return the new recovery codes.
 	return recovery_codes
+
+
+@frappe.whitelist()
+def get_user_banners():
+	team = get_current_team()
+
+	# fetch sites + servers for this team
+	site_server_pairs = frappe.get_all(
+		"Site",
+		filters={"team": team},
+		fields=["name", "server"],
+	)
+
+	sites = list(set([pair["name"] for pair in site_server_pairs]))
+	servers = list(set([pair["server"] for pair in site_server_pairs if pair.get("server")]))
+
+	DashboardBanner = frappe.qb.DocType("Dashboard Banner")
+	now = frappe.utils.now()
+
+	# fetch all enabled banners for this user
+	all_enabled_banners = (
+		frappe.qb.from_(DashboardBanner)
+		.select("*")
+		.where(
+			((DashboardBanner.enabled == 1) & (DashboardBanner.is_scheduled == 0))
+			| (
+				(DashboardBanner.enabled == 1)
+				& (DashboardBanner.is_scheduled == 1)
+				& (DashboardBanner.scheduled_start_time <= now)
+				& (DashboardBanner.scheduled_end_time >= now)
+			)
+		)
+		.where(
+			(DashboardBanner.is_global == 1)
+			| ((DashboardBanner.type_of_scope == "Site") & (DashboardBanner.site.isin(sites or [""])))
+			| ((DashboardBanner.type_of_scope == "Server") & (DashboardBanner.server.isin(servers or [""])))
+			| ((DashboardBanner.type_of_scope == "Team") & (DashboardBanner.team == team))
+		)
+		.run(as_dict=True)
+	)
+
+	# filter out dismissed banners
+	user = frappe.session.user
+	visible_banners = []
+	for banner in all_enabled_banners:
+		banner_dismissals_by_user = frappe.get_all(
+			"Dashboard Banner Dismissal",
+			filters={"user": user, "parent": banner["name"]},
+		)
+		if not banner_dismissals_by_user:
+			visible_banners.append(banner)
+
+	return visible_banners
+
+
+@frappe.whitelist()
+def dismiss_banner(banner_name):
+	user = frappe.session.user
+	banner = frappe.get_doc("Dashboard Banner", banner_name)
+	if banner and banner.is_dismissible and not banner.is_global:
+		banner.append(
+			"user_dismissals",
+			{
+				"user": user,
+				"dismissed_at": frappe.utils.now(),
+				"parent": banner_name,
+			},
+		)
+		banner.save()
+		return True
+	return False
 
 
 # Not available for Telangana, Ladakh, and Other Territory
