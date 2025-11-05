@@ -15,7 +15,6 @@ from frappe.model.document import Document
 from press.agent import Agent
 from press.exceptions import SiteTooManyPendingBackups
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
-from press.press.doctype.agent_job.agent_job import create
 
 if TYPE_CHECKING:
 	from datetime import datetime
@@ -393,7 +392,7 @@ class SiteBackup(Document):
 				frappe.log_error(
 					"Failed to fix global search indexes",
 					reference_doctype=self.doctype,
-					reference_name=self.name
+					reference_name=self.name,
 				)
 
 	@classmethod
