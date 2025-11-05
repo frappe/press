@@ -746,7 +746,11 @@ class SiteMigration(Document):
 		return (job.job_type == "Archive Site" and job.bench == self.destination_bench) and (
 			job.status == "Success"
 			or (
-				job.status == "Failure" and f"KeyError: '{self.site}'" in str(job.traceback)
+				job.status == "Failure"
+				and (
+					f"KeyError: '{self.site}'" in str(job.traceback)
+					or "BenchNotExistsException" in str(job.traceback)
+				)
 			)  # sometimes site may not even get created in destination to clean it up
 		)
 
