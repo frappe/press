@@ -68,9 +68,11 @@ repos:
         stages: [pre-commit]
         verbose: true
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.18.2
+  - repo: local
     hooks:
-      - id: mypy
-        args: [--strict, --ignore-missing-imports]
-        exclude: ^tests/|test_.*\.py$ # Exclude the 'tests/' directory and files starting with 'test_'
+      - id: mypy-line-count-check
+        name: Check if type errors have increased
+        entry: press/scripts/mypy_line_count_check.sh
+        language: script
+        types: [python]
+        verbose: true
