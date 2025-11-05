@@ -257,7 +257,7 @@ class SiteBackup(Document):
 
 		if (
 			not self.physical
-			and self.has_value_change("status")
+			and self.has_value_changed("status")
 			and frappe.db.get_value("Agent Job", self.job, "status") == "Failure"
 		):
 			self.fix_global_search_indexes()
