@@ -23,7 +23,7 @@ def usage(
 	session: CloudSession = ctx.obj
 
 	if not name:
-		Print.info("Please provide a server name using --name.")
+		Print.info(console, "Please provide a server name using --name.")
 		return
 
 	try:
@@ -33,9 +33,8 @@ def usage(
 			message=f"[bold green]Fetching usage for {name}...",
 		)
 
-		console.print("[bold cyan]Usage (latest sample)[/bold cyan]")
 		if not isinstance(usage_data, dict) or not usage_data:
-			Print.info("No usage data returned.")
+			Print.info(console, "No usage data returned.")
 			return
 
 		vcpu = usage_data.get("vcpu")
@@ -114,7 +113,7 @@ def server_plan(
 			Print.error(console, f"{doctype} '{name}' or its current plan not found.")
 			return
 		plan = response["current_plan"]
-		print_full_plan_details(console, plan)
+		print_full_plan_details(plan, console)
 	except Exception as e:
 		Print.error(console, e)
 
@@ -151,7 +150,10 @@ def increase_storage(
 			Print.error(console, f"Failed to increase storage: {response.get('message', 'Unknown error')}")
 			return
 
-		Print.success(f"Storage increased for server {name} by {increment} GB", style="bold")
+		Print.success(
+			console,
+			f"Storage increased for server {name} by {increment} GB",
+		)
 
 	except Exception as e:
 		Print.error(console, e)
@@ -235,9 +237,9 @@ def create_server(
 			)
 			return
 
-		Print.success(f"Successfully created server: {response['server']}")
+		Print.success(console, f"Successfully created server: {response['server']}")
 		if response.get("job"):
-			Print.info(f"Server creation job started: {response['job']}")
+			Print.info(console, f"Server creation job started: {response['job']}")
 
 	except Exception as e:
 		Print.error(console, e)
@@ -261,7 +263,7 @@ def delete_server(
 			Print.error(console, f"Failed to delete server: {response.get('exception', 'Unknown error')}")
 			return
 
-		Print.success(f"Successfully deleted (archived) server: {name}")
+		Print.success(console, f"Successfully deleted (archived) server: {name}")
 
 	except Exception as e:
 		Print.error(console, e)

@@ -24,7 +24,7 @@ class Print:
 	@classmethod
 	def header(cls, console: "Console", title: str) -> None:
 		"""Print a section header."""
-		console.print(f"\n[bold cyan]{title}[/bold cyan]")
+		console.print(f"[bold cyan]{title}[/bold cyan]")
 
 	@classmethod
 	def field(cls, console: "Console", label: str, value: typing.Any, indent: int = 0) -> None:
