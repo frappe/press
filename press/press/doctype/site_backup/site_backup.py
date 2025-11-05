@@ -195,7 +195,7 @@ class SiteBackup(Document):
 		if self.job:
 			frappe.delete_doc_if_exists("Agent Job", self.job)
 
-	def on_update(self):
+	def on_update(self):  # noqa: C901
 		if self.physical and self.has_value_changed("status") and self.status in ["Success", "Failure"]:
 			site_update_doc_name = frappe.db.exists("Site Update", {"site_backup": self.name})
 			if site_update_doc_name:
@@ -242,7 +242,7 @@ class SiteBackup(Document):
 
 		if (
 			not self.physical
-			and self.has_value_change("status")
+			and self.has_value_changed("status")
 			and frappe.db.get_value("Agent Job", self.job, "status") == "Failure"
 		):
 			self.fix_global_search_indexes()
