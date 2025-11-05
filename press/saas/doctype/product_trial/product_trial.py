@@ -11,6 +11,7 @@ from frappe.model.document import Document
 from frappe.utils.data import get_url
 
 from press.utils import log_error
+from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.unique_name_generator import generate as generate_random_name
 
 
@@ -477,6 +478,8 @@ def replenish_standby_sites():
 	"""Create standby sites for all products with pooling enabled. This is called by the scheduler."""
 	products = frappe.get_all("Product Trial", {"enable_pooling": 1}, pluck="name")
 	for product in products:
+		if has_job_timeout_exceeded():
+			return
 		product: ProductTrial = frappe.get_doc("Product Trial", product)
 		try:
 			product.create_standby_sites_in_each_cluster()
