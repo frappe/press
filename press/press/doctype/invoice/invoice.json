@@ -23,6 +23,7 @@
   "period_end",
   "due_date",
   "amended_from",
+  "budget_alert_sent",
   "section_break_8",
   "items",
   "discounts_section",
@@ -515,6 +516,13 @@
    "fieldname": "mpesa_invoice_pdf",
    "fieldtype": "Attach",
    "label": "Mpesa Invoice PDF"
+  },
+  {
+   "default": "0",
+   "fieldname": "budget_alert_sent",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Budget Alert Sent"
   }
  ],
  "grid_page_length": 50,
@@ -541,8 +549,8 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2025-09-30 19:07:43.931883",
- "modified_by": "Administrator",
+ "modified": "2025-10-14 14:39:14.404906",
+ "modified_by": "aysha@frappe.io",
  "module": "Press",
  "name": "Invoice",
  "naming_rule": "Expression",
