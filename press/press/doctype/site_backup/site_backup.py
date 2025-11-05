@@ -15,6 +15,7 @@ from frappe.model.document import Document
 from press.agent import Agent
 from press.exceptions import SiteTooManyPendingBackups
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
+from press.press.doctype.agent_job.agent_job import create
 
 if TYPE_CHECKING:
 	from datetime import datetime
@@ -226,6 +227,27 @@ class SiteBackup(Document):
 				frappe.get_doc("Site", self.site), reference_doctype=self.doctype, reference_name=self.name
 			)
 
+		try:
+			if (
+				not self.physical
+				and self.has_value_changed("status")
+				and frappe.db.get_value("Agent Job", self.job, "status") == "Failure"
+			):
+				self.autocorrect_bench_permissions()
+		except Exception:
+			frappe.log_error(
+				"Failed to correct bench permissions",
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+			)
+
+		if (
+			not self.physical
+			and self.has_value_change("status")
+			and frappe.db.get_value("Agent Job", self.job, "status") == "Failure"
+		):
+			self.fix_global_search_indexes()
+
 	def _rollback_db_directory_permissions(self):
 		if not self.physical:
 			return
@@ -324,6 +346,55 @@ class SiteBackup(Document):
 		frappe.db.set_value(
 			"Site Backup", self.name, "database_snapshot", virtual_machine.flags.created_snapshots[0]
 		)
+
+	def autocorrect_bench_permissions(self):
+		"""
+		Run this whenever a Site Backup fails with the error
+		"[Errno 13]: Permission denied".
+		"""
+		job = frappe.db.get_value("Agent Job", self.job, ["bench", "server", "output"], as_dict=True)
+		import re
+
+		play_exists = frappe.db.get_value(
+			"Ansible Play",
+			filters={
+				"play": "Correct Bench Permissions",
+				"status": ["in", ["Pending", "Running"]],
+				"server": job.server,
+				"variables": ["like", "f%{job.bench}%"],
+			},
+		)
+
+		if job.output and not play_exists and re.search(r"\[Errno 13\] Permission denied", job.output):
+			try:
+				bench = frappe.get_doc("Bench", job.bench)
+				bench.correct_bench_permissions()
+				return True
+			except Exception:
+				frappe.log_error(
+					"Failed to correct bench permissions.",
+					reference_doctype=self.doctype,
+					reference_name=self.name,
+				)
+				return False
+		return False
+
+	def fix_global_search_indexes(self):
+		"""
+		Run this whenever Backup Job fails because of broken global search indexes and regenerate them.
+		"""
+		job = frappe.db.get_value("Agent Job", self.job, ["bench", "server", "output"], as_dict=True)
+
+		if job.output and "Couldn't execute 'show create table `__global_search`'" in job.output:
+			try:
+				agent = Agent(self.server)
+				agent.create_agent_job("Fix global search", "fix_global_search")
+			except Exception:
+				frappe.log_error(
+					"Failed to fix global search indexes",
+					reference_doctype=self.doctype,
+					reference_name=self.name
+				)
 
 	@classmethod
 	def offsite_backup_exists(cls, site: str, day: datetime.date) -> bool:
