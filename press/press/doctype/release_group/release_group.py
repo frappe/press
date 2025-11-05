@@ -19,7 +19,11 @@ from frappe.query_builder.functions import Count
 from frappe.utils import cstr, flt, get_url, sbool
 from frappe.utils.caching import redis_cache
 
+from press.access.actions import ReleaseGroupActions
+from press.access.decorators import action_guard
+from press.agent import Agent
 from press.api.client import dashboard_whitelist
+from press.exceptions import ImageNotFoundInRegistry, InsufficientSpaceOnServer, VolumeResizeLimitError
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import new_app
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
@@ -28,6 +32,7 @@ from press.press.doctype.deploy_candidate_build.deploy_candidate_build import cr
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server import Server
 from press.utils import (
+	fmt_timedelta,
 	get_app_tag,
 	get_client_blacklisted_keys,
 	get_current_team,
@@ -47,7 +52,10 @@ DEFAULT_DEPENDENCIES = [
 	{"dependency": "PYTHON_VERSION", "version": "3.7"},
 	{"dependency": "WKHTMLTOPDF_VERSION", "version": "0.12.5"},
 	{"dependency": "BENCH_VERSION", "version": "5.25.1"},
+	{"dependency": "PIP_VERSION", "version": "25.2"},
 ]
+
+SUPPORTED_WKHTMLTOPDF_VERSIONS = ["0.12.5", "0.12.6"]
 
 
 class LastDeployInfo(TypedDict):
@@ -58,6 +66,7 @@ class LastDeployInfo(TypedDict):
 
 if TYPE_CHECKING:
 	from press.press.doctype.app.app import App
+	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 
@@ -109,6 +118,7 @@ class ReleaseGroup(Document, TagHelpers):
 		packages: DF.Table[ReleaseGroupPackage]
 		public: DF.Check
 		redis_cache_size: DF.Int
+		redis_password: DF.Password | None
 		saas_app: DF.Link | None
 		saas_bench: DF.Check
 		servers: DF.Table[ReleaseGroupServer]
@@ -226,8 +236,14 @@ class ReleaseGroup(Document, TagHelpers):
 		self.validate_rq_queues()
 		self.validate_max_min_workers()
 		self.validate_feature_flags()
+		self.validate_dependencies()
 		if self.check_dependent_apps:
 			self.validate_dependent_apps()
+		if not self.redis_password:
+			self.set_redis_password()
+
+	def set_redis_password(self):
+		self.redis_password = frappe.generate_hash(length=32)
 
 	def validate_dependent_apps(self):
 		required_repository_urls = set()
@@ -537,6 +553,29 @@ class ReleaseGroup(Document, TagHelpers):
 		if self.use_app_cache and not self.can_use_get_app_cache():
 			frappe.throw(_("Use App Cache cannot be set, BENCH_VERSION must be 5.22.1 or later"))
 
+	def _validate_dependency_format(self, dependency: str, version: str):
+		# Append patch version
+		if version.count(".") == 1:
+			version += ".0"
+
+		try:
+			sv.Version(version)
+		except ValueError as e:
+			frappe.throw(f"{dependency}: {e}")
+
+	def _validate_supported_wkhtmltopdf_version(self, version):
+		if version not in SUPPORTED_WKHTMLTOPDF_VERSIONS:
+			frappe.throw(
+				f"Unsupported wkhtmltopdf version {version}\n"
+				f"Supported versions: {', '.join(SUPPORTED_WKHTMLTOPDF_VERSIONS)}"
+			)
+
+	def validate_dependencies(self):
+		for dependency in self.dependencies:
+			self._validate_dependency_format(dependency.dependency, dependency.version)
+			if dependency.dependency == "WKHTMLTOPDF_VERSION":
+				self._validate_supported_wkhtmltopdf_version(dependency.version)
+
 	def can_use_get_app_cache(self) -> bool:
 		version = find(
 			self.dependencies,
@@ -558,6 +597,15 @@ class ReleaseGroup(Document, TagHelpers):
 		required_intel_build = "x86_64" in platforms
 		return required_arm_build, required_intel_build
 
+	def get_redis_password(self) -> str:
+		"""Get redis password create and update password if not present"""
+		try:
+			return self.get_password("redis_password")
+		except frappe.AuthenticationError:
+			self.redis_password = frappe.generate_hash(length=32)
+			self.save(ignore_permissions=True)
+			return self.get_password("redis_password")
+
 	@frappe.whitelist()
 	def create_duplicate_deploy_candidate(self):
 		return self.create_deploy_candidate([])
@@ -570,7 +618,65 @@ class ReleaseGroup(Document, TagHelpers):
 	@dashboard_whitelist()
 	def initial_deploy(self):
 		dc = self.create_deploy_candidate()
-		dc.schedule_build_and_deploy()
+		response = dc.schedule_build_and_deploy()
+		return response.get("name")
+
+	def _try_server_size_increase_or_throw(self, server: Server, mountpoint: str, required_size: int):
+		"""In case of low storage on the server try to either increase the storage (if allowed) or throw an error"""
+		if server.auto_increase_storage:
+			try:
+				server.calculated_increase_disk_size(mountpoint=mountpoint)
+			except VolumeResizeLimitError:
+				frappe.throw(
+					f"We are unable to increase server space right now for the deploy. Please wait "
+					f"{fmt_timedelta(server.time_to_wait_before_updating_volume)} before trying again.",
+					InsufficientSpaceOnServer,
+				)
+		else:
+			frappe.throw(
+				f"Not enough space on server {server.name} to create a new bench. {required_size}G is required.",
+				InsufficientSpaceOnServer,
+			)
+
+	@staticmethod
+	def _get_last_deployed_image_size(server: Server, last_deployed_bench: Bench) -> float | None:
+		"""Try and fetch the last deployed image size"""
+		try:
+			return Agent(server.name).get(f"server/image-size/{last_deployed_bench.build}").get("size")
+		except Exception as e:
+			log_error("Failed to fetch last image size", data=e)
+
+	def check_app_server_storage(self):
+		"""
+		Check storage on the app server before deploying
+		Check if the free space on the server is more than the last
+		image deployed, assuming new image to be created will have the same or more
+		size than the last time.
+		"""
+		for server in self.servers:
+			server: Server = frappe.get_cached_doc("Server", server.server)
+
+			if server.is_self_hosted:
+				continue
+
+			mountpoint = server.guess_data_disk_mountpoint()
+			# If prometheus acts up
+			try:
+				free_space = server.free_space(mountpoint) / 1024**3
+			except Exception:
+				continue
+
+			last_deployed_bench = get_last_doc("Bench", {"group": self.name, "status": "Active"})
+
+			if not last_deployed_bench:
+				continue
+
+			last_image_size = self._get_last_deployed_image_size(server, last_deployed_bench)
+
+			if last_image_size and (free_space < last_image_size):
+				self._try_server_size_increase_or_throw(
+					server, mountpoint, required_size=last_image_size - free_space
+				)
 
 	@frappe.whitelist()
 	def create_deploy_candidate(
@@ -581,6 +687,7 @@ class ReleaseGroup(Document, TagHelpers):
 		if not self.enabled:
 			return None
 
+		self.check_app_server_storage()
 		apps = self.get_apps_to_update(apps_to_update)
 		if apps_to_update is None:
 			self.validate_dc_apps_against_rg(apps)
@@ -891,6 +998,7 @@ class ReleaseGroup(Document, TagHelpers):
 		)
 
 	@dashboard_whitelist()
+	@action_guard(ReleaseGroupActions.SSHAccess)
 	def generate_certificate(self):
 		ssh_key = frappe.get_all(
 			"User SSH Key",
@@ -1320,6 +1428,11 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def add_server(self, server: str, deploy=False, force_new_build: bool = False):
+		"""
+		Add a server to the release group in case last successful deploy candidate exists
+		create a deploy check if the image has not been pruned from the registry in case of
+		missing image create new build.
+		"""
 		if not deploy:
 			return None
 
@@ -1330,7 +1443,9 @@ class ReleaseGroup(Document, TagHelpers):
 
 		if not last_successful_deploy_candidate_build or force_new_build:
 			# No build of this platform is available creating new build
-			last_candidate_build = self.get_last_successful_candidate_build()
+			last_candidate_build = (
+				self.get_last_successful_candidate_build()
+			)  # Checking for any platform build
 
 			if not last_candidate_build:
 				frappe.throw("No build present for this release group", frappe.ValidationError)
@@ -1347,7 +1462,13 @@ class ReleaseGroup(Document, TagHelpers):
 		self.append("servers", {"server": server, "default": False})
 		self.save()
 
-		return last_successful_deploy_candidate_build._create_deploy([server])
+		try:
+			return last_successful_deploy_candidate_build._create_deploy(
+				[server],
+				check_image_exists=True,
+			)
+		except ImageNotFoundInRegistry:
+			return self.add_server(server=server, deploy=True, force_new_build=True)
 
 	@frappe.whitelist()
 	def change_server(self, server: str):
@@ -1447,8 +1568,8 @@ class ReleaseGroup(Document, TagHelpers):
 
 		self.use_delta_builds = 0
 
-	def is_version_14_or_higher(self):
-		return frappe.get_cached_value("Frappe Version", self.version, "number") >= 14
+	def is_this_version_or_above(self, version: int) -> bool:
+		return frappe.get_cached_value("Frappe Version", self.version, "number") >= version
 
 	def setup_default_feature_flags(self):
 		DEFAULT_FEATURE_FLAGS = {

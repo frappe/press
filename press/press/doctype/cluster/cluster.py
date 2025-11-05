@@ -9,7 +9,7 @@ import re
 import time
 import typing
 from textwrap import wrap
-from typing import ClassVar
+from typing import ClassVar, Literal
 
 import boto3
 import frappe
@@ -40,9 +40,14 @@ from press.utils import get_current_team, unique
 if typing.TYPE_CHECKING:
 	from collections.abc import Generator
 
+	from press.press.doctype.database_server.database_server import DatabaseServer
+	from press.press.doctype.press_job.press_job import PressJob
 	from press.press.doctype.press_settings.press_settings import PressSettings
+	from press.press.doctype.server.server import Server
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+
+DEFAULT_SERVER_TITLE = "First"
 
 
 class Cluster(Document):
@@ -73,6 +78,7 @@ class Cluster(Document):
 		proxy_security_group_id: DF.Data | None
 		public: DF.Check
 		region: DF.Link | None
+		repository: DF.Data | None
 		route_table_id: DF.Data | None
 		security_group_id: DF.Data | None
 		ssh_key: DF.Link | None
@@ -97,6 +103,8 @@ class Cluster(Document):
 		# "Monitor Server": "p",
 		# "Log Server": "e,
 	}
+
+	secondary_server_series: ClassVar[str] = "fs"
 
 	wait_for_aws_creds_seconds = 20
 
@@ -671,28 +679,41 @@ class Cluster(Document):
 			server_doctypes = {**server_doctypes, **self.private_servers}
 		return server_doctypes
 
-	def get_same_region_vmis(self, get_series=False):
-		return frappe.get_all(
-			"Virtual Machine Image",
-			filters={
-				"region": self.region,
-				"series": ("in", list(self.server_doctypes.values())),
-				"status": "Available",
-			},
-			pluck="name" if not get_series else "series",
-		)
-
-	def get_other_region_vmis(self, get_series=False):
+	def get_same_region_vmis(self, platform="x86_64", get_series=False) -> list[str]:
 		vmis = []
 		for series in list(self.server_doctypes.values()):
 			vmis.extend(
 				frappe.get_all(
 					"Virtual Machine Image",
-					["name", "series", "creation"],
+					filters={
+						"region": self.region,
+						"series": series,
+						"status": "Available",
+						"public": True,
+						"platform": "x86_64" if series == "n" else platform,
+						"cloud_provider": self.cloud_provider,
+					},
+					limit=1,
+					order_by="creation DESC",
+					pluck="name" if not get_series else "series",
+				)
+			)
+
+		return vmis
+
+	def get_other_region_vmis(self, platform="x86_64", get_series=False) -> list[str]:
+		vmis = []
+		for series in list(self.server_doctypes.values()):
+			vmis.extend(
+				frappe.get_all(
+					"Virtual Machine Image",
 					filters={
 						"region": ("!=", self.region),
 						"series": series,
 						"status": "Available",
+						"public": True,
+						"platform": "x86_64" if series == "n" else platform,
+						"cloud_provider": self.cloud_provider,
 					},
 					limit=1,
 					order_by="creation DESC",
@@ -705,15 +726,28 @@ class Cluster(Document):
 	def copy_virtual_machine_images(self) -> Generator[VirtualMachineImage, None, None]:
 		"""Creates VMIs required for the cluster"""
 		copies = []
-		for vmi in self.get_other_region_vmis():
+		for vmi in set(self.get_other_region_vmis()) - set(self.get_same_region_vmis()):
 			copies.append(
-				frappe.get_doc(
+				VirtualMachineImage(
 					"Virtual Machine Image",
 					vmi,
-				).copy_image(self.name)
+				).copy_image(str(self.name))
 			)
 			frappe.db.commit()
 		yield from copies
+
+	@frappe.whitelist()
+	def create_proxy(self):
+		"""Creates a proxy server for the cluster"""
+		if self.get_same_region_vmis(get_series=True).count("n") < 1:
+			frappe.throw(
+				"Proxy Image not available in this region. Add them or wait for copy to complete",
+				frappe.ValidationError,
+			)
+		if self.status != "Active":
+			frappe.throw("Cluster is not active", frappe.ValidationError)
+
+		self.create_server("Proxy Server", DEFAULT_SERVER_TITLE)
 
 	@frappe.whitelist()
 	def create_servers(self):
@@ -730,7 +764,7 @@ class Cluster(Document):
 			# TODO: remove Test title #
 			server, _ = self.create_server(
 				doctype,
-				"Test",
+				DEFAULT_SERVER_TITLE,
 			)
 			match doctype:  # for populating Server doc's fields; assume the trio is created together
 				case "Database Server":
@@ -742,7 +776,7 @@ class Cluster(Document):
 		for doctype, _ in self.private_servers.items():
 			self.create_server(
 				doctype,
-				"Test",
+				DEFAULT_SERVER_TITLE,
 				create_subscription=False,
 			)
 
@@ -781,21 +815,46 @@ class Cluster(Document):
 		return True
 
 	def create_vm(
-		self, machine_type: str, platform: str, disk_size: int, domain: str, series: str, team: str
+		self,
+		machine_type: str,
+		platform: str,
+		disk_size: int,
+		domain: str,
+		series: str,
+		team: str,
+		data_disk_snapshot: str | None = None,
+		temporary_server: bool = False,
+		kms_key_id: str | None = None,
 	) -> "VirtualMachine":
+		"""Creates a Virtual Machine for the cluster
+		temporary_server: If you are creating a temporary server for some special purpose, set this to True.
+				This will use a different nameing series `t` for the server to avoid conflicts
+				with the regular servers.
+		"""
 		return frappe.get_doc(
 			{
 				"doctype": "Virtual Machine",
 				"cluster": self.name,
 				"domain": domain,
-				"series": series,
+				"series": "t" if temporary_server else series,
 				"disk_size": disk_size,
 				"machine_type": machine_type,
 				"platform": platform,
 				"virtual_machine_image": self.get_available_vmi(series, platform=platform),
 				"team": team,
+				"data_disk_snapshot": data_disk_snapshot,
+				"kms_key_id": kms_key_id,
 			},
 		).insert()
+
+	def get_default_instance_type(self):
+		if self.cloud_provider == "AWS EC2":
+			return "t3.medium"
+		if self.cloud_provider == "OCI":
+			return "VM.Standard.E4.Flex"
+		if self.cloud_provider == "Hetzner":
+			return "cpx21"
+		return None
 
 	def get_or_create_basic_plan(self, server_type):
 		plan = frappe.db.exists("Server Plan", f"Basic Cluster - {server_type}")
@@ -806,7 +865,7 @@ class Cluster(Document):
 				"doctype": "Server Plan",
 				"name": f"Basic Cluster - {server_type}",
 				"title": f"Basic Cluster - {server_type}",
-				"instance_type": "t2.medium",
+				"instance_type": self.get_default_instance_type(),
 				"price_inr": 0,
 				"price_usd": 0,
 				"vcpu": 2,
@@ -815,7 +874,7 @@ class Cluster(Document):
 			}
 		).insert(ignore_permissions=True, ignore_if_duplicate=True)
 
-	def create_server(
+	def create_server(  # noqa: C901
 		self,
 		doctype: str,
 		title: str,
@@ -824,30 +883,94 @@ class Cluster(Document):
 		team: str | None = None,
 		create_subscription=True,
 		auto_increase_storage: bool = False,
-	):
-		"""Creates a server for the cluster"""
+		data_disk_snapshot: str | None = None,
+		temporary_server: bool = False,
+		is_for_recovery: bool = False,
+		setup_db_replication: bool = False,
+		master_db_server: str | None = None,
+		press_job_arguments: dict[str, typing.Any] | None = None,
+		kms_key_id: str | None = None,
+		is_secondary: bool = False,
+		primary: str | None = None,
+	) -> tuple["Server", "PressJob"]:
+		"""Creates a server for the cluster
+
+		temporary_server: If you are creating a temporary server for some special purpose, set this to True.
+			This will use a different nameing series `t` for the server to avoid conflicts
+			with the regular servers.
+		"""
+
+		if press_job_arguments is None:
+			press_job_arguments = {}
+
+		if setup_db_replication:
+			if doctype != "Database Server":
+				frappe.throw(
+					"Replication can only be set up for Database Servers",
+					frappe.ValidationError,
+				)
+			if not master_db_server:
+				frappe.throw(
+					"Please provide the master database server for replication setup", frappe.ValidationError
+				)
+			if frappe.get_value("Database Server", master_db_server, "status") != "Active":
+				frappe.throw(
+					"Master Database Server is not active. Please check the status of the server before creating replication.",
+					frappe.ValidationError,
+				)
+
 		domain = domain or frappe.db.get_single_value("Press Settings", "domain")
 		server_series = {**self.base_servers, **self.private_servers}
 		team = team or get_current_team()
 		plan = plan or self.get_or_create_basic_plan(doctype)
 		vm = self.create_vm(
-			plan.instance_type, plan.platform, plan.disk, domain, server_series[doctype], team
+			plan.instance_type,
+			plan.platform,
+			plan.disk,
+			domain,
+			server_series[doctype] if not is_secondary else self.secondary_server_series,
+			team,
+			data_disk_snapshot=data_disk_snapshot,
+			temporary_server=temporary_server,
+			kms_key_id=kms_key_id,
 		)
 		server = None
 		match doctype:
 			case "Database Server":
-				server = vm.create_database_server()
+				server: "DatabaseServer" = vm.create_database_server()
 				server.ram = plan.memory
 				server.title = f"{title} - Database"
 				server.auto_increase_storage = auto_increase_storage
+				server.is_for_recovery = is_for_recovery
+
+				if setup_db_replication:
+					server.is_primary = False
+					server.primary = master_db_server
+
+				if server.auto_increase_storage:
+					server.auto_purge_binlog_based_on_size = True
+					server.binlog_max_disk_usage_percent = 75
+				else:
+					server.auto_purge_binlog_based_on_size = True
+					server.binlog_max_disk_usage_percent = 20
+
 			case "Server":
-				server = vm.create_server()
-				server.title = f"{title} - Application"
+				server: "Server" = vm.create_server(is_secondary=is_secondary, primary=primary)
+				server.title = f"{title} - Application" if not is_secondary else title
 				server.ram = plan.memory
-				server.database_server = self.database_server
-				server.proxy_server = self.proxy_server
+				if hasattr(self, "database_server") and self.database_server:
+					server.database_server = self.database_server
+
+				if not hasattr(self, "proxy_server") or not self.proxy_server:
+					frappe.throw(
+						"Please set the Proxy Server to Cluster record before creating the App Server",
+						frappe.ValidationError,
+					)
+				else:
+					server.proxy_server = self.proxy_server
 				server.new_worker_allocation = True
 				server.auto_increase_storage = auto_increase_storage
+				server.is_for_recovery = is_for_recovery
 			case "Proxy Server":
 				server = vm.create_proxy_server()
 				server.title = f"{title} - Proxy"
@@ -860,9 +983,18 @@ class Cluster(Document):
 
 		if create_subscription:
 			server.plan = plan.name
-			server.save()
+
+		server.save()
+
+		if create_subscription:
 			server.create_subscription(plan.name)
-		job = server.run_press_job("Create Server")
+
+		job_arguments = {}
+		if setup_db_replication:
+			job_arguments["master_db_server"] = master_db_server
+			job_arguments["setup_db_replication"] = True
+			job_arguments.update(press_job_arguments)
+		job = server.run_press_job("Create Server", arguments=job_arguments)
 
 		return server, job
 
@@ -877,3 +1009,58 @@ class Cluster(Document):
 			filters={**filters, **extra_filters},
 			fields=["name", "title", "image", "beta"],
 		)
+
+	def find_server_plan_with_compute_config(
+		self,
+		server_type: Literal["Server", "Database Server"],
+		vcpu: int,
+		memory: int,
+		platform: Literal["arm64", "amd64", "x86_64"] | None = None,
+	) -> str | None:
+		platforms = [platform] if platform else ["arm64", "amd64", "x86_64"]  # Priority of platform
+		best_plan = None
+		best_score = float("inf")
+
+		for platform in platforms:
+			plans = frappe.get_all(
+				"Server Plan",
+				filters={
+					"enabled": True,
+					"legacy_plan": False,
+					"cluster": self.name,
+					"platform": platform,
+					"server_type": server_type,
+					"premium": False,
+				},
+				fields=["name", "vcpu", "memory", "platform"],
+			)
+
+			# Skip platform if no plans available
+			if not plans:
+				continue
+
+			# Find best plan for this platform
+			for plan in plans:
+				vcpu_diff = abs(plan.vcpu - vcpu) / max(vcpu, 1) * 100
+				memory_diff = abs(plan.memory - memory) / max(memory, 1) * 100
+
+				# Calculate weighted average difference (you can adjust weights as needed)
+				total_score = (vcpu_diff * 0.4) + (memory_diff * 0.2)
+
+				# Prefer plans that meet or exceed requirements rather than fall short
+				# Add penalty if plan doesn't meet minimum requirements
+				penalty = 0
+				if plan.vcpu < vcpu:
+					penalty += 50
+				if plan.memory < memory:
+					penalty += 50
+
+				final_score = total_score + penalty
+
+				# Update best plan if this one is better
+				if final_score < best_score:
+					best_score = final_score
+					best_plan = plan.name
+
+			return best_plan
+		return None

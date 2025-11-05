@@ -17,7 +17,15 @@
   "server",
   "virtual_machine",
   "column_break_11",
-  "arguments"
+  "arguments",
+  "callback_section",
+  "callback_executed",
+  "callback_failed",
+  "callback_retry_limit_reached",
+  "callback_failure_issue_resolved",
+  "column_break_zynz",
+  "callback_failure_count",
+  "next_callback_retry_at"
  ],
  "fields": [
   {
@@ -105,8 +113,60 @@
   {
    "fieldname": "column_break_11",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "callback_failure_count",
+   "fieldtype": "Int",
+   "label": "Callback Failure Count",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "callback_failed",
+   "fieldtype": "Check",
+   "label": "Callback Failed",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "callback_retry_limit_reached",
+   "fieldtype": "Check",
+   "label": "Callback Retry Limit Reached",
+   "read_only": 1
+  },
+  {
+   "fieldname": "next_callback_retry_at",
+   "fieldtype": "Datetime",
+   "label": "Next Callback Retry At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "callback_section",
+   "fieldtype": "Section Break",
+   "label": "Callback"
+  },
+  {
+   "default": "0",
+   "fieldname": "callback_failure_issue_resolved",
+   "fieldtype": "Check",
+   "label": "Callback Failure Issue Resolved",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_zynz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "callback_executed",
+   "fieldtype": "Check",
+   "label": "Callback Executed",
+   "read_only": 1
   }
  ],
+ "grid_page_length": 50,
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [
@@ -115,7 +175,7 @@
    "link_fieldname": "job"
   }
  ],
- "modified": "2024-08-05 16:56:38.861601",
+ "modified": "2025-07-31 11:51:16.216581",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Job",
@@ -145,6 +205,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

@@ -10,15 +10,13 @@ from frappe.core.doctype.user.user import User
 from frappe.handler import is_whitelisted
 from frappe.utils import cint
 
+from press.access.support_access import has_support_access
 from press.runner import constants
 from press.utils import _get_current_team, _system_user
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def upload_file():
-	if frappe.session.user == "Guest":
-		return None
-
 	files = frappe.request.files
 	is_private = frappe.form_dict.is_private
 	doctype = frappe.form_dict.doctype
@@ -89,7 +87,9 @@ def on_login(login_manager):
 	):
 		frappe.throw("Please re-login to verify your identity.")
 
-	if not frappe.db.exists("Team", {"user": frappe.session.user, "enabled": 1}) and frappe.db.exists("Team", {"user": frappe.session.user, "enabled": 0}):
+	if not frappe.db.exists("Team", {"user": frappe.session.user, "enabled": 1}) and frappe.db.exists(
+		"Team", {"user": frappe.session.user, "enabled": 0}
+	):
 		frappe.db.set_value("Team", {"user": frappe.session.user, "enabled": 0}, "enabled", 1)
 		frappe.db.commit()
 
@@ -136,7 +136,7 @@ def update_website_context(context):
 
 
 def has_permission(doc, ptype, user):
-	from press.utils import get_current_team, has_role
+	from press.utils import get_current_team
 
 	if not user:
 		user = frappe.session.user
@@ -148,12 +148,12 @@ def has_permission(doc, ptype, user):
 	if ptype == "create":
 		return True
 
-	if has_role("Press Support Agent", user) and ptype == "read":
-		return True
-
 	team = get_current_team()
 	child_team_members = [d.name for d in frappe.db.get_all("Team", {"parent_team": team}, ["name"])]
 	if doc.team == team or doc.team in child_team_members:
+		return True
+
+	if has_support_access(doc.doctype, doc.name):
 		return True
 
 	return False

@@ -69,6 +69,7 @@ class MarketplaceApp(WebsiteGenerator):
 		poll_method: DF.Data | None
 		privacy_policy: DF.Data | None
 		published: DF.Check
+		published_on: DF.Date | None
 		review_stage: DF.Literal[
 			"Not Started",
 			"Description Missing",
@@ -179,6 +180,11 @@ class MarketplaceApp(WebsiteGenerator):
 		self.published = self.status == "Published"
 		self.validate_sources()
 		self.validate_number_of_screenshots()
+		self.validate_summary()
+
+	def validate_summary(self):
+		if len(self.description) > 140:
+			frappe.throw("Marketplace App summary cannot be more than 140 characters.")
 
 	def validate_sources(self):
 		for source in self.sources:
@@ -198,6 +204,17 @@ class MarketplaceApp(WebsiteGenerator):
 		max_allowed_screenshots = frappe.db.get_single_value("Press Settings", "max_allowed_screenshots")
 		if len(self.screenshots) > max_allowed_screenshots:
 			frappe.throw(f"You cannot add more than {max_allowed_screenshots} screenshots for an app.")
+
+	def on_update(self):
+		self.set_published_on_date()
+
+	def set_published_on_date(self):
+		if self.published_on:
+			return
+
+		doc_before_save = self.get_doc_before_save()
+		if self.status == "Published" and doc_before_save.status != "Published":
+			self.published_on = frappe.utils.nowdate()
 
 	def change_branch(self, source, version, to_branch):
 		existing_source = frappe.db.exists(
@@ -509,7 +526,7 @@ class MarketplaceApp(WebsiteGenerator):
 
 	def get_payout_amount(self, status: str = "", total_for: str = "net_amount"):
 		"""Return the payout amount for this app"""
-		filters = {"recipient": self.team}
+		filters = {"team": self.team}
 		if status:
 			filters["status"] = status
 		payout_orders = frappe.get_all("Payout Order", filters=filters, pluck="name")

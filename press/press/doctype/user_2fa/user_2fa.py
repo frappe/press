@@ -43,9 +43,9 @@ class User2FA(Document):
 		self.totp_secret = pyotp.random_base32()
 
 	@classmethod
-	def generate_recovery_codes(self):
-		for _ in range(self.recovery_codes_max):
-			yield frappe.generate_hash(length=self.recovery_codes_length).upper()
+	def generate_recovery_codes(cls):
+		for _ in range(cls.recovery_codes_max):
+			yield frappe.generate_hash(length=cls.recovery_codes_length).upper()
 
 	def mark_recovery_codes_viewed(self):
 		"""

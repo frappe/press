@@ -15,7 +15,12 @@
 			<div class="flex flex-row gap-2">
 				<LinkControl
 					class="cursor-pointer"
-					:options="{ doctype: 'Site', filters: { status: 'Active' } }"
+					:options="{
+						doctype: 'Site',
+						filters: {
+							status: ['in', ['Active', 'Suspended', 'Broken', 'Inactive']],
+						},
+					}"
 					placeholder="Select a site"
 					v-model="site"
 				/>

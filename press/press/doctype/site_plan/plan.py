@@ -32,13 +32,9 @@ class Plan(Document):
 		if not fields:
 			fields = ["*"]
 
-		# Should either be enabled or a legacy plan
-		# In case a platform is not passed in we want more control and only want to show
-		# enabled plans in the region, in other cases we can show legacy plan
-		if doctype != "Server Plan" or not filters.get("platform"):
-			filters.update({"enabled": True})
-		else:
-			or_filters = {"enabled": True, "legacy_plan": True}
+		filters.update(
+			{"use_for_plan_change" if filters.get("platform") else "enabled": True},
+		)
 
 		fields.append("`tabHas Role`.role")
 		plans = frappe.get_all(

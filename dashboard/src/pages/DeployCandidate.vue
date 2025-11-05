@@ -28,6 +28,13 @@
 				<Badge class="ml-2" :label="deploy.status" />
 				<div class="ml-auto flex items-center space-x-2">
 					<Button
+						@click="stopBuild"
+						v-if="deploy && deploy.status === 'Running'"
+						theme="red"
+					>
+						Stop Build
+					</Button>
+					<Button
 						@click="$resources.deploy.reload()"
 						:loading="$resources.deploy.get.loading"
 					>
@@ -105,6 +112,7 @@ import AlertAddressableError from '../components/AlertAddressableError.vue';
 import AlertBanner from '../components/AlertBanner.vue';
 import dayjs from 'dayjs';
 import { toast } from 'vue-sonner';
+import { confirmDialog } from '../utils/components';
 
 export default {
 	name: 'DeployCandidate',
@@ -243,6 +251,44 @@ export default {
 			}
 			return deploy;
 		},
+		stopBuild() {
+			const deploy = this.deploy;
+
+			confirmDialog({
+				title: 'Fail Running Build',
+				message: `
+				Are you sure you want to fail this running build?<br><br>
+				<div class="text-bg-base bg-gray-100 p-2 rounded-md">
+				This will <strong>stop the current build immediately</strong>.  
+				All progress made so far will be <strong>discarded</strong>, and the next triggered build will start from scratch.
+				<br><br>
+				Use this option if a build is stuck, taking unusually long, or is expected to fail.
+				</div>
+				`,
+				primaryAction: {
+					label: 'Stop Build',
+					variant: 'solid',
+					theme: 'red',
+					onClick({ hide }) {
+						createResource({
+							url: 'press.api.bench.fail_build',
+							params: { dn: deploy.name },
+						})
+							.fetch()
+							.then(() => {
+								hide();
+							})
+							.catch(() => {
+								hide();
+								toast.error(
+									'Unable to stop build please wait for the status to be updated',
+								);
+							});
+					},
+				},
+			});
+		},
+
 		failAndRedeploy() {
 			if (!this.deploy) {
 				return;

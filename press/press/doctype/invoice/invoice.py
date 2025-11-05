@@ -11,6 +11,7 @@ from frappe.utils.data import fmt_money
 
 from press.api.billing import get_stripe
 from press.api.client import dashboard_whitelist
+from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.utils import log_error
 from press.utils.billing import (
 	convert_stripe_money,
@@ -123,6 +124,7 @@ class Invoice(Document):
 		"amount_due_with_tax",
 		"mpesa_invoice",
 		"mpesa_invoice_pdf",
+		"customer_name",
 	)
 
 	@staticmethod
@@ -518,11 +520,12 @@ class Invoice(Document):
 		team = frappe.get_doc("Team", self.team)
 
 		self.customer_name = team.billing_name or frappe.utils.get_fullname(self.team)
-		self.customer_email = (
-			frappe.db.get_value("Communication Email", {"parent": team.user, "type": "invoices"}, ["value"])
-			or team.user
-		)
-		self.billing_email = team.billing_email or self.customer_email
+		self.customer_email = team.user
+		billing_emails = get_communication_info("Email", "Billing", "Team", self.team)
+		if billing_emails:
+			self.billing_email = billing_emails[0]
+		else:
+			self.billing_email = self.customer_email
 		self.currency = team.currency
 		if not self.payment_mode:
 			self.payment_mode = team.payment_mode
@@ -554,6 +557,8 @@ class Invoice(Document):
 						item.description = f"{server_title} Storage Add-on for {how_many_days}"
 					else:
 						item.description = f"{server_title} active for {how_many_days}"
+				elif item.document_type == "Server Snapshot":
+					item.description = f"{item.document_name} stored for {how_many_days}"
 				elif item.document_type == "Marketplace App":
 					app_title = frappe.get_cached_value("Marketplace App", item.document_name, "title")
 					item.description = f"Marketplace app {app_title} active for {how_many_days}"
@@ -1114,7 +1119,7 @@ def get_permission_query_conditions(user):
 
 
 def has_permission(doc, ptype, user):
-	from press.utils import get_current_team, has_role
+	from press.utils import get_current_team
 
 	if not user:
 		user = frappe.session.user
@@ -1124,9 +1129,6 @@ def has_permission(doc, ptype, user):
 		return True
 
 	if ptype == "create":
-		return True
-
-	if has_role("Press Support Agent", user) and ptype == "read":
 		return True
 
 	team = get_current_team(True)

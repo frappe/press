@@ -49,8 +49,17 @@ class BuildMetric(Document):
 	def _get_metrics(self):
 		build_metric = GenerateBuildMetric(self.start_from, self.to)
 		build_metric.get_metrics()
-		self.metric_dump = json.dumps(build_metric.dump_metrics(), indent=4)
+		build_metric_dump = build_metric.dump_metrics()
+		deploy_metric_dump = deploy_metrics(self.start_from, self.to)
+		self.metric_dump = json.dumps(
+			{"build_metric": build_metric_dump, "deploy_metric": deploy_metric_dump}, indent=4
+		)
 		self.save()
+
+	@frappe.whitelist()
+	def get_metrics(self):
+		"""Retrigger metrics"""
+		frappe.enqueue(self._get_metrics)
 
 
 @dataclass
@@ -82,10 +91,11 @@ class GenerateBuildMetric:
 				"fc_manual_failure": len(self.total_failures["fc_manual_failure"]),
 				"fc_failure": len(self.total_failures["fc_failure"]),
 			},
-			"median_pending_duration": self.duration_metrics["median_pending_duration"],
-			"median_build_duration": self.duration_metrics["median_build_duration"],
+			"median_pending_duration": self.build_duration_metrics["median_pending_duration"],
+			"median_build_duration": self.build_duration_metrics["median_build_duration"],
 			"median_upload_context_duration": self.context_durations["median_upload_duration"],
 			"median_package_context_duration": self.context_durations["median_package_duration"],
+			"median_deploy_duration": self.deploy_duration_metrics,
 			"failure_frequency": dict(self.failure_frequency.most_common()),
 			"fc_failure_metrics": self.fc_failure_metrics,
 			"build_count_split": self.get_build_count_platform_split(),
@@ -101,7 +111,8 @@ class GenerateBuildMetric:
 		"""
 		self.total_builds = self.get_total_builds()
 		self.total_failures = self.get_total_failures()
-		self.duration_metrics = self.get_build_duration_metrics()
+		self.build_duration_metrics = self.get_build_duration_metrics()
+		self.deploy_duration_metrics = self.get_deploy_duration_metrics()
 		self.context_durations = self.get_context_durations()
 		self.failure_frequency = self.get_error_frequency(
 			self.total_failures["user_failure"],
@@ -163,6 +174,18 @@ class GenerateBuildMetric:
 			"median_build_duration": median_build_duration,
 			"median_pending_duration": median_pending_duration,
 		}
+
+	def get_deploy_duration_metrics(self) -> float:
+		deploy_durations = frappe.db.get_all(
+			"Agent Job",
+			{
+				"job_type": "New Bench",
+				"creation": ("between", [self.from_date, self.end_date]),
+				"status": "Success",
+			},
+			pluck="duration",
+		)
+		return median([deploy_duration.total_seconds() / 60 for deploy_duration in deploy_durations])
 
 	def get_total_failures(self) -> FailedBuildType:
 		"""User failures, fc failures and manual failures"""
@@ -226,11 +249,15 @@ class GenerateBuildMetric:
 		failure_output_frequency = defaultdict(int)
 
 		for fc_failure in fc_failures:
-			step_name, step, output = frappe.db.get_value(
+			failed_build_step = frappe.db.get_value(
 				"Deploy Candidate Build Step",
 				{"parent": fc_failure["name"], "status": "Failure"},
 				["stage", "step", "output"],
 			)
+			if not failed_build_step:
+				continue
+
+			step_name, step, output = failed_build_step
 
 			failure_key = f"{step_name}-{step}"
 			failed_step_frequency[failure_key] += 1
@@ -240,6 +267,65 @@ class GenerateBuildMetric:
 					failure_output_frequency[key] += 1
 
 		return {"step_failures": failed_step_frequency, "known_output_failures": failure_output_frequency}
+
+
+def deploy_metrics(start_from: DateTimeLikeObject, to: DateTimeLikeObject) -> dict[str, int]:
+	"""Get deploy failure metrics"""
+
+	no_space = []
+	port_offset = []
+	missing_docker_layer = []
+	missing_docker_image = []
+	registry_timeout = []
+	missing_files = []
+	others = []
+
+	failed_new_bench_jobs = frappe.get_all(
+		"Agent Job",
+		{
+			"status": "Failure",
+			"job_type": "New Bench",
+			"creation": ("between", [start_from, to]),
+		},
+	)
+	all_new_bench_jobs = frappe.get_all(
+		"Agent Job",
+		{
+			"job_type": "New Bench",
+			"creation": ("between", [start_from, to]),
+		},
+	)
+
+	for agent_job in failed_new_bench_jobs:
+		output = frappe.db.get_value("Agent Job", agent_job, ["output"])
+		output = output.casefold() if output else ""
+
+		if "no space" in output:
+			no_space.append(agent_job)
+		elif "port is already allocated" in output:
+			port_offset.append(agent_job)
+		elif "docker: unknown blob" in output:
+			missing_docker_layer.append(agent_job)
+		elif "manifest unknown" in output:
+			missing_docker_image.append(agent_job)
+		elif "tls handshake timeout" in output:
+			registry_timeout.append(agent_job)
+		elif "no such file or directory" in output:
+			missing_files.append(agent_job)
+		else:
+			others.append(agent_job)
+
+	return {
+		"total_deploys": len(all_new_bench_jobs),
+		"failed_deploys": len(failed_new_bench_jobs),
+		"no_space": len(no_space),
+		"port_offset": len(port_offset),
+		"missing_docker_layer": len(missing_docker_layer),
+		"missing_docker_image": len(missing_docker_image),
+		"registry_timeout": len(registry_timeout),
+		"missing_files": len(missing_files),
+		"other": len(others),
+	}
 
 
 def create_build_metric():

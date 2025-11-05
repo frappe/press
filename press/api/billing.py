@@ -21,8 +21,8 @@ from press.api.regional_payments.mpesa.utils import (
 )
 from press.press.doctype.mpesa_setup.mpesa_connector import MpesaConnector
 from press.press.doctype.team.team import (
-	has_unsettled_invoices,
 	_enqueue_finalize_unpaid_invoices_for_team,
+	has_unsettled_invoices,
 )
 from press.utils import get_current_team
 from press.utils.billing import (
@@ -219,6 +219,10 @@ def details():
 
 @frappe.whitelist()
 def fetch_invoice_items(invoice):
+	team = get_current_team()
+	if frappe.db.get_value("Invoice", invoice, "team") != team:
+		frappe.throw("Only team owners and members are permitted to download Invoice")
+
 	return frappe.get_all(
 		"Invoice Item",
 		{"parent": invoice, "parenttype": "Invoice"},
@@ -636,6 +640,11 @@ def get_latest_unpaid_invoice():
 def team_has_balance_for_invoice(prepaid_mode_invoice):
 	team = get_current_team(get_doc=True)
 	return team.get_balance() >= prepaid_mode_invoice.amount_due
+
+
+@frappe.whitelist()
+def is_paypal_enabled() -> bool:
+	return frappe.db.get_single_value("Press Settings", "paypal_enabled")
 
 
 @frappe.whitelist()

@@ -63,12 +63,15 @@ class PressSettings(Document):
 		docker_registry_password: DF.Data | None
 		docker_registry_url: DF.Data | None
 		docker_registry_username: DF.Data | None
+		docker_s3_access_key: DF.Data | None
+		docker_s3_secret_key: DF.Password | None
 		domain: DF.Link | None
 		eff_registration_email: DF.Data
 		email_recipients: DF.SmallText | None
 		enable_app_grouping: DF.Check
 		enable_email_pre_verification: DF.Check
 		enable_google_oauth: DF.Check
+		enable_server_snapshot_recovery: DF.Check
 		enable_site_pooling: DF.Check
 		enable_spam_check: DF.Check
 		enforce_storage_limits: DF.Check
@@ -80,6 +83,7 @@ class PressSettings(Document):
 		erpnext_group: DF.Link | None
 		erpnext_plan: DF.Link | None
 		erpnext_url: DF.Data | None
+		execute_incident_action: DF.Check
 		frappe_url: DF.Data | None
 		frappeio_api_key: DF.Data | None
 		frappeio_api_secret: DF.Password | None
@@ -115,6 +119,7 @@ class PressSettings(Document):
 		offsite_backups_secret_access_key: DF.Password | None
 		partnership_fee_inr: DF.Int
 		partnership_fee_usd: DF.Int
+		paypal_enabled: DF.Check
 		plausible_api_key: DF.Password | None
 		plausible_site_id: DF.Data | None
 		plausible_url: DF.Data | None
@@ -136,6 +141,7 @@ class PressSettings(Document):
 		send_email_notifications: DF.Check
 		send_telegram_notifications: DF.Check
 		servers_using_alternative_http_port_for_communication: DF.SmallText | None
+		set_redis_password: DF.Check
 		spaces_domain: DF.Link | None
 		spamd_api_key: DF.Data | None
 		spamd_api_secret: DF.Password | None

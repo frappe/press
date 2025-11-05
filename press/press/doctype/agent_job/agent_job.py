@@ -21,6 +21,7 @@ from frappe.utils import (
 	now_datetime,
 )
 
+from press.access.support_access import has_support_access
 from press.agent import Agent, AgentCallbackException, AgentRequestSkippedException
 from press.api.client import is_owned_by_team
 from press.press.doctype.agent_job_type.agent_job_type import (
@@ -31,7 +32,7 @@ from press.press.doctype.site_migration.site_migration import (
 	get_ongoing_migration,
 	process_site_migration_job_update,
 )
-from press.utils import has_role, log_error, timer
+from press.utils import log_error, timer
 
 AGENT_LOG_KEY = "agent-jobs"
 
@@ -95,11 +96,11 @@ class AgentJob(Document):
 		if not (site or group or server or bench):
 			frappe.throw("Not permitted", frappe.PermissionError)
 
-		if site and not has_role("Press Support Agent"):
+		if site and not has_support_access("Site", site):
 			is_owned_by_team("Site", site, raise_exception=True)
 
 		if group:
-			if not has_role("Press Support Agent"):
+			if not has_support_access("Release Group", group):
 				is_owned_by_team("Release Group", group, raise_exception=True)
 
 			AgentJob = frappe.qb.DocType("Agent Job")
@@ -786,24 +787,24 @@ def retry_undelivered_jobs(server):
 
 		undelivered_jobs = list(set(server_jobs[server]) - set(delivered_jobs))
 
-		for job in undelivered_jobs:
-			job_doc = frappe.get_doc("Agent Job", job)
-			max_retry_count = max_retry_per_job_type[job_doc.job_type] or 0
+		for job_name in undelivered_jobs:
+			job = AgentJob("Agent Job", job_name)
+			max_retry_count = max_retry_per_job_type[job.job_type] or 0
 
-			if not job_doc.next_retry_at and job_doc.name not in queued_jobs():
-				job_doc.set_status_and_next_retry_at()
+			if not job.next_retry_at and job.name not in queued_jobs():
+				job.set_status_and_next_retry_at()
 				continue
 
-			if get_datetime(job_doc.next_retry_at) > nowtime:
+			if get_datetime(job.next_retry_at) > nowtime:
 				continue
 
-			if job_doc.retry_count <= max_retry_count:
-				retry = job_doc.retry_count + 1
-				frappe.db.set_value("Agent Job", job, "retry_count", retry, update_modified=False)
-				job_doc.retry_in_place()
+			if job.retry_count <= max_retry_count:
+				retry = job.retry_count + 1
+				frappe.db.set_value("Agent Job", job_name, "retry_count", retry, update_modified=False)
+				job.retry_in_place()
 			else:
-				update_job_and_step_status(job, "Delivery Failure")
-				process_job_updates(job)
+				update_job_and_step_status(job_name, "Delivery Failure")
+				process_job_updates(job_name)
 
 
 def queued_jobs():
@@ -943,6 +944,11 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_remove_binlogs_from_indexer_agent_job_update,
 		)
 		from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
+		from press.press.doctype.logical_replication_backup.logical_replication_backup import (
+			process_logical_replication_backup_activate_site_job_update,
+			process_logical_replication_backup_deactivate_site_job_update,
+			process_logical_replication_backup_update_database_host_job_update,
+		)
 		from press.press.doctype.mariadb_binlog.mariadb_binlog import (
 			process_upload_binlogs_to_s3_job_update,
 		)
@@ -956,6 +962,11 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_update_nginx_job_update,
 		)
 		from press.press.doctype.server.server import process_new_server_job_update
+		from press.press.doctype.server_snapshot_recovery.server_snapshot_recovery import (
+			process_backup_database_from_snapshot_job_callback,
+			process_backup_files_from_snapshot_job_callback,
+			process_search_sites_in_snapshot_job_callback,
+		)
 		from press.press.doctype.site.erpnext_site import (
 			process_setup_erpnext_site_job_update,
 		)
@@ -1083,10 +1094,16 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_deactivate_site_job_update(job)
 		elif job.job_type == "Activate Site" and job.reference_doctype == "Site Update":
 			process_activate_site_job_update(job)
+		elif job.job_type == "Activate Site" and job.reference_doctype == "Logical Replication Backup":
+			process_logical_replication_backup_activate_site_job_update(job)
 		elif job.job_type == "Deactivate Site" and job.reference_doctype == "Site Backup":
 			process_site_backup_deactivate_site_job_update(job)
 		elif job.job_type == "Deactivate Site" and job.reference_doctype == "Physical Backup Restoration":
 			process_physical_backup_restoration_deactivate_site_job_update(job)
+		elif job.job_type == "Deactivate Site" and job.reference_doctype == "Logical Replication Backup":
+			process_logical_replication_backup_deactivate_site_job_update(job)
+		elif job.job_type == "Update Database Host" and job.reference_doctype == "Logical Replication Backup":
+			process_logical_replication_backup_update_database_host_job_update(job)
 		elif job.job_type == "Add Domain":
 			process_add_domain_job_update(job)
 		elif job.job_type == "Add Binlogs To Indexer":
@@ -1095,6 +1112,12 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_remove_binlogs_from_indexer_agent_job_update(job)
 		elif job.job_type == "Upload Binlogs To S3":
 			process_upload_binlogs_to_s3_job_update(job)
+		elif job.job_type == "Search Sites In Snapshot":
+			process_search_sites_in_snapshot_job_callback(job)
+		elif job.job_type == "Backup Database From Snapshot":
+			process_backup_database_from_snapshot_job_callback(job)
+		elif job.job_type == "Backup Files From Snapshot":
+			process_backup_files_from_snapshot_job_callback(job)
 
 		# send failure notification if job failed
 		if job.status == "Failure":

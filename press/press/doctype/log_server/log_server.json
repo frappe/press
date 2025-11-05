@@ -8,6 +8,7 @@
   "status",
   "hostname",
   "domain",
+  "tls_certificate_renewal_failed",
   "column_break_4",
   "cluster",
   "provider",
@@ -203,6 +204,13 @@
    "fieldname": "ssh_port",
    "fieldtype": "Int",
    "label": "SSH Port"
+  },
+  {
+   "default": "0",
+   "fieldname": "tls_certificate_renewal_failed",
+   "fieldtype": "Check",
+   "label": "TLS Certificate Renewal Failed",
+   "read_only": 1
   }
  ],
  "links": [
@@ -211,7 +219,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2025-04-23 15:31:55.323135",
+ "modified": "2025-09-02 16:43:33.847741",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Log Server",

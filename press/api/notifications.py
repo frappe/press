@@ -59,6 +59,8 @@ def get_notifications(filters=None, order_by="creation desc", limit_start=None, 
 			notification.route = (
 				f"sites/{site_name}/insights/jobs/{notification.document_name}" if site_name else None
 			)
+		elif notification.document_type == "Support Access":
+			notification.route = "access-requests"
 		else:
 			notification.route = None
 

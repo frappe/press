@@ -163,7 +163,10 @@ export default {
 					() => import('../pages/ReleaseGroupBenchSites.vue'),
 				),
 				props: (releaseGroup) => {
-					return { releaseGroup: releaseGroup.doc.name };
+					return {
+						releaseGroup: releaseGroup.doc.name,
+						actionsAccess: releaseGroup.doc.actions_access,
+					};
 				},
 			},
 			{
@@ -939,7 +942,7 @@ export default {
 					},
 				},
 			},
-			tagTab(),
+			tagTab('Release Group'),
 		],
 		actions(context) {
 			let { documentResource: group } = context;
@@ -1003,7 +1006,8 @@ export default {
 										}),
 										{
 											success: 'Deploy scheduled successfully',
-											error: 'Failed to schedule deploy',
+											error: (e) =>
+												getToastErrorMessage(e, 'Failed to schedule deploy'),
 											loading: 'Scheduling deploy...',
 										},
 									);

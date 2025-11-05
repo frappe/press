@@ -188,7 +188,7 @@
    "reqd": 1
   },
   {
-   "default": "/desk",
+   "default": "/app",
    "fieldname": "redirect_to_after_login",
    "fieldtype": "Data",
    "label": "Redirect To After Login",
@@ -242,7 +242,7 @@
    "link_fieldname": "product_trial"
   }
  ],
- "modified": "2025-05-22 12:29:52.256771",
+ "modified": "2025-09-05 12:27:46.001406",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial",

@@ -57,11 +57,10 @@
    "link_fieldname": "review"
   }
  ],
- "modified": "2022-01-18 08:28:31.459866",
+ "modified": "2025-08-20 20:10:52.072103",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "App User Review",
- "name_case": "UPPER CASE",
  "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
@@ -76,8 +75,21 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Marketplace Manager",
+   "share": 1,
+   "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
