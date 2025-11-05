@@ -54,7 +54,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 	# end: auto-generated types
 
 	def stop_all_benches(self, step: "NFSVolumeDetachmentStep"):
-		"""Stop all benches running on /shared"""
+		"""Stop all running benches"""
 		server: Server = frappe.get_doc("Server", self.primary_server)
 		step.status = Status.Running
 		step.save()
@@ -100,12 +100,10 @@ class NFSVolumeDetachment(Document, StepHandler):
 			self.secondary_server,
 			"private_ip",
 		)
-		redis_password = frappe.get_cached_doc("Server", self.primary_server).get_redis_password()
 
 		agent_job = Agent(self.primary_server).change_bench_directory(
 			redis_connection_string_ip="localhost",
 			directory="/home/frappe/benches/",
-			redis_password=redis_password,
 			secondary_server_private_ip=secondary_server_private_ip,
 			is_primary=True,
 			restart_benches=True,
