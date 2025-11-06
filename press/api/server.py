@@ -177,7 +177,7 @@ def overview(name):
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 def archive(name):
-	server = poly_get_doc(["Server", "Database Server"], name)
+	server: Server | DatabaseServer = poly_get_doc(["Server", "Database Server"], name)
 	server.drop_server()
 
 

@@ -396,6 +396,19 @@ class BaseServer(Document, TagHelpers):
 	@dashboard_whitelist()
 	def drop_server(self):
 		app_server, db_server = self._get_app_and_database_servers()
+
+		if not app_server.is_primary:
+			frappe.throw(
+				"This operation is only allowed on a primary server. Secondary servers cannot be dropped directly.",
+				frappe.ValidationError,
+			)
+
+		if app_server.benches_on_shared_volume:
+			frappe.throw(
+				"This server is currently using a shared volume. Please detach it from the NFS server before proceeding.",
+				frappe.ValidationError,
+			)
+
 		app_server.archive()
 		db_server.archive()
 
