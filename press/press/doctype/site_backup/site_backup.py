@@ -255,16 +255,13 @@ class SiteBackup(Document):
 				reference_name=self.name,
 			)
 
-<<<<<<< HEAD
-=======
 		if (
 			not self.physical
-			and self.has_value_changed("status")
+			and self.has_value_change("status")
 			and frappe.db.get_value("Agent Job", self.job, "status") == "Failure"
 		):
 			self.fix_global_search_indexes()
 
->>>>>>> a05c23e8b (fix: Trigger agent job on global search index failure)
 	def _rollback_db_directory_permissions(self):
 		if not self.physical:
 			return
@@ -396,8 +393,6 @@ class SiteBackup(Document):
 				return False
 		return False
 
-<<<<<<< HEAD
-=======
 	def fix_global_search_indexes(self):
 		"""
 		Run this whenever Backup Job fails because of broken global search indexes and regenerate them.
@@ -415,7 +410,6 @@ class SiteBackup(Document):
 					reference_name=self.name,
 				)
 
->>>>>>> a05c23e8b (fix: Trigger agent job on global search index failure)
 	@classmethod
 	def offsite_backup_exists(cls, site: str, day: datetime.date) -> bool:
 		return cls.backup_exists(site, day, {"offsite": True})
