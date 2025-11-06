@@ -525,7 +525,6 @@ class Team(Document):
 
 	@frappe.whitelist()
 	def disable_erpnext_partner_privileges(self):
-		self.erpnext_partner = 0
 		self.partner_status = "Inactive"
 		self.save(ignore_permissions=True)
 
