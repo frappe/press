@@ -50,13 +50,8 @@ import CustomAlerts from '../components/CustomAlerts.vue';
 
 export default {
 	name: 'ReleaseGroupBenchSites',
-<<<<<<< HEAD
 	props: ['releaseGroup', 'actionsAccess'],
-	components: { ObjectList, DismissableBanner },
-=======
-	props: ['releaseGroup'],
 	components: { ObjectList, DismissableBanner, CustomAlerts },
->>>>>>> d31d1f31c (feat(dashboard-banners): Add CustomAlerts to ReleaseGroupBenchSites view)
 	data() {
 		return {
 			showAppVersionDialog: false,
