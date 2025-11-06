@@ -897,11 +897,8 @@ class BaseServer(Document, TagHelpers):
 			mountpoint = self.guess_data_disk_mountpoint()
 
 		volume = self.find_mountpoint_volume(mountpoint)
-
-		virtual_machine: "VirtualMachine" = frappe.get_doc(
-			"Virtual Machine",
-			self.volume_host_info.nfs_server if self.has_shared_volume else self.virtual_machine,
-		)
+		# Get the parent of the volume directly instead of guessing.
+		virtual_machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", volume.parent)
 		virtual_machine.increase_disk_size(volume.volume_id, increment)
 		if self.provider == "AWS EC2":
 			device = self.get_device_from_volume_id(volume.volume_id)
