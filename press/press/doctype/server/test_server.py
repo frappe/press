@@ -55,8 +55,7 @@ def create_test_server(
 	if not team:
 		team = create_test_team().name
 
-	if plan:
-		plan_doc: "ServerPlan" = frappe.get_doc("Server Plan", plan)
+	plan_doc: "ServerPlan" | None = frappe.get_doc("Server Plan", plan) if plan else None
 
 	server = frappe.get_doc(
 		{
