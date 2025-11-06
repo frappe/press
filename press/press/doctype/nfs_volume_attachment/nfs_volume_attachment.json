@@ -73,7 +73,8 @@
   {
    "fieldname": "volume_id",
    "fieldtype": "Data",
-   "label": "Volume Id"
+   "label": "Volume Id",
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
@@ -84,7 +85,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2025-10-22 10:31:34.461465",
+ "modified": "2025-11-06 11:13:53.410930",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "NFS Volume Attachment",
