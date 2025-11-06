@@ -24,20 +24,22 @@ def create_test_virtual_machine(
 	series: str = "m",
 	platform: str = "x86_64",
 	cloud_provider: str = "AWS EC2",
+	disk_size: int = 100,
+	has_data_volume: bool = False,
 ) -> VirtualMachine:
 	"""Create test Virtual Machine doc"""
 	if not ip:
 		ip = frappe.mock("ipv4")
 	if not cluster:
 		cluster = create_test_cluster()
-	return frappe.get_doc(
+	vm = frappe.get_doc(
 		{
 			"doctype": "Virtual Machine",
 			"domain": create_test_root_domain("fc.dev", cluster.name).name,
 			"series": series,
 			"status": "Running",
 			"machine_type": "r5.xlarge",
-			"disk_size": 100,
+			"disk_size": disk_size,
 			"cluster": cluster.name,
 			"instance_id": "i-1234567890",
 			"vcpu": 4,
@@ -45,6 +47,45 @@ def create_test_virtual_machine(
 			"cloud_provider": cloud_provider,
 		}
 	).insert(ignore_if_duplicate=True)
+
+	volumes = []
+	# Root volume
+	volumes.append(
+		frappe.get_doc(
+			{
+				"doctype": "Virtual Machine Volume",
+				"parenttype": "Virtual Machine",
+				"parent": vm.name,
+				"parentfield": "volumes",
+				"volume_type": "gp3",
+				"throughput": 125,
+				"device": "/dev/sdf",
+				"size": disk_size if not has_data_volume else 8,
+				"volume_id": f"vol-{frappe.generate_hash(11)}",
+			}
+		)
+	)
+	if has_data_volume:
+		volumes.append(
+			frappe.get_doc(
+				{
+					"doctype": "Virtual Machine Volume",
+					"parenttype": "Virtual Machine",
+					"parent": vm.name,
+					"parentfield": "volumes",
+					"volume_type": "gp3",
+					"throughput": 125,
+					"device": "/dev/sdg",
+					"size": disk_size,
+					"volume_id": f"vol-{frappe.generate_hash(11)}",
+				}
+			)
+		)
+
+	for volume in volumes:
+		volume.insert()
+
+	return vm
 
 
 @patch.object(VirtualMachine, "client", new=MagicMock())
