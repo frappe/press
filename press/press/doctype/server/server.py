@@ -3017,8 +3017,16 @@ class Server(BaseServer):
 
 	@property
 	def can_scale(self) -> bool:
-		"""Check if server is configured for auto scaling"""
-		return self.benches_on_shared_volume
+		"""
+		Check if server is configured for auto scaling
+		and all release groups on this server have a password
+		"""
+		has_release_groups_without_redis_password = bool(
+			frappe.db.get_all(
+				"Release Group", {"server": self.name, "enabled": 1, "redis_password": ("LIKE", "")}
+			)
+		)
+		return self.benches_on_shared_volume and not has_release_groups_without_redis_password
 
 	def _create_auto_scale_record(self, scale_up: bool) -> "AutoScaleRecord":
 		"""Create up/down scale record"""
