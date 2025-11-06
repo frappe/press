@@ -55,7 +55,9 @@ def create_test_server(
 	if not team:
 		team = create_test_team().name
 
-	plan_doc: "ServerPlan" = frappe.get_doc("Server Plan", plan)
+	if plan:
+		plan_doc: "ServerPlan" = frappe.get_doc("Server Plan", plan)
+
 	server = frappe.get_doc(
 		{
 			"doctype": "Server",
@@ -73,8 +75,8 @@ def create_test_server(
 			"plan": plan,
 			"public": public,
 			"virtual_machine": create_test_virtual_machine(
-				platform=plan_doc.platform,
-				disk_size=plan_doc.disk,
+				platform=plan_doc.platform if plan_doc else "x86_64",
+				disk_size=plan_doc.disk if plan_doc else 25,
 				has_data_volume=has_data_volume,
 				series="f",
 			).name,
