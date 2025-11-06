@@ -211,11 +211,13 @@ class VirtualMachine(Document):
 			frappe.delete_doc("Virtual Machine Image", image)
 
 	def on_update(self):
-		if self.has_value_changed("has_data_volume"):
-			server = self.get_server()
-			if server:
-				server.has_data_volume = self.has_data_volume
-				server.save()
+		server = self.get_server()
+		if server and server.doctype == "NFS Server":
+			return
+
+		if self.has_value_changed("has_data_volume") and server:
+			server.has_data_volume = self.has_data_volume
+			server.save()
 
 		if self.has_value_changed("disk_size") and self.should_bill_addon_storage():
 			self.update_subscription_for_addon_storage()
