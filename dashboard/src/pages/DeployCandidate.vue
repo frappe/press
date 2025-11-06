@@ -35,6 +35,12 @@
 						Stop Deploy
 					</Button>
 					<Button
+						@click="failAndRedeploy"
+						v-if="deploy && deploy.status == 'Failure'"
+					>
+						Redeploy Bench
+					</Button>
+					<Button
 						@click="$resources.deploy.reload()"
 						:loading="$resources.deploy.get.loading"
 					>
