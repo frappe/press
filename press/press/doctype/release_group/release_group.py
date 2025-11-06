@@ -398,6 +398,14 @@ class ReleaseGroup(Document, TagHelpers):
 		self.update_config_in_release_group(sanitized_common_site_config, sanitized_bench_config)
 		self.update_benches_config()
 
+	@property
+	def has_scaled_up_servers(self) -> bool:
+		"""Check if this release group has servers that are currently scaled up"""
+		servers = frappe.db.get_all("Release Group Server", {"parent": self.name}, pluck="server")
+		return bool(
+			frappe.db.get_all("Server", {"name": ("IN", servers), "scaled_up": True}, pluck="name"),
+		)
+
 	def update_config_in_release_group(self, common_site_config, bench_config):
 		"""Updates bench_config and common_site_config in the Release Group
 
@@ -688,6 +696,13 @@ class ReleaseGroup(Document, TagHelpers):
 			return None
 
 		self.check_app_server_storage()
+
+		if self.has_scaled_up_servers:
+			frappe.throw(
+				"Unable to create a new deploy as server(s) in this bench group are currently up scaled!",
+				frappe.ValidationError,
+			)
+
 		apps = self.get_apps_to_update(apps_to_update)
 		if apps_to_update is None:
 			self.validate_dc_apps_against_rg(apps)
