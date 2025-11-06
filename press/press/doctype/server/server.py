@@ -1011,6 +1011,25 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def archive(self):
+		if frappe.db.exists(
+			"Press Job",
+			{
+				"job_type": "Archive Server",
+				"server": self.name,
+				"server_type": self.doctype,
+				"status": "Success",
+			},
+		):
+			frappe.msgprint(_("Server {0} has already been archived.").format(self.name))
+			return
+
+		if self.virtual_machine:
+			vm_status = frappe.db.get_value("Virtual Machine", self.virtual_machine, "status")
+			if vm_status == "Terminated":
+				self.status = "Archived"
+				self.save()
+				return
+
 		if frappe.get_all(
 			"Site",
 			filters={"server": self.name, "status": ("!=", "Archived")},
@@ -1027,6 +1046,7 @@ class BaseServer(Document, TagHelpers):
 			frappe.throw(
 				_("Cannot archive server with benches. Please drop them from their respective dashboards.")
 			)
+
 		self.status = "Pending"
 		self.save()
 		if self.is_self_hosted:
