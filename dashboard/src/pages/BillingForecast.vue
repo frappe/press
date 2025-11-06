@@ -39,15 +39,15 @@
 			<!-- Charts Section -->
 			<div>
 				<div
-					v-if="axisChartConfig.data.length || donutConfig.data.length"
+					v-if="axisChartConfig?.data?.length || donutConfig?.data?.length"
 					class="grid grid-cols-1 gap-6 lg:grid-cols-2"
 				>
 					<!-- Stacked Bar Chart for last month, mtd, and forecasted month end -->
-					<div class="rounded-md border" v-if="axisChartConfig.data.length">
+					<div class="rounded-md border" v-if="axisChartConfig?.data?.length">
 						<AxisChart :config="axisChartConfig" />
 					</div>
 					<!-- Donut Chart for current month's usage -->
-					<div class="rounded-md border" v-if="donutConfig.data.length">
+					<div class="rounded-md border" v-if="donutConfig?.data?.length">
 						<DonutChart :config="donutConfig" />
 					</div>
 				</div>
