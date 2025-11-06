@@ -54,6 +54,7 @@
   "partner_tab",
   "partner_details_section",
   "erpnext_partner",
+  "company_name",
   "partner_email",
   "partner_manager",
   "column_break_ooyo",
@@ -505,8 +506,9 @@
   },
   {
    "fieldname": "partner_tier",
-   "fieldtype": "Data",
-   "label": "Partner Tier"
+   "fieldtype": "Link",
+   "label": "Partner Tier",
+   "options": "Partner Tier"
   },
   {
    "fieldname": "custom_apps_tab",
@@ -630,6 +632,11 @@
    "fieldname": "end_date",
    "fieldtype": "Date",
    "label": "End Date"
+  },
+  {
+   "fieldname": "company_name",
+   "fieldtype": "Data",
+   "label": "Company Name"
   }
  ],
  "grid_page_length": 50,
@@ -695,7 +702,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2025-11-06 10:49:46.272417",
+ "modified": "2025-11-06 18:07:54.307229",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
