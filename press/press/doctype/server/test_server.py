@@ -143,7 +143,7 @@ class TestServer(FrappeTestCase):
 	@mock_aws
 	@patch.object(BaseServer, "enqueue_extend_ec2_volume", new=Mock())
 	@patch("boto3.client")
-	def test_subscription_creation_on_addon_storage(self, mock_boto_client):
+	def test_subscription_creation_on_addon_storage(self, _):
 		"""Test subscription creation with a fixed increment"""
 		increment = 10
 		create_test_press_settings()
@@ -152,15 +152,10 @@ class TestServer(FrappeTestCase):
 		plan_disk_size = server_plan.disk
 		actual_disk_size = frappe.db.get_value("Virtual Machine", server.virtual_machine, "disk_size")
 		self.assertEqual(plan_disk_size, actual_disk_size)
+
 		vm: "VirtualMachine" = frappe.get_doc("Virtual Machine", server.virtual_machine)
 		root_volume = vm.volumes[0]
 		self.assertEqual(plan_disk_size, root_volume.size)
-
-		mock_ec2 = Mock()
-		mock_ec2.modify_volume.return_value = {
-			"VolumeModification": {"VolumeId": "vol-123", "ModificationState": "modifying", "TargetSize": 100}
-		}
-		mock_boto_client.return_value = mock_ec2
 
 		server.increase_disk_size_for_server(server.name, increment=increment)
 		new_actual_disk_size = frappe.db.get_value("Virtual Machine", server.virtual_machine, "disk_size")
@@ -178,11 +173,13 @@ class TestServer(FrappeTestCase):
 		)
 
 		self.assertEqual(subscription_doc.enabled, 1)
+
 		self.assertEqual(int(subscription_doc.additional_storage), increment)
 
 		# Increase by another 10
 		server.increase_disk_size_for_server(server.name, increment=increment)
 		new_actual_disk_size = frappe.db.get_value("Virtual Machine", server.virtual_machine, "disk_size")
+
 		self.assertEqual(plan_disk_size + increment + increment, new_actual_disk_size)
 
 		subscription_doc = frappe.get_doc(
@@ -197,6 +194,7 @@ class TestServer(FrappeTestCase):
 		)
 
 		self.assertEqual(subscription_doc.enabled, 1)
+
 		self.assertEqual(int(subscription_doc.additional_storage), increment + increment)
 
 	def test_subscription_team_update_on_server_team_update(self):
