@@ -753,12 +753,12 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "Hetzner":
 			self.client().servers.reboot(self.server_instance)
 
-		log_server_activity(self.series, self.name, action="Reboot")
+		log_server_activity(self.series, self.get_server().name, action="Reboot")
 
 		self.sync()
 
 	@frappe.whitelist()
-	def increase_disk_size(self, volume_id=None, increment=50):
+	def increase_disk_size(self, volume_id=None, increment=50):  # noqa: C901
 		if not increment:
 			return
 		if not volume_id:
@@ -772,7 +772,10 @@ class VirtualMachine(Document):
 		volume.last_updated_at = frappe.utils.now_datetime()
 		if self.cloud_provider == "AWS EC2":
 			self.client().modify_volume(VolumeId=volume.volume_id, Size=volume.size)
-			self.update_subscription_for_nfs_addon_storage(volume)
+			server = self.get_server()
+			if server.doctype == "NFS Server":
+				self.update_subscription_for_nfs_addon_storage(volume)
+
 		elif self.cloud_provider == "OCI":
 			if ".bootvolume." in volume.volume_id:
 				self.client(BlockstorageClient).update_boot_volume(
@@ -792,7 +795,7 @@ class VirtualMachine(Document):
 
 		log_server_activity(
 			self.series,
-			self.name,
+			server=self.get_server().name,
 			action="Disk Size Change",
 			reason=f"{'Root' if is_root_volume else 'Data'} volume increased by {increment}",
 		)
@@ -1329,7 +1332,7 @@ class VirtualMachine(Document):
 				volume.delete()
 			self.client().servers.delete(self.server_instance)
 
-		log_server_activity(self.series, self.name, action="Terminated")
+		log_server_activity(self.series, self.get_server().name, action="Terminated")
 
 	@frappe.whitelist()
 	def resize(self, machine_type):
@@ -1569,7 +1572,7 @@ class VirtualMachine(Document):
 
 		log_server_activity(
 			self.series,
-			self.name,
+			self.get_server().name,
 			action="Reboot",
 			reason="Unable to reboot manually, rebooting with serial console",
 		)
@@ -1790,7 +1793,7 @@ class VirtualMachine(Document):
 		if log_activity:
 			log_server_activity(
 				self.series,
-				self.name,
+				self.get_server().name,
 				action="Volume",
 				reason="Volume attached on server",
 			)
