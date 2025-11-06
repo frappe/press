@@ -166,6 +166,39 @@ class TestServer(FrappeTestCase):
 		new_actual_disk_size = frappe.db.get_value("Virtual Machine", server.virtual_machine, "disk_size")
 		self.assertEqual(plan_disk_size + increment, new_actual_disk_size)
 
+		subscription_doc = frappe.get_doc(
+			"Subscription",
+			{
+				"team": server.team,
+				"plan_type": "Server Storage Plan",
+				"plan": "Add-on Storage Plan",
+				"document_type": server.doctype,
+				"document_name": server.name,
+			},
+		)
+
+		self.assertEqual(subscription_doc.enabled, 1)
+		self.assertEqual(int(subscription_doc.additional_storage), increment)
+
+		# Increase by another 10
+		server.increase_disk_size_for_server(server.name, increment=increment)
+		new_actual_disk_size = frappe.db.get_value("Virtual Machine", server.virtual_machine, "disk_size")
+		self.assertEqual(plan_disk_size + increment + increment, new_actual_disk_size)
+
+		subscription_doc = frappe.get_doc(
+			"Subscription",
+			{
+				"team": server.team,
+				"plan_type": "Server Storage Plan",
+				"plan": "Add-on Storage Plan",
+				"document_type": server.doctype,
+				"document_name": server.name,
+			},
+		)
+
+		self.assertEqual(subscription_doc.enabled, 1)
+		self.assertEqual(int(subscription_doc.additional_storage), increment + increment)
+
 	def test_subscription_team_update_on_server_team_update(self):
 		create_test_press_settings()
 		server_plan = create_test_server_plan()
