@@ -89,6 +89,7 @@ def yearly_2fa_recovery_code_reminder():
 				"<=",
 				frappe.utils.add_to_date(frappe.utils.now_datetime(), years=-1),
 			],
+			"enabled": 1,
 		},
 		pluck="name",
 	)
