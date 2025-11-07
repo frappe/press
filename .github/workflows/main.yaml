@@ -162,16 +162,14 @@ jobs:
 
       - name: Install Playwright dependencies
         run: |
-          yarn install
-          rm -rf ~/.cache/ms-playwright
-          yarn playwright install --with-deps
+          npx playwright install --with-deps
         env:
           NODE_ENV: development
 
-      - name: Run UI Tests
+      - name: Run Playwright Tests
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
         run: |
-          yarn run test:e2e
+          npx playwright test
         env:
           CI: true
           TYPE: server
