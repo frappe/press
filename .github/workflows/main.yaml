@@ -160,8 +160,10 @@ jobs:
         with:
           install: true
 
-      - name: Install Playwright browsers
-        run: yarn playwright install --with-deps
+      - name: Install Node dependencies
+        run: yarn install --frozen-lockfile --ignore-engines
+        env:
+          NODE_ENV: development
 
       - name: Run UI Tests
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
