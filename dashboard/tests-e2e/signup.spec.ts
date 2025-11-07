@@ -268,7 +268,7 @@ const products = fetchProductTrials();
 for (const product of products) {
   test(`signup flow for product: ${product}`, async ({ page }) => {
     test.skip(process.env.CI === 'true', 'Skipping signup test in CI');
-    throw new Error(JSON.stringify(process.env));
+    throw new Error(`✅ process.env.CI=${process.env.CI}`);
     test.setTimeout(PER_PRODUCT_TIMEOUT_MS + 30_000);
     await runSignupFlow(page, product);
   });
