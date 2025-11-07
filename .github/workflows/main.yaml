@@ -163,12 +163,10 @@ jobs:
       - name: Install Playwright dependencies
         run: |
           yarn install
-          yarn playwright install
+          rm -rf ~/.cache/ms-playwright
+          yarn playwright install --with-deps
         env:
           NODE_ENV: development
-
-      - name: Clean Playwright cache
-        run: rm -rf ~/.cache/ms-playwright
 
       - name: Run UI Tests
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
