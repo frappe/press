@@ -266,9 +266,8 @@ test.describe.configure({ mode: 'parallel' });
 const products = fetchProductTrials();
 for (const product of products) {
   const skipInCI = process.env.CI === 'true';
-  test.skip(skipInCI, 'Skipping signup test in CI');
-
   test(`signup flow for product: ${product}`, async ({ page }) => {
+    test.skip(skipInCI, 'Skipping signup test in CI');
     test.setTimeout(PER_PRODUCT_TIMEOUT_MS + 30_000);
     await runSignupFlow(page, product);
   });
