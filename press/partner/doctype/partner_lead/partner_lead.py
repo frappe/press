@@ -22,6 +22,7 @@ class PartnerLead(Document):
 		contact_no: DF.Data | None
 		conversion_date: DF.Date | None
 		country: DF.Link | None
+		crm_deal: DF.Data | None
 		domain: DF.Literal[
 			"",
 			"Distribution",
@@ -35,6 +36,7 @@ class PartnerLead(Document):
 			"Other",
 		]
 		email: DF.Data | None
+		employees: DF.Literal["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"]
 		engagement_stage: DF.Literal[
 			"",
 			"Demo",
@@ -75,8 +77,10 @@ class PartnerLead(Document):
 		partner_manager: DF.Data | None
 		partner_team: DF.Link | None
 		partner_territory: DF.Data | None
+		passed_date: DF.Date | None
 		plan_proposed: DF.Data | None
 		probability: DF.Literal["Hot", "Cold", "Warm"]
+		require_deal_assistance: DF.Check
 		requirement: DF.Text | None
 		site_url: DF.Data | None
 		state: DF.Data | None
