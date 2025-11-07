@@ -2,6 +2,7 @@ import { test, expect, Page } from '@playwright/test';
 import crypto from 'crypto';
 
 function fetchProductTrials(): string[] {
+  throw new Error(JSON.stringify(process.env));
   const raw = process.env.PRODUCT_TRIALS || '';
   const products = raw.split(',').map(s => s.trim()).filter(Boolean);
   if (!products.length) {
@@ -265,9 +266,9 @@ test.describe.configure({ mode: 'parallel' });
 
 const products = fetchProductTrials();
 for (const product of products) {
-  console.error(JSON.stringify(process.env));
   test(`signup flow for product: ${product}`, async ({ page }) => {
     test.skip(process.env.CI === 'true', 'Skipping signup test in CI');
+    throw new Error(JSON.stringify(process.env));
     test.setTimeout(PER_PRODUCT_TIMEOUT_MS + 30_000);
     await runSignupFlow(page, product);
   });
