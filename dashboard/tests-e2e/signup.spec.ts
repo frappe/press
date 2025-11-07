@@ -266,6 +266,7 @@ test.describe.configure({ mode: 'parallel' });
 const products = fetchProductTrials();
 for (const product of products) {
   test(`signup flow for product: ${product}`, async ({ page }) => {
+    test.skip(process.env.TYPE === 'server', 'Skipping tests in server mode');
     test.setTimeout(PER_PRODUCT_TIMEOUT_MS + 30_000);
     await runSignupFlow(page, product);
   });
