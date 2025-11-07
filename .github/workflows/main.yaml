@@ -160,22 +160,22 @@ jobs:
         with:
           install: true
 
-      - name: Install Playwright dependencies
-        run: |
-          npx playwright install --with-deps
-        env:
-          NODE_ENV: development
+      - name: Install Node dependencies
+        working-directory: /home/runner/frappe-bench/apps/press/dashboard
+        run: yarn install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        working-directory: /home/runner/frappe-bench/apps/press/dashboard
+        run: npx playwright install --with-deps
 
       - name: Run Playwright Tests
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
-        run: |
-          npx playwright test
+        run: npx playwright test
         env:
           CI: true
           TYPE: server
           BASE_URL: http://test_site:8000
-          PRODUCT_TRIALS: SampleProduct
-          
+          PRODUCT_TRIALS: None
 
       - name: Run Tests
         working-directory: /home/runner/frappe-bench
