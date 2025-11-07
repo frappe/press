@@ -75,6 +75,7 @@ class NFSServer(BaseServer):
 					"certificate_private_key": certificate.private_key,
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
+					"is_nfs_server": True,
 				},
 			)
 			play = ansible.run()

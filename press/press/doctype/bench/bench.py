@@ -461,9 +461,9 @@ class Bench(Document):
 	def after_insert(self):
 		self.create_agent_request()
 
-	def create_agent_request(self):
-		agent = Agent(self.server)
-		agent.new_bench(self)
+	def create_agent_request(self) -> None:
+		"""Create a new bench."""
+		Agent(self.server).new_bench(self)
 
 	def _mark_applied_patch_as_archived(self):
 		frappe.db.set_value(

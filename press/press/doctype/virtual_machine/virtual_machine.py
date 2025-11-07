@@ -382,6 +382,9 @@ class VirtualMachine(Document):
 		primary_server = frappe.db.get_value(
 			"NFS Volume Attachment", {"volume_id": volume.volume_id}, "primary_server"
 		)
+		if not primary_server:
+			"""Most likely the root volume"""
+			return
 		primary_server: Server = frappe.get_doc("Server", primary_server)
 		server_plan_disk_size = frappe.db.get_value("Server Plan", primary_server.plan, "disk")
 

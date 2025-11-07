@@ -53,7 +53,7 @@ class Agent:
 		self.server = server
 		self.port = 443 if self.server not in servers_using_alternative_port_for_communication() else 8443
 
-	def new_bench(self, bench: "Bench"):
+	def new_bench(self, bench: "Bench") -> AgentJob:
 		settings = frappe.db.get_value(
 			"Press Settings",
 			None,
