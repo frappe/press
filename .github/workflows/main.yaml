@@ -167,6 +167,9 @@ jobs:
         env:
           NODE_ENV: development
 
+      - name: Clean Playwright cache
+        run: rm -rf ~/.cache/ms-playwright
+
       - name: Run UI Tests
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
         run: |
