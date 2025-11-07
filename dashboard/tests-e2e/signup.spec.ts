@@ -2,7 +2,6 @@ import { test, expect, Page } from '@playwright/test';
 import crypto from 'crypto';
 
 function fetchProductTrials(): string[] {
-  throw new Error(JSON.stringify(process.env));
   const raw = process.env.PRODUCT_TRIALS || '';
   const products = raw.split(',').map(s => s.trim()).filter(Boolean);
   if (!products.length) {
