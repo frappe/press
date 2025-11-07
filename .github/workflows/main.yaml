@@ -160,6 +160,9 @@ jobs:
         with:
           install: true
 
+      - name: Install Playwright browsers
+        run: yarn playwright install --with-deps
+
       - name: Run UI Tests
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
         run: |
@@ -169,6 +172,7 @@ jobs:
           TYPE: server
           BASE_URL: http://test_site:8000
           PRODUCT_TRIALS: SampleProduct
+          
 
       - name: Run Tests
         working-directory: /home/runner/frappe-bench

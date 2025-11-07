@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const localCloudBaseUrl = new URL(process.env.BASE_URL || 'http://localhost:8010').hostname;
+const localCloudBaseUrl = new URL(process.env.BASE_URL || 'http://localhost:8000').hostname;
 
 test('Login', async ({ page }) => {
     await page.goto(`${localCloudBaseUrl}/dashboard/login`);
