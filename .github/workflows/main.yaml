@@ -160,8 +160,10 @@ jobs:
         with:
           install: true
 
-      - name: Install Node dependencies
-        run: yarn install --frozen-lockfile --ignore-engines
+      - name: Install Playwright dependencies
+        run: |
+          yarn install
+          yarn playwright install
         env:
           NODE_ENV: development
 
