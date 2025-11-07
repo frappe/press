@@ -111,8 +111,37 @@ class AccountRequest(Document):
 		else:
 			self.is_us_eu = False
 
-	def validate(self):
+	def before_validate(self):
 		self.email = self.email.strip()
+
+	def validate(self):
+		self.disallow_temporary_email_providers()
+
+	def disallow_temporary_email_providers(self):
+		"""
+		Disallow temporary email providers for account requests. Throws
+		validation error if a temporary email provider is detected.
+		"""
+		if not self.email:
+			return
+		host = self.email.split("@").pop().lower()
+		hosts = [
+			"yopmail.com",
+			"mailinator.com",
+			"temp-mail.org",
+			"10minutemail.com",
+			"guerrillamail.com",
+			"throwawaymail.com",
+			"maildrop.cc",
+			"getnada.com",
+			"tempmailaddress.com",
+			"dispostable.com",
+		]
+		if host in hosts:
+			frappe.throw(
+				"Temporary email providers are not allowed.",
+				frappe.ValidationError,
+			)
 
 	def after_insert(self):
 		# Telemetry: Only capture if it's not a saas signup or invited by parent team. Also don't capture if user already have a team

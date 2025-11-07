@@ -41,4 +41,37 @@ def create_test_account_request(
 
 
 class TestAccountRequest(FrappeTestCase):
-	pass
+	def test_bare(self):
+		account_request = frappe.get_doc(
+			{
+				"doctype": "Account Request",
+				"email": "hello@example.com",
+			}
+		)
+
+		self.assertIsNotNone(account_request.insert())
+
+	def test_temporary_email_providers(self):
+		hosts = [
+			"yopmail.com",
+			"mailinator.com",
+			"temp-mail.org",
+			"10minutemail.com",
+			"guerrillamail.com",
+			"throwawaymail.com",
+			"maildrop.cc",
+			"getnada.com",
+			"tempmailaddress.com",
+			"dispostable.com",
+		]
+
+		for host in hosts:
+			account_request = frappe.get_doc(
+				{
+					"doctype": "Account Request",
+					"email": "hello@" + host,
+				}
+			)
+
+			with self.assertRaises(frappe.ValidationError):
+				account_request.insert()
