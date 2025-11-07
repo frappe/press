@@ -264,6 +264,7 @@ async function runSignupFlow(page: Page, product: string) {
 test.describe.configure({ mode: 'parallel' });
 
 const products = fetchProductTrials();
+
 for (const product of products) {
   const skipInCI = process.env.CI === 'true';
   test(`signup flow for product: ${product}`, async ({ page }) => {
