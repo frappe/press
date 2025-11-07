@@ -15,6 +15,7 @@
   "origin",
   "lead_source",
   "lead_type",
+  "employees",
   "column_break_fyau",
   "status",
   "engagement_stage",
@@ -52,6 +53,8 @@
   "column_break_jonl",
   "partner_email",
   "partner_manager",
+  "deal_assistance_section",
+  "require_deal_assistance",
   "feedback_tab",
   "lead_rating",
   "feedback_to_partner",
@@ -60,7 +63,10 @@
   "more_info_tab",
   "hosting",
   "column_break_rdxj",
-  "site_url"
+  "site_url",
+  "reference_section",
+  "crm_deal",
+  "passed_date"
  ],
  "fields": [
   {
@@ -217,6 +223,7 @@
    "options": "Team"
   },
   {
+   "fetch_from": "partner_team.company_name",
    "fieldname": "company_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -233,11 +240,13 @@
    "fieldtype": "Column Break"
   },
   {
+   "fetch_from": "partner_team.partner_email",
    "fieldname": "partner_email",
    "fieldtype": "Data",
    "label": "Partner Email"
   },
   {
+   "fetch_from": "partner_team.partner_manager",
    "fieldname": "partner_manager",
    "fieldtype": "Data",
    "label": "Partner Manager"
@@ -357,12 +366,45 @@
    "fieldname": "details_tab",
    "fieldtype": "Tab Break",
    "label": "Details"
+  },
+  {
+   "fieldname": "employees",
+   "fieldtype": "Select",
+   "label": "Employees",
+   "options": "1-10\n11-50\n51-200\n201-500\n501-1000\n1000+"
+  },
+  {
+   "fieldname": "deal_assistance_section",
+   "fieldtype": "Section Break",
+   "label": "Deal Assistance"
+  },
+  {
+   "default": "0",
+   "fieldname": "require_deal_assistance",
+   "fieldtype": "Check",
+   "label": "Require Deal Assistance"
+  },
+  {
+   "description": "Additional Info if the lead is Passed to Partner ",
+   "fieldname": "reference_section",
+   "fieldtype": "Section Break",
+   "label": "Reference"
+  },
+  {
+   "fieldname": "crm_deal",
+   "fieldtype": "Data",
+   "label": "CRM Deal"
+  },
+  {
+   "fieldname": "passed_date",
+   "fieldtype": "Date",
+   "label": "Passed Date"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-09 23:40:23.690200",
+ "modified": "2025-11-07 17:42:25.162441",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Partner Lead",
