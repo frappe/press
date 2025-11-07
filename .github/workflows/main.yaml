@@ -160,6 +160,15 @@ jobs:
         with:
           install: true
 
+      - name: Run UI Tests
+        working-directory: /home/runner/frappe-bench/apps/press/dashboard
+        run: |
+          yarn run test:e2e
+        env:
+          CI: true
+          TYPE: server
+          BASE_URL: http://test_site:8000
+
       - name: Run Tests
         working-directory: /home/runner/frappe-bench
         run: |
@@ -168,14 +177,6 @@ jobs:
         env:
           TYPE: server
           COVERAGE_RCFILE: /home/runner/frappe-bench/apps/press/.coveragerc
-
-      - name: Run UI Tests
-        working-directory: /home/runner/frappe-bench/apps/press/dashboard
-        run: |
-          yarn run test:e2e
-        env:
-          TYPE: server
-          BASE_URL: http://test_site:8010
 
       - name: Upload coverage reports to Codecov
         uses: actions/upload-artifact@v4
