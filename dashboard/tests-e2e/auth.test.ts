@@ -10,5 +10,3 @@ test('Login', async ({ page }) => {
     await page.getByRole('button', { name: 'Log In' }).click();
     await expect(page).toHaveURL(/\/dashboard\/sites$/);
 });
-
-export { test };
