@@ -1,0 +1,92 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Email Provider",
+  "domain": "yopmail.com",
+  "is_temporary": 1,
+  "modified": "2025-11-08 21:47:21.711502",
+  "name": "yopmail.com",
+  "title": "YOPmail"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Provider",
+  "domain": "mailinator.com",
+  "is_temporary": 1,
+  "modified": "2025-11-08 21:47:21.711502",
+  "name": "mailinator.com",
+  "title": "Mailinator"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Provider",
+  "domain": "temp-mail.org",
+  "is_temporary": 1,
+  "modified": "2025-11-08 21:47:21.711502",
+  "name": "temp-mail.org",
+  "title": "Temp Mail"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Provider",
+  "domain": "10minutemail.com",
+  "is_temporary": 1,
+  "modified": "2025-11-08 21:47:21.711502",
+  "name": "10minutemail.com",
+  "title": "10 Minute Mail"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Provider",
+  "domain": "guerrillamail.com",
+  "is_temporary": 1,
+  "modified": "2025-11-08 21:47:21.711502",
+  "name": "guerrillamail.com",
+  "title": "Guerrilla Mail"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Provider",
+  "domain": "throwawaymail.com",
+  "is_temporary": 1,
+  "modified": "2025-11-08 21:47:21.711502",
+  "name": "throwawaymail.com",
+  "title": "ThrowAwayMail"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Provider",
+  "domain": "maildrop.cc",
+  "is_temporary": 1,
+  "modified": "2025-11-08 21:47:21.711502",
+  "name": "maildrop.cc",
+  "title": "MailDrop"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Provider",
+  "domain": "getnada.com",
+  "is_temporary": 1,
+  "modified": "2025-11-08 21:47:21.711502",
+  "name": "getnada.com",
+  "title": "GetNada"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Provider",
+  "domain": "tempmailaddress.com",
+  "is_temporary": 1,
+  "modified": "2025-11-08 21:47:21.711502",
+  "name": "tempmailaddress.com",
+  "title": "Temp Mail Address"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Provider",
+  "domain": "dispostable.com",
+  "is_temporary": 1,
+  "modified": "2025-11-08 21:47:21.711502",
+  "name": "dispostable.com",
+  "title": "Dispostable"
+ }
+]

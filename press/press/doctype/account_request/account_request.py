@@ -125,18 +125,11 @@ class AccountRequest(Document):
 		if not self.email:
 			return
 		host = self.email.split("@").pop().lower()
-		hosts = [
-			"yopmail.com",
-			"mailinator.com",
-			"temp-mail.org",
-			"10minutemail.com",
-			"guerrillamail.com",
-			"throwawaymail.com",
-			"maildrop.cc",
-			"getnada.com",
-			"tempmailaddress.com",
-			"dispostable.com",
-		]
+		hosts = frappe.get_all(
+			"Email Provider",
+			filters={"is_temporary": 1},
+			pluck="domain",
+		)
 		if host in hosts:
 			frappe.throw(
 				"Temporary email providers are not allowed.",
