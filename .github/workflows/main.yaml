@@ -80,7 +80,7 @@ jobs:
           semgrep ci --config ./press-semgrep-rules.yml --config r/python.lang.correctness
 
   ui-tests:
-    name: UI Tests
+    name: Client
     runs-on: ubuntu-latest
 
     services:
@@ -151,14 +151,13 @@ jobs:
       - name: Expose GitHub Runtime
         uses: crazy-max/ghaction-github-runtime@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          install: true
-
       - name: Install Node dependencies
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
         run: yarn install --frozen-lockfile
+
+      - name: Build Dashboard assets
+        working-directory: /home/runner/frappe-bench/apps/press/dashboard
+        run: CI=Yes bench build --app press
 
       - name: Install Playwright browsers
         working-directory: /home/runner/frappe-bench/apps/press/dashboard

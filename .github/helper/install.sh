@@ -33,7 +33,6 @@ bench setup requirements --dev
 
 bench start &> bench_start_logs.txt &
 CI=Yes bench build --app frappe &
-CI=Yes bench build --app press &
 bench new-site --db-root-password root --admin-password admin test_site
 bench --site test_site install-app press
 bench set-config -g server_script_enabled 1
