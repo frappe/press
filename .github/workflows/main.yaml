@@ -168,7 +168,8 @@ jobs:
         run: npx playwright test
         env:
           CI: true
-          TYPE: ui
+          TYPE: server
+          BASE_URL: http://test_site:8000
           PRODUCT_TRIALS: None
   
   tests:
