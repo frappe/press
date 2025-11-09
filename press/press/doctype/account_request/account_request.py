@@ -9,7 +9,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import get_url, random_string
 
-from press.utils import get_country_info, is_valid_email_address, log_error
+from press.utils import disposable_emails, get_country_info, is_valid_email_address, log_error
 from press.utils.otp import generate_otp
 from press.utils.telemetry import capture
 
@@ -124,13 +124,7 @@ class AccountRequest(Document):
 		"""
 		if not self.email:
 			return
-		host = self.email.split("@").pop().lower()
-		hosts = frappe.get_all(
-			"Email Provider",
-			filters={"is_temporary": 1},
-			pluck="domain",
-		)
-		if host in hosts:
+		if disposable_emails.is_disposable(self.email):
 			frappe.throw(
 				"Temporary email providers are not allowed.",
 				frappe.ValidationError,
