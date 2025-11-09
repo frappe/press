@@ -145,6 +145,7 @@ jobs:
         run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
 
       - name: Setup Test Users
+        working-directory: /home/runner/frappe-bench/apps/press/dashboard
         run: |
           # Create a test press admin team with free account and skip onboarding
           bench --site test_site execute press.press.doctype.team.test_team.create_test_press_admin_team --kwargs '{"email": "playwright@example.com", "free_account": True, "skip_onboarding": True}'
