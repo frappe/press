@@ -7,20 +7,16 @@ test('Login', async ({ page }) => {
     await page.goto(`${localCloudBaseUrl}/dashboard/login`);
     await page.getByRole('textbox', { name: 'Email (required)' }).click();
     await page.waitForTimeout(500);
-
-    await page.getByRole('textbox', { name: 'Email (required)' }).fill(userEmail);
+    await page.getByRole('textbox', { name: 'Email (required)' }).fill('playwright@example.com');
     await page.waitForTimeout(500);
-
-    await page.getByRole('button', { name: 'Send verification code' }).click();
+    await page.getByRole('button', { name: 'Continue with password' }).click();
     await page.waitForTimeout(500);
-    await page.getByRole('textbox', { name: 'Verification code (required)' }).click();
+    await page.getByRole('textbox', { name: 'Password (required)' }).click();
     await page.waitForTimeout(500);
-
-    await page.getByRole('textbox', { name: 'Verification code (required)' }).fill('111111');
+    await page.getByRole('textbox', { name: 'Password (required)' }).fill('admin');
     await page.waitForTimeout(500);
-
-    await page.getByRole('button', { name: 'Submit verification code' }).click();
-    await page.waitForTimeout(2000);
+    await page.getByRole('button', { name: 'Log In' }).click();
+    await page.waitForTimeout(500);
 
     const url = new URL(page.url());
     expect(url.pathname).toBe("/dashboard/welcome");
