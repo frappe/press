@@ -13,7 +13,7 @@ test('Login', async ({ page }) => {
     await page.waitForTimeout(500);
     await page.getByRole('textbox', { name: 'Password (required)' }).click();
     await page.waitForTimeout(500);
-    await page.getByRole('textbox', { name: 'Password (required)' }).fill('admin');
+    await page.getByRole('textbox', { name: 'Password (required)' }).fill('playwright');
     await page.waitForTimeout(500);
     await page.getByRole('button', { name: 'Log In' }).click();
     await page.waitForTimeout(500);
