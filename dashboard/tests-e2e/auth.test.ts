@@ -12,6 +12,7 @@ test('Login', async ({ page }) => {
     await page.getByRole('textbox', { name: 'Password (required)' }).click();
     await page.getByRole('textbox', { name: 'Password (required)' }).fill(userPassword);
     await page.getByRole('button', { name: 'Log In' }).click();
+    await page.waitForTimeout(2000); // wait for navigation
 
     const url = new URL(page.url());
     expect(url.pathname).toBe("/dashboard/sites");
