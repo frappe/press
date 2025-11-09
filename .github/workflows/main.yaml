@@ -164,11 +164,21 @@ jobs:
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
         run: npx playwright install --with-deps
 
+      - name: Show site config
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench --site test_site show-config
+
       - name: Setup Test Users
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
         run: |
           # Create a test press admin team with free account and skip onboarding
           bench --site test_site execute press.press.doctype.team.test_team.create_test_press_admin_team --kwargs '{"email": "playwright@example.com", "free_account": True, "skip_onboarding": True}'
+          bench --site test_site set-password playwright@example.com playwright
+
+      - name: Show site config
+        working-directory: /home/runner/frappe-bench
+        run: bench --site test_site show-config
 
       - name: Run Playwright Tests
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
