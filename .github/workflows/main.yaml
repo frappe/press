@@ -179,6 +179,13 @@ jobs:
           PRODUCT_TRIALS: None
           # Test user credentials
           PRESS_ADMIN_USER_EMAIL: playwright@example.com
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: /home/runner/frappe-bench/apps/press/dashboard/playwright-report
   
   tests:
     runs-on: ubuntu-latest
