@@ -144,6 +144,11 @@ jobs:
       - name: Install
         run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
 
+      - name: Setup Test Users
+        run: |
+          # Create a test press admin team with free account and skip onboarding
+          bench --site test_site execute press.press.doctype.team.test_team.create_test_press_admin_team --kwargs '{"email": "playwright@example.com", "free_account": True, "skip_onboarding": True}'
+
       - name: Add to Hosts
         run: |
           echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
@@ -171,6 +176,9 @@ jobs:
           TYPE: server
           BASE_URL: http://test_site:8000
           PRODUCT_TRIALS: None
+          # Test user credentials
+          PRESS_ADMIN_USER_EMAIL: playwright@example.com
+          PRESS_ADMIN_USER_PWD: admin
   
   tests:
     runs-on: ubuntu-latest
