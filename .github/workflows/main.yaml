@@ -82,6 +82,13 @@ jobs:
   ui-tests:
     name: Client
     runs-on: ubuntu-latest
+    env:
+      CI: Yes
+      TYPE: server
+      PRESS_ADMIN_USER_EMAIL: playwright@example.com
+      PRESS_ADMIN_USER_PASSWORD: playwright
+      BASE_URL: http://test_site:8000
+      PRODUCT_TRIALS: None
 
     services:
       mariadb:
@@ -164,17 +171,12 @@ jobs:
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
         run: npx playwright install --with-deps
 
-      - name: Show site config
-        working-directory: /home/runner/frappe-bench
-        run: |
-          bench --site test_site show-config
-
       - name: Setup Test Users
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
         run: |
-          # Create a test press admin team with free account and skip onboarding
-          bench --site test_site execute press.press.doctype.team.test_team.create_test_press_admin_team --kwargs '{"email": "playwright@example.com", "free_account": True, "skip_onboarding": True}'
-          bench --site test_site set-password playwright@example.com playwright
+          bench --site test_site execute press.press.doctype.team.test_team.create_test_press_admin_team \
+            --kwargs "{\"email\": \"${PRESS_ADMIN_USER_EMAIL}\", \"free_account\": True, \"skip_onboarding\": True}"
+          bench --site test_site set-password "$PRESS_ADMIN_USER_EMAIL" "$PRESS_ADMIN_USER_PASSWORD"
 
       - name: Show site config
         working-directory: /home/runner/frappe-bench
@@ -183,15 +185,8 @@ jobs:
       - name: Run Playwright Tests
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
         run: npx playwright test
-        env:
-          CI: true
-          TYPE: server
-          BASE_URL: http://test_site:8000
-          PRODUCT_TRIALS: None
-          # Test user credentials
-          PRESS_ADMIN_USER_EMAIL: playwright@example.com
 
-      - name: Upload Playwright report
+      - name: Upload Playwright Test report
         if: always()
         uses: actions/upload-artifact@v4
         with:
