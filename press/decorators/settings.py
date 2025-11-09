@@ -17,7 +17,7 @@ def enabled(key: str, default_value=None, raise_error: bool = False):
 
 	def wrapped(func):
 		def inner(*args, **kwargs):
-			if frappe.db.get_value(SETTINGS_DOCTYPE, SETTINGS_DOCTYPE, key):
+			if frappe.db.get_single_value(SETTINGS_DOCTYPE, key, cache=True):
 				return func(*args, **kwargs)
 			if raise_error:
 				frappe.throw("This feature is disabled", frappe.ValidationError)
