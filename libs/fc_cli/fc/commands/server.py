@@ -54,11 +54,6 @@ def usage(
 		Print.error(console, e)
 
 
-def _noop() -> None:
-	"""Placeholder to keep file structure stable; helpers removed to simplify usage output."""
-	...
-
-
 @server.command(help="Show details about a specific plan for a server")
 def show_plan(
 	ctx: typer.Context,
@@ -80,12 +75,8 @@ def show_plan(
 			Print.error(console, f"Plan '{plan}' not found for server '{name}'")
 			return
 
-		console.print("[bold]Plan Details:[/bold]")
-		console.print(f"[bold]Name:[/bold] [bold]{selected_plan.get('name', '-')}")
-		console.print(f"[bold]Price:[/bold] [bold]₹{selected_plan.get('price_inr', '-')} /mo")
-		console.print(
-			f"[bold]vCPUs:[/bold] [bold]{selected_plan.get('vcpu', '-')}\n[bold]Memory:[/bold] [bold]{selected_plan.get('memory', '-')} GB\n[bold]Disk:[/bold] [bold]{selected_plan.get('disk', '-')} GB"
-		)
+		# Centralized plan rendering via printer helper
+		print_plan_details(selected_plan, console)
 
 	except Exception as e:
 		Print.error(console, e)
@@ -179,6 +170,33 @@ def choose_plan(
 			Print.error(console, f"Plan '{plan}' not found for server '{name}'")
 			return
 
+		# Fetch current plan to compare
+		current_resp = session.post(
+			"press.api.client.get",
+			json={
+				"doctype": doctype,
+				"name": name,
+				"fields": ["current_plan"],
+				"debug": 0,
+			},
+			message="[bold green]Checking current server plan...",
+		)
+		current_plan_name = None
+		if isinstance(current_resp, dict) and current_resp.get("current_plan"):
+			# current_plan may be a dict with name
+			cp = current_resp["current_plan"]
+			if isinstance(cp, dict):
+				current_plan_name = cp.get("name")
+			elif isinstance(cp, str):
+				current_plan_name = cp
+
+		if current_plan_name and current_plan_name == selected_plan.get("name"):
+			Print.info(
+				console,
+				f"Plan '{current_plan_name}' is already active for server '{name}'. Choose a different plan to change.",
+			)
+			return
+
 		change_payload = {
 			"dt": doctype,
 			"dn": name,
@@ -196,6 +214,11 @@ def choose_plan(
 			Print.error(console, f"Failed to change plan: {response.get('message', 'Unknown error')}")
 			return
 
+		previous_plan = current_plan_name or "(unknown)"
+		Print.success(
+			console,
+			f"Plan changed for server '{name}': {previous_plan} -> {selected_plan.get('name')}",
+		)
 		print_plan_details(selected_plan, console)
 
 	except Exception as e:
