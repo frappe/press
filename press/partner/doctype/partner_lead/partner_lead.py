@@ -18,11 +18,13 @@ class PartnerLead(Document):
 		from press.partner.doctype.lead_followup.lead_followup import LeadFollowup
 
 		additional_comments: DF.SmallText | None
+		assistance_type: DF.Literal["Pre-sales Demo", "Plan suggestion", "Proposal", "Closing a deal"]
 		company_name: DF.Data | None
 		contact_no: DF.Data | None
 		conversion_date: DF.Date | None
 		country: DF.Link | None
 		crm_deal: DF.Data | None
+		deal_assistance_rating: DF.Rating
 		domain: DF.Literal[
 			"",
 			"Distribution",
@@ -82,6 +84,7 @@ class PartnerLead(Document):
 		probability: DF.Literal["Hot", "Cold", "Warm"]
 		require_deal_assistance: DF.Check
 		requirement: DF.Text | None
+		requirements: DF.SmallText | None
 		site_url: DF.Data | None
 		state: DF.Data | None
 		status: DF.Literal["Open", "In Process", "Won", "Lost", "Junk", "Pass to Other Partner"]

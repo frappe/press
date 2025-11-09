@@ -55,6 +55,10 @@
   "partner_manager",
   "deal_assistance_section",
   "require_deal_assistance",
+  "assistance_type",
+  "column_break_psrb",
+  "requirements",
+  "deal_assistance_rating",
   "feedback_tab",
   "lead_rating",
   "feedback_to_partner",
@@ -399,12 +403,35 @@
    "fieldname": "passed_date",
    "fieldtype": "Date",
    "label": "Passed Date"
+  },
+  {
+   "depends_on": "require_deal_assistance",
+   "fieldname": "assistance_type",
+   "fieldtype": "Select",
+   "label": "Assistance Type",
+   "options": "Pre-sales Demo\nPlan suggestion\nProposal\nClosing a deal"
+  },
+  {
+   "depends_on": "require_deal_assistance",
+   "fieldname": "requirements",
+   "fieldtype": "Small Text",
+   "label": "Requirements"
+  },
+  {
+   "depends_on": "require_deal_assistance",
+   "fieldname": "deal_assistance_rating",
+   "fieldtype": "Rating",
+   "label": "Deal Assistance Rating"
+  },
+  {
+   "fieldname": "column_break_psrb",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-07 17:42:25.162441",
+ "modified": "2025-11-09 19:21:42.585693",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Partner Lead",
