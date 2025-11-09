@@ -99,7 +99,6 @@ jobs:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
 
-
     steps:
       - name: Remove unnecessary files
         run: |
@@ -151,7 +150,6 @@ jobs:
       - name: Install
         run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
 
-
       - name: Add to Hosts
         run: |
           echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
@@ -159,17 +157,13 @@ jobs:
       - name: Expose GitHub Runtime
         uses: crazy-max/ghaction-github-runtime@v3
 
-      - name: Install Node dependencies
-        working-directory: /home/runner/frappe-bench/apps/press/dashboard
-        run: yarn install --frozen-lockfile
-
       - name: Build Dashboard assets
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
         run: CI=Yes bench build --app press
 
       - name: Install Playwright browsers
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
-        run: npx playwright install --with-deps
+        run: npx playwright install chromium
 
       - name: Setup Test Users
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
@@ -177,10 +171,6 @@ jobs:
           bench --site test_site execute press.press.doctype.team.test_team.create_test_press_admin_team \
             --kwargs "{\"email\": \"${PRESS_ADMIN_USER_EMAIL}\", \"free_account\": True, \"skip_onboarding\": True}"
           bench --site test_site set-password "$PRESS_ADMIN_USER_EMAIL" "$PRESS_ADMIN_USER_PASSWORD"
-
-      - name: Show site config
-        working-directory: /home/runner/frappe-bench
-        run: bench --site test_site show-config
 
       - name: Run Playwright Tests
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
@@ -192,7 +182,7 @@ jobs:
         with:
           name: playwright-report
           path: /home/runner/frappe-bench/apps/press/dashboard/playwright-report
-  
+
   tests:
     runs-on: ubuntu-latest
     strategy:
