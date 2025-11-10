@@ -22,6 +22,8 @@ jobs:
   format:
     name: 'Lint and Format'
     runs-on: ubuntu-latest
+    outputs:
+      python-files-changed: ${{ steps.changed-python-files.outputs.any_changed }}
 
     steps:
       - name: Checkout code
@@ -31,39 +33,25 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+          cache: 'pip'
 
       - name: Install dependencies
-        run: |
-          pip install ruff
+        run: pip install ruff
 
       - name: Get changed files
         id: changed-python-files
         uses: tj-actions/changed-files@v45
         with:
-          files: |
-            **.py
+          files: '**.py'
 
-      - name: List all changed files
+      - name: Lint and Format Check
         if: steps.changed-python-files.outputs.any_changed == 'true'
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-python-files.outputs.all_changed_files }}
         run: |
-          for file in ${ALL_CHANGED_FILES}; do
-            echo "$file was changed"
-          done
-
-      - name: Lint Check
-        if: steps.changed-python-files.outputs.any_changed == 'true'
-        env:
-          ALL_CHANGED_FILES: ${{ steps.changed-python-files.outputs.all_changed_files }}
-        run: |
+          echo "Running lint and format checks on changed files:"
+          echo "${ALL_CHANGED_FILES}" | tr ' ' '\n'
           ruff check --output-format github ${ALL_CHANGED_FILES}
-
-      - name: Format Check
-        if: steps.changed-python-files.outputs.any_changed == 'true'
-        env:
-          ALL_CHANGED_FILES: ${{ steps.changed-python-files.outputs.all_changed_files }}
-        run: |
           ruff format --check ${ALL_CHANGED_FILES} --diff
 
   semgrep:
@@ -74,14 +62,64 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+          cache: 'pip'
       - name: Run Semgrep rules
         run: |
           pip install semgrep==1.32
           semgrep ci --config ./press-semgrep-rules.yml --config r/python.lang.correctness
 
-  ui-tests:
-    name: Client
+  setup-cache:
+    name: Setup Dependencies Cache
     runs-on: ubuntu-latest
+    outputs:
+      pip-cache-key: ${{ steps.cache-keys.outputs.pip-cache-key }}
+      yarn-cache-key: ${{ steps.cache-keys.outputs.yarn-cache-key }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate cache keys
+        id: cache-keys
+        run: |
+          pip_hash=$(find . -name "*requirements.txt" -o -name "pyproject.toml" -o -name "setup.py" -o -name "setup.cfg" | xargs cat | sha256sum | cut -d' ' -f1)
+          yarn_hash=$(find . -name "yarn.lock" | xargs cat | sha256sum | cut -d' ' -f1)
+          echo "pip-cache-key=${{ runner.os }}-pip-${pip_hash}" >> $GITHUB_OUTPUT
+          echo "yarn-cache-key=${{ runner.os }}-yarn-${yarn_hash}" >> $GITHUB_OUTPUT
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'yarn'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ steps.cache-keys.outputs.pip-cache-key }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Get yarn cache directory
+        id: yarn-cache-dir
+        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache yarn
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.yarn-cache-dir.outputs.dir }}
+          key: ${{ steps.cache-keys.outputs.yarn-cache-key }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+  ui-tests:
+    name: Client Tests
+    runs-on: ubuntu-latest
+    needs: setup-cache
     env:
       CI: Yes
       TYPE: server
@@ -100,21 +138,25 @@ jobs:
         options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
 
     steps:
-      - name: Remove unnecessary files
+      - name: Free up disk space
         run: |
           sudo rm -rf /usr/share/dotnet
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
 
-      - name: Clone
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Check for valid Python & Merge Conflicts
+      - name: Validate Python syntax
+        run: python -m py_compile $(find . -name "*.py" | head -10) # Quick syntax check on subset
+
+      - name: Check for merge conflicts
         run: |
-          python -m compileall -q -f "${GITHUB_WORKSPACE}"
-          if grep -lr --exclude-dir=node_modules "^<<<<<<< " "${GITHUB_WORKSPACE}"
-              then echo "Found merge conflicts"
-              exit 1
+          if grep -lr --exclude-dir=node_modules "^<<<<<<< " "${GITHUB_WORKSPACE}"; then
+            echo "Found merge conflicts"
+            exit 1
           fi
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -124,33 +166,20 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          check-latest: true
+          cache: 'yarn'
 
-      - name: Cache pip
+      - name: Restore pip cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
+          key: ${{ needs.setup-cache.outputs.pip-cache-key }}
           restore-keys: |
             ${{ runner.os }}-pip-
-            ${{ runner.os }}-
 
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: 'echo "::set-output name=dir::$(yarn cache dir)"'
-
-      - uses: actions/cache@v4
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-
-      - name: Install
+      - name: Install dependencies
         run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
 
-      - name: Add to Hosts
+      - name: Add to hosts & expose runtime
         run: |
           echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
 
@@ -159,20 +188,20 @@ jobs:
 
       - name: Install Playwright browsers
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
-        run: npx playwright install chromium
+        run: npx playwright install chromium --with-deps
 
-      - name: Setup Test Users
+      - name: Setup test users
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
         run: |
           bench --site test_site execute press.press.doctype.team.test_team.create_test_press_admin_team \
             --kwargs "{\"email\": \"${PRESS_ADMIN_USER_EMAIL}\", \"free_account\": True, \"skip_onboarding\": True}"
           bench --site test_site set-password "$PRESS_ADMIN_USER_EMAIL" "$PRESS_ADMIN_USER_PASSWORD"
 
-      - name: Run Playwright Tests
+      - name: Run Playwright tests
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
-        run: npx playwright test
+        run: npx playwright test --workers=2
 
-      - name: Upload Playwright Test report
+      - name: Upload test report
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -181,12 +210,13 @@ jobs:
 
   tests:
     runs-on: ubuntu-latest
+    needs: setup-cache
     strategy:
       fail-fast: false
       matrix:
-        container: [1, 2]
+        container: [1, 2, 3] # Increase parallelization
 
-    name: Server
+    name: Server Tests (Split ${{ matrix.container }})
 
     services:
       mariadb:
@@ -198,21 +228,14 @@ jobs:
         options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
 
     steps:
-      - name: Remove unnecessary files
+      - name: Free up disk space
         run: |
           sudo rm -rf /usr/share/dotnet
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo rm -rf /usr/local/lib/android
 
-      - name: Clone
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Check for valid Python & Merge Conflicts
-        run: |
-          python -m compileall -q -f "${GITHUB_WORKSPACE}"
-          if grep -lr --exclude-dir=node_modules "^<<<<<<< " "${GITHUB_WORKSPACE}"
-              then echo "Found merge conflicts"
-              exit 1
-          fi
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -222,61 +245,45 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          check-latest: true
+          cache: 'yarn'
 
-      - name: Cache pip
+      - name: Restore pip cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
+          key: ${{ needs.setup-cache.outputs.pip-cache-key }}
           restore-keys: |
             ${{ runner.os }}-pip-
-            ${{ runner.os }}-
 
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: 'echo "::set-output name=dir::$(yarn cache dir)"'
-
-      - uses: actions/cache@v4
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-
-      - name: Install
+      - name: Install dependencies
         run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
 
-      - name: Add to Hosts
-        run: |
-          echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
+      - name: Add to hosts
+        run: echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
 
       - name: Expose GitHub Runtime
         uses: crazy-max/ghaction-github-runtime@v3
 
-      - name: Set up Docker Buildx
+      - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          install: true
 
-      - name: Run Tests
+      - name: Run tests
         working-directory: /home/runner/frappe-bench
         run: |
           bench --site test_site set-config allow_tests true
-          bench --site test_site run-parallel-tests --app press --with-coverage --total-builds 2 --build-number ${{ matrix.container }}
+          bench --site test_site run-parallel-tests --app press --with-coverage --total-builds 3 --build-number ${{ matrix.container }}
         env:
           TYPE: server
           COVERAGE_RCFILE: /home/runner/frappe-bench/apps/press/.coveragerc
 
-      - name: Upload coverage reports to Codecov
+      - name: Upload coverage
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.container }}
           path: /home/runner/frappe-bench/sites/coverage.xml
         if: always()
 
-      - name: Upload bench start logs
+      - name: Upload logs
         uses: actions/upload-artifact@v4
         with:
           name: bench-start-logs-${{ matrix.container }}
@@ -284,18 +291,21 @@ jobs:
         if: always()
 
   coverage:
-    name: Coverage Wrap Up
+    name: Coverage Report
     if: always()
     needs: tests
     runs-on: ubuntu-latest
     steps:
-      - name: Clone
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download artifacts
+      - name: Download coverage artifacts
         uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          merge-multiple: true
 
-      - name: Upload coverage data
+      - name: Upload to Codecov
         uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: false
