@@ -9,7 +9,7 @@ export default {
 	list: {
 		route: '/access-requests',
 		title: 'Access Requests',
-		orderBy: 'creation desc',
+		orderBy: 'modified desc',
 		fields: ['target_team', 'reason', 'site_domains', 'login_as_administrator'],
 		filters: {
 			source: 'Received',
