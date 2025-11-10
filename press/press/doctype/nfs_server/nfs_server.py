@@ -30,6 +30,7 @@ class NFSServer(BaseServer):
 		is_server_prepared: DF.Check
 		is_server_setup: DF.Check
 		monitoring_password: DF.Password | None
+		plan: DF.Link | None
 		private_ip: DF.Data
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
@@ -38,13 +39,14 @@ class NFSServer(BaseServer):
 		ssh_port: DF.Int
 		ssh_user: DF.Data | None
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		team: DF.Link | None
 		tls_certificate_renewal_failed: DF.Check
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
 
 	def validate(self):
 		self.validate_agent_password()
-		# self.validate_monitoring_password()
+		self.validate_monitoring_password()
 
 	def validate_monitoring_password(self):
 		if not self.monitoring_password:
@@ -66,7 +68,7 @@ class NFSServer(BaseServer):
 				port=self._ssh_port(),
 				variables={
 					"server": self.name,
-					"workers": 1,
+					"workers": 8,
 					"domain": self.domain,
 					"agent_password": agent_password,
 					"agent_repository_url": agent_repository_url,

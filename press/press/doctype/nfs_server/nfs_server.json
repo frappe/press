@@ -15,6 +15,9 @@
   "virtual_machine",
   "is_server_prepared",
   "is_server_setup",
+  "billing_section",
+  "team",
+  "plan",
   "networking_section",
   "ip",
   "column_break_9",
@@ -206,6 +209,23 @@
    "fieldtype": "Link",
    "label": "Cluster",
    "options": "Cluster"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "billing_section",
+   "fieldtype": "Section Break",
+   "label": "Billing"
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "label": "Plan",
+   "options": "Server Plan"
   }
  ],
  "links": [
@@ -226,7 +246,7 @@
    "link_fieldname": "nfs_server"
   }
  ],
- "modified": "2025-10-15 23:20:56.419708",
+ "modified": "2025-11-10 14:17:45.639068",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "NFS Server",
@@ -246,6 +266,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

@@ -2442,6 +2442,12 @@ class Server(BaseServer):
 	@frappe.whitelist()
 	def setup_secondary_server(self, server_plan: str):
 		"""Setup secondary server"""
+		secondary_server_platform = frappe.db.get_value("Server Plan", server_plan, "platform")
+		if self.platform != secondary_server_platform:
+			frappe.throw(
+				"Please select a plan of the same platform as the primary server", frappe.ValidationError
+			)
+
 		if self.doctype == "Database Server" or self.is_secondary:
 			return
 
