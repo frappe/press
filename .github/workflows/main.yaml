@@ -72,49 +72,62 @@ jobs:
     name: Setup Dependencies Cache
     runs-on: ubuntu-latest
     outputs:
-      pip-cache-key: ${{ steps.cache-keys.outputs.pip-cache-key }}
-      yarn-cache-key: ${{ steps.cache-keys.outputs.yarn-cache-key }}
+      cache-hit: ${{ steps.cache-deps.outputs.cache-hit }}
+      deps-cache-key: ${{ steps.generate-key.outputs.deps-cache-key }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Generate cache keys
-        id: cache-keys
+      - name: Generate dependency cache key
+        id: generate-key
         run: |
-          pip_hash=$(find . -name "*requirements.txt" -o -name "pyproject.toml" -o -name "setup.py" -o -name "setup.cfg" | xargs cat | sha256sum | cut -d' ' -f1)
-          yarn_hash=$(find . -name "yarn.lock" | xargs cat | sha256sum | cut -d' ' -f1)
-          echo "pip-cache-key=${{ runner.os }}-pip-${pip_hash}" >> $GITHUB_OUTPUT
-          echo "yarn-cache-key=${{ runner.os }}-yarn-${yarn_hash}" >> $GITHUB_OUTPUT
+          # Create a comprehensive hash of all dependency files
+          deps_hash=$(find . -name "*requirements.txt" -o -name "pyproject.toml" -o -name "setup.py" -o -name "setup.cfg" -o -name "yarn.lock" -o -name "package.json" | sort | xargs cat | sha256sum | cut -d' ' -f1)
+          echo "deps-cache-key=${{ runner.os }}-deps-v2-${deps_hash}" >> $GITHUB_OUTPUT
+
+      - name: Cache installed dependencies
+        id: cache-deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/yarn
+            /tmp/frappe-deps
+          key: ${{ steps.generate-key.outputs.deps-cache-key }}
+          restore-keys: |
+            ${{ runner.os }}-deps-v2-
 
       - name: Setup Python
+        if: steps.cache-deps.outputs.cache-hit != 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
       - name: Setup Node
+        if: steps.cache-deps.outputs.cache-hit != 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'yarn'
 
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ steps.cache-keys.outputs.pip-cache-key }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+      - name: Pre-install dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: |
+          # Create temp directory for pre-installed deps
+          mkdir -p /tmp/frappe-deps
 
-      - name: Get yarn cache directory
-        id: yarn-cache-dir
-        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
+          # Pre-install common Python packages
+          pip install --cache-dir ~/.cache/pip \
+            frappe-bench \
+            wheel \
+            setuptools \
+            psutil \
+            redis \
+            pillow \
+            cryptography
 
-      - name: Cache yarn
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.yarn-cache-dir.outputs.dir }}
-          key: ${{ steps.cache-keys.outputs.yarn-cache-key }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+          # Cache pip packages info
+          pip freeze > /tmp/frappe-deps/pip-freeze.txt
+
+          echo "Dependencies pre-installed and cached"
 
   ui-tests:
     name: Client Tests
@@ -161,6 +174,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+          cache: 'pip'
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -168,16 +182,27 @@ jobs:
           node-version: 18
           cache: 'yarn'
 
-      - name: Restore pip cache
+      - name: Restore dependency cache
         uses: actions/cache@v4
         with:
-          path: ~/.cache/pip
-          key: ${{ needs.setup-cache.outputs.pip-cache-key }}
+          path: |
+            ~/.cache/pip
+            ~/.cache/yarn
+            /tmp/frappe-deps
+          key: ${{ needs.setup-cache.outputs.deps-cache-key }}
           restore-keys: |
-            ${{ runner.os }}-pip-
+            ${{ runner.os }}-deps-v2-
 
       - name: Install dependencies
-        run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
+        run: |
+          # Use cached dependencies if available
+          if [ "${{ needs.setup-cache.outputs.cache-hit }}" = "true" ] && [ -f /tmp/frappe-deps/pip-freeze.txt ]; then
+            echo "Using cached dependencies"
+            pip install --cache-dir ~/.cache/pip --no-deps -r /tmp/frappe-deps/pip-freeze.txt || true
+          fi
+
+          # Run the main install script
+          bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
 
       - name: Add to hosts & expose runtime
         run: |
@@ -214,7 +239,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container: [1, 2, 3] # Increase parallelization
+        container: [1, 2, 3, 4, 5]
 
     name: Server Tests (Split ${{ matrix.container }})
 
@@ -247,16 +272,27 @@ jobs:
           node-version: 18
           cache: 'yarn'
 
-      - name: Restore pip cache
+      - name: Restore dependency cache
         uses: actions/cache@v4
         with:
-          path: ~/.cache/pip
-          key: ${{ needs.setup-cache.outputs.pip-cache-key }}
+          path: |
+            ~/.cache/pip
+            ~/.cache/yarn
+            /tmp/frappe-deps
+          key: ${{ needs.setup-cache.outputs.deps-cache-key }}
           restore-keys: |
-            ${{ runner.os }}-pip-
+            ${{ runner.os }}-deps-v2-
 
       - name: Install dependencies
-        run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
+        run: |
+          # Use cached dependencies if available
+          if [ "${{ needs.setup-cache.outputs.cache-hit }}" = "true" ] && [ -f /tmp/frappe-deps/pip-freeze.txt ]; then
+            echo "Using cached dependencies"
+            pip install --cache-dir ~/.cache/pip --no-deps -r /tmp/frappe-deps/pip-freeze.txt || true
+          fi
+
+          # Run the main install script
+          bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
 
       - name: Add to hosts
         run: echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
@@ -271,7 +307,7 @@ jobs:
         working-directory: /home/runner/frappe-bench
         run: |
           bench --site test_site set-config allow_tests true
-          bench --site test_site run-parallel-tests --app press --with-coverage --total-builds 3 --build-number ${{ matrix.container }}
+          bench --site test_site run-parallel-tests --app press --with-coverage --total-builds 5 --build-number ${{ matrix.container }}
         env:
           TYPE: server
           COVERAGE_RCFILE: /home/runner/frappe-bench/apps/press/.coveragerc
