@@ -459,10 +459,27 @@ class Bench(Document):
 			agent.update_bench_config(self)
 
 	def after_insert(self):
-		self.create_agent_request()
+		self.setup_bench()
 
-	def create_agent_request(self) -> None:
-		"""Create a new bench."""
+	def setup_bench(self) -> None:
+		"""Create agent request to copy data and setup bench bind on the correct server"""
+		benches_on_shared_volume = frappe.db.get_value("Server", self.server, "benches_on_shared_volume")
+		if benches_on_shared_volume:
+			nfs_server = frappe.db.get_value(
+				"NFS Volume Attachment", {"status": "Success", "primary_server": self.server}, "nfs_server"
+			)
+			Agent(
+				server=nfs_server,
+				server_type="NFS Server",
+			).setup_bench(
+				self,
+				primary_server=self.server,
+			)
+		else:
+			Agent(self.server).setup_bench(self)
+
+	def deploy_bench(self) -> None:
+		"""Create agent request run the bench on the server request `setup_bench`"""
 		Agent(self.server).new_bench(self)
 
 	def _mark_applied_patch_as_archived(self):
@@ -1166,11 +1183,37 @@ def archive_staging_sites():
 	StagingSite.archive_expired()
 
 
+def process_setup_bench_job_update(job):
+	"""This is a prerequisite to the new bench job however bench will still change
+	its status according to this jobs. As its successor will only be fired if this job is successful.
+	"""
+	bench = Bench("Bench", job.bench)
+
+	if job.status == "Success":
+		# Deploy the bench as soon as the job is successful
+		bench.deploy_bench()
+		return
+
+	# If the status is anything except success we will update bench status
+	updated_status = {
+		"Pending": "Pending",
+		"Running": "Installing",
+		"Failure": "Broken",
+		"Delivery Failure": "Broken",
+	}[job.status]
+
+	if updated_status == bench.status:
+		# Same status do nothing
+		return
+
+	frappe.db.set_value("Bench", job.bench, "status", updated_status)
+
+
 def process_new_bench_job_update(job):
 	bench = Bench("Bench", job.bench)
 
 	updated_status = {
-		"Pending": "Pending",
+		# "Pending": "Pending", # Does not make sense to backtrack our status
 		"Running": "Installing",
 		"Success": "Active",
 		"Failure": "Broken",

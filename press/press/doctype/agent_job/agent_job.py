@@ -932,6 +932,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_archive_bench_job_update,
 			process_new_bench_job_update,
 			process_remove_ssh_user_job_update,
+			process_setup_bench_job_update,
 		)
 		from press.press.doctype.code_server.code_server import (
 			process_archive_code_server_job_update,
@@ -1006,6 +1007,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_site_migration_job_update(job, site_migration)
 		elif job.job_type == "Add Upstream to Proxy":
 			process_new_server_job_update(job)
+		elif job.job_type == "Setup Bench":
+			process_setup_bench_job_update(job)
 		elif job.job_type == "New Bench":
 			process_new_bench_job_update(job)
 		elif job.job_type == "Archive Bench":

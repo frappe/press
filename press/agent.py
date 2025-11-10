@@ -53,7 +53,7 @@ class Agent:
 		self.server = server
 		self.port = 443 if self.server not in servers_using_alternative_port_for_communication() else 8443
 
-	def new_bench(self, bench: "Bench") -> AgentJob:
+	def _get_registry_credentials(self) -> tuple[str, str, str]:
 		settings = frappe.db.get_value(
 			"Press Settings",
 			None,
@@ -62,6 +62,28 @@ class Agent:
 		)
 		cluster = frappe.db.get_value(self.server_type, self.server, "cluster")
 		registry_url = frappe.db.get_value("Cluster", cluster, "repository") or settings.docker_registry_url
+		return settings.docker_registry_username, settings.docker_registry_password, registry_url
+
+	def setup_bench(self, bench: "Bench", primary_server: str | None = None) -> AgentJob:
+		docker_registry_username, docker_registry_password, registry_url = self._get_registry_credentials()
+
+		data = {
+			"name": bench.name,
+			"bench_config": json.loads(bench.bench_config),
+			"registry": {
+				"url": registry_url,
+				"username": docker_registry_username,
+				"password": docker_registry_password,
+			},
+		}
+
+		if primary_server:
+			data.update({"primary_server": primary_server})
+
+		self.create_agent_job("Setup Bench", "benches/setup", data=data, bench=bench)
+
+	def new_bench(self, bench: "Bench") -> AgentJob:
+		docker_registry_username, docker_registry_password, registry_url = self._get_registry_credentials()
 
 		data = {
 			"name": bench.name,
@@ -69,8 +91,8 @@ class Agent:
 			"common_site_config": json.loads(bench.config),
 			"registry": {
 				"url": registry_url,
-				"username": settings.docker_registry_username,
-				"password": settings.docker_registry_password,
+				"username": docker_registry_username,
+				"password": docker_registry_password,
 			},
 		}
 
@@ -84,7 +106,7 @@ class Agent:
 				for m in bench.mounts
 			]
 
-		return self.create_agent_job("New Bench", "benches", data, bench=bench.name)
+		return self.create_agent_job("New Bench", "benches/new", data, bench=bench.name)
 
 	def archive_bench(self, bench):
 		return self.create_agent_job("Archive Bench", f"benches/{bench.name}/archive", bench=bench.name)
