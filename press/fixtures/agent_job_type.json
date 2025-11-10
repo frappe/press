@@ -1111,11 +1111,8 @@
   "modified": "2023-11-06 07:28:19.023648",
   "name": "New Bench",
   "request_method": "POST",
-  "request_path": "/benches",
+  "request_path": "/benches/new",
   "steps": [
-   {
-    "step_name": "Initialize Bench"
-   },
    {
     "step_name": "Update Bench Configuration"
    },
@@ -1127,6 +1124,21 @@
    }
   ]
  },
+ {
+   "disabled_auto_retry": 0,
+   "docstatus": 0,
+   "doctype": "Agent Job Type",
+   "max_retry_count": 6,
+   "modified": "2023-11-06 07:28:19.023648",
+   "name": "Setup Bench",
+   "request_method": "POST",
+   "request_path": "/benches/setup",
+   "steps": [
+    {
+     "step_name": "Setup Bench"
+    }
+   ]
+  },
  {
   "disabled_auto_retry": 0,
   "docstatus": 0,
