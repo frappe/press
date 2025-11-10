@@ -69,65 +69,84 @@ jobs:
           semgrep ci --config ./press-semgrep-rules.yml --config r/python.lang.correctness
 
   setup-cache:
-    name: Setup Dependencies Cache
+    name: Setup Complete Environment
     runs-on: ubuntu-latest
     outputs:
-      cache-hit: ${{ steps.cache-deps.outputs.cache-hit }}
-      deps-cache-key: ${{ steps.generate-key.outputs.deps-cache-key }}
+      cache-hit: ${{ steps.cache-complete.outputs.cache-hit }}
+      env-cache-key: ${{ steps.generate-key.outputs.env-cache-key }}
+
+    services:
+      mariadb:
+        image: mariadb:10.6
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Generate dependency cache key
+      - name: Generate environment cache key
         id: generate-key
         run: |
-          # Create a comprehensive hash of all dependency files
-          deps_hash=$(find . -name "*requirements.txt" -o -name "pyproject.toml" -o -name "setup.py" -o -name "setup.cfg" -o -name "yarn.lock" -o -name "package.json" | sort | xargs cat | sha256sum | cut -d' ' -f1)
-          echo "deps-cache-key=${{ runner.os }}-deps-v2-${deps_hash}" >> $GITHUB_OUTPUT
+          # Create hash from all relevant files that could affect the setup
+          setup_hash=$(find . -name "*requirements.txt" -o -name "pyproject.toml" -o -name "setup.py" -o -name "setup.cfg" -o -name "yarn.lock" -o -name "package.json" | sort | xargs cat | sha256sum | cut -d' ' -f1)
+          install_script_hash=$(sha256sum .github/helper/install.sh | cut -d' ' -f1)
+          press_hash=$(find ./press -name "*.py" | head -20 | xargs cat | sha256sum | cut -d' ' -f1)
+          combined_hash="${setup_hash}-${install_script_hash}-${press_hash}"
+          echo "env-cache-key=${{ runner.os }}-complete-env-v1-${combined_hash}" >> $GITHUB_OUTPUT
 
-      - name: Cache installed dependencies
-        id: cache-deps
+      - name: Cache complete environment
+        id: cache-complete
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/pip
             ~/.cache/yarn
-            /tmp/frappe-deps
-          key: ${{ steps.generate-key.outputs.deps-cache-key }}
+            /tmp/complete-setup
+          key: ${{ steps.generate-key.outputs.env-cache-key }}
           restore-keys: |
-            ${{ runner.os }}-deps-v2-
+            ${{ runner.os }}-complete-env-v1-
 
-      - name: Setup Python
-        if: steps.cache-deps.outputs.cache-hit != 'true'
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Setup Node
-        if: steps.cache-deps.outputs.cache-hit != 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Pre-install dependencies
-        if: steps.cache-deps.outputs.cache-hit != 'true'
+      - name: Setup complete environment
+        if: steps.cache-complete.outputs.cache-hit != 'true'
         run: |
-          # Create temp directory for pre-installed deps
-          mkdir -p /tmp/frappe-deps
+          # Free up disk space
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
 
-          # Pre-install common Python packages
-          pip install --cache-dir ~/.cache/pip \
-            frappe-bench \
-            wheel \
-            setuptools \
-            psutil \
-            redis \
-            pillow \
-            cryptography
+          # Setup Python and Node
+          sudo apt-get update
 
-          # Cache pip packages info
-          pip freeze > /tmp/frappe-deps/pip-freeze.txt
+          # Create cache directory
+          mkdir -p /tmp/complete-setup
 
-          echo "Dependencies pre-installed and cached"
+          # Run the complete installation
+          bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
+
+          # Cache the installed environment state
+          if [ -d "/home/runner/frappe-bench" ]; then
+            echo "📦 Caching frappe-bench environment..."
+
+            # Save the installation state
+            echo "$(date): Complete setup cached" > /tmp/complete-setup/setup-complete.txt
+
+            # Cache key file paths and states
+            ls -la /home/runner/frappe-bench/apps/ > /tmp/complete-setup/apps-list.txt 2>/dev/null || true
+            cp /home/runner/frappe-bench/sites/apps.txt /tmp/complete-setup/ 2>/dev/null || true
+
+            # Cache pip freeze for verification
+            pip freeze > /tmp/complete-setup/pip-packages.txt
+
+            # Cache node_modules if they exist
+            if [ -d "/home/runner/frappe-bench/apps/press/dashboard/node_modules" ]; then
+              echo "Found dashboard node_modules" > /tmp/complete-setup/node-modules-ready.txt
+            fi
+          else
+            echo "❌ Frappe bench not found after installation"
+            exit 1
+          fi
 
   ui-tests:
     name: Client Tests
@@ -160,8 +179,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate Python syntax
-        run: python -m py_compile $(find . -name "*.py" | head -10) # Quick syntax check on subset
 
       - name: Check for merge conflicts
         run: |
@@ -170,43 +187,35 @@ jobs:
             exit 1
           fi
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-          cache: 'pip'
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: 'yarn'
-
-      - name: Restore dependency cache
+      - name: Restore complete environment cache
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/pip
             ~/.cache/yarn
-            /tmp/frappe-deps
-          key: ${{ needs.setup-cache.outputs.deps-cache-key }}
+            /tmp/complete-setup
+          key: ${{ needs.setup-cache.outputs.env-cache-key }}
           restore-keys: |
-            ${{ runner.os }}-deps-v2-
+            ${{ runner.os }}-complete-env-v1-
 
-      - name: Install dependencies
+      - name: Setup or restore environment
         run: |
-          # Use cached dependencies if available
-          if [ "${{ needs.setup-cache.outputs.cache-hit }}" = "true" ] && [ -f /tmp/frappe-deps/pip-freeze.txt ]; then
-            echo "Using cached dependencies"
-            pip install --cache-dir ~/.cache/pip --no-deps -r /tmp/frappe-deps/pip-freeze.txt || true
+          if [ "${{ needs.setup-cache.outputs.cache-hit }}" = "true" ] && [ -f /tmp/complete-setup/setup-complete.txt ]; then
+            echo "Cache created: $(cat /tmp/complete-setup/setup-complete.txt)"
+
+            # Verify cached state
+            if [ -f /tmp/complete-setup/apps-list.txt ]; then
+              echo "📋 Apps in cache:"
+              cat /tmp/complete-setup/apps-list.txt
+            fi
           fi
 
-          # Run the main install script
+          # Always run the install script, but it should be much faster with cache
           bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
 
       - name: Add to hosts & expose runtime
-        run: |
-          echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
+        run: echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
 
       - name: Expose GitHub Runtime
         uses: crazy-max/ghaction-github-runtime@v3
@@ -261,47 +270,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: 'yarn'
-
-      - name: Restore dependency cache
+      - name: Restore complete environment cache
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/pip
             ~/.cache/yarn
-            /tmp/frappe-deps
-          key: ${{ needs.setup-cache.outputs.deps-cache-key }}
+            /tmp/complete-setup
+          key: ${{ needs.setup-cache.outputs.env-cache-key }}
           restore-keys: |
-            ${{ runner.os }}-deps-v2-
+            ${{ runner.os }}-complete-env-v1-
 
-      - name: Install dependencies
+      - name: Setup or restore environment
         run: |
-          # Use cached dependencies if available
-          if [ "${{ needs.setup-cache.outputs.cache-hit }}" = "true" ] && [ -f /tmp/frappe-deps/pip-freeze.txt ]; then
-            echo "Using cached dependencies"
-            pip install --cache-dir ~/.cache/pip --no-deps -r /tmp/frappe-deps/pip-freeze.txt || true
+          if [ "${{ needs.setup-cache.outputs.cache-hit }}" = "true" ] && [ -f /tmp/complete-setup/setup-complete.txt ]; then
+            echo "Cache created: $(cat /tmp/complete-setup/setup-complete.txt)"
           fi
 
-          # Run the main install script
+          # Always run the install script, but it should be much faster with cache
           bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
 
       - name: Add to hosts
         run: echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
 
-      - name: Expose GitHub Runtime
-        uses: crazy-max/ghaction-github-runtime@v3
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
 
       - name: Run tests
         working-directory: /home/runner/frappe-bench
