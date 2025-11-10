@@ -14,7 +14,9 @@ from press.press.doctype.account_request.test_account_request import (
 from press.press.doctype.team.team import Team
 
 
-def create_test_press_admin_team(email: str | None = None) -> Team:
+def create_test_press_admin_team(
+	email: str | None = None, skip_onboarding: bool | None = 0, free_account: bool | None = None
+) -> Team:
 	"""Create test press admin user."""
 	if not email:
 		email = frappe.mock("email")
@@ -22,19 +24,31 @@ def create_test_press_admin_team(email: str | None = None) -> Team:
 	user = frappe.get_doc("User", {"email": email})
 	user.remove_roles(*frappe.get_all("Role", pluck="name"))
 	user.add_roles("Press Admin")
-	return create_test_team(email)
+	return create_test_team(email, skip_onboarding=skip_onboarding, free_account=free_account)
 
 
 @patch.object(Team, "update_billing_details_on_frappeio", new=Mock())
 @patch.object(Team, "create_stripe_customer", new=Mock())
-def create_test_team(email: str | None = None, country="India", free_account: bool | None = None) -> Team:
+def create_test_team(
+	email: str | None = None,
+	country="India",
+	free_account: bool | None = None,
+	skip_onboarding: bool | None = None,
+) -> Team:
 	"""Create test team doc."""
 	if not email:
 		email = frappe.mock("email")
 	create_test_user(email)  # ignores if user already exists
 	user = frappe.get_value("User", {"email": email}, "name")
 	team = frappe.get_doc(
-		{"doctype": "Team", "user": user, "enabled": 1, "country": country, "free_account": free_account}
+		{
+			"doctype": "Team",
+			"user": user,
+			"enabled": 1,
+			"country": country,
+			"free_account": free_account,
+			"skip_onboarding": skip_onboarding,
+		}
 	).insert(ignore_if_duplicate=True)
 	team.reload()
 	# Create a fake account request

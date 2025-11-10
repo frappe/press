@@ -1425,14 +1425,15 @@ def get_user_banners():
 	team = get_current_team()
 
 	# fetch sites + servers for this team
-	site_server_pairs = frappe.get_all(
+	all_sites = frappe.get_all(
 		"Site",
 		filters={"team": team},
-		fields=["name", "server"],
+		fields=["name", "server", "cluster"],
 	)
 
-	sites = list(set([pair["name"] for pair in site_server_pairs]))
-	servers = list(set([pair["server"] for pair in site_server_pairs if pair.get("server")]))
+	sites = list(set([site["name"] for site in all_sites]))
+	servers = list(set([site["server"] for site in all_sites if site.get("server")]))
+	clusters = list(set([site["cluster"] for site in all_sites if site.get("cluster")]))
 
 	DashboardBanner = frappe.qb.DocType("Dashboard Banner")
 	now = frappe.utils.now()
@@ -1453,6 +1454,10 @@ def get_user_banners():
 		.where(
 			(DashboardBanner.is_global == 1)
 			| ((DashboardBanner.type_of_scope == "Site") & (DashboardBanner.site.isin(sites or [""])))
+			| (
+				(DashboardBanner.type_of_scope == "Cluster")
+				& (DashboardBanner.cluster.isin(clusters or [""]))
+			)
 			| ((DashboardBanner.type_of_scope == "Server") & (DashboardBanner.server.isin(servers or [""])))
 			| ((DashboardBanner.type_of_scope == "Team") & (DashboardBanner.team == team))
 		)
