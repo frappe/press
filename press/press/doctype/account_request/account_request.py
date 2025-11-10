@@ -9,6 +9,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import get_url, random_string
 
+from press.decorators import settings
 from press.utils import disposable_emails, get_country_info, is_valid_email_address, log_error
 from press.utils.otp import generate_otp
 from press.utils.telemetry import capture
@@ -115,9 +116,10 @@ class AccountRequest(Document):
 		self.email = self.email.strip()
 
 	def validate(self):
-		self.disallow_temporary_email_providers()
+		self.disallow_disposable_emails()
 
-	def disallow_temporary_email_providers(self):
+	@settings.enabled("disallow_disposable_emails")
+	def disallow_disposable_emails(self):
 		"""
 		Disallow temporary email providers for account requests. Throws
 		validation error if a temporary email provider is detected.
