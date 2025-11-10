@@ -1490,7 +1490,7 @@ def dismiss_banner(banner_name):
 				"parent": banner_name,
 			},
 		)
-		banner.save()
+		banner.save(ignore_permissions=True)
 		return True
 	return False
 
