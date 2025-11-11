@@ -13,7 +13,6 @@ from press.agent import Agent
 from press.runner import Ansible
 
 if typing.TYPE_CHECKING:
-	from press.press.doctype.nfs_server.nfs_server import NFSServer
 	from press.press.doctype.nfs_volume_attachment_step.nfs_volume_attachment_step import (
 		NFSVolumeAttachmentStep,
 	)
@@ -21,7 +20,6 @@ if typing.TYPE_CHECKING:
 		NFSVolumeDetachmentStep,
 	)
 	from press.press.doctype.server.server import Server
-	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 class Status(str, Enum):
@@ -188,12 +186,10 @@ class NFSVolumeAttachment(Document, StepHandler):
 			NFSVolumeAttachmentStep,
 		)
 
-		nfs_server: DF.Link
 		nfs_volume_attachment_steps: DF.Table[NFSVolumeAttachmentStep]
 		primary_server: DF.Link
-		secondary_server: DF.Link
+		secondary_server: DF.Link | None
 		status: DF.Literal["Pending", "Running", "Success", "Failure", "Archived"]
-		volume_id: DF.Data | None
 	# end: auto-generated types
 
 	def validate(self):
@@ -206,7 +202,6 @@ class NFSVolumeAttachment(Document, StepHandler):
 		has_shared_volume_setup = frappe.db.exists(
 			"NFS Volume Attachment",
 			{
-				"nfs_server": self.nfs_server,
 				"primary_server": self.primary_server,
 				"secondary_server": self.secondary_server,
 				"status": "Success",
@@ -236,40 +231,18 @@ class NFSVolumeAttachment(Document, StepHandler):
 			self._fail_ansible_step(step, ansible, e)
 			raise
 
-	def attach_volume_on_nfs_server(self, step: "NFSVolumeAttachmentStep") -> None:
-		"""Attach a new volume on the NFS server."""
-		step.status = Status.Running
-		step.save()
-
-		volume_size = frappe.db.get_value("Virtual Machine", self.primary_server, "disk_size")
-		virtual_machine: VirtualMachine = frappe.get_cached_doc("Virtual Machine", self.nfs_server)
-		try:
-			volume_id = virtual_machine.attach_new_volume(
-				volume_size,
-				iops=3000,
-				throughput=124,
-				log_activity=False,
-			)
-			frappe.db.set_value(
-				"NFS Volume Attachment", self.name, "volume_id", volume_id
-			)  # Need to do this otherwise a reload is required
-			step.status = Status.Success
-			step.save()
-		except Exception as e:
-			self._fail_job_step(step, e)
-			raise
-
 	def allow_servers_to_mount(self, step: "NFSVolumeAttachmentStep"):
 		"""Allow primary and secondary server to share fs"""
-		nfs_server: NFSServer = frappe.get_cached_doc("NFS Server", self.nfs_server)
-		primary_server_private_ip = frappe.db.get_value("Server", self.primary_server, "private_ip")
-		secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
+		primary_server: Server = frappe.get_cached_doc("Server", self.primary_server)
+		secondary_server_private_ip = frappe.db.get_value(
+			"Server", primary_server.secondary_server, "private_ip"
+		)
 
 		try:
-			agent_job = nfs_server.agent.add_servers_to_acl(
-				primary_server_private_ip=primary_server_private_ip,
+			agent_job = primary_server.agent.add_servers_to_acl(
 				secondary_server_private_ip=secondary_server_private_ip,
-				shared_directory=self.primary_server,
+				reference_doctype=primary_server.doctype,
+				reference_name=primary_server.name,
 			)
 			step.job_type = "Agent Job"
 			step.job = agent_job.name
@@ -295,85 +268,10 @@ class NFSVolumeAttachment(Document, StepHandler):
 		)
 		self.handle_async_job(step, job)
 
-	def format_and_mount_fs(self, step: "NFSVolumeAttachmentStep") -> None:
-		"""Create a filesystem on the new volume and mount the shared directory."""
-		nfs_server: NFSServer = frappe.get_cached_doc("NFS Server", self.nfs_server)
-
-		step.status = Status.Running
-		step.save()
-
-		try:
-			ansible = Ansible(
-				playbook="mount_ebs_on_nfs_server.yml",
-				server=nfs_server,
-				user=nfs_server._ssh_user(),
-				port=nfs_server._ssh_port(),
-				variables={
-					"shared_directory": f"/home/frappe/nfs/{self.primary_server}",
-					"volume_id": self.volume_id.replace("vol-", ""),
-				},
-			)
-
-			self._run_ansible_step(step, ansible)
-		except Exception as e:
-			self._fail_ansible_step(step, ansible, e)
-			raise
-
-	def allow_ssh_access_to_primary_server(self, step: "NFSVolumeAttachmentStep"):
-		"""Add primary server keys to nfs server"""
-		primary_server: Server = frappe.get_cached_doc("Server", self.primary_server)
-
-		step.status = Status.Running
-		step.save()
-
-		try:
-			ansible = Ansible(
-				playbook="ssh_access_to_rsync.yml",
-				server=primary_server,
-				user=primary_server._ssh_user(),
-				port=primary_server._ssh_port(),
-				variables={
-					"ssh_user": primary_server._ssh_user(),
-					"ssh_key_path": "/root/.ssh/id_ed25519",
-					"destination_host": self.nfs_server,  # This is the nfs server
-				},
-			)
-
-			self._run_ansible_step(step, ansible)
-		except Exception as e:
-			self._fail_ansible_step(step, ansible, e)
-			raise
-
-	def mount_shared_folder_on_primary_server(self, step: "NFSVolumeAttachmentStep") -> None:
-		"""Mount shared folder on primary server"""
-		primary_server: Server = frappe.get_cached_doc("Server", self.primary_server)
-		nfs_server_private_ip = frappe.db.get_value("NFS Server", self.nfs_server, "private_ip")
-
-		step.status = Status.Running
-		step.save()
-
-		try:
-			ansible = Ansible(
-				playbook="mount_shared_folder.yml",
-				server=primary_server,
-				user=primary_server._ssh_user(),
-				port=primary_server._ssh_port(),
-				variables={
-					"nfs_server_private_ip": nfs_server_private_ip,
-					"using_fs_of_server": self.primary_server,
-					"shared_directory": "/shared",
-				},
-			)
-
-			self._run_ansible_step(step, ansible)
-		except Exception as e:
-			self._fail_ansible_step(step, ansible, e)
-			raise
-
 	def mount_shared_folder_on_secondary_server(self, step: "NFSVolumeAttachmentStep") -> None:
 		"""Mount shared folder on secondary server"""
 		secondary_server: Server = frappe.get_cached_doc("Server", self.secondary_server)
-		nfs_server_private_ip = frappe.db.get_value("NFS Server", self.nfs_server, "private_ip")
+		primary_server_private_ip = frappe.db.get_value("Server", secondary_server.primary, "private_ip")
 
 		step.status = Status.Running
 		step.save()
@@ -385,9 +283,9 @@ class NFSVolumeAttachment(Document, StepHandler):
 				user=secondary_server._ssh_user(),
 				port=secondary_server._ssh_port(),
 				variables={
-					"nfs_server_private_ip": nfs_server_private_ip,
+					"primary_server_private_ip": primary_server_private_ip,
 					"using_fs_of_server": self.primary_server,
-					"shared_directory": "/shared",
+					"shared_directory": "/home/frappe/shared",
 				},
 			)
 
@@ -410,7 +308,6 @@ class NFSVolumeAttachment(Document, StepHandler):
 				user=primary_server._ssh_user(),
 				port=primary_server._ssh_port(),
 				variables={
-					"nfs_server": self.nfs_server,
 					"client_server": primary_server.name,
 				},
 			)
@@ -433,7 +330,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 
 		agent_job = Agent(self.primary_server).change_bench_directory(
 			redis_connection_string_ip="localhost",
-			directory="/shared",
+			directory="/home/frappe/shared",
 			secondary_server_private_ip=secondary_server_private_ip,
 			is_primary=True,
 			restart_benches=True,
@@ -478,12 +375,8 @@ class NFSVolumeAttachment(Document, StepHandler):
 		for step in self.get_steps(
 			[
 				self.stop_all_benches,
-				self.attach_volume_on_nfs_server,
 				self.allow_servers_to_mount,
 				self.wait_for_acl_addition,
-				self.format_and_mount_fs,
-				self.allow_ssh_access_to_primary_server,
-				self.mount_shared_folder_on_primary_server,
 				self.mount_shared_folder_on_secondary_server,
 				self.move_benches_to_shared,
 				self.run_primary_server_benches_on_shared_fs,
@@ -492,6 +385,8 @@ class NFSVolumeAttachment(Document, StepHandler):
 			]
 		):
 			self.append("nfs_volume_attachment_steps", step)
+
+		self.secondary_server = frappe.db.get_value("Server", self.primary_server, "secondary_server")
 
 	@frappe.whitelist()
 	def force_continue(self):

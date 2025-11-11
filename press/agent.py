@@ -1703,9 +1703,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 
 	def add_servers_to_acl(
 		self,
-		primary_server_private_ip: str,
 		secondary_server_private_ip: str,
-		shared_directory: str,
 		reference_doctype: str | None = None,
 		reference_name: str | None = None,
 	) -> AgentJob:
@@ -1713,9 +1711,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			"Add Servers to ACL",
 			"/nfs/add-to-acl",
 			data={
-				"primary_server_private_ip": primary_server_private_ip,
 				"secondary_server_private_ip": secondary_server_private_ip,
-				"shared_directory": shared_directory,
 			},
 			reference_doctype=reference_doctype,
 			reference_name=reference_name,
