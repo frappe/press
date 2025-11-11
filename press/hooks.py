@@ -313,6 +313,7 @@ scheduler_events = {
 			"press.press.doctype.site_update.site_update.run_scheduled_updates",
 			"press.press.doctype.virtual_machine.virtual_machine.snapshot_aws_servers",
 			"press.press.doctype.app.app.poll_new_releases",
+			"press.utils.jobs.alert_on_zombie_rq_jobs",
 		],
 		"* * * * *": [
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",
