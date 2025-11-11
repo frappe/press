@@ -307,9 +307,6 @@ class NFSVolumeAttachment(Document, StepHandler):
 				server=primary_server,
 				user=primary_server._ssh_user(),
 				port=primary_server._ssh_port(),
-				variables={
-					"client_server": primary_server.name,
-				},
 			)
 
 			self._run_ansible_step(step, ansible)
