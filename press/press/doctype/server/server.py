@@ -1175,6 +1175,23 @@ class BaseServer(Document, TagHelpers):
 		return frappe.get_doc("Cluster", self.cluster).get_password("monitoring_password")
 
 	@frappe.whitelist()
+	def setup_nfs(self):
+		"""Allow nfs setup on this server"""
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_nfs", queue="long", timeout=1200)
+
+	def _setup_nfs(self):
+		try:
+			ansible = Ansible(
+				playbook="nfs_server.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Increase swap exception", doc=self)
+
+	@frappe.whitelist()
 	def increase_swap(self, swap_size=4):
 		frappe.enqueue_doc(
 			self.doctype,
