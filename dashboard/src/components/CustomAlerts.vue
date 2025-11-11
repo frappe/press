@@ -127,22 +127,29 @@ export default {
 					this.trimOldDismissedBanners();
 
 					this.localBanners = (
-						this.ctx_type === 'Server'
+						this.ctx_type === 'Cluster'
 							? data.filter(
 									(banner) =>
-										banner.server === this.ctx_name || banner.is_global,
+										banner.cluster === this.ctx_name || banner.is_global,
 								)
-							: this.ctx_type === 'Site'
+							: this.ctx_type === 'Server'
 								? data.filter(
 										(banner) =>
-											banner.site === this.ctx_name || banner.is_global,
+											banner.server === this.ctx_name || banner.is_global,
 									)
-								: this.ctx_type === 'List Page'
+								: this.ctx_type === 'Site'
 									? data.filter(
 											(banner) =>
-												banner.type_of_scope === 'Team' || banner.is_global,
+												banner.site === this.ctx_name || banner.is_global,
 										)
-									: data
+									: this.ctx_type === 'List Page'
+										? data.filter(
+												(banner) =>
+													banner.type_of_scope === 'Team' ||
+													banner.type_of_scope === 'Cluster' ||
+													banner.is_global,
+											)
+										: data
 					).filter((banner) => !(banner.name in this.localDismissedBanners));
 				},
 			};
