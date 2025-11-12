@@ -52,10 +52,10 @@ class TestAccountRequest(FrappeTestCase):
 		self.assertIsNotNone(account_request.insert())
 
 	@patch("press.utils.disposable_emails.domains")
-	def test_temporary_email_provider(self, disposable_domains):
+	def test_temporary_email_provider(self, domains):
 		frappe.db.set_value("Press Settings", "Press Settings", "disallow_disposable_emails", 1)
-		domain: str = frappe.mock("domain_name")
-		disposable_domains.return_value = [domain]
+		domain = frappe.mock("domain_name")
+		domains.return_value = [domain]
 
 		account_request = frappe.get_doc(
 			{
@@ -66,4 +66,4 @@ class TestAccountRequest(FrappeTestCase):
 
 		with self.assertRaises(frappe.ValidationError):
 			account_request.insert()
-			disposable_domains.assert_called_once()
+			domains.assert_called_once()
