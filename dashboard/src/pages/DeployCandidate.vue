@@ -26,7 +26,7 @@
 					{{ deploy.deploy_candidate }}
 				</h2>
 				<Badge class="ml-2" :label="deploy.status" />
-				<div class="ml-auto flex items-cen2ter space-x-2">
+				<div class="ml-auto flex items-center space-x-2">
 					<Button
 						@click="stopBuild"
 						v-if="deploy && deploy.status === 'Running'"
