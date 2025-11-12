@@ -59,6 +59,7 @@ class PressSettings(Document):
 		disable_auto_retry: DF.Check
 		disable_frappe_auth: DF.Check
 		disable_physical_backup: DF.Check
+		disallow_disposable_emails: DF.Check
 		docker_registry_namespace: DF.Data | None
 		docker_registry_password: DF.Data | None
 		docker_registry_url: DF.Data | None
