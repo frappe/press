@@ -613,5 +613,23 @@
     "wait_until_true": 0
    }
   ]
- }
+ },
+ {
+    "callback_max_retry": 1,
+    "callback_script": null,
+    "docstatus": 0,
+    "doctype": "Press Job Type",
+    "modified": "2025-11-12 11:06:08.243873",
+    "name": "Prune Mirror Registry",
+    "steps": [
+     {
+      "parent": "Prune Mirror Registry",
+      "parentfield": "steps",
+      "parenttype": "Press Job Type",
+      "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Registry Server\":\n    server.prune_mirror_registry()",
+      "step_name": "Prune Mirror Registry",
+      "wait_until_true": 0
+     }
+    ]
+}
 ]
