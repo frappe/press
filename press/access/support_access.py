@@ -2,7 +2,6 @@ import frappe
 import frappe.utils
 
 from press.access.actions import ReleaseGroupActions, SiteActions
-from press.utils import get_current_team
 
 TAB_DF_MAP = {
 	"Site": {
@@ -40,7 +39,6 @@ def has_support_access(doctype: str, docname: str, action: str | None = None) ->
 
 	filters = {
 		"status": "Accepted",
-		"requested_team": get_current_team(),
 		"access_allowed_till": (">", frappe.utils.now_datetime()),
 	}
 
