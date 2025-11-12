@@ -1495,6 +1495,7 @@
    "label": "NFS"
   },
   {
+   "default": "/home/frappe/shared",
    "fieldname": "shared_directory",
    "fieldtype": "Data",
    "label": "Shared Directory"
@@ -1502,7 +1503,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-11-12 11:53:51.678466",
+ "modified": "2025-11-12 15:26:00.303409",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
