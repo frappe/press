@@ -73,6 +73,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 	def sync_data(self, step: "NFSVolumeDetachmentStep"):
 		"""Sync data from shared to /home/frappe/benches"""
 		primary_server: Server = frappe.get_cached_doc("Server", self.primary_server)
+		shared_directory = frappe.db.get_single_value("Press Settings", "shared_directory")
 		step.status = Status.Running
 		step.save()
 
@@ -82,6 +83,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 				server=primary_server,
 				user=primary_server._ssh_user(),
 				port=primary_server._ssh_port(),
+				variables={"shared_directory": shared_directory},
 			)
 			self._run_ansible_step(step, ansible)
 		except Exception as e:

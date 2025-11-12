@@ -212,6 +212,8 @@
   "email_recipients",
   "section_break_nloq",
   "servers_using_alternative_http_port_for_communication",
+  "nfs_section",
+  "shared_directory",
   "feature_flags_tab",
   "verify_cards_with_micro_charge",
   "enable_google_oauth",
@@ -1486,11 +1488,21 @@
    "fieldname": "set_redis_password",
    "fieldtype": "Check",
    "label": "Set Redis Password"
+  },
+  {
+   "fieldname": "nfs_section",
+   "fieldtype": "Section Break",
+   "label": "NFS"
+  },
+  {
+   "fieldname": "shared_directory",
+   "fieldtype": "Data",
+   "label": "Shared Directory"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-11-03 10:28:59.626610",
+ "modified": "2025-11-12 11:53:51.678466",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
@@ -1509,6 +1521,7 @@
  ],
  "quick_entry": 1,
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

@@ -272,6 +272,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 		"""Mount shared folder on secondary server"""
 		secondary_server: Server = frappe.get_cached_doc("Server", self.secondary_server)
 		primary_server_private_ip = frappe.db.get_value("Server", secondary_server.primary, "private_ip")
+		shared_directory = frappe.db.get_single_value("Press Settings", "shared_directory")
 
 		step.status = Status.Running
 		step.save()
@@ -285,7 +286,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 				variables={
 					"primary_server_private_ip": primary_server_private_ip,
 					"using_fs_of_server": self.primary_server,
-					"shared_directory": "/home/frappe/shared",
+					"shared_directory": shared_directory,
 				},
 			)
 
@@ -297,6 +298,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 	def move_benches_to_shared(self, step: "NFSVolumeAttachmentStep") -> None:
 		"""Move benches to the shared NFS directory."""
 		primary_server: Server = frappe.get_cached_doc("Server", self.primary_server)
+		shared_directory = frappe.db.get_single_value("Press Settings", "shared_directory")
 
 		step.status = Status.Running
 		step.save()
@@ -307,6 +309,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 				server=primary_server,
 				user=primary_server._ssh_user(),
 				port=primary_server._ssh_port(),
+				variables={"shared_directory": shared_directory},
 			)
 
 			self._run_ansible_step(step, ansible)
@@ -324,10 +327,11 @@ class NFSVolumeAttachment(Document, StepHandler):
 			self.secondary_server,
 			"private_ip",
 		)
+		shared_directory = frappe.db.get_single_value("Press Settings", "shared_directory")
 
 		agent_job = Agent(self.primary_server).change_bench_directory(
 			redis_connection_string_ip="localhost",
-			directory="/home/frappe/shared",
+			directory=shared_directory,
 			secondary_server_private_ip=secondary_server_private_ip,
 			is_primary=True,
 			restart_benches=True,

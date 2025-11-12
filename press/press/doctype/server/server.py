@@ -72,7 +72,7 @@ class ARMDockerImageType(TypedDict):
 PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
 MARIADB_DATA_MNT_POINT = "/opt/volumes/mariadb"
 BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
-SHARED_MNT_POINT = "/home/frappe/shared"
+SHARED_MNT_POINT = frappe.db.get_single_value("Press Settings", "shared_directory")
 
 
 class BaseServer(Document, TagHelpers):
