@@ -1523,7 +1523,16 @@
    "fieldname": "shared_directory",
    "fieldtype": "Data",
    "label": "Shared Directory"
+<<<<<<< HEAD
 >>>>>>> ef9545a6d (chore(nfs): Pick shared directory from press settings)
+=======
+  },
+  {
+   "default": "1",
+   "fieldname": "disallow_disposable_emails",
+   "fieldtype": "Check",
+   "label": "Disallow disposable emails"
+>>>>>>> efcac54b5 (fix(conflicts): Merge conflicts)
   }
  ],
  "issingle": 1,
