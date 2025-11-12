@@ -358,7 +358,7 @@
   "name": "Trigger Build Server Cleanup",
   "steps": [
    {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif server.use_for_build and server.platform == \"arm64\":\n    server.prune_docker_system()\n    \n",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif server.use_for_build:\n    server.prune_docker_system()\n    \n",
     "step_name": "Trigger Build Server Cleanup",
     "wait_until_true": 0
    }
