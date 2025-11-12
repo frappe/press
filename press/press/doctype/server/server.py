@@ -1170,7 +1170,7 @@ class BaseServer(Document, TagHelpers):
 			)
 			ansible.run()
 		except Exception:
-			log_error("Increase swap exception", doc=self)
+			log_error("Exception while setting up NFS", doc=self)
 
 	@frappe.whitelist()
 	def increase_swap(self, swap_size=4):
@@ -2409,6 +2409,7 @@ class Server(BaseServer):
 		if self.doctype == "Database Server" or self.is_secondary:
 			return
 
+		self.setup_nfs()  # Setup nfs when creating a secondary server
 		self.status = "Installing"
 		self.save()
 
