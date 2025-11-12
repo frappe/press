@@ -60,7 +60,7 @@ class AutoScaleRecord(Document):
 		return Agent(self.secondary_server).change_bench_directory(
 			redis_connection_string_ip=primary_server_private_ip,
 			secondary_server_private_ip=secondary_server_private_ip,
-			directory="/shared",
+			directory="/home/frappe/shared",
 			is_primary=False,
 			registry_settings={
 				"url": settings.docker_registry_url,
@@ -86,7 +86,7 @@ class AutoScaleRecord(Document):
 			redis_connection_string_ip="localhost",
 			secondary_server_private_ip=secondary_server_private_ip,
 			is_primary=True,
-			directory="/shared",
+			directory="/home/frappe/shared",
 			restart_benches=True,
 			reference_doctype="Server",
 			reference_name=self.primary_server,
