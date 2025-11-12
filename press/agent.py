@@ -1719,9 +1719,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 
 	def remove_servers_from_acl(
 		self,
-		primary_server_private_ip: str,
 		secondary_server_private_ip: str,
-		shared_directory: str,
 		reference_doctype: str | None = None,
 		reference_name: str | None = None,
 	) -> AgentJob:
@@ -1729,9 +1727,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			"Remove Servers from ACL",
 			"/nfs/remove-from-acl",
 			data={
-				"primary_server_private_ip": primary_server_private_ip,
 				"secondary_server_private_ip": secondary_server_private_ip,
-				"shared_directory": shared_directory,
 			},
 			reference_doctype=reference_doctype,
 			reference_name=reference_name,
