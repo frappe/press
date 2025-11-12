@@ -54,6 +54,7 @@ if TYPE_CHECKING:
 @patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
 @patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 @patch("press.api.bench.frappe.db.commit", new=MagicMock)
+@patch("press.utils.disposable_emails.domains", new=MagicMock)
 class TestStagingSite(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
@@ -75,6 +76,7 @@ class TestStagingSite(FrappeTestCase):
 @patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 @patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
 @patch("press.api.bench.frappe.db.commit", new=MagicMock)
+@patch("press.utils.disposable_emails.domains", new=MagicMock)
 class TestBench(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
@@ -391,6 +393,7 @@ class TestBench(FrappeTestCase):
 @patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
 @patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 @patch("press.api.bench.frappe.db.commit", new=MagicMock)
+@patch("press.utils.disposable_emails.domains", new=MagicMock)
 class TestArchiveObsoleteBenches(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()

@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import random
 from unittest.mock import patch
 
 import frappe
@@ -52,19 +51,19 @@ class TestAccountRequest(FrappeTestCase):
 
 		self.assertIsNotNone(account_request.insert())
 
-	def test_temporary_email_provider(self):
+	@patch("press.utils.disposable_emails.domains")
+	def test_temporary_email_provider(self, disposable_domains):
 		frappe.db.set_value("Press Settings", "Press Settings", "disallow_disposable_emails", 1)
-		with patch("press.utils.disposable_emails.domains") as disposable_domains:
-			disposable_domains.return_value = [frappe.mock("domain_name")]
-			domains = disposable_domains()
-			domain = domains[random.randint(0, len(domains) - 1)]
+		domain: str = frappe.mock("domain_name")
+		disposable_domains.return_value = [domain]
 
-			account_request = frappe.get_doc(
-				{
-					"doctype": "Account Request",
-					"email": "hello@" + domain,
-				}
-			)
+		account_request = frappe.get_doc(
+			{
+				"doctype": "Account Request",
+				"email": "hello@" + domain,
+			}
+		)
 
-			with self.assertRaises(frappe.ValidationError):
-				account_request.insert()
+		with self.assertRaises(frappe.ValidationError):
+			account_request.insert()
+			disposable_domains.assert_called_once()
