@@ -195,7 +195,7 @@ class SSHAccessAudit(Document):
 		if not (key_doctype and key_document):
 			return False
 		document = frappe.get_doc(key_doctype, key_document)
-		if not document.user:
+		if not hasattr(document, "user"):
 			return False
 		if "System Manager" in frappe.get_roles(document.user):
 			return True
