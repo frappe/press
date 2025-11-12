@@ -11,6 +11,8 @@ from rq.command import send_stop_job_command
 from rq.job import Job, JobStatus, NoSuchJobError, get_current_job
 from rq.queue import Queue
 
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
+
 if TYPE_CHECKING:
 	from redis import Redis
 
@@ -97,8 +99,6 @@ def has_job_timeout_exceeded() -> bool:
 
 
 def alert_on_zombie_rq_jobs() -> None:
-	from press.telegram_utils import Telegram
-
 	connection = get_redis_conn()
 
 	threshold = datetime.now() - timedelta(minutes=2)
@@ -111,6 +111,6 @@ def alert_on_zombie_rq_jobs() -> None:
 			if job.enqueued_at < threshold and job.get_status() == JobStatus.QUEUED and position is None:
 				serialized = json.dumps(vars(job), default=str, indent=2, sort_keys=True)
 				message = f"""*Stuck Job Detected in RQ Queue* \n\n```JSON\n{serialized}```\n\n@adityahase @balamurali27 @tanmoysrt"""
-				Telegram("Errors").send(message)
+				TelegramMessage.enqueue(message, "Errors")
 		except Exception:
 			pass
