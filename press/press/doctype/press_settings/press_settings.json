@@ -1500,7 +1500,8 @@
    "fieldname": "shared_directory",
    "fieldtype": "Data",
    "label": "Shared Directory"
-  {   
+  },
+  {
    "default": "1",
    "fieldname": "disallow_disposable_emails",
    "fieldtype": "Check",
