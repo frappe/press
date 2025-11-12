@@ -1,7 +1,7 @@
 # Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
 
-# import frappe
+import frappe
 from frappe.model.document import Document
 
 
@@ -29,4 +29,7 @@ class BastionServer(Document):
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
 
-	pass
+	def autoname(self):
+		if not self.domain:
+			self.domain = frappe.db.get_single_value("Press Settings", "domain")
+		self.name = f"{self.hostname}.{self.domain}"
