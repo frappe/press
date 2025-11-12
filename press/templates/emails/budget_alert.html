@@ -1,0 +1,61 @@
+{% extends "templates/emails/base.html" %}
+{% import "templates/emails/macros.html" as utils %}
+{% block content %}
+<td class="text-base leading-6 text-gray-900">
+	<div class="p-8 bg-white">
+		<div class="from-markdown">
+			<p>Hello,</p>
+
+			<p>
+				Your Frappe Cloud cost for team <strong>{{ team_user }}</strong> has exceeded
+				the monthly budget alert threshold.
+			</p>
+
+			<h3 style="margin: 5px 0; font-weight: bold;">
+				Budget Alert Details:
+			</h3>
+			<table class="table">
+				<tr>
+					<td>
+						Monthly Alert Threshold:
+					</td>
+					<td>
+						{{ alert_threshold }}
+					</td>
+				</tr>
+				<tr>
+					<td>
+						Month-To-Date Invoice Amount:
+					</td>
+					<td>
+						{{ invoice_amount }}
+					</td>
+				</tr>
+				<tr>
+					<td>
+						Amount Over Budget:
+					</td>
+					<td>
+						{{ excess_amount }}
+					</td>
+				</tr>
+				<tr>
+					<td>
+						Invoice Period:
+					</td>
+					<td>
+						{{ frappe.format_date(period_start) }} to {{ frappe.format_date(period_end) }}
+					</td>
+				</tr>
+			</table>
+
+			<p style="margin: 20px 0">
+				To manage your budget alerts, please visit your billing settings in the Frappe Cloud dashboard.
+			</p>
+
+			{{ utils.separator() }}
+		    {{ utils.signature() }}
+		</div>
+	</div>
+</td>
+{% endblock %}

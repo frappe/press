@@ -2138,6 +2138,20 @@ class Site(Document, TagHelpers):
 				f'You <a class="underline" href="https://docs.frappe.io/cloud/enable-server-script">cannot enable server scripts</a> on public benches. Please move to a <a class="underline" href="{PRIVATE_BENCH_DOC}">private bench</a>.'
 			)
 
+	def validate_encryption_key(self, key: str, value: Any):
+		if key != "encryption_key":
+			return
+		from cryptography.fernet import Fernet, InvalidToken
+
+		try:
+			Fernet(value)
+		except (ValueError, InvalidToken):
+			frappe.throw(
+				_(
+					"This is not a valid encryption key. Please copy it exactly. Read <a href='https://docs.frappe.io/cloud/sites/migrate-an-existing-site#encryption-key' class='underline' target='_blank'>here</a> if you have lost the encryption key."
+				)
+			)
+
 	@dashboard_whitelist()
 	@site_action(["Active"])
 	def update_config(self, config=None):
@@ -2152,6 +2166,7 @@ class Site(Document, TagHelpers):
 			if key in get_client_blacklisted_keys():
 				frappe.throw(_(f"The key <b>{key}</b> is blacklisted or internal and cannot be updated"))
 			self.check_server_script_enabled_on_public_bench(key)
+			self.validate_encryption_key(key, value)
 
 			_type = self._site_config_key_type(key, value)
 
@@ -3267,7 +3282,7 @@ class Site(Document, TagHelpers):
 			},
 			{
 				"action": "Deactivate site",
-				"description": "Deactivated site is not accessible on the internet",
+				"description": "Deactivating will put the site in maintenance mode and make it inacessible",
 				"button_label": "Deactivate",
 				"condition": self.status == "Active",
 				"doc_method": "deactivate",

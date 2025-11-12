@@ -189,6 +189,7 @@ scheduler_events = {
 		"press.press.doctype.database_server.database_server.remove_uploaded_binlogs_from_s3",
 		"press.press.doctype.mariadb_binlog.mariadb_binlog.cleanup_old_records",
 		"press.press.doctype.database_server.database_server.delete_mariadb_binlog_for_archived_servers",
+		"press.press.doctype.team.team.check_budget_alerts",
 	],
 	"daily_long": [
 		"press.press.audit.check_bench_fields",
@@ -312,6 +313,7 @@ scheduler_events = {
 			"press.press.doctype.site_update.site_update.run_scheduled_updates",
 			"press.press.doctype.virtual_machine.virtual_machine.snapshot_aws_servers",
 			"press.press.doctype.app.app.poll_new_releases",
+			"press.utils.jobs.alert_on_zombie_rq_jobs",
 		],
 		"* * * * *": [
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",

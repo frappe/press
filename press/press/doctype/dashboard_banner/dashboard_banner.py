@@ -19,6 +19,7 @@ class DashboardBanner(Document):
 
 		action: DF.Data | None
 		action_label: DF.Data | None
+		cluster: DF.Link | None
 		enabled: DF.Check
 		has_action: DF.Check
 		help_url: DF.Data | None
@@ -33,6 +34,6 @@ class DashboardBanner(Document):
 		team: DF.Link | None
 		title: DF.Data | None
 		type: DF.Literal["Info", "Success", "Error", "Warning"]
-		type_of_scope: DF.Literal["Team", "Server", "Site"]
+		type_of_scope: DF.Literal["Team", "Cluster", "Server", "Site"]
 		user_dismissals: DF.Table[DashboardBannerDismissal]
 	# end: auto-generated types

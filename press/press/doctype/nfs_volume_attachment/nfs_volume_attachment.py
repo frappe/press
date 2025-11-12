@@ -219,7 +219,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 			)
 
 	def stop_all_benches(self, step: "NFSVolumeAttachmentStep"):
-		"""Stop all benches running on /shared"""
+		"""Stop all running benches"""
 		server: Server = frappe.get_doc("Server", self.primary_server)
 		step.status = Status.Running
 		step.save()
@@ -430,12 +430,10 @@ class NFSVolumeAttachment(Document, StepHandler):
 			self.secondary_server,
 			"private_ip",
 		)
-		redis_password = frappe.get_cached_doc("Server", self.primary_server).get_redis_password()
 
 		agent_job = Agent(self.primary_server).change_bench_directory(
 			redis_connection_string_ip="localhost",
 			directory="/shared",
-			redis_password=redis_password,
 			secondary_server_private_ip=secondary_server_private_ip,
 			is_primary=True,
 			restart_benches=True,
@@ -494,6 +492,10 @@ class NFSVolumeAttachment(Document, StepHandler):
 			]
 		):
 			self.append("nfs_volume_attachment_steps", step)
+
+	@frappe.whitelist()
+	def force_continue(self):
+		self.execute_mount_steps()
 
 	def execute_mount_steps(self):
 		frappe.enqueue_doc(

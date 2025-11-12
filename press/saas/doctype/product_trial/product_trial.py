@@ -410,6 +410,7 @@ class ProductTrial(Document):
 		servers = (
 			frappe.qb.from_(ReleaseGroupServer)
 			.select(ReleaseGroupServer.server)
+			.distinct()
 			.where(ReleaseGroupServer.parent == self.release_group)
 			.join(Server)
 			.on(Server.name == ReleaseGroupServer.server)

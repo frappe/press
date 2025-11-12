@@ -36,6 +36,7 @@ export default {
 			currentTab: 0,
 			tabs: [
 				{ label: 'Overview', route: { name: 'BillingOverview' } },
+				{ label: 'Forecast', route: { name: 'BillingForecast' } },
 				{ label: 'Invoices', route: { name: 'BillingInvoices' } },
 				{ label: 'Balances', route: { name: 'BillingBalances' } },
 				{ label: 'Payment Methods', route: { name: 'BillingPaymentMethods' } },
