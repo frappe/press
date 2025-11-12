@@ -734,7 +734,7 @@ class BaseServer(Document, TagHelpers):
 					server=self,
 					user="ubuntu",
 				)
-			ansible.run()
+				ansible.run()
 		except Exception:
 			log_error("Unprepared Server Ping Exception", server=self.as_dict())
 
