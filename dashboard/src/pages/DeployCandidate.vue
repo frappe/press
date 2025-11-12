@@ -22,11 +22,11 @@
 
 		<div class="mt-3">
 			<div class="flex w-full items-center">
-				<h2 class="text-lg font-medium text-gray-900">
+				<h2 class="text-lg font-large text-gray-900">
 					{{ deploy.deploy_candidate }}
 				</h2>
 				<Badge class="ml-2" :label="deploy.status" />
-				<div class="ml-auto flex items-center space-x-2">
+				<div class="ml-auto flex items-cen2ter space-x-2">
 					<Button
 						@click="stopBuild"
 						v-if="deploy && deploy.status === 'Running'"
@@ -35,10 +35,11 @@
 						Stop Build
 					</Button>
 					<Button
-						@click="failAndRedeploy"
+						@click="deploy"
 						v-if="deploy && deploy.status == 'Failure'"
+						theme="green"
 					>
-						Redeploy Bench
+						Redeploy
 					</Button>
 					<Button
 						@click="$resources.deploy.reload()"
