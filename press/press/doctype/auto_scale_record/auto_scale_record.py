@@ -53,6 +53,7 @@ class AutoScaleRecord(Document):
 		)
 		primary_server_private_ip = frappe.db.get_value("Server", self.primary_server, "private_ip")
 		secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
+		shared_directory = frappe.db.get_single_value("Press Settings", "shared_directory")
 		frappe.db.set_value("Server", self.primary_server, "scaled_up", True)
 
 		self.setup_secondary_upstream()
@@ -60,7 +61,7 @@ class AutoScaleRecord(Document):
 		return Agent(self.secondary_server).change_bench_directory(
 			redis_connection_string_ip=primary_server_private_ip,
 			secondary_server_private_ip=secondary_server_private_ip,
-			directory="/home/frappe/shared",
+			directory=shared_directory,
 			is_primary=False,
 			registry_settings={
 				"url": settings.docker_registry_url,
@@ -79,6 +80,7 @@ class AutoScaleRecord(Document):
 		"""
 		secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
 		frappe.db.set_value("Server", self.primary_server, "scaled_up", False)
+		shared_directory = frappe.db.get_single_value("Press Settings", "shared_directory")
 
 		self.setup_primary_upstream()
 
@@ -86,7 +88,7 @@ class AutoScaleRecord(Document):
 			redis_connection_string_ip="localhost",
 			secondary_server_private_ip=secondary_server_private_ip,
 			is_primary=True,
-			directory="/home/frappe/shared",
+			directory=shared_directory,
 			restart_benches=True,
 			reference_doctype="Server",
 			reference_name=self.primary_server,

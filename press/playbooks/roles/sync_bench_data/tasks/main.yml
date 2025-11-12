@@ -1,12 +1,10 @@
 ---
 - name: Move bench data to benches directory
   become: yes
-  shell: mv /home/frappe/shared/* /home/frappe/benches/
+  shell: mv "{{ shared_directory }}"/* /home/frappe/benches/
 
 - name: Remove shared directory after sync
   become: yes
   file:
-    path: /home/frappe/shared
+    path: "{{ shared_directory }}"
     state: absent
-
-
