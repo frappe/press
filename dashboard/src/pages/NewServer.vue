@@ -540,10 +540,10 @@ export default {
 						throw new DashboardError(
 							'Please enter a valid Database Private IP',
 						);
-					} else if (this.dbPublicIP === this.appPublicIP) {
-						throw new DashboardError(
-							"Please don't use the same server as Application and Database servers",
-						);
+						//} else if (this.dbPublicIP === this.appPublicIP) {
+						//throw new DashboardError(
+						//"Please don't use the same server as Application and Database servers",
+						//);
 					} else if (!this.agreedToRegionConsent) {
 						throw new DashboardError('Please agree to the region consent');
 					}
