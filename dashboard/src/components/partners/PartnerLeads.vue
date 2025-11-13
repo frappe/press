@@ -155,7 +155,6 @@ export default {
 					return {
 						label: 'Add Lead',
 						variant: 'solid',
-						disabled: true,
 						slots: {
 							prefix: icon('plus'),
 						},
