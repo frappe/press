@@ -126,8 +126,10 @@ def get_targets_method_rate_limit() -> int:
 	return 2
 
 
+MONITORING_ENDPOINT_RATE_LIMIT_WINDOW_SECONDS = 60
+
 @frappe.whitelist(allow_guest=True)
-@rate_limit(limit=get_targets_method_rate_limit, seconds=60)
+@rate_limit(limit=get_targets_method_rate_limit, seconds=MONITORING_ENDPOINT_RATE_LIMIT_WINDOW_SECONDS)
 def targets(token=None):
 	if not token:
 		frappe.throw_permission_error()
