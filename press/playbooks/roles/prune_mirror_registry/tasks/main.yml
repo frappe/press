@@ -1,0 +1,4 @@
+---
+- name: Remove All Docker Blobs
+  shell: rm -rf "{{ mountpoint }}/"*
+

@@ -184,6 +184,7 @@ class SupportAccess(Document):
 			template="access_request_update",
 			args={
 				"status": self.status,
+				"resources": self.resources,
 			},
 		)
 
@@ -220,6 +221,7 @@ class SupportAccess(Document):
 			args={
 				"requested_by": self.requested_by,
 				"reason": self.reason,
+				"resources": self.resources,
 			},
 		)
 

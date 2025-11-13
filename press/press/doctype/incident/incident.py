@@ -24,7 +24,7 @@ from twilio.base.exceptions import TwilioRestException
 from press.api.server import prometheus_query
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.server.server import MARIADB_DATA_MNT_POINT
-from press.telegram_utils import Telegram
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error
 
 if TYPE_CHECKING:
@@ -500,8 +500,7 @@ class Incident(WebsiteGenerator):
 		return call.fetch().status  # will eventually be no-answer
 
 	def notify_unable_to_reach_twilio(self):
-		telegram = Telegram()
-		telegram.send(
+		TelegramMessage.enqueue(
 			f"""Unable to reach Twilio for Incident in {self.server}
 
 Likely due to insufficient balance or incorrect credentials""",
@@ -858,8 +857,7 @@ def notify_ignored_servers():
 	for server in ignored_servers:
 		message += f"{server.name} till {frappe.utils.pretty_date(server.ignore_incidents_till)}\n"
 	message += "\n@adityahase @balamurali27 @saurabh6790\n"
-	telegram = Telegram()
-	telegram.send(message)
+	TelegramMessage.enqueue(message)
 
 
 def on_doctype_update():
