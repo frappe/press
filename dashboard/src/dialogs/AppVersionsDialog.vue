@@ -22,28 +22,7 @@
 			<ListView
 				v-else
 				class="h-80"
-				:columns="[
-					{
-						label: 'App',
-						key: 'name',
-						width: 2,
-					},
-					{
-						label: 'Commit',
-						key: 'hash',
-						width: 2,
-					},
-					{
-						label: 'Branch',
-						key: 'branch',
-						width: 2,
-					},
-					{
-						label: 'Repository',
-						key: 'repository',
-						width: 2,
-					},
-				]"
+				:columns="columns"
 				:rows="formattedRows"
 				:options="{
 					resizeColumn: true,
@@ -51,7 +30,30 @@
 					onRowClick: handleRowClick,
 				}"
 				row-key="name"
-			/>
+			>
+				<ListHeader>
+					<ListHeaderItem
+						v-for="column in columns"
+						:key="column.key"
+						:item="column"
+					/>
+				</ListHeader>
+				<ListRows>
+					<ListRow v-for="(row, i) in formattedRows" :row="row" :key="row.name">
+						<template v-slot="{ column, item }">
+							<div class="truncate text-base" :class="column.class">
+								<template v-if="column.class === 'font-mono'">
+									<Badge :label="item" />
+								</template>
+
+								<template v-else>
+									{{ item }}
+								</template>
+							</div>
+						</template>
+					</ListRow>
+				</ListRows>
+			</ListView>
 			<Button
 				v-if="
 					!['Draft', 'Preparing', 'Running', 'Pending'].includes(status) &&
@@ -70,12 +72,26 @@
 </template>
 
 <script>
-import { ListView, Spinner } from 'frappe-ui';
+import {
+	ListHeader,
+	ListHeaderItem,
+	ListRow,
+	ListRows,
+	ListView,
+	Spinner,
+} from 'frappe-ui';
 import { toast } from 'vue-sonner';
 export default {
 	name: 'AppVersionsDialog',
 	props: ['group', 'dc_name', 'status'],
-	components: { Spinner, ListView },
+	components: {
+		Spinner,
+		ListView,
+		ListHeader,
+		ListHeaderItem,
+		ListRows,
+		ListRow,
+	},
 	data() {
 		return {
 			show: true,
@@ -89,6 +105,31 @@ export default {
 					repository: `${item.repository_owner}/${item.repository}`,
 				})) || []
 			);
+		},
+		columns() {
+			return [
+				{
+					label: 'App',
+					key: 'name',
+					width: 2,
+				},
+				{
+					label: 'Commit',
+					key: 'hash',
+					width: 2,
+					class: 'font-mono',
+				},
+				{
+					label: 'Branch',
+					key: 'branch',
+					width: 2,
+				},
+				{
+					label: 'Repository',
+					key: 'repository',
+					width: 2,
+				},
+			];
 		},
 	},
 	resources: {
