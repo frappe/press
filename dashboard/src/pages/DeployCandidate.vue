@@ -113,13 +113,14 @@
 </template>
 <script>
 import { createResource, getCachedDocumentResource } from 'frappe-ui';
-import { getObject } from '../objects';
-import JobStep from '../components/JobStep.vue';
+import { h } from 'vue';
+import { toast } from 'vue-sonner';
+import { renderDialog } from '../utils/components';
+import RedeployDialog from '../dialogs/RedeployDialog.vue';
 import AlertAddressableError from '../components/AlertAddressableError.vue';
 import AlertBanner from '../components/AlertBanner.vue';
-import dayjs from 'dayjs';
-import { toast } from 'vue-sonner';
-import { confirmDialog } from '../utils/components';
+import JobStep from '../components/JobStep.vue';
+import { getObject } from '../objects';
 
 export default {
 	name: 'DeployCandidate',
@@ -222,6 +223,14 @@ export default {
 					condition: () => this.showFailAndRedeploy,
 					onClick: () => this.failAndRedeploy(),
 				},
+				{
+					label: 'View App Versions',
+					icon: 'package',
+					condition: () => this.deploy.status === 'Success',
+					onClick: () => {
+						console.log('here');
+					},
+				},
 			].filter((option) => option.condition?.() ?? true);
 		},
 		showFailAndRedeploy() {
@@ -287,6 +296,15 @@ export default {
 					},
 				},
 			});
+		},
+
+		appVersions() {
+			const deploy = this.deploy;
+			renderDialog(
+				h(RedeployDialog, {
+					dc_name: deploy.name,
+				}),
+			);
 		},
 
 		failAndRedeploy() {
