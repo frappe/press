@@ -142,7 +142,8 @@ class RegistryServer(BaseServer):
 				variables={
 					"mountpoint": os.path.join(
 						self.docker_data_mountpoint, "docker", "registry", "v2", "blobs"
-					)
+					),
+					"registry_container": "registry-registry-1",
 				},
 			)
 			ansible.run()
