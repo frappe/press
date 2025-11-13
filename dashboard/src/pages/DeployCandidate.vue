@@ -116,7 +116,7 @@ import { createResource, getCachedDocumentResource } from 'frappe-ui';
 import { h } from 'vue';
 import { toast } from 'vue-sonner';
 import { renderDialog } from '../utils/components';
-import RedeployDialog from '../dialogs/RedeployDialog.vue';
+import AppVersionsDialog from '../dialogs/AppVersionsDialog.vue';
 import AlertAddressableError from '../components/AlertAddressableError.vue';
 import AlertBanner from '../components/AlertBanner.vue';
 import JobStep from '../components/JobStep.vue';
@@ -228,7 +228,7 @@ export default {
 					icon: 'package',
 					condition: () => this.deploy.status === 'Success',
 					onClick: () => {
-						console.log('here');
+						this.appVersions();
 					},
 				},
 			].filter((option) => option.condition?.() ?? true);
@@ -301,8 +301,9 @@ export default {
 		appVersions() {
 			const deploy = this.deploy;
 			renderDialog(
-				h(RedeployDialog, {
+				h(AppVersionsDialog, {
 					dc_name: deploy.name,
+					group: deploy.group,
 				}),
 			);
 		},
