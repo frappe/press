@@ -1064,13 +1064,20 @@ def fail_and_redeploy(name: str, dc_name: str):
 @protected("Release Group")
 def show_app_versions(name: str, dc_name: str) -> dict[str, str]:
 	"""Get app versions from the deploy candidate"""
-	candidate = frappe.db.get_value("Deploy Candidate Build", dc_name, "candidate")
+	candidate = frappe.db.get_value("Deploy Candidate Build", dc_name, "deploy_candidate")
 	deploy_candidate: "DeployCandidate" = frappe.get_cached_doc("Deploy Candidate", candidate)
 	app_sources = frappe.db.get_all(
-		"App Source", {"name": ("IN", [app.source for app in deploy_candidate.apps])}, ["name", "branch"]
+		"App Source",
+		{"name": ("IN", [app.source for app in deploy_candidate.apps])},
+		["name", "branch", "repository", "repository_owner", "repository_url"],
 	)
 	sources = {
-		item["name"]: {"branch": item["branch"], "repository_url": item["repository_url"]}
+		item["name"]: {
+			"branch": item["branch"],
+			"repository_url": item["repository_url"],
+			"repository": item["repository"],
+			"repository_owner": item["repository_owner"],
+		}
 		for item in app_sources
 	}
 
@@ -1079,7 +1086,9 @@ def show_app_versions(name: str, dc_name: str) -> dict[str, str]:
 			"name": app.app,
 			"hash": app.hash[:7],
 			"branch": sources.get(app.source).get("branch"),
-			"repo": sources.get(app.source).get("repository_url"),
+			"repository": sources.get(app.source).get("repository"),
+			"repository_owner": sources.get(app.source).get("repository_owner"),
+			"repository_url": sources.get(app.source).get("repository_url"),
 		}
 		for app in deploy_candidate.apps
 	]
