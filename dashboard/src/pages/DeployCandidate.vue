@@ -213,7 +213,6 @@ export default {
 				{
 					label: 'View App Versions',
 					icon: 'package',
-					condition: () => this.deploy.status === 'Success',
 					onClick: () => {
 						this.appVersions();
 					},

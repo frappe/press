@@ -54,7 +54,7 @@
 			/>
 			<Button
 				v-if="
-					!['Preparing', 'Running', 'Pending'].includes(status) &&
+					!['Draft', 'Preparing', 'Running', 'Pending'].includes(status) &&
 					!$resources?.redeployBuild?.loading
 				"
 				variant="solid"
@@ -125,6 +125,7 @@ export default {
 					this.$router.push({
 						path: response,
 					});
+					this.show = false;
 				})
 				.catch(() => {
 					toast.error('Failed to redeploy');
