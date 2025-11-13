@@ -35,13 +35,6 @@
 						Stop Deploy
 					</Button>
 					<Button
-						@click="deploy"
-						v-if="deploy && deploy.status == 'Failure'"
-						theme="green"
-					>
-						Redeploy
-					</Button>
-					<Button
 						@click="$resources.deploy.reload()"
 						:loading="$resources.deploy.get.loading"
 					>
