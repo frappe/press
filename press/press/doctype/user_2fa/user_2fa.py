@@ -3,6 +3,9 @@
 
 from __future__ import annotations
 
+import random
+import string
+
 import frappe
 import frappe.utils
 from frappe.model.document import Document
@@ -42,6 +45,20 @@ class User2FA(Document):
 
 		self.totp_secret = pyotp.random_base32()
 
+	def generate_random_alphanum(length: int) -> str:
+		if length < 2:
+			raise ValueError("Length must be at least 2")
+
+		letters = string.ascii_letters
+		digits = string.digits
+		all_chars = letters + digits
+		# ensure at least one letter and one non-letter
+		result = [random.choice(letters), random.choice(digits)]
+		# fill the rest randomly
+		result += [random.choice(all_chars) for _ in range(length - 2)]
+		random.shuffle(result)
+		return "".join(result).upper()
+
 	@classmethod
 <<<<<<< HEAD
 	def generate_recovery_codes(cls):
@@ -49,6 +66,7 @@ class User2FA(Document):
 			yield frappe.generate_hash(length=cls.recovery_codes_length).upper()
 =======
 	def generate_recovery_codes(self):
+<<<<<<< HEAD
 		for _ in range(self.recovery_codes_max):
 			while True:
 				# Generate a random hash
@@ -60,6 +78,16 @@ class User2FA(Document):
 					break
 			yield code
 >>>>>>> 4c3203e2f (fix(generate-recovery-code): Modify algorithm to include letters AND digits)
+=======
+		counter = 0
+		while counter < self.recovery_codes_max:
+			code = self.generate_random_alphanum(self.recovery_codes_length)
+			has_upper = code.isupper()
+			has_digit = any(c.isdigit() for c in code)
+			if has_upper and has_digit:
+				counter += 1
+				yield code
+>>>>>>> aa286932a (fix(2fa-token-test): Add new 2FA code generator)
 
 	def mark_recovery_codes_viewed(self):
 		"""
