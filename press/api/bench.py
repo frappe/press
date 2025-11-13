@@ -21,6 +21,7 @@ from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
 	fail_and_redeploy as fail_and_redeploy_build,
 )
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import fail_remote_job
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import redeploy as redeploy_candidate
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_total_installs_by_app,
 )
@@ -1092,6 +1093,17 @@ def show_app_versions(name: str, dc_name: str) -> dict[str, str]:
 		}
 		for app in deploy_candidate.apps
 	]
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def redeploy(name: str, dc_name: str) -> str:
+	response = redeploy_candidate(dc_name)
+
+	if response["error"]:
+		frappe.throw("Unable to redeploy this build!", frappe.ValidationError)
+
+	return response["message"]
 
 
 @frappe.whitelist(allow_guest=True)

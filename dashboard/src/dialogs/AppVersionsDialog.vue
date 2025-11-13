@@ -53,6 +53,10 @@
 				row-key="name"
 			/>
 			<Button
+				v-if="
+					!['Preparing', 'Running', 'Pending'].includes(status) &&
+					!$resources?.redeployBuild?.loading
+				"
 				variant="solid"
 				iconLeft=""
 				theme="gray"
@@ -66,11 +70,11 @@
 </template>
 
 <script>
-import { Spinner, ListView } from 'frappe-ui';
-
+import { ListView, Spinner } from 'frappe-ui';
+import { toast } from 'vue-sonner';
 export default {
 	name: 'AppVersionsDialog',
-	props: ['group', 'dc_name'],
+	props: ['group', 'dc_name', 'status'],
 	components: { Spinner, ListView },
 	data() {
 		return {
@@ -100,10 +104,31 @@ export default {
 				auto: true,
 			};
 		},
+		redeployBuild() {
+			return {
+				url: 'press.api.bench.redeploy',
+				makeParams: () => {
+					return {
+						name: this.group,
+						dc_name: this.dc_name,
+					};
+				},
+				auto: false,
+			};
+		},
 	},
 	methods: {
-		onRedeploy() {
-			console.log('Redeploying!');
+		async onRedeploy() {
+			await this.$resources.redeployBuild
+				.submit()
+				.then((response) => {
+					this.$router.push({
+						path: response,
+					});
+				})
+				.catch(() => {
+					toast.error('Failed to redeploy');
+				});
 		},
 		handleRowClick(row) {
 			window.open(`${row.repository_url}/commits/${row.hash}`, '_blank');
