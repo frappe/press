@@ -88,6 +88,7 @@
 				:columns="columns"
 				:rows="filteredRows"
 				ref="listView"
+				test-id="object-list-view"
 				:options="{
 					selectable: this.options.selectable || false,
 					onRowClick: this.options.onRowClick
