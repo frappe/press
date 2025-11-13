@@ -16,7 +16,8 @@ const INACTIVITY_LIMIT_MS = parseInt(process.env.SIGNUP_INACTIVITY_MS || '0', 10
 
 function testEmail(product: string) {
   const rand = crypto.randomBytes(3).toString('hex');
-  return `playwright_${product}_${rand}@signup.test`;
+  return `fc-signup-test+${product}_${rand}@frappemail.com`;
+  // return `playwright_${product}_${rand}@signup.test`;
 }
 
 async function runSignupFlow(page: Page, product: string) {
