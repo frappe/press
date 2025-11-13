@@ -3,6 +3,9 @@
 
 from __future__ import annotations
 
+import random
+import string
+
 import frappe
 import frappe.utils
 from frappe.model.document import Document
@@ -42,18 +45,30 @@ class User2FA(Document):
 
 		self.totp_secret = pyotp.random_base32()
 
+	def generate_random_alphanum(length: int) -> str:
+		if length < 2:
+			raise ValueError("Length must be at least 2")
+
+		letters = string.ascii_letters
+		digits = string.digits
+		all_chars = letters + digits
+		# ensure at least one letter and one non-letter
+		result = [random.choice(letters), random.choice(digits)]
+		# fill the rest randomly
+		result += [random.choice(all_chars) for _ in range(length - 2)]
+		random.shuffle(result)
+		return "".join(result).upper()
+
 	@classmethod
 	def generate_recovery_codes(self):
-		for _ in range(self.recovery_codes_max):
-			while True:
-				# Generate a random hash
-				code = frappe.generate_hash(length=self.recovery_codes_length).upper()
-				# Check if it has at least one digit and one uppercase letter
-				has_digit = any(c.isdigit() for c in code)
-				has_upper = any(c.isupper() for c in code)
-				if has_digit and has_upper:
-					break
-			yield code
+		counter = 0
+		while counter < self.recovery_codes_max:
+			code = self.generate_random_alphanum(self.recovery_codes_length)
+			has_upper = code.isupper()
+			has_digit = any(c.isdigit() for c in code)
+			if has_upper and has_digit:
+				counter += 1
+				yield code
 
 	def mark_recovery_codes_viewed(self):
 		"""
