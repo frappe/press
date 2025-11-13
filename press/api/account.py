@@ -54,6 +54,7 @@ def signup(email: str, product: str | None = None, referrer: str | None = None) 
 		{"email": email, "referrer_id": referrer, "product_trial": product},
 		"name",
 	)
+
 	if not account_request:
 		account_request_doc = frappe.get_doc(
 			{
