@@ -260,6 +260,11 @@ let router = createRouter({
 						import('./components/partners/PartnerCertificates.vue'),
 				},
 				{
+					name: 'PartnerResources',
+					path: 'resources',
+					component: () => import('./components/partners/PartnerResources.vue'),
+				},
+				{
 					name: 'PartnerApprovalRequests',
 					path: 'approval-requests',
 					component: () =>
