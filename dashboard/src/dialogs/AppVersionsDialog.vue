@@ -29,7 +29,7 @@
 						width: 2,
 					},
 					{
-						label: 'Hash',
+						label: 'Commit',
 						key: 'hash',
 						width: 2,
 					},
