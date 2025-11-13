@@ -296,13 +296,13 @@ function loginToSite(siteName) {
 	// avoid toast if user is coming from their site to login
 	if (pickedSite.value)
 		login.submit({
-			// email: email.value || session.user,
+			email: email.value || session.user,
 			site: siteName,
 		});
 	else
 		toast.promise(
 			login.submit({
-				// email: email.value || session.user,
+				email: email.value || session.user,
 				site: siteName,
 			}),
 			{
@@ -338,13 +338,13 @@ function sendOTP() {
 		toast.error('Please enter email');
 		return;
 	}
-
 	toast.promise(
 		sendOTPMethod.submit({
 			email: email.value,
+			site: pickedSite,
 		}),
 		{
-			loading: 'Sending OTP ...',
+			loading: 'Verifying user and Sending OTP ...',
 			success: `OTP sent to ${email.value}`,
 			error: (e) => getToastErrorMessage(e),
 		},
