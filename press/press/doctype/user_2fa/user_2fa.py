@@ -60,25 +60,7 @@ class User2FA(Document):
 		return "".join(result).upper()
 
 	@classmethod
-<<<<<<< HEAD
-	def generate_recovery_codes(cls):
-		for _ in range(cls.recovery_codes_max):
-			yield frappe.generate_hash(length=cls.recovery_codes_length).upper()
-=======
 	def generate_recovery_codes(self):
-<<<<<<< HEAD
-		for _ in range(self.recovery_codes_max):
-			while True:
-				# Generate a random hash
-				code = frappe.generate_hash(length=self.recovery_codes_length).upper()
-				# Check if it has at least one digit and one uppercase letter
-				has_digit = any(c.isdigit() for c in code)
-				has_upper = any(c.isupper() for c in code)
-				if has_digit and has_upper:
-					break
-			yield code
->>>>>>> 4c3203e2f (fix(generate-recovery-code): Modify algorithm to include letters AND digits)
-=======
 		counter = 0
 		while counter < self.recovery_codes_max:
 			code = self.generate_random_alphanum(self.recovery_codes_length)
@@ -87,7 +69,6 @@ class User2FA(Document):
 			if has_upper and has_digit:
 				counter += 1
 				yield code
->>>>>>> aa286932a (fix(2fa-token-test): Add new 2FA code generator)
 
 	def mark_recovery_codes_viewed(self):
 		"""
