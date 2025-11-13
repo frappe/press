@@ -218,14 +218,7 @@ export default {
 			].filter((option) => option.condition?.() ?? true);
 		},
 		showFailAndRedeploy() {
-			if (!this.deploy || this.deploy.status == 'Failure') {
-				return false;
-			}
-			const from = ['Pending', 'Preparing'].includes(this.deploy.status)
-				? this.deploy.creation
-				: this.deploy.build_start;
-			const now = dayjs(new Date());
-			return now.diff(from, 'hours') > 2;
+			return this.deploy.status === 'Running';
 		},
 	},
 	methods: {
