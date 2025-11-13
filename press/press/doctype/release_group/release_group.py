@@ -609,6 +609,7 @@ class ReleaseGroup(Document, TagHelpers):
 			self.flags.ignore_validate = 1
 			self._save_passwords()
 			self.save()
+			frappe.db.commit()  # Safe password regardless
 			return self.get_password("redis_password")
 
 	@frappe.whitelist()
