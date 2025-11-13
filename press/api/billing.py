@@ -731,6 +731,21 @@ def total_unpaid_amount():
 	) + negative_balance
 
 
+@frappe.whitelist()
+def get_current_billing_amount():
+	team = get_current_team(get_doc=True)
+	due_date = frappe.utils.get_last_day(frappe.utils.getdate())
+
+	return (
+		frappe.get_value(
+			"Invoice",
+			{"team": team.name, "due_date": due_date, "docstatus": 0},
+			"total",
+		)
+		or 0
+	)
+
+
 # Mpesa integrations, mpesa express
 """Send stk push to the user"""
 
@@ -995,3 +1010,246 @@ def parse_datetime(date):
 	from datetime import datetime
 
 	return datetime.strptime(str(date), "%Y%m%d%H%M%S")
+
+
+@frappe.whitelist()
+def billing_forecast():
+	"""
+	Get billing forecast and breakdown data for the current month.
+	"""
+	team = get_current_team(True)
+
+	# Get dates and related info
+	date_info = _get_date_context()
+
+	# Get last and current month invoice currency and totals
+	invoice_data = _get_invoice_data(team.name, date_info)
+
+	# Calculate month-end forecast amount and per-service breakdown of forecasts
+	forecast_data = _calculate_forecast_data(team.name, team.currency, date_info)
+
+	# Get usage breakdowns for last month, current month-to-date and forecasted month-end
+	usage_breakdown = _get_usage_data_breakdown(invoice_data, forecast_data, date_info["days_remaining"])
+
+	# Calculate month-over-month and month-to-date % changes
+	changes = _calculate_percentage_changes(
+		team.name, invoice_data, forecast_data["forecasted_total"], date_info
+	)
+
+	return {
+		"current_month_to_date_cost": invoice_data["current_month_total"],
+		"forecasted_month_end": forecast_data["forecasted_total"],
+		"last_month_cost": invoice_data["last_month_total"],
+		"usage_breakdown": usage_breakdown,
+		"month_over_month_change": changes["month_over_month"],
+		"mtd_change": changes["mtd_change"],
+		"currency": team.currency,
+	}
+
+
+def _get_date_context():
+	"""Get all date-related data in one place for billing forecast."""
+	from frappe.utils import add_days, add_months, get_last_day, getdate
+
+	current_date = getdate()
+	current_month_start = current_date.replace(day=1)
+	current_month_end = get_last_day(current_date)
+	last_month_end = add_days(current_month_start, -1)
+	last_month_start = last_month_end.replace(day=1)
+	last_month_same_date = add_months(current_date, -1)
+
+	days_in_month = (current_month_end - current_month_start).days + 1
+	days_passed = (current_date - current_month_start).days + 1
+	days_remaining = max(days_in_month - days_passed, 0)
+
+	return {
+		"current_date": current_date,
+		"current_month_start": current_month_start,
+		"current_month_end": current_month_end,
+		"last_month_start": last_month_start,
+		"last_month_end": last_month_end,
+		"last_month_same_date": last_month_same_date,
+		"days_in_month": days_in_month,
+		"days_passed": days_passed,
+		"days_remaining": days_remaining,
+	}
+
+
+def _get_invoice_data(team_name: str, date_info: dict):
+	"""Get current and last month invoice data."""
+	current_invoice = _get_invoice_based_on_due_date(team_name, date_info["current_month_end"])
+	last_month_invoice = _get_invoice_based_on_due_date(team_name, date_info["last_month_end"])
+
+	return {
+		"current_invoice": current_invoice,
+		"last_month_invoice": last_month_invoice,
+		"current_month_total": current_invoice.total if current_invoice else 0,
+		"last_month_total": last_month_invoice.total if last_month_invoice else 0,
+	}
+
+
+def _get_invoice_based_on_due_date(team_name, due_date):
+	return frappe.db.get_value(
+		"Invoice",
+		{"team": team_name, "due_date": due_date, "docstatus": ("!=", 2)},
+		["name", "total", "currency"],
+		as_dict=True,
+	)
+
+
+def _calculate_forecast_data(
+	team: str, currency: str, date_info: dict
+) -> dict[str, float | dict[str, float]]:
+	"""Calculate monthly total cost of all active subscriptions and forecasted cost for remaining days in the month"""
+	from frappe.utils import flt
+
+	subscriptions = _get_active_subscriptions(team)
+	days_remaining = date_info["days_remaining"]
+	days_in_month = date_info["days_in_month"]
+
+	forecasted_month_end = 0
+	per_service_forecast = {}  # Forecasted remaining cost per service or document_type
+
+	price_field = "price_usd" if currency == "USD" else "price_inr"
+
+	for sub in subscriptions:
+		plan = frappe.db.get_value(sub.plan_type, sub.plan, [price_field], as_dict=True)
+		if not plan:
+			continue
+
+		price = plan.get(price_field, 0)
+		if price > 0:
+			forecasted_month_end += price
+
+			# Forecasted remaining cost for this service
+			if days_remaining > 0:
+				remaining_cost = (price / days_in_month) * days_remaining
+				per_service_forecast[sub.document_type] = flt(
+					per_service_forecast.get(sub.document_type, 0) + remaining_cost
+				)
+
+	return {
+		"forecasted_total": forecasted_month_end,
+		"subscription_forecast": per_service_forecast,
+	}
+
+
+def _get_active_subscriptions(team: str):
+	"""Get all active subscriptions for a team."""
+	Subscription = frappe.qb.DocType("Subscription")
+
+	return (
+		frappe.qb.from_(Subscription)
+		.select(Subscription.document_type, Subscription.plan_type, Subscription.plan)
+		.where((Subscription.team == team) & (Subscription.enabled == 1))
+		.run(as_dict=True)
+	)
+
+
+def _get_usage_data_breakdown(invoice_data: dict, forecast_data: dict, days_remaining: int = 0):
+	"""Get usage breakdown grouped by document_type."""
+	current_breakdown = (
+		_get_usage_breakdown(invoice_data["current_invoice"].name) if invoice_data["current_invoice"] else {}
+	)
+	last_month_breakdown = (
+		_get_usage_breakdown(invoice_data["last_month_invoice"].name)
+		if invoice_data["last_month_invoice"]
+		else {}
+	)
+	forecasted_breakdown = _get_forecasted_usage_breakdown(
+		current_breakdown, forecast_data["subscription_forecast"], days_remaining
+	)
+
+	return {
+		"month_to_date_usage_breakdown": current_breakdown,
+		"last_month_usage_breakdown": last_month_breakdown,
+		"forecasted_usage_breakdown": forecasted_breakdown,
+	}
+
+
+def _get_usage_breakdown(invoice: str) -> dict[str, float]:
+	if not invoice:
+		return {}
+
+	invoice_doc = frappe.get_doc("Invoice", invoice)
+	service_costs: dict[str, float] = {}
+
+	for item in invoice_doc.items:
+		service = item.document_type
+		service_costs[service] = service_costs.get(service, 0.0) + float(item.amount)
+
+	return service_costs
+
+
+def _get_forecasted_usage_breakdown(
+	current_usage: dict, subscription_forecast: dict, days_remaining: int
+) -> dict:
+	# Consider usage so far as well as active subscriptions to forecast month-end usage breakdown
+	if not subscription_forecast and not current_usage:
+		return {}
+
+	if days_remaining == 0:  # if end of month, use actual usage
+		return current_usage
+
+	forecasted_usage_breakdown = {}
+	for service in set(list(current_usage.keys()) + list(subscription_forecast.keys())):
+		forecasted_usage_breakdown[service] = current_usage.get(service, 0) + subscription_forecast.get(
+			service, 0
+		)
+
+	return forecasted_usage_breakdown
+
+
+def _calculate_percentage_changes(team_name: str, invoice_data: dict, forecasted_total, date_info: dict):
+	"""Calculate month-over-month and MTD changes."""
+	from frappe.utils import flt
+
+	# Month-over-month change
+	month_over_month_change = 0
+	last_month_total = invoice_data["last_month_total"]
+	if last_month_total > 0:
+		month_over_month_change = (forecasted_total - last_month_total) / last_month_total * 100
+
+	# Month-to-date change
+	mtd_change = _calculate_mtd_change(
+		team_name,
+		invoice_data["current_month_total"],
+		date_info["last_month_start"],
+		date_info["last_month_same_date"],
+	)
+
+	return {
+		"month_over_month": flt(month_over_month_change, 2),
+		"mtd_change": flt(mtd_change, 2),
+	}
+
+
+def _calculate_mtd_change(team: str, current_mtd_cost: float, last_month_start, last_month_same_date):
+	from frappe.utils import flt
+
+	last_mtd_total = _get_usage_records_total_for_date_range(team, last_month_start, last_month_same_date)
+
+	mtd_change = 0
+	if last_mtd_total > 0:
+		mtd_change = ((current_mtd_cost - last_mtd_total) / last_mtd_total) * 100
+	return flt(mtd_change, 2)
+
+
+def _get_usage_records_total_for_date_range(team: str, start_date, end_date):
+	"""Get total amount from Usage Records for a team in a date range."""
+	from frappe.query_builder.functions import Sum
+
+	UsageRecord = frappe.qb.DocType("Usage Record")
+	total_amount = (
+		frappe.qb.from_(UsageRecord)
+		.select(Sum(UsageRecord.amount))
+		.where(
+			(UsageRecord.team == team)
+			& (UsageRecord.date >= start_date)
+			& (UsageRecord.date <= end_date)
+			& (UsageRecord.docstatus == 1)
+		)
+		.run(pluck=True)
+	)
+
+	return total_amount[0] or 0

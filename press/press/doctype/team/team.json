@@ -40,6 +40,10 @@
   "free_credits_allocated",
   "column_break_12",
   "address_html",
+  "section_break_jzok",
+  "receive_budget_alerts",
+  "monthly_alert_threshold",
+  "column_break_hunh",
   "notification_tab",
   "section_break_9",
   "send_notifications",
@@ -50,7 +54,9 @@
   "partner_tab",
   "partner_details_section",
   "erpnext_partner",
+  "company_name",
   "partner_email",
+  "partner_manager",
   "column_break_ooyo",
   "partner_status",
   "partner_tier",
@@ -60,6 +66,10 @@
   "introduction",
   "column_break_akmx",
   "customers",
+  "partnership_date_section",
+  "start_date",
+  "column_break_egkq",
+  "end_date",
   "partner_section",
   "partner_referral_code",
   "partnership_date",
@@ -496,8 +506,9 @@
   },
   {
    "fieldname": "partner_tier",
-   "fieldtype": "Data",
-   "label": "Partner Tier"
+   "fieldtype": "Link",
+   "label": "Partner Tier",
+   "options": "Partner Tier"
   },
   {
    "fieldname": "custom_apps_tab",
@@ -574,6 +585,58 @@
    "fieldtype": "Table",
    "label": "Communication Infos",
    "options": "Communication Info"
+  },
+  {
+   "fieldname": "section_break_jzok",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_hunh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "receive_budget_alerts",
+   "fieldtype": "Check",
+   "label": "Receive Budget Alerts"
+  },
+  {
+   "depends_on": "receive_budget_alerts",
+   "description": "Email alert when monthly spend exceeds limit",
+   "fieldname": "monthly_alert_threshold",
+   "fieldtype": "Currency",
+   "label": "Monthly Alert Limit",
+   "mandatory_depends_on": "receive_budget_alerts"
+  },
+  {
+   "fieldname": "partner_manager",
+   "fieldtype": "Link",
+   "label": "Partner Manager",
+   "options": "User"
+  },
+  {
+   "fieldname": "partnership_date_section",
+   "fieldtype": "Section Break",
+   "label": "Partnership Date"
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date"
+  },
+  {
+   "fieldname": "column_break_egkq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date"
+  },
+  {
+   "fieldname": "company_name",
+   "fieldtype": "Data",
+   "label": "Company Name"
   }
  ],
  "grid_page_length": 50,
@@ -639,8 +702,8 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2025-10-08 10:25:21.095258",
- "modified_by": "aysha@frappe.io",
+ "modified": "2025-11-06 18:07:54.307229",
+ "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
  "naming_rule": "Random",

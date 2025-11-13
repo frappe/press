@@ -22,7 +22,7 @@
 
 		<div class="mt-3">
 			<div class="flex w-full items-center">
-				<h2 class="text-lg font-medium text-gray-900">
+				<h2 class="text-lg font-large text-gray-900">
 					{{ deploy.deploy_candidate }}
 				</h2>
 				<Badge class="ml-2" :label="deploy.status" />
@@ -33,6 +33,13 @@
 						theme="red"
 					>
 						Stop Build
+					</Button>
+					<Button
+						@click="deploy"
+						v-if="deploy && deploy.status == 'Failure'"
+						theme="green"
+					>
+						Redeploy
 					</Button>
 					<Button
 						@click="$resources.deploy.reload()"
@@ -218,14 +225,7 @@ export default {
 			].filter((option) => option.condition?.() ?? true);
 		},
 		showFailAndRedeploy() {
-			if (!this.deploy || this.deploy.status == 'Failure') {
-				return false;
-			}
-			const from = ['Pending', 'Preparing'].includes(this.deploy.status)
-				? this.deploy.creation
-				: this.deploy.build_start;
-			const now = dayjs(new Date());
-			return now.diff(from, 'hours') > 2;
+			return this.deploy.status === 'Running';
 		},
 	},
 	methods: {

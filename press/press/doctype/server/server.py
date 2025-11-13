@@ -33,8 +33,8 @@ from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server_activity.server_activity import log_server_activity
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
-from press.telegram_utils import Telegram
 from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
@@ -734,7 +734,7 @@ class BaseServer(Document, TagHelpers):
 					server=self,
 					user="ubuntu",
 				)
-			ansible.run()
+				ansible.run()
 		except Exception:
 			log_error("Unprepared Server Ping Exception", server=self.as_dict())
 
@@ -897,11 +897,8 @@ class BaseServer(Document, TagHelpers):
 			mountpoint = self.guess_data_disk_mountpoint()
 
 		volume = self.find_mountpoint_volume(mountpoint)
-
-		virtual_machine: "VirtualMachine" = frappe.get_doc(
-			"Virtual Machine",
-			self.volume_host_info.nfs_server if self.has_shared_volume else self.virtual_machine,
-		)
+		# Get the parent of the volume directly instead of guessing.
+		virtual_machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", volume.parent)
 		virtual_machine.increase_disk_size(volume.volume_id, increment)
 		if self.provider == "AWS EC2":
 			device = self.get_device_from_volume_id(volume.volume_id)
@@ -1011,6 +1008,25 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def archive(self):
+		if frappe.db.exists(
+			"Press Job",
+			{
+				"job_type": "Archive Server",
+				"server": self.name,
+				"server_type": self.doctype,
+				"status": "Success",
+			},
+		):
+			frappe.msgprint(_("Server {0} has already been archived.").format(self.name))
+			return
+
+		if self.virtual_machine:
+			vm_status = frappe.db.get_value("Virtual Machine", self.virtual_machine, "status")
+			if vm_status == "Terminated":
+				self.status = "Archived"
+				self.save()
+				return
+
 		if frappe.get_all(
 			"Site",
 			filters={"server": self.name, "status": ("!=", "Archived")},
@@ -1027,6 +1043,7 @@ class BaseServer(Document, TagHelpers):
 			frappe.throw(
 				_("Cannot archive server with benches. Please drop them from their respective dashboards.")
 			)
+
 		self.status = "Pending"
 		self.save()
 		if self.is_self_hosted:
@@ -1870,8 +1887,6 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			- Notify the user to manually increase disk space.
 		"""
 
-		telegram = Telegram("Information")
-
 		buffer = self.size_to_increase_by_for_20_percent_available(mountpoint)
 		server: Server | DatabaseServer = frappe.get_doc(self.doctype, self.name)
 		disk_capacity = self.disk_capacity(mountpoint)
@@ -1881,10 +1896,11 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		disk_capacity = round(disk_capacity / 1024 / 1024 / 1024, 2)
 
 		if not server.auto_increase_storage and (not server.has_data_volume or mountpoint != "/"):
-			telegram.send(
+			TelegramMessage.enqueue(
 				f"Not increasing disk (mount point {mountpoint}) on "
 				f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
-				f"by {buffer + additional}G as auto disk increase disabled by user"
+				f"by {buffer + additional}G as auto disk increase disabled by user",
+				"Information",
 			)
 			insert_addon_storage_log(
 				adding_storage=additional + buffer,
@@ -1902,10 +1918,11 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 			return
 
-		telegram.send(
+		TelegramMessage.enqueue(
 			f"Increasing disk (mount point {mountpoint}) on "
 			f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
-			f"by {buffer + additional}G"
+			f"by {buffer + additional}G",
+			"Information",
 		)
 
 		self.increase_disk_size_for_server(
@@ -2221,6 +2238,18 @@ class Server(BaseServer):
 
 	GUNICORN_MEMORY = 150  # avg ram usage of 1 gunicorn worker
 	BACKGROUND_JOB_MEMORY = 3 * 80  # avg ram usage of 3 sets of bg workers
+
+	def validate(self):
+		super().validate()
+		self.validate_managed_database_service()
+
+	def validate_managed_database_service(self):
+		if getattr(self, "is_managed_database", 0):
+			if not self.managed_database_service:
+				frappe.throw(_("Please select Managed Database Service"))
+			self.database_server = ""
+		else:
+			self.managed_database_service = ""
 
 	def on_update(self):
 		# If Database Server is changed for the server then change it for all the benches
@@ -3020,8 +3049,16 @@ class Server(BaseServer):
 
 	@property
 	def can_scale(self) -> bool:
-		"""Check if server is configured for auto scaling"""
-		return self.benches_on_shared_volume
+		"""
+		Check if server is configured for auto scaling
+		and all release groups on this server have a password
+		"""
+		has_release_groups_without_redis_password = bool(
+			frappe.db.get_all(
+				"Release Group", {"server": self.name, "enabled": 1, "redis_password": ("LIKE", "")}
+			)
+		)
+		return self.benches_on_shared_volume and not has_release_groups_without_redis_password
 
 	def _create_auto_scale_record(self, scale_up: bool) -> "AutoScaleRecord":
 		"""Create up/down scale record"""

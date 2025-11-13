@@ -99,7 +99,7 @@ export default {
 				},
 				validate() {
 					var billing_name = this.billingInformation.billing_name.trim();
-					var billingNameRegex = /^[a-zA-Z0-9\-\'\,\.\s]+$/;
+					var billingNameRegex = /^[a-zA-Z0-9\-\'\,\.\(\)\s]+$/;
 					var billingNameValid = billingNameRegex.test(billing_name);
 					if (!billingNameValid) {
 						throw new DashboardError(
