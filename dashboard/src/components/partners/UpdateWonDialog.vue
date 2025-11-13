@@ -27,6 +27,7 @@
 					name="site_url"
 					:required="true"
 				/>
+				<ErrorMessage :message="errorMessage" />
 				<Button variant="solid" @click="() => updateStatus.submit()"
 					>Submit</Button
 				>
@@ -37,6 +38,7 @@
 <script setup>
 import { Dialog, FormControl, createResource } from 'frappe-ui';
 import { ref, defineEmits } from 'vue';
+import { DashboardError } from '../../utils/error';
 
 const emit = defineEmits(['update']);
 const show = defineModel();
@@ -50,6 +52,7 @@ const props = defineProps({
 const conversion_date = ref();
 const hosting_type = ref();
 const site_url = ref();
+const errorMessage = ref('');
 const updateStatus = createResource({
 	url: 'press.api.partner.update_lead_status',
 	makeParams: () => {
@@ -60,6 +63,17 @@ const updateStatus = createResource({
 			hosting: hosting_type.value,
 			site_url: site_url.value,
 		};
+	},
+	validate: () => {
+		if (
+			conversion_date.value === undefined ||
+			hosting_type.value === undefined ||
+			site_url.value === undefined
+		) {
+			let error = 'Please fill all the required fields';
+			errorMessage.value = error;
+			throw new DashboardError(error);
+		}
 	},
 	onSuccess: () => {
 		emit('update');
