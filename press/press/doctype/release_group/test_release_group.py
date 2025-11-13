@@ -61,7 +61,7 @@ def create_test_release_group(
 			"doctype": "Release Group",
 			"version": frappe_version,
 			"enabled": True,
-			"title": f"Test ReleaseGroup {frappe.mock('name')}",
+			"title": f"Test ReleaseGroup {frappe.generate_hash(length=10)}",
 			"team": frappe.get_value("Team", {"user": user}, "name"),
 			"public": public,
 		}
