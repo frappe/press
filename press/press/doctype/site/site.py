@@ -3282,7 +3282,7 @@ class Site(Document, TagHelpers):
 			},
 			{
 				"action": "Deactivate site",
-				"description": "Deactivated site is not accessible on the internet",
+				"description": "Deactivating will put the site in maintenance mode and make it inacessible",
 				"button_label": "Deactivate",
 				"condition": self.status == "Active",
 				"doc_method": "deactivate",

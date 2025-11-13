@@ -3,10 +3,11 @@
 
 from __future__ import annotations
 
+import os
+
 import frappe
 from frappe.frappeclient import FrappeClient
 
-from press.press.doctype.deploy_candidate.deploy_candidate import toggle_builds
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
@@ -124,20 +125,30 @@ class RegistryServer(BaseServer):
 
 		self.save()
 
-	def _prune_docker_system(self):
+	def prune_mirror_registry(self):
+		"""Clear out the docker system for the mirror registry"""
 		if not self.is_mirror:
-			toggle_builds(True)
+			return
+
+		frappe.enqueue_doc(self.doctype, self.name, "_prune_mirror_registry", queue="long", timeout=3600)
+
+	def _prune_mirror_registry(self):
 		try:
 			ansible = Ansible(
-				playbook="docker_registry_prune.yml",
+				playbook="prune_mirror_registry.yml",
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
+				variables={
+					"mountpoint": os.path.join(
+						self.docker_data_mountpoint, "docker", "registry", "v2", "blobs"
+					),
+					"registry_container": "registry-registry-1",
+				},
 			)
 			ansible.run()
 		except Exception:
-			log_error("Prune Docker Registry Exception", doc=self)
-		toggle_builds(False)
+			log_error("Mirror Registry Prune Failed", server=self.as_dict())
 
 	@frappe.whitelist()
 	def show_registry_password(self):

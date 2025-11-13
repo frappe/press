@@ -57,6 +57,7 @@ server_doctypes = [
 	"Proxy Server",
 	"Monitor Server",
 	"Log Server",
+	"NFS Server",
 ]
 
 HETZNER_ROOT_DISK_ID = "hetzner-root-disk"
@@ -210,11 +211,13 @@ class VirtualMachine(Document):
 			frappe.delete_doc("Virtual Machine Image", image)
 
 	def on_update(self):
-		if self.has_value_changed("has_data_volume"):
-			server = self.get_server()
-			if server:
-				server.has_data_volume = self.has_data_volume
-				server.save()
+		server = self.get_server()
+		if server and server.doctype == "NFS Server":
+			return
+
+		if self.has_value_changed("has_data_volume") and server:
+			server.has_data_volume = self.has_data_volume
+			server.save()
 
 		if self.has_value_changed("disk_size") and self.should_bill_addon_storage():
 			self.update_subscription_for_addon_storage()
@@ -327,61 +330,86 @@ class VirtualMachine(Document):
 
 		return False
 
+	def _handle_updated_addon_storage(self, server: Server, increment: int) -> None:
+		if frappe.db.exists(
+			"Subscription",
+			{"document_name": server.name, "team": server.team, "plan_type": "Server Storage Plan"},
+		):
+			# update the existing subscription
+			frappe.db.set_value(
+				"Subscription",
+				{
+					"document_name": server.name,
+					"team": server.team,
+					"plan_type": "Server Storage Plan",
+				},
+				{
+					"additional_storage": increment,
+					"enabled": 1,
+				},
+			)
+		else:
+			# create a new subscription
+			frappe.get_doc(
+				doctype="Subscription",
+				team=server.team,
+				plan_type="Server Storage Plan",
+				plan="Add-on Storage plan",
+				document_type=server.doctype,
+				document_name=server.name,
+				additional_storage=increment,
+				enabled=1,
+			).insert()
+
+	def _plan_change_addon_storage(self, server: Server) -> None:
+		if frappe.db.exists(
+			"Subscription",
+			{"document_name": server.name, "team": server.team, "plan_type": "Server Storage Plan"},
+		):
+			frappe.db.set_value(
+				"Subscription",
+				{
+					"document_name": server.name,
+					"team": server.team,
+					"plan_type": "Server Storage Plan",
+				},
+				"enabled",
+				0,
+			)
+
+	def update_subscription_for_nfs_addon_storage(self, volume: "VirtualMachineVolume") -> None:
+		"""Handle subscriptions for primary servers and their nfs server"""
+		primary_server = frappe.db.get_value(
+			"NFS Volume Attachment", {"volume_id": volume.volume_id}, "primary_server"
+		)
+		primary_server: Server = frappe.get_doc("Server", primary_server)
+		server_plan_disk_size = frappe.db.get_value("Server Plan", primary_server.plan, "disk")
+
+		if volume.size == server_plan_disk_size:
+			self._plan_change_addon_storage(primary_server)
+
+		if volume.size > server_plan_disk_size:
+			increment = volume.size - server_plan_disk_size
+			self._handle_updated_addon_storage(primary_server, increment)
+
 	def update_subscription_for_addon_storage(self):
+		"""Update subscription record"""
 		server = self.get_server()
-		if not server:
+
+		if not server or server.doctype == "NFS Server":
 			return
+
 		server_plan_size = frappe.db.get_value("Server Plan", server.plan, "disk")
 
 		if server_plan_size and self.disk_size > server_plan_size:
 			# Add on storage was added or updated
 			increment = self.disk_size - server_plan_size
-			if frappe.db.exists(
-				"Subscription",
-				{"document_name": server.name, "team": server.team, "plan_type": "Server Storage Plan"},
-			):
-				# update the existing subscription
-				frappe.db.set_value(
-					"Subscription",
-					{
-						"document_name": server.name,
-						"team": server.team,
-						"plan_type": "Server Storage Plan",
-					},
-					{
-						"additional_storage": increment,
-						"enabled": 1,
-					},
-				)
-			else:
-				# create a new subscription
-				frappe.get_doc(
-					doctype="Subscription",
-					team=server.team,
-					plan_type="Server Storage Plan",
-					plan="Add-on Storage plan",
-					document_type=server.doctype,
-					document_name=server.name,
-					additional_storage=increment,
-					enabled=1,
-				).insert()
+			self._handle_updated_addon_storage(server, increment)
 		elif self.disk_size == server_plan_size:
 			# Server was upgraded or downgraded from plan change
 			# Remove the existing add-on storage subscription
-			if frappe.db.exists(
-				"Subscription",
-				{"document_name": server.name, "team": server.team, "plan_type": "Server Storage Plan"},
-			):
-				frappe.db.set_value(
-					"Subscription",
-					{
-						"document_name": server.name,
-						"team": server.team,
-						"plan_type": "Server Storage Plan",
-					},
-					"enabled",
-					0,
-				)
+			self._plan_change_addon_storage(server)
+		return
 
 	@frappe.whitelist()
 	def provision(self):
@@ -727,12 +755,12 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "Hetzner":
 			self.client().servers.reboot(self.server_instance)
 
-		log_server_activity(self.series, self.name, action="Reboot")
+		log_server_activity(self.series, self.get_server().name, action="Reboot")
 
 		self.sync()
 
 	@frappe.whitelist()
-	def increase_disk_size(self, volume_id=None, increment=50):
+	def increase_disk_size(self, volume_id=None, increment=50):  # noqa: C901
 		if not increment:
 			return
 		if not volume_id:
@@ -746,6 +774,10 @@ class VirtualMachine(Document):
 		volume.last_updated_at = frappe.utils.now_datetime()
 		if self.cloud_provider == "AWS EC2":
 			self.client().modify_volume(VolumeId=volume.volume_id, Size=volume.size)
+			server = self.get_server()
+			if server.doctype == "NFS Server":
+				self.update_subscription_for_nfs_addon_storage(volume)
+
 		elif self.cloud_provider == "OCI":
 			if ".bootvolume." in volume.volume_id:
 				self.client(BlockstorageClient).update_boot_volume(
@@ -765,7 +797,7 @@ class VirtualMachine(Document):
 
 		log_server_activity(
 			self.series,
-			self.name,
+			server=self.get_server().name,
 			action="Disk Size Change",
 			reason=f"{'Root' if is_root_volume else 'Data'} volume increased by {increment}",
 		)
@@ -1302,7 +1334,7 @@ class VirtualMachine(Document):
 				volume.delete()
 			self.client().servers.delete(self.server_instance)
 
-		log_server_activity(self.series, self.name, action="Terminated")
+		log_server_activity(self.series, self.get_server().name, action="Terminated")
 
 	@frappe.whitelist()
 	def resize(self, machine_type):
@@ -1542,7 +1574,7 @@ class VirtualMachine(Document):
 
 		log_server_activity(
 			self.series,
-			self.name,
+			self.get_server().name,
 			action="Reboot",
 			reason="Unable to reboot manually, rebooting with serial console",
 		)
@@ -1763,7 +1795,7 @@ class VirtualMachine(Document):
 		if log_activity:
 			log_server_activity(
 				self.series,
-				self.name,
+				self.get_server().name,
 				action="Volume",
 				reason="Volume attached on server",
 			)

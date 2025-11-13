@@ -210,7 +210,7 @@ class SiteBackup(Document):
 		if self.job:
 			frappe.delete_doc_if_exists("Agent Job", self.job)
 
-	def on_update(self):
+	def on_update(self):  # noqa: C901
 		if self.physical and self.has_value_changed("status") and self.status in ["Success", "Failure"]:
 			site_update_doc_name = frappe.db.exists("Site Update", {"site_backup": self.name})
 			if site_update_doc_name:
@@ -254,6 +254,13 @@ class SiteBackup(Document):
 				reference_doctype=self.doctype,
 				reference_name=self.name,
 			)
+
+		if (
+			not self.physical
+			and self.has_value_changed("status")
+			and frappe.db.get_value("Agent Job", self.job, "status") == "Failure"
+		):
+			self.fix_global_search_indexes()
 
 	def _rollback_db_directory_permissions(self):
 		if not self.physical:
@@ -385,6 +392,23 @@ class SiteBackup(Document):
 				)
 				return False
 		return False
+
+	def fix_global_search_indexes(self):
+		"""
+		Run this whenever Backup Job fails because of broken global search indexes and regenerate them.
+		"""
+		job = frappe.db.get_value("Agent Job", self.job, ["bench", "server", "output"], as_dict=True)
+
+		if job.output and "Couldn't execute 'show create table `__global_search`'" in job.output:
+			try:
+				agent = Agent(self.server)
+				agent.create_agent_job("Fix global search", "fix_global_search")
+			except Exception:
+				frappe.log_error(
+					"Failed to fix global search indexes",
+					reference_doctype=self.doctype,
+					reference_name=self.name,
+				)
 
 	@classmethod
 	def offsite_backup_exists(cls, site: str, day: datetime.date) -> bool:

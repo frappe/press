@@ -1,12 +1,20 @@
-from typing import Any, Generator, Optional
+import json
 import signal
+from collections.abc import Generator
+from datetime import datetime, timedelta
+from typing import TYPE_CHECKING, Any
 
 import frappe
 from frappe.core.doctype.rq_job.rq_job import fetch_job_ids
 from frappe.utils.background_jobs import get_queues, get_redis_conn
-from redis import Redis
 from rq.command import send_stop_job_command
 from rq.job import Job, JobStatus, NoSuchJobError, get_current_job
+from rq.queue import Queue
+
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
+
+if TYPE_CHECKING:
+	from redis import Redis
 
 
 def stop_background_job(job: Job):
@@ -23,7 +31,7 @@ def get_background_jobs(
 	doctype: str,
 	name: str,
 	status: list[str] | None = None,
-	connection: "Optional[Redis]" = None,
+	connection: "Redis | None" = None,
 ) -> Generator[Job, Any, None]:
 	"""
 	Returns background jobs for a `doc` created using the `run_doc_method`
@@ -45,7 +53,7 @@ def get_background_jobs(
 
 def get_job_ids(
 	status: str | list[str],
-	connection: "Optional[Redis]" = None,
+	connection: "Redis | None" = None,
 ) -> Generator[str, Any, None]:
 	if isinstance(status, str):
 		status = [status]
@@ -60,8 +68,7 @@ def get_job_ids(
 			except ValueError:
 				return
 
-			for jid in job_ids:
-				yield jid
+			yield from job_ids
 
 
 def does_job_belong_to_doc(job: Job, doctype: str, name: str) -> bool:
@@ -69,9 +76,7 @@ def does_job_belong_to_doc(job: Job, doctype: str, name: str) -> bool:
 	if site and site != frappe.local.site:
 		return False
 
-	job_name = (
-		job.kwargs.get("job_type") or job.kwargs.get("job_name") or job.kwargs.get("method")
-	)
+	job_name = job.kwargs.get("job_type") or job.kwargs.get("job_name") or job.kwargs.get("method")
 	if job_name != "frappe.utils.background_jobs.run_doc_method":
 		return False
 
@@ -91,3 +96,21 @@ def has_job_timeout_exceeded() -> bool:
 	# getitimer returns the time left for this timer
 	# 0.0 means the timer is expired
 	return bool(get_current_job()) and (signal.getitimer(signal.ITIMER_REAL)[0] <= 0)
+
+
+def alert_on_zombie_rq_jobs() -> None:
+	connection = get_redis_conn()
+
+	threshold = datetime.now() - timedelta(minutes=2)
+	for id in connection.keys("rq:job:*"):
+		id = id.decode().split(":", 2)[-1]
+		try:
+			job = Job.fetch(id, connection=connection)
+			queue = Queue(job.origin, connection=connection)
+			position = queue.get_job_position(job.id)
+			if job.enqueued_at < threshold and job.get_status() == JobStatus.QUEUED and position is None:
+				serialized = json.dumps(vars(job), default=str, indent=2, sort_keys=True)
+				message = f"""*Stuck Job Detected in RQ Queue* \n\n```JSON\n{serialized}```\n\n@adityahase @balamurali27 @tanmoysrt"""
+				TelegramMessage.enqueue(message, "Errors")
+		except Exception:
+			pass

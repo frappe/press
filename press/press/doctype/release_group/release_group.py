@@ -598,12 +598,18 @@ class ReleaseGroup(Document, TagHelpers):
 		return required_arm_build, required_intel_build
 
 	def get_redis_password(self) -> str:
-		"""Get redis password create and update password if not present"""
+		"""Get redis password create and update password if not present
+		Ignore validation while setting redis password to allow older RGs
+		to be password protected.
+		"""
 		try:
 			return self.get_password("redis_password")
-		except frappe.AuthenticationError:
+		except (frappe.AuthenticationError, frappe.ValidationError):
 			self.redis_password = frappe.generate_hash(length=32)
-			self.save(ignore_permissions=True)
+			self.flags.ignore_validate = 1
+			self._save_passwords()
+			self.save()
+			frappe.db.commit()  # Safe password regardless
 			return self.get_password("redis_password")
 
 	@frappe.whitelist()

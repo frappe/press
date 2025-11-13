@@ -600,5 +600,19 @@
   "set_on_new_servers": 0,
   "skippable": 0,
   "title": null
+ },
+ {
+  "configurable_by_user": 0,
+  "datatype": "Str",
+  "default_value": "OFF",
+  "doc_section": "replication-and-binary-log",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 0,
+  "modified": "2025-11-07 17:00:51.114771",
+  "name": "log_slave_updates",
+  "set_on_new_servers": 0,
+  "skippable": 0,
+  "title": null
  }
 ]

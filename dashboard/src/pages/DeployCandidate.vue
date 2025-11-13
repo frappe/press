@@ -22,7 +22,7 @@
 
 		<div class="mt-3">
 			<div class="flex w-full items-center">
-				<h2 class="text-lg font-medium text-gray-900">
+				<h2 class="text-lg font-large text-gray-900">
 					{{ deploy.deploy_candidate }}
 				</h2>
 				<Badge class="ml-2" :label="deploy.status" />
@@ -106,13 +106,14 @@
 </template>
 <script>
 import { createResource, getCachedDocumentResource } from 'frappe-ui';
-import { getObject } from '../objects';
-import JobStep from '../components/JobStep.vue';
+import { h } from 'vue';
+import { toast } from 'vue-sonner';
 import AlertAddressableError from '../components/AlertAddressableError.vue';
 import AlertBanner from '../components/AlertBanner.vue';
-import dayjs from 'dayjs';
-import { toast } from 'vue-sonner';
-import { confirmDialog } from '../utils/components';
+import JobStep from '../components/JobStep.vue';
+import AppVersionsDialog from '../dialogs/AppVersionsDialog.vue';
+import { getObject } from '../objects';
+import { confirmDialog, renderDialog } from '../utils/components';
 
 export default {
 	name: 'DeployCandidate',
@@ -210,22 +211,13 @@ export default {
 					},
 				},
 				{
-					label: 'Fail and Redeploy',
-					icon: 'repeat',
-					condition: () => this.showFailAndRedeploy,
-					onClick: () => this.failAndRedeploy(),
+					label: 'View App Versions',
+					icon: 'package',
+					onClick: () => {
+						this.appVersions();
+					},
 				},
 			].filter((option) => option.condition?.() ?? true);
-		},
-		showFailAndRedeploy() {
-			if (!this.deploy || this.deploy.status == 'Failure') {
-				return false;
-			}
-			const from = ['Pending', 'Preparing'].includes(this.deploy.status)
-				? this.deploy.creation
-				: this.deploy.build_start;
-			const now = dayjs(new Date());
-			return now.diff(from, 'hours') > 2;
 		},
 	},
 	methods: {
@@ -289,27 +281,15 @@ export default {
 			});
 		},
 
-		failAndRedeploy() {
-			if (!this.deploy) {
-				return;
-			}
-
-			const group = this.deploy.group;
-			const onError = () => toast.error('Could not fail and redeploy');
-			const router = this.$router;
-
-			createResource({
-				url: 'press.api.bench.fail_and_redeploy',
-				params: { name: group, dc_name: this.deploy.name },
-				onSuccess(name) {
-					if (!name) {
-						onError();
-					} else {
-						router.push(`/groups/${group}/deploys/${name}`);
-					}
-				},
-				onError,
-			}).fetch();
+		appVersions() {
+			const deploy = this.deploy;
+			renderDialog(
+				h(AppVersionsDialog, {
+					dc_name: deploy.name,
+					group: deploy.group,
+					status: deploy.status,
+				}),
+			);
 		},
 	},
 };

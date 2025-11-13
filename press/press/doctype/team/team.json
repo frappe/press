@@ -54,7 +54,9 @@
   "partner_tab",
   "partner_details_section",
   "erpnext_partner",
+  "company_name",
   "partner_email",
+  "partner_manager",
   "column_break_ooyo",
   "partner_status",
   "partner_tier",
@@ -64,6 +66,10 @@
   "introduction",
   "column_break_akmx",
   "customers",
+  "partnership_date_section",
+  "start_date",
+  "column_break_egkq",
+  "end_date",
   "partner_section",
   "partner_referral_code",
   "partnership_date",
@@ -500,8 +506,9 @@
   },
   {
    "fieldname": "partner_tier",
-   "fieldtype": "Data",
-   "label": "Partner Tier"
+   "fieldtype": "Link",
+   "label": "Partner Tier",
+   "options": "Partner Tier"
   },
   {
    "fieldname": "custom_apps_tab",
@@ -600,6 +607,36 @@
    "fieldtype": "Currency",
    "label": "Monthly Alert Limit",
    "mandatory_depends_on": "receive_budget_alerts"
+  },
+  {
+   "fieldname": "partner_manager",
+   "fieldtype": "Link",
+   "label": "Partner Manager",
+   "options": "User"
+  },
+  {
+   "fieldname": "partnership_date_section",
+   "fieldtype": "Section Break",
+   "label": "Partnership Date"
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date"
+  },
+  {
+   "fieldname": "column_break_egkq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date"
+  },
+  {
+   "fieldname": "company_name",
+   "fieldtype": "Data",
+   "label": "Company Name"
   }
  ],
  "grid_page_length": 50,
@@ -665,8 +702,8 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2025-10-17 09:32:15.018772",
- "modified_by": "aysha@frappe.io",
+ "modified": "2025-11-06 18:07:54.307229",
+ "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
  "naming_rule": "Random",

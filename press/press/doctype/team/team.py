@@ -55,6 +55,7 @@ class Team(Document):
 		code_servers_enabled: DF.Check
 		communication_infos: DF.Table[CommunicationInfo]
 		company_logo: DF.Attach | None
+		company_name: DF.Data | None
 		country: DF.Link | None
 		currency: DF.Link | None
 		customers: DF.SmallText | None
@@ -64,6 +65,7 @@ class Team(Document):
 		enable_inplace_updates: DF.Check
 		enable_performance_tuning: DF.Check
 		enabled: DF.Check
+		end_date: DF.Date | None
 		enforce_2fa: DF.Check
 		erpnext_partner: DF.Check
 		extend_payment_due_suspension: DF.Check
@@ -84,9 +86,10 @@ class Team(Document):
 		parent_team: DF.Link | None
 		partner_commission: DF.Percent
 		partner_email: DF.Data | None
+		partner_manager: DF.Link | None
 		partner_referral_code: DF.Data | None
 		partner_status: DF.Literal["Active", "Inactive"]
-		partner_tier: DF.Data | None
+		partner_tier: DF.Link | None
 		partnership_date: DF.Date | None
 		payment_mode: DF.Literal["", "Card", "Prepaid Credits", "Paid By Partner"]
 		razorpay_enabled: DF.Check
@@ -99,6 +102,7 @@ class Team(Document):
 		skip_backups: DF.Check
 		skip_onboarding: DF.Check
 		ssh_access_enabled: DF.Check
+		start_date: DF.Date | None
 		stripe_customer_id: DF.Data | None
 		team_members: DF.Table[TeamMember]
 		team_title: DF.Data | None
@@ -522,7 +526,6 @@ class Team(Document):
 
 	@frappe.whitelist()
 	def disable_erpnext_partner_privileges(self):
-		self.erpnext_partner = 0
 		self.partner_status = "Inactive"
 		self.save(ignore_permissions=True)
 
@@ -1162,7 +1165,7 @@ class Team(Document):
 		)
 
 	def reallocate_workers_if_needed(
-		self, workloads_before: list[str, float, str], workloads_after: list[str, float, str]
+		self, workloads_before: list[tuple[str, float, str]], workloads_after: list[tuple[str, float, str]]
 	):
 		for before, after in zip(workloads_before, workloads_after, strict=False):
 			if after[1] - before[1] >= 8:  # 100 USD equivalent
