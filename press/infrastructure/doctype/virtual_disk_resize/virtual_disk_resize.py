@@ -99,17 +99,25 @@ class VirtualDiskResize(Document):
 			self.create_new_volume()
 			self.status = Status.Ready
 			self.save()
-		except frappe.QueryTimeoutError:
-			frappe.db.rollback()
-			self.status = Status.Scheduled
-			self.save()
 		except Exception as e:
 			frappe.log_error(message=str(e), title="Virtual Disk Resize Prerequisites Failed")
 			self.status = Status.Failure
 			self.save()
 
+	def get_lock(self):
+		try:
+			frappe.get_value("Virtual Machine", self.virtual_machine, "status", for_update=True)
+			return True
+		except frappe.QueryTimeoutError:
+			frappe.db.rollback()
+			self.add_comment("Could not acquire lock, the virtual machine seems to be busy.")
+			frappe.db.commit()
+			return False
+
 	@frappe.whitelist()
 	def execute(self):
+		if not self.get_lock():
+			return
 		self.run_prerequisites()
 		self.status = Status.Running
 		self.start = frappe.utils.now_datetime()
