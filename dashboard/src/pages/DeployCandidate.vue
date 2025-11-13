@@ -108,12 +108,12 @@
 import { createResource, getCachedDocumentResource } from 'frappe-ui';
 import { h } from 'vue';
 import { toast } from 'vue-sonner';
-import { renderDialog } from '../utils/components';
-import AppVersionsDialog from '../dialogs/AppVersionsDialog.vue';
 import AlertAddressableError from '../components/AlertAddressableError.vue';
 import AlertBanner from '../components/AlertBanner.vue';
 import JobStep from '../components/JobStep.vue';
+import AppVersionsDialog from '../dialogs/AppVersionsDialog.vue';
 import { getObject } from '../objects';
+import { confirmDialog, renderDialog } from '../utils/components';
 
 export default {
 	name: 'DeployCandidate',
@@ -211,12 +211,6 @@ export default {
 					},
 				},
 				{
-					label: 'Fail and Redeploy',
-					icon: 'repeat',
-					condition: () => this.showFailAndRedeploy,
-					onClick: () => this.failAndRedeploy(),
-				},
-				{
 					label: 'View App Versions',
 					icon: 'package',
 					condition: () => this.deploy.status === 'Success',
@@ -225,9 +219,6 @@ export default {
 					},
 				},
 			].filter((option) => option.condition?.() ?? true);
-		},
-		showFailAndRedeploy() {
-			return this.deploy.status === 'Running';
 		},
 	},
 	methods: {
@@ -297,31 +288,9 @@ export default {
 				h(AppVersionsDialog, {
 					dc_name: deploy.name,
 					group: deploy.group,
+					status: deploy.status,
 				}),
 			);
-		},
-
-		failAndRedeploy() {
-			if (!this.deploy) {
-				return;
-			}
-
-			const group = this.deploy.group;
-			const onError = () => toast.error('Could not fail and redeploy');
-			const router = this.$router;
-
-			createResource({
-				url: 'press.api.bench.fail_and_redeploy',
-				params: { name: group, dc_name: this.deploy.name },
-				onSuccess(name) {
-					if (!name) {
-						onError();
-					} else {
-						router.push(`/groups/${group}/deploys/${name}`);
-					}
-				},
-				onError,
-			}).fetch();
 		},
 	},
 };
