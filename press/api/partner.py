@@ -114,11 +114,7 @@ def transfer_credits(amount, customer, partner):
 	amt = frappe.utils.flt(amount)
 	partner_doc = frappe.get_doc("Team", partner)
 	credits_available = partner_doc.get_balance()
-<<<<<<< HEAD
-	partner_level, _ = partner_doc.get_partner_level()
-=======
 	partner_level = partner_doc.get_partner_level()
->>>>>>> fb1479a00 (feat(prm): Add Resources tab)
 	discount_percent = DISCOUNT_MAP.get(partner_level)
 
 	if credits_available < amt:
