@@ -44,7 +44,7 @@ class CertificateLinkRequest(Document):
 		frappe.sendmail(
 			recipients=[self.user_email],
 			subject="Certificate Link Request",
-			template="partner_certificate_link_request",
+			template="partner_link_certificate",
 			args={"link": link, "partner": self.partner or "", "user": self.user_email},
 			now=True,
 		)

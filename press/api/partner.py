@@ -116,6 +116,10 @@ def approve_certificate_link_request(key):
 	cert_req_doc = frappe.get_doc("Certificate Link Request", {"key": key})
 	cert_req_doc.status = "Approved"
 	cert_req_doc.save(ignore_permissions=True)
+	frappe.db.commit()
+
+	frappe.response.type = "redirect"
+	frappe.response.location = "/dashboard/partners/certificates"
 
 
 @frappe.whitelist()
