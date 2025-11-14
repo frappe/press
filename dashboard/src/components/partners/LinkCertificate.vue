@@ -39,6 +39,7 @@
 					<Button
 						class="w-full"
 						variant="solid"
+						:loading="linkCertificate.loading"
 						label="Link Certificate"
 						@click="linkCertificate.submit()"
 					/>
