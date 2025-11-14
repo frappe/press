@@ -104,12 +104,11 @@ export default {
 						},
 					},
 				],
-				documentation: 'https://frappe.io',
+				documentation: 'https://school.frappe.io',
 				actions() {
 					return [
 						{
-							label: 'Apply for Free Certification',
-							disabled: true,
+							label: 'Apply for Certification',
 							slots: {
 								prefix: icon('plus'),
 							},
@@ -126,7 +125,6 @@ export default {
 						},
 						{
 							label: 'Link Certificate',
-							disabled: true,
 							slots: {
 								prefix: icon('link'),
 							},

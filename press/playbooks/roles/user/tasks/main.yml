@@ -18,3 +18,11 @@
   user:
     name: root
     generate_ssh_key: yes
+
+- name: Change ownership of home directory to frappe user
+  file:
+    path: "/home/frappe"
+    owner: "frappe"
+    group: "frappe"
+    recurse: yes
+    state: directory

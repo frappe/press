@@ -64,7 +64,6 @@ class BenchInfoType(TypedDict):
 
 class ARMDockerImageType(TypedDict):
 	build: str
-	existing_image: bool
 	status: Literal["Pending", "Preparing", "Running", "Failure", "Success"]
 	bench: str
 
@@ -1101,10 +1100,10 @@ class BaseServer(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def change_plan(self, plan: str, ignore_card_setup=False):
-		plan: ServerPlan = frappe.get_doc("Server Plan", plan)
-		self.can_change_plan(ignore_card_setup, new_plan=plan)
-		self._change_plan(plan)
-		self.run_press_job("Resize Server", {"machine_type": plan.instance_type})
+		plan_doc: ServerPlan = frappe.get_doc("Server Plan", plan)
+		self.can_change_plan(ignore_card_setup, new_plan=plan_doc)
+		self._change_plan(plan_doc)
+		self.run_press_job("Resize Server", {"machine_type": plan_doc.instance_type})
 
 	def _change_plan(self, plan):
 		self.ram = plan.memory
@@ -1505,7 +1504,7 @@ class BaseServer(Document, TagHelpers):
 	def get_volume_mounts(self):
 		return [mount.as_dict() for mount in self.mounts if mount.mount_type == "Volume"]
 
-	def _create_arm_build(self, build: str) -> str:
+	def _create_arm_build(self, build: str) -> str | None:
 		from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
 			_create_arm_build as arm_build_util,
 		)
@@ -1516,8 +1515,9 @@ class BaseServer(Document, TagHelpers):
 			return arm_build_util(deploy_candidate)
 		except frappe.ValidationError:
 			frappe.log_error(
-				"Failed to create ARM build", message=f"Failed to create arm build for build {build.name}"
+				"Failed to create ARM build", message=f"Failed to create arm build for build {build}"
 			)
+			return None
 
 	def _process_bench(self, bench_info: BenchInfoType) -> ARMDockerImageType:
 		candidate = bench_info["candidate"]
@@ -2394,11 +2394,11 @@ class Server(BaseServer):
 				f"existing server plan. Current memory: {current_plan_memory}"
 			)
 
-	def create_secondary_server(self, secondary_server_plan: str) -> None:
+	def create_secondary_server(self, plan_name: str) -> None:
 		"""Create a secondary server for this server"""
-		self.validate_more_memory_in_secondary_server(secondary_server_plan)
+		self.validate_more_memory_in_secondary_server(plan_name)
 
-		secondary_server_plan: ServerPlan = frappe.get_cached_doc("Server Plan", secondary_server_plan)
+		plan: ServerPlan = frappe.get_cached_doc("Server Plan", plan_name)
 		team_name = frappe.db.get_value("Server", self.name, "team", "name")
 		cluster: "Cluster" = frappe.get_cached_doc("Cluster", self.cluster)
 		server_title = f"Secondary - {self.title or self.name}"
@@ -2411,7 +2411,7 @@ class Server(BaseServer):
 		secondary_server, _ = cluster.create_server(
 			"Server",
 			server_title,
-			secondary_server_plan,
+			plan,
 			team=team_name,
 			auto_increase_storage=self.auto_increase_storage,
 			is_secondary=True,
@@ -2883,12 +2883,12 @@ class Server(BaseServer):
 		return max(self.ram - 3000, self.ram * 0.75)  # in MB (leaving some for disk cache + others)
 
 	@cached_property
-	def max_gunicorn_workers(self) -> int:
+	def max_gunicorn_workers(self) -> float:
 		usable_ram_for_gunicorn = 0.6 * self.usable_ram  # 60% of usable ram
 		return usable_ram_for_gunicorn / self.GUNICORN_MEMORY
 
 	@cached_property
-	def max_bg_workers(self) -> int:
+	def max_bg_workers(self) -> float:
 		usable_ram_for_bg = 0.4 * self.usable_ram  # 40% of usable ram
 		return usable_ram_for_bg / self.BACKGROUND_JOB_MEMORY
 
@@ -3060,7 +3060,7 @@ class Server(BaseServer):
 		)
 		return self.benches_on_shared_volume and not has_release_groups_without_redis_password
 
-	def _create_auto_scale_record(self, scale_up: bool) -> "AutoScaleRecord":
+	def _create_auto_scale_record(self, scale_up: bool) -> AutoScaleRecord:
 		"""Create up/down scale record"""
 		return frappe.get_doc(
 			{
@@ -3073,15 +3073,16 @@ class Server(BaseServer):
 
 	@property
 	def domains(self):
+		filters = {}
 		if (
 			self.is_self_hosted
 		):  # to avoid pushing certificates to self hosted servers on setup_wildcard_hosts
-			return []
+			filters = {"name": self.name}
 		return [
 			frappe._dict({"domain": domain.name, "code_server": False})
 			for domain in frappe.get_all(
 				"Root Domain",
-				filters={"enabled": 1},
+				filters={"enabled": 1} | filters,
 				fields=["name"],
 			)
 		]  # To avoid adding child table in server doc

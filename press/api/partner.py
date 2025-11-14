@@ -92,6 +92,11 @@ def get_partner_details(partner_email):
 
 
 @frappe.whitelist()
+def get_resource_url():
+	return frappe.db.get_value("Press Settings", "Press Settings", "drive_resource_link")
+
+
+@frappe.whitelist()
 def get_partner_name(partner_email):
 	return frappe.db.get_value(
 		"Team",
@@ -108,7 +113,7 @@ def transfer_credits(amount, customer, partner):
 	amt = frappe.utils.flt(amount)
 	partner_doc = frappe.get_doc("Team", partner)
 	credits_available = partner_doc.get_balance()
-	partner_level, certificates = partner_doc.get_partner_level()
+	partner_level = partner_doc.get_partner_level()
 	discount_percent = DISCOUNT_MAP.get(partner_level)
 
 	if credits_available < amt:
