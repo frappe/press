@@ -1,6 +1,7 @@
 # Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
 
+
 import frappe
 import frappe.utils
 from frappe.model.document import Document
@@ -31,7 +32,7 @@ class SupportAccess(Document):
 		resources: DF.Table[SupportAccessResource]
 		site_domains: DF.Check
 		site_release_group: DF.Check
-		status: DF.Literal["Pending", "Accepted", "Rejected"]
+		status: DF.Literal["Pending", "Accepted", "Rejected", "Forfeited", "Revoked"]
 		target_team: DF.Link | None
 	# end: auto-generated types
 
@@ -141,14 +142,38 @@ class SupportAccess(Document):
 		self.validate_expiry()
 		self.validate_target_team()
 
+	@property
+	def target_statuses(self) -> list[str]:
+		"""
+		Returns the possible target statuses for the current user.
+		"""
+		if self.target_team == get_current_team():
+			return ["Accepted", "Rejected", "Revoked"]
+		return ["Pending", "Forfeited"]
+
+	def is_valid_status_transition(self, from_status: str, to_status: str) -> bool:
+		"""
+		Checks if status can be changed from `from_status` to `to_status`.
+		"""
+		return to_status in {
+			"Pending": ["Accepted", "Rejected"],
+			"Accepted": ["Revoked"],
+			"Rejected": [],
+			"Forfeited": [],
+			"Revoked": [],
+		}.get(from_status, [])
+
 	def validate_status_change(self):
-		team = get_current_team()
+		status_changed = self.has_value_changed("status")
+		if not status_changed:
+			return
 		doc_before = self.get_doc_before_save()
-		status_changed = doc_before and doc_before.status != self.status
-		if status_changed and self.target_team != team:
-			frappe.throw("Only the target team can change the status")
-		if status_changed and doc_before.status != "Pending":
-			frappe.throw("Status can only be changed if it is Pending")
+		status_before = doc_before.status
+		status_after = self.status
+		if not self.is_valid_status_transition(status_before, status_after):
+			frappe.throw(f"Cannot change status from {status_before} to {status_after}")
+		if status_after not in self.target_statuses:
+			frappe.throw("You are not allowed to set this status")
 
 	def validate_expiry(self):
 		if self.access_expired:
