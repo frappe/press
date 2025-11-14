@@ -89,6 +89,15 @@ export default {
 						),
 				},
 				{
+					label: 'Resources',
+					route: { name: 'PartnerResources' },
+					condition: () =>
+						Boolean(
+							this.$team.doc.erpnext_partner &&
+								this.$team.doc.partner_status === 'Active',
+						),
+				},
+				{
 					label: 'Contributions',
 					route: { name: 'PartnerContributions' },
 					condition: () =>
