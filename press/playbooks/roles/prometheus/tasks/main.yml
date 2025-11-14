@@ -12,11 +12,20 @@
     - /home/frappe/prometheus/rules
     - /home/frappe/prometheus/file_sd
 
+- name: Set system architecture
+  set_fact:
+    system_arch: >-
+      {% if ansible_architecture in ['aarch64', 'arm64'] %}
+      arm64
+      {% else %}
+      amd64
+      {% endif %}
+
 - name: Download Prometheus Archive
   become: yes
   become_user: frappe
   unarchive:
-    src: https://github.com/prometheus/prometheus/releases/download/v2.49.1/prometheus-2.49.1.linux-amd64.tar.gz
+    src: 'https://github.com/prometheus/prometheus/releases/download/v2.49.1/prometheus-2.49.1.linux-{{ system_arch }}.tar.gz'
     dest: /tmp
     remote_src: yes
 
@@ -24,7 +33,7 @@
   become: yes
   become_user: frappe
   copy:
-    src: '/tmp/prometheus-2.49.1.linux-amd64/{{ item }}/'
+    src: '/tmp/prometheus-2.49.1.linux-{{ system_arch }}/{{ item }}/'
     dest: '/home/frappe/prometheus/{{ item }}/'
     mode: 0755
     remote_src: yes
@@ -36,7 +45,7 @@
   become: yes
   become_user: frappe
   copy:
-    src: '/tmp/prometheus-2.49.1.linux-amd64/{{ item }}'
+    src: '/tmp/prometheus-2.49.1.linux-{{ system_arch }}/{{ item }}'
     dest: '/home/frappe/prometheus/{{ item }}'
     mode: 0755
     remote_src: yes

@@ -16,11 +16,20 @@
     - /home/frappe/grafana/data/dashboards
     - /home/frappe/grafana/data/plugins
 
+- name: Set system architecture
+  set_fact:
+    system_arch: >-
+      {% if ansible_architecture in ['aarch64', 'arm64'] %}
+      arm64
+      {% else %}
+      amd64
+      {% endif %}
+
 - name: Download Grafana Archive
   become: yes
   become_user: frappe
   unarchive:
-    src: https://dl.grafana.com/oss/release/grafana-10.3.1.linux-amd64.tar.gz
+    src: "https://dl.grafana.com/oss/release/grafana-10.3.1.linux-{{ system_arch }}.tar.gz"
     dest: /tmp
     remote_src: yes
 
