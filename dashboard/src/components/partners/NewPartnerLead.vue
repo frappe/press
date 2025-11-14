@@ -19,6 +19,7 @@
 						/>
 					</div>
 				</div>
+				<ErrorMessage :message="errorMessage" />
 				<div>
 					<Button
 						class="w-full"
@@ -100,6 +101,7 @@ const countryList = computed(() => {
 	}));
 });
 
+const errorMessage = ref('');
 const newLeadInfo = createResource({
 	url: 'press.api.partner.add_new_lead',
 	makeParams: () => {
@@ -109,7 +111,10 @@ const newLeadInfo = createResource({
 	},
 	validate: async () => {
 		let error = await validate();
-		if (error) throw new DashboardError(error);
+		if (error) {
+			errorMessage.value = error;
+			throw new DashboardError(error);
+		}
 	},
 	onSuccess: () => {
 		toast.success('New Lead created successfully');
