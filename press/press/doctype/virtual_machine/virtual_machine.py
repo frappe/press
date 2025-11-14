@@ -212,8 +212,6 @@ class VirtualMachine(Document):
 
 	def on_update(self):
 		server = self.get_server()
-		if server and server.doctype == "NFS Server":
-			return
 
 		if self.has_value_changed("has_data_volume") and server:
 			server.has_data_volume = self.has_data_volume
@@ -376,21 +374,6 @@ class VirtualMachine(Document):
 				"enabled",
 				0,
 			)
-
-	def update_subscription_for_nfs_addon_storage(self, volume: "VirtualMachineVolume") -> None:
-		"""Handle subscriptions for primary servers and their nfs server"""
-		primary_server = frappe.db.get_value(
-			"NFS Volume Attachment", {"volume_id": volume.volume_id}, "primary_server"
-		)
-		primary_server: Server = frappe.get_doc("Server", primary_server)
-		server_plan_disk_size = frappe.db.get_value("Server Plan", primary_server.plan, "disk")
-
-		if volume.size == server_plan_disk_size:
-			self._plan_change_addon_storage(primary_server)
-
-		if volume.size > server_plan_disk_size:
-			increment = volume.size - server_plan_disk_size
-			self._handle_updated_addon_storage(primary_server, increment)
 
 	def update_subscription_for_addon_storage(self):
 		"""Update subscription record"""
@@ -760,7 +743,7 @@ class VirtualMachine(Document):
 		self.sync()
 
 	@frappe.whitelist()
-	def increase_disk_size(self, volume_id=None, increment=50):  # noqa: C901
+	def increase_disk_size(self, volume_id=None, increment=50):
 		if not increment:
 			return
 		if not volume_id:
@@ -774,9 +757,6 @@ class VirtualMachine(Document):
 		volume.last_updated_at = frappe.utils.now_datetime()
 		if self.cloud_provider == "AWS EC2":
 			self.client().modify_volume(VolumeId=volume.volume_id, Size=volume.size)
-			server = self.get_server()
-			if server.doctype == "NFS Server":
-				self.update_subscription_for_nfs_addon_storage(volume)
 
 		elif self.cloud_provider == "OCI":
 			if ".bootvolume." in volume.volume_id:
