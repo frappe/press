@@ -151,17 +151,17 @@ class SupportAccess(Document):
 			return ["Accepted", "Rejected", "Revoked"]
 		return ["Pending", "Forfeited"]
 
-	def is_valid_status_transition(self, from_status: str, to_status: str) -> bool:
+	def is_valid_status_transition(self, status_from: str, status_to: str) -> bool:
 		"""
 		Checks if status can be changed from `from_status` to `to_status`.
 		"""
-		return to_status in {
+		return status_to in {
 			"Pending": ["Accepted", "Rejected"],
-			"Accepted": ["Revoked"],
+			"Accepted": ["Revoked", "Forfeited"],
 			"Rejected": [],
 			"Forfeited": [],
 			"Revoked": [],
-		}.get(from_status, [])
+		}.get(status_from, [])
 
 	def validate_status_change(self):
 		status_changed = self.has_value_changed("status")
