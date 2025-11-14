@@ -155,6 +155,7 @@ RUN {{ p.package_manager }} install {{ p.package }} \
 # Install Ubuntu packages
 {% else %}
 RUN --mount=type=cache,target=/var/cache/apt apt-get update \
+  rm -f /var/cache/apt/archives/lock \
   && apt-get install --yes --no-install-suggests --no-install-recommends {{ p.package }} \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre-{{ p.package }}`
