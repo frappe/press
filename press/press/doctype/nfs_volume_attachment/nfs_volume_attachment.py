@@ -20,6 +20,7 @@ if typing.TYPE_CHECKING:
 		NFSVolumeDetachmentStep,
 	)
 	from press.press.doctype.server.server import Server
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 class Status(str, Enum):
@@ -32,7 +33,18 @@ class Status(str, Enum):
 		return self.value
 
 
-class StepHandler:
+class StepHandler(Document):
+	def handle_vm_status_job(
+		self,
+		step: "NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep",
+		virtual_machine: str,
+		expected_status: str,
+	) -> None:
+		step.attempt = 1 if not step.attempt else step.attempt + 1
+		machine_status = frappe.db.get_value("Virtual Machine", virtual_machine, "status")
+		step.status = Status.Running if machine_status != expected_status else Status.Success
+		step.save()
+
 	def handle_async_job(self, step: "NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep", job: str) -> None:
 		job_status = frappe.db.get_value("Agent Job", job, "status")
 
@@ -196,7 +208,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 		"""Check if the primary server has a secondary server provisioned with no existing attachments"""
 		secondary_server_status = frappe.db.get_value("Server", self.secondary_server, "status")
 
-		if not secondary_server_status or secondary_server_status != "Active":
+		if not secondary_server_status:
 			frappe.throw("Please select a primary server that has a secondary server provisioned!")
 
 		has_shared_volume_setup = frappe.db.exists(
@@ -212,6 +224,30 @@ class NFSVolumeAttachment(Document, StepHandler):
 			frappe.throw(
 				f"{self.primary_server} is already sharing benches with {self.secondary_server}!",
 			)
+
+	def start_secondary_server(self, step: "NFSVolumeAttachmentStep"):
+		"""Start secondary server"""
+		step.status = Status.Running
+		step.save()
+
+		secondary_server_vm = frappe.db.get_value("Server", self.secondary_server, "virtual_machine")
+		virtual_machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", secondary_server_vm)
+
+		if virtual_machine.status != "Running":
+			virtual_machine.start()
+
+		step.status = Status.Success
+		step.save()
+
+	def wait_for_secondary_server_to_start(self, step: "NFSVolumeAttachmentStep"):
+		"""Wait for secondary server to starts"""
+		step.status = Status.Running
+		step.is_waiting = True
+		step.save()
+
+		virtual_machine = frappe.db.get_value("Server", self.secondary_server, "virtual_machine")
+
+		self.handle_vm_status_job(step, virtual_machine=virtual_machine, expected_status="Running")
 
 	def stop_all_benches(self, step: "NFSVolumeAttachmentStep"):
 		"""Stop all running benches"""
@@ -375,6 +411,8 @@ class NFSVolumeAttachment(Document, StepHandler):
 		"""Append defined steps to the document before saving."""
 		for step in self.get_steps(
 			[
+				self.start_secondary_server,
+				self.wait_for_secondary_server_to_start,
 				self.stop_all_benches,
 				self.allow_servers_to_mount,
 				self.wait_for_acl_addition,
