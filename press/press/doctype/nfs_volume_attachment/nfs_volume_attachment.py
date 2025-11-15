@@ -33,7 +33,7 @@ class Status(str, Enum):
 		return self.value
 
 
-class StepHandler(Document):
+class StepHandler:
 	def handle_vm_status_job(
 		self,
 		step: "NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep",
