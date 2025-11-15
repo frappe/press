@@ -54,7 +54,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-23 20:34:40.233178",
+ "modified": "2025-11-15 13:59:54.275588",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Auto Scale Record",
@@ -74,6 +74,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],

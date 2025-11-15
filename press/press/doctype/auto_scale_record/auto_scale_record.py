@@ -7,9 +7,13 @@ import frappe
 from frappe.model.document import Document
 
 from press.agent import Agent
+from press.runner import Ansible
+from press.utils import log_error
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.server.server import Server
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 class AutoScaleRecord(Document):
@@ -39,6 +43,19 @@ class AutoScaleRecord(Document):
 
 		if self.scale_down:
 			self.switch_to_primary()
+
+	def _gracefully_stop_benches_on_secondary(self) -> None:
+		secondary_server: "Server" = frappe.get_cached_doc("Server", self.secondary_server)
+		try:
+			ansible = Ansible(
+				playbook="stop_benches.yml",
+				server=secondary_server,
+				user=secondary_server._ssh_user(),
+				port=secondary_server._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Stop Benches Exception", server=secondary_server.as_dict())
 
 	def switch_to_secondary(self):
 		"""
@@ -79,7 +96,6 @@ class AutoScaleRecord(Document):
 		bench directories in all the configs.
 		"""
 		secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
-		frappe.db.set_value("Server", self.primary_server, "scaled_up", False)
 		shared_directory = frappe.db.get_single_value("Press Settings", "shared_directory")
 
 		self.setup_primary_upstream()
@@ -93,6 +109,50 @@ class AutoScaleRecord(Document):
 			reference_doctype="Server",
 			reference_name=self.primary_server,
 		)
+
+	def initiate_secondary_shutdown(self) -> None:
+		"""
+		Initiates a shutdown of the secondary server once it is safe to do so.
+
+		This method checks whether all "Remove Site from Upstream" jobs related to the
+		secondary server have finished. These jobs must be fully completed before the
+		secondary server can be shut down.
+
+		If the secondary server's virtual machine is already stopped, the method exits
+		immediately.
+
+		Once all upstream-removal jobs are finished and the server is confirmed to be
+		running, this method gracefully stops all benches on the secondary server and
+		then triggers the shutdown of the virtual machine.
+		"""
+		virtual_machine = frappe.db.get_value("Server", self.secondary_server, "virtual_machine")
+		secondary_server_status = frappe.db.get_value("Virtual Machine", virtual_machine, "status")
+
+		if secondary_server_status in ["Stopping", "Stopped"]:
+			return
+
+		non_terminal_states = ["Pending", "Undelivered", "Running"]
+		remove_upstream_jobs = frappe.db.get_all(
+			"Agent Job",
+			{
+				"job_type": "Remove Site from Upstream",
+				"upstream": self.secondary_server,
+				"status": ("IN", non_terminal_states),
+			},
+		)
+
+		if remove_upstream_jobs:
+			return
+
+		current_user = frappe.session.user
+		frappe.set_user("Administrator")
+
+		self._gracefully_stop_benches_on_secondary()
+		secondary_server_vm: "VirtualMachine" = frappe.get_doc("Virtual Machine", virtual_machine)
+		secondary_server_vm.stop()
+		frappe.db.set_value("Server", self.primary_server, "scaled_up", False)
+
+		frappe.set_user(current_user)
 
 	def setup_secondary_upstream(self) -> "AgentJob":
 		"""Update proxy server with secondary as upstream"""
