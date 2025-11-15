@@ -15,6 +15,8 @@
 						'bg-green-50 border-green-200 text-green-800':
 							banner.type === 'success',
 						'bg-red-50 border-red-200 text-red-800': banner.type === 'error',
+						'bg-gray-50 border-gray-200 text-gray-800':
+							banner.type === 'neutral',
 					}"
 				>
 					{{ banner.message }}
@@ -77,6 +79,7 @@ import Link from './Link.vue';
 import { Badge, createDocumentResource, createResource } from 'frappe-ui';
 import { computed, ref } from 'vue';
 import { getTeam } from '../data/team';
+import { toast } from 'vue-sonner';
 
 const props = defineProps<{
 	name: string;
@@ -118,30 +121,17 @@ const permissions = computed(() =>
 	].filter((p) => p.requested),
 );
 
-const accept = createResource({
+const update = createResource({
 	url: 'press.api.client.set_value',
-	params: {
+	makeParams: (args: any) => ({
 		doctype: 'Support Access',
 		name: props.name,
 		fieldname: {
-			status: 'Accepted',
+			status: args.status,
 		},
-	},
-	onSuccess: () => {
-		open.value = false;
-	},
-});
-
-const reject = createResource({
-	url: 'press.api.client.set_value',
-	params: {
-		doctype: 'Support Access',
-		name: props.name,
-		fieldname: {
-			status: 'Rejected',
-		},
-	},
-	onSuccess: () => {
+	}),
+	onSuccess: (data: any) => {
+		toast.success(`Request ${data.status}`);
 		open.value = false;
 	},
 });
@@ -157,27 +147,74 @@ const banner = computed(() => {
 			type: 'error',
 			message: 'This request has been rejected.',
 		};
+	} else if (request.doc?.status === 'Revoked') {
+		return {
+			type: 'neutral',
+			message: 'This request has been revoked.',
+		};
+	} else if (request.doc?.status === 'Forfeited') {
+		return {
+			type: 'neutral',
+			message: 'This request has been forfeited.',
+		};
 	}
 });
 
 const actions = computed(() => {
-	if (request.doc?.status !== 'Pending' || !isReceived.value) {
-		return [];
+	const actions = [];
+	const isExpired = new Date(request.doc.access_allowed_till) < new Date();
+
+	if (request.doc?.status === 'Pending' && isReceived.value) {
+		actions.push(
+			{
+				label: 'Reject',
+				variant: 'subtle',
+				theme: 'red',
+				onClick: () => {
+					update.submit({
+						status: 'Rejected',
+					});
+				},
+			},
+			{
+				label: 'Accept',
+				variant: 'solid',
+				onClick: () => {
+					update.submit({
+						status: 'Accepted',
+					});
+				},
+			},
+		);
 	}
 
-	return [
-		{
-			label: 'Reject',
+	if (request.doc?.status === 'Accepted' && isReceived.value && !isExpired) {
+		actions.push({
+			label: 'Revoke',
 			variant: 'subtle',
 			theme: 'red',
-			onClick: () => reject.submit(),
-		},
-		{
-			label: 'Accept',
-			variant: 'solid',
-			onClick: () => accept.submit(),
-		},
-	];
+			onClick: () => {
+				update.submit({
+					status: 'Revoked',
+				});
+			},
+		});
+	}
+
+	if (request.doc?.status === 'Accepted' && !isReceived.value && !isExpired) {
+		actions.push({
+			label: 'Forfeit',
+			variant: 'subtle',
+			theme: 'red',
+			onClick: () => {
+				update.submit({
+					status: 'Forfeited',
+				});
+			},
+		});
+	}
+
+	return actions;
 });
 
 const resourceLink = (documentType: string, documentName: string) => {
