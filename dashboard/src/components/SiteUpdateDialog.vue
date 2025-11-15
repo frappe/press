@@ -10,7 +10,10 @@
 			<template v-if="updatableApps.length > 0">
 				<GenericList :options="listOptions" />
 				<div class="mt-4 flex flex-col space-y-4">
-					<DateTimeControl v-model="scheduledTime" label="Schedule Time" />
+					<DateTimeControl
+						v-model="scheduledTime"
+						label="Schedule Time in IST"
+					/>
 					<div class="flex flex-col space-y-2">
 						<FormControl
 							label="Skip failing patches if any"

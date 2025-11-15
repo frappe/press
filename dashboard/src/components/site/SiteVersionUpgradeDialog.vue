@@ -22,7 +22,7 @@
 				<DateTimeControl
 					v-if="($site.doc.group_public && nextVersion) || benchHasCommonServer"
 					v-model="targetDateTime"
-					label="Schedule Time"
+					label="Schedule Time in IST"
 				/>
 				<FormControl
 					v-if="($site.doc.group_public && nextVersion) || benchHasCommonServer"
