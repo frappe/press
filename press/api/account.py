@@ -1210,6 +1210,10 @@ def get_permission_roles():
 			PressRole.allow_bench_creation,
 			PressRole.allow_server_creation,
 			PressRole.allow_webhook_configuration,
+			PressRole.allow_dashboard,
+			PressRole.allow_customer,
+			PressRole.allow_leads,
+			PressRole.allow_contribution,
 		)
 		.join(PressRoleUser)
 		.on((PressRole.name == PressRoleUser.parent) & (PressRoleUser.user == frappe.session.user))

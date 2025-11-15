@@ -39,6 +39,7 @@
 					<Button
 						class="w-full"
 						variant="solid"
+						:loading="linkCertificate.loading"
 						label="Link Certificate"
 						@click="linkCertificate.submit()"
 					/>
@@ -51,6 +52,7 @@
 <script setup>
 import { defineEmits, ref } from 'vue';
 import { createResource, frappeRequest, debounce } from 'frappe-ui';
+import { toast } from 'vue-sonner';
 
 const courseTypes = [
 	{ label: 'Framework', value: 'frappe-developer-certification' },
@@ -61,7 +63,7 @@ const show = ref(true);
 const userEmail = ref('');
 const certificateType = ref('');
 const linkCertificate = createResource({
-	url: 'press.api.partner.link_certificate',
+	url: 'press.api.partner.send_link_certificate_request',
 	makeParams: () => {
 		return {
 			user_email: userEmail.value,
@@ -76,6 +78,7 @@ const linkCertificate = createResource({
 	onSuccess: () => {
 		show.value = false;
 		emit('success');
+		toast.success('Email has been sent to the user for linking certificate.');
 	},
 	onError: (error) => {
 		console.error(error);

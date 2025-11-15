@@ -19,6 +19,12 @@
   "allow_bench_creation",
   "allow_server_creation",
   "allow_webhook_configuration",
+  "partner_permissions_section",
+  "allow_dashboard",
+  "allow_leads",
+  "column_break_hocg",
+  "allow_customer",
+  "allow_contribution",
   "section_break_zdiv",
   "users"
  ],
@@ -107,11 +113,45 @@
    "fieldname": "allow_webhook_configuration",
    "fieldtype": "Check",
    "label": "Allow Webhook Configuration"
+  },
+  {
+   "depends_on": "allow_partner",
+   "fieldname": "partner_permissions_section",
+   "fieldtype": "Section Break",
+   "label": "Partner Permissions"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_dashboard",
+   "fieldtype": "Check",
+   "label": "Allow Dashboard"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_leads",
+   "fieldtype": "Check",
+   "label": "Allow Leads"
+  },
+  {
+   "fieldname": "column_break_hocg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_customer",
+   "fieldtype": "Check",
+   "label": "Allow Customer"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_contribution",
+   "fieldtype": "Check",
+   "label": "Allow Contribution"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-28 23:13:02.340747",
+ "modified": "2025-11-14 19:02:58.097025",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Role",

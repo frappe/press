@@ -125,7 +125,6 @@ export default {
 						},
 						{
 							label: 'Link Certificate',
-							disabled: true,
 							slots: {
 								prefix: icon('link'),
 							},
