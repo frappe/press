@@ -153,7 +153,7 @@ class SupportAccess(Document):
 
 	def is_valid_status_transition(self, status_from: str, status_to: str) -> bool:
 		"""
-		Checks if status can be changed from `from_status` to `to_status`.
+		Checks if status can be changed from `status_from` to `status_to`.
 		"""
 		return status_to in {
 			"Pending": ["Accepted", "Rejected"],
@@ -168,6 +168,8 @@ class SupportAccess(Document):
 		if not status_changed:
 			return
 		doc_before = self.get_doc_before_save()
+		if not doc_before:
+			return
 		status_before = doc_before.status
 		status_after = self.status
 		if not self.is_valid_status_transition(status_before, status_after):
@@ -178,8 +180,8 @@ class SupportAccess(Document):
 	def validate_expiry(self):
 		if self.access_expired:
 			frappe.throw("Access expiry must be in the future")
-		if self.status != "Accepted" and self.access_allowed_till:
-			frappe.throw("Access expiry can only be set if request is accepted")
+		if self.status == "Pending" and self.access_allowed_till:
+			frappe.throw("Pending requests cannot have access expiry")
 
 	def validate_target_team(self):
 		teams = set()
