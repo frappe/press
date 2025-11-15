@@ -22,10 +22,12 @@ from press.press.doctype.team.team import get_child_team_members
 from press.utils import get_current_team
 
 if TYPE_CHECKING:
+	from press.press.doctype.auto_scale_record.auto_scale_record import AutoScaleRecord
 	from press.press.doctype.cluster.cluster import Cluster
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.server_plan.server_plan import ServerPlan
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 def poly_get_doc(doctypes, name):
@@ -654,4 +656,50 @@ def rename(name, title):
 
 
 def get_timespan_timegrain(duration: str) -> tuple[int, int]:
+<<<<<<< HEAD
 	return TIMESPAN_TIMEGRAIN_MAP[duration]
+=======
+	timespan, timegrain = {
+		"1 Hour": (60 * 60, 2 * 60),
+		"6 Hour": (6 * 60 * 60, 5 * 60),
+		"24 Hour": (24 * 60 * 60, 30 * 60),
+		"7 Days": (7 * 24 * 60 * 60, 2 * 30 * 60),
+		"15 Days": (15 * 24 * 60 * 60, 3 * 30 * 60),
+	}[duration]
+
+	return timespan, timegrain
+
+
+@frappe.whitelist(allow_guest=True)
+def benches_are_idle(server: str, access_token: str) -> None:
+	"""Shut down the secondary server if all benches are idle.
+
+	This function is only triggered by secondary servers:
+	https://github.com/frappe/agent/pull/346/files#diff-7355d9c50cadfa3f4c74fc77a4ad8ab08e4da8f6c3326bbf9b0de0f00a0aa0daR87-R93
+	"""
+	from passlib.hash import pbkdf2_sha256 as pbkdf2
+
+	server_doc = frappe.get_cached_doc("Server", server)
+	agent_password = server_doc.get_password("agent_password")
+	current_user = frappe.session.user
+
+	if not pbkdf2.verify(agent_password, access_token):
+		return
+
+	# If benches exist but are idle, trigger auto-scale shutdown
+	try:
+		auto_scale_record: "AutoScaleRecord" = frappe.get_last_doc(
+			"Auto Scale Record", {"secondary_server": server}
+		)
+		auto_scale_record.initiate_secondary_shutdown()
+	except frappe.DoesNotExistError:
+		# Secondary server is running after setting up shared benches stop virtual machine
+		frappe.set_user("Administrator")
+
+		virtual_machine = frappe.db.get_value("Server", server, "virtual_machine")
+		virtual_machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", virtual_machine)
+		if virtual_machine.status == "Running":
+			virtual_machine.stop()
+
+		frappe.set_user(current_user)
+>>>>>>> e62258666 (chore(secondary-server): Initiate virtual machine shutdown)
