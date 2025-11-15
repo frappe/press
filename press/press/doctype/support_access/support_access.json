@@ -73,7 +73,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nAccepted\nRejected"
+   "options": "Pending\nAccepted\nRejected\nForfeited\nRevoked"
   },
   {
    "fieldname": "section_break_lwpm",
@@ -143,7 +143,7 @@
  ],
  "grid_page_length": 50,
  "links": [],
- "modified": "2025-10-31 13:39:07.345916",
+ "modified": "2025-11-14 21:55:56.574233",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Support Access",
