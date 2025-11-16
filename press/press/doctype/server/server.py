@@ -3017,14 +3017,6 @@ class Server(BaseServer):
 		auto_scale_record = self._create_auto_scale_record(scale_up=True)
 		auto_scale_record.insert()
 
-	@frappe.whitelist()
-	def scale_down(self):
-		if not self.can_scale:
-			frappe.throw("Server is not configured for auto scaling", frappe.ValidationError)
-
-		auto_scale_record = self._create_auto_scale_record(scale_up=False)
-		auto_scale_record.insert()
-
 	@property
 	def can_scale(self) -> bool:
 		"""
