@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 import typing
 from enum import Enum
+from typing import Literal
 
 import frappe
 from frappe.model.document import Document
@@ -15,9 +16,6 @@ from press.runner import Ansible
 if typing.TYPE_CHECKING:
 	from press.press.doctype.nfs_volume_attachment_step.nfs_volume_attachment_step import (
 		NFSVolumeAttachmentStep,
-	)
-	from press.press.doctype.nfs_volume_detachment_step.nfs_volume_detachment_step import (
-		NFSVolumeDetachmentStep,
 	)
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
@@ -32,11 +30,17 @@ class Status(str, Enum):
 	def __str__(self):
 		return self.value
 
+class GenericStep(Document):
+	attempt: int
+	job_type: Literal["Ansible Play", "Agent Job"]
+	job: str
+	status: Status
+
 
 class StepHandler:
 	def handle_vm_status_job(
 		self,
-		step: "NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep",
+		step: GenericStep,
 		virtual_machine: str,
 		expected_status: str,
 	) -> None:
@@ -45,7 +49,7 @@ class StepHandler:
 		step.status = Status.Running if machine_status != expected_status else Status.Success
 		step.save()
 
-	def handle_async_job(self, step: "NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep", job: str) -> None:
+	def handle_async_job(self, step: GenericStep, job: str) -> None:
 		job_status = frappe.db.get_value("Agent Job", job, "status")
 
 		status_map = {
@@ -62,7 +66,7 @@ class StepHandler:
 			raise
 
 	def _run_ansible_step(
-		self, step: "NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep", ansible: Ansible
+		self, step: GenericStep, ansible: Ansible
 	) -> None:
 		step.job_type = "Ansible Play"
 		step.job = ansible.play
@@ -76,7 +80,7 @@ class StepHandler:
 
 	def _fail_ansible_step(
 		self,
-		step: "NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep",
+		step: GenericStep,
 		ansible: Ansible,
 		e: Exception | None = None,
 	) -> None:
@@ -86,7 +90,7 @@ class StepHandler:
 		step.save()
 
 	def _fail_job_step(
-		self, step: "NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep", e: Exception | None = None
+		self, step: GenericStep, e: Exception | None = None
 	) -> None:
 		step.status = Status.Failure
 		step.output = str(e)
@@ -135,15 +139,15 @@ class StepHandler:
 		return getattr(self, method_name)
 
 	def next_step(
-		self, steps: list["NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep"]
-	) -> "NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep" | None:
+		self, steps: list[GenericStep]
+	) -> GenericStep | None:
 		for step in steps:
 			if step.status not in (Status.Success, Status.Failure):
 				return step
 
 		return None
 
-	def _execute_steps(self, steps: list["NFSVolumeAttachmentStep" | "NFSVolumeDetachmentStep"]):
+	def _execute_steps(self, steps: list[GenericStep]):
 		"""Sequentially execute defined NFS attachment steps."""
 		self.status = Status.Running
 		self.save()

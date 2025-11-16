@@ -8,9 +8,12 @@
   "server_section",
   "primary_server",
   "secondary_server",
+  "status",
   "column_break_nxd6",
   "scale_up",
-  "scale_down"
+  "scale_down",
+  "steps_section",
+  "scale_steps"
  ],
  "fields": [
   {
@@ -49,12 +52,31 @@
    "fieldtype": "Link",
    "label": "Secondary Server",
    "options": "Server"
+  },
+  {
+   "fieldname": "steps_section",
+   "fieldtype": "Section Break",
+   "label": "Steps"
+  },
+  {
+   "fieldname": "scale_steps",
+   "fieldtype": "Table",
+   "label": "Scale Steps",
+   "options": "Scale Step"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nFailure\nSuccess",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-15 13:59:54.275588",
+ "modified": "2025-11-16 15:11:53.476206",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Auto Scale Record",
