@@ -27,7 +27,6 @@ if TYPE_CHECKING:
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.server_plan.server_plan import ServerPlan
-	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 def poly_get_doc(doctypes, name):
@@ -683,19 +682,36 @@ def benches_are_idle(server: str, access_token: str) -> None:
 	if not pbkdf2.verify(agent_password, access_token):
 		return
 
-	# If benches exist but are idle, trigger auto-scale shutdown
-	try:
-		auto_scale_record: "AutoScaleRecord" = frappe.get_last_doc(
-			"Auto Scale Record", {"secondary_server": server}
-		)
-		auto_scale_record.initiate_secondary_shutdown()
-	except frappe.DoesNotExistError:
-		# Secondary server is running after setting up shared benches stop virtual machine
+	primary_server, is_server_scaled_up = frappe.db.get_value(
+		"Server", {"secondary_server": server}, ["name", "scaled_up"]
+	)
+	running_scale_down = frappe.db.get_value(
+		"Auto Scale Record", {"secondary_server": server, "status": ("IN", ("Running", "Pending"))}
+	)
+	scaled_up_at = frappe.db.get_value(
+		"Auto Scale Record", {"secondary_server": server, "scale_up": True}, "modified"
+	)
+
+	should_scale_down = (
+		not running_scale_down
+		and is_server_scaled_up
+		and scaled_up_at
+		and (datetime.now() - scaled_up_at) > timedelta(minutes=5)
+	)
+	if should_scale_down:
+		# Scale down here
 		frappe.set_user("Administrator")
-
-		virtual_machine = frappe.db.get_value("Server", server, "virtual_machine")
-		virtual_machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", virtual_machine)
-		if virtual_machine.status == "Running":
-			virtual_machine.stop()
-
+		auto_scale_record: "AutoScaleRecord" = frappe.get_doc(
+			{
+				"doctype": "Auto Scale Record",
+				"scale_up": False,
+				"scale_down": True,
+				"primary_server": primary_server,
+			}
+		)
+		auto_scale_record.insert()
 		frappe.set_user(current_user)
+	else:
+		print(
+			f"NOT running as running_scale_down {running_scale_down} is_server_scaled_up {is_server_scaled_up}"
+		)

@@ -30,6 +30,7 @@ class Status(str, Enum):
 	def __str__(self):
 		return self.value
 
+
 class GenericStep(Document):
 	attempt: int
 	job_type: Literal["Ansible Play", "Agent Job"]
@@ -65,9 +66,7 @@ class StepHandler:
 		if step.status == Status.Failure:
 			raise
 
-	def _run_ansible_step(
-		self, step: GenericStep, ansible: Ansible
-	) -> None:
+	def _run_ansible_step(self, step: GenericStep, ansible: Ansible) -> None:
 		step.job_type = "Ansible Play"
 		step.job = ansible.play
 		step.save()
@@ -89,9 +88,7 @@ class StepHandler:
 		step.output = str(e)
 		step.save()
 
-	def _fail_job_step(
-		self, step: GenericStep, e: Exception | None = None
-	) -> None:
+	def _fail_job_step(self, step: GenericStep, e: Exception | None = None) -> None:
 		step.status = Status.Failure
 		step.output = str(e)
 		step.save()
@@ -138,9 +135,7 @@ class StepHandler:
 		"""Retrieve a method object by name."""
 		return getattr(self, method_name)
 
-	def next_step(
-		self, steps: list[GenericStep]
-	) -> GenericStep | None:
+	def next_step(self, steps: list[GenericStep]) -> GenericStep | None:
 		for step in steps:
 			if step.status not in (Status.Success, Status.Failure):
 				return step
