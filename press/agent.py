@@ -1093,7 +1093,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			filters["bench"] = bench
 
 		if site:
-			filters["site"] = site
+			filters["site"] = site if not isinstance(site, list) else ("IN", site)
 
 		if code_server:
 			filters["code_server"] = code_server
@@ -1104,7 +1104,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		if host:
 			filters["host"] = host
 
-		job = frappe.db.get_value("Agent Job", filters, "name")
+		job = frappe.db.get_value("Agent Job", filters, "name", debug=1)
 
 		return frappe.get_doc("Agent Job", job) if job else False
 
