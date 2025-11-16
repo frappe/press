@@ -25,6 +25,7 @@
   "npo_discount",
   "column_break_qfwx",
   "print_format",
+  "ic_key",
   "stripe_settings_section",
   "stripe_publishable_key",
   "stripe_secret_key",
@@ -233,6 +234,8 @@
   "partnership_fee_usd",
   "column_break_yxrj",
   "partnership_fee_inr",
+  "section_break_dhzi",
+  "drive_resource_link",
   "hybrid_server_tab",
   "hybrid_cluster",
   "hybrid_domain",
@@ -1506,11 +1509,25 @@
    "fieldname": "disallow_disposable_emails",
    "fieldtype": "Check",
    "label": "Disallow disposable emails"
+  },
+  {
+   "fieldname": "drive_resource_link",
+   "fieldtype": "Data",
+   "label": "Drive Resource Link"
+  },
+  {
+   "fieldname": "ic_key",
+   "fieldtype": "Password",
+   "label": "IC Key"
+  },
+  {
+   "fieldname": "section_break_dhzi",
+   "fieldtype": "Section Break"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-11-12 15:26:00.303409",
+ "modified": "2025-11-13 11:07:07.301410",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

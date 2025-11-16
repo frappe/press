@@ -29,7 +29,6 @@
   "column_break_udzz",
   "type_of_scope",
   "team",
-  "cluster",
   "server",
   "site",
   "dismissals_section",
@@ -91,7 +90,7 @@
   },
   {
    "depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Server\"",
-   "description": "Recipients are users that own Sites on this Server",
+   "description": "Recipients are users with Sites on this Server",
    "fieldname": "server",
    "fieldtype": "Link",
    "label": "Server",
@@ -100,7 +99,7 @@
   },
   {
    "depends_on": "eval:!doc.is_global & doc.type_of_scope == \"Site\"",
-   "description": "Recipients are users that own this Site",
+   "description": "Recipients are users with this Site",
    "fieldname": "site",
    "fieldtype": "Link",
    "label": "Site",
@@ -176,7 +175,7 @@
    "in_standard_filter": 1,
    "label": "Type of scope",
    "mandatory_depends_on": "eval:!doc.is_global",
-   "options": "Team\nCluster\nServer\nSite"
+   "options": "Team\nServer\nSite"
   },
   {
    "fieldname": "column_break_udzz",
@@ -210,20 +209,11 @@
    "label": "Scheduled End Time",
    "mandatory_depends_on": "eval:!!doc.is_scheduled",
    "search_index": 1
-  },
-  {
-   "depends_on": "eval:!doc.is_global & doc.type_of_scope == \"Cluster\"",
-   "description": "Recipients are users that own resources in this cluster",
-   "fieldname": "cluster",
-   "fieldtype": "Link",
-   "label": "Cluster",
-   "mandatory_depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Cluster\"",
-   "options": "Cluster"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-09 23:58:06.299785",
+ "modified": "2025-10-30 20:48:50.537360",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Dashboard Banner",

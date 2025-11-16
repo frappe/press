@@ -130,6 +130,7 @@ def get_total_firing_and_resolved_for_resolved_incident(draw) -> tuple[int, int,
 @patch("press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient)
 @patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
 @patch("tenacity.nap.time", new=Mock())  # no sleep
+@patch.object(Incident, "sites_down", new=[])
 class TestIncident(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
@@ -417,7 +418,6 @@ class TestIncident(FrappeTestCase):
 		incident.reload()
 		self.assertEqual(incident.status, "Auto-Resolved")
 
-	@patch.object(Incident, "sites_down", new=[])
 	def test_threshold_field_is_checked_before_calling(self):
 		create_test_alertmanager_webhook_log()
 		incident = frappe.get_last_doc("Incident")
@@ -524,7 +524,6 @@ class TestIncident(FrappeTestCase):
 			],
 		}
 
-	@patch.object(Incident, "sites_down", new=[])
 	def test_high_load_avg_on_resource_makes_it_affected(self):
 		create_test_alertmanager_webhook_log()
 		incident: Incident = frappe.get_last_doc("Incident")
@@ -540,7 +539,6 @@ class TestIncident(FrappeTestCase):
 		self.assertEqual(incident.resource, incident.server)
 		self.assertEqual(incident.resource_type, "Server")
 
-	@patch.object(Incident, "sites_down", new=[])
 	def test_no_response_from_monitor_on_resource_makes_it_affected(self):
 		create_test_alertmanager_webhook_log()
 		incident: Incident = frappe.get_last_doc("Incident")

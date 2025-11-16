@@ -69,7 +69,7 @@ const linkCertificate = createResource({
 		};
 	},
 	validate: () => {
-		if (!userName.value || !certificateType.value) {
+		if (!userEmail.value || !certificateType.value) {
 			throw new Error('Please select a member and certificate type');
 		}
 	},
