@@ -651,6 +651,7 @@ class ReleaseGroup(Document, TagHelpers):
 			return Agent(server.name).get(f"server/image-size/{last_deployed_bench.build}").get("size")
 		except Exception as e:
 			log_error("Failed to fetch last image size", data=e)
+			return None
 
 	def check_app_server_storage(self):
 		"""
@@ -1085,7 +1086,7 @@ class ReleaseGroup(Document, TagHelpers):
 		return "Active" if active_benches else "Awaiting Deploy"
 
 	@cached_property
-	def last_dc_info(self) -> "LastDeployInfo | None":
+	def last_dc_info(self) -> LastDeployInfo | None:
 		DeployCandidateBuild = frappe.qb.DocType("Deploy Candidate Build")
 
 		query = (
@@ -1103,8 +1104,10 @@ class ReleaseGroup(Document, TagHelpers):
 		return None
 
 	@cached_property
-	def last_benches_info(self) -> "list[LastDeployInfo]":
-		if not (name := (self.last_dc_info or {}).get("name")):
+	def last_benches_info(self) -> list[LastDeployInfo]:
+		last_dc_info: LastDeployInfo | dict = self.last_dc_info or {}
+		name: str | None = last_dc_info.get("name")
+		if not name:
 			return []
 
 		Bench = frappe.qb.DocType("Bench")
@@ -1460,7 +1463,7 @@ class ReleaseGroup(Document, TagHelpers):
 			self.save()
 
 			return create_platform_build_and_deploy(
-				deploy_candidate=last_candidate_build.candidate.name,
+				deploy_candidate=last_candidate_build.candidate.name,  # type: ignore
 				server=server,
 				platform=server_platform,
 			)
@@ -1490,10 +1493,12 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def update_benches_config(self):
+		from press.press.doctype.bench.bench import Bench
+
 		"""Update benches config for all benches in the release group"""
 		benches = frappe.get_all("Bench", "name", {"group": self.name, "status": "Active"})
 		for bench in benches:
-			frappe.get_doc("Bench", bench.name).update_bench_config(force=True)
+			Bench("Bench", bench.name).update_bench_config(force=True)
 
 	@dashboard_whitelist()
 	def add_app(self, app, is_update: bool = False):

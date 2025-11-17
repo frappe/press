@@ -167,9 +167,10 @@ class VirtualDiskSnapshot(Document):
 				self.client.delete_snapshot(SnapshotId=self.snapshot_id)
 			except ClientError as e:
 				if e.response["Error"]["Code"] == "InvalidSnapshot.InUse":
-					frappe.msgprint("Snapshot is in use", alert=True)
-				else:
-					raise e
+					raise SnapshotInUseError(e.response["Error"]["Message"]) from e
+				if e.response["Error"]["Code"] == "SnapshotLocked":
+					raise SnapshotLockedError(e.response["Error"]["Message"]) from e
+				raise e
 		elif cluster.cloud_provider == "OCI":
 			if ".bootvolumebackup." in self.snapshot_id:
 				self.client.delete_boot_volume_backup(self.snapshot_id)
@@ -288,6 +289,14 @@ class VirtualDiskSnapshot(Document):
 		return None
 
 
+class SnapshotInUseError(Exception):
+	pass
+
+
+class SnapshotLockedError(Exception):
+	pass
+
+
 def sync_snapshots():
 	snapshots = frappe.get_all(
 		"Virtual Disk Snapshot", {"status": "Pending", "physical_backup": 0, "rolling_snapshot": 0}
@@ -371,6 +380,8 @@ def delete_old_snapshots():
 		try:
 			frappe.get_doc("Virtual Disk Snapshot", snapshot).delete_snapshot()
 			frappe.db.commit()
+		except (SnapshotLockedError, SnapshotInUseError):
+			pass
 		except Exception:
 			log_error("Virtual Disk Snapshot Delete Error", snapshot=snapshot)
 			frappe.db.rollback()
@@ -417,6 +428,8 @@ def delete_expired_snapshots():
 
 			frappe.get_doc("Virtual Disk Snapshot", snapshot).delete_snapshot()
 			frappe.db.commit()
+		except (SnapshotLockedError, SnapshotInUseError):
+			pass
 		except Exception:
 			log_error("Virtual Disk Snapshot Delete Error", snapshot=snapshot)
 			frappe.db.rollback()

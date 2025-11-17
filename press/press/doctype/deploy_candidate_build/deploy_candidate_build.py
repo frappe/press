@@ -1267,6 +1267,20 @@ def fail_and_redeploy(dn: str):
 
 
 @frappe.whitelist()
+def redeploy(dn: str) -> dict[str, str | bool]:
+	"""Allow redeploy preserving app sources if the deploy is in terminal stage"""
+	deploy_candidate_build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dn)
+
+	if deploy_candidate_build.status in Status.intermediate():
+		frappe.throw(
+			"Wait for deploy to finish or stop current deploy first!",
+			frappe.ValidationError,
+		)
+
+	return deploy_candidate_build.redeploy()
+
+
+@frappe.whitelist()
 def fail_remote_job(dn: str) -> bool:
 	agent_job: "AgentJob" = frappe.get_doc(
 		"Agent Job", {"reference_doctype": "Deploy Candidate Build", "reference_name": dn}
