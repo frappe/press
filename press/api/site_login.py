@@ -97,35 +97,13 @@ def get_product_sites_of_user(user: str):
 	)
 
 
-def verify_user_in_site(site: str, user: str):
-	try:
-		site_doc = frappe.get_doc("Site", site)
-		query = f"""
-			SELECT name, enabled
-			FROM `tabUser`
-			WHERE name = '{user}'
-		"""
-		response = site_doc.run_sql_query_in_database(query, False)
-		if (
-			response.get("success", False)
-			and response.get("data")
-			and response["data"][0].get("row_count", 0) == 1
-		):
-			_, is_user_enabled = response["data"][0]["output"]["data"][0]
-			return is_user_enabled
-	except frappe.DoesNotExistError:
-		pass
-	return False
-
-
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 5)
-def send_otp(email: str, site: str):
+def send_otp(email: str):
 	"""
 	Send OTP to the user trying to login to the product site from /site-login page
 	"""
-	if not verify_user_in_site(site, email):
-		frappe.throw("Invalid user")
+
 	last_otp = frappe.db.get_value("Site User Session", {"user": email}, "otp_generated_at")
 	if last_otp and (frappe.utils.now_datetime() - last_otp).seconds < 30:
 		return frappe.throw("Please wait for 30 seconds before sending the OTP again")
@@ -169,30 +147,27 @@ def verify_otp(email: str, otp: str):
 	)
 
 
-def verify_session_user():
-	session_id = frappe.local.request.cookies.get("site_user_sid")
-	if not session_id or not isinstance(session_id, str):
-		return None
-	return frappe.db.get_value("Site User Session", {"session_id": session_id, "verified": 1}, "user")
-
-
-@frappe.whitelist(allow_guest=False)
+@frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60)
 @disabled
-def login_to_site(site: str):
+def login_to_site(email: str, site: str):
 	"""
-	Login to the product site - when you are logging into site with email id,
-	just verify if that site has that email id enabled and if yes allow them to login_to_site
+	Login to the product site
 	"""
-	verified_user = verify_session_user()
-	if not verified_user:
-		frappe.throw(_("Invalid or unverified Session"))
-	try:
-		if not verify_user_in_site(site, verified_user):
-			frappe.throw(_(f"User is disabled for the site {site}"))
-		return frappe.get_doc("Site", site).login_as_user(verified_user)
-	except frappe.DoesNotExistError:
-		frappe.throw(_(f"User not found in site {site}"))
+	session_id = frappe.local.request.cookies.get("site_user_sid")
+	if not session_id or not isinstance(session_id, str):
+		if frappe.session.user == "Guest":
+			return frappe.throw("Invalid session")
+		frappe.get_doc({"doctype": "Site User Session", "user": email}).insert(ignore_permissions=True)
+
+	site_user_name = frappe.db.get_value("Site User", {"user": email, "site": site}, "name")
+	if not site_user_name:
+		return frappe.throw(f"User {email} not found in site {site}")
+	site_user = frappe.get_doc("Site User", site_user_name)
+	if not site_user.enabled:
+		frappe.throw(_(f"User is disabled for the site {site}"))
+
+	return site_user.login_to_site()
 
 
 @frappe.whitelist(allow_guest=True)

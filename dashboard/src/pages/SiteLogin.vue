@@ -338,13 +338,13 @@ function sendOTP() {
 		toast.error('Please enter email');
 		return;
 	}
+
 	toast.promise(
 		sendOTPMethod.submit({
 			email: email.value,
-			site: pickedSite,
 		}),
 		{
-			loading: 'Verifying user and Sending OTP ...',
+			loading: 'Sending OTP ...',
 			success: `OTP sent to ${email.value}`,
 			error: (e) => getToastErrorMessage(e),
 		},
