@@ -9,10 +9,12 @@ from enum import Enum
 from typing import TYPE_CHECKING, ClassVar, Final, TypedDict
 
 import frappe
+import frappe.utils
 import requests
 import sqlparse
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import A, Search
+from frappe import auth
 from frappe.utils import (
 	convert_utc_to_timezone,
 	flt,
@@ -24,6 +26,7 @@ from pytz import timezone as pytz_timezone
 
 from press.agent import Agent
 from press.api.site import protected
+from press.guards import site
 from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.press.report.binary_log_browser.binary_log_browser import (
 	get_data as get_binary_log_data,
@@ -1205,26 +1208,34 @@ def get_current_cpu_usage_for_sites_on_server(server):
 
 @frappe.whitelist()
 @protected("Site")
-def request_logs(name, timezone, date, sort=None, start=0):
+@site.feature("monitor_access")
+def request_logs(site, timezone, date, sort=None, start=0):
+	result = []
 	log_server = frappe.db.get_single_value("Press Settings", "log_server")
 	if not log_server:
-		return []
+		frappe.log_error("Log server not configured")
+		return result
 
 	url = f"https://{log_server}/elasticsearch/filebeat-*/_search"
-	password = get_decrypted_password("Log Server", log_server, "kibana_password")
+	try:
+		password = auth.get_decrypted_password("Log Server", log_server, "kibana_password")
+	except Exception as e:
+		frappe.log_error(f"Failed to get log server password: {e}")
+		return []
 
-	sort_value = {
+	sort_options = {
 		"Time (Ascending)": {"@timestamp": "asc"},
 		"Time (Descending)": {"@timestamp": "desc"},
 		"CPU Time (Descending)": {"json.duration": "desc"},
-	}[sort or "CPU Time (Descending)"]
+	}
+	sort_value = sort_options.get(sort, sort_options["CPU Time (Descending)"])
 
 	query = {
 		"query": {
 			"bool": {
 				"filter": [
 					{"match_phrase": {"json.transaction_type": "request"}},
-					{"match_phrase": {"json.site": name}},
+					{"match_phrase": {"json.site": site}},
 					{"range": {"@timestamp": {"gt": f"{date}||-1d/d", "lte": f"{date}||/d"}}},
 				],
 				"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
@@ -1235,24 +1246,40 @@ def request_logs(name, timezone, date, sort=None, start=0):
 		"size": 10,
 	}
 
-	response = requests.post(url, json=query, auth=("frappe", password)).json()
-	out = []
-	for d in response["hits"]["hits"]:
-		data = d["_source"]["json"]
-		data["timestamp"] = convert_utc_to_timezone(
-			frappe.utils.get_datetime(data["timestamp"]).replace(tzinfo=None), timezone
-		)
-		out.append(data)
+	try:
+		response = requests.post(url, json=query, auth=("frappe", password), timeout=10)
+		response.raise_for_status()
+		data_json = response.json()
+	except requests.RequestException as e:
+		frappe.log_error(f"Log server request failed: {e}")
+		return result
+	except ValueError as e:
+		frappe.log_error(f"Invalid JSON response: {e}")
+		return result
 
-	return out
+	for hit in data_json.get("hits", {}).get("hits", []):
+		data = hit.get("_source", {}).get("json", {})
+		if not data:
+			continue
+		try:
+			data["timestamp"] = convert_utc_to_timezone(
+				frappe.utils.get_datetime(data["timestamp"]).replace(tzinfo=None), timezone
+			)
+		except Exception as e:
+			frappe.log_error(f"Timestamp conversion failed: {e}")
+			data["timestamp"] = None
+		result.append(data)
+
+	return result
 
 
 @frappe.whitelist()
 @protected("Site")
-def binary_logs(name, start_time, end_time, pattern: str = ".*", max_lines: int = 4000):
+@site.feature("monitor_access")
+def binary_logs(site, start_time, end_time, pattern: str = ".*", max_lines: int = 4000):
 	filters = frappe._dict(
-		site=name,
-		database=frappe.db.get_value("Site", name, "database_name"),
+		site=site,
+		database=frappe.db.get_value("Site", site, "database_name"),
 		start_datetime=start_time,
 		stop_datetime=end_time,
 		pattern=pattern,
@@ -1264,6 +1291,7 @@ def binary_logs(name, start_time, end_time, pattern: str = ".*", max_lines: int 
 
 @frappe.whitelist()
 @protected("Site")
+@site.feature("monitor_access")
 def mariadb_processlist(site):
 	site = frappe.get_doc("Site", site)
 	agent = Agent(site.server)
@@ -1276,8 +1304,9 @@ def mariadb_processlist(site):
 
 @frappe.whitelist()
 @protected("Site")
+@site.feature("monitor_access")
 def mariadb_slow_queries(
-	name,
+	site,
 	start_datetime,
 	stop_datetime,
 	max_lines=1000,
@@ -1287,7 +1316,7 @@ def mariadb_slow_queries(
 ):
 	meta = frappe._dict(
 		{
-			"site": name,
+			"site": site,
 			"start_datetime": start_datetime,
 			"stop_datetime": stop_datetime,
 			"max_lines": max_lines,
@@ -1302,12 +1331,13 @@ def mariadb_slow_queries(
 
 @frappe.whitelist()
 @protected("Site")
-def deadlock_report(name, start_datetime, stop_datetime, max_log_size=500):
+@site.feature("monitor_access")
+def deadlock_report(site, start_datetime, stop_datetime, max_log_size=500):
 	from press.press.report.mariadb_deadlock_browser.mariadb_deadlock_browser import execute
 
 	meta = frappe._dict(
 		{
-			"site": name,
+			"site": site,
 			"start_datetime": start_datetime,
 			"stop_datetime": stop_datetime,
 			"max_log_size": max_log_size,
