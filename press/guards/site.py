@@ -10,8 +10,8 @@ def feature(key: str, site_key: str = "site", raise_error: bool = True):
 	def wrapper(fn):
 		@functools.wraps(fn)
 		def inner(*args, **kwargs):
-			plan = frappe.get_value("Site", get_site(), "plan")
-			if frappe.get_value("Site Plan", plan, key):
+			[plan, is_free] = frappe.get_value("Site", get_site(), ["plan", "free"])
+			if is_free or frappe.get_value("Site Plan", plan, key):
 				return fn(*args, **kwargs)
 			if raise_error:
 				message = "Current plan does not support this feature."
