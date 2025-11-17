@@ -118,7 +118,7 @@ class AutoScaleRecord(Document, StepHandler):
 			"job",
 		)
 
-		self.handle_async_job(step, job)
+		self.handle_agent_job(step, job)
 
 	def switch_to_secondary(self, step: "ScaleStep"):
 		"""Prepare agent for switch to secondary"""
@@ -167,7 +167,7 @@ class AutoScaleRecord(Document, StepHandler):
 			"job",
 		)
 
-		self.handle_async_job(step, job)
+		self.handle_agent_job(step, job)
 
 	def mark_server_as_auto_scale(self, step: "ScaleStep"):
 		"""Mark server as ready to auto scale"""
@@ -216,7 +216,7 @@ class AutoScaleRecord(Document, StepHandler):
 			"job",
 		)
 
-		self.handle_async_job(step, job)
+		self.handle_agent_job(step, job)
 
 	def switch_to_primary(self, step: "ScaleStep"):
 		"""Switch to primary server"""
@@ -253,7 +253,7 @@ class AutoScaleRecord(Document, StepHandler):
 			"job",
 		)
 
-		self.handle_async_job(step, job)
+		self.handle_agent_job(step, job)
 
 	def _gracefully_stop_benches_on_secondary(self) -> None:
 		secondary_server: "Server" = frappe.get_cached_doc("Server", self.secondary_server)

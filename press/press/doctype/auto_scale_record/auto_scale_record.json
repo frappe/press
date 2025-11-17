@@ -27,6 +27,7 @@
    "in_list_view": 1,
    "label": "Primary Server",
    "options": "Server",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -34,14 +35,16 @@
    "fieldname": "scale_up",
    "fieldtype": "Check",
    "in_list_view": 1,
-   "label": "Scale Up"
+   "label": "Scale Up",
+   "read_only": 1
   },
   {
    "default": "0",
    "fieldname": "scale_down",
    "fieldtype": "Check",
    "in_list_view": 1,
-   "label": "Scale Down"
+   "label": "Scale Down",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_nxd6",
@@ -51,7 +54,8 @@
    "fieldname": "secondary_server",
    "fieldtype": "Link",
    "label": "Secondary Server",
-   "options": "Server"
+   "options": "Server",
+   "read_only": 1
   },
   {
    "fieldname": "steps_section",
@@ -76,7 +80,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-16 15:11:53.476206",
+ "modified": "2025-11-17 11:27:08.679170",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Auto Scale Record",

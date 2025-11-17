@@ -691,12 +691,13 @@ def benches_are_idle(server: str, access_token: str) -> None:
 	scaled_up_at = frappe.db.get_value(
 		"Auto Scale Record", {"secondary_server": server, "scale_up": True}, "modified"
 	)
+	cool_off_period = frappe.db.get_single_value("Press Settings", "cool_off_period")
 
 	should_scale_down = (
 		not running_scale_down
 		and is_server_scaled_up
 		and scaled_up_at
-		and (datetime.now() - scaled_up_at) > timedelta(minutes=5)
+		and (datetime.now() - scaled_up_at) > timedelta(seconds=cool_off_period or 300)
 	)
 	if should_scale_down:
 		# Scale down here
