@@ -23,6 +23,10 @@ class PressRole(Document):
 		allow_apps: DF.Check
 		allow_bench_creation: DF.Check
 		allow_billing: DF.Check
+		allow_contribution: DF.Check
+		allow_customer: DF.Check
+		allow_dashboard: DF.Check
+		allow_leads: DF.Check
 		allow_partner: DF.Check
 		allow_server_creation: DF.Check
 		allow_site_creation: DF.Check
@@ -44,6 +48,10 @@ class PressRole(Document):
 		"allow_server_creation",
 		"allow_webhook_configuration",
 		"team",
+		"allow_customer",
+		"allow_leads",
+		"allow_dashboard",
+		"allow_contribution",
 	)
 
 	def before_insert(self):
