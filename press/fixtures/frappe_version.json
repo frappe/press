@@ -268,5 +268,59 @@
   "number": 15,
   "public": 1,
   "status": "Stable"
- }
+ },
+ {
+    "default": 0,
+    "dependencies": [
+     {
+      "dependency": "NVM_VERSION",
+      "parent": "Version 16 Beta",
+      "parentfield": "dependencies",
+      "parenttype": "Frappe Version",
+      "version": "0.36.0"
+     },
+     {
+      "dependency": "NODE_VERSION",
+      "parent": "Version 16 Beta",
+      "parentfield": "dependencies",
+      "parenttype": "Frappe Version",
+      "version": "18.16.0"
+     },
+     {
+      "dependency": "PYTHON_VERSION",
+      "parent": "Version 16 Beta",
+      "parentfield": "dependencies",
+      "parenttype": "Frappe Version",
+      "version": "3.11"
+     },
+     {
+      "dependency": "WKHTMLTOPDF_VERSION",
+      "parent": "Version 16 Beta",
+      "parentfield": "dependencies",
+      "parenttype": "Frappe Version",
+      "version": "0.12.5"
+     },
+     {
+      "dependency": "BENCH_VERSION",
+      "parent": "Version 16 Beta",
+      "parentfield": "dependencies",
+      "parenttype": "Frappe Version",
+      "version": "5.26.0"
+     },
+     {
+      "dependency": "PIP_VERSION",
+      "parent": "Version 16 Beta",
+      "parentfield": "dependencies",
+      "parenttype": "Frappe Version",
+      "version": "25.3"
+     }
+    ],
+    "docstatus": 0,
+    "doctype": "Frappe Version",
+    "modified": "2025-05-23 11:09:57.983138",
+    "name": "Version 16 Beta",
+    "number": 16,
+    "public": 1,
+    "status": "Beta"
+   }
 ]
