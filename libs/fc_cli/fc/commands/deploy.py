@@ -181,12 +181,14 @@ if __name__ == "__main__":
 @deploy.command(help="Update a single app in a bench by release hash prefix")
 def update_app(
 	ctx: typer.Context,
+	app: Annotated[str, typer.Argument(help="App name to update (e.g. india_compliance)")],
+	hash_prefix: Annotated[
+		str, typer.Argument(help="First few characters of the target release git hash (min 5)")
+	],
 	bench: Annotated[
 		str | None,
 		typer.Argument(None, help="Bench group name (optional; auto-detect by app)"),
 	] = None,
-	app: Annotated[str, typer.Argument(help="App name to update (e.g. india_compliance)")],
-	hash_prefix: Annotated[str, typer.Argument(help="First few characters of the target release git hash (min 5)")],
 ):
 	"""Find the app release whose commit hash starts with HASH_PREFIX and trigger deploy_and_update.
 
