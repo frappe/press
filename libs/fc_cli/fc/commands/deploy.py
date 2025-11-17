@@ -19,7 +19,7 @@ console = Console()
 @deploy.command(help="Trigger initial deploy for a bench group")
 def bench_init(
 	ctx: typer.Context,
-	name: Annotated[str, typer.Option("--name", help="Bench group name")] = ...,
+	name: Annotated[str, typer.Argument(help="Bench group name")],
 ):
 	session: CloudSession = ctx.obj
 	payload = {
@@ -45,12 +45,10 @@ def bench_init(
 @deploy.command(help="Create bench group")
 def create_bench_group(
 	ctx: typer.Context,
-	version: Annotated[
-		str, typer.Option("--version", help="Frappe Framework Version (e.g. Version 15)")
-	] = ...,
-	region: Annotated[str, typer.Option("--region", help="Region (cluster name, e.g. Mumbai)")] = ...,
-	title: Annotated[str, typer.Option("--title", help="Bench Group Title (e.g. cli-test-bench)")] = ...,
-	server: Annotated[str, typer.Option("--server", help="Server name (required)")] = ...,
+	version: Annotated[str, typer.Argument(help="Frappe Framework Version (e.g. Version 15)")],
+	region: Annotated[str, typer.Argument(help="Region (cluster name, e.g. Mumbai)")],
+	title: Annotated[str, typer.Argument(help="Bench Group Title (e.g. cli-test-bench)")],
+	server: Annotated[str, typer.Argument(help="Server name")],
 ):
 	session: CloudSession = ctx.obj
 	try:
@@ -69,7 +67,7 @@ def create_bench_group(
 @deploy.command(help="Drop (archive) a bench group")
 def drop_bench_group(
 	ctx: typer.Context,
-	name: Annotated[str, typer.Option("--name", help="Bench group name to drop/archive")] = ...,
+	name: Annotated[str, typer.Argument(help="Bench group name to drop/archive")],
 ):
 	session: CloudSession = ctx.obj
 	try:
@@ -96,9 +94,9 @@ def drop_bench_group(
 @deploy.command(help="Add app to bench group by name and version")
 def add_app(
 	ctx: typer.Context,
-	bench: Annotated[str, typer.Option("--bench", help="Bench group name")] = ...,
-	app: Annotated[str, typer.Option("--app", help="App name")] = ...,
-	branch: Annotated[str, typer.Option("--branch", help="App branch (e.g. 'version-15-beta')")] = ...,
+	bench: Annotated[str, typer.Argument(help="Bench group name")],
+	app: Annotated[str, typer.Argument(help="App name")],
+	branch: Annotated[str, typer.Argument(help="App branch (e.g. 'version-15-beta')")],
 ):
 	session: CloudSession = ctx.obj
 	url = _build_method_url(session, "press.api.bench.all_apps")
@@ -143,8 +141,8 @@ def add_app(
 @deploy.command(help="Remove app from bench group")
 def remove_app(
 	ctx: typer.Context,
-	bench: Annotated[str, typer.Option("--bench", help="Bench group name")] = ...,
-	app: Annotated[str, typer.Option("--app", help="App name to remove")] = ...,
+	bench: Annotated[str, typer.Argument(help="Bench group name")],
+	app: Annotated[str, typer.Argument(help="App name to remove")],
 ):
 	session: CloudSession = ctx.obj
 	url = _build_method_url(session, "press.api.client.run_doc_method")
@@ -185,13 +183,10 @@ def update_app(
 	ctx: typer.Context,
 	bench: Annotated[
 		str | None,
-		typer.Option("--bench", help="Bench group name (Release Group name). If omitted, auto-detect by app"),
+		typer.Argument(None, help="Bench group name (optional; auto-detect by app)"),
 	] = None,
-	app: Annotated[str, typer.Option("--app", help="App name to update (e.g. india_compliance)")] = ...,
-	hash_prefix: Annotated[
-		str,
-		typer.Option("--hash", help="First few characters of the target release git hash (min 5)"),
-	] = ...,
+	app: Annotated[str, typer.Argument(help="App name to update (e.g. india_compliance)")],
+	hash_prefix: Annotated[str, typer.Argument(help="First few characters of the target release git hash (min 5)")],
 ):
 	"""Find the app release whose commit hash starts with HASH_PREFIX and trigger deploy_and_update.
 
@@ -208,7 +203,7 @@ def update_app(
 		if not target_bench:
 			Print.error(
 				console,
-				"Could not determine bench group. Please pass --bench explicitly or ensure the app is present in a bench.",
+				"Could not determine bench group. Please pass bench explicitly or ensure the app is present in a bench.",
 			)
 			return
 

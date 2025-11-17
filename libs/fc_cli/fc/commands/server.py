@@ -18,13 +18,9 @@ console = Console()
 @server.command(help="Show live usage for a server")
 def usage(
 	ctx: typer.Context,
-	name: Annotated[str | None, typer.Option("--name", "-n", help="Server name")] = None,
+	name: Annotated[str, typer.Argument(help="Server name")],
 ):
 	session: CloudSession = ctx.obj
-
-	if not name:
-		Print.info(console, "Please provide a server name using --name.")
-		return
 
 	try:
 		usage_data = session.post(
@@ -57,8 +53,8 @@ def usage(
 @server.command(help="Show details about a specific plan for a server")
 def show_plan(
 	ctx: typer.Context,
-	name: Annotated[str, typer.Option("--name", "-n", help="Server name")] = ...,
-	plan: Annotated[str, typer.Option("--plan", "-p", help="Plan name")] = ...,
+	name: Annotated[str, typer.Argument(help="Server name")],
+	plan: Annotated[str, typer.Argument(help="Plan name")],
 ):
 	session: CloudSession = ctx.obj
 
@@ -85,7 +81,7 @@ def show_plan(
 @server.command(help="Shows the current plan for a server")
 def server_plan(
 	ctx: typer.Context,
-	name: Annotated[str, typer.Option("--name", "-n", help="Server name")] = ...,
+	name: Annotated[str, typer.Argument(help="Server name")],
 ):
 	session: CloudSession = ctx.obj
 
@@ -112,8 +108,8 @@ def server_plan(
 @server.command(help="Increase storage for a server")
 def increase_storage(
 	ctx: typer.Context,
-	name: Annotated[str, typer.Option("--name", "-n", help="Server name")] = ...,
-	increment: Annotated[int, typer.Option("--increment", "-i", help="Increment size in GB")] = ...,
+	name: Annotated[str, typer.Argument(help="Server name")],
+	increment: Annotated[int, typer.Argument(help="Increment size in GB")],
 ):
 	session: CloudSession = ctx.obj
 	is_valid, err = validate_server_name(name)
@@ -153,8 +149,8 @@ def increase_storage(
 @server.command(help="Show current plan and choose available server plans")
 def choose_plan(
 	ctx: typer.Context,
-	name: Annotated[str, typer.Option("--name", "-n", help="Name of the server")] = ...,
-	plan: Annotated[str, typer.Option("--plan", "-o", help="Name of the plan")] = ...,
+	name: Annotated[str, typer.Argument(help="Server name")],
+	plan: Annotated[str, typer.Argument(help="Plan name")],
 ):
 	session: CloudSession = ctx.obj
 
@@ -228,10 +224,10 @@ def choose_plan(
 @server.command(help="Create a new server")
 def create_server(
 	ctx: typer.Context,
-	cluster: Annotated[str, typer.Option("--cluster", help="Cluster name")] = ...,
-	title: Annotated[str, typer.Option("--title", help="Server title")] = ...,
-	app_plan: Annotated[str, typer.Option("--app-plan", help="App server plan name")] = ...,
-	db_plan: Annotated[str, typer.Option("--db-plan", help="Database server plan name")] = ...,
+	cluster: Annotated[str, typer.Argument(help="Cluster name")],
+	title: Annotated[str, typer.Argument(help="Server title")],
+	app_plan: Annotated[str, typer.Argument(help="App server plan name")],
+	db_plan: Annotated[str, typer.Argument(help="Database server plan name")],
 	auto_increase_storage: Annotated[
 		bool, typer.Option("--auto-increase-storage", is_flag=True, help="Auto increase storage")
 	] = False,
@@ -271,7 +267,7 @@ def create_server(
 @server.command(help="Delete a server (archive)")
 def delete_server(
 	ctx: typer.Context,
-	name: Annotated[str, typer.Option("--name", help="Name of the server to delete")] = ...,
+	name: Annotated[str, typer.Argument(help="Server name to delete")],
 ):
 	session: CloudSession = ctx.obj
 
