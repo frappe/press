@@ -33,7 +33,7 @@ export default {
 							if (params) return params;
 
 							return {
-								name: this.name,
+								site: this.name,
 								timezone: dayjs.tz.guess(),
 								sort: 'CPU Time (Descending)',
 								date: this.today,
