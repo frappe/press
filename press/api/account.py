@@ -23,7 +23,7 @@ from frappe.website.utils import build_response
 from pypika.terms import ValueWrapper
 
 from press.api.site import protected
-from press.decorators import mfa
+from press.guards import mfa
 from press.press.doctype.team.team import (
 	Team,
 	get_child_team_members,
