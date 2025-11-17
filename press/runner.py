@@ -16,7 +16,7 @@ from ansible.plugins.action.async_status import ActionModule
 from ansible.plugins.callback import CallbackBase
 from ansible.utils.display import Display
 from ansible.vars.manager import VariableManager
-from frappe.model.base_document import Document
+from frappe.model.document import Document
 from frappe.utils import cstr
 from frappe.utils import now_datetime as now
 
@@ -312,7 +312,7 @@ class StepHandler:
 		step.status = Status.Running if machine_status != expected_status else Status.Success
 		step.save()
 
-	def handle_async_job(self, step: GenericStep, job: str) -> None:
+	def handle_agent_job(self, step: GenericStep, job: str) -> None:
 		job_status = frappe.db.get_value("Agent Job", job, "status")
 
 		status_map = {
@@ -328,7 +328,7 @@ class StepHandler:
 		if step.status == Status.Failure:
 			raise
 
-	def _run_ansible_step(self, step: GenericStep, ansible: Ansible) -> None:
+	def handle_ansible_play(self, step: GenericStep, ansible: Ansible) -> None:
 		step.job_type = "Ansible Play"
 		step.job = ansible.play
 		step.save()
@@ -376,7 +376,7 @@ class StepHandler:
 				"document_name": self.name,
 				"class": "Error",
 				"traceback": frappe.get_traceback(with_context=False),
-				"message": f"Error occurred during auto scale {'setup' if self.doctype == 'NFS Volume Attachment' else 'teardown'}",
+				"message": "Error occurred during auto scale",
 			}
 		)
 		press_notification.insert()

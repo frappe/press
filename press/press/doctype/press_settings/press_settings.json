@@ -25,7 +25,6 @@
   "npo_discount",
   "column_break_qfwx",
   "print_format",
-  "ic_key",
   "stripe_settings_section",
   "stripe_publishable_key",
   "stripe_secret_key",
@@ -215,6 +214,7 @@
   "servers_using_alternative_http_port_for_communication",
   "nfs_section",
   "shared_directory",
+  "cool_off_period",
   "feature_flags_tab",
   "verify_cards_with_micro_charge",
   "enable_google_oauth",
@@ -234,8 +234,6 @@
   "partnership_fee_usd",
   "column_break_yxrj",
   "partnership_fee_inr",
-  "section_break_dhzi",
-  "drive_resource_link",
   "hybrid_server_tab",
   "hybrid_cluster",
   "hybrid_domain",
@@ -1495,12 +1493,27 @@
   },
   {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+   "fieldname": "nfs_section",
+   "fieldtype": "Section Break",
+   "label": "Auto Scale"
+  },
+  {
+   "default": "/home/frappe/shared",
+   "fieldname": "shared_directory",
+   "fieldtype": "Data",
+   "label": "Shared Directory"
+  },
+  {
+>>>>>>> a71234c06 (chore(scale): Define validations before scaling)
    "default": "1",
    "fieldname": "disallow_disposable_emails",
    "fieldtype": "Check",
    "label": "Disallow disposable emails"
   },
   {
+<<<<<<< HEAD
    "fieldname": "drive_resource_link",
    "fieldtype": "Data",
    "label": "Drive Resource Link"
@@ -1533,10 +1546,18 @@
    "fieldtype": "Check",
    "label": "Disallow disposable emails"
 >>>>>>> efcac54b5 (fix(conflicts): Merge conflicts)
+=======
+   "default": "600",
+   "description": "Time between two autoscale events (up scale or down scale)",
+   "fieldname": "cool_off_period",
+   "fieldtype": "Int",
+   "label": "Cool off period"
+>>>>>>> a71234c06 (chore(scale): Define validations before scaling)
   }
  ],
  "issingle": 1,
  "links": [],
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
  "modified": "2025-11-13 11:07:07.301410",
@@ -1546,6 +1567,9 @@
 =======
  "modified": "2025-11-12 15:26:00.303409",
 >>>>>>> fdc904bfe (chore(setting): Add default shared directory & setup nfs when requesting a secondary server)
+=======
+ "modified": "2025-11-17 11:14:58.353740",
+>>>>>>> a71234c06 (chore(scale): Define validations before scaling)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

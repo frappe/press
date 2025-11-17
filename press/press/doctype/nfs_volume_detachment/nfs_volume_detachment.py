@@ -51,7 +51,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 				user=server._ssh_user(),
 				port=server._ssh_port(),
 			)
-			self._run_ansible_step(step, ansible)
+			self.handle_ansible_play(step, ansible)
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
 			raise
@@ -71,7 +71,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 				port=primary_server._ssh_port(),
 				variables={"shared_directory": shared_directory},
 			)
-			self._run_ansible_step(step, ansible)
+			self.handle_ansible_play(step, ansible)
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
 			raise
@@ -113,7 +113,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 			},
 			"job",
 		)
-		self.handle_async_job(step, job)
+		self.handle_agent_job(step, job)
 
 	def umount_from_primary_server(self, step: "NFSVolumeDetachmentStep") -> None:
 		"""Umount /shared from primary server and remove from fstab"""
@@ -133,7 +133,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 					"shared_directory": f"/home/frappe/nfs/{self.primary_server}",
 				},
 			)
-			self._run_ansible_step(step, ansible)
+			self.handle_ansible_play(step, ansible)
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
 			raise
@@ -169,7 +169,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 			},
 			"job",
 		)
-		self.handle_async_job(step, job)
+		self.handle_agent_job(step, job)
 
 	def umount_volume_from_nfs_server(self, step: "NFSVolumeDetachmentStep") -> None:
 		"""Umount volume from NFS Server"""
@@ -188,7 +188,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 					"shared_directory": f"/home/frappe/nfs/{self.primary_server}",
 				},
 			)
-			self._run_ansible_step(step, ansible)
+			self.handle_ansible_play(step, ansible)
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
 			raise

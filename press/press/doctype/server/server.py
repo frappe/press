@@ -3009,12 +3009,53 @@ class Server(BaseServer):
 			frappe.throw("Snapshot does not belong to this server")
 		doc.unlock()
 
-	@frappe.whitelist()
-	def scale_up(self):
+	def validate_scale(self):
+		"""
+		Check if the server can auto scale, the following parameters before creating a scale record
+			1. Server is configured for auto scale.
+			2. Was the last auto scale modified before the cool of period (don't create new auto scale).
+			3. There is a auto scale operation running on the server.
+		"""
 		if not self.can_scale:
 			frappe.throw("Server is not configured for auto scaling", frappe.ValidationError)
 
+		last_auto_scale_at = frappe.db.get_value(
+			"Auto Scale Record", {"primary_server": self.name, "status": "Success"}, "modified"
+		)
+		time_diff = frappe.utils.now_datetime() - last_auto_scale_at
+		cool_off_period = frappe.db.get_single_value("Press Settings", "cool_off_period")
+
+		running_auto_scale = frappe.db.get_value(
+			"Auto Scale Record", {"primary_server": self.name, "status": "Running"}
+		)
+
+		if running_auto_scale:
+			frappe.throw("Auto scale is already running", frappe.ValidationError)
+
+		if time_diff < timedelta(seconds=cool_off_period or 300):
+			frappe.throw(
+				f"Please wait for {fmt_timedelta(timedelta(seconds=cool_off_period or 300) - time_diff)} before scaling again",
+				frappe.ValidationError,
+			)
+
+	@frappe.whitelist()
+	def scale_up(self):
+		if self.scaled_up:
+			frappe.throw("Server is already scaled up", frappe.ValidationError)
+
+		self.validate_scale()
+
 		auto_scale_record = self._create_auto_scale_record(scale_up=True)
+		auto_scale_record.insert()
+
+	@frappe.whitelist()
+	def scale_down(self):
+		if not self.scaled_up:
+			frappe.throw("Server is already scaled down", frappe.ValidationError)
+
+		self.validate_scale()
+
+		auto_scale_record = self._create_auto_scale_record(scale_up=False)
 		auto_scale_record.insert()
 
 	@property

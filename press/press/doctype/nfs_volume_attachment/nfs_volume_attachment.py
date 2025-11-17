@@ -108,7 +108,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 				user=server._ssh_user(),
 				port=server._ssh_port(),
 			)
-			self._run_ansible_step(step, ansible)
+			self.handle_ansible_play(step, ansible)
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
 			raise
@@ -148,7 +148,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 			},
 			"job",
 		)
-		self.handle_async_job(step, job)
+		self.handle_agent_job(step, job)
 
 	def mount_shared_folder_on_secondary_server(self, step: "NFSVolumeAttachmentStep") -> None:
 		"""Mount shared folder on secondary server"""
@@ -172,7 +172,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 				},
 			)
 
-			self._run_ansible_step(step, ansible)
+			self.handle_ansible_play(step, ansible)
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
 			raise
@@ -194,7 +194,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 				variables={"shared_directory": shared_directory},
 			)
 
-			self._run_ansible_step(step, ansible)
+			self.handle_ansible_play(step, ansible)
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
 			raise
@@ -241,7 +241,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 			"job",
 		)
 
-		self.handle_async_job(step, job)
+		self.handle_agent_job(step, job)
 
 	def ready_to_auto_scale(self, step: "NFSVolumeAttachmentStep"):
 		"""Mark server as ready to auto scale"""
