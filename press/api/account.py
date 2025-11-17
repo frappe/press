@@ -23,6 +23,7 @@ from frappe.website.utils import build_response
 from pypika.terms import ValueWrapper
 
 from press.api.site import protected
+from press.decorators import mfa
 from press.press.doctype.team.team import (
 	Team,
 	get_child_team_members,
@@ -702,6 +703,7 @@ def update_feature_flags(values=None):
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 60)
+@mfa.verify(user_key="email", raise_error=True)
 def send_reset_password_email(email: str):
 	"""
 	Sends reset password email to the user.
@@ -714,10 +716,8 @@ def send_reset_password_email(email: str):
 
 	key = frappe.generate_hash()
 	url = get_url("/dashboard/reset-password/" + key)
-	user = frappe.get_doc("User", email)
-	user.reset_password_key = sha256_hash(key)
-	user.last_reset_password_key_generated_on = frappe.utils.now_datetime()
-	user.save()
+	frappe.db.set_value("User", email, "reset_password_key", sha256_hash(key))
+	frappe.db.set_value("User", email, "last_reset_password_key_generated_on", frappe.utils.now_datetime())
 
 	frappe.sendmail(
 		recipients=email,
