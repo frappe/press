@@ -380,6 +380,8 @@ def delete_old_snapshots():
 		try:
 			frappe.get_doc("Virtual Disk Snapshot", snapshot).delete_snapshot()
 			frappe.db.commit()
+		except (SnapshotLockedError, SnapshotInUseError):
+			pass
 		except Exception:
 			log_error("Virtual Disk Snapshot Delete Error", snapshot=snapshot)
 			frappe.db.rollback()
