@@ -3,7 +3,7 @@
   become: yes
   become_user: frappe
   file:
-    path: '{{ item }}'
+    path: "{{ item }}"
     state: directory
     mode: 0755
   with_items:
@@ -12,32 +12,24 @@
     - /home/frappe/prometheus/rules
     - /home/frappe/prometheus/file_sd
 
+- name: Set Architecture
+  set_fact:
+    arch: "{{'amd64' if (ansible_architecture == 'x86_64') else 'arm64'}}"
+
 - name: Download Prometheus Archive
   become: yes
   become_user: frappe
   unarchive:
-    src: https://github.com/prometheus/prometheus/releases/download/v2.49.1/prometheus-2.49.1.linux-amd64.tar.gz
+    src: "https://github.com/prometheus/prometheus/releases/download/v3.7.3/prometheus-3.7.3.linux-{{ arch }}.tar.gz"
     dest: /tmp
     remote_src: yes
-
-- name: Copy Prometheus Console Templates
-  become: yes
-  become_user: frappe
-  copy:
-    src: '/tmp/prometheus-2.49.1.linux-amd64/{{ item }}/'
-    dest: '/home/frappe/prometheus/{{ item }}/'
-    mode: 0755
-    remote_src: yes
-  with_items:
-    - console_libraries
-    - consoles
 
 - name: Copy Prometheus and Promtool Binaries
   become: yes
   become_user: frappe
   copy:
-    src: '/tmp/prometheus-2.49.1.linux-amd64/{{ item }}'
-    dest: '/home/frappe/prometheus/{{ item }}'
+    src: "/tmp/prometheus-3.7.3.linux-{{ arch }}/{{ item }}"
+    dest: "/home/frappe/prometheus/{{ item }}"
     mode: 0755
     remote_src: yes
   with_items:
@@ -64,9 +56,9 @@
 
 - name: Set JSON Variables
   set_fact:
-    registries: '{{ registries_json | from_json }}'
-    clusters: '{{ clusters_json | from_json }}'
-    log_servers: '{{ log_servers_json | from_json }}'
+    registries: "{{ registries_json | from_json }}"
+    clusters: "{{ clusters_json | from_json }}"
+    log_servers: "{{ log_servers_json | from_json }}"
 
 - name: Configure Prometheus Service Discovery for Registries
   become: yes
@@ -76,7 +68,7 @@
     dest: /home/frappe/prometheus/file_sd/registry.{{ item.name }}.yml
     force: true
     mode: 0600
-  loop: '{{ registries }}'
+  loop: "{{ registries }}"
 
 - name: Configure Prometheus Service Discovery for Log Servers
   become: yes
@@ -86,13 +78,13 @@
     dest: /home/frappe/prometheus/file_sd/log.{{ item.name }}.yml
     force: true
     mode: 0600
-  loop: '{{ log_servers }}'
+  loop: "{{ log_servers }}"
 
 - name: Configure Prometheus
   template:
     src: prometheus.yml
     dest: /home/frappe/prometheus/prometheus.yml
-    validate: '/home/frappe/prometheus/promtool check config %s'
+    validate: "/home/frappe/prometheus/promtool check config %s"
 
 - name: Configure ownership permissions on prometheus.yml
   file:
@@ -119,7 +111,7 @@
 - name: Setup Agent Based Discovery
   become: yes
   become_user: frappe
-  command: '/home/frappe/agent/env/bin/agent setup monitor --url {{ press_url }} --token {{ monitor_token }}'
+  command: "/home/frappe/agent/env/bin/agent setup monitor --url {{ press_url }} --token {{ monitor_token }}"
   args:
     chdir: /home/frappe/agent
 
