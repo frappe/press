@@ -50,7 +50,12 @@ export default {
 				{
 					label: 'Dashboard',
 					route: { name: 'PartnerDashboard' },
-					condition: () => Boolean(this.$team.doc.erpnext_partner),
+					condition: () =>
+						Boolean(
+							this.$team.doc.erpnext_partner &&
+								this.$team.doc.partner_status === 'Active' &&
+								this.$session.hasPartnerDashboardAccess,
+						),
 				},
 				{
 					label: 'Customers',
@@ -58,7 +63,8 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.erpnext_partner &&
-								this.$team.doc.partner_status === 'Active',
+								this.$team.doc.partner_status === 'Active' &&
+								this.$session.hasPartnerCustomerAccess,
 						),
 				},
 				{
@@ -76,7 +82,8 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.erpnext_partner &&
-								this.$team.doc.partner_status === 'Active',
+								this.$team.doc.partner_status === 'Active' &&
+								this.$session.hasPartnerLeadsAccess,
 						),
 				},
 				{
@@ -103,7 +110,8 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.erpnext_partner &&
-								this.$team.doc.partner_status === 'Active',
+								this.$team.doc.partner_status === 'Active' &&
+								this.$session.hasPartnerContributionAccess,
 						),
 				},
 				{
