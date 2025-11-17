@@ -55,6 +55,7 @@ class Team(Document):
 		code_servers_enabled: DF.Check
 		communication_infos: DF.Table[CommunicationInfo]
 		company_logo: DF.Attach | None
+		company_name: DF.Data | None
 		country: DF.Link | None
 		currency: DF.Link | None
 		customers: DF.SmallText | None
@@ -88,7 +89,7 @@ class Team(Document):
 		partner_manager: DF.Link | None
 		partner_referral_code: DF.Data | None
 		partner_status: DF.Literal["Active", "Inactive"]
-		partner_tier: DF.Data | None
+		partner_tier: DF.Link | None
 		partnership_date: DF.Date | None
 		payment_mode: DF.Literal["", "Card", "Prepaid Credits", "Paid By Partner"]
 		razorpay_enabled: DF.Check
@@ -1049,9 +1050,9 @@ class Team(Document):
 		if response.ok:
 			res = response.json()
 			partner_level = res.get("message")
-			certificate_count = res.get("certificates")
+			# certificate_count = res.get("certificates")
 			if partner_level:
-				return partner_level, certificate_count
+				return partner_level
 			return None
 
 		self.add_comment(text="Failed to fetch partner level" + "<br><br>" + response.text)

@@ -33,8 +33,8 @@ from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server_activity.server_activity import log_server_activity
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
-from press.telegram_utils import Telegram
 from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
@@ -64,7 +64,6 @@ class BenchInfoType(TypedDict):
 
 class ARMDockerImageType(TypedDict):
 	build: str
-	existing_image: bool
 	status: Literal["Pending", "Preparing", "Running", "Failure", "Success"]
 	bench: str
 
@@ -734,7 +733,7 @@ class BaseServer(Document, TagHelpers):
 					server=self,
 					user="ubuntu",
 				)
-			ansible.run()
+				ansible.run()
 		except Exception:
 			log_error("Unprepared Server Ping Exception", server=self.as_dict())
 
@@ -897,11 +896,8 @@ class BaseServer(Document, TagHelpers):
 			mountpoint = self.guess_data_disk_mountpoint()
 
 		volume = self.find_mountpoint_volume(mountpoint)
-
-		virtual_machine: "VirtualMachine" = frappe.get_doc(
-			"Virtual Machine",
-			self.volume_host_info.nfs_server if self.has_shared_volume else self.virtual_machine,
-		)
+		# Get the parent of the volume directly instead of guessing.
+		virtual_machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", volume.parent)
 		virtual_machine.increase_disk_size(volume.volume_id, increment)
 		if self.provider == "AWS EC2":
 			device = self.get_device_from_volume_id(volume.volume_id)
@@ -1104,10 +1100,10 @@ class BaseServer(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def change_plan(self, plan: str, ignore_card_setup=False):
-		plan: ServerPlan = frappe.get_doc("Server Plan", plan)
-		self.can_change_plan(ignore_card_setup, new_plan=plan)
-		self._change_plan(plan)
-		self.run_press_job("Resize Server", {"machine_type": plan.instance_type})
+		plan_doc: ServerPlan = frappe.get_doc("Server Plan", plan)
+		self.can_change_plan(ignore_card_setup, new_plan=plan_doc)
+		self._change_plan(plan_doc)
+		self.run_press_job("Resize Server", {"machine_type": plan_doc.instance_type})
 
 	def _change_plan(self, plan):
 		self.ram = plan.memory
@@ -1508,7 +1504,7 @@ class BaseServer(Document, TagHelpers):
 	def get_volume_mounts(self):
 		return [mount.as_dict() for mount in self.mounts if mount.mount_type == "Volume"]
 
-	def _create_arm_build(self, build: str) -> str:
+	def _create_arm_build(self, build: str) -> str | None:
 		from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
 			_create_arm_build as arm_build_util,
 		)
@@ -1519,8 +1515,9 @@ class BaseServer(Document, TagHelpers):
 			return arm_build_util(deploy_candidate)
 		except frappe.ValidationError:
 			frappe.log_error(
-				"Failed to create ARM build", message=f"Failed to create arm build for build {build.name}"
+				"Failed to create ARM build", message=f"Failed to create arm build for build {build}"
 			)
+			return None
 
 	def _process_bench(self, bench_info: BenchInfoType) -> ARMDockerImageType:
 		candidate = bench_info["candidate"]
@@ -1890,8 +1887,6 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			- Notify the user to manually increase disk space.
 		"""
 
-		telegram = Telegram("Information")
-
 		buffer = self.size_to_increase_by_for_20_percent_available(mountpoint)
 		server: Server | DatabaseServer = frappe.get_doc(self.doctype, self.name)
 		disk_capacity = self.disk_capacity(mountpoint)
@@ -1901,10 +1896,11 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		disk_capacity = round(disk_capacity / 1024 / 1024 / 1024, 2)
 
 		if not server.auto_increase_storage and (not server.has_data_volume or mountpoint != "/"):
-			telegram.send(
+			TelegramMessage.enqueue(
 				f"Not increasing disk (mount point {mountpoint}) on "
 				f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
-				f"by {buffer + additional}G as auto disk increase disabled by user"
+				f"by {buffer + additional}G as auto disk increase disabled by user",
+				"Information",
 			)
 			insert_addon_storage_log(
 				adding_storage=additional + buffer,
@@ -1922,10 +1918,11 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 			return
 
-		telegram.send(
+		TelegramMessage.enqueue(
 			f"Increasing disk (mount point {mountpoint}) on "
 			f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
-			f"by {buffer + additional}G"
+			f"by {buffer + additional}G",
+			"Information",
 		)
 
 		self.increase_disk_size_for_server(
@@ -2242,6 +2239,18 @@ class Server(BaseServer):
 	GUNICORN_MEMORY = 150  # avg ram usage of 1 gunicorn worker
 	BACKGROUND_JOB_MEMORY = 3 * 80  # avg ram usage of 3 sets of bg workers
 
+	def validate(self):
+		super().validate()
+		self.validate_managed_database_service()
+
+	def validate_managed_database_service(self):
+		if getattr(self, "is_managed_database", 0):
+			if not self.managed_database_service:
+				frappe.throw(_("Please select Managed Database Service"))
+			self.database_server = ""
+		else:
+			self.managed_database_service = ""
+
 	def on_update(self):
 		# If Database Server is changed for the server then change it for all the benches
 		if not self.is_new() and (
@@ -2385,11 +2394,11 @@ class Server(BaseServer):
 				f"existing server plan. Current memory: {current_plan_memory}"
 			)
 
-	def create_secondary_server(self, secondary_server_plan: str) -> None:
+	def create_secondary_server(self, plan_name: str) -> None:
 		"""Create a secondary server for this server"""
-		self.validate_more_memory_in_secondary_server(secondary_server_plan)
+		self.validate_more_memory_in_secondary_server(plan_name)
 
-		secondary_server_plan: ServerPlan = frappe.get_cached_doc("Server Plan", secondary_server_plan)
+		plan: ServerPlan = frappe.get_cached_doc("Server Plan", plan_name)
 		team_name = frappe.db.get_value("Server", self.name, "team", "name")
 		cluster: "Cluster" = frappe.get_cached_doc("Cluster", self.cluster)
 		server_title = f"Secondary - {self.title or self.name}"
@@ -2402,7 +2411,7 @@ class Server(BaseServer):
 		secondary_server, _ = cluster.create_server(
 			"Server",
 			server_title,
-			secondary_server_plan,
+			plan,
 			team=team_name,
 			auto_increase_storage=self.auto_increase_storage,
 			is_secondary=True,
@@ -2874,12 +2883,12 @@ class Server(BaseServer):
 		return max(self.ram - 3000, self.ram * 0.75)  # in MB (leaving some for disk cache + others)
 
 	@cached_property
-	def max_gunicorn_workers(self) -> int:
+	def max_gunicorn_workers(self) -> float:
 		usable_ram_for_gunicorn = 0.6 * self.usable_ram  # 60% of usable ram
 		return usable_ram_for_gunicorn / self.GUNICORN_MEMORY
 
 	@cached_property
-	def max_bg_workers(self) -> int:
+	def max_bg_workers(self) -> float:
 		usable_ram_for_bg = 0.4 * self.usable_ram  # 40% of usable ram
 		return usable_ram_for_bg / self.BACKGROUND_JOB_MEMORY
 
@@ -3051,7 +3060,7 @@ class Server(BaseServer):
 		)
 		return self.benches_on_shared_volume and not has_release_groups_without_redis_password
 
-	def _create_auto_scale_record(self, scale_up: bool) -> "AutoScaleRecord":
+	def _create_auto_scale_record(self, scale_up: bool) -> AutoScaleRecord:
 		"""Create up/down scale record"""
 		return frappe.get_doc(
 			{
@@ -3064,15 +3073,16 @@ class Server(BaseServer):
 
 	@property
 	def domains(self):
+		filters = {}
 		if (
 			self.is_self_hosted
 		):  # to avoid pushing certificates to self hosted servers on setup_wildcard_hosts
-			return []
+			filters = {"name": self.name}
 		return [
 			frappe._dict({"domain": domain.name, "code_server": False})
 			for domain in frappe.get_all(
 				"Root Domain",
-				filters={"enabled": 1},
+				filters={"enabled": 1} | filters,
 				fields=["name"],
 			)
 		]  # To avoid adding child table in server doc

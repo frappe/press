@@ -54,6 +54,7 @@ def signup(email: str, product: str | None = None, referrer: str | None = None) 
 		{"email": email, "referrer_id": referrer, "product_trial": product},
 		"name",
 	)
+
 	if not account_request:
 		account_request_doc = frappe.get_doc(
 			{
@@ -1209,6 +1210,10 @@ def get_permission_roles():
 			PressRole.allow_bench_creation,
 			PressRole.allow_server_creation,
 			PressRole.allow_webhook_configuration,
+			PressRole.allow_dashboard,
+			PressRole.allow_customer,
+			PressRole.allow_leads,
+			PressRole.allow_contribution,
 		)
 		.join(PressRoleUser)
 		.on((PressRole.name == PressRoleUser.parent) & (PressRoleUser.user == frappe.session.user))

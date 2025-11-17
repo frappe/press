@@ -59,6 +59,7 @@ class PressSettings(Document):
 		disable_auto_retry: DF.Check
 		disable_frappe_auth: DF.Check
 		disable_physical_backup: DF.Check
+		disallow_disposable_emails: DF.Check
 		docker_registry_namespace: DF.Data | None
 		docker_registry_password: DF.Data | None
 		docker_registry_url: DF.Data | None
@@ -66,6 +67,7 @@ class PressSettings(Document):
 		docker_s3_access_key: DF.Data | None
 		docker_s3_secret_key: DF.Password | None
 		domain: DF.Link | None
+		drive_resource_link: DF.Data | None
 		eff_registration_email: DF.Data
 		email_recipients: DF.SmallText | None
 		enable_app_grouping: DF.Check
@@ -101,6 +103,7 @@ class PressSettings(Document):
 		hetzner_api_token: DF.Password | None
 		hybrid_cluster: DF.Link | None
 		hybrid_domain: DF.Link | None
+		ic_key: DF.Password | None
 		log_server: DF.Link | None
 		mailgun_api_key: DF.Data | None
 		max_allowed_screenshots: DF.Int

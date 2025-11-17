@@ -18,6 +18,7 @@
 				/>
 			</div>
 		</div>
+		<ErrorMessage :message="errorMessage" />
 		<div>
 			<Button
 				class="w-full"
@@ -31,12 +32,13 @@
 <script setup>
 import { FormControl, createResource } from 'frappe-ui';
 import { toast } from 'vue-sonner';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { DashboardError } from '../../utils/error';
 import { useRoute } from 'vue-router';
 
 const emit = defineEmits(['success']);
 const route = useRoute();
+const errorMessage = ref('');
 
 const leadInfo = defineModel();
 const props = defineProps({
@@ -118,7 +120,10 @@ const updateLeadInfo = createResource({
 	},
 	validate: async () => {
 		let error = await validate();
-		if (error) throw new DashboardError(error);
+		if (error) {
+			errorMessage.value = error;
+			throw new DashboardError(error);
+		}
 	},
 	onSuccess: () => {
 		toast.success('Lead Information updated');

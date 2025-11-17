@@ -38,8 +38,8 @@ from press.press.doctype.site.site import (
 from press.press.doctype.site_activity.test_site_activity import create_test_site_activity
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.team.test_team import create_test_team
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.saas.doctype.saas_settings.test_saas_settings import create_test_saas_settings
-from press.telegram_utils import Telegram
 from press.utils import get_current_team
 
 if typing.TYPE_CHECKING:
@@ -418,7 +418,7 @@ class TestSite(FrappeTestCase):
 			subscription_plan=plan.name,
 		)
 
-	@patch.object(Telegram, "send", new=Mock())
+	@patch.object(TelegramMessage, "enqueue", new=Mock())
 	@patch.object(BaseServer, "disk_capacity", new=Mock(return_value=100))
 	@patch.object(RemoteFile, "download_link", new="http://test.com")
 	@patch.object(RemoteFile, "get_content", new=lambda _: {"a": "test"})
