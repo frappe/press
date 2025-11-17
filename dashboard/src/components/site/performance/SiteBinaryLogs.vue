@@ -32,7 +32,7 @@ export default {
 					if (params) return params;
 
 					return {
-						name: this.name,
+						site: this.name,
 						start_time: this.start_time,
 						end_time: this.end_time,
 						pattern: this.pattern,
