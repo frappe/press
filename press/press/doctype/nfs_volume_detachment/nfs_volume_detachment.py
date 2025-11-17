@@ -3,16 +3,12 @@
 from __future__ import annotations
 
 import typing
-from enum import Enum
 
 import frappe
 from frappe.model.document import Document
 
 from press.agent import Agent
-from press.press.doctype.nfs_volume_attachment.nfs_volume_attachment import (
-	StepHandler,
-)
-from press.runner import Ansible
+from press.runner import Ansible, Status, StepHandler
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.nfs_server.nfs_server import NFSServer
@@ -21,16 +17,6 @@ if typing.TYPE_CHECKING:
 	)
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
-
-
-class Status(str, Enum):
-	Pending = "Pending"
-	Running = "Running"
-	Success = "Success"
-	Failure = "Failure"
-
-	def __str__(self):
-		return self.value
 
 
 class NFSVolumeDetachment(Document, StepHandler):

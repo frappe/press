@@ -7,8 +7,7 @@ import frappe
 from frappe.model.document import Document
 
 from press.agent import Agent
-from press.press.doctype.nfs_volume_attachment.nfs_volume_attachment import Status, StepHandler
-from press.runner import Ansible
+from press.runner import Ansible, Status, StepHandler
 from press.utils import log_error
 
 if typing.TYPE_CHECKING:
