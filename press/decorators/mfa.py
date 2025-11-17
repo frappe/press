@@ -16,7 +16,7 @@ def enabled(user_key: str = "user", raise_error: bool = False):
 
 	def get_user() -> str:
 		if frappe.session.user == "Guest":
-			return frappe.request.form.get(user_key)
+			return (frappe.request.json or frappe.request.form).get(user_key, frappe.session.user)
 		return frappe.session.user
 
 	def wrapper(fn):
@@ -25,8 +25,8 @@ def enabled(user_key: str = "user", raise_error: bool = False):
 			if frappe.get_value("User 2FA", get_user(), "enabled"):
 				return fn(*args, **kwargs)
 			if raise_error:
-				msg = "Two-factor authentication is not enabled."
-				raise frappe.PermissionError(msg)
+				message = "Two-factor authentication is not enabled."
+				frappe.throw(message, frappe.PermissionError)
 			return None
 
 		return inner
@@ -46,11 +46,11 @@ def verify(user_key: str = "user", code_key: str = "totp_code", raise_error: boo
 
 	def get_user() -> str:
 		if frappe.session.user == "Guest":
-			return frappe.request.form.get(user_key)
+			return (frappe.request.json or frappe.request.form).get(user_key, frappe.session.user)
 		return frappe.session.user
 
-	def get_code():
-		return frappe.request.form.get(code_key)
+	def get_code() -> str:
+		return (frappe.request.json or frappe.request.form).get(code_key, "")
 
 	def verify_code(user: str, code: str):
 		secret = auth.get_decrypted_password("User 2FA", user, "totp_secret")
@@ -61,13 +61,14 @@ def verify(user_key: str = "user", code_key: str = "totp_code", raise_error: boo
 		def inner(*args, **kwargs):
 			user = get_user()
 			code = get_code()
+
 			if user and not frappe.get_value("User 2FA", user, "enabled"):
 				return fn(*args, **kwargs)
 			if user and code and verify_code(user, code):
 				return fn(*args, **kwargs)
 			if raise_error:
-				msg = "Two-factor authentication verification failed."
-				raise frappe.PermissionError(msg)
+				message = "Two-factor authentication verification failed."
+				frappe.throw(message, frappe.PermissionError)
 			return None
 
 		return inner
