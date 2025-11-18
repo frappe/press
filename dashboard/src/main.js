@@ -78,6 +78,7 @@ getInitialData().then(() => {
 					behaviour: 'apply-tag-if-contains-third-party-frames',
 				}),
 			],
+			tracesSampleRate: 1.0,
 			replaysSessionSampleRate: 0.1,
 			replaysOnErrorSampleRate: 1.0,
 			beforeSend(event, hint) {
