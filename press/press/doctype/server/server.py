@@ -151,7 +151,10 @@ class BaseServer(Document, TagHelpers):
 		)
 		doc.usage = usage(self.name)
 		doc.actions = self.get_actions()
-		doc.disk_size = self.get_data_disk_size()
+
+		if not self.is_self_hosted:
+			doc.disk_size = self.get_data_disk_size()
+
 		doc.communication_infos = self.get_communication_infos()
 
 		try:
