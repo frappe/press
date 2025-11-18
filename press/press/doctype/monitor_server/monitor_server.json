@@ -39,7 +39,8 @@
   "monitoring_password",
   "webhook_token",
   "column_break_nzet",
-  "prometheus_data_directory"
+  "prometheus_data_directory",
+  "only_monitor_uptime_metrics"
  ],
  "fields": [
   {
@@ -256,6 +257,12 @@
    "fieldtype": "Check",
    "label": "TLS Certificate Renewal Failed",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "only_monitor_uptime_metrics",
+   "fieldtype": "Check",
+   "label": "Only Monitor Uptime Metrics"
   }
  ],
  "grid_page_length": 50,
@@ -265,7 +272,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2025-09-02 16:43:40.405932",
+ "modified": "2025-11-17 21:10:06.147734",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Monitor Server",

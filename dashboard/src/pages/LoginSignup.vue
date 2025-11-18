@@ -640,6 +640,7 @@ export default {
 					} else if (this.hasForgotPassword) {
 						await this.$resources.resetPassword.submit({
 							email: this.email,
+							totp_code: this.twoFactorCode,
 						});
 					}
 				},

@@ -62,12 +62,7 @@ def get_clusters():
 	servers["nfs"] = frappe.get_all("NFS Server", {"status": ("!=", "Archived")}, ["name", "cluster"])
 
 	clusters = frappe.get_all("Cluster")
-	job_map = {
-		"proxy": ["node", "nginx", "proxysql", "mariadb_proxy"],
-		"app": ["node", "nginx", "docker", "cadvisor", "gunicorn", "rq"],
-		"nfs": ["node", "nginx", "docker", "cadvisor", "gunicorn", "rq"],
-		"database": ["node", "mariadb"],
-	}
+	job_map = get_job_map()
 	servers_using_alternative_port = servers_using_alternative_port_for_communication()
 	for cluster in clusters:
 		cluster["jobs"] = {}
@@ -128,6 +123,7 @@ def get_targets_method_rate_limit() -> int:
 
 MONITORING_ENDPOINT_RATE_LIMIT_WINDOW_SECONDS = 60
 
+
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=get_targets_method_rate_limit, seconds=MONITORING_ENDPOINT_RATE_LIMIT_WINDOW_SECONDS)
 def targets(token=None):
@@ -175,3 +171,28 @@ def alert(*args, **kwargs):
 
 	finally:
 		frappe.set_user(user)
+
+
+def get_job_map() -> dict[str, list[str]]:
+	DEFAULT_JOB_MAP = {
+		"proxy": ["node", "nginx", "proxysql", "mariadb_proxy"],
+		"app": ["node", "nginx", "docker", "cadvisor", "gunicorn", "rq"],
+		"nfs": ["node", "nginx", "docker", "cadvisor", "gunicorn", "rq"],
+		"database": ["node", "mariadb"],
+	}
+
+	if frappe.local and hasattr(frappe.local, "request_ip"):
+		if frappe.get_value(
+			"Monitor Server",
+			{"ip": frappe.local.request_ip, "status": ("!=", "Archived")},
+			"only_monitor_uptime_metrics",
+			cache=True,
+		):
+			return {
+				"proxy": ["node"],
+				"app": ["node"],
+				"nfs": ["node"],
+				"database": ["node"],
+			}
+		return DEFAULT_JOB_MAP
+	return DEFAULT_JOB_MAP
