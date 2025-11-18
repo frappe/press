@@ -239,6 +239,7 @@
   "partnership_fee_usd",
   "column_break_yxrj",
   "partnership_fee_inr",
+  "section_break_dhzi",
   "drive_resource_link",
   "hybrid_server_tab",
   "hybrid_cluster",
@@ -1502,6 +1503,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 =======
 >>>>>>> aff0908f2 (Revert "fix(conflicts): Trying to add missing changes")
@@ -1514,6 +1516,15 @@
   {
 >>>>>>> ca3a6c199 (fix(conflicts): Trying to add missing changes 2)
    "fieldname": "nfs_section",
+=======
+   "default": "1",
+   "fieldname": "disallow_disposable_emails",
+   "fieldtype": "Check",
+   "label": "Disallow disposable emails"
+   },
+  {
+   "fieldname": "auto_scale_section",
+>>>>>>> eb681f026 (fix(conflicts): Trying to add missing changes 3)
    "fieldtype": "Section Break",
    "label": "Auto Scale"
   },
