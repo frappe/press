@@ -116,7 +116,7 @@ export default {
 			return {
 				url: 'press.api.analytics.mariadb_slow_queries',
 				params: {
-					name: this.name,
+					site: this.name,
 					start_datetime: startDateTime,
 					stop_datetime: endDateTime,
 					max_lines: 10,
