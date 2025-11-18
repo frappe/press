@@ -2,12 +2,14 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import contextlib
 import json
 from typing import TypedDict
 
 import frappe
 import requests
 from frappe.utils.caching import redis_cache
+from frappe.utils.data import cint
 from requests.auth import HTTPBasicAuth
 
 from press.press.doctype.server.server import BaseServer
@@ -51,6 +53,7 @@ class MonitorServer(BaseServer):
 		is_server_setup: DF.Check
 		monitoring_password: DF.Password | None
 		node_exporter_dashboard_path: DF.Data | None
+		only_monitor_uptime_metrics: DF.Check
 		private_ip: DF.Data
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
@@ -301,3 +304,22 @@ def get_monitor_server_ips():
 		if server.private_ip:
 			ips.append(server.private_ip)
 	return ips
+
+
+def check_monitoring_servers_rate_limit_key():
+	from press.api.monitoring import MONITORING_ENDPOINT_RATE_LIMIT_WINDOW_SECONDS
+	from press.telegram_utils import Telegram
+
+	ips = get_monitor_server_ips()
+
+	for ip in ips:
+		key = f"{frappe.conf.db_name}|rl:press.api.monitoring.targets:{ip}:{MONITORING_ENDPOINT_RATE_LIMIT_WINDOW_SECONDS}"
+		val = frappe.cache.get(key)
+		if not val:
+			continue
+		current_val = cint(val.decode("utf-8"))
+		if current_val > 100:
+			frappe.cache.delete(key)
+			with contextlib.suppress(Exception):
+				msg = f"Rate limit key for monitoring server {ip} had value {current_val} which is too high. Deleted the key.\n@adityahase @balamurali27 @tanmoysrt"
+				Telegram("Errors").send(msg)

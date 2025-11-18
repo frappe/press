@@ -1101,7 +1101,9 @@ def _get_invoice_based_on_due_date(team_name, due_date):
 	)
 
 
-def _calculate_forecast_data(team: str, currency: str, date_info: dict) -> dict:
+def _calculate_forecast_data(
+	team: str, currency: str, date_info: dict
+) -> dict[str, float | dict[str, float]]:
 	"""Calculate monthly total cost of all active subscriptions and forecasted cost for remaining days in the month"""
 	from frappe.utils import flt
 
@@ -1120,14 +1122,15 @@ def _calculate_forecast_data(team: str, currency: str, date_info: dict) -> dict:
 			continue
 
 		price = plan.get(price_field, 0)
-		forecasted_month_end += price
+		if price > 0:
+			forecasted_month_end += price
 
-		# Forecasted remaining cost for this service
-		if days_remaining > 0:
-			remaining_cost = (price / days_in_month) * days_remaining
-			per_service_forecast[sub.document_type] = flt(
-				per_service_forecast.get(sub.document_type, 0) + remaining_cost
-			)
+			# Forecasted remaining cost for this service
+			if days_remaining > 0:
+				remaining_cost = (price / days_in_month) * days_remaining
+				per_service_forecast[sub.document_type] = flt(
+					per_service_forecast.get(sub.document_type, 0) + remaining_cost
+				)
 
 	return {
 		"forecasted_total": forecasted_month_end,
@@ -1168,7 +1171,7 @@ def _get_usage_data_breakdown(invoice_data: dict, forecast_data: dict, days_rema
 	}
 
 
-def _get_usage_breakdown(invoice: str) -> dict:
+def _get_usage_breakdown(invoice: str) -> dict[str, float]:
 	if not invoice:
 		return {}
 
@@ -1177,7 +1180,7 @@ def _get_usage_breakdown(invoice: str) -> dict:
 
 	for item in invoice_doc.items:
 		service = item.document_type
-		service_costs[service] = service_costs.get(service, 0) + (item.amount)
+		service_costs[service] = service_costs.get(service, 0.0) + float(item.amount)
 
 	return service_costs
 
@@ -1221,7 +1224,7 @@ def _calculate_percentage_changes(team_name: str, invoice_data: dict, forecasted
 
 	return {
 		"month_over_month": flt(month_over_month_change, 2),
-		"mtd_change": mtd_change,
+		"mtd_change": flt(mtd_change, 2),
 	}
 
 

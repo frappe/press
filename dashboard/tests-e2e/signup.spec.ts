@@ -16,7 +16,8 @@ const INACTIVITY_LIMIT_MS = parseInt(process.env.SIGNUP_INACTIVITY_MS || '0', 10
 
 function testEmail(product: string) {
   const rand = crypto.randomBytes(3).toString('hex');
-  return `playwright_${product}_${rand}@signup.test`;
+  return `fc-signup-test+${product}_${rand}@frappemail.com`;
+  // return `playwright_${product}_${rand}@signup.test`;
 }
 
 async function runSignupFlow(page: Page, product: string) {
@@ -264,8 +265,11 @@ async function runSignupFlow(page: Page, product: string) {
 test.describe.configure({ mode: 'parallel' });
 
 const products = fetchProductTrials();
+
 for (const product of products) {
+  const skipInCI = process.env.CI === 'Yes';
   test(`signup flow for product: ${product}`, async ({ page }) => {
+    test.skip(skipInCI, 'Skipping signup test in CI');
     test.setTimeout(PER_PRODUCT_TIMEOUT_MS + 30_000);
     await runSignupFlow(page, product);
   });

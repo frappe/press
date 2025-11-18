@@ -244,11 +244,11 @@
   "callback_script": null,
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2024-05-27 11:29:41.787719",
+  "modified": "2025-11-12 09:35:41.121169",
   "name": "Prune Docker system",
   "steps": [
    {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\ntelegram = frappe.get_doc(\"Press Settings\").telegram(\"Information\")\ntelegram.send(f\"Pruning docker cache on [{server.name}]({frappe.utils.get_url_to_form(server.doctype, server.name)})\")\nserver.prune_docker_system()",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\ntelegram_message = frappe.get_doc(\"Press Settings\").telegram_message\ntelegram_message.enqueue(f\"Pruning docker cache on [{server.name}]({frappe.utils.get_url_to_form(server.doctype, server.name)})\", \"Information\")\nserver.prune_docker_system()",
     "step_name": "Prune Docker system",
     "wait_until_true": 0
    },
@@ -264,11 +264,11 @@
   "callback_script": null,
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2024-06-18 16:03:25.166898",
+  "modified": "2025-11-12 09:35:21.819679",
   "name": "Increase Swap",
   "steps": [
    {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\ntelegram = frappe.get_doc(\"Press Settings\").telegram(\"Information\")\ntelegram.send(f\"Increasing swap on [{server.name}]({frappe.utils.get_url_to_form(server.doctype, server.name)})\")\nserver.increase_swap(4)",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\ntelegram_message = frappe.get_doc(\"Press Settings\").telegram_message\ntelegram_message.enqueue(f\"Increasing swap on [{server.name}]({frappe.utils.get_url_to_form(server.doctype, server.name)})\", \"Information\")\nserver.increase_swap(4)",
     "step_name": "Add swap on server",
     "wait_until_true": 0
    },
@@ -319,11 +319,11 @@
   "callback_script": null,
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2025-03-30 17:33:29.170125",
+  "modified": "2025-11-12 09:34:59.467479",
   "name": "Reset Swap",
   "steps": [
    {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\ntelegram = frappe.get_doc(\"Press Settings\").telegram(\"Information\")\ntelegram.send(f\"Resetting swap on [{server.name}]({frappe.utils.get_url_to_form(server.doctype, server.name)})\")\nserver.reset_swap()",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\ntelegram_message = frappe.get_doc(\"Press Settings\").telegram_message\ntelegram_message.enqueue(f\"Resetting swap on [{server.name}]({frappe.utils.get_url_to_form(server.doctype, server.name)})\", \"Information\")\nserver.reset_swap()",
     "step_name": "Reset swap on server",
     "wait_until_true": 0
    },
@@ -358,7 +358,7 @@
   "name": "Trigger Build Server Cleanup",
   "steps": [
    {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif server.use_for_build and server.platform == \"arm64\":\n    server.prune_docker_system()\n    \n",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif server.use_for_build:\n    server.prune_docker_system()\n    \n",
     "step_name": "Trigger Build Server Cleanup",
     "wait_until_true": 0
    }
@@ -610,6 +610,26 @@
    {
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.set_additional_config()",
     "step_name": "Set additional config",
+    "wait_until_true": 0
+   },
+   {
+    "script": "if doc.server.startswith(\"fs\") and doc.server_type == \"Server\":\n    virtual_machine = frappe.db.get_value(doc.server_type, doc.server, \"virtual_machine\")\n    virtual_machine = frappe.get_doc(\"Virtual Machine\", virtual_machine)\n    virtual_machine.stop()",
+    "step_name": "Stop Secondary Server",
+    "wait_until_true": 0
+   }
+  ]
+ },
+ {
+  "callback_max_retry": 1,
+  "callback_script": null,
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2025-11-12 11:06:08.243873",
+  "name": "Prune Mirror Registry",
+  "steps": [
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Registry Server\":\n    server.prune_mirror_registry()",
+    "step_name": "Prune Mirror Registry",
     "wait_until_true": 0
    }
   ]

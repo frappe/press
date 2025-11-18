@@ -92,6 +92,41 @@ def get_partner_details(partner_email):
 
 
 @frappe.whitelist()
+def send_link_certificate_request(user_email, certificate_type):
+	if not frappe.db.exists(
+		"Partner Certificate", {"partner_member_email": user_email, "course": certificate_type}
+	):
+		frappe.throw(f"No certificate found for the {user_email} with given course")
+
+	team = get_current_team(get_doc=True)
+
+	frappe.get_doc(
+		{
+			"doctype": "Certificate Link Request",
+			"partner_team": team.name,
+			"user_email": user_email,
+			"course": certificate_type,
+		}
+	).insert()
+
+
+@frappe.whitelist()
+def approve_certificate_link_request(key):
+	cert_req_doc = frappe.get_doc("Certificate Link Request", {"key": key})
+	cert_req_doc.status = "Approved"
+	cert_req_doc.save(ignore_permissions=True)
+	frappe.db.commit()
+
+	frappe.response.type = "redirect"
+	frappe.response.location = "/dashboard/partners/certificates"
+
+
+@frappe.whitelist()
+def get_resource_url():
+	return frappe.db.get_value("Press Settings", "Press Settings", "drive_resource_link")
+
+
+@frappe.whitelist()
 def get_partner_name(partner_email):
 	return frappe.db.get_value(
 		"Team",
@@ -108,7 +143,7 @@ def transfer_credits(amount, customer, partner):
 	amt = frappe.utils.flt(amount)
 	partner_doc = frappe.get_doc("Team", partner)
 	credits_available = partner_doc.get_balance()
-	partner_level, certificates = partner_doc.get_partner_level()
+	partner_level = partner_doc.get_partner_level()
 	discount_percent = DISCOUNT_MAP.get(partner_level)
 
 	if credits_available < amt:
@@ -588,7 +623,7 @@ def fetch_followup_details(id, lead):
 
 @frappe.whitelist()
 def check_certificate_exists(email, type):
-	return frappe.db.count("Partner Certificate", {"partner_member_email": email})
+	return frappe.db.count("Partner Certificate", {"partner_member_email": email, "course": type})
 
 
 @frappe.whitelist()

@@ -36,7 +36,7 @@ from press.press.doctype.prometheus_alert_rule.test_prometheus_alert_rule import
 )
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
-from press.telegram_utils import Telegram
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils.test import foreground_enqueue_doc
 
 
@@ -130,6 +130,7 @@ def get_total_firing_and_resolved_for_resolved_incident(draw) -> tuple[int, int,
 @patch("press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient)
 @patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
 @patch("tenacity.nap.time", new=Mock())  # no sleep
+@patch.object(Incident, "sites_down", new=[])
 class TestIncident(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
@@ -417,7 +418,6 @@ class TestIncident(FrappeTestCase):
 		incident.reload()
 		self.assertEqual(incident.status, "Auto-Resolved")
 
-	@patch.object(Incident, "sites_down", new=[])
 	def test_threshold_field_is_checked_before_calling(self):
 		create_test_alertmanager_webhook_log()
 		incident = frappe.get_last_doc("Incident")
@@ -494,8 +494,9 @@ class TestIncident(FrappeTestCase):
 				to=self.test_phno_2, from_=self.from_, url="http://demo.twilio.com/docs/voice.xml"
 			)
 
-	@patch.object(Telegram, "send")
+	@patch.object(TelegramMessage, "enqueue")
 	def test_telegram_message_is_sent_when_unable_to_reach_twilio(self, mock_telegram_send):
+		print(mock_telegram_send)
 		create_test_alertmanager_webhook_log()
 		incident = frappe.get_last_doc("Incident")
 		with (
@@ -523,7 +524,6 @@ class TestIncident(FrappeTestCase):
 			],
 		}
 
-	@patch.object(Incident, "sites_down", new=[])
 	def test_high_load_avg_on_resource_makes_it_affected(self):
 		create_test_alertmanager_webhook_log()
 		incident: Incident = frappe.get_last_doc("Incident")
@@ -539,7 +539,6 @@ class TestIncident(FrappeTestCase):
 		self.assertEqual(incident.resource, incident.server)
 		self.assertEqual(incident.resource_type, "Server")
 
-	@patch.object(Incident, "sites_down", new=[])
 	def test_no_response_from_monitor_on_resource_makes_it_affected(self):
 		create_test_alertmanager_webhook_log()
 		incident: Incident = frappe.get_last_doc("Incident")
