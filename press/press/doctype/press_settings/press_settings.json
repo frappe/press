@@ -235,6 +235,7 @@
   "partnership_fee_usd",
   "column_break_yxrj",
   "partnership_fee_inr",
+  "section_break_dhzi",
   "drive_resource_link",
   "hybrid_server_tab",
   "hybrid_cluster",
@@ -1494,13 +1495,13 @@
    "label": "Set Redis Password"
   },
   {
-    "default": "1",
-    "fieldname": "disallow_disposable_emails",
-    "fieldtype": "Check",
-    "label": "Disallow disposable emails"
+   "default": "1",
+   "fieldname": "disallow_disposable_emails",
+   "fieldtype": "Check",
+   "label": "Disallow disposable emails"
    },
   {
-   "fieldname": "nfs_section",
+   "fieldname": "auto_scale_section",
    "fieldtype": "Section Break",
    "label": "Auto Scale"
   },
