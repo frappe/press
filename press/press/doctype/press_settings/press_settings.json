@@ -24,6 +24,7 @@
   "gst_percentage",
   "npo_discount",
   "column_break_qfwx",
+  "ic_key",
   "print_format",
   "stripe_settings_section",
   "stripe_publishable_key",
@@ -212,7 +213,7 @@
   "email_recipients",
   "section_break_nloq",
   "servers_using_alternative_http_port_for_communication",
-  "nfs_section",
+  "auto_scale_section",
   "shared_directory",
   "cool_off_period",
   "feature_flags_tab",
@@ -234,6 +235,7 @@
   "partnership_fee_usd",
   "column_break_yxrj",
   "partnership_fee_inr",
+  "drive_resource_link",
   "hybrid_server_tab",
   "hybrid_cluster",
   "hybrid_domain",
@@ -1492,6 +1494,12 @@
    "label": "Set Redis Password"
   },
   {
+    "default": "1",
+    "fieldname": "disallow_disposable_emails",
+    "fieldtype": "Check",
+    "label": "Disallow disposable emails"
+   },
+  {
    "fieldname": "nfs_section",
    "fieldtype": "Section Break",
    "label": "Auto Scale"
@@ -1503,11 +1511,15 @@
    "label": "Shared Directory"
   },
   {
-   "default": "1",
-   "fieldname": "disallow_disposable_emails",
-   "fieldtype": "Check",
-   "label": "Disallow disposable emails"
-  },
+    "fieldname": "drive_resource_link",
+    "fieldtype": "Data",
+    "label": "Drive Resource Link"
+   },
+   {
+    "fieldname": "ic_key",
+    "fieldtype": "Password",
+    "label": "IC Key"
+   },
   {
    "default": "600",
    "description": "Time between two autoscale events (up scale or down scale)",
