@@ -13,7 +13,7 @@ from frappe.utils import convert_utc_to_timezone, flt
 from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 
-from press.api.analytics import get_rounded_boundaries
+from press.api.analytics import TIMESPAN_TIMEGRAIN_MAP, get_rounded_boundaries
 from press.api.bench import all as all_benches
 from press.api.site import protected
 from press.exceptions import MonitorServerDown
