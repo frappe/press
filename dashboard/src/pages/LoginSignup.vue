@@ -412,9 +412,10 @@
 						v-else-if="resetPasswordEmailSent"
 					>
 						<p>
-							We have sent an email to
-							<span class="font-semibold">{{ email }}</span
-							>. Please click on the link received to reset your password.
+							You will receive an email with instructions to reset your password
+							if an account with the provided email
+							(<span class="font-medium">{{ email }}</span>)
+							exists.
 						</p>
 					</div>
 				</template>

@@ -710,9 +710,9 @@ def send_reset_password_email(email: str):
 	"""
 	frappe.utils.validate_email_address(email, throw=True)
 
-	# Abort if user does not exist
+	# Abort if user does not exist.
 	if not frappe.db.exists("User", email):
-		frappe.throw(f"User {email} does not exist")
+		return
 
 	key = frappe.generate_hash()
 	url = get_url("/dashboard/reset-password/" + key)
