@@ -8,9 +8,12 @@
   "server_section",
   "primary_server",
   "secondary_server",
+  "status",
   "column_break_nxd6",
   "scale_up",
-  "scale_down"
+  "scale_down",
+  "steps_section",
+  "scale_steps"
  ],
  "fields": [
   {
@@ -24,6 +27,7 @@
    "in_list_view": 1,
    "label": "Primary Server",
    "options": "Server",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -31,14 +35,16 @@
    "fieldname": "scale_up",
    "fieldtype": "Check",
    "in_list_view": 1,
-   "label": "Scale Up"
+   "label": "Scale Up",
+   "read_only": 1
   },
   {
    "default": "0",
    "fieldname": "scale_down",
    "fieldtype": "Check",
    "in_list_view": 1,
-   "label": "Scale Down"
+   "label": "Scale Down",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_nxd6",
@@ -48,13 +54,33 @@
    "fieldname": "secondary_server",
    "fieldtype": "Link",
    "label": "Secondary Server",
-   "options": "Server"
+   "options": "Server",
+   "read_only": 1
+  },
+  {
+   "fieldname": "steps_section",
+   "fieldtype": "Section Break",
+   "label": "Steps"
+  },
+  {
+   "fieldname": "scale_steps",
+   "fieldtype": "Table",
+   "label": "Scale Steps",
+   "options": "Scale Step"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nFailure\nSuccess",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-23 20:34:40.233178",
+ "modified": "2025-11-17 11:27:08.679170",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Auto Scale Record",
@@ -74,6 +100,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],

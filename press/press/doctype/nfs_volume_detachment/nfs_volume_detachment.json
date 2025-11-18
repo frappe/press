@@ -6,7 +6,6 @@
  "engine": "InnoDB",
  "field_order": [
   "nfs_settings_section",
-  "nfs_server",
   "primary_server",
   "secondary_server",
   "status",
@@ -20,24 +19,19 @@
    "label": "NFS Settings"
   },
   {
-   "fieldname": "nfs_server",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "NFS Server",
-   "options": "NFS Server"
-  },
-  {
    "fieldname": "primary_server",
    "fieldtype": "Link",
    "label": "Primary Server",
-   "options": "Server"
+   "options": "Server",
+   "reqd": 1
   },
   {
    "fieldname": "secondary_server",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Secondary Server",
-   "options": "Server"
+   "options": "Server",
+   "read_only": 1
   },
   {
    "fieldname": "status",
@@ -65,7 +59,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2025-10-22 10:32:02.790635",
+ "modified": "2025-11-11 16:46:53.671641",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "NFS Volume Detachment",
@@ -85,6 +79,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],

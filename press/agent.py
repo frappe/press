@@ -1093,7 +1093,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			filters["bench"] = bench
 
 		if site:
-			filters["site"] = site
+			filters["site"] = site if not isinstance(site, list) else ("IN", site)
 
 		if code_server:
 			filters["code_server"] = code_server
@@ -1104,7 +1104,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		if host:
 			filters["host"] = host
 
-		job = frappe.db.get_value("Agent Job", filters, "name")
+		job = frappe.db.get_value("Agent Job", filters, "name", debug=1)
 
 		return frappe.get_doc("Agent Job", job) if job else False
 
@@ -1703,9 +1703,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 
 	def add_servers_to_acl(
 		self,
-		primary_server_private_ip: str,
 		secondary_server_private_ip: str,
-		shared_directory: str,
 		reference_doctype: str | None = None,
 		reference_name: str | None = None,
 	) -> AgentJob:
@@ -1713,9 +1711,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			"Add Servers to ACL",
 			"/nfs/add-to-acl",
 			data={
-				"primary_server_private_ip": primary_server_private_ip,
 				"secondary_server_private_ip": secondary_server_private_ip,
-				"shared_directory": shared_directory,
 			},
 			reference_doctype=reference_doctype,
 			reference_name=reference_name,
@@ -1723,9 +1719,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 
 	def remove_servers_from_acl(
 		self,
-		primary_server_private_ip: str,
 		secondary_server_private_ip: str,
-		shared_directory: str,
 		reference_doctype: str | None = None,
 		reference_name: str | None = None,
 	) -> AgentJob:
@@ -1733,9 +1727,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			"Remove Servers from ACL",
 			"/nfs/remove-from-acl",
 			data={
-				"primary_server_private_ip": primary_server_private_ip,
 				"secondary_server_private_ip": secondary_server_private_ip,
-				"shared_directory": shared_directory,
 			},
 			reference_doctype=reference_doctype,
 			reference_name=reference_name,
