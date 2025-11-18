@@ -28,6 +28,7 @@
   "gst_percentage",
   "npo_discount",
   "column_break_qfwx",
+  "ic_key",
   "print_format",
   "stripe_settings_section",
   "stripe_publishable_key",
@@ -216,7 +217,7 @@
   "email_recipients",
   "section_break_nloq",
   "servers_using_alternative_http_port_for_communication",
-  "nfs_section",
+  "auto_scale_section",
   "shared_directory",
   "cool_off_period",
   "feature_flags_tab",
@@ -238,6 +239,7 @@
   "partnership_fee_usd",
   "column_break_yxrj",
   "partnership_fee_inr",
+  "drive_resource_link",
   "hybrid_server_tab",
   "hybrid_cluster",
   "hybrid_domain",
@@ -1499,9 +1501,18 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 =======
 >>>>>>> aff0908f2 (Revert "fix(conflicts): Trying to add missing changes")
+=======
+    "default": "1",
+    "fieldname": "disallow_disposable_emails",
+    "fieldtype": "Check",
+    "label": "Disallow disposable emails"
+   },
+  {
+>>>>>>> ca3a6c199 (fix(conflicts): Trying to add missing changes 2)
    "fieldname": "nfs_section",
    "fieldtype": "Section Break",
    "label": "Auto Scale"
@@ -1514,6 +1525,7 @@
   },
   {
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> a71234c06 (chore(scale): Define validations before scaling)
 =======
 >>>>>>> aff0908f2 (Revert "fix(conflicts): Trying to add missing changes")
@@ -1522,6 +1534,17 @@
    "fieldtype": "Check",
    "label": "Disallow disposable emails"
   },
+=======
+    "fieldname": "drive_resource_link",
+    "fieldtype": "Data",
+    "label": "Drive Resource Link"
+   },
+   {
+    "fieldname": "ic_key",
+    "fieldtype": "Password",
+    "label": "IC Key"
+   },
+>>>>>>> ca3a6c199 (fix(conflicts): Trying to add missing changes 2)
   {
 <<<<<<< HEAD
 <<<<<<< HEAD
