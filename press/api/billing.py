@@ -139,20 +139,20 @@ def balances():
 	return data
 
 
-def get_processed_balance_transactions(transactions: list[dict]):
+def get_processed_balance_transactions(transactions: list[dict]) -> list:
 	"""Cleans up transactions and adjusts ending balances accordingly"""
 
 	cleaned_up_transations = get_cleaned_up_transactions(transactions)
-	processed_balance_transactions = []
+	processed_balance_transactions: list[dict] = []
 	for bt in reversed(cleaned_up_transations):
 		if is_added_credits_bt(bt) and len(processed_balance_transactions) < 1:
 			processed_balance_transactions.append(bt)
 		elif is_added_credits_bt(bt):
-			bt.ending_balance += processed_balance_transactions[
-				-1
-			].ending_balance  # Adjust the ending balance
+			bt["ending_balance"] = bt.get("ending_balance", 0) + processed_balance_transactions[-1].get(
+				"ending_balance", 0
+			)  # Adjust the ending balance
 			processed_balance_transactions.append(bt)
-		elif bt.type == "Applied To Invoice":
+		elif bt.get("type") == "Applied To Invoice":
 			processed_balance_transactions.append(bt)
 
 	return list(reversed(processed_balance_transactions))
@@ -167,8 +167,8 @@ def get_cleaned_up_transactions(transactions: list[dict]):
 			cleaned_up_transations.append(bt)
 			continue
 
-		if bt.type == "Applied To Invoice" and not find(
-			cleaned_up_transations, lambda x: x.invoice == bt.invoice
+		if bt.get("type") == "Applied To Invoice" and not find(
+			cleaned_up_transations, lambda x: x.get("invoice") == bt.get("invoice")
 		):
 			cleaned_up_transations.append(bt)
 			continue
@@ -648,7 +648,11 @@ def is_paypal_enabled() -> bool:
 
 
 @frappe.whitelist()
-def create_razorpay_order(amount, type=None):
+def create_razorpay_order(amount, type=None) -> dict | None:
+	if amount <= 0:
+		frappe.msgprint(_("Amount should be greater than zero"))
+		return None
+
 	client = get_razorpay_client()
 	team = get_current_team(get_doc=True)
 
@@ -1108,7 +1112,11 @@ def _calculate_forecast_data(
 	days_in_month = date_info["days_in_month"]
 
 	forecasted_month_end = 0
+<<<<<<< HEAD
 	per_service_forecast = {}  # Forecasted remaining cost per service or document_type
+=======
+	per_service_forecast: dict[str, float] = {}  # Forecasted remaining cost per service
+>>>>>>> eb3947dd5 (fix: add amount validation to create_razorpay_order and few mypy fixes)
 
 	price_field = "price_usd" if currency == "USD" else "price_inr"
 
@@ -1252,4 +1260,4 @@ def _get_usage_records_total_for_date_range(team: str, start_date, end_date):
 		.run(pluck=True)
 	)
 
-	return total_amount[0] or 0
+	return total_amount[0] or 0g
