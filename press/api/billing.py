@@ -1253,4 +1253,4 @@ def _get_usage_records_total_for_date_range(team: str, start_date, end_date):
 		.run(pluck=True)
 	)
 
-	return total_amount[0] or 0g
+	return total_amount[0] or 0
