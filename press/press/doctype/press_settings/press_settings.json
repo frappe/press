@@ -28,8 +28,8 @@
   "gst_percentage",
   "npo_discount",
   "column_break_qfwx",
-  "ic_key",
   "print_format",
+  "ic_key",
   "stripe_settings_section",
   "stripe_publishable_key",
   "stripe_secret_key",
@@ -1521,7 +1521,21 @@
    "fieldname": "disallow_disposable_emails",
    "fieldtype": "Check",
    "label": "Disallow disposable emails"
-   },
+  },
+  {
+   "fieldname": "drive_resource_link",
+   "fieldtype": "Data",
+   "label": "Drive Resource Link"
+  },
+  {
+   "fieldname": "ic_key",
+   "fieldtype": "Password",
+   "label": "IC Key"
+  },
+  {
+    "fieldname": "section_break_dhzi",
+    "fieldtype": "Section Break"
+  },
   {
    "fieldname": "auto_scale_section",
 >>>>>>> eb681f026 (fix(conflicts): Trying to add missing changes 3)
@@ -1535,6 +1549,7 @@
    "label": "Shared Directory"
   },
   {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 >>>>>>> a71234c06 (chore(scale): Define validations before scaling)
@@ -1594,6 +1609,8 @@
 =======
 =======
 >>>>>>> aff0908f2 (Revert "fix(conflicts): Trying to add missing changes")
+=======
+>>>>>>> 82370bf30 (fix(conflicts): Trying to add missing changes 4)
    "default": "600",
    "description": "Time between two autoscale events (up scale or down scale)",
    "fieldname": "cool_off_period",
