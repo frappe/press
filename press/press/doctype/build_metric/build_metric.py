@@ -91,10 +91,21 @@ class GenerateBuildMetric:
 				"fc_manual_failure": len(self.total_failures["fc_manual_failure"]),
 				"fc_failure": len(self.total_failures["fc_failure"]),
 			},
+			# Pending durations
 			"median_pending_duration": self.build_duration_metrics["median_pending_duration"],
+			"p90_pending_duration": self.build_duration_metrics["p90_pending_duration"],
+			"p99_pending_duration": self.build_duration_metrics["p99_pending_duration"],
+			# Build durations
 			"median_build_duration": self.build_duration_metrics["median_build_duration"],
+			"p90_build_duration": self.build_duration_metrics["p90_build_duration"],
+			"p99_build_duration": self.build_duration_metrics["p99_build_duration"],
+			# Context durations (upload & package)
 			"median_upload_context_duration": self.context_durations["median_upload_duration"],
+			"p90_upload_context_duration": self.context_durations["p90_upload_duration"],
+			"p99_upload_context_duration": self.context_durations["p99_upload_duration"],
 			"median_package_context_duration": self.context_durations["median_package_duration"],
+			"p90_package_context_duration": self.context_durations["p90_package_duration"],
+			"p99_package_context_duration": self.context_durations["p99_package_duration"],
 			"median_deploy_duration": self.deploy_duration_metrics,
 			"failure_frequency": dict(self.failure_frequency.most_common()),
 			"fc_failure_metrics": self.fc_failure_metrics,
