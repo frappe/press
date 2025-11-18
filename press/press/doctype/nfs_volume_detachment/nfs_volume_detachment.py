@@ -38,6 +38,30 @@ class NFSVolumeDetachment(Document, StepHandler):
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
 	# end: auto-generated types
 
+	def start_secondary_server(self, step: "NFSVolumeDetachmentStep"):
+		"""Start secondary server"""
+		step.status = Status.Running
+		step.save()
+
+		secondary_server_vm = frappe.db.get_value("Server", self.secondary_server, "virtual_machine")
+		virtual_machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", secondary_server_vm)
+
+		if virtual_machine.status != "Running":
+			virtual_machine.start()
+
+		step.status = Status.Success
+		step.save()
+
+	def wait_for_secondary_server_to_start(self, step: "NFSVolumeDetachmentStep"):
+		"""Wait for secondary server to start"""
+		step.status = Status.Running
+		step.is_waiting = True
+		step.save()
+
+		virtual_machine = frappe.db.get_value("Server", self.secondary_server, "virtual_machine")
+
+		self.handle_vm_status_job(step, virtual_machine=virtual_machine, expected_status="Running")
+
 	def stop_all_benches(self, step: "NFSVolumeDetachmentStep"):
 		"""Stop all running benches"""
 		server: Server = frappe.get_doc("Server", self.primary_server)
@@ -247,6 +271,8 @@ class NFSVolumeDetachment(Document, StepHandler):
 		"""Append defined steps to the document before saving."""
 		for step in self.get_steps(
 			[
+				self.start_secondary_server,
+				self.wait_for_secondary_server_to_start,
 				self.stop_all_benches,
 				self.sync_data,
 				self.run_bench_on_primary_server,
