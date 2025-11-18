@@ -86,7 +86,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 		step.save()
 
 	def wait_for_secondary_server_to_start(self, step: "NFSVolumeAttachmentStep"):
-		"""Wait for secondary server to starts"""
+		"""Wait for secondary server to start"""
 		step.status = Status.Running
 		step.is_waiting = True
 		step.save()
@@ -253,6 +253,30 @@ class NFSVolumeAttachment(Document, StepHandler):
 		step.status = Status.Success
 		step.save()
 
+	def stop_secondary_server(self, step: "NFSVolumeAttachmentStep"):
+		"""Stop secondary server"""
+		step.status = Status.Running
+		step.save()
+
+		secondary_server_vm = frappe.db.get_value("Server", self.secondary_server, "virtual_machine")
+		virtual_machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", secondary_server_vm)
+
+		if virtual_machine.status == "Running":
+			virtual_machine.stop()
+
+		step.status = Status.Success
+		step.save()
+
+	def wait_for_secondary_server_to_stop(self, step: "NFSVolumeAttachmentStep"):
+		"""Wait for secondary server to stop"""
+		step.status = Status.Running
+		step.is_waiting = True
+		step.save()
+
+		virtual_machine = frappe.db.get_value("Server", self.secondary_server, "virtual_machine")
+
+		self.handle_vm_status_job(step, virtual_machine=virtual_machine, expected_status="Stopped")
+
 	def before_insert(self):
 		"""Append defined steps to the document before saving."""
 		for step in self.get_steps(
@@ -267,6 +291,8 @@ class NFSVolumeAttachment(Document, StepHandler):
 				self.run_primary_server_benches_on_shared_fs,
 				self.wait_for_benches_to_run_on_shared,
 				self.ready_to_auto_scale,
+				self.stop_secondary_server,
+				self.wait_for_secondary_server_to_stop,
 			]
 		):
 			self.append("nfs_volume_attachment_steps", step)
