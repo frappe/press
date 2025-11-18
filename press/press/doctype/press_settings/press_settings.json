@@ -1,5 +1,8 @@
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> aff0908f2 (Revert "fix(conflicts): Trying to add missing changes")
  "actions": [],
  "creation": "2022-02-08 15:13:48.372783",
  "doctype": "DocType",
@@ -1495,7 +1498,10 @@
   {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> aff0908f2 (Revert "fix(conflicts): Trying to add missing changes")
    "fieldname": "nfs_section",
    "fieldtype": "Section Break",
    "label": "Auto Scale"
@@ -1507,13 +1513,17 @@
    "label": "Shared Directory"
   },
   {
+<<<<<<< HEAD
 >>>>>>> a71234c06 (chore(scale): Define validations before scaling)
+=======
+>>>>>>> aff0908f2 (Revert "fix(conflicts): Trying to add missing changes")
    "default": "1",
    "fieldname": "disallow_disposable_emails",
    "fieldtype": "Check",
    "label": "Disallow disposable emails"
   },
   {
+<<<<<<< HEAD
 <<<<<<< HEAD
    "fieldname": "drive_resource_link",
    "fieldtype": "Data",
@@ -1548,16 +1558,22 @@
    "label": "Disallow disposable emails"
 >>>>>>> efcac54b5 (fix(conflicts): Merge conflicts)
 =======
+=======
+>>>>>>> aff0908f2 (Revert "fix(conflicts): Trying to add missing changes")
    "default": "600",
    "description": "Time between two autoscale events (up scale or down scale)",
    "fieldname": "cool_off_period",
    "fieldtype": "Int",
    "label": "Cool off period"
+<<<<<<< HEAD
 >>>>>>> a71234c06 (chore(scale): Define validations before scaling)
+=======
+>>>>>>> aff0908f2 (Revert "fix(conflicts): Trying to add missing changes")
   }
  ],
  "issingle": 1,
  "links": [],
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -1571,6 +1587,9 @@
 =======
  "modified": "2025-11-17 11:14:58.353740",
 >>>>>>> a71234c06 (chore(scale): Define validations before scaling)
+=======
+ "modified": "2025-11-17 11:14:58.353740",
+>>>>>>> aff0908f2 (Revert "fix(conflicts): Trying to add missing changes")
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
@@ -1594,6 +1613,7 @@
  "sort_order": "DESC",
  "states": [],
  "track_changes": 1
+<<<<<<< HEAD
 }
 =======
     "actions": [],
@@ -3155,3 +3175,6 @@
     "track_changes": 1
    }
 >>>>>>> edd9eea92 (fix(conflicts): Trying to add missing changes)
+=======
+}
+>>>>>>> aff0908f2 (Revert "fix(conflicts): Trying to add missing changes")
