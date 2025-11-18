@@ -71,7 +71,6 @@ class ARMDockerImageType(TypedDict):
 PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
 MARIADB_DATA_MNT_POINT = "/opt/volumes/mariadb"
 BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
-SHARED_MNT_POINT = "/shared"
 
 
 class BaseServer(Document, TagHelpers):
@@ -866,21 +865,11 @@ class BaseServer(Document, TagHelpers):
 		if self.provider != "AWS EC2":
 			return 0
 
-		if self.has_shared_volume:
-			last_updated_at = frappe.get_value(
-				"Virtual Machine Volume",
-				{
-					"parent": self.volume_host_info.nfs_server,
-					"volume_id": self.volume_host_info.volume_id,
-				},
-				"last_updated_at",
-			)
-		else:
-			last_updated_at = frappe.get_value(
-				"Virtual Machine Volume",
-				{"parent": self.virtual_machine, "idx": 1},  # first volume is likely main
-				"last_updated_at",
-			)
+		last_updated_at = frappe.get_value(
+			"Virtual Machine Volume",
+			{"parent": self.virtual_machine, "idx": 1},  # first volume is likely main
+			"last_updated_at",
+		)
 
 		if not last_updated_at:
 			return 0
@@ -918,10 +907,10 @@ class BaseServer(Document, TagHelpers):
 			return "/"
 
 		volumes = self.get_volume_mounts()
-		if volumes or self.has_data_volume or self.has_shared_volume:
+		if volumes or self.has_data_volume:
 			# Adding this condition since this method is called from both server and database server doctypes
 			if self.doctype == "Server":
-				mountpoint = BENCH_DATA_MNT_POINT if not self.has_shared_volume else SHARED_MNT_POINT
+				mountpoint = BENCH_DATA_MNT_POINT
 			elif self.doctype == "Database Server":
 				mountpoint = MARIADB_DATA_MNT_POINT
 		else:
@@ -930,15 +919,7 @@ class BaseServer(Document, TagHelpers):
 
 	def find_mountpoint_volume(self, mountpoint) -> "VirtualMachineVolume":
 		volume_id = None
-		if self.has_shared_volume and mountpoint == SHARED_MNT_POINT:
-			volume_id = self.volume_host_info.volume_id
-
-		machine: "VirtualMachine" = frappe.get_doc(
-			"Virtual Machine",
-			self.volume_host_info.nfs_server
-			if self.has_shared_volume and mountpoint == SHARED_MNT_POINT
-			else self.virtual_machine,
-		)
+		machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", self.virtual_machine)
 
 		if volume_id:
 			# Return the volume doc immediately
@@ -1173,6 +1154,23 @@ class BaseServer(Document, TagHelpers):
 
 	def get_monitoring_password(self):
 		return frappe.get_doc("Cluster", self.cluster).get_password("monitoring_password")
+
+	@frappe.whitelist()
+	def setup_nfs(self):
+		"""Allow nfs setup on this server"""
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_nfs", queue="long", timeout=1200)
+
+	def _setup_nfs(self):
+		try:
+			ansible = Ansible(
+				playbook="nfs_server.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Exception while setting up NFS", doc=self)
 
 	@frappe.whitelist()
 	def increase_swap(self, swap_size=4):
@@ -1766,20 +1764,6 @@ class BaseServer(Document, TagHelpers):
 			ansible.run()
 		except Exception:
 			log_error("Cloud Init Wait Exception", server=self.as_dict())
-
-	@property
-	def volume_host_info(self) -> "VirtualMachine":
-		return frappe.db.get_value(
-			"NFS Volume Attachment",
-			{"primary_server": self.name, "status": "Success"},
-			["volume_id", "nfs_server"],
-			as_dict=True,
-		)
-
-	@property
-	def has_shared_volume(self) -> bool:
-		"""Return True if benches_on_shared_volume exists and is True."""
-		return bool(getattr(self, "benches_on_shared_volume", False))
 
 	def free_space(self, mountpoint: str) -> int:
 		from press.api.server import prometheus_query
@@ -2425,6 +2409,7 @@ class Server(BaseServer):
 		if self.doctype == "Database Server" or self.is_secondary:
 			return
 
+		self.setup_nfs()  # Setup nfs when creating a secondary server
 		self.status = "Installing"
 		self.save()
 
@@ -3024,18 +3009,51 @@ class Server(BaseServer):
 			frappe.throw("Snapshot does not belong to this server")
 		doc.unlock()
 
-	@frappe.whitelist()
-	def scale_up(self):
+	def validate_scale(self):
+		"""
+		Check if the server can auto scale, the following parameters before creating a scale record
+			1. Server is configured for auto scale.
+			2. Was the last auto scale modified before the cool of period (don't create new auto scale).
+			3. There is a auto scale operation running on the server.
+		"""
 		if not self.can_scale:
 			frappe.throw("Server is not configured for auto scaling", frappe.ValidationError)
+
+		last_auto_scale_at = frappe.db.get_value(
+			"Auto Scale Record", {"primary_server": self.name, "status": "Success"}, "modified"
+		)
+		time_diff = frappe.utils.now_datetime() - last_auto_scale_at
+		cool_off_period = frappe.db.get_single_value("Press Settings", "cool_off_period")
+
+		running_auto_scale = frappe.db.get_value(
+			"Auto Scale Record", {"primary_server": self.name, "status": "Running"}
+		)
+
+		if running_auto_scale:
+			frappe.throw("Auto scale is already running", frappe.ValidationError)
+
+		if time_diff < timedelta(seconds=cool_off_period or 300):
+			frappe.throw(
+				f"Please wait for {fmt_timedelta(timedelta(seconds=cool_off_period or 300) - time_diff)} before scaling again",
+				frappe.ValidationError,
+			)
+
+	@frappe.whitelist()
+	def scale_up(self):
+		if self.scaled_up:
+			frappe.throw("Server is already scaled up", frappe.ValidationError)
+
+		self.validate_scale()
 
 		auto_scale_record = self._create_auto_scale_record(scale_up=True)
 		auto_scale_record.insert()
 
 	@frappe.whitelist()
 	def scale_down(self):
-		if not self.can_scale:
-			frappe.throw("Server is not configured for auto scaling", frappe.ValidationError)
+		if not self.scaled_up:
+			frappe.throw("Server is already scaled down", frappe.ValidationError)
+
+		self.validate_scale()
 
 		auto_scale_record = self._create_auto_scale_record(scale_up=False)
 		auto_scale_record.insert()
