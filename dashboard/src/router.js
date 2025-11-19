@@ -142,6 +142,11 @@ let router = createRouter({
 					path: 'follow-up',
 					component: () => import('./components/partners/LeadFollowup.vue'),
 				},
+				{
+					name: 'LeadActivities',
+					path: 'activities',
+					component: () => import('./components/partners/LeadActivities.vue'),
+				},
 			],
 		},
 		{

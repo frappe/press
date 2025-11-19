@@ -1,5 +1,8 @@
+import json
+
 import frappe
 from frappe.core.utils import find
+from frappe.desk.form.load import get_docinfo
 from frappe.utils import flt
 from frappe.utils.data import add_days, add_months, get_first_day, get_last_day, today
 
@@ -269,6 +272,120 @@ def get_lead_stats():
 		as_dict=True,
 	)
 	return data[0] if data else {}
+
+
+@frappe.whitelist()
+def get_lead_activities(name):
+	get_docinfo("", "Partner Lead", name)
+	res = frappe.response["docinfo"]
+	doc_meta = frappe.get_meta("Partner Lead")
+	fields = {field.fieldname: {"label": field.label, "options": field.options} for field in doc_meta.fields}
+
+	doc = frappe.db.get_values("Partner Lead", name, ["creation", "owner"])[0]
+	activities = []
+	activities.append(
+		{"activity_type": "creation", "creation": doc[0], "owner": doc[1], "data": "created this lead"}
+	)
+
+	res.versions.reverse()
+
+	for version in res.versions:
+		data = json.loads(version.data)
+		if not data.get("changed"):
+			continue
+
+		if change := data.get("changed")[0]:
+			field = fields.get(change[0], None)
+			if not field or (not change[1] and not change[2]):
+				continue
+
+			field_label = field.get("label") or change[0]
+			field_option = field.get("options") or None
+
+			activity_type = "changed"
+			data = {
+				"field": change[0],
+				"field_label": field_label,
+				"old_value": change[1],
+				"new_value": change[2],
+			}
+
+			if not change[1] and change[2]:
+				activity_type = "added"
+				data = {
+					"field": change[0],
+					"field_label": field_label,
+					"value": change[2],
+				}
+			elif change[1] and not change[2]:
+				activity_type = "removed"
+				data = {
+					"field": change[0],
+					"field_label": field_label,
+					"value": change[1],
+				}
+
+		activity = {
+			"activity_type": activity_type,
+			"creation": version.creation,
+			"owner": version.owner,
+			"data": data,
+			"options": field_option,
+		}
+		activities.append(activity)
+
+		for comment in res.comments:
+			activity = {
+				"name": comment.name,
+				"activity_type": "comment",
+				"creation": comment.creation,
+				"owner": comment.owner,
+				"content": comment.content,
+			}
+			activities.append(activity)
+
+	activities.sort(key=lambda x: x.get("creation"), reverse=True)
+	activities = handle_multiple_versions(activities)
+
+	return activities  # noqa: RET504
+
+
+def handle_multiple_versions(versions):  # noqa: C901
+	# print(versions)
+	activities = []
+	grouped_versions = []
+	old_version = None
+	for version in versions:
+		is_version = version["activity_type"] in ["changed", "added", "removed"]
+		if not is_version:
+			activities.append(version)
+		if not old_version:
+			old_version = version
+			if is_version:
+				grouped_versions.append(version)
+			continue
+		if is_version and old_version.get("owner") and version["owner"] == old_version["owner"]:
+			grouped_versions.append(version)
+		else:
+			if grouped_versions:
+				activities.append(parse_grouped_versions(grouped_versions))
+			grouped_versions = []
+			if is_version:
+				grouped_versions.append(version)
+		old_version = version
+		if version == versions[-1] and grouped_versions:
+			activities.append(parse_grouped_versions(grouped_versions))
+
+	return activities
+
+
+def parse_grouped_versions(versions):
+	version = versions[0]
+	if len(versions) == 1:
+		return version
+	other_versions = versions[1:]
+	version["other_versions"] = other_versions
+	return version
 
 
 @frappe.whitelist()
@@ -698,6 +815,12 @@ def can_apply_for_certificate():
 	response = client.get_api("check_free_certificate", {"partner_email": team.partner_email})
 
 	return response  # noqa: RET504
+
+
+@frappe.whitelist()
+def get_users_list():
+	users = frappe.get_all("User", {"enabled": 1}, ["name", "full_name"])
+	return users  # noqa: RET504
 
 
 @frappe.whitelist()
