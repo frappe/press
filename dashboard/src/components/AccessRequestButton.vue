@@ -1,8 +1,7 @@
 <template>
 	<Button
-		v-if="canRequestAccess"
-		label="Request Access"
-		icon-left="lock"
+		v-if="show"
+		v-bind="buttonProps"
 		variant="subtle"
 		@click="
 			() => {
@@ -26,16 +25,39 @@ import AccessRequestDialog from './AccessRequestDialog.vue';
 const props = defineProps<{
 	doctype: string;
 	docname: string;
+	doc?: any;
 	error?: Error;
 }>();
 
 const team = getTeam();
+
+const buttonProps = computed(() => {
+	if (props.doc) {
+		return {
+			label: '',
+			icon: 'unlock',
+		};
+	} else {
+		return {
+			label: 'Request Access',
+			iconLeft: 'lock',
+		};
+	}
+});
 
 const isPermissionError = computed(() => {
 	return Boolean(props.error?.message.endsWith('PermissionError'));
 });
 
 const canRequestAccess = computed(() => {
-	return Boolean(isPermissionError.value && team.doc?.can_request_access);
+	return Boolean(team.doc?.can_request_access);
+});
+
+const isOwner = computed(() => {
+	return props.doc?.team === team.doc?.name;
+});
+
+const show = computed(() => {
+	return canRequestAccess.value && (isPermissionError.value || !isOwner.value);
 });
 </script>

@@ -9,14 +9,17 @@
 					v-bind="badge"
 				/>
 			</div>
-			<div
-				class="flex justify-between items-center mt-1 space-x-2 sm:mt-0"
-				v-if="$resources.document?.doc"
-			>
+			<div class="flex justify-between items-center mt-1 space-x-2 sm:mt-0">
 				<div class="sm:hidden">
 					<Badge v-if="$resources.document?.doc && badge" v-bind="badge" />
 				</div>
-				<div class="space-x-2">
+				<AccessRequestButton
+					:doctype="object.doctype"
+					:docname="name"
+					:doc="$resources.document?.doc"
+					:error="$resources.document.get.error"
+				/>
+				<div class="space-x-2" v-if="$resources.document?.doc">
 					<ActionButton
 						v-for="action in actions"
 						v-bind="action"
@@ -25,12 +28,6 @@
 					/>
 				</div>
 			</div>
-			<AccessRequestButton
-				v-if="!$resources.document?.doc"
-				:doctype="object.doctype"
-				:docname="name"
-				:error="$resources.document.get.error"
-			/>
 		</div>
 	</Header>
 	<div>
