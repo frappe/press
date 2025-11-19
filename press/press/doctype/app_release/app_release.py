@@ -19,6 +19,7 @@ from press.utils import log_error
 if typing.TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.release_group.release_group import ReleaseGroup
+	from press.press.doctype.resource_tag.resource_tag import ResourceTag
 
 
 class AppReleaseDict(TypedDict):
@@ -108,9 +109,10 @@ class AppRelease(Document):
 
 	def _has_auto_deploy_marker(self) -> tuple[bool, str | None]:
 		"""<deploy-marker>-<bench-group> | <deploy-marker>"""
-		deploy_marker = frappe.db.get_single_value("Press Settings", "deploy_marker", cache=True)
+		deploy_marker = frappe.db.get_single_value("Press Settings", "deploy_marker", cache=False)
 
-		if not self.message or deploy_marker not in self.message:
+		# Acts as a feature flag for global auto deploys
+		if not deploy_marker or not self.message or deploy_marker not in self.message:
 			return False, None
 
 		bench_group = self.message.split(deploy_marker)[-1]
@@ -158,7 +160,8 @@ class AppRelease(Document):
 			candidate.schedule_build_and_deploy()
 
 	def trigger_deploy_via_commit_markers(self):
-		"""Check if the commit has deploy markers and trigger deploy"""
+		"""Check if the commit has deploy markers and trigger deploy for no bench groups
+		passed deploy bench groups with tag auto-deploy"""
 		deploy, bench_group = self._has_auto_deploy_marker()
 
 		if not deploy:
@@ -171,9 +174,20 @@ class AppRelease(Document):
 			self._deploy_bench_group(bench_group)
 
 		else:
-			for bench_group in frappe.db.get_all(
-				"Release Group", {"team": self.team, "enabled": 1}, pluck="name"
-			):
+			ReleaseGroup: "ReleaseGroup" = frappe.qb.DocType("Release Group")
+			ResourceTag: "ResourceTag" = frappe.qb.DocType("Resource Tag")
+
+			release_groups_with_auto_deploy = (
+				frappe.qb.from_(ReleaseGroup)
+				.join(ResourceTag)
+				.on(ResourceTag.parent == ReleaseGroup.name)
+				.where(ResourceTag.tag_name == "auto-deploy")
+				.where(ReleaseGroup.enabled == 1)
+				.where(ReleaseGroup.team == self.team)
+				.select(ReleaseGroup.name)
+				.run(pluck="name")
+			)
+			for bench_group in release_groups_with_auto_deploy:
 				self._deploy_bench_group(bench_group)
 
 	def after_insert(self):
