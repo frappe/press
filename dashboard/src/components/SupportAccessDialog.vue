@@ -52,7 +52,7 @@
 				</div>
 				<div v-if="request.doc?.reason" class="space-y-2">
 					<p class="font-medium">Reason:</p>
-					<p>{{ request.doc?.reason }}</p>
+					<p class="leading-relaxed">{{ request.doc?.reason }}</p>
 				</div>
 				<div v-if="permissions.length" class="space-y-2">
 					<p class="font-medium">Permissions:</p>
