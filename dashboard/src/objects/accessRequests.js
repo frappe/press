@@ -44,12 +44,21 @@ export default {
 		},
 		columns: [
 			{
-				label: 'Requested By',
-				fieldname: 'requested_by',
+				label: 'Resource',
+				fieldname: 'resource_name',
+				width: '250px',
+				format: (_, row) => {
+					if (row.resource_count > 1) {
+						return row.resource_count + ' Resources';
+					} else {
+						return row.resource_name;
+					}
+				},
 			},
 			{
 				label: 'Status',
 				fieldname: 'status',
+				width: '150px',
 				type: 'Badge',
 				theme: (value) => {
 					return {
@@ -60,26 +69,22 @@ export default {
 				},
 			},
 			{
-				label: 'Resource',
-				fieldname: 'resource_name',
-				format: (_, row) => {
-					if (row.resource_count > 1) {
-						return row.resource_count + ' Resources';
-					} else {
-						return row.resource_name;
-					}
-				},
+				label: 'Reason',
+				fieldname: 'reason',
+				class: 'max-w-md',
 			},
 			{
 				label: 'Expiry',
 				fieldname: 'access_allowed_till',
 				type: 'Timestamp',
+				width: '150px',
 			},
 			{
 				label: 'Requested',
 				fieldname: 'creation',
 				type: 'Timestamp',
 				align: 'right',
+				width: '150px',
 			},
 		],
 	},
