@@ -697,7 +697,7 @@ def benches_are_idle(server: str, access_token: str) -> None:
 		not running_scale_down
 		and is_server_scaled_up
 		and scaled_up_at
-		and (datetime.now() - scaled_up_at) > timedelta(seconds=cool_off_period or 300)
+		and (frappe.utils.now_datetime() - scaled_up_at) > timedelta(seconds=cool_off_period or 300)
 	)
 	if should_scale_down:
 		# Scale down here
@@ -712,7 +712,3 @@ def benches_are_idle(server: str, access_token: str) -> None:
 		)
 		auto_scale_record.insert()
 		frappe.set_user(current_user)
-	else:
-		print(
-			f"NOT running as running_scale_down {running_scale_down} is_server_scaled_up {is_server_scaled_up}"
-		)
