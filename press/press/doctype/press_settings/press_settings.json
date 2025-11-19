@@ -147,6 +147,7 @@
   "github_app_public_link",
   "github_webhook_secret",
   "github_access_token",
+  "deploy_marker",
   "section_break_41",
   "column_break_tcmy",
   "column_break_edst",
@@ -832,6 +833,7 @@
    "read_only": 1
   },
   {
+   "default": "fc-deploy",
    "fieldname": "column_break_36",
    "fieldtype": "Column Break"
   },
@@ -1511,8 +1513,8 @@
    "label": "IC Key"
   },
   {
-    "fieldname": "section_break_dhzi",
-    "fieldtype": "Section Break"
+   "fieldname": "section_break_dhzi",
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "auto_scale_section",
@@ -1531,11 +1533,17 @@
    "fieldname": "cool_off_period",
    "fieldtype": "Int",
    "label": "Cool off period"
+  },
+  {
+   "fieldname": "deploy_marker",
+   "fieldtype": "Data",
+   "label": "Deploy Marker",
+   "options": "If found in commit message deploy will be triggered"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-11-17 11:14:58.353740",
+ "modified": "2025-11-19 10:27:32.401458",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
