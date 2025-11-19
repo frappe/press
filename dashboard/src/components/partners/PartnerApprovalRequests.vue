@@ -1,5 +1,5 @@
 <template>
-	<div class="p-5">
+	<div>
 		<ObjectList :options="options" />
 	</div>
 </template>
@@ -25,7 +25,7 @@ export default {
 						fieldname: 'customer_email',
 					},
 					{
-						label: 'customer team id',
+						label: 'Customer Team',
 						fieldname: 'requested_by',
 					},
 					{
@@ -41,7 +41,7 @@ export default {
 						},
 					},
 					{
-						label: 'Approval By Frappe',
+						label: 'Frappe Approval',
 						fieldname: 'approved_by_frappe',
 						type: 'Component',
 						align: 'center',
