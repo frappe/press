@@ -41,6 +41,7 @@ export default {
 			tabs: [
 				{ label: 'Overview', route: { name: 'LeadOverview' } },
 				{ label: 'Follow-up', route: { name: 'LeadDealDetails' } },
+				{ label: 'Activities', route: { name: 'LeadActivities' } },
 			],
 		};
 	},
