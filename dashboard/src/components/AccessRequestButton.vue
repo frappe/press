@@ -6,9 +6,17 @@
 		@click="
 			() => {
 				renderDialog(
-					h(AccessRequestDialog, {
+					h(DialogComponent, {
 						doctype,
 						docname,
+						onOpenRequestDialog: () => {
+							renderDialog(
+								h(AccessRequestDialog, {
+									doctype,
+									docname,
+								}),
+							);
+						},
 					}),
 				);
 			}
@@ -21,6 +29,7 @@ import { computed, h } from 'vue';
 import { getTeam } from '../data/team';
 import { renderDialog } from '../utils/components';
 import AccessRequestDialog from './AccessRequestDialog.vue';
+import AccessRequestStatusDialog from './AccessRequestStatusDialog.vue';
 
 const props = defineProps<{
 	doctype: string;
@@ -55,6 +64,14 @@ const canRequestAccess = computed(() => {
 
 const isOwner = computed(() => {
 	return props.doc?.team === team.doc?.name;
+});
+
+const DialogComponent = computed(() => {
+	if (props.doc) {
+		return AccessRequestStatusDialog;
+	} else {
+		return AccessRequestDialog;
+	}
 });
 
 const show = computed(() => {
