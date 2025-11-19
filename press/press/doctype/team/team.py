@@ -522,7 +522,6 @@ class Team(Document):
 		self.partner_status = "Active"
 		self.save(ignore_permissions=True)
 		self.create_partner_referral_code()
-		self.create_new_invoice()
 
 	@frappe.whitelist()
 	def disable_erpnext_partner_privileges(self):
@@ -546,58 +545,6 @@ class Team(Document):
 		if not data:
 			frappe.throw("Partner not found on frappe.io")
 		return frappe.utils.getdate(data.get("start_date"))
-
-	def create_new_invoice(self):
-		"""
-		After enabling partner privileges, new invoice should be created
-		to track the partner achievements
-		"""
-		# check if any active user with an invoice
-		if not frappe.get_all("Invoice", {"team": self.name, "docstatus": ("<", 2)}, pluck="name"):
-			return
-		today = frappe.utils.getdate()
-		current_invoice = frappe.db.get_value(
-			"Invoice",
-			{
-				"team": self.name,
-				"type": "Subscription",
-				"docstatus": 0,
-				"period_end": frappe.utils.get_last_day(today),
-			},
-			"name",
-		)
-
-		if not current_invoice:
-			return
-
-		current_inv_doc = frappe.get_doc("Invoice", current_invoice)
-
-		if current_inv_doc.partner_email and current_inv_doc.partner_email == self.partner_email:
-			# don't create new invoice if partner email is set
-			return
-
-		if (
-			not current_invoice
-			or today == frappe.utils.get_last_day(today)
-			or today == current_inv_doc.period_start
-		):
-			# don't create invoice if new team or today is the last day of the month
-			return
-		current_inv_doc.period_end = frappe.utils.add_days(today, -1)
-		current_inv_doc.flags.on_partner_conversion = True
-		current_inv_doc.save()
-		current_inv_doc.finalize_invoice()
-
-		# create invoice
-		invoice = frappe.get_doc(
-			{
-				"doctype": "Invoice",
-				"team": self.name,
-				"type": "Subscription",
-				"period_start": today,
-			}
-		)
-		invoice.insert()
 
 	def create_referral_bonus(self, referrer_id):
 		# Get team name with this this referrer id
