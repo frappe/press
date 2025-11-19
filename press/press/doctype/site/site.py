@@ -100,6 +100,7 @@ if TYPE_CHECKING:
 
 	from frappe.types.DF import Table
 
+	from press.press.doctype.account_request.account_request import AccountRequest
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.bench_app.bench_app import BenchApp
@@ -600,7 +601,7 @@ class Site(Document, TagHelpers):
 	def capture_signup_event(self, event: str):
 		team = frappe.get_doc("Team", self.team)
 		if frappe.db.count("Site", {"team": team.name}) <= 1 and team.account_request:
-			account_request: "AccountRequest" = frappe.get_doc("Account Request", team.account_request)
+			account_request: AccountRequest = frappe.get_doc("Account Request", team.account_request)
 			if not (account_request.is_saas_signup() or account_request.invited_by_parent_team):
 				capture(event, "fc_signup", team.user)
 
@@ -782,7 +783,7 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
-	def install_app(self, app: str, plan: str | None = None) -> str:
+	def install_app(self, app: str, plan: str | None = None) -> str | None:
 		self.check_marketplace_app_installable(plan)
 
 		if find(self.apps, lambda x: x.app == app):
@@ -1394,18 +1395,18 @@ class Site(Document, TagHelpers):
 		return None
 
 	def add_domain_to_config(self, domain: str):
-		domains = self.get_config_value_for_key("domains") or []
-		domains.append(domain)
-		self._update_configuration({"domains": domains})
+		domains = set(self.get_config_value_for_key("domains") or [])
+		domains.add(domain)
+		self._update_configuration({"domains": list(domains)})
 		agent = Agent(self.server)
 		agent.add_domain(self, domain)
 
 	def remove_domain_from_config(self, domain):
-		domains = self.get_config_value_for_key("domains") or []
+		domains = set(self.get_config_value_for_key("domains") or [])
 		if domain not in domains:
 			return
-		domains.remove(domain)
-		self._update_configuration({"domains": domains})
+		domains.discard(domain)
+		self._update_configuration({"domains": list(domains)})
 		agent = Agent(self.server)
 		agent.remove_domain(self, domain)
 
@@ -1415,7 +1416,7 @@ class Site(Document, TagHelpers):
 		if domain == self.name:
 			frappe.throw("Cannot delete default site_domain")
 		site_domain = frappe.get_all("Site Domain", filters={"site": self.name, "domain": domain})[0]
-		site_domain = frappe.delete_doc("Site Domain", site_domain.name)
+		frappe.delete_doc("Site Domain", site_domain.name)
 
 	def retry_add_domain(self, domain):
 		if check_dns(self.name, domain)["matched"]:
@@ -1758,6 +1759,7 @@ class Site(Document, TagHelpers):
 				"Server is unresponsive. Please try again in some time.",
 				frappe.ValidationError,
 			)
+		return None
 
 	def get_login_sid(self, user: str = "Administrator"):
 		sid = None
@@ -3052,7 +3054,7 @@ class Site(Document, TagHelpers):
 	@classmethod
 	def get_sites_with_backup_time(cls, backup_type: Literal["Logical", "Physical"]) -> list[dict]:
 		site_backup_times = frappe.qb.DocType("Site Backup Time")
-		site_filters = {"status": "Active"}
+		site_filters: dict[str, Any] = {"status": "Active"}
 		if backup_type == "Logical":
 			site_filters.update(
 				{
@@ -3105,7 +3107,7 @@ class Site(Document, TagHelpers):
 			{"status": "Active", "skip_scheduled_backups": False},
 			pluck="name",
 		)
-		filters = {
+		filters: dict[str, Any] = {
 			"name": ("in", sites),
 			"server": ("in", servers_with_backups),
 		}
@@ -3282,7 +3284,7 @@ class Site(Document, TagHelpers):
 			},
 			{
 				"action": "Deactivate site",
-				"description": "Deactivating will put the site in maintenance mode and make it inacessible",
+				"description": "Deactivating will put the site in maintenance mode and make it inaccessible",
 				"button_label": "Deactivate",
 				"condition": self.status == "Active",
 				"doc_method": "deactivate",
@@ -4296,10 +4298,10 @@ def options_for_new(group: str | None = None, selected_values=None) -> dict:
 
 	versions = []
 	bench = None
-	apps = []
+	apps: list[dict] = []
 	clusters = []
 
-	versions_filters = {"public": True}
+	versions_filters: dict[str, Any] = {"public": True}
 	if not group:
 		versions_filters.update({"status": ("!=", "End of Life")})
 
