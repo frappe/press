@@ -78,7 +78,7 @@ export default {
 						),
 				},
 				{
-					label: 'Certificates',
+					label: 'Certifications',
 					route: { name: 'PartnerCertificates' },
 					condition: () =>
 						Boolean(
