@@ -135,7 +135,21 @@ class AppRelease(Document):
 		)
 
 	def _deploy_bench_group(self, bench_group: str) -> None:
-		"""Deploy bench group with this app update"""
+		"""Deploy bench group with this particular app update
+		1. Checks if the bench group already has running deploys
+		2. Checks if the bench group has the app that is being deployed
+		3. Deploy candidate can be created from the release group
+		"""
+
+		if self._has_running_builds(bench_group):
+			return
+
+		bench_group_has_app = frappe.db.get_value(
+			"Release Group App", {"parent": bench_group, "source": self.source}
+		)
+		if not bench_group_has_app:
+			return
+
 		group: "ReleaseGroup" = frappe.get_doc("Release Group", bench_group)
 		candidate: "DeployCandidate" = group.create_deploy_candidate(
 			apps_to_update=[app for app in group.apps if app.source == self.source]
@@ -154,23 +168,13 @@ class AppRelease(Document):
 			return
 
 		if bench_group:
-			if self._has_running_builds(bench_group):
-				return
 			self._deploy_bench_group(bench_group)
 
 		else:
 			for bench_group in frappe.db.get_all(
 				"Release Group", {"team": self.team, "enabled": 1}, pluck="name"
 			):
-				if self._has_running_builds(bench_group):
-					continue
-
-				bench_group_has_app = frappe.db.get_value(
-					"Release Group App", {"parent": bench_group, "source": self.source}
-				)
-
-				if bench_group_has_app:
-					self._deploy_bench_group(bench_group)
+				self._deploy_bench_group(bench_group)
 
 	def after_insert(self):
 		self.create_release_differences()
