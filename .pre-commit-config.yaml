@@ -75,4 +75,9 @@ repos:
         args:
           [--ignore-missing-imports, --follow-imports=skip, --exclude-gitignore]
         exclude: ^tests/|test_.*\.py$ # Exclude the 'tests/' directory and files starting with 'test_'
-        additional_dependencies: [types-requests<2.32]
+        additional_dependencies:
+          [
+            types-requests<2.32,
+            types-pytz~=2025.2,
+            types-python-dateutil~=2.9.0,
+          ]
