@@ -22,9 +22,7 @@
 					{{ banner.message }}
 				</div>
 				<p v-if="isReceived" class="leading-normal">
-					Do you want to accept or reject this access request from
-					<span class="font-medium">{{ request.doc?.requested_by }}</span
-					>?
+					Do you want to accept or reject this access request?
 				</p>
 				<div class="rounded-sm border divide-y">
 					<div
