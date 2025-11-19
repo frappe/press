@@ -102,12 +102,11 @@ const showMessage = ref(false);
 const checkCertification = createResource({
 	url: 'press.api.partner.can_apply_for_certificate',
 	onSuccess: (data) => {
-		console.log('response', data);
-		showMessage.value = data;
+		showMessage.value = !data;
 	},
 });
 
-let batch_link = '';
+let batch_link = ref('');
 async function handleApplyForCertificate() {
 	if (!userName.value || !certificateType.value) {
 		toast.error('Please select a member and certificate type');
@@ -117,7 +116,7 @@ async function handleApplyForCertificate() {
 	try {
 		await checkCertification.submit();
 		if (showMessage.value) {
-			batch_link = `https://school.frappe.io/lms/billing/certificate/${certificateType.value}`;
+			batch_link.value = `https://school.frappe.io/lms/billing/certificate/${certificateType.value}`;
 			throw new Error(
 				'You are not eligible for a free certification at this time.',
 			);
