@@ -579,9 +579,11 @@ def get_partner_members(partner):
 
 
 @frappe.whitelist()
-def get_partner_leads(status=None, engagement_stage=None):
+def get_partner_leads(lead_name=None, status=None, engagement_stage=None):
 	team = get_current_team()
 	filters = {"partner_team": team}
+	if lead_name:
+		filters["lead_name"] = ("like", f"%{lead_name}%")
 	if status:
 		filters["status"] = status
 	if engagement_stage:
