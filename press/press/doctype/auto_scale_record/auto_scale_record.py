@@ -170,7 +170,7 @@ class AutoScaleRecord(Document, StepHandler):
 		self.handle_agent_job(step, job)
 
 	def mark_server_as_auto_scale(self, step: "ScaleStep"):
-		"""Mark server as auto scaled"""
+		"""Mark server as ready to auto scale"""
 		step.status = Status.Running
 		step.save()
 
