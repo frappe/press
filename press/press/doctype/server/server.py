@@ -3032,8 +3032,10 @@ class Server(BaseServer):
 		last_auto_scale_at = frappe.db.get_value(
 			"Auto Scale Record", {"primary_server": self.name, "status": "Success"}, "modified"
 		)
-		time_diff = frappe.utils.now_datetime() - last_auto_scale_at
 		cool_off_period = frappe.db.get_single_value("Press Settings", "cool_off_period")
+		time_diff = (
+			frappe.utils.now_datetime() - last_auto_scale_at if last_auto_scale_at else cool_off_period + 1
+		)
 
 		running_auto_scale = frappe.db.get_value(
 			"Auto Scale Record", {"primary_server": self.name, "status": "Running"}
