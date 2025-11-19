@@ -182,10 +182,15 @@ def get_partner_contribution_list(partner_email):
 	partner_currency = frappe.db.get_value(
 		"Team", {"erpnext_partner": 1, "partner_email": partner_email}, "currency"
 	)
+	month_start = frappe.utils.get_first_day(today())
 	month_end = frappe.utils.get_last_day(today())
 	invoices = frappe.get_all(
 		"Invoice",
-		{"partner_email": partner_email, "due_date": month_end, "type": "Subscription"},
+		{
+			"partner_email": partner_email,
+			"due_date": ("between", [month_start, month_end]),
+			"type": "Subscription",
+		},
 		["due_date", "customer_name", "total_before_discount", "currency", "status"],
 	)
 
