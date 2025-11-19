@@ -1051,24 +1051,31 @@ class Bench(Document):
 	def check_ongoing_site_updates(self):
 		frappe.db.commit()
 		site_updates = frappe.qb.DocType("Site Update")
+
 		ongoing_site_updates = (
 			frappe.qb.from_(site_updates)
 			.select(site_updates.name)
 			.where((site_updates.source_bench == self.name) | (site_updates.destination_bench == self.name))
+			.where(site_updates.status.isin(["Pending", "Running", "Failure", "Recovering", "Scheduled"]))
+			.limit(1)
+		).run()
+
+		if ongoing_site_updates:
+			frappe.throw("Cannot archive due to ongoing site update.", ArchiveBenchError)
+
+		fatal_site_updates = (
+			frappe.qb.from_(site_updates)
+			.select(site_updates.name)
+			.where((site_updates.source_bench == self.name) | (site_updates.destination_bench == self.name))
 			.where(
-				(site_updates.status.isin(["Pending", "Running", "Failure", "Recovering", "Scheduled"]))
-				| (
-					(site_updates.status == "Fatal")
-					& (
-						site_updates.creation
-						> frappe.utils.add_to_date(None, days=-EMPTY_BENCH_COURTESY_DAYS)
-					)
-				)
+				(site_updates.status == "Fatal")
+				& (site_updates.creation > frappe.utils.add_to_date(None, days=-EMPTY_BENCH_COURTESY_DAYS))
 			)
 			.limit(1)
 		).run()
-		if ongoing_site_updates:
-			frappe.throw("Cannot archive due to ongoing site update.", ArchiveBenchError)
+
+		if fatal_site_updates:
+			frappe.throw("Cannot archive due to recent fatal site update.", ArchiveBenchError)
 
 	def check_unarchived_sites(self):
 		frappe.db.commit()
