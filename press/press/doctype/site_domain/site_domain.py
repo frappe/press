@@ -194,7 +194,7 @@ class SiteDomain(Document):
 			frappe.db.set_value("Agent Job", job.name, "host", None)
 
 	def remove_domain_from_site_config(self):
-		site_doc = frappe.get_doc("Site", self.site)
+		site_doc: Site = frappe.get_doc("Site", self.site)
 		if site_doc.status == "Archived":
 			return
 		site_doc.remove_domain_from_config(self.domain)
