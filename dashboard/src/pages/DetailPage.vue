@@ -25,6 +25,12 @@
 					/>
 				</div>
 			</div>
+			<AccessRequestButton
+				v-if="!$resources.document?.doc"
+				:doctype="object.doctype"
+				:docname="name"
+				:error="$resources.document.get.error"
+			/>
 		</div>
 	</Header>
 	<div>
@@ -59,6 +65,7 @@ import DetailPageError from '../components/DetailPageError.vue';
 import { Breadcrumbs } from 'frappe-ui';
 import { getObject } from '../objects';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
+import AccessRequestButton from '../components/AccessRequestButton.vue';
 
 let subscribed = {};
 
