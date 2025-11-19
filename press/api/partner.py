@@ -689,5 +689,16 @@ def add_new_lead(lead_details):
 
 
 @frappe.whitelist()
+def can_apply_for_certificate():
+	from press.utils.billing import get_frappe_io_connection
+
+	team = get_current_team(get_doc=True)
+	client = get_frappe_io_connection()
+	response = client.get_api("check_free_certificate", {"partner_email": team.partner_email})
+
+	return response  # noqa: RET504
+
+
+@frappe.whitelist()
 def delete_followup(id, lead_name):
 	frappe.delete_doc("Lead Followup", id)
