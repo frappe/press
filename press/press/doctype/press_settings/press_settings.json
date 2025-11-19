@@ -833,7 +833,7 @@
    "read_only": 1
   },
   {
-   "default": "press-deploy",
+   "default": "fc-deploy",
    "fieldname": "column_break_36",
    "fieldtype": "Column Break"
   },
@@ -1537,12 +1537,13 @@
   {
    "fieldname": "deploy_marker",
    "fieldtype": "Data",
-   "label": "Deploy Marker"
+   "label": "Deploy Marker",
+   "options": "If found in commit message deploy will be triggered"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-11-18 22:55:24.230459",
+ "modified": "2025-11-19 10:27:32.401458",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
