@@ -128,7 +128,9 @@ def run_signup_e2e():  # noqa: C901
 
 
 def clean_up():
-	signup_teams = frappe.db.get_all("Team", {"user": ("like", "%signup.test"), "enabled": 1}, pluck="name")
+	signup_teams = frappe.db.get_all(
+		"Team", {"user": ("like", "%fc-signup-test+%"), "enabled": 1}, pluck="name"
+	)
 	if not signup_teams:
 		return
 
