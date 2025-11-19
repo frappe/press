@@ -355,11 +355,13 @@ class AgentJob(Document):
 			"Incident",
 			{
 				"server": self.server,
-				"status": ("in", "Auto-Resolved", "Resolved", "Press-Resolved"),
+				"status": ("in", ["Auto-Resolved", "Resolved", "Press-Resolved"]),
 				"creation": (
 					"between",
-					frappe.utils.add_to_date(self.creation, minutes=-15),
-					self.creation,
+					[
+						frappe.utils.add_to_date(self.creation, minutes=-15),
+						self.creation,
+					],
 				),  # incident didn't happen because of job
 			},
 		):
