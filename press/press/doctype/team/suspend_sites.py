@@ -95,13 +95,14 @@ def get_teams_with_unpaid_invoices():
 			& (invoice.docstatus < 2)
 			& (invoice.type == "Subscription")
 			& (site.free == 0)
-			& (site.plan).notin(ignorable_plans)
+			# & (site.plan).notin(ignorable_plans)
 			& (invoice.period_end <= last_day)
 		)
 		.select(invoice.team)
 		.distinct()
 	)
-
+	if ignorable_plans:
+		query = query.where((site.plan).notin(ignorable_plans))
 	first_day = get_first_day(today)
 	two_weeks = add_days(first_day, 14)  # 15th day of the month
 	if today < two_weeks:
