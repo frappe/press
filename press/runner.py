@@ -309,14 +309,6 @@ class StepHandler:
 	) -> None:
 		step.attempt = 1 if not step.attempt else step.attempt + 1
 		machine_status = frappe.db.get_value("Virtual Machine", virtual_machine, "status")
-
-		# Try to sync status in every attempt
-		try:
-			virtual_machine = frappe.get_doc("Virtual Machine", virtual_machine)
-			virtual_machine.sync()
-		except Exception:
-			pass
-
 		step.status = Status.Running if machine_status != expected_status else Status.Success
 		step.save()
 
