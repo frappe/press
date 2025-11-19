@@ -8,7 +8,6 @@ from datetime import timezone as tz
 from typing import TYPE_CHECKING
 
 import frappe
-import frappe.utils
 import requests
 from frappe.utils import convert_utc_to_timezone, flt
 from frappe.utils.caching import redis_cache
@@ -704,7 +703,3 @@ def benches_are_idle(server: str, access_token: str) -> None:
 		)
 		auto_scale_record.insert()
 		frappe.set_user(current_user)
-	else:
-		print(
-			f"NOT running as running_scale_down {running_scale_down} is_server_scaled_up {is_server_scaled_up}"
-		)
