@@ -8,6 +8,7 @@ from datetime import timezone as tz
 from typing import TYPE_CHECKING
 
 import frappe
+import frappe.utils
 import requests
 from frappe.utils import convert_utc_to_timezone, flt
 from frappe.utils.caching import redis_cache
@@ -688,7 +689,7 @@ def benches_are_idle(server: str, access_token: str) -> None:
 		not running_scale_down
 		and is_server_scaled_up
 		and scaled_up_at
-		and (datetime.now() - scaled_up_at) > timedelta(seconds=cool_off_period or 300)
+		and (frappe.utils.now_datetime() - scaled_up_at) > timedelta(seconds=cool_off_period or 300)
 	)
 	if should_scale_down:
 		# Scale down here
