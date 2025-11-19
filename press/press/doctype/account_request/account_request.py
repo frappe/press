@@ -9,7 +9,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import get_url, random_string
 
-from press.decorators import settings
+from press.guards import settings
 from press.utils import disposable_emails, get_country_info, is_valid_email_address, log_error
 from press.utils.otp import generate_otp
 from press.utils.telemetry import capture

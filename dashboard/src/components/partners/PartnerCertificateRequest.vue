@@ -6,7 +6,7 @@
 			:options="{ title: 'Apply for Certification' }"
 		>
 			<template #body-content>
-				<div v-if="canApply">
+				<div v-if="!showMessage">
 					<p class="pb-3 text-p-base">
 						Enter the details to apply for a certificate.
 					</p>
@@ -32,13 +32,17 @@
 							class="w-full"
 							variant="solid"
 							label="Apply for Certificate"
-							@click="applyForCertificate.submit()"
+							@click="handleApplyForCertificate()"
 						/>
 					</div>
 				</div>
 				<div v-else>
 					<p class="text-p-base">
-						You can only apply for a maximum of 2 free certificates.
+						You have used both of your free certifications. Please navigate to
+						<a :href="batch_link" target="_blank" class="underline">
+							this batch
+						</a>
+						and complete the billing process to enroll in the paid batch.
 					</p>
 				</div>
 			</template>
@@ -48,8 +52,9 @@
 
 <script setup>
 import { defineEmits, onMounted, ref } from 'vue';
-import { createResource, createListResource } from 'frappe-ui';
+import { createResource } from 'frappe-ui';
 import { getTeam } from '../../data/team';
+import { toast } from 'vue-sonner';
 
 const courseTypes = [
 	{ label: 'Framework', value: 'frappe-developer-certification' },
@@ -79,34 +84,49 @@ const applyForCertificate = createResource({
 			certificate_type: certificateType.value,
 		};
 	},
-	validate: () => {
-		if (!userName.value || !certificateType.value) {
-			throw new Error('Please select a member and certificate type');
-		}
-	},
 	onSuccess: () => {
 		show.value = false;
+		toast.success(
+			'Certificate application submitted successfully. You will receive an email regarding the confirmation of your registration in a few minutes.',
+		);
 		emit('success');
 	},
 	onError: (error) => {
 		console.error(error);
+		toast.error(error.message || 'An error occurred during application.');
 	},
 });
 
-const canApply = ref(true);
-createListResource({
-	doctype: 'Partner Certificate',
-	fields: ['name'],
-	filters: {
-		team: team.name,
-		free: 1,
-	},
-	cache: 'freeCertificates',
-	auto: true,
+const showMessage = ref(false);
+
+const checkCertification = createResource({
+	url: 'press.api.partner.can_apply_for_certificate',
 	onSuccess: (data) => {
-		canApply.value = Boolean(data.length < 2);
+		showMessage.value = !data;
 	},
 });
+
+let batch_link = ref('');
+async function handleApplyForCertificate() {
+	if (!userName.value || !certificateType.value) {
+		toast.error('Please select a member and certificate type');
+		return;
+	}
+
+	try {
+		await checkCertification.submit();
+		if (showMessage.value) {
+			batch_link.value = `https://school.frappe.io/lms/billing/certificate/${certificateType.value}`;
+			throw new Error(
+				'You are not eligible for a free certification at this time.',
+			);
+		}
+		await applyForCertificate.submit();
+	} catch (error) {
+		console.error(error);
+		toast.error(error.message || 'An unexpected error occurred.');
+	}
+}
 
 const emit = defineEmits(['success']);
 </script>

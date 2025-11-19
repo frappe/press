@@ -5,6 +5,7 @@ import os
 import shlex
 import shutil
 import subprocess
+import typing
 from datetime import datetime
 from typing import Optional, TypedDict
 
@@ -14,6 +15,11 @@ from frappe.model.document import Document
 from press.api.github import get_access_token
 from press.press.doctype.app_source.app_source import AppSource
 from press.utils import log_error
+
+if typing.TYPE_CHECKING:
+	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.release_group.release_group import ReleaseGroup
+	from press.press.doctype.resource_tag.resource_tag import ResourceTag
 
 
 class AppReleaseDict(TypedDict):
@@ -100,6 +106,89 @@ class AppRelease(Document):
 		teams = frappe.get_all("Auto Release Team", {"parent": "Marketplace Settings"}, pluck="team")
 		if self.team in teams or self.app in apps:
 			self.status = "Approved"
+
+	def _has_auto_deploy_marker(self) -> tuple[bool, str | None]:
+		"""<deploy-marker>-<bench-group> | <deploy-marker>"""
+		deploy_marker = frappe.db.get_single_value("Press Settings", "deploy_marker", cache=False)
+
+		# Acts as a feature flag for global auto deploys
+		if not deploy_marker or not self.message or deploy_marker not in self.message:
+			return False, None
+
+		bench_group = self.message.split(deploy_marker)[-1]
+		bench_group = bench_group.replace("-", "", 1) if bench_group else None
+
+		return True, bench_group
+
+	def _validate_bench_group(self, bench_group: str) -> bool:
+		"""Check if bench group exists and belongs to the team"""
+		try:
+			bench_group_doc: "ReleaseGroup" = frappe.get_doc("Release Group", bench_group)
+			return bench_group_doc.team == self.team
+		except frappe.DoesNotExistError:
+			return False
+
+	def _has_running_builds(self, bench_group: str) -> bool:
+		return bool(
+			frappe.get_value(
+				"Deploy Candidate Build",
+				{"status": ("in", ("Pending", "Running", "Scheduled")), "group": bench_group},
+			)
+		)
+
+	def _deploy_bench_group(self, bench_group: str) -> None:
+		"""Deploy bench group with this particular app update
+		1. Checks if the bench group already has running deploys
+		2. Checks if the bench group has the app that is being deployed
+		3. Deploy candidate can be created from the release group
+		"""
+
+		if self._has_running_builds(bench_group):
+			return
+
+		bench_group_has_app = frappe.db.get_value(
+			"Release Group App", {"parent": bench_group, "source": self.source}
+		)
+		if not bench_group_has_app:
+			return
+
+		group: "ReleaseGroup" = frappe.get_doc("Release Group", bench_group)
+		candidate: "DeployCandidate" = group.create_deploy_candidate(
+			apps_to_update=[app for app in group.apps if app.source == self.source]
+		)
+		if candidate:
+			candidate.schedule_build_and_deploy()
+
+	def trigger_deploy_via_commit_markers(self):
+		"""Check if the commit has deploy markers and trigger deploy for no bench groups
+		passed deploy bench groups with tag auto-deploy"""
+		deploy, bench_group = self._has_auto_deploy_marker()
+
+		if not deploy:
+			return
+
+		if bench_group and not self._validate_bench_group(bench_group):
+			return
+
+		if bench_group:
+			self._deploy_bench_group(bench_group)
+
+		else:
+			ReleaseGroup: "ReleaseGroup" = frappe.qb.DocType("Release Group")
+			ResourceTag: "ResourceTag" = frappe.qb.DocType("Resource Tag")
+
+			release_groups_with_auto_deploy = (
+				frappe.qb.from_(ReleaseGroup)
+				.join(ResourceTag)
+				.on(ResourceTag.parent == ReleaseGroup.name)
+				.where(ResourceTag.tag_name == "auto-deploy")
+				.where(ReleaseGroup.enabled == 1)
+				.where(ReleaseGroup.team == self.team)
+				.select(ReleaseGroup.name)
+				.run(pluck="name")
+			)
+			for bench_group in release_groups_with_auto_deploy:
+				self._deploy_bench_group(bench_group)
 
 	def after_insert(self):
 		self.create_release_differences()
@@ -268,6 +357,7 @@ class AppRelease(Document):
 
 	def auto_deploy(self):
 		current_user = frappe.session.user
+		created_deploys = False
 		try:
 			frappe.set_user("Administrator")
 			groups = frappe.get_all(
@@ -281,11 +371,16 @@ class AppRelease(Document):
 					{"status": ("in", ("Pending", "Running")), "group": group.parent},
 				):
 					continue
-				group = frappe.get_doc("Release Group", group.parent)
+				group: "ReleaseGroup" = frappe.get_doc("Release Group", group.parent)
 				apps = [app.as_dict() for app in group.apps if app.enable_auto_deploy]
-				candidate = group.create_deploy_candidate(apps)
+				candidate: "DeployCandidate" = group.create_deploy_candidate(apps)
 				if candidate:
 					candidate.schedule_build_and_deploy()
+					created_deploys = True
+
+			if not created_deploys:
+				self.trigger_deploy_via_commit_markers()
+
 		finally:
 			frappe.set_user(current_user)
 

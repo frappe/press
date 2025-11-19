@@ -64,7 +64,7 @@ def run_signup_e2e():  # noqa: C901
 	if otp_helper:
 		env["OTP_HELPER_ENDPOINT"] = str(otp_helper)
 
-	cmd = ["npm", "run", "test:e2e"]
+	cmd = ["npm", "run", "test:e2e", "--", "--project=cron"]
 	frappe.log(
 		f"signup_e2e: starting Playwright test (products={env.get('PRODUCT_TRIALS')} base_url={env.get('BASE_URL')} timeout={timeout}s)"
 	)
@@ -79,7 +79,7 @@ def run_signup_e2e():  # noqa: C901
 			text=True,
 		)
 	except FileNotFoundError:
-		frappe.log("signup_e2e: failed to spawn yarn (is Node/Yarn installed in this environment?)")
+		frappe.log("signup_e2e: failed to spawn npm (is Node/npm installed in this environment?)")
 		return
 
 	output_lines = []
@@ -128,7 +128,9 @@ def run_signup_e2e():  # noqa: C901
 
 
 def clean_up():
-	signup_teams = frappe.db.get_all("Team", {"user": ("like", "%signup.test"), "enabled": 1}, pluck="name")
+	signup_teams = frappe.db.get_all(
+		"Team", {"user": ("like", "%fc-signup-test+%"), "enabled": 1}, pluck="name"
+	)
 	if not signup_teams:
 		return
 

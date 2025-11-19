@@ -22,6 +22,7 @@ from press.press.doctype.team.team import get_child_team_members
 from press.utils import get_current_team
 
 if TYPE_CHECKING:
+	from press.press.doctype.auto_scale_record.auto_scale_record import AutoScaleRecord
 	from press.press.doctype.cluster.cluster import Cluster
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.server.server import Server
@@ -663,3 +664,51 @@ def get_timespan_timegrain(duration: str) -> tuple[int, int]:
 	}[duration]
 
 	return timespan, timegrain
+
+
+@frappe.whitelist(allow_guest=True)
+def benches_are_idle(server: str, access_token: str) -> None:
+	"""Shut down the secondary server if all benches are idle.
+
+	This function is only triggered by secondary servers:
+	https://github.com/frappe/agent/pull/346/files#diff-7355d9c50cadfa3f4c74fc77a4ad8ab08e4da8f6c3326bbf9b0de0f00a0aa0daR87-R93
+	"""
+	from passlib.hash import pbkdf2_sha256 as pbkdf2
+
+	server_doc = frappe.get_cached_doc("Server", server)
+	agent_password = server_doc.get_password("agent_password")
+	current_user = frappe.session.user
+
+	if not pbkdf2.verify(agent_password, access_token):
+		return
+
+	primary_server, is_server_scaled_up = frappe.db.get_value(
+		"Server", {"secondary_server": server}, ["name", "scaled_up"]
+	)
+	running_scale_down = frappe.db.get_value(
+		"Auto Scale Record", {"secondary_server": server, "status": ("IN", ("Running", "Pending"))}
+	)
+	scaled_up_at = frappe.db.get_value(
+		"Auto Scale Record", {"secondary_server": server, "scale_up": True}, "modified"
+	)
+	cool_off_period = frappe.db.get_single_value("Press Settings", "cool_off_period")
+
+	should_scale_down = (
+		not running_scale_down
+		and is_server_scaled_up
+		and scaled_up_at
+		and (frappe.utils.now_datetime() - scaled_up_at) > timedelta(seconds=cool_off_period or 300)
+	)
+	if should_scale_down:
+		# Scale down here
+		frappe.set_user("Administrator")
+		auto_scale_record: "AutoScaleRecord" = frappe.get_doc(
+			{
+				"doctype": "Auto Scale Record",
+				"scale_up": False,
+				"scale_down": True,
+				"primary_server": primary_server,
+			}
+		)
+		auto_scale_record.insert()
+		frappe.set_user(current_user)
