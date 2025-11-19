@@ -79,7 +79,7 @@ class RegistryServer(BaseServer):
 		)
 		certificate = frappe.get_doc("TLS Certificate", certificate_name)
 		access_key = settings.docker_s3_access_key
-		secret_key = settings.get_password("docker_s3_secret_key")
+		secret_key = settings.get_password("docker_s3_secret_key", raise_exception=False)
 		variables = {
 			"server": self.name,
 			"workers": 1,
