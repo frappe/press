@@ -21,7 +21,7 @@
 				>
 					{{ banner.message }}
 				</div>
-				<p v-if="isReceived" class="leading-normal">
+				<p v-if="isReceived && isPending" class="leading-normal">
 					Do you want to accept or reject this access request?
 				</p>
 				<div class="rounded-sm border divide-y">
@@ -85,13 +85,19 @@ const props = defineProps<{
 
 const open = ref(true);
 const team = getTeam();
+
 const request = createDocumentResource({
 	doctype: 'Support Access',
 	name: props.name,
 	auto: true,
 });
+
 const isReceived = computed(() => {
 	return team.doc?.name === request.doc?.target_team;
+});
+
+const isPending = computed(() => {
+	return request.doc?.status === 'Pending';
 });
 
 const permissions = computed(() =>
