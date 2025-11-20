@@ -144,6 +144,7 @@ class Team(Document):
 		"partner_status",
 		"receive_budget_alerts",
 		"monthly_alert_threshold",
+		"company_name",
 	)
 
 	def get_doc(self, doc):
