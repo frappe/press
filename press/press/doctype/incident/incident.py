@@ -174,10 +174,10 @@ class Incident(WebsiteGenerator):
 			timespan,
 			timespan + 1,
 		)["datasets"]
-		if load == []:
-			ret = -1  # no response
-		else:
+		if load:
 			ret = load[0]["values"][-1]
+		else:
+			ret = -1  # no response
 		self.add_description(f"{name} load avg(5m): {ret if ret != -1 else 'No data'}")
 		return ret
 
