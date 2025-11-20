@@ -246,7 +246,6 @@ class SupportAccess(Document):
 			recipients=team_email,
 			template="access_request",
 			args={
-				"requested_by": self.requested_by,
 				"reason": self.reason,
 				"resources": self.resources,
 			},
