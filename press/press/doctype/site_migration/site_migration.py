@@ -99,7 +99,7 @@ class SiteMigration(Document):
 			return
 		domains = frappe.get_all(
 			"Site Domain",
-			{"site": self.site, "domain": ("!=", self.name)},
+			{"site": self.site, "domain": ("!=", self.site)},
 			pluck="domain",
 		)
 
