@@ -878,7 +878,7 @@ class Cluster(Document):
 		self,
 		doctype: str,
 		title: str,
-		plan: "ServerPlan" = None,
+		plan: "ServerPlan" | None = None,
 		domain: str | None = None,
 		team: str | None = None,
 		create_subscription=True,
