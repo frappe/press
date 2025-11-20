@@ -13,6 +13,7 @@ from frappe.model.document import Document
 
 from press.agent import Agent
 from press.exceptions import (
+	ActiveDomainsForStandalone,
 	CannotChangePlan,
 	InactiveDomains,
 	InsufficientSpaceOnServer,
@@ -82,11 +83,31 @@ class SiteMigration(Document):
 		self.validate_apps()
 		self.validate_bench()
 		self.check_for_inactive_domains()
+		self.check_for_existing_domains()
 		self.check_enough_space_on_destination_server()
 		if get_ongoing_migration(self.site, scheduled=True):
 			frappe.throw(f"Ongoing/Scheduled Site Migration for the site {frappe.bold(self.site)} exists.")
 		site: Site = frappe.get_doc("Site", self.site)
 		site.check_move_scheduled()
+
+	def check_for_existing_domains(self):
+		"""
+		If destination server is standalone, custom domains need to be removed before moving the site and added afterwards.
+		"""
+		is_standalone = frappe.db.get_value("Server", self.destination_server, "is_standalone")
+		if not is_standalone:
+			return
+		domains = frappe.get_all(
+			"Site Domain",
+			{"site": self.site, "domain": ("!=", self.name)},
+			pluck="domain",
+		)
+
+		if domains:
+			frappe.throw(
+				f"Destination server is standalone. Please remove custom domains: ({', '.join(domains)}) before moving the site. They can be added again after the migration is complete.",
+				ActiveDomainsForStandalone,
+			)
 
 	def validate_bench(self):
 		if frappe.db.get_value("Bench", self.destination_bench, "status", for_update=True) != "Active":
@@ -162,6 +183,7 @@ class SiteMigration(Document):
 		self.status = "Pending"
 		self.save()
 		self.check_for_inactive_domains()
+		self.check_for_existing_domains()
 		self.validate_apps()
 		self.check_enough_space_on_destination_server()
 		site: Site = frappe.get_doc("Site", self.site)
@@ -362,6 +384,8 @@ class SiteMigration(Document):
 		self.save()
 
 	def update_next_step_status(self, status: str):
+		if not self.next_step:
+			raise ValueError("No next step to update status for")
 		self.next_step.status = status
 		self.save()
 
@@ -768,6 +792,9 @@ def job_matches_site_migration(job, site_migration_name: str):
 
 def process_site_migration_job_update(job, site_migration_name: str):
 	site_migration = SiteMigration("Site Migration", site_migration_name)
+	if not site_migration.next_step:
+		log_error("No next step found during Site Migration", doc=site_migration)
+		return
 	if job.name != site_migration.next_step.step_job:
 		log_error("Extra Job found during Site Migration", job=job.as_dict())
 		return
@@ -805,7 +832,12 @@ def run_scheduled_migrations():
 				hours=4
 			):  # don't trigger more than 4 hours later scheduled time
 				site_migration.cleanup_and_fail(reason=str(e))
-		except (MissingAppsInBench, InsufficientSpaceOnServer, InactiveDomains) as e:
+		except (
+			MissingAppsInBench,
+			InsufficientSpaceOnServer,
+			InactiveDomains,
+			ActiveDomainsForStandalone,
+		) as e:
 			site_migration.cleanup_and_fail(reason=str(e), force_activate=True)
 		except Exception as e:
 			log_error("Site Migration Start Error", exception=e)
