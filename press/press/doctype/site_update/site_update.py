@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 import random
 from datetime import datetime
-from typing import TYPE_CHECKING, ClassVar, Literal
+from typing import TYPE_CHECKING, ClassVar
 
 import frappe
 import frappe.utils
@@ -316,7 +316,7 @@ class SiteUpdate(Document):
 		self.status = "Pending"
 		self.update_start = frappe.utils.now()
 		self.save()
-		site: "Site" = frappe.get_cached_doc("Site", self.site)
+		site: Site = frappe.get_cached_doc("Site", self.site)
 		try:
 			site.ready_for_move()
 		except SiteAlreadyArchived:
@@ -371,7 +371,7 @@ class SiteUpdate(Document):
 		return frappe.get_cached_value("Frappe Version", version, "number") > 12
 
 	def create_logical_replication_backup_record(self):
-		record: "LogicalReplicationBackup" = frappe.get_doc(
+		record: LogicalReplicationBackup = frappe.get_doc(
 			{"doctype": "Logical Replication Backup", "site": self.site, "execution_stage": "Pre-Migrate"}
 		).insert(ignore_permissions=True)
 		frappe.db.set_value("Site Update", self.name, "logical_replication_backup", record.name)
@@ -380,7 +380,7 @@ class SiteUpdate(Document):
 	def trigger_post_migration_stage_logical_replication_backup(self):
 		if not self.logical_replication_backup:
 			return
-		record: "LogicalReplicationBackup" = frappe.get_doc(
+		record: LogicalReplicationBackup = frappe.get_doc(
 			"Logical Replication Backup", self.logical_replication_backup
 		)
 		record.execution_stage = "Post-Migrate"
@@ -391,7 +391,7 @@ class SiteUpdate(Document):
 	def trigger_failover_stage_logical_replication_backup(self):
 		if not self.logical_replication_backup:
 			return
-		record: "LogicalReplicationBackup" = frappe.get_doc(
+		record: LogicalReplicationBackup = frappe.get_doc(
 			"Logical Replication Backup", self.logical_replication_backup
 		)
 		record.execution_stage = "Failover"
@@ -716,12 +716,7 @@ class SiteUpdate(Document):
 		frappe.db.set_value("Site Update", self.name, "status", status)
 
 
-def update_status(
-	name: str,
-	status: Literal[
-		"Pending", "Running", "Success", "Failure", "Recovering", "Recovered", "Fatal", "Scheduled"
-	],
-):
+def update_status(name: str, status: str):
 	frappe.db.set_value("Site Update", name, "status", status)
 	if status in ("Success", "Failure", "Fatal", "Recovered"):
 		frappe.db.set_value("Site Update", name, "update_end", frappe.utils.now())
@@ -937,7 +932,7 @@ def process_physical_backup_restoration_status_update(name: str):
 
 
 def process_activate_site_job_update(job: AgentJob):
-	if job.reference_doctype != "Site Update":
+	if job.reference_doctype != "Site Update" or not job.reference_name:
 		return
 	if job.status == "Success":
 		# If `Site Update` successful, then mark site as `Active`
@@ -1042,7 +1037,7 @@ def process_update_site_job_update(job: AgentJob):  # noqa: C901
 				"Site Update",
 				site_update.name,
 				"cause_of_failure_is_resolved",
-				job.failed_because_of_agent_update,
+				job.failed_because_of_agent_update or job.failed_because_of_incident,
 			)
 			if not frappe.db.get_value("Site Update", site_update.name, "skipped_backups"):
 				doc = frappe.get_doc("Site Update", site_update.name)

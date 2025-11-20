@@ -7,7 +7,7 @@ import json
 import typing
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
-from statistics import median
+from statistics import median, quantiles
 from typing import Any
 
 import frappe
@@ -91,10 +91,21 @@ class GenerateBuildMetric:
 				"fc_manual_failure": len(self.total_failures["fc_manual_failure"]),
 				"fc_failure": len(self.total_failures["fc_failure"]),
 			},
+			# Pending durations
 			"median_pending_duration": self.build_duration_metrics["median_pending_duration"],
+			"p90_pending_duration": self.build_duration_metrics["p90_pending_duration"],
+			"p99_pending_duration": self.build_duration_metrics["p99_pending_duration"],
+			# Build durations
 			"median_build_duration": self.build_duration_metrics["median_build_duration"],
+			"p90_build_duration": self.build_duration_metrics["p90_build_duration"],
+			"p99_build_duration": self.build_duration_metrics["p99_build_duration"],
+			# Context durations (upload & package)
 			"median_upload_context_duration": self.context_durations["median_upload_duration"],
+			"p90_upload_context_duration": self.context_durations["p90_upload_duration"],
+			"p99_upload_context_duration": self.context_durations["p99_upload_duration"],
 			"median_package_context_duration": self.context_durations["median_package_duration"],
+			"p90_package_context_duration": self.context_durations["p90_package_duration"],
+			"p99_package_context_duration": self.context_durations["p99_package_duration"],
 			"median_deploy_duration": self.deploy_duration_metrics,
 			"failure_frequency": dict(self.failure_frequency.most_common()),
 			"fc_failure_metrics": self.fc_failure_metrics,
@@ -126,7 +137,14 @@ class GenerateBuildMetric:
 		"""What type of user addressable failure is most common"""
 		return Counter(failure["error_key"] for failure in user_failures)
 
+	@staticmethod
+	def p(values, percentile):
+		if not values:
+			return None
+		return quantiles(values, n=100)[percentile - 1]
+
 	def get_context_durations(self) -> ContextDurationType:
+		"""Compute median, p90, and p99 for package/upload durations."""
 		deploy_candidate_build = frappe.qb.DocType("Deploy Candidate Build")
 		deploy_candidate_build_step = frappe.qb.DocType("Deploy Candidate Build Step")
 
@@ -146,12 +164,18 @@ class GenerateBuildMetric:
 		upload_durations = [ctx.duration / 60 for ctx in context_durations if ctx.stage_slug == "upload"]
 
 		return {
-			"median_package_duration": median(package_durations),
-			"median_upload_duration": median(upload_durations),
+			# Package
+			"median_package_duration": median(package_durations) if package_durations else None,
+			"p90_package_duration": self.p(package_durations, 90),
+			"p99_package_duration": self.p(package_durations, 99),
+			# Upload
+			"median_upload_duration": median(upload_durations) if upload_durations else None,
+			"p90_upload_duration": self.p(upload_durations, 90),
+			"p99_upload_duration": self.p(upload_durations, 99),
 		}
 
 	def get_build_duration_metrics(self) -> DurationType:
-		"""Average duration pending / build getting python median"""
+		"""Compute median, p90, and p99 for pending/build durations."""
 		durations = frappe.get_all(
 			"Deploy Candidate Build",
 			{
@@ -163,16 +187,18 @@ class GenerateBuildMetric:
 			["build_duration", "pending_duration"],
 		)
 
-		median_pending_duration = median(
-			[duration["pending_duration"].total_seconds() / 60 for duration in durations]
-		)
-		median_build_duration = median(
-			[duration["build_duration"].total_seconds() / 60 for duration in durations]
-		)
+		pending_minutes = [d["pending_duration"].total_seconds() / 60 for d in durations]
+		build_minutes = [d["build_duration"].total_seconds() / 60 for d in durations]
 
 		return {
-			"median_build_duration": median_build_duration,
-			"median_pending_duration": median_pending_duration,
+			# pending
+			"median_pending_duration": median(pending_minutes) if pending_minutes else None,
+			"p90_pending_duration": self.p(pending_minutes, 90),
+			"p99_pending_duration": self.p(pending_minutes, 99),
+			# build
+			"median_build_duration": median(build_minutes) if build_minutes else None,
+			"p90_build_duration": self.p(build_minutes, 90),
+			"p99_build_duration": self.p(build_minutes, 99),
 		}
 
 	def get_deploy_duration_metrics(self) -> float:

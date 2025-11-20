@@ -698,14 +698,16 @@
    "description": "Is this a secondary server",
    "fieldname": "is_secondary",
    "fieldtype": "Check",
-   "label": "Is Secondary"
+   "label": "Is Secondary",
+   "read_only": 1
   },
   {
    "default": "0",
    "description": "Are the benches running on a shared volume",
    "fieldname": "benches_on_shared_volume",
    "fieldtype": "Check",
-   "label": "Benches on Shared Volume"
+   "label": "Benches on Shared Volume",
+   "read_only": 1
   },
   {
    "fieldname": "auto_scale_trigger",
@@ -718,7 +720,8 @@
    "description": "Check if the benches are running on the secondary server",
    "fieldname": "scaled_up",
    "fieldtype": "Check",
-   "label": "Scaled Up"
+   "label": "Scaled Up",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_ywnx",
@@ -731,7 +734,7 @@
    "link_fieldname": "primary_server"
   }
  ],
- "modified": "2025-11-05 14:24:18.240520",
+ "modified": "2025-11-17 11:29:25.581882",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
@@ -763,6 +766,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

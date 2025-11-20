@@ -50,6 +50,11 @@ export default {
 						width: 0.6,
 					},
 					{
+						label: 'Partner',
+						fieldname: 'team',
+						width: 0.6,
+					},
+					{
 						label: 'Version',
 						fieldname: 'version',
 						width: 0.5,
@@ -95,6 +100,24 @@ export default {
 						},
 					},
 				],
+				filterControls() {
+					return [
+						{
+							type: 'data',
+							fieldname: 'search-text',
+							label: 'Search',
+						},
+						{
+							type: 'select',
+							fieldname: 'course',
+							label: 'Course',
+							options: [
+								{ label: 'Framework', value: 'frappe-developer-certification' },
+								{ label: 'ERPNext', value: 'erpnext-distribution' },
+							],
+						},
+					];
+				},
 				orderBy: 'creation desc',
 			};
 		},

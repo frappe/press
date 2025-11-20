@@ -3,16 +3,12 @@
 from __future__ import annotations
 
 import typing
-from enum import Enum
 
 import frappe
 from frappe.model.document import Document
 
 from press.agent import Agent
-from press.press.doctype.nfs_volume_attachment.nfs_volume_attachment import (
-	StepHandler,
-)
-from press.runner import Ansible
+from press.runner import Ansible, Status, StepHandler
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.nfs_server.nfs_server import NFSServer
@@ -21,16 +17,6 @@ if typing.TYPE_CHECKING:
 	)
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
-
-
-class Status(str, Enum):
-	Pending = "Pending"
-	Running = "Running"
-	Success = "Success"
-	Failure = "Failure"
-
-	def __str__(self):
-		return self.value
 
 
 class NFSVolumeDetachment(Document, StepHandler):
@@ -46,12 +32,35 @@ class NFSVolumeDetachment(Document, StepHandler):
 			NFSVolumeDetachmentStep,
 		)
 
-		nfs_server: DF.Link | None
 		nfs_volume_detachment_steps: DF.Table[NFSVolumeDetachmentStep]
-		primary_server: DF.Link | None
+		primary_server: DF.Link
 		secondary_server: DF.Link | None
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
 	# end: auto-generated types
+
+	def start_secondary_server(self, step: "NFSVolumeDetachmentStep"):
+		"""Start secondary server"""
+		step.status = Status.Running
+		step.save()
+
+		secondary_server_vm = frappe.db.get_value("Server", self.secondary_server, "virtual_machine")
+		virtual_machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", secondary_server_vm)
+
+		if virtual_machine.status != "Running":
+			virtual_machine.start()
+
+		step.status = Status.Success
+		step.save()
+
+	def wait_for_secondary_server_to_start(self, step: "NFSVolumeDetachmentStep"):
+		"""Wait for secondary server to start"""
+		step.status = Status.Running
+		step.is_waiting = True
+		step.save()
+
+		virtual_machine = frappe.db.get_value("Server", self.secondary_server, "virtual_machine")
+
+		self.handle_vm_status_job(step, virtual_machine=virtual_machine, expected_status="Running")
 
 	def stop_all_benches(self, step: "NFSVolumeDetachmentStep"):
 		"""Stop all running benches"""
@@ -66,14 +75,15 @@ class NFSVolumeDetachment(Document, StepHandler):
 				user=server._ssh_user(),
 				port=server._ssh_port(),
 			)
-			self._run_ansible_step(step, ansible)
+			self.handle_ansible_play(step, ansible)
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
 			raise
 
 	def sync_data(self, step: "NFSVolumeDetachmentStep"):
-		"""Sync data from /shared to /home/frappe/benches"""
+		"""Sync data from shared to /home/frappe/benches"""
 		primary_server: Server = frappe.get_cached_doc("Server", self.primary_server)
+		shared_directory = frappe.db.get_single_value("Press Settings", "shared_directory")
 		step.status = Status.Running
 		step.save()
 
@@ -83,12 +93,9 @@ class NFSVolumeDetachment(Document, StepHandler):
 				server=primary_server,
 				user=primary_server._ssh_user(),
 				port=primary_server._ssh_port(),
-				variables={
-					"nfs_server": self.nfs_server,
-					"client_server": primary_server.name,
-				},
+				variables={"shared_directory": shared_directory},
 			)
-			self._run_ansible_step(step, ansible)
+			self.handle_ansible_play(step, ansible)
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
 			raise
@@ -130,7 +137,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 			},
 			"job",
 		)
-		self.handle_async_job(step, job)
+		self.handle_agent_job(step, job)
 
 	def umount_from_primary_server(self, step: "NFSVolumeDetachmentStep") -> None:
 		"""Umount /shared from primary server and remove from fstab"""
@@ -150,22 +157,19 @@ class NFSVolumeDetachment(Document, StepHandler):
 					"shared_directory": f"/home/frappe/nfs/{self.primary_server}",
 				},
 			)
-			self._run_ansible_step(step, ansible)
+			self.handle_ansible_play(step, ansible)
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
 			raise
 
 	def remove_servers_from_acl(self, step: "NFSVolumeDetachmentStep") -> None:
 		"""Remove primary and secondary servers from acl"""
-		nfs_server: NFSServer = frappe.get_cached_doc("NFS Server", self.nfs_server)
-		primary_server_private_ip = frappe.db.get_value("Server", self.primary_server, "private_ip")
+		primary_server: Server = frappe.get_cached_doc("Server", self.primary_server)
 		secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
 
 		try:
-			agent_job = nfs_server.agent.remove_servers_from_acl(
-				primary_server_private_ip=primary_server_private_ip,
+			agent_job = primary_server.agent.remove_servers_from_acl(
 				secondary_server_private_ip=secondary_server_private_ip,
-				shared_directory=self.primary_server,
 			)
 			step.job_type = "Agent Job"
 			step.job = agent_job.name
@@ -189,7 +193,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 			},
 			"job",
 		)
-		self.handle_async_job(step, job)
+		self.handle_agent_job(step, job)
 
 	def umount_volume_from_nfs_server(self, step: "NFSVolumeDetachmentStep") -> None:
 		"""Umount volume from NFS Server"""
@@ -208,7 +212,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 					"shared_directory": f"/home/frappe/nfs/{self.primary_server}",
 				},
 			)
-			self._run_ansible_step(step, ansible)
+			self.handle_ansible_play(step, ansible)
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
 			raise
@@ -267,25 +271,30 @@ class NFSVolumeDetachment(Document, StepHandler):
 		"""Append defined steps to the document before saving."""
 		for step in self.get_steps(
 			[
+				self.start_secondary_server,
+				self.wait_for_secondary_server_to_start,
 				self.stop_all_benches,
 				self.sync_data,
 				self.run_bench_on_primary_server,
 				self.wait_for_job_completion,
-				self.umount_from_primary_server,
 				self.remove_servers_from_acl,
 				self.wait_for_acl_deletion,
-				self.umount_volume_from_nfs_server,
-				self.detach_and_delete_volume_from_nfs_server,
 				self.mark_attachment_as_archived,
 				self.not_ready_to_auto_scale,
 			]
 		):
 			self.append("nfs_volume_detachment_steps", step)
 
+		self.secondary_server = frappe.db.get_value("Server", self.primary_server, "secondary_server")
+
 	def validate(self):
 		is_server_auto_scaled = frappe.db.get_value("Server", self.primary_server, "auto_scale")
 		if is_server_auto_scaled:
 			frappe.throw("Benches are currently running on the secondary server!")
+
+	@frappe.whitelist()
+	def force_continue(self):
+		self.execute_mount_steps()
 
 	def execute_mount_steps(self):
 		frappe.enqueue_doc(

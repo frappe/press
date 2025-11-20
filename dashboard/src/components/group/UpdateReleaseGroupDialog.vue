@@ -3,7 +3,7 @@
 		v-model="show"
 		:options="{
 			size: '4xl',
-			title: 'Update Bench Group',
+			title: lastDeploy ? 'Update Bench Group' : 'Deploy Bench Group',
 		}"
 	>
 		<template #body-content>
@@ -17,7 +17,9 @@
 			<div class="space-y-4">
 				<!-- Select Apps Step -->
 				<div v-if="step === 'select-apps'">
-					<h2 class="mb-4 text-lg font-medium">Select apps to update</h2>
+					<h2 class="mb-4 text-lg font-medium">
+						{{ lastDeploy ? 'Select apps to update' : 'Select apps to deploy' }}
+					</h2>
 					<GenericList
 						class="max-h-[500px]"
 						v-if="benchDocResource.doc.deploy_information.update_available"
@@ -131,7 +133,7 @@ import AlertBanner from '../AlertBanner.vue';
 
 export default {
 	name: 'UpdateReleaseGroupDialog',
-	props: ['bench'],
+	props: ['bench', 'lastDeploy'],
 	components: {
 		GenericList,
 		CommitChooser,
@@ -153,6 +155,14 @@ export default {
 	mounted() {
 		if (this.hasUpdateAvailable) {
 			this.step = 'select-apps';
+			if (!this.lastDeploy) {
+				// Preselect all updatable apps for first time deploys
+				this.handleAppSelection(
+					this.benchDocResource.doc?.deploy_information?.apps?.map(
+						(app) => app.name,
+					) || [],
+				);
+			}
 		} else if (this.hasRemovedApps) {
 			this.step = 'removed-apps';
 		} else {
@@ -168,7 +178,7 @@ export default {
 
 			return {
 				data: appData,
-				selectable: true,
+				selectable: !!this.lastDeploy,
 				columns: [
 					{
 						label: 'App',
@@ -401,6 +411,10 @@ export default {
 			return this.hasUpdateAvailable || this.step === 'restrict-build';
 		},
 		canShowNext() {
+			if (this.step === 'select-apps' && !this.lastDeploy) {
+				return false;
+			}
+
 			if (this.step === 'restrict-build') {
 				return false;
 			}
@@ -415,6 +429,10 @@ export default {
 			return !this.canShowNext;
 		},
 		deployLabel() {
+			if (!this.lastDeploy) {
+				return 'Deploy now';
+			}
+
 			if (this.selectedSites.length === 0) {
 				return 'Skip and Deploy';
 			}
@@ -595,6 +613,11 @@ export default {
 			).next_release;
 		},
 		updateBench() {
+			if (this.selectedApps.length === 0 && !this.lastDeploy) {
+				this.errorMessage = 'Please select an app to proceed';
+				return;
+			}
+
 			if (this.restrictMessage && !this.ignoreWillFailCheck) {
 				this.errorMessage =
 					'Please check the <b>I understand</b> box to proceed';

@@ -51,10 +51,12 @@ class PressSettings(Document):
 		code_server_password: DF.Data | None
 		commission: DF.Float
 		compress_app_cache: DF.Check
+		cool_off_period: DF.Int
 		data_40: DF.Data | None
 		default_apps: DF.Table[AppGroup]
 		default_outgoing_id: DF.Data | None
 		default_outgoing_pass: DF.Data | None
+		deploy_marker: DF.Data | None
 		disable_agent_job_deduplication: DF.Check
 		disable_auto_retry: DF.Check
 		disable_frappe_auth: DF.Check
@@ -145,6 +147,7 @@ class PressSettings(Document):
 		send_telegram_notifications: DF.Check
 		servers_using_alternative_http_port_for_communication: DF.SmallText | None
 		set_redis_password: DF.Check
+		shared_directory: DF.Data | None
 		spaces_domain: DF.Link | None
 		spamd_api_key: DF.Data | None
 		spamd_api_secret: DF.Password | None

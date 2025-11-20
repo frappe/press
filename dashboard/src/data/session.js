@@ -128,3 +128,24 @@ export function getSessionUser() {
 function getSessionCookies() {
 	return new URLSearchParams(document.cookie.split('; ').join('&'));
 }
+
+export let userByName = reactive({});
+export let users = createResource({
+	url: 'press.api.partner.get_users_list',
+	cache: ['users_list'],
+	initialData: [],
+	auto: true,
+	transform(usersArray) {
+		for (const user of usersArray) {
+			userByName[user.name] = user;
+			if (user.name === 'Administrator') {
+				userByName[user.name] = user;
+			}
+		}
+		return usersArray;
+	},
+});
+
+export function getUser(email) {
+	return userByName[email];
+}

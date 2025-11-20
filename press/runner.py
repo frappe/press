@@ -1,4 +1,7 @@
 import json
+import time
+from enum import Enum
+from typing import Literal
 
 import frappe
 import wrapt
@@ -13,6 +16,7 @@ from ansible.plugins.action.async_status import ActionModule
 from ansible.plugins.callback import CallbackBase
 from ansible.utils.display import Display
 from ansible.vars.manager import VariableManager
+from frappe.model.document import Document
 from frappe.utils import cstr
 from frappe.utils import now_datetime as now
 
@@ -277,3 +281,161 @@ class Ansible:
 					).insert()
 					self.tasks.setdefault(role.get_name(), {})[task.name] = task_doc.name
 					self.task_list.append(task_doc.name)
+
+
+class Status(str, Enum):
+	Pending = "Pending"
+	Running = "Running"
+	Success = "Success"
+	Failure = "Failure"
+
+	def __str__(self):
+		return self.value
+
+
+class GenericStep(Document):
+	attempt: int
+	job_type: Literal["Ansible Play", "Agent Job"]
+	job: str
+	status: Status
+
+
+class StepHandler:
+	def handle_vm_status_job(
+		self,
+		step: GenericStep,
+		virtual_machine: str,
+		expected_status: str,
+	) -> None:
+		step.attempt = 1 if not step.attempt else step.attempt + 1
+
+		# Try to sync status in every attempt
+		try:
+			virtual_machine = frappe.get_doc("Virtual Machine", virtual_machine)
+			virtual_machine.sync()
+		except Exception:
+			pass
+
+		machine_status = frappe.db.get_value("Virtual Machine", virtual_machine, "status")
+		step.status = Status.Running if machine_status != expected_status else Status.Success
+		step.save()
+
+	def handle_agent_job(self, step: GenericStep, job: str) -> None:
+		job_status = frappe.db.get_value("Agent Job", job, "status")
+
+		status_map = {
+			"Delivery Failure": Status.Failure,
+			"Undelivered": Status.Pending,
+		}
+		job_status = status_map.get(job_status, job_status)
+		step.attempt = 1 if not step.attempt else step.attempt + 1
+
+		step.status = job_status
+		step.save()
+
+		if step.status == Status.Failure:
+			raise
+
+	def handle_ansible_play(self, step: GenericStep, ansible: Ansible) -> None:
+		step.job_type = "Ansible Play"
+		step.job = ansible.play
+		step.save()
+		ansible_play = ansible.run()
+		step.status = ansible_play.status
+		step.save()
+
+		if step.status == Status.Failure:
+			raise
+
+	def _fail_ansible_step(
+		self,
+		step: GenericStep,
+		ansible: Ansible,
+		e: Exception | None = None,
+	) -> None:
+		step.job = getattr(ansible, "play", None)
+		step.status = Status.Failure
+		step.output = str(e)
+		step.save()
+
+	def _fail_job_step(self, step: GenericStep, e: Exception | None = None) -> None:
+		step.status = Status.Failure
+		step.output = str(e)
+		step.save()
+
+	def fail(self):
+		self.status = Status.Failure
+		self.save()
+		frappe.db.commit()
+
+	def succeed(self):
+		self.status = Status.Success
+		self.save()
+		frappe.db.commit()
+
+	def handle_step_failure(self):
+		team = frappe.db.get_value("Server", self.primary_server, "team")
+		press_notification = frappe.get_doc(
+			{
+				"doctype": "Press Notification",
+				"team": team,
+				"type": "Auto Scale",
+				"document_type": self.doctype,
+				"document_name": self.name,
+				"class": "Error",
+				"traceback": frappe.get_traceback(with_context=False),
+				"message": "Error occurred during auto scale",
+			}
+		)
+		press_notification.insert()
+		frappe.db.commit()
+
+	def get_steps(self, methods: list) -> list[dict]:
+		"""Generate a list of steps to be executed for NFS volume attachment."""
+		return [
+			{
+				"step_name": method.__doc__,
+				"method_name": method.__name__,
+				"status": "Pending",
+			}
+			for method in methods
+		]
+
+	def _get_method(self, method_name: str):
+		"""Retrieve a method object by name."""
+		return getattr(self, method_name)
+
+	def next_step(self, steps: list[GenericStep]) -> GenericStep | None:
+		for step in steps:
+			if step.status not in (Status.Success, Status.Failure):
+				return step
+
+		return None
+
+	def _execute_steps(self, steps: list[GenericStep]):
+		"""Sequentially execute defined NFS attachment steps."""
+		self.status = Status.Running
+		self.save()
+		frappe.db.commit()
+
+		while True:
+			step = self.next_step(steps)
+			if not step:
+				break  # We are done here
+
+			step = step.reload()
+			method = self._get_method(step.method_name)
+
+			try:
+				method(step)  # Each step updates its own state
+			except Exception:
+				self.reload()
+				self.fail()
+				self.handle_step_failure()
+				return  # Stop on first failure
+
+			self.reload()
+			frappe.db.commit()
+			time.sleep(1)
+
+		self.succeed()

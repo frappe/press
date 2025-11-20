@@ -19,6 +19,7 @@ from frappe.rate_limiter import rate_limit
 from frappe.utils import flt, sbool, time_diff_in_hours
 from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
+from frappe.utils.typing_validations import validate_argument_types
 from frappe.utils.user import is_system_user
 
 from press.access.support_access import has_support_access
@@ -283,7 +284,10 @@ def get_group_for_new_site_and_set_localisation_app(site, apps):
 	return groups[0]
 
 
-def validate_plan(server, plan):
+@validate_argument_types
+def validate_plan(server: str, plan: str) -> None:
+	if not frappe.db.exists("Site Plan", plan):
+		frappe.throw(f"Plan {plan} does not exist", frappe.DoesNotExistError)
 	if (
 		frappe.db.get_value("Site Plan", plan, "price_usd") > 0
 		or frappe.db.get_value("Site Plan", plan, "dedicated_server_plan") == 1

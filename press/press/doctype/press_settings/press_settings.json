@@ -147,6 +147,7 @@
   "github_app_public_link",
   "github_webhook_secret",
   "github_access_token",
+  "deploy_marker",
   "section_break_41",
   "column_break_tcmy",
   "column_break_edst",
@@ -213,6 +214,9 @@
   "email_recipients",
   "section_break_nloq",
   "servers_using_alternative_http_port_for_communication",
+  "auto_scale_section",
+  "shared_directory",
+  "cool_off_period",
   "feature_flags_tab",
   "verify_cards_with_micro_charge",
   "enable_google_oauth",
@@ -829,6 +833,7 @@
    "read_only": 1
   },
   {
+   "default": "fc-deploy",
    "fieldname": "column_break_36",
    "fieldtype": "Column Break"
   },
@@ -1510,11 +1515,35 @@
   {
    "fieldname": "section_break_dhzi",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "auto_scale_section",
+   "fieldtype": "Section Break",
+   "label": "Auto Scale"
+  },
+  {
+   "default": "/home/frappe/shared",
+   "fieldname": "shared_directory",
+   "fieldtype": "Data",
+   "label": "Shared Directory"
+  },
+  {
+   "default": "600",
+   "description": "Time between two autoscale events (up scale or down scale)",
+   "fieldname": "cool_off_period",
+   "fieldtype": "Int",
+   "label": "Cool off period"
+  },
+  {
+   "fieldname": "deploy_marker",
+   "fieldtype": "Data",
+   "label": "Deploy Marker",
+   "options": "If found in commit message deploy will be triggered"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-11-13 11:07:07.301410",
+ "modified": "2025-11-19 10:27:32.401458",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
@@ -1533,6 +1562,7 @@
  ],
  "quick_entry": 1,
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

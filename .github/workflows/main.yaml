@@ -83,12 +83,9 @@ jobs:
     name: Client
     runs-on: ubuntu-latest
     env:
-      CI: Yes
-      TYPE: server
       PRESS_ADMIN_USER_EMAIL: playwright@example.com
       PRESS_ADMIN_USER_PASSWORD: playwright
       BASE_URL: http://test_site:8000
-      PRODUCT_TRIALS: None
 
     services:
       mariadb:
@@ -170,7 +167,7 @@ jobs:
 
       - name: Run Playwright Tests
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
-        run: npx playwright test
+        run: npx playwright test --project=chromium
 
       - name: Upload Playwright Test report
         if: always()

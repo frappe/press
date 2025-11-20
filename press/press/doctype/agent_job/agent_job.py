@@ -35,6 +35,7 @@ from press.press.doctype.site_migration.site_migration import (
 from press.utils import log_error, timer
 
 AGENT_LOG_KEY = "agent-jobs"
+AGENT_JOB_TIMEOUT_HOURS = 4
 
 
 class AgentJob(Document):
@@ -349,6 +350,25 @@ class AgentJob(Document):
 		return False
 
 	@property
+	def failed_because_of_incident(self) -> bool:
+		if self.server and frappe.db.exists(
+			"Incident",
+			{
+				"server": self.server,
+				"status": ("in", ["Auto-Resolved", "Resolved", "Press-Resolved"]),
+				"creation": (
+					"between",
+					[
+						frappe.utils.add_to_date(self.creation, minutes=-15),
+						self.creation,
+					],
+				),  # incident didn't happen because of job
+			},
+		):
+			return True
+		return False
+
+	@property
 	def on_public_server(self):
 		return bool(frappe.db.get_value(self.server_type, self.server, "public"))
 
@@ -640,7 +660,7 @@ def fail_old_jobs():
 	update_status(delivery_failed_jobs, "Delivery Failure")
 
 
-def get_pair_jobs() -> tuple[str]:
+def get_pair_jobs():
 	"""Return list of jobs who's callback depend on another"""
 	return (
 		"New Site",
