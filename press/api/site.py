@@ -315,14 +315,16 @@ def new(site):
 	return _new(site)
 
 
-def get_app_subscriptions(app_plans, team: str):
+def get_app_subscriptions(app_plans, team_name: str):
 	subscriptions = []
+	team: Team | None = None
 
 	for app_name, plan_name in app_plans.items():
 		is_free = frappe.db.get_value("Marketplace App Plan", plan_name, "is_free")
 		if not is_free:
-			team_doc: Team = frappe.get_doc("Team", team)
-			if not team_doc.can_install_paid_apps():
+			if not team:
+				team = frappe.get_doc("Team", team_name)
+			if not team.can_install_paid_apps():
 				frappe.throw(
 					"You cannot install a Paid app on Free Credits. Please buy credits before trying to install again."
 				)
@@ -335,7 +337,7 @@ def get_app_subscriptions(app_plans, team: str):
 				"plan_type": "Marketplace App Plan",
 				"plan": plan_name,
 				"enabled": 1,
-				"team": team_doc,
+				"team": team_name,
 			}
 		).insert(ignore_permissions=True)
 
@@ -635,6 +637,8 @@ def set_default_apps(app_source_details_grouped):
 def get_available_versions(for_bench: str | None = None):
 	available_versions = []
 	restricted_release_group_names = get_restricted_release_group_names()
+	filters: dict[str, int | bool | tuple] = {}
+	release_group_filters: dict[str, int | str | bool | tuple] = {}
 
 	if for_bench:
 		version = frappe.db.get_value("Release Group", for_bench, "version")
@@ -748,8 +752,8 @@ def get_domain():
 def get_new_site_options(group: str | None = None):
 	team = get_current_team()
 	apps = set()
-	filters = {"enabled": True}
-	versions_filters = {"public": True}
+	filters: dict[str, bool | str] = {"enabled": True}
+	versions_filters: dict[str, tuple | str | bool] = {"public": True}
 
 	if group:  # private bench
 		filters.update({"name": group, "team": team})
@@ -1849,12 +1853,18 @@ def get_proxy_and_redirected_status(domain) -> tuple[str | None, bool]:
 			DNSValidationError,
 		)
 	else:
+<<<<<<< HEAD
 		redirected = (
 			res.headers.get("location") == "http://ssl.frappe.cloud/.well-known/acme-challenge/random"
 		)
 		server = res.headers.get("server")  # eg: cloudflare
 		server = None if server == "Frappe Cloud" else server
 		return server, redirected
+=======
+		if (server := res.headers.get("server")) not in ("Frappe Cloud", None):  # eg: cloudflare
+			return server
+		return None
+>>>>>>> e551cef22 (ci(mypy): Ignore no return codepaths)
 
 
 def _check_dns_cname_a(name, domain, ignore_proxying=False, throw_proxy_validation_early=True):
