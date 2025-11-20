@@ -54,7 +54,7 @@ class PressPermissionGroup(Document):
 		self.validate_permissions()
 		self.validate_users()
 
-	def validate_permissions(self):
+	def validate_permissions(self):  # noqa: C901
 		permissions = frappe.parse_json(self.permissions)
 		if not permissions:
 			self.permissions = DEFAULT_PERMISSIONS
@@ -274,7 +274,7 @@ def get_method_perms_for_group(doctype: str, name: str, group_name: str) -> list
 	return doc_perms
 
 
-def resolve_doc_permissions(doctype, permissions_by_group: dict) -> dict:
+def resolve_doc_permissions(doctype, permissions_by_group: dict) -> dict:  # noqa: C901
 	"""
 	Permission Resolution Logic:
 	- if a group has *: True and another group has *: False, then all the methods are allowed
