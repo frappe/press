@@ -50,9 +50,8 @@ class PreBuildValidations:
 					reason,
 				)
 
-	def _validate_python_dependency_files(self) -> dict[str, tuple[bool, bool]]:
-		"""Return whether pyproject.toml and requirements.txt exist for each app."""
-		results = {}
+	def _validate_python_dependency_files(self) -> None:
+		"""Check pyproject.toml and requirements.txt for each app."""
 		for app, pm in self.pmf.items():
 			repo_path = Path(pm["repo_path"])
 			has_pyproject = (repo_path / "pyproject.toml").exists()
@@ -80,10 +79,6 @@ class PreBuildValidations:
 					stacklevel=2,
 					source={"app": app},
 				)
-
-			results[app] = (has_pyproject, has_requirements)
-
-		return results
 
 	def _validate_python_requirement(self):
 		actual = self.dc.get_dependency_version("python")
