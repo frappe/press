@@ -640,11 +640,21 @@ def apply_for_certificate(member_name, certificate_type):
 
 
 @frappe.whitelist()
-def get_partner_teams():
+def get_partner_teams(company=None, email=None, country=None, tier=None):
+	filters = {"enabled": 1, "erpnext_partner": 1}
+	if company:
+		filters["company_name"] = ("like", f"%{company}%")
+	if email:
+		filters["partner_email"] = ("like", f"%{email}%")
+	if country:
+		filters["country"] = ("like", f"%{country}%")
+	if tier:
+		filters["partner_tier"] = tier
+	print(filters)
 	teams = frappe.get_all(
 		"Team",
-		{"enabled": 1, "erpnext_partner": 1},
-		["partner_email", "billing_name", "country", "partner_tier", "name"],
+		filters,
+		["partner_email", "company_name", "country", "partner_tier", "name"],
 	)
 	return teams  # noqa: RET504
 

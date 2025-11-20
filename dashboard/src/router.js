@@ -310,9 +310,9 @@ let router = createRouter({
 					component: () => import('./pages/PartnerAdminCertificates.vue'),
 				},
 				{
-					name: 'PartnerLeadList',
-					path: 'partner-lead-list',
-					component: () => import('./components/partners/PartnerLeads.vue'),
+					name: 'PartnerAdminLeads',
+					path: 'partner-admin-lead-list',
+					component: () => import('./pages/PartnerAdminLeads.vue'),
 				},
 			],
 		},
