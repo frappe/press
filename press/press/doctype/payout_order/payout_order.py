@@ -3,7 +3,7 @@
 
 from datetime import date
 from itertools import groupby
-from typing import List
+from typing import ClassVar
 
 import frappe
 from frappe.model.document import Document
@@ -21,9 +21,11 @@ class PayoutOrder(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.payout_order_item.payout_order_item import PayoutOrderItem
 
 		amended_from: DF.Link | None
+		commission: DF.Currency
 		currency_inr: DF.Data | None
 		currency_usd: DF.Data | None
 		due_date: DF.Date | None
@@ -43,7 +45,7 @@ class PayoutOrder(Document):
 		type: DF.Literal["Marketplace", "SaaS"]
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields: ClassVar = [
 		"period_end",
 		"team",
 		"mode_of_payment",
@@ -57,87 +59,122 @@ class PayoutOrder(Document):
 	@staticmethod
 	def get_list_query(query):
 		PayoutOrder = frappe.qb.DocType("Payout Order")
-		query = query.where((PayoutOrder.docstatus != 2))
-		return query
+		return query.where(PayoutOrder.docstatus != 2)
 
 	def validate(self):
-		self.validate_items()
-		self.validate_net_totals()
-		self.compute_total_amount()
-
-	def validate_items(self):
 		for row in self.items:
-			invoice_name = row.invoice
-			invoice = frappe.db.get_value(
-				"Invoice",
-				invoice_name,
-				[
-					"status",
-					"currency",
-					"transaction_fee",
-					"exchange_rate",
-					"amount_paid",
-				],
-				as_dict=True,
-			)
+			if row.currency == "INR":
+				self.net_total_inr += row.net_total
+			elif row.currency == "USD":
+				self.net_total_usd += row.net_total
 
-			if invoice.status != "Paid":
-				frappe.throw(f"Invoice {invoice_name} is not paid yet.")
+	def on_update(self):
+		if self.docstatus != 1:
+			return
+		if self.mode_of_payment == "Cash" and self.status == "Paid" and not self.frappe_purchase_order:
+			frappe.throw("Frappe Purchase Order is required before marking this cash payout as Paid")
 
-			invoice_item = get_invoice_item_for_po_item(invoice_name, row)
+	def on_submit(self):
+		self.set_total_and_track_revenue_in_marketplace_app_payment()
+		self.compute_total_amount_payable()
+		self.set_status()
+
+	def set_total_and_track_revenue_in_marketplace_app_payment(self):
+		"""
+		- Verify payout order items with respective invoices
+		- Calculate row-wise commission and net amounts
+		- Update totals in Marketplace App Payment docs
+		- Calculate total commission and net totals
+		"""
+		self.net_total_inr = 0
+		self.net_total_usd = 0
+		total_commission = 0
+
+		for row in self.items:
+			invoice = self._get_invoice_data(row.invoice)
+			invoice_item = get_invoice_item_for_po_item(row.invoice, row)
 
 			# check to avoid app revenue ledger item's calculation
 			if not invoice_item:
 				return
 
-			row.tax = row.tax or 0.0
-			row.total_amount = invoice_item.amount
-			row.site = invoice_item.site
-			row.currency = invoice.currency
-			row.gateway_fee = 0.0
+			self._populate_row_data(row, invoice_item, invoice)
 
-			# validate commissions and thresholds
-			app_payment = (
-				frappe.get_cached_doc("Marketplace App Payment", row.document_name)
-				if frappe.db.exists("Marketplace App Payment", row.document_name)
-				else frappe.get_doc(
-					{
-						"doctype": "Marketplace App Payment",
-						"app": row.document_name,
-						"team": self.team,
-					}
-				).insert(ignore_permissions=True)
-			)
+			app_payment = self._get_or_create_app_payment(row.document_name)
 
-			row.commission = (
-				app_payment.get_commission(row.total_amount) if not self.ignore_commission else 0.0
-			)
-
+			# Calculate commission based on current Marketplace App Payment totals
+			row.commission = self._calculate_commission(app_payment, row.total_amount, row.currency)
 			row.net_amount = row.total_amount - row.commission
 
-			if row.currency == "INR":
-				app_payment.total_inr += row.net_amount if row.net_amount > 0 else row.commission
-			else:
-				app_payment.total_usd += row.net_amount if row.net_amount > 0 else row.commission
+			self._update_app_payment_record(app_payment, row)
 
-			app_payment.save(ignore_permissions=True)
+			self._update_net_totals(row)
+			total_commission += self._convert_commission_to_recipient_currency(row.commission, row.currency)
 
-	def validate_net_totals(self):
-		self.net_total_usd = 0
-		self.net_total_inr = 0
+		self.commission = total_commission
 
-		for row in self.items:
-			if row.currency == "INR":
-				self.net_total_inr += row.net_amount
-			else:
-				self.net_total_usd += row.net_amount
+	def _get_invoice_data(self, invoice_name):
+		invoice = frappe.db.get_value("Invoice", invoice_name, ["status", "currency"], as_dict=True)
+		if not invoice:
+			frappe.throw(f"Invoice {invoice_name} not found")
+		if invoice.status != "Paid":
+			frappe.throw(f"Invoice {invoice_name} is not paid yet")
+		return invoice
 
-		if self.net_total_usd <= 0 and self.net_total_inr <= 0:
-			self.status = "Commissioned"
-		elif (self.net_total_usd > 0 or self.net_total_inr > 0) and not self.frappe_purchase_order:
-			self.status = "Draft"
+	def _populate_row_data(self, row, invoice_item, invoice):
+		row.tax = row.tax or 0.0
+		row.total_amount = invoice_item.amount
+		row.site = invoice_item.site
+		row.currency = invoice.currency
+		row.gateway_fee = 0.0
 
-	def compute_total_amount(self):
+	def _get_or_create_app_payment(self, app_name):
+		if frappe.db.exists("Marketplace App Payment", app_name):
+			return frappe.get_doc("Marketplace App Payment", app_name)
+
+		app_payment = frappe.get_doc(
+			{
+				"doctype": "Marketplace App Payment",
+				"app": app_name,
+				"team": self.team,
+			}
+		)
+		app_payment.insert(ignore_permissions=True)
+		return app_payment
+
+	def _calculate_commission(self, app_payment, total_amount, currency):
+		if self.ignore_commission:
+			return 0.0
+		return app_payment.get_commission(total_amount, currency)
+
+	def _update_net_totals(self, row):
+		if row.currency == "INR":
+			self.net_total_inr += row.net_amount
+		elif row.currency == "USD":
+			self.net_total_usd += row.net_amount
+
+	def _convert_commission_to_recipient_currency(self, commission, row_currency):
+		exchange_rate = frappe.db.get_single_value("Press Settings", "usd_rate") or 80
+
+		if row_currency == self.recipient_currency:
+			return commission
+		if self.recipient_currency == "INR" and row_currency == "USD":
+			return commission * exchange_rate
+		if self.recipient_currency == "USD" and row_currency == "INR":
+			return commission / exchange_rate
+		return 0
+
+	def _update_app_payment_record(self, app_payment, row):
+		if row.currency == "INR":
+			app_payment.total_inr = (app_payment.total_inr or 0) + row.total_amount
+			app_payment.commission_inr = (app_payment.commission_inr or 0) + row.commission
+		elif row.currency == "USD":
+			app_payment.total_usd = (app_payment.total_usd or 0) + row.total_amount
+			app_payment.commission_usd = (app_payment.commission_usd or 0) + row.commission
+
+		app_payment.save(ignore_permissions=True)
+
+	def compute_total_amount_payable(self):
 		exchange_rate = frappe.db.get_single_value("Press Settings", "usd_rate")
 		if self.recipient_currency == "USD":
 			inr_in_usd = 0
@@ -147,17 +184,16 @@ class PayoutOrder(Document):
 		elif self.recipient_currency == "INR":
 			self.total_amount = self.net_total_inr + (self.net_total_usd * exchange_rate)
 
-	def before_submit(self):
-		if self.mode_of_payment == "Cash" and (not self.frappe_purchase_order):
-			frappe.throw(
-				"Frappe Purchase Order is required before marking this cash payout as Paid"
-			)
-		self.status = "Paid"
+	def set_status(self):
+		if self.total_amount <= 0:
+			status = "Commissioned"
+		else:
+			status = "Unpaid"
+
+		self.status = status
 
 
-def get_invoice_item_for_po_item(
-	invoice_name: str, payout_order_item: PayoutOrderItem
-) -> InvoiceItem | None:
+def get_invoice_item_for_po_item(invoice_name: str, payout_order_item: PayoutOrderItem) -> InvoiceItem | None:
 	try:
 		if payout_order_item.invoice_item:
 			item = frappe.get_doc("Invoice Item", payout_order_item.invoice_item)
@@ -186,20 +222,17 @@ def get_invoice_item_for_po_item(
 
 def create_marketplace_payout_orders_monthly(period_start=None, period_end=None):
 	period_start, period_end = (
-		(period_start, period_end)
-		if period_start and period_end
-		else get_current_period_boundaries()
+		(period_start, period_end) if period_start and period_end else get_current_period_boundaries()
 	)
-	items = get_unaccounted_marketplace_invoice_items()
+	invoice_items = get_unaccounted_marketplace_invoice_items()
 
 	# Group by teams
-	for app_team, items in groupby(items, key=lambda x: x["app_team"]):
+	for app_team, team_items in groupby(invoice_items, key=lambda x: x["app_team"]):
 		try:
-			item_names = [i.name for i in items]
+			team_items = list(team_items)
+			item_names = [i.name for i in team_items]
 
-			po_exists = frappe.db.exists(
-				"Payout Order", {"team": app_team, "period_end": period_end}
-			)
+			po_exists = frappe.db.exists("Payout Order", {"team": app_team, "period_end": period_end})
 
 			if not po_exists:
 				create_payout_order_from_invoice_item_names(
@@ -221,7 +254,7 @@ def create_marketplace_payout_orders_monthly(period_start=None, period_end=None)
 				frappe.db.commit()
 		except Exception:
 			frappe.db.rollback()
-			log_error("Payout Order Creation Error", team=app_team, invoice_items=items)
+			log_error("Payout Order Creation Error", team=app_team, invoice_items=team_items)
 
 
 def get_current_period_boundaries():
@@ -257,7 +290,7 @@ def get_unaccounted_marketplace_invoice_items():
 	invoice_item = frappe.qb.DocType("Invoice Item")
 	marketplace_app = frappe.qb.DocType("Marketplace App")
 
-	items = (
+	return (
 		frappe.qb.from_(invoice_item)
 		.left_join(invoice)
 		.on(invoice_item.parent == invoice.name)
@@ -266,19 +299,15 @@ def get_unaccounted_marketplace_invoice_items():
 		.where(invoice.status == "Paid")
 		.where(invoice_item.document_type == "Marketplace App")
 		.where(invoice_item.has_marketplace_payout_completed == 0)
-		.select(
-			invoice_item.name, invoice_item.document_name, marketplace_app.team.as_("app_team")
-		)
+		.select(invoice_item.name, invoice_item.document_name, marketplace_app.team.as_("app_team"))
 		.distinct()
 		.run(as_dict=True)
 	)
 
-	return items
-
 
 @frappe.whitelist()
 def create_payout_order_from_invoice_items(
-	invoice_items: List[InvoiceItem],
+	invoice_items: list[InvoiceItem],
 	team: str,
 	period_start: date,
 	period_end: date,
@@ -318,6 +347,20 @@ def create_payout_order_from_invoice_items(
 		po.insert()
 
 	return po
+
+
+@frappe.whitelist()
+def mark_as_paid(payout_order):
+	doc = frappe.get_doc("Payout Order", payout_order)
+
+	# Verify document is submitted and unpaid
+	if doc.docstatus != 1:
+		frappe.throw("Payout Order must be submitted to mark as paid")
+
+	if doc.status != "Unpaid":
+		frappe.throw("Payout Order is not in Unpaid status")
+
+	return doc.db_set("status", "Paid", update_modified=True)
 
 
 def create_payout_order_from_invoice_item_names(item_names, *args, **kwargs):

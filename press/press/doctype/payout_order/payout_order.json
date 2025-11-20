@@ -30,6 +30,7 @@
   "column_break_15",
   "net_total_usd",
   "currency_usd",
+  "commission",
   "section_break_21",
   "ignore_commission"
  ],
@@ -177,12 +178,19 @@
    "label": "Total Amount",
    "options": "recipient_currency",
    "read_only": 1
+  },
+  {
+   "fieldname": "commission",
+   "fieldtype": "Currency",
+   "label": "Commission",
+   "options": "recipient_currency",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-03-20 10:23:23.836067",
+ "modified": "2025-11-20 14:53:51.571705",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payout Order",
@@ -202,6 +210,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [
