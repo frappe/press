@@ -6,6 +6,7 @@ import calendar
 import json
 import secrets
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import frappe
 import requests
@@ -16,6 +17,9 @@ from frappe.utils.password import get_decrypted_password
 from press.api.developer.marketplace import get_subscription_info
 from press.api.site import site_config, update_config
 from press.utils import log_error
+
+if TYPE_CHECKING:
+	from press.press.doctype.press_settings.press_settings import PressSettings
 
 
 class EmailLimitExceeded(TooManyRequestsError):
@@ -152,6 +156,20 @@ def validate_plan(secret_key):
 		)
 
 
+def make_spamd_request(press_settings: PressSettings, message: bytes):
+	headers = {}
+	if press_settings.spamd_api_key:
+		spamd_api_secret = get_decrypted_password("Press Settings", "Press Settings", "spamd_api_secret")
+		headers["Authorization"] = f"token {press_settings.spamd_api_key}:{spamd_api_secret}"
+	r = requests.post(
+		press_settings.spamd_endpoint,
+		headers=headers,
+		files={"message": message},
+	)
+	r.raise_for_status()
+	return r.json()
+
+
 def check_spam(message: bytes):
 	press_settings = frappe.get_cached_value(
 		"Press Settings",
@@ -162,20 +180,16 @@ def check_spam(message: bytes):
 	if not press_settings.enable_spam_check:
 		return
 	try:
-		headers = {}
-		if press_settings.spamd_api_key:
-			spamd_api_secret = get_decrypted_password("Press Settings", "Press Settings", "spamd_api_secret")
-			headers["Authorization"] = f"token {press_settings.spamd_api_key}:{spamd_api_secret}"
-		resp = requests.post(
-			press_settings.spamd_endpoint,
-			headers=headers,
-			files={"message": message},
-		)
-		resp.raise_for_status()
-		data = resp.json()
-		if data["message"] > 4.0:
+		data = make_spamd_request(press_settings, message)["message"]
+		score = data.get("spam_score", 0)
+		spamd_res = data.get("spamd_response")
+		if score > 4.0:
 			frappe.throw(
-				"This email was blocked as it was flagged as spam by our system. Please review the contents and try again.",
+				f"""This email was blocked as it was flagged as spam. Please review documentation corresponding to the error codes below:
+
+docs: https://spamassassin.apache.org/old/tests_3_3_x.html
+
+{spamd_res}""",
 				SpamDetectionError,
 			)
 	except requests.exceptions.HTTPError as e:
@@ -218,8 +232,8 @@ def send_mime_mail(**data):
 	if resp.status_code == 200:
 		return "Sending"  # Not really required as v14 and up automatically marks the email q as sent
 	if resp.status_code == 400:
-		message = resp.json().get("message", "Invalid request")
-		frappe.throw(f"Something went wrong with sending emails: {message}", InvalidEmail)
+		err_msg: str = resp.json().get("message", "Invalid request")
+		frappe.throw(f"Something went wrong with sending emails: {err_msg}", InvalidEmail)
 	log_error("Email Delivery Service: Sending error", response=resp.text, data=data, message=message)
 	frappe.throw(
 		"Something went wrong with sending emails. Please try again later or raise a support ticket with support.frappe.io",
