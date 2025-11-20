@@ -128,7 +128,8 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 			"No python dependency file found",
 			update_with_no_python_dependency_file_error,
 			check_if_app_updated,
-		)(
+		),
+		(
 			"App has invalid pyproject.toml file",
 			update_with_invalid_pyproject_error,
 			None,
