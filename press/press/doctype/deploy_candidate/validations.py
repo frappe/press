@@ -29,6 +29,7 @@ class PreBuildValidations:
 
 	def validate(self):
 		self._validate_repos()
+		self._validate_requirement_files()
 		self._validate_python_requirement()
 		self._validate_node_requirement()
 		self._validate_frappe_dependencies()
@@ -46,6 +47,24 @@ class PreBuildValidations:
 					app.hash,
 					reason,
 				)
+
+	def _validate_requirement_files(self) -> dict[str, tuple[bool, bool]]:
+		"""Return whether pyproject.toml and requirements.txt exist for each app."""
+		results = {}
+		for app, pm in self.pmf.items():
+			repo_path = Path(pm["repo_path"])
+			has_pyproject = (repo_path / "pyproject.toml").exists()
+			has_requirements = (repo_path / "requirements.txt").exists()
+
+			if not has_pyproject and not has_requirements:
+				raise Exception(
+					"No python dependency file found",
+					app,
+				)
+
+			results[app] = (has_pyproject, has_requirements)
+
+		return results
 
 	def _validate_python_requirement(self):
 		actual = self.dc.get_dependency_version("python")
