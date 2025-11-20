@@ -34,7 +34,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install ruff
+          pip install ruff mypy
 
       - name: Get changed files
         id: changed-python-files
@@ -65,6 +65,13 @@ jobs:
           ALL_CHANGED_FILES: ${{ steps.changed-python-files.outputs.all_changed_files }}
         run: |
           ruff format --check ${ALL_CHANGED_FILES} --diff
+
+      - name: Typing Check
+        if: steps.changed-python-files.outputs.any_changed == 'true'
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-python-files.outputs.all_changed_files }}
+        run: |
+          mypy ${ALL_CHANGED_FILES}
 
   semgrep:
     name: Semgrep Rules
