@@ -60,6 +60,7 @@ class JobErr(Enum):
 	CANT_CONNECT_TO_MYSQL = auto()
 	GZIP_TAR_ERR = auto()
 	UNKNOWN_COMMAND_HYPHEN = auto()
+	RQ_JOBS_IN_QUEUE = auto()
 
 
 DOC_URLS = {
@@ -70,6 +71,7 @@ DOC_URLS = {
 	JobErr.CANT_CONNECT_TO_MYSQL: "https://docs.frappe.io/cloud/cant-connect-to-mysql-server",
 	JobErr.GZIP_TAR_ERR: "https://docs.frappe.io/cloud/sites/migrate-an-existing-site#tar-gzip-command-fails-with-unexpected-eof",
 	JobErr.UNKNOWN_COMMAND_HYPHEN: "https://docs.frappe.io/cloud/unknown-command-",
+	JobErr.RQ_JOBS_IN_QUEUE: "https://docs.frappe.io/cloud/faq/site#how-do-i-deactivate-my-site-",
 }
 
 
@@ -104,6 +106,7 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 		("tar: Unexpected EOF in archive", update_with_gzip_tar_err),
 		("Unknown command '\\-'.", update_with_unknown_command_hyphen_err),
 		('redis_host, redis_port = redis_url.split(":")', update_with_redis_unpack_error),
+		("Site might have lot of jobs in queue.", update_with_rq_jobs_in_queue_err),
 	]
 
 
@@ -227,7 +230,7 @@ def update_with_data_truncated_for_column_err(details: Details, job: AgentJob):
 	return True
 
 
-def update_with_redis_unpack_error(details: Details, _: AgentJob) -> bool:
+def update_with_redis_unpack_error(details: Details, job: AgentJob):
 	"""Add this message for every job that faces redis unpack issue"""
 	details["title"] = "Framework version bump required"
 
@@ -295,6 +298,22 @@ def update_with_unknown_command_hyphen_err(details: Details, job: AgentJob):
 	"""
 
 	details["assistance_url"] = DOC_URLS[JobErr.UNKNOWN_COMMAND_HYPHEN]
+
+	return True
+
+
+def update_with_rq_jobs_in_queue_err(details: Details, job: AgentJob):
+	details["title"] = "High number of queued jobs"
+
+	details["message"] = """<p>The job could not be processed because there are too many jobs getting queued.
+	If this continues to happen upon retry, please <b>deactivate</b> your site, wait for 5 minutes and and try again. You may activate it again once the issue is resolved</p>
+	<p>Click <i>help</i> for instructions on how to deactivate your site.</p>
+
+
+	<p><b>NOTE</b>: This will cause downtime for that duration</p>
+	"""
+
+	details["assistance_url"] = DOC_URLS[JobErr.RQ_JOBS_IN_QUEUE]
 
 	return True
 
