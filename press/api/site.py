@@ -27,6 +27,7 @@ from press.exceptions import (
 	AAAARecordExists,
 	ConflictingCAARecord,
 	ConflictingDNSRecord,
+	DNSValidationError,
 	DomainProxied,
 	MultipleARecords,
 	MultipleCNAMERecords,
@@ -40,6 +41,7 @@ from press.press.doctype.remote_file.remote_file import get_remote_key
 from press.press.doctype.server.server import is_dedicated_server
 from press.press.doctype.site_plan.plan import Plan
 from press.press.doctype.site_update.site_update import benches_with_available_update
+from press.press.doctype.team.team import Team
 from press.utils import (
 	get_client_blacklisted_keys,
 	get_current_team,
@@ -315,8 +317,8 @@ def get_app_subscriptions(app_plans, team: str):
 	for app_name, plan_name in app_plans.items():
 		is_free = frappe.db.get_value("Marketplace App Plan", plan_name, "is_free")
 		if not is_free:
-			team = frappe.get_doc("Team", team)
-			if not team.can_install_paid_apps():
+			team_doc: Team = frappe.get_doc("Team", team)
+			if not team_doc.can_install_paid_apps():
 				frappe.throw(
 					"You cannot install a Paid app on Free Credits. Please buy credits before trying to install again."
 				)
@@ -329,7 +331,7 @@ def get_app_subscriptions(app_plans, team: str):
 				"plan_type": "Marketplace App Plan",
 				"plan": plan_name,
 				"enabled": 1,
-				"team": team,
+				"team": team_doc,
 			}
 		).insert(ignore_permissions=True)
 
@@ -546,7 +548,6 @@ def app_details_for_new_public_site():
 def options_for_new(for_bench: str | None = None):  # noqa: C901
 	from press.utils import get_nearest_cluster
 
-	for_bench = str(for_bench) if for_bench else None
 	available_versions = get_available_versions(for_bench)
 
 	unique_app_sources = []
@@ -627,7 +628,7 @@ def set_default_apps(app_source_details_grouped):
 			app_source["preinstalled"] = True
 
 
-def get_available_versions(for_bench: str = None):  # noqa
+def get_available_versions(for_bench: str | None = None):
 	available_versions = []
 	restricted_release_group_names = get_restricted_release_group_names()
 
@@ -1840,7 +1841,8 @@ def check_domain_proxied(domain) -> str | None:
 		res = requests.head(f"http://{domain}", timeout=3)
 	except requests.exceptions.RequestException as e:
 		frappe.throw(
-			f"Unable to connect to the domain. Is the DNS correct{get_dns_provider_link_substr(domain)}?\n\n{e!s}"
+			f"Unable to connect to the domain. Is the DNS correct{get_dns_provider_link_substr(domain)}?\n\n{e!s}",
+			DNSValidationError,
 		)
 	else:
 		if (server := res.headers.get("server")) not in ("Frappe Cloud", None):  # eg: cloudflare
