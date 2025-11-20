@@ -306,7 +306,7 @@ def update_with_rq_jobs_in_queue_err(details: Details, job: AgentJob):
 	details["title"] = "High number of queued jobs"
 
 	details["message"] = """<p>The job could not be processed because there are too many jobs getting queued.
-	If this continues to happen upon retry, please <b>deactivate</b> your site, wait for 5 minutes and and try again. You may activate it again once the issue is resolved</p>
+	If this continues to happen upon retry, please <b>deactivate</b> your site, wait for 5 minutes and try again. You may activate it again once the issue is resolved</p>
 	<p>Click <i>help</i> for instructions on how to deactivate your site.</p>
 
 
