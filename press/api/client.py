@@ -91,6 +91,7 @@ ALLOWED_DOCTYPES = [
 	"Lead Followup",
 	"Partner Consent",
 	"Support Access",
+	"Partner Lead Origin",
 ]
 
 whitelisted_methods = set()
