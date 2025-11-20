@@ -28,6 +28,9 @@ export default {
 			return {
 				doctype: 'Partner Certificate',
 				fields: ['free', 'certificate_link'],
+				filters: {
+					team: this.$team.doc.name,
+				},
 				columns: [
 					{
 						label: 'Member Name',
