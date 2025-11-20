@@ -45,7 +45,6 @@ from press.press.doctype.remote_file.remote_file import get_remote_key
 from press.press.doctype.server.server import is_dedicated_server
 from press.press.doctype.site_plan.plan import Plan
 from press.press.doctype.site_update.site_update import benches_with_available_update
-from press.press.doctype.team.team import Team
 from press.utils import (
 	get_client_blacklisted_keys,
 	get_current_team,
@@ -68,6 +67,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.site.site import Site
+	from press.press.doctype.team.team import Team
 
 
 NAMESERVERS = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
