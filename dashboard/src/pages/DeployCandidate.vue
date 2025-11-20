@@ -7,8 +7,18 @@
 			:title="error.title"
 			@done="$resources.errors.reload()"
 		/>
+		<AlertAddressableError
+			v-for="w in warnings"
+			:key="w.name"
+			class="mb-5"
+			:name="w.name"
+			:title="w.title"
+			type="warning"
+			@done="$resources.warnings.reload()"
+		/>
+
 		<AlertBanner
-			v-if="alertMessage && !error"
+			v-if="alertMessage && !error && !warnings"
 			:title="alertMessage"
 			type="warning"
 			class="mb-5"
@@ -132,6 +142,26 @@ export default {
 				transform: this.transformDeploy,
 			};
 		},
+		warnings() {
+			return {
+				type: 'list',
+				cache: [
+					'Press Notification',
+					'Warning',
+					'Deploy Candidate Build',
+					this.id,
+				],
+				doctype: 'Press Notification',
+				auto: true,
+				fields: ['title', 'name'],
+				filters: {
+					document_type: 'Deploy Candidate Build',
+					document_name: this.id,
+					class: 'Warning',
+				},
+				limit: 5,
+			};
+		},
 		errors() {
 			return {
 				type: 'list',
@@ -171,6 +201,7 @@ export default {
 			if (rgDoc) rgDoc.reload();
 			this.$resources.deploy.reload();
 			this.$resources.errors.reload();
+			this.$resources.warnings.reload();
 		});
 	},
 	beforeUnmount() {
@@ -186,6 +217,9 @@ export default {
 		},
 		error() {
 			return this.$resources.errors?.data?.[0] ?? null;
+		},
+		warnings() {
+			return (this.$resources.warnings?.data ?? []).slice(0, 5);
 		},
 		alertMessage() {
 			if (!this.deploy) {
