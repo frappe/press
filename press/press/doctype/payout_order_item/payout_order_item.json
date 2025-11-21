@@ -67,6 +67,7 @@
    "options": "currency"
   },
   {
+   "default": "0",
    "fieldname": "net_amount",
    "fieldtype": "Currency",
    "in_list_view": 1,
@@ -80,6 +81,7 @@
   {
    "fieldname": "commission",
    "fieldtype": "Currency",
+   "hidden": 1,
    "label": "Commission",
    "options": "currency"
   },
@@ -131,13 +133,14 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-03-18 10:10:51.856778",
+ "modified": "2025-11-21 08:57:06.901514",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payout Order Item",
  "naming_rule": "Autoincrement",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

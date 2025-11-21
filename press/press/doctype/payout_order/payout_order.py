@@ -64,9 +64,9 @@ class PayoutOrder(Document):
 	def validate(self):
 		for row in self.items:
 			if row.currency == "INR":
-				self.net_total_inr += row.net_total
+				self.net_total_inr += row.net_amount
 			elif row.currency == "USD":
-				self.net_total_usd += row.net_total
+				self.net_total_usd += row.net_amount
 
 	def on_update(self):
 		if self.docstatus != 1:
@@ -114,7 +114,7 @@ class PayoutOrder(Document):
 			self._update_net_totals(row)
 			total_commission += self._convert_commission_to_recipient_currency(row.commission, row.currency)
 
-		if total_commission > 0:
+		if self.type == "Marketplace":
 			self.commission = total_commission
 
 	def _get_invoice_data(self, invoice_name):

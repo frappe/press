@@ -194,7 +194,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-21 08:10:29.869249",
+ "modified": "2025-11-21 09:07:21.296395",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payout Order",
@@ -229,6 +229,10 @@
   {
    "color": "Orange",
    "title": "Unpaid"
+  },
+  {
+   "color": "Cyan",
+   "title": "Commissioned"
   }
  ],
  "track_changes": 1
