@@ -34,7 +34,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install ruff mypy
+          pip install -r dev-requirements.txt
 
       - name: Get changed files
         id: changed-python-files
