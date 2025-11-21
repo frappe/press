@@ -21,16 +21,17 @@
 </template>
 
 <script setup>
-import { getCachedDocumentResource, createDocumentResource } from 'frappe-ui';
-import { toast } from 'vue-sonner';
-import { confirmDialog, renderDialog } from '../../utils/components';
-import router from '../../router';
-import { getToastErrorMessage } from '../../utils/toast';
-import DatabaseConfigurationDialog from './DatabaseConfigurationDialog.vue';
-import DatabaseBinlogsDialog from './DatabaseBinlogsDialog.vue';
-import CleanupDialog from './CleanupDialog.vue';
+import { createDocumentResource, getCachedDocumentResource } from 'frappe-ui';
 import { h } from 'vue';
+import { toast } from 'vue-sonner';
+import router from '../../router';
+import { confirmDialog, renderDialog } from '../../utils/components';
+import { getToastErrorMessage } from '../../utils/toast';
 import CommunicationInfoDialog from '../CommunicationInfoDialog.vue';
+import CleanupDialog from './CleanupDialog.vue';
+import DatabaseBinlogsDialog from './DatabaseBinlogsDialog.vue';
+import DatabaseConfigurationDialog from './DatabaseConfigurationDialog.vue';
+import SecondaryServerPlanDialog from './SecondaryServerPlanDialog.vue';
 
 const props = defineProps({
 	serverName: { type: String, required: true },
@@ -51,6 +52,7 @@ function getServerActionHandler(action) {
 		'Rename server': onRenameServer,
 		'Drop server': onDropServer,
 		'Cleanup Server': onCleanupServer,
+		'Setup Secondary Server': onSetupSecondaryServer,
 		'Enable Performance Schema': onEnablePerformanceSchema,
 		'Disable Performance Schema': onDisablePerformanceSchema,
 		'Update InnoDB Buffer Pool Size': onUpdateInnodbBufferPoolSize,
@@ -82,6 +84,47 @@ function onCleanupServer() {
 			title: 'Server Cleanup',
 		}),
 	);
+}
+
+function onSetupSecondaryServer() {
+	confirmDialog({
+		title: 'Setup Secondary Application Server',
+		message: `
+		<p>
+			You're about to <strong>provision a Secondary Application Server</strong> for auto-scaling.
+			This will put the server into an <strong>Installing</strong> state while the setup runs.
+		</p>
+
+		<div class="mt-3 rounded-md bg-gray-50 border border-gray-200 p-3 text-sm">
+			<p><strong>No downtime:</strong> Your sites and services will remain operational during the entire process.</p>
+
+			<p class="mt-3"><strong>What you need to choose:</strong></p>
+			<ul class="list-disc list-inside space-y-1">
+				<li>Select a <strong>secondary server plan</strong> — this is the configuration the secondary server will run on.</li>
+				<li>The secondary plan must have <strong>higher compute</strong> than your current plan (CPU / memory).</li>
+			</ul>
+
+			<p class="mt-3">
+				After setup, the secondary server will remain in <em>standby</em> (inactive) until autoscaling or manual activation.
+			</p>
+
+			<p class="mt-3 text-gray-600">
+				See the docs to learn about costs, storage behavior, and autoscaling details:
+				<a href="#" target="_blank" rel="noopener">Secondary Server setup guide</a>.
+			</p>
+		</div>
+  		`,
+		primaryAction: {
+			label: 'Choose Plan',
+		},
+		onSuccess({ hide, values }) {
+			renderDialog(
+				h(SecondaryServerPlanDialog, {
+					server: server.doc.name,
+				}),
+			);
+		},
+	});
 }
 
 function onRebootServer() {
