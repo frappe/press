@@ -3,12 +3,28 @@
 		<CustomAlerts ctx_type="Server" :ctx_name="$appServer?.doc?.name" />
 		<div class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2">
 			<div
-				v-for="server in !!$dbReplicaServer?.doc
-					? ['Server', 'Database Server', 'Replication Server']
-					: ['Server', 'Database Server']"
+				v-for="server in $appServer?.doc?.secondary_server
+					? $dbReplicaServer?.doc
+						? [
+								'Server',
+								'App Secondary Server',
+								'Database Server',
+								'Replication Server',
+							]
+						: ['Server', 'App Secondary Server', 'Database Server']
+					: $dbReplicaServer?.doc
+						? ['Server', 'Database Server', 'Replication Server']
+						: ['Server', 'Database Server']"
 				class="col-span-1 rounded-md border lg:col-span-2"
 			>
-				<div class="grid grid-cols-2 lg:grid-cols-4">
+				<div
+					class="grid grid-cols-2 lg:grid-cols-4"
+					:class="{
+						'opacity-70 pointer-events-none':
+							$appSecondaryServer?.doc?.status === 'Pending' &&
+							server === 'App Secondary Server',
+					}"
+				>
 					<template v-for="(d, i) in currentUsage(server)" :key="d.value">
 						<div
 							class="border-b p-5 lg:border-b-0"
@@ -22,7 +38,21 @@
 									v-if="d.type === 'header'"
 									class="mt-2 flex flex-col space-y-2"
 								>
-									<div class="text-base text-gray-700">{{ d.label }}</div>
+									<div class="flex items-center text-base text-gray-700">
+										<span>{{ d.label }}</span>
+										<Badge
+											v-if="
+												server === 'App Secondary Server' &&
+												$appSecondaryServer?.doc?.status === 'Pending'
+											"
+											class="ml-2"
+											theme="gray"
+											size="sm"
+											variant="subtle"
+											label="Standby"
+										/>
+									</div>
+
 									<div class="space-y-1">
 										<div class="flex items-center text-base text-gray-900">
 											{{ d.value }}
@@ -54,7 +84,11 @@
 									</div>
 								</div>
 								<Button
-									v-if="d.type === 'header' && !$appServer.doc.is_self_hosted"
+									v-if="
+										d.type === 'header' &&
+										!$appServer.doc.is_self_hosted &&
+										server != 'App Secondary Server'
+									"
 									@click="showPlanChangeDialog(server)"
 									label="Change"
 								/>
@@ -89,6 +123,14 @@
 											<lucide-info class="mt-2 h-4 w-4 text-gray-500" />
 										</Tooltip>
 									</div>
+								</div>
+							</div>
+							<div v-else-if="d.type === 'info'">
+								<div class="flex items-center justify-between">
+									<div class="text-base text-gray-700">{{ d.label }}</div>
+								</div>
+								<div class="mt-1 text-sm text-gray-600">
+									{{ d.value }}
 								</div>
 							</div>
 						</div>
@@ -134,6 +176,7 @@ export default {
 	props: ['server'],
 	components: {
 		Progress,
+		Badge,
 		ServerLoadAverage,
 		ServerPlansDialog,
 		StorageBreakdownDialog,
@@ -185,11 +228,13 @@ export default {
 			let doc =
 				serverType === 'Server'
 					? this.$appServer.doc
-					: serverType === 'Database Server'
-						? this.$dbServer.doc
-						: serverType === 'Replication Server'
-							? this.$dbReplicaServer?.doc
-							: null;
+					: serverType === 'App Secondary Server'
+						? this.$appSecondaryServer?.doc
+						: serverType === 'Database Server'
+							? this.$dbServer.doc
+							: serverType === 'Replication Server'
+								? this.$dbReplicaServer?.doc
+								: null;
 
 			if (!doc) return [];
 
@@ -212,6 +257,35 @@ export default {
 				planDescription = `${this.$format.userCurrency(price, 0)}/mo`;
 			} else {
 				planDescription = currentPlan.plan_title;
+			}
+
+			if (serverType === 'App Secondary Server') {
+				return [
+					{
+						label: 'Secondary Application Server Plan',
+						value: planDescription,
+						type: 'header',
+						isPremium: !!currentPlan?.premium,
+					},
+					{
+						label: 'CPU',
+						type: 'info',
+						value:
+							'Inactive — monitoring disabled for standby secondary server',
+					},
+
+					{
+						label: 'Memory',
+						type: 'info',
+						value:
+							'Inactive — monitoring disabled for standby secondary server',
+					},
+					{
+						label: 'Storage',
+						type: 'info',
+						value: 'Uses primary server storage configuration (inactive state)',
+					},
+				];
 			}
 
 			return [
@@ -484,6 +558,10 @@ export default {
 					value: this.$appServer.doc.name,
 				},
 				{
+					label: 'Secondary App Server',
+					value: this.$appServer.doc.secondary_server,
+				},
+				{
 					label: 'Database server',
 					value: this.$appServer.doc.database_server,
 				},
@@ -507,6 +585,12 @@ export default {
 		},
 		$appServer() {
 			return getCachedDocumentResource('Server', this.server);
+		},
+		$appSecondaryServer() {
+			return getDocResource({
+				doctype: 'Server',
+				name: this.$appServer.doc.secondary_server,
+			});
 		},
 		$dbServer() {
 			return getDocResource({

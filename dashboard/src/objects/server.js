@@ -29,6 +29,7 @@ export default {
 		deleteSnapshot: 'delete_snapshot',
 		lockSnapshot: 'lock_snapshot',
 		unlockSnapshot: 'unlock_snapshot',
+		setupSecondaryServer: 'setup_secondary_server',
 	},
 	list: {
 		route: '/servers',
