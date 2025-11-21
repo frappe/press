@@ -31,6 +31,8 @@ export default {
 		unlockSnapshot: 'unlock_snapshot',
 		setupSecondaryServer: 'setup_secondary_server',
 		teardownSecondaryServer: 'teardown_secondary_server',
+		scaleUp: 'scale_up',
+		scaleDown: 'scale_down',
 	},
 	list: {
 		route: '/servers',

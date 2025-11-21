@@ -87,15 +87,35 @@
 										</div>
 									</div>
 								</div>
-								<Button
-									v-if="
-										d.type === 'header' &&
-										!$appServer.doc.is_self_hosted &&
-										server != 'App Secondary Server'
-									"
-									@click="showPlanChangeDialog(server)"
-									label="Change"
-								/>
+								<div class="flex flex-col space-y-2">
+									<Button
+										v-if="
+											d.type === 'header' &&
+											!$appServer.doc.is_self_hosted &&
+											server != 'App Secondary Server'
+										"
+										@click="showPlanChangeDialog(server)"
+										label="Change"
+									/>
+
+									<Button
+										v-if="
+											server === 'Server' &&
+											$appSecondaryServer?.doc?.status === 'Pending'
+										"
+										@click="scaleUp()"
+										label="Scale Up"
+									/>
+
+									<Button
+										v-if="
+											server === 'App Secondary Server' &&
+											$appSecondaryServer?.doc?.status === 'Active'
+										"
+										@click="scaleDown()"
+										label="Scale Down"
+									/>
+								</div>
 							</div>
 							<div v-else-if="d.type === 'progress'">
 								<div class="flex items-center justify-between space-x-2">
@@ -223,6 +243,38 @@ export default {
 				}),
 			);
 		},
+		scaleUp() {
+			this.$appServer.scaleUp.submit(
+				{},
+				{
+					onSuccess: () => {
+						this.$toast.success('Starting scale up please wait a few minutes');
+					},
+					onError(e) {
+						e.messages.forEach((message) => {
+							this.$toast.error(message);
+						});
+					},
+				},
+			);
+		},
+		scaleDown() {
+			this.$appServer.scaleDown.submit(
+				{},
+				{
+					onSuccess: () => {
+						this.$toast.success(
+							'Starting scale down please wait a few minutes',
+						);
+					},
+					onError(e) {
+						e.messages.forEach((message) => {
+							this.$toast.error(message);
+						});
+					},
+				},
+			);
+		},
 		currentUsage(serverType) {
 			if (!this.$appServer?.doc) return [];
 			if (!this.$dbServer?.doc) return [];
@@ -274,12 +326,12 @@ export default {
 					{
 						label: 'CPU',
 						type: 'info',
-						value: 'Inactive — monitoring disabled for secondary server',
+						value: 'Monitoring disabled for secondary server',
 					},
 					{
 						label: 'Memory',
 						type: 'info',
-						value: 'Inactive — monitoring disabled for secondary server',
+						value: 'Monitoring disabled for secondary server',
 					},
 					{
 						label: 'Storage',
