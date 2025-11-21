@@ -66,7 +66,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Draft\nPaid\nCommissioned"
+   "options": "Draft\nUnpaid\nPaid\nCommissioned\nSubmitted"
   },
   {
    "fieldname": "column_break_4",
@@ -102,6 +102,7 @@
    "fieldtype": "Section Break"
   },
   {
+   "default": "0",
    "fieldname": "net_total_inr",
    "fieldtype": "Currency",
    "label": "Net Total INR",
@@ -109,6 +110,7 @@
    "read_only": 1
   },
   {
+   "default": "0",
    "fieldname": "net_total_usd",
    "fieldtype": "Currency",
    "label": "Net Total USD",
@@ -173,6 +175,7 @@
    "reqd": 1
   },
   {
+   "default": "0",
    "fieldname": "total_amount",
    "fieldtype": "Currency",
    "label": "Total Amount",
@@ -180,6 +183,7 @@
    "read_only": 1
   },
   {
+   "default": "0",
    "fieldname": "commission",
    "fieldtype": "Currency",
    "label": "Commission",
@@ -190,7 +194,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-20 14:53:51.571705",
+ "modified": "2025-11-21 08:10:29.869249",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payout Order",
@@ -221,6 +225,10 @@
   {
    "color": "Gray",
    "title": "Draft"
+  },
+  {
+   "color": "Orange",
+   "title": "Unpaid"
   }
  ],
  "track_changes": 1
