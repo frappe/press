@@ -279,6 +279,10 @@ def get_lead_stats():
 	return data[0] if data else {}
 
 
+def get_user_by_name(email):
+	return frappe.get_cached_value("User", email, "full_name")
+
+
 @frappe.whitelist()
 def get_lead_activities(name):
 	get_docinfo("", "Partner Lead", name)
@@ -333,7 +337,7 @@ def get_lead_activities(name):
 		activity = {
 			"activity_type": activity_type,
 			"creation": version.creation,
-			"owner": version.owner,
+			"owner": get_user_by_name(version.owner),
 			"data": data,
 			"options": field_option,
 		}
@@ -344,7 +348,7 @@ def get_lead_activities(name):
 				"name": comment.name,
 				"activity_type": "comment",
 				"creation": comment.creation,
-				"owner": comment.owner,
+				"owner": get_user_by_name(comment.owner),
 				"content": comment.content,
 			}
 			activities.append(activity)
@@ -832,12 +836,6 @@ def can_apply_for_certificate():
 	response = client.get_api("check_free_certificate", {"partner_email": team.partner_email})
 
 	return response  # noqa: RET504
-
-
-@frappe.whitelist()
-def get_users_list():
-	users = frappe.get_all("User", {"enabled": 1}, ["name", "full_name"])
-	return users  # noqa: RET504
 
 
 @frappe.whitelist()
