@@ -99,10 +99,6 @@ function onTeardownSecondaryServer() {
 		</p>
 
 		<div class="mt-3 rounded-md bg-gray-50 border border-gray-200 p-3 text-sm">
-			<p>
-				<strong>No downtime:</strong> Your primary application server and all sites will
-				continue running normally during this process.
-			</p>
 			<p class="mt-3"><strong>What this does</strong></p>
 			<ul class="list-disc list-inside space-y-1">
 				<li>Deletes the secondary server instance.</li>
@@ -150,8 +146,6 @@ function onSetupSecondaryServer() {
 		</p>
 
 		<div class="mt-3 rounded-md bg-gray-50 border border-gray-200 p-3 text-sm">
-			<p><strong>No downtime:</strong> Your sites and services will remain operational during the entire process.</p>
-
 			<p class="mt-3"><strong>What you need to choose:</strong></p>
 			<ul class="list-disc list-inside space-y-1">
 				<li>Select a <strong>secondary server plan</strong> — this is the configuration the secondary server will run on.</li>

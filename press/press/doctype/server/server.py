@@ -3081,6 +3081,7 @@ class Server(BaseServer):
 				frappe.ValidationError,
 			)
 
+	@dashboard_whitelist()
 	@frappe.whitelist()
 	def scale_up(self):
 		if self.scaled_up:
@@ -3091,6 +3092,7 @@ class Server(BaseServer):
 		auto_scale_record = self._create_auto_scale_record(scale_up=True)
 		auto_scale_record.insert()
 
+	@dashboard_whitelist()
 	@frappe.whitelist()
 	def scale_down(self):
 		if not self.scaled_up:
