@@ -1,5 +1,6 @@
 pre-commit
 moto[all]~=5.0
+ruff==0.14.2
 Faker==23.2.0
 mypy==1.18.2
 types-requests<2.32
