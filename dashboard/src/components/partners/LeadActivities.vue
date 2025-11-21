@@ -25,14 +25,18 @@
 								<span v-if="activity.value" class="text-ink-gray-5">{{
 									activity.value
 								}}</span>
-								<span class="truncate" v-if="activity.data.old_value">{{
-									activity.data.old_value
-								}}</span>
+								<span
+									class="truncate max-w-xs"
+									v-if="activity.data.old_value"
+									>{{ activity.data.old_value }}</span
+								>
 								<span v-else>{{ activity.data.value }}</span>
 								<span v-if="activity.to" class="text-ink-gray-5">{{
 									activity.to
 								}}</span>
-								<span class="truncate">{{ activity.data.new_value }}</span>
+								<span class="truncate max-w-xs">{{
+									activity.data.new_value
+								}}</span>
 							</div>
 							<div class="ml-auto whitespace-nowrap">
 								<Tooltip :text="formatDate(activity.creation)">
