@@ -235,7 +235,7 @@ class ProductTrial(Document):
 			"Site",
 			filters=filters,
 			pluck="name",
-			order_by="creation asc",
+			order_by="status,standby_for,creation asc",
 			limit=10,
 		)
 		if not sites:
