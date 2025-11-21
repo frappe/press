@@ -46,6 +46,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.cluster.cluster import Cluster
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.mariadb_variable.mariadb_variable import MariaDBVariable
+	from press.press.doctype.nfs_volume_detachment.nfs_volume_detachment import NFSVolumeDetachment
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server_mount.server_mount import ServerMount
 	from press.press.doctype.server_plan.server_plan import ServerPlan
@@ -173,6 +174,10 @@ class BaseServer(Document, TagHelpers):
 			"name",
 		)
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
+
+		if self.doctype == "Server":
+			doc.secondary_server = self.secondary_server
+			doc.benches = self.benches_on_shared_volume
 
 		return doc
 
@@ -360,6 +365,29 @@ class BaseServer(Document, TagHelpers):
 				"condition": self.status == "Active" and self.doctype == "Server",
 				"doc_method": "cleanup_unused_files",
 				"group": f"{server_type.title()} Actions",
+			},
+			{
+				"action": "Setup Secondary Server",
+				"description": "Setup a secondary application server to auto scale to during high loads",
+				"button_label": "Setup",
+				"condition": self.status == "Active"
+				and self.doctype == "Server"
+				# As only present on server doctype
+				and not self.secondary_server,
+				"group": "Application Server Actions",
+			},
+			{
+				"action": "Teardown Secondary Server",
+				"description": "Disable secondary server and turn off auto-scaling.",
+				"button_label": "Teardown",
+				"condition": (
+					self.status == "Active"
+					and self.doctype == "Server"
+					# Only applicable for primary application servers
+					and self.secondary_server
+					and self.benches_on_shared_volume
+				),
+				"group": "Application Server Actions",
 			},
 			{
 				"action": "Drop server",
@@ -2403,6 +2431,7 @@ class Server(BaseServer):
 		server: "Server" = frappe.get_doc("Server", self.secondary_server)
 		server.archive()
 
+	@dashboard_whitelist()
 	@frappe.whitelist()
 	def setup_secondary_server(self, server_plan: str):
 		"""Setup secondary server"""
@@ -2414,6 +2443,16 @@ class Server(BaseServer):
 		self.save()
 
 		self.create_secondary_server(server_plan)
+
+	@dashboard_whitelist()
+	@frappe.whitelist()
+	def teardown_secondary_server(self):
+		if self.secondary_server:
+			nfs_volume_detachment: "NFSVolumeDetachment" = frappe.get_doc(
+				{"doctype": "NFS Volume Detachment", "primary_server": self.name}
+			)
+			print("created: ", nfs_volume_detachment)
+			# nfs_volume_detachment.insert(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def setup_ncdu(self):

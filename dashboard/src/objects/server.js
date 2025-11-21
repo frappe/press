@@ -30,6 +30,7 @@ export default {
 		lockSnapshot: 'lock_snapshot',
 		unlockSnapshot: 'unlock_snapshot',
 		setupSecondaryServer: 'setup_secondary_server',
+		teardownSecondaryServer: 'teardown_secondary_server',
 	},
 	list: {
 		route: '/servers',

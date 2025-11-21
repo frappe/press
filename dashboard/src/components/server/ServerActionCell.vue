@@ -53,6 +53,7 @@ function getServerActionHandler(action) {
 		'Drop server': onDropServer,
 		'Cleanup Server': onCleanupServer,
 		'Setup Secondary Server': onSetupSecondaryServer,
+		'Teardown Secondary Server': onTeardownSecondaryServer,
 		'Enable Performance Schema': onEnablePerformanceSchema,
 		'Disable Performance Schema': onDisablePerformanceSchema,
 		'Update InnoDB Buffer Pool Size': onUpdateInnodbBufferPoolSize,
@@ -86,6 +87,59 @@ function onCleanupServer() {
 	);
 }
 
+function onTeardownSecondaryServer() {
+	confirmDialog({
+		title: 'Remove Secondary Application Server',
+		message: `
+		<p>
+			You're about to <strong>remove your Secondary Application Server</strong> and 
+			<strong>disable auto-scaling</strong>.
+			Once this begins, the secondary server will enter a <strong>Teardown</strong> state
+			while it is being removed.
+		</p>
+
+		<div class="mt-3 rounded-md bg-gray-50 border border-gray-200 p-3 text-sm">
+			<p>
+				<strong>No downtime:</strong> Your primary application server and all sites will
+				continue running normally during this process.
+			</p>
+			<p class="mt-3"><strong>What this does</strong></p>
+			<ul class="list-disc list-inside space-y-1">
+				<li>Deletes the secondary server instance.</li>
+				<li>Fully disables auto-scaling until a new secondary server is set up.</li>
+			</ul>
+
+			<p class="mt-3">
+				After teardown, autoscaling will <strong>not trigger</strong> unless you configure
+				a new secondary server.
+			</p>
+
+			<p class="text-gray-600">
+				See the docs to learn more about autoscaling:
+				<a href="#" target="_blank" rel="noopener">Secondary Server teardown guide</a>.
+			</p>
+		</div>
+		`,
+		primaryAction: {
+			label: 'Teardown',
+		},
+		onSuccess({ hide }) {
+			toast.promise(
+				server.teardownSecondaryServer.submit(null, {
+					onSuccess() {
+						hide();
+					},
+				}),
+				{
+					loading: 'Tearing down secondary server...',
+					success: 'Secondary server teardown started',
+					error: 'Failed to start secondary server teardown',
+				},
+			);
+		},
+	});
+}
+
 function onSetupSecondaryServer() {
 	confirmDialog({
 		title: 'Setup Secondary Application Server',
@@ -109,7 +163,7 @@ function onSetupSecondaryServer() {
 			</p>
 
 			<p class="mt-3 text-gray-600">
-				See the docs to learn about costs, storage behavior, and autoscaling details:
+				See the docs to learn more about autoscaling:
 				<a href="#" target="_blank" rel="noopener">Secondary Server setup guide</a>.
 			</p>
 		</div>
