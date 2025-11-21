@@ -120,13 +120,13 @@ export default {
 						onSuccess: () => {
 							this.show = false;
 							this.$toast.success('Starting secondary server setup');
-                            this.$router.push({ name: 'Server List' });
+							this.$router.push({ name: 'Server List' });
 						},
 					},
 				);
 			} else {
-                this.$toast.error("Please select a plan!")
-            }
+				this.$toast.error('Please select a plan!');
+			}
 		},
 	},
 	computed: {

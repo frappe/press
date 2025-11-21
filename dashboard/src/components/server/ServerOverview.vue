@@ -21,8 +21,10 @@
 					class="grid grid-cols-2 lg:grid-cols-4"
 					:class="{
 						'opacity-70 pointer-events-none':
-							$appSecondaryServer?.doc?.status === 'Pending' &&
-							server === 'App Secondary Server',
+							($appSecondaryServer?.doc?.status === 'Pending' &&
+								server === 'App Secondary Server') ||
+							($appSecondaryServer?.doc?.status === 'Active' &&
+								server === 'Server'),
 					}"
 				>
 					<template v-for="(d, i) in currentUsage(server)" :key="d.value">
@@ -42,8 +44,10 @@
 										<span>{{ d.label }}</span>
 										<Badge
 											v-if="
-												server === 'App Secondary Server' &&
-												$appSecondaryServer?.doc?.status === 'Pending'
+												(server === 'App Secondary Server' &&
+													$appSecondaryServer?.doc?.status === 'Pending') ||
+												($appSecondaryServer?.doc?.status === 'Active' &&
+													server === 'Server')
 											"
 											class="ml-2"
 											theme="gray"
@@ -270,20 +274,17 @@ export default {
 					{
 						label: 'CPU',
 						type: 'info',
-						value:
-							'Inactive — monitoring disabled for standby secondary server',
+						value: 'Inactive — monitoring disabled for secondary server',
 					},
-
 					{
 						label: 'Memory',
 						type: 'info',
-						value:
-							'Inactive — monitoring disabled for standby secondary server',
+						value: 'Inactive — monitoring disabled for secondary server',
 					},
 					{
 						label: 'Storage',
 						type: 'info',
-						value: 'Uses primary server storage configuration (inactive state)',
+						value: 'Uses primary server storage configuration',
 					},
 				];
 			}
