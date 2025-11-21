@@ -147,9 +147,12 @@ class SupportAccess(Document):
 		"""
 		Returns the possible target statuses for the current user.
 		"""
-		if self.target_team == get_current_team():
+		current_team = get_current_team()
+		if self.target_team == current_team:
 			return ["Accepted", "Rejected", "Revoked"]
-		return ["Pending", "Forfeited"]
+		if self.requested_team == current_team:
+			return ["Pending", "Forfeited"]
+		return []
 
 	def is_valid_status_transition(self, status_from: str, status_to: str) -> bool:
 		"""
@@ -196,18 +199,24 @@ class SupportAccess(Document):
 		self.notify_on_request()
 
 	def on_update(self):
-		doc_before = self.get_doc_before_save()
-		if doc_before and doc_before.status != self.status:
-			self.notify_on_status_change()
+		self.notify_on_status_change()
 
 	def notify_on_status_change(self):
+		if not self.has_value_changed("status"):
+			return
+
 		title = f"Access Request {self.status}"
 		message = f"Your request for support access has been {self.status.lower()}."
+		recipient = self.requested_by
+
+		if self.status == "Forfeited":
+			message = "Support access has been forfieted."
+			recipient = self.target_team
 
 		frappe.sendmail(
 			subject=title,
 			message=message,
-			recipients=self.requested_by,
+			recipients=recipient,
 			template="access_request_update",
 			args={
 				"status": self.status,
