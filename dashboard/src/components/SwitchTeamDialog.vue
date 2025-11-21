@@ -19,10 +19,18 @@
 					</component>
 				</div>
 			</div>
+			<div class="mt-3">
+				<TextInput
+					size="sm"
+					variant="subtle"
+					placeholder="Search team.."
+					v-model="teamSearch"
+				/>
+			</div>
 			<div class="-mb-3 mt-3 divide-y">
 				<div
 					class="flex items-center justify-between py-3"
-					v-for="team in $team.doc.valid_teams"
+					v-for="team in filteredTeams"
 					:key="team.name"
 				>
 					<div class="flex items-center space-x-2">
@@ -63,6 +71,7 @@
 	</Dialog>
 </template>
 <script>
+import { TextInput } from 'frappe-ui';
 import { switchToTeam } from '../data/team';
 import LinkControl from './LinkControl.vue';
 
@@ -70,7 +79,7 @@ export default {
 	name: 'SwitchTeamDialog',
 	props: ['modelValue'],
 	emits: ['update:modelValue'],
-	components: { LinkControl },
+	components: { LinkControl, TextInput },
 	computed: {
 		show: {
 			get() {
@@ -80,10 +89,28 @@ export default {
 				this.$emit('update:modelValue', value);
 			},
 		},
+		sortedTeams() {
+			if (!this.$team?.doc?.valid_teams) return [];
+			return [...this.$team.doc.valid_teams].sort((a, b) => {
+				return a.user.localeCompare(b.user);
+			});
+		},
+		filteredTeams() {
+			if (!this.teamSearch.trim()) {
+				return this.sortedTeams;
+			}
+			const query = this.teamSearch.toLowerCase();
+			return this.sortedTeams.filter(
+				(team) =>
+					team.user.toLowerCase().includes(query) ||
+					team.name.toLowerCase().includes(query),
+			);
+		},
 	},
 	data() {
 		return {
 			selectedTeam: null,
+			teamSearch: '',
 		};
 	},
 	methods: {
