@@ -929,7 +929,7 @@ export default {
 						},
 						{
 							label: 'Status',
-							fieldname: 'status'
+							fieldname: 'status',
 						},
 						{
 							label: 'Scale Up',
