@@ -34,6 +34,15 @@ class AutoScaleRecord(Document, StepHandler):
 		status: DF.Literal["Pending", "Running", "Failure", "Success"]
 	# end: auto-generated types
 
+	dashboard_fields = (
+		"secondary_server",
+		"scale_up",
+		"scale_down",
+		"created_at",
+		"modified_at",
+		"status",
+	)
+
 	def before_insert(self):
 		"""Set metadata attributes"""
 		if self.scale_up:
@@ -41,9 +50,11 @@ class AutoScaleRecord(Document, StepHandler):
 				[
 					self.start_secondary_server,
 					self.wait_for_secondary_server_to_start,
+					# Do this before we start sendings requests to the secondary
+					# since bench can run with secondary's configuration on the primary
+					self.switch_to_secondary,
 					self.setup_secondary_upstream,
 					self.wait_for_secondary_upstream,
-					self.switch_to_secondary,
 					self.wait_for_switch_to_secondary,
 					self.mark_server_as_auto_scale,
 				]
