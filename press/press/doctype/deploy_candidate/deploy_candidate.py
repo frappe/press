@@ -167,9 +167,26 @@ class DeployCandidate(Document):
 			{"document_type": self.doctype, "document_name": self.name},
 		)
 
+	@property
+	def release_group(self) -> ReleaseGroup:
+		return frappe.get_doc("Release Group", self.group)
+
+	@property
+	def custom_workers_group(self) -> str:
+		custom_workers = self.custom_workers.keys()
+		if custom_workers:
+			return ",".join(f"frappe-bench-{worker_name}-worker" for worker_name in custom_workers)
+		return ""
+
+	@property
+	def custom_workers(self):
+		if self.release_group.common_site_config:
+			common_site_config = json.loads(self.release_group.common_site_config) or frappe._dict()
+			return common_site_config.get("workers", frappe._dict())
+		return frappe._dict()
+
 	def get_unpublished_marketplace_releases(self) -> list[str]:
-		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
-		marketplace_app_sources = rg.get_marketplace_app_sources()
+		marketplace_app_sources = self.release_group.get_marketplace_app_sources()
 
 		if not marketplace_app_sources:
 			return []
@@ -189,8 +206,7 @@ class DeployCandidate(Document):
 		)
 
 	def create_build(self, **kwargs) -> DeployCandidateBuild:
-		release_group: ReleaseGroup = frappe.get_doc("Release Group", self.group)
-		servers = [server_ref.server for server_ref in release_group.servers]
+		servers = [server_ref.server for server_ref in self.release_group.servers]
 
 		if frappe.get_value("Server", {"name": ("in", servers)}, "stop_deployments"):
 			frappe.throw("Deployments on this server are currently halted!")
@@ -535,8 +551,7 @@ class DeployCandidate(Document):
 		return pull_update
 
 	def get_duplicate_dc(self) -> "DeployCandidate | None":
-		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
-		if not (dc := rg.create_deploy_candidate()):
+		if not (dc := self.release_group.create_deploy_candidate()):
 			return None
 
 		# Set new DC apps to pull from the same sources
