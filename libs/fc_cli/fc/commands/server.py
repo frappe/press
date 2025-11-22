@@ -110,6 +110,10 @@ def increase_storage(
 	ctx: typer.Context,
 	name: Annotated[str, typer.Argument(help="Server name")],
 	increment: Annotated[int, typer.Argument(help="Increment size in GB")],
+	confirm: Annotated[
+		str | None,
+		typer.Argument(help="Type 'force' to skip confirmation (irreversible action)"),
+	] = None,
 ):
 	session: CloudSession = ctx.obj
 	is_valid, err = validate_server_name(name)
@@ -119,6 +123,13 @@ def increase_storage(
 
 	try:
 		doctype = get_doctype(name)
+
+		if not _should_proceed(
+			f"Increase storage for server '{name}' by {increment} GB? This action may be irreversible.",
+			confirm,
+		):
+			Print.info(console, "Operation cancelled.")
+			return
 
 		payload = {
 			"dt": doctype,
@@ -151,6 +162,10 @@ def choose_plan(
 	ctx: typer.Context,
 	name: Annotated[str, typer.Argument(help="Server name")],
 	plan: Annotated[str, typer.Argument(help="Plan name")],
+	confirm: Annotated[
+		str | None,
+		typer.Argument(help="Type 'force' to skip confirmation"),
+	] = None,
 ):
 	session: CloudSession = ctx.obj
 
@@ -167,30 +182,21 @@ def choose_plan(
 			return
 
 		# Fetch current plan to compare
-		current_resp = session.post(
-			"press.api.client.get",
-			json={
-				"doctype": doctype,
-				"name": name,
-				"fields": ["current_plan"],
-				"debug": 0,
-			},
-			message="[bold green]Checking current server plan...",
-		)
-		current_plan_name = None
-		if isinstance(current_resp, dict) and current_resp.get("current_plan"):
-			# current_plan may be a dict with name
-			cp = current_resp["current_plan"]
-			if isinstance(cp, dict):
-				current_plan_name = cp.get("name")
-			elif isinstance(cp, str):
-				current_plan_name = cp
+		current_plan_name = _get_current_plan_name(session, doctype, name)
 
 		if current_plan_name and current_plan_name == selected_plan.get("name"):
 			Print.info(
 				console,
 				f"Plan '{current_plan_name}' is already active for server '{name}'. Choose a different plan to change.",
 			)
+			return
+
+		# Confirm before changing plan
+		if not _should_proceed(
+			f"Change plan for server '{name}' to '{selected_plan.get('name')}'?",
+			confirm,
+		):
+			Print.info(console, "Operation cancelled.")
 			return
 
 		change_payload = {
@@ -268,10 +274,21 @@ def create_server(
 def delete_server(
 	ctx: typer.Context,
 	name: Annotated[str, typer.Argument(help="Server name to delete")],
+	confirm: Annotated[
+		str | None,
+		typer.Argument(help="Type 'force' to skip confirmation"),
+	] = None,
 ):
 	session: CloudSession = ctx.obj
 
 	try:
+		if not _should_proceed(
+			f"Are you sure you want to archive server '{name}'? This action may be irreversible.",
+			confirm,
+		):
+			Print.info(console, "Operation cancelled.")
+			return
+
 		response = session.post(
 			"press.api.server.archive",
 			json={"name": name},
@@ -286,3 +303,34 @@ def delete_server(
 
 	except Exception as e:
 		Print.error(console, e)
+
+
+def _should_proceed(message: str, confirm_token: str | None) -> bool:
+	"""Return True if destructive action should proceed.
+
+	- When confirm_token is 'force' (case-insensitive), skip prompt and proceed.
+	- Otherwise, show a confirmation prompt and return the user's choice.
+	"""
+	if isinstance(confirm_token, str) and confirm_token.lower() in {"force", "yes", "y"}:
+		return True
+	return typer.confirm(message, default=False)
+
+
+def _get_current_plan_name(session: "CloudSession", doctype: str, name: str) -> str | None:
+	resp = session.post(
+		"press.api.client.get",
+		json={
+			"doctype": doctype,
+			"name": name,
+			"fields": ["current_plan"],
+			"debug": 0,
+		},
+		message="[bold green]Checking current server plan...",
+	)
+	if isinstance(resp, dict) and resp.get("current_plan"):
+		cp = resp["current_plan"]
+		if isinstance(cp, dict):
+			return cp.get("name")
+		if isinstance(cp, str):
+			return cp
+	return None

@@ -20,6 +20,10 @@ console = Console()
 def bench_init(
 	ctx: typer.Context,
 	name: Annotated[str, typer.Argument(help="Bench group name")],
+	confirm: Annotated[
+		str | None,
+		typer.Argument(help="Type 'force' to skip confirmation"),
+	] = None,
 ):
 	session: CloudSession = ctx.obj
 	payload = {
@@ -29,6 +33,12 @@ def bench_init(
 		"args": None,
 	}
 	try:
+		if not _should_proceed(
+			f"Trigger initial deploy for bench group '{name}'? This will start a full build & deploy.",
+			confirm,
+		):
+			Print.info(console, "Operation cancelled.")
+			return
 		url = _build_method_url(session, "press.api.client.run_doc_method")
 		response = session.post(
 			url, json=payload, message=f"[bold green]Triggering initial deploy for '{name}'..."
@@ -68,9 +78,19 @@ def create_bench_group(
 def drop_bench_group(
 	ctx: typer.Context,
 	name: Annotated[str, typer.Argument(help="Bench group name to drop/archive")],
+	confirm: Annotated[
+		str | None, typer.Argument(help="Type 'force' to skip confirmation (irreversible action)")
+	] = None,
 ):
 	session: CloudSession = ctx.obj
 	try:
+		if not _should_proceed(
+			f"Are you sure you want to drop/archive bench group '{name}'? This action may be irreversible.",
+			confirm,
+		):
+			Print.info(console, "Operation cancelled.")
+			return
+
 		payload = {"doctype": "Release Group", "name": name}
 		delete_url = _build_method_url(session, "press.api.client.delete")
 		response = session.post(
@@ -187,7 +207,7 @@ def update_app(
 	],
 	bench: Annotated[
 		str | None,
-		typer.Argument(None, help="Bench group name (optional; auto-detect by app)"),
+		typer.Argument(help="Bench group name (optional; auto-detect by app)"),
 	] = None,
 ):
 	"""Find the app release whose commit hash starts with HASH_PREFIX and trigger deploy_and_update.
@@ -308,6 +328,12 @@ def _format_error_message(result: object) -> str:
 	if isinstance(result, dict):
 		return str(result.get("message") or result.get("exception") or result) or "Unknown error"
 	return str(result) or "Unknown error"
+
+
+def _should_proceed(message: str, confirm_token: str | None) -> bool:
+	if isinstance(confirm_token, str) and confirm_token.lower() in {"force", "yes", "y"}:
+		return True
+	return typer.confirm(message, default=False)
 
 
 # --------------------
