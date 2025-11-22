@@ -92,6 +92,7 @@ ALLOWED_DOCTYPES = [
 	"Partner Consent",
 	"Support Access",
 	"Partner Lead Origin",
+	"Auto Scale Record",
 ]
 
 whitelisted_methods = set()
