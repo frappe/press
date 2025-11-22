@@ -214,7 +214,7 @@ class RemoteFile(Document):
 	def delete_remote_object(self):
 		self.db_set("status", "Unavailable")
 		return self.s3_client.delete_object(
-			Bucket=frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"),
+			Bucket=self.bucket or frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"),
 			Key=self.file_path,
 		)
 
