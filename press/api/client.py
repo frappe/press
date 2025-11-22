@@ -92,6 +92,7 @@ ALLOWED_DOCTYPES = [
 	"Server Snapshot Recovery",
 	"Support Access",
 	"Partner Lead Origin",
+	"Auto Scale Record",
 ]
 
 whitelisted_methods = set()
