@@ -9,6 +9,7 @@
   "hostname",
   "domain",
   "tls_certificate_renewal_failed",
+  "plan",
   "column_break_4",
   "cluster",
   "provider",
@@ -263,6 +264,12 @@
    "fieldname": "only_monitor_uptime_metrics",
    "fieldtype": "Check",
    "label": "Only Monitor Uptime Metrics"
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "label": "Plan",
+   "options": "Server Plan"
   }
  ],
  "grid_page_length": 50,
@@ -272,7 +279,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2025-11-17 21:10:06.147734",
+ "modified": "2025-11-22 15:49:17.754965",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Monitor Server",

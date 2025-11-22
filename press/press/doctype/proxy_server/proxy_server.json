@@ -11,6 +11,7 @@
   "domain",
   "self_hosted_server_domain",
   "tls_certificate_renewal_failed",
+  "plan",
   "column_break_3",
   "cluster",
   "provider",
@@ -158,7 +159,6 @@
    "fieldtype": "Link",
    "label": "Domain",
    "options": "Root Domain",
-   "read_only": 1,
    "set_only_once": 1
   },
   {
@@ -458,10 +458,16 @@
    "fieldtype": "Check",
    "label": "Is Static IP",
    "read_only": 1
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "label": "Plan",
+   "options": "Server Plan"
   }
  ],
  "links": [],
- "modified": "2025-10-10 09:35:03.473042",
+ "modified": "2025-11-22 15:47:36.251776",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
