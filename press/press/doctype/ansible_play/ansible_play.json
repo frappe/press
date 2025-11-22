@@ -177,7 +177,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-16 14:55:11.607375",
+ "modified": "2025-11-19 15:53:46.951150",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Ansible Play",
@@ -210,6 +210,5 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "play",
- "track_changes": 1
+ "title_field": "play"
 }

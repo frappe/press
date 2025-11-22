@@ -130,7 +130,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-11-01 18:42:20.359594",
+ "modified": "2025-11-19 15:53:26.168512",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Ansible Task",
@@ -159,9 +159,9 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "task",
- "track_changes": 1
+ "title_field": "task"
 }
