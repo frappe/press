@@ -27,6 +27,7 @@ from press.exceptions import (
 	AAAARecordExists,
 	ConflictingCAARecord,
 	ConflictingDNSRecord,
+	DNSValidationError,
 	DomainProxied,
 	MultipleARecords,
 	MultipleCNAMERecords,
@@ -62,6 +63,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.site.site import Site
+	from press.press.doctype.team.team import Team
 
 
 NAMESERVERS = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
@@ -309,13 +311,15 @@ def new(site):
 	return _new(site)
 
 
-def get_app_subscriptions(app_plans, team: str):
+def get_app_subscriptions(app_plans, team_name: str):
 	subscriptions = []
+	team: Team | None = None
 
 	for app_name, plan_name in app_plans.items():
 		is_free = frappe.db.get_value("Marketplace App Plan", plan_name, "is_free")
 		if not is_free:
-			team = frappe.get_doc("Team", team)
+			if not team:
+				team = frappe.get_doc("Team", team_name)
 			if not team.can_install_paid_apps():
 				frappe.throw(
 					"You cannot install a Paid app on Free Credits. Please buy credits before trying to install again."
@@ -329,7 +333,7 @@ def get_app_subscriptions(app_plans, team: str):
 				"plan_type": "Marketplace App Plan",
 				"plan": plan_name,
 				"enabled": 1,
-				"team": team,
+				"team": team_name,
 			}
 		).insert(ignore_permissions=True)
 
@@ -546,7 +550,6 @@ def app_details_for_new_public_site():
 def options_for_new(for_bench: str | None = None):  # noqa: C901
 	from press.utils import get_nearest_cluster
 
-	for_bench = str(for_bench) if for_bench else None
 	available_versions = get_available_versions(for_bench)
 
 	unique_app_sources = []
@@ -627,9 +630,11 @@ def set_default_apps(app_source_details_grouped):
 			app_source["preinstalled"] = True
 
 
-def get_available_versions(for_bench: str = None):  # noqa
+def get_available_versions(for_bench: str | None = None):
 	available_versions = []
 	restricted_release_group_names = get_restricted_release_group_names()
+	filters: dict[str, int | bool | tuple] = {}
+	release_group_filters: dict[str, int | str | bool | tuple] = {}
 
 	if for_bench:
 		version = frappe.db.get_value("Release Group", for_bench, "version")
@@ -743,8 +748,8 @@ def get_domain():
 def get_new_site_options(group: str | None = None):
 	team = get_current_team()
 	apps = set()
-	filters = {"enabled": True}
-	versions_filters = {"public": True}
+	filters: dict[str, bool | str] = {"enabled": True}
+	versions_filters: dict[str, tuple | str | bool] = {"public": True}
 
 	if group:  # private bench
 		filters.update({"name": group, "team": team})
@@ -1840,11 +1845,13 @@ def check_domain_proxied(domain) -> str | None:
 		res = requests.head(f"http://{domain}", timeout=3)
 	except requests.exceptions.RequestException as e:
 		frappe.throw(
-			f"Unable to connect to the domain. Is the DNS correct{get_dns_provider_link_substr(domain)}?\n\n{e!s}"
+			f"Unable to connect to the domain. Is the DNS correct{get_dns_provider_link_substr(domain)}?\n\n{e!s}",
+			DNSValidationError,
 		)
 	else:
 		if (server := res.headers.get("server")) not in ("Frappe Cloud", None):  # eg: cloudflare
 			return server
+		return None
 
 
 def _check_dns_cname_a(name, domain, ignore_proxying=False):

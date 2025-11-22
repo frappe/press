@@ -46,6 +46,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.cluster.cluster import Cluster
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.mariadb_variable.mariadb_variable import MariaDBVariable
+	from press.press.doctype.press_job.press_job import PressJob
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server_mount.server_mount import ServerMount
 	from press.press.doctype.server_plan.server_plan import ServerPlan
@@ -1107,7 +1108,7 @@ class BaseServer(Document, TagHelpers):
 	def create_image(self):
 		self.run_press_job("Create Server Snapshot")
 
-	def run_press_job(self, job_name, arguments=None):
+	def run_press_job(self, job_name, arguments=None) -> PressJob:
 		if arguments is None:
 			arguments = {}
 		return frappe.get_doc(
