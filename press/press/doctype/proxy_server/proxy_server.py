@@ -24,7 +24,6 @@ class ProxyServer(BaseServer):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.proxy_server_domain.proxy_server_domain import ProxyServerDomain
 
 		agent_password: DF.Password | None
@@ -51,6 +50,7 @@ class ProxyServer(BaseServer):
 		is_ssh_proxy_setup: DF.Check
 		is_static_ip: DF.Check
 		is_wireguard_setup: DF.Check
+		plan: DF.Link | None
 		primary: DF.Link | None
 		private_ip: DF.Data | None
 		private_ip_interface_id: DF.Data | None
