@@ -80,6 +80,7 @@ DOC_URLS = {
 	"vite-not-found": "https://docs.frappe.io/cloud/common-issues/vite-not-found",
 	"invalid-project-structure": "https://docs.frappe.io/framework/user/en/tutorial/create-an-app#app-directory-structure",
 	"frappe-not-found": "https://pip.pypa.io/en/stable/news/#v25-3",
+	"no-python-dependency-file-found": "https://packaging.python.org/en/latest/guides/writing-pyproject-toml/",
 }
 
 
@@ -122,6 +123,11 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 			"Repository could not be fetched",
 			update_with_app_not_fetchable,
 			None,
+		),
+		(
+			"No python dependency file found",
+			update_with_no_python_dependency_file_error,
+			check_if_app_updated,
 		),
 		(
 			"App has invalid pyproject.toml file",
@@ -246,6 +252,32 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 			None,
 		),
 	]
+
+
+def create_build_warning_notification(
+	dc: "DeployCandidate",
+	dcb: "DeployCandidateBuild",
+	title: str,
+	message: str,
+) -> bool:
+	"""Create a warning notification for build"""
+	warning_details = {"title": title, "message": message}
+	doc_dict = {
+		"doctype": "Press Notification",
+		"team": dc.team,
+		"type": "Bench Deploy",
+		"document_type": dcb.doctype,
+		"document_name": dcb.name,
+		"class": "Warning",
+		**warning_details,
+	}
+	doc = frappe.get_doc(doc_dict)
+	doc.insert()
+	frappe.db.commit()
+
+	frappe.publish_realtime("press_notification", doctype="Press Notification", message={"team": dc.team})
+
+	return True
 
 
 def create_build_failed_notification(
@@ -541,6 +573,27 @@ def update_with_error_on_pip_install(
 
 	details["message"] = fmt(message)
 	details["assistance_url"] = DOC_URLS["debugging-app-installs-locally"]
+	return True
+
+
+def update_with_no_python_dependency_file_error(
+	details: "Details", dc: "DeployCandidate", dcb: "DeployCandidateBuild", exc: BaseException
+):
+	"No python dependency file found"
+	app_name = exc.args[-1]
+
+	details["title"] = "Validation Failed: No python dependency file found"
+	message = f"""
+	<p><b>{app_name}</b> does not have a python dependency file.
+
+	Please add a <code>pyproject.toml</code> file.</p>
+
+	<p>To rectify this issue, please follow the the steps mentioned in <i>Help</i>.</p>
+	"""
+	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["no-python-dependency-file-found"]
+
+	details["traceback"] = None
 	return True
 
 

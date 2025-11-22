@@ -2,7 +2,7 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
-# import frappe
+import frappe
 from frappe.model.document import Document
 
 
@@ -36,4 +36,39 @@ class PartnerCertificate(Document):
 		"partner_member_name",
 		"partner_member_email",
 		"free",
+		"team",
 	)
+
+	@staticmethod
+	def get_list_query(query, filters=None, **list_args):
+		PartnerCertificate = frappe.qb.DocType("Partner Certificate")
+		Team = frappe.qb.DocType("Team")
+
+		query = (
+			frappe.qb.from_(PartnerCertificate)
+			.inner_join(Team)
+			.on(PartnerCertificate.team == Team.name)
+			.select(
+				PartnerCertificate.course,
+				PartnerCertificate.version,
+				PartnerCertificate.issue_date,
+				PartnerCertificate.partner_member_name,
+				PartnerCertificate.partner_member_email,
+				PartnerCertificate.free,
+				PartnerCertificate.certificate_link,
+				Team.company_name.as_("team"),
+			)
+		)
+		if filters:
+			if filters.get("team") and not frappe.local.system_user():
+				query = query.where(PartnerCertificate.team == filters.get("team"))
+			if filters.get("course"):
+				query = query.where(PartnerCertificate.course == filters.get("course"))
+			if filters.get("search-text"):
+				search_text = f"%{filters.get('search-text')}%"
+				query = query.where(
+					(PartnerCertificate.partner_member_name.like(search_text))
+					| (PartnerCertificate.partner_member_email.like(search_text))
+					| (Team.company_name.like(search_text))
+				)
+		return query.run(as_dict=True)

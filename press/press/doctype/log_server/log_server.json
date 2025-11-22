@@ -9,6 +9,7 @@
   "hostname",
   "domain",
   "tls_certificate_renewal_failed",
+  "plan",
   "column_break_4",
   "cluster",
   "provider",
@@ -211,6 +212,12 @@
    "fieldtype": "Check",
    "label": "TLS Certificate Renewal Failed",
    "read_only": 1
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "label": "Plan",
+   "options": "Server Plan"
   }
  ],
  "links": [
@@ -219,7 +226,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2025-09-02 16:43:33.847741",
+ "modified": "2025-11-22 15:50:53.703274",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Log Server",

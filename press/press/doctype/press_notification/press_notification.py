@@ -70,6 +70,10 @@ class PressNotification(Document):
 			self.send_bench_deploy_failed(get_communication_info("Email", "General", "Team", self.team))
 
 	def send_bench_deploy_failed(self, mails: list[str]):
+		"""Skip emails in case of warning"""
+		if getattr(self, "class", None) == "Warning":
+			return
+
 		group_name = frappe.db.get_value("Deploy Candidate Build", self.document_name, "group")
 		rg_title = frappe.db.get_value("Release Group", group_name, "title")
 

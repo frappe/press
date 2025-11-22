@@ -12,6 +12,7 @@ import shutil
 import tarfile
 import tempfile
 import typing
+import warnings
 from datetime import datetime, timedelta
 from enum import Enum
 from functools import cached_property
@@ -30,12 +31,14 @@ from press.agent import Agent
 from press.exceptions import ImageNotFoundInRegistry
 from press.press.doctype.deploy_candidate.deploy_notifications import (
 	create_build_failed_notification,
+	create_build_warning_notification,
 )
 from press.press.doctype.deploy_candidate.docker_output_parsers import (
 	DockerBuildOutputParser,
 	UploadStepUpdater,
 )
 from press.press.doctype.deploy_candidate.utils import (
+	BuildWarning,
 	get_arm_build_server_with_least_active_builds,
 	get_build_server,
 	get_intel_build_server_with_least_active_builds,
@@ -49,6 +52,8 @@ from press.utils.jobs import get_background_jobs, stop_background_job
 from press.utils.webhook import create_webhook_event
 
 if typing.TYPE_CHECKING:
+	from warnings import WarningMessage
+
 	from rq.job import Job
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
@@ -639,6 +644,15 @@ class DeployCandidateBuild(Document):
 
 		return False
 
+	def handle_build_warning(self, title, warning: "WarningMessage") -> None:
+		"""Create warning notification similar to error notifications"""
+		create_build_warning_notification(
+			dc=self.candidate,
+			dcb=self,
+			title=title,
+			message=warning.message,
+		)
+
 	def handle_build_failure(
 		self,
 		exc: Exception | None = None,
@@ -1043,8 +1057,23 @@ class DeployCandidateBuild(Document):
 		)
 		self._set_output_parsers()
 
+		# https://docs.python.org/3/library/warnings.html#testing-warnings
+		with warnings.catch_warnings(record=True) as caught_warnings:
+			warnings.simplefilter("always", BuildWarning)  # capture everything
+
+			try:
+				self._prepare_build()
+			except Exception as exc:
+				self.handle_build_failure(exc)
+				return
+
+			for warning in caught_warnings:
+				self.handle_build_warning(
+					title="Pre Build Validation Warning",
+					warning=warning,
+				)
+
 		try:
-			self._prepare_build()
 			self._start_build()
 		except Exception as exc:
 			self.handle_build_failure(exc)

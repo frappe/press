@@ -70,6 +70,17 @@
 				>
 			</template>
 		</Dialog>
+		<Dialog
+			v-model="showApprovalRequestsDialog"
+			:options="{
+				title: 'Customer Approval Requests',
+				size: '6xl',
+			}"
+		>
+			<template #body-content>
+				<PartnerApprovalRequests />
+			</template>
+		</Dialog>
 	</div>
 </template>
 <script>
@@ -78,6 +89,7 @@ import ObjectList from '../ObjectList.vue';
 import { Dialog, ErrorMessage } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import { userCurrency } from '../../utils/format';
+import PartnerApprovalRequests from './PartnerApprovalRequests.vue';
 
 export default {
 	name: 'PartnerCustomers',
@@ -86,6 +98,7 @@ export default {
 		Dialog,
 		ErrorMessage,
 		ObjectList,
+		PartnerApprovalRequests,
 	},
 	data() {
 		return {
@@ -95,6 +108,7 @@ export default {
 			customerTeam: null,
 			amount: 0.0,
 			showConfirmationDialog: false,
+			showApprovalRequestsDialog: false,
 		};
 	},
 	resources: {
@@ -185,6 +199,16 @@ export default {
 						},
 					},
 				],
+				actions: () => {
+					return [
+						{
+							label: 'Customer Approval Requests',
+							onClick: () => {
+								this.showApprovalRequestsDialog = true;
+							},
+						},
+					];
+				},
 			};
 		},
 	},

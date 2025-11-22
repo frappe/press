@@ -21,10 +21,8 @@
 				>
 					{{ banner.message }}
 				</div>
-				<p v-if="isReceived" class="leading-normal">
-					Do you want to accept or reject this access request from
-					<span class="font-medium">{{ request.doc?.requested_by }}</span
-					>?
+				<p v-if="isReceived && isPending" class="leading-normal">
+					Do you want to accept or reject this access request?
 				</p>
 				<div class="rounded-sm border divide-y">
 					<div
@@ -54,7 +52,7 @@
 				</div>
 				<div v-if="request.doc?.reason" class="space-y-2">
 					<p class="font-medium">Reason:</p>
-					<p>{{ request.doc?.reason }}</p>
+					<p class="leading-relaxed">{{ request.doc?.reason }}</p>
 				</div>
 				<div v-if="permissions.length" class="space-y-2">
 					<p class="font-medium">Permissions:</p>
@@ -87,13 +85,19 @@ const props = defineProps<{
 
 const open = ref(true);
 const team = getTeam();
+
 const request = createDocumentResource({
 	doctype: 'Support Access',
 	name: props.name,
 	auto: true,
 });
+
 const isReceived = computed(() => {
 	return team.doc?.name === request.doc?.target_team;
+});
+
+const isPending = computed(() => {
+	return request.doc?.status === 'Pending';
 });
 
 const permissions = computed(() =>

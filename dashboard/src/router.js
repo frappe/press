@@ -142,6 +142,11 @@ let router = createRouter({
 					path: 'follow-up',
 					component: () => import('./components/partners/LeadFollowup.vue'),
 				},
+				{
+					name: 'LeadActivities',
+					path: 'activities',
+					component: () => import('./components/partners/LeadActivities.vue'),
+				},
 			],
 		},
 		{
@@ -265,12 +270,6 @@ let router = createRouter({
 					component: () => import('./components/partners/PartnerResources.vue'),
 				},
 				{
-					name: 'PartnerApprovalRequests',
-					path: 'approval-requests',
-					component: () =>
-						import('./components/partners/PartnerApprovalRequests.vue'),
-				},
-				{
 					name: 'PartnerContributions',
 					path: 'contributions',
 					component: () =>
@@ -311,9 +310,9 @@ let router = createRouter({
 					component: () => import('./pages/PartnerAdminCertificates.vue'),
 				},
 				{
-					name: 'PartnerLeadList',
-					path: 'partner-lead-list',
-					component: () => import('./components/partners/PartnerLeads.vue'),
+					name: 'PartnerAdminLeads',
+					path: 'partner-admin-lead-list',
+					component: () => import('./pages/PartnerAdminLeads.vue'),
 				},
 			],
 		},

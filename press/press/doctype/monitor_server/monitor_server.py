@@ -54,6 +54,7 @@ class MonitorServer(BaseServer):
 		monitoring_password: DF.Password | None
 		node_exporter_dashboard_path: DF.Data | None
 		only_monitor_uptime_metrics: DF.Check
+		plan: DF.Link | None
 		private_ip: DF.Data
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None

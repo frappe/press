@@ -122,7 +122,7 @@
 									:disabled="adminAccess"
 								/>
 							</div>
-							<div class="space-y-1 rounded border p-4">
+							<div v-if="allowPartner" class="space-y-1 rounded border p-4">
 								<h2 class="mb-2 ml-2 font-semibold">Partner Permissions</h2>
 								<Switch
 									v-model="allowDashboard"

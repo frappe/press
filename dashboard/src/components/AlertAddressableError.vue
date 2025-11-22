@@ -1,8 +1,9 @@
 <template>
-	<AlertBanner :title="title" type="error">
-		<Button class="ml-auto" variant="outline" @click="show"> View </Button>
+	<AlertBanner :title="title" :type="type">
+		<Button class="ml-auto" variant="outline" @click="show">View</Button>
 	</AlertBanner>
 </template>
+
 <script>
 import AlertBanner from './AlertBanner.vue';
 import { addressableErrorDialog } from '../utils/components';
@@ -14,6 +15,10 @@ export default {
 	props: {
 		name: String,
 		title: String,
+		type: {
+			type: String,
+			default: 'error',
+		},
 	},
 	methods: {
 		show() {

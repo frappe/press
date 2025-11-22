@@ -34,6 +34,7 @@ class RegistryServer(BaseServer):
 		is_mirror: DF.Check
 		is_server_setup: DF.Check
 		monitoring_password: DF.Password | None
+		plan: DF.Link | None
 		private_ip: DF.Data
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None

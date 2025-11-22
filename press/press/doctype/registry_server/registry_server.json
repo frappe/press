@@ -9,6 +9,7 @@
   "hostname",
   "domain",
   "tls_certificate_renewal_failed",
+  "plan",
   "column_break_4",
   "provider",
   "virtual_machine",
@@ -266,6 +267,12 @@
    "fieldname": "proxy_pass",
    "fieldtype": "Data",
    "label": "Proxy Pass"
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "label": "Plan",
+   "options": "Server Plan"
   }
  ],
  "links": [
@@ -274,7 +281,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2025-09-19 16:11:40.237095",
+ "modified": "2025-11-22 15:50:08.907789",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Registry Server",
