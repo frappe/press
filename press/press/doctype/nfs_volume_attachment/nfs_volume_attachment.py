@@ -66,6 +66,17 @@ class NFSVolumeAttachment(Document, StepHandler):
 				f"{self.primary_server} is already sharing benches with {self.secondary_server}!",
 			)
 
+	def mark_servers_as_installing(self, step: "NFSVolumeAttachmentStep"):
+		"""Mark primary and secondary servers as `Installing`"""
+		step.status = Status.Running
+		step.save()
+
+		frappe.db.set_value("Server", self.primary_server, "status", "Installing")
+		frappe.db.set_value("Server", self.secondary_server, "status", "Installing")
+
+		step.status = Status.Success
+		step.save()
+
 	def start_secondary_server(self, step: "NFSVolumeAttachmentStep"):
 		"""Start secondary server"""
 		step.status = Status.Running
@@ -134,7 +145,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 		)
 
 		try:
-			agent_job = primary_server.agent.add_servers_to_acl(
+			agent_job = Agent(primary_server.name).add_servers_to_acl(
 				secondary_server_private_ip=secondary_server_private_ip,
 				reference_doctype=primary_server.doctype,
 				reference_name=primary_server.name,
@@ -262,6 +273,8 @@ class NFSVolumeAttachment(Document, StepHandler):
 		step.save()
 
 		frappe.db.set_value("Server", self.primary_server, "benches_on_shared_volume", True)
+		frappe.db.set_value("Server", self.primary_server, "status", "Active")
+		frappe.db.set_value("Server", self.secondary_server, "status", "Active")
 
 		step.status = Status.Success
 		step.save()
@@ -294,6 +307,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 		"""Append defined steps to the document before saving."""
 		for step in self.get_steps(
 			[
+				self.mark_servers_as_installing,
 				self.start_secondary_server,
 				self.wait_for_secondary_server_to_start,
 				self.setup_nfs_common_on_secondary,
@@ -304,9 +318,9 @@ class NFSVolumeAttachment(Document, StepHandler):
 				self.move_benches_to_shared,
 				self.run_primary_server_benches_on_shared_fs,
 				self.wait_for_benches_to_run_on_shared,
-				self.ready_to_auto_scale,
 				self.stop_secondary_server,
 				self.wait_for_secondary_server_to_stop,
+				self.ready_to_auto_scale,
 			]
 		):
 			self.append("nfs_volume_attachment_steps", step)
