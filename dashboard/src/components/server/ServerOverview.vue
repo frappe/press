@@ -21,10 +21,9 @@
 					class="grid grid-cols-2 lg:grid-cols-4"
 					:class="{
 						'opacity-70 pointer-events-none':
-							($appSecondaryServer?.doc?.status === 'Pending' &&
-								server === 'App Secondary Server') ||
-							($appSecondaryServer?.doc?.status === 'Active' &&
-								server === 'Server'),
+							(server === 'App Secondary Server' &&
+								!$appServer?.doc?.scaled_up) ||
+							($appServer?.doc?.scaled_up && server === 'Server'),
 					}"
 				>
 					<template v-for="(d, i) in currentUsage(server)" :key="d.value">
@@ -45,9 +44,8 @@
 										<Badge
 											v-if="
 												(server === 'App Secondary Server' &&
-													$appSecondaryServer?.doc?.status === 'Pending') ||
-												($appSecondaryServer?.doc?.status === 'Active' &&
-													server === 'Server')
+													!$appServer?.doc?.scaled_up) ||
+												($appServer?.doc?.scaled_up && server === 'Server')
 											"
 											class="ml-2"
 											theme="gray"
@@ -99,7 +97,12 @@
 									/>
 
 									<Button
-										v-if="server === 'Server' && !$appServer?.doc?.scaled_up"
+										v-if="
+											server === 'Server' &&
+											!$appServer?.doc?.scaled_up &&
+											$appServer?.doc?.status === 'Active' &&
+											$appServer?.doc?.secondary_server
+										"
 										@click="scaleUp()"
 										label="Scale Up"
 									/>

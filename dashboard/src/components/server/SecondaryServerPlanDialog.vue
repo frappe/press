@@ -120,7 +120,10 @@ export default {
 						onSuccess: () => {
 							this.show = false;
 							this.$toast.success('Starting secondary server setup');
-							this.$router.push({ name: 'Server List' });
+							this.$router.push({
+								path: this.$server.doc.name,
+								path: 'plays',
+							});
 						},
 					},
 				);
