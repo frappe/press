@@ -2077,6 +2077,9 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		except Exception:
 			log_error("Set MariaDB Mount Dependency Exception", server=self.as_dict())
 
+	def update_database_schema_sizes(self):
+		self.agent.update_database_schema_sizes()
+
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Database Server")
 
@@ -2268,6 +2271,29 @@ def auto_purge_binlogs_by_size_limit():
 			if not server.auto_purge_binlog_based_on_size:
 				continue
 			server.purge_binlogs_by_configured_size_limit()
+			frappe.db.commit()
+		except rq.timeouts.JobTimeoutException:
+			frappe.db.rollback()
+			return
+		except Exception:
+			frappe.db.rollback()
+
+
+def update_database_schema_sizes():
+	databases = frappe.db.get_all(
+		"Database Server",
+		filters={
+			"status": "Active",
+		},
+		pluck="name",
+	)
+
+	for database in databases:
+		if has_job_timeout_exceeded():
+			return
+		try:
+			server: DatabaseServer = frappe.get_doc("Database Server", database)
+			server.update_database_schema_sizes()
 			frappe.db.commit()
 		except rq.timeouts.JobTimeoutException:
 			frappe.db.rollback()

@@ -1375,6 +1375,23 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			},
 		)
 
+	def update_database_schema_sizes(self):
+		if self.server_type != "Database Server":
+			return NotImplementedError("This method is only supported for Database Server")
+
+		return self.create_agent_job(
+			"Update Database Schema Sizes",
+			"database/update-schema-sizes",
+			data={
+				"private_ip": frappe.get_value("Database Server", self.server, "private_ip"),
+				"mariadb_root_password": get_decrypted_password(
+					"Database Server", self.server, "mariadb_root_password"
+				),
+			},
+			reference_doctype=self.server_type,
+			reference_name=self.server,
+		)
+
 	def fetch_database_variables(self):
 		if self.server_type != "Database Server":
 			return NotImplementedError("Only Database Server supports this method")
