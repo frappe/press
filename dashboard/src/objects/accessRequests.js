@@ -28,7 +28,14 @@ export default {
 				{
 					type: 'select',
 					fieldname: 'status',
-					options: ['', 'Pending', 'Accepted', 'Rejected'],
+					options: [
+						'',
+						'Pending',
+						'Accepted',
+						'Rejected',
+						'Revoked',
+						'Forfeited',
+					],
 					default: '',
 					placeholder: 'Status',
 					condition: true,

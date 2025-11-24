@@ -17,9 +17,7 @@
 							<div
 								class="inline-flex items-center flex-wrap gap-1.5 text-ink-gray-8 font-medium"
 							>
-								<span class="font-medium">{{
-									getUser(activity.owner).full_name
-								}}</span>
+								<span class="font-medium">{{ activity.owner }}</span>
 								<span class="text-ink-gray-5">{{ activity.type }}</span>
 								<span v-if="activity.data.field_label">{{
 									activity.data.field_label
@@ -27,14 +25,18 @@
 								<span v-if="activity.value" class="text-ink-gray-5">{{
 									activity.value
 								}}</span>
-								<span v-if="activity.data.old_value">{{
-									activity.data.old_value
-								}}</span>
+								<span
+									class="truncate max-w-xs"
+									v-if="activity.data.old_value"
+									>{{ activity.data.old_value }}</span
+								>
 								<span v-else>{{ activity.data.value }}</span>
 								<span v-if="activity.to" class="text-ink-gray-5">{{
 									activity.to
 								}}</span>
-								{{ activity.data.new_value }}
+								<span class="truncate max-w-xs">{{
+									activity.data.new_value
+								}}</span>
 							</div>
 							<div class="ml-auto whitespace-nowrap">
 								<Tooltip :text="formatDate(activity.creation)">
@@ -53,7 +55,7 @@
 									<span>{{ activity.show_others ? 'Hide' : 'Show' }}</span>
 									<span> +{{ activity.other_versions.length }} </span>
 									<span>{{ 'changes from' }}</span>
-									<span>{{ getUser(activity.owner).full_name }}</span>
+									<span>{{ activity.owner }}</span>
 									<Button
 										class="!size-4"
 										variant="ghost"
@@ -136,7 +138,6 @@ import DotIcon from '../icons/DotIcon.vue';
 import SelectIcon from '../icons/SelectIcon.vue';
 import { computed } from 'vue';
 import { timeAgo, startCase } from '../../utils/format';
-import { getUser } from '../../data/session';
 
 const route = useRoute();
 
