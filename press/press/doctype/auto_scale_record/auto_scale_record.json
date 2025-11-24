@@ -70,8 +70,13 @@
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-11-24 10:47:26.758408",
+ "links": [
+  {
+   "link_doctype": "Press Notification",
+   "link_fieldname": "document_name"
+  }
+ ],
+ "modified": "2025-11-24 15:26:59.379855",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Auto Scale Record",
