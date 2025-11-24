@@ -2451,8 +2451,7 @@ class Server(BaseServer):
 			nfs_volume_detachment: "NFSVolumeDetachment" = frappe.get_doc(
 				{"doctype": "NFS Volume Detachment", "primary_server": self.name}
 			)
-			print("created: ", nfs_volume_detachment)
-			# nfs_volume_detachment.insert(ignore_permissions=True)
+			nfs_volume_detachment.insert(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def setup_ncdu(self):
@@ -3048,15 +3047,29 @@ class Server(BaseServer):
 			frappe.throw("Snapshot does not belong to this server")
 		doc.unlock()
 
+	def validate_bench_status_before_scaling(self) -> bool:
+		"Ensures no new bench job is pending/running before scaling"
+		return bool(
+			frappe.db.get_value(
+				"Bench", {"server": self.name, "status": ("IN", ["Pending", "Installing", "Updating"])}
+			)
+		)
+
 	def validate_scale(self):
 		"""
 		Check if the server can auto scale, the following parameters before creating a scale record
-			1. Server is configured for auto scale.
-			2. Was the last auto scale modified before the cool of period (don't create new auto scale).
-			3. There is a auto scale operation running on the server.
+			- Benches being modified
+			- Server is configured for auto scale.
+			- Was the last auto scale modified before the cool of period (don't create new auto scale).
+			- There is a auto scale operation running on the server.
 		"""
 		if not self.can_scale:
 			frappe.throw("Server is not configured for auto scaling", frappe.ValidationError)
+
+		if self.validate_bench_status_before_scaling():
+			frappe.throw(
+				"Please wait for all bench related jobs to complete before scaling the server.",
+			)
 
 		last_auto_scale_at = frappe.db.get_value(
 			"Auto Scale Record", {"primary_server": self.name, "status": "Success"}, "modified"
