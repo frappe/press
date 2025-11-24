@@ -47,6 +47,11 @@ if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.virtual_machine_migration.virtual_machine_migration import (
 		VirtualMachineMigration,
 	)
+	from press.press.doctype.cluster.cluster import Cluster
+	from press.press.doctype.database_server.database_server import DatabaseServer
+	from press.press.doctype.log_server.log_server import LogServer
+	from press.press.doctype.monitor_server.monitor_server import MonitorServer
+	from press.press.doctype.proxy_server.proxy_server import ProxyServer
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot import VirtualDiskSnapshot
 
@@ -1398,7 +1403,7 @@ class VirtualMachine(Document):
 		return None
 
 	@frappe.whitelist()
-	def create_server(self, is_secondary: bool = False, primary: str | None = None):
+	def create_server(self, is_secondary: bool = False, primary: str | None = None) -> Server:
 		document = {
 			"doctype": "Server",
 			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
@@ -1422,7 +1427,7 @@ class VirtualMachine(Document):
 		return frappe.get_doc(document).insert()
 
 	@frappe.whitelist()
-	def create_database_server(self):
+	def create_database_server(self) -> DatabaseServer:
 		document = {
 			"doctype": "Database Server",
 			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
@@ -1459,7 +1464,7 @@ class VirtualMachine(Document):
 		return frappe.get_all("Root Domain", {"enabled": True}, pluck="name")
 
 	@frappe.whitelist()
-	def create_proxy_server(self):
+	def create_proxy_server(self) -> ProxyServer:
 		document = {
 			"doctype": "Proxy Server",
 			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
@@ -1477,7 +1482,7 @@ class VirtualMachine(Document):
 		return frappe.get_doc(document).insert()
 
 	@frappe.whitelist()
-	def create_monitor_server(self):
+	def create_monitor_server(self) -> MonitorServer:
 		document = {
 			"doctype": "Monitor Server",
 			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
@@ -1493,7 +1498,7 @@ class VirtualMachine(Document):
 		return frappe.get_doc(document).insert()
 
 	@frappe.whitelist()
-	def create_log_server(self):
+	def create_log_server(self) -> LogServer:
 		document = {
 			"doctype": "Log Server",
 			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
@@ -1656,11 +1661,11 @@ class VirtualMachine(Document):
 				queue="sync",
 				job_id=f"bulk_sync_oci:{cluster}",
 				deduplicate=True,
-				cluster=cluster,
+				cluster_name=cluster,
 			)
 
-	def bulk_sync_oci_cluster(self, cluster: str):
-		cluster = frappe.get_doc("Cluster", cluster)
+	def bulk_sync_oci_cluster(self, cluster_name: str):
+		cluster: Cluster = frappe.get_doc("Cluster", cluster_name)
 		client: "ComputeClient" = self.client()
 
 		try:
@@ -1699,7 +1704,7 @@ class VirtualMachine(Document):
 			log_error("Virtual Machine OCI Bulk Sync Error", cluster=cluster.name)
 			frappe.db.rollback()
 
-	def bulk_sync_oci_cluster_in_batch(self, instances: list[dict]):
+	def bulk_sync_oci_cluster_in_batch(self, instances: list[frappe._dict]):
 		for instance in instances:
 			machine: VirtualMachine = frappe.get_doc("Virtual Machine", {"instance_id": instance.id})
 			if has_job_timeout_exceeded():

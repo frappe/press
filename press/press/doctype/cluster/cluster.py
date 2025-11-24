@@ -40,10 +40,11 @@ from press.utils import get_current_team, unique
 if typing.TYPE_CHECKING:
 	from collections.abc import Generator
 
-	from press.press.doctype.database_server.database_server import DatabaseServer
+	from press.press.doctype.log_server.log_server import LogServer
+	from press.press.doctype.monitor_server.monitor_server import MonitorServer
 	from press.press.doctype.press_job.press_job import PressJob
 	from press.press.doctype.press_settings.press_settings import PressSettings
-	from press.press.doctype.server.server import Server
+	from press.press.doctype.server.server import BaseServer
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
@@ -780,7 +781,7 @@ class Cluster(Document):
 				create_subscription=False,
 			)
 
-	def get_aws_client(self) -> boto3.client:
+	def get_aws_client(self):
 		return boto3.client(
 			"ec2",
 			region_name=self.region,
@@ -856,7 +857,7 @@ class Cluster(Document):
 			return "cpx21"
 		return None
 
-	def get_or_create_basic_plan(self, server_type):
+	def get_or_create_basic_plan(self, server_type) -> ServerPlan:
 		plan = frappe.db.exists("Server Plan", f"Basic Cluster - {server_type}")
 		if plan:
 			return frappe.get_doc("Server Plan", f"Basic Cluster - {server_type}")
@@ -878,7 +879,7 @@ class Cluster(Document):
 		self,
 		doctype: str,
 		title: str,
-		plan: "ServerPlan" = None,
+		plan: ServerPlan | None = None,
 		domain: str | None = None,
 		team: str | None = None,
 		create_subscription=True,
@@ -892,7 +893,7 @@ class Cluster(Document):
 		kms_key_id: str | None = None,
 		is_secondary: bool = False,
 		primary: str | None = None,
-	) -> tuple["Server", "PressJob"]:
+	) -> tuple[BaseServer | MonitorServer | LogServer, PressJob]:
 		"""Creates a server for the cluster
 
 		temporary_server: If you are creating a temporary server for some special purpose, set this to True.
@@ -934,10 +935,10 @@ class Cluster(Document):
 			temporary_server=temporary_server,
 			kms_key_id=kms_key_id,
 		)
-		server = None
+		server: BaseServer | MonitorServer | LogServer | None = None
 		match doctype:
 			case "Database Server":
-				server: "DatabaseServer" = vm.create_database_server()
+				server = vm.create_database_server()
 				server.ram = plan.memory
 				server.title = f"{title} - Database"
 				server.auto_increase_storage = auto_increase_storage
@@ -955,7 +956,7 @@ class Cluster(Document):
 					server.binlog_max_disk_usage_percent = 20
 
 			case "Server":
-				server: "Server" = vm.create_server(is_secondary=is_secondary, primary=primary)
+				server = vm.create_server(is_secondary=is_secondary, primary=primary)
 				server.title = f"{title} - Application" if not is_secondary else title
 				server.ram = plan.memory
 				if hasattr(self, "database_server") and self.database_server:
@@ -980,6 +981,8 @@ class Cluster(Document):
 			case "Log Server":
 				server = vm.create_log_server()
 				server.title = f"{title} - Log"
+			case _:
+				raise NotImplementedError
 
 		if create_subscription:
 			server.plan = plan.name
@@ -989,7 +992,7 @@ class Cluster(Document):
 		if create_subscription:
 			server.create_subscription(plan.name)
 
-		job_arguments = {}
+		job_arguments: dict[str, str | bool | None] = {}
 		if setup_db_replication:
 			job_arguments["master_db_server"] = master_db_server
 			job_arguments["setup_db_replication"] = True

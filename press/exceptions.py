@@ -57,6 +57,10 @@ class InactiveDomains(ValidationError):
 	pass
 
 
+class ActiveDomainsForStandalone(ValidationError):
+	pass
+
+
 class DNSValidationError(ValidationError):
 	pass
 

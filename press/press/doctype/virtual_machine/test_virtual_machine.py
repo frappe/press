@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 @patch.object(VirtualMachine, "client", new=MagicMock())
 def create_test_virtual_machine(
 	ip: str | None = None,
-	cluster: Cluster = None,
+	cluster: Cluster | None = None,
 	series: str = "m",
 	platform: str = "x86_64",
 	cloud_provider: str = "AWS EC2",

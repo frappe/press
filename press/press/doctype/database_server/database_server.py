@@ -546,7 +546,7 @@ class DatabaseServer(BaseServer):
 		self,
 		variable: str,
 		value_type: Literal["value_int", "value_float", "value_str"],
-		value: Any = None,
+		value: Any | None = None,
 		skip: bool = False,
 		persist: bool = True,
 		save: bool = True,
