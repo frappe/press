@@ -268,6 +268,9 @@ scheduler_events = {
 			"press.press.audit.check_backup_records",
 			"press.press.audit.billing_audit",
 		],
+		"0 0 * * *": [
+			"press.saas.doctype.product_trial_request.product_trial_request.gather_daily_stats",
+		],
 		"0 3 * * *": [
 			"press.press.doctype.drip_email.drip_email.send_drip_emails",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_all_snapshots_from_aws",
@@ -287,6 +290,7 @@ scheduler_events = {
 		],
 		"0 */2 * * *": [
 			"press.signup_e2e.run_signup_e2e",
+			"press.saas.doctype.product_trial_request.product_trial_request.gather_hourly_stats",
 		],
 		"0 */6 * * *": [
 			"press.press.doctype.server.server.cleanup_unused_files",
@@ -356,7 +360,10 @@ scheduler_events = {
 			"press.press.doctype.aws_savings_plan_recommendation.aws_savings_plan_recommendation.refresh",
 			"press.infrastructure.doctype.ssh_access_audit.ssh_access_audit.run",
 		],
-		"0 9 * * 2": ["press.press.doctype.build_metric.build_metric.create_build_metric"],
+		"0 9 * * 2": [
+			"press.press.doctype.build_metric.build_metric.create_build_metric",
+			"press.saas.doctype.product_trial_request.product_trial_request.gather_weekly_stats",
+		],
 	},
 }
 
