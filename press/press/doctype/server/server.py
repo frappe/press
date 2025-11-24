@@ -2051,6 +2051,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		if self.doctype == "Database Server":
 			self.adjust_memory_config()
+			self.provide_frappe_user_du_permission()
 			self.setup_logrotate()
 
 		if self.doctype == "Proxy Server":

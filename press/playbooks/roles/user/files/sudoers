@@ -6,4 +6,4 @@ frappe ALL = (root) NOPASSWD: /bin/systemctl * alertmanager
 frappe ALL = (root) NOPASSWD: /usr/bin/supervisorctl
 frappe ALL = (root) NOPASSWD: /usr/sbin/nginx
 frappe ALL = (root) NOPASSWD: /usr/local/bin/bench
-
+frappe ALL = (root) NOPASSWD: /usr/bin/du
