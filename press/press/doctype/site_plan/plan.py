@@ -32,7 +32,6 @@ class Plan(Document):
 		if not fields:
 			fields = ["*"]
 
-<<<<<<< HEAD
 		# Should either be enabled or a legacy plan
 		# In case a platform is not passed in we want more control and only want to show
 		# enabled plans in the region, in other cases we can show legacy plan
@@ -40,9 +39,6 @@ class Plan(Document):
 			filters.update({"enabled": True})
 		else:
 			or_filters = {"enabled": True, "legacy_plan": True}
-=======
-		filters.update({"enabled": True})
->>>>>>> 79e86a1fb (feat(auto-scale): Show auto scale record on the dashboard)
 
 		fields.append("`tabHas Role`.role")
 		plans = frappe.get_all(
