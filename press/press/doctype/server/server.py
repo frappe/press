@@ -374,7 +374,8 @@ class BaseServer(Document, TagHelpers):
 				"condition": self.status == "Active"
 				and self.doctype == "Server"
 				# As only present on server doctype
-				and not self.secondary_server,
+				and not self.secondary_server
+				and self.team == "team@erpnext.com",
 				"group": "Application Server Actions",
 			},
 			{
