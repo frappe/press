@@ -920,6 +920,22 @@ export default {
 							primary_server: server.doc?.name,
 						};
 					},
+					filterControls() {
+						return [
+							{
+								type: 'select',
+								label: 'Status',
+								fieldname: 'status',
+								options: ['', 'Running', 'Pending', 'Failure', 'Success'],
+							},
+							{
+								type: 'select',
+								label: 'Action',
+								fieldname: 'action',
+								options: ['', 'Scale Down', 'Scale Up'],
+							},
+						];
+					},
 					orderBy: 'creation desc',
 					fields: ['owner'],
 					columns: [
@@ -960,6 +976,11 @@ export default {
 
 								return `${seconds}s`;
 							},
+						},
+						{
+							label: 'Triggered By',
+							fieldname: 'owner',
+							align: 'center',
 						},
 						{
 							label: 'Triggered At',
