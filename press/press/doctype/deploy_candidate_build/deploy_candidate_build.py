@@ -656,7 +656,7 @@ class DeployCandidateBuild(Document):
 	def handle_build_failure(
 		self,
 		exc: Exception | None = None,
-		job: "AgentJob | None" = None,
+		job: AgentJob | None = None,
 	) -> None:
 		self._flush_output_parsers()
 		self.set_status(Status.FAILURE)
