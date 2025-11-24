@@ -111,6 +111,23 @@ class NFSVolumeDetachment(Document, StepHandler):
 			self._fail_ansible_step(step, ansible, e)
 			raise
 
+	def remove_shared_directory(self, step: "NFSVolumeDetachmentStep"):
+		"""Remove shared directory folder"""
+		primary_server: Server = frappe.get_cached_doc("Server", self.primary_server)
+		shared_directory = frappe.db.get_single_value("Press Settings", "shared_directory")
+		try:
+			ansible = Ansible(
+				playbook="cleanup_shared.yml",
+				server=primary_server,
+				user=primary_server._ssh_user(),
+				port=primary_server._ssh_port(),
+				variables={"shared_directory": shared_directory},
+			)
+			self.handle_ansible_play(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+			raise
+
 	def run_bench_on_primary_server(self, step: "NFSVolumeDetachmentStep"):
 		"""Change bench directory"""
 		secondary_server_private_ip = frappe.db.get_value(
@@ -285,8 +302,10 @@ class NFSVolumeDetachment(Document, StepHandler):
 				self.mark_servers_as_installing,
 				self.start_secondary_server,
 				self.wait_for_secondary_server_to_start,
+				self.sync_data,  # Once before and once after to reduce downtime.
 				self.stop_all_benches,
 				self.sync_data,
+				self.remove_shared_directory,
 				self.run_bench_on_primary_server,
 				self.wait_for_job_completion,
 				self.remove_servers_from_acl,
