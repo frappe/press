@@ -38,6 +38,17 @@ class NFSVolumeDetachment(Document, StepHandler):
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
 	# end: auto-generated types
 
+	def mark_servers_as_installing(self, step: "NFSVolumeDetachmentStep"):
+		"""Mark primary and secondary servers as `Installing`"""
+		step.status = Status.Running
+		step.save()
+
+		frappe.db.set_value("Server", self.primary_server, "status", "Installing")
+		frappe.db.set_value("Server", self.secondary_server, "status", "Installing")
+
+		step.status = Status.Success
+		step.save()
+
 	def start_secondary_server(self, step: "NFSVolumeDetachmentStep"):
 		"""Start secondary server"""
 		step.status = Status.Running
@@ -164,11 +175,10 @@ class NFSVolumeDetachment(Document, StepHandler):
 
 	def remove_servers_from_acl(self, step: "NFSVolumeDetachmentStep") -> None:
 		"""Remove primary and secondary servers from acl"""
-		primary_server: Server = frappe.get_cached_doc("Server", self.primary_server)
 		secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
 
 		try:
-			agent_job = primary_server.agent.remove_servers_from_acl(
+			agent_job = Agent(self.primary_server).remove_servers_from_acl(
 				secondary_server_private_ip=secondary_server_private_ip,
 			)
 			step.job_type = "Agent Job"
@@ -261,6 +271,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 
 			# Mark secondary server field as empty on the primary server
 			frappe.db.set_value("Server", self.primary_server, "secondary_server", None)
+			frappe.db.set_value("Server", self.primary_server, "status", "Active")
 
 			step.status = Status.Success
 			step.save()
@@ -271,6 +282,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 		"""Append defined steps to the document before saving."""
 		for step in self.get_steps(
 			[
+				self.mark_servers_as_installing,
 				self.start_secondary_server,
 				self.wait_for_secondary_server_to_start,
 				self.stop_all_benches,
