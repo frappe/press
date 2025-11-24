@@ -26,18 +26,16 @@ class AutoScaleRecord(Document, StepHandler):
 
 		from press.press.doctype.scale_step.scale_step import ScaleStep
 
+		action: DF.Literal["Scale Up", "Scale Down"]
 		primary_server: DF.Link
-		scale_down: DF.Check
 		scale_steps: DF.Table[ScaleStep]
-		scale_up: DF.Check
 		secondary_server: DF.Link | None
 		status: DF.Literal["Pending", "Running", "Failure", "Success"]
 	# end: auto-generated types
 
 	dashboard_fields = (
 		"secondary_server",
-		"scale_up",
-		"scale_down",
+		"action",
 		"created_at",
 		"modified_at",
 		"status",
@@ -45,17 +43,15 @@ class AutoScaleRecord(Document, StepHandler):
 
 	def before_insert(self):
 		"""Set metadata attributes"""
-		if self.scale_up:
+		if self.action == "Scale Up":
 			for step in self.get_steps(
 				[
 					self.start_secondary_server,
 					self.wait_for_secondary_server_to_start,
-					# Do this before we start sendings requests to the secondary
-					# since bench can run with secondary's configuration on the primary
 					self.switch_to_secondary,
+					self.wait_for_switch_to_secondary,
 					self.setup_secondary_upstream,
 					self.wait_for_secondary_upstream,
-					self.wait_for_switch_to_secondary,
 					self.mark_server_as_auto_scale,
 				]
 			):
@@ -64,10 +60,10 @@ class AutoScaleRecord(Document, StepHandler):
 		else:
 			for step in self.get_steps(
 				[
-					self.setup_primary_upstream,
-					self.wait_for_primary_upstream,
 					self.switch_to_primary,
 					self.wait_for_primary_switch,
+					self.setup_primary_upstream,
+					self.wait_for_primary_upstream,
 					self.initiate_secondary_shutdown,
 				]
 			):

@@ -177,7 +177,7 @@ class BaseServer(Document, TagHelpers):
 
 		if self.doctype == "Server":
 			doc.secondary_server = self.secondary_server
-			doc.benches = self.benches_on_shared_volume
+			doc.scaled_up = self.scaled_up
 
 		return doc
 
@@ -3089,7 +3089,7 @@ class Server(BaseServer):
 
 		self.validate_scale()
 
-		auto_scale_record = self._create_auto_scale_record(scale_up=True)
+		auto_scale_record = self._create_auto_scale_record(action="Scale Up")
 		auto_scale_record.insert()
 
 	@dashboard_whitelist()
@@ -3100,7 +3100,7 @@ class Server(BaseServer):
 
 		self.validate_scale()
 
-		auto_scale_record = self._create_auto_scale_record(scale_up=False)
+		auto_scale_record = self._create_auto_scale_record(action="Scale Down")
 		auto_scale_record.insert()
 
 	@property
@@ -3116,16 +3116,9 @@ class Server(BaseServer):
 		)
 		return self.benches_on_shared_volume and not has_release_groups_without_redis_password
 
-	def _create_auto_scale_record(self, scale_up: bool) -> AutoScaleRecord:
+	def _create_auto_scale_record(self, action: Literal["Scale Up", "Scale Down"]) -> AutoScaleRecord:
 		"""Create up/down scale record"""
-		return frappe.get_doc(
-			{
-				"doctype": "Auto Scale Record",
-				"scale_up": scale_up,
-				"scale_down": not scale_up,
-				"primary_server": self.name,
-			}
-		)
+		return frappe.get_doc({"doctype": "Auto Scale Record", "primary_server": self.name, "action": action})
 
 	@property
 	def domains(self):
