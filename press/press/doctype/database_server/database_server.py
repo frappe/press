@@ -1200,6 +1200,7 @@ class DatabaseServer(BaseServer):
 			return task.output
 		except Exception:
 			log_error("Process List Capture Exception", server=self.as_dict())
+			return None
 
 	@frappe.whitelist()
 	def setup_pt_stalk(self):
@@ -1903,8 +1904,8 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		# Generate series of binlog
 		unindexable_binlogs = []
 		for binlog_no in range(first_binlog_no, last_binlog_no + 1):
-			binlog_no = str(binlog_no).zfill(no_of_digits)
-			unindexable_binlogs.append(f"mysql-bin.{binlog_no}")
+			binlog_no_z_filled = str(binlog_no).zfill(no_of_digits)
+			unindexable_binlogs.append(f"mysql-bin.{binlog_no_z_filled}")
 
 		self.agent.remove_binlogs_from_indexer(unindexable_binlogs)
 
