@@ -666,6 +666,7 @@ def rename(name, title):
 def get_timespan_timegrain(duration: str) -> tuple[int, int]:
 	return TIMESPAN_TIMEGRAIN_MAP[duration]
 
+
 @frappe.whitelist(allow_guest=True)
 def benches_are_idle(server: str, access_token: str) -> None:
 	"""Shut down the secondary server if all benches are idle.
