@@ -52,11 +52,6 @@ class NFSVolumeAttachment(Document, StepHandler):
 
 	def validate(self):
 		"""Check if the primary server has a secondary server provisioned with no existing attachments"""
-		secondary_server_status = frappe.db.get_value("Server", self.secondary_server, "status")
-
-		if not secondary_server_status:
-			frappe.throw("Please select a primary server that has a secondary server provisioned!")
-
 		has_shared_volume_setup = frappe.db.exists(
 			"NFS Volume Attachment",
 			{
@@ -70,6 +65,17 @@ class NFSVolumeAttachment(Document, StepHandler):
 			frappe.throw(
 				f"{self.primary_server} is already sharing benches with {self.secondary_server}!",
 			)
+
+	def mark_servers_as_installing(self, step: "NFSVolumeAttachmentStep"):
+		"""Mark primary and secondary servers as `Installing`"""
+		step.status = Status.Running
+		step.save()
+
+		frappe.db.set_value("Server", self.primary_server, "status", "Installing")
+		frappe.db.set_value("Server", self.secondary_server, "status", "Installing")
+
+		step.status = Status.Success
+		step.save()
 
 	def start_secondary_server(self, step: "NFSVolumeAttachmentStep"):
 		"""Start secondary server"""
@@ -94,6 +100,24 @@ class NFSVolumeAttachment(Document, StepHandler):
 		virtual_machine = frappe.db.get_value("Server", self.secondary_server, "virtual_machine")
 
 		self.handle_vm_status_job(step, virtual_machine=virtual_machine, expected_status="Running")
+
+	def setup_nfs_common_on_secondary(self, step: "NFSVolumeAttachmentStep"):
+		"""Install nfs common on secondary server for sanity"""
+		server: Server = frappe.get_doc("Server", self.secondary_server)
+		step.status = Status.Running
+		step.save()
+
+		try:
+			ansible = Ansible(
+				playbook="install_nfs_common.yml",
+				server=server,
+				user=server._ssh_user(),
+				port=server._ssh_port(),
+			)
+			self.handle_ansible_play(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+			raise
 
 	def stop_all_benches(self, step: "NFSVolumeAttachmentStep"):
 		"""Stop all running benches"""
@@ -121,7 +145,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 		)
 
 		try:
-			agent_job = primary_server.agent.add_servers_to_acl(
+			agent_job = Agent(primary_server.name).add_servers_to_acl(
 				secondary_server_private_ip=secondary_server_private_ip,
 				reference_doctype=primary_server.doctype,
 				reference_name=primary_server.name,
@@ -249,6 +273,8 @@ class NFSVolumeAttachment(Document, StepHandler):
 		step.save()
 
 		frappe.db.set_value("Server", self.primary_server, "benches_on_shared_volume", True)
+		frappe.db.set_value("Server", self.primary_server, "status", "Active")
+		frappe.db.set_value("Server", self.secondary_server, "status", "Active")
 
 		step.status = Status.Success
 		step.save()
@@ -281,18 +307,21 @@ class NFSVolumeAttachment(Document, StepHandler):
 		"""Append defined steps to the document before saving."""
 		for step in self.get_steps(
 			[
+				self.mark_servers_as_installing,
 				self.start_secondary_server,
 				self.wait_for_secondary_server_to_start,
-				self.stop_all_benches,
+				self.setup_nfs_common_on_secondary,
 				self.allow_servers_to_mount,
 				self.wait_for_acl_addition,
 				self.mount_shared_folder_on_secondary_server,
+				self.move_benches_to_shared,  # Sync twice to reduce downtime
+				self.stop_all_benches,
 				self.move_benches_to_shared,
 				self.run_primary_server_benches_on_shared_fs,
 				self.wait_for_benches_to_run_on_shared,
-				self.ready_to_auto_scale,
 				self.stop_secondary_server,
 				self.wait_for_secondary_server_to_stop,
+				self.ready_to_auto_scale,
 			]
 		):
 			self.append("nfs_volume_attachment_steps", step)

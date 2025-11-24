@@ -24,8 +24,7 @@ from press.utils import get_current_team
 if TYPE_CHECKING:
 	from press.press.doctype.auto_scale_record.auto_scale_record import AutoScaleRecord
 	from press.press.doctype.cluster.cluster import Cluster
-	from press.press.doctype.database_server.database_server import DatabaseServer
-	from press.press.doctype.server.server import Server
+	from press.press.doctype.server.server import BaseServer, Server
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 
 
@@ -47,7 +46,7 @@ def get_mount_point(server: str, server_type=None) -> str:
 	elif server_type == "Replication Server":
 		server_type = "Database Server"
 
-	server: Server | DatabaseServer = frappe.get_doc(server_type, server)
+	server: "BaseServer" = frappe.get_doc(server_type, server)
 	if server.provider != "AWS EC2":
 		return "/"
 
@@ -521,7 +520,13 @@ def options():
 
 
 @frappe.whitelist()
-def plans(name, cluster=None, platform=None):
+def plans(
+	name,
+	cluster=None,
+	platform=None,
+	show_secondary_application_server_plans: bool = False,
+	current_plan: str | None = None,
+):
 	# Removed default platform of x86_64;
 	# Still use x86_64 for new database servers
 	filters = {"server_type": name}
@@ -531,6 +536,10 @@ def plans(name, cluster=None, platform=None):
 
 	if platform:
 		filters.update({"platform": platform})
+
+	if show_secondary_application_server_plans and current_plan:
+		current_plan_memory = frappe.db.get_value("Server Plan", current_plan, "memory")
+		filters.update({"memory": (">", current_plan_memory)})
 
 	return Plan.get_plans(
 		doctype="Server Plan",
@@ -656,6 +665,7 @@ def rename(name, title):
 
 def get_timespan_timegrain(duration: str) -> tuple[int, int]:
 	return TIMESPAN_TIMEGRAIN_MAP[duration]
+
 
 @frappe.whitelist(allow_guest=True)
 def benches_are_idle(server: str, access_token: str) -> None:

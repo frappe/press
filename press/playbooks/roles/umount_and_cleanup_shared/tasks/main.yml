@@ -1,18 +1,6 @@
 ---
-- name: Unmount Shared
-  ansible.builtin.mount:
-    path: /shared
-    state: unmounted
-
-- name: Remove Permanent Mount from fstab
-  ansible.builtin.mount:
-    path: /shared
-    src: "{{nfs_server_private_ip}}:{{shared_directory}}"
-    fstype: nfs4
-    opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,intr,_netdev
-    state: absent
-
-- name: Delete Shared Directory
-  ansible.builtin.file:
-    path: /shared
+- name: Remove shared directory after sync
+  become: yes
+  file:
+    path: "{{ shared_directory }}"
     state: absent

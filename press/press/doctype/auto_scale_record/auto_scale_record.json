@@ -10,8 +10,7 @@
   "secondary_server",
   "status",
   "column_break_nxd6",
-  "scale_up",
-  "scale_down",
+  "action",
   "steps_section",
   "scale_steps"
  ],
@@ -29,22 +28,6 @@
    "options": "Server",
    "read_only": 1,
    "reqd": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "scale_up",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "label": "Scale Up",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "scale_down",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "label": "Scale Down",
-   "read_only": 1
   },
   {
    "fieldname": "column_break_nxd6",
@@ -75,12 +58,25 @@
    "label": "Status",
    "options": "Pending\nRunning\nFailure\nSuccess",
    "read_only": 1
+  },
+  {
+   "fieldname": "action",
+   "fieldtype": "Select",
+   "label": "Action",
+   "options": "Scale Up\nScale Down",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-11-17 11:27:08.679170",
+ "links": [
+  {
+   "link_doctype": "Press Notification",
+   "link_fieldname": "document_name"
+  }
+ ],
+ "modified": "2025-11-24 15:26:59.379855",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Auto Scale Record",

@@ -46,6 +46,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.cluster.cluster import Cluster
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.mariadb_variable.mariadb_variable import MariaDBVariable
+	from press.press.doctype.nfs_volume_detachment.nfs_volume_detachment import NFSVolumeDetachment
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server_mount.server_mount import ServerMount
 	from press.press.doctype.server_plan.server_plan import ServerPlan
@@ -173,6 +174,10 @@ class BaseServer(Document, TagHelpers):
 			"name",
 		)
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
+
+		if self.doctype == "Server":
+			doc.secondary_server = self.secondary_server
+			doc.scaled_up = self.scaled_up
 
 		return doc
 
@@ -360,6 +365,30 @@ class BaseServer(Document, TagHelpers):
 				"condition": self.status == "Active" and self.doctype == "Server",
 				"doc_method": "cleanup_unused_files",
 				"group": f"{server_type.title()} Actions",
+			},
+			{
+				"action": "Setup Secondary Server",
+				"description": "Setup a secondary application server to auto scale to during high loads",
+				"button_label": "Setup",
+				"condition": self.status == "Active"
+				and self.doctype == "Server"
+				# As only present on server doctype
+				and not self.secondary_server
+				and self.team == "team@erpnext.com",
+				"group": "Application Server Actions",
+			},
+			{
+				"action": "Teardown Secondary Server",
+				"description": "Disable secondary server and turn off auto-scaling.",
+				"button_label": "Teardown",
+				"condition": (
+					self.status == "Active"
+					and self.doctype == "Server"
+					# Only applicable for primary application servers
+					and self.secondary_server
+					and self.benches_on_shared_volume
+				),
+				"group": "Application Server Actions",
 			},
 			{
 				"action": "Drop server",
@@ -2403,6 +2432,7 @@ class Server(BaseServer):
 		server: "Server" = frappe.get_doc("Server", self.secondary_server)
 		server.archive()
 
+	@dashboard_whitelist()
 	@frappe.whitelist()
 	def setup_secondary_server(self, server_plan: str):
 		"""Setup secondary server"""
@@ -2414,6 +2444,15 @@ class Server(BaseServer):
 		self.save()
 
 		self.create_secondary_server(server_plan)
+
+	@dashboard_whitelist()
+	@frappe.whitelist()
+	def teardown_secondary_server(self):
+		if self.secondary_server:
+			nfs_volume_detachment: "NFSVolumeDetachment" = frappe.get_doc(
+				{"doctype": "NFS Volume Detachment", "primary_server": self.name}
+			)
+			nfs_volume_detachment.insert(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def setup_ncdu(self):
@@ -3009,15 +3048,29 @@ class Server(BaseServer):
 			frappe.throw("Snapshot does not belong to this server")
 		doc.unlock()
 
+	def validate_bench_status_before_scaling(self) -> bool:
+		"Ensures no new bench job is pending/running before scaling"
+		return bool(
+			frappe.db.get_value(
+				"Bench", {"server": self.name, "status": ("IN", ["Pending", "Installing", "Updating"])}
+			)
+		)
+
 	def validate_scale(self):
 		"""
 		Check if the server can auto scale, the following parameters before creating a scale record
-			1. Server is configured for auto scale.
-			2. Was the last auto scale modified before the cool of period (don't create new auto scale).
-			3. There is a auto scale operation running on the server.
+			- Benches being modified
+			- Server is configured for auto scale.
+			- Was the last auto scale modified before the cool of period (don't create new auto scale).
+			- There is a auto scale operation running on the server.
 		"""
 		if not self.can_scale:
 			frappe.throw("Server is not configured for auto scaling", frappe.ValidationError)
+
+		if self.validate_bench_status_before_scaling():
+			frappe.throw(
+				"Please wait for all bench related jobs to complete before scaling the server.",
+			)
 
 		last_auto_scale_at = frappe.db.get_value(
 			"Auto Scale Record", {"primary_server": self.name, "status": "Success"}, "modified"
@@ -3042,6 +3095,7 @@ class Server(BaseServer):
 				frappe.ValidationError,
 			)
 
+	@dashboard_whitelist()
 	@frappe.whitelist()
 	def scale_up(self):
 		if self.scaled_up:
@@ -3049,9 +3103,10 @@ class Server(BaseServer):
 
 		self.validate_scale()
 
-		auto_scale_record = self._create_auto_scale_record(scale_up=True)
+		auto_scale_record = self._create_auto_scale_record(action="Scale Up")
 		auto_scale_record.insert()
 
+	@dashboard_whitelist()
 	@frappe.whitelist()
 	def scale_down(self):
 		if not self.scaled_up:
@@ -3059,7 +3114,7 @@ class Server(BaseServer):
 
 		self.validate_scale()
 
-		auto_scale_record = self._create_auto_scale_record(scale_up=False)
+		auto_scale_record = self._create_auto_scale_record(action="Scale Down")
 		auto_scale_record.insert()
 
 	@property
@@ -3075,16 +3130,9 @@ class Server(BaseServer):
 		)
 		return self.benches_on_shared_volume and not has_release_groups_without_redis_password
 
-	def _create_auto_scale_record(self, scale_up: bool) -> AutoScaleRecord:
+	def _create_auto_scale_record(self, action: Literal["Scale Up", "Scale Down"]) -> AutoScaleRecord:
 		"""Create up/down scale record"""
-		return frappe.get_doc(
-			{
-				"doctype": "Auto Scale Record",
-				"scale_up": scale_up,
-				"scale_down": not scale_up,
-				"primary_server": self.name,
-			}
-		)
+		return frappe.get_doc({"doctype": "Auto Scale Record", "primary_server": self.name, "action": action})
 
 	@property
 	def domains(self):
