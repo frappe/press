@@ -40,17 +40,13 @@ from press.utils import get_current_team, unique
 if typing.TYPE_CHECKING:
 	from collections.abc import Generator
 
-	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.log_server.log_server import LogServer
 	from press.press.doctype.monitor_server.monitor_server import MonitorServer
 	from press.press.doctype.press_job.press_job import PressJob
 	from press.press.doctype.press_settings.press_settings import PressSettings
-	from press.press.doctype.proxy_server.proxy_server import ProxyServer
-	from press.press.doctype.server.server import BaseServer, Server
+	from press.press.doctype.server.server import BaseServer
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
-
-	AnyServer = Server | ProxyServer | DatabaseServer | MonitorServer | LogServer
 
 DEFAULT_SERVER_TITLE = "First"
 
