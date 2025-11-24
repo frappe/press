@@ -5,6 +5,7 @@ import typing
 
 import frappe
 from frappe.model.document import Document
+from requests.exceptions import ConnectionError, HTTPError, JSONDecodeError
 
 from press.agent import Agent
 from press.runner import Ansible, Status, StepHandler
@@ -48,6 +49,7 @@ class AutoScaleRecord(Document, StepHandler):
 				[
 					self.start_secondary_server,
 					self.wait_for_secondary_server_to_start,
+					self.wait_for_secondary_server_ping,
 					self.switch_to_secondary,
 					self.wait_for_switch_to_secondary,
 					self.setup_secondary_upstream,
@@ -95,6 +97,22 @@ class AutoScaleRecord(Document, StepHandler):
 		virtual_machine = frappe.db.get_value("Server", self.secondary_server, "virtual_machine")
 
 		self.handle_vm_status_job(step, virtual_machine=virtual_machine, expected_status="Running")
+
+	def wait_for_secondary_server_ping(self, step: "ScaleStep"):
+		"""Wait for secondary server to respond to agent pings"""
+		step.status = Status.Running
+		step.is_waiting = True
+		step.save()
+
+		try:
+			Agent(self.secondary_server).ping()
+		except (HTTPError, ConnectionError, JSONDecodeError):
+			step.attempt = 1 if not step.attempt else step.attempt + 1
+			step.save()
+			return
+
+		step.status = Status.Success
+		step.save()
 
 	def setup_secondary_upstream(self, step: "ScaleStep"):
 		"""Update proxy server with secondary as upstream"""
