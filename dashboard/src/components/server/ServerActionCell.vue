@@ -94,12 +94,12 @@ function onTeardownSecondaryServer() {
 		<p>
 			You're about to <strong>remove your Secondary Application Server</strong> and 
 			<strong>disable auto-scaling</strong>.
-			Once this begins, the secondary server will enter a <strong>Teardown</strong> state
+			Once this begins, the secondary server will enter a <strong>Installing</strong> state
 			while it is being removed.
 		</p>
 
 		<div class="mt-3 rounded-md bg-gray-50 border border-gray-200 p-3 text-sm">
-			<p class="mt-3"><strong>What this does</strong></p>
+			<p><strong>What this does</strong></p>
 			<ul class="list-disc list-inside space-y-1">
 				<li>Deletes the secondary server instance.</li>
 				<li>Fully disables auto-scaling until a new secondary server is set up.</li>
@@ -110,7 +110,7 @@ function onTeardownSecondaryServer() {
 				a new secondary server.
 			</p>
 
-			<p class="text-gray-600">
+			<p class="mt-3 text-gray-600">
 				See the docs to learn more about autoscaling:
 				<a href="#" target="_blank" rel="noopener">Secondary Server teardown guide</a>.
 			</p>
@@ -123,6 +123,10 @@ function onTeardownSecondaryServer() {
 			toast.promise(
 				server.teardownSecondaryServer.submit(null, {
 					onSuccess() {
+						this.$router.push({
+							path: server,
+							path: 'plays',
+						});
 						hide();
 					},
 				}),
@@ -143,10 +147,14 @@ function onSetupSecondaryServer() {
 		<p>
 			You're about to <strong>provision a Secondary Application Server</strong> for auto-scaling.
 			This will put the server into an <strong>Installing</strong> state while the setup runs.
+			Your server will become active once all the setup is completed, this might take some time depending on the
+			number and size of the benches on the server.
 		</p>
 
-		<div class="mt-3 rounded-md bg-gray-50 border border-gray-200 p-3 text-sm">
-			<p class="mt-3"><strong>What you need to choose:</strong></p>
+		<p><strong>This requires a downtime while it runs.</strong></p>
+
+		<div class="mt-3 rounded-md bg-gray-50 border border-gray-200 text-sm">
+			<p class="mb-2"><strong>What you need to choose:</strong></p>
 			<ul class="list-disc list-inside space-y-1">
 				<li>Select a <strong>secondary server plan</strong> — this is the configuration the secondary server will run on.</li>
 				<li>The secondary plan must have <strong>higher compute</strong> than your current plan (CPU / memory).</li>

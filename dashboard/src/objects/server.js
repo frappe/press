@@ -934,6 +934,11 @@ export default {
 								fieldname: 'action',
 								options: ['', 'Scale Down', 'Scale Up'],
 							},
+							{
+								type: 'text',
+								label: 'Triggered By',
+								fieldname: 'owner',
+							},
 						];
 					},
 					orderBy: 'creation desc',
