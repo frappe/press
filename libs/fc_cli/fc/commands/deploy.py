@@ -20,10 +20,10 @@ console = Console()
 def bench_init(
 	ctx: typer.Context,
 	name: Annotated[str, typer.Argument(help="Bench group name")],
-	confirm: Annotated[
-		str | None,
-		typer.Argument(help="Type 'force' to skip confirmation"),
-	] = None,
+	force: Annotated[
+		bool,
+		typer.Option("--force", "-f", is_flag=True, help="Skip confirmation"),
+	] = False,
 ):
 	session: CloudSession = ctx.obj
 	payload = {
@@ -35,7 +35,7 @@ def bench_init(
 	try:
 		if not _should_proceed(
 			f"Trigger initial deploy for bench group '{name}'? This will start a full build & deploy.",
-			confirm,
+			force,
 		):
 			Print.info(console, "Operation cancelled.")
 			return
@@ -78,15 +78,16 @@ def create_bench_group(
 def drop_bench_group(
 	ctx: typer.Context,
 	name: Annotated[str, typer.Argument(help="Bench group name to drop/archive")],
-	confirm: Annotated[
-		str | None, typer.Argument(help="Type 'force' to skip confirmation (irreversible action)")
-	] = None,
+	force: Annotated[
+		bool,
+		typer.Option("--force", "-f", is_flag=True, help="Skip confirmation"),
+	] = False,
 ):
 	session: CloudSession = ctx.obj
 	try:
 		if not _should_proceed(
 			f"Are you sure you want to drop/archive bench group '{name}'? This action may be irreversible.",
-			confirm,
+			force,
 		):
 			Print.info(console, "Operation cancelled.")
 			return
@@ -331,6 +332,8 @@ def _format_error_message(result: object) -> str:
 
 
 def _should_proceed(message: str, confirm_token: str | None) -> bool:
+	if isinstance(confirm_token, bool) and confirm_token:
+		return True
 	if isinstance(confirm_token, str) and confirm_token.lower() in {"force", "yes", "y"}:
 		return True
 	return typer.confirm(message, default=False)

@@ -110,10 +110,10 @@ def increase_storage(
 	ctx: typer.Context,
 	name: Annotated[str, typer.Argument(help="Server name")],
 	increment: Annotated[int, typer.Argument(help="Increment size in GB")],
-	confirm: Annotated[
-		str | None,
-		typer.Argument(help="Type 'force' to skip confirmation (irreversible action)"),
-	] = None,
+	force: Annotated[
+		bool,
+		typer.Option("--force", "-f", is_flag=True, help="Skip confirmation"),
+	] = False,
 ):
 	session: CloudSession = ctx.obj
 	is_valid, err = validate_server_name(name)
@@ -126,7 +126,7 @@ def increase_storage(
 
 		if not _should_proceed(
 			f"Increase storage for server '{name}' by {increment} GB? This action may be irreversible.",
-			confirm,
+			force,
 		):
 			Print.info(console, "Operation cancelled.")
 			return
@@ -162,10 +162,10 @@ def choose_plan(
 	ctx: typer.Context,
 	name: Annotated[str, typer.Argument(help="Server name")],
 	plan: Annotated[str, typer.Argument(help="Plan name")],
-	confirm: Annotated[
-		str | None,
-		typer.Argument(help="Type 'force' to skip confirmation"),
-	] = None,
+	force: Annotated[
+		bool,
+		typer.Option("--force", "-f", is_flag=True, help="Skip confirmation"),
+	] = False,
 ):
 	session: CloudSession = ctx.obj
 
@@ -194,7 +194,7 @@ def choose_plan(
 		# Confirm before changing plan
 		if not _should_proceed(
 			f"Change plan for server '{name}' to '{selected_plan.get('name')}'?",
-			confirm,
+			force,
 		):
 			Print.info(console, "Operation cancelled.")
 			return
@@ -274,17 +274,17 @@ def create_server(
 def delete_server(
 	ctx: typer.Context,
 	name: Annotated[str, typer.Argument(help="Server name to delete")],
-	confirm: Annotated[
-		str | None,
-		typer.Argument(help="Type 'force' to skip confirmation"),
-	] = None,
+	force: Annotated[
+		bool,
+		typer.Option("--force", "-f", is_flag=True, help="Skip confirmation"),
+	] = False,
 ):
 	session: CloudSession = ctx.obj
 
 	try:
 		if not _should_proceed(
 			f"Are you sure you want to archive server '{name}'? This action may be irreversible.",
-			confirm,
+			force,
 		):
 			Print.info(console, "Operation cancelled.")
 			return
@@ -311,6 +311,8 @@ def _should_proceed(message: str, confirm_token: str | None) -> bool:
 	- When confirm_token is 'force' (case-insensitive), skip prompt and proceed.
 	- Otherwise, show a confirmation prompt and return the user's choice.
 	"""
+	if isinstance(confirm_token, bool) and confirm_token:
+		return True
 	if isinstance(confirm_token, str) and confirm_token.lower() in {"force", "yes", "y"}:
 		return True
 	return typer.confirm(message, default=False)
