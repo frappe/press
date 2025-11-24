@@ -313,8 +313,9 @@ class NFSVolumeAttachment(Document, StepHandler):
 				self.setup_nfs_common_on_secondary,
 				self.allow_servers_to_mount,
 				self.wait_for_acl_addition,
-				self.stop_all_benches,
 				self.mount_shared_folder_on_secondary_server,
+				self.move_benches_to_shared,  # Sync twice to reduce downtime
+				self.stop_all_benches,
 				self.move_benches_to_shared,
 				self.run_primary_server_benches_on_shared_fs,
 				self.wait_for_benches_to_run_on_shared,
