@@ -99,10 +99,7 @@
 									/>
 
 									<Button
-										v-if="
-											server === 'Server' &&
-											$appSecondaryServer?.doc?.status === 'Pending'
-										"
+										v-if="server === 'Server' && !$appServer?.doc?.scaled_up"
 										@click="scaleUp()"
 										label="Scale Up"
 									/>
@@ -110,7 +107,7 @@
 									<Button
 										v-if="
 											server === 'App Secondary Server' &&
-											$appSecondaryServer?.doc?.status === 'Active'
+											$appServer?.doc?.scaled_up
 										"
 										@click="scaleDown()"
 										label="Scale Down"
@@ -249,6 +246,10 @@ export default {
 				{
 					onSuccess: () => {
 						this.$toast.success('Starting scale up please wait a few minutes');
+						this.$router.push({
+							path: this.$appServer.name,
+							path: 'auto-scale',
+						});
 					},
 					onError(e) {
 						e.messages.forEach((message) => {
@@ -266,6 +267,10 @@ export default {
 						this.$toast.success(
 							'Starting scale down please wait a few minutes',
 						);
+						this.$router.push({
+							path: this.$appServer.name,
+							path: 'auto-scale',
+						});
 					},
 					onError(e) {
 						e.messages.forEach((message) => {
