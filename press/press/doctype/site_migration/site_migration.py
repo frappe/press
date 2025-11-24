@@ -453,6 +453,8 @@ class SiteMigration(Document):
 			and site.status_before_update != "Inactive"
 		):
 			site.activate()
+		elif site.status_before_update == "Inactive":
+			site.db_set("status", "Inactive")
 		if self.is_standalone_migration:
 			site.create_dns_record()
 		if self.migration_type == "Cluster":
