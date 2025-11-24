@@ -1,4 +1,5 @@
 import { defineAsyncComponent, h } from 'vue';
+import { toast } from 'vue-sonner';
 import LucideAppWindow from '~icons/lucide/app-window';
 import LucideVenetianMask from '~icons/lucide/venetian-mask';
 import ServerActions from '../components/server/ServerActions.vue';
@@ -7,11 +8,10 @@ import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
 import { isMobile } from '../utils/device';
 import { date, duration, planTitle, userCurrency } from '../utils/format';
+import { getQueryParam, setQueryParam } from '../utils/index';
 import { trialDays } from '../utils/site';
 import { getJobsTab } from './common/jobs';
 import { tagTab } from './common/tags';
-import { getQueryParam, setQueryParam } from '../utils/index';
-import { toast } from 'vue-sonner';
 
 export default {
 	doctype: 'Server',
@@ -930,36 +930,27 @@ export default {
 						{
 							label: 'Status',
 							fieldname: 'status',
+							type: 'Badge',
+							align: 'center',
 						},
 						{
-							label: 'Scale Up',
-							fieldname: 'scale_up',
-							type: 'Icon',
-							Icon(value) {
-								return value ? 'check' : 'x';
-							},
-						},
-						{
-							label: 'Scale Down',
-							fieldname: 'scale_down',
-							type: 'Icon',
-							Icon(value) {
-								return value ? 'check' : 'x';
-							},
+							label: 'Action',
+							fieldname: 'action',
+							type: 'Badge',
+							align: 'center',
 						},
 						{
 							label: 'Duration',
 							fieldname: 'modified',
 							type: 'int',
-							format(value, row) {
-								const created = new Date(row.creation);
-								const modified = new Date(row.modified);
+							format(row, value) {
+								const created = new Date(value.creation);
+								const modified = new Date(value.modified);
 
-								const diff = modified - created; // ms diff
+								const diff = modified - created;
 
 								if (diff < 0) return '-';
 
-								// convert to human readable
 								const seconds = Math.floor(diff / 1000);
 								const minutes = Math.floor(seconds / 60);
 								const hours = Math.floor(minutes / 60);
