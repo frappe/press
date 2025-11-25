@@ -8,7 +8,7 @@ import os
 import re
 from contextlib import suppress
 from datetime import date
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import frappe
 import frappe.utils
@@ -191,7 +191,7 @@ class Agent:
 		)
 
 	def rename_site(self, site, new_name: str, create_user: dict | None = None, config: dict | None = None):
-		data = {"new_name": new_name}
+		data: dict[str, Any] = {"new_name": new_name}
 		if create_user:
 			data["create_user"] = create_user
 		if config:
@@ -1017,7 +1017,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		self,
 		job_type,
 		path,
-		data=None,
+		data: dict | None = None,
 		files=None,
 		method="POST",
 		bench=None,
@@ -1038,12 +1038,12 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		)
 
 		if not disable_agent_job_deduplication:
-			job = self.get_similar_in_execution_job(
+			existing_job = self.get_similar_in_execution_job(
 				job_type, path, bench, site, code_server, upstream, host, method
 			)
 
-			if job:
-				return job
+			if existing_job:
+				return existing_job
 
 		job: "AgentJob" = frappe.get_doc(
 			{
@@ -1375,6 +1375,23 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			},
 		)
 
+	def update_database_schema_sizes(self):
+		if self.server_type != "Database Server":
+			return NotImplementedError("This method is only supported for Database Server")
+
+		return self.create_agent_job(
+			"Update Database Schema Sizes",
+			"database/update-schema-sizes",
+			data={
+				"private_ip": frappe.get_value("Database Server", self.server, "private_ip"),
+				"mariadb_root_password": get_decrypted_password(
+					"Database Server", self.server, "mariadb_root_password"
+				),
+			},
+			reference_doctype=self.server_type,
+			reference_name=self.server,
+		)
+
 	def fetch_database_variables(self):
 		if self.server_type != "Database Server":
 			return NotImplementedError("Only Database Server supports this method")
@@ -1591,14 +1608,14 @@ Response: {reason or getattr(result, "text", "Unknown")}
 	):
 		from press.press.doctype.site_backup.site_backup import get_backup_bucket
 
-		database_server: DatabaseServer = frappe.get_doc("Database Server", database_server)
+		database_server_doc: DatabaseServer = frappe.get_doc("Database Server", database_server)  # type: ignore
 		data = {
 			"site": site,
 			"database_name": database_name,
 			"database_ip": frappe.get_value(
-				"Virtual Machine", database_server.virtual_machine, "private_ip_address"
+				"Virtual Machine", database_server_doc.virtual_machine, "private_ip_address"
 			),
-			"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+			"mariadb_root_password": database_server_doc.get_password("mariadb_root_password"),
 		}
 
 		# offsite config
@@ -1634,7 +1651,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 	):
 		from press.press.doctype.site_backup.site_backup import get_backup_bucket
 
-		data = {
+		data: dict[str, Any] = {
 			"site": site,
 			"bench": bench,
 		}

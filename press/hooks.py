@@ -261,6 +261,9 @@ scheduler_events = {
 		"*/2 * * * *": [
 			"press.press.doctype.incident.incident.resolve_incidents",
 		],
+		"45 * * * *": [
+			"press.press.doctype.database_server.database_server.update_database_schema_sizes",
+		],
 		"0 4 * * *": [
 			"press.press.doctype.site.backups.cleanup_offsite",
 			"press.press.doctype.site.backups.expire_physical",
