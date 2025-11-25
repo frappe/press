@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import os
 import typing
 
 import frappe
@@ -201,6 +202,44 @@ class NFSVolumeAttachment(Document, StepHandler):
 			self._fail_ansible_step(step, ansible, e)
 			raise
 
+	def mount_shared_folder_on_volume(self, step: "NFSVolumeAttachmentStep") -> None:
+		"""Mount shared folder on data volume if present"""
+		primary_server: "Server" = frappe.get_doc("Server", self.primary_server)
+		shared_directory = frappe.db.get_single_value("Press Settings", "shared_directory")
+
+		step.status = Status.Running
+		step.save()
+
+		if not primary_server.has_data_volume:
+			step.status = Status.Success
+			step.save()
+			return
+
+		mountpoints = primary_server.get_volume_mounts()
+		if not mountpoints:
+			step.status = Status.Success
+			step.save()
+			return
+
+		parent_mountpoint = mountpoints[0].get("mount_point")
+
+		try:
+			ansible = Ansible(
+				playbook="mount_shared_folder_on_volume.yml",
+				server=primary_server,
+				user=primary_server._ssh_user(),
+				port=primary_server._ssh_port(),
+				variables={
+					"shared_directory": shared_directory,
+					"parent_mountpoint": os.path.join(parent_mountpoint, os.path.basename(shared_directory)),
+				},
+			)
+
+			self.handle_ansible_play(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+			raise
+
 	def move_benches_to_shared(self, step: "NFSVolumeAttachmentStep") -> None:
 		"""Move benches to the shared NFS directory."""
 		primary_server: Server = frappe.get_cached_doc("Server", self.primary_server)
@@ -315,6 +354,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 				self.allow_servers_to_mount,
 				self.wait_for_acl_addition,
 				self.mount_shared_folder_on_secondary_server,
+				self.mount_shared_folder_on_volume,
 				self.stop_all_benches,
 				self.move_benches_to_shared,
 				self.run_primary_server_benches_on_shared_fs,
