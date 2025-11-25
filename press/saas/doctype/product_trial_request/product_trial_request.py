@@ -395,7 +395,7 @@ def expire_long_pending_trial_requests():
 
 def gather_stats(time_ago):
 	stats = {
-		"total_trial": 0,
+		"total_trials": 0,
 		"failed_trials": 0,
 		"succeeded_trials": 0,
 		"expired_trials": 0,
@@ -410,7 +410,7 @@ def gather_stats(time_ago):
 			{"creation": (">", time_ago), "owner": ("not like", "fc-signup-test_%")},
 			["name", "status", "product_trial", "site_creation_started_on", "site_creation_completed_on"],
 		)
-		stats["total_trial"] = len(trial_requests)
+		stats["total_trials"] = len(trial_requests)
 		for req in trial_requests:
 			if req.status == "Error":
 				stats["failed_trials"] = stats["failed_trials"] + 1

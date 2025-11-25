@@ -563,17 +563,10 @@ Likely due to insufficient balance or incorrect credentials""",
 		) and ignore_since < frappe.utils.now_datetime():
 			return
 		domain = frappe.db.get_value("Press Settings", None, "domain")
-		incident_link = f"{domain}{self.get_url()}"
-
-		message_body = f"""New Incident {self.name} Reported
-
-Hosted on: {self.server}
-
-Incident URL: {incident_link}"""
+		incident_link = f"https://{domain}{self.get_url()}"
+		message = f"Incident on server: {self.server}\n\nURL: {incident_link}\n\nID: {self.name}"
 		for human in self.get_humans():
-			self.twilio_client.messages.create(
-				to=human.phone, from_=self.twilio_phone_number, body=message_body
-			)
+			self.twilio_client.messages.create(to=human.phone, from_=self.twilio_phone_number, body=message)
 		self.reload()  # In case the phone call status is modified by the investigator before the sms is sent
 		self.sms_sent = 1
 		self.save()
