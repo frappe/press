@@ -16,6 +16,7 @@ from frappe.utils.telemetry import init_telemetry
 
 from press.api.client import dashboard_whitelist
 from press.press.doctype.root_domain.root_domain import get_domains
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error, validate_subdomain
 
 if TYPE_CHECKING:
