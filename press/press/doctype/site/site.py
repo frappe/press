@@ -3964,7 +3964,12 @@ def update_backup_restoration_test(site: str, status: str):
 		frappe.db.set_value("Backup Restoration Test", backup_tests[0], "status", "Archive Failed")
 
 
-def process_archive_site_job_update(job):
+def process_archive_site_job_update(job: "AgentJob"):  # noqa: C901
+	with suppress(Exception):
+		is_secondary_server = frappe.db.get_value("Server", job.upstream, "is_secondary")
+		if is_secondary_server:
+			return
+
 	site_status = frappe.get_value("Site", job.site, "status", for_update=True)
 
 	other_job_type = {
