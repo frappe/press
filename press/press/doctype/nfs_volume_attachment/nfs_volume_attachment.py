@@ -275,6 +275,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 		frappe.db.set_value("Server", self.primary_server, "benches_on_shared_volume", True)
 		frappe.db.set_value("Server", self.primary_server, "status", "Active")
 		frappe.db.set_value("Server", self.secondary_server, "status", "Active")
+		frappe.db.set_value("Server", self.secondary_server, "is_monitoring_disabled", True)
 
 		step.status = Status.Success
 		step.save()
@@ -314,7 +315,6 @@ class NFSVolumeAttachment(Document, StepHandler):
 				self.allow_servers_to_mount,
 				self.wait_for_acl_addition,
 				self.mount_shared_folder_on_secondary_server,
-				self.move_benches_to_shared,  # Sync twice to reduce downtime
 				self.stop_all_benches,
 				self.move_benches_to_shared,
 				self.run_primary_server_benches_on_shared_fs,
