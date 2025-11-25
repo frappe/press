@@ -390,8 +390,6 @@ def expire_long_pending_trial_requests():
 		"Expired",
 		update_modified=False,
 	)
-<<<<<<< HEAD
-=======
 
 
 def gather_stats(time_ago):
@@ -486,4 +484,3 @@ def gather_hourly_stats():
 	message = "*Hourly Signup stats*\n\n"
 	stats = gather_stats(one_hour_ago)
 	push_stats_message(stats, message)
->>>>>>> 1e0424527 (chore(metrics): Moving from server script to press)
