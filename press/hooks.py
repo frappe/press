@@ -247,6 +247,7 @@ scheduler_events = {
 		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
 		"press.press.doctype.press_webhook.press_webhook.auto_disable_high_delivery_failure_webhooks",
 		"press.saas.doctype.product_trial_request.product_trial_request.gather_hourly_stats",
+		"press.press.doctype.agent_job.agent_job.agent_poll_count_stats",
 	],
 	"all": [
 		"press.auth.flush",
