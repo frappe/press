@@ -1,0 +1,63 @@
+{
+ "actions": [],
+ "creation": "2025-11-24 13:32:44.225696",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "primary",
+  "column_break_djlt",
+  "secondary"
+ ],
+ "fields": [
+  {
+   "fieldname": "primary",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Primary",
+   "options": "Proxy Server",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_djlt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "secondary",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Secondary",
+   "options": "Proxy Server",
+   "reqd": 1,
+   "set_only_once": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "in_create": 1,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-11-24 13:35:30.550775",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Proxy Failover",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
