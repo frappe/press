@@ -24,17 +24,19 @@ class ProxyFailover(Document):
 		self.status = "Queued"
 
 	def after_insert(self):
-		# TODO: do we add a new "failover" queue?
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
 			"_trigger_failover",
 			queue="long",
 			timeout=3600,
+			at_front_when_starved=True,
 			enqueue_after_commit=True,
 		)
 
 	# TODO: add a child table with steps and update them?
+	def update_step(self):
+		pass
 
 	def _trigger_failover(self):
 		frappe.db.set_value("Proxy Failover", self.name, "status", "In Progress")
@@ -49,8 +51,6 @@ class ProxyFailover(Document):
 		try:
 			primary_proxy = frappe.get_doc("Proxy Server", self.primary)
 			if not primary_proxy.is_static_ip:
-				self.update_dns_records_for_all_sites()
-
 				# TODO: attach the secondary public ip to domain name of primary
 
 				try:
@@ -60,6 +60,7 @@ class ProxyFailover(Document):
 					pass
 
 
+			self.update_dns_records_for_all_sites()
 			self.stop_primary_agent_and_replication(primary_proxy)
 			self.update_app_servers()
 			self.move_wildcard_domains_from_primary()
@@ -79,9 +80,8 @@ class ProxyFailover(Document):
 			self.add_ssh_users_for_existing_benches()
 		except Exception:
 			# TODO: we need to mark the proxies broken as well?
-			self.status = "Failed"
+			frappe.db.set_value("Proxy Failover", self.name, "status", "Failed")
 			self.log_error("Proxy Server Failover Exception")
-		self.save()
 
 	def attach_static_ip_to_secondary(self):
 		primary_vm = frappe.get_doc(
