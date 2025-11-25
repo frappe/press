@@ -65,7 +65,7 @@ class BenchInfoType(TypedDict):
 
 
 class ARMDockerImageType(TypedDict):
-	build: str
+	build: str | None
 	status: Literal["Pending", "Preparing", "Running", "Failure", "Success"]
 	bench: str
 
@@ -1850,12 +1850,12 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		return int(max(self.auto_add_storage_min, min(projected_growth_gb, self.auto_add_storage_max)))
 
-	def recommend_disk_increase(self, mountpoint: str | None = None):
+	def recommend_disk_increase(self, mountpoint: str):
 		"""
 		Send disk expansion email to users with disabled auto addon storage at 80% capacity
 		Calculate the disk usage over a 30 hour period and take 25 percent of that
 		"""
-		server: Server | DatabaseServer = frappe.get_doc(self.doctype, self.name)
+		server: Server | DatabaseServer = frappe.get_doc(self.doctype, self.name)  # type: ignore
 		if server.auto_increase_storage:
 			return
 
@@ -1869,8 +1869,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			/ 1024
 		)
 
-		current_disk_usage = current_disk_usage / 1024 / 1024 / 1024
-		disk_capacity = disk_capacity / 1024 / 1024 / 1024
+		current_disk_usage_flt = round(current_disk_usage / 1024 / 1024 / 1024, 2)
+		disk_capacity_flt = round(disk_capacity / 1024 / 1024 / 1024, 2)
 
 		frappe.sendmail(
 			recipients=get_communication_info("Email", "Incident", self.doctype, self.name),
@@ -1878,8 +1878,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			template="disabled_auto_disk_expansion",
 			args={
 				"server": server.name,
-				"current_disk_usage": f"{current_disk_usage} Gib",
-				"available_disk_space": f"{disk_capacity} GiB",
+				"current_disk_usage": f"{current_disk_usage_flt} Gib",
+				"available_disk_space": f"{disk_capacity_flt} GiB",
 				"used_storage_percentage": "80%",
 				"increase_by": f"{recommended_increase} GiB",
 			},
@@ -1887,8 +1887,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 	def calculated_increase_disk_size(
 		self,
+		mountpoint: str,
 		additional: int = 0,
-		mountpoint: str | None = None,
 	):
 		"""
 		Calculate required disk increase for servers and handle notifications accordingly.
@@ -1907,10 +1907,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		buffer = self.size_to_increase_by_for_20_percent_available(mountpoint)
 		server: Server | DatabaseServer = frappe.get_doc(self.doctype, self.name)
 		disk_capacity = self.disk_capacity(mountpoint)
-		current_disk_usage = disk_capacity - self.free_space(mountpoint)
 
-		current_disk_usage = round(current_disk_usage / 1024 / 1024 / 1024, 2)
-		disk_capacity = round(disk_capacity / 1024 / 1024 / 1024, 2)
+		current_disk_usage = round((disk_capacity - self.free_space(mountpoint)) / 1024 / 1024 / 1024, 2)
 
 		if not server.auto_increase_storage and (not server.has_data_volume or mountpoint != "/"):
 			TelegramMessage.enqueue(
@@ -2081,6 +2079,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		if self.doctype == "Database Server":
 			self.adjust_memory_config()
+			self.provide_frappe_user_du_permission()
 			self.setup_logrotate()
 
 		if self.doctype == "Proxy Server":
