@@ -210,6 +210,7 @@ scheduler_events = {
 		"press.press.doctype.site.site.suspend_sites_exceeding_disk_usage_for_last_7_days",
 		"press.press.doctype.user_2fa.user_2fa.yearly_2fa_recovery_code_reminder",
 		"press.press.doctype.registry_server.registry_server.delete_old_images_from_registry",
+		"press.saas.doctype.product_trial_request.product_trial_request.gather_daily_stats",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -245,6 +246,7 @@ scheduler_events = {
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_expired_snapshots",
 		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
 		"press.press.doctype.press_webhook.press_webhook.auto_disable_high_delivery_failure_webhooks",
+		"press.saas.doctype.product_trial_request.product_trial_request.gather_hourly_stats",
 	],
 	"all": [
 		"press.auth.flush",
@@ -268,9 +270,6 @@ scheduler_events = {
 			"press.press.audit.check_backup_records",
 			"press.press.audit.billing_audit",
 		],
-		"0 0 * * *": [
-			"press.saas.doctype.product_trial_request.product_trial_request.gather_daily_stats",
-		],
 		"0 3 * * *": [
 			"press.press.doctype.drip_email.drip_email.send_drip_emails",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_all_snapshots_from_aws",
@@ -290,7 +289,6 @@ scheduler_events = {
 		],
 		"0 */2 * * *": [
 			"press.signup_e2e.run_signup_e2e",
-			"press.saas.doctype.product_trial_request.product_trial_request.gather_hourly_stats",
 		],
 		"0 */6 * * *": [
 			"press.press.doctype.server.server.cleanup_unused_files",

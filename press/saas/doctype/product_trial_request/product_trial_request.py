@@ -481,7 +481,7 @@ def gather_daily_stats():
 
 
 def gather_hourly_stats():
-	two_hours_ago = frappe.utils.add_to_date(None, hours=-2)
+	one_hour_ago = frappe.utils.add_to_date(None, hours=-1)
 	message = "*Hourly Signup stats*\n\n"
-	stats = gather_stats(two_hours_ago)
+	stats = gather_stats(one_hour_ago)
 	push_stats_message(stats, message)
