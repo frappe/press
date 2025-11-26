@@ -256,7 +256,7 @@
  ],
  "in_create": 1,
  "links": [],
- "modified": "2025-04-16 12:11:23.204689",
+ "modified": "2025-11-19 15:54:21.538789",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job",
@@ -292,9 +292,9 @@
   }
  ],
  "quick_entry": 1,
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "job_type",
- "track_changes": 1
+ "title_field": "job_type"
 }
