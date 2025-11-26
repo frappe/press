@@ -99,21 +99,21 @@ function onTeardownSecondaryServer() {
 		</p>
 
 		<div class="mt-3 rounded-md bg-gray-50 border border-gray-200 p-3 text-sm">
-			<p><strong>What this does</strong></p>
-			<ul class="list-disc list-inside space-y-1">
-				<li>Deletes the secondary server instance.</li>
-				<li>Fully disables auto-scaling until a new secondary server is set up.</li>
-			</ul>
+			<div class="p-2">
+				<p>
+					This action <strong>archives the secondary server instance and fully disables auto-scaling</strong> until a new secondary server is set up.
+				</p>
 
-			<p class="mt-3">
-				After teardown, autoscaling will <strong>not trigger</strong> unless you configure
-				a new secondary server.
-			</p>
+				<p class="mt-3">
+					After teardown, autoscaling will <strong>not trigger</strong> unless you configure a new secondary server.
+				</p>
 
-			<p class="mt-3 text-gray-600">
-				See the docs to learn more about autoscaling:
-				<a href="#" target="_blank" rel="noopener">Secondary Server teardown guide</a>.
-			</p>
+				<p class="mt-3 text-gray-600">
+					See the docs to learn more about autoscaling:
+					<a href="#" target="_blank" rel="noopener">Secondary Server teardown guide</a>.
+				</p>
+		</div>
+
 		</div>
 		`,
 		primaryAction: {
@@ -151,23 +151,23 @@ function onSetupSecondaryServer() {
 			number and size of the benches on the server.
 		</p>
 
-		<p><strong>This requires a downtime while it runs.</strong></p>
-
 		<div class="mt-3 rounded-md bg-gray-50 border border-gray-200 text-sm">
-			<p class="mb-2"><strong>What you need to choose:</strong></p>
-			<ul class="list-disc list-inside space-y-1">
-				<li>Select a <strong>secondary server plan</strong> — this is the configuration the secondary server will run on.</li>
-				<li>The secondary plan must have <strong>higher compute</strong> than your current plan (CPU / memory).</li>
-			</ul>
+			<div class="p-2">
+				<p>
+					Select a <strong>secondary server plan</strong> — this is the plan the secondary server will run on.  
+					The secondary plan must have <strong>higher compute</strong> than your current plan (CPU / memory).
+				</p>
 
-			<p class="mt-3">
-				After setup, the secondary server will remain in <em>standby</em> (inactive) until autoscaling or manual activation.
-			</p>
+				<p class="mt-3">
+					After setup, the secondary server will remain in <em>standby</em> (inactive) until autoscaling or manual activation.
+				</p>
 
-			<p class="mt-3 text-gray-600">
-				See the docs to learn more about autoscaling:
-				<a href="#" target="_blank" rel="noopener">Secondary Server setup guide</a>.
-			</p>
+				<p class="mt-3 text-gray-600">
+					See the docs to learn more about autoscaling:
+					<a href="#" target="_blank" rel="noopener">Secondary Server setup guide</a>.
+				</p>
+		</div>
+
 		</div>
   		`,
 		primaryAction: {
