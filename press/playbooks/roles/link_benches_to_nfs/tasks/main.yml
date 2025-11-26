@@ -1,0 +1,13 @@
+---
+- name: Remove existing shared directory
+  become: yes
+  file:
+    path: "{{ shared_directory }}"
+    state: absent
+
+- name: Create symlink for shared directory
+  become: yes
+  file:
+    src: "/home/frappe/benches"
+    dest: "{{ shared_directory }}"
+    state: link
