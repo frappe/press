@@ -1112,11 +1112,7 @@ def _calculate_forecast_data(
 	days_in_month = date_info["days_in_month"]
 
 	forecasted_month_end = 0
-<<<<<<< HEAD
-	per_service_forecast = {}  # Forecasted remaining cost per service or document_type
-=======
 	per_service_forecast: dict[str, float] = {}  # Forecasted remaining cost per service
->>>>>>> eb3947dd5 (fix: add amount validation to create_razorpay_order and few mypy fixes)
 
 	price_field = "price_usd" if currency == "USD" else "price_inr"
 
