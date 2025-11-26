@@ -285,8 +285,6 @@ class NFSVolumeDetachment(Document, StepHandler):
 				self.mark_servers_as_installing,
 				self.start_secondary_server,
 				self.wait_for_secondary_server_to_start,
-				self.stop_all_benches,
-				# self.sync_data,
 				self.unlink_benches_from_shared,
 				self.run_bench_on_primary_server,
 				self.wait_for_job_completion,
