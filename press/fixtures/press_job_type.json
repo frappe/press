@@ -633,5 +633,20 @@
     "wait_until_true": 0
    }
   ]
- }
+ },
+ {
+  "callback_max_retry": 1,
+  "callback_script": null,
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2025-11-26 15:28:08.243873",
+  "name": "Auto Scale Application Server",
+  "steps": [
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Server\":\n    server.scale_up()",
+    "step_name": "Auto Scale Application Server",
+    "wait_until_true": 0
+    }
+   ]
+ }  
 ]
