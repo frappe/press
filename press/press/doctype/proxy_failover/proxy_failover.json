@@ -5,8 +5,11 @@
  "engine": "InnoDB",
  "field_order": [
   "primary",
+  "status",
   "column_break_djlt",
-  "secondary"
+  "secondary",
+  "section_break_gajn",
+  "failover_steps"
  ],
  "fields": [
   {
@@ -30,13 +33,32 @@
    "options": "Proxy Server",
    "reqd": 1,
    "set_only_once": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_gajn",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "failover_steps",
+   "fieldtype": "Table",
+   "label": "Failover Steps",
+   "options": "Proxy Failover Steps",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-24 13:35:30.550775",
+ "modified": "2025-11-26 14:12:01.427223",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Failover",
