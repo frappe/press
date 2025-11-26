@@ -423,6 +423,10 @@ page_renderer = ["press.metrics.MetricsRenderer"]
 
 export_python_type_annotations = True
 
+default_log_clearing_doctypes = {
+	"Alertmanager Webhook Log": 60,
+}
+
 
 # These are used for some business logic, they should be manually evicted.
 __persistent_cache_keys = [
