@@ -792,8 +792,13 @@ class Bench(Document):
 				# Roughly workers / threads_per_worker = total number of workers
 				# 1. At least one worker
 				# 2. Slightly more workers than required
-				self.gunicorn_workers = frappe.utils.ceil(
-					self.gunicorn_workers / self.gunicorn_threads_per_worker
+				self.gunicorn_workers = min(
+					max_gn or MAX_GUNICORN_WORKERS,
+					max(
+						frappe.utils.ceil(self.gunicorn_workers / self.gunicorn_threads_per_worker),
+						min_gn
+						or 1,  # 1 instead of MIN_GUNICORN_WORKERS because that's what we're doing right now
+					),
 				)
 			self.background_workers = min(
 				max_bg or MAX_BACKGROUND_WORKERS,
