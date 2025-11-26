@@ -1,0 +1,10 @@
+- name: Allow frappe user to run du
+  lineinfile:
+    path: /etc/sudoers.d/frappe
+    line: 'frappe ALL = (root) NOPASSWD: /usr/bin/du'
+    create: yes
+    state: present
+    validate: 'visudo -cf %s'
+    mode: '0440'
+    owner: root
+    group: root

@@ -1200,6 +1200,7 @@ class DatabaseServer(BaseServer):
 			return task.output
 		except Exception:
 			log_error("Process List Capture Exception", server=self.as_dict())
+			return None
 
 	@frappe.whitelist()
 	def setup_pt_stalk(self):
@@ -1250,6 +1251,24 @@ class DatabaseServer(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("Logrotate Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def provide_frappe_user_du_permission(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_provide_frappe_user_du_permission", queue="long", timeout=1200
+		)
+
+	def _provide_frappe_user_du_permission(self):
+		try:
+			ansible = Ansible(
+				playbook="provide_frappe_user_du_permission.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("MariaDB Provide Frappe User DU Permission Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def setup_mariadb_debug_symbols(self):
@@ -1885,8 +1904,8 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		# Generate series of binlog
 		unindexable_binlogs = []
 		for binlog_no in range(first_binlog_no, last_binlog_no + 1):
-			binlog_no = str(binlog_no).zfill(no_of_digits)
-			unindexable_binlogs.append(f"mysql-bin.{binlog_no}")
+			binlog_no_z_filled = str(binlog_no).zfill(no_of_digits)
+			unindexable_binlogs.append(f"mysql-bin.{binlog_no_z_filled}")
 
 		self.agent.remove_binlogs_from_indexer(unindexable_binlogs)
 
@@ -2058,6 +2077,9 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			ansible.run()
 		except Exception:
 			log_error("Set MariaDB Mount Dependency Exception", server=self.as_dict())
+
+	def update_database_schema_sizes(self):
+		self.agent.update_database_schema_sizes()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Database Server")
@@ -2250,6 +2272,29 @@ def auto_purge_binlogs_by_size_limit():
 			if not server.auto_purge_binlog_based_on_size:
 				continue
 			server.purge_binlogs_by_configured_size_limit()
+			frappe.db.commit()
+		except rq.timeouts.JobTimeoutException:
+			frappe.db.rollback()
+			return
+		except Exception:
+			frappe.db.rollback()
+
+
+def update_database_schema_sizes():
+	databases = frappe.db.get_all(
+		"Database Server",
+		filters={
+			"status": "Active",
+		},
+		pluck="name",
+	)
+
+	for database in databases:
+		if has_job_timeout_exceeded():
+			return
+		try:
+			server: DatabaseServer = frappe.get_doc("Database Server", database)
+			server.update_database_schema_sizes()
 			frappe.db.commit()
 		except rq.timeouts.JobTimeoutException:
 			frappe.db.rollback()

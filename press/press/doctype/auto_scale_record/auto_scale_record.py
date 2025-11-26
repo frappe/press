@@ -5,6 +5,7 @@ import typing
 
 import frappe
 from frappe.model.document import Document
+from requests.exceptions import ConnectionError, HTTPError, JSONDecodeError
 
 from press.agent import Agent
 from press.runner import Ansible, Status, StepHandler
@@ -26,25 +27,33 @@ class AutoScaleRecord(Document, StepHandler):
 
 		from press.press.doctype.scale_step.scale_step import ScaleStep
 
+		action: DF.Literal["Scale Up", "Scale Down"]
 		primary_server: DF.Link
-		scale_down: DF.Check
 		scale_steps: DF.Table[ScaleStep]
-		scale_up: DF.Check
 		secondary_server: DF.Link | None
 		status: DF.Literal["Pending", "Running", "Failure", "Success"]
 	# end: auto-generated types
 
+	dashboard_fields = (
+		"secondary_server",
+		"action",
+		"created_at",
+		"modified_at",
+		"status",
+	)
+
 	def before_insert(self):
 		"""Set metadata attributes"""
-		if self.scale_up:
+		if self.action == "Scale Up":
 			for step in self.get_steps(
 				[
 					self.start_secondary_server,
 					self.wait_for_secondary_server_to_start,
-					self.setup_secondary_upstream,
-					self.wait_for_secondary_upstream,
+					self.wait_for_secondary_server_ping,
 					self.switch_to_secondary,
 					self.wait_for_switch_to_secondary,
+					self.setup_secondary_upstream,
+					self.wait_for_secondary_upstream,
 					self.mark_server_as_auto_scale,
 				]
 			):
@@ -53,10 +62,10 @@ class AutoScaleRecord(Document, StepHandler):
 		else:
 			for step in self.get_steps(
 				[
-					self.setup_primary_upstream,
-					self.wait_for_primary_upstream,
 					self.switch_to_primary,
 					self.wait_for_primary_switch,
+					self.setup_primary_upstream,
+					self.wait_for_primary_upstream,
 					self.initiate_secondary_shutdown,
 				]
 			):
@@ -88,6 +97,22 @@ class AutoScaleRecord(Document, StepHandler):
 		virtual_machine = frappe.db.get_value("Server", self.secondary_server, "virtual_machine")
 
 		self.handle_vm_status_job(step, virtual_machine=virtual_machine, expected_status="Running")
+
+	def wait_for_secondary_server_ping(self, step: "ScaleStep"):
+		"""Wait for secondary server to respond to agent pings"""
+		step.status = Status.Running
+		step.is_waiting = True
+		step.save()
+
+		try:
+			Agent(self.secondary_server).ping()
+		except (HTTPError, ConnectionError, JSONDecodeError):
+			step.attempt = 1 if not step.attempt else step.attempt + 1
+			step.save()
+			return
+
+		step.status = Status.Success
+		step.save()
 
 	def setup_secondary_upstream(self, step: "ScaleStep"):
 		"""Update proxy server with secondary as upstream"""

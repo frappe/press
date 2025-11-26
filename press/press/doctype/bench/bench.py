@@ -1087,6 +1087,11 @@ class Bench(Document):
 		if frappe.db.exists("Site", {"bench": self.name, "status": ("!=", "Archived")}):
 			frappe.throw("Cannot archive bench due to unarchived sites on bench.", ArchiveBenchError)
 
+	def check_scaled_up_server(self):
+		scaled_up = frappe.db.get_value("Server", self.server, "scaled_up")
+		if scaled_up:
+			frappe.throw("Can not archive bench as server is currently scaled up", ArchiveBenchError)
+
 	def check_bench_resetting(self):
 		if self.resetting_bench:
 			frappe.throw("Cannot archive bench due to ongoing in-place updates.", ArchiveBenchError)
@@ -1098,6 +1103,7 @@ class Bench(Document):
 			frappe.throw("Cannot archive as previous archive failed in the last 24 hours.", ArchiveBenchError)
 
 	def ready_to_archive(self):
+		self.check_scaled_up_server()
 		self.check_bench_resetting()
 		self.check_last_archive()
 		self.check_archive_jobs()
