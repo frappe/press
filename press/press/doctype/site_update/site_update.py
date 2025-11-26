@@ -594,6 +594,7 @@ class SiteUpdate(Document):
 				# Site is already on source bench and maintenance mode is on
 				# No need to do anything
 				site.reset_previous_status()
+				update_status(self.name, "Recovered")
 		if job:
 			frappe.db.set_value("Site Update", self.name, "recover_job", job.name)
 
@@ -1035,7 +1036,7 @@ def handle_failure(job: AgentJob, site_update: OngoingUpdate):
 		doc = SiteUpdate("Site Update", site_update.name)
 		doc.trigger_recovery_job()
 	else:
-		# If user has did Site Update with skipped_backups
+		# If user has done Site Update with skipped_backups
 		# We have nothing to do here
 		update_status(site_update.name, "Fatal")
 		SiteUpdate("Site Update", site_update.name).reallocate_workers()
