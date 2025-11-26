@@ -91,7 +91,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 			self._fail_ansible_step(step, ansible, e)
 			raise
 
-	def sync_data(self, step: "NFSVolumeDetachmentStep"):
+	def unlink_benches_from_shared(self, step: "NFSVolumeDetachmentStep"):
 		"""Sync data from shared to /home/frappe/benches"""
 		primary_server: Server = frappe.get_cached_doc("Server", self.primary_server)
 		shared_directory = frappe.db.get_single_value("Press Settings", "shared_directory")
@@ -100,7 +100,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 
 		try:
 			ansible = Ansible(
-				playbook="sync_bench_data.yml",
+				playbook="unlink_benches_from_nfs.yml",
 				server=primary_server,
 				user=primary_server._ssh_user(),
 				port=primary_server._ssh_port(),
@@ -286,7 +286,8 @@ class NFSVolumeDetachment(Document, StepHandler):
 				self.start_secondary_server,
 				self.wait_for_secondary_server_to_start,
 				self.stop_all_benches,
-				self.sync_data,
+				# self.sync_data,
+				self.unlink_benches_from_shared,
 				self.run_bench_on_primary_server,
 				self.wait_for_job_completion,
 				self.remove_servers_from_acl,

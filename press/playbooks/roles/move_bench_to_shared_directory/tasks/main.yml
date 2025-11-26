@@ -1,3 +1,0 @@
----
-- name: Copy Benches to Shared Directory on NFS Server
-  shell: mv /home/frappe/benches/* "{{ shared_directory }}"/
