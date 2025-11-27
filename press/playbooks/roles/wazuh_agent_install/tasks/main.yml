@@ -12,12 +12,6 @@
     dest: /usr/share/keyrings/wazuh.gpg
     mode: '0644'
 
-- name: Add Key
-  apt_key:
-    file: /usr/share/keyrings/wazuh.gpg
-    state: present
-    keyring: /usr/share/keyrings/wazuh.gpg
-
 - name: Add Repository
   apt_repository:
     repo: "deb [signed-by=/usr/share/keyrings/wazuh.gpg] https://packages.wazuh.com/4.x/apt/ stable main"
