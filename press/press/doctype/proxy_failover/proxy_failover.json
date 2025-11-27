@@ -37,10 +37,10 @@
   {
    "fieldname": "status",
    "fieldtype": "Select",
+   "hidden": 1,
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nRunning\nSuccess\nFailure",
-   "reqd": 1
+   "options": "Pending\nRunning\nSuccess\nFailure"
   },
   {
    "fieldname": "section_break_gajn",
@@ -58,7 +58,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-26 14:12:01.427223",
+ "modified": "2025-11-26 15:31:33.217528",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Failover",

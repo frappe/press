@@ -1,6 +1,8 @@
 # Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
 
+import os
+from contextlib import suppress
 from itertools import groupby
 
 import frappe
@@ -38,6 +40,8 @@ class ProxyFailover(Document, StepHandler):
 
 		for step in self.get_steps(
 			[
+				self.create_agent_job_for_routing_requests,
+				self.wait_for_secondary_proxy_routing,
 				self.update_dns_records_for_all_sites,
 				self.stop_primary_agent_and_replication,
 				self.update_app_servers,
@@ -64,21 +68,66 @@ class ProxyFailover(Document, StepHandler):
 			enqueue_after_commit=True,
 		)
 
-	def do_some_stuff(self, step):
-		primary_proxy = frappe.get_doc("Proxy Server", self.primary)
-		if not primary_proxy.is_static_ip:
-			# TODO: attach the secondary public ip to domain name of primary
+	@frappe.whitelist()
+	def create_agent_job_for_routing_requests(self, step=None):
+		"""Route all traffic from primary to secondary proxy server"""
 
-			try:
-				primary_proxy.ping_agent()
-			except Exception:
-				# TODO: trigger an agent job to add an nginx config to route all traffic to secondary
-				pass
+		def _update_status(comments, step=None, step_status=None, job=None):
+			if step:
+				step.status = step_status
+				step.job = job
+				step.output = comments
+				step.save()
+			else:
+				frappe.msgprint(comments)
+
+		primary_proxy = frappe.get_doc("Proxy Server", self.primary)
+		if primary_proxy.is_static_ip:
+			comments = "Primary proxy server has a static IP. Skipping routing."
+			_update_status(comments, step, Status.Skipped)
+			return
+
+		# not pinging agent directly as:
+		# maybe primary is up and we retried the failover - so agent might've gone down
+		response = os.system(f"ping -c 1 {primary_proxy.ip}")
+		if response != 0:
+			comments = "Primary proxy server is not reachable. Skipping routing."
+			_update_status(comments, step, Status.Skipped)
+			return
+
+		# TODO: trigger an agent job to add an nginx config to route all traffic to secondary
+		# job = primary_proxy.route_traffic_to_secondary(self.secondary)
+		_update_status("Queued", step, Status.Success)  # job.name)
+
+	def wait_for_secondary_proxy_routing(self, step):
+		job = frappe.db.get_value(
+			"Proxy Failover Steps",
+			{
+				"parent": self.name,
+				"step_name": "Route all traffic from primary to secondary proxy server",
+			},
+			"job",
+		)
+
+		if not job:
+			step.status = Status.Skipped
+			step.output = "No routing job found. Skipping wait step."
+			step.save()
+			return
+
+		step.status = Status.Running
+
+		with suppress(Exception):
+			# this can be handled externally too using create_agent_job_for_routing_requests
+			self.handle_agent_job(step, job)
 
 	def attach_static_ip_to_secondary(self, step):
-		primary = frappe.db.get_value("Proxy Server", self.primary, ["is_static_ip", "virtual_machine"])
+		primary = frappe.db.get_value(
+			"Proxy Server", self.primary, ["is_static_ip", "virtual_machine"], as_dict=True
+		)
 		if not primary.is_static_ip:
-			step.status = Status.Success
+			step.status = Status.Skipped
+			step.output = "Primary proxy server does not have a static IP. Skipping static IP attachment."
 			step.save()
 			return
 
@@ -116,7 +165,8 @@ class ProxyFailover(Document, StepHandler):
 
 	def add_ssh_users_for_existing_benches(self, step):
 		if not frappe.db.get_value("Proxy Server", self.secondary, "is_ssh_proxy_setup"):
-			step.status = Status.Success
+			step.status = Status.Skipped
+			step.output = "SSH Proxy is not set up on the secondary proxy server. Skipping SSH user addition."
 			step.save()
 			return
 
@@ -143,6 +193,7 @@ class ProxyFailover(Document, StepHandler):
 
 	def update_app_servers(self, step):
 		frappe.db.set_value("Server", {"proxy_server": self.primary}, "proxy_server", self.secondary)
+
 		step.status = Status.Success
 		step.save()
 
@@ -152,6 +203,7 @@ class ProxyFailover(Document, StepHandler):
 			self.secondary,
 			{"is_primary": True, "is_replication_setup": False, "primary": None},
 		)
+
 		step.status = Status.Success
 		step.save()
 
@@ -162,6 +214,7 @@ class ProxyFailover(Document, StepHandler):
 			"server",
 			self.secondary,
 		)
+
 		step.status = Status.Success
 		step.save()
 
@@ -177,7 +230,6 @@ class ProxyFailover(Document, StepHandler):
 
 	def stop_primary_agent_and_replication(self, step):
 		step.status = Status.Running
-		step.save()
 
 		try:
 			primary_proxy = frappe.get_doc("Proxy Server", self.primary)
@@ -194,7 +246,6 @@ class ProxyFailover(Document, StepHandler):
 
 	def remove_primary_access_and_start_nginx_in_secondary(self, step):
 		step.status = Status.Running
-		step.save()
 
 		try:
 			secondary_proxy = frappe.get_doc("Proxy Server", self.secondary)
@@ -214,5 +265,6 @@ class ProxyFailover(Document, StepHandler):
 			self._fail_ansible_step(step, ansible, e)
 			raise
 
-	def send_failover_email(self):
-		pass
+	def send_failover_email(self, step):
+		step.status = Status.Skipped
+		step.save()

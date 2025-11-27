@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import frappe
 from frappe.utils import unique
 
+from press.agent import Agent
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
@@ -18,6 +19,7 @@ class ProxyServer(BaseServer):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.proxy_server_domain.proxy_server_domain import ProxyServerDomain
 
 		agent_password: DF.Password | None
@@ -301,12 +303,9 @@ class ProxyServer(BaseServer):
 
 	@frappe.whitelist()
 	def trigger_failover(self):
-		# is this *only* manual?
-		# should ideally be automatic based on monitoring/some kind of health check mechanism
+		# TODO: should also be automatic based on monitoring/some kind of health check mechanism
 		if self.is_primary:
 			return
-		# self.status = "Installing"
-		# self.save()
 
 		failover = frappe.get_doc(
 			{
@@ -317,8 +316,21 @@ class ProxyServer(BaseServer):
 		).insert()
 
 		frappe.msgprint(
-			f"Failover Reference: <a href='/app/proxy-failover/{failover.name}'>{failover.name}</a>",
+			f"Failover Reference: <a href='/desk/proxy-failover/{failover.name}'>{failover.name}</a>",
 			alert=True,
+		)
+
+	def route_traffic_to_secondary(self, secondary):
+		if not frappe.db.exists(
+			"Proxy Server", {"name": secondary, "primary": self.name, "is_replication_setup": True}
+		):
+			frappe.throw("Secondary Proxy Server not found/configured properly.")
+
+		agent = Agent(self.name)
+		return agent.create_agent_job(
+			"Route Traffic to Secondary Proxy Server",
+			"proxy/hosts/redirect-to-secondary",
+			data={"secondary_proxy": secondary},
 		)
 
 	@frappe.whitelist()
