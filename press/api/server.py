@@ -24,7 +24,8 @@ from press.utils import get_current_team
 if TYPE_CHECKING:
 	from press.press.doctype.auto_scale_record.auto_scale_record import AutoScaleRecord
 	from press.press.doctype.cluster.cluster import Cluster
-	from press.press.doctype.server.server import BaseServer, Server
+	from press.press.doctype.database_server.database_server import DatabaseServer
+	from press.press.doctype.server.server import Server
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 
 
@@ -46,11 +47,11 @@ def get_mount_point(server: str, server_type=None) -> str:
 	elif server_type == "Replication Server":
 		server_type = "Database Server"
 
-	server: "BaseServer" = frappe.get_doc(server_type, server)
-	if server.provider != "AWS EC2":
+	server_doc: "Server" | "DatabaseServer" = frappe.get_doc(server_type, server)
+	if server_doc.provider != "AWS EC2":
 		return "/"
 
-	return server.guess_data_disk_mountpoint()
+	return server_doc.guess_data_disk_mountpoint()
 
 
 @frappe.whitelist()
@@ -538,8 +539,8 @@ def plans(
 		filters.update({"platform": platform})
 
 	if show_secondary_application_server_plans and current_plan:
-		current_plan_memory = frappe.db.get_value("Server Plan", current_plan, "memory")
-		filters.update({"memory": (">", current_plan_memory)})
+		current_price = frappe.db.get_value("Server Plan", current_plan, "price_inr")
+		filters.update({"price_inr": (">", current_price)})  # Hoping this covers memory and vcpus
 
 	return Plan.get_plans(
 		doctype="Server Plan",
