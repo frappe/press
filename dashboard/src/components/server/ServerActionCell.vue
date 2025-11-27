@@ -174,6 +174,7 @@ function onSetupSecondaryServer() {
 			label: 'Choose Plan',
 		},
 		onSuccess({ hide, values }) {
+			hide();
 			renderDialog(
 				h(SecondaryServerPlanDialog, {
 					server: server.doc.name,
