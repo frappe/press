@@ -3019,10 +3019,10 @@ class Server(BaseServer):
 			self.doctype,
 			self.name,
 			"_install_wazuh_agent",
-			server=wazuh_server,
+			wazuh_server=wazuh_server,
 		)
 
-	def _install_wazuh_agent(self, server: str):
+	def _install_wazuh_agent(self, wazuh_server: str):
 		try:
 			ansible = Ansible(
 				playbook="wazuh_agent_install.yml",
@@ -3030,7 +3030,8 @@ class Server(BaseServer):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 				variables={
-					"wazuh_manager": server,
+					"wazuh_manager": wazuh_server,
+					"wazuh_agent_name": self.name,
 				},
 			)
 			ansible.run()
