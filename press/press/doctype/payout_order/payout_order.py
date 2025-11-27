@@ -253,13 +253,13 @@ def create_marketplace_payout_orders_monthly(period_start=None, period_end=None)
 				po = frappe.get_doc("Payout Order", {"team": app_team, "period_end": period_end})
 				add_invoice_items_to_po(po, item_names)
 
-			po.submit()
 			frappe.db.set_value(
 				"Invoice Item",
 				{"name": ("in", item_names)},
 				"has_marketplace_payout_completed",
 				True,
 			)
+			po.submit()
 
 			if not frappe.flags.in_test:
 				# Save this particular PO transaction
@@ -267,6 +267,8 @@ def create_marketplace_payout_orders_monthly(period_start=None, period_end=None)
 		except Exception:
 			frappe.db.rollback()
 			log_error("Payout Order Creation Error", team=app_team, invoice_items=team_items)
+
+	send_unpaid_payout_order_notification()
 
 
 def get_current_period_boundaries():
@@ -359,6 +361,59 @@ def create_payout_order_from_invoice_items(
 		po.insert()
 
 	return po
+
+
+def send_unpaid_payout_order_notification():
+	"""
+	Send reminder emails to the configured email address for unpaid Marketplace payout orders.
+	"""
+	if not frappe.get_single_value("Marketplace Settings", "enable_payout_reminder"):
+		return
+
+	email = frappe.get_single_value("Marketplace Settings", "email")
+
+	unpaid_orders = frappe.get_all(
+		"Payout Order",
+		filters={"status": "Unpaid", "docstatus": 1, "type": "Marketplace"},
+		fields=[
+			"name",
+			"team",
+			"period_start",
+			"period_end",
+			"recipient_currency",
+			"total_amount",
+		],
+	)
+
+	if not unpaid_orders:
+		return
+
+	team_details = {}
+	for order in unpaid_orders:
+		currency = "₹" if order["recipient_currency"] == "INR" else "$"
+		order["amount"] = f"{currency}{order['total_amount']}"
+
+		team = order.team
+		if team not in team_details:
+			team_details[team] = {"id": team, "user": frappe.db.get_value("Team", team, "user")}
+
+	try:
+		frappe.sendmail(
+			recipients=email,
+			subject=f"Marketplace App Payout Reminder: {total_orders} Unpaid Order(s) Pending",
+			template="payout_reminder",
+			args={
+				"total_orders": len(unpaid_orders),
+				"payout_orders": unpaid_orders,
+				"team_details": team_details,
+			},
+		)
+
+	except Exception as e:
+		frappe.log_error(
+			title="Failed to Send Payout Reminder Email",
+			message=f"Error sending marketplace payout reminder to {marketplace_settings.email}: {e!s}",
+		)
 
 
 @frappe.whitelist()
