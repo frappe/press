@@ -3055,7 +3055,7 @@ class Server(BaseServer):
 			)
 			ansible.run()
 		except Exception:
-			log_error("Wazuh Agent Install Exception", server=self.as_dict())
+			log_error("Wazuh Agent Uninstall Exception", server=self.as_dict())
 
 	@property
 	def docker_depends_on_mounts(self):
