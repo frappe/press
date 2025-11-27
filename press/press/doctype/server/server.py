@@ -3002,13 +3002,17 @@ class Server(BaseServer):
 
 	@frappe.whitelist()
 	def install_wazuh_agent(self):
+		wazuh_server = frappe.get_value("Press Settings", "Press Settings", "wazuh_server")
+		if not wazuh_server:
+			frappe.throw("Please configure Wazuh Server in Press Settings")
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
 			"_install_wazuh_agent",
+			server=wazuh_server,
 		)
 
-	def _install_wazuh_agent(self):
+	def _install_wazuh_agent(self, server: str):
 		try:
 			ansible = Ansible(
 				playbook="wazuh_agent_install.yml",
@@ -3016,7 +3020,7 @@ class Server(BaseServer):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 				variables={
-					"wazuh_manager": "TODO:",
+					"wazuh_manager": server,
 				},
 			)
 			ansible.run()
