@@ -50,6 +50,7 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+test-results
 
 # Translations
 *.mo
@@ -143,6 +144,9 @@ press/public/css/email.css
 press/public/css/saas-next.css
 dashboard/tailwind.theme.json
 dashboard/components.d.ts
+
+# Session file
+libs/fc_cli/session.json
 
 # Backbone artefacts
 backbone/packer/builds/

@@ -33,18 +33,21 @@ from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server_activity.server_activity import log_server_activity
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
-from press.telegram_utils import Telegram
 from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
+	from press.press.doctype.auto_scale_record.auto_scale_record import AutoScaleRecord
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.cluster.cluster import Cluster
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.mariadb_variable.mariadb_variable import MariaDBVariable
+	from press.press.doctype.nfs_volume_detachment.nfs_volume_detachment import NFSVolumeDetachment
+	from press.press.doctype.press_job.press_job import PressJob
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server_mount.server_mount import ServerMount
 	from press.press.doctype.server_plan.server_plan import ServerPlan
@@ -62,8 +65,7 @@ class BenchInfoType(TypedDict):
 
 
 class ARMDockerImageType(TypedDict):
-	build: str
-	existing_image: bool
+	build: str | None
 	status: Literal["Pending", "Preparing", "Running", "Failure", "Success"]
 	bench: str
 
@@ -71,7 +73,6 @@ class ARMDockerImageType(TypedDict):
 PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
 MARIADB_DATA_MNT_POINT = "/opt/volumes/mariadb"
 BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
-SHARED_MNT_POINT = "/shared"
 
 
 class BaseServer(Document, TagHelpers):
@@ -151,7 +152,10 @@ class BaseServer(Document, TagHelpers):
 		)
 		doc.usage = usage(self.name)
 		doc.actions = self.get_actions()
-		doc.disk_size = self.get_data_disk_size()
+
+		if not self.is_self_hosted:
+			doc.disk_size = self.get_data_disk_size()
+
 		doc.communication_infos = self.get_communication_infos()
 
 		try:
@@ -171,6 +175,10 @@ class BaseServer(Document, TagHelpers):
 			"name",
 		)
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
+
+		if self.doctype == "Server":
+			doc.secondary_server = self.secondary_server
+			doc.scaled_up = self.scaled_up
 
 		return doc
 
@@ -360,6 +368,30 @@ class BaseServer(Document, TagHelpers):
 				"group": f"{server_type.title()} Actions",
 			},
 			{
+				"action": "Setup Secondary Server",
+				"description": "Setup a secondary application server to auto scale to during high loads",
+				"button_label": "Setup",
+				"condition": self.status == "Active"
+				and self.doctype == "Server"
+				# As only present on server doctype
+				and not self.secondary_server
+				and self.team == "team@erpnext.com",
+				"group": "Application Server Actions",
+			},
+			{
+				"action": "Teardown Secondary Server",
+				"description": "Disable secondary server and turn off auto-scaling.",
+				"button_label": "Teardown",
+				"condition": (
+					self.status == "Active"
+					and self.doctype == "Server"
+					# Only applicable for primary application servers
+					and self.secondary_server
+					and self.benches_on_shared_volume
+				),
+				"group": "Application Server Actions",
+			},
+			{
 				"action": "Drop server",
 				"description": "Drop both the application and database servers",
 				"button_label": "Drop",
@@ -379,6 +411,8 @@ class BaseServer(Document, TagHelpers):
 		"""Get servers data disk size"""
 		mountpoint = self.guess_data_disk_mountpoint()
 		volume = self.find_mountpoint_volume(mountpoint)
+		if not volume:  # Volume might not be attached as soon as the server is created
+			return 0
 		return frappe.db.get_value("Virtual Machine Volume", {"volume_id": volume.volume_id}, "size")
 
 	def _get_app_and_database_servers(self) -> tuple[Server, DatabaseServer]:
@@ -731,7 +765,7 @@ class BaseServer(Document, TagHelpers):
 					server=self,
 					user="ubuntu",
 				)
-			ansible.run()
+				ansible.run()
 		except Exception:
 			log_error("Unprepared Server Ping Exception", server=self.as_dict())
 
@@ -859,21 +893,11 @@ class BaseServer(Document, TagHelpers):
 		if self.provider != "AWS EC2":
 			return 0
 
-		if self.has_shared_volume:
-			last_updated_at = frappe.get_value(
-				"Virtual Machine Volume",
-				{
-					"parent": self.volume_host_info.nfs_server,
-					"volume_id": self.volume_host_info.volume_id,
-				},
-				"last_updated_at",
-			)
-		else:
-			last_updated_at = frappe.get_value(
-				"Virtual Machine Volume",
-				{"parent": self.virtual_machine, "idx": 1},  # first volume is likely main
-				"last_updated_at",
-			)
+		last_updated_at = frappe.get_value(
+			"Virtual Machine Volume",
+			{"parent": self.virtual_machine, "idx": 1},  # first volume is likely main
+			"last_updated_at",
+		)
 
 		if not last_updated_at:
 			return 0
@@ -894,11 +918,8 @@ class BaseServer(Document, TagHelpers):
 			mountpoint = self.guess_data_disk_mountpoint()
 
 		volume = self.find_mountpoint_volume(mountpoint)
-
-		virtual_machine: "VirtualMachine" = frappe.get_doc(
-			"Virtual Machine",
-			self.volume_host_info.nfs_server if self.has_shared_volume else self.virtual_machine,
-		)
+		# Get the parent of the volume directly instead of guessing.
+		virtual_machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", volume.parent)
 		virtual_machine.increase_disk_size(volume.volume_id, increment)
 		if self.provider == "AWS EC2":
 			device = self.get_device_from_volume_id(volume.volume_id)
@@ -914,10 +935,10 @@ class BaseServer(Document, TagHelpers):
 			return "/"
 
 		volumes = self.get_volume_mounts()
-		if volumes or self.has_data_volume or self.has_shared_volume:
+		if volumes or self.has_data_volume:
 			# Adding this condition since this method is called from both server and database server doctypes
 			if self.doctype == "Server":
-				mountpoint = BENCH_DATA_MNT_POINT if not self.has_shared_volume else SHARED_MNT_POINT
+				mountpoint = BENCH_DATA_MNT_POINT
 			elif self.doctype == "Database Server":
 				mountpoint = MARIADB_DATA_MNT_POINT
 		else:
@@ -926,15 +947,7 @@ class BaseServer(Document, TagHelpers):
 
 	def find_mountpoint_volume(self, mountpoint) -> "VirtualMachineVolume":
 		volume_id = None
-		if self.has_shared_volume and mountpoint == SHARED_MNT_POINT:
-			volume_id = self.volume_host_info.volume_id
-
-		machine: "VirtualMachine" = frappe.get_doc(
-			"Virtual Machine",
-			self.volume_host_info.nfs_server
-			if self.has_shared_volume and mountpoint == SHARED_MNT_POINT
-			else self.virtual_machine,
-		)
+		machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", self.virtual_machine)
 
 		if volume_id:
 			# Return the volume doc immediately
@@ -1008,6 +1021,25 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def archive(self):
+		if frappe.db.exists(
+			"Press Job",
+			{
+				"job_type": "Archive Server",
+				"server": self.name,
+				"server_type": self.doctype,
+				"status": "Success",
+			},
+		):
+			frappe.msgprint(_("Server {0} has already been archived.").format(self.name))
+			return
+
+		if self.virtual_machine:
+			vm_status = frappe.db.get_value("Virtual Machine", self.virtual_machine, "status")
+			if vm_status == "Terminated":
+				self.status = "Archived"
+				self.save()
+				return
+
 		if frappe.get_all(
 			"Site",
 			filters={"server": self.name, "status": ("!=", "Archived")},
@@ -1024,6 +1056,7 @@ class BaseServer(Document, TagHelpers):
 			frappe.throw(
 				_("Cannot archive server with benches. Please drop them from their respective dashboards.")
 			)
+
 		self.status = "Pending"
 		self.save()
 		if self.is_self_hosted:
@@ -1081,10 +1114,10 @@ class BaseServer(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def change_plan(self, plan: str, ignore_card_setup=False):
-		plan: ServerPlan = frappe.get_doc("Server Plan", plan)
-		self.can_change_plan(ignore_card_setup, new_plan=plan)
-		self._change_plan(plan)
-		self.run_press_job("Resize Server", {"machine_type": plan.instance_type})
+		plan_doc: ServerPlan = frappe.get_doc("Server Plan", plan)
+		self.can_change_plan(ignore_card_setup, new_plan=plan_doc)
+		self._change_plan(plan_doc)
+		self.run_press_job("Resize Server", {"machine_type": plan_doc.instance_type})
 
 	def _change_plan(self, plan):
 		self.ram = plan.memory
@@ -1104,7 +1137,7 @@ class BaseServer(Document, TagHelpers):
 	def create_image(self):
 		self.run_press_job("Create Server Snapshot")
 
-	def run_press_job(self, job_name, arguments=None):
+	def run_press_job(self, job_name, arguments=None) -> PressJob:
 		if arguments is None:
 			arguments = {}
 		return frappe.get_doc(
@@ -1149,6 +1182,23 @@ class BaseServer(Document, TagHelpers):
 
 	def get_monitoring_password(self):
 		return frappe.get_doc("Cluster", self.cluster).get_password("monitoring_password")
+
+	@frappe.whitelist()
+	def setup_nfs(self):
+		"""Allow nfs setup on this server"""
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_nfs", queue="long", timeout=1200)
+
+	def _setup_nfs(self):
+		try:
+			ansible = Ansible(
+				playbook="nfs_server.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Exception while setting up NFS", doc=self)
 
 	@frappe.whitelist()
 	def increase_swap(self, swap_size=4):
@@ -1485,7 +1535,7 @@ class BaseServer(Document, TagHelpers):
 	def get_volume_mounts(self):
 		return [mount.as_dict() for mount in self.mounts if mount.mount_type == "Volume"]
 
-	def _create_arm_build(self, build: str) -> str:
+	def _create_arm_build(self, build: str) -> str | None:
 		from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
 			_create_arm_build as arm_build_util,
 		)
@@ -1496,8 +1546,9 @@ class BaseServer(Document, TagHelpers):
 			return arm_build_util(deploy_candidate)
 		except frappe.ValidationError:
 			frappe.log_error(
-				"Failed to create ARM build", message=f"Failed to create arm build for build {build.name}"
+				"Failed to create ARM build", message=f"Failed to create arm build for build {build}"
 			)
+			return None
 
 	def _process_bench(self, bench_info: BenchInfoType) -> ARMDockerImageType:
 		candidate = bench_info["candidate"]
@@ -1619,6 +1670,9 @@ class BaseServer(Document, TagHelpers):
 		if not cleanup_db_replication_files:
 			cleanup_db_replication_files = False
 
+		if self.provider == "Hetzner" and not any(self.get_mount_variables().values()):
+			frappe.throw(_("No mounts defined to mount"))
+
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
@@ -1739,20 +1793,6 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Cloud Init Wait Exception", server=self.as_dict())
 
-	@property
-	def volume_host_info(self) -> "VirtualMachine":
-		return frappe.db.get_value(
-			"NFS Volume Attachment",
-			{"primary_server": self.name, "status": "Success"},
-			["volume_id", "nfs_server"],
-			as_dict=True,
-		)
-
-	@property
-	def has_shared_volume(self) -> bool:
-		"""Return True if benches_on_shared_volume exists and is True."""
-		return bool(getattr(self, "benches_on_shared_volume", False))
-
 	def free_space(self, mountpoint: str) -> int:
 		from press.api.server import prometheus_query
 
@@ -1810,12 +1850,12 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		return int(max(self.auto_add_storage_min, min(projected_growth_gb, self.auto_add_storage_max)))
 
-	def recommend_disk_increase(self, mountpoint: str | None = None):
+	def recommend_disk_increase(self, mountpoint: str):
 		"""
 		Send disk expansion email to users with disabled auto addon storage at 80% capacity
 		Calculate the disk usage over a 30 hour period and take 25 percent of that
 		"""
-		server: Server | DatabaseServer = frappe.get_doc(self.doctype, self.name)
+		server: Server | DatabaseServer = frappe.get_doc(self.doctype, self.name)  # type: ignore
 		if server.auto_increase_storage:
 			return
 
@@ -1829,8 +1869,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			/ 1024
 		)
 
-		current_disk_usage = current_disk_usage / 1024 / 1024 / 1024
-		disk_capacity = disk_capacity / 1024 / 1024 / 1024
+		current_disk_usage_flt = round(current_disk_usage / 1024 / 1024 / 1024, 2)
+		disk_capacity_flt = round(disk_capacity / 1024 / 1024 / 1024, 2)
 
 		frappe.sendmail(
 			recipients=get_communication_info("Email", "Incident", self.doctype, self.name),
@@ -1838,8 +1878,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			template="disabled_auto_disk_expansion",
 			args={
 				"server": server.name,
-				"current_disk_usage": f"{current_disk_usage} Gib",
-				"available_disk_space": f"{disk_capacity} GiB",
+				"current_disk_usage": f"{current_disk_usage_flt} Gib",
+				"available_disk_space": f"{disk_capacity_flt} GiB",
 				"used_storage_percentage": "80%",
 				"increase_by": f"{recommended_increase} GiB",
 			},
@@ -1847,8 +1887,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 	def calculated_increase_disk_size(
 		self,
+		mountpoint: str,
 		additional: int = 0,
-		mountpoint: str | None = None,
 	):
 		"""
 		Calculate required disk increase for servers and handle notifications accordingly.
@@ -1864,21 +1904,18 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			- Notify the user to manually increase disk space.
 		"""
 
-		telegram = Telegram("Information")
-
 		buffer = self.size_to_increase_by_for_20_percent_available(mountpoint)
 		server: Server | DatabaseServer = frappe.get_doc(self.doctype, self.name)
 		disk_capacity = self.disk_capacity(mountpoint)
-		current_disk_usage = disk_capacity - self.free_space(mountpoint)
 
-		current_disk_usage = round(current_disk_usage / 1024 / 1024 / 1024, 2)
-		disk_capacity = round(disk_capacity / 1024 / 1024 / 1024, 2)
+		current_disk_usage = round((disk_capacity - self.free_space(mountpoint)) / 1024 / 1024 / 1024, 2)
 
 		if not server.auto_increase_storage and (not server.has_data_volume or mountpoint != "/"):
-			telegram.send(
+			TelegramMessage.enqueue(
 				f"Not increasing disk (mount point {mountpoint}) on "
 				f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
-				f"by {buffer + additional}G as auto disk increase disabled by user"
+				f"by {buffer + additional}G as auto disk increase disabled by user",
+				"Information",
 			)
 			insert_addon_storage_log(
 				adding_storage=additional + buffer,
@@ -1896,10 +1933,11 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 			return
 
-		telegram.send(
+		TelegramMessage.enqueue(
 			f"Increasing disk (mount point {mountpoint}) on "
 			f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
-			f"by {buffer + additional}G"
+			f"by {buffer + additional}G",
+			"Information",
 		)
 
 		self.increase_disk_size_for_server(
@@ -2041,6 +2079,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		if self.doctype == "Database Server":
 			self.adjust_memory_config()
+			self.provide_frappe_user_du_permission()
 			self.setup_logrotate()
 
 		if self.doctype == "Proxy Server":
@@ -2133,6 +2172,7 @@ class Server(BaseServer):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.auto_scale_trigger.auto_scale_trigger import AutoScaleTrigger
 		from press.press.doctype.communication_info.communication_info import CommunicationInfo
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 		from press.press.doctype.server_mount.server_mount import ServerMount
@@ -2141,7 +2181,7 @@ class Server(BaseServer):
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
 		auto_increase_storage: DF.Check
-		auto_scaled: DF.Check
+		auto_scale_trigger: DF.Table[AutoScaleTrigger]
 		bastion_server: DF.Link | None
 		benches_on_shared_volume: DF.Check
 		cluster: DF.Link | None
@@ -2189,6 +2229,7 @@ class Server(BaseServer):
 		public: DF.Check
 		ram: DF.Float
 		root_public_key: DF.Code | None
+		scaled_up: DF.Check
 		secondary_server: DF.Link | None
 		self_hosted_mariadb_root_password: DF.Password | None
 		self_hosted_mariadb_server: DF.Data | None
@@ -2213,6 +2254,18 @@ class Server(BaseServer):
 
 	GUNICORN_MEMORY = 150  # avg ram usage of 1 gunicorn worker
 	BACKGROUND_JOB_MEMORY = 3 * 80  # avg ram usage of 3 sets of bg workers
+
+	def validate(self):
+		super().validate()
+		self.validate_managed_database_service()
+
+	def validate_managed_database_service(self):
+		if getattr(self, "is_managed_database", 0):
+			if not self.managed_database_service:
+				frappe.throw(_("Please select Managed Database Service"))
+			self.database_server = ""
+		else:
+			self.managed_database_service = ""
 
 	def on_update(self):
 		# If Database Server is changed for the server then change it for all the benches
@@ -2344,24 +2397,24 @@ class Server(BaseServer):
 					"Subscription", add_on_storage_subscription.name, {"team": self.team, "enabled": 1}
 				)
 
-	def validate_more_memory_in_secondary_server(self, secondary_server_plan: str) -> None:
+	def validate_bigger_secondary_server(self, secondary_server_plan: str) -> None:
 		"""Ensure secondary server has more memory than the primary server"""
-		current_plan_memory: int = frappe.db.get_value("Server Plan", self.plan, "memory")
-		secondary_server_plan_memory: int = frappe.db.get_value(
-			"Server Plan", secondary_server_plan, "memory"
+		current_plan_memory, vcpus = frappe.db.get_value("Server Plan", self.plan, ["memory", "vcpu"])
+		secondary_server_plan_memory, secondary_server_vcpus = frappe.db.get_value(
+			"Server Plan", secondary_server_plan, ["memory", "vcpu"]
 		)
 
-		if secondary_server_plan_memory <= current_plan_memory:
+		if secondary_server_plan_memory <= current_plan_memory and secondary_server_vcpus <= vcpus:
 			frappe.throw(
-				"Please select a plan with more memory than the "
-				f"existing server plan. Current memory: {current_plan_memory}"
+				"Please select a plan with more memory or more vcpus than the "
+				f"existing server plan. Current memory: {current_plan_memory} Current vcpus: {vcpus}"
 			)
 
-	def create_secondary_server(self, secondary_server_plan: str) -> None:
+	def create_secondary_server(self, plan_name: str) -> None:
 		"""Create a secondary server for this server"""
-		self.validate_more_memory_in_secondary_server(secondary_server_plan)
+		self.validate_bigger_secondary_server(plan_name)
 
-		secondary_server_plan: ServerPlan = frappe.get_cached_doc("Server Plan", secondary_server_plan)
+		plan: ServerPlan = frappe.get_cached_doc("Server Plan", plan_name)
 		team_name = frappe.db.get_value("Server", self.name, "team", "name")
 		cluster: "Cluster" = frappe.get_cached_doc("Cluster", self.cluster)
 		server_title = f"Secondary - {self.title or self.name}"
@@ -2374,7 +2427,7 @@ class Server(BaseServer):
 		secondary_server, _ = cluster.create_server(
 			"Server",
 			server_title,
-			secondary_server_plan,
+			plan,
 			team=team_name,
 			auto_increase_storage=self.auto_increase_storage,
 			is_secondary=True,
@@ -2384,16 +2437,32 @@ class Server(BaseServer):
 		self.secondary_server = secondary_server.name
 		self.save()
 
+	def drop_secondary_server(self) -> None:
+		"""Drop secondary server"""
+		server: "Server" = frappe.get_doc("Server", self.secondary_server)
+		server.archive()
+
+	@dashboard_whitelist()
 	@frappe.whitelist()
 	def setup_secondary_server(self, server_plan: str):
 		"""Setup secondary server"""
 		if self.doctype == "Database Server" or self.is_secondary:
 			return
 
+		self.setup_nfs()  # Setup nfs when creating a secondary server
 		self.status = "Installing"
 		self.save()
 
 		self.create_secondary_server(server_plan)
+
+	@dashboard_whitelist()
+	@frappe.whitelist()
+	def teardown_secondary_server(self):
+		if self.secondary_server:
+			nfs_volume_detachment: "NFSVolumeDetachment" = frappe.get_doc(
+				{"doctype": "NFS Volume Detachment", "primary_server": self.name}
+			)
+			nfs_volume_detachment.insert(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def setup_ncdu(self):
@@ -2841,12 +2910,12 @@ class Server(BaseServer):
 		return max(self.ram - 3000, self.ram * 0.75)  # in MB (leaving some for disk cache + others)
 
 	@cached_property
-	def max_gunicorn_workers(self) -> int:
+	def max_gunicorn_workers(self) -> float:
 		usable_ram_for_gunicorn = 0.6 * self.usable_ram  # 60% of usable ram
 		return usable_ram_for_gunicorn / self.GUNICORN_MEMORY
 
 	@cached_property
-	def max_bg_workers(self) -> int:
+	def max_bg_workers(self) -> float:
 		usable_ram_for_bg = 0.4 * self.usable_ram  # 40% of usable ram
 		return usable_ram_for_bg / self.BACKGROUND_JOB_MEMORY
 
@@ -2941,6 +3010,54 @@ class Server(BaseServer):
 		except Exception:
 			log_error("Earlyoom Install Exception", server=self.as_dict())
 
+	@frappe.whitelist()
+	def install_wazuh_agent(self):
+		wazuh_server = frappe.get_value("Press Settings", "Press Settings", "wazuh_server")
+		if not wazuh_server:
+			frappe.throw("Please configure Wazuh Server in Press Settings")
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_install_wazuh_agent",
+			wazuh_server=wazuh_server,
+		)
+
+	def _install_wazuh_agent(self, wazuh_server: str):
+		try:
+			ansible = Ansible(
+				playbook="wazuh_agent_install.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={
+					"wazuh_manager": wazuh_server,
+					"wazuh_agent_name": self.name,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Wazuh Agent Install Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def uninstall_wazuh_agent(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_uninstall_wazuh_agent",
+		)
+
+	def _uninstall_wazuh_agent(self):
+		try:
+			ansible = Ansible(
+				playbook="wazuh_agent_uninstall.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Wazuh Agent Uninstall Exception", server=self.as_dict())
+
 	@property
 	def docker_depends_on_mounts(self):
 		mount_points = set(mount.mount_point for mount in self.mounts)
@@ -2989,17 +3106,104 @@ class Server(BaseServer):
 			frappe.throw("Snapshot does not belong to this server")
 		doc.unlock()
 
+	def validate_bench_status_before_scaling(self) -> bool:
+		"Ensures no new bench job is pending/running before scaling"
+		return bool(
+			frappe.db.get_value(
+				"Bench", {"server": self.name, "status": ("IN", ["Pending", "Installing", "Updating"])}
+			)
+		)
+
+	def validate_scale(self):
+		"""
+		Check if the server can auto scale, the following parameters before creating a scale record
+			- Benches being modified
+			- Server is configured for auto scale.
+			- Was the last auto scale modified before the cool of period (don't create new auto scale).
+			- There is a auto scale operation running on the server.
+		"""
+		if not self.can_scale:
+			frappe.throw("Server is not configured for auto scaling", frappe.ValidationError)
+
+		if self.validate_bench_status_before_scaling():
+			frappe.throw(
+				"Please wait for all bench related jobs to complete before scaling the server.",
+			)
+
+		last_auto_scale_at = frappe.db.get_value(
+			"Auto Scale Record", {"primary_server": self.name, "status": "Success"}, "modified"
+		)
+		cool_off_period = frappe.db.get_single_value("Press Settings", "cool_off_period")
+		time_diff = (
+			(frappe.utils.now_datetime() - last_auto_scale_at)
+			if last_auto_scale_at
+			else timedelta(seconds=cool_off_period + 1)
+		)
+
+		running_auto_scale = frappe.db.get_value(
+			"Auto Scale Record", {"primary_server": self.name, "status": "Running"}
+		)
+
+		if running_auto_scale:
+			frappe.throw("Auto scale is already running", frappe.ValidationError)
+
+		if time_diff < timedelta(seconds=cool_off_period or 300):
+			frappe.throw(
+				f"Please wait for {fmt_timedelta(timedelta(seconds=cool_off_period or 300) - time_diff)} before scaling again",
+				frappe.ValidationError,
+			)
+
+	@dashboard_whitelist()
+	@frappe.whitelist()
+	def scale_up(self):
+		if self.scaled_up:
+			frappe.throw("Server is already scaled up", frappe.ValidationError)
+
+		self.validate_scale()
+
+		auto_scale_record = self._create_auto_scale_record(action="Scale Up")
+		auto_scale_record.insert()
+
+	@dashboard_whitelist()
+	@frappe.whitelist()
+	def scale_down(self):
+		if not self.scaled_up:
+			frappe.throw("Server is already scaled down", frappe.ValidationError)
+
+		self.validate_scale()
+
+		auto_scale_record = self._create_auto_scale_record(action="Scale Down")
+		auto_scale_record.insert()
+
+	@property
+	def can_scale(self) -> bool:
+		"""
+		Check if server is configured for auto scaling
+		and all release groups on this server have a password
+		"""
+		has_release_groups_without_redis_password = bool(
+			frappe.db.get_all(
+				"Release Group", {"server": self.name, "enabled": 1, "redis_password": ("LIKE", "")}
+			)
+		)
+		return self.benches_on_shared_volume and not has_release_groups_without_redis_password
+
+	def _create_auto_scale_record(self, action: Literal["Scale Up", "Scale Down"]) -> AutoScaleRecord:
+		"""Create up/down scale record"""
+		return frappe.get_doc({"doctype": "Auto Scale Record", "primary_server": self.name, "action": action})
+
 	@property
 	def domains(self):
+		filters = {}
 		if (
 			self.is_self_hosted
 		):  # to avoid pushing certificates to self hosted servers on setup_wildcard_hosts
-			return []
+			filters = {"name": self.name}
 		return [
 			frappe._dict({"domain": domain.name, "code_server": False})
 			for domain in frappe.get_all(
 				"Root Domain",
-				filters={"enabled": 1},
+				filters={"enabled": 1} | filters,
 				fields=["name"],
 			)
 		]  # To avoid adding child table in server doc

@@ -11,6 +11,7 @@ from frappe.model.document import Document
 from frappe.utils.data import get_url
 
 from press.utils import log_error
+from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.unique_name_generator import generate as generate_random_name
 
 
@@ -234,7 +235,7 @@ class ProductTrial(Document):
 			"Site",
 			filters=filters,
 			pluck="name",
-			order_by="creation asc",
+			order_by="status,standby_for,creation asc",
 			limit=10,
 		)
 		if not sites:
@@ -403,20 +404,21 @@ class ProductTrial(Document):
 
 	def get_server_from_cluster(self, cluster):
 		"""Return the server with the least number of standby sites in the cluster"""
-
 		ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
 		Server = frappe.qb.DocType("Server")
-
+		Bench = frappe.qb.DocType("Bench")
 		servers = (
 			frappe.qb.from_(ReleaseGroupServer)
 			.select(ReleaseGroupServer.server)
+			.distinct()
 			.where(ReleaseGroupServer.parent == self.release_group)
 			.join(Server)
 			.on(Server.name == ReleaseGroupServer.server)
 			.where(Server.cluster == cluster)
+			.join(Bench)
+			.on(Bench.server == ReleaseGroupServer.server)
 			.run(pluck="server")
 		)
-
 		server_sites = {}
 		for server in servers:
 			server_sites[server] = frappe.db.count(
@@ -432,37 +434,41 @@ class ProductTrial(Document):
 		return min(server_sites, key=server_sites.get)
 
 
-def get_app_subscriptions_site_config(apps: list[str], site: str | None = None) -> dict:
+def create_free_app_subscription(app: str, site: str | None = None):
 	from press.utils import get_current_team
 
+	free_plan = frappe.get_all(
+		"Marketplace App Plan",
+		{"enabled": 1, "price_usd": ("<=", 0), "app": app},
+		pluck="name",
+	)
+	if not free_plan:
+		return None
+	return frappe.get_doc(
+		{
+			"doctype": "Subscription",
+			"document_type": "Marketplace App",
+			"document_name": app,
+			"plan_type": "Marketplace App Plan",
+			"plan": free_plan[0],
+			"site": site,
+			"enabled": 1,
+			"team": get_current_team(),
+		}
+	).insert(ignore_permissions=True)
+
+
+def get_app_subscriptions_site_config(apps: list[str], site: str | None = None) -> dict:
 	subscriptions = []
 	site_config = {}
 
 	for app in apps:
-		free_plan = frappe.get_all(
-			"Marketplace App Plan",
-			{"enabled": 1, "price_usd": ("<=", 0), "app": app},
-			pluck="name",
-		)
-		if free_plan:
-			new_subscription = frappe.get_doc(
-				{
-					"doctype": "Subscription",
-					"document_type": "Marketplace App",
-					"document_name": app,
-					"plan_type": "Marketplace App Plan",
-					"plan": free_plan[0],
-					"site": site,
-					"enabled": 1,
-					"team": get_current_team(),
-				}
-			).insert(ignore_permissions=True)
-
-			subscriptions.append(new_subscription)
-			config = frappe.db.get_value("Marketplace App", app, "site_config")
-			config = json.loads(config) if config else {}
-			site_config.update(config)
-
+		if not (s := create_free_app_subscription(app, site)):
+			continue
+		subscriptions.append(s)
+		config = frappe.db.get_value("Marketplace App", app, "site_config")
+		config = json.loads(config) if config else {}
+		site_config.update(config)
 	for s in subscriptions:
 		site_config.update({"sk_" + s.document_name: s.secret_key})
 
@@ -473,6 +479,8 @@ def replenish_standby_sites():
 	"""Create standby sites for all products with pooling enabled. This is called by the scheduler."""
 	products = frappe.get_all("Product Trial", {"enable_pooling": 1}, pluck="name")
 	for product in products:
+		if has_job_timeout_exceeded():
+			return
 		product: ProductTrial = frappe.get_doc("Product Trial", product)
 		try:
 			product.create_standby_sites_in_each_cluster()

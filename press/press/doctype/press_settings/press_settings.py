@@ -51,14 +51,17 @@ class PressSettings(Document):
 		code_server_password: DF.Data | None
 		commission: DF.Float
 		compress_app_cache: DF.Check
+		cool_off_period: DF.Int
 		data_40: DF.Data | None
 		default_apps: DF.Table[AppGroup]
 		default_outgoing_id: DF.Data | None
 		default_outgoing_pass: DF.Data | None
+		deploy_marker: DF.Data | None
 		disable_agent_job_deduplication: DF.Check
 		disable_auto_retry: DF.Check
 		disable_frappe_auth: DF.Check
 		disable_physical_backup: DF.Check
+		disallow_disposable_emails: DF.Check
 		docker_registry_namespace: DF.Data | None
 		docker_registry_password: DF.Data | None
 		docker_registry_url: DF.Data | None
@@ -66,6 +69,7 @@ class PressSettings(Document):
 		docker_s3_access_key: DF.Data | None
 		docker_s3_secret_key: DF.Password | None
 		domain: DF.Link | None
+		drive_resource_link: DF.Data | None
 		eff_registration_email: DF.Data
 		email_recipients: DF.SmallText | None
 		enable_app_grouping: DF.Check
@@ -101,6 +105,7 @@ class PressSettings(Document):
 		hetzner_api_token: DF.Password | None
 		hybrid_cluster: DF.Link | None
 		hybrid_domain: DF.Link | None
+		ic_key: DF.Password | None
 		log_server: DF.Link | None
 		mailgun_api_key: DF.Data | None
 		max_allowed_screenshots: DF.Int
@@ -141,6 +146,8 @@ class PressSettings(Document):
 		send_email_notifications: DF.Check
 		send_telegram_notifications: DF.Check
 		servers_using_alternative_http_port_for_communication: DF.SmallText | None
+		set_redis_password: DF.Check
+		shared_directory: DF.Data | None
 		spaces_domain: DF.Link | None
 		spamd_api_key: DF.Data | None
 		spamd_api_secret: DF.Password | None
@@ -176,6 +183,7 @@ class PressSettings(Document):
 		use_delta_builds: DF.Check
 		use_staging_ca: DF.Check
 		verify_cards_with_micro_charge: DF.Literal["No", "Only INR", "Only USD", "Both INR and USD"]
+		wazuh_server: DF.Data | None
 		webroot_directory: DF.Data | None
 	# end: auto-generated types
 

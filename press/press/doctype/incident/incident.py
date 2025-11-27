@@ -22,18 +22,19 @@ from tenacity.retry import retry_if_not_result
 from twilio.base.exceptions import TwilioRestException
 
 from press.api.server import prometheus_query
+from press.press.doctype.agent_job.agent_job import AgentJob
+from press.press.doctype.bench.bench import Bench
 from press.press.doctype.communication_info.communication_info import get_communication_info
+from press.press.doctype.database_server.database_server import DatabaseServer
 from press.press.doctype.server.server import MARIADB_DATA_MNT_POINT
-from press.telegram_utils import Telegram
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error
 
 if TYPE_CHECKING:
+	from frappe.types import DF
 	from twilio.rest.api.v2010.account.call import CallInstance
 
-	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import AlertmanagerWebhookLog
-	from press.press.doctype.bench.bench import Bench
-	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.incident_settings.incident_settings import IncidentSettings
 	from press.press.doctype.incident_settings_self_hosted_user.incident_settings_self_hosted_user import (
 		IncidentSettingsSelfHostedUser,
@@ -43,7 +44,7 @@ if TYPE_CHECKING:
 	)
 	from press.press.doctype.monitor_server.monitor_server import MonitorServer
 	from press.press.doctype.press_settings.press_settings import PressSettings
-	from press.press.doctype.server.server import BaseServer, Server
+	from press.press.doctype.server.server import Server
 
 INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere #
 INCIDENT_SCOPE = (
@@ -142,6 +143,7 @@ class Incident(WebsiteGenerator):
 			pass
 		self.send_sms_via_twilio()
 		self.send_email_notification()
+		self.identify_affected_resource()
 
 	def on_update(self):
 		if self.has_value_changed("status"):
@@ -150,10 +152,10 @@ class Incident(WebsiteGenerator):
 				self.call_customers()
 
 	def vcpu(self, server_type, server_name):
-		vm_name = frappe.db.get_value(server_type, server_name, "virtual_machine")
+		vm_name = str(frappe.db.get_value(server_type, server_name, "virtual_machine"))
 		return int(
-			frappe.db.get_value("Virtual Machine", vm_name, "vcpu") or 16
-		)  # 16 as DO and scaleway servers have high CPU; Add a CPU field everywhere later
+			frappe.db.get_value("Virtual Machine", vm_name, "vcpu") or 16  # type: ignore
+		)  # 16 as DO and Scaleway servers have high CPU; Add a CPU field everywhere later
 
 	@cached_property
 	def database_server(self):
@@ -172,10 +174,10 @@ class Incident(WebsiteGenerator):
 			timespan,
 			timespan + 1,
 		)["datasets"]
-		if load == []:
-			ret = -1  # no response
-		else:
+		if load:
 			ret = load[0]["values"][-1]
+		else:
+			ret = -1  # no response
 		self.add_description(f"{name} load avg(5m): {ret if ret != -1 else 'No data'}")
 		return ret
 
@@ -187,11 +189,15 @@ class Incident(WebsiteGenerator):
 			return resource_type, resource
 		return False, False
 
+	def get_sites_down_list(self):
+		return "\n".join(self.sites_down)
+
 	def identify_affected_resource(self):
 		"""
 		Identify the affected resource and set the resource field
 		"""
-		self.add_description(f"{len(self.sites_down)} / {self.total_instances} sites down")
+		self.add_description(f"{len(self.sites_down)} / {self.total_instances} sites down:")
+		self.add_description(self.get_sites_down_list())
 
 		for resource_type, resource in [
 			("Database Server", self.database_server),
@@ -228,13 +234,13 @@ class Incident(WebsiteGenerator):
 			timespan,
 			timespan + 1,
 		)["datasets"]
-		mode_cpus = {x["name"]: x["values"][-1] for x in cpu_info} or {
+		mode_cpus: dict[str, int] = {x["name"]: x["values"][-1] for x in cpu_info} or {
 			"user": -1,
 			"idle": -1,
 			"softirq": -1,
 			"iowait": -1,
 		}  # no info;
-		max_mode = max(mode_cpus, key=mode_cpus.get)
+		max_mode: str = max(mode_cpus, key=lambda k: mode_cpus[k])
 		max_cpu = mode_cpus[max_mode]
 		self.add_description(f"CPU Usage: {max_mode} {max_cpu if max_cpu > 0 else 'No data'}")
 		return max_mode, mode_cpus[max_mode]
@@ -319,6 +325,7 @@ class Incident(WebsiteGenerator):
 				self.type = "Database Down"
 				self.subtype = "Disk full"
 				self.categorize_disk_full_issue()
+				self.send_disk_full_mail()
 				return
 			# TODO: Try more random shit if resource isn't identified
 			# Eg: Check mysql up/ docker up/ container up
@@ -387,10 +394,10 @@ class Incident(WebsiteGenerator):
 
 	@frappe.whitelist()
 	def reboot_database_server(self):
-		db_server_name: Server = frappe.db.get_value("Server", self.server, "database_server")
+		db_server_name = frappe.db.get_value("Server", self.server, "database_server")
 		if not db_server_name:
 			frappe.throw("No database server found for this server")
-		db_server: DatabaseServer = frappe.get_doc("Database Server", db_server_name)
+		db_server = DatabaseServer("Database Server", db_server_name)
 		try:
 			db_server.reboot_with_serial_console()
 		except NotImplementedError:
@@ -417,7 +424,7 @@ class Incident(WebsiteGenerator):
 			limit=2,
 		)  # only 2 workers
 		for stuck_job in stuck_jobs:
-			job: AgentJob = frappe.get_doc("Agent Job", stuck_job.name)
+			job = AgentJob("Agent Job", stuck_job.name)
 			job.cancel_job()
 			self.add_likely_cause(f"Cancelled stuck {stuck_job.job_type} job {stuck_job.name}")
 		self.save()
@@ -435,7 +442,7 @@ class Incident(WebsiteGenerator):
 			frappe.throw("No down benches found for this server")
 			return
 		for bench_name in down_benches:
-			bench: Bench = frappe.get_doc("Bench", bench_name)
+			bench: Bench = Bench("Bench", bench_name)
 			bench.restart()
 			self.add_likely_cause(f"Restarted bench {bench_name}")
 		self.save()
@@ -459,13 +466,13 @@ class Incident(WebsiteGenerator):
 		"""
 		Returns a list of users who are in the incident team
 		"""
-		incident_settings: IncidentSettings = frappe.get_cached_doc("Incident Settings")
+		incident_settings: IncidentSettings = frappe.get_cached_doc("Incident Settings")  # type: ignore
 		users = incident_settings.users
 		if frappe.db.exists("Self Hosted Server", {"server": self.server}) or frappe.db.get_value(
 			"Server", self.server, "is_self_hosted"
 		):
 			users = incident_settings.self_hosted_users
-		ret: list[IncidentSettingsUser | IncidentSettingsSelfHostedUser] = users
+		ret: DF.Table = users
 		if self.status == "Acknowledged":  # repeat the acknowledged user to be the first
 			for user in users:
 				if user.user == self.acknowledged_by:
@@ -500,8 +507,7 @@ class Incident(WebsiteGenerator):
 		return call.fetch().status  # will eventually be no-answer
 
 	def notify_unable_to_reach_twilio(self):
-		telegram = Telegram()
-		telegram.send(
+		TelegramMessage.enqueue(
 			f"""Unable to reach Twilio for Incident in {self.server}
 
 Likely due to insufficient balance or incorrect credentials""",
@@ -558,20 +564,45 @@ Likely due to insufficient balance or incorrect credentials""",
 		) and ignore_since < frappe.utils.now_datetime():
 			return
 		domain = frappe.db.get_value("Press Settings", None, "domain")
-		incident_link = f"{domain}{self.get_url()}"
-
-		message_body = f"""New Incident {self.name} Reported
-
-Hosted on: {self.server}
-
-Incident URL: {incident_link}"""
+		incident_link = f"https://{domain}{self.get_url()}"
+		message = f"Incident on server: {self.server}\n\nURL: {incident_link}\n\nID: {self.name}"
 		for human in self.get_humans():
-			self.twilio_client.messages.create(
-				to=human.phone, from_=self.twilio_phone_number, body=message_body
-			)
+			self.twilio_client.messages.create(to=human.phone, from_=self.twilio_phone_number, body=message)
 		self.reload()  # In case the phone call status is modified by the investigator before the sms is sent
 		self.sms_sent = 1
 		self.save()
+
+	def send_disk_full_mail(self):
+		title = str(frappe.db.get_value("Server", self.server, "title"))
+		if self.resource_type:
+			title = str(frappe.db.get_value(self.resource_type, self.resource, "title"))
+		subject = f"Disk Full Incident on {title}"
+		message = f"""
+		<p>Dear User,</p>
+		<p>You are receiving this mail as the storage has been filled up on your server: <strong>{self.resource}</strong> and you have <a href="https://docs.frappe.io/cloud/storage-addons#steps-to-disable-auto-increase-storage">automatic addition</a> of storage disabled.</p>
+		<p>Please enable automatic addition of storage or <a href="https://docs.frappe.io/cloud/storage-addons#steps-to-add-storage-manually">add more storage manually</a> to resolve the issue.</p>
+		<p>Best regards,<br/>Frappe Cloud Team</p>
+		"""
+		self.send_mail(subject, message)
+
+	def send_mail(self, subject: str, message: str):
+		try:
+			frappe.sendmail(
+				recipients=get_communication_info("Email", "Server Activity", "Server", self.server),
+				subject=subject,
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+				template="incident",
+				args={
+					"message": message,
+					"link": f"dashboard/servers/{self.server}/analytics/",
+				},
+				now=True,
+			)
+
+		except Exception:
+			# Swallow the exception to avoid breaking the Incident creation
+			log_error("Incident Notification Email Failed")
 
 	def send_email_notification(self):
 		if not self.global_email_alerts_enabled:
@@ -584,22 +615,9 @@ Incident URL: {incident_link}"""
 		team = frappe.db.get_value("Server", self.server, "team")
 		if (not self.server) or (not team):
 			return
-		try:
-			subject = self.get_email_subject()
-			message = self.get_email_message()
-			frappe.sendmail(
-				recipients=get_communication_info("Email", "Server Activity", "Server", self.server),
-				subject=subject,
-				template="incident",
-				args={
-					"message": message,
-					"link": f"dashboard/servers/{self.server}/analytics/",
-				},
-				now=True,
-			)
-		except Exception:
-			# Swallow the exception to avoid breaking the Incident creation
-			log_error("Incident Notification Email Failed")
+		subject = self.get_email_subject()
+		message = self.get_email_message()
+		self.send_mail(subject, message)
 
 	def get_email_subject(self):
 		title = str(frappe.db.get_value("Server", self.server, "title"))
@@ -744,9 +762,13 @@ Incident URL: {incident_link}"""
 	def create_log_for_server(self, is_resolved: bool = False):
 		"""We will create a incident log on the server activity for confirmed incidents and their resolution"""
 		try:
-			incidence_server: BaseServer = frappe.get_cached_doc(self.resource_type, self.resource)
+			incidence_server: Server | DatabaseServer = frappe.get_cached_doc(
+				self.resource_type, self.resource
+			)
 		except Exception:
-			incidence_server: Server = frappe.get_cached_doc("Server", self.server)
+			if not self.server:
+				return
+			incidence_server = frappe.get_cached_doc("Server", self.server)
 
 		incidence_server.create_log(
 			"Incident",
@@ -857,8 +879,7 @@ def notify_ignored_servers():
 	for server in ignored_servers:
 		message += f"{server.name} till {frappe.utils.pretty_date(server.ignore_incidents_till)}\n"
 	message += "\n@adityahase @balamurali27 @saurabh6790\n"
-	telegram = Telegram()
-	telegram.send(message)
+	TelegramMessage.enqueue(message)
 
 
 def on_doctype_update():

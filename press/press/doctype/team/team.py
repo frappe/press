@@ -12,7 +12,7 @@ from frappe.contacts.address_and_contact import load_address_and_contact
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.rate_limiter import rate_limit
-from frappe.utils import get_fullname, get_url_to_form, random_string
+from frappe.utils import get_fullname, get_last_day, get_url_to_form, getdate, random_string
 
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
@@ -55,6 +55,7 @@ class Team(Document):
 		code_servers_enabled: DF.Check
 		communication_infos: DF.Table[CommunicationInfo]
 		company_logo: DF.Attach | None
+		company_name: DF.Data | None
 		country: DF.Link | None
 		currency: DF.Link | None
 		customers: DF.SmallText | None
@@ -64,6 +65,7 @@ class Team(Document):
 		enable_inplace_updates: DF.Check
 		enable_performance_tuning: DF.Check
 		enabled: DF.Check
+		end_date: DF.Date | None
 		enforce_2fa: DF.Check
 		erpnext_partner: DF.Check
 		extend_payment_due_suspension: DF.Check
@@ -77,18 +79,21 @@ class Team(Document):
 		is_saas_user: DF.Check
 		is_us_eu: DF.Check
 		last_used_team: DF.Link | None
+		monthly_alert_threshold: DF.Currency
 		mpesa_enabled: DF.Check
 		mpesa_phone_number: DF.Data | None
 		mpesa_tax_id: DF.Data | None
 		parent_team: DF.Link | None
 		partner_commission: DF.Percent
 		partner_email: DF.Data | None
+		partner_manager: DF.Link | None
 		partner_referral_code: DF.Data | None
 		partner_status: DF.Literal["Active", "Inactive"]
-		partner_tier: DF.Data | None
+		partner_tier: DF.Link | None
 		partnership_date: DF.Date | None
 		payment_mode: DF.Literal["", "Card", "Prepaid Credits", "Paid By Partner"]
 		razorpay_enabled: DF.Check
+		receive_budget_alerts: DF.Check
 		referrer_id: DF.Data | None
 		security_portal_enabled: DF.Check
 		self_hosted_servers_enabled: DF.Check
@@ -97,6 +102,7 @@ class Team(Document):
 		skip_backups: DF.Check
 		skip_onboarding: DF.Check
 		ssh_access_enabled: DF.Check
+		start_date: DF.Date | None
 		stripe_customer_id: DF.Data | None
 		team_members: DF.Table[TeamMember]
 		team_title: DF.Data | None
@@ -136,6 +142,9 @@ class Team(Document):
 		"razorpay_enabled",
 		"account_request",
 		"partner_status",
+		"receive_budget_alerts",
+		"monthly_alert_threshold",
+		"company_name",
 	)
 
 	def get_doc(self, doc):
@@ -179,6 +188,8 @@ class Team(Document):
 			as_dict=True,
 		)
 		doc.communication_infos = self.get_communication_infos()
+		doc.receive_budget_alerts = self.receive_budget_alerts
+		doc.monthly_alert_threshold = self.monthly_alert_threshold
 
 	def onload(self):
 		load_address_and_contact(self)
@@ -458,6 +469,7 @@ class Team(Document):
 
 		self.validate_payment_mode()
 		self.update_draft_invoice_payment_mode()
+		self.check_budget_alert_threshold()
 
 		if (
 			not self.is_new()
@@ -475,6 +487,15 @@ class Team(Document):
 
 			for invoice in draft_invoices:
 				frappe.db.set_value("Invoice", invoice, "payment_mode", self.payment_mode)
+
+	def check_budget_alert_threshold(self):
+		if self.receive_budget_alerts and self.has_value_changed("monthly_alert_threshold"):
+			frappe.db.set_value(
+				"Invoice",
+				{"team": self.name, "docstatus": 0, "due_date": get_last_day(getdate())},
+				"budget_alert_sent",
+				0,
+			)
 
 	@frappe.whitelist()
 	def impersonate(self, member, reason):
@@ -499,13 +520,13 @@ class Team(Document):
 			self.partner_email = self.user
 		self.frappe_partnership_date = self.get_partnership_start_date()
 		self.servers_enabled = 1
+		self.partner_status = "Active"
 		self.save(ignore_permissions=True)
 		self.create_partner_referral_code()
-		self.create_new_invoice()
 
 	@frappe.whitelist()
 	def disable_erpnext_partner_privileges(self):
-		self.erpnext_partner = 0
+		self.partner_status = "Inactive"
 		self.save(ignore_permissions=True)
 
 	def create_partner_referral_code(self):
@@ -525,58 +546,6 @@ class Team(Document):
 		if not data:
 			frappe.throw("Partner not found on frappe.io")
 		return frappe.utils.getdate(data.get("start_date"))
-
-	def create_new_invoice(self):
-		"""
-		After enabling partner privileges, new invoice should be created
-		to track the partner achievements
-		"""
-		# check if any active user with an invoice
-		if not frappe.get_all("Invoice", {"team": self.name, "docstatus": ("<", 2)}, pluck="name"):
-			return
-		today = frappe.utils.getdate()
-		current_invoice = frappe.db.get_value(
-			"Invoice",
-			{
-				"team": self.name,
-				"type": "Subscription",
-				"docstatus": 0,
-				"period_end": frappe.utils.get_last_day(today),
-			},
-			"name",
-		)
-
-		if not current_invoice:
-			return
-
-		current_inv_doc = frappe.get_doc("Invoice", current_invoice)
-
-		if current_inv_doc.partner_email and current_inv_doc.partner_email == self.partner_email:
-			# don't create new invoice if partner email is set
-			return
-
-		if (
-			not current_invoice
-			or today == frappe.utils.get_last_day(today)
-			or today == current_inv_doc.period_start
-		):
-			# don't create invoice if new team or today is the last day of the month
-			return
-		current_inv_doc.period_end = frappe.utils.add_days(today, -1)
-		current_inv_doc.flags.on_partner_conversion = True
-		current_inv_doc.save()
-		current_inv_doc.finalize_invoice()
-
-		# create invoice
-		invoice = frappe.get_doc(
-			{
-				"doctype": "Invoice",
-				"team": self.name,
-				"type": "Subscription",
-				"period_start": today,
-			}
-		)
-		invoice.insert()
 
 	def create_referral_bonus(self, referrer_id):
 		# Get team name with this this referrer id
@@ -1029,9 +998,9 @@ class Team(Document):
 		if response.ok:
 			res = response.json()
 			partner_level = res.get("message")
-			certificate_count = res.get("certificates")
+			# certificate_count = res.get("certificates")
 			if partner_level:
-				return partner_level, certificate_count
+				return partner_level
 			return None
 
 		self.add_comment(text="Failed to fetch partner level" + "<br><br>" + response.text)
@@ -1144,7 +1113,7 @@ class Team(Document):
 		)
 
 	def reallocate_workers_if_needed(
-		self, workloads_before: list[str, float, str], workloads_after: list[str, float, str]
+		self, workloads_before: list[tuple[str, float, str]], workloads_after: list[tuple[str, float, str]]
 	):
 		for before, after in zip(workloads_before, workloads_after, strict=False):
 			if after[1] - before[1] >= 8:  # 100 USD equivalent
@@ -1604,3 +1573,96 @@ def is_us_eu():
 		"Mexico",
 	]
 	return frappe.db.get_value("Team", get_current_team(), "country") in countrygroup
+
+
+def check_budget_alerts():
+	"""
+	Daily background job to check if teams have exceeded their monthly budget alert limits.
+	Sends email notifications for invoices that have crossed the set limit.
+	"""
+	teams_with_budget_alert_enabled = frappe.get_all(
+		"Team",
+		filters={"receive_budget_alerts": 1, "monthly_alert_threshold": (">", 0), "enabled": 1},
+		fields=["name", "monthly_alert_threshold", "currency", "user"],
+	)
+
+	if not teams_with_budget_alert_enabled:
+		return
+
+	team_names = [team["name"] for team in teams_with_budget_alert_enabled]
+	team_dict = {team["name"]: team for team in teams_with_budget_alert_enabled}
+
+	current_month_end = get_last_day(getdate())
+
+	# Fetch current month invoices for all teams, filter out invoices that have already sent alerts
+	current_invoices = frappe.get_all(
+		"Invoice",
+		filters={
+			"team": ("in", team_names),
+			"due_date": current_month_end,
+			"status": "Draft",
+			"budget_alert_sent": 0,
+		},
+		fields=[
+			"name",
+			"team",
+			"total",
+			"period_start",
+			"period_end",
+		],
+		order_by="creation desc",
+	)
+
+	invoices_to_update = []  # To keep track of invoices that need budget_alert_sent field update
+	for invoice in current_invoices:
+		team_name = invoice["team"]
+		monthly_limit = team_dict[team_name]["monthly_alert_threshold"]
+		if invoice["total"] > monthly_limit:
+			email_sent = send_budget_alert_email(team_dict[team_name], invoice)
+			if email_sent:
+				invoices_to_update.append(invoice["name"])
+
+	if invoices_to_update:
+		Invoice = frappe.qb.DocType("Invoice")
+		(
+			frappe.qb.update(Invoice)
+			.set(Invoice.budget_alert_sent, 1)
+			.where(Invoice.name.isin(invoices_to_update))
+		).run()
+
+
+def send_budget_alert_email(team_info, invoice):
+	"""
+	Args:
+		team_info (dict)
+		invoice (dict): Invoice that exceeded the budget alert threshold
+	"""
+	try:
+		team_user = team_info["user"]
+		currency = "₹" if team_info["currency"] == "INR" else "$"
+
+		invoice_amount = f"{currency}{invoice['total']}"
+		alert_threshold = f"{currency}{team_info['monthly_alert_threshold']}"
+		excess_amount = f"{currency}{round(invoice['total'] - team_info['monthly_alert_threshold'], 2)}"
+
+		subject = f"Frappe Cloud Budget Alert for {team_user}"
+
+		frappe.sendmail(
+			recipients=team_user,
+			subject=subject,
+			template="budget_alert",
+			args={
+				"team_user": team_user,
+				"invoice_amount": invoice_amount,
+				"alert_threshold": alert_threshold,
+				"excess_amount": excess_amount,
+				"period_start": invoice["period_start"],
+				"period_end": invoice["period_end"],
+			},
+			reference_doctype="Invoice",
+			reference_name=invoice["name"],
+		)
+		return True
+	except Exception as e:
+		frappe.log_error(f"Failed to send budget alert email: {team_info['user']}", {e})
+		return False

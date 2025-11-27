@@ -7,8 +7,18 @@
 			:title="error.title"
 			@done="$resources.errors.reload()"
 		/>
+		<AlertAddressableError
+			v-for="w in warnings"
+			:key="w.name"
+			class="mb-5"
+			:name="w.name"
+			:title="w.title"
+			type="warning"
+			@done="$resources.warnings.reload()"
+		/>
+
 		<AlertBanner
-			v-if="alertMessage && !error"
+			v-if="alertMessage && !error && !warnings"
 			:title="alertMessage"
 			type="warning"
 			class="mb-5"
@@ -22,7 +32,7 @@
 
 		<div class="mt-3">
 			<div class="flex w-full items-center">
-				<h2 class="text-lg font-medium text-gray-900">
+				<h2 class="text-lg font-large text-gray-900">
 					{{ deploy.deploy_candidate }}
 				</h2>
 				<Badge class="ml-2" :label="deploy.status" />
@@ -106,13 +116,14 @@
 </template>
 <script>
 import { createResource, getCachedDocumentResource } from 'frappe-ui';
-import { getObject } from '../objects';
-import JobStep from '../components/JobStep.vue';
+import { h } from 'vue';
+import { toast } from 'vue-sonner';
 import AlertAddressableError from '../components/AlertAddressableError.vue';
 import AlertBanner from '../components/AlertBanner.vue';
-import dayjs from 'dayjs';
-import { toast } from 'vue-sonner';
-import { confirmDialog } from '../utils/components';
+import JobStep from '../components/JobStep.vue';
+import AppVersionsDialog from '../dialogs/AppVersionsDialog.vue';
+import { getObject } from '../objects';
+import { confirmDialog, renderDialog } from '../utils/components';
 
 export default {
 	name: 'DeployCandidate',
@@ -129,6 +140,26 @@ export default {
 				doctype: 'Deploy Candidate Build',
 				name: this.id,
 				transform: this.transformDeploy,
+			};
+		},
+		warnings() {
+			return {
+				type: 'list',
+				cache: [
+					'Press Notification',
+					'Warning',
+					'Deploy Candidate Build',
+					this.id,
+				],
+				doctype: 'Press Notification',
+				auto: true,
+				fields: ['title', 'name'],
+				filters: {
+					document_type: 'Deploy Candidate Build',
+					document_name: this.id,
+					class: 'Warning',
+				},
+				limit: 5,
 			};
 		},
 		errors() {
@@ -170,6 +201,7 @@ export default {
 			if (rgDoc) rgDoc.reload();
 			this.$resources.deploy.reload();
 			this.$resources.errors.reload();
+			this.$resources.warnings.reload();
 		});
 	},
 	beforeUnmount() {
@@ -185,6 +217,9 @@ export default {
 		},
 		error() {
 			return this.$resources.errors?.data?.[0] ?? null;
+		},
+		warnings() {
+			return (this.$resources.warnings?.data ?? []).slice(0, 5);
 		},
 		alertMessage() {
 			if (!this.deploy) {
@@ -210,22 +245,13 @@ export default {
 					},
 				},
 				{
-					label: 'Fail and Redeploy',
-					icon: 'repeat',
-					condition: () => this.showFailAndRedeploy,
-					onClick: () => this.failAndRedeploy(),
+					label: 'View App Versions',
+					icon: 'package',
+					onClick: () => {
+						this.appVersions();
+					},
 				},
 			].filter((option) => option.condition?.() ?? true);
-		},
-		showFailAndRedeploy() {
-			if (!this.deploy || this.deploy.status == 'Failure') {
-				return false;
-			}
-			const from = ['Pending', 'Preparing'].includes(this.deploy.status)
-				? this.deploy.creation
-				: this.deploy.build_start;
-			const now = dayjs(new Date());
-			return now.diff(from, 'hours') > 2;
 		},
 	},
 	methods: {
@@ -289,27 +315,15 @@ export default {
 			});
 		},
 
-		failAndRedeploy() {
-			if (!this.deploy) {
-				return;
-			}
-
-			const group = this.deploy.group;
-			const onError = () => toast.error('Could not fail and redeploy');
-			const router = this.$router;
-
-			createResource({
-				url: 'press.api.bench.fail_and_redeploy',
-				params: { name: group, dc_name: this.deploy.name },
-				onSuccess(name) {
-					if (!name) {
-						onError();
-					} else {
-						router.push(`/groups/${group}/deploys/${name}`);
-					}
-				},
-				onError,
-			}).fetch();
+		appVersions() {
+			const deploy = this.deploy;
+			renderDialog(
+				h(AppVersionsDialog, {
+					dc_name: deploy.name,
+					group: deploy.group,
+					status: deploy.status,
+				}),
+			);
 		},
 	},
 };

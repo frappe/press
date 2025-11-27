@@ -21,16 +21,17 @@
 </template>
 
 <script setup>
-import { getCachedDocumentResource, createDocumentResource } from 'frappe-ui';
-import { toast } from 'vue-sonner';
-import { confirmDialog, renderDialog } from '../../utils/components';
-import router from '../../router';
-import { getToastErrorMessage } from '../../utils/toast';
-import DatabaseConfigurationDialog from './DatabaseConfigurationDialog.vue';
-import DatabaseBinlogsDialog from './DatabaseBinlogsDialog.vue';
-import CleanupDialog from './CleanupDialog.vue';
+import { createDocumentResource, getCachedDocumentResource } from 'frappe-ui';
 import { h } from 'vue';
+import { toast } from 'vue-sonner';
+import router from '../../router';
+import { confirmDialog, renderDialog } from '../../utils/components';
+import { getToastErrorMessage } from '../../utils/toast';
 import CommunicationInfoDialog from '../CommunicationInfoDialog.vue';
+import CleanupDialog from './CleanupDialog.vue';
+import DatabaseBinlogsDialog from './DatabaseBinlogsDialog.vue';
+import DatabaseConfigurationDialog from './DatabaseConfigurationDialog.vue';
+import SecondaryServerPlanDialog from './SecondaryServerPlanDialog.vue';
 
 const props = defineProps({
 	serverName: { type: String, required: true },
@@ -51,6 +52,8 @@ function getServerActionHandler(action) {
 		'Rename server': onRenameServer,
 		'Drop server': onDropServer,
 		'Cleanup Server': onCleanupServer,
+		'Setup Secondary Server': onSetupSecondaryServer,
+		'Teardown Secondary Server': onTeardownSecondaryServer,
 		'Enable Performance Schema': onEnablePerformanceSchema,
 		'Disable Performance Schema': onDisablePerformanceSchema,
 		'Update InnoDB Buffer Pool Size': onUpdateInnodbBufferPoolSize,
@@ -82,6 +85,103 @@ function onCleanupServer() {
 			title: 'Server Cleanup',
 		}),
 	);
+}
+
+function onTeardownSecondaryServer() {
+	confirmDialog({
+		title: 'Remove Secondary Application Server',
+		message: `
+		<p>
+			You're about to <strong>remove your Secondary Application Server</strong> and 
+			<strong>disable auto-scaling</strong>.
+			Once this begins, the secondary server will enter a <strong>Installing</strong> state
+			while it is being removed.
+		</p>
+
+		<div class="mt-3 rounded-md bg-gray-50 border border-gray-200 p-3 text-sm">
+			<div class="p-2">
+				<p>
+					This action <strong>archives the secondary server instance and fully disables auto-scaling</strong> until a new secondary server is set up.
+				</p>
+
+				<p class="mt-3">
+					After teardown, autoscaling will <strong>not trigger</strong> unless you configure a new secondary server.
+				</p>
+
+				<p class="mt-3 text-gray-600">
+					See the docs to learn more about autoscaling:
+					<a href="#" target="_blank" rel="noopener">Secondary Server teardown guide</a>.
+				</p>
+		</div>
+
+		</div>
+		`,
+		primaryAction: {
+			label: 'Teardown',
+		},
+		onSuccess({ hide }) {
+			toast.promise(
+				server.teardownSecondaryServer.submit(null, {
+					onSuccess() {
+						this.$router.push({
+							path: server,
+							path: 'plays',
+						});
+						hide();
+					},
+				}),
+				{
+					loading: 'Tearing down secondary server...',
+					success: 'Secondary server teardown started',
+					error: 'Failed to start secondary server teardown',
+				},
+			);
+		},
+	});
+}
+
+function onSetupSecondaryServer() {
+	confirmDialog({
+		title: 'Setup Secondary Application Server',
+		message: `
+		<p>
+			You're about to <strong>provision a Secondary Application Server</strong> for auto-scaling.
+			This will put the server into an <strong>Installing</strong> state while the setup runs.
+			Your server will become active once all the setup is completed, this might take some time depending on the
+			number and size of the benches on the server.
+		</p>
+
+		<div class="mt-3 rounded-md bg-gray-50 border border-gray-200 text-sm">
+			<div class="p-2">
+				<p>
+					Select a <strong>secondary server plan</strong> — this is the plan the secondary server will run on.  
+					The secondary plan must have <strong>higher compute</strong> than your current plan (CPU / memory).
+				</p>
+
+				<p class="mt-3">
+					After setup, the secondary server will remain in <em>standby</em> (inactive) until autoscaling or manual activation.
+				</p>
+
+				<p class="mt-3 text-gray-600">
+					See the docs to learn more about autoscaling:
+					<a href="#" target="_blank" rel="noopener">Secondary Server setup guide</a>.
+				</p>
+		</div>
+
+		</div>
+  		`,
+		primaryAction: {
+			label: 'Choose Plan',
+		},
+		onSuccess({ hide, values }) {
+			hide();
+			renderDialog(
+				h(SecondaryServerPlanDialog, {
+					server: server.doc.name,
+				}),
+			);
+		},
+	});
 }
 
 function onRebootServer() {

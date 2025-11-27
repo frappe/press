@@ -74,6 +74,26 @@ export let session = reactive({
 			? session.roles.data.some((role) => role.allow_partner)
 			: true,
 	),
+	hasPartnerDashboardAccess: computed(() =>
+		session.roles.data.length
+			? session.roles.data.some((role) => role.allow_dashboard)
+			: true,
+	),
+	hasPartnerLeadsAccess: computed(() =>
+		session.roles.data.length
+			? session.roles.data.some((role) => role.allow_leads)
+			: true,
+	),
+	hasPartnerCustomerAccess: computed(() =>
+		session.roles.data.length
+			? session.roles.data.some((role) => role.allow_customer)
+			: true,
+	),
+	hasPartnerContributionAccess: computed(() =>
+		session.roles.data.length
+			? session.roles.data.some((role) => role.allow_contribution)
+			: true,
+	),
 	hasSiteCreationAccess: computed(() =>
 		session.roles.data.length
 			? session.roles.data.some((role) => role.allow_site_creation)

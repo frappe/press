@@ -9,6 +9,7 @@ from unittest.mock import Mock, patch
 import frappe
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
+from moto import mock_aws
 
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
@@ -27,6 +28,8 @@ from press.press.doctype.virtual_machine.test_virtual_machine import create_test
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.server.server import Server
+	from press.press.doctype.server_plan.server_plan import ServerPlan
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 @patch.object(BaseServer, "after_insert", new=Mock())
@@ -41,6 +44,8 @@ def create_test_server(
 	use_for_build: bool = False,
 	is_self_hosted: bool = False,
 	auto_increase_storage: bool = False,
+	provider: str | None = None,
+	has_data_volume: bool = False,
 ) -> "Server":
 	"""Create test Server doc."""
 	if not proxy_server:
@@ -49,6 +54,9 @@ def create_test_server(
 		database_server = create_test_database_server().name
 	if not team:
 		team = create_test_team().name
+
+	plan_doc: "ServerPlan" | None = frappe.get_doc("Server Plan", plan) if plan else None
+
 	server = frappe.get_doc(
 		{
 			"doctype": "Server",
@@ -65,11 +73,18 @@ def create_test_server(
 			"team": team,
 			"plan": plan,
 			"public": public,
-			"virtual_machine": create_test_virtual_machine().name,
+			"virtual_machine": create_test_virtual_machine(
+				platform=plan_doc.platform if plan_doc else "x86_64",
+				disk_size=plan_doc.disk if plan_doc else 25,
+				has_data_volume=has_data_volume,
+				series="f",
+			).name,
 			"platform": platform,
 			"use_for_build": use_for_build,
 			"is_self_hosted": is_self_hosted,
 			"auto_increase_storage": auto_increase_storage,
+			"provider": provider,
+			"has_data_volume": has_data_volume,
 		}
 	).insert()
 	server.reload()
@@ -124,6 +139,63 @@ class TestServer(FrappeTestCase):
 		server = create_test_server(plan=server_plan.name)
 		self.assertEqual(server.team, server.subscription.team)
 		self.assertEqual(server.plan, server.subscription.plan)
+
+	@mock_aws
+	@patch.object(BaseServer, "enqueue_extend_ec2_volume", new=Mock())
+	@patch("boto3.client")
+	def test_subscription_creation_on_addon_storage(self, _):
+		"""Test subscription creation with a fixed increment"""
+		increment = 10
+		create_test_press_settings()
+		server_plan = create_test_server_plan()
+		server: "Server" = create_test_server(plan=server_plan.name, provider="AWS EC2")
+		plan_disk_size = server_plan.disk
+		actual_disk_size = frappe.db.get_value("Virtual Machine", server.virtual_machine, "disk_size")
+		self.assertEqual(plan_disk_size, actual_disk_size)
+
+		vm: "VirtualMachine" = frappe.get_doc("Virtual Machine", server.virtual_machine)
+		root_volume = vm.volumes[0]
+		self.assertEqual(plan_disk_size, root_volume.size)
+
+		server.increase_disk_size_for_server(server.name, increment=increment)
+		new_actual_disk_size = frappe.db.get_value("Virtual Machine", server.virtual_machine, "disk_size")
+		self.assertEqual(plan_disk_size + increment, new_actual_disk_size)
+
+		subscription_doc = frappe.get_doc(
+			"Subscription",
+			{
+				"team": server.team,
+				"plan_type": "Server Storage Plan",
+				"plan": "Add-on Storage Plan",
+				"document_type": server.doctype,
+				"document_name": server.name,
+			},
+		)
+
+		self.assertEqual(subscription_doc.enabled, 1)
+
+		self.assertEqual(int(subscription_doc.additional_storage), increment)
+
+		# Increase by another 10
+		server.increase_disk_size_for_server(server.name, increment=increment)
+		new_actual_disk_size = frappe.db.get_value("Virtual Machine", server.virtual_machine, "disk_size")
+
+		self.assertEqual(plan_disk_size + increment + increment, new_actual_disk_size)
+
+		subscription_doc = frappe.get_doc(
+			"Subscription",
+			{
+				"team": server.team,
+				"plan_type": "Server Storage Plan",
+				"plan": "Add-on Storage Plan",
+				"document_type": server.doctype,
+				"document_name": server.name,
+			},
+		)
+
+		self.assertEqual(subscription_doc.enabled, 1)
+
+		self.assertEqual(int(subscription_doc.additional_storage), increment + increment)
 
 	def test_subscription_team_update_on_server_team_update(self):
 		create_test_press_settings()

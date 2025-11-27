@@ -57,7 +57,7 @@ def create_test_cluster(
 
 class TestCluster(FrappeTestCase):
 	@mock_aws
-	def _setup_fake_vmis(self, series: list[str], cluster: Cluster = None):
+	def _setup_fake_vmis(self, series: list[str], cluster: Cluster | None = None):
 		from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (
 			create_test_virtual_machine_image,
 		)

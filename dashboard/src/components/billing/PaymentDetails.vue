@@ -121,6 +121,31 @@
 					</Button>
 				</div>
 			</div>
+			<div class="my-3 h-px bg-gray-100" />
+			<div class="flex items-center justify-between text-base text-gray-900">
+				<div class="flex flex-col gap-1.5">
+					<div class="font-medium">Budget Alerts</div>
+					<div
+						v-if="team.doc.receive_budget_alerts"
+						class="leading-5 text-gray-700"
+					>
+						Alert threshold is set at {{ currency
+						}}{{ team.doc.monthly_alert_threshold }} per month
+					</div>
+					<div v-else class="text-gray-700">
+						Receive an email alert if monthly total exceeds limit set
+					</div>
+				</div>
+				<div class="shrink-0">
+					<Button
+						:label="
+							team.doc.receive_budget_alerts ? 'Edit' : 'Set Budget Alert'
+						"
+						@click="showBudgetAlertDialog = true"
+					>
+					</Button>
+				</div>
+			</div>
 		</div>
 	</div>
 	<BillingDetailsDialog
@@ -128,6 +153,11 @@
 		v-model="showBillingDetailsDialog"
 		:showMessage="showMessage"
 		@success="billingDetails.reload()"
+	/>
+	<BudgetAlertDialog
+		v-if="showBudgetAlertDialog"
+		v-model="showBudgetAlertDialog"
+		@success="team.reload()"
 	/>
 	<AddPrepaidCreditsDialog
 		v-if="showAddPrepaidCreditsDialog"
@@ -162,6 +192,7 @@
 <script setup>
 import DropdownItem from './DropdownItem.vue';
 import BillingDetailsDialog from './BillingDetailsDialog.vue';
+import BudgetAlertDialog from './BudgetAlertDialog.vue';
 import AddPrepaidCreditsDialog from './AddPrepaidCreditsDialog.vue';
 import AddCardDialog from './AddCardDialog.vue';
 import ChangeCardDialog from './ChangeCardDialog.vue';
@@ -173,6 +204,7 @@ import {
 } from '../../utils/components';
 import { computed, ref, inject, h, defineAsyncComponent } from 'vue';
 import router from '../../router';
+import { switchToTeam } from '../../data/team';
 
 const team = inject('team');
 const {
@@ -183,6 +215,7 @@ const {
 } = inject('billing');
 
 const showBillingDetailsDialog = ref(false);
+const showBudgetAlertDialog = ref(false);
 const showAddPrepaidCreditsDialog = ref(false);
 const showAddCardDialog = ref(false);
 const showChangeCardDialog = ref(false);

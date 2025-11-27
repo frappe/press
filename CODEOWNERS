@@ -13,12 +13,11 @@ playbooks/ @adityahase @balamurali27
 site* @balamurali27
 team/ @shadrak98
 
-dashboard/ @breadgenie
 invoice/ @shadrak98
-marketplace* @breadgenie
 stripe* @shadrak98
 razorpay* @shadrak98
 subscription/ @shadrak98
+dashboard/ @regdocs
 
 saas @rutwikhdev
 

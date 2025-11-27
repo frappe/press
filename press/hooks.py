@@ -198,6 +198,7 @@ scheduler_events = {
 		"press.press.doctype.database_server.database_server.remove_uploaded_binlogs_from_s3",
 		"press.press.doctype.mariadb_binlog.mariadb_binlog.cleanup_old_records",
 		"press.press.doctype.database_server.database_server.delete_mariadb_binlog_for_archived_servers",
+		"press.press.doctype.team.team.check_budget_alerts",
 	],
 	"daily_long": [
 		"press.press.audit.check_bench_fields",
@@ -218,6 +219,7 @@ scheduler_events = {
 		"press.press.doctype.site.site.suspend_sites_exceeding_disk_usage_for_last_7_days",
 		"press.press.doctype.user_2fa.user_2fa.yearly_2fa_recovery_code_reminder",
 		"press.press.doctype.registry_server.registry_server.delete_old_images_from_registry",
+		"press.saas.doctype.product_trial_request.product_trial_request.gather_daily_stats",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -253,6 +255,7 @@ scheduler_events = {
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_expired_snapshots",
 		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
 		"press.press.doctype.press_webhook.press_webhook.auto_disable_high_delivery_failure_webhooks",
+		"press.saas.doctype.product_trial_request.product_trial_request.gather_hourly_stats",
 	],
 	"all": [
 		"press.auth.flush",
@@ -266,6 +269,9 @@ scheduler_events = {
 		],
 		"*/2 * * * *": [
 			"press.press.doctype.incident.incident.resolve_incidents",
+		],
+		"45 * * * *": [
+			"press.press.doctype.database_server.database_server.update_database_schema_sizes",
 		],
 		"0 4 * * *": [
 			"press.press.doctype.site.backups.cleanup_offsite",
@@ -321,6 +327,8 @@ scheduler_events = {
 			"press.press.doctype.site_update.site_update.run_scheduled_updates",
 			"press.press.doctype.virtual_machine.virtual_machine.snapshot_aws_servers",
 			"press.press.doctype.app.app.poll_new_releases",
+			"press.utils.jobs.alert_on_zombie_rq_jobs",
+			"press.saas.doctype.product_trial.product_trial.replenish_standby_sites",
 		],
 		"* * * * *": [
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",
@@ -329,10 +337,9 @@ scheduler_events = {
 			"press.saas.doctype.site_access_token.site_access_token.cleanup_expired_access_tokens",
 			"press.press.doctype.server_snapshot.server_snapshot.sync_ongoing_server_snapshots",
 			"press.press.doctype.site.site.create_subscription_for_trial_sites",
-			"press.press.doctype.dashboard_banner.dashboard_banner.run_scheduled_publish_unpublish",
+			"press.press.doctype.monitor_server.monitor_server.check_monitoring_servers_rate_limit_key",
 		],
 		"*/10 * * * *": [
-			"press.saas.doctype.product_trial.product_trial.replenish_standby_sites",
 			"press.press.doctype.site.saas_pool.create",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_rolling_snapshots",
 			"press.press.doctype.database_server.database_server.auto_purge_binlogs_by_size_limit",
@@ -363,7 +370,10 @@ scheduler_events = {
 			"press.press.doctype.aws_savings_plan_recommendation.aws_savings_plan_recommendation.refresh",
 			"press.infrastructure.doctype.ssh_access_audit.ssh_access_audit.run",
 		],
-		"0 9 * * 2": ["press.press.doctype.build_metric.build_metric.create_build_metric"],
+		"0 9 * * 2": [
+			"press.press.doctype.build_metric.build_metric.create_build_metric",
+			"press.saas.doctype.product_trial_request.product_trial_request.gather_weekly_stats",
+		],
 	},
 }
 
@@ -421,6 +431,10 @@ auth_hooks = ["press.auth.hook"]
 page_renderer = ["press.metrics.MetricsRenderer"]
 
 export_python_type_annotations = True
+
+default_log_clearing_doctypes = {
+	"Alertmanager Webhook Log": 60,
+}
 
 
 # These are used for some business logic, they should be manually evicted.

@@ -467,16 +467,37 @@ class BaseCA:
 		self._obtain()
 		return self._extract()
 
-	def _extract(self):
-		with open(self.certificate_file) as f:
-			certificate = f.read()
-		with open(self.full_chain_file) as f:
-			full_chain = f.read()
-		with open(self.intermediate_chain_file) as f:
-			intermediate_chain = f.read()
-		with open(self.private_key_file) as f:
-			private_key = f.read()
+	def _read_latest_certificate_file(self, file_path):
+		import glob
+		import os
+		import re
 
+		# Split path into directory and filename
+		dir_path = os.path.dirname(file_path)
+		file_name = os.path.basename(file_path)
+		parent_dir = os.path.dirname(dir_path)
+		base_dir_name = os.path.basename(dir_path)
+
+		# Look for indexed directories first (e.g., dir-0000, dir-0001, etc.)
+		indexed_dirs = glob.glob(os.path.join(parent_dir, f"{base_dir_name}-[0-9][0-9][0-9][0-9]"))
+
+		if indexed_dirs:
+			# Find directory with highest index
+			latest_dir = max(indexed_dirs, key=lambda p: int(re.search(r"-(\d+)$", p).group(1)))
+			latest_path = os.path.join(latest_dir, file_name)
+		elif os.path.exists(file_path):
+			latest_path = file_path
+		else:
+			raise FileNotFoundError(f"Certificate file not found: {file_path}")
+
+		with open(latest_path) as f:
+			return f.read()
+
+	def _extract(self):
+		certificate = self._read_latest_certificate_file(self.certificate_file)
+		full_chain = self._read_latest_certificate_file(self.full_chain_file)
+		intermediate_chain = self._read_latest_certificate_file(self.intermediate_chain_file)
+		private_key = self._read_latest_certificate_file(self.private_key_file)
 		return certificate, full_chain, intermediate_chain, private_key
 
 

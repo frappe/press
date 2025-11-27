@@ -15,21 +15,44 @@
 						'bg-green-50 border-green-200 text-green-800':
 							banner.type === 'success',
 						'bg-red-50 border-red-200 text-red-800': banner.type === 'error',
+						'bg-gray-50 border-gray-200 text-gray-800':
+							banner.type === 'neutral',
 					}"
 				>
 					{{ banner.message }}
 				</div>
-				<p v-if="isReceived" class="leading-normal">
-					Do you want to accept or reject this access request from
-					<span class="font-medium">{{ requestedBy }}</span>
-					for
-					<span class="font-medium">{{ resourceType }}</span
-					>: <span class="font-medium">{{ resourceName }}</span
-					>?
+				<p v-if="isReceived && isPending" class="leading-normal">
+					Do you want to accept or reject this access request?
 				</p>
-				<div v-if="reason" class="space-y-2">
+				<div class="rounded-sm border divide-y">
+					<div
+						v-for="resource in request.doc?.resources"
+						class="grid grid-cols-3 divide-x"
+					>
+						<div class="col-span-1 py-2 px-3 font-medium">
+							{{ resource.document_type }}
+						</div>
+						<div class="col-span-2 py-2 px-3">
+							<Link
+								:to="
+									resourceLink(resource.document_type, resource.document_name)
+								"
+								@click="
+									() =>
+										resourceLink(
+											resource.document_type,
+											resource.document_name,
+										) && (open = false)
+								"
+							>
+								{{ resource.document_name }}
+							</Link>
+						</div>
+					</div>
+				</div>
+				<div v-if="request.doc?.reason" class="space-y-2">
 					<p class="font-medium">Reason:</p>
-					<p>{{ reason }}</p>
+					<p class="leading-relaxed">{{ request.doc?.reason }}</p>
 				</div>
 				<div v-if="permissions.length" class="space-y-2">
 					<p class="font-medium">Permissions:</p>
@@ -37,7 +60,7 @@
 						<Badge
 							v-for="permission in permissions"
 							variant="outline"
-							theme="orange"
+							:theme="permission.color"
 							size="lg"
 						>
 							{{ permission.label }}
@@ -50,93 +73,177 @@
 </template>
 
 <script setup lang="ts">
-import { Badge, createResource } from 'frappe-ui';
+import Link from './Link.vue';
+import { Badge, createDocumentResource, createResource } from 'frappe-ui';
 import { computed, ref } from 'vue';
+import { getTeam } from '../data/team';
+import { toast } from 'vue-sonner';
 
 const props = defineProps<{
 	name: string;
-	requestedBy: string;
-	resourceType: string;
-	resourceName: string;
-	status: 'Pending' | 'Accepted' | 'Rejected';
-	reason: string;
-	siteDomains: boolean;
-	loginAsAdministrator: boolean;
-	isReceived: boolean;
 }>();
 
 const open = ref(true);
+const team = getTeam();
+
+const request = createDocumentResource({
+	doctype: 'Support Access',
+	name: props.name,
+	auto: true,
+});
+
+const isReceived = computed(() => {
+	return team.doc?.name === request.doc?.target_team;
+});
+
+const isPending = computed(() => {
+	return request.doc?.status === 'Pending';
+});
 
 const permissions = computed(() =>
 	[
 		{
-			label: 'Login as Administrator',
-			requested: props.loginAsAdministrator,
+			label: 'Release Group',
+			requested: request.doc?.site_release_group,
+			color: 'red',
 		},
 		{
-			label: 'Site Domains',
-			requested: props.siteDomains,
+			label: 'SSH',
+			requested: request.doc?.bench_ssh,
+			color: 'red',
+		},
+		{
+			label: 'Login as Administrator',
+			requested: request.doc?.login_as_administrator,
+			color: 'orange',
+		},
+		{
+			label: 'Domains',
+			requested: request.doc?.site_domains,
+			color: 'green',
 		},
 	].filter((p) => p.requested),
 );
 
-const accept = createResource({
+const update = createResource({
 	url: 'press.api.client.set_value',
-	params: {
+	makeParams: (args: any) => ({
 		doctype: 'Support Access',
 		name: props.name,
-		fieldname: 'status',
-		value: 'Accepted',
-	},
-	onSuccess: () => {
-		open.value = false;
-	},
-});
-
-const reject = createResource({
-	url: 'press.api.client.set_value',
-	params: {
-		doctype: 'Support Access',
-		name: props.name,
-		fieldname: 'status',
-		value: 'Rejected',
-	},
-	onSuccess: () => {
+		fieldname: {
+			status: args.status,
+		},
+	}),
+	onSuccess: (data: any) => {
+		toast.success(`Request ${data.status}`);
 		open.value = false;
 	},
 });
 
 const banner = computed(() => {
-	if (props.status === 'Accepted') {
+	if (request.doc?.status === 'Accepted') {
 		return {
 			type: 'success',
 			message: 'This request has been accepted.',
 		};
-	} else if (props.status === 'Rejected') {
+	} else if (request.doc?.status === 'Rejected') {
 		return {
 			type: 'error',
 			message: 'This request has been rejected.',
+		};
+	} else if (request.doc?.status === 'Revoked') {
+		return {
+			type: 'neutral',
+			message: 'This request has been revoked.',
+		};
+	} else if (request.doc?.status === 'Forfeited') {
+		return {
+			type: 'neutral',
+			message: 'This request has been forfeited.',
 		};
 	}
 });
 
 const actions = computed(() => {
-	if (props.status !== 'Pending' || !props.isReceived) {
-		return [];
+	const actions = [];
+	const isExpired = new Date(request.doc.access_allowed_till) < new Date();
+
+	if (request.doc?.status === 'Pending' && isReceived.value) {
+		actions.push(
+			{
+				label: 'Reject',
+				variant: 'subtle',
+				theme: 'red',
+				onClick: () => {
+					update.submit({
+						status: 'Rejected',
+					});
+				},
+			},
+			{
+				label: 'Accept',
+				variant: 'solid',
+				onClick: () => {
+					update.submit({
+						status: 'Accepted',
+					});
+				},
+			},
+		);
 	}
 
-	return [
-		{
-			label: 'Reject',
+	if (request.doc?.status === 'Accepted' && isReceived.value && !isExpired) {
+		actions.push({
+			label: 'Revoke',
 			variant: 'subtle',
 			theme: 'red',
-			onClick: () => reject.submit(),
-		},
-		{
-			label: 'Accept',
-			variant: 'solid',
-			onClick: () => accept.submit(),
-		},
-	];
+			onClick: () => {
+				update.submit({
+					status: 'Revoked',
+				});
+			},
+		});
+	}
+
+	if (request.doc?.status === 'Accepted' && !isReceived.value && !isExpired) {
+		actions.push({
+			label: 'Forfeit',
+			variant: 'subtle',
+			theme: 'red',
+			onClick: () => {
+				update.submit({
+					status: 'Forfeited',
+				});
+			},
+		});
+	}
+
+	return actions;
 });
+
+const resourceLink = (documentType: string, documentName: string) => {
+	switch (documentType) {
+		case 'Site':
+			return {
+				name: 'Site Detail',
+				params: {
+					name: documentName,
+				},
+			};
+		case 'Release Group':
+			return {
+				name: 'Release Group Detail',
+				params: {
+					name: documentName,
+				},
+			};
+		case 'Bench':
+			return {
+				name: 'Bench Detail',
+				params: {
+					name: documentName,
+				},
+			};
+	}
+};
 </script>

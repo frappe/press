@@ -6,13 +6,10 @@
  "engine": "InnoDB",
  "field_order": [
   "nfs_settings_section",
-  "nfs_server",
   "primary_server",
   "secondary_server",
   "status",
-  "volume_section",
-  "volume_id",
-  "volume_size",
+  "column_break_pbze",
   "steps_section",
   "nfs_volume_attachment_steps"
  ],
@@ -21,14 +18,6 @@
    "fieldname": "nfs_settings_section",
    "fieldtype": "Section Break",
    "label": "NFS Settings"
-  },
-  {
-   "fieldname": "nfs_server",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "NFS Server",
-   "options": "NFS Server",
-   "reqd": 1
   },
   {
    "description": "Server that is sharing it's file system.",
@@ -46,22 +35,7 @@
    "in_list_view": 1,
    "label": "Secondary Server",
    "options": "Server",
-   "reqd": 1
-  },
-  {
-   "fieldname": "volume_section",
-   "fieldtype": "Section Break",
-   "label": "Volume"
-  },
-  {
-   "fieldname": "volume_id",
-   "fieldtype": "Data",
-   "label": "Volume Id"
-  },
-  {
-   "fieldname": "volume_size",
-   "fieldtype": "Int",
-   "label": "Volume Size"
+   "read_only": 1
   },
   {
    "fieldname": "status",
@@ -80,12 +54,21 @@
    "fieldname": "nfs_volume_attachment_steps",
    "fieldtype": "Table",
    "options": "NFS Volume Attachment Step"
+  },
+  {
+   "fieldname": "column_break_pbze",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-10-09 11:11:10.670740",
+ "links": [
+  {
+   "link_doctype": "Press Notification",
+   "link_fieldname": "document_name"
+  }
+ ],
+ "modified": "2025-11-11 16:07:41.830892",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "NFS Volume Attachment",
@@ -105,6 +88,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],

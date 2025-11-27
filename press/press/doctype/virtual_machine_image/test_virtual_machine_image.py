@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 @patch.object(VirtualMachineImage, "client", new=MagicMock())
 @patch.object(VirtualMachineImage, "after_insert", new=MagicMock())
 def create_test_virtual_machine_image(
-	ip: str | None = None, cluster: Cluster = None, series: str = "m", platform: str = "x86_64"
+	ip: str | None = None, cluster: Cluster | None = None, series: str = "m", platform: str = "x86_64"
 ) -> VirtualMachineImage:
 	"""Create test Virtual Machine Image doc"""
 	if not ip:

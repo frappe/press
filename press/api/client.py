@@ -91,6 +91,8 @@ ALLOWED_DOCTYPES = [
 	"Server Snapshot",
 	"Server Snapshot Recovery",
 	"Support Access",
+	"Partner Lead Origin",
+	"Auto Scale Record",
 ]
 
 whitelisted_methods = set()
@@ -172,12 +174,7 @@ def get_list_query(
 	from press.press.doctype.press_role.press_role import LINKED_DOCTYPE_PERMISSIONS, check_role_permissions
 
 	query = frappe.qb.get_query(
-		doctype,
-		filters=valid_filters,
-		fields=valid_fields,
-		offset=start,
-		limit=limit,
-		order_by=order_by,
+		doctype, filters=valid_filters, fields=valid_fields, offset=start, limit=limit, order_by=order_by
 	)
 
 	if meta.istable and frappe.get_meta(filters.get("parenttype")).has_field("team"):

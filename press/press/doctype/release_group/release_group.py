@@ -52,6 +52,7 @@ DEFAULT_DEPENDENCIES = [
 	{"dependency": "PYTHON_VERSION", "version": "3.7"},
 	{"dependency": "WKHTMLTOPDF_VERSION", "version": "0.12.5"},
 	{"dependency": "BENCH_VERSION", "version": "5.25.1"},
+	{"dependency": "PIP_VERSION", "version": "25.2"},
 ]
 
 SUPPORTED_WKHTMLTOPDF_VERSIONS = ["0.12.5", "0.12.6"]
@@ -117,6 +118,7 @@ class ReleaseGroup(Document, TagHelpers):
 		packages: DF.Table[ReleaseGroupPackage]
 		public: DF.Check
 		redis_cache_size: DF.Int
+		redis_password: DF.Password | None
 		saas_app: DF.Link | None
 		saas_bench: DF.Check
 		servers: DF.Table[ReleaseGroupServer]
@@ -237,6 +239,11 @@ class ReleaseGroup(Document, TagHelpers):
 		self.validate_dependencies()
 		if self.check_dependent_apps:
 			self.validate_dependent_apps()
+		if not self.redis_password:
+			self.set_redis_password()
+
+	def set_redis_password(self):
+		self.redis_password = frappe.generate_hash(length=32)
 
 	def validate_dependent_apps(self):
 		required_repository_urls = set()
@@ -590,6 +597,21 @@ class ReleaseGroup(Document, TagHelpers):
 		required_intel_build = "x86_64" in platforms
 		return required_arm_build, required_intel_build
 
+	def get_redis_password(self) -> str:
+		"""Get redis password create and update password if not present
+		Ignore validation while setting redis password to allow older RGs
+		to be password protected.
+		"""
+		try:
+			return self.get_password("redis_password")
+		except (frappe.AuthenticationError, frappe.ValidationError):
+			self.redis_password = frappe.generate_hash(length=32)
+			self.flags.ignore_validate = 1
+			self._save_passwords()
+			self.save()
+			frappe.db.commit()  # Safe password regardless
+			return self.get_password("redis_password")
+
 	@frappe.whitelist()
 	def create_duplicate_deploy_candidate(self):
 		return self.create_deploy_candidate([])
@@ -602,7 +624,8 @@ class ReleaseGroup(Document, TagHelpers):
 	@dashboard_whitelist()
 	def initial_deploy(self):
 		dc = self.create_deploy_candidate()
-		dc.schedule_build_and_deploy()
+		response = dc.schedule_build_and_deploy()
+		return response.get("name")
 
 	def _try_server_size_increase_or_throw(self, server: Server, mountpoint: str, required_size: int):
 		"""In case of low storage on the server try to either increase the storage (if allowed) or throw an error"""
@@ -628,6 +651,7 @@ class ReleaseGroup(Document, TagHelpers):
 			return Agent(server.name).get(f"server/image-size/{last_deployed_bench.build}").get("size")
 		except Exception as e:
 			log_error("Failed to fetch last image size", data=e)
+			return None
 
 	def check_app_server_storage(self):
 		"""
@@ -661,6 +685,21 @@ class ReleaseGroup(Document, TagHelpers):
 					server, mountpoint, required_size=last_image_size - free_space
 				)
 
+	def check_for_scaled_up_servers(self) -> None:
+		"""Check for servers that are scaled up in the release group and throw if any"""
+		has_scaled_up_servers = frappe.db.get_value(
+			"Server",
+			{
+				"name": ("IN", [server.server for server in self.servers]),
+				"scaled_up": True,
+			},
+		)
+		if has_scaled_up_servers:
+			frappe.throw(
+				"Server(s) are scaled up currently and no deployment can run on them as of now. "
+				"Please scale down all the server to deploy."
+			)
+
 	@frappe.whitelist()
 	def create_deploy_candidate(
 		self,
@@ -671,6 +710,8 @@ class ReleaseGroup(Document, TagHelpers):
 			return None
 
 		self.check_app_server_storage()
+		self.check_for_scaled_up_servers()
+
 		apps = self.get_apps_to_update(apps_to_update)
 		if apps_to_update is None:
 			self.validate_dc_apps_against_rg(apps)
@@ -981,7 +1022,7 @@ class ReleaseGroup(Document, TagHelpers):
 		)
 
 	@dashboard_whitelist()
-	@action_guard(ReleaseGroupActions.GENERATE_SSH_CERTIFICATE)
+	@action_guard(ReleaseGroupActions.SSHAccess)
 	def generate_certificate(self):
 		ssh_key = frappe.get_all(
 			"User SSH Key",
@@ -1062,7 +1103,7 @@ class ReleaseGroup(Document, TagHelpers):
 		return "Active" if active_benches else "Awaiting Deploy"
 
 	@cached_property
-	def last_dc_info(self) -> "LastDeployInfo | None":
+	def last_dc_info(self) -> LastDeployInfo | None:
 		DeployCandidateBuild = frappe.qb.DocType("Deploy Candidate Build")
 
 		query = (
@@ -1080,8 +1121,10 @@ class ReleaseGroup(Document, TagHelpers):
 		return None
 
 	@cached_property
-	def last_benches_info(self) -> "list[LastDeployInfo]":
-		if not (name := (self.last_dc_info or {}).get("name")):
+	def last_benches_info(self) -> list[LastDeployInfo]:
+		last_dc_info: LastDeployInfo | dict = self.last_dc_info or {}
+		name: str | None = last_dc_info.get("name")
+		if not name:
 			return []
 
 		Bench = frappe.qb.DocType("Bench")
@@ -1437,7 +1480,7 @@ class ReleaseGroup(Document, TagHelpers):
 			self.save()
 
 			return create_platform_build_and_deploy(
-				deploy_candidate=last_candidate_build.candidate.name,
+				deploy_candidate=last_candidate_build.candidate.name,  # type: ignore
 				server=server,
 				platform=server_platform,
 			)
@@ -1467,10 +1510,12 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def update_benches_config(self):
+		from press.press.doctype.bench.bench import Bench
+
 		"""Update benches config for all benches in the release group"""
 		benches = frappe.get_all("Bench", "name", {"group": self.name, "status": "Active"})
 		for bench in benches:
-			frappe.get_doc("Bench", bench.name).update_bench_config(force=True)
+			Bench("Bench", bench.name).update_bench_config(force=True)
 
 	@dashboard_whitelist()
 	def add_app(self, app, is_update: bool = False):

@@ -1,23 +1,23 @@
 from enum import Enum
 
 
-class ReleaseGroupActions(Enum):
-	GENERATE_SSH_CERTIFICATE = "Generate SSH Certificate"
+class ReleaseGroupActions(str, Enum):
+	SSHAccess = "SSH Access"
 
 
-class SiteActions(Enum):
-	VISIT_SITE = "Visit Site"
-	VIEW_IN_DESK = "View in Desk"
-	LOGIN_AS_ADMINISTRATOR = "Login As Administrator"
+class SiteActions(str, Enum):
+	VisitSite = "Visit Site"
+	ViewInDesk = "View in Desk"
+	LoginAsAdmin = "Login As Administrator"
 
 
 ACTIONS_RULES = {
 	"Release Group": {
-		ReleaseGroupActions.GENERATE_SSH_CERTIFICATE: False,
+		ReleaseGroupActions.SSHAccess.value: False,
 	},
 	"Site": {
-		SiteActions.VISIT_SITE: True,
-		SiteActions.VIEW_IN_DESK: False,
-		SiteActions.LOGIN_AS_ADMINISTRATOR: False,
+		SiteActions.VisitSite.value: True,
+		SiteActions.ViewInDesk.value: False,
+		SiteActions.LoginAsAdmin.value: False,
 	},
 }

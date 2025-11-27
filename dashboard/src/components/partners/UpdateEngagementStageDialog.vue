@@ -32,6 +32,7 @@
 					name="expected_close_date"
 					:required="true"
 				/>
+				<ErrorMessage :message="errorMessage" />
 				<Button variant="solid" @click="() => updateStatus.submit()"
 					>Submit</Button
 				>
@@ -43,9 +44,11 @@
 import { Dialog, FormControl, createResource } from 'frappe-ui';
 import { defineEmits, ref } from 'vue';
 import { getPlans } from '../../data/plans';
+import { DashboardError } from '../../utils/error';
 
 const emit = defineEmits(['update']);
 const show = defineModel();
+const errorMessage = ref('');
 const props = defineProps({
 	lead_id: {
 		type: String,
@@ -87,6 +90,17 @@ const updateStatus = createResource({
 			proposed_plan: proposed_plan.value,
 			expected_close_date: expected_close_date.value,
 		};
+	},
+	validate: () => {
+		if (
+			['Quotation', 'Ready for Closing'].includes(engagement_stage.value) &&
+			(proposed_plan.value === undefined ||
+				expected_close_date.value === undefined)
+		) {
+			let error = 'Please select a Proposed Plan and Expected Close Date';
+			errorMessage.value = error;
+			throw new DashboardError(error);
+		}
 	},
 	onSuccess: () => {
 		emit('update');

@@ -9,7 +9,7 @@ export default {
 	list: {
 		route: '/access-requests',
 		title: 'Access Requests',
-		orderBy: 'creation desc',
+		orderBy: 'modified desc',
 		fields: ['target_team', 'reason', 'site_domains', 'login_as_administrator'],
 		filters: {
 			source: 'Received',
@@ -28,7 +28,14 @@ export default {
 				{
 					type: 'select',
 					fieldname: 'status',
-					options: ['', 'Pending', 'Accepted', 'Rejected'],
+					options: [
+						'',
+						'Pending',
+						'Accepted',
+						'Rejected',
+						'Revoked',
+						'Forfeited',
+					],
 					default: '',
 					placeholder: 'Status',
 					condition: true,
@@ -36,30 +43,29 @@ export default {
 			].filter(({ condition }) => !!condition);
 		},
 		onRowClick(row) {
-			const team = getTeam();
-			const isReceived = row.target_team === team.doc?.name;
 			renderDialog(
 				h(SupportAccessDialog, {
 					name: row.name,
-					requestedBy: row.requested_by,
-					resourceType: row.resource_type,
-					resourceName: row.resource_name,
-					status: row.status,
-					reason: row.reason,
-					loginAsAdministrator: row.login_as_administrator,
-					siteDomains: row.site_domains,
-					isReceived,
 				}),
 			);
 		},
 		columns: [
 			{
-				label: 'Requested By',
-				fieldname: 'requested_by',
+				label: 'Resource',
+				fieldname: 'resource_name',
+				width: '250px',
+				format: (_, row) => {
+					if (row.resource_count > 1) {
+						return row.resource_count + ' Resources';
+					} else {
+						return row.resource_name;
+					}
+				},
 			},
 			{
 				label: 'Status',
 				fieldname: 'status',
+				width: '150px',
 				type: 'Badge',
 				theme: (value) => {
 					return {
@@ -70,19 +76,22 @@ export default {
 				},
 			},
 			{
-				label: 'Resource',
-				fieldname: 'resource_name',
+				label: 'Reason',
+				fieldname: 'reason',
+				class: 'max-w-md',
 			},
 			{
 				label: 'Expiry',
 				fieldname: 'access_allowed_till',
 				type: 'Timestamp',
+				width: '150px',
 			},
 			{
 				label: 'Requested',
 				fieldname: 'creation',
 				type: 'Timestamp',
 				align: 'right',
+				width: '150px',
 			},
 		],
 	},

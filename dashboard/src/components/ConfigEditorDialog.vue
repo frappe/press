@@ -22,6 +22,16 @@
 						:options="keyOptions"
 						v-model="selectedConfig"
 					/>
+					<div
+						v-if="
+							selectedConfig &&
+							selectedConfig.value !== '__custom_key' &&
+							selectedConfig.detail
+						"
+						class="text-sm text-gray-500 mt-2 ml-1"
+					>
+						{{ selectedConfig.detail }}
+					</div>
 				</div>
 				<FormControl
 					type="text"
@@ -175,6 +185,7 @@ export default {
 				label: key.title,
 				value: key.key,
 				type: key.type,
+				detail: key.description, // anti-pattern to avoid showing description in dropdown
 			}));
 			return [customKeyOption, ...standardKeyOptions];
 		},

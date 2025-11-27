@@ -1,8 +1,9 @@
 import frappe
 import frappe.utils
 
-from press.access.actions import SiteActions
-from press.utils import get_current_team
+from press import utils as press_utils
+from press.access import utils as access_utils
+from press.access.actions import ReleaseGroupActions, SiteActions
 
 TAB_DF_MAP = {
 	"Site": {
@@ -11,9 +12,12 @@ TAB_DF_MAP = {
 }
 
 ACTION_DF_MAP = {
+	"Release Group": {
+		ReleaseGroupActions.SSHAccess.value: "bench_ssh",
+	},
 	"Site": {
-		SiteActions.LOGIN_AS_ADMINISTRATOR: "login_as_administrator",
-	}
+		SiteActions.LoginAsAdmin.value: "login_as_administrator",
+	},
 }
 
 
@@ -35,9 +39,14 @@ def has_support_access(doctype: str, docname: str, action: str | None = None) ->
 	if frappe.local.system_user():
 		return True
 
+	if not press_utils.has_role("Press Support Agent"):
+		return False
+
+	if access_utils.is_public_resource(doctype, docname):
+		return True
+
 	filters = {
 		"status": "Accepted",
-		"requested_team": get_current_team(),
 		"access_allowed_till": (">", frappe.utils.now_datetime()),
 	}
 

@@ -2,7 +2,7 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
-# import frappe
+import frappe
 from frappe.model.document import Document
 
 
@@ -18,10 +18,13 @@ class PartnerLead(Document):
 		from press.partner.doctype.lead_followup.lead_followup import LeadFollowup
 
 		additional_comments: DF.SmallText | None
+		assistance_type: DF.Literal["Pre-sales Demo", "Plan suggestion", "Proposal", "Closing a deal"]
 		company_name: DF.Data | None
 		contact_no: DF.Data | None
 		conversion_date: DF.Date | None
 		country: DF.Link | None
+		crm_deal: DF.Data | None
+		deal_assistance_rating: DF.Rating
 		domain: DF.Literal[
 			"",
 			"Distribution",
@@ -35,6 +38,7 @@ class PartnerLead(Document):
 			"Other",
 		]
 		email: DF.Data | None
+		employees: DF.Literal["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"]
 		engagement_stage: DF.Literal[
 			"",
 			"Demo",
@@ -75,9 +79,12 @@ class PartnerLead(Document):
 		partner_manager: DF.Data | None
 		partner_team: DF.Link | None
 		partner_territory: DF.Data | None
+		passed_date: DF.Date | None
 		plan_proposed: DF.Data | None
 		probability: DF.Literal["Hot", "Cold", "Warm"]
+		require_deal_assistance: DF.Check
 		requirement: DF.Text | None
+		requirements: DF.SmallText | None
 		site_url: DF.Data | None
 		state: DF.Data | None
 		status: DF.Literal["Open", "In Process", "Won", "Lost", "Junk", "Pass to Other Partner"]
@@ -85,6 +92,7 @@ class PartnerLead(Document):
 	# end: auto-generated types
 
 	dashboard_fields = (
+		"name",
 		"organization_name",
 		"state",
 		"status",
@@ -108,4 +116,35 @@ class PartnerLead(Document):
 		"discussion",
 		"lost_reason",
 		"lost_reason_specify",
+		"company_name",
 	)
+
+	@staticmethod
+	def get_list_query(query, filters=None, **list_args):
+		PartnerLead = frappe.qb.DocType("Partner Lead")
+		query = frappe.qb.from_(PartnerLead).select(
+			PartnerLead.name,
+			PartnerLead.organization_name,
+			PartnerLead.status,
+			PartnerLead.engagement_stage,
+			PartnerLead.lead_source,
+			PartnerLead.lead_name,
+			PartnerLead.company_name,
+		)
+
+		if filters:
+			if filters.get("source"):
+				query = query.where(PartnerLead.lead_source == filters.get("source"))
+			if filters.get("status"):
+				query = query.where(PartnerLead.status == filters.get("status"))
+			if filters.get("origin"):
+				query = query.where(PartnerLead.origin == filters.get("origin"))
+			if filters.get("search-text"):
+				search_text = f"%{filters.get('search-text')}%"
+				query = query.where(
+					(PartnerLead.organization_name.like(search_text))
+					| (PartnerLead.lead_name.like(search_text))
+					| (PartnerLead.company_name.like(search_text))
+				)
+
+		return query.run(as_dict=True)

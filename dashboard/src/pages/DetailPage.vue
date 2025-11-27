@@ -9,14 +9,17 @@
 					v-bind="badge"
 				/>
 			</div>
-			<div
-				class="flex justify-between items-center mt-1 space-x-2 sm:mt-0"
-				v-if="$resources.document?.doc"
-			>
+			<div class="flex justify-between items-center mt-1 space-x-2 sm:mt-0">
 				<div class="sm:hidden">
 					<Badge v-if="$resources.document?.doc && badge" v-bind="badge" />
 				</div>
-				<div class="space-x-2">
+				<AccessRequestButton
+					:doctype="object.doctype"
+					:docname="name"
+					:doc="$resources.document?.doc"
+					:error="$resources.document.get.error"
+				/>
+				<div class="space-x-2" v-if="$resources.document?.doc">
 					<ActionButton
 						v-for="action in actions"
 						v-bind="action"
@@ -59,6 +62,7 @@ import DetailPageError from '../components/DetailPageError.vue';
 import { Breadcrumbs } from 'frappe-ui';
 import { getObject } from '../objects';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
+import AccessRequestButton from '../components/AccessRequestButton.vue';
 
 let subscribed = {};
 

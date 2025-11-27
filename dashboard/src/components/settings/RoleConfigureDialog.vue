@@ -122,6 +122,19 @@
 									:disabled="adminAccess"
 								/>
 							</div>
+							<div v-if="allowPartner" class="space-y-1 rounded border p-4">
+								<h2 class="mb-2 ml-2 font-semibold">Partner Permissions</h2>
+								<Switch
+									v-model="allowDashboard"
+									label="Allow Dashboard Access"
+								/>
+								<Switch v-model="allowLeads" label="Allow Leads Access" />
+								<Switch v-model="allowCustomer" label="Allow Customer Access" />
+								<Switch
+									v-model="allowContribution"
+									label="Allow Contribution Access"
+								/>
+							</div>
 						</div>
 					</div>
 				</TabPanel>
@@ -281,6 +294,58 @@ export default {
 				this.$resources.role.setValue.submit(
 					{
 						allow_webhook_configuration: value,
+					},
+					{ onSuccess: this.$session.roles.reload },
+				);
+			},
+		},
+		allowDashboard: {
+			get() {
+				return !!this.role?.allow_dashboard;
+			},
+			set(value) {
+				this.$resources.role.setValue.submit(
+					{
+						allow_dashboard: value,
+					},
+					{ onSuccess: this.$session.roles.reload },
+				);
+			},
+		},
+		allowLeads: {
+			get() {
+				return !!this.role?.allow_leads;
+			},
+			set(value) {
+				this.$resources.role.setValue.submit(
+					{
+						allow_leads: value,
+					},
+					{ onSuccess: this.$session.roles.reload },
+				);
+			},
+		},
+		allowCustomer: {
+			get() {
+				return !!this.role?.allow_customer;
+			},
+			set(value) {
+				this.$resources.role.setValue.submit(
+					{
+						allow_customer: value,
+					},
+					{ onSuccess: this.$session.roles.reload },
+				);
+			},
+		},
+		allowContribution: {
+			get() {
+				return !!this.role?.allow_contribution;
+			},
+			set(value) {
+				this.$resources.role.setValue.submit(
+					{
+						allow_contribution: value,
 					},
 					{ onSuccess: this.$session.roles.reload },
 				);

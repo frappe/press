@@ -10,7 +10,7 @@
 
 - name: Add NFS mount to Fstab
   mount:
-    src: "{{ nfs_server_private_ip }}:/home/frappe/nfs/{{ using_fs_of_server }}"
+    src: "{{ primary_server_private_ip }}:/home/frappe/benches"
     path: "{{ shared_directory }}"
     fstype: nfs4
     opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,intr,_netdev

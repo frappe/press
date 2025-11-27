@@ -78,39 +78,40 @@ getInitialData().then(() => {
 					behaviour: 'apply-tag-if-contains-third-party-frames',
 				}),
 			],
+			tracesSampleRate: 1.0,
 			replaysSessionSampleRate: 0.1,
 			replaysOnErrorSampleRate: 1.0,
 			beforeSend(event, hint) {
 				const ignoreErrors = [
-					/api\/method\/press.api.client/,
-					/dynamically imported module/,
-					/NetworkError when attempting to fetch resource/,
-					/Failed to fetch/,
-					/Load failed/,
-					/frappe is not defined/,
-					/Cannot read properties of undefined \(reading 'exc_type'\)/,
-					/Failed to execute 'transaction' on 'IDBDatabase': The database connection is closing/,
-					/Importing a module script failed./,
-					/o is undefined/,
-					/undefined is not an object \(evaluating 'o.exc_type'\)/,
-					/e is not defined/,
-					/Cannot set property ethereum of #<Window> which has only a getter/,
-					/Can't find variable: ResizeObserver/,
-					/Method not found/,
-					/Menu caption text is required/,
-					/Internal error opening backing store for indexedDB.open/,
+					// /api\/method\/press.api.client/,
+					// /dynamically imported module/,
+					// /NetworkError when attempting to fetch resource/,
+					// /Failed to fetch/,
+					// /Load failed/,
+					// /frappe is not defined/,
+					// /Cannot read properties of undefined \(reading 'exc_type'\)/,
+					// /Failed to execute 'transaction' on 'IDBDatabase': The database connection is closing/,
+					// /Importing a module script failed./,
+					// /o is undefined/,
+					// /undefined is not an object \(evaluating 'o.exc_type'\)/,
+					// /e is not defined/,
+					// /Cannot set property ethereum of #<Window> which has only a getter/,
+					// /Can't find variable: ResizeObserver/,
+					// /Method not found/,
+					// /Menu caption text is required/,
+					// /Internal error opening backing store for indexedDB.open/,
 				];
 				const ignoreErrorTypes = [
-					'BuildValidationError',
-					'ValidationError',
-					'PermissionError',
-					'SecurityException',
-					'AAAARecordExists',
-					'AuthenticationError',
-					'RateLimitExceededError',
-					'InsufficientSpaceOnServer',
-					'ConflictingDNSRecord',
-					'MultipleARecords',
+					// 'BuildValidationError',
+					// 'ValidationError',
+					// 'PermissionError',
+					// 'SecurityException',
+					// 'AAAARecordExists',
+					// 'AuthenticationError',
+					// 'RateLimitExceededError',
+					// 'InsufficientSpaceOnServer',
+					// 'ConflictingDNSRecord',
+					// 'MultipleARecords',
 				];
 				const error = hint.originalException;
 
@@ -144,9 +145,9 @@ getInitialData().then(() => {
 				maskAllInputs: true,
 				maskInputFn: (text, element) => {
 					if (element?.dataset['record'] === 'true') {
-						return text
+						return text;
 					}
-					return '*'.repeat(text.trim().length)
+					return '*'.repeat(text.trim().length);
 				},
 			},
 		});

@@ -1,5 +1,0 @@
----
-- name: Copy Benches to Shared Directory on NFS Server
-  command: >
-    rsync -az --partial --inplace --rsh="ssh -o StrictHostKeyChecking=no" "/home/frappe/benches/" "root@{{ nfs_server }}:/home/frappe/nfs/{{ client_server }}/"
-

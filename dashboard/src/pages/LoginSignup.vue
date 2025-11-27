@@ -162,6 +162,12 @@
 									variant="outline"
 									required
 								/>
+								<!-- OAuth Authentication -->
+								<template v-if="isOauthLogin && !usePassword">
+									<Button class="mt-4" variant="solid">
+										Log in with {{ oauthProviderName }}
+									</Button>
+								</template>
 
 								<!-- Password Authentication -->
 								<template v-if="!isOauthLogin && usePassword">
@@ -197,7 +203,7 @@
 								</template>
 
 								<!-- OTP Authentication -->
-								<template v-else-if="!usePassword">
+								<template v-else-if="!isOauthLogin && !usePassword">
 									<!-- OTP Verification Input (when OTP is sent) -->
 									<template v-if="otpSent">
 										<FormControl
@@ -246,13 +252,6 @@
 											Send verification code
 										</Button>
 									</template>
-								</template>
-
-								<!-- OAuth Authentication -->
-								<template v-else>
-									<Button class="mt-4" variant="solid">
-										Log in with {{ oauthProviderName }}
-									</Button>
 								</template>
 
 								<!-- Error Messages -->
@@ -413,9 +412,10 @@
 						v-else-if="resetPasswordEmailSent"
 					>
 						<p>
-							We have sent an email to
-							<span class="font-semibold">{{ email }}</span
-							>. Please click on the link received to reset your password.
+							You will receive an email with instructions to reset your password
+							if an account with the provided email
+							(<span class="font-medium">{{ email }}</span>)
+							exists.
 						</p>
 					</div>
 				</template>
@@ -465,7 +465,7 @@ export default {
 		if (window.posthog?.__loaded) {
 			window.posthog.identify(this.email || window.posthog.get_distinct_id(), {
 				app: 'frappe_cloud',
-				action: 'login_signup'
+				action: 'login_signup',
 			});
 
 			window.posthog.startSessionRecording();
@@ -641,6 +641,7 @@ export default {
 					} else if (this.hasForgotPassword) {
 						await this.$resources.resetPassword.submit({
 							email: this.email,
+							totp_code: this.twoFactorCode,
 						});
 					}
 				},

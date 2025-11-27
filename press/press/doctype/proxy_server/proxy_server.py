@@ -24,7 +24,6 @@ class ProxyServer(BaseServer):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.proxy_server_domain.proxy_server_domain import ProxyServerDomain
 
 		agent_password: DF.Password | None
@@ -51,6 +50,7 @@ class ProxyServer(BaseServer):
 		is_ssh_proxy_setup: DF.Check
 		is_static_ip: DF.Check
 		is_wireguard_setup: DF.Check
+		plan: DF.Link | None
 		primary: DF.Link | None
 		private_ip: DF.Data | None
 		private_ip_interface_id: DF.Data | None
@@ -83,19 +83,12 @@ class ProxyServer(BaseServer):
 		self.validate_proxysql_admin_password()
 
 	def validate_domains(self):
-		domains = [row.domain for row in self.domains]
-		code_servers = [row.code_server for row in self.domains]
-		# Always include self.domain in the domains child table
-		# Remove duplicates
-		domains = unique([self.domain, *domains])
-		self.domains = []
-		for i, domain in enumerate(domains):
+		domains_to_validate = unique([self.domain] + [row.domain for row in self.domains])
+		for domain in domains_to_validate:
 			if not frappe.db.exists(
 				"TLS Certificate", {"wildcard": True, "status": "Active", "domain": domain}
 			):
 				frappe.throw(f"Valid wildcard TLS Certificate not found for {domain}")
-			if code_servers:
-				self.append("domains", {"domain": domain, "code_server": code_servers[i]})
 
 	def validate_proxysql_admin_password(self):
 		if not self.proxysql_admin_password:

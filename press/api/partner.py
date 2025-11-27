@@ -1,5 +1,8 @@
+import json
+
 import frappe
 from frappe.core.utils import find
+from frappe.desk.form.load import get_docinfo
 from frappe.utils import flt
 from frappe.utils.data import add_days, add_months, get_first_day, get_last_day, today
 
@@ -92,6 +95,41 @@ def get_partner_details(partner_email):
 
 
 @frappe.whitelist()
+def send_link_certificate_request(user_email, certificate_type):
+	if not frappe.db.exists(
+		"Partner Certificate", {"partner_member_email": user_email, "course": certificate_type}
+	):
+		frappe.throw(f"No certificate found for the {user_email} with given course")
+
+	team = get_current_team(get_doc=True)
+
+	frappe.get_doc(
+		{
+			"doctype": "Certificate Link Request",
+			"partner_team": team.name,
+			"user_email": user_email,
+			"course": certificate_type,
+		}
+	).insert()
+
+
+@frappe.whitelist()
+def approve_certificate_link_request(key):
+	cert_req_doc = frappe.get_doc("Certificate Link Request", {"key": key})
+	cert_req_doc.status = "Approved"
+	cert_req_doc.save(ignore_permissions=True)
+	frappe.db.commit()
+
+	frappe.response.type = "redirect"
+	frappe.response.location = "/dashboard/partners/certificates"
+
+
+@frappe.whitelist()
+def get_resource_url():
+	return frappe.db.get_value("Press Settings", "Press Settings", "drive_resource_link")
+
+
+@frappe.whitelist()
 def get_partner_name(partner_email):
 	return frappe.db.get_value(
 		"Team",
@@ -108,7 +146,7 @@ def transfer_credits(amount, customer, partner):
 	amt = frappe.utils.flt(amount)
 	partner_doc = frappe.get_doc("Team", partner)
 	credits_available = partner_doc.get_balance()
-	partner_level, certificates = partner_doc.get_partner_level()
+	partner_level = partner_doc.get_partner_level()
 	discount_percent = DISCOUNT_MAP.get(partner_level)
 
 	if credits_available < amt:
@@ -144,10 +182,15 @@ def get_partner_contribution_list(partner_email):
 	partner_currency = frappe.db.get_value(
 		"Team", {"erpnext_partner": 1, "partner_email": partner_email}, "currency"
 	)
+	month_start = frappe.utils.get_first_day(today())
 	month_end = frappe.utils.get_last_day(today())
 	invoices = frappe.get_all(
 		"Invoice",
-		{"partner_email": partner_email, "due_date": month_end, "type": "Subscription"},
+		{
+			"partner_email": partner_email,
+			"due_date": ("between", [month_start, month_end]),
+			"type": "Subscription",
+		},
 		["due_date", "customer_name", "total_before_discount", "currency", "status"],
 	)
 
@@ -233,6 +276,124 @@ def get_lead_stats():
 		as_dict=True,
 	)
 	return data[0] if data else {}
+
+
+def get_user_by_name(email):
+	return frappe.get_cached_value("User", email, "full_name")
+
+
+@frappe.whitelist()
+def get_lead_activities(name):
+	get_docinfo("", "Partner Lead", name)
+	res = frappe.response["docinfo"]
+	doc_meta = frappe.get_meta("Partner Lead")
+	fields = {field.fieldname: {"label": field.label, "options": field.options} for field in doc_meta.fields}
+
+	doc = frappe.db.get_values("Partner Lead", name, ["creation", "owner"])[0]
+	activities = []
+	activities.append(
+		{"activity_type": "creation", "creation": doc[0], "owner": doc[1], "data": "created this lead"}
+	)
+
+	res.versions.reverse()
+
+	for version in res.versions:
+		data = json.loads(version.data)
+		if not data.get("changed"):
+			continue
+
+		if change := data.get("changed")[0]:
+			field = fields.get(change[0], None)
+			if not field or (not change[1] and not change[2]):
+				continue
+
+			field_label = field.get("label") or change[0]
+			field_option = field.get("options") or None
+
+			activity_type = "changed"
+			data = {
+				"field": change[0],
+				"field_label": field_label,
+				"old_value": change[1],
+				"new_value": change[2],
+			}
+
+			if not change[1] and change[2]:
+				activity_type = "added"
+				data = {
+					"field": change[0],
+					"field_label": field_label,
+					"value": change[2],
+				}
+			elif change[1] and not change[2]:
+				activity_type = "removed"
+				data = {
+					"field": change[0],
+					"field_label": field_label,
+					"value": change[1],
+				}
+
+		activity = {
+			"activity_type": activity_type,
+			"creation": version.creation,
+			"owner": get_user_by_name(version.owner),
+			"data": data,
+			"options": field_option,
+		}
+		activities.append(activity)
+
+		for comment in res.comments:
+			activity = {
+				"name": comment.name,
+				"activity_type": "comment",
+				"creation": comment.creation,
+				"owner": get_user_by_name(comment.owner),
+				"content": comment.content,
+			}
+			activities.append(activity)
+
+	activities.sort(key=lambda x: x.get("creation"), reverse=True)
+	activities = handle_multiple_versions(activities)
+
+	return activities  # noqa: RET504
+
+
+def handle_multiple_versions(versions):  # noqa: C901
+	# print(versions)
+	activities = []
+	grouped_versions = []
+	old_version = None
+	for version in versions:
+		is_version = version["activity_type"] in ["changed", "added", "removed"]
+		if not is_version:
+			activities.append(version)
+		if not old_version:
+			old_version = version
+			if is_version:
+				grouped_versions.append(version)
+			continue
+		if is_version and old_version.get("owner") and version["owner"] == old_version["owner"]:
+			grouped_versions.append(version)
+		else:
+			if grouped_versions:
+				activities.append(parse_grouped_versions(grouped_versions))
+			grouped_versions = []
+			if is_version:
+				grouped_versions.append(version)
+		old_version = version
+		if version == versions[-1] and grouped_versions:
+			activities.append(parse_grouped_versions(grouped_versions))
+
+	return activities
+
+
+def parse_grouped_versions(versions):
+	version = versions[0]
+	if len(versions) == 1:
+		return version
+	other_versions = versions[1:]
+	version["other_versions"] = other_versions
+	return version
 
 
 @frappe.whitelist()
@@ -422,9 +583,11 @@ def get_partner_members(partner):
 
 
 @frappe.whitelist()
-def get_partner_leads(status=None, engagement_stage=None):
+def get_partner_leads(lead_name=None, status=None, engagement_stage=None):
 	team = get_current_team()
 	filters = {"partner_team": team}
+	if lead_name:
+		filters["lead_name"] = ("like", f"%{lead_name}%")
 	if status:
 		filters["status"] = status
 	if engagement_stage:
@@ -481,11 +644,21 @@ def apply_for_certificate(member_name, certificate_type):
 
 
 @frappe.whitelist()
-def get_partner_teams():
+def get_partner_teams(company=None, email=None, country=None, tier=None):
+	filters = {"enabled": 1, "erpnext_partner": 1}
+	if company:
+		filters["company_name"] = ("like", f"%{company}%")
+	if email:
+		filters["partner_email"] = ("like", f"%{email}%")
+	if country:
+		filters["country"] = ("like", f"%{country}%")
+	if tier:
+		filters["partner_tier"] = tier
+	print(filters)
 	teams = frappe.get_all(
 		"Team",
-		{"enabled": 1, "erpnext_partner": 1},
-		["partner_email", "billing_name", "country", "partner_tier", "name"],
+		filters,
+		["partner_email", "company_name", "country", "partner_tier", "name"],
 	)
 	return teams  # noqa: RET504
 
@@ -588,7 +761,7 @@ def fetch_followup_details(id, lead):
 
 @frappe.whitelist()
 def check_certificate_exists(email, type):
-	return frappe.db.count("Partner Certificate", {"partner_member_email": email})
+	return frappe.db.count("Partner Certificate", {"partner_member_email": email, "course": type})
 
 
 @frappe.whitelist()
@@ -651,6 +824,17 @@ def add_new_lead(lead_details):
 	)
 	doc.insert(ignore_permissions=True)
 	doc.reload()
+
+
+@frappe.whitelist()
+def can_apply_for_certificate():
+	from press.utils.billing import get_frappe_io_connection
+
+	team = get_current_team(get_doc=True)
+	client = get_frappe_io_connection()
+	response = client.get_api("check_free_certificate", {"partner_email": team.partner_email})
+
+	return response  # noqa: RET504
 
 
 @frappe.whitelist()

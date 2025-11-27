@@ -1,8 +1,0 @@
----
-- name: Umount And Cleanup Shared Directory
-  hosts: all
-  become: yes
-  become_user: root
-  gather_facts: yes
-  roles:
-    - role: umount_and_cleanup_shared

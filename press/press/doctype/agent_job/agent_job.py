@@ -35,6 +35,7 @@ from press.press.doctype.site_migration.site_migration import (
 from press.utils import log_error, timer
 
 AGENT_LOG_KEY = "agent-jobs"
+AGENT_JOB_TIMEOUT_HOURS = 4
 
 
 class AgentJob(Document):
@@ -349,6 +350,25 @@ class AgentJob(Document):
 		return False
 
 	@property
+	def failed_because_of_incident(self) -> bool:
+		if self.server and frappe.db.exists(
+			"Incident",
+			{
+				"server": self.server,
+				"status": ("in", ["Auto-Resolved", "Resolved", "Press-Resolved"]),
+				"creation": (
+					"between",
+					[
+						frappe.utils.add_to_date(self.creation, minutes=-15),
+						self.creation,
+					],
+				),  # incident didn't happen because of job
+			},
+		):
+			return True
+		return False
+
+	@property
 	def on_public_server(self):
 		return bool(frappe.db.get_value(self.server_type, self.server, "public"))
 
@@ -640,7 +660,7 @@ def fail_old_jobs():
 	update_status(delivery_failed_jobs, "Delivery Failure")
 
 
-def get_pair_jobs() -> tuple[str]:
+def get_pair_jobs():
 	"""Return list of jobs who's callback depend on another"""
 	return (
 		"New Site",
@@ -787,24 +807,24 @@ def retry_undelivered_jobs(server):
 
 		undelivered_jobs = list(set(server_jobs[server]) - set(delivered_jobs))
 
-		for job in undelivered_jobs:
-			job_doc = frappe.get_doc("Agent Job", job)
-			max_retry_count = max_retry_per_job_type[job_doc.job_type] or 0
+		for job_name in undelivered_jobs:
+			job = AgentJob("Agent Job", job_name)
+			max_retry_count = max_retry_per_job_type[job.job_type] or 0
 
-			if not job_doc.next_retry_at and job_doc.name not in queued_jobs():
-				job_doc.set_status_and_next_retry_at()
+			if not job.next_retry_at and job.name not in queued_jobs():
+				job.set_status_and_next_retry_at()
 				continue
 
-			if get_datetime(job_doc.next_retry_at) > nowtime:
+			if get_datetime(job.next_retry_at) > nowtime:
 				continue
 
-			if job_doc.retry_count <= max_retry_count:
-				retry = job_doc.retry_count + 1
-				frappe.db.set_value("Agent Job", job, "retry_count", retry, update_modified=False)
-				job_doc.retry_in_place()
+			if job.retry_count <= max_retry_count:
+				retry = job.retry_count + 1
+				frappe.db.set_value("Agent Job", job_name, "retry_count", retry, update_modified=False)
+				job.retry_in_place()
 			else:
-				update_job_and_step_status(job, "Delivery Failure")
-				process_job_updates(job)
+				update_job_and_step_status(job_name, "Delivery Failure")
+				process_job_updates(job_name)
 
 
 def queued_jobs():

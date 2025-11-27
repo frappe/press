@@ -163,7 +163,10 @@ export default {
 					() => import('../pages/ReleaseGroupBenchSites.vue'),
 				),
 				props: (releaseGroup) => {
-					return { releaseGroup: releaseGroup.doc.name };
+					return {
+						releaseGroup: releaseGroup.doc.name,
+						actionsAccess: releaseGroup.doc.actions_access,
+					};
 				},
 			},
 			{
@@ -973,44 +976,23 @@ export default {
 						group.doc.deploy_information.update_available &&
 						['Awaiting Deploy', 'Active'].includes(group.doc.status),
 					onClick() {
-						if (group.doc?.deploy_information?.last_deploy) {
-							let UpdateReleaseGroupDialog = defineAsyncComponent(
-								() =>
-									import('../components/group/UpdateReleaseGroupDialog.vue'),
-							);
-							renderDialog(
-								h(UpdateReleaseGroupDialog, {
-									bench: group.name,
-									onSuccess(candidate) {
-										group.doc.deploy_information.deploy_in_progress = true;
-										if (candidate) {
-											group.doc.deploy_information.last_deploy.name = candidate;
-										}
-									},
-								}),
-							);
-						} else {
-							confirmDialog({
-								title: 'Deploy',
-								message: "Let's deploy now?",
-								onSuccess({ hide }) {
-									toast.promise(
-										group.initialDeploy.submit(null, {
-											onSuccess: () => {
-												group.reload();
-												hide();
-											},
-										}),
-										{
-											success: 'Deploy scheduled successfully',
-											error: (e) =>
-												getToastErrorMessage(e, 'Failed to schedule deploy'),
-											loading: 'Scheduling deploy...',
-										},
-									);
+						let UpdateReleaseGroupDialog = defineAsyncComponent(
+							() => import('../components/group/UpdateReleaseGroupDialog.vue'),
+						);
+						renderDialog(
+							h(UpdateReleaseGroupDialog, {
+								bench: group.name,
+								lastDeploy: group.doc?.deploy_information?.last_deploy,
+								onSuccess(candidate) {
+									group.doc.deploy_information.deploy_in_progress = true;
+									if (candidate) {
+										group.doc.deploy_information.last_deploy = {
+											name: candidate,
+										};
+									}
 								},
-							});
-						}
+							}),
+						);
 					},
 				},
 				{

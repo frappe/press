@@ -285,6 +285,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 					{"key": "PYTHON_VERSION", "value": "3.6"},  # updated
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
 					{"key": "BENCH_VERSION", "value": "5.15.2"},
+					{"key": "PIP_VERSION", "value": "25.2"},
 				]
 			),
 		)
@@ -311,6 +312,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 					{"key": "NODE_VERSION", "value": "16.36.0"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
 					{"key": "BENCH_VERSION", "value": "5.15.2"},
+					{"key": "PIP_VERSION", "value": "25.2"},
 					{
 						"key": "asdf",
 						"value": "10.9",
@@ -332,6 +334,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 					{"key": "PYTHON_VERSION", "value": "3.6"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
 					{"key": "BENCH_VERSION", "value": "5.15.2"},
+					{"key": "PIP_VERSION", "value": "25.2"},
 				],
 			),
 		)
@@ -369,6 +372,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 						"key": "MARIADB_VERSION",
 						"value": "10.9",
 					},  # invalid dependency
+					{"key": "PIP_VERSION", "value": "25.2"},
 				],
 			),
 		)
@@ -389,6 +393,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 					{"key": "PYTHON_VERSION", "value": "3.6"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
 					{"key": "BENCH_VERSION", "value": "5.15.2"},
+					{"key": "PIP_VERSION", "value": "25.2"},
 					{"key": "MARIADB_VERSION", "value": "10.9"},
 				]
 			),
@@ -410,6 +415,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 					{"key": "PYTHON_VERSION", "value": "3.6"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
 					{"key": "BENCH_VERSION", "value": "5.15.2"},
+					{"key": "PIP_VERSION", "value": "25.2"},
 				]
 			),
 		)
@@ -433,6 +439,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 					{"key": "PYTHON_VERSION", "value": "3.6"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
 					{"key": "BENCH_VERSION", "value": "5.15.2"},
+					{"key": "PIP_VERSION", "value": "25.2"},
 				]
 			),
 		)
@@ -446,6 +453,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 			{"key": "PYTHON_VERSION", "value": "3.6"},
 			{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
 			{"key": "BENCH_VERSION", "value": "5.15.2"},
+			{"key": "PIP_VERSION", "value": "25.2"},
 		]
 		update_dependencies(
 			self.rg.name,
@@ -464,6 +472,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 			{"key": "PYTHON_VERSION", "value": "3.6"},
 			{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
 			{"key": "BENCH_VERSION", "value": "5.15.2"},
+			{"key": "PIP_VERSION", "value": "25.2"},
 		]
 		self.assertFalse(dependencies(self.rg.name)["update_available"])
 		create_test_bench(group=self.rg)  # don't show dependency update available for new deploys

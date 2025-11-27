@@ -118,7 +118,7 @@
 							<div class="pt-2">
 								<div class="text-sm text-gray-600">Requirement</div>
 								<div class="text-base leading-6 font-normal py-2">
-									{{ lead?.requirement }}
+									<div v-html="lead?.requirement"></div>
 								</div>
 							</div>
 						</div>

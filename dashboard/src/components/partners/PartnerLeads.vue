@@ -115,6 +115,11 @@ export default {
 				filterControls() {
 					return [
 						{
+							type: 'data',
+							fieldname: 'lead_name',
+							label: 'Lead Name',
+						},
+						{
 							type: 'select',
 							fieldname: 'status',
 							label: 'Status',
@@ -155,7 +160,6 @@ export default {
 					return {
 						label: 'Add Lead',
 						variant: 'solid',
-						disabled: true,
 						slots: {
 							prefix: icon('plus'),
 						},
