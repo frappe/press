@@ -29,6 +29,7 @@
     force: yes
   environment:
     WAZUH_MANAGER: "{{ wazuh_manager }}"
+    WAZUH_AGENT_NAME: "{{ wazuh_agent_name }}"
 
 - name: Enable and Start Agent
   service:
