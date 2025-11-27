@@ -3010,6 +3010,49 @@ class Server(BaseServer):
 		except Exception:
 			log_error("Earlyoom Install Exception", server=self.as_dict())
 
+	@frappe.whitelist()
+	def install_wazuh_agent(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_install_wazuh_agent",
+		)
+
+	def _install_wazuh_agent(self):
+		try:
+			ansible = Ansible(
+				playbook="wazuh_agent_install.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={
+					"wazuh_manager": "TODO:",
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Wazuh Agent Install Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def uninstall_wazuh_agent(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_uninstall_wazuh_agent",
+		)
+
+	def _uninstall_wazuh_agent(self):
+		try:
+			ansible = Ansible(
+				playbook="wazuh_agent_uninstall.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Wazuh Agent Install Exception", server=self.as_dict())
+
 	@property
 	def docker_depends_on_mounts(self):
 		mount_points = set(mount.mount_point for mount in self.mounts)
