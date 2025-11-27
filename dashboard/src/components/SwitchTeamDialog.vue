@@ -21,10 +21,11 @@
 			</div>
 			<div class="mt-3">
 				<TextInput
+					v-if="sortedTeams.length > 5"
 					size="sm"
-					variant="subtle"
-					placeholder="Search team.."
-					v-model="teamSearch"
+					placeholder="Search"
+					:debounce="500"
+					v-model="searchQuery"
 				/>
 			</div>
 			<div class="-mb-3 mt-3 divide-y">
@@ -96,10 +97,10 @@ export default {
 			});
 		},
 		filteredTeams() {
-			if (!this.teamSearch.trim()) {
+			if (!this.searchQuery.trim()) {
 				return this.sortedTeams;
 			}
-			const query = this.teamSearch.toLowerCase();
+			const query = this.searchQuery.toLowerCase();
 			return this.sortedTeams.filter(
 				(team) =>
 					team.user.toLowerCase().includes(query) ||
@@ -110,7 +111,7 @@ export default {
 	data() {
 		return {
 			selectedTeam: null,
-			teamSearch: '',
+			searchQuery: '',
 		};
 	},
 	methods: {
