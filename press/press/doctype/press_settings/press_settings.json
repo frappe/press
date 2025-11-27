@@ -243,7 +243,9 @@
   "hybrid_domain",
   "tls_renewal_queue_size",
   "code_spaces_tab",
-  "spaces_domain"
+  "spaces_domain",
+  "security_tab",
+  "wazuh_server"
  ],
  "fields": [
   {
@@ -1539,12 +1541,22 @@
    "fieldtype": "Data",
    "label": "Deploy Marker",
    "options": "If found in commit message deploy will be triggered"
+  },
+  {
+   "fieldname": "security_tab",
+   "fieldtype": "Tab Break",
+   "label": "Security"
+  },
+  {
+   "fieldname": "wazuh_server",
+   "fieldtype": "Data",
+   "label": "Wazuh Server"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-11-19 10:27:32.401458",
- "modified_by": "Administrator",
+ "modified": "2025-11-27 17:29:59.207393",
+ "modified_by": "hello@ssiyad.com",
  "module": "Press",
  "name": "Press Settings",
  "owner": "Administrator",
