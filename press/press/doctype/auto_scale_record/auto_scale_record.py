@@ -30,8 +30,9 @@ class AutoScaleRecord(Document, StepHandler):
 		action: DF.Literal["Scale Up", "Scale Down"]
 		primary_server: DF.Link
 		scale_steps: DF.Table[ScaleStep]
+		scheduled: DF.Datetime | None
 		secondary_server: DF.Link | None
-		status: DF.Literal["Pending", "Running", "Failure", "Success"]
+		status: DF.Literal["Pending", "Running", "Failure", "Success", "Scheduled"]
 	# end: auto-generated types
 
 	dashboard_fields = (
@@ -348,7 +349,7 @@ class AutoScaleRecord(Document, StepHandler):
 
 	# Primary switch steps end
 
-	def execute_mount_steps(self):
+	def execute_scale_steps(self):
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
@@ -361,4 +362,54 @@ class AutoScaleRecord(Document, StepHandler):
 		)
 
 	def after_insert(self):
-		self.execute_mount_steps()
+		if self.status != "Scheduled":
+			self.execute_scale_steps()
+
+
+def create_autoscale_failure_notification(team: str, name: str, exc: str):
+	press_notification = frappe.get_doc(
+		{
+			"doctype": "Press Notification",
+			"team": team,
+			"type": "Auto Scale",
+			"document_type": "Auto Scale Record",
+			"document_name": name,
+			"class": "Error",
+			"traceback": exc,
+			"message": "Error occurred during auto scale",
+		}
+	)
+	press_notification.insert()
+
+
+def validate_scheduled_autoscale(primary_server: str) -> None:
+	"""Throw if invalid auto scale schedule"""
+	server: "Server" = frappe.get_doc("Server", primary_server)
+	server.validate_scale()
+
+
+def run_scheduled_scale_records():
+	"""Run 5 scale scheduled scale records at a time"""
+	scale_records = frappe.get_all(
+		"Auto Scale Record",
+		{
+			"status": "Scheduled",
+			"scheduled": ("<=", frappe.utils.now_datetime()),
+		},
+		pluck="name",
+		limit=5,
+	)
+	for record in scale_records:
+		auto_scale_record: AutoScaleRecord = frappe.get_doc("Auto Scale Record", record)
+		try:
+			validate_scheduled_autoscale(primary_server=auto_scale_record.primary_server)
+			auto_scale_record.execute_scale_steps()  # Will take the status to running directly bypassing after insert
+		except frappe.ValidationError as e:
+			frappe.db.set_value("Auto Scale Record", auto_scale_record.name, "status", "Failure")
+			create_autoscale_failure_notification(
+				exc=e,
+				name=auto_scale_record.name,
+				team=frappe.db.get_value("Server", auto_scale_record.primary_server, "team"),
+			)
+
+		frappe.db.commit()
