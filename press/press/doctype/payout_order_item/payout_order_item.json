@@ -81,7 +81,6 @@
   {
    "fieldname": "commission",
    "fieldtype": "Currency",
-   "hidden": 1,
    "label": "Commission",
    "options": "currency"
   },
@@ -133,7 +132,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-11-21 08:57:06.901514",
+ "modified": "2025-11-27 20:29:45.833450",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payout Order Item",

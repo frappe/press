@@ -10,7 +10,11 @@
   "featured_apps",
   "release_auto_approval_section",
   "auto_release_apps",
-  "auto_release_teams"
+  "auto_release_teams",
+  "payout_tab",
+  "enable_payout_reminder",
+  "column_break_vuyd",
+  "email"
  ],
  "fields": [
   {
@@ -40,12 +44,35 @@
    "fieldtype": "Table",
    "label": "Auto Release Teams",
    "options": "Auto Release Team"
+  },
+  {
+   "fieldname": "payout_tab",
+   "fieldtype": "Tab Break",
+   "label": "Payout"
+  },
+  {
+   "fieldname": "column_break_vuyd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "enable_payout_reminder",
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email",
+   "mandatory_depends_on": "enable_payout_reminder"
+  },
+  {
+   "default": "0",
+   "description": "Send month-end reminder for unpaid Payout Orders",
+   "fieldname": "enable_payout_reminder",
+   "fieldtype": "Check",
+   "label": "Enable Payout Reminder"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-08-20 20:10:09.572230",
+ "modified": "2025-11-27 22:16:27.085261",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace Settings",
