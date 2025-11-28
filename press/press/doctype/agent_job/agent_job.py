@@ -37,6 +37,8 @@ from press.utils import log_error, timer
 AGENT_LOG_KEY = "agent-jobs"
 AGENT_JOB_TIMEOUT_HOURS = 4
 
+BYPASS_AGENT_JOB_HALT = ["Change Bench Directory"]
+
 
 class AgentJob(Document):
 	# begin: auto-generated types
@@ -164,7 +166,7 @@ class AgentJob(Document):
 	def create_http_request(self):
 		try:
 			agent = Agent(self.server, server_type=self.server_type)
-			if agent.should_skip_requests():
+			if agent.should_skip_requests() and self.job_type not in BYPASS_AGENT_JOB_HALT:
 				self.retry_count = 0
 				self.set_status_and_next_retry_at()
 				return

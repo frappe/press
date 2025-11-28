@@ -3144,9 +3144,14 @@ class Server(BaseServer):
 				frappe.ValidationError,
 			)
 
-		active_site = frappe.db.get_value("Site", {"server": self.name}, pluck="name")
+		active_sites_on_primary = frappe.db.get_value(
+			"Site", {"server": self.name, "status": "Active"}, pluck="name"
+		)
+		active_sites_on_secondary = frappe.db.get_value(
+			"Site", {"server": self.secondary_server, "status": "Active"}, pluck="name"
+		)
 
-		if not active_site:
+		if not active_sites_on_primary and not active_sites_on_secondary:
 			frappe.throw("There are no active sites on this server!", frappe.ValidationError)
 
 	@dashboard_whitelist()

@@ -51,6 +51,8 @@ class AutoScaleRecord(Document, StepHandler):
 				[
 					self.start_secondary_server,
 					self.wait_for_secondary_server_to_start,
+					# Since the secondary is stopped no jobs running on it
+					self.stop_all_agent_jobs_on_primary,
 					self.wait_for_secondary_server_ping,
 					self.switch_to_secondary,
 					self.wait_for_switch_to_secondary,
@@ -65,7 +67,10 @@ class AutoScaleRecord(Document, StepHandler):
 			for step in self.get_steps(
 				[
 					self.switch_to_primary,
+					# There could be jobs running on both primary and secondary
 					self.wait_for_primary_switch,
+					self.stop_all_agent_jobs_on_primary,
+					self.stop_all_agent_jobs_on_secondary,
 					self.setup_primary_upstream,
 					self.wait_for_primary_upstream,
 					self.initiate_secondary_shutdown,
@@ -120,7 +125,9 @@ class AutoScaleRecord(Document, StepHandler):
 		"""Update proxy server with secondary as upstream"""
 		proxy_server = frappe.get_value("Server", self.secondary_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		active_sites = frappe.get_all("Site", {"server": self.primary_server}, pluck="name")
+		active_sites = frappe.get_all(
+			"Site", {"server": self.primary_server, "status": "Active"}, pluck="name"
+		)
 
 		agent_job = agent.new_upstream_file(server=self.secondary_server, site=active_sites)
 		frappe.db.set_value("Site", {"name": ("IN", active_sites)}, "server", self.secondary_server)
@@ -201,7 +208,7 @@ class AutoScaleRecord(Document, StepHandler):
 		step.status = Status.Running
 		step.save()
 
-		frappe.db.set_value("Server", self.primary_server, "scaled_up", True)
+		frappe.db.set_value("Server", self.primary_server, {"scaled_up": True, "halt_agent_jobs": False})
 
 		step.status = Status.Success
 		step.save()
@@ -213,7 +220,9 @@ class AutoScaleRecord(Document, StepHandler):
 		"""Setup up primary upstream"""
 		proxy_server = frappe.get_value("Server", self.secondary_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		active_sites = frappe.get_all("Site", {"server": self.secondary_server}, pluck="name")
+		active_sites = frappe.get_all(
+			"Site", {"server": self.secondary_server, "status": "Active"}, pluck="name"
+		)
 
 		agent_job = agent.new_upstream_file(server=self.primary_server, site=active_sites)
 
@@ -339,9 +348,11 @@ class AutoScaleRecord(Document, StepHandler):
 		self._gracefully_stop_benches_on_secondary()
 		secondary_server_vm: "VirtualMachine" = frappe.get_doc("Virtual Machine", virtual_machine)
 		secondary_server_vm.stop()
+
 		frappe.db.set_value(
-			"Server", self.primary_server, "scaled_up", False
+			"Server", self.primary_server, {"scaled_up": False, "halt_agent_jobs": False}
 		)  # Once the secondary server has stopped
+		frappe.db.set_value("Server", self.secondary_server, "halt_agent_jobs", False)
 
 		frappe.set_user(current_user)
 
@@ -349,6 +360,51 @@ class AutoScaleRecord(Document, StepHandler):
 		step.save()
 
 	# Primary switch steps end
+
+	# Agent job halt
+	def stop_all_agent_jobs_on_primary(self, step: "ScaleStep"):
+		"""Stop all other running agent jobs on the primary server"""
+		step.status = Status.Running
+		step.save()
+
+		frappe.db.set_value("Server", self.primary_server, "halt_agent_jobs", True)
+		frappe.db.commit()  # Need immediate effect
+
+		primary_server: "Server" = frappe.get_doc("Server", self.primary_server)
+
+		try:
+			ansible = Ansible(
+				playbook="restart_agent_workers.yml",
+				server=primary_server,
+				user=primary_server._ssh_user(),
+				port=primary_server._ssh_port(),
+			)
+			self.handle_ansible_play(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+			raise
+
+	def stop_all_agent_jobs_on_secondary(self, step: "ScaleStep"):
+		"""Stop all other running agent jobs on the secondary server"""
+		step.status = Status.Running
+		step.save()
+
+		frappe.db.set_value("Server", self.secondary_server, "halt_agent_jobs", True)
+		frappe.db.commit()  # Need immediate effect
+
+		secondary_server: "Server" = frappe.get_doc("Server", self.secondary_server)
+
+		try:
+			ansible = Ansible(
+				playbook="restart_agent_workers.yml",
+				server=secondary_server,
+				user=secondary_server._ssh_user(),
+				port=secondary_server._ssh_port(),
+			)
+			self.handle_ansible_play(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+			raise
 
 	def execute_scale_steps(self):
 		frappe.enqueue_doc(
@@ -365,6 +421,10 @@ class AutoScaleRecord(Document, StepHandler):
 	def after_insert(self):
 		if self.status != "Scheduled":
 			self.execute_scale_steps()
+
+	@frappe.whitelist()
+	def force_continue(self):
+		self.execute_scale_steps()
 
 
 def create_autoscale_failure_notification(team: str, name: str, exc: str):
