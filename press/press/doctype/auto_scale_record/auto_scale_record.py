@@ -130,7 +130,6 @@ class AutoScaleRecord(Document, StepHandler):
 		)
 
 		agent_job = agent.new_upstream_file(server=self.secondary_server, site=active_sites)
-		frappe.db.set_value("Site", {"name": ("IN", active_sites)}, "server", self.secondary_server)
 
 		step.status = Status.Success
 		step.job_type = "Agent Job"
@@ -229,8 +228,6 @@ class AutoScaleRecord(Document, StepHandler):
 		# Since this will be checked when trying to shutdown the server we can fire and forget
 		for site in active_sites:
 			agent.remove_upstream_file(server=self.secondary_server, site=site)
-
-		frappe.db.set_value("Site", {"name": ("IN", active_sites)}, "server", self.primary_server)
 
 		step.status = Status.Success
 		step.job_type = "Agent Job"
