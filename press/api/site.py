@@ -5,24 +5,22 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
-import dns.exception
 import frappe
 import requests
 import wrapt
 from boto3 import client
 from botocore.exceptions import ClientError
-from dns.resolver import Resolver
 from frappe.core.utils import find
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.query_builder import Case
 from frappe.rate_limiter import rate_limit
 from frappe.utils import flt, sbool, time_diff_in_hours
-from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.typing_validations import validate_argument_types
 from frappe.utils.user import is_system_user
 
 from press.access.support_access import has_support_access
+<<<<<<< HEAD
 from press.exceptions import (
 	AAAARecordExists,
 	ConflictingCAARecord,
@@ -33,6 +31,8 @@ from press.exceptions import (
 	MultipleARecords,
 	MultipleCNAMERecords,
 )
+=======
+>>>>>>> 9cffd62f1 (refactor(site-api): Move dns utils to respective file)
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
@@ -40,6 +40,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 )
 from press.press.doctype.remote_file.remote_file import get_remote_key
 from press.press.doctype.server.server import is_dedicated_server
+from press.press.doctype.site.site import Site, get_updates_between_current_and_next_apps
 from press.press.doctype.site_plan.plan import Plan
 from press.press.doctype.site_update.site_update import benches_with_available_update
 from press.utils import (
@@ -50,24 +51,15 @@ from press.utils import (
 	log_error,
 	unique,
 )
+from press.utils.dns import check_dns_cname_a
 
 if TYPE_CHECKING:
-	from frappe.types import DF
-
 	from press.press.doctype.bench.bench import Bench
-	from press.press.doctype.bench_app.bench_app import BenchApp
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
-	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
-		DeployCandidateApp,
-	)
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server.server import Server
-	from press.press.doctype.site.site import Site
 	from press.press.doctype.team.team import Team
-
-
-NAMESERVERS = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
 
 
 def protected(doctypes):
@@ -1254,49 +1246,6 @@ def check_for_updates(name):
 	return out
 
 
-def get_updates_between_current_and_next_apps(
-	current_apps: "DF.Table[BenchApp]",
-	next_apps: "DF.Table[DeployCandidateApp]",
-):
-	from press.utils import get_app_tag
-
-	apps = []
-	for app in next_apps:
-		bench_app = find(current_apps, lambda x: x.app == app.app)
-		current_hash = bench_app.hash if bench_app else None
-		source = frappe.get_doc("App Source", app.source)
-
-		will_branch_change = False
-		current_branch = source.branch
-		if bench_app:
-			current_source = frappe.get_doc("App Source", bench_app.source)
-			will_branch_change = current_source.branch != source.branch
-			current_branch = current_source.branch
-
-		current_tag = (
-			get_app_tag(source.repository, source.repository_owner, current_hash) if current_hash else None
-		)
-		next_hash = app.pullable_hash or app.hash
-		apps.append(
-			{
-				"title": app.title,
-				"app": app.app,
-				"repository": source.repository,
-				"repository_owner": source.repository_owner,
-				"repository_url": source.repository_url,
-				"branch": source.branch,
-				"current_hash": current_hash,
-				"current_tag": current_tag,
-				"next_hash": next_hash,
-				"next_tag": get_app_tag(source.repository, source.repository_owner, next_hash),
-				"will_branch_change": will_branch_change,
-				"current_branch": current_branch,
-				"update_available": not current_hash or current_hash != next_hash,
-			}
-		)
-	return apps
-
-
 @frappe.whitelist()
 @protected("Site")
 def installed_apps(name):
@@ -1679,6 +1628,7 @@ def setup_wizard_complete(name):
 	return frappe.get_doc("Site", name).is_setup_wizard_complete()
 
 
+<<<<<<< HEAD
 def get_dns_provider_mname_rname(domain):
 	from tldextract import extract
 
@@ -1929,6 +1879,8 @@ def check_dns_cname_a(
 	return result
 
 
+=======
+>>>>>>> 9cffd62f1 (refactor(site-api): Move dns utils to respective file)
 @frappe.whitelist()
 @protected("Site")
 def check_dns(name, domain):
@@ -2518,12 +2470,15 @@ def version_upgrade(
 @frappe.whitelist()
 @protected("Site")
 def change_server_options(name):
-	site_server = frappe.db.get_value("Site", name, "server")
-	return frappe.db.get_all(
-		"Server",
-		{"team": get_current_team(), "status": "Active", "name": ("!=", site_server)},
-		["name", "title"],
-	)
+	site = Site("Site", name)
+	return {
+		"servers": frappe.db.get_all(
+			"Server",
+			{"team": get_current_team(), "status": "Active", "name": ("!=", site.server)},
+			["name", "title"],
+		),
+		"estimated_time": site.get_estimated_time_for_server_change(),
+	}
 
 
 @frappe.whitelist()
