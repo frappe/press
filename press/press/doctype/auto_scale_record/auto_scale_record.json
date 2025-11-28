@@ -12,6 +12,7 @@
   "column_break_nxd6",
   "action",
   "scheduled",
+  "failed_validation",
   "steps_section",
   "scale_steps"
  ],
@@ -73,6 +74,14 @@
    "fieldname": "scheduled",
    "fieldtype": "Datetime",
    "label": "Scheduled"
+  },
+  {
+   "default": "0",
+   "description": "Checked if the auto scale failed due to a validation error.\n\n(Adhere to autoscaling rules)",
+   "fieldname": "failed_validation",
+   "fieldtype": "Check",
+   "label": "Failed Validation",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -83,7 +92,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2025-11-27 16:32:34.554936",
+ "modified": "2025-11-28 10:50:25.001026",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Auto Scale Record",

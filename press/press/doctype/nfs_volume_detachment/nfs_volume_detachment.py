@@ -262,16 +262,16 @@ class NFSVolumeDetachment(Document, StepHandler):
 		step.save()
 
 		try:
-			# Mark primary as not ready to auto scale
-			frappe.db.set_value("Server", self.primary_server, "benches_on_shared_volume", False)
-
 			# Drop secondary server
 			primary_server: "Server" = frappe.get_doc("Server", self.primary_server)
 			primary_server.drop_secondary_server()
 
 			# Mark secondary server field as empty on the primary server
-			frappe.db.set_value("Server", self.primary_server, "secondary_server", None)
-			frappe.db.set_value("Server", self.primary_server, "status", "Active")
+			frappe.db.set_value(
+				"Server",
+				self.primary_server,
+				{"benches_on_shared_volume": False, "secondary_server": None, "status": "Active"},
+			)
 
 			step.status = Status.Success
 			step.save()

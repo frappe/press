@@ -28,6 +28,7 @@ class AutoScaleRecord(Document, StepHandler):
 		from press.press.doctype.scale_step.scale_step import ScaleStep
 
 		action: DF.Literal["Scale Up", "Scale Down"]
+		failed_validation: DF.Check
 		primary_server: DF.Link
 		scale_steps: DF.Table[ScaleStep]
 		scheduled: DF.Datetime | None
@@ -405,7 +406,9 @@ def run_scheduled_scale_records():
 			validate_scheduled_autoscale(primary_server=auto_scale_record.primary_server)
 			auto_scale_record.execute_scale_steps()  # Will take the status to running directly bypassing after insert
 		except frappe.ValidationError as e:
-			frappe.db.set_value("Auto Scale Record", auto_scale_record.name, "status", "Failure")
+			frappe.db.set_value(
+				"Auto Scale Record", auto_scale_record.name, {"status": "Failure", "failed_validation": True}
+			)
 			create_autoscale_failure_notification(
 				exc=e,
 				name=auto_scale_record.name,
