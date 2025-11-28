@@ -107,8 +107,14 @@ def alert_on_zombie_rq_jobs() -> None:
 			queue = Queue(job.origin, connection=connection)
 			position = queue.get_job_position(job.id)
 			if job.enqueued_at < threshold and job.get_status() == JobStatus.QUEUED and position is None:
+				try:
+					job.cancel()
+					cancelled = True
+				except Exception:
+					cancelled = False
+
 				serialized = json.dumps(vars(job), default=str, indent=2, sort_keys=True)
-				message = f"""*Stuck Job Detected in RQ Queue* \n\n```JSON\n{serialized}```\n\n@adityahase @balamurali27 @tanmoysrt"""
+				message = f"""*Stuck Job Detected in RQ Queue* \n\n```JSON\n{serialized}```\n\n@adityahase @balamurali27 @tanmoysrt\n\nCancellation Status: {"Success" if cancelled else "Failed"}"""
 				TelegramMessage.enqueue(message, "Errors")
 		except Exception:
 			pass
