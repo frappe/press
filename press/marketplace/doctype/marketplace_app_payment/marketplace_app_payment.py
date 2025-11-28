@@ -31,7 +31,7 @@ class MarketplaceAppPayment(Document):
 		press_settings = frappe.get_cached_doc("Press Settings")
 		exchange_rate = press_settings.usd_rate or 80
 		threshold = press_settings.threshold or 500
-		commission_rate = press_settings.commission or 0.25  # Default 25%
+		commission_rate = press_settings.commission or 0.20
 
 		# Calculate current total in USD
 		current_total = self.total_usd + (self.total_inr / exchange_rate)
@@ -40,15 +40,18 @@ class MarketplaceAppPayment(Document):
 			# Already above threshold, apply commission rate to entire amount
 			return row_amount * commission_rate
 
-		# Below threshold - check if this transaction crosses it
+		# Below threshold -> check if this transaction crosses it
 		new_total = current_total + (row_amount / exchange_rate if currency == "INR" else row_amount)
 
 		if new_total <= threshold:
 			# Still below threshold, full amount as commission
 			return row_amount
 
-		# Transaction crosses threshold - partial commission
+		# Transaction crosses threshold -> partial commission
 		amount_to_threshold = threshold - current_total
-		amount_above_threshold = row_amount - amount_to_threshold
 
+		if currency == "INR":
+			amount_to_threshold = amount_to_threshold * exchange_rate
+
+		amount_above_threshold = row_amount - amount_to_threshold
 		return amount_to_threshold + (amount_above_threshold * commission_rate)
