@@ -272,10 +272,12 @@ class NFSVolumeAttachment(Document, StepHandler):
 		step.status = Status.Running
 		step.save()
 
-		frappe.db.set_value("Server", self.primary_server, "benches_on_shared_volume", True)
-		frappe.db.set_value("Server", self.primary_server, "status", "Active")
-		frappe.db.set_value("Server", self.secondary_server, "status", "Active")
-		frappe.db.set_value("Server", self.secondary_server, "is_monitoring_disabled", True)
+		frappe.db.set_value(
+			"Server", self.primary_server, {"benches_on_shared_volume": True, "status": "Active"}
+		)
+		frappe.db.set_value(
+			"Server", self.secondary_server, {"status": "Active", "is_monitoring_disabled": True}
+		)
 
 		step.status = Status.Success
 		step.save()
