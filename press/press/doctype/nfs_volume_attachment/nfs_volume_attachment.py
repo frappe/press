@@ -11,6 +11,7 @@ from press.agent import Agent
 from press.runner import Ansible, Status, StepHandler
 
 if typing.TYPE_CHECKING:
+	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.nfs_volume_attachment_step.nfs_volume_attachment_step import (
 		NFSVolumeAttachmentStep,
 	)
@@ -172,6 +173,11 @@ class NFSVolumeAttachment(Document, StepHandler):
 			},
 			"job",
 		)
+
+		# Jobs go undelivered for some reason, need to manually get status
+		job_doc: "AgentJob" = frappe.get_doc("Agent Job", job)
+		job_doc.get_status()
+
 		self.handle_agent_job(step, job)
 
 	def mount_shared_folder_on_secondary_server(self, step: "NFSVolumeAttachmentStep") -> None:

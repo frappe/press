@@ -11,6 +11,7 @@ from press.agent import Agent
 from press.runner import Ansible, Status, StepHandler
 
 if typing.TYPE_CHECKING:
+	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.nfs_server.nfs_server import NFSServer
 	from press.press.doctype.nfs_volume_detachment_step.nfs_volume_detachment_step import (
 		NFSVolumeDetachmentStep,
@@ -203,6 +204,11 @@ class NFSVolumeDetachment(Document, StepHandler):
 			},
 			"job",
 		)
+
+		# Jobs go undelivered for some reason, need to manually get status
+		job_doc: "AgentJob" = frappe.get_doc("Agent Job", job)
+		job_doc.get_status()
+
 		self.handle_agent_job(step, job)
 
 	def umount_volume_from_nfs_server(self, step: "NFSVolumeDetachmentStep") -> None:
