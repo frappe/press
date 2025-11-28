@@ -72,7 +72,6 @@ class AutoScaleRecord(Document, StepHandler):
 					self.stop_all_agent_jobs_on_primary,
 					self.stop_all_agent_jobs_on_secondary,
 					self.setup_primary_upstream,
-					self.wait_for_primary_upstream,
 					self.initiate_secondary_shutdown,
 				]
 			):
@@ -223,33 +222,12 @@ class AutoScaleRecord(Document, StepHandler):
 			"Site", {"server": self.secondary_server, "status": "Active"}, pluck="name"
 		)
 
-		agent_job = agent.new_upstream_file(server=self.primary_server, site=active_sites)
-
 		# Since this will be checked when trying to shutdown the server we can fire and forget
 		for site in active_sites:
 			agent.remove_upstream_file(server=self.secondary_server, site=site)
 
 		step.status = Status.Success
-		step.job_type = "Agent Job"
-		step.job = agent_job.name
 		step.save()
-
-	def wait_for_primary_upstream(self, step: "ScaleStep"):
-		"""Wait for primary upstream to be added"""
-		step.status = Status.Running
-		step.is_waiting = True
-		step.save()
-
-		job = frappe.db.get_value(
-			"Scale Step",
-			{
-				"parent": self.name,
-				"step_name": "Setup up primary upstream",
-			},
-			"job",
-		)
-
-		self.handle_agent_job(step, job)
 
 	def switch_to_primary(self, step: "ScaleStep"):
 		"""Switch to primary server"""
