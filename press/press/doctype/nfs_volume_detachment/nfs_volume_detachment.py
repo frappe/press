@@ -11,6 +11,7 @@ from press.agent import Agent
 from press.runner import Ansible, Status, StepHandler
 
 if typing.TYPE_CHECKING:
+	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.nfs_server.nfs_server import NFSServer
 	from press.press.doctype.nfs_volume_detachment_step.nfs_volume_detachment_step import (
 		NFSVolumeDetachmentStep,
@@ -203,6 +204,11 @@ class NFSVolumeDetachment(Document, StepHandler):
 			},
 			"job",
 		)
+
+		# Jobs go undelivered for some reason, need to manually get status
+		job_doc: "AgentJob" = frappe.get_doc("Agent Job", job)
+		job_doc.get_status()
+
 		self.handle_agent_job(step, job)
 
 	def umount_volume_from_nfs_server(self, step: "NFSVolumeDetachmentStep") -> None:
@@ -262,16 +268,16 @@ class NFSVolumeDetachment(Document, StepHandler):
 		step.save()
 
 		try:
-			# Mark primary as not ready to auto scale
-			frappe.db.set_value("Server", self.primary_server, "benches_on_shared_volume", False)
-
 			# Drop secondary server
 			primary_server: "Server" = frappe.get_doc("Server", self.primary_server)
 			primary_server.drop_secondary_server()
 
 			# Mark secondary server field as empty on the primary server
-			frappe.db.set_value("Server", self.primary_server, "secondary_server", None)
-			frappe.db.set_value("Server", self.primary_server, "status", "Active")
+			frappe.db.set_value(
+				"Server",
+				self.primary_server,
+				{"benches_on_shared_volume": False, "secondary_server": None, "status": "Active"},
+			)
 
 			step.status = Status.Success
 			step.save()

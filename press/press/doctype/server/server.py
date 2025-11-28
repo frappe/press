@@ -3111,6 +3111,7 @@ class Server(BaseServer):
 			- Server is configured for auto scale.
 			- Was the last auto scale modified before the cool of period (don't create new auto scale).
 			- There is a auto scale operation running on the server.
+			- There are no active sites on the server.
 		"""
 		if not self.can_scale:
 			frappe.throw("Server is not configured for auto scaling", frappe.ValidationError)
@@ -3142,6 +3143,16 @@ class Server(BaseServer):
 				f"Please wait for {fmt_timedelta(timedelta(seconds=cool_off_period or 300) - time_diff)} before scaling again",
 				frappe.ValidationError,
 			)
+
+		active_sites_on_primary = frappe.db.get_value(
+			"Site", {"server": self.name, "status": "Active"}, pluck="name"
+		)
+		active_sites_on_secondary = frappe.db.get_value(
+			"Site", {"server": self.secondary_server, "status": "Active"}, pluck="name"
+		)
+
+		if not active_sites_on_primary and not active_sites_on_secondary:
+			frappe.throw("There are no active sites on this server!", frappe.ValidationError)
 
 	@dashboard_whitelist()
 	@frappe.whitelist()
