@@ -10,13 +10,12 @@ import rq
 from frappe.model.document import Document
 
 from press.agent import Agent
-from press.api.site import check_dns_cname_a
 from press.exceptions import (
 	DNSValidationError,
 )
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
-from press.utils.dns import create_dns_record
+from press.utils.dns import check_dns_cname_a, create_dns_record
 from press.utils.jobs import has_job_timeout_exceeded
 
 if TYPE_CHECKING:

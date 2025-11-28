@@ -25,6 +25,7 @@ from press.exceptions import (
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
+from press.press.doctype.site.site import Site
 from press.press.doctype.site_backup.site_backup import (
 	SiteBackup,
 	process_backup_site_job_update,
@@ -37,7 +38,6 @@ if TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.cluster.cluster import Cluster
 	from press.press.doctype.server.server import Server
-	from press.press.doctype.site.site import Site
 	from press.press.doctype.site_domain.site_domain import SiteDomain
 
 
@@ -115,16 +115,7 @@ class SiteMigration(Document):
 
 	@cached_property
 	def last_backup(self) -> SiteBackup | None:
-		return frappe.get_last_doc(
-			"Site Backup",
-			{
-				"site": self.site,
-				"with_files": True,
-				"offsite": True,
-				"status": "Success",
-				"files_availability": "Available",
-			},
-		)
+		return Site("Site", self.site).last_backup
 
 	def check_enough_space_on_source_server(self):
 		# server needs to have enough space to create backup
