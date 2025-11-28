@@ -636,6 +636,20 @@ class Agent:
 		data = {"name": private_ip}
 		return self.create_agent_job("Rename Upstream", f"proxy/upstreams/{ip}/rename", data, upstream=server)
 
+	def proxy_add_auto_scale_site_to_upstream(
+		self, primary_upstream: str, secondary_upstreams: list[str]
+	) -> "AgentJob":
+		return self.create_agent_job(
+			"Add Auto Scale Site to Upstream",
+			f"proxy/upstreams/{primary_upstream}/auto-scale-site",
+			data={"secondary_upstreams": secondary_upstreams},
+		)
+
+	def proxy_remove_auto_scale_site_to_upstream(self, primary_upstream: str) -> "AgentJob":
+		return self.create_agent_job(
+			"Remove Auto Scale Site to Upstream", f"proxy/upstreams/{primary_upstream}/remove-auto-scale-site"
+		)
+
 	def new_upstream_file(self, server, site=None, code_server=None):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
