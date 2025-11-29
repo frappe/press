@@ -998,9 +998,9 @@ class Team(Document):
 		if response.ok:
 			res = response.json()
 			partner_level = res.get("message")
-			# certificate_count = res.get("certificates")
+			certificate_count = res.get("certificates")
 			if partner_level:
-				return partner_level
+				return [partner_level, certificate_count]
 			return None
 
 		self.add_comment(text="Failed to fetch partner level" + "<br><br>" + response.text)
