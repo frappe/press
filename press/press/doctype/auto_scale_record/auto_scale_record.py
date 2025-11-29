@@ -66,11 +66,11 @@ class AutoScaleRecord(Document, StepHandler):
 		else:
 			for step in self.get_steps(
 				[
-					self.switch_to_primary,
 					# There could be jobs running on both primary and secondary
-					self.wait_for_primary_switch,
 					self.stop_all_agent_jobs_on_primary,
 					self.stop_all_agent_jobs_on_secondary,
+					self.switch_to_primary,
+					self.wait_for_primary_switch,
 					self.setup_primary_upstream,
 					self.wait_for_primary_upstream_setup,
 					self.initiate_secondary_shutdown,
@@ -130,7 +130,8 @@ class AutoScaleRecord(Document, StepHandler):
 
 		# We might add new secondary servers later on
 		agent_job = agent.proxy_add_auto_scale_site_to_upstream(
-			primary_server_private_ip, [secondary_server_private_ip]
+			primary_server_private_ip,
+			[{secondary_server_private_ip: 3}],  # pass default weight value as 3 for now
 		)
 
 		step.status = Status.Success

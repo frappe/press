@@ -637,7 +637,7 @@ class Agent:
 		return self.create_agent_job("Rename Upstream", f"proxy/upstreams/{ip}/rename", data, upstream=server)
 
 	def proxy_add_auto_scale_site_to_upstream(
-		self, primary_upstream: str, secondary_upstreams: list[str]
+		self, primary_upstream: str, secondary_upstreams: list[dict[str, int]]
 	) -> "AgentJob":
 		return self.create_agent_job(
 			"Add Auto Scale Site to Upstream",
@@ -647,7 +647,8 @@ class Agent:
 
 	def proxy_remove_auto_scale_site_to_upstream(self, primary_upstream: str) -> "AgentJob":
 		return self.create_agent_job(
-			"Remove Auto Scale Site to Upstream", f"proxy/upstreams/{primary_upstream}/remove-auto-scale-site"
+			"Remove Auto Scale Site from Upstream",
+			f"proxy/upstreams/{primary_upstream}/remove-auto-scale-site",
 		)
 
 	def new_upstream_file(self, server, site=None, code_server=None):
