@@ -32,6 +32,7 @@ from press.press.doctype.site_migration.site_migration import (
 	get_ongoing_migration,
 	process_site_migration_job_update,
 )
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error, timer
 
 AGENT_LOG_KEY = "agent-jobs"
@@ -1266,3 +1267,42 @@ def update_query_result_status_timestamps(results):
 
 		if result.end:
 			result.end = convert_utc_to_system_timezone(result.end).replace(tzinfo=None)
+
+
+def agent_poll_count_stats():
+	from_datetime = frappe.utils.add_to_date(None, hours=-1)
+	to_datetime = frappe.utils.add_to_date(None, minutes=-1)
+	rows = frappe.get_all(
+		"Scheduled Job Log",
+		filters=[
+			["creation", ">=", from_datetime],
+			["creation", "<", to_datetime],
+			["scheduled_job_type", "=", "agent_job.poll_pending_jobs"],
+		],
+		fields=["DATE_FORMAT(creation, '%Y-%m-%d %H:%i:00') as timestamp", "count(*) as count"],
+		order_by="timestamp ASC",
+		group_by="timestamp",
+	)
+	found = {frappe.utils.get_datetime(row["timestamp"]): row["count"] for row in rows}
+	total_count = sum(found.values())
+	average_count = total_count / len(found)
+	filtered_data = {key: value for key, value in found.items() if value < 10}
+	sorted_dict = dict(sorted(filtered_data.items(), key=lambda item: item[1]))
+	top_3_min = dict(list(sorted_dict.items())[:3])
+
+	telegram_message = f"""Agent Polling Count Hourly Report
+
+	Average Count: {average_count:.2f}
+
+	Top 3 Minimum Values (≤10):
+	"""
+
+	if top_3_min:
+		for i, item in enumerate(top_3_min, 1):
+			timestamp_str = frappe.utils.format_datetime(item["timestamp"], "dd MMM yyyy, HH:mm")
+			telegram_message = telegram_message + f"\n{i}. 🕒 {timestamp_str} → Count: {item['count']}"
+	else:
+		telegram_message = telegram_message + "\nNo entries found with count ≤ 10"
+
+	telegram_message = telegram_message + f"\n\nFound {len(filtered_data)} entries with count ≤ 10"
+	TelegramMessage.enqueue(message=telegram_message, topic="Signups")
