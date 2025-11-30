@@ -25,18 +25,43 @@ class Indexer:
 		self.logging = False
 		self._lock_file_path = os.path.join(self.base_path, "indexer.lock")
 
-	def add(self, binlog_path: str, batch_size: int = 10000):
+	def add(
+		self,
+		binlog_path: str,
+		batch_size: int = 10000,
+		cpu_quota_percentage: int = 0,
+		memory_hard_limit: int = 0,
+	):
 		with filelock.FileLock(self._lock_file_path):
-			subprocess.run(
-				[
-					self.indexer_lib,
-					"add",
-					self.base_path,
-					binlog_path,
-					self.db_name,
-					str(batch_size),
-				]
-			)
+			command = [
+				self.indexer_lib,
+				"add",
+				self.base_path,
+				binlog_path,
+				self.db_name,
+				str(batch_size),
+			]
+			if cpu_quota_percentage > 0 or memory_hard_limit > 0:
+				systemd_command = ["systemd-run", "--scope", "--user"]
+
+				if cpu_quota_percentage > 0:
+					systemd_command.extend(
+						[
+							"-p",
+							f"CPUQuota={cpu_quota_percentage}%",
+						]
+					)
+				if memory_hard_limit > 0:
+					systemd_command.extend(
+						[
+							"-p",
+							f"MemoryMax={memory_hard_limit}M",
+						]
+					)
+
+				command = [*systemd_command, *command]
+
+			subprocess.run(command)
 
 	def remove(self, binlog_path: str):
 		with filelock.FileLock(self._lock_file_path):
