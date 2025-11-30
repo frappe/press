@@ -273,6 +273,25 @@ class NFSVolumeAttachment(Document, StepHandler):
 
 		self.handle_agent_job(step, job)
 
+	def add_loopback_rule(self, step: "NFSVolumeAttachmentStep"):
+		"""Allow loopback requests from container"""
+		step.status = Status.Running
+		step.save()
+
+		primary_server: "Server" = frappe.get_doc("Server", self.primary_server)
+
+		try:
+			ansible = Ansible(
+				playbook="allow_docker_loopback.yml",
+				server=primary_server,
+				user=primary_server._ssh_user(),
+				port=primary_server._ssh_port(),
+			)
+			self.handle_ansible_play(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+			raise
+
 	def ready_to_auto_scale(self, step: "NFSVolumeAttachmentStep"):
 		"""Mark server as ready to auto scale"""
 		step.status = Status.Running
@@ -326,6 +345,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 				self.link_benches_to_shared,
 				self.run_primary_server_benches_on_shared_fs,
 				self.wait_for_benches_to_run_on_shared,
+				self.add_loopback_rule,
 				self.stop_secondary_server,
 				self.wait_for_secondary_server_to_stop,
 				self.ready_to_auto_scale,
