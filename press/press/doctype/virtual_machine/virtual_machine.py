@@ -1706,7 +1706,7 @@ class VirtualMachine(Document):
 
 	def bulk_sync_oci_cluster_in_batch(self, instances: list[frappe._dict]):
 		for instance in instances:
-			machine: VirtualMachine = frappe.get_doc("Virtual Machine", {"instance_id": instance.id})
+			machine: VirtualMachine = frappe.get_doc("Virtual Machine", {"instance_id": instance["id"]})
 			if has_job_timeout_exceeded():
 				return
 			try:
@@ -1951,6 +1951,33 @@ class VirtualMachine(Document):
 
 		if sync:
 			self.sync()
+
+	def detach_static_ip(self):
+		if self.cloud_provider != "AWS EC2" and not self.is_static_ip:
+			return
+
+		client = self.client()
+		response = client.describe_addresses(PublicIps=[self.public_ip_address])
+
+		address_info = response["Addresses"][0]
+		if "AssociationId" not in address_info:
+			return
+
+		client.disassociate_address(AssociationId=address_info["AssociationId"])
+
+	def attach_static_ip(self, static_ip):
+		if self.cloud_provider != "AWS EC2":
+			return
+
+		client = self.client()
+		response = client.describe_addresses(PublicIps=[static_ip])
+
+		address_info = response["Addresses"][0]
+		if "AssociationId" in address_info:
+			frappe.throw("Static IP is already associated with another instance.")
+
+		allocation_id = address_info["AllocationId"]
+		client.associate_address(AllocationId=allocation_id, InstanceId=self.instance_id)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")

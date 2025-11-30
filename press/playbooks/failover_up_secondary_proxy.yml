@@ -23,3 +23,11 @@
       cron:
         name: reload_nginx
         state: absent
+
+    - name: Remove Primary from Authorized Keys
+      become: yes
+      become_user: frappe
+      authorized_key:
+        user: frappe
+        key: "{{ primary_public_key }}"
+        state: absent
