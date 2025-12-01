@@ -1424,7 +1424,9 @@ class VirtualMachine(Document):
 			document["is_server_renamed"] = True
 			document["is_upstream_setup"] = True
 
-		return frappe.get_doc(document).insert()
+		server = frappe.get_doc(document).insert()
+		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))
+		return server
 
 	@frappe.whitelist()
 	def create_database_server(self) -> DatabaseServer:
@@ -1458,7 +1460,9 @@ class VirtualMachine(Document):
 					f"Virtual Machine Image {self.virtual_machine_image} does not have a MariaDB root password set."
 				)
 
-		return frappe.get_doc(document).insert()
+		server = frappe.get_doc(document).insert()
+		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))
+		return server
 
 	def get_root_domains(self):
 		return frappe.get_all("Root Domain", {"enabled": True}, pluck="name")
@@ -1479,7 +1483,9 @@ class VirtualMachine(Document):
 			document["is_server_setup"] = True
 			document["is_primary"] = True
 
-		return frappe.get_doc(document).insert()
+		server = frappe.get_doc(document).insert()
+		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))
+		return server
 
 	@frappe.whitelist()
 	def create_monitor_server(self) -> MonitorServer:
@@ -1495,7 +1501,9 @@ class VirtualMachine(Document):
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
 
-		return frappe.get_doc(document).insert()
+		server = frappe.get_doc(document).insert()
+		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))
+		return server
 
 	@frappe.whitelist()
 	def create_log_server(self) -> LogServer:
@@ -1511,7 +1519,9 @@ class VirtualMachine(Document):
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
 
-		return frappe.get_doc(document).insert()
+		server = frappe.get_doc(document).insert()
+		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))
+		return server
 
 	@frappe.whitelist()
 	def create_registry_server(self):
@@ -1527,7 +1537,9 @@ class VirtualMachine(Document):
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
 
-		return frappe.get_doc(document).insert()
+		server = frappe.get_doc(document).insert()
+		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))
+		return server
 
 	def get_security_groups(self):
 		groups = [self.security_group_id]
@@ -1953,7 +1965,7 @@ class VirtualMachine(Document):
 			self.sync()
 
 	def detach_static_ip(self):
-		if self.cloud_provider != "AWS EC2" and not self.is_static_ip:
+		if self.cloud_provider != "AWS EC2" or not self.is_static_ip:
 			return
 
 		client = self.client()
@@ -1964,10 +1976,14 @@ class VirtualMachine(Document):
 			return
 
 		client.disassociate_address(AssociationId=address_info["AssociationId"])
+		self.sync()
 
 	def attach_static_ip(self, static_ip):
 		if self.cloud_provider != "AWS EC2":
 			return
+
+		if self.is_static_ip:
+			frappe.throw("Virtual Machine already has a static IP associated.")
 
 		client = self.client()
 		response = client.describe_addresses(PublicIps=[static_ip])
@@ -1976,8 +1992,8 @@ class VirtualMachine(Document):
 		if "AssociationId" in address_info:
 			frappe.throw("Static IP is already associated with another instance.")
 
-		allocation_id = address_info["AllocationId"]
-		client.associate_address(AllocationId=allocation_id, InstanceId=self.instance_id)
+		client.associate_address(AllocationId=address_info["AllocationId"], InstanceId=self.instance_id)
+		self.sync()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")

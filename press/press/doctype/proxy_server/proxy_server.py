@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 import frappe
 from frappe.utils import unique
 
-from press.agent import Agent
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
@@ -157,6 +156,9 @@ class ProxyServer(BaseServer):
 
 	@frappe.whitelist()
 	def setup_ssh_proxy(self):
+		if not self.ssh_certificate_authority:
+			frappe.throw("SSH Certificate Authority is required to setup SSH Proxy")
+
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_ssh_proxy", queue="long", timeout=1200)
 
 	def _setup_ssh_proxy(self):
@@ -305,7 +307,7 @@ class ProxyServer(BaseServer):
 	def trigger_failover(self):
 		# TODO: should also be automatic based on monitoring/some kind of health check mechanism
 		if self.is_primary:
-			return
+			return None
 
 		failover = frappe.get_doc(
 			{
@@ -315,23 +317,7 @@ class ProxyServer(BaseServer):
 			}
 		).insert()
 
-		frappe.msgprint(
-			f"Failover Reference: <a href='/desk/proxy-failover/{failover.name}'>{failover.name}</a>",
-			alert=True,
-		)
-
-	def route_traffic_to_secondary(self, secondary):
-		if not frappe.db.exists(
-			"Proxy Server", {"name": secondary, "primary": self.name, "is_replication_setup": True}
-		):
-			frappe.throw("Secondary Proxy Server not found/configured properly.")
-
-		agent = Agent(self.name)
-		return agent.create_agent_job(
-			"Route Traffic to Secondary Proxy Server",
-			"proxy/hosts/redirect-to-secondary",
-			data={"secondary_proxy": secondary},
-		)
+		return f"Failover Reference: {frappe.get_desk_link(failover.doctype, failover.name)}"
 
 	@frappe.whitelist()
 	def setup_proxysql_monitor(self):

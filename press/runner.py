@@ -1,5 +1,6 @@
 import json
 import time
+from contextlib import suppress
 from enum import Enum
 from typing import Literal
 
@@ -311,10 +312,8 @@ class StepHandler:
 		step.attempt = 1 if not step.attempt else step.attempt + 1
 
 		# Try to sync status in every attempt
-		try:
+		with suppress(Exception):
 			frappe.get_doc("Virtual Machine", virtual_machine).sync()
-		except Exception:
-			pass
 
 		machine_status = frappe.db.get_value("Virtual Machine", virtual_machine, "status")
 		step.status = Status.Running if machine_status != expected_status else Status.Success

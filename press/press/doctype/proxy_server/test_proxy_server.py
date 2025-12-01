@@ -28,6 +28,7 @@ def create_test_proxy_server(
 	domains: list[dict[str, str]] | None = None,
 	cluster: str = "Default",
 	is_primary: bool = True,
+	is_static_ip: bool = False,
 ) -> ProxyServer:
 	"""Create test Proxy Server doc"""
 	if domains is None:
@@ -44,6 +45,7 @@ def create_test_proxy_server(
 			"domain": domain,
 			"domains": domains,
 			"is_primary": is_primary,
+			"is_static_ip": is_static_ip,
 			"virtual_machine": create_test_virtual_machine().name,
 		}
 	).insert(ignore_if_duplicate=True)
@@ -69,7 +71,7 @@ class TestProxyServer(FrappeTestCase):
 		from press.press.doctype.server.test_server import create_test_server
 		from press.press.doctype.site.test_site import create_test_site
 
-		proxy1 = create_test_proxy_server()
+		proxy1 = create_test_proxy_server(is_static_ip=True)
 		proxy2 = create_test_proxy_server(is_primary=False)
 
 		root_domain: RootDomain = frappe.get_doc("Root Domain", proxy1.domain)

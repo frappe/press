@@ -3,12 +3,14 @@
 
 frappe.ui.form.on('Proxy Failover', {
 	refresh(frm) {
-		frm.add_custom_button(
-			'Route Requests From Primary To Secondary',
-			() => {
-				frm.call('create_agent_job_for_routing_requests');
-			},
-			'Actions',
-		);
+		if (frm.doc.status != "Success") {
+			frm.add_custom_button(
+				'Force Continue',
+				() => {
+					frm.call('force_continue');
+				},
+				'Actions',
+			);
+		}
 	},
 });

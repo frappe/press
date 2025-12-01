@@ -9,7 +9,9 @@
   "column_break_djlt",
   "secondary",
   "section_break_gajn",
-  "failover_steps"
+  "failover_steps",
+  "section_break_wkly",
+  "error"
  ],
  "fields": [
   {
@@ -52,13 +54,23 @@
    "label": "Failover Steps",
    "options": "Proxy Failover Steps",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_break_wkly",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Text",
+   "label": "Error",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-26 15:31:33.217528",
+ "modified": "2025-12-01 13:06:24.336533",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Failover",
