@@ -244,44 +244,40 @@ export default {
 			);
 		},
 		scaleUp() {
-			this.$appServer.scaleUp.submit(
-				{},
-				{
-					onSuccess: () => {
-						this.$toast.success('Starting scale up please wait a few minutes');
-						this.$router.push({
-							path: this.$appServer.name,
-							path: 'auto-scale',
-						});
-					},
-					onError(e) {
-						e.messages.forEach((message) => {
-							this.$toast.error(message);
-						});
-					},
+			toast.promise(this.$appServer.scaleUp.submit({}), {
+				loading: 'Starting scale up…',
+				success: () => {
+					this.$router.push({
+						path: this.$appServer.name,
+						path: 'auto-scale',
+					});
+					return 'Scale-up started. Please wait a few minutes.';
 				},
-			);
+				error: (e) => {
+					if (Array.isArray(e.messages)) {
+						return e.messages.join(', ');
+					}
+					return e.message || 'Scale-up failed';
+				},
+			});
 		},
 		scaleDown() {
-			this.$appServer.scaleDown.submit(
-				{},
-				{
-					onSuccess: () => {
-						this.$toast.success(
-							'Starting scale down please wait a few minutes',
-						);
-						this.$router.push({
-							path: this.$appServer.name,
-							path: 'auto-scale',
-						});
-					},
-					onError(e) {
-						e.messages.forEach((message) => {
-							this.$toast.error(message);
-						});
-					},
+			toast.promise(this.$appServer.scaleDown.submit({}), {
+				loading: 'Starting scale down…',
+				success: () => {
+					this.$router.push({
+						path: this.$appServer.name,
+						path: 'auto-scale',
+					});
+					return 'Scale-down started. Please wait a few minutes.';
 				},
-			);
+				error: (e) => {
+					if (Array.isArray(e.messages)) {
+						return e.messages.join(', ');
+					}
+					return e.message || 'Scale-down failed';
+				},
+			});
 		},
 		currentUsage(serverType) {
 			if (!this.$appServer?.doc) return [];
