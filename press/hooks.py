@@ -210,6 +210,7 @@ scheduler_events = {
 		"press.press.doctype.site.site.suspend_sites_exceeding_disk_usage_for_last_7_days",
 		"press.press.doctype.user_2fa.user_2fa.yearly_2fa_recovery_code_reminder",
 		"press.press.doctype.registry_server.registry_server.delete_old_images_from_registry",
+		"press.saas.doctype.product_trial_request.product_trial_request.gather_daily_stats",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -245,6 +246,7 @@ scheduler_events = {
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_expired_snapshots",
 		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
 		"press.press.doctype.press_webhook.press_webhook.auto_disable_high_delivery_failure_webhooks",
+		"press.saas.doctype.product_trial_request.product_trial_request.gather_hourly_stats",
 	],
 	"all": [
 		"press.auth.flush",
@@ -314,6 +316,7 @@ scheduler_events = {
 			"press.press.doctype.virtual_machine.virtual_machine.snapshot_aws_servers",
 			"press.press.doctype.app.app.poll_new_releases",
 			"press.utils.jobs.alert_on_zombie_rq_jobs",
+			"press.saas.doctype.product_trial.product_trial.replenish_standby_sites",
 		],
 		"* * * * *": [
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",
@@ -323,9 +326,9 @@ scheduler_events = {
 			"press.press.doctype.server_snapshot.server_snapshot.sync_ongoing_server_snapshots",
 			"press.press.doctype.site.site.create_subscription_for_trial_sites",
 			"press.press.doctype.monitor_server.monitor_server.check_monitoring_servers_rate_limit_key",
+			"press.press.doctype.auto_scale_record.auto_scale_record.run_scheduled_scale_records",
 		],
 		"*/10 * * * *": [
-			"press.saas.doctype.product_trial.product_trial.replenish_standby_sites",
 			"press.press.doctype.site.saas_pool.create",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_rolling_snapshots",
 			"press.press.doctype.database_server.database_server.auto_purge_binlogs_by_size_limit",
@@ -356,7 +359,10 @@ scheduler_events = {
 			"press.press.doctype.aws_savings_plan_recommendation.aws_savings_plan_recommendation.refresh",
 			"press.infrastructure.doctype.ssh_access_audit.ssh_access_audit.run",
 		],
-		"0 9 * * 2": ["press.press.doctype.build_metric.build_metric.create_build_metric"],
+		"0 9 * * 2": [
+			"press.press.doctype.build_metric.build_metric.create_build_metric",
+			"press.saas.doctype.product_trial_request.product_trial_request.gather_weekly_stats",
+		],
 	},
 }
 

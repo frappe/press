@@ -1,8 +1,8 @@
 ---
-- name: Move Bench To Shared Folder
+- name: Mount Shared Fs on Volume
   hosts: all
   become: yes
   become_user: root
   gather_facts: yes
   roles:
-    - role: move_bench_to_shared_directory
+  - role: mount_shared_fs_on_volume
