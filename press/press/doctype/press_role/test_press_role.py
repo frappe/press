@@ -17,6 +17,7 @@ class TestPressRole(FrappeTestCase):
 		frappe.db.delete("Press Role")
 		self.team_user = create_user("team@example.com")
 		self.team = create_test_team(self.team_user.email)
+		self.team.user = "Administrator"
 		self.team_member = create_user("user123@example.com")
 		self.team.append("team_members", {"user": self.team_member.name})
 		self.team.save()
