@@ -48,6 +48,7 @@ from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import 
 	MarketplaceAppPlan,
 )
 from press.press.doctype.communication_info.communication_info import get_communication_info
+from press.press.doctype.server.server import Server
 from press.saas.doctype.product_trial.product_trial import create_free_app_subscription
 from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture
@@ -969,12 +970,15 @@ class Site(Document, TagHelpers):
 		)
 
 	def check_space_on_server_for_restore(self):
-		app: "Server" = frappe.get_doc("Server", self.server)
+		app: Server = frappe.get_doc("Server", self.server)
 		self.check_and_increase_disk(app, self.restore_space_required_on_app)
 
 		if app.database_server:
-			db: "DatabaseServer" = frappe.get_doc("Database Server", app.database_server)
-			self.check_and_increase_disk(db, self.restore_space_required_on_db)
+			db: DatabaseServer = frappe.get_doc("Database Server", app.database_server)
+			space_required = self.restore_space_required_on_db
+			if db.ip == app.ip:
+				space_required += self.restore_space_required_on_app
+			self.check_and_increase_disk(db, space_required)
 
 	def create_agent_request(self):
 		agent = Agent(self.server)

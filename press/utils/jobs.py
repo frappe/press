@@ -2,19 +2,17 @@ import json
 import signal
 from collections.abc import Generator
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import frappe
 from frappe.core.doctype.rq_job.rq_job import fetch_job_ids
 from frappe.utils.background_jobs import get_queues, get_redis_conn
+from redis import Redis
 from rq.command import send_stop_job_command
 from rq.job import Job, JobStatus, NoSuchJobError, get_current_job
 from rq.queue import Queue
 
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
-
-if TYPE_CHECKING:
-	from redis import Redis
 
 
 def stop_background_job(job: Job):
@@ -31,7 +29,7 @@ def get_background_jobs(
 	doctype: str,
 	name: str,
 	status: list[str] | None = None,
-	connection: "Redis | None" = None,
+	connection: Redis | None = None,
 ) -> Generator[Job, Any, None]:
 	"""
 	Returns background jobs for a `doc` created using the `run_doc_method`
@@ -53,7 +51,7 @@ def get_background_jobs(
 
 def get_job_ids(
 	status: str | list[str],
-	connection: "Redis | None" = None,
+	connection: Redis | None = None,
 ) -> Generator[str, Any, None]:
 	if isinstance(status, str):
 		status = [status]

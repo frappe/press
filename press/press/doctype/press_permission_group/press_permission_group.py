@@ -1,6 +1,8 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
+from typing import ClassVar
+
 import frappe
 from frappe.model.document import Document
 
@@ -30,7 +32,7 @@ class PressPermissionGroup(Document):
 		users: DF.Table[PressPermissionGroupUser]
 	# end: auto-generated types
 
-	dashboard_fields = ["title", "users"]
+	dashboard_fields: ClassVar = ["title", "users"]
 
 	def get_doc(self, doc):
 		if doc.users:
@@ -52,7 +54,7 @@ class PressPermissionGroup(Document):
 		self.validate_permissions()
 		self.validate_users()
 
-	def validate_permissions(self):
+	def validate_permissions(self):  # noqa: C901
 		permissions = frappe.parse_json(self.permissions)
 		if not permissions:
 			self.permissions = DEFAULT_PERMISSIONS
@@ -80,7 +82,7 @@ class PressPermissionGroup(Document):
 				if not restrictable_methods:
 					frappe.throw(f"{doctype} does not have any restrictable methods.")
 
-				for method, permitted in doc_perms.items():
+				for method, _permitted in doc_perms.items():
 					if method != "*" and method not in restrictable_methods:
 						frappe.throw(f"{method} is not a restrictable method of {doctype}")
 
@@ -88,9 +90,7 @@ class PressPermissionGroup(Document):
 		for user in self.users:
 			if user.user == "Administrator":
 				continue
-			user_belongs_to_team = frappe.db.exists(
-				"Team Member", {"parent": self.team, "user": user.user}
-			)
+			user_belongs_to_team = frappe.db.exists("Team Member", {"parent": self.team, "user": user.user})
 			if not user_belongs_to_team:
 				frappe.throw(f"{user.user} does not belong to {self.team}")
 
@@ -125,9 +125,7 @@ class PressPermissionGroup(Document):
 
 		user_is_team_owner = frappe.db.exists("Team", {"name": self.team, "user": user})
 		if user_is_team_owner:
-			frappe.throw(
-				f"{user} cannot be added to {self.title} because they are the owner of {self.team}"
-			)
+			frappe.throw(f"{user} cannot be added to {self.title} because they are the owner of {self.team}")
 
 		self.append("users", {"user": user})
 		self.save()
@@ -214,9 +212,7 @@ class PressPermissionGroup(Document):
 		self.save()
 
 
-def has_method_permission(
-	doctype: str, name: str, method: str, group_names: list = None
-):
+def has_method_permission(doctype: str, name: str, method: str, group_names: list | None = None):
 	if frappe.local.system_user():
 		return True
 
@@ -241,7 +237,7 @@ def has_method_permission(
 	return False
 
 
-def get_permitted_methods(doctype: str, name: str, group_names: list = None) -> list:
+def get_permitted_methods(doctype: str, name: str, group_names: list | None = None) -> list:
 	user = frappe.session.user
 
 	if doctype not in get_all_restrictable_doctypes():
@@ -250,9 +246,7 @@ def get_permitted_methods(doctype: str, name: str, group_names: list = None) -> 
 	permissions_by_group = {}
 	permission_groups = group_names or get_permission_groups(user)
 	for group_name in set(permission_groups):
-		permissions_by_group[group_name] = get_method_perms_for_group(
-			doctype, name, group_name
-		)
+		permissions_by_group[group_name] = get_method_perms_for_group(doctype, name, group_name)
 
 	method_perms = resolve_doc_permissions(doctype, permissions_by_group)
 	permitted_methods = [method for method, permitted in method_perms.items() if permitted]
@@ -280,7 +274,7 @@ def get_method_perms_for_group(doctype: str, name: str, group_name: str) -> list
 	return doc_perms
 
 
-def resolve_doc_permissions(doctype, permissions_by_group: dict) -> dict:
+def resolve_doc_permissions(doctype, permissions_by_group: dict) -> dict:  # noqa: C901
 	"""
 	Permission Resolution Logic:
 	- if a group has *: True and another group has *: False, then all the methods are allowed
@@ -295,7 +289,7 @@ def resolve_doc_permissions(doctype, permissions_by_group: dict) -> dict:
 
 	# first we parse the wildcard permissions
 	# if any group has *: True, then all methods are allowed
-	for group_name, permissions in permissions_by_group.items():
+	for _group_name, permissions in permissions_by_group.items():
 		if permissions.get("*", None) is None:
 			continue
 		if permissions.get("*", None) is True:
@@ -306,13 +300,13 @@ def resolve_doc_permissions(doctype, permissions_by_group: dict) -> dict:
 
 	# now we restrict all the methods that are explicitly restricted
 	# so that we can allow all the methods that are explicitly allowed later
-	for group_name, permissions in permissions_by_group.items():
+	for _group_name, permissions in permissions_by_group.items():
 		for method, permitted in permissions.items():
 			if not permitted and method != "*":
 				method_perms[method] = False
 
 	# now we allow all the methods that are explicitly allowed
-	for group_name, permissions in permissions_by_group.items():
+	for _group_name, permissions in permissions_by_group.items():
 		for method, permitted in permissions.items():
 			if permitted and method != "*":
 				method_perms[method] = True
@@ -345,7 +339,7 @@ def get_all_restrictable_methods(doctype: str) -> list:
 	return methods.get(doctype, {})
 
 
-def get_permission_groups(user: str = None) -> list:
+def get_permission_groups(user: str | None = None) -> list:
 	if not user:
 		user = frappe.session.user
 
