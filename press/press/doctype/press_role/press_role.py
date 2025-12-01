@@ -147,7 +147,7 @@ class PressRole(Document):
 	@dashboard_whitelist()
 	def remove_user(self, user):
 		if not self.has_admin_access:
-			message = _("Only users with admin access can add users to this role")
+			message = _("Only users with admin access can remove users from this role")
 			frappe.throw(message, frappe.PermissionError)
 
 		user_exists = self.get("users", {"user": user})
