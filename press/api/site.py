@@ -27,11 +27,8 @@ from press.exceptions import (
 	AAAARecordExists,
 	ConflictingCAARecord,
 	ConflictingDNSRecord,
-<<<<<<< HEAD
-	DomainNoLongerPointed,
-=======
 	DNSValidationError,
->>>>>>> 9a5a5f825 (fix(site-api): Remove unnecessary casting)
+	DomainNoLongerPointed,
 	DomainProxied,
 	MultipleARecords,
 	MultipleCNAMERecords,
@@ -1844,7 +1841,7 @@ def ensure_dns_aaaa_record_doesnt_exist(domain: str):
 		pass  # We have other problems
 
 
-def get_proxy_and_redirected_status(domain) -> tuple[str | None, bool]:
+def get_proxy_and_redirected_status(domain) -> tuple[str | None, bool] | None:
 	try:
 		res = requests.head(f"http://{domain}/.well-known/acme-challenge/random", timeout=3)
 	except requests.exceptions.RequestException as e:
@@ -1853,18 +1850,12 @@ def get_proxy_and_redirected_status(domain) -> tuple[str | None, bool]:
 			DNSValidationError,
 		)
 	else:
-<<<<<<< HEAD
 		redirected = (
 			res.headers.get("location") == "http://ssl.frappe.cloud/.well-known/acme-challenge/random"
 		)
 		server = res.headers.get("server")  # eg: cloudflare
 		server = None if server == "Frappe Cloud" else server
 		return server, redirected
-=======
-		if (server := res.headers.get("server")) not in ("Frappe Cloud", None):  # eg: cloudflare
-			return server
-		return None
->>>>>>> e551cef22 (ci(mypy): Ignore no return codepaths)
 
 
 def _check_dns_cname_a(name, domain, ignore_proxying=False, throw_proxy_validation_early=True):

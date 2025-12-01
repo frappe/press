@@ -7,15 +7,7 @@ cd ~ || exit
 sudo apt update && sudo apt install redis-server libcups2-dev
 
 pip install frappe-bench
-<<<<<<< HEAD
-<<<<<<< HEAD
 bench init --skip-assets --python "$(which python)" ~/frappe-bench --frappe-path https://github.com/balamurali27/frappe --frappe-branch fc-ci
-=======
-bench init --skip-assets --python "$(which python)" ~/frappe-bench --frappe-path https://github.com/frappe/frappe --frappe-branch version-15
->>>>>>> 9f14afb9d (ci(github): Change frappe branch to v15 to see actual breaking tests)
-=======
-bench init --skip-assets --python "$(which python)" ~/frappe-bench --frappe-path https://github.com/balamurali27/frappe --frappe-branch fc-ci
->>>>>>> 80b19f4e7 (ci(github): Use slightly higher than version-15 frappe)
 
 mysql --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL character_set_server = 'utf8mb4'"
 mysql --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
