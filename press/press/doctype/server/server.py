@@ -2115,7 +2115,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 	def setup_wildcard_hosts(self):
 		agent = Agent(self.name, server_type=self.doctype)
 		wildcards = self.get_wildcard_domains()
-		agent.setup_wildcard_hosts(wildcards)
+		return agent.setup_wildcard_hosts(wildcards)
 
 	@property
 	def bastion_host(self):
