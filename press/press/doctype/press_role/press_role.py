@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 from press.api.client import dashboard_whitelist
@@ -107,8 +108,31 @@ class PressRole(Document):
 	def is_team_member(self, user):
 		return bool(frappe.db.exists("Team Member", {"parent": self.team, "user": user}))
 
+	@property
+	def has_admin_access(self) -> bool:
+		"""
+		Check if the current user has admin access on this team.
+
+		:return: True if the user has admin access, False otherwise.
+		"""
+
+		return frappe.db.get_value("Team", self.team, "user") == frappe.session.user or bool(
+			frappe.db.exists(
+				{
+					"doctype": "Press Role",
+					"user": frappe.session.user,
+					"team": self.team,
+					"admin_access": 1,
+				}
+			)
+		)
+
 	@dashboard_whitelist()
 	def add_user(self, user):
+		if not self.has_admin_access:
+			message = _("Only users with admin access can add users to this role")
+			frappe.throw(message, frappe.PermissionError)
+
 		user_exists = self.get("users", {"user": user})
 		if user_exists:
 			frappe.throw(f"{user} already belongs to {self.title}")
@@ -123,6 +147,10 @@ class PressRole(Document):
 
 	@dashboard_whitelist()
 	def remove_user(self, user):
+		if not self.has_admin_access:
+			message = _("Only users with admin access can remove users from this role")
+			frappe.throw(message, frappe.PermissionError)
+
 		user_exists = self.get("users", {"user": user})
 		if not user_exists:
 			frappe.throw(f"{user} does not belong to {self.title}")
