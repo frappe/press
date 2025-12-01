@@ -115,7 +115,8 @@ class PressRole(Document):
 
 		:return: True if the user has admin access, False otherwise.
 		"""
-		return bool(
+
+		return frappe.db.get_value("Team", self.team, "user") == frappe.session.user or bool(
 			frappe.db.exists(
 				{
 					"doctype": "Press Role",
