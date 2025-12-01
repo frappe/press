@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 import frappe
 import frappe.utils
@@ -105,8 +106,7 @@ class ProductTrial(Document):
 		standby_site = self.get_standby_site(cluster, account_request)
 
 		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
-		site = None
-		agent_job_name = None
+		agent_job_name: str | None = None
 		plan = self.trial_plan
 
 		if standby_site:
@@ -230,6 +230,7 @@ class ProductTrial(Document):
 			"Cluster", {"name": ("in", clusters), "public": 1}, order_by="name asc", pluck="name"
 		)
 
+	@staticmethod
 	def get_preferred_site(filters) -> str | None:
 		sites = frappe.db.get_all(
 			"Site",
@@ -316,7 +317,7 @@ class ProductTrial(Document):
 			for rule in self.hybrid_pool_rules:
 				self._create_standby_sites(cluster, rule)
 
-	def _create_standby_sites(self, cluster: str, rule: dict | None = None):
+	def _create_standby_sites(self, cluster: str, rule: HybridPoolItem | None = None):
 		if rule and rule.preferred_cluster and rule.preferred_cluster != cluster:
 			return
 
@@ -333,7 +334,7 @@ class ProductTrial(Document):
 			self.create_standby_site(cluster, rule)
 			frappe.db.commit()
 
-	def create_standby_site(self, cluster: str, rule: dict | None = None):
+	def create_standby_site(self, cluster: str, rule: HybridPoolItem | None = None):
 		from frappe.core.utils import find
 
 		administrator = frappe.db.get_value("Team", {"user": "Administrator"}, "name")
@@ -367,29 +368,22 @@ class ProductTrial(Document):
 		site.insert(ignore_permissions=True)
 
 	def get_standby_sites_count(self, cluster: str, hybrid_for: str | None = None):
-		active_standby_sites = frappe.db.count(
+		one_hour_ago = frappe.utils.add_to_date(None, hours=-1)
+		site_list = frappe.db.get_list(
 			"Site",
-			{
+			filters={
 				"cluster": cluster,
 				"is_standby": 1,
 				"standby_for_product": self.name,
-				"status": "Active",
 				"hybrid_for": hybrid_for,
 			},
+			or_filters=[
+				{"status": "Active"},
+				{"creation": (">", one_hour_ago), "status": ("not in", ["Archived", "Suspended"])},
+			],
+			pluck="name",
 		)
-		# sites that are created in the last hour
-		recent_standby_sites = frappe.db.count(
-			"Site",
-			{
-				"cluster": cluster,
-				"is_standby": 1,
-				"standby_for_product": self.name,
-				"status": ("not in", ["Archived", "Suspended"]),
-				"creation": (">", frappe.utils.add_to_date(None, hours=-1)),
-				"hybrid_for": hybrid_for,
-			},
-		)
-		return active_standby_sites + recent_standby_sites
+		return len(site_list)
 
 	def get_unique_site_name(self):
 		subdomain = f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}"
@@ -460,7 +454,7 @@ def create_free_app_subscription(app: str, site: str | None = None):
 
 def get_app_subscriptions_site_config(apps: list[str], site: str | None = None) -> dict:
 	subscriptions = []
-	site_config = {}
+	site_config: dict[str, Any] = {}
 
 	for app in apps:
 		if not (s := create_free_app_subscription(app, site)):
@@ -563,13 +557,15 @@ def sync_product_site_users():
 		)
 
 
-def send_suspend_mail(site: str, product: str) -> None:
+def send_suspend_mail(site_name: str, product_name: str) -> None:
 	"""Send suspension mail to the site owner."""
 
-	site = frappe.db.get_value("Site", site, ["team", "trial_end_date", "name", "host_name"], as_dict=True)
+	site = frappe.db.get_value(
+		"Site", site_name, ["team", "trial_end_date", "name", "host_name"], as_dict=True
+	)
 	product = frappe.db.get_value(
 		"Product Trial",
-		product,
+		product_name,
 		["title", "suspension_email_subject", "suspension_email_content", "email_full_logo", "logo"],
 		as_dict=True,
 	)
