@@ -1,5 +1,6 @@
 import json
 import time
+from contextlib import suppress
 from enum import Enum
 from typing import Literal
 
@@ -287,6 +288,7 @@ class Status(str, Enum):
 	Pending = "Pending"
 	Running = "Running"
 	Success = "Success"
+	Skipped = "Skipped"
 	Failure = "Failure"
 
 	def __str__(self):
@@ -310,11 +312,8 @@ class StepHandler:
 		step.attempt = 1 if not step.attempt else step.attempt + 1
 
 		# Try to sync status in every attempt
-		try:
-			virtual_machine = frappe.get_doc("Virtual Machine", virtual_machine)
-			virtual_machine.sync()
-		except Exception:
-			pass
+		with suppress(Exception):
+			frappe.get_doc("Virtual Machine", virtual_machine).sync()
 
 		machine_status = frappe.db.get_value("Virtual Machine", virtual_machine, "status")
 		step.status = Status.Running if machine_status != expected_status else Status.Success
@@ -374,21 +373,8 @@ class StepHandler:
 		frappe.db.commit()
 
 	def handle_step_failure(self):
-		team = frappe.db.get_value("Server", self.primary_server, "team")
-		press_notification = frappe.get_doc(
-			{
-				"doctype": "Press Notification",
-				"team": team,
-				"type": "Auto Scale",
-				"document_type": self.doctype,
-				"document_name": self.name,
-				"class": "Error",
-				"traceback": frappe.get_traceback(with_context=False),
-				"message": "Error occurred during auto scale",
-			}
-		)
-		press_notification.insert()
-		frappe.db.commit()
+		# can be implemented by the controller
+		pass
 
 	def get_steps(self, methods: list) -> list[dict]:
 		"""Generate a list of steps to be executed for NFS volume attachment."""
@@ -407,7 +393,7 @@ class StepHandler:
 
 	def next_step(self, steps: list[GenericStep]) -> GenericStep | None:
 		for step in steps:
-			if step.status not in (Status.Success, Status.Failure):
+			if step.status not in (Status.Success, Status.Failure, Status.Skipped):
 				return step
 
 		return None
