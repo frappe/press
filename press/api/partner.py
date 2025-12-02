@@ -147,7 +147,7 @@ def transfer_credits(amount, customer, partner):
 	partner_doc = frappe.get_doc("Team", partner)
 	credits_available = partner_doc.get_balance()
 	partner_level = partner_doc.get_partner_level()
-	discount_percent = DISCOUNT_MAP.get(partner_level)
+	discount_percent = DISCOUNT_MAP.get(partner_level[0]) if partner_level else 0
 
 	if credits_available < amt:
 		frappe.throw(f"Insufficient Credits to transfer. Credits Available: {credits_available}")
