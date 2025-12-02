@@ -41,8 +41,13 @@ func (r SQLSourceMetadata) String() string {
 	return fmt.Sprintf("Type: %s\tTables: %s", r.Type, tablesString)
 }
 
+// StringInterner interface for string deduplication
+type StringInterner interface {
+	internString(s string) string
+}
+
 // ExtractSQLMetadata extracts database/table pairs and statement type from SQL
-func ExtractSQLMetadata(sql string, parser *sqlparser.Parser, defaultDatabase string) SQLSourceMetadata {
+func ExtractSQLMetadata(sql string, parser *sqlparser.Parser, defaultDatabase string, interner StringInterner) SQLSourceMetadata {
 	result := SQLSourceMetadata{
 		Tables: []*SQLTable{},
 		Type:   Other,
@@ -61,8 +66,8 @@ func ExtractSQLMetadata(sql string, parser *sqlparser.Parser, defaultDatabase st
 				if tblExpr, ok := table.(*sqlparser.AliasedTableExpr); ok {
 					if table, err := tblExpr.TableName(); err == nil {
 						result.Tables = append(result.Tables, &SQLTable{
-							Database: table.Qualifier.String(),
-							Table:    table.Name.String(),
+							Database: interner.internString(table.Qualifier.String()),
+							Table:    interner.internString(table.Name.String()),
 						})
 					}
 				}
@@ -73,8 +78,8 @@ func ExtractSQLMetadata(sql string, parser *sqlparser.Parser, defaultDatabase st
 			result.Type = Insert
 			if table, err := node.Table.TableName(); err == nil {
 				result.Tables = append(result.Tables, &SQLTable{
-					Database: table.Qualifier.String(),
-					Table:    table.Name.String(),
+					Database: interner.internString(table.Qualifier.String()),
+					Table:    interner.internString(table.Name.String()),
 				})
 			}
 			return false, nil
@@ -85,8 +90,8 @@ func ExtractSQLMetadata(sql string, parser *sqlparser.Parser, defaultDatabase st
 				if tblExpr, ok := expr.(*sqlparser.AliasedTableExpr); ok {
 					if table, err := tblExpr.TableName(); err == nil {
 						result.Tables = append(result.Tables, &SQLTable{
-							Database: table.Qualifier.String(),
-							Table:    table.Name.String(),
+							Database: interner.internString(table.Qualifier.String()),
+							Table:    interner.internString(table.Name.String()),
 						})
 					}
 				}
@@ -99,8 +104,8 @@ func ExtractSQLMetadata(sql string, parser *sqlparser.Parser, defaultDatabase st
 				if tblExpr, ok := expr.(*sqlparser.AliasedTableExpr); ok {
 					if table, err := tblExpr.TableName(); err == nil {
 						result.Tables = append(result.Tables, &SQLTable{
-							Database: table.Qualifier.String(),
-							Table:    table.Name.String(),
+							Database: interner.internString(table.Qualifier.String()),
+							Table:    interner.internString(table.Name.String()),
 						})
 					}
 				}
@@ -113,9 +118,10 @@ func ExtractSQLMetadata(sql string, parser *sqlparser.Parser, defaultDatabase st
 
 	// Set default database if database is empty
 	if defaultDatabase != "" {
+		internedDefault := interner.internString(defaultDatabase)
 		for _, table := range result.Tables {
 			if strings.Compare(table.Database, "") == 0 {
-				table.Database = defaultDatabase
+				table.Database = internedDefault
 			}
 		}
 	}
@@ -124,7 +130,7 @@ func ExtractSQLMetadata(sql string, parser *sqlparser.Parser, defaultDatabase st
 	if len(result.Tables) == 0 && defaultDatabase != "" {
 		result.Tables = []*SQLTable{
 			{
-				Database: defaultDatabase,
+				Database: interner.internString(defaultDatabase),
 				Table:    "",
 			},
 		}

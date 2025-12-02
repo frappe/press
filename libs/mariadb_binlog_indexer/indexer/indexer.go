@@ -45,8 +45,9 @@ type BinlogIndexer struct {
 	binlogPath string
 
 	// State
-	queries      []Query
-	currentRowId int32
+	queries         []Query
+	currentRowId    int32
+	estimatedMemory int64 // Track estimated memory usage in bytes
 
 	// Internal
 	db        *sql.DB
@@ -55,6 +56,9 @@ type BinlogIndexer struct {
 	parser    *replication.BinlogParser
 	sqlParser *sqlparser.Parser
 	isClosed  bool
+
+	// String interning for memory optimization
+	stringCache map[string]string
 
 	// AnnotateRowsEvent parsing related
 	annotateRowsEvent          *replication.MariadbAnnotateRowsEvent
@@ -124,19 +128,90 @@ func NewBinlogIndexer(basePath string, binlogPath string, databaseFilename strin
 	parquetWriter.CompressionType = parquet.CompressionCodec_ZSTD
 
 	return &BinlogIndexer{
-		BatchSize:      batchSize,
-		binlogName:     binlogFilename,
-		binlogPath:     binlogPath,
-		queries:        make([]Query, 0),
-		currentRowId:   1,
-		db:             db,
-		fw:             fw,
-		pw:             parquetWriter,
-		parser:         replication.NewBinlogParser(),
-		sqlParser:      sql_parser,
-		isClosed:       false,
-		tableMapEvents: make([][]string, 0),
+		BatchSize:       batchSize,
+		binlogName:      binlogFilename,
+		binlogPath:      binlogPath,
+		queries:         make([]Query, 0, batchSize),
+		currentRowId:    1,
+		estimatedMemory: 0,
+		db:              db,
+		fw:              fw,
+		pw:              parquetWriter,
+		parser:          replication.NewBinlogParser(),
+		sqlParser:       sql_parser,
+		isClosed:        false,
+		stringCache:     make(map[string]string),
+		tableMapEvents:  make([][]string, 0, 4), // Most queries affect 1-4 tables
 	}, nil
+}
+
+// internString deduplicates strings to reduce memory usage
+// Database and table names are repeated frequently across events
+func (p *BinlogIndexer) internString(s string) string {
+	if s == "" {
+		return ""
+	}
+	if interned, exists := p.stringCache[s]; exists {
+		return interned
+	}
+	p.stringCache[s] = s
+	return s
+}
+
+// bytesToString converts []byte to string efficiently
+// Uses the string directly to allow interning
+func (p *BinlogIndexer) bytesToString(b []byte) string {
+	return p.internString(string(b))
+}
+
+// detectQueryType quickly detects SQL statement type from prefix
+// This is much faster than full SQL parsing - uses byte comparison
+func detectQueryType(sql string) StatementType {
+	// Skip leading whitespace
+	i := 0
+	for i < len(sql) && (sql[i] == ' ' || sql[i] == '\t' || sql[i] == '\n' || sql[i] == '\r') {
+		i++
+	}
+
+	if i >= len(sql) {
+		return Other
+	}
+
+	// Fast byte-level comparison (case-insensitive)
+	// Check first character to quickly filter
+	firstChar := sql[i] | 0x20 // Convert to lowercase
+	switch firstChar {
+	case 's': // SELECT
+		if i+6 <= len(sql) {
+			word := sql[i : i+6]
+			if strings.EqualFold(word, "SELECT") {
+				return Select
+			}
+		}
+	case 'i': // INSERT
+		if i+6 <= len(sql) {
+			word := sql[i : i+6]
+			if strings.EqualFold(word, "INSERT") {
+				return Insert
+			}
+		}
+	case 'u': // UPDATE
+		if i+6 <= len(sql) {
+			word := sql[i : i+6]
+			if strings.EqualFold(word, "UPDATE") {
+				return Update
+			}
+		}
+	case 'd': // DELETE
+		if i+6 <= len(sql) {
+			word := sql[i : i+6]
+			if strings.EqualFold(word, "DELETE") {
+				return Delete
+			}
+		}
+	}
+
+	return Other
 }
 
 func (p *BinlogIndexer) Start() error {
@@ -167,7 +242,10 @@ func (p *BinlogIndexer) onBinlogEvent(e *replication.BinlogEvent) error {
 		}
 	case replication.TABLE_MAP_EVENT:
 		if event, ok := e.Event.(*replication.TableMapEvent); ok {
-			p.tableMapEvents = append(p.tableMapEvents, []string{string(event.Schema), string(event.Table)})
+			p.tableMapEvents = append(p.tableMapEvents, []string{
+				p.bytesToString(event.Schema),
+				p.bytesToString(event.Table),
+			})
 			p.annotateRowsEventSize += e.Header.EventSize
 		}
 	case replication.WRITE_ROWS_EVENTv1, replication.UPDATE_ROWS_EVENTv1, replication.DELETE_ROWS_EVENTv1:
@@ -176,7 +254,12 @@ func (p *BinlogIndexer) onBinlogEvent(e *replication.BinlogEvent) error {
 		}
 	case replication.QUERY_EVENT:
 		if event, ok := e.Event.(*replication.QueryEvent); ok {
-			p.addQuery(string(event.Query), string(event.Schema), e.Header.Timestamp, e.Header.EventSize)
+			p.addQuery(
+				string(event.Query),
+				p.bytesToString(event.Schema),
+				e.Header.Timestamp,
+				e.Header.EventSize,
+			)
 		}
 		commitAnnotateRowsEvent = true
 	default:
@@ -199,49 +282,64 @@ func (p *BinlogIndexer) commitAnnotateRowsEvent() {
 		return
 	}
 
-	metadata := ExtractSQLMetadata(string(p.annotateRowsEvent.Query), p.sqlParser, "")
-	metadata.Tables = make([]*SQLTable, 0)
+	sqlQuery := string(p.annotateRowsEvent.Query)
+	// For annotate rows events, we already have table info from TABLE_MAP_EVENT
+	// Skip expensive SQL parsing and use the table map directly
+	metadata := SQLSourceMetadata{
+		Type:   detectQueryType(sqlQuery), // Fast prefix detection, no parsing
+		Tables: make([]*SQLTable, 0, len(p.tableMapEvents)),
+	}
 	for _, table := range p.tableMapEvents {
 		metadata.Tables = append(metadata.Tables, &SQLTable{
-			Database: table[0],
-			Table:    table[1],
+			Database: table[0], // Already interned
+			Table:    table[1], // Already interned
 		})
 	}
 
-	p.queries = append(p.queries, Query{
+	query := Query{
 		Timestamp: p.annotateRowsEventTimestamp,
 		Metadata:  metadata,
 		RowId:     p.currentRowId,
 		EventSize: p.annotateRowsEventSize,
-		SQL:       string(p.annotateRowsEvent.Query),
-	})
+		SQL:       sqlQuery,
+	}
+
+	// Track memory usage
+	p.estimatedMemory += int64(len(sqlQuery) + 32) // SQL + struct overhead
+	p.queries = append(p.queries, query)
 	p.currentRowId += 1
 
-	// reset
+	// reset - reuse slice capacity
 	p.annotateRowsEvent = nil
 	p.annotateRowsEventSize = 0
 	p.annotateRowsEventTimestamp = 0
-	p.tableMapEvents = make([][]string, 0)
+	p.tableMapEvents = p.tableMapEvents[:0]
 
 	p.flushIfNeeded()
 }
 
 func (p *BinlogIndexer) addQuery(query string, schema string, timestamp uint32, eventSize uint32) {
-	metadata := ExtractSQLMetadata(query, p.sqlParser, string(schema))
+	metadata := ExtractSQLMetadata(query, p.sqlParser, schema, p)
 
-	p.queries = append(p.queries, Query{
+	q := Query{
 		Timestamp: timestamp,
 		Metadata:  metadata,
 		RowId:     p.currentRowId,
 		EventSize: eventSize,
 		SQL:       query,
-	})
+	}
+
+	// Track memory usage
+	p.estimatedMemory += int64(len(query) + 32) // SQL + struct overhead
+	p.queries = append(p.queries, q)
 	p.currentRowId += 1
 	p.flushIfNeeded()
 }
 
 func (p *BinlogIndexer) flushIfNeeded() {
-	if len(p.queries) >= p.BatchSize {
+	// Flush based on either batch size or memory usage (50MB threshold)
+	const maxMemoryBytes = 50 * 1024 * 1024 // 50MB
+	if len(p.queries) >= p.BatchSize || p.estimatedMemory > maxMemoryBytes {
 		err := p.flush()
 		if err != nil {
 			fmt.Printf("[WARN] failed to flush: %v\n", err)
@@ -264,23 +362,47 @@ func (p *BinlogIndexer) flush() error {
 		_ = tx.Rollback()
 	}()
 
-	// Write the queries to db
-	batch := make([]string, 0, len(p.queries))
+	// Write the queries to db using strings.Builder for efficiency
+	// Estimate size: each row is ~100 bytes on average
+	var builder strings.Builder
+	totalRows := 0
+	for _, query := range p.queries {
+		totalRows += len(query.Metadata.Tables)
+	}
+	builder.Grow(totalRows * 100) // Pre-allocate to avoid reallocations
+
+	first := true
 	for _, query := range p.queries {
 		for _, table := range query.Metadata.Tables {
-			batch = append(batch, fmt.Sprintf("('%s', '%s', '%s', %d, '%s', %d, %d)",
-				p.binlogName, table.Database, table.Table, query.Timestamp, query.Metadata.Type, query.RowId, query.EventSize))
+			if !first {
+				builder.WriteByte(',')
+			}
+			first = false
+
+			// Manually build the string to avoid fmt.Sprintf allocations
+			builder.WriteString("('")
+			builder.WriteString(p.binlogName)
+			builder.WriteString("', '")
+			builder.WriteString(table.Database)
+			builder.WriteString("', '")
+			builder.WriteString(table.Table)
+			builder.WriteString("', ")
+			builder.WriteString(itoa(int(query.Timestamp)))
+			builder.WriteString(", '")
+			builder.WriteString(string(query.Metadata.Type))
+			builder.WriteString("', ")
+			builder.WriteString(itoa(int(query.RowId)))
+			builder.WriteString(", ")
+			builder.WriteString(itoa(int(query.EventSize)))
+			builder.WriteByte(')')
 		}
 	}
 
 	// Insert the queries
-	_, err = tx.Exec(fmt.Sprintf(INSERT_QUERY_SQL, strings.Join(batch, ",")))
+	_, err = tx.Exec(fmt.Sprintf(INSERT_QUERY_SQL, builder.String()))
 	if err != nil {
 		return fmt.Errorf("failed to insert queries: %w", err)
 	}
-
-	// Release memory of batch
-	batch = nil
 
 	// Insert all query in parquet file
 	for _, query := range p.queries {
@@ -298,8 +420,19 @@ func (p *BinlogIndexer) flush() error {
 		return fmt.Errorf("failed to commit db transaction: %w", err)
 	}
 
-	// Clear the queries
-	p.queries = make([]Query, 0)
+	// Clear the queries - reuse slice capacity if reasonable
+	p.estimatedMemory = 0
+	p.queries = p.queries[:0]
+
+	// If slice grew too large, reset it to prevent holding too much memory
+	if cap(p.queries) > p.BatchSize*2 {
+		p.queries = make([]Query, 0, p.BatchSize)
+	}
+
+	// Periodically clear string cache if it grows too large (> 10000 entries)
+	if len(p.stringCache) > 10000 {
+		p.stringCache = make(map[string]string, 1000)
+	}
 
 	return nil
 }
@@ -325,6 +458,11 @@ func (p *BinlogIndexer) Close() {
 	if err := p.db.Close(); err != nil {
 		fmt.Printf("[WARN] failed to close db: %v\n", err)
 	}
+
+	// Free memory
+	p.queries = nil
+	p.tableMapEvents = nil
+	p.stringCache = nil
 
 	p.isClosed = true
 }
