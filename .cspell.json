@@ -699,9 +699,15 @@
         "Zpyihv",
         "Zvkq",
 <<<<<<< HEAD
+<<<<<<< HEAD
         "Wazuh"
 =======
         "segs"
 >>>>>>> 3abf88db7 (chore(ui): Vendor TimePicker and DateTimePicker from frappe-ui)
+=======
+        "segs",
+	"interner",
+	"sprintf"
+>>>>>>> ba6db5a7c (perf(mariadb-binlog-indexer): Optimize for memory)
     ]
 }
