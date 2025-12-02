@@ -1510,7 +1510,7 @@ class Site(Document, TagHelpers):
 		site_domain.remove_redirect()
 
 	@dashboard_whitelist()
-	@site_action(["Active", "Broken", "Suspended"])
+	@site_action(["Active", "Broken", "Inactive", "Suspended"])
 	def archive(self, site_name=None, reason=None, force=False):
 		agent = Agent(self.server)
 		self.status = "Pending"
