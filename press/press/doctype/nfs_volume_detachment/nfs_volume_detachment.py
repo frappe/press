@@ -284,6 +284,27 @@ class NFSVolumeDetachment(Document, StepHandler):
 		except Exception:
 			raise
 
+	def remove_subscription_record(self, step: "NFSVolumeDetachmentStep"):
+		"""Disable the subscription record for secondary server"""
+		step.status = Status.Running
+		step.save()
+
+		team = frappe.db.get_value("Server", self.primary_server, "team")
+
+		if frappe.db.exists(
+			"Subscription",
+			{"document_name": self.secondary_server, "team": team, "plan_type": "Server Plan"},
+		):
+			frappe.db.set_value(
+				"Subscription",
+				{"document_name": self.secondary_server, "team": team, "plan_type": "Server Plan"},
+				"enabled",
+				0,
+			)
+
+		step.status = Status.Success
+		step.save()
+
 	def before_insert(self):
 		"""Append defined steps to the document before saving."""
 		for step in self.get_steps(
@@ -297,6 +318,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 				self.remove_servers_from_acl,
 				self.wait_for_acl_deletion,
 				self.mark_attachment_as_archived,
+				self.remove_subscription_record,
 				self.not_ready_to_auto_scale,
 			]
 		):

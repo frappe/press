@@ -113,23 +113,19 @@ export default {
 	},
 	methods: {
 		setupSecondaryServer() {
-			if (this.plan.name != this.$server.doc.current_plan.name) {
-				return this.$server.setupSecondaryServer.submit(
-					{ server_plan: this.plan.name },
-					{
-						onSuccess: () => {
-							this.show = false;
-							this.$toast.success('Starting secondary server setup');
-							this.$router.push({
-								path: this.$server.doc.name,
-								path: 'plays',
-							});
-						},
+			return this.$server.setupSecondaryServer.submit(
+				{ server_plan: this.plan.name },
+				{
+					onSuccess: () => {
+						this.show = false;
+						this.$toast.success('Starting secondary server setup');
+						this.$router.push({
+							path: this.$server.doc.name,
+							path: 'plays',
+						});
 					},
-				);
-			} else {
-				this.$toast.error('Please select a plan!');
-			}
+				},
+			);
 		},
 	},
 	computed: {
