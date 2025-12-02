@@ -205,6 +205,7 @@ import {
 import { computed, ref, inject, h, defineAsyncComponent } from 'vue';
 import router from '../../router';
 import { switchToTeam } from '../../data/team';
+import { toast } from 'vue-sonner';
 
 const team = inject('team');
 const {
@@ -231,6 +232,11 @@ const billingDetails = createResource({
 const changePaymentMode = createResource({
 	url: 'press.api.billing.change_payment_mode',
 	onSuccess: () => setTimeout(() => team.reload(), 1000),
+	onError: (error) => {
+		toast.error(
+			error.message || 'Failed to change payment mode. Please try again.',
+		);
+	}
 });
 
 const billingDetailsSummary = computed(() => {

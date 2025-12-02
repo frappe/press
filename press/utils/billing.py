@@ -2,8 +2,9 @@ import re
 
 import frappe
 import razorpay
+import requests
 import stripe
-from frappe.utils import fmt_money
+from frappe.utils import fmt_money, random_string
 
 from press.exceptions import CentralServerNotSet, FrappeioServerNotSet
 from press.utils import get_current_team, log_error
@@ -122,8 +123,6 @@ def get_publishable_key():
 
 
 def get_setup_intent(team):
-	from frappe.utils import random_string
-
 	intent = frappe.cache().hget("setup_intent", team)
 	if not intent:
 		data = frappe.db.get_value("Team", team, ["stripe_customer_id", "currency"])
@@ -197,6 +196,23 @@ def validate_gstin_check_digit(gstin, label="GSTIN"):
 		frappe.throw(
 			f"""Invalid {label}! The check digit validation has failed. Please ensure you've typed the {label} correctly."""
 		)
+
+
+def fetch_gstin_details(gstin, action="TP"):
+	url = "https://asp.resilient.tech/commonapi/search"
+	hash = random_string(10)
+	team = get_current_team()
+	headers = {
+		"requestid": f"GST{hash}{team}",
+		"x-api-key": frappe.db.get_single_value("Press Settings", "ic_key"),
+	}
+	data = {
+		"gstin": gstin,
+		"action": action,
+	}
+	response = requests.get(url, headers=headers, params=data)
+	print(response.status_code, response.json())
+	return response.json()
 
 
 def get_razorpay_client():
