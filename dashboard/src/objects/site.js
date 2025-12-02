@@ -65,6 +65,7 @@ export default {
 		getBackupDownloadLink: 'get_backup_download_link',
 		fetchDatabaseTableSchemas: 'fetch_database_table_schemas',
 		fetchSitesDataForExport: 'fetch_sites_data_for_export',
+		extendTrial: 'extend_trial',
 	},
 	list: {
 		route: '/sites',
@@ -1710,6 +1711,48 @@ export default {
 								.submit({ reason: '' })
 								.then((url) => window.open(url, '_blank'));
 						}
+					},
+				},
+				{
+					label: 'Extend Trial',
+					theme: 'blue',
+					condition: () =>
+						site.doc.trial_end_date &&
+						dayjs(site.doc.trial_end_date).diff(dayjs(), 'days') >= 0 &&
+						dayjs(site.doc.trial_end_date).diff(dayjs(), 'days') <= 3,
+					onClick() {
+						// console.log(site.doc.trial_end_date, dayjs().add(3, 'day').format('YYYY-MM-DD'));
+						// console.log();
+						// console.log('Extend Trial clicked');
+						confirmDialog({
+							title: 'Extend Trial',
+							message: `Are you sure you want to extend the trial period for the site <b>${site.doc?.name}</b> by 7 days?`,
+							fields:
+								$team.name !== site.doc.team || $team.doc.is_desk_user
+									? [
+											{
+												label: 'Reason',
+												type: 'textarea',
+												fieldname: 'reason',
+											},
+										]
+									: [],
+							onSuccess({ hide, values }) {
+								if (
+									!values.reason &&
+									($team.name !== site.doc.team || $team.doc.is_desk_user)
+								) {
+									throw new Error('Reason is required');
+								}
+								return site.extendTrial
+									.submit({ reason: values.reason })
+									.then((res) => {
+										console.log(res);
+										hide();
+										toast.success('Trial extended by 7 days');
+									});
+							},
+						});
 					},
 				},
 				{

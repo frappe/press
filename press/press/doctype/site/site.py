@@ -1704,6 +1704,19 @@ class Site(Document, TagHelpers):
 		log_site_activity(self.name, "Login as Administrator", reason=reason)
 		return self.get_login_sid()
 
+	@dashboard_whitelist()
+	@site_action(["Active"])
+	def extend_trial(self, reason=None):
+		frappe.get_doc(
+			{
+				"doctype": "Site Trial Extension",
+				"site": self.name,
+				"reason": reason,
+				"date": frappe.utils.add_days(frappe.utils.nowdate(), 7),
+			}
+		).insert().submit()
+		return "ok"
+
 	def create_user_with_team_info(self):
 		team_user = frappe.db.get_value("Team", self.team, "user")
 		user = frappe.get_doc("User", team_user)
