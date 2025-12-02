@@ -369,21 +369,27 @@ class ProductTrial(Document):
 
 	def get_standby_sites_count(self, cluster: str, hybrid_for: str | None = None):
 		one_hour_ago = frappe.utils.add_to_date(None, hours=-1)
-		site_list = frappe.db.get_list(
-			"Site",
-			filters={
-				"cluster": cluster,
-				"is_standby": 1,
-				"standby_for_product": self.name,
-				"hybrid_for": hybrid_for,
-			},
-			or_filters=[
-				{"status": "Active"},
-				{"creation": (">", one_hour_ago), "status": ("not in", ["Archived", "Suspended"])},
-			],
-			pluck="name",
+		Site = frappe.qb.DocType("Site")
+		query = (
+			frappe.qb.from_(Site)
+			.select(Site.name)
+			.distinct()
+			.where(
+				(Site.cluster == cluster) & (Site.is_standby == 1) & (Site.standby_for_product == self.name)
+			)
 		)
-		return len(site_list)
+
+		if hybrid_for is None:
+			query = query.where(Site.hybrid_for.isnull())
+		else:
+			query = query.where(Site.hybrid_for == hybrid_for)
+
+		query = query.where(
+			(Site.status == "Active")
+			| ((Site.creation > one_hour_ago) & (Site.status.notin(["Archived", "Suspended"])))
+		)
+		standby_sites = query.run(pluck=True)
+		return len(standby_sites)
 
 	def get_unique_site_name(self):
 		subdomain = f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}"
