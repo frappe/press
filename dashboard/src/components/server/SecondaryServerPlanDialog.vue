@@ -59,6 +59,7 @@
 								(p) => p.premium === 0,
 							)
 				"
+				:hourly-pricing="true"
 			/>
 			<ErrorMessage class="mt-2" :message="$server.changePlan.error" />
 		</template>
@@ -98,12 +99,11 @@ export default {
 	resources: {
 		secondaryServerPlans() {
 			return {
-				url: 'press.api.server.plans',
+				url: 'press.api.server.secondary_server_plans',
 				params: {
 					name: 'Server',
 					cluster: this.$server.doc.cluster,
 					platform: this.$server.doc.current_plan.platform,
-					show_secondary_application_server_plans: true,
 					current_plan: this.$server.doc.current_plan.name,
 				},
 				auto: true,
