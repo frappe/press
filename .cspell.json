@@ -698,6 +698,10 @@
         "zloirock",
         "Zpyihv",
         "Zvkq",
+<<<<<<< HEAD
         "Wazuh"
+=======
+        "segs"
+>>>>>>> 3abf88db7 (chore(ui): Vendor TimePicker and DateTimePicker from frappe-ui)
     ]
 }
