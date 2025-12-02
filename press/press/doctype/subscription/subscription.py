@@ -33,7 +33,7 @@ class Subscription(Document):
 		document_name: DF.DynamicLink
 		document_type: DF.Link
 		enabled: DF.Check
-		interval: DF.Literal["Daily", "Monthly"]
+		interval: DF.Literal["Hourly", "Daily", "Monthly"]
 		marketplace_app_subscription: DF.Link | None
 		plan: DF.DynamicLink
 		plan_type: DF.Link
@@ -170,6 +170,12 @@ class Subscription(Document):
 			price = plan.price_inr if team.currency == "INR" else plan.price_usd
 			price_per_day = price / plan.period  # no rounding off to avoid discrepancies
 			amount = flt((price_per_day * cint(self.additional_storage)), 2)
+
+		elif self.plan_type == "Server Plan" and self.document_type == "Server":
+			is_primary = frappe.db.get_value("Server", self.document_name, "is_primary")
+			if not is_primary:
+				return None  # If the server is not a primary server don't create a usage record here
+
 		elif self.plan_type == "Server Snapshot Plan":
 			price = plan.price_inr if team.currency == "INR" else plan.price_usd
 			price_per_day = price / plan.period  # no rounding off to avoid discrepancies
