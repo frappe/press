@@ -156,7 +156,7 @@ const totalUnpaidAmount = createResource({
 const minimumAmount = computed(() => {
 	if (props.minimumAmount) return props.minimumAmount;
 	if (!team.doc) return 0;
-	const unpaidAmount = totalUnpaidAmount.data || 0;
+	let unpaidAmount = totalUnpaidAmount.data || 0;
 	const minimumDefault = team.doc?.currency == 'INR' ? 410 : 5;
 
 	if (unpaidAmount > 100000 && team.doc?.currency == 'INR') {
