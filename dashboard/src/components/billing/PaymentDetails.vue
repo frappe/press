@@ -236,7 +236,7 @@ const changePaymentMode = createResource({
 		toast.error(
 			error.message || 'Failed to change payment mode. Please try again.',
 		);
-	}
+	},
 });
 
 const billingDetailsSummary = computed(() => {
