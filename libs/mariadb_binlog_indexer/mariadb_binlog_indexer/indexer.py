@@ -97,6 +97,7 @@ class Indexer:
 		end_timestamp: int,
 		type: QUERY_TYPES | None = None,
 		database: str | None = None,
+		table: str | None = None,
 	):
 		"""
 		Args:
@@ -153,6 +154,14 @@ class Indexer:
 		if database is not None:
 			where_clause += " AND q.db_name = ? "
 			parameters.append(database)
+
+		if table is not None:
+			# Check if it's a like search or exact match
+			if table.startswith("%") or table.endswith("%"):
+				where_clause += " AND q.table_name LIKE ? "
+			else:
+				where_clause += " AND q.table_name = ? "
+			parameters.append(table)
 
 		query_result = self._execute_query(
 			"db",
@@ -229,7 +238,11 @@ class Indexer:
 			where_clause += " AND db_name = ? "
 			parameters.append(database)
 		if table is not None:
-			where_clause += " AND table_name = ? "
+			# Check if it's a like search or exact match
+			if table.startswith("%") or table.endswith("%"):
+				where_clause += " AND table_name LIKE ? "
+			else:
+				where_clause += " AND table_name = ? "
 			parameters.append(table)
 
 		row_ids = [
