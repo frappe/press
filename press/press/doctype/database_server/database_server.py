@@ -69,6 +69,7 @@ class DatabaseServer(BaseServer):
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
 		ip: DF.Data | None
+		is_binlog_indexer_running: DF.Check
 		is_for_recovery: DF.Check
 		is_monitoring_disabled: DF.Check
 		is_performance_schema_enabled: DF.Check

@@ -360,6 +360,8 @@ function payUnpaidInvoices() {
 
 const showMessage = ref(false);
 function updatePaymentMode(mode) {
+	console.log('Called ' + mode);
+	//return;
 	showMessage.value = false;
 	if (!billingDetailsSummary.value) {
 		showMessage.value = true;

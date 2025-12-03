@@ -22,6 +22,7 @@
   "enable_physical_backup",
   "halt_agent_jobs",
   "enable_binlog_indexing",
+  "is_binlog_indexer_running",
   "column_break_qsqm",
   "is_server_setup",
   "is_server_renamed",
@@ -708,6 +709,12 @@
    "fieldtype": "Check",
    "label": "Is Monitoring Disabled",
    "search_index": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_binlog_indexer_running",
+   "fieldtype": "Check",
+   "label": "Is Binlog Indexer Running"
   }
  ],
  "grid_page_length": 50,
@@ -724,7 +731,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-10-16 13:11:58.465662",
+ "modified": "2025-12-03 22:41:51.401512",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

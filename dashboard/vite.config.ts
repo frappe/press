@@ -30,7 +30,7 @@ export default defineConfig({
 			applicationKey: 'press-dashboard',
 			authToken: process.env.SENTRY_AUTH_TOKEN,
 		}),
-		vueDevTools(),
+		// vueDevTools(),
 	],
 	server: {
 		allowedHosts: true
