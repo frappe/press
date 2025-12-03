@@ -6,6 +6,15 @@ from rich.console import Console
 console = Console()
 
 
+<<<<<<< HEAD
+=======
+# Default User-Agent to identify CLI-originated traffic server-side
+CLI_USER_AGENT = (
+	f"press-cli/python-{sys.version_info.major}.{sys.version_info.minor}; {platform.system().lower()})"
+)
+
+
+>>>>>>> 48f108970 (fix(user-agent): small fix)
 class CloudSession(Session):
 	"""Custom requests.Session with Frappe sid cookie"""
 
