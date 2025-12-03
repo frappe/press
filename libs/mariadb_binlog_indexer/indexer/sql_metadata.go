@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 
 	"vitess.io/vitess/go/vt/sqlparser"
 )
@@ -29,6 +28,12 @@ type SQLSourceMetadata struct {
 	Tables []*SQLTable   // The database and table
 }
 
+func (r *SQLSourceMetadata) Reset() {
+	// Clear slice without freeing underlying array
+	r.Tables = r.Tables[:0]
+	r.Type = Other
+}
+
 func (r SQLSourceMetadata) String() string {
 	tablesString := ""
 	for _, table := range r.Tables {
@@ -47,94 +52,73 @@ type StringInterner interface {
 }
 
 // ExtractSQLMetadata extracts database/table pairs and statement type from SQL
-func ExtractSQLMetadata(sql string, parser *sqlparser.Parser, defaultDatabase string, interner StringInterner) SQLSourceMetadata {
-	result := SQLSourceMetadata{
-		Tables: []*SQLTable{},
-		Type:   Other,
-	}
+func (b *BinlogIndexer) ExtractSQLMetadata(sql string, defaultDatabase string) *SQLSourceMetadata {
+	result := b.sqlMetadataResult
+	result.Reset()
 
-	stmt, err := parser.Parse(sql)
+	stmt, err := b.sqlParser.Parse(sql)
 	if err != nil {
 		return result
 	}
 
-	sqlparser.Walk(func(node sqlparser.SQLNode) (kontinue bool, err error) {
-		switch node := node.(type) {
-		case *sqlparser.Select:
-			result.Type = Select
-			for _, table := range node.From {
-				if tblExpr, ok := table.(*sqlparser.AliasedTableExpr); ok {
-					if table, err := tblExpr.TableName(); err == nil {
-						result.Tables = append(result.Tables, &SQLTable{
-							Database: interner.internString(table.Qualifier.String()),
-							Table:    interner.internString(table.Name.String()),
-						})
-					}
-				}
-			}
-			return false, nil
+	internedDefault := ""
+	if defaultDatabase != "" {
+		internedDefault = b.internString(defaultDatabase)
+	}
 
-		case *sqlparser.Insert:
-			result.Type = Insert
-			if table, err := node.Table.TableName(); err == nil {
-				result.Tables = append(result.Tables, &SQLTable{
-					Database: interner.internString(table.Qualifier.String()),
-					Table:    interner.internString(table.Name.String()),
-				})
-			}
-			return false, nil
-
-		case *sqlparser.Delete:
-			result.Type = Delete
-			for _, expr := range node.TableExprs {
-				if tblExpr, ok := expr.(*sqlparser.AliasedTableExpr); ok {
-					if table, err := tblExpr.TableName(); err == nil {
-						result.Tables = append(result.Tables, &SQLTable{
-							Database: interner.internString(table.Qualifier.String()),
-							Table:    interner.internString(table.Name.String()),
-						})
-					}
-				}
-			}
-			return false, nil
-
-		case *sqlparser.Update:
-			result.Type = Update
-			for _, expr := range node.TableExprs {
-				if tblExpr, ok := expr.(*sqlparser.AliasedTableExpr); ok {
-					if table, err := tblExpr.TableName(); err == nil {
-						result.Tables = append(result.Tables, &SQLTable{
-							Database: interner.internString(table.Qualifier.String()),
-							Table:    interner.internString(table.Name.String()),
-						})
-					}
-				}
-			}
-			return false, nil
+	// Instead of walking the AST, we only care about top-level table references
+	switch node := stmt.(type) {
+	case *sqlparser.Select:
+		result.Type = Select
+		for _, tableExpr := range node.From {
+			b.extractTable(tableExpr, result, internedDefault)
 		}
 
-		return true, nil
-	}, stmt)
+	case *sqlparser.Insert:
+		result.Type = Insert
+		if table, err := node.Table.TableName(); err == nil {
+			result.Tables = append(result.Tables, b.makeTable(table, internedDefault))
+		}
 
-	// Set default database if database is empty
-	if defaultDatabase != "" {
-		internedDefault := interner.internString(defaultDatabase)
-		for _, table := range result.Tables {
-			if strings.Compare(table.Database, "") == 0 {
-				table.Database = internedDefault
-			}
+	case *sqlparser.Update:
+		result.Type = Update
+		for _, tableExpr := range node.TableExprs {
+			b.extractTable(tableExpr, result, internedDefault)
+		}
+
+	case *sqlparser.Delete:
+		result.Type = Delete
+		for _, tableExpr := range node.TableExprs {
+			b.extractTable(tableExpr, result, internedDefault)
 		}
 	}
 
-	// If result is empty, set default database
-	if len(result.Tables) == 0 && defaultDatabase != "" {
-		result.Tables = []*SQLTable{
-			{
-				Database: interner.internString(defaultDatabase),
-				Table:    "",
-			},
-		}
+	// Fallback if no tables extracted
+	if len(result.Tables) == 0 && internedDefault != "" {
+		result.Tables = []*SQLTable{{Database: internedDefault, Table: ""}}
 	}
 
 	return result
+}
+
+func (b *BinlogIndexer) extractTable(tableExpr sqlparser.TableExpr, result *SQLSourceMetadata, defaultDB string) {
+	if aliasedTable, ok := tableExpr.(*sqlparser.AliasedTableExpr); ok {
+		if table, err := aliasedTable.TableName(); err == nil {
+			result.Tables = append(result.Tables, b.makeTable(table, defaultDB))
+		}
+	}
+}
+
+func (b *BinlogIndexer) makeTable(table sqlparser.TableName, defaultDB string) *SQLTable {
+	db := table.Qualifier.String()
+	if db == "" {
+		db = defaultDB
+	} else {
+		db = b.internString(db)
+	}
+
+	return &SQLTable{
+		Database: db,
+		Table:    b.internString(table.Name.String()),
+	}
 }

@@ -707,7 +707,18 @@
 =======
         "segs",
 	"interner",
+<<<<<<< HEAD
 	"sprintf"
 >>>>>>> ba6db5a7c (perf(mariadb-binlog-indexer): Optimize for memory)
+=======
+	"sprintf",
+	"xyproto",
+	"vxeg",
+	"rzgre",
+	"Yekq",
+	"Rhiv",
+	"Kvsc",
+	"ZSTD"
+>>>>>>> 9638fb0d0 (perf(mariadb-binlog-indexer): Provide different set of profile)
     ]
 }

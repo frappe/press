@@ -28,10 +28,14 @@ class Indexer:
 	def add(
 		self,
 		binlog_path: str,
-		batch_size: int = 10000,
+		mode: Literal["low-memory", "balanced", "high-compression"] = "balanced",
 		cpu_quota_percentage: int = 0,
 		memory_hard_limit: int = 0,
 	):
+		"""
+		NOTE: It's mandatory to enable linger for the user running this process for systemd-run to work properly.
+		You can enable it by running: loginctl enable-linger $USER
+		"""
 		with filelock.FileLock(self._lock_file_path):
 			command = [
 				self.indexer_lib,
@@ -39,7 +43,7 @@ class Indexer:
 				self.base_path,
 				binlog_path,
 				self.db_name,
-				str(batch_size),
+				mode,
 			]
 			if cpu_quota_percentage > 0 or memory_hard_limit > 0:
 				systemd_command = ["systemd-run", "--scope", "--user"]
@@ -61,11 +65,31 @@ class Indexer:
 
 				command = [*systemd_command, *command]
 
-			subprocess.run(command)
+			env = os.environ.copy()
+			uid = os.getuid()
+			xdg_runtime = f"/run/user/{uid}"
+
+			env["XDG_RUNTIME_DIR"] = xdg_runtime
+			env["DBUS_SESSION_BUS_ADDRESS"] = f"unix:path={xdg_runtime}/bus"
+
+			result = subprocess.run(command, text=True, capture_output=True, check=False, env=env)
+			if result.returncode != 0:
+				raise Exception(
+					f"Failed to index binlog:\n\nStdout: {result.stdout}\nStderr: {result.stderr}"
+				)
 
 	def remove(self, binlog_path: str):
 		with filelock.FileLock(self._lock_file_path):
-			subprocess.run([self.indexer_lib, "remove", self.base_path, binlog_path, self.db_name])
+			result = subprocess.run(
+				[self.indexer_lib, "remove", self.base_path, binlog_path, self.db_name],
+				text=True,
+				capture_output=True,
+				check=False,
+			)
+			if result.returncode != 0:
+				raise Exception(
+					f"Failed to remove binlog from indexer:\n\nStdout: {result.stdout}\nStderr: {result.stderr}"
+				)
 
 	def get_timeline(
 		self,

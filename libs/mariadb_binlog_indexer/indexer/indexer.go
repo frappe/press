@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/go-mysql-org/go-mysql/replication"
 	_ "github.com/marcboeker/go-duckdb/v2"
-	"vitess.io/vitess/go/vt/sqlparser"
+	"github.com/parquet-go/parquet-go"
+	"github.com/parquet-go/parquet-go/compress/snappy"
+	"github.com/parquet-go/parquet-go/compress/zstd"
 
-	"github.com/xitongsys/parquet-go-source/local"
-	"github.com/xitongsys/parquet-go/parquet"
-	"github.com/xitongsys/parquet-go/source"
-	"github.com/xitongsys/parquet-go/writer"
+	"vitess.io/vitess/go/vt/sqlparser"
 )
 
 const CREATE_TABLE_SQL string = `
@@ -29,7 +30,7 @@ CREATE TABLE IF NOT EXISTS query (
 )
 `
 
-const INSERT_QUERY_SQL string = "INSERT INTO query (binlog, db_name, table_name, timestamp, type, row_id, event_size) VALUES %s"
+const INSERT_QUERY_SQL string = "INSERT INTO query (binlog, db_name, table_name, timestamp, type, row_id, event_size) VALUES "
 
 type Query struct {
 	Timestamp uint32
@@ -40,9 +41,10 @@ type Query struct {
 }
 
 type BinlogIndexer struct {
-	BatchSize  int
-	binlogName string
-	binlogPath string
+	BatchSize       int
+	binlogName      string
+	binlogPath      string
+	compressionMode string // "low-memory" or "balanced"
 
 	// State
 	queries         []Query
@@ -50,12 +52,15 @@ type BinlogIndexer struct {
 	estimatedMemory int64 // Track estimated memory usage in bytes
 
 	// Internal
-	db        *sql.DB
-	fw        source.ParquetFile
-	pw        *writer.ParquetWriter
-	parser    *replication.BinlogParser
-	sqlParser *sqlparser.Parser
-	isClosed  bool
+	db                       *sql.DB
+	fw                       *os.File
+	pw                       *parquet.GenericWriter[ParquetRow]
+	parquetBuffer            []ParquetRow
+	parser                   *replication.BinlogParser
+	sqlParser                *sqlparser.Parser
+	sqlMetadataResult        *SQLSourceMetadata
+	isClosed                 bool
+	sqlStringBuilderForFlush strings.Builder
 
 	// String interning for memory optimization
 	stringCache map[string]string
@@ -68,17 +73,30 @@ type BinlogIndexer struct {
 }
 
 type ParquetRow struct {
-	Id    int32  `parquet:"name=id, type=INT32"`
-	Query string `parquet:"name=query, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
+	Id    int32  `parquet:"id, type=INT32"`
+	Query string `parquet:"query, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN"`
 }
 
 //export NewBinlogIndexer
-func NewBinlogIndexer(basePath string, binlogPath string, databaseFilename string, batchSize int) (*BinlogIndexer, error) {
+func NewBinlogIndexer(basePath string, binlogPath string, databaseFilename string, compressionMode string) (*BinlogIndexer, error) {
 	if _, err := os.Stat(basePath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("base path does not exist: %w", err)
 	}
 	binlogFilename := filepath.Base(binlogPath)
-	db, err := sql.Open("duckdb", filepath.Join(basePath, databaseFilename))
+
+	// Configure DuckDB memory based on compression mode
+	var duckdbMemoryLimit string
+	switch compressionMode {
+	case "low-memory":
+		duckdbMemoryLimit = "15MB" // Aggressive limit for <50MB target
+	case "high-compression":
+		duckdbMemoryLimit = "512MB" // Large memory allowance for 1GB target
+	default: // "balanced"
+		duckdbMemoryLimit = "50MB" // Moderate limit
+	}
+
+	dbPath := filepath.Join(basePath, databaseFilename) + "?memory_limit=" + duckdbMemoryLimit + "&threads=1"
+	db, err := sql.Open("duckdb", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
@@ -110,38 +128,89 @@ func NewBinlogIndexer(basePath string, binlogPath string, databaseFilename strin
 	parquet_filepath := filepath.Join(basePath, fmt.Sprintf("queries_%s.parquet", binlogFilename))
 	_ = os.Remove(parquet_filepath)
 
-	// Estimate out row group size
-	pageSize, err := EstimateParquetPageSize(binlogPath)
+	// Create file writer
+	parquetFile, err := os.Create(parquet_filepath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to estimate row group size: %w", err)
+		return nil, fmt.Errorf("failed to create parquet file: %w", err)
 	}
-	// Create parquet writer
-	fw, err := local.NewLocalFileWriter(parquet_filepath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create local file: %w", err)
+	var parquetOptions []parquet.WriterOption
+
+	switch compressionMode {
+	case "low-memory":
+		// Snappy: ~5MB compression buffer, minimal page buffers
+		parquetOptions = []parquet.WriterOption{
+			parquet.Compression(&snappy.Codec{}),
+			parquet.PageBufferSize(512 * 1024), // 512KB
+			parquet.MaxRowsPerRowGroup(100),    // Flush every 100 rows
+			parquet.DataPageStatistics(false),
+		}
+	case "high-compression":
+		// ZSTD max compression: Large buffers for maximum compression ratio
+		parquetOptions = []parquet.WriterOption{
+			parquet.Compression(&zstd.Codec{Level: zstd.SpeedBestCompression}),
+			parquet.PageBufferSize(64 * 1024 * 1024), // 64MB page buffer
+			parquet.MaxRowsPerRowGroup(50000),        // Very large row groups
+			parquet.DataPageStatistics(true),         // Enable statistics for better compression
+			parquet.ColumnPageBuffers(
+				parquet.NewFileBufferPool(basePath, "tmp_buffers.*"), // File-backed buffers
+			),
+		}
+	default: // "balanced" mode
+		// ZSTD default: Good compression, moderate buffers
+		parquetOptions = []parquet.WriterOption{
+			parquet.Compression(&zstd.Codec{Level: zstd.SpeedDefault}),
+			parquet.PageBufferSize(2 * 1024 * 1024), // 2MB
+			parquet.MaxRowsPerRowGroup(1000),        // Flush every 1000 rows
+			parquet.DataPageStatistics(false),
+		}
 	}
 
-	parquetWriter, err := writer.NewParquetWriter(fw, new(ParquetRow), 1)
-	parquetWriter.RowGroupSize = 128 * 1024 * 1024 // 128MB
+	parquetWriter := parquet.NewGenericWriter[ParquetRow](parquetFile, parquetOptions...)
 
-	parquetWriter.PageSize = pageSize
-	parquetWriter.CompressionType = parquet.CompressionCodec_ZSTD
+	// Adjust batch size and allocations based on compression mode
+	var actualBatchSize int
+	var builderSize int
+	var queriesCapacity int
+
+	switch compressionMode {
+	case "low-memory":
+		actualBatchSize = 100   // Small batches
+		builderSize = 100 * 100 // 10KB
+		queriesCapacity = 100
+	case "high-compression":
+		actualBatchSize = 10000   // Very large batches - accumulate more data
+		builderSize = 10000 * 100 // 1MB
+		queriesCapacity = 10000
+	default: // "balanced"
+		actualBatchSize = 1000   // Medium batches
+		builderSize = 1000 * 100 // 100KB
+		queriesCapacity = 1000
+	}
+
+	sqlStringBuilderForFlush := strings.Builder{}
+	sqlStringBuilderForFlush.Grow(builderSize)
 
 	return &BinlogIndexer{
-		BatchSize:       batchSize,
+		BatchSize:       actualBatchSize,
 		binlogName:      binlogFilename,
 		binlogPath:      binlogPath,
-		queries:         make([]Query, 0, batchSize),
+		compressionMode: compressionMode,
+		queries:         make([]Query, 0, queriesCapacity),
 		currentRowId:    1,
 		estimatedMemory: 0,
 		db:              db,
-		fw:              fw,
+		fw:              parquetFile,
 		pw:              parquetWriter,
 		parser:          replication.NewBinlogParser(),
 		sqlParser:       sql_parser,
-		isClosed:        false,
-		stringCache:     make(map[string]string),
-		tableMapEvents:  make([][]string, 0, 4), // Most queries affect 1-4 tables
+		sqlMetadataResult: &SQLSourceMetadata{
+			Tables: make([]*SQLTable, 0, 2),
+			Type:   Other,
+		},
+		sqlStringBuilderForFlush: sqlStringBuilderForFlush,
+		isClosed:                 false,
+		stringCache:              make(map[string]string),
+		tableMapEvents:           make([][]string, 0, 4), // Most queries affect 1-4 tables
 	}, nil
 }
 
@@ -159,7 +228,6 @@ func (p *BinlogIndexer) internString(s string) string {
 }
 
 // bytesToString converts []byte to string efficiently
-// Uses the string directly to allow interning
 func (p *BinlogIndexer) bytesToString(b []byte) string {
 	return p.internString(string(b))
 }
@@ -254,12 +322,31 @@ func (p *BinlogIndexer) onBinlogEvent(e *replication.BinlogEvent) error {
 		}
 	case replication.QUERY_EVENT:
 		if event, ok := e.Event.(*replication.QueryEvent); ok {
-			p.addQuery(
-				string(event.Query),
-				p.bytesToString(event.Schema),
-				e.Header.Timestamp,
-				e.Header.EventSize,
-			)
+			sqlQuery := string(event.Query)
+			schema := p.bytesToString(event.Schema)
+
+			// Fast check: skip DDL/control statements entirely
+			queryType := detectQueryType(sqlQuery)
+			if queryType == Other {
+				// Skip indexing Other queries - they're not searchable/useful
+				break
+			}
+
+			// For DML statements (INSERT/UPDATE/DELETE/SELECT), parse to extract tables
+			metadata := p.ExtractSQLMetadata(sqlQuery, schema)
+
+			q := Query{
+				Timestamp: e.Header.Timestamp,
+				Metadata:  *metadata,
+				RowId:     p.currentRowId,
+				EventSize: e.Header.EventSize,
+				SQL:       sqlQuery,
+			}
+
+			p.estimatedMemory += int64(len(sqlQuery) + 32)
+			p.queries = append(p.queries, q)
+			p.currentRowId += 1
+			p.flushIfNeeded()
 		}
 		commitAnnotateRowsEvent = true
 	default:
@@ -318,27 +405,18 @@ func (p *BinlogIndexer) commitAnnotateRowsEvent() {
 	p.flushIfNeeded()
 }
 
-func (p *BinlogIndexer) addQuery(query string, schema string, timestamp uint32, eventSize uint32) {
-	metadata := ExtractSQLMetadata(query, p.sqlParser, schema, p)
-
-	q := Query{
-		Timestamp: timestamp,
-		Metadata:  metadata,
-		RowId:     p.currentRowId,
-		EventSize: eventSize,
-		SQL:       query,
+func (p *BinlogIndexer) flushIfNeeded() {
+	// Memory threshold varies by compression mode
+	var maxMemoryBytes int64
+	switch p.compressionMode {
+	case "low-memory":
+		maxMemoryBytes = 2 * 1024 * 1024 // 2MB - very aggressive flushing
+	case "high-compression":
+		maxMemoryBytes = 100 * 1024 * 1024 // 100MB - accumulate more for better compression
+	default: // "balanced"
+		maxMemoryBytes = 10 * 1024 * 1024 // 10MB - moderate flushing
 	}
 
-	// Track memory usage
-	p.estimatedMemory += int64(len(query) + 32) // SQL + struct overhead
-	p.queries = append(p.queries, q)
-	p.currentRowId += 1
-	p.flushIfNeeded()
-}
-
-func (p *BinlogIndexer) flushIfNeeded() {
-	// Flush based on either batch size or memory usage (50MB threshold)
-	const maxMemoryBytes = 50 * 1024 * 1024 // 50MB
 	if len(p.queries) >= p.BatchSize || p.estimatedMemory > maxMemoryBytes {
 		err := p.flush()
 		if err != nil {
@@ -348,9 +426,6 @@ func (p *BinlogIndexer) flushIfNeeded() {
 }
 
 func (p *BinlogIndexer) flush() error {
-	if len(p.queries) == 0 {
-		return nil
-	}
 	// Create transaction
 	tx, err := p.db.Begin()
 	if err != nil {
@@ -364,54 +439,79 @@ func (p *BinlogIndexer) flush() error {
 
 	// Write the queries to db using strings.Builder for efficiency
 	// Estimate size: each row is ~100 bytes on average
-	var builder strings.Builder
+
+	// Count total rows for pre-allocation
 	totalRows := 0
-	for _, query := range p.queries {
-		totalRows += len(query.Metadata.Tables)
+	for i := range p.queries {
+		totalRows += len(p.queries[i].Metadata.Tables)
 	}
-	builder.Grow(totalRows * 100) // Pre-allocate to avoid reallocations
+
+	// Reset the string builder
+	p.sqlStringBuilderForFlush.Reset()
+
+	p.sqlStringBuilderForFlush.Grow(totalRows * 100) // Pre-allocate to avoid reallocations
 
 	first := true
-	for _, query := range p.queries {
-		for _, table := range query.Metadata.Tables {
+	if len(p.queries) == 0 {
+		return nil
+	}
+
+	// Write the query template at the start
+	p.sqlStringBuilderForFlush.WriteString(INSERT_QUERY_SQL)
+
+	// Build the values
+	for i := range p.queries {
+		query := &p.queries[i] // avoid copy
+
+		for j := range query.Metadata.Tables {
+			table := query.Metadata.Tables[j] // avoid copy
+
 			if !first {
-				builder.WriteByte(',')
+				p.sqlStringBuilderForFlush.WriteByte(',')
 			}
 			first = false
 
 			// Manually build the string to avoid fmt.Sprintf allocations
-			builder.WriteString("('")
-			builder.WriteString(p.binlogName)
-			builder.WriteString("', '")
-			builder.WriteString(table.Database)
-			builder.WriteString("', '")
-			builder.WriteString(table.Table)
-			builder.WriteString("', ")
-			builder.WriteString(itoa(int(query.Timestamp)))
-			builder.WriteString(", '")
-			builder.WriteString(string(query.Metadata.Type))
-			builder.WriteString("', ")
-			builder.WriteString(itoa(int(query.RowId)))
-			builder.WriteString(", ")
-			builder.WriteString(itoa(int(query.EventSize)))
-			builder.WriteByte(')')
+			p.sqlStringBuilderForFlush.WriteString("('")
+			p.sqlStringBuilderForFlush.WriteString(p.binlogName)
+			p.sqlStringBuilderForFlush.WriteString("', '")
+			p.sqlStringBuilderForFlush.WriteString(table.Database)
+			p.sqlStringBuilderForFlush.WriteString("', '")
+			p.sqlStringBuilderForFlush.WriteString(table.Table)
+			p.sqlStringBuilderForFlush.WriteString("', ")
+			p.sqlStringBuilderForFlush.WriteString(itoa(int(query.Timestamp)))
+			p.sqlStringBuilderForFlush.WriteString(", '")
+			p.sqlStringBuilderForFlush.WriteString(string(query.Metadata.Type))
+			p.sqlStringBuilderForFlush.WriteString("', ")
+			p.sqlStringBuilderForFlush.WriteString(itoa(int(query.RowId)))
+			p.sqlStringBuilderForFlush.WriteString(", ")
+			p.sqlStringBuilderForFlush.WriteString(itoa(int(query.EventSize)))
+			p.sqlStringBuilderForFlush.WriteByte(')')
 		}
 	}
 
 	// Insert the queries
-	_, err = tx.Exec(fmt.Sprintf(INSERT_QUERY_SQL, builder.String()))
+	_, err = tx.Exec(p.sqlStringBuilderForFlush.String())
 	if err != nil {
 		return fmt.Errorf("failed to insert queries: %w", err)
 	}
 
-	// Insert all query in parquet file
-	for _, query := range p.queries {
-		if err = p.pw.Write(ParquetRow{
-			Id:    query.RowId,
-			Query: query.SQL,
-		}); err != nil {
-			return fmt.Errorf("failed to write query to parquet file: %w", err)
-		}
+	// Write to parquet file by bulk insert
+	if cap(p.parquetBuffer) < len(p.queries) {
+		p.parquetBuffer = make([]ParquetRow, len(p.queries))
+	} else {
+		p.parquetBuffer = p.parquetBuffer[:len(p.queries)]
+	}
+
+	// Fill buffer
+	for i := range p.queries {
+		p.parquetBuffer[i].Id = p.queries[i].RowId
+		p.parquetBuffer[i].Query = p.queries[i].SQL
+	}
+
+	// Batch write
+	if _, err = p.pw.Write(p.parquetBuffer); err != nil {
+		return err
 	}
 
 	// Commit the transaction
@@ -429,9 +529,24 @@ func (p *BinlogIndexer) flush() error {
 		p.queries = make([]Query, 0, p.BatchSize)
 	}
 
-	// Periodically clear string cache if it grows too large (> 10000 entries)
-	if len(p.stringCache) > 10000 {
-		p.stringCache = make(map[string]string, 1000)
+	// Clear string cache based on compression mode
+	switch p.compressionMode {
+	case "low-memory":
+		// Aggressive cache clearing for low-memory mode
+		if len(p.stringCache) > 1000 {
+			p.stringCache = make(map[string]string, 100)
+		}
+		// Force GC to release memory immediately - acceptable since speed is not priority
+		runtime.GC()
+	case "high-compression":
+		// Never clear cache in high-compression mode - maximize reuse
+		// No manual GC - let Go handle it naturally
+	default: // "balanced"
+		// More relaxed cache clearing for balanced mode
+		if len(p.stringCache) > 10000 {
+			p.stringCache = make(map[string]string, 1000)
+		}
+		// No manual GC in balanced mode - let Go handle it
 	}
 
 	return nil
@@ -446,7 +561,7 @@ func (p *BinlogIndexer) Close() {
 		fmt.Printf("[WARN] failed to flush: %v\n", err)
 	}
 	// try to stop the parquet writer
-	if err := p.pw.WriteStop(); err != nil {
+	if err := p.pw.Close(); err != nil {
 		fmt.Printf("[WARN] failed to stop parquet writer: %v\n", err)
 	}
 
@@ -490,4 +605,9 @@ func RemoveBinlogIndex(basePath string, binlogPath string, databaseFilename stri
 	parquetFilepath := filepath.Join(basePath, fmt.Sprintf("queries_%s.parquet", binlogFilename))
 	_ = os.Remove(parquetFilepath)
 	return nil
+}
+
+// itoa is a faster integer to string conversion for SQL building
+func itoa(i int) string {
+	return strconv.Itoa(i)
 }
