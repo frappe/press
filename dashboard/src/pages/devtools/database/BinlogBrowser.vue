@@ -45,12 +45,10 @@
 							{ label: 'Delete Query', value: 'DELETE' },
 							{ label: 'Select Query', value: 'SELECT' },
 							{ label: 'Other Query', value: 'OTHER' },
-						]" size="sm" variant="outline" placeholder="Query Type" v-model="type"
-							:disabled="this.$resources?.timeline?.loading" />
+						]" size="sm" variant="outline" placeholder="Query Type" v-model="type" :disabled="isProcessingQueries" />
 
 						<FormControl type="text" class="w-[18rem]" size="sm" variant="outline"
-							placeholder="Table Name (% allowed)" v-model="tableName"
-							:disabled="this.$resources?.timeline?.loading" />
+							placeholder="Table Name (% allowed)" v-model="tableName" :disabled="isProcessingQueries" />
 
 						<div class="w-full flex flex-row items-center gap-2">
 							<div class="text-base">Event Size</div>
@@ -78,28 +76,27 @@
 					<div class="flex flex-row items-center gap-2">
 						<div class="w-[12rem] text-base" :autoClose="false">
 							<DateTimePicker v-model="start" variant="outline" placeholder="Start Time"
-								:disabled="this.$resources?.timeline?.loading" :disableTextInput="true"
-								:clearable="false" :maxDateTime="end" />
+								:disabled="isProcessingQueries" :disableTextInput="true" :clearable="false"
+								:maxDateTime="end" />
 						</div>
 						<FeatherIcon name="arrow-right" class="h-5 w-5 stroke-gray-700" />
 						<div class="w-[12rem] text-base" :autoClose="true">
 							<DateTimePicker v-model="end" variant="outline" placeholder="End Time"
-								:disabled="this.$resources?.timeline?.loading" :disableTextInput="true"
-								:clearable="false" :minDateTime="start" :maxDateTime="Date()" />
+								:disabled="isProcessingQueries" :disableTextInput="true" :clearable="false"
+								:minDateTime="start" :maxDateTime="Date()" />
 						</div>
 					</div>
 				</div>
 				<!-- Timeline chart -->
-				<div class="max-w-100 py-2">
+				<div class="max-w-100 pt-2">
 					<BinlogBrowserChart :data="barChartData" @zoomEvent="onZoomEvent" />
 				</div>
 				<div class="relative">
 					<!-- Query Option -->
-					<div class="mt-3 flex flex-row items-center justify-end gap-2">
+					<div class="flex flex-row items-center justify-end gap-2">
 						<TextInput type="text" size="sm" variant="outline" placeholder="Search Phrase (Optional)"
 							class="w-[12rem]" v-model="searchString" :disabled="isProcessingQueries"
 							@keydown.enter.prevent="searchBinlogs" />
-
 
 						<Button variant="solid" theme="gray" size="sm" @click="searchBinlogs" :loading="this.$resources?.searchBinlogs?.loading ||
 							this.$resources?.fetchQueriesFromBinlog?.loading
@@ -107,13 +104,10 @@
 							Search
 						</Button>
 					</div>
+
 					<!-- Result Table -->
-					<div class="mt-3">
-						<div v-if="!this.searchResultReady"
-							class="flex h-80 w-full items-center justify-center gap-2 text-base text-gray-700">
-							Search for binlogs to see results
-						</div>
-						<div v-else-if="this.$resources?.searchBinlogs?.loading"
+					<div class="mt-3" v-if="isBinlogSearchAccessible">
+						<div v-if="this.$resources?.searchBinlogs?.loading"
 							class="flex h-80 w-full items-center justify-center gap-2 text-base text-gray-700">
 							<Spinner class="w-4" /> Searching for binlogs...
 						</div>
@@ -127,8 +121,8 @@
 					</div>
 
 					<!-- Block  -->
-					<div class="z-1000 bg-white-overlay-900 absolute inset-0 flex justify-center items-center"
-						v-if="!isBinlogSearchAccessible">
+					<div class="z-1000 h-80 bg-white-overlay-900 absolute inset-0 flex justify-center items-center"
+						v-else>
 						<div class="flex text-md text-gray-800 items-center gap-1.5">
 							<lucide-triangle-alert class="h-5 w-5 text-amber-600" />
 							To view or search SQL queries, choose a time range of less than 6
@@ -305,6 +299,11 @@ export default {
 			if (newVal && this.event_size) {
 				this.refreshDataWithDebounce();
 			}
+
+			if (newVal === '') {
+				this.event_size = 0;
+				this.refreshDataWithDebounce();
+			}
 		},
 		event_size(newVal) {
 			if (newVal && this.event_size_comparator) {
@@ -450,7 +449,9 @@ export default {
 			}
 
 			if (url.searchParams.get('event_size_comparator')) {
-				this.event_size_comparator = url.searchParams.get('event_size_comparator');
+				this.event_size_comparator = url.searchParams.get(
+					'event_size_comparator',
+				);
 			}
 
 			if (url.searchParams.get('event_size')) {
@@ -509,14 +510,15 @@ export default {
 			}
 
 			if (this.event_size_comparator && this.event_size) {
-				url.searchParams.set('event_size_comparator', this.event_size_comparator);
+				url.searchParams.set(
+					'event_size_comparator',
+					this.event_size_comparator,
+				);
 				url.searchParams.set('event_size', this.event_size);
 			} else {
 				url.searchParams.delete('event_size_comparator');
 				url.searchParams.delete('event_size');
 			}
-
-
 
 			// Only push state if it's different from the last pushed state
 			const newState = url.toString();
@@ -540,7 +542,9 @@ export default {
 					end: parseInt(new Date(this.end).getTime() / 1000),
 					query_type: this.type === 'ALL' || !this.type ? null : this.type,
 					table: !this.tableName ? null : this.tableName,
-					event_size_comparator: !this.event_size_comparator ? null : this.event_size_comparator,
+					event_size_comparator: !this.event_size_comparator
+						? null
+						: this.event_size_comparator,
 					event_size: !this.event_size_comparator ? null : this.event_size,
 				},
 			});
@@ -559,7 +563,9 @@ export default {
 					query_type: this.type === 'ALL' || !this.type ? null : this.type,
 					table: !this.tableName ? null : this.tableName,
 					search_string: this.searchString,
-					event_size_comparator: !this.event_size_comparator ? null : this.event_size_comparator,
+					event_size_comparator: !this.event_size_comparator
+						? null
+						: this.event_size_comparator,
 					event_size: !this.event_size_comparator ? null : this.event_size,
 				},
 			});
@@ -707,8 +713,11 @@ export default {
 			return endTime - startTime <= sixHoursInMs;
 		},
 		isProcessingQueries() {
-			this.$resources?.searchBinlogs?.loading ||
-				this.$resources?.fetchQueriesFromBinlog?.loading;
+			return (
+				this.$resources?.timeline?.loading ||
+				this.$resources?.searchBinlogs?.loading ||
+				this.$resources?.fetchQueriesFromBinlog?.loading
+			);
 		},
 	},
 };
