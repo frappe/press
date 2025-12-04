@@ -3589,7 +3589,7 @@ class Site(Document, TagHelpers):
 		hosted_on_shared_server = bool(
 			frappe.db.get_value("Database Server", self.database_server_name, "public", cache=True)
 		)
-		return {
+		data = {
 			"enabled": self.is_binlog_indexing_enabled(),
 			"indexer_running": self.is_binlog_indexer_running(),
 			"hosted_on_shared_server": hosted_on_shared_server,
@@ -3597,6 +3597,18 @@ class Site(Document, TagHelpers):
 			if hosted_on_shared_server
 			else frappe.db.get_value("Database Server", self.database_server_name, "ram", cache=True),
 		}
+		# If the site is on hosted on shared server, only allow `System User` to view the binlog indexing service status
+		if hosted_on_shared_server and not frappe.local.system_user():
+			data["enabled"] = False
+
+		# Turn off hosted_on_shared_server flag if the user is System User
+		if frappe.local.system_user():
+			data["hosted_on_shared_server"] = False
+			data["database_server_memory"] = (
+				frappe.db.get_value("Database Server", self.database_server_name, "ram", cache=True),
+			)
+
+		return data
 
 	@dashboard_whitelist()
 	def fetch_binlog_timeline(  # noqa: C901
