@@ -2048,7 +2048,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			log_error("Cadvisor Install Exception", server=self.as_dict())
 
 	@frappe.whitelist()
-	def set_additional_config(self):
+	def set_additional_config(self):  # noqa: C901
 		"""
 		Corresponds to Set additional config step in Create Server Press Job
 		"""

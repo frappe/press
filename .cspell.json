@@ -698,14 +698,15 @@
         "Zpyihv",
         "Zvkq",
         "segs",
-	"interner",
-	"sprintf",
-	"xyproto",
-	"vxeg",
-	"rzgre",
-	"Yekq",
-	"Rhiv",
-	"Kvsc",
-	"ZSTD"
+        "interner",
+        "sprintf",
+        "xyproto",
+        "vxeg",
+        "rzgre",
+        "Yekq",
+        "Rhiv",
+        "Kvsc",
+        "ZSTD",
+        "wazuh"
     ]
 }
