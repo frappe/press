@@ -803,6 +803,27 @@ class DatabaseServer(BaseServer):
 			log_error("Setup failed for missing essentials", server=self.as_dict())
 		self.save()
 
+	def setup_binlog_indexes_folder(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_setup_binlog_indexes_folder",
+			queue="short",
+			timeout=1200,
+		)
+
+	def _setup_binlog_indexes_folder(self):
+		try:
+			ansible = Ansible(
+				playbook="setup_binlog_indexes_folder.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Archived folder setup error", server=self.as_dict())
+
 	def process_hybrid_server_setup(self):
 		try:
 			hybrid_server = frappe.db.get_value("Self Hosted Server", {"database_server": self.name}, "name")
