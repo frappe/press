@@ -38,23 +38,54 @@
 				<!-- Time and Query Selector -->
 				<div class="flex flex-row items-center justify-between gap-2">
 					<div class="flex flex-row items-center gap-2">
-						<div class="text-base">Query</div>
-						<FormControl type="select" :options="[
-							{ label: 'ALL     ', value: 'ALL' },
-							{ label: 'INSERT  ', value: 'INSERT' },
-							{ label: 'UPDATE  ', value: 'UPDATE' },
-							{ label: 'DELETE  ', value: 'DELETE' },
-							{ label: 'SELECT  ', value: 'SELECT' },
-							{ label: 'OTHER   ', value: 'OTHER' },
-						]" size="sm" variant="outline" placeholder="Query Type" v-model="type" />
+						<FormControl class="w-[13rem]" type="select" :options="[
+							{ label: 'All Query', value: 'ALL' },
+							{ label: 'Insert Query', value: 'INSERT' },
+							{ label: 'Update Query', value: 'UPDATE' },
+							{ label: 'Delete Query', value: 'DELETE' },
+							{ label: 'Select Query', value: 'SELECT' },
+							{ label: 'Other Query', value: 'OTHER' },
+						]" size="sm" variant="outline" placeholder="Query Type" v-model="type"
+							:disabled="this.$resources?.timeline?.loading" />
+
+						<FormControl type="text" class="w-[18rem]" size="sm" variant="outline"
+							placeholder="Table Name (% allowed)" v-model="tableName"
+							:disabled="this.$resources?.timeline?.loading" />
+
+						<div class="w-full flex flex-row items-center gap-2">
+							<div class="text-base">Event Size</div>
+							<FormControl class="w-[8rem]" type="select" :options="[
+								{
+									label: '',
+									value: '',
+								},
+								{
+									label: 'less than',
+									value: 'lt',
+								},
+								{
+									label: 'greater than',
+									value: 'gt',
+								},
+							]" size="sm" variant="outline" :disabled="isProcessingQueries" v-model="event_size_comparator"
+								placeholder="Comparator" />
+							<FormControl v-if="event_size_comparator" type="number" size="sm" variant="outline"
+								placeholder="size" class="w-[8rem]" v-model="event_size"
+								:disabled="isProcessingQueries" />
+							<div v-if="event_size_comparator" class="text-base">bytes</div>
+						</div>
 					</div>
 					<div class="flex flex-row items-center gap-2">
-						<div class="max-w-[12rem] text-base" :autoClose="true">
-							<DatTimePicker v-model="start" variant="outline" placeholder="Start Time" />
+						<div class="w-[12rem] text-base" :autoClose="false">
+							<DateTimePicker v-model="start" variant="outline" placeholder="Start Time"
+								:disabled="this.$resources?.timeline?.loading" :disableTextInput="true"
+								:clearable="false" :maxDateTime="end" />
 						</div>
 						<FeatherIcon name="arrow-right" class="h-5 w-5 stroke-gray-700" />
-						<div class="max-w-[12rem] text-base" :autoClose="true">
-							<DatTimePicker v-model="end" variant="outline" placeholder="End Time" />
+						<div class="w-[12rem] text-base" :autoClose="true">
+							<DateTimePicker v-model="end" variant="outline" placeholder="End Time"
+								:disabled="this.$resources?.timeline?.loading" :disableTextInput="true"
+								:clearable="false" :minDateTime="start" :maxDateTime="Date()" />
 						</div>
 					</div>
 				</div>
@@ -64,37 +95,17 @@
 				</div>
 				<div class="relative">
 					<!-- Query Option -->
-					<div class="mt-3 flex flex-row items-center justify-between gap-2">
-						<div class="flex flex-row items-center gap-2">
-							<div class="text-base">Table</div>
-							<FormControl type="select" :options="tables.map((table) => ({
-								label: table,
-								value: table,
-							}))
-								" size="sm" variant="outline" placeholder="Selected Table" v-model="selectedTable" />
-							<Button variant="outline" theme="gray" size="sm"
-								@click="this.showTypeColumn = !this.showTypeColumn"
-								:iconLeft="this.showTypeColumn ? 'eye' : 'eye-off'">
-								Query Type
-							</Button>
-							<Button variant="outline" theme="gray" size="sm"
-								@click="this.showTableColumn = !this.showTableColumn"
-								:iconLeft="this.showTableColumn ? 'eye' : 'eye-off'">
-								Table Name
-							</Button>
-						</div>
+					<div class="mt-3 flex flex-row items-center justify-end gap-2">
+						<TextInput type="text" size="sm" variant="outline" placeholder="Search Phrase (Optional)"
+							class="w-[12rem]" v-model="searchString" :disabled="isProcessingQueries"
+							@keydown.enter.prevent="searchBinlogs" />
 
-						<div class="flex flex-row items-center gap-2">
-							<FormControl type="text" size="sm" variant="outline"
-								placeholder="Search keywords (Optional)" v-model="searchString" :disabled="this.$resources?.searchBinlogs?.loading ||
-									this.$resources?.fetchQueriesFromBinlog?.loading
-									" />
-							<Button variant="solid" theme="gray" size="sm" @click="searchBinlogs" :loading="this.$resources?.searchBinlogs?.loading ||
-								this.$resources?.fetchQueriesFromBinlog?.loading
-								" loadingText="Searching" iconLeft="search">
-								Search
-							</Button>
-						</div>
+
+						<Button variant="solid" theme="gray" size="sm" @click="searchBinlogs" :loading="this.$resources?.searchBinlogs?.loading ||
+							this.$resources?.fetchQueriesFromBinlog?.loading
+							" loadingText="Searching" iconLeft="search">
+							Search
+						</Button>
 					</div>
 					<!-- Result Table -->
 					<div class="mt-3">
@@ -192,8 +203,15 @@
 <script>
 import BinlogBrowserChart from '../../../components/devtools/database/BinlogBrowserChart.vue';
 import Header from '../../../components/Header.vue';
-import { Tabs, Breadcrumbs, Select, FeatherIcon, Spinner } from 'frappe-ui';
-import DatTimePicker from './extras/DateTimePicker.vue';
+import {
+	Tabs,
+	Breadcrumbs,
+	Select,
+	FeatherIcon,
+	Spinner,
+	TextInput,
+} from 'frappe-ui';
+import DateTimePicker from './extras/DateTimePicker.vue';
 import { formatValue } from '../../../utils/format';
 import LinkControl from '../../../components/LinkControl.vue';
 import BinlogResultTable from '../../../components/devtools/database/BinlogResultTable.vue';
@@ -207,9 +225,10 @@ export default {
 		LinkControl,
 		Select,
 		BinlogResultTable,
-		DatTimePicker,
+		DateTimePicker,
 		BinlogBrowserChart,
 		Spinner,
+		TextInput,
 	},
 	data() {
 		return {
@@ -218,8 +237,8 @@ export default {
 			data: null,
 			start: null,
 			end: null,
-			type: 'ALL',
-			selectedTable: 'All Tables',
+			type: '',
+			tableName: '',
 			searchString: '',
 			queryIds: [],
 			result: [],
@@ -234,6 +253,9 @@ export default {
 			site_hosted_on_shared_server: false,
 			database_server_memory: 0,
 			binlog_status_check_interval_ref: null,
+			timer: null,
+			event_size_comparator: '',
+			event_size: null,
 		};
 	},
 	mounted() {
@@ -264,20 +286,34 @@ export default {
 			this.$resources.site.submit();
 			this.fetchBinlogServiceStatus();
 		},
+		tableName() {
+			if (this.tableName && this.tableName.indexOf('%') === -1) {
+				this.tableName = '%' + this.tableName.trim() + '%';
+			}
+			this.refreshDataWithDebounce();
+		},
 		type() {
-			this.fetchBinlogTimeline();
+			this.refreshDataWithDebounce();
 		},
 		start() {
-			this.updateURLParams();
-			this.fetchBinlogTimeline();
+			this.refreshDataWithDebounce();
 		},
 		end() {
-			this.updateURLParams();
-			this.fetchBinlogTimeline();
+			this.refreshDataWithDebounce();
+		},
+		event_size_comparator(newVal) {
+			if (newVal && this.event_size) {
+				this.refreshDataWithDebounce();
+			}
+		},
+		event_size(newVal) {
+			if (newVal && this.event_size_comparator) {
+				this.refreshDataWithDebounce();
+			}
 		},
 		isBinlogIndexerAvailable(newVal) {
 			if (!newVal) return;
-			this.fetchBinlogTimeline();
+			this.refreshDataWithDebounce();
 		},
 	},
 	resources: {
@@ -405,6 +441,22 @@ export default {
 				this.start = oneDayAgo.toLocaleString();
 			}
 
+			if (url.searchParams.get('type')) {
+				this.type = url.searchParams.get('type');
+			}
+
+			if (url.searchParams.get('table')) {
+				this.tableName = url.searchParams.get('table');
+			}
+
+			if (url.searchParams.get('event_size_comparator')) {
+				this.event_size_comparator = url.searchParams.get('event_size_comparator');
+			}
+
+			if (url.searchParams.get('event_size')) {
+				this.event_size = parseInt(url.searchParams.get('event_size'));
+			}
+
 			if (site_name) {
 				this.site = site_name;
 			}
@@ -444,6 +496,28 @@ export default {
 				url.searchParams.set('end', endTimestamp);
 			}
 
+			if (this.type) {
+				url.searchParams.set('type', this.type);
+			} else {
+				url.searchParams.delete('type');
+			}
+
+			if (this.tableName) {
+				url.searchParams.set('table', this.tableName);
+			} else {
+				url.searchParams.delete('table');
+			}
+
+			if (this.event_size_comparator && this.event_size) {
+				url.searchParams.set('event_size_comparator', this.event_size_comparator);
+				url.searchParams.set('event_size', this.event_size);
+			} else {
+				url.searchParams.delete('event_size_comparator');
+				url.searchParams.delete('event_size');
+			}
+
+
+
 			// Only push state if it's different from the last pushed state
 			const newState = url.toString();
 			if (this.lastPushedState !== newState) {
@@ -464,7 +538,10 @@ export default {
 				args: {
 					start: parseInt(new Date(this.start).getTime() / 1000),
 					end: parseInt(new Date(this.end).getTime() / 1000),
-					query_type: this.type === 'ALL' ? null : this.type,
+					query_type: this.type === 'ALL' || !this.type ? null : this.type,
+					table: !this.tableName ? null : this.tableName,
+					event_size_comparator: !this.event_size_comparator ? null : this.event_size_comparator,
+					event_size: !this.event_size_comparator ? null : this.event_size,
 				},
 			});
 		},
@@ -479,10 +556,11 @@ export default {
 				args: {
 					start: parseInt(new Date(this.start).getTime() / 1000),
 					end: parseInt(new Date(this.end).getTime() / 1000),
-					query_type: this.type === 'ALL' ? null : this.type,
-					table:
-						this.selectedTable === 'All Tables' ? null : this.selectedTable,
+					query_type: this.type === 'ALL' || !this.type ? null : this.type,
+					table: !this.tableName ? null : this.tableName,
 					search_string: this.searchString,
+					event_size_comparator: !this.event_size_comparator ? null : this.event_size_comparator,
+					event_size: !this.event_size_comparator ? null : this.event_size,
 				},
 			});
 		},
@@ -539,6 +617,13 @@ export default {
 			this.end = null;
 			this.start = start['timestamp'].toLocaleString();
 			this.end = end['timestamp'].toLocaleString();
+		},
+		refreshDataWithDebounce() {
+			clearTimeout(this.timer);
+			this.timer = setTimeout(() => {
+				this.updateURLParams();
+				this.fetchBinlogTimeline();
+			}, 1000);
 		},
 		resetSearch() {
 			this.queryIds = [];
@@ -620,6 +705,10 @@ export default {
 			const endTime = new Date(this.end).getTime();
 			const sixHoursInMs = 6 * 60 * 60 * 1000;
 			return endTime - startTime <= sixHoursInMs;
+		},
+		isProcessingQueries() {
+			this.$resources?.searchBinlogs?.loading ||
+				this.$resources?.fetchQueriesFromBinlog?.loading;
 		},
 	},
 };

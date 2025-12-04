@@ -13,13 +13,15 @@
 				<TextInput
 					v-model="inputValue"
 					type="text"
-					class="cursor-text w-full"
+					class="cursor-text w-full caret-transparent"
 					:class="props.inputClass"
 					:label="props.label"
 					:variant="props.variant"
 					:placeholder="props.placeholder || 'Select date & time'"
 					:disabled="props.disabled"
-					:readonly="props.readonly || !props.allowCustom"
+					:readonly="
+						props.disableTextInput || props.readonly || !props.allowCustom
+					"
 					@focus="activateInput(isOpen, togglePopover)"
 					@click="activateInput(isOpen, togglePopover)"
 					@blur="onBlur"
@@ -187,7 +189,7 @@
 						placeholder="Select time"
 						:minTime="computedMinTime"
 						:maxTime="computedMaxTime"
-						@change="onTimeChange"
+						@change="(v) => onTimeChange(v, togglePopover)"
 					/>
 				</div>
 
@@ -236,6 +238,11 @@ import { dayjsSystem } from 'frappe-ui/src/utils/dayjs';
 import TimePicker from './TimePicker.vue';
 import { months, monthStart, generateWeeks, getDateValue } from './utils.js';
 
+/*
+Added a props disableTextInput
+When true, the text input becomes readonly, preventing manual typing.
+*/
+
 const props = defineProps({
 	value: {
 		type: String,
@@ -256,6 +263,10 @@ const props = defineProps({
 	placeholder: {
 		type: String,
 		default: 'Select date & time',
+	},
+	disableTextInput: {
+		type: Boolean,
+		default: false,
 	},
 	readonly: {
 		type: Boolean,
@@ -448,7 +459,10 @@ function onEnter(togglePopover) {
 	isTyping.value = false;
 }
 function activateInput(isOpen, togglePopover) {
-	isTyping.value = true;
+	if (!props.disableTextInput) {
+		isTyping.value = true;
+	}
+
 	if (!isOpen) togglePopover();
 }
 
@@ -540,10 +554,10 @@ function handleDateCellClick(date, togglePopover) {
 	view.value = 'date';
 }
 
-function onTimeChange(val) {
+function onTimeChange(val, togglePopover) {
 	timeValue.value = val;
 	isTyping.value = false;
-	if (selectedDate.value) emitChange();
+	if (selectedDate.value) emitChange(true, togglePopover);
 }
 
 function emitChange(close = false, togglePopover) {

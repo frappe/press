@@ -2202,7 +2202,19 @@ def unindex_mariadb_binlogs():
 		frappe.get_doc("Database Server", database).remove_binlogs_from_indexer(days=7)
 
 
+def update_binlog_indexer_status_on_agent_job_update(job: AgentJob):
+	if not (job.server_type == "Database Server" and job.server):
+		return
+
+	if job.status in ["Success", "Failure"]:
+		frappe.db.set_value(job.server_type, job.server, "is_binlog_indexer_running", False, update_modified=False)
+	elif job.status in ["Pending", "Running"]:
+		frappe.db.set_value(job.server_type, job.server, "is_binlog_indexer_running", True, update_modified=False)
+
+
 def process_add_binlogs_to_indexer_agent_job_update(job: AgentJob):
+	update_binlog_indexer_status_on_agent_job_update(job)
+
 	if job.status != "Success":
 		return
 
@@ -2237,6 +2249,8 @@ def process_add_binlogs_to_indexer_agent_job_update(job: AgentJob):
 
 
 def process_remove_binlogs_from_indexer_agent_job_update(job: AgentJob):
+	update_binlog_indexer_status_on_agent_job_update(job)
+
 	if job.status != "Success":
 		return
 
