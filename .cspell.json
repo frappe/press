@@ -706,6 +706,7 @@
 >>>>>>> 3abf88db7 (chore(ui): Vendor TimePicker and DateTimePicker from frappe-ui)
 =======
         "segs",
+<<<<<<< HEAD
 	"interner",
 <<<<<<< HEAD
 	"sprintf"
@@ -720,5 +721,17 @@
 	"Kvsc",
 	"ZSTD"
 >>>>>>> 9638fb0d0 (perf(mariadb-binlog-indexer): Provide different set of profile)
+=======
+        "interner",
+        "sprintf",
+        "xyproto",
+        "vxeg",
+        "rzgre",
+        "Yekq",
+        "Rhiv",
+        "Kvsc",
+        "ZSTD",
+        "wazuh"
+>>>>>>> 4cb200d87 (chore: Lint)
     ]
 }
