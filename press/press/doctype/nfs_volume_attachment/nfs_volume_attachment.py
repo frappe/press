@@ -8,9 +8,11 @@ import frappe
 from frappe.model.document import Document
 
 from press.agent import Agent
+from press.press.doctype.auto_scale_record.auto_scale_record import AutoScaleStepFailureHandler
 from press.runner import Ansible, Status, StepHandler
 
 if typing.TYPE_CHECKING:
+	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.nfs_volume_attachment_step.nfs_volume_attachment_step import (
 		NFSVolumeAttachmentStep,
 	)
@@ -31,7 +33,7 @@ def get_restart_benches_play(server: str) -> Ansible:
 	)
 
 
-class NFSVolumeAttachment(Document, StepHandler):
+class NFSVolumeAttachment(Document, AutoScaleStepFailureHandler, StepHandler):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -172,6 +174,11 @@ class NFSVolumeAttachment(Document, StepHandler):
 			},
 			"job",
 		)
+
+		# Jobs go undelivered for some reason, need to manually get status
+		job_doc: "AgentJob" = frappe.get_doc("Agent Job", job)
+		job_doc.get_status()
+
 		self.handle_agent_job(step, job)
 
 	def mount_shared_folder_on_secondary_server(self, step: "NFSVolumeAttachmentStep") -> None:
@@ -267,15 +274,36 @@ class NFSVolumeAttachment(Document, StepHandler):
 
 		self.handle_agent_job(step, job)
 
+	def add_loopback_rule(self, step: "NFSVolumeAttachmentStep"):
+		"""Allow loopback requests from container"""
+		step.status = Status.Running
+		step.save()
+
+		primary_server: "Server" = frappe.get_doc("Server", self.primary_server)
+
+		try:
+			ansible = Ansible(
+				playbook="allow_docker_loopback.yml",
+				server=primary_server,
+				user=primary_server._ssh_user(),
+				port=primary_server._ssh_port(),
+			)
+			self.handle_ansible_play(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+			raise
+
 	def ready_to_auto_scale(self, step: "NFSVolumeAttachmentStep"):
 		"""Mark server as ready to auto scale"""
 		step.status = Status.Running
 		step.save()
 
-		frappe.db.set_value("Server", self.primary_server, "benches_on_shared_volume", True)
-		frappe.db.set_value("Server", self.primary_server, "status", "Active")
-		frappe.db.set_value("Server", self.secondary_server, "status", "Active")
-		frappe.db.set_value("Server", self.secondary_server, "is_monitoring_disabled", True)
+		frappe.db.set_value(
+			"Server", self.primary_server, {"benches_on_shared_volume": True, "status": "Active"}
+		)
+		frappe.db.set_value(
+			"Server", self.secondary_server, {"status": "Active", "is_monitoring_disabled": True}
+		)
 
 		step.status = Status.Success
 		step.save()
@@ -318,6 +346,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 				self.link_benches_to_shared,
 				self.run_primary_server_benches_on_shared_fs,
 				self.wait_for_benches_to_run_on_shared,
+				self.add_loopback_rule,
 				self.stop_secondary_server,
 				self.wait_for_secondary_server_to_stop,
 				self.ready_to_auto_scale,

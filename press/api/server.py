@@ -722,3 +722,28 @@ def benches_are_idle(server: str, access_token: str) -> None:
 		)
 		auto_scale_record.insert()
 		frappe.set_user(current_user)
+
+
+@frappe.whitelist()
+@protected(["Server"])
+def schedule_auto_scale(name, scheduled_scale_up_time: str, scheduled_scale_down_time: str) -> None:
+	"""Schedule two auto scale record with scale up and down actions at given times"""
+	secondary_server = frappe.db.get_value("Server", name, "secondary_server")
+	formatted_scheduled_scale_up_time = datetime.strptime(scheduled_scale_up_time, "%Y-%m-%d %H:%M:%S")
+	formatted_scheduled_scale_down_time = datetime.strptime(scheduled_scale_down_time, "%Y-%m-%d %H:%M:%S")
+
+	def create_record(action: str, scheduled_time: datetime) -> None:
+		doc = frappe.get_doc(
+			{
+				"doctype": "Auto Scale Record",
+				"action": action,
+				"status": "Scheduled",
+				"scheduled": scheduled_time,
+				"primary_server": name,
+				"secondary_server": secondary_server,
+			}
+		)
+		doc.insert()
+
+	create_record("Scale Up", formatted_scheduled_scale_up_time)
+	create_record("Scale Down", formatted_scheduled_scale_down_time)

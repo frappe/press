@@ -2008,5 +2008,41 @@
     "step_name": "Update Database Schema Size in Metadata Table"
    }
   ]
- }
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2025-11-28 22:48:21.908330",
+  "name": "Add Auto Scale Site to Upstream",
+  "request_method": "POST",
+  "request_path": "/proxy/upstreams/{primary_upstream}/auto-scale-site",
+  "steps": [
+    {
+     "step_name": "Add Auto Scale Site to Upstream"
+    },
+    {
+     "step_name": "Reload NGINX"
+    }
+   ]
+},
+{
+ "disabled_auto_retry": 1,
+ "docstatus": 0,
+ "doctype": "Agent Job Type",
+ "max_retry_count": 3,
+ "modified": "2025-11-28 22:48:21.908330",
+ "name": "Remove Auto Scale Site from Upstream",
+ "request_method": "POST",
+ "request_path": "/proxy/upstreams/{primary_upstream}/remove-auto-scale-site",
+ "steps": [
+    {
+     "step_name": "Remove Auto Scale Site from Upstream"
+    },
+    {
+     "step_name": "Reload NGINX"
+    }
+   ]
+}
 ]
