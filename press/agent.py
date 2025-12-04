@@ -8,7 +8,11 @@ import os
 import re
 from contextlib import suppress
 from datetime import date
+<<<<<<< HEAD
 from typing import TYPE_CHECKING
+=======
+from typing import TYPE_CHECKING, Any, Literal
+>>>>>>> 96a480408 (refactor(binlog-browser): Enhance interactivity)
 
 import frappe
 import frappe.utils
@@ -1466,10 +1470,27 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			"Remove Binlogs From Indexer", "/database/binlogs/indexer/remove", data={"binlogs": binlogs}
 		)
 
-	def get_binlogs_timeline(self, start: int, end: int, database: str, type: str | None = None):
+	def get_binlogs_timeline(
+		self,
+		start: int,
+		end: int,
+		database: str,
+		table: str | None = None,
+		type: str | None = None,
+		event_size_comparator: Literal["gt", "lt"] | None = None,
+		event_size: int | None = None,
+	):
 		return self.post(
 			"/database/binlogs/indexer/timeline",
-			data={"start_timestamp": start, "end_timestamp": end, "database": database, "type": type},
+			data={
+				"start_timestamp": start,
+				"end_timestamp": end,
+				"database": database,
+				"table": table,
+				"type": type,
+				"event_size_comparator": event_size_comparator,
+				"event_size": event_size,
+			},
 		)
 
 	def search_binlogs(
@@ -1480,6 +1501,8 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		type: str | None = None,
 		table: str | None = None,
 		search_str: str | None = None,
+		event_size_comparator: Literal["gt", "lt"] | None = None,
+		event_size: int | None = None,
 	):
 		return self.post(
 			"/database/binlogs/indexer/search",
@@ -1490,6 +1513,8 @@ Response: {reason or getattr(result, "text", "Unknown")}
 				"type": type,
 				"table": table,
 				"search_str": search_str,
+				"event_size_comparator": event_size_comparator,
+				"event_size": event_size,
 			},
 		)
 

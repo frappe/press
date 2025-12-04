@@ -91,13 +91,15 @@ class Indexer:
 					f"Failed to remove binlog from indexer:\n\nStdout: {result.stdout}\nStderr: {result.stderr}"
 				)
 
-	def get_timeline(
+	def get_timeline(  # noqa: C901
 		self,
 		start_timestamp: int,
 		end_timestamp: int,
 		type: QUERY_TYPES | None = None,
 		database: str | None = None,
 		table: str | None = None,
+		event_size_comparator: Literal["gt", "lt"] | None = None,
+		event_size: int | None = None,
 	):
 		"""
 		Args:
@@ -163,6 +165,15 @@ class Indexer:
 				where_clause += " AND q.table_name = ? "
 			parameters.append(table)
 
+		if event_size_comparator is not None and event_size is not None:
+			if event_size_comparator == "gt":
+				where_clause += " AND q.event_size >= ? "
+			elif event_size_comparator == "lt":
+				where_clause += " AND q.event_size <= ? "
+
+			if event_size_comparator in ["gt", "lt"]:
+				parameters.append(event_size)
+
 		query_result = self._execute_query(
 			"db",
 			f"""WITH time_intervals AS (
@@ -210,6 +221,8 @@ class Indexer:
 		database: str | None = None,
 		table: str | None = None,
 		search_str: str | None = None,
+		event_size_comparator: Literal["gt", "lt"] | None = None,
+		event_size: int | None = None,
 	) -> dict[str, list[int]]:
 		"""
 		Args:
@@ -244,6 +257,15 @@ class Indexer:
 			else:
 				where_clause += " AND table_name = ? "
 			parameters.append(table)
+
+		if event_size_comparator is not None and event_size is not None:
+			if event_size_comparator == "gt":
+				where_clause += " AND event_size >= ? "
+			elif event_size_comparator == "lt":
+				where_clause += " AND event_size <= ? "
+
+			if event_size_comparator in ["gt", "lt"]:
+				parameters.append(event_size)
 
 		row_ids = [
 			i
