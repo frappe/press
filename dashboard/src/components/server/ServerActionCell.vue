@@ -56,6 +56,8 @@ function getServerActionHandler(action) {
 		'Teardown Secondary Server': onTeardownSecondaryServer,
 		'Enable Performance Schema': onEnablePerformanceSchema,
 		'Disable Performance Schema': onDisablePerformanceSchema,
+		'Enable Binlog Indexer': onEnableBinlogIndexing,
+		'Disable Binlog Indexer': onDisableBinlogIndexing,
 		'Update InnoDB Buffer Pool Size': onUpdateInnodbBufferPoolSize,
 		'Update Max DB Connections': onUpdateMaxDBConnections,
 		'View Database Configuration': onViewDatabaseConfiguration,
@@ -359,6 +361,58 @@ function onDropServer() {
 						? error.messages.join('\n')
 						: 'Failed to drop servers',
 			});
+		},
+	});
+}
+
+function onEnableBinlogIndexing() {
+	if (!server.enableBinlogIndexing) return;
+	confirmDialog({
+		title: 'Enable Binlog Indexing',
+		message: `Are you sure you want to enable the Binlog Indexing on the database server <b>${server.doc.name}</b> ?<br><br><b>Note:</b> Binlog indexes will consume additional disk space (10% of total binlog size). It can take upto 1 day to index existing binlogs depending on the size of binlogs.`,
+		primaryAction: {
+			label: 'Enable Binlog Indexing',
+		},
+		onSuccess({ hide }) {
+			if (server.enableBinlogIndexing.loading) return;
+			toast.promise(
+				server.enableBinlogIndexing.submit(null, {
+					onSuccess() {
+						hide();
+					},
+				}),
+				{
+					loading: 'Enabling Binlog Indexing...',
+					success: 'Binlog Indexing enabled',
+					error: 'Failed to enable Binlog Indexing',
+				},
+			);
+		},
+	});
+}
+
+function onDisableBinlogIndexing() {
+	if (!server.disableBinlogIndexing) return;
+	confirmDialog({
+		title: 'Disable Binlog Indexing',
+		message: `Are you sure you want to disable the Binlog Indexing on the database server <b>${server.doc.name}</b> ?<br><br><b>Note:</b> Disabling binlog indexing will remove all existing binlog indexes from the server.`,
+		primaryAction: {
+			label: 'Disable Binlog Indexing',
+		},
+		onSuccess({ hide }) {
+			if (server.disableBinlogIndexing.loading) return;
+			toast.promise(
+				server.disableBinlogIndexing.submit(null, {
+					onSuccess() {
+						hide();
+					},
+				}),
+				{
+					loading: 'Disabling Binlog Indexing...',
+					success: 'Binlog Indexing disabled',
+					error: 'Failed to disable Binlog Indexing',
+				},
+			);
 		},
 	});
 }

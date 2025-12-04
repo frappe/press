@@ -332,6 +332,22 @@ class DatabaseServer(BaseServer):
 				"group": f"{server_type.title()} Actions",
 			},
 			{
+				"action": "Enable Binlog Indexer",
+				"description": "Start binlog indexer to be able to browse binlogs from dashboard",
+				"button_label": "Enable",
+				"condition": self.status == "Active" and not self.enable_binlog_indexing and self.ram > 4096,
+				"doc_method": "enable_binlog_indexing_service",
+				"group": f"{server_type.title()} Actions",
+			},
+			{
+				"action": "Disable Binlog Indexer",
+				"description": "Stop binlog indexer to disable browsing binlogs from dashboard",
+				"button_label": "Disable",
+				"condition": self.status == "Active" and self.enable_binlog_indexing,
+				"doc_method": "disable_binlog_indexing_service",
+				"group": f"{server_type.title()} Actions",
+			},
+			{
 				"action": "Enable Performance Schema",
 				"description": "Activate for enhanced database insights",
 				"button_label": "Enable",
@@ -1700,7 +1716,30 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 
 		self.agent.purge_binlogs_by_size_limit(self, max_binlog_gb=binlog_limit_in_gb)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
+	def enable_binlog_indexing_service(self):
+		if self.enable_binlog_indexing:
+			return
+
+		self.enable_binlog_indexing = True
+		self.save(ignore_permissions=True)
+
+	@dashboard_whitelist()
+	def disable_binlog_indexing_service(self):
+		if not self.enable_binlog_indexing:
+			return
+
+		self.enable_binlog_indexing = False
+		self.save(ignore_permissions=True)
+		frappe.db.set_value(
+			"MariaDB Binlog",
+			{"database_server": self.name},
+			"indexed",
+			0,
+		)
+		frappe.msgprint("Binlog Indexing has been disabled")
+
+	@dashboard_whitelist()
 	def sync_binlogs_info(self, index_binlogs: bool = True, upload_binlogs: bool = True):
 		if not self.enable_binlog_indexing:
 			frappe.msgprint("Binlog Indexing is not enabled")
