@@ -52,10 +52,11 @@ type StringInterner interface {
 }
 
 // ExtractSQLMetadata extracts database/table pairs and statement type from SQL
-func (b *BinlogIndexer) ExtractSQLMetadata(sql string, defaultDatabase string) *SQLSourceMetadata {
-	result := b.sqlMetadataResult
-	result.Reset()
-
+func (b *BinlogIndexer) ExtractSQLMetadata(stmtType StatementType, sql string, defaultDatabase string) *SQLSourceMetadata {
+	result := &SQLSourceMetadata{
+		Tables: make([]*SQLTable, 0, 2),
+		Type:   Other,
+	}
 	stmt, err := b.sqlParser.Parse(sql)
 	if err != nil {
 		return result
@@ -66,30 +67,33 @@ func (b *BinlogIndexer) ExtractSQLMetadata(sql string, defaultDatabase string) *
 		internedDefault = b.internString(defaultDatabase)
 	}
 
-	// Instead of walking the AST, we only care about top-level table references
-	switch node := stmt.(type) {
-	case *sqlparser.Select:
-		result.Type = Select
-		for _, tableExpr := range node.From {
-			b.extractTable(tableExpr, result, internedDefault)
-		}
+	if stmtType != Other {
 
-	case *sqlparser.Insert:
-		result.Type = Insert
-		if table, err := node.Table.TableName(); err == nil {
-			result.Tables = append(result.Tables, b.makeTable(table, internedDefault))
-		}
+		// Instead of walking the AST, we only care about top-level table references
+		switch node := stmt.(type) {
+		case *sqlparser.Select:
+			result.Type = Select
+			for _, tableExpr := range node.From {
+				b.extractTable(tableExpr, result, internedDefault)
+			}
 
-	case *sqlparser.Update:
-		result.Type = Update
-		for _, tableExpr := range node.TableExprs {
-			b.extractTable(tableExpr, result, internedDefault)
-		}
+		case *sqlparser.Insert:
+			result.Type = Insert
+			if table, err := node.Table.TableName(); err == nil {
+				result.Tables = append(result.Tables, b.makeTable(table, internedDefault))
+			}
 
-	case *sqlparser.Delete:
-		result.Type = Delete
-		for _, tableExpr := range node.TableExprs {
-			b.extractTable(tableExpr, result, internedDefault)
+		case *sqlparser.Update:
+			result.Type = Update
+			for _, tableExpr := range node.TableExprs {
+				b.extractTable(tableExpr, result, internedDefault)
+			}
+
+		case *sqlparser.Delete:
+			result.Type = Delete
+			for _, tableExpr := range node.TableExprs {
+				b.extractTable(tableExpr, result, internedDefault)
+			}
 		}
 	}
 

@@ -58,7 +58,6 @@ type BinlogIndexer struct {
 	parquetBuffer            []ParquetRow
 	parser                   *replication.BinlogParser
 	sqlParser                *sqlparser.Parser
-	sqlMetadataResult        *SQLSourceMetadata
 	isClosed                 bool
 	sqlStringBuilderForFlush strings.Builder
 
@@ -191,22 +190,18 @@ func NewBinlogIndexer(basePath string, binlogPath string, databaseFilename strin
 	sqlStringBuilderForFlush.Grow(builderSize)
 
 	return &BinlogIndexer{
-		BatchSize:       actualBatchSize,
-		binlogName:      binlogFilename,
-		binlogPath:      binlogPath,
-		compressionMode: compressionMode,
-		queries:         make([]Query, 0, queriesCapacity),
-		currentRowId:    1,
-		estimatedMemory: 0,
-		db:              db,
-		fw:              parquetFile,
-		pw:              parquetWriter,
-		parser:          replication.NewBinlogParser(),
-		sqlParser:       sql_parser,
-		sqlMetadataResult: &SQLSourceMetadata{
-			Tables: make([]*SQLTable, 0, 2),
-			Type:   Other,
-		},
+		BatchSize:                actualBatchSize,
+		binlogName:               binlogFilename,
+		binlogPath:               binlogPath,
+		compressionMode:          compressionMode,
+		queries:                  make([]Query, 0, queriesCapacity),
+		currentRowId:             1,
+		estimatedMemory:          0,
+		db:                       db,
+		fw:                       parquetFile,
+		pw:                       parquetWriter,
+		parser:                   replication.NewBinlogParser(),
+		sqlParser:                sql_parser,
 		sqlStringBuilderForFlush: sqlStringBuilderForFlush,
 		isClosed:                 false,
 		stringCache:              make(map[string]string),
@@ -325,23 +320,15 @@ func (p *BinlogIndexer) onBinlogEvent(e *replication.BinlogEvent) error {
 			sqlQuery := string(event.Query)
 			schema := p.bytesToString(event.Schema)
 
-			// Fast check: skip DDL/control statements entirely
-			queryType := detectQueryType(sqlQuery)
-			if queryType == Other {
-				// Skip indexing Other queries - they're not searchable/useful
-				break
-			}
-
-			// For DML statements (INSERT/UPDATE/DELETE/SELECT), parse to extract tables
-			metadata := p.ExtractSQLMetadata(sqlQuery, schema)
-
 			q := Query{
 				Timestamp: e.Header.Timestamp,
-				Metadata:  *metadata,
 				RowId:     p.currentRowId,
 				EventSize: e.Header.EventSize,
 				SQL:       sqlQuery,
 			}
+
+			queryType := detectQueryType(sqlQuery)
+			q.Metadata = *p.ExtractSQLMetadata(queryType, sqlQuery, schema)
 
 			p.estimatedMemory += int64(len(sqlQuery) + 32)
 			p.queries = append(p.queries, q)
@@ -378,8 +365,8 @@ func (p *BinlogIndexer) commitAnnotateRowsEvent() {
 	}
 	for _, table := range p.tableMapEvents {
 		metadata.Tables = append(metadata.Tables, &SQLTable{
-			Database: table[0], // Already interned
-			Table:    table[1], // Already interned
+			Database: table[0],
+			Table:    table[1],
 		})
 	}
 
@@ -396,7 +383,7 @@ func (p *BinlogIndexer) commitAnnotateRowsEvent() {
 	p.queries = append(p.queries, query)
 	p.currentRowId += 1
 
-	// reset - reuse slice capacity
+	// reset
 	p.annotateRowsEvent = nil
 	p.annotateRowsEventSize = 0
 	p.annotateRowsEventTimestamp = 0
