@@ -21,8 +21,6 @@
   "is_self_hosted",
   "enable_physical_backup",
   "halt_agent_jobs",
-  "enable_binlog_indexing",
-  "is_binlog_indexer_running",
   "column_break_qsqm",
   "is_server_setup",
   "is_server_renamed",
@@ -94,8 +92,6 @@
   "auto_purge_binlog_based_on_size",
   "binlog_max_disk_usage_percent",
   "column_break_hrsi",
-  "binlogs_removed",
-  "binlog_retention_days",
   "replication_tab",
   "is_primary",
   "column_break_vajj",
@@ -106,7 +102,17 @@
   "column_break_clus",
   "gtid_current_pos",
   "column_break_gasc",
-  "gtid_slave_pos"
+  "gtid_slave_pos",
+  "binlog_indexing_tab",
+  "enable_binlog_indexing",
+  "is_binlog_indexer_running",
+  "binlogs_removed",
+  "column_break_coih",
+  "binlog_retention_days",
+  "binlog_index_retention_days",
+  "column_break_blnf",
+  "enable_binlog_upload_to_s3",
+  "uploaded_binlogs_retention_days"
  ],
  "fields": [
   {
@@ -599,7 +605,6 @@
   },
   {
    "default": "14",
-   "description": "Only works with Binlog Indexer",
    "fieldname": "binlog_retention_days",
    "fieldtype": "Int",
    "label": "Binlog Retention (days)"
@@ -715,6 +720,35 @@
    "fieldname": "is_binlog_indexer_running",
    "fieldtype": "Check",
    "label": "Is Binlog Indexer Running"
+  },
+  {
+   "fieldname": "binlog_indexing_tab",
+   "fieldtype": "Tab Break",
+   "label": "Binlog Indexing"
+  },
+  {
+   "fieldname": "column_break_coih",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_blnf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "uploaded_binlogs_retention_days",
+   "fieldtype": "Int",
+   "label": "Uploaded Binlogs Retention (days)"
+  },
+  {
+   "fieldname": "binlog_index_retention_days",
+   "fieldtype": "Int",
+   "label": "Binlog Index Retention (days)"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_binlog_upload_to_s3",
+   "fieldtype": "Check",
+   "label": "Enable Binlog Upload to S3"
   }
  ],
  "grid_page_length": 50,
@@ -731,7 +765,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-12-03 22:41:51.401512",
+ "modified": "2025-12-05 00:48:58.793324",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
