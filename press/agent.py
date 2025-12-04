@@ -8,7 +8,7 @@ import os
 import re
 from contextlib import suppress
 from datetime import date
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import frappe
 import frappe.utils
@@ -191,7 +191,7 @@ class Agent:
 		)
 
 	def rename_site(self, site, new_name: str, create_user: dict | None = None, config: dict | None = None):
-		data = {"new_name": new_name}
+		data: dict[str, Any] = {"new_name": new_name}
 		if create_user:
 			data["create_user"] = create_user
 		if config:
@@ -531,7 +531,7 @@ class Agent:
 		from press.press.doctype.site_backup.site_backup import get_backup_bucket
 
 		data = {"with_files": site_backup.with_files}
-
+		data.update({"agent_job_timeout": 6 * 3600})
 		if site_backup.offsite:
 			settings = frappe.get_single("Press Settings")
 			backups_path = os.path.join(site.name, str(date.today()))
@@ -1585,13 +1585,13 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		cluster: str,
 		site: str,
 		database_name: str,
-		database_server: str,
+		database_server_name: str,
 		reference_doctype=None,
 		reference_name=None,
 	):
 		from press.press.doctype.site_backup.site_backup import get_backup_bucket
 
-		database_server: DatabaseServer = frappe.get_doc("Database Server", database_server)
+		database_server: DatabaseServer = frappe.get_doc("Database Server", database_server_name)
 		data = {
 			"site": site,
 			"database_name": database_name,
@@ -1634,7 +1634,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 	):
 		from press.press.doctype.site_backup.site_backup import get_backup_bucket
 
-		data = {
+		data: dict[str, Any] = {
 			"site": site,
 			"bench": bench,
 		}
