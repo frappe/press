@@ -51,6 +51,7 @@ class DatabaseServer(BaseServer):
 		auto_increase_storage: DF.Check
 		auto_purge_binlog_based_on_size: DF.Check
 		bastion_server: DF.Link | None
+		binlog_index_retention_days: DF.Int
 		binlog_max_disk_usage_percent: DF.Int
 		binlog_retention_days: DF.Int
 		binlogs_removed: DF.Check
@@ -58,6 +59,7 @@ class DatabaseServer(BaseServer):
 		communication_info: DF.Table[CommunicationInfo]
 		domain: DF.Link | None
 		enable_binlog_indexing: DF.Check
+		enable_binlog_upload_to_s3: DF.Check
 		enable_physical_backup: DF.Check
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
@@ -115,6 +117,7 @@ class DatabaseServer(BaseServer):
 		team: DF.Link | None
 		title: DF.Data | None
 		tls_certificate_renewal_failed: DF.Check
+		uploaded_binlogs_retention_days: DF.Int
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
 
@@ -308,7 +311,7 @@ class DatabaseServer(BaseServer):
 				"action": "Manage Database Binlogs",
 				"description": "View binlogs and purge old binlogs",
 				"button_label": "View",
-				"condition": self.status == "Active" and not self.enable_binlog_indexing,
+				"condition": self.status == "Active",
 				"doc_method": "get_binlogs_info",
 				"group": f"{server_type.title()} Actions",
 			},
@@ -648,8 +651,6 @@ class DatabaseServer(BaseServer):
 			days = int(days)
 		if days < 1:
 			frappe.throw("Binlog retention days cannot be less than 1")
-		if self.enable_binlog_indexing:
-			frappe.throw("Cannot update binlog retention days when binlog indexing is enabled.")
 
 		self.binlog_retention_days = days
 		# From MariaDB 10.6.1, expire_logs_days is alias of binlog_expire_logs_seconds
@@ -1659,9 +1660,6 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			raise e
 
 	def purge_binlogs_by_configured_size_limit(self):
-		if self.enable_binlog_indexing:
-			return
-
 		if not self.auto_purge_binlog_based_on_size:
 			return
 
@@ -1855,7 +1853,10 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 
 		self.agent.add_binlogs_to_indexer([x["file_name"] for x in filtered_binlogs])
 
-	def remove_binlogs_from_indexer(self, days: int = 7):
+	def remove_binlogs_from_indexer(self):
+		if not self.enable_binlog_indexing:
+			return
+
 		# Avoid if there is already Binlog Indexing related job
 		if self._is_binlog_indexing_related_operation_running():
 			return
@@ -1866,7 +1867,10 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			filters={
 				"database_server": self.name,
 				"indexed": 1,
-				"file_modification_time": ("<", frappe.utils.add_to_date(None, days=-1 * days)),
+				"file_modification_time": (
+					"<",
+					frappe.utils.add_to_date(None, days=-1 * self.binlog_index_retention_days),
+				),
 			},
 			pluck="file_name",
 			order_by="file_modification_time asc",
@@ -1892,6 +1896,9 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		self.agent.remove_binlogs_from_indexer(unindexable_binlogs)
 
 	def _is_binlog_indexing_related_operation_running(self):
+		if self.is_binlog_indexer_running:
+			return True
+
 		return frappe.db.exists(
 			"Agent Job",
 			{
@@ -1902,8 +1909,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		)
 
 	def upload_binlogs_to_s3(self):
-		if not self.enable_binlog_indexing:
-			frappe.msgprint("Binlog Indexing is not enabled")
+		if not self.enable_binlog_indexing or not self.enable_binlog_upload_to_s3:
 			return
 
 		# Upload only those binlogs which is indexed
@@ -1928,7 +1934,10 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 				"database_server": self.name,
 				"current": 0,
 				"purged_from_disk": 0,
-				"file_modification_time": ("<", frappe.utils.add_to_date(None, days=-1)),
+				"file_modification_time": (
+					"<",
+					frappe.utils.add_to_date(None, days=self.binlog_retention_days * -1),
+				),
 			},
 			order_by="file_name asc",
 			fields=["file_name", "uploaded"],
@@ -1953,7 +1962,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 				"uploaded": 1,
 				"file_modification_time": (
 					"<",
-					frappe.utils.add_to_date(None, days=-1 * self.binlog_retention_days),
+					frappe.utils.add_to_date(None, days=-1 * self.uploaded_binlogs_retention_days),
 				),
 			},
 			pluck="name",
@@ -2177,7 +2186,7 @@ def unindex_mariadb_binlogs():
 		filters={"status": "Active", "is_server_setup": 1, "is_self_hosted": 0, "enable_binlog_indexing": 1},
 	)
 	for database in databases:
-		frappe.get_doc("Database Server", database).remove_binlogs_from_indexer(days=7)
+		frappe.get_doc("Database Server", database).remove_binlogs_from_indexer()
 
 
 def update_binlog_indexer_status_on_agent_job_update(job: AgentJob):
@@ -2185,9 +2194,13 @@ def update_binlog_indexer_status_on_agent_job_update(job: AgentJob):
 		return
 
 	if job.status in ["Success", "Failure"]:
-		frappe.db.set_value(job.server_type, job.server, "is_binlog_indexer_running", False, update_modified=False)
+		frappe.db.set_value(
+			job.server_type, job.server, "is_binlog_indexer_running", False, update_modified=False
+		)
 	elif job.status in ["Pending", "Running"]:
-		frappe.db.set_value(job.server_type, job.server, "is_binlog_indexer_running", True, update_modified=False)
+		frappe.db.set_value(
+			job.server_type, job.server, "is_binlog_indexer_running", True, update_modified=False
+		)
 
 
 def process_add_binlogs_to_indexer_agent_job_update(job: AgentJob):
