@@ -18,6 +18,7 @@
   "cluster",
   "admin_password",
   "additional_system_user_created",
+  "backup_timeout",
   "config_tab",
   "hide_config",
   "host_name",
@@ -735,6 +736,12 @@
    "fieldtype": "Data",
    "label": "Reason for Disabling Monitoring",
    "read_only": 1
+  },
+  {
+   "default": "18000",
+   "fieldname": "backup_timeout",
+   "fieldtype": "Int",
+   "label": "Backup Timeout"
   }
  ],
  "links": [
@@ -814,7 +821,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2025-10-07 19:14:24.341019",
+ "modified": "2025-12-10 16:15:59.071177",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
