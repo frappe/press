@@ -154,6 +154,7 @@ class Site(Document, TagHelpers):
 		communication_infos: DF.Table[CommunicationInfo]
 		config: DF.Code | None
 		configuration: DF.Table[SiteConfig]
+		creation_failed: DF.Check
 		current_cpu_usage: DF.Int
 		current_database_usage: DF.Int
 		current_disk_usage: DF.Int
@@ -252,6 +253,7 @@ class Site(Document, TagHelpers):
 		"site_usage_exceeded",
 		"is_monitoring_disabled",
 		"reason_for_disabling_monitoring",
+		"creation_failed",
 	)
 
 	@staticmethod
@@ -365,10 +367,29 @@ class Site(Document, TagHelpers):
 					return func(inst, *args, **kwargs)
 				if has_support_access(inst.doctype, inst.name):
 					return func(inst, *args, **kwargs)
-				status = frappe.get_value(inst.doctype, inst.name, "status", for_update=True)
+
+				status, creation_failed = frappe.get_value(
+					inst.doctype, inst.name, ["status", "creation_failed"], for_update=True
+				)
+
 				if status not in allowed_status:
 					frappe.throw(
-						f"Site action not allowed for site with status: {frappe.bold(status)}.\nAllowed status are: {frappe.bold(comma_and(allowed_status))}."
+						_(
+							"Site action not allowed for site with status: {0}.\nAllowed status are: {1}."
+						).format(frappe.bold(status), frappe.bold(comma_and(allowed_status)))
+					)
+
+				allowed_actions_after_creation_failure = [
+					"restore_site_from_physical_backup",
+					"restore_site_from_files",
+					"restore_site",
+					"archive",
+				]
+				if creation_failed and func.__name__ not in allowed_actions_after_creation_failure:
+					frappe.throw(
+						_(
+							"Site action '{0}' is blocked because site creation failed. Please restore from a backup or drop this site to create a new one"
+						).format(frappe.bold(func.__name__))
 					)
 				return func(inst, *args, **kwargs)
 
@@ -3812,6 +3833,7 @@ def process_new_site_job_update(job):  # noqa: C901
 		marketplace_app_hook(site=Site("Site", job.site), op="install")
 	elif "Failure" in (first, second) or "Delivery Failure" in (first, second):
 		updated_status = "Broken"
+		frappe.db.set_value("Site", job.site, "creation_failed", 1)
 	elif "Running" in (first, second):
 		updated_status = "Installing"
 	else:
@@ -4089,6 +4111,8 @@ def process_restore_job_update(job, force=False):
 			site = Site("Site", job.site)
 			process_marketplace_hooks_for_backup_restore(set(apps_from_backup), site)
 			site.set_apps(apps_from_backup)
+			if frappe.db.get_value("Site", job.site, "creation_failed"):
+				frappe.db.set_value("Site", job.site, "creation_failed", 0)
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 		create_site_status_update_webhook_event(job.site)
 
@@ -4646,3 +4670,31 @@ def create_subscription_for_trial_sites():
 		except Exception:
 			frappe.db.rollback()
 			log_error(title="Creating subscription for trial sites", site=trial_site)
+
+
+def archive_creation_failure_sites():
+	seven_days_ago = frappe.utils.add_days(frappe.utils.today(), -7)
+	filters = {
+		"creation_failed": 1,
+		"status": ["!=", "Archived"],
+		"creation": ["<", seven_days_ago],
+	}
+
+	failed_sites = frappe.db.get_all(
+		"Site",
+		filters=filters,
+		fields=["name"],
+	)
+	if not failed_sites:
+		return
+
+	for site in failed_sites:
+		try:
+			site = frappe.get_doc("Site", site.name)
+			site.archive(
+				reason="Site creation failed and was not restored within 7 days",
+			)
+			frappe.db.commit()
+		except Exception:
+			frappe.log_error(title="Creation Failed Site Archive Error")
+			frappe.db.rollback()
