@@ -838,6 +838,7 @@ def update_billing_information(billing_details):
 		billing_details = frappe._dict(billing_details)
 		team = get_current_team(get_doc=True)
 		validate_pincode(billing_details)
+		validate_gst(billing_details)
 		if (team.country != billing_details.country) and (
 			team.country == "India" or billing_details.country == "India"
 		):
