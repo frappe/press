@@ -392,7 +392,9 @@ class Site(Document, TagHelpers):
 				allowed_actions_after_creation_failure = ["restore_site_from_physical_backup", "archive"]
 				if creation_failed and func.__name__ not in allowed_actions_after_creation_failure:
 					frappe.throw(
-						f"Site action '{frappe.bold(func.__name__)}' is blocked because site creation failed. Please restore from a backup or drop this site to create a new one"
+						_(
+							"Site action '{0}' is blocked because site creation failed. Please restore from a backup or drop this site to create a new one"
+						).format(frappe.bold(func.__name__))
 					)
 				return func(inst, *args, **kwargs)
 
@@ -4802,3 +4804,31 @@ def get_updates_between_current_and_next_apps(
 			}
 		)
 	return apps
+
+
+def archive_creation_failure_sites():
+	seven_days_ago = frappe.utils.add_days(frappe.utils.today(), -7)
+	filters = {
+		"creation_failed": 1,
+		"status": ["!=", "Archived"],
+		"creation": ["<", seven_days_ago],
+	}
+
+	failed_sites = frappe.db.get_all(
+		"Site",
+		filters=filters,
+		fields=["name"],
+	)
+	if not failed_sites:
+		return
+
+	for site in failed_sites:
+		try:
+			site = frappe.get_doc("Site", site.name)
+			site.archive(
+				reason="Site creation failed and was not restored within 7 days",
+			)
+			frappe.db.commit()
+		except Exception:
+			frappe.log_error(title="Creation Failed Site Archive Error")
+			frappe.db.rollback()
