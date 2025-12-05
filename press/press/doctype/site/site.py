@@ -939,7 +939,9 @@ class Site(Document, TagHelpers):
 
 	def try_increasing_disk(self, server: "BaseServer", mountpoint: str, diff: int, err_msg: str):
 		try:
-			server.calculated_increase_disk_size(mountpoint=mountpoint, additional=diff / 1024 / 1024 // 1024)
+			server.calculated_increase_disk_size(
+				mountpoint=mountpoint, additional=cint(diff / 1024 / 1024 // 1024)
+			)
 		except VolumeResizeLimitError:
 			frappe.throw(
 				f"{err_msg} Please wait {fmt_timedelta(server.time_to_wait_before_updating_volume)} before trying again.",
@@ -2422,9 +2424,6 @@ class Site(Document, TagHelpers):
 		if team.payment_mode == "Paid By Partner" and team.billing_team:
 			team = frappe.get_doc("Team", team.billing_team)
 
-		if team.is_defaulter():
-			frappe.throw("Cannot change plan because you have unpaid invoices", CannotChangePlan)
-
 		if not (team.default_payment_method or team.get_balance()):
 			frappe.throw(
 				"Cannot change plan because you haven't added a card and not have enough balance",
@@ -3400,7 +3399,7 @@ class Site(Document, TagHelpers):
 			frappe.cache().delete_value(key_for_schema)
 			frappe.cache().delete_value(key_for_schema_status)
 
-		status = frappe.utils.cint(frappe.cache().get_value(key_for_schema_status))
+		status = cint(frappe.cache().get_value(key_for_schema_status))
 		if status:
 			if status == 1:
 				return {
