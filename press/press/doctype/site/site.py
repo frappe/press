@@ -933,7 +933,7 @@ class Site(Document, TagHelpers):
 		mountpoint = server.guess_data_disk_mountpoint()
 		free_space = server.free_space(mountpoint)
 		if (diff := free_space - space_required) <= 0:
-			msg = f"Insufficient estimated space on {DOCTYPE_SERVER_TYPE_MAP[server.doctype]} server to {purpose}. Required: {human_readable(space_required)}, Available: {human_readable(free_space)} (Need {human_readable(abs(diff))})."
+			msg = f"Insufficient estimated space on {DOCTYPE_SERVER_TYPE_MAP[server.doctype]} server to {purpose}. Required: {human_readable(space_required)}, Available: {human_readable(free_space)} (Need {human_readable(abs(diff))} more)."
 			if server.public and not no_increase:
 				self.try_increasing_disk(server, mountpoint, diff, msg)
 			else:
