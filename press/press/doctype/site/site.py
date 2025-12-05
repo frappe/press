@@ -377,8 +377,8 @@ class Site(Document, TagHelpers):
 				if status not in allowed_status:
 					frappe.throw(
 						_(
-							"Site action not allowed for site with status: {frappe.bold(status)}.\nAllowed status are: {0}."
-						).format(frappe.bold(comma_and(allowed_status)))
+							"Site action not allowed for site with status: {0}.\nAllowed status are: {1}."
+						).format(frappe.bold(status), frappe.bold(comma_and(allowed_status)))
 					)
 
 				allowed_actions_after_creation_failure = ["restore_site_from_physical_backup", "archive"]
