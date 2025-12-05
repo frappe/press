@@ -371,11 +371,9 @@ class Site(Document, TagHelpers):
 				if has_support_access(inst.doctype, inst.name):
 					return func(inst, *args, **kwargs)
 
-				site_data = frappe.get_value(
-					inst.doctype, inst.name, ["status", "creation_failed"], for_update=True, as_dict=True
+				status, creation_failed = frappe.get_value(
+					inst.doctype, inst.name, ["status", "creation_failed"], for_update=True
 				)
-				status = site_data.status
-				creation_failed = site_data.creation_failed
 
 				if status not in allowed_status:
 					if disallowed_message and isinstance(disallowed_message, str):
@@ -389,7 +387,12 @@ class Site(Document, TagHelpers):
 							f"Site is in {frappe.bold(status.lower())} state. Your site have to be active to {frappe.bold(action_name_refined)}."
 						)
 
-				allowed_actions_after_creation_failure = ["restore_site_from_physical_backup", "archive"]
+				allowed_actions_after_creation_failure = [
+					"restore_site_from_physical_backup",
+					"restore_site_from_files",
+					"restore_site",
+					"archive",
+				]
 				if creation_failed and func.__name__ not in allowed_actions_after_creation_failure:
 					frappe.throw(
 						_(
