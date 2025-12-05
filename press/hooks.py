@@ -1,5 +1,3 @@
-from press.api.account import get_frappe_io_auth_url
-
 from . import __version__ as app_version
 
 app_name = "press"
@@ -69,7 +67,7 @@ website_route_rules = [
 ]
 
 website_redirects = [
-	{"source": "/dashboard/f-login", "target": get_frappe_io_auth_url() or "/"},
+	{"source": "/dashboard/f-login", "target": "/"},
 	{
 		"source": "/suspended-site",
 		"target": "/api/method/press.api.handle_suspended_site_redirection",
