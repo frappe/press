@@ -945,8 +945,11 @@ class BaseServer(Document, TagHelpers):
 			mountpoint = "/"
 		return mountpoint
 
-	def find_mountpoint_volume(self, mountpoint) -> "VirtualMachineVolume":
+	def find_mountpoint_volume(self, mountpoint) -> "VirtualMachineVolume" | None:
 		volume_id = None
+		if self.provider == "Generic":
+			return None
+
 		machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", self.virtual_machine)
 
 		if volume_id:
@@ -2042,7 +2045,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			log_error("Cadvisor Install Exception", server=self.as_dict())
 
 	@frappe.whitelist()
-	def set_additional_config(self):
+	def set_additional_config(self):  # noqa: C901
 		"""
 		Corresponds to Set additional config step in Create Server Press Job
 		"""
@@ -2078,6 +2081,9 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			self.adjust_memory_config()
 			self.provide_frappe_user_du_permission()
 			self.setup_logrotate()
+
+			if self.has_data_volume:
+				self.setup_binlog_indexes_folder()
 
 		if self.doctype == "Proxy Server":
 			self.setup_wildcard_hosts()

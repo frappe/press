@@ -10,3 +10,7 @@ env
 dist
 build
 *.egg-info
+mariadb_binlog_indexer
+*.prof
+mysql-bin.*
+tmp*

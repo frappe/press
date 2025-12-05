@@ -1,0 +1,8 @@
+---
+- name: Setup binlog indexes folder
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+  roles:
+    - role: setup_binlog_indexes_folder
