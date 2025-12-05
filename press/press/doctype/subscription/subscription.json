@@ -50,7 +50,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Interval",
-   "options": "Daily\nMonthly"
+   "options": "Hourly\nDaily\nMonthly"
   },
   {
    "default": "1",
@@ -108,7 +108,7 @@
    "link_fieldname": "subscription"
   }
  ],
- "modified": "2025-08-12 16:42:46.212706",
+ "modified": "2025-12-02 14:15:27.501756",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Subscription",
@@ -142,6 +142,7 @@
  ],
  "quick_entry": 1,
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

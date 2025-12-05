@@ -332,6 +332,31 @@ class NFSVolumeAttachment(Document, AutoScaleStepFailureHandler, StepHandler):
 
 		self.handle_vm_status_job(step, virtual_machine=virtual_machine, expected_status="Stopped")
 
+	def create_subscription_record(self, step: "NFSVolumeAttachmentStep"):
+		"""Create a subscription record for secondary server"""
+		step.status = Status.Running
+		step.save()
+
+		team = frappe.db.get_value("Server", self.primary_server, "team")
+
+		if not frappe.db.exists(
+			"Subscription",
+			{"document_name": self.secondary_server, "team": team, "plan_type": "Server Plan"},
+		):
+			frappe.get_doc(
+				doctype="Subscription",
+				team=team,
+				plan_type="Server Plan",
+				plan=frappe.db.get_value("Server", self.secondary_server, "plan"),
+				document_type="Server",
+				document_name=self.secondary_server,
+				interval="Hourly",
+				enabled=1,
+			).insert()
+
+		step.status = Status.Success
+		step.save()
+
 	def before_insert(self):
 		"""Append defined steps to the document before saving."""
 		for step in self.get_steps(
@@ -349,6 +374,7 @@ class NFSVolumeAttachment(Document, AutoScaleStepFailureHandler, StepHandler):
 				self.add_loopback_rule,
 				self.stop_secondary_server,
 				self.wait_for_secondary_server_to_stop,
+				self.create_subscription_record,
 				self.ready_to_auto_scale,
 			]
 		):
