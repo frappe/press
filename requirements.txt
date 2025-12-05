@@ -1,4 +1,4 @@
-ansible==3.4.0
+ansible==12.0.0
 beautifulsoup4
 boto3==1.39.14
 Click
