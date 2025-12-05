@@ -33,27 +33,29 @@ class ProxyFailover(Document, StepHandler):
 		self.status = "Pending"
 
 		primary = frappe.db.get_value("Proxy Server", self.primary, ["cluster", "is_static_ip"], as_dict=True)
-		if frappe.db.get_value("Proxy Server", self.secondary, "cluster") != primary.cluster:
-			frappe.throw("Failover can only be triggered between Proxy Servers in the same Cluster")
+		secondary = frappe.db.get_value("Proxy Server", self.secondary, ["cluster", "is_static_ip"], as_dict=True)
 
-		if not primary.is_static_ip:
+		if secondary.cluster != primary.cluster:
+			frappe.throw("Failover can only be initiated between Proxy Servers in the same Cluster")
+
+		if not primary.is_static_ip and not secondary.is_static_ip:
 			frappe.throw(
-				"(Currently) Failover can only be initiated if the primary proxy server has a static IP"
+				"Failover can only be initiated if one of the proxy server has a static IP"
 			)
 
 		for step in self.get_steps(
 			[
 				self.stop_replication,
-				# self.route_requests_from_primary_to_secondary,
-				# self.wait_for_secondary_proxy_routing,
-				self.halt_agent_jobs_on_primary,
 				self.attach_static_ip_to_secondary,
+				self.route_requests_from_primary_to_secondary,
+				self.wait_for_secondary_proxy_routing,
+				self.halt_agent_jobs_on_primary,
 				self.update_dns_records_for_all_sites,
 				self.move_wildcard_domains_from_primary,  # TODO: dont know the significance of this
-				self.add_ssh_users_for_existing_benches,
-				self.update_app_servers,
 				self.wait_for_wildcard_domains_setup,
+				self.update_app_servers,
 				self.forward_undelivered_jobs_to_secondary,
+				self.add_ssh_users_for_existing_benches,
 				self.remove_primary_access_and_ensure_nginx_started_in_secondary,
 				self.switch_primary,
 			]
@@ -105,8 +107,8 @@ class ProxyFailover(Document, StepHandler):
 			return
 
 		# TODO: trigger an agent job to add an nginx config to route all traffic to secondary
-		# job = primary_proxy.route_traffic_to_secondary(self.secondary)
-		# _update_status("Queued", step, Status.Success, job.name)
+		job = primary_proxy.route_traffic_to_secondary(self.secondary)
+		_update_status("Queued", step, Status.Success, job.name)
 
 	def wait_for_secondary_proxy_routing(self, step):
 		job = frappe.db.get_value(
