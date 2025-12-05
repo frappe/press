@@ -256,6 +256,7 @@ class Site(Document, TagHelpers):
 		"site_usage_exceeded",
 		"is_monitoring_disabled",
 		"reason_for_disabling_monitoring",
+		"creation_failed",
 	)
 
 	@staticmethod
