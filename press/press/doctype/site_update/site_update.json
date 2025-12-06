@@ -80,7 +80,7 @@
    "in_standard_filter": 1,
    "label": "Status",
    "no_copy": 1,
-   "options": "Pending\nRunning\nSuccess\nFailure\nRecovering\nRecovered\nFatal\nScheduled"
+   "options": "Pending\nRunning\nSuccess\nFailure\nRecovering\nRecovered\nFatal\nScheduled\nCancelled"
   },
   {
    "fieldname": "destination_bench",
@@ -342,7 +342,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-21 15:58:45.863368",
+ "modified": "2025-12-06 21:13:57.822331",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",
