@@ -724,8 +724,15 @@ def daily_usage(name, timezone):
 
 	plan = frappe.get_cached_doc("Site", name).plan
 
+	# Handle case where get_usage returns a dict instead of a list
+	# This happens when there's no log server or no aggregations data
+	if isinstance(request_data, dict):
+		data = []
+	else:
+		data = [{"value": r.max, "date": r.date} for r in request_data]
+
 	return {
-		"data": [{"value": r.max, "date": r.date} for r in request_data],
+		"data": data,
 		"plan_limit": get_plan_config(plan)["rate_limit"]["limit"] if plan else 0,
 	}
 
