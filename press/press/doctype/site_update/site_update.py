@@ -71,7 +71,15 @@ class SiteUpdate(Document):
 		source_bench: DF.Link | None
 		source_candidate: DF.Link | None
 		status: DF.Literal[
-			"Pending", "Running", "Success", "Failure", "Recovering", "Recovered", "Fatal", "Scheduled"
+			"Pending",
+			"Running",
+			"Success",
+			"Failure",
+			"Recovering",
+			"Recovered",
+			"Fatal",
+			"Scheduled",
+			"Cancelled",
 		]
 		team: DF.Link | None
 		touched_tables: DF.Code | None
@@ -713,11 +721,27 @@ class SiteUpdate(Document):
 
 	@frappe.whitelist()
 	def set_status(self, status):
-		frappe.db.set_value("Site Update", self.name, "status", status)
+		return self.update_status(self.name, status)
+
+	@classmethod
+	def update_status(cls, name, status):
+		if status == "Cancelled":
+			try:
+				if (
+					_status := frappe.db.get_value("Site Update", name, "status", for_update=True, wait=False)
+				) != "Scheduled":
+					frappe.throw(f"Cannot cancel a Site Update with status {_status}")
+
+			except (frappe.QueryTimeoutError, frappe.QueryDeadlockError):
+				frappe.throw(
+					"The update is probably underway. Please reload/refresh to get the latest status."
+				)
+
+		frappe.db.set_value("Site Update", name, "status", status)
 
 
 def update_status(name: str, status: str):
-	frappe.db.set_value("Site Update", name, "status", status)
+	SiteUpdate.update_status(name, status)
 	if status in ("Success", "Failure", "Fatal", "Recovered"):
 		frappe.db.set_value("Site Update", name, "update_end", frappe.utils.now())
 		update_start = frappe.db.get_value("Site Update", name, "update_start")
@@ -1102,7 +1126,10 @@ def run_scheduled_updates():
 
 	for update in updates:
 		try:
-			doc = frappe.get_doc("Site Update", update)
+			doc = frappe.get_doc("Site Update", update, for_update=True)
+			if doc.status != "Scheduled":
+				continue
+
 			doc.validate()
 			doc.start()
 			frappe.db.commit()
