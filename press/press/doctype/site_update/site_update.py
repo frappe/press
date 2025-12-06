@@ -449,8 +449,7 @@ class SiteUpdate(Document):
 		job = agent.deactivate_site(
 			frappe.get_doc("Site", self.site), reference_doctype="Site Update", reference_name=self.name
 		)
-		frappe.db.set_value("Site Update", self.name, "deactivate_site_job", job.name)
-		frappe.db.set_value("Site Update", self.name, "status", "Running")
+		frappe.db.set_value("Site Update", self.name, {"deactivate_site_job": job.name, "status": "Running"})
 
 	def create_physical_backup(self):
 		site: Site = frappe.get_doc("Site", self.site)
