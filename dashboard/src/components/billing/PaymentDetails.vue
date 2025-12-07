@@ -377,17 +377,17 @@ function updatePaymentMode(mode) {
 		mode === 'Paid By Partner' &&
 		Boolean(unpaidInvoices.data.length > 0)
 	) {
-		if (unpaidInvoices.data) {
-			payUnpaidInvoices();
-			return;
-		}
-		if (currentBillingAmount.value) {
-			const finalizeInvoicesDialog = defineAsyncComponent(
-				() => import('./FinalizeInvoicesDialog.vue'),
-			);
-			renderDialog(h(finalizeInvoicesDialog));
-			return;
-		}
+		payUnpaidInvoices();
+		return;
+	} else if (
+		mode === 'Paid By Partner' &&
+		Boolean(currentBillingAmount.value)
+	) {
+		const finalizeInvoicesDialog = defineAsyncComponent(
+			() => import('./FinalizeInvoicesDialog.vue'),
+		);
+		renderDialog(h(finalizeInvoicesDialog));
+		return;
 	}
 	if (!changePaymentMode.loading) changePaymentMode.submit({ mode });
 }
