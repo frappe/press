@@ -372,6 +372,7 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 		step.status = Status.Running
 		step.save()
 
+		# Since only created when scaling down this value will always be present!
 		last_auto_scale_at = frappe.db.get_value(
 			"Auto Scale Record",
 			{
@@ -385,8 +386,9 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 
 		auto_scaled_for = frappe.utils.now_datetime() - last_auto_scale_at
 		auto_scaled_for = auto_scaled_for.total_seconds() / 3600
-		secondary_server_plan = frappe.db.get_value("Server", self.secondary_server, "plan")
-		secondary_server_team = frappe.db.get_value("Server", self.secondary_server, "team")
+		secondary_server_plan, secondary_server_team = frappe.db.get_value(
+			"Server", self.secondary_server, ["plan", "team"]
+		)
 
 		calculated_amount = calculate_amount_from_usage(
 			auto_scaled_for=auto_scaled_for,
