@@ -775,6 +775,9 @@ def schedule_auto_scale(name, scheduled_scale_up_time: str, scheduled_scale_down
 	formatted_scheduled_scale_up_time = datetime.strptime(scheduled_scale_up_time, "%Y-%m-%d %H:%M:%S")
 	formatted_scheduled_scale_down_time = datetime.strptime(scheduled_scale_down_time, "%Y-%m-%d %H:%M:%S")
 
+	if (formatted_scheduled_scale_down_time - formatted_scheduled_scale_up_time).total_seconds() / 60 < 60:
+		frappe.throw("Scheduled scales must be an hour apart", frappe.ValidationError)
+
 	def create_record(action: str, scheduled_time: datetime) -> None:
 		doc = frappe.get_doc(
 			{
