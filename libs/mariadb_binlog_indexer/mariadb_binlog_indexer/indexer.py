@@ -1,3 +1,4 @@
+# type: ignore
 from __future__ import annotations
 
 import contextlib
@@ -25,29 +26,81 @@ class Indexer:
 		self.logging = False
 		self._lock_file_path = os.path.join(self.base_path, "indexer.lock")
 
-	def add(self, binlog_path: str, batch_size: int = 10000):
+	def add(
+		self,
+		binlog_path: str,
+		mode: Literal["low-memory", "balanced", "high-compression"] = "balanced",
+		cpu_quota_percentage: int = 0,
+		memory_hard_limit: int = 0,
+	):
+		"""
+		NOTE: It's mandatory to enable linger for the user running this process for systemd-run to work properly.
+		You can enable it by running: loginctl enable-linger $USER
+		"""
 		with filelock.FileLock(self._lock_file_path):
-			subprocess.run(
-				[
-					self.indexer_lib,
-					"add",
-					self.base_path,
-					binlog_path,
-					self.db_name,
-					str(batch_size),
-				]
-			)
+			command = [
+				self.indexer_lib,
+				"add",
+				self.base_path,
+				binlog_path,
+				self.db_name,
+				mode,
+			]
+			if cpu_quota_percentage > 0 or memory_hard_limit > 0:
+				systemd_command = ["systemd-run", "--scope", "--user"]
+
+				if cpu_quota_percentage > 0:
+					systemd_command.extend(
+						[
+							"-p",
+							f"CPUQuota={cpu_quota_percentage}%",
+						]
+					)
+				if memory_hard_limit > 0:
+					systemd_command.extend(
+						[
+							"-p",
+							f"MemoryMax={memory_hard_limit}M",
+						]
+					)
+
+				command = [*systemd_command, *command]
+
+			env = os.environ.copy()
+			uid = os.getuid()
+			xdg_runtime = f"/run/user/{uid}"
+
+			env["XDG_RUNTIME_DIR"] = xdg_runtime
+			env["DBUS_SESSION_BUS_ADDRESS"] = f"unix:path={xdg_runtime}/bus"
+
+			result = subprocess.run(command, text=True, capture_output=True, check=False, env=env)
+			if result.returncode != 0:
+				raise Exception(
+					f"Failed to index binlog:\n\nStdout: {result.stdout}\nStderr: {result.stderr}"
+				)
 
 	def remove(self, binlog_path: str):
 		with filelock.FileLock(self._lock_file_path):
-			subprocess.run([self.indexer_lib, "remove", self.base_path, binlog_path, self.db_name])
+			result = subprocess.run(
+				[self.indexer_lib, "remove", self.base_path, binlog_path, self.db_name],
+				text=True,
+				capture_output=True,
+				check=False,
+			)
+			if result.returncode != 0:
+				raise Exception(
+					f"Failed to remove binlog from indexer:\n\nStdout: {result.stdout}\nStderr: {result.stderr}"
+				)
 
-	def get_timeline(
+	def get_timeline(  # noqa: C901
 		self,
 		start_timestamp: int,
 		end_timestamp: int,
 		type: QUERY_TYPES | None = None,
 		database: str | None = None,
+		table: str | None = None,
+		event_size_comparator: Literal["gt", "lt"] | None = None,
+		event_size: int | None = None,
 	):
 		"""
 		Args:
@@ -105,6 +158,23 @@ class Indexer:
 			where_clause += " AND q.db_name = ? "
 			parameters.append(database)
 
+		if table is not None:
+			# Check if it's a like search or exact match
+			if table.startswith("%") or table.endswith("%"):
+				where_clause += " AND q.table_name LIKE ? "
+			else:
+				where_clause += " AND q.table_name = ? "
+			parameters.append(table)
+
+		if event_size_comparator is not None and event_size is not None:
+			if event_size_comparator == "gt":
+				where_clause += " AND q.event_size >= ? "
+			elif event_size_comparator == "lt":
+				where_clause += " AND q.event_size <= ? "
+
+			if event_size_comparator in ["gt", "lt"]:
+				parameters.append(event_size)
+
 		query_result = self._execute_query(
 			"db",
 			f"""WITH time_intervals AS (
@@ -152,6 +222,8 @@ class Indexer:
 		database: str | None = None,
 		table: str | None = None,
 		search_str: str | None = None,
+		event_size_comparator: Literal["gt", "lt"] | None = None,
+		event_size: int | None = None,
 	) -> dict[str, list[int]]:
 		"""
 		Args:
@@ -180,8 +252,21 @@ class Indexer:
 			where_clause += " AND db_name = ? "
 			parameters.append(database)
 		if table is not None:
-			where_clause += " AND table_name = ? "
+			# Check if it's a like search or exact match
+			if table.startswith("%") or table.endswith("%"):
+				where_clause += " AND table_name LIKE ? "
+			else:
+				where_clause += " AND table_name = ? "
 			parameters.append(table)
+
+		if event_size_comparator is not None and event_size is not None:
+			if event_size_comparator == "gt":
+				where_clause += " AND event_size >= ? "
+			elif event_size_comparator == "lt":
+				where_clause += " AND event_size <= ? "
+
+			if event_size_comparator in ["gt", "lt"]:
+				parameters.append(event_size)
 
 		row_ids = [
 			i

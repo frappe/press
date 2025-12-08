@@ -9,7 +9,7 @@ frappe.ui.form.on('Database Server', {
 		);
 
 		[
-			[__('Ping Agent'), 'ping_agent', false, !frm.doc.is_server_setup],
+			[__('Ping Agent'), 'ping_agent', false, frm.doc.is_server_setup],
 			[__('Ping Ansible'), 'ping_ansible', true, frm.doc.is_server_prepared],
 			[
 				__('Ping Ansible Unprepared'),

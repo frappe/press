@@ -1481,7 +1481,7 @@ class Site(Document, TagHelpers):
 			self.unset_redirects_in_proxy(domains)
 
 	def set_redirects_in_proxy(self, domains: list[str]):
-		target = self.host_name
+		target = str(self.host_name)
 		if self.is_on_standalone:
 			agent = Agent(self.server)
 		else:
@@ -3571,63 +3571,121 @@ class Site(Document, TagHelpers):
 			self.save()
 		return self.database_name
 
+	def is_binlog_indexer_running(self):
+		return bool(
+			frappe.db.get_value("Database Server", self.database_server_name, "is_binlog_indexer_running")
+		)
+
+	def is_binlog_indexing_enabled(self):
+		return bool(
+			frappe.db.get_value(
+				"Database Server", self.database_server_name, "enable_binlog_indexing", cache=True
+			)
+		)
+
 	@dashboard_whitelist()
-	def fetch_binlog_timeline(self, start: int, end: int, query_type: str | None = None):  # noqa: C901
+	def binlog_indexing_service_status(self):
+		hosted_on_shared_server = bool(
+			frappe.db.get_value("Database Server", self.database_server_name, "public", cache=True)
+		)
+		data = {
+			"enabled": self.is_binlog_indexing_enabled(),
+			"indexer_running": self.is_binlog_indexer_running(),
+			"database_server": self.database_server_name,
+			"hosted_on_shared_server": hosted_on_shared_server,
+			"database_server_memory": 0
+			if hosted_on_shared_server
+			else frappe.db.get_value("Database Server", self.database_server_name, "ram", cache=True),
+		}
+		# If the site is on hosted on shared server, only allow `System User` to view the binlog indexing service status
+		if hosted_on_shared_server and not frappe.local.system_user():
+			data["enabled"] = False
+
+		# Turn off hosted_on_shared_server flag if the user is System User
+		if frappe.local.system_user():
+			data["hosted_on_shared_server"] = False
+			data["database_server_memory"] = (
+				frappe.db.get_value("Database Server", self.database_server_name, "ram", cache=True),
+			)
+
+		return data
+
+	@dashboard_whitelist()
+	def fetch_binlog_timeline(  # noqa: C901
+		self,
+		start: int,
+		end: int,
+		table: str | None = None,
+		query_type: str | None = None,
+		event_size_comparator: Literal["gt", "lt"] | None = None,
+		event_size: int | None = None,
+	):
+		if (not self.is_binlog_indexing_enabled()) or (self.is_binlog_indexer_running()):
+			frappe.throw("Binlog indexing service is not enabled or in maintenance.")
+
+		if start >= end:
+			frappe.throw("Invalid time range. Start time must be less than end time.")
+
 		data = self.database_server_agent.get_binlogs_timeline(
 			start=start,
 			end=end,
+			table=table,
 			type=query_type,
 			database=self.fetch_database_name(),
+			event_size_comparator=event_size_comparator,
+			event_size=event_size,
 		)
 
 		start_timestamp = data.get("start_timestamp")
 		end_timestamp = data.get("end_timestamp")
 		interval = data.get("interval")
-		series = []
+		dataset = {}
+		time_series = []
+		blank_data = {
+			"INSERT": 0,
+			"UPDATE": 0,
+			"DELETE": 0,
+			"SELECT": 0,
+			"OTHER": 0,
+		}
 		current_timestamp = start_timestamp
 		while current_timestamp < end_timestamp:
-			series.append(current_timestamp)
+			dataset[current_timestamp] = blank_data.copy()
+			time_series.append(current_timestamp)
 			current_timestamp += interval
 
 		if current_timestamp == end_timestamp:
-			series.append(current_timestamp)
-		elif len(series) > 0 and series[-1] != end_timestamp:
-			series.append(end_timestamp)
+			time_series.append(end_timestamp)
+			dataset[current_timestamp] = blank_data.copy()
+		elif len(time_series) > 0 and time_series[-1] != end_timestamp:
+			dataset[end_timestamp] = blank_data.copy()
 
-		dataset_map = {
-			"INSERT": [0],
-			"UPDATE": [0],
-			"DELETE": [0],
-			"SELECT": [0],
-			"OTHER": [0],
-		}
-
-		if len(series) > 1:
-			for i in range(len(series) - 1):
-				start_timestamp = series[i]
-				end_timestamp = series[i + 1]
+		# TODO optimize this loop
+		if len(time_series) > 1:
+			for i in range(len(time_series) - 1):
+				start_timestamp = time_series[i]
+				end_timestamp = time_series[i + 1]
 				key = f"{start_timestamp}:{end_timestamp}"
 				if key not in data["results"]:
 					continue
 
 				query_data: dict = data["results"][key]
-				for q in dataset_map:
-					dataset_map[q].append(query_data.get(q, 0))
+				dataset[start_timestamp]["INSERT"] = query_data.get("INSERT", 0)
+				dataset[start_timestamp]["UPDATE"] = query_data.get("UPDATE", 0)
+				dataset[start_timestamp]["DELETE"] = query_data.get("DELETE", 0)
+				dataset[start_timestamp]["SELECT"] = query_data.get("SELECT", 0)
+				dataset[start_timestamp]["OTHER"] = query_data.get("OTHER", 0)
 
-		datasets = []
-		for key, value in dataset_map.items():
-			datasets.append(
-				{
-					"stack": "path",
-					"path": key,
-					"values": value,
-				}
-			)
+		# Convert dataset to list of dicts
+		converted_dataset = []
+		for timestamp in sorted(dataset.keys()):
+			entry = {"timestamp": timestamp}
+			entry.update(dataset[timestamp])
+			converted_dataset.append(entry)
 
 		return {
-			"datasets": datasets,
-			"labels": series,
-			"tables": data.get("tables", []),
+			"dataset": converted_dataset,
+			"tables": sorted(data.get("tables", [])),
 		}
 
 	@dashboard_whitelist()
@@ -3638,9 +3696,17 @@ class Site(Document, TagHelpers):
 		query_type: str | None = None,
 		table: str | None = None,
 		search_string: str | None = None,
+		event_size_comparator: Literal["gt", "lt"] | None = None,
+		event_size: int | None = None,
 	):
-		if (end - start) > 60 * 60 * 24:
-			frappe.throw("Binlog search is limited to 24 hours. Please select a smaller time range.")
+		if (not self.is_binlog_indexing_enabled()) or (self.is_binlog_indexer_running()):
+			frappe.throw("Binlog indexing service is not enabled or in maintenance.")
+
+		if start >= end:
+			frappe.throw("Invalid time range. Start time must be less than end time.")
+
+		if (end - start) > 60 * 60 * 6:
+			frappe.throw("Binlog search is limited to 6 hours. Please select a smaller time range.")
 
 		if not table:
 			table = None
@@ -3654,10 +3720,17 @@ class Site(Document, TagHelpers):
 			database=self.fetch_database_name(),
 			table=table,
 			search_str=search_string,
+			event_size_comparator=event_size_comparator,
+			event_size=event_size,
 		)
 
 	@dashboard_whitelist()
 	def fetch_queries_from_binlog(self, row_ids: dict[str, list[int]]):
+		# Don't allow to fetch more than 100 rows at a time
+		total_row_ids = sum(len(v) for v in row_ids.values())
+		if total_row_ids > 100:
+			frappe.throw("Cannot fetch more than 100 rows at a time from binlog.")
+
 		return self.database_server_agent.get_binlog_queries(
 			row_ids=row_ids, database=self.fetch_database_name()
 		)

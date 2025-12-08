@@ -60,6 +60,7 @@ class PressSettings(Document):
 		deploy_marker: DF.Data | None
 		disable_agent_job_deduplication: DF.Check
 		disable_auto_retry: DF.Check
+		disable_binlog_indexer_jobs: DF.Check
 		disable_frappe_auth: DF.Check
 		disable_physical_backup: DF.Check
 		disallow_disposable_emails: DF.Check

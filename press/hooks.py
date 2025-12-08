@@ -227,6 +227,7 @@ scheduler_events = {
 		"press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.expire_backups",
 		"press.press.doctype.server_snapshot.server_snapshot.expire_snapshots",
 		"press.saas.doctype.product_trial.product_trial.sync_product_site_users",
+		"press.press.doctype.database_server.database_server.sync_binlogs_info",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
@@ -336,7 +337,6 @@ scheduler_events = {
 		"*/30 * * * *": [
 			"press.press.doctype.site_update.scheduled_auto_updates.trigger",
 			"press.press.doctype.team.suspend_sites.execute",
-			"press.press.doctype.database_server.database_server.sync_binlogs_info",
 		],
 		"15,45 * * * *": [
 			"press.press.doctype.site.site_usages.update_cpu_usages",

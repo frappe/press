@@ -8,7 +8,7 @@ import os
 import re
 from contextlib import suppress
 from datetime import date
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal
 
 import frappe
 import frappe.utils
@@ -273,6 +273,8 @@ class Agent:
 			public_link = frappe.get_doc("Remote File", site.remote_public_file).download_link
 		if site.remote_private_file:
 			private_link = frappe.get_doc("Remote File", site.remote_private_file).download_link
+
+		assert site.config is not None, "Site config is required to restore site from backup"
 
 		data = {
 			"config": json.loads(site.config),
@@ -1466,10 +1468,27 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			"Remove Binlogs From Indexer", "/database/binlogs/indexer/remove", data={"binlogs": binlogs}
 		)
 
-	def get_binlogs_timeline(self, start: int, end: int, database: str, type: str | None = None):
+	def get_binlogs_timeline(
+		self,
+		start: int,
+		end: int,
+		database: str,
+		table: str | None = None,
+		type: str | None = None,
+		event_size_comparator: Literal["gt", "lt"] | None = None,
+		event_size: int | None = None,
+	):
 		return self.post(
 			"/database/binlogs/indexer/timeline",
-			data={"start_timestamp": start, "end_timestamp": end, "database": database, "type": type},
+			data={
+				"start_timestamp": start,
+				"end_timestamp": end,
+				"database": database,
+				"table": table,
+				"type": type,
+				"event_size_comparator": event_size_comparator,
+				"event_size": event_size,
+			},
 		)
 
 	def search_binlogs(
@@ -1480,6 +1499,8 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		type: str | None = None,
 		table: str | None = None,
 		search_str: str | None = None,
+		event_size_comparator: Literal["gt", "lt"] | None = None,
+		event_size: int | None = None,
 	):
 		return self.post(
 			"/database/binlogs/indexer/search",
@@ -1490,6 +1511,8 @@ Response: {reason or getattr(result, "text", "Unknown")}
 				"type": type,
 				"table": table,
 				"search_str": search_str,
+				"event_size_comparator": event_size_comparator,
+				"event_size": event_size,
 			},
 		)
 

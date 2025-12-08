@@ -52,7 +52,6 @@ const table = useVueTable({
 	data: generatedData,
 	manualPagination: true,
 	onPaginationChange: (updater) => {
-		const currentPageSize = paginationInfo.pageSize;
 		const data = updater(paginationInfo);
 		paginationInfo.pageSize = data.pageSize;
 		paginationInfo.pageIndex = data.pageIndex;
@@ -194,12 +193,20 @@ watch(
 		<div class="relative flex flex-1 flex-col overflow-auto text-base">
 			<div
 				v-if="loadingData"
-				class="absolute bottom-0 left-0 right-0 top-0 flex w-full items-center justify-center gap-2 bg-white-overlay-900 text-base text-gray-800"
+				class="absolute bottom-0 left-0 right-0 top-0 flex w-full items-center justify-center gap-2 bg-white text-base text-gray-800 min-h-80"
 			>
 				<Spinner class="w-4" /> Crunching data...
 			</div>
+			<div
+				v-if="props.data?.length == 0"
+				class="flex flex-col h-80 items-center justify-center text-gray-800 text-base gap-1"
+			>
+				<p>No results to display</p>
+				<br />
+				<p>Try adjusting your search criteria or filters</p>
+			</div>
 			<table
-				v-if="props?.columns?.length"
+				v-else
 				class="border-separate border-spacing-0"
 				:class="{
 					'h-80': !props.data?.length,
@@ -273,12 +280,6 @@ watch(
 					<tr height="99%" class="border-b"></tr>
 				</tbody>
 			</table>
-			<div
-				v-else-if="props.data?.length == 0"
-				class="flex min-h-[20vh] items-center justify-center"
-			>
-				<div>No results to display</div>
-			</div>
 		</div>
 
 		<div
@@ -292,8 +293,8 @@ watch(
 					:disabled="loadingData"
 				>
 					<option value="10">10&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
+					<option value="25">25&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
 					<option value="50">50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
-					<option value="100">100&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
 				</select>
 				<p class="text-sm text-gray-600">Per Page</p>
 			</div>
