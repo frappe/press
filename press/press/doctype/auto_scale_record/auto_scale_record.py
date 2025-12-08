@@ -384,23 +384,15 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 			"modified",
 		)
 
+		secondary_server_team = frappe.db.get_value("Server", self.secondary_server, "team")
+
 		auto_scaled_for = frappe.utils.now_datetime() - last_auto_scale_at
 		auto_scaled_for = auto_scaled_for.total_seconds() / 3600
-		secondary_server_plan, secondary_server_team = frappe.db.get_value(
-			"Server", self.secondary_server, ["plan", "team"]
-		)
+		secondary_server_plan = frappe.db.get_value("Server", self.secondary_server, "plan")
 
-		calculated_amount = calculate_amount_from_usage(
-			auto_scaled_for=auto_scaled_for,
-			team=secondary_server_team,
-			secondary_server_plan=secondary_server_plan,
+		secondary_server_hourly_price_with_discount = calculate_secondary_server_price(
+			secondary_server_team, secondary_server_plan
 		)
-
-		if not calculated_amount > 0.00:
-			# Only create usage record if amount is greater than 0.00 (round off two places)
-			step.status = Status.Success
-			step.save()
-			return
 
 		usage_record = frappe.get_doc(
 			doctype="Usage Record",
@@ -408,8 +400,8 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 			document_type="Server",
 			document_name=self.secondary_server,
 			plan_type="Server Plan",
+			amount=secondary_server_hourly_price_with_discount,
 			plan=secondary_server_plan,
-			amount=calculated_amount,
 			date=frappe.utils.now_datetime(),
 			subscription=frappe.db.get_value(
 				"Subscription",
@@ -546,8 +538,8 @@ def run_scheduled_scale_records():
 		frappe.db.commit()
 
 
-def calculate_amount_from_usage(auto_scaled_for: int, team: str, secondary_server_plan: str) -> float:
-	"""Calculate the amount given with a 10% discount for the up scaled hours"""
+def calculate_secondary_server_price(team: str, secondary_server_plan: str) -> float:
+	"""Calculate secondary server proice with a 10% discount"""
 	is_inr = frappe.db.get_value("Team", team, "currency") == "INR"
 	price_field = "price_inr" if is_inr else "price_usd"
 
@@ -555,5 +547,4 @@ def calculate_amount_from_usage(auto_scaled_for: int, team: str, secondary_serve
 	server_price_with_discount = server_price * 0.9
 
 	_, days_in_this_month = calendar.monthrange(datetime.date.today().year, datetime.date.today().month)
-	price_per_hour = server_price_with_discount / days_in_this_month / 24
-	return round(price_per_hour * auto_scaled_for, 2)
+	return server_price_with_discount / days_in_this_month / 24
