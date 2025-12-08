@@ -3591,6 +3591,7 @@ class Site(Document, TagHelpers):
 		data = {
 			"enabled": self.is_binlog_indexing_enabled(),
 			"indexer_running": self.is_binlog_indexer_running(),
+			"database_server": self.database_server_name,
 			"hosted_on_shared_server": hosted_on_shared_server,
 			"database_server_memory": 0
 			if hosted_on_shared_server

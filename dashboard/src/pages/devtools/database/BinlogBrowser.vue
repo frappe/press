@@ -26,6 +26,20 @@
 							<lucide-flask-conical class="h-4 w-4 text-purple-500" />
 						</div>
 					</Tooltip>
+					<Button
+						v-if="site"
+						:disabled="
+							isProcessingQueries &&
+							binlog_indexer_enabled &&
+							isBinlogIndexerAvailable
+						"
+						@click.prevent="() => (show_binlog_index_status_dialog = true)"
+					>
+						<div class="flex flex-row items-center gap-1">
+							<lucide-package-search class="h-4 w-4" /> Binlogs
+						</div>
+					</Button>
+
 					<LinkControl
 						class="cursor-pointer"
 						:options="{ doctype: 'Site', filters: { status: 'Active' } }"
@@ -296,6 +310,18 @@
 				</p>
 			</div>
 		</div>
+
+		<!-- Binlog Index Status Dialog -->
+		<BinlogBrowserIndexStatusDialog
+			v-if="
+				database_server &&
+				show_binlog_index_status_dialog &&
+				isBinlogIndexerAvailable
+			"
+			:server="this.$resources?.site?.data?.server"
+			:database_server="database_server"
+			v-model="show_binlog_index_status_dialog"
+		/>
 	</div>
 </template>
 <script>
@@ -350,10 +376,12 @@ export default {
 			binlog_indexer_running: false,
 			site_hosted_on_shared_server: false,
 			database_server_memory: 0,
+			database_server: null,
 			binlog_status_check_interval_ref: null,
 			timer: null,
 			event_size_comparator: '',
 			event_size: null,
+			show_binlog_index_status_dialog: false,
 		};
 	},
 	mounted() {
@@ -382,7 +410,6 @@ export default {
 			this.database_server_memory = 0;
 
 			this.$resources.site.submit();
-			this.fetchBinlogServiceStatus();
 		},
 		tableName() {
 			this.refreshDataWithDebounce();
@@ -426,7 +453,7 @@ export default {
 				},
 				auto: false,
 				onSuccess: (data) => {
-					if (data?.message) {
+					if (data) {
 						this.fetchBinlogServiceStatus();
 					}
 				},
@@ -464,6 +491,7 @@ export default {
 						this.binlog_indexer_running = data.message?.indexer_running;
 						this.site_hosted_on_shared_server =
 							data.message?.hosted_on_shared_server;
+						this.database_server = data.message?.database_server;
 						this.database_server_memory = data.message?.database_server_memory;
 					}
 				},
