@@ -8,11 +8,7 @@ import os
 import re
 from contextlib import suppress
 from datetime import date
-<<<<<<< HEAD
-from typing import TYPE_CHECKING
-=======
 from typing import TYPE_CHECKING, Any, Literal
->>>>>>> 96a480408 (refactor(binlog-browser): Enhance interactivity)
 
 import frappe
 import frappe.utils
