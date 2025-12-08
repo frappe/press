@@ -708,6 +708,7 @@
         "Rhiv",
         "Kvsc",
         "ZSTD",
-        "Wazuh"
+        "Wazuh",
+        "DBUS"
     ]
 }

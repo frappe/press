@@ -274,6 +274,8 @@ class Agent:
 		if site.remote_private_file:
 			private_link = frappe.get_doc("Remote File", site.remote_private_file).download_link
 
+		assert site.config is not None, "Site config is required to restore site from backup"
+
 		data = {
 			"config": json.loads(site.config),
 			"apps": apps,
