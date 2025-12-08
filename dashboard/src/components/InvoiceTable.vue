@@ -34,7 +34,7 @@
 							<td class="py-1 pl-2 pr-2">
 								{{ row.document_name }}
 								<span v-if="row.plan" class="text-gray-700">
-									({{ formatPlan(row.plan) }}/mo)
+									({{ formatPlan(row.plan) }})
 								</span>
 							</td>
 							<td class="py-1 pl-2 pr-2 text-right">
@@ -42,15 +42,16 @@
 							</td>
 							<td class="py-1 pl-2 pr-2 text-right">
 								{{ row.quantity }}
+
 								{{
 									[
 										'Site',
 										'Release Group',
 										'Server',
 										'Database Server',
-									].includes(row.document_type)
+									].includes(row.document_type) && !row.plan.includes('hour')
 										? $format.plural(row.quantity, 'day', 'days')
-										: ''
+										: 'hours'
 								}}
 							</td>
 							<td class="py-1 pl-2 pr-2 text-right font-medium">
