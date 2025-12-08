@@ -2086,6 +2086,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			self.adjust_memory_config()
 			self.provide_frappe_user_du_permission()
 			self.setup_logrotate()
+			self.setup_user_lingering()
 
 			if self.has_data_volume:
 				self.setup_binlog_indexes_folder()
