@@ -2263,7 +2263,7 @@ def monitor_disk_performance():
 
 
 def sync_binlogs_info():
-	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_jobs"):
+	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_service"):
 		return
 
 	databases = frappe.db.get_all(
@@ -2283,7 +2283,7 @@ def sync_binlogs_info():
 
 
 def remove_uploaded_binlogs_from_disk():
-	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_jobs"):
+	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_service"):
 		return
 
 	databases = frappe.db.get_all(
@@ -2303,7 +2303,7 @@ def remove_uploaded_binlogs_from_disk():
 
 
 def remove_uploaded_binlogs_from_s3():
-	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_jobs"):
+	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_service"):
 		return
 
 	databases = frappe.db.get_all(
@@ -2323,7 +2323,7 @@ def remove_uploaded_binlogs_from_s3():
 
 
 def delete_mariadb_binlog_for_archived_servers():
-	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_jobs"):
+	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_service"):
 		return
 	"""
 	Delete binlog records for archived servers
@@ -2349,7 +2349,7 @@ def delete_mariadb_binlog_for_archived_servers():
 
 
 def unindex_mariadb_binlogs():
-	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_jobs"):
+	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_service"):
 		return
 	databases = frappe.get_all(
 		"Database Server",
