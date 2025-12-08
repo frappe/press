@@ -840,6 +840,27 @@ class DatabaseServer(BaseServer):
 		except Exception:
 			log_error("Archived folder setup error", server=self.as_dict())
 
+	def setup_user_lingering(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_setup_user_lingering",
+			queue="short",
+			timeout=1200,
+		)
+
+	def _setup_user_lingering(self):
+		try:
+			ansible = Ansible(
+				playbook="setup_user_lingering.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("User lingering setup error", server=self.as_dict())
+
 	def process_hybrid_server_setup(self):
 		try:
 			hybrid_server = frappe.db.get_value("Self Hosted Server", {"database_server": self.name}, "name")
@@ -2207,6 +2228,9 @@ def monitor_disk_performance():
 
 
 def sync_binlogs_info():
+	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_jobs"):
+		return
+
 	databases = frappe.db.get_all(
 		"Database Server",
 		filters={"status": "Active", "is_server_setup": 1, "is_self_hosted": 0, "enable_binlog_indexing": 1},
@@ -2224,6 +2248,9 @@ def sync_binlogs_info():
 
 
 def remove_uploaded_binlogs_from_disk():
+	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_jobs"):
+		return
+
 	databases = frappe.db.get_all(
 		"Database Server",
 		filters={"status": "Active", "is_server_setup": 1, "is_self_hosted": 0, "enable_binlog_indexing": 1},
@@ -2241,6 +2268,9 @@ def remove_uploaded_binlogs_from_disk():
 
 
 def remove_uploaded_binlogs_from_s3():
+	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_jobs"):
+		return
+
 	databases = frappe.db.get_all(
 		"Database Server",
 		filters={"status": "Active", "is_server_setup": 1, "is_self_hosted": 0, "enable_binlog_indexing": 1},
@@ -2258,6 +2288,8 @@ def remove_uploaded_binlogs_from_s3():
 
 
 def delete_mariadb_binlog_for_archived_servers():
+	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_jobs"):
+		return
 	"""
 	Delete binlog records for archived servers
 	"""
@@ -2282,6 +2314,8 @@ def delete_mariadb_binlog_for_archived_servers():
 
 
 def unindex_mariadb_binlogs():
+	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_jobs"):
+		return
 	databases = frappe.get_all(
 		"Database Server",
 		fields=["name"],

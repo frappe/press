@@ -2089,6 +2089,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		if self.doctype == "Database Server":
 			self.adjust_memory_config()
 			self.setup_logrotate()
+			self.setup_user_lingering()
 
 			if self.has_data_volume:
 				self.setup_binlog_indexes_folder()
