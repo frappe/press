@@ -984,6 +984,12 @@ class Agent:
 					"failure_count": 1,
 				}
 			)
+			is_primary = frappe.db.get_value(self.server_type, self.server, "is_primary")
+			if self.server_type == "Server" and not is_primary:
+				# Don't create agent request failures for secondary servers
+				# Since we try to connect to them frequently after IP changes
+				return
+
 			frappe.new_doc("Agent Request Failure", **fields).insert(ignore_permissions=True)
 
 	def raw_request(self, method, path, data=None, raises=True, timeout=None):
