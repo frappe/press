@@ -108,10 +108,15 @@ function onTeardownSecondaryServer() {
 					After teardown, autoscaling will <strong>not trigger</strong> unless you configure a new secondary server.
 				</p>
 
-				<p class="mt-3 text-gray-600">
-					See the docs to learn more about autoscaling:
-					<a href="#" target="_blank" rel="noopener">Secondary Server teardown guide</a>.
+				<p class="mt-3">
+					See the docs to learn more about autoscaling:<br>
+					<a href="https://docs.frappe.io/cloud/application-server-horizontal-scaling#opting-out"
+					target="_blank" rel="noopener" style="text-decoration: underline;">
+					<strong>Secondary Server Teardown Guide</strong>
+					</a>
 				</p>
+
+
 		</div>
 
 		</div>
@@ -162,9 +167,13 @@ function onSetupSecondaryServer() {
 					After setup, the secondary server will remain in <em>standby</em> (inactive) until autoscaling or manual activation.
 				</p>
 
-				<p class="mt-3 text-gray-600">
-					See the docs to learn more about autoscaling:
-					<a href="#" target="_blank" rel="noopener">Secondary Server setup guide</a>.
+
+				<p class="mt-3">
+					See the docs to learn more about autoscaling:<br>
+					<a href="https://docs.frappe.io/cloud/application-server-horizontal-scaling#setting-up-a-secondary-server"
+					target="_blank" rel="noopener" style="text-decoration: underline;">
+					<strong>Secondary Server Setup Guide</strong>
+					</a>
 				</p>
 		</div>
 
