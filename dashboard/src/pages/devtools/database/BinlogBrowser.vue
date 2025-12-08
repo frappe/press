@@ -29,9 +29,9 @@
 					<Button
 						v-if="site"
 						:disabled="
-							isProcessingQueries &&
-							binlog_indexer_enabled &&
-							isBinlogIndexerAvailable
+							isProcessingQueries ||
+							!binlog_indexer_enabled ||
+							!isBinlogIndexerAvailable
 						"
 						@click.prevent="() => (show_binlog_index_status_dialog = true)"
 					>
