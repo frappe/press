@@ -103,6 +103,7 @@
 											$appServer?.doc?.status === 'Active' &&
 											$appServer?.doc?.secondary_server
 										"
+										:disabled="startedScaleUp"
 										@click="scaleUp()"
 										label="Scale Up"
 									/>
@@ -112,6 +113,7 @@
 											server === 'App Secondary Server' &&
 											$appServer?.doc?.scaled_up
 										"
+										:disabled="startedScaleDown"
 										@click="scaleDown()"
 										label="Scale Down"
 									/>
@@ -206,6 +208,12 @@ export default {
 		StorageBreakdownDialog,
 		CustomAlerts,
 	},
+	data() {
+		return {
+			startedScaleUp: false,
+			startedScaleDown: false,
+		};
+	},
 	methods: {
 		showPlanChangeDialog(serverType) {
 			let ServerPlansDialog = defineAsyncComponent(
@@ -245,8 +253,12 @@ export default {
 		},
 		scaleUp() {
 			toast.promise(this.$appServer.scaleUp.submit({}), {
-				loading: 'Starting scale up…',
+				loading: () => {
+					this.startedScaleUp = true;
+					return 'Starting scale up…';
+				},
 				success: () => {
+					this.startedScaleUp = false;
 					this.$router.push({
 						path: this.$appServer.name,
 						path: 'auto-scale',
@@ -254,6 +266,7 @@ export default {
 					return 'Scale-up started. Please wait a few minutes.';
 				},
 				error: (e) => {
+					this.startedScaleUp = false;
 					if (Array.isArray(e.messages)) {
 						return e.messages.join(', ');
 					}
@@ -263,8 +276,12 @@ export default {
 		},
 		scaleDown() {
 			toast.promise(this.$appServer.scaleDown.submit({}), {
-				loading: 'Starting scale down…',
+				loading: () => {
+					this.startedScaleDown = true;
+					return 'Starting scale down…';
+				},
 				success: () => {
+					this.startedScaleDown = false;
 					this.$router.push({
 						path: this.$appServer.name,
 						path: 'auto-scale',
@@ -272,6 +289,7 @@ export default {
 					return 'Scale-down started. Please wait a few minutes.';
 				},
 				error: (e) => {
+					this.startedScaleDown = false;
 					if (Array.isArray(e.messages)) {
 						return e.messages.join(', ');
 					}

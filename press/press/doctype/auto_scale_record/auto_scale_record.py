@@ -1,6 +1,8 @@
 # Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
 
+import calendar
+import datetime
 import typing
 
 import frappe
@@ -93,6 +95,7 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 					self.setup_primary_upstream,
 					self.wait_for_primary_upstream_setup,
 					self.initiate_secondary_shutdown,
+					self.create_usage_record,
 				]
 			):
 				self.append("scale_steps", step)
@@ -147,10 +150,17 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 		primary_server_private_ip = frappe.db.get_value("Server", self.primary_server, "private_ip")
 		secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
 
-		# We might add new secondary servers later on
+		has_same_plan = frappe.db.get_value("Server", self.primary_server, "plan") == frappe.db.get_value(
+			"Server", self.secondary_server, "plan"
+		)
+
+		# https://nginx.org/en/docs/http/load_balancing.html
 		agent_job = agent.proxy_add_auto_scale_site_to_upstream(
 			primary_server_private_ip,
-			[{secondary_server_private_ip: 3}],  # pass default weight value as 3 for now
+			[
+				{secondary_server_private_ip: 1 if has_same_plan else 3}
+			],  # Since we allow users to setup a secondary server with the same plan
+			# we will divide the load between the servers equally if they have the same plan
 		)
 
 		step.status = Status.Success
@@ -357,6 +367,66 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 		step.status = Status.Success
 		step.save()
 
+	def create_usage_record(self, step: "ScaleStep"):
+		"""Create a usage when a scale down is completed"""
+		step.status = Status.Running
+		step.save()
+
+		# Since only created when scaling down this value will always be present!
+		last_auto_scale_at = frappe.db.get_value(
+			"Auto Scale Record",
+			{
+				"primary_server": self.primary_server,
+				"secondary_server": self.secondary_server,
+				"status": "Success",
+				"action": "Scale Up",
+			},
+			"modified",
+		)
+
+		auto_scaled_for = frappe.utils.now_datetime() - last_auto_scale_at
+		auto_scaled_for = auto_scaled_for.total_seconds() / 3600
+		secondary_server_plan, secondary_server_team = frappe.db.get_value(
+			"Server", self.secondary_server, ["plan", "team"]
+		)
+
+		calculated_amount = calculate_amount_from_usage(
+			auto_scaled_for=auto_scaled_for,
+			team=secondary_server_team,
+			secondary_server_plan=secondary_server_plan,
+		)
+
+		if not calculated_amount > 0.00:
+			# Only create usage record if amount is greater than 0.00 (round off two places)
+			step.status = Status.Success
+			step.save()
+			return
+
+		usage_record = frappe.get_doc(
+			doctype="Usage Record",
+			team=secondary_server_team,
+			document_type="Server",
+			document_name=self.secondary_server,
+			plan_type="Server Plan",
+			plan=secondary_server_plan,
+			amount=calculated_amount,
+			date=frappe.utils.now_datetime(),
+			subscription=frappe.db.get_value(
+				"Subscription",
+				{
+					"document_type": "Server",
+					"document_name": self.secondary_server,
+				},
+			),
+			interval="Hourly",
+			site=None,
+		)
+		usage_record.insert()
+		usage_record.submit()
+
+		step.status = Status.Success
+		step.save()
+
 	# Primary switch steps end
 
 	# Agent job halt
@@ -474,3 +544,16 @@ def run_scheduled_scale_records():
 			)
 
 		frappe.db.commit()
+
+
+def calculate_amount_from_usage(auto_scaled_for: int, team: str, secondary_server_plan: str) -> float:
+	"""Calculate the amount given with a 10% discount for the up scaled hours"""
+	is_inr = frappe.db.get_value("Team", team, "currency") == "INR"
+	price_field = "price_inr" if is_inr else "price_usd"
+
+	server_price = frappe.db.get_value("Server Plan", secondary_server_plan, price_field)
+	server_price_with_discount = server_price * 0.9
+
+	_, days_in_this_month = calendar.monthrange(datetime.date.today().year, datetime.date.today().month)
+	price_per_hour = server_price_with_discount / days_in_this_month / 24
+	return round(price_per_hour * auto_scaled_for, 2)
