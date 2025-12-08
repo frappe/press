@@ -2,17 +2,6 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Site Update', {
-	onload: function (frm) {
-		frm.set_query('destination_bench', function () {
-			return {
-				filters: {
-					status: 'Active',
-					server: frm.doc.server,
-				},
-			};
-		});
-	},
-
 	refresh: function (frm) {
 		// Disable save button
 		frm.disable_save();
@@ -22,6 +11,8 @@ frappe.ui.form.on('Site Update', {
 			`/dashboard/sites/${frm.doc.site}/updates/${frm.doc.name}`,
 			__('Visit Dashboard'),
 		);
+
+		if (frm.doc.status === 'Cancelled') return;
 
 		// Add custom buttons
 		[
@@ -55,6 +46,9 @@ frappe.ui.form.on('Site Update', {
 		frm.add_custom_button(
 			__('Change Status'),
 			() => {
+				let options = ['Success', 'Recovered', 'Failure', 'Fatal'];
+				frm.doc.status === 'Scheduled' ? options.push('Cancelled') : null;
+
 				const dialog = new frappe.ui.Dialog({
 					title: __('Change Status'),
 					fields: [
@@ -62,7 +56,7 @@ frappe.ui.form.on('Site Update', {
 							fieldtype: 'Select',
 							label: __('Status'),
 							fieldname: 'status',
-							options: ['Success', 'Recovered', 'Failure', 'Fatal'],
+							options: options,
 						},
 					],
 				});
