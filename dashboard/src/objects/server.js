@@ -918,6 +918,7 @@ export default {
 					filters: (server) => {
 						return {
 							primary_server: server.doc?.name,
+							secondary_server: server.doc?.secondary_server,
 						};
 					},
 					filterControls() {
@@ -994,6 +995,34 @@ export default {
 							align: 'right',
 						},
 					],
+					primaryAction({ documentResource: server, listResource: snapshots }) {
+						if (
+							server?.doc?.status === 'Archived' ||
+							!server?.doc?.secondary_server
+						)
+							return;
+						return {
+							label: 'Schedule Auto Scale',
+							slots: {
+								prefix: icon('clock'),
+							},
+							onClick() {
+								renderDialog(
+									h(
+										defineAsyncComponent(
+											() =>
+												import(
+													'../components/server/AutoscaleScheduleDialog.vue'
+												),
+										),
+										{
+											server: server.name,
+										},
+									),
+								);
+							},
+						};
+					},
 				},
 			},
 			tagTab('Server'),

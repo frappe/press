@@ -1,3 +1,0 @@
----
-- name: Copy Benches to Shared Directory on NFS Server
-  shell: rsync -av --delete /home/frappe/benches/ "{{ shared_directory }}"/

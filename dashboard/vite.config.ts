@@ -6,6 +6,8 @@ import frappeui from 'frappe-ui/vite';
 import pluginRewriteAll from 'vite-plugin-rewrite-all';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import vueDevTools from 'vite-plugin-vue-devtools'
+import dotenv from 'dotenv';
+dotenv.config();
 
 export default defineConfig({
 	plugins: [
@@ -30,7 +32,7 @@ export default defineConfig({
 			applicationKey: 'press-dashboard',
 			authToken: process.env.SENTRY_AUTH_TOKEN,
 		}),
-		vueDevTools(),
+		...(process.env.ENABLE_VUE_DEVTOOLS ? [vueDevTools()] : []),
 	],
 	server: {
 		allowedHosts: true

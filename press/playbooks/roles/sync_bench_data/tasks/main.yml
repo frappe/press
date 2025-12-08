@@ -1,4 +1,0 @@
----
-- name: Move bench data to benches directory
-  become: yes
-  shell: rsync -av --delete "{{ shared_directory }}/" /home/frappe/benches/

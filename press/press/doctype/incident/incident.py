@@ -174,10 +174,10 @@ class Incident(WebsiteGenerator):
 			timespan,
 			timespan + 1,
 		)["datasets"]
-		if load == []:
-			ret = -1  # no response
-		else:
+		if load:
 			ret = load[0]["values"][-1]
+		else:
+			ret = -1  # no response
 		self.add_description(f"{name} load avg(5m): {ret if ret != -1 else 'No data'}")
 		return ret
 
@@ -325,6 +325,7 @@ class Incident(WebsiteGenerator):
 				self.type = "Database Down"
 				self.subtype = "Disk full"
 				self.categorize_disk_full_issue()
+				self.send_disk_full_mail()
 				return
 			# TODO: Try more random shit if resource isn't identified
 			# Eg: Check mysql up/ docker up/ container up
@@ -571,6 +572,38 @@ Likely due to insufficient balance or incorrect credentials""",
 		self.sms_sent = 1
 		self.save()
 
+	def send_disk_full_mail(self):
+		title = str(frappe.db.get_value("Server", self.server, "title"))
+		if self.resource_type:
+			title = str(frappe.db.get_value(self.resource_type, self.resource, "title"))
+		subject = f"Disk Full Incident on {title}"
+		message = f"""
+		<p>Dear User,</p>
+		<p>You are receiving this mail as the storage has been filled up on your server: <strong>{self.resource}</strong> and you have <a href="https://docs.frappe.io/cloud/storage-addons#steps-to-disable-auto-increase-storage">automatic addition</a> of storage disabled.</p>
+		<p>Please enable automatic addition of storage or <a href="https://docs.frappe.io/cloud/storage-addons#steps-to-add-storage-manually">add more storage manually</a> to resolve the issue.</p>
+		<p>Best regards,<br/>Frappe Cloud Team</p>
+		"""
+		self.send_mail(subject, message)
+
+	def send_mail(self, subject: str, message: str):
+		try:
+			frappe.sendmail(
+				recipients=get_communication_info("Email", "Server Activity", "Server", self.server),
+				subject=subject,
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+				template="incident",
+				args={
+					"message": message,
+					"link": f"dashboard/servers/{self.server}/analytics/",
+				},
+				now=True,
+			)
+
+		except Exception:
+			# Swallow the exception to avoid breaking the Incident creation
+			log_error("Incident Notification Email Failed")
+
 	def send_email_notification(self):
 		if not self.global_email_alerts_enabled:
 			return
@@ -582,22 +615,9 @@ Likely due to insufficient balance or incorrect credentials""",
 		team = frappe.db.get_value("Server", self.server, "team")
 		if (not self.server) or (not team):
 			return
-		try:
-			subject = self.get_email_subject()
-			message = self.get_email_message()
-			frappe.sendmail(
-				recipients=get_communication_info("Email", "Server Activity", "Server", self.server),
-				subject=subject,
-				template="incident",
-				args={
-					"message": message,
-					"link": f"dashboard/servers/{self.server}/analytics/",
-				},
-				now=True,
-			)
-		except Exception:
-			# Swallow the exception to avoid breaking the Incident creation
-			log_error("Incident Notification Email Failed")
+		subject = self.get_email_subject()
+		message = self.get_email_message()
+		self.send_mail(subject, message)
 
 	def get_email_subject(self):
 		title = str(frappe.db.get_value("Server", self.server, "title"))

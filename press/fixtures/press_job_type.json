@@ -616,16 +616,6 @@
     "script": "if doc.server.startswith(\"fs\") and doc.server_type == \"Server\":\n    primary_server = frappe.db.get_value(\"Server\", doc.server, \"primary\")\n    nfs_volume_attachment = frappe.get_doc(\n\t    {\"doctype\": \"NFS Volume Attachment\", \"primary_server\": primary_server}\n    )\n    nfs_volume_attachment.insert(ignore_permissions=True)\n    frappe.db.commit()",
     "step_name": "Share benches over NFS",
     "wait_until_true": 0
-   },
-   {
-    "script": "if doc.server.startswith(\"fs\"):\n    attachment = frappe.get_all(\n\t    \"NFS Volume Attachment\", {\"secondary_server\": doc.server}, [\"status\"], order_by=\"creation desc\", limit=1\n    )\n    result = (attachment and attachment[0].status == \"Success\", attachment and attachment[0].status == \"Failure\")\n\nelse:\n    result = (True,)",
-    "step_name": "Wait for benches to be shared",
-    "wait_until_true": 1
-   },
-   {
-    "script": "if doc.server.startswith(\"fs\") and doc.server_type == \"Server\":\n    virtual_machine = frappe.db.get_value(doc.server_type, doc.server, \"virtual_machine\")\n    virtual_machine = frappe.get_doc(\"Virtual Machine\", virtual_machine)\n    virtual_machine.stop()",
-    "step_name": "Stop Secondary Server",
-    "wait_until_true": 0
    }
   ]
  },
@@ -643,5 +633,20 @@
     "wait_until_true": 0
    }
   ]
- }
+ },
+ {
+  "callback_max_retry": 1,
+  "callback_script": null,
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2025-11-26 15:28:08.243873",
+  "name": "Auto Scale Application Server",
+  "steps": [
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Server\":\n    server.scale_up()",
+    "step_name": "Auto Scale Application Server",
+    "wait_until_true": 0
+    }
+   ]
+ }  
 ]

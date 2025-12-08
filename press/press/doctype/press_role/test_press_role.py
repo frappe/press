@@ -2,6 +2,7 @@
 # See license.txt
 
 import frappe
+from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.site.test_site import create_test_site
@@ -16,6 +17,7 @@ class TestPressRole(FrappeTestCase):
 		frappe.db.delete("Press Role")
 		self.team_user = create_user("team@example.com")
 		self.team = create_test_team(self.team_user.email)
+		self.team.user = "Administrator"
 		self.team_member = create_user("user123@example.com")
 		self.team.append("team_members", {"user": self.team_member.name})
 		self.team.save()
@@ -191,10 +193,8 @@ class TestPressRole(FrappeTestCase):
 
 # utils
 def create_permission_role(team, allow_site_creation=0):
-	import random
-
 	doc = frappe.new_doc("Press Role")
-	doc.title = "Test Role" + str(random.randint(1, 1000))
+	doc.title = make_autoname("Test-Role-.###")
 	doc.team = team
 	doc.allow_site_creation = allow_site_creation
 	doc.save()

@@ -103,6 +103,7 @@
 											$appServer?.doc?.status === 'Active' &&
 											$appServer?.doc?.secondary_server
 										"
+										:disabled="startedScaleUp"
 										@click="scaleUp()"
 										label="Scale Up"
 									/>
@@ -112,6 +113,7 @@
 											server === 'App Secondary Server' &&
 											$appServer?.doc?.scaled_up
 										"
+										:disabled="startedScaleDown"
 										@click="scaleDown()"
 										label="Scale Down"
 									/>
@@ -193,6 +195,7 @@ import ServerPlansDialog from './ServerPlansDialog.vue';
 import ServerLoadAverage from './ServerLoadAverage.vue';
 import StorageBreakdownDialog from './StorageBreakdownDialog.vue';
 import { getDocResource } from '../../utils/resource';
+import { createResource } from 'frappe-ui';
 import Badge from '../global/Badge.vue';
 import CustomAlerts from '../CustomAlerts.vue';
 
@@ -206,6 +209,23 @@ export default {
 		StorageBreakdownDialog,
 		CustomAlerts,
 	},
+	data() {
+		return {
+			startedScaleUp: false,
+			startedScaleDown: false,
+			autoscaleDiscount: null,
+		};
+	},
+	async mounted() {
+		const get = createResource({
+			url: 'press.api.server.get_autoscale_discount',
+			method: 'GET',
+		});
+
+		this.autoscaleDiscount = await get.fetch();
+		console.log(this.autoscaleDiscount);
+	},
+
 	methods: {
 		showPlanChangeDialog(serverType) {
 			let ServerPlansDialog = defineAsyncComponent(
@@ -244,44 +264,50 @@ export default {
 			);
 		},
 		scaleUp() {
-			this.$appServer.scaleUp.submit(
-				{},
-				{
-					onSuccess: () => {
-						this.$toast.success('Starting scale up please wait a few minutes');
-						this.$router.push({
-							path: this.$appServer.name,
-							path: 'auto-scale',
-						});
-					},
-					onError(e) {
-						e.messages.forEach((message) => {
-							this.$toast.error(message);
-						});
-					},
+			toast.promise(this.$appServer.scaleUp.submit({}), {
+				loading: () => {
+					this.startedScaleUp = true;
+					return 'Starting scale up…';
 				},
-			);
+				success: () => {
+					this.startedScaleUp = false;
+					this.$router.push({
+						path: this.$appServer.name,
+						path: 'auto-scale',
+					});
+					return 'Scale-up started. Please wait a few minutes.';
+				},
+				error: (e) => {
+					this.startedScaleUp = false;
+					if (Array.isArray(e.messages)) {
+						return e.messages.join(', ');
+					}
+					return e.message || 'Scale-up failed';
+				},
+			});
 		},
 		scaleDown() {
-			this.$appServer.scaleDown.submit(
-				{},
-				{
-					onSuccess: () => {
-						this.$toast.success(
-							'Starting scale down please wait a few minutes',
-						);
-						this.$router.push({
-							path: this.$appServer.name,
-							path: 'auto-scale',
-						});
-					},
-					onError(e) {
-						e.messages.forEach((message) => {
-							this.$toast.error(message);
-						});
-					},
+			toast.promise(this.$appServer.scaleDown.submit({}), {
+				loading: () => {
+					this.startedScaleDown = true;
+					return 'Starting scale down…';
 				},
-			);
+				success: () => {
+					this.startedScaleDown = false;
+					this.$router.push({
+						path: this.$appServer.name,
+						path: 'auto-scale',
+					});
+					return 'Scale-down started. Please wait a few minutes.';
+				},
+				error: (e) => {
+					this.startedScaleDown = false;
+					if (Array.isArray(e.messages)) {
+						return e.messages.join(', ');
+					}
+					return e.message || 'Scale-down failed';
+				},
+			});
 		},
 		currentUsage(serverType) {
 			if (!this.$appServer?.doc) return [];
@@ -318,7 +344,15 @@ export default {
 				planDescription = 'No plan selected';
 			} else if (currentPlan.price_usd > 0) {
 				price = currentPlan[priceField];
-				planDescription = `${this.$format.userCurrency(price, 0)}/mo`;
+				if (serverType === 'App Secondary Server') {
+					planDescription = this.autoscaleDiscount
+						? `${this.$format.userCurrency(
+								this.$format.pricePerHour(price) * this.autoscaleDiscount,
+							)}/hour`
+						: '';
+				} else {
+					planDescription = `${this.$format.userCurrency(price, 0)}/mo`;
+				}
 			} else {
 				planDescription = currentPlan.plan_title;
 			}
@@ -435,10 +469,10 @@ export default {
 										doc.title || doc.name
 									}</b>
 									<div class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border">
-									You will be charged at the rate of 
+									You will be charged at the rate of
 									<strong>
 										${this.$format.userCurrency(doc.storage_plan[priceField])}/mo
-									</strong> 
+									</strong>
 									for each additional GB of storage.
 									${
 										additionalStorageIncrementRecommendation

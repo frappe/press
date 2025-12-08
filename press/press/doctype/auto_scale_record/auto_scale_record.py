@@ -1,6 +1,8 @@
 # Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
 
+import calendar
+import datetime
 import typing
 
 import frappe
@@ -28,10 +30,12 @@ class AutoScaleRecord(Document, StepHandler):
 		from press.press.doctype.scale_step.scale_step import ScaleStep
 
 		action: DF.Literal["Scale Up", "Scale Down"]
+		failed_validation: DF.Check
 		primary_server: DF.Link
 		scale_steps: DF.Table[ScaleStep]
+		scheduled: DF.Datetime | None
 		secondary_server: DF.Link | None
-		status: DF.Literal["Pending", "Running", "Failure", "Success"]
+		status: DF.Literal["Pending", "Running", "Failure", "Success", "Scheduled"]
 	# end: auto-generated types
 
 	dashboard_fields = (
@@ -49,6 +53,8 @@ class AutoScaleRecord(Document, StepHandler):
 				[
 					self.start_secondary_server,
 					self.wait_for_secondary_server_to_start,
+					# Since the secondary is stopped no jobs running on it
+					self.stop_all_agent_jobs_on_primary,
 					self.wait_for_secondary_server_ping,
 					self.switch_to_secondary,
 					self.wait_for_switch_to_secondary,
@@ -62,11 +68,15 @@ class AutoScaleRecord(Document, StepHandler):
 		else:
 			for step in self.get_steps(
 				[
+					# There could be jobs running on both primary and secondary
+					self.stop_all_agent_jobs_on_primary,
+					self.stop_all_agent_jobs_on_secondary,
 					self.switch_to_primary,
 					self.wait_for_primary_switch,
 					self.setup_primary_upstream,
-					self.wait_for_primary_upstream,
+					self.wait_for_primary_upstream_setup,
 					self.initiate_secondary_shutdown,
+					self.create_usage_record,
 				]
 			):
 				self.append("scale_steps", step)
@@ -118,10 +128,21 @@ class AutoScaleRecord(Document, StepHandler):
 		"""Update proxy server with secondary as upstream"""
 		proxy_server = frappe.get_value("Server", self.secondary_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		active_sites = frappe.get_all("Site", {"server": self.primary_server}, pluck="name")
+		primary_server_private_ip = frappe.db.get_value("Server", self.primary_server, "private_ip")
+		secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
 
-		agent_job = agent.new_upstream_file(server=self.secondary_server, site=active_sites)
-		frappe.db.set_value("Site", {"name": ("IN", active_sites)}, "server", self.secondary_server)
+		has_same_plan = frappe.db.get_value("Server", self.primary_server, "plan") == frappe.db.get_value(
+			"Server", self.secondary_server, "plan"
+		)
+
+		# https://nginx.org/en/docs/http/load_balancing.html
+		agent_job = agent.proxy_add_auto_scale_site_to_upstream(
+			primary_server_private_ip,
+			[
+				{secondary_server_private_ip: 1 if has_same_plan else 3}
+			],  # Since we allow users to setup a secondary server with the same plan
+			# we will divide the load between the servers equally if they have the same plan
+		)
 
 		step.status = Status.Success
 		step.job_type = "Agent Job"
@@ -199,7 +220,7 @@ class AutoScaleRecord(Document, StepHandler):
 		step.status = Status.Running
 		step.save()
 
-		frappe.db.set_value("Server", self.primary_server, "scaled_up", True)
+		frappe.db.set_value("Server", self.primary_server, {"scaled_up": True, "halt_agent_jobs": False})
 
 		step.status = Status.Success
 		step.save()
@@ -211,23 +232,17 @@ class AutoScaleRecord(Document, StepHandler):
 		"""Setup up primary upstream"""
 		proxy_server = frappe.get_value("Server", self.secondary_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		active_sites = frappe.get_all("Site", {"server": self.secondary_server}, pluck="name")
 
-		agent_job = agent.new_upstream_file(server=self.primary_server, site=active_sites)
-
-		# Since this will be checked when trying to shutdown the server we can fire and forget
-		for site in active_sites:
-			agent.remove_upstream_file(server=self.secondary_server, site=site)
-
-		frappe.db.set_value("Site", {"name": ("IN", active_sites)}, "server", self.primary_server)
+		primary_upstream = frappe.db.get_value("Server", self.primary_server, "private_ip")
+		agent_job = agent.proxy_remove_auto_scale_site_to_upstream(primary_upstream)
 
 		step.status = Status.Success
 		step.job_type = "Agent Job"
 		step.job = agent_job.name
 		step.save()
 
-	def wait_for_primary_upstream(self, step: "ScaleStep"):
-		"""Wait for primary upstream to be added"""
+	def wait_for_primary_upstream_setup(self, step: "ScaleStep"):
+		"""Wait for primary upstream setup"""
 		step.status = Status.Running
 		step.is_waiting = True
 		step.save()
@@ -316,39 +331,109 @@ class AutoScaleRecord(Document, StepHandler):
 		if secondary_server_status in ["Stopping", "Stopped"]:
 			return
 
-		non_terminal_states = ["Pending", "Undelivered", "Running"]
-		remove_upstream_jobs = frappe.db.get_all(
-			"Agent Job",
-			{
-				"job_type": "Remove Site from Upstream",
-				"upstream": self.secondary_server,
-				"status": ("IN", non_terminal_states),
-			},
-		)
-
-		if remove_upstream_jobs:
-			step.attempt = 1 if not step.attempt else step.attempt + 1
-			step.save()
-			return
-
 		current_user = frappe.session.user
 		frappe.set_user("Administrator")
 
 		self._gracefully_stop_benches_on_secondary()
 		secondary_server_vm: "VirtualMachine" = frappe.get_doc("Virtual Machine", virtual_machine)
 		secondary_server_vm.stop()
+
 		frappe.db.set_value(
-			"Server", self.primary_server, "scaled_up", False
+			"Server", self.primary_server, {"scaled_up": False, "halt_agent_jobs": False}
 		)  # Once the secondary server has stopped
+		frappe.db.set_value("Server", self.secondary_server, "halt_agent_jobs", False)
 
 		frappe.set_user(current_user)
 
 		step.status = Status.Success
 		step.save()
 
+	def create_usage_record(self, step: "ScaleStep"):
+		"""Create a usage when a scale down is completed"""
+		step.status = Status.Running
+		step.save()
+
+		secondary_server_team, secondary_server_plan = frappe.db.get_value(
+			"Server", self.secondary_server, ["team", "plan"]
+		)
+
+		secondary_server_hourly_price_with_discount = calculate_secondary_server_price(
+			secondary_server_team, secondary_server_plan
+		)
+
+		usage_record = frappe.get_doc(
+			doctype="Usage Record",
+			team=secondary_server_team,
+			document_type="Server",
+			document_name=self.secondary_server,
+			plan_type="Server Plan",
+			amount=secondary_server_hourly_price_with_discount,
+			plan=secondary_server_plan,
+			date=frappe.utils.now_datetime(),
+			subscription=frappe.db.get_value(
+				"Subscription",
+				{
+					"document_type": "Server",
+					"document_name": self.secondary_server,
+				},
+			),
+			interval="Hourly",
+			site=None,
+		)
+		usage_record.insert()
+		usage_record.submit()
+
+		step.status = Status.Success
+		step.save()
+
 	# Primary switch steps end
 
-	def execute_mount_steps(self):
+	# Agent job halt
+	def stop_all_agent_jobs_on_primary(self, step: "ScaleStep"):
+		"""Stop all other running agent jobs on the primary server"""
+		step.status = Status.Running
+		step.save()
+
+		frappe.db.set_value("Server", self.primary_server, "halt_agent_jobs", True)
+		frappe.db.commit()  # Need immediate effect
+
+		primary_server: "Server" = frappe.get_doc("Server", self.primary_server)
+
+		try:
+			ansible = Ansible(
+				playbook="restart_agent_workers.yml",
+				server=primary_server,
+				user=primary_server._ssh_user(),
+				port=primary_server._ssh_port(),
+			)
+			self.handle_ansible_play(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+			raise
+
+	def stop_all_agent_jobs_on_secondary(self, step: "ScaleStep"):
+		"""Stop all other running agent jobs on the secondary server"""
+		step.status = Status.Running
+		step.save()
+
+		frappe.db.set_value("Server", self.secondary_server, "halt_agent_jobs", True)
+		frappe.db.commit()  # Need immediate effect
+
+		secondary_server: "Server" = frappe.get_doc("Server", self.secondary_server)
+
+		try:
+			ansible = Ansible(
+				playbook="restart_agent_workers.yml",
+				server=secondary_server,
+				user=secondary_server._ssh_user(),
+				port=secondary_server._ssh_port(),
+			)
+			self.handle_ansible_play(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+			raise
+
+	def execute_scale_steps(self):
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
@@ -361,4 +446,73 @@ class AutoScaleRecord(Document, StepHandler):
 		)
 
 	def after_insert(self):
-		self.execute_mount_steps()
+		if self.status != "Scheduled":
+			self.execute_scale_steps()
+
+	@frappe.whitelist()
+	def force_continue(self):
+		self.execute_scale_steps()
+
+
+def create_autoscale_failure_notification(team: str, name: str, exc: str):
+	press_notification = frappe.get_doc(
+		{
+			"doctype": "Press Notification",
+			"team": team,
+			"type": "Auto Scale",
+			"document_type": "Auto Scale Record",
+			"document_name": name,
+			"class": "Error",
+			"traceback": exc,
+			"message": "Error occurred during auto scale",
+		}
+	)
+	press_notification.insert()
+
+
+def validate_scheduled_autoscale(primary_server: str) -> None:
+	"""Throw if invalid auto scale schedule"""
+	server: "Server" = frappe.get_doc("Server", primary_server)
+	server.validate_scale()
+
+
+def run_scheduled_scale_records():
+	"""Run 5 scale scheduled scale records at a time"""
+	scale_records = frappe.get_all(
+		"Auto Scale Record",
+		{
+			"status": "Scheduled",
+			"scheduled": ("<=", frappe.utils.now_datetime()),
+		},
+		pluck="name",
+		limit=5,
+	)
+	for record in scale_records:
+		auto_scale_record: AutoScaleRecord = frappe.get_doc("Auto Scale Record", record)
+		try:
+			validate_scheduled_autoscale(primary_server=auto_scale_record.primary_server)
+			auto_scale_record.execute_scale_steps()  # Will take the status to running directly bypassing after insert
+		except frappe.ValidationError as e:
+			frappe.db.set_value(
+				"Auto Scale Record", auto_scale_record.name, {"status": "Failure", "failed_validation": True}
+			)
+			create_autoscale_failure_notification(
+				exc=e,
+				name=auto_scale_record.name,
+				team=frappe.db.get_value("Server", auto_scale_record.primary_server, "team"),
+			)
+
+		frappe.db.commit()
+
+
+def calculate_secondary_server_price(team: str, secondary_server_plan: str) -> float:
+	"""Calculate secondary server proice with a discount"""
+	is_inr = frappe.db.get_value("Team", team, "currency") == "INR"
+	price_field = "price_inr" if is_inr else "price_usd"
+
+	server_price = frappe.db.get_value("Server Plan", secondary_server_plan, price_field)
+	autoscale_discount = frappe.db.get_single_value("Press Settings", "autoscale_discount")
+	server_price_with_discount = server_price * autoscale_discount
+
+	_, days_in_this_month = calendar.monthrange(datetime.date.today().year, datetime.date.today().month)
+	return round(server_price_with_discount / days_in_this_month / 24, 2)

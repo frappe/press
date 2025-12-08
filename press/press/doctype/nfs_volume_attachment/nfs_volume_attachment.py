@@ -11,6 +11,7 @@ from press.agent import Agent
 from press.runner import Ansible, Status, StepHandler
 
 if typing.TYPE_CHECKING:
+	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.nfs_volume_attachment_step.nfs_volume_attachment_step import (
 		NFSVolumeAttachmentStep,
 	)
@@ -172,6 +173,11 @@ class NFSVolumeAttachment(Document, StepHandler):
 			},
 			"job",
 		)
+
+		# Jobs go undelivered for some reason, need to manually get status
+		job_doc: "AgentJob" = frappe.get_doc("Agent Job", job)
+		job_doc.get_status()
+
 		self.handle_agent_job(step, job)
 
 	def mount_shared_folder_on_secondary_server(self, step: "NFSVolumeAttachmentStep") -> None:
@@ -201,8 +207,8 @@ class NFSVolumeAttachment(Document, StepHandler):
 			self._fail_ansible_step(step, ansible, e)
 			raise
 
-	def move_benches_to_shared(self, step: "NFSVolumeAttachmentStep") -> None:
-		"""Move benches to the shared NFS directory."""
+	def link_benches_to_shared(self, step: "NFSVolumeAttachmentStep") -> None:
+		"""Link benches to the shared NFS directory."""
 		primary_server: Server = frappe.get_cached_doc("Server", self.primary_server)
 		shared_directory = frappe.db.get_single_value("Press Settings", "shared_directory")
 
@@ -211,7 +217,7 @@ class NFSVolumeAttachment(Document, StepHandler):
 
 		try:
 			ansible = Ansible(
-				playbook="share_benches_on_nfs.yml",
+				playbook="link_benches_to_nfs.yml",
 				server=primary_server,
 				user=primary_server._ssh_user(),
 				port=primary_server._ssh_port(),
@@ -267,14 +273,36 @@ class NFSVolumeAttachment(Document, StepHandler):
 
 		self.handle_agent_job(step, job)
 
+	def add_loopback_rule(self, step: "NFSVolumeAttachmentStep"):
+		"""Allow loopback requests from container"""
+		step.status = Status.Running
+		step.save()
+
+		primary_server: "Server" = frappe.get_doc("Server", self.primary_server)
+
+		try:
+			ansible = Ansible(
+				playbook="allow_docker_loopback.yml",
+				server=primary_server,
+				user=primary_server._ssh_user(),
+				port=primary_server._ssh_port(),
+			)
+			self.handle_ansible_play(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+			raise
+
 	def ready_to_auto_scale(self, step: "NFSVolumeAttachmentStep"):
 		"""Mark server as ready to auto scale"""
 		step.status = Status.Running
 		step.save()
 
-		frappe.db.set_value("Server", self.primary_server, "benches_on_shared_volume", True)
-		frappe.db.set_value("Server", self.primary_server, "status", "Active")
-		frappe.db.set_value("Server", self.secondary_server, "status", "Active")
+		frappe.db.set_value(
+			"Server", self.primary_server, {"benches_on_shared_volume": True, "status": "Active"}
+		)
+		frappe.db.set_value(
+			"Server", self.secondary_server, {"status": "Active", "is_monitoring_disabled": True}
+		)
 
 		step.status = Status.Success
 		step.save()
@@ -303,6 +331,31 @@ class NFSVolumeAttachment(Document, StepHandler):
 
 		self.handle_vm_status_job(step, virtual_machine=virtual_machine, expected_status="Stopped")
 
+	def create_subscription_record(self, step: "NFSVolumeAttachmentStep"):
+		"""Create a subscription record for secondary server"""
+		step.status = Status.Running
+		step.save()
+
+		team = frappe.db.get_value("Server", self.primary_server, "team")
+
+		if not frappe.db.exists(
+			"Subscription",
+			{"document_name": self.secondary_server, "team": team, "plan_type": "Server Plan"},
+		):
+			frappe.get_doc(
+				doctype="Subscription",
+				team=team,
+				plan_type="Server Plan",
+				plan=frappe.db.get_value("Server", self.secondary_server, "plan"),
+				document_type="Server",
+				document_name=self.secondary_server,
+				interval="Hourly",
+				enabled=1,
+			).insert()
+
+		step.status = Status.Success
+		step.save()
+
 	def before_insert(self):
 		"""Append defined steps to the document before saving."""
 		for step in self.get_steps(
@@ -314,13 +367,13 @@ class NFSVolumeAttachment(Document, StepHandler):
 				self.allow_servers_to_mount,
 				self.wait_for_acl_addition,
 				self.mount_shared_folder_on_secondary_server,
-				self.move_benches_to_shared,  # Sync twice to reduce downtime
-				self.stop_all_benches,
-				self.move_benches_to_shared,
+				self.link_benches_to_shared,
 				self.run_primary_server_benches_on_shared_fs,
 				self.wait_for_benches_to_run_on_shared,
+				self.add_loopback_rule,
 				self.stop_secondary_server,
 				self.wait_for_secondary_server_to_stop,
+				self.create_subscription_record,
 				self.ready_to_auto_scale,
 			]
 		):

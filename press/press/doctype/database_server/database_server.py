@@ -51,6 +51,7 @@ class DatabaseServer(BaseServer):
 		auto_increase_storage: DF.Check
 		auto_purge_binlog_based_on_size: DF.Check
 		bastion_server: DF.Link | None
+		binlog_index_retention_days: DF.Int
 		binlog_max_disk_usage_percent: DF.Int
 		binlog_retention_days: DF.Int
 		binlogs_removed: DF.Check
@@ -58,6 +59,7 @@ class DatabaseServer(BaseServer):
 		communication_info: DF.Table[CommunicationInfo]
 		domain: DF.Link | None
 		enable_binlog_indexing: DF.Check
+		enable_binlog_upload_to_s3: DF.Check
 		enable_physical_backup: DF.Check
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
@@ -69,6 +71,7 @@ class DatabaseServer(BaseServer):
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
 		ip: DF.Data | None
+		is_binlog_indexer_running: DF.Check
 		is_for_recovery: DF.Check
 		is_monitoring_disabled: DF.Check
 		is_performance_schema_enabled: DF.Check
@@ -114,6 +117,7 @@ class DatabaseServer(BaseServer):
 		team: DF.Link | None
 		title: DF.Data | None
 		tls_certificate_renewal_failed: DF.Check
+		uploaded_binlogs_retention_days: DF.Int
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
 
@@ -307,7 +311,7 @@ class DatabaseServer(BaseServer):
 				"action": "Manage Database Binlogs",
 				"description": "View binlogs and purge old binlogs",
 				"button_label": "View",
-				"condition": self.status == "Active" and not self.enable_binlog_indexing,
+				"condition": self.status == "Active",
 				"doc_method": "get_binlogs_info",
 				"group": f"{server_type.title()} Actions",
 			},
@@ -325,6 +329,22 @@ class DatabaseServer(BaseServer):
 				"button_label": "Update",
 				"condition": self.status == "Active" and not self.is_part_of_replica,
 				"doc_method": "update_binlog_size_limit",
+				"group": f"{server_type.title()} Actions",
+			},
+			{
+				"action": "Enable Binlog Indexer",
+				"description": "Start binlog indexer to be able to browse binlogs from dashboard",
+				"button_label": "Enable",
+				"condition": self.status == "Active" and not self.enable_binlog_indexing and self.ram > 4096,
+				"doc_method": "enable_binlog_indexing_service",
+				"group": f"{server_type.title()} Actions",
+			},
+			{
+				"action": "Disable Binlog Indexer",
+				"description": "Stop binlog indexer to disable browsing binlogs from dashboard",
+				"button_label": "Disable",
+				"condition": self.status == "Active" and self.enable_binlog_indexing,
+				"doc_method": "disable_binlog_indexing_service",
 				"group": f"{server_type.title()} Actions",
 			},
 			{
@@ -546,7 +566,7 @@ class DatabaseServer(BaseServer):
 		self,
 		variable: str,
 		value_type: Literal["value_int", "value_float", "value_str"],
-		value: Any = None,
+		value: Any | None = None,
 		skip: bool = False,
 		persist: bool = True,
 		save: bool = True,
@@ -647,8 +667,6 @@ class DatabaseServer(BaseServer):
 			days = int(days)
 		if days < 1:
 			frappe.throw("Binlog retention days cannot be less than 1")
-		if self.enable_binlog_indexing:
-			frappe.throw("Cannot update binlog retention days when binlog indexing is enabled.")
 
 		self.binlog_retention_days = days
 		# From MariaDB 10.6.1, expire_logs_days is alias of binlog_expire_logs_seconds
@@ -800,6 +818,48 @@ class DatabaseServer(BaseServer):
 			self.status = "Broken"
 			log_error("Setup failed for missing essentials", server=self.as_dict())
 		self.save()
+
+	def setup_binlog_indexes_folder(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_setup_binlog_indexes_folder",
+			queue="short",
+			timeout=1200,
+		)
+
+	def _setup_binlog_indexes_folder(self):
+		try:
+			ansible = Ansible(
+				playbook="setup_binlog_indexes_folder.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Archived folder setup error", server=self.as_dict())
+
+	def setup_user_lingering(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_setup_user_lingering",
+			queue="short",
+			timeout=1200,
+		)
+
+	def _setup_user_lingering(self):
+		try:
+			ansible = Ansible(
+				playbook="setup_user_lingering.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("User lingering setup error", server=self.as_dict())
 
 	def process_hybrid_server_setup(self):
 		try:
@@ -1655,6 +1715,34 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		frappe.msgprint(message, "Binlog Summary")
 
 	@dashboard_whitelist()
+	def get_binlogs_indexing_status(self):
+		if not self.enable_binlog_indexing:
+			frappe.throw("Binlog Indexing is not enabled for this server.")
+
+		data = frappe.db.get_all(
+			"MariaDB Binlog",
+			filters={"database_server": self.name, "purged_from_disk": False},
+			fields=[
+				"file_name",
+				"indexed",
+				"size_mb",
+				"file_modification_time",
+			],
+			order_by="file_modification_time DESC",
+			limit_page_length=2000,
+		)
+		# Replace file_name with name
+		return [
+			{
+				"name": row["file_name"],
+				"indexed": row["indexed"],
+				"size_mb": row["size_mb"],
+				"file_modification_time": row["file_modification_time"],
+			}
+			for row in data
+		]
+
+	@dashboard_whitelist()
 	def purge_binlogs(self, to_binlog: str):
 		"""
 		!!!NOTE!!!
@@ -1677,9 +1765,6 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			raise e
 
 	def purge_binlogs_by_configured_size_limit(self):
-		if self.enable_binlog_indexing:
-			return
-
 		if not self.auto_purge_binlog_based_on_size:
 			return
 
@@ -1699,7 +1784,30 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 
 		self.agent.purge_binlogs_by_size_limit(self, max_binlog_gb=binlog_limit_in_gb)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
+	def enable_binlog_indexing_service(self):
+		if self.enable_binlog_indexing:
+			return
+
+		self.enable_binlog_indexing = True
+		self.save(ignore_permissions=True)
+
+	@dashboard_whitelist()
+	def disable_binlog_indexing_service(self):
+		if not self.enable_binlog_indexing:
+			return
+
+		self.enable_binlog_indexing = False
+		self.save(ignore_permissions=True)
+		frappe.db.set_value(
+			"MariaDB Binlog",
+			{"database_server": self.name},
+			"indexed",
+			0,
+		)
+		frappe.msgprint("Binlog Indexing has been disabled")
+
+	@dashboard_whitelist()
 	def sync_binlogs_info(self, index_binlogs: bool = True, upload_binlogs: bool = True):
 		if not self.enable_binlog_indexing:
 			frappe.msgprint("Binlog Indexing is not enabled")
@@ -1873,7 +1981,24 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 
 		self.agent.add_binlogs_to_indexer([x["file_name"] for x in filtered_binlogs])
 
-	def remove_binlogs_from_indexer(self, days: int = 7):
+	@dashboard_whitelist()
+	def index_binlogs_on_demand(self, binlog_file_names: list[str]):
+		if not binlog_file_names:
+			return None
+
+		if not self.enable_binlog_indexing:
+			frappe.throw("Binlog Indexing is not enabled for this server.")
+
+		if self._is_binlog_indexing_related_operation_running() or self.is_binlog_indexer_running:
+			frappe.throw("Another Binlog Indexing related operation is already in progress.")
+
+		job = self.agent.add_binlogs_to_indexer(binlog_file_names)
+		return job.name
+
+	def remove_binlogs_from_indexer(self):
+		if not self.enable_binlog_indexing:
+			return
+
 		# Avoid if there is already Binlog Indexing related job
 		if self._is_binlog_indexing_related_operation_running():
 			return
@@ -1884,7 +2009,10 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			filters={
 				"database_server": self.name,
 				"indexed": 1,
-				"file_modification_time": ("<", frappe.utils.add_to_date(None, days=-1 * days)),
+				"file_modification_time": (
+					"<",
+					frappe.utils.add_to_date(None, days=-1 * self.binlog_index_retention_days),
+				),
 			},
 			pluck="file_name",
 			order_by="file_modification_time asc",
@@ -1910,6 +2038,9 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		self.agent.remove_binlogs_from_indexer(unindexable_binlogs)
 
 	def _is_binlog_indexing_related_operation_running(self):
+		if self.is_binlog_indexer_running:
+			return True
+
 		return frappe.db.exists(
 			"Agent Job",
 			{
@@ -1920,8 +2051,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		)
 
 	def upload_binlogs_to_s3(self):
-		if not self.enable_binlog_indexing:
-			frappe.msgprint("Binlog Indexing is not enabled")
+		if not self.enable_binlog_indexing or not self.enable_binlog_upload_to_s3:
 			return
 
 		# Upload only those binlogs which is indexed
@@ -1946,7 +2076,10 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 				"database_server": self.name,
 				"current": 0,
 				"purged_from_disk": 0,
-				"file_modification_time": ("<", frappe.utils.add_to_date(None, days=-1)),
+				"file_modification_time": (
+					"<",
+					frappe.utils.add_to_date(None, days=self.binlog_retention_days * -1),
+				),
 			},
 			order_by="file_name asc",
 			fields=["file_name", "uploaded"],
@@ -1971,7 +2104,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 				"uploaded": 1,
 				"file_modification_time": (
 					"<",
-					frappe.utils.add_to_date(None, days=-1 * self.binlog_retention_days),
+					frappe.utils.add_to_date(None, days=-1 * self.uploaded_binlogs_retention_days),
 				),
 			},
 			pluck="name",
@@ -2117,6 +2250,9 @@ def monitor_disk_performance():
 
 
 def sync_binlogs_info():
+	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_jobs"):
+		return
+
 	databases = frappe.db.get_all(
 		"Database Server",
 		filters={"status": "Active", "is_server_setup": 1, "is_self_hosted": 0, "enable_binlog_indexing": 1},
@@ -2134,6 +2270,9 @@ def sync_binlogs_info():
 
 
 def remove_uploaded_binlogs_from_disk():
+	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_jobs"):
+		return
+
 	databases = frappe.db.get_all(
 		"Database Server",
 		filters={"status": "Active", "is_server_setup": 1, "is_self_hosted": 0, "enable_binlog_indexing": 1},
@@ -2151,6 +2290,9 @@ def remove_uploaded_binlogs_from_disk():
 
 
 def remove_uploaded_binlogs_from_s3():
+	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_jobs"):
+		return
+
 	databases = frappe.db.get_all(
 		"Database Server",
 		filters={"status": "Active", "is_server_setup": 1, "is_self_hosted": 0, "enable_binlog_indexing": 1},
@@ -2168,6 +2310,8 @@ def remove_uploaded_binlogs_from_s3():
 
 
 def delete_mariadb_binlog_for_archived_servers():
+	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_jobs"):
+		return
 	"""
 	Delete binlog records for archived servers
 	"""
@@ -2192,16 +2336,34 @@ def delete_mariadb_binlog_for_archived_servers():
 
 
 def unindex_mariadb_binlogs():
+	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_jobs"):
+		return
 	databases = frappe.get_all(
 		"Database Server",
 		fields=["name"],
 		filters={"status": "Active", "is_server_setup": 1, "is_self_hosted": 0, "enable_binlog_indexing": 1},
 	)
 	for database in databases:
-		frappe.get_doc("Database Server", database).remove_binlogs_from_indexer(days=7)
+		frappe.get_doc("Database Server", database).remove_binlogs_from_indexer()
+
+
+def update_binlog_indexer_status_on_agent_job_update(job: AgentJob):
+	if not (job.server_type == "Database Server" and job.server):
+		return
+
+	if job.status in ["Success", "Failure"]:
+		frappe.db.set_value(
+			job.server_type, job.server, "is_binlog_indexer_running", False, update_modified=False
+		)
+	elif job.status in ["Pending", "Running"]:
+		frappe.db.set_value(
+			job.server_type, job.server, "is_binlog_indexer_running", True, update_modified=False
+		)
 
 
 def process_add_binlogs_to_indexer_agent_job_update(job: AgentJob):
+	update_binlog_indexer_status_on_agent_job_update(job)
+
 	if job.status != "Success":
 		return
 
@@ -2236,6 +2398,8 @@ def process_add_binlogs_to_indexer_agent_job_update(job: AgentJob):
 
 
 def process_remove_binlogs_from_indexer_agent_job_update(job: AgentJob):
+	update_binlog_indexer_status_on_agent_job_update(job)
+
 	if job.status != "Success":
 		return
 
