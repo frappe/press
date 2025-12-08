@@ -865,6 +865,8 @@ class BaseServer(Document, TagHelpers):
 		if not device:
 			# Try the best guess. Try extending the data volume
 			volume = self.find_mountpoint_volume(mountpoint)
+			assert volume is not None, "Volume not found"
+			assert volume.volume_id is not None, "Volume ID not found"
 			device = self.get_device_from_volume_id(volume.volume_id)
 
 		server = self.get_server_from_device(device)
@@ -917,7 +919,10 @@ class BaseServer(Document, TagHelpers):
 			mountpoint = self.guess_data_disk_mountpoint()
 
 		volume = self.find_mountpoint_volume(mountpoint)
+		assert volume is not None, f"Volume not found for mountpoint {mountpoint}"
 		# Get the parent of the volume directly instead of guessing.
+		assert volume.parent is not None, "Virtual Machine not found for volume"
+		assert volume.volume_id is not None, "Volume ID not found"
 		virtual_machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", volume.parent)
 		virtual_machine.increase_disk_size(volume.volume_id, increment)
 		if self.provider == "AWS EC2":
@@ -944,8 +949,11 @@ class BaseServer(Document, TagHelpers):
 			mountpoint = "/"
 		return mountpoint
 
-	def find_mountpoint_volume(self, mountpoint) -> "VirtualMachineVolume":
+	def find_mountpoint_volume(self, mountpoint) -> "VirtualMachineVolume" | None:
 		volume_id = None
+		if self.provider == "Generic":
+			return None
+
 		machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", self.virtual_machine)
 
 		if volume_id:
@@ -2041,7 +2049,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			log_error("Cadvisor Install Exception", server=self.as_dict())
 
 	@frappe.whitelist()
-	def set_additional_config(self):
+	def set_additional_config(self):  # noqa: C901
 		"""
 		Corresponds to Set additional config step in Create Server Press Job
 		"""
@@ -2077,6 +2085,10 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			self.adjust_memory_config()
 			self.provide_frappe_user_du_permission()
 			self.setup_logrotate()
+			self.setup_user_lingering()
+
+			if self.has_data_volume:
+				self.setup_binlog_indexes_folder()
 
 		if self.doctype == "Proxy Server":
 			self.setup_wildcard_hosts()
