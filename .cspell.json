@@ -731,7 +731,12 @@
         "Rhiv",
         "Kvsc",
         "ZSTD",
+<<<<<<< HEAD
         "wazuh"
 >>>>>>> 4cb200d87 (chore: Lint)
+=======
+        "Wazuh",
+        "DBUS"
+>>>>>>> 0e5cfe809 (fix: Lint)
     ]
 }

@@ -866,6 +866,8 @@ class BaseServer(Document, TagHelpers):
 		if not device:
 			# Try the best guess. Try extending the data volume
 			volume = self.find_mountpoint_volume(mountpoint)
+			assert volume is not None, "Volume not found"
+			assert volume.volume_id is not None, "Volume ID not found"
 			device = self.get_device_from_volume_id(volume.volume_id)
 
 		server = self.get_server_from_device(device)
@@ -920,7 +922,10 @@ class BaseServer(Document, TagHelpers):
 			mountpoint = self.guess_data_disk_mountpoint()
 
 		volume = self.find_mountpoint_volume(mountpoint)
+		assert volume is not None, f"Volume not found for mountpoint {mountpoint}"
 		# Get the parent of the volume directly instead of guessing.
+		assert volume.parent is not None, "Virtual Machine not found for volume"
+		assert volume.volume_id is not None, "Volume ID not found"
 		virtual_machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", volume.parent)
 		virtual_machine.increase_disk_size(volume.volume_id, increment)
 		if self.provider == "AWS EC2":

@@ -1481,7 +1481,7 @@ class Site(Document, TagHelpers):
 			self.unset_redirects_in_proxy(domains)
 
 	def set_redirects_in_proxy(self, domains: list[str]):
-		target = self.host_name
+		target = str(self.host_name)
 		if self.is_on_standalone:
 			agent = Agent(self.server)
 		else:
