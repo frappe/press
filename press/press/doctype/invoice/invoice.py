@@ -606,7 +606,7 @@ class Invoice(Document):
 
 		# Since down scale is always followed
 		scale_duration = last_down_scale_at - last_up_scale_at
-		return round(scale_duration.total_seconds() / 60, 2)
+		return round(scale_duration.total_seconds() / 3600, 2)
 
 	def add_usage_record(self, usage_record):
 		if self.type != "Subscription":
