@@ -373,9 +373,9 @@ class BaseServer(Document, TagHelpers):
 				"button_label": "Setup",
 				"condition": self.status == "Active"
 				and self.doctype == "Server"
-				# As only present on server doctype
-				and not self.secondary_server,
-				# and self.team == "team@erpnext.com",
+				and not self.secondary_server
+				and self.team == "team@erpnext.com"
+				and self.cluster == "Mumbai",
 				"group": "Application Server Actions",
 			},
 			{
