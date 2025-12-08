@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import contextlib
 import json
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
@@ -2155,6 +2156,16 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			if result.get("status") != "Success":
 				raise Exception("Failed to fetch storage usage")
 
+			binlog_indexes_size = 0
+			with contextlib.suppress(Exception):
+				binlog_indexes_size_result = AnsibleAdHoc(sources=f"{self.ip},").run(
+					"du -sk /home/frappe/binlog_indexes/ | cut -f1",
+					self.name,
+					raw_params=True,
+				)[0]
+				if binlog_indexes_size_result.get("status") == "Success":
+					binlog_indexes_size = int(binlog_indexes_size_result.get("output", "0").strip())
+
 			disk_info_str, mysql_dir_info_str = result.get("output", "\n\n").split("\n\n", 1)
 			disk_info = find_db_disk_info(disk_info_str)
 			if disk_info is None:
@@ -2168,6 +2179,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 				+ mysql_storage_info["error_log"]
 				+ mysql_storage_info["core"]
 				+ mysql_storage_info["other"]
+				+ binlog_indexes_size
 			)
 
 			sites_db_name_info = frappe.get_all(
@@ -2187,6 +2199,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 				"disk_used": disk_info[1],
 				"disk_free": disk_info[0] - disk_info[1],
 				"database_usage": total_db_usage,
+				"binlog_indexes": binlog_indexes_size,
 				"os_usage": disk_info[1] - total_db_usage,
 				"database": mysql_storage_info,
 				"db_name_site_map": db_name_site_mapping,
@@ -2250,7 +2263,7 @@ def monitor_disk_performance():
 
 
 def sync_binlogs_info():
-	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_jobs"):
+	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_service"):
 		return
 
 	databases = frappe.db.get_all(
@@ -2270,7 +2283,7 @@ def sync_binlogs_info():
 
 
 def remove_uploaded_binlogs_from_disk():
-	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_jobs"):
+	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_service"):
 		return
 
 	databases = frappe.db.get_all(
@@ -2290,7 +2303,7 @@ def remove_uploaded_binlogs_from_disk():
 
 
 def remove_uploaded_binlogs_from_s3():
-	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_jobs"):
+	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_service"):
 		return
 
 	databases = frappe.db.get_all(
@@ -2310,7 +2323,7 @@ def remove_uploaded_binlogs_from_s3():
 
 
 def delete_mariadb_binlog_for_archived_servers():
-	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_jobs"):
+	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_service"):
 		return
 	"""
 	Delete binlog records for archived servers
@@ -2336,7 +2349,7 @@ def delete_mariadb_binlog_for_archived_servers():
 
 
 def unindex_mariadb_binlogs():
-	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_jobs"):
+	if frappe.get_single_value("Press Settings", "disable_binlog_indexer_service"):
 		return
 	databases = frappe.get_all(
 		"Database Server",

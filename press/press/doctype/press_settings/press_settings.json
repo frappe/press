@@ -223,7 +223,7 @@
   "enable_google_oauth",
   "realtime_job_updates",
   "disable_agent_job_deduplication",
-  "disable_binlog_indexer_jobs",
+  "disable_binlog_indexer_service",
   "column_break_rdlr",
   "disable_auto_retry",
   "disallow_disposable_emails",
@@ -1561,14 +1561,14 @@
   },
   {
    "default": "1",
-   "fieldname": "disable_binlog_indexer_jobs",
+   "fieldname": "disable_binlog_indexer_service",
    "fieldtype": "Check",
-   "label": "Disable Binlog Indexer Jobs"
+   "label": "Disable Binlog Indexer Service"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-12-08 17:14:43.589271",
+ "modified": "2025-12-09 00:06:25.213870",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
