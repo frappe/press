@@ -525,7 +525,7 @@ def run_scheduled_scale_records():
 
 
 def calculate_secondary_server_price(team: str, secondary_server_plan: str) -> float:
-	"""Calculate secondary server proice with a 10% discount"""
+	"""Calculate secondary server proice with a discount"""
 	is_inr = frappe.db.get_value("Team", team, "currency") == "INR"
 	price_field = "price_inr" if is_inr else "price_usd"
 
