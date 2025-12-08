@@ -374,7 +374,6 @@ class BaseServer(Document, TagHelpers):
 				"condition": self.status == "Active"
 				and self.doctype == "Server"
 				and not self.secondary_server
-				and self.team == "team@erpnext.com"
 				and self.cluster == "Mumbai",
 				"group": "Application Server Actions",
 			},

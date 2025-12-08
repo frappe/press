@@ -521,6 +521,11 @@ def options():
 
 
 @frappe.whitelist()
+def get_autoscale_discount():
+	return frappe.db.get_single_value("Press Settings", "autoscale_discount", cache=True)
+
+
+@frappe.whitelist()
 def secondary_server_plans(
 	name,
 	cluster=None,
@@ -540,14 +545,15 @@ def secondary_server_plans(
 
 	ServerPlan = frappe.qb.DocType("Server Plan")
 	HasRole = frappe.qb.DocType("Has Role")
+	autoscale_discount = frappe.db.get_single_value("Press Settings", "autoscale_discount")
 
 	query = (
 		frappe.qb.from_(ServerPlan)
 		.select(
 			ServerPlan.name,
 			ServerPlan.title,
-			(ServerPlan.price_usd * 0.9).as_("price_usd"),
-			(ServerPlan.price_inr * 0.9).as_("price_inr"),
+			(ServerPlan.price_usd * autoscale_discount).as_("price_usd"),
+			(ServerPlan.price_inr * autoscale_discount).as_("price_inr"),
 			ServerPlan.vcpu,
 			ServerPlan.memory,
 			ServerPlan.disk,

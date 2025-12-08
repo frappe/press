@@ -195,6 +195,7 @@ import ServerPlansDialog from './ServerPlansDialog.vue';
 import ServerLoadAverage from './ServerLoadAverage.vue';
 import StorageBreakdownDialog from './StorageBreakdownDialog.vue';
 import { getDocResource } from '../../utils/resource';
+import { createResource } from 'frappe-ui';
 import Badge from '../global/Badge.vue';
 import CustomAlerts from '../CustomAlerts.vue';
 
@@ -212,8 +213,19 @@ export default {
 		return {
 			startedScaleUp: false,
 			startedScaleDown: false,
+			autoscaleDiscount: null,
 		};
 	},
+	async mounted() {
+		const get = createResource({
+			url: 'press.api.server.get_autoscale_discount',
+			method: 'GET',
+		});
+
+		this.autoscaleDiscount = await get.fetch();
+		console.log(this.autoscaleDiscount);
+	},
+
 	methods: {
 		showPlanChangeDialog(serverType) {
 			let ServerPlansDialog = defineAsyncComponent(
@@ -332,7 +344,15 @@ export default {
 				planDescription = 'No plan selected';
 			} else if (currentPlan.price_usd > 0) {
 				price = currentPlan[priceField];
-				planDescription = `${this.$format.userCurrency(price, 0)}/mo`;
+				if (serverType === 'App Secondary Server') {
+					planDescription = this.autoscaleDiscount
+						? `${this.$format.userCurrency(
+								this.$format.pricePerHour(price) * this.autoscaleDiscount,
+							)}/hour`
+						: '';
+				} else {
+					planDescription = `${this.$format.userCurrency(price, 0)}/mo`;
+				}
 			} else {
 				planDescription = currentPlan.plan_title;
 			}
@@ -449,10 +469,10 @@ export default {
 										doc.title || doc.name
 									}</b>
 									<div class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border">
-									You will be charged at the rate of 
+									You will be charged at the rate of
 									<strong>
 										${this.$format.userCurrency(doc.storage_plan[priceField])}/mo
-									</strong> 
+									</strong>
 									for each additional GB of storage.
 									${
 										additionalStorageIncrementRecommendation

@@ -23,6 +23,7 @@
   "invoicing_column",
   "gst_percentage",
   "npo_discount",
+  "autoscale_discount",
   "column_break_qfwx",
   "print_format",
   "ic_key",
@@ -1552,6 +1553,11 @@
    "fieldname": "wazuh_server",
    "fieldtype": "Data",
    "label": "Wazuh Server"
+  },
+  {
+   "fieldname": "autoscale_discount",
+   "fieldtype": "Float",
+   "label": "Autoscale Discount"
   },
   {
    "default": "1",

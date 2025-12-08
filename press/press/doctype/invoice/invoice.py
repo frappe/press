@@ -13,6 +13,7 @@ from frappe.utils.data import fmt_money
 
 from press.api.billing import get_stripe
 from press.api.client import dashboard_whitelist
+from press.press.doctype.auto_scale_record.auto_scale_record import calculate_secondary_server_price
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.utils import log_error
 from press.utils.billing import (
@@ -186,11 +187,18 @@ class Invoice(Document):
 
 		for item in doc["items"]:
 			if item.document_type in ("Server", "Database Server"):
+				is_primary = frappe.get_value(item.document_type, item.document_name, "is_primary")
 				item.document_name = frappe.get_value(item.document_type, item.document_name, "title")
 				if server_plan := frappe.get_value("Server Plan", item.plan, price_field):
-					item.plan = f"{currency_symbol}{server_plan}"
+					if not is_primary and item.document_type == "Server":
+						item.plan = (
+							f"{currency_symbol}{calculate_secondary_server_price(self.team, item.plan)}/hour"
+						)
+					else:
+						item.plan = f"{currency_symbol}{server_plan}/mo"
 				elif server_plan := frappe.get_value("Server Storage Plan", item.plan, price_field):
 					item.plan = f"Storage Add-on {currency_symbol}{server_plan}/GB"
+
 			elif item.document_type == "Marketplace App":
 				item.document_name = frappe.get_value(item.document_type, item.document_name, "title")
 				item.plan = (
