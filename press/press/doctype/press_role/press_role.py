@@ -128,8 +128,8 @@ class PressRole(Document):
 		)
 
 	@dashboard_whitelist()
-	def add_user(self, user):
-		if not self.has_admin_access:
+	def add_user(self, user, skip_validations=False):
+		if not skip_validations and not self.has_admin_access:
 			message = _("Only users with admin access can add users to this role")
 			frappe.throw(message, frappe.PermissionError)
 
@@ -189,8 +189,8 @@ Explanation of LINKED_DOCTYPE_PERMISSIONS:
 
 Example -
 "Site Backup": {
-	"parent_doctype": "Site",
-	"parent_field": "site",
+    "parent_doctype": "Site",
+    "parent_field": "site",
 }
 
 Site Backup doctype has a field named 'site' which is a link to Site doctype.

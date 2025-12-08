@@ -358,6 +358,7 @@ class Team(Document):
 		password=None,
 		role=None,
 		press_roles=None,
+		skip_validations=False,
 	):
 		user = frappe.db.get_value("User", email, ["name"], as_dict=True)
 		if not user:
@@ -367,7 +368,10 @@ class Team(Document):
 		self.save(ignore_permissions=True)
 
 		for role in press_roles or []:
-			frappe.get_doc("Press Role", role.press_role).add_user(user.name)
+			frappe.get_doc("Press Role", role.press_role).add_user(
+				user.name,
+				skip_validations=skip_validations,
+			)
 
 	@dashboard_whitelist()
 	def remove_team_member(self, member):
