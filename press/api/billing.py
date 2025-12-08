@@ -648,17 +648,25 @@ def is_paypal_enabled() -> bool:
 
 
 @frappe.whitelist()
-def create_razorpay_order(amount, type=None) -> dict | None:
-	if amount <= 0:
-		frappe.msgprint(_("Amount should be greater than zero"))
-		return None
+def create_razorpay_order(amount, type, doc_name=None) -> dict | None:
+	if not type:
+		frappe.throw(_("Transaction type is not set"))
+	if not amount or amount <= 0:
+		frappe.throw(_("Amount should be greater than zero"))
 
-	client = get_razorpay_client()
 	team = get_current_team(get_doc=True)
 
+	# transaction type validations
+	_validate_razorpay_order_type(type, amount, doc_name, team.currency)
+
+	# GST for INR transactions
+	gst_amount = 0
 	if team.currency == "INR":
 		gst_amount = amount * frappe.db.get_single_value("Press Settings", "gst_percentage")
 		amount += gst_amount
+
+	# normalize type for payment record
+	payment_record_type = "Prepaid Credits" if type in ["Invoice", "Purchase Plan"] else type
 
 	amount = round(amount, 2)
 	data = {
@@ -667,15 +675,21 @@ def create_razorpay_order(amount, type=None) -> dict | None:
 		"notes": {
 			"Description": "Order for Frappe Cloud Prepaid Credits",
 			"Team (Frappe Cloud ID)": team.name,
-			"gst": gst_amount if team.currency == "INR" else 0,
+			"gst": gst_amount,
+			"Type": payment_record_type,
 		},
 	}
-	if type and type == "Partnership Fee":
-		data.get("notes").update({"Type": type})
+
+	client = get_razorpay_client()
 	order = client.order.create(data=data)
 
 	payment_record = frappe.get_doc(
-		{"doctype": "Razorpay Payment Record", "order_id": order.get("id"), "team": team.name, "type": type}
+		{
+			"doctype": "Razorpay Payment Record",
+			"order_id": order.get("id"),
+			"team": team.name,
+			"type": payment_record_type,
+		}
 	).insert(ignore_permissions=True)
 
 	return {
@@ -683,6 +697,39 @@ def create_razorpay_order(amount, type=None) -> dict | None:
 		"key_id": client.auth[0],
 		"payment_record": payment_record.name,
 	}
+
+
+def _validate_razorpay_order_type(type, amount, doc_name, currency):
+	currency_symbol = "₹" if currency == "INR" else "$"
+
+	if type == "Prepaid Credits":
+		minimum_amount = 100 if currency == "INR" else 5
+		if amount < minimum_amount:
+			frappe.throw(_("Amount should be at least {0}{1}").format(currency_symbol, minimum_amount))
+
+	elif type == "Purchase Plan":
+		if not doc_name or not frappe.db.exists("Plan", doc_name):
+			frappe.throw(_("Plan {0} does not exist").format(doc_name or ""))
+
+		price_field = "price_inr" if currency == "INR" else "price_usd"
+		plan_amount = frappe.db.get_value("Plan", doc_name, price_field)
+
+		if amount < plan_amount:
+			frappe.throw(
+				_("Amount should not be less than plan amount of {0}{1}").format(currency_symbol, plan_amount)
+			)
+
+	elif type == "Invoice":
+		if not doc_name or not frappe.db.exists("Invoice", doc_name):
+			frappe.throw(_("Invoice {0} does not exist").format(doc_name or ""))
+
+		invoice_amount = frappe.db.get_value("Invoice", doc_name, "amount_due_with_tax")
+		if amount < invoice_amount:
+			frappe.throw(
+				_("Amount should not be less than invoice amount of {0}{1}").format(
+					currency_symbol, invoice_amount
+				)
+			)
 
 
 @frappe.whitelist()
