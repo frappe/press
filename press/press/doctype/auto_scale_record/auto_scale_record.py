@@ -353,23 +353,9 @@ class AutoScaleRecord(Document, StepHandler):
 		step.status = Status.Running
 		step.save()
 
-		# Since only created when scaling down this value will always be present!
-		last_auto_scale_at = frappe.db.get_value(
-			"Auto Scale Record",
-			{
-				"primary_server": self.primary_server,
-				"secondary_server": self.secondary_server,
-				"status": "Success",
-				"action": "Scale Up",
-			},
-			"modified",
+		secondary_server_team, secondary_server_plan = frappe.db.get_value(
+			"Server", self.secondary_server, ["team", "plan"]
 		)
-
-		secondary_server_team = frappe.db.get_value("Server", self.secondary_server, "team")
-
-		auto_scaled_for = frappe.utils.now_datetime() - last_auto_scale_at
-		auto_scaled_for = auto_scaled_for.total_seconds() / 3600
-		secondary_server_plan = frappe.db.get_value("Server", self.secondary_server, "plan")
 
 		secondary_server_hourly_price_with_discount = calculate_secondary_server_price(
 			secondary_server_team, secondary_server_plan
@@ -520,12 +506,13 @@ def run_scheduled_scale_records():
 
 
 def calculate_secondary_server_price(team: str, secondary_server_plan: str) -> float:
-	"""Calculate secondary server proice with a 10% discount"""
+	"""Calculate secondary server proice with a discount"""
 	is_inr = frappe.db.get_value("Team", team, "currency") == "INR"
 	price_field = "price_inr" if is_inr else "price_usd"
 
 	server_price = frappe.db.get_value("Server Plan", secondary_server_plan, price_field)
-	server_price_with_discount = server_price * 0.9
+	autoscale_discount = frappe.db.get_single_value("Press Settings", "autoscale_discount")
+	server_price_with_discount = server_price * autoscale_discount
 
 	_, days_in_this_month = calendar.monthrange(datetime.date.today().year, datetime.date.today().month)
-	return server_price_with_discount / days_in_this_month / 24
+	return round(server_price_with_discount / days_in_this_month / 24, 2)
