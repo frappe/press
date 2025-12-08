@@ -23,6 +23,7 @@
   "invoicing_column",
   "gst_percentage",
   "npo_discount",
+  "autoscale_discount",
   "column_break_qfwx",
   "print_format",
   "ic_key",
@@ -1551,12 +1552,17 @@
    "fieldname": "wazuh_server",
    "fieldtype": "Data",
    "label": "Wazuh Server"
+  },
+  {
+   "fieldname": "autoscale_discount",
+   "fieldtype": "Float",
+   "label": "Autoscale Discount"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-11-27 17:29:59.207393",
- "modified_by": "hello@ssiyad.com",
+ "modified": "2025-12-08 14:09:36.901183",
+ "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
  "owner": "Administrator",

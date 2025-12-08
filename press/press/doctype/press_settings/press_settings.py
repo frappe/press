@@ -31,6 +31,7 @@ class PressSettings(Document):
 		agent_sentry_dsn: DF.Data | None
 		app_include_script: DF.Data | None
 		auto_update_queue_size: DF.Int
+		autoscale_discount: DF.Float
 		aws_access_key_id: DF.Data | None
 		aws_s3_bucket: DF.Data | None
 		aws_secret_access_key: DF.Password | None
