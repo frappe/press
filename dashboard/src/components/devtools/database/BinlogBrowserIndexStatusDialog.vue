@@ -5,6 +5,7 @@
 			size: '2xl',
 		}"
 		v-model="show"
+		@close="hide"
 	>
 		<template #body-content>
 			<div
@@ -61,6 +62,15 @@
 						</div>
 					</div>
 				</div>
+
+				<AlertBanner
+					v-if="selectedBinlogs.length > 0"
+					class="mt-2 mb-2"
+					title="Indexing a large number of files at once can momentarily increase database load. We recommend indexing no more than 500 MB per batch."
+					type="warning"
+					:show-icon="false"
+				/>
+
 				<ErrorMessage
 					:message="$resources.indexBinlogs.error"
 					v-if="$resources.indexBinlogs.error"
@@ -71,7 +81,7 @@
 				<Button
 					class="w-full"
 					variant="solid"
-					:disabled="this.selectedBinlogs.length === 0"
+					:disabled="selectedBinlogs.length === 0"
 					@click.prevent="$resources?.indexBinlogs?.submit()"
 					:loading="$resources?.indexBinlogs?.loading"
 				>
