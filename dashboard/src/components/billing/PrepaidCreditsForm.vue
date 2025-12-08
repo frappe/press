@@ -109,6 +109,8 @@
 			:amount="creditsToBuy"
 			:minimumAmount="minimumAmount"
 			:paypalEnabled="paypalEnabled.data"
+			:type="props.type"
+			:docName="props.docName"
 			@success="() => emit('success')"
 			@cancel="show = false"
 		/>
@@ -138,7 +140,18 @@ const emit = defineEmits(['success']);
 
 const team = inject('team');
 const props = defineProps({
-	minimumAmount: Number,
+	minimumAmount: {
+		type: Number,
+		default: null,
+	},
+	type: {
+		type: String,
+		default: 'Prepaid Credits',
+	},
+	docName: {
+		type: String,
+		default: null,
+	},
 });
 
 const paypalEnabled = createResource({
