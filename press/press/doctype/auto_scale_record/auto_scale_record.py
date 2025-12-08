@@ -534,4 +534,4 @@ def calculate_secondary_server_price(team: str, secondary_server_plan: str) -> f
 	server_price_with_discount = server_price * autoscale_discount
 
 	_, days_in_this_month = calendar.monthrange(datetime.date.today().year, datetime.date.today().month)
-	return server_price_with_discount / days_in_this_month / 24
+	return round(server_price_with_discount / days_in_this_month / 24, 2)
