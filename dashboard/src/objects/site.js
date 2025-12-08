@@ -1336,7 +1336,8 @@ export default {
 							},
 							{
 								label: 'View Job',
-								condition: () => row.status !== 'Scheduled',
+								condition: () =>
+									!['Scheduled', 'Cancelled'].includes(row.status),
 								onClick() {
 									router.push({
 										name: 'Site Update',
