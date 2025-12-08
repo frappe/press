@@ -373,9 +373,9 @@ class BaseServer(Document, TagHelpers):
 				"button_label": "Setup",
 				"condition": self.status == "Active"
 				and self.doctype == "Server"
-				# As only present on server doctype
 				and not self.secondary_server
-				and self.team == "team@erpnext.com",
+				and self.team == "team@erpnext.com"
+				and self.cluster == "Mumbai",
 				"group": "Application Server Actions",
 			},
 			{
@@ -2407,7 +2407,7 @@ class Server(BaseServer):
 			"Server Plan", secondary_server_plan, ["memory", "vcpu"]
 		)
 
-		if secondary_server_plan_memory <= current_plan_memory and secondary_server_vcpus <= vcpus:
+		if secondary_server_plan_memory < current_plan_memory and secondary_server_vcpus < vcpus:
 			frappe.throw(
 				"Please select a plan with more memory or more vcpus than the "
 				f"existing server plan. Current memory: {current_plan_memory} Current vcpus: {vcpus}"

@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import typing
+
 import frappe
 from frappe import _
 from frappe.model.document import Document
@@ -20,6 +22,9 @@ from press.utils.billing import (
 	get_partner_external_connection,
 	is_frappe_auth_disabled,
 )
+
+if typing.TYPE_CHECKING:
+	from press.press.doctype.usage_record.usage_record import UsageRecord
 
 
 class Invoice(Document):
@@ -566,6 +571,43 @@ class Invoice(Document):
 				else:
 					item.description = "Prepaid Credits"
 
+	def is_auto_scale_invoice_item(self, usage_record: UsageRecord) -> bool:
+		"""Check if this a secondary server usage record"""
+		if usage_record.document_type != "Server":
+			return False
+
+		is_primary = frappe.db.get_value("Server", usage_record.document_name, "is_primary")
+		if is_primary:
+			return False
+
+		return True
+
+	def get_auto_scale_quantity(self, usage_record: UsageRecord) -> float:
+		"""Get the duration the server was auto scaled for"""
+		last_up_scale_at = frappe.db.get_value(
+			"Auto Scale Record",
+			{
+				"secondary_server": usage_record.document_name,
+				"status": "Success",
+				"action": "Scale Up",
+			},
+			"modified",
+		)
+
+		last_down_scale_at = frappe.db.get_value(
+			"Auto Scale Record",
+			{
+				"secondary_server": usage_record.document_name,
+				"status": "Success",
+				"action": "Scale Down",
+			},
+			"modified",
+		)
+
+		# Since down scale is always followed
+		scale_duration = last_down_scale_at - last_up_scale_at
+		return round(scale_duration.total_seconds() / 60, 2)
+
 	def add_usage_record(self, usage_record):
 		if self.type != "Subscription":
 			return
@@ -595,7 +637,15 @@ class Invoice(Document):
 				},
 			)
 
-		invoice_item.quantity = (invoice_item.quantity or 0) + 1
+		if self.is_auto_scale_invoice_item(usage_record):
+			invoice_item.quantity = (
+				self.get_auto_scale_quantity(usage_record)
+				if not invoice_item.quantity
+				else invoice_item.quantity + self.get_auto_scale_quantity(usage_record)
+			)
+
+		else:
+			invoice_item.quantity = (invoice_item.quantity or 0) + 1
 
 		if usage_record.payout:
 			self.payout += usage_record.payout
