@@ -698,30 +698,7 @@
         "zloirock",
         "Zpyihv",
         "Zvkq",
-<<<<<<< HEAD
-<<<<<<< HEAD
-        "Wazuh"
-=======
-        "segs"
->>>>>>> 3abf88db7 (chore(ui): Vendor TimePicker and DateTimePicker from frappe-ui)
-=======
-        "segs",
-<<<<<<< HEAD
-	"interner",
-<<<<<<< HEAD
-	"sprintf"
->>>>>>> ba6db5a7c (perf(mariadb-binlog-indexer): Optimize for memory)
-=======
-	"sprintf",
-	"xyproto",
-	"vxeg",
-	"rzgre",
-	"Yekq",
-	"Rhiv",
-	"Kvsc",
-	"ZSTD"
->>>>>>> 9638fb0d0 (perf(mariadb-binlog-indexer): Provide different set of profile)
-=======
+		"segs",
         "interner",
         "sprintf",
         "xyproto",
@@ -731,12 +708,7 @@
         "Rhiv",
         "Kvsc",
         "ZSTD",
-<<<<<<< HEAD
-        "wazuh"
->>>>>>> 4cb200d87 (chore: Lint)
-=======
         "Wazuh",
         "DBUS"
->>>>>>> 0e5cfe809 (fix: Lint)
     ]
 }
