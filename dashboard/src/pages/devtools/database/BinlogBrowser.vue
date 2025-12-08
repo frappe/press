@@ -313,11 +313,7 @@
 
 		<!-- Binlog Index Status Dialog -->
 		<BinlogBrowserIndexStatusDialog
-			v-if="
-				database_server &&
-				show_binlog_index_status_dialog &&
-				isBinlogIndexerAvailable
-			"
+			v-if="isBinlogIndexerAvailable"
 			:server="this.$resources?.site?.data?.server"
 			:database_server="database_server"
 			v-model="show_binlog_index_status_dialog"
