@@ -186,6 +186,12 @@ frappe.ui.form.on('Database Server', {
 				true,
 				frm.doc.is_server_setup,
 			],
+			[
+				'Provide Frappe User DU Permission',
+				'provide_frappe_user_du_permission',
+				true,
+				frm.doc.is_server_setup,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
