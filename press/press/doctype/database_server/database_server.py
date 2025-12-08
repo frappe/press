@@ -1675,6 +1675,34 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		frappe.msgprint(message, "Binlog Summary")
 
 	@dashboard_whitelist()
+	def get_binlogs_indexing_status(self):
+		if not self.enable_binlog_indexing:
+			frappe.throw("Binlog Indexing is not enabled for this server.")
+
+		data = frappe.db.get_all(
+			"MariaDB Binlog",
+			filters={"database_server": self.name, "purged_from_disk": False},
+			fields=[
+				"file_name",
+				"indexed",
+				"size_mb",
+				"file_modification_time",
+			],
+			order_by="file_modification_time DESC",
+			limit_page_length=2000,
+		)
+		# Replace file_name with name
+		return [
+			{
+				"name": row["file_name"],
+				"indexed": row["indexed"],
+				"size_mb": row["size_mb"],
+				"file_modification_time": row["file_modification_time"],
+			}
+			for row in data
+		]
+
+	@dashboard_whitelist()
 	def purge_binlogs(self, to_binlog: str):
 		"""
 		!!!NOTE!!!
@@ -1912,6 +1940,20 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			return
 
 		self.agent.add_binlogs_to_indexer([x["file_name"] for x in filtered_binlogs])
+
+	@dashboard_whitelist()
+	def index_binlogs_on_demand(self, binlog_file_names: list[str]):
+		if not binlog_file_names:
+			return None
+
+		if not self.enable_binlog_indexing:
+			frappe.throw("Binlog Indexing is not enabled for this server.")
+
+		if self._is_binlog_indexing_related_operation_running() or self.is_binlog_indexer_running:
+			frappe.throw("Another Binlog Indexing related operation is already in progress.")
+
+		job = self.agent.add_binlogs_to_indexer(binlog_file_names)
+		return job.name
 
 	def remove_binlogs_from_indexer(self):
 		if not self.enable_binlog_indexing:
