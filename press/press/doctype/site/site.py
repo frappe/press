@@ -1276,14 +1276,14 @@ class Site(Document, TagHelpers):
 	def cancel_scheduled_update(self, site_update: str):
 		try:
 			if (
-				_status := frappe.db.get_value("Site Update", site_update, "status", for_update=True, wait=False)
+				_status := frappe.db.get_value(
+					"Site Update", site_update, "status", for_update=True, wait=False
+				)
 			) != "Scheduled":
 				frappe.throw(f"Cannot cancel a Site Update with status {_status}")
 
 		except (frappe.QueryTimeoutError, frappe.QueryDeadlockError):
-			frappe.throw(
-				"The update is probably underway. Please reload/refresh to get the latest status."
-			)
+			frappe.throw("The update is probably underway. Please reload/refresh to get the latest status.")
 
 		# used document api for applying doc permissions
 		doc = frappe.get_doc("Site Update", site_update)
