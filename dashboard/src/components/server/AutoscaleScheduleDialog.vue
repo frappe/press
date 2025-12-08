@@ -11,7 +11,7 @@
 					<ul class="list-disc list-inside space-y-1">
 						<li>
 							Scale up and scale down times must be at least
-							<strong>30 minutes apart</strong>.
+							<strong>60 minutes apart</strong>.
 						</li>
 						<li>The selected times must be in the future.</li>
 						<li>
@@ -120,9 +120,9 @@ export default {
 
 			// Need a 30 minutes
 			const diffMinutes = (down - up) / (1000 * 60);
-			if (diffMinutes < 30) {
+			if (diffMinutes < 60) {
 				return toast.error(
-					'Scale down time must be at least 30 minutes after scale up.',
+					'Scale down time must be at least 60 minutes after scale up.',
 				);
 			}
 
