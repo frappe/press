@@ -480,6 +480,7 @@ class BaseServer(Document, TagHelpers):
 				"route53",
 				aws_access_key_id=domain.aws_access_key_id,
 				aws_secret_access_key=domain.get_password("aws_secret_access_key"),
+				region_name=domain.aws_region,
 			)
 			zones = client.list_hosted_zones_by_name()["HostedZones"]
 			# list_hosted_zones_by_name returns a lexicographically ordered list of zones

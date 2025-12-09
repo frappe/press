@@ -30,6 +30,7 @@ class RootDomain(Document):
 		from frappe.types import DF
 
 		aws_access_key_id: DF.Data | None
+		aws_region: DF.Data | None
 		aws_secret_access_key: DF.Password | None
 		default_cluster: DF.Link
 		default_proxy_server: DF.Link | None
@@ -78,6 +79,7 @@ class RootDomain(Document):
 				"route53",
 				aws_access_key_id=self.aws_access_key_id,
 				aws_secret_access_key=self.get_password("aws_secret_access_key"),
+				region_name=self.aws_region,
 			)
 		return self._boto3_client
 
@@ -95,6 +97,7 @@ class RootDomain(Document):
 			)
 		except Exception:
 			log_error("Route 53 Pagination Error", domain=self.name)
+		return []
 
 	def delete_dns_records(self, records: list[str]):
 		try:
