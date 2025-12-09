@@ -382,7 +382,9 @@ class NFSVolumeAttachment(Document, AutoScaleStepFailureHandler, StepHandler):
 		step.job = agent_job.name
 		step.is_waiting = True
 
-		step.output = "Pushing the following missing images to registry: {}".format("\n".join(missing_images))
+		step.output = "Pushing the following missing images to registry:\n{}".format(
+			"\n".join(missing_images)
+		)
 		step.save()
 
 	def wait_for_missing_images(self, step: "NFSVolumeAttachmentStep"):
