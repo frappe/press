@@ -7,7 +7,13 @@ import { getTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
 import { isMobile } from '../utils/device';
-import { date, duration, planTitle, userCurrency } from '../utils/format';
+import {
+	date,
+	duration,
+	planTitle,
+	prettyDate,
+	userCurrency,
+} from '../utils/format';
 import { getQueryParam, setQueryParam } from '../utils/index';
 import { trialDays } from '../utils/site';
 import { getJobsTab } from './common/jobs';
@@ -962,34 +968,32 @@ export default {
 							align: 'center',
 						},
 						{
-							label: 'Duration',
-							fieldname: 'modified',
-							type: 'int',
+							label: 'Scheduled Time',
+							fieldname: 'scheduled_time',
+							width: 1,
 							format(row, value) {
-								const created = new Date(value.creation);
-								const modified = new Date(value.modified);
-
-								const diff = modified - created;
-
-								if (diff < 0) return '-';
-
-								const seconds = Math.floor(diff / 1000);
-								const minutes = Math.floor(seconds / 60);
-								const hours = Math.floor(minutes / 60);
-
-								if (hours > 0) return `${hours}h ${minutes % 60}m`;
-								if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
-
-								return `${seconds}s`;
+								if (value.status !== 'Scheduled') {
+									return '-';
+								}
+								return date(row, 'LLL');
 							},
 						},
 						{
-							label: 'Triggered By',
+							label: 'Duration',
+							fieldname: 'duration',
+							width: 1,
+							format(row, value) {
+								if (row) return duration(row);
+								return '-';
+							},
+						},
+						{
+							label: 'Created By',
 							fieldname: 'owner',
 							align: 'center',
 						},
 						{
-							label: 'Triggered At',
+							label: 'Created At',
 							fieldname: 'creation',
 							type: 'Timestamp',
 							align: 'right',
