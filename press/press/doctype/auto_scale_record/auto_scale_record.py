@@ -18,6 +18,25 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
+class AutoScaleStepFailureHandler:
+	def handle_step_failure(self):
+		team = frappe.db.get_value("Server", self.primary_server, "team")
+		press_notification = frappe.get_doc(
+			{
+				"doctype": "Press Notification",
+				"team": team,
+				"type": "Auto Scale",
+				"document_type": self.doctype,
+				"document_name": self.name,
+				"class": "Error",
+				"traceback": frappe.get_traceback(with_context=False),
+				"message": "Error occurred during auto scale",
+			}
+		)
+		press_notification.insert()
+		frappe.db.commit()
+
+
 class AutoScaleRecord(Document, StepHandler):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
