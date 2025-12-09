@@ -1032,19 +1032,7 @@ class DeployCandidateBuild(Document):
 		if settings.docker_registry_url != "registry.frappe.cloud":
 			return True
 
-<<<<<<< HEAD
-		response = requests.get(
-			f"https://{settings.docker_registry_url}/v2/{repository}/tags/list", auth=auth, headers=headers
-		)
-
-		if not response.ok:
-			return False
-
-		image_tags = response.json().get("tags", [])
-		return self.name in image_tags
-=======
 		return is_image_in_registry(self.name, self.group, settings)
->>>>>>> b9f08d2cd (feat(image): Verbose image exists check in registry)
 
 	def _start_build(self):
 		self._update_docker_image_metadata()
