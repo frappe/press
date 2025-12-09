@@ -67,7 +67,7 @@ export default {
 				url: 'press.api.billing.create_razorpay_order',
 				params: {
 					amount: this.amount,
-					type: this.type,
+					transaction_type: this.type,
 				},
 				onSuccess(data) {
 					this.processOrder(data);

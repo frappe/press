@@ -648,8 +648,8 @@ def is_paypal_enabled() -> bool:
 
 
 @frappe.whitelist()
-def create_razorpay_order(amount, type, doc_name=None) -> dict | None:
-	if not type:
+def create_razorpay_order(amount, transaction_type, doc_name=None) -> dict | None:
+	if not transaction_type:
 		frappe.throw(_("Transaction type is not set"))
 	if not amount or amount <= 0:
 		frappe.throw(_("Amount should be greater than zero"))
@@ -657,7 +657,7 @@ def create_razorpay_order(amount, type, doc_name=None) -> dict | None:
 	team = get_current_team(get_doc=True)
 
 	# transaction type validations
-	_validate_razorpay_order_type(type, amount, doc_name, team.currency)
+	_validate_razorpay_order_type(transaction_type, amount, doc_name, team.currency)
 
 	# GST for INR transactions
 	gst_amount = 0
@@ -666,7 +666,7 @@ def create_razorpay_order(amount, type, doc_name=None) -> dict | None:
 		amount += gst_amount
 
 	# normalize type for payment record
-	payment_record_type = "Prepaid Credits" if type in ["Invoice", "Purchase Plan"] else type
+	payment_record_type = "Prepaid Credits" if transaction_type in ["Invoice", "Purchase Plan"] else type
 
 	amount = round(amount, 2)
 	data = {
@@ -699,37 +699,48 @@ def create_razorpay_order(amount, type, doc_name=None) -> dict | None:
 	}
 
 
-def _validate_razorpay_order_type(type, amount, doc_name, currency):
-	currency_symbol = "₹" if currency == "INR" else "$"
+def _validate_razorpay_order_type(transaction_type, amount, doc_name, currency):
+	if transaction_type == "Prepaid Credits":
+		_validate_prepaid_credits(amount, currency)
+	elif transaction_type == "Purchase Plan":
+		_validate_purchase_plan(amount, doc_name, currency)
+	elif transaction_type == "Invoice":
+		_validate_invoice_payment(amount, doc_name, currency)
 
-	if type == "Prepaid Credits":
-		minimum_amount = 100 if currency == "INR" else 5
-		if amount < minimum_amount:
-			frappe.throw(_("Amount should be at least {0}{1}").format(currency_symbol, minimum_amount))
 
-	elif type == "Purchase Plan":
-		if not doc_name or not frappe.db.exists("Plan", doc_name):
-			frappe.throw(_("Plan {0} does not exist").format(doc_name or ""))
+def _validate_prepaid_credits(amount, currency):
+	minimum_amount = 100 if currency == "INR" else 5
+	if amount < minimum_amount:
+		currency_symbol = "₹" if currency == "INR" else "$"
+		frappe.throw(_("Amount should be at least {0}{1}").format(currency_symbol, minimum_amount))
 
-		price_field = "price_inr" if currency == "INR" else "price_usd"
-		plan_amount = frappe.db.get_value("Plan", doc_name, price_field)
 
-		if amount < plan_amount:
-			frappe.throw(
-				_("Amount should not be less than plan amount of {0}{1}").format(currency_symbol, plan_amount)
+def _validate_purchase_plan(amount, doc_name, currency):
+	if not doc_name or not frappe.db.exists("Plan", doc_name):
+		frappe.throw(_("Plan {0} does not exist").format(doc_name or ""))
+
+	price_field = "price_inr" if currency == "INR" else "price_usd"
+	plan_amount = frappe.db.get_value("Plan", doc_name, price_field)
+
+	if amount < plan_amount:
+		currency_symbol = "₹" if currency == "INR" else "$"
+		frappe.throw(
+			_("Amount should not be less than plan amount of {0}{1}").format(currency_symbol, plan_amount)
+		)
+
+
+def _validate_invoice_payment(amount, doc_name, currency):
+	if not doc_name or not frappe.db.exists("Invoice", doc_name):
+		frappe.throw(_("Invoice {0} does not exist").format(doc_name or ""))
+
+	invoice_amount = frappe.db.get_value("Invoice", doc_name, "amount_due_with_tax")
+	if amount < invoice_amount:
+		currency_symbol = "₹" if currency == "INR" else "$"
+		frappe.throw(
+			_("Amount should not be less than invoice amount of {0}{1}").format(
+				currency_symbol, invoice_amount
 			)
-
-	elif type == "Invoice":
-		if not doc_name or not frappe.db.exists("Invoice", doc_name):
-			frappe.throw(_("Invoice {0} does not exist").format(doc_name or ""))
-
-		invoice_amount = frappe.db.get_value("Invoice", doc_name, "amount_due_with_tax")
-		if amount < invoice_amount:
-			frappe.throw(
-				_("Amount should not be less than invoice amount of {0}{1}").format(
-					currency_symbol, invoice_amount
-				)
-			)
+		)
 
 
 @frappe.whitelist()

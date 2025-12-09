@@ -82,7 +82,7 @@ const createRazorpayOrder = createResource({
 	url: 'press.api.billing.create_razorpay_order',
 	params: {
 		amount: props.amount,
-		type: order_type,
+		transaction_type: order_type,
 	},
 	onSuccess: (data) => processOrder(data),
 	validate: () => {
