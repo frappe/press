@@ -55,10 +55,10 @@ def bench_init(
 @deploy.command(help="Create bench group")
 def create_bench_group(
 	ctx: typer.Context,
-	version: Annotated[str, typer.Argument(help="Frappe Framework Version (e.g. Version 15)")],
-	region: Annotated[str, typer.Argument(help="Region (cluster name, e.g. Mumbai)")],
 	title: Annotated[str, typer.Argument(help="Bench Group Title (e.g. cli-test-bench)")],
+	version: Annotated[str, typer.Argument(help="Frappe Framework Version (e.g. Version 15)")],
 	server: Annotated[str, typer.Argument(help="Server name")],
+	region: Annotated[str, typer.Argument(help="Region (cluster name, e.g. Mumbai)")],
 ):
 	session: CloudSession = ctx.obj
 	try:
@@ -115,9 +115,9 @@ def drop_bench_group(
 @deploy.command(help="Add app to bench group by name and version")
 def add_app(
 	ctx: typer.Context,
-	bench: Annotated[str, typer.Argument(help="Bench group name")],
 	app: Annotated[str, typer.Argument(help="App name")],
 	branch: Annotated[str, typer.Argument(help="App branch (e.g. 'version-15-beta')")],
+	bench: Annotated[str, typer.Argument(help="Bench group name")],
 ):
 	session: CloudSession = ctx.obj
 	url = _build_method_url(session, "press.api.bench.all_apps")
@@ -162,8 +162,8 @@ def add_app(
 @deploy.command(help="Remove app from bench group")
 def remove_app(
 	ctx: typer.Context,
-	bench: Annotated[str, typer.Argument(help="Bench group name")],
 	app: Annotated[str, typer.Argument(help="App name to remove")],
+	bench: Annotated[str, typer.Argument(help="Bench group name")],
 ):
 	session: CloudSession = ctx.obj
 	url = _build_method_url(session, "press.api.client.run_doc_method")
@@ -206,10 +206,7 @@ def update_app(
 	hash_prefix: Annotated[
 		str, typer.Argument(help="First few characters of the target release git hash (min 5)")
 	],
-	bench: Annotated[
-		str | None,
-		typer.Argument(help="Bench group name (optional; auto-detect by app)"),
-	] = None,
+	bench: Annotated[str, typer.Argument(help="Bench group name")],
 ):
 	"""Find the app release whose commit hash starts with HASH_PREFIX and trigger deploy_and_update.
 
