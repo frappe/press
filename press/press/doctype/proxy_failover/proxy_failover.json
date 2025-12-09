@@ -1,0 +1,97 @@
+{
+ "actions": [],
+ "creation": "2025-11-24 13:32:44.225696",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "primary",
+  "status",
+  "column_break_djlt",
+  "secondary",
+  "section_break_gajn",
+  "failover_steps",
+  "section_break_wkly",
+  "error"
+ ],
+ "fields": [
+  {
+   "fieldname": "primary",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Primary",
+   "options": "Proxy Server",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_djlt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "secondary",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Secondary",
+   "options": "Proxy Server",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure"
+  },
+  {
+   "fieldname": "section_break_gajn",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "failover_steps",
+   "fieldtype": "Table",
+   "label": "Failover Steps",
+   "options": "Proxy Failover Steps",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_wkly",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Text",
+   "label": "Error",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "in_create": 1,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-12-01 13:06:24.336533",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Proxy Failover",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
