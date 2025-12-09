@@ -227,10 +227,17 @@ def choose_plan(
 @server.command(help="Create a new server")
 def create_server(
 	ctx: typer.Context,
+<<<<<<< HEAD
 	cluster: Annotated[str, typer.Option("--cluster", help="Cluster name")] = ...,
 	title: Annotated[str, typer.Option("--title", help="Server title")] = ...,
 	app_plan: Annotated[str, typer.Option("--app-plan", help="App server plan name")] = ...,
 	db_plan: Annotated[str, typer.Option("--db-plan", help="Database server plan name")] = ...,
+=======
+	title: Annotated[str, typer.Argument(help="Server title")],
+	cluster: Annotated[str, typer.Argument(help="Cluster name")],
+	app_plan: Annotated[str, typer.Argument(help="App server plan name")],
+	db_plan: Annotated[str, typer.Argument(help="Database server plan name")],
+>>>>>>> b9de66640 (feat(cli): Add utility to create and delete sites)
 	auto_increase_storage: Annotated[
 		bool, typer.Option("--auto-increase-storage", is_flag=True, help="Auto increase storage")
 	] = False,
