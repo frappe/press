@@ -11,6 +11,7 @@ from frappe import _
 from frappe.contacts.address_and_contact import load_address_and_contact
 from frappe.core.utils import find
 from frappe.model.document import Document
+from frappe.query_builder.functions import Count
 from frappe.rate_limiter import rate_limit
 from frappe.utils import get_fullname, get_last_day, get_url_to_form, getdate, random_string
 
@@ -825,6 +826,32 @@ class Team(Document):
 		stripe = get_stripe()
 		customer_object = stripe.Customer.retrieve(self.stripe_customer_id)
 		return (customer_object["balance"] * -1) / 100
+
+	def is_team_owner(self) -> bool:
+		"""
+		Checks if the current user is the owner of the team.
+		"""
+		return bool(frappe.db.get_value("Team", self.name, "user") == frappe.session.user)
+
+	def is_admin_user(self) -> bool:
+		"""
+		Checks if the current user has admin access in the team via roles.
+		"""
+		PressRole = frappe.qb.DocType("Press Role")
+		PressRoleUser = frappe.qb.DocType("Press Role User")
+		return (
+			frappe.qb.from_(PressRoleUser)
+			.left_join(PressRole)
+			.on(PressRole.name == PressRoleUser.parent)
+			.select(Count(PressRoleUser.name).as_("count"))
+			.where(PressRole.team == self.name)
+			.where(PressRoleUser.user == frappe.session.user)
+			.where(PressRole.admin_access == 1)
+			.run(as_dict=1)
+			.pop()
+			.get("count", 0)
+			> 0
+		)
 
 	@dashboard_whitelist()
 	def get_team_members(self):

@@ -2,11 +2,17 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import functools
+from typing import TYPE_CHECKING
+
 import frappe
 from frappe import _
 from frappe.model.document import Document
 
 from press.api.client import dashboard_whitelist
+
+if TYPE_CHECKING:
+	from press.press.doctype.team.team import Team
 
 
 class PressRole(Document):
@@ -108,24 +114,16 @@ class PressRole(Document):
 	def is_team_member(self, user):
 		return bool(frappe.db.exists("Team Member", {"parent": self.team, "user": user}))
 
+	@functools.cached_property
+	def team_doc(self) -> Team:
+		return frappe.get_doc("Team", self.team)
+
 	@property
 	def has_admin_access(self) -> bool:
 		"""
 		Check if the current user has admin access on this team.
-
-		:return: True if the user has admin access, False otherwise.
 		"""
-
-		return frappe.db.get_value("Team", self.team, "user") == frappe.session.user or bool(
-			frappe.db.exists(
-				{
-					"doctype": "Press Role",
-					"user": frappe.session.user,
-					"team": self.team,
-					"admin_access": 1,
-				}
-			)
-		)
+		return self.team_doc.is_team_owner() or self.team_doc.is_admin_user()
 
 	@dashboard_whitelist()
 	def add_user(self, user, skip_validations=False):
