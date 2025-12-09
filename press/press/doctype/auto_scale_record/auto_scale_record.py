@@ -49,11 +49,13 @@ class AutoScaleRecord(Document, StepHandler):
 		from press.press.doctype.scale_step.scale_step import ScaleStep
 
 		action: DF.Literal["Scale Up", "Scale Down"]
+		duration: DF.Time | None
 		failed_validation: DF.Check
 		primary_server: DF.Link
 		scale_steps: DF.Table[ScaleStep]
-		scheduled: DF.Datetime | None
+		scheduled_time: DF.Datetime | None
 		secondary_server: DF.Link | None
+		start_time: DF.Datetime | None
 		status: DF.Literal["Pending", "Running", "Failure", "Success", "Scheduled"]
 	# end: auto-generated types
 
@@ -63,13 +65,18 @@ class AutoScaleRecord(Document, StepHandler):
 		"created_at",
 		"modified_at",
 		"status",
+		"scheduled_time",
+		"duration",
 	)
 
 	def before_insert(self):
 		"""Set metadata attributes"""
+		self.duration = None
+
 		if self.action == "Scale Up":
 			for step in self.get_steps(
 				[
+					self.mark_start_time,
 					self.start_secondary_server,
 					self.wait_for_secondary_server_to_start,
 					# Since the secondary is stopped no jobs running on it
@@ -88,6 +95,7 @@ class AutoScaleRecord(Document, StepHandler):
 			for step in self.get_steps(
 				[
 					# There could be jobs running on both primary and secondary
+					self.mark_start_time,
 					self.stop_all_agent_jobs_on_primary,
 					self.stop_all_agent_jobs_on_secondary,
 					self.switch_to_primary,
@@ -101,6 +109,20 @@ class AutoScaleRecord(Document, StepHandler):
 				self.append("scale_steps", step)
 
 		self.secondary_server = frappe.db.get_value("Server", self.primary_server, "secondary_server")
+
+	def mark_start_time(self, step: "ScaleStep"):
+		"""Mark autoscale start time"""
+		# This function is required since scale up and scale down share methods
+		# We don't want a function to accidentally override the start time
+		step.status = Status.Running
+		step.save()
+
+		frappe.db.set_value(
+			"Auto Scale Record", self.name, "start_time", frappe.utils.now()
+		)  # Set start stime
+
+		step.status = Status.Success
+		step.save()
 
 	# Steps to switch to secondary
 	def start_secondary_server(self, step: "ScaleStep"):
@@ -240,6 +262,10 @@ class AutoScaleRecord(Document, StepHandler):
 		step.save()
 
 		frappe.db.set_value("Server", self.primary_server, {"scaled_up": True, "halt_agent_jobs": False})
+		duration = frappe.utils.now_datetime() - frappe.db.get_value(
+			"Auto Scale Record", self.name, "start_time"
+		)
+		frappe.db.set_value("Auto Scale Record", self.name, "duration", duration)
 
 		step.status = Status.Success
 		step.save()
@@ -402,6 +428,11 @@ class AutoScaleRecord(Document, StepHandler):
 		usage_record.insert()
 		usage_record.submit()
 
+		duration = frappe.utils.now_datetime() - frappe.db.get_value(
+			"Auto Scale Record", self.name, "start_time"
+		)
+		frappe.db.set_value("Auto Scale Record", self.name, "duration", duration)
+
 		step.status = Status.Success
 		step.save()
 
@@ -501,7 +532,7 @@ def run_scheduled_scale_records():
 		"Auto Scale Record",
 		{
 			"status": "Scheduled",
-			"scheduled": ("<=", frappe.utils.now_datetime()),
+			"scheduled_time": ("<=", frappe.utils.now_datetime()),
 		},
 		pluck="name",
 		limit=5,

@@ -782,7 +782,7 @@ def schedule_auto_scale(name, scheduled_scale_up_time: str, scheduled_scale_down
 				"doctype": "Auto Scale Record",
 				"action": action,
 				"status": "Scheduled",
-				"scheduled": scheduled_time,
+				"scheduled_time": scheduled_time,
 				"primary_server": name,
 				"secondary_server": secondary_server,
 			}
