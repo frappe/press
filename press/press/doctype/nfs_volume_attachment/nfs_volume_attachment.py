@@ -8,11 +8,8 @@ import frappe
 from frappe.model.document import Document
 
 from press.agent import Agent
-<<<<<<< HEAD
-=======
 from press.press.doctype.auto_scale_record.auto_scale_record import AutoScaleStepFailureHandler
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import is_image_in_registry
->>>>>>> e50407f15 (feat(image): Add setup step for missing image push)
 from press.runner import Ansible, Status, StepHandler
 
 if typing.TYPE_CHECKING:
@@ -37,7 +34,7 @@ def get_restart_benches_play(server: str) -> Ansible:
 	)
 
 
-class NFSVolumeAttachment(Document, StepHandler):
+class NFSVolumeAttachment(Document, AutoScaleStepFailureHandler, StepHandler):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
