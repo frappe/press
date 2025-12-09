@@ -20,11 +20,9 @@
 						</li>
 					</ul>
 				</div>
-				<div
-					class="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4 space-y-6"
-				>
+				<div class="border border-gray-200 rounded-lg p-4 mt-4 space-y-6">
 					<div class="flex flex-col space-y-2">
-						<label class="font-medium text-gray-700">Scale Up Start Time</label>
+						<label class="font-medium">Scale Up Start Time</label>
 						<DateTimePicker
 							v-model="scaleUpdateTime"
 							variant="subtle"
@@ -32,11 +30,8 @@
 						/>
 					</div>
 
-					<!-- Scale Down -->
 					<div class="flex flex-col space-y-2">
-						<label class="font-medium text-gray-700"
-							>Scale Down Start Time</label
-						>
+						<label class="font-medium">Scale Down Start Time</label>
 						<DateTimePicker
 							v-model="scaleDowndateTime"
 							variant="subtle"
