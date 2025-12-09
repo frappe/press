@@ -1276,11 +1276,21 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def cancel_scheduled_update(self, site_update: str):
-		if status := frappe.db.get_value("Site Update", site_update, "status") != "Scheduled":
-			frappe.throw(f"Cannot cancel a Site Update with status {status}")
+		try:
+			if (
+				_status := frappe.db.get_value(
+					"Site Update", site_update, "status", for_update=True, wait=False
+				)
+			) != "Scheduled":
+				frappe.throw(f"Cannot cancel a Site Update with status {_status}")
 
-		# TODO: Set status to cancelled instead of deleting the doc
-		frappe.delete_doc("Site Update", site_update)
+		except (frappe.QueryTimeoutError, frappe.QueryDeadlockError):
+			frappe.throw("The update is probably underway. Please reload/refresh to get the latest status.")
+
+		# used document api for applying doc permissions
+		doc = frappe.get_doc("Site Update", site_update)
+		doc.status = "Cancelled"
+		doc.save()
 
 	@frappe.whitelist()
 	def move_to_group(self, group, skip_failing_patches=False, skip_backups=False):
