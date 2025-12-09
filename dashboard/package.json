@@ -95,5 +95,25 @@
 			"yarn lint",
 			"git add"
 		]
+	},
+	"nyc": {
+		"include": [
+			"src/**/*.vue",
+			"src/**/*.js"
+		],
+		"extension": [
+			".js",
+			".ts",
+			".vue"
+		],
+		"reporter": [
+			"html",
+			"text",
+			"lcov"
+		],
+		"all": true,
+		"require": [
+			"source-map-support/register"
+		]
 	}
 }
