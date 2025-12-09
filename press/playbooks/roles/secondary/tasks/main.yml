@@ -104,6 +104,7 @@
     mode: changemaster
     login_user: root
     login_password: "{{ mariadb_root_password }}"
+    login_port: "{{ db_port }}"
     master_host: "{{ primary_private_ip }}"
     master_user: root
     master_port: "{{ primary_db_port }}"
