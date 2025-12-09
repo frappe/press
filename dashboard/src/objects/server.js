@@ -7,13 +7,7 @@ import { getTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
 import { isMobile } from '../utils/device';
-import {
-	date,
-	duration,
-	planTitle,
-	prettyDate,
-	userCurrency,
-} from '../utils/format';
+import { date, duration, planTitle, userCurrency } from '../utils/format';
 import { getQueryParam, setQueryParam } from '../utils/index';
 import { trialDays } from '../utils/site';
 import { getJobsTab } from './common/jobs';
@@ -913,120 +907,35 @@ export default {
 			{
 				label: 'Auto Scale',
 				icon: icon('maximize-2'),
+				route: 'auto-scale',
+				type: 'Component',
 				condition: (server) => {
 					if (!server?.doc) return true;
 					return server?.doc?.secondary_server;
 				},
-				route: 'auto-scale',
-				type: 'list',
-				list: {
-					doctype: 'Auto Scale Record',
-					filters: (server) => {
-						return {
-							primary_server: server.doc?.name,
-							secondary_server: server.doc?.secondary_server,
-						};
+				redirectTo: 'Triggered',
+				childrenRoutes: ['Triggered', 'Scheduled'],
+				nestedChildrenRoutes: [
+					{
+						name: 'Triggered',
+						path: '',
+						component: () => import('../components/server/AutoScale.vue'),
 					},
-					filterControls() {
-						return [
-							{
-								type: 'select',
-								label: 'Status',
-								fieldname: 'status',
-								options: ['', 'Running', 'Pending', 'Failure', 'Success'],
-							},
-							{
-								type: 'select',
-								label: 'Action',
-								fieldname: 'action',
-								options: ['', 'Scale Down', 'Scale Up'],
-							},
-							{
-								type: 'text',
-								label: 'Triggered By',
-								fieldname: 'owner',
-							},
-						];
+					{
+						name: 'Scheduled',
+						path: 'scheduled',
+						component: () =>
+							import('../components/server/AutoScaleScheduled.vue'),
 					},
-					orderBy: 'creation desc',
-					fields: ['owner'],
-					columns: [
-						{
-							label: 'Secondary Server',
-							fieldname: 'secondary_server',
-						},
-						{
-							label: 'Status',
-							fieldname: 'status',
-							type: 'Badge',
-							align: 'center',
-						},
-						{
-							label: 'Action',
-							fieldname: 'action',
-							type: 'Badge',
-							align: 'center',
-						},
-						{
-							label: 'Scheduled Time',
-							fieldname: 'scheduled_time',
-							width: 1,
-							format(row, value) {
-								if (value.status !== 'Scheduled') {
-									return '-';
-								}
-								return date(row, 'LLL');
-							},
-						},
-						{
-							label: 'Duration',
-							fieldname: 'duration',
-							width: 1,
-							format(row, value) {
-								if (row) return duration(row);
-								return '-';
-							},
-						},
-						{
-							label: 'Created By',
-							fieldname: 'owner',
-							align: 'center',
-						},
-						{
-							label: 'Created At',
-							fieldname: 'creation',
-							type: 'Timestamp',
-							align: 'right',
-						},
-					],
-					primaryAction({ documentResource: server, listResource: snapshots }) {
-						if (
-							server?.doc?.status === 'Archived' ||
-							!server?.doc?.secondary_server
-						)
-							return;
-						return {
-							label: 'Schedule Auto Scale',
-							slots: {
-								prefix: icon('clock'),
-							},
-							onClick() {
-								renderDialog(
-									h(
-										defineAsyncComponent(
-											() =>
-												import(
-													'../components/server/AutoscaleScheduleDialog.vue'
-												),
-										),
-										{
-											server: server.name,
-										},
-									),
-								);
-							},
-						};
-					},
+				],
+				component: defineAsyncComponent(
+					() => import('../components/server/AutoScaleTabs.vue'),
+				),
+				props: (server) => {
+					return {
+						server: server.doc.name,
+						secondaryServer: server.doc.secondary_server,
+					};
 				},
 			},
 			tagTab('Server'),
