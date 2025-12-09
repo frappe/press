@@ -190,6 +190,9 @@ class Team(Document):
 		doc.communication_infos = self.get_communication_infos()
 		doc.receive_budget_alerts = self.receive_budget_alerts
 		doc.monthly_alert_threshold = self.monthly_alert_threshold
+		doc.is_binlog_indexer_enabled = not frappe.db.get_single_value(
+			"Press Settings", "disable_binlog_indexer_service", cache=True
+		)
 
 	def onload(self):
 		load_address_and_contact(self)
