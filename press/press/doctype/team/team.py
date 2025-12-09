@@ -526,12 +526,14 @@ class Team(Document):
 		self.servers_enabled = 1
 		self.partner_status = "Active"
 		self.save(ignore_permissions=True)
+		frappe.get_doc("User", self.user).add_roles("Partner")
 		self.create_partner_referral_code()
 
 	@frappe.whitelist()
 	def disable_erpnext_partner_privileges(self):
 		self.partner_status = "Inactive"
 		self.save(ignore_permissions=True)
+		frappe.get_doc("User", self.user).remove_roles("Partner")
 
 	def create_partner_referral_code(self):
 		if not self.partner_referral_code:
