@@ -658,9 +658,12 @@ export default {
 				this.step = 'restrict-build';
 				return;
 			}
-
-			this.errorMessage =
-				'Internal Server Error: Deploy could not be initiated';
+			if (Array.isArray(error.messages)) {
+				this.errorMessage = error.messages.join(', ');
+			} else {
+				this.errorMessage =
+					'Internal Server Error: Deploy could not be initiated';
+			}
 		},
 	},
 };
