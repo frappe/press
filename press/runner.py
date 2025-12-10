@@ -1,10 +1,7 @@
 import json
 import time
-<<<<<<< HEAD
-=======
 import typing
 from contextlib import suppress
->>>>>>> 7380cb4f8 (feat(schedule): Validate schedule before inserting)
 from enum import Enum
 from typing import Literal
 
