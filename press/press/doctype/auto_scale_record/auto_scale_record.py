@@ -69,6 +69,17 @@ class AutoScaleRecord(Document, StepHandler):
 		"duration",
 	)
 
+	@staticmethod
+	def get_list_query(query, filters: dict[str, str] | None = None, **args):
+		"""Fetch the secondary server from the primary server doc"""
+		AutoScaleRecord = frappe.qb.DocType("Auto Scale Record")
+		secondary_server = frappe.db.get_value(
+			"Server", filters.get("primary_server", None) if filters else None, "secondary_server"
+		)
+		query = query.where(AutoScaleRecord.secondary_server == secondary_server)
+
+		return query.run(as_dict=True)
+
 	def before_insert(self):
 		"""Set metadata attributes"""
 		self.duration = None
