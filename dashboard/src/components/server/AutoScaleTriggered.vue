@@ -22,7 +22,6 @@ export default {
 				doctype: 'Auto Scale Record',
 				filters: {
 					primary_server: this.name,
-					secondary_server: this.$route.query.secondaryServer,
 					status: ['not in', 'Scheduled'],
 				},
 				filterControls: () => [
