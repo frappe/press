@@ -9,6 +9,8 @@ import { date } from '../../utils/format';
 import { icon } from '../../utils/components';
 import ObjectList from '../ObjectList.vue';
 
+import Badge from '../global/Badge.vue';
+
 export default {
 	name: 'AutoScale',
 	props: {
@@ -56,8 +58,13 @@ export default {
 					{
 						label: 'Action',
 						fieldname: 'action',
-						type: 'Badge',
+						type: 'Component',
 						align: 'center',
+						component: ({ row }) =>
+							h(Badge, {
+								label: row.action,
+								theme: row.action === 'Scale Down' ? 'orange' : 'green',
+							}),
 					},
 					{
 						label: 'Scheduled Time',
