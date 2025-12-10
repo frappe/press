@@ -919,7 +919,8 @@ export default {
 					{
 						name: 'Triggered',
 						path: '',
-						component: () => import('../components/server/AutoScale.vue'),
+						component: () =>
+							import('../components/server/AutoScaleTriggered.vue'),
 					},
 					{
 						name: 'Scheduled',

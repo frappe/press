@@ -3,8 +3,10 @@
 </template>
 
 <script>
+import { h } from 'vue';
 import { duration } from '../../utils/format';
 import ObjectList from '../ObjectList.vue';
+import Badge from '../global/Badge.vue';
 
 export default {
 	name: 'AutoScale',
@@ -53,8 +55,13 @@ export default {
 					{
 						label: 'Action',
 						fieldname: 'action',
-						type: 'Badge',
+						type: 'Component',
 						align: 'center',
+						component: ({ row }) =>
+							h(Badge, {
+								label: row.action,
+								theme: row.action === 'Scale Down' ? 'orange' : 'green',
+							}),
 					},
 					{
 						label: 'Duration',
