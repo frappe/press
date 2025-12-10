@@ -1,5 +1,5 @@
 <template>
-	<ObjectList class="p-5" :options="autoScaleRecords" />
+	<ObjectList class="p-5" ref="objectList" :options="autoScaleRecords" />
 </template>
 
 <script>
@@ -16,9 +16,7 @@ export default {
 	props: {
 		name: String,
 	},
-
 	components: { ObjectList },
-
 	computed: {
 		autoScaleRecords() {
 			return {
@@ -41,11 +39,8 @@ export default {
 						fieldname: 'owner',
 					},
 				],
-
 				orderBy: 'creation desc',
-
 				fields: ['owner'],
-
 				columns: [
 					{ label: 'Secondary Server', fieldname: 'secondary_server' },
 
@@ -99,7 +94,10 @@ export default {
 								defineAsyncComponent(
 									() => import('../server/AutoscaleScheduleDialog.vue'),
 								),
-								{ server: this.name },
+								{
+									server: this.name,
+									reloadListView: this.$refs.objectList.reloadListView,
+								},
 							),
 						),
 				}),
