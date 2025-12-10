@@ -918,7 +918,7 @@ export default {
 				nestedChildrenRoutes: [
 					{
 						name: 'Triggered',
-						path: '',
+						path: 'triggered',
 						component: () =>
 							import('../components/server/AutoScaleTriggered.vue'),
 					},
@@ -935,7 +935,6 @@ export default {
 				props: (server) => {
 					return {
 						server: server.doc.name,
-						secondaryServer: server.doc.secondary_server,
 					};
 				},
 			},
