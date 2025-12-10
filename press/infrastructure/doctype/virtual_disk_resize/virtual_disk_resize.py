@@ -64,15 +64,7 @@ class VirtualDiskResize(Document):
 		scheduled_time: DF.Datetime | None
 		service: DF.Data | None
 		start: DF.Datetime | None
-		status: DF.Literal[
-			"Scheduled",
-			"Pending",
-			"Preparing",
-			"Ready",
-			"Running",
-			"Success",
-			"Failure",
-		]
+		status: DF.Literal["Scheduled", "Pending", "Preparing", "Ready", "Running", "Success", "Failure"]
 		steps: DF.Table[VirtualMachineMigrationStep]
 		virtual_disk_snapshot: DF.Link | None
 		virtual_machine: DF.Link
