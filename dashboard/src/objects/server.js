@@ -809,6 +809,132 @@ export default {
 					},
 				},
 			},
+			{
+				label: 'Disk Resize (Shrink)',
+				// icon: icon('camera'),
+				condition: (server) => {
+					if (!server?.doc) return true;
+					return server?.doc?.provider === 'AWS EC2';
+				},
+				route: 'disk-resize',
+				type: 'list',
+				filterControls() {
+					return [
+						{
+							type: 'select',
+							label: 'Status',
+							fieldname: 'status',
+							options: [
+								'Scheduled',
+								'Pending',
+								'Preparing',
+								'Ready',
+								'Running',
+								'Success',
+								'Failure',
+							],
+						},
+					];
+				},
+				autoReloadAfterUpdateFilterCallback: true,
+				orderBy: 'creation desc',
+				fields: [
+					'name',
+					'status',
+					'creation',
+					'old_volume_size',
+					'new_volume_size',
+				],
+				columns: [
+					{
+						label: 'Disk Resize Request',
+						fieldname: 'name',
+						width: 0.5,
+						class: 'font-medium',
+					},
+					{
+						label: 'Status',
+						fieldname: 'status',
+						type: 'Badge',
+						width: 0.5,
+						align: 'center',
+					},
+					{
+						label: 'Old Volume Size (GB)',
+						fieldname: 'old_volume_size',
+						width: 0.5,
+						align: 'center',
+						format(value) {
+							if (!value) return '-';
+							return `${value} GB`;
+						},
+					},
+					{
+						label: 'New Volume Size (GB)',
+						fieldname: 'new_volume_size',
+						width: 0.5,
+						align: 'center',
+						format(value) {
+							if (!value) return '-';
+							return `${value} GB`;
+						},
+					},
+					{
+						label: 'Created At',
+						fieldname: 'creation',
+						width: 1,
+						align: 'right',
+						format(value) {
+							return date(value, 'llll');
+						},
+					},
+				],
+				primaryAction({ documentResource: server, listResource: disk_resize }) {
+					if (server?.doc?.status === 'Archived') return;
+					return {
+						label: 'New Disk Resize',
+						// slots: {
+						// 	prefix: icon('camera'),
+						// },
+						onClick() {
+							renderDialog(
+								h(
+									defineAsyncComponent(
+										() =>
+											import('../components/server/ServerDiskResizeDialog.vue'),
+									),
+									{
+										server: server.name,
+										onDiskResizeCreation: () => {
+											disk_resize.reload();
+										},
+									},
+								),
+							);
+						},
+					};
+				},
+				rowActions({ row, documentResource: server }) {
+					return [
+						{
+							label: 'View Details',
+							onClick() {
+								let ServerDiskResizeDetailsDialog = defineAsyncComponent(
+									() =>
+										import(
+											'../components/server/ServerDiskResizeDetailsDialog.vue'
+										),
+								);
+								renderDialog(
+									h(ServerDiskResizeDetailsDialog, {
+										name: row.name,
+									}),
+								);
+							},
+						},
+					];
+				},
+			},
 			getJobsTab('Server'),
 			{
 				label: 'Plays',
