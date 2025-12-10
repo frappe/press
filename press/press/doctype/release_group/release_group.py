@@ -696,8 +696,8 @@ class ReleaseGroup(Document, TagHelpers):
 		)
 		if has_scaled_up_servers:
 			frappe.throw(
-				"Server(s) are scaled up currently and no deployment can run on them as of now. "
-				"Please scale down all the server to deploy."
+				"Server(s) are scaled up currently and no deployment can run on them as of now."
+				"Please scale down all the server this to be deployed on."
 			)
 
 	@frappe.whitelist()

@@ -907,122 +907,36 @@ export default {
 			{
 				label: 'Auto Scale',
 				icon: icon('maximize-2'),
+				route: 'auto-scale',
+				type: 'Component',
 				condition: (server) => {
 					if (!server?.doc) return true;
 					return server?.doc?.secondary_server;
 				},
-				route: 'auto-scale',
-				type: 'list',
-				list: {
-					doctype: 'Auto Scale Record',
-					filters: (server) => {
-						return {
-							primary_server: server.doc?.name,
-							secondary_server: server.doc?.secondary_server,
-						};
+				redirectTo: 'Triggered',
+				childrenRoutes: ['Triggered', 'Scheduled'],
+				nestedChildrenRoutes: [
+					{
+						name: 'Triggered',
+						path: '',
+						component: () =>
+							import('../components/server/AutoScaleTriggered.vue'),
 					},
-					filterControls() {
-						return [
-							{
-								type: 'select',
-								label: 'Status',
-								fieldname: 'status',
-								options: ['', 'Running', 'Pending', 'Failure', 'Success'],
-							},
-							{
-								type: 'select',
-								label: 'Action',
-								fieldname: 'action',
-								options: ['', 'Scale Down', 'Scale Up'],
-							},
-							{
-								type: 'text',
-								label: 'Triggered By',
-								fieldname: 'owner',
-							},
-						];
+					{
+						name: 'Scheduled',
+						path: 'scheduled',
+						component: () =>
+							import('../components/server/AutoScaleScheduled.vue'),
 					},
-					orderBy: 'creation desc',
-					fields: ['owner'],
-					columns: [
-						{
-							label: 'Secondary Server',
-							fieldname: 'secondary_server',
-						},
-						{
-							label: 'Status',
-							fieldname: 'status',
-							type: 'Badge',
-							align: 'center',
-						},
-						{
-							label: 'Action',
-							fieldname: 'action',
-							type: 'Badge',
-							align: 'center',
-						},
-						{
-							label: 'Duration',
-							fieldname: 'modified',
-							type: 'int',
-							format(row, value) {
-								const created = new Date(value.creation);
-								const modified = new Date(value.modified);
-
-								const diff = modified - created;
-
-								if (diff < 0) return '-';
-
-								const seconds = Math.floor(diff / 1000);
-								const minutes = Math.floor(seconds / 60);
-								const hours = Math.floor(minutes / 60);
-
-								if (hours > 0) return `${hours}h ${minutes % 60}m`;
-								if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
-
-								return `${seconds}s`;
-							},
-						},
-						{
-							label: 'Triggered By',
-							fieldname: 'owner',
-							align: 'center',
-						},
-						{
-							label: 'Triggered At',
-							fieldname: 'creation',
-							type: 'Timestamp',
-							align: 'right',
-						},
-					],
-					primaryAction({ documentResource: server, listResource: snapshots }) {
-						if (
-							server?.doc?.status === 'Archived' ||
-							!server?.doc?.secondary_server
-						)
-							return;
-						return {
-							label: 'Schedule Auto Scale',
-							slots: {
-								prefix: icon('clock'),
-							},
-							onClick() {
-								renderDialog(
-									h(
-										defineAsyncComponent(
-											() =>
-												import(
-													'../components/server/AutoscaleScheduleDialog.vue'
-												),
-										),
-										{
-											server: server.name,
-										},
-									),
-								);
-							},
-						};
-					},
+				],
+				component: defineAsyncComponent(
+					() => import('../components/server/AutoScaleTabs.vue'),
+				),
+				props: (server) => {
+					return {
+						server: server.doc.name,
+						secondaryServer: server.doc.secondary_server,
+					};
 				},
 			},
 			tagTab('Server'),

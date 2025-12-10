@@ -223,7 +223,6 @@ export default {
 		});
 
 		this.autoscaleDiscount = await get.fetch();
-		console.log(this.autoscaleDiscount);
 	},
 
 	methods: {
