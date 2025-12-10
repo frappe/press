@@ -69,6 +69,10 @@ export default {
 			type: String,
 			required: true,
 		},
+		reloadListView: {
+			type: Function,
+			required: true,
+		},
 	},
 
 	data() {
@@ -125,6 +129,7 @@ export default {
 				loading: 'Scheduling autoscale...',
 				success: () => {
 					this.show = false;
+					this.reloadListView();
 					return 'Scheduled autoscale';
 				},
 				error: (err) => {
