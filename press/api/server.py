@@ -17,6 +17,7 @@ from press.api.analytics import TIMESPAN_TIMEGRAIN_MAP, get_rounded_boundaries
 from press.api.bench import all as all_benches
 from press.api.site import protected
 from press.exceptions import MonitorServerDown
+from press.press.doctype.auto_scale_record.auto_scale_record import validate_scaling_schedule
 from press.press.doctype.site_plan.plan import Plan, filter_by_roles
 from press.press.doctype.team.team import get_child_team_members
 from press.utils import get_current_team
@@ -776,13 +777,19 @@ def schedule_auto_scale(name, scheduled_scale_up_time: str, scheduled_scale_down
 	if (formatted_scheduled_scale_down_time - formatted_scheduled_scale_up_time).total_seconds() / 60 < 60:
 		frappe.throw("Scheduled scales must be an hour apart", frappe.ValidationError)
 
+	validate_scaling_schedule(
+		name,
+		formatted_scheduled_scale_up_time,
+		formatted_scheduled_scale_down_time,
+	)
+
 	def create_record(action: str, scheduled_time: datetime) -> None:
 		doc = frappe.get_doc(
 			{
 				"doctype": "Auto Scale Record",
 				"action": action,
 				"status": "Scheduled",
-				"scheduled": scheduled_time,
+				"scheduled_time": scheduled_time,
 				"primary_server": name,
 				"secondary_server": secondary_server,
 			}
