@@ -92,7 +92,7 @@ export default {
 								defineAsyncComponent(
 									() => import('../server/AutoscaleScheduleDialog.vue'),
 								),
-								{ server: this.server },
+								{ server: this.name },
 							),
 						),
 				}),
