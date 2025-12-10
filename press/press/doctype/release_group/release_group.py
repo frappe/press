@@ -685,7 +685,7 @@ class ReleaseGroup(Document, TagHelpers):
 					server, mountpoint, required_size=last_image_size - free_space
 				)
 
-	def check_for_scaled_up_servers(self) -> None:
+	def check_auto_scales(self) -> None:
 		"""Check for servers that are scaled up in the release group and throw if any"""
 		has_scaled_up_servers = frappe.db.get_value(
 			"Server",
@@ -697,7 +697,21 @@ class ReleaseGroup(Document, TagHelpers):
 		if has_scaled_up_servers:
 			frappe.throw(
 				"Server(s) are scaled up currently and no deployment can run on them as of now."
-				"Please scale down all the server this to be deployed on."
+				"Please scale down all the server before deploying."
+			)
+
+		has_running_auto_scales = frappe.db.get_value(
+			"Auto Scale Record",
+			{
+				"primary_server": ("IN", [server.server for server in self.servers]),
+				"status": ("IN", ["Running", "Pending"]),
+			},
+		)
+
+		if has_running_auto_scales:
+			frappe.throw(
+				"Server(s) are triggered to auto scale and no deployment can run on them as of now."
+				"Please scale down all the server before deploying."
 			)
 
 	@frappe.whitelist()
@@ -710,7 +724,7 @@ class ReleaseGroup(Document, TagHelpers):
 			return None
 
 		self.check_app_server_storage()
-		self.check_for_scaled_up_servers()
+		self.check_auto_scales()
 
 		apps = self.get_apps_to_update(apps_to_update)
 		if apps_to_update is None:
