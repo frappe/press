@@ -128,8 +128,11 @@ export default {
 					return 'Scheduled autoscale';
 				},
 				error: (err) => {
-					console.log(err);
-					return 'Failed scheduled autoscale';
+					if (Array.isArray(err.messages)) {
+						return err.messages.join(', ');
+					} else {
+						return 'Failed to scheduled autoscale';
+					}
 				},
 			});
 		},

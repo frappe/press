@@ -205,7 +205,7 @@ class AutoScaleRecord(Document, StepHandler):
 			"job",
 		)
 
-		self.handle_agent_job(step, job)
+		self.handle_agent_job(step, job, poll=True)
 
 	def switch_to_secondary(self, step: "ScaleStep"):
 		"""Prepare agent for switch to secondary"""
@@ -254,7 +254,7 @@ class AutoScaleRecord(Document, StepHandler):
 			"job",
 		)
 
-		self.handle_agent_job(step, job)
+		self.handle_agent_job(step, job, poll=True)
 
 	def mark_server_as_auto_scale(self, step: "ScaleStep"):
 		"""Mark server as ready to auto scale"""
@@ -301,7 +301,7 @@ class AutoScaleRecord(Document, StepHandler):
 			"job",
 		)
 
-		self.handle_agent_job(step, job)
+		self.handle_agent_job(step, job, poll=True)
 
 	def switch_to_primary(self, step: "ScaleStep"):
 		"""Switch to primary server"""
@@ -338,7 +338,7 @@ class AutoScaleRecord(Document, StepHandler):
 			"job",
 		)
 
-		self.handle_agent_job(step, job)
+		self.handle_agent_job(step, job, poll=True)
 
 	def _gracefully_stop_benches_on_secondary(self) -> None:
 		secondary_server: "Server" = frappe.get_cached_doc("Server", self.secondary_server)
@@ -518,6 +518,106 @@ def create_autoscale_failure_notification(team: str, name: str, exc: str):
 		}
 	)
 	press_notification.insert()
+
+
+def _is_scale_up_colliding_with_a_existing_scaling_window(
+	primary_server: str, scale_up_time: datetime.datetime
+):
+	AutoScaleRecord = frappe.qb.DocType("Auto Scale Record")
+
+	last_scale_up = (
+		frappe.qb.from_(AutoScaleRecord)
+		.select(AutoScaleRecord.scheduled_time)
+		.where(AutoScaleRecord.primary_server == primary_server)
+		.where(AutoScaleRecord.action == "Scale Up")
+		.where(AutoScaleRecord.scheduled_time <= scale_up_time)
+		.where(AutoScaleRecord.status == "Scheduled")
+		.orderby(AutoScaleRecord.scheduled_time, order=frappe.qb.desc)
+		.limit(1)
+		.run(pluck=True)
+	)
+	next_scale_down = None
+	if last_scale_up:
+		next_scale_down = (
+			frappe.qb.from_(AutoScaleRecord)
+			.select(AutoScaleRecord.scheduled_time)
+			.where(AutoScaleRecord.primary_server == primary_server)
+			.where(AutoScaleRecord.action == "Scale Down")
+			.where(AutoScaleRecord.status == "Scheduled")
+			.where(AutoScaleRecord.scheduled_time >= last_scale_up[0])
+			.orderby(AutoScaleRecord.scheduled_time)
+			.limit(1)
+			.run(pluck=True)
+		)
+
+	# If we find a scale window we can check if the scale up is between that window
+	if last_scale_up and next_scale_down and last_scale_up[0] <= scale_up_time <= next_scale_down[0]:
+		frappe.throw(
+			f"Scale Up at {scale_up_time} conflicts with an existing scale window "
+			f"({last_scale_up[0]} - {next_scale_down[0]})"
+		)
+
+
+def _is_scale_down_colliding_with_a_existing_scaling_window(
+	primary_server: str, scale_down_time: datetime.datetime
+):
+	AutoScaleRecord = frappe.qb.DocType("Auto Scale Record")
+
+	next_scale_down = (
+		frappe.qb.from_(AutoScaleRecord)
+		.select(AutoScaleRecord.scheduled_time)
+		.where(AutoScaleRecord.primary_server == primary_server)
+		.where(AutoScaleRecord.action == "Scale Down")
+		.where(
+			AutoScaleRecord.scheduled_time >= scale_down_time
+		)  # There is no window between scale down and up
+		.where(AutoScaleRecord.status == "Scheduled")
+		.orderby(AutoScaleRecord.scheduled_time)
+		.limit(1)
+		.run(pluck=True)
+	)
+	last_scale_up = None
+	if next_scale_down:
+		last_scale_up = (
+			frappe.qb.from_(AutoScaleRecord)
+			.select(AutoScaleRecord.scheduled_time)
+			.where(AutoScaleRecord.primary_server == primary_server)
+			.where(AutoScaleRecord.action == "Scale Up")
+			.where(AutoScaleRecord.scheduled_time <= next_scale_down[0])
+			.where(AutoScaleRecord.status == "Scheduled")
+			.orderby(AutoScaleRecord.scheduled_time, order=frappe.qb.desc)
+			.limit(1)
+			.run(pluck=True)
+		)
+
+	# If we find a scale window we can check if the scale up is between that window
+	if last_scale_up and next_scale_down and last_scale_up[0] <= scale_down_time <= next_scale_down[0]:
+		frappe.throw(
+			f"Scale Down at {scale_down_time} conflicts with an existing scale window "
+			f"({last_scale_up[0]} - {next_scale_down[0]})"
+		)
+
+
+def validate_scaling_schedule(
+	name: str, scale_up_time: datetime.datetime, scale_down_time: datetime.datetime
+):
+	"""Throw if the scaling schedule violates any of these conditions"""
+
+	# Check existing scales with same schedule time
+	existing_scheduled_scales = frappe.db.get_value(
+		"Auto Scale Record",
+		{
+			"primary_server": name,
+			"status": "Scheduled",
+			"scheduled_time": ("IN", [scale_up_time, scale_down_time]),
+		},
+	)
+
+	if existing_scheduled_scales:
+		frappe.throw("Scale is already scheduled for this time", frappe.ValidationError)
+
+	_is_scale_up_colliding_with_a_existing_scaling_window(name, scale_up_time)
+	_is_scale_down_colliding_with_a_existing_scaling_window(name, scale_down_time)
 
 
 def validate_scheduled_autoscale(primary_server: str) -> None:

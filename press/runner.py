@@ -1,5 +1,10 @@
 import json
 import time
+<<<<<<< HEAD
+=======
+import typing
+from contextlib import suppress
+>>>>>>> 7380cb4f8 (feat(schedule): Validate schedule before inserting)
 from enum import Enum
 from typing import Literal
 
@@ -21,6 +26,9 @@ from frappe.utils import cstr
 from frappe.utils import now_datetime as now
 
 from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
+
+if typing.TYPE_CHECKING:
+	from press.press.doctype.agent_job.agent_job import AgentJob
 
 
 def reconnect_on_failure():
@@ -320,7 +328,11 @@ class StepHandler:
 		step.status = Status.Running if machine_status != expected_status else Status.Success
 		step.save()
 
-	def handle_agent_job(self, step: GenericStep, job: str) -> None:
+	def handle_agent_job(self, step: GenericStep, job: str, poll: bool = False) -> None:
+		if poll:
+			job_doc: AgentJob = frappe.get_doc("Agent Job", job)
+			job_doc.get_status()
+
 		job_status = frappe.db.get_value("Agent Job", job, "status")
 
 		status_map = {
