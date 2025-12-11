@@ -10,6 +10,7 @@ from frappe import _
 from frappe.model.document import Document
 
 from press.api.client import dashboard_whitelist
+from press.guards import team_guard
 
 if TYPE_CHECKING:
 	from press.press.doctype.team.team import Team
@@ -61,14 +62,10 @@ class PressRole(Document):
 		"allow_contribution",
 	)
 
+	@team_guard.only_owner()
 	def before_insert(self):
 		if frappe.db.exists("Press Role", {"title": self.title, "team": self.team}):
 			frappe.throw(f"Role with title {self.title} already exists", frappe.DuplicateEntryError)
-
-		if not frappe.local.system_user() and frappe.session.user != frappe.db.get_value(
-			"Team", self.team, "user"
-		):
-			frappe.throw("Only the team owner can create roles")
 
 	def validate(self):
 		self.set_first_role_as_admin()
@@ -111,14 +108,11 @@ class PressRole(Document):
 			user.get("roles").remove(existing_roles["Press Admin"])
 			user.save(ignore_permissions=True)
 
-	def is_team_member(self, user):
-		return bool(frappe.db.exists("Team Member", {"parent": self.team, "user": user}))
-
 	@functools.cached_property
 	def team_doc(self) -> Team:
 		return frappe.get_doc("Team", self.team)
 
-	@property
+	@functools.cached_property
 	def has_admin_access(self) -> bool:
 		"""
 		Check if the current user has admin access on this team.
@@ -126,17 +120,15 @@ class PressRole(Document):
 		return self.team_doc.is_team_owner() or self.team_doc.is_admin_user()
 
 	@dashboard_whitelist()
+	@team_guard.only_admin(skip=lambda _, args: args.get("skip_validations", False))
+	@team_guard.only_member(
+		user=lambda _, args: str(args.get("user")),
+		error_message=_("User is not a member of the team"),
+	)
 	def add_user(self, user, skip_validations=False):
-		if not skip_validations and not self.has_admin_access:
-			message = _("Only users with admin access can add users to this role")
-			frappe.throw(message, frappe.PermissionError)
-
 		user_exists = self.get("users", {"user": user})
 		if user_exists:
 			frappe.throw(f"{user} already belongs to {self.title}")
-
-		if not self.is_team_member(user):
-			frappe.throw(f"{user} is not a member of the team")
 
 		self.append("users", {"user": user})
 		self.save()
@@ -144,11 +136,8 @@ class PressRole(Document):
 			self.add_press_admin_role(user)
 
 	@dashboard_whitelist()
+	@team_guard.only_admin()
 	def remove_user(self, user):
-		if not self.has_admin_access:
-			message = _("Only users with admin access can remove users from this role")
-			frappe.throw(message, frappe.PermissionError)
-
 		user_exists = self.get("users", {"user": user})
 		if not user_exists:
 			frappe.throw(f"{user} does not belong to {self.title}")
@@ -169,13 +158,9 @@ class PressRole(Document):
 				perm_doc.delete()
 
 	@dashboard_whitelist()
-	def delete(self) -> None:
-		if not frappe.local.system_user() and frappe.session.user != frappe.db.get_value(
-			"Team", self.team, "user"
-		):
-			frappe.throw("Only the team owner can delete this role")
-
-		super().delete()
+	@team_guard.only_owner()
+	def delete(self, *_args, **_kwargs):
+		return super().delete()
 
 	def on_trash(self) -> None:
 		frappe.db.delete("Press Role Permission", {"role": self.name})
