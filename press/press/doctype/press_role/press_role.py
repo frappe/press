@@ -138,14 +138,11 @@ class PressRole(Document):
 	@dashboard_whitelist()
 	@team_guard.only_admin()
 	def remove_user(self, user):
-		user_exists = self.get("users", {"user": user})
-		if not user_exists:
-			frappe.throw(f"{user} does not belong to {self.title}")
-
-		for row in self.users:
-			if row.user == user:
-				self.remove(row)
-				break
+		users = self.get("users", {"user": user})
+		if not users:
+			message = _("User {0} does not belong to {1}").format(user, self.title)
+			frappe.throw(message, frappe.ValidationError)
+		self.remove(users.pop())
 		self.save()
 		if self.admin_access or self.allow_billing:
 			self.remove_press_admin_role(user)
