@@ -176,6 +176,9 @@ export default {
 				(app) => app.update_available === true,
 			);
 
+			// preserving this for use in component functions
+			const vm = this;
+
 			return {
 				data: appData,
 				selectable: !!this.lastDeploy,
@@ -253,8 +256,7 @@ export default {
 								options: commitChooserOptions(app),
 								modelValue: initialValue,
 								'onUpdate:modelValue': (value) => {
-									appData.find((a) => a.name === app.name).next_release =
-										value.value;
+									vm.updateNextRelease(app.name, value.value);
 								},
 							});
 						},
@@ -541,6 +543,15 @@ export default {
 		},
 	},
 	methods: {
+		updateNextRelease(name, next) {
+			const app = this.benchDocResource.doc.deploy_information.apps.find(
+				(a) => a.name === name,
+			);
+			if (app) app.next_release = next;
+
+			// Update next_release in selectedApps as well
+			this.handleAppSelection(this.selectedApps.map((a) => a.app));
+		},
 		back() {
 			if (this.step === 'select-apps') {
 				return;
