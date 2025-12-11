@@ -34,7 +34,10 @@ def only_owner(team: Callable[[Document, OrderedDict], str] = lambda document, _
 	return wrapper
 
 
-def only_admin(team: Callable[[Document, OrderedDict], str] = lambda document, _: str(document.team)):
+def only_admin(
+	team: Callable[[Document, OrderedDict], str] = lambda document, _: str(document.team),
+	skip: Callable[[Document, OrderedDict], bool] = lambda _, __: False,
+):
 	"""
 	This guard can only be used for a class method. No other options are
 	supported. Team owner is considered as admin.
@@ -45,6 +48,8 @@ def only_admin(team: Callable[[Document, OrderedDict], str] = lambda document, _
 		def inner(self, *args, **kwargs):
 			bound_args = inspect.signature(fn).bind(*args, **kwargs)
 			bound_args.apply_defaults()
+			if skip(self, bound_args.arguments):
+				return fn(self, *args, **kwargs)
 			t = team(self, bound_args.arguments)
 			d: Team = frappe.get_cached_doc("Team", t)
 			if not (d.is_team_owner() or d.is_admin_user()):
@@ -59,7 +64,7 @@ def only_admin(team: Callable[[Document, OrderedDict], str] = lambda document, _
 
 def only_member(
 	team: Callable[[Document, OrderedDict], str] = lambda document, _: str(document.team),
-	user: Callable[[Document, OrderedDict], str] = lambda _, _args: str(frappe.session.user),
+	user: Callable[[Document, OrderedDict], str] = lambda _, __: str(frappe.session.user),
 	error_message: str | None = None,
 ):
 	"""
