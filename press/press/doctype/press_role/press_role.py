@@ -67,22 +67,13 @@ class PressRole(Document):
 		if frappe.db.exists("Press Role", {"title": self.title, "team": self.team}):
 			frappe.throw(f"Role with title {self.title} already exists", frappe.DuplicateEntryError)
 
-	def validate(self):
+	def before_validate(self):
 		self.set_first_role_as_admin()
-		self.allow_only_one_admin_role()
 		self.set_admin_permissions()
 
 	def set_first_role_as_admin(self):
 		if not frappe.get_all("Press Role", filters={"team": self.team}):
 			self.admin_access = 1
-
-	def allow_only_one_admin_role(self):
-		admin_roles = frappe.get_all(
-			"Press Role",
-			filters={"team": self.team, "admin_access": 1, "name": ("!=", self.name)},
-		)
-		if admin_roles and self.admin_access:
-			frappe.throw("There can only be one admin role per team")
 
 	def set_admin_permissions(self):
 		if self.admin_access:
@@ -93,6 +84,17 @@ class PressRole(Document):
 			self.allow_bench_creation = 1
 			self.allow_server_creation = 1
 			self.allow_webhook_configuration = 1
+
+	def validate(self):
+		self.allow_only_one_admin_role()
+
+	def allow_only_one_admin_role(self):
+		admin_roles = frappe.get_all(
+			"Press Role",
+			filters={"team": self.team, "admin_access": 1, "name": ("!=", self.name)},
+		)
+		if admin_roles and self.admin_access:
+			frappe.throw("There can only be one admin role per team")
 
 	def add_press_admin_role(self, user):
 		user = frappe.get_doc("User", user)
