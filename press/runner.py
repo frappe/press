@@ -1,7 +1,6 @@
 import json
 import typing
 from collections.abc import Callable
-from contextlib import suppress
 from dataclasses import dataclass
 from enum import Enum
 from typing import Literal
@@ -27,6 +26,7 @@ from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 def reconnect_on_failure():
@@ -324,8 +324,13 @@ class StepHandler:
 
 		# Try to sync status in every attempt
 		try:
+<<<<<<< HEAD
 			virtual_machine = frappe.get_doc("Virtual Machine", virtual_machine)
 			virtual_machine.sync()
+=======
+			virtual_machine_doc: "VirtualMachine" = frappe.get_doc("Virtual Machine", virtual_machine)
+			virtual_machine_doc.sync()
+>>>>>>> 3803bb8db (fix(step-handler): Add commit before next job enqueue)
 		except Exception:
 			pass
 
@@ -452,6 +457,7 @@ class StepHandler:
 			self.handle_step_failure()
 			return
 
+		frappe.db.commit()
 		# After step completes, queue the next step
 		frappe.enqueue_doc(
 			self.doctype,
