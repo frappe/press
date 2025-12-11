@@ -1,7 +1,8 @@
 import json
-import time
 import typing
+from collections.abc import Callable
 from contextlib import suppress
+from dataclasses import dataclass
 from enum import Enum
 from typing import Literal
 
@@ -301,11 +302,18 @@ class Status(str, Enum):
 class GenericStep(Document):
 	attempt: int
 	job_type: Literal["Ansible Play", "Agent Job"]
-	job: str
+	job: str | None
 	status: Status
+	method_name: str
 
 
+@dataclass
 class StepHandler:
+	save: Callable
+	reload: Callable
+	doctype: str
+	name: str
+
 	def handle_vm_status_job(
 		self,
 		step: GenericStep,
@@ -422,29 +430,36 @@ class StepHandler:
 		return None
 
 	def _execute_steps(self, steps: list[GenericStep]):
-		"""Sequentially execute defined NFS attachment steps."""
+		"""It is now required to be with a `enqueue_doc` else the first step executes in the web worker"""
 		self.status = Status.Running
 		self.save()
 		frappe.db.commit()
 
-		while True:
-			step = self.next_step(steps)
-			if not step:
-				break  # We are done here
+		step = self.next_step(steps)
+		if not step:
+			self.succeed()
+			return
 
-			step = step.reload()
-			method = self._get_method(step.method_name)
+		# Run a single step in this job
+		step = step.reload()
+		method = self._get_method(step.method_name)
 
-			try:
-				method(step)  # Each step updates its own state
-			except Exception:
-				self.reload()
-				self.fail()
-				self.handle_step_failure()
-				return  # Stop on first failure
-
+		try:
+			method(step)
+		except Exception:
 			self.reload()
-			frappe.db.commit()
-			time.sleep(1)
+			self.fail()
+			self.handle_step_failure()
+			return
 
-		self.succeed()
+		# After step completes, queue the next step
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_execute_steps",
+			steps=steps,
+			timeout=18000,
+			at_front=True,
+			queue="long",
+			enqueue_after_commit=True,
+		)
