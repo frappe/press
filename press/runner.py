@@ -434,13 +434,14 @@ class StepHandler:
 
 		try:
 			method(step)
+			frappe.db.commit()
 		except Exception:
 			self.reload()
 			self.fail()
 			self.handle_step_failure()
+			frappe.db.commit()
 			return
 
-		frappe.db.commit()
 		# After step completes, queue the next step
 		frappe.enqueue_doc(
 			self.doctype,
