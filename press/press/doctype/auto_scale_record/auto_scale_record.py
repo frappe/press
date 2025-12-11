@@ -146,7 +146,7 @@ class AutoScaleRecord(Document, StepHandler):
 		return ret
 
 	def mark_start_time(self, step: "ScaleStep"):
-		"""Mark autoscale start time"""
+		"""Mark Autoscale Start Time"""
 		# This function is required since scale up and scale down share methods
 		# We don't want a function to accidentally override the start time
 		step.status = Status.Running
@@ -161,7 +161,7 @@ class AutoScaleRecord(Document, StepHandler):
 
 	# Steps to switch to secondary
 	def start_secondary_server(self, step: "ScaleStep"):
-		"""Start secondary server"""
+		"""Start Secondary Server"""
 		step.status = Status.Running
 		step.save()
 
@@ -175,7 +175,7 @@ class AutoScaleRecord(Document, StepHandler):
 		step.save()
 
 	def wait_for_secondary_server_to_start(self, step: "ScaleStep"):
-		"""Wait for secondary server to starts"""
+		"""Wait For Secondary Server To Start"""
 		step.status = Status.Running
 		step.is_waiting = True
 		step.save()
@@ -185,7 +185,7 @@ class AutoScaleRecord(Document, StepHandler):
 		self.handle_vm_status_job(step, virtual_machine=virtual_machine, expected_status="Running")
 
 	def wait_for_secondary_server_ping(self, step: "ScaleStep"):
-		"""Wait for secondary server to respond to agent pings"""
+		"""Wait For Secondary Server Agent"""
 		step.status = Status.Running
 		step.is_waiting = True
 		step.save()
@@ -201,7 +201,7 @@ class AutoScaleRecord(Document, StepHandler):
 		step.save()
 
 	def setup_secondary_upstream(self, step: "ScaleStep"):
-		"""Update proxy server with secondary as upstream"""
+		"""Update Proxy With Secondary Server Upstream"""
 		proxy_server = frappe.get_value("Server", self.secondary_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		primary_server_private_ip = frappe.db.get_value("Server", self.primary_server, "private_ip")
@@ -226,7 +226,7 @@ class AutoScaleRecord(Document, StepHandler):
 		step.save()
 
 	def wait_for_secondary_upstream(self, step: "ScaleStep"):
-		"""Wait for secondary upstream to be added"""
+		"""Wait For Proxy Server Upstream Addition"""
 		step.status = Status.Running
 		step.is_waiting = True
 		step.save()
@@ -235,7 +235,7 @@ class AutoScaleRecord(Document, StepHandler):
 			"Scale Step",
 			{
 				"parent": self.name,
-				"step_name": "Update proxy server with secondary as upstream",
+				"step_name": "Update Proxy With Secondary Server Upstream",
 			},
 			"job",
 		)
@@ -243,7 +243,7 @@ class AutoScaleRecord(Document, StepHandler):
 		self.handle_agent_job(step, job, poll=True)
 
 	def switch_to_secondary(self, step: "ScaleStep"):
-		"""Prepare agent for switch to secondary"""
+		"""Prepare Agent To Switch To Secondary"""
 		settings = frappe.db.get_value(
 			"Press Settings",
 			None,
@@ -275,7 +275,7 @@ class AutoScaleRecord(Document, StepHandler):
 		step.save()
 
 	def wait_for_switch_to_secondary(self, step: "ScaleStep"):
-		"""Wait for benches to run on shared volume"""
+		"""Wait For Benches To Run On Shared Volume"""
 		step.status = Status.Running
 		step.is_waiting = True
 		step.save()
@@ -284,7 +284,7 @@ class AutoScaleRecord(Document, StepHandler):
 			"Scale Step",
 			{
 				"parent": self.name,
-				"step_name": "Prepare agent for switch to secondary",
+				"step_name": "Prepare Agent To Switch To Secondary",
 			},
 			"job",
 		)
@@ -292,7 +292,7 @@ class AutoScaleRecord(Document, StepHandler):
 		self.handle_agent_job(step, job, poll=True)
 
 	def mark_server_as_auto_scale(self, step: "ScaleStep"):
-		"""Mark server as ready to auto scale"""
+		"""Mark Server As Auto Scaled"""
 		step.status = Status.Running
 		step.save()
 
@@ -309,7 +309,7 @@ class AutoScaleRecord(Document, StepHandler):
 
 	# Switch to primary steps start
 	def setup_primary_upstream(self, step: "ScaleStep"):
-		"""Setup up primary upstream"""
+		"""Setup Primary Upstream"""
 		proxy_server = frappe.get_value("Server", self.secondary_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
 
@@ -322,7 +322,7 @@ class AutoScaleRecord(Document, StepHandler):
 		step.save()
 
 	def wait_for_primary_upstream_setup(self, step: "ScaleStep"):
-		"""Wait for primary upstream setup"""
+		"""Wait For Primary Upstream Setup"""
 		step.status = Status.Running
 		step.is_waiting = True
 		step.save()
@@ -331,7 +331,7 @@ class AutoScaleRecord(Document, StepHandler):
 			"Scale Step",
 			{
 				"parent": self.name,
-				"step_name": "Setup up primary upstream",
+				"step_name": "Setup Primary Upstream",
 			},
 			"job",
 		)
@@ -339,7 +339,7 @@ class AutoScaleRecord(Document, StepHandler):
 		self.handle_agent_job(step, job, poll=True)
 
 	def switch_to_primary(self, step: "ScaleStep"):
-		"""Switch to primary server"""
+		"""Prepare Agent To Switch To Primary"""
 		secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
 		shared_directory = frappe.db.get_single_value("Press Settings", "shared_directory")
 
@@ -359,7 +359,7 @@ class AutoScaleRecord(Document, StepHandler):
 		step.save()
 
 	def wait_for_primary_switch(self, step: "ScaleStep"):
-		"""Wait for switch to primary server"""
+		"""Wait For Benches To Run On Primary"""
 		step.status = Status.Running
 		step.is_waiting = True
 		step.save()
@@ -368,7 +368,7 @@ class AutoScaleRecord(Document, StepHandler):
 			"Scale Step",
 			{
 				"parent": self.name,
-				"step_name": "Switch to primary server",
+				"step_name": "Prepare Agent To Switch To Primary",
 			},
 			"job",
 		)
@@ -389,7 +389,7 @@ class AutoScaleRecord(Document, StepHandler):
 			log_error("Stop Benches Exception", server=secondary_server.as_dict())
 
 	def initiate_secondary_shutdown(self, step: "ScaleStep"):
-		"""Initiates a shutdown of the secondary server once it is safe to do so."""
+		"""Initiates A Graceful Secondary Server Shutdown"""
 		# This method checks whether all "Remove Site from Upstream" jobs related to the
 		# secondary server have finished. These jobs must be fully completed before the
 		# secondary server can be shut down.
@@ -429,7 +429,7 @@ class AutoScaleRecord(Document, StepHandler):
 		step.save()
 
 	def create_usage_record(self, step: "ScaleStep"):
-		"""Create a usage when a scale down is completed"""
+		"""Create Usage Record"""
 		step.status = Status.Running
 		step.save()
 
@@ -475,7 +475,7 @@ class AutoScaleRecord(Document, StepHandler):
 
 	# Agent job halt
 	def stop_all_agent_jobs_on_primary(self, step: "ScaleStep"):
-		"""Stop all other running agent jobs on the primary server"""
+		"""Stop All Agent Jobs On the Primary Server"""
 		step.status = Status.Running
 		step.save()
 
@@ -497,7 +497,7 @@ class AutoScaleRecord(Document, StepHandler):
 			raise
 
 	def stop_all_agent_jobs_on_secondary(self, step: "ScaleStep"):
-		"""Stop all other running agent jobs on the secondary server"""
+		"""Stop All Agent Jobs On the Secondary Server"""
 		step.status = Status.Running
 		step.save()
 
