@@ -1269,9 +1269,7 @@ def update_query_result_status_timestamps(results):
 			result.end = convert_utc_to_system_timezone(result.end).replace(tzinfo=None)
 
 
-def agent_poll_count_stats():
-	from_datetime = frappe.utils.add_to_date(None, hours=-1)
-	to_datetime = frappe.utils.add_to_date(None, minutes=-1)
+def agent_poll_count_stats(from_datetime, to_datetime, min_count, duration):
 	rows = frappe.get_all(
 		"Scheduled Job Log",
 		filters=[
@@ -1288,21 +1286,37 @@ def agent_poll_count_stats():
 	average_count = total_count / len(found)
 	filtered_data = {key: value for key, value in found.items() if value < 10}
 	sorted_dict = dict(sorted(filtered_data.items(), key=lambda item: item[1]))
-	top_3_min = dict(list(sorted_dict.items())[:3])
+	top_min_count = dict(list(sorted_dict.items())[:min_count])
 
-	telegram_message = f"""Agent Polling Count Hourly Report
+	telegram_message = f"""Agent Polling Count {duration} Report
 
 	Average Count: {average_count:.2f}
 
-	Top 3 Minimum Values (≤10):
+	Top {min_count} Minimum Values (≤10):
 	"""
 
-	if top_3_min:
-		for i, item in enumerate(top_3_min, 1):
-			timestamp_str = frappe.utils.format_datetime(item["timestamp"], "dd MMM yyyy, HH:mm")
-			telegram_message = telegram_message + f"\n{i}. 🕒 {timestamp_str} → Count: {item['count']}"
+	if top_min_count:
+		for i, item in enumerate(top_min_count, 1):
+			timestamp_str = frappe.utils.format_datetime(item, "dd MMM yyyy, HH:mm")
+			telegram_message = telegram_message + f"\n{i}. 🕒 {timestamp_str} → Count: {top_min_count[item]}"
 	else:
 		telegram_message = telegram_message + "\nNo entries found with count ≤ 10"
 
 	telegram_message = telegram_message + f"\n\nFound {len(filtered_data)} entries with count ≤ 10"
 	TelegramMessage.enqueue(message=telegram_message, topic="Signups")
+
+
+def agent_poll_count_stats_hourly():
+	min_count = 3
+	duration = "Hourly"
+	start_time = frappe.utils.add_to_date(None, hours=-1)
+	end_time = frappe.utils.add_to_date(None, minutes=-1)
+	agent_poll_count_stats(start_time, end_time, min_count, duration)
+
+
+def agent_poll_count_stats_daily():
+	min_count = 12
+	duration = "Daily"
+	start_time = frappe.utils.add_to_date(None, hours=-24)
+	end_time = frappe.utils.add_to_date(None, minutes=-1)
+	agent_poll_count_stats(start_time, end_time, min_count, duration)
