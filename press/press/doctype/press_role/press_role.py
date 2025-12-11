@@ -112,13 +112,6 @@ class PressRole(Document):
 	def team_doc(self) -> Team:
 		return frappe.get_doc("Team", self.team)
 
-	@functools.cached_property
-	def has_admin_access(self) -> bool:
-		"""
-		Check if the current user has admin access on this team.
-		"""
-		return self.team_doc.is_team_owner() or self.team_doc.is_admin_user()
-
 	@dashboard_whitelist()
 	@team_guard.only_admin(skip=lambda _, args: args.get("skip_validations", False))
 	@team_guard.only_member(
