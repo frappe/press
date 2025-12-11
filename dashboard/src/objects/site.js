@@ -323,7 +323,6 @@ export default {
 					'Site Performance Reports',
 					'Site Performance Request Logs',
 					'Site Performance Slow Queries',
-					'Site Performance Binary Logs',
 					'Site Performance Process List',
 					'Site Performance Request Log',
 					'Site Performance Deadlock Report',
@@ -365,12 +364,6 @@ export default {
 						path: 'performance/slow-queries',
 						component: () =>
 							import('../components/site/performance/SiteSlowQueries.vue'),
-					},
-					{
-						name: 'Site Performance Binary Logs',
-						path: 'performance/binary-logs',
-						component: () =>
-							import('../components/site/performance/SiteBinaryLogs.vue'),
 					},
 					{
 						name: 'Site Performance Process List',
@@ -1336,7 +1329,8 @@ export default {
 							},
 							{
 								label: 'View Job',
-								condition: () => row.status !== 'Scheduled',
+								condition: () =>
+									!['Scheduled', 'Cancelled'].includes(row.status),
 								onClick() {
 									router.push({
 										name: 'Site Update',

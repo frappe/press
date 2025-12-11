@@ -165,6 +165,7 @@ export default {
 	name: 'ObjectList',
 	props: ['options'],
 	emits: ['update:selections'],
+	expose: ['reloadListView'],
 	components: {
 		AlertBanner,
 		DismissableBanner,
@@ -447,6 +448,9 @@ export default {
 		},
 	},
 	methods: {
+		reloadListView() {
+			this.$resources.list.reload();
+		},
 		filterRow(query, row) {
 			let values = this.options.columns.map((column) => {
 				let value = row[column.fieldname];

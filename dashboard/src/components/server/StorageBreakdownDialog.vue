@@ -268,6 +268,7 @@ export default {
 				error_log: message.database.error_log,
 				db_other: message.database.other,
 				db_core: message.database.core,
+				binlog_indexes: message.binlog_indexes,
 				db_data: Object.values(message.database.schema).reduce(
 					(partialSum, a) => partialSum + a,
 					0,
@@ -325,6 +326,7 @@ export default {
 					db_data: `${this.noOfDatabases} Databases (including mysql, sys, perf_schema)`,
 					db_core: 'MariaDB Core',
 					db_other: 'MariaDB Owned System Files',
+					binlog_indexes: 'MariaDB Binlog Indexes (Binlog Browser)',
 				}[key] || key
 			);
 		},

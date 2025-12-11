@@ -1,6 +1,8 @@
 # Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
 
+import calendar
+import datetime
 import typing
 
 import frappe
@@ -47,11 +49,13 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 		from press.press.doctype.scale_step.scale_step import ScaleStep
 
 		action: DF.Literal["Scale Up", "Scale Down"]
+		duration: DF.Time | None
 		failed_validation: DF.Check
 		primary_server: DF.Link
 		scale_steps: DF.Table[ScaleStep]
-		scheduled: DF.Datetime | None
+		scheduled_time: DF.Datetime | None
 		secondary_server: DF.Link | None
+		start_time: DF.Datetime | None
 		status: DF.Literal["Pending", "Running", "Failure", "Success", "Scheduled"]
 	# end: auto-generated types
 
@@ -61,13 +65,29 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 		"created_at",
 		"modified_at",
 		"status",
+		"scheduled_time",
+		"duration",
 	)
+
+	@staticmethod
+	def get_list_query(query, filters: dict[str, str] | None = None, **args):
+		"""Fetch the secondary server from the primary server doc"""
+		AutoScaleRecord = frappe.qb.DocType("Auto Scale Record")
+		secondary_server = frappe.db.get_value(
+			"Server", filters.get("primary_server", None) if filters else None, "secondary_server"
+		)
+		query = query.where(AutoScaleRecord.secondary_server == secondary_server)
+
+		return query.run(as_dict=True)
 
 	def before_insert(self):
 		"""Set metadata attributes"""
+		self.duration = None
+
 		if self.action == "Scale Up":
 			for step in self.get_steps(
 				[
+					self.mark_start_time,
 					self.start_secondary_server,
 					self.wait_for_secondary_server_to_start,
 					# Since the secondary is stopped no jobs running on it
@@ -86,6 +106,7 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 			for step in self.get_steps(
 				[
 					# There could be jobs running on both primary and secondary
+					self.mark_start_time,
 					self.stop_all_agent_jobs_on_primary,
 					self.stop_all_agent_jobs_on_secondary,
 					self.switch_to_primary,
@@ -93,11 +114,26 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 					self.setup_primary_upstream,
 					self.wait_for_primary_upstream_setup,
 					self.initiate_secondary_shutdown,
+					self.create_usage_record,
 				]
 			):
 				self.append("scale_steps", step)
 
 		self.secondary_server = frappe.db.get_value("Server", self.primary_server, "secondary_server")
+
+	def mark_start_time(self, step: "ScaleStep"):
+		"""Mark autoscale start time"""
+		# This function is required since scale up and scale down share methods
+		# We don't want a function to accidentally override the start time
+		step.status = Status.Running
+		step.save()
+
+		frappe.db.set_value(
+			"Auto Scale Record", self.name, "start_time", frappe.utils.now()
+		)  # Set start stime
+
+		step.status = Status.Success
+		step.save()
 
 	# Steps to switch to secondary
 	def start_secondary_server(self, step: "ScaleStep"):
@@ -147,10 +183,17 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 		primary_server_private_ip = frappe.db.get_value("Server", self.primary_server, "private_ip")
 		secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
 
-		# We might add new secondary servers later on
+		has_same_plan = frappe.db.get_value("Server", self.primary_server, "plan") == frappe.db.get_value(
+			"Server", self.secondary_server, "plan"
+		)
+
+		# https://nginx.org/en/docs/http/load_balancing.html
 		agent_job = agent.proxy_add_auto_scale_site_to_upstream(
 			primary_server_private_ip,
-			[{secondary_server_private_ip: 3}],  # pass default weight value as 3 for now
+			[
+				{secondary_server_private_ip: 1 if has_same_plan else 3}
+			],  # Since we allow users to setup a secondary server with the same plan
+			# we will divide the load between the servers equally if they have the same plan
 		)
 
 		step.status = Status.Success
@@ -173,7 +216,7 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 			"job",
 		)
 
-		self.handle_agent_job(step, job)
+		self.handle_agent_job(step, job, poll=True)
 
 	def switch_to_secondary(self, step: "ScaleStep"):
 		"""Prepare agent for switch to secondary"""
@@ -222,7 +265,7 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 			"job",
 		)
 
-		self.handle_agent_job(step, job)
+		self.handle_agent_job(step, job, poll=True)
 
 	def mark_server_as_auto_scale(self, step: "ScaleStep"):
 		"""Mark server as ready to auto scale"""
@@ -230,6 +273,10 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 		step.save()
 
 		frappe.db.set_value("Server", self.primary_server, {"scaled_up": True, "halt_agent_jobs": False})
+		duration = frappe.utils.now_datetime() - frappe.db.get_value(
+			"Auto Scale Record", self.name, "start_time"
+		)
+		frappe.db.set_value("Auto Scale Record", self.name, "duration", duration)
 
 		step.status = Status.Success
 		step.save()
@@ -265,7 +312,7 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 			"job",
 		)
 
-		self.handle_agent_job(step, job)
+		self.handle_agent_job(step, job, poll=True)
 
 	def switch_to_primary(self, step: "ScaleStep"):
 		"""Switch to primary server"""
@@ -302,7 +349,7 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 			"job",
 		)
 
-		self.handle_agent_job(step, job)
+		self.handle_agent_job(step, job, poll=True)
 
 	def _gracefully_stop_benches_on_secondary(self) -> None:
 		secondary_server: "Server" = frappe.get_cached_doc("Server", self.secondary_server)
@@ -353,6 +400,49 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 		frappe.db.set_value("Server", self.secondary_server, "halt_agent_jobs", False)
 
 		frappe.set_user(current_user)
+
+		step.status = Status.Success
+		step.save()
+
+	def create_usage_record(self, step: "ScaleStep"):
+		"""Create a usage when a scale down is completed"""
+		step.status = Status.Running
+		step.save()
+
+		secondary_server_team, secondary_server_plan = frappe.db.get_value(
+			"Server", self.secondary_server, ["team", "plan"]
+		)
+
+		secondary_server_hourly_price_with_discount = calculate_secondary_server_price(
+			secondary_server_team, secondary_server_plan
+		)
+
+		usage_record = frappe.get_doc(
+			doctype="Usage Record",
+			team=secondary_server_team,
+			document_type="Server",
+			document_name=self.secondary_server,
+			plan_type="Server Plan",
+			amount=secondary_server_hourly_price_with_discount,
+			plan=secondary_server_plan,
+			date=frappe.utils.now_datetime(),
+			subscription=frappe.db.get_value(
+				"Subscription",
+				{
+					"document_type": "Server",
+					"document_name": self.secondary_server,
+				},
+			),
+			interval="Hourly",
+			site=None,
+		)
+		usage_record.insert()
+		usage_record.submit()
+
+		duration = frappe.utils.now_datetime() - frappe.db.get_value(
+			"Auto Scale Record", self.name, "start_time"
+		)
+		frappe.db.set_value("Auto Scale Record", self.name, "duration", duration)
 
 		step.status = Status.Success
 		step.save()
@@ -441,6 +531,106 @@ def create_autoscale_failure_notification(team: str, name: str, exc: str):
 	press_notification.insert()
 
 
+def _is_scale_up_colliding_with_a_existing_scaling_window(
+	primary_server: str, scale_up_time: datetime.datetime
+):
+	AutoScaleRecord = frappe.qb.DocType("Auto Scale Record")
+
+	last_scale_up = (
+		frappe.qb.from_(AutoScaleRecord)
+		.select(AutoScaleRecord.scheduled_time)
+		.where(AutoScaleRecord.primary_server == primary_server)
+		.where(AutoScaleRecord.action == "Scale Up")
+		.where(AutoScaleRecord.scheduled_time <= scale_up_time)
+		.where(AutoScaleRecord.status == "Scheduled")
+		.orderby(AutoScaleRecord.scheduled_time, order=frappe.qb.desc)
+		.limit(1)
+		.run(pluck=True)
+	)
+	next_scale_down = None
+	if last_scale_up:
+		next_scale_down = (
+			frappe.qb.from_(AutoScaleRecord)
+			.select(AutoScaleRecord.scheduled_time)
+			.where(AutoScaleRecord.primary_server == primary_server)
+			.where(AutoScaleRecord.action == "Scale Down")
+			.where(AutoScaleRecord.status == "Scheduled")
+			.where(AutoScaleRecord.scheduled_time >= last_scale_up[0])
+			.orderby(AutoScaleRecord.scheduled_time)
+			.limit(1)
+			.run(pluck=True)
+		)
+
+	# If we find a scale window we can check if the scale up is between that window
+	if last_scale_up and next_scale_down and last_scale_up[0] <= scale_up_time <= next_scale_down[0]:
+		frappe.throw(
+			f"Scale Up at {scale_up_time} conflicts with an existing scale window "
+			f"({last_scale_up[0]} - {next_scale_down[0]})"
+		)
+
+
+def _is_scale_down_colliding_with_a_existing_scaling_window(
+	primary_server: str, scale_down_time: datetime.datetime
+):
+	AutoScaleRecord = frappe.qb.DocType("Auto Scale Record")
+
+	next_scale_down = (
+		frappe.qb.from_(AutoScaleRecord)
+		.select(AutoScaleRecord.scheduled_time)
+		.where(AutoScaleRecord.primary_server == primary_server)
+		.where(AutoScaleRecord.action == "Scale Down")
+		.where(
+			AutoScaleRecord.scheduled_time >= scale_down_time
+		)  # There is no window between scale down and up
+		.where(AutoScaleRecord.status == "Scheduled")
+		.orderby(AutoScaleRecord.scheduled_time)
+		.limit(1)
+		.run(pluck=True)
+	)
+	last_scale_up = None
+	if next_scale_down:
+		last_scale_up = (
+			frappe.qb.from_(AutoScaleRecord)
+			.select(AutoScaleRecord.scheduled_time)
+			.where(AutoScaleRecord.primary_server == primary_server)
+			.where(AutoScaleRecord.action == "Scale Up")
+			.where(AutoScaleRecord.scheduled_time <= next_scale_down[0])
+			.where(AutoScaleRecord.status == "Scheduled")
+			.orderby(AutoScaleRecord.scheduled_time, order=frappe.qb.desc)
+			.limit(1)
+			.run(pluck=True)
+		)
+
+	# If we find a scale window we can check if the scale up is between that window
+	if last_scale_up and next_scale_down and last_scale_up[0] <= scale_down_time <= next_scale_down[0]:
+		frappe.throw(
+			f"Scale Down at {scale_down_time} conflicts with an existing scale window "
+			f"({last_scale_up[0]} - {next_scale_down[0]})"
+		)
+
+
+def validate_scaling_schedule(
+	name: str, scale_up_time: datetime.datetime, scale_down_time: datetime.datetime
+):
+	"""Throw if the scaling schedule violates any of these conditions"""
+
+	# Check existing scales with same schedule time
+	existing_scheduled_scales = frappe.db.get_value(
+		"Auto Scale Record",
+		{
+			"primary_server": name,
+			"status": "Scheduled",
+			"scheduled_time": ("IN", [scale_up_time, scale_down_time]),
+		},
+	)
+
+	if existing_scheduled_scales:
+		frappe.throw("Scale is already scheduled for this time", frappe.ValidationError)
+
+	_is_scale_up_colliding_with_a_existing_scaling_window(name, scale_up_time)
+	_is_scale_down_colliding_with_a_existing_scaling_window(name, scale_down_time)
+
+
 def validate_scheduled_autoscale(primary_server: str) -> None:
 	"""Throw if invalid auto scale schedule"""
 	server: "Server" = frappe.get_doc("Server", primary_server)
@@ -453,7 +643,7 @@ def run_scheduled_scale_records():
 		"Auto Scale Record",
 		{
 			"status": "Scheduled",
-			"scheduled": ("<=", frappe.utils.now_datetime()),
+			"scheduled_time": ("<=", frappe.utils.now_datetime()),
 		},
 		pluck="name",
 		limit=5,
@@ -474,3 +664,16 @@ def run_scheduled_scale_records():
 			)
 
 		frappe.db.commit()
+
+
+def calculate_secondary_server_price(team: str, secondary_server_plan: str) -> float:
+	"""Calculate secondary server proice with a discount"""
+	is_inr = frappe.db.get_value("Team", team, "currency") == "INR"
+	price_field = "price_inr" if is_inr else "price_usd"
+
+	server_price = frappe.db.get_value("Server Plan", secondary_server_plan, price_field)
+	autoscale_discount = frappe.db.get_single_value("Press Settings", "autoscale_discount")
+	server_price_with_discount = server_price * autoscale_discount
+
+	_, days_in_this_month = calendar.monthrange(datetime.date.today().year, datetime.date.today().month)
+	return round(server_price_with_discount / days_in_this_month / 24, 2)

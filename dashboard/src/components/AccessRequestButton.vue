@@ -54,6 +54,10 @@ const buttonProps = computed(() => {
 	}
 });
 
+const isError = computed(() => {
+	return Boolean(props.error?.message);
+});
+
 const isPermissionError = computed(() => {
 	return Boolean(props.error?.message.endsWith('PermissionError'));
 });
@@ -66,6 +70,10 @@ const isOwner = computed(() => {
 	return props.doc?.team === team.doc?.name;
 });
 
+const hasAccess = computed(() => {
+	return !isOwner.value && !isError.value;
+});
+
 const DialogComponent = computed(() => {
 	if (props.doc) {
 		return AccessRequestStatusDialog;
@@ -75,6 +83,6 @@ const DialogComponent = computed(() => {
 });
 
 const show = computed(() => {
-	return canRequestAccess.value && (isPermissionError.value || !isOwner.value);
+	return canRequestAccess.value && (isPermissionError.value || hasAccess.value);
 });
 </script>

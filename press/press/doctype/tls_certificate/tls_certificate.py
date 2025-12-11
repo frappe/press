@@ -529,19 +529,21 @@ class LetsEncrypt(BaseCA):
 
 	def _obtain_wildcard(self):
 		domain = frappe.get_doc("Root Domain", self.domain[2:])
-		environment = os.environ
+		environment = os.environ.copy()
 		environment.update(
 			{
 				"AWS_ACCESS_KEY_ID": domain.aws_access_key_id,
 				"AWS_SECRET_ACCESS_KEY": domain.get_password("aws_secret_access_key"),
 			}
 		)
+		if domain.aws_region:
+			environment["AWS_DEFAULT_REGION"] = domain.aws_region
 		self.run(self._certbot_command(), environment=environment)
 
 	def _obtain_naked_with_dns(self):
 		domain = frappe.get_all("Root Domain", pluck="name", limit=1)[0]
 		domain = frappe.get_doc("Root Domain", domain)
-		environment = os.environ
+		environment = os.environ.copy()
 		environment.update(
 			{
 				"AWS_ACCESS_KEY_ID": domain.aws_access_key_id,

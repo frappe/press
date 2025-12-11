@@ -11,7 +11,7 @@
 					<ul class="list-disc list-inside space-y-1">
 						<li>
 							Scale up and scale down times must be at least
-							<strong>30 minutes apart</strong>.
+							<strong>60 minutes apart</strong>.
 						</li>
 						<li>The selected times must be in the future.</li>
 						<li>
@@ -20,11 +20,9 @@
 						</li>
 					</ul>
 				</div>
-				<div
-					class="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4 space-y-6"
-				>
+				<div class="border border-gray-200 rounded-lg p-4 mt-4 space-y-6">
 					<div class="flex flex-col space-y-2">
-						<label class="font-medium text-gray-700">Scale Up Start Time</label>
+						<label class="font-medium">Scale Up Start Time</label>
 						<DateTimePicker
 							v-model="scaleUpdateTime"
 							variant="subtle"
@@ -32,11 +30,8 @@
 						/>
 					</div>
 
-					<!-- Scale Down -->
 					<div class="flex flex-col space-y-2">
-						<label class="font-medium text-gray-700"
-							>Scale Down Start Time</label
-						>
+						<label class="font-medium">Scale Down Start Time</label>
 						<DateTimePicker
 							v-model="scaleDowndateTime"
 							variant="subtle"
@@ -72,6 +67,10 @@ export default {
 	props: {
 		server: {
 			type: String,
+			required: true,
+		},
+		reloadListView: {
+			type: Function,
 			required: true,
 		},
 	},
@@ -120,9 +119,9 @@ export default {
 
 			// Need a 30 minutes
 			const diffMinutes = (down - up) / (1000 * 60);
-			if (diffMinutes < 30) {
+			if (diffMinutes < 60) {
 				return toast.error(
-					'Scale down time must be at least 30 minutes after scale up.',
+					'Scale down time must be at least 60 minutes after scale up.',
 				);
 			}
 
@@ -130,11 +129,15 @@ export default {
 				loading: 'Scheduling autoscale...',
 				success: () => {
 					this.show = false;
+					this.reloadListView();
 					return 'Scheduled autoscale';
 				},
 				error: (err) => {
-					console.log(err);
-					return 'Failed scheduled autoscale';
+					if (Array.isArray(err.messages)) {
+						return err.messages.join(', ');
+					} else {
+						return 'Failed to scheduled autoscale';
+					}
 				},
 			});
 		},

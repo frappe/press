@@ -83,6 +83,7 @@ class SupportAccess(Document):
 		self.requested_by = self.requested_by or frappe.session.user
 		self.requested_team = self.requested_team or get_current_team()
 		self.set_expiry()
+		self.resolve_sites()
 		self.add_release_group()
 
 	def add_release_group(self):
@@ -136,6 +137,18 @@ class SupportAccess(Document):
 		hours = frappe.utils.cint(self.allowed_for)
 		if hours and doc_before and doc_before.status != self.status and self.status == "Accepted":
 			self.access_allowed_till = frappe.utils.add_to_date(frappe.utils.now_datetime(), hours=hours)
+
+	def resolve_sites(self):
+		for resource in self.resources:
+			if resource.document_type == "Site":
+				resource.document_name = self.resolve_site_name(resource.document_name)
+
+	def resolve_site_name(self, site) -> str:
+		try:
+			domain = frappe.get_doc("Site Domain", site)
+			return domain.site
+		except frappe.DoesNotExistError:
+			return site
 
 	def validate(self):
 		self.validate_status_change()

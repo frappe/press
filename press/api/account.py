@@ -204,7 +204,15 @@ def setup_account(  # noqa: C901
 		# if this is a request from an invitation
 		# then Team already exists and will be added to that team
 		doc = frappe.get_doc("Team", team)
-		doc.create_user_for_member(first_name, last_name, email, password, role, press_roles)
+		doc.create_user_for_member(
+			first_name,
+			last_name,
+			email,
+			password,
+			role,
+			press_roles,
+			skip_validations=True,
+		)
 	else:
 		# Team doesn't exist, create it
 		Team.create_new(

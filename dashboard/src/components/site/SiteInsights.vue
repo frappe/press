@@ -55,7 +55,6 @@ export default {
 					value: 'Site Performance Reports',
 					children: [
 						'Site Performance Slow Queries',
-						'Site Performance Binary Logs',
 						'Site Performance Process List',
 						'Site Performance Request Logs',
 						'Site Performance Deadlock Report',

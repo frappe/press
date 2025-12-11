@@ -11,7 +11,9 @@
   "status",
   "column_break_nxd6",
   "action",
-  "scheduled",
+  "start_time",
+  "duration",
+  "scheduled_time",
   "failed_validation",
   "steps_section",
   "scale_steps"
@@ -71,17 +73,27 @@
    "reqd": 1
   },
   {
-   "fieldname": "scheduled",
-   "fieldtype": "Datetime",
-   "label": "Scheduled"
-  },
-  {
    "default": "0",
    "description": "Checked if the auto scale failed due to a validation error.\n\n(Adhere to autoscaling rules)",
    "fieldname": "failed_validation",
    "fieldtype": "Check",
    "label": "Failed Validation",
    "read_only": 1
+  },
+  {
+   "fieldname": "scheduled_time",
+   "fieldtype": "Datetime",
+   "label": "Scheduled Time"
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Time",
+   "label": "Duration"
+  },
+  {
+   "fieldname": "start_time",
+   "fieldtype": "Datetime",
+   "label": "Start Time"
   }
  ],
  "grid_page_length": 50,
@@ -92,7 +104,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2025-11-28 10:50:25.001026",
+ "modified": "2025-12-09 20:16:57.320759",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Auto Scale Record",

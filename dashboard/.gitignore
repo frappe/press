@@ -29,3 +29,4 @@ tests-e2e/.auth
 blob-report/
 playwright/.cache/
 *.trace.zip
+.nyc_output/

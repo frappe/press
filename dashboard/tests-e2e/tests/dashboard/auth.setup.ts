@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from "fs";
 import { fileURLToPath } from 'url';
-import { test as setup } from "@playwright/test"
+import { test as setup } from "./coverage.fixture";
 
 const localCloudBaseUrl = process.env.BASE_URL!;
 const userEmail = process.env.PRESS_ADMIN_USER_EMAIL!;
