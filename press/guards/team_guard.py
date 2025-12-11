@@ -20,7 +20,7 @@ def only_owner(team: Callable[[Document, OrderedDict], str] = lambda document, _
 	def wrapper(fn):
 		@functools.wraps(fn)
 		def inner(self, *args, **kwargs):
-			bound_args = inspect.signature(fn).bind(*args, **kwargs)
+			bound_args = inspect.signature(fn).bind(self, *args, **kwargs)
 			bound_args.apply_defaults()
 			t = team(self, bound_args.arguments)
 			d: Team = frappe.get_cached_doc("Team", t)
@@ -46,7 +46,7 @@ def only_admin(
 	def wrapper(fn):
 		@functools.wraps(fn)
 		def inner(self, *args, **kwargs):
-			bound_args = inspect.signature(fn).bind(*args, **kwargs)
+			bound_args = inspect.signature(fn).bind(self, *args, **kwargs)
 			bound_args.apply_defaults()
 			if skip(self, bound_args.arguments):
 				return fn(self, *args, **kwargs)
@@ -75,7 +75,7 @@ def only_member(
 	def wrapper(fn):
 		@functools.wraps(fn)
 		def inner(self, *args, **kwargs):
-			bound_args = inspect.signature(fn).bind(*args, **kwargs)
+			bound_args = inspect.signature(fn).bind(self, *args, **kwargs)
 			bound_args.apply_defaults()
 			t = team(self, bound_args.arguments)
 			u = user(self, bound_args.arguments)
