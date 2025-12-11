@@ -55,7 +55,7 @@ def only_admin(key: str = "team"):
 
 def only_member(
 	team: Callable[[Document, OrderedDict], str] = lambda document, _: str(document.team),
-	user: Callable[[Document, OrderedDict], str] = lambda _, args: str(args.get("user", frappe.session.user)),
+	user: Callable[[Document, OrderedDict], str] = lambda _, _args: str(frappe.session.user),
 	error_message: str | None = None,
 ):
 	"""
