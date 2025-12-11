@@ -11,6 +11,8 @@ from press.utils import get_current_team
 
 from .document import check as document_check
 from .marketplace import check as marketplace_check
+from .server_snapshot import check as server_snapshot_check
+from .site_backup import check as site_backup_check
 from .webhook import check as webhook_check
 
 
@@ -66,7 +68,11 @@ def check(document_type: str, document_name: str) -> bool:
 			return document_check(query, document_type, document_name)
 		case "Server":
 			return document_check(query, document_type, document_name)
+		case "Server Snapshot":
+			return server_snapshot_check(query, document_name)
 		case "Site":
 			return document_check(query, document_type, document_name)
+		case "Site Backup":
+			return site_backup_check(query, document_name)
 		case _:
 			return False
