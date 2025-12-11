@@ -19,84 +19,75 @@ console = Console()
 def new_site(
 	ctx: typer.Context,
 	name: Annotated[str, typer.Argument(help="Site name/subdomain (name)")],
+	bench_opt: Annotated[str, typer.Option("--bench", help="Bench group name (group)")],
 	version: Annotated[str, typer.Option("--version", help="Stack version (version)")],
 	cluster: Annotated[str, typer.Option("--cluster", help="Cluster/region (cluster)")],
 	plan: Annotated[str, typer.Option("--plan", help="Plan (plan)")],
 	apps: Annotated[list[str], typer.Option("--apps", help="Apps list (apps)")],
 ):
-	"""Create a new site on a bench after checking availability.
-
-	Maps args to payload for press.api.site.new:
-	- apps -> list[str]
-	- cluster -> region
-	- domain -> domain
-	- group -> bench
-	- localisation_country -> None
-	- name -> subdomain
-	- plan -> plan
-	- selected_app_plans -> {}
-	- share_details_consent -> False
-	- version -> version
-	"""
+	"""Create a new site on a bench after checking availability."""
 	session: CloudSession = ctx.obj
-	bench = _pick_bench_with_apps(session, apps) or _pick_default_bench(session)
-	if not bench:
-		Print.error(console, "No bench groups found. Please create a bench group first.")
+
+	benches = session.get("press.api.bench.all") or []
+	bench_names = [b.get("name") for b in benches if isinstance(b, dict) and b.get("name")]
+	if bench_opt in bench_names:
+		bench = bench_opt
+	else:
+		Print.error(
+			console,
+			f"Bench '{bench_opt}' not found. Available benches: {', '.join(bench_names) if bench_names else 'none'}",
+		)
 		return
 
 	domain = "m.frappe.cloud"
 	subdomain = name
 	full_site = f"{subdomain}.{domain}"
 
+	available_plans = _get_available_plans(session)
+	print(available_plans)
+
+	if not _is_valid_plan(session, plan):
+		Print.error(console, f"Invalid plan: '{plan}'. Available plans: {', '.join(available_plans)}")
+		return
+
+	# Skip backend availability precheck per user request; rely on backend response
+
+	payload = {
+		"apps": apps or [],
+		"cluster": cluster,
+		"domain": domain,
+		"group": bench,
+		"localisation_country": None,
+		"name": subdomain,
+		"plan": plan,
+		"selected_app_plans": {},
+		"share_details_consent": False,
+		"version": version,
+	}
+
 	try:
-		# Check availability first
-		availability = session.post(
-			"press.api.site.exists",
-			json={"domain": domain, "subdomain": subdomain},
-			message="Checking availability…",
-		)
-		if isinstance(availability, dict) and availability.get("exists"):
-			Print.error(console, f"Site name '{full_site}' is not available")
-			return
-
-		payload = {
-			"apps": apps or [],
-			"cluster": cluster,
-			"domain": domain,
-			"group": bench,
-			"localisation_country": None,
-			"name": subdomain,
-			"plan": plan,
-			"selected_app_plans": {},
-			"share_details_consent": False,
-			"version": version,
-		}
-
 		result = session.post(
 			"press.api.site.new",
 			json={"site": payload},
 			message=f"[bold green]Provisioning site '{full_site}' on bench '{bench}'…",
 		)
-
 		if _is_success_response(result):
 			Print.success(
 				console,
 				f"Site '{full_site}' provisioned successfully with apps: {', '.join(apps) if apps else 'none'}.",
 			)
-		else:
-			Print.error(console, f"Failed to provision site: {_format_error_message(result)}")
-			# Print raw backend response for debugging
-			console.print(result)
-
+			return
+		exc_type = result.get("exc_type") if isinstance(result, dict) else None
+		if exc_type == "DuplicateEntryError":
+			Print.error(console, f"Duplicate entry: Site '{full_site}' already exists.")
+			return
+		Print.error(console, f"Failed to provision site: {_format_error_message(result)}")
 	except Exception as e:
+		resp_text = getattr(getattr(e, "response", None), "text", None)
+		if resp_text and "DuplicateEntryError" in resp_text:
+			Print.error(console, f"Duplicate entry: Site '{full_site}' already exists.")
+			return
 		Print.error(console, f"Error provisioning site: {e}")
-		# Print raw backend response body if available
-		try:
-			resp_text = getattr(getattr(e, "response", None), "text", None)
-			if resp_text:
-				console.print(resp_text)
-		except Exception:
-			pass
 
 
 def _is_success_response(result: object) -> bool:
@@ -119,6 +110,25 @@ def _pick_default_bench(session: "CloudSession") -> str | None:
 	if isinstance(benches, list) and benches:
 		return benches[0].get("name")
 	return None
+
+
+def _get_available_plans(session: "CloudSession") -> list[str]:
+	resp = session.post("press.api.site.get_site_plans", json={}) or []
+	items = resp if isinstance(resp, list) else (resp.get("message", []) if isinstance(resp, dict) else [])
+	return [p.get("name") for p in items if isinstance(p, dict) and p.get("name")]
+
+
+def _is_valid_plan(session: "CloudSession", plan: str) -> bool:
+	return plan in _get_available_plans(session)
+
+
+def _is_site_available(session: "CloudSession", domain: str, subdomain: str) -> bool:
+	availability = session.post(
+		"press.api.site.exists",
+		json={"domain": domain, "subdomain": subdomain},
+		message="Checking availability…",
+	)
+	return not (isinstance(availability, dict) and availability.get("exists"))
 
 
 @sites.command(help="Archive (drop) a site")

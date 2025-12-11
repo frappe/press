@@ -56,9 +56,13 @@ def bench_init(
 def create_bench_group(
 	ctx: typer.Context,
 	title: Annotated[str, typer.Argument(help="Bench Group Title (e.g. cli-test-bench)")],
-	version: Annotated[str, typer.Argument(help="Frappe Framework Version (e.g. Version 15)")],
-	server: Annotated[str, typer.Argument(help="Server name")],
-	region: Annotated[str, typer.Argument(help="Region (cluster name, e.g. Mumbai)")],
+	version: Annotated[
+		str | None, typer.Option("--version", help="Frappe Framework Version (e.g. Version 15)")
+	] = None,
+	server: Annotated[str | None, typer.Option("--server", help="Server name")] = None,
+	region: Annotated[
+		str | None, typer.Option("--cluster", help="Region (cluster name, e.g. Mumbai)")
+	] = None,
 ):
 	session: CloudSession = ctx.obj
 	try:
