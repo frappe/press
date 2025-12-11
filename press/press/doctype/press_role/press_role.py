@@ -120,15 +120,12 @@ class PressRole(Document):
 		return self.team_doc.is_team_owner() or self.team_doc.is_admin_user()
 
 	@dashboard_whitelist()
+	@team_guard.only_admin(skip=lambda _, args: args.get("skip_validations", False))
 	@team_guard.only_member(
 		user=lambda _, args: str(args.get("user")),
 		error_message=_("User is not a member of the team"),
 	)
 	def add_user(self, user, skip_validations=False):
-		if not skip_validations and not self.has_admin_access:
-			message = _("Only users with admin access can add users to this role")
-			frappe.throw(message, frappe.PermissionError)
-
 		user_exists = self.get("users", {"user": user})
 		if user_exists:
 			frappe.throw(f"{user} already belongs to {self.title}")
