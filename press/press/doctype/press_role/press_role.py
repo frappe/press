@@ -2,7 +2,6 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
-import functools
 from typing import TYPE_CHECKING
 
 import frappe
@@ -12,15 +11,10 @@ from frappe.model.document import Document
 from press.api.client import dashboard_whitelist
 from press.guards import team_guard
 
-if TYPE_CHECKING:
-	from press.press.doctype.team.team import Team
-
 
 class PressRole(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
-
-	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
@@ -109,10 +103,6 @@ class PressRole(Document):
 		if "Press Admin" in existing_roles:
 			user.get("roles").remove(existing_roles["Press Admin"])
 			user.save(ignore_permissions=True)
-
-	@functools.cached_property
-	def team_doc(self) -> Team:
-		return frappe.get_doc("Team", self.team)
 
 	@dashboard_whitelist()
 	@team_guard.only_admin(skip=lambda _, args: args.get("skip_validations", False))
