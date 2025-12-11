@@ -126,11 +126,11 @@ class PressRole(Document):
 		error_message=_("User is not a member of the team"),
 	)
 	def add_user(self, user, skip_validations=False):
-		user_exists = self.get("users", {"user": user})
-		if user_exists:
-			frappe.throw(f"{user} already belongs to {self.title}")
-
-		self.append("users", {"user": user})
+		user_dict = {"user": user}
+		if self.get("users", user_dict):
+			message = _("{0} already belongs to {1}").format(user, self.title)
+			frappe.throw(message, frappe.ValidationError)
+		self.append("users", user_dict)
 		self.save()
 		if self.admin_access or self.allow_billing:
 			self.add_press_admin_role(user)
