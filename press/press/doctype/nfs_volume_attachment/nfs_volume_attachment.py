@@ -21,19 +21,6 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
-def get_restart_benches_play(server: str) -> Ansible:
-	"""Get restart benches play"""
-	primary_server: Server = frappe.get_cached_doc("Server", server)
-	benches = frappe.get_all("Bench", {"server": server, "status": "Active"}, pluck="name")
-	return Ansible(
-		playbook="start_benches.yml",
-		server=primary_server,
-		user=primary_server._ssh_user(),
-		port=primary_server._ssh_port(),
-		variables={"benches": " ".join(benches)},
-	)
-
-
 class NFSVolumeAttachment(Document, AutoScaleStepFailureHandler, StepHandler):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
