@@ -37,7 +37,14 @@ export default {
 						fieldname: 'owner',
 					},
 				],
-
+				onRowClick: (row) => {
+					this.$router.push({
+						name: 'Auto Scale Steps',
+						params: {
+							id: row.name,
+						},
+					});
+				},
 				orderBy: 'creation desc',
 
 				fields: ['owner'],

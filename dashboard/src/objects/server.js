@@ -1017,5 +1017,10 @@ export default {
 			path: 'plays/:id',
 			component: () => import('../pages/PlayPage.vue'),
 		},
+		{
+			name: 'Auto Scale Steps',
+			path: 'auto-scale-steps/:id',
+			component: () => import('../components/server/AutoScaleSteps.vue'),
+		},
 	],
 };
