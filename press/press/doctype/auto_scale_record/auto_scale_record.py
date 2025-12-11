@@ -10,6 +10,7 @@ from frappe.model.document import Document
 from requests.exceptions import ConnectionError, HTTPError, JSONDecodeError
 
 from press.agent import Agent
+from press.api.client import dashboard_whitelist
 from press.runner import Ansible, Status, StepHandler
 from press.utils import log_error
 
@@ -120,6 +121,29 @@ class AutoScaleRecord(Document, StepHandler):
 				self.append("scale_steps", step)
 
 		self.secondary_server = frappe.db.get_value("Server", self.primary_server, "secondary_server")
+
+	def get_doc(self, doc):
+		doc.steps = self.get_steps_for_dashboard()
+		doc.start_time = self.start_time
+		doc.duration = self.duration
+		return doc
+
+	@dashboard_whitelist()
+	def get_steps_for_dashboard(self) -> list[dict[str, str]]:
+		"""Format steps for dashboard job step"""
+		ret = []
+
+		for step in self.scale_steps:
+			ret.append(
+				{
+					"name": step.method_name,
+					"status": step.status,
+					"output": step.output,
+					"title": step.step_name,
+				}
+			)
+
+		return ret
 
 	def mark_start_time(self, step: "ScaleStep"):
 		"""Mark autoscale start time"""
