@@ -1,7 +1,6 @@
 import json
 import typing
 from collections.abc import Callable
-from contextlib import suppress
 from dataclasses import dataclass
 from enum import Enum
 from typing import Literal
@@ -27,6 +26,7 @@ from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 def reconnect_on_failure():
@@ -293,6 +293,7 @@ class Status(str, Enum):
 	Pending = "Pending"
 	Running = "Running"
 	Success = "Success"
+	Skipped = "Skipped"
 	Failure = "Failure"
 
 	def __str__(self):
@@ -324,8 +325,8 @@ class StepHandler:
 
 		# Try to sync status in every attempt
 		try:
-			virtual_machine = frappe.get_doc("Virtual Machine", virtual_machine)
-			virtual_machine.sync()
+			virtual_machine_doc: "VirtualMachine" = frappe.get_doc("Virtual Machine", virtual_machine)
+			virtual_machine_doc.sync()
 		except Exception:
 			pass
 
@@ -391,21 +392,8 @@ class StepHandler:
 		frappe.db.commit()
 
 	def handle_step_failure(self):
-		team = frappe.db.get_value("Server", self.primary_server, "team")
-		press_notification = frappe.get_doc(
-			{
-				"doctype": "Press Notification",
-				"team": team,
-				"type": "Auto Scale",
-				"document_type": self.doctype,
-				"document_name": self.name,
-				"class": "Error",
-				"traceback": frappe.get_traceback(with_context=False),
-				"message": "Error occurred during auto scale",
-			}
-		)
-		press_notification.insert()
-		frappe.db.commit()
+		# can be implemented by the controller
+		pass
 
 	def get_steps(self, methods: list) -> list[dict]:
 		"""Generate a list of steps to be executed for NFS volume attachment."""
@@ -424,7 +412,7 @@ class StepHandler:
 
 	def next_step(self, steps: list[GenericStep]) -> GenericStep | None:
 		for step in steps:
-			if step.status not in (Status.Success, Status.Failure):
+			if step.status not in (Status.Success, Status.Failure, Status.Skipped):
 				return step
 
 		return None
@@ -446,10 +434,12 @@ class StepHandler:
 
 		try:
 			method(step)
+			frappe.db.commit()
 		except Exception:
 			self.reload()
 			self.fail()
 			self.handle_step_failure()
+			frappe.db.commit()
 			return
 
 		# After step completes, queue the next step
