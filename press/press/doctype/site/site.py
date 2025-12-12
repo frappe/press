@@ -122,6 +122,7 @@ DOCTYPE_SERVER_TYPE_MAP = {
 }
 
 ARCHIVE_AFTER_SUSPEND_DAYS = 21
+CREATION_FAILURE_RETENTION_DAYS = 14
 PRIVATE_BENCH_DOC = "https://docs.frappe.io/cloud/sites/move-site-to-private-bench"
 SERVER_SCRIPT_DISABLED_VERSION = (
 	15  # version from which server scripts were disabled on public benches. No longer set in site
@@ -157,7 +158,7 @@ class Site(Document, TagHelpers):
 		communication_infos: DF.Table[CommunicationInfo]
 		config: DF.Code | None
 		configuration: DF.Table[SiteConfig]
-		creation_failed: DF.Check
+		creation_failed: DF.Datetime | None
 		current_cpu_usage: DF.Int
 		current_database_usage: DF.Int
 		current_disk_usage: DF.Int
@@ -3927,7 +3928,7 @@ def process_new_site_job_update(job):  # noqa: C901
 		marketplace_app_hook(site=Site("Site", job.site), op="install")
 	elif "Failure" in (first, second) or "Delivery Failure" in (first, second):
 		updated_status = "Broken"
-		frappe.db.set_value("Site", job.site, "creation_failed", 1)
+		frappe.db.set_value("Site", job.site, "creation_failed", frappe.utils.now())
 	elif "Running" in (first, second):
 		updated_status = "Installing"
 	else:
@@ -4205,8 +4206,10 @@ def process_restore_job_update(job, force=False):
 			site = Site("Site", job.site)
 			process_marketplace_hooks_for_backup_restore(set(apps_from_backup), site)
 			site.set_apps(apps_from_backup)
-			if frappe.db.get_value("Site", job.site, "creation_failed"):
-				frappe.db.set_value("Site", job.site, "creation_failed", 0)
+			frappe.db.set_value("Site", job.site, "creation_failed", None)
+
+		else:
+			frappe.db.set_value("Site", job.site, "creation_failed", frappe.utils.now())
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 		create_site_status_update_webhook_event(job.site)
 
@@ -4809,12 +4812,13 @@ def get_updates_between_current_and_next_apps(
 	return apps
 
 
-def archive_creation_failure_sites():
-	seven_days_ago = frappe.utils.add_days(frappe.utils.today(), -7)
+def archive_creation_failed_sites():
+	creation_failure_retention_date = frappe.utils.add_days(
+		frappe.utils.now(), -CREATION_FAILURE_RETENTION_DAYS
+	)
 	filters = {
-		"creation_failed": 1,
+		"creation_failed": ["<", creation_failure_retention_date],
 		"status": ["!=", "Archived"],
-		"creation": ["<", seven_days_ago],
 	}
 
 	failed_sites = frappe.db.get_all(
