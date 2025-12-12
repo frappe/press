@@ -6,9 +6,6 @@
   gather_facts: no
 
   tasks:
-    - name: Stop Agent to reject jobs
-      command: 'supervisorctl stop agent:'
-
     - name: Stop lsyncd and disable
       systemd:
         name: lsyncd

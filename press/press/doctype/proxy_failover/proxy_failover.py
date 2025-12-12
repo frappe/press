@@ -29,41 +29,33 @@ class ProxyFailover(Document, StepHandler):
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
 	# end: auto-generated types
 
-	# take both cases - primary up and primary down
-	# assume secondary to be up
-
-	# TODO: we'll also need to make sure secondary has the latest conf
-	# one easy way is to validate the last X add site to upstream entries in agent job (which succeeded in primary)
-	# and cross check it with secondary
-
 	def before_insert(self):
 		self.status = "Pending"
 
-		if frappe.db.get_value("Proxy Server", self.secondary, "cluster") != frappe.db.get_value(
-			"Proxy Server", self.primary, "cluster"
-		):
+		primary = frappe.db.get_value("Proxy Server", self.primary, ["cluster", "is_static_ip"], as_dict=True)
+		if frappe.db.get_value("Proxy Server", self.secondary, "cluster") != primary.cluster:
 			frappe.throw("Failover can only be triggered between Proxy Servers in the same Cluster")
 
-		if not frappe.db.get_value("Proxy Server", self.primary, "is_static_ip"):
+		if not primary.is_static_ip:
 			frappe.throw(
 				"(Currently) Failover can only be initiated if the primary proxy server has a static IP"
 			)
 
 		for step in self.get_steps(
 			[
+				self.stop_replication,
 				# self.route_requests_from_primary_to_secondary,
 				# self.wait_for_secondary_proxy_routing,
-				self.stop_primary_agent_and_replication,
+				self.halt_agent_jobs_on_primary,
 				self.attach_static_ip_to_secondary,
 				self.update_dns_records_for_all_sites,
-				self.forward_jobs_to_secondary,
-				self.remove_primary_access_and_start_nginx_in_secondary,
 				self.move_wildcard_domains_from_primary,  # TODO: dont know the significance of this
-				self.wait_for_wildcard_domains_setup,
-				self.update_app_servers,
-				self.switch_primary,
-				self.send_failover_email,
 				self.add_ssh_users_for_existing_benches,
+				self.update_app_servers,
+				self.wait_for_wildcard_domains_setup,
+				self.forward_undelivered_jobs_to_secondary,
+				self.remove_primary_access_and_ensure_nginx_started_in_secondary,
+				self.switch_primary,
 			]
 		):
 			self.append("failover_steps", step)
@@ -197,7 +189,7 @@ class ProxyFailover(Document, StepHandler):
 			.on(servers.name == benches.server)
 			.select(benches.name)
 			.where(benches.status == "Active")
-			.where(servers.proxy_server == self.secondary)
+			.where(servers.proxy_server == self.primary)
 			.run(as_dict=True)
 		)
 		for bench_name in active_benches:
@@ -223,7 +215,7 @@ class ProxyFailover(Document, StepHandler):
 		step.status = Status.Success
 		step.save()
 
-	def forward_jobs_to_secondary(self, step):
+	def forward_undelivered_jobs_to_secondary(self, step):
 		frappe.db.set_value(
 			"Agent Job",
 			{"server": self.primary, "status": "Undelivered"},
@@ -234,19 +226,35 @@ class ProxyFailover(Document, StepHandler):
 		step.status = Status.Success
 		step.save()
 
-	def move_wildcard_domains_from_primary(self, step):
-		frappe.db.set_value(
-			"Proxy Server Domain",
-			{"parent": self.primary},
-			"parent",
-			self.secondary,
-		)
-
-		job = frappe.get_doc("Proxy Server", self.secondary).setup_wildcard_hosts()
+	def halt_agent_jobs_on_primary(self, step):
+		frappe.db.set_value("Proxy Server", self.primary, "halt_agent_jobs", True)
 
 		step.status = Status.Success
-		step.job = job.name
-		step.job_type = "Agent Job"
+		step.save()
+
+	def move_wildcard_domains_from_primary(self, step):
+		domains = set(
+			frappe.get_all(
+				"Proxy Server Domain",
+				filters={"parent": ["in", (self.primary, self.secondary)]},
+				fields=["domain", "code_server"],
+				as_list=True,
+			)
+		)
+
+		secondary = frappe.get_doc("Proxy Server", self.secondary)
+		secondary.domains = []
+		for domain in domains:
+			secondary.append("domains", {"domain": domain[0], "code_server": domain[1]})
+
+		if secondary.domains:
+			secondary.save()
+
+			job = secondary.setup_wildcard_hosts()
+			step.job = job.name
+			step.job_type = "Agent Job"
+
+		step.status = Status.Success
 		step.save()
 
 	def wait_for_wildcard_domains_setup(self, step):
@@ -270,14 +278,11 @@ class ProxyFailover(Document, StepHandler):
 		with suppress(Exception):
 			self.handle_agent_job(step, job)
 
-	def stop_primary_agent_and_replication(self, step):
-		step.status = Status.Running
-
-		# TODO: this needs to take the 1st routing job (in case of non static ip) into account
+	def stop_replication(self, step):
 		try:
 			primary_proxy = frappe.get_doc("Proxy Server", self.primary)
 			ansible = Ansible(
-				playbook="failover_prepare_primary_proxy.yml",
+				playbook="stop_primary_proxy_replication.yml",
 				server=primary_proxy,
 				user=primary_proxy._ssh_user(),
 				port=primary_proxy._ssh_port(),
@@ -287,9 +292,7 @@ class ProxyFailover(Document, StepHandler):
 			self._fail_ansible_step(step, ansible, e)
 			# no need to raise an error here as even if primary is down, we need to proceed
 
-	def remove_primary_access_and_start_nginx_in_secondary(self, step):
-		step.status = Status.Running
-
+	def remove_primary_access_and_ensure_nginx_started_in_secondary(self, step):
 		try:
 			secondary_proxy = frappe.get_doc("Proxy Server", self.secondary)
 			ansible = Ansible(
@@ -307,11 +310,6 @@ class ProxyFailover(Document, StepHandler):
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
 			raise
-
-	def send_failover_email(self, step):
-		step.status = Status.Skipped
-		step.output = "Email notification not implemented yet."
-		step.save()
 
 	def handle_step_failure(self):
 		self.error = frappe.get_traceback(with_context=True)
