@@ -738,9 +738,8 @@
    "read_only": 1
   },
   {
-   "default": "0",
    "fieldname": "creation_failed",
-   "fieldtype": "Check",
+   "fieldtype": "Datetime",
    "label": "Creation Failed",
    "read_only": 1
   }
@@ -822,8 +821,8 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2025-12-05 13:49:05.307868",
- "modified_by": "aysha@frappe.io",
+ "modified": "2025-12-12 22:26:41.654346",
+ "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
  "owner": "Administrator",
