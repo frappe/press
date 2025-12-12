@@ -17,6 +17,7 @@ from pypika.queries import QueryBuilder
 from press.access import dashboard_access_rules
 from press.access.support_access import has_support_access
 from press.exceptions import TeamHeaderNotInRequestError
+from press.guards import role_guard
 from press.utils import has_role
 
 if typing.TYPE_CHECKING:
@@ -161,6 +162,12 @@ def get_list(
 	return []
 
 
+@role_guard.document(
+	document_type=lambda args: str(args.get("doctype")),
+	should_throw=False,
+	inject_values=True,
+	injection_key="document_options",
+)
 def get_list_query(
 	doctype: str,
 	meta: "Meta",
@@ -170,9 +177,8 @@ def get_list_query(
 	start: int,
 	limit: int,
 	order_by: str | None,
+	document_options=None,
 ):
-	from press.press.doctype.press_role.press_role import LINKED_DOCTYPE_PERMISSIONS, check_role_permissions
-
 	query = frappe.qb.get_query(
 		doctype, filters=valid_filters, fields=valid_fields, offset=start, limit=limit, order_by=order_by
 	)
@@ -187,30 +193,19 @@ def get_list_query(
 			.where(ParentDocType.team == frappe.local.team().name)
 		)
 
-	if roles := check_role_permissions(doctype):
-		PressRolePermission = frappe.qb.DocType("Press Role Permission")
-		QueriedDocType = frappe.qb.DocType(doctype)
-
-		if doctype in LINKED_DOCTYPE_PERMISSIONS:
-			field = LINKED_DOCTYPE_PERMISSIONS[doctype].get("parent_doctype", "").lower().replace(" ", "_")
-			doctype_field = QueriedDocType[LINKED_DOCTYPE_PERMISSIONS[doctype].get("parent_field")]
-		else:
-			field = doctype.lower().replace(" ", "_")
-			doctype_field = QueriedDocType.name
-
-		query = (
-			query.join(PressRolePermission)
-			.on(PressRolePermission[field] == doctype_field & PressRolePermission.role.isin(roles))
-			.distinct()
-		)
+	if document_options:
+		QueryDoctype = frappe.qb.DocType(doctype)
+		query = query.where(QueryDoctype.name.isin(document_options))
 
 	return query
 
 
 @frappe.whitelist()
+@role_guard.document(
+	document_type=lambda args: str(args.get("doctype")),
+	document_name=lambda args: str(args.get("name")),
+)
 def get(doctype, name):
-	from press.press.doctype.press_role.press_role import check_role_permissions
-
 	check_permissions(doctype)
 	try:
 		doc = frappe.get_doc(doctype, name)
@@ -226,8 +221,6 @@ def get(doctype, name):
 		and doc.team != frappe.local.team().name
 	):
 		raise_not_permitted()
-
-	check_role_permissions(doctype, name)
 
 	fields = tuple(default_fields)
 	if hasattr(doc, "dashboard_fields"):
