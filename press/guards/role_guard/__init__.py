@@ -18,7 +18,7 @@ from .utils import document_type_key
 from .webhook import check as webhook_check
 
 
-def for_doc(
+def document(
 	document_type: Callable[[OrderedDict], str],
 	document_name: Callable[[OrderedDict], str] = lambda _: "",
 	default_value: Callable[[OrderedDict], Any] | None = None,
@@ -26,6 +26,29 @@ def for_doc(
 	inject_values: bool = False,
 	injection_key: str | None = None,
 ):
+	"""
+	Check if the user has permission to access a specific document type and
+	name. This decorator can inject the result into the decorated function's
+	kwargs.
+
+	```python
+	@role_guard.document(
+		document_type=lambda _: "Release Group",
+		inject_values=True,
+		should_throw=False,
+	)
+	def example_function(release_groups: list[str]):
+		pass
+	```
+
+	:param document_type: Document type extractor function
+	:param document_name: Document name extractor function
+	:param default_value: Return a default value if permission check fails
+	:param should_throw: Whether to throw an error if permission check fails
+	:param inject_values: Whether to inject the result into the decorated function's kwargs
+	:param injection_key: Custom key for injected values in kwargs
+	"""
+
 	def wrapper(fn):
 		def gen_key(document_type: str) -> str:
 			return injection_key or document_type_key(document_type) + "s"
