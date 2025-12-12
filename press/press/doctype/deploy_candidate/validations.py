@@ -341,9 +341,8 @@ def _format_pylint_exceptions(errors: list[dict[str, int | str]]) -> list[str]:
 
 		path = err["path"]
 		filename = _relative_from_apps(str(path))
-		module = err["module"]
 		line = err["endLine"]
 		message = err["message"]
-		exception_messages.append(f"[{module}] {filename}:{line} → {message}")
+		exception_messages.append(f"{filename}:{line} → {message}")
 
 	return exception_messages

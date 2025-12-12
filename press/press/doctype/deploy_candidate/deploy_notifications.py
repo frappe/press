@@ -607,7 +607,8 @@ def update_with_custom_app_import_errors(
 	details["message"] = fmt(message)
 
 	traceback = ""
-	for errors in error_dict.values():
+	for app, errors in error_dict.items():
+		traceback += f"{app}\n"
 		for err in errors:
 			traceback += f"{err}\n"
 
