@@ -22,11 +22,13 @@ def for_doc(
 	document_type: Callable[[OrderedDict], str],
 	document_name: Callable[[OrderedDict], str] = lambda _: "",
 	default_value: Callable[[OrderedDict], Any] | None = None,
+	should_throw: bool = True,
 	inject_values: bool = False,
+	injection_key: str | None = None,
 ):
 	def wrapper(fn):
-		def injection_key(document_type: str) -> str:
-			return document_type_key(document_type) + "s"
+		def gen_key(document_type: str) -> str:
+			return injection_key or document_type_key(document_type) + "s"
 
 		@functools.wraps(fn)
 		def inner(*args, **kwargs):
@@ -37,11 +39,11 @@ def for_doc(
 			r = check(t, n)
 			if not r and default_value:
 				return default_value(bound_args.arguments)
-			if not r:
+			if not r and should_throw:
 				error_message = _("You do not have permission to access this {0}.").format(t)
 				frappe.throw(error_message, frappe.PermissionError)
 			if inject_values:
-				kwargs[injection_key(t)] = r
+				kwargs[gen_key(t)] = r
 			return fn(*args, **kwargs)
 
 		return inner
