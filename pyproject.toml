@@ -56,6 +56,7 @@ dependencies = [
     "hcloud==2.2.1",
     "playwright==1.49.1",
     "prometheus-api-client==0.6.0",
+    "pylint==4.0.4",
 ]
 
 [project.scripts]

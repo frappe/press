@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import ast
+import json
+import subprocess
 import warnings
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING
 
 import frappe
@@ -36,6 +38,7 @@ class PreBuildValidations:
 		self._validate_node_requirement()
 		self._validate_frappe_dependencies()
 		self._validate_required_apps()
+		self._validate_custom_app_imports()
 
 	def _validate_repos(self):
 		for app in self.dc.apps:
@@ -207,6 +210,59 @@ class PreBuildValidations:
 
 		return None
 
+	def _run_pylint(self, app_name: str, pmf: PackageManagers) -> list[dict[str, str | int]] | None:
+		"""Run pylint with only error messages enabled; convention and refactor messages are disabled."""
+		# Follow frappe app convention.
+		app_path = Path(pmf["repo_path"]) / app_name / app_name
+
+		if not app_path.exists():
+			return None
+
+		cmd = [
+			"pylint",
+			str(app_path),
+			"--enable=E0401",  # Enable only import errors
+			"--disable=all",
+			"--errors-only",
+			"--output-format=json",
+		]
+
+		try:
+			subprocess.run(
+				cmd,
+				check=True,
+				capture_output=True,
+				text=True,
+			)
+		except subprocess.CalledProcessError as exc:
+			# Since out output format is json this should work
+			return _format_pylint_exceptions(json.loads(exc.stdout))
+
+	def _validate_custom_app_imports(self):
+		"""Run pylint to ensure custom app imports work"""
+		# Latest pylint supports Python 3.10.0 and above
+		# https://pypi.org/project/pylint/
+		app_errors = {}
+		supported_python_version = ">=3.10"
+		actual_python_version = self.dc.get_dependency_version("python")
+
+		if not check_version(actual_python_version, supported_python_version):
+			return
+
+		apps_to_check = frappe.db.get_values(
+			"App Source",
+			{"name": ("IN", [app.source for app in self.dc.apps]), "repository_owner": ("!=", "frappe")},
+			"app",
+			pluck=True,
+		)
+
+		for app in apps_to_check:
+			if errors := self._run_pylint(app, self.pmf.get(app)):
+				app_errors[app] = errors
+
+		if app_errors:
+			raise Exception("Custom App Import Errors Found", app_errors)
+
 
 def check_version(actual: str, expected: str) -> bool:
 	# Python version mentions on press dont mention the patch version.
@@ -256,3 +312,38 @@ def check_if_update_will_fail(rg: "ReleaseGroup", new_dc: "DeployCandidate"):
 		return
 
 	checker(old_dcb, new_dc)
+
+
+def _relative_from_apps(path: str) -> str:
+	"""
+	Return file path from the 'apps' directory.
+	If 'apps' is not present, return only the filename.
+	"""
+	# https://docs.python.org/3/library/pathlib.html#pathlib.PurePath.parts
+	p = PurePosixPath(path)
+	parts = p.parts
+
+	if "apps" in parts:
+		idx = parts.index("apps")
+		return str(PurePosixPath(*parts[idx:]))
+
+	# fallback: just filename
+	return Path(path).name
+
+
+def _format_pylint_exceptions(errors: list[dict[str, int | str]]) -> list[str]:
+	"""Raise exceptions generated from pylint and add to press notifications"""
+	exception_messages = []
+
+	for err in errors:
+		if err.get("type") != "error":
+			continue
+
+		path = err["path"]
+		filename = _relative_from_apps(str(path))
+		module = err["module"]
+		line = err["endLine"]
+		message = err["message"]
+		exception_messages.append(f"[{module}] {filename}:{line} → {message}")
+
+	return exception_messages
