@@ -108,7 +108,7 @@ class VirtualDiskResize(Document):
 
 	@frappe.whitelist()
 	def execute(self):
-		if not self.get_lock():
+		if not self.get_lock() or self.status != "Scheduled":
 			return
 		self.run_prerequisites()
 		self.status = Status.Running
@@ -293,7 +293,8 @@ class VirtualDiskResize(Document):
 		machine = self.machine
 		root_volume = machine.get_root_volume()
 
-		volumes = find_all(machine.volumes, lambda v: v.volume_id != root_volume.volume_id)
+		excluded_volumes = [root_volume.volume_id] + [vol.volume_id for vol in machine.temporary_volumes]
+		volumes = find_all(machine.volumes, lambda v: v.volume_id not in excluded_volumes)
 		if len(volumes) == 0:
 			frappe.throw("No additional volumes found. Cannot shrink any volume.")
 		elif len(volumes) > 1:

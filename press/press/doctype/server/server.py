@@ -144,6 +144,7 @@ class BaseServer(Document, TagHelpers):
 					"disk": virtual_machine.disk_size,
 				}
 
+		doc.data_volumes = frappe.get_doc("Virtual Machine", self.virtual_machine).get_data_volume(all=True)
 		doc.storage_plan = frappe.db.get_value(
 			"Server Storage Plan",
 			{"enabled": 1},
@@ -181,6 +182,22 @@ class BaseServer(Document, TagHelpers):
 			doc.scaled_up = self.scaled_up
 
 		return doc
+
+	@dashboard_whitelist()
+	def cancel_disk_resize(self, disk_resize):
+		try:
+			frappe.db.get_value(
+				"Virtual Machine", self.virtual_machine, "status", for_update=True, wait=False
+			)
+		except (frappe.QueryTimeoutError, frappe.QueryDeadlockError):
+			frappe.throw("The Server is currently busy. Please try again in a moment..")
+
+		# used document api for applying doc permissions
+		doc = frappe.get_doc("Virtual Disk Resize", disk_resize)
+		if doc.status != "Scheduled":
+			frappe.throw("Only scheduled disk resize can be cancelled.")
+		doc.status = "Cancelled"
+		doc.save()
 
 	@dashboard_whitelist()
 	def get_communication_infos(self):
