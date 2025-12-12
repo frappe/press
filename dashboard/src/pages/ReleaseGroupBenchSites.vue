@@ -393,6 +393,7 @@ export default {
 				},
 				{
 					label: 'Archive Bench',
+					condition: () => true,
 					onClick: () => {
 						confirmDialog({
 							title: 'Archive Bench',
