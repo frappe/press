@@ -210,7 +210,7 @@ class PreBuildValidations:
 
 		return None
 
-	def _run_pylint(self, app_name: str, pmf: PackageManagers) -> list[dict[str, str | int]] | None:
+	def _run_pylint(self, app_name: str, pmf: PackageManagers) -> list[str] | None:
 		"""Run pylint with only error messages enabled; convention and refactor messages are disabled."""
 		# Follow frappe app convention.
 		app_path = Path(pmf["repo_path"]) / app_name / app_name
@@ -226,14 +226,18 @@ class PreBuildValidations:
 			"--errors-only",
 			"--output-format=json",
 		]
-
+		# Try to lint each app for a minute
+		# large repos like frappe/frappe finish under a minute
 		try:
 			subprocess.run(
 				cmd,
 				check=True,
 				capture_output=True,
 				text=True,
+				timeout=60,
 			)
+		except subprocess.TimeoutExpired:
+			return None
 		except subprocess.CalledProcessError as exc:
 			# Since out output format is json this should work
 			return _format_pylint_exceptions(json.loads(exc.stdout))
