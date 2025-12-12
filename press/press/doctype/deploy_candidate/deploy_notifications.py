@@ -130,6 +130,11 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 			check_if_app_updated,
 		),
 		(
+			"Custom App Import Errors Found",
+			update_with_custom_app_import_errors,
+			None,
+		),
+		(
 			"App has invalid pyproject.toml file",
 			update_with_invalid_pyproject_error,
 			None,
@@ -573,6 +578,40 @@ def update_with_error_on_pip_install(
 
 	details["message"] = fmt(message)
 	details["assistance_url"] = DOC_URLS["debugging-app-installs-locally"]
+	return True
+
+
+def update_with_custom_app_import_errors(
+	details: "Details", dc: "DeployCandidate", dcb: "DeployCandidateBuild", exc: BaseException
+) -> bool:
+	"""Found module import errors
+	Error Dict Example:
+	{
+		"auto_update": [
+			"[auto_update.auto_update] apps/auto_update/auto_update/auto_update/__init__.py:3 → Unable to import 'another_bad_import'",
+			"[auto_update.auto_update] apps/auto_update/auto_update/auto_update/__init__.py:5 → Unable to import 'pytorch'",
+			"[auto_update.auto_update] apps/auto_update/auto_update/auto_update/__init__.py:6 → Unable to import 'randoms'",
+		]
+	}
+	"""
+
+	error_dict = exc.args[-1]
+
+	details["title"] = "Validation Failed: Import Errors Found In Custom App"
+	message = """
+	<p>We found import errors in your custom application.</p>
+	<p>These issues will <strong>prevent your site from migrating</strong>.</p>
+	<p>Please review the traceback below and fix the errors before trying again.</p>
+	"""
+
+	details["message"] = fmt(message)
+
+	traceback = ""
+	for errors in error_dict.values():
+		for err in errors:
+			traceback += f"{err}\n"
+
+	details["traceback"] = traceback
 	return True
 
 
