@@ -75,6 +75,7 @@ export default {
 			return getCachedDocumentResource('Server', this.server);
 		},
 		$dbServer() {
+			// Should mirror the whitelistedMethods in ServerOverview.vue
 			return getDocResource({
 				doctype: 'Database Server',
 				name: this.$appServer.doc.database_server,
