@@ -2,6 +2,7 @@ import functools
 import inspect
 from collections import OrderedDict
 from collections.abc import Callable
+from typing import Any
 
 import frappe
 from frappe import _
@@ -13,20 +14,34 @@ from .document import check as document_check
 from .marketplace import check as marketplace_check
 from .server_snapshot import check as server_snapshot_check
 from .site_backup import check as site_backup_check
+from .utils import document_type_key
 from .webhook import check as webhook_check
 
 
-def for_doc(document_type: Callable[[OrderedDict], str], document_name: Callable[[OrderedDict], str]):
+def for_doc(
+	document_type: Callable[[OrderedDict], str],
+	document_name: Callable[[OrderedDict], str] = lambda _: "",
+	default_value: Callable[[OrderedDict], Any] | None = None,
+	inject_values: bool = False,
+):
 	def wrapper(fn):
+		def injection_key(document_type: str) -> str:
+			return document_type_key(document_type) + "s"
+
 		@functools.wraps(fn)
 		def inner(*args, **kwargs):
 			bound_args = inspect.signature(fn).bind(*args, **kwargs)
 			bound_args.apply_defaults()
 			t = document_type(bound_args.arguments)
 			n = document_name(bound_args.arguments)
-			if not check(t, n):
+			r = check(t, n)
+			if not r and default_value:
+				return default_value(bound_args.arguments)
+			if not r:
 				error_message = _("You do not have permission to access this {0}.").format(t)
 				frappe.throw(error_message, frappe.PermissionError)
+			if inject_values:
+				kwargs[injection_key(t)] = r
 			return fn(*args, **kwargs)
 
 		return inner
@@ -50,7 +65,7 @@ def base_query() -> QueryBuilder:
 	)
 
 
-def check(document_type: str, document_name: str) -> bool:
+def check(document_type: str, document_name: str) -> bool | list[str]:
 	"""
 	Check if the user has permission to access a specific document type and name.
 	"""
