@@ -136,7 +136,7 @@ def download_invoice(name: str):
 
 
 @whitelist_saas_api
-def get_stripe_payment_url_for_invoice(name: str) -> str:
+def get_stripe_payment_url_for_invoice(name: str) -> str | None:
 	try:
 		invoice = frappe.get_doc("Invoice", name)
 		if invoice.stripe_invoice_url:
