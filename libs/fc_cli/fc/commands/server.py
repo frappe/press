@@ -230,8 +230,8 @@ def choose_plan(
 @server.command(help="Create a new server")
 def create_server(
 	ctx: typer.Context,
-	cluster: Annotated[str, typer.Argument(help="Cluster name")],
 	title: Annotated[str, typer.Argument(help="Server title")],
+	cluster: Annotated[str, typer.Argument(help="Cluster name")],
 	app_plan: Annotated[str, typer.Argument(help="App server plan name")],
 	db_plan: Annotated[str, typer.Argument(help="Database server plan name")],
 	auto_increase_storage: Annotated[
