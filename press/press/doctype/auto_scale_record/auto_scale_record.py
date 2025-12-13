@@ -94,6 +94,8 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 					# Since the secondary is stopped no jobs running on it
 					self.stop_all_agent_jobs_on_primary,
 					self.wait_for_secondary_server_ping,
+					self.remove_redis_localhost_bind,
+					self.wait_for_redis_localhost_bind_removal,
 					self.switch_to_secondary,
 					self.wait_for_switch_to_secondary,
 					self.setup_secondary_upstream,
@@ -285,6 +287,34 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 			{
 				"parent": self.name,
 				"step_name": "Prepare Agent To Switch To Secondary",
+			},
+			"job",
+		)
+
+		self.handle_agent_job(step, job, poll=True)
+
+	def remove_redis_localhost_bind(self, step: "ScaleStep"):
+		"""Expose Redis Of Primary Server"""
+		agent_job = Agent(self.primary_server).remove_redis_localhost_bind(
+			reference_doctype="Server", reference_name=self.primary_server
+		)
+
+		step.status = Status.Success
+		step.job_type = "Agent Job"
+		step.job = agent_job.name
+		step.save()
+
+	def wait_for_redis_localhost_bind_removal(self, step: "ScaleStep"):
+		"""Wait For Redis To Be Exposed"""
+		step.status = Status.Running
+		step.is_waiting = True
+		step.save()
+
+		job = frappe.db.get_value(
+			"Scale Step",
+			{
+				"parent": self.name,
+				"step_name": "Expose Redis Of Primary Server",
 			},
 			"job",
 		)

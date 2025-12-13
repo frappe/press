@@ -2059,5 +2059,20 @@
       "step_name": "Push Images to Registry"
    }
    ]
+},
+{
+ "disabled_auto_retry": 1,
+ "docstatus": 0,
+ "doctype": "Agent Job Type",
+ "max_retry_count": 3,
+ "modified": "2025-12-09 22:48:21.908330",
+ "name": "Remove Redis Localhost Bind",
+ "request_method": "POST",
+ "request_path": "/server/remove-localhost-redis-bind",
+ "steps": [
+   {
+      "step_name": "Remove Redis Localhost Bind"
+   }
+   ]
 }
 ]
