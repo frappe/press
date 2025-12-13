@@ -104,8 +104,10 @@
     mode: changemaster
     login_user: root
     login_password: "{{ mariadb_root_password }}"
+    login_port: "{{ db_port }}"
     master_host: "{{ primary_private_ip }}"
     master_user: root
+    master_port: "{{ primary_db_port }}"
     master_password: "{{ mariadb_root_password }}"
     master_use_gtid: slave_pos
 
@@ -113,12 +115,14 @@
   mysql_replication:
     mode: startslave
     login_user: root
+    login_port: "{{ db_port }}"
     login_password: "{{ mariadb_root_password }}"
 
 - name: Check Secondary Status
   mysql_replication:
     mode: getslave
     login_user: root
+    login_port: "{{ db_port }}"
     login_password: "{{ mariadb_root_password }}"
   register: secondary_status
   failed_when: 'secondary_status["Slave_IO_Running"] == "No" or secondary_status["Slave_SQL_Running"] == "No"'

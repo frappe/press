@@ -27,6 +27,7 @@ def create_test_database_server(ip=None, cluster="Default") -> DatabaseServer:
 			"status": "Active",
 			"ip": ip,
 			"private_ip": frappe.mock("ipv4_private"),
+			"db_port": 3306,
 			"agent_password": frappe.mock("password"),
 			"hostname": f"m{make_autoname('.##')}",
 			"cluster": cluster,
