@@ -6,6 +6,7 @@ import ServerActions from '../components/server/ServerActions.vue';
 import { getTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
+import { getToastErrorMessage } from '../utils/toast';
 import { isMobile } from '../utils/device';
 import { date, duration, planTitle, userCurrency } from '../utils/format';
 import { getQueryParam, setQueryParam } from '../utils/index';
@@ -33,6 +34,7 @@ export default {
 		teardownSecondaryServer: 'teardown_secondary_server',
 		scaleUp: 'scale_up',
 		scaleDown: 'scale_down',
+		cancelResize: 'cancel_disk_resize',
 	},
 	list: {
 		route: '/servers',
@@ -807,6 +809,178 @@ export default {
 							},
 						];
 					},
+				},
+			},
+			{
+				label: 'Disk Resize (Shrink)',
+				// icon: icon('camera'),
+				condition: (server) => {
+					return (
+						record.doc?.status !== 'Archived' &&
+						server?.doc?.provider === 'AWS EC2'
+					);
+				},
+				route: 'disk-resize',
+				type: 'list',
+				list: {
+					doctype: 'Virtual Disk Resize',
+					// filterControls() {
+					// 	return [
+					// 		{
+					// 			type: 'select',
+					// 			label: 'Status',
+					// 			fieldname: 'status',
+					// 			options: [
+					// 				'Scheduled',
+					// 				'Pending',
+					// 				'Preparing',
+					// 				'Ready',
+					// 				'Running',
+					// 				'Success',
+					// 				'Failure',
+					// 			],
+					// 		},
+					// 	];
+					// },
+					autoReloadAfterUpdateFilterCallback: true,
+					orderBy: 'creation desc',
+					fields: [
+						'name',
+						'status',
+						'scheduled_time',
+						'old_volume_size',
+						'new_volume_size',
+						'old_volume_id',
+					],
+					columns: [
+						{
+							label: 'Disk Resize Request',
+							fieldname: 'name',
+							width: 0.5,
+							class: 'font-medium',
+						},
+						{
+							label: 'Status',
+							fieldname: 'status',
+							type: 'Badge',
+							width: 0.5,
+							align: 'center',
+						},
+						{
+							label: 'Old Volume ID',
+							fieldname: 'old_volume_id',
+							width: 1,
+							align: 'center',
+						},
+						{
+							label: 'Old Volume Size (GB)',
+							fieldname: 'old_volume_size',
+							width: 0.5,
+							align: 'center',
+							format(value) {
+								if (!value) return '-';
+								return `${value} GB`;
+							},
+						},
+						{
+							label: 'New Volume Size (GB)',
+							fieldname: 'new_volume_size',
+							width: 0.5,
+							align: 'center',
+							format(value) {
+								if (!value) return '-';
+								return `${value} GB`;
+							},
+						},
+						{
+							label: 'Scheduled At',
+							fieldname: 'scheduled_time',
+							width: 1,
+							align: 'right',
+							format(value) {
+								return date(value, 'llll');
+							},
+						},
+					],
+				},
+				primaryAction({ documentResource: server, listResource: disk_resize }) {
+					return {
+						label: 'New Disk Resize',
+						// slots: {
+						// 	prefix: icon('camera'),
+						// },
+						onClick() {
+							renderDialog(
+								h(
+									defineAsyncComponent(
+										() =>
+											import('../components/server/ServerDiskResizeDialog.vue'),
+									),
+									{
+										server: server.name,
+										onDiskResizeCreation: () => {
+											disk_resize.reload();
+										},
+									},
+								),
+							);
+						},
+					};
+				},
+				rowActions({ row, documentResource: server }) {
+					return [
+						{
+							label: 'View in Desk',
+							condition: () => getTeam()?.doc?.is_desk_user,
+							onClick() {
+								window.open(
+									`${window.location.protocol}//${window.location.host}/app/virtual-disk-resize/${row.name}`,
+									'_blank',
+								);
+							},
+						},
+						{
+							label: 'View Details',
+							onClick() {
+								let ServerDiskResizeDetailsDialog = defineAsyncComponent(
+									() =>
+										import(
+											'../components/server/ServerDiskResizeDetailsDialog.vue'
+										),
+								);
+								renderDialog(
+									h(ServerDiskResizeDetailsDialog, {
+										name: row.name,
+									}),
+								);
+							},
+						},
+						{
+							label: 'Cancel',
+							condition: () => row.status === 'Scheduled',
+							onClick() {
+								confirmDialog({
+									title: 'Cancel Resize',
+									message: `Are you sure you want to cancel the scheduled disk resize?`,
+									onSuccess({ hide }) {
+										if (server.cancelResize.loading) return;
+										toast.promise(
+											server.cancelResize.submit({ disk_resize: row.name }),
+											{
+												loading: 'Cancelling disk resize...',
+												success: () => {
+													hide();
+													server.reload();
+													return 'Cancelled';
+												},
+												error: (e) => getToastErrorMessage(e),
+											},
+										);
+									},
+								});
+							},
+						},
+					];
 				},
 			},
 			getJobsTab('Server'),
