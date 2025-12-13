@@ -1838,6 +1838,16 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			reference_name=reference_name,
 		)
 
+	def remove_redis_localhost_bind(
+		self, reference_doctype: str | None = None, reference_name: str | None = None
+	) -> AgentJob:
+		return self.create_agent_job(
+			"Remove Redis Localhost Bind",
+			"/server/remove-localhost-redis-bind",
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
 	def force_remove_all_benches(
 		self, reference_doctype: str | None = None, reference_name: str | None = None
 	) -> AgentJob:
