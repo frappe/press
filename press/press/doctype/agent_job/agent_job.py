@@ -38,7 +38,7 @@ from press.utils import log_error, timer
 AGENT_LOG_KEY = "agent-jobs"
 AGENT_JOB_TIMEOUT_HOURS = 4
 
-BYPASS_AGENT_JOB_HALT = ["Change Bench Directory"]
+BYPASS_AGENT_JOB_HALT = ["Change Bench Directory", "Remove Redis Localhost Bind"]
 
 
 class AgentJob(Document):
