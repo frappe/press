@@ -2,7 +2,6 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
-import functools
 from typing import TYPE_CHECKING
 
 import frappe
@@ -10,16 +9,12 @@ from frappe import _
 from frappe.model.document import Document
 
 from press.api.client import dashboard_whitelist
-
-if TYPE_CHECKING:
-	from press.press.doctype.team.team import Team
+from press.guards import team_guard
 
 
 class PressRole(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
-
-	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
@@ -61,31 +56,18 @@ class PressRole(Document):
 		"allow_contribution",
 	)
 
+	@team_guard.only_owner()
 	def before_insert(self):
 		if frappe.db.exists("Press Role", {"title": self.title, "team": self.team}):
 			frappe.throw(f"Role with title {self.title} already exists", frappe.DuplicateEntryError)
 
-		if not frappe.local.system_user() and frappe.session.user != frappe.db.get_value(
-			"Team", self.team, "user"
-		):
-			frappe.throw("Only the team owner can create roles")
-
-	def validate(self):
+	def before_validate(self):
 		self.set_first_role_as_admin()
-		self.allow_only_one_admin_role()
 		self.set_admin_permissions()
 
 	def set_first_role_as_admin(self):
 		if not frappe.get_all("Press Role", filters={"team": self.team}):
 			self.admin_access = 1
-
-	def allow_only_one_admin_role(self):
-		admin_roles = frappe.get_all(
-			"Press Role",
-			filters={"team": self.team, "admin_access": 1, "name": ("!=", self.name)},
-		)
-		if admin_roles and self.admin_access:
-			frappe.throw("There can only be one admin role per team")
 
 	def set_admin_permissions(self):
 		if self.admin_access:
@@ -96,6 +78,17 @@ class PressRole(Document):
 			self.allow_bench_creation = 1
 			self.allow_server_creation = 1
 			self.allow_webhook_configuration = 1
+
+	def validate(self):
+		self.allow_only_one_admin_role()
+
+	def allow_only_one_admin_role(self):
+		admin_roles = frappe.get_all(
+			"Press Role",
+			filters={"team": self.team, "admin_access": 1, "name": ("!=", self.name)},
+		)
+		if admin_roles and self.admin_access:
+			frappe.throw("There can only be one admin role per team")
 
 	def add_press_admin_role(self, user):
 		user = frappe.get_doc("User", user)
@@ -111,52 +104,30 @@ class PressRole(Document):
 			user.get("roles").remove(existing_roles["Press Admin"])
 			user.save(ignore_permissions=True)
 
-	def is_team_member(self, user):
-		return bool(frappe.db.exists("Team Member", {"parent": self.team, "user": user}))
-
-	@functools.cached_property
-	def team_doc(self) -> Team:
-		return frappe.get_doc("Team", self.team)
-
-	@property
-	def has_admin_access(self) -> bool:
-		"""
-		Check if the current user has admin access on this team.
-		"""
-		return self.team_doc.is_team_owner() or self.team_doc.is_admin_user()
-
 	@dashboard_whitelist()
+	@team_guard.only_admin(skip=lambda _, args: args.get("skip_validations", False))
+	@team_guard.only_member(
+		user=lambda _, args: str(args.get("user")),
+		error_message=_("User is not a member of the team"),
+	)
 	def add_user(self, user, skip_validations=False):
-		if not skip_validations and not self.has_admin_access:
-			message = _("Only users with admin access can add users to this role")
-			frappe.throw(message, frappe.PermissionError)
-
-		user_exists = self.get("users", {"user": user})
-		if user_exists:
-			frappe.throw(f"{user} already belongs to {self.title}")
-
-		if not self.is_team_member(user):
-			frappe.throw(f"{user} is not a member of the team")
-
-		self.append("users", {"user": user})
+		user_dict = {"user": user}
+		if self.get("users", user_dict):
+			message = _("{0} already belongs to {1}").format(user, self.title)
+			frappe.throw(message, frappe.ValidationError)
+		self.append("users", user_dict)
 		self.save()
 		if self.admin_access or self.allow_billing:
 			self.add_press_admin_role(user)
 
 	@dashboard_whitelist()
+	@team_guard.only_admin()
 	def remove_user(self, user):
-		if not self.has_admin_access:
-			message = _("Only users with admin access can remove users from this role")
-			frappe.throw(message, frappe.PermissionError)
-
-		user_exists = self.get("users", {"user": user})
-		if not user_exists:
-			frappe.throw(f"{user} does not belong to {self.title}")
-
-		for row in self.users:
-			if row.user == user:
-				self.remove(row)
-				break
+		users = self.get("users", {"user": user})
+		if not users:
+			message = _("User {0} does not belong to {1}").format(user, self.title)
+			frappe.throw(message, frappe.ValidationError)
+		self.remove(users.pop())
 		self.save()
 		if self.admin_access or self.allow_billing:
 			self.remove_press_admin_role(user)
@@ -169,13 +140,9 @@ class PressRole(Document):
 				perm_doc.delete()
 
 	@dashboard_whitelist()
-	def delete(self) -> None:
-		if not frappe.local.system_user() and frappe.session.user != frappe.db.get_value(
-			"Team", self.team, "user"
-		):
-			frappe.throw("Only the team owner can delete this role")
-
-		super().delete()
+	@team_guard.only_owner()
+	def delete(self, *_args, **_kwargs):
+		return super().delete()
 
 	def on_trash(self) -> None:
 		frappe.db.delete("Press Role Permission", {"role": self.name})

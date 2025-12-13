@@ -11,8 +11,6 @@ from press.press.doctype.team.test_team import create_test_team
 
 class TestPressRole(FrappeTestCase):
 	def setUp(self):
-		super().setUp()
-
 		frappe.set_user("Administrator")
 		frappe.db.delete("Press Role")
 		self.team_user = create_user("team@example.com")
@@ -188,7 +186,7 @@ class TestPressRole(FrappeTestCase):
 		frappe.local._current_team = self.team_doc
 
 		role = create_permission_role(self.team.name)
-		self.assertRaises(frappe.exceptions.ValidationError, role.add_user, self.external_team_member.name)
+		self.assertRaises(frappe.exceptions.PermissionError, role.add_user, self.external_team_member.name)
 
 
 # utils
