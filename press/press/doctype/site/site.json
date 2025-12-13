@@ -12,6 +12,7 @@
   "status_before_update",
   "server",
   "archive_failed",
+  "creation_failed",
   "column_break_3",
   "bench",
   "group",
@@ -735,6 +736,12 @@
    "fieldtype": "Data",
    "label": "Reason for Disabling Monitoring",
    "read_only": 1
+  },
+  {
+   "fieldname": "creation_failed",
+   "fieldtype": "Datetime",
+   "label": "Creation Failed",
+   "read_only": 1
   }
  ],
  "links": [
@@ -814,7 +821,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2025-10-07 19:14:24.341019",
+ "modified": "2025-12-12 22:26:41.654346",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
