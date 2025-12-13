@@ -56,6 +56,14 @@ const props = defineProps({
 		type: Boolean,
 		default: false,
 	},
+	type: {
+		type: String,
+		default: 'Prepaid Credits',
+	},
+	docName: {
+		type: String,
+		default: null,
+	},
 });
 
 const emit = defineEmits(['success']);
@@ -85,6 +93,8 @@ const createRazorpayOrder = createResource({
 	url: 'press.api.billing.create_razorpay_order',
 	params: {
 		amount: props.amount,
+		transaction_type: props.type,
+		doc_name: props.docName,
 	},
 	onSuccess: (data) => processOrder(data),
 	validate: () => {

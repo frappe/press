@@ -123,6 +123,8 @@
 					:minimumAmount="
 						$team.doc?.currency === 'INR' ? plan.price_inr : plan.price_usd
 					"
+					:type="'Purchase Plan'"
+					:docName="plan.name"
 					@success="paymentModeAdded"
 				/>
 			</div>

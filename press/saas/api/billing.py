@@ -60,8 +60,8 @@ def create_payment_intent_for_buying_credits(amount):
 
 # Razorpay Payment Gateway Related APIs
 @whitelist_saas_api
-def create_razorpay_order(amount):
-	return billing_api.create_razorpay_order(amount)
+def create_razorpay_order(amount, type, doc_name=None):
+	return billing_api.create_razorpay_order(amount, type, doc_name=doc_name)
 
 
 @whitelist_saas_api
@@ -136,7 +136,7 @@ def download_invoice(name: str):
 
 
 @whitelist_saas_api
-def get_stripe_payment_url_for_invoice(name: str) -> str:
+def get_stripe_payment_url_for_invoice(name: str) -> str | None:
 	try:
 		invoice = frappe.get_doc("Invoice", name)
 		if invoice.stripe_invoice_url:
