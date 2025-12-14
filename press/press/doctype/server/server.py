@@ -144,7 +144,6 @@ class BaseServer(Document, TagHelpers):
 					"disk": virtual_machine.disk_size,
 				}
 
-		doc.data_volumes = frappe.get_doc("Virtual Machine", self.virtual_machine).get_data_volume(all=True)
 		doc.storage_plan = frappe.db.get_value(
 			"Server Storage Plan",
 			{"enabled": 1},
@@ -154,6 +153,7 @@ class BaseServer(Document, TagHelpers):
 		doc.usage = usage(self.name)
 		doc.actions = self.get_actions()
 
+		doc.data_volumes = self.get_data_volumes()
 		if not self.is_self_hosted:
 			doc.disk_size = self.get_data_disk_size()
 
@@ -182,6 +182,16 @@ class BaseServer(Document, TagHelpers):
 			doc.scaled_up = self.scaled_up
 
 		return doc
+
+	def get_data_volumes(self):
+		if not self.virtual_machine:
+			return None
+
+		virtual_machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		if virtual_machine.has_data_volume:
+			volumes = virtual_machine.get_data_volume(all=True)
+			if volumes[0].size != 0:
+				return volumes
 
 	@dashboard_whitelist()
 	def cancel_disk_resize(self, disk_resize):
@@ -963,12 +973,7 @@ class BaseServer(Document, TagHelpers):
 		return mountpoint
 
 	def find_mountpoint_volume(self, mountpoint) -> "VirtualMachineVolume":
-		volume_id = None
 		machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", self.virtual_machine)
-
-		if volume_id:
-			# Return the volume doc immediately
-			return find(machine.volumes, lambda x: x.volume_id == volume_id)
 
 		if len(machine.volumes) == 1:
 			# If there is only one volume,
