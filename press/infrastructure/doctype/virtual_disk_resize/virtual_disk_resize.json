@@ -68,7 +68,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Scheduled\nPending\nPreparing\nReady\nRunning\nSuccess\nFailure",
+   "options": "Scheduled\nPending\nPreparing\nReady\nRunning\nSuccess\nFailure\nCancelled",
    "read_only": 1,
    "reqd": 1
   },
@@ -141,8 +141,7 @@
   {
    "fieldname": "old_volume_id",
    "fieldtype": "Data",
-   "label": "Old Volume ID",
-   "read_only": 1
+   "label": "Old Volume ID"
   },
   {
    "fieldname": "old_volume_status",
@@ -310,7 +309,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-10 17:32:02.628416",
+ "modified": "2025-12-15 00:09:33.426002",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Virtual Disk Resize",

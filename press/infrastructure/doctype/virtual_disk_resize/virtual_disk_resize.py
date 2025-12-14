@@ -64,11 +64,27 @@ class VirtualDiskResize(Document):
 		scheduled_time: DF.Datetime | None
 		service: DF.Data | None
 		start: DF.Datetime | None
-		status: DF.Literal["Scheduled", "Pending", "Preparing", "Ready", "Running", "Success", "Failure"]
+		status: DF.Literal[
+			"Scheduled", "Pending", "Preparing", "Ready", "Running", "Success", "Failure", "Cancelled"
+		]
 		steps: DF.Table[VirtualMachineMigrationStep]
 		virtual_disk_snapshot: DF.Link | None
 		virtual_machine: DF.Link
 	# end: auto-generated types
+
+	dashboard_fields = (
+		"virtual_machine",
+		"status",
+		"downtime_start",
+		"downtime_end",
+		"downtime_duration",
+		"old_volume_id",
+		"old_volume_status",
+		"old_volume_size",
+		"new_volume_id",
+		"new_volume_status",
+		"new_volume_size",
+	)
 
 	def before_insert(self):
 		self.validate_aws_only()
@@ -96,14 +112,11 @@ class VirtualDiskResize(Document):
 			self.status = Status.Failure
 			self.save()
 
-	def get_lock(self):
+	def get_lock(self, wait=True):
 		try:
-			frappe.get_value("Virtual Machine", self.virtual_machine, "status", for_update=True)
+			frappe.get_value("Virtual Machine", self.virtual_machine, "status", for_update=True, wait=wait)
 			return True
 		except frappe.QueryTimeoutError:
-			frappe.db.rollback()
-			self.add_comment("Could not acquire lock, the virtual machine seems to be busy.")
-			frappe.db.commit()
 			return False
 
 	@frappe.whitelist()
@@ -115,6 +128,16 @@ class VirtualDiskResize(Document):
 		self.start = frappe.utils.now_datetime()
 		self.save()
 		self.next()
+
+	@frappe.whitelist()
+	def cancel(self):
+		if not self.get_lock(wait=False):
+			frappe.throw("The Server is currently busy. Please try again in a moment..")
+		if self.status != "Scheduled":
+			frappe.throw("Only scheduled disk resize can be cancelled.")
+
+		self.status = "Cancelled"
+		self.save()
 
 	def add_steps(self):
 		for step in self.shrink_steps:
