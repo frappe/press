@@ -754,13 +754,9 @@ def schedule_auto_scale(name, scheduled_scale_up_time: str, scheduled_scale_down
 def schedule_disk_resize(
 	name: str, server_type: str, volume_id: str, expected_volume_size: int | str, scheduled_datetime: str
 ) -> None:
-	server = frappe.db.get_value(server_type, name, ["provider", "virtual_machine", "status"], as_dict=True)
-
+	server = frappe.db.get_value(server_type, name, ["virtual_machine", "status"], as_dict=True)
 	if server.status != "Active":
 		frappe.throw(f"Cannot schedule disk resize for a server in {server.status} state")
-
-	if server.provider != "AWS EC2":
-		frappe.throw("Disk resize scheduling is only supported for AWS EC2 servers")
 
 	existing_resize = frappe.db.get_value(
 		"Virtual Disk Resize",
