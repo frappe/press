@@ -34,7 +34,7 @@ export default {
 		teardownSecondaryServer: 'teardown_secondary_server',
 		scaleUp: 'scale_up',
 		scaleDown: 'scale_down',
-		cancelResize: 'cancel_disk_resize',
+		cancelDiskResize: 'cancel_disk_resize',
 	},
 	list: {
 		route: '/servers',
@@ -917,7 +917,12 @@ export default {
 											import('../components/server/ServerDiskResizeDialog.vue'),
 									),
 									{
-										server: server.name,
+										servers: {
+											app: server.doc.name,
+											secondary_app: server.doc?.secondary_server,
+											db: server.doc.database_server,
+											replica: server.doc?.replication_server,
+										},
 										onDiskResizeCreation: () => {
 											disk_resize.reload();
 										},
@@ -927,7 +932,11 @@ export default {
 						},
 					};
 				},
-				rowActions({ row, documentResource: server }) {
+				rowActions({
+					row,
+					documentResource: server,
+					listResource: disk_resize,
+				}) {
 					return [
 						{
 							label: 'View in Desk',
@@ -937,6 +946,31 @@ export default {
 									`${window.location.protocol}//${window.location.host}/app/virtual-disk-resize/${row.name}`,
 									'_blank',
 								);
+							},
+						},
+						{
+							label: 'Cancel',
+							condition: () => row.status === 'Scheduled',
+							onClick() {
+								confirmDialog({
+									title: 'Cancel Resize',
+									message: `Are you sure you want to cancel the scheduled disk resize?`,
+									onSuccess({ hide }) {
+										if (server.cancelDiskResize.loading) return;
+										toast.promise(
+											server.cancelDiskResize.submit({ disk_resize: row.name }),
+											{
+												loading: 'Cancelling disk resize...',
+												success: () => {
+													hide();
+													disk_resize.reload();
+													return 'Cancelled';
+												},
+												error: (e) => getToastErrorMessage(e),
+											},
+										);
+									},
+								});
 							},
 						},
 						{
@@ -953,31 +987,6 @@ export default {
 										name: row.name,
 									}),
 								);
-							},
-						},
-						{
-							label: 'Cancel',
-							condition: () => row.status === 'Scheduled',
-							onClick() {
-								confirmDialog({
-									title: 'Cancel Resize',
-									message: `Are you sure you want to cancel the scheduled disk resize?`,
-									onSuccess({ hide }) {
-										if (server.cancelResize.loading) return;
-										toast.promise(
-											server.cancelResize.submit({ disk_resize: row.name }),
-											{
-												loading: 'Cancelling disk resize...',
-												success: () => {
-													hide();
-													server.reload();
-													return 'Cancelled';
-												},
-												error: (e) => getToastErrorMessage(e),
-											},
-										);
-									},
-								});
 							},
 						},
 					];
