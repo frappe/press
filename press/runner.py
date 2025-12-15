@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import contextlib
 import json
 import subprocess
+import tempfile
 import typing
 from dataclasses import dataclass
 from datetime import time
@@ -11,6 +13,7 @@ from typing import Literal
 import ansible_runner
 import frappe
 import wrapt
+from ansible.inventory.manager import os
 from frappe.model.document import Document
 from frappe.utils import get_datetime
 from frappe.utils import now_datetime as now
@@ -272,6 +275,205 @@ class Ansible:
 			docname=self.play,
 			user=frappe.session.user,
 		)
+
+
+# Ansible AdHoc Command Runner
+
+
+class AnsibleAdHoc:
+	def __init__(
+		self,
+		sources: str | list[str],
+		nonce: str | None = None,
+		port: int = 22,
+		user: str = "root",
+		on_publish: Callable[[str | None, list], None] | None = None,
+	):
+		"""
+		Run command on remote hosts.
+		Args:
+			sources: List of hosts or comma-separated string of hosts
+			nonce: Random ID for tracking
+			port: SSH port (default: 22).
+			user: SSH user (default: root).
+			on_publish: Callback function to publish progress
+		"""
+		if isinstance(sources, str):
+			sources = [s.strip() for s in sources.split(",")]
+		if not sources:
+			raise ValueError("Hosts must be provided")
+
+		self.hosts = sources
+		self.port = port
+		self.user = user
+		self.nonce = nonce
+		self.results: dict[str, dict] = {}
+
+		self.on_publish = on_publish
+
+	def run(
+		self,
+		command: str,
+		module: str = "shell",
+		variables: dict | None = None,
+		become: bool = True,
+		raw_params: bool = True,
+	):
+		# Create a temporary directory for ansible-runner
+		with tempfile.TemporaryDirectory() as private_data_dir:
+			# Create inventory
+			inventory_content = self._create_inventory()
+			inventory_path = os.path.join(private_data_dir, "inventory")
+			os.makedirs(inventory_path)
+
+			with open(os.path.join(inventory_path, "hosts"), "w") as f:
+				f.write(inventory_content)
+
+			# Build module arguments
+			# raw_params tells Ansible to pass the command string directly without parsing (Useful for command with complex grep)
+			if raw_params and (module == "shell" or module == "command"):
+				# Use _raw_params for shell/command modules when raw_params is True
+				module_args = f"_raw_params={command}"
+			if module == "shell" or module == "command":
+				module_args = command
+			else:
+				# For other modules, parse command as key=value pairs or use as-is
+				module_args = command
+
+			# Build cmdline options
+			cmdline_parts = [f"--user={self.user}"]
+			if become:
+				cmdline_parts.append("--become")
+
+			cmdline = " ".join(cmdline_parts)
+
+			# Run the ad-hoc command
+			ansible_runner.run(
+				private_data_dir=private_data_dir,
+				host_pattern="all",
+				module=module,
+				module_args=module_args,
+				inventory=inventory_path,
+				extravars=variables or {},
+				cmdline=cmdline,
+				event_handler=self.event_handler,
+			)
+
+			# Process final results
+			return self._format_results()
+
+	def _create_inventory(self) -> str:
+		lines = ["[targets]"]
+		for host in self.hosts:
+			if self.port != 22:
+				lines.append(f"{host} ansible_port={self.port}")
+			else:
+				lines.append(host)
+
+		return "\n".join(lines)
+
+	def event_handler(self, event):
+		event_type = event.get("event")
+
+		if event_type == "runner_on_ok":
+			self._handle_ok(event.get("event_data", {}))
+		elif event_type == "runner_on_failed":
+			self._handle_failed(event.get("event_data", {}))
+		elif event_type == "runner_on_unreachable":
+			self._handle_unreachable(event.get("event_data", {}))
+		elif event_type == "runner_on_skipped":
+			self._handle_skipped(event.get("event_data", {}))
+
+	@reconnect_on_failure()
+	def _handle_ok(self, event_data):
+		host = event_data.get("host")
+		result = frappe._dict(event_data.get("res", {}))
+
+		self.results[host] = {
+			"host": host,
+			"status": "Success",
+			"output": result.get("stdout", ""),
+			"error": result.get("stderr", ""),
+			"exception": result.get("msg", ""),
+			"exit_code": result.get("rc"),
+			"changed": result.get("changed", False),
+			"duration": self._parse_duration(result.get("delta")),
+		}
+		self._publish_update()
+
+	@reconnect_on_failure()
+	def _handle_failed(self, event_data):
+		host = event_data.get("host")
+		result = frappe._dict(event_data.get("res", {}))
+
+		self.results[host] = {
+			"host": host,
+			"status": "Failure",
+			"output": result.get("stdout", ""),
+			"error": result.get("stderr", ""),
+			"exception": result.get("msg", ""),
+			"exit_code": result.get("rc"),
+			"changed": result.get("changed", False),
+			"duration": self._parse_duration(result.get("delta")),
+		}
+		self._publish_update()
+
+	@reconnect_on_failure()
+	def _handle_unreachable(self, event_data):
+		host = event_data.get("host")
+		result = frappe._dict(event_data.get("res", {}))
+
+		self.results[host] = {
+			"host": host,
+			"status": "Unreachable",
+			"output": "",
+			"error": "",
+			"exception": result.get("msg", "Host unreachable"),
+			"exit_code": None,
+			"changed": False,
+			"duration": 0,
+		}
+		self._publish_update()
+
+	@reconnect_on_failure()
+	def _handle_skipped(self, event_data):
+		host = event_data.get("host")
+
+		self.results[host] = {
+			"host": host,
+			"status": "Skipped",
+			"output": "",
+			"error": "",
+			"exception": "Task skipped",
+			"exit_code": None,
+			"changed": False,
+			"duration": 0,
+		}
+		self._publish_update()
+
+	def _parse_duration(self, delta):
+		if not delta:
+			return 0
+
+		try:
+			# Delta is usually in format like "0:00:01.234567"
+			parts = delta.split(":")
+			hours = int(parts[0])
+			minutes = int(parts[1])
+			seconds = float(parts[2])
+			return int(hours * 3600 + minutes * 60 + seconds)
+		except (ValueError, IndexError):
+			return 0
+
+	def _publish_update(self):
+		if not self.on_publish:
+			return
+
+		with contextlib.suppress(Exception):
+			self.on_publish(self.nonce, list(self.results.values()))
+
+	def _format_results(self):
+		return list(self.results.values())
 
 
 # Step Handler Implementation
