@@ -414,9 +414,7 @@ export default {
 				{
 					label: 'CPU',
 					type: 'progress',
-					progress_value: currentPlan
-						? (currentUsage.vcpu / currentPlan.vcpu) * 100
-						: 0,
+					progress_value: currentUsage.vcpu * 100,
 					value: currentPlan
 						? `${(((currentUsage.vcpu || 0) / currentPlan.vcpu) * 100).toFixed(
 								2,
