@@ -2,124 +2,73 @@
 	<Dialog v-model="show" :options="{ title: 'Disk Resize Details' }">
 		<template #body-content>
 			<div class="space-y-6">
-				<!-- Downtime Information -->
-				<div v-if="hasDowntimeInfo" class="space-y-3">
-					<h3 class="text-sm font-semibold text-gray-900">
+				<!-- OLD VOLUME -->
+				<div v-if="groups.oldVolume.length">
+					<h3
+						class="text-base font-semibold text-gray-500 uppercase tracking-wide mb-3"
+					>
+						Old Volume
+					</h3>
+					<div class="bg-gray-50 rounded-lg p-4 space-y-2.5">
+						<div
+							v-for="item in groups.oldVolume"
+							:key="item.key"
+							class="flex items-baseline gap-4"
+						>
+							<span class="text-base text-gray-600 font-medium">{{
+								item.label
+							}}</span>
+							<span class="text-base text-gray-900 ml-auto">
+								{{ item.value }}
+							</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- NEW VOLUME -->
+				<div v-if="groups.newVolume.length">
+					<h3
+						class="text-base font-semibold text-gray-500 uppercase tracking-wide mb-3"
+					>
+						New Volume
+					</h3>
+					<div class="bg-gray-50 rounded-lg p-4 space-y-2.5">
+						<div
+							v-for="item in groups.newVolume"
+							:key="item.key"
+							class="flex items-baseline gap-4"
+						>
+							<span class="text-base text-gray-600 font-medium">{{
+								item.label
+							}}</span>
+							<span class="text-base text-gray-900 ml-auto">
+								{{ item.value }}
+							</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- DOWNTIME -->
+				<div v-if="groups.downtime.length">
+					<h3
+						class="text-base font-semibold text-gray-500 uppercase tracking-wide mb-3"
+					>
 						Downtime Information
 					</h3>
-					<div class="space-y-2">
-						<div class="flex justify-between text-sm">
-							<span class="text-gray-600">Start Time:</span>
-							<span class="font-medium text-gray-900">{{
-								formatDateTime(resizeDetails.downtime_start)
+					<div class="bg-gray-50 rounded-lg p-4 space-y-2.5">
+						<div
+							v-for="item in groups.downtime"
+							:key="item.key"
+							class="flex items-baseline gap-4"
+						>
+							<span class="text-base text-gray-600 font-medium">{{
+								item.label
 							}}</span>
-						</div>
-						<div class="flex justify-between text-sm">
-							<span class="text-gray-600">End Time:</span>
-							<span class="font-medium text-gray-900">{{
-								formatDateTime(resizeDetails.downtime_end)
-							}}</span>
-						</div>
-						<div class="flex justify-between text-sm">
-							<span class="text-gray-600">Duration:</span>
-							<span class="font-medium text-gray-900">{{
-								resizeDetails.downtime_duration
-							}}</span>
-						</div>
-					</div>
-				</div>
-
-				<div v-if="hasDowntimeInfo" class="border-t border-gray-200"></div>
-
-				<!-- Old Volume Details -->
-				<div class="space-y-3">
-					<h3 class="text-sm font-semibold text-gray-900">Previous Volume</h3>
-					<div class="space-y-2">
-						<div class="flex justify-between text-sm">
-							<span class="text-gray-600">Volume ID:</span>
-							<span class="font-mono text-xs font-medium text-gray-900">{{
-								resizeDetails.old_volume_id
-							}}</span>
-						</div>
-						<div class="flex justify-between text-sm">
-							<span class="text-gray-600">Status:</span>
-							<span
-								class="font-medium"
-								:class="getStatusClass(resizeDetails.old_volume_status)"
-							>
-								{{ resizeDetails.old_volume_status }}
+							<span class="text-base text-gray-900 ml-auto">
+								{{ item.value }}
 							</span>
 						</div>
-						<div class="flex justify-between text-sm">
-							<span class="text-gray-600">Size:</span>
-							<span class="font-medium text-gray-900"
-								>{{ resizeDetails.old_volume_size }} GB</span
-							>
-						</div>
-						<div class="flex justify-between text-sm">
-							<span class="text-gray-600">IOPS:</span>
-							<span class="font-medium text-gray-900">{{
-								resizeDetails.old_volume_iops
-							}}</span>
-						</div>
-						<div class="flex justify-between text-sm">
-							<span class="text-gray-600">Throughput:</span>
-							<span class="font-medium text-gray-900"
-								>{{ resizeDetails.old_volume_throughput }} MB/s</span
-							>
-						</div>
 					</div>
-				</div>
-
-				<div class="border-t border-gray-200"></div>
-
-				<!-- New Volume Details -->
-				<div v-if="hasNewVolumeInfo" class="space-y-3">
-					<h3 class="text-sm font-semibold text-gray-900">New Volume</h3>
-					<div class="space-y-2">
-						<div class="flex justify-between text-sm">
-							<span class="text-gray-600">Volume ID:</span>
-							<span class="font-mono text-xs font-medium text-gray-900">{{
-								resizeDetails.new_volume_id
-							}}</span>
-						</div>
-						<div class="flex justify-between text-sm">
-							<span class="text-gray-600">Status:</span>
-							<span
-								class="font-medium"
-								:class="getStatusClass(resizeDetails.new_volume_status)"
-							>
-								{{ resizeDetails.new_volume_status }}
-							</span>
-						</div>
-						<div class="flex justify-between text-sm">
-							<span class="text-gray-600">Size:</span>
-							<span class="font-medium text-gray-900"
-								>{{ resizeDetails.new_volume_size }} GB</span
-							>
-						</div>
-						<div class="flex justify-between text-sm">
-							<span class="text-gray-600">IOPS:</span>
-							<span class="font-medium text-gray-900">{{
-								resizeDetails.new_volume_iops
-							}}</span>
-						</div>
-						<div class="flex justify-between text-sm">
-							<span class="text-gray-600">Throughput:</span>
-							<span class="font-medium text-gray-900"
-								>{{ resizeDetails.new_volume_throughput }} MB/s</span
-							>
-						</div>
-					</div>
-				</div>
-
-				<div
-					v-else
-					class="flex items-center rounded bg-blue-50 p-4 text-sm text-blue-700"
-				>
-					<lucide-info class="mr-2 h-4 w-4" />
-					New volume details will be available after the resize operation
-					completes.
 				</div>
 			</div>
 		</template>
@@ -141,21 +90,6 @@ export default {
 		resizeDetails: {
 			type: Object,
 			required: true,
-			default: () => ({
-				downtime_start: null,
-				downtime_end: null,
-				downtime_duration: null,
-				old_volume_id: null,
-				old_volume_status: null,
-				old_volume_size: null,
-				old_volume_iops: null,
-				old_volume_throughput: null,
-				new_volume_id: null,
-				new_volume_status: null,
-				new_volume_size: null,
-				new_volume_iops: null,
-				new_volume_throughput: null,
-			}),
 		},
 	},
 	data() {
@@ -164,38 +98,56 @@ export default {
 		};
 	},
 	computed: {
-		hasDowntimeInfo() {
-			return (
-				this.resizeDetails.downtime_start ||
-				this.resizeDetails.downtime_end ||
-				this.resizeDetails.downtime_duration
-			);
-		},
-		hasNewVolumeInfo() {
-			return (
-				this.resizeDetails.new_volume_id ||
-				this.resizeDetails.new_volume_status ||
-				this.resizeDetails.new_volume_size
-			);
+		groups() {
+			const map = {
+				downtime: [],
+				oldVolume: [],
+				newVolume: [],
+			};
+
+			Object.entries(this.resizeDetails).forEach(([key, value]) => {
+				// Skip null / undefined everywhere
+				if (value === null || value === undefined) return;
+				// Skip 0 values for new volume fields
+				if (key.startsWith('new_volume_') && value === 0) return;
+
+				const item = {
+					key,
+					label: this.formatLabel(key),
+					value: this.formatValue(key, value),
+				};
+
+				if (key.startsWith('downtime_')) {
+					map.downtime.push(item);
+				} else if (key.startsWith('old_volume_')) {
+					map.oldVolume.push(item);
+				} else if (key.startsWith('new_volume_')) {
+					map.newVolume.push(item);
+				}
+			});
+
+			return map;
 		},
 	},
 	methods: {
+		formatLabel(key) {
+			return key
+				.replace(/^(downtime_|old_volume_|new_volume_)/, '')
+				.replace(/_/g, ' ')
+				.replace(/\b\w/g, (c) => c.toUpperCase());
+		},
+		formatValue(key, value) {
+			if (key.includes('downtime') && !key.includes('duration')) {
+				return this.formatDateTime(value);
+			}
+			if (key.includes('size')) {
+				return `${value} GB`;
+			}
+			return value;
+		},
 		formatDateTime(datetime) {
 			if (!datetime) return 'N/A';
 			return this.$dayjs(datetime).format('MMM DD, YYYY hh:mm A');
-		},
-		getStatusClass(status) {
-			if (!status) return 'text-gray-900';
-
-			const statusLower = status.toLowerCase();
-			if (statusLower === 'available' || statusLower === 'in-use') {
-				return 'text-green-700';
-			} else if (statusLower === 'creating' || statusLower === 'modifying') {
-				return 'text-blue-700';
-			} else if (statusLower === 'error' || statusLower === 'deleted') {
-				return 'text-red-700';
-			}
-			return 'text-gray-900';
 		},
 	},
 };
