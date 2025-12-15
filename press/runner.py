@@ -309,14 +309,15 @@ class AnsibleAdHoc:
 		port: int = 22,
 		user: str = "root",
 		on_publish: Callable[[str | None, list], None] | None = None,
+		debug: bool = False,
 	):
 		"""
 		Run command on remote hosts.
 		Args:
 			sources: List of hosts or comma-separated string of hosts
 			nonce: Random ID for tracking
-			port: SSH port (default: 22).
-			user: SSH user (default: root).
+			port: SSH port (default: 22)
+			user: SSH user (default: root)
 			on_publish: Callback function to publish progress
 		"""
 		if isinstance(sources, str):
@@ -329,43 +330,32 @@ class AnsibleAdHoc:
 		self.user = user
 		self.nonce = nonce
 		self.results: dict[str, dict] = {}
+		self.playbook_results: dict[str, list] = {}  # Store results per host for playbook tasks
+		self.debug = debug
 
 		self.on_publish = on_publish
 
-	def run(
-		self,
-		command: str,
-		module: str = "shell",
-		variables: dict | None = None,
-		become: bool = True,
-		raw_params: bool = True,
-	):
-		# Create a temporary directory for ansible-runner
+	def run(self, command: str, module: str = "shell", variables: dict | None = None, become: bool = True):
+		"""
+		Run a single ad-hoc command across all hosts.
+
+		Args:
+			command: Command to execute
+			module: Ansible module to use (default: shell)
+			variables: Extra variables to pass to Ansible
+			become: Use sudo (default: True)
+			raw_params: Pass command as raw params (default: True)
+
+		Returns:
+			List of results for each host
+		"""
 		with tempfile.TemporaryDirectory() as private_data_dir:
-			# Create inventory
-			inventory_content = self._create_inventory()
-			inventory_path = os.path.join(private_data_dir, "inventory")
-			os.makedirs(inventory_path)
-
-			with open(os.path.join(inventory_path, "hosts"), "w") as f:
-				f.write(inventory_content)
-
-			# Build module arguments
-			# raw_params tells Ansible to pass the command string directly without parsing (Useful for command with complex grep)
-			if raw_params and (module == "shell" or module == "command"):
-				# Use _raw_params for shell/command modules when raw_params is True
-				module_args = f"_raw_params={command}"
-			if module == "shell" or module == "command":
-				module_args = command
-			else:
-				# For other modules, parse command as key=value pairs or use as-is
-				module_args = command
+			inventory_path = self._setup_inventory(private_data_dir)
 
 			# Build cmdline options
 			cmdline_parts = [f"--user={self.user}"]
 			if become:
 				cmdline_parts.append("--become")
-
 			cmdline = " ".join(cmdline_parts)
 
 			# Run the ad-hoc command
@@ -373,15 +363,63 @@ class AnsibleAdHoc:
 				private_data_dir=private_data_dir,
 				host_pattern="all",
 				module=module,
-				module_args=module_args,
+				module_args=command,
 				inventory=inventory_path,
 				extravars=variables or {},
 				cmdline=cmdline,
-				event_handler=self.event_handler,
+				event_handler=self._event_handler_adhoc,
+				quiet=self.debug,
+				verbosity=1 if self.debug else 0,
 			)
 
-			# Process final results
-			return self._format_results()
+			return self._format_adhoc_results()
+
+	def run_playbook(
+		self,
+		playbook_content: str,
+		variables: dict | None = None,
+		become: bool = False,
+		forks: int = 16,
+	):
+		with tempfile.TemporaryDirectory() as private_data_dir:
+			inventory_path = self._setup_inventory(private_data_dir)
+
+			# Create the playbook directory
+			playbook_path = os.path.join(private_data_dir, "project")
+			os.makedirs(playbook_path)
+
+			# Write the playbook file
+			with open(os.path.join(playbook_path, "playbook.yml"), "w") as f:
+				f.write(playbook_content)
+
+			cmdline_parts = [f"--user={self.user}", f"--forks={forks}"]
+			if become:
+				cmdline_parts.append("--become")
+			cmdline = " ".join(cmdline_parts)
+
+			# Run the playbook
+			ansible_runner.run(
+				private_data_dir=private_data_dir,
+				playbook="playbook.yml",
+				inventory=inventory_path,
+				extravars=variables or {},
+				cmdline=cmdline,
+				event_handler=self._event_handler_playbook,
+				quiet=self.debug,
+				verbosity=1 if self.debug else 0,
+			)
+
+			return self.playbook_results
+
+	def _setup_inventory(self, private_data_dir: str) -> str:
+		inventory_content = self._create_inventory()
+		inventory_path = os.path.join(private_data_dir, "inventory")
+		os.makedirs(inventory_path)
+
+		with open(os.path.join(inventory_path, "hosts"), "w") as f:
+			f.write(inventory_content)
+
+		return inventory_path
 
 	def _create_inventory(self) -> str:
 		lines = ["[targets]"]
@@ -393,20 +431,31 @@ class AnsibleAdHoc:
 
 		return "\n".join(lines)
 
-	def event_handler(self, event):
+	def _event_handler_adhoc(self, event):
 		event_type = event.get("event")
 
 		if event_type == "runner_on_ok":
-			self._handle_ok(event.get("event_data", {}))
+			self._handle_adhoc_ok(event.get("event_data", {}))
 		elif event_type == "runner_on_failed":
-			self._handle_failed(event.get("event_data", {}))
+			self._handle_adhoc_failed(event.get("event_data", {}))
 		elif event_type == "runner_on_unreachable":
-			self._handle_unreachable(event.get("event_data", {}))
+			self._handle_adhoc_unreachable(event.get("event_data", {}))
 		elif event_type == "runner_on_skipped":
-			self._handle_skipped(event.get("event_data", {}))
+			self._handle_adhoc_skipped(event.get("event_data", {}))
+
+	def _event_handler_playbook(self, event):
+		event_type = event.get("event")
+
+		if event_type == "runner_on_ok":
+			self._handle_playbook_ok(event.get("event_data", {}))
+		elif event_type == "runner_on_failed":
+			self._handle_playbook_failed(event.get("event_data", {}))
+		elif event_type == "runner_on_unreachable":
+			self._handle_playbook_unreachable(event.get("event_data", {}))
 
 	@reconnect_on_failure()
-	def _handle_ok(self, event_data):
+	def _handle_adhoc_ok(self, event_data):
+		"""Handle successful ad-hoc command execution"""
 		host = event_data.get("host")
 		result = frappe._dict(event_data.get("res", {}))
 
@@ -423,7 +472,8 @@ class AnsibleAdHoc:
 		self._publish_update()
 
 	@reconnect_on_failure()
-	def _handle_failed(self, event_data):
+	def _handle_adhoc_failed(self, event_data):
+		"""Handle failed ad-hoc command execution"""
 		host = event_data.get("host")
 		result = frappe._dict(event_data.get("res", {}))
 
@@ -440,7 +490,8 @@ class AnsibleAdHoc:
 		self._publish_update()
 
 	@reconnect_on_failure()
-	def _handle_unreachable(self, event_data):
+	def _handle_adhoc_unreachable(self, event_data):
+		"""Handle unreachable host in ad-hoc command"""
 		host = event_data.get("host")
 		result = frappe._dict(event_data.get("res", {}))
 
@@ -457,7 +508,8 @@ class AnsibleAdHoc:
 		self._publish_update()
 
 	@reconnect_on_failure()
-	def _handle_skipped(self, event_data):
+	def _handle_adhoc_skipped(self, event_data):
+		"""Handle skipped ad-hoc command"""
 		host = event_data.get("host")
 
 		self.results[host] = {
@@ -472,7 +524,75 @@ class AnsibleAdHoc:
 		}
 		self._publish_update()
 
+	@reconnect_on_failure()
+	def _handle_playbook_ok(self, event_data):
+		"""Handle successful task execution in playbook"""
+		host = event_data.get("host")
+		task = event_data.get("task")
+		result = frappe._dict(event_data.get("res", {}))
+
+		# Initialize host results if needed
+		if host not in self.playbook_results:
+			self.playbook_results[host] = []
+
+		# Store task result with all relevant data
+		task_result = {
+			"task": task,
+			"status": "ok",
+			"changed": result.get("changed", False),
+			"item": result.get("item"),
+			"stdout": result.get("stdout", ""),
+			"stdout_lines": result.get("stdout_lines", []),
+			"stderr": result.get("stderr", ""),
+			"cmd": result.get("cmd", ""),
+			"rc": result.get("rc"),
+			"msg": result.get("msg", ""),
+			"results": result.get("results", []),
+		}
+		self.playbook_results[host].append(task_result)
+
+	@reconnect_on_failure()
+	def _handle_playbook_failed(self, event_data):
+		"""Handle failed task in playbook"""
+		host = event_data.get("host")
+		task = event_data.get("task")
+		result = frappe._dict(event_data.get("res", {}))
+
+		# Initialize host results if needed
+		if host not in self.playbook_results:
+			self.playbook_results[host] = []
+
+		# Store failed task result
+		task_result = {
+			"task": task,
+			"status": "failed",
+			"failed": True,
+			"msg": result.get("msg", ""),
+			"stdout": result.get("stdout", ""),
+			"stderr": result.get("stderr", ""),
+			"rc": result.get("rc"),
+		}
+		self.playbook_results[host].append(task_result)
+
+	@reconnect_on_failure()
+	def _handle_playbook_unreachable(self, event_data):
+		"""Handle unreachable host in playbook"""
+		host = event_data.get("host")
+		result = frappe._dict(event_data.get("res", {}))
+
+		# Initialize host results if needed
+		if host not in self.playbook_results:
+			self.playbook_results[host] = []
+
+		self.playbook_results[host].append(
+			{
+				"status": "unreachable",
+				"msg": result.get("msg", "Host unreachable"),
+			}
+		)
+
 	def _parse_duration(self, delta):
+		"""Parse Ansible duration string to seconds"""
 		if not delta:
 			return 0
 
@@ -487,13 +607,15 @@ class AnsibleAdHoc:
 			return 0
 
 	def _publish_update(self):
+		"""Publish progress update if callback is provided"""
 		if not self.on_publish:
 			return
 
 		with contextlib.suppress(Exception):
 			self.on_publish(self.nonce, list(self.results.values()))
 
-	def _format_results(self):
+	def _format_adhoc_results(self):
+		"""Format results for ad-hoc commands"""
 		return list(self.results.values())
 
 
