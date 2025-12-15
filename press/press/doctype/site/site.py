@@ -354,7 +354,7 @@ class Site(Document, TagHelpers):
 
 		return doc
 
-	def site_action(allowed_status: list[str], disallowed_status_with_message: dict[str,str]=None):
+	def site_action(allowed_status: list[str], disallowed_status_with_message: dict[str, str] | None = None):
 		def outer_wrapper(func):
 			@wraps(func)
 			def wrapper(inst, *args, **kwargs):
@@ -1013,10 +1013,8 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(
 		["Active", "Broken"],
-		disallowed_status_with_message={
-			"Suspended":"Cannot reset a suspended site. Please activate first."
-		}
-		)
+		disallowed_status_with_message={"Suspended": "Cannot reset a suspended site. Please activate first."},
+	)
 	def reinstall(self):
 		agent = Agent(self.server)
 		job = agent.reinstall_site(self)
@@ -2121,7 +2119,7 @@ class Site(Document, TagHelpers):
 
 		for d in config:
 			d = frappe._dict(d)
-			if isinstance(d.value, dict | list):
+			if isinstance(d.value, (dict, list)):
 				value = json.dumps(d.value)
 			else:
 				value = d.value
