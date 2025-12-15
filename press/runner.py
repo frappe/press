@@ -101,13 +101,30 @@ class Ansible:
 			playbook=self.playbook_path,
 			inventory=f"{self.host}:{self.port}",
 			extravars=self.variables,
-			cmdline=f"--user={self.user}",
+			cmdline=self.generate_cmdline(),
 			event_handler=self.event_handler,
 			quiet=(not self.debug),
 			verbosity=0 if self.debug else 1,
 		)
 		assert self.play, "Play not found"
 		return frappe.get_doc("Ansible Play", self.play)
+
+	def generate_cmdline(self):
+		cmdline = f"--user={self.user}"
+		# Note: ProxyCommand must be enclosed in double quotes
+		# because it contains spaces
+		# and the entire argument must be enclosed in single quotes
+		# because it is passed via the CLI
+		# See https://docs.ansible.com/ansible/latest/user_guide/connection_details.html#ssh-args
+		# and https://unix.stackexchange.com/a/303717
+		# for details
+		if hasattr(self.server, "bastion_host") and self.server.bastion_host:
+			cmdline += (
+				f' -o ProxyCommand="ssh -W %h:%p '
+				f"{self.server.bastion_host.ssh_user}@{self.server.bastion_host.ip}"
+				f'-p {self.server.bastion_host.ssh_port}"'
+			)
+		return cmdline
 
 	def event_handler(self, event):
 		event_type = event.get("event")
