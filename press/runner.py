@@ -368,7 +368,7 @@ class AnsibleAdHoc:
 				extravars=variables or {},
 				cmdline=cmdline,
 				event_handler=self._event_handler_adhoc,
-				quiet=self.debug,
+				quiet=(not self.debug),
 				verbosity=1 if self.debug else 0,
 			)
 
@@ -405,7 +405,7 @@ class AnsibleAdHoc:
 				extravars=variables or {},
 				cmdline=cmdline,
 				event_handler=self._event_handler_playbook,
-				quiet=self.debug,
+				quiet=(not self.debug),
 				verbosity=1 if self.debug else 0,
 			)
 
