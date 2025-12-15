@@ -416,7 +416,7 @@ export default {
 					type: 'progress',
 					progress_value: currentUsage.vcpu * 100,
 					value: currentPlan
-						? `${(((currentUsage.vcpu || 0) / currentPlan.vcpu) * 100).toFixed(
+						? `${(currentUsage.vcpu * 100).toFixed(
 								2,
 							)}% of ${currentPlan.vcpu} ${this.$format.plural(
 								currentPlan.vcpu,
