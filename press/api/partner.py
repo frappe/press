@@ -584,7 +584,7 @@ def get_partner_members(partner):
 
 
 @frappe.whitelist()
-def get_partner_leads(lead_name=None, status=None, engagement_stage=None):
+def get_partner_leads(lead_name=None, status=None, engagement_stage=None, source=None):
 	team = get_current_team()
 	filters = {"partner_team": team}
 	if lead_name:
@@ -593,6 +593,8 @@ def get_partner_leads(lead_name=None, status=None, engagement_stage=None):
 		filters["status"] = status
 	if engagement_stage:
 		filters["engagement_stage"] = engagement_stage
+	if source:
+		filters["lead_source"] = source
 	return frappe.get_all(
 		"Partner Lead",
 		filters,
@@ -645,7 +647,7 @@ def apply_for_certificate(member_name, certificate_type):
 
 
 @frappe.whitelist()
-def get_partner_teams(company=None, email=None, country=None, tier=None):
+def get_partner_teams(company=None, email=None, country=None, tier=None, active_only=False):
 	filters = {"enabled": 1, "erpnext_partner": 1}
 	if company:
 		filters["company_name"] = ("like", f"%{company}%")
@@ -655,7 +657,9 @@ def get_partner_teams(company=None, email=None, country=None, tier=None):
 		filters["country"] = ("like", f"%{country}%")
 	if tier:
 		filters["partner_tier"] = tier
-	print(filters)
+	if active_only:
+		filters["partner_status"] = "Active"
+
 	teams = frappe.get_all(
 		"Team",
 		filters,
