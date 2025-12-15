@@ -211,6 +211,7 @@ scheduler_events = {
 		"press.press.doctype.user_2fa.user_2fa.yearly_2fa_recovery_code_reminder",
 		"press.press.doctype.registry_server.registry_server.delete_old_images_from_registry",
 		"press.saas.doctype.product_trial_request.product_trial_request.gather_daily_stats",
+		"press.press.doctype.agent_job.agent_job.agent_poll_count_stats_daily",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -227,6 +228,7 @@ scheduler_events = {
 		"press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.expire_backups",
 		"press.press.doctype.server_snapshot.server_snapshot.expire_snapshots",
 		"press.saas.doctype.product_trial.product_trial.sync_product_site_users",
+		"press.press.doctype.database_server.database_server.sync_binlogs_info",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
@@ -247,6 +249,7 @@ scheduler_events = {
 		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
 		"press.press.doctype.press_webhook.press_webhook.auto_disable_high_delivery_failure_webhooks",
 		"press.saas.doctype.product_trial_request.product_trial_request.gather_hourly_stats",
+		"press.press.doctype.agent_job.agent_job.agent_poll_count_stats_hourly",
 	],
 	"all": [
 		"press.auth.flush",
@@ -339,7 +342,6 @@ scheduler_events = {
 		"*/30 * * * *": [
 			"press.press.doctype.site_update.scheduled_auto_updates.trigger",
 			"press.press.doctype.team.suspend_sites.execute",
-			"press.press.doctype.database_server.database_server.sync_binlogs_info",
 		],
 		"15,45 * * * *": [
 			"press.press.doctype.site.site_usages.update_cpu_usages",
