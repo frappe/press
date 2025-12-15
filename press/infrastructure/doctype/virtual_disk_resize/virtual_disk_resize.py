@@ -84,6 +84,8 @@ class VirtualDiskResize(Document):
 		"new_volume_id",
 		"new_volume_status",
 		"new_volume_size",
+		"scheduled_time",
+		"expected_disk_size",
 	)
 
 	def before_insert(self):
