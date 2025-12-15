@@ -6,11 +6,9 @@ build-backend = "setuptools.build_meta"
 name = "press"
 dynamic = ["version"]
 description = "Managed Frappe Hosting"
-authors = [
-    {name = "Frappe", email = "aditya@erpnext.com"}
-]
+authors = [{ name = "Frappe", email = "aditya@erpnext.com" }]
 readme = "README.md"
-license = {text = "AGPL-3.0"}
+license = { text = "AGPL-3.0" }
 requires-python = ">=3.10"
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -22,7 +20,8 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "ansible==3.4.0",
+    "ansible==10.7.0",
+    "ansible-runner==2.4.2",
     "beautifulsoup4",
     "boto3==1.39.14",
     "Click",
@@ -64,4 +63,4 @@ packages = ["press"]
 include-package-data = true
 
 [tool.setuptools.dynamic]
-version = {attr = "press.__version__"}
+version = { attr = "press.__version__" }
