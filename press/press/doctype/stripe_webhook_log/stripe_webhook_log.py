@@ -43,7 +43,11 @@ class StripeWebhookLog(Document):
 		invoice_id = get_invoice_id(payload)
 		self.stripe_payment_intent_id = ""
 
-		if self.event_type in ["payment_intent.succeeded", "payment_intent.failed", "payment_intent.requires_action"]:
+		if self.event_type in [
+			"payment_intent.succeeded",
+			"payment_intent.failed",
+			"payment_intent.requires_action",
+		]:
 			self.stripe_payment_intent_id = get_intent_id(payload)
 
 		if customer_id:
@@ -97,7 +101,7 @@ def stripe_webhook_handler():
 		frappe.get_doc(
 			doctype="Stripe Webhook Log",
 			payload=frappe.as_json(event),
-		).insert(ignore_if_duplicate=True)
+		).insert()
 	except Exception:
 		frappe.db.rollback()
 		press.utils.log_error(title="Stripe Webhook Handler", stripe_event_id=form_dict.id)
