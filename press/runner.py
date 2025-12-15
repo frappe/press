@@ -6,7 +6,6 @@ import subprocess
 import tempfile
 import typing
 from dataclasses import dataclass
-from datetime import time
 from enum import Enum
 from typing import Literal
 
@@ -147,8 +146,13 @@ class Ansible:
 	def process_task_success(self, event):
 		result, action = frappe._dict(event.get("res", {})), event.get("task_action")
 		if action == "user" and self.play:
-			frappe.db.set_value("Ansible Play", self.play, "public_key", result.ssh_public_key)
-			frappe.db.commit()
+			server_type, server = frappe.db.get_value("Ansible Play", self.play, ["server_type", "server"])  # type: ignore
+			server = frappe.get_doc(server_type, server)  # type: ignore
+			if result.name == "root":
+				server.root_public_key = result.ssh_public_key  # type: ignore
+			elif result.name == "frappe":
+				server.frappe_public_key = result.ssh_public_key  # type: ignore
+			server.save()
 
 	@reconnect_on_failure()
 	def update_play(
@@ -166,7 +170,7 @@ class Ansible:
 			start = get_datetime(play.start)
 			end = get_datetime(play.end)
 			assert start and end, "Start and end times not found"
-			play.duration = time(second=int((end - start).total_seconds()))
+			play.duration = int((end - start).total_seconds())  # type: ignore
 		else:
 			assert status, "Status not found"
 			play.status = status
