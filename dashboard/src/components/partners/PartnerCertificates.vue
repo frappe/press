@@ -35,14 +35,17 @@ export default {
 					{
 						label: 'Member Name',
 						fieldname: 'partner_member_name',
+						width: 0.8,
 					},
 					{
 						label: 'Member Email',
 						fieldname: 'partner_member_email',
+						width: 0.8,
 					},
 					{
 						label: 'Issued On',
 						fieldname: 'issue_date',
+						width: 0.5,
 						format(value) {
 							return Intl.DateTimeFormat('en-US', {
 								year: 'numeric',
@@ -64,7 +67,7 @@ export default {
 					{
 						label: 'Version',
 						fieldname: 'version',
-						width: 0.5,
+						width: 0.4,
 						align: 'center',
 					},
 					{
@@ -105,6 +108,7 @@ export default {
 								},
 							};
 						},
+						width: 0.5,
 					},
 				],
 				documentation: 'https://school.frappe.io',
