@@ -6,7 +6,7 @@
 	>
 		<template #body-content>
 			<div class="space-y-4">
-				<p class="text-base">Select a server and shrink its disk size</p>
+				<p class="text-base">Select a server to shrink its disk size</p>
 
 				<FormControl
 					label="Select Server"
@@ -17,14 +17,16 @@
 				/>
 
 				<div
-					v-if="selectedServer && (!volumes || volumes.length === 0)"
+					v-if="
+						selectedServer && currentVolumes.length === 0 && !isLoadingVolumes
+					"
 					class="flex items-center rounded bg-red-50 p-4 text-sm text-red-700"
 				>
 					<lucide-alert-circle class="mr-2 h-4 w-4" />
-					No volumes found for this server.
+					No volumes to shrink found for this server.
 				</div>
 
-				<template v-if="selectedServer && volumes && volumes.length > 0">
+				<template v-if="selectedServer && currentVolumes.length > 0">
 					<div
 						class="flex items-center rounded bg-yellow-50 p-4 text-sm text-yellow-700"
 					>
@@ -67,7 +69,7 @@
 					<DateTimeControl
 						v-if="selectedVolume"
 						v-model="targetDateTime"
-						label="Schedule Time in IST"
+						label="Schedule Time"
 					/>
 				</template>
 			</div>
@@ -77,16 +79,9 @@
 				class="w-full"
 				variant="solid"
 				label="Resize Disk"
-				:disabled="
-					!selectedServer ||
-					!selectedVolume ||
-					!expectedVolumeSize ||
-					expectedVolumeSize >= currentVolumeSize ||
-					!volumes ||
-					volumes.length === 0
-				"
-				:loading="$resources.virtualDiskResize.loading"
-				@click="$resources.virtualDiskResize.submit()"
+				:disabled="isResizeDisabled"
+				:loading="$resources.virtualDiskResize?.loading"
+				@click="resizeDisk"
 			/>
 		</template>
 	</Dialog>
@@ -95,7 +90,6 @@
 <script>
 import { toast } from 'vue-sonner';
 import DateTimeControl from '../DateTimeControl.vue';
-import { getDocResource } from '../../utils/resource';
 
 export default {
 	name: 'ServerDiskResizeDialog',
@@ -118,28 +112,22 @@ export default {
 			selectedVolume: null,
 			expectedVolumeSize: null,
 			currentVolumeSize: null,
-			volumes: [],
 		};
 	},
 	computed: {
 		serverTypeOptions() {
 			const options = [];
-
-			options.push([
-				{
+			if (this.servers.app) {
+				options.push({
 					label: this.servers.app,
 					value: this.servers.app,
-				},
-				{
+				});
+			}
+
+			if (this.servers.db) {
+				options.push({
 					label: this.servers.db,
 					value: this.servers.db,
-				},
-			]);
-
-			if (this.servers.secondary_app) {
-				options.push({
-					label: this.servers.secondary_app,
-					value: this.servers.secondary_app,
 				});
 			}
 
@@ -152,64 +140,117 @@ export default {
 
 			return options;
 		},
+		currentVolumes() {
+			if (!this.selectedServer) return [];
+
+			if (this.selectedServer === this.servers.db) {
+				return this.$resources.dbServer?.doc?.data_volumes || [];
+			} else if (this.selectedServer === this.servers.app) {
+				return this.$resources.appServer?.doc?.data_volumes || [];
+			} else if (this.selectedServer === this.servers.replica) {
+				return this.$resources.replicaServer?.doc?.data_volumes || [];
+			}
+
+			return [];
+		},
+		isLoadingVolumes() {
+			if (!this.selectedServer) return false;
+
+			if (this.selectedServer === this.servers.db) {
+				return this.$resources.dbServer?.loading;
+			} else if (this.selectedServer === this.servers.app) {
+				return this.$resources.appServer?.loading;
+			} else if (this.selectedServer === this.servers.replica) {
+				return this.$resources.replicaServer?.loading;
+			}
+
+			return false;
+		},
 		volumeOptions() {
-			return this.volumes.map((volume) => ({
-				label: `${volume.name} (${volume.size} GB)`,
-				value: volume.name,
+			return this.currentVolumes.map((volume) => ({
+				label: `${volume.volume_id} (${volume.size} GB)`,
+				value: volume.volume_id,
 			}));
 		},
 		datetimeInIST() {
 			if (!this.targetDateTime) return null;
-			const datetimeInIST = this.$dayjs(this.targetDateTime).format(
-				'YYYY-MM-DDTHH:mm',
-			);
-			return datetimeInIST;
+			return this.$dayjs(this.targetDateTime)
+				.tz('Asia/Kolkata')
+				.format('YYYY-MM-DDTHH:mm');
 		},
-		$server() {
+		serverDoctype() {
 			if (!this.selectedServer) return null;
-
-			let doctype = 'Server';
-			if (
-				![this.servers.app, this.servers.secondary_app].includes(
-					this.selectedServer,
-				)
-			) {
-				doctype = 'Database Server';
-			}
-
-			return getDocResource(doctype, this.selectedServer);
+			return this.selectedServer === this.servers.app
+				? 'Server'
+				: 'Database Server';
+		},
+		isResizeDisabled() {
+			return (
+				!this.selectedServer ||
+				!this.selectedVolume ||
+				!this.expectedVolumeSize ||
+				this.expectedVolumeSize >= this.currentVolumeSize ||
+				this.currentVolumes.length === 0 ||
+				!this.targetDateTime
+			);
 		},
 	},
 	watch: {
-		selectedServer(newType) {
-			// Reset when server type changes
+		selectedServer() {
+			// Reset when server changes
 			this.selectedVolume = null;
 			this.expectedVolumeSize = null;
 			this.currentVolumeSize = null;
-			this.volumes = [];
-
-			// Load volumes for new server
-			if (newType && this.$server?.doc?.data_volumes) {
-				this.volumes = this.$server.doc.data_volumes;
-			}
 		},
 		selectedVolume(newVolume) {
 			if (newVolume) {
-				const volume = this.volumes.find((v) => v.name === newVolume);
+				const volume = this.currentVolumes.find(
+					(v) => v.volume_id === newVolume,
+				);
 				if (volume) {
 					this.currentVolumeSize = volume.size;
-					this.expectedVolumeSize = null; // Reset when changing volume
+					this.expectedVolumeSize = null;
 				}
 			}
 		},
 	},
 	resources: {
+		dbServer() {
+			if (!this.servers.db) return null;
+
+			return {
+				type: 'document',
+				doctype: 'Database Server',
+				name: this.servers.db,
+				auto: true,
+			};
+		},
+		appServer() {
+			if (!this.servers.app) return null;
+
+			return {
+				type: 'document',
+				doctype: 'Server',
+				name: this.servers.app,
+				auto: true,
+			};
+		},
+		replicaServer() {
+			if (!this.servers.replica) return null;
+
+			return {
+				type: 'document',
+				doctype: 'Database Server',
+				name: this.servers.replica,
+				auto: true,
+			};
+		},
 		virtualDiskResize() {
 			return {
 				url: 'press.api.server.schedule_disk_resize',
 				params: {
 					name: this.selectedServer,
-					server_type: this.$server?.doc?.doctype,
+					server_type: this.serverDoctype,
 					volume_id: this.selectedVolume,
 					expected_volume_size: this.expectedVolumeSize,
 					scheduled_datetime: this.datetimeInIST,
@@ -221,6 +262,9 @@ export default {
 					this.onDiskResizeCreation();
 					this.show = false;
 				},
+				onError(error) {
+					toast.error('Failed to schedule virtual disk resize.');
+				},
 			};
 		},
 	},
@@ -231,7 +275,11 @@ export default {
 			this.selectedVolume = null;
 			this.expectedVolumeSize = null;
 			this.currentVolumeSize = null;
-			this.volumes = [];
+		},
+		resizeDisk() {
+			if (!this.isResizeDisabled && this.$resources.virtualDiskResize) {
+				this.$resources.virtualDiskResize.submit();
+			}
 		},
 	},
 };
