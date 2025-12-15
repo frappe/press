@@ -966,7 +966,7 @@ class BaseServer(Document, TagHelpers):
 		return mountpoint
 
 	def find_mountpoint_volume(self, mountpoint) -> "VirtualMachineVolume" | None:
-	  if self.provider == "Generic":
+		if self.provider == "Generic":
 			return None
 
 		machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", self.virtual_machine)
