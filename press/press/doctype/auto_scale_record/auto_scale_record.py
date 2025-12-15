@@ -327,6 +327,12 @@ class AutoScaleRecord(Document, StepHandler):
 		step.save()
 
 		frappe.db.set_value("Server", self.primary_server, {"scaled_up": True, "halt_agent_jobs": False})
+
+		# Enable monitoring on the secondary server
+		frappe.db.set_value(
+			"Server", self.secondary_server, {"status": "Active", "is_monitoring_disabled": False}
+		)
+
 		duration = frappe.utils.now_datetime() - frappe.db.get_value(
 			"Auto Scale Record", self.name, "start_time"
 		)
@@ -451,7 +457,9 @@ class AutoScaleRecord(Document, StepHandler):
 		frappe.db.set_value(
 			"Server", self.primary_server, {"scaled_up": False, "halt_agent_jobs": False}
 		)  # Once the secondary server has stopped
-		frappe.db.set_value("Server", self.secondary_server, "halt_agent_jobs", False)
+		frappe.db.set_value(
+			"Server", self.secondary_server, {"halt_agent_jobs": False, "is_monitoring_disabled": True}
+		)
 
 		frappe.set_user(current_user)
 
