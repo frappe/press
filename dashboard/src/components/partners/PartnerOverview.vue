@@ -9,7 +9,7 @@
 				<Badge
 					variant="subtle"
 					:label="team.doc.partner_status"
-					:theme="team.doc.partner_status ? 'green' : 'gray'"
+					:theme="team.doc.partner_status == 'Active' ? 'green' : 'gray'"
 				/>
 			</div>
 		</div>
@@ -234,7 +234,7 @@
 			}"
 		>
 			<template #body-content>
-				<p class="text-base text-gray-700">
+				<p class="text-base leading-6 text-gray-700">
 					By clicking "I Agree", you confirm that you have read and accepted the
 					terms and conditions of the
 					<a
@@ -315,7 +315,7 @@ function isRenewalPeriod() {
 	const today = dayjs();
 	const daysDifference = renewal.diff(today, 'days');
 
-	return Boolean(daysDifference >= -30 && daysDifference <= 30);
+	return Boolean(daysDifference <= 30);
 }
 
 const currentMonthContribution = createResource({

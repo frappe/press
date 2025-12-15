@@ -35,6 +35,7 @@ export default {
 				{ label: 'Partner', route: { name: 'PartnerList' } },
 				{ label: 'Certificates', route: { name: 'CertificateList' } },
 				{ label: 'Leads', route: { name: 'PartnerAdminLeads' } },
+				{ label: 'Resources', route: { name: 'PartnerAdminResources' } },
 			],
 		};
 	},
