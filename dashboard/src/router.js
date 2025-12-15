@@ -314,6 +314,11 @@ let router = createRouter({
 					path: 'partner-admin-lead-list',
 					component: () => import('./pages/PartnerAdminLeads.vue'),
 				},
+				{
+					name: 'PartnerAdminResources',
+					path: 'admin-resources',
+					component: () => import('./components/partners/PartnerResources.vue'),
+				},
 			],
 		},
 		{
