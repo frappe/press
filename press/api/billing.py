@@ -921,7 +921,13 @@ def create_mpesa_payment_record(transaction_response):
 	}
 	if frappe.db.exists("Mpesa Payment Record", {"transaction_id": transaction_id}):
 		return
-	mpesa_invoice, invoice_name = create_invoice_partner_site(data, gateway_name)
+
+	try:
+		mpesa_invoice, invoice_name = create_invoice_partner_site(data, gateway_name)
+	except Exception as e:
+		frappe.log_error(f"Failed to create mpesa invoice on partner site: {e}")
+		mpesa_invoice = invoice_name = None
+
 	try:
 		payment_record = frappe.get_doc(
 			{
