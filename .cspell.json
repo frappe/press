@@ -709,6 +709,7 @@
         "Kvsc",
         "ZSTD",
         "Wazuh",
-        "DBUS"
+        "DBUS",
+        "timesyncd"
     ]
 }

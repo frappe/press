@@ -3,17 +3,20 @@
   apt:
     update_cache: yes
 
+- name: Check if systemd-timesyncd exists
+  stat:
+    path: /usr/lib/systemd/systemd-timesyncd
+  register: timesyncd_exists
+
 - name: Install Essential Packages
   apt:
     state: present
-    force: yes
     pkg:
       - build-essential
       - git
       - htop
       - libcrypto++-dev
       - libssl-dev
-      - ntp
       - python3-dev
       - python3-pip
       - virtualenv
@@ -23,3 +26,9 @@
       - vim
       - acl
       - zlib1g-dev
+
+- name: Install ntp only if systemd-timesyncd doesn't exist
+  apt:
+    name: ntp
+    state: present
+  when: not timesyncd_exists.stat.exists

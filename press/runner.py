@@ -139,7 +139,7 @@ class Ansible:
 	def playbook_on_stats(self, event):
 		stats = {}
 		for key in ["changed", "dark", "failures", "ignored", "ok", "processed", "rescued", "skipped"]:
-			stats[key] = event.get(key, {}).get(self.server, 0)
+			stats[key] = event.get(key, {}).get(self.host, 0)
 		stats["unreachable"] = stats.pop("dark", 0)  # ansible_runner quirk
 		self.update_play(stats=stats)
 
@@ -163,13 +163,16 @@ class Ansible:
 	def process_task_success(self, event):
 		result, action = frappe._dict(event.get("res", {})), event.get("task_action")
 		if action == "user" and self.play:
-			server_type, server = frappe.db.get_value("Ansible Play", self.play, ["server_type", "server"])  # type: ignore
-			server = frappe.get_doc(server_type, server)  # type: ignore
+			server_type, server_name = frappe.db.get_value(
+				"Ansible Play", self.play, ["server_type", "server"]
+			)
+
 			if result.name == "root":
-				server.root_public_key = result.ssh_public_key  # type: ignore
+				frappe.db.set_value(server_type, server_name, "root_public_key", result.ssh_public_key)
 			elif result.name == "frappe":
-				server.frappe_public_key = result.ssh_public_key  # type: ignore
-			server.save()
+				frappe.db.set_value(server_type, server_name, "frappe_public_key", result.ssh_public_key)
+
+			frappe.db.commit()
 
 	@reconnect_on_failure()
 	def update_play(
@@ -187,7 +190,7 @@ class Ansible:
 			start = get_datetime(play.start)
 			end = get_datetime(play.end)
 			assert start and end, "Start and end times not found"
-			play.duration = int((end - start).total_seconds())  # type: ignore
+			play.duration = end - start
 		else:
 			assert status, "Status not found"
 			play.status = status
@@ -210,6 +213,8 @@ class Ansible:
 		if not role or not name:
 			return
 
+		name = name.strip()
+
 		task_name = self.tasks[role][name]
 		task_doc: AnsibleTask = frappe.get_doc("Ansible Task", task_name)  # type: ignore
 		task_doc.status = status
@@ -228,7 +233,7 @@ class Ansible:
 			start = get_datetime(task_doc.start)
 			end = get_datetime(task_doc.end)
 			assert start and end, f"Start or end is None for task {task_name}"
-			task_doc.duration = int((end - start).total_seconds())
+			task_doc.duration = end - start
 		else:
 			task_doc.start = now()
 		task_doc.save()
