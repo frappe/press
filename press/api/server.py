@@ -758,34 +758,26 @@ def schedule_disk_resize(
 	if server.status != "Active":
 		frappe.throw(f"Cannot schedule disk resize for a server in {server.status} state")
 
-	existing_resize = frappe.db.get_value(
+	if frappe.db.get_value(
 		"Virtual Disk Resize",
 		{
+			"creation": [">", frappe.utils.add_days(frappe.utils.now_datetime(), -7)],
 			"virtual_machine": server.virtual_machine,
 			"status": ["not in", ["Failure", "Cancelled"]],
 		},
-		["status", "creation"],
-		order_by="creation desc",
 		as_dict=True,
-	)
+	):
+		frappe.throw(
+			"A disk resize was triggered within the last 7 days. Please wait before scheduling another resize."
+		)
 
-	if existing_resize:
-		if existing_resize.status == "Scheduled":
-			frappe.throw("A disk resize is already scheduled for this server")
-
-		if existing_resize.creation > frappe.utils.add_days(frappe.utils.now_datetime(), -7):
-			frappe.throw(
-				"A disk resize was triggered within the last 7 days. Please wait before scheduling another resize."
-			)
-
-	formatted_scheduled_datetime = datetime.strptime(scheduled_datetime, "%Y-%m-%d %H:%M:%S")
 	frappe.get_doc(
 		{
 			"doctype": "Virtual Disk Resize",
 			"virtual_machine": server.virtual_machine,
 			"old_volume_id": volume_id,
 			"expected_volume_size": expected_volume_size,
-			"scheduled_datetime": formatted_scheduled_datetime,
+			"scheduled_datetime": scheduled_datetime,
 			"status": "Scheduled",
 		}
 	).insert()
