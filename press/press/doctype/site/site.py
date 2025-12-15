@@ -354,7 +354,7 @@ class Site(Document, TagHelpers):
 
 		return doc
 
-	def site_action(allowed_status: list[str]):
+	def site_action(allowed_status: list[str], disallowed_status_with_message: dict[str,str]=None):
 		def outer_wrapper(func):
 			@wraps(func)
 			def wrapper(inst, *args, **kwargs):
@@ -367,9 +367,13 @@ class Site(Document, TagHelpers):
 					return func(inst, *args, **kwargs)
 				status = frappe.get_value(inst.doctype, inst.name, "status", for_update=True)
 				if status not in allowed_status:
-					frappe.throw(
-						f"Site action not allowed for site with status: {frappe.bold(status)}.\nAllowed status are: {frappe.bold(comma_and(allowed_status))}."
-					)
+					if disallowed_status_with_message and status in disallowed_status_with_message:
+						custom_message = disallowed_status_with_message[status]
+						frappe.throw(custom_message)
+					else:
+						frappe.throw(
+							f"Site action not allowed for site with status: {frappe.bold(status)}.\nAllowed status are: {frappe.bold(comma_and(allowed_status))}."
+						)
 				return func(inst, *args, **kwargs)
 
 			return wrapper
@@ -1007,7 +1011,12 @@ class Site(Document, TagHelpers):
 		agent.new_upstream_file(server=self.server, site=self.name)
 
 	@dashboard_whitelist()
-	@site_action(["Active", "Broken"])
+	@site_action(
+		["Active", "Broken"],
+		disallowed_status_with_message={
+			"Suspended":"Cannot reset a suspended site. Please activate first."
+		}
+		)
 	def reinstall(self):
 		agent = Agent(self.server)
 		job = agent.reinstall_site(self)
