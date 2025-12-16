@@ -1,4 +1,5 @@
 import frappe
+from frappe.query_builder import Not
 from frappe.query_builder.functions import Count
 from frappe.query_builder.terms import QueryBuilder
 
@@ -20,7 +21,7 @@ def documents(base_query: QueryBuilder, document_type: str) -> list[str]:
 		.on(
 			(PressRolePermission.team == PressRole.team)
 			& (PressRolePermission.role == PressRole.name)
-			& (PressRolePermission[document_key] is not None)
+			& (Not(PressRolePermission[document_key].isnull()))
 		)
 		.select(PressRolePermission[document_key].as_("name"))
 		.distinct()
