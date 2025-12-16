@@ -306,7 +306,7 @@ def usage(name):
 		if response:
 			result[usage_type] = response[0]["values"][-1]
 
-	result["vcpus"] = get_cpu_usage(name)
+	result["vcpu"] = get_cpu_usage(name)
 	return result
 
 
