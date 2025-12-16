@@ -11,6 +11,9 @@
 				</span>
 			</div>
 			<PrepaidCreditsForm
+				:minimumAmount="minimumAmount"
+				:type="type"
+				:docName="docName"
 				@success="
 					() => {
 						show = false;
@@ -29,6 +32,18 @@ const props = defineProps({
 	showMessage: {
 		type: Boolean,
 		default: false,
+	},
+	minimumAmount: {
+		type: Number,
+		default: null,
+	},
+	docName: {
+		type: String,
+		default: null,
+	},
+	type: {
+		type: String,
+		default: 'Prepaid Credits',
 	},
 });
 

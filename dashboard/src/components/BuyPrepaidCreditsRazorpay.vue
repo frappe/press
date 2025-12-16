@@ -41,6 +41,10 @@ export default {
 		isOnboarding: {
 			default: false,
 		},
+		type: {
+			type: String,
+			default: 'Prepaid Credits',
+		},
 	},
 	data() {
 		return {
@@ -63,6 +67,7 @@ export default {
 				url: 'press.api.billing.create_razorpay_order',
 				params: {
 					amount: this.amount,
+					transaction_type: this.type,
 				},
 				onSuccess(data) {
 					this.processOrder(data);
