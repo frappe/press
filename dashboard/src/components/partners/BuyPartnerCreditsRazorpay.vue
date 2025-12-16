@@ -50,7 +50,7 @@ const props = defineProps({
 	},
 	type: {
 		type: String,
-		default: 'prepaid-credits',
+		default: 'Prepaid Credits',
 	},
 });
 
@@ -76,14 +76,13 @@ onBeforeUnmount(() => {
 	razorpayCheckoutJS.value?.remove();
 });
 
-let order_type =
-	props.type === 'prepaid-credits' ? 'Prepaid Credits' : 'Partnership Fee';
+let order_type = props.type;
 
 const createRazorpayOrder = createResource({
 	url: 'press.api.billing.create_razorpay_order',
 	params: {
 		amount: props.amount,
-		type: order_type,
+		transaction_type: order_type,
 	},
 	onSuccess: (data) => processOrder(data),
 	validate: () => {
