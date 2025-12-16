@@ -5,8 +5,11 @@ from collections.abc import Callable
 from typing import Any
 
 import frappe
-from frappe import _
+from frappe import TYPE_CHECKING, _
 from frappe.query_builder.terms import QueryBuilder
+
+if TYPE_CHECKING:
+	from press.press.doctype.team.team import Team
 
 from press.utils import get_current_team
 
@@ -94,6 +97,9 @@ def check(document_type: str, document_name: str) -> bool | list[str]:
 	"""
 	Check if the user has permission to access a specific document type and name.
 	"""
+	team: Team = get_current_team(get_doc=True)
+	if team.is_team_owner() or team.is_admin_user():
+		return True
 	query = base_query()
 	match document_type:
 		case "Marketplace App":
