@@ -193,7 +193,7 @@ def get_list_query(
 			.where(ParentDocType.team == frappe.local.team().name)
 		)
 
-	if document_options:
+	if document_options and isinstance(document_options, list):
 		QueryDoctype = frappe.qb.DocType(doctype)
 		query = query.where(QueryDoctype.name.isin(document_options))
 

@@ -115,4 +115,4 @@ def check(document_type: str, document_name: str) -> bool | list[str]:
 		case "Site Backup":
 			return site_backup_check(query, document_name)
 		case _:
-			return False
+			return True

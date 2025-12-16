@@ -31,12 +31,14 @@ def documents(base_query: QueryBuilder, document_type: str) -> list[str]:
 def document(base_query: QueryBuilder, document_type: str, document_name: str) -> bool:
 	PressRole = frappe.qb.DocType("Press Role")
 	PressRolePermission = frappe.qb.DocType("Press Role Permission")
+	document_key = document_type_key(document_type)
 	return (
-		base_query.join(PressRolePermission)
+		base_query.inner_join(PressRolePermission)
 		.on(PressRolePermission.team == PressRole.team & PressRolePermission.role == PressRole.name)
 		.select(Count(PressRole.name).as_("count"))
-		.where(PressRolePermission[document_type_key(document_type)] == document_name)
-		.run(as_dict=True, pluck="count")
+		.where(PressRolePermission[document_key] == document_name)
+		.run(as_dict=True)
 		.pop()
+		.get("count")
 		> 0
 	)
