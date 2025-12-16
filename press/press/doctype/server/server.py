@@ -31,7 +31,6 @@ from press.press.doctype.add_on_storage_log.add_on_storage_log import (
 )
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.communication_info.communication_info import get_communication_info
-from press.press.doctype.monitor_server.monitor_server import get_monitor_server_ips
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
@@ -2704,6 +2703,8 @@ class Server(BaseServer):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_fail2ban", queue="long", timeout=1200)
 
 	def _setup_fail2ban(self):
+		from press.press.doctype.monitor_server.monitor_server import get_monitor_server_ips
+
 		try:
 			ansible = Ansible(
 				playbook="fail2ban.yml",
