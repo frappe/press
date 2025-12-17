@@ -101,7 +101,8 @@ class BaseServer(Document, TagHelpers):
 		if status == "Archived":
 			query = query.where(Server.status == status)
 		else:
-			query = query.where(Server.status != "Archived")
+			# Show only Active and Installing servers ignore pending (secondary server)
+			query = query.where(Server.status.isin(["Active", "Installing"]))
 
 		query = query.where(Server.is_for_recovery != 1).where(Server.team == frappe.local.team().name)
 		results = query.run(as_dict=True)
@@ -3187,6 +3188,20 @@ class Server(BaseServer):
 
 		if not active_sites_on_primary and not active_sites_on_secondary:
 			frappe.throw("There are no active sites on this server!", frappe.ValidationError)
+
+	@dashboard_whitelist()
+	@frappe.whitelist()
+	def configure_automated_scaling(self, scale_up_cpu_threshold: float, scale_down_cpu_threshold: float):
+		"""Configure automated scaling based on cpu loads"""
+		self.append(
+			"auto_scale_trigger",
+			{"metric": "CPU", "threshold": round(scale_up_cpu_threshold, 2), "action": "Scale Up"},
+		)
+		self.append(
+			"auto_scale_trigger",
+			{"metric": "CPU", "threshold": round(scale_down_cpu_threshold, 2), "action": "Scale Down"},
+		)
+		self.save()
 
 	@dashboard_whitelist()
 	@frappe.whitelist()

@@ -33,6 +33,7 @@ export default {
 		teardownSecondaryServer: 'teardown_secondary_server',
 		scaleUp: 'scale_up',
 		scaleDown: 'scale_down',
+		configureAutomatedScaling: 'configure_automated_scaling',
 	},
 	list: {
 		route: '/servers',

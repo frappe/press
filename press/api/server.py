@@ -843,3 +843,13 @@ def schedule_auto_scale(name, scheduled_scale_up_time: str, scheduled_scale_down
 
 	create_record("Scale Up", formatted_scheduled_scale_up_time)
 	create_record("Scale Down", formatted_scheduled_scale_down_time)
+
+
+@frappe.whitelist()
+@protected(["Server"])
+def get_configured_autoscale_triggers(name) -> list[dict[str, float]] | None:
+	return frappe.db.get_all(
+		"Auto Scale Trigger",
+		{"parent": name},
+		["metric", "threshold", "action"],
+	)
