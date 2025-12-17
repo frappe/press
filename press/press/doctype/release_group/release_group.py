@@ -24,6 +24,7 @@ from press.access.decorators import action_guard
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.exceptions import ImageNotFoundInRegistry, InsufficientSpaceOnServer, VolumeResizeLimitError
+from press.guards import role_guard
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import new_app
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
@@ -227,6 +228,7 @@ class ReleaseGroup(Document, TagHelpers):
 			},
 		]
 
+	@role_guard.action()
 	def validate(self):
 		self.validate_title()
 		self.validate_frappe_app()

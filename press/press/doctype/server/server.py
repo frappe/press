@@ -25,6 +25,7 @@ from frappe.utils.user import is_system_user
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.exceptions import VolumeResizeLimitError
+from press.guards import role_guard
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.add_on_storage_log.add_on_storage_log import (
 	insert_addon_storage_log,
@@ -2264,6 +2265,7 @@ class Server(BaseServer):
 	GUNICORN_MEMORY = 150  # avg ram usage of 1 gunicorn worker
 	BACKGROUND_JOB_MEMORY = 3 * 80  # avg ram usage of 3 sets of bg workers
 
+	@role_guard.action()
 	def validate(self):
 		super().validate()
 		self.validate_managed_database_service()
