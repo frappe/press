@@ -10,6 +10,10 @@ from frappe.model.document import Document
 
 from press.api.client import dashboard_whitelist
 from press.guards import team_guard
+from press.utils import get_current_team
+
+if TYPE_CHECKING:
+	from press.press.doctype.team.team import Team
 
 
 class PressRole(Document):
@@ -336,3 +340,33 @@ def add_permission_for_newly_created_doc(doc: Document) -> None:
 			fields=["name", "role", fieldname, "team", "creation", "modified"],
 			values=set(new_perms),
 		)
+
+
+def create_user_resource(document: Document, _):
+	user = frappe.session.user
+	team: Team = get_current_team(get_doc=True)
+	if team.is_team_owner() or team.is_admin_user():
+		return
+	document_type = document.doctype.lower().replace(" ", "_")
+	role = frappe.get_doc(
+		{
+			"doctype": "Press Role",
+			"title": user + " / " + document.name,
+			"team": team.name,
+			"users": [
+				{
+					"user": user,
+				}
+			],
+		}
+	)
+	role.save()
+	role_permission = frappe.get_doc(
+		{
+			"doctype": "Press Role Permission",
+			"team": team.name,
+			"role": role.name,
+			document_type: document.name,
+		}
+	)
+	role_permission.save()
