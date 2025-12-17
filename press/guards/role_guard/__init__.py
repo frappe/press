@@ -25,7 +25,7 @@ from .utils import document_type_key
 from .webhook import check as webhook_check
 
 
-def api(scope: Literal["billing"]):
+def api(scope: Literal["billing", "partner"]):
 	def wrapper(fn):
 		@functools.wraps(fn)
 		def inner(*args, **kwargs):
