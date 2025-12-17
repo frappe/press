@@ -124,24 +124,22 @@ class SiteMigration(Document):
 		except frappe.DoesNotExistError:
 			pass
 		else:
-			site: "Site" = frappe.get_doc("Site", self.site)
+			site = Site("Site", self.site)
 			site.remote_database_file = backup.remote_database_file
 			site.remote_public_file = backup.remote_public_file
 			site.remote_private_file = backup.remote_private_file
 			site.check_space_on_server_for_backup()
 
 	def check_enough_space_on_destination_server(self):
-		try:
-			backup = self.last_backup
-		except frappe.DoesNotExistError:
-			pass
-		else:
-			site: "Site" = frappe.get_doc("Site", self.site)
-			site.server = self.destination_server
-			site.remote_database_file = backup.remote_database_file
-			site.remote_public_file = backup.remote_public_file
-			site.remote_private_file = backup.remote_private_file
-			site.check_space_on_server_for_restore()
+		backup = self.last_backup
+		if not backup:
+			return
+		site = Site("Site", self.site)
+		site.server = self.destination_server
+		site.remote_database_file = backup.remote_database_file
+		site.remote_public_file = backup.remote_public_file
+		site.remote_private_file = backup.remote_private_file
+		site.check_space_on_server_for_restore()
 
 	def after_insert(self):
 		self.set_migration_type()
@@ -149,7 +147,7 @@ class SiteMigration(Document):
 		self.save()
 
 	def validate_apps(self):
-		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
+		site_apps = [app.app for app in Site("Site", self.site).apps]
 		bench_apps = [app.app for app in frappe.get_doc("Bench", self.destination_bench).apps]
 
 		if diff := set(site_apps) - set(bench_apps):
@@ -177,7 +175,7 @@ class SiteMigration(Document):
 		self.check_for_existing_domains()
 		self.validate_apps()
 		self.check_enough_space_on_destination_server()
-		site: Site = frappe.get_doc("Site", self.site)
+		site = Site("Site", self.site)
 		try:
 			site.ready_for_move()
 		except SiteAlreadyArchived:
@@ -322,7 +320,7 @@ class SiteMigration(Document):
 
 	def setup_redirects(self):
 		"""Setup redirects of site in proxy"""
-		site: "Site" = frappe.get_doc("Site", self.site)
+		site = Site("Site", self.site)
 		ret = site._update_redirects_for_all_site_domains()
 		if ret:
 			# could be no jobs
@@ -432,7 +430,7 @@ class SiteMigration(Document):
 		return find(self.steps, lambda x: x.status == "Failure")
 
 	def activate_site_if_appropriate(self, force=False):
-		site: "Site" = frappe.get_doc("Site", self.site)
+		site = Site("Site", self.site)
 		failed_step_method_name = (self.failed_step or {}).get("method_name", "__NOT_SET__")
 		if force or (
 			failed_step_method_name
@@ -459,7 +457,7 @@ class SiteMigration(Document):
 	def send_fail_notification(self, reason: str | None = None):
 		from press.press.doctype.agent_job.agent_job_notifications import create_job_failed_notification
 
-		site = frappe.get_doc("Site", self.site)
+		site = Site("Site", self.site)
 		message = f"Site Migration ({self.migration_type}) for site <b>{site.host_name}</b> failed"
 		if reason:
 			message += f" due to {reason}"
@@ -484,7 +482,7 @@ class SiteMigration(Document):
 		self.send_success_notification()
 
 	def send_success_notification(self):
-		site = frappe.get_doc("Site", self.site)
+		site = Site("Site", self.site)
 
 		message = (
 			f"Site Migration ({self.migration_type}) for site <b>{site.host_name}</b> completed successfully"

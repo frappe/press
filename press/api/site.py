@@ -2477,7 +2477,7 @@ def change_server_options(name):
 			{"team": get_current_team(), "status": "Active", "name": ("!=", site.server)},
 			["name", "title"],
 		),
-		"estimated_time": site.get_estimated_time_for_server_change(),
+		"estimated_duration": site.get_estimated_duration_for_server_change(),
 	}
 
 
