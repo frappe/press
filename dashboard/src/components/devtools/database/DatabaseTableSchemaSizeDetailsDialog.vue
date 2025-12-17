@@ -2,7 +2,7 @@
 	<Dialog
 		:options="{
 			title: 'Table Size',
-			size: '3xl',
+			size: '7xl',
 		}"
 	>
 		<template #body-content>
@@ -30,6 +30,10 @@ export default {
 			type: Function,
 			required: true,
 		},
+		optimizeTable: {
+			type: Function,
+			required: true,
+		},
 	},
 	components: {
 		ObjectList,
@@ -44,6 +48,7 @@ export default {
 					table_name: tableName,
 					index_size: this.bytesToMB(table.size.index_length),
 					data_size: this.bytesToMB(table.size.data_length),
+					data_free: this.bytesToMB(table.size.data_free) || 0,
 					total_size: this.bytesToMB(table.size.total_size),
 				});
 			}
@@ -89,6 +94,31 @@ export default {
 						label: 'Index Size (MB)',
 						fieldname: 'index_size',
 						align: 'center',
+					},
+					{
+						label: 'Claimable Space (MB)',
+						fieldname: 'data_free',
+						align: 'center',
+					},
+					{
+						label: 'Optimize Table',
+						fieldname: 'table_name',
+						type: 'Component',
+						align: 'center',
+						component: ({ row }) => {
+							return h(
+								'button',
+								{
+									class:
+										'inline-flex items-center justify-center gap-2 transition-colors focus:outline-none text-gray-800 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 focus-visible:ring focus-visible:ring-gray-400 h-7 text-base px-2 rounded',
+									onClick: (_) => {
+										console.log(row.table_name);
+										this.optimizeTable(row.table_name);
+									},
+								},
+								['Optimize Table'],
+							);
+						},
 					},
 					{
 						label: 'View Schema',

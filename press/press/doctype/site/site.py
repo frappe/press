@@ -2838,34 +2838,17 @@ class Site(Document, TagHelpers):
 		)
 
 	@dashboard_whitelist()
-	def optimize_tables(self, ignore_checks: bool = False):
-		if not ignore_checks:
+	def optimize_tables(self, ignore_checks: bool = True, tables: list[str] | None = None):
+		if not ignore_checks and (job := self.fetch_running_optimize_tables_job()):
 			# check for running `Optimize Tables` agent job
-			if job := self.fetch_running_optimize_tables_job():
-				return {
-					"success": True,
-					"message": "Optimize Tables job is already running on this site.",
-					"job_name": job,
-				}
-			# check if `Optimize Tables` has run in last 1 hour
-			recent_agent_job_name = frappe.db.exists(
-				"Agent Job",
-				{
-					"site": self.name,
-					"job_type": "Optimize Tables",
-					"status": ["not in", ["Failure", "Delivery Failure"]],
-					"creation": [">", frappe.utils.add_to_date(frappe.utils.now_datetime(), hours=-1)],
-				},
-			)
-			if recent_agent_job_name:
-				return {
-					"success": False,
-					"message": "Optimize Tables job has already run in the last 1 hour. Try later.",
-					"job_name": None,
-				}
+			return {
+				"success": True,
+				"message": "Optimize Tables job is already running on this site.",
+				"job_name": job,
+			}
 
 		agent = Agent(self.server)
-		job_name = agent.optimize_tables(self).name
+		job_name = agent.optimize_tables(self, tables).name
 		return {
 			"success": True,
 			"message": "Optimize Tables has been triggered on this site.",
@@ -3853,6 +3836,7 @@ def process_fetch_database_table_schema_job_update(job):
 					"size": {
 						"data_length": 0,
 						"index_length": 0,
+						"data_free": 0,
 						"total_size": 0,
 					},  # old agent api doesn't have size info
 				}
