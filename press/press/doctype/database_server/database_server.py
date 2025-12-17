@@ -1327,15 +1327,15 @@ class DatabaseServer(BaseServer):
 			log_error("Logrotate Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
-	def provide_frappe_user_du_permission(self):
+	def provide_frappe_user_du_and_find_permission(self):
 		frappe.enqueue_doc(
-			self.doctype, self.name, "_provide_frappe_user_du_permission", queue="long", timeout=1200
+			self.doctype, self.name, "_provide_frappe_user_du_and_find_permission", queue="long", timeout=1200
 		)
 
-	def _provide_frappe_user_du_permission(self):
+	def _provide_frappe_user_du_and_find_permission(self):
 		try:
 			ansible = Ansible(
-				playbook="provide_frappe_user_du_permission.yml",
+				playbook="provide_frappe_user_du_and_find_permission.yml",
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),

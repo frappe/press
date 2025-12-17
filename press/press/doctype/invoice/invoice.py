@@ -851,6 +851,9 @@ class Invoice(Document):
 			if not address:
 				# don't create invoice if address is not set
 				return None
+			if team.country != address.country:
+				# don't create invoice if team country and address country don't match
+				return None
 			client = self.get_frappeio_connection()
 			response = client.session.post(
 				f"{client.url}/api/method/create-fc-invoice",

@@ -666,7 +666,9 @@ def create_razorpay_order(amount, transaction_type, doc_name=None) -> dict | Non
 		amount += gst_amount
 
 	# normalize type for payment record
-	payment_record_type = "Prepaid Credits" if transaction_type in ["Invoice", "Purchase Plan"] else type
+	payment_record_type = (
+		"Prepaid Credits" if transaction_type in ["Invoice", "Purchase Plan"] else transaction_type
+	)
 
 	amount = round(amount, 2)
 	data = {
