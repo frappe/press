@@ -169,9 +169,18 @@ doc_events = {
 		],
 	},
 	"Address": {"validate": "press.api.billing.validate_gst"},
-	"Site": {"before_insert": "press.press.doctype.team.team.validate_site_creation"},
+	"Site": {
+		"before_insert": "press.press.doctype.team.team.validate_site_creation",
+		"after_insert": "press.press.doctype.press_role.press_role.create_user_resource",
+	},
 	"Marketplace App Subscription": {
 		"on_update": "press.press.doctype.storage_integration_subscription.storage_integration_subscription.create_after_insert",
+	},
+	"Release Group": {
+		"after_insert": "press.press.doctype.press_role.press_role.create_user_resource",
+	},
+	"Server": {
+		"after_insert": "press.press.doctype.press_role.press_role.create_user_resource",
 	},
 }
 
