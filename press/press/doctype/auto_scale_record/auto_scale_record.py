@@ -384,7 +384,7 @@ class AutoScaleRecord(Document, StepHandler):
 			secondary_server_private_ip=secondary_server_private_ip,
 			is_primary=True,
 			directory=shared_directory,
-			restart_benches=True,
+			restart_benches=False,
 			reference_doctype="Server",
 			reference_name=self.primary_server,
 		)
