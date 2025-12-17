@@ -16,12 +16,10 @@ console = Console()
 
 
 @sites.command(help="Provision a new site with multiple apps")
-def new_site(
+def new(
 	ctx: typer.Context,
 	name: Annotated[str, typer.Argument(help="Site name/subdomain (name)")],
 	bench_opt: Annotated[str, typer.Option("--bench", help="Bench group name (group)")],
-	version: Annotated[str, typer.Option("--version", help="Stack version (version)")],
-	cluster: Annotated[str, typer.Option("--cluster", help="Cluster/region (cluster)")],
 	plan: Annotated[str, typer.Option("--plan", help="Plan (plan)")],
 	apps: Annotated[list[str], typer.Option("--apps", help="Apps list (apps)")],
 ):
@@ -44,17 +42,12 @@ def new_site(
 	full_site = f"{subdomain}.{domain}"
 
 	available_plans = _get_available_plans(session)
-	print(available_plans)
-
-	if not _is_valid_plan(session, plan):
+	if plan not in available_plans:
 		Print.error(console, f"Invalid plan: '{plan}'. Available plans: {', '.join(available_plans)}")
 		return
 
-	# Skip backend availability precheck per user request; rely on backend response
-
 	payload = {
 		"apps": apps or [],
-		"cluster": cluster,
 		"domain": domain,
 		"group": bench,
 		"localisation_country": None,
@@ -62,7 +55,6 @@ def new_site(
 		"plan": plan,
 		"selected_app_plans": {},
 		"share_details_consent": False,
-		"version": version,
 	}
 
 	try:
@@ -72,13 +64,12 @@ def new_site(
 			message=f"[bold green]Provisioning site '{full_site}' on bench '{bench}'…",
 		)
 		if _is_success_response(result):
+			installed_list = ", ".join(apps) if apps else "none"
 			Print.success(
-				console,
-				f"Site '{full_site}' provisioned successfully with apps: {', '.join(apps) if apps else 'none'}.",
+				console, f"Site '{full_site}' provisioned successfully with apps: {installed_list}."
 			)
 			return
-		exc_type = result.get("exc_type") if isinstance(result, dict) else None
-		if exc_type == "DuplicateEntryError":
+		if isinstance(result, dict) and result.get("exc_type") == "DuplicateEntryError":
 			Print.error(console, f"Duplicate entry: Site '{full_site}' already exists.")
 			return
 		Print.error(console, f"Failed to provision site: {_format_error_message(result)}")
@@ -104,35 +95,14 @@ def _format_error_message(result: object) -> str:
 	return str(result) or "Unknown error"
 
 
-def _pick_default_bench(session: "CloudSession") -> str | None:
-	"""Return the first available bench group name, or None if none exist."""
-	benches = session.get("press.api.bench.all") or []
-	if isinstance(benches, list) and benches:
-		return benches[0].get("name")
-	return None
-
-
 def _get_available_plans(session: "CloudSession") -> list[str]:
 	resp = session.post("press.api.site.get_site_plans", json={}) or []
 	items = resp if isinstance(resp, list) else (resp.get("message", []) if isinstance(resp, dict) else [])
 	return [p.get("name") for p in items if isinstance(p, dict) and p.get("name")]
 
 
-def _is_valid_plan(session: "CloudSession", plan: str) -> bool:
-	return plan in _get_available_plans(session)
-
-
-def _is_site_available(session: "CloudSession", domain: str, subdomain: str) -> bool:
-	availability = session.post(
-		"press.api.site.exists",
-		json={"domain": domain, "subdomain": subdomain},
-		message="Checking availability…",
-	)
-	return not (isinstance(availability, dict) and availability.get("exists"))
-
-
 @sites.command(help="Archive (drop) a site")
-def drop_site(
+def drop(
 	ctx: typer.Context,
 	name: Annotated[str, typer.Argument(help="Site name/subdomain (without domain)")],
 	force: Annotated[
@@ -181,15 +151,61 @@ def drop_site(
 			pass
 
 
-def _pick_bench_with_apps(session: "CloudSession", apps: list[str]) -> str | None:
-	"""Return the name of a bench that contains all requested apps, if any."""
+@sites.command(help="Install app(s) available for a site")
+def install_available_apps(
+	ctx: typer.Context,
+	site: Annotated[str, typer.Argument(help="Full site domain, e.g. foo.m.frappe.cloud")],
+	app: Annotated[list[str] | None, typer.Option("--app", help="App(s) to install; omit for all")] = None,
+):
+	"""Install apps available to the site but not yet installed."""
+	session: CloudSession = ctx.obj
+
 	try:
-		benches = session.get("press.api.bench.all") or []
-		for bench in benches or []:
-			bench_name = bench.get("name")
-			bench_apps = {a.get("app") for a in (bench.get("apps") or []) if a.get("app")}
-			if apps and set(apps).issubset(bench_apps):
-				return bench_name
-	except Exception:
-		return None
-	return None
+		resp = session.get("press.api.site.available_apps", params={"name": site}) or []
+		available = [x.get("app") for x in (resp if isinstance(resp, list) else []) if x.get("app")]
+		if not available:
+			return Print.info(console, f"No available apps for '{site}'.")
+
+		target = [a for a in (app or available) if a in available]
+		if not target:
+			return Print.info(console, "Nothing to install.")
+
+		for name in target:
+			result = session.post(
+				"press.api.client.run_doc_method",
+				json={"dt": "Site", "dn": site, "method": "install_app", "args": {"app": name}},
+			)
+			if _is_success_response(result):
+				Print.success(console, f"Installed '{name}'")
+			else:
+				Print.error(console, f"Failed '{name}': {_format_error_message(result)}")
+	except Exception as e:
+		Print.error(console, f"Error: {e}")
+
+
+@sites.command(help="Uninstall an app from a site")
+def uninstall_app(
+	ctx: typer.Context,
+	site: Annotated[str, typer.Argument(help="Full site domain, e.g. foo.m.frappe.cloud")],
+	app: Annotated[str, typer.Option("--app", help="App to uninstall")],
+):
+	"""Uninstall an app from a site via press.api.client.run_doc_method."""
+	session: CloudSession = ctx.obj
+
+	try:
+		result = session.post(
+			"press.api.client.run_doc_method",
+			json={
+				"dt": "Site",
+				"dn": site,
+				"method": "uninstall_app",
+				"args": {"app": app},
+			},
+			message=f"[bold red]Uninstalling app '{app}' from '{site}'…",
+		)
+		if _is_success_response(result):
+			Print.success(console, f"Uninstalled '{app}' from '{site}'.")
+		else:
+			Print.error(console, f"Failed to uninstall '{app}': {_format_error_message(result)}")
+	except Exception as e:
+		Print.error(console, f"Error uninstalling app: {e}")
