@@ -54,10 +54,12 @@
 
 <script>
 import { getCachedDocumentResource } from 'frappe-ui';
+import Button from 'frappe-ui/src/components/Button/Button.vue';
+import { h } from 'vue';
 import { toast } from 'vue-sonner';
 import { confirmDialog } from '../../utils/components';
 import GenericList from '../GenericList.vue';
-import Button from 'frappe-ui/src/components/Button/Button.vue';
+import Badge from '../global/Badge.vue';
 
 export default {
 	name: 'AutoScale',
@@ -109,7 +111,14 @@ export default {
 					{
 						label: 'Action',
 						fieldname: 'action',
-						type: 'text',
+						type: 'Component',
+						align: 'center',
+						component: ({ row }) => {
+							return h(Badge, {
+								label: row.action,
+								theme: row.action === 'Scale Down' ? 'orange' : 'green',
+							});
+						},
 					},
 				],
 				emptyState: {
