@@ -840,10 +840,6 @@ class Site(Document, TagHelpers):
 		).insert(ignore_if_duplicate=True)
 
 	def after_insert(self):
-		from press.press.doctype.press_role.press_role import (
-			add_permission_for_newly_created_doc,
-		)
-
 		self.capture_signup_event("created_first_site")
 
 		if hasattr(self, "subscription_plan") and self.subscription_plan:
@@ -871,8 +867,6 @@ class Site(Document, TagHelpers):
 				site=self.name,
 				created_on=frappe.utils.now_datetime(),
 			).insert(ignore_permissions=True)
-
-		add_permission_for_newly_created_doc(self)
 
 		create_site_status_update_webhook_event(self.name)
 

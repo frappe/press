@@ -2325,14 +2325,6 @@ class Server(BaseServer):
 		db_server.team = self.team
 		db_server.save()
 
-	def after_insert(self):
-		from press.press.doctype.press_role.press_role import (
-			add_permission_for_newly_created_doc,
-		)
-
-		super().after_insert()
-		add_permission_for_newly_created_doc(self)
-
 	def set_bench_memory_limits_if_needed(self, save: bool = False):
 		# Enable bench memory limits for public servers
 		if self.public:
