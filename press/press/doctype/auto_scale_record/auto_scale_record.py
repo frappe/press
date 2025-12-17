@@ -112,6 +112,8 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 					self.mark_start_time,
 					self.stop_all_agent_jobs_on_primary,
 					self.stop_all_agent_jobs_on_secondary,
+					self.switch_to_primary,
+					self.wait_for_primary_switch,
 					self.setup_primary_upstream,
 					self.wait_for_primary_upstream_setup,
 					self.initiate_secondary_shutdown,
@@ -366,6 +368,43 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 			{
 				"parent": self.name,
 				"step_name": "Setup Primary Upstream",
+			},
+			"job",
+		)
+
+		self.handle_agent_job(step, job, poll=True)
+
+	def switch_to_primary(self, step: "ScaleStep"):
+		"""Prepare Agent To Switch To Primary"""
+		secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
+		shared_directory = frappe.db.get_single_value("Press Settings", "shared_directory")
+
+		agent_job = Agent(self.primary_server).change_bench_directory(
+			redis_connection_string_ip="localhost",
+			secondary_server_private_ip=secondary_server_private_ip,
+			is_primary=True,
+			directory=shared_directory,
+			restart_benches=False,
+			reference_doctype="Server",
+			reference_name=self.primary_server,
+		)
+
+		step.status = Status.Success
+		step.job_type = "Agent Job"
+		step.job = agent_job.name
+		step.save()
+
+	def wait_for_primary_switch(self, step: "ScaleStep"):
+		"""Wait For Benches To Run On Primary"""
+		step.status = Status.Running
+		step.is_waiting = True
+		step.save()
+
+		job = frappe.db.get_value(
+			"Scale Step",
+			{
+				"parent": self.name,
+				"step_name": "Prepare Agent To Switch To Primary",
 			},
 			"job",
 		)
