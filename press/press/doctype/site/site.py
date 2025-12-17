@@ -4207,8 +4207,7 @@ def process_restore_job_update(job, force=False):
 			process_marketplace_hooks_for_backup_restore(set(apps_from_backup), site)
 			site.set_apps(apps_from_backup)
 			frappe.db.set_value("Site", job.site, "creation_failed", None)
-
-		else:
+		elif job.status == "Failure":
 			frappe.db.set_value("Site", job.site, "creation_failed", frappe.utils.now())
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 		create_site_status_update_webhook_event(job.site)
@@ -4816,22 +4815,18 @@ def archive_creation_failed_sites():
 	creation_failure_retention_date = frappe.utils.add_days(
 		frappe.utils.now(), -CREATION_FAILURE_RETENTION_DAYS
 	)
-	filters = {
-		"creation_failed": ["<", creation_failure_retention_date],
-		"status": ["!=", "Archived"],
-	}
 
-	failed_sites = frappe.db.get_all(
-		"Site",
-		filters=filters,
-		fields=["name"],
-	)
-	if not failed_sites:
-		return
+	filters = [
+		["creation_failed", "!=", None],
+		["creation_failed", "<", creation_failure_retention_date],
+		["status", "!=", "Archived"],
+	]
+
+	failed_sites = frappe.db.get_all("Site", filters=filters, fields=["name"], pluck="name")
 
 	for site in failed_sites:
 		try:
-			site = frappe.get_doc("Site", site.name)
+			site = Site("Site", site)
 			site.archive(
 				reason="Site creation failed and was not restored within 7 days",
 			)
