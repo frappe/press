@@ -86,6 +86,7 @@ from press.utils import (
 	fmt_timedelta,
 	get_client_blacklisted_keys,
 	get_current_team,
+	get_last_doc,
 	guess_type,
 	human_readable,
 	is_list,
@@ -3713,7 +3714,7 @@ class Site(Document, TagHelpers):
 
 	@cached_property
 	def last_backup(self) -> SiteBackup | None:
-		return frappe.get_last_doc(
+		return get_last_doc(
 			"Site Backup",
 			{
 				"site": self.name,
@@ -3724,7 +3725,7 @@ class Site(Document, TagHelpers):
 			},
 		)
 
-	def get_estimated_time_for_server_change(self) -> str | None:
+	def get_estimated_duration_for_server_change(self) -> str | None:
 		"""2x backup duration (backup + restore) in seconds"""
 		last_backup = self.last_backup
 		if not last_backup:
