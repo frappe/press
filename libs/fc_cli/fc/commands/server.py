@@ -56,8 +56,13 @@ def usage(
 @server.command(help="Show details about a specific plan for a server")
 def show_plan(
 	ctx: typer.Context,
+<<<<<<< HEAD
 	name: Annotated[str, typer.Option("--name", "-n", help="Server name")] = ...,
 	plan: Annotated[str, typer.Option("--plan", "-p", help="Plan name")] = ...,
+=======
+	name: Annotated[str, typer.Argument(help="Server name")],
+	plan: Annotated[str, typer.Option("--plan", help="Plan name")],
+>>>>>>> 2602806c3 (feat(cli): add utility to add and remove app on site and also fixed new and drop site)
 ):
 	session: CloudSession = ctx.obj
 
@@ -74,7 +79,6 @@ def show_plan(
 			Print.error(console, f"Plan '{plan}' not found for server '{name}'")
 			return
 
-		# Centralized plan rendering via printer helper
 		print_plan_details(selected_plan, console)
 
 	except Exception as e:
@@ -111,8 +115,17 @@ def server_plan(
 @server.command(help="Increase storage for a server")
 def increase_storage(
 	ctx: typer.Context,
+<<<<<<< HEAD
 	name: Annotated[str, typer.Option("--name", "-n", help="Server name")] = ...,
 	increment: Annotated[int, typer.Option("--increment", "-i", help="Increment size in GB")] = ...,
+=======
+	name: Annotated[str, typer.Argument(help="Server name")],
+	increment: Annotated[int, typer.Option("--increment", help="Increment size in GB")],
+	force: Annotated[
+		bool,
+		typer.Option("--force", "-f", is_flag=True, help="Skip confirmation"),
+	] = False,
+>>>>>>> 2602806c3 (feat(cli): add utility to add and remove app on site and also fixed new and drop site)
 ):
 	session: CloudSession = ctx.obj
 	is_valid, err = validate_server_name(name)
@@ -152,8 +165,17 @@ def increase_storage(
 @server.command(help="Show current plan and choose available server plans")
 def choose_plan(
 	ctx: typer.Context,
+<<<<<<< HEAD
 	name: Annotated[str, typer.Option("--name", "-n", help="Name of the server")] = ...,
 	plan: Annotated[str, typer.Option("--plan", "-o", help="Name of the plan")] = ...,
+=======
+	name: Annotated[str, typer.Argument(help="Server name")],
+	plan: Annotated[str, typer.Option("--plan", help="Plan name")],
+	force: Annotated[
+		bool,
+		typer.Option("--force", "-f", is_flag=True, help="Skip confirmation"),
+	] = False,
+>>>>>>> 2602806c3 (feat(cli): add utility to add and remove app on site and also fixed new and drop site)
 ):
 	session: CloudSession = ctx.obj
 
@@ -169,6 +191,7 @@ def choose_plan(
 			Print.error(console, f"Plan '{plan}' not found for server '{name}'")
 			return
 
+<<<<<<< HEAD
 		# Fetch current plan to compare
 		current_resp = session.post(
 			"press.api.client.get",
@@ -188,6 +211,9 @@ def choose_plan(
 				current_plan_name = cp.get("name")
 			elif isinstance(cp, str):
 				current_plan_name = cp
+=======
+		current_plan_name = _get_current_plan_name(session, doctype, name)
+>>>>>>> 2602806c3 (feat(cli): add utility to add and remove app on site and also fixed new and drop site)
 
 		if current_plan_name and current_plan_name == selected_plan.get("name"):
 			Print.info(
@@ -196,6 +222,16 @@ def choose_plan(
 			)
 			return
 
+<<<<<<< HEAD
+=======
+		if not _should_proceed(
+			f"Change plan for server '{name}' to '{selected_plan.get('name')}'?",
+			force,
+		):
+			Print.info(console, "Operation cancelled.")
+			return
+
+>>>>>>> 2602806c3 (feat(cli): add utility to add and remove app on site and also fixed new and drop site)
 		change_payload = {
 			"dt": doctype,
 			"dn": name,
@@ -234,10 +270,16 @@ def create_server(
 	db_plan: Annotated[str, typer.Option("--db-plan", help="Database server plan name")] = ...,
 =======
 	title: Annotated[str, typer.Argument(help="Server title")],
+<<<<<<< HEAD
 	cluster: Annotated[str, typer.Argument(help="Cluster name")],
 	app_plan: Annotated[str, typer.Argument(help="App server plan name")],
 	db_plan: Annotated[str, typer.Argument(help="Database server plan name")],
 >>>>>>> b9de66640 (feat(cli): Add utility to create and delete sites)
+=======
+	cluster: Annotated[str, typer.Option("--cluster", help="Cluster name")] = "",
+	app_plan: Annotated[str, typer.Option("--app-plan", help="App server plan name")] = "",
+	db_plan: Annotated[str, typer.Option("--db-plan", help="Database server plan name")] = "",
+>>>>>>> 2602806c3 (feat(cli): add utility to add and remove app on site and also fixed new and drop site)
 	auto_increase_storage: Annotated[
 		bool, typer.Option("--auto-increase-storage", is_flag=True, help="Auto increase storage")
 	] = False,
