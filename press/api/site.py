@@ -2303,7 +2303,7 @@ def change_group_options(name, release_groups=None):
 		.groupby(Bench.group)
 	)
 
-	if release_groups:
+	if release_groups and isinstance(release_groups, list):
 		query = query.where(ReleaseGroup.name.isin(release_groups))
 
 	return query.run(as_dict=True)
