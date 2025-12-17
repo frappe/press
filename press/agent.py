@@ -228,10 +228,11 @@ class Agent:
 			site=site.name,
 		)
 
-	def optimize_tables(self, site):
+	def optimize_tables(self, site, tables):
 		return self.create_agent_job(
 			"Optimize Tables",
 			f"benches/{site.bench}/sites/{site.name}/optimize",
+			data={"tables": tables},
 			bench=site.bench,
 			site=site.name,
 		)
@@ -1834,6 +1835,16 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		return self.create_agent_job(
 			"Start Bench Workers",
 			"/server/start-bench-workers",
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def remove_redis_localhost_bind(
+		self, reference_doctype: str | None = None, reference_name: str | None = None
+	) -> AgentJob:
+		return self.create_agent_job(
+			"Remove Redis Localhost Bind",
+			"/server/remove-localhost-redis-bind",
 			reference_doctype=reference_doctype,
 			reference_name=reference_name,
 		)

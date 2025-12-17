@@ -242,15 +242,50 @@ def new(server):
 	return {"server": app_server.name, "job": job.name}
 
 
+def get_cpu_usage(name: str, time_range: str = "4m") -> float:
+	"""Returns a value between 0 and 1 using a simpler CPU idle time estimate across all cores"""
+	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
+	if not monitor_server:
+		return 0.0
+
+	query = f"""
+				1 - avg(rate(node_cpu_seconds_total{{instance="{name}",job="node",mode="idle"}}[{time_range}]))
+			"""
+
+	url = f"https://{monitor_server}/prometheus/api/v1/query"
+	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
+	params = {"query": query}
+
+	response = requests.get(url, params=params, auth=("frappe", str(password))).json()
+
+	if (
+		response.get("status") == "success"
+		and response.get("data")
+		and response["data"].get("resultType") == "vector"
+		and response["data"].get("result")
+	):
+		return float(response["data"]["result"][0]["value"][1])
+
+	return 0.0
+
+
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 def usage(name):
 	mount_point = get_mount_point(name)
+	# 	  (
+	#       (count(count by (cpu) (node_cpu_seconds_total{instance="fs22-mumbai.frappe.cloud",job="node"})))
+	#     -
+	#       avg(
+	#         sum by (mode) (
+	#           rate(node_cpu_seconds_total{instance="fs22-mumbai.frappe.cloud",job="node",mode="idle"}[120s])
+	#         )
+	#       )
+	#   )
+	# /
+	# Changing CPU usage to a vector result averaging over a 120s window
+
 	query_map = {
-		"vcpu": (
-			f"""((count(count(node_cpu_seconds_total{{instance="{name}",job="node"}}) by (cpu))) - avg(sum by (mode)(rate(node_cpu_seconds_total{{mode='idle',instance="{name}",job="node"}}[120s])))) / count(count(node_cpu_seconds_total{{instance="{name}",job="node"}}) by (cpu))""",
-			lambda x: x,
-		),
 		"disk": (
 			f"""sum(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}} - node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}}) by ()/ (1024 * 1024 * 1024)""",
 			lambda x: x,
@@ -270,6 +305,8 @@ def usage(name):
 		response = prometheus_query(query[0], query[1], "Asia/Kolkata", 120, 120)["datasets"]
 		if response:
 			result[usage_type] = response[0]["values"][-1]
+
+	result["vcpu"] = get_cpu_usage(name)
 	return result
 
 

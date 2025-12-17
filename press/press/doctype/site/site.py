@@ -24,7 +24,6 @@ from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import (
 	add_to_date,
 	cint,
-	comma_and,
 	cstr,
 	flt,
 	get_datetime,
@@ -355,7 +354,7 @@ class Site(Document, TagHelpers):
 
 		return doc
 
-	def site_action(allowed_status: list[str]):
+	def site_action(allowed_status: list[str], disallowed_message: str | dict[str, str] | None = None):
 		def outer_wrapper(func):
 			@wraps(func)
 			def wrapper(inst, *args, **kwargs):
@@ -368,9 +367,16 @@ class Site(Document, TagHelpers):
 					return func(inst, *args, **kwargs)
 				status = frappe.get_value(inst.doctype, inst.name, "status", for_update=True)
 				if status not in allowed_status:
-					frappe.throw(
-						f"Site action not allowed for site with status: {frappe.bold(status)}.\nAllowed status are: {frappe.bold(comma_and(allowed_status))}."
-					)
+					if disallowed_message and isinstance(disallowed_message, str):
+						frappe.throw(disallowed_message)
+					elif disallowed_message and status in disallowed_message:
+						custom_message = disallowed_message[status]
+						frappe.throw(custom_message)
+					else:
+						action_name_refined = func.__name__.replace("_", " ")
+						frappe.throw(
+							f"Site is in {frappe.bold(status)} state. You site have to be active to {frappe.bold(action_name_refined)}."
+						)
 				return func(inst, *args, **kwargs)
 
 			return wrapper
@@ -2114,7 +2120,7 @@ class Site(Document, TagHelpers):
 
 		for d in config:
 			d = frappe._dict(d)
-			if isinstance(d.value, dict | list):
+			if isinstance(d.value, (dict, list)):
 				value = json.dumps(d.value)
 			else:
 				value = d.value
@@ -2529,7 +2535,10 @@ class Site(Document, TagHelpers):
 		self.update_site_status_on_proxy("deactivated")
 
 	@dashboard_whitelist()
-	@site_action(["Inactive", "Broken"])
+	@site_action(
+		["Inactive", "Broken"],
+		disallowed_message="You can activate only inactive or broken site",
+	)
 	def activate(self):
 		log_site_activity(self.name, "Activate Site")
 		if self.status == "Suspended":
@@ -2578,7 +2587,7 @@ class Site(Document, TagHelpers):
 		)
 
 	@frappe.whitelist()
-	@site_action(["Suspended"])
+	@site_action(["Suspended"], disallowed_message="You can unsuspend only suspended site.")
 	def unsuspend(self, reason=None):
 		log_site_activity(self.name, "Unsuspend Site", reason)
 		self.status = "Active"
@@ -2840,34 +2849,17 @@ class Site(Document, TagHelpers):
 		)
 
 	@dashboard_whitelist()
-	def optimize_tables(self, ignore_checks: bool = False):
-		if not ignore_checks:
+	def optimize_tables(self, ignore_checks: bool = True, tables: list[str] | None = None):
+		if not ignore_checks and (job := self.fetch_running_optimize_tables_job()):
 			# check for running `Optimize Tables` agent job
-			if job := self.fetch_running_optimize_tables_job():
-				return {
-					"success": True,
-					"message": "Optimize Tables job is already running on this site.",
-					"job_name": job,
-				}
-			# check if `Optimize Tables` has run in last 1 hour
-			recent_agent_job_name = frappe.db.exists(
-				"Agent Job",
-				{
-					"site": self.name,
-					"job_type": "Optimize Tables",
-					"status": ["not in", ["Failure", "Delivery Failure"]],
-					"creation": [">", frappe.utils.add_to_date(frappe.utils.now_datetime(), hours=-1)],
-				},
-			)
-			if recent_agent_job_name:
-				return {
-					"success": False,
-					"message": "Optimize Tables job has already run in the last 1 hour. Try later.",
-					"job_name": None,
-				}
+			return {
+				"success": True,
+				"message": "Optimize Tables job is already running on this site.",
+				"job_name": job,
+			}
 
 		agent = Agent(self.server)
-		job_name = agent.optimize_tables(self).name
+		job_name = agent.optimize_tables(self, tables).name
 		return {
 			"success": True,
 			"message": "Optimize Tables has been triggered on this site.",
@@ -3855,6 +3847,7 @@ def process_fetch_database_table_schema_job_update(job):
 					"size": {
 						"data_length": 0,
 						"index_length": 0,
+						"data_free": 0,
 						"total_size": 0,
 					},  # old agent api doesn't have size info
 				}
