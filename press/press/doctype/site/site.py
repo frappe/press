@@ -44,6 +44,7 @@ from press.exceptions import (
 	SiteUnderMaintenance,
 	VolumeResizeLimitError,
 )
+from press.guards import role_guard
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
@@ -385,6 +386,7 @@ class Site(Document, TagHelpers):
 	def autoname(self):
 		self.name = self._get_site_name(self.subdomain)
 
+	@role_guard.action()
 	def validate(self):
 		if self.has_value_changed("subdomain"):
 			self.validate_site_name()

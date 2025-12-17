@@ -7,8 +7,9 @@ def check(base_query: QueryBuilder) -> bool:
 	PressRole = frappe.qb.DocType("Press Role")
 	return (
 		base_query.where(PressRole.allow_webhook_configuration == 1)
-		.select(Count(PressRole.name).as_("count"))
-		.run(as_dict=True, pluck="count")
+		.select(Count(PressRole.name).as_("document_count"))
+		.run(as_dict=True)
 		.pop()
+		.get("document_count")
 		> 0
 	)
