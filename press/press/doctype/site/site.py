@@ -375,6 +375,7 @@ class Site(Document, TagHelpers):
 				status, creation_failed = frappe.get_value(
 					inst.doctype, inst.name, ["status", "creation_failed"], for_update=True
 				)
+				action_name_refined = func.__name__.replace("_", " ")
 
 				if status not in allowed_status:
 					if disallowed_message and isinstance(disallowed_message, str):
@@ -383,23 +384,12 @@ class Site(Document, TagHelpers):
 						custom_message = disallowed_message[status]
 						frappe.throw(custom_message)
 					else:
-						action_name_refined = func.__name__.replace("_", " ")
 						frappe.throw(
 							f"Site is in {frappe.bold(status.lower())} state. Your site have to be active to {frappe.bold(action_name_refined)}."
 						)
 
-				allowed_actions_after_creation_failure = [
-					"restore_site_from_physical_backup",
-					"restore_site_from_files",
-					"restore_site",
-					"archive",
-				]
-				if creation_failed and func.__name__ not in allowed_actions_after_creation_failure:
-					frappe.throw(
-						_(
-							"Site action '{0}' is blocked because site creation failed. Please restore from a backup or drop this site to create a new one"
-						).format(frappe.bold(func.__name__))
-					)
+				check_allowed_actions(creation_failed, func.__name__, action_name_refined)
+
 				return func(inst, *args, **kwargs)
 
 			return wrapper
@@ -3822,6 +3812,21 @@ class Site(Document, TagHelpers):
 		if not d:
 			return None
 		return str(timedelta(seconds=round(d.total_seconds() * 2)))
+
+
+def check_allowed_actions(creation_failed, function_name, action_name_refined):
+	allowed_actions_after_creation_failure = [
+		"restore_site_from_physical_backup",
+		"restore_site_from_files",
+		"restore_site",
+		"archive",
+	]
+	if creation_failed and function_name not in allowed_actions_after_creation_failure:
+		frappe.throw(
+			_(
+				"Site action '{0}' is blocked because site creation has failed. Please restore from a backup or drop this site to create a new one."
+			).format(frappe.bold(action_name_refined))
+		)
 
 
 def site_cleanup_after_archive(site):
