@@ -24,7 +24,6 @@ from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import (
 	add_to_date,
 	cint,
-	comma_and,
 	cstr,
 	flt,
 	get_datetime,
@@ -354,7 +353,7 @@ class Site(Document, TagHelpers):
 
 		return doc
 
-	def site_action(allowed_status: list[str], disallowed_status_with_message: dict[str, str] | None = None):
+	def site_action(allowed_status: list[str], disallowed_message: str | dict[str, str] | None = None):
 		def outer_wrapper(func):
 			@wraps(func)
 			def wrapper(inst, *args, **kwargs):
@@ -367,12 +366,15 @@ class Site(Document, TagHelpers):
 					return func(inst, *args, **kwargs)
 				status = frappe.get_value(inst.doctype, inst.name, "status", for_update=True)
 				if status not in allowed_status:
-					if disallowed_status_with_message and status in disallowed_status_with_message:
-						custom_message = disallowed_status_with_message[status]
+					if disallowed_message and isinstance(disallowed_message, str):
+						frappe.throw(disallowed_message)
+					elif disallowed_message and status in disallowed_message:
+						custom_message = disallowed_message[status]
 						frappe.throw(custom_message)
 					else:
+						action_name_refined = func.__name__.replace("_", " ")
 						frappe.throw(
-							f"Site action not allowed for site with status: {frappe.bold(status)}.\nAllowed status are: {frappe.bold(comma_and(allowed_status))}."
+							f"Site is in {frappe.bold(status)} state. You site have to be active to {frappe.bold(action_name_refined)}."
 						)
 				return func(inst, *args, **kwargs)
 
@@ -1011,10 +1013,7 @@ class Site(Document, TagHelpers):
 		agent.new_upstream_file(server=self.server, site=self.name)
 
 	@dashboard_whitelist()
-	@site_action(
-		["Active", "Broken"],
-		disallowed_status_with_message={"Suspended": "Cannot reset a suspended site. Please activate first."},
-	)
+	@site_action(["Active", "Broken"])
 	def reinstall(self):
 		agent = Agent(self.server)
 		job = agent.reinstall_site(self)
@@ -2534,7 +2533,10 @@ class Site(Document, TagHelpers):
 		self.update_site_status_on_proxy("deactivated")
 
 	@dashboard_whitelist()
-	@site_action(["Inactive", "Broken"])
+	@site_action(
+		["Inactive", "Broken"],
+		disallowed_message="You can activate only inactive or broken site",
+	)
 	def activate(self):
 		log_site_activity(self.name, "Activate Site")
 		if self.status == "Suspended":
@@ -2583,7 +2585,7 @@ class Site(Document, TagHelpers):
 		)
 
 	@frappe.whitelist()
-	@site_action(["Suspended"])
+	@site_action(["Suspended"], disallowed_message="You can unsuspend only suspended site.")
 	def unsuspend(self, reason=None):
 		log_site_activity(self.name, "Unsuspend Site", reason)
 		self.status = "Active"
