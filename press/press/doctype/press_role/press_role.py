@@ -20,9 +20,12 @@ class PressRole(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
+	from typing import TYPE_CHECKING
+
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.press_role_resource.press_role_resource import PressRoleResource
 		from press.press.doctype.press_role_user.press_role_user import PressRoleUser
 
 		admin_access: DF.Check
@@ -37,6 +40,7 @@ class PressRole(Document):
 		allow_server_creation: DF.Check
 		allow_site_creation: DF.Check
 		allow_webhook_configuration: DF.Check
+		resources: DF.Table[PressRoleResource]
 		team: DF.Link
 		title: DF.Data
 		users: DF.Table[PressRoleUser]
