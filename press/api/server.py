@@ -242,14 +242,14 @@ def new(server):
 	return {"server": app_server.name, "job": job.name}
 
 
-def get_cpu_usage(name: str) -> float:
+def get_cpu_usage(name: str, time_range: str = "4m") -> float:
 	"""Returns a value between 0 and 1 using a simpler CPU idle time estimate across all cores"""
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	if not monitor_server:
 		return 0.0
 
 	query = f"""
-				1 - avg(rate(node_cpu_seconds_total{{instance="{name}",job="node",mode="idle"}}[4m]))
+				1 - avg(rate(node_cpu_seconds_total{{instance="{name}",job="node",mode="idle"}}[{time_range}]))
 			"""
 
 	url = f"https://{monitor_server}/prometheus/api/v1/query"
