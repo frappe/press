@@ -14,7 +14,39 @@
 				<Spinner class="w-4" /> Loading
 			</div>
 			<div v-else>
-				<ObjectList :options="autoScaleTriggerOptions" ref="list" />
+				<div class="flex justify-end gap-2">
+					<Button
+						variant="solid"
+						class="mb-3"
+						iconLeft="plus"
+						@click="openAddTriggerDialog"
+					>
+						New
+					</Button>
+					<Button
+						v-if="selectedTriggers.length > 0"
+						variant="solid"
+						class="mb-3"
+						theme="red"
+						iconLeft="trash-2"
+						@click="onRemoveTrigger"
+					>
+						Remove
+					</Button>
+					<Button
+						variant="subtle"
+						class="mb-3"
+						icon="refresh-cw"
+						:loading="$resources.configuredAutoscales.loading"
+						@click="$resources.configuredAutoscales.submit()"
+					>
+						Refresh
+					</Button>
+				</div>
+				<GenericList
+					:options="autoScaleTriggerOptions"
+					@update:selections="onSelectionUpdate"
+				/>
 			</div>
 		</template>
 	</Dialog>
@@ -24,7 +56,8 @@
 import { getCachedDocumentResource } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import { confirmDialog } from '../../utils/components';
-import ObjectList from '../ObjectList.vue';
+import GenericList from '../GenericList.vue';
+import Button from 'frappe-ui/src/components/Button/Button.vue';
 
 export default {
 	name: 'AutoScale',
@@ -34,10 +67,15 @@ export default {
 			required: true,
 		},
 	},
-	components: { ObjectList },
+	components: { GenericList },
 	data() {
-		return { show: true };
+		return {
+			show: true,
+			selectedTriggers: [],
+			triggers: [],
+		};
 	},
+
 	resources: {
 		configuredAutoscales() {
 			return {
@@ -45,6 +83,9 @@ export default {
 				params: { name: this.name },
 				auto: true,
 				initialData: [],
+				onSuccess: (data) => {
+					this.triggers = [...(data || [])];
+				},
 			};
 		},
 	},
@@ -55,129 +96,113 @@ export default {
 		},
 		autoScaleTriggerOptions() {
 			return {
-				data: () => {
-					return this.$resources.configuredAutoscales.data || [];
-				},
+				data: this.triggers,
+				selectable: true,
 				columns: [
-					{ label: 'Metric', fieldname: 'metric' },
+					{ label: 'Metric', fieldname: 'metric', type: 'text' },
 					{
 						label: 'Threshold',
 						fieldname: 'threshold',
-						class: 'text-gray-600',
-						align: 'left',
-						format(value) {
-							return `${value}%`;
-						},
+						type: 'text',
+						format: (v) => `${v}%`,
 					},
 					{
 						label: 'Action',
 						fieldname: 'action',
+						type: 'text',
 					},
 				],
-				showTooltip: false,
-				selectable: false,
 				emptyState: {
 					title: 'No Autoscale Triggers found',
-					description: 'Your have not configured any auto scale triggers yet',
+					description: 'You have not configured any autoscale triggers yet',
 				},
-				actions: () => [
+			};
+		},
+	},
+	methods: {
+		onSelectionUpdate(selection) {
+			this.selectedTriggers = Array.from(selection || []);
+		},
+
+		onRemoveTrigger() {
+			const server = this.server;
+			toast.promise(
+				server.removeAutomatedScalingTriggers.submit({
+					triggers: this.selectedTriggers,
+				}),
+				{
+					loading: 'Removing trigger...',
+					success: () => {
+						this.$resources.configuredAutoscales.submit();
+						return 'Removed Trigger';
+					},
+					error: 'Failed to remove trigger',
+				},
+			);
+		},
+
+		openAddTriggerDialog() {
+			this.show = false;
+			const server = this.server;
+
+			confirmDialog({
+				title: 'Add Autoscaling Trigger',
+				message: 'Create a new autoscaling rule for this server.',
+				fields: [
 					{
-						variant: 'solid',
-						theme: 'red',
-						label: 'Remove Triggers',
-						disabled: this.$resources?.configuredAutoscales?.data.length === 0,
-						onClick: () => {
-							toast.promise(
-								this.server.removeAutomatedScalingTriggers.submit(),
-								{
-									loading: 'Removing triggers...',
-									success: () => {
-										this.show = false;
-										return 'Removed Triggers';
-									},
-									error: () =>
-										getToastErrorMessage(
-											this.server.removeAutomatedScalingTriggers.error ||
-												'Failed to remove triggers',
-										),
-									duration: 5000,
-								},
-							);
-						},
+						label: 'Metric',
+						fieldname: 'metric',
+						type: 'select',
+						options: [{ label: 'CPU Usage', value: 'CPU' }],
+						default: 'CPU',
+						disabled: true,
+						required: true,
+					},
+
+					{
+						label: 'Threshold (%)',
+						fieldname: 'threshold',
+						type: 'float',
+						required: true,
 					},
 					{
-						variant: 'solid',
-						label:
-							this.$resources?.configuredAutoscales?.data.length === 0
-								? 'Add Triggers'
-								: 'Update Triggers',
-						onClick: () => {
-							this.show = false;
-							const server = this.server;
-
-							confirmDialog({
-								title: 'Configure Automated Scaling',
-								message: `
-							You can configure when your server scales up and down depending on CPU loads.<br>
-							refer to this documentation to learn more!
-						`,
-								fields: [
-									{
-										label: 'Enter the new threshold load to scale up at',
-										fieldname: 'scaleUpCPUThreshold',
-										type: 'float',
-									},
-									{
-										label: 'Enter the new threshold load to scale down at',
-										fieldname: 'scaleDownCPUThreshold',
-										type: 'float',
-									},
-								],
-								primaryAction: {
-									label: 'Configure Automated Scaling',
-								},
-								onSuccess({ hide, values }) {
-									if (!server || server.addAutomatedScalingTriggers.loading)
-										return;
-									let upThreshold = parseFloat(values.scaleUpCPUThreshold);
-									let downThreshold = parseFloat(values.scaleDownCPUThreshold);
-
-									if (!upThreshold || !downThreshold) {
-										toast.error(
-											'Invalid values for scale up or down threshold',
-										);
-										return;
-									}
-
-									toast.promise(
-										server.addAutomatedScalingTriggers.submit(
-											{
-												scale_up_cpu_threshold: upThreshold,
-												scale_down_cpu_threshold: downThreshold,
-											},
-											{
-												onSuccess() {
-													hide();
-												},
-											},
-										),
-										{
-											loading: 'Adding triggers...',
-											success: 'Added triggers',
-											error: () =>
-												getToastErrorMessage(
-													server.addAutomatedScalingTriggers.error ||
-														'Failed to add triggers',
-												),
-											duration: 5000,
-										},
-									);
-								},
-							});
-						},
+						label: 'Action',
+						fieldname: 'action',
+						type: 'select',
+						options: [
+							{ label: 'Scale Up', value: 'Scale Up' },
+							{ label: 'Scale Down', value: 'Scale Down' },
+						],
+						required: true,
 					},
 				],
-			};
+				primaryAction: {
+					label: 'Add Trigger',
+				},
+				onSuccess: ({ hide, values }) => {
+					const threshold = parseFloat(values.threshold);
+
+					if (isNaN(threshold)) {
+						toast.error('Threshold must be a valid number');
+						return;
+					}
+
+					toast.promise(
+						server.addAutomatedScalingTriggers.submit({
+							threshold,
+							action: values.action,
+						}),
+						{
+							loading: 'Adding trigger...',
+							success: () => {
+								hide();
+								return 'Trigger added';
+							},
+							error: 'Failed to add trigger',
+						},
+					);
+				},
+			});
 		},
 	},
 };

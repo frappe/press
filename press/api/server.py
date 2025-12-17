@@ -843,5 +843,5 @@ def get_configured_autoscale_triggers(name) -> list[dict[str, float]] | None:
 	return frappe.db.get_all(
 		"Auto Scale Trigger",
 		{"parent": name},
-		["metric", "threshold", "action"],
+		["name", "metric", "threshold", "action"],
 	)
