@@ -43,21 +43,25 @@ class ProxyFailover(Document, StepHandler):
 				"Failover can only be initiated if one of the proxy server has a static IP"
 			)
 
+		# TODO: people keep bringing up ttl - what's it's significance?
+		# TODO: get recursive hash from primary & seconary and check what's the difference
+		# TODO: maybe run a lot of stuff via ansible - as we want to halt agent jobs as soon as possible on primary
+
 		for step in self.get_steps(
 			[
+				self.halt_agent_jobs_on_primary,
 				self.stop_replication,
 				self.attach_static_ip_to_secondary,
-				self.route_requests_from_primary_to_secondary,
+				self.route_requests_from_primary_to_secondary, # do this via ansible
 				self.wait_for_secondary_proxy_routing,
-				self.halt_agent_jobs_on_primary,
 				self.update_dns_records_for_all_sites,
 				self.move_wildcard_domains_from_primary,  # TODO: dont know the significance of this
 				self.wait_for_wildcard_domains_setup,
 				self.update_app_servers,
 				self.forward_undelivered_jobs_to_secondary,
+				self.switch_primary,
 				self.add_ssh_users_for_existing_benches,
 				self.remove_primary_access_and_ensure_nginx_started_in_secondary,
-				self.switch_primary,
 			]
 		):
 			self.append("failover_steps", step)
@@ -100,7 +104,7 @@ class ProxyFailover(Document, StepHandler):
 
 		# not pinging agent directly as:
 		# maybe primary is up and we retried the failover - so agent might've gone down
-		response = os.system(f"ping -c 1 {primary_proxy.ip}")
+		response = os.system(f"ping -c 3 {primary_proxy.ip}")
 		if response != 0:
 			comments = "Primary proxy server is not reachable. Skipping routing."
 			_update_status(comments, step, Status.Skipped)
