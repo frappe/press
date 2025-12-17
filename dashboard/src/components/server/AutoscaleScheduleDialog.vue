@@ -4,7 +4,10 @@
 		:options="{ title: `Schedule Autoscale`, size: '2xl' }"
 	>
 		<template #body-content>
-			<div class="flex flex-col space-y-6">
+			<div
+				v-if="$resources.autoscaleTriggers?.data?.length === 0"
+				class="flex flex-col space-y-6"
+			>
 				<div class="leading-relaxed">
 					<p class="font-medium mb-1">Autoscale Scheduling Rules</p>
 
@@ -48,6 +51,29 @@
 					Schedule Autoscale
 				</Button>
 			</div>
+			<div
+				v-else
+				class="flex flex-col items-center justify-center rounded-lg border border-gray-200 bg-gray-50 p-6 text-center space-y-3"
+			>
+				<p class="text-gray-900">Autoscale scheduling is unavailable</p>
+
+				<p class="text-gray-600 max-w-md">
+					You can only schedule autoscale records when automatic scaling is not
+					already configured for this server.
+				</p>
+
+				<p class="text-gray-600">
+					Please read the
+					<a
+						href="https://docs.frappe.io/cloud/application-server-horizontal-scaling"
+						target="_blank"
+						class="text-gray-900 underline hover:text-gray-700"
+					>
+						documentation
+					</a>
+					for more information.
+				</p>
+			</div>
 		</template>
 	</Dialog>
 </template>
@@ -84,6 +110,15 @@ export default {
 	},
 
 	resources: {
+		autoscaleTriggers() {
+			return {
+				url: 'press.api.server.get_configured_autoscale_triggers',
+				makeParams: () => {
+					return { name: this.server };
+				},
+				auto: true,
+			};
+		},
 		scheduleAutoscale() {
 			return {
 				url: 'press.api.server.schedule_auto_scale',
