@@ -3191,7 +3191,13 @@ class Server(BaseServer):
 
 	@dashboard_whitelist()
 	@frappe.whitelist()
-	def configure_automated_scaling(self, scale_up_cpu_threshold: float, scale_down_cpu_threshold: float):
+	def remove_automated_scaling_triggers(self):
+		"""Currently we need to remove both since we can't support scaling up trigger without a scaling down trigger"""
+		frappe.db.delete("Auto Scale Trigger", {"parent": self.name})
+
+	@dashboard_whitelist()
+	@frappe.whitelist()
+	def add_automated_scaling_triggers(self, scale_up_cpu_threshold: float, scale_down_cpu_threshold: float):
 		"""Configure automated scaling based on cpu loads"""
 		self.append(
 			"auto_scale_trigger",

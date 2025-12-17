@@ -83,6 +83,30 @@ export default {
 				actions: () => [
 					{
 						variant: 'solid',
+						theme: 'red',
+						label: 'Remove Triggers',
+						disabled: this.$resources?.configuredAutoscales?.data.length === 0,
+						onClick: () => {
+							toast.promise(
+								this.server.removeAutomatedScalingTriggers.submit(),
+								{
+									loading: 'Removing triggers...',
+									success: () => {
+										this.show = false;
+										return 'Removed Triggers';
+									},
+									error: () =>
+										getToastErrorMessage(
+											this.server.removeAutomatedScalingTriggers.error ||
+												'Failed to remove triggers',
+										),
+									duration: 5000,
+								},
+							);
+						},
+					},
+					{
+						variant: 'solid',
 						label:
 							this.$resources?.configuredAutoscales?.data.length === 0
 								? 'Add Triggers'
@@ -113,7 +137,7 @@ export default {
 									label: 'Configure Automated Scaling',
 								},
 								onSuccess({ hide, values }) {
-									if (!server || server.configureAutomatedScaling.loading)
+									if (!server || server.addAutomatedScalingTriggers.loading)
 										return;
 									let upThreshold = parseFloat(values.scaleUpCPUThreshold);
 									let downThreshold = parseFloat(values.scaleDownCPUThreshold);
@@ -126,7 +150,7 @@ export default {
 									}
 
 									toast.promise(
-										server.configureAutomatedScaling.submit(
+										server.addAutomatedScalingTriggers.submit(
 											{
 												scale_up_cpu_threshold: upThreshold,
 												scale_down_cpu_threshold: downThreshold,
@@ -138,12 +162,12 @@ export default {
 											},
 										),
 										{
-											loading: 'Automating scaling...',
-											success: 'Automated scaling',
+											loading: 'Adding triggers...',
+											success: 'Added triggers',
 											error: () =>
 												getToastErrorMessage(
-													server.configureAutomatedScaling.error ||
-														'Failed to configure automated scaling',
+													server.addAutomatedScalingTriggers.error ||
+														'Failed to add triggers',
 												),
 											duration: 5000,
 										},
