@@ -2,7 +2,7 @@ import functools
 import inspect
 from collections import OrderedDict
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Literal
 
 import frappe
 from frappe import TYPE_CHECKING, _
@@ -16,12 +16,48 @@ if TYPE_CHECKING:
 from press.utils import get_current_team
 
 from .action import action_key
+from .api import api_key
 from .document import check as document_check
 from .marketplace import check as marketplace_check
 from .server_snapshot import check as server_snapshot_check
 from .site_backup import check as site_backup_check
 from .utils import document_type_key
 from .webhook import check as webhook_check
+
+
+def api(scope: Literal["billing"]):
+	def wrapper(fn):
+		@functools.wraps(fn)
+		def inner(*args, **kwargs):
+			key = api_key(scope)
+			if not key:
+				return fn(*args, **kwargs)
+			team: Team = get_current_team(get_doc=True)
+			if team.is_team_owner() or team.is_admin_user():
+				return fn(*args, **kwargs)
+			PressRole = frappe.qb.DocType("Press Role")
+			PressRoleUser = frappe.qb.DocType("Press Role User")
+			has_permission = (
+				frappe.qb.from_(PressRole)
+				.inner_join(PressRoleUser)
+				.on(PressRoleUser.parent == PressRole.name)
+				.select(Count(PressRole.name).as_("count"))
+				.where(PressRole.team == team.name)
+				.where(PressRole[key] == 1)
+				.where(PressRoleUser.user == frappe.session.user)
+				.run(as_dict=True)
+				.pop()
+				.get("count")
+				> 0
+			)
+			if not has_permission:
+				error_message = _("You do not have permission to perform the action.")
+				frappe.throw(error_message, frappe.PermissionError)
+			return fn(*args, **kwargs)
+
+		return inner
+
+	return wrapper
 
 
 def action():
