@@ -249,7 +249,7 @@ def get_cpu_usage(name: str) -> float:
 		return 0.0
 
 	query = f"""
-				1 - avg(rate(node_cpu_seconds_total{{instance="{name}",job="node",mode="idle"}}[120s]))
+				1 - avg(rate(node_cpu_seconds_total{{instance="{name}",job="node",mode="idle"}}[4m]))
 			"""
 
 	url = f"https://{monitor_server}/prometheus/api/v1/query"
