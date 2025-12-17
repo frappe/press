@@ -187,8 +187,8 @@ frappe.ui.form.on('Database Server', {
 				frm.doc.is_server_setup,
 			],
 			[
-				'Provide Frappe User DU Permission',
-				'provide_frappe_user_du_permission',
+				'Provide Frappe User DU and Find Permission',
+				'provide_frappe_user_du_and_find_permission',
 				true,
 				frm.doc.is_server_setup,
 			],
