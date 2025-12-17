@@ -228,10 +228,11 @@ class Agent:
 			site=site.name,
 		)
 
-	def optimize_tables(self, site):
+	def optimize_tables(self, site, tables):
 		return self.create_agent_job(
 			"Optimize Tables",
 			f"benches/{site.bench}/sites/{site.name}/optimize",
+			data={"tables": tables},
 			bench=site.bench,
 			site=site.name,
 		)

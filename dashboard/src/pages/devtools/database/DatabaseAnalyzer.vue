@@ -56,10 +56,10 @@
 							View Details
 						</Button>
 						<Button
-							@click="optimizeTable"
+							@click="(_) => optimizeTable()"
 							:loading="this.$resources.optimizeTable.loading"
 						>
-							Optimize Table
+							Optimize Tables
 						</Button>
 					</div>
 				</div>
@@ -81,6 +81,13 @@
 						:style="{
 							backgroundColor: '#34BAE3',
 							width: `${databaseSizeBreakup.index_size_percentage}%`,
+						}"
+					></div>
+					<div
+						class="h-7"
+						:style="{
+							backgroundColor: '#FFBF00',
+							width: `${databaseSizeBreakup.claimable_size_percentage}%`,
 						}"
 					></div>
 				</div>
@@ -115,6 +122,18 @@
 					>
 						<div
 							class="h-2 w-2 rounded-full"
+							style="background-color: #ffbf00"
+						></div>
+						<span class="text-sm text-gray-800">Claimable Space</span
+						><span class="ml-auto text-sm text-gray-800"
+							>{{ formatSizeInMB(this.databaseSizeBreakup.claimable_size) }}
+						</span>
+					</div>
+					<div
+						class="flex w-full items-center justify-start gap-x-2 border-t py-3"
+					>
+						<div
+							class="h-2 w-2 rounded-full"
 							style="background-color: #e2e2e2"
 						></div>
 						<span class="text-sm text-gray-800">Free Space</span
@@ -123,6 +142,21 @@
 						</span>
 					</div>
 				</div>
+				<!-- Message -->
+				<AlertBanner
+					title="Do you want to cleanup the reclaimable space ?"
+					type="info"
+					:showIcon="false"
+					class="my-3"
+				>
+					<Button
+						class="ml-auto"
+						variant="outline"
+						link="https://docs.frappe.io/cloud/sites/monitoring#how-to-check-for-reclaimable-space"
+					>
+						Documentation
+					</Button>
+				</AlertBanner>
 			</div>
 
 			<!-- Database Processes -->
@@ -290,6 +324,7 @@
 				:tableSchemas="tableSchemas"
 				v-model="showTableSchemaSizeDetailsDialog"
 				:viewSchemaDetails="viewTableSchemaDetails"
+				:optimizeTable="optimizeTable"
 			/>
 
 			<DatabaseTableSchemaDialog
@@ -329,6 +364,7 @@ import DatabaseTableSchemaDialog from '../../../components/devtools/database/Dat
 import DatabaseTableSchemaSizeDetailsDialog from '../../../components/devtools/database/DatabaseTableSchemaSizeDetailsDialog.vue';
 import DatabaseAddIndexButton from '../../../components/devtools/database/DatabaseAddIndexButton.vue';
 import DatabasePerformanceSchemaDisabledNotice from '../../../components/devtools/database/DatabasePerformanceSchemaDisabledNotice.vue';
+import { confirmDialog } from '../../../utils/components';
 
 export default {
 	name: 'DatabaseAnalyzer',
@@ -430,9 +466,13 @@ export default {
 				initialData: {},
 				auto: false,
 				onSuccess: (data) => {
+					console.log(data);
 					if (data?.message) {
 						if (data?.message?.success) {
 							toast.success(data?.message?.message);
+							console.log(
+								`/sites/${this.site}/insights/jobs/${data?.message?.job_name}`,
+							);
 							this.$router.push(
 								`/sites/${this.site}/insights/jobs/${data?.message?.job_name}`,
 							);
@@ -526,6 +566,7 @@ export default {
 					table_name: tableName,
 					data_size_mb: (table.size.data_length / (1024 * 1024)).toFixed(3),
 					index_size_mb: (table.size.index_length / (1024 * 1024)).toFixed(3),
+					data_free_mb: (table.size.data_free / (1024 * 1024)).toFixed(3),
 					total_size_mb: (table.size.total_size / (1024 * 1024)).toFixed(3),
 					no_of_columns: table.columns.length,
 				});
@@ -586,17 +627,31 @@ export default {
 			);
 			index_size = index_size.toFixed(2);
 
+			let claimable_size = this.tableSizeInfo.reduce(
+				(a, b) => a + parseFloat(b.data_free_mb),
+				0,
+			);
+
 			let database_size_limit =
 				this.site_info.current_plan.max_database_usage.toFixed(2);
 
 			return {
 				data_size,
 				index_size,
+				claimable_size,
 				database_size_limit,
-				free_size: (database_size_limit - data_size - index_size).toFixed(2),
+				free_size: (
+					database_size_limit -
+					data_size -
+					index_size -
+					claimable_size
+				).toFixed(2),
 				data_size_percentage: parseInt((data_size / database_size_limit) * 100),
 				index_size_percentage: parseInt(
 					(index_size / database_size_limit) * 100,
+				),
+				claimable_size_percentage: parseInt(
+					(claimable_size / database_size_limit) * 100,
 				),
 			};
 		},
@@ -751,11 +806,29 @@ export default {
 				},
 			});
 		},
-		optimizeTable() {
-			this.$resources.optimizeTable.submit({
-				dt: 'Site',
-				dn: this.site,
-				method: 'optimize_tables',
+		optimizeTable(tableName = null) {
+			this.showTableSchemaSizeDetailsDialog = false;
+
+			confirmDialog({
+				title: 'Optimize Database Tables',
+				message: tableName
+					? `Do you want to optimize the table <strong>${tableName}</strong> to reclaim space ?<br>`
+					: `Frappe Cloud will find tables where reclaimable space exceeds 100 MB or 20% of the table size.<br>Are you sure you want to optimize the database tables ?<br>`,
+				primaryAction: {
+					label: 'Optimize',
+					variant: 'solid',
+					onClick: ({ hide }) => {
+						hide();
+						this.$resources.optimizeTable.submit({
+							dt: 'Site',
+							dn: this.site,
+							method: 'optimize_tables',
+							args: {
+								tables: tableName ? [tableName] : [],
+							},
+						});
+					},
+				},
 			});
 		},
 		viewTableSchemaDetails(tableName) {
