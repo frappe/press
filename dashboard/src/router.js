@@ -249,6 +249,12 @@ let router = createRouter({
 					component: () => import('./components/partners/PartnerOverview.vue'),
 				},
 				{
+					name: 'PartnerWebsiteDetails',
+					path: 'website-details',
+					component: () =>
+						import('./components/partners/PartnerWebsiteDetails.vue'),
+				},
+				{
 					name: 'PartnerCustomers',
 					path: 'customers',
 					component: () => import('./components/partners/PartnerCustomers.vue'),

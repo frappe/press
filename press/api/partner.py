@@ -86,6 +86,12 @@ def get_partner_details(partner_email):
 			"introduction",
 			"customers",
 			"custom_process_maturity_level",
+			"phone_number",
+			"address",
+			"custom_foundation_date",
+			"custom_team_size",
+			"custom_successful_projects_count",
+			"custom_journey_blog_link",
 		],
 	)
 	if data:
