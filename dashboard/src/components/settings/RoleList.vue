@@ -25,15 +25,21 @@
 				</div>
 				<div>
 					<div class="flex items-center -space-x-2">
-						<Avatar
+						<Tooltip
 							v-for="user in role.users.slice(0, 3)"
-							:shape="'circle'"
-							:ref_for="true"
-							:image="user.user_image"
-							:label="user.full_name"
-							size="lg"
-							class="border border-white"
-						/>
+							:text="user.full_name"
+							:hover-delay="1"
+							:placement="'top'"
+						>
+							<Avatar
+								:shape="'circle'"
+								:ref_for="true"
+								:image="user.user_image"
+								:label="user.full_name"
+								size="lg"
+								class="border border-white"
+							/>
+						</Tooltip>
 						<div
 							v-if="role.users.length > 4"
 							class="flex items-center justify-center relative shrink-0 w-7 h-7 rounded-full bg-gray-300 border border-white"
