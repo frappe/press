@@ -14,7 +14,23 @@
 				<Spinner class="w-4" /> Loading
 			</div>
 			<div v-else>
+				<AlertBanner
+					title="Please note if threshold values are added on both CPU and Memory, the scaling will trigger if either of them are true"
+					type="info"
+					:showIcon="false"
+					class="mb-3"
+				/>
 				<div class="flex justify-end gap-2">
+					<Button
+						v-if="selectedTriggers.length > 0"
+						variant="subtle"
+						class="mb-3"
+						theme="red"
+						iconLeft="trash-2"
+						@click="onRemoveTrigger"
+					>
+						Remove
+					</Button>
 					<Button
 						variant="solid"
 						class="mb-3"
@@ -22,16 +38,6 @@
 						@click="openAddTriggerDialog"
 					>
 						New
-					</Button>
-					<Button
-						v-if="selectedTriggers.length > 0"
-						variant="solid"
-						class="mb-3"
-						theme="red"
-						iconLeft="trash-2"
-						@click="onRemoveTrigger"
-					>
-						Remove
 					</Button>
 					<Button
 						variant="subtle"
@@ -59,6 +65,7 @@ import { h } from 'vue';
 import { toast } from 'vue-sonner';
 import { confirmDialog } from '../../utils/components';
 import GenericList from '../GenericList.vue';
+import AlertBanner from '../AlertBanner.vue';
 import Badge from '../global/Badge.vue';
 
 export default {
@@ -162,9 +169,11 @@ export default {
 						label: 'Metric',
 						fieldname: 'metric',
 						type: 'select',
-						options: [{ label: 'CPU Usage', value: 'CPU' }],
+						options: [
+							{ label: 'CPU Usage', value: 'CPU' },
+							{ label: 'Memory', value: 'Memory' },
+						],
 						default: 'CPU',
-						disabled: true,
 						required: true,
 					},
 
@@ -198,6 +207,7 @@ export default {
 
 					toast.promise(
 						server.addAutomatedScalingTriggers.submit({
+							metric: values.metric,
 							threshold,
 							action: values.action,
 						}),
