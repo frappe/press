@@ -282,14 +282,17 @@ def ensure_dns_aaaa_record_doesnt_exist(domain: str):
 		pass  # We have other problems
 
 
+DNS_HELP_ARTICLE = "https://developers.cloudflare.com/dns/manage-dns-records/"
+
+
 def check_domain_proxied(domain) -> str | None:
 	try:
 		res = requests.head(f"http://{domain}", timeout=3)
 	except requests.exceptions.RequestException as e:
-		frappe.throw(
-			f"Unable to connect to the domain. Is the DNS correct{get_dns_provider_link_substr(domain)}?\n\n{e!s}",
-			DNSValidationError,
+		frappe.msgprint(
+			f"Unable to connect to the domain. Is the DNS correct{get_dns_provider_link_substr(domain)}? <a href='{DNS_HELP_ARTICLE}' target='_blank' class='underline' >Learn more</a>.",
 		)
+		raise DNSValidationError from e
 	else:
 		if (server := res.headers.get("server")) not in ("Frappe Cloud", None):  # eg: cloudflare
 			return server
