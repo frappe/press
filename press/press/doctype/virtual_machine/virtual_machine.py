@@ -12,7 +12,7 @@ import boto3
 import botocore
 import frappe
 import rq
-from frappe.core.utils import find
+from frappe.core.utils import find, find_all
 from frappe.desk.utils import slug
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
@@ -1060,7 +1060,7 @@ class VirtualMachine(Document):
 			return volume
 		return frappe._dict({"size": 0})
 
-	def get_data_volume(self):
+	def get_data_volume(self, all=False):
 		if not self.has_data_volume:
 			return self.get_root_volume()
 
@@ -1075,7 +1075,8 @@ class VirtualMachine(Document):
 			"Hetzner": lambda v: v.device != "/dev/sda" and v.device not in temporary_volume_devices,
 		}
 		data_volume_filter = DATA_VOLUME_FILTERS.get(self.cloud_provider)
-		volume = find(self.volumes, data_volume_filter)
+		find_func = find if not all else find_all
+		volume = find_func(self.volumes, data_volume_filter)
 		if volume:  # Un-provisioned machines might not have any volumes
 			return volume
 		return frappe._dict({"size": 0})

@@ -843,3 +843,37 @@ def schedule_auto_scale(name, scheduled_scale_up_time: str, scheduled_scale_down
 
 	create_record("Scale Up", formatted_scheduled_scale_up_time)
 	create_record("Scale Down", formatted_scheduled_scale_down_time)
+
+
+@frappe.whitelist()
+@protected(["Server", "Database Server"])
+def schedule_disk_resize(
+	name: str, server_type: str, volume_id: str, expected_volume_size: int | str, scheduled_datetime: str
+) -> None:
+	server = frappe.db.get_value(server_type, name, ["virtual_machine", "status"], as_dict=True)
+	if server.status != "Active":
+		frappe.throw(f"Cannot schedule disk resize for a server in {server.status} state")
+
+	if frappe.db.get_value(
+		"Virtual Disk Resize",
+		{
+			"creation": [">", frappe.utils.add_days(frappe.utils.now_datetime(), -7)],
+			"virtual_machine": server.virtual_machine,
+			"status": ["not in", ["Failure", "Cancelled"]],
+		},
+		as_dict=True,
+	):
+		frappe.throw(
+			"A disk resize was triggered within the last 7 days. Please wait before scheduling another resize."
+		)
+
+	frappe.get_doc(
+		{
+			"doctype": "Virtual Disk Resize",
+			"virtual_machine": server.virtual_machine,
+			"old_volume_id": volume_id,
+			"expected_volume_size": expected_volume_size,
+			"scheduled_datetime": scheduled_datetime,
+			"status": "Scheduled",
+		}
+	).insert()

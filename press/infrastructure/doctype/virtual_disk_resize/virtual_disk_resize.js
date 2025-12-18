@@ -8,6 +8,7 @@ frappe.ui.form.on('Virtual Disk Resize', {
 			[__('Force Continue'), 'force_continue', frm.doc.status === 'Failure'],
 			[__('Force Fail'), 'force_fail', frm.doc.status === 'Running'],
 			[__('Propagate Volume ID'), 'propagate_volume_id'],
+			[__('Cancel'), 'cancel', !frm.is_new() && frm.doc.status === 'Scheduled'],
 		].forEach(([label, method, condition]) => {
 			if (condition) {
 				frm.add_custom_button(

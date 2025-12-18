@@ -93,6 +93,7 @@ ALLOWED_DOCTYPES = [
 	"Support Access",
 	"Partner Lead Origin",
 	"Auto Scale Record",
+	"Virtual Disk Resize",
 ]
 
 whitelisted_methods = set()

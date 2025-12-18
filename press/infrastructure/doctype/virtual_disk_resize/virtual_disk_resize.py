@@ -65,18 +65,28 @@ class VirtualDiskResize(Document):
 		service: DF.Data | None
 		start: DF.Datetime | None
 		status: DF.Literal[
-			"Scheduled",
-			"Pending",
-			"Preparing",
-			"Ready",
-			"Running",
-			"Success",
-			"Failure",
+			"Scheduled", "Pending", "Preparing", "Ready", "Running", "Success", "Failure", "Cancelled"
 		]
 		steps: DF.Table[VirtualMachineMigrationStep]
 		virtual_disk_snapshot: DF.Link | None
 		virtual_machine: DF.Link
 	# end: auto-generated types
+
+	dashboard_fields = (
+		"virtual_machine",
+		"status",
+		"downtime_start",
+		"downtime_end",
+		"downtime_duration",
+		"old_volume_id",
+		"old_volume_status",
+		"old_volume_size",
+		"new_volume_id",
+		"new_volume_status",
+		"new_volume_size",
+		"scheduled_time",
+		"expected_disk_size",
+	)
 
 	def before_insert(self):
 		self.validate_aws_only()
@@ -104,25 +114,32 @@ class VirtualDiskResize(Document):
 			self.status = Status.Failure
 			self.save()
 
-	def get_lock(self):
+	def get_lock(self, wait=True):
 		try:
-			frappe.get_value("Virtual Machine", self.virtual_machine, "status", for_update=True)
+			frappe.get_value("Virtual Machine", self.virtual_machine, "status", for_update=True, wait=wait)
 			return True
 		except frappe.QueryTimeoutError:
-			frappe.db.rollback()
-			self.add_comment("Could not acquire lock, the virtual machine seems to be busy.")
-			frappe.db.commit()
 			return False
 
 	@frappe.whitelist()
 	def execute(self):
-		if not self.get_lock():
+		if not self.get_lock() or self.status != "Scheduled":
 			return
 		self.run_prerequisites()
 		self.status = Status.Running
 		self.start = frappe.utils.now_datetime()
 		self.save()
 		self.next()
+
+	@frappe.whitelist()
+	def cancel(self):
+		if not self.get_lock(wait=False):
+			frappe.throw("The Server is currently busy. Please try again in a moment..")
+		if self.status != "Scheduled":
+			frappe.throw("Only scheduled disk resize can be cancelled.")
+
+		self.status = "Cancelled"
+		self.save()
 
 	def add_steps(self):
 		for step in self.shrink_steps:
@@ -301,7 +318,8 @@ class VirtualDiskResize(Document):
 		machine = self.machine
 		root_volume = machine.get_root_volume()
 
-		volumes = find_all(machine.volumes, lambda v: v.volume_id != root_volume.volume_id)
+		excluded_volumes = [root_volume.volume_id] + [vol.volume_id for vol in machine.temporary_volumes]
+		volumes = find_all(machine.volumes, lambda v: v.volume_id not in excluded_volumes)
 		if len(volumes) == 0:
 			frappe.throw("No additional volumes found. Cannot shrink any volume.")
 		elif len(volumes) > 1:
