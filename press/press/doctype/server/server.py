@@ -30,6 +30,10 @@ from press.press.doctype.add_on_storage_log.add_on_storage_log import (
 	insert_addon_storage_log,
 )
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
+from press.press.doctype.auto_scale_record.auto_scale_record import (
+	create_prometheus_rule_for_scaling,
+	update_or_delete_prometheus_rule_for_scaling,
+)
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server_activity.server_activity import log_server_activity
@@ -3193,17 +3197,36 @@ class Server(BaseServer):
 	@frappe.whitelist()
 	def remove_automated_scaling_triggers(self, triggers: list[str]):
 		"""Currently we need to remove both since we can't support scaling up trigger without a scaling down trigger"""
-		frappe.db.delete("Auto Scale Trigger", {"parent": self.name, "name": ("in", triggers)})
+		trigger_filters = {"parent": self.name, "name": ("in", triggers)}
+		metrics = frappe.db.get_all("Auto Scale Trigger", trigger_filters, pluck="metric")
+
+		frappe.db.delete("Auto Scale Trigger", trigger_filters)
+		for trigger_metric in metrics:
+			update_or_delete_prometheus_rule_for_scaling(self.name, trigger_metric)
 
 	@dashboard_whitelist()
 	@frappe.whitelist()
-	def add_automated_scaling_triggers(self, action: str, threshold: float):
+	def add_automated_scaling_triggers(self, metric: Literal["CPU", "Memory"], action: str, threshold: float):
 		"""Configure automated scaling based on cpu loads"""
-		self.append(
-			"auto_scale_trigger",
-			{"metric": "CPU", "threshold": round(threshold, 2), "action": action},
+		threshold = round(threshold, 2)
+		existing_trigger = frappe.db.get_value(
+			"Auto Scale Trigger", {"action": action, "parent": self.name, "metric": metric}
 		)
-		self.save()
+
+		if existing_trigger:
+			frappe.db.set_value(
+				"Auto Scale Trigger",
+				existing_trigger,
+				{"action": action, "threshold": threshold, "metric": metric},
+			)
+		else:
+			self.append(
+				"auto_scale_trigger",
+				{"metric": metric, "threshold": threshold, "action": action},
+			)
+			self.save()
+
+		create_prometheus_rule_for_scaling(self.name, metric=metric, threshold=threshold, time_range="4m")
 
 	@dashboard_whitelist()
 	@frappe.whitelist()

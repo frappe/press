@@ -4,6 +4,7 @@
 import calendar
 import datetime
 import typing
+from typing import Literal
 
 import frappe
 from frappe.model.document import Document
@@ -739,3 +740,108 @@ def calculate_secondary_server_price(team: str, secondary_server_plan: str) -> f
 
 	_, days_in_this_month = calendar.monthrange(datetime.date.today().year, datetime.date.today().month)
 	return round(server_price_with_discount / days_in_this_month / 24, 2)
+
+
+def _get_query_map(instance_name: str, time_range: str = "4m"):
+	return {
+		"CPU": f"""
+		(
+			1 - avg(
+				rate(node_cpu_seconds_total{{instance="{instance_name}", job="node", mode="idle"}}[{time_range}])
+			)
+		) * 100
+		""".strip(),
+		"Memory": f"""
+		(
+			1 -
+			(
+				avg_over_time(node_memory_MemAvailable_bytes{{instance="{instance_name}", job="node"}}[{time_range}])
+				/
+				avg_over_time(node_memory_MemTotal_bytes{{instance="{instance_name}", job="node"}}[{time_range}])
+			)
+		) * 100
+		""".strip(),
+	}
+
+
+def update_or_delete_prometheus_rule_for_scaling(
+	instance_name: str, metric: Literal["CPU", "Memory"]
+) -> None:
+	rule_name = f"Autoscale Trigger - {instance_name}"
+	existing = frappe.db.get_value("Prometheus Alert Rule", rule_name, ["name", "expression"], as_dict=True)
+
+	if not existing:
+		return
+
+	query_map = _get_query_map(instance_name)
+	base_query = query_map[metric]
+	expression = existing.expression or ""  # Ideally we should have an expression here
+
+	parts = [p.strip() for p in expression.split(" OR ") if p.strip()]
+	parts = [p for p in parts if base_query not in p]
+
+	if not parts:
+		# This was the only expression present
+		frappe.db.delete("Prometheus Alert Rule", rule_name)
+		return
+
+	new_expression = " OR ".join(parts)  # Part without the removed metric
+	frappe.db.set_value(
+		"Prometheus Alert Rule",
+		rule_name,
+		"expression",
+		new_expression,
+	)
+
+
+def create_prometheus_rule_for_scaling(
+	instance_name: str,
+	metric: Literal["CPU", "Memory"],
+	threshold: float,
+	time_range: str = "4m",
+) -> None:
+	"""Create or update a Prometheus autoscaling alert rule."""
+	query_map = _get_query_map(instance_name)
+
+	base_query = query_map[metric]
+	query_with_threshold = f"({base_query} > {threshold})"
+
+	rule_name = f"Autoscale Trigger - {instance_name}"
+
+	existing = frappe.db.get_value(
+		"Prometheus Alert Rule",
+		{"name": rule_name},
+		["name", "expression"],
+		as_dict=True,
+	)
+
+	if existing:
+		expression = existing.expression or ""
+
+		parts = [p.strip() for p in expression.split(" OR ") if p.strip()]
+		parts = [p for p in parts if base_query not in p]
+
+		# Add updated metric expression
+		parts.append(query_with_threshold)
+
+		new_expression = " OR ".join(parts)
+
+		frappe.db.set_value(
+			"Prometheus Alert Rule",
+			rule_name,
+			"expression",
+			new_expression,
+		)
+
+	else:
+		doc = frappe.get_doc(
+			{
+				"doctype": "Prometheus Alert Rule",
+				"name": rule_name,
+				"description": f"Autoscale trigger for {instance_name}",
+				"expression": query_with_threshold,
+				"enabled": 1,
+				"for": "5m",
+			}
+		)
+		doc.insert()
