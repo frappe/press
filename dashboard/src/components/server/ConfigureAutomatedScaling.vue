@@ -150,6 +150,7 @@ export default {
 					loading: 'Removing trigger...',
 					success: () => {
 						this.$resources.configuredAutoscales.submit();
+						this.selectedTriggers = [];
 						return 'Removed Trigger';
 					},
 					error: 'Failed to remove trigger',

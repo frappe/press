@@ -74,6 +74,11 @@ class ARMDockerImageType(TypedDict):
 	bench: str
 
 
+class AutoScaleTriggerRow(TypedDict):
+	metric: Literal["CPU", "Memory"]
+	action: Literal["Scale Up", "Scale Down"]
+
+
 PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
 MARIADB_DATA_MNT_POINT = "/opt/volumes/mariadb"
 BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
@@ -3173,15 +3178,21 @@ class Server(BaseServer):
 	def remove_automated_scaling_triggers(self, triggers: list[str]):
 		"""Currently we need to remove both since we can't support scaling up trigger without a scaling down trigger"""
 		trigger_filters = {"parent": self.name, "name": ("in", triggers)}
-		metrics = frappe.db.get_all("Auto Scale Trigger", trigger_filters, pluck="metric")
-
+		matching_triggers: list[AutoScaleTriggerRow] = frappe.db.get_values(
+			"Auto Scale Trigger", trigger_filters, ["metric", "action"], as_dict=True
+		)
 		frappe.db.delete("Auto Scale Trigger", trigger_filters)
-		for trigger_metric in metrics:
-			update_or_delete_prometheus_rule_for_scaling(self.name, trigger_metric)
+
+		for trigger in matching_triggers:
+			update_or_delete_prometheus_rule_for_scaling(
+				self.name, metric=trigger["metric"], action=trigger["action"]
+			)
 
 	@dashboard_whitelist()
 	@frappe.whitelist()
-	def add_automated_scaling_triggers(self, metric: Literal["CPU", "Memory"], action: str, threshold: float):
+	def add_automated_scaling_triggers(
+		self, metric: Literal["CPU", "Memory"], action: Literal["Scale Up", "Scale Down"], threshold: float
+	):
 		"""Configure automated scaling based on cpu loads"""
 		threshold = round(threshold, 2)
 		existing_trigger = frappe.db.get_value(
@@ -3201,7 +3212,12 @@ class Server(BaseServer):
 			)
 			self.save()
 
-		create_prometheus_rule_for_scaling(self.name, metric=metric, threshold=threshold)
+		create_prometheus_rule_for_scaling(
+			self.name,
+			metric=metric,
+			threshold=threshold,
+			action=action,
+		)
 
 	@dashboard_whitelist()
 	@frappe.whitelist()
