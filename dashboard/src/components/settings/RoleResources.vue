@@ -70,7 +70,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { Button, FeatherIcon, Select, createListResource } from 'frappe-ui';
-import { getTeam } from '../../data/team';
+import { teamResources } from './data';
 
 const props = withDefaults(
 	defineProps<{
@@ -92,55 +92,11 @@ const icons = {
 	Site: 'globe',
 };
 
-const team = getTeam();
 const open = ref(false);
-
-const sites = createListResource({
-	doctype: 'Site',
-	auto: true,
-	filters: {
-		team: team.doc?.name,
-	},
-});
-
-const servers = createListResource({
-	doctype: 'Server',
-	auto: true,
-	filters: {
-		team: team.doc?.name,
-	},
-});
-
-const releaseGroups = createListResource({
-	doctype: 'Release Group',
-	auto: true,
-	filters: {
-		team: team.doc?.name,
-	},
-});
 
 const resourceToInclude = ref<string>('');
 const resourcesToInclude = computed(() => {
-	return [
-		...sites.data.map((site: any) => ({
-			document_type: 'Site',
-			document_name: site.name,
-			label: site.name,
-			value: site.name,
-		})),
-		...servers.data.map((server: any) => ({
-			document_type: 'Server',
-			document_name: server.name,
-			label: server.name,
-			value: server.name,
-		})),
-		...releaseGroups.data.map((releaseGroup: any) => ({
-			document_type: 'Release Group',
-			document_name: releaseGroup.name,
-			label: releaseGroup.name,
-			value: releaseGroup.name,
-		})),
-	].filter(
+	return teamResources.value.filter(
 		(resource) =>
 			!props.resources?.some(
 				(r) =>

@@ -76,7 +76,7 @@
 import { computed, ref } from 'vue';
 import { Button, Dialog, Select } from 'frappe-ui';
 import { dayjsLocal } from '../../utils/dayjs';
-import { getTeam } from '../../data/team';
+import { teamMembers } from './data';
 
 const props = withDefaults(
 	defineProps<{
@@ -93,14 +93,8 @@ defineEmits<{
 }>();
 
 const open = ref(false);
-const team = getTeam();
 const userForInvite = ref<string>('');
-const usersForInvite = computed(() => {
-	return team.doc?.team_members
-		.filter((u: any) => !props.users?.some((user) => user.user === u.user))
-		.map((user: any) => ({
-			label: user.user,
-			value: user.user,
-		}));
-});
+const usersForInvite = computed(() =>
+	teamMembers(props.users.map((u) => u.user)),
+);
 </script>

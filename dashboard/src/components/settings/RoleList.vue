@@ -6,7 +6,7 @@
 				variant="subtle"
 				@click="() => roles.refresh()"
 			/>
-			<Button icon="plus" variant="solid" />
+			<Button icon-left="plus" variant="solid" label="Create Role" />
 		</div>
 		<div class="grid grid-cols-3 gap-4 text-base">
 			<RouterLink
@@ -19,10 +19,10 @@
 				}"
 			>
 				<div
-					class="px-4 h-36 flex flex-col justify-evenly rounded shadow cursor-pointer hover:shadow-lg transition"
+					class="px-5 py-4 space-y-3 rounded shadow cursor-pointer hover:shadow-lg transition"
 				>
-					<div class="font-medium">{{ role.title }}</div>
-					<div class="flex flex-wrap gap-1">
+					<div class="font-medium h-6">{{ role.title }}</div>
+					<div class="h-6 flex flex-wrap gap-1">
 						<div v-for="permission in permissions(role)">
 							<Badge
 								variant="subtle"
@@ -31,7 +31,7 @@
 							/>
 						</div>
 					</div>
-					<div>
+					<div class="h-6">
 						<div class="flex items-center -space-x-2">
 							<Tooltip
 								v-for="user in role.users.slice(0, 3)"
@@ -59,11 +59,35 @@
 				</div>
 			</RouterLink>
 		</div>
+		<RoleCreateDialog
+			v-model="showCreateDialog"
+			@create="
+				(title, users, resources) => {
+					insert.submit({
+						doc: {
+							doctype: 'Press Role',
+							title,
+							users: users.map((u) => ({
+								user: u,
+							})),
+							resources: resources.map((resource) => ({
+								document_type: resource.document_type,
+								document_name: resource.document_name,
+							})),
+						},
+					});
+				}
+			"
+		/>
 	</div>
 </template>
 
 <script setup>
-import { createListResource } from 'frappe-ui';
+import { ref } from 'vue';
+import { createListResource, createResource } from 'frappe-ui';
+import RoleCreateDialog from './RoleCreateDialog.vue';
+
+const showCreateDialog = ref(false);
 
 const roles = createListResource({
 	doctype: 'Press Role',
@@ -80,6 +104,14 @@ const roles = createListResource({
 	sortBy: 'title',
 	sortOrder: 'asc',
 	auto: true,
+});
+
+const insert = createResource({
+	url: 'press.api.client.insert',
+	auto: false,
+	onSuccess: () => {
+		roles.refresh();
+	},
 });
 
 const permissions = (role) => {
