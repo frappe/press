@@ -18,8 +18,7 @@
 					type="info"
 					:showIcon="false"
 					class="mb-3"
-					title="If threshold values are configured for both CPU and Memory, scaling
-					will be triggered when either condition is met.
+					title="When both CPU and Memory thresholds are set, scaling will trigger if either condition is met.
 					<br>Please refer to the <a href='https://docs.frappe.io/cloud/application-server-horizontal-scaling#application-server-horizontal-scaling'
 					target='_blank' class='underline'>documentation</a> for more information."
 				/>
