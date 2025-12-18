@@ -3,14 +3,23 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import boto3
-import dns
 import frappe
 import requests
-from dns.resolver import Resolver
+from dns.exception import DNSException
+from dns.rdatatype import AAAA, CAA, CNAME, SOA, A
+from dns.resolver import NoAnswer, Resolver
 from frappe.core.utils import find
 from frappe.utils.caching import redis_cache
 
-from press.exceptions import AAAARecordExists, DNSValidationError
+from press.exceptions import (
+	AAAARecordExists,
+	ConflictingCAARecord,
+	ConflictingDNSRecord,
+	DNSValidationError,
+	DomainProxied,
+	MultipleARecords,
+	MultipleCNAMERecords,
+)
 from press.utils import log_error
 
 if TYPE_CHECKING:
@@ -22,7 +31,7 @@ NAMESERVERS = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
 @frappe.whitelist()
 def create_dns_record(doc, record_name=None):
 	"""Check if site needs dns records and creates one."""
-	domain = frappe.get_doc("Root Domain", doc.domain)
+	domain: RootDomain = frappe.get_doc("Root Domain", doc.domain)
 
 	if domain.generic_dns_provider:
 		return
@@ -116,14 +125,14 @@ def get_dns_provider_mname_rname(domain):
 	resolver = Resolver(configure=False)
 	resolver.nameservers = NAMESERVERS
 	try:
-		answer = resolver.query(domain, "SOA")
+		answer = resolver.query(domain, SOA)
 		if len(answer) > 0:
 			mname = answer[0].mname.to_text()
 			rname = answer[0].rname.to_text()
 			return extract(mname).registered_domain, extract(rname).registered_domain
-	except dns.resolver.NoAnswer:
+	except NoAnswer:
 		pass
-	except dns.exception.DNSException:
+	except DNSException:
 		pass
 	return None
 
@@ -157,13 +166,13 @@ def check_domain_allows_letsencrypt_certs(domain):
 	resolver = Resolver(configure=False)
 	resolver.nameservers = NAMESERVERS
 	try:
-		answer = resolver.query(naked_domain, "CAA")
+		answer = resolver.query(naked_domain, CAA)
 		for rdata in answer:
 			if "letsencrypt.org" in rdata.to_text():
 				return True
-	except dns.resolver.NoAnswer:
+	except NoAnswer:
 		pass  # no CAA record. Anything goes
-	except dns.exception.DNSException:
+	except DNSException:
 		pass  # We have other problems
 	else:
 		frappe.throw(
@@ -177,7 +186,7 @@ def check_dns_cname(name, domain):
 	try:
 		resolver = Resolver(configure=False)
 		resolver.nameservers = NAMESERVERS
-		answer = resolver.query(domain, "CNAME")
+		answer = resolver.query(domain, CNAME)
 		if len(answer) > 1:
 			raise MultipleCNAMERecords
 		mapped_domain = answer[0].to_text().rsplit(".", 1)[0]
@@ -193,10 +202,10 @@ def check_dns_cname(name, domain):
 			f"Domain <b>{domain}</b> has multiple CNAME records: <b>{multiple_domains}</b>. Please keep only one{get_dns_provider_link_substr(domain)}.",
 			MultipleCNAMERecords,
 		)
-	except dns.resolver.NoAnswer as e:
+	except NoAnswer as e:
 		result["exists"] = False
 		result["answer"] = str(e)
-	except dns.exception.DNSException as e:
+	except DNSException as e:
 		result["answer"] = str(e)
 	except Exception as e:
 		result["answer"] = str(e)
@@ -226,11 +235,11 @@ def check_dns_a(name, domain):
 	try:
 		resolver = Resolver(configure=False)
 		resolver.nameservers = NAMESERVERS
-		answer = resolver.query(domain, "A")
+		answer = resolver.query(domain, A)
 		if len(answer) > 1:
 			raise MultipleARecords
 		domain_ip = answer[0].to_text()
-		site_ip = resolver.query(name, "A")[0].to_text()
+		site_ip = resolver.query(name, A)[0].to_text()
 		result["answer"] = answer.rrset.to_text()
 		result["matched"] = check_for_ip_match(name, site_ip, domain_ip)
 	except MultipleARecords:
@@ -239,10 +248,10 @@ def check_dns_a(name, domain):
 			f"Domain {domain} has multiple A records: {multiple_ips}. Please keep only one{get_dns_provider_link_substr(domain)}.",
 			MultipleARecords,
 		)
-	except dns.resolver.NoAnswer as e:
+	except NoAnswer as e:
 		result["exists"] = False
 		result["answer"] = str(e)
-	except dns.exception.DNSException as e:
+	except DNSException as e:
 		result["answer"] = str(e)
 	except Exception as e:
 		result["answer"] = str(e)
@@ -260,15 +269,15 @@ def ensure_dns_aaaa_record_doesnt_exist(domain: str):
 	try:
 		resolver = Resolver(configure=False)
 		resolver.nameservers = NAMESERVERS
-		answer = resolver.query(domain, "AAAA")
+		answer = resolver.query(domain, AAAA)
 		if answer:
 			frappe.throw(
 				f"Domain {domain} has an AAAA record. This causes issues with https certificate generation. Please remove the same{get_dns_provider_link_substr(domain)}.",
 				AAAARecordExists,
 			)
-	except dns.resolver.NoAnswer:
+	except NoAnswer:
 		pass
-	except dns.exception.DNSException:
+	except DNSException:
 		pass  # We have other problems
 
 
