@@ -1,34 +1,36 @@
 <template>
 	<div class="space-y-4">
 		<div class="grid grid-cols-3 gap-4 text-base">
-			<div
-				v-for="resource in resources"
-				class="group flex h-24 rounded shadow hover:shadow-lg transition"
-			>
-				<div class="size-24 rounded-l">
+			<RouterLink v-for="resource in resources" :to="toLink(resource)">
+				<div class="group flex h-24 rounded shadow hover:shadow-lg transition">
+					<div class="size-24 rounded-l">
+						<div
+							class="size-full bg-gray-200 flex items-center justify-center rounded-l text-gray-500 font-semibold text-2xl"
+						>
+							<FeatherIcon
+								class="size-6"
+								:name="icons[resource.document_type]"
+							/>
+						</div>
+					</div>
+					<div class="px-4 py-3 flex flex-col justify-evenly">
+						<div class="font-medium">{{ resource.document_name }}</div>
+						<div>{{ resource.document_type }}</div>
+					</div>
 					<div
-						class="size-full bg-gray-200 flex items-center justify-center rounded-l text-gray-500 font-semibold text-2xl"
+						class="opacity-0 group-hover:opacity-100 transition w-14 flex justify-center items-center ml-auto rounded-r"
 					>
-						<FeatherIcon class="size-6" :name="icons[resource.document_type]" />
+						<Button
+							icon="trash-2"
+							variant="ghost"
+							class="text-red-600"
+							@click.prevent.stop="
+								$emit('remove', resource.document_type, resource.document_name)
+							"
+						/>
 					</div>
 				</div>
-				<div class="px-4 py-3 flex flex-col justify-evenly">
-					<div class="font-medium">{{ resource.document_name }}</div>
-					<div>{{ resource.document_type }}</div>
-				</div>
-				<div
-					class="opacity-0 group-hover:opacity-100 transition w-14 flex justify-center items-center ml-auto rounded-r"
-				>
-					<Button
-						icon="trash-2"
-						variant="ghost"
-						class="text-red-600"
-						@click="
-							$emit('remove', resource.document_type, resource.document_name)
-						"
-					/>
-				</div>
-			</div>
+			</RouterLink>
 		</div>
 		<div>
 			<Button label="Include" icon-left="globe" @click="open = !open" />
@@ -148,5 +150,29 @@ const resourcesToInclude = computed(() => {
 	);
 });
 
-console.log(resourcesToInclude);
+const toLink = (resource: any) => {
+	if (resource.document_type === 'Site') {
+		return {
+			name: 'Site Detail',
+			params: {
+				name: resource.document_name,
+			},
+		};
+	} else if (resource.document_type === 'Server') {
+		return {
+			name: 'Server Detail',
+			params: {
+				name: resource.document_name,
+			},
+		};
+	} else if (resource.document_type === 'Release Group') {
+		return {
+			name: 'Release Group Detail',
+			params: {
+				name: resource.document_name,
+			},
+		};
+	}
+	return '#';
+};
 </script>
