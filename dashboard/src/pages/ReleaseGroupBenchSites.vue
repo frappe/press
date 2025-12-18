@@ -248,6 +248,7 @@ export default {
 				},
 				{
 					label: 'Show Apps',
+					condition: () => bench.status === 'Active',
 					onClick: () => {
 						toast.promise(
 							this.$releaseGroup.getAppVersions
@@ -393,6 +394,7 @@ export default {
 				},
 				{
 					label: 'Archive Bench',
+					condition: () => true,
 					onClick: () => {
 						confirmDialog({
 							title: 'Archive Bench',

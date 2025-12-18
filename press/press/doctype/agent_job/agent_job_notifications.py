@@ -98,6 +98,7 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 	return [
 		("returned non-zero exit status 137", update_with_oom_err),
 		("returned non-zero exit status 143", update_with_oom_err),
+		("b'Terminated\\n'", update_with_oom_err),
 		("Row size too large", update_with_row_size_too_large_err),
 		("Data truncated for column", update_with_data_truncated_for_column_err),
 		("BrokenPipeError", update_with_broken_pipe_err),
