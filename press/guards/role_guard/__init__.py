@@ -21,7 +21,6 @@ from .document import check as document_check
 from .marketplace import check as marketplace_check
 from .server_snapshot import check as server_snapshot_check
 from .site_backup import check as site_backup_check
-from .utils import document_type_key
 from .webhook import check as webhook_check
 
 
@@ -128,7 +127,7 @@ def document(
 
 	def wrapper(fn):
 		def gen_key(document_type: str) -> str:
-			return injection_key or document_type_key(document_type) + "s"
+			return injection_key or document_type.lower().replace(" ", "_") + "s"
 
 		@functools.wraps(fn)
 		def inner(*args, **kwargs):
