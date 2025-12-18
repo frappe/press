@@ -6,35 +6,51 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "trigger_metric",
-  "threshold"
+  "metric",
+  "threshold",
+  "action"
  ],
  "fields": [
   {
-   "fieldname": "trigger_metric",
+   "description": "Action to take",
+   "fieldname": "action",
    "fieldtype": "Select",
    "in_list_view": 1,
-   "label": "Trigger Metric",
-   "options": "CPU\nMemory"
+   "label": "Action",
+   "options": "Scale Up\nScale Down",
+   "read_only": 1,
+   "reqd": 1
   },
   {
+   "description": "Metric being probed",
+   "fieldname": "metric",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Metric",
+   "options": "CPU\nMemory",
+   "reqd": 1
+  },
+  {
+   "description": "Probe metric threshold value to take action at",
    "fieldname": "threshold",
    "fieldtype": "Float",
    "in_list_view": 1,
-   "label": "Threshold"
+   "label": "Threshold",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-23 10:37:31.643402",
+ "modified": "2025-12-17 13:18:19.622890",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Auto Scale Trigger",
  "owner": "Administrator",
  "permissions": [],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": []

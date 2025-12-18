@@ -4,6 +4,7 @@
 import calendar
 import datetime
 import typing
+from typing import Literal, TypedDict
 
 import frappe
 from frappe.model.document import Document
@@ -11,12 +12,17 @@ from requests.exceptions import ConnectionError, HTTPError, JSONDecodeError
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
+from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.runner import Ansible, Status, StepHandler
 from press.utils import log_error
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+
+
+class PrometheusAlertRuleRow(TypedDict):
+	expression: str
 
 
 class AutoScaleStepFailureHandler:
@@ -52,6 +58,7 @@ class AutoScaleRecord(Document, StepHandler):
 		action: DF.Literal["Scale Up", "Scale Down"]
 		duration: DF.Time | None
 		failed_validation: DF.Check
+		is_automatically_triggered: DF.Check
 		primary_server: DF.Link
 		scale_steps: DF.Table[ScaleStep]
 		scheduled_time: DF.Datetime | None
@@ -338,6 +345,18 @@ class AutoScaleRecord(Document, StepHandler):
 		)
 		frappe.db.set_value("Auto Scale Record", self.name, "duration", duration)
 
+		emails = get_communication_info("Email", "Server Activity", "Server", self.primary_server)
+		server_title = frappe.db.get_value("Server", self.primary_server, "title") or self.primary_server
+
+		if self.is_automatically_triggered and emails:
+			send_autoscale_notification(
+				server_title=server_title,
+				server_name=self.primary_server,
+				action=self.action,
+				emails=emails,
+				auto_scale_name=self.name,
+			)
+
 		step.status = Status.Success
 		step.save()
 
@@ -505,6 +524,18 @@ class AutoScaleRecord(Document, StepHandler):
 			"Auto Scale Record", self.name, "start_time"
 		)
 		frappe.db.set_value("Auto Scale Record", self.name, "duration", duration)
+
+		emails = get_communication_info("Email", "Server Activity", "Server", self.primary_server)
+		server_title = frappe.db.get_value("Server", self.primary_server, "title") or self.primary_server
+
+		if self.is_automatically_triggered and emails:
+			send_autoscale_notification(
+				server_title=server_title,
+				server_name=self.primary_server,
+				action=self.action,
+				emails=emails,
+				auto_scale_name=self.name,
+			)
 
 		step.status = Status.Success
 		step.save()
@@ -739,3 +770,133 @@ def calculate_secondary_server_price(team: str, secondary_server_plan: str) -> f
 
 	_, days_in_this_month = calendar.monthrange(datetime.date.today().year, datetime.date.today().month)
 	return round(server_price_with_discount / days_in_this_month / 24, 2)
+
+
+def _get_query_map(instance_name: str, time_range: str = "4m"):
+	return {
+		"CPU": f"""
+		(
+			1 - avg(
+				rate(node_cpu_seconds_total{{instance="{instance_name}", job="node", mode="idle"}}[{time_range}])
+			)
+		) * 100
+		""".strip(),
+		"Memory": f"""
+		(
+			1 -
+			(
+				avg_over_time(node_memory_MemAvailable_bytes{{instance="{instance_name}", job="node"}}[{time_range}])
+				/
+				avg_over_time(node_memory_MemTotal_bytes{{instance="{instance_name}", job="node"}}[{time_range}])
+			)
+		) * 100
+		""".strip(),
+	}
+
+
+def update_or_delete_prometheus_rule_for_scaling(
+	instance_name: str,
+	metric: Literal["CPU", "Memory"],
+	action: Literal["Scale Up", "Scale Down"],
+) -> None:
+	rule_name = f"Auto {action} Trigger - {instance_name}"
+	existing: PrometheusAlertRuleRow = frappe.db.get_value(
+		"Prometheus Alert Rule", rule_name, "expression", as_dict=True
+	)
+
+	if not existing:
+		return
+
+	query_map = _get_query_map(instance_name)
+	base_query = query_map[metric]
+	expression = existing["expression"] or ""  # Ideally we should have an expression here
+
+	parts = [p.strip() for p in expression.split(" OR ") if p.strip()]
+	parts = [p for p in parts if base_query not in p]
+
+	if not parts:
+		# This was the only expression present
+		frappe.db.delete("Prometheus Alert Rule", rule_name)
+		return
+
+	new_expression = " OR ".join(parts)  # Part without the removed metric
+	frappe.db.set_value(
+		"Prometheus Alert Rule",
+		rule_name,
+		"expression",
+		new_expression,
+	)
+
+
+def create_prometheus_rule_for_scaling(
+	instance_name: str,
+	metric: Literal["CPU", "Memory"],
+	threshold: float,
+	action: Literal["Scale Up", "Scale Down"],
+) -> None:
+	"""Create or update a Prometheus autoscaling alert rule."""
+	query_map = _get_query_map(instance_name)
+
+	base_query = query_map[metric]
+	query_with_threshold = f"({base_query} {'>' if action == 'Scale Up' else '<'} {threshold})"
+
+	rule_name = f"Auto {action} Trigger - {instance_name}"
+
+	existing: PrometheusAlertRuleRow = frappe.db.get_value(
+		"Prometheus Alert Rule",
+		{"name": rule_name},
+		"expression",
+		as_dict=True,
+	)
+
+	if existing:
+		expression = existing["expression"] or ""
+
+		parts = [p.strip() for p in expression.split(" OR ") if p.strip()]
+		parts = [p for p in parts if base_query not in p]
+
+		# Add updated metric expression
+		parts.append(query_with_threshold)
+
+		new_expression = " OR ".join(parts)
+
+		frappe.db.set_value(
+			"Prometheus Alert Rule",
+			rule_name,
+			"expression",
+			new_expression,
+		)
+
+	else:
+		doc = frappe.get_doc(
+			{
+				"doctype": "Prometheus Alert Rule",
+				"name": rule_name,
+				"description": f"Autoscale trigger for {instance_name}",
+				"expression": query_with_threshold,
+				"enabled": 1,
+				"for": "5m",
+				"press_job_type": "Auto Scale Up Application Server"
+				if action == "Scale Up"
+				else "Auto Scale Down Application Server",
+			}
+		)
+		doc.insert()
+
+
+def send_autoscale_notification(
+	server_title: str,
+	server_name: str,
+	action: Literal["Scale Up", "Scale Down"],
+	emails: list[str],
+	auto_scale_name: str,
+):
+	frappe.sendmail(
+		recipients=emails,
+		subject=f"Autoscale - {server_title}",
+		template="auto_scale_notification",
+		args={
+			"message": f"Automatic {action} triggered for server {server_title}",
+			"link": f"dashboard/servers/{server_name}/auto-scale-steps/{auto_scale_name}",
+		},
+	)
