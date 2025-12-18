@@ -2224,6 +2224,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		except Exception:
 			log_error("Set MariaDB Mount Dependency Exception", server=self.as_dict())
 
+	@frappe.whitelist()
 	def update_database_schema_sizes(self):
 		self.agent.update_database_schema_sizes()
 
