@@ -248,6 +248,7 @@ export default {
 				},
 				{
 					label: 'Show Apps',
+					condition: () => bench.status === 'Active',
 					onClick: () => {
 						toast.promise(
 							this.$releaseGroup.getAppVersions
