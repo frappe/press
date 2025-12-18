@@ -3201,7 +3201,7 @@ class Server(BaseServer):
 			)
 			self.save()
 
-		create_prometheus_rule_for_scaling(self.name, metric=metric, threshold=threshold, time_range="4m")
+		create_prometheus_rule_for_scaling(self.name, metric=metric, threshold=threshold)
 
 	@dashboard_whitelist()
 	@frappe.whitelist()

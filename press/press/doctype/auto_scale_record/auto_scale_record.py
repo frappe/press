@@ -798,7 +798,6 @@ def create_prometheus_rule_for_scaling(
 	instance_name: str,
 	metric: Literal["CPU", "Memory"],
 	threshold: float,
-	time_range: str = "4m",
 ) -> None:
 	"""Create or update a Prometheus autoscaling alert rule."""
 	query_map = _get_query_map(instance_name)
