@@ -12,6 +12,7 @@ from requests.exceptions import ConnectionError, HTTPError, JSONDecodeError
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
+from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.runner import Ansible, Status, StepHandler
 from press.utils import log_error
 
@@ -57,6 +58,7 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 		action: DF.Literal["Scale Up", "Scale Down"]
 		duration: DF.Time | None
 		failed_validation: DF.Check
+		is_automatically_triggered: DF.Check
 		primary_server: DF.Link
 		scale_steps: DF.Table[ScaleStep]
 		scheduled_time: DF.Datetime | None
@@ -343,6 +345,18 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 		)
 		frappe.db.set_value("Auto Scale Record", self.name, "duration", duration)
 
+		emails = get_communication_info("Email", "Server Activity", "Server", self.primary_server)
+		server_title = frappe.db.get_value("Server", self.primary_server, "title") or self.primary_server
+
+		if self.is_automatically_triggered and emails:
+			send_autoscale_notification(
+				server_title=server_title,
+				server_name=self.primary_server,
+				action=self.action,
+				emails=emails,
+				auto_scale_name=self.name,
+			)
+
 		step.status = Status.Success
 		step.save()
 
@@ -510,6 +524,18 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 			"Auto Scale Record", self.name, "start_time"
 		)
 		frappe.db.set_value("Auto Scale Record", self.name, "duration", duration)
+
+		emails = get_communication_info("Email", "Server Activity", "Server", self.primary_server)
+		server_title = frappe.db.get_value("Server", self.primary_server, "title") or self.primary_server
+
+		if self.is_automatically_triggered and emails:
+			send_autoscale_notification(
+				server_title=server_title,
+				server_name=self.primary_server,
+				action=self.action,
+				emails=emails,
+				auto_scale_name=self.name,
+			)
 
 		step.status = Status.Success
 		step.save()
@@ -856,3 +882,21 @@ def create_prometheus_rule_for_scaling(
 			}
 		)
 		doc.insert()
+
+
+def send_autoscale_notification(
+	server_title: str,
+	server_name: str,
+	action: Literal["Scale Up", "Scale Down"],
+	emails: list[str],
+	auto_scale_name: str,
+):
+	frappe.sendmail(
+		recipients=emails,
+		subject=f"Autoscale - {server_title}",
+		template="auto_scale_notification",
+		args={
+			"message": f"Automatic {action} triggered for server {server_title}",
+			"link": f"dashboard/servers/{server_name}/auto-scale-steps/{auto_scale_name}",
+		},
+	)
