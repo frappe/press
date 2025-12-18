@@ -34,7 +34,7 @@ class PrometheusAlertRule(Document):
 		annotations: DF.Code
 		description: DF.Data
 		enabled: DF.Check
-		expression: DF.Code
+		expression: DF.Code | None
 		group_by: DF.Code
 		group_interval: DF.Data
 		group_wait: DF.Data
@@ -51,6 +51,8 @@ class PrometheusAlertRule(Document):
 	def validate(self):
 		self.alert_preview = yaml.dump(self.get_rule())
 		self.route_preview = yaml.dump(self.get_route())
+		if self.enabled and not self.expression:
+			frappe.throw("Enabled alert rules require an expression")
 
 	def get_rule(self):
 		labels = json.loads(self.labels)
