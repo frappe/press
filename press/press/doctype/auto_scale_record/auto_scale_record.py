@@ -843,15 +843,17 @@ def create_prometheus_rule_for_scaling(
 
 	rule_name = f"Auto {action} Trigger - {instance_name}"
 
-	existing: PrometheusAlertRuleRow = frappe.db.get_value(
-		"Prometheus Alert Rule",
-		{"name": rule_name},
-		"expression",
-		as_dict=True,
-	)
+	try:
+		existing: PrometheusAlertRule = frappe.get_doc(
+			"Prometheus Alert Rule",
+			rule_name,
+			for_update=True,
+		)
+	except frappe.DoesNotExistError:
+		existing = None
 
 	if existing:
-		expression = existing["expression"] or ""
+		expression = existing.expression or ""
 
 		parts = [p.strip() for p in expression.split(" OR ") if p.strip()]
 		parts = [p for p in parts if base_query not in p]
@@ -861,12 +863,9 @@ def create_prometheus_rule_for_scaling(
 
 		new_expression = " OR ".join(parts)
 
-		prometheus_alert_rule_doc: PrometheusAlertRule = frappe.get_doc(
-			"Prometheus Alert Rule", rule_name, for_update=True
-		)
-		prometheus_alert_rule_doc.expression = new_expression
-		prometheus_alert_rule_doc.enabled = True
-		prometheus_alert_rule_doc.save()  # Need to call this to allow on_update to trigger
+		existing.expression = new_expression
+		existing.enabled = True
+		existing.save()  # Need to call this to allow on_update to trigger
 
 	else:
 		doc = frappe.get_doc(
