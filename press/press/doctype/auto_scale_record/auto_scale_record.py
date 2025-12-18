@@ -776,7 +776,7 @@ def _get_query_map(instance_name: str, time_range: str = "4m"):
 	return {
 		"CPU": f"""
 		(
-			1 - avg(
+			1 - avg by (instance) (
 				rate(node_cpu_seconds_total{{instance="{instance_name}", job="node", mode="idle"}}[{time_range}])
 			)
 		) * 100
