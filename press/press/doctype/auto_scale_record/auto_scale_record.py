@@ -17,6 +17,7 @@ from press.runner import Ansible, Status, StepHandler
 from press.utils import log_error
 
 if typing.TYPE_CHECKING:
+	from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import PrometheusAlertRule
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
@@ -860,11 +861,12 @@ def create_prometheus_rule_for_scaling(
 
 		new_expression = " OR ".join(parts)
 
-		frappe.db.set_value(
-			"Prometheus Alert Rule",
-			rule_name,
-			{"expression": new_expression, "enabled": True},
+		prometheus_alert_rule_doc: PrometheusAlertRule = frappe.get_doc(
+			"Prometheus Alert Rule", rule_name, for_update=True
 		)
+		prometheus_alert_rule_doc.expression = new_expression
+		prometheus_alert_rule_doc.enabled = True
+		prometheus_alert_rule_doc.save()  # Need to call this to allow on_update to trigger
 
 	else:
 		doc = frappe.get_doc(
