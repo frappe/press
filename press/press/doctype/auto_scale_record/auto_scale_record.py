@@ -801,32 +801,35 @@ def update_or_delete_prometheus_rule_for_scaling(
 	action: Literal["Scale Up", "Scale Down"],
 ) -> None:
 	rule_name = f"Auto {action} Trigger - {instance_name}"
-	existing: PrometheusAlertRuleRow = frappe.db.get_value(
-		"Prometheus Alert Rule", rule_name, "expression", as_dict=True
-	)
+	existing: PrometheusAlertRule | None
+	try:
+		existing = frappe.get_doc(
+			"Prometheus Alert Rule",
+			rule_name,
+			for_update=True,
+		)
+	except frappe.DoesNotExistError:
+		existing = None
 
 	if not existing:
 		return
 
 	query_map = _get_query_map(instance_name)
 	base_query = query_map[metric]
-	expression = existing["expression"] or ""  # Ideally we should have an expression here
+	expression = existing.expression or ""  # Ideally we should have an expression here
 
 	parts = [p.strip() for p in expression.split(" OR ") if p.strip()]
 	parts = [p for p in parts if base_query not in p]
 
 	if not parts:
 		# This was the only expression present don't delete just disable
-		frappe.db.set_value("Prometheus Alert Rule", rule_name, {"enabled": False, "expression": ""})
-		return
+		existing.enabled = False
+		existing.expression = ""
+	else:
+		new_expression = " OR ".join(parts)  # Part without the removed metric
+		existing.expression = new_expression
 
-	new_expression = " OR ".join(parts)  # Part without the removed metric
-	frappe.db.set_value(
-		"Prometheus Alert Rule",
-		rule_name,
-		"expression",
-		new_expression,
-	)
+	existing.save()
 
 
 def create_prometheus_rule_for_scaling(
@@ -842,9 +845,10 @@ def create_prometheus_rule_for_scaling(
 	query_with_threshold = f"({base_query} {'>' if action == 'Scale Up' else '<'} {threshold})"
 
 	rule_name = f"Auto {action} Trigger - {instance_name}"
+	existing: PrometheusAlertRule | None
 
 	try:
-		existing: PrometheusAlertRule = frappe.get_doc(
+		existing = frappe.get_doc(
 			"Prometheus Alert Rule",
 			rule_name,
 			for_update=True,
