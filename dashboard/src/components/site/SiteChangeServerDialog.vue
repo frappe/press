@@ -133,7 +133,7 @@ export default {
 				initialData: [],
 				auto: true,
 				transform(d) {
-					return d.map((s) => ({
+					return d.servers.map((s) => ({
 						label: s.title || s.name,
 						description: s.name,
 						value: s.name,

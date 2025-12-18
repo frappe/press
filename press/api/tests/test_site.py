@@ -925,7 +925,7 @@ erpnext 0.8.3	    HEAD
 
 		self.assertEqual(
 			change_server_options(site.name),
-			[{"name": other_server.name, "title": None}],
+			{"servers": [{"name": other_server.name, "title": None}], "estimated_duration": None},
 		)
 
 		self.assertEqual(

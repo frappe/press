@@ -149,4 +149,5 @@ press.press.doctype.user_2fa.patches.generate_recovery_codes
 press.press.doctype.account_request.patches.generate_expiration_time_for_request_key
 press.saas.doctype.product_trial_request.patches.set_subscription_created_flag
 press.patches.v0_8_0.move_notify_billing_email_of_team_to_child_doc
+press.patches.v0_8_0.reset_release_group_gunicorn_workers
 press.patches.v0_8_0.clear_alertmanager_webhook_log
