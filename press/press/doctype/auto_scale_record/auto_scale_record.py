@@ -4,7 +4,7 @@
 import calendar
 import datetime
 import typing
-from typing import Literal
+from typing import Literal, TypedDict
 
 import frappe
 from frappe.model.document import Document
@@ -18,6 +18,10 @@ from press.utils import log_error
 if typing.TYPE_CHECKING:
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+
+
+class PrometheusAlertRuleRow(TypedDict):
+	expression: str
 
 
 class AutoScaleStepFailureHandler:
@@ -765,17 +769,21 @@ def _get_query_map(instance_name: str, time_range: str = "4m"):
 
 
 def update_or_delete_prometheus_rule_for_scaling(
-	instance_name: str, metric: Literal["CPU", "Memory"]
+	instance_name: str,
+	metric: Literal["CPU", "Memory"],
+	action: Literal["Scale Up", "Scale Down"],
 ) -> None:
-	rule_name = f"Autoscale Trigger - {instance_name}"
-	existing = frappe.db.get_value("Prometheus Alert Rule", rule_name, ["name", "expression"], as_dict=True)
+	rule_name = f"Auto {action} Trigger - {instance_name}"
+	existing: PrometheusAlertRuleRow = frappe.db.get_value(
+		"Prometheus Alert Rule", rule_name, "expression", as_dict=True
+	)
 
 	if not existing:
 		return
 
 	query_map = _get_query_map(instance_name)
 	base_query = query_map[metric]
-	expression = existing.expression or ""  # Ideally we should have an expression here
+	expression = existing["expression"] or ""  # Ideally we should have an expression here
 
 	parts = [p.strip() for p in expression.split(" OR ") if p.strip()]
 	parts = [p for p in parts if base_query not in p]
@@ -798,6 +806,7 @@ def create_prometheus_rule_for_scaling(
 	instance_name: str,
 	metric: Literal["CPU", "Memory"],
 	threshold: float,
+	action: Literal["Scale Up", "Scale Down"],
 ) -> None:
 	"""Create or update a Prometheus autoscaling alert rule."""
 	query_map = _get_query_map(instance_name)
@@ -805,17 +814,17 @@ def create_prometheus_rule_for_scaling(
 	base_query = query_map[metric]
 	query_with_threshold = f"({base_query} > {threshold})"
 
-	rule_name = f"Autoscale Trigger - {instance_name}"
+	rule_name = f"Auto {action} Trigger - {instance_name}"
 
-	existing = frappe.db.get_value(
+	existing: PrometheusAlertRuleRow = frappe.db.get_value(
 		"Prometheus Alert Rule",
 		{"name": rule_name},
-		["name", "expression"],
+		"expression",
 		as_dict=True,
 	)
 
 	if existing:
-		expression = existing.expression or ""
+		expression = existing["expression"] or ""
 
 		parts = [p.strip() for p in expression.split(" OR ") if p.strip()]
 		parts = [p for p in parts if base_query not in p]
@@ -841,6 +850,9 @@ def create_prometheus_rule_for_scaling(
 				"expression": query_with_threshold,
 				"enabled": 1,
 				"for": "5m",
+				"press_job_type": "Auto Scale Up Application Server"
+				if action == "Scale Up"
+				else "Auto Scale Down Application Server",
 			}
 		)
 		doc.insert()
