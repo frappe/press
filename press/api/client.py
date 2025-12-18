@@ -46,7 +46,6 @@ ALLOWED_DOCTYPES = [
 	"Cluster",
 	"Press Permission Group",
 	"Press Role",
-	"Press Role Permission",
 	"Team",
 	"Product Trial Request",
 	"Deploy Candidate",

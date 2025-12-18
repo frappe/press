@@ -624,8 +624,6 @@ class Site(Document, TagHelpers):
 
 		if self.has_value_changed("team"):
 			frappe.db.set_value("Site Domain", {"site": self.name}, "team", self.team)
-			if not self.flags.in_insert:
-				frappe.db.delete("Press Role Permission", {"site": self.name})
 
 		if self.status not in [
 			"Pending",

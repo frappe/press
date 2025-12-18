@@ -1079,8 +1079,6 @@ class BaseServer(Document, TagHelpers):
 			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
 		self.disable_subscription()
 
-		frappe.db.delete("Press Role Permission", {"server": self.name})
-
 	def _archive(self):
 		self.run_press_job("Archive Server")
 
@@ -2298,7 +2296,6 @@ class Server(BaseServer):
 		if not self.is_new() and self.has_value_changed("team"):
 			self.update_subscription()
 			self.update_db_server()
-			frappe.db.delete("Press Role Permission", {"server": self.name})
 
 		self.set_bench_memory_limits_if_needed(save=False)
 		if self.public:

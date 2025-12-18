@@ -291,8 +291,6 @@ class ReleaseGroup(Document, TagHelpers):
 			if row[0] == "dependencies":
 				self.db_set("last_dependency_update", frappe.utils.now_datetime())
 				break
-		if self.has_value_changed("team"):
-			frappe.db.delete("Press Role Permission", {"release_group": self.name})
 
 	def on_trash(self):
 		candidates = frappe.get_all("Deploy Candidate", {"group": self.name})
@@ -1574,8 +1572,6 @@ class ReleaseGroup(Document, TagHelpers):
 		self.title = append_number_if_name_exists("Release Group", new_name, "title", separator=".")
 		self.enabled = 0
 		self.save()
-
-		frappe.db.delete("Press Role Permission", {"release_group": self.name})
 
 	@dashboard_whitelist()
 	def delete(self) -> None:
