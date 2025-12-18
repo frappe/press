@@ -815,8 +815,8 @@ def update_or_delete_prometheus_rule_for_scaling(
 	parts = [p for p in parts if base_query not in p]
 
 	if not parts:
-		# This was the only expression present
-		frappe.db.delete("Prometheus Alert Rule", rule_name)
+		# This was the only expression present don't delete just disable
+		frappe.db.set_value("Prometheus Alert Rule", rule_name, {"enabled": False, "expression": ""})
 		return
 
 	new_expression = " OR ".join(parts)  # Part without the removed metric
@@ -863,8 +863,7 @@ def create_prometheus_rule_for_scaling(
 		frappe.db.set_value(
 			"Prometheus Alert Rule",
 			rule_name,
-			"expression",
-			new_expression,
+			{"expression": new_expression, "enabled": True},
 		)
 
 	else:
