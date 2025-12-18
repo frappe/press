@@ -15,10 +15,13 @@
 			</div>
 			<div v-else>
 				<AlertBanner
-					title="Please note if threshold values are added on both CPU and Memory, the scaling will trigger if either of them are true"
 					type="info"
 					:showIcon="false"
 					class="mb-3"
+					title="If threshold values are configured for both CPU and Memory, scaling
+					will be triggered when either condition is met.
+					<br>Please refer to the <a href='https://docs.frappe.io/cloud/application-server-horizontal-scaling#application-server-horizontal-scaling'
+					target='_blank' class='underline'>documentation</a> for more information."
 				/>
 				<div class="flex justify-end gap-2">
 					<Button
@@ -64,8 +67,8 @@ import Button from 'frappe-ui/src/components/Button/Button.vue';
 import { h } from 'vue';
 import { toast } from 'vue-sonner';
 import { confirmDialog } from '../../utils/components';
-import GenericList from '../GenericList.vue';
 import AlertBanner from '../AlertBanner.vue';
+import GenericList from '../GenericList.vue';
 import Badge from '../global/Badge.vue';
 
 export default {

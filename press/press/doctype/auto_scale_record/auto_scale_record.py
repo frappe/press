@@ -812,7 +812,7 @@ def create_prometheus_rule_for_scaling(
 	query_map = _get_query_map(instance_name)
 
 	base_query = query_map[metric]
-	query_with_threshold = f"({base_query} > {threshold})"
+	query_with_threshold = f"({base_query} {'>' if action == 'Scale Up' else '<'} {threshold})"
 
 	rule_name = f"Auto {action} Trigger - {instance_name}"
 
