@@ -3,8 +3,6 @@ from frappe.query_builder import Not
 from frappe.query_builder.functions import Count
 from frappe.query_builder.terms import QueryBuilder
 
-from .utils import document_type_key
-
 
 def check(base_query: QueryBuilder, document_type: str, document_name: str) -> bool | list[str]:
 	if document_name:
@@ -14,17 +12,15 @@ def check(base_query: QueryBuilder, document_type: str, document_name: str) -> b
 
 def documents(base_query: QueryBuilder, document_type: str) -> list[str]:
 	PressRole = frappe.qb.DocType("Press Role")
-	PressRolePermission = frappe.qb.DocType("Press Role Permission")
-	document_key = document_type_key(document_type)
+	PressRoleResource = frappe.qb.DocType("Press Role Resource")
 	return [
 		doc.document_name
-		for doc in base_query.inner_join(PressRolePermission)
+		for doc in base_query.inner_join(PressRoleResource)
 		.on(
-			(PressRolePermission.team == PressRole.team)
-			& (PressRolePermission.role == PressRole.name)
-			& (Not(PressRolePermission[document_key].isnull()))
+			(PressRoleResource.parent == PressRole.name)
+			& (Not(PressRoleResource.document_type == document_type))
 		)
-		.select(PressRolePermission[document_key].as_("document_name"))
+		.select(PressRoleResource.document_name)
 		.distinct()
 		.run(as_dict=True)
 	]
@@ -32,14 +28,13 @@ def documents(base_query: QueryBuilder, document_type: str) -> list[str]:
 
 def document(base_query: QueryBuilder, document_type: str, document_name: str) -> bool:
 	PressRole = frappe.qb.DocType("Press Role")
-	PressRolePermission = frappe.qb.DocType("Press Role Permission")
-	document_key = document_type_key(document_type)
+	PressRoleResource = frappe.qb.DocType("Press Role Resource")
 	return (
-		base_query.inner_join(PressRolePermission)
+		base_query.inner_join(PressRoleResource)
 		.on(
-			(PressRolePermission.team == PressRole.team)
-			& (PressRolePermission.role == PressRole.name)
-			& (PressRolePermission[document_key] == document_name)
+			(PressRoleResource.parent == PressRole.name)
+			& (PressRoleResource.document_type == document_type)
+			& (PressRoleResource.document_name == document_name)
 		)
 		.select(Count(PressRole.name).as_("document_count"))
 		.run(as_dict=True)

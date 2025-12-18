@@ -20,9 +20,12 @@ class PressRole(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
+	from typing import TYPE_CHECKING
+
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.press_role_resource.press_role_resource import PressRoleResource
 		from press.press.doctype.press_role_user.press_role_user import PressRoleUser
 
 		admin_access: DF.Check
@@ -37,30 +40,31 @@ class PressRole(Document):
 		allow_server_creation: DF.Check
 		allow_site_creation: DF.Check
 		allow_webhook_configuration: DF.Check
+		resources: DF.Table[PressRoleResource]
 		team: DF.Link
 		title: DF.Data
 		users: DF.Table[PressRoleUser]
 	# end: auto-generated types
 
 	dashboard_fields = (
+		"admin_access",
+		"allow_apps",
+		"allow_bench_creation",
+		"allow_billing",
+		"allow_contribution",
+		"allow_customer",
+		"allow_dashboard",
+		"allow_leads",
+		"allow_partner",
+		"allow_server_creation",
+		"allow_site_creation",
+		"allow_webhook_configuration",
+		"resources",
+		"team",
 		"title",
 		"users",
-		"admin_access",
-		"allow_billing",
-		"allow_apps",
-		"allow_partner",
-		"allow_site_creation",
-		"allow_bench_creation",
-		"allow_server_creation",
-		"allow_webhook_configuration",
-		"team",
-		"allow_customer",
-		"allow_leads",
-		"allow_dashboard",
-		"allow_contribution",
 	)
 
-	@team_guard.only_owner()
 	def before_insert(self):
 		if frappe.db.exists("Press Role", {"title": self.title, "team": self.team}):
 			frappe.throw(f"Role with title {self.title} already exists", frappe.DuplicateEntryError)
@@ -83,6 +87,7 @@ class PressRole(Document):
 			self.allow_server_creation = 1
 			self.allow_webhook_configuration = 1
 
+	@team_guard.only_admin()
 	def validate(self):
 		self.allow_only_one_admin_role()
 
@@ -137,11 +142,24 @@ class PressRole(Document):
 			self.remove_press_admin_role(user)
 
 	@dashboard_whitelist()
-	def delete_permissions(self, permissions: list[str]) -> None:
-		for perm in permissions:
-			perm_doc = frappe.get_doc("Press Role Permission", perm)
-			if perm_doc.role == self.name:
-				perm_doc.delete()
+	@team_guard.only_admin(skip=lambda _, args: args.get("skip_validations", False))
+	def add_resource(self, document_type: str, document_name: str):
+		resource_dict = {"document_type": document_type, "document_name": document_name}
+		if self.get("resources", resource_dict):
+			message = _("{0} already belongs to {1}").format(document_name, self.title)
+			frappe.throw(message, frappe.ValidationError)
+		self.append("resources", resource_dict)
+		self.save()
+
+	@dashboard_whitelist()
+	@team_guard.only_admin()
+	def remove_resource(self, document_type: str, document_name: str):
+		resources = self.get("resources", {"document_type": document_type, "document_name": document_name})
+		if not resources:
+			message = _("Resource {0} does not belong to {1}").format(document_name, self.title)
+			frappe.throw(message, frappe.ValidationError)
+		self.remove(resources.pop())
+		self.save()
 
 	@dashboard_whitelist()
 	@team_guard.only_owner()
@@ -149,35 +167,29 @@ class PressRole(Document):
 		return super().delete()
 
 	def on_trash(self) -> None:
-		frappe.db.delete("Press Role Permission", {"role": self.name})
 		frappe.db.delete("Account Request Press Role", {"press_role": self.name})
 
 
 def create_user_resource(document: Document, _):
 	user = frappe.session.user
-	team: Team = get_current_team(get_doc=True)
-	if team.is_team_owner() or team.is_admin_user():
+	team: Team = get_current_team()
+	if not user or team.is_team_owner() or team.is_admin_user():
 		return
-	document_type = document.doctype.lower().replace(" ", "_")
-	role = frappe.get_doc(
+	frappe.get_doc(
 		{
 			"doctype": "Press Role",
 			"title": user + " / " + document.name,
-			"team": team.name,
+			"team": team,
 			"users": [
 				{
 					"user": user,
 				}
 			],
+			"resources": [
+				{
+					"document_type": document.doctype,
+					"document_name": document.name,
+				}
+			],
 		}
-	)
-	role.save()
-	role_permission = frappe.get_doc(
-		{
-			"doctype": "Press Role Permission",
-			"team": team.name,
-			"role": role.name,
-			document_type: document.name,
-		}
-	)
-	role_permission.save()
+	).save()
