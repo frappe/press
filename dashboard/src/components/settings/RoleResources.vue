@@ -1,33 +1,76 @@
 <template>
-	<div class="grid grid-cols-3 gap-4 text-base">
-		<div
-			v-for="resource in resources"
-			class="group flex h-24 rounded shadow hover:shadow-lg transition"
-		>
-			<div class="size-24 rounded-l">
+	<div class="space-y-4">
+		<div class="grid grid-cols-3 gap-4 text-base">
+			<div
+				v-for="resource in resources"
+				class="group flex h-24 rounded shadow hover:shadow-lg transition"
+			>
+				<div class="size-24 rounded-l">
+					<div
+						class="size-full bg-gray-200 flex items-center justify-center rounded-l text-gray-500 font-semibold text-2xl"
+					>
+						<FeatherIcon class="size-6" :name="icons[resource.document_type]" />
+					</div>
+				</div>
+				<div class="px-4 py-3 flex flex-col justify-evenly">
+					<div class="font-medium">{{ resource.document_name }}</div>
+					<div>{{ resource.document_type }}</div>
+				</div>
 				<div
-					class="size-full bg-gray-200 flex items-center justify-center rounded-l text-gray-500 font-semibold text-2xl"
+					class="opacity-0 group-hover:opacity-100 transition w-14 flex justify-center items-center ml-auto rounded-r"
 				>
-					<FeatherIcon class="size-6" :name="icons[resource.document_type]" />
+					<Button
+						icon="trash-2"
+						variant="ghost"
+						class="text-red-600"
+						@click="
+							$emit('remove', resource.document_type, resource.document_name)
+						"
+					/>
 				</div>
 			</div>
-			<div class="px-4 py-3 flex flex-col justify-evenly">
-				<div class="font-medium">{{ resource.document_name }}</div>
-				<div>{{ resource.document_type }}</div>
-			</div>
-			<div
-				class="opacity-0 group-hover:opacity-100 transition w-14 flex justify-center items-center ml-auto rounded-r"
-			>
-				<Button icon="trash-2" variant="ghost" class="text-red-600" />
-			</div>
 		</div>
+		<div>
+			<Button label="Include" icon-left="globe" @click="open = !open" />
+		</div>
+		<Dialog
+			v-model="open"
+			:options="{
+				title: 'Include',
+				size: 'lg',
+				actions: [
+					{
+						label: 'Submit',
+						variant: 'solid',
+						onClick: () => {
+							const { document_type, document_name } = resourcesToInclude.find(
+								(r) => r.document_name === resourceToInclude,
+							);
+							$emit('include', document_type, document_name);
+							open = false;
+						},
+					},
+				],
+			}"
+		>
+			<template #body-content>
+				<div class="mb-2 text-base">Include a resource in this role.</div>
+				<Select
+					:options="resourcesToInclude"
+					v-model="resourceToInclude"
+					placeholder="Resource"
+				/>
+			</template>
+		</Dialog>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { Button, FeatherIcon } from 'frappe-ui';
+import { computed, ref } from 'vue';
+import { Button, FeatherIcon, Select, createListResource } from 'frappe-ui';
+import { getTeam } from '../../data/team';
 
-withDefaults(
+const props = withDefaults(
 	defineProps<{
 		resources?: Array<any>;
 	}>(),
@@ -36,9 +79,74 @@ withDefaults(
 	},
 );
 
+defineEmits<{
+	include: [document_type: string, document_name: string];
+	remove: [document_type: string, document_name: string];
+}>();
+
 const icons = {
 	'Release Group': 'package',
 	Server: 'server',
 	Site: 'globe',
 };
+
+const team = getTeam();
+const open = ref(false);
+
+const sites = createListResource({
+	doctype: 'Site',
+	auto: true,
+	filters: {
+		team: team.doc?.name,
+	},
+});
+
+const servers = createListResource({
+	doctype: 'Server',
+	auto: true,
+	filters: {
+		team: team.doc?.name,
+	},
+});
+
+const releaseGroups = createListResource({
+	doctype: 'Release Group',
+	auto: true,
+	filters: {
+		team: team.doc?.name,
+	},
+});
+
+const resourceToInclude = ref<string>('');
+const resourcesToInclude = computed(() => {
+	return [
+		...sites.data.map((site: any) => ({
+			document_type: 'Site',
+			document_name: site.name,
+			label: site.name,
+			value: site.name,
+		})),
+		...servers.data.map((server: any) => ({
+			document_type: 'Server',
+			document_name: server.name,
+			label: server.name,
+			value: server.name,
+		})),
+		...releaseGroups.data.map((releaseGroup: any) => ({
+			document_type: 'Release Group',
+			document_name: releaseGroup.name,
+			label: releaseGroup.name,
+			value: releaseGroup.name,
+		})),
+	].filter(
+		(resource) =>
+			!props.resources?.some(
+				(r) =>
+					r.document_type === resource.document_type &&
+					r.document_name === resource.document_name,
+			),
+	);
+});
+
+console.log(resourcesToInclude);
 </script>

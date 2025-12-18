@@ -32,10 +32,43 @@
 			},
 		]"
 	/>
-	<RoleMembers v-if="tab === 'members'" :users="role.doc?.users" />
+	<RoleMembers
+		v-if="tab === 'members'"
+		:users="role.doc?.users"
+		@add="
+			(id: string) => {
+				role.add_user.submit({
+					user: id,
+				});
+			}
+		"
+		@remove="
+			(id: string) => {
+				role.remove_user.submit({
+					user: id,
+				});
+			}
+		"
+	/>
 	<RoleResources
 		v-else-if="tab === 'resources'"
 		:resources="role.doc?.resources"
+		@include="
+			(document_type, document_name) => {
+				role.add_resource.submit({
+					document_type,
+					document_name,
+				});
+			}
+		"
+		@remove="
+			(document_type, document_name) => {
+				role.remove_resource.submit({
+					document_type,
+					document_name,
+				});
+			}
+		"
 	/>
 	<RolePermissions
 		v-else-if="tab === 'permissions'"
@@ -77,10 +110,11 @@ const role = createDocumentResource({
 	doctype: 'Press Role',
 	name: props.id,
 	auto: true,
-	// whitelistedMethods: {
-	// 	addUser: 'add_user',
-	// 	removeUser: 'remove_user',
-	// 	bulkDelete: 'delete_permissions',
-	// },
+	whitelistedMethods: {
+		add_user: 'add_user',
+		remove_user: 'remove_user',
+		add_resource: 'add_resource',
+		remove_resource: 'remove_resource',
+	},
 });
 </script>
