@@ -3221,24 +3221,26 @@ class Server(BaseServer):
 
 	@dashboard_whitelist()
 	@frappe.whitelist()
-	def scale_up(self):
+	def scale_up(self, is_automatically_triggered: bool = False):
 		if self.scaled_up:
 			frappe.throw("Server is already scaled up", frappe.ValidationError)
 
 		self.validate_scale()
 
 		auto_scale_record = self._create_auto_scale_record(action="Scale Up")
+		auto_scale_record.is_automatically_triggered = is_automatically_triggered
 		auto_scale_record.insert()
 
 	@dashboard_whitelist()
 	@frappe.whitelist()
-	def scale_down(self):
+	def scale_down(self, is_automatically_triggered: bool = False):
 		if not self.scaled_up:
 			frappe.throw("Server is already scaled down", frappe.ValidationError)
 
 		self.validate_scale()
 
 		auto_scale_record = self._create_auto_scale_record(action="Scale Down")
+		auto_scale_record.is_automatically_triggered = is_automatically_triggered
 		auto_scale_record.insert()
 
 	@property

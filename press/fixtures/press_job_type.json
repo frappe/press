@@ -643,7 +643,7 @@
   "name": "Auto Scale Up Application Server",
   "steps": [
    {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Server\":\n    server.scale_up()",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Server\":\n    server.scale_up(is_automatically_triggered=True)",
     "step_name": "Auto Scale Up Application Server",
     "wait_until_true": 0
     }
@@ -658,7 +658,7 @@
   "name": "Auto Scale Down Application Server",
   "steps": [
    {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Server\" and server.scaled_up:\n    server.scale_down()",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Server\" and server.scaled_up:\n    server.scale_down(is_automatically_triggered=True)",
     "step_name": "Auto Scale Down Application Server",
     "wait_until_true": 0
     }
