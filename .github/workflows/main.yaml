@@ -176,12 +176,27 @@ jobs:
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
         run: npx playwright test --project=chromium
 
+      - name: Generate Coverage Report
+        working-directory: /home/runner/frappe-bench/apps/press/dashboard
+        run: npx nyc report --reporter=cobertura --reporter=text --report-dir=./coverage
+
       - name: Upload Playwright Test report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: /home/runner/frappe-bench/apps/press/dashboard/playwright-report
+
+      - name: Upload coverage data
+        uses: codecov/codecov-action@v5
+        with:
+          disable_search: true
+          files: /home/runner/frappe-bench/apps/press/dashboard/coverage/cobertura-coverage.xml
+          fail_ci_if_error: false
+          verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          name: press-dashboard
+          flags: dashboard
 
   tests:
     runs-on: ubuntu-latest

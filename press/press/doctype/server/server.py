@@ -373,9 +373,8 @@ class BaseServer(Document, TagHelpers):
 				"button_label": "Setup",
 				"condition": self.status == "Active"
 				and self.doctype == "Server"
-				# As only present on server doctype
 				and not self.secondary_server
-				and self.team == "team@erpnext.com",
+				and self.cluster == "Mumbai",
 				"group": "Application Server Actions",
 			},
 			{
@@ -481,6 +480,7 @@ class BaseServer(Document, TagHelpers):
 				"route53",
 				aws_access_key_id=domain.aws_access_key_id,
 				aws_secret_access_key=domain.get_password("aws_secret_access_key"),
+				region_name=domain.aws_region,
 			)
 			zones = client.list_hosted_zones_by_name()["HostedZones"]
 			# list_hosted_zones_by_name returns a lexicographically ordered list of zones
@@ -866,6 +866,8 @@ class BaseServer(Document, TagHelpers):
 		if not device:
 			# Try the best guess. Try extending the data volume
 			volume = self.find_mountpoint_volume(mountpoint)
+			assert volume is not None, "Volume not found"
+			assert volume.volume_id is not None, "Volume ID not found"
 			device = self.get_device_from_volume_id(volume.volume_id)
 
 		server = self.get_server_from_device(device)
@@ -918,7 +920,10 @@ class BaseServer(Document, TagHelpers):
 			mountpoint = self.guess_data_disk_mountpoint()
 
 		volume = self.find_mountpoint_volume(mountpoint)
+		assert volume is not None, f"Volume not found for mountpoint {mountpoint}"
 		# Get the parent of the volume directly instead of guessing.
+		assert volume.parent is not None, "Virtual Machine not found for volume"
+		assert volume.volume_id is not None, "Volume ID not found"
 		virtual_machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", volume.parent)
 		virtual_machine.increase_disk_size(volume.volume_id, increment)
 		if self.provider == "AWS EC2":
@@ -945,8 +950,11 @@ class BaseServer(Document, TagHelpers):
 			mountpoint = "/"
 		return mountpoint
 
-	def find_mountpoint_volume(self, mountpoint) -> "VirtualMachineVolume":
+	def find_mountpoint_volume(self, mountpoint) -> "VirtualMachineVolume" | None:
 		volume_id = None
+		if self.provider == "Generic":
+			return None
+
 		machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", self.virtual_machine)
 
 		if volume_id:
@@ -1099,9 +1107,6 @@ class BaseServer(Document, TagHelpers):
 
 		if team.payment_mode == "Paid By Partner" and team.billing_team:
 			team = frappe.get_doc("Team", team.billing_team)
-
-		if team.is_defaulter():
-			frappe.throw("Cannot change plan because you have unpaid invoices")
 
 		if not (team.default_payment_method or team.get_balance()):
 			frappe.throw("Cannot change plan because you haven't added a card and not have enough balance")
@@ -1992,8 +1997,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		ansible = Ansible(
 			playbook="fetch_frappe_public_key.yml",
 			server=primary,
-			user=self._ssh_user(),
-			port=self._ssh_port(),
+			user=primary._ssh_user(),
+			port=primary._ssh_port(),
 		)
 		play = ansible.run()
 		if play.status == "Success":
@@ -2045,7 +2050,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			log_error("Cadvisor Install Exception", server=self.as_dict())
 
 	@frappe.whitelist()
-	def set_additional_config(self):
+	def set_additional_config(self):  # noqa: C901
 		"""
 		Corresponds to Set additional config step in Create Server Press Job
 		"""
@@ -2079,8 +2084,12 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		if self.doctype == "Database Server":
 			self.adjust_memory_config()
-			self.provide_frappe_user_du_permission()
+			self.provide_frappe_user_du_and_find_permission()
 			self.setup_logrotate()
+			self.setup_user_lingering()
+
+			if self.has_data_volume:
+				self.setup_binlog_indexes_folder()
 
 		if self.doctype == "Proxy Server":
 			self.setup_wildcard_hosts()
@@ -2115,7 +2124,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 	def setup_wildcard_hosts(self):
 		agent = Agent(self.name, server_type=self.doctype)
 		wildcards = self.get_wildcard_domains()
-		agent.setup_wildcard_hosts(wildcards)
+		return agent.setup_wildcard_hosts(wildcards)
 
 	@property
 	def bastion_host(self):
@@ -2397,22 +2406,22 @@ class Server(BaseServer):
 					"Subscription", add_on_storage_subscription.name, {"team": self.team, "enabled": 1}
 				)
 
-	def validate_more_memory_in_secondary_server(self, secondary_server_plan: str) -> None:
+	def validate_bigger_secondary_server(self, secondary_server_plan: str) -> None:
 		"""Ensure secondary server has more memory than the primary server"""
-		current_plan_memory: int = frappe.db.get_value("Server Plan", self.plan, "memory")
-		secondary_server_plan_memory: int = frappe.db.get_value(
-			"Server Plan", secondary_server_plan, "memory"
+		current_plan_memory, vcpus = frappe.db.get_value("Server Plan", self.plan, ["memory", "vcpu"])
+		secondary_server_plan_memory, secondary_server_vcpus = frappe.db.get_value(
+			"Server Plan", secondary_server_plan, ["memory", "vcpu"]
 		)
 
-		if secondary_server_plan_memory <= current_plan_memory:
+		if secondary_server_plan_memory < current_plan_memory and secondary_server_vcpus < vcpus:
 			frappe.throw(
-				"Please select a plan with more memory than the "
-				f"existing server plan. Current memory: {current_plan_memory}"
+				"Please select a plan with more memory or more vcpus than the "
+				f"existing server plan. Current memory: {current_plan_memory} Current vcpus: {vcpus}"
 			)
 
 	def create_secondary_server(self, plan_name: str) -> None:
 		"""Create a secondary server for this server"""
-		self.validate_more_memory_in_secondary_server(plan_name)
+		self.validate_bigger_secondary_server(plan_name)
 
 		plan: ServerPlan = frappe.get_cached_doc("Server Plan", plan_name)
 		team_name = frappe.db.get_value("Server", self.name, "team", "name")
@@ -2542,9 +2551,17 @@ class Server(BaseServer):
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
 		agent_repository_url = self.get_agent_repository_url()
+		agent_branch = self.get_agent_repository_branch()
 		certificate = self.get_certificate()
 		log_server, kibana_password = self.get_log_server()
 		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
+
+		# If database server is set, then define db port under configuration
+		db_port = (
+			frappe.db.get_value("Database Server", self.database_server, "db_port")
+			if self.database_server
+			else None
+		)
 
 		try:
 			ansible = Ansible(
@@ -2559,6 +2576,7 @@ class Server(BaseServer):
 					"workers": "2",
 					"agent_password": agent_password,
 					"agent_repository_url": agent_repository_url,
+					"agent_branch": agent_branch,
 					"agent_sentry_dsn": agent_sentry_dsn,
 					"monitoring_password": self.get_monitoring_password(),
 					"log_server": log_server,
@@ -2567,6 +2585,7 @@ class Server(BaseServer):
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 					"docker_depends_on_mounts": self.docker_depends_on_mounts,
+					"db_port": db_port,
 					**self.get_mount_variables(),
 				},
 			)
@@ -2755,14 +2774,19 @@ class Server(BaseServer):
 				self.save()
 
 	def _setup_primary(self, secondary):
-		secondary_private_ip = frappe.db.get_value("Server", secondary, "private_ip")
+		secondary_private_ip, secondary_ssh_port = frappe.db.get_value(
+			"Server", secondary, ("private_ip", "ssh_port")
+		)
 		try:
 			ansible = Ansible(
 				playbook="primary_app.yml",
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
-				variables={"secondary_private_ip": secondary_private_ip},
+				variables={
+					"secondary_private_ip": secondary_private_ip,
+					"secondary_ssh_port": secondary_ssh_port,
+				},
 			)
 			play = ansible.run()
 			self.reload()
@@ -3013,6 +3037,54 @@ class Server(BaseServer):
 		except Exception:
 			log_error("Earlyoom Install Exception", server=self.as_dict())
 
+	@frappe.whitelist()
+	def install_wazuh_agent(self):
+		wazuh_server = frappe.get_value("Press Settings", "Press Settings", "wazuh_server")
+		if not wazuh_server:
+			frappe.throw("Please configure Wazuh Server in Press Settings")
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_install_wazuh_agent",
+			wazuh_server=wazuh_server,
+		)
+
+	def _install_wazuh_agent(self, wazuh_server: str):
+		try:
+			ansible = Ansible(
+				playbook="wazuh_agent_install.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={
+					"wazuh_manager": wazuh_server,
+					"wazuh_agent_name": self.name,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Wazuh Agent Install Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def uninstall_wazuh_agent(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_uninstall_wazuh_agent",
+		)
+
+	def _uninstall_wazuh_agent(self):
+		try:
+			ansible = Ansible(
+				playbook="wazuh_agent_uninstall.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Wazuh Agent Uninstall Exception", server=self.as_dict())
+
 	@property
 	def docker_depends_on_mounts(self):
 		mount_points = set(mount.mount_point for mount in self.mounts)
@@ -3076,6 +3148,7 @@ class Server(BaseServer):
 			- Server is configured for auto scale.
 			- Was the last auto scale modified before the cool of period (don't create new auto scale).
 			- There is a auto scale operation running on the server.
+			- There are no active sites on the server.
 		"""
 		if not self.can_scale:
 			frappe.throw("Server is not configured for auto scaling", frappe.ValidationError)
@@ -3107,6 +3180,16 @@ class Server(BaseServer):
 				f"Please wait for {fmt_timedelta(timedelta(seconds=cool_off_period or 300) - time_diff)} before scaling again",
 				frappe.ValidationError,
 			)
+
+		active_sites_on_primary = frappe.db.get_value(
+			"Site", {"server": self.name, "status": "Active"}, pluck="name"
+		)
+		active_sites_on_secondary = frappe.db.get_value(
+			"Site", {"server": self.secondary_server, "status": "Active"}, pluck="name"
+		)
+
+		if not active_sites_on_primary and not active_sites_on_secondary:
+			frappe.throw("There are no active sites on this server!", frappe.ValidationError)
 
 	@dashboard_whitelist()
 	@frappe.whitelist()

@@ -1,12 +1,29 @@
 <template>
-	<PlansCards :plans="plansOption" v-model="selectedPlan" />
+	<PlansCards
+		:plans="plansOption"
+		v-model="selectedPlan"
+		:hourly-pricing="hourlyPricing"
+	/>
 </template>
 
 <script>
 import PlansCards from '../PlansCards.vue';
 
 export default {
-	props: ['modelValue', 'plans'],
+	props: {
+		modelValue: {
+			type: [String, Object, Number, Boolean],
+			default: null,
+		},
+		plans: {
+			type: Array,
+			default: () => [],
+		},
+		hourlyPricing: {
+			type: Boolean,
+			default: false,
+		},
+	},
 	emits: ['update:modelValue'],
 	components: {
 		PlansCards,

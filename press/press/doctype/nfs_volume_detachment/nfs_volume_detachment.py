@@ -8,9 +8,11 @@ import frappe
 from frappe.model.document import Document
 
 from press.agent import Agent
+from press.press.doctype.auto_scale_record.auto_scale_record import AutoScaleStepFailureHandler
 from press.runner import Ansible, Status, StepHandler
 
 if typing.TYPE_CHECKING:
+	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.nfs_server.nfs_server import NFSServer
 	from press.press.doctype.nfs_volume_detachment_step.nfs_volume_detachment_step import (
 		NFSVolumeDetachmentStep,
@@ -19,7 +21,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
-class NFSVolumeDetachment(Document, StepHandler):
+class NFSVolumeDetachment(Document, AutoScaleStepFailureHandler, StepHandler):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -203,6 +205,11 @@ class NFSVolumeDetachment(Document, StepHandler):
 			},
 			"job",
 		)
+
+		# Jobs go undelivered for some reason, need to manually get status
+		job_doc: "AgentJob" = frappe.get_doc("Agent Job", job)
+		job_doc.get_status()
+
 		self.handle_agent_job(step, job)
 
 	def umount_volume_from_nfs_server(self, step: "NFSVolumeDetachmentStep") -> None:
@@ -262,21 +269,42 @@ class NFSVolumeDetachment(Document, StepHandler):
 		step.save()
 
 		try:
-			# Mark primary as not ready to auto scale
-			frappe.db.set_value("Server", self.primary_server, "benches_on_shared_volume", False)
-
 			# Drop secondary server
 			primary_server: "Server" = frappe.get_doc("Server", self.primary_server)
 			primary_server.drop_secondary_server()
 
 			# Mark secondary server field as empty on the primary server
-			frappe.db.set_value("Server", self.primary_server, "secondary_server", None)
-			frappe.db.set_value("Server", self.primary_server, "status", "Active")
+			frappe.db.set_value(
+				"Server",
+				self.primary_server,
+				{"benches_on_shared_volume": False, "secondary_server": None, "status": "Active"},
+			)
 
 			step.status = Status.Success
 			step.save()
 		except Exception:
 			raise
+
+	def remove_subscription_record(self, step: "NFSVolumeDetachmentStep"):
+		"""Disable the subscription record for secondary server"""
+		step.status = Status.Running
+		step.save()
+
+		team = frappe.db.get_value("Server", self.primary_server, "team")
+
+		if frappe.db.exists(
+			"Subscription",
+			{"document_name": self.secondary_server, "team": team, "plan_type": "Server Plan"},
+		):
+			frappe.db.set_value(
+				"Subscription",
+				{"document_name": self.secondary_server, "team": team, "plan_type": "Server Plan"},
+				"enabled",
+				0,
+			)
+
+		step.status = Status.Success
+		step.save()
 
 	def before_insert(self):
 		"""Append defined steps to the document before saving."""
@@ -291,6 +319,7 @@ class NFSVolumeDetachment(Document, StepHandler):
 				self.remove_servers_from_acl,
 				self.wait_for_acl_deletion,
 				self.mark_attachment_as_archived,
+				self.remove_subscription_record,
 				self.not_ready_to_auto_scale,
 			]
 		):

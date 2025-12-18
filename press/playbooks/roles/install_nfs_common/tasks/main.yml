@@ -1,12 +1,10 @@
 ---
-- name: Install NFS Common
+- name: Install NFS Common with retries
   become: yes
   become_user: root
   apt:
     name: nfs-common
     state: present
-    update_cache: yes
-
   register: result
   until: result.failed == false
   retries: 5

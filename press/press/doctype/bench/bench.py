@@ -290,11 +290,16 @@ class Bench(Document):
 			"restart_supervisor_on_update": True,
 		}
 
-		db_host = frappe.db.get_value("Database Server", self.database_server, "private_ip")
+		if self.database_server:
+			db_host, db_port = frappe.db.get_value(
+				"Database Server", self.database_server, ["private_ip", "db_port"]
+			)
+		else:
+			db_host, db_port = None, 3306
 
 		if db_host:
 			config["db_host"] = db_host
-			config["db_port"] = 3306
+			config["db_port"] = db_port
 
 		if self.managed_database_service:
 			config["rds_db"] = 1

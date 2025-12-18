@@ -2,10 +2,17 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import functools
+from typing import TYPE_CHECKING
+
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 from press.api.client import dashboard_whitelist
+
+if TYPE_CHECKING:
+	from press.press.doctype.team.team import Team
 
 
 class PressRole(Document):
@@ -107,8 +114,23 @@ class PressRole(Document):
 	def is_team_member(self, user):
 		return bool(frappe.db.exists("Team Member", {"parent": self.team, "user": user}))
 
+	@functools.cached_property
+	def team_doc(self) -> Team:
+		return frappe.get_doc("Team", self.team)
+
+	@property
+	def has_admin_access(self) -> bool:
+		"""
+		Check if the current user has admin access on this team.
+		"""
+		return self.team_doc.is_team_owner() or self.team_doc.is_admin_user()
+
 	@dashboard_whitelist()
-	def add_user(self, user):
+	def add_user(self, user, skip_validations=False):
+		if not skip_validations and not self.has_admin_access:
+			message = _("Only users with admin access can add users to this role")
+			frappe.throw(message, frappe.PermissionError)
+
 		user_exists = self.get("users", {"user": user})
 		if user_exists:
 			frappe.throw(f"{user} already belongs to {self.title}")
@@ -123,6 +145,10 @@ class PressRole(Document):
 
 	@dashboard_whitelist()
 	def remove_user(self, user):
+		if not self.has_admin_access:
+			message = _("Only users with admin access can remove users from this role")
+			frappe.throw(message, frappe.PermissionError)
+
 		user_exists = self.get("users", {"user": user})
 		if not user_exists:
 			frappe.throw(f"{user} does not belong to {self.title}")
@@ -161,8 +187,8 @@ Explanation of LINKED_DOCTYPE_PERMISSIONS:
 
 Example -
 "Site Backup": {
-	"parent_doctype": "Site",
-	"parent_field": "site",
+    "parent_doctype": "Site",
+    "parent_field": "site",
 }
 
 Site Backup doctype has a field named 'site' which is a link to Site doctype.

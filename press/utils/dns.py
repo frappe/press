@@ -78,6 +78,7 @@ def _change_dns_record(method: str, domain: RootDomain, proxy_server: str, recor
 		"route53",
 		aws_access_key_id=domain.aws_access_key_id,
 		aws_secret_access_key=domain.get_password("aws_secret_access_key"),
+		region_name=domain.aws_region,
 	)
 	try:
 		zones = client.list_hosted_zones_by_name()["HostedZones"]

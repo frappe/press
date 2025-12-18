@@ -26,6 +26,10 @@
 							<span class="truncate font-medium text-gray-900">
 								<!-- Needed for app plan selector -->
 								<template v-if="plan.label">{{ plan.label }}</template>
+								<template v-if="hourlyPricing">
+									{{ $format.planTitleHourly(plan) }}
+									<span v-if="plan.price_inr" class="text-gray-700">/hour</span>
+								</template>
 								<template v-else>
 									{{ $format.planTitle(plan) }}
 									<span v-if="plan.price_inr" class="text-gray-700">/mo</span>
@@ -39,7 +43,7 @@
 							</Tooltip>
 						</div>
 					</div>
-					<div class="mt-1 text-sm text-gray-600">
+					<div class="mt-1 text-sm text-gray-600" v-if="!hourlyPricing">
 						<template v-if="plan.sublabel">
 							{{ plan.sublabel }}
 						</template>
@@ -82,7 +86,20 @@
 import { icon } from '../utils/components';
 
 export default {
-	props: ['plans', 'modelValue'],
+	props: {
+		modelValue: {
+			type: [String, Object, Number, Boolean],
+			default: null,
+		},
+		plans: {
+			type: Array,
+			default: () => [],
+		},
+		hourlyPricing: {
+			type: Boolean,
+			default: false,
+		},
+	},
 	methods: {
 		_icon(iconName, classes) {
 			return icon(iconName, classes);
