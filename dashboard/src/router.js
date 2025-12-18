@@ -228,9 +228,8 @@ let router = createRouter({
 						},
 						{
 							name: 'SettingsPermissionRolePermissions',
-							path: 'roles/:roleId',
-							component: () =>
-								import('./components/settings/RolePermissions.vue'),
+							path: 'roles/:id',
+							component: () => import('./components/settings/Role.vue'),
 							props: true,
 						},
 					],
