@@ -30,6 +30,10 @@ from press.press.doctype.add_on_storage_log.add_on_storage_log import (
 	insert_addon_storage_log,
 )
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
+from press.press.doctype.auto_scale_record.auto_scale_record import (
+	create_prometheus_rule_for_scaling,
+	update_or_delete_prometheus_rule_for_scaling,
+)
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server_activity.server_activity import log_server_activity
@@ -70,6 +74,11 @@ class ARMDockerImageType(TypedDict):
 	bench: str
 
 
+class AutoScaleTriggerRow(TypedDict):
+	metric: Literal["CPU", "Memory"]
+	action: Literal["Scale Up", "Scale Down"]
+
+
 PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
 MARIADB_DATA_MNT_POINT = "/opt/volumes/mariadb"
 BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
@@ -101,7 +110,8 @@ class BaseServer(Document, TagHelpers):
 		if status == "Archived":
 			query = query.where(Server.status == status)
 		else:
-			query = query.where(Server.status != "Archived")
+			# Show only Active and Installing servers ignore pending (secondary server)
+			query = query.where(Server.status.isin(["Active", "Installing"]))
 
 		query = query.where(Server.is_for_recovery != 1).where(Server.team == frappe.local.team().name)
 		results = query.run(as_dict=True)
@@ -3193,24 +3203,72 @@ class Server(BaseServer):
 
 	@dashboard_whitelist()
 	@frappe.whitelist()
-	def scale_up(self):
+	def remove_automated_scaling_triggers(self, triggers: list[str]):
+		"""Currently we need to remove both since we can't support scaling up trigger without a scaling down trigger"""
+		trigger_filters = {"parent": self.name, "name": ("in", triggers)}
+		matching_triggers: list[AutoScaleTriggerRow] = frappe.db.get_values(
+			"Auto Scale Trigger", trigger_filters, ["metric", "action"], as_dict=True
+		)
+		frappe.db.delete("Auto Scale Trigger", trigger_filters)
+
+		for trigger in matching_triggers:
+			update_or_delete_prometheus_rule_for_scaling(
+				self.name, metric=trigger["metric"], action=trigger["action"]
+			)
+
+	@dashboard_whitelist()
+	@frappe.whitelist()
+	def add_automated_scaling_triggers(
+		self, metric: Literal["CPU", "Memory"], action: Literal["Scale Up", "Scale Down"], threshold: float
+	):
+		"""Configure automated scaling based on cpu loads"""
+		threshold = round(threshold, 2)
+		existing_trigger = frappe.db.get_value(
+			"Auto Scale Trigger", {"action": action, "parent": self.name, "metric": metric}
+		)
+
+		if existing_trigger:
+			frappe.db.set_value(
+				"Auto Scale Trigger",
+				existing_trigger,
+				{"action": action, "threshold": threshold, "metric": metric},
+			)
+		else:
+			self.append(
+				"auto_scale_trigger",
+				{"metric": metric, "threshold": threshold, "action": action},
+			)
+			self.save()
+
+		create_prometheus_rule_for_scaling(
+			self.name,
+			metric=metric,
+			threshold=threshold,
+			action=action,
+		)
+
+	@dashboard_whitelist()
+	@frappe.whitelist()
+	def scale_up(self, is_automatically_triggered: bool = False):
 		if self.scaled_up:
 			frappe.throw("Server is already scaled up", frappe.ValidationError)
 
 		self.validate_scale()
 
 		auto_scale_record = self._create_auto_scale_record(action="Scale Up")
+		auto_scale_record.is_automatically_triggered = is_automatically_triggered
 		auto_scale_record.insert()
 
 	@dashboard_whitelist()
 	@frappe.whitelist()
-	def scale_down(self):
+	def scale_down(self, is_automatically_triggered: bool = False):
 		if not self.scaled_up:
 			frappe.throw("Server is already scaled down", frappe.ValidationError)
 
 		self.validate_scale()
 
 		auto_scale_record = self._create_auto_scale_record(action="Scale Down")
+		auto_scale_record.is_automatically_triggered = is_automatically_triggered
 		auto_scale_record.insert()
 
 	@property
