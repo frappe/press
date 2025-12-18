@@ -4644,7 +4644,7 @@ def send_warning_mail_regarding_sites_exceeding_disk_usage():
 					"site": site,
 					"current_disk_usage": site_info.current_disk_usage,
 					"current_database_usage": site_info.current_database_usage,
-					"no_of_days_left_to_suspend": 7
+					"no_of_days_left_to_suspend": 14
 					- (frappe.utils.date_diff(frappe.utils.nowdate(), site_info.site_usage_exceeded_on) or 0),
 				},
 			)
@@ -4658,8 +4658,8 @@ def send_warning_mail_regarding_sites_exceeding_disk_usage():
 			frappe.db.rollback()
 
 
-def suspend_sites_exceeding_disk_usage_for_last_7_days():
-	"""Suspend sites if they have exceeded database or disk usage limits for the last 7 days."""
+def suspend_sites_exceeding_disk_usage_for_last_14_days():
+	"""Suspend sites if they have exceeded database or disk usage limits for the last 14 days."""
 
 	if not frappe.db.get_single_value("Press Settings", "enforce_storage_limits"):
 		return
@@ -4672,7 +4672,7 @@ def suspend_sites_exceeding_disk_usage_for_last_7_days():
 			"free": False,
 			"team": ("not in", free_teams),
 			"site_usage_exceeded": 1,
-			"site_usage_exceeded_on": ("<", frappe.utils.add_to_date(frappe.utils.now(), days=-7)),
+			"site_usage_exceeded_on": ("<", frappe.utils.add_to_date(frappe.utils.now(), days=-14)),
 		},
 		fields=["name", "team", "current_database_usage", "current_disk_usage"],
 	)
