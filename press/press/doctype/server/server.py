@@ -32,6 +32,7 @@ from press.press.doctype.add_on_storage_log.add_on_storage_log import (
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.auto_scale_record.auto_scale_record import (
 	create_prometheus_rule_for_scaling,
+	is_secondary_ready_for_scale_down,
 	update_or_delete_prometheus_rule_for_scaling,
 )
 from press.press.doctype.communication_info.communication_info import get_communication_info
@@ -3252,23 +3253,13 @@ class Server(BaseServer):
 	@dashboard_whitelist()
 	@frappe.whitelist()
 	def scale_down(self, is_automatically_triggered: bool = False):
-		from press.api.server import get_cpu_usage
-
 		if not self.scaled_up:
 			frappe.throw("Server is already scaled down", frappe.ValidationError)
 
 		self.validate_scale()
 
-		if is_automatically_triggered:
-			secondary_cpu_usage = get_cpu_usage(self.secondary_server) * 100
-			scale_down_threshold = frappe.db.get_value(
-				"Auto Scale Trigger",
-				{"parent": self.name, "action": "Scale Down", "metric": "CPU"},
-				"threshold",
-			)
-			if secondary_cpu_usage >= scale_down_threshold:
-				# Secondary server is still usage more resources.
-				return
+		if is_automatically_triggered and not is_secondary_ready_for_scale_down(self):
+			return
 
 		auto_scale_record = self._create_auto_scale_record(action="Scale Down")
 		auto_scale_record.is_automatically_triggered = is_automatically_triggered
