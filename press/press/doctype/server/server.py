@@ -3262,10 +3262,23 @@ class Server(BaseServer):
 	@dashboard_whitelist()
 	@frappe.whitelist()
 	def scale_down(self, is_automatically_triggered: bool = False):
+		from press.api.server import get_cpu_usage
+
 		if not self.scaled_up:
 			frappe.throw("Server is already scaled down", frappe.ValidationError)
 
 		self.validate_scale()
+
+		if is_automatically_triggered:
+			secondary_cpu_usage = get_cpu_usage(self.secondary_server) * 100
+			scale_down_threshold = frappe.db.get_value(
+				"Auto Scale Trigger",
+				{"parent": self.name, "action": "Scale Down", "metric": "CPU"},
+				"threshold",
+			)
+			if secondary_cpu_usage >= scale_down_threshold:
+				# Secondary server is still usage more resources.
+				return
 
 		auto_scale_record = self._create_auto_scale_record(action="Scale Down")
 		auto_scale_record.is_automatically_triggered = is_automatically_triggered
