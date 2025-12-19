@@ -570,17 +570,7 @@ def secondary_server_plans(
 	platform=None,
 	current_plan: str | None = None,
 ):
-	filters = {"server_type": name}
-
-	if cluster:
-		filters.update({"cluster": cluster})
-
-	if platform:
-		filters.update({"platform": platform})
-
 	current_price = frappe.db.get_value("Server Plan", current_plan, "price_inr")
-	filters.update({"price_inr": current_price})  # Only allow same size servers to be provisioned
-
 	ServerPlan = frappe.qb.DocType("Server Plan")
 	HasRole = frappe.qb.DocType("Has Role")
 	autoscale_discount = frappe.db.get_single_value("Press Settings", "autoscale_discount")
@@ -605,7 +595,7 @@ def secondary_server_plans(
 		.on((HasRole.parenttype == "Server Plan") & (HasRole.parent == ServerPlan.name))
 		.where(ServerPlan.server_type == name)
 		.where(ServerPlan.platform == platform)
-		.where(ServerPlan.price_inr >= current_price)
+		.where(ServerPlan.price_inr == current_price)
 		.where(ServerPlan.enabled == 1)
 	)
 	if cluster:
