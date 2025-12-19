@@ -177,7 +177,6 @@ export default {
 							{ label: 'Memory', value: 'Memory' },
 						],
 						default: 'CPU',
-						disabled: true,
 						required: true,
 					},
 
