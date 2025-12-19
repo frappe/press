@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import calendar
+import contextlib
 import datetime
 import typing
 from typing import Literal, TypedDict
@@ -358,6 +359,15 @@ class AutoScaleRecord(Document, StepHandler):
 				auto_scale_name=self.name,
 			)
 
+		with contextlib.suppress(frappe.DoesNotExistError):
+			# In case there is a scale down trigger setup for the server, enable it
+			# since we are scaled up now
+			auto_scale_trigger: PrometheusAlertRule = frappe.get_doc(
+				"Prometheus Alert Rule", f"Auto Scale Down Trigger - {self.primary_server}"
+			)
+			auto_scale_trigger.enabled = 1
+			auto_scale_trigger.save()
+
 		step.status = Status.Success
 		step.save()
 
@@ -537,6 +547,15 @@ class AutoScaleRecord(Document, StepHandler):
 				emails=emails,
 				auto_scale_name=self.name,
 			)
+
+		with contextlib.suppress(frappe.DoesNotExistError):
+			# In case there is a scale down trigger setup for the server, disable it
+			# since we are already scaled down
+			auto_scale_trigger: PrometheusAlertRule = frappe.get_doc(
+				"Prometheus Alert Rule", f"Auto Scale Down Trigger - {self.primary_server}"
+			)
+			auto_scale_trigger.enabled = 0
+			auto_scale_trigger.save()
 
 		step.status = Status.Success
 		step.save()
