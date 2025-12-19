@@ -5,34 +5,21 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
-import dns.exception
 import frappe
 import requests
 import wrapt
 from boto3 import client
 from botocore.exceptions import ClientError
-from dns.resolver import Resolver
 from frappe.core.utils import find
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.query_builder import Case
 from frappe.rate_limiter import rate_limit
 from frappe.utils import flt, sbool, time_diff_in_hours
-from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.typing_validations import validate_argument_types
 from frappe.utils.user import is_system_user
 
 from press.access.support_access import has_support_access
-from press.exceptions import (
-	AAAARecordExists,
-	ConflictingCAARecord,
-	ConflictingDNSRecord,
-	DNSValidationError,
-	DomainNoLongerPointed,
-	DomainProxied,
-	MultipleARecords,
-	MultipleCNAMERecords,
-)
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
@@ -40,6 +27,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 )
 from press.press.doctype.remote_file.remote_file import get_remote_key
 from press.press.doctype.server.server import is_dedicated_server
+from press.press.doctype.site.site import Site, get_updates_between_current_and_next_apps
 from press.press.doctype.site_plan.plan import Plan
 from press.press.doctype.site_update.site_update import benches_with_available_update
 from press.utils import (
@@ -50,24 +38,15 @@ from press.utils import (
 	log_error,
 	unique,
 )
+from press.utils.dns import check_dns_cname_a
 
 if TYPE_CHECKING:
-	from frappe.types import DF
-
 	from press.press.doctype.bench.bench import Bench
-	from press.press.doctype.bench_app.bench_app import BenchApp
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
-	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
-		DeployCandidateApp,
-	)
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server.server import Server
-	from press.press.doctype.site.site import Site
 	from press.press.doctype.team.team import Team
-
-
-NAMESERVERS = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
 
 
 def protected(doctypes):
@@ -1254,49 +1233,6 @@ def check_for_updates(name):
 	return out
 
 
-def get_updates_between_current_and_next_apps(
-	current_apps: "DF.Table[BenchApp]",
-	next_apps: "DF.Table[DeployCandidateApp]",
-):
-	from press.utils import get_app_tag
-
-	apps = []
-	for app in next_apps:
-		bench_app = find(current_apps, lambda x: x.app == app.app)
-		current_hash = bench_app.hash if bench_app else None
-		source = frappe.get_doc("App Source", app.source)
-
-		will_branch_change = False
-		current_branch = source.branch
-		if bench_app:
-			current_source = frappe.get_doc("App Source", bench_app.source)
-			will_branch_change = current_source.branch != source.branch
-			current_branch = current_source.branch
-
-		current_tag = (
-			get_app_tag(source.repository, source.repository_owner, current_hash) if current_hash else None
-		)
-		next_hash = app.pullable_hash or app.hash
-		apps.append(
-			{
-				"title": app.title,
-				"app": app.app,
-				"repository": source.repository,
-				"repository_owner": source.repository_owner,
-				"repository_url": source.repository_url,
-				"branch": source.branch,
-				"current_hash": current_hash,
-				"current_tag": current_tag,
-				"next_hash": next_hash,
-				"next_tag": get_app_tag(source.repository, source.repository_owner, next_hash),
-				"will_branch_change": will_branch_change,
-				"current_branch": current_branch,
-				"update_available": not current_hash or current_hash != next_hash,
-			}
-		)
-	return apps
-
-
 @frappe.whitelist()
 @protected("Site")
 def installed_apps(name):
@@ -1677,256 +1613,6 @@ def exists(subdomain, domain):
 @protected("Site")
 def setup_wizard_complete(name):
 	return frappe.get_doc("Site", name).is_setup_wizard_complete()
-
-
-def get_dns_provider_mname_rname(domain):
-	from tldextract import extract
-
-	resolver = Resolver(configure=False)
-	resolver.nameservers = NAMESERVERS
-	try:
-		answer = resolver.query(domain, "SOA")
-		if len(answer) > 0:
-			mname = answer[0].mname.to_text()
-			rname = answer[0].rname.to_text()
-			return extract(mname).registered_domain, extract(rname).registered_domain
-	except dns.resolver.NoAnswer:
-		pass
-	except dns.exception.DNSException:
-		pass
-	return None
-
-
-def accessible_link_substr(provider: str):
-	try:
-		res = requests.head(f"http://{provider}", timeout=3)
-		res.raise_for_status()
-	except requests.RequestException:
-		return None
-	else:
-		return f'<a class=underline href="http://{provider}" target="_blank">{provider}</a>'
-
-
-@redis_cache()
-def get_dns_provider_link_substr(domain: str):
-	# get link to dns provider as html a tag if link is accessible
-	provider = get_dns_provider_mname_rname(domain)
-	if not provider:
-		return ""
-	mname, rname = provider
-	return f" at your DNS provider (hint: {accessible_link_substr(mname) or accessible_link_substr(rname) or rname})"  # likely rname has meaningful link
-
-
-def check_domain_allows_letsencrypt_certs(domain):
-	# Check if domain is allowed to get letsencrypt certificates
-	# This is a security measure to prevent unauthorized certificate issuance
-	from tldextract import extract
-
-	naked_domain = extract(domain).registered_domain
-	resolver = Resolver(configure=False)
-	resolver.nameservers = NAMESERVERS
-	try:
-		answer = resolver.query(naked_domain, "CAA")
-		for rdata in answer:
-			if "letsencrypt.org" in rdata.to_text():
-				return True
-	except dns.resolver.NoAnswer:
-		pass  # no CAA record. Anything goes
-	except dns.exception.DNSException:
-		pass  # We have other problems
-	else:
-		frappe.throw(
-			f"Domain {naked_domain} does not allow Let's Encrypt certificates. Please update or remove <b>CAA</b> record{get_dns_provider_link_substr(domain)}.",
-			ConflictingCAARecord,
-		)
-
-
-def check_dns_cname(name, domain):
-	result = {"type": "CNAME", "exists": True, "matched": False, "answer": ""}
-	try:
-		resolver = Resolver(configure=False)
-		resolver.nameservers = NAMESERVERS
-		answer = resolver.query(domain, "CNAME")
-		if len(answer) > 1:
-			raise MultipleCNAMERecords
-		mapped_domain = answer[0].to_text().rsplit(".", 1)[0]
-		result["answer"] = answer.rrset.to_text()
-		other_domains = frappe.db.get_all(
-			"Site Domain", {"site": name, "status": "Active", "domain": ("!=", name)}, pluck="domain"
-		)
-		if mapped_domain == name or mapped_domain in other_domains:
-			result["matched"] = True
-	except MultipleCNAMERecords:
-		multiple_domains = ", ".join(part.to_text() for part in answer)
-		frappe.throw(
-			f"Domain <b>{domain}</b> has multiple CNAME records: <b>{multiple_domains}</b>. Please keep only one{get_dns_provider_link_substr(domain)}.",
-			MultipleCNAMERecords,
-		)
-	except dns.resolver.NoAnswer as e:
-		result["exists"] = False
-		result["answer"] = str(e)
-	except dns.exception.DNSException as e:
-		result["answer"] = str(e)
-	except Exception as e:
-		result["answer"] = str(e)
-		log_error("DNS Query Exception - CNAME", site=name, domain=domain, exception=e)
-	return result
-
-
-def check_for_ip_match(site_name: str, site_ip: str | None, domain_ip: str | None):
-	if domain_ip == site_ip:
-		return True
-	if site_ip:
-		# We can issue certificates even if the domain points to the secondary proxies
-		server = frappe.db.get_value("Site", site_name, "server")
-		proxy = frappe.db.get_value("Server", server, "proxy_server")
-		secondary_ips = frappe.get_all(
-			"Proxy Server",
-			{"status": "Active", "primary": proxy, "is_replication_setup": True},
-			pluck="ip",
-		)
-		if domain_ip in secondary_ips:
-			return True
-	return False
-
-
-def check_dns_a(name, domain):
-	result = {"type": "A", "exists": True, "matched": False, "answer": ""}
-	try:
-		resolver = Resolver(configure=False)
-		resolver.nameservers = NAMESERVERS
-		answer = resolver.query(domain, "A")
-		if len(answer) > 1:
-			raise MultipleARecords
-		domain_ip = answer[0].to_text()
-		site_ip = resolver.query(name, "A")[0].to_text()
-		result["answer"] = answer.rrset.to_text()
-		result["matched"] = check_for_ip_match(name, site_ip, domain_ip)
-	except MultipleARecords:
-		multiple_ips = ", ".join(part.to_text() for part in answer)
-		frappe.throw(
-			f"Domain {domain} has multiple A records: {multiple_ips}. Please keep only one{get_dns_provider_link_substr(domain)}.",
-			MultipleARecords,
-		)
-	except dns.resolver.NoAnswer as e:
-		result["exists"] = False
-		result["answer"] = str(e)
-	except dns.exception.DNSException as e:
-		result["answer"] = str(e)
-	except Exception as e:
-		result["answer"] = str(e)
-		log_error("DNS Query Exception - A", site=name, domain=domain, exception=e)
-	return result
-
-
-def ensure_dns_aaaa_record_doesnt_exist(domain: str):
-	"""
-	Ensure that the domain doesn't have an AAAA record
-
-	LetsEncrypt has issues with IPv6, so we need to ensure that the domain doesn't have an AAAA record
-	ref: https://letsencrypt.org/docs/ipv6-support/#incorrect-ipv6-addresses
-	"""
-	try:
-		resolver = Resolver(configure=False)
-		resolver.nameservers = NAMESERVERS
-		answer = resolver.query(domain, "AAAA")
-		if answer:
-			frappe.throw(
-				f"Domain {domain} has an AAAA record. This causes issues with https certificate generation. Please remove the same{get_dns_provider_link_substr(domain)}.",
-				AAAARecordExists,
-			)
-	except dns.resolver.NoAnswer:
-		pass
-	except dns.exception.DNSException:
-		pass  # We have other problems
-
-
-def get_proxy_and_redirected_status(domain) -> tuple[str | None, bool] | None:
-	try:
-		res = requests.head(f"http://{domain}/.well-known/acme-challenge/random", timeout=3)
-	except requests.exceptions.RequestException as e:
-		frappe.throw(
-			f"Unable to connect to the domain. Is the DNS correct{get_dns_provider_link_substr(domain)}?\n\n{e!s}",
-			DNSValidationError,
-		)
-	else:
-		redirected = (
-			res.headers.get("location") == "http://ssl.frappe.cloud/.well-known/acme-challenge/random"
-		)
-		server = res.headers.get("server")  # eg: cloudflare
-		server = None if server == "Frappe Cloud" else server
-		return server, redirected
-
-
-def _check_dns_cname_a(name, domain, ignore_proxying=False, throw_proxy_validation_early=True):
-	check_domain_allows_letsencrypt_certs(domain)
-	proxy, redirected = get_proxy_and_redirected_status(domain)
-	if proxy:
-		if ignore_proxying:
-			if redirected:  # pointed to Frappe Cloud servers at least
-				return {"CNAME": {}, "A": {}, "matched": True, "type": "A"}  # assume A
-			frappe.throw(
-				f"Domain <b>{domain}</b> doesn't point to Frappe Cloud servers anymore (server: <b>{proxy}</b>).",
-				DomainNoLongerPointed,
-			)
-
-		if throw_proxy_validation_early:
-			frappe.throw(
-				f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying and try again in some time.""",
-				DomainProxied,
-			)
-
-	ensure_dns_aaaa_record_doesnt_exist(domain)
-	cname = check_dns_cname(name, domain)
-	result = {"CNAME": cname} | cname
-
-	a = check_dns_a(name, domain)
-	result |= {"A": a} | a
-
-	if cname["matched"] and a["exists"] and not a["matched"]:
-		frappe.throw(
-			f"""
-			Domain <b>{domain}</b> has correct CNAME record <b>{cname["answer"].strip().split()[-1]}</b>, but also an A record that points to an incorrect IP address <b>{a["answer"].strip().split()[-1]}</b>.
-			<br>Please remove or update the <b>A</b> record{get_dns_provider_link_substr(domain)}.
-			""",
-			ConflictingDNSRecord,
-		)
-	if a["matched"] and cname["exists"] and not cname["matched"]:
-		frappe.throw(
-			f"""
-			Domain <b>{domain}</b> has correct A record <b>{a["answer"].strip().split()[-1]}</b>, but also a CNAME record that points to an incorrect domain <b>{cname["answer"].strip().split()[-1]}</b>.
-			<br>Please remove or update the <b>CNAME</b> record{get_dns_provider_link_substr(domain)}.
-			""",
-			ConflictingDNSRecord,
-		)
-
-	if proxy and not throw_proxy_validation_early:
-		frappe.throw(
-			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying{get_dns_provider_link_substr(domain)} and try again in some time.
-			<br>You may enable it once the domain is verified.""",
-			DomainProxied,
-		)
-
-	result["valid"] = cname["matched"] or a["matched"]
-	return result
-
-
-def check_dns_cname_a(
-	name, domain, ignore_proxying=False, throw_error=True, throw_proxy_validation_early=True
-):
-	if throw_error:
-		return _check_dns_cname_a(name, domain, ignore_proxying, throw_proxy_validation_early)
-
-	result = {}
-	try:
-		result = _check_dns_cname_a(name, domain, ignore_proxying, throw_proxy_validation_early)
-
-	except Exception as e:
-		result["exc_type"] = e.__class__.__name__
-		result["exc_message"] = str(e)
-		result["valid"] = False
-
-	return result
 
 
 @frappe.whitelist()
@@ -2518,12 +2204,15 @@ def version_upgrade(
 @frappe.whitelist()
 @protected("Site")
 def change_server_options(name):
-	site_server = frappe.db.get_value("Site", name, "server")
-	return frappe.db.get_all(
-		"Server",
-		{"team": get_current_team(), "status": "Active", "name": ("!=", site_server)},
-		["name", "title"],
-	)
+	site = Site("Site", name)
+	return {
+		"servers": frappe.db.get_all(
+			"Server",
+			{"team": get_current_team(), "status": "Active", "name": ("!=", site.server)},
+			["name", "title"],
+		),
+		"estimated_duration": site.get_estimated_duration_for_server_change(),
+	}
 
 
 @frappe.whitelist()
