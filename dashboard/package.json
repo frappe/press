@@ -11,7 +11,8 @@
 		"lint": "eslint src",
 		"test:e2e": "playwright test",
 		"test:e2e:headed": "playwright test --headed",
-		"test:e2e:report": "playwright show-report"
+		"test:e2e:report": "playwright show-report",
+		"postinstall": "patch-package"
 	},
 	"dependencies": {
 		"@codemirror/autocomplete": "^6.18.1",
@@ -31,13 +32,14 @@
 		"echarts": "^5.4.3",
 		"feather-icons": "^4.26.0",
 		"frappe-charts": "2.0.0-rc22",
-		"frappe-ui": "0.1.168",
+		"frappe-ui": "0.1.238",
 		"fuse.js": "6.6.2",
 		"libarchive.js": "^1.3.0",
 		"lodash": "^4.17.19",
 		"luxon": "^1.22.0",
 		"markdown-it": "^12.3.2",
 		"papaparse": "^5.4.1",
+		"patch-package": "^8.0.1",
 		"qrcode": "^1.5.4",
 		"register-service-worker": "^1.6.2",
 		"socket.io-client": "^4.5.1",
