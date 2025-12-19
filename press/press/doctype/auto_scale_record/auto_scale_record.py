@@ -1,5 +1,6 @@
 # Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import calendar
 import contextlib
@@ -792,6 +793,35 @@ def calculate_secondary_server_price(team: str, secondary_server_plan: str) -> f
 	return round(server_price_with_discount / days_in_this_month / 24, 2)
 
 
+def is_secondary_ready_for_scale_down(server: Server) -> bool:
+	"""Check if the secondary server is ready for scaling down based on CPU or Memory usage."""
+	from press.api.server import usage
+
+	scale_down_thresholds = frappe.db.get_values(
+		"Auto Scale Trigger",
+		{"parent": server.name, "action": "Scale Down"},
+		["metric", "threshold"],
+		as_dict=True,
+	)
+
+	if not scale_down_thresholds:
+		return True
+
+	# Usage roughly returns the same values for memory as the trigger query
+	secondary_server_usage = usage(server.secondary_server)
+	secondary_server_cpu_usage = secondary_server_usage["vcpu"] * 100
+	secondary_server_memory_usage = secondary_server_usage["memory"] * 100
+
+	for config in scale_down_thresholds:
+		if (config["metric"] == "CPU") and (secondary_server_cpu_usage < config["threshold"]):
+			return True
+
+		if (config["metric"] == "Memory") and (secondary_server_memory_usage < config["threshold"]):
+			return True
+
+	return False
+
+
 def _get_query_map(instance_name: str, time_range: str = "4m"):
 	return {
 		"CPU": f"""
@@ -899,6 +929,9 @@ def create_prometheus_rule_for_scaling(
 				"expression": query_with_threshold,
 				"enabled": 1,
 				"for": "5m",
+				"repeat_interval": "1h"
+				if action == "Scale Up"
+				else "5m",  # Quicker checks for scaling down [Price sensitive?]
 				"press_job_type": "Auto Scale Up Application Server"
 				if action == "Scale Up"
 				else "Auto Scale Down Application Server",
