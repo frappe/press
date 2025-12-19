@@ -18,15 +18,14 @@
 				]"
 				v-model="tabIndex"
 			>
-				<TabList v-slot="{ tab, selected }" class="pl-0">
+				<template #tab-item="{ tab }">
 					<div
-						class="flex cursor-pointer items-center gap-1.5 border-b border-transparent py-3 text-base text-gray-600 duration-300 ease-in-out hover:border-gray-400 hover:text-gray-900 focus:outline-none focus:transition-none [&>div]:pl-0"
-						:class="{ 'text-gray-900': selected }"
+						class="flex cursor-pointer items-center gap-1.5 py-3 text-base text-gray-600 duration-300 ease-in-out hover:border-gray-400 hover:text-gray-900 focus:outline-none focus:transition-none [&>div]:pl-0"
 					>
 						<span>{{ tab.label }}</span>
 					</div>
-				</TabList>
-				<TabPanel v-slot="{ tab }">
+				</template>
+				<template #tab-panel="{ tab }">
 					<div v-if="tab.value === 'members'" class="text-base">
 						<div class="my-4 flex gap-2">
 							<div class="flex-1">
@@ -137,14 +136,14 @@
 							</div>
 						</div>
 					</div>
-				</TabPanel>
+				</template>
 			</FTabs>
 		</template>
 	</Dialog>
 </template>
 
 <script>
-import { Switch, Tabs, TabList, TabPanel } from 'frappe-ui';
+import { Switch, Tabs } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import UserWithAvatarCell from '../UserWithAvatarCell.vue';
 import { getToastErrorMessage } from '../../utils/toast';
@@ -156,8 +155,6 @@ export default {
 	components: {
 		UserWithAvatarCell,
 		FTabs: Tabs,
-		TabPanel,
-		TabList,
 		Switch,
 	},
 	data() {
