@@ -1,17 +1,41 @@
 <template>
-	<div class="grid grid-cols-3 gap-4 text-base">
-		<div v-for="permission in permissions">
-			<div class="px-5 py-4 border rounded">
-				<Switch
-					size="sm"
-					:disabled="disabled"
-					:label="permission.label"
-					:description="permission.description"
-					:model-value="$props[permission.key]"
-					@update:model-value="
-						(value: boolean) => $emit('update', permission.key, value)
-					"
-				/>
+	<div class="space-y-4">
+		<div class="space-y-2">
+			<div class="font-medium text-lg">General</div>
+			<div class="grid grid-cols-3 gap-4 text-base">
+				<div v-for="permission in permissionsGeneral">
+					<div class="px-5 py-4 border rounded">
+						<Switch
+							size="sm"
+							:disabled="disabled"
+							:label="permission.label"
+							:description="permission.description"
+							:model-value="$props[permission.key]"
+							@update:model-value="
+								(value: boolean) => $emit('update', permission.key, value)
+							"
+						/>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="space-y-2">
+			<div class="font-medium text-lg">Partner</div>
+			<div class="grid grid-cols-3 gap-4 text-base">
+				<div v-for="permission in permissionsPartner">
+					<div class="px-5 py-4 border rounded">
+						<Switch
+							size="sm"
+							:disabled="disabled || !$props.allow_partner"
+							:label="permission.label"
+							:description="permission.description"
+							:model-value="$props[permission.key]"
+							@update:model-value="
+								(value: boolean) => $emit('update', permission.key, value)
+							"
+						/>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -28,6 +52,10 @@ withDefaults(
 		allow_server_creation?: number;
 		allow_site_creation?: number;
 		allow_webhook_configuration?: number;
+		allow_dashboard?: number;
+		allow_customer?: number;
+		allow_leads?: number;
+		allow_contribution?: number;
 		disabled?: boolean;
 	}>(),
 	{
@@ -37,6 +65,10 @@ withDefaults(
 		allow_server_creation: 0,
 		allow_site_creation: 0,
 		allow_webhook_configuration: 0,
+		allow_dashboard: 0,
+		allow_customer: 0,
+		allow_leads: 0,
+		allow_contribution: 0,
 		disabled: false,
 	},
 );
@@ -45,7 +77,7 @@ defineEmits<{
 	update: [key: string, value: boolean];
 }>();
 
-const permissions = [
+const permissionsGeneral = [
 	{
 		key: 'allow_site_creation',
 		label: 'Site',
@@ -75,6 +107,29 @@ const permissions = [
 		key: 'allow_partner',
 		label: 'Partner',
 		description: 'Enables access to partner features',
+	},
+];
+
+const permissionsPartner = [
+	{
+		key: 'allow_dashboard',
+		label: 'Dashboard',
+		description: 'Enables access to dashboard features for Partner',
+	},
+	{
+		key: 'allow_customer',
+		label: 'Customer',
+		description: 'Enables access to customer features for Partner',
+	},
+	{
+		key: 'allow_leads',
+		label: 'Leads',
+		description: 'Enables access to leads features for Partner',
+	},
+	{
+		key: 'allow_contribution',
+		label: 'Contribution',
+		description: 'Enables access to contribution features for Partner',
 	},
 ];
 </script>

@@ -78,6 +78,10 @@
 		:allow_server_creation="role.doc?.allow_server_creation"
 		:allow_site_creation="role.doc?.allow_site_creation"
 		:allow_webhook_configuration="role.doc?.allow_webhook_configuration"
+		:allow_dashboard="role.doc?.allow_dashboard"
+		:allow_customer="role.doc?.allow_customer"
+		:allow_leads="role.doc?.allow_leads"
+		:allow_contribution="role.doc?.allow_contribution"
 		:disabled="user != team.doc?.user"
 		@update="
 			(key: string, value: boolean) => {
