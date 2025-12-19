@@ -579,7 +579,7 @@ def secondary_server_plans(
 		filters.update({"platform": platform})
 
 	current_price = frappe.db.get_value("Server Plan", current_plan, "price_inr")
-	filters.update({"price_inr": (">=", current_price)})  # Hoping this covers memory and vcpus
+	filters.update({"price_inr": current_price})  # Only allow same size servers to be provisioned
 
 	ServerPlan = frappe.qb.DocType("Server Plan")
 	HasRole = frappe.qb.DocType("Has Role")
