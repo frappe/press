@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,10 +10,12 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 )
 
 var debugLogFile *os.File
 var sessionFile = "session_v2.json"
+var apiHTTPClient *http.Client
 
 func init() {
 	if os.Getenv("DEBUG") == "1" {
@@ -21,6 +24,17 @@ func init() {
 		if err != nil {
 			debugLogFile = nil
 		}
+	}
+
+	// Initialize HTTP client with proper timeout for API requests
+	apiHTTPClient = &http.Client{
+		Timeout: 5 * time.Minute, // 5 minute timeout for API requests
+		Transport: &http.Transport{
+			MaxIdleConns:        100,
+			IdleConnTimeout:     90 * time.Second,
+			DisableCompression:  false,
+			TLSHandshakeTimeout: 10 * time.Second,
+		},
 	}
 }
 
@@ -103,32 +117,37 @@ func (s *Session) Save() error {
 }
 
 func (s *Session) SendRequest(method string, payload map[string]any) (map[string]any, error) {
+	return s.SendRequestWithContext(context.Background(), method, payload)
+}
+
+func (s *Session) SendRequestWithContext(ctx context.Context, method string, payload map[string]any) (map[string]any, error) {
 	schema := "https"
 	if strings.Contains(s.Server, ".local") {
 		schema = "http"
-	}
-	req := &http.Request{
-		Method: "POST",
-		URL: &url.URL{
-			Scheme: schema,
-			Host:   s.Server,
-			Path:   fmt.Sprintf("/api/method/%s", method),
-		},
-		Header: http.Header{
-			"Content-Type": {"application/json"},
-			"X-Press-Team": {s.CurrentTeam},
-			"Cookie":       {fmt.Sprintf("sid=%s", s.SessionID)},
-		},
-		Body: http.NoBody, // No body for the request, we will set it later,
 	}
 
 	data, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
 	}
-	req.Body = io.NopCloser(bytes.NewBuffer(data))
 
-	resp, err := http.DefaultClient.Do(req)
+	req, err := http.NewRequestWithContext(ctx, "POST", "", bytes.NewBuffer(data))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.URL = &url.URL{
+		Scheme: schema,
+		Host:   s.Server,
+		Path:   fmt.Sprintf("/api/method/%s", method),
+	}
+	req.Header = http.Header{
+		"Content-Type": {"application/json"},
+		"X-Press-Team": {s.CurrentTeam},
+		"Cookie":       {fmt.Sprintf("sid=%s", s.SessionID)},
+	}
+
+	resp, err := apiHTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
