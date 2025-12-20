@@ -242,15 +242,24 @@ def new(server):
 	return {"server": app_server.name, "job": job.name}
 
 
-def get_cpu_usage(name: str, time_range: str = "4m") -> float:
-	"""Returns a value between 0 and 1 using a simpler CPU idle time estimate across all cores"""
+def get_cpu_and_memory_usage(name: str, time_range: str = "4m") -> dict[str, float]:
+	"""Returns simplified CPU and memory usage [0..1] for autoscale triggers"""
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	if not monitor_server:
-		return 0.0
+		return {"vcpu": 0.0, "memory": 0.0}
 
 	query = f"""
-				1 - avg(rate(node_cpu_seconds_total{{instance="{name}",job="node",mode="idle"}}[{time_range}]))
-			"""
+		1 - avg(rate(node_cpu_seconds_total{{instance="{name}",job="node",mode="idle"}}[{time_range}]))
+
+			OR
+
+		1 -
+			(
+				avg_over_time(node_memory_MemAvailable_bytes{{instance="{name}", job="node"}}[{time_range}])
+				/
+				avg_over_time(node_memory_MemTotal_bytes{{instance="{name}", job="node"}}[{time_range}])
+			)
+	"""
 
 	url = f"https://{monitor_server}/prometheus/api/v1/query"
 	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
@@ -264,9 +273,13 @@ def get_cpu_usage(name: str, time_range: str = "4m") -> float:
 		and response["data"].get("resultType") == "vector"
 		and response["data"].get("result")
 	):
-		return float(response["data"]["result"][0]["value"][1])
+		results = response["data"]["result"]
+		return {
+			"vcpu": float(results[0]["value"][1]),
+			"memory": float(results[1]["value"][1]),
+		}
 
-	return 0.0
+	return {"vcpu": 0.0, "memory": 0.0}
 
 
 @frappe.whitelist()
@@ -306,7 +319,7 @@ def usage(name):
 		if response:
 			result[usage_type] = response[0]["values"][-1]
 
-	result["vcpu"] = get_cpu_usage(name)
+	result["vcpu"] = get_cpu_and_memory_usage(name)["vcpu"]
 	return result
 
 
