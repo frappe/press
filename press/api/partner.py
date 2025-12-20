@@ -348,17 +348,18 @@ def get_lead_activities(name):
 		}
 		activities.append(activity)
 
-		for comment in res.comments:
-			activity = {
-				"name": comment.name,
-				"activity_type": "comment",
-				"creation": comment.creation,
-				"owner": get_user_by_name(comment.owner),
-				"content": comment.content,
-			}
-			activities.append(activity)
+	for comment in res.comments:
+		activity = {
+			"name": comment.name,
+			"activity_type": "comment",
+			"creation": comment.creation,
+			"owner": get_user_by_name(comment.owner),
+			"content": comment.content,
+			# "attachments": get_attachments("Comment", comment.name),
+		}
+		activities.append(activity)
 
-	activities.sort(key=lambda x: x.get("creation"), reverse=True)
+	activities.sort(key=lambda x: x.get("creation"), reverse=False)
 	activities = handle_multiple_versions(activities)
 
 	return activities  # noqa: RET504
