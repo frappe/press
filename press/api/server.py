@@ -246,7 +246,7 @@ def get_cpu_and_memory_usage(name: str, time_range: str = "4m") -> dict[str, flo
 	"""Returns simplified CPU and memory usage [0..1] for autoscale triggers"""
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	if not monitor_server:
-		return {"cpu": 0.0, "memory": 0.0}
+		return {"vcpu": 0.0, "memory": 0.0}
 
 	query = f"""
 		1 - avg(rate(node_cpu_seconds_total{{instance="{name}",job="node",mode="idle"}}[{time_range}]))
