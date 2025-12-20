@@ -795,7 +795,7 @@ def calculate_secondary_server_price(team: str, secondary_server_plan: str) -> f
 
 def is_secondary_ready_for_scale_down(server: Server) -> bool:
 	"""Check if the secondary server is ready for scaling down based on CPU or Memory usage."""
-	from press.api.server import usage
+	from press.api.server import get_cpu_and_memory_usage
 
 	scale_down_thresholds = frappe.db.get_values(
 		"Auto Scale Trigger",
@@ -807,8 +807,7 @@ def is_secondary_ready_for_scale_down(server: Server) -> bool:
 	if not scale_down_thresholds:
 		return True
 
-	# Usage roughly returns the same values for memory as the trigger query
-	secondary_server_usage = usage(server.secondary_server)
+	secondary_server_usage = get_cpu_and_memory_usage(server.secondary_server)
 	secondary_server_cpu_usage = secondary_server_usage["vcpu"] * 100
 	secondary_server_memory_usage = secondary_server_usage["memory"] * 100
 
