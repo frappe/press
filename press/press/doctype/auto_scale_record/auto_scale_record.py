@@ -120,10 +120,10 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 				[
 					# There could be jobs running on both primary and secondary
 					self.mark_start_time,
-					self.stop_all_agent_jobs_on_primary,
 					self.stop_all_agent_jobs_on_secondary,
 					self.switch_to_primary,
 					self.wait_for_primary_switch,
+					self.stop_all_agent_jobs_on_primary,
 					self.setup_primary_upstream,
 					self.wait_for_primary_upstream_setup,
 					self.initiate_secondary_shutdown,
