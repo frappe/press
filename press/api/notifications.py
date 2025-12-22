@@ -47,7 +47,12 @@ def get_notifications(
 		.offset(limit_start)
 	)
 
-	resources = set(sites + release_groups)
+	resources = set()
+	if sites and isinstance(sites, list):
+		resources.update(sites)
+	if release_groups and isinstance(release_groups, list):
+		resources.update(release_groups)
+
 	if resources:
 		query = query.where(PressNotification.reference_name.isin(resources))
 
