@@ -8,7 +8,8 @@ def check(base_query: QueryBuilder) -> bool:
 	return (
 		base_query.where(PressRole.allow_apps == 1)
 		.select(Count(PressRole.name).as_("count"))
-		.run(as_dict=True, pluck="count")
+		.run(as_dict=True)
 		.pop()
+		.get("count")
 		> 0
 	)
