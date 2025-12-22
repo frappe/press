@@ -110,6 +110,7 @@ export let session = reactive({
 			: true,
 	),
 	user: getSessionUser(),
+	userFullName: getSessionCookies().get('full_name') || '',
 	isLoggedIn: computed(() => !!session.user),
 	isSystemUser: getSessionCookies().get('system_user') === 'yes',
 });

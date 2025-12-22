@@ -9,7 +9,7 @@
 				<Badge
 					variant="subtle"
 					:label="team.doc.partner_status"
-					:theme="team.doc.partner_status ? 'green' : 'gray'"
+					:theme="team.doc.partner_status == 'Active' ? 'green' : 'gray'"
 				/>
 			</div>
 		</div>
@@ -117,48 +117,6 @@
 			</div>
 		</div>
 
-		<div class="rounded-lg text-base text-gray-900 border">
-			<div class="flex h-full flex-col justify-between p-4 gap-2">
-				<div class="flex justify-between items-center">
-					<h3 class="font-semibold text-lg">Website Info</h3>
-					<Button label="Edit" @click="showUpdateWebsiteInfo = true" />
-				</div>
-				<div class="my-1 h-px bg-gray-100" />
-				<div class="flex flex-col">
-					<div class="pb-4">
-						<div class="text-sm text-gray-600">Partner Website</div>
-						<div class="text-base font-medium text-gray-700 py-2">
-							{{ partnerDetails.data?.partner_website }}
-						</div>
-					</div>
-					<div class="flex gap-4">
-						<div class="flex-1">
-							<div class="text-sm text-gray-600 pb-3">Introduction</div>
-							<div class="text-base leading-5 text-gray-700 py-1">
-								<div v-html="partnerDetails.data?.introduction"></div>
-							</div>
-						</div>
-						<div class="mx-1 w-px border-r" />
-						<div class="flex-1">
-							<div class="text-sm text-gray-600 pb-3">Customers</div>
-							<div
-								v-for="customer in customerList.slice(0, 10)"
-								class="text-base text-gray-700 py-1"
-							>
-								<li>{{ customer }}</li>
-							</div>
-							<div
-								v-if="customerList.length > 10"
-								class="text-sm text-gray-600 py-3"
-							>
-								... And many more
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-
 		<Dialog
 			:show="showPartnerContributionDialog"
 			v-model="showPartnerContributionDialog"
@@ -196,24 +154,6 @@
 		</Dialog>
 
 		<Dialog
-			:show="showUpdateWebsiteInfo"
-			v-model="showUpdateWebsiteInfo"
-			:options="{ title: 'Update Website Info', size: '2xl' }"
-		>
-			<template #body-content>
-				<WebsiteInfoDialog
-					v-model="partnerDetails.data"
-					@success="
-						() => {
-							partnerDetails.reload();
-							showUpdateWebsiteInfo = false;
-						}
-					"
-				/>
-			</template>
-		</Dialog>
-
-		<Dialog
 			:show="showRenewalConfirmationDialog"
 			v-model="showRenewalConfirmationDialog"
 			:options="{
@@ -234,7 +174,7 @@
 			}"
 		>
 			<template #body-content>
-				<p class="text-base text-gray-700">
+				<p class="text-base leading-6 text-gray-700">
 					By clicking "I Agree", you confirm that you have read and accepted the
 					terms and conditions of the
 					<a
@@ -264,7 +204,6 @@ import PartnerContribution from './PartnerContribution.vue';
 import ClickToCopyField from '../ClickToCopyField.vue';
 import PartnerCreditsForm from './PartnerCreditsForm.vue';
 import PartnerMembers from './PartnerMembers.vue';
-import WebsiteInfoDialog from './WebsiteInfoDialog.vue';
 import { toast } from 'vue-sonner';
 
 const team = inject('team');
@@ -272,7 +211,6 @@ const team = inject('team');
 const showPartnerContributionDialog = ref(false);
 const showPartnerCreditsDialog = ref(false);
 const showPartnerMembersDialog = ref(false);
-const showUpdateWebsiteInfo = ref(false);
 const showRenewalConfirmationDialog = ref(false);
 
 const partnerDetails = createResource({
@@ -295,10 +233,6 @@ const partnerConsent = createListResource({
 	},
 });
 
-const customerList = computed(
-	() => partnerDetails?.data?.customers?.split(',') || [],
-);
-
 const daysUntilRenewal = computed(() => {
 	const today = new Date();
 	const renewal = new Date(partnerDetails.data?.end_date);
@@ -315,7 +249,7 @@ function isRenewalPeriod() {
 	const today = dayjs();
 	const daysDifference = renewal.diff(today, 'days');
 
-	return Boolean(daysDifference >= -30 && daysDifference <= 30);
+	return Boolean(daysDifference <= 30);
 }
 
 const currentMonthContribution = createResource({

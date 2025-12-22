@@ -127,12 +127,22 @@
 								<Switch
 									v-model="allowDashboard"
 									label="Allow Dashboard Access"
+									:disabled="adminAccess"
 								/>
-								<Switch v-model="allowLeads" label="Allow Leads Access" />
-								<Switch v-model="allowCustomer" label="Allow Customer Access" />
+								<Switch
+									v-model="allowLeads"
+									label="Allow Leads Access"
+									:disabled="adminAccess"
+								/>
+								<Switch
+									v-model="allowCustomer"
+									label="Allow Customer Access"
+									:disabled="adminAccess"
+								/>
 								<Switch
 									v-model="allowContribution"
 									label="Allow Contribution Access"
+									:disabled="adminAccess"
 								/>
 							</div>
 						</div>

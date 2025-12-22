@@ -110,6 +110,22 @@ const countryList = computed(() => {
 	}));
 });
 
+const _planList = createResource({
+	url: 'press.api.partner.get_fc_plans',
+	auto: true,
+	cache: 'planList',
+	onSuccess: (data) => {
+		console.log('Plan List', data);
+	},
+});
+
+const planList = computed(() => {
+	return (_planList.data || []).map((plan) => ({
+		label: plan,
+		value: plan,
+	}));
+});
+
 const updateLeadInfo = createResource({
 	url: 'press.api.partner.update_lead_details',
 	makeParams: () => {
@@ -286,9 +302,10 @@ const sections = computed(() => {
 					options: probability.value,
 				},
 				{
-					fieldtype: 'Data',
+					fieldtype: 'Select',
 					fieldname: 'plan_proposed',
 					label: 'Plan Proposed',
+					options: planList.value,
 				},
 			],
 		},

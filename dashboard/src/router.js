@@ -249,6 +249,12 @@ let router = createRouter({
 					component: () => import('./components/partners/PartnerOverview.vue'),
 				},
 				{
+					name: 'PartnerWebsiteDetails',
+					path: 'website-details',
+					component: () =>
+						import('./components/partners/PartnerWebsiteDetails.vue'),
+				},
+				{
 					name: 'PartnerCustomers',
 					path: 'customers',
 					component: () => import('./components/partners/PartnerCustomers.vue'),
@@ -313,6 +319,11 @@ let router = createRouter({
 					name: 'PartnerAdminLeads',
 					path: 'partner-admin-lead-list',
 					component: () => import('./pages/PartnerAdminLeads.vue'),
+				},
+				{
+					name: 'PartnerAdminResources',
+					path: 'admin-resources',
+					component: () => import('./components/partners/PartnerResources.vue'),
 				},
 			],
 		},
