@@ -2,11 +2,17 @@
 	<div class="space-y-5">
 		<div class="ml-auto mr-0 w-max space-x-2">
 			<Button
-				icon="refresh-cw"
+				icon-left="refresh-cw"
+				label="Reload"
 				variant="subtle"
-				@click="() => roles.refresh()"
+				@click="() => roles.reload()"
 			/>
-			<Button icon-left="plus" variant="solid" label="Create Role" />
+			<Button
+				icon-left="plus"
+				variant="solid"
+				label="Create Role"
+				@click="showCreateDialog = !showCreateDialog"
+			/>
 		</div>
 		<div class="grid grid-cols-3 gap-4 text-base">
 			<RouterLink
@@ -112,7 +118,8 @@ const insert = createResource({
 	url: 'press.api.client.insert',
 	auto: false,
 	onSuccess: () => {
-		roles.refresh();
+		roles.reload();
+		showCreateDialog.value = false;
 	},
 });
 
