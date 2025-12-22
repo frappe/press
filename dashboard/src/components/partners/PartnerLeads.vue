@@ -148,6 +148,16 @@ export default {
 								'Learning',
 							],
 						},
+						{
+							type: 'select',
+							fieldname: 'source',
+							label: 'Lead Source',
+							options: [
+								{ label: 'Partner Owned', value: 'Partner Owned' },
+								{ label: 'Passed to Partner', value: 'Passed to Partner' },
+								{ label: 'Partner Listing', value: 'Partner Listing' },
+							],
+						},
 					];
 				},
 				onRowClick: (row) => {

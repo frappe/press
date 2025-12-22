@@ -87,6 +87,12 @@ def get_partner_details(partner_email):
 			"introduction",
 			"customers",
 			"custom_process_maturity_level",
+			"phone_number",
+			"address",
+			"custom_foundation_date",
+			"custom_team_size",
+			"custom_successful_projects_count",
+			"custom_journey_blog_link",
 		],
 	)
 	if data:
@@ -343,17 +349,18 @@ def get_lead_activities(name):
 		}
 		activities.append(activity)
 
-		for comment in res.comments:
-			activity = {
-				"name": comment.name,
-				"activity_type": "comment",
-				"creation": comment.creation,
-				"owner": get_user_by_name(comment.owner),
-				"content": comment.content,
-			}
-			activities.append(activity)
+	for comment in res.comments:
+		activity = {
+			"name": comment.name,
+			"activity_type": "comment",
+			"creation": comment.creation,
+			"owner": get_user_by_name(comment.owner),
+			"content": comment.content,
+			# "attachments": get_attachments("Comment", comment.name),
+		}
+		activities.append(activity)
 
-	activities.sort(key=lambda x: x.get("creation"), reverse=True)
+	activities.sort(key=lambda x: x.get("creation"), reverse=False)
 	activities = handle_multiple_versions(activities)
 
 	return activities  # noqa: RET504
@@ -584,7 +591,7 @@ def get_partner_members(partner):
 
 
 @frappe.whitelist()
-def get_partner_leads(lead_name=None, status=None, engagement_stage=None):
+def get_partner_leads(lead_name=None, status=None, engagement_stage=None, source=None):
 	team = get_current_team()
 	filters = {"partner_team": team}
 	if lead_name:
@@ -593,6 +600,8 @@ def get_partner_leads(lead_name=None, status=None, engagement_stage=None):
 		filters["status"] = status
 	if engagement_stage:
 		filters["engagement_stage"] = engagement_stage
+	if source:
+		filters["lead_source"] = source
 	return frappe.get_all(
 		"Partner Lead",
 		filters,
@@ -645,7 +654,7 @@ def apply_for_certificate(member_name, certificate_type):
 
 
 @frappe.whitelist()
-def get_partner_teams(company=None, email=None, country=None, tier=None):
+def get_partner_teams(company=None, email=None, country=None, tier=None, active_only=False):
 	filters = {"enabled": 1, "erpnext_partner": 1}
 	if company:
 		filters["company_name"] = ("like", f"%{company}%")
@@ -655,7 +664,9 @@ def get_partner_teams(company=None, email=None, country=None, tier=None):
 		filters["country"] = ("like", f"%{country}%")
 	if tier:
 		filters["partner_tier"] = tier
-	print(filters)
+	if active_only:
+		filters["partner_status"] = "Active"
+
 	teams = frappe.get_all(
 		"Team",
 		filters,
@@ -763,6 +774,14 @@ def fetch_followup_details(id, lead):
 @frappe.whitelist()
 def check_certificate_exists(email, type):
 	return frappe.db.count("Partner Certificate", {"partner_member_email": email, "course": type})
+
+
+@frappe.whitelist()
+def get_fc_plans():
+	site_plans = frappe.get_all(
+		"Site Plan", {"enabled": 1, "document_type": "Site", "price_inr": (">", 0)}, pluck="name"
+	)
+	return [*site_plans, "Dedicated Server", "Managed Press"]
 
 
 @frappe.whitelist()
