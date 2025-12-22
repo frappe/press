@@ -338,3 +338,34 @@ def delete_server(
 
 	except Exception as e:
 		Print.error(console, e)
+<<<<<<< HEAD
+=======
+
+
+def _should_proceed(message: str, confirm_token: str | None) -> bool:
+	if isinstance(confirm_token, bool) and confirm_token:
+		return True
+	if isinstance(confirm_token, str) and confirm_token.lower() in {"force", "yes", "y"}:
+		return True
+	return typer.confirm(message, default=False)
+
+
+def _get_current_plan_name(session: "CloudSession", doctype: str, name: str) -> str | None:
+	resp = session.post(
+		"press.api.client.get",
+		json={
+			"doctype": doctype,
+			"name": name,
+			"fields": ["current_plan"],
+			"debug": 0,
+		},
+		message="[bold green]Checking current server plan...",
+	)
+	if isinstance(resp, dict) and resp.get("current_plan"):
+		cp = resp["current_plan"]
+		if isinstance(cp, dict):
+			return cp.get("name")
+		if isinstance(cp, str):
+			return cp
+	return None
+>>>>>>> f05d95c49 (chore(cli):minor changes to comments)
