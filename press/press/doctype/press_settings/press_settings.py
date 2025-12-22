@@ -22,7 +22,6 @@ class PressSettings(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.app_group.app_group import AppGroup
 		from press.press.doctype.erpnext_app.erpnext_app import ERPNextApp
 
@@ -52,6 +51,7 @@ class PressSettings(Document):
 		code_server_password: DF.Data | None
 		commission: DF.Float
 		compress_app_cache: DF.Check
+		compute_api_token: DF.Password | None
 		cool_off_period: DF.Int
 		data_40: DF.Data | None
 		default_apps: DF.Table[AppGroup]
@@ -124,6 +124,7 @@ class PressSettings(Document):
 		offsite_backups_count: DF.Int
 		offsite_backups_provider: DF.Literal["AWS S3"]
 		offsite_backups_secret_access_key: DF.Password | None
+		orchestrator_base_url: DF.Data | None
 		partnership_fee_inr: DF.Int
 		partnership_fee_usd: DF.Int
 		paypal_enabled: DF.Check

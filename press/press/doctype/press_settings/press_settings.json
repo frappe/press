@@ -159,6 +159,9 @@
   "aws_secret_access_key",
   "hetzner_section",
   "hetzner_api_token",
+  "frappe_compute_section",
+  "orchestrator_base_url",
+  "compute_api_token",
   "twilio_section",
   "twilio_account_sid",
   "twilio_api_key_sid",
@@ -1564,11 +1567,26 @@
    "fieldname": "disable_binlog_indexer_service",
    "fieldtype": "Check",
    "label": "Disable Binlog Indexer Service"
+  },
+  {
+   "fieldname": "frappe_compute_section",
+   "fieldtype": "Section Break",
+   "label": "Frappe Compute"
+  },
+  {
+   "fieldname": "compute_api_token",
+   "fieldtype": "Password",
+   "label": "Compute API Token"
+  },
+  {
+   "fieldname": "orchestrator_base_url",
+   "fieldtype": "Data",
+   "label": "Orchestrator Base URL"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-12-09 00:06:25.213870",
+ "modified": "2025-12-19 02:07:35.062064",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

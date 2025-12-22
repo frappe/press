@@ -41,6 +41,7 @@
   "private_ip_address",
   "public_ip_address",
   "is_static_ip",
+  "mac_address_of_public_ip",
   "column_break_15",
   "subnet_cidr_block",
   "public_dns_name",
@@ -65,7 +66,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "\nAWS EC2\nOCI\nHetzner",
+   "options": "\nAWS EC2\nOCI\nHetzner\nFrappe Compute",
    "read_only": 1,
    "reqd": 1
   },
@@ -75,16 +76,14 @@
    "fieldtype": "Link",
    "label": "Region",
    "options": "Cloud Region",
-   "read_only": 1,
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fetch_from": "cluster.availability_zone",
    "fieldname": "availability_zone",
    "fieldtype": "Data",
    "label": "Availability Zone",
-   "read_only": 1,
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "cluster",
@@ -151,8 +150,7 @@
    "fieldtype": "Link",
    "label": "SSH Key",
    "options": "SSH Key",
-   "read_only": 1,
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "column_break_18",
@@ -161,8 +159,7 @@
   {
    "fieldname": "public_ip_address",
    "fieldtype": "Data",
-   "label": "Public IP Address",
-   "read_only": 1
+   "label": "Public IP Address"
   },
   {
    "fieldname": "column_break_15",
@@ -386,6 +383,12 @@
    "fieldtype": "Check",
    "label": "Is Static IP",
    "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.cloud_provider === \"Frappe Compute\"",
+   "fieldname": "mac_address_of_public_ip",
+   "fieldtype": "Data",
+   "label": "Mac Address of Public IP"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -426,7 +429,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2025-10-13 14:56:34.498409",
+ "modified": "2025-12-18 16:41:59.024529",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
