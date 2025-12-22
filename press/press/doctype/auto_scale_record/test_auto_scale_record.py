@@ -180,3 +180,4 @@ class UnitTestAutoScaleRecord(TestCase):
 		)
 
 		self.assertEqual(expected_expression_only_cpu, actual_expression)
+		self.assertEqual(prometheus_alert_rule.enabled, 1)
