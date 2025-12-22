@@ -176,7 +176,7 @@ class PressRole(Document):
 
 def create_user_resource(document: Document, _):
 	user = frappe.session.user
-	team: Team = get_current_team()
+	team: Team = get_current_team(get_doc=True)
 	if not user or team.is_team_owner() or team.is_admin_user():
 		return
 	frappe.get_doc(
