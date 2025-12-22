@@ -12,6 +12,9 @@ import frappe
 
 from press.api.server import schedule_auto_scale
 from press.press.doctype.auto_scale_record.auto_scale_record import AutoScaleRecord
+from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import (
+	PrometheusAlertRule,
+)
 from press.press.doctype.server.test_server import create_test_server
 
 if typing.TYPE_CHECKING:
@@ -58,28 +61,30 @@ class UnitTestAutoScaleRecord(TestCase):
 	Use this class for testing individual functions and methods.
 	"""
 
-	def test_scheduled_auto_scale(self):
-		primary_server = create_test_server()
-		secondary_server = create_test_server()
-		primary_server.secondary_server = secondary_server.name
-		primary_server.save()
+	@classmethod
+	def setUpClass(cls):
+		cls.primary_server = create_test_server()
+		cls.secondary_server = create_test_server()
+		cls.primary_server.secondary_server = cls.secondary_server.name
+		cls.primary_server.save()
 
+	def test_scheduled_auto_scale(self):
 		first_auto_scale_window = [
-			datetime.now() + timedelta(minutes=1),
+			datetime.now() + timedelta(minutes=5),
 			datetime.now() + timedelta(minutes=6),
 		]
 
 		with self.assertRaises(frappe.ValidationError):
 			# Scales must be atleast 60 minutes apart
 			schedule_auto_scale(
-				primary_server.name,
+				self.primary_server.name,
 				scheduled_scale_up_time=first_auto_scale_window[0],
 				scheduled_scale_down_time=first_auto_scale_window[1],
 			)
 
-		first_auto_scale_window[1] = datetime.now() + timedelta(minutes=61)
+		first_auto_scale_window[1] = datetime.now() + timedelta(minutes=70)
 		schedule_auto_scale(
-			primary_server.name,
+			self.primary_server.name,
 			scheduled_scale_up_time=first_auto_scale_window[0],
 			scheduled_scale_down_time=first_auto_scale_window[1],
 		)
@@ -94,7 +99,7 @@ class UnitTestAutoScaleRecord(TestCase):
 		with self.assertRaises(frappe.ValidationError):
 			# Scales must be atleast 60 minutes apart
 			schedule_auto_scale(
-				primary_server.name,
+				self.primary_server.name,
 				scheduled_scale_up_time=conflicting_auto_scale_window[0],
 				scheduled_scale_down_time=conflicting_auto_scale_window[1],
 			)
@@ -103,7 +108,75 @@ class UnitTestAutoScaleRecord(TestCase):
 		conflicting_auto_scale_window[0] = datetime.now() + timedelta(minutes=-10)
 		with self.assertRaises(frappe.ValidationError):
 			schedule_auto_scale(
-				primary_server.name,
+				self.primary_server.name,
 				scheduled_scale_up_time=conflicting_auto_scale_window[0],
 				scheduled_scale_down_time=conflicting_auto_scale_window[1],
 			)
+
+	@patch.object(PrometheusAlertRule, "on_update", new=Mock())
+	def test_trigger_creation(self):
+		self.primary_server.add_automated_scaling_triggers(
+			metric="CPU",
+			action="Scale Up",
+			threshold=75.0,
+		)
+
+		prometheus_alert_rule: PrometheusAlertRule = frappe.get_last_doc("Prometheus Alert Rule")
+		self.assertEqual(
+			prometheus_alert_rule.name,
+			f"Auto Scale Up Trigger - {self.primary_server.name}",
+		)
+		expected_expression_only_cpu = (
+			f"""((
+				1 - avg by (instance) (
+						rate(node_cpu_seconds_total{{instance="{self.primary_server.name}", job="node", mode="idle"}}[4m])
+				)
+		) * 100 > 75.0)""".strip()
+			.replace(" ", "")
+			.replace("\n", "")
+			.replace("\t", "")
+		)
+
+		actual_expression = (
+			prometheus_alert_rule.expression.strip().replace(" ", "").replace("\n", "").replace("\t", "")
+		)
+		self.assertEqual(expected_expression_only_cpu, actual_expression)
+
+		self.primary_server.add_automated_scaling_triggers(
+			metric="Memory",
+			action="Scale Up",
+			threshold=55.0,
+		)
+
+		expected_expression_cpu_and_memory = (
+			f"""((
+				1 - avg by (instance) (
+						rate(node_cpu_seconds_total{{instance="{self.primary_server.name}", job="node", mode="idle"}}[4m])
+				)
+		) * 100 > 75.0) OR ((
+			1 -
+			(
+				avg_over_time(node_memory_MemAvailable_bytes{{instance="{self.primary_server.name}", job="node"}}[4m])
+				/
+				avg_over_time(node_memory_MemTotal_bytes{{instance="{self.primary_server.name}", job="node"}}[4m])
+			)
+		) * 100 > 55.0)""".strip()
+			.replace(" ", "")
+			.replace("\n", "")
+			.replace("\t", "")
+		)
+
+		prometheus_alert_rule = prometheus_alert_rule.reload()
+		actual_expression = (
+			prometheus_alert_rule.expression.strip().replace(" ", "").replace("\n", "").replace("\t", "")
+		)
+		self.assertEqual(expected_expression_cpu_and_memory, actual_expression)
+		memory_trigger = frappe.get_last_doc("Auto Scale Trigger", {"metric": "Memory"})
+		self.primary_server.remove_automated_scaling_triggers(triggers=[memory_trigger.name])
+
+		prometheus_alert_rule = prometheus_alert_rule.reload()
+		actual_expression = (
+			prometheus_alert_rule.expression.strip().replace(" ", "").replace("\n", "").replace("\t", "")
+		)
+
+		self.assertEqual(expected_expression_only_cpu, actual_expression)
