@@ -274,10 +274,11 @@ def get_cpu_and_memory_usage(name: str, time_range: str = "4m") -> dict[str, flo
 		and response["data"].get("result")
 	):
 		results = response["data"]["result"]
-		return {
-			"vcpu": float(results[0]["value"][1]),
-			"memory": float(results[1]["value"][1]),
-		}
+		if results and len(results) == 2:
+			return {
+				"vcpu": float(results[0]["value"][1]),
+				"memory": float(results[1]["value"][1]),
+			}
 
 	return {"vcpu": 0.0, "memory": 0.0}
 
