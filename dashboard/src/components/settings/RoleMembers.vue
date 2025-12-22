@@ -24,8 +24,9 @@
 						}}
 					</div>
 				</div>
-				<div class="px-4 py-3 flex flex-col justify-evenly">
+				<div class="px-4 py-2 flex flex-col justify-evenly">
 					<div class="font-medium">{{ user.full_name }}</div>
+					<div class="text-gray-800">{{ user.user }}</div>
 					<div>Joined: {{ dayjsLocal(user.creation).format('LL') }}</div>
 				</div>
 				<div
