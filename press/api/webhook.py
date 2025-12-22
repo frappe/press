@@ -8,7 +8,7 @@ import json
 import frappe
 
 from press.api.site import protected
-from press.press.doctype.press_role.press_role import check_role_permissions
+from press.guards import role_guard
 
 
 @frappe.whitelist(allow_guest=True)
@@ -22,8 +22,8 @@ def available_events():
 
 
 @frappe.whitelist()
+@role_guard.document(document_type=lambda _: "Press Webhook")
 def add(endpoint: str, secret: str, events: list[str]):
-	check_role_permissions("Press Webhook")
 	doc = frappe.new_doc("Press Webhook")
 	doc.endpoint = endpoint
 	doc.secret = secret
@@ -35,8 +35,8 @@ def add(endpoint: str, secret: str, events: list[str]):
 
 @frappe.whitelist()
 @protected("Press Webhook")
+@role_guard.document(document_type=lambda _: "Press Webhook")
 def update(name: str, endpoint: str, secret: str, events: list[str]):
-	check_role_permissions("Press Webhook")
 	doc = frappe.get_doc("Press Webhook", name)
 	doc.endpoint = endpoint
 	doc.secret = secret or doc.secret
@@ -48,8 +48,8 @@ def update(name: str, endpoint: str, secret: str, events: list[str]):
 
 @frappe.whitelist()
 @protected("Press Webhook")
+@role_guard.document(document_type=lambda _: "Press Webhook Log")
 def attempts(webhook: str):
-	check_role_permissions("Press Webhook Log")
 	doc = frappe.get_doc("Press Webhook", webhook)
 	doc.has_permission("read")
 
@@ -74,8 +74,8 @@ def attempts(webhook: str):
 
 
 @frappe.whitelist()
+@role_guard.document(document_type=lambda _: "Press Webhook Attempt")
 def attempt(name: str):
-	check_role_permissions("Press Webhook Attempt")
 	doc = frappe.get_doc("Press Webhook Attempt", name)
 	doc.has_permission("read")
 	data = doc.as_dict()

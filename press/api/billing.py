@@ -19,6 +19,7 @@ from press.api.regional_payments.mpesa.utils import (
 	sanitize_mobile_number,
 	update_tax_id_or_phone_no,
 )
+from press.guards import role_guard
 from press.press.doctype.mpesa_setup.mpesa_connector import MpesaConnector
 from press.press.doctype.team.team import (
 	_enqueue_finalize_unpaid_invoices_for_team,
@@ -42,6 +43,7 @@ from press.utils.mpesa_utils import create_mpesa_request_log
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def get_publishable_key_and_setup_intent():
 	team = get_current_team()
 	return {
@@ -51,6 +53,7 @@ def get_publishable_key_and_setup_intent():
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def upcoming_invoice():
 	team = get_current_team(True)
 	invoice = team.get_upcoming_invoice()
@@ -68,29 +71,34 @@ def upcoming_invoice():
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def get_balance_credit():
 	team = get_current_team(True)
 	return team.get_balance()
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def past_invoices():
 	return get_current_team(True).get_past_invoices()
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def invoices_and_payments():
 	team = get_current_team(True)
 	return team.get_past_invoices()
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def refresh_invoice_link(invoice):
 	doc = frappe.get_doc("Invoice", invoice)
 	return doc.refresh_stripe_payment_link()
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def balances():
 	team = get_current_team()
 	has_bought_credits = frappe.db.get_all(
@@ -194,6 +202,7 @@ def is_added_credits_bt(bt):
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def details():
 	team = get_current_team(True)
 	address = None
@@ -218,6 +227,7 @@ def details():
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def fetch_invoice_items(invoice):
 	team = get_current_team()
 	if frappe.db.get_value("Invoice", invoice, "team") != team:
@@ -241,6 +251,7 @@ def fetch_invoice_items(invoice):
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def get_customer_details(team):
 	"""This method is called by frappe.io for creating Customer and Address"""
 	team_doc = frappe.db.get_value("Team", team, "*")
@@ -251,6 +262,7 @@ def get_customer_details(team):
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def create_payment_intent_for_micro_debit():
 	team = get_current_team(True)
 	stripe = get_stripe()
@@ -273,6 +285,7 @@ def create_payment_intent_for_micro_debit():
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def create_payment_intent_for_partnership_fees():
 	team = get_current_team(True)
 	press_settings = frappe.get_cached_doc("Press Settings")
@@ -300,6 +313,7 @@ def create_payment_intent_for_partnership_fees():
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def create_payment_intent_for_buying_credits(amount):
 	team = get_current_team(True)
 	metadata = {"payment_for": "prepaid_credits"}
@@ -329,6 +343,7 @@ def create_payment_intent_for_buying_credits(amount):
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def create_payment_intent_for_prepaid_app(amount, metadata):
 	stripe = get_stripe()
 	team = get_current_team(True)
@@ -386,18 +401,21 @@ def create_payment_intent_for_prepaid_app(amount, metadata):
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def get_payment_methods():
 	team = get_current_team()
 	return frappe.get_doc("Team", team).get_payment_methods()
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def set_as_default(name):
 	payment_method = frappe.get_doc("Stripe Payment Method", {"name": name, "team": get_current_team()})
 	payment_method.set_default()
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def remove_payment_method(name):
 	team = get_current_team()
 	payment_method_count = frappe.db.count("Stripe Payment Method", {"team": team})
@@ -411,6 +429,7 @@ def remove_payment_method(name):
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def finalize_invoices():
 	unsettled_invoices = frappe.get_all(
 		"Invoice",
@@ -424,6 +443,7 @@ def finalize_invoices():
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def unpaid_invoices():
 	team = get_current_team()
 	return frappe.db.get_all(
@@ -439,6 +459,7 @@ def unpaid_invoices():
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def get_unpaid_invoices():
 	team = get_current_team()
 	unpaid_invoices = frappe.db.get_all(
@@ -456,6 +477,7 @@ def get_unpaid_invoices():
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def change_payment_mode(mode):
 	team = get_current_team(get_doc=True)
 
@@ -473,6 +495,7 @@ def change_payment_mode(mode):
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def prepaid_credits_via_onboarding():
 	"""When prepaid credits are bought, the balance is not immediately reflected.
 	This method will check balance every second and then set payment_mode"""
@@ -492,6 +515,7 @@ def prepaid_credits_via_onboarding():
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def get_invoice_usage(invoice):
 	team = get_current_team()
 	# apply team filter for safety
@@ -504,6 +528,7 @@ def get_invoice_usage(invoice):
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def get_summary():
 	team = get_current_team()
 	invoices = frappe.get_all(
@@ -557,11 +582,13 @@ def get_grouped_invoice_items(invoices: list[str]) -> dict:
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def after_card_add():
 	clear_setup_intent()
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def setup_intent_success(setup_intent, address=None):
 	setup_intent = frappe._dict(setup_intent)
 
@@ -588,6 +615,7 @@ def setup_intent_success(setup_intent, address=None):
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def validate_gst(address, method=None):
 	if isinstance(address, dict):
 		address = frappe._dict(address)
@@ -613,6 +641,7 @@ def validate_gst(address, method=None):
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def get_latest_unpaid_invoice():
 	team = get_current_team()
 	unpaid_invoices = frappe.get_all(
@@ -643,11 +672,13 @@ def team_has_balance_for_invoice(prepaid_mode_invoice):
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def is_paypal_enabled() -> bool:
 	return frappe.db.get_single_value("Press Settings", "paypal_enabled")
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def create_razorpay_order(amount, transaction_type, doc_name=None) -> dict | None:
 	if not transaction_type:
 		frappe.throw(_("Transaction type is not set"))
@@ -746,6 +777,7 @@ def _validate_invoice_payment(amount, doc_name, currency):
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def handle_razorpay_payment_success(response):
 	client = get_razorpay_client()
 	client.utility.verify_payment_signature(response)
@@ -766,6 +798,7 @@ def handle_razorpay_payment_success(response):
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def handle_razorpay_payment_failed(response):
 	payment_record = frappe.get_doc(
 		"Razorpay Payment Record",
@@ -779,6 +812,7 @@ def handle_razorpay_payment_failed(response):
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def total_unpaid_amount():
 	team = get_current_team(get_doc=True)
 	balance = team.get_balance()
@@ -796,6 +830,7 @@ def total_unpaid_amount():
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def get_current_billing_amount():
 	team = get_current_team(get_doc=True)
 	due_date = frappe.utils.get_last_day(frappe.utils.getdate())
@@ -926,6 +961,7 @@ def handle_transaction_result(transaction_response, integration_request):
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def request_for_payment(**kwargs):
 	"""request for payments"""
 	team = get_current_team()
@@ -1083,6 +1119,7 @@ def parse_datetime(date):
 
 
 @frappe.whitelist()
+@role_guard.api("billing")
 def billing_forecast():
 	"""
 	Get billing forecast and breakdown data for the current month.
