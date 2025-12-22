@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.team.team import Team
 
 from press.utils import get_current_team
+from press.utils import user as utils_user
 
 from .action import action_key
 from .api import api_key
@@ -28,6 +29,8 @@ def api(scope: Literal["billing", "partner"]):
 	def wrapper(fn):
 		@functools.wraps(fn)
 		def inner(*args, **kwargs):
+			if utils_user.is_system_manager():
+				return fn(*args, **kwargs)
 			key = api_key(scope)
 			if not key:
 				return fn(*args, **kwargs)
@@ -63,6 +66,8 @@ def action():
 	def wrapper(fn):
 		@functools.wraps(fn)
 		def inner(self: Document, *args, **kwargs):
+			if utils_user.is_system_manager():
+				return fn(self, *args, **kwargs)
 			key = action_key(self)
 			if not key:
 				return fn(self, *args, **kwargs)
@@ -135,7 +140,7 @@ def document(
 			bound_args.apply_defaults()
 			t = document_type(bound_args.arguments)
 			n = document_name(bound_args.arguments)
-			r = check(t, n)
+			r = utils_user.is_system_manager() or check(t, n)
 			if not r and default_value:
 				return default_value(bound_args.arguments)
 			if not r and should_throw:
