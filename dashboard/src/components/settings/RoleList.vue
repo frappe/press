@@ -50,9 +50,11 @@
 							</Tooltip>
 							<div
 								v-if="role.users.length > 4"
-								class="flex items-center justify-center relative shrink-0 w-7 h-7 rounded-full bg-gray-300 border border-white"
+								class="flex items-center justify-center relative shrink-0 w-7 h-7 rounded-full bg-surface-gray-2 border border-white"
 							>
-								<div class="text-xs">+{{ role.users.length - 3 }}</div>
+								<div class="text-xs font-medium text-ink-gray-5">
+									+{{ role.users.length - 3 }}
+								</div>
 							</div>
 						</div>
 					</div>
