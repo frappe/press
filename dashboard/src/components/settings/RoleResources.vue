@@ -3,9 +3,16 @@
 		<div class="grid grid-cols-3 gap-4 text-base">
 			<RouterLink v-for="resource in resources" :to="toLink(resource)">
 				<div class="group flex h-24 rounded shadow hover:shadow-lg transition">
-					<div class="size-24 rounded-l">
+					<div
+						class="size-24 rounded-l shrink-0"
+						:class="{
+							'bg-green-100': resource.document_type === 'Site',
+							'bg-blue-100': resource.document_type === 'Release Group',
+							'bg-yellow-100': resource.document_type === 'Server',
+						}"
+					>
 						<div
-							class="size-full bg-gray-200 flex items-center justify-center rounded-l text-gray-500 font-semibold text-2xl"
+							class="size-full flex items-center justify-center rounded-l text-gray-500 font-semibold text-2xl"
 						>
 							<FeatherIcon
 								class="size-6"
