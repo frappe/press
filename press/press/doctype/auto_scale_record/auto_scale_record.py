@@ -133,6 +133,8 @@ class AutoScaleRecord(Document, StepHandler):
 				self.append("scale_steps", step)
 
 		self.secondary_server = frappe.db.get_value("Server", self.primary_server, "secondary_server")
+		if not self.secondary_server:
+			frappe.throw("Primary server must have a secondary server to auto scale")
 
 	def get_doc(self, doc):
 		doc.steps = self.get_steps_for_dashboard()
