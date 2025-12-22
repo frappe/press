@@ -817,11 +817,21 @@ def benches_are_idle(server: str, access_token: str) -> None:
 
 @frappe.whitelist()
 @protected(["Server"])
-def schedule_auto_scale(name, scheduled_scale_up_time: str, scheduled_scale_down_time: str) -> None:
+def schedule_auto_scale(
+	name, scheduled_scale_up_time: str | datetime, scheduled_scale_down_time: str | datetime
+) -> None:
 	"""Schedule two auto scale record with scale up and down actions at given times"""
 	secondary_server = frappe.db.get_value("Server", name, "secondary_server")
-	formatted_scheduled_scale_up_time = datetime.strptime(scheduled_scale_up_time, "%Y-%m-%d %H:%M:%S")
-	formatted_scheduled_scale_down_time = datetime.strptime(scheduled_scale_down_time, "%Y-%m-%d %H:%M:%S")
+	formatted_scheduled_scale_up_time = (
+		datetime.strptime(scheduled_scale_up_time, "%Y-%m-%d %H:%M:%S")
+		if isinstance(scheduled_scale_up_time, str)
+		else scheduled_scale_up_time
+	)
+	formatted_scheduled_scale_down_time = (
+		datetime.strptime(scheduled_scale_down_time, "%Y-%m-%d %H:%M:%S")
+		if isinstance(scheduled_scale_down_time, str)
+		else scheduled_scale_down_time
+	)
 
 	if (formatted_scheduled_scale_down_time - formatted_scheduled_scale_up_time).total_seconds() / 60 < 60:
 		frappe.throw("Scheduled scales must be an hour apart", frappe.ValidationError)
