@@ -11,7 +11,10 @@ from unittest.mock import Mock, patch
 import frappe
 
 from press.api.server import schedule_auto_scale
-from press.press.doctype.auto_scale_record.auto_scale_record import AutoScaleRecord
+from press.press.doctype.auto_scale_record.auto_scale_record import (
+	AutoScaleRecord,
+	is_secondary_ready_for_scale_down,
+)
 from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import (
 	PrometheusAlertRule,
 )
@@ -22,15 +25,15 @@ if typing.TYPE_CHECKING:
 
 
 def mimic_memory_usage(is_high: bool = False):
-	return {"memory": 0.4} if not is_high else {"memory": 0.9}
+	return {"memory": 0.2} if not is_high else {"memory": 0.9}
 
 
 def mimic_cpu_usage(is_high: bool = False):
-	return {"vcpu": 0.4} if not is_high else {"vcpu": 0.9}
+	return {"vcpu": 0.2} if not is_high else {"vcpu": 0.9}
 
 
 def mimic_get_cpu_and_memory_usage(is_high: bool = False):
-	cpu_usage = mimic_get_cpu_and_memory_usage(is_high)
+	cpu_usage = mimic_cpu_usage(is_high)
 	cpu_usage.update(mimic_memory_usage(is_high))
 	return cpu_usage
 
@@ -55,6 +58,7 @@ def create_test_auto_scale_record(
 
 
 @patch.object(AutoScaleRecord, "after_insert", new=Mock())
+@patch.object(PrometheusAlertRule, "on_update", new=Mock())
 class UnitTestAutoScaleRecord(TestCase):
 	"""
 	Unit tests for AutoScaleRecord.
@@ -113,7 +117,6 @@ class UnitTestAutoScaleRecord(TestCase):
 				scheduled_scale_down_time=conflicting_auto_scale_window[1],
 			)
 
-	@patch.object(PrometheusAlertRule, "on_update", new=Mock())
 	def test_trigger_creation(self):
 		self.primary_server.add_automated_scaling_triggers(
 			metric="CPU",
@@ -121,11 +124,10 @@ class UnitTestAutoScaleRecord(TestCase):
 			threshold=75.0,
 		)
 
-		prometheus_alert_rule: PrometheusAlertRule = frappe.get_last_doc("Prometheus Alert Rule")
-		self.assertEqual(
-			prometheus_alert_rule.name,
-			f"Auto Scale Up Trigger - {self.primary_server.name}",
+		prometheus_alert_rule: PrometheusAlertRule = frappe.get_doc(
+			"Prometheus Alert Rule", f"Auto Scale Up Trigger - {self.primary_server.name}"
 		)
+
 		expected_expression_only_cpu = (
 			f"""((
 				1 - avg by (instance) (
@@ -181,3 +183,68 @@ class UnitTestAutoScaleRecord(TestCase):
 
 		self.assertEqual(expected_expression_only_cpu, actual_expression)
 		self.assertEqual(prometheus_alert_rule.enabled, 1)
+
+	def test_remove_all_triggers(self):
+		self.primary_server.add_automated_scaling_triggers(
+			metric="CPU",
+			action="Scale Up",
+			threshold=75.0,
+		)
+		auto_scale_triggers = frappe.get_all(
+			"Auto Scale Trigger", filters={"parent": self.primary_server.name}, pluck="name"
+		)
+		self.primary_server.remove_automated_scaling_triggers(triggers=auto_scale_triggers)
+
+		prometheus_alert_rule = frappe.get_doc(
+			"Prometheus Alert Rule", {"name": f"Auto Scale Up Trigger - {self.primary_server.name}"}
+		)
+		self.assertEqual(prometheus_alert_rule.enabled, 0)
+
+	def test_scale_down_trigger_creation(self):
+		self.primary_server.add_automated_scaling_triggers(
+			metric="CPU",
+			action="Scale Down",
+			threshold=25.0,
+		)
+
+		prometheus_alert_rule: PrometheusAlertRule = frappe.get_doc(
+			"Prometheus Alert Rule",
+			{"name": f"Auto Scale Down Trigger - {self.primary_server.name}"},
+		)
+		expected_expression_only_cpu = (
+			f"""((
+				1 - avg by (instance) (
+						rate(node_cpu_seconds_total{{instance="{self.primary_server.name}", job="node", mode="idle"}}[4m])
+				)
+		) * 100 < 25.0)""".strip()
+			.replace(" ", "")
+			.replace("\n", "")
+			.replace("\t", "")
+		)
+
+		actual_expression = (
+			prometheus_alert_rule.expression.strip().replace(" ", "").replace("\n", "").replace("\t", "")
+		)
+		self.assertEqual(expected_expression_only_cpu, actual_expression)
+
+	def test_is_secondary_ready_for_scale_down(self):
+		server = self.primary_server
+		server.add_automated_scaling_triggers(
+			metric="CPU",
+			action="Scale Down",
+			threshold=25.0,
+		)
+
+		with patch(
+			"press.api.server.get_cpu_and_memory_usage",
+			side_effect=lambda srv: mimic_get_cpu_and_memory_usage(is_high=True),
+		):
+			# Resource usage is still high on secondary we should not be ready for scale down
+			self.assertFalse(is_secondary_ready_for_scale_down(server))
+
+		with patch(
+			"press.api.server.get_cpu_and_memory_usage",
+			side_effect=lambda srv: mimic_get_cpu_and_memory_usage(is_high=False),
+		):
+			# Resource usage is now low on secondary we should be ready for scale down
+			self.assertTrue(is_secondary_ready_for_scale_down(server))
