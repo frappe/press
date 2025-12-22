@@ -20,6 +20,7 @@ from frappe.utils.password import get_decrypted_password
 from hcloud import APIException
 from hcloud import Client as HetznerClient
 from hcloud.servers.domain import ServerCreatePublicNetwork
+from press.frappe_compute_client.client import FrappeComputeClient
 from oci import pagination as oci_pagination
 from oci.core import BlockstorageClient, ComputeClient, VirtualNetworkClient
 from oci.core.models import (
@@ -77,14 +78,11 @@ class VirtualMachine(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
-		from press.press.doctype.virtual_machine_temporary_volume.virtual_machine_temporary_volume import (
-			VirtualMachineTemporaryVolume,
-		)
+		from press.press.doctype.virtual_machine_temporary_volume.virtual_machine_temporary_volume import VirtualMachineTemporaryVolume
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
-		availability_zone: DF.Data
-		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner"]
+		availability_zone: DF.Data | None
+		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner", "Frappe Compute"]
 		cluster: DF.Link
 		data_disk_snapshot: DF.Link | None
 		data_disk_snapshot_attached: DF.Check
@@ -97,6 +95,7 @@ class VirtualMachine(Document):
 		instance_id: DF.Data | None
 		is_static_ip: DF.Check
 		kms_key_id: DF.Data | None
+		mac_address_of_public_ip: DF.Data | None
 		machine_image: DF.Data | None
 		machine_type: DF.Data
 		platform: DF.Literal["x86_64", "arm64"]
@@ -106,12 +105,12 @@ class VirtualMachine(Document):
 		public_ip_address: DF.Data | None
 		ram: DF.Int
 		ready_for_conversion: DF.Check
-		region: DF.Link
+		region: DF.Link | None
 		root_disk_size: DF.Int
 		security_group_id: DF.Data | None
 		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "t", "nfs", "fs"]
 		skip_automated_snapshot: DF.Check
-		ssh_key: DF.Link
+		ssh_key: DF.Link | None
 		status: DF.Literal["Draft", "Pending", "Running", "Stopped", "Terminated"]
 		subnet_cidr_block: DF.Data | None
 		subnet_id: DF.Data | None
@@ -407,7 +406,22 @@ class VirtualMachine(Document):
 			return self._provision_oci()
 		if self.cloud_provider == "Hetzner":
 			return self._provision_hetzner()
+		if self.cloud_provider == "Frappe Compute":
+			return self._provision_frappe_compute()
+
 		return None
+
+	def _provision_frappe_compute(self):
+		server_response = self.client().create_vm(
+			self.name,
+			"Ubuntu 22.04",
+			1,
+			1,
+			cloud_init=self.get_cloud_init(),
+			mac_address=self.mac_address_of_public_ip,
+			ip_address=self.public_ip_address,
+		)
+		return server_response
 
 	def _provision_hetzner(self):
 		from hcloud.firewalls.domain import Firewall
@@ -757,6 +771,10 @@ class VirtualMachine(Document):
 			)
 			if images and len(images) > 0:
 				return images[0].id
+		if self.cloud_provider == "Frappe Compute":
+			images = self.client().get_all_images()
+			if images:
+				return images[0]["id"]
 		return None
 
 	@frappe.whitelist()
@@ -1415,6 +1433,9 @@ class VirtualMachine(Document):
 				self.get_hetzner_server_instance(fetch_data=False)
 			).wait_until_finished(HETZNER_ACTION_RETRIES)
 
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().terminate_vm(self.name)
+
 		if server := self.get_server():
 			log_server_activity(self.series, server.name, action="Terminated")
 
@@ -1503,6 +1524,12 @@ class VirtualMachine(Document):
 		if self.cloud_provider == "Hetzner":
 			api_token = cluster.get_password("hetzner_api_token")
 			return HetznerClient(token=api_token)
+		if self.cloud_provider == "Frappe Compute":
+			settings = frappe.get_single("Press Settings")
+			orchestrator_base_url = settings.orchestrator_base_url
+			api_token = settings.get_password("compute_api_token")
+			return FrappeComputeClient(orchestrator_base_url, api_token)
+
 
 		return None
 
