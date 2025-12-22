@@ -783,7 +783,7 @@ class VirtualMachine(Document):
 		log_server_activity(
 			self.series,
 			server=self.get_server().name,
-			action="Disk Size Change",
+			action="Increase Disk Size",
 			reason=f"{'Root' if is_root_volume else 'Data'} volume increased by {increment}",
 		)
 

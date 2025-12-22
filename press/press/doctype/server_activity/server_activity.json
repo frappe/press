@@ -5,18 +5,16 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "column_break_ceix",
   "document_type",
   "document_name",
   "team",
   "action",
+  "column_break_oohx",
+  "additional_reference_type",
+  "additional_reference",
   "reason"
  ],
  "fields": [
-  {
-   "fieldname": "column_break_ceix",
-   "fieldtype": "Column Break"
-  },
   {
    "fieldname": "team",
    "fieldtype": "Link",
@@ -27,7 +25,7 @@
    "fieldname": "action",
    "fieldtype": "Select",
    "label": "Action",
-   "options": "Created\nReboot\nVolume\nDisk Size Change\nTerminated\nIncident",
+   "options": "Created\nReboot\nVolume\nIncrease Disk Size\nReduce Disk Size\nTerminated\nIncident",
    "reqd": 1
   },
   {
@@ -49,12 +47,28 @@
    "label": "Document Name",
    "options": "document_type",
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_oohx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "additional_reference_type",
+   "fieldtype": "Link",
+   "label": "Additional Reference Type",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "additional_reference",
+   "fieldtype": "Dynamic Link",
+   "label": "Additional Reference",
+   "options": "additional_reference_type"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-07 12:09:37.291972",
+ "modified": "2025-12-22 15:38:20.965400",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Activity",

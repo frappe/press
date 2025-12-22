@@ -18,6 +18,7 @@ from press.api.bench import all as all_benches
 from press.api.site import protected
 from press.exceptions import MonitorServerDown
 from press.press.doctype.auto_scale_record.auto_scale_record import validate_scaling_schedule
+from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.press.doctype.site_plan.plan import Plan, filter_by_roles
 from press.press.doctype.team.team import get_child_team_members
 from press.utils import get_current_team
@@ -824,13 +825,12 @@ def schedule_disk_resize(
 			"virtual_machine": server.virtual_machine,
 			"status": ["not in", ["Failure", "Cancelled"]],
 		},
-		as_dict=True,
 	):
 		frappe.throw(
 			"A disk resize was triggered within the last 7 days. Please wait before scheduling another resize."
 		)
 
-	frappe.get_doc(
+	vdr = frappe.get_doc(
 		{
 			"doctype": "Virtual Disk Resize",
 			"virtual_machine": server.virtual_machine,
@@ -840,3 +840,12 @@ def schedule_disk_resize(
 			"status": "Scheduled",
 		}
 	).insert()
+
+	log_server_activity(
+		"f" if server_type == "Server" else "m",
+		server=name,
+		action="Reduce Disk Size",
+		reason=f"Data volume {volume_id} reduced to {expected_volume_size} GB",
+		additional_reference_type=vdr.doctype,
+		additional_reference=vdr.name,
+	)
