@@ -15,7 +15,6 @@ deploy = typer.Typer(help="Bench/Deploy Commands")
 console = Console()
 
 
-# Trigger initial deploy for a bench group
 @deploy.command(help="Trigger initial deploy for a bench group")
 def create_initial_deploy(
 	ctx: typer.Context,
@@ -266,10 +265,6 @@ def _pick_app_entry(info: dict, app: str) -> dict | None:
 
 
 def _select_release_by_prefix(releases: list[dict], hash_prefix: str) -> tuple[str | None, str]:
-	"""Return (release_name, hash) matching the given hash prefix, else (None, "").
-
-	Prints concise error messages on ambiguity or no-match.
-	"""
 	matches = [r for r in releases if str(r.get("hash", "")).startswith(hash_prefix)]
 	if not matches:
 		suggestions = ", ".join([r.get("hash", "")[:7] for r in releases][:10])
@@ -300,7 +295,6 @@ def _get_deploy_info(session: "CloudSession", bench_name: str) -> dict:
 
 
 def _build_apps_payload(info: dict, apps: list[str], hashes: list[str], bench_name: str) -> list[dict]:
-	"""Build apps payload by matching each app to a release via hash prefix."""
 	apps_payload: list[dict] = []
 	for app_name, hash_val in zip(apps, hashes, strict=True):
 		app_entry = _pick_app_entry(info, app_name)
@@ -351,11 +345,6 @@ def _should_proceed(message: str, confirm_token: str | None) -> bool:
 	return typer.confirm(message, default=False)
 
 
-# --------------------
-# Helper functions
-# --------------------
-
-
 def _build_method_url(session: "CloudSession", method: str) -> str:
 	"""Build a full URL to an API method using the session's base URL."""
 	base_url = session.base_url.rstrip("/")
@@ -387,7 +376,6 @@ def _prepare_bench_payload(
 
 
 def _find_frappe_source(options: dict, version: str) -> str | None:
-	"""Given bench options and a version, return the frappe source name or None."""
 	try:
 		for v in options.get("versions", []):
 			if v.get("name") == version:
@@ -401,7 +389,6 @@ def _find_frappe_source(options: dict, version: str) -> str | None:
 
 
 def _find_app_source(apps_list: list[dict], app: str, branch: str) -> str | None:
-	"""Find source name for an app/branch in the all_apps response."""
 	for entry in apps_list:
 		if entry.get("app") == app:
 			for src in entry.get("sources", []):
@@ -433,7 +420,6 @@ def _create_bench(
 		if isinstance(response, dict) and response.get("success"):
 			Print.success(console, f"Successfully created bench group: {title}")
 		elif isinstance(response, dict):
-			# Show only the main error message if present
 			msg = (
 				response.get("message") or response.get("exception") or response.get("exc") or "Unknown error"
 			)
@@ -443,5 +429,4 @@ def _create_bench(
 		else:
 			Print.error(console, f"Backend error: {response}")
 	except Exception as req_exc:
-		# Show only the exception message
 		Print.error(console, f"Request error: {req_exc}")

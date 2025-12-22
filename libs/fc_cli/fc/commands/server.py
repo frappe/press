@@ -303,11 +303,6 @@ def delete_server(
 
 
 def _should_proceed(message: str, confirm_token: str | None) -> bool:
-	"""Return True if destructive action should proceed.
-
-	- When confirm_token is 'force' (case-insensitive), skip prompt and proceed.
-	- Otherwise, show a confirmation prompt and return the user's choice.
-	"""
 	if isinstance(confirm_token, bool) and confirm_token:
 		return True
 	if isinstance(confirm_token, str) and confirm_token.lower() in {"force", "yes", "y"}:

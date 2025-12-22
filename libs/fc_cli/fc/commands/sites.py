@@ -110,7 +110,6 @@ def drop(
 		typer.Option("--force", "-f", is_flag=True, help="Skip confirmation"),
 	] = False,
 ):
-	"""Archive a site via press.api.client.run_doc_method using the provided payload shape."""
 	session: CloudSession = ctx.obj
 	domain = "m.frappe.cloud"
 	full_site = f"{name}.{domain}"
@@ -157,7 +156,6 @@ def install_available_apps(
 	site: Annotated[str, typer.Argument(help="Full site domain, e.g. foo.m.frappe.cloud")],
 	app: Annotated[list[str] | None, typer.Option("--app", help="App(s) to install; omit for all")] = None,
 ):
-	"""Install apps available to the site but not yet installed."""
 	session: CloudSession = ctx.obj
 
 	try:
@@ -189,7 +187,6 @@ def uninstall_app(
 	site: Annotated[str, typer.Argument(help="Full site domain, e.g. foo.m.frappe.cloud")],
 	app: Annotated[str, typer.Option("--app", help="App to uninstall")],
 ):
-	"""Uninstall an app from a site via press.api.client.run_doc_method."""
 	session: CloudSession = ctx.obj
 
 	try:
