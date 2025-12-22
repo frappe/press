@@ -1,9 +1,12 @@
 # Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import calendar
+import contextlib
 import datetime
 import typing
+from typing import Literal, TypedDict
 
 import frappe
 from frappe.model.document import Document
@@ -11,12 +14,18 @@ from requests.exceptions import ConnectionError, HTTPError, JSONDecodeError
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
+from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.runner import Ansible, Status, StepHandler
 from press.utils import log_error
 
 if typing.TYPE_CHECKING:
+	from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import PrometheusAlertRule
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+
+
+class PrometheusAlertRuleRow(TypedDict):
+	expression: str
 
 
 class AutoScaleStepFailureHandler:
@@ -52,6 +61,7 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 		action: DF.Literal["Scale Up", "Scale Down"]
 		duration: DF.Time | None
 		failed_validation: DF.Check
+		is_automatically_triggered: DF.Check
 		primary_server: DF.Link
 		scale_steps: DF.Table[ScaleStep]
 		scheduled_time: DF.Datetime | None
@@ -338,6 +348,27 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 		)
 		frappe.db.set_value("Auto Scale Record", self.name, "duration", duration)
 
+		emails = get_communication_info("Email", "Server Activity", "Server", self.primary_server)
+		server_title = frappe.db.get_value("Server", self.primary_server, "title") or self.primary_server
+
+		if self.is_automatically_triggered and emails:
+			send_autoscale_notification(
+				server_title=server_title,
+				server_name=self.primary_server,
+				action=self.action,
+				emails=emails,
+				auto_scale_name=self.name,
+			)
+
+		with contextlib.suppress(frappe.DoesNotExistError):
+			# In case there is a scale down trigger setup for the server, enable it
+			# since we are scaled up now
+			auto_scale_trigger: PrometheusAlertRule = frappe.get_doc(
+				"Prometheus Alert Rule", f"Auto Scale Down Trigger - {self.primary_server}"
+			)
+			auto_scale_trigger.enabled = 1
+			auto_scale_trigger.save()
+
 		step.status = Status.Success
 		step.save()
 
@@ -384,7 +415,7 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 			secondary_server_private_ip=secondary_server_private_ip,
 			is_primary=True,
 			directory=shared_directory,
-			restart_benches=True,
+			restart_benches=False,
 			reference_doctype="Server",
 			reference_name=self.primary_server,
 		)
@@ -505,6 +536,27 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 			"Auto Scale Record", self.name, "start_time"
 		)
 		frappe.db.set_value("Auto Scale Record", self.name, "duration", duration)
+
+		emails = get_communication_info("Email", "Server Activity", "Server", self.primary_server)
+		server_title = frappe.db.get_value("Server", self.primary_server, "title") or self.primary_server
+
+		if self.is_automatically_triggered and emails:
+			send_autoscale_notification(
+				server_title=server_title,
+				server_name=self.primary_server,
+				action=self.action,
+				emails=emails,
+				auto_scale_name=self.name,
+			)
+
+		with contextlib.suppress(frappe.DoesNotExistError):
+			# In case there is a scale down trigger setup for the server, disable it
+			# since we are already scaled down
+			auto_scale_trigger: PrometheusAlertRule = frappe.get_doc(
+				"Prometheus Alert Rule", f"Auto Scale Down Trigger - {self.primary_server}"
+			)
+			auto_scale_trigger.enabled = 0
+			auto_scale_trigger.save()
 
 		step.status = Status.Success
 		step.save()
@@ -739,3 +791,167 @@ def calculate_secondary_server_price(team: str, secondary_server_plan: str) -> f
 
 	_, days_in_this_month = calendar.monthrange(datetime.date.today().year, datetime.date.today().month)
 	return round(server_price_with_discount / days_in_this_month / 24, 2)
+
+
+def is_secondary_ready_for_scale_down(server: Server) -> bool:
+	"""Check if the secondary server is ready for scaling down based on CPU or Memory usage."""
+	from press.api.server import get_cpu_and_memory_usage
+
+	scale_down_thresholds = frappe.db.get_values(
+		"Auto Scale Trigger",
+		{"parent": server.name, "action": "Scale Down"},
+		["metric", "threshold"],
+		as_dict=True,
+	)
+
+	if not scale_down_thresholds:
+		return True
+
+	secondary_server_usage = get_cpu_and_memory_usage(server.secondary_server)
+	secondary_server_cpu_usage = secondary_server_usage["vcpu"] * 100
+	secondary_server_memory_usage = secondary_server_usage["memory"] * 100
+
+	for config in scale_down_thresholds:
+		if (config["metric"] == "CPU") and (secondary_server_cpu_usage < config["threshold"]):
+			return True
+
+		if (config["metric"] == "Memory") and (secondary_server_memory_usage < config["threshold"]):
+			return True
+
+	return False
+
+
+def _get_query_map(instance_name: str, time_range: str = "4m"):
+	return {
+		"CPU": f"""
+		(
+			1 - avg by (instance) (
+				rate(node_cpu_seconds_total{{instance="{instance_name}", job="node", mode="idle"}}[{time_range}])
+			)
+		) * 100
+		""".strip(),
+		"Memory": f"""
+		(
+			1 -
+			(
+				avg_over_time(node_memory_MemAvailable_bytes{{instance="{instance_name}", job="node"}}[{time_range}])
+				/
+				avg_over_time(node_memory_MemTotal_bytes{{instance="{instance_name}", job="node"}}[{time_range}])
+			)
+		) * 100
+		""".strip(),
+	}
+
+
+def update_or_delete_prometheus_rule_for_scaling(
+	instance_name: str,
+	metric: Literal["CPU", "Memory"],
+	action: Literal["Scale Up", "Scale Down"],
+) -> None:
+	rule_name = f"Auto {action} Trigger - {instance_name}"
+	existing: PrometheusAlertRule | None
+	try:
+		existing = frappe.get_doc(
+			"Prometheus Alert Rule",
+			rule_name,
+			for_update=True,
+		)
+	except frappe.DoesNotExistError:
+		existing = None
+
+	if not existing:
+		return
+
+	query_map = _get_query_map(instance_name)
+	base_query = query_map[metric]
+	expression = existing.expression or ""  # Ideally we should have an expression here
+
+	parts = [p.strip() for p in expression.split(" OR ") if p.strip()]
+	parts = [p for p in parts if base_query not in p]
+
+	if not parts:
+		# This was the only expression present don't delete just disable
+		existing.enabled = False
+		existing.expression = ""
+	else:
+		new_expression = " OR ".join(parts)  # Part without the removed metric
+		existing.expression = new_expression
+
+	existing.save()
+
+
+def create_prometheus_rule_for_scaling(
+	instance_name: str,
+	metric: Literal["CPU", "Memory"],
+	threshold: float,
+	action: Literal["Scale Up", "Scale Down"],
+) -> None:
+	"""Create or update a Prometheus autoscaling alert rule."""
+	query_map = _get_query_map(instance_name)
+
+	base_query = query_map[metric]
+	query_with_threshold = f"({base_query} {'>' if action == 'Scale Up' else '<'} {threshold})"
+
+	rule_name = f"Auto {action} Trigger - {instance_name}"
+	existing: PrometheusAlertRule | None
+
+	try:
+		existing = frappe.get_doc(
+			"Prometheus Alert Rule",
+			rule_name,
+			for_update=True,
+		)
+	except frappe.DoesNotExistError:
+		existing = None
+
+	if existing:
+		expression = existing.expression or ""
+
+		parts = [p.strip() for p in expression.split(" OR ") if p.strip()]
+		parts = [p for p in parts if base_query not in p]
+
+		# Add updated metric expression
+		parts.append(query_with_threshold)
+
+		new_expression = " OR ".join(parts)
+
+		existing.expression = new_expression
+		existing.enabled = True
+		existing.save()  # Need to call this to allow on_update to trigger
+
+	else:
+		doc = frappe.get_doc(
+			{
+				"doctype": "Prometheus Alert Rule",
+				"name": rule_name,
+				"description": f"Autoscale trigger for {instance_name}",
+				"expression": query_with_threshold,
+				"enabled": 1,
+				"for": "5m",
+				"repeat_interval": "1h"
+				if action == "Scale Up"
+				else "5m",  # Quicker checks for scaling down [Price sensitive?]
+				"press_job_type": "Auto Scale Up Application Server"
+				if action == "Scale Up"
+				else "Auto Scale Down Application Server",
+			}
+		)
+		doc.insert()
+
+
+def send_autoscale_notification(
+	server_title: str,
+	server_name: str,
+	action: Literal["Scale Up", "Scale Down"],
+	emails: list[str],
+	auto_scale_name: str,
+):
+	frappe.sendmail(
+		recipients=emails,
+		subject=f"Autoscale - {server_title}",
+		template="auto_scale_notification",
+		args={
+			"message": f"Automatic {action} triggered for server {server_title}",
+			"link": f"dashboard/servers/{server_name}/auto-scale-steps/{auto_scale_name}",
+		},
+	)

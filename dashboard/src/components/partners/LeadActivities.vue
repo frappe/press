@@ -1,5 +1,22 @@
 <template>
-	<div class="mt-10 px-60">
+	<div class="mt-5 px-60">
+		<div class="flex justify-between px-10 pb-5">
+			<div class="font-semibold text-lg">Activity</div>
+			<div>
+				<Dropdown :options="commentOptions">
+					<template #default="{ comment }">
+						<Button variant="subtle" size="md" label="New">
+							<template #suffix>
+								<FeatherIcon
+									:name="comment ? 'chevron-up' : 'chevron-down'"
+									class="h-4 w-4"
+								/>
+							</template>
+						</Button>
+					</template>
+				</Dropdown>
+			</div>
+		</div>
 		<div v-for="activity in activities" :key="activity.id" class="activities">
 			<div
 				class="activity px-3 sm:px-10 grid grid-cols-[30px_minmax(auto,_1fr)] gap-2 sm:gap-4"
@@ -9,7 +26,11 @@
 				>
 					<component :is="activity.icon" class="text-ink-gray-4" />
 				</div>
-				<div class="mb-1">
+				<div
+					class="mb-1"
+					:id="activity.name"
+					v-if="activity.activity_type != 'comment'"
+				>
 					<div>
 						<div
 							class="mb-1 flex items-center justify-stretch gap-2 py-1 text-base"
@@ -19,7 +40,7 @@
 							>
 								<span class="font-medium">{{ activity.owner }}</span>
 								<span class="text-ink-gray-5">{{ activity.type }}</span>
-								<span v-if="activity.data.field_label">{{
+								<span v-if="activity.data?.field_label">{{
 									activity.data.field_label
 								}}</span>
 								<span v-if="activity.value" class="text-ink-gray-5">{{
@@ -27,15 +48,15 @@
 								}}</span>
 								<span
 									class="truncate max-w-xs"
-									v-if="activity.data.old_value"
+									v-if="activity.data?.old_value"
 									>{{ activity.data.old_value }}</span
 								>
-								<span v-else>{{ activity.data.value }}</span>
-								<span v-if="activity.to" class="text-ink-gray-5">{{
+								<span v-else>{{ activity.data?.value }}</span>
+								<span v-if="activity?.to" class="text-ink-gray-5">{{
 									activity.to
 								}}</span>
 								<span class="truncate max-w-xs">{{
-									activity.data.new_value
+									activity.data?.new_value
 								}}</span>
 							</div>
 							<div class="ml-auto whitespace-nowrap">
@@ -127,17 +148,38 @@
 						</div>
 					</div>
 				</div>
+				<div
+					class="mb-4"
+					:id="activity.name"
+					v-if="activity.activity_type == 'comment'"
+				>
+					<CommentArea :activity="activity" />
+				</div>
 			</div>
 		</div>
+		<NewCommentDialog
+			v-if="showNewCommentDialog"
+			v-model="showNewCommentDialog"
+			@update:show="showNewCommentDialog = $event"
+			:content="newComment"
+			@save-comment="newComment = $event"
+			:members="memberList"
+		/>
 	</div>
 </template>
 <script setup>
-import { createResource, Tooltip } from 'frappe-ui';
+import { createResource, Tooltip, Button, FeatherIcon, call } from 'frappe-ui';
 import { useRoute } from 'vue-router';
 import DotIcon from '../icons/DotIcon.vue';
 import SelectIcon from '../icons/SelectIcon.vue';
-import { computed } from 'vue';
+import { computed, h, ref, watch, onMounted } from 'vue';
 import { timeAgo, startCase } from '../../utils/format';
+import CommentArea from './CommentArea.vue';
+import CommentIcon from '../icons/CommentIcon.vue';
+import DropdownItem from '../billing/DropdownItem.vue';
+import NewCommentDialog from './NewCommentDialog.vue';
+import { session } from '../../data/session';
+import { getTeam } from '../../data/team';
 
 const route = useRoute();
 
@@ -163,7 +205,11 @@ function get_activities() {
 const activities = computed(() => {
 	let _activities = get_activities();
 	_activities.forEach((activity) => {
-		activity.icon = DotIcon;
+		if (activity.activity_type == 'comment') {
+			activity.icon = CommentIcon;
+		} else {
+			activity.icon = DotIcon;
+		}
 		update_activities_details(activity);
 	});
 	return sortByCreation(_activities);
@@ -190,14 +236,78 @@ function update_activities_details(activity) {
 	}
 }
 
+let newComment = ref('');
+let showNewCommentDialog = ref(false);
+const commentOptions = computed(() => {
+	return [
+		{
+			label: 'New Comment',
+			value: 'comment',
+			component: () =>
+				h(DropdownItem, {
+					label: 'New Comment',
+					onClick: () => {
+						showNewCommentDialog.value = true;
+					},
+				}),
+		},
+		// {
+		// 	label: 'New Email',
+		// 	value: 'email',
+		// 	component: () =>
+		// 		h(DropdownItem, {
+		// 			label: 'New Email',
+		// 			onClick: () => {
+		// 				console.log('Email Clicked');
+		// 			},
+		// 		}),
+		// },
+	];
+});
+
+watch(newComment, () => {
+	saveComment();
+});
+
+async function saveComment() {
+	if (!newComment.value) {
+		return;
+	}
+	let comment = await call('frappe.desk.form.utils.add_comment', {
+		reference_doctype: 'Partner Lead',
+		reference_name: route.params.leadId,
+		content: newComment.value,
+		comment_email: session.user,
+		comment_by: session.userFullName,
+	});
+
+	if (comment) {
+		newComment.value = '';
+		showNewCommentDialog.value = false;
+		all_activities.reload();
+	}
+}
+
+const team = getTeam();
+let memberList = ref([]);
+const getMembers = async () => {
+	let members = await team.getTeamMembers.submit();
+	memberList.value = members.map((member) => {
+		return { label: member.full_name, value: member.name };
+	});
+};
+
+onMounted(() => {
+	getMembers();
+});
+
 function formatDate(date) {
 	return new Date(date).toLocaleString();
 }
 
 function sortByCreation(list) {
-	return list.sort((a, b) => new Date(a.creation) - new Date(b.creation));
+	return list
+		.sort((a, b) => new Date(a.creation) - new Date(b.creation))
+		.reverse();
 }
-// function sortByModified(list) {
-//   return list.sort((b, a) => new Date(a.modified) - new Date(b.modified))
-// }
 </script>

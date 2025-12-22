@@ -298,7 +298,9 @@ class SiteBackup(Document):
 			f"chmod 770 /var/lib/mysql/{self.database_name}"
 		)
 		if not success:
-			frappe.db.set_value("Site Backup", self.name, "status", "Failure")
+			self.reload()
+			self.status = "Failure"
+			self.save(ignore_permissions=True)
 			return
 		agent = Agent(self.database_server, "Database Server")
 		job = agent.physical_backup_database(site, self)

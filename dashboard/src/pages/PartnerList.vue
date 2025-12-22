@@ -41,14 +41,17 @@ export default {
 					{
 						label: 'Partner Email',
 						fieldname: 'email',
+						width: 0.8,
 					},
 					{
 						label: 'Country',
 						fieldname: 'country',
+						width: 0.5,
 					},
 					{
 						label: 'Tier',
 						fieldname: 'tier',
+						width: 0.5,
 					},
 				],
 				onRowClick(row) {
@@ -76,6 +79,11 @@ export default {
 							label: 'Tier',
 							fieldname: 'tier',
 							options: ['', 'Entry', 'Emerging', 'Bronze', 'Silver', 'Gold'],
+						},
+						{
+							type: 'checkbox',
+							label: 'Active Partners',
+							fieldname: 'active_only',
 						},
 					];
 				},
