@@ -25,3 +25,4 @@ def execute():
 			role.append("resources", item)
 
 		role.save()
+		frappe.db.commit()
