@@ -55,7 +55,7 @@
 								/>
 							</Tooltip>
 							<div
-								v-if="role.users.length > 4"
+								v-if="role.users.length > 3"
 								class="flex items-center justify-center relative shrink-0 w-7 h-7 rounded-full bg-surface-gray-2 border border-white"
 							>
 								<div class="text-xs font-medium text-ink-gray-5">
