@@ -15,6 +15,7 @@ import requests
 from frappe.model.document import Document
 
 from press.api.client import dashboard_whitelist
+from press.guards import role_guard
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import is_valid_hostname
 
@@ -42,6 +43,7 @@ class PressWebhook(Document):
 	DOCTYPE = "Press Webhook"
 	dashboard_fields = ("enabled", "endpoint", "events")
 
+	@role_guard.action()
 	def validate(self):
 		# maximum 5 webhooks per team
 		if self.is_new() and frappe.db.count("Press Webhook", {"team": self.team}) > 5:

@@ -26,7 +26,9 @@
   "allow_customer",
   "allow_contribution",
   "section_break_zdiv",
-  "users"
+  "users",
+  "section_break_wcgd",
+  "resources"
  ],
  "fields": [
   {
@@ -147,12 +149,22 @@
    "fieldname": "allow_contribution",
    "fieldtype": "Check",
    "label": "Allow Contribution"
+  },
+  {
+   "fieldname": "section_break_wcgd",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "resources",
+   "fieldtype": "Table",
+   "label": "Resources",
+   "options": "Press Role Resource"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-14 19:02:58.097025",
- "modified_by": "Administrator",
+ "modified": "2025-12-17 21:41:40.796104",
+ "modified_by": "hello@ssiyad.com",
  "module": "Press",
  "name": "Press Role",
  "naming_rule": "Random",
