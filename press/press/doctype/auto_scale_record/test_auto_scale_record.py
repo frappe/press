@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import typing
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Literal
 from unittest import TestCase
 from unittest.mock import Mock, patch
@@ -70,8 +70,8 @@ class UnitTestAutoScaleRecord(TestCase):
 
 	def test_scheduled_auto_scale(self):
 		first_auto_scale_window = [
-			datetime.now() + timedelta(minutes=5),
-			datetime.now() + timedelta(minutes=6),
+			frappe.utils.now_datetime() + timedelta(minutes=5),
+			frappe.utils.now_datetime() + timedelta(minutes=6),
 		]
 
 		with self.assertRaises(frappe.ValidationError):
@@ -82,7 +82,7 @@ class UnitTestAutoScaleRecord(TestCase):
 				scheduled_scale_down_time=first_auto_scale_window[1],
 			)
 
-		first_auto_scale_window[1] = datetime.now() + timedelta(minutes=70)
+		first_auto_scale_window[1] = frappe.utils.now_datetime() + timedelta(minutes=70)
 		schedule_auto_scale(
 			self.primary_server.name,
 			scheduled_scale_up_time=first_auto_scale_window[0],
@@ -92,8 +92,8 @@ class UnitTestAutoScaleRecord(TestCase):
 		# A scheduled auto scale cannot be created if there is a conflicting auto scale window
 		# Trying to scale up when already scaled up according to the previous schedule
 		conflicting_auto_scale_window = [
-			datetime.now() + timedelta(minutes=5),
-			datetime.now() + timedelta(minutes=70),
+			frappe.utils.now_datetime() + timedelta(minutes=5),
+			frappe.utils.now_datetime() + timedelta(minutes=70),
 		]
 
 		with self.assertRaises(frappe.ValidationError):
@@ -105,7 +105,7 @@ class UnitTestAutoScaleRecord(TestCase):
 			)
 
 		# Trying to scale up in the past
-		conflicting_auto_scale_window[0] = datetime.now() + timedelta(minutes=-10)
+		conflicting_auto_scale_window[0] = frappe.utils.now_datetime() + timedelta(minutes=-10)
 		with self.assertRaises(frappe.ValidationError):
 			schedule_auto_scale(
 				self.primary_server.name,
