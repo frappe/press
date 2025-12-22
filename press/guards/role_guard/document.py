@@ -18,7 +18,8 @@ def documents(base_query: QueryBuilder, document_type: str) -> list[str]:
 		for doc in base_query.inner_join(PressRoleResource)
 		.on(
 			(PressRoleResource.parent == PressRole.name)
-			& (Not(PressRoleResource.document_type == document_type))
+			& (PressRoleResource.document_type == document_type)
+			& (Not(PressRoleResource.document_name.isnull()))
 		)
 		.select(PressRoleResource.document_name)
 		.distinct()
