@@ -279,7 +279,7 @@ export default {
 				},
 			},
 			{
-				label: 'Bench Analytics',
+				label: 'Bench Group Analytics',
 				icon: icon('bar-chart-2'),
 				condition: (server) => server.doc?.status !== 'Archived',
 				route: 'bench-group-analytics',

@@ -100,8 +100,8 @@ ENV {{ doc.get_dependency_version("wkhtmltopdf", True) }}
 
   {% if doc.get_dependency_version("wkhtmltopdf") == '0.12.6' %}
   RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_arm64.deb  \
-    && dpkg -i wkhtmltox_0.12.6.1-2.jammy_arm64.deb \
-    && rm wkhtmltox_0.12.6.1-2.jammy_arm64.deb \
+    && dpkg -i wkhtmltox_0.12.6.1-2.jammy_arm64 \
+    && rm wkhtmltox_0.12.6.1-2.jammy_arm64 \
     `#stage-pre-wkhtmltopdf`
   {% endif %}
 {% else %}

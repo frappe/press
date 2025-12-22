@@ -47,7 +47,7 @@ class AutoScaleStepFailureHandler:
 		frappe.db.commit()
 
 
-class AutoScaleRecord(Document, StepHandler):
+class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 

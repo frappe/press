@@ -683,6 +683,8 @@ Likely due to insufficient balance or incorrect credentials""",
 
 		server_title_encoded = urllib.parse.quote(server_title)
 
+		# TODO Better message for Disk Full incidents
+
 		press_public_base_url = frappe.utils.get_url()
 		twilio_client.calls.create(
 			url=f"{press_public_base_url}/api/method/press.api.message.confirmed_incident?server_title={server_title_encoded}",
