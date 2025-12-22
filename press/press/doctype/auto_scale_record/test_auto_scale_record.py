@@ -2,9 +2,7 @@
 # See license.txt
 from __future__ import annotations
 
-import typing
 from datetime import timedelta
-from typing import Literal
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
@@ -20,9 +18,6 @@ from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import (
 )
 from press.press.doctype.server.test_server import create_test_server
 
-if typing.TYPE_CHECKING:
-	from press.press.doctype.server.server import Server
-
 
 def mimic_memory_usage(is_high: bool = False):
 	return {"memory": 0.2} if not is_high else {"memory": 0.9}
@@ -36,25 +31,6 @@ def mimic_get_cpu_and_memory_usage(is_high: bool = False):
 	cpu_usage = mimic_cpu_usage(is_high)
 	cpu_usage.update(mimic_memory_usage(is_high))
 	return cpu_usage
-
-
-def create_test_auto_scale_record(
-	action: Literal["Scale Up", "Scale Down"],
-	is_automatically_triggered: bool = False,
-	server: Server | None = None,
-) -> AutoScaleRecord:
-	server = server or create_test_server()
-	server.secondary_server = (
-		create_test_server().name if not server.secondary_server else server.secondary_server
-	)
-	return frappe.get_doc(
-		{
-			"doctype": "Auto Scale Record",
-			"server": server.name,
-			"action": action,
-			"is_automatically_triggered": is_automatically_triggered,
-		}
-	).insert()
 
 
 @patch.object(AutoScaleRecord, "after_insert", new=Mock())
