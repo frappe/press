@@ -7,6 +7,7 @@
         "**/assets",
         "*.json",
         "**.jinja2",
+        "**.j2",
         "**.service",
         "**.yml",
         "test_**",
@@ -503,6 +504,7 @@
         "Qyzylorda",
         "rcfile",
         "rdata",
+        "rdatatype",
         "recognise",
         "redisearch",
         "referer",
@@ -662,6 +664,7 @@
         "vtprotobuf",
         "vueuse",
         "Vzzq",
+        "wazuh",
         "weasyprint",
         "webp",
         "Winamac",
@@ -696,6 +699,18 @@
         "zeebo",
         "zloirock",
         "Zpyihv",
-        "Zvkq"
+        "Zvkq",
+        "segs",
+        "interner",
+        "sprintf",
+        "xyproto",
+        "vxeg",
+        "rzgre",
+        "Yekq",
+        "Rhiv",
+        "Kvsc",
+        "ZSTD",
+        "Wazuh",
+        "DBUS"
     ]
 }

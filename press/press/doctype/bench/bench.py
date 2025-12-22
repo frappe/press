@@ -40,6 +40,8 @@ from press.utils.webhook import create_webhook_event
 if TYPE_CHECKING:
 	from collections.abc import Generator, Iterable
 
+	from frappe.types import DF
+
 
 TRANSITORY_STATES = ["Pending", "Installing"]
 FINAL_STATES = ["Active", "Broken", "Archived"]
@@ -288,11 +290,16 @@ class Bench(Document):
 			"restart_supervisor_on_update": True,
 		}
 
-		db_host = frappe.db.get_value("Database Server", self.database_server, "private_ip")
+		if self.database_server:
+			db_host, db_port = frappe.db.get_value(
+				"Database Server", self.database_server, ["private_ip", "db_port"]
+			)
+		else:
+			db_host, db_port = None, 3306
 
 		if db_host:
 			config["db_host"] = db_host
-			config["db_port"] = 3306
+			config["db_port"] = db_port
 
 		if self.managed_database_service:
 			config["rds_db"] = 1
@@ -792,8 +799,13 @@ class Bench(Document):
 				# Roughly workers / threads_per_worker = total number of workers
 				# 1. At least one worker
 				# 2. Slightly more workers than required
-				self.gunicorn_workers = frappe.utils.ceil(
-					self.gunicorn_workers / self.gunicorn_threads_per_worker
+				self.gunicorn_workers = min(
+					max_gn or MAX_GUNICORN_WORKERS,
+					max(
+						frappe.utils.ceil(self.gunicorn_workers / self.gunicorn_threads_per_worker),
+						min_gn
+						or 1,  # 1 instead of MIN_GUNICORN_WORKERS because that's what we're doing right now
+					),
 				)
 			self.background_workers = min(
 				max_bg or MAX_BACKGROUND_WORKERS,
@@ -1000,7 +1012,7 @@ class Bench(Document):
 			docker_image = req_data.get("image")
 			self.inplace_update_docker_image = docker_image
 
-			bench_config = json.loads(self.bench_config)
+			bench_config = json.loads(self.bench_config or "{}")
 			bench_config.update({"docker_image": docker_image})
 			self.bench_config = json.dumps(bench_config, indent=4)
 
@@ -1276,7 +1288,13 @@ def process_remove_ssh_user_job_update(job):
 		frappe.db.set_value("Bench", job.bench, "is_ssh_proxy_setup", False, update_modified=False)
 
 
-def get_scheduled_version_upgrades(bench: dict):
+class BenchLike(frappe._dict):
+	name: str
+	server: str
+	group: str
+
+
+def get_scheduled_version_upgrades(bench: BenchLike | Bench):
 	frappe.db.commit()
 	sites = frappe.qb.DocType("Site")
 	version_upgrades = frappe.qb.DocType("Version Upgrade")
@@ -1292,7 +1310,7 @@ def get_scheduled_version_upgrades(bench: dict):
 	)
 
 
-def get_unfinished_site_migrations(bench: dict):
+def get_unfinished_site_migrations(bench: BenchLike | Bench):
 	frappe.db.commit()
 	return frappe.db.exists(
 		"Site Migration",
@@ -1355,7 +1373,15 @@ def archive_obsolete_benches(group: str | None = None, server: str | None = None
 		)
 
 
-def archive_obsolete_benches_for_server(benches: Iterable[dict]):
+class BenchesToArchive(frappe._dict):
+	name: str
+	candidate: str
+	creation: DF.Datetime
+	public: bool
+	central_bench: bool
+
+
+def archive_obsolete_benches_for_server(benches: Iterable[BenchesToArchive]):
 	for bench in benches:
 		# If the bench is a private one and has been created more than EMPTY_BENCH_COURTESY_DAYS ago,
 		# then we can attempt to archive it.
@@ -1495,8 +1521,8 @@ def sort_supervisor_processes(processes: "list[SupervisorProcess]"):
 	return flatten(sorted_process_groups)
 
 
-def group_supervisor_processes(processes: "list[SupervisorProcess]"):
-	status_grouped: "OrderedDict[str, OrderedDict[str, list[SupervisorProcess]]]" = OrderedDict()
+def group_supervisor_processes(processes: list[SupervisorProcess]):
+	status_grouped: OrderedDict[str | None, OrderedDict[str | None, list[SupervisorProcess]]] = OrderedDict()
 	for p in processes:
 		status = p.get("status")
 		group = p.get("group", "NONE")

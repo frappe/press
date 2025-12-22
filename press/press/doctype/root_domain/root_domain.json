@@ -13,7 +13,8 @@
   "column_break_4",
   "dns_provider",
   "aws_access_key_id",
-  "aws_secret_access_key"
+  "aws_secret_access_key",
+  "aws_region"
  ],
  "fields": [
   {
@@ -66,6 +67,12 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled"
+  },
+  {
+   "description": "Sets AWS_DEFAULT_REGION environment variable",
+   "fieldname": "aws_region",
+   "fieldtype": "Data",
+   "label": "AWS Region"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -101,7 +108,7 @@
    "link_fieldname": "domain"
   }
  ],
- "modified": "2025-07-07 13:57:57.363562",
+ "modified": "2025-12-09 14:04:47.403558",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Root Domain",
@@ -122,6 +129,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

@@ -54,6 +54,17 @@ export function plural(number, singular, plural) {
 	return plural;
 }
 
+export function planTitleHourly(plan) {
+	if (plan === undefined) return;
+	const $team = getTeam();
+	const india = $team.doc?.currency === 'INR';
+	const priceField = india ? 'price_inr' : 'price_usd';
+	const price =
+		plan?.block_monthly == 1 ? plan[priceField] * 12 : plan[priceField];
+
+	return price > 0 ? `${userCurrency(pricePerHour(price))}` : plan.plan_title;
+}
+
 export function planTitle(plan) {
 	if (plan === undefined) return;
 	const $team = getTeam();
@@ -95,6 +106,11 @@ export function numberK(number) {
 
 		return `${value}k`;
 	}
+}
+
+export function pricePerHour(price) {
+	let daysInThisMonth = dayjs().daysInMonth();
+	return price / daysInThisMonth / 24;
 }
 
 export function pricePerDay(price) {
@@ -220,6 +236,8 @@ export function formatValue(value, type) {
 			return numberK(value);
 		case 'pricePerDay':
 			return pricePerDay(value);
+		case 'pricePerHour':
+			return pricePerHour(value);
 		case 'sql':
 			return formatSQL(value);
 		default:

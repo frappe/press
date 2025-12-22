@@ -731,7 +731,7 @@
  "description": null,
   "docstatus": 0,
   "doctype": "Site Config Key",
-  "internal": 1,
+  "internal": 0 ,
   "key": "workers",
   "modified": "2025-07-13 11:31:26.815014",
   "name": "workers",

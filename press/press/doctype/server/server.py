@@ -25,11 +25,17 @@ from frappe.utils.user import is_system_user
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.exceptions import VolumeResizeLimitError
+from press.guards import role_guard
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.add_on_storage_log.add_on_storage_log import (
 	insert_addon_storage_log,
 )
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
+from press.press.doctype.auto_scale_record.auto_scale_record import (
+	create_prometheus_rule_for_scaling,
+	is_secondary_ready_for_scale_down,
+	update_or_delete_prometheus_rule_for_scaling,
+)
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server_activity.server_activity import log_server_activity
@@ -70,6 +76,11 @@ class ARMDockerImageType(TypedDict):
 	bench: str
 
 
+class AutoScaleTriggerRow(TypedDict):
+	metric: Literal["CPU", "Memory"]
+	action: Literal["Scale Up", "Scale Down"]
+
+
 PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
 MARIADB_DATA_MNT_POINT = "/opt/volumes/mariadb"
 BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
@@ -101,7 +112,8 @@ class BaseServer(Document, TagHelpers):
 		if status == "Archived":
 			query = query.where(Server.status == status)
 		else:
-			query = query.where(Server.status != "Archived")
+			# Show only Active and Installing servers ignore pending (secondary server)
+			query = query.where(Server.status.isin(["Active", "Installing"]))
 
 		query = query.where(Server.is_for_recovery != 1).where(Server.team == frappe.local.team().name)
 		results = query.run(as_dict=True)
@@ -373,9 +385,8 @@ class BaseServer(Document, TagHelpers):
 				"button_label": "Setup",
 				"condition": self.status == "Active"
 				and self.doctype == "Server"
-				# As only present on server doctype
 				and not self.secondary_server
-				and self.team == "team@erpnext.com",
+				and self.cluster == "Mumbai",
 				"group": "Application Server Actions",
 			},
 			{
@@ -481,6 +492,7 @@ class BaseServer(Document, TagHelpers):
 				"route53",
 				aws_access_key_id=domain.aws_access_key_id,
 				aws_secret_access_key=domain.get_password("aws_secret_access_key"),
+				region_name=domain.aws_region,
 			)
 			zones = client.list_hosted_zones_by_name()["HostedZones"]
 			# list_hosted_zones_by_name returns a lexicographically ordered list of zones
@@ -866,6 +878,8 @@ class BaseServer(Document, TagHelpers):
 		if not device:
 			# Try the best guess. Try extending the data volume
 			volume = self.find_mountpoint_volume(mountpoint)
+			assert volume is not None, "Volume not found"
+			assert volume.volume_id is not None, "Volume ID not found"
 			device = self.get_device_from_volume_id(volume.volume_id)
 
 		server = self.get_server_from_device(device)
@@ -918,7 +932,10 @@ class BaseServer(Document, TagHelpers):
 			mountpoint = self.guess_data_disk_mountpoint()
 
 		volume = self.find_mountpoint_volume(mountpoint)
+		assert volume is not None, f"Volume not found for mountpoint {mountpoint}"
 		# Get the parent of the volume directly instead of guessing.
+		assert volume.parent is not None, "Virtual Machine not found for volume"
+		assert volume.volume_id is not None, "Volume ID not found"
 		virtual_machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", volume.parent)
 		virtual_machine.increase_disk_size(volume.volume_id, increment)
 		if self.provider == "AWS EC2":
@@ -945,8 +962,11 @@ class BaseServer(Document, TagHelpers):
 			mountpoint = "/"
 		return mountpoint
 
-	def find_mountpoint_volume(self, mountpoint) -> "VirtualMachineVolume":
+	def find_mountpoint_volume(self, mountpoint) -> "VirtualMachineVolume" | None:
 		volume_id = None
+		if self.provider == "Generic":
+			return None
+
 		machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", self.virtual_machine)
 
 		if volume_id:
@@ -1070,8 +1090,6 @@ class BaseServer(Document, TagHelpers):
 			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
 		self.disable_subscription()
 
-		frappe.db.delete("Press Role Permission", {"server": self.name})
-
 	def _archive(self):
 		self.run_press_job("Archive Server")
 
@@ -1099,9 +1117,6 @@ class BaseServer(Document, TagHelpers):
 
 		if team.payment_mode == "Paid By Partner" and team.billing_team:
 			team = frappe.get_doc("Team", team.billing_team)
-
-		if team.is_defaulter():
-			frappe.throw("Cannot change plan because you have unpaid invoices")
 
 		if not (team.default_payment_method or team.get_balance()):
 			frappe.throw("Cannot change plan because you haven't added a card and not have enough balance")
@@ -1992,8 +2007,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		ansible = Ansible(
 			playbook="fetch_frappe_public_key.yml",
 			server=primary,
-			user=self._ssh_user(),
-			port=self._ssh_port(),
+			user=primary._ssh_user(),
+			port=primary._ssh_port(),
 		)
 		play = ansible.run()
 		if play.status == "Success":
@@ -2045,7 +2060,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			log_error("Cadvisor Install Exception", server=self.as_dict())
 
 	@frappe.whitelist()
-	def set_additional_config(self):
+	def set_additional_config(self):  # noqa: C901
 		"""
 		Corresponds to Set additional config step in Create Server Press Job
 		"""
@@ -2079,8 +2094,12 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		if self.doctype == "Database Server":
 			self.adjust_memory_config()
-			self.provide_frappe_user_du_permission()
+			self.provide_frappe_user_du_and_find_permission()
 			self.setup_logrotate()
+			self.setup_user_lingering()
+
+			if self.has_data_volume:
+				self.setup_binlog_indexes_folder()
 
 		if self.doctype == "Proxy Server":
 			self.setup_wildcard_hosts()
@@ -2255,6 +2274,7 @@ class Server(BaseServer):
 	GUNICORN_MEMORY = 150  # avg ram usage of 1 gunicorn worker
 	BACKGROUND_JOB_MEMORY = 3 * 80  # avg ram usage of 3 sets of bg workers
 
+	@role_guard.action()
 	def validate(self):
 		super().validate()
 		self.validate_managed_database_service()
@@ -2287,7 +2307,6 @@ class Server(BaseServer):
 		if not self.is_new() and self.has_value_changed("team"):
 			self.update_subscription()
 			self.update_db_server()
-			frappe.db.delete("Press Role Permission", {"server": self.name})
 
 		self.set_bench_memory_limits_if_needed(save=False)
 		if self.public:
@@ -2313,14 +2332,6 @@ class Server(BaseServer):
 
 		db_server.team = self.team
 		db_server.save()
-
-	def after_insert(self):
-		from press.press.doctype.press_role.press_role import (
-			add_permission_for_newly_created_doc,
-		)
-
-		super().after_insert()
-		add_permission_for_newly_created_doc(self)
 
 	def set_bench_memory_limits_if_needed(self, save: bool = False):
 		# Enable bench memory limits for public servers
@@ -2404,7 +2415,7 @@ class Server(BaseServer):
 			"Server Plan", secondary_server_plan, ["memory", "vcpu"]
 		)
 
-		if secondary_server_plan_memory <= current_plan_memory and secondary_server_vcpus <= vcpus:
+		if secondary_server_plan_memory < current_plan_memory and secondary_server_vcpus < vcpus:
 			frappe.throw(
 				"Please select a plan with more memory or more vcpus than the "
 				f"existing server plan. Current memory: {current_plan_memory} Current vcpus: {vcpus}"
@@ -2542,9 +2553,17 @@ class Server(BaseServer):
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
 		agent_repository_url = self.get_agent_repository_url()
+		agent_branch = self.get_agent_repository_branch()
 		certificate = self.get_certificate()
 		log_server, kibana_password = self.get_log_server()
 		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
+
+		# If database server is set, then define db port under configuration
+		db_port = (
+			frappe.db.get_value("Database Server", self.database_server, "db_port")
+			if self.database_server
+			else None
+		)
 
 		try:
 			ansible = Ansible(
@@ -2559,6 +2578,7 @@ class Server(BaseServer):
 					"workers": "2",
 					"agent_password": agent_password,
 					"agent_repository_url": agent_repository_url,
+					"agent_branch": agent_branch,
 					"agent_sentry_dsn": agent_sentry_dsn,
 					"monitoring_password": self.get_monitoring_password(),
 					"log_server": log_server,
@@ -2567,6 +2587,7 @@ class Server(BaseServer):
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 					"docker_depends_on_mounts": self.docker_depends_on_mounts,
+					"db_port": db_port,
 					**self.get_mount_variables(),
 				},
 			)
@@ -2703,12 +2724,15 @@ class Server(BaseServer):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_fail2ban", queue="long", timeout=1200)
 
 	def _setup_fail2ban(self):
+		from press.press.doctype.monitor_server.monitor_server import get_monitor_server_ips
+
 		try:
 			ansible = Ansible(
 				playbook="fail2ban.yml",
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
+				variables={"monitor_server_ips": " ".join(get_monitor_server_ips())},
 			)
 			play = ansible.run()
 			self.reload()
@@ -2752,14 +2776,19 @@ class Server(BaseServer):
 				self.save()
 
 	def _setup_primary(self, secondary):
-		secondary_private_ip = frappe.db.get_value("Server", secondary, "private_ip")
+		secondary_private_ip, secondary_ssh_port = frappe.db.get_value(
+			"Server", secondary, ("private_ip", "ssh_port")
+		)
 		try:
 			ansible = Ansible(
 				playbook="primary_app.yml",
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
-				variables={"secondary_private_ip": secondary_private_ip},
+				variables={
+					"secondary_private_ip": secondary_private_ip,
+					"secondary_ssh_port": secondary_ssh_port,
+				},
 			)
 			play = ansible.run()
 			self.reload()
@@ -3166,24 +3195,75 @@ class Server(BaseServer):
 
 	@dashboard_whitelist()
 	@frappe.whitelist()
-	def scale_up(self):
+	def remove_automated_scaling_triggers(self, triggers: list[str]):
+		"""Currently we need to remove both since we can't support scaling up trigger without a scaling down trigger"""
+		trigger_filters = {"parent": self.name, "name": ("in", triggers)}
+		matching_triggers: list[AutoScaleTriggerRow] = frappe.db.get_values(
+			"Auto Scale Trigger", trigger_filters, ["metric", "action"], as_dict=True
+		)
+		frappe.db.delete("Auto Scale Trigger", trigger_filters)
+
+		for trigger in matching_triggers:
+			update_or_delete_prometheus_rule_for_scaling(
+				self.name, metric=trigger["metric"], action=trigger["action"]
+			)
+
+	@dashboard_whitelist()
+	@frappe.whitelist()
+	def add_automated_scaling_triggers(
+		self, metric: Literal["CPU", "Memory"], action: Literal["Scale Up", "Scale Down"], threshold: float
+	):
+		"""Configure automated scaling based on cpu loads"""
+		threshold = round(threshold, 2)
+		existing_trigger = frappe.db.get_value(
+			"Auto Scale Trigger", {"action": action, "parent": self.name, "metric": metric}
+		)
+
+		if existing_trigger:
+			frappe.db.set_value(
+				"Auto Scale Trigger",
+				existing_trigger,
+				{"action": action, "threshold": threshold, "metric": metric},
+			)
+		else:
+			self.append(
+				"auto_scale_trigger",
+				{"metric": metric, "threshold": threshold, "action": action},
+			)
+			self.save()
+
+		create_prometheus_rule_for_scaling(
+			self.name,
+			metric=metric,
+			threshold=threshold,
+			action=action,
+		)
+
+	@dashboard_whitelist()
+	@frappe.whitelist()
+	def scale_up(self, is_automatically_triggered: bool = False):
 		if self.scaled_up:
 			frappe.throw("Server is already scaled up", frappe.ValidationError)
 
 		self.validate_scale()
 
 		auto_scale_record = self._create_auto_scale_record(action="Scale Up")
+		auto_scale_record.is_automatically_triggered = is_automatically_triggered
 		auto_scale_record.insert()
 
 	@dashboard_whitelist()
 	@frappe.whitelist()
-	def scale_down(self):
+	def scale_down(self, is_automatically_triggered: bool = False):
 		if not self.scaled_up:
 			frappe.throw("Server is already scaled down", frappe.ValidationError)
 
 		self.validate_scale()
 
+		if is_automatically_triggered and not is_secondary_ready_for_scale_down(self):
+			return
+
 		auto_scale_record = self._create_auto_scale_record(action="Scale Down")
+		auto_scale_record.is_automatically_triggered = is_automatically_triggered
 		auto_scale_record.insert()
 
 	@property

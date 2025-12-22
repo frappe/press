@@ -525,6 +525,7 @@ export default {
 									renderDialog(
 										h(UpdateReleaseGroupDialog, {
 											bench: group.name,
+											lastDeploy: true,
 											onSuccess(candidate) {
 												group.doc.deploy_information.deploy_in_progress = true;
 												if (candidate) {

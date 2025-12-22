@@ -17,7 +17,8 @@ from press.api.analytics import get_rounded_boundaries
 from press.api.bench import all as all_benches
 from press.api.site import protected
 from press.exceptions import MonitorServerDown
-from press.press.doctype.site_plan.plan import Plan
+from press.press.doctype.auto_scale_record.auto_scale_record import validate_scaling_schedule
+from press.press.doctype.site_plan.plan import Plan, filter_by_roles
 from press.press.doctype.team.team import get_child_team_members
 from press.utils import get_current_team
 
@@ -241,15 +242,64 @@ def new(server):
 	return {"server": app_server.name, "job": job.name}
 
 
+def get_cpu_and_memory_usage(name: str, time_range: str = "4m") -> dict[str, float]:
+	"""Returns simplified CPU and memory usage [0..1] for autoscale triggers"""
+	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
+	if not monitor_server:
+		return {"vcpu": 0.0, "memory": 0.0}
+
+	query = f"""
+		1 - avg(rate(node_cpu_seconds_total{{instance="{name}",job="node",mode="idle"}}[{time_range}]))
+
+			OR
+
+		1 -
+			(
+				avg_over_time(node_memory_MemAvailable_bytes{{instance="{name}", job="node"}}[{time_range}])
+				/
+				avg_over_time(node_memory_MemTotal_bytes{{instance="{name}", job="node"}}[{time_range}])
+			)
+	"""
+
+	url = f"https://{monitor_server}/prometheus/api/v1/query"
+	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
+	params = {"query": query}
+
+	response = requests.get(url, params=params, auth=("frappe", str(password))).json()
+
+	if (
+		response.get("status") == "success"
+		and response.get("data")
+		and response["data"].get("resultType") == "vector"
+		and response["data"].get("result")
+	):
+		results = response["data"]["result"]
+		if results and len(results) == 2:
+			return {
+				"vcpu": float(results[0]["value"][1]),
+				"memory": float(results[1]["value"][1]),
+			}
+
+	return {"vcpu": 0.0, "memory": 0.0}
+
+
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 def usage(name):
 	mount_point = get_mount_point(name)
+	# 	  (
+	#       (count(count by (cpu) (node_cpu_seconds_total{instance="fs22-mumbai.frappe.cloud",job="node"})))
+	#     -
+	#       avg(
+	#         sum by (mode) (
+	#           rate(node_cpu_seconds_total{instance="fs22-mumbai.frappe.cloud",job="node",mode="idle"}[120s])
+	#         )
+	#       )
+	#   )
+	# /
+	# Changing CPU usage to a vector result averaging over a 120s window
+
 	query_map = {
-		"vcpu": (
-			f"""((count(count(node_cpu_seconds_total{{instance="{name}",job="node"}}) by (cpu))) - avg(sum by (mode)(rate(node_cpu_seconds_total{{mode='idle',instance="{name}",job="node"}}[120s])))) / count(count(node_cpu_seconds_total{{instance="{name}",job="node"}}) by (cpu))""",
-			lambda x: x,
-		),
 		"disk": (
 			f"""sum(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}} - node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}}) by ()/ (1024 * 1024 * 1024)""",
 			lambda x: x,
@@ -269,6 +319,8 @@ def usage(name):
 		response = prometheus_query(query[0], query[1], "Asia/Kolkata", 120, 120)["datasets"]
 		if response:
 			result[usage_type] = response[0]["values"][-1]
+
+	result["vcpu"] = get_cpu_and_memory_usage(name)["vcpu"]
 	return result
 
 
@@ -521,13 +573,56 @@ def options():
 
 
 @frappe.whitelist()
-def plans(
+def get_autoscale_discount():
+	return frappe.db.get_single_value("Press Settings", "autoscale_discount", cache=True)
+
+
+@frappe.whitelist()
+def secondary_server_plans(
 	name,
 	cluster=None,
 	platform=None,
-	show_secondary_application_server_plans: bool = False,
 	current_plan: str | None = None,
 ):
+	current_price = frappe.db.get_value("Server Plan", current_plan, "price_inr")
+	ServerPlan = frappe.qb.DocType("Server Plan")
+	HasRole = frappe.qb.DocType("Has Role")
+	autoscale_discount = frappe.db.get_single_value("Press Settings", "autoscale_discount")
+
+	query = (
+		frappe.qb.from_(ServerPlan)
+		.select(
+			ServerPlan.name,
+			ServerPlan.title,
+			(ServerPlan.price_usd * autoscale_discount).as_("price_usd"),
+			(ServerPlan.price_inr * autoscale_discount).as_("price_inr"),
+			ServerPlan.vcpu,
+			ServerPlan.memory,
+			ServerPlan.disk,
+			ServerPlan.cluster,
+			ServerPlan.instance_type,
+			ServerPlan.premium,
+			ServerPlan.platform,
+			HasRole.role,
+		)
+		.join(HasRole)
+		.on((HasRole.parenttype == "Server Plan") & (HasRole.parent == ServerPlan.name))
+		.where(ServerPlan.server_type == name)
+		.where(ServerPlan.platform == platform)
+		.where(ServerPlan.price_inr == current_price)
+		.where(ServerPlan.enabled == 1)
+	)
+	if cluster:
+		query = query.where(ServerPlan.cluster == cluster)
+	if platform:
+		query = query.where(ServerPlan.platform == platform)
+
+	plans = query.run(as_dict=1)
+	return filter_by_roles(plans)
+
+
+@frappe.whitelist()
+def plans(name, cluster=None, platform=None):
 	# Removed default platform of x86_64;
 	# Still use x86_64 for new database servers
 	filters = {"server_type": name}
@@ -537,10 +632,6 @@ def plans(
 
 	if platform:
 		filters.update({"platform": platform})
-
-	if show_secondary_application_server_plans and current_plan:
-		current_price = frappe.db.get_value("Server Plan", current_plan, "price_inr")
-		filters.update({"price_inr": (">", current_price)})  # Hoping this covers memory and vcpus
 
 	return Plan.get_plans(
 		doctype="Server Plan",
@@ -732,13 +823,22 @@ def schedule_auto_scale(name, scheduled_scale_up_time: str, scheduled_scale_down
 	formatted_scheduled_scale_up_time = datetime.strptime(scheduled_scale_up_time, "%Y-%m-%d %H:%M:%S")
 	formatted_scheduled_scale_down_time = datetime.strptime(scheduled_scale_down_time, "%Y-%m-%d %H:%M:%S")
 
+	if (formatted_scheduled_scale_down_time - formatted_scheduled_scale_up_time).total_seconds() / 60 < 60:
+		frappe.throw("Scheduled scales must be an hour apart", frappe.ValidationError)
+
+	validate_scaling_schedule(
+		name,
+		formatted_scheduled_scale_up_time,
+		formatted_scheduled_scale_down_time,
+	)
+
 	def create_record(action: str, scheduled_time: datetime) -> None:
 		doc = frappe.get_doc(
 			{
 				"doctype": "Auto Scale Record",
 				"action": action,
 				"status": "Scheduled",
-				"scheduled": scheduled_time,
+				"scheduled_time": scheduled_time,
 				"primary_server": name,
 				"secondary_server": secondary_server,
 			}
@@ -747,3 +847,13 @@ def schedule_auto_scale(name, scheduled_scale_up_time: str, scheduled_scale_down
 
 	create_record("Scale Up", formatted_scheduled_scale_up_time)
 	create_record("Scale Down", formatted_scheduled_scale_down_time)
+
+
+@frappe.whitelist()
+@protected(["Server"])
+def get_configured_autoscale_triggers(name) -> list[dict[str, float]] | None:
+	return frappe.db.get_all(
+		"Auto Scale Trigger",
+		{"parent": name},
+		["name", "metric", "threshold", "action"],
+	)

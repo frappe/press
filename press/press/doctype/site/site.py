@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 from collections import defaultdict
 from contextlib import suppress
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import cached_property, wraps
 from typing import Any, Literal
 
@@ -24,7 +24,6 @@ from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import (
 	add_to_date,
 	cint,
-	comma_and,
 	cstr,
 	flt,
 	get_datetime,
@@ -44,6 +43,7 @@ from press.exceptions import (
 	SiteUnderMaintenance,
 	VolumeResizeLimitError,
 )
+from press.guards import role_guard
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
@@ -68,7 +68,6 @@ from frappe.utils.password import get_decrypted_password
 
 from press.agent import Agent, AgentRequestSkippedException
 from press.api.client import dashboard_whitelist
-from press.api.site import check_dns, check_dns_cname_a, get_updates_between_current_and_next_apps
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
@@ -87,6 +86,7 @@ from press.utils import (
 	fmt_timedelta,
 	get_client_blacklisted_keys,
 	get_current_team,
+	get_last_doc,
 	guess_type,
 	human_readable,
 	is_list,
@@ -94,11 +94,12 @@ from press.utils import (
 	unique,
 	validate_subdomain,
 )
-from press.utils.dns import _change_dns_record, create_dns_record
+from press.utils.dns import _change_dns_record, check_dns_cname_a, create_dns_record
 
 if TYPE_CHECKING:
 	from datetime import datetime
 
+	from frappe.types import DF
 	from frappe.types.DF import Table
 
 	from press.press.doctype.account_request.account_request import AccountRequest
@@ -107,8 +108,10 @@ if TYPE_CHECKING:
 	from press.press.doctype.bench_app.bench_app import BenchApp
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import DeployCandidateApp
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server.server import BaseServer, Server
+	from press.press.doctype.site_backup.site_backup import SiteBackup
 	from press.press.doctype.site_domain.site_domain import SiteDomain
 	from press.press.doctype.tls_certificate.tls_certificate import TLSCertificate
 
@@ -354,7 +357,7 @@ class Site(Document, TagHelpers):
 
 		return doc
 
-	def site_action(allowed_status: list[str]):
+	def site_action(allowed_status: list[str], disallowed_message: str | dict[str, str] | None = None):
 		def outer_wrapper(func):
 			@wraps(func)
 			def wrapper(inst, *args, **kwargs):
@@ -367,9 +370,16 @@ class Site(Document, TagHelpers):
 					return func(inst, *args, **kwargs)
 				status = frappe.get_value(inst.doctype, inst.name, "status", for_update=True)
 				if status not in allowed_status:
-					frappe.throw(
-						f"Site action not allowed for site with status: {frappe.bold(status)}.\nAllowed status are: {frappe.bold(comma_and(allowed_status))}."
-					)
+					if disallowed_message and isinstance(disallowed_message, str):
+						frappe.throw(disallowed_message)
+					elif disallowed_message and status in disallowed_message:
+						custom_message = disallowed_message[status]
+						frappe.throw(custom_message)
+					else:
+						action_name_refined = func.__name__.replace("_", " ")
+						frappe.throw(
+							f"Site is in {frappe.bold(status)} state. You site have to be active to {frappe.bold(action_name_refined)}."
+						)
 				return func(inst, *args, **kwargs)
 
 			return wrapper
@@ -385,6 +395,7 @@ class Site(Document, TagHelpers):
 	def autoname(self):
 		self.name = self._get_site_name(self.subdomain)
 
+	@role_guard.action()
 	def validate(self):
 		if self.has_value_changed("subdomain"):
 			self.validate_site_name()
@@ -616,8 +627,6 @@ class Site(Document, TagHelpers):
 
 		if self.has_value_changed("team"):
 			frappe.db.set_value("Site Domain", {"site": self.name}, "team", self.team)
-			if not self.flags.in_insert:
-				frappe.db.delete("Press Role Permission", {"site": self.name})
 
 		if self.status not in [
 			"Pending",
@@ -832,10 +841,6 @@ class Site(Document, TagHelpers):
 		).insert(ignore_if_duplicate=True)
 
 	def after_insert(self):
-		from press.press.doctype.press_role.press_role import (
-			add_permission_for_newly_created_doc,
-		)
-
 		self.capture_signup_event("created_first_site")
 
 		if hasattr(self, "subscription_plan") and self.subscription_plan:
@@ -863,8 +868,6 @@ class Site(Document, TagHelpers):
 				site=self.name,
 				created_on=frappe.utils.now_datetime(),
 			).insert(ignore_permissions=True)
-
-		add_permission_for_newly_created_doc(self)
 
 		create_site_status_update_webhook_event(self.name)
 
@@ -931,7 +934,7 @@ class Site(Document, TagHelpers):
 		mountpoint = server.guess_data_disk_mountpoint()
 		free_space = server.free_space(mountpoint)
 		if (diff := free_space - space_required) <= 0:
-			msg = f"Insufficient estimated space on {DOCTYPE_SERVER_TYPE_MAP[server.doctype]} server to {purpose}. Required: {human_readable(space_required)}, Available: {human_readable(free_space)} (Need {human_readable(abs(diff))})."
+			msg = f"Insufficient estimated space on {DOCTYPE_SERVER_TYPE_MAP[server.doctype]} server to {purpose}. Required: {human_readable(space_required)}, Available: {human_readable(free_space)} (Need {human_readable(abs(diff))} more)."
 			if server.public and not no_increase:
 				self.try_increasing_disk(server, mountpoint, diff, msg)
 			else:
@@ -939,7 +942,9 @@ class Site(Document, TagHelpers):
 
 	def try_increasing_disk(self, server: "BaseServer", mountpoint: str, diff: int, err_msg: str):
 		try:
-			server.calculated_increase_disk_size(mountpoint=mountpoint, additional=diff / 1024 / 1024 // 1024)
+			server.calculated_increase_disk_size(
+				mountpoint=mountpoint, additional=cint(diff / 1024 / 1024 // 1024)
+			)
 		except VolumeResizeLimitError:
 			frappe.throw(
 				f"{err_msg} Please wait {fmt_timedelta(server.time_to_wait_before_updating_volume)} before trying again.",
@@ -1274,11 +1279,21 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def cancel_scheduled_update(self, site_update: str):
-		if status := frappe.db.get_value("Site Update", site_update, "status") != "Scheduled":
-			frappe.throw(f"Cannot cancel a Site Update with status {status}")
+		try:
+			if (
+				_status := frappe.db.get_value(
+					"Site Update", site_update, "status", for_update=True, wait=False
+				)
+			) != "Scheduled":
+				frappe.throw(f"Cannot cancel a Site Update with status {_status}")
 
-		# TODO: Set status to cancelled instead of deleting the doc
-		frappe.delete_doc("Site Update", site_update)
+		except (frappe.QueryTimeoutError, frappe.QueryDeadlockError):
+			frappe.throw("The update is probably underway. Please reload/refresh to get the latest status.")
+
+		# used document api for applying doc permissions
+		doc = frappe.get_doc("Site Update", site_update)
+		doc.status = "Cancelled"
+		doc.save()
 
 	@frappe.whitelist()
 	def move_to_group(self, group, skip_failing_patches=False, skip_backups=False):
@@ -1340,7 +1355,7 @@ class Site(Document, TagHelpers):
 	@site_action(["Active"])
 	def add_domain(self, domain):
 		domain = domain.lower().strip(".")
-		response = check_dns(self.name, domain)
+		response = check_dns_cname_a(self.name, domain)
 		if response["matched"]:
 			if frappe.db.exists("Site Domain", {"domain": domain}):
 				frappe.throw(f"The domain {frappe.bold(domain)} is already used by a site")
@@ -1423,7 +1438,7 @@ class Site(Document, TagHelpers):
 		frappe.delete_doc("Site Domain", site_domain.name)
 
 	def retry_add_domain(self, domain):
-		if check_dns(self.name, domain)["matched"]:
+		if check_dns_cname_a(self.name, domain)["matched"]:
 			site_domain = frappe.get_all(
 				"Site Domain",
 				filters={
@@ -1479,7 +1494,7 @@ class Site(Document, TagHelpers):
 			self.unset_redirects_in_proxy(domains)
 
 	def set_redirects_in_proxy(self, domains: list[str]):
-		target = self.host_name
+		target = str(self.host_name)
 		if self.is_on_standalone:
 			agent = Agent(self.server)
 		else:
@@ -2100,7 +2115,7 @@ class Site(Document, TagHelpers):
 
 		for d in config:
 			d = frappe._dict(d)
-			if isinstance(d.value, dict | list):
+			if isinstance(d.value, (dict, list)):
 				value = json.dumps(d.value)
 			else:
 				value = d.value
@@ -2422,9 +2437,6 @@ class Site(Document, TagHelpers):
 		if team.payment_mode == "Paid By Partner" and team.billing_team:
 			team = frappe.get_doc("Team", team.billing_team)
 
-		if team.is_defaulter():
-			frappe.throw("Cannot change plan because you have unpaid invoices", CannotChangePlan)
-
 		if not (team.default_payment_method or team.get_balance()):
 			frappe.throw(
 				"Cannot change plan because you haven't added a card and not have enough balance",
@@ -2518,7 +2530,10 @@ class Site(Document, TagHelpers):
 		self.update_site_status_on_proxy("deactivated")
 
 	@dashboard_whitelist()
-	@site_action(["Inactive", "Broken"])
+	@site_action(
+		["Inactive", "Broken"],
+		disallowed_message="You can activate only inactive or broken site",
+	)
 	def activate(self):
 		log_site_activity(self.name, "Activate Site")
 		if self.status == "Suspended":
@@ -2567,7 +2582,7 @@ class Site(Document, TagHelpers):
 		)
 
 	@frappe.whitelist()
-	@site_action(["Suspended"])
+	@site_action(["Suspended"], disallowed_message="You can unsuspend only suspended site.")
 	def unsuspend(self, reason=None):
 		log_site_activity(self.name, "Unsuspend Site", reason)
 		self.status = "Active"
@@ -2829,34 +2844,17 @@ class Site(Document, TagHelpers):
 		)
 
 	@dashboard_whitelist()
-	def optimize_tables(self, ignore_checks: bool = False):
-		if not ignore_checks:
+	def optimize_tables(self, ignore_checks: bool = True, tables: list[str] | None = None):
+		if not ignore_checks and (job := self.fetch_running_optimize_tables_job()):
 			# check for running `Optimize Tables` agent job
-			if job := self.fetch_running_optimize_tables_job():
-				return {
-					"success": True,
-					"message": "Optimize Tables job is already running on this site.",
-					"job_name": job,
-				}
-			# check if `Optimize Tables` has run in last 1 hour
-			recent_agent_job_name = frappe.db.exists(
-				"Agent Job",
-				{
-					"site": self.name,
-					"job_type": "Optimize Tables",
-					"status": ["not in", ["Failure", "Delivery Failure"]],
-					"creation": [">", frappe.utils.add_to_date(frappe.utils.now_datetime(), hours=-1)],
-				},
-			)
-			if recent_agent_job_name:
-				return {
-					"success": False,
-					"message": "Optimize Tables job has already run in the last 1 hour. Try later.",
-					"job_name": None,
-				}
+			return {
+				"success": True,
+				"message": "Optimize Tables job is already running on this site.",
+				"job_name": job,
+			}
 
 		agent = Agent(self.server)
-		job_name = agent.optimize_tables(self).name
+		job_name = agent.optimize_tables(self, tables).name
 		return {
 			"success": True,
 			"message": "Optimize Tables has been triggered on this site.",
@@ -3400,7 +3398,7 @@ class Site(Document, TagHelpers):
 			frappe.cache().delete_value(key_for_schema)
 			frappe.cache().delete_value(key_for_schema_status)
 
-		status = frappe.utils.cint(frappe.cache().get_value(key_for_schema_status))
+		status = cint(frappe.cache().get_value(key_for_schema_status))
 		if status:
 			if status == 1:
 				return {
@@ -3572,63 +3570,121 @@ class Site(Document, TagHelpers):
 			self.save()
 		return self.database_name
 
+	def is_binlog_indexer_running(self):
+		return bool(
+			frappe.db.get_value("Database Server", self.database_server_name, "is_binlog_indexer_running")
+		)
+
+	def is_binlog_indexing_enabled(self):
+		return bool(
+			frappe.db.get_value(
+				"Database Server", self.database_server_name, "enable_binlog_indexing", cache=True
+			)
+		)
+
 	@dashboard_whitelist()
-	def fetch_binlog_timeline(self, start: int, end: int, query_type: str | None = None):  # noqa: C901
+	def binlog_indexing_service_status(self):
+		hosted_on_shared_server = bool(
+			frappe.db.get_value("Database Server", self.database_server_name, "public", cache=True)
+		)
+		data = {
+			"enabled": self.is_binlog_indexing_enabled(),
+			"indexer_running": self.is_binlog_indexer_running(),
+			"database_server": self.database_server_name,
+			"hosted_on_shared_server": hosted_on_shared_server,
+			"database_server_memory": 0
+			if hosted_on_shared_server
+			else frappe.db.get_value("Database Server", self.database_server_name, "ram", cache=True),
+		}
+		# If the site is on hosted on shared server, only allow `System User` to view the binlog indexing service status
+		if hosted_on_shared_server and not frappe.local.system_user():
+			data["enabled"] = False
+
+		# Turn off hosted_on_shared_server flag if the user is System User
+		if frappe.local.system_user():
+			data["hosted_on_shared_server"] = False
+			data["database_server_memory"] = (
+				frappe.db.get_value("Database Server", self.database_server_name, "ram", cache=True),
+			)
+
+		return data
+
+	@dashboard_whitelist()
+	def fetch_binlog_timeline(  # noqa: C901
+		self,
+		start: int,
+		end: int,
+		table: str | None = None,
+		query_type: str | None = None,
+		event_size_comparator: Literal["gt", "lt"] | None = None,
+		event_size: int | None = None,
+	):
+		if (not self.is_binlog_indexing_enabled()) or (self.is_binlog_indexer_running()):
+			frappe.throw("Binlog indexing service is not enabled or in maintenance.")
+
+		if start >= end:
+			frappe.throw("Invalid time range. Start time must be less than end time.")
+
 		data = self.database_server_agent.get_binlogs_timeline(
 			start=start,
 			end=end,
+			table=table,
 			type=query_type,
 			database=self.fetch_database_name(),
+			event_size_comparator=event_size_comparator,
+			event_size=event_size,
 		)
 
 		start_timestamp = data.get("start_timestamp")
 		end_timestamp = data.get("end_timestamp")
 		interval = data.get("interval")
-		series = []
+		dataset = {}
+		time_series = []
+		blank_data = {
+			"INSERT": 0,
+			"UPDATE": 0,
+			"DELETE": 0,
+			"SELECT": 0,
+			"OTHER": 0,
+		}
 		current_timestamp = start_timestamp
 		while current_timestamp < end_timestamp:
-			series.append(current_timestamp)
+			dataset[current_timestamp] = blank_data.copy()
+			time_series.append(current_timestamp)
 			current_timestamp += interval
 
 		if current_timestamp == end_timestamp:
-			series.append(current_timestamp)
-		elif len(series) > 0 and series[-1] != end_timestamp:
-			series.append(end_timestamp)
+			time_series.append(end_timestamp)
+			dataset[current_timestamp] = blank_data.copy()
+		elif len(time_series) > 0 and time_series[-1] != end_timestamp:
+			dataset[end_timestamp] = blank_data.copy()
 
-		dataset_map = {
-			"INSERT": [0],
-			"UPDATE": [0],
-			"DELETE": [0],
-			"SELECT": [0],
-			"OTHER": [0],
-		}
-
-		if len(series) > 1:
-			for i in range(len(series) - 1):
-				start_timestamp = series[i]
-				end_timestamp = series[i + 1]
+		# TODO optimize this loop
+		if len(time_series) > 1:
+			for i in range(len(time_series) - 1):
+				start_timestamp = time_series[i]
+				end_timestamp = time_series[i + 1]
 				key = f"{start_timestamp}:{end_timestamp}"
 				if key not in data["results"]:
 					continue
 
 				query_data: dict = data["results"][key]
-				for q in dataset_map:
-					dataset_map[q].append(query_data.get(q, 0))
+				dataset[start_timestamp]["INSERT"] = query_data.get("INSERT", 0)
+				dataset[start_timestamp]["UPDATE"] = query_data.get("UPDATE", 0)
+				dataset[start_timestamp]["DELETE"] = query_data.get("DELETE", 0)
+				dataset[start_timestamp]["SELECT"] = query_data.get("SELECT", 0)
+				dataset[start_timestamp]["OTHER"] = query_data.get("OTHER", 0)
 
-		datasets = []
-		for key, value in dataset_map.items():
-			datasets.append(
-				{
-					"stack": "path",
-					"path": key,
-					"values": value,
-				}
-			)
+		# Convert dataset to list of dicts
+		converted_dataset = []
+		for timestamp in sorted(dataset.keys()):
+			entry = {"timestamp": timestamp}
+			entry.update(dataset[timestamp])
+			converted_dataset.append(entry)
 
 		return {
-			"datasets": datasets,
-			"labels": series,
-			"tables": data.get("tables", []),
+			"dataset": converted_dataset,
+			"tables": sorted(data.get("tables", [])),
 		}
 
 	@dashboard_whitelist()
@@ -3639,9 +3695,17 @@ class Site(Document, TagHelpers):
 		query_type: str | None = None,
 		table: str | None = None,
 		search_string: str | None = None,
+		event_size_comparator: Literal["gt", "lt"] | None = None,
+		event_size: int | None = None,
 	):
-		if (end - start) > 60 * 60 * 24:
-			frappe.throw("Binlog search is limited to 24 hours. Please select a smaller time range.")
+		if (not self.is_binlog_indexing_enabled()) or (self.is_binlog_indexer_running()):
+			frappe.throw("Binlog indexing service is not enabled or in maintenance.")
+
+		if start >= end:
+			frappe.throw("Invalid time range. Start time must be less than end time.")
+
+		if (end - start) > 60 * 60 * 6:
+			frappe.throw("Binlog search is limited to 6 hours. Please select a smaller time range.")
 
 		if not table:
 			table = None
@@ -3655,10 +3719,17 @@ class Site(Document, TagHelpers):
 			database=self.fetch_database_name(),
 			table=table,
 			search_str=search_string,
+			event_size_comparator=event_size_comparator,
+			event_size=event_size,
 		)
 
 	@dashboard_whitelist()
 	def fetch_queries_from_binlog(self, row_ids: dict[str, list[int]]):
+		# Don't allow to fetch more than 100 rows at a time
+		total_row_ids = sum(len(v) for v in row_ids.values())
+		if total_row_ids > 100:
+			frappe.throw("Cannot fetch more than 100 rows at a time from binlog.")
+
 		return self.database_server_agent.get_binlog_queries(
 			row_ids=row_ids, database=self.fetch_database_name()
 		)
@@ -3708,6 +3779,29 @@ class Site(Document, TagHelpers):
 	@property
 	def is_on_standalone(self):
 		return bool(frappe.db.get_value("Server", self.server, "is_standalone"))
+
+	@cached_property
+	def last_backup(self) -> SiteBackup | None:
+		return get_last_doc(
+			"Site Backup",
+			{
+				"site": self.name,
+				"with_files": True,
+				"offsite": True,
+				"status": "Success",
+				"files_availability": "Available",
+			},
+		)
+
+	def get_estimated_duration_for_server_change(self) -> str | None:
+		"""2x backup duration (backup + restore) in seconds"""
+		last_backup = self.last_backup
+		if not last_backup:
+			return None
+		d: timedelta = frappe.get_value("Agent Job", last_backup.job, "duration")
+		if not d:
+			return None
+		return str(timedelta(seconds=round(d.total_seconds() * 2)))
 
 
 def site_cleanup_after_archive(site):
@@ -3771,6 +3865,7 @@ def process_fetch_database_table_schema_job_update(job):
 					"size": {
 						"data_length": 0,
 						"index_length": 0,
+						"data_free": 0,
 						"total_size": 0,
 					},  # old agent api doesn't have size info
 				}
@@ -4578,7 +4673,7 @@ def send_warning_mail_regarding_sites_exceeding_disk_usage():
 					"site": site,
 					"current_disk_usage": site_info.current_disk_usage,
 					"current_database_usage": site_info.current_database_usage,
-					"no_of_days_left_to_suspend": 7
+					"no_of_days_left_to_suspend": 14
 					- (frappe.utils.date_diff(frappe.utils.nowdate(), site_info.site_usage_exceeded_on) or 0),
 				},
 			)
@@ -4592,8 +4687,8 @@ def send_warning_mail_regarding_sites_exceeding_disk_usage():
 			frappe.db.rollback()
 
 
-def suspend_sites_exceeding_disk_usage_for_last_7_days():
-	"""Suspend sites if they have exceeded database or disk usage limits for the last 7 days."""
+def suspend_sites_exceeding_disk_usage_for_last_14_days():
+	"""Suspend sites if they have exceeded database or disk usage limits for the last 14 days."""
 
 	if not frappe.db.get_single_value("Press Settings", "enforce_storage_limits"):
 		return
@@ -4606,7 +4701,7 @@ def suspend_sites_exceeding_disk_usage_for_last_7_days():
 			"free": False,
 			"team": ("not in", free_teams),
 			"site_usage_exceeded": 1,
-			"site_usage_exceeded_on": ("<", frappe.utils.add_to_date(frappe.utils.now(), days=-7)),
+			"site_usage_exceeded_on": ("<", frappe.utils.add_to_date(frappe.utils.now(), days=-14)),
 		},
 		fields=["name", "team", "current_database_usage", "current_disk_usage"],
 	)
@@ -4647,3 +4742,46 @@ def create_subscription_for_trial_sites():
 		except Exception:
 			frappe.db.rollback()
 			log_error(title="Creating subscription for trial sites", site=trial_site)
+
+
+def get_updates_between_current_and_next_apps(
+	current_apps: DF.Table[BenchApp],
+	next_apps: DF.Table[DeployCandidateApp],
+):
+	from press.utils import get_app_tag
+
+	apps = []
+	for app in next_apps:
+		bench_app = find(current_apps, lambda x: x.app == app.app)
+		current_hash = bench_app.hash if bench_app else None
+		source = frappe.get_doc("App Source", app.source)
+
+		will_branch_change = False
+		current_branch = source.branch
+		if bench_app:
+			current_source = frappe.get_doc("App Source", bench_app.source)
+			will_branch_change = current_source.branch != source.branch
+			current_branch = current_source.branch
+
+		current_tag = (
+			get_app_tag(source.repository, source.repository_owner, current_hash) if current_hash else None
+		)
+		next_hash = app.pullable_hash or app.hash
+		apps.append(
+			{
+				"title": app.title,
+				"app": app.app,
+				"repository": source.repository,
+				"repository_owner": source.repository_owner,
+				"repository_url": source.repository_url,
+				"branch": source.branch,
+				"current_hash": current_hash,
+				"current_tag": current_tag,
+				"next_hash": next_hash,
+				"next_tag": get_app_tag(source.repository, source.repository_owner, next_hash),
+				"will_branch_change": will_branch_change,
+				"current_branch": current_branch,
+				"update_available": not current_hash or current_hash != next_hash,
+			}
+		)
+	return apps

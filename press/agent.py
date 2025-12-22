@@ -8,7 +8,7 @@ import os
 import re
 from contextlib import suppress
 from datetime import date
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 import frappe
 import frappe.utils
@@ -228,10 +228,11 @@ class Agent:
 			site=site.name,
 		)
 
-	def optimize_tables(self, site):
+	def optimize_tables(self, site, tables):
 		return self.create_agent_job(
 			"Optimize Tables",
 			f"benches/{site.bench}/sites/{site.name}/optimize",
+			data={"tables": tables},
 			bench=site.bench,
 			site=site.name,
 		)
@@ -273,6 +274,8 @@ class Agent:
 			public_link = frappe.get_doc("Remote File", site.remote_public_file).download_link
 		if site.remote_private_file:
 			private_link = frappe.get_doc("Remote File", site.remote_private_file).download_link
+
+		assert site.config is not None, "Site config is required to restore site from backup"
 
 		data = {
 			"config": json.loads(site.config),
@@ -982,6 +985,12 @@ class Agent:
 					"failure_count": 1,
 				}
 			)
+			is_primary = frappe.db.get_value(self.server_type, self.server, "is_primary")
+			if self.server_type == "Server" and not is_primary:
+				# Don't create agent request failures for secondary servers
+				# Since we try to connect to them frequently after IP changes
+				return
+
 			frappe.new_doc("Agent Request Failure", **fields).insert(ignore_permissions=True)
 
 	def raw_request(self, method, path, data=None, raises=True, timeout=None):
@@ -1445,6 +1454,30 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			reference_name=reference_name,
 		)
 
+	def push_docker_images(
+		self, images: list[str], reference_doctype: str | None = None, reference_name: str | None = None
+	) -> AgentJob:
+		settings = frappe.db.get_value(
+			"Press Settings",
+			None,
+			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
+			as_dict=True,
+		)
+		return self.create_agent_job(
+			"Push Images to Registry",
+			"/server/push-images",
+			data={
+				"images": images,
+				"registry_settings": {
+					"url": settings.docker_registry_url,
+					"username": settings.docker_registry_username,
+					"password": settings.docker_registry_password,
+				},
+			},
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
 	def upload_binlogs_to_s3(self, binlogs: list[str]):
 		from press.press.doctype.site_backup.site_backup import get_backup_bucket
 
@@ -1483,10 +1516,27 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			"Remove Binlogs From Indexer", "/database/binlogs/indexer/remove", data={"binlogs": binlogs}
 		)
 
-	def get_binlogs_timeline(self, start: int, end: int, database: str, type: str | None = None):
+	def get_binlogs_timeline(
+		self,
+		start: int,
+		end: int,
+		database: str,
+		table: str | None = None,
+		type: str | None = None,
+		event_size_comparator: Literal["gt", "lt"] | None = None,
+		event_size: int | None = None,
+	):
 		return self.post(
 			"/database/binlogs/indexer/timeline",
-			data={"start_timestamp": start, "end_timestamp": end, "database": database, "type": type},
+			data={
+				"start_timestamp": start,
+				"end_timestamp": end,
+				"database": database,
+				"table": table,
+				"type": type,
+				"event_size_comparator": event_size_comparator,
+				"event_size": event_size,
+			},
 		)
 
 	def search_binlogs(
@@ -1497,6 +1547,8 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		type: str | None = None,
 		table: str | None = None,
 		search_str: str | None = None,
+		event_size_comparator: Literal["gt", "lt"] | None = None,
+		event_size: int | None = None,
 	):
 		return self.post(
 			"/database/binlogs/indexer/search",
@@ -1507,6 +1559,8 @@ Response: {reason or getattr(result, "text", "Unknown")}
 				"type": type,
 				"table": table,
 				"search_str": search_str,
+				"event_size_comparator": event_size_comparator,
+				"event_size": event_size,
 			},
 		)
 
@@ -1781,6 +1835,16 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		return self.create_agent_job(
 			"Start Bench Workers",
 			"/server/start-bench-workers",
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def remove_redis_localhost_bind(
+		self, reference_doctype: str | None = None, reference_name: str | None = None
+	) -> AgentJob:
+		return self.create_agent_job(
+			"Remove Redis Localhost Bind",
+			"/server/remove-localhost-redis-bind",
 			reference_doctype=reference_doctype,
 			reference_name=reference_name,
 		)
