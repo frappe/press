@@ -728,6 +728,18 @@ def validate_scaling_schedule(
 ):
 	"""Throw if the scaling schedule violates any of these conditions"""
 
+	now = frappe.utils.now_datetime()
+	if (
+		scale_down_time <= now
+		or scale_up_time <= now
+		or scale_down_time <= now
+		or scale_down_time <= scale_up_time
+	):
+		frappe.throw(
+			"Scale down time must be in the future & scale down must be after a scale up",
+			frappe.ValidationError,
+		)
+
 	# Check existing scales with same schedule time
 	existing_scheduled_scales = frappe.db.get_value(
 		"Auto Scale Record",
