@@ -2,11 +2,17 @@
 	<div class="space-y-5">
 		<div class="ml-auto mr-0 w-max space-x-2">
 			<Button
-				icon="refresh-cw"
+				icon-left="refresh-cw"
+				label="Reload"
 				variant="subtle"
-				@click="() => roles.refresh()"
+				@click="() => roles.reload()"
 			/>
-			<Button icon-left="plus" variant="solid" label="Create Role" />
+			<Button
+				icon-left="plus"
+				variant="solid"
+				label="Create Role"
+				@click="showCreateDialog = !showCreateDialog"
+			/>
 		</div>
 		<div class="grid grid-cols-3 gap-4 text-base">
 			<RouterLink
@@ -50,9 +56,11 @@
 							</Tooltip>
 							<div
 								v-if="role.users.length > 4"
-								class="flex items-center justify-center relative shrink-0 w-7 h-7 rounded-full bg-gray-300 border border-white"
+								class="flex items-center justify-center relative shrink-0 w-7 h-7 rounded-full bg-surface-gray-2 border border-white"
 							>
-								<div class="text-xs">+{{ role.users.length - 3 }}</div>
+								<div class="text-xs font-medium text-ink-gray-5">
+									+{{ role.users.length - 3 }}
+								</div>
 							</div>
 						</div>
 					</div>
@@ -110,7 +118,8 @@ const insert = createResource({
 	url: 'press.api.client.insert',
 	auto: false,
 	onSuccess: () => {
-		roles.refresh();
+		roles.reload();
+		showCreateDialog.value = false;
 	},
 });
 
