@@ -99,10 +99,10 @@ class AutoScaleRecord(Document, StepHandler):
 			for step in self.get_steps(
 				[
 					self.mark_start_time,
+					self.stop_all_agent_jobs_on_primary,
 					self.start_secondary_server,
 					self.wait_for_secondary_server_to_start,
 					# Since the secondary is stopped no jobs running on it
-					self.stop_all_agent_jobs_on_primary,
 					self.wait_for_secondary_server_ping,
 					self.remove_redis_localhost_bind,
 					self.wait_for_redis_localhost_bind_removal,
@@ -133,6 +133,8 @@ class AutoScaleRecord(Document, StepHandler):
 				self.append("scale_steps", step)
 
 		self.secondary_server = frappe.db.get_value("Server", self.primary_server, "secondary_server")
+		if not self.secondary_server:
+			frappe.throw("Primary server must have a secondary server to auto scale")
 
 	def get_doc(self, doc):
 		doc.steps = self.get_steps_for_dashboard()
@@ -366,8 +368,10 @@ class AutoScaleRecord(Document, StepHandler):
 			auto_scale_trigger: PrometheusAlertRule = frappe.get_doc(
 				"Prometheus Alert Rule", f"Auto Scale Down Trigger - {self.primary_server}"
 			)
-			auto_scale_trigger.enabled = 1
-			auto_scale_trigger.save()
+			# Only set it to enabled if a valid expression exists
+			if auto_scale_trigger.expression:
+				auto_scale_trigger.enabled = 1
+				auto_scale_trigger.save()
 
 		step.status = Status.Success
 		step.save()
@@ -555,8 +559,9 @@ class AutoScaleRecord(Document, StepHandler):
 			auto_scale_trigger: PrometheusAlertRule = frappe.get_doc(
 				"Prometheus Alert Rule", f"Auto Scale Down Trigger - {self.primary_server}"
 			)
-			auto_scale_trigger.enabled = 0
-			auto_scale_trigger.save()
+			if auto_scale_trigger.enabled and auto_scale_trigger.expression:
+				auto_scale_trigger.enabled = 0
+				auto_scale_trigger.save()
 
 		step.status = Status.Success
 		step.save()
@@ -727,6 +732,18 @@ def validate_scaling_schedule(
 	name: str, scale_up_time: datetime.datetime, scale_down_time: datetime.datetime
 ):
 	"""Throw if the scaling schedule violates any of these conditions"""
+
+	now = frappe.utils.now_datetime()
+	if (
+		scale_down_time <= now
+		or scale_up_time <= now
+		or scale_down_time <= now
+		or scale_down_time <= scale_up_time
+	):
+		frappe.throw(
+			"Scale down time must be in the future & scale down must be after a scale up",
+			frappe.ValidationError,
+		)
 
 	# Check existing scales with same schedule time
 	existing_scheduled_scales = frappe.db.get_value(
