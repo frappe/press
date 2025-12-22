@@ -14,24 +14,48 @@
 			<FeatherIcon name="shield" class="h-5 w-5 text-gray-700" />
 		</Tooltip>
 	</div>
-	<TabButtons
-		class="w-max mb-5"
-		v-model="tab"
-		:buttons="[
-			{
-				label: 'Members',
-				value: 'members',
-			},
-			{
-				label: 'Resources',
-				value: 'resources',
-			},
-			{
-				label: 'Permissions',
-				value: 'permissions',
-			},
-		]"
-	/>
+	<div class="flex items-center justify-between mb-5">
+		<TabButtons
+			class="w-max"
+			v-model="tab"
+			:buttons="[
+				{
+					label: 'Members',
+					value: 'members',
+				},
+				{
+					label: 'Resources',
+					value: 'resources',
+				},
+				{
+					label: 'Permissions',
+					value: 'permissions',
+				},
+			]"
+		/>
+		<Button
+			label="Delete"
+			icon-left="trash-2"
+			theme="red"
+			variant="subtle"
+			@click="
+				confirmDialog({
+					title: 'Delete',
+					message: 'Are you sure you want to delete this role?',
+					primaryAction: {
+						label: 'Delete',
+						theme: 'red',
+						onClick: ({ hide }) => {
+							role.delete.submit().then(() => {
+								hide();
+								$router.push({ name: 'SettingsPermissionRoles' });
+							});
+						},
+					},
+				})
+			"
+		/>
+	</div>
 	<RoleMembers
 		v-if="tab === 'members'"
 		:users="role.doc?.users"
@@ -101,6 +125,7 @@ import RolePermissions from './RolePermissions.vue';
 import RoleResources from './RoleResources.vue';
 import { getTeam } from '../../data/team';
 import { getSessionUser } from '../../data/session';
+import { confirmDialog, renderDialog } from '../../utils/components';
 
 const props = defineProps<{
 	id: string;
