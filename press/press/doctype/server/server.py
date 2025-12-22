@@ -194,10 +194,6 @@ class BaseServer(Document, TagHelpers):
 				return volumes
 
 	@dashboard_whitelist()
-	def cancel_disk_resize(self, disk_resize):
-		frappe.get_doc("Virtual Disk Resize", disk_resize).cancel()
-
-	@dashboard_whitelist()
 	def get_communication_infos(self):
 		return (
 			[{"channel": c.channel, "type": c.type, "value": c.value} for c in self.communication_infos]
