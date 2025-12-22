@@ -270,7 +270,10 @@ export default {
 		},
 		contact_info() {
 			return [
-				{ label: 'Full Name', value: this.lead?.full_name },
+				{
+					label: 'Full Name',
+					value: this.lead?.full_name || this.lead?.lead_name,
+				},
 				{ label: 'Email', value: this.lead?.email },
 				{ label: 'Country', value: this.lead?.country },
 				{ label: 'State', value: this.lead?.state },
