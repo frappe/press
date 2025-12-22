@@ -99,10 +99,10 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 			for step in self.get_steps(
 				[
 					self.mark_start_time,
+					self.stop_all_agent_jobs_on_primary,
 					self.start_secondary_server,
 					self.wait_for_secondary_server_to_start,
 					# Since the secondary is stopped no jobs running on it
-					self.stop_all_agent_jobs_on_primary,
 					self.wait_for_secondary_server_ping,
 					self.remove_redis_localhost_bind,
 					self.wait_for_redis_localhost_bind_removal,
