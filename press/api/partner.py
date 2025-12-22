@@ -776,6 +776,14 @@ def check_certificate_exists(email, type):
 
 
 @frappe.whitelist()
+def get_fc_plans():
+	site_plans = frappe.get_all(
+		"Site Plan", {"enabled": 1, "document_type": "Site", "price_inr": (">", 0)}, pluck="name"
+	)
+	return [*site_plans, "Dedicated Server", "Managed Press"]
+
+
+@frappe.whitelist()
 def update_followup_details(id, lead, followup_details):
 	followup_details = frappe._dict(followup_details)
 	if id:

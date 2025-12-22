@@ -90,6 +90,10 @@ class PressRole(Document):
 			self.allow_bench_creation = 1
 			self.allow_server_creation = 1
 			self.allow_webhook_configuration = 1
+			self.allow_customer = 1
+			self.allow_leads = 1
+			self.allow_dashboard = 1
+			self.allow_contribution = 1
 
 	def add_press_admin_role(self, user):
 		user = frappe.get_doc("User", user)

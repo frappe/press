@@ -251,17 +251,17 @@ const commentOptions = computed(() => {
 					},
 				}),
 		},
-		{
-			label: 'New Email',
-			value: 'email',
-			component: () =>
-				h(DropdownItem, {
-					label: 'New Email',
-					onClick: () => {
-						console.log('Email Clicked');
-					},
-				}),
-		},
+		// {
+		// 	label: 'New Email',
+		// 	value: 'email',
+		// 	component: () =>
+		// 		h(DropdownItem, {
+		// 			label: 'New Email',
+		// 			onClick: () => {
+		// 				console.log('Email Clicked');
+		// 			},
+		// 		}),
+		// },
 	];
 });
 
