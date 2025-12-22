@@ -368,8 +368,10 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 			auto_scale_trigger: PrometheusAlertRule = frappe.get_doc(
 				"Prometheus Alert Rule", f"Auto Scale Down Trigger - {self.primary_server}"
 			)
-			auto_scale_trigger.enabled = 1
-			auto_scale_trigger.save()
+			# Only set it to enabled if a valid expression exists
+			if auto_scale_trigger.expression:
+				auto_scale_trigger.enabled = 1
+				auto_scale_trigger.save()
 
 		step.status = Status.Success
 		step.save()
