@@ -3162,6 +3162,7 @@ class Server(BaseServer):
 			- Was the last auto scale modified before the cool of period (don't create new auto scale).
 			- There is a auto scale operation running on the server.
 			- There are no active sites on the server.
+			- Check if there are active deployments on primary server
 		"""
 		if not self.can_scale:
 			frappe.throw("Server is not configured for auto scaling", frappe.ValidationError)
@@ -3203,6 +3204,15 @@ class Server(BaseServer):
 
 		if not active_sites_on_primary and not active_sites_on_secondary:
 			frappe.throw("There are no active sites on this server!", frappe.ValidationError)
+
+		active_deployments = frappe.db.get_value(
+			"Bench", {"server": self.name, "status": ("in", ["Installing", "Pending"])}
+		)
+
+		if active_deployments:
+			frappe.throw(
+				"Please wait for all active deployments to complete before scaling the server.",
+			)
 
 	@dashboard_whitelist()
 	@frappe.whitelist()
