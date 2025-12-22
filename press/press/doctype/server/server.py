@@ -3223,6 +3223,10 @@ class Server(BaseServer):
 		self, metric: Literal["CPU", "Memory"], action: Literal["Scale Up", "Scale Down"], threshold: float
 	):
 		"""Configure automated scaling based on cpu loads"""
+
+		if not self.secondary_server:
+			frappe.throw("Please setup a secondary server to enable auto scaling", frappe.ValidationError)
+
 		threshold = round(threshold, 2)
 		existing_trigger = frappe.db.get_value(
 			"Auto Scale Trigger", {"action": action, "parent": self.name, "metric": metric}
