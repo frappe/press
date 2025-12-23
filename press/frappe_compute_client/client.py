@@ -26,7 +26,6 @@ class FrappeComputeClient:
 
 		response = self._send_request(url, "POST", params)
 		doc_dict = json.loads(response.text)
-		frappe.throw(f"{str(doc_dict)}")
 
 		return doc_dict
 
@@ -42,9 +41,14 @@ class FrappeComputeClient:
 
 		return response
 
+	def attach_volumes(self, name, volumes):
+		url = urljoin(self.base_url, f"/api/v2/document/Virtual%20Machine/{name}/method/attach_volumes")
+		response = self._send_request(url, "POST", {"volumes": volumes}).json()
+
+		return response
+
 	def get_volumes(self, name):
 		url = urljoin(self.base_url, f"/api/v2/document/Virtual%20Machine/{name}/method/get_volumes")
-
 		response = self._send_request(url, "GET", {}).json()
 
 		return response["data"]
