@@ -42,6 +42,13 @@ class FrappeComputeClient:
 
 		return response
 
+	def get_volumes(self, name):
+		url = urljoin(self.base_url, f"/api/v2/document/Virtual%20Machine/{name}/method/get_volumes")
+
+		response = self._send_request(url, "GET", {}).json()
+
+		return response["data"]
+
 	def _send_request(self, url, method, data):
 		headers = {
     		"Authorization": f"token {self.api_key}",
