@@ -1,6 +1,6 @@
 <template>
 	<div class="flex h-full flex-col">
-		<div class="sticky top-0 z-10 shrink-0">
+		<div class="sticky top-0 shrink-0">
 			<Header>
 				<FBreadcrumbs
 					:items="[{ label: 'Partnership', route: { name: 'Partnership' } }]"

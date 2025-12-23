@@ -197,6 +197,7 @@
 										class="mt-4"
 										variant="solid"
 										:loading="$session.login.loading"
+										type="submit"
 									>
 										Log In
 									</Button>
@@ -413,9 +414,10 @@
 					>
 						<p>
 							You will receive an email with instructions to reset your password
-							if an account with the provided email
-							(<span class="font-medium">{{ email }}</span>)
-							exists.
+							if an account with the provided email (<span
+								class="font-medium"
+								>{{ email }}</span
+							>) exists.
 						</p>
 					</div>
 				</template>
