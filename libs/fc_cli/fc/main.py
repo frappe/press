@@ -1,10 +1,13 @@
 import json
 
 import typer
+
 from fc.authentication.login import session_file_path
 from fc.authentication.session import CloudSession
 from fc.commands.auth import auth
+from fc.commands.deploy import deploy
 from fc.commands.server import server
+from fc.commands.sites import sites
 
 app = typer.Typer(help="FC CLI")
 
@@ -23,3 +26,5 @@ def init_session(ctx: typer.Context):
 
 app.add_typer(server, name="server")
 app.add_typer(auth, name="auth")
+app.add_typer(deploy, name="deploy")
+app.add_typer(sites, name="sites")
