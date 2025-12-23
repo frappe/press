@@ -624,7 +624,7 @@ class Bench(Document):
 		)
 		for site in sites:
 			try:
-				site = frappe.get_doc("Site", site)
+				site: Site = frappe.get_doc("Site", site)
 				site.schedule_update()
 				frappe.db.commit()
 			except Exception:
