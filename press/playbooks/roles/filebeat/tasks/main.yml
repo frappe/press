@@ -17,15 +17,26 @@
   retries: 5
   delay: 120
 
-- name: Add Elasticsearch Repository Key
-  apt_key:
-    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
-    state: present
+- name: Check if Elasticsearch GPG Key Exists
+  stat:
+    path: /usr/share/keyrings/elasticsearch.gpg
+  register: elasticsearch_gpg_key
 
-- name: Add Elasticsearch Repository
-  apt_repository:
-    repo: deb https://artifacts.elastic.co/packages/7.x/apt stable main
-    state: present
+- name: Add Elasticsearch Repository Key (Modern)
+  shell: curl -fsSL https://artifacts.elastic.co/GPG-KEY-elasticsearch | gpg --dearmor -o /usr/share/keyrings/elasticsearch.gpg
+  when: not elasticsearch_gpg_key.stat.exists
+
+- name: Add Elasticsearch Repository (Modern)
+  copy:
+    content: "deb [signed-by=/usr/share/keyrings/elasticsearch.gpg] https://artifacts.elastic.co/packages/7.x/apt stable main"
+    dest: /etc/apt/sources.list.d/elastic-7.x.list
+  register: elastic_repo
+
+- name: Update APT Cache for Elasticsearch
+  apt:
+    update_cache: yes
+  when: elastic_repo.changed
+  ignore_errors: yes
 
 - name: Remove new Elasticsearch Repository
   apt_repository:

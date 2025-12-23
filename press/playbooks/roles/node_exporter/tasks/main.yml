@@ -1,9 +1,15 @@
 ---
+- name: Check if Node Exporter is installed
+  stat:
+    path: /opt/node_exporter/node_exporter
+  register: node_exporter_binary
+
 - name: Create Node Exporter Directory
   file:
     path: /opt/node_exporter
     state: directory
     mode: 0755
+  when: not node_exporter_binary.stat.exists
 
 - name: Set Architecture
   set_fact:
@@ -14,6 +20,7 @@
     src: "https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-{{ arch }}.tar.gz"
     dest: /tmp
     remote_src: yes
+  when: not node_exporter_binary.stat.exists
 
 - name: Copy Node Exporter Binary
   copy:
@@ -23,6 +30,7 @@
     mode: 0755
     owner: root
     group: root
+  when: not node_exporter_binary.stat.exists
 
 - name: Create Node Exporter Systemd Service File
   template:
