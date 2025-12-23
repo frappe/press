@@ -122,14 +122,14 @@
     "parent": "Nightly",
     "parentfield": "dependencies",
     "parenttype": "Frappe Version",
-    "version": "18.16.0"
+    "version": "24.0.0"
    },
    {
     "dependency": "PYTHON_VERSION",
     "parent": "Nightly",
     "parentfield": "dependencies",
     "parenttype": "Frappe Version",
-    "version": "3.11"
+    "version": "3.14"
    },
    {
     "dependency": "WKHTMLTOPDF_VERSION",
@@ -284,14 +284,14 @@
       "parent": "Version 16 Beta",
       "parentfield": "dependencies",
       "parenttype": "Frappe Version",
-      "version": "18.16.0"
+      "version": "24.0.0"
      },
      {
       "dependency": "PYTHON_VERSION",
       "parent": "Version 16 Beta",
       "parentfield": "dependencies",
       "parenttype": "Frappe Version",
-      "version": "3.11"
+      "version": "3.14"
      },
      {
       "dependency": "WKHTMLTOPDF_VERSION",
