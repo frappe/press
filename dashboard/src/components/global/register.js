@@ -15,6 +15,7 @@ import {
 } from 'frappe-ui';
 import { GreenCheckIcon } from 'frappe-ui/icons';
 import outsideClickDirective from './outsideClickDirective';
+import Link from '../Link.vue';
 
 let components = import.meta.glob('./*.vue', { eager: true }); // To get each component inside this folder
 
@@ -33,6 +34,7 @@ let globalFrappeUIComponents = {
 	ErrorMessage,
 	Autocomplete,
 	Spinner,
+	Link,
 };
 
 export default function registerGlobalComponents(app) {
