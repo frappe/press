@@ -1,10 +1,11 @@
 ---
 - name: Setup ca public key to verify signed certificates
   block:
+    # Use curl instead of get_url to avoid Python 3.12 HTTPSConnection issues
     - name: Setup certificate-authority key file
-      get_url:
-        url: "https://frappecloud.com/files/ca.pub"
-        dest: /etc/ssh/ca.pub
+      shell: curl -sL -o /etc/ssh/ca.pub https://frappecloud.com/files/ca.pub
+      args:
+        creates: /etc/ssh/ca.pub
 
     - name: Set key file permissions to 0644
       file:
@@ -41,7 +42,8 @@
         - "TrustedUserCAKeys /etc/ssh/ca.pub"
         - "AuthorizedPrincipalsFile /etc/ssh/auth_principals/%u"
 
+# Use distribution-aware service name (ssh on Ubuntu 24.04+, sshd on older)
 - name: Restart sshd service
   service:
-    name: sshd
+    name: "{{ 'ssh' if (ansible_distribution == 'Ubuntu' and ansible_distribution_version is version('24.04', '>=')) else 'sshd' }}"
     state: reloaded

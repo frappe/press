@@ -5,21 +5,29 @@
     state: directory
     mode: 0755
 
+- name: Check if cAdvisor binary exists
+  stat:
+    path: /opt/cadvisor/cadvisor
+  register: cadvisor_binary
+
+# Use curl instead of get_url to avoid Python 3.12 HTTPSConnection issues
 - name: Download cAdvisor Binary (amd64)
-  get_url:
-    url: https://github.com/google/cadvisor/releases/download/v0.50.0/cadvisor-v0.50.0-linux-amd64
-    checksum: sha256:c63976400ca980b4b34bd074ef93c5321650050e45e6dc4d0cb1baf7dc772639
-    dest: /opt/cadvisor/cadvisor
-    mode: 0755
-  when: ansible_architecture == "x86_64"
+  shell: |
+    curl -sL -o /opt/cadvisor/cadvisor https://github.com/google/cadvisor/releases/download/v0.50.0/cadvisor-v0.50.0-linux-amd64
+    echo "c63976400ca980b4b34bd074ef93c5321650050e45e6dc4d0cb1baf7dc772639  /opt/cadvisor/cadvisor" | sha256sum -c -
+    chmod 0755 /opt/cadvisor/cadvisor
+  when:
+    - ansible_architecture == "x86_64"
+    - not cadvisor_binary.stat.exists
 
 - name: Download cAdvisor Binary (arm64)
-  get_url:
-    url: https://github.com/google/cadvisor/releases/download/v0.50.0/cadvisor-v0.50.0-linux-arm64
-    checksum: sha256:37c998d54dc0e8b1635d9be4c0ab15dfc3123aa41805ad0bd909c896d5a1a89b
-    dest: /opt/cadvisor/cadvisor
-    mode: 0755
-  when: ansible_architecture == "aarch64"
+  shell: |
+    curl -sL -o /opt/cadvisor/cadvisor https://github.com/google/cadvisor/releases/download/v0.50.0/cadvisor-v0.50.0-linux-arm64
+    echo "37c998d54dc0e8b1635d9be4c0ab15dfc3123aa41805ad0bd909c896d5a1a89b  /opt/cadvisor/cadvisor" | sha256sum -c -
+    chmod 0755 /opt/cadvisor/cadvisor
+  when:
+    - ansible_architecture == "aarch64"
+    - not cadvisor_binary.stat.exists
 
 - name: Create cAdvisor Systemd Service File
   template:

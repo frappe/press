@@ -9,20 +9,19 @@
   set_fact:
     arch: "{{'amd64' if (ansible_architecture == 'x86_64') else 'arm64'}}"
 
-- name: Download StatsD Exporter Archive
-  unarchive:
-    src: "https://github.com/prometheus/statsd_exporter/releases/download/v0.27.1/statsd_exporter-0.27.1.linux-{{ arch }}.tar.gz"
-    dest: /tmp
-    remote_src: yes
+- name: Check if StatsD Exporter binary exists
+  stat:
+    path: /opt/statsd_exporter/statsd_exporter
+  register: statsd_exporter_binary
 
-- name: Copy StatsD Exporter Binary
-  copy:
-    src: "/tmp/statsd_exporter-0.27.1.linux-{{ arch }}/statsd_exporter"
-    dest: /opt/statsd_exporter/statsd_exporter
-    remote_src: yes
-    mode: 0755
-    owner: root
-    group: root
+# Use curl+tar instead of unarchive to avoid Python 3.12 HTTPSConnection issues
+- name: Download and Extract StatsD Exporter Archive
+  shell: |
+    curl -sL https://github.com/prometheus/statsd_exporter/releases/download/v0.27.1/statsd_exporter-0.27.1.linux-{{ arch }}.tar.gz | tar xz -C /tmp
+    cp /tmp/statsd_exporter-0.27.1.linux-{{ arch }}/statsd_exporter /opt/statsd_exporter/statsd_exporter
+    chmod 0755 /opt/statsd_exporter/statsd_exporter
+    chown root:root /opt/statsd_exporter/statsd_exporter
+  when: not statsd_exporter_binary.stat.exists
 
 - name: Create StatsD Mapping Config File
   template:
