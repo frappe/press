@@ -2,86 +2,117 @@
 	<Dialog
 		v-model="show"
 		@close="resetValues"
-		:options="{ title: 'Resize Virtual Disk' }"
+		:options="{ title: 'Manage Storage' }"
 	>
 		<template #body-content>
 			<div class="space-y-4">
-				<p class="text-base">Select a server to shrink its disk size</p>
-
 				<FormControl
-					label="Select Server"
+					label="Action"
 					type="select"
-					v-model="selectedServer"
-					:options="serverTypeOptions"
-					placeholder="Choose a server"
+					v-model="selectedAction"
+					:options="actionOptions"
+					placeholder="Choose an action"
 				/>
 
-				<div
-					v-if="
-						selectedServer && currentVolumes.length === 0 && !isLoadingVolumes
-					"
-					class="flex items-center rounded bg-red-50 p-4 text-sm text-red-700"
-				>
-					<lucide-alert-circle class="mr-2 h-4 w-4" />
-					No volumes to shrink found for this server.
-				</div>
-
-				<template v-if="selectedServer && currentVolumes.length > 0">
+				<!-- Increase Storage Section -->
+				<template v-if="selectedAction === 'increase'">
 					<div
-						class="flex items-center rounded bg-yellow-50 p-4 text-sm text-yellow-700"
+						class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border"
 					>
-						<lucide-alert-triangle class="mr-2 h-4 w-4" />
-						<span
-							><b>Warning:</b> Resizing the disk will cause server downtime
-							during the operation.</span
-						>
+						You will be charged at the rate of
+						<strong> {{ perGBRatePerMonth }}/mo </strong>
+						for each additional GB of storage.
+
+						<template v-if="additionalStorageIncrementRecommendation">
+							<br />
+							<br />Recommended storage increment:
+							<strong
+								>{{ additionalStorageIncrementRecommendation }} GiB</strong
+							>
+						</template>
 					</div>
 
+					<p class="mt-4 text-sm text-gray-700">
+						<strong>Note</strong>: You can increase the storage size of the
+						server only once in 6 hours.
+					</p>
 					<FormControl
-						label="Select Volume"
+						label="Storage (GB)"
 						type="select"
-						v-model="selectedVolume"
-						:options="volumeOptions"
-						placeholder="Choose a volume"
+						v-model="storageIncrement"
+						:options="storageIncrementOptions"
+						placeholder="Choose increment size"
 					/>
+				</template>
 
-					<FormControl
-						v-if="selectedVolume"
-						label="Expected Volume Size (GB)"
-						type="number"
-						v-model="expectedVolumeSize"
-						:min="1"
-						:step="1"
-						placeholder="Enter size in GB"
-					/>
-
+				<!-- Reduce Storage Section -->
+				<template v-if="selectedAction === 'reduce'">
 					<div
-						v-if="expectedVolumeSize && expectedVolumeSize >= currentVolumeSize"
-						class="flex items-center rounded bg-yellow-50 p-4 text-sm text-yellow-700"
+						v-if="currentVolumes.length === 0 && !isLoadingVolumes"
+						class="flex items-center rounded bg-red-50 p-4 text-sm text-red-700"
 					>
-						<lucide-alert-triangle class="mr-2 h-4 w-4" />
-						New volume size must be less than current size ({{
-							currentVolumeSize
-						}}
-						GB).
+						<lucide-alert-circle class="mr-2 h-4 w-4" />
+						No volumes to shrink found for this server.
 					</div>
 
-					<DateTimeControl
-						v-if="selectedVolume"
-						v-model="targetDateTime"
-						label="Schedule Time"
-					/>
+					<template v-if="currentVolumes.length > 0">
+						<div
+							class="flex items-center rounded bg-yellow-50 p-4 text-sm text-yellow-700"
+						>
+							<lucide-alert-triangle class="mr-2 h-4 w-4" />
+							<span
+								><b>Warning:</b> Reducing storage will cause server downtime
+								during the operation.</span
+							>
+						</div>
+
+						<FormControl
+							label="Select Volume"
+							type="select"
+							v-model="selectedVolume"
+							:options="volumeOptions"
+							placeholder="Choose a volume"
+						/>
+
+						<FormControl
+							v-if="selectedVolume"
+							label="Expected Volume Size (GB)"
+							type="number"
+							v-model="newVolumeSize"
+							:max="currentVolumeSize - 5"
+							:step="5"
+							placeholder="Enter size in GB"
+						/>
+
+						<div
+							v-if="newVolumeSize && newVolumeSize >= currentVolumeSize"
+							class="flex items-center rounded bg-yellow-50 p-4 text-sm text-yellow-700"
+						>
+							<lucide-alert-triangle class="mr-2 h-4 w-4" />
+							New volume size must be less than current size ({{
+								currentVolumeSize
+							}}
+							GB).
+						</div>
+
+						<DateTimeControl
+							v-if="selectedVolume"
+							v-model="targetDateTime"
+							label="Schedule Time"
+						/>
+					</template>
 				</template>
 			</div>
 		</template>
 		<template #actions>
 			<Button
+				v-if="selectedAction"
 				class="w-full"
 				variant="solid"
-				label="Resize Disk"
-				:disabled="isResizeDisabled"
-				:loading="$resources.virtualDiskResize?.loading"
-				@click="resizeDisk"
+				:label="actionButtonLabel"
+				:disabled="isActionDisabled"
+				:loading="$resources.storageOperation?.loading"
+				@click="performStorageAction"
 			/>
 		</template>
 	</Dialog>
@@ -92,13 +123,21 @@ import { toast } from 'vue-sonner';
 import DateTimeControl from '../DateTimeControl.vue';
 
 export default {
-	name: 'ServerDiskResizeDialog',
+	name: 'ManageStorageDialog',
 	props: {
-		servers: {
+		server: {
 			type: Object,
 			required: true,
 		},
-		onDiskResizeCreation: {
+		perGBRatePerMonth: {
+			type: Number,
+			required: true,
+		},
+		additionalStorageIncrementRecommendation: {
+			type: Number,
+			default: null,
+		},
+		onStorageOperationComplete: {
 			type: Function,
 			default: () => {},
 		},
@@ -107,64 +146,34 @@ export default {
 	data() {
 		return {
 			show: true,
+			selectedAction: null,
 			targetDateTime: null,
-			selectedServer: null,
 			selectedVolume: null,
-			expectedVolumeSize: null,
+			newVolumeSize: null,
 			currentVolumeSize: null,
+			storageIncrement: null,
 		};
 	},
 	computed: {
-		serverTypeOptions() {
-			const options = [];
-			if (this.servers.app) {
-				options.push({
-					label: this.servers.app,
-					value: this.servers.app,
-				});
-			}
-
-			if (this.servers.db) {
-				options.push({
-					label: this.servers.db,
-					value: this.servers.db,
-				});
-			}
-
-			if (this.servers.replica) {
-				options.push({
-					label: this.servers.replica,
-					value: this.servers.replica,
-				});
-			}
-
-			return options;
+		actionOptions() {
+			return [
+				{ label: 'Increase Storage', value: 'increase' },
+				{ label: 'Reduce Storage', value: 'reduce' },
+			];
+		},
+		storageIncrementOptions() {
+			return Array.from({ length: 100 }, (_, i) => ({
+				label: `${(i + 1) * 5} GB`,
+				value: (i + 1) * 5,
+			}));
 		},
 		currentVolumes() {
-			if (!this.selectedServer) return [];
-
-			if (this.selectedServer === this.servers.db) {
-				return this.$resources.dbServer?.doc?.data_volumes || [];
-			} else if (this.selectedServer === this.servers.app) {
-				return this.$resources.appServer?.doc?.data_volumes || [];
-			} else if (this.selectedServer === this.servers.replica) {
-				return this.$resources.replicaServer?.doc?.data_volumes || [];
-			}
-
-			return [];
+			if (!this.server) return [];
+			return this.$resources.$server?.doc?.data_volumes || [];
 		},
 		isLoadingVolumes() {
-			if (!this.selectedServer) return false;
-
-			if (this.selectedServer === this.servers.db) {
-				return this.$resources.dbServer?.loading;
-			} else if (this.selectedServer === this.servers.app) {
-				return this.$resources.appServer?.loading;
-			} else if (this.selectedServer === this.servers.replica) {
-				return this.$resources.replicaServer?.loading;
-			}
-
-			return false;
+			if (!this.server) return false;
+			return this.$resources.$server?.loading;
 		},
 		volumeOptions() {
 			return this.currentVolumes.map((volume) => ({
@@ -178,29 +187,44 @@ export default {
 				.tz('Asia/Kolkata')
 				.format('YYYY-MM-DDTHH:mm');
 		},
-		serverDoctype() {
-			if (!this.selectedServer) return null;
-			return this.selectedServer === this.servers.app
-				? 'Server'
-				: 'Database Server';
+		actionButtonLabel() {
+			if (this.selectedAction === 'increase') {
+				return 'Increase Storage';
+			} else if (this.selectedAction === 'reduce') {
+				return 'Reduce Storage';
+			}
 		},
-		isResizeDisabled() {
-			return (
-				!this.selectedServer ||
-				!this.selectedVolume ||
-				!this.expectedVolumeSize ||
-				this.expectedVolumeSize >= this.currentVolumeSize ||
-				this.currentVolumes.length === 0 ||
-				!this.targetDateTime
-			);
+		isActionDisabled() {
+			if (!this.selectedAction) {
+				return true;
+			}
+
+			if (this.selectedAction === 'increase') {
+				return !this.storageIncrement;
+			}
+
+			if (this.selectedAction === 'reduce') {
+				if (
+					!this.selectedVolume ||
+					!this.newVolumeSize ||
+					!this.targetDateTime
+				) {
+					return true;
+				}
+				return this.newVolumeSize >= this.currentVolumeSize;
+			}
+
+			return false;
 		},
 	},
 	watch: {
-		selectedServer() {
-			// Reset when server changes
+		selectedAction() {
+			// Reset fields when action changes
 			this.selectedVolume = null;
-			this.expectedVolumeSize = null;
+			this.newVolumeSize = null;
 			this.currentVolumeSize = null;
+			this.targetDateTime = null;
+			this.storageIncrement = null;
 		},
 		selectedVolume(newVolume) {
 			if (newVolume) {
@@ -209,76 +233,78 @@ export default {
 				);
 				if (volume) {
 					this.currentVolumeSize = volume.size;
-					this.expectedVolumeSize = null;
+					this.newVolumeSize = null;
 				}
 			}
 		},
 	},
 	resources: {
-		dbServer() {
-			if (!this.servers.db) return null;
+		$server() {
+			if (!this.server?.name) return null;
 
 			return {
 				type: 'document',
-				doctype: 'Database Server',
-				name: this.servers.db,
+				doctype: this.server.doctype,
+				name: this.server.name,
 				auto: true,
+				whitelistedMethods: {
+					increaseDiskSize: 'increase_disk_size_for_server',
+					reduceDiskSize: 'schedule_disk_resize',
+				},
 			};
 		},
-		appServer() {
-			if (!this.servers.app) return null;
+		storageOperation() {
+			if (this.selectedAction === 'increase') {
+				return {
+					method: 'increaseDiskSize',
+					params: {
+						increment: Number(this.storageIncrement),
+					},
+					onSuccess: () => {
+						toast.success('Disk size is scheduled to increase');
+						this.onStorageOperationComplete();
+						this.show = false;
+					},
+					onError: (e) => {
+						console.error(e);
+						toast.error('Failed to increase disk size');
+					},
+				};
+			}
 
 			return {
-				type: 'document',
-				doctype: 'Server',
-				name: this.servers.app,
-				auto: true,
-			};
-		},
-		replicaServer() {
-			if (!this.servers.replica) return null;
-
-			return {
-				type: 'document',
-				doctype: 'Database Server',
-				name: this.servers.replica,
-				auto: true,
-			};
-		},
-		virtualDiskResize() {
-			return {
-				url: 'press.api.server.schedule_disk_resize',
+				method: 'reduceDiskSize',
 				params: {
-					name: this.selectedServer,
-					server_type: this.serverDoctype,
 					volume_id: this.selectedVolume,
-					expected_volume_size: this.expectedVolumeSize,
+					expected_volume_size: this.newVolumeSize,
 					scheduled_datetime: this.datetimeInIST,
 				},
-				onSuccess() {
-					toast.success('Virtual disk resize has been scheduled.', {
-						description: `Disk will be resized to ${this.expectedVolumeSize} GB for ${this.selectedServer}.`,
+				onSuccess: () => {
+					toast.success('Storage reduction has been scheduled.', {
+						description: `Disk will be resized to ${this.newVolumeSize} GB.`,
 					});
-					this.onDiskResizeCreation();
+					this.onStorageOperationComplete();
 					this.show = false;
 				},
-				onError(error) {
-					toast.error('Failed to schedule virtual disk resize.');
+				onError: (error) => {
+					console.error(error);
+					toast.error('Failed to schedule disk size reduction');
 				},
 			};
 		},
 	},
 	methods: {
 		resetValues() {
+			this.selectedAction = null;
 			this.targetDateTime = null;
-			this.selectedServer = null;
 			this.selectedVolume = null;
-			this.expectedVolumeSize = null;
+			this.newVolumeSize = null;
 			this.currentVolumeSize = null;
+			this.storageIncrement = null;
 		},
-		resizeDisk() {
-			if (!this.isResizeDisabled && this.$resources.virtualDiskResize) {
-				this.$resources.virtualDiskResize.submit();
+		performStorageAction() {
+			if (!this.isActionDisabled && this.$resources.storageOperation) {
+				this.$resources.storageOperation.submit();
 			}
 		},
 	},

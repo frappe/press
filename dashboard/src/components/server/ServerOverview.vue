@@ -470,75 +470,26 @@ export default {
 										: '',
 								actions: [
 									{
-										label: 'Increase Storage',
-										icon: 'plus',
+										label: 'Manage Storage',
+										icon: 'save',
 										variant: 'ghost',
 										onClick: () => {
-											confirmDialog({
-												title: 'Increase Storage',
-												message: `Enter the disk size you want to increase to the server <b>${
-													doc.title || doc.name
-												}</b>
-									<div class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border">
-									You will be charged at the rate of
-									<strong>
-										${this.$format.userCurrency(doc.storage_plan[priceField])}/mo
-									</strong>
-									for each additional GB of storage.
-									${
-										additionalStorageIncrementRecommendation
-											? `<br /> <br />Recommended storage increment: <strong>${additionalStorageIncrementRecommendation} GiB</strong>`
-											: ''
-									}
-									</div>
-									<p class="mt-4 text-sm text-gray-700"><strong>Note</strong>: You can increase the storage size of the server only once in 6 hours.
-										</div>`,
-												fields: [
-													{
-														fieldname: 'storage',
-														type: 'select',
-														default: 50,
-														label: 'Storage (GB)',
-														variant: 'outline',
-														// options from 5 GB to 500 GB in steps of 5 GB
-														options: Array.from({ length: 100 }, (_, i) => ({
-															label: `${(i + 1) * 5} GB`,
-															value: (i + 1) * 5,
-														})),
+											let ServerDiskResizeDialog = defineAsyncComponent(
+												() => import('../server/ServerDiskResizeDialog.vue'),
+											);
+											renderDialog(
+												h(ServerDiskResizeDialog, {
+													server: {
+														name: doc.name,
+														doctype: doc.doctype,
 													},
-												],
-												onSuccess: ({ hide, values }) => {
-													toast.promise(
-														this.$appServer.increaseDiskSize.submit(
-															{
-																server: doc.name,
-																increment: Number(values.storage),
-															},
-															{
-																onSuccess: () => {
-																	hide();
-																	this.$router.push({
-																		name: 'Server Detail Plays',
-																		params: { name: this.$appServer.name },
-																	});
-																},
-																onError(e) {
-																	console.error(e);
-																},
-															},
-														),
-														{
-															loading: 'Increasing disk size...',
-															success: 'Disk size is scheduled to increase',
-															error: (e) =>
-																getToastErrorMessage(
-																	e,
-																	'Failed to increase disk size',
-																),
-														},
-													);
-												},
-											});
+													perGBRatePerMonth: this.$format.userCurrency(
+														doc.storage_plan[priceField],
+													),
+													additionalStorageIncrementRecommendation:
+														additionalStorageIncrementRecommendation,
+												}),
+											);
 										},
 									},
 									{

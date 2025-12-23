@@ -16,7 +16,6 @@ import { tagTab } from './common/tags';
 export default {
 	doctype: 'Server',
 	whitelistedMethods: {
-		increaseDiskSize: 'increase_disk_size_for_server',
 		configureAutoAddStorage: 'configure_auto_add_storage',
 		changePlan: 'change_plan',
 		toggleAutoIncreaseStorage: 'toggle_auto_increase_storage',
