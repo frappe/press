@@ -54,7 +54,7 @@ def usage(
 def show_plan(
 	ctx: typer.Context,
 	name: Annotated[str, typer.Argument(help="Server name")],
-	plan: Annotated[str, typer.Argument(help="Plan name")],
+	plan: Annotated[str, typer.Option("--plan", help="Plan name")],
 ):
 	session: CloudSession = ctx.obj
 
@@ -71,7 +71,6 @@ def show_plan(
 			Print.error(console, f"Plan '{plan}' not found for server '{name}'")
 			return
 
-		# Centralized plan rendering via printer helper
 		print_plan_details(selected_plan, console)
 
 	except Exception as e:
@@ -109,7 +108,7 @@ def server_plan(
 def increase_storage(
 	ctx: typer.Context,
 	name: Annotated[str, typer.Argument(help="Server name")],
-	increment: Annotated[int, typer.Argument(help="Increment size in GB")],
+	increment: Annotated[int, typer.Option("--increment", help="Increment size in GB")],
 	force: Annotated[
 		bool,
 		typer.Option("--force", "-f", is_flag=True, help="Skip confirmation"),
@@ -161,7 +160,7 @@ def increase_storage(
 def choose_plan(
 	ctx: typer.Context,
 	name: Annotated[str, typer.Argument(help="Server name")],
-	plan: Annotated[str, typer.Argument(help="Plan name")],
+	plan: Annotated[str, typer.Option("--plan", help="Plan name")],
 	force: Annotated[
 		bool,
 		typer.Option("--force", "-f", is_flag=True, help="Skip confirmation"),
@@ -181,7 +180,6 @@ def choose_plan(
 			Print.error(console, f"Plan '{plan}' not found for server '{name}'")
 			return
 
-		# Fetch current plan to compare
 		current_plan_name = _get_current_plan_name(session, doctype, name)
 
 		if current_plan_name and current_plan_name == selected_plan.get("name"):
@@ -191,7 +189,6 @@ def choose_plan(
 			)
 			return
 
-		# Confirm before changing plan
 		if not _should_proceed(
 			f"Change plan for server '{name}' to '{selected_plan.get('name')}'?",
 			force,
@@ -230,10 +227,10 @@ def choose_plan(
 @server.command(help="Create a new server")
 def create_server(
 	ctx: typer.Context,
-	cluster: Annotated[str, typer.Argument(help="Cluster name")],
 	title: Annotated[str, typer.Argument(help="Server title")],
-	app_plan: Annotated[str, typer.Argument(help="App server plan name")],
-	db_plan: Annotated[str, typer.Argument(help="Database server plan name")],
+	cluster: Annotated[str, typer.Option("--cluster", help="Cluster name")] = "",
+	app_plan: Annotated[str, typer.Option("--app-plan", help="App server plan name")] = "",
+	db_plan: Annotated[str, typer.Option("--db-plan", help="Database server plan name")] = "",
 	auto_increase_storage: Annotated[
 		bool, typer.Option("--auto-increase-storage", is_flag=True, help="Auto increase storage")
 	] = False,
@@ -306,11 +303,6 @@ def delete_server(
 
 
 def _should_proceed(message: str, confirm_token: str | None) -> bool:
-	"""Return True if destructive action should proceed.
-
-	- When confirm_token is 'force' (case-insensitive), skip prompt and proceed.
-	- Otherwise, show a confirmation prompt and return the user's choice.
-	"""
 	if isinstance(confirm_token, bool) and confirm_token:
 		return True
 	if isinstance(confirm_token, str) and confirm_token.lower() in {"force", "yes", "y"}:
