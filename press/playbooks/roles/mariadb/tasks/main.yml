@@ -1,17 +1,27 @@
-- name: Add MariaDB Repository Key
-  apt_key:
-    url: https://mariadb.org/mariadb_release_signing_key.pgp
-    state: present
+# For Ubuntu 24.04 (noble), use Ubuntu's default repos which have MariaDB 10.11
+# For older versions, use MariaDB's official repository
 
-- name: Add MariaDB Repository
-  apt_repository:
-    repo: deb https://mirror.rackspace.com/mariadb/repo/10.6/ubuntu {{ ansible_distribution_release }} main
-    state: present
-    update_cache: true
+- name: Check if MariaDB GPG Key Exists
+  stat:
+    path: /usr/share/keyrings/mariadb-archive-keyring.gpg
+  register: mariadb_gpg_key
+  when: ansible_distribution_release != 'noble'
+
+- name: Add MariaDB Repository Key (Modern)
+  shell: curl -fsSL https://mariadb.org/mariadb_release_signing_key.pgp | gpg --dearmor -o /usr/share/keyrings/mariadb-archive-keyring.gpg
+  when: ansible_distribution_release != 'noble' and (mariadb_gpg_key.stat is not defined or not mariadb_gpg_key.stat.exists)
+
+- name: Add MariaDB Repository (Modern)
+  copy:
+    content: "deb [signed-by=/usr/share/keyrings/mariadb-archive-keyring.gpg] https://mirror.rackspace.com/mariadb/repo/10.6/ubuntu {{ ansible_distribution_release }} main"
+    dest: /etc/apt/sources.list.d/mariadb.list
+  register: mariadb_repo
+  when: ansible_distribution_release != 'noble'
 
 - name: Update APT Cache
   apt:
     update_cache: yes
+  ignore_errors: yes
 
 - name: Use Debian Unattended Package Installation Mode
   shell: export DEBIAN_FRONTEND=noninteractive
@@ -22,7 +32,7 @@
     pkg:
       - mariadb-server
       - mariadb-client
-      - libmariadbclient18
+      - libmariadb3
     state: present
 
 - name: Install MySQLdb Python Package

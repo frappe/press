@@ -67,5 +67,4 @@
 
 - name: Restart SSHD service
   service:
-    name: sshd
-    state: reloaded
+    name: "{{ 'ssh' if ansible_distribution_release == 'noble' else 'sshd' }}"

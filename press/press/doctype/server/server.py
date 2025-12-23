@@ -481,6 +481,9 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def create_dns_record(self):
+		if not self.domain:
+			return
+
 		try:
 			domain = frappe.get_doc("Root Domain", self.domain)
 
@@ -515,7 +518,7 @@ class BaseServer(Document, TagHelpers):
 				HostedZoneId=hosted_zone,
 			)
 		except Exception:
-			log_error("Route 53 Record Creation Error", domain=domain.name, server=self.name)
+			log_error("Route 53 Record Creation Error", domain=self.domain, server=self.name)
 
 	def add_to_public_groups(self):
 		groups = frappe.get_all("Release Group", {"public": True, "enabled": True}, "name")

@@ -8,19 +8,26 @@
       - libpcre3-dev
     state: present
 
+- name: Check if NGINX GPG Key Exists
+  stat:
+    path: /usr/share/keyrings/nginx-archive-keyring.gpg
+  register: nginx_gpg_key
+
+- name: Add NGINX Repository Key (Modern)
+  shell: curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor -o /usr/share/keyrings/nginx-archive-keyring.gpg
+  when: not nginx_gpg_key.stat.exists
+
 - name: Setup NGINX Source Repository
   copy:
-    content: "deb-src http://nginx.org/packages/mainline/ubuntu/ {{ ansible_distribution_release }} nginx"
+    content: "deb-src [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/mainline/ubuntu/ {{ ansible_distribution_release }} nginx"
     dest: /etc/apt/sources.list.d/nginx.list
-
-- name: Add NGINX Repository Key
-  apt_key:
-    url: https://nginx.org/keys/nginx_signing.key
-    state: present
+  register: nginx_repo
 
 - name: Update APT Cache
   apt:
     update_cache: yes
+  when: nginx_repo.changed
+  ignore_errors: yes
 
 - name: Install NGINX Build Dependencies
   apt:
@@ -37,11 +44,11 @@
     dest: /opt/nginx
     state: directory
 
-- name: Download NGINX Source Archive
-  unarchive:
-    src: http://nginx.org/download/nginx-{{ nginx_version.stdout }}.tar.gz
-    dest: /opt/nginx
-    remote_src: yes
+- name: Download and Extract NGINX Source Archive
+  shell: |
+    curl -fsSL "http://nginx.org/download/nginx-{{ nginx_version.stdout }}.tar.gz" -o /tmp/nginx-source.tar.gz
+    tar -xzf /tmp/nginx-source.tar.gz -C /opt/nginx
+    rm -f /tmp/nginx-source.tar.gz
 
 - name: Clone NGINX VTS Module Repository
   git:

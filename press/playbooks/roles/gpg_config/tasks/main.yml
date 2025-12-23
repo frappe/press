@@ -1,6 +1,18 @@
 ---
-- name: Ensure GPG keys are configured | Ubuntu
+# Ubuntu 24.04 deprecated /etc/apt/trusted.gpg - keys are now in /usr/share/keyrings/
+- name: Check if legacy trusted.gpg exists
+  stat:
+    path: /etc/apt/trusted.gpg
+  register: trusted_gpg
+
+- name: Ensure GPG keys are configured | Ubuntu (legacy)
   command: gpg --quiet --with-fingerprint /etc/apt/trusted.gpg
+  when: trusted_gpg.stat.exists
+
+- name: List GPG keyrings | Ubuntu (modern)
+  shell: ls -la /usr/share/keyrings/ /etc/apt/keyrings/ 2>/dev/null || true
+  changed_when: no
+  when: not trusted_gpg.stat.exists
 
 - name: Ensure package manager repositories are configured
   block:

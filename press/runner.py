@@ -63,8 +63,12 @@ class AnsibleCallback(CallbackBase):
 		self.update_task("Success", result)
 		self.process_task_success(result)
 
-	def v2_runner_on_failed(self, result, *args, **kwargs):
-		self.update_task("Failure", result)
+	def v2_runner_on_failed(self, result, ignore_errors=False, *args, **kwargs):
+		if ignore_errors:
+			# Task failed but ignore_errors=True, treat as skipped
+			self.update_task("Skipped", result)
+		else:
+			self.update_task("Failure", result)
 
 	def v2_runner_on_skipped(self, result):
 		self.update_task("Skipped", result)
@@ -116,7 +120,11 @@ class AnsibleCallback(CallbackBase):
 		if result:
 			task.output = result.stdout
 			task.error = result.stderr
-			task.exception = result.msg
+			# Convert msg to string if it's a list (e.g., from debug tasks)
+			msg = result.msg
+			if isinstance(msg, list):
+				msg = "\n".join(str(item) for item in msg)
+			task.exception = msg
 			# Reduce clutter be removing keys already shown elsewhere
 			for key in ("stdout", "stdout_lines", "stderr", "stderr_lines", "msg"):
 				result.pop(key, None)

@@ -1,19 +1,26 @@
 ---
+- name: Check if MySQL Exporter is installed
+  stat:
+    path: /opt/mysqld_exporter/mysqld_exporter
+  register: mysqld_exporter_binary
+
 - name: Create MySQL Exporter Directory
   file:
     path: /opt/mysqld_exporter
     state: directory
     mode: 0755
+  when: not mysqld_exporter_binary.stat.exists
 
 - name: Set Architecture
   set_fact:
     arch: "{{'amd64' if (ansible_architecture == 'x86_64') else 'arm64'}}"
 
-- name: Download MySQL Exporter Archive
-  unarchive:
-    src: "https://github.com/prometheus/mysqld_exporter/releases/download/v0.15.1/mysqld_exporter-0.15.1.linux-{{ arch }}.tar.gz"
-    dest: /tmp
-    remote_src: yes
+- name: Download and Extract MySQL Exporter Archive
+  shell: |
+    curl -fsSL "https://github.com/prometheus/mysqld_exporter/releases/download/v0.15.1/mysqld_exporter-0.15.1.linux-{{ arch }}.tar.gz" -o /tmp/mysqld_exporter.tar.gz
+    tar -xzf /tmp/mysqld_exporter.tar.gz -C /tmp
+    rm -f /tmp/mysqld_exporter.tar.gz
+  when: not mysqld_exporter_binary.stat.exists
 
 - name: Copy MySQL Exporter Binary
   copy:
@@ -23,6 +30,7 @@
     mode: 0755
     owner: root
     group: root
+  when: not mysqld_exporter_binary.stat.exists
 
 - name: Create MySQL Exporter Systemd Service File
   template:

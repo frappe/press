@@ -1,8 +1,5 @@
 ---
-- name: Update NGINX Repository Key
-  apt_key:
-    url: https://nginx.org/keys/nginx_signing.key
-    state: present
+# Note: Removed unnecessary NGINX Repository Key task (not needed for memory allocator)
 
 - name: Install Memory Allocators
   apt:
@@ -20,6 +17,15 @@
     file_type: file
     patterns: "lib{{ allocator }}.so.*"
   register: libraries
+  when: allocator != "system"
+
+- name: Create MariaDB SystemD drop-in directory
+  file:
+    path: /etc/systemd/system/mariadb.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
   when: allocator != "system"
 
 - name: Set Memory Allocator

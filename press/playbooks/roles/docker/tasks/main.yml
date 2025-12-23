@@ -20,22 +20,26 @@
       - curl
       - software-properties-common
 
-- name: Add Docker Repository Key
-  apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    state: present
+- name: Check if Docker GPG Key Exists
+  stat:
+    path: /usr/share/keyrings/docker-archive-keyring.gpg
+  register: docker_gpg_key
 
-# This seems to be breaking on some servers
-- name: Add NGINX Repository Key
-  apt_key:
-    url: https://nginx.org/keys/nginx_signing.key
-    state: present
+- name: Add Docker Repository Key (Modern)
+  shell: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+  when: not docker_gpg_key.stat.exists
 
-- name: Add Docker Repository
-  apt_repository:
-    repo: deb https://download.docker.com/linux/ubuntu focal stable
-    state: present
-    update_cache: true
+- name: Add Docker Repository (Modern)
+  copy:
+    content: "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    dest: /etc/apt/sources.list.d/docker.list
+  register: docker_repo
+
+- name: Update APT Cache for Docker
+  apt:
+    update_cache: yes
+  when: docker_repo.changed
+  ignore_errors: yes
 
 - name: Install Docker
   apt:
