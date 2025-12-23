@@ -67,6 +67,12 @@
 				</div>
 			</RouterLink>
 		</div>
+		<Button
+			v-if="roles.hasNextPage"
+			icon-left="plus"
+			label="Load More"
+			@click="() => roles.next()"
+		/>
 		<RoleCreateDialog
 			v-model="showCreateDialog"
 			@create="
@@ -90,7 +96,7 @@
 	</div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue';
 import { createListResource, createResource } from 'frappe-ui';
 import RoleCreateDialog from './RoleCreateDialog.vue';
