@@ -40,6 +40,7 @@ class PressNotification(Document):
 			"Downtime/Performance",
 			"Support Access",
 			"Auto Scale",
+			"Disk Resize",
 		]
 	# end: auto-generated types
 
@@ -99,8 +100,10 @@ class PressNotification(Document):
 		self.db_set("read", True)
 
 
-def create_new_notification(team, type, document_type, document_name, message):
-	if not frappe.db.exists("Press Notification", {"document_name": document_name}):
+def create_new_notification(team, type, document_type, document_name, message, include_traceback=False):
+	if not frappe.db.exists(
+		"Press Notification", {"document_type": document_type, "document_name": document_name}
+	):
 		if document_type == "Agent Job":
 			reference_doctype = "Site"
 			reference_doc = frappe.db.get_value("Agent Job", document_name, "site")
@@ -119,6 +122,7 @@ def create_new_notification(team, type, document_type, document_name, message):
 				"document_type": document_type,
 				"document_name": document_name or 0,
 				"message": message,
+				"traceback": frappe.get_traceback(with_context=False) if include_traceback else None,
 				"reference_doctype": reference_doctype,
 				"reference_name": reference_doc,
 			}

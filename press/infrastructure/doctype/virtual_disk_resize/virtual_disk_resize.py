@@ -14,6 +14,7 @@ from frappe.core.utils import find, find_all
 from frappe.model.document import Document
 
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
+from press.press.doctype.press_notification.press_notification import create_new_notification
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
@@ -123,7 +124,7 @@ class VirtualDiskResize(Document):
 
 	@frappe.whitelist()
 	def execute(self):
-		if not self.get_lock() or self.status != "Scheduled":
+		if not self.get_lock() or self.status != Status.Scheduled:
 			return
 		self.run_prerequisites()
 		self.status = Status.Running
@@ -135,10 +136,10 @@ class VirtualDiskResize(Document):
 	def cancel(self):
 		if not self.get_lock(wait=False):
 			frappe.throw("The Server is currently busy. Please try again in a moment..")
-		if self.status != "Scheduled":
+		if self.status != Status.Scheduled:
 			frappe.throw("Only scheduled disk resize can be cancelled.")
 
-		self.status = "Cancelled"
+		self.status = Status.Cancelled
 		self.save()
 
 	def add_steps(self):
@@ -617,6 +618,15 @@ class VirtualDiskResize(Document):
 		self.duration = (self.end - self.start).total_seconds()
 		self.save()
 
+		create_new_notification(
+			frappe.get_doc("Virtual Machine", self.virtual_machine).team,
+			"Disk Resize",
+			self.doctype,
+			self.name,
+			"Disk resize (shrink) failed",
+			include_traceback=True,
+		)
+
 	def succeed(self) -> None:
 		self.status = Status.Success
 		self.end = frappe.utils.now_datetime()
@@ -740,6 +750,7 @@ class Status(str, Enum):
 	Running = "Running"
 	Success = "Success"
 	Failure = "Failure"
+	Cancelled = "Cancelled"
 
 	def __str__(self):
 		return self.value
