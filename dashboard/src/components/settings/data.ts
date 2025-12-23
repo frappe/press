@@ -7,6 +7,7 @@ const team = getTeam();
 const sites = createListResource({
 	doctype: 'Site',
 	auto: true,
+	pageLength: 99999,
 	filters: {
 		team: team.doc?.name,
 	},
@@ -15,6 +16,7 @@ const sites = createListResource({
 const servers = createListResource({
 	doctype: 'Server',
 	auto: true,
+	pageLength: 99999,
 	filters: {
 		team: team.doc?.name,
 	},
@@ -23,6 +25,7 @@ const servers = createListResource({
 const releaseGroups = createListResource({
 	doctype: 'Release Group',
 	auto: true,
+	pageLength: 99999,
 	filters: {
 		team: team.doc?.name,
 	},
