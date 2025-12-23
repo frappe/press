@@ -55,6 +55,10 @@ def has_support_access(doctype: str, docname: str, action: str | None = None) ->
 
 	accesses = frappe.get_all("Support Access", filters=filters, pluck="name")
 
+	if doctype == "Bench":
+		doctype = "Release Group"
+		docname = frappe.get_value("Bench", docname, "group")
+
 	for access in accesses:
 		if frappe.db.exists(
 			"Support Access Resource",
