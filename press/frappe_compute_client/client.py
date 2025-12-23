@@ -30,6 +30,12 @@ class FrappeComputeClient:
 
 		return doc_dict
 
+	def stop_vm(self, name):
+		url = urljoin(self.base_url, f"/api/v2/document/Virtual%20Machine/{name}/method/stop")
+		response = self._send_request(url, "POST", {})
+
+		return response
+
 	def _send_request(self, url, method, data):
 		headers = {
     		"Authorization": f"token {self.api_key}",
