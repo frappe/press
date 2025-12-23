@@ -29,7 +29,7 @@ def api(scope: Literal["billing", "partner"]):
 	def wrapper(fn):
 		@functools.wraps(fn)
 		def inner(*args, **kwargs):
-			if utils_user.is_system_manager():
+			if (not roles_enabled()) or utils_user.is_system_manager():
 				return fn(*args, **kwargs)
 			key = api_key(scope)
 			if not key:
@@ -66,7 +66,7 @@ def action():
 	def wrapper(fn):
 		@functools.wraps(fn)
 		def inner(self: Document, *args, **kwargs):
-			if utils_user.is_system_manager():
+			if (not roles_enabled()) or utils_user.is_system_manager():
 				return fn(self, *args, **kwargs)
 			key = action_key(self)
 			if not key:
@@ -140,7 +140,7 @@ def document(
 			bound_args.apply_defaults()
 			t = document_type(bound_args.arguments)
 			n = document_name(bound_args.arguments)
-			r = utils_user.is_system_manager() or check(t, n)
+			r = (not roles_enabled()) or utils_user.is_system_manager() or check(t, n)
 			if not r and default_value:
 				return default_value(bound_args.arguments)
 			if not r and should_throw:
@@ -200,3 +200,18 @@ def check(document_type: str, document_name: str) -> bool | list[str]:
 			return site_backup_check(query, document_name)
 		case _:
 			return True
+
+
+def roles_enabled() -> bool:
+	"""
+	Check if role-based access control is enabled for the current team. This is
+	done by checking if any roles exist for the team.
+	"""
+	return bool(
+		frappe.db.exists(
+			{
+				"doctype": "Press Role",
+				"team": get_current_team(),
+			}
+		)
+	)
