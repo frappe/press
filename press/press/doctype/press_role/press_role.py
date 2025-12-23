@@ -65,43 +65,15 @@ class PressRole(Document):
 		"users",
 	)
 
-	def before_insert(self):
-		if frappe.db.exists("Press Role", {"title": self.title, "team": self.team}):
-			frappe.throw(f"Role with title {self.title} already exists", frappe.DuplicateEntryError)
-
-	def before_validate(self):
-		self.set_first_role_as_admin()
-		self.set_admin_permissions()
-
-	def set_first_role_as_admin(self):
-		if not frappe.get_all("Press Role", filters={"team": self.team}):
-			self.admin_access = 1
-
-	def set_admin_permissions(self):
-		if self.admin_access:
-			self.allow_apps = 1
-			self.allow_billing = 1
-			self.allow_partner = 1
-			self.allow_site_creation = 1
-			self.allow_bench_creation = 1
-			self.allow_server_creation = 1
-			self.allow_webhook_configuration = 1
-			self.allow_customer = 1
-			self.allow_leads = 1
-			self.allow_dashboard = 1
-			self.allow_contribution = 1
-
 	@team_guard.only_admin()
 	def validate(self):
-		self.allow_only_one_admin_role()
+		self.validate_duplicate_title()
 
-	def allow_only_one_admin_role(self):
-		admin_roles = frappe.get_all(
-			"Press Role",
-			filters={"team": self.team, "admin_access": 1, "name": ("!=", self.name)},
-		)
-		if admin_roles and self.admin_access:
-			frappe.throw("There can only be one admin role per team")
+	def validate_duplicate_title(self):
+		exists = frappe.db.exists({"doctype": "Press Role", "title": self.title, "team": self.team})
+		if self.is_new() and exists:
+			message = _("Role with title {0} already exists in this team").format(self.title)
+			frappe.throw(message, frappe.DuplicateEntryError)
 
 	def add_press_admin_role(self, user):
 		user = frappe.get_doc("User", user)
@@ -177,7 +149,15 @@ class PressRole(Document):
 def create_user_resource(document: Document, _):
 	user = frappe.session.user
 	team: Team = get_current_team(get_doc=True)
-	if not user or team.is_team_owner() or team.is_admin_user():
+	roles_enabled = bool(
+		frappe.db.exists(
+			{
+				"doctype": "Press Role",
+				"team": get_current_team(),
+			}
+		)
+	)
+	if (not user) or (not roles_enabled) or team.is_team_owner() or team.is_admin_user():
 		return
 	frappe.get_doc(
 		{

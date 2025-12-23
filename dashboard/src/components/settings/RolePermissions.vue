@@ -1,6 +1,25 @@
 <template>
 	<div class="space-y-4">
 		<div class="space-y-2">
+			<div class="font-medium text-lg">Important</div>
+			<div class="grid grid-cols-3 gap-4 text-base">
+				<div v-for="permission in permissionsImportant">
+					<div class="px-5 py-4 border rounded">
+						<Switch
+							size="sm"
+							:disabled="disabled"
+							:label="permission.label"
+							:description="permission.description"
+							:model-value="$props[permission.key]"
+							@update:model-value="
+								(value: boolean) => $emit('update', permission.key, value)
+							"
+						/>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="space-y-2">
 			<div class="font-medium text-lg">General</div>
 			<div class="grid grid-cols-3 gap-4 text-base">
 				<div v-for="permission in permissionsGeneral">
@@ -46,6 +65,7 @@ import { Switch } from 'frappe-ui';
 
 withDefaults(
 	defineProps<{
+		admin_access?: number;
 		allow_bench_creation?: number;
 		allow_billing?: number;
 		allow_partner?: number;
@@ -59,6 +79,7 @@ withDefaults(
 		disabled?: boolean;
 	}>(),
 	{
+		admin_access: 0,
 		allow_bench_creation: 0,
 		allow_billing: 0,
 		allow_partner: 0,
@@ -76,6 +97,14 @@ withDefaults(
 defineEmits<{
 	update: [key: string, value: boolean];
 }>();
+
+const permissionsImportant = [
+	{
+		key: 'admin_access',
+		label: 'Admin',
+		description: 'Grants full administrative access',
+	},
+];
 
 const permissionsGeneral = [
 	{
