@@ -629,6 +629,7 @@ class VirtualMachine(Document):
 				"private_ip": self.private_ip_address,
 				"ansible_memtotal_mb": memory,
 				"mariadb_root_password": server.get_password("mariadb_root_password"),
+				"db_port": server.db_port or 3306,
 			}
 
 			context.update(
