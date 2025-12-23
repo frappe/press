@@ -122,7 +122,7 @@
     "parent": "Nightly",
     "parentfield": "dependencies",
     "parenttype": "Frappe Version",
-    "version": "24.0.0"
+    "version": "24.12.0"
    },
    {
     "dependency": "PYTHON_VERSION",
@@ -284,7 +284,7 @@
       "parent": "Version 16 Beta",
       "parentfield": "dependencies",
       "parenttype": "Frappe Version",
-      "version": "24.0.0"
+      "version": "24.12.0"
      },
      {
       "dependency": "PYTHON_VERSION",
