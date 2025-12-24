@@ -42,6 +42,8 @@ if TYPE_CHECKING:
 
 	from frappe.types import DF
 
+	from press.press.doctype.release_group.release_group import ReleaseGroup
+
 
 TRANSITORY_STATES = ["Pending", "Installing"]
 FINAL_STATES = ["Active", "Broken", "Archived"]
@@ -872,6 +874,17 @@ class Bench(Document):
 			programs,
 		)
 
+	def is_this_version_or_above(self, version: int) -> bool:
+		group: ReleaseGroup = frappe.get_cached_doc("Release Group", self.group)
+		return group.is_this_version_or_above(version)
+
+	def remove_scheduler_status(self, processes: list[SupervisorProcess]) -> list[SupervisorProcess]:
+		if self.is_this_version_or_above(14):
+			for p in processes:
+				if p["name"] == "frappe-bench-frappe-schedule" and p["status"] == "Exited":
+					processes.remove(p)
+		return processes
+
 	def supervisorctl_status(self):
 		result = self.docker_execute("supervisorctl status")
 		if result["status"] != "Success" or not result["output"]:
@@ -881,8 +894,8 @@ class Bench(Document):
 		output = result["output"]
 		processes = parse_supervisor_status(output)
 		# remove scheduler from the list
-		processes = [p for p in processes if p["name"] != "frappe-bench-frappe-schedule"]
-		return sort_supervisor_processes(processes)
+		processes = sort_supervisor_processes(processes)
+		return self.remove_scheduler_status(processes)
 
 	def update_inplace(self, apps: "list[BenchUpdateApp]", sites: "list[str]") -> str:
 		self.set_self_and_site_status(sites, status="Updating", site_status="Updating")
