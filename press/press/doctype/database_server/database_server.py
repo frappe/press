@@ -52,16 +52,13 @@ class DatabaseServer(BaseServer):
 		auto_increase_storage: DF.Check
 		auto_purge_binlog_based_on_size: DF.Check
 		bastion_server: DF.Link | None
-		binlog_index_retention_days: DF.Int
 		binlog_max_disk_usage_percent: DF.Int
 		binlog_retention_days: DF.Int
 		binlogs_removed: DF.Check
 		cluster: DF.Link | None
 		communication_info: DF.Table[CommunicationInfo]
-		db_port: DF.Int
 		domain: DF.Link | None
 		enable_binlog_indexing: DF.Check
-		enable_binlog_upload_to_s3: DF.Check
 		enable_physical_backup: DF.Check
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
@@ -73,7 +70,6 @@ class DatabaseServer(BaseServer):
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
 		ip: DF.Data | None
-		is_binlog_indexer_running: DF.Check
 		is_for_recovery: DF.Check
 		is_monitoring_disabled: DF.Check
 		is_performance_schema_enabled: DF.Check
@@ -97,7 +93,7 @@ class DatabaseServer(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom"]
 		public: DF.Check
 		ram: DF.Float
 		root_public_key: DF.Code | None
@@ -119,7 +115,6 @@ class DatabaseServer(BaseServer):
 		team: DF.Link | None
 		title: DF.Data | None
 		tls_certificate_renewal_failed: DF.Check
-		uploaded_binlogs_retention_days: DF.Int
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
 

@@ -284,7 +284,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner\nVodacom",
    "set_only_once": 1
   },
   {
@@ -734,7 +734,7 @@
    "link_fieldname": "primary_server"
   }
  ],
- "modified": "2025-11-17 11:29:25.581882",
+ "modified": "2025-12-24 11:28:48.077610",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
