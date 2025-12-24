@@ -619,7 +619,7 @@ class VirtualDiskResize(Document):
 		self.save()
 
 		create_new_notification(
-			frappe.get_doc("Virtual Machine", self.virtual_machine).team,
+			frappe.db.get_value("Virtual Machine", self.virtual_machine, "team"),
 			"Disk Resize",
 			self.doctype,
 			self.name,
