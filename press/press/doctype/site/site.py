@@ -378,7 +378,7 @@ class Site(Document, TagHelpers):
 					else:
 						action_name_refined = func.__name__.replace("_", " ")
 						frappe.throw(
-							f"Site is in {frappe.bold(status)} state. You site have to be active to {frappe.bold(action_name_refined)}."
+							f"Site is in {frappe.bold(status.lower())} state. Your site have to be active to {frappe.bold(action_name_refined)}."
 						)
 				return func(inst, *args, **kwargs)
 
