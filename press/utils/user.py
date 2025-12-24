@@ -11,4 +11,7 @@ def is_system_manager(user: str | None = None) -> bool:
 	"""
 	user = user or frappe.session.user
 	user_doc: User = frappe.get_cached_doc("User", user)
-	return bool(user_doc.get("roles", {"role": "System Manager"}))
+	# FIX: Do not consider system users as system managers.
+	# TODO: Remove system users from being considered as system managers.
+	# HACK: Done to accomodate logics where system users are treated as system managers.
+	return user_doc.user_type == "System User" or bool(user_doc.get("roles", {"role": "System Manager"}))
