@@ -880,6 +880,8 @@ class Bench(Document):
 
 		output = result["output"]
 		processes = parse_supervisor_status(output)
+		# remove scheduler from the list
+		processes = [p for p in processes if p["name"] != "frappe-bench-frappe-schedule"]
 		return sort_supervisor_processes(processes)
 
 	def update_inplace(self, apps: "list[BenchUpdateApp]", sites: "list[str]") -> str:
