@@ -29,6 +29,7 @@ from press.utils import get_current_team
 from press.utils.billing import (
 	GSTIN_FORMAT,
 	clear_setup_intent,
+	fetch_gstin_details,
 	get_publishable_key,
 	get_razorpay_client,
 	get_setup_intent,
@@ -638,6 +639,8 @@ def validate_gst(address, method=None):
 			frappe.throw(f"GSTIN must start with {tin_code} for {address.state}.")
 
 		validate_gstin_check_digit(address.gstin)
+		res = fetch_gstin_details(address.gstin)
+		print(res)
 
 
 @frappe.whitelist()
