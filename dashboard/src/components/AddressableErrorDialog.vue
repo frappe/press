@@ -24,9 +24,9 @@
 					{{ copied ? 'copied' : 'copy' }}
 				</button>
 				<div
-					class="max-h-48 w-full overflow-scroll rounded-sm border border-gray-200 bg-gray-100 p-3 text-xs text-gray-600"
+					class="w-full rounded-sm border border-gray-200 bg-gray-100 p-3 text-xs text-gray-700 whitespace-pre-wrap break-all"
 				>
-					<pre>{{ doc.traceback }}</pre>
+					<pre class="whitespace-pre-wrap break-all">{{ doc.traceback }}</pre>
 				</div>
 			</div>
 
