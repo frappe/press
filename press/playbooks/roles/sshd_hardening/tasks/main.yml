@@ -1,71 +1,80 @@
 ---
-
-- name: "Ensure SSH X11 forwarding is disabled"
+- name: 'Ensure SSH X11 forwarding is disabled'
   lineinfile:
-      state: present
-      dest: /etc/ssh/sshd_config
-      regexp: "^#X11Forwarding|^X11Forwarding"
-      line: 'X11Forwarding no'
+    state: present
+    dest: /etc/ssh/sshd_config
+    regexp: '^#X11Forwarding|^X11Forwarding'
+    line: 'X11Forwarding no'
 
-- name: " Ensure SSH MaxAuthTries is set to 4 or less"
+- name: ' Ensure SSH MaxAuthTries is set to 4 or less'
   lineinfile:
-      state: present
-      dest: /etc/ssh/sshd_config
-      regexp: '^(#)?MaxAuthTries \d'
-      line: 'MaxAuthTries 6'
+    state: present
+    dest: /etc/ssh/sshd_config
+    regexp: '^(#)?MaxAuthTries \d'
+    line: 'MaxAuthTries 6'
 
-- name: "Ensure SSH PermitEmptyPasswords is disabled"
+- name: 'Ensure SSH PermitEmptyPasswords is disabled'
   lineinfile:
-      state: present
-      dest: /etc/ssh/sshd_config
-      regexp: "^#PermitEmptyPasswords|^PermitEmptyPasswords"
-      line: 'PermitEmptyPasswords no'
+    state: present
+    dest: /etc/ssh/sshd_config
+    regexp: '^#PermitEmptyPasswords|^PermitEmptyPasswords'
+    line: 'PermitEmptyPasswords no'
 
-- name: "Ensure SSH PermitUserEnvironment is disabled"
+- name: 'Ensure SSH PermitUserEnvironment is disabled'
   lineinfile:
-      state: present
-      dest: /etc/ssh/sshd_config
-      regexp: "^#PermitUserEnvironment|^PermitUserEnvironment"
-      line: 'PermitUserEnvironment no'
+    state: present
+    dest: /etc/ssh/sshd_config
+    regexp: '^#PermitUserEnvironment|^PermitUserEnvironment'
+    line: 'PermitUserEnvironment no'
 
-- name: "Ensure SSH Idle Timeout Interval is configured"
+- name: 'Ensure SSH Idle Timeout Interval is configured'
   block:
-    - name: "Ensure SSH Idle Timeout Interval is configured | Add line in sshd_config for ClientAliveInterval"
+    - name: 'Ensure SSH Idle Timeout Interval is configured | Add line in sshd_config for ClientAliveInterval'
       lineinfile:
-          state: present
-          dest: /etc/ssh/sshd_config
-          regexp: '^ClientAliveInterval'
-          line: "ClientAliveInterval {{ sshd['clientaliveinterval'] }}"
+        state: present
+        dest: /etc/ssh/sshd_config
+        regexp: '^ClientAliveInterval'
+        line: "ClientAliveInterval {{ sshd['clientaliveinterval'] }}"
 
-    - name: "Ensure SSH Idle Timeout Interval is configured | Ensure SSH ClientAliveCountMax set to <= 3"
+    - name: 'Ensure SSH Idle Timeout Interval is configured | Ensure SSH ClientAliveCountMax set to <= 3'
       lineinfile:
-          state: present
-          dest: /etc/ssh/sshd_config
-          regexp: '^ClientAliveCountMax'
-          line: "ClientAliveCountMax {{ sshd['clientalivecountmax'] }}"
+        state: present
+        dest: /etc/ssh/sshd_config
+        regexp: '^ClientAliveCountMax'
+        line: "ClientAliveCountMax {{ sshd['clientalivecountmax'] }}"
 
-- name: "Ensure SSH warning banner is configured"
+- name: 'Ensure SSH warning banner is configured'
   lineinfile:
     state: present
     dest: /etc/ssh/sshd_config
     regexp: '^Banner'
-    line: "Banner /etc/login.warn"
+    line: 'Banner /etc/login.warn'
 
-- name: "Ensure SSH MaxStartups is configured"
+- name: 'Ensure SSH MaxStartups is configured'
   lineinfile:
-      state: present
-      dest: /etc/ssh/sshd_config
-      regexp: "^#MaxStartups|^MaxStartups"
-      line: 'MaxStartups 10:30:60'
+    state: present
+    dest: /etc/ssh/sshd_config
+    regexp: '^#MaxStartups|^MaxStartups'
+    line: 'MaxStartups 10:30:60'
 
-- name: "Ensure SSH MaxSessions is limited"
+- name: 'Ensure SSH MaxSessions is limited'
   lineinfile:
-      state: present
-      dest: /etc/ssh/sshd_config
-      regexp: "^#MaxSessions|^MaxSessions"
-      line: 'MaxSessions {{ ssh_maxsessions }}'
+    state: present
+    dest: /etc/ssh/sshd_config
+    regexp: '^#MaxSessions|^MaxSessions'
+    line: 'MaxSessions {{ ssh_maxsessions }}'
 
-- name: Restart SSHD service
-  service:
-    name: sshd
-    state: reloaded
+- name: Ensure SSH service is running
+  systemd:
+    name: '{{ item }}'
+    state: started
+    enabled: yes
+  loop:
+    - ssh
+    - sshd
+  ignore_errors: yes
+
+- name: Reload SSH service configuration
+  shell: systemctl reload sshd 2>/dev/null || systemctl reload ssh 2>/dev/null || systemctl restart ssh
+  args:
+    executable: /bin/bash

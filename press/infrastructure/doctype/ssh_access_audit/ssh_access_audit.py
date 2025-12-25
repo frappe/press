@@ -7,17 +7,9 @@ import json
 from functools import cached_property
 
 import frappe
-from ansible import constants, context
-from ansible.executor.task_queue_manager import TaskQueueManager
-from ansible.inventory.manager import InventoryManager
-from ansible.module_utils.common.collections import ImmutableDict
-from ansible.parsing.dataloader import DataLoader
-from ansible.playbook.play import Play
-from ansible.plugins.callback import CallbackBase
-from ansible.vars.manager import VariableManager
 from frappe.model.document import Document
 
-from press.utils import reconnect_on_failure
+from press.runner import AnsibleAdHoc
 
 SERVER_TYPES = [
 	"Proxy Server",
@@ -83,15 +75,102 @@ class SSHAccessAudit(Document):
 
 	def fetch_keys_from_servers(self):
 		try:
+			# Create the SSH audit playbook
+			playbook = """---
+- name: SSH Access Audit
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Get users with shell access
+      shell: grep '/bin/.*sh' /etc/passwd | cut -f 1,6 -d ':'
+      register: users
+
+    - name: Get SSH authorized keys for each user
+      shell: cat {{item.split(':')[1]}}/.ssh/authorized_keys
+      ignore_errors: true
+      with_items: "{{users.stdout_lines}}"
+      register: ssh_keys
+"""
+			assert self.inventory, "Inventory is not set"
+			# Run the playbook
 			ad_hoc = AnsibleAdHoc(sources=self.inventory)
-			hosts = ad_hoc.run()
-			sorted_hosts = sorted(hosts, key=lambda host: self.inventory.index(host["host"]))
-			for host in sorted_hosts:
+			playbook_results = ad_hoc.run_playbook(playbook_content=playbook, forks=16)
+
+			# Process results
+			formatted_results = self._process_ssh_audit_results(playbook_results)
+
+			# Sort results based on inventory order
+			inventory_list = [s.strip() for s in self.inventory.split(",")]
+			sorted_results = sorted(
+				formatted_results,
+				key=lambda host: inventory_list.index(host["host"])
+				if host["host"] in inventory_list
+				else len(inventory_list),
+			)
+
+			# Add to document
+			for host in sorted_results:
 				self.append("hosts", host)
+
 		except Exception:
 			import traceback
 
 			traceback.print_exc()
+
+	def _process_ssh_audit_results(self, playbook_results):  # noqa: C901
+		"""Process playbook results into the format expected by SSH audit"""
+		formatted_results = []
+
+		for host, tasks in playbook_results.items():
+			# Check if host is unreachable
+			if any(task.get("status") == "unreachable" for task in tasks):
+				formatted_results.append(
+					{
+						"host": host,
+						"status": "Unreachable",
+						"users": "",
+					}
+				)
+				continue
+
+			# Process SSH keys task results
+			users = []
+			for task in tasks:
+				# Look for the task with results (the ssh_keys task)
+				if task.get("results"):
+					for item_result in task["results"]:
+						# Skip failed or skipped items
+						if item_result.get("failed") or item_result.get("skipped"):
+							continue
+
+						# Extract user info
+						user_info = {
+							"user": item_result["item"].split(":")[0],
+							"command": item_result.get("cmd", ""),
+							"keys": [],
+							"raw_keys": [],
+						}
+
+						# Process each key
+						for key_line in item_result.get("stdout_lines", []):
+							stripped_key = key_line.strip()
+							if stripped_key and not stripped_key.startswith("#"):
+								user_info["raw_keys"].append(key_line)
+								user_info["keys"].append(_extract_key_from_key_string(stripped_key))
+
+						users.append(user_info)
+					break
+
+			# Add formatted result
+			formatted_results.append(
+				{
+					"host": host,
+					"status": "Completed" if users else "Unreachable",
+					"users": json.dumps(users, indent=1, sort_keys=True) if users else "",
+				}
+			)
+
+		return formatted_results
 
 	def set_inventory(self):
 		all_servers = []
@@ -197,7 +276,7 @@ class SSHAccessAudit(Document):
 		document = frappe.get_doc(key_doctype, key_document)
 		if not hasattr(document, "user"):
 			return False
-		if "System Manager" in frappe.get_roles(document.user):
+		if "System Manager" in frappe.get_roles(document.user):  # type: ignore
 			return True
 		return False
 
@@ -229,123 +308,13 @@ class SSHAccessAudit(Document):
 		self.reachable_hosts = len([host for host in self.hosts if host.status == "Completed"])
 		self.total_known_violations = len(self.known_violations)
 		self.total_violations = len(self.violations)
-		self.user_violations = len(json.loads(self.suspicious_users))
+		self.user_violations = len(json.loads(self.suspicious_users)) if self.suspicious_users else 0
 
 	def set_status(self):
 		if self.violations or self.user_violations:
 			self.status = "Failure"
 		else:
 			self.status = "Success"
-
-
-class AnsibleAdHoc:
-	def __init__(self, sources):
-		constants.HOST_KEY_CHECKING = False
-		context.CLIARGS = ImmutableDict(
-			become_method="sudo",
-			check=False,
-			connection="ssh",
-			extra_vars=[],
-			remote_user="root",
-			start_at_task=None,
-			syntax=False,
-			verbosity=3,
-		)
-
-		self.loader = DataLoader()
-		self.passwords = dict({})
-
-		self.inventory = InventoryManager(loader=self.loader, sources=sources)
-		self.variable_manager = VariableManager(loader=self.loader, inventory=self.inventory)
-
-		self.callback = AnsibleCallback()
-
-	def run(self):
-		self.tasks = [
-			{
-				"action": {"module": "shell", "args": "grep '/bin/.*sh' /etc/passwd | cut -f 1,6 -d ':'"},
-				"register": "users",
-			},
-			{
-				"action": {"module": "shell", "args": "cat {{item.split(':')[1]}}/.ssh/authorized_keys"},
-				"ignore_errors": True,
-				"with_items": "{{users.stdout_lines}}",
-			},
-		]
-		source = dict(
-			name="Ansible Play",
-			hosts="all",
-			gather_facts="no",
-			tasks=self.tasks,
-		)
-
-		self.play = Play().load(source, variable_manager=self.variable_manager, loader=self.loader)
-
-		tqm = TaskQueueManager(
-			inventory=self.inventory,
-			variable_manager=self.variable_manager,
-			loader=self.loader,
-			passwords=self.passwords,
-			stdout_callback=self.callback,
-			forks=16,
-		)
-
-		try:
-			tqm.run(self.play)
-		finally:
-			tqm.cleanup()
-
-		return list(self.callback.hosts.values())
-
-
-class AnsibleCallback(CallbackBase):
-	def __init__(self, *args, **kwargs):
-		super().__init__(*args, **kwargs)
-		self.hosts = {}
-
-	def v2_runner_on_ok(self, result, *args, **kwargs):
-		self.update_task("Completed", result)
-
-	def v2_runner_on_failed(self, result, *args, **kwargs):
-		self.update_task("Completed", result)
-
-	def v2_runner_on_unreachable(self, result):
-		self.update_task("Unreachable", result)
-
-	@reconnect_on_failure()
-	def update_task(self, status, result):
-		host, raw_result = self.parse_result(result)
-		if raw_result:
-			# Only update on the last task (that has results)
-			users = []
-			for row in raw_result:
-				user = {
-					"user": row["item"].split(":")[0],
-					"command": row["cmd"],
-					"keys": [],
-					"raw_keys": [],
-				}
-				for key in row["stdout_lines"]:
-					stripped_key = key.strip()
-					if stripped_key and not stripped_key.startswith("#"):
-						user["raw_keys"].append(key)
-						user["keys"].append(_extract_key_from_key_string(stripped_key))
-
-				users.append(user)
-
-			self.hosts[host] = {
-				"users": json.dumps(users, indent=1, sort_keys=True),
-				"host": host,
-				"status": status,
-			}
-
-		elif status == "Unreachable":
-			self.hosts[host] = {"host": host, "status": status}
-
-	def parse_result(self, result):
-		host = result._host.get_name()
-		_result = result._result
-		return host, _result.get("results")
 
 
 def _extract_key_from_key_string(key_string):

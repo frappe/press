@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
@@ -38,7 +37,7 @@ class AnsiblePlay(Document):
 		variables: DF.Code
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"name",
 		"creation",
 		"status",
@@ -47,7 +46,7 @@ class AnsiblePlay(Document):
 		"duration",
 		"server",
 		"play",
-	]
+	)
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
@@ -66,8 +65,7 @@ class AnsiblePlay(Document):
 			doctype = poly_get_doctype(["Server", "Database Server"], server)
 			is_owned_by_team(doctype, server, raise_exception=True)
 
-		results = query.run(as_dict=1)
-		return results
+		return query.run(as_dict=1)
 
 	def get_doc(self, doc):
 		doc["tasks"] = frappe.get_all(
