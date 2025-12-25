@@ -5,16 +5,15 @@ import {
 	LoadingIndicator,
 	LoadingText,
 	Dialog,
-	Link,
 	Input,
 	Avatar,
-	GreenCheckIcon,
 	Dropdown,
 	FormControl,
 	ErrorMessage,
 	Autocomplete,
 	Spinner,
 } from 'frappe-ui';
+import { GreenCheckIcon } from 'frappe-ui/icons';
 import outsideClickDirective from './outsideClickDirective';
 
 let components = import.meta.glob('./*.vue', { eager: true }); // To get each component inside this folder
@@ -26,7 +25,6 @@ let globalFrappeUIComponents = {
 	Tooltip,
 	LoadingIndicator,
 	LoadingText,
-	Link,
 	Dialog,
 	Input,
 	GreenCheckIcon,
