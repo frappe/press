@@ -87,6 +87,7 @@ jobs:
           semgrep ci --config ./press-semgrep-rules.yml --config r/python.lang.correctness
 
   ui-tests:
+    needs: install
     name: Client
     runs-on: ubuntu-latest
     env:
@@ -233,7 +234,7 @@ jobs:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
         volumes:
-          - mariadb_data:/var/lib/mysql
+          - /data/mariadb_data:/var/lib/mysql
 
     steps:
       - name: Remove unnecessary files
@@ -297,7 +298,8 @@ jobs:
         id: yarn-cache-dir-path
         run: 'echo "::set-output name=dir::$(yarn cache dir)"'
 
-      - uses: actions/cache@v4
+      - name: Cache yarn
+        uses: actions/cache@v4
         id: yarn-cache
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
@@ -308,20 +310,25 @@ jobs:
       - name: Install
         run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
 
-      - name: Upload bench directory to artifact
-        uses: actions/upload-artifact@v4
+      - name: Cache bench directory
+        uses: actions/cache/save@v4
         with:
-          name: bench-dir-${{ github.run_id }}
+          key: bench-dir-${{ github.ref }}
           path: /home/runner/frappe-bench
-          retention-days: 1
 
-      - name: Upload mysql data directory to artifact
-        uses: actions/upload-artifact@v4
+      - name: Stop mariadb service
+        run: |
+          docker stop ${{ job.services.mariadb.id }}
+
+      - name: Change ownership of mariadb data directory (for caching)
+        run: |
+          sudo chown -R runner:runner /data/mariadb_data
+
+      - name: Cache mariadb data directory
+        uses: actions/cache/save@v4
         with:
-          name: mariadb-data-${{ github.run_id }}
-          path: mariadb_data
-          retention-days: 1
-
+          key: mariadb-data-${{ github.ref }}
+          path: /data/mariadb_data
 
   tests:
     needs: install
@@ -342,15 +349,22 @@ jobs:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
         volumes:
-          - mariadb_data:/var/lib/mysql
+          - /data/mariadb_data:/var/lib/mysql
 
     steps:
+      - name: Change ownership of mariadb data directory (for caching)
+        run: |
+          sudo chown -R runner:runner /data/mariadb_data
 
-      - name: Download mysql data directory artifact
-        uses: actions/download-artifact@v4
+      - name: Restore mariadb data directory from cache
+        uses: actions/cache/restore@v4
         with:
-          name: mariadb-data-${{ github.run_id }}
-          path: mariadb_data
+          key: mariadb-data-${{ github.ref }}
+          path: /data/mariadb_data
+
+      - name: Change ownership of mariadb data directory (post cache restore)
+        run: |
+          sudo chown -R runner:runner /data/mariadb_data
 
       - name: Remove unnecessary files
         run: |
@@ -373,15 +387,26 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Download bench directory artifact
-        uses: actions/download-artifact@v4
+      - name: Restore bench directory from cache
+        uses: actions/cache/restore@v4
         with:
-          name: bench-dir-${{ github.run_id }}
           path: /home/runner/frappe-bench
+          key: bench-dir-${{ github.ref }}
+
+      - name: Install Bench command
+        run: pip install frappe-bench
+
+      - name: Start Bench
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench start &> bench_start_logs.txt &
 
       - name: Add to Hosts
         run: |
           echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
+
+      - name: Tmate
+        uses: mxschmitt/action-tmate@v3
 
       - name: Expose GitHub Runtime
         uses: crazy-max/ghaction-github-runtime@v3
