@@ -220,14 +220,9 @@ jobs:
           name: press-dashboard
           flags: dashboard
 
-  tests:
+  install:
+    name: Setup Bench
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        container: [1, 2]
-
-    name: Server
 
     services:
       mariadb:
@@ -237,6 +232,8 @@ jobs:
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
+        volumes:
+          - mariadb_data:/var/lib/mysql
 
     steps:
       - name: Remove unnecessary files
@@ -254,6 +251,7 @@ jobs:
               then echo "Found merge conflicts"
               exit 1
           fi
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -309,6 +307,77 @@ jobs:
 
       - name: Install
         run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
+
+      - name: Upload bench directory to artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-dir-${{ github.run_id }}
+          path: /home/runner/frappe-bench
+          retention-days: 1
+
+      - name: Upload mysql data directory to artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mariadb-data-${{ github.run_id }}
+          path: mariadb_data
+          retention-days: 1
+
+
+  tests:
+    needs: install
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        container: [1, 2]
+
+    name: Server
+
+    services:
+      mariadb:
+        image: mariadb:10.6
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
+        volumes:
+          - mariadb_data:/var/lib/mysql
+
+    steps:
+
+      - name: Download mysql data directory artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mariadb-data-${{ github.run_id }}
+          path: mariadb_data
+
+      - name: Remove unnecessary files
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
+      - name: Clone
+        uses: actions/checkout@v4
+
+      - name: Check for valid Python & Merge Conflicts
+        run: |
+          python -m compileall -q -f "${GITHUB_WORKSPACE}"
+          if grep -lr --exclude-dir=node_modules "^<<<<<<< " "${GITHUB_WORKSPACE}"
+              then echo "Found merge conflicts"
+              exit 1
+          fi
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Download bench directory artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bench-dir-${{ github.run_id }}
+          path: /home/runner/frappe-bench
 
       - name: Add to Hosts
         run: |
