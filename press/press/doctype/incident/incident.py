@@ -218,13 +218,13 @@ class Incident(WebsiteGenerator):
 			self.comment_bench_web_err_log(self.down_bench)
 		self.save()
 
-	def get_last_n_lines_of_log(self, log: str, n: int = 1000) -> str:
+	def get_last_n_lines_of_log(self, log: str, n: int = 100) -> str:
 		# get last n lines of log
 		lines = log.splitlines()
 		return "\n".join(lines[-n:]) if len(lines) > n else log
 
 	def comment_bench_web_err_log(self, bench_name: str):
-		# get last 1000 lines of web.error.log from the bench
+		# get last 100 lines of web.error.log from the bench
 		bench: Bench = Bench("Bench", bench_name)
 		try:
 			log = bench.get_server_log("web.error.log")["web.error.log"]
@@ -233,7 +233,7 @@ class Incident(WebsiteGenerator):
 
 		self.add_comment(
 			"Comment",
-			f"""Last 1000 lines of web.error.log for bench {bench_name}:<br/><br/>
+			f"""Last 100 lines of web.error.log for bench {bench_name}:<br/><br/>
 <pre class="ql-code-block-container">
 {self.get_last_n_lines_of_log(log)}
 </pre>
