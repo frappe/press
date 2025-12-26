@@ -882,9 +882,11 @@ class Bench(Document):
 
 	def remove_scheduler_status(self, processes: list[SupervisorProcess]) -> list[SupervisorProcess]:
 		if self.is_this_version_or_above(14):
-			for p in processes:
-				if p["name"] == "frappe-bench-frappe-schedule" and p["status"] == "Exited":
-					processes.remove(p)
+			processes = [
+				p
+				for p in processes
+				if not (p["name"] == "frappe-bench-frappe-schedule" and p["status"] == "Exited")
+			]
 		return processes
 
 	def supervisorctl_status(self):
