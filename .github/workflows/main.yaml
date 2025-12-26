@@ -233,7 +233,7 @@ jobs:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
         volumes:
-          - mariadb_data:/var/lib/mysql
+          - /data/mariadb_data:/var/lib/mysql
 
     steps:
       - name: Remove unnecessary files
@@ -308,19 +308,17 @@ jobs:
       - name: Install
         run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
 
-      - name: Upload bench directory to artifact
-        uses: actions/upload-artifact@v4
+      - name: Cache bench directory
+        uses: actions/cache/save@v4
         with:
-          name: bench-dir-${{ github.run_id }}
+          key: bench-dir-${{ github.run_id }}
           path: /home/runner/frappe-bench
-          retention-days: 1
 
-      - name: Upload mysql data directory to artifact
-        uses: actions/upload-artifact@v4
+      - name: Cache mariadb data directory
+        uses: actions/cache/save@v4
         with:
-          name: mariadb-data-${{ github.run_id }}
-          path: mariadb_data
-          retention-days: 1
+          key: mariadb-data-${{ github.run_id }}
+          path: /data/mariadb_data
 
 
   tests:
@@ -346,11 +344,11 @@ jobs:
 
     steps:
 
-      - name: Download mysql data directory artifact
-        uses: actions/download-artifact@v4
+      - name: Restore mariadb data directory from cache
+        uses: actions/cache/restore@v4
         with:
-          name: mariadb-data-${{ github.run_id }}
-          path: mariadb_data
+          key: mariadb-data-${{ github.run_id }}
+          path: /data/mariadb_data
 
       - name: Remove unnecessary files
         run: |
@@ -373,11 +371,11 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Download bench directory artifact
-        uses: actions/download-artifact@v4
+      - name: Restore bench directory from cache
+        uses: actions/cache/restore@v4
         with:
-          name: bench-dir-${{ github.run_id }}
           path: /home/runner/frappe-bench
+          key: bench-dir-${{ github.run_id }}
 
       - name: Add to Hosts
         run: |
