@@ -194,8 +194,6 @@ export default {
 							{ label: 'Scale Up', value: 'Scale Up' },
 							{ label: 'Scale Down', value: 'Scale Down' },
 						],
-						default: 'Scale Up',
-						disabled: true,
 						required: true,
 					},
 				],

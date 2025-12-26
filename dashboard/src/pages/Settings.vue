@@ -40,7 +40,7 @@ const tabs = [
 			$session.isSystemUser,
 	},
 	{
-		label: 'Permissions',
+		label: 'Roles',
 		icon: icon('lock'),
 		routeName: 'SettingsPermission',
 		childrenRoutes: [

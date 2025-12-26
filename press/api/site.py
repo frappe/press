@@ -20,6 +20,7 @@ from frappe.utils.typing_validations import validate_argument_types
 from frappe.utils.user import is_system_user
 
 from press.access.support_access import has_support_access
+from press.guards import role_guard
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
@@ -1976,9 +1977,12 @@ def validate_group_for_upgrade(name, group_name):
 
 @frappe.whitelist()
 @protected("Site")
-def change_group_options(name):
-	from press.press.doctype.press_role.press_role import check_role_permissions
-
+@role_guard.document(
+	document_type=lambda _: "Release Group",
+	inject_values=True,
+	should_throw=False,
+)
+def change_group_options(name, release_groups=None):
 	team = get_current_team()
 	group, server, plan = frappe.db.get_value("Site", name, ["group", "server", "plan"])
 
@@ -2004,14 +2008,8 @@ def change_group_options(name):
 		.groupby(Bench.group)
 	)
 
-	if roles := check_role_permissions("Release Group"):
-		PressRolePermission = frappe.qb.DocType("Press Role Permission")
-
-		query = (
-			query.join(PressRolePermission)
-			.on(PressRolePermission.release_group == ReleaseGroup.name & PressRolePermission.role.isin(roles))
-			.distinct()
-		)
+	if release_groups and isinstance(release_groups, list):
+		query = query.where(ReleaseGroup.name.isin(release_groups))
 
 	return query.run(as_dict=True)
 
@@ -2111,9 +2109,12 @@ def change_region(name, cluster, scheduled_datetime=None, skip_failing_patches=F
 
 @frappe.whitelist()
 @protected("Site")
-def get_private_groups_for_upgrade(name, version):
-	from press.press.doctype.press_role.press_role import check_role_permissions
-
+@role_guard.document(
+	document_type=lambda _: "Release Group",
+	inject_values=True,
+	should_throw=False,
+)
+def get_private_groups_for_upgrade(name, version, release_groups=None):
 	team = get_current_team()
 	version_number = frappe.db.get_value("Frappe Version", version, "number")
 	next_version = frappe.db.get_value(
@@ -2141,14 +2142,8 @@ def get_private_groups_for_upgrade(name, version):
 		.distinct()
 	)
 
-	if roles := check_role_permissions("Release Group"):
-		PressRolePermission = frappe.qb.DocType("Press Role Permission")
-
-		query = (
-			query.join(PressRolePermission)
-			.on(PressRolePermission.release_group == ReleaseGroup.name & PressRolePermission.role.isin(roles))
-			.distinct()
-		)
+	if release_groups and isinstance(release_groups, list):
+		query = query.where(ReleaseGroup.name.isin(release_groups))
 
 	return query.run(as_dict=True)
 

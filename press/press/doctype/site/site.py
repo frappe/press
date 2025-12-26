@@ -43,6 +43,7 @@ from press.exceptions import (
 	SiteUnderMaintenance,
 	VolumeResizeLimitError,
 )
+from press.guards import role_guard
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
@@ -378,7 +379,7 @@ class Site(Document, TagHelpers):
 					else:
 						action_name_refined = func.__name__.replace("_", " ")
 						frappe.throw(
-							f"Site is in {frappe.bold(status)} state. You site have to be active to {frappe.bold(action_name_refined)}."
+							f"Site is in {frappe.bold(status.lower())} state. Your site have to be active to {frappe.bold(action_name_refined)}."
 						)
 				return func(inst, *args, **kwargs)
 
@@ -395,6 +396,7 @@ class Site(Document, TagHelpers):
 	def autoname(self):
 		self.name = self._get_site_name(self.subdomain)
 
+	@role_guard.action()
 	def validate(self):
 		if self.has_value_changed("subdomain"):
 			self.validate_site_name()
@@ -626,8 +628,6 @@ class Site(Document, TagHelpers):
 
 		if self.has_value_changed("team"):
 			frappe.db.set_value("Site Domain", {"site": self.name}, "team", self.team)
-			if not self.flags.in_insert:
-				frappe.db.delete("Press Role Permission", {"site": self.name})
 
 		if self.status not in [
 			"Pending",
@@ -842,10 +842,6 @@ class Site(Document, TagHelpers):
 		).insert(ignore_if_duplicate=True)
 
 	def after_insert(self):
-		from press.press.doctype.press_role.press_role import (
-			add_permission_for_newly_created_doc,
-		)
-
 		self.capture_signup_event("created_first_site")
 
 		if hasattr(self, "subscription_plan") and self.subscription_plan:
@@ -873,8 +869,6 @@ class Site(Document, TagHelpers):
 				site=self.name,
 				created_on=frappe.utils.now_datetime(),
 			).insert(ignore_permissions=True)
-
-		add_permission_for_newly_created_doc(self)
 
 		create_site_status_update_webhook_event(self.name)
 

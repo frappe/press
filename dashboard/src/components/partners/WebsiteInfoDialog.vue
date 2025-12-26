@@ -1,14 +1,19 @@
 <template>
 	<div class="flex flex-col gap-5">
-		<div class="flex flex-col gap-4">
-			<div v-for="field in fields" :key="field.fieldname">
+		<div
+			v-for="section in sections"
+			:key="section.name"
+			class="grid gap-5"
+			:class="'grid-cols-' + section.columns"
+		>
+			<div v-for="field in section.fields" :key="field.name">
 				<FormControl
 					v-model="websiteInfo[field.fieldname]"
-					:label="field.label"
+					:label="field.label || field.fieldname"
 					:type="getInputType(field)"
 					:name="field.fieldname"
+					:options="field.options"
 					:required="field.required"
-					:rows="10"
 				/>
 			</div>
 		</div>
@@ -45,23 +50,83 @@ function _updateWebsiteInfo() {
 	updateWebsiteInfo.submit();
 }
 
-const fields = computed(() => {
+const sections = computed(() => {
 	return [
 		{
-			fieldname: 'partner_website',
-			label: 'Website URL',
-			fieldtype: 'Data',
-			required: true,
+			name: 'Website & Contact',
+			columns: 2,
+			fields: [
+				{
+					fieldname: 'partner_website',
+					label: 'Website URL',
+					fieldtype: 'Data',
+					required: true,
+				},
+				{
+					fieldname: 'phone_number',
+					label: 'Contact',
+					fieldtype: 'Data',
+				},
+			],
 		},
 		{
-			fieldname: 'introduction',
-			label: 'Introduction',
-			fieldtype: 'Text',
+			name: 'Foundation',
+			columns: 2,
+			fields: [
+				{
+					fieldname: 'custom_journey_blog_link',
+					label: 'Journey Blog Link',
+					fieldtype: 'Data',
+				},
+				{
+					fieldname: 'custom_foundation_date',
+					label: 'Foundation Date',
+					fieldtype: 'Date',
+				},
+			],
 		},
 		{
-			fieldname: 'customers',
-			label: 'Customers',
-			fieldtype: 'Text',
+			name: 'Projects & Team',
+			columns: 2,
+			fields: [
+				{
+					fieldname: 'custom_team_size',
+					label: 'Team Size',
+					fieldtype: 'Int',
+				},
+				{
+					fieldname: 'custom_successful_projects_count',
+					label: 'Successfull Projects',
+					fieldtype: 'Int',
+				},
+			],
+		},
+		{
+			name: 'Address',
+			columns: 1,
+			fields: [
+				{
+					fieldname: 'address',
+					label: 'Address',
+					fieldtype: 'Text',
+				},
+			],
+		},
+		{
+			name: 'Additional Info',
+			columns: 2,
+			fields: [
+				{
+					fieldname: 'introduction',
+					label: 'Introduction',
+					fieldtype: 'Text',
+				},
+				{
+					fieldname: 'customers',
+					label: 'Customers',
+					fieldtype: 'Text',
+				},
+			],
 		},
 	];
 });

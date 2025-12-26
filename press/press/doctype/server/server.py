@@ -25,6 +25,7 @@ from frappe.utils.user import is_system_user
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.exceptions import VolumeResizeLimitError
+from press.guards import role_guard
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.add_on_storage_log.add_on_storage_log import (
 	insert_addon_storage_log,
@@ -32,6 +33,7 @@ from press.press.doctype.add_on_storage_log.add_on_storage_log import (
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.auto_scale_record.auto_scale_record import (
 	create_prometheus_rule_for_scaling,
+	is_secondary_ready_for_scale_down,
 	update_or_delete_prometheus_rule_for_scaling,
 )
 from press.press.doctype.communication_info.communication_info import get_communication_info
@@ -1089,8 +1091,6 @@ class BaseServer(Document, TagHelpers):
 		else:
 			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
 		self.disable_subscription()
-
-		frappe.db.delete("Press Role Permission", {"server": self.name})
 
 	def _archive(self):
 		self.run_press_job("Archive Server")
@@ -2276,6 +2276,7 @@ class Server(BaseServer):
 	GUNICORN_MEMORY = 150  # avg ram usage of 1 gunicorn worker
 	BACKGROUND_JOB_MEMORY = 3 * 80  # avg ram usage of 3 sets of bg workers
 
+	@role_guard.action()
 	def validate(self):
 		super().validate()
 		self.validate_managed_database_service()
@@ -2308,7 +2309,6 @@ class Server(BaseServer):
 		if not self.is_new() and self.has_value_changed("team"):
 			self.update_subscription()
 			self.update_db_server()
-			frappe.db.delete("Press Role Permission", {"server": self.name})
 
 		self.set_bench_memory_limits_if_needed(save=False)
 		if self.public:
@@ -2334,14 +2334,6 @@ class Server(BaseServer):
 
 		db_server.team = self.team
 		db_server.save()
-
-	def after_insert(self):
-		from press.press.doctype.press_role.press_role import (
-			add_permission_for_newly_created_doc,
-		)
-
-		super().after_insert()
-		add_permission_for_newly_created_doc(self)
 
 	def set_bench_memory_limits_if_needed(self, save: bool = False):
 		# Enable bench memory limits for public servers
@@ -3161,6 +3153,7 @@ class Server(BaseServer):
 			- Was the last auto scale modified before the cool of period (don't create new auto scale).
 			- There is a auto scale operation running on the server.
 			- There are no active sites on the server.
+			- Check if there are active deployments on primary server
 		"""
 		if not self.can_scale:
 			frappe.throw("Server is not configured for auto scaling", frappe.ValidationError)
@@ -3203,6 +3196,15 @@ class Server(BaseServer):
 		if not active_sites_on_primary and not active_sites_on_secondary:
 			frappe.throw("There are no active sites on this server!", frappe.ValidationError)
 
+		active_deployments = frappe.db.get_value(
+			"Bench", {"server": self.name, "status": ("in", ["Installing", "Pending"])}
+		)
+
+		if active_deployments:
+			frappe.throw(
+				"Please wait for all active deployments to complete before scaling the server.",
+			)
+
 	@dashboard_whitelist()
 	@frappe.whitelist()
 	def remove_automated_scaling_triggers(self, triggers: list[str]):
@@ -3224,6 +3226,10 @@ class Server(BaseServer):
 		self, metric: Literal["CPU", "Memory"], action: Literal["Scale Up", "Scale Down"], threshold: float
 	):
 		"""Configure automated scaling based on cpu loads"""
+
+		if not self.secondary_server:
+			frappe.throw("Please setup a secondary server to enable auto scaling", frappe.ValidationError)
+
 		threshold = round(threshold, 2)
 		existing_trigger = frappe.db.get_value(
 			"Auto Scale Trigger", {"action": action, "parent": self.name, "metric": metric}
@@ -3268,6 +3274,9 @@ class Server(BaseServer):
 			frappe.throw("Server is already scaled down", frappe.ValidationError)
 
 		self.validate_scale()
+
+		if is_automatically_triggered and not is_secondary_ready_for_scale_down(self):
+			return
 
 		auto_scale_record = self._create_auto_scale_record(action="Scale Down")
 		auto_scale_record.is_automatically_triggered = is_automatically_triggered
