@@ -130,6 +130,26 @@ jobs:
           node-version: 18
           check-latest: true
 
+      - name: Cache apt
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: redis-server libcups2-dev
+          version: 1.0 # Arbitrary version to bust cache when needed
+
+      - name: Cache wkhtmltopdf
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/wkhtmltopdf
+          key: ${{ runner.os }}-wkhtmltopdf-0.12.3
+
+      - name: Install wkhtmltopdf
+        run: |
+          wget -O /tmp/wkhtmltox.tar.xz https://github.com/frappe/wkhtmltopdf/raw/master/wkhtmltox-0.12.3_linux-generic-amd64.tar.xz
+          tar -xf /tmp/wkhtmltox.tar.xz -C /tmp
+          sudo mv /tmp/wkhtmltox/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf
+          sudo chmod o+x /usr/local/bin/wkhtmltopdf
+        if: steps.cache-wkhtmltopdf.outputs.cache-hit != 'true'
+
       - name: Cache pip
         uses: actions/cache@v4
         with:
@@ -242,6 +262,26 @@ jobs:
         with:
           node-version: 18
           check-latest: true
+
+      - name: Cache apt
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: redis-server libcups2-dev
+          version: 1.0 # Arbitrary version to bust cache when needed
+
+      - name: Cache wkhtmltopdf
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/wkhtmltopdf
+          key: ${{ runner.os }}-wkhtmltopdf-0.12.3
+
+      - name: Install wkhtmltopdf
+        run: |
+          wget -O /tmp/wkhtmltox.tar.xz https://github.com/frappe/wkhtmltopdf/raw/master/wkhtmltox-0.12.3_linux-generic-amd64.tar.xz
+          tar -xf /tmp/wkhtmltox.tar.xz -C /tmp
+          sudo mv /tmp/wkhtmltox/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf
+          sudo chmod o+x /usr/local/bin/wkhtmltopdf
+        if: steps.cache-wkhtmltopdf.outputs.cache-hit != 'true'
 
       - name: Cache pip
         uses: actions/cache@v4
