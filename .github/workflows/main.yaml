@@ -316,6 +316,10 @@ jobs:
           key: bench-dir-${{ github.ref }}
           path: /home/runner/frappe-bench
 
+      - name: Stop mariadb service
+        run: |
+          docker stop ${{ job.services.mariadb.id }}
+
       - name: Change ownership of mariadb data directory (for caching)
         run: |
           sudo chown -R runner:runner /data/mariadb_data
@@ -345,14 +349,22 @@ jobs:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
         volumes:
-          - mariadb_data:/var/lib/mysql
+          - /data/mariadb_data:/var/lib/mysql
 
     steps:
+      - name: Change ownership of mariadb data directory (for caching)
+        run: |
+          sudo chown -R runner:runner /data/mariadb_data
+
       - name: Restore mariadb data directory from cache
         uses: actions/cache/restore@v4
         with:
           key: mariadb-data-${{ github.ref }}
           path: /data/mariadb_data
+
+      - name: Change ownership of mariadb data directory (post cache restore)
+        run: |
+          sudo chown -R runner:runner /data/mariadb_data
 
       - name: Remove unnecessary files
         run: |
@@ -400,9 +412,6 @@ jobs:
         uses: docker/setup-buildx-action@v3
         with:
           install: true
-
-      - name: Tmate
-        uses: mxschmitt/action-tmate@v3
 
       - name: Run Tests
         working-directory: /home/runner/frappe-bench
