@@ -87,6 +87,7 @@ jobs:
           semgrep ci --config ./press-semgrep-rules.yml --config r/python.lang.correctness
 
   ui-tests:
+    needs: install
     name: Client
     runs-on: ubuntu-latest
     env:
@@ -130,6 +131,27 @@ jobs:
           node-version: 18
           check-latest: true
 
+      - name: Cache apt
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: redis-server libcups2-dev
+          version: 1.0 # Arbitrary version to bust cache when needed
+
+      - name: Cache wkhtmltopdf
+        id: cache-wkhtmltopdf
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/wkhtmltopdf
+          key: ${{ runner.os }}-wkhtmltopdf-0.12.3
+
+      - name: Install wkhtmltopdf
+        if: steps.cache-wkhtmltopdf.outputs.cache-hit != 'true'
+        run: |
+          wget -O /tmp/wkhtmltox.tar.xz https://github.com/frappe/wkhtmltopdf/raw/master/wkhtmltox-0.12.3_linux-generic-amd64.tar.xz
+          tar -xf /tmp/wkhtmltox.tar.xz -C /tmp
+          sudo mv /tmp/wkhtmltox/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf
+          sudo chmod o+x /usr/local/bin/wkhtmltopdf
+
       - name: Cache pip
         uses: actions/cache@v4
         with:
@@ -143,7 +165,8 @@ jobs:
         id: yarn-cache-dir-path
         run: 'echo "::set-output name=dir::$(yarn cache dir)"'
 
-      - uses: actions/cache@v4
+      - name: Cache yarn
+        uses: actions/cache@v4
         id: yarn-cache
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
@@ -198,14 +221,9 @@ jobs:
           name: press-dashboard
           flags: dashboard
 
-  tests:
+  install:
+    name: Setup Bench
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        container: [1, 2]
-
-    name: Server
 
     services:
       mariadb:
@@ -215,6 +233,8 @@ jobs:
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
+        volumes:
+          - /data/mariadb_data:/var/lib/mysql
 
     steps:
       - name: Remove unnecessary files
@@ -232,6 +252,7 @@ jobs:
               then echo "Found merge conflicts"
               exit 1
           fi
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -242,6 +263,27 @@ jobs:
         with:
           node-version: 18
           check-latest: true
+
+      - name: Cache apt
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: redis-server libcups2-dev
+          version: 1.0 # Arbitrary version to bust cache when needed
+
+      - name: Cache wkhtmltopdf
+        id: cache-wkhtmltopdf
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/wkhtmltopdf
+          key: ${{ runner.os }}-wkhtmltopdf-0.12.3
+
+      - name: Install wkhtmltopdf
+        if: steps.cache-wkhtmltopdf.outputs.cache-hit != 'true'
+        run: |
+          wget -O /tmp/wkhtmltox.tar.xz https://github.com/frappe/wkhtmltopdf/raw/master/wkhtmltox-0.12.3_linux-generic-amd64.tar.xz
+          tar -xf /tmp/wkhtmltox.tar.xz -C /tmp
+          sudo mv /tmp/wkhtmltox/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf
+          sudo chmod o+x /usr/local/bin/wkhtmltopdf
 
       - name: Cache pip
         uses: actions/cache@v4
@@ -256,7 +298,8 @@ jobs:
         id: yarn-cache-dir-path
         run: 'echo "::set-output name=dir::$(yarn cache dir)"'
 
-      - uses: actions/cache@v4
+      - name: Cache yarn
+        uses: actions/cache@v4
         id: yarn-cache
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
@@ -266,6 +309,97 @@ jobs:
 
       - name: Install
         run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
+
+      - name: Cache bench directory
+        uses: actions/cache/save@v4
+        with:
+          key: bench-dir-${{ github.ref }}
+          path: /home/runner/frappe-bench
+
+      - name: Stop mariadb service
+        run: |
+          docker stop ${{ job.services.mariadb.id }}
+
+      - name: Change ownership of mariadb data directory (for caching)
+        run: |
+          sudo chown -R runner:runner /data/mariadb_data
+
+      - name: Cache mariadb data directory
+        uses: actions/cache/save@v4
+        with:
+          key: mariadb-data-${{ github.ref }}
+          path: /data/mariadb_data
+
+  tests:
+    needs: install
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        container: [1, 2]
+
+    name: Server
+
+    services:
+      mariadb:
+        image: mariadb:10.6
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
+        volumes:
+          - /data/mariadb_data:/var/lib/mysql
+
+    steps:
+      - name: Change ownership of mariadb data directory (for caching)
+        run: |
+          sudo chown -R runner:runner /data/mariadb_data
+
+      - name: Restore mariadb data directory from cache
+        uses: actions/cache/restore@v4
+        with:
+          key: mariadb-data-${{ github.ref }}
+          path: /data/mariadb_data
+
+      - name: Change ownership of mariadb data directory (post cache restore)
+        run: |
+          sudo chown -R runner:runner /data/mariadb_data
+
+      - name: Remove unnecessary files
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
+      - name: Clone
+        uses: actions/checkout@v4
+
+      - name: Check for valid Python & Merge Conflicts
+        run: |
+          python -m compileall -q -f "${GITHUB_WORKSPACE}"
+          if grep -lr --exclude-dir=node_modules "^<<<<<<< " "${GITHUB_WORKSPACE}"
+              then echo "Found merge conflicts"
+              exit 1
+          fi
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Restore bench directory from cache
+        uses: actions/cache/restore@v4
+        with:
+          path: /home/runner/frappe-bench
+          key: bench-dir-${{ github.ref }}
+
+      - name: Install Bench command
+        run: pip install frappe-bench
+
+      - name: Start Bench
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench start &> bench_start_logs.txt &
 
       - name: Add to Hosts
         run: |
