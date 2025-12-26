@@ -310,7 +310,7 @@ class Bench(Document):
 				"Managed Database Service", self.managed_database_service, "port"
 			)
 
-		press_settings_common_site_config = frappe.db.get_single_value(
+		press_settings_common_site_config: str = frappe.db.get_single_value(
 			"Press Settings", "bench_configuration"
 		)
 		if press_settings_common_site_config:
@@ -318,7 +318,9 @@ class Bench(Document):
 
 		self.update_config_with_rg_config(config)
 
-		server_private_ip = frappe.db.get_value("Server", self.server, "private_ip")
+		if not (server_private_ip := frappe.db.get_value("Server", self.server, "private_ip")):
+			frappe.throw("Server must have a private IP to create Bench")
+
 		bench_config = {
 			"docker_image": self.docker_image,
 			"web_port": 18000 + self.port_offset,
