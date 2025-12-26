@@ -45,6 +45,7 @@ def create_test_virtual_machine(
 			"vcpu": 4,
 			"platform": platform,
 			"cloud_provider": cloud_provider,
+			"public_ip_address": ip,
 		}
 	).insert(ignore_if_duplicate=True)
 
