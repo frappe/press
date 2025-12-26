@@ -137,6 +137,7 @@ jobs:
           version: 1.0 # Arbitrary version to bust cache when needed
 
       - name: Cache wkhtmltopdf
+        id: cache-wkhtmltopdf
         uses: actions/cache@v4
         with:
           path: /usr/local/bin/wkhtmltopdf
@@ -163,7 +164,8 @@ jobs:
         id: yarn-cache-dir-path
         run: 'echo "::set-output name=dir::$(yarn cache dir)"'
 
-      - uses: actions/cache@v4
+      - name: Cache yarn
+        uses: actions/cache@v4
         id: yarn-cache
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
