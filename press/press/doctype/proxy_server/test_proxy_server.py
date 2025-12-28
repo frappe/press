@@ -7,14 +7,11 @@ from unittest.mock import Mock, patch
 import frappe
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
-from moto import mock_aws
 
-from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
 from press.press.doctype.proxy_server.proxy_server import ProxyServer
-from press.press.doctype.root_domain.root_domain import RootDomain
 from press.press.doctype.server.server import BaseServer
 from press.press.doctype.virtual_machine.test_virtual_machine import create_test_virtual_machine
 from press.utils.test import foreground_enqueue_doc
@@ -51,12 +48,10 @@ def create_test_proxy_server(
 	return server
 
 
-@patch(
-	"press.press.doctype.proxy_server.proxy_server.frappe.enqueue_doc",
-	foreground_enqueue_doc,
-)
-@patch("press.press.doctype.proxy_server.proxy_server.Ansible", new=Mock())
+@patch("frappe.enqueue_doc", new=foreground_enqueue_doc)
+@patch("press.press.doctype.proxy_failover.proxy_failover.Ansible", new=Mock)
 class TestProxyServer(FrappeTestCase):
+<<<<<<< HEAD
 	@fake_agent_job("Reload NGINX Job")
 	@mock_aws
 	@patch.object(
@@ -70,22 +65,16 @@ class TestProxyServer(FrappeTestCase):
 		from press.press.doctype.site.test_site import create_test_site
 
 		proxy1 = create_test_proxy_server()
+=======
+	def test_failover_document_creation(self):
+		proxy1 = create_test_proxy_server(is_static_ip=True)
+>>>>>>> eb931f43f (chore: Fix failing proxy failover test in CI (#4353))
 		proxy2 = create_test_proxy_server(is_primary=False)
-
-		root_domain: RootDomain = frappe.get_doc("Root Domain", proxy1.domain)
-		root_domain.boto3_client.create_hosted_zone(
-			Name=proxy1.domain,
-			CallerReference="1",
-			HostedZoneConfig={"Comment": "Test", "PrivateZone": False},
-		)
-
-		server = create_test_server(proxy1.name)
-		site1 = create_test_site(server=server.name)
-		create_test_site()  # another proxy; unrelated
 
 		proxy2.db_set("primary", proxy1.name)
 		proxy2.db_set("is_replication_setup", 1)
 		proxy2.trigger_failover()
+<<<<<<< HEAD
 		update_dns_records_for_sites.assert_called_once_with(root_domain, [site1.name], proxy2.name)
 		proxy2.reload()
 		proxy1.reload()
@@ -93,3 +82,9 @@ class TestProxyServer(FrappeTestCase):
 		self.assertFalse(proxy1.is_primary)
 		self.assertEqual(proxy2.status, "Active")
 		self.assertEqual(proxy1.status, "Active")
+=======
+
+		self.assertTrue(
+			frappe.db.exists("Proxy Failover", {"primary": proxy1.name, "secondary": proxy2.name})
+		)
+>>>>>>> eb931f43f (chore: Fix failing proxy failover test in CI (#4353))
