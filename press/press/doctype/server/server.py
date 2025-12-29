@@ -649,6 +649,8 @@ class BaseServer(Document, TagHelpers):
 				ansible = Ansible(playbook="aws.yml", server=self, user="ubuntu")
 			elif self.provider == "OCI":
 				ansible = Ansible(playbook="oci.yml", server=self, user="ubuntu")
+			elif self.provider == "Vodacom":
+				ansible = Ansible(playbook="vodacom.yml", server=self, user="ubuntu")
 			if self.provider != "Generic":
 				ansible.run()
 
@@ -2243,7 +2245,7 @@ class Server(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom"]
 		proxy_server: DF.Link | None
 		public: DF.Check
 		ram: DF.Float
