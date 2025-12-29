@@ -13,17 +13,18 @@ from frappe import _
 from frappe.core.doctype.user.user import update_password
 from frappe.core.utils import find
 from frappe.exceptions import DoesNotExistError
+<<<<<<< HEAD
 from frappe.query_builder.custom import GROUP_CONCAT
 from frappe.query_builder.functions import Count
+=======
+>>>>>>> d649d0f47 (chore(core): Remove `Press Permission Group`)
 from frappe.rate_limiter import rate_limit
 from frappe.utils import cint, get_url
 from frappe.utils.data import sha256_hash
 from frappe.utils.oauth import get_oauth2_authorize_url, get_oauth_keys
 from frappe.utils.password import get_decrypted_password
 from frappe.website.utils import build_response
-from pypika.terms import ValueWrapper
 
-from press.api.site import protected
 from press.guards import mfa
 from press.press.doctype.team.team import (
 	Team,
@@ -539,7 +540,6 @@ def _get():
 		"partner_email": team_doc.partner_email or "",
 		"partner_billing_name": partner_billing_name,
 		"number_of_sites": number_of_sites,
-		"permissions": get_permissions(),
 		"billing_info": team_doc.billing_info(),
 	}
 
@@ -553,23 +553,6 @@ def current_team():
 	from press.api.client import get
 
 	return get("Team", frappe.local.team().name)
-
-
-def get_permissions():
-	user = frappe.session.user
-	groups = tuple(
-		[*frappe.get_all("Press Permission Group User", {"user": user}, pluck="parent"), "1", "2"]
-	)  # [1, 2] is for avoiding singleton tuples
-	docperms = frappe.db.sql(
-		f"""
-			SELECT `document_name`, GROUP_CONCAT(`action`) as `actions`
-			FROM `tabPress User Permission`
-			WHERE user='{user}' or `group` in {groups}
-			GROUP BY `document_name`
-		""",
-		as_dict=True,
-	)
-	return {perm.document_name: perm.actions.split(",") for perm in docperms if perm.actions}
 
 
 @frappe.whitelist()
@@ -1068,6 +1051,7 @@ def fuse_list():
 	return frappe.db.sql(query, as_dict=True)
 
 
+<<<<<<< HEAD
 # Permissions
 @frappe.whitelist()
 def get_permission_options(name, ptype):
@@ -1207,6 +1191,10 @@ def remove_permission_group_user(name, user):
 
 
 def has_user_permission(key: str):
+=======
+@frappe.whitelist()
+def get_permission_roles():
+>>>>>>> d649d0f47 (chore(core): Remove `Press Permission Group`)
 	PressRole = frappe.qb.DocType("Press Role")
 	PressRoleUser = frappe.qb.DocType("Press Role User")
 	return (
