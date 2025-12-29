@@ -30,8 +30,8 @@ class MarketplaceAppPayment(Document):
 		"""
 		press_settings = frappe.get_cached_doc("Press Settings")
 		exchange_rate = press_settings.usd_rate or 80
-		threshold = press_settings.threshold or 500
-		commission_rate = press_settings.commission or 0.20
+		threshold = press_settings.threshold
+		commission_rate = press_settings.commission
 
 		# Calculate current total in USD
 		current_total = self.total_usd + (self.total_inr / exchange_rate)

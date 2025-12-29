@@ -400,7 +400,7 @@ def send_unpaid_payout_order_notification():
 	try:
 		frappe.sendmail(
 			recipients=email,
-			subject=f"Marketplace App Payout Reminder: {total_orders} Unpaid Order(s) Pending",
+			subject=f"Marketplace App Payout Reminder: {len(unpaid_orders)} Unpaid Order(s) Pending",
 			template="payout_reminder",
 			args={
 				"total_orders": len(unpaid_orders),
@@ -412,7 +412,7 @@ def send_unpaid_payout_order_notification():
 	except Exception as e:
 		frappe.log_error(
 			title="Failed to Send Payout Reminder Email",
-			message=f"Error sending marketplace payout reminder to {marketplace_settings.email}: {e!s}",
+			message=f"Error sending marketplace payout reminder to {email}: {e!s}",
 		)
 
 
