@@ -27,6 +27,15 @@ jobs:
         with:
           python-version: '3.10'
 
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/*dev-requirements.txt, **/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
+
       - name: Install dependencies
         run: |
           pip install -r dev-requirements.txt
@@ -144,7 +153,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/*dev-requirements.txt, **/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
           restore-keys: |
             ${{ runner.os }}-pip-
             ${{ runner.os }}-
