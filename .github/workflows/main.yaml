@@ -173,7 +173,7 @@ jobs:
       - name: Cache bench directory
         uses: actions/cache/save@v4
         with:
-          key: bench-dir-${{ github.run.id }}
+          key: bench-dir-${{ github.run_id }}
           path: /home/runner/frappe-bench
 
       - name: Stop mariadb service
@@ -187,7 +187,7 @@ jobs:
       - name: Cache mariadb data directory
         uses: actions/cache/save@v4
         with:
-          key: mariadb-data-${{ github.run.id }}
+          key: mariadb-data-${{ github.run_id }}
           path: /data/mariadb_data
 
   ui-tests:
@@ -211,7 +211,7 @@ jobs:
       - name: Restore mariadb data directory from cache
         uses: actions/cache/restore@v4
         with:
-          key: mariadb-data-${{ github.run.id }}
+          key: mariadb-data-${{ github.run_id }}
           path: /data/mariadb_data
 
       - name: Change ownership of mariadb data directory (post cache restore)
@@ -283,7 +283,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: /home/runner/frappe-bench
-          key: bench-dir-${{ github.run.id }}
+          key: bench-dir-${{ github.run_id }}
 
       - name: Install Bench command
         run: pip install frappe-bench
@@ -358,7 +358,7 @@ jobs:
       - name: Restore mariadb data directory from cache
         uses: actions/cache/restore@v4
         with:
-          key: mariadb-data-${{ github.run.id }}
+          key: mariadb-data-${{ github.run_id }}
           path: /data/mariadb_data
 
       - name: Change ownership of mariadb data directory (post cache restore)
@@ -396,7 +396,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: /home/runner/frappe-bench
-          key: bench-dir-${{ github.run.id }}
+          key: bench-dir-${{ github.run_id }}
 
       - name: Install Bench command
         run: pip install frappe-bench
