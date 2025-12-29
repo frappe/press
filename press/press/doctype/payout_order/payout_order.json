@@ -42,6 +42,7 @@
    "label": "Due Date"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "frappe_purchase_order",
    "fieldtype": "Data",
    "label": "Frappe Purchase Order"
@@ -194,7 +195,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-21 09:07:21.296395",
+ "modified": "2025-12-29 15:16:32.571022",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payout Order",

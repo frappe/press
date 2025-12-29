@@ -31,16 +31,23 @@ def get_totals_from_submitted_payout_orders():
 		"Payout Order",
 		filters={"type": "Marketplace", "docstatus": 1},
 	)
-
 	for po_data in payout_orders:
-		po = frappe.get_doc("Payout Order", po_data.name)
-
-		# Track totals by currency
 		commission_inr = 0.0
 		commission_usd = 0.0
 
-		# Process each item in the payout order
+		po = frappe.get_doc("Payout Order", po_data.name)
 		for item in po.items:
+			if item.document_type != "Marketplace App":
+				return
+
+			subscription_type = frappe.get_cached_value(
+				"Marketplace App", item.document_name, "subscription_type"
+			)
+			if (
+				subscription_type == "Free"
+			):  # to filter out older 'App revenue Sharing' payout orders since that type didn't initially exist
+				return
+
 			if item.currency == "INR":
 				commission_inr += flt(item.commission)
 			elif item.currency == "USD":
@@ -49,21 +56,23 @@ def get_totals_from_submitted_payout_orders():
 			update_app_payment_record(
 				item.document_name, item.currency, flt(item.total_amount), flt(item.commission)
 			)
+		_calculate_payout_order_commission(po, commission_inr, commission_usd)
 
-		# Calculate total commission in recipient currency
-		exchange_rate = frappe.db.get_single_value("Press Settings", "usd_rate") or 80
-		if po.recipient_currency == "USD":
-			inr_in_usd = 0
-			if commission_inr > 0:
-				inr_in_usd = commission_inr / exchange_rate
-			commission = commission_usd + inr_in_usd
-		elif po.recipient_currency == "INR":
-			commission = commission_inr + (commission_usd * exchange_rate)
-		else:
-			commission = 0
 
-		# Update the newly added commission field
-		frappe.db.set_value("Payout Order", po.name, "commission", commission)
+def _calculate_payout_order_commission(payout_order, commission_inr, commission_usd):
+	# Calculate total commission in recipient currency
+	exchange_rate = frappe.db.get_single_value("Press Settings", "usd_rate") or 80
+	if payout_order.recipient_currency == "USD":
+		inr_in_usd = 0
+		if commission_inr > 0:
+			inr_in_usd = commission_inr / exchange_rate
+		commission = commission_usd + inr_in_usd
+	elif payout_order.recipient_currency == "INR":
+		commission = commission_inr + (commission_usd * exchange_rate)
+	else:
+		commission = 0
+
+	frappe.db.set_value("Payout Order", payout_order.name, "commission", commission)
 
 
 def update_app_payment_record(app_name, currency, item_amount, item_commission):
