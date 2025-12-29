@@ -19,11 +19,10 @@ sed -i 's/redis_socketio:/# redis_socketio:/g' Procfile
 
 bench get-app press "${GITHUB_WORKSPACE}"
 
-bench setup requirements --dev
+bench setup requirements
 
-bench start &> bench_start_logs.txt &
 CI=Yes bench build --app frappe &
-bench new-site --no-mariadb-socket --db-root-password root --admin-password admin test_site
+bench new-site --db-root-password root --admin-password admin test_site
 bench --site test_site install-app press
 bench set-config -g server_script_enabled 1
 bench set-config -g http_port 8000

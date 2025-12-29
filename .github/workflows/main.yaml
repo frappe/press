@@ -270,6 +270,14 @@ jobs:
       - name: Install Bench command
         run: pip install frappe-bench
 
+      - name: Don't run unnecessary services
+        working-directory: /home/runner/frappe-bench
+        run: |
+          sed -i 's/watch:/# watch:/g' Procfile
+          sed -i 's/schedule:/# schedule:/g' Procfile
+          sed -i 's/socketio:/# socketio:/g' Procfile
+          sed -i 's/redis_socketio:/# redis_socketio:/g' Procfile
+
       - name: Start Bench
         working-directory: /home/runner/frappe-bench
         run: |
