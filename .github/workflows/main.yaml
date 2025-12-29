@@ -97,11 +97,6 @@ jobs:
           - /data/mariadb_data:/var/lib/mysql
 
     steps:
-      - name: Remove unnecessary files
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-
       - name: Clone
         uses: actions/checkout@v4
 
@@ -230,11 +225,6 @@ jobs:
             --health-timeout=2s \
             --health-retries=3 \
             mariadb:10.6
-
-      - name: Remove unnecessary files
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
       - name: Clone
         uses: actions/checkout@v4
