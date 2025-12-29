@@ -159,6 +159,7 @@ def create_user_resource(document: Document, _):
 	)
 	if (not user) or (not roles_enabled) or team.is_team_owner() or team.is_admin_user():
 		return
+
 	frappe.get_doc(
 		{
 			"doctype": "Press Role",
@@ -176,4 +177,4 @@ def create_user_resource(document: Document, _):
 				}
 			],
 		}
-	).save()
+	).save(ignore_permissions=True)
