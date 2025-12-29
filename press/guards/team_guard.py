@@ -27,7 +27,7 @@ def only_owner(team: Callable[[Document, OrderedDict], str] = lambda document, _
 			bound_args = inspect.signature(fn).bind(self, *args, **kwargs)
 			bound_args.apply_defaults()
 			t = team(self, bound_args.arguments)
-			d: Team = frappe.get_cached_doc("Team", t)
+			d: Team = frappe.get_doc("Team", t)
 			if not d.is_team_owner():
 				message = _("Only team owner can perform this action.")
 				frappe.throw(message, frappe.PermissionError)
@@ -57,7 +57,7 @@ def only_admin(
 			if skip(self, bound_args.arguments):
 				return fn(self, *args, **kwargs)
 			t = team(self, bound_args.arguments)
-			d: Team = frappe.get_cached_doc("Team", t)
+			d: Team = frappe.get_doc("Team", t)
 			if not (d.is_team_owner() or d.is_admin_user()):
 				message = _("Only team admin can perform this action.")
 				frappe.throw(message, frappe.PermissionError)
