@@ -15,8 +15,12 @@ concurrency:
 
 jobs:
   format:
-    name: 'Lint and Format'
+    name: Lint and Format
     runs-on: ubuntu-latest
+    outputs:
+      changed-python: ${{ steps.changed-python-files.outputs.any_changed }}
+      changed-json: ${{ steps.changed-json-files.outputs.any_changed }}
+      changed-js-vue: ${{ steps.changed-js-vue-files.outputs.any_changed }}
 
     steps:
       - name: Checkout code
@@ -40,12 +44,27 @@ jobs:
         run: |
           pip install -r dev-requirements.txt
 
-      - name: Get changed files
+      - name: Get changed python files
         id: changed-python-files
         uses: tj-actions/changed-files@v45
         with:
           files: |
             **.py
+
+      - name: Get changed json files
+        id: changed-json-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            **.json
+
+      - name: Get changed js or vue files
+        id: changed-js-vue-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            **.js
+            **.vue
 
       - name: List all changed files
         if: steps.changed-python-files.outputs.any_changed == 'true'
@@ -92,7 +111,9 @@ jobs:
 
   install:
     name: Setup Bench
+    needs: format
     runs-on: ubuntu-latest
+    if: needs.format.outputs.changed-python == 'true' || needs.format.outputs.changed-json == 'true' || needs.format.outputs.changed-js-vue == 'true'
 
     services:
       mariadb:
@@ -195,7 +216,7 @@ jobs:
           path: /data/mariadb_data
 
   ui-tests:
-    needs: install
+    needs: [format, install]
     name: Client
     runs-on: ubuntu-latest
     env:
@@ -336,14 +357,15 @@ jobs:
           name: press-dashboard
           flags: dashboard
 
-  tests:
-    needs: install
+  server-tests:
+    needs: [format, install]
     name: Server
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         container: [1, 2, 3]
+    if: needs.format.outputs.changed-python == 'true' || needs.format.outputs.changed-json == 'true'
 
     steps:
       - name: Create mariadb data directory
@@ -443,7 +465,7 @@ jobs:
   coverage:
     name: Coverage Wrap Up
     if: always()
-    needs: tests
+    needs: server-tests
     runs-on: ubuntu-latest
     steps:
       - name: Clone
