@@ -63,8 +63,11 @@ class AnsibleCallback(CallbackBase):
 		self.update_task("Success", result)
 		self.process_task_success(result)
 
-	def v2_runner_on_failed(self, result, *args, **kwargs):
-		self.update_task("Failure", result)
+	def v2_runner_on_failed(self, result, ignore_errors=False, *args, **kwargs):
+		if ignore_errors:
+			self.update_task("Ignored", result)
+		else:
+			self.update_task("Failure", result)
 
 	def v2_runner_on_skipped(self, result):
 		self.update_task("Skipped", result)
