@@ -153,17 +153,18 @@ def create_user_resource(document: Document, _):
 		frappe.db.exists(
 			{
 				"doctype": "Press Role",
-				"team": get_current_team(),
+				"team": team.name,
 			}
 		)
 	)
 	if (not user) or (not roles_enabled) or team.is_team_owner() or team.is_admin_user():
 		return
+
 	frappe.get_doc(
 		{
 			"doctype": "Press Role",
 			"title": user + " / " + document.name,
-			"team": team,
+			"team": team.name,
 			"users": [
 				{
 					"user": user,
@@ -176,4 +177,4 @@ def create_user_resource(document: Document, _):
 				}
 			],
 		}
-	).save()
+	).save(ignore_permissions=True)
