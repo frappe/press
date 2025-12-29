@@ -153,7 +153,7 @@ def create_user_resource(document: Document, _):
 		frappe.db.exists(
 			{
 				"doctype": "Press Role",
-				"team": get_current_team(),
+				"team": team.name,
 			}
 		)
 	)
@@ -163,7 +163,7 @@ def create_user_resource(document: Document, _):
 		{
 			"doctype": "Press Role",
 			"title": user + " / " + document.name,
-			"team": team,
+			"team": team.name,
 			"users": [
 				{
 					"user": user,
