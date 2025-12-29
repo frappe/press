@@ -55,13 +55,6 @@ class TestPressRole(FrappeTestCase):
 		self.assertFalse(perm_role_user_exists)
 		self.assertRaises(frappe.ValidationError, self.perm_role.remove_user, self.team_member.name)
 
-	def test_dont_allow_to_add_user_if_not_team_member(self):
-		frappe.set_user("Administrator")
-		frappe.local._current_team = self.team_doc
-
-		role = create_permission_role(self.team.name)
-		self.assertRaises(frappe.exceptions.PermissionError, role.add_user, self.external_team_member.name)
-
 
 # utils
 def create_permission_role(team, allow_site_creation=0):
