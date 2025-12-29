@@ -388,8 +388,8 @@ class Team(Document):
 			roles = (
 				frappe.qb.from_(PressRole)
 				.join(PressRoleUser)
-				.on(PressRole.name == PressRoleUser.parent)
-				.where(PressRoleUser.user == member)
+				.on((PressRoleUser.parent == PressRole.name) & (PressRoleUser.user == member))
+				.where(PressRole.team == self.name)
 				.select(PressRole.name)
 				.run(as_dict=True, pluck="name")
 			)
