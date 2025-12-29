@@ -330,6 +330,7 @@ class Site(Document, TagHelpers):
 		doc.current_usage = self.current_usage
 		doc.current_plan = get("Site Plan", self.plan) if self.plan else None
 		doc.last_updated = self.last_updated
+		doc.creation_failure_retention_days = CREATION_FAILURE_RETENTION_DAYS
 		doc.has_scheduled_updates = bool(
 			frappe.db.exists("Site Update", {"site": self.name, "status": "Scheduled"})
 		)
@@ -4824,7 +4825,7 @@ def archive_creation_failed_sites():
 	filters = [
 		["creation_failed", "!=", None],
 		["creation_failed", "<", creation_failure_retention_date],
-		["status", "!=", "Archived"],
+		["status", "=", "Broken"],
 	]
 
 	failed_sites = frappe.db.get_all("Site", filters=filters, fields=["name"], pluck="name")
@@ -4833,7 +4834,7 @@ def archive_creation_failed_sites():
 		try:
 			site = Site("Site", site)
 			site.archive(
-				reason="Site creation failed and was not restored within 7 days",
+				reason=f"Site creation failed and was not restored within {CREATION_FAILURE_RETENTION_DAYS} days"
 			)
 			frappe.db.commit()
 		except Exception:
