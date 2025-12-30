@@ -11,3 +11,8 @@
         name: lsyncd
         enabled: no
         state: stopped
+
+    - name: Stop NGINX Reload Manager
+      command: 'sudo supervisorctl stop agent:nginx_reload_manager'
+      args:
+        chdir: /home/frappe/agent

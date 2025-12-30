@@ -305,7 +305,6 @@ class ProxyServer(BaseServer):
 
 	@frappe.whitelist()
 	def trigger_failover(self):
-		# TODO: should also be automatic based on monitoring/some kind of health check mechanism
 		if self.is_primary:
 			return None
 
