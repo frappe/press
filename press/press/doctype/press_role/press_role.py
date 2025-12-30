@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.query_builder.functions import Count
 
 from press.api.client import dashboard_whitelist
 from press.guards import team_guard
@@ -157,7 +158,14 @@ def create_user_resource(document: Document, _):
 			}
 		)
 	)
-	if (not user) or (not roles_enabled) or team.is_team_owner() or team.is_admin_user():
+
+	if (
+		(not user)
+		or (not roles_enabled)
+		or (not user_has_roles())
+		or team.is_team_owner()
+		or team.is_admin_user()
+	):
 		return
 
 	frappe.get_doc(
@@ -178,3 +186,19 @@ def create_user_resource(document: Document, _):
 			],
 		}
 	).save(ignore_permissions=True)
+
+
+def user_has_roles() -> bool:
+	PressRole = frappe.qb.DocType("Press Role")
+	PressRoleUser = frappe.qb.DocType("Press Role User")
+	return (
+		frappe.qb.from_(PressRole)
+		.inner_join(PressRoleUser)
+		.on(PressRole.name == PressRoleUser.parent)
+		.where(PressRole.team == get_current_team())
+		.where(PressRoleUser.user == frappe.session.user)
+		.select(Count(PressRole.name).as_("role_count"))
+		.run(as_dict=True)
+		.pop()
+		.get("role_count", 0)
+	) > 0
