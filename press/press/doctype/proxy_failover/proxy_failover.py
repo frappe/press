@@ -1,13 +1,14 @@
 # Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
 
-import os
 from contextlib import suppress
 from itertools import groupby
 
 import frappe
 from frappe.model.document import Document
 
+from press.press.doctype.agent_job.agent_job import Agent, handle_polled_jobs, poll_random_jobs
+from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.runner import Ansible, Status, StepHandler
 
 
@@ -33,28 +34,28 @@ class ProxyFailover(Document, StepHandler):
 		self.status = "Pending"
 
 		primary = frappe.db.get_value("Proxy Server", self.primary, ["cluster", "is_static_ip"], as_dict=True)
-		secondary = frappe.db.get_value("Proxy Server", self.secondary, ["cluster", "is_static_ip"], as_dict=True)
+		secondary = frappe.db.get_value(
+			"Proxy Server", self.secondary, ["cluster", "is_static_ip"], as_dict=True
+		)
 
 		if secondary.cluster != primary.cluster:
 			frappe.throw("Failover can only be initiated between Proxy Servers in the same Cluster")
 
 		if not primary.is_static_ip and not secondary.is_static_ip:
-			frappe.throw(
-				"Failover can only be initiated if one of the proxy server has a static IP"
-			)
+			frappe.throw("Failover can only be initiated if one of the proxy server has a static IP")
 
 		# TODO: people keep bringing up ttl - what's it's significance?
 		# TODO: get recursive hash from primary & seconary and check what's the difference
-		# TODO: maybe run a lot of stuff via ansible - as we want to halt agent jobs as soon as possible on primary
 
 		for step in self.get_steps(
 			[
 				self.halt_agent_jobs_on_primary,
+				self.wait_for_pending_agent_jobs_to_complete,
 				self.stop_replication,
+				self.replicate_once_manually,
 				self.attach_static_ip_to_secondary,
-				self.route_requests_from_primary_to_secondary, # do this via ansible
-				self.wait_for_secondary_proxy_routing,
 				self.update_dns_records_for_all_sites,
+				self.route_requests_from_primary_to_secondary,
 				self.move_wildcard_domains_from_primary,  # TODO: dont know the significance of this
 				self.wait_for_wildcard_domains_setup,
 				self.update_app_servers,
@@ -102,38 +103,8 @@ class ProxyFailover(Document, StepHandler):
 			_update_status(comments, step, Status.Skipped)
 			return
 
-		# not pinging agent directly as:
-		# maybe primary is up and we retried the failover - so agent might've gone down
-		response = os.system(f"ping -c 3 {primary_proxy.ip}")
-		if response != 0:
-			comments = "Primary proxy server is not reachable. Skipping routing."
-			_update_status(comments, step, Status.Skipped)
-			return
-
-		# TODO: trigger an agent job to add an nginx config to route all traffic to secondary
-		job = primary_proxy.route_traffic_to_secondary(self.secondary)
+		# TODO: trigger an ansible job to add an nginx config to route all traffic to secondary
 		_update_status("Queued", step, Status.Success, job.name)
-
-	def wait_for_secondary_proxy_routing(self, step):
-		job = frappe.db.get_value(
-			"Proxy Failover Steps",
-			{
-				"parent": self.name,
-				"method_name": "route_requests_from_primary_to_secondary",
-			},
-			"job",
-		)
-
-		if not job:
-			step.status = Status.Skipped
-			step.output = "No routing job found. Skipping wait step."
-			step.save()
-			return
-
-		step.status = Status.Running
-
-		with suppress(Exception):
-			self.handle_agent_job(step, job)
 
 	def attach_static_ip_to_secondary(self, step):
 		primary = frappe.db.get_value(
@@ -238,6 +209,34 @@ class ProxyFailover(Document, StepHandler):
 		step.status = Status.Success
 		step.save()
 
+	def wait_for_pending_agent_jobs_to_complete(self, step):
+		step.status = Status.Running
+		step.save()
+
+		pending_jobs = frappe.get_all(
+			"Agent Job",
+			fields=["name", "job_id", "status", "callback_failure_count"],
+			filters={
+				"status": ("in", ["Pending", "Running"]),
+				"job_id": ("!=", 0),
+				"server": self.primary,
+			},
+			order_by="job_id",
+			ignore_ifnull=True,
+		)
+
+		if not pending_jobs:
+			step.status = Status.Success
+			step.save()
+			return
+
+		agent = Agent(self.primary, server_type="Proxy Server")
+		pending_ids = [j.job_id for j in pending_jobs]
+		if not (polled_jobs := poll_random_jobs(agent, pending_ids)):
+			return
+
+		handle_polled_jobs(polled_jobs, pending_jobs)
+
 	def move_wildcard_domains_from_primary(self, step):
 		domains = set(
 			frappe.get_all(
@@ -297,6 +296,25 @@ class ProxyFailover(Document, StepHandler):
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
 			# no need to raise an error here as even if primary is down, we need to proceed
+			# TODO: only raise if this fails due to some other reason
+
+	def replicate_once_manually(self, step):
+		step.status = Status.Running
+		step.save()
+
+		result = self.ansible_run(
+			self.primary,
+			f"rsync -aAXvz /home/frappe/agent/nginx/ frappe@{self.secondary}:/home/frappe/agent/nginx/",
+		)
+		if result.get("status") != "Success":
+			print(result)
+			step.status = Status.Failure
+			step.output = "Failed to replicate nginx config to secondary"
+			step.save()
+			raise
+
+		step.status = Status.Success
+		step.save()
 
 	def remove_primary_access_and_ensure_nginx_started_in_secondary(self, step):
 		try:
@@ -315,11 +333,15 @@ class ProxyFailover(Document, StepHandler):
 			self.handle_ansible_play(step, ansible)
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
-			raise
+			# not really that big of an issue if we couldnt remove access (if the replication was stopped properly)
 
 	def handle_step_failure(self):
 		self.error = frappe.get_traceback(with_context=True)
 		self.save()
+
+	def ansible_run(self, proxy, command):
+		inventory = f"{frappe.db.get('Proxy Server', proxy, 'ip')},"
+		return AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
 
 	@frappe.whitelist()
 	def force_continue(self):
