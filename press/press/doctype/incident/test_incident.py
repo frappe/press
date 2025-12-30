@@ -131,6 +131,7 @@ def get_total_firing_and_resolved_for_resolved_incident(draw) -> tuple[int, int,
 @patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
 @patch("tenacity.nap.time", new=Mock())  # no sleep
 @patch.object(Incident, "sites_down", new=[])
+@patch.object(Incident, "down_bench", new=[])
 class TestIncident(FrappeTestCase):
 	def setUp(self):
 		super().setUp()

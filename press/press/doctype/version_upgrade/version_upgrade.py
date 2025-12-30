@@ -12,6 +12,7 @@ from press.press.doctype.communication_info.communication_info import get_commun
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
+from press.press.doctype.site.site import TRANSITORY_STATES
 from press.utils import log_error
 
 if TYPE_CHECKING:
@@ -93,7 +94,7 @@ class VersionUpgrade(Document):
 	@frappe.whitelist()
 	def start(self):
 		site: "Site" = frappe.get_doc("Site", self.site)
-		if site.status.endswith("ing"):
+		if site.status in TRANSITORY_STATES:
 			frappe.throw("Site is under maintenance. Cannot Update")
 		try:
 			self.site_update = site.move_to_group(
@@ -191,7 +192,7 @@ def run_scheduled_upgrades():
 	for upgrade in VersionUpgrade.get_all_scheduled_before_now():
 		try:
 			site_status = frappe.db.get_value("Site", upgrade.site, "status")
-			if site_status.endswith("ing"):
+			if site_status in TRANSITORY_STATES:
 				# If we attempt to start the upgrade now, it will fail
 				# This will be picked up in the next iteration
 				continue
