@@ -6,12 +6,12 @@ import os
 from functools import partial
 
 import frappe
+from ansible import constants
 from frappe.core.doctype.user.user import User
 from frappe.handler import is_whitelisted
 from frappe.utils import cint
 
 from press.access.support_access import has_support_access
-from press.runner import constants
 from press.utils import _get_current_team, _system_user
 
 
