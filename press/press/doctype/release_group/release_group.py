@@ -24,6 +24,7 @@ from press.access.decorators import action_guard
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.exceptions import ImageNotFoundInRegistry, InsufficientSpaceOnServer, VolumeResizeLimitError
+from press.guards import role_guard
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import new_app
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
@@ -227,6 +228,7 @@ class ReleaseGroup(Document, TagHelpers):
 			},
 		]
 
+	@role_guard.action()
 	def validate(self):
 		self.validate_title()
 		self.validate_frappe_app()
@@ -280,13 +282,6 @@ class ReleaseGroup(Document, TagHelpers):
 		self.set_default_delta_builds_flags()
 		self.setup_default_feature_flags()
 
-	def after_insert(self):
-		from press.press.doctype.press_role.press_role import (
-			add_permission_for_newly_created_doc,
-		)
-
-		add_permission_for_newly_created_doc(self)
-
 	def on_update(self):
 		old_doc = self.get_doc_before_save()
 		if self.flags.in_insert or self.is_new() or not old_doc:
@@ -296,8 +291,6 @@ class ReleaseGroup(Document, TagHelpers):
 			if row[0] == "dependencies":
 				self.db_set("last_dependency_update", frappe.utils.now_datetime())
 				break
-		if self.has_value_changed("team"):
-			frappe.db.delete("Press Role Permission", {"release_group": self.name})
 
 	def on_trash(self):
 		candidates = frappe.get_all("Deploy Candidate", {"group": self.name})
@@ -1579,8 +1572,6 @@ class ReleaseGroup(Document, TagHelpers):
 		self.title = append_number_if_name_exists("Release Group", new_name, "title", separator=".")
 		self.enabled = 0
 		self.save()
-
-		frappe.db.delete("Press Role Permission", {"release_group": self.name})
 
 	@dashboard_whitelist()
 	def delete(self) -> None:

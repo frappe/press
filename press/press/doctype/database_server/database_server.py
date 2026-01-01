@@ -97,7 +97,7 @@ class DatabaseServer(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom"]
 		public: DF.Check
 		ram: DF.Float
 		root_public_key: DF.Code | None
@@ -1327,15 +1327,15 @@ class DatabaseServer(BaseServer):
 			log_error("Logrotate Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
-	def provide_frappe_user_du_permission(self):
+	def provide_frappe_user_du_and_find_permission(self):
 		frappe.enqueue_doc(
-			self.doctype, self.name, "_provide_frappe_user_du_permission", queue="long", timeout=1200
+			self.doctype, self.name, "_provide_frappe_user_du_and_find_permission", queue="long", timeout=1200
 		)
 
-	def _provide_frappe_user_du_permission(self):
+	def _provide_frappe_user_du_and_find_permission(self):
 		try:
 			ansible = Ansible(
-				playbook="provide_frappe_user_du_permission.yml",
+				playbook="provide_frappe_user_du_and_find_permission.yml",
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
@@ -2237,6 +2237,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		except Exception:
 			log_error("Set MariaDB Mount Dependency Exception", server=self.as_dict())
 
+	@frappe.whitelist()
 	def update_database_schema_sizes(self):
 		self.agent.update_database_schema_sizes()
 

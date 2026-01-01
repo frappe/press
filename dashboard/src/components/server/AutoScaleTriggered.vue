@@ -7,14 +7,17 @@ import { h } from 'vue';
 import { duration } from '../../utils/format';
 import ObjectList from '../ObjectList.vue';
 import Badge from '../global/Badge.vue';
+import { renderDialog } from '../../utils/components';
+import { defineAsyncComponent } from 'vue';
 
+import { confirmDialog, icon } from '../../utils/components';
 export default {
 	name: 'AutoScale',
 	props: {
 		name: String,
 	},
 
-	components: { ObjectList },
+	components: { ObjectList, confirmDialog, icon },
 
 	computed: {
 		autoScaleRecords() {
@@ -87,6 +90,23 @@ export default {
 						align: 'right',
 					},
 				],
+
+				primaryAction: () => ({
+					label: 'Configure Automated Scaling',
+					slots: { prefix: icon('settings') },
+					onClick: () => {
+						renderDialog(
+							h(
+								defineAsyncComponent(
+									() => import('../server/ConfigureAutomatedScaling.vue'),
+								),
+								{
+									name: this.name,
+								},
+							),
+						);
+					},
+				}),
 			};
 		},
 	},
