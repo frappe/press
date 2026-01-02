@@ -156,7 +156,7 @@ export default {
 					},
 					{
 						label: 'Amount Due',
-						fieldname: 'amount_due',
+						fieldname: 'amount_due_with_tax',
 						format: this.formatCurrency,
 						align: 'right',
 						width: 0.6,
