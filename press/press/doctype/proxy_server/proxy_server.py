@@ -544,10 +544,11 @@ class ProxyServer(BaseServer):
 				"enabled": 1,
 				"type": "Warning",
 				"title": f"Proxy Failover Pre Warning - {self.name}",
-				"message": f"There is currently an issue with the proxy server in {self.cluster} region. You may experience temporary interruptions while accessing the site. Our team is working to resolve this as quickly as possible.",
+				"message": f"There is currently an issue with the proxy server in {self.cluster} region. You may experience temporary interruptions while accessing your sites in that region. Our team is working to resolve this as quickly as possible.",
 				"is_scheduled": 1,
 				"scheduled_start_time": frappe.utils.now(),
 				"scheduled_end_time": frappe.utils.add_to_date(frappe.utils.now(), hours=6),
+				"is_global": 1,
 			}
 		).insert()
 
