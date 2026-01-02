@@ -1,0 +1,57 @@
+---
+- name: Configure Nginx Routing from Primary to Secondary Proxy
+  become: yes
+  vars:
+    secondary_proxy: "{{ secondary_proxy }}"
+    nginx_conf_path: "/home/frappe/agent/nginx/nginx.conf"
+    proxy_conf_path: "/home/frappe/agent/nginx/proxy.conf"
+    agent_conf_path: "/home/frappe/agent/nginx.conf"
+
+  tasks:
+    - name: Check if stream block already exists in main config
+      shell: grep -q "^stream {" {{ nginx_conf_path }}
+      register: stream_exists
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Add stream block to main nginx.conf
+      lineinfile:
+        path: "{{ nginx_conf_path }}"
+        line: |
+
+          stream {
+              upstream secondary_80 {
+                  server {{ secondary_proxy }}:80;
+              }
+              upstream secondary_443 {
+                  server {{ secondary_proxy }}:443;
+              }
+              server {
+                  listen 80;
+                  proxy_pass secondary_80;
+              }
+              server {
+                  listen 443;
+                  proxy_pass secondary_443;
+              }
+          }
+        insertafter: EOF
+      when: stream_exists.rc != 0
+
+    - name: Comment out entire proxy.conf file
+      shell: |
+        sed -i 's/^/# /' {{ proxy_conf_path }}
+
+    - name: Replace port 443 with 8443 in agent proxy conf
+      replace:
+        path: "{{ upstream_conf_path }}"
+        regexp: '443\b'
+        replace: '8443'
+        backup: yes
+      when: upstream_conf_stat.stat.exists
+      notify: test and reload nginx
+
+    - name: Start nginx service
+      systemd:
+        name: nginx
+        state: started
