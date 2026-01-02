@@ -94,16 +94,14 @@ class ProxyFailover(Document, StepHandler):
 		step.save()
 
 		primary_proxy = frappe.get_doc("Proxy Server", self.primary)
-		try:
-			Ansible(
-				playbook="nginx_conf_changes_for_tcp_streaming.yml",
-				server=primary_proxy,
-				user=primary_proxy._ssh_user(),
-				port=primary_proxy._ssh_port(),
-				variables={"secondary_proxy": self.secondary},
-			).run()
-		except Exception:
-			raise
+
+		Ansible(
+			playbook="nginx_conf_changes_for_tcp_streaming.yml",
+			server=primary_proxy,
+			user=primary_proxy._ssh_user(),
+			port=primary_proxy._ssh_port(),
+			variables={"secondary_proxy": self.secondary},
+		).run()
 
 		cluster = frappe.get_doc("Cluster", primary_proxy.cluster)
 		client = cluster.get_aws_client()
@@ -136,7 +134,9 @@ class ProxyFailover(Document, StepHandler):
 		step.save()
 
 	def build_nginx_with_stream_module(self, step):
+		frappe.db.set_value("Proxy Server", self.primary, "status", "Installing")
 		primary_proxy = frappe.get_doc("Proxy Server", self.primary)
+
 		try:
 			ansible = Ansible(
 				playbook="build_nginx_with_stream.yml",
@@ -145,8 +145,10 @@ class ProxyFailover(Document, StepHandler):
 				port=primary_proxy._ssh_port(),
 			)
 			self.handle_ansible_play(step, ansible)
+			frappe.db.set_value("Proxy Server", self.primary, "status", "Active")
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
+			frappe.db.set_value("Proxy Server", self.primary, "status", "Broken")
 			raise
 
 	def attach_static_ip_to_secondary(self, step):
@@ -391,6 +393,7 @@ class ProxyFailover(Document, StepHandler):
 
 
 def reduce_ttl_of_sites(proxy):
+	proxy_domain = frappe.db.get_value("Proxy Server", proxy, ["domain", "ip", "is_static_ip"], as_dict=True)
 	servers = frappe.get_all("Server", {"proxy_server": proxy}, pluck="name")
 	sites_domains = frappe.get_all(
 		"Site",
@@ -400,3 +403,23 @@ def reduce_ttl_of_sites(proxy):
 	for domain_name, sites in groupby(sites_domains, lambda x: x["domain"]):
 		domain = frappe.get_doc("Root Domain", domain_name)
 		domain.update_dns_records_for_sites([site.name for site in sites], proxy, ttl=60)
+
+		if proxy_domain.domain == domain_name and proxy_domain.is_static_ip:
+			# also reduce ttl for proxy domain A record
+			changes = [
+				{
+					"Action": "UPSERT",
+					"ResourceRecordSet": {
+						"Name": proxy,
+						"Type": "A",
+						"TTL": 60,
+						"ResourceRecords": [
+							{"Value": proxy_domain.ip},
+						],
+					},
+				}
+			]
+
+			domain.boto3_client.change_resource_record_sets(
+				ChangeBatch={"Changes": changes}, HostedZoneId=domain.hosted_zone
+			)
