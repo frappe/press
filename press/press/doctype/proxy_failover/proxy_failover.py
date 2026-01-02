@@ -10,6 +10,7 @@ from frappe.model.document import Document
 from press.press.doctype.agent_job.agent_job import Agent, handle_polled_jobs, poll_random_jobs
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.runner import Ansible, Status, StepHandler
+from press.utils import servers_using_alternative_port_for_communication
 
 
 class ProxyFailover(Document, StepHandler):
@@ -32,6 +33,7 @@ class ProxyFailover(Document, StepHandler):
 
 	def before_insert(self):
 		self.status = "Pending"
+		routing_steps = []
 
 		primary = frappe.db.get_value("Proxy Server", self.primary, ["cluster", "is_static_ip"], as_dict=True)
 		secondary = frappe.db.get_value(
@@ -44,8 +46,10 @@ class ProxyFailover(Document, StepHandler):
 		if not primary.is_static_ip and not secondary.is_static_ip:
 			frappe.throw("Failover can only be initiated if one of the proxy server has a static IP")
 
-		# TODO: people keep bringing up ttl - what's it's significance?
-		# TODO: get recursive hash from primary & seconary and check what's the difference
+		if not primary.is_static_ip:
+			routing_steps.extend(
+				[self.build_nginx_with_stream_module, self.route_requests_from_primary_to_secondary]
+			)
 
 		for step in self.get_steps(
 			[
@@ -53,13 +57,13 @@ class ProxyFailover(Document, StepHandler):
 				self.wait_for_pending_agent_jobs_to_complete,
 				self.stop_replication,
 				self.replicate_once_manually,
+				self.move_wildcard_domains_from_primary,
+				self.wait_for_wildcard_domains_setup,
 				self.attach_static_ip_to_secondary,
 				self.update_dns_records_for_all_sites,
-				self.route_requests_from_primary_to_secondary,
-				self.move_wildcard_domains_from_primary,  # TODO: dont know the significance of this
-				self.wait_for_wildcard_domains_setup,
 				self.update_app_servers,
 				self.forward_undelivered_jobs_to_secondary,
+				*routing_steps,
 				self.switch_primary,
 				self.add_ssh_users_for_existing_benches,
 				self.remove_primary_access_and_ensure_nginx_started_in_secondary,
@@ -84,27 +88,66 @@ class ProxyFailover(Document, StepHandler):
 			deduplicate=True,
 		)
 
-	@frappe.whitelist()
 	def route_requests_from_primary_to_secondary(self, step=None):
 		"""Route all traffic from primary to secondary proxy server"""
-
-		def _update_status(comments, step=None, step_status=None, job=None):
-			if step:
-				step.status = step_status
-				step.job = job
-				step.output = comments
-				step.save()
-			else:
-				frappe.msgprint(comments)
+		step.status = Status.Running
+		step.save()
 
 		primary_proxy = frappe.get_doc("Proxy Server", self.primary)
-		if primary_proxy.is_static_ip:
-			comments = "Primary proxy server has a static IP. Skipping routing."
-			_update_status(comments, step, Status.Skipped)
-			return
+		try:
+			Ansible(
+				playbook="nginx_conf_changes_for_tcp_streaming.yml",
+				server=primary_proxy,
+				user=primary_proxy._ssh_user(),
+				port=primary_proxy._ssh_port(),
+				variables={"secondary_proxy": self.secondary},
+			).run()
+		except Exception:
+			raise
 
-		# TODO: trigger an ansible job to add an nginx config to route all traffic to secondary
-		_update_status("Queued", step, Status.Success, job.name)
+		cluster = frappe.get_doc("Cluster", primary_proxy.cluster)
+		client = cluster.get_aws_client()
+		client.authorize_security_group_ingress(
+			GroupId=cluster.proxy_security_group_id,
+			IpPermissions=[
+				{
+					"FromPort": 8443,
+					"IpProtocol": "tcp",
+					"IpRanges": [
+						{
+							"CidrIp": "0.0.0.0/0",
+							"Description": "HTTPS Alternative Port for Agent and Prometheus",
+						}
+					],
+					"ToPort": 8443,
+				},
+			],
+		)
+
+		if self.primary not in (alt_port_servers := servers_using_alternative_port_for_communication()):
+			alt_port_servers.append(self.primary)
+			frappe.db.set_single_value(
+				"Press Settings",
+				"servers_using_alternative_http_port_for_communication",
+				"\n".join(alt_port_servers),
+			)
+
+		step.status = Status.Success
+		step.save()
+
+	def build_nginx_with_stream_module(self, step):
+		primary_proxy = frappe.get_doc("Proxy Server", self.primary)
+		try:
+			ansible = Ansible(
+				playbook="build_nginx_with_stream.yml",
+				server=primary_proxy,
+				user=primary_proxy._ssh_user(),
+				port=primary_proxy._ssh_port(),
+			)
+			self.handle_ansible_play(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+			raise
 
 	def attach_static_ip_to_secondary(self, step):
 		primary = frappe.db.get_value(
@@ -166,7 +209,7 @@ class ProxyFailover(Document, StepHandler):
 			.on(servers.name == benches.server)
 			.select(benches.name)
 			.where(benches.status == "Active")
-			.where(servers.proxy_server == self.primary)
+			.where(servers.proxy_server == self.secondary)
 			.run(as_dict=True)
 		)
 		for bench_name in active_benches:
@@ -210,8 +253,9 @@ class ProxyFailover(Document, StepHandler):
 		step.save()
 
 	def wait_for_pending_agent_jobs_to_complete(self, step):
-		step.status = Status.Running
-		step.save()
+		if step.status == Status.Pending:
+			step.status = Status.Running
+			step.save()
 
 		pending_jobs = frappe.get_all(
 			"Agent Job",
@@ -295,19 +339,17 @@ class ProxyFailover(Document, StepHandler):
 			self.handle_ansible_play(step, ansible)
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
-			# no need to raise an error here as even if primary is down, we need to proceed
-			# TODO: only raise if this fails due to some other reason
+			raise
 
 	def replicate_once_manually(self, step):
 		step.status = Status.Running
 		step.save()
 
-		result = self.ansible_run(
-			self.primary,
+		result = AnsibleAdHoc(sources=f"{frappe.db.get('Proxy Server', self.primary, 'ip')},").run(
 			f"rsync -aAXvz /home/frappe/agent/nginx/ frappe@{self.secondary}:/home/frappe/agent/nginx/",
-		)
+		)[0]
+
 		if result.get("status") != "Success":
-			print(result)
 			step.status = Status.Failure
 			step.output = "Failed to replicate nginx config to secondary"
 			step.save()
@@ -333,15 +375,11 @@ class ProxyFailover(Document, StepHandler):
 			self.handle_ansible_play(step, ansible)
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
-			# not really that big of an issue if we couldnt remove access (if the replication was stopped properly)
+			# not really that big of an issue if we couldn't remove access (if the replication was stopped properly)
 
 	def handle_step_failure(self):
 		self.error = frappe.get_traceback(with_context=True)
 		self.save()
-
-	def ansible_run(self, proxy, command):
-		inventory = f"{frappe.db.get('Proxy Server', proxy, 'ip')},"
-		return AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
 
 	@frappe.whitelist()
 	def force_continue(self):
@@ -350,3 +388,15 @@ class ProxyFailover(Document, StepHandler):
 
 		self.execute_failover_steps()
 		frappe.msgprint("Failover steps re-queued from the point of failure.", alert=True)
+
+
+def reduce_ttl_of_sites(proxy):
+	servers = frappe.get_all("Server", {"proxy_server": proxy}, pluck="name")
+	sites_domains = frappe.get_all(
+		"Site",
+		{"status": ("!=", "Archived"), "server": ("in", servers)},
+		["name", "domain"],
+	)
+	for domain_name, sites in groupby(sites_domains, lambda x: x["domain"]):
+		domain = frappe.get_doc("Root Domain", domain_name)
+		domain.update_dns_records_for_sites([site.name for site in sites], proxy, ttl=60)
