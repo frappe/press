@@ -14,6 +14,7 @@
   "dns_provider",
   "aws_access_key_id",
   "aws_secret_access_key",
+  "cloud_flare_api_key",
   "aws_region"
  ],
  "fields": [
@@ -24,7 +25,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "DNS Provider",
-   "options": "AWS Route 53\nGeneric",
+   "options": "AWS Route 53\nCloud Flare\nGeneric",
    "reqd": 1
   },
   {
@@ -73,6 +74,12 @@
    "fieldname": "aws_region",
    "fieldtype": "Data",
    "label": "AWS Region"
+  },
+  {
+   "depends_on": "eval:doc.dns_provider=='Cloud Flare'",
+   "fieldname": "cloud_flare_api_key",
+   "fieldtype": "Password",
+   "label": "Cloud Flare Api Key"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -108,7 +115,7 @@
    "link_fieldname": "domain"
   }
  ],
- "modified": "2025-12-09 14:04:47.403558",
+ "modified": "2025-12-29 16:33:04.233501",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Root Domain",
