@@ -9,10 +9,9 @@
 
   tasks:
     - name: Check if stream block already exists in main config
-      shell: grep -q "^stream {" {{ nginx_conf_path }}
+      shell: grep "^stream {" {{ nginx_conf_path }}
       register: stream_exists
       ignore_errors: yes
-      changed_when: false
 
     - name: Add stream block to main nginx.conf
       lineinfile:
@@ -45,13 +44,11 @@
     - name: Replace port 443 with 8443 in agent proxy conf
       replace:
         path: "{{ upstream_conf_path }}"
-        regexp: '443\b'
+        regexp: '(?<=\s|^)443\b'
         replace: '8443'
         backup: yes
-      when: upstream_conf_stat.stat.exists
-      notify: test and reload nginx
 
-    - name: Start nginx service
-      systemd:
+    - name: Reload nginx
+      service:
         name: nginx
-        state: started
+        state: reloaded
