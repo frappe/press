@@ -134,10 +134,9 @@ class ProxyFailover(Document, StepHandler):
 		step.save()
 
 	def build_nginx_with_stream_module(self, step):
-		frappe.db.set_value("Proxy Server", self.primary, "status", "Installing")
 		primary_proxy = frappe.get_doc("Proxy Server", self.primary)
-
 		try:
+			frappe.db.set_value("Proxy Server", self.primary, "status", "Installing")
 			ansible = Ansible(
 				playbook="build_nginx_with_stream.yml",
 				server=primary_proxy,
@@ -284,6 +283,9 @@ class ProxyFailover(Document, StepHandler):
 		handle_polled_jobs(polled_jobs, pending_jobs)
 
 	def move_wildcard_domains_from_primary(self, step):
+		step.status = Status.Running
+		step.save()
+
 		domains = set(
 			frappe.get_all(
 				"Proxy Server Domain",
@@ -324,8 +326,6 @@ class ProxyFailover(Document, StepHandler):
 			step.save()
 			return
 
-		step.status = Status.Running
-
 		with suppress(Exception):
 			self.handle_agent_job(step, job)
 
@@ -344,9 +344,6 @@ class ProxyFailover(Document, StepHandler):
 			raise
 
 	def replicate_once_manually(self, step):
-		step.status = Status.Running
-		step.save()
-
 		result = AnsibleAdHoc(sources=f"{frappe.db.get('Proxy Server', self.primary, 'ip')},").run(
 			f"rsync -aAXvz /home/frappe/agent/nginx/ frappe@{self.secondary}:/home/frappe/agent/nginx/",
 		)[0]
@@ -393,8 +390,30 @@ class ProxyFailover(Document, StepHandler):
 
 
 def reduce_ttl_of_sites(proxy):
-	proxy_domain = frappe.db.get_value("Proxy Server", proxy, ["domain", "ip", "is_static_ip"], as_dict=True)
-	servers = frappe.get_all("Server", {"proxy_server": proxy}, pluck="name")
+	proxy = frappe.db.get_value("Proxy Server", proxy, ["domain", "ip", "is_static_ip"], as_dict=True)
+	if proxy.is_static_ip:
+		# reduce ttl for proxy domain A record
+		domain = frappe.get_doc("Root Domain", proxy.domain)
+		changes = [
+			{
+				"Action": "UPSERT",
+				"ResourceRecordSet": {
+					"Name": proxy.name,
+					"Type": "A",
+					"TTL": 60,
+					"ResourceRecords": [
+						{"Value": proxy.ip},
+					],
+				},
+			}
+		]
+
+		domain.boto3_client.change_resource_record_sets(
+			ChangeBatch={"Changes": changes}, HostedZoneId=domain.hosted_zone
+		)
+
+	# reduce ttl for all sites using this proxy
+	servers = frappe.get_all("Server", {"proxy_server": proxy.name}, pluck="name")
 	sites_domains = frappe.get_all(
 		"Site",
 		{"status": ("!=", "Archived"), "server": ("in", servers)},
@@ -402,24 +421,4 @@ def reduce_ttl_of_sites(proxy):
 	)
 	for domain_name, sites in groupby(sites_domains, lambda x: x["domain"]):
 		domain = frappe.get_doc("Root Domain", domain_name)
-		domain.update_dns_records_for_sites([site.name for site in sites], proxy, ttl=60)
-
-		if proxy_domain.domain == domain_name and proxy_domain.is_static_ip:
-			# also reduce ttl for proxy domain A record
-			changes = [
-				{
-					"Action": "UPSERT",
-					"ResourceRecordSet": {
-						"Name": proxy,
-						"Type": "A",
-						"TTL": 60,
-						"ResourceRecords": [
-							{"Value": proxy_domain.ip},
-						],
-					},
-				}
-			]
-
-			domain.boto3_client.change_resource_record_sets(
-				ChangeBatch={"Changes": changes}, HostedZoneId=domain.hosted_zone
-			)
+		domain.update_dns_records_for_sites([site.name for site in sites], proxy.name, ttl=60)
