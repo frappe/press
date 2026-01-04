@@ -12,17 +12,17 @@
         enabled: yes
         state: started
 
-    - name: Reload nginx
-      service:
-        name: nginx
-        state: reloaded
-
     - name: Remove cron to reload nginx every 5 mins # kept as we used to reload nginx every 5 mins via cron historically
       become: yes
       become_user: frappe
       cron:
         name: reload_nginx
         state: absent
+
+    - name: Reload nginx
+      service:
+        name: nginx
+        state: reloaded
 
     - name: Remove Primary from Authorized Keys
       become: yes
