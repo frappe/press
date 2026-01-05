@@ -10,6 +10,7 @@ from typing import TypedDict
 
 import boto3
 import botocore.exceptions
+import requests
 from bench.cli import change_working_directory
 
 APP_NAME = sys.argv[1]
@@ -25,14 +26,10 @@ class AssetStoreCredentials(TypedDict):
 
 
 def get_asset_store_credentials() -> AssetStoreCredentials:
-	"""Return asset store credentials from command-line arguments."""
-	return {
-		"secret_access_key": sys.argv[3],
-		"access_key": sys.argv[4],
-		"region_name": sys.argv[5],
-		"endpoint_url": sys.argv[6],
-		"bucket_name": sys.argv[7],
-	}
+	"""Return asset store credentials from remote api to not make it part of the docker image"""
+	return requests.get("https://cloud.frappe.io/api/method/press.api.assets.get_credentials").json()[
+		"message"
+	]
 
 
 def check_existing_asset_in_s3(credentials: AssetStoreCredentials, file_name: str) -> bool:

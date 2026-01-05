@@ -198,11 +198,6 @@ ENV PATH "$PATH:/home/frappe/.nvm/versions/node/v${NODE_VERSION}/bin"
 # Install Yarn
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 npm install -g yarn `#stage-pre-yarn`
 
-# Install Boto for Asset store
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 \
-  python${PYTHON_VERSION} -m pip install boto3==1.34.162 botocore==1.34.162 \
-  `#stage-pre-asset-store`
-
 # Install Bench
 ENV PATH "$PATH:/home/frappe/.local/bin"
 
@@ -232,6 +227,11 @@ RUN `#stage-bench-env`
 ENV {{v.key}} {{ v.value }}
 {% endfor %}
 
+# Install Boto and Requests for Asset store access
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 \
+  python${PYTHON_VERSION} -m pip install boto3==1.34.162 botocore==1.34.162 requests==2.32.5 \
+  `#stage-pre-Configure Asset Store`
+
 # Install Frappe app
 RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,source=apps/frappe,target=/home/frappe/context/apps/frappe bench init --python /usr/bin/python${PYTHON_VERSION} --no-backups --frappe-path file:///home/frappe/context/apps/frappe frappe-bench `#stage-apps-frappe`
 WORKDIR /home/frappe/frappe-bench
@@ -251,7 +251,12 @@ RUN chmod +x /usr/local/bin/get_cached_app.py
 {% for app in doc.apps %}
 {% if app.app != "frappe"%}
 
+<<<<<<< HEAD
 {% if app.app != "crm" %}
+=======
+
+{% if app.use_cached %}
+>>>>>>> a24a08342 (feat(build): Isolate assets from image)
 RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 \
 <<<<<<< HEAD
   --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
@@ -270,14 +275,22 @@ RUN --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps
 {% endif %}
 =======
     --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
-    python${PYTHON_VERSION} /usr/local/bin/get_cached_app.py {{ app.app }} {{ app.hash }} \
-    {{ asset_store_credentials.secret_access_key }} \
-    {{ asset_store_credentials.access_key }} \
-    {{ asset_store_credentials.region_name }} \
-    {{ asset_store_credentials.endpoint_url }} \
-    {{ asset_store_credentials.bucket_name }} \
+    --mount=type=secret,id=asset_store_credentials \
+    python${PYTHON_VERSION} /usr/local/bin/get_cached_app.py \
+        {{ app.app }} \
+        {{ app.hash }} \
+        `#stage-apps-{{ app.app }}`
+{% else %}
+RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 \
+    --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
+    bench get-app file:///home/frappe/context/apps/{{ app.app }} \
     `#stage-apps-{{ app.app }}`
+<<<<<<< HEAD
 >>>>>>> 602c938d0 (refactor(build): Standalone `get-app` file)
+=======
+{% endif %}
+
+>>>>>>> a24a08342 (feat(build): Isolate assets from image)
 
 {% endif %}
 {% endfor %}
