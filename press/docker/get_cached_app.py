@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
 import tarfile
 from typing import TYPE_CHECKING
 
@@ -21,8 +22,8 @@ from press.api.assets import (
 if TYPE_CHECKING:
 	from io import BytesIO
 
-APP_NAME = os.environ.get("APP_NAME")
-APP_HASH = os.environ.get("APP_HASH")
+APP_NAME = sys.argv[1]
+APP_HASH = sys.argv[2]
 
 
 def _write_assets(file: os.DirEntry, assets_file: str, relative_path: str):
