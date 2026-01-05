@@ -89,7 +89,7 @@ def build_and_upload_assets(
 	# Since we moved into the bench directory we can get the current directory and build the path to the assets
 	assets_folder = os.path.join(os.getcwd(), "sites", "assets", app)
 	commit = get_app_commit_info(app)
-	tar_file = tar_and_compress_folder(assets_folder, f"{app}_assets_{commit}.tar.gz")
+	tar_file = tar_and_compress_folder(assets_folder, f"{app}.{commit}.tar.gz")
 
 	if not os.path.exists(assets_folder):
 		Print.error(
