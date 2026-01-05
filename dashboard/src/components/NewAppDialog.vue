@@ -51,7 +51,7 @@
 								/>
 								<FormControl
 									v-else
-									type="autocomplete"
+									type="combobox"
 									:options="branchOptions"
 									v-model="selectedBranch"
 								>
