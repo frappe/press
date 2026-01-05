@@ -43,6 +43,9 @@ class StripeWebhookLog(Document):
 		invoice_id = get_invoice_id(payload)
 		self.stripe_payment_intent_id = ""
 
+		if not self.allow_insert_log(invoice_id):
+			return
+
 		if self.event_type in [
 			"payment_intent.succeeded",
 			"payment_intent.failed",
@@ -85,6 +88,25 @@ class StripeWebhookLog(Document):
 				"next_payment_attempt_date",
 				frappe.utils.getdate(next_payment_attempt_date),
 			)
+
+	def allow_insert_log(self, invoice_id=None):
+		if not frappe.db.exists("Stripe Webhook Log", self.name):
+			return True
+
+		if (
+			invoice_id
+			and frappe.db.get_value("Invoice", {"stripe_invoice_id": invoice_id}, "status") == "Paid"
+		):
+			# Do not insert duplicate webhook logs for invoices that are already paid
+			return False
+		if (
+			invoice_id
+			and frappe.db.get_value("Invoice", {"stripe_invoice_id": invoice_id}, "status") == "Unpaid"
+		):
+			# Delete existing log and allow reinsertion for unpaid invoices
+			frappe.delete_doc("Stripe Webhook Log", self.name, ignore_permissions=True)
+
+		return True
 
 
 @frappe.whitelist(allow_guest=True)
