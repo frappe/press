@@ -717,6 +717,7 @@
         "zloirock",
         "Zpyihv",
         "ZSTD",
+<<<<<<< HEAD
         "Wazuh",
         "DBUS",
         "Zvkq",
@@ -724,5 +725,9 @@
         "pydo",
         "erpnextv",
         "hrmsv"
+=======
+        "Zvkq",
+        "botocore"
+>>>>>>> 602c938d0 (refactor(build): Standalone `get-app` file)
     ]
 }

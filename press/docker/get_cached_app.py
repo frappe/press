@@ -1,6 +1,3 @@
-# Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and contributors
-# Manage application assets with caching control
-
 from __future__ import annotations
 
 import json
@@ -8,22 +5,93 @@ import os
 import subprocess
 import sys
 import tarfile
-from typing import TYPE_CHECKING
+from io import BytesIO
+from typing import TypedDict
 
+import boto3
+import botocore.exceptions
 from bench.cli import change_working_directory
-
-from press.api.assets import (
-	check_existing_asset_in_s3,
-	download_asset_from_store,
-	get_asset_store_credentials,
-	upload_assets_to_store,
-)
-
-if TYPE_CHECKING:
-	from io import BytesIO
 
 APP_NAME = sys.argv[1]
 APP_HASH = sys.argv[2]
+
+
+class AssetStoreCredentials(TypedDict):
+	secret_access_key: str
+	access_key: str
+	region_name: str
+	endpoint_url: str
+	bucket_name: str
+
+
+def get_asset_store_credentials() -> AssetStoreCredentials:
+	"""Return asset store credentials from command-line arguments."""
+	return {
+		"secret_access_key": sys.argv[3],
+		"access_key": sys.argv[4],
+		"region_name": sys.argv[5],
+		"endpoint_url": sys.argv[6],
+		"bucket_name": sys.argv[7],
+	}
+
+
+def check_existing_asset_in_s3(credentials: AssetStoreCredentials, file_name: str) -> bool:
+	"""Check if asset with this commit hash already exists in S3"""
+	client = boto3.client(
+		"s3",
+		region_name=credentials["region_name"],
+		endpoint_url=credentials["endpoint_url"],
+		aws_access_key_id=credentials["access_key"],
+		aws_secret_access_key=credentials["secret_access_key"],
+	)
+
+	try:
+		client.head_object(Bucket=credentials["bucket_name"], Key=file_name)
+		return True
+	except botocore.exceptions.ClientError:
+		return False
+
+
+def upload_assets_to_store(credentials: AssetStoreCredentials, file_obj: BytesIO, file_name: str) -> None:
+	"""Upload asset stream to store"""
+	client = boto3.client(
+		"s3",
+		region_name=credentials["region_name"],
+		endpoint_url=credentials["endpoint_url"],
+		aws_access_key_id=credentials["access_key"],
+		aws_secret_access_key=credentials["secret_access_key"],
+	)
+
+	client.upload_fileobj(
+		Fileobj=file_obj,
+		Bucket=credentials["bucket_name"],
+		Key=file_name,
+		ExtraArgs={
+			"ContentType": "application/x-tar",
+		},
+	)
+
+
+def download_asset_from_store(credentials: AssetStoreCredentials, file_name: str) -> BytesIO:
+	"""Download asset from store and return it as a BytesIO stream."""
+	client = boto3.client(
+		"s3",
+		region_name=credentials["region_name"],
+		endpoint_url=credentials["endpoint_url"],
+		aws_access_key_id=credentials["access_key"],
+		aws_secret_access_key=credentials["secret_access_key"],
+	)
+
+	file_stream = BytesIO()
+
+	client.download_fileobj(
+		Bucket=credentials["bucket_name"],
+		Key=file_name,
+		Fileobj=file_stream,
+	)
+
+	file_stream.seek(0)
+	return file_stream
 
 
 def _write_assets(file: os.DirEntry, assets_file: str, relative_path: str):
