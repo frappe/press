@@ -15,7 +15,7 @@
 					variant="outline"
 					:label="`Please select a ${nextVersion} bench group to upgrade your site from ${$site.doc.version}`"
 					class="w-full"
-					type="autocomplete"
+					type="combobox"
 					:options="privateReleaseGroups"
 					v-model="privateReleaseGroup"
 				/>

@@ -17,7 +17,7 @@
 			<div class="space-y-4">
 				<div :class="{ 'pointer-events-none': config }">
 					<FormControl
-						type="autocomplete"
+						type="combobox"
 						label="Config Name"
 						:options="keyOptions"
 						v-model="selectedConfig"

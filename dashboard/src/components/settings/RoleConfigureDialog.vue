@@ -30,7 +30,7 @@
 						<div class="my-4 flex gap-2">
 							<div class="flex-1">
 								<FormControl
-									type="autocomplete"
+									type="combobox"
 									:options="autoCompleteList"
 									v-model="member"
 									placeholder="Select a member to add"

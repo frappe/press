@@ -21,7 +21,7 @@
 				>
 					<FormControl
 						class="w-full"
-						type="autocomplete"
+						type="combobox"
 						label="Select Roles"
 						:options="roleOptions"
 						v-model="selectedRole"

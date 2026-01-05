@@ -28,7 +28,7 @@
 		<template #body-content>
 			<div class="space-y-4">
 				<FormControl
-					type="autocomplete"
+					type="combobox"
 					label="Choose Region"
 					:options="regionOptions"
 					v-model="selectedRegion"
