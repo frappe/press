@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import contextlib
-from typing import TYPE_CHECKING
+from io import BytesIO
+from typing import TYPE_CHECKING, TypedDict
 
 import boto3
 import botocore.exceptions
@@ -9,6 +9,86 @@ import frappe
 
 if TYPE_CHECKING:
 	from apps.press.press.press.doctype.press_settings.press_settings import PressSettings
+
+
+class AssetStoreCredentials(TypedDict):
+	secret_access_key: str
+	access_key: str
+	region_name: str
+	endpoint_url: str
+	bucket_name: str
+
+
+def get_asset_store_credentials() -> AssetStoreCredentials:
+	"""Return asset store credentials from Press Settings."""
+	settings: PressSettings = frappe.get_cached_doc("Press Settings")
+
+	return {
+		"secret_access_key": settings.get_password("asset_store_secret_access_key"),
+		"access_key": settings.asset_store_access_key,
+		"region_name": settings.asset_store_region,
+		"endpoint_url": settings.asset_store_endpoint,
+		"bucket_name": settings.asset_store_bucket_name,
+	}
+
+
+def check_existing_asset_in_s3(credentials: AssetStoreCredentials, file_name: str) -> bool:
+	"""Check if asset with this commit hash already exists in S3"""
+	client = boto3.client(
+		"s3",
+		region_name=credentials["region_name"],
+		endpoint_url=credentials["endpoint_url"],
+		aws_access_key_id=credentials["access_key"],
+		aws_secret_access_key=credentials["secret_access_key"],
+	)
+
+	try:
+		client.head_object(Bucket=credentials["bucket_name"], Key=file_name)
+		return True
+	except botocore.exceptions.ClientError:
+		return False
+
+
+def upload_assets_to_store(credentials: AssetStoreCredentials, file_obj: BytesIO, file_name: str) -> None:
+	"""Upload asset stream to store"""
+	client = boto3.client(
+		"s3",
+		region_name=credentials["region_name"],
+		endpoint_url=credentials["endpoint_url"],
+		aws_access_key_id=credentials["access_key"],
+		aws_secret_access_key=credentials["secret_access_key"],
+	)
+
+	client.upload_fileobj(
+		Fileobj=file_obj,
+		Bucket=credentials["bucket_name"],
+		Key=file_name,
+		ExtraArgs={
+			"ContentType": "application/x-tar",
+		},
+	)
+
+
+def download_asset_from_store(credentials: AssetStoreCredentials, file_name: str) -> BytesIO:
+	"""Download asset from store and return it as a BytesIO stream."""
+	client = boto3.client(
+		"s3",
+		region_name=credentials["region_name"],
+		endpoint_url=credentials["endpoint_url"],
+		aws_access_key_id=credentials["access_key"],
+		aws_secret_access_key=credentials["secret_access_key"],
+	)
+
+	file_stream = BytesIO()
+
+	client.download_fileobj(
+		Bucket=credentials["bucket_name"],
+		Key=file_name,
+		Fileobj=file_stream,
+	)
+
+	file_stream.seek(0)
+	return file_stream
 
 
 @frappe.whitelist()
@@ -19,32 +99,10 @@ def upload_asset():
 		frappe.throw("No asset file uploaded")
 
 	asset_file = files["asset_file"]
+	credentials = get_asset_store_credentials()
 
-	settings: PressSettings = frappe.get_cached_doc("Press Settings")
-	secret_access_key = settings.get_password("asset_store_secret_access_key")
-	access_key = settings.asset_store_access_key
-	region_name = settings.asset_store_region
-	endpoint_url = settings.asset_store_endpoint
-	bucket_name = settings.asset_store_bucket_name
+	has_existing_asset = check_existing_asset_in_s3(credentials, asset_file.filename)
+	if has_existing_asset:
+		frappe.throw(f"Asset with name {asset_file.filename} already exists in the asset store")
 
-	client = boto3.client(
-		"s3",
-		region_name=region_name,
-		endpoint_url=endpoint_url,
-		aws_access_key_id=access_key,
-		aws_secret_access_key=secret_access_key,
-	)
-	with contextlib.suppress(botocore.exceptions.ClientError):
-		client.head_object(Bucket=bucket_name, Key=asset_file.filename)
-		frappe.throw(
-			f"Asset for commit hash '{asset_file.filename}' already exists please create a new commit"
-		)
-
-	client.upload_fileobj(
-		Fileobj=asset_file.stream,
-		Bucket=bucket_name,
-		Key=asset_file.filename,
-		ExtraArgs={
-			"ContentType": "application/x-tar",
-		},
-	)
+	upload_assets_to_store(credentials, asset_file.stream, asset_file.filename)
