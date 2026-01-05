@@ -19,7 +19,7 @@ class AssetStoreCredentials(TypedDict):
 	bucket_name: str
 
 
-def get_asset_store_credentials() -> AssetStoreCredentials:
+def _get_asset_store_credentials() -> AssetStoreCredentials:
 	"""Return asset store credentials from Press Settings."""
 	settings: PressSettings = frappe.get_cached_doc("Press Settings")
 
@@ -99,10 +99,26 @@ def upload_asset():
 		frappe.throw("No asset file uploaded")
 
 	asset_file = files["asset_file"]
-	credentials = get_asset_store_credentials()
+	credentials = _get_asset_store_credentials()
 
 	has_existing_asset = check_existing_asset_in_s3(credentials, asset_file.filename)
 	if has_existing_asset:
 		frappe.throw(f"Asset with name {asset_file.filename} already exists in the asset store")
 
 	upload_assets_to_store(credentials, asset_file.stream, asset_file.filename)
+
+
+@frappe.whitelist(allow_guest=True)
+def get_credentials() -> dict[str, AssetStoreCredentials]:
+	"""Get asset store credentials if it is requested from a build server"""
+	ip_address = (
+		frappe.request.headers.get("X-Forwarded-For")
+		or frappe.request.headers.get("X-Real-IP")
+		or frappe.request.remote_addr
+	)
+	is_from_build_server = frappe.db.get_value("Server", {"ip": ip_address, "use_for_build": True})
+
+	if not is_from_build_server:
+		frappe.throw("Not authorized to access asset store credentials", frappe.PermissionError)
+
+	return _get_asset_store_credentials()
