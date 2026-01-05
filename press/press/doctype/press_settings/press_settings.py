@@ -30,6 +30,11 @@ class PressSettings(Document):
 		agent_repository_owner: DF.Data | None
 		agent_sentry_dsn: DF.Data | None
 		app_include_script: DF.Data | None
+		asset_store_access_key: DF.Data | None
+		asset_store_bucket_name: DF.Data | None
+		asset_store_endpoint: DF.Data | None
+		asset_store_region: DF.Data | None
+		asset_store_secret_access_key: DF.Password | None
 		auto_update_queue_size: DF.Int
 		autoscale_discount: DF.Float
 		aws_access_key_id: DF.Data | None
@@ -182,6 +187,7 @@ class PressSettings(Document):
 		usd_rate: DF.Float
 		use_agent_job_callbacks: DF.Check
 		use_app_cache: DF.Check
+		use_asset_store: DF.Check
 		use_delta_builds: DF.Check
 		use_staging_ca: DF.Check
 		verify_cards_with_micro_charge: DF.Literal["No", "Only INR", "Only USD", "Both INR and USD"]
