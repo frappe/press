@@ -65,9 +65,14 @@
 - name: Find ext4 partitions on disks
   shell: >-
     if lsblk -no TYPE {{ item.source | quote }} | grep -q "^disk$"; then
-    lsblk {{ item.source | quote }} -rno NAME,FSTYPE | grep -E "(ext4|^[[:space:]]*$)" | head -1 | awk '{print "/dev/" $1}';
+      RESULT=$(lsblk {{ item.source | quote }} -rno NAME,FSTYPE | grep -E "(ext4|^[[:space:]]*$)" | head -1 | awk '{print "/dev/" $1}');
+      if [ -n "$RESULT" ]; then
+        echo "$RESULT";
+      else
+        echo {{ item.source | quote }};
+      fi
     else
-    echo {{ item.source | quote }};
+      echo {{ item.source | quote }};
     fi
   register: target_devices
   changed_when: false
