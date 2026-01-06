@@ -638,6 +638,8 @@ class BaseServer(Document, TagHelpers):
 
 	def _prepare_server(self):
 		try:
+			ansible = None
+
 			if self.provider == "Scaleway":
 				ansible = Ansible(
 					playbook="scaleway.yml",
@@ -653,7 +655,14 @@ class BaseServer(Document, TagHelpers):
 				ansible = Ansible(playbook="aws.yml", server=self, user="ubuntu")
 			elif self.provider == "OCI":
 				ansible = Ansible(playbook="oci.yml", server=self, user="ubuntu")
+<<<<<<< HEAD
 			if self.provider != "Generic":
+=======
+			elif self.provider == "Vodacom":
+				ansible = Ansible(playbook="vodacom.yml", server=self, user="ubuntu")
+
+			if self.provider != "Generic" and ansible:
+>>>>>>> 4bd3c0811 (fix(server): In prepare server step dont run ansible if not required)
 				ansible.run()
 
 			self.reload()
