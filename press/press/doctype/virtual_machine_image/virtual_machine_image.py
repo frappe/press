@@ -274,7 +274,7 @@ class VirtualMachineImage(Document):
 		images = frappe.qb.DocType(cls.DOCTYPE)
 		get_available_images = (
 			frappe.qb.from_(images)
-			.select("name")
+			.select(images.name)
 			.where(images.status == "Available")
 			.where(images.public == 1)
 			.where(
