@@ -549,7 +549,7 @@ def options():
 	regions = frappe.get_all(
 		"Cluster",
 		{"cloud_provider": ("!=", "Generic"), "public": True},
-		["name", "title", "image", "beta"],
+		["name", "title", "image", "beta", "has_add_on_storage_support"],
 	)
 	storage_plan = frappe.db.get_value(
 		"Server Storage Plan",

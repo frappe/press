@@ -251,7 +251,11 @@
 			</div>
 			<div
 				class="flex flex-col space-y-3"
-				v-if="serverType === 'dedicated' && serverRegion"
+				v-if="
+					serverType === 'dedicated' &&
+					serverRegion &&
+					selectedRegionInfo?.has_add_on_storage_support
+				"
 			>
 				<h2 class="text-base font-medium leading-6 text-gray-900">
 					Auto Add-on Storage
@@ -560,6 +564,9 @@ export default {
 	computed: {
 		options() {
 			return this.$resources.options.data;
+		},
+		selectedRegionInfo() {
+			return this.options?.regions.find((r) => r.name === this.serverRegion);
 		},
 		_totalPerMonth() {
 			let currencyField =

@@ -10,14 +10,24 @@
   "description",
   "column_break_2",
   "status",
+<<<<<<< HEAD
   "public",
   "beta",
   "hybrid",
   "has_arm_support",
   "enable_autoscaling",
   "column_break_fsht",
+=======
+>>>>>>> 0e13e7a58 (feat(server): Don't show auto-add on storage confirmation if not enable at cluster)
   "monitoring_password",
   "image",
+  "section_break_ymkq",
+  "public",
+  "beta",
+  "column_break_ynby",
+  "hybrid",
+  "has_arm_support",
+  "has_add_on_storage_support",
   "billing_section",
   "team",
   "provisioning_section",
@@ -39,9 +49,9 @@
   "networking_section",
   "cidr_block",
   "subnet_cidr_block",
-  "column_break_12",
   "vpc_id",
   "subnet_id",
+  "column_break_12",
   "security_group_id",
   "proxy_security_group_id",
   "network_acl_id",
@@ -162,10 +172,6 @@
    "fieldname": "image",
    "fieldtype": "Attach Image",
    "label": "Image"
-  },
-  {
-   "fieldname": "column_break_fsht",
-   "fieldtype": "Column Break"
   },
   {
    "default": "Active",
@@ -305,10 +311,25 @@
    "label": "Repository"
   },
   {
+<<<<<<< HEAD
    "default": "0",
    "fieldname": "enable_autoscaling",
    "fieldtype": "Check",
    "label": "Enable Autoscaling"
+=======
+   "fieldname": "section_break_ymkq",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_ynby",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "has_add_on_storage_support",
+   "fieldtype": "Check",
+   "label": "Has Add On Storage Support"
+>>>>>>> 0e13e7a58 (feat(server): Don't show auto-add on storage confirmation if not enable at cluster)
   }
  ],
  "image_field": "image",
@@ -345,7 +366,11 @@
    "link_fieldname": "document_name"
   }
  ],
+<<<<<<< HEAD
  "modified": "2026-01-07 10:03:06.173064",
+=======
+ "modified": "2026-01-07 04:00:28.252425",
+>>>>>>> 0e13e7a58 (feat(server): Don't show auto-add on storage confirmation if not enable at cluster)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",

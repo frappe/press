@@ -68,7 +68,11 @@ class Cluster(Document):
 		cidr_block: DF.Data | None
 		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner"]
 		description: DF.Data | None
+<<<<<<< HEAD
 		enable_autoscaling: DF.Check
+=======
+		has_add_on_storage_support: DF.Check
+>>>>>>> 0e13e7a58 (feat(server): Don't show auto-add on storage confirmation if not enable at cluster)
 		has_arm_support: DF.Check
 		hybrid: DF.Check
 		image: DF.AttachImage | None
@@ -93,7 +97,7 @@ class Cluster(Document):
 		vpc_id: DF.Data | None
 	# end: auto-generated types
 
-	dashboard_fields: ClassVar[list[str]] = ["title", "image"]
+	dashboard_fields: ClassVar[list[str]] = ["title", "image", "has_add_on_storage_support"]
 
 	base_servers: ClassVar[dict[str, str]] = {
 		"Proxy Server": "n",
