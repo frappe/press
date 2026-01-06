@@ -16,10 +16,10 @@ from frappe.core.utils import find
 from frappe.desk.utils import slug
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
+from frappe.utils import cint
 from frappe.utils.password import get_decrypted_password
 from hcloud import APIException
 from hcloud import Client as HetznerClient
-from hcloud.images.domain import Image
 from hcloud.servers.domain import ServerCreatePublicNetwork
 from oci import pagination as oci_pagination
 from oci.core import BlockstorageClient, ComputeClient, VirtualNetworkClient
@@ -411,36 +411,58 @@ class VirtualMachine(Document):
 		return None
 
 	def _provision_hetzner(self):
+		from hcloud.firewalls.domain import Firewall
+		from hcloud.images.domain import Image
+		from hcloud.locations.domain import Location
+		from hcloud.networks.domain import Network
+		from hcloud.server_types.domain import ServerType
+		from hcloud.ssh_keys.domain import SSHKey
+
 		cluster = frappe.get_doc("Cluster", self.cluster)
-		server_type = self.client().server_types.get_by_name(self.machine_type)
-		location = self.client().locations.get_by_name(cluster.region)
-		network = self.client().networks.get_by_id(cluster.vpc_id)
-		public_net = ServerCreatePublicNetwork(enable_ipv4=True, enable_ipv6=False)
-		ssh_key_name = self.ssh_key
-		ssh_key = self.client().ssh_keys.get_by_name(ssh_key_name)
-
 		self.skip_automated_snapshot = True
-		if self.virtual_machine_image:
-			vmi = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
-			image = self.client().images.get_by_id(vmi.image_id)
-		else:
-			image = Image(id=67794396)  # ubuntu-20.04
 
-		server_response = self.client().servers.create(
-			name=f"{self.name}",
-			server_type=server_type,
-			image=image,
-			networks=[network],
-			location=location,
-			public_net=public_net,
-			ssh_keys=[ssh_key],
-			user_data=self.get_cloud_init() if self.virtual_machine_image else "",
+		server = (
+			self.client()
+			.servers.create(
+				name=self.name,
+				server_type=ServerType(name=self.machine_type),
+				image=(
+					Image(
+						id=frappe.get_value("Virtual Machine Image", self.virtual_machine_image, "image_id")
+					)
+					if self.virtual_machine_image
+					else Image(name="ubuntu-22.04")
+				),
+				networks=[],  # Don't attach to any network during creation
+				firewalls=[
+					Firewall(id=cint(self.security_group_id)),
+				],
+				location=Location(name=cluster.region),
+				public_net=ServerCreatePublicNetwork(
+					enable_ipv4=True,
+					enable_ipv6=False,
+				),
+				ssh_keys=[
+					SSHKey(name=self.ssh_key),
+				],
+				user_data=self.get_cloud_init() if self.virtual_machine_image else "",
+			)
+			.server
 		)
-		server = server_response.server
 		self.instance_id = server.id
+		self.save()
+		# To ensure, we don't lose state, because machine has been created at this point
+		frappe.db.commit()
+
+		# Attach Server to Private Network
+		# Because, this allows us to provide the required private IP during network attachment
+		self.client().servers.attach_to_network(
+			server=server,
+			network=Network(id=cint(cluster.vpc_id)),
+			ip=self.private_ip_address,
+		).wait_until_finished(HETZNER_ACTION_TIMEOUT)
 
 		self.status = self.get_hetzner_status_map()[server.status]
-
 		self.save()
 
 	def _provision_aws(self):  # noqa: C901
@@ -875,7 +897,7 @@ class VirtualMachine(Document):
 		if server_instance:
 			self.status = self.get_hetzner_status_map()[server_instance.status]
 			self.machine_type = server_instance.server_type.name
-			self.private_ip_address = server_instance.private_net[0].ip
+			self.private_ip_address = server_instance.private_net[0].ip if server_instance.private_net else ""
 			self.public_ip_address = server_instance.public_net.ipv4.ip
 
 			existing_volumes = [vol.volume_id for vol in self.volumes]
@@ -1833,34 +1855,6 @@ class VirtualMachine(Document):
 			raise NotImplementedError
 		return self.client().servers.get_by_id(self.instance_id)
 
-	def correct_private_ip(self):
-		"""
-		We don't get to set private ip on instance creation.
-		So, we need to detach and attach the instance to the network with the desired private ip
-		Otherwise, too many config files need to be updated
-		"""
-		if self.cloud_provider != "Hetzner":
-			raise NotImplementedError
-		vpc_id = frappe.db.get_value("Cluster", self.cluster, "vpc_id")
-		network = self.client().networks.get_by_id(vpc_id)
-		try:
-			self.server_instance.detach_from_network(network).wait_until_finished(HETZNER_ACTION_TIMEOUT)
-		except APIException as e:  # for retry
-			if "resource not found" in str(e):
-				pass
-			else:
-				raise e
-		try:
-			self.server_instance.attach_to_network(network, ip=self.get_private_ip()).wait_until_finished(
-				HETZNER_ACTION_TIMEOUT
-			)
-		except APIException as e:
-			if "already attached" in str(e):
-				pass
-			else:
-				raise e
-		self.sync()
-
 	@frappe.whitelist()
 	def attach_volume(self, volume_id=None, is_temporary_volume: bool = False, size: int | None = None):
 		"""
@@ -1889,6 +1883,7 @@ class VirtualMachine(Document):
 				automount=False,
 				server=self.server_instance,
 			)
+
 			"""
 			This is a temporary assignment of linux_device from Hetzner API to
 			device_name. linux_device is actually the mountpoint of the volume.
@@ -1898,6 +1893,7 @@ class VirtualMachine(Document):
 			new_volume.action.wait_until_finished(HETZNER_ACTION_TIMEOUT)  # wait until volume is created
 			for action in new_volume.next_actions:
 				action.wait_until_finished(HETZNER_ACTION_TIMEOUT)  # wait until volume is attached
+
 		self.save()
 		self.sync()
 		return device_name
