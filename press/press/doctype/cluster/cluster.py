@@ -899,6 +899,10 @@ class Cluster(Document):
 		if self.cloud_provider == "OCI":
 			return self._check_oci_machine_availability(machine_type)
 
+		if self.cloud_provider == "Hetzner":
+			# TODO: Implement Hetzner machine type availability check
+			return True
+
 		return True
 
 	def create_vm(

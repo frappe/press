@@ -15,7 +15,11 @@
 		v-model="show"
 	>
 		<template #body-content>
-			<div class="mb-4 mt-2 w-full space-y-2">
+			<!-- Don't show premium plans for Hetzner provider -->
+			<div
+				class="mb-4 mt-2 w-full space-y-2"
+				v-if="this.$server?.doc?.provider != 'Hetzner'"
+			>
 				<div class="grid grid-cols-2 gap-3">
 					<button
 						v-for="c in [
@@ -48,7 +52,46 @@
 					</button>
 				</div>
 			</div>
+
+			<!-- CPU and Ram only upgrade choice -->
+			<div
+				v-if="this.$server?.doc?.provider === 'Hetzner'"
+				class="flex flex-col overflow-hidden rounded text-left w-full p-3 mb-4 cursor-pointer gap-3"
+				:class="{
+					'border-amber-300 bg-amber-100 border-2': !cpu_and_memory_only_resize,
+					'border-blue-300 bg-blue-100 border-2': cpu_and_memory_only_resize,
+				}"
+				@click.prevent="
+					cpu_and_memory_only_resize = !cpu_and_memory_only_resize
+				"
+			>
+				<Checkbox
+					class="cursor-pointer"
+					size="sm"
+					v-model="cpu_and_memory_only_resize"
+					label="CPU and Memory only resize"
+				/>
+
+				<p class="text-base leading-relaxed" v-if="!cpu_and_memory_only_resize">
+					<b>Note :</b> You won't be able to downgrade this server to a plan
+					with a smaller disk size.<br />
+					If you only want to upgrade CPU and memory without changing the disk
+					size, keep this option checked.
+				</p>
+				<p v-else class="text-base leading-relaxed">
+					To view plans that include disk upgrades, uncheck this option.
+				</p>
+			</div>
+
+			<!-- Site Plans Cards -->
+			<div
+				class="h-64 flex flex-row justify-center items-center gap-2"
+				v-if="$resources?.serverPlans?.loading"
+			>
+				<Spinner class="w-4" /> Loading Server Plans...
+			</div>
 			<ServerPlansCards
+				v-else
 				v-model="plan"
 				:plans="
 					planType === 'Premium'
@@ -61,11 +104,11 @@
 	</Dialog>
 </template>
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
+import { getCachedDocumentResource, Checkbox, Spinner } from 'frappe-ui';
 import ServerPlansCards from './ServerPlansCards.vue';
 
 export default {
-	components: { ServerPlansCards },
+	components: { ServerPlansCards, Checkbox, Spinner },
 	props: {
 		server: {
 			type: String,
@@ -81,6 +124,7 @@ export default {
 			show: true,
 			plan: null,
 			planType: 'Standard',
+			cpu_and_memory_only_resize: true,
 		};
 	},
 	watch: {
@@ -94,6 +138,10 @@ export default {
 				}
 			},
 		},
+		cpu_and_memory_only_resize(value) {
+			if (!this.$resources?.serverPlans) return;
+			this.$resources?.serverPlans.submit();
+		},
 	},
 	resources: {
 		serverPlans() {
@@ -103,6 +151,8 @@ export default {
 					name: this.cleanedServerType,
 					cluster: this.$server.doc.cluster,
 					platform: this.$server.doc.current_plan.platform,
+					resource_name: this.$server.doc.name,
+					cpu_and_memory_only_resize: this.cpu_and_memory_only_resize,
 				},
 				auto: true,
 				initialData: [],
@@ -111,8 +161,13 @@ export default {
 	},
 	methods: {
 		changePlan() {
+			// TODO: Add confirmation dialog for hetzner plan upgrade
+
 			return this.$server.changePlan.submit(
-				{ plan: this.plan.name },
+				{
+					plan: this.plan.name,
+					upgrade_disk: !this.cpu_and_memory_only_resize,
+				},
 				{
 					onSuccess: () => {
 						this.show = false;
