@@ -928,6 +928,8 @@ class VirtualMachine(Document):
 		self.private_ip_address = server_instance.private_net[0].ip if server_instance.private_net else ""
 		self.public_ip_address = server_instance.public_net.ipv4.ip
 
+		self.termination_protection = server_instance.protection.get("delete", False)
+
 		attached_volumes = []
 		attached_devices = []
 
