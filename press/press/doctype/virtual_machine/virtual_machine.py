@@ -766,7 +766,8 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "Hetzner":
 			self.client().servers.reboot(self.get_hetzner_server_instance(fetch_data=False))
 
-		log_server_activity(self.series, self.get_server().name, action="Reboot")
+		if server := self.get_server():
+			log_server_activity(self.series, server.name, action="Reboot")
 
 		self.sync()
 
@@ -1398,7 +1399,8 @@ class VirtualMachine(Document):
 				volume.delete()
 			self.client().servers.delete(self.get_hetzner_server_instance(fetch_data=False))
 
-		log_server_activity(self.series, self.get_server().name, action="Terminated")
+		if server := self.get_server():
+			log_server_activity(self.series, server.name, action="Terminated")
 
 	@frappe.whitelist()
 	def resize(self, machine_type, upgrade_disk: bool = False):
@@ -1656,12 +1658,13 @@ class VirtualMachine(Document):
 		if self.cloud_provider == "AWS EC2":
 			self.get_server().reboot_with_serial_console()
 
-		log_server_activity(
-			self.series,
-			self.get_server().name,
-			action="Reboot",
-			reason="Unable to reboot manually, rebooting with serial console",
-		)
+		if server := self.get_server():
+			log_server_activity(
+				self.series,
+				server.name,
+				action="Reboot",
+				reason="Unable to reboot manually, rebooting with serial console",
+			)
 
 		self.sync()
 
@@ -1876,10 +1879,10 @@ class VirtualMachine(Document):
 		self.wait_for_volume_to_be_available(volume_id)
 		self.attach_volume(volume_id)
 
-		if log_activity:
+		if log_activity and (server := self.get_server()):
 			log_server_activity(
 				self.series,
-				self.get_server().name,
+				server.name,
 				action="Volume",
 				reason="Volume attached on server",
 			)
