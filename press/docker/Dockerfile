@@ -255,8 +255,12 @@ RUN chmod +x /usr/local/bin/get_cached_app.py
 {% if app.app != "crm" %}
 =======
 
+<<<<<<< HEAD
 {% if app.use_cached %}
 >>>>>>> a24a08342 (feat(build): Isolate assets from image)
+=======
+{% if app.use_cached and use_asset_store %}
+>>>>>>> d8b81da15 (feat(build): Allow >3.10 python to use cached assets)
 RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 \
 <<<<<<< HEAD
   --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
@@ -275,7 +279,6 @@ RUN --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps
 {% endif %}
 =======
     --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
-    --mount=type=secret,id=asset_store_credentials \
     python${PYTHON_VERSION} /usr/local/bin/get_cached_app.py \
         {{ app.app }} \
         {{ app.hash }} \
