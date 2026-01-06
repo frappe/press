@@ -8,7 +8,7 @@
 		<ErrorMessage class="mt-2" :message="errorMessage" />
 
 		<FormControl
-			type="autocomplete"
+			type="combobox"
 			:options="teams"
 			size="sm"
 			variant="subtle"

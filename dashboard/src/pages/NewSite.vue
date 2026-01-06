@@ -1,5 +1,5 @@
 <template>
-	<div class="sticky top-0 z-10 shrink-0">
+	<div class="sticky top-0 shrink-0">
 		<Header>
 			<FBreadcrumbs :items="breadcrumbs" />
 		</Header>
@@ -45,7 +45,7 @@
 					:class="{ 'pointer-events-none opacity-50': !showLocalisationOption }"
 					label="Select Country"
 					v-model="selectedLocalisationCountry"
-					type="autocomplete"
+					type="combobox"
 					:options="localisationAppCountries"
 				/>
 			</div>
