@@ -634,6 +634,8 @@ class BaseServer(Document, TagHelpers):
 
 	def _prepare_server(self):
 		try:
+			ansible = None
+
 			if self.provider == "Scaleway":
 				ansible = Ansible(
 					playbook="scaleway.yml",
@@ -651,7 +653,8 @@ class BaseServer(Document, TagHelpers):
 				ansible = Ansible(playbook="oci.yml", server=self, user="ubuntu")
 			elif self.provider == "Vodacom":
 				ansible = Ansible(playbook="vodacom.yml", server=self, user="ubuntu")
-			if self.provider != "Generic":
+
+			if self.provider != "Generic" and ansible:
 				ansible.run()
 
 			self.reload()
