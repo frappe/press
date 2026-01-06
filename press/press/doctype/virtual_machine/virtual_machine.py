@@ -417,6 +417,9 @@ class VirtualMachine(Document):
 		from hcloud.server_types.domain import ServerType
 		from hcloud.ssh_keys.domain import SSHKey
 
+		if not self.machine_image:
+			frappe.throw("Machine Image is required to provision Hetzner Virtual Machine.")
+
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		self.skip_automated_snapshot = True
 
@@ -425,13 +428,7 @@ class VirtualMachine(Document):
 			.servers.create(
 				name=self.name,
 				server_type=ServerType(name=self.machine_type),
-				image=(
-					Image(
-						id=frappe.get_value("Virtual Machine Image", self.virtual_machine_image, "image_id")
-					)
-					if self.virtual_machine_image
-					else Image(name="ubuntu-22.04")
-				),
+				image=Image(cint(self.machine_image)),
 				networks=[],  # Don't attach to any network during creation
 				firewalls=[
 					Firewall(id=cint(self.security_group_id)),
@@ -751,9 +748,12 @@ class VirtualMachine(Document):
 				return images[0].id
 		if self.cloud_provider == "Hetzner":
 			images = self.client().images.get_all(
-				name="ubuntu-20.04", architecture="x86", sort="created:desc", type="system"
+				name="ubuntu-22.04",
+				architecture="x86" if self.platform == "x86_64" else "arm",
+				sort="created:desc",
+				type="system",
 			)
-			if images:
+			if images and len(images) > 0:
 				return images[0].id
 		return None
 
