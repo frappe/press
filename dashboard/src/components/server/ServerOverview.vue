@@ -471,6 +471,7 @@ export default {
 										label: 'Increase Storage',
 										icon: 'plus',
 										variant: 'ghost',
+										condition: () => doc.provider != 'Hetzner',
 										onClick: () => {
 											confirmDialog({
 												title: 'Increase Storage',
@@ -651,7 +652,14 @@ export default {
 											this.showStorageBreakdownDialog(serverType);
 										},
 									},
-								].filter((e) => e.hidden !== true),
+								]
+									.filter((e) => e.hidden !== true)
+									.filter((e) => {
+										if (e.condition) {
+											return e.condition();
+										}
+										return true;
+									}),
 							},
 						]),
 			];
