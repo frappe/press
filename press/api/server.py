@@ -622,18 +622,35 @@ def secondary_server_plans(
 
 
 @frappe.whitelist()
-def plans(name, cluster=None, platform=None):
-	# Removed default platform of x86_64;
-	# Still use x86_64 for new database servers
+def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_only_resize=False):
 	filters = {"server_type": name}
 
 	if cluster:
 		filters.update({"cluster": cluster})
 
+	# Removed default platform of x86_64;
+	# Still use x86_64 for new database servers
 	if platform:
 		filters.update({"platform": platform})
 
-	return Plan.get_plans(
+	current_root_disk_size = None
+	if resource_name:
+		resource_details = frappe.db.get_value(
+			name, resource_name, ["virtual_machine", "provider"], as_dict=True
+		)
+
+		if resource_details.provider == "Hetzner":
+			current_root_disk_size = (
+				frappe.db.get_value("Virtual Machine", resource_details.virtual_machine, "root_disk_size")
+				if resource_details and resource_details.virtual_machine
+				else None
+			)
+
+			if current_root_disk_size is not None:
+				# Hide all plans that offer less disk than current disk size
+				filters.update({"disk": [">=", current_root_disk_size]})
+
+	plans = Plan.get_plans(
 		doctype="Server Plan",
 		fields=[
 			"name",
@@ -650,6 +667,13 @@ def plans(name, cluster=None, platform=None):
 		],
 		filters=filters,
 	)
+
+	if cpu_and_memory_only_resize and current_root_disk_size is not None:
+		# Show only CPU/memory upgrades by normalizing disk size
+		for plan in plans:
+			plan["disk"] = current_root_disk_size
+
+	return plans
 
 
 @frappe.whitelist()

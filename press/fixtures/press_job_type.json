@@ -1,5 +1,20 @@
 [
  {
+  "callback_max_retry": 1,
+  "callback_script": null,
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2025-11-26 15:28:08.243873",
+  "name": "Auto Scale Application Server",
+  "steps": [
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Server\":\n    server.scale_up()",
+    "step_name": "Auto Scale Application Server",
+    "wait_until_true": 0
+   }
+  ]
+ },
+ {
   "callback_max_retry": 5,
   "callback_script": "snapshot = frappe.get_doc(\"Server Snapshot\", arguments.get(\"server_snapshot\"))\nif doc.server_type == \"Server\":\n\tsnapshot.resume_app_server_services()\nelif doc.server_type == \"Database Server\":\n\tsnapshot.resume_database_server_services()\n\nif doc.status == \"Failure\":\n    frappe.db.set_value(\"Server Snapshot\", snapshot.name, \"status\", \"Failure\", update_modified=False)\n    for s in snapshot.snapshots:\n        try:\n            frappe.get_doc(\"Virtual Disk Snapshot\", s).delete_snapshot()\n        except:\n            pass\n        \nelse:\n    snapshot.sync(now=False)",
   "docstatus": 0,
@@ -45,56 +60,6 @@
    {
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nprint(machine.as_dict())\nif machine.cloud_provider in [\"AWS EC2\", \"OCI\"]:\n    machine.attach_new_volume(machine.size, machine.iops, machine.throughput)\nelse:\n    machine.attach_volume(size=100)",
     "step_name": "Attach Volume",
-    "wait_until_true": 0
-   }
-  ]
- },
- {
-  "callback_max_retry": 0,
-  "callback_script": null,
-  "docstatus": 0,
-  "doctype": "Press Job Type",
-  "modified": "2025-01-02 15:33:27.252601",
-  "name": "Resize Server",
-  "steps": [
-   {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.stop()",
-    "step_name": "Stop Virtual Machine",
-    "wait_until_true": 0
-   },
-   {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = (machine.status == \"Stopped\", False)",
-    "step_name": "Wait for Virtual Machine to Stop",
-    "wait_until_true": 1
-   },
-   {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.resize(arguments.machine_type)",
-    "step_name": "Resize Virtual Machine",
-    "wait_until_true": 0
-   },
-   {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\ntry:\n    machine.start()\n    result = (True, False)\nexcept:\n    result = (False, False)",
-    "step_name": "Start Virtual Machine",
-    "wait_until_true": 1
-   },
-   {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = (machine.status == \"Running\", False)",
-    "step_name": "Wait for Virtual Machine to Start",
-    "wait_until_true": 1
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.ping_ansible()\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Ping Server\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
-    "step_name": "Wait for Server to be accessible",
-    "wait_until_true": 1
-   },
-   {
-    "script": "if doc.server_type == \"Database Server\":\n    server = frappe.get_doc(doc.server_type, doc.server)\n    server.adjust_memory_config()\nelif doc.server_type == \"Server\":\n    server = frappe.get_doc(doc.server_type, doc.server)\n    server.auto_scale_workers()",
-    "step_name": "Set additional config",
-    "wait_until_true": 0
-   },
-   {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n\nserver = frappe.get_doc(doc.server_type, doc.server)\nif server.plan:\n    plan_disk_size = frappe.db.get_value(\"Server Plan\", server.plan, \"disk\")\n    if plan_disk_size and plan_disk_size > machine.disk_size:\n        try:\n            server.increase_disk_size(increment=plan_disk_size - machine.disk_size)\n        except:\n            pass",
-    "step_name": "Increase Disk Size",
     "wait_until_true": 0
    }
   ]
@@ -471,6 +436,101 @@
  },
  {
   "callback_max_retry": 1,
+  "callback_script": null,
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2025-11-12 11:06:08.243873",
+  "name": "Prune Mirror Registry",
+  "steps": [
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Registry Server\":\n    server.prune_mirror_registry()",
+    "step_name": "Prune Mirror Registry",
+    "wait_until_true": 0
+   }
+  ]
+ },
+ {
+  "callback_max_retry": 1,
+  "callback_script": null,
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2025-12-18 15:28:08.243873",
+  "name": "Auto Scale Up Application Server",
+  "steps": [
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Server\" and not server.scaled_up:\n    server.scale_up(is_automatically_triggered=True)",
+    "step_name": "Auto Scale Up Application Server",
+    "wait_until_true": 0
+   }
+  ]
+ },
+ {
+  "callback_max_retry": 1,
+  "callback_script": null,
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2025-12-18 15:28:08.243873",
+  "name": "Auto Scale Down Application Server",
+  "steps": [
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Server\" and server.scaled_up:\n    server.scale_down(is_automatically_triggered=True)",
+    "step_name": "Auto Scale Down Application Server",
+    "wait_until_true": 0
+   }
+  ]
+ },
+ {
+  "callback_max_retry": 0,
+  "callback_script": null,
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2026-01-07 03:29:43.954581",
+  "name": "Resize Server",
+  "steps": [
+   {
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.stop()",
+    "step_name": "Stop Virtual Machine",
+    "wait_until_true": 0
+   },
+   {
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = (machine.status == \"Stopped\", False)",
+    "step_name": "Wait for Virtual Machine to Stop",
+    "wait_until_true": 1
+   },
+   {
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.resize(arguments.machine_type, arguments.get(\"upgrade_disk\", None))",
+    "step_name": "Resize Virtual Machine",
+    "wait_until_true": 0
+   },
+   {
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\ntry:\n    machine.start()\n    result = (True, False)\nexcept:\n    result = (False, False)",
+    "step_name": "Start Virtual Machine",
+    "wait_until_true": 1
+   },
+   {
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = (machine.status == \"Running\", False)",
+    "step_name": "Wait for Virtual Machine to Start",
+    "wait_until_true": 1
+   },
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.ping_ansible()\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Ping Server\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
+    "step_name": "Wait for Server to be accessible",
+    "wait_until_true": 1
+   },
+   {
+    "script": "if doc.server_type == \"Database Server\":\n    server = frappe.get_doc(doc.server_type, doc.server)\n    server.adjust_memory_config()\nelif doc.server_type == \"Server\":\n    server = frappe.get_doc(doc.server_type, doc.server)\n    server.auto_scale_workers()",
+    "step_name": "Set additional config",
+    "wait_until_true": 0
+   },
+   {
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n\nserver = frappe.get_doc(doc.server_type, doc.server)\nif server.plan:\n    plan_disk_size = frappe.db.get_value(\"Server Plan\", server.plan, \"disk\")\n    if plan_disk_size and plan_disk_size > machine.disk_size:\n        try:\n            server.increase_disk_size(increment=plan_disk_size - machine.disk_size)\n        except:\n            pass",
+    "step_name": "Increase Disk Size",
+    "wait_until_true": 0
+   }
+  ]
+ },
+ {
+  "callback_max_retry": 1,
   "callback_script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type in [\"Server\", \"Database Server\"] and server.is_for_recovery:\n    filter_field = \"app_server\" if doc.server_type == \"Server\" else \"database_server\"\n    recovery_record_name = frappe.db.get_value(\"Server Snapshot Recovery\", {filter_field: doc.server}, \"name\")\n    if recovery_record_name:\n        recovery_record = frappe.get_doc(\"Server Snapshot Recovery\", recovery_record_name, for_update=True)\n    \n        if doc.status == \"Success\":\n            if doc.server_type == \"Server\":\n                recovery_record.is_app_server_ready = True\n            else:\n                recovery_record.is_database_server_ready = True\n            recovery_record.save()\n        else:\n            recovery_record.mark_server_provisioning_as_failed()\n            \nif doc.server_type in [\"Server\", \"Database Server\"] and \"logical_replication_backup\" in arguments:\n    if doc.status == \"Success\":\n        frappe.get_doc(\"Logical Replication Backup\", arguments.get(\"logical_replication_backup\")).next()\n    if doc.status == \"Failure\":\n        frappe.get_doc(\"Logical Replication Backup\", arguments.get(\"logical_replication_backup\")).fail()",
   "docstatus": 0,
   "doctype": "Press Job Type",
@@ -615,51 +675,6 @@
    {
     "script": "if doc.server.startswith(\"fs\") and doc.server_type == \"Server\":\n    primary_server = frappe.db.get_value(\"Server\", doc.server, \"primary\")\n    nfs_volume_attachment = frappe.get_doc(\n\t    {\"doctype\": \"NFS Volume Attachment\", \"primary_server\": primary_server}\n    )\n    nfs_volume_attachment.insert(ignore_permissions=True)\n    frappe.db.commit()",
     "step_name": "Share benches over NFS",
-    "wait_until_true": 0
-   }
-  ]
- },
- {
-  "callback_max_retry": 1,
-  "callback_script": null,
-  "docstatus": 0,
-  "doctype": "Press Job Type",
-  "modified": "2025-11-12 11:06:08.243873",
-  "name": "Prune Mirror Registry",
-  "steps": [
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Registry Server\":\n    server.prune_mirror_registry()",
-    "step_name": "Prune Mirror Registry",
-    "wait_until_true": 0
-   }
-  ]
- },
- {
-  "callback_max_retry": 1,
-  "callback_script": null,
-  "docstatus": 0,
-  "doctype": "Press Job Type",
-  "modified": "2025-12-18 15:28:08.243873",
-  "name": "Auto Scale Up Application Server",
-  "steps": [
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Server\" and not server.scaled_up:\n    server.scale_up(is_automatically_triggered=True)",
-    "step_name": "Auto Scale Up Application Server",
-    "wait_until_true": 0
-   }
-  ]
- },
- {
-  "callback_max_retry": 1,
-  "callback_script": null,
-  "docstatus": 0,
-  "doctype": "Press Job Type",
-  "modified": "2025-12-18 15:28:08.243873",
-  "name": "Auto Scale Down Application Server",
-  "steps": [
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Server\" and server.scaled_up:\n    server.scale_down(is_automatically_triggered=True)",
-    "step_name": "Auto Scale Down Application Server",
     "wait_until_true": 0
    }
   ]

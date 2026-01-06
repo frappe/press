@@ -1122,7 +1122,9 @@ class BaseServer(Document, TagHelpers):
 		if add_on_storage_subscription:
 			add_on_storage_subscription.disable()
 
-	def can_change_plan(self, ignore_card_setup: bool, new_plan: ServerPlan) -> None:
+	def can_change_plan(  # noqa: C901
+		self, ignore_card_setup: bool, new_plan: ServerPlan, upgrade_disk: bool = False
+	) -> None:
 		if is_system_user(frappe.session.user):
 			return
 
@@ -1146,12 +1148,23 @@ class BaseServer(Document, TagHelpers):
 				f"Cannot change plan right now since the instance type {new_plan.instance_type} is not available. Try again later."
 			)
 
+		if self.provider == "Hetzner" and self.plan and self.plan == new_plan.name and upgrade_disk:
+			current_root_disk_size = frappe.db.get_value(
+				"Virtual Machine", self.virtual_machine, "root_disk_size"
+			)
+			if current_root_disk_size >= new_plan.disk:
+				frappe.throw(
+					"Cannot upgrade disk because the selected plan has the same or smaller disk size"
+				)
+
 	@dashboard_whitelist()
-	def change_plan(self, plan: str, ignore_card_setup=False):
+	def change_plan(self, plan: str, ignore_card_setup=False, upgrade_disk: bool = False):
 		plan_doc: ServerPlan = frappe.get_doc("Server Plan", plan)
-		self.can_change_plan(ignore_card_setup, new_plan=plan_doc)
+		self.can_change_plan(ignore_card_setup, new_plan=plan_doc, upgrade_disk=upgrade_disk)
 		self._change_plan(plan_doc)
-		self.run_press_job("Resize Server", {"machine_type": plan_doc.instance_type})
+		self.run_press_job(
+			"Resize Server", {"machine_type": plan_doc.instance_type, "upgrade_disk": upgrade_disk}
+		)
 
 	def _change_plan(self, plan):
 		self.ram = plan.memory
