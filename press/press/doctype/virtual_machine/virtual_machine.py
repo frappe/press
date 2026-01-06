@@ -1214,6 +1214,8 @@ class VirtualMachine(Document):
 			)
 		elif self.cloud_provider == "OCI":
 			self._create_snapshots_oci(exclude_boot_volume)
+		elif self.cloud_provider == "Hetzner":
+			self._create_snapshots_hetzner()
 
 	def _create_snapshots_aws(
 		self,
@@ -1301,6 +1303,22 @@ class VirtualMachine(Document):
 				pass
 			except Exception:
 				log_error(title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot)
+
+	def _create_snapshots_hetzner(self):
+		server = self.get_hetzner_server_instance(fetch_data=True)
+		response = server.create_image(
+			type="snapshot", description=f"Frappe Cloud - {self.name} - {frappe.utils.now()}"
+		)
+
+		doc = frappe.get_doc(
+			{
+				"doctype": "Virtual Disk Snapshot",
+				"virtual_machine": self.name,
+				"snapshot_id": response.image.id,
+				"volume_id": HETZNER_ROOT_DISK_ID,
+			}
+		).insert()
+		self.flags.created_snapshots.append(doc.name)
 
 	def get_temporary_volume_ids(self) -> list[str]:
 		tmp_volume_ids = set()
