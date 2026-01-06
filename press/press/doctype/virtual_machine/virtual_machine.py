@@ -17,7 +17,8 @@ from frappe.desk.utils import slug
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils.password import get_decrypted_password
-from hcloud import APIException, Client
+from hcloud import APIException
+from hcloud import Client as HetznerClient
 from hcloud.images.domain import Image
 from hcloud.servers.domain import ServerCreatePublicNetwork
 from oci import pagination as oci_pagination
@@ -779,7 +780,7 @@ class VirtualMachine(Document):
 			if volume_id == HETZNER_ROOT_DISK_ID:
 				frappe.throw("Cannot increase disk size for hetzner root disk.")
 			volume = self.client().volumes.get_by_id(volume_id)
-			self.client().volumes.resize(volume, increment)
+			self.client().volumes.resize(volume, volume.size)
 
 		log_server_activity(
 			self.series,
@@ -1399,7 +1400,7 @@ class VirtualMachine(Document):
 		if self.cloud_provider == "Hetzner":
 			settings = frappe.get_single("Press Settings")
 			api_token = settings.get_password("hetzner_api_token")
-			return Client(token=api_token)
+			return HetznerClient(token=api_token)
 
 		return None
 
