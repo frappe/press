@@ -2320,7 +2320,20 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			return frappe.get_cached_value(
 				"Bastion Server", self.bastion_server, ["ssh_user", "ssh_port", "ip"], as_dict=True
 			)
-		return frappe._dict()
+
+		# if bastion server is not found and server doesnt have public ip, use proxy server as bastion/jump server
+		if not self.ip:
+			proxy_server = None
+			if self.doctype == "Database Server":
+				proxy_server = frappe.db.get_value("Server", {"database_server": self.name}, "proxy_server")
+			elif self.doctype == "Server":
+				proxy_server = frappe.db.get_value(self.doctype, self.name, "proxy_server")
+
+			if proxy_server:
+				return frappe._dict(
+					{"ssh_user": "root"}
+					| frappe.get_cached_value("Proxy Server", proxy_server, ["ssh_port", "ip"], as_dict=True)
+				)
 
 	@frappe.whitelist()
 	def get_aws_static_ip(self):
