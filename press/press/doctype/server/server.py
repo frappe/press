@@ -1045,7 +1045,7 @@ class BaseServer(Document, TagHelpers):
 		frappe.enqueue_doc(self.doctype, self.name, "_rename_server", queue="long", timeout=2400)
 
 	@frappe.whitelist()
-	def archive(self):
+	def archive(self):  # noqa: C901
 		if frappe.db.exists(
 			"Press Job",
 			{
@@ -1055,6 +1055,10 @@ class BaseServer(Document, TagHelpers):
 				"status": "Success",
 			},
 		):
+			if self.status != "Archived":
+				self.status = "Archived"
+				self.save()
+
 			frappe.msgprint(_("Server {0} has already been archived.").format(self.name))
 			return
 
@@ -2516,8 +2520,8 @@ class Server(BaseServer):
 		inventory = f"{self.ip},"
 		return AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
 
-	def setup_docker(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_docker", timeout=1200)
+	def setup_docker(self, now: bool | None = None):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_docker", timeout=1200, now=now or False)
 
 	def _setup_docker(self):
 		try:
