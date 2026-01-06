@@ -15,6 +15,7 @@ import boto3
 import frappe
 from frappe.model.document import Document
 from hcloud import APIException, Client
+from hcloud.firewalls.domain import FirewallRule as HetznerFirewallRule
 from hcloud.networks.domain import NetworkSubnet
 from oci.config import validate_config
 from oci.core import VirtualNetworkClient
@@ -183,15 +184,6 @@ class Cluster(Document):
 
 	def provision_on_hetzner(self):
 		try:
-			# Define the subnet
-			subnets = [
-				NetworkSubnet(
-					type="cloud",  # VPCs in Hetzner are defined as 'cloud' subnets
-					ip_range=self.subnet_cidr_block,
-					network_zone=self.availability_zone,
-				)
-			]
-
 			# Get Hetzner API token from Press Settings
 			settings: "PressSettings" = frappe.get_single("Press Settings")
 			api_token = settings.get_password("hetzner_api_token")
@@ -202,29 +194,138 @@ class Cluster(Document):
 			network = client.networks.create(
 				name=f"Frappe Cloud - {self.name}",
 				ip_range=self.cidr_block,  # The IP range for the entire network (CIDR)
-				subnets=subnets,
+				subnets=[
+					NetworkSubnet(
+						type="cloud",  # VPCs in Hetzner are defined as 'cloud' subnets
+						ip_range=self.subnet_cidr_block,
+						network_zone=self.availability_zone,
+					)
+				],
 				routes=[],
 			)
 			self.vpc_id = network.id
 			self.save()
-
-			# Create the SSH Key on Hetzner
-			try:
-				client.ssh_keys.create(
-					name=self.ssh_key,
-					public_key=frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
-				)
-			except APIException:
-				# If the SSH key already exists, retrieve it
-				existing_keys = client.ssh_keys.get_all(name=self.ssh_key)
-				if len(existing_keys) == 0:
-					frappe.throw(f"SSH Key creation failed and '{self.ssh_key}' not found on Hetzner Cloud.")
-
 		except APIException as e:
 			frappe.throw(f"Failed to provision network on Hetzner: {e!s}")
 
-		except Exception as e:
-			frappe.throw(f"An unexpected error occurred during provisioning: {e!s}")
+		# Create the SSH Key on Hetzner
+		try:
+			client.ssh_keys.create(
+				name=self.ssh_key,
+				public_key=frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
+			)
+		except APIException:
+			# If the SSH key already exists, retrieve it
+			existing_keys = client.ssh_keys.get_all(name=self.ssh_key)
+			if len(existing_keys) == 0:
+				frappe.throw(f"SSH Key creation failed and '{self.ssh_key}' not found on Hetzner Cloud.")
+
+		try:
+			# Create Server Firewall
+			server_firewall = client.firewalls.create(
+				name=f"Frappe Cloud - {self.name} - Security Group",
+				rules=[
+					HetznerFirewallRule(
+						description="HTTP from anywhere",
+						direction="in",
+						protocol="tcp",
+						port="80",
+						source_ips=["0.0.0.0/0"],
+					),
+					HetznerFirewallRule(
+						description="HTTPS from anywhere",
+						direction="in",
+						protocol="tcp",
+						port="443",
+						source_ips=["0.0.0.0/0"],
+					),
+					HetznerFirewallRule(
+						description="SSH from anywhere",
+						direction="in",
+						protocol="tcp",
+						port="22",
+						source_ips=["0.0.0.0/0"],
+					),
+					HetznerFirewallRule(
+						description="MariaDB from private network",
+						direction="in",
+						protocol="tcp",
+						port="3306",
+						source_ips=[self.subnet_cidr_block],
+					),
+					HetznerFirewallRule(
+						description="SSH from private network",
+						direction="in",
+						protocol="tcp",
+						port="22000-22999",
+						source_ips=[self.subnet_cidr_block],
+					),
+					HetznerFirewallRule(
+						description="ICMP from anywhere",
+						direction="in",
+						protocol="icmp",
+						port=None,
+						source_ips=["0.0.0.0/0"],
+					),
+				],
+			)
+			self.security_group_id = server_firewall.firewall.id
+			self.save()
+		except APIException as e:
+			frappe.throw(f"Failed to provision server firewall on Hetzner: {e!s}")
+
+		try:
+			# Create Proxy Server Firewall
+			proxy_firewall = client.firewalls.create(
+				f"Frappe Cloud - {self.name} - Proxy - Security Group",
+				rules=[
+					HetznerFirewallRule(
+						description="HTTP from anywhere",
+						direction="in",
+						protocol="tcp",
+						port="80",
+						source_ips=["0.0.0.0/0"],
+					),
+					HetznerFirewallRule(
+						description="HTTPS from anywhere",
+						direction="in",
+						protocol="tcp",
+						port="443",
+						source_ips=["0.0.0.0/0"],
+					),
+					HetznerFirewallRule(
+						description="SSH from anywhere",
+						direction="in",
+						protocol="tcp",
+						port="22",
+						source_ips=["0.0.0.0/0"],
+					),
+					HetznerFirewallRule(
+						description="ICMP from anywhere",
+						direction="in",
+						protocol="icmp",
+						source_ips=["0.0.0.0/0"],
+					),
+					HetznerFirewallRule(
+						description="SSH proxy from anywhere",
+						direction="in",
+						protocol="tcp",
+						port="2222",
+						source_ips=["0.0.0.0/0"],
+					),
+					HetznerFirewallRule(
+						description="MariaDB from anywhere",
+						direction="in",
+						protocol="tcp",
+						port="3306",
+						source_ips=["0.0.0.0/0"],
+					),
+				],
+			)
+			self.proxy_security_group_id = proxy_firewall.firewall.id
+			self.save()
+		except APIException as e:
+			frappe.throw(f"Failed to provision proxy server firewall on Hetzner: {e!s}")
 
 	def on_trash(self):
 		machines = frappe.get_all(
