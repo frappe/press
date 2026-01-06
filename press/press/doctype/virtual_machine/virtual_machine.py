@@ -1346,7 +1346,7 @@ class VirtualMachine(Document):
 				InstanceId=self.instance_id, DisableApiTermination={"Value": False}
 			)
 		elif self.cloud_provider == "Hetzner":
-			self.get_hetzner_server_instance(fetch_data=False).change_protection(delete=False)
+			self.get_hetzner_server_instance().change_protection(delete=False, rebuild=False)
 		self.sync()
 
 	@frappe.whitelist()
@@ -1356,7 +1356,7 @@ class VirtualMachine(Document):
 				InstanceId=self.instance_id, DisableApiTermination={"Value": True}
 			)
 		elif self.cloud_provider == "Hetzner":
-			self.get_hetzner_server_instance(fetch_data=False).change_protection(delete=True, rebuild=True)
+			self.get_hetzner_server_instance().change_protection(delete=True, rebuild=True)
 		self.sync()
 
 	@frappe.whitelist()
@@ -1958,9 +1958,9 @@ class VirtualMachine(Document):
 		if fetch_data:
 			return self.client().servers.get_by_id(self.instance_id)
 
-		from hcloud.servers.domain import Server
+		from hcloud.servers.domain import Server as HetznerServer
 
-		return Server(cint(self.instance_id))
+		return HetznerServer(cint(self.instance_id))
 
 	@frappe.whitelist()
 	def attach_volume(self, volume_id, is_temporary_volume: bool = False):

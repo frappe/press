@@ -474,7 +474,7 @@
   "callback_script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type in [\"Server\", \"Database Server\"] and server.is_for_recovery:\n    filter_field = \"app_server\" if doc.server_type == \"Server\" else \"database_server\"\n    recovery_record_name = frappe.db.get_value(\"Server Snapshot Recovery\", {filter_field: doc.server}, \"name\")\n    if recovery_record_name:\n        recovery_record = frappe.get_doc(\"Server Snapshot Recovery\", recovery_record_name, for_update=True)\n    \n        if doc.status == \"Success\":\n            if doc.server_type == \"Server\":\n                recovery_record.is_app_server_ready = True\n            else:\n                recovery_record.is_database_server_ready = True\n            recovery_record.save()\n        else:\n            recovery_record.mark_server_provisioning_as_failed()\n            \nif doc.server_type in [\"Server\", \"Database Server\"] and \"logical_replication_backup\" in arguments:\n    if doc.status == \"Success\":\n        frappe.get_doc(\"Logical Replication Backup\", arguments.get(\"logical_replication_backup\")).next()\n    if doc.status == \"Failure\":\n        frappe.get_doc(\"Logical Replication Backup\", arguments.get(\"logical_replication_backup\")).fail()",
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2026-01-06 16:44:09.505509",
+  "modified": "2026-01-07 00:03:57.075587",
   "name": "Create Server",
   "steps": [
    {
@@ -533,19 +533,24 @@
     "wait_until_true": 1
    },
    {
-    "script": "provider = frappe.db.get_value(doc.server_type, doc.server, 'provider')\nif provider == \"Hetzner\" and doc.server_type != \"Proxy Server\":\n    vm = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n    vm.attach_new_volume(100)\n    vm.sync()\n    server = frappe.get_doc(doc.server_type, doc.server)\n    server.validate_mounts()\n    server.save()\n    server.mount_volumes(now=False)\n",
+    "script": "provider = frappe.db.get_value(doc.server_type, doc.server, 'provider')\nif provider == \"Hetzner\" and doc.virtual_machine:\n    vm = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n    server = frappe.get_doc(doc.server_type, doc.server)\n    \n    if vm.virtual_machine_image:\n        vmi = frappe.get_doc(\"Virtual Machine Image\", vm.virtual_machine_image)\n\n        if vmi.has_data_volume:\n            # If VMI has data volume, then only proceed with attaching disk\n            if server.plan:\n                data_disk_size = int(frappe.db.get_value(\"Server Plan\", server.plan ,\"disk\"))\n            else:\n                data_disk_size = 25\n            \n            vm.attach_new_volume(data_disk_size)\n            \n            # Do Virtual Machine Sync\n            # Until we got no error\n            max_sync_tries = 100\n            while max_sync_tries:\n                try:\n                    vm.sync()\n                    break\n                except Exception as e:\n                    max_sync_tries = max_sync_tries - 1\n                    if max_sync_tries <=0 :\n                        raise e\n     \n            server.validate_mounts()\n            server.save(ignore_version=True) # To avoid timestamp mismatch errors\n            server.mount_volumes(now=False)\n            result = (True, False)\n        else:\n            result = (False, False)\n",
     "step_name": "Create and mount volumes (Hetzner)",
     "wait_until_true": 0
    },
    {
-    "script": "provider = frappe.db.get_value(doc.server_type, doc.server, 'provider')\nif provider == 'Hetzner' and doc.server_type != \"Proxy Server\":\n    plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Mount Volumes\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n    result = (plays and plays[0].status == \"Success\", False)\nelse:\n    result = (True, False)",
+    "script": "provider = frappe.db.get_value(doc.server_type, doc.server, 'provider')\nif provider == \"Hetzner\" and doc.virtual_machine:\n    vm = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n\n    if vm.virtual_machine_image:\n        vmi = frappe.get_doc(\"Virtual Machine Image\", vm.virtual_machine_image)\n        if vmi.has_data_volume:\n            # Check for running ansible play\n            plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Mount Volumes\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n            result = (plays and plays[0].status == \"Success\", False)\n        else:\n            result = None\n",
     "step_name": "Wait for volumes to mount",
     "wait_until_true": 1
    },
    {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"Hetzner\" :\n    if server.doctype == \"Server\":\n        server.setup_docker()\n    elif server.doctype == \"Database Server\":\n        server.set_mariadb_mount_dependency()",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"Hetzner\" and server.has_data_volume:\n    if server.doctype == \"Server\":\n        server.setup_docker()\n    elif server.doctype == \"Database Server\":\n        server.set_mariadb_mount_dependency()\nelse:\n    result = (False, False)",
     "step_name": "Configure apps for mounts (Hetzner)",
     "wait_until_true": 0
+   },
+   {
+    "script": "play_statuses = frappe.db.get_list(\"Ansible Play\", filters={\n    \"server_type\": doc.server_type,\n    \"server\": doc.server,\n    \"play\": (\"in\", [\"Install Docker\", \"Setup MariaDB Mount Dependency\"])\n}, pluck=\"status\")\n\nall_completed = True\nis_failure = False\n\nfor status in play_statuses:\n    if status == \"Failure\":\n        is_failure = True\n        \n    all_completed = all_completed and status == \"Success\"\n    \nif all_completed:\n    result = (True, False)\nelif is_failure:\n    result = (False, True)\nelse:\n    result = (False, False)",
+    "step_name": "Wait For Dependent Plays To Finish (Hetzner)",
+    "wait_until_true": 1
    },
    {
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.update_tls_certificate()",
