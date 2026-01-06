@@ -10,7 +10,7 @@
 			<div class="flex flex-row gap-2">
 				<FormControl
 					class="w-full"
-					type="autocomplete"
+					type="combobox"
 					:options="autocompleteOptions"
 					v-model="selectedSchema"
 				/>

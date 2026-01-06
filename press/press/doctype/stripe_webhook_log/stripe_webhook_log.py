@@ -43,9 +43,6 @@ class StripeWebhookLog(Document):
 		invoice_id = get_invoice_id(payload)
 		self.stripe_payment_intent_id = ""
 
-		if not self.allow_insert_log(invoice_id):
-			return
-
 		if self.event_type in [
 			"payment_intent.succeeded",
 			"payment_intent.failed",
@@ -89,24 +86,35 @@ class StripeWebhookLog(Document):
 				frappe.utils.getdate(next_payment_attempt_date),
 			)
 
-	def allow_insert_log(self, invoice_id=None):
-		if not frappe.db.exists("Stripe Webhook Log", self.name):
-			return True
 
-		if (
-			invoice_id
-			and frappe.db.get_value("Invoice", {"stripe_invoice_id": invoice_id}, "status") == "Paid"
-		):
-			# Do not insert duplicate webhook logs for invoices that are already paid
-			return False
-		if (
-			invoice_id
-			and frappe.db.get_value("Invoice", {"stripe_invoice_id": invoice_id}, "status") == "Unpaid"
-		):
-			# Delete existing log and allow reinsertion for unpaid invoices
-			frappe.delete_doc("Stripe Webhook Log", self.name, ignore_permissions=True)
+def allow_insert_log(event):
+	if isinstance(event, str):
+		event = frappe.parse_json(event)
+	evt_id = event.get("id")
+	invoice_id = get_invoice_id(event)
+	intent_id = get_intent_id(event)
+	description = event["data"]["object"]["description"]
 
+	if not frappe.db.exists("Stripe Webhook Log", evt_id):
 		return True
+
+	if invoice_id and frappe.db.get_value("Invoice", {"stripe_invoice_id": invoice_id}, "status") == "Paid":
+		# Do not insert duplicate webhook logs for invoices that are already paid
+		return False
+	if invoice_id and frappe.db.get_value("Invoice", {"stripe_invoice_id": invoice_id}, "status") == "Unpaid":
+		# Delete existing log and allow reinsertion for unpaid invoices
+		frappe.delete_doc("Stripe Webhook Log", evt_id)
+
+	if (
+		description == "Prepaid Credits"
+		and intent_id
+		and frappe.db.exists(
+			"Invoice", {"type": "Prepaid Credits", "status": "Paid", "stripe_payment_intent_id": intent_id}
+		)
+	):
+		return False
+
+	return True
 
 
 @frappe.whitelist(allow_guest=True)
@@ -120,6 +128,9 @@ def stripe_webhook_handler():
 		event = parse_payload(payload, signature)
 		# set user to Administrator, to not have to do ignore_permissions everywhere
 		frappe.set_user("Administrator")
+
+		if not allow_insert_log(event):
+			return
 		frappe.get_doc(
 			doctype="Stripe Webhook Log",
 			payload=frappe.as_json(event),

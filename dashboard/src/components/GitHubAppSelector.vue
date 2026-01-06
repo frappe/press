@@ -21,7 +21,7 @@
 	</div>
 	<div v-else class="space-y-4">
 		<FormControl
-			type="autocomplete"
+			type="combobox"
 			label="Choose GitHub User / Organization"
 			:options="
 				options.installations.map((i) => ({
@@ -59,7 +59,7 @@
 			</Link>
 		</span>
 		<FormControl
-			type="autocomplete"
+			type="combobox"
 			v-if="selectedGithubUserData"
 			label="Choose GitHub Repository"
 			:options="
@@ -89,7 +89,7 @@
 		</p>
 		<FormControl
 			v-if="selectedGithubRepository"
-			type="autocomplete"
+			type="combobox"
 			label="Choose Branch"
 			:options="branchOptions"
 			v-model="selectedBranch"
