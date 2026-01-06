@@ -431,7 +431,7 @@ class VirtualMachine(Document):
 				image=Image(cint(self.machine_image)),
 				networks=[],  # Don't attach to any network during creation
 				firewalls=[
-					Firewall(id=cint(self.security_group_id)),
+					Firewall(id=cint(security_group_id)) for security_group_id in self.get_security_groups()
 				],
 				location=Location(name=cluster.region),
 				public_net=ServerCreatePublicNetwork(

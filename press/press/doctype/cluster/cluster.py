@@ -280,33 +280,6 @@ class Cluster(Document):
 				f"Frappe Cloud - {self.name} - Proxy - Security Group",
 				rules=[
 					HetznerFirewallRule(
-						description="HTTP from anywhere",
-						direction="in",
-						protocol="tcp",
-						port="80",
-						source_ips=["0.0.0.0/0"],
-					),
-					HetznerFirewallRule(
-						description="HTTPS from anywhere",
-						direction="in",
-						protocol="tcp",
-						port="443",
-						source_ips=["0.0.0.0/0"],
-					),
-					HetznerFirewallRule(
-						description="SSH from anywhere",
-						direction="in",
-						protocol="tcp",
-						port="22",
-						source_ips=["0.0.0.0/0"],
-					),
-					HetznerFirewallRule(
-						description="ICMP from anywhere",
-						direction="in",
-						protocol="icmp",
-						source_ips=["0.0.0.0/0"],
-					),
-					HetznerFirewallRule(
 						description="SSH proxy from anywhere",
 						direction="in",
 						protocol="tcp",
