@@ -157,7 +157,7 @@ def extract_and_flatten_tar(file_stream: BytesIO) -> dict[str, bytes]:
 	change_working_directory()
 
 	with tarfile.open(fileobj=file_stream, mode="r:*") as tar:
-		tar.extractall(path=os.path.join(os.getcwd(), "sites", "assets"))
+		tar.extractall(path=os.path.join(os.getcwd(), "sites", "assets"), filter="fully_trusted")
 
 
 def build_assets(app: str) -> str:

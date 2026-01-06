@@ -252,10 +252,9 @@ RUN chmod +x /usr/local/bin/get_cached_app.py
 {% if app.app != "frappe" %}
 
 
-{% if app.use_cached %}
+{% if app.use_cached and use_asset_store %}
 RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 \
     --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
-    --mount=type=secret,id=asset_store_credentials \
     python${PYTHON_VERSION} /usr/local/bin/get_cached_app.py \
         {{ app.app }} \
         {{ app.hash }} \
