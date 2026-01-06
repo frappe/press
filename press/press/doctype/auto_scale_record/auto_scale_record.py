@@ -897,6 +897,15 @@ def update_or_delete_prometheus_rule_for_scaling(
 	existing.save()
 
 
+def _should_enable_trigger(instance_name: str, action: Literal["Scale Up", "Scale Down"]) -> bool:
+	"""Only enable scale down trigger if server is already scaled up"""
+	if action == "Scale Up":
+		return True
+
+	scaled_up = frappe.db.get_value("Server", instance_name, "scaled_up")
+	return bool(scaled_up)
+
+
 def create_prometheus_rule_for_scaling(
 	instance_name: str,
 	metric: Literal["CPU", "Memory"],
@@ -933,7 +942,7 @@ def create_prometheus_rule_for_scaling(
 		new_expression = " OR ".join(parts)
 
 		existing.expression = new_expression
-		existing.enabled = True
+		existing.enabled = _should_enable_trigger(instance_name, action)
 		existing.save()  # Need to call this to allow on_update to trigger
 
 	else:
@@ -943,7 +952,7 @@ def create_prometheus_rule_for_scaling(
 				"name": rule_name,
 				"description": f"Autoscale trigger for {instance_name}",
 				"expression": query_with_threshold,
-				"enabled": 1,
+				"enabled": _should_enable_trigger(instance_name, action),
 				"for": "5m",
 				"repeat_interval": "1h"
 				if action == "Scale Up"
