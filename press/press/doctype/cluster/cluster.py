@@ -209,6 +209,18 @@ class Cluster(Document):
 			self.vpc_id = network.id
 			self.save()
 
+			# Create the SSH Key on Hetzner
+			try:
+				client.ssh_keys.create(
+					name=self.ssh_key,
+					public_key=frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
+				)
+			except APIException:
+				# If the SSH key already exists, retrieve it
+				existing_keys = client.ssh_keys.get_all(name=self.ssh_key)
+				if len(existing_keys) == 0:
+					frappe.throw(f"SSH Key creation failed and '{self.ssh_key}' not found on Hetzner Cloud.")
+
 		except APIException as e:
 			frappe.throw(f"Failed to provision network on Hetzner: {e!s}")
 
