@@ -92,6 +92,8 @@ def allow_insert_log(event):
 		event = frappe.parse_json(event)
 	evt_id = event.get("id")
 	invoice_id = get_invoice_id(event)
+	intent_id = get_intent_id(event)
+	description = event["data"]["object"]["description"]
 
 	if not frappe.db.exists("Stripe Webhook Log", evt_id):
 		return True
@@ -102,6 +104,15 @@ def allow_insert_log(event):
 	if invoice_id and frappe.db.get_value("Invoice", {"stripe_invoice_id": invoice_id}, "status") == "Unpaid":
 		# Delete existing log and allow reinsertion for unpaid invoices
 		frappe.delete_doc("Stripe Webhook Log", evt_id)
+
+	if (
+		description == "Prepaid Credits"
+		and intent_id
+		and frappe.db.exists(
+			"Invoice", {"type": "Prepaid Credits", "status": "Paid", "stripe_payment_intent_id": intent_id}
+		)
+	):
+		return False
 
 	return True
 
