@@ -1381,7 +1381,7 @@ class VirtualMachine(Document):
 		log_server_activity(self.series, self.get_server().name, action="Terminated")
 
 	@frappe.whitelist()
-	def resize(self, machine_type):
+	def resize(self, machine_type, upgrade_disk: bool = False):
 		if self.cloud_provider == "AWS EC2":
 			self.client().modify_instance_attribute(
 				InstanceId=self.instance_id,
@@ -1396,6 +1396,14 @@ class VirtualMachine(Document):
 						ocpus=vcpu // 2, vcpus=vcpu, memory_in_gbs=ram_in_gbs
 					)
 				),
+			)
+		elif self.cloud_provider == "Hetzner":
+			from hcloud.server_types.domain import ServerType
+
+			self.client().servers.change_type(
+				self.get_hetzner_server_instance(fetch_data=False),
+				server_type=ServerType(name=machine_type),
+				upgrade_disk=upgrade_disk,
 			)
 		self.machine_type = machine_type
 		self.save()
