@@ -21,6 +21,7 @@
   "is_server_setup",
   "is_server_prepared",
   "is_server_renamed",
+  "is_provisioning_press_job_completed",
   "is_self_hosted",
   "keep_files_on_server_in_offsite_backup",
   "public",
@@ -142,7 +143,7 @@
    "default": "0",
    "fieldname": "is_server_setup",
    "fieldtype": "Check",
-   "label": "Server Setup",
+   "label": "Is Server Setup",
    "read_only": 1
   },
   {
@@ -726,6 +727,12 @@
   {
    "fieldname": "column_break_ywnx",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_provisioning_press_job_completed",
+   "fieldtype": "Check",
+   "label": "Is Provisioning Job Completed"
   }
  ],
  "links": [
@@ -734,7 +741,11 @@
    "link_fieldname": "primary_server"
   }
  ],
+<<<<<<< HEAD
  "modified": "2025-11-17 11:29:25.581882",
+=======
+ "modified": "2026-01-07 14:58:23.188531",
+>>>>>>> 0c545c60e (refactor(server): Show server status as Installing until provisioned)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

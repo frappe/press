@@ -78,6 +78,7 @@ class DatabaseServer(BaseServer):
 		is_monitoring_disabled: DF.Check
 		is_performance_schema_enabled: DF.Check
 		is_primary: DF.Check
+		is_provisioning_press_job_completed: DF.Check
 		is_replication_setup: DF.Check
 		is_self_hosted: DF.Check
 		is_server_prepared: DF.Check
