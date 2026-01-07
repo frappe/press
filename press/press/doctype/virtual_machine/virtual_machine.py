@@ -66,7 +66,7 @@ server_doctypes = [
 ]
 
 HETZNER_ROOT_DISK_ID = "hetzner-root-disk"
-HETZNER_ACTION_TIMEOUT = 60  # seconds; shouldn't be longer than default RQ job timeout of 300 seconds
+HETZNER_ACTION_RETRIES = 60  # retry count; try to keep it lower so that it doesn't surpass than default RQ job timeout of 300 seconds
 
 
 class VirtualMachine(Document):
@@ -456,7 +456,7 @@ class VirtualMachine(Document):
 			server=server,
 			network=Network(id=cint(cluster.vpc_id)),
 			ip=self.private_ip_address,
-		).wait_until_finished(HETZNER_ACTION_TIMEOUT)
+		).wait_until_finished(HETZNER_ACTION_RETRIES)
 
 		self.status = self.get_hetzner_status_map()[server.status]
 		self.save()
@@ -1394,10 +1394,10 @@ class VirtualMachine(Document):
 			for volume in self.volumes:
 				if volume.volume_id == HETZNER_ROOT_DISK_ID:
 					continue
-				volume = self.client().volumes.get_by_id(volume.volume_id)
-				volume.detach().wait_until_finished(HETZNER_ACTION_TIMEOUT)
-				volume.delete()
-			self.client().servers.delete(self.get_hetzner_server_instance(fetch_data=False))
+				self.delete_volume(volume.volume_id, sync=False)
+			self.client().servers.delete(
+				self.get_hetzner_server_instance(fetch_data=False)
+			).wait_until_finished(HETZNER_ACTION_RETRIES)
 
 		if server := self.get_server():
 			log_server_activity(self.series, server.name, action="Terminated")
@@ -1900,9 +1900,9 @@ class VirtualMachine(Document):
 			automount=False,
 			server=self.get_hetzner_server_instance(fetch_data=False),
 		)
-		volume_create_request.action.wait_until_finished(HETZNER_ACTION_TIMEOUT)
+		volume_create_request.action.wait_until_finished(HETZNER_ACTION_RETRIES)
 		for action in volume_create_request.next_actions:
-			action.wait_until_finished(HETZNER_ACTION_TIMEOUT)
+			action.wait_until_finished(HETZNER_ACTION_RETRIES)
 
 		if log_activity and (server := self.get_server()):
 			log_server_activity(
@@ -1991,7 +1991,7 @@ class VirtualMachine(Document):
 			"""
 			device_name = volume.linux_device
 			for action in volume.get_actions():
-				action.wait_until_finished(HETZNER_ACTION_TIMEOUT)  # wait for previous actions to finish
+				action.wait_until_finished(HETZNER_ACTION_RETRIES)  # wait for previous actions to finish
 
 			self.client().volumes.attach(
 				volume, self.get_hetzner_server_instance(fetch_data=False), automount=False
@@ -2036,7 +2036,7 @@ class VirtualMachine(Document):
 			if volume_id == HETZNER_ROOT_DISK_ID:
 				frappe.throw("Cannot detach hetzner root disk.")
 
-			self.client().volumes.detach(Volume(id=volume_id))
+			self.client().volumes.detach(Volume(id=volume_id)).wait_until_finished(HETZNER_ACTION_RETRIES)
 		if sync:
 			self.sync()
 		return True
@@ -2045,6 +2045,7 @@ class VirtualMachine(Document):
 	def delete_volume(self, volume_id, sync: bool | None = None):
 		if sync is None:
 			sync = True
+
 		if self.detach(volume_id, sync=sync):
 			if self.cloud_provider == "AWS EC2":
 				self.wait_for_volume_to_be_available(volume_id)
@@ -2055,8 +2056,10 @@ class VirtualMachine(Document):
 			if self.cloud_provider == "Hetzner":
 				if volume_id == HETZNER_ROOT_DISK_ID:
 					frappe.throw("Cannot delete hetzner root disk.")
-				vol = self.client().volumes.get_by_id(volume_id)
-				self.client().volumes.delete(vol)
+
+				from hcloud.volumes.domain import Volume
+
+				self.client().volumes.delete(Volume(id=cint(volume_id)))
 
 		if sync:
 			self.sync()
