@@ -594,7 +594,7 @@ def get_python_path(dirpath: str) -> str:
 			if requires_python:
 				version_spec = sv.SimpleSpec(requires_python)
 				if version_spec.match(sv.Version("3.14.0")):
-					return "/usr/bin/python3.14"  # Temporary hardcoding until python 3.14 until we move to build server
+					return "/home/tanmoy/.pyenv/shims/python3.14"  # Temporary hardcoding until python 3.14 until we move to build server
 
 	return _get_python_path()
 

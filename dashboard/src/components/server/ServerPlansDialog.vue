@@ -83,22 +83,69 @@
 				</p>
 			</div>
 
-			<!-- Site Plans Cards -->
 			<div
 				class="h-64 flex flex-row justify-center items-center gap-2"
-				v-if="$resources?.serverPlans?.loading"
+				v-if="$resources?.serverPlansdata?.loading"
 			>
 				<Spinner class="w-4" /> Loading Server Plans...
 			</div>
-			<ServerPlansCards
-				v-else
-				v-model="plan"
-				:plans="
-					planType === 'Premium'
-						? $resources.serverPlans.data.filter((p) => p.premium === 1)
-						: $resources.serverPlans.data.filter((p) => p.premium === 0)
-				"
-			/>
+			<div v-else>
+				<!-- Server Plan Type Selection -->
+				<div
+					class="w-full space-y-2 mb-4"
+					v-if="Object.keys(serverPlanTypes).length > 1"
+				>
+					<div class="grid grid-cols-2 gap-3">
+						<button
+							v-for="planType in Object.values(serverPlanTypes)"
+							:key="planType.name"
+							@click="serverPlanType = planType.name"
+							:class="[
+								serverPlanType === planType.name
+									? 'border-gray-900 ring-1 ring-gray-900'
+									: 'border-gray-300',
+								'flex w-full flex-col overflow-hidden rounded border text-left hover:bg-gray-50',
+							]"
+						>
+							<div class="w-full p-3">
+								<div class="flex items-center justify-between">
+									<div class="flex w-full items-center">
+										<span class="truncate text-lg font-medium text-gray-900">
+											{{ planType.title }}
+										</span>
+									</div>
+								</div>
+								<div
+									class="mt-1 text-sm text-gray-600"
+									v-if="planType.description"
+								>
+									{{ planType.description }}
+								</div>
+							</div>
+						</button>
+					</div>
+				</div>
+
+				<!-- Single Plan Type Message -->
+				<div
+					v-else-if="Object.keys(serverPlanTypes).length === 1"
+					class="flex flex-col rounded border border-gray-300 p-3 gap-2 mb-4"
+				>
+					<p class="text-base text-gray-900">
+						<span class="font-medium">{{
+							Object.values(serverPlanTypes)[0].title
+						}}</span>
+						machines are available.
+					</p>
+
+					<p class="text-base text-gray-600">
+						{{ Object.values(serverPlanTypes)[0].description }}
+					</p>
+				</div>
+
+				<!-- Site Plans Cards -->
+				<ServerPlansCards v-model="plan" :plans="filteredServerPlans" />
+			</div>
 			<ErrorMessage class="mt-2" :message="$server.changePlan.error" />
 		</template>
 	</Dialog>
@@ -124,6 +171,7 @@ export default {
 			show: true,
 			plan: null,
 			planType: 'Standard',
+			serverPlanType: '',
 			cpu_and_memory_only_resize: true,
 		};
 	},
@@ -134,17 +182,18 @@ export default {
 				if (serverName) {
 					if (this.$server?.doc?.plan) {
 						this.plan = this.$server.doc.current_plan;
+						this.serverPlanType = this.$server.doc.current_plan.plan_type;
 					}
 				}
 			},
 		},
 		cpu_and_memory_only_resize(value) {
-			if (!this.$resources?.serverPlans) return;
-			this.$resources?.serverPlans.submit();
+			if (!this.$resources?.serverPlansdata) return;
+			this.$resources?.serverPlansdata.submit();
 		},
 	},
 	resources: {
-		serverPlans() {
+		serverPlansdata() {
 			return {
 				url: 'press.api.server.plans',
 				params: {
@@ -155,7 +204,10 @@ export default {
 					cpu_and_memory_only_resize: this.cpu_and_memory_only_resize,
 				},
 				auto: true,
-				initialData: [],
+				initialData: {
+					plans: [],
+					types: {},
+				},
 			};
 		},
 	},
@@ -172,7 +224,7 @@ export default {
 					onSuccess: () => {
 						this.show = false;
 
-						const plan = this.$resources.serverPlans.data.find(
+						const plan = this.serverPlans.find(
 							(plan) => plan.name === this.$server.doc.plan,
 						);
 
@@ -190,10 +242,31 @@ export default {
 		$server() {
 			return getCachedDocumentResource(this.cleanedServerType, this.server);
 		},
+		serverPlans() {
+			return this.$resources.serverPlansdata?.data?.plans || [];
+		},
+		serverPlanTypes() {
+			// Find out the plan_types that we have
+			let filtered_types = {};
+			this.serverPlans.forEach((plan) => {
+				filtered_types[plan.plan_type] =
+					this.$resources.serverPlansdata?.data?.types[plan.plan_type];
+			});
+			return filtered_types;
+		},
 		cleanedServerType() {
 			return this.serverType === 'Replication Server'
 				? 'Database Server'
 				: this.serverType;
+		},
+		filteredServerPlans() {
+			let plans = [];
+			if (this.planType == 'Premium') {
+				plans = this.serverPlans.filter((p) => p.premium === 1);
+			} else {
+				plans = this.serverPlans.filter((p) => p.premium === 0);
+			}
+			return plans.filter((plan) => plan.plan_type === this.serverPlanType);
 		},
 	},
 };

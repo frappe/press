@@ -19,6 +19,7 @@ from press.api.site import protected
 from press.exceptions import MonitorServerDown
 from press.press.doctype.auto_scale_record.auto_scale_record import validate_scaling_schedule
 from press.press.doctype.cloud_provider.cloud_provider import get_cloud_providers
+from press.press.doctype.server_plan_type.server_plan_type import get_server_plan_types
 from press.press.doctype.site_plan.plan import Plan, filter_by_roles
 from press.press.doctype.team.team import get_child_team_members
 from press.utils import get_current_team
@@ -581,8 +582,12 @@ def options():
 			"cluster_name": region.name,
 			"title": cloud_providers[provider]["title"],
 			"provider_image": cloud_providers[provider]["image"],
+			"beta": region.get("beta", 0),
 			"has_add_on_storage_support": region.get("has_add_on_storage_support", 0),
 		}
+
+	default_server_plan_type = frappe.db.get_single_value("Press Settings", "default_server_plan_type")
+	server_plan_types = get_server_plan_types()
 
 	storage_plan = frappe.db.get_value(
 		"Server Storage Plan",
@@ -601,6 +606,8 @@ def options():
 		"regions_data": regions_data,
 		"app_plans": plans("Server"),
 		"db_plans": plans("Database Server"),
+		"plan_types": server_plan_types,
+		"default_plan_type": default_server_plan_type,
 		"storage_plan": storage_plan,
 		"snapshot_plan": snapshot_plan,
 	}
@@ -656,7 +663,7 @@ def secondary_server_plans(
 
 
 @frappe.whitelist()
-def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_only_resize=False):
+def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_only_resize=False):  # noqa C901
 	filters = {"server_type": name}
 
 	if cluster:
@@ -698,16 +705,27 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 			"instance_type",
 			"premium",
 			"platform",
+			"plan_type",
 		],
 		filters=filters,
 	)
+
+	default_server_plan_type = frappe.db.get_single_value("Press Settings", "default_server_plan_type")
+	for plan in plans:
+		if not plan.get("plan_type"):
+			plan["plan_type"] = default_server_plan_type
+
+	server_plan_types = get_server_plan_types()
 
 	if cpu_and_memory_only_resize and current_root_disk_size is not None:
 		# Show only CPU/memory upgrades by normalizing disk size
 		for plan in plans:
 			plan["disk"] = current_root_disk_size
 
-	return plans
+	return {
+		"plans": plans,
+		"types": server_plan_types,
+	}
 
 
 @frappe.whitelist()

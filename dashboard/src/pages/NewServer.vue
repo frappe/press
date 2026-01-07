@@ -19,7 +19,7 @@
 	</div>
 
 	<div v-else-if="serverEnabled" class="mx-auto max-w-2xl px-5">
-		<div v-if="options" class="space-y-12 pb-[50vh] pt-12">
+		<div v-if="options" class="space-y-8 pb-[50vh] pt-12">
 			<div class="flex flex-col">
 				<h2 class="text-sm font-medium leading-6 text-gray-900">
 					Choose Server Type
@@ -61,7 +61,7 @@
 					/>
 				</div>
 			</div>
-			<div v-if="serverType === 'dedicated'" class="space-y-12">
+			<div v-if="serverType === 'dedicated'" class="space-y-8">
 				<!-- Chose Region -->
 				<div class="flex flex-col" v-if="options?.regions_data">
 					<h2 class="text-sm font-medium leading-6 text-gray-900">
@@ -87,7 +87,6 @@
 											{{ r }}
 										</span>
 									</div>
-									<!-- <Badge v-if="r.beta" :label="r.beta ? 'Beta' : ''" /> Move to provider selection -->
 								</div>
 							</button>
 						</div>
@@ -126,13 +125,17 @@
 									<Badge
 										v-if="providers[provider].beta"
 										:label="providers[provider].beta ? 'Beta' : ''"
+										theme="orange"
+										variant="outline"
+										size="md"
 									/>
 								</div>
 							</button>
 						</div>
 					</div>
 				</div>
-				<!-- Choose App Server Premium Plans -->
+				<!-- Chose Plan Type -->
+				<!-- Choose Service Type (Premium/Standard) -->
 				<div
 					v-if="
 						serverRegion &&
@@ -143,7 +146,7 @@
 				>
 					<div class="flex items-center justify-between">
 						<h2 class="text-sm font-medium leading-6 text-gray-900">
-							Plan Type
+							Service Type
 						</h2>
 						<div>
 							<Button
@@ -171,9 +174,9 @@
 									},
 								]"
 								:key="c.name"
-								@click="planType = c.name"
+								@click="serviceType = c.name"
 								:class="[
-									planType === c.name
+									serviceType === c.name
 										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
 										: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
 									'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
@@ -191,61 +194,153 @@
 						</div>
 					</div>
 				</div>
-				<!-- Choose App Server Standard Plans -->
+				<!-- Choose App Server Plan -->
 				<div v-if="serverRegion && serverProvider && selectedCluster">
-					<div class="flex flex-col" v-if="options?.app_plans.length">
+					<div
+						class="flex flex-col space-y-4"
+						v-if="availableAppPlanTypes.length"
+					>
 						<h2 class="text-sm font-medium leading-6 text-gray-900">
 							Select Application Server Plan
 						</h2>
-						<div class="mt-2 space-y-2">
+
+						<!-- App Server Plan Type Selection -->
+						<div
+							class="w-full space-y-2"
+							v-if="availableAppPlanTypes.length > 1"
+						>
+							<div class="grid grid-cols-2 gap-3">
+								<button
+									v-for="planType in availableAppPlanTypes"
+									:key="planType.name"
+									@click="appServerPlanType = planType.name"
+									:class="[
+										appServerPlanType === planType.name
+											? 'border-gray-900 ring-1 ring-gray-900'
+											: 'border-gray-300',
+										'flex w-full flex-col overflow-hidden rounded border text-left hover:bg-gray-50',
+									]"
+								>
+									<div class="w-full p-3">
+										<div class="flex items-center justify-between">
+											<div class="flex w-full items-center">
+												<span
+													class="truncate text-lg font-medium text-gray-900"
+												>
+													{{ planType.title }}
+												</span>
+											</div>
+										</div>
+										<div
+											class="mt-1 text-sm text-gray-600"
+											v-if="planType.description"
+										>
+											{{ planType.description }}
+										</div>
+									</div>
+								</button>
+							</div>
+						</div>
+
+						<!-- Single Plan Type Message -->
+						<div
+							v-else-if="availableAppPlanTypes.length === 1"
+							class="flex flex-col rounded border border-gray-300 p-3 gap-2"
+						>
+							<p class="text-base text-gray-900">
+								<span class="font-medium">{{
+									availableAppPlanTypes[0].title
+								}}</span>
+								machines are available.
+							</p>
+
+							<p class="text-base text-gray-600">
+								{{ availableAppPlanTypes[0].description }}
+							</p>
+						</div>
+
+						<!-- App Server Plans -->
+						<div v-if="appServerPlanType" class="mt-2 space-y-2">
 							<ServerPlansCards
 								v-model="appServerPlan"
-								:plans="
-									(planType === 'Standard'
-										? options.app_plans
-										: options.app_premium_plans
-									).filter((p) => {
-										const isARMSupportedCluster =
-											p.cluster === 'Mumbai' || p.cluster === 'Frankfurt';
-										return (
-											p.cluster === selectedCluster &&
-											(!isARMSupportedCluster || p.platform === 'arm64')
-										);
-									})
-								"
+								:plans="filteredAppPlans"
 							/>
 						</div>
 					</div>
 				</div>
 				<!-- Choose Database Server Plan -->
 				<div v-if="serverRegion && serverProvider && selectedCluster">
-					<div class="flex flex-col" v-if="options?.db_plans.length">
+					<div
+						class="flex flex-col space-y-4"
+						v-if="availableDbPlanTypes.length"
+					>
 						<h2 class="text-sm font-medium leading-6 text-gray-900">
 							Select Database Server Plan
 						</h2>
-						<div class="mt-2 w-full space-y-2">
+
+						<!-- DB Server Plan Type Selection -->
+						<div class="w-full" v-if="availableDbPlanTypes.length > 1">
+							<div class="grid grid-cols-2 gap-3">
+								<button
+									v-for="planType in availableDbPlanTypes"
+									:key="planType.name"
+									@click="dbServerPlanType = planType.name"
+									:class="[
+										dbServerPlanType === planType.name
+											? 'border-gray-900 ring-1 ring-gray-900'
+											: 'border-gray-300',
+										'flex w-full flex-col overflow-hidden rounded border text-left hover:bg-gray-50',
+									]"
+								>
+									<div class="w-full p-3">
+										<div class="flex items-center justify-between">
+											<div class="flex w-full items-center">
+												<span
+													class="truncate text-lg font-medium text-gray-900"
+												>
+													{{ planType.title }}
+												</span>
+											</div>
+										</div>
+										<div
+											class="mt-1 text-sm text-gray-600"
+											v-if="planType.description"
+										>
+											{{ planType.description }}
+										</div>
+									</div>
+								</button>
+							</div>
+						</div>
+
+						<!-- Single Plan Type Message -->
+						<div
+							v-else-if="availableDbPlanTypes.length === 1"
+							class="flex flex-col rounded border border-gray-300 p-3 gap-2"
+						>
+							<p class="text-base text-gray-900">
+								<span class="font-medium">{{
+									availableDbPlanTypes[0].title
+								}}</span>
+								machines are available.
+							</p>
+
+							<p class="text-base text-gray-600">
+								{{ availableDbPlanTypes[0].description }}
+							</p>
+						</div>
+
+						<!-- DB Server Plans -->
+						<div v-if="dbServerPlanType" class="mt-2 w-full space-y-2">
 							<ServerPlansCards
-								v-if="options.db_plans"
 								v-model="dbServerPlan"
-								:plans="
-									(planType === 'Standard'
-										? options.db_plans
-										: options.db_premium_plans
-									).filter((p) => {
-										const isARMSupportedCluster =
-											p.cluster === 'Mumbai' || p.cluster === 'Frankfurt';
-										return (
-											p.cluster === selectedCluster &&
-											(!isARMSupportedCluster || p.platform === 'arm64')
-										);
-									})
-								"
+								:plans="filteredDbPlans"
 							/>
 						</div>
 					</div>
 				</div>
 			</div>
-			<div v-else-if="serverType === 'hybrid'" class="space-y-12">
+			<div v-else-if="serverType === 'hybrid'" class="space-y-8">
 				<div class="flex flex-col space-y-2">
 					<h2 class="text-sm font-medium leading-6 text-gray-900">
 						App Server IP Addresses
@@ -293,7 +388,9 @@
 						<span class="font-mono">~/.ssh/authorized_keys</span>
 						file on Application and Database server</span
 					>
-					<ClickToCopy :textContent="$resources.hybridOptions.data.ssh_key" />
+					<ClickToCopy
+						:textContent="$resources.hybridOptions.data?.ssh_key || ''"
+					/>
 				</div>
 			</div>
 			<div class="flex flex-col space-y-3" v-if="showAutoAddStorageOption">
@@ -387,7 +484,7 @@
 										app_private_ip: appPrivateIP,
 										db_public_ip: dbPublicIP,
 										db_private_ip: dbPrivateIP,
-										plan: $resources.hybridOptions.data.plans[0],
+										plan: $resources.hybridOptions.data?.plans?.[0],
 									},
 								})
 					"
@@ -455,7 +552,9 @@ export default {
 			appPrivateIP: '',
 			dbPublicIP: '',
 			dbPrivateIP: '',
-			planType: 'Standard',
+			serviceType: 'Standard',
+			appServerPlanType: '',
+			dbServerPlanType: '',
 			serverEnabled: true,
 			enableAutoAddStorage: false,
 			agreedToRegionConsent: false,
@@ -463,7 +562,15 @@ export default {
 	},
 	watch: {
 		serverRegion() {
-			this.serverProvider = '';
+			if (Object.keys(this.providers).length > 0) {
+				this.serverProvider = Object.keys(this.providers).sort((a, b) =>
+					a.localeCompare(b),
+				)[0];
+			} else {
+				this.serverProvider = '';
+			}
+			this.appServerPlanType = '';
+			this.dbServerPlanType = '';
 			this.appServerPlan = '';
 			this.dbServerPlan = '';
 		},
@@ -471,13 +578,43 @@ export default {
 			this.appServerPlan = '';
 			this.dbServerPlan = '';
 			this.serverRegion = '';
+			this.appServerPlanType = '';
+			this.dbServerPlanType = '';
 			this.appPublicIP = '';
 			this.appPrivateIP = '';
 			this.dbPublicIP = '';
 			this.dbPrivateIP = '';
 		},
-		planType() {
+		serviceType() {
 			this.appServerPlan = '';
+			this.dbServerPlan = '';
+		},
+		selectedCluster() {
+			this.appServerPlanType = '';
+			this.dbServerPlanType = '';
+			this.appServerPlan = '';
+			this.dbServerPlan = '';
+		},
+		availableAppPlanTypes() {
+			// Auto-select if only one plan type is available
+			if (this.availableAppPlanTypes.length === 1) {
+				this.appServerPlanType = this.availableAppPlanTypes[0].name;
+			} else if (this.availableAppPlanTypes.length === 0) {
+				this.appServerPlanType = '';
+			}
+		},
+		availableDbPlanTypes() {
+			// Auto-select if only one plan type is available
+			if (this.availableDbPlanTypes.length === 1) {
+				this.dbServerPlanType = this.availableDbPlanTypes[0].name;
+			} else if (this.availableDbPlanTypes.length === 0) {
+				this.dbServerPlanType = '';
+			}
+		},
+		appServerPlanType() {
+			this.appServerPlan = '';
+		},
+		dbServerPlanType() {
 			this.dbServerPlan = '';
 		},
 	},
@@ -487,6 +624,14 @@ export default {
 				url: 'press.api.server.options',
 				auto: true,
 				transform(data) {
+					const fillPlanType = (plans) => {
+						return plans.map((plan) => ({
+							...plan,
+							...(data.default_plan_type &&
+								!plan.plan_type && { plan_type: data.default_plan_type }),
+						}));
+					};
+
 					return {
 						server_types: [
 							{
@@ -504,10 +649,18 @@ export default {
 						],
 						regions: data.regions,
 						regions_data: data.regions_data,
-						app_plans: data.app_plans.filter((p) => p.premium == 0),
-						db_plans: data.db_plans.filter((p) => p.premium == 0),
-						app_premium_plans: data.app_plans.filter((p) => p.premium == 1),
-						db_premium_plans: data.db_plans.filter((p) => p.premium == 1),
+						plan_types: data.plan_types,
+						default_plan_type: data.default_plan_type,
+						app_plans: fillPlanType(
+							data.app_plans.filter((p) => p.premium == 0),
+						),
+						db_plans: fillPlanType(data.db_plans.filter((p) => p.premium == 0)),
+						app_premium_plans: fillPlanType(
+							data.app_plans.filter((p) => p.premium == 1),
+						),
+						db_premium_plans: fillPlanType(
+							data.db_plans.filter((p) => p.premium == 1),
+						),
 						storage_plan: data.storage_plan,
 					};
 				},
@@ -613,9 +766,9 @@ export default {
 			return this.$resources.options.data;
 		},
 		providers() {
-			if (!this.serverRegion) return [];
-			if (!this.options?.regions_data) return [];
-			return this.options.regions_data[this.serverRegion]?.providers || [];
+			if (!this.serverRegion) return {};
+			if (!this.options?.regions_data) return {};
+			return this.options.regions_data[this.serverRegion]?.providers || {};
 		},
 		selectedCluster() {
 			if (!this.serverRegion) return null;
@@ -624,6 +777,98 @@ export default {
 			return this.options.regions_data[this.serverRegion]?.providers[
 				this.serverProvider
 			]?.cluster_name;
+		},
+		availableAppPlanTypes() {
+			if (!this.selectedCluster || !this.options?.plan_types) return [];
+
+			const planTypes = [];
+			const planTypeData = this.options.plan_types;
+
+			for (const [key, planType] of Object.entries(planTypeData)) {
+				const hasAppPlans = this.options.app_plans.some(
+					(plan) =>
+						plan.cluster === this.selectedCluster && plan.plan_type === key,
+				);
+
+				if (hasAppPlans) {
+					planTypes.push({
+						name: key,
+						title: planType.title,
+						description: planType.description,
+						order: planType.order_in_list || 999,
+					});
+				}
+			}
+
+			return planTypes.sort((a, b) => a.order - b.order);
+		},
+		availableDbPlanTypes() {
+			if (!this.selectedCluster || !this.options?.plan_types) return [];
+
+			const planTypes = [];
+			const planTypeData = this.options.plan_types;
+
+			for (const [key, planType] of Object.entries(planTypeData)) {
+				const hasDbPlans = this.options.db_plans.some(
+					(plan) =>
+						plan.cluster === this.selectedCluster && plan.plan_type === key,
+				);
+
+				if (hasDbPlans) {
+					planTypes.push({
+						name: key,
+						title: planType.title,
+						description: planType.description,
+						order: planType.order_in_list || 999,
+					});
+				}
+			}
+
+			return planTypes.sort((a, b) => a.order - b.order);
+		},
+		filteredAppPlans() {
+			if (
+				!this.selectedCluster ||
+				!this.appServerPlanType ||
+				!this.options?.app_plans
+			)
+				return [];
+
+			return (
+				this.serviceType === 'Standard'
+					? this.options.app_plans
+					: this.options.app_premium_plans
+			).filter((p) => {
+				const isARMSupportedCluster =
+					p.cluster === 'Mumbai' || p.cluster === 'Frankfurt';
+				return (
+					p.cluster === this.selectedCluster &&
+					p.plan_type === this.appServerPlanType &&
+					(!isARMSupportedCluster || p.platform === 'arm64')
+				);
+			});
+		},
+		filteredDbPlans() {
+			if (
+				!this.selectedCluster ||
+				!this.dbServerPlanType ||
+				!this.options?.db_plans
+			)
+				return [];
+
+			return (
+				this.serviceType === 'Standard'
+					? this.options.db_plans
+					: this.options.db_premium_plans
+			).filter((p) => {
+				const isARMSupportedCluster =
+					p.cluster === 'Mumbai' || p.cluster === 'Frankfurt';
+				return (
+					p.cluster === this.selectedCluster &&
+					p.plan_type === this.dbServerPlanType &&
+					(!isARMSupportedCluster || p.platform === 'arm64')
+				);
+			});
 		},
 		showAutoAddStorageOption() {
 			return (
@@ -642,12 +887,16 @@ export default {
 			let currencyField =
 				this.$team.doc.currency == 'INR' ? 'price_inr' : 'price_usd';
 			if (this.serverType === 'dedicated') {
+				if (!this.appServerPlan || !this.dbServerPlan) return 0;
 				return (
 					this.appServerPlan[currencyField] + this.dbServerPlan[currencyField]
 				);
 			} else if (this.serverType === 'hybrid') {
-				return this.$resources.hybridOptions?.data?.plans[0][currencyField] * 2;
+				const hybridPlan = this.$resources.hybridOptions?.data?.plans?.[0];
+				if (!hybridPlan) return 0;
+				return hybridPlan[currencyField] * 2;
 			}
+			return 0;
 		},
 		totalPerMonth() {
 			return this.$format.userCurrency(this._totalPerMonth);
