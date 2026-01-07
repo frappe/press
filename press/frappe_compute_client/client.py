@@ -1,8 +1,9 @@
-from ipaddress import ip_address
+import json
+from urllib.parse import urljoin
+
 import frappe
 import requests
-from urllib.parse import urljoin
-import json
+
 
 # state transfer from the orchestrator to the agent
 class FrappeComputeClient:
@@ -11,8 +12,12 @@ class FrappeComputeClient:
 		self.api_key = api_key
 
 	@frappe.whitelist()
-	def create_vm(self, name, image, memory, number_of_vcpus, cloud_init, mac_address, ip_address):
-		url = urljoin(self.base_url, f"/api/method/agent.agent.doctype.virtual_machine.virtual_machine.new_vm_from_image")
+	def create_vm(
+		self, name, image, memory, number_of_vcpus, cloud_init, mac_address, ip_address, private_network
+	):
+		url = urljoin(
+			self.base_url, "/api/method/agent.agent.doctype.virtual_machine.virtual_machine.new_vm_from_image"
+		)
 
 		params = {
 			"name": name,
@@ -22,48 +27,34 @@ class FrappeComputeClient:
 			"cloud_init": cloud_init,
 			"mac_address": mac_address,
 			"ip_address": ip_address,
+			"private_network": private_network,
 		}
 
 		response = self._send_request(url, "POST", params)
-		doc_dict = json.loads(response.text)
-
-		return doc_dict
+		return json.loads(response.text)
 
 	def stop_vm(self, name):
 		url = urljoin(self.base_url, f"/api/v2/document/Virtual%20Machine/{name}/method/stop")
-		response = self._send_request(url, "POST", {})
-
-		return response
+		return self._send_request(url, "POST", {})
 
 	def reboot_vm(self, name):
 		url = urljoin(self.base_url, f"/api/v2/document/Virtual%20Machine/{name}/method/reboot")
-		response = self._send_request(url, "POST", {})
-
-		return response
+		return self._send_request(url, "POST", {})
 
 	def attach_volumes(self, name, volumes):
 		url = urljoin(self.base_url, f"/api/v2/document/Virtual%20Machine/{name}/method/attach_volumes")
-		response = self._send_request(url, "POST", {"volumes": volumes}).json()
-
-		return response
+		return self._send_request(url, "POST", {"volumes": volumes}).json()
 
 	def create_vpc(self, name, cidr_block):
-		url = urljoin(self.base_url, f"/api/v2/document/Private%20Network/")
-		response = self._send_request(url, "POST", {"name": name, "cidr_block": cidr_block}).json()
-
-		return response["data"]
+		url = urljoin(self.base_url, "/api/v2/document/Private%20Network/")
+		return self._send_request(url, "POST", {"name": name, "cidr_block": cidr_block}).json()["data"]
 
 	def get_volumes(self, name):
 		url = urljoin(self.base_url, f"/api/v2/document/Virtual%20Machine/{name}/method/get_volumes")
-		response = self._send_request(url, "GET", {}).json()
-
-		return response["data"]
+		return self._send_request(url, "GET", {}).json()["data"]
 
 	def _send_request(self, url, method, data):
-		headers = {
-    		"Authorization": f"token {self.api_key}",
-    		"Content-Type": "application/json"
-		}
+		headers = {"Authorization": f"token {self.api_key}", "Content-Type": "application/json"}
 
 		method = method.upper()
 
@@ -77,8 +68,7 @@ class FrappeComputeClient:
 			case _:
 				frappe.throw("Method not implemented yet.")
 
-		response = request_func(url, json=data, headers=headers)
-		return response
+		return request_func(url, json=data, headers=headers)
 
 	def get_all_images(self):
 		return [{"id": "Ubuntu"}]
