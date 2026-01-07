@@ -18,6 +18,7 @@ from press.api.bench import all as all_benches
 from press.api.site import protected
 from press.exceptions import MonitorServerDown
 from press.press.doctype.auto_scale_record.auto_scale_record import validate_scaling_schedule
+from press.press.doctype.cloud_provider.cloud_provider import get_cloud_providers
 from press.press.doctype.site_plan.plan import Plan, filter_by_roles
 from press.press.doctype.team.team import get_child_team_members
 from press.utils import get_current_team
@@ -546,11 +547,43 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 def options():
 	if not get_current_team(get_doc=True).servers_enabled:
 		frappe.throw("Servers feature is not yet enabled on your account")
+
 	regions = frappe.get_all(
 		"Cluster",
 		{"cloud_provider": ("!=", "Generic"), "public": True},
-		["name", "title", "image", "beta", "has_add_on_storage_support"],
+		["name", "title", "image", "beta", "has_add_on_storage_support", "cloud_provider"],
 	)
+	cloud_providers = get_cloud_providers()
+	"""
+	{
+		"Mumbai": {
+			"providers": ["AWS EC2", "OCI"],
+			"image": "<chose any cluster image with same title>",
+			"providers_data": {
+				"AWS EC2": {
+					"cluster_name": "aws-mumbai",
+					"title": "Amazon Web Services",
+					"provider_image": "...",
+					"has_add_on_storage_support": 1,
+				},
+			}
+		}
+	}
+	"""
+	regions_data = {}
+	for region in regions:
+		provider = region.get("cloud_provider")
+		record = regions_data.setdefault(region.title, {"providers": {}})
+		if region.image and not record.get("image"):
+			record["image"] = region.image
+
+		record["providers"][provider] = {
+			"cluster_name": region.name,
+			"title": cloud_providers[provider]["title"],
+			"provider_image": cloud_providers[provider]["image"],
+			"has_add_on_storage_support": region.get("has_add_on_storage_support", 0),
+		}
+
 	storage_plan = frappe.db.get_value(
 		"Server Storage Plan",
 		{"enabled": 1},
@@ -565,6 +598,7 @@ def options():
 	)
 	return {
 		"regions": regions,
+		"regions_data": regions_data,
 		"app_plans": plans("Server"),
 		"db_plans": plans("Database Server"),
 		"storage_plan": storage_plan,
