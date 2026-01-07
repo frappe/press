@@ -1639,8 +1639,6 @@ class VirtualMachine(Document):
 			self.client().servers.delete(
 				self.get_hetzner_server_instance(fetch_data=False)
 			).wait_until_finished(HETZNER_ACTION_RETRIES)
-		elif self.cloud_provider == "Frappe Compute":
-			self.client().terminate_vm(self.name)
 
 		elif self.cloud_provider == "DigitalOcean":
 			for volume in self.volumes:
