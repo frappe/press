@@ -68,6 +68,7 @@ class Cluster(Document):
 		cidr_block: DF.Data | None
 		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner"]
 		description: DF.Data | None
+		enable_autoscaling: DF.Check
 		has_add_on_storage_support: DF.Check
 		has_arm_support: DF.Check
 		hybrid: DF.Check

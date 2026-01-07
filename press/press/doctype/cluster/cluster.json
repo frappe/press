@@ -19,6 +19,7 @@
   "hybrid",
   "has_arm_support",
   "has_add_on_storage_support",
+  "enable_autoscaling",
   "billing_section",
   "team",
   "provisioning_section",
@@ -314,6 +315,12 @@
    "fieldname": "has_add_on_storage_support",
    "fieldtype": "Check",
    "label": "Has Add On Storage Support"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_autoscaling",
+   "fieldtype": "Check",
+   "label": "Enable Autoscaling"
   }
  ],
  "image_field": "image",
@@ -350,7 +357,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2026-01-07 04:00:28.252425",
+ "modified": "2026-01-08 00:29:32.853963",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
