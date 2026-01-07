@@ -469,6 +469,7 @@ class VirtualMachine(Document):
 		frappe.db.commit()
 
 	def _provision_frappe_compute(self):
+		cluster = frappe.get_doc("Cluster", self.cluster)
 		server_response = self.client().create_vm(
 			self.name,
 			"Ubuntu 22.04",
@@ -477,6 +478,7 @@ class VirtualMachine(Document):
 			cloud_init=self.get_cloud_init(),
 			mac_address=self.mac_address_of_public_ip,
 			ip_address=self.public_ip_address,
+			private_network=cluster.vpc_id
 		)
 		return server_response
 

@@ -47,6 +47,12 @@ class FrappeComputeClient:
 
 		return response
 
+	def create_vpc(self, name, cidr_block):
+		url = urljoin(self.base_url, f"/api/v2/document/Private%20Network/")
+		response = self._send_request(url, "POST", {"name": name, "cidr_block": cidr_block}).json()
+
+		return response["data"]
+
 	def get_volumes(self, name):
 		url = urljoin(self.base_url, f"/api/v2/document/Virtual%20Machine/{name}/method/get_volumes")
 		response = self._send_request(url, "GET", {}).json()
