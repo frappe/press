@@ -918,6 +918,10 @@ class VirtualMachine(Document):
 					raise
 
 		if not server_instance:
+			# If server not found, mark it as terminated
+			# Update status at server side as well
+			if self.status == "Terminated":
+				self.update_servers()
 			return
 
 		self.status = self.get_hetzner_status_map()[server_instance.status]
