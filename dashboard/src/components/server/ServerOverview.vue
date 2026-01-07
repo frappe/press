@@ -669,6 +669,10 @@ export default {
 		serverInformation() {
 			return [
 				{
+					label: 'Hosted on',
+					value: `${this.$appServer.doc.provider} - ${this.$appServer.doc.cluster}`,
+				},
+				{
 					label: 'Application server',
 					value: this.$appServer.doc.name,
 				},
