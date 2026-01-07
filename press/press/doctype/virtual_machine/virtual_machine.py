@@ -1398,6 +1398,9 @@ class VirtualMachine(Document):
 			self.client().instance_action(instance_id=self.instance_id, action="START")
 		elif self.cloud_provider == "Hetzner":
 			self.client().servers.power_on(self.get_hetzner_server_instance(fetch_data=False))
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().start_vm(self.name)
+
 		self.sync()
 
 	@frappe.whitelist()
