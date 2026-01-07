@@ -666,11 +666,15 @@ export default {
 				},
 				onError(error) {
 					if (
+						error &&
+						error.messages &&
 						error.messages.includes(
 							'Servers feature is not yet enabled on your account',
 						)
 					) {
 						this.serverEnabled = false;
+					} else {
+						console.error(error);
 					}
 				},
 			};
