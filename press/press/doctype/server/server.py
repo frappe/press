@@ -344,6 +344,10 @@ class BaseServer(Document, TagHelpers):
 			}
 		raise
 
+	def _get_clusters_with_autoscale_support(self) -> list[str]:
+		"""Get clusters which have autoscaling enabled"""
+		return frappe.db.get_all("Cluster", {"enable_autoscaling": 1}, pluck="name")
+
 	def get_actions(self):
 		server_type = ""
 		if self.doctype == "Server":
@@ -386,7 +390,7 @@ class BaseServer(Document, TagHelpers):
 				"condition": self.status == "Active"
 				and self.doctype == "Server"
 				and not self.secondary_server
-				and self.cluster == "Mumbai",
+				and self.cluster in self._get_clusters_with_autoscale_support(),
 				"group": "Application Server Actions",
 			},
 			{
