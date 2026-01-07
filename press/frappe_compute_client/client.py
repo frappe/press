@@ -33,6 +33,10 @@ class FrappeComputeClient:
 		response = self._send_request(url, "POST", params)
 		return json.loads(response.text)
 
+	def start_vm(self, name):
+		url = urljoin(self.base_url, f"/api/v2/document/Virtual%20Machine/{name}/method/start")
+		return self._send_request(url, "POST", {})
+
 	def stop_vm(self, name):
 		url = urljoin(self.base_url, f"/api/v2/document/Virtual%20Machine/{name}/method/stop")
 		return self._send_request(url, "POST", {})
