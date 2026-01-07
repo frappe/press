@@ -13,7 +13,15 @@ class FrappeComputeClient:
 
 	@frappe.whitelist()
 	def create_vm(
-		self, name, image, memory, number_of_vcpus, cloud_init, mac_address, ip_address, private_network
+		self,
+		name: str,
+		image: str,
+		memory: int,
+		number_of_vcpus: int,
+		cloud_init: str,
+		mac_address: str,
+		ip_address: str,
+		private_network: str,
 	):
 		url = urljoin(
 			self.base_url, "/api/method/agent.agent.doctype.virtual_machine.virtual_machine.new_vm_from_image"
