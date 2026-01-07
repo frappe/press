@@ -341,7 +341,8 @@ class NFSVolumeDetachment(Document, AutoScaleStepFailureHandler, StepHandler):
 						f"Auto Scale Up Trigger - {self.primary_server}",
 						f"Auto Scale Down Trigger - {self.primary_server}",
 					],
-				]
+				],
+				"enabled": 1,
 			},
 			pluck="name",
 		)
