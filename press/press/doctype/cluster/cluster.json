@@ -14,6 +14,7 @@
   "beta",
   "hybrid",
   "has_arm_support",
+  "enable_autoscaling",
   "column_break_fsht",
   "monitoring_password",
   "image",
@@ -302,6 +303,12 @@
    "fieldname": "repository",
    "fieldtype": "Data",
    "label": "Repository"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_autoscaling",
+   "fieldtype": "Check",
+   "label": "Enable Autoscaling"
   }
  ],
  "image_field": "image",
@@ -338,7 +345,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2025-09-19 16:27:01.820199",
+ "modified": "2026-01-07 10:03:06.173064",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
@@ -359,6 +366,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
