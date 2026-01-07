@@ -887,6 +887,8 @@ class VirtualMachine(Document):
 			self.client().servers.reboot(self.get_hetzner_server_instance(fetch_data=False))
 		elif self.cloud_provider == "DigitalOcean":
 			self.client().droplet_actions.post(self.instance_id, {"type": "reboot"})
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().reboot_vm(self.name)
 
 		if server := self.get_server():
 			log_server_activity(self.series, server.name, action="Reboot")
