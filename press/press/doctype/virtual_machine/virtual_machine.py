@@ -460,6 +460,9 @@ class VirtualMachine(Document):
 		self.status = self.get_hetzner_status_map()[server.status]
 		self.save()
 
+		# Enqueue enable protection separately to avoid any issue
+		frappe.enqueue_doc(self.doctype, self.name, "enable_termination_protection", sync=False)
+
 	def _provision_aws(self):  # noqa: C901
 		additional_volumes = []
 		if self.virtual_machine_image:
@@ -1343,24 +1346,34 @@ class VirtualMachine(Document):
 		return list(tmp_volume_ids)
 
 	@frappe.whitelist()
-	def disable_termination_protection(self):
+	def disable_termination_protection(self, sync: bool | None = None):
+		if sync is None:
+			sync = False
+
 		if self.cloud_provider == "AWS EC2":
 			self.client().modify_instance_attribute(
 				InstanceId=self.instance_id, DisableApiTermination={"Value": False}
 			)
 		elif self.cloud_provider == "Hetzner":
 			self.get_hetzner_server_instance().change_protection(delete=False, rebuild=False)
-		self.sync()
+
+		if sync:
+			self.sync()
 
 	@frappe.whitelist()
-	def enable_termination_protection(self):
+	def enable_termination_protection(self, sync: bool | None = None):
+		if sync is None:
+			sync = False
+
 		if self.cloud_provider == "AWS EC2":
 			self.client().modify_instance_attribute(
 				InstanceId=self.instance_id, DisableApiTermination={"Value": True}
 			)
 		elif self.cloud_provider == "Hetzner":
 			self.get_hetzner_server_instance().change_protection(delete=True, rebuild=True)
-		self.sync()
+
+		if sync:
+			self.sync()
 
 	@frappe.whitelist()
 	def start(self):
