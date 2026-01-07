@@ -150,10 +150,6 @@ export default {
 		onSuccess() {
 			this.$emit('success');
 		},
-		handlePayPalClick() {
-			console.log('PayPal button clicked!');
-			this.paymentGateway = 'Razorpay';
-		},
 	},
 	computed: {
 		totalAmount() {
