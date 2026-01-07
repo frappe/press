@@ -100,11 +100,11 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:doc.cloud_provider !== \"Generic\"",
+   "depends_on": "eval: ![\"Generic\", \"Frappe Compute\"].includes(doc.cloud_provider)",
    "fieldname": "region",
    "fieldtype": "Link",
    "label": "Region",
-   "mandatory_depends_on": "eval:doc.cloud_provider !== \"Generic\"",
+   "mandatory_depends_on": "eval: ![\"Generic\", \"Frappe Compute\"].includes(doc.cloud_provider)",
    "options": "Cloud Region"
   },
   {
@@ -133,7 +133,7 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.cloud_provider !== \"Generic\"",
+   "depends_on": "eval: ![\"Generic\", \"Frappe Compute\"].includes(doc.cloud_provider)",
    "fieldname": "availability_zone",
    "fieldtype": "Data",
    "label": "Availability Zone",
@@ -141,11 +141,11 @@
    "set_only_once": 1
   },
   {
-   "depends_on": "eval:doc.cloud_provider !== \"Generic\"",
+   "depends_on": "eval: ![\"Generic\", \"Frappe Compute\"].includes(doc.cloud_provider)",
    "fieldname": "ssh_key",
    "fieldtype": "Link",
    "label": "SSH Key",
-   "mandatory_depends_on": "eval:doc.cloud_provider !== \"Generic\"",
+   "mandatory_depends_on": "eval: ![\"Generic\", \"Frappe Compute\"].includes(doc.cloud_provider)",
    "options": "SSH Key"
   },
   {
