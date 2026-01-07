@@ -1515,6 +1515,8 @@ class VirtualMachine(Document):
 			document["is_server_setup"] = True
 			document["is_server_renamed"] = True
 			document["is_upstream_setup"] = True
+		else:
+			document["is_provisioning_press_job_completed"] = True
 
 		server = frappe.get_doc(document).insert()
 		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))
@@ -1551,6 +1553,8 @@ class VirtualMachine(Document):
 				frappe.throw(
 					f"Virtual Machine Image {self.virtual_machine_image} does not have a MariaDB root password set."
 				)
+		else:
+			document["is_provisioning_press_job_completed"] = True
 
 		server = frappe.get_doc(document).insert()
 		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))

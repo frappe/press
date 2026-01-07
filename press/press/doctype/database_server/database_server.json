@@ -25,6 +25,7 @@
   "is_server_setup",
   "is_server_renamed",
   "is_server_prepared",
+  "is_provisioning_press_job_completed",
   "is_for_recovery",
   "is_monitoring_disabled",
   "billing_section",
@@ -758,6 +759,12 @@
    "fieldname": "uploaded_binlogs_retention_days",
    "fieldtype": "Int",
    "label": "Uploaded Binlogs Retention (days)"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_provisioning_press_job_completed",
+   "fieldtype": "Check",
+   "label": "Is Provisioning Job Completed"
   }
  ],
  "grid_page_length": 50,
@@ -774,7 +781,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-12-26 12:33:08.520608",
+ "modified": "2026-01-07 15:03:11.997980",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

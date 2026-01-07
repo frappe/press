@@ -102,6 +102,7 @@ class BaseServer(Document, TagHelpers):
 		"auto_purge_binlog_based_on_size",
 		"binlog_max_disk_usage_percent",
 		"is_monitoring_disabled",
+		"is_provisioning_press_job_completed",
 	)
 
 	@staticmethod
@@ -143,6 +144,9 @@ class BaseServer(Document, TagHelpers):
 		from press.api.server import usage
 
 		warn_at_storage_percentage = 0.8
+
+		if doc.status in ("Active", "Pending") and not doc.is_provisioning_press_job_completed:
+			doc.status = "Installing"
 
 		if self.plan:
 			doc.current_plan = get("Server Plan", self.plan)
@@ -2241,6 +2245,7 @@ class Server(BaseServer):
 		is_managed_database: DF.Check
 		is_monitoring_disabled: DF.Check
 		is_primary: DF.Check
+		is_provisioning_press_job_completed: DF.Check
 		is_pyspy_setup: DF.Check
 		is_replication_setup: DF.Check
 		is_secondary: DF.Check

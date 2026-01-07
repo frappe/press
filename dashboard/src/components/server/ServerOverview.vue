@@ -544,6 +544,7 @@ export default {
 										label: 'Configure Auto Increase Storage',
 										icon: 'tool',
 										variant: 'ghost',
+										condition: () => doc.provider != 'Hetzner',
 										onClick: () => {
 											confirmDialog({
 												title: 'Configure Auto Increase Storage',

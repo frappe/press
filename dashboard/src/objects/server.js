@@ -475,6 +475,7 @@ export default {
 						};
 					},
 					primaryAction({ listResource: benches, documentResource: server }) {
+						if (server?.doc?.status !== 'Active') return {};
 						return {
 							label: 'New Bench Group',
 							slots: {
