@@ -765,6 +765,8 @@ class VirtualMachine(Document):
 			self.client().instance_action(instance_id=self.instance_id, action="RESET")
 		elif self.cloud_provider == "Hetzner":
 			self.client().servers.reboot(self.server_instance)
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().reboot_vm(self.name)
 
 		log_server_activity(self.series, self.get_server().name, action="Reboot")
 
