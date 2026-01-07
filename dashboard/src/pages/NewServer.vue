@@ -62,18 +62,19 @@
 				</div>
 			</div>
 			<div v-if="serverType === 'dedicated'" class="space-y-12">
-				<div class="flex flex-col" v-if="options?.regions.length">
+				<!-- Chose Region -->
+				<div class="flex flex-col" v-if="options?.regions_data">
 					<h2 class="text-sm font-medium leading-6 text-gray-900">
 						Select Region
 					</h2>
 					<div class="mt-2 w-full space-y-2">
 						<div class="grid grid-cols-2 gap-3">
 							<button
-								v-for="c in options?.regions"
-								:key="c.name"
-								@click="serverRegion = c.name"
+								v-for="r in Object.keys(options?.regions_data ?? {})"
+								:key="r"
+								@click="serverRegion = r"
 								:class="[
-									serverRegion === c.name
+									serverRegion === r
 										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
 										: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
 									'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
@@ -81,19 +82,61 @@
 							>
 								<div class="flex w-full items-center justify-between">
 									<div class="flex w-full items-center space-x-2">
-										<img :src="c.image" class="h-5 w-5" />
+										<img :src="options.regions_data[r].image" class="h-5 w-5" />
 										<span class="text-sm font-medium">
-											{{ c.title }}
+											{{ r }}
 										</span>
 									</div>
-									<Badge v-if="c.beta" :label="c.beta ? 'Beta' : ''" />
+									<!-- <Badge v-if="r.beta" :label="r.beta ? 'Beta' : ''" /> Move to provider selection -->
 								</div>
 							</button>
 						</div>
 					</div>
 				</div>
+				<!-- Choose Server Provider -->
+				<div class="flex flex-col" v-if="serverRegion && providers">
+					<h2 class="text-sm font-medium leading-6 text-gray-900">
+						Select Provider
+					</h2>
+					<div class="mt-2 w-full space-y-2">
+						<div class="grid grid-cols-2 gap-3">
+							<button
+								v-for="provider in Object.keys(providers)"
+								:key="provider"
+								@click="serverProvider = provider"
+								:class="[
+									serverProvider === provider
+										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
+										: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
+									'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
+								]"
+							>
+								<div class="flex w-full items-center justify-between">
+									<div class="flex w-full items-center space-x-2">
+										<img
+											:src="providers[provider].provider_image"
+											class="h-5 w-5"
+										/>
+										<span class="text-sm font-medium">
+											{{ providers[provider].title }}
+										</span>
+									</div>
+									<Badge
+										v-if="providers[provider].beta"
+										:label="providers[provider].beta ? 'Beta' : ''"
+									/>
+								</div>
+							</button>
+						</div>
+					</div>
+				</div>
+				<!-- Choose App Server Premium Plans -->
 				<div
-					v-if="serverRegion && options.app_premium_plans.length > 0"
+					v-if="
+						serverRegion &&
+						serverProvider &&
+						options.app_premium_plans.length > 0
+					"
 					class="flex flex-col"
 				>
 					<div class="flex items-center justify-between">
@@ -146,7 +189,8 @@
 						</div>
 					</div>
 				</div>
-				<div v-if="serverRegion">
+				<!-- Choose App Server Standard Plans -->
+				<div v-if="serverRegion && serverProvider && selectedCluster">
 					<div class="flex flex-col" v-if="options?.app_plans.length">
 						<h2 class="text-sm font-medium leading-6 text-gray-900">
 							Select Application Server Plan
@@ -162,7 +206,7 @@
 										const isARMSupportedCluster =
 											p.cluster === 'Mumbai' || p.cluster === 'Frankfurt';
 										return (
-											p.cluster === serverRegion &&
+											p.cluster === selectedCluster &&
 											(!isARMSupportedCluster || p.platform === 'arm64')
 										);
 									})
@@ -171,7 +215,8 @@
 						</div>
 					</div>
 				</div>
-				<div v-if="serverRegion">
+				<!-- Choose Database Server Plan -->
+				<div v-if="serverRegion && serverProvider && selectedCluster">
 					<div class="flex flex-col" v-if="options?.db_plans.length">
 						<h2 class="text-sm font-medium leading-6 text-gray-900">
 							Select Database Server Plan
@@ -188,7 +233,7 @@
 										const isARMSupportedCluster =
 											p.cluster === 'Mumbai' || p.cluster === 'Frankfurt';
 										return (
-											p.cluster === serverRegion &&
+											p.cluster === selectedCluster &&
 											(!isARMSupportedCluster || p.platform === 'arm64')
 										);
 									})
@@ -249,14 +294,7 @@
 					<ClickToCopy :textContent="$resources.hybridOptions.data.ssh_key" />
 				</div>
 			</div>
-			<div
-				class="flex flex-col space-y-3"
-				v-if="
-					serverType === 'dedicated' &&
-					serverRegion &&
-					selectedRegionInfo?.has_add_on_storage_support
-				"
-			>
+			<div class="flex flex-col space-y-3" v-if="showAutoAddStorageOption">
 				<h2 class="text-base font-medium leading-6 text-gray-900">
 					Auto Add-on Storage
 				</h2>
@@ -334,7 +372,7 @@
 							? $resources.createServer.submit({
 									server: {
 										title: serverTitle,
-										cluster: serverRegion,
+										cluster: selectedCluster,
 										app_plan: appServerPlan?.name,
 										db_plan: dbServerPlan?.name,
 										auto_increase_storage: enableAutoAddStorage,
@@ -409,6 +447,7 @@ export default {
 			appServerPlan: '',
 			dbServerPlan: '',
 			serverRegion: '',
+			serverProvider: '',
 			serverType: '',
 			appPublicIP: '',
 			appPrivateIP: '',
@@ -421,6 +460,11 @@ export default {
 		};
 	},
 	watch: {
+		serverRegion() {
+			this.serverProvider = '';
+			this.appServerPlan = '';
+			this.dbServerPlan = '';
+		},
 		serverType() {
 			this.appServerPlan = '';
 			this.dbServerPlan = '';
@@ -457,6 +501,7 @@ export default {
 							},
 						],
 						regions: data.regions,
+						regions_data: data.regions_data,
 						app_plans: data.app_plans.filter((p) => p.premium == 0),
 						db_plans: data.db_plans.filter((p) => p.premium == 0),
 						app_premium_plans: data.app_plans.filter((p) => p.premium == 1),
@@ -564,6 +609,29 @@ export default {
 	computed: {
 		options() {
 			return this.$resources.options.data;
+		},
+		providers() {
+			if (!this.serverRegion) return [];
+			if (!this.options?.regions_data) return [];
+			return this.options.regions_data[this.serverRegion]?.providers || [];
+		},
+		selectedCluster() {
+			if (!this.serverRegion) return null;
+			if (!this.options?.regions_data) return null;
+			if (!this.serverProvider) return null;
+			return this.options.regions_data[this.serverRegion]?.providers[
+				this.serverProvider
+			]?.cluster_name;
+		},
+		showAutoAddStorageOption() {
+			return (
+				this.serverType === 'dedicated' &&
+				this.serverRegion &&
+				this.serverProvider &&
+				this.options.regions_data[this.serverRegion]?.providers[
+					this.serverProvider
+				]?.has_add_on_storage_support
+			);
 		},
 		selectedRegionInfo() {
 			return this.options?.regions.find((r) => r.name === this.serverRegion);
