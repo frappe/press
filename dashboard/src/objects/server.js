@@ -279,7 +279,7 @@ export default {
 				},
 			},
 			{
-				label: 'Bench Group Analytics',
+				label: 'Bench Analytics',
 				icon: icon('bar-chart-2'),
 				condition: (server) => server.doc?.status !== 'Archived',
 				route: 'bench-group-analytics',
@@ -645,9 +645,7 @@ export default {
 									h(
 										defineAsyncComponent(
 											() =>
-												import(
-													'../components/server/ServerNewSnapshotDialog.vue'
-												),
+												import('../components/server/ServerNewSnapshotDialog.vue'),
 										),
 										{
 											server: server.name,
@@ -667,9 +665,7 @@ export default {
 								onClick() {
 									let ServerSnapshotDetailsDialog = defineAsyncComponent(
 										() =>
-											import(
-												'../components/server/ServerSnapshotDetailsDialog.vue'
-											),
+											import('../components/server/ServerSnapshotDetailsDialog.vue'),
 									);
 									renderDialog(
 										h(ServerSnapshotDetailsDialog, {
@@ -684,9 +680,7 @@ export default {
 								onClick() {
 									let ServerSnapshotRecoverSitesDialog = defineAsyncComponent(
 										() =>
-											import(
-												'../components/server/ServerSnapshotRecoverSitesDialog.vue'
-											),
+											import('../components/server/ServerSnapshotRecoverSitesDialog.vue'),
 									);
 									renderDialog(
 										h(ServerSnapshotRecoverSitesDialog, {
