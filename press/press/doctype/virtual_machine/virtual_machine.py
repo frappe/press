@@ -1332,6 +1332,7 @@ class VirtualMachine(Document):
 			"OCI": lambda v: ".bootvolume." in v.volume_id,
 			"Hetzner": lambda v: v.device == "/dev/sda",
 			"DigitalOcean": lambda v: v.device == "/dev/sda",
+			"Frappe Compute": lambda v: v.device == "/dev/vda",
 		}
 		root_volume_filter = ROOT_VOLUME_FILTERS.get(self.cloud_provider)
 		volume = find(self.volumes, root_volume_filter)
