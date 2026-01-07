@@ -421,7 +421,6 @@ class VirtualMachine(Document):
 			frappe.throw("Machine Image is required to provision Hetzner Virtual Machine.")
 
 		cluster = frappe.get_doc("Cluster", self.cluster)
-		self.skip_automated_snapshot = True
 
 		server = (
 			self.client()
@@ -2091,6 +2090,31 @@ def sync_virtual_machines():
 def snapshot_oci_virtual_machines():
 	machines = frappe.get_all(
 		"Virtual Machine", {"status": "Running", "skip_automated_snapshot": 0, "cloud_provider": "OCI"}
+	)
+	for machine in machines:
+		# Skip if a snapshot has already been created today
+		if frappe.get_all(
+			"Virtual Disk Snapshot",
+			{
+				"virtual_machine": machine.name,
+				"physical_backup": 0,
+				"rolling_snapshot": 0,
+				"creation": (">=", frappe.utils.today()),
+			},
+			limit=1,
+		):
+			continue
+		try:
+			frappe.get_doc("Virtual Machine", machine.name).create_snapshots()
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			log_error(title="Virtual Machine Snapshot Error", virtual_machine=machine.name)
+
+
+def snapshot_hetzner_virtual_machines():
+	machines = frappe.get_all(
+		"Virtual Machine", {"status": "Running", "skip_automated_snapshot": 0, "cloud_provider": "Hetzner"}
 	)
 	for machine in machines:
 		# Skip if a snapshot has already been created today
