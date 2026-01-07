@@ -28,6 +28,7 @@
   "hybrid",
   "has_arm_support",
   "has_add_on_storage_support",
+  "enable_autoscaling",
   "billing_section",
   "team",
   "provisioning_section",
@@ -329,7 +330,16 @@
    "fieldname": "has_add_on_storage_support",
    "fieldtype": "Check",
    "label": "Has Add On Storage Support"
+<<<<<<< HEAD
 >>>>>>> 0e13e7a58 (feat(server): Don't show auto-add on storage confirmation if not enable at cluster)
+=======
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_autoscaling",
+   "fieldtype": "Check",
+   "label": "Enable Autoscaling"
+>>>>>>> 33a528744 (chore(cluster): Add enable_autoscaling flag)
   }
  ],
  "image_field": "image",
@@ -367,10 +377,14 @@
   }
  ],
 <<<<<<< HEAD
+<<<<<<< HEAD
  "modified": "2026-01-07 10:03:06.173064",
 =======
  "modified": "2026-01-07 04:00:28.252425",
 >>>>>>> 0e13e7a58 (feat(server): Don't show auto-add on storage confirmation if not enable at cluster)
+=======
+ "modified": "2026-01-08 00:29:32.853963",
+>>>>>>> 33a528744 (chore(cluster): Add enable_autoscaling flag)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",

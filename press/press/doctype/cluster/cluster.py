@@ -69,8 +69,12 @@ class Cluster(Document):
 		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner"]
 		description: DF.Data | None
 <<<<<<< HEAD
+<<<<<<< HEAD
 		enable_autoscaling: DF.Check
 =======
+=======
+		enable_autoscaling: DF.Check
+>>>>>>> 33a528744 (chore(cluster): Add enable_autoscaling flag)
 		has_add_on_storage_support: DF.Check
 >>>>>>> 0e13e7a58 (feat(server): Don't show auto-add on storage confirmation if not enable at cluster)
 		has_arm_support: DF.Check
