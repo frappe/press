@@ -1216,7 +1216,8 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		return status
 
 	def get_jobs_id(self, agent_job_ids):
-		return self.get(f"agent-jobs/{agent_job_ids}")
+		ids = ",".join(agent_job_ids) if isinstance(agent_job_ids, (list, tuple)) else agent_job_ids
+		return self.get(f"agent-jobs/{ids}")
 
 	def get_version(self):
 		return self.raw_request("GET", "version", raises=True, timeout=(2, 10))
