@@ -19,6 +19,7 @@
   "micro_debit_charge_inr",
   "column_break_wrqp",
   "usage_record_creation_batch_size",
+  "default_server_plan_type",
   "invoicing_section",
   "invoicing_column",
   "gst_percentage",
@@ -1564,11 +1565,17 @@
    "fieldname": "disable_binlog_indexer_service",
    "fieldtype": "Check",
    "label": "Disable Binlog Indexer Service"
+  },
+  {
+   "fieldname": "default_server_plan_type",
+   "fieldtype": "Link",
+   "label": "Default Server Plan Type",
+   "options": "Server Plan Type"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-12-09 00:06:25.213870",
+ "modified": "2026-01-07 19:35:17.048595",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

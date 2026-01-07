@@ -150,6 +150,10 @@ class BaseServer(Document, TagHelpers):
 
 		if self.plan:
 			doc.current_plan = get("Server Plan", self.plan)
+			if doc.current_plan and not doc.current_plan.get("plan_type"):
+				doc.current_plan["plan_type"] = frappe.db.get_single_value(
+					"Press Settings", "default_server_plan_type"
+				)
 		else:
 			if virtual_machine := frappe.db.get_value(
 				"Virtual Machine", self.virtual_machine, ["vcpu", "ram", "disk_size"], as_dict=True
