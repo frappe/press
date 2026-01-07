@@ -186,7 +186,6 @@ class Cluster(Document):
 			self.provision_on_frappe_compute()
 
 	def provision_on_frappe_compute(self):
-
 		settings = frappe.get_single("Press Settings")
 		orchestrator_base_url = settings.orchestrator_base_url
 		api_token = settings.get_password("compute_api_token")

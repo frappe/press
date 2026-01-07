@@ -20,7 +20,6 @@ from frappe.utils.password import get_decrypted_password
 from hcloud import APIException, Client
 from hcloud.images.domain import Image
 from hcloud.servers.domain import ServerCreatePublicNetwork
-from press.frappe_compute_client.client import FrappeComputeClient
 from oci import pagination as oci_pagination
 from oci.core import BlockstorageClient, ComputeClient, VirtualNetworkClient
 from oci.core.models import (
@@ -39,6 +38,7 @@ from oci.core.models import (
 )
 from oci.exceptions import TransientServiceError
 
+from press.frappe_compute_client.client import FrappeComputeClient
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.utils import log_error
@@ -78,7 +78,10 @@ class VirtualMachine(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-		from press.press.doctype.virtual_machine_temporary_volume.virtual_machine_temporary_volume import VirtualMachineTemporaryVolume
+
+		from press.press.doctype.virtual_machine_temporary_volume.virtual_machine_temporary_volume import (
+			VirtualMachineTemporaryVolume,
+		)
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
 		availability_zone: DF.Data | None
@@ -413,7 +416,7 @@ class VirtualMachine(Document):
 
 	def _provision_frappe_compute(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
-		server_response = self.client().create_vm(
+		return self.client().create_vm(
 			self.name,
 			"Ubuntu 22.04",
 			1,
@@ -421,9 +424,8 @@ class VirtualMachine(Document):
 			cloud_init=self.get_cloud_init(),
 			mac_address=self.mac_address_of_public_ip,
 			ip_address=self.public_ip_address,
-			private_network=cluster.vpc_id
+			private_network=cluster.vpc_id,
 		)
-		return server_response
 
 	def _provision_hetzner(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
@@ -1427,7 +1429,6 @@ class VirtualMachine(Document):
 			orchestrator_base_url = settings.orchestrator_base_url
 			api_token = settings.get_password("compute_api_token")
 			return FrappeComputeClient(orchestrator_base_url, api_token)
-
 
 		return None
 
