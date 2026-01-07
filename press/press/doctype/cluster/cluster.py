@@ -187,6 +187,10 @@ class Cluster(Document):
 		elif self.cloud_provider == "Hetzner":
 			self.provision_on_hetzner()
 
+		frappe.msgprint(
+			"To add this cluster to monitoring, go to the Monitor Server and trigger the 'Reconfigure Monitor Server' action from the Actions menu."
+		)
+
 	def provision_on_hetzner(self):
 		try:
 			# Get Hetzner API token from Press Settings
