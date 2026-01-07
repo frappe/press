@@ -143,6 +143,7 @@
 									I remember my password
 								</router-link>
 								<Button
+									type="submit"
 									class="mt-4"
 									:loading="$resources.resetPassword.loading"
 									variant="solid"
@@ -164,7 +165,7 @@
 								/>
 								<!-- OAuth Authentication -->
 								<template v-if="isOauthLogin && !usePassword">
-									<Button class="mt-4" variant="solid">
+									<Button class="mt-4" variant="solid" type="submit">
 										Log in with {{ oauthProviderName }}
 									</Button>
 								</template>
@@ -281,6 +282,7 @@
 									class="mt-4"
 									:loading="$resources.signup.loading"
 									variant="solid"
+									type="submit"
 								>
 									Sign up with email
 								</Button>
