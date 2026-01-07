@@ -9,6 +9,7 @@ from frappe.utils import unique
 
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
+from press.security import fail2ban
 from press.utils import log_error
 
 if TYPE_CHECKING:
@@ -202,7 +203,13 @@ class ProxyServer(BaseServer):
 	def _setup_fail2ban(self):
 		try:
 			ansible = Ansible(
-				playbook="fail2ban.yml", server=self, user=self._ssh_user(), port=self._ssh_port()
+				playbook="fail2ban.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={
+					"rules": fail2ban.rules(),
+				},
 			)
 			play = ansible.run()
 			self.reload()

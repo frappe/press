@@ -41,6 +41,7 @@ from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
+from press.security import fail2ban
 from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
@@ -2764,7 +2765,10 @@ class Server(BaseServer):
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
-				variables={"monitor_server_ips": " ".join(get_monitor_server_ips())},
+				variables={
+					"rules": fail2ban.rules(),
+					"monitor_server_ips": " ".join(get_monitor_server_ips()),
+				},
 			)
 			play = ansible.run()
 			self.reload()
