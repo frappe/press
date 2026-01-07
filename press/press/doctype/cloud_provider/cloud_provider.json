@@ -33,7 +33,7 @@
  "image_field": "image",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-07 11:12:01.398501",
+ "modified": "2026-01-08 00:49:07.721216",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cloud Provider",
@@ -49,6 +49,27 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "select": 1,
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "select": 1,
    "share": 1,
    "write": 1
   }
