@@ -604,8 +604,8 @@ def options():
 	return {
 		"regions": regions,
 		"regions_data": regions_data,
-		"app_plans": plans("Server"),
-		"db_plans": plans("Database Server"),
+		"app_plans": plans("Server").get("plans", []),
+		"db_plans": plans("Database Server").get("plans", []),
 		"plan_types": server_plan_types,
 		"default_plan_type": default_server_plan_type,
 		"storage_plan": storage_plan,

@@ -1029,8 +1029,9 @@ class Cluster(Document):
 		server_series = {**self.base_servers, **self.private_servers}
 		team = team or get_current_team()
 		plan = plan or self.get_or_create_basic_plan(doctype)
+		assert plan.instance_type is not None, "Instance type is required in the plan"
 		vm = self.create_vm(
-			plan.instance_type,
+			str(plan.instance_type),
 			plan.platform,
 			plan.disk,
 			domain,

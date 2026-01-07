@@ -1676,7 +1676,7 @@ class VirtualMachine(Document):
 	def bulk_sync_aws(cls):
 		for cluster in frappe.get_all(
 			"Virtual Machine",
-			["cluster", "cloud_provider", "max(`index`) as max_index"],
+			["cluster", "cloud_provider", {"MAX": "index", "as": "max_index"}],
 			{
 				"status": ("not in", ("Terminated", "Draft")),
 				"cloud_provider": "AWS EC2",
