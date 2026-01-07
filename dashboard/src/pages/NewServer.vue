@@ -101,7 +101,9 @@
 					<div class="mt-2 w-full space-y-2">
 						<div class="grid grid-cols-2 gap-3">
 							<button
-								v-for="provider in Object.keys(providers)"
+								v-for="provider in Object.keys(providers).sort((a, b) =>
+									a.localeCompare(b),
+								)"
 								:key="provider"
 								@click="serverProvider = provider"
 								:class="[
