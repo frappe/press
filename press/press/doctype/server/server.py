@@ -352,6 +352,10 @@ class BaseServer(Document, TagHelpers):
 			}
 		raise
 
+	def _get_clusters_with_autoscale_support(self) -> list[str]:
+		"""Get clusters which have autoscaling enabled"""
+		return frappe.db.get_all("Cluster", {"enable_autoscaling": 1}, pluck="name")
+
 	def get_actions(self):
 		server_type = ""
 		if self.doctype == "Server":
@@ -394,7 +398,7 @@ class BaseServer(Document, TagHelpers):
 				"condition": self.status == "Active"
 				and self.doctype == "Server"
 				and not self.secondary_server
-				and self.cluster == "Mumbai",
+				and self.cluster in self._get_clusters_with_autoscale_support(),
 				"group": "Application Server Actions",
 			},
 			{
@@ -2436,23 +2440,8 @@ class Server(BaseServer):
 					"Subscription", add_on_storage_subscription.name, {"team": self.team, "enabled": 1}
 				)
 
-	def validate_bigger_secondary_server(self, secondary_server_plan: str) -> None:
-		"""Ensure secondary server has more memory than the primary server"""
-		current_plan_memory, vcpus = frappe.db.get_value("Server Plan", self.plan, ["memory", "vcpu"])
-		secondary_server_plan_memory, secondary_server_vcpus = frappe.db.get_value(
-			"Server Plan", secondary_server_plan, ["memory", "vcpu"]
-		)
-
-		if secondary_server_plan_memory < current_plan_memory and secondary_server_vcpus < vcpus:
-			frappe.throw(
-				"Please select a plan with more memory or more vcpus than the "
-				f"existing server plan. Current memory: {current_plan_memory} Current vcpus: {vcpus}"
-			)
-
 	def create_secondary_server(self, plan_name: str) -> None:
 		"""Create a secondary server for this server"""
-		self.validate_bigger_secondary_server(plan_name)
-
 		plan: ServerPlan = frappe.get_cached_doc("Server Plan", plan_name)
 		team_name = frappe.db.get_value("Server", self.name, "team", "name")
 		cluster: "Cluster" = frappe.get_cached_doc("Cluster", self.cluster)

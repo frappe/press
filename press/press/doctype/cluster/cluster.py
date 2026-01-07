@@ -33,6 +33,7 @@ from oci.core.models import (
 )
 from oci.identity import IdentityClient
 
+from press.frappe_compute_client.client import FrappeComputeClient
 from press.press.doctype.virtual_machine_image.virtual_machine_image import (
 	VirtualMachineImage,
 )
@@ -66,7 +67,7 @@ class Cluster(Document):
 		aws_secret_access_key: DF.Password | None
 		beta: DF.Check
 		cidr_block: DF.Data | None
-		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner"]
+		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner", "Frappe Compute"]
 		description: DF.Data | None
 		enable_autoscaling: DF.Check
 		has_add_on_storage_support: DF.Check
@@ -183,6 +184,18 @@ class Cluster(Document):
 			self.provision_on_oci()
 		elif self.cloud_provider == "Hetzner":
 			self.provision_on_hetzner()
+		elif self.cloud_provider == "Frappe Compute":
+			self.provision_on_frappe_compute()
+
+	def provision_on_frappe_compute(self):
+		settings = frappe.get_single("Press Settings")
+		orchestrator_base_url = settings.orchestrator_base_url
+		api_token = settings.get_password("compute_api_token")
+
+		client = FrappeComputeClient(orchestrator_base_url, api_token)
+		network = client.create_vpc(name=f"Frappe Cloud - {self.name}", cidr_block=self.cidr_block)
+		self.vpc_id = network["name"]
+		self.save()
 
 		frappe.msgprint(
 			"To add this cluster to monitoring, go to the Monitor Server and trigger the 'Reconfigure Monitor Server' action from the Actions menu."
@@ -922,12 +935,14 @@ class Cluster(Document):
 		data_disk_snapshot: str | None = None,
 		temporary_server: bool = False,
 		kms_key_id: str | None = None,
+		vmi_series: str | None = None,
 	) -> "VirtualMachine":
 		"""Creates a Virtual Machine for the cluster
 		temporary_server: If you are creating a temporary server for some special purpose, set this to True.
 				This will use a different nameing series `t` for the server to avoid conflicts
 				with the regular servers.
 		"""
+		vmi_series = vmi_series or series
 		return frappe.get_doc(
 			{
 				"doctype": "Virtual Machine",
@@ -937,7 +952,7 @@ class Cluster(Document):
 				"disk_size": disk_size,
 				"machine_type": machine_type,
 				"platform": platform,
-				"virtual_machine_image": self.get_available_vmi(series, platform=platform),
+				"virtual_machine_image": self.get_available_vmi(vmi_series, platform=platform),
 				"team": team,
 				"data_disk_snapshot": data_disk_snapshot,
 				"kms_key_id": kms_key_id,
@@ -1030,6 +1045,7 @@ class Cluster(Document):
 			data_disk_snapshot=data_disk_snapshot,
 			temporary_server=temporary_server,
 			kms_key_id=kms_key_id,
+			vmi_series="f" if is_secondary else None,  # Just use `f` series for secondary servers
 		)
 		server: BaseServer | MonitorServer | LogServer | None = None
 		match doctype:
