@@ -1585,6 +1585,8 @@ class VirtualMachine(Document):
 			self.client().servers.power_on(self.get_hetzner_server_instance(fetch_data=False))
 		elif self.cloud_provider == "DigitalOcean":
 			self.client().droplet_actions.post(self.instance_id, {"type": "power_on"})
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().start_vm(self.name)
 
 		# Digital Ocean `start` takes some time therefore this sync is useless for DO.
 		self.sync()
