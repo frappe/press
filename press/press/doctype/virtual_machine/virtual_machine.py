@@ -1147,6 +1147,7 @@ class VirtualMachine(Document):
 			"AWS EC2": lambda v: v.device == "/dev/sda1",
 			"OCI": lambda v: ".bootvolume." in v.volume_id,
 			"Hetzner": lambda v: v.device == "/dev/sda",
+			"Frappe Compute": lambda v: v.device == "/dev/vda",
 		}
 		root_volume_filter = ROOT_VOLUME_FILTERS.get(self.cloud_provider)
 		volume = find(self.volumes, root_volume_filter)
