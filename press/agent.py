@@ -51,7 +51,8 @@ class Agent:
 	def __init__(self, server, server_type="Server"):
 		self.server_type = server_type
 		self.server = server
-		self.port = 443 if self.server not in servers_using_alternative_port_for_communication() else 8443
+		self.__servers_using_alt_ports = servers_using_alternative_port_for_communication()
+		self.port = 443 if self.server not in self.__servers_using_alt_ports else 8443
 
 	def new_bench(self, bench: "Bench"):
 		settings = frappe.db.get_value(
@@ -905,15 +906,19 @@ class Agent:
 		return self.request("DELETE", path, data, raises=raises)
 
 	def _make_req(self, method, path, data, files, agent_job_id):
+		url = self._get_request_url(path)
 		password = get_decrypted_password(self.server_type, self.server, "agent_password")
 		headers = {"Authorization": f"bearer {password}", "X-Agent-Job-Id": agent_job_id}
-		url = f"https://{self.server}:{self.port}/agent/{path}"
-		intermediate_ca = frappe.db.get_value("Press Settings", "Press Settings", "backbone_intermediate_ca")
-		if frappe.conf.developer_mode and intermediate_ca:
+
+		verify = True
+		if frappe.conf.developer_mode and (
+			intermediate_ca := frappe.db.get_value(
+				"Press Settings", "Press Settings", "backbone_intermediate_ca"
+			)
+		):
 			root_ca = frappe.db.get_value("Certificate Authority", intermediate_ca, "parent_authority")
 			verify = frappe.get_doc("Certificate Authority", root_ca).certificate_file
-		else:
-			verify = True
+
 		if files:
 			file_objects = {
 				key: value
@@ -996,7 +1001,7 @@ class Agent:
 			frappe.new_doc("Agent Request Failure", **fields).insert(ignore_permissions=True)
 
 	def raw_request(self, method, path, data=None, raises=True, timeout=None):
-		url = f"https://{self.server}:{self.port}/agent/{path}"
+		url = self._get_request_url(path)
 		password = get_decrypted_password(self.server_type, self.server, "agent_password")
 		headers = {"Authorization": f"bearer {password}"}
 		timeout = timeout or (10, 30)
@@ -1005,6 +1010,24 @@ class Agent:
 		if raises:
 			response.raise_for_status()
 		return json_response
+
+	def _get_request_url(self, path):
+		proxy, server_ip, server_private_ip = None
+		if self.server_type in ("Server", "Database Server"):
+			server_ip, server_private_ip = frappe.db.get_value(
+				self.server_type, self.server, ("ip", "private_ip")
+			)
+			if not server_ip:
+				if self.server_type == "Server":
+					proxy = frappe.db.get_value("Server", self.server, "proxy_server")
+				elif self.server_type == "Database Server":
+					proxy = frappe.db.get_value("Server", {"database_server": self.name}, "proxy_server")
+
+		if proxy:
+			proxy_port = 443 if proxy not in self.__servers_using_alt_ports else 8443
+			return f"https://{proxy}:{proxy_port}/{server_private_ip}:{self.port}/agent/{path}"
+
+		return f"https://{self.server}:{self.port}/agent/{path}"
 
 	def should_skip_requests(self):
 		if self.server_type in ("Server", "Database Server", "Proxy Server") and frappe.db.get_value(
