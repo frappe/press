@@ -105,8 +105,6 @@ class Cluster(Document):
 		# "Log Server": "e,
 	}
 
-	secondary_server_series: ClassVar[str] = "fs"
-
 	wait_for_aws_creds_seconds = 20
 
 	@staticmethod
@@ -929,7 +927,7 @@ class Cluster(Document):
 			plan.platform,
 			plan.disk,
 			domain,
-			server_series[doctype] if not is_secondary else self.secondary_server_series,
+			server_series[doctype],  # Use `f` series vmi for secondary servers as well.
 			team,
 			data_disk_snapshot=data_disk_snapshot,
 			temporary_server=temporary_server,
