@@ -1352,8 +1352,6 @@ class VirtualMachine(Document):
 				volume.detach().wait_until_finished(HETZNER_ACTION_TIMEOUT)
 				volume.delete()
 			self.client().servers.delete(self.server_instance)
-		elif self.cloud_provider == "Frappe Compute":
-			self.client().terminate_vm(self.name)
 
 		log_server_activity(self.series, self.get_server().name, action="Terminated")
 
