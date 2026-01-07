@@ -1,5 +1,5 @@
 import json
-from urllib.parse import urljoin
+from urllib.parse import quote, urljoin
 
 import frappe
 import requests
@@ -34,27 +34,27 @@ class FrappeComputeClient:
 		return json.loads(response.text)
 
 	def start_vm(self, name):
-		url = urljoin(self.base_url, f"/api/v2/document/Virtual%20Machine/{name}/method/start")
+		url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}/method/start"))
 		return self._send_request(url, "POST", {})
 
 	def stop_vm(self, name):
-		url = urljoin(self.base_url, f"/api/v2/document/Virtual%20Machine/{name}/method/stop")
+		url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}/method/stop"))
 		return self._send_request(url, "POST", {})
 
 	def reboot_vm(self, name):
-		url = urljoin(self.base_url, f"/api/v2/document/Virtual%20Machine/{name}/method/reboot")
+		url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}/method/reboot"))
 		return self._send_request(url, "POST", {})
 
 	def attach_volumes(self, name, volumes):
-		url = urljoin(self.base_url, f"/api/v2/document/Virtual%20Machine/{name}/method/attach_volumes")
+		url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}/method/attach_volumes"))
 		return self._send_request(url, "POST", {"volumes": volumes}).json()
 
 	def create_vpc(self, name, cidr_block):
-		url = urljoin(self.base_url, "/api/v2/document/Private%20Network/")
+		url = urljoin(self.base_url, quote("/api/v2/document/Private Network/"))
 		return self._send_request(url, "POST", {"name": name, "cidr_block": cidr_block}).json()["data"]
 
 	def get_volumes(self, name):
-		url = urljoin(self.base_url, f"/api/v2/document/Virtual%20Machine/{name}/method/get_volumes")
+		url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}/method/get_volumes"))
 		return self._send_request(url, "GET", {}).json()["data"]
 
 	def _send_request(self, url, method, data):
