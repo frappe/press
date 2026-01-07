@@ -856,6 +856,9 @@ class VirtualMachine(Document):
 				)
 			)
 			return volumes
+
+		if self.cloud_provider == "Frappe Compute":
+			return self.client().get_volumes(self.name)
 		return None
 
 	def convert_to_gp3(self):
