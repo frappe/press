@@ -332,6 +332,23 @@ class NFSVolumeDetachment(Document, AutoScaleStepFailureHandler, StepHandler):
 		if is_server_auto_scaled:
 			frappe.throw("Benches are currently running on the secondary server!")
 
+		has_triggers = frappe.db.get_value(
+			"Prometheus Alert Rule",
+			filters={
+				"name": [
+					"in",
+					[
+						f"Auto Scale Up Trigger - {self.primary_server}",
+						f"Auto Scale Down Trigger - {self.primary_server}",
+					],
+				]
+			},
+			pluck="name",
+		)
+
+		if has_triggers:
+			frappe.throw("Please remove all auto scale triggers before dropping the secondary server")
+
 	@frappe.whitelist()
 	def force_continue(self):
 		self.execute_mount_steps()
