@@ -140,7 +140,10 @@ function onTeardownSecondaryServer() {
 				{
 					loading: 'Tearing down secondary server...',
 					success: 'Secondary server teardown started',
-					error: 'Failed to start secondary server teardown',
+					error: (error) =>
+						error.messages.length
+							? error.messages.join('\n')
+							: 'Failed to drop servers',
 				},
 			);
 		},

@@ -67,6 +67,7 @@ class Cluster(Document):
 		cidr_block: DF.Data | None
 		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner"]
 		description: DF.Data | None
+		enable_autoscaling: DF.Check
 		has_arm_support: DF.Check
 		hybrid: DF.Check
 		image: DF.AttachImage | None
@@ -826,12 +827,14 @@ class Cluster(Document):
 		data_disk_snapshot: str | None = None,
 		temporary_server: bool = False,
 		kms_key_id: str | None = None,
+		vmi_series: str | None = None,
 	) -> "VirtualMachine":
 		"""Creates a Virtual Machine for the cluster
 		temporary_server: If you are creating a temporary server for some special purpose, set this to True.
 				This will use a different nameing series `t` for the server to avoid conflicts
 				with the regular servers.
 		"""
+		vmi_series = vmi_series or series
 		return frappe.get_doc(
 			{
 				"doctype": "Virtual Machine",
@@ -841,7 +844,7 @@ class Cluster(Document):
 				"disk_size": disk_size,
 				"machine_type": machine_type,
 				"platform": platform,
-				"virtual_machine_image": self.get_available_vmi(series, platform=platform),
+				"virtual_machine_image": self.get_available_vmi(vmi_series, platform=platform),
 				"team": team,
 				"data_disk_snapshot": data_disk_snapshot,
 				"kms_key_id": kms_key_id,
@@ -934,6 +937,7 @@ class Cluster(Document):
 			data_disk_snapshot=data_disk_snapshot,
 			temporary_server=temporary_server,
 			kms_key_id=kms_key_id,
+			vmi_series="f" if is_secondary else None,  # Just use `f` series for secondary servers
 		)
 		server: BaseServer | MonitorServer | LogServer | None = None
 		match doctype:
