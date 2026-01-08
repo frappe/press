@@ -767,7 +767,7 @@ class BaseServer(Document, TagHelpers):
 				variables={
 					"agent_repository_url": self.get_agent_repository_url(),
 					"agent_repository_branch_or_commit_ref": agent_branch,
-					"agent_update_args": "",
+					"agent_update_args": " --skip-repo-setup=true",
 				},
 				server=self,
 				user=self._ssh_user(),
@@ -2605,6 +2605,8 @@ class Server(BaseServer):
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 					"docker_depends_on_mounts": self.docker_depends_on_mounts,
 					"db_port": db_port,
+					"agent_repository_branch_or_commit_ref": self.get_agent_repository_branch(),
+					"agent_update_args": " --skip-repo-setup=true",
 					**self.get_mount_variables(),
 				},
 			)
