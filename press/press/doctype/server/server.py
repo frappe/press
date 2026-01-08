@@ -102,6 +102,7 @@ class BaseServer(Document, TagHelpers):
 		"auto_purge_binlog_based_on_size",
 		"binlog_max_disk_usage_percent",
 		"is_monitoring_disabled",
+		"is_provisioning_press_job_completed",
 	)
 
 	@staticmethod
@@ -138,14 +139,31 @@ class BaseServer(Document, TagHelpers):
 		"""Helper to log server activity"""
 		log_server_activity(self._series, self.name, action, reason)
 
-	def get_doc(self, doc):
+	def get_doc(self, doc):  # noqa: C901
 		from press.api.client import get
 		from press.api.server import usage
 
 		warn_at_storage_percentage = 0.8
 
+		if doc.status in ("Active", "Pending") and not doc.is_provisioning_press_job_completed:
+			doc.status = "Installing"
+
+		if doc.database_server:
+			data = frappe.get_value(
+				"Database Server",
+				doc.database_server,
+				["status", "is_provisioning_press_job_completed"],
+				as_dict=True,
+			)
+			if data and data.status in ("Active", "Pending") and not data.is_provisioning_press_job_completed:
+				doc.status = "Installing"
+
 		if self.plan:
 			doc.current_plan = get("Server Plan", self.plan)
+			if doc.current_plan and not doc.current_plan.get("plan_type"):
+				doc.current_plan["plan_type"] = frappe.db.get_single_value(
+					"Press Settings", "default_server_plan_type"
+				)
 		else:
 			if virtual_machine := frappe.db.get_value(
 				"Virtual Machine", self.virtual_machine, ["vcpu", "ram", "disk_size"], as_dict=True
@@ -638,6 +656,8 @@ class BaseServer(Document, TagHelpers):
 
 	def _prepare_server(self):
 		try:
+			ansible = None
+
 			if self.provider == "Scaleway":
 				ansible = Ansible(
 					playbook="scaleway.yml",
@@ -655,7 +675,8 @@ class BaseServer(Document, TagHelpers):
 				ansible = Ansible(playbook="oci.yml", server=self, user="ubuntu")
 			elif self.provider == "Vodacom":
 				ansible = Ansible(playbook="vodacom.yml", server=self, user="ubuntu")
-			if self.provider != "Generic":
+
+			if self.provider != "Generic" and ansible:
 				ansible.run()
 
 			self.reload()
@@ -756,7 +777,7 @@ class BaseServer(Document, TagHelpers):
 				variables={
 					"agent_repository_url": self.get_agent_repository_url(),
 					"agent_repository_branch_or_commit_ref": agent_branch,
-					"agent_update_args": "",
+					"agent_update_args": " --skip-repo-setup=true",
 				},
 				server=self,
 				user=self._ssh_user(),
@@ -1046,7 +1067,7 @@ class BaseServer(Document, TagHelpers):
 		frappe.enqueue_doc(self.doctype, self.name, "_rename_server", queue="long", timeout=2400)
 
 	@frappe.whitelist()
-	def archive(self):
+	def archive(self):  # noqa: C901
 		if frappe.db.exists(
 			"Press Job",
 			{
@@ -1056,6 +1077,10 @@ class BaseServer(Document, TagHelpers):
 				"status": "Success",
 			},
 		):
+			if self.status != "Archived":
+				self.status = "Archived"
+				self.save()
+
 			frappe.msgprint(_("Server {0} has already been archived.").format(self.name))
 			return
 
@@ -1109,7 +1134,9 @@ class BaseServer(Document, TagHelpers):
 		if add_on_storage_subscription:
 			add_on_storage_subscription.disable()
 
-	def can_change_plan(self, ignore_card_setup: bool, new_plan: ServerPlan) -> None:
+	def can_change_plan(  # noqa: C901
+		self, ignore_card_setup: bool, new_plan: ServerPlan, upgrade_disk: bool = False
+	) -> None:
 		if is_system_user(frappe.session.user):
 			return
 
@@ -1133,12 +1160,23 @@ class BaseServer(Document, TagHelpers):
 				f"Cannot change plan right now since the instance type {new_plan.instance_type} is not available. Try again later."
 			)
 
+		if self.provider == "Hetzner" and self.plan and self.plan == new_plan.name and upgrade_disk:
+			current_root_disk_size = frappe.db.get_value(
+				"Virtual Machine", self.virtual_machine, "root_disk_size"
+			)
+			if current_root_disk_size >= new_plan.disk:
+				frappe.throw(
+					"Cannot upgrade disk because the selected plan has the same or smaller disk size"
+				)
+
 	@dashboard_whitelist()
-	def change_plan(self, plan: str, ignore_card_setup=False):
+	def change_plan(self, plan: str, ignore_card_setup=False, upgrade_disk: bool = False):
 		plan_doc: ServerPlan = frappe.get_doc("Server Plan", plan)
-		self.can_change_plan(ignore_card_setup, new_plan=plan_doc)
+		self.can_change_plan(ignore_card_setup, new_plan=plan_doc, upgrade_disk=upgrade_disk)
 		self._change_plan(plan_doc)
-		self.run_press_job("Resize Server", {"machine_type": plan_doc.instance_type})
+		self.run_press_job(
+			"Resize Server", {"machine_type": plan_doc.instance_type, "upgrade_disk": upgrade_disk}
+		)
 
 	def _change_plan(self, plan):
 		self.ram = plan.memory
@@ -1691,9 +1729,6 @@ class BaseServer(Document, TagHelpers):
 		if not cleanup_db_replication_files:
 			cleanup_db_replication_files = False
 
-		if self.provider == "Hetzner" and not any(self.get_mount_variables().values()):
-			frappe.throw(_("No mounts defined to mount"))
-
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
@@ -2228,6 +2263,7 @@ class Server(BaseServer):
 		is_managed_database: DF.Check
 		is_monitoring_disabled: DF.Check
 		is_primary: DF.Check
+		is_provisioning_press_job_completed: DF.Check
 		is_pyspy_setup: DF.Check
 		is_replication_setup: DF.Check
 		is_secondary: DF.Check
@@ -2505,8 +2541,8 @@ class Server(BaseServer):
 		inventory = f"{self.ip},"
 		return AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
 
-	def setup_docker(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_docker", timeout=1200)
+	def setup_docker(self, now: bool | None = None):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_docker", timeout=1200, now=now or False)
 
 	def _setup_docker(self):
 		try:
@@ -2579,6 +2615,8 @@ class Server(BaseServer):
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 					"docker_depends_on_mounts": self.docker_depends_on_mounts,
 					"db_port": db_port,
+					"agent_repository_branch_or_commit_ref": self.get_agent_repository_branch(),
+					"agent_update_args": " --skip-repo-setup=true",
 					**self.get_mount_variables(),
 				},
 			)

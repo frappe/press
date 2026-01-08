@@ -114,20 +114,32 @@ frappe.ui.form.on('Virtual Machine', {
 			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
+				let fields = [
+					{
+						fieldtype: 'Data',
+						label: 'Machine Type',
+						fieldname: 'machine_type',
+						reqd: 1,
+					},
+				];
+				if (frm.doc.cloud_provider == 'Hetzner') {
+					fields.push({
+						fieldtype: 'Check',
+						label: 'Upgrade Disk ?',
+						fieldname: 'upgrade_disk',
+						default: 0,
+					});
+				}
 				frm.add_custom_button(
 					label,
 					() => {
 						frappe.prompt(
-							{
-								fieldtype: 'Data',
-								label: 'Machine Type',
-								fieldname: 'machine_type',
-								reqd: 1,
-							},
-							({ machine_type }) => {
+							fields,
+							({ machine_type, upgrade_disk }) => {
 								frm
 									.call(method, {
 										machine_type,
+										upgrade_disk,
 									})
 									.then((r) => frm.refresh());
 							},

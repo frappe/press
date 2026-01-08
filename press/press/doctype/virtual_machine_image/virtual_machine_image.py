@@ -2,11 +2,13 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import math
+
 import boto3
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
-from hcloud import Client
+from hcloud import APIException, Client
 from oci.core import ComputeClient
 from oci.core.models import (
 	CreateImageDetails,
@@ -57,6 +59,8 @@ class VirtualMachineImage(Document):
 
 	def before_insert(self):
 		self.set_credentials()
+		if self.cloud_provider == "Hetzner" and self.has_data_volume:
+			frappe.throw("Hetzner Virtual Machine Images cannot have data volumes.")
 
 	def after_insert(self):
 		if self.copied_from:
@@ -97,12 +101,15 @@ class VirtualMachineImage(Document):
 			).data
 			self.image_id = image.id
 		elif cluster.cloud_provider == "Hetzner":
-			server_instance = self.client.servers.get_by_id(self.instance_id)
+			from hcloud.servers.domain import Server
+
 			response = self.client.servers.create_image(
-				server=server_instance,
-				description=f"Frappe Cloud - {self.virtual_machine} - {self.instance_id} ",
+				server=Server(id=self.instance_id),
+				description=f"Frappe Cloud VMI {self.name} - {self.virtual_machine} ",
 				labels={
-					"environment": "local",
+					"environment": "prod" if not frappe.conf.developer_mode else "local",
+					"instance-id": str(self.instance_id),
+					"virtual-machine": self.virtual_machine,
 				},
 				type="snapshot",
 			)
@@ -173,7 +180,7 @@ class VirtualMachineImage(Document):
 						self.remove(volume)
 
 				self.size = self.get_data_volume().size
-				self.root_size = self.get_data_volume().size
+				self.root_size = self.get_root_volume().size
 			else:
 				self.status = "Unavailable"
 		elif cluster.cloud_provider == "OCI":
@@ -182,9 +189,17 @@ class VirtualMachineImage(Document):
 			if image.size_in_mbs:
 				self.size = image.size_in_mbs // 1024
 		elif cluster.cloud_provider == "Hetzner":
-			image = self.client.images.get_by_id(self.image_id)
-			self.status = self.get_hetzner_status_map(image.status)
-			self.size = image.image_size
+			try:
+				image = self.client.images.get_by_id(self.image_id)
+				self.status = self.get_hetzner_status_map(image.status)
+				self.size = math.ceil(image.disk_size)
+				self.root_size = self.size
+			except APIException as e:
+				if e.code == "not_found":
+					self.status = "Unavailable"
+				else:
+					raise e
+
 		self.save()
 		return self.status
 
@@ -213,6 +228,10 @@ class VirtualMachineImage(Document):
 				self.client.delete_snapshot(SnapshotId=self.snapshot_id)
 		elif cluster.cloud_provider == "OCI":
 			self.client.delete_image(self.image_id)
+		elif cluster.cloud_provider == "Hetzner":
+			from hcloud.images.domain import Image
+
+			self.client.images.delete(Image(self.image_id))
 		self.sync()
 
 	def get_aws_status_map(self, status):
@@ -223,7 +242,7 @@ class VirtualMachineImage(Document):
 
 	def get_hetzner_status_map(self, status):
 		return {
-			"pending": "Pending",
+			"creating": "Pending",
 			"available": "Available",
 		}.get(status, "Unavailable")
 
@@ -283,7 +302,7 @@ class VirtualMachineImage(Document):
 		images = frappe.qb.DocType(cls.DOCTYPE)
 		get_available_images = (
 			frappe.qb.from_(images)
-			.select("name")
+			.select(images.name)
 			.where(images.status == "Available")
 			.where(images.public == 1)
 			.where(

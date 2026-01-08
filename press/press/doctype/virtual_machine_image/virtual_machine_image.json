@@ -160,6 +160,7 @@
   },
   {
    "default": "0",
+   "fetch_from": "virtual_machine.has_data_volume",
    "fieldname": "has_data_volume",
    "fieldtype": "Check",
    "label": "Has Data Volume",
@@ -182,7 +183,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-13 14:56:47.398186",
+ "modified": "2026-01-06 20:18:10.820546",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",
