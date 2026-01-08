@@ -32,6 +32,8 @@
   "aws_access_key_id",
   "column_break_qpia",
   "aws_secret_access_key",
+  "hetzner_section",
+  "hetzner_api_token",
   "oci_section",
   "oci_user",
   "oci_public_key",
@@ -70,7 +72,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "AWS EC2\nGeneric\nOCI\nHetzner",
+   "options": "AWS EC2\nGeneric\nOCI\nHetzner\nFrappe Compute",
    "reqd": 1,
    "set_only_once": 1
   },
@@ -321,6 +323,18 @@
    "fieldname": "enable_autoscaling",
    "fieldtype": "Check",
    "label": "Enable Autoscaling"
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "eval: doc.cloud_provider == \"Hetzner\"",
+   "fieldname": "hetzner_section",
+   "fieldtype": "Section Break",
+   "label": "Hetzner"
+  },
+  {
+   "fieldname": "hetzner_api_token",
+   "fieldtype": "Password",
+   "label": "Hetzner API Token"
   }
  ],
  "image_field": "image",
@@ -357,7 +371,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2026-01-08 00:29:32.853963",
+ "modified": "2026-01-08 18:16:32.403234",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
