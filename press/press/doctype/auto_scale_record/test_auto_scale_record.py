@@ -171,7 +171,7 @@ class UnitTestAutoScaleRecord(TestCase):
 
 		with self.assertRaises(frappe.ValidationError) as context:
 			nfs_volume_detachment: "NFSVolumeDetachment" = frappe.get_doc(
-				{"doctype": "NFS Volume Detachment", "primary_server": self.primary_server}
+				{"doctype": "NFS Volume Detachment", "primary_server": self.primary_server.name}
 			)
 			nfs_volume_detachment.insert(ignore_permissions=True)
 
