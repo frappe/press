@@ -757,7 +757,9 @@ export default {
 				},
 				{
 					label: 'Database Server',
-					value: this.$server.doc.database_server,
+					value:
+						this.$server.doc.database_server &&
+						!this.$server.doc.is_unified_server,
 				},
 				{
 					label: 'Replication Server',
