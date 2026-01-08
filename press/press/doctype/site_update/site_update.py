@@ -48,6 +48,7 @@ class SiteUpdate(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		name: DF.Data
 		activate_site_job: DF.Link | None
 		backup_type: DF.Literal["Logical", "Physical", "Logical Replication"]
 		cause_of_failure_is_resolved: DF.Check
@@ -1157,12 +1158,12 @@ def run_scheduled_updates():
 
 	for update in updates:
 		try:
-			doc = frappe.get_doc("Site Update", update, for_update=True)
-			if doc.status != "Scheduled":
+			site_update: SiteUpdate = frappe.get_doc("Site Update", update, for_update=True)
+			if site_update.status != "Scheduled":
 				continue
 
-			doc.validate()
-			doc.start()
+			site_update.validate()
+			site_update.start()
 			frappe.db.commit()
 		except Exception:
 			log_error("Scheduled Site Update Error", update=update)

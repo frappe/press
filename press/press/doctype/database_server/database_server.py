@@ -78,6 +78,7 @@ class DatabaseServer(BaseServer):
 		is_monitoring_disabled: DF.Check
 		is_performance_schema_enabled: DF.Check
 		is_primary: DF.Check
+		is_provisioning_press_job_completed: DF.Check
 		is_replication_setup: DF.Check
 		is_self_hosted: DF.Check
 		is_server_prepared: DF.Check
@@ -97,7 +98,7 @@ class DatabaseServer(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom"]
 		public: DF.Check
 		ram: DF.Float
 		root_public_key: DF.Code | None
@@ -2220,10 +2221,10 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		except Exception:
 			frappe.throw("Failed to fetch storage usage. Try again later.")
 
-	def set_mariadb_mount_dependency(self):
+	def set_mariadb_mount_dependency(self, now: bool | None = None):
 		if not self.mariadb_depends_on_mounts:
 			return
-		frappe.enqueue_doc(self.doctype, self.name, "_set_mariadb_mount_dependency", timeout=1800)
+		frappe.enqueue_doc(self.doctype, self.name, "_set_mariadb_mount_dependency", timeout=1800, now=now)
 
 	def _set_mariadb_mount_dependency(self):
 		try:

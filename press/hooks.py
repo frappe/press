@@ -253,6 +253,7 @@ scheduler_events = {
 		"press.press.doctype.deploy_candidate_build.deploy_candidate_build.cleanup_build_directories",
 		"press.press.doctype.deploy_candidate_build.deploy_candidate_build.check_builds_status",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_oci_virtual_machines",
+		"press.press.doctype.virtual_machine.virtual_machine.snapshot_hetzner_virtual_machines",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_aws_internal_virtual_machines",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_old_snapshots",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_expired_snapshots",

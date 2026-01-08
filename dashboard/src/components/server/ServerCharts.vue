@@ -2,7 +2,7 @@
 	<div class="space-y-4">
 		<div class="flex space-x-2">
 			<FormControl
-				class="w-40"
+				class="w-50"
 				label="Server"
 				type="select"
 				:options="serverOptions"
