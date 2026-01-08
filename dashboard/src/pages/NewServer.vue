@@ -64,9 +64,22 @@
 			<div v-if="serverType === 'dedicated'" class="space-y-8">
 				<!-- Choose Server Provider -->
 				<div class="flex flex-col" v-if="allProviders.length">
-					<h2 class="text-sm font-medium leading-6 text-gray-900">
-						Select Provider
-					</h2>
+					<div class="flex items-center justify-between">
+						<h2 class="text-sm font-medium leading-6 text-gray-900">
+							Select Provider
+						</h2>
+						<div>
+							<Button
+								link="https://docs.frappe.io/cloud/servers/provider-comparision"
+								variant="ghost"
+							>
+								<template #prefix>
+									<lucide-help-circle class="h-4 w-4 text-gray-700" />
+								</template>
+								Compare Features
+							</Button>
+						</div>
+					</div>
 					<div class="mt-2 w-full space-y-2">
 						<div class="grid grid-cols-2 gap-3">
 							<button
@@ -82,18 +95,26 @@
 							>
 								<div class="flex w-full items-center justify-between">
 									<div class="flex w-full items-center space-x-2">
-										<img :src="provider.provider_image" class="h-5 w-5" />
+										<img
+											:src="provider.provider_image"
+											class="h-5 w-5 rounded-sm"
+										/>
 										<span class="text-sm font-medium">
 											{{ provider.title }}
 										</span>
 									</div>
-									<Badge
+									<Tooltip
 										v-if="provider.beta"
-										:label="provider.beta ? 'Beta' : ''"
-										theme="orange"
-										variant="outline"
-										size="md"
-									/>
+										text="This provider is in beta. Click 'Compare Features' above to learn more."
+									>
+										<Badge
+											label="Beta"
+											theme="orange"
+											variant="subtle"
+											size="md"
+											class="border border-orange-400"
+										/>
+									</Tooltip>
 								</div>
 							</button>
 						</div>
@@ -122,7 +143,7 @@
 							>
 								<div class="flex w-full items-center justify-between">
 									<div class="flex w-full items-center space-x-2">
-										<img :src="r.image" class="h-5 w-5" />
+										<img :src="r.image" class="h-5 w-5 rounded-sm" />
 										<span class="text-sm font-medium">
 											{{ r.name }}
 										</span>
