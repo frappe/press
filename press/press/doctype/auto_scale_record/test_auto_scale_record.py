@@ -186,7 +186,7 @@ class UnitTestAutoScaleRecord(TestCase):
 		self.primary_server.remove_automated_scaling_triggers(triggers=auto_scale_triggers)
 
 		nfs_volume_detachment: "NFSVolumeDetachment" = frappe.get_doc(
-			{"doctype": "NFS Volume Detachment", "primary_server": self.primary_server}
+			{"doctype": "NFS Volume Detachment", "primary_server": self.primary_server.name}
 		)
 		nfs_volume_detachment.insert(ignore_permissions=True)
 
