@@ -563,8 +563,12 @@ def options():
 	regions = frappe.get_all(
 		"Cluster",
 		regions_filter,
-		["name", "title", "image", "beta", "has_add_on_storage_support", "cloud_provider"],
+		["name", "title", "image", "beta", "has_add_on_storage_support", "cloud_provider", "public"],
 	)
+
+	for r in regions:
+		r["title"] = r["title"] + " (Internal)" if not r["public"] else r["title"]
+
 	cloud_providers = get_cloud_providers()
 	"""
 	{
