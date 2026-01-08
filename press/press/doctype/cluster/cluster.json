@@ -20,6 +20,7 @@
   "has_arm_support",
   "has_add_on_storage_support",
   "enable_autoscaling",
+  "has_unified_server_support",
   "billing_section",
   "team",
   "provisioning_section",
@@ -70,7 +71,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "AWS EC2\nGeneric\nOCI\nHetzner",
+   "options": "AWS EC2\nGeneric\nOCI\nHetzner\nFrappe Compute",
    "reqd": 1,
    "set_only_once": 1
   },
@@ -321,6 +322,13 @@
    "fieldname": "enable_autoscaling",
    "fieldtype": "Check",
    "label": "Enable Autoscaling"
+  },
+  {
+   "default": "0",
+   "description": "Has unified server support",
+   "fieldname": "has_unified_server_support",
+   "fieldtype": "Check",
+   "label": "Has Unified Server Support"
   }
  ],
  "image_field": "image",
@@ -357,7 +365,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2026-01-08 00:29:32.853963",
+ "modified": "2026-01-08 14:08:09.067541",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",

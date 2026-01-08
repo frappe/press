@@ -172,7 +172,7 @@ class VirtualMachine(Document):
 		index = self.index + 356
 		if self.series == "n":
 			return str(ip + index)
-		offset = ["f", "m", "c", "p", "e", "r", "t", "nfs", "fs"].index(self.series)
+		offset = ["n", "f", "m", "c", "p", "e", "r", "u", "t", "nfs", "fs"].index(self.series)
 		return str(ip + 256 * (2 * (index // 256) + offset) + (index % 256))
 
 	def validate(self):
@@ -1565,7 +1565,11 @@ class VirtualMachine(Document):
 			server_document["is_server_renamed"] = True
 			server_document["is_upstream_setup"] = True
 
-		server = frappe.get_doc(server_document).insert()
+		common_agent_password = frappe.generate_hash(length=32)
+
+		server = frappe.get_doc(server_document)
+		server.agent_password = common_agent_password
+		server = server.insert()
 
 		database_server_document = {
 			"doctype": "Database Server",
@@ -1598,7 +1602,10 @@ class VirtualMachine(Document):
 					f"Virtual Machine Image {self.virtual_machine_image} does not have a MariaDB root password set."
 				)
 
-		database_server = frappe.get_doc(database_server_document).insert()
+		database_server = frappe.get_doc(database_server_document)
+		database_server.agent_password = common_agent_password
+		database_server = database_server.insert()
+
 		return server, database_server
 
 	@frappe.whitelist()

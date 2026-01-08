@@ -612,12 +612,7 @@ class BaseServer(Document, TagHelpers):
 			frappe.throw("Default Cluster not found", frappe.ValidationError)
 
 	def validate_agent_password(self):
-		# In case of unified database server the agent password is shared
-		# We can also be sure that the app server will have a agent password by now since `saved` first
-		if self.is_unified_server and self.doctype == "Database Server":
-			app_server_name = frappe.db.get_value("Server", {"database_server": self.name}, "name")
-			self.agent_password = get_decrypted_password("Server", app_server_name, "agent_password")
-
+		# In case of unified servers the agent password is set during creation of the virtual machine
 		if not self.agent_password:
 			self.agent_password = frappe.generate_hash(length=32)
 
