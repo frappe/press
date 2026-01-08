@@ -32,7 +32,12 @@
 								<FormControl
 									type="combobox"
 									:options="autoCompleteList"
-									v-model="member"
+									:modelValue="member?.value"
+									@update:modelValue="
+										member = autoCompleteList.find(
+											(option) => option.value === $event,
+										)
+									"
 									placeholder="Select a member to add"
 								/>
 							</div>

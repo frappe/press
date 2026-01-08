@@ -8,9 +8,9 @@
 		:placeholder="placeholder"
 		@update:query="onQuery"
 		@update:modelValue="
-			(option) => {
-				if (option) {
-					$emit('update:modelValue', option);
+			(optionValue) => {
+				if (optionValue) {
+					$emit('update:modelValue', optionValue);
 				} else {
 					$emit('update:modelValue', undefined);
 				}
