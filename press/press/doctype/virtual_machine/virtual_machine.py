@@ -482,6 +482,7 @@ class VirtualMachine(Document):
 			mac_address=self.mac_address_of_public_ip,
 			ip_address=self.public_ip_address,
 			private_network=cluster.vpc_id,
+			ssh_key=frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
 		)
 
 	def _provision_hetzner(self):
