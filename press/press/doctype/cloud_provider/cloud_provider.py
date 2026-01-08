@@ -22,7 +22,7 @@ class CloudProvider(Document):
 	pass
 
 
-@redis_cache(ttl=3600)
+@redis_cache(ttl=60)
 def get_cloud_providers() -> dict[str, dict]:
 	data = frappe.get_all(
 		"Cloud Provider",
