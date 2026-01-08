@@ -25,7 +25,12 @@
 					variant="outline"
 					type="combobox"
 					label="Choose Region"
-					v-model="selectedRegion"
+					:modelValue="selectedRegion?.value"
+					@update:modelValue="
+						selectedRegion = $resources.changeRegionOptions.data.regions.find(
+							(option) => option.value === $event,
+						)
+					"
 					:options="
 						$resources.changeRegionOptions.data.regions.map((r) => ({
 							label: r.title || r.name,
