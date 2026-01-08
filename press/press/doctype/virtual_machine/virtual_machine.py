@@ -639,7 +639,7 @@ class VirtualMachine(Document):
 				"server_id": server.server_id,
 				"private_ip": self.private_ip_address,
 				"ansible_memtotal_mb": memory,
-				"mariadb_root_password": server.mariadb_root_password,
+				"mariadb_root_password": server.get_password("mariadb_root_password"),
 				"db_port": server.db_port or 3306,
 			}
 		if server.doctype == "Server" and server.is_unified_server:
@@ -648,7 +648,7 @@ class VirtualMachine(Document):
 				"server_id": database_server.server_id,
 				"private_ip": self.private_ip_address,
 				"ansible_memtotal_mb": memory,
-				"mariadb_root_password": database_server.mariadb_root_password,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
 				"db_port": database_server.db_port or 3306,
 			}
 
@@ -681,6 +681,7 @@ class VirtualMachine(Document):
 				},
 				is_path=True,
 			),
+			"is_unified_server": getattr(server, "is_unified_server", False),
 		}
 		if server.doctype == "Database Server" or getattr(server, "is_unified_server", False):
 			memory = frappe.db.get_value("Server Plan", server.plan, "memory") or 1024
@@ -719,7 +720,6 @@ class VirtualMachine(Document):
 					),
 				}
 			)
-
 		return frappe.render_template(cloud_init_template, context, is_path=True)
 
 	def get_server(self):
