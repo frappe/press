@@ -2331,8 +2331,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 			if proxy_server:
 				return frappe._dict(
-					{"ssh_user": "root"}
-					| frappe.get_cached_value("Proxy Server", proxy_server, ["ssh_port", "ip"], as_dict=True)
+					{"ssh_user": "root", "ip": proxy_server}
+					| frappe.get_cached_value("Proxy Server", proxy_server, ["ssh_port"], as_dict=True)
 				)
 
 	@frappe.whitelist()
