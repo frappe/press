@@ -72,6 +72,7 @@ class Cluster(Document):
 		enable_autoscaling: DF.Check
 		has_add_on_storage_support: DF.Check
 		has_arm_support: DF.Check
+		hetzner_api_token: DF.Password | None
 		hybrid: DF.Check
 		image: DF.AttachImage | None
 		monitoring_password: DF.Password | None
@@ -136,8 +137,7 @@ class Cluster(Document):
 			self.validate_hetzner_api_token()
 
 	def validate_hetzner_api_token(self):
-		settings: "PressSettings" = frappe.get_single("Press Settings")
-		api_token = settings.get_password("hetzner_api_token")
+		api_token = self.get_password("hetzner_api_token")
 		client = Client(token=api_token)
 		try:
 			# Check if we can list servers (read access)
@@ -192,8 +192,7 @@ class Cluster(Document):
 	def provision_on_hetzner(self):
 		try:
 			# Get Hetzner API token from Press Settings
-			settings: "PressSettings" = frappe.get_single("Press Settings")
-			api_token = settings.get_password("hetzner_api_token")
+			api_token = self.get_password("hetzner_api_token")
 
 			client = Client(token=api_token)
 
@@ -885,8 +884,7 @@ class Cluster(Document):
 	def get_hetzner_client(self):
 		from hcloud import Client
 
-		settings: "PressSettings" = frappe.get_single("Press Settings")
-		api_token = settings.get_password("hetzner_api_token")
+		api_token = self.get_password("hetzner_api_token")
 		return Client(token=api_token)
 
 	def _check_aws_machine_availability(self, machine_type: str) -> bool:

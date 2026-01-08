@@ -158,8 +158,9 @@
   "aws_access_key_id",
   "column_break_agig",
   "aws_secret_access_key",
-  "hetzner_section",
-  "hetzner_api_token",
+  "frappe_compute_section",
+  "orchestrator_base_url",
+  "compute_api_token",
   "twilio_section",
   "twilio_account_sid",
   "twilio_api_key_sid",
@@ -1279,16 +1280,6 @@
    "label": "Usage Record Creation Batch Size"
   },
   {
-   "fieldname": "hetzner_section",
-   "fieldtype": "Section Break",
-   "label": "Hetzner"
-  },
-  {
-   "fieldname": "hetzner_api_token",
-   "fieldtype": "Password",
-   "label": "Hetzner API Token"
-  },
-  {
    "fieldname": "press_trial_plan",
    "fieldtype": "Link",
    "label": "Press Trial Plan",
@@ -1575,7 +1566,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-01-07 19:35:17.048595",
+ "modified": "2026-01-08 18:10:48.053078",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
