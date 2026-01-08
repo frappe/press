@@ -2170,7 +2170,7 @@ get_permission_query_conditions = get_permission_query_conditions_for_doctype("V
 def sync_virtual_machines_hetzner():
 	for machine in frappe.get_all(
 		"Virtual Machine",
-		{"status": ("not in", ("Draft")), "cloud_provider": "Hetzner"},
+		{"status": ("not in", ("Draft", "Terminated")), "cloud_provider": "Hetzner"},
 		pluck="name",
 	):
 		if has_job_timeout_exceeded():
