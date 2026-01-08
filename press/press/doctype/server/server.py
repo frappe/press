@@ -613,6 +613,12 @@ class BaseServer(Document, TagHelpers):
 			frappe.throw("Default Cluster not found", frappe.ValidationError)
 
 	def validate_agent_password(self):
+		# In case of unified database server the agent password is shared
+		# We can also be sure that the app server will have a agent password by now since `saved` first
+		if self.is_unified_server and self.doctype == "Database Server":
+			app_server_name = frappe.db.get_value("Server", {"database_server": self.name}, "name")
+			self.agent_password = get_decrypted_password("Server", app_server_name, "agent_password")
+
 		if not self.agent_password:
 			self.agent_password = frappe.generate_hash(length=32)
 
@@ -685,6 +691,13 @@ class BaseServer(Document, TagHelpers):
 			self.save()
 		except Exception:
 			log_error("Server Preparation Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def setup_unified_server(self):
+		"""Setup both the application server and its associated database server (plays run on same vm)."""
+		database_server = frappe.get_doc("Database Server", self.database_server)
+		self.setup_server()
+		database_server.setup_server()
 
 	@frappe.whitelist()
 	def setup_server(self):
@@ -3402,8 +3415,3 @@ def is_dedicated_server(server_name):
 		frappe.throw("Invalid argument")
 	is_public = frappe.db.get_value("Server", server_name, "public")
 	return not is_public
-
-
-def setup_standalone_app_and_db_server(server_name: str) -> None:
-	"""This function sets up an app + db server on a single server, leaving proxy to be setup separately."""
-	...
