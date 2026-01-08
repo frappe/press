@@ -156,11 +156,7 @@
 				<!-- Chose Plan Type -->
 				<!-- Choose Service Type (Premium/Standard) -->
 				<div
-					v-if="
-						serverRegion &&
-						serverProvider &&
-						options.app_premium_plans.length > 0
-					"
+					v-if="serverRegion && serverProvider && hasPremiumPlansForCluster"
 					class="flex flex-col"
 				>
 					<div class="flex items-center justify-between">
@@ -175,7 +171,7 @@
 								<template #prefix>
 									<lucide-help-circle class="h-4 w-4 text-gray-700" />
 								</template>
-								Help
+								Know More
 							</Button>
 						</div>
 					</div>
@@ -582,12 +578,14 @@ export default {
 	watch: {
 		serverProvider() {
 			this.serverRegion = '';
+			this.serviceType = 'Standard';
 			this.appServerPlanType = '';
 			this.dbServerPlanType = '';
 			this.appServerPlan = '';
 			this.dbServerPlan = '';
 		},
 		serverRegion() {
+			this.serviceType = 'Standard';
 			this.appServerPlanType = '';
 			this.dbServerPlanType = '';
 			this.appServerPlan = '';
@@ -610,6 +608,8 @@ export default {
 			}
 		},
 		serviceType() {
+			this.appServerPlanType = '';
+			this.dbServerPlanType = '';
 			this.appServerPlan = '';
 			this.dbServerPlan = '';
 		},
@@ -842,14 +842,25 @@ export default {
 				this.serverProvider
 			]?.cluster_name;
 		},
+		hasPremiumPlansForCluster() {
+			if (!this.selectedCluster || !this.options?.app_premium_plans)
+				return false;
+			return this.options.app_premium_plans.some(
+				(plan) => plan.cluster === this.selectedCluster,
+			);
+		},
 		availableAppPlanTypes() {
 			if (!this.selectedCluster || !this.options?.plan_types) return [];
 
 			const planTypes = [];
 			const planTypeData = this.options.plan_types;
+			const plansToCheck =
+				this.serviceType === 'Standard'
+					? this.options.app_plans
+					: this.options.app_premium_plans;
 
 			for (const [key, planType] of Object.entries(planTypeData)) {
-				const hasAppPlans = this.options.app_plans.some(
+				const hasAppPlans = plansToCheck.some(
 					(plan) =>
 						plan.cluster === this.selectedCluster && plan.plan_type === key,
 				);
@@ -871,9 +882,13 @@ export default {
 
 			const planTypes = [];
 			const planTypeData = this.options.plan_types;
+			const plansToCheck =
+				this.serviceType === 'Standard'
+					? this.options.db_plans
+					: this.options.db_premium_plans;
 
 			for (const [key, planType] of Object.entries(planTypeData)) {
-				const hasDbPlans = this.options.db_plans.some(
+				const hasDbPlans = plansToCheck.some(
 					(plan) =>
 						plan.cluster === this.selectedCluster && plan.plan_type === key,
 				);
