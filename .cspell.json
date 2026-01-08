@@ -19,7 +19,6 @@
         "2.4.6",
         "Aaiun",
         "Ababa",
-        "activites",
         "Adak",
         "adblockers",
         "Addis",
@@ -717,19 +716,6 @@
         "zeebo",
         "zloirock",
         "Zpyihv",
-<<<<<<< HEAD
-        "Zvkq",
-		"segs",
-        "interner",
-        "sprintf",
-        "xyproto",
-        "vxeg",
-        "rzgre",
-        "Yekq",
-        "Rhiv",
-        "Kvsc",
-=======
->>>>>>> 570633b66 (fix(server): Add prepare method for Vodacom)
         "ZSTD",
         "Zvkq"
     ]
