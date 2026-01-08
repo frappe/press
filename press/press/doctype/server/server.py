@@ -139,7 +139,7 @@ class BaseServer(Document, TagHelpers):
 		"""Helper to log server activity"""
 		log_server_activity(self._series, self.name, action, reason)
 
-	def get_doc(self, doc):
+	def get_doc(self, doc):  # noqa: C901
 		from press.api.client import get
 		from press.api.server import usage
 
@@ -147,6 +147,16 @@ class BaseServer(Document, TagHelpers):
 
 		if doc.status in ("Active", "Pending") and not doc.is_provisioning_press_job_completed:
 			doc.status = "Installing"
+
+		if doc.database_server:
+			data = frappe.get_value(
+				"Database Server",
+				doc.database_server,
+				["status", "is_provisioning_press_job_completed"],
+				as_dict=True,
+			)
+			if data and data.status in ("Active", "Pending") and not data.is_provisioning_press_job_completed:
+				doc.status = "Installing"
 
 		if self.plan:
 			doc.current_plan = get("Server Plan", self.plan)
