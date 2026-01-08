@@ -818,6 +818,7 @@ def total_unpaid_amount():
 	balance = team.get_balance()
 	negative_balance = -1 * balance if balance < 0 else 0
 
+<<<<<<< HEAD
 	return (
 		frappe.get_all(
 			"Invoice",
@@ -827,6 +828,28 @@ def total_unpaid_amount():
 		)[0]
 		or 0
 	) + negative_balance
+=======
+	try:
+		return (
+			frappe.get_all(
+				"Invoice",
+				{"status": "Unpaid", "team": team.name, "type": "Subscription", "docstatus": ("!=", 2)},
+				["sum(amount_due) as total"],
+				pluck="total",
+			)[0]
+			or 0
+		) + negative_balance
+	except:  # noqa E722
+		return (
+			frappe.get_all(
+				"Invoice",
+				{"status": "Unpaid", "team": team.name, "type": "Subscription", "docstatus": ("!=", 2)},
+				[{"SUM": "amount_due", "as": "total"}],
+				pluck="total",
+			)[0]
+			or 0
+		) + negative_balance
+>>>>>>> 038675b21 (fix: Add compatibility for v15 and v16)
 
 
 @frappe.whitelist()

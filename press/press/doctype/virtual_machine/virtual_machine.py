@@ -1569,6 +1569,7 @@ class VirtualMachine(Document):
 
 	@classmethod
 	def bulk_sync_aws(cls):
+<<<<<<< HEAD
 		for cluster in frappe.get_all(
 			"Virtual Machine",
 			["cluster", "cloud_provider", "max(`index`) as max_index"],
@@ -1578,6 +1579,29 @@ class VirtualMachine(Document):
 			},
 			group_by="cluster",
 		):
+=======
+		try:
+			clusters = frappe.get_all(
+				"Virtual Machine",
+				["cluster", "cloud_provider", "max(index) as max_index"],
+				{
+					"status": ("not in", ("Terminated", "Draft")),
+					"cloud_provider": "AWS EC2",
+				},
+				group_by="cluster",
+			)
+		except:  # noqa E722
+			clusters = frappe.get_all(
+				"Virtual Machine",
+				["cluster", "cloud_provider", {"MAX": "index", "as": "max_index"}],
+				{
+					"status": ("not in", ("Terminated", "Draft")),
+					"cloud_provider": "AWS EC2",
+				},
+				group_by="cluster",
+			)
+		for cluster in clusters:
+>>>>>>> 038675b21 (fix: Add compatibility for v15 and v16)
 			CHUNK_SIZE = 25  # Each call will pick up ~50 machines (2 x CHUNK_SIZE)
 			# Generate closed bounds for 25 indexes at a time
 			# (1, 25), (26, 50), (51, 75), ...
