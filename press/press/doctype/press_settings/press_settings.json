@@ -158,14 +158,9 @@
   "aws_access_key_id",
   "column_break_agig",
   "aws_secret_access_key",
-<<<<<<< HEAD
-  "hetzner_section",
-  "hetzner_api_token",
-=======
   "frappe_compute_section",
   "orchestrator_base_url",
   "compute_api_token",
->>>>>>> 484c6d5c0 (feat(cluster): Move hetzner api token to cluster doctype)
   "twilio_section",
   "twilio_account_sid",
   "twilio_api_key_sid",
