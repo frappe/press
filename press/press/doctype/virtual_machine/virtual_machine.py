@@ -1533,8 +1533,7 @@ class VirtualMachine(Document):
 		if self.cloud_provider == "OCI":
 			return (client_type or ComputeClient)(cluster.get_oci_config())
 		if self.cloud_provider == "Hetzner":
-			settings = frappe.get_single("Press Settings")
-			api_token = settings.get_password("hetzner_api_token")
+			api_token = cluster.get_password("hetzner_api_token")
 			return HetznerClient(token=api_token)
 		if self.cloud_provider == "Frappe Compute":
 			settings = frappe.get_single("Press Settings")
