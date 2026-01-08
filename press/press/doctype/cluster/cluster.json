@@ -10,14 +10,16 @@
   "description",
   "column_break_2",
   "status",
-  "public",
-  "beta",
-  "hybrid",
-  "has_arm_support",
-  "enable_autoscaling",
-  "column_break_fsht",
   "monitoring_password",
   "image",
+  "section_break_ymkq",
+  "public",
+  "beta",
+  "column_break_ynby",
+  "hybrid",
+  "has_arm_support",
+  "has_add_on_storage_support",
+  "enable_autoscaling",
   "billing_section",
   "team",
   "provisioning_section",
@@ -39,9 +41,9 @@
   "networking_section",
   "cidr_block",
   "subnet_cidr_block",
-  "column_break_12",
   "vpc_id",
   "subnet_id",
+  "column_break_12",
   "security_group_id",
   "proxy_security_group_id",
   "network_acl_id",
@@ -68,7 +70,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "AWS EC2\nGeneric\nOCI\nHetzner\nFrappe Compute",
+   "options": "AWS EC2\nGeneric\nOCI\nHetzner",
    "reqd": 1,
    "set_only_once": 1
   },
@@ -96,12 +98,13 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval: ![\"Generic\", \"Frappe Compute\"].includes(doc.cloud_provider)",
+   "depends_on": "eval:doc.cloud_provider !== \"Generic\"",
    "fieldname": "region",
    "fieldtype": "Link",
    "label": "Region",
-   "mandatory_depends_on": "eval: ![\"Generic\", \"Frappe Compute\"].includes(doc.cloud_provider)",
-   "options": "Cloud Region"
+   "mandatory_depends_on": "eval:doc.cloud_provider !== \"Generic\"",
+   "options": "Cloud Region",
+   "set_only_once": 1
   },
   {
    "fieldname": "column_break_2",
@@ -129,7 +132,7 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval: ![\"Generic\", \"Frappe Compute\"].includes(doc.cloud_provider)",
+   "depends_on": "eval:doc.cloud_provider !== \"Generic\"",
    "fieldname": "availability_zone",
    "fieldtype": "Data",
    "label": "Availability Zone",
@@ -137,12 +140,13 @@
    "set_only_once": 1
   },
   {
-   "depends_on": "eval: ![\"Generic\", \"Frappe Compute\"].includes(doc.cloud_provider)",
+   "depends_on": "eval:doc.cloud_provider !== \"Generic\"",
    "fieldname": "ssh_key",
    "fieldtype": "Link",
    "label": "SSH Key",
-   "mandatory_depends_on": "eval: ![\"Generic\", \"Frappe Compute\"].includes(doc.cloud_provider)",
-   "options": "SSH Key"
+   "mandatory_depends_on": "eval:doc.cloud_provider !== \"Generic\"",
+   "options": "SSH Key",
+   "set_only_once": 1
   },
   {
    "default": "0",
@@ -160,10 +164,6 @@
    "fieldname": "image",
    "fieldtype": "Attach Image",
    "label": "Image"
-  },
-  {
-   "fieldname": "column_break_fsht",
-   "fieldtype": "Column Break"
   },
   {
    "default": "Active",
@@ -303,6 +303,20 @@
    "label": "Repository"
   },
   {
+   "fieldname": "section_break_ymkq",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_ynby",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "has_add_on_storage_support",
+   "fieldtype": "Check",
+   "label": "Has Add On Storage Support"
+  },
+  {
    "default": "0",
    "fieldname": "enable_autoscaling",
    "fieldtype": "Check",
@@ -343,7 +357,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2026-01-07 10:27:14.307364",
+ "modified": "2026-01-08 00:29:32.853963",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
@@ -364,7 +378,6 @@
   }
  ],
  "row_format": "Dynamic",
- "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

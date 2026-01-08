@@ -26,6 +26,7 @@
   "is_server_setup",
   "is_server_renamed",
   "is_server_prepared",
+  "is_provisioning_press_job_completed",
   "is_for_recovery",
   "is_monitoring_disabled",
   "billing_section",
@@ -766,6 +767,12 @@
    "fieldname": "is_unified_server",
    "fieldtype": "Check",
    "label": "Is Unified Server"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_provisioning_press_job_completed",
+   "fieldtype": "Check",
+   "label": "Is Provisioning Job Completed"
   }
  ],
  "grid_page_length": 50,
@@ -782,7 +789,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2026-01-08 09:16:11.801853",
+ "modified": "2026-01-07 15:03:11.997980",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

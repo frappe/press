@@ -471,6 +471,7 @@ export default {
 										label: 'Increase Storage',
 										icon: 'plus',
 										variant: 'ghost',
+										condition: () => doc.provider != 'Hetzner',
 										onClick: () => {
 											confirmDialog({
 												title: 'Increase Storage',
@@ -543,6 +544,7 @@ export default {
 										label: 'Configure Auto Increase Storage',
 										icon: 'tool',
 										variant: 'ghost',
+										condition: () => doc.provider != 'Hetzner',
 										onClick: () => {
 											confirmDialog({
 												title: 'Configure Auto Increase Storage',
@@ -651,7 +653,14 @@ export default {
 											this.showStorageBreakdownDialog(serverType);
 										},
 									},
-								].filter((e) => e.hidden !== true),
+								]
+									.filter((e) => e.hidden !== true)
+									.filter((e) => {
+										if (e.condition) {
+											return e.condition();
+										}
+										return true;
+									}),
 							},
 						]),
 			];
@@ -660,6 +669,10 @@ export default {
 	computed: {
 		serverInformation() {
 			return [
+				{
+					label: 'Hosted on',
+					value: `${this.$appServer.doc.provider} - ${this.$appServer.doc.cluster}`,
+				},
 				{
 					label: 'Application server',
 					value: this.$appServer.doc.name,

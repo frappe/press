@@ -58,6 +58,7 @@ class PressSettings(Document):
 		default_apps: DF.Table[AppGroup]
 		default_outgoing_id: DF.Data | None
 		default_outgoing_pass: DF.Data | None
+		default_server_plan_type: DF.Link | None
 		deploy_marker: DF.Data | None
 		disable_agent_job_deduplication: DF.Check
 		disable_auto_retry: DF.Check

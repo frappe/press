@@ -23,6 +23,7 @@ class ServerPlan(Plan):
 		instance_type: DF.Data | None
 		legacy_plan: DF.Check
 		memory: DF.Int
+		plan_type: DF.Link | None
 		platform: DF.Literal["x86_64", "arm64", "amd64"]
 		premium: DF.Check
 		price_inr: DF.Currency
@@ -42,6 +43,7 @@ class ServerPlan(Plan):
 		"disk",
 		"platform",
 		"premium",
+		"plan_type",
 	)
 
 	def get_doc(self, doc):

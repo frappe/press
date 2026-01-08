@@ -19,6 +19,7 @@
   "micro_debit_charge_inr",
   "column_break_wrqp",
   "usage_record_creation_batch_size",
+  "default_server_plan_type",
   "invoicing_section",
   "invoicing_column",
   "gst_percentage",
@@ -1569,6 +1570,12 @@
    "label": "Disable Binlog Indexer Service"
   },
   {
+   "fieldname": "default_server_plan_type",
+   "fieldtype": "Link",
+   "label": "Default Server Plan Type",
+   "options": "Server Plan Type"
+  },
+  { 
    "fieldname": "frappe_compute_section",
    "fieldtype": "Section Break",
    "label": "Frappe Compute"
@@ -1586,7 +1593,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-12-19 02:07:35.062064",
+ "modified": "2026-01-07 19:35:17.048595",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

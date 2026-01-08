@@ -160,6 +160,7 @@
   },
   {
    "default": "0",
+   "fetch_from": "virtual_machine.has_data_volume",
    "fieldname": "has_data_volume",
    "fieldtype": "Check",
    "label": "Has Data Volume",
