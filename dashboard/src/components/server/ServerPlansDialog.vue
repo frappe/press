@@ -97,7 +97,9 @@
 				>
 					<div class="grid grid-cols-2 gap-3">
 						<button
-							v-for="planType in Object.values(serverPlanTypes)"
+							v-for="planType in Object.values(serverPlanTypes).sort(
+								(a, b) => a.order_in_list - b.order_in_list,
+							)"
 							:key="planType.name"
 							@click="serverPlanType = planType.name"
 							:class="[
