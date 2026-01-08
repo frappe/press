@@ -1018,7 +1018,7 @@ class Cluster(Document):
 		plan: ServerPlan,
 		team: str | None = None,
 		auto_increase_storage: bool | None = False,
-	) -> tuple[Server, DatabaseServer]:
+	) -> tuple[Server, DatabaseServer, PressJob]:
 		"""Minimal creation of a unified server with app and database on same vmi"""
 		# Accepting only arguments allowed via the API to create a server.
 		# Other arguments can be added laters.
@@ -1057,8 +1057,12 @@ class Cluster(Document):
 		# Deliberately skipping subscription creation for database server
 		server.create_subscription(plan.name)
 
+		job = server.run_press_job(
+			"Create Server", arguments=None
+		)  # Deliberately calling via `Server` and not `Database Server`
+
 		# TODO: Create new press job to create unified server.
-		return server, database_server
+		return server, database_server, job
 
 	def create_server(  # noqa: C901
 		self,

@@ -2172,11 +2172,45 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		except Exception:
 			log_error("Cadvisor Install Exception", server=self.as_dict())
 
+	def set_additional_unified_config(self):
+		"""Set both `Server` and `Database Server` additional config for Unified Servers"""
+		# Common config for both Server and Database Server
+		self.set_swappiness()
+		self.add_glass_file()
+		self.install_filebeat()
+
+		# Server specific config
+		self.setup_mysqldump()
+		self.install_earlyoom()
+		self.setup_ncdu()
+		self.setup_iptables()
+		self.install_cadvisor()
+
+		# Database Server specific config
+		database_server: DatabaseServer = frappe.get_doc("Database Server", self.database_server)
+		default_variables = frappe.get_all("MariaDB Variable", {"set_on_new_servers": 1}, pluck="name")
+		for var_name in default_variables:
+			var: MariaDBVariable = frappe.get_doc("MariaDB Variable", var_name)
+			var.set_on_server(database_server)
+
+		database_server.adjust_memory_config()
+		database_server.provide_frappe_user_du_and_find_permission()
+		database_server.setup_logrotate()
+		database_server.setup_user_lingering()
+
+		self.validate_mounts()
+		self.save(ignore_permissions=True)
+
 	@frappe.whitelist()
 	def set_additional_config(self):  # noqa: C901
 		"""
 		Corresponds to Set additional config step in Create Server Press Job
 		"""
+
+		if hasattr(self, "is_unified_server") and self.is_unified_server:
+			self.set_additional_unified_config()
+			return
+
 		if self.doctype == "Database Server":
 			default_variables = frappe.get_all("MariaDB Variable", {"set_on_new_servers": 1}, pluck="name")
 			for var_name in default_variables:

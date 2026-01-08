@@ -222,10 +222,10 @@ def new_unified(server: UnifiedServerDetails):
 	)[0]
 
 	cluster.proxy_server = proxy_server.get("name")
-	server, database_server = cluster.create_unified_server(
+	server, database_server, job = cluster.create_unified_server(
 		server["title"], app_plan, team=team.name, auto_increase_storage=auto_increase_storage
 	)
-	return {"server": server.name, "database_server": database_server.name}
+	return {"server": server.name, "database_server": database_server.name, "job": job.name}
 
 
 @frappe.whitelist()
