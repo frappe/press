@@ -61,7 +61,10 @@
 					/>
 				</div>
 			</div>
-			<div v-if="serverType === 'dedicated'" class="space-y-12">
+			<div
+				v-if="serverType === 'dedicated' || serverType === 'unified'"
+				class="space-y-12"
+			>
 				<div class="flex flex-col" v-if="options?.regions.length">
 					<h2 class="text-sm font-medium leading-6 text-gray-900">
 						Select Region
@@ -148,9 +151,16 @@
 				</div>
 				<div v-if="serverRegion">
 					<div class="flex flex-col" v-if="options?.app_plans.length">
-						<h2 class="text-sm font-medium leading-6 text-gray-900">
+						<h2
+							v-if="serverType !== 'unified'"
+							class="text-sm font-medium leading-6 text-gray-900"
+						>
 							Select Application Server Plan
 						</h2>
+						<h2 v-else class="text-sm font-medium leading-6 text-gray-900">
+							Select Unified Server Plan
+						</h2>
+						<!-- Showing app server plans for unified servers as well-->
 						<div class="mt-2 space-y-2">
 							<ServerPlansCards
 								v-model="appServerPlan"
@@ -171,7 +181,7 @@
 						</div>
 					</div>
 				</div>
-				<div v-if="serverRegion">
+				<div v-if="serverRegion && serverType !== 'unified'">
 					<div class="flex flex-col" v-if="options?.db_plans.length">
 						<h2 class="text-sm font-medium leading-6 text-gray-900">
 							Select Database Server Plan
@@ -251,7 +261,10 @@
 			</div>
 			<div
 				class="flex flex-col space-y-3"
-				v-if="serverType === 'dedicated' && serverRegion"
+				v-if="
+					(serverType === 'dedicated' || serverType === 'unified') &&
+					serverRegion
+				"
 			>
 				<h2 class="text-base font-medium leading-6 text-gray-900">
 					Auto Add-on Storage
@@ -299,7 +312,9 @@
 				:options="summaryOptions"
 				v-if="
 					serverTitle &&
-					((serverRegion && dbServerPlan && appServerPlan) ||
+					((serverRegion &&
+						(dbServerPlan || serverType === 'unified') &&
+						appServerPlan) ||
 						(appPublicIP && appPrivateIP && dbPublicIP && dbPrivateIP))
 				"
 			/>
@@ -307,7 +322,9 @@
 				class="flex flex-col space-y-4"
 				v-if="
 					serverTitle &&
-					((serverRegion && dbServerPlan && appServerPlan) ||
+					((serverRegion &&
+						(dbServerPlan || serverType == 'unified') &&
+						appServerPlan) ||
 						(appPublicIP && appPrivateIP && dbPublicIP && dbPrivateIP))
 				"
 			>
@@ -336,23 +353,39 @@
 										auto_increase_storage: enableAutoAddStorage,
 									},
 								})
-							: $resources.createHybridServer.submit({
-									server: {
-										title: serverTitle,
-										app_public_ip: appPublicIP,
-										app_private_ip: appPrivateIP,
-										db_public_ip: dbPublicIP,
-										db_private_ip: dbPrivateIP,
-										plan: $resources.hybridOptions.data.plans[0],
-									},
-								})
+							: serverType === 'unified'
+								? $resources.createUnifiedServer.submit({
+										server: {
+											title: serverTitle,
+											cluster: serverRegion,
+											app_plan: appServerPlan?.name,
+											auto_increase_storage: enableAutoAddStorage,
+										},
+									})
+								: $resources.createHybridServer.submit({
+										server: {
+											title: serverTitle,
+											app_public_ip: appPublicIP,
+											app_private_ip: appPrivateIP,
+											db_public_ip: dbPublicIP,
+											db_private_ip: dbPrivateIP,
+											plan: $resources.hybridOptions.data.plans[0],
+										},
+									})
 					"
 					:loading="
 						$resources.createServer.loading ||
+						$resources.createUnifiedServer.loading ||
 						$resources.createHybridServer.loading
 					"
 				>
-					{{ serverType === 'hybrid' ? 'Add Hybrid Server' : 'Create Server' }}
+					{{
+						serverType === 'hybrid'
+							? 'Add Hybrid Server'
+							: serverType === 'unified'
+								? 'Create Unified Server'
+								: 'Create Server'
+					}}
 				</Button>
 			</div>
 		</div>
@@ -451,6 +484,12 @@ export default {
 								description:
 									'A pair of dedicated servers managed by frappe and owned/provisioned by you',
 							},
+							{
+								name: 'unified',
+								title: 'Unified Server',
+								description:
+									'A single server hosting both the application and database',
+							},
 						],
 						regions: data.regions,
 						app_plans: data.app_plans.filter((p) => p.premium == 0),
@@ -502,6 +541,40 @@ export default {
 					) {
 						throw new DashboardError(
 							'You need to have $200 worth of credits to create a server.',
+						);
+					}
+				},
+				onSuccess(server) {
+					this.$router.push({
+						name: 'Server Detail Plays',
+						params: { name: server.server },
+					});
+				},
+			};
+		},
+		createUnifiedServer() {
+			return {
+				url: 'press.api.server.new_unified',
+				validate({ server }) {
+					if (!server.title) {
+						throw new DashboardError('Server name is required');
+					} else if (!server.cluster) {
+						throw new DashboardError('Please select a region');
+					} else if (!server.app_plan) {
+						throw new DashboardError('Please select a Unified Server Plan');
+					} else if (Object.keys(this.$team.doc.billing_details).length === 0) {
+						throw new DashboardError(
+							"You don't have billing details added. Please add billing details from settings to continue.",
+						);
+					} else if (
+						this.$team.doc.servers_enabled == 0 &&
+						((this.$team.doc.currency == 'USD' &&
+							this.$team.doc.balance < 100) ||
+							(this.$team.doc.currency == 'INR' &&
+								this.$team.doc.balance < 8000))
+					) {
+						throw new DashboardError(
+							'You need to have $100 worth of credits to create a server.',
 						);
 					}
 				},
@@ -568,6 +641,8 @@ export default {
 				return (
 					this.appServerPlan[currencyField] + this.dbServerPlan[currencyField]
 				);
+			} else if (this.serverType === 'unified') {
+				return this.appServerPlan[currencyField];
 			} else if (this.serverType === 'hybrid') {
 				return this.$resources.hybridOptions?.data?.plans[0][currencyField] * 2;
 			}
@@ -589,12 +664,17 @@ export default {
 				{
 					label: 'Region',
 					value: this.serverRegion,
-					condition: () => this.serverType === 'dedicated',
+					condition: () =>
+						this.serverType === 'dedicated' || this.serverType === 'unified',
 				},
 				{
-					label: 'App Server Plan',
+					label:
+						this.serverType === 'dedicated'
+							? 'App Server Plan'
+							: 'Unified Server Plan',
 					value: this.$format.planTitle(this.appServerPlan) + ' per month',
-					condition: () => this.serverType === 'dedicated',
+					condition: () =>
+						this.serverType === 'dedicated' || this.serverType === 'unified',
 				},
 				{
 					label: 'DB Server Plan',

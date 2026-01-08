@@ -41,11 +41,12 @@ from press.utils import get_current_team, unique
 if typing.TYPE_CHECKING:
 	from collections.abc import Generator
 
+	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.log_server.log_server import LogServer
 	from press.press.doctype.monitor_server.monitor_server import MonitorServer
 	from press.press.doctype.press_job.press_job import PressJob
 	from press.press.doctype.press_settings.press_settings import PressSettings
-	from press.press.doctype.server.server import BaseServer
+	from press.press.doctype.server.server import BaseServer, Server
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
@@ -898,7 +899,7 @@ class Cluster(Document):
 		plan: ServerPlan,
 		team: str | None = None,
 		auto_increase_storage: bool | None = False,
-	):
+	) -> tuple[Server, DatabaseServer]:
 		"""Minimal creation of a unified server with app and database on same vmi"""
 		# Accepting only arguments allowed via the API to create a server.
 		# Other arguments can be added laters.
@@ -931,10 +932,14 @@ class Cluster(Document):
 		database_server.auto_purge_binlog_based_on_size = True
 		database_server.binlog_max_disk_usage_percent = 75 if auto_increase_storage else 20
 
-		server.save()
+		server.save()  # Creating server before database server to use the preset agent password
+		database_server.save()
 
 		# Deliberately skipping subscription creation for database server
 		server.create_subscription(plan.name)
+
+		# TODO: Create new press job to create unified server.
+		return server, database_server
 
 	def create_server(  # noqa: C901
 		self,
