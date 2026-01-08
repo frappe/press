@@ -31,7 +31,12 @@
 					type="autocomplete"
 					label="Choose Region"
 					:options="regionOptions"
-					v-model="selectedRegion"
+					:modelValue="selectedRegion?.value"
+					@update:modelValue="
+						selectedRegion = regionOptions.find(
+							(option) => option.value === $event,
+						)
+					"
 				>
 					<template #prefix>
 						<img :src="selectedRegion?.image" class="mr-2 h-4" />

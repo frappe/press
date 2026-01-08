@@ -54,7 +54,12 @@
 									v-else
 									type="autocomplete"
 									:options="branchOptions"
-									v-model="selectedBranch"
+									:modelValue="selectedBranch?.value"
+									@update:modelValue="
+										selectedBranch = branchOptions.find(
+											(option) => option.value === $event,
+										)
+									"
 								>
 									<template v-slot:target="{ togglePopover }">
 										<Button

@@ -19,9 +19,17 @@
 			<FormControl
 				v-if="selectedTag?.value !== '__new__'"
 				label="Select tag"
+<<<<<<< HEAD
 				type="autocomplete"
 				v-model="selectedTag"
+=======
+				type="combobox"
+>>>>>>> 585b118f3 (fix(dependency): Migrate FormControl.combobox implementations)
 				:options="tagOptions"
+				:modelValue="selectedTag?.value"
+				@update:modelValue="
+					selectedTag = tagOptions.find((option) => option.value === $event)
+				"
 			/>
 			<FormControl
 				v-if="selectedTag?.value === '__new__'"

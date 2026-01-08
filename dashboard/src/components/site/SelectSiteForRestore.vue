@@ -23,8 +23,23 @@
 			<FormControl
 				label="Select the site where you want to restore the backup"
 				class="mt-4"
+<<<<<<< HEAD
 				type="autocomplete"
 				v-model="selectedSite"
+=======
+				type="combobox"
+				:modelValue="selectedSite?.value"
+				@update:modelValue="
+					selectedSite = ($resources.sites.data || [])
+						.map((site) => {
+							return {
+								label: site.host_name || site.name,
+								value: site.name,
+							};
+						})
+						.find((option) => option.value === $event)
+				"
+>>>>>>> 585b118f3 (fix(dependency): Migrate FormControl.combobox implementations)
 				:options="
 					($resources.sites.data || []).map((site) => {
 						return {
