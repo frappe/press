@@ -219,6 +219,37 @@ class ProxyServer(BaseServer):
 		self.save()
 
 	@frappe.whitelist()
+	def remove_fail2ban(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_remove_fail2ban",
+			queue="long",
+			timeout=1200,
+		)
+		self.status = "Installing"
+		self.save()
+
+	def _remove_fail2ban(self):
+		try:
+			ansible = Ansible(
+				playbook="fail2ban_remove.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+			else:
+				self.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			log_error("Fail2ban Setup Exception", server=self.as_dict())
+		self.save()
+
+	@frappe.whitelist()
 	def setup_proxysql(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_proxysql", queue="long", timeout=1200)
 
