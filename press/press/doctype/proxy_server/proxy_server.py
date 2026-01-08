@@ -24,6 +24,7 @@ class ProxyServer(BaseServer):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.proxy_server_domain.proxy_server_domain import ProxyServerDomain
 
 		agent_password: DF.Password | None
