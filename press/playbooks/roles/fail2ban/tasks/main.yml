@@ -18,26 +18,19 @@
     mode: '0644'
     remote_src: yes
 
-- name: Setup Actions
-  template:
-    src: 'actions/{{ item }}.conf'
-    dest: '/etc/fail2ban/action.d/{{ item }}.conf'
-  with_items:
-    - iptables-docker
-
 - name: Setup Filters
   template:
     src: 'filters/{{ item }}.conf'
     dest: '/etc/fail2ban/filter.d/{{ item }}.conf'
   with_items:
-    - nginx-proxy
+    - nginx
 
 - name: Setup Jails
   template:
     src: 'jails/{{ item }}.conf'
     dest: '/etc/fail2ban/jail.d/{{ item }}.conf'
   with_items:
-    - nginx-proxy
+    - nginx
 
 - name: Restart fail2ban
   service:
