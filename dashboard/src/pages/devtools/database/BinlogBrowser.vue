@@ -7,7 +7,7 @@
 				!binlog_indexer_enabled,
 		}"
 	>
-		<Header class="sticky top-0 z-10 bg-white">
+		<Header class="sticky top-0 bg-white">
 			<div
 				class="flex w-full flex-col gap-2 md:flex-row md:items-center md:justify-between"
 			>
