@@ -424,6 +424,7 @@ class VirtualMachine(Document):
 			mac_address=self.mac_address_of_public_ip,
 			ip_address=self.public_ip_address,
 			private_network=cluster.vpc_id,
+			ssh_key=frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
 		)
 
 	def _provision_hetzner(self):
@@ -1532,8 +1533,7 @@ class VirtualMachine(Document):
 		if self.cloud_provider == "OCI":
 			return (client_type or ComputeClient)(cluster.get_oci_config())
 		if self.cloud_provider == "Hetzner":
-			settings = frappe.get_single("Press Settings")
-			api_token = settings.get_password("hetzner_api_token")
+			api_token = cluster.get_password("hetzner_api_token")
 			return HetznerClient(token=api_token)
 		if self.cloud_provider == "Frappe Compute":
 			settings = frappe.get_single("Press Settings")
@@ -1799,7 +1799,7 @@ class VirtualMachine(Document):
 		try:
 			clusters = frappe.get_all(
 				"Virtual Machine",
-				["cluster", "cloud_provider", "max(index) as max_index"],
+				["cluster", "cloud_provider", "max(`index`) as max_index"],
 				{
 					"status": ("not in", ("Terminated", "Draft")),
 					"cloud_provider": "AWS EC2",
@@ -2240,7 +2240,7 @@ get_permission_query_conditions = get_permission_query_conditions_for_doctype("V
 def sync_virtual_machines_hetzner():
 	for machine in frappe.get_all(
 		"Virtual Machine",
-		{"status": ("not in", ("Draft")), "cloud_provider": "Hetzner"},
+		{"status": ("not in", ("Draft", "Terminated")), "cloud_provider": "Hetzner"},
 		pluck="name",
 	):
 		if has_job_timeout_exceeded():
