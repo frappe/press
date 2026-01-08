@@ -31,7 +31,11 @@ frappe.ui.form.on('Cluster', {
 				);
 			}
 		}
-		if (frm.doc.cloud_provider === 'AWS EC2' && frm.doc.status === 'Active') {
+		if (
+			(frm.doc.cloud_provider === 'AWS EC2' ||
+				frm.doc.cloud_provider === 'Hetzner') &&
+			frm.doc.status === 'Active'
+		) {
 			// add btn, when clicked creates a prompt and calls check_machine_availability with value input
 			frm.add_custom_button(__('Check Machine Availability'), () => {
 				frappe.prompt(
