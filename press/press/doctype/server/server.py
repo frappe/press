@@ -41,7 +41,6 @@ from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
-from press.security import fail2ban
 from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
@@ -2748,37 +2747,6 @@ class Server(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("Agent Proxy IP Setup Exception", server=self.as_dict())
-		self.save()
-
-	@frappe.whitelist()
-	def setup_fail2ban(self):
-		self.status = "Installing"
-		self.save()
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_fail2ban", queue="long", timeout=1200)
-
-	def _setup_fail2ban(self):
-		from press.press.doctype.monitor_server.monitor_server import get_monitor_server_ips
-
-		try:
-			ansible = Ansible(
-				playbook="fail2ban.yml",
-				server=self,
-				user=self._ssh_user(),
-				port=self._ssh_port(),
-				variables={
-					"rules": fail2ban.rules(),
-					"monitor_server_ips": " ".join(get_monitor_server_ips()),
-				},
-			)
-			play = ansible.run()
-			self.reload()
-			if play.status == "Success":
-				self.status = "Active"
-			else:
-				self.status = "Broken"
-		except Exception:
-			self.status = "Broken"
-			log_error("Fail2ban Setup Exception", server=self.as_dict())
 		self.save()
 
 	@frappe.whitelist()

@@ -1,2 +1,3 @@
 ---
 nginx_log: /var/log/nginx/access.log
+ignore_ips: ""
