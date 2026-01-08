@@ -1843,7 +1843,9 @@ class BaseServer(Document, TagHelpers):
 				"hetzner_cloud": self.provider == "Hetzner",
 				**self.get_mount_variables(),
 			}
-			if self.doctype == "Database Server" and self.provider != "Generic":
+			if self.provider != "Generic" and (
+				self.doctype == "Database Server" or getattr(self, "has_unified_volume", False)
+			):
 				variables["mariadb_bind_address"] = frappe.get_value(
 					"Virtual Machine", self.virtual_machine, "private_ip_address"
 				)
