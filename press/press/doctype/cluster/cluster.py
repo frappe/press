@@ -14,6 +14,7 @@ from typing import ClassVar, Literal
 import boto3
 import frappe
 from frappe.model.document import Document
+from frappe.utils.caching import redis_cache
 from hcloud import APIException, Client
 from hcloud.firewalls.domain import FirewallRule as HetznerFirewallRule
 from hcloud.networks.domain import NetworkSubnet
@@ -894,6 +895,13 @@ class Cluster(Document):
 			aws_secret_access_key=self.get_password("aws_secret_access_key"),
 		)
 
+	def get_hetzner_client(self):
+		from hcloud import Client
+
+		settings: "PressSettings" = frappe.get_single("Press Settings")
+		api_token = settings.get_password("hetzner_api_token")
+		return Client(token=api_token)
+
 	def _check_aws_machine_availability(self, machine_type: str) -> bool:
 		"""Check if instance offering in the region is present"""
 		client = self.get_aws_client()
@@ -910,6 +918,23 @@ class Cluster(Document):
 		"""
 		return True
 
+	@redis_cache(ttl=60)
+	def _check_hetzner_machine_availability(self, machine_type: str) -> bool:
+		client = self.get_hetzner_client()
+		machine = client.server_types.get_by_name(machine_type)
+		if not machine:
+			return False
+
+		machine_id = machine.id
+
+		datacenters = client.datacenters.get_all()
+		datacenters = [dc for dc in datacenters if dc.location.name == self.region]
+		for dc in datacenters:
+			for st in dc.server_types.available:
+				if st.id == machine_id:
+					return True
+		return False
+
 	@frappe.whitelist()
 	def check_machine_availability(self, machine_type: str) -> bool:
 		"Check availability of machine in the region before allowing provision"
@@ -917,10 +942,8 @@ class Cluster(Document):
 			return self._check_aws_machine_availability(machine_type)
 		if self.cloud_provider == "OCI":
 			return self._check_oci_machine_availability(machine_type)
-
 		if self.cloud_provider == "Hetzner":
-			# TODO: Implement Hetzner machine type availability check
-			return True
+			return self._check_hetzner_machine_availability(machine_type)
 
 		return True
 
