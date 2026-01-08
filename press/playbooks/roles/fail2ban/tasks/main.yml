@@ -1,10 +1,10 @@
 ---
-- name: Install fail2ban package
+- name: Setup Fail2Ban
   apt:
     pkg: fail2ban
     state: present
 
-- name: Enable fail2ban
+- name: Enable Fail2Ban
   service:
     name: fail2ban
     enabled: yes
@@ -24,6 +24,7 @@
     dest: '/etc/fail2ban/filter.d/{{ item }}.conf'
   with_items:
     - nginx
+    - nginx-spam
 
 - name: Setup Jails
   template:
@@ -31,8 +32,9 @@
     dest: '/etc/fail2ban/jail.d/{{ item }}.conf'
   with_items:
     - nginx
+    - nginx-spam
 
-- name: Restart fail2ban
+- name: Restart Fail2Ban
   service:
     name: fail2ban
     state: restarted
