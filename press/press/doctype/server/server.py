@@ -462,6 +462,11 @@ class BaseServer(Document, TagHelpers):
 	def drop_server(self):
 		app_server, db_server = self._get_app_and_database_servers()
 		app_server.archive()
+
+		# Don't need to archive db server explicitly if it's a unified server
+		if app_server.is_unified_server:
+			return
+
 		db_server.archive()
 
 	@dashboard_whitelist()

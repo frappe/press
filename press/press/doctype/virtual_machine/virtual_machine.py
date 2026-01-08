@@ -631,6 +631,29 @@ class VirtualMachine(Document):
 		self.status = self.get_oci_status_map()[instance.lifecycle_state]
 		self.save()
 
+	def get_mariadb_context(
+		self, server: Server | DatabaseServer, memory: int
+	) -> dict[str, str | int] | None:
+		if server.doctype == "Database Server":
+			return {
+				"server_id": server.server_id,
+				"private_ip": self.private_ip_address,
+				"ansible_memtotal_mb": memory,
+				"mariadb_root_password": server.mariadb_root_password,
+				"db_port": server.db_port or 3306,
+			}
+		if server.doctype == "Server" and server.is_unified_server:
+			database_server: DatabaseServer = frappe.get_doc("Database Server", server.database_server)
+			return {
+				"server_id": database_server.server_id,
+				"private_ip": self.private_ip_address,
+				"ansible_memtotal_mb": memory,
+				"mariadb_root_password": database_server.mariadb_root_password,
+				"db_port": database_server.db_port or 3306,
+			}
+
+		return None
+
 	def get_cloud_init(self):
 		server = self.get_server()
 		if not server:
@@ -659,17 +682,12 @@ class VirtualMachine(Document):
 				is_path=True,
 			),
 		}
-		if server.doctype == "Database Server":
+		if server.doctype == "Database Server" or getattr(server, "is_unified_server", False):
 			memory = frappe.db.get_value("Server Plan", server.plan, "memory") or 1024
 			if memory < 1024:
 				frappe.throw("MariaDB cannot be installed on a server plan with less than 1GB RAM.")
-			mariadb_context = {
-				"server_id": server.server_id,
-				"private_ip": self.private_ip_address,
-				"ansible_memtotal_mb": memory,
-				"mariadb_root_password": server.get_password("mariadb_root_password"),
-				"db_port": server.db_port or 3306,
-			}
+
+			mariadb_context = self.get_mariadb_context(server, memory)
 
 			context.update(
 				{
