@@ -23,7 +23,7 @@ class ServerPlanType(Document):
 	pass
 
 
-@redis_cache(ttl=3600)
+@redis_cache(ttl=60)
 def get_server_plan_types() -> dict[str, dict]:
 	data = frappe.get_all(
 		"Server Plan Type",
