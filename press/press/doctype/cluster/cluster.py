@@ -108,6 +108,7 @@ class Cluster(Document):
 	}
 
 	secondary_server_series: ClassVar[str] = "fs"
+	unified_server_series: ClassVar[str] = "u"
 
 	wait_for_aws_creds_seconds = 20
 
@@ -890,6 +891,50 @@ class Cluster(Document):
 				"disk": 50,
 			}
 		).insert(ignore_permissions=True, ignore_if_duplicate=True)
+
+	def create_unified_server(
+		self,
+		title: str,
+		plan: ServerPlan,
+		team: str | None = None,
+		auto_increase_storage: bool | None = False,
+	):
+		"""Minimal creation of a unified server with app and database on same vmi"""
+		# Accepting only arguments allowed via the API to create a server.
+		# Other arguments can be added laters.
+
+		team = team or get_current_team()
+		vm = self.create_vm(
+			machine_type=plan.instance_type,
+			platform=plan.platform,
+			disk_size=plan.disk,
+			domain=frappe.db.get_single_value("Press Settings", "domain"),
+			series=self.unified_server_series,
+			team=team,
+		)
+		server, database_server = vm.create_unified_server()
+
+		server.title = f"{title} - Application"
+		database_server.title = f"{title} - Database"
+
+		# Common configurations
+		server.ram = database_server.ram = plan.memory
+		server.auto_increase_storage = database_server.auto_increase_storage = auto_increase_storage
+		server.plan = database_server.plan = plan.name
+
+		# Server configurations
+		server.new_worker_allocation = True
+		server.database_server = database_server.name
+		server.proxy_server = self.proxy_server
+
+		# Database configurations
+		database_server.auto_purge_binlog_based_on_size = True
+		database_server.binlog_max_disk_usage_percent = 75 if auto_increase_storage else 20
+
+		server.save()
+
+		# Deliberately skipping subscription creation for database server
+		server.create_subscription(plan.name)
 
 	def create_server(  # noqa: C901
 		self,
