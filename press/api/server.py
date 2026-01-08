@@ -598,8 +598,21 @@ def options():
 
 	regions = frappe.get_all(
 		"Cluster",
+<<<<<<< HEAD
 		regions_filter,
 		["name", "title", "image", "beta", "has_add_on_storage_support", "cloud_provider", "public"],
+=======
+		{"cloud_provider": ("!=", "Generic"), "public": True},
+		[
+			"name",
+			"title",
+			"image",
+			"beta",
+			"has_add_on_storage_support",
+			"cloud_provider",
+			"has_unified_server_support",
+		],
+>>>>>>> 16300fee8 (feat(unified-server): Change layout of cheaper unified offering)
 	)
 
 	for r in regions:
@@ -617,6 +630,7 @@ def options():
 					"title": "Amazon Web Services",
 					"provider_image": "...",
 					"has_add_on_storage_support": 1,
+					"has_unified_server_support": 1,
 				},
 			}
 		}
@@ -635,6 +649,7 @@ def options():
 			"provider_image": cloud_providers[provider]["image"],
 			"beta": region.get("beta", 0),
 			"has_add_on_storage_support": region.get("has_add_on_storage_support", 0),
+			"has_unified_server_support": region.get("has_unified_server_support", 0),
 		}
 
 	default_server_plan_type = frappe.db.get_single_value("Press Settings", "default_server_plan_type")

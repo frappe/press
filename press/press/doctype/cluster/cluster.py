@@ -73,7 +73,11 @@ class Cluster(Document):
 		enable_autoscaling: DF.Check
 		has_add_on_storage_support: DF.Check
 		has_arm_support: DF.Check
+<<<<<<< HEAD
 		hetzner_api_token: DF.Password | None
+=======
+		has_unified_server_support: DF.Check
+>>>>>>> 16300fee8 (feat(unified-server): Change layout of cheaper unified offering)
 		hybrid: DF.Check
 		image: DF.AttachImage | None
 		monitoring_password: DF.Password | None
