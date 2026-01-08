@@ -1729,7 +1729,7 @@ class VirtualMachine(Document):
 		try:
 			clusters = frappe.get_all(
 				"Virtual Machine",
-				["cluster", "cloud_provider", "max(index) as max_index"],
+				["cluster", "cloud_provider", "max(`index`) as max_index"],
 				{
 					"status": ("not in", ("Terminated", "Draft")),
 					"cloud_provider": "AWS EC2",
