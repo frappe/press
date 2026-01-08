@@ -20,8 +20,11 @@
 				v-if="selectedTag?.value !== '__new__'"
 				label="Select tag"
 				type="combobox"
-				v-model="selectedTag"
 				:options="tagOptions"
+				:modelValue="selectedTag?.value"
+				@update:modelValue="
+					selectedTag = tagOptions.find((option) => option.value === $event)
+				"
 			/>
 			<FormControl
 				v-if="selectedTag?.value === '__new__'"

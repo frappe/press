@@ -20,7 +20,12 @@
 						type="combobox"
 						label="Config Name"
 						:options="keyOptions"
-						v-model="selectedConfig"
+						:modelValue="selectedConfig?.value"
+						@update:modelValue="
+							selectedConfig = keyOptions.find(
+								(option) => option.value === $event,
+							)
+						"
 					/>
 					<div
 						v-if="

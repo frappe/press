@@ -12,7 +12,12 @@
 					class="w-full"
 					type="combobox"
 					:options="autocompleteOptions"
-					v-model="selectedSchema"
+					:modelValue="selectedSchema?.value"
+					@update:modelValue="
+						selectedSchema = autocompleteOptions.find(
+							(option) => option.value === $event,
+						)
+					"
 				/>
 				<Button
 					icon="copy"

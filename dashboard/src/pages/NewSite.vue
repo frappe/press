@@ -44,7 +44,12 @@
 					variant="outline"
 					:class="{ 'pointer-events-none opacity-50': !showLocalisationOption }"
 					label="Select Country"
-					v-model="selectedLocalisationCountry"
+					:modelValue="selectedLocalisationCountry?.value"
+					@update:modelValue="
+						selectedLocalisationCountry = localisationAppCountries.find(
+							(option) => option.value === $event,
+						)
+					"
 					type="combobox"
 					:options="localisationAppCountries"
 				/>
