@@ -24,7 +24,17 @@
 				label="Select the site where you want to restore the backup"
 				class="mt-4"
 				type="combobox"
-				v-model="selectedSite"
+				:modelValue="selectedSite?.value"
+				@update:modelValue="
+					selectedSite = ($resources.sites.data || [])
+						.map((site) => {
+							return {
+								label: site.host_name || site.name,
+								value: site.name,
+							};
+						})
+						.find((option) => option.value === $event)
+				"
 				:options="
 					($resources.sites.data || []).map((site) => {
 						return {
