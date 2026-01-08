@@ -251,7 +251,7 @@
    "fieldname": "series",
    "fieldtype": "Select",
    "label": "Series",
-   "options": "n\nf\nm\nc\np\ne\nr\nt\nnfs\nfs",
+   "options": "n\nf\nm\nc\np\ne\nr\nu\nt\nnfs\nfs",
    "reqd": 1
   },
   {
@@ -426,7 +426,11 @@
    "link_fieldname": "virtual_machine"
   }
  ],
+<<<<<<< HEAD
  "modified": "2025-10-13 14:56:34.498409",
+=======
+ "modified": "2026-01-08 09:35:46.805480",
+>>>>>>> 89fe1d5cc (feat(unified-server): Support provisioning app + db server in a single (unified) vm)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
@@ -458,6 +462,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

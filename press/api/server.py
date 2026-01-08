@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 from datetime import timezone as tz
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 import frappe
 import requests
@@ -30,6 +30,13 @@ if TYPE_CHECKING:
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.server_plan.server_plan import ServerPlan
+
+
+class UnifiedServerDetails(TypedDict):
+	title: str
+	cluster: str
+	app_plan: str
+	auto_increase_storage: bool | None
 
 
 def poly_get_doc(doctypes, name):
@@ -190,6 +197,35 @@ def archive(name):
 def get_reclaimable_size(name):
 	server: Server = frappe.get_doc("Server", name)
 	return server.agent.get("server/reclaimable-size")
+
+
+@frappe.whitelist()
+def new_unified(server: UnifiedServerDetails):
+	team = get_current_team(get_doc=True)
+	if not team.enabled:
+		frappe.throw("You cannot create a new server because your account is disabled")
+
+	cluster: Cluster = frappe.get_doc("Cluster", server["cluster"])
+
+	app_plan: ServerPlan = frappe.get_doc("Server Plan", server["app_plan"])
+	if not cluster.check_machine_availability(app_plan.instance_type):
+		frappe.throw(
+			f"No machines of {app_plan.instance_type} are currently available in the {cluster.name} region"
+		)
+
+	auto_increase_storage = server.get("auto_increase_storage", False)
+
+	proxy_server = frappe.get_all(
+		"Proxy Server",
+		{"status": "Active", "cluster": cluster.name, "is_primary": True},
+		limit=1,
+	)[0]
+
+	cluster.proxy_server = proxy_server.get("name")
+
+	cluster.create_unified_server(
+		server["title"], app_plan, team=team.name, auto_increase_storage=auto_increase_storage
+	)
 
 
 @frappe.whitelist()

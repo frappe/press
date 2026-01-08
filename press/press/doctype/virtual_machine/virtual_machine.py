@@ -109,7 +109,7 @@ class VirtualMachine(Document):
 		region: DF.Link
 		root_disk_size: DF.Int
 		security_group_id: DF.Data | None
-		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "t", "nfs", "fs"]
+		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "u", "t", "nfs", "fs"]
 		skip_automated_snapshot: DF.Check
 		ssh_key: DF.Link
 		status: DF.Literal["Draft", "Pending", "Running", "Stopped", "Terminated"]
@@ -1505,6 +1505,64 @@ class VirtualMachine(Document):
 			return HetznerClient(token=api_token)
 
 		return None
+
+	@frappe.whitelist()
+	def create_unified_server(self) -> tuple[Server, DatabaseServer]:
+		"""Virtual machines of series U will create a f series app server and m series database server"""
+		server_document = {
+			"doctype": "Server",
+			"hostname": f"f{self.index}-{slug(self.cluster)}",
+			"domain": self.domain,
+			"cluster": self.cluster,
+			"provider": self.cloud_provider,
+			"virtual_machine": self.name,
+			"team": self.team,
+			"is_primary": True,
+			"platform": self.platform,
+			"is_unified_server": True,
+		}
+
+		if self.virtual_machine_image:
+			server_document["is_server_prepared"] = True
+			server_document["is_server_setup"] = True
+			server_document["is_server_renamed"] = True
+			server_document["is_upstream_setup"] = True
+
+		server = frappe.get_doc(server_document).insert()
+
+		database_server_document = {
+			"doctype": "Database Server",
+			"hostname": f"m{self.index}-{slug(self.cluster)}",
+			"domain": self.domain,
+			"cluster": self.cluster,
+			"provider": self.cloud_provider,
+			"virtual_machine": self.name,
+			"server_id": self.index,
+			"is_primary": True,
+			"team": self.team,
+			"is_unified_server": True,
+		}
+
+		if self.virtual_machine_image:
+			database_server_document["is_server_prepared"] = True
+			database_server_document["is_server_setup"] = True
+			database_server_document["is_server_renamed"] = True
+			if self.data_disk_snapshot:
+				database_server_document["mariadb_root_password"] = get_decrypted_password(
+					"Virtual Disk Snapshot", self.data_disk_snapshot, "mariadb_root_password"
+				)
+			else:
+				database_server_document["mariadb_root_password"] = get_decrypted_password(
+					"Virtual Machine Image", self.virtual_machine_image, "mariadb_root_password"
+				)
+
+			if not database_server_document["mariadb_root_password"]:
+				frappe.throw(
+					f"Virtual Machine Image {self.virtual_machine_image} does not have a MariaDB root password set."
+				)
+
+		database_server = frappe.get_doc(database_server_document).insert()
+		return server, database_server
 
 	@frappe.whitelist()
 	def create_server(self, is_secondary: bool = False, primary: str | None = None) -> Server:

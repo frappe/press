@@ -45,7 +45,7 @@ class VirtualMachineImage(Document):
 		public: DF.Check
 		region: DF.Link
 		root_size: DF.Int
-		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "nfs", "fs"]
+		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "nfs", "fs", "u"]
 		size: DF.Int
 		snapshot_id: DF.Data | None
 		status: DF.Literal["Pending", "Available", "Unavailable"]

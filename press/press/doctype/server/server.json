@@ -12,6 +12,7 @@
   "domain",
   "self_hosted_server_domain",
   "tls_certificate_renewal_failed",
+  "is_unified_server",
   "column_break_4",
   "cluster",
   "provider",
@@ -730,9 +731,16 @@
   },
   {
    "default": "0",
+<<<<<<< HEAD
    "fieldname": "is_provisioning_press_job_completed",
    "fieldtype": "Check",
    "label": "Is Provisioning Job Completed"
+=======
+   "description": "Checked if database and app are hosted on the server server",
+   "fieldname": "is_unified_server",
+   "fieldtype": "Check",
+   "label": "Is Unified Server"
+>>>>>>> 89fe1d5cc (feat(unified-server): Support provisioning app + db server in a single (unified) vm)
   }
  ],
  "links": [
@@ -741,7 +749,11 @@
    "link_fieldname": "primary_server"
   }
  ],
+<<<<<<< HEAD
  "modified": "2026-01-07 14:58:23.188531",
+=======
+ "modified": "2026-01-08 09:17:08.757295",
+>>>>>>> 89fe1d5cc (feat(unified-server): Support provisioning app + db server in a single (unified) vm)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
