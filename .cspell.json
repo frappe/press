@@ -710,12 +710,9 @@
         "Rhiv",
         "Kvsc",
         "ZSTD",
-<<<<<<< HEAD
         "Wazuh",
-        "DBUS"
-=======
+        "DBUS",
         "Zvkq",
         "reka"
->>>>>>> b3453372d (chore(ui): Increase width of server type dropdown)
     ]
 }

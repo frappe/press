@@ -741,11 +741,7 @@
    "link_fieldname": "primary_server"
   }
  ],
-<<<<<<< HEAD
- "modified": "2025-11-17 11:29:25.581882",
-=======
  "modified": "2026-01-07 14:58:23.188531",
->>>>>>> 0c545c60e (refactor(server): Show server status as Installing until provisioned)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

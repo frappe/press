@@ -102,11 +102,8 @@ class BaseServer(Document, TagHelpers):
 		"is_monitoring_disabled",
 		"auto_purge_binlog_based_on_size",
 		"binlog_max_disk_usage_percent",
-<<<<<<< HEAD
-=======
 		"is_monitoring_disabled",
 		"is_provisioning_press_job_completed",
->>>>>>> 0c545c60e (refactor(server): Show server status as Installing until provisioned)
 	)
 
 	@staticmethod
@@ -677,14 +674,10 @@ class BaseServer(Document, TagHelpers):
 				ansible = Ansible(playbook="aws.yml", server=self, user="ubuntu")
 			elif self.provider == "OCI":
 				ansible = Ansible(playbook="oci.yml", server=self, user="ubuntu")
-<<<<<<< HEAD
-			if self.provider != "Generic":
-=======
 			elif self.provider == "Vodacom":
 				ansible = Ansible(playbook="vodacom.yml", server=self, user="ubuntu")
 
 			if self.provider != "Generic" and ansible:
->>>>>>> 4bd3c0811 (fix(server): In prepare server step dont run ansible if not required)
 				ansible.run()
 
 			self.reload()

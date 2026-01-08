@@ -10,15 +10,6 @@
   "description",
   "column_break_2",
   "status",
-<<<<<<< HEAD
-  "public",
-  "beta",
-  "hybrid",
-  "has_arm_support",
-  "enable_autoscaling",
-  "column_break_fsht",
-=======
->>>>>>> 0e13e7a58 (feat(server): Don't show auto-add on storage confirmation if not enable at cluster)
   "monitoring_password",
   "image",
   "section_break_ymkq",
@@ -312,12 +303,6 @@
    "label": "Repository"
   },
   {
-<<<<<<< HEAD
-   "default": "0",
-   "fieldname": "enable_autoscaling",
-   "fieldtype": "Check",
-   "label": "Enable Autoscaling"
-=======
    "fieldname": "section_break_ymkq",
    "fieldtype": "Section Break"
   },
@@ -330,16 +315,12 @@
    "fieldname": "has_add_on_storage_support",
    "fieldtype": "Check",
    "label": "Has Add On Storage Support"
-<<<<<<< HEAD
->>>>>>> 0e13e7a58 (feat(server): Don't show auto-add on storage confirmation if not enable at cluster)
-=======
   },
   {
    "default": "0",
    "fieldname": "enable_autoscaling",
    "fieldtype": "Check",
    "label": "Enable Autoscaling"
->>>>>>> 33a528744 (chore(cluster): Add enable_autoscaling flag)
   }
  ],
  "image_field": "image",
@@ -376,15 +357,7 @@
    "link_fieldname": "document_name"
   }
  ],
-<<<<<<< HEAD
-<<<<<<< HEAD
- "modified": "2026-01-07 10:03:06.173064",
-=======
- "modified": "2026-01-07 04:00:28.252425",
->>>>>>> 0e13e7a58 (feat(server): Don't show auto-add on storage confirmation if not enable at cluster)
-=======
  "modified": "2026-01-08 00:29:32.853963",
->>>>>>> 33a528744 (chore(cluster): Add enable_autoscaling flag)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
@@ -405,7 +378,6 @@
   }
  ],
  "row_format": "Dynamic",
- "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

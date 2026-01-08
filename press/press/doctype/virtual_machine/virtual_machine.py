@@ -805,14 +805,6 @@ class VirtualMachine(Document):
 			if volume_id == HETZNER_ROOT_DISK_ID:
 				frappe.throw("Cannot increase disk size for hetzner root disk.")
 
-<<<<<<< HEAD
-		log_server_activity(
-			self.series,
-			server=self.get_server().name,
-			action="Disk Size Change",
-			reason=f"{'Root' if is_root_volume else 'Data'} volume increased by {increment} GB",
-		)
-=======
 			from hcloud.volumes.domain import Volume
 
 			self.client().volumes.resize(Volume(volume_id), volume.size)
@@ -824,7 +816,6 @@ class VirtualMachine(Document):
 				action="Disk Size Change",
 				reason=f"{'Root' if is_root_volume else 'Data'} volume increased by {increment} GB",
 			)
->>>>>>> 67511da81 (refactor(vm): Fix volume and vm syncing)
 
 		self.save()
 
