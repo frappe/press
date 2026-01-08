@@ -62,51 +62,19 @@
 				</div>
 			</div>
 			<div v-if="serverType === 'dedicated'" class="space-y-8">
-				<!-- Chose Region -->
-				<div class="flex flex-col" v-if="options?.regions_data">
-					<h2 class="text-sm font-medium leading-6 text-gray-900">
-						Select Region
-					</h2>
-					<div class="mt-2 w-full space-y-2">
-						<div class="grid grid-cols-2 gap-3">
-							<button
-								v-for="r in Object.keys(options?.regions_data ?? {})"
-								:key="r"
-								@click="serverRegion = r"
-								:class="[
-									serverRegion === r
-										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-										: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
-									'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
-								]"
-							>
-								<div class="flex w-full items-center justify-between">
-									<div class="flex w-full items-center space-x-2">
-										<img :src="options.regions_data[r].image" class="h-5 w-5" />
-										<span class="text-sm font-medium">
-											{{ r }}
-										</span>
-									</div>
-								</div>
-							</button>
-						</div>
-					</div>
-				</div>
 				<!-- Choose Server Provider -->
-				<div class="flex flex-col" v-if="serverRegion && providers">
+				<div class="flex flex-col" v-if="allProviders.length">
 					<h2 class="text-sm font-medium leading-6 text-gray-900">
 						Select Provider
 					</h2>
 					<div class="mt-2 w-full space-y-2">
 						<div class="grid grid-cols-2 gap-3">
 							<button
-								v-for="provider in Object.keys(providers).sort((a, b) =>
-									a.localeCompare(b),
-								)"
-								:key="provider"
-								@click="serverProvider = provider"
+								v-for="provider in allProviders"
+								:key="provider.name"
+								@click="serverProvider = provider.name"
 								:class="[
-									serverProvider === provider
+									serverProvider === provider.name
 										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
 										: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
 									'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
@@ -114,21 +82,51 @@
 							>
 								<div class="flex w-full items-center justify-between">
 									<div class="flex w-full items-center space-x-2">
-										<img
-											:src="providers[provider].provider_image"
-											class="h-5 w-5"
-										/>
+										<img :src="provider.provider_image" class="h-5 w-5" />
 										<span class="text-sm font-medium">
-											{{ providers[provider].title }}
+											{{ provider.title }}
 										</span>
 									</div>
 									<Badge
-										v-if="providers[provider].beta"
-										:label="providers[provider].beta ? 'Beta' : ''"
+										v-if="provider.beta"
+										:label="provider.beta ? 'Beta' : ''"
 										theme="orange"
 										variant="outline"
 										size="md"
 									/>
+								</div>
+							</button>
+						</div>
+					</div>
+				</div>
+				<!-- Chose Region -->
+				<div
+					class="flex flex-col"
+					v-if="serverProvider && regionsForProvider.length"
+				>
+					<h2 class="text-sm font-medium leading-6 text-gray-900">
+						Select Region
+					</h2>
+					<div class="mt-2 w-full space-y-2">
+						<div class="grid grid-cols-2 gap-3">
+							<button
+								v-for="r in regionsForProvider"
+								:key="r.name"
+								@click="serverRegion = r.name"
+								:class="[
+									serverRegion === r.name
+										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
+										: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
+									'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
+								]"
+							>
+								<div class="flex w-full items-center justify-between">
+									<div class="flex w-full items-center space-x-2">
+										<img :src="r.image" class="h-5 w-5" />
+										<span class="text-sm font-medium">
+											{{ r.name }}
+										</span>
+									</div>
 								</div>
 							</button>
 						</div>
@@ -561,14 +559,14 @@ export default {
 		};
 	},
 	watch: {
+		serverProvider() {
+			this.serverRegion = '';
+			this.appServerPlanType = '';
+			this.dbServerPlanType = '';
+			this.appServerPlan = '';
+			this.dbServerPlan = '';
+		},
 		serverRegion() {
-			if (Object.keys(this.providers).length > 0) {
-				this.serverProvider = Object.keys(this.providers).sort((a, b) =>
-					a.localeCompare(b),
-				)[0];
-			} else {
-				this.serverProvider = '';
-			}
 			this.appServerPlanType = '';
 			this.dbServerPlanType = '';
 			this.appServerPlan = '';
@@ -578,12 +576,17 @@ export default {
 			this.appServerPlan = '';
 			this.dbServerPlan = '';
 			this.serverRegion = '';
+			this.serverProvider = '';
 			this.appServerPlanType = '';
 			this.dbServerPlanType = '';
 			this.appPublicIP = '';
 			this.appPrivateIP = '';
 			this.dbPublicIP = '';
 			this.dbPrivateIP = '';
+			// Auto-select first provider when server type changes to dedicated
+			if (this.serverType === 'dedicated' && this.allProviders.length > 0) {
+				this.serverProvider = this.allProviders[0].name;
+			}
 		},
 		serviceType() {
 			this.appServerPlan = '';
@@ -768,6 +771,42 @@ export default {
 	computed: {
 		options() {
 			return this.$resources.options.data;
+		},
+		allProviders() {
+			if (!this.options?.regions_data) return [];
+			const providersMap = {};
+			for (const regionData of Object.values(this.options.regions_data)) {
+				for (const [providerName, providerData] of Object.entries(
+					regionData.providers || {},
+				)) {
+					if (!providersMap[providerName]) {
+						providersMap[providerName] = {
+							name: providerName,
+							title: providerData.title,
+							provider_image: providerData.provider_image,
+							beta: providerData.beta,
+						};
+					}
+				}
+			}
+			return Object.values(providersMap).sort((a, b) =>
+				a.name.localeCompare(b.name),
+			);
+		},
+		regionsForProvider() {
+			if (!this.serverProvider || !this.options?.regions_data) return [];
+			const regions = [];
+			for (const [regionName, regionData] of Object.entries(
+				this.options.regions_data,
+			)) {
+				if (regionData.providers && regionData.providers[this.serverProvider]) {
+					regions.push({
+						name: regionName,
+						image: regionData.image,
+					});
+				}
+			}
+			return regions.sort((a, b) => a.name.localeCompare(b.name));
 		},
 		providers() {
 			if (!this.serverRegion) return {};
