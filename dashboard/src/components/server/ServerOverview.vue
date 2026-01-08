@@ -18,6 +18,11 @@
 				class="col-span-1 rounded-md border lg:col-span-2"
 			>
 				<div
+					v-if="
+						!(
+							server === 'Database Server' && $appServer?.doc?.is_unified_server
+						)
+					"
 					class="grid grid-cols-2 lg:grid-cols-4"
 					:class="{
 						'opacity-70 pointer-events-none':
@@ -38,7 +43,10 @@
 									class="mt-2 flex flex-col space-y-2"
 								>
 									<div class="flex items-center text-base text-gray-700">
-										<span>{{ d.label }}</span>
+										<span v-if="!$appServer?.doc?.is_unified_server">{{
+											d.label
+										}}</span>
+										<span v-else>Unified Server Plan</span>
 										<Badge
 											v-if="
 												server === 'App Secondary Server' &&
@@ -683,7 +691,9 @@ export default {
 				},
 				{
 					label: 'Database server',
-					value: this.$appServer.doc.database_server,
+					value:
+						this.$appServer.doc.database_server &&
+						!this.$appServer.doc.is_unified_server,
 				},
 				{
 					label: 'Replication server',

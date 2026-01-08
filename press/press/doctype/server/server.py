@@ -104,6 +104,7 @@ class BaseServer(Document, TagHelpers):
 		"binlog_max_disk_usage_percent",
 		"is_monitoring_disabled",
 		"is_provisioning_press_job_completed",
+		"is_unified_server",
 	)
 
 	@staticmethod
