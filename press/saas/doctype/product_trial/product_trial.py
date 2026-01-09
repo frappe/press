@@ -437,6 +437,13 @@ class ProductTrial(Document):
 def create_free_app_subscription(app: str, site: str | None = None):
 	from press.utils import get_current_team
 
+	team = get_current_team()
+
+	# Skip creating subscription for app authors
+	app_author_team = frappe.db.get_value("Marketplace App", {"app": app}, "team")
+	if app_author_team == team:
+		return None
+
 	free_plan = frappe.get_all(
 		"Marketplace App Plan",
 		{"enabled": 1, "price_usd": ("<=", 0), "app": app},
@@ -453,7 +460,7 @@ def create_free_app_subscription(app: str, site: str | None = None):
 			"plan": free_plan[0],
 			"site": site,
 			"enabled": 1,
-			"team": get_current_team(),
+			"team": team,
 		}
 	).insert(ignore_permissions=True)
 

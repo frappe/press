@@ -121,7 +121,7 @@ def get_name_from_filters(filters: dict):
 		return None
 
 	value = values[0]
-	if isinstance(value, int | str):
+	if isinstance(value, (int, str)):
 		return value
 
 	return None
@@ -389,6 +389,11 @@ def get_app_subscriptions(app_plans, team_name: str):
 	team: Team | None = None
 
 	for app_name, plan_name in app_plans.items():
+		# Skip subscription for app authors - they shouldn't be charged for their own app
+		app_author_team = frappe.db.get_value("Marketplace App", {"app": app_name}, "team")
+		if app_author_team == team_name:
+			continue
+
 		is_free = frappe.db.get_value("Marketplace App Plan", plan_name, "is_free")
 		if not is_free:
 			if not team:
