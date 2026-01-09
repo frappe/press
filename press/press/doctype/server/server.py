@@ -369,15 +369,16 @@ class BaseServer(Document, TagHelpers):
 		return frappe.db.get_all("Cluster", {"enable_autoscaling": 1}, pluck="name")
 
 	def get_actions(self):
-		print("GETTING ACTIONS")
 		server_type = ""
 		if self.doctype == "Server":
-			server_type = "application server"
+			server_type = "application server" if not getattr(self, "is_unified_server", False) else "server"
 		elif self.doctype == "Database Server":
 			if self.is_replication_setup:
 				server_type = "replication server"
 			else:
-				server_type = "database server"
+				server_type = (
+					"database server" if not getattr(self, "is_unified_server", False) else "database"
+				)
 
 		actions = [
 			{
@@ -429,7 +430,9 @@ class BaseServer(Document, TagHelpers):
 			},
 			{
 				"action": "Drop server",
-				"description": "Drop both the application and database servers",
+				"description": "Drop both the application and database servers"
+				if not getattr(self, "is_unified_server", False)
+				else "Drop the unifed server",
 				"button_label": "Drop",
 				"condition": self.status == "Active" and self.doctype == "Server",
 				"doc_method": "drop_server",
@@ -2521,7 +2524,7 @@ class Server(BaseServer):
 				"description": "Manage notification channels",
 				"button_label": "Manage",
 				"doc_method": "dummy",
-				"group": "Application Server Actions",
+				"group": "Application Server Actions" if not self.is_unified_server else "Server Actions",
 				"server_doctype": "Server",
 				"server_name": self.name,
 			},
