@@ -156,7 +156,7 @@
 				</div>
 				<!-- Add a check if unified server plan is available here -->
 				<div
-					v-if="serverRegion && selectedRegionInfo?.has_unified_server_support"
+					v-if="showUnifiedServerOption"
 					class="flex items-center space-x-2 text-sm text-gray-600"
 				>
 					<FormControl
@@ -1032,8 +1032,15 @@ export default {
 				]?.has_add_on_storage_support
 			);
 		},
-		selectedRegionInfo() {
-			return this.options?.regions.find((r) => r.name === this.serverRegion);
+		showUnifiedServerOption() {
+			return (
+				this.serverType === 'dedicated' &&
+				this.serverRegion &&
+				this.serverProvider &&
+				this.options.regions_data[this.serverRegion]?.providers[
+					this.serverProvider
+				]?.has_unified_server_support
+			);
 		},
 		_totalPerMonth() {
 			let currencyField =
