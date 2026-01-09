@@ -2747,34 +2747,6 @@ class Server(BaseServer):
 		self.save()
 
 	@frappe.whitelist()
-	def setup_fail2ban(self):
-		self.status = "Installing"
-		self.save()
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_fail2ban", queue="long", timeout=1200)
-
-	def _setup_fail2ban(self):
-		from press.press.doctype.monitor_server.monitor_server import get_monitor_server_ips
-
-		try:
-			ansible = Ansible(
-				playbook="fail2ban.yml",
-				server=self,
-				user=self._ssh_user(),
-				port=self._ssh_port(),
-				variables={"monitor_server_ips": " ".join(get_monitor_server_ips())},
-			)
-			play = ansible.run()
-			self.reload()
-			if play.status == "Success":
-				self.status = "Active"
-			else:
-				self.status = "Broken"
-		except Exception:
-			self.status = "Broken"
-			log_error("Fail2ban Setup Exception", server=self.as_dict())
-		self.save()
-
-	@frappe.whitelist()
 	def setup_pyspy(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_pyspy", queue="long")
 
