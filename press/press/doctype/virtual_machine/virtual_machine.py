@@ -38,6 +38,7 @@ from oci.core.models import (
 )
 from oci.exceptions import TransientServiceError
 
+from press.frappe_compute_client.client import FrappeComputeClient
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.utils import log_error
@@ -83,8 +84,8 @@ class VirtualMachine(Document):
 		)
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
-		availability_zone: DF.Data
-		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner"]
+		availability_zone: DF.Data | None
+		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner", "Frappe Compute"]
 		cluster: DF.Link
 		data_disk_snapshot: DF.Link | None
 		data_disk_snapshot_attached: DF.Check
@@ -97,6 +98,7 @@ class VirtualMachine(Document):
 		instance_id: DF.Data | None
 		is_static_ip: DF.Check
 		kms_key_id: DF.Data | None
+		mac_address_of_public_ip: DF.Data | None
 		machine_image: DF.Data | None
 		machine_type: DF.Data
 		platform: DF.Literal["x86_64", "arm64"]
@@ -106,12 +108,12 @@ class VirtualMachine(Document):
 		public_ip_address: DF.Data | None
 		ram: DF.Int
 		ready_for_conversion: DF.Check
-		region: DF.Link
+		region: DF.Link | None
 		root_disk_size: DF.Int
 		security_group_id: DF.Data | None
 		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "u", "t", "nfs", "fs"]
 		skip_automated_snapshot: DF.Check
-		ssh_key: DF.Link
+		ssh_key: DF.Link | None
 		status: DF.Literal["Draft", "Pending", "Running", "Stopped", "Terminated"]
 		subnet_cidr_block: DF.Data | None
 		subnet_id: DF.Data | None
@@ -407,7 +409,24 @@ class VirtualMachine(Document):
 			return self._provision_oci()
 		if self.cloud_provider == "Hetzner":
 			return self._provision_hetzner()
+		if self.cloud_provider == "Frappe Compute":
+			return self._provision_frappe_compute()
+
 		return None
+
+	def _provision_frappe_compute(self):
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		return self.client().create_vm(
+			self.name,
+			"Ubuntu 22.04",
+			1,
+			1,
+			cloud_init=self.get_cloud_init(),
+			mac_address=self.mac_address_of_public_ip,
+			ip_address=self.public_ip_address,
+			private_network=cluster.vpc_id,
+			ssh_key=frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
+		)
 
 	def _provision_hetzner(self):
 		from hcloud.firewalls.domain import Firewall
@@ -775,6 +794,10 @@ class VirtualMachine(Document):
 			)
 			if images and len(images) > 0:
 				return images[0].id
+		if self.cloud_provider == "Frappe Compute":
+			images = self.client().get_all_images()
+			if images:
+				return images[0]["id"]
 		return None
 
 	@frappe.whitelist()
@@ -785,6 +808,8 @@ class VirtualMachine(Document):
 			self.client().instance_action(instance_id=self.instance_id, action="RESET")
 		elif self.cloud_provider == "Hetzner":
 			self.client().servers.reboot(self.get_hetzner_server_instance(fetch_data=False))
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().reboot_vm(self.name)
 
 		if server := self.get_server():
 			log_server_activity(self.series, server.name, action="Reboot")
@@ -888,6 +913,8 @@ class VirtualMachine(Document):
 
 			return volumes
 
+		if self.cloud_provider == "Frappe Compute":
+			return self.client().get_volumes(self.name)
 		return None
 
 	def convert_to_gp3(self):
@@ -1139,6 +1166,7 @@ class VirtualMachine(Document):
 			"AWS EC2": lambda v: v.device == "/dev/sda1",
 			"OCI": lambda v: ".bootvolume." in v.volume_id,
 			"Hetzner": lambda v: v.device == "/dev/sda",
+			"Frappe Compute": lambda v: v.device == "/dev/vda",
 		}
 		root_volume_filter = ROOT_VOLUME_FILTERS.get(self.cloud_provider)
 		volume = find(self.volumes, root_volume_filter)
@@ -1392,6 +1420,9 @@ class VirtualMachine(Document):
 			self.client().instance_action(instance_id=self.instance_id, action="START")
 		elif self.cloud_provider == "Hetzner":
 			self.client().servers.power_on(self.get_hetzner_server_instance(fetch_data=False))
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().start_vm(self.name)
+
 		self.sync()
 
 	@frappe.whitelist()
@@ -1402,6 +1433,8 @@ class VirtualMachine(Document):
 			self.client().instance_action(instance_id=self.instance_id, action="STOP")
 		elif self.cloud_provider == "Hetzner":
 			self.client().servers.shutdown(self.get_hetzner_server_instance(fetch_data=False))
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().stop_vm(self.name)
 		self.sync()
 
 	@frappe.whitelist()
@@ -1432,6 +1465,9 @@ class VirtualMachine(Document):
 			self.client().servers.delete(
 				self.get_hetzner_server_instance(fetch_data=False)
 			).wait_until_finished(HETZNER_ACTION_RETRIES)
+
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().terminate_vm(self.name)
 
 		if server := self.get_server():
 			log_server_activity(self.series, server.name, action="Terminated")
@@ -1521,6 +1557,11 @@ class VirtualMachine(Document):
 		if self.cloud_provider == "Hetzner":
 			api_token = cluster.get_password("hetzner_api_token")
 			return HetznerClient(token=api_token)
+		if self.cloud_provider == "Frappe Compute":
+			settings = frappe.get_single("Press Settings")
+			orchestrator_base_url = settings.orchestrator_base_url
+			api_token = settings.get_password("compute_api_token")
+			return FrappeComputeClient(orchestrator_base_url, api_token)
 
 		return None
 
