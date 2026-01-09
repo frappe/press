@@ -599,7 +599,16 @@ def options():
 	regions = frappe.get_all(
 		"Cluster",
 		regions_filter,
-		["name", "title", "image", "beta", "has_add_on_storage_support", "cloud_provider", "public", "has_unified_server_support"],
+		[
+			"name",
+			"title",
+			"image",
+			"beta",
+			"has_add_on_storage_support",
+			"cloud_provider",
+			"public",
+			"has_unified_server_support",
+		],
 	)
 
 	for r in regions:
