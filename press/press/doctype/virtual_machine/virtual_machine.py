@@ -84,8 +84,8 @@ class VirtualMachine(Document):
 		)
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
-		availability_zone: DF.Data | None
-		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner", "Frappe Compute"]
+		availability_zone: DF.Data
+		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner"]
 		cluster: DF.Link
 		data_disk_snapshot: DF.Link | None
 		data_disk_snapshot_attached: DF.Check
@@ -98,7 +98,6 @@ class VirtualMachine(Document):
 		instance_id: DF.Data | None
 		is_static_ip: DF.Check
 		kms_key_id: DF.Data | None
-		mac_address_of_public_ip: DF.Data | None
 		machine_image: DF.Data | None
 		machine_type: DF.Data
 		platform: DF.Literal["x86_64", "arm64"]
@@ -108,12 +107,12 @@ class VirtualMachine(Document):
 		public_ip_address: DF.Data | None
 		ram: DF.Int
 		ready_for_conversion: DF.Check
-		region: DF.Link | None
+		region: DF.Link
 		root_disk_size: DF.Int
 		security_group_id: DF.Data | None
 		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "u", "t", "nfs", "fs"]
 		skip_automated_snapshot: DF.Check
-		ssh_key: DF.Link | None
+		ssh_key: DF.Link
 		status: DF.Literal["Draft", "Pending", "Running", "Stopped", "Terminated"]
 		subnet_cidr_block: DF.Data | None
 		subnet_id: DF.Data | None
@@ -1466,9 +1465,6 @@ class VirtualMachine(Document):
 				self.get_hetzner_server_instance(fetch_data=False)
 			).wait_until_finished(HETZNER_ACTION_RETRIES)
 
-		elif self.cloud_provider == "Frappe Compute":
-			self.client().terminate_vm(self.name)
-
 		if server := self.get_server():
 			log_server_activity(self.series, server.name, action="Terminated")
 
@@ -1567,10 +1563,14 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def create_unified_server(self) -> tuple[Server, DatabaseServer]:
-		"""Virtual machines of series U will create a f series app server and m series database server"""
+		"""Virtual machines of series U will create a u series app server and u series database server"""
+
+		if self.series != "u":
+			frappe.throw("Only virtual machines of series 'u' can create unified servers.")
+
 		server_document = {
 			"doctype": "Server",
-			"hostname": f"f{self.index}-{slug(self.cluster)}",
+			"hostname": f"u{self.index}-{slug(self.cluster)}",
 			"domain": self.domain,
 			"cluster": self.cluster,
 			"provider": self.cloud_provider,
@@ -1598,7 +1598,7 @@ class VirtualMachine(Document):
 
 		database_server_document = {
 			"doctype": "Database Server",
-			"hostname": f"m{self.index}-{slug(self.cluster)}",
+			"hostname": f"u{self.index}-{slug(self.cluster)}",
 			"domain": self.domain,
 			"cluster": self.cluster,
 			"provider": self.cloud_provider,
@@ -1659,7 +1659,9 @@ class VirtualMachine(Document):
 		else:
 			document["is_provisioning_press_job_completed"] = True
 
-		return frappe.get_doc(document).insert()
+		server = frappe.get_doc(document).insert()
+		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))
+		return server
 
 	@frappe.whitelist()
 	def create_database_server(self) -> DatabaseServer:
@@ -1695,7 +1697,9 @@ class VirtualMachine(Document):
 		else:
 			document["is_provisioning_press_job_completed"] = True
 
-		return frappe.get_doc(document).insert()
+		server = frappe.get_doc(document).insert()
+		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))
+		return server
 
 	def get_root_domains(self):
 		return frappe.get_all("Root Domain", {"enabled": True}, pluck="name")
@@ -1716,7 +1720,9 @@ class VirtualMachine(Document):
 			document["is_server_setup"] = True
 			document["is_primary"] = True
 
-		return frappe.get_doc(document).insert()
+		server = frappe.get_doc(document).insert()
+		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))
+		return server
 
 	@frappe.whitelist()
 	def create_monitor_server(self) -> MonitorServer:
@@ -1732,7 +1738,9 @@ class VirtualMachine(Document):
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
 
-		return frappe.get_doc(document).insert()
+		server = frappe.get_doc(document).insert()
+		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))
+		return server
 
 	@frappe.whitelist()
 	def create_log_server(self) -> LogServer:
@@ -1748,7 +1756,9 @@ class VirtualMachine(Document):
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
 
-		return frappe.get_doc(document).insert()
+		server = frappe.get_doc(document).insert()
+		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))
+		return server
 
 	@frappe.whitelist()
 	def create_registry_server(self):
@@ -1764,7 +1774,9 @@ class VirtualMachine(Document):
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
 
-		return frappe.get_doc(document).insert()
+		server = frappe.get_doc(document).insert()
+		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))
+		return server
 
 	def get_security_groups(self):
 		groups = [self.security_group_id]
@@ -1956,7 +1968,7 @@ class VirtualMachine(Document):
 
 	def bulk_sync_oci_cluster_in_batch(self, instances: list[frappe._dict]):
 		for instance in instances:
-			machine: VirtualMachine = frappe.get_doc("Virtual Machine", {"instance_id": instance.id})
+			machine: VirtualMachine = frappe.get_doc("Virtual Machine", {"instance_id": instance["id"]})
 			if has_job_timeout_exceeded():
 				return
 			try:
@@ -2211,6 +2223,37 @@ class VirtualMachine(Document):
 
 		if sync:
 			self.sync()
+
+	def detach_static_ip(self):
+		if self.cloud_provider != "AWS EC2" or not self.is_static_ip:
+			return
+
+		client = self.client()
+		response = client.describe_addresses(PublicIps=[self.public_ip_address])
+
+		address_info = response["Addresses"][0]
+		if "AssociationId" not in address_info:
+			return
+
+		client.disassociate_address(AssociationId=address_info["AssociationId"])
+		self.sync()
+
+	def attach_static_ip(self, static_ip):
+		if self.cloud_provider != "AWS EC2":
+			return
+
+		if self.is_static_ip:
+			frappe.throw("Virtual Machine already has a static IP associated.")
+
+		client = self.client()
+		response = client.describe_addresses(PublicIps=[static_ip])
+
+		address_info = response["Addresses"][0]
+		if "AssociationId" in address_info:
+			frappe.throw("Static IP is already associated with another instance.")
+
+		client.associate_address(AllocationId=address_info["AllocationId"], InstanceId=self.instance_id)
+		self.sync()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")
