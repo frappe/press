@@ -369,6 +369,7 @@ class BaseServer(Document, TagHelpers):
 		return frappe.db.get_all("Cluster", {"enable_autoscaling": 1}, pluck="name")
 
 	def get_actions(self):
+		print("GETTING ACTIONS")
 		server_type = ""
 		if self.doctype == "Server":
 			server_type = "application server"
@@ -391,7 +392,7 @@ class BaseServer(Document, TagHelpers):
 				"action": "Reboot server",
 				"description": f"Reboot the {server_type}",
 				"button_label": "Reboot",
-				"condition": self.status == "Active",
+				"condition": self.should_show_reboot(),
 				"doc_method": "reboot",
 				"group": f"{server_type.title()} Actions",
 			},
@@ -441,6 +442,15 @@ class BaseServer(Document, TagHelpers):
 			action["server_name"] = self.name
 
 		return [action for action in actions if action.get("condition", True)]
+
+	def should_show_reboot(self) -> bool:
+		if self.doctype == "Server":
+			return True
+
+		if self.doctype == "Database Server":
+			return bool(not getattr(self, "is_unified_server", False))
+
+		return False
 
 	def get_data_disk_size(self) -> int:
 		"""Get servers data disk size"""
