@@ -763,16 +763,16 @@
   },
   {
    "default": "0",
-<<<<<<< HEAD
-   "fieldname": "is_provisioning_press_job_completed",
-   "fieldtype": "Check",
-   "label": "Is Provisioning Job Completed"
-=======
    "description": "Checked when database server is hosted on the primary app server",
    "fieldname": "is_unified_server",
    "fieldtype": "Check",
    "label": "Is Unified Server"
->>>>>>> 89fe1d5cc (feat(unified-server): Support provisioning app + db server in a single (unified) vm)
+  },
+  {
+   "default": "0",
+   "fieldname": "is_provisioning_press_job_completed",
+   "fieldtype": "Check",
+   "label": "Is Provisioning Job Completed"
   }
  ],
  "grid_page_length": 50,
@@ -789,11 +789,7 @@
    "link_fieldname": "database_server"
   }
  ],
-<<<<<<< HEAD
  "modified": "2026-01-07 15:03:11.997980",
-=======
- "modified": "2026-01-08 09:16:11.801853",
->>>>>>> 89fe1d5cc (feat(unified-server): Support provisioning app + db server in a single (unified) vm)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
