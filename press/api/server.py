@@ -599,6 +599,7 @@ def options():
 	regions = frappe.get_all(
 		"Cluster",
 <<<<<<< HEAD
+<<<<<<< HEAD
 		regions_filter,
 		["name", "title", "image", "beta", "has_add_on_storage_support", "cloud_provider", "public"],
 =======
@@ -613,6 +614,10 @@ def options():
 			"has_unified_server_support",
 		],
 >>>>>>> 16300fee8 (feat(unified-server): Change layout of cheaper unified offering)
+=======
+		regions_filter,
+		["name", "title", "image", "beta", "has_add_on_storage_support", "cloud_provider", "public", "has_unified_server_support"],
+>>>>>>> 7c639c38e (fix(conflicts): Merge Conflicts)
 	)
 
 	for r in regions:
