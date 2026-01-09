@@ -370,12 +370,14 @@ class BaseServer(Document, TagHelpers):
 	def get_actions(self):
 		server_type = ""
 		if self.doctype == "Server":
-			server_type = "application server"
+			server_type = "application server" if not getattr(self, "is_unified_server", False) else "server"
 		elif self.doctype == "Database Server":
 			if self.is_replication_setup:
 				server_type = "replication server"
 			else:
-				server_type = "database server"
+				server_type = (
+					"database server" if not getattr(self, "is_unified_server", False) else "database"
+				)
 
 		actions = [
 			{
@@ -390,7 +392,7 @@ class BaseServer(Document, TagHelpers):
 				"action": "Reboot server",
 				"description": f"Reboot the {server_type}",
 				"button_label": "Reboot",
-				"condition": self.status == "Active",
+				"condition": self.should_show_reboot(),
 				"doc_method": "reboot",
 				"group": f"{server_type.title()} Actions",
 			},
@@ -427,7 +429,9 @@ class BaseServer(Document, TagHelpers):
 			},
 			{
 				"action": "Drop server",
-				"description": "Drop both the application and database servers",
+				"description": "Drop both the application and database servers"
+				if not getattr(self, "is_unified_server", False)
+				else "Drop the unifed server",
 				"button_label": "Drop",
 				"condition": self.status == "Active" and self.doctype == "Server",
 				"doc_method": "drop_server",
@@ -440,6 +444,15 @@ class BaseServer(Document, TagHelpers):
 			action["server_name"] = self.name
 
 		return [action for action in actions if action.get("condition", True)]
+
+	def should_show_reboot(self) -> bool:
+		if self.doctype == "Server":
+			return True
+
+		if self.doctype == "Database Server":
+			return bool(not getattr(self, "is_unified_server", False))
+
+		return False
 
 	def get_data_disk_size(self) -> int:
 		"""Get servers data disk size"""
@@ -2508,7 +2521,7 @@ class Server(BaseServer):
 				"description": "Manage notification channels",
 				"button_label": "Manage",
 				"doc_method": "dummy",
-				"group": "Application Server Actions",
+				"group": "Application Server Actions" if not self.is_unified_server else "Server Actions",
 				"server_doctype": "Server",
 				"server_name": self.name,
 			},

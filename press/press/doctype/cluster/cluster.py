@@ -1032,7 +1032,7 @@ class Cluster(Document):
 		)
 		server, database_server = vm.create_unified_server()
 
-		server.title = f"{title} - Application"
+		server.title = f"{title} - Unified"
 		database_server.title = f"{title} - Database"
 
 		# Common configurations
