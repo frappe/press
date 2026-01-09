@@ -88,6 +88,7 @@
   "razorpay_enabled",
   "servers_enabled",
   "code_servers_enabled",
+  "hybrid_servers_enabled",
   "self_hosted_servers_enabled",
   "security_portal_enabled",
   "benches_enabled",
@@ -638,6 +639,12 @@
    "fieldname": "company_name",
    "fieldtype": "Data",
    "label": "Company Name"
+  },
+  {
+   "default": "0",
+   "fieldname": "hybrid_servers_enabled",
+   "fieldtype": "Check",
+   "label": "Hybrid Servers Enabled"
   }
  ],
  "grid_page_length": 50,
@@ -703,7 +710,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2026-01-05 21:32:47.513245",
+ "modified": "2026-01-09 12:49:28.688740",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

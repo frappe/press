@@ -20,7 +20,7 @@
 
 	<div v-else-if="serverEnabled" class="mx-auto max-w-2xl px-5">
 		<div v-if="options" class="space-y-8 pb-[50vh] pt-12">
-			<div class="flex flex-col">
+			<div class="flex flex-col" v-if="$team.doc?.hybrid_servers_enabled">
 				<h2 class="text-sm font-medium leading-6 text-gray-900">
 					Choose Server Type
 				</h2>
@@ -49,9 +49,10 @@
 					</div>
 				</div>
 			</div>
+
 			<div v-if="serverType" class="flex flex-col">
 				<h2 class="text-sm font-medium leading-6 text-gray-900">
-					Enter Server Name
+					Enter Server Name<span class="text-red-500">&nbsp;*</span>
 				</h2>
 				<div class="mt-2">
 					<FormControl
@@ -155,7 +156,7 @@
 				</div>
 				<!-- Add a check if unified server plan is available here -->
 				<div
-					v-if="serverRegion && selectedRegionInfo?.has_unified_server_support"
+					v-if="showUnifiedServerOption"
 					class="flex items-center space-x-2 text-sm text-gray-600"
 				>
 					<FormControl
@@ -226,15 +227,40 @@
 						class="flex flex-col space-y-4"
 						v-if="availableAppPlanTypes.length"
 					>
-						<h2
-							v-if="!unifiedServer"
-							class="text-sm font-medium leading-6 text-gray-900"
-						>
-							Select Application Server Plan
-						</h2>
-						<h2 v-else class="text-sm font-medium leading-6 text-gray-900">
-							Select Unified Server Plan
-						</h2>
+						<div class="flex flex-row justify-between">
+							<h2
+								v-if="!unifiedServer"
+								class="text-sm font-medium leading-6 text-gray-900"
+							>
+								Select Application Server Plan
+							</h2>
+							<h2 v-else class="text-sm font-medium leading-6 text-gray-900">
+								Select Unified Server Plan
+							</h2>
+
+							<div v-if="!unifiedServer">
+								<Button
+									link="https://docs.frappe.io/cloud/servers/instance-types"
+									variant="ghost"
+								>
+									<template #prefix>
+										<lucide-help-circle class="h-4 w-4 text-gray-700" />
+									</template>
+									Learn About Instance Types
+								</Button>
+							</div>
+							<div v-else>
+								<Button
+									link="https://docs.frappe.io/cloud/servers/instance-types#unified-server"
+									variant="ghost"
+								>
+									<template #prefix>
+										<lucide-help-circle class="h-4 w-4 text-gray-700" />
+									</template>
+									Learn About Unified Server
+								</Button>
+							</div>
+						</div>
 
 						<!-- App Server Plan Type Selection -->
 						<div
@@ -310,9 +336,22 @@
 						class="flex flex-col space-y-4"
 						v-if="availableDbPlanTypes.length"
 					>
-						<h2 class="text-sm font-medium leading-6 text-gray-900">
-							Select Database Server Plan
-						</h2>
+						<div class="flex flex-row justify-between">
+							<h2 class="text-sm font-medium leading-6 text-gray-900">
+								Select Database Server Plan
+							</h2>
+							<div>
+								<Button
+									link="https://docs.frappe.io/cloud/servers/instance-types"
+									variant="ghost"
+								>
+									<template #prefix>
+										<lucide-help-circle class="h-4 w-4 text-gray-700" />
+									</template>
+									Learn About Instance Types
+								</Button>
+							</div>
+						</div>
 
 						<!-- DB Server Plan Type Selection -->
 						<div class="w-full" v-if="availableDbPlanTypes.length > 1">
@@ -599,7 +638,7 @@ export default {
 			dbServerPlan: '',
 			serverRegion: '',
 			serverProvider: '',
-			serverType: '',
+			serverType: 'dedicated',
 			appPublicIP: '',
 			appPrivateIP: '',
 			dbPublicIP: '',
@@ -658,18 +697,18 @@ export default {
 			this.dbServerPlan = '';
 		},
 		availableAppPlanTypes() {
-			// Auto-select if only one plan type is available
-			if (this.availableAppPlanTypes.length === 1) {
+			// Auto-select first plan type as default
+			if (this.availableAppPlanTypes.length > 0) {
 				this.appServerPlanType = this.availableAppPlanTypes[0].name;
-			} else if (this.availableAppPlanTypes.length === 0) {
+			} else {
 				this.appServerPlanType = '';
 			}
 		},
 		availableDbPlanTypes() {
-			// Auto-select if only one plan type is available
-			if (this.availableDbPlanTypes.length === 1) {
+			// Auto-select first plan type as default
+			if (this.availableDbPlanTypes.length > 0) {
 				this.dbServerPlanType = this.availableDbPlanTypes[0].name;
-			} else if (this.availableDbPlanTypes.length === 0) {
+			} else {
 				this.dbServerPlanType = '';
 			}
 		},
@@ -1031,8 +1070,15 @@ export default {
 				]?.has_add_on_storage_support
 			);
 		},
-		selectedRegionInfo() {
-			return this.options?.regions.find((r) => r.name === this.serverRegion);
+		showUnifiedServerOption() {
+			return (
+				this.serverType === 'dedicated' &&
+				this.serverRegion &&
+				this.serverProvider &&
+				this.options.regions_data[this.serverRegion]?.providers[
+					this.serverProvider
+				]?.has_unified_server_support
+			);
 		},
 		_totalPerMonth() {
 			let currencyField =
