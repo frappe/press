@@ -1566,7 +1566,7 @@ class VirtualMachine(Document):
 		"""Virtual machines of series U will create a f series app server and m series database server"""
 		server_document = {
 			"doctype": "Server",
-			"hostname": f"f{self.index}-{slug(self.cluster)}",
+			"hostname": f"u{self.index}-{slug(self.cluster)}",
 			"domain": self.domain,
 			"cluster": self.cluster,
 			"provider": self.cloud_provider,
@@ -1594,7 +1594,7 @@ class VirtualMachine(Document):
 
 		database_server_document = {
 			"doctype": "Database Server",
-			"hostname": f"m{self.index}-{slug(self.cluster)}",
+			"hostname": f"u{self.index}-{slug(self.cluster)}",
 			"domain": self.domain,
 			"cluster": self.cluster,
 			"provider": self.cloud_provider,
