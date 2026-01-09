@@ -74,6 +74,7 @@ class Team(Document):
 		free_account: DF.Check
 		free_credits_allocated: DF.Check
 		github_access_token: DF.Data | None
+		hybrid_servers_enabled: DF.Check
 		introduction: DF.SmallText | None
 		is_code_server_user: DF.Check
 		is_developer: DF.Check
@@ -146,6 +147,7 @@ class Team(Document):
 		"receive_budget_alerts",
 		"monthly_alert_threshold",
 		"company_name",
+		"hybrid_servers_enabled",
 	)
 
 	def get_doc(self, doc):
