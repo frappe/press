@@ -73,6 +73,7 @@
 							<Button
 								link="https://docs.frappe.io/cloud/servers/provider-comparision"
 								variant="ghost"
+								size="sm"
 							>
 								<template #prefix>
 									<lucide-help-circle class="h-4 w-4 text-gray-700" />
@@ -242,6 +243,7 @@
 								<Button
 									link="https://docs.frappe.io/cloud/servers/instance-types"
 									variant="ghost"
+									size="sm"
 								>
 									<template #prefix>
 										<lucide-help-circle class="h-4 w-4 text-gray-700" />
@@ -253,6 +255,7 @@
 								<Button
 									link="https://docs.frappe.io/cloud/servers/instance-types#unified-server"
 									variant="ghost"
+									size="sm"
 								>
 									<template #prefix>
 										<lucide-help-circle class="h-4 w-4 text-gray-700" />
@@ -344,6 +347,7 @@
 								<Button
 									link="https://docs.frappe.io/cloud/servers/instance-types"
 									variant="ghost"
+									size="sm"
 								>
 									<template #prefix>
 										<lucide-help-circle class="h-4 w-4 text-gray-700" />
