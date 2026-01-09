@@ -1548,6 +1548,79 @@ class VirtualMachine(Document):
 		return None
 
 	@frappe.whitelist()
+<<<<<<< HEAD
+=======
+	def create_unified_server(self) -> tuple[Server, DatabaseServer]:
+		"""Virtual machines of series U will create a f series app server and m series database server"""
+		server_document = {
+			"doctype": "Server",
+			"hostname": f"u{self.index}-{slug(self.cluster)}",
+			"domain": self.domain,
+			"cluster": self.cluster,
+			"provider": self.cloud_provider,
+			"virtual_machine": self.name,
+			"team": self.team,
+			"is_primary": True,
+			"platform": self.platform,
+			"is_unified_server": True,
+		}
+
+		if self.virtual_machine_image:
+			server_document["is_server_prepared"] = True
+			server_document["is_server_setup"] = True
+			server_document["is_server_renamed"] = True
+			server_document["is_upstream_setup"] = True
+
+		else:
+			server_document["is_provisioning_press_job_completed"] = True
+
+		common_agent_password = frappe.generate_hash(length=32)
+
+		server = frappe.get_doc(server_document)
+		server.agent_password = common_agent_password
+		server = server.insert()
+
+		database_server_document = {
+			"doctype": "Database Server",
+			"hostname": f"u{self.index}-{slug(self.cluster)}",
+			"domain": self.domain,
+			"cluster": self.cluster,
+			"provider": self.cloud_provider,
+			"virtual_machine": self.name,
+			"server_id": self.index,
+			"is_primary": True,
+			"team": self.team,
+			"is_unified_server": True,
+		}
+
+		if self.virtual_machine_image:
+			database_server_document["is_server_prepared"] = True
+			database_server_document["is_server_setup"] = True
+			database_server_document["is_server_renamed"] = True
+			if self.data_disk_snapshot:
+				database_server_document["mariadb_root_password"] = get_decrypted_password(
+					"Virtual Disk Snapshot", self.data_disk_snapshot, "mariadb_root_password"
+				)
+			else:
+				database_server_document["mariadb_root_password"] = get_decrypted_password(
+					"Virtual Machine Image", self.virtual_machine_image, "mariadb_root_password"
+				)
+
+			if not database_server_document["mariadb_root_password"]:
+				frappe.throw(
+					f"Virtual Machine Image {self.virtual_machine_image} does not have a MariaDB root password set."
+				)
+		else:
+			database_server_document["is_provisioning_press_job_completed"] = True
+
+		database_server = frappe.get_doc(database_server_document)
+		database_server.agent_password = common_agent_password
+		database_server = database_server.insert()
+
+		return server, database_server
+
+	@frappe.whitelist()
+>>>>>>> 6f8859da5 (fix(unified-server): Create corresponding server and database names)
 	def create_server(self, is_secondary: bool = False, primary: str | None = None) -> Server:
 		document = {
 			"doctype": "Server",
