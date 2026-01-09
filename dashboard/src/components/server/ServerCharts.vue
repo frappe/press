@@ -2,6 +2,16 @@
 	<div class="space-y-4">
 		<div class="flex space-x-2">
 			<FormControl
+				v-if="serverOptions.length === 1"
+				label="Server"
+				class="w-50"
+				type="text"
+				:value="serverOptions[0].label"
+				:readonly="true"
+				v-model="chosenServer"
+			/>
+			<FormControl
+				v-else
 				class="w-50"
 				label="Server"
 				type="select"
@@ -17,7 +27,7 @@
 			/>
 		</div>
 		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-			<AnalyticsCard title="Uptime" v-if="!isServerType('Application Server')">
+			<AnalyticsCard title="Uptime" v-if="isServerType('Database Server')">
 				<LineChart
 					type="time"
 					title="Uptime"
@@ -223,7 +233,7 @@
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard title="Queries" v-if="!isServerType('Application Server')">
+			<AnalyticsCard title="Queries" v-if="isServerType('Database Server')">
 				<LineChart
 					type="time"
 					title="Queries"
@@ -249,7 +259,7 @@
 
 			<AnalyticsCard
 				title="DB Connections"
-				v-if="!isServerType('Application Server')"
+				v-if="isServerType('Database Server')"
 			>
 				<LineChart
 					type="time"
@@ -270,7 +280,7 @@
 
 			<AnalyticsCard
 				title="Average Row Lock Time"
-				v-if="!isServerType('Application Server')"
+				v-if="isServerType('Database Server')"
 			>
 				<LineChart
 					type="time"
@@ -288,7 +298,7 @@
 
 			<AnalyticsCard
 				title="Buffer Pool Size"
-				v-if="!isServerType('Application Server')"
+				v-if="isServerType('Database Server')"
 			>
 				<LineChart
 					type="time"
@@ -306,7 +316,7 @@
 
 			<AnalyticsCard
 				title="Buffer Pool Size of Total Ram"
-				v-if="!isServerType('Application Server')"
+				v-if="isServerType('Database Server')"
 			>
 				<LineChart
 					type="time"
@@ -335,7 +345,7 @@
 
 			<AnalyticsCard
 				title="Buffer Pool Miss Percent"
-				v-if="!isServerType('Application Server')"
+				v-if="isServerType('Database Server')"
 			>
 				<LineChart
 					type="time"
@@ -363,7 +373,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
-				v-if="!isServerType('Application Server')"
+				v-if="isServerType('Database Server')"
 				class="sm:col-span-2"
 				title="Frequent Slow queries"
 			>
@@ -387,7 +397,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
-				v-if="!isServerType('Application Server')"
+				v-if="isServerType('Database Server')"
 				class="sm:col-span-2"
 				title="Slowest queries"
 			>
@@ -752,7 +762,9 @@ export default {
 		serverOptions() {
 			return [
 				{
-					label: 'Application Server',
+					label: this.$server.doc.is_unified_server
+						? 'Unified Server'
+						: 'Application Server',
 					value: this.$server.doc.name,
 				},
 				{
@@ -883,7 +895,7 @@ export default {
 		},
 		innodbBufferPoolSizeOfTotalRamData() {
 			let data = this.$resources.innodbBufferPoolSizeOfTotalRam.data;
-			if (!data) return;
+			if (!data || (data.datasets && data.datasets.length === 0)) return;
 			let payload = this.transformSingleLineChartData(data, true);
 			payload['markLine'] = {
 				data: [
@@ -916,7 +928,8 @@ export default {
 		},
 		innodbBufferPoolMissPercentageData() {
 			let data = this.$resources.innodbBufferPoolMissPercentage.data;
-			if (!data) return;
+			if (!data || (data.datasets && data.datasets.length === 0)) return;
+
 			let payload = this.transformSingleLineChartData(data, false);
 			payload['markLine'] = {
 				data: [
@@ -988,6 +1001,10 @@ export default {
 			return { datasets, yMax: percentage ? 100 : null };
 		},
 		isServerType(type) {
+			// Show all analytics for Unified Server
+			if (this.$server.doc.is_unified_server) {
+				type = 'Unified Server';
+			}
 			return (
 				this.chosenServer ===
 				this.serverOptions.find((s) => s.label === type)?.value

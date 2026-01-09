@@ -332,7 +332,9 @@ function onDropServer() {
 
 	confirmDialog({
 		title: 'Drop Server',
-		message: `<div class="prose text-base">Are you sure you want to drop your servers?<br><br>Following servers will be dropped<ul><li>${server.doc.title} (<b>${server.doc.name}</b>)</li><li>${databaseServer.doc.title} (<b>${server.doc.database_server}</b>)</li></ul><br>This action cannot be undone.</div>`,
+		message: server.doc.is_unified_server
+			? `<div class="prose text-base">Are you sure you want to drop your unified server?<br><br>The following server will be dropped<ul><li>${server.doc.title} (<b>${server.doc.name}</b>)</li></ul><br>This action cannot be undone.</div>`
+			: `<div class="prose text-base">Are you sure you want to drop your servers?<br><br>Following servers will be dropped<ul><li>${server.doc.title} (<b>${server.doc.name}</b>)</li><li>${databaseServer.doc.title} (<b>${server.doc.database_server}</b>)</li></ul><br>This action cannot be undone.</div>`,
 		fields: [
 			{
 				label: "Please type either server's name or title to confirm",
