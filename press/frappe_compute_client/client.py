@@ -22,6 +22,7 @@ class FrappeComputeClient:
 		mac_address: str,
 		ip_address: str,
 		private_network: str,
+		ssh_key: str,
 	):
 		url = urljoin(
 			self.base_url, "/api/method/agent.agent.doctype.virtual_machine.virtual_machine.new_vm_from_image"
@@ -36,6 +37,7 @@ class FrappeComputeClient:
 			"mac_address": mac_address,
 			"ip_address": ip_address,
 			"private_network": private_network,
+			"ssh_key": ssh_key,
 		}
 
 		response = self._send_request(url, "POST", params)
