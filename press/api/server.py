@@ -222,10 +222,10 @@ def new_unified(server: UnifiedServerDetails):
 	)[0]
 
 	cluster.proxy_server = proxy_server.get("name")
-	server, database_server, job = cluster.create_unified_server(
+	server_doc, database_server_doc, job = cluster.create_unified_server(
 		server["title"], app_plan, team=team.name, auto_increase_storage=auto_increase_storage
 	)
-	return {"server": server.name, "database_server": database_server.name, "job": job.name}
+	return {"server": server_doc.name, "database_server": database_server_doc.name, "job": job.name}
 
 
 @frappe.whitelist()
@@ -427,6 +427,8 @@ def calculate_swap(name):
 @protected(["Server", "Database Server"])
 @redis_cache(ttl=10 * 60)
 def analytics(name, query, timezone, duration, server_type=None):
+	# If the server type is of unified server, then just show server's metrics as application server
+	server_type = "Application Server" if server_type == "Unified Server" else server_type
 	mount_point = get_mount_point(name, server_type)
 	timespan, timegrain = get_timespan_timegrain(duration)
 
