@@ -18,7 +18,7 @@
 				<!-- Select Apps Step -->
 				<div v-if="step === 'select-apps'">
 					<h2 class="mb-4 text-lg font-medium">
-						{{ lastDeploy ? 'Select apps to update' : 'Select apps to deploy' }}
+						{{ lastDeploy ? 'Select apps to update' : 'Deploy Apps' }}
 					</h2>
 					<GenericList
 						class="max-h-[500px]"
