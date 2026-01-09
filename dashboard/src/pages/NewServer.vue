@@ -155,10 +155,7 @@
 				</div>
 				<!-- Add a check if unified server plan is available here -->
 				<div
-					v-if="
-						serverProvider &&
-						providers[serverProvider].has_unified_server_support
-					"
+					v-if="serverRegion && selectedRegionInfo?.has_unified_server_support"
 					class="flex items-center space-x-2 text-sm text-gray-600"
 				>
 					<FormControl
@@ -167,7 +164,6 @@
 						label="Create a cheaper unified server with both App and DB in a single machine."
 					/>
 				</div>
-
 				<!-- Chose Plan Type -->
 				<!-- Choose Service Type (Premium/Standard) -->
 				<div
