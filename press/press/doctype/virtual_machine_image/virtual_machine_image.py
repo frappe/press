@@ -47,7 +47,7 @@ class VirtualMachineImage(Document):
 		public: DF.Check
 		region: DF.Link
 		root_size: DF.Int
-		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "nfs", "fs"]
+		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "nfs", "fs", "u"]
 		size: DF.Int
 		snapshot_id: DF.Data | None
 		status: DF.Literal["Pending", "Available", "Unavailable"]
@@ -129,7 +129,9 @@ class VirtualMachineImage(Document):
 		self.sync()
 
 	def set_credentials(self):
-		if self.series == "m" and frappe.db.exists("Database Server", self.virtual_machine):
+		if (self.series == "m" or self.series == "u") and frappe.db.exists(
+			"Database Server", self.virtual_machine
+		):
 			self.mariadb_root_password = frappe.get_doc("Database Server", self.virtual_machine).get_password(
 				"mariadb_root_password"
 			)

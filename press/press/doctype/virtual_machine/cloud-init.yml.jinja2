@@ -56,7 +56,7 @@ write_files:
     TrustedUserCAKeys /etc/ssh/ca.pub
     AuthorizedPrincipalsFile /etc/ssh/auth_principals/%u
 
-{% if server.doctype == 'Database Server' %}
+{% if server.doctype == 'Database Server' or is_unified_server %}
 - path: /etc/mysql/conf.d/frappe.cnf
   content: |
     {{ mariadb_config | indent(4) }}

@@ -12,6 +12,7 @@
   "domain",
   "self_hosted_server_domain",
   "tls_certificate_renewal_failed",
+  "is_unified_server",
   "column_break_4",
   "cluster",
   "provider",
@@ -727,6 +728,13 @@
   {
    "fieldname": "column_break_ywnx",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Checked if database and app are hosted on the server server",
+   "fieldname": "is_unified_server",
+   "fieldtype": "Check",
+   "label": "Is Unified Server"
   },
   {
    "default": "0",

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 from datetime import timezone as tz
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 import frappe
 import requests
@@ -30,6 +30,13 @@ if TYPE_CHECKING:
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.server_plan.server_plan import ServerPlan
+
+
+class UnifiedServerDetails(TypedDict):
+	title: str
+	cluster: str
+	app_plan: str
+	auto_increase_storage: bool | None
 
 
 def poly_get_doc(doctypes, name):
@@ -190,6 +197,35 @@ def archive(name):
 def get_reclaimable_size(name):
 	server: Server = frappe.get_doc("Server", name)
 	return server.agent.get("server/reclaimable-size")
+
+
+@frappe.whitelist()
+def new_unified(server: UnifiedServerDetails):
+	team = get_current_team(get_doc=True)
+	if not team.enabled:
+		frappe.throw("You cannot create a new server because your account is disabled")
+
+	cluster: Cluster = frappe.get_doc("Cluster", server["cluster"])
+
+	app_plan: ServerPlan = frappe.get_doc("Server Plan", server["app_plan"])
+	if not cluster.check_machine_availability(app_plan.instance_type):
+		frappe.throw(
+			f"No machines of {app_plan.instance_type} are currently available in the {cluster.name} region"
+		)
+
+	auto_increase_storage = server.get("auto_increase_storage", False)
+
+	proxy_server = frappe.get_all(
+		"Proxy Server",
+		{"status": "Active", "cluster": cluster.name, "is_primary": True},
+		limit=1,
+	)[0]
+
+	cluster.proxy_server = proxy_server.get("name")
+	server, database_server, job = cluster.create_unified_server(
+		server["title"], app_plan, team=team.name, auto_increase_storage=auto_increase_storage
+	)
+	return {"server": server.name, "database_server": database_server.name, "job": job.name}
 
 
 @frappe.whitelist()
@@ -563,7 +599,16 @@ def options():
 	regions = frappe.get_all(
 		"Cluster",
 		regions_filter,
-		["name", "title", "image", "beta", "has_add_on_storage_support", "cloud_provider", "public"],
+		[
+			"name",
+			"title",
+			"image",
+			"beta",
+			"has_add_on_storage_support",
+			"cloud_provider",
+			"public",
+			"has_unified_server_support",
+		],
 	)
 
 	for r in regions:
@@ -581,6 +626,7 @@ def options():
 					"title": "Amazon Web Services",
 					"provider_image": "...",
 					"has_add_on_storage_support": 1,
+					"has_unified_server_support": 1,
 				},
 			}
 		}
@@ -599,6 +645,7 @@ def options():
 			"provider_image": cloud_providers[provider]["image"],
 			"beta": region.get("beta", 0),
 			"has_add_on_storage_support": region.get("has_add_on_storage_support", 0),
+			"has_unified_server_support": region.get("has_unified_server_support", 0),
 		}
 
 	default_server_plan_type = frappe.db.get_single_value("Press Settings", "default_server_plan_type")

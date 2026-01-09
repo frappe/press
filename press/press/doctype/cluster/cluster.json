@@ -20,6 +20,7 @@
   "has_arm_support",
   "has_add_on_storage_support",
   "enable_autoscaling",
+  "has_unified_server_support",
   "billing_section",
   "team",
   "provisioning_section",
@@ -325,6 +326,14 @@
    "label": "Enable Autoscaling"
   },
   {
+   "default": "0",
+   "description": "Has unified server support",
+   "fieldname": "has_unified_server_support",
+   "fieldtype": "Check",
+   "label": "Has Unified Server Support"
+  },
+  {
+   "default": "0",
    "collapsible": 1,
    "depends_on": "eval: doc.cloud_provider == \"Hetzner\"",
    "fieldname": "hetzner_section",

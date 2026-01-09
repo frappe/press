@@ -84,8 +84,8 @@ class VirtualMachine(Document):
 		)
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
-		availability_zone: DF.Data | None
-		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner", "Frappe Compute"]
+		availability_zone: DF.Data
+		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner"]
 		cluster: DF.Link
 		data_disk_snapshot: DF.Link | None
 		data_disk_snapshot_attached: DF.Check
@@ -98,7 +98,6 @@ class VirtualMachine(Document):
 		instance_id: DF.Data | None
 		is_static_ip: DF.Check
 		kms_key_id: DF.Data | None
-		mac_address_of_public_ip: DF.Data | None
 		machine_image: DF.Data | None
 		machine_type: DF.Data
 		platform: DF.Literal["x86_64", "arm64"]
@@ -108,12 +107,12 @@ class VirtualMachine(Document):
 		public_ip_address: DF.Data | None
 		ram: DF.Int
 		ready_for_conversion: DF.Check
-		region: DF.Link | None
+		region: DF.Link
 		root_disk_size: DF.Int
 		security_group_id: DF.Data | None
-		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "t", "nfs", "fs"]
+		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "u", "t", "nfs", "fs"]
 		skip_automated_snapshot: DF.Check
-		ssh_key: DF.Link | None
+		ssh_key: DF.Link
 		status: DF.Literal["Draft", "Pending", "Running", "Stopped", "Terminated"]
 		subnet_cidr_block: DF.Data | None
 		subnet_id: DF.Data | None
@@ -173,7 +172,7 @@ class VirtualMachine(Document):
 		index = self.index + 356
 		if self.series == "n":
 			return str(ip + index)
-		offset = ["f", "m", "c", "p", "e", "r", "t", "nfs", "fs"].index(self.series)
+		offset = ["n", "f", "m", "c", "p", "e", "r", "u", "t", "nfs", "fs"].index(self.series)
 		return str(ip + 256 * (2 * (index // 256) + offset) + (index % 256))
 
 	def validate(self):
@@ -632,6 +631,29 @@ class VirtualMachine(Document):
 		self.status = self.get_oci_status_map()[instance.lifecycle_state]
 		self.save()
 
+	def get_mariadb_context(
+		self, server: Server | DatabaseServer, memory: int
+	) -> dict[str, str | int] | None:
+		if server.doctype == "Database Server":
+			return {
+				"server_id": server.server_id,
+				"private_ip": self.private_ip_address,
+				"ansible_memtotal_mb": memory,
+				"mariadb_root_password": server.get_password("mariadb_root_password"),
+				"db_port": server.db_port or 3306,
+			}
+		if server.doctype == "Server" and server.is_unified_server:
+			database_server: DatabaseServer = frappe.get_doc("Database Server", server.database_server)
+			return {
+				"server_id": database_server.server_id,
+				"private_ip": self.private_ip_address,
+				"ansible_memtotal_mb": memory,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+				"db_port": database_server.db_port or 3306,
+			}
+
+		return None
+
 	def get_cloud_init(self):
 		server = self.get_server()
 		if not server:
@@ -659,18 +681,14 @@ class VirtualMachine(Document):
 				},
 				is_path=True,
 			),
+			"is_unified_server": getattr(server, "is_unified_server", False),
 		}
-		if server.doctype == "Database Server":
+		if server.doctype == "Database Server" or getattr(server, "is_unified_server", False):
 			memory = frappe.db.get_value("Server Plan", server.plan, "memory") or 1024
 			if memory < 1024:
 				frappe.throw("MariaDB cannot be installed on a server plan with less than 1GB RAM.")
-			mariadb_context = {
-				"server_id": server.server_id,
-				"private_ip": self.private_ip_address,
-				"ansible_memtotal_mb": memory,
-				"mariadb_root_password": server.get_password("mariadb_root_password"),
-				"db_port": server.db_port or 3306,
-			}
+
+			mariadb_context = self.get_mariadb_context(server, memory)
 
 			context.update(
 				{
@@ -702,7 +720,6 @@ class VirtualMachine(Document):
 					),
 				}
 			)
-
 		return frappe.render_template(cloud_init_template, context, is_path=True)
 
 	def get_server(self):
@@ -1543,6 +1560,76 @@ class VirtualMachine(Document):
 			return FrappeComputeClient(orchestrator_base_url, api_token)
 
 		return None
+
+	@frappe.whitelist()
+	def create_unified_server(self) -> tuple[Server, DatabaseServer]:
+		"""Virtual machines of series U will create a f series app server and m series database server"""
+		server_document = {
+			"doctype": "Server",
+			"hostname": f"f{self.index}-{slug(self.cluster)}",
+			"domain": self.domain,
+			"cluster": self.cluster,
+			"provider": self.cloud_provider,
+			"virtual_machine": self.name,
+			"team": self.team,
+			"is_primary": True,
+			"platform": self.platform,
+			"is_unified_server": True,
+		}
+
+		if self.virtual_machine_image:
+			server_document["is_server_prepared"] = True
+			server_document["is_server_setup"] = True
+			server_document["is_server_renamed"] = True
+			server_document["is_upstream_setup"] = True
+
+		else:
+			server_document["is_provisioning_press_job_completed"] = True
+
+		common_agent_password = frappe.generate_hash(length=32)
+
+		server = frappe.get_doc(server_document)
+		server.agent_password = common_agent_password
+		server = server.insert()
+
+		database_server_document = {
+			"doctype": "Database Server",
+			"hostname": f"m{self.index}-{slug(self.cluster)}",
+			"domain": self.domain,
+			"cluster": self.cluster,
+			"provider": self.cloud_provider,
+			"virtual_machine": self.name,
+			"server_id": self.index,
+			"is_primary": True,
+			"team": self.team,
+			"is_unified_server": True,
+		}
+
+		if self.virtual_machine_image:
+			database_server_document["is_server_prepared"] = True
+			database_server_document["is_server_setup"] = True
+			database_server_document["is_server_renamed"] = True
+			if self.data_disk_snapshot:
+				database_server_document["mariadb_root_password"] = get_decrypted_password(
+					"Virtual Disk Snapshot", self.data_disk_snapshot, "mariadb_root_password"
+				)
+			else:
+				database_server_document["mariadb_root_password"] = get_decrypted_password(
+					"Virtual Machine Image", self.virtual_machine_image, "mariadb_root_password"
+				)
+
+			if not database_server_document["mariadb_root_password"]:
+				frappe.throw(
+					f"Virtual Machine Image {self.virtual_machine_image} does not have a MariaDB root password set."
+				)
+		else:
+			database_server_document["is_provisioning_press_job_completed"] = True
+
+		database_server = frappe.get_doc(database_server_document)
+		database_server.agent_password = common_agent_password
+		database_server = database_server.insert()
+
+		return server, database_server
 
 	@frappe.whitelist()
 	def create_server(self, is_secondary: bool = False, primary: str | None = None) -> Server:
