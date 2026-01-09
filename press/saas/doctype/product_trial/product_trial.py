@@ -439,7 +439,7 @@ def create_free_app_subscription(app: str, site: str | None = None):
 
 	team = get_current_team()
 
-	# Skip subscription for app authors - they shouldn't be charged for their own app
+	# Skip creating subscription for app authors
 	app_author_team = frappe.db.get_value("Marketplace App", {"app": app}, "team")
 	if app_author_team == team:
 		return None
