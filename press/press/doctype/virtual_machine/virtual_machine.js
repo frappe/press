@@ -37,12 +37,17 @@ frappe.ui.form.on('Virtual Machine', {
 				true,
 				frm.doc.status == 'Running',
 			],
-			[__('Create Server'), 'create_server', true, frm.doc.series === 'f'],
+			[
+				__('Create Server'),
+				'create_server',
+				true,
+				frm.doc.series === 'f' || frm.doc.series === 'u',
+			],
 			[
 				__('Create Database Server'),
 				'create_database_server',
 				false,
-				frm.doc.series === 'm',
+				frm.doc.series === 'm' || frm.doc.series === 'u',
 			],
 			[
 				__('Create Proxy Server'),

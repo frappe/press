@@ -1563,10 +1563,14 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def create_unified_server(self) -> tuple[Server, DatabaseServer]:
-		"""Virtual machines of series U will create a f series app server and m series database server"""
+		"""Virtual machines of series U will create a u series app server and u series database server"""
+
+		if self.series != "u":
+			frappe.throw("Only virtual machines of series 'u' can create unified servers.")
+
 		server_document = {
 			"doctype": "Server",
-			"hostname": f"f{self.index}-{slug(self.cluster)}",
+			"hostname": f"u{self.index}-{slug(self.cluster)}",
 			"domain": self.domain,
 			"cluster": self.cluster,
 			"provider": self.cloud_provider,
@@ -1594,7 +1598,7 @@ class VirtualMachine(Document):
 
 		database_server_document = {
 			"doctype": "Database Server",
-			"hostname": f"m{self.index}-{slug(self.cluster)}",
+			"hostname": f"u{self.index}-{slug(self.cluster)}",
 			"domain": self.domain,
 			"cluster": self.cluster,
 			"provider": self.cloud_provider,
