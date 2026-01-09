@@ -303,6 +303,7 @@ class DatabaseServer(BaseServer):
 		server_actions = super().get_actions()
 
 		if self.is_unified_server:
+			# Remove rename from database actions section for unified servers
 			server_actions = list(
 				filter(lambda action: action.get("action") != "Rename server", server_actions)
 			)
