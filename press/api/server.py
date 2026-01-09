@@ -616,8 +616,21 @@ def options():
 >>>>>>> 16300fee8 (feat(unified-server): Change layout of cheaper unified offering)
 =======
 		regions_filter,
+<<<<<<< HEAD
 		["name", "title", "image", "beta", "has_add_on_storage_support", "cloud_provider", "public", "has_unified_server_support"],
 >>>>>>> 7c639c38e (fix(conflicts): Merge Conflicts)
+=======
+		[
+			"name",
+			"title",
+			"image",
+			"beta",
+			"has_add_on_storage_support",
+			"cloud_provider",
+			"public",
+			"has_unified_server_support",
+		],
+>>>>>>> 6d2112da8 (fix(conflicts): Merge Conflicts - 2)
 	)
 
 	for r in regions:
