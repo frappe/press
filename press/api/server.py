@@ -579,7 +579,6 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 
 	return {"datasets": datasets, "labels": labels}
 
-
 @frappe.whitelist()
 def options():
 	if not get_current_team(get_doc=True).servers_enabled:
@@ -598,28 +597,7 @@ def options():
 
 	regions = frappe.get_all(
 		"Cluster",
-<<<<<<< HEAD
-<<<<<<< HEAD
 		regions_filter,
-		["name", "title", "image", "beta", "has_add_on_storage_support", "cloud_provider", "public"],
-=======
-		{"cloud_provider": ("!=", "Generic"), "public": True},
-		[
-			"name",
-			"title",
-			"image",
-			"beta",
-			"has_add_on_storage_support",
-			"cloud_provider",
-			"has_unified_server_support",
-		],
->>>>>>> 16300fee8 (feat(unified-server): Change layout of cheaper unified offering)
-=======
-		regions_filter,
-<<<<<<< HEAD
-		["name", "title", "image", "beta", "has_add_on_storage_support", "cloud_provider", "public", "has_unified_server_support"],
->>>>>>> 7c639c38e (fix(conflicts): Merge Conflicts)
-=======
 		[
 			"name",
 			"title",
@@ -630,7 +608,6 @@ def options():
 			"public",
 			"has_unified_server_support",
 		],
->>>>>>> 6d2112da8 (fix(conflicts): Merge Conflicts - 2)
 	)
 
 	for r in regions:
@@ -695,7 +672,6 @@ def options():
 		"storage_plan": storage_plan,
 		"snapshot_plan": snapshot_plan,
 	}
-
 
 @frappe.whitelist()
 def get_autoscale_discount():
