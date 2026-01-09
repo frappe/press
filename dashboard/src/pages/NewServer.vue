@@ -1,5 +1,5 @@
 <template>
-	<div class="sticky top-0 z-10 shrink-0">
+	<div class="sticky top-0 shrink-0">
 		<Header>
 			<Breadcrumbs
 				:items="[
@@ -73,6 +73,7 @@
 							<Button
 								link="https://docs.frappe.io/cloud/servers/provider-comparision"
 								variant="ghost"
+								size="sm"
 							>
 								<template #prefix>
 									<lucide-help-circle class="h-4 w-4 text-gray-700" />
@@ -154,8 +155,6 @@
 						</div>
 					</div>
 				</div>
-<<<<<<< HEAD
-=======
 				<!-- Add a check if unified server plan is available here -->
 				<div
 					v-if="showUnifiedServerOption"
@@ -167,7 +166,6 @@
 						label="Create a cheaper unified server with both App and DB in a single machine."
 					/>
 				</div>
->>>>>>> 2fde6d7f4 (refactor(server): Use regions_data for finding selected region flags)
 				<!-- Chose Plan Type -->
 				<!-- Choose Service Type (Premium/Standard) -->
 				<div
@@ -230,11 +228,6 @@
 						class="flex flex-col space-y-4"
 						v-if="availableAppPlanTypes.length"
 					>
-<<<<<<< HEAD
-						<h2 class="text-sm font-medium leading-6 text-gray-900">
-							Select Application Server Plan
-						</h2>
-=======
 						<div class="flex flex-row justify-between">
 							<h2
 								v-if="!unifiedServer"
@@ -250,6 +243,7 @@
 								<Button
 									link="https://docs.frappe.io/cloud/servers/instance-types"
 									variant="ghost"
+									size="sm"
 								>
 									<template #prefix>
 										<lucide-help-circle class="h-4 w-4 text-gray-700" />
@@ -261,6 +255,7 @@
 								<Button
 									link="https://docs.frappe.io/cloud/servers/instance-types#unified-server"
 									variant="ghost"
+									size="sm"
 								>
 									<template #prefix>
 										<lucide-help-circle class="h-4 w-4 text-gray-700" />
@@ -269,7 +264,6 @@
 								</Button>
 							</div>
 						</div>
->>>>>>> ec29b904f (refactor(server): Add link to instance type and unified server docs)
 
 						<!-- App Server Plan Type Selection -->
 						<div
@@ -336,7 +330,11 @@
 					</div>
 				</div>
 				<!-- Choose Database Server Plan -->
-				<div v-if="serverRegion && serverProvider && selectedCluster">
+				<div
+					v-if="
+						serverRegion && serverProvider && selectedCluster && !unifiedServer
+					"
+				>
 					<div
 						class="flex flex-col space-y-4"
 						v-if="availableDbPlanTypes.length"
@@ -349,6 +347,7 @@
 								<Button
 									link="https://docs.frappe.io/cloud/servers/instance-types"
 									variant="ghost"
+									size="sm"
 								>
 									<template #prefix>
 										<lucide-help-circle class="h-4 w-4 text-gray-700" />
@@ -520,7 +519,7 @@
 				:options="summaryOptions"
 				v-if="
 					serverTitle &&
-					((serverRegion && dbServerPlan && appServerPlan) ||
+					((serverRegion && (dbServerPlan || unifiedServer) && appServerPlan) ||
 						(appPublicIP && appPrivateIP && dbPublicIP && dbPrivateIP))
 				"
 			/>
@@ -528,7 +527,7 @@
 				class="flex flex-col space-y-4"
 				v-if="
 					serverTitle &&
-					((serverRegion && dbServerPlan && appServerPlan) ||
+					((serverRegion && (dbServerPlan || unifiedServer) && appServerPlan) ||
 						(appPublicIP && appPrivateIP && dbPublicIP && dbPrivateIP))
 				"
 			>
@@ -548,15 +547,24 @@
 					:disabled="!agreedToRegionConsent"
 					@click="
 						serverType === 'dedicated'
-							? $resources.createServer.submit({
-									server: {
-										title: serverTitle,
-										cluster: selectedCluster,
-										app_plan: appServerPlan?.name,
-										db_plan: dbServerPlan?.name,
-										auto_increase_storage: enableAutoAddStorage,
-									},
-								})
+							? unifiedServer
+								? $resources.createUnifiedServer.submit({
+										server: {
+											title: serverTitle,
+											cluster: selectedCluster,
+											app_plan: appServerPlan?.name,
+											auto_increase_storage: enableAutoAddStorage,
+										},
+									})
+								: $resources.createServer.submit({
+										server: {
+											title: serverTitle,
+											cluster: selectedCluster,
+											app_plan: appServerPlan?.name,
+											db_plan: dbServerPlan?.name,
+											auto_increase_storage: enableAutoAddStorage,
+										},
+									})
 							: $resources.createHybridServer.submit({
 									server: {
 										title: serverTitle,
@@ -570,10 +578,17 @@
 					"
 					:loading="
 						$resources.createServer.loading ||
-						$resources.createHybridServer.loading
+						$resources.createHybridServer.loading ||
+						$resources.createUnifiedServer.loading
 					"
 				>
-					{{ serverType === 'hybrid' ? 'Add Hybrid Server' : 'Create Server' }}
+					{{
+						serverType === 'hybrid'
+							? 'Add Hybrid Server'
+							: unifiedServer
+								? 'Create Unified Server'
+								: 'Create Server'
+					}}
 				</Button>
 			</div>
 		</div>
@@ -638,6 +653,7 @@ export default {
 			serverEnabled: true,
 			enableAutoAddStorage: false,
 			agreedToRegionConsent: false,
+			unifiedServer: false,
 		};
 	},
 	watch: {
@@ -772,6 +788,40 @@ export default {
 			return {
 				url: 'press.api.selfhosted.options_for_new',
 				auto: true,
+			};
+		},
+		createUnifiedServer() {
+			return {
+				url: 'press.api.server.new_unified',
+				validate({ server }) {
+					if (!server.title) {
+						throw new DashboardError('Server name is required');
+					} else if (!server.cluster) {
+						throw new DashboardError('Please select a region');
+					} else if (!server.app_plan) {
+						throw new DashboardError('Please select an Unified Server Plan');
+					} else if (Object.keys(this.$team.doc.billing_details).length === 0) {
+						throw new DashboardError(
+							"You don't have billing details added. Please add billing details from settings to continue.",
+						);
+					} else if (
+						this.$team.doc.servers_enabled == 0 &&
+						((this.$team.doc.currency == 'USD' &&
+							this.$team.doc.balance < 200) ||
+							(this.$team.doc.currency == 'INR' &&
+								this.$team.doc.balance < 16000))
+					) {
+						throw new DashboardError(
+							'You need to have $200 worth of credits to create a server.',
+						);
+					}
+				},
+				onSuccess(server) {
+					this.$router.push({
+						name: 'Server Detail Plays',
+						params: { name: server.server },
+					});
+				},
 			};
 		},
 		createServer() {
@@ -1069,14 +1119,15 @@ export default {
 					condition: () => this.serverType === 'dedicated',
 				},
 				{
-					label: 'App Server Plan',
+					label: this.unifiedServer ? 'Unified Server Plan' : 'App Server Plan',
 					value: this.$format.planTitle(this.appServerPlan) + ' per month',
 					condition: () => this.serverType === 'dedicated',
 				},
 				{
 					label: 'DB Server Plan',
 					value: this.$format.planTitle(this.dbServerPlan) + ' per month',
-					condition: () => this.serverType === 'dedicated',
+					condition: () =>
+						this.serverType === 'dedicated' && !this.unifiedServer,
 				},
 				{
 					label: 'App Public IP',
