@@ -1,7 +1,7 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-from typing import List
+from typing import ClassVar
 
 import frappe
 from frappe import cint
@@ -10,7 +10,7 @@ from press.press.doctype.site_plan.plan import Plan
 
 
 class MarketplaceAppPlan(Plan):
-	dashboard_fields = ["app", "name", "title", "price_inr", "price_usd", "enabled"]
+	dashboard_fields: ClassVar = ["app", "name", "title", "price_inr", "price_usd", "enabled"]
 
 	@staticmethod
 	def get_list_query(query):
@@ -39,7 +39,14 @@ class MarketplaceAppPlan(Plan):
 	def create_marketplace_app_subscription(
 		site_name, app_name, plan_name, team_name, while_site_creation=False
 	):
-		marketplace_app = frappe.db.get_value("Marketplace App", {"app": app_name})
+		marketplace_app, app_author_team = frappe.db.get_value(
+			"Marketplace App", {"app": app_name}, ["name", "team"]
+		)
+
+		# Skip subscription for app authors - they shouldn't be charged for their own app
+		if app_author_team == team_name:
+			return None
+
 		subscription = frappe.db.exists(
 			"Subscription",
 			{
@@ -77,9 +84,5 @@ class MarketplaceAppPlan(Plan):
 		).insert(ignore_permissions=True)
 
 
-def get_app_plan_features(app_plan: str) -> List[str]:
-	features = frappe.get_all(
-		"Plan Feature", filters={"parent": app_plan}, pluck="description", order_by="idx"
-	)
-
-	return features
+def get_app_plan_features(app_plan: str) -> list[str]:
+	return frappe.get_all("Plan Feature", filters={"parent": app_plan}, pluck="description", order_by="idx")
