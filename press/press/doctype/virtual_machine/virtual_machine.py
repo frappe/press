@@ -1563,7 +1563,7 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def create_unified_server(self) -> tuple[Server, DatabaseServer]:
-		"""Virtual machines of series U will create a f series app server and m series database server"""
+		"""Virtual machines of series U will create a u series app server and u series database server"""
 
 		if self.series != "u":
 			frappe.throw("Only virtual machines of series 'u' can create unified servers.")
