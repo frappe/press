@@ -659,18 +659,18 @@ export default {
 			this.dbServerPlan = '';
 		},
 		availableAppPlanTypes() {
-			// Auto-select if only one plan type is available
-			if (this.availableAppPlanTypes.length === 1) {
+			// Auto-select first plan type as default
+			if (this.availableAppPlanTypes.length > 0) {
 				this.appServerPlanType = this.availableAppPlanTypes[0].name;
-			} else if (this.availableAppPlanTypes.length === 0) {
+			} else {
 				this.appServerPlanType = '';
 			}
 		},
 		availableDbPlanTypes() {
-			// Auto-select if only one plan type is available
-			if (this.availableDbPlanTypes.length === 1) {
+			// Auto-select first plan type as default
+			if (this.availableDbPlanTypes.length > 0) {
 				this.dbServerPlanType = this.availableDbPlanTypes[0].name;
-			} else if (this.availableDbPlanTypes.length === 0) {
+			} else {
 				this.dbServerPlanType = '';
 			}
 		},
