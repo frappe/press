@@ -328,7 +328,7 @@ class NFSVolumeDetachment(Document, AutoScaleStepFailureHandler, StepHandler):
 		self.secondary_server = frappe.db.get_value("Server", self.primary_server, "secondary_server")
 
 	def validate(self):
-		is_server_auto_scaled = frappe.db.get_value("Server", self.primary_server, "auto_scale")
+		is_server_auto_scaled = frappe.db.get_value("Server", self.primary_server, "scaled_up")
 		if is_server_auto_scaled:
 			frappe.throw("Benches are currently running on the secondary server!")
 
