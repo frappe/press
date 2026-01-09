@@ -854,14 +854,7 @@
     "wait_until_true": 0
    },
    {
-<<<<<<< HEAD
     "script": "play_statuses = frappe.db.get_all(\"Ansible Play\", filters={\n    \"server_type\": doc.server_type,\n    \"server\": doc.server,\n    \"play\": (\"in\", [\"Install Docker\", \"Setup MariaDB Mount Dependency\"])\n}, pluck=\"status\")\n\nall_completed = True\nis_failure = False\n\nfor status in play_statuses:\n    if status == \"Failure\":\n        is_failure = True\n        \n    all_completed = all_completed and status == \"Success\"\n    \nif all_completed:\n    result = (True, False)\nelif is_failure:\n    result = (False, True)\nelse:\n    result = (False, False)",
-=======
-    "parent": "Create Server",
-    "parentfield": "steps",
-    "parenttype": "Press Job Type",
-    "script": "play_statuses = frappe.db.get_list(\"Ansible Play\", filters={\n    \"server_type\": doc.server_type,\n    \"server\": doc.server,\n    \"play\": (\"in\", [\"Install Docker\", \"Setup MariaDB Mount Dependency\"])\n}, pluck=\"status\")\n\nall_completed = True\nis_failure = False\n\nfor status in play_statuses:\n    if status == \"Failure\":\n        is_failure = True\n        \n    all_completed = all_completed and status == \"Success\"\n    \nif all_completed:\n    result = (True, False)\nelif is_failure:\n    result = (False, True)\nelse:\n    result = (False, False)",
->>>>>>> 91124b6f8 (feat(unified-server): Provision unified servers via vmis)
     "step_name": "Wait For Dependent Plays To Finish (Hetzner)",
     "wait_until_true": 1
    },
