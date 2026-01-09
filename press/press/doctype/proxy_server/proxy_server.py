@@ -9,6 +9,7 @@ from frappe.utils import unique
 
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
+from press.security import fail2ban
 from press.utils import log_error
 
 if TYPE_CHECKING:
@@ -195,14 +196,57 @@ class ProxyServer(BaseServer):
 
 	@frappe.whitelist()
 	def setup_fail2ban(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_setup_fail2ban",
+			queue="long",
+			timeout=1200,
+		)
 		self.status = "Installing"
 		self.save()
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_fail2ban", queue="long", timeout=1200)
 
 	def _setup_fail2ban(self):
 		try:
 			ansible = Ansible(
-				playbook="fail2ban.yml", server=self, user=self._ssh_user(), port=self._ssh_port()
+				playbook="fail2ban.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={
+					"ignore_ips": fail2ban.ignore_ips(),
+				},
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+			else:
+				self.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			log_error("Fail2ban Setup Exception", server=self.as_dict())
+		self.save()
+
+	@frappe.whitelist()
+	def remove_fail2ban(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_remove_fail2ban",
+			queue="long",
+			timeout=1200,
+		)
+		self.status = "Installing"
+		self.save()
+
+	def _remove_fail2ban(self):
+		try:
+			ansible = Ansible(
+				playbook="fail2ban_remove.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			play = ansible.run()
 			self.reload()
