@@ -104,6 +104,7 @@ class BaseServer(Document, TagHelpers):
 		"binlog_max_disk_usage_percent",
 		"is_monitoring_disabled",
 		"is_provisioning_press_job_completed",
+		"is_unified_server",
 	)
 
 	@staticmethod
@@ -462,6 +463,11 @@ class BaseServer(Document, TagHelpers):
 	def drop_server(self):
 		app_server, db_server = self._get_app_and_database_servers()
 		app_server.archive()
+
+		# Don't need to archive db server explicitly if it's a unified server
+		if app_server.is_unified_server:
+			return
+
 		db_server.archive()
 
 	@dashboard_whitelist()
@@ -613,6 +619,7 @@ class BaseServer(Document, TagHelpers):
 			frappe.throw("Default Cluster not found", frappe.ValidationError)
 
 	def validate_agent_password(self):
+		# In case of unified servers the agent password is set during creation of the virtual machine
 		if not self.agent_password:
 			self.agent_password = frappe.generate_hash(length=32)
 
@@ -685,6 +692,76 @@ class BaseServer(Document, TagHelpers):
 			self.save()
 		except Exception:
 			log_error("Server Preparation Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def setup_unified_server(self):
+		"""Setup both the application server and its associated database server (unified plays on vm)."""
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_unified_server", queue="long", timeout=2400)
+
+	def _setup_unified_server(self):
+		agent_password = self.get_password("agent_password")
+		agent_repository_url = self.get_agent_repository_url()
+		agent_branch = self.get_agent_repository_branch()
+		certificate = self.get_certificate()
+		log_server, kibana_password = self.get_log_server()
+		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
+		database_server: DatabaseServer = frappe.get_doc("Database Server", self.database_server)
+		database_server_config = database_server._get_config()
+
+		self.status = "Installing"
+		database_server.status = "Installing"
+		self.save()
+		database_server.save()
+
+		try:
+			ansible = Ansible(
+				playbook="unified_server.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={
+					"server": self.name,
+					"private_ip": self.private_ip,
+					"proxy_ip": self.get_proxy_ip(),
+					"workers": "2",
+					"agent_password": agent_password,
+					"agent_repository_url": agent_repository_url,
+					"agent_branch": agent_branch,
+					"agent_sentry_dsn": agent_sentry_dsn,
+					"monitoring_password": self.get_monitoring_password(),
+					"log_server": log_server,
+					"kibana_password": kibana_password,
+					"certificate_private_key": certificate.private_key,
+					"certificate_full_chain": certificate.full_chain,
+					"certificate_intermediate_chain": certificate.intermediate_chain,
+					"docker_depends_on_mounts": self.docker_depends_on_mounts,
+					"db_port": database_server.db_port,
+					"agent_repository_branch_or_commit_ref": self.get_agent_repository_branch(),
+					"agent_update_args": " --skip-repo-setup=true",
+					"server_id": database_server.server_id,
+					"allocator": database_server.memory_allocator.lower(),
+					"mariadb_root_password": database_server_config.mariadb_root_password,
+					"mariadb_depends_on_mounts": database_server_config.mariadb_depends_on_mounts,
+					**self.get_mount_variables(),  # Currently same as database server since no volumes
+				},
+			)
+			play = ansible.run()
+			self.reload()
+			database_server = database_server.reload()
+
+			if play.status == "Success":
+				self.status = "Active"
+				database_server.status = "Active"
+			else:
+				self.status = "Broken"
+				database_server.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			database_server.status = "Broken"
+			log_error("Unified Server Setup Exception", server=self.as_dict())
+
+		self.save()
+		database_server.save()
 
 	@frappe.whitelist()
 	def setup_server(self):
@@ -1771,7 +1848,9 @@ class BaseServer(Document, TagHelpers):
 				"hetzner_cloud": self.provider == "Hetzner",
 				**self.get_mount_variables(),
 			}
-			if self.doctype == "Database Server" and self.provider != "Generic":
+			if self.provider != "Generic" and (
+				self.doctype == "Database Server" or getattr(self, "has_unified_volume", False)
+			):
 				variables["mariadb_bind_address"] = frappe.get_value(
 					"Virtual Machine", self.virtual_machine, "private_ip_address"
 				)
@@ -2103,11 +2182,45 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		except Exception:
 			log_error("Cadvisor Install Exception", server=self.as_dict())
 
+	def set_additional_unified_config(self):
+		"""Set both `Server` and `Database Server` additional config for Unified Servers"""
+		# Common config for both Server and Database Server
+		self.set_swappiness()
+		self.add_glass_file()
+		self.install_filebeat()
+
+		# Server specific config
+		self.setup_mysqldump()
+		self.install_earlyoom()
+		self.setup_ncdu()
+		self.setup_iptables()
+		self.install_cadvisor()
+
+		# Database Server specific config
+		database_server: DatabaseServer = frappe.get_doc("Database Server", self.database_server)
+		default_variables = frappe.get_all("MariaDB Variable", {"set_on_new_servers": 1}, pluck="name")
+		for var_name in default_variables:
+			var: MariaDBVariable = frappe.get_doc("MariaDB Variable", var_name)
+			var.set_on_server(database_server)
+
+		database_server.adjust_memory_config()
+		database_server.provide_frappe_user_du_and_find_permission()
+		database_server.setup_logrotate()
+		database_server.setup_user_lingering()
+
+		self.validate_mounts()
+		self.save(ignore_permissions=True)
+
 	@frappe.whitelist()
 	def set_additional_config(self):  # noqa: C901
 		"""
 		Corresponds to Set additional config step in Create Server Press Job
 		"""
+
+		if hasattr(self, "is_unified_server") and self.is_unified_server:
+			self.set_additional_unified_config()
+			return
+
 		if self.doctype == "Database Server":
 			default_variables = frappe.get_all("MariaDB Variable", {"set_on_new_servers": 1}, pluck="name")
 			for var_name in default_variables:
@@ -2277,6 +2390,7 @@ class Server(BaseServer):
 		is_standalone: DF.Check
 		is_standalone_setup: DF.Check
 		is_static_ip: DF.Check
+		is_unified_server: DF.Check
 		is_upstream_setup: DF.Check
 		keep_files_on_server_in_offsite_backup: DF.Check
 		managed_database_service: DF.Link | None

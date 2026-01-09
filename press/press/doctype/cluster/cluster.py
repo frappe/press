@@ -43,11 +43,12 @@ from press.utils import get_current_team, unique
 if typing.TYPE_CHECKING:
 	from collections.abc import Generator
 
+	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.log_server.log_server import LogServer
 	from press.press.doctype.monitor_server.monitor_server import MonitorServer
 	from press.press.doctype.press_job.press_job import PressJob
 	from press.press.doctype.press_settings.press_settings import PressSettings
-	from press.press.doctype.server.server import BaseServer
+	from press.press.doctype.server.server import BaseServer, Server
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
@@ -74,6 +75,7 @@ class Cluster(Document):
 		has_add_on_storage_support: DF.Check
 		has_arm_support: DF.Check
 		hetzner_api_token: DF.Password | None
+		has_unified_server_support: DF.Check
 		hybrid: DF.Check
 		image: DF.AttachImage | None
 		monitoring_password: DF.Password | None
@@ -112,6 +114,7 @@ class Cluster(Document):
 	}
 
 	secondary_server_series: ClassVar[str] = "fs"
+	unified_server_series: ClassVar[str] = "u"
 
 	wait_for_aws_creds_seconds = 20
 
@@ -1006,6 +1009,58 @@ class Cluster(Document):
 				"disk": 50,
 			}
 		).insert(ignore_permissions=True, ignore_if_duplicate=True)
+
+	def create_unified_server(
+		self,
+		title: str,
+		plan: ServerPlan,
+		team: str | None = None,
+		auto_increase_storage: bool | None = False,
+	) -> tuple[Server, DatabaseServer, PressJob]:
+		"""Minimal creation of a unified server with app and database on same vmi"""
+		# Accepting only arguments allowed via the API to create a server.
+		# Other arguments can be added laters.
+
+		team = team or get_current_team()
+		vm = self.create_vm(
+			machine_type=plan.instance_type,
+			platform=plan.platform,
+			disk_size=plan.disk,
+			domain=frappe.db.get_single_value("Press Settings", "domain"),
+			series=self.unified_server_series,
+			team=team,
+		)
+		server, database_server = vm.create_unified_server()
+
+		server.title = f"{title} - Application"
+		database_server.title = f"{title} - Database"
+
+		# Common configurations
+		server.ram = database_server.ram = plan.memory
+		server.auto_increase_storage = database_server.auto_increase_storage = auto_increase_storage
+		server.plan = database_server.plan = plan.name
+
+		# Server configurations
+		server.new_worker_allocation = True
+		server.database_server = database_server.name
+		server.proxy_server = self.proxy_server
+
+		# Database configurations
+		database_server.auto_purge_binlog_based_on_size = True
+		database_server.binlog_max_disk_usage_percent = 75 if auto_increase_storage else 20
+
+		server.save()  # Creating server before database server to use the preset agent password
+		database_server.save()
+
+		# Deliberately skipping subscription creation for database server
+		server.create_subscription(plan.name)
+
+		job = server.run_press_job(
+			"Create Server", arguments=None
+		)  # Deliberately calling via `Server` and not `Database Server`
+
+		# TODO: Create new press job to create unified server.
+		return server, database_server, job
 
 	def create_server(  # noqa: C901
 		self,

@@ -11,6 +11,7 @@
   "domain",
   "title",
   "tls_certificate_renewal_failed",
+  "is_unified_server",
   "column_break_4",
   "cluster",
   "provider",
@@ -759,6 +760,13 @@
    "fieldname": "uploaded_binlogs_retention_days",
    "fieldtype": "Int",
    "label": "Uploaded Binlogs Retention (days)"
+  },
+  {
+   "default": "0",
+   "description": "Checked when database server is hosted on the primary app server",
+   "fieldname": "is_unified_server",
+   "fieldtype": "Check",
+   "label": "Is Unified Server"
   },
   {
    "default": "0",
