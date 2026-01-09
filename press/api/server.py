@@ -585,6 +585,17 @@ def options():
 	if not get_current_team(get_doc=True).servers_enabled:
 		frappe.throw("Servers feature is not yet enabled on your account")
 
+	regions_filter = {"cloud_provider": ("!=", "Generic"), "public": True, "status": "Active"}
+	if (
+		(frappe.session and frappe.session.data and frappe.session.data.user_type)
+		or (
+			frappe.session
+			and frappe.session.user
+			and frappe.get_cached_value("User", frappe.session.user, "user_type")
+		)
+	) == "System User":
+		regions_filter.pop("public", None)
+
 	regions = frappe.get_all(
 		"Cluster",
 		{"cloud_provider": ("!=", "Generic"), "public": True},
@@ -595,9 +606,14 @@ def options():
 			"beta",
 			"has_add_on_storage_support",
 			"cloud_provider",
+      "public",
 			"has_unified_server_support",
 		],
 	)
+
+	for r in regions:
+		r["title"] = r["title"] + " (Internal)" if not r["public"] else r["title"]
+
 	cloud_providers = get_cloud_providers()
 	"""
 	{

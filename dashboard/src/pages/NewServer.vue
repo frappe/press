@@ -62,51 +62,32 @@
 				</div>
 			</div>
 			<div v-if="serverType === 'dedicated'" class="space-y-8">
-				<!-- Chose Region -->
-				<div class="flex flex-col" v-if="options?.regions_data">
-					<h2 class="text-sm font-medium leading-6 text-gray-900">
-						Select Region
-					</h2>
-					<div class="mt-2 w-full space-y-2">
-						<div class="grid grid-cols-2 gap-3">
-							<button
-								v-for="r in Object.keys(options?.regions_data ?? {})"
-								:key="r"
-								@click="serverRegion = r"
-								:class="[
-									serverRegion === r
-										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-										: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
-									'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
-								]"
+				<!-- Choose Server Provider -->
+				<div class="flex flex-col" v-if="allProviders.length">
+					<div class="flex items-center justify-between">
+						<h2 class="text-sm font-medium leading-6 text-gray-900">
+							Select Provider
+						</h2>
+						<div>
+							<Button
+								link="https://docs.frappe.io/cloud/servers/provider-comparision"
+								variant="ghost"
 							>
-								<div class="flex w-full items-center justify-between">
-									<div class="flex w-full items-center space-x-2">
-										<img :src="options.regions_data[r].image" class="h-5 w-5" />
-										<span class="text-sm font-medium">
-											{{ r }}
-										</span>
-									</div>
-								</div>
-							</button>
+								<template #prefix>
+									<lucide-help-circle class="h-4 w-4 text-gray-700" />
+								</template>
+								Compare Features
+							</Button>
 						</div>
 					</div>
-				</div>
-				<!-- Choose Server Provider -->
-				<div class="flex flex-col" v-if="serverRegion && providers">
-					<h2 class="text-sm font-medium leading-6 text-gray-900">
-						Select Provider
-					</h2>
 					<div class="mt-2 w-full space-y-2">
 						<div class="grid grid-cols-2 gap-3">
 							<button
-								v-for="provider in Object.keys(providers).sort((a, b) =>
-									a.localeCompare(b),
-								)"
-								:key="provider"
-								@click="serverProvider = provider"
+								v-for="provider in allProviders"
+								:key="provider.name"
+								@click="serverProvider = provider.name"
 								:class="[
-									serverProvider === provider
+									serverProvider === provider.name
 										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
 										: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
 									'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
@@ -115,20 +96,58 @@
 								<div class="flex w-full items-center justify-between">
 									<div class="flex w-full items-center space-x-2">
 										<img
-											:src="providers[provider].provider_image"
-											class="h-5 w-5"
+											:src="provider.provider_image"
+											class="h-5 w-5 rounded-sm"
 										/>
 										<span class="text-sm font-medium">
-											{{ providers[provider].title }}
+											{{ provider.title }}
 										</span>
 									</div>
-									<Badge
-										v-if="providers[provider].beta"
-										:label="providers[provider].beta ? 'Beta' : ''"
-										theme="orange"
-										variant="outline"
-										size="md"
-									/>
+									<Tooltip
+										v-if="provider.beta"
+										text="This provider is in beta. Click 'Compare Features' above to learn more."
+									>
+										<Badge
+											label="Beta"
+											theme="orange"
+											variant="subtle"
+											size="md"
+											class="border border-orange-400"
+										/>
+									</Tooltip>
+								</div>
+							</button>
+						</div>
+					</div>
+				</div>
+				<!-- Chose Region -->
+				<div
+					class="flex flex-col"
+					v-if="serverProvider && regionsForProvider.length"
+				>
+					<h2 class="text-sm font-medium leading-6 text-gray-900">
+						Select Region
+					</h2>
+					<div class="mt-2 w-full space-y-2">
+						<div class="grid grid-cols-2 gap-3">
+							<button
+								v-for="r in regionsForProvider"
+								:key="r.name"
+								@click="serverRegion = r.name"
+								:class="[
+									serverRegion === r.name
+										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
+										: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
+									'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
+								]"
+							>
+								<div class="flex w-full items-center justify-between">
+									<div class="flex w-full items-center space-x-2">
+										<img :src="r.image" class="h-5 w-5 rounded-sm" />
+										<span class="text-sm font-medium">
+											{{ r.name }}
+										</span>
+									</div>
 								</div>
 							</button>
 						</div>
@@ -152,11 +171,7 @@
 				<!-- Chose Plan Type -->
 				<!-- Choose Service Type (Premium/Standard) -->
 				<div
-					v-if="
-						serverRegion &&
-						serverProvider &&
-						options.app_premium_plans.length > 0
-					"
+					v-if="serverRegion && serverProvider && hasPremiumPlansForCluster"
 					class="flex flex-col"
 				>
 					<div class="flex items-center justify-between">
@@ -171,7 +186,7 @@
 								<template #prefix>
 									<lucide-help-circle class="h-4 w-4 text-gray-700" />
 								</template>
-								Help
+								Know More
 							</Button>
 						</div>
 					</div>
@@ -603,14 +618,16 @@ export default {
 		};
 	},
 	watch: {
+		serverProvider() {
+			this.serverRegion = '';
+			this.serviceType = 'Standard';
+			this.appServerPlanType = '';
+			this.dbServerPlanType = '';
+			this.appServerPlan = '';
+			this.dbServerPlan = '';
+		},
 		serverRegion() {
-			if (Object.keys(this.providers).length > 0) {
-				this.serverProvider = Object.keys(this.providers).sort((a, b) =>
-					a.localeCompare(b),
-				)[0];
-			} else {
-				this.serverProvider = '';
-			}
+			this.serviceType = 'Standard';
 			this.appServerPlanType = '';
 			this.dbServerPlanType = '';
 			this.appServerPlan = '';
@@ -620,14 +637,21 @@ export default {
 			this.appServerPlan = '';
 			this.dbServerPlan = '';
 			this.serverRegion = '';
+			this.serverProvider = '';
 			this.appServerPlanType = '';
 			this.dbServerPlanType = '';
 			this.appPublicIP = '';
 			this.appPrivateIP = '';
 			this.dbPublicIP = '';
 			this.dbPrivateIP = '';
+			// Auto-select first provider when server type changes to dedicated
+			if (this.serverType === 'dedicated' && this.allProviders.length > 0) {
+				this.serverProvider = this.allProviders[0].name;
+			}
 		},
 		serviceType() {
+			this.appServerPlanType = '';
+			this.dbServerPlanType = '';
 			this.appServerPlan = '';
 			this.dbServerPlan = '';
 		},
@@ -845,6 +869,42 @@ export default {
 		options() {
 			return this.$resources.options.data;
 		},
+		allProviders() {
+			if (!this.options?.regions_data) return [];
+			const providersMap = {};
+			for (const regionData of Object.values(this.options.regions_data)) {
+				for (const [providerName, providerData] of Object.entries(
+					regionData.providers || {},
+				)) {
+					if (!providersMap[providerName]) {
+						providersMap[providerName] = {
+							name: providerName,
+							title: providerData.title,
+							provider_image: providerData.provider_image,
+							beta: providerData.beta,
+						};
+					}
+				}
+			}
+			return Object.values(providersMap).sort((a, b) =>
+				a.name.localeCompare(b.name),
+			);
+		},
+		regionsForProvider() {
+			if (!this.serverProvider || !this.options?.regions_data) return [];
+			const regions = [];
+			for (const [regionName, regionData] of Object.entries(
+				this.options.regions_data,
+			)) {
+				if (regionData.providers && regionData.providers[this.serverProvider]) {
+					regions.push({
+						name: regionName,
+						image: regionData.image,
+					});
+				}
+			}
+			return regions.sort((a, b) => a.name.localeCompare(b.name));
+		},
 		providers() {
 			if (!this.serverRegion) return {};
 			if (!this.options?.regions_data) return {};
@@ -858,14 +918,25 @@ export default {
 				this.serverProvider
 			]?.cluster_name;
 		},
+		hasPremiumPlansForCluster() {
+			if (!this.selectedCluster || !this.options?.app_premium_plans)
+				return false;
+			return this.options.app_premium_plans.some(
+				(plan) => plan.cluster === this.selectedCluster,
+			);
+		},
 		availableAppPlanTypes() {
 			if (!this.selectedCluster || !this.options?.plan_types) return [];
 
 			const planTypes = [];
 			const planTypeData = this.options.plan_types;
+			const plansToCheck =
+				this.serviceType === 'Standard'
+					? this.options.app_plans
+					: this.options.app_premium_plans;
 
 			for (const [key, planType] of Object.entries(planTypeData)) {
-				const hasAppPlans = this.options.app_plans.some(
+				const hasAppPlans = plansToCheck.some(
 					(plan) =>
 						plan.cluster === this.selectedCluster && plan.plan_type === key,
 				);
@@ -887,9 +958,13 @@ export default {
 
 			const planTypes = [];
 			const planTypeData = this.options.plan_types;
+			const plansToCheck =
+				this.serviceType === 'Standard'
+					? this.options.db_plans
+					: this.options.db_premium_plans;
 
 			for (const [key, planType] of Object.entries(planTypeData)) {
-				const hasDbPlans = this.options.db_plans.some(
+				const hasDbPlans = plansToCheck.some(
 					(plan) =>
 						plan.cluster === this.selectedCluster && plan.plan_type === key,
 				);
