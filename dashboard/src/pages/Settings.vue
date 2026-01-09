@@ -1,5 +1,5 @@
 <template>
-	<Header class="sticky top-0 bg-white">
+	<Header class="sticky top-0 z-10 bg-white">
 		<div class="flex items-center space-x-2">
 			<Breadcrumbs :items="[{ label: 'Settings', route: '/settings' }]" />
 		</div>

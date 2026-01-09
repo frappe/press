@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<div class="sticky top-0 shrink-0">
+		<div class="sticky top-0 z-10 shrink-0">
 			<Header>
 				<FBreadcrumbs :items="breadcrumbs" />
 			</Header>
