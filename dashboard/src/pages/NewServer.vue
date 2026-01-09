@@ -227,15 +227,40 @@
 						class="flex flex-col space-y-4"
 						v-if="availableAppPlanTypes.length"
 					>
-						<h2
-							v-if="!unifiedServer"
-							class="text-sm font-medium leading-6 text-gray-900"
-						>
-							Select Application Server Plan
-						</h2>
-						<h2 v-else class="text-sm font-medium leading-6 text-gray-900">
-							Select Unified Server Plan
-						</h2>
+						<div class="flex flex-row justify-between">
+							<h2
+								v-if="!unifiedServer"
+								class="text-sm font-medium leading-6 text-gray-900"
+							>
+								Select Application Server Plan
+							</h2>
+							<h2 v-else class="text-sm font-medium leading-6 text-gray-900">
+								Select Unified Server Plan
+							</h2>
+
+							<div v-if="!unifiedServer">
+								<Button
+									link="https://docs.frappe.io/cloud/servers/instance-types"
+									variant="ghost"
+								>
+									<template #prefix>
+										<lucide-help-circle class="h-4 w-4 text-gray-700" />
+									</template>
+									Learn About Instance Types
+								</Button>
+							</div>
+							<div v-else>
+								<Button
+									link="https://docs.frappe.io/cloud/servers/instance-types#unified-server"
+									variant="ghost"
+								>
+									<template #prefix>
+										<lucide-help-circle class="h-4 w-4 text-gray-700" />
+									</template>
+									Learn About Unified Server
+								</Button>
+							</div>
+						</div>
 
 						<!-- App Server Plan Type Selection -->
 						<div
@@ -311,9 +336,22 @@
 						class="flex flex-col space-y-4"
 						v-if="availableDbPlanTypes.length"
 					>
-						<h2 class="text-sm font-medium leading-6 text-gray-900">
-							Select Database Server Plan
-						</h2>
+						<div class="flex flex-row justify-between">
+							<h2 class="text-sm font-medium leading-6 text-gray-900">
+								Select Database Server Plan
+							</h2>
+							<div>
+								<Button
+									link="https://docs.frappe.io/cloud/servers/instance-types"
+									variant="ghost"
+								>
+									<template #prefix>
+										<lucide-help-circle class="h-4 w-4 text-gray-700" />
+									</template>
+									Learn About Instance Types
+								</Button>
+							</div>
+						</div>
 
 						<!-- DB Server Plan Type Selection -->
 						<div class="w-full" v-if="availableDbPlanTypes.length > 1">
