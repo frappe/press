@@ -20,7 +20,7 @@
 
 	<div v-else-if="serverEnabled" class="mx-auto max-w-2xl px-5">
 		<div v-if="options" class="space-y-8 pb-[50vh] pt-12">
-			<div class="flex flex-col">
+			<div class="flex flex-col" v-if="$team.doc?.hybrid_servers_enabled">
 				<h2 class="text-sm font-medium leading-6 text-gray-900">
 					Choose Server Type
 				</h2>
@@ -49,9 +49,10 @@
 					</div>
 				</div>
 			</div>
+
 			<div v-if="serverType" class="flex flex-col">
 				<h2 class="text-sm font-medium leading-6 text-gray-900">
-					Enter Server Name
+					Enter Server Name<span class="text-red-500">&nbsp;*</span>
 				</h2>
 				<div class="mt-2">
 					<FormControl
@@ -599,7 +600,7 @@ export default {
 			dbServerPlan: '',
 			serverRegion: '',
 			serverProvider: '',
-			serverType: '',
+			serverType: 'dedicated',
 			appPublicIP: '',
 			appPrivateIP: '',
 			dbPublicIP: '',
