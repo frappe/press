@@ -682,7 +682,9 @@ export default {
 					value: `${this.$appServer.doc.provider} - ${this.$appServer.doc.cluster}`,
 				},
 				{
-					label: 'Application server',
+					label: this.$appServer.doc.is_unified_server
+						? 'Server'
+						: 'Application Server',
 					value: this.$appServer.doc.name,
 				},
 				{
