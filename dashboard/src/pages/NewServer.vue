@@ -12,207 +12,42 @@
 
 	<div
 		v-if="!$team.doc?.is_desk_user && !$session.hasServerCreationAccess"
-		class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
+		class="mx-auto mt-60 w-fit rounded-md border border-dashed px-12 py-8 text-center text-gray-600"
 	>
 		<lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
 		<ErrorMessage message="You aren't permitted to create new servers" />
 	</div>
 
-	<div v-else-if="serverEnabled" class="mx-auto max-w-2xl px-5">
-		<div v-if="options" class="space-y-8 pb-[50vh] pt-12">
-			<div class="flex flex-col" v-if="$team.doc?.hybrid_servers_enabled">
-				<h2 class="text-sm font-medium leading-6 text-gray-900">
-					Choose Server Type
-				</h2>
-				<div class="mt-2 w-full space-y-2">
-					<div class="grid grid-cols-2 gap-3">
-						<button
-							v-for="c in options?.server_types"
-							:key="c.name"
-							@click="serverType = c.name"
-							:class="[
-								serverType === c.name
-									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-									: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
-								'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
-							]"
-						>
-							<div class="flex w-full items-center justify-between space-x-2">
-								<span class="text-sm font-medium">
-									{{ c.title }}
-								</span>
-								<Tooltip :text="c.description">
-									<lucide-info class="h-4 w-4 text-gray-500" />
-								</Tooltip>
-							</div>
-						</button>
-					</div>
-				</div>
-			</div>
-
-			<div v-if="serverType" class="flex flex-col">
-				<h2 class="text-sm font-medium leading-6 text-gray-900">
-					Enter Server Name<span class="text-red-500">&nbsp;*</span>
-				</h2>
-				<div class="mt-2">
-					<FormControl
-						v-model="serverTitle"
-						type="text"
-						class="block rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
-					/>
-				</div>
-			</div>
-			<div v-if="serverType === 'dedicated'" class="space-y-8">
-				<!-- Choose Server Provider -->
-				<div class="flex flex-col" v-if="allProviders.length">
-					<div class="flex items-center justify-between">
-						<h2 class="text-sm font-medium leading-6 text-gray-900">
-							Select Provider
-						</h2>
-						<div>
-							<Button
-								link="https://docs.frappe.io/cloud/servers/provider-comparision"
-								variant="ghost"
-								size="sm"
-							>
-								<template #prefix>
-									<lucide-help-circle class="h-4 w-4 text-gray-700" />
-								</template>
-								Compare Features
-							</Button>
-						</div>
-					</div>
-					<div class="mt-2 w-full space-y-2">
-						<div class="grid grid-cols-2 gap-3">
-							<button
-								v-for="provider in allProviders"
-								:key="provider.name"
-								@click="serverProvider = provider.name"
-								:class="[
-									serverProvider === provider.name
-										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-										: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
-									'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
-								]"
-							>
-								<div class="flex w-full items-center justify-between">
-									<div class="flex w-full items-center space-x-2">
-										<img
-											:src="provider.provider_image"
-											class="h-5 w-5 rounded-sm"
-										/>
-										<span class="text-sm font-medium">
-											{{ provider.title }}
-										</span>
-									</div>
-									<Tooltip
-										v-if="provider.beta"
-										text="This provider is in beta. Click 'Compare Features' above to learn more."
-									>
-										<Badge
-											label="Beta"
-											theme="orange"
-											variant="subtle"
-											size="md"
-											class="border border-orange-400"
-										/>
-									</Tooltip>
-								</div>
-							</button>
-						</div>
-					</div>
-				</div>
-				<!-- Chose Region -->
-				<div
-					class="flex flex-col"
-					v-if="serverProvider && regionsForProvider.length"
-				>
-					<h2 class="text-sm font-medium leading-6 text-gray-900">
-						Select Region
+	<div
+		v-else-if="serverEnabled"
+		class="flex w-full justify-center px-4 sm:px-5"
+	>
+		<div
+			v-if="options"
+			class="pb-[50vh] pt-4 sm:pt-8 lg:pt-8 flex flex-col lg:flex-row lg:justify-center gap-8 lg:gap-[60px] w-full max-w-8xl"
+		>
+			<!-- Main configuration section -->
+			<div class="w-full lg:min-w-[42rem] lg:max-w-[42rem] space-y-8">
+				<div class="flex flex-col" v-if="$team.doc?.hybrid_servers_enabled">
+					<h2 class="text-base font-semibold leading-6 text-gray-900">
+						Choose Server Type
 					</h2>
 					<div class="mt-2 w-full space-y-2">
-						<div class="grid grid-cols-2 gap-3">
+						<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 							<button
-								v-for="r in regionsForProvider"
-								:key="r.name"
-								@click="serverRegion = r.name"
-								:class="[
-									serverRegion === r.name
-										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-										: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
-									'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
-								]"
-							>
-								<div class="flex w-full items-center justify-between">
-									<div class="flex w-full items-center space-x-2">
-										<img :src="r.image" class="h-5 w-5 rounded-sm" />
-										<span class="text-sm font-medium">
-											{{ r.name }}
-										</span>
-									</div>
-								</div>
-							</button>
-						</div>
-					</div>
-				</div>
-				<!-- Add a check if unified server plan is available here -->
-				<div
-					v-if="showUnifiedServerOption"
-					class="flex items-center space-x-2 text-sm text-gray-600"
-				>
-					<FormControl
-						type="checkbox"
-						v-model="unifiedServer"
-						label="Create a cheaper unified server with both App and DB in a single machine."
-					/>
-				</div>
-				<!-- Chose Plan Type -->
-				<!-- Choose Service Type (Premium/Standard) -->
-				<div
-					v-if="serverRegion && serverProvider && hasPremiumPlansForCluster"
-					class="flex flex-col"
-				>
-					<div class="flex items-center justify-between">
-						<h2 class="text-sm font-medium leading-6 text-gray-900">
-							Service Type
-						</h2>
-						<div>
-							<Button
-								link="https://frappecloud.com/pricing#dedicated"
-								variant="ghost"
-							>
-								<template #prefix>
-									<lucide-help-circle class="h-4 w-4 text-gray-700" />
-								</template>
-								Know More
-							</Button>
-						</div>
-					</div>
-					<div class="mt-2 w-full space-y-2">
-						<div class="grid grid-cols-2 gap-3">
-							<button
-								v-for="c in [
-									{
-										name: 'Standard',
-										description: 'Includes standard support and SLAs',
-									},
-									{
-										name: 'Premium',
-										description: 'Includes enterprise support and SLAs',
-									},
-								]"
+								v-for="c in options?.server_types"
 								:key="c.name"
-								@click="serviceType = c.name"
+								@click="serverType = c.name"
 								:class="[
-									serviceType === c.name
+									serverType === c.name
 										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
 										: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
-									'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
+									'flex w-full items-center rounded-md border p-3 text-left text-base text-gray-900',
 								]"
 							>
 								<div class="flex w-full items-center justify-between space-x-2">
 									<span class="text-sm font-medium">
-										{{ c.name }}
+										{{ c.title }}
 									</span>
 									<Tooltip :text="c.description">
 										<lucide-info class="h-4 w-4 text-gray-500" />
@@ -222,380 +57,825 @@
 						</div>
 					</div>
 				</div>
-				<!-- Choose App Server Plan -->
-				<div v-if="serverRegion && serverProvider && selectedCluster">
-					<div
-						class="flex flex-col space-y-4"
-						v-if="availableAppPlanTypes.length"
-					>
-						<div class="flex flex-row justify-between">
-							<h2
-								v-if="!unifiedServer"
-								class="text-sm font-medium leading-6 text-gray-900"
-							>
-								Select Application Server Plan
-							</h2>
-							<h2 v-else class="text-sm font-medium leading-6 text-gray-900">
-								Select Unified Server Plan
-							</h2>
 
-							<div v-if="!unifiedServer">
-								<Button
-									link="https://docs.frappe.io/cloud/servers/instance-types"
-									variant="ghost"
-									size="sm"
-								>
-									<template #prefix>
-										<lucide-help-circle class="h-4 w-4 text-gray-700" />
-									</template>
-									Learn About Instance Types
-								</Button>
-							</div>
-							<div v-else>
-								<Button
-									link="https://docs.frappe.io/cloud/servers/instance-types#unified-server"
-									variant="ghost"
-									size="sm"
-								>
-									<template #prefix>
-										<lucide-help-circle class="h-4 w-4 text-gray-700" />
-									</template>
-									Learn About Unified Server
-								</Button>
-							</div>
-						</div>
-
-						<!-- App Server Plan Type Selection -->
-						<div
-							class="w-full space-y-2"
-							v-if="availableAppPlanTypes.length > 1"
-						>
-							<div class="grid grid-cols-2 gap-3">
-								<button
-									v-for="planType in availableAppPlanTypes"
-									:key="planType.name"
-									@click="appServerPlanType = planType.name"
-									:class="[
-										appServerPlanType === planType.name
-											? 'border-gray-900 ring-1 ring-gray-900'
-											: 'border-gray-300',
-										'flex w-full flex-col overflow-hidden rounded border text-left hover:bg-gray-50',
-									]"
-								>
-									<div class="w-full p-3">
-										<div class="flex items-center justify-between">
-											<div class="flex w-full items-center">
-												<span
-													class="truncate text-lg font-medium text-gray-900"
-												>
-													{{ planType.title }}
-												</span>
-											</div>
-										</div>
-										<div
-											class="mt-1 text-sm text-gray-600"
-											v-if="planType.description"
-										>
-											{{ planType.description }}
-										</div>
-									</div>
-								</button>
-							</div>
-						</div>
-
-						<!-- Single Plan Type Message -->
-						<div
-							v-else-if="availableAppPlanTypes.length === 1"
-							class="flex flex-col rounded border border-gray-300 p-3 gap-2"
-						>
-							<p class="text-base text-gray-900">
-								<span class="font-medium">{{
-									availableAppPlanTypes[0].title
-								}}</span>
-								machines are available.
-							</p>
-
-							<p class="text-base text-gray-600">
-								{{ availableAppPlanTypes[0].description }}
-							</p>
-						</div>
-
-						<!-- App Server Plans -->
-						<div v-if="appServerPlanType" class="mt-2 space-y-2">
-							<ServerPlansCards
-								v-model="appServerPlan"
-								:plans="filteredAppPlans"
-							/>
-						</div>
+				<div v-if="serverType" class="flex flex-col">
+					<h2 class="text-base font-semibold leading-6 text-gray-900">
+						Enter Name For Your Server<span class="text-red-500">&nbsp;*</span>
+					</h2>
+					<div class="mt-2">
+						<FormControl
+							v-model="serverTitle"
+							type="text"
+							class="block rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
+						/>
 					</div>
 				</div>
-				<!-- Choose Database Server Plan -->
-				<div
-					v-if="
-						serverRegion && serverProvider && selectedCluster && !unifiedServer
-					"
-				>
-					<div
-						class="flex flex-col space-y-4"
-						v-if="availableDbPlanTypes.length"
-					>
-						<div class="flex flex-row justify-between">
-							<h2 class="text-sm font-medium leading-6 text-gray-900">
-								Select Database Server Plan
+				<div v-if="serverType === 'dedicated'" class="space-y-8">
+					<!-- Choose Server Provider -->
+					<div class="flex flex-col" v-if="allProviders.length">
+						<div class="flex items-center justify-between items-center">
+							<h2 class="text-base font-semibold leading-6 text-gray-900">
+								Select Provider
 							</h2>
 							<div>
 								<Button
-									link="https://docs.frappe.io/cloud/servers/instance-types"
+									link="https://docs.frappe.io/cloud/servers/provider-comparision"
 									variant="ghost"
 									size="sm"
 								>
 									<template #prefix>
 										<lucide-help-circle class="h-4 w-4 text-gray-700" />
 									</template>
-									Learn About Instance Types
+									<span class="hidden sm:inline">Compare Features</span>
+									<span class="sm:hidden">Compare</span>
 								</Button>
 							</div>
 						</div>
-
-						<!-- DB Server Plan Type Selection -->
-						<div class="w-full" v-if="availableDbPlanTypes.length > 1">
-							<div class="grid grid-cols-2 gap-3">
+						<div class="mt-2 w-full space-y-2">
+							<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 								<button
-									v-for="planType in availableDbPlanTypes"
-									:key="planType.name"
-									@click="dbServerPlanType = planType.name"
+									v-for="provider in allProviders"
+									:key="provider.name"
+									@click="serverProvider = provider.name"
 									:class="[
-										dbServerPlanType === planType.name
-											? 'border-gray-900 ring-1 ring-gray-900'
-											: 'border-gray-300',
-										'flex w-full flex-col overflow-hidden rounded border text-left hover:bg-gray-50',
+										serverProvider === provider.name
+											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
+											: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
+										'flex w-full items-center rounded-md border p-2 text-left text-base text-gray-900',
 									]"
 								>
-									<div class="w-full p-3">
-										<div class="flex items-center justify-between">
-											<div class="flex w-full items-center">
-												<span
-													class="truncate text-lg font-medium text-gray-900"
-												>
-													{{ planType.title }}
-												</span>
-											</div>
+									<div class="flex w-full items-center justify-between">
+										<div class="flex w-full items-center space-x-2">
+											<img
+												:src="provider.provider_image"
+												class="h-5 w-5 rounded-sm"
+											/>
+											<span class="text-sm font-medium">
+												{{ provider.title }}
+											</span>
 										</div>
-										<div
-											class="mt-1 text-sm text-gray-600"
-											v-if="planType.description"
+										<Tooltip
+											v-if="provider.beta"
+											text="This provider is in beta. Click 'Compare Features' above to learn more."
 										>
-											{{ planType.description }}
+											<Badge
+												label="Beta"
+												theme="orange"
+												variant="subtle"
+												size="md"
+												class="border border-orange-400"
+											/>
+										</Tooltip>
+									</div>
+								</button>
+							</div>
+						</div>
+					</div>
+					<!-- Chose Region -->
+					<div
+						class="flex flex-col"
+						v-if="serverProvider && regionsForProvider.length"
+					>
+						<h2 class="text-base font-semibold leading-6 text-gray-900">
+							Select Region
+						</h2>
+						<div class="mt-2 w-full space-y-2">
+							<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+								<button
+									v-for="r in regionsForProvider"
+									:key="r.name"
+									@click="serverRegion = r.name"
+									:class="[
+										serverRegion === r.name
+											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
+											: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
+										'flex w-full items-center rounded-md border p-2 text-left text-base text-gray-900',
+									]"
+								>
+									<div class="flex w-full items-center justify-between">
+										<div class="flex w-full items-center space-x-2">
+											<img :src="r.image" class="h-5 w-5 rounded-sm" />
+											<span class="text-sm font-medium">
+												{{ r.name }}
+											</span>
 										</div>
 									</div>
 								</button>
 							</div>
 						</div>
-
-						<!-- Single Plan Type Message -->
-						<div
-							v-else-if="availableDbPlanTypes.length === 1"
-							class="flex flex-col rounded border border-gray-300 p-3 gap-2"
-						>
-							<p class="text-base text-gray-900">
-								<span class="font-medium">{{
-									availableDbPlanTypes[0].title
-								}}</span>
-								machines are available.
-							</p>
-
-							<p class="text-base text-gray-600">
-								{{ availableDbPlanTypes[0].description }}
-							</p>
+					</div>
+					<!-- Add a check if unified server plan is available here -->
+					<div
+						v-if="showUnifiedServerOption"
+						class="flex items-center space-x-2 text-sm text-gray-600"
+					>
+						<FormControl
+							type="checkbox"
+							v-model="unifiedServer"
+							label="Opt for cheaper unified server (Single server for App and DB)"
+						/>
+					</div>
+					<!-- Chose Plan Type -->
+					<!-- Choose Service Type (Premium/Standard) -->
+					<div
+						v-if="serverRegion && serverProvider && hasPremiumPlansForCluster"
+						class="flex flex-col"
+					>
+						<div class="flex items-center justify-between">
+							<h2 class="text-base font-semibold leading-6 text-gray-900">
+								Service Type
+							</h2>
+							<div>
+								<Button
+									link="https://frappecloud.com/pricing#dedicated"
+									variant="ghost"
+								>
+									<template #prefix>
+										<lucide-help-circle class="h-4 w-4 text-gray-700" />
+									</template>
+									<span class="hidden sm:inline">Know More</span>
+									<span class="sm:hidden">More</span>
+								</Button>
+							</div>
 						</div>
+						<div class="mt-2 w-full space-y-2">
+							<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+								<button
+									v-for="c in [
+										{
+											name: 'Standard',
+											description: 'Includes standard support and SLAs',
+										},
+										{
+											name: 'Premium',
+											description: 'Includes enterprise support and SLAs',
+										},
+									]"
+									:key="c.name"
+									@click="serviceType = c.name"
+									:class="[
+										serviceType === c.name
+											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
+											: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
+										'flex w-full items-center rounded-md border p-3 text-left text-base text-gray-900',
+									]"
+								>
+									<div
+										class="flex w-full items-center justify-between space-x-2"
+									>
+										<span class="text-sm font-medium">
+											{{ c.name }}
+										</span>
+										<Tooltip :text="c.description">
+											<lucide-info class="h-4 w-4 text-gray-500" />
+										</Tooltip>
+									</div>
+								</button>
+							</div>
+						</div>
+					</div>
 
-						<!-- DB Server Plans -->
-						<div v-if="dbServerPlanType" class="mt-2 w-full space-y-2">
-							<ServerPlansCards
-								v-model="dbServerPlan"
-								:plans="filteredDbPlans"
+					<!-- Choose App Server Plan -->
+					<div v-if="serverRegion && serverProvider && selectedCluster">
+						<div
+							class="flex flex-col space-y-4"
+							v-if="availableAppPlanTypes.length"
+						>
+							<div class="flex flex-col space-y-2">
+								<div class="flex flex-row justify-between items-center">
+									<h2
+										v-if="!unifiedServer"
+										class="text-base font-semibold leading-6 text-gray-900"
+									>
+										Select Application Server Plan
+									</h2>
+									<h2
+										v-else
+										class="text-base font-semibold leading-6 text-gray-900"
+									>
+										Select Unified Server Plan
+									</h2>
+
+									<div v-if="!unifiedServer">
+										<Button
+											link="https://docs.frappe.io/cloud/servers/instance-types"
+											variant="ghost"
+											size="sm"
+										>
+											<template #prefix>
+												<lucide-help-circle class="h-4 w-4 text-gray-700" />
+											</template>
+											<span class="hidden sm:inline"
+												>Learn About Instance Types</span
+											>
+											<span class="sm:hidden">Learn More</span>
+										</Button>
+									</div>
+									<div v-else>
+										<Button
+											link="https://docs.frappe.io/cloud/servers/instance-types#unified-server"
+											variant="ghost"
+											size="sm"
+										>
+											<template #prefix>
+												<lucide-help-circle class="h-4 w-4 text-gray-700" />
+											</template>
+											<span class="hidden sm:inline"
+												>Learn About Unified Server</span
+											>
+											<span class="sm:hidden">Learn More</span>
+										</Button>
+									</div>
+								</div>
+
+								<!-- App Server Plan Type Selection -->
+								<div
+									class="w-full space-y-2"
+									v-if="availableAppPlanTypes.length > 1"
+								>
+									<div class="flex flex-col sm:flex-row">
+										<button
+											v-for="(planType, index) in availableAppPlanTypes"
+											:key="planType.name"
+											@click="appServerPlanType = planType.name"
+											:class="[
+												appServerPlanType === planType.name
+													? 'border-gray-900 ring-1 ring-gray-900'
+													: 'border-gray-300',
+												index === 0
+													? 'rounded-t-md sm:rounded-l-md sm:rounded-tr-none'
+													: index === availableAppPlanTypes.length - 1
+														? 'rounded-b-md sm:rounded-r-md sm:rounded-bl-none'
+														: 'rounded-none',
+												'flex w-full flex-col overflow-hidden border text-left hover:bg-gray-50',
+											]"
+										>
+											<div class="w-full p-3">
+												<div class="flex items-center justify-between">
+													<div class="flex w-full items-center">
+														<span
+															class="truncate text-base font-semibold text-gray-900"
+														>
+															{{ planType.title }}
+														</span>
+													</div>
+												</div>
+												<div
+													class="mt-1 text-base text-gray-600"
+													v-if="planType.description"
+												>
+													{{ planType.description }}
+												</div>
+											</div>
+										</button>
+									</div>
+								</div>
+
+								<!-- Single Plan Type Message -->
+								<div
+									v-else-if="availableAppPlanTypes.length === 1"
+									class="flex flex-col rounded-md border border-gray-300 p-3 gap-2"
+								>
+									<p class="text-base text-gray-900">
+										<span class="font-medium">{{
+											availableAppPlanTypes[0].title
+										}}</span>
+										machines are available.
+									</p>
+
+									<p class="text-base text-gray-600">
+										{{ availableAppPlanTypes[0].description }}
+									</p>
+								</div>
+							</div>
+
+							<!-- App Server Plans -->
+							<div v-if="appServerPlanType" class="mt-2 space-y-2">
+								<ServerPlansCards
+									v-model="appServerPlan"
+									:plans="filteredAppPlans"
+								/>
+							</div>
+						</div>
+					</div>
+
+					<!-- Choose Database Server Plan -->
+					<div
+						v-if="
+							serverRegion &&
+							serverProvider &&
+							selectedCluster &&
+							!unifiedServer
+						"
+					>
+						<div
+							class="flex flex-col space-y-4"
+							v-if="availableDbPlanTypes.length"
+						>
+							<div class="flex flex-col space-y-2">
+								<div class="flex flex-row justify-between items-center">
+									<h2 class="text-base font-semibold leading-6 text-gray-900">
+										Select Database Server Plan
+									</h2>
+									<div>
+										<Button
+											link="https://docs.frappe.io/cloud/servers/instance-types"
+											variant="ghost"
+											size="sm"
+										>
+											<template #prefix>
+												<lucide-help-circle class="h-4 w-4 text-gray-700" />
+											</template>
+											<span class="hidden sm:inline"
+												>Learn About Instance Types</span
+											>
+											<span class="sm:hidden">Learn More</span>
+										</Button>
+									</div>
+								</div>
+
+								<!-- DB Server Plan Type Selection -->
+								<div
+									class="w-full space-y-2"
+									v-if="availableDbPlanTypes.length > 1"
+								>
+									<div class="flex flex-col sm:flex-row">
+										<button
+											v-for="(planType, index) in availableDbPlanTypes"
+											:key="planType.name"
+											@click="dbServerPlanType = planType.name"
+											:class="[
+												dbServerPlanType === planType.name
+													? 'border-gray-900 ring-1 ring-gray-900'
+													: 'border-gray-300',
+												index === 0
+													? 'rounded-t-md sm:rounded-l-md sm:rounded-tr-none'
+													: index === availableDbPlanTypes.length - 1
+														? 'rounded-b-md sm:rounded-r-md sm:rounded-bl-none'
+														: 'rounded-none',
+												'flex w-full flex-col overflow-hidden border text-left hover:bg-gray-50',
+											]"
+										>
+											<div class="w-full p-3">
+												<div class="flex items-center justify-between">
+													<div class="flex w-full items-center">
+														<span
+															class="truncate text-base font-semibold text-gray-900"
+														>
+															{{ planType.title }}
+														</span>
+													</div>
+												</div>
+												<div
+													class="mt-1 text-base text-gray-600"
+													v-if="planType.description"
+												>
+													{{ planType.description }}
+												</div>
+											</div>
+										</button>
+									</div>
+								</div>
+
+								<!-- Single Plan Type Message -->
+								<div
+									v-else-if="availableDbPlanTypes.length === 1"
+									class="flex flex-col rounded-md border border-gray-300 p-3 gap-2"
+								>
+									<p class="text-base text-gray-900">
+										<span class="font-medium">{{
+											availableDbPlanTypes[0].title
+										}}</span>
+										machines are available.
+									</p>
+
+									<p class="text-base text-gray-600">
+										{{ availableDbPlanTypes[0].description }}
+									</p>
+								</div>
+							</div>
+
+							<!-- DB Server Plans -->
+							<div v-if="dbServerPlanType" class="mt-2 w-full space-y-2">
+								<ServerPlansCards
+									v-model="dbServerPlan"
+									:plans="filteredDbPlans"
+								/>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div v-else-if="serverType === 'hybrid'" class="space-y-8">
+					<div class="flex flex-col space-y-2">
+						<h2 class="text-base font-semibold leading-6 text-gray-900">
+							App Server IP Addresses
+						</h2>
+						<div class="flex flex-col sm:flex-row gap-3">
+							<FormControl
+								class="w-full"
+								v-model="appPublicIP"
+								label="Public IP"
+								type="text"
+							/>
+							<FormControl
+								class="w-full"
+								v-model="appPrivateIP"
+								label="Private IP"
+								type="text"
 							/>
 						</div>
 					</div>
-				</div>
-			</div>
-			<div v-else-if="serverType === 'hybrid'" class="space-y-8">
-				<div class="flex flex-col space-y-2">
-					<h2 class="text-sm font-medium leading-6 text-gray-900">
-						App Server IP Addresses
-					</h2>
-					<div class="flex space-x-3">
-						<FormControl
-							class="w-full"
-							v-model="appPublicIP"
-							label="Public IP"
-							type="text"
-						/>
-						<FormControl
-							class="w-full"
-							v-model="appPrivateIP"
-							label="Private IP"
-							type="text"
+					<div class="flex flex-col space-y-2">
+						<h2 class="text-base font-semibold leading-6 text-gray-900">
+							Database Server IP Addresses
+						</h2>
+						<div class="flex flex-col sm:flex-row gap-3">
+							<FormControl
+								class="w-full"
+								v-model="dbPublicIP"
+								label="Public IP"
+								type="text"
+							/>
+							<FormControl
+								class="w-full"
+								v-model="dbPrivateIP"
+								label="Private IP"
+								type="text"
+							/>
+						</div>
+					</div>
+					<div class="flex flex-col space-y-2">
+						<h2 class="text-base font-semibold leading-6 text-gray-900">
+							Add SSH Key
+						</h2>
+						<span class="text-xs text-gray-600">
+							Add this SSH Key to
+							<span class="font-mono">~/.ssh/authorized_keys</span>
+							file on Application and Database server</span
+						>
+						<ClickToCopy
+							:textContent="$resources.hybridOptions.data?.ssh_key || ''"
 						/>
 					</div>
 				</div>
-				<div class="flex flex-col space-y-2">
-					<h2 class="text-sm font-medium leading-6 text-gray-900">
-						Database Server IP Addresses
+				<div class="flex flex-col space-y-3" v-if="showAutoAddStorageOption">
+					<h2 class="text-base font-semibold leading-6 text-gray-900">
+						Auto Add-on Storage
 					</h2>
-					<div class="flex space-x-3">
+					<div class="my-4 rounded-md border bg-gray-50 p-2 prose-sm prose">
+						This feature will automatically increases the storage as it reaches
+						over <b>90%</b> of its capacity.
+
+						<br /><br />
+						With this feature disabled, disk capacity
+						<strong>will not increase automatically</strong> in the event your
+						server approaches or reaches its storage limit.
+
+						<br /><br />
+						<strong>Note :</strong>
+
+						<ul>
+							<li v-if="this.storagePlanRate">
+								• You will be charged at the rate of
+								<b>{{ this.$format.userCurrency(this.storagePlanRate) }}/mo</b>
+								for each additional GB of storage.
+							</li>
+
+							<li>
+								• Disabling this feature may result in
+								<strong>service degradation or downtime</strong> if storage is
+								exhausted.
+							</li>
+
+							<li>
+								• Storage can auto increase only once in
+								<strong>6 hours</strong>.
+							</li>
+						</ul>
+					</div>
+					<div>
 						<FormControl
-							class="w-full"
-							v-model="dbPublicIP"
-							label="Public IP"
-							type="text"
-						/>
-						<FormControl
-							class="w-full"
-							v-model="dbPrivateIP"
-							label="Private IP"
-							type="text"
+							type="checkbox"
+							v-model="enableAutoAddStorage"
+							label="Enable Auto Add-on Storage for Application and Database Server"
 						/>
 					</div>
 				</div>
-				<div class="flex flex-col space-y-2">
-					<h2 class="text-sm font-medium leading-6 text-gray-900">
-						Add SSH Key
-					</h2>
-					<span class="text-xs text-gray-600">
-						Add this SSH Key to
-						<span class="font-mono">~/.ssh/authorized_keys</span>
-						file on Application and Database server</span
+
+				<!-- Mobile only Summary -->
+				<div
+					class="lg:hidden rounded border-gray-400 bg-white text-gray-900 ring-gray-200 border p-6 space-y-4"
+					v-if="showSummary"
+				>
+					<h2 class="text-md font-semibold">Summary</h2>
+
+					<!-- Server Name -->
+					<div class="flex flex-col space-y-1" v-if="serverTitle">
+						<div class="text-base text-gray-700">Server Name</div>
+						<div class="text-base font-medium">{{ serverTitle }}</div>
+					</div>
+
+					<!-- Server Provider (Dedicated only) -->
+					<div
+						class="flex flex-col space-y-1"
+						v-if="serverType === 'dedicated' && serverProvider"
 					>
-					<ClickToCopy
-						:textContent="$resources.hybridOptions.data?.ssh_key || ''"
-					/>
+						<div class="text-base text-gray-700">Server Provider</div>
+						<div class="text-base font-medium">{{ selectedProviderTitle }}</div>
+					</div>
+
+					<!-- Server Region (Dedicated only) -->
+					<div
+						class="flex flex-col space-y-1"
+						v-if="serverType === 'dedicated' && serverRegion"
+					>
+						<div class="text-base text-gray-700">Server Region</div>
+						<div class="text-base font-medium">{{ serverRegion }}</div>
+					</div>
+
+					<!-- App/Unified Server Plan (Dedicated only) -->
+					<div
+						class="flex flex-col space-y-1"
+						v-if="serverType === 'dedicated' && appServerPlan"
+					>
+						<div class="text-base text-gray-700">
+							{{
+								unifiedServer
+									? 'Unified Server Plan'
+									: 'Application Server Plan'
+							}}
+						</div>
+						<div class="text-base font-medium">
+							{{ $format.planTitle(appServerPlan) }}/mo -
+							{{ getPlanTypeTitle(appServerPlan) }}
+						</div>
+						<div class="text-xs text-gray-700">
+							{{ appServerPlan.vcpu }} vCPUs •
+							{{ $format.bytes(appServerPlan.memory, 0, 2) }} Memory •
+							{{ appServerPlan.disk }} GB Disk •
+							{{ appServerPlan.instance_type }}
+						</div>
+					</div>
+
+					<!-- DB Server Plan (Dedicated only, not unified) -->
+					<div
+						class="flex flex-col space-y-1"
+						v-if="serverType === 'dedicated' && !unifiedServer && dbServerPlan"
+					>
+						<div class="text-base text-gray-700">Database Server Plan</div>
+						<div class="text-base font-medium">
+							{{ $format.planTitle(dbServerPlan) }}/mo -
+							{{ getPlanTypeTitle(dbServerPlan) }}
+						</div>
+						<div class="text-xs text-gray-700">
+							{{ dbServerPlan.vcpu }} vCPUs •
+							{{ $format.bytes(dbServerPlan.memory, 0, 2) }} Memory •
+							{{ dbServerPlan.disk }} GB Disk • {{ dbServerPlan.instance_type }}
+						</div>
+					</div>
+
+					<!-- Hybrid Server IPs -->
+					<div
+						class="flex flex-col space-y-1"
+						v-if="serverType === 'hybrid' && appPublicIP && appPrivateIP"
+					>
+						<div class="text-base text-gray-700">App Server IPs</div>
+						<div class="text-base font-medium">
+							{{ appPublicIP }} / {{ appPrivateIP }}
+						</div>
+					</div>
+
+					<div
+						class="flex flex-col space-y-1"
+						v-if="serverType === 'hybrid' && dbPublicIP && dbPrivateIP"
+					>
+						<div class="text-base text-gray-700">DB Server IPs</div>
+						<div class="text-base font-medium">
+							{{ dbPublicIP }} / {{ dbPrivateIP }}
+						</div>
+					</div>
+
+					<!-- Hybrid Plan -->
+					<div
+						class="flex flex-col space-y-1"
+						v-if="
+							serverType === 'hybrid' &&
+							$resources.hybridOptions?.data?.plans?.[0]
+						"
+					>
+						<div class="text-base text-gray-700">Plan</div>
+						<div class="text-base font-medium">
+							{{ $format.planTitle($resources.hybridOptions.data.plans[0]) }}/mo
+						</div>
+					</div>
+
+					<hr class="h-2 mt-2" v-if="_totalPerMonth" />
+
+					<!-- Total Cost -->
+					<div class="flex flex-col space-y-2" v-if="_totalPerMonth">
+						<div class="text-base text-gray-700">Total Cost</div>
+						<div class="flex flex-col space-y-1">
+							<div class="text-lg font-semibold">
+								{{ totalPerMonth }} / month
+							</div>
+							<div class="text-base font-medium text-gray-700">
+								{{ totalPerDay }} per day
+							</div>
+						</div>
+					</div>
+
+					<template v-if="canCreateServer">
+						<FormControl
+							type="checkbox"
+							size="sm"
+							variant="subtle"
+							:label="`I agree that the laws of the selected region apply to both me and Frappe.`"
+							v-model="agreedToRegionConsent"
+						/>
+
+						<ErrorMessage
+							class="my-2"
+							:message="
+								$resources.createServer.error ||
+								$resources.createHybridServer.error ||
+								$resources.createUnifiedServer.error
+							"
+						/>
+					</template>
+
+					<Button
+						variant="solid"
+						size="md"
+						class="w-full"
+						:disabled="!agreedToRegionConsent || !canCreateServer"
+						@click="createServer"
+						:loading="
+							$resources.createServer.loading ||
+							$resources.createHybridServer.loading ||
+							$resources.createUnifiedServer.loading
+						"
+					>
+						{{ serverButtonLabel }}
+					</Button>
 				</div>
 			</div>
-			<div class="flex flex-col space-y-3" v-if="showAutoAddStorageOption">
-				<h2 class="text-base font-medium leading-6 text-gray-900">
-					Auto Add-on Storage
-				</h2>
-				<div class="my-4 rounded border bg-gray-50 p-2 prose-sm prose">
-					This feature will automatically increases the storage as it reaches
-					over <b>90%</b> of its capacity.
 
-					<br /><br />
-					With this feature disabled, disk capacity
-					<strong>will not increase automatically</strong> in the event your
-					server approaches or reaches its storage limit.
+			<!-- Desktop only Summary -->
+			<div
+				class="hidden lg:block sticky top-[4.5rem] rounded border-gray-400 bg-white text-gray-900 ring-gray-200 border p-6 h-fit w-[25rem] space-y-4"
+				v-if="showSummary"
+			>
+				<h2 class="text-md font-semibold">Summary</h2>
 
-					<br /><br />
-					<strong>Note :</strong>
-
-					<ul>
-						<li v-if="this.storagePlanRate">
-							• You will be charged at the rate of
-							<b>{{ this.$format.userCurrency(this.storagePlanRate) }}/mo</b>
-							for each additional GB of storage.
-						</li>
-
-						<li>
-							• Disabling this feature may result in
-							<strong>service degradation or downtime</strong> if storage is
-							exhausted.
-						</li>
-
-						<li>
-							• Storage can auto increase only once in <strong>6 hours</strong>.
-						</li>
-					</ul>
+				<!-- Server Name -->
+				<div class="flex flex-col space-y-1" v-if="serverTitle">
+					<div class="text-base text-gray-700">Server Name</div>
+					<div class="text-base font-medium">{{ serverTitle }}</div>
 				</div>
-				<div>
+
+				<!-- Server Provider (Dedicated only) -->
+				<div
+					class="flex flex-col space-y-1"
+					v-if="serverType === 'dedicated' && serverProvider"
+				>
+					<div class="text-base text-gray-700">Server Provider</div>
+					<div class="text-base font-medium">{{ selectedProviderTitle }}</div>
+				</div>
+
+				<!-- Server Region (Dedicated only) -->
+				<div
+					class="flex flex-col space-y-1"
+					v-if="serverType === 'dedicated' && serverRegion"
+				>
+					<div class="text-base text-gray-700">Server Region</div>
+					<div class="text-base font-medium">{{ serverRegion }}</div>
+				</div>
+
+				<!-- App/Unified Server Plan (Dedicated only) -->
+				<div
+					class="flex flex-col space-y-1"
+					v-if="serverType === 'dedicated' && appServerPlan"
+				>
+					<div class="text-base text-gray-700">
+						{{
+							unifiedServer ? 'Unified Server Plan' : 'Application Server Plan'
+						}}
+					</div>
+					<div class="text-base font-medium">
+						{{ $format.planTitle(appServerPlan) }}/mo -
+						{{ getPlanTypeTitle(appServerPlan) }}
+					</div>
+					<div class="text-xs text-gray-700">
+						{{ appServerPlan.vcpu }} vCPUs •
+						{{ $format.bytes(appServerPlan.memory, 0, 2) }} Memory •
+						{{ appServerPlan.disk }} GB Disk • {{ appServerPlan.instance_type }}
+					</div>
+				</div>
+
+				<!-- DB Server Plan (Dedicated only, not unified) -->
+				<div
+					class="flex flex-col space-y-1"
+					v-if="serverType === 'dedicated' && !unifiedServer && dbServerPlan"
+				>
+					<div class="text-base text-gray-700">Database Server Plan</div>
+					<div class="text-base font-medium">
+						{{ $format.planTitle(dbServerPlan) }}/mo -
+						{{ getPlanTypeTitle(dbServerPlan) }}
+					</div>
+					<div class="text-xs text-gray-700">
+						{{ dbServerPlan.vcpu }} vCPUs •
+						{{ $format.bytes(dbServerPlan.memory, 0, 2) }} Memory •
+						{{ dbServerPlan.disk }} GB Disk • {{ dbServerPlan.instance_type }}
+					</div>
+				</div>
+
+				<!-- Hybrid Server IPs -->
+				<div
+					class="flex flex-col space-y-1"
+					v-if="serverType === 'hybrid' && appPublicIP && appPrivateIP"
+				>
+					<div class="text-base text-gray-700">App Server IPs</div>
+					<div class="text-base font-medium">
+						{{ appPublicIP }} / {{ appPrivateIP }}
+					</div>
+				</div>
+
+				<div
+					class="flex flex-col space-y-1"
+					v-if="serverType === 'hybrid' && dbPublicIP && dbPrivateIP"
+				>
+					<div class="text-base text-gray-700">DB Server IPs</div>
+					<div class="text-base font-medium">
+						{{ dbPublicIP }} / {{ dbPrivateIP }}
+					</div>
+				</div>
+
+				<!-- Hybrid Plan -->
+				<div
+					class="flex flex-col space-y-1"
+					v-if="
+						serverType === 'hybrid' &&
+						$resources.hybridOptions?.data?.plans?.[0]
+					"
+				>
+					<div class="text-base text-gray-700">Plan</div>
+					<div class="text-base font-medium">
+						{{ $format.planTitle($resources.hybridOptions.data.plans[0]) }}/mo
+					</div>
+				</div>
+
+				<hr class="h-2 mt-2" v-if="_totalPerMonth" />
+
+				<!-- Total Cost -->
+				<div class="flex flex-col space-y-2" v-if="_totalPerMonth">
+					<div class="text-base text-gray-700">Total Cost</div>
+					<div class="flex flex-col space-y-1">
+						<div class="text-lg font-semibold">{{ totalPerMonth }} / month</div>
+						<div class="text-base font-medium text-gray-700">
+							{{ totalPerDay }} per day
+						</div>
+					</div>
+				</div>
+
+				<template v-if="canCreateServer">
 					<FormControl
 						type="checkbox"
-						v-model="enableAutoAddStorage"
-						label="Enable Auto Add-on Storage for Application and Database Server"
+						size="sm"
+						variant="subtle"
+						:label="`I agree that the laws of the selected region apply to both me and Frappe.`"
+						v-model="agreedToRegionConsent"
 					/>
-				</div>
-			</div>
 
-			<Summary
-				:options="summaryOptions"
-				v-if="
-					serverTitle &&
-					((serverRegion && (dbServerPlan || unifiedServer) && appServerPlan) ||
-						(appPublicIP && appPrivateIP && dbPublicIP && dbPrivateIP))
-				"
-			/>
-			<div
-				class="flex flex-col space-y-4"
-				v-if="
-					serverTitle &&
-					((serverRegion && (dbServerPlan || unifiedServer) && appServerPlan) ||
-						(appPublicIP && appPrivateIP && dbPublicIP && dbPrivateIP))
-				"
-			>
-				<FormControl
-					type="checkbox"
-					v-model="agreedToRegionConsent"
-					:label="`I agree that the laws of the region selected by me shall stand applicable to me and Frappe.`"
-				/>
-				<ErrorMessage
-					class="my-2"
-					:message="
-						$resources.createServer.error || $resources.createHybridServer.error
-					"
-				/>
+					<ErrorMessage
+						class="my-2"
+						:message="
+							$resources.createServer.error ||
+							$resources.createHybridServer.error ||
+							$resources.createUnifiedServer.error
+						"
+					/>
+				</template>
+
 				<Button
 					variant="solid"
-					:disabled="!agreedToRegionConsent"
-					@click="
-						serverType === 'dedicated'
-							? unifiedServer
-								? $resources.createUnifiedServer.submit({
-										server: {
-											title: serverTitle,
-											cluster: selectedCluster,
-											app_plan: appServerPlan?.name,
-											auto_increase_storage: enableAutoAddStorage,
-										},
-									})
-								: $resources.createServer.submit({
-										server: {
-											title: serverTitle,
-											cluster: selectedCluster,
-											app_plan: appServerPlan?.name,
-											db_plan: dbServerPlan?.name,
-											auto_increase_storage: enableAutoAddStorage,
-										},
-									})
-							: $resources.createHybridServer.submit({
-									server: {
-										title: serverTitle,
-										app_public_ip: appPublicIP,
-										app_private_ip: appPrivateIP,
-										db_public_ip: dbPublicIP,
-										db_private_ip: dbPrivateIP,
-										plan: $resources.hybridOptions.data?.plans?.[0],
-									},
-								})
-					"
+					size="md"
+					class="w-full"
+					:disabled="!agreedToRegionConsent || !canCreateServer"
+					@click="createServer"
 					:loading="
 						$resources.createServer.loading ||
 						$resources.createHybridServer.loading ||
 						$resources.createUnifiedServer.loading
 					"
 				>
-					{{
-						serverType === 'hybrid'
-							? 'Add Hybrid Server'
-							: unifiedServer
-								? 'Create Unified Server'
-								: 'Create Server'
-					}}
+					{{ serverButtonLabel }}
 				</Button>
 			</div>
 		</div>
 	</div>
 	<div
 		v-else
-		class="mx-auto mt-60 w-fit rounded border-2 border-dashed px-12 py-8 text-center text-gray-600"
+		class="mx-auto mt-60 w-fit rounded-md border-2 border-dashed px-12 py-8 text-center text-gray-600"
 	>
 		<LucideServer class="mx-auto mb-4 h-8 w-8" />
 		<p>Server feature isn't enabled for your account.</p>
@@ -621,7 +901,6 @@
 <script>
 import LucideServer from '~icons/lucide/server-off';
 import Header from '../components/Header.vue';
-import Summary from '../components/Summary.vue';
 import ServerPlansCards from '../components/server/ServerPlansCards.vue';
 import ClickToCopy from '../components/ClickToCopyField.vue';
 import { DashboardError } from '../utils/error';
@@ -631,7 +910,6 @@ export default {
 		ServerPlansCards,
 		LucideServer,
 		ClickToCopy,
-		Summary,
 		Header,
 	},
 	props: ['server'],
@@ -1088,6 +1366,10 @@ export default {
 			let currencyField =
 				this.$team.doc.currency == 'INR' ? 'price_inr' : 'price_usd';
 			if (this.serverType === 'dedicated') {
+				if (this.unifiedServer) {
+					if (!this.appServerPlan) return 0;
+					return this.appServerPlan[currencyField];
+				}
 				if (!this.appServerPlan || !this.dbServerPlan) return 0;
 				return (
 					this.appServerPlan[currencyField] + this.dbServerPlan[currencyField]
@@ -1107,64 +1389,6 @@ export default {
 				this.$format.pricePerDay(this._totalPerMonth),
 			);
 		},
-		summaryOptions() {
-			return [
-				{
-					label: 'Server Name',
-					value: this.serverTitle,
-				},
-				{
-					label: 'Region',
-					value: this.serverRegion,
-					condition: () => this.serverType === 'dedicated',
-				},
-				{
-					label: this.unifiedServer ? 'Unified Server Plan' : 'App Server Plan',
-					value: this.$format.planTitle(this.appServerPlan) + ' per month',
-					condition: () => this.serverType === 'dedicated',
-				},
-				{
-					label: 'DB Server Plan',
-					value: this.$format.planTitle(this.dbServerPlan) + ' per month',
-					condition: () =>
-						this.serverType === 'dedicated' && !this.unifiedServer,
-				},
-				{
-					label: 'App Public IP',
-					value: this.appPublicIP,
-					condition: () => this.serverType === 'hybrid',
-				},
-				{
-					label: 'App Private IP',
-					value: this.appPrivateIP,
-					condition: () => this.serverType === 'hybrid',
-				},
-				{
-					label: 'DB Public IP',
-					value: this.dbPublicIP,
-					condition: () => this.serverType === 'hybrid',
-				},
-				{
-					label: 'DB Private IP',
-					value: this.dbPrivateIP,
-					condition: () => this.serverType === 'hybrid',
-				},
-				{
-					label: 'Plan',
-					value: `${this.$format.planTitle(
-						this.$resources.hybridOptions?.data?.plans[0],
-					)} per month`,
-					condition: () =>
-						this.serverType === 'hybrid' &&
-						this.$resources.hybridOptions?.data?.plans[0],
-				},
-				{
-					label: 'Total',
-					value: `${this.totalPerMonth} per month <div class="text-gray-600"> ${this.totalPerDay} per day</div>`,
-					condition: () => this._totalPerMonth,
-				},
-			];
-		},
 		storagePlanRate() {
 			if (!this.$team?.doc?.currency) return -1;
 			try {
@@ -1176,12 +1400,97 @@ export default {
 				return -1;
 			}
 		},
+		showSummary() {
+			// Show summary after provider is selected (for dedicated) or server type is hybrid
+			if (this.serverType === 'dedicated') {
+				return !!this.serverProvider;
+			} else if (this.serverType === 'hybrid') {
+				return true;
+			}
+			return false;
+		},
+		selectedProviderTitle() {
+			// Get the title of the selected provider
+			if (!this.serverProvider) return '';
+			const provider = this.allProviders.find(
+				(p) => p.name === this.serverProvider,
+			);
+			return provider?.title || this.serverProvider;
+		},
+		canCreateServer() {
+			// Check if all required fields are filled for server creation
+			if (!this.serverTitle) return false;
+
+			if (this.serverType === 'dedicated') {
+				if (this.unifiedServer) {
+					return this.serverRegion && this.appServerPlan;
+				}
+				return this.serverRegion && this.appServerPlan && this.dbServerPlan;
+			} else if (this.serverType === 'hybrid') {
+				return (
+					this.appPublicIP &&
+					this.appPrivateIP &&
+					this.dbPublicIP &&
+					this.dbPrivateIP
+				);
+			}
+			return false;
+		},
+		serverButtonLabel() {
+			if (this.serverType === 'hybrid') {
+				return 'Add Hybrid Server';
+			}
+			if (this.unifiedServer) {
+				return 'Create Unified Server';
+			}
+			return 'Create Server';
+		},
 	},
 	methods: {
 		validateIP(ip) {
 			return !ip.match(
 				/^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/,
 			);
+		},
+		createServer() {
+			if (this.serverType === 'dedicated') {
+				if (this.unifiedServer) {
+					this.$resources.createUnifiedServer.submit({
+						server: {
+							title: this.serverTitle,
+							cluster: this.selectedCluster,
+							app_plan: this.appServerPlan?.name,
+							auto_increase_storage: this.enableAutoAddStorage,
+						},
+					});
+				} else {
+					this.$resources.createServer.submit({
+						server: {
+							title: this.serverTitle,
+							cluster: this.selectedCluster,
+							app_plan: this.appServerPlan?.name,
+							db_plan: this.dbServerPlan?.name,
+							auto_increase_storage: this.enableAutoAddStorage,
+						},
+					});
+				}
+			} else if (this.serverType === 'hybrid') {
+				this.$resources.createHybridServer.submit({
+					server: {
+						title: this.serverTitle,
+						app_public_ip: this.appPublicIP,
+						app_private_ip: this.appPrivateIP,
+						db_public_ip: this.dbPublicIP,
+						db_private_ip: this.dbPrivateIP,
+						plan: this.$resources.hybridOptions.data?.plans?.[0],
+					},
+				});
+			}
+		},
+		getPlanTypeTitle(plan) {
+			if (!plan?.plan_type || !this.options?.plan_types) return '';
+			const planType = this.options.plan_types[plan.plan_type];
+			return planType?.title || plan.plan_type;
 		},
 	},
 };
