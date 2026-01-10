@@ -691,8 +691,8 @@ export default {
 				},
 				{
 					label: 'Database server',
-					value: !this.$server.doc.is_unified_server
-						? this.$server.doc.database_server
+					value: !this.$appServer.doc.is_unified_server
+						? this.$appServer.doc.database_server
 						: false,
 				},
 				{
