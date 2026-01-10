@@ -2,16 +2,7 @@
 	<div class="space-y-4">
 		<div class="flex space-x-2">
 			<FormControl
-				v-if="serverOptions.length === 1"
-				label="Server"
-				class="w-50"
-				type="text"
-				:value="serverOptions[0].label"
-				:readonly="true"
-				v-model="chosenServer"
-			/>
-			<FormControl
-				v-else
+				v-if="serverOptions.length > 1"
 				class="w-50"
 				label="Server"
 				type="select"
@@ -760,7 +751,7 @@ export default {
 			return getCachedDocumentResource('Server', this.serverName);
 		},
 		serverOptions() {
-			return [
+			const options = [
 				{
 					label: this.$server.doc.is_unified_server
 						? 'Unified Server'
@@ -778,6 +769,10 @@ export default {
 					value: this.$server.doc.replication_server,
 				},
 			].filter((v) => v.value);
+			if (options.length === 1 && !this.chosenServer) {
+				this.chosenServer = options[0].value;
+			}
+			return options;
 		},
 		loadAverageData() {
 			let loadavg = this.$resources.loadavg.data;
