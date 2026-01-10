@@ -217,7 +217,7 @@
 										serviceType === c.name
 											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
 											: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
-										'flex w-full items-center rounded-md border p-3 text-left text-base text-gray-900',
+										'flex w-full items-center rounded-md border p-2 text-left text-base text-gray-900',
 									]"
 								>
 									<div
@@ -968,6 +968,7 @@ export default {
 			this.dbServerPlan = '';
 			this.unifiedServer = false;
 			this.enableAutoAddStorage = false;
+			this.agreedToRegionConsent = false;
 		},
 		serverRegion() {
 			this.serviceType = 'Standard';
