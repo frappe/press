@@ -840,7 +840,7 @@
 					</div>
 				</div>
 
-				<hr class="h-2 mt-2" v-if="_totalPerMonth" />
+				<hr class="mt-2" v-if="_totalPerMonth" />
 
 				<!-- Total Cost -->
 				<div class="flex flex-col space-y-2" v-if="_totalPerMonth">
@@ -854,13 +854,21 @@
 				</div>
 
 				<template v-if="canCreateServer">
-					<FormControl
-						type="checkbox"
-						size="sm"
-						variant="subtle"
-						:label="`I agree that the laws of the selected region apply to both me and Frappe.`"
-						v-model="agreedToRegionConsent"
-					/>
+					<div
+						class="flex flex-row gap-2 cursor-pointer"
+						@click.prevent="agreedToRegionConsent = !agreedToRegionConsent"
+					>
+						<FormControl
+							type="checkbox"
+							size="sm"
+							variant="subtle"
+							v-model="agreedToRegionConsent"
+						/>
+						<div class="text-base font-medium">
+							I agree that the laws of selected region<br />
+							apply to both me and frappe
+						</div>
+					</div>
 
 					<ErrorMessage
 						class="my-2"
@@ -958,6 +966,7 @@ export default {
 			this.dbServerPlanType = '';
 			this.appServerPlan = '';
 			this.dbServerPlan = '';
+			this.unifiedServer = false;
 		},
 		serverRegion() {
 			this.serviceType = 'Standard';
@@ -965,6 +974,7 @@ export default {
 			this.dbServerPlanType = '';
 			this.appServerPlan = '';
 			this.dbServerPlan = '';
+			this.unifiedServer = false;
 		},
 		serverType() {
 			this.appServerPlan = '';
@@ -977,6 +987,8 @@ export default {
 			this.appPrivateIP = '';
 			this.dbPublicIP = '';
 			this.dbPrivateIP = '';
+			this.unifiedServer = false;
+
 			// Auto-select first provider when server type changes to dedicated
 			if (this.serverType === 'dedicated' && this.allProviders.length > 0) {
 				this.serverProvider = this.allProviders[0].name;
