@@ -4,7 +4,7 @@
 			<button
 				v-for="(plan, i) in plans"
 				:key="plan.name"
-				class="flex flex-col overflow-hidden rounded border text-left hover:bg-gray-50"
+				class="flex flex-col overflow-hidden rounded-md border text-left hover:bg-gray-50"
 				:class="[
 					modelValue?.name === plan?.name
 						? 'border-gray-900 ring-1 ring-gray-900'
