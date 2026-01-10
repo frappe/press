@@ -967,6 +967,7 @@ export default {
 			this.appServerPlan = '';
 			this.dbServerPlan = '';
 			this.unifiedServer = false;
+			this.enableAutoAddStorage = false;
 		},
 		serverRegion() {
 			this.serviceType = 'Standard';
