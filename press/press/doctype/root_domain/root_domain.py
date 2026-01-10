@@ -11,6 +11,7 @@ import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils.caching import redis_cache
+from cloudflare import Cloudflare
 
 from press.utils import log_error
 
@@ -32,9 +33,10 @@ class RootDomain(Document):
 		aws_access_key_id: DF.Data | None
 		aws_region: DF.Data | None
 		aws_secret_access_key: DF.Password | None
+		cloud_flare_api_key: DF.Password | None
 		default_cluster: DF.Link
 		default_proxy_server: DF.Link | None
-		dns_provider: DF.Literal["AWS Route 53", "Generic"]
+		dns_provider: DF.Literal["AWS Route 53", "Cloud Flare", "Generic"]
 		enabled: DF.Check
 		team: DF.Link | None
 	# end: auto-generated types
@@ -82,6 +84,24 @@ class RootDomain(Document):
 				region_name=self.aws_region,
 			)
 		return self._boto3_client
+
+	@property
+	def cloudflare_client(self):
+		if not hasattr(self, "_cloudflare_client"):
+			self._cloudflare_client = CloudFlare(
+				token=self.get_password("cloud_flare_api_key")
+			)
+    	
+		return self._cloudflare_client
+
+	@property
+	def cloudflare_zone_id(self):
+		# Cloudflare zones API returns a list, we must search
+		zones = self.cloudflare_client.zones.get(params={"name": self.name})
+		if zones:
+			return zones[0]["id"]
+		frappe.throw(f"Cloudflare Zone not found for {self.name}")
+	
 
 	@property
 	def hosted_zone(self):
