@@ -669,6 +669,14 @@
 						</div>
 					</div>
 
+					<!-- Auto Add-on Storage -->
+					<div class="flex flex-col space-y-1" v-if="showAutoAddStorageOption">
+						<div class="text-base text-gray-700">Auto Add-on Storage</div>
+						<div class="text-base font-medium text-green-900">
+							{{ enableAutoAddStorage ? 'Enabled' : 'Disabled' }}
+						</div>
+					</div>
+
 					<hr class="h-2 mt-2" v-if="_totalPerMonth" />
 
 					<!-- Total Cost -->
@@ -821,6 +829,14 @@
 					<div class="text-base text-gray-700">Plan</div>
 					<div class="text-base font-medium">
 						{{ $format.planTitle($resources.hybridOptions.data.plans[0]) }}/mo
+					</div>
+				</div>
+
+				<!-- Auto Add-on Storage -->
+				<div class="flex flex-col space-y-1" v-if="showAutoAddStorageOption">
+					<div class="text-base text-gray-700">Auto Add-on Storage</div>
+					<div class="text-base font-medium text-gray-900">
+						{{ enableAutoAddStorage ? 'Enabled' : 'Disabled' }}
 					</div>
 				</div>
 
