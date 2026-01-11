@@ -7,10 +7,10 @@
 		:modelValue="modelValue"
 		:placeholder="placeholder"
 		@update:query="onQuery"
-		@update:model-value="
+		@update:modelValue="
 			(option) => {
-				if (option?.value) {
-					$emit('update:modelValue', option.value);
+				if (option) {
+					$emit('update:modelValue', option);
 				} else {
 					$emit('update:modelValue', undefined);
 				}

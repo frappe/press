@@ -93,6 +93,7 @@
 								$resources.setupAccount.loading ||
 								$resources.acceptInvite.loading
 							"
+							type="submit"
 						>
 							{{
 								is2FA ? 'Verify' : isInvitation ? 'Accept' : 'Create account'

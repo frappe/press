@@ -59,6 +59,7 @@
 						label="Create site"
 						:loading="findingClosestServer || $resources.createSite?.loading"
 						:loadingText="'Creating site...'"
+						type="submit"
 					/>
 				</form>
 			</LoginBox>
