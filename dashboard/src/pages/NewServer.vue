@@ -1010,12 +1010,8 @@ export default {
 			this.agreedToRegionConsent = false;
 		},
 		serverRegion() {
-			this.serviceType = 'Standard';
-			this.appServerPlanType = '';
-			this.dbServerPlanType = '';
-			this.appServerPlan = '';
-			this.dbServerPlan = '';
-			this.unifiedServer = false;
+			// Let selectedCluster watcher handle all plan selection logic
+			// The selectedCluster computed depends on serverRegion, so it will update automatically
 		},
 		serverType() {
 			this.appServerPlan = '';
@@ -1098,16 +1094,30 @@ export default {
 						this.avoidAutoResetPlanSelection = false;
 					});
 				} else {
-					// No defaults configured, reset and let watchers auto-select
+					// No defaults configured, reset values
 					this.serviceType = 'Standard';
 					this.unifiedServer = false;
-					this.appServerPlanType = '';
-					this.dbServerPlanType = '';
 					this.appServerPlan = '';
 					this.dbServerPlan = '';
+
+					// Use $nextTick to ensure availableAppPlanTypes/availableDbPlanTypes
+					// computed properties have updated with the new cluster before we auto-select
+					this.$nextTick(() => {
+						if (this.availableAppPlanTypes.length > 0) {
+							this.appServerPlanType = this.availableAppPlanTypes[0].name;
+						} else {
+							this.appServerPlanType = '';
+						}
+						if (this.availableDbPlanTypes.length > 0) {
+							this.dbServerPlanType = this.availableDbPlanTypes[0].name;
+						} else {
+							this.dbServerPlanType = '';
+						}
+					});
 				}
 			} else {
 				this.serviceType = 'Standard';
+				this.unifiedServer = false;
 				this.appServerPlan = '';
 				this.appServerPlanType = '';
 				this.dbServerPlan = '';
