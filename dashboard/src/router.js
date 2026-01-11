@@ -372,6 +372,12 @@ let router = createRouter({
 			props: true,
 		},
 		{
+			name: 'NewSiteProgress',
+			path: '/sites/new/progress/:siteGroupDeployName',
+			component: () => import('./pages/NewSiteProgress.vue'),
+			props: true,
+		},
+		{
 			path: '/developer-reply/:marketplaceApp/:reviewId',
 			name: 'ReplyMarketplaceApp',
 			component: () =>
