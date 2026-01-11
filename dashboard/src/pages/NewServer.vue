@@ -1506,13 +1506,28 @@ export default {
 			);
 		},
 		showUnifiedServerOption() {
-			return (
-				this.serverType === 'dedicated' &&
-				this.serverRegion &&
-				this.serverProvider &&
-				this.options.regions_data[this.serverRegion]?.providers[
-					this.serverProvider
-				]?.has_unified_server_support
+			if (
+				!(
+					this.serverType === 'dedicated' &&
+					this.serverRegion &&
+					this.serverProvider &&
+					this.options.regions_data[this.serverRegion]?.providers[
+						this.serverProvider
+					]?.has_unified_server_support
+				)
+			) {
+				return false;
+			}
+
+			// Check if there are any app plans with unified server support for this cluster
+			const plansToCheck =
+				this.serviceType === 'Standard'
+					? this.options.app_plans
+					: this.options.app_premium_plans;
+
+			return plansToCheck?.some(
+				(plan) =>
+					plan.cluster === this.selectedCluster && plan.allow_unified_server,
 			);
 		},
 		_totalPerMonth() {
