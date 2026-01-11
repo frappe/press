@@ -1054,37 +1054,57 @@ export default {
 			this.dbServerPlan = '';
 		},
 		selectedCluster(val) {
-			this.avoidAutoResetPlanSelection = true;
 			if (val) {
-				this.unifiedServer =
-					this.selectedClusterDetails.by_default_select_unified_mode || false;
+				// Check if we have cluster defaults to apply
+				const hasDefaults =
+					this.selectedClusterDetails.default_app_server_plan_type ||
+					this.selectedClusterDetails.default_app_server_plan;
 
-				// Determine service type based on whether the default app plan is premium
-				const defaultAppPlan = this.getPlan(
-					this.selectedClusterDetails.default_app_server_plan,
-					'Server',
-				);
-				if (defaultAppPlan?.premium) {
-					this.serviceType = 'Premium';
+				if (hasDefaults) {
+					this.avoidAutoResetPlanSelection = true;
+
+					this.unifiedServer =
+						this.selectedClusterDetails.by_default_select_unified_mode || false;
+
+					// Determine service type based on whether the default app plan is premium
+					const defaultAppPlan = this.getPlan(
+						this.selectedClusterDetails.default_app_server_plan,
+						'Server',
+					);
+					if (defaultAppPlan?.premium) {
+						this.serviceType = 'Premium';
+					} else {
+						this.serviceType = 'Standard';
+					}
+
+					this.appServerPlanType =
+						this.selectedClusterDetails.default_app_server_plan_type || '';
+					this.appServerPlan = defaultAppPlan || '';
+
+					if (this.unifiedServer) {
+						this.dbServerPlanType = '';
+						this.dbServerPlan = '';
+					} else {
+						this.dbServerPlanType =
+							this.selectedClusterDetails.default_db_server_plan_type || '';
+						this.dbServerPlan =
+							this.getPlan(
+								this.selectedClusterDetails.default_db_server_plan,
+								'Database Server',
+							) || '';
+					}
+
+					this.$nextTick(() => {
+						this.avoidAutoResetPlanSelection = false;
+					});
 				} else {
+					// No defaults configured, reset and let watchers auto-select
 					this.serviceType = 'Standard';
-				}
-
-				this.appServerPlanType =
-					this.selectedClusterDetails.default_app_server_plan_type || '';
-				this.appServerPlan = defaultAppPlan || '';
-
-				if (this.unifiedServer) {
+					this.unifiedServer = false;
+					this.appServerPlanType = '';
 					this.dbServerPlanType = '';
+					this.appServerPlan = '';
 					this.dbServerPlan = '';
-				} else {
-					this.dbServerPlanType =
-						this.selectedClusterDetails.default_db_server_plan_type || '';
-					this.dbServerPlan =
-						this.getPlan(
-							this.selectedClusterDetails.default_db_server_plan,
-							'Database Server',
-						) || '';
 				}
 			} else {
 				this.serviceType = 'Standard';
@@ -1093,9 +1113,6 @@ export default {
 				this.dbServerPlan = '';
 				this.dbServerPlanType = '';
 			}
-			this.$nextTick(() => {
-				this.avoidAutoResetPlanSelection = false;
-			});
 		},
 		availableAppPlanTypes() {
 			if (this.avoidAutoResetPlanSelection) return;
