@@ -610,6 +610,11 @@ def options():
 			"cloud_provider",
 			"public",
 			"has_unified_server_support",
+			"default_app_server_plan",
+			"default_app_server_plan_type",
+			"default_db_server_plan",
+			"default_db_server_plan_type",
+			"by_default_select_unified_mode",
 		],
 	)
 
@@ -648,6 +653,11 @@ def options():
 			"beta": region.get("beta", 0),
 			"has_add_on_storage_support": region.get("has_add_on_storage_support", 0),
 			"has_unified_server_support": region.get("has_unified_server_support", 0),
+			"default_app_server_plan": region.get("default_app_server_plan"),
+			"default_app_server_plan_type": region.get("default_app_server_plan_type"),
+			"default_db_server_plan": region.get("default_db_server_plan"),
+			"default_db_server_plan_type": region.get("default_db_server_plan_type"),
+			"by_default_select_unified_mode": region.get("by_default_select_unified_mode"),
 		}
 
 	default_server_plan_type = frappe.db.get_single_value("Press Settings", "default_server_plan_type")
@@ -770,6 +780,7 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 			"premium",
 			"platform",
 			"plan_type",
+			"allow_unified_server",
 		],
 		filters=filters,
 	)

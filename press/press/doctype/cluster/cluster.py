@@ -68,8 +68,13 @@ class Cluster(Document):
 		aws_access_key_id: DF.Data | None
 		aws_secret_access_key: DF.Password | None
 		beta: DF.Check
+		by_default_select_unified_mode: DF.Check
 		cidr_block: DF.Data | None
 		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner", "Frappe Compute"]
+		default_app_server_plan: DF.Link | None
+		default_app_server_plan_type: DF.Link | None
+		default_db_server_plan: DF.Link | None
+		default_db_server_plan_type: DF.Link | None
 		description: DF.Data | None
 		enable_autoscaling: DF.Check
 		has_add_on_storage_support: DF.Check

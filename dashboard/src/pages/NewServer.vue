@@ -167,13 +167,51 @@
 					<!-- Add a check if unified server plan is available here -->
 					<div
 						v-if="showUnifiedServerOption"
-						class="flex items-center space-x-2 text-sm text-gray-600"
+						class="flex flex-col space-y-2 text-sm text-gray-600 w-full"
 					>
-						<FormControl
-							type="checkbox"
-							v-model="unifiedServer"
-							label="Opt for cheaper unified server (Single server for App and DB)"
-						/>
+						<h2 class="text-base font-semibold leading-6 text-gray-900">
+							Deployment Mode
+						</h2>
+
+						<div class="mt-2 w-full space-y-2">
+							<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+								<button
+									v-for="c in [
+										{
+											name: 'Seperate Server for App and DB',
+											description:
+												'Standard deployment with dedicated App and DB servers (recommended)',
+											unifiedServer: false,
+										},
+										{
+											name: 'Single Unified Server for App and DB',
+											description:
+												'Cheaper option with a single server for both App and DB',
+											unifiedServer: true,
+										},
+									]"
+									:key="c.name"
+									@click="unifiedServer = c.unifiedServer"
+									:class="[
+										unifiedServer == c.unifiedServer
+											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
+											: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
+										'flex w-full items-center rounded-md border p-2.5 text-left text-base text-gray-900',
+									]"
+								>
+									<div
+										class="flex w-full items-center justify-between space-x-2"
+									>
+										<span class="text-sm font-medium">
+											{{ c.name }}
+										</span>
+										<Tooltip :text="c.description">
+											<lucide-info class="h-4 w-4 text-gray-500" />
+										</Tooltip>
+									</div>
+								</button>
+							</div>
+						</div>
 					</div>
 					<!-- Chose Plan Type -->
 					<!-- Choose Service Type (Premium/Standard) -->
@@ -956,6 +994,7 @@ export default {
 			enableAutoAddStorage: false,
 			agreedToRegionConsent: false,
 			unifiedServer: false,
+			avoidAutoResetPlanSelection: false,
 		};
 	},
 	watch: {
@@ -997,18 +1036,70 @@ export default {
 			}
 		},
 		serviceType() {
+			if (this.avoidAutoResetPlanSelection) return;
+
 			this.appServerPlanType = '';
 			this.dbServerPlanType = '';
 			this.appServerPlan = '';
 			this.dbServerPlan = '';
 		},
-		selectedCluster() {
+		unifiedServer() {
+			if (this.avoidAutoResetPlanSelection) return;
+
+			// Reset plan selections when unified server mode changes
+			// as available plans are filtered by allow_unified_server
 			this.appServerPlanType = '';
 			this.dbServerPlanType = '';
 			this.appServerPlan = '';
 			this.dbServerPlan = '';
+		},
+		selectedCluster(val) {
+			this.avoidAutoResetPlanSelection = true;
+			if (val) {
+				this.unifiedServer =
+					this.selectedClusterDetails.by_default_select_unified_mode || false;
+
+				// Determine service type based on whether the default app plan is premium
+				const defaultAppPlan = this.getPlan(
+					this.selectedClusterDetails.default_app_server_plan,
+					'Server',
+				);
+				if (defaultAppPlan?.premium) {
+					this.serviceType = 'Premium';
+				} else {
+					this.serviceType = 'Standard';
+				}
+
+				this.appServerPlanType =
+					this.selectedClusterDetails.default_app_server_plan_type || '';
+				this.appServerPlan = defaultAppPlan || '';
+
+				if (this.unifiedServer) {
+					this.dbServerPlanType = '';
+					this.dbServerPlan = '';
+				} else {
+					this.dbServerPlanType =
+						this.selectedClusterDetails.default_db_server_plan_type || '';
+					this.dbServerPlan =
+						this.getPlan(
+							this.selectedClusterDetails.default_db_server_plan,
+							'Database Server',
+						) || '';
+				}
+			} else {
+				this.serviceType = 'Standard';
+				this.appServerPlan = '';
+				this.appServerPlanType = '';
+				this.dbServerPlan = '';
+				this.dbServerPlanType = '';
+			}
+			this.$nextTick(() => {
+				this.avoidAutoResetPlanSelection = false;
+			});
 		},
 		availableAppPlanTypes() {
+			if (this.avoidAutoResetPlanSelection) return;
+
 			// Auto-select first plan type as default
 			if (this.availableAppPlanTypes.length > 0) {
 				this.appServerPlanType = this.availableAppPlanTypes[0].name;
@@ -1017,6 +1108,8 @@ export default {
 			}
 		},
 		availableDbPlanTypes() {
+			if (this.avoidAutoResetPlanSelection) return;
+
 			// Auto-select first plan type as default
 			if (this.availableDbPlanTypes.length > 0) {
 				this.dbServerPlanType = this.availableDbPlanTypes[0].name;
@@ -1025,9 +1118,11 @@ export default {
 			}
 		},
 		appServerPlanType() {
+			if (this.avoidAutoResetPlanSelection) return;
 			this.appServerPlan = '';
 		},
 		dbServerPlanType() {
+			if (this.avoidAutoResetPlanSelection) return;
 			this.dbServerPlan = '';
 		},
 	},
@@ -1258,18 +1353,23 @@ export default {
 			return this.options.regions_data[this.serverRegion]?.providers || {};
 		},
 		selectedCluster() {
+			return this.selectedClusterDetails?.cluster_name;
+		},
+		selectedClusterDetails() {
 			if (!this.serverRegion) return null;
 			if (!this.options?.regions_data) return null;
 			if (!this.serverProvider) return null;
 			return this.options.regions_data[this.serverRegion]?.providers[
 				this.serverProvider
-			]?.cluster_name;
+			];
 		},
 		hasPremiumPlansForCluster() {
 			if (!this.selectedCluster || !this.options?.app_premium_plans)
 				return false;
 			return this.options.app_premium_plans.some(
-				(plan) => plan.cluster === this.selectedCluster,
+				(plan) =>
+					plan.cluster === this.selectedCluster &&
+					(this.unifiedServer ? plan.allow_unified_server : true),
 			);
 		},
 		availableAppPlanTypes() {
@@ -1285,7 +1385,9 @@ export default {
 			for (const [key, planType] of Object.entries(planTypeData)) {
 				const hasAppPlans = plansToCheck.some(
 					(plan) =>
-						plan.cluster === this.selectedCluster && plan.plan_type === key,
+						plan.cluster === this.selectedCluster &&
+						plan.plan_type === key &&
+						(this.unifiedServer ? plan.allow_unified_server : true),
 				);
 
 				if (hasAppPlans) {
@@ -1313,7 +1415,9 @@ export default {
 			for (const [key, planType] of Object.entries(planTypeData)) {
 				const hasDbPlans = plansToCheck.some(
 					(plan) =>
-						plan.cluster === this.selectedCluster && plan.plan_type === key,
+						plan.cluster === this.selectedCluster &&
+						plan.plan_type === key &&
+						(this.unifiedServer ? plan.allow_unified_server : true),
 				);
 
 				if (hasDbPlans) {
@@ -1346,7 +1450,8 @@ export default {
 				return (
 					p.cluster === this.selectedCluster &&
 					p.plan_type === this.appServerPlanType &&
-					(!isARMSupportedCluster || p.platform === 'arm64')
+					(!isARMSupportedCluster || p.platform === 'arm64') &&
+					(this.unifiedServer ? p.allow_unified_server : true)
 				);
 			});
 		},
@@ -1368,7 +1473,8 @@ export default {
 				return (
 					p.cluster === this.selectedCluster &&
 					p.plan_type === this.dbServerPlanType &&
-					(!isARMSupportedCluster || p.platform === 'arm64')
+					(!isARMSupportedCluster || p.platform === 'arm64') &&
+					(this.unifiedServer ? p.allow_unified_server : true)
 				);
 			});
 		},
@@ -1521,6 +1627,24 @@ export default {
 			if (!plan?.plan_type || !this.options?.plan_types) return '';
 			const planType = this.options.plan_types[plan.plan_type];
 			return planType?.title || plan.plan_type;
+		},
+		getPlan(plan_name, server_type) {
+			if (!plan_name || !this.options) return null;
+
+			if (server_type === 'Server') {
+				return (
+					this.options.app_plans?.find((p) => p.name === plan_name) ||
+					this.options.app_premium_plans?.find((p) => p.name === plan_name) ||
+					null
+				);
+			} else if (server_type === 'Database Server') {
+				return (
+					this.options.db_plans?.find((p) => p.name === plan_name) ||
+					this.options.db_premium_plans?.find((p) => p.name === plan_name) ||
+					null
+				);
+			}
+			return null;
 		},
 	},
 };
