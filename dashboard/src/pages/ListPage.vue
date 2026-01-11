@@ -1,5 +1,6 @@
 <template>
 	<div class="flex h-full flex-col">
+<<<<<<< HEAD
 		<div class="sticky top-0 z-10 shrink-0">
 			<Header>
 				<Breadcrumbs
@@ -7,6 +8,13 @@
 				/>
 			</Header>
 		</div>
+=======
+		<Header :sticky="true">
+			<Breadcrumbs
+				:items="[{ label: object.list.title, route: object.list.route }]"
+			/>
+		</Header>
+>>>>>>> 77cede00a (fix(dependency): Resolve z-index overlap for Header)
 		<div class="p-5">
 			<AlertAddPaymentMode
 				class="mb-5"
