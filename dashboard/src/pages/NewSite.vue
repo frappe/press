@@ -111,8 +111,48 @@
 				</div>
 			</div>
 			<div
+				v-if="!bench && selectedVersion && options.providers?.length"
 				class="flex flex-col"
-				v-if="selectedVersion?.group?.clusters?.length"
+			>
+				<h2 class="text-base font-medium leading-6 text-gray-900">
+					Select Provider
+				</h2>
+				<div class="mt-2 w-full space-y-2">
+					<div class="grid grid-cols-2 gap-3">
+						<button
+							v-for="p in options.providers"
+							:key="p.name"
+							@click="provider = p.name"
+							:class="[
+								provider === p.name
+									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
+									: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
+								'flex w-full items-center rounded-md border p-2 text-left text-base text-gray-900',
+							]"
+						>
+							<div class="flex w-full items-center justify-between">
+								<div class="flex w-full items-center space-x-2">
+									<img
+										v-if="p.image"
+										:src="p.image"
+										class="h-5 w-5 rounded-sm"
+									/>
+									<span class="text-sm font-medium">
+										{{ p.title }}
+									</span>
+								</div>
+							</div>
+						</button>
+					</div>
+				</div>
+			</div>
+			<div
+				class="flex flex-col"
+				v-if="
+					selectedVersion?.group &&
+					filteredClusters.length &&
+					(provider || bench)
+				"
 			>
 				<h2 class="text-base font-medium leading-6 text-gray-900">
 					Select Region
@@ -120,7 +160,7 @@
 				<div class="mt-2 w-full space-y-2">
 					<div class="grid grid-cols-2 gap-3">
 						<button
-							v-for="c in selectedVersion.group.clusters"
+							v-for="c in filteredClusters"
 							:key="c.name"
 							@click="cluster = c.name"
 							:class="[
@@ -165,8 +205,24 @@
 						:selectedCluster="cluster"
 						:selectedApps="apps"
 						:selectedVersion="version"
+						:selectedProvider="provider"
 						:hideRestrictedPlans="selectedLocalisationCountry"
 					/>
+				</div>
+				<div
+					v-if="!bench && plan?.private_bench_support"
+					class="mt-4 text-xs text-gray-700"
+				>
+					<div
+						class="flex items-center rounded bg-blue-50 p-2 text-p-base font-medium text-blue-800"
+					>
+						<lucide-info class="h-4 w-8 text-blue-600" />
+						<span class="ml-4">
+							Your site will be created on a <strong>private bench</strong>. You
+							can install custom apps and have full control over your
+							deployment.
+						</span>
+					</div>
 				</div>
 				<div class="mt-4 text-xs text-gray-700">
 					<div
@@ -278,6 +334,7 @@ import {
 	debounce,
 	Breadcrumbs,
 	getCachedDocumentResource,
+	Badge,
 } from 'frappe-ui';
 import SitePlansCards from '../components/SitePlansCards.vue';
 import { validateSubdomain } from '../utils/site';
@@ -304,12 +361,14 @@ export default {
 		Tooltip,
 		Summary,
 		Header,
+		Badge,
 	},
 	data() {
 		return {
 			version: null,
 			subdomain: '',
 			cluster: null,
+			provider: null,
 			plan: null,
 			apps: [],
 			appPlans: {},
@@ -346,12 +405,32 @@ export default {
 		},
 		version() {
 			this.cluster = null;
-			this.cluster = this.closestCluster;
+			this.provider = null;
+			this.agreedToRegionConsent = false;
+		},
+		provider() {
+			if (this.bench) {
+				// provider is inferred from cluster selection, so avoid clearing it
+				return;
+			}
+
+			this.cluster = null;
+			this.plan = null;
 			this.agreedToRegionConsent = false;
 		},
 		cluster() {
 			this.plan = null;
 			this.agreedToRegionConsent = false;
+
+			// For bench flow, set provider based on the selected cluster's cloud_provider
+			if (this.bench && this.cluster) {
+				const selectedCluster = this.selectedVersion?.group?.clusters.find(
+					(c) => c.name === this.cluster,
+				);
+				if (selectedCluster?.cloud_provider) {
+					this.provider = selectedCluster.cloud_provider;
+				}
+			}
 		},
 		subdomain: {
 			handler: debounce(function (value) {
@@ -540,9 +619,26 @@ export default {
 			}));
 		},
 		selectedClusterTitle() {
-			return this.selectedVersion?.group?.clusters?.find(
-				(c) => c.name === this.cluster,
-			)?.title;
+			const allClusters = [
+				...(this.selectedVersion?.group?.clusters || []),
+				...(this.options.additional_clusters || []),
+			];
+			return allClusters.find((c) => c.name === this.cluster)?.title;
+		},
+		filteredClusters() {
+			if (!this.selectedVersion?.group?.clusters) return [];
+
+			const versionClusters = this.selectedVersion.group.clusters;
+
+			if (!this.provider) return versionClusters;
+
+			// version clusters with additional private bench clusters
+			const allClusters = [
+				...versionClusters,
+				...(this.options.additional_clusters || []),
+			];
+
+			return allClusters.filter((c) => c.cloud_provider === this.provider);
 		},
 		selectedVersionApps() {
 			let apps = [];

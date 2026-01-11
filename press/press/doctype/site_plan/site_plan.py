@@ -24,6 +24,7 @@ class SitePlan(Plan):
 
 		allow_downgrading_from_other_plan: DF.Check
 		allowed_apps: DF.Table[SitePlanAllowedApp]
+		cloud_providers: DF.Table[CloudProviders]
 		cluster: DF.Link | None
 		cpu_time_per_day: DF.Float
 		database_access: DF.Check
@@ -44,6 +45,7 @@ class SitePlan(Plan):
 		plan_title: DF.Data | None
 		price_inr: DF.Currency
 		price_usd: DF.Currency
+		private_bench_support: DF.Check
 		private_benches: DF.Check
 		release_groups: DF.Table[SitePlanReleaseGroup]
 		roles: DF.Table[HasRole]
