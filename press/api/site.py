@@ -529,6 +529,7 @@ def app_details_for_new_public_site():
 
 @frappe.whitelist()
 def options_for_new(for_bench: str | None = None):  # noqa: C901
+	from press.press.doctype.cloud_provider.cloud_provider import get_cloud_providers
 	from press.utils import get_nearest_cluster
 
 	available_versions = get_available_versions(for_bench)
@@ -592,6 +593,30 @@ def options_for_new(for_bench: str | None = None):  # noqa: C901
 		["name", "default_cluster as cluster"],
 	)
 
+	# providers list from all clusters across versions
+	unique_providers = {}
+	cloud_providers = get_cloud_providers()
+	existing_clusters = set()
+
+	for version in available_versions:
+		for cluster in version.group.clusters or []:
+			existing_clusters.add(cluster.get("name"))
+			provider_name = cluster.get("cloud_provider")
+			if provider_name and provider_name not in unique_providers:
+				provider_info = cloud_providers.get(provider_name, {})
+				unique_providers[provider_name] = {
+					"name": provider_name,
+					"title": provider_info.get("title", provider_name),
+					"image": provider_info.get("image"),
+				}
+
+	# Get additional clusters with active servers for deploying sites on private benches
+	private_bench_clusters = []
+	if not for_bench:
+		private_bench_clusters = get_additional_clusters_for_private_benches(
+			existing_clusters, cloud_providers, unique_providers
+		)
+
 	return {
 		"versions": available_versions,
 		"domain": default_domain,
@@ -599,6 +624,8 @@ def options_for_new(for_bench: str | None = None):  # noqa: C901
 		"cluster_specific_root_domains": cluster_specific_root_domains,
 		"marketplace_details": marketplace_details,
 		"app_source_details": app_source_details_grouped,
+		"providers": list(unique_providers.values()),
+		"additional_clusters": private_bench_clusters,
 	}
 
 
@@ -702,7 +729,7 @@ def set_bench_and_clusters(version, for_bench):
 		clusters = frappe.db.get_all(
 			"Cluster",
 			filters={"name": ("in", cluster_names)},
-			fields=["name", "title", "image", "beta"],
+			fields=["name", "title", "image", "beta", "cloud_provider"],
 		)
 		if not for_bench:
 			proxy_servers = frappe.db.get_all(
@@ -718,6 +745,71 @@ def set_bench_and_clusters(version, for_bench):
 				cluster.proxy_server = find(proxy_servers, lambda x: x.cluster == cluster.name)
 
 		version.group.clusters = clusters
+
+
+def get_additional_clusters_for_private_benches(existing_clusters, cloud_providers, unique_providers):
+	"""
+	Fetch clusters from active public servers that are not already in existing_clusters(from benches linked to public release groups) and have a provider that's enabled in at least Site Plan with Private Bench enabled
+	"""
+	private_bench_site_plans_providers = frappe.db.get_all(
+		"Site Plan",
+		filters={"private_bench_support": 1, "enabled": 1, "dedicated_server_plan": 0},
+		pluck="name",
+	)
+
+	if not private_bench_site_plans_providers:
+		return []
+
+	allowed_providers = frappe.db.get_all(
+		"Cloud Providers",
+		filters={"parent": ("in", private_bench_site_plans_providers)},
+		pluck="cloud_provider",
+	)
+
+	if not allowed_providers:
+		return []
+
+	# Find active public servers from these providers and their clusters
+	additional_clusters = []
+	servers_with_allowed_providers = frappe.db.get_all(
+		"Server",
+		filters={
+			"status": "Active",
+			"public": 1,
+			"provider": ("in", allowed_providers),
+		},
+		fields=["cluster", "provider"],
+	)
+
+	seen_clusters = set()
+	for server in servers_with_allowed_providers:
+		cluster_name = server.get("cluster")
+		if cluster_name in existing_clusters or cluster_name in seen_clusters:
+			continue
+
+		provider_name = server.get("provider")
+
+		cluster_info = frappe.db.get_value(
+			"Cluster",
+			cluster_name,
+			["name", "title", "image", "beta", "cloud_provider"],
+			as_dict=True,
+		)
+
+		if cluster_info:
+			additional_clusters.append(cluster_info)
+			seen_clusters.add(cluster_name)
+
+			# Ensure provider is in unique_providers
+			if provider_name and provider_name not in unique_providers:
+				provider_info = cloud_providers.get(provider_name, {})
+				unique_providers[provider_name] = {
+					"name": provider_name,
+					"title": provider_info.get("title", provider_name),
+					"image": provider_info.get("image"),
+				}
+
+	return additional_clusters
 
 
 @frappe.whitelist()
@@ -834,10 +926,20 @@ def get_site_plans():
 			"dedicated_server_plan",
 			"is_trial_plan",
 			"allow_downgrading_from_other_plan",
+			"private_bench_support",
 		],
 		# TODO: Remove later, temporary change because site plan has all document_type plans
 		filters={"document_type": "Site"},
 	)
+
+	# Fetch cloud_providers for each plan
+	for plan in plans:
+		plan.cloud_providers = frappe.get_all(
+			"Cloud Providers",
+			filters={"parent": plan.name},
+			fields=["cloud_provider"],
+			pluck="cloud_provider",
+		)
 
 	plan_names = [x.name for x in plans]
 	if len(plan_names) == 0:

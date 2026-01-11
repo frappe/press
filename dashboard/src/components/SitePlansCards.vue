@@ -15,6 +15,7 @@ export default {
 		'selectedCluster',
 		'selectedApps',
 		'selectedVersion',
+		'selectedProvider',
 		'hideRestrictedPlans',
 	],
 	emits: ['update:modelValue'],
@@ -82,6 +83,20 @@ export default {
 			if (this.hideRestrictedPlans) {
 				plans = plans.filter((plan) => !plan.restricted_plan);
 			}
+			if (this.selectedProvider) {
+				plans = plans.map((plan) => {
+					return {
+						...plan,
+						disabled:
+							plan.disabled ||
+							(plan.cloud_providers && plan.cloud_providers.length > 0
+								? !plan.cloud_providers.includes(this.selectedProvider)
+								: false),
+					};
+				});
+			}
+
+			plans = plans.filter((plan) => !plan.disabled);
 
 			return plans.map((plan) => {
 				return {
