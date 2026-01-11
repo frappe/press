@@ -289,7 +289,99 @@ def new(site):
 	if not hasattr(site, "domain") and not site.get("domain"):
 		site["domain"] = frappe.db.get_single_value("Press Settings", "domain")
 
+	plan = site.get("plan")
+	if frappe.db.get_value("Site Plan", plan, "private_bench_support"):
+		return create_site_on_private_bench(
+			subdomain=site.get("name"),
+			plan=plan,
+			cluster=site.get("cluster"),
+			apps=site.get("apps", ["frappe"]),
+			version=site.get("version"),
+			provider=site.get("provider"),
+			localisation_country=site.get("localisation_country"),
+		)
+
 	return _new(site)
+
+
+def create_site_on_private_bench(
+	subdomain: str,
+	plan: str,
+	cluster: str,
+	apps: list[str],
+	version: str,
+	provider: str,
+	localisation_country: str | None = None,
+) -> dict:
+	team = get_current_team()
+
+	if localisation_country:
+		localisation_app = frappe.db.get_value(
+			"Marketplace Localisation App", {"country": localisation_country}, "marketplace_app"
+		)
+		if localisation_app:
+			apps.append(localisation_app)
+
+	app_names = [app for app in apps if app != "frappe"]
+
+	AppSource = frappe.qb.DocType("App Source")
+	AppSourceVersion = frappe.qb.DocType("App Source Version")
+	frappe_app_source = (
+		frappe.qb.from_(AppSource)
+		.left_join(AppSourceVersion)
+		.on(AppSource.name == AppSourceVersion.parent)
+		.select(AppSource.name.as_("source"), AppSource.app, AppSourceVersion.version)
+		.where(AppSource.app == "frappe")
+		.where(AppSource.public == 1)
+		.where(AppSourceVersion.version == version)
+		.run(as_dict=True)
+	)
+
+	if app_names:
+		MarketplaceApp = frappe.qb.DocType("Marketplace App")
+		MarketplaceAppVersion = frappe.qb.DocType("Marketplace App Version")
+		app_sources = (
+			frappe.qb.from_(MarketplaceApp)
+			.left_join(MarketplaceAppVersion)
+			.on(MarketplaceApp.name == MarketplaceAppVersion.parent)
+			.select(
+				MarketplaceApp.name.as_("app"),
+				MarketplaceAppVersion.source,
+			)
+			.where(MarketplaceApp.name.isin(app_names))
+			.where(MarketplaceAppVersion.version == version)
+			.orderby(MarketplaceAppVersion.version, order=frappe.qb.desc)
+			.run(as_dict=True)
+		)
+	else:
+		app_sources = []
+
+	apps_with_sources = []
+	sources = {x.app: x.source for x in frappe_app_source + app_sources}
+	for app in apps:
+		if app not in sources:
+			frappe.throw(f"Source not found for app {app}")
+
+		apps_with_sources.append({"app": app, "source": sources[app]})
+
+	# Create Site Group Deploy with auto_provision_bench flag
+	site_group_deploy = frappe.get_doc(
+		{
+			"doctype": "Site Group Deploy",
+			"auto_provision_bench": 1,
+			"site_plan": plan,
+			"subdomain": subdomain,
+			"apps": apps_with_sources,
+			"cluster": cluster,
+			"version": version,
+			"team": team,
+			"provider": provider,
+		}
+	).insert(ignore_permissions=True)
+
+	return {
+		"site_group_deploy": site_group_deploy.name,
+	}
 
 
 def get_app_subscriptions(app_plans, team_name: str):
@@ -751,6 +843,8 @@ def get_additional_clusters_for_private_benches(existing_clusters, cloud_provide
 	"""
 	Fetch clusters from active public servers that are not already in existing_clusters(from benches linked to public release groups) and have a provider that's enabled in at least Site Plan with Private Bench enabled
 	"""
+	from press.press.doctype.release_group.release_group import get_restricted_server_names
+
 	private_bench_site_plans_providers = frappe.db.get_all(
 		"Site Plan",
 		filters={"private_bench_support": 1, "enabled": 1, "dedicated_server_plan": 0},
@@ -769,20 +863,22 @@ def get_additional_clusters_for_private_benches(existing_clusters, cloud_provide
 	if not allowed_providers:
 		return []
 
-	# Find active public servers from these providers and their clusters
-	additional_clusters = []
-	servers_with_allowed_providers = frappe.db.get_all(
+	restricted_server_names = get_restricted_server_names()
+	servers_from_allowed_providers = frappe.db.get_all(
 		"Server",
 		filters={
 			"status": "Active",
 			"public": 1,
+			"use_for_new_benches": 1,
+			"name": ("not in", restricted_server_names),
 			"provider": ("in", allowed_providers),
 		},
 		fields=["cluster", "provider"],
 	)
 
+	additional_clusters = []
 	seen_clusters = set()
-	for server in servers_with_allowed_providers:
+	for server in servers_from_allowed_providers:
 		cluster_name = server.get("cluster")
 		if cluster_name in existing_clusters or cluster_name in seen_clusters:
 			continue
@@ -800,7 +896,6 @@ def get_additional_clusters_for_private_benches(existing_clusters, cloud_provide
 			additional_clusters.append(cluster_info)
 			seen_clusters.add(cluster_name)
 
-			# Ensure provider is in unique_providers
 			if provider_name and provider_name not in unique_providers:
 				provider_info = cloud_providers.get(provider_name, {})
 				unique_providers[provider_name] = {

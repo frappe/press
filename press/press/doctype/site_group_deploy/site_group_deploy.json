@@ -11,6 +11,9 @@
   "site_section",
   "site",
   "subdomain",
+  "site_plan",
+  "auto_provision_bench",
+  "provider",
   "release_group_section",
   "release_group",
   "version",
@@ -104,11 +107,34 @@
    "label": "Team",
    "options": "Team",
    "reqd": 1
+  },
+  {
+   "fieldname": "site_plan",
+   "fieldtype": "Link",
+   "label": "Site Plan",
+   "link_filters": "[[\"Site Plan\",\"document_type\",\"=\",\"Site\"]]",
+   "options": "Site Plan",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fetch_from": "site_plan.private_bench_support",
+   "fieldname": "auto_provision_bench",
+   "fieldtype": "Check",
+   "label": "Auto Provision Bench",
+   "read_only": 1
+  },
+  {
+   "fieldname": "provider",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Provider",
+   "options": "Cloud Provider"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-02 10:30:41.897673",
+ "modified": "2026-01-12 00:55:22.675800",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Group Deploy",
@@ -152,6 +178,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": []

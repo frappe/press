@@ -605,9 +605,7 @@ class DeployCandidate(Document):
 			},
 		)
 		if site_group_deploy:
-			frappe.get_doc("Site Group Deploy", site_group_deploy).update_site_group_deploy_on_deploy_failure(
-				self,
-			)
+			frappe.db.set_value("Site Group Deploy", site_group_deploy, "status", "Bench Deploy Failed")
 
 
 def can_pull_update(file_paths: list[str]) -> bool:
