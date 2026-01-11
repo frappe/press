@@ -557,7 +557,11 @@ class VirtualMachine(Document):
 			},
 			"NetworkInterfaces": [
 				{
-					"AssociatePublicIpAddress": True,
+					"AssociatePublicIpAddress": self.series
+					not in (
+						"f",
+						"m",
+					),
 					"DeleteOnTermination": True,
 					"DeviceIndex": 0,
 					"PrivateIpAddress": self.private_ip_address,
