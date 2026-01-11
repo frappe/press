@@ -1029,7 +1029,7 @@ class Cluster(Document):
 
 		team = team or get_current_team()
 		vm = self.create_vm(
-			machine_type=plan.instance_type,
+			machine_type=str(plan.instance_type),
 			platform=plan.platform,
 			disk_size=plan.disk,
 			domain=frappe.db.get_single_value("Press Settings", "domain"),

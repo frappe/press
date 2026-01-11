@@ -595,7 +595,7 @@ def options():
 			and frappe.session.user
 			and frappe.get_cached_value("User", frappe.session.user, "user_type")
 		)
-	) == "System User":
+	) == "System User" or (frappe.local and frappe.local.team and frappe.local.team.hetzner_internal_user):
 		regions_filter.pop("public", None)
 
 	regions = frappe.get_all(

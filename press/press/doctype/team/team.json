@@ -93,6 +93,7 @@
   "security_portal_enabled",
   "benches_enabled",
   "mpesa_enabled",
+  "hetzner_internal_user",
   "discounts_section",
   "discounts",
   "is_us_eu",
@@ -645,6 +646,12 @@
    "fieldname": "hybrid_servers_enabled",
    "fieldtype": "Check",
    "label": "Hybrid Servers Enabled"
+  },
+  {
+   "default": "0",
+   "fieldname": "hetzner_internal_user",
+   "fieldtype": "Check",
+   "label": "Hetzner Internal User"
   }
  ],
  "grid_page_length": 50,
@@ -710,7 +717,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2026-01-09 12:49:28.688740",
+ "modified": "2026-01-11 13:32:31.714758",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

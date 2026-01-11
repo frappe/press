@@ -178,7 +178,7 @@
 								<button
 									v-for="c in [
 										{
-											name: 'Seperate Server for App and DB',
+											name: 'Separate Server for App and DB',
 											description:
 												'Standard deployment with dedicated App and DB servers (recommended)',
 											unifiedServer: false,
