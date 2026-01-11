@@ -409,7 +409,7 @@ class DeployCandidate(Document):
 	def __prepare_chunks(self, packages: list[str]):
 		"""Chunk packages into groups of 140 characters"""
 		# Start with one empty chunk
-		chunks = [[]]
+		chunks: list[list[str]] = [[]]
 		for package in packages:
 			# Appending the package to the last chunk will keep it under 140
 			# Append package to last chunk
@@ -719,7 +719,8 @@ def get_build_stage_and_step(
 	stage = STAGE_SLUG_MAP.get(stage_slug, stage_slug)
 	step = step_slug
 	if stage_slug == "clone" or stage_slug == "apps":
-		step = app_titles.get(step_slug, step_slug)
+		if app_titles:
+			step = app_titles.get(step_slug, step_slug)
 	else:
 		step = STEP_SLUG_MAP.get((stage_slug, step_slug), step_slug)
 	return (stage, step)
