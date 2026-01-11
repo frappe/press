@@ -23,7 +23,7 @@
 			<FormControl
 				label="Select the site where you want to restore the backup"
 				class="mt-4"
-				type="autocomplete"
+				type="combobox"
 				v-model="selectedSite"
 				:options="
 					($resources.sites.data || []).map((site) => {

@@ -38,7 +38,7 @@
 				<FormControl
 					variant="outline"
 					label="Select Bench Group"
-					type="autocomplete"
+					type="combobox"
 					:options="
 						$resources.changeGroupOptions.data.map((group) => ({
 							label: group.title || group.name,

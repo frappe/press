@@ -1,7 +1,7 @@
 <template>
 	<FormControl
 		v-bind="$attrs"
-		type="autocomplete"
+		type="combobox"
 		:label="label"
 		:options="autocompleteOptions"
 		:modelValue="modelValue"

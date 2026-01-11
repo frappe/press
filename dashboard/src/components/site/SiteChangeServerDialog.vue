@@ -40,7 +40,7 @@
 				v-else-if="$resources.changeServerOptions.data.length > 0"
 				label="Select Server"
 				variant="outline"
-				type="autocomplete"
+				type="combobox"
 				:options="$resources.changeServerOptions.data"
 				v-model="targetServer"
 			/>

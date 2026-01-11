@@ -50,7 +50,7 @@
 							</h2>
 							<div class="mt-2 w-full space-y-2">
 								<FormControl
-									type="autocomplete"
+									type="combobox"
 									:options="
 										options.private_groups.map((b) => ({
 											label: b.title,

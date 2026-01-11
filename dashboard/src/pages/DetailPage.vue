@@ -1,5 +1,5 @@
 <template>
-	<Header class="sticky top-0 z-10 bg-white">
+	<Header class="sticky top-0 bg-white">
 		<div class="w-full sm:flex sm:justify-between sm:items-center">
 			<div class="flex items-center space-x-2">
 				<FBreadcrumbs :items="breadcrumbs" />
@@ -36,9 +36,17 @@
 			:document="$resources.document?.doc"
 			:tabs="tabs"
 		>
+			<template #tab-item="{ tab }">
+				<router-link
+					:to="{ name: tab.routeName }"
+					class="flex items-center py-2.5 gap-1.5 text-base text-ink-gray-5 duration-300 ease-in-out hover:text-ink-gray-9 data-[state=active]:text-ink-gray-9"
+				>
+					<component v-if="tab.icon" :is="tab.icon" class="size-4"> </component>
+
+					{{ tab.label }}
+				</router-link>
+			</template>
 			<template #tab-content="{ tab }">
-				<!-- this div is required for some reason -->
-				<div></div>
 				<router-view
 					v-if="$resources.document?.doc"
 					:tab="tab"

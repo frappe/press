@@ -1,0 +1,45 @@
+diff --git a/node_modules/frappe-ui/package.json b/node_modules/frappe-ui/package.json
+index 4a652de..826f0a0 100644
+--- a/node_modules/frappe-ui/package.json
++++ b/node_modules/frappe-ui/package.json
+@@ -4,6 +4,7 @@
+   "description": "A set of components and utilities for rapid UI development",
+   "type": "module",
+   "sideEffects": false,
++  "main": "./src/index.ts",
+   "scripts": {
+     "test": "vitest --run",
+     "type-check": "tsc --noEmit",
+@@ -17,32 +18,6 @@
+     "story:build": "histoire build && cp 404.html .histoire/dist",
+     "story:preview": "histoire preview"
+   },
+-  "exports": {
+-    ".": {
+-      "import": "./src/index.ts",
+-      "types": "./src/index.ts"
+-    },
+-    "./frappe": {
+-      "import": "./frappe/index.js"
+-    },
+-    "./icons": {
+-      "import": "./icons/index.ts"
+-    },
+-    "./tailwind": {
+-      "import": "./src/tailwind/preset.js",
+-      "default": "./src/tailwind/preset.js"
+-    },
+-    "./vite": {
+-      "import": "./vite/index.js"
+-    },
+-    "./style.css": {
+-      "import": "./src/style.css"
+-    },
+-    "./tsconfig.base.json": {
+-      "default": "./tsconfig.base.json",
+-      "types": "./tsconfig.base.json"
+-    }
+-  },
+   "files": [
+     "frappe",
+     "src",

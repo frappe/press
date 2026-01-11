@@ -23,7 +23,7 @@
 			<div v-else class="space-y-4">
 				<FormControl
 					variant="outline"
-					type="autocomplete"
+					type="combobox"
 					label="Choose Region"
 					v-model="selectedRegion"
 					:options="

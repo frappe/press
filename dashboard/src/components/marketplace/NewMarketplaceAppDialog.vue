@@ -28,7 +28,7 @@
 			<LinkControl
 				v-if="selectedBranch"
 				class="mt-4"
-				type="autocomplete"
+				type="combobox"
 				label="Choose Version"
 				:options="{ doctype: 'Frappe Version', filters: { public: 1 } }"
 				v-model="selectedVersion"

@@ -49,7 +49,7 @@
 										'Release Group',
 										'Server',
 										'Database Server',
-									].includes(row.document_type) && !row.plan.includes('hour')
+									].includes(row.document_type) && !row.plan?.includes('hour')
 										? $format.plural(row.quantity, 'day', 'days')
 										: 'hours'
 								}}

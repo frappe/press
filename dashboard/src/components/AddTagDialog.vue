@@ -19,7 +19,7 @@
 			<FormControl
 				v-if="selectedTag?.value !== '__new__'"
 				label="Select tag"
-				type="autocomplete"
+				type="combobox"
 				v-model="selectedTag"
 				:options="tagOptions"
 			/>
