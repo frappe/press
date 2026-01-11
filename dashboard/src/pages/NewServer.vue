@@ -217,7 +217,7 @@
 										serviceType === c.name
 											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
 											: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
-										'flex w-full items-center rounded-md border p-3 text-left text-base text-gray-900',
+										'flex w-full items-center rounded-md border p-2.5 text-left text-base text-gray-900',
 									]"
 								>
 									<div
@@ -300,14 +300,14 @@
 											@click="appServerPlanType = planType.name"
 											:class="[
 												appServerPlanType === planType.name
-													? 'border-gray-900 ring-1 ring-gray-900'
-													: 'border-gray-300',
+													? 'border-gray-900 ring-1 ring-gray-900 z-10'
+													: 'border-gray-300 z-0',
 												index === 0
 													? 'rounded-t-md sm:rounded-l-md sm:rounded-tr-none'
 													: index === availableAppPlanTypes.length - 1
 														? 'rounded-b-md sm:rounded-r-md sm:rounded-bl-none'
 														: 'rounded-none',
-												'flex w-full flex-col overflow-hidden border text-left hover:bg-gray-50',
+												'relative flex w-full flex-col overflow-hidden border text-left hover:bg-gray-50',
 											]"
 										>
 											<div class="w-full p-3">
@@ -406,14 +406,14 @@
 											@click="dbServerPlanType = planType.name"
 											:class="[
 												dbServerPlanType === planType.name
-													? 'border-gray-900 ring-1 ring-gray-900'
-													: 'border-gray-300',
+													? 'border-gray-900 ring-1 ring-gray-900 z-10'
+													: 'border-gray-300 z-0',
 												index === 0
 													? 'rounded-t-md sm:rounded-l-md sm:rounded-tr-none'
 													: index === availableDbPlanTypes.length - 1
 														? 'rounded-b-md sm:rounded-r-md sm:rounded-bl-none'
 														: 'rounded-none',
-												'flex w-full flex-col overflow-hidden border text-left hover:bg-gray-50',
+												'relative flex w-full flex-col overflow-hidden border text-left hover:bg-gray-50',
 											]"
 										>
 											<div class="w-full p-3">
@@ -968,6 +968,7 @@ export default {
 			this.dbServerPlan = '';
 			this.unifiedServer = false;
 			this.enableAutoAddStorage = false;
+			this.agreedToRegionConsent = false;
 		},
 		serverRegion() {
 			this.serviceType = 'Standard';
