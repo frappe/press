@@ -204,18 +204,14 @@
 						:hideRestrictedPlans="selectedLocalisationCountry"
 					/>
 				</div>
-				<div
-					v-if="!bench && plan?.private_bench_support"
-					class="mt-4 text-xs text-gray-700"
-				>
+				<div v-if="isPrivateBenchPlan" class="mt-4 text-xs text-gray-700">
 					<div
 						class="flex items-center rounded bg-blue-50 p-2 text-p-base font-medium text-blue-800"
 					>
 						<lucide-info class="h-4 w-8 text-blue-600" />
 						<span class="ml-4">
 							Your site will be created on a <strong>private bench</strong>. You
-							can install custom apps and have full control over your
-							deployment.
+							can install custom apps and have full control over the bench.
 						</span>
 					</div>
 				</div>
@@ -310,7 +306,11 @@
 					:disabled="!agreedToRegionConsent"
 					@click="$resources.newSite.submit()"
 					:loading="$resources.newSite.loading"
-					:loadingText="'Creating site... This may take a while...'"
+					:loadingText="
+						isPrivateBenchPlan
+							? 'Provisioning private bench and creating site...'
+							: 'Creating site... This may take a while...'
+					"
 				>
 					Create site
 				</Button>
@@ -544,6 +544,7 @@ export default {
 									? this.selectedLocalisationCountry?.value
 									: null,
 								version: this.selectedVersion.name,
+								provider: this.provider,
 								group: this.selectedVersion.group.name,
 								cluster: this.cluster,
 								plan: this.plan.name,
@@ -566,11 +567,18 @@ export default {
 							);
 						}
 					},
-					onSuccess: (site) => {
-						router.push({
-							name: 'Site Job',
-							params: { name: site.site, id: site.job },
-						});
+					onSuccess: (response) => {
+						if (response.site_group_deploy) {
+							router.push({
+								name: 'NewSiteProgress',
+								params: { siteGroupDeployName: response.site_group_deploy },
+							});
+						} else {
+							router.push({
+								name: 'Site Job',
+								params: { name: response.site, id: response.job },
+							});
+						}
 					},
 				};
 			}
@@ -678,6 +686,9 @@ export default {
 			return this.selectedVersionApps.filter(
 				(app) => !this.localisationAppNames.includes(app.app),
 			);
+		},
+		isPrivateBenchPlan() {
+			return !this.bench && Boolean(this.plan?.private_bench_support);
 		},
 		showLocalisationSelector() {
 			if (

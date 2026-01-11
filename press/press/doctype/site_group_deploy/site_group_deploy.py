@@ -15,15 +15,16 @@ class SiteGroupDeploy(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.site_group_deploy_app.site_group_deploy_app import (
-			SiteGroupDeployApp,
-		)
+		from press.press.doctype.site_group_deploy_app.site_group_deploy_app import SiteGroupDeployApp
 
 		apps: DF.Table[SiteGroupDeployApp]
+		auto_provision_bench: DF.Check
 		bench: DF.Link | None
 		cluster: DF.Link
+		provider: DF.Link | None
 		release_group: DF.Link | None
 		site: DF.Link | None
+		site_plan: DF.Link | None
 		status: DF.Literal[
 			"Pending",
 			"Deploying Bench",
@@ -72,9 +73,27 @@ class SiteGroupDeploy(Document):
 			frappe.throw(f"Site with subdomain {self.subdomain} already exists")
 
 	def create_release_group(self):
-		from press.press.doctype.release_group.release_group import new_release_group
+		from press.press.doctype.release_group.release_group import (
+			get_restricted_server_names,
+			new_release_group,
+		)
 
 		apps = [{"app": app.app, "source": app.source} for app in self.apps]
+
+		if self.auto_provision_bench and self.provider:
+			restricted_server_names = get_restricted_server_names()
+			server = frappe.get_all(
+				"Server",
+				{
+					"status": "Active",
+					"cluster": self.cluster,
+					"provider": self.provider,
+					"use_for_new_benches": True,
+					"name": ("not in", restricted_server_names),
+				},
+				pluck="name",
+				limit=1,
+			)
 
 		group = new_release_group(
 			title=self.subdomain,
@@ -82,6 +101,7 @@ class SiteGroupDeploy(Document):
 			apps=apps,
 			team=self.team,
 			cluster=self.cluster,
+			server=server[0] if server else None,
 		)
 
 		self.release_group = group.name
@@ -90,16 +110,19 @@ class SiteGroupDeploy(Document):
 		return group
 
 	def create_site(self):
-		cheapest_private_bench_plan = frappe.db.get_value(
-			"Site Plan",
-			{
-				"private_benches": 1,
-				"document_type": "Site",
-				"price_inr": ["!=", 0],
-				"price_usd": ["!=", 0],
-			},
-			order_by="price_inr asc",
-		)
+		site_plan = self.site_plan
+		if not (site_plan and self.auto_provision_bench):
+			cheapest_private_bench_plan = frappe.db.get_value(
+				"Site Plan",
+				{
+					"private_benches": 1,
+					"document_type": "Site",
+					"price_inr": ["!=", 0],
+					"price_usd": ["!=", 0],
+				},
+				order_by="price_inr asc",
+			)
+			site_plan = cheapest_private_bench_plan
 
 		apps = [{"app": app.app} for app in self.apps]
 		app_plan_map = {app.app: {"name": app.plan} for app in self.apps if app.plan}
@@ -115,7 +138,7 @@ class SiteGroupDeploy(Document):
 					"release_group": self.release_group,
 					"bench": self.bench,
 					"domain": frappe.db.get_single_value("Press Settings", "domain"),
-					"subscription_plan": cheapest_private_bench_plan,
+					"subscription_plan": site_plan,
 					"app_plans": app_plan_map,
 				}
 			).insert()
