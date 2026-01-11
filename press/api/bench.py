@@ -1155,3 +1155,24 @@ def confirm_bench_transfer(key: str):
 		http_status_code=403,
 		indicator_color="red",
 	)
+
+
+@frappe.whitelist()
+def search_releases(
+	app: str,
+	source: str,
+	fields: list,
+	query: str | None = None,
+	page_length: int = 20,
+):
+	DocType = frappe.qb.DocType("App Release")
+	q = (
+		frappe.qb.from_(DocType)
+		.select(*fields)
+		.where(DocType.hash.like(f"%{query}%") | DocType.message.like(f"%{query}%"))
+		.where((DocType.public == 1) & (DocType.status == "Approved"))
+		.where((DocType.app == app) & (DocType.source == source))
+		.orderby(DocType.timestamp, order=frappe.qb.desc)
+		.limit(page_length)
+	)
+	return q.run(as_dict=1)
