@@ -51,7 +51,7 @@
 							v-if="columns?.length || props.log?.length"
 							class="w-full border-separate border-spacing-0"
 						>
-							<thead class="z-5 sticky top-0 w-full rounded bg-gray-100">
+							<thead class="z-5 sticky top-0 z-10 w-full rounded bg-gray-100">
 								<tr
 									v-for="headerGroup in table.getHeaderGroups()"
 									:key="headerGroup.id"

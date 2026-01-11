@@ -8,7 +8,7 @@
 				>
 					<AppSidebar v-if="$session.user" />
 				</div>
-				<div class="w-full overflow-auto" id="scrollContainer">
+				<div class="w-full overflow-auto z-0" id="scrollContainer">
 					<MobileNav
 						v-if="!isSignupFlow && $isMobile && !isHideSidebar && $session.user"
 					/>
