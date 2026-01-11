@@ -2,6 +2,28 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Cluster', {
+	setup: function (frm) {
+		frm.set_query('default_app_server_plan', function () {
+			return {
+				filters: {
+					cluster: frm.doc.name,
+					server_type: 'Server',
+					premium: 0,
+					allow_unified_server: frm.doc.by_default_select_unified_mode ? 1 : 0,
+				},
+			};
+		});
+		frm.set_query('default_db_server_plan', function () {
+			return {
+				filters: {
+					cluster: frm.doc.name,
+					server_type: 'Database Server',
+					premium: 0,
+					allow_unified_server: frm.doc.by_default_select_unified_mode ? 1 : 0,
+				},
+			};
+		});
+	},
 	refresh: function (frm) {
 		[
 			[__('Create Servers'), 'create_servers', frm.doc.status === 'Active'],
