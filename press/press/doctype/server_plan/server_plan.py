@@ -17,6 +17,7 @@ class ServerPlan(Plan):
 		from frappe.core.doctype.has_role.has_role import HasRole
 		from frappe.types import DF
 
+		allow_unified_server: DF.Check
 		cluster: DF.Link | None
 		disk: DF.Int
 		enabled: DF.Check
@@ -44,6 +45,7 @@ class ServerPlan(Plan):
 		"platform",
 		"premium",
 		"plan_type",
+		"allow_unified_server",
 	)
 
 	def get_doc(self, doc):

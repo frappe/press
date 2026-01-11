@@ -11,6 +11,7 @@
   "column_break_ppap",
   "enabled",
   "legacy_plan",
+  "allow_unified_server",
   "pricing_section",
   "price_inr",
   "column_break_sjmg",
@@ -148,11 +149,17 @@
   {
    "fieldname": "column_break_ppap",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_unified_server",
+   "fieldtype": "Check",
+   "label": "Allow Unified Server"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-07 19:26:29.169876",
+ "modified": "2026-01-11 11:38:46.997472",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Plan",
