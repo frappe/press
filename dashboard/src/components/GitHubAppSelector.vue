@@ -30,7 +30,12 @@
 					image: i.image,
 				}))
 			"
-			v-model="selectedGithubUser"
+			:modelValue="selectedGithubUser?.value"
+			@update:modelValue="
+				selectedGithubUser = options.installations.find(
+					(option) => option.id === $event,
+				)
+			"
 		>
 			<template #prefix>
 				<img
@@ -68,7 +73,12 @@
 					value: r.name,
 				}))
 			"
-			v-model="selectedGithubRepository"
+			:modelValue="selectedGithubRepository?.value"
+			@update:modelValue="
+				selectedGithubRepository = (selectedGithubUserData.repos || []).find(
+					(option) => option.name === $event,
+				)
+			"
 		>
 			<template #prefix>
 				<FeatherIcon name="book" class="mr-2 h-4 w-4" />

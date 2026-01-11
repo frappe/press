@@ -7,10 +7,17 @@
 		:modelValue="modelValue"
 		:placeholder="placeholder"
 		@update:query="onQuery"
+<<<<<<< HEAD
 		@update:model-value="
 			(option) => {
 				if (option?.value) {
 					$emit('update:modelValue', option.value);
+=======
+		@update:modelValue="
+			(optionValue) => {
+				if (optionValue) {
+					$emit('update:modelValue', optionValue);
+>>>>>>> 585b118f3 (fix(dependency): Migrate FormControl.combobox implementations)
 				} else {
 					$emit('update:modelValue', undefined);
 				}

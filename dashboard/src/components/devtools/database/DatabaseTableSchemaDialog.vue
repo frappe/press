@@ -12,7 +12,12 @@
 					class="w-full"
 					type="autocomplete"
 					:options="autocompleteOptions"
-					v-model="selectedSchema"
+					:modelValue="selectedSchema?.value"
+					@update:modelValue="
+						selectedSchema = autocompleteOptions.find(
+							(option) => option.value === $event,
+						)
+					"
 				/>
 				<Button
 					icon="copy"
