@@ -734,6 +734,14 @@ class VirtualMachine(Document):
 				return frappe.get_doc(doctype, server)
 		return None
 
+	def get_frappe_compute_status_map(self):
+		# Compute has very basic statuses
+		return {
+			"Running": "Running",
+			"Stopped": "Stopped",
+			"Undefined": "Pending",
+		}
+
 	def get_hetzner_status_map(self):
 		# Hetzner has not status for Terminating or Terminated. Just returns a server not found.
 		return {
@@ -947,7 +955,49 @@ class VirtualMachine(Document):
 			return self._sync_oci(*args, **kwargs)
 		if self.cloud_provider == "Hetzner":
 			return self._sync_hetzner(*args, **kwargs)
+		if self.cloud_provider == "Frappe Compute":
+			return self._sync_frappe_compute(*args, **kwargs)
 		return None
+
+	def _sync_frappe_compute(self, instance=None):
+		try:
+			info = self.client().get_vm_info(instance_id=self.instance_id)
+		except APIError as e:
+			if e.exception_code == "DoesNotExistError":
+				self.status = "Terminated"
+				return
+			raise
+
+		info = frappe._dict(info)
+
+		self.status = self.get_frappe_compute_status_map()[info.state]
+		self.machine_type = info.virtual_machine_type
+		self.vcpu = info.number_of_vcpus
+		self.ram = info.memory
+
+		self.private_ip_address = info.private_ip_addresses[0]
+		self.public_ip_address = info.public_ip_address
+
+		# not implemented yet. mocking
+		self.termination_protection = False
+
+		self.volumes = []
+		for disk in info.disks:
+			disk = frappe._dict(disk)
+			row = frappe._dict()
+			row.idx = disk.idx
+			row.volume_id = disk.name
+			row.size = disk.size
+			row.device = "/dev/" + disk.device
+
+			self.append("volumes", row)
+
+		if self.volumes:
+			self.disk_size = self.get_data_volume().size
+			self.root_disk_size = self.get_root_volume().size
+
+		self.save()
+		self.update_servers()
 
 	def _sync_hetzner(self, server_instance=None):  # noqa: C901
 		if not server_instance:
