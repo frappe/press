@@ -16,13 +16,12 @@ class FrappeComputeClient:
 		self,
 		name: str,
 		image: str,
-		memory: int,
-		number_of_vcpus: int,
-		cloud_init: str,
-		mac_address: str,
-		ip_address: str,
+		machine_type: str,
+		private_ip_address: str,
 		private_network: str,
 		ssh_key: str,
+		cloud_init: str,
+		root_disk_size: int,
 	):
 		url = urljoin(
 			self.base_url, "/api/method/agent.agent.doctype.virtual_machine.virtual_machine.new_vm_from_image"
@@ -31,17 +30,19 @@ class FrappeComputeClient:
 		params = {
 			"name": name,
 			"image": image,
-			"memory": memory,
-			"number_of_vcpus": number_of_vcpus,
-			"cloud_init": cloud_init,
-			"mac_address": mac_address,
-			"ip_address": ip_address,
+			"machine_type": machine_type,
+			"private_ip_address": private_ip_address,
 			"private_network": private_network,
 			"ssh_key": ssh_key,
+			"cloud_init": cloud_init,
+			"root_disk_size": root_disk_size,
 		}
 
 		response = self._send_request(url, "POST", params)
-		return json.loads(response.text)
+		data = json.loads(response.text)
+		if "message" in data:
+			return data["message"]
+		raise APIError(data)
 
 	def start_vm(self, name):
 		url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}/method/start"))
@@ -86,3 +87,9 @@ class FrappeComputeClient:
 
 	def get_all_images(self):
 		return [{"id": "Ubuntu"}]
+
+
+class APIError(Exception):
+	def __init__(self, message, exception_code=None):
+		super().__init__(message)
+		self.exception_code = exception_code
