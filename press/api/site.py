@@ -843,8 +843,6 @@ def get_additional_clusters_for_private_benches(existing_clusters, cloud_provide
 	"""
 	Fetch clusters from active public servers that are not already in existing_clusters(from benches linked to public release groups) and have a provider that's enabled in at least Site Plan with Private Bench enabled
 	"""
-	from press.press.doctype.release_group.release_group import get_restricted_server_names
-
 	private_bench_site_plans_providers = frappe.db.get_all(
 		"Site Plan",
 		filters={"private_bench_support": 1, "enabled": 1, "dedicated_server_plan": 0},
@@ -863,14 +861,11 @@ def get_additional_clusters_for_private_benches(existing_clusters, cloud_provide
 	if not allowed_providers:
 		return []
 
-	restricted_server_names = get_restricted_server_names()
 	servers_from_allowed_providers = frappe.db.get_all(
 		"Server",
 		filters={
 			"status": "Active",
 			"public": 1,
-			"use_for_new_benches": 1,
-			"name": ("not in", restricted_server_names),
 			"provider": ("in", allowed_providers),
 		},
 		fields=["cluster", "provider"],

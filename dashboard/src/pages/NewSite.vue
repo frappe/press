@@ -210,8 +210,9 @@
 					>
 						<lucide-info class="h-4 w-8 text-blue-600" />
 						<span class="ml-4">
-							Your site will be created on a <strong>private bench</strong>. You
-							can install custom apps and have full control over the bench.
+							Your site will be created on a
+							<strong>private bench</strong>.<br />You can install custom apps
+							and have full control over the bench.
 						</span>
 					</div>
 				</div>
