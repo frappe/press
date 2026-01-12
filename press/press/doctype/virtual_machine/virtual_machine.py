@@ -84,8 +84,8 @@ class VirtualMachine(Document):
 		)
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
-		availability_zone: DF.Data
-		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner"]
+		availability_zone: DF.Data | None
+		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner", "Frappe Compute"]
 		cluster: DF.Link
 		data_disk_snapshot: DF.Link | None
 		data_disk_snapshot_attached: DF.Check
@@ -107,7 +107,7 @@ class VirtualMachine(Document):
 		public_ip_address: DF.Data | None
 		ram: DF.Int
 		ready_for_conversion: DF.Check
-		region: DF.Link
+		region: DF.Link | None
 		root_disk_size: DF.Int
 		security_group_id: DF.Data | None
 		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "u", "t", "nfs", "fs"]
@@ -415,17 +415,22 @@ class VirtualMachine(Document):
 
 	def _provision_frappe_compute(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
-		return self.client().create_vm(
-			self.name,
-			"Ubuntu 22.04",
-			1,
-			1,
-			cloud_init=self.get_cloud_init(),
-			mac_address=self.mac_address_of_public_ip,
-			ip_address=self.public_ip_address,
-			private_network=cluster.vpc_id,
-			ssh_key=frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
-		)
+		try:
+			instance_id = self.client().create_vm(
+				name=self.name,
+				image="Ubuntu",
+				machine_type=self.machine_type,
+				private_ip_address=self.private_ip_address,
+				private_network=cluster.vpc_id,
+				ssh_key=frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
+				cloud_init=self.get_cloud_init(),
+				root_disk_size=self.root_disk_size,
+			)
+		except Exception as e:
+			frappe.throw(f"There was an error {e}")
+			return
+		self.instance_id = instance_id
+		self.status = "Pending"
 
 	def _provision_hetzner(self):
 		from hcloud.firewalls.domain import Firewall
