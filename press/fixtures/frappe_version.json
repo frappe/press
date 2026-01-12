@@ -305,7 +305,7 @@
       "parent": "Version 16",
       "parentfield": "dependencies",
       "parenttype": "Frappe Version",
-      "version": "5.26.0"
+      "version": "5.28.0"
      },
      {
       "dependency": "PIP_VERSION",
