@@ -72,28 +72,45 @@ class SiteGroupDeploy(Document):
 		if Site.exists(self.subdomain, domain):
 			frappe.throw(f"Site with subdomain {self.subdomain} already exists")
 
+	def get_optimal_server_for_private_bench(self):
+		servers = frappe.get_all(
+			"Server",
+			filters={
+				"status": "Active",
+				"cluster": self.cluster,
+				"provider": self.provider,
+				"public": True,
+			},
+			fields=["name", "ram"],
+		)
+
+		if not servers:
+			return None
+
+		server_stats = []
+		for server in servers:
+			bench_count = frappe.db.count("Bench", {"server": server.name, "status": "Active"})
+			resource_ratio = server.ram / (bench_count + 1)
+			server_stats.append(
+				{
+					"name": server.name,
+					"resource_ratio": resource_ratio,
+				}
+			)
+
+		server_stats.sort(key=lambda x: -x["resource_ratio"])
+		return [server_stats[0]["name"]] if server_stats else None
+
 	def create_release_group(self):
 		from press.press.doctype.release_group.release_group import (
-			get_restricted_server_names,
 			new_release_group,
 		)
 
 		apps = [{"app": app.app, "source": app.source} for app in self.apps]
 
+		server = ""
 		if self.auto_provision_bench and self.provider:
-			restricted_server_names = get_restricted_server_names()
-			server = frappe.get_all(
-				"Server",
-				{
-					"status": "Active",
-					"cluster": self.cluster,
-					"provider": self.provider,
-					"use_for_new_benches": True,
-					"name": ("not in", restricted_server_names),
-				},
-				pluck="name",
-				limit=1,
-			)
+			server = self.get_optimal_server_for_private_bench()
 
 		group = new_release_group(
 			title=self.subdomain,
@@ -101,7 +118,7 @@ class SiteGroupDeploy(Document):
 			apps=apps,
 			team=self.team,
 			cluster=self.cluster,
-			server=server[0] if server else None,
+			server=server if server else None,
 		)
 
 		self.release_group = group.name
