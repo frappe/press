@@ -1,16 +1,24 @@
 <template>
 	<FormControl
+		ref="formControl"
 		v-bind="$attrs"
 		type="autocomplete"
 		:label="label"
 		:options="autocompleteOptions"
 		:modelValue="modelValue"
 		:placeholder="placeholder"
+<<<<<<< HEAD
 		@update:query="onQuery"
 		@update:model-value="
 			(option) => {
 				if (option?.value) {
 					$emit('update:modelValue', option.value);
+=======
+		@update:modelValue="
+			(optionValue) => {
+				if (optionValue) {
+					$emit('update:modelValue', optionValue);
+>>>>>>> e19c6e39e (fix(dependency): LinkControl combobox now fires event on keystroke)
 				} else {
 					$emit('update:modelValue', undefined);
 				}
@@ -20,6 +28,7 @@
 </template>
 <script>
 import { FormControl, debounce } from 'frappe-ui';
+import { nextTick } from 'vue';
 
 export default {
 	name: 'LinkControl',
@@ -34,6 +43,25 @@ export default {
 			query: '',
 			currentValidValueInOptions: null,
 		};
+	},
+	beforeUnmount() {
+		const root = this.$refs.formControl?.$el;
+		const input = root?.querySelector('input');
+
+		if (!input) return;
+
+		input.removeEventListener('input', this.onNativeInput);
+	},
+	mounted() {
+		nextTick(() => {
+			const root = this.$refs.formControl?.$el;
+			if (!root) return;
+
+			const input = root.querySelector('input');
+
+			if (!input) return;
+			input.addEventListener('input', this.onNativeInput);
+		});
 	},
 	resources: {
 		options() {
@@ -62,6 +90,9 @@ export default {
 		onQuery: debounce(function (query) {
 			this.query = query.trim();
 		}, 500),
+		onNativeInput(e) {
+			this.onQuery(e.target.value);
+		},
 	},
 	computed: {
 		autocompleteOptions() {
