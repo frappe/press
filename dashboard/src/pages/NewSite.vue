@@ -26,29 +26,6 @@
 				:siteOnPublicBench="!bench"
 				v-model="apps"
 			/>
-			<div v-if="showLocalisationSelector" class="space-y-4">
-				<div class="flex space-x-2">
-					<FormControl
-						label="Install Local Compliance App?"
-						v-model="showLocalisationOption"
-						type="checkbox"
-					/>
-					<Tooltip
-						text="A local compliance app allows creating transactions as per statutory compliance. They're maintained by community partners."
-					>
-						<lucide-info class="h-4 w-4 text-gray-500" />
-					</Tooltip>
-				</div>
-				<FormControl
-					class="w-1/2"
-					variant="outline"
-					:class="{ 'pointer-events-none opacity-50': !showLocalisationOption }"
-					label="Select Country"
-					v-model="selectedLocalisationCountry"
-					type="autocomplete"
-					:options="localisationAppCountries"
-				/>
-			</div>
 			<div v-if="!bench">
 				<div class="flex items-center justify-between">
 					<h2 class="text-base font-medium leading-6 text-gray-900">
