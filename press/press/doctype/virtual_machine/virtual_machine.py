@@ -1704,6 +1704,8 @@ class VirtualMachine(Document):
 
 		if server := self.get_server():
 			log_server_activity(self.series, server.name, action="Terminated")
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().terminate_vm(self.name)
 
 	def _wait_for_digital_ocean_resize_action_completion(self, action_id: int):
 		"""Wait for resize to complete before starting the droplet."""

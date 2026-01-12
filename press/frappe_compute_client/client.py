@@ -59,6 +59,10 @@ class FrappeComputeClient:
 		url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}/method/reboot"))
 		return self._send_request(url, "POST", {})
 
+	def terminate_vm(self, name):
+		url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}"))
+		return self._send_request(url, "DELETE", {})
+
 	def attach_volumes(self, name, volumes):
 		url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}/method/attach_volumes"))
 		return self._send_request(url, "POST", {"volumes": volumes}).json()
@@ -97,6 +101,8 @@ class FrappeComputeClient:
 				request_func = requests.post
 			case "PUT":
 				request_func = requests.put
+			case "DELETE":
+				request_func = requests.delete
 			case _:
 				frappe.throw("Method not implemented yet.")
 
