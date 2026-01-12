@@ -802,6 +802,14 @@ class VirtualMachine(Document):
 			"archive": "Terminated",
 		}
 
+	def get_frappe_compute_status_map(self):
+		# Compute has very basic statuses
+		return {
+			"Running": "Running",
+			"Stopped": "Stopped",
+			"Undefined": "Pending",
+		}
+
 	def get_hetzner_status_map(self):
 		# Hetzner has not status for Terminating or Terminated. Just returns a server not found.
 		return {
@@ -1071,6 +1079,8 @@ class VirtualMachine(Document):
 			return self._sync_oci(*args, **kwargs)
 		if self.cloud_provider == "Hetzner":
 			return self._sync_hetzner(*args, **kwargs)
+		if self.cloud_provider == "Frappe Compute":
+			return self._sync_frappe_compute(*args, **kwargs)
 		if self.cloud_provider == "DigitalOcean":
 			return self._sync_digital_ocean(*args, **kwargs)
 		return None
@@ -1099,10 +1109,48 @@ class VirtualMachine(Document):
 		for volume in list(self.temporary_volumes):
 			if volume.device not in attached_devices:
 				self.remove(volume)
+		if self.volumes:
+			self.disk_size = self.get_data_volume().size
+			self.root_disk_size = self.get_root_volume().size
+
+	def _sync_frappe_compute(self, instance=None):
+		try:
+			info = self.client().get_vm_info(instance_id=self.instance_id)
+		except APIError as e:
+			if e.exception_code == "DoesNotExistError":
+				self.status = "Terminated"
+				return
+			raise
+
+		info = frappe._dict(info)
+
+		self.status = self.get_frappe_compute_status_map()[info.state]
+		self.machine_type = info.virtual_machine_type
+		self.vcpu = info.number_of_vcpus
+		self.ram = info.memory
+
+		self.private_ip_address = info.private_ip_addresses[0]
+		self.public_ip_address = info.public_ip_address
+
+		# not implemented yet. mocking
+		self.termination_protection = False
+
+		self.volumes = []
+		for disk in info.disks:
+			disk = frappe._dict(disk)
+			row = frappe._dict()
+			row.idx = disk.idx
+			row.volume_id = disk.name
+			row.size = disk.size
+			row.device = "/dev/" + disk.device
+
+			self.append("volumes", row)
 
 		if self.volumes:
 			self.disk_size = self.get_data_volume().size
 			self.root_disk_size = self.get_root_volume().size
+		self.save()
+		self.update_servers()
 
 	def _sync_digital_ocean(self, *args, **kwargs):
 		server_instance = self.get_digital_ocean_server_instance()
