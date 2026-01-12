@@ -901,6 +901,7 @@
 							size="sm"
 							variant="subtle"
 							v-model="agreedToRegionConsent"
+							@click.stop
 						/>
 						<div class="text-base font-medium">
 							I agree that the laws of selected region<br />
