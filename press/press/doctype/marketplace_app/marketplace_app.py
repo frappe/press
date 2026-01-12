@@ -685,10 +685,18 @@ def run_script(app, site: Site, op):
 
 @redis_cache(ttl=60 * 60 * 24)
 def get_total_installs_by_app():
-	total_installs = frappe.db.get_all(
-		"Site App",
-		fields=["app", "count(*) as count"],
-		group_by="app",
-		order_by=None,
-	)
+	try:
+		total_installs = frappe.db.get_all(
+			"Site App",
+			fields=["app", "count(*) as count"],
+			group_by="app",
+			order_by=None,
+		)
+	except:  # noqa E722
+		total_installs = frappe.db.get_all(
+			"Site App",
+			fields=["app", {"COUNT": "*", "as": "count"}],
+			group_by="app",
+			order_by=None,
+		)
 	return {installs["app"]: installs["count"] for installs in total_installs}
