@@ -26,29 +26,6 @@
 				:siteOnPublicBench="!bench"
 				v-model="apps"
 			/>
-			<div v-if="showLocalisationSelector" class="space-y-4">
-				<div class="flex space-x-2">
-					<FormControl
-						label="Install Local Compliance App?"
-						v-model="showLocalisationOption"
-						type="checkbox"
-					/>
-					<Tooltip
-						text="A local compliance app allows creating transactions as per statutory compliance. They're maintained by community partners."
-					>
-						<lucide-info class="h-4 w-4 text-gray-500" />
-					</Tooltip>
-				</div>
-				<FormControl
-					class="w-1/2"
-					variant="outline"
-					:class="{ 'pointer-events-none opacity-50': !showLocalisationOption }"
-					label="Select Country"
-					v-model="selectedLocalisationCountry"
-					type="combobox"
-					:options="localisationAppCountries"
-				/>
-			</div>
 			<div v-if="!bench">
 				<div class="flex items-center justify-between">
 					<h2 class="text-base font-medium leading-6 text-gray-900">
@@ -104,6 +81,34 @@
 						</component>
 					</div>
 				</div>
+			</div>
+			<div v-if="showLocalisationSelector" class="space-y-4">
+				<div class="flex space-x-2">
+					<FormControl
+						label="Install Local Compliance App?"
+						v-model="showLocalisationOption"
+						type="checkbox"
+					/>
+					<Tooltip
+						text="A local compliance app allows creating transactions as per statutory compliance. They're maintained by community partners."
+					>
+						<lucide-info class="h-4 w-4 text-gray-500" />
+					</Tooltip>
+				</div>
+				<FormControl
+					class="w-1/2"
+					variant="outline"
+					:class="{ 'pointer-events-none opacity-50': !showLocalisationOption }"
+					label="Select Country"
+					:modelValue="selectedLocalisationCountry?.value"
+					@update:modelValue="
+						selectedLocalisationCountry = localisationAppCountries.find(
+							(option) => option.value === $event,
+						)
+					"
+					type="combobox"
+					:options="localisationAppCountries"
+				/>
 			</div>
 			<div
 				class="flex flex-col"
@@ -343,6 +348,9 @@ export default {
 			this.cluster = null;
 			this.cluster = this.closestCluster;
 			this.agreedToRegionConsent = false;
+			// Reset localisation selection when version changes
+			this.selectedLocalisationCountry = null;
+			this.showLocalisationOption = false;
 		},
 		cluster() {
 			this.plan = null;
@@ -522,13 +530,6 @@ export default {
 				return acc.filter((v) => app.sources.map((s) => s.version).includes(v));
 			}, null);
 
-			if (this.selectedLocalisationCountry) {
-				// temporary override since we don't have localisation app ready for v14
-				// TODO: remove this when localisation app is ready for v14
-				commonVersions = ['Version 15'];
-				this.version = 'Version 15';
-			}
-
 			return this.options.versions.map((v) => ({
 				...v,
 				disabled: !commonVersions.includes(v.name),
@@ -587,9 +588,13 @@ export default {
 			if (
 				!this.selectedVersionApps ||
 				!this.localisationAppNames.length ||
-				!this.apps.length
+				!this.apps.length ||
+				!this.version
 			)
 				return false;
+
+			// Check if there are any localisation countries available for the selected version
+			if (!this.localisationAppCountries.length) return false;
 
 			const appsThatNeedLocalisation = this.selectedVersionApps.filter(
 				(app) => app.localisation_apps.length,
@@ -615,14 +620,30 @@ export default {
 				.filter(Boolean);
 		},
 		localisationAppCountries() {
-			if (!this.selectedVersionApps) return [];
+			if (!this.selectedVersionApps || !this.selectedVersion) return [];
+
+			// Get the bench_app_sources for the selected version
+			const versionAppSources =
+				this.selectedVersion?.group?.bench_app_sources || [];
+
+			// Get all localisation app details from selected apps
 			const localisationAppDetails = this.selectedVersionApps.flatMap(
 				(app) => app.localisation_apps,
 			);
-			return localisationAppDetails.map((app) => ({
-				label: app?.country,
-				value: app?.country,
-			}));
+
+			// Filter to only include countries whose localisation app is available in the selected version
+			return localisationAppDetails
+				.filter((app) => {
+					if (!app?.marketplace_app) return false;
+					// Check if this localisation app has a source in the selected version's bench_app_sources
+					return versionAppSources.some((source) =>
+						source.toLowerCase().includes(app.marketplace_app.toLowerCase()),
+					);
+				})
+				.map((app) => ({
+					label: app?.country,
+					value: app?.country,
+				}));
 		},
 		selectedPlan() {
 			if (!plans?.data) return;
