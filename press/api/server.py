@@ -781,6 +781,7 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 			"platform",
 			"plan_type",
 			"allow_unified_server",
+			"machine_unavailable",
 		],
 		filters=filters,
 	)
