@@ -1009,8 +1009,10 @@ export default {
 			this.unifiedServer = false;
 			this.enableAutoAddStorage = false;
 			this.agreedToRegionConsent = false;
+			this.resetProvisionErrorMessage();
 		},
 		serverRegion() {
+			this.resetProvisionErrorMessage();
 			// Let selectedCluster watcher handle all plan selection logic
 			// The selectedCluster computed depends on serverRegion, so it will update automatically
 		},
@@ -1031,8 +1033,11 @@ export default {
 			if (this.serverType === 'dedicated' && this.allProviders.length > 0) {
 				this.serverProvider = this.allProviders[0].name;
 			}
+
+			this.resetProvisionErrorMessage();
 		},
 		serviceType() {
+			this.resetProvisionErrorMessage();
 			if (this.avoidAutoResetPlanSelection) return;
 
 			this.appServerPlanType = '';
@@ -1041,6 +1046,7 @@ export default {
 			this.dbServerPlan = '';
 		},
 		unifiedServer() {
+			this.resetProvisionErrorMessage();
 			if (this.avoidAutoResetPlanSelection) return;
 
 			// Reset plan selections when unified server mode changes
@@ -1146,12 +1152,20 @@ export default {
 			}
 		},
 		appServerPlanType() {
+			this.resetProvisionErrorMessage();
 			if (this.avoidAutoResetPlanSelection) return;
 			this.appServerPlan = '';
 		},
 		dbServerPlanType() {
+			this.resetProvisionErrorMessage();
 			if (this.avoidAutoResetPlanSelection) return;
 			this.dbServerPlan = '';
+		},
+		appServerPlan() {
+			this.resetProvisionErrorMessage();
+		},
+		dbServerPlan() {
+			this.resetProvisionErrorMessage();
 		},
 	},
 	resources: {
@@ -1688,6 +1702,17 @@ export default {
 				);
 			}
 			return null;
+		},
+		resetProvisionErrorMessage() {
+			try {
+				this.$resources.createHybridServer.error = null;
+			} catch (_) {}
+			try {
+				this.$resources.createServer.error = null;
+			} catch (_) {}
+			try {
+				this.$resources.createUnifiedServer.error = null;
+			} catch (_) {}
 		},
 	},
 };
