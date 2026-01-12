@@ -526,19 +526,26 @@ class MarketplaceApp(WebsiteGenerator):
 
 	def get_payout_amount(self, status: str = "", total_for: str = "net_amount"):
 		"""Return the payout amount for this app"""
-		filters = {"team": self.team}
+		conditions = ["po.team = %(team)s", "poi.document_name = %(docname)s"]
+		params = {"team": self.team, "docname": self.name}
+
 		if status:
-			filters["status"] = status
-		payout_orders = frappe.get_all("Payout Order", filters=filters, pluck="name")
-		payout = frappe.get_all(
-			"Payout Order Item",
-			filters={"parent": ("in", payout_orders), "document_name": self.name},
-			fields=[
-				f"SUM(CASE WHEN currency = 'USD' THEN {total_for} ELSE 0 END) AS usd_amount",
-				f"SUM(CASE WHEN currency = 'INR' THEN {total_for} ELSE 0 END) AS inr_amount",
-			],
-		)
-		return payout[0] if payout else {"usd_amount": 0, "inr_amount": 0}
+			conditions.append("po.status = %(status)s")
+			params["status"] = status
+
+		condition_sql = " AND ".join(conditions)
+
+		query = f"""
+			SELECT
+				SUM(CASE WHEN poi.currency = 'USD' THEN poi.{total_for} ELSE 0 END) AS usd_amount,
+				SUM(CASE WHEN poi.currency = 'INR' THEN poi.{total_for} ELSE 0 END) AS inr_amount
+			FROM `tabPayout Order Item` poi
+			INNER JOIN `tabPayout Order` po ON po.name = poi.parent
+			WHERE {condition_sql}
+		"""
+
+		result = frappe.db.sql(query, params, as_dict=True)
+		return result[0] if result else {"usd_amount": 0, "inr_amount": 0}
 
 	@dashboard_whitelist()
 	def site_installs(self):
