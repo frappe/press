@@ -184,7 +184,7 @@
 											unifiedServer: false,
 										},
 										{
-											name: 'Single Unified Server for App and DB',
+											name: 'Unified Server for App and DB',
 											description:
 												'Cheaper option with a single server for both App and DB',
 											unifiedServer: true,
