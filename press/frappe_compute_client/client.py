@@ -68,6 +68,20 @@ class FrappeComputeClient:
 		url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}/method/get_volumes"))
 		return self._send_request(url, "GET", {}).json()["data"]
 
+	def get_vm_info(self, instance_id):
+		url = urljoin(
+			self.base_url,
+			quote(
+				"/api/method/agent.agent.doctype.virtual_machine.virtual_machine.get_vm_details_from_instance_id"
+			),
+		)
+		resp = self._send_request(url, "GET", {"instance_id": instance_id}).json()
+		if "message" not in resp:
+			if "exc_type" in resp:
+				raise APIError(resp, resp["exc_type"])
+			raise APIError(resp)
+		return frappe._dict(resp["message"])
+
 	def _send_request(self, url, method, data):
 		headers = {"Authorization": f"token {self.api_key}", "Content-Type": "application/json"}
 
@@ -82,6 +96,9 @@ class FrappeComputeClient:
 				request_func = requests.put
 			case _:
 				frappe.throw("Method not implemented yet.")
+
+		if method == "GET":
+			return request_func(url, params=data, headers=headers)
 
 		return request_func(url, json=data, headers=headers)
 
