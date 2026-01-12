@@ -1522,6 +1522,8 @@ class VirtualMachine(Document):
 
 		if server := self.get_server():
 			log_server_activity(self.series, server.name, action="Terminated")
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().terminate_vm(self.name)
 
 	@frappe.whitelist()
 	def resize(self, machine_type, upgrade_disk: bool = False):
