@@ -1660,7 +1660,7 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "DigitalOcean":
 			self.client().droplet_actions.post(self.instance_id, {"type": "power_off"})
 		elif self.cloud_provider == "Frappe Compute":
-			self.client().stop_vm(self.name)
+			self.client().stop_vm(self.name, force=force)
 		self.sync()
 
 	@frappe.whitelist()

@@ -48,8 +48,11 @@ class FrappeComputeClient:
 		url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}/method/start"))
 		return self._send_request(url, "POST", {})
 
-	def stop_vm(self, name):
-		url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}/method/stop"))
+	def stop_vm(self, name, force):
+		if force:
+			url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}/method/stop"))
+		else:
+			url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}/method/shutdown"))
 		return self._send_request(url, "POST", {})
 
 	def reboot_vm(self, name):
