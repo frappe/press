@@ -75,6 +75,7 @@
    "fieldname": "region",
    "fieldtype": "Link",
    "label": "Region",
+   "mandatory_depends_on": "eval: doc.cloud_provider !== \"Frappe Compute\"",
    "options": "Cloud Region",
    "read_only": 1
   },
@@ -83,6 +84,7 @@
    "fieldname": "availability_zone",
    "fieldtype": "Data",
    "label": "Availability Zone",
+   "mandatory_depends_on": "eval: doc.cloud_provider !== \"Frappe Compute\"",
    "read_only": 1
   },
   {
@@ -429,7 +431,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2026-01-19 13:54:28.206523",
+ "modified": "2026-01-19 15:54:28.206523",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
