@@ -65,7 +65,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "\nAWS EC2\nOCI\nHetzner",
+   "options": "\nAWS EC2\nOCI\nHetzner\nFrappe Compute",
    "read_only": 1,
    "reqd": 1
   },
@@ -74,17 +74,17 @@
    "fieldname": "region",
    "fieldtype": "Link",
    "label": "Region",
+   "mandatory_depends_on": "eval: doc.cloud_provider !== \"Frappe Compute\"",
    "options": "Cloud Region",
-   "read_only": 1,
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fetch_from": "cluster.availability_zone",
    "fieldname": "availability_zone",
    "fieldtype": "Data",
    "label": "Availability Zone",
-   "read_only": 1,
-   "reqd": 1
+   "mandatory_depends_on": "eval: doc.cloud_provider !== \"Frappe Compute\"",
+   "read_only": 1
   },
   {
    "fieldname": "cluster",
@@ -426,7 +426,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2026-01-08 09:35:46.805480",
+ "modified": "2026-01-12 21:00:54.671055",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
