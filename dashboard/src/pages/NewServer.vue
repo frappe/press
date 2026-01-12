@@ -811,7 +811,7 @@
 						{{ $format.planTitle(appServerPlan) }}/mo -
 						{{ getPlanTypeTitle(appServerPlan) }}
 					</div>
-					<div class="text-xs text-gray-700">
+					<div class="text-sm text-gray-700">
 						{{ appServerPlan.vcpu }} vCPUs •
 						{{ $format.bytes(appServerPlan.memory, 0, 2) }} Memory •
 						{{ appServerPlan.disk }} GB Disk • {{ appServerPlan.instance_type }}
@@ -828,7 +828,7 @@
 						{{ $format.planTitle(dbServerPlan) }}/mo -
 						{{ getPlanTypeTitle(dbServerPlan) }}
 					</div>
-					<div class="text-xs text-gray-700">
+					<div class="text-sm text-gray-700">
 						{{ dbServerPlan.vcpu }} vCPUs •
 						{{ $format.bytes(dbServerPlan.memory, 0, 2) }} Memory •
 						{{ dbServerPlan.disk }} GB Disk • {{ dbServerPlan.instance_type }}
@@ -1069,32 +1069,48 @@ export default {
 					this.unifiedServer =
 						this.selectedClusterDetails.by_default_select_unified_mode || false;
 
-					// Determine service type based on whether the default app plan is premium
-					const defaultAppPlan = this.getPlan(
-						this.selectedClusterDetails.default_app_server_plan,
-						'Server',
-					);
-					if (defaultAppPlan?.premium) {
+					// Try to select default app plan or find available alternative
+					let selectedAppPlan = null;
+					if (this.selectedClusterDetails.default_app_server_plan) {
+						selectedAppPlan = this.selectAvailablePlanOrFallback(
+							this.selectedClusterDetails.default_app_server_plan,
+							'Server',
+						);
+					}
+
+					// Determine service type based on the selected app plan
+					if (selectedAppPlan?.premium) {
 						this.serviceType = 'Premium';
 					} else {
 						this.serviceType = 'Standard';
 					}
 
+					// Set plan type - always use default even if specific plan is unavailable
 					this.appServerPlanType =
 						this.selectedClusterDetails.default_app_server_plan_type || '';
-					this.appServerPlan = defaultAppPlan || '';
+
+					// Set the specific plan only if we found an available one
+					this.appServerPlan = selectedAppPlan || '';
 
 					if (this.unifiedServer) {
 						this.dbServerPlanType = '';
 						this.dbServerPlan = '';
 					} else {
-						this.dbServerPlanType =
-							this.selectedClusterDetails.default_db_server_plan_type || '';
-						this.dbServerPlan =
-							this.getPlan(
+						// Try to select default db plan or find available alternative
+						let selectedDbPlan = null;
+						if (this.selectedClusterDetails.default_db_server_plan) {
+							selectedDbPlan = this.selectAvailablePlanOrFallback(
 								this.selectedClusterDetails.default_db_server_plan,
 								'Database Server',
-							) || '';
+							);
+						}
+
+						// Set plan type - always use default even if specific plan is unavailable
+						this.dbServerPlanType =
+							this.selectedClusterDetails.default_db_server_plan_type || '';
+
+						// Set the specific plan only if we found an available one
+						this.dbServerPlan = selectedDbPlan || '';
 					}
 
 					this.$nextTick(() => {
@@ -1701,6 +1717,60 @@ export default {
 					null
 				);
 			}
+			return null;
+		},
+		findAvailablePlanInSameConfiguration(originalPlan, serverType) {
+			if (!originalPlan || !this.options) return null;
+
+			// Get the appropriate plan list based on server type and service type
+			let planList = [];
+			if (serverType === 'Server') {
+				planList =
+					this.serviceType === 'Standard'
+						? this.options.app_plans
+						: this.options.app_premium_plans;
+			} else if (serverType === 'Database Server') {
+				planList =
+					this.serviceType === 'Standard'
+						? this.options.db_plans
+						: this.options.db_premium_plans;
+			}
+
+			if (!planList) return null;
+
+			// Find plans in the same cluster, region, provider, and plan type that are available
+			const availablePlans = planList.filter(
+				(plan) =>
+					plan.cluster === originalPlan.cluster &&
+					plan.plan_type === originalPlan.plan_type &&
+					!plan.machine_unavailable &&
+					(this.unifiedServer ? plan.allow_unified_server : true),
+			);
+
+			// Return the first available plan, or null if none found
+			return availablePlans.length > 0 ? availablePlans[0] : null;
+		},
+		selectAvailablePlanOrFallback(defaultPlanName, serverType) {
+			const defaultPlan = this.getPlan(defaultPlanName, serverType);
+
+			if (!defaultPlan) return null;
+
+			// If the default plan is available, use it
+			if (!defaultPlan.machine_unavailable) {
+				return defaultPlan;
+			}
+
+			// If default plan is unavailable, try to find an alternative in same configuration
+			const alternativePlan = this.findAvailablePlanInSameConfiguration(
+				defaultPlan,
+				serverType,
+			);
+
+			if (alternativePlan) {
+				return alternativePlan;
+			}
+
+			// If no alternative found, return null to fall back to just plan type selection
 			return null;
 		},
 		resetProvisionErrorMessage() {

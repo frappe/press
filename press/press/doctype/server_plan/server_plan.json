@@ -12,6 +12,8 @@
   "enabled",
   "legacy_plan",
   "allow_unified_server",
+  "machine_unavailable",
+  "ignore_machine_availability_sync",
   "pricing_section",
   "price_inr",
   "column_break_sjmg",
@@ -155,11 +157,23 @@
    "fieldname": "allow_unified_server",
    "fieldtype": "Check",
    "label": "Allow Unified Server"
+  },
+  {
+   "default": "0",
+   "fieldname": "machine_unavailable",
+   "fieldtype": "Check",
+   "label": "Machine Unavailable"
+  },
+  {
+   "default": "0",
+   "fieldname": "ignore_machine_availability_sync",
+   "fieldtype": "Check",
+   "label": "Ignore Machine Availability Sync"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-11 11:38:46.997472",
+ "modified": "2026-01-12 13:37:13.763512",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Plan",
