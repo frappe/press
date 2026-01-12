@@ -26,7 +26,6 @@
 				:siteOnPublicBench="!bench"
 				v-model="apps"
 			/>
-<<<<<<< HEAD
 			<div v-if="showLocalisationSelector" class="space-y-4">
 				<div class="flex space-x-2">
 					<FormControl
@@ -50,8 +49,6 @@
 					:options="localisationAppCountries"
 				/>
 			</div>
-=======
->>>>>>> a907fe7e6 (fix(site): Show version followed by install compliance app option based on app source)
 			<div v-if="!bench">
 				<div class="flex items-center justify-between">
 					<h2 class="text-base font-medium leading-6 text-gray-900">
