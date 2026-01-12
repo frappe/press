@@ -23,9 +23,14 @@
 			<div v-else class="space-y-4">
 				<FormControl
 					variant="outline"
-					type="autocomplete"
+					type="combobox"
 					label="Choose Region"
-					v-model="selectedRegion"
+					:modelValue="selectedRegion?.value"
+					@update:modelValue="
+						selectedRegion = $resources.changeRegionOptions.data.regions.find(
+							(option) => option.value === $event,
+						)
+					"
 					:options="
 						$resources.changeRegionOptions.data.regions.map((r) => ({
 							label: r.title || r.name,

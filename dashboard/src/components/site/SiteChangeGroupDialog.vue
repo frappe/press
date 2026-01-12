@@ -38,7 +38,7 @@
 				<FormControl
 					variant="outline"
 					label="Select Bench Group"
-					type="autocomplete"
+					type="combobox"
 					:options="
 						$resources.changeGroupOptions.data.map((group) => ({
 							label: group.title || group.name,
@@ -46,7 +46,16 @@
 							value: group.name,
 						}))
 					"
-					v-model="targetGroup"
+					:modelValue="targetGroup?.value"
+					@update:modelValue="
+						targetGroup = $resources.changeGroupOptions.data
+							.map((group) => ({
+								label: group.title || group.name,
+								description: group.name,
+								value: group.name,
+							}))
+							.find((option) => option.value === $event)
+					"
 				/>
 				<FormControl
 					label="Skip failing patches if any"

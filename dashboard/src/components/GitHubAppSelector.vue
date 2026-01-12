@@ -21,7 +21,7 @@
 	</div>
 	<div v-else class="space-y-4">
 		<FormControl
-			type="autocomplete"
+			type="combobox"
 			label="Choose GitHub User / Organization"
 			:options="
 				options.installations.map((i) => ({
@@ -30,7 +30,12 @@
 					image: i.image,
 				}))
 			"
-			v-model="selectedGithubUser"
+			:modelValue="selectedGithubUser?.value"
+			@update:modelValue="
+				selectedGithubUser = options.installations.find(
+					(option) => option.id === $event,
+				)
+			"
 		>
 			<template #prefix>
 				<img
@@ -59,7 +64,7 @@
 			</Link>
 		</span>
 		<FormControl
-			type="autocomplete"
+			type="combobox"
 			v-if="selectedGithubUserData"
 			label="Choose GitHub Repository"
 			:options="
@@ -68,7 +73,12 @@
 					value: r.name,
 				}))
 			"
-			v-model="selectedGithubRepository"
+			:modelValue="selectedGithubRepository?.value"
+			@update:modelValue="
+				selectedGithubRepository = (selectedGithubUserData.repos || []).find(
+					(option) => option.name === $event,
+				)
+			"
 		>
 			<template #prefix>
 				<FeatherIcon name="book" class="mr-2 h-4 w-4" />
@@ -89,7 +99,7 @@
 		</p>
 		<FormControl
 			v-if="selectedGithubRepository"
-			type="autocomplete"
+			type="combobox"
 			label="Choose Branch"
 			:options="branchOptions"
 			v-model="selectedBranch"

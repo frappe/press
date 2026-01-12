@@ -21,15 +21,14 @@
 	>
 		<template #body-content>
 			<FTabs :tabs="tabs" v-model="tabIndex">
-				<TabList v-slot="{ tab, selected }" class="pl-0">
+				<template #tab-item="{ tab }">
 					<div
-						class="flex cursor-pointer items-center gap-1.5 border-b border-transparent py-3 text-base text-gray-600 duration-300 ease-in-out hover:border-gray-400 hover:text-gray-900 focus:outline-none focus:transition-none [&>div]:pl-0"
-						:class="{ 'text-gray-900': selected }"
+						class="flex cursor-pointer items-center gap-1.5 py-3 text-base transition"
 					>
-						<span>{{ tab.label }}</span>
+						{{ tab.label }}
 					</div>
-				</TabList>
-				<TabPanel v-slot="{ tab }">
+				</template>
+				<template #tab-panel="{ tab }">
 					<div class="-ml-0.5 p-1">
 						<div v-if="tab.value === 'public-github-app'" class="space-y-4">
 							<div class="mt-4 flex items-end space-x-2">
@@ -52,9 +51,14 @@
 								/>
 								<FormControl
 									v-else
-									type="autocomplete"
+									type="combobox"
 									:options="branchOptions"
-									v-model="selectedBranch"
+									:modelValue="selectedBranch?.value"
+									@update:modelValue="
+										selectedBranch = branchOptions.find(
+											(option) => option.value === $event,
+										)
+									"
 								>
 									<template v-slot:target="{ togglePopover }">
 										<Button
@@ -89,7 +93,7 @@
 							</div>
 						</div>
 					</div>
-				</TabPanel>
+				</template>
 			</FTabs>
 			<AlertBanner
 				v-if="isAppOnBench"
@@ -110,7 +114,7 @@
 </template>
 
 <script>
-import { FormControl, Tabs, TabList, TabPanel } from 'frappe-ui';
+import { FormControl, Tabs } from 'frappe-ui';
 import { DashboardError } from '../utils/error';
 import GitHubAppSelector from './GitHubAppSelector.vue';
 import AlertBanner from './AlertBanner.vue';
@@ -122,8 +126,6 @@ export default {
 		FTabs: Tabs,
 		FormControl,
 		AlertBanner,
-		TabPanel,
-		TabList,
 	},
 	props: {
 		group: {
