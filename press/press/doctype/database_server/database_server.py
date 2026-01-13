@@ -168,6 +168,13 @@ class DatabaseServer(BaseServer):
 		self.validate_server_id()
 		self.validate_server_team()
 		self.validate_mariadb_system_variables()
+		self.validate_physical_backup()
+
+	def validate_physical_backup(self):
+		if self.is_unified_server and self.enable_physical_backup:
+			frappe.throw(
+				"Physical backup cannot be enabled for unified servers.",
+			)
 
 	def validate_mariadb_root_password(self):
 		# Check if db server created from snapshot
