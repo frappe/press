@@ -16,8 +16,23 @@
 					:label="`Please select a ${nextVersion} bench group to upgrade your site from ${$site.doc.version}`"
 					class="w-full"
 					type="combobox"
-					:options="privateReleaseGroups"
-					v-model="privateReleaseGroup"
+					:options="
+						privateReleaseGroups.map((group) => ({
+							label: group.title,
+							value: group.name,
+						}))
+					"
+					:modelValue="privateReleaseGroup?.value"
+					@update:modelValue="
+						(value) => {
+							privateReleaseGroup = privateReleaseGroups
+								.map((group) => ({
+									label: group.title,
+									value: group.name,
+								}))
+								.find((option) => option.value === value);
+						}
+					"
 				/>
 				<DateTimeControl
 					v-if="($site.doc.group_public && nextVersion) || benchHasCommonServer"
