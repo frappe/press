@@ -801,7 +801,7 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 				and frappe.get_cached_value("User", frappe.session.user, "user_type")
 			)
 		) == "System User":
-			plan["allow_unified_server"] = True
+			plan["allow_unified_server"] = plan.get("allow_unified_server", False)
 		else:
 			plan["allow_unified_server"] = frappe.local.team().allow_unified_servers and plan.get(
 				"allow_unified_server", False
