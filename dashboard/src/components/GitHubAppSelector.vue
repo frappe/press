@@ -33,7 +33,7 @@
 			:modelValue="selectedGithubUser?.value"
 			@update:modelValue="
 				selectedGithubUser = options.installations.find(
-					(option) => option.id === $event,
+					(option) => String(option.id) === $event,
 				)
 			"
 		>
