@@ -16,21 +16,17 @@
 					:label="`Please select a ${nextVersion} bench group to upgrade your site from ${$site.doc.version}`"
 					class="w-full"
 					type="combobox"
-					:options="
-						privateReleaseGroups.map((group) => ({
-							label: group.title,
-							value: group.name,
-						}))
-					"
+					:options="privateReleaseGroups"
 					:modelValue="privateReleaseGroup?.value"
 					@update:modelValue="
-						(value) => {
+						(optionValue) => {
 							privateReleaseGroup = privateReleaseGroups
 								.map((group) => ({
 									label: group.title,
 									value: group.name,
+									description: group.description,
 								}))
-								.find((option) => option.value === value);
+								.find((option) => option.value === optionValue);
 						}
 					"
 				/>
