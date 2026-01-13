@@ -47,6 +47,7 @@ class Team(Document):
 		from press.press.doctype.team_member.team_member import TeamMember
 
 		account_request: DF.Link | None
+		allow_unified_servers: DF.Check
 		apply_npo_discount: DF.Check
 		benches_enabled: DF.Check
 		billing_address: DF.Link | None

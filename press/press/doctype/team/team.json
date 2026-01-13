@@ -94,6 +94,7 @@
   "benches_enabled",
   "mpesa_enabled",
   "hetzner_internal_user",
+  "allow_unified_servers",
   "discounts_section",
   "discounts",
   "is_us_eu",
@@ -652,6 +653,12 @@
    "fieldname": "hetzner_internal_user",
    "fieldtype": "Check",
    "label": "Hetzner Internal User"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_unified_servers",
+   "fieldtype": "Check",
+   "label": "Allow Unified Servers"
   }
  ],
  "grid_page_length": 50,
@@ -717,7 +724,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2026-01-11 13:32:31.714758",
+ "modified": "2026-01-13 20:23:37.626353",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
