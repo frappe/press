@@ -740,7 +740,6 @@ def secondary_server_plans(
 
 @frappe.whitelist()
 def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_only_resize=False):  # noqa C901
-	team = get_current_team(get_doc=True)
 	filters = {"server_type": name}
 
 	if cluster:
@@ -793,7 +792,20 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 	for plan in plans:
 		if not plan.get("plan_type"):
 			plan["plan_type"] = default_server_plan_type
-		plan["allow_unified_server"] = team.allow_unified_servers and plan.get("allow_unified_server", False)
+
+		if (
+			(frappe.session and frappe.session.data and frappe.session.data.user_type)
+			or (
+				frappe.session
+				and frappe.session.user
+				and frappe.get_cached_value("User", frappe.session.user, "user_type")
+			)
+		) == "System User":
+			plan["allow_unified_server"] = True
+		else:
+			plan["allow_unified_server"] = frappe.local.team().allow_unified_servers and plan.get(
+				"allow_unified_server", False
+			)
 
 	server_plan_types = get_server_plan_types()
 
