@@ -785,7 +785,9 @@ class Cluster(Document):
 	def get_available_vmi(self, series, platform=None) -> str | None:
 		"""Virtual Machine Image available in region [if not hetzner] for given series"""
 		region = self.region if self.cloud_provider != "Hetzner" else None
-		return VirtualMachineImage.get_available_for_series(series, region=region, platform=platform)
+		return VirtualMachineImage.get_available_for_series(
+			series, cloud_provider=self.cloud_provider, region=region, platform=platform
+		)
 
 	@property
 	def server_doctypes(self):
