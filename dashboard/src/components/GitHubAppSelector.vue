@@ -32,9 +32,11 @@
 			"
 			:modelValue="selectedGithubUser?.value"
 			@update:modelValue="
-				selectedGithubUser = options.installations.find(
-					(option) => String(option.id) === $event,
-				)
+				(optionValue) => {
+					selectedGithubUser = options.installations.find(
+						(option) => String(option.id) === optionValue,
+					);
+				}
 			"
 		>
 			<template #prefix>
@@ -75,9 +77,11 @@
 			"
 			:modelValue="selectedGithubRepository?.value"
 			@update:modelValue="
-				selectedGithubRepository = (selectedGithubUserData.repos || []).find(
-					(option) => option.name === $event,
-				)
+				(optionValue) => {
+					selectedGithubRepository = (selectedGithubUserData.repos || []).find(
+						(option) => option.name === optionValue,
+					);
+				}
 			"
 		>
 			<template #prefix>
@@ -102,7 +106,14 @@
 			type="combobox"
 			label="Choose Branch"
 			:options="branchOptions"
-			v-model="selectedBranch"
+			:modelValue="selectedBranch?.value"
+			@update:modelValue="
+				(optionValue) => {
+					selectedBranch = branchOptions.find(
+						(option) => option.value === optionValue,
+					);
+				}
+			"
 		>
 			<template #prefix>
 				<FeatherIcon name="git-branch" class="mr-2 h-4 w-4" />
@@ -127,21 +138,21 @@ export default {
 			this.selectedBranch = '';
 			this.$emit('fieldChange');
 		},
-		selectedGithubRepository(val) {
-			if (!val) {
+		selectedGithubRepository(repo) {
+			if (!repo) {
 				this.selectedBranch = '';
 				return;
 			}
 			this.$emit('fieldChange');
 			this.$resources.branches.submit({
-				owner: this.selectedGithubUser?.label,
-				name: val?.label,
-				installation: this.selectedGithubUser?.value,
+				owner: this.selectedGithubUser?.login,
+				name: repo?.name,
+				installation: this.selectedGithubUser?.id,
 			});
 
 			if (this.selectedGithubUserData) {
 				let defaultBranch = this.selectedGithubUserData.repos.find(
-					(r) => r.name === val.label,
+					(r) => r.name === repo.name,
 				).default_branch;
 				this.selectedBranch = { label: defaultBranch, value: defaultBranch };
 			} else this.selectedBranch = '';
@@ -182,10 +193,10 @@ export default {
 			return this.$resources.options.data;
 		},
 		appOwner() {
-			return this.selectedGithubUser?.label;
+			return this.selectedGithubUser?.login;
 		},
 		appName() {
-			return this.selectedGithubRepository?.label;
+			return this.selectedGithubRepository?.name;
 		},
 		branchOptions() {
 			return (this.$resources.branches.data || []).map((branch) => ({
@@ -196,7 +207,7 @@ export default {
 		selectedGithubUserData() {
 			if (!this.selectedGithubUser) return null;
 			return this.options.installations.find(
-				(i) => i.id === Number(this.selectedGithubUser.value),
+				(i) => i.id === Number(this.selectedGithubUser.id),
 			);
 		},
 		needsAuthorization() {
