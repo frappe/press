@@ -150,6 +150,7 @@ class PressRole(Document):
 def create_user_resource(document: Document, _):
 	user = frappe.session.user
 	team: Team = get_current_team(get_doc=True)
+
 	roles_enabled = bool(
 		frappe.db.exists(
 			{
@@ -168,10 +169,25 @@ def create_user_resource(document: Document, _):
 	):
 		return
 
+	title = user + " / " + document.name
+
+	role_exists = bool(
+		frappe.db.exists(
+			{
+				"doctype": "Press Role",
+				"team": team.name,
+				"title": title,
+			}
+		)
+	)
+
+	if role_exists:
+		return
+
 	frappe.get_doc(
 		{
 			"doctype": "Press Role",
-			"title": user + " / " + document.name,
+			"title": title,
 			"team": team.name,
 			"users": [
 				{
