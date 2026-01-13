@@ -20,13 +20,9 @@
 					:modelValue="privateReleaseGroup?.value"
 					@update:modelValue="
 						(optionValue) => {
-							privateReleaseGroup = privateReleaseGroups
-								.map((group) => ({
-									label: group.title,
-									value: group.name,
-									description: group.description,
-								}))
-								.find((option) => option.value === optionValue);
+							privateReleaseGroup = privateReleaseGroups.find(
+								(option) => option.value === optionValue,
+							);
 						}
 					"
 				/>
@@ -70,7 +66,7 @@
 				v-if="!$site.doc.group_public"
 				class="mb-2 w-full"
 				:disabled="
-					benchHasCommonServer || !privateReleaseGroup.value || !nextVersion
+					benchHasCommonServer || !privateReleaseGroup?.value || !nextVersion
 				"
 				label="Add Server to Bench Group"
 				@click="$resources.addServerToReleaseGroup.submit()"
@@ -84,7 +80,7 @@
 				variant="solid"
 				label="Upgrade"
 				:disabled="
-					((!benchHasCommonServer || !privateReleaseGroup.value) &&
+					((!benchHasCommonServer || !privateReleaseGroup?.value) &&
 						!$site.doc.group_public) ||
 					!nextVersion
 				"
