@@ -298,7 +298,11 @@ class VirtualMachineImage(Document):
 
 	@classmethod
 	def get_available_for_series(
-		cls, series: str, region: str | None = None, platform: str | None = None
+		cls,
+		series: str,
+		region: str | None = None,
+		platform: str | None = None,
+		cloud_provider: str | None = None,
 	) -> str | None:
 		images = frappe.qb.DocType(cls.DOCTYPE)
 		get_available_images = (
@@ -315,6 +319,8 @@ class VirtualMachineImage(Document):
 			get_available_images = get_available_images.where(images.region == region)
 		if platform:
 			get_available_images = get_available_images.where(images.platform == platform)
+		if cloud_provider:
+			get_available_images = get_available_images.where(images.cloud_provider == cloud_provider)
 
 		available_images = get_available_images.run(as_dict=True)
 		if not available_images:
