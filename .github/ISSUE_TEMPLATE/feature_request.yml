@@ -20,8 +20,6 @@ body:
         - Security
         - Marketplace
         - Other
-    descriptions:
-      Select the area which would be affected by this feature.
 
   - type: textarea
     id: problem
@@ -34,6 +32,3 @@ body:
     id: proposal
     attributes:
       label: Proposed Solution
-    descriptions:
-      Describe the solution you would like to see implemented.
-    placeholder: A clear and concise description of what you want to happen.
