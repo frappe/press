@@ -42,7 +42,14 @@
 				variant="outline"
 				type="combobox"
 				:options="$resources.changeServerOptions.data"
-				v-model="targetServer"
+				:modelValue="targetServer?.value"
+				@update:modelValue="
+					(optionValue) => {
+						targetServer = $resources.changeServerOptions.data.find(
+							(option) => option.value === optionValue,
+						) || { label: '', value: '' };
+					}
+				"
 			/>
 			<div v-if="$resources.isServerAddedInGroup.data" class="mt-4 space-y-4">
 				<DateTimeControl v-model="targetDateTime" label="Schedule Time" />
