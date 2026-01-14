@@ -7,7 +7,7 @@
 					label: 'Change Region',
 					loading: $resources.changeRegion.loading,
 					variant: 'solid',
-					disabled: !selectedRegion,
+					disabled: !selectedRegion?.value,
 					onClick: changeRegion,
 				},
 			],
@@ -28,12 +28,13 @@
 					placeholder="Select Region"
 					:modelValue="selectedRegion?.value"
 					@update:modelValue="
-						selectedRegion = $resources.changeRegionOptions.data.regions.find(
+						selectedRegion = $resources.changeRegionOptions.data.find(
 							(option) => option.value === $event,
 						)
 					"
 					:options="
-						$resources.changeRegionOptions.data.regions.map((r) => ({
+						console.log($resources.changeRegionOptions.data) ||
+						$resources.changeRegionOptions.data.map((r) => ({
 							label: r.title || r.name,
 							value: r.name,
 							image: r.image,
@@ -143,7 +144,7 @@ export default {
 				},
 				auto: true,
 				transform: (data) => {
-					return data.map((region) => ({
+					return data.regions.map((region) => ({
 						...region,
 						label: region.title || region.name,
 						value: region.name,
