@@ -92,17 +92,14 @@ class VirtualDiskResize(Document):
 
 	def run_prerequisites(self):
 		try:
-			self.status = Status.Preparing
-			self.save()
 			self.set_filesystem_attributes()
 			self.set_new_volume_attributes()
 			self.create_new_volume()
 			self.status = Status.Ready
-			self.save()
-		except Exception as e:
-			frappe.log_error(message=str(e), title="Virtual Disk Resize Prerequisites Failed")
+		except Exception:
+			self.log_error("Virtual Disk Resize Prerequisites Failed")
 			self.status = Status.Failure
-			self.save()
+		self.save()
 
 	def get_lock(self):
 		try:
@@ -118,8 +115,11 @@ class VirtualDiskResize(Document):
 	def execute(self):
 		if not self.get_lock():
 			return
+
 		self.run_prerequisites()
-		self.status = Status.Running
+		if self.status != Status.Ready:
+			return
+
 		self.start = frappe.utils.now_datetime()
 		self.save()
 		self.next()
