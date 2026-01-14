@@ -25,6 +25,7 @@
 					variant="outline"
 					type="combobox"
 					label="Choose Region"
+					placeholder="Select Region"
 					:modelValue="selectedRegion?.value"
 					@update:modelValue="
 						selectedRegion = $resources.changeRegionOptions.data.regions.find(
@@ -141,6 +142,13 @@ export default {
 					name: this.site,
 				},
 				auto: true,
+				transform: (data) => {
+					return data.map((region) => ({
+						...region,
+						label: region.title || region.name,
+						value: region.name,
+					}));
+				},
 			};
 		},
 		changeRegion() {
