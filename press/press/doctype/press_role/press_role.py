@@ -120,12 +120,15 @@ class PressRole(Document):
 
 	@dashboard_whitelist()
 	@team_guard.only_admin(skip=lambda _, args: args.get("skip_validations", False))
-	def add_resource(self, document_type: str, document_name: str):
-		resource_dict = {"document_type": document_type, "document_name": document_name}
-		if self.get("resources", resource_dict):
-			message = _("{0} already belongs to {1}").format(document_name, self.title)
-			frappe.throw(message, frappe.ValidationError)
-		self.append("resources", resource_dict)
+	def add_resource(self, resources: list[dict[str, str]]):
+		for resource in resources:
+			document_type = resource["document_type"]
+			document_name = resource["document_name"]
+			resource_dict = {"document_type": document_type, "document_name": document_name}
+			if self.get("resources", resource_dict):
+				message = _("{0} already belongs to {1}").format(document_name, self.title)
+				frappe.throw(message, frappe.ValidationError)
+			self.append("resources", resource_dict)
 		self.save()
 
 	@dashboard_whitelist()
