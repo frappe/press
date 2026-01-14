@@ -157,7 +157,10 @@ export default {
 							type: 'select',
 							fieldname: 'course',
 							label: 'Course',
-							options: ['', 'Framework', 'ERPNext'],
+							options: [
+								{ label: 'Framework', value: 'frappe-developer-certification' },
+								{ label: 'ERPNext', value: 'erpnext-distribution' },
+							],
 						},
 					];
 				},
