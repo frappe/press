@@ -1,35 +1,33 @@
 <template>
 	<div class="flex items-center space-x-1">
 		<FormControl
-			class="w-52"
+			class="w-2/5"
 			:label="label ? label : 'Date'"
 			type="select"
 			variant="outline"
 			:options="dayOptions"
-			:modelValue="scheduledDate"
-			@update:modelValue="
-				(value) => {
-					scheduledDate = value;
-				}
-			"
+			v-model="scheduledDate"
+			placeholder="Select date"
 		/>
 		<FormControl
-			class="w-24"
+			class="w-[3/10]"
 			:class="label ? 'mt-5' : ''"
 			:label="label ? '' : 'Hour'"
 			type="select"
 			variant="outline"
 			:options="hourOptions"
 			v-model="scheduledHour"
+			placeholder="Select hour"
 		/>
 		<FormControl
-			class="w-24"
+			class="w-[3/10]"
 			:class="label ? 'mt-5' : ''"
 			:label="label ? '' : 'Minute'"
 			type="select"
 			variant="outline"
 			:options="minuteOptions"
 			v-model="scheduledMinute"
+			placeholder="Select min"
 		/>
 	</div>
 </template>
