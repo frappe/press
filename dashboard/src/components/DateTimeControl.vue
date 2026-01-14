@@ -6,7 +6,12 @@
 			type="select"
 			variant="outline"
 			:options="dayOptions"
-			v-model="scheduledDate"
+			:modelValue="scheduledDate"
+			@update:modelValue="
+				(value) => {
+					scheduledDate = value;
+				}
+			"
 		/>
 		<FormControl
 			class="w-24"
@@ -56,7 +61,7 @@ export default {
 			set(value) {
 				this.$emit(
 					'update:modelValue',
-					`${this.scheduledDate}T${value.padStart(2, '0')}:${
+					`${this.scheduledDate}T${value.toString().padStart(2, '0')}:${
 						this.scheduledMinute
 					}`,
 				);
@@ -71,10 +76,9 @@ export default {
 			set(value) {
 				this.$emit(
 					'update:modelValue',
-					`${this.scheduledDate}T${this.scheduledHour}:${value.padStart(
-						2,
-						'0',
-					)}`,
+					`${this.scheduledDate}T${this.scheduledHour}:${value
+						.toString()
+						.padStart(2, '0')}`,
 				);
 			},
 		},
