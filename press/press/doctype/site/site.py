@@ -127,6 +127,7 @@ PRIVATE_BENCH_DOC = "https://docs.frappe.io/cloud/sites/move-site-to-private-ben
 SERVER_SCRIPT_DISABLED_VERSION = (
 	15  # version from which server scripts were disabled on public benches. No longer set in site
 )
+TRANSITORY_STATES = ["Updating", "Recovering", "Pending", "Installing"]
 
 
 class Site(Document, TagHelpers):
@@ -1239,7 +1240,7 @@ class Site(Document, TagHelpers):
 			frappe.throw(f"Site Update is scheduled for {self.name} at {time}")
 
 	def ready_for_move(self):
-		if self.status in ["Updating", "Recovering", "Pending", "Installing"]:
+		if self.status in TRANSITORY_STATES:
 			frappe.throw(f"Site is in {self.status} state. Cannot Update", SiteUnderMaintenance)
 		elif self.status == "Archived":
 			frappe.throw("Site is archived. Cannot Update", SiteAlreadyArchived)
@@ -2448,7 +2449,10 @@ class Site(Document, TagHelpers):
 		if team.payment_mode == "Paid By Partner" and team.billing_team:
 			team = frappe.get_doc("Team", team.billing_team)
 
-		if not (team.default_payment_method or team.get_balance()):
+		trial_plans = frappe.get_all("Site Plan", {"is_trial_plan": 1, "enabled": 1}, pluck="name")
+		if (
+			not (team.default_payment_method or team.get_balance()) and self.plan in trial_plans
+		) or not team.payment_mode:
 			frappe.throw(
 				"Cannot change plan because you haven't added a card and not have enough balance",
 				CannotChangePlan,

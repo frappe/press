@@ -52,11 +52,13 @@ class PressSettings(Document):
 		code_server_password: DF.Data | None
 		commission: DF.Float
 		compress_app_cache: DF.Check
+		compute_api_token: DF.Password | None
 		cool_off_period: DF.Int
 		data_40: DF.Data | None
 		default_apps: DF.Table[AppGroup]
 		default_outgoing_id: DF.Data | None
 		default_outgoing_pass: DF.Data | None
+		default_server_plan_type: DF.Link | None
 		deploy_marker: DF.Data | None
 		disable_agent_job_deduplication: DF.Check
 		disable_auto_retry: DF.Check
@@ -124,6 +126,7 @@ class PressSettings(Document):
 		offsite_backups_count: DF.Int
 		offsite_backups_provider: DF.Literal["AWS S3"]
 		offsite_backups_secret_access_key: DF.Password | None
+		orchestrator_base_url: DF.Data | None
 		partnership_fee_inr: DF.Int
 		partnership_fee_usd: DF.Int
 		paypal_enabled: DF.Check

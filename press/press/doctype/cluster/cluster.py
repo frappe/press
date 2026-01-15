@@ -14,7 +14,9 @@ from typing import ClassVar, Literal
 import boto3
 import frappe
 from frappe.model.document import Document
+from frappe.utils.caching import redis_cache
 from hcloud import APIException, Client
+from hcloud.firewalls.domain import FirewallRule as HetznerFirewallRule
 from hcloud.networks.domain import NetworkSubnet
 from oci.config import validate_config
 from oci.core import VirtualNetworkClient
@@ -32,6 +34,7 @@ from oci.core.models import (
 )
 from oci.identity import IdentityClient
 
+from press.frappe_compute_client.client import FrappeComputeClient
 from press.press.doctype.virtual_machine_image.virtual_machine_image import (
 	VirtualMachineImage,
 )
@@ -40,11 +43,12 @@ from press.utils import get_current_team, unique
 if typing.TYPE_CHECKING:
 	from collections.abc import Generator
 
+	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.log_server.log_server import LogServer
 	from press.press.doctype.monitor_server.monitor_server import MonitorServer
 	from press.press.doctype.press_job.press_job import PressJob
 	from press.press.doctype.press_settings.press_settings import PressSettings
-	from press.press.doctype.server.server import BaseServer
+	from press.press.doctype.server.server import BaseServer, Server
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
@@ -64,11 +68,19 @@ class Cluster(Document):
 		aws_access_key_id: DF.Data | None
 		aws_secret_access_key: DF.Password | None
 		beta: DF.Check
+		by_default_select_unified_mode: DF.Check
 		cidr_block: DF.Data | None
-		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner"]
+		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner", "Frappe Compute"]
+		default_app_server_plan: DF.Link | None
+		default_app_server_plan_type: DF.Link | None
+		default_db_server_plan: DF.Link | None
+		default_db_server_plan_type: DF.Link | None
 		description: DF.Data | None
 		enable_autoscaling: DF.Check
+		has_add_on_storage_support: DF.Check
 		has_arm_support: DF.Check
+		hetzner_api_token: DF.Password | None
+		has_unified_server_support: DF.Check
 		hybrid: DF.Check
 		image: DF.AttachImage | None
 		monitoring_password: DF.Password | None
@@ -92,7 +104,7 @@ class Cluster(Document):
 		vpc_id: DF.Data | None
 	# end: auto-generated types
 
-	dashboard_fields: ClassVar[list[str]] = ["title", "image"]
+	dashboard_fields: ClassVar[list[str]] = ["title", "image", "has_add_on_storage_support"]
 
 	base_servers: ClassVar[dict[str, str]] = {
 		"Proxy Server": "n",
@@ -107,6 +119,7 @@ class Cluster(Document):
 	}
 
 	secondary_server_series: ClassVar[str] = "fs"
+	unified_server_series: ClassVar[str] = "u"
 
 	wait_for_aws_creds_seconds = 20
 
@@ -133,8 +146,7 @@ class Cluster(Document):
 			self.validate_hetzner_api_token()
 
 	def validate_hetzner_api_token(self):
-		settings: "PressSettings" = frappe.get_single("Press Settings")
-		api_token = settings.get_password("hetzner_api_token")
+		api_token = self.get_password("hetzner_api_token")
 		client = Client(token=api_token)
 		try:
 			# Check if we can list servers (read access)
@@ -181,21 +193,27 @@ class Cluster(Document):
 			self.provision_on_oci()
 		elif self.cloud_provider == "Hetzner":
 			self.provision_on_hetzner()
+		elif self.cloud_provider == "Frappe Compute":
+			self.provision_on_frappe_compute()
+
+	def provision_on_frappe_compute(self):
+		settings = frappe.get_single("Press Settings")
+		orchestrator_base_url = settings.orchestrator_base_url
+		api_token = settings.get_password("compute_api_token")
+
+		client = FrappeComputeClient(orchestrator_base_url, api_token)
+		network = client.create_vpc(name=f"Frappe Cloud - {self.name}", cidr_block=self.cidr_block)
+		self.vpc_id = network["name"]
+		self.save()
+
+		frappe.msgprint(
+			"To add this cluster to monitoring, go to the Monitor Server and trigger the 'Reconfigure Monitor Server' action from the Actions menu."
+		)
 
 	def provision_on_hetzner(self):
 		try:
-			# Define the subnet
-			subnets = [
-				NetworkSubnet(
-					type="cloud",  # VPCs in Hetzner are defined as 'cloud' subnets
-					ip_range=self.subnet_cidr_block,
-					network_zone=self.availability_zone,
-				)
-			]
-
 			# Get Hetzner API token from Press Settings
-			settings: "PressSettings" = frappe.get_single("Press Settings")
-			api_token = settings.get_password("hetzner_api_token")
+			api_token = self.get_password("hetzner_api_token")
 
 			client = Client(token=api_token)
 
@@ -203,17 +221,111 @@ class Cluster(Document):
 			network = client.networks.create(
 				name=f"Frappe Cloud - {self.name}",
 				ip_range=self.cidr_block,  # The IP range for the entire network (CIDR)
-				subnets=subnets,
+				subnets=[
+					NetworkSubnet(
+						type="cloud",  # VPCs in Hetzner are defined as 'cloud' subnets
+						ip_range=self.subnet_cidr_block,
+						network_zone=self.availability_zone,
+					)
+				],
 				routes=[],
 			)
 			self.vpc_id = network.id
 			self.save()
-
 		except APIException as e:
 			frappe.throw(f"Failed to provision network on Hetzner: {e!s}")
 
-		except Exception as e:
-			frappe.throw(f"An unexpected error occurred during provisioning: {e!s}")
+		# Create the SSH Key on Hetzner
+		try:
+			client.ssh_keys.create(
+				name=self.ssh_key,
+				public_key=frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
+			)
+		except APIException:
+			# If the SSH key already exists, retrieve it
+			existing_keys = client.ssh_keys.get_all(name=self.ssh_key)
+			if len(existing_keys) == 0:
+				frappe.throw(f"SSH Key creation failed and '{self.ssh_key}' not found on Hetzner Cloud.")
+
+		try:
+			# Create Server Firewall
+			server_firewall = client.firewalls.create(
+				name=f"Frappe Cloud - {self.name} - Security Group",
+				rules=[
+					HetznerFirewallRule(
+						description="HTTP from anywhere",
+						direction="in",
+						protocol="tcp",
+						port="80",
+						source_ips=["0.0.0.0/0"],
+					),
+					HetznerFirewallRule(
+						description="HTTPS from anywhere",
+						direction="in",
+						protocol="tcp",
+						port="443",
+						source_ips=["0.0.0.0/0"],
+					),
+					HetznerFirewallRule(
+						description="SSH from anywhere",
+						direction="in",
+						protocol="tcp",
+						port="22",
+						source_ips=["0.0.0.0/0"],
+					),
+					HetznerFirewallRule(
+						description="MariaDB from private network",
+						direction="in",
+						protocol="tcp",
+						port="3306",
+						source_ips=[self.subnet_cidr_block],
+					),
+					HetznerFirewallRule(
+						description="SSH from private network",
+						direction="in",
+						protocol="tcp",
+						port="22000-22999",
+						source_ips=[self.subnet_cidr_block],
+					),
+					HetznerFirewallRule(
+						description="ICMP from anywhere",
+						direction="in",
+						protocol="icmp",
+						port=None,
+						source_ips=["0.0.0.0/0"],
+					),
+				],
+			)
+			self.security_group_id = server_firewall.firewall.id
+			self.save()
+		except APIException as e:
+			frappe.throw(f"Failed to provision server firewall on Hetzner: {e!s}")
+
+		try:
+			# Create Proxy Server Firewall
+			proxy_firewall = client.firewalls.create(
+				f"Frappe Cloud - {self.name} - Proxy - Security Group",
+				rules=[
+					HetznerFirewallRule(
+						description="SSH proxy from anywhere",
+						direction="in",
+						protocol="tcp",
+						port="2222",
+						source_ips=["0.0.0.0/0"],
+					),
+					HetznerFirewallRule(
+						description="MariaDB from anywhere",
+						direction="in",
+						protocol="tcp",
+						port="3306",
+						source_ips=["0.0.0.0/0"],
+					),
+				],
+			)
+			self.proxy_security_group_id = proxy_firewall.firewall.id
+			self.save()
+		except APIException as e:
+			frappe.throw(f"Failed to provision proxy server firewall on Hetzner: {e!s}")
 
 	def on_trash(self):
 		machines = frappe.get_all(
@@ -671,8 +783,11 @@ class Cluster(Document):
 		self.save()
 
 	def get_available_vmi(self, series, platform=None) -> str | None:
-		"""Virtual Machine Image available in region for given series"""
-		return VirtualMachineImage.get_available_for_series(series, self.region, platform=platform)
+		"""Virtual Machine Image available in region [if not hetzner] for given series"""
+		region = self.region if self.cloud_provider != "Hetzner" else None
+		return VirtualMachineImage.get_available_for_series(
+			series, cloud_provider=self.cloud_provider, region=region, platform=platform
+		)
 
 	@property
 	def server_doctypes(self):
@@ -790,6 +905,12 @@ class Cluster(Document):
 			aws_secret_access_key=self.get_password("aws_secret_access_key"),
 		)
 
+	def get_hetzner_client(self):
+		from hcloud import Client
+
+		api_token = self.get_password("hetzner_api_token")
+		return Client(token=api_token)
+
 	def _check_aws_machine_availability(self, machine_type: str) -> bool:
 		"""Check if instance offering in the region is present"""
 		client = self.get_aws_client()
@@ -806,6 +927,23 @@ class Cluster(Document):
 		"""
 		return True
 
+	@redis_cache(ttl=60)
+	def _check_hetzner_machine_availability(self, machine_type: str) -> bool:
+		client = self.get_hetzner_client()
+		machine = client.server_types.get_by_name(machine_type)
+		if not machine:
+			return False
+
+		machine_id = machine.id
+
+		datacenters = client.datacenters.get_all()
+		datacenters = [dc for dc in datacenters if dc.location.name == self.region]
+		for dc in datacenters:
+			for st in dc.server_types.available:
+				if st.id == machine_id:
+					return True
+		return False
+
 	@frappe.whitelist()
 	def check_machine_availability(self, machine_type: str) -> bool:
 		"Check availability of machine in the region before allowing provision"
@@ -813,6 +951,8 @@ class Cluster(Document):
 			return self._check_aws_machine_availability(machine_type)
 		if self.cloud_provider == "OCI":
 			return self._check_oci_machine_availability(machine_type)
+		if self.cloud_provider == "Hetzner":
+			return self._check_hetzner_machine_availability(machine_type)
 
 		return True
 
@@ -878,6 +1018,58 @@ class Cluster(Document):
 			}
 		).insert(ignore_permissions=True, ignore_if_duplicate=True)
 
+	def create_unified_server(
+		self,
+		title: str,
+		plan: ServerPlan,
+		team: str | None = None,
+		auto_increase_storage: bool | None = False,
+	) -> tuple[Server, DatabaseServer, PressJob]:
+		"""Minimal creation of a unified server with app and database on same vmi"""
+		# Accepting only arguments allowed via the API to create a server.
+		# Other arguments can be added laters.
+
+		team = team or get_current_team()
+		vm = self.create_vm(
+			machine_type=str(plan.instance_type),
+			platform=plan.platform,
+			disk_size=plan.disk,
+			domain=frappe.db.get_single_value("Press Settings", "domain"),
+			series=self.unified_server_series,
+			team=team,
+		)
+		server, database_server = vm.create_unified_server()
+
+		server.title = f"{title} - Unified"
+		database_server.title = f"{title} - Database"
+
+		# Common configurations
+		server.ram = database_server.ram = plan.memory
+		server.auto_increase_storage = database_server.auto_increase_storage = auto_increase_storage
+		server.plan = database_server.plan = plan.name
+
+		# Server configurations
+		server.new_worker_allocation = True
+		server.database_server = database_server.name
+		server.proxy_server = self.proxy_server
+
+		# Database configurations
+		database_server.auto_purge_binlog_based_on_size = True
+		database_server.binlog_max_disk_usage_percent = 75 if auto_increase_storage else 20
+
+		server.save()  # Creating server before database server to use the preset agent password
+		database_server.save()
+
+		# Deliberately skipping subscription creation for database server
+		server.create_subscription(plan.name)
+
+		job = server.run_press_job(
+			"Create Server", arguments=None
+		)  # Deliberately calling via `Server` and not `Database Server`
+
+		# TODO: Create new press job to create unified server.
+		return server, database_server, job
+
 	def create_server(  # noqa: C901
 		self,
 		doctype: str,
@@ -927,8 +1119,9 @@ class Cluster(Document):
 		server_series = {**self.base_servers, **self.private_servers}
 		team = team or get_current_team()
 		plan = plan or self.get_or_create_basic_plan(doctype)
+		assert plan.instance_type is not None, "Instance type is required in the plan"
 		vm = self.create_vm(
-			plan.instance_type,
+			str(plan.instance_type),
 			plan.platform,
 			plan.disk,
 			domain,

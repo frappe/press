@@ -84,6 +84,12 @@ frappe.ui.form.on('Server', {
 			],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
 			[
+				__('Setup Unified Server'),
+				'setup_unified_server',
+				true,
+				frm.doc.is_unified_server,
+			],
+			[
 				__('Add to Proxy'),
 				'add_upstream_to_proxy',
 				true,
@@ -129,7 +135,6 @@ frappe.ui.form.on('Server', {
 			],
 			[__('Create Image'), 'create_image', true, frm.doc.status == 'Active'],
 			[__('Archive'), 'archive', true, frm.doc.status !== 'Archived'],
-			[__('Setup Fail2ban'), 'setup_fail2ban', true, frm.doc.is_server_setup],
 			[
 				__('Setup MySQLdump'),
 				'setup_mysqldump',

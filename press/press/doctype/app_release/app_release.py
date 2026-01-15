@@ -598,6 +598,11 @@ def get_python_path(dirpath: str) -> str:
 					# Check if python3.14 exists on system
 					if os.path.isfile(python_314_path) and os.access(python_314_path, os.X_OK):
 						return python_314_path
+					# try to resolve python3.14 path
+					python_path = shutil.which("python3.14")
+					if python_path:
+						return python_path
+
 	return _get_python_path()
 
 

@@ -47,6 +47,7 @@ class Team(Document):
 		from press.press.doctype.team_member.team_member import TeamMember
 
 		account_request: DF.Link | None
+		allow_unified_servers: DF.Check
 		apply_npo_discount: DF.Check
 		benches_enabled: DF.Check
 		billing_address: DF.Link | None
@@ -74,6 +75,8 @@ class Team(Document):
 		free_account: DF.Check
 		free_credits_allocated: DF.Check
 		github_access_token: DF.Data | None
+		hetzner_internal_user: DF.Check
+		hybrid_servers_enabled: DF.Check
 		introduction: DF.SmallText | None
 		is_code_server_user: DF.Check
 		is_developer: DF.Check
@@ -146,6 +149,7 @@ class Team(Document):
 		"receive_budget_alerts",
 		"monthly_alert_threshold",
 		"company_name",
+		"hybrid_servers_enabled",
 	)
 
 	def get_doc(self, doc):
