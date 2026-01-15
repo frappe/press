@@ -56,6 +56,7 @@ export default {
 	},
 	data() {
 		return {
+			paypalEnabled: this.$team.doc.currency === 'USD' && this.paypalEnabled,
 			isPaymentComplete: false,
 			isVerifyingPayment: false,
 		};
