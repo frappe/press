@@ -966,7 +966,7 @@ class VirtualMachine(Document):
 			info = self.client().get_vm_info(instance_id=self.instance_id)
 		except APIError as e:
 			if e.exception_code == "DoesNotExistError":
-				self.status = "Terminated"
+				self.db_set("status", "Terminated")
 				return
 			raise
 
