@@ -106,8 +106,8 @@ class FrappeComputeClient:
 		url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine Image/{image_id}"))
 		resp = self._send_request(url, "GET", {"image_id": image_id}).json()
 		if "data" not in resp:
-			if "exc_type" in resp:
-				raise APIError(resp, resp["exc_type"])
+			if "errors" in resp:
+				raise APIError(resp, resp["errors"][0]["type"])
 			raise APIError(resp)
 
 		return frappe._dict(resp["data"])

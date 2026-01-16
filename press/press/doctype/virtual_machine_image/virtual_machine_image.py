@@ -19,7 +19,7 @@ from oci.core.models.image_source_via_object_storage_uri_details import (
 from tenacity import retry, stop_after_attempt, wait_fixed
 from tenacity.retry import retry_if_result
 
-from press.frappe_compute_client.client import FrappeComputeClient
+from press.frappe_compute_client.client import APIError, FrappeComputeClient
 
 
 class VirtualMachineImage(Document):
@@ -204,7 +204,13 @@ class VirtualMachineImage(Document):
 				else:
 					raise e
 		elif cluster.cloud_provider == "Frappe Compute":
-			image_info = self.client.get_image_info(self.image_id)
+			try:
+				image_info = self.client.get_image_info(self.image_id)
+			except APIError as e:
+				if e.exception_code == "DoesNotExistError":
+					self.status = "Unavailable"
+					self.save()
+					return self.status
 			self.status = self.get_frappe_compute_status_map(image_info["status"])
 			self.size = image_info["size"]
 			self.root_size = image_info["size"]
