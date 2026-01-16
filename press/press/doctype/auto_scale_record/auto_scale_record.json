@@ -113,7 +113,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2025-12-18 16:19:12.134366",
+ "modified": "2026-01-16 12:58:07.817192",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Auto Scale Record",
@@ -128,6 +128,29 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
    "share": 1,
    "write": 1
   }
