@@ -158,7 +158,7 @@ def get_partner_name(partner_email):
 @role_guard.api("partner")
 def transfer_credits(amount, customer, partner):
 	# partner discount map
-	DISCOUNT_MAP = {"Entry": 0, "Emerging": 0.10, "Bronze": 0.10, "Silver": 0.15, "Gold": 0.20}
+	DISCOUNT_MAP = {"Entry": 0.10, "Emerging": 0.10, "Bronze": 0.15, "Silver": 0.20, "Gold": 0.25}
 
 	amt = frappe.utils.flt(amount)
 	partner_doc = frappe.get_doc("Team", partner)
