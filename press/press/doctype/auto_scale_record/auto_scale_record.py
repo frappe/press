@@ -626,7 +626,7 @@ class AutoScaleRecord(Document, StepHandler):
 			steps=self.scale_steps,
 			timeout=18000,
 			at_front=True,
-			queue="long",
+			queue="auto-scale",
 			enqueue_after_commit=True,
 		)
 
