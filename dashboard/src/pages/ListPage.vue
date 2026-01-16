@@ -1,12 +1,10 @@
 <template>
 	<div class="flex h-full flex-col">
-		<div class="sticky top-0 shrink-0">
-			<Header>
-				<Breadcrumbs
-					:items="[{ label: object.list.title, route: object.list.route }]"
-				/>
-			</Header>
-		</div>
+		<Header :sticky="true">
+			<Breadcrumbs
+				:items="[{ label: object.list.title, route: object.list.route }]"
+			/>
+		</Header>
 		<div class="p-5">
 			<AlertAddPaymentMode
 				class="mb-5"
