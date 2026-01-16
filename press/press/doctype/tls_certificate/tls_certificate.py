@@ -539,7 +539,6 @@ class LetsEncrypt(BaseCA):
 				}
 			)
 
-		
 		if domain.aws_region:
 			environment["AWS_DEFAULT_REGION"] = domain.aws_region
 		self.run(self._certbot_command(), environment=environment)
@@ -556,8 +555,7 @@ class LetsEncrypt(BaseCA):
 					"AWS_SECRET_ACCESS_KEY": domain.get_password("aws_secret_access_key"),
 				}
 			)
-		
-		self.run(self._certbot_command(), environment=environment)
+
 
 	def _obtain_naked(self):
 		if not os.path.exists(self.webroot_directory):
@@ -569,7 +567,7 @@ class LetsEncrypt(BaseCA):
 		if self.wildcard or frappe.conf.developer_mode:
 			if(domain.dns_provider == 'AWS Route 53'):
 				plugin = "--dns-route53"
-			
+
 			if(domain.dns_provider == 'Cloud Flare'):
 				cloudflare_creds = os.path.join(self.directory, "cloudflare.ini")
 				with open(cloudflare_creds, "w") as f:
@@ -578,7 +576,7 @@ class LetsEncrypt(BaseCA):
 				plugin = f"--dns-cloudflare --dns-cloudflare-credentials {cloudflare_creds}"			
 		else:
 			plugin = f"--webroot --webroot-path {self.webroot_directory}"
-
+		
 		staging = "--staging" if self.staging else ""
 		force_renewal = "--keep" if frappe.conf.developer_mode else "--force-renewal"
 

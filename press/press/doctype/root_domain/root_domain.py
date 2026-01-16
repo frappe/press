@@ -7,11 +7,11 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 import boto3
+from cloudflare import Cloudflare
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils.caching import redis_cache
-from cloudflare import Cloudflare
 
 from press.utils import log_error
 
@@ -91,7 +91,7 @@ class RootDomain(Document):
 			self._cloudflare_client = CloudFlare(
 				token=self.get_password("cloud_flare_api_key")
 			)
-    	
+
 		return self._cloudflare_client
 
 	@property
@@ -100,8 +100,7 @@ class RootDomain(Document):
 		zones = self.cloudflare_client.zones.get(params={"name": self.name})
 		if zones:
 			return zones[0]["id"]
-		frappe.throw(f"Cloudflare Zone not found for {self.name}")
-	
+		return frappe.throw(f"Cloudflare Zone not found for {self.name}")
 
 	@property
 	def hosted_zone(self):
