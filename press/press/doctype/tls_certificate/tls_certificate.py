@@ -573,10 +573,10 @@ class LetsEncrypt(BaseCA):
 				with open(cloudflare_creds, "w") as f:
 					f.write(f"dns_cloudflare_api_token = {domain.get_password('cloud_flare_api_key')}")
 				os.chmod(cloudflare_creds, 0o600)
-				plugin = f"--dns-cloudflare --dns-cloudflare-credentials {cloudflare_creds}"			
+				plugin = f"--dns-cloudflare --dns-cloudflare-credentials {cloudflare_creds}"
 		else:
 			plugin = f"--webroot --webroot-path {self.webroot_directory}"
-		
+
 		staging = "--staging" if self.staging else ""
 		force_renewal = "--keep" if frappe.conf.developer_mode else "--force-renewal"
 

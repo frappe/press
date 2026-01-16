@@ -88,7 +88,7 @@ class RootDomain(Document):
 	@property
 	def cloudflare_client(self):
 		if not hasattr(self, "_cloudflare_client"):
-			self._cloudflare_client = CloudFlare(
+			self._cloudflare_client = Cloudflare(
 				token=self.get_password("cloud_flare_api_key")
 			)
 
