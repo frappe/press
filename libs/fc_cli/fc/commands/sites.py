@@ -68,6 +68,34 @@ def _run_doc_method(
 	)
 
 
+def _print_backend_http_error(err: Exception) -> None:
+	resp = getattr(err, "response", None)
+	if resp is None:
+		return
+	status = getattr(resp, "status_code", None)
+	url = getattr(resp, "url", None)
+	Print.error(console, f"Backend HTTP error: {status} for url: {url}")
+	try:
+		Print.info(console, f"Backend response JSON: {resp.json()!r}")
+	except Exception:
+		text = getattr(resp, "text", "")
+		Print.info(console, f"Backend response text: {text}")
+
+
+def _is_duplicate_entry_http_error(err: Exception) -> bool:
+	text = str(getattr(getattr(err, "response", None), "text", ""))
+	return "DuplicateEntryError" in text
+
+
+def _find_bench_info(benches: object, bench_name: str) -> dict | None:
+	if not isinstance(benches, list):
+		return None
+	for bench in benches:
+		if isinstance(bench, dict) and bench.get("name") == bench_name:
+			return bench
+	return None
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Site Commands
 # ─────────────────────────────────────────────────────────────────────────────
@@ -92,6 +120,23 @@ def new(
 		Print.error(console, f"Bench '{bench}' not found. Available: {', '.join(bench_names) or 'none'}")
 		return
 
+	# Fetch bench group server and its cluster
+	bench_details = session.post(
+		"press.api.client.get",
+		json={"doctype": "Release Group", "name": bench, "fields": ["server"]},
+		message="[bold green]Fetching bench group details...",
+	)
+	server_name = bench_details.get("server") if isinstance(bench_details, dict) else None
+	cluster = None
+	if server_name:
+		server_details = session.post(
+			"press.api.client.get",
+			json={"doctype": "Server", "name": server_name, "fields": ["cluster"]},
+			message="[bold green]Fetching server cluster...",
+		)
+		cluster = server_details.get("cluster") if isinstance(server_details, dict) else None
+	Print.info(console, f"Bench group '{bench}' -> server={server_name!r}, cluster={cluster!r}")
+
 	# Validate plan
 	if plan not in (available := _get_plans(session)):
 		Print.error(console, f"Invalid plan '{plan}'. Available: {', '.join(available)}")
@@ -99,6 +144,7 @@ def new(
 
 	payload = {
 		"apps": apps or [],
+		"cluster": cluster,  # Include cluster to avoid backend defaulting to Press Settings
 		"domain": DOMAIN,
 		"group": bench,
 		"localisation_country": None,
@@ -121,7 +167,8 @@ def new(
 		else:
 			Print.error(console, f"Failed: {_error_msg(result)}")
 	except Exception as e:
-		if "DuplicateEntryError" in str(getattr(getattr(e, "response", None), "text", "")):
+		_print_backend_http_error(e)
+		if _is_duplicate_entry_http_error(e):
 			Print.error(console, f"Site '{full_site}' already exists.")
 		else:
 			Print.error(console, f"Error: {e}")
@@ -247,9 +294,9 @@ def backup(
 		Print.error(console, f"Error: {e}")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ───────────────────────────────────────────────────────────
 # Bench Group Commands
-# ─────────────────────────────────────────────────────────────────────────────
+# ───────────────────────────────────────────────────────────
 
 
 def _do_switch_group(session: "CloudSession", site: str, groups: list) -> None:
