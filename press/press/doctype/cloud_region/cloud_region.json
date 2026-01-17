@@ -23,13 +23,13 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "AWS EC2\nOCI\nHetzner\nDigital Ocean",
+   "options": "AWS EC2\nOCI\nHetzner\nDigitalOcean",
    "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-17 13:15:50.451857",
+ "modified": "2026-01-17 15:33:53.069480",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cloud Region",
