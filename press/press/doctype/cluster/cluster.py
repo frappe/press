@@ -13,6 +13,7 @@ from typing import ClassVar, Literal
 
 import boto3
 import frappe
+import pydo
 from frappe.model.document import Document
 from frappe.utils.caching import redis_cache
 from hcloud import APIException, Client
@@ -70,12 +71,13 @@ class Cluster(Document):
 		beta: DF.Check
 		by_default_select_unified_mode: DF.Check
 		cidr_block: DF.Data | None
-		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner", "Frappe Compute"]
+		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner", "Frappe Compute", "Digital Ocean"]
 		default_app_server_plan: DF.Link | None
 		default_app_server_plan_type: DF.Link | None
 		default_db_server_plan: DF.Link | None
 		default_db_server_plan_type: DF.Link | None
 		description: DF.Data | None
+		digital_ocean_api_token: DF.Password | None
 		enable_autoscaling: DF.Check
 		has_add_on_storage_support: DF.Check
 		has_arm_support: DF.Check
@@ -193,8 +195,148 @@ class Cluster(Document):
 			self.provision_on_oci()
 		elif self.cloud_provider == "Hetzner":
 			self.provision_on_hetzner()
+		elif self.cloud_provider == "Digital Ocean":
+			self.provision_on_digital_ocean()
 		elif self.cloud_provider == "Frappe Compute":
 			self.provision_on_frappe_compute()
+
+	def provision_on_digital_ocean(self):
+		api_token = self.get_password("digital_ocean_api_token")
+		client = pydo.Client(api_token)
+
+		# Provision VPC
+		self._add_digital_ocean_vpc(client=client)
+		# Add ssh key to digital ocean, if it doesn't already exist
+		self._add_digital_ocean_ssh_keys(client=client)
+		# Add firewall to digital ocean, if it doesn't already exist
+		self._add_digital_ocean_firewall(client=client)
+		# Add proxy firewall to digital ocean, if it doesn't already exist
+		self._add_digital_ocean_proxy_firewall(client=client)
+
+		self.save()
+
+	def _add_digital_ocean_vpc(self, client):
+		"""Provisions a VPC on Digital Ocean"""
+		try:
+			network = client.vpcs.create(
+				{
+					"name": f"Frappe - Cloud - {self.name}".replace(" ", ""),
+					"description": f"VPC for Frappe Cloud {self.name} Cluster",
+					"region": self.region,
+					"ip_range": self.cidr_block,
+				}
+			)
+			self.vpc_id = network["vpc"]["id"]
+		except Exception as e:
+			frappe.throw(f"Failed to provision VPC on Digital Ocean: {e!s}")
+
+	def _add_digital_ocean_ssh_keys(self, client):
+		"""Adds the SSH key to Digital Ocean if it doesn't already exist"""
+		keys = client.ssh_keys.list()
+		keys = keys.get("ssh_keys", [])
+		existing_keys = [key for key in keys if key["name"] == self.ssh_key]
+		if existing_keys:
+			return
+
+		try:
+			client.ssh_keys.create(
+				{
+					"name": self.ssh_key,
+					"public_key": frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
+				}
+			)
+		except Exception as e:
+			frappe.throw(f"Failed to create SSH Key on Digital Ocean: {e!s}")
+
+	def _add_digital_ocean_proxy_firewall(self, client):
+		"""Adds the proxy firewall to Digital Ocean if it doesn't already exist"""
+		firewalls = client.firewalls.list()
+		firewalls = firewalls.get("firewalls", [])
+		existing_firewalls = [
+			fw
+			for fw in firewalls
+			if fw["name"] == f"Frappe Cloud - {self.name} - Proxy - Security Group".replace(" ", "")
+		]
+		if existing_firewalls:
+			self.proxy_security_group_id = existing_firewalls[0]["id"]
+			return
+
+		try:
+			firewall = client.firewalls.create(
+				{
+					"name": f"Frappe Cloud - {self.name} - Proxy - Security Group".replace(" ", ""),
+					"inbound_rules": [
+						{"protocol": "tcp", "ports": "2222", "sources": {"addresses": ["0.0.0.0/0"]}},
+						{"protocol": "tcp", "ports": "3306", "sources": {"addresses": ["0.0.0.0/0"]}},
+					],
+					"outbound_rules": [
+						{"protocol": "tcp", "ports": "0", "destinations": {"addresses": ["0.0.0.0/0"]}},
+						{"protocol": "udp", "ports": "0", "destinations": {"addresses": ["0.0.0.0/0"]}},
+						{"protocol": "icmp", "ports": "0", "destinations": {"addresses": ["0.0.0.0/0"]}},
+					],
+				}
+			)
+			self.proxy_security_group_id = firewall["firewall"]["id"]
+		except Exception as e:
+			frappe.throw(f"Failed to create Proxy Firewall on Digital Ocean: {e!s}")
+
+	def _add_digital_ocean_firewall(self, client):
+		"""Adds the firewall to Digital Ocean if it doesn't already exist"""
+		firewalls = client.firewalls.list()
+		firewalls = firewalls.get("firewalls", [])
+		existing_firewalls = [
+			fw
+			for fw in firewalls
+			if fw["name"] == f"Frappe Cloud - {self.name} - Security Group".replace(" ", "")
+		]
+		if existing_firewalls:
+			self.security_group_id = existing_firewalls[0]["id"]
+			return
+
+		try:
+			firewall = client.firewalls.create(
+				{
+					"name": f"Frappe Cloud - {self.name} - Security Group".replace(" ", ""),
+					"inbound_rules": [
+						{"protocol": "tcp", "ports": "80", "sources": {"addresses": ["0.0.0.0/0"]}},
+						{"protocol": "tcp", "ports": "443", "sources": {"addresses": ["0.0.0.0/0"]}},
+						{"protocol": "tcp", "ports": "22", "sources": {"addresses": ["0.0.0.0/0"]}},
+						{
+							"protocol": "tcp",
+							"ports": "3306",
+							"sources": {"addresses": [self.subnet_cidr_block]},
+						},
+						{
+							"protocol": "tcp",
+							"ports": "2049",
+							"sources": {"addresses": [self.subnet_cidr_block]},
+						},
+						{
+							"protocol": "tcp",
+							"ports": "11000-20000",
+							"sources": {"addresses": [self.subnet_cidr_block]},
+						},
+						{
+							"protocol": "tcp",
+							"ports": "22000-22999",
+							"sources": {"addresses": [self.subnet_cidr_block]},
+						},
+						{"protocol": "icmp", "ports": "0", "sources": {"addresses": ["0.0.0.0/0"]}},
+					],
+					"outbound_rules": [
+						{"protocol": "tcp", "ports": "0", "destinations": {"addresses": ["0.0.0.0/0"]}},
+						{"protocol": "udp", "ports": "0", "destinations": {"addresses": ["0.0.0.0/0"]}},
+						{"protocol": "icmp", "ports": "0", "destinations": {"addresses": ["0.0.0.0/0"]}},
+					],
+				}
+			)
+
+			if "id" not in firewall.get("firewall", {}):
+				frappe.throw("Failed to create Firewall on Digital Ocean.")
+
+			self.security_group_id = firewall["firewall"]["id"]
+		except Exception as e:
+			frappe.throw(f"Failed to create Firewall on Digital Ocean: {e!s}")
 
 	def provision_on_frappe_compute(self):
 		settings = frappe.get_single("Press Settings")
