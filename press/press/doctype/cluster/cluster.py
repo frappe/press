@@ -281,6 +281,20 @@ class Cluster(Document):
 						source_ips=[self.subnet_cidr_block],
 					),
 					HetznerFirewallRule(
+						description="NFS from private network",
+						direction="in",
+						protocol="tcp",
+						port="2049",
+						source_ips=[self.subnet_cidr_block],
+					),
+					HetznerFirewallRule(
+						description="Redis from private network",
+						direction="in",
+						protocol="tcp",
+						port="11000-20000",
+						source_ips=[self.subnet_cidr_block],
+					),
+					HetznerFirewallRule(
 						description="SSH from private network",
 						direction="in",
 						protocol="tcp",
@@ -509,6 +523,28 @@ class Cluster(Document):
 					"ToPort": 3306,
 				},
 				{
+					"FromPort": 2049,
+					"IpProtocol": "tcp",
+					"IpRanges": [
+						{
+							"CidrIp": self.subnet_cidr_block,
+							"Description": "NFS Access from private network",
+						}
+					],
+					"ToPort": 2049,
+				},
+				{
+					"FromPort": 11000,
+					"IpProtocol": "tcp",
+					"IpRanges": [
+						{
+							"CidrIp": self.subnet_cidr_block,
+							"Description": "Redis from private network",
+						}
+					],
+					"ToPort": 20000,
+				},
+				{
 					"FromPort": 22000,
 					"IpProtocol": "tcp",
 					"IpRanges": [
@@ -731,6 +767,13 @@ class Cluster(Document):
 						protocol="6",
 						source="0.0.0.0/0",
 						tcp_options=TcpOptions(destination_port_range=PortRange(min=3306, max=3306)),
+					),
+					AddSecurityRuleDetails(
+						description="NFS from from anywhere",
+						direction="INGRESS",
+						protocol="6",
+						source="0.0.0.0/0",
+						tcp_options=TcpOptions(destination_port_range=PortRange(min=2049, max=2049)),
 					),
 					AddSecurityRuleDetails(
 						description="Everything to anywhere",
