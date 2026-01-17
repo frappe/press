@@ -410,8 +410,8 @@ class VirtualMachine(Document):
 			return self._provision_oci()
 		if self.cloud_provider == "Hetzner":
 			return self._provision_hetzner()
-		if self.cloud_provider == "Digital Ocean":
-			...
+		if self.cloud_provider == "DigitalOcean":
+			return self._provision_digital_ocean()
 		if self.cloud_provider == "Frappe Compute":
 			return self._provision_frappe_compute()
 
@@ -447,6 +447,7 @@ class VirtualMachine(Document):
 					"name": self.name,
 					"region": cluster.region,
 					"size": self.machine_type,
+					"image": self.machine_image,
 					"ssh_keys": [self._get_digital_ocean_ssh_key_id()],
 					"backups": False,
 					"vpc_uuid": cluster.vpc_id,
@@ -463,6 +464,7 @@ class VirtualMachine(Document):
 		except Exception as e:
 			frappe.throw(f"Failed to assign Firewall to Digital Ocean Droplet: {e!s}")
 
+		self.status = self.get_digital_ocean_status_map()[droplet["droplet"]["status"]]
 		self.save()
 		frappe.db.commit()
 
@@ -1047,7 +1049,7 @@ class VirtualMachine(Document):
 			return self._sync_digital_ocean(*args, **kwargs)
 		return None
 
-	def _sync_digital_ocean(self):
+	def _sync_digital_ocean(self, *args, **kwargs):
 		server_instance = self.get_digital_ocean_server_instance()
 
 		if server_instance.get("id", None) == "not_found":
