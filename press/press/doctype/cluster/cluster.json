@@ -82,7 +82,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "AWS EC2\nGeneric\nOCI\nHetzner\nFrappe Compute\nDigital Ocean",
+   "options": "AWS EC2\nGeneric\nOCI\nHetzner\nFrappe Compute\nDigitalOcean",
    "reqd": 1,
    "set_only_once": 1
   },
@@ -441,7 +441,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2026-01-17 13:14:56.585943",
+ "modified": "2026-01-17 15:33:40.357042",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",

@@ -10,6 +10,7 @@ import typing
 import boto3
 import botocore
 import frappe
+import pydo
 import rq
 from frappe.core.utils import find
 from frappe.desk.utils import slug
@@ -67,6 +68,7 @@ server_doctypes = [
 ]
 
 HETZNER_ROOT_DISK_ID = "hetzner-root-disk"
+DIGITALOCEAN_ROOT_DISK_ID = "digital-ocean-root-disk"
 HETZNER_ACTION_RETRIES = 60  # retry count; try to keep it lower so that it doesn't surpass than default RQ job timeout of 300 seconds
 
 
@@ -85,7 +87,7 @@ class VirtualMachine(Document):
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
 		availability_zone: DF.Data
-		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner"]
+		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner", "DigitalOcean"]
 		cluster: DF.Link
 		data_disk_snapshot: DF.Link | None
 		data_disk_snapshot_attached: DF.Check
@@ -408,10 +410,61 @@ class VirtualMachine(Document):
 			return self._provision_oci()
 		if self.cloud_provider == "Hetzner":
 			return self._provision_hetzner()
+		if self.cloud_provider == "Digital Ocean":
+			...
 		if self.cloud_provider == "Frappe Compute":
 			return self._provision_frappe_compute()
 
 		return None
+
+	def _get_digital_ocean_ssh_key_id(self) -> int:
+		"""Get digital ocean ssh key id"""
+		keys = self.client().ssh_keys.list()
+		keys = keys.get("ssh_keys", [])
+		existing_key = [key for key in keys if key["name"] == self.ssh_key]
+		if not existing_key:
+			frappe.throw(f"No SSH Key found on Digital Ocean with the name {self.ssh_key}")
+
+		return existing_key[0]["id"]
+
+	def _provision_digital_ocean(self):
+		"""Provision a Digital Ocean Droplet"""
+		if not self.machine_image:
+			frappe.throw("Machine Image is required to provision Hetzner Virtual Machine.")
+
+		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+
+		firewalls = self.client().firewalls.list()
+		firewalls = firewalls.get("firewalls", [])
+		cluster_firewall = next(fw for fw in firewalls if fw["id"] == cluster.security_group_id)
+
+		if cluster_firewall["status"] != "succeeded":
+			frappe.throw(f"Firewall with id {cluster.security_group_id} not active")
+
+		try:
+			droplet = self.client().droplets.create(
+				{
+					"name": self.name,
+					"region": cluster.region,
+					"size": self.machine_type,
+					"ssh_keys": [self._get_digital_ocean_ssh_key_id()],
+					"backups": False,
+					"vpc_uuid": cluster.vpc_id,
+				}
+			)
+			self.instance_id = droplet["droplet"]["id"]
+		except Exception as e:
+			frappe.throw(f"Failed to provision Digital Ocean Droplet: {e!s}")
+
+		try:
+			self.client().firewalls.assign_droplets(
+				cluster.security_group_id, {"droplet_ids": [self.instance_id]}
+			)
+		except Exception as e:
+			frappe.throw(f"Failed to assign Firewall to Digital Ocean Droplet: {e!s}")
+
+		self.save()
+		frappe.db.commit()
 
 	def _provision_frappe_compute(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
@@ -729,6 +782,14 @@ class VirtualMachine(Document):
 				return frappe.get_doc(doctype, server)
 		return None
 
+	def get_digital_ocean_status_map(self):
+		return {
+			"new": "Pending",
+			"active": "Running",
+			"off": "Stopped",
+			"archive": "Terminated",
+		}
+
 	def get_hetzner_status_map(self):
 		# Hetzner has not status for Terminating or Terminated. Just returns a server not found.
 		return {
@@ -766,7 +827,7 @@ class VirtualMachine(Document):
 			"TERMINATED": "Terminated",
 		}
 
-	def get_latest_ubuntu_image(self):
+	def get_latest_ubuntu_image(self):  # noqa: C901
 		if self.cloud_provider == "AWS EC2":
 			architecture = {"x86_64": "amd64", "arm64": "arm64"}[self.platform]
 			return self.client("ssm").get_parameter(
@@ -793,6 +854,17 @@ class VirtualMachine(Document):
 			)
 			if images and len(images) > 0:
 				return images[0].id
+
+		if self.cloud_provider == "DigitalOcean":
+			images = self.client().images.list(type="distribution", private=False)
+			images = images["images"]
+			ubuntu_images = [image for image in images if "22.04" in image["name"]]
+
+			if not ubuntu_images:
+				frappe.throw("No image available for Ubuntu 22.04")
+
+			return ubuntu_images[0]["id"]
+
 		if self.cloud_provider == "Frappe Compute":
 			images = self.client().get_all_images()
 			if images:
@@ -912,6 +984,35 @@ class VirtualMachine(Document):
 
 			return volumes
 
+		if self.cloud_provider == "DigitalOcean":
+			attached_volumes = []
+			instance = self.get_digital_ocean_server_instance()
+
+			volume_ids = instance["volume_ids"]  # List of attached volume IDs
+			volumes = self.client().volumes.list()["volumes"]
+			volumes = [v for v in volumes if v["id"] in volume_ids]
+
+			for v in volumes:
+				attached_volumes.append(
+					frappe._dict(
+						{
+							"id": v.id,
+							"size": v.size_gigabytes,
+						}
+					)
+				)
+
+			volumes.append(
+				frappe._dict(
+					{
+						"id": DIGITALOCEAN_ROOT_DISK_ID,
+						"device": "/dev/sda",
+						"size": instance["disk"],
+					}
+				)
+			)
+			return volumes
+
 		if self.cloud_provider == "Frappe Compute":
 			return self.client().get_volumes(self.name)
 		return None
@@ -942,7 +1043,43 @@ class VirtualMachine(Document):
 			return self._sync_oci(*args, **kwargs)
 		if self.cloud_provider == "Hetzner":
 			return self._sync_hetzner(*args, **kwargs)
+		if self.cloud_provider == "DigitalOcean":
+			return self._sync_digital_ocean(*args, **kwargs)
 		return None
+
+	def _sync_digital_ocean(self):
+		server_instance = self.get_digital_ocean_server_instance()
+
+		if server_instance.get("id", None) == "not_found":
+			self.status = "Terminated"
+			self.save()
+			self.update_servers()
+			return
+
+		server_instance = server_instance.get("droplet", {})
+
+		self.status = self.get_digital_ocean_status_map()[server_instance["status"]]
+		self.machine_type = server_instance["size"]["slug"]
+		self.vcpu = server_instance["size"]["vcpus"]
+		self.ram = server_instance["size"]["memory"]
+
+		self.private_ip_address = (
+			server_instance["networks"]["v4"][0]["ip_address"]
+			if server_instance["networks"]["v4"][0]["type"] == "private"
+			else ""
+		)
+		self.public_ip_address = (
+			server_instance["networks"]["v4"][1]["ip_address"]
+			if server_instance["networks"]["v4"][0]["type"] == "public"
+			else ""
+		)
+
+		# We don't have volume support yet for digital ocean droplets
+		self.root_disk_size = server_instance["disk"]
+		self.disk_size = server_instance["disk"]
+
+		self.save()
+		self.update_servers()
 
 	def _sync_hetzner(self, server_instance=None):  # noqa: C901
 		if not server_instance:
@@ -1548,11 +1685,18 @@ class VirtualMachine(Document):
 				aws_access_key_id=cluster.aws_access_key_id,
 				aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
 			)
+
 		if self.cloud_provider == "OCI":
 			return (client_type or ComputeClient)(cluster.get_oci_config())
+
 		if self.cloud_provider == "Hetzner":
 			api_token = cluster.get_password("hetzner_api_token")
 			return HetznerClient(token=api_token)
+
+		if self.cloud_provider == "DigitalOcean":
+			api_token = cluster.get_password("digital_ocean_api_token")
+			return pydo.Client(token=api_token)
+
 		if self.cloud_provider == "Frappe Compute":
 			settings = frappe.get_single("Press Settings")
 			orchestrator_base_url = settings.orchestrator_base_url
@@ -2113,6 +2257,13 @@ class VirtualMachine(Document):
 		except botocore.exceptions.ClientError as e:
 			if e.response.get("Error", {}).get("Code") == "InvalidVolumeModification.NotFound":
 				return None
+
+	def get_digital_ocean_server_instance(self):
+		"""Get digital ocean droplet instance"""
+		if self.cloud_provider != "DigitalOcean":
+			raise NotImplementedError
+
+		return self.client().droplets.get(self.instance_id)
 
 	def get_hetzner_server_instance(self, fetch_data=True):
 		if self.cloud_provider != "Hetzner":
