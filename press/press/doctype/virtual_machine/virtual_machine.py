@@ -466,6 +466,10 @@ class VirtualMachine(Document):
 			self.client().firewalls.assign_droplets(
 				cluster.security_group_id, {"droplet_ids": [self.instance_id]}
 			)
+			if self.series == "n":
+				self.client().firewalls.assign_droplets(
+					cluster.proxy_security_group_id, {"droplet_ids": [self.instance_id]}
+				)
 		except Exception as e:
 			frappe.throw(f"Failed to assign Firewall to Digital Ocean Droplet: {e!s}")
 
