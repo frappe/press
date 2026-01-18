@@ -71,18 +71,59 @@ RUN --mount=type=cache,target=/var/cache/apt curl -fsSL https://packages.redis.i
   redis-server \
   && rm -rf /var/lib/apt/lists/* `#stage-pre-redis`
 
-# Install Python from DeadSnakes PPA
+# Build Python from source (deadsnakes PPA no longer supports Ubuntu Focal)
 ENV {{ doc.get_dependency_version("python", True) }}
-RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/ppa \
-  && apt-get update \
+
+# Install Python build dependencies
+RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
-    python${PYTHON_VERSION} \
-    python${PYTHON_VERSION}-dev \
-    {% if not remove_distutils -%}
-    python${PYTHON_VERSION}-distutils \
-    {%- endif %}
-    python${PYTHON_VERSION}-venv \
+    libssl-dev \
+    zlib1g-dev \
+    libbz2-dev \
+    libreadline-dev \
+    libsqlite3-dev \
+    llvm \
+    libncurses5-dev \
+    libncursesw5-dev \
+    xz-utils \
+    tk-dev \
+    libffi-dev \
+    liblzma-dev \
   && rm -rf /var/lib/apt/lists/* \
+  `#stage-pre-python-deps`
+
+# Build and install Python from source
+# Dynamically fetches the latest patch version for the given major.minor version
+RUN --mount=type=cache,target=/root/.cache/pip \
+  --mount=type=cache,target=/tmp/python-build \
+  cd /tmp \
+  && if echo "${PYTHON_VERSION}" | grep -qE "^[0-9]+\.[0-9]+\.[0-9]+$"; then \
+       # Full version provided (e.g., 3.11.14)
+       export PYTHON_FULL_VERSION="${PYTHON_VERSION}"; \
+       export PYTHON_SHORT_VERSION=$(echo "${PYTHON_VERSION}" | cut -d. -f1,2); \
+     else \
+       # Short version provided (e.g., 3.11) - fetch latest patch version
+       export PYTHON_SHORT_VERSION="${PYTHON_VERSION}"; \
+       export PYTHON_FULL_VERSION=$(curl -s https://www.python.org/ftp/python/ | sed -n "s/.*${PYTHON_VERSION}\\.\([0-9]*\).*/${PYTHON_VERSION}.\\1/p" | sort -V | tail -1); \
+       if [ -z "${PYTHON_FULL_VERSION}" ]; then \
+         echo "Error: Could not find Python version matching ${PYTHON_VERSION}" && exit 1; \
+       fi; \
+     fi \
+  && echo "Building Python ${PYTHON_FULL_VERSION}" \
+  && if [ ! -f "/tmp/python-build/Python-${PYTHON_FULL_VERSION}.tgz" ]; then \
+       wget -q -P /tmp/python-build https://www.python.org/ftp/python/${PYTHON_FULL_VERSION}/Python-${PYTHON_FULL_VERSION}.tgz; \
+     fi \
+  && tar -xf /tmp/python-build/Python-${PYTHON_FULL_VERSION}.tgz \
+  && cd Python-${PYTHON_FULL_VERSION} \
+  && ./configure --enable-optimizations --prefix=/usr/local --enable-shared \
+  && make -j$(nproc) \
+  && make altinstall \
+  && cd / \
+  && rm -rf /tmp/Python-${PYTHON_FULL_VERSION} \
+  && ldconfig \
+  && ln -sf /usr/local/bin/python${PYTHON_SHORT_VERSION} /usr/bin/python${PYTHON_VERSION} \
+  && ln -sf /usr/local/bin/python${PYTHON_SHORT_VERSION} /usr/bin/python${PYTHON_SHORT_VERSION} \
+  && ln -sf /usr/local/bin/pip${PYTHON_SHORT_VERSION} /usr/bin/pip${PYTHON_SHORT_VERSION} \
   `#stage-pre-python`
 
 # Install wkhtmltopdf
