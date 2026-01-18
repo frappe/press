@@ -6,6 +6,7 @@ import math
 
 import boto3
 import frappe
+import pydo
 from frappe.core.utils import find
 from frappe.model.document import Document
 from hcloud import APIException, Client
@@ -35,6 +36,7 @@ class VirtualMachineImage(Document):
 			VirtualMachineImageVolume,
 		)
 
+		action_id: DF.Data | None
 		cloud_provider: DF.Data
 		cluster: DF.Link
 		copied_from: DF.Link | None
@@ -59,8 +61,17 @@ class VirtualMachineImage(Document):
 
 	def before_insert(self):
 		self.set_credentials()
-		if self.cloud_provider == "Hetzner" and self.has_data_volume:
+		if (
+			self.cloud_provider == "Hetzner" or self.cloud_provider == "DigitalOcean"
+		) and self.has_data_volume:
 			frappe.throw("Hetzner Virtual Machine Images cannot have data volumes.")
+
+		if self.cloud_provider == "DigitalOcean":
+			snapshots = self.client.droplets.list_snapshots(self.instance_id)
+			if snapshots.get("snapshots", []):
+				frappe.throw(
+					"A snapshot already exists, please delete the existing snapshot before creating a new image."
+				)
 
 	def after_insert(self):
 		if self.copied_from:
@@ -70,6 +81,7 @@ class VirtualMachineImage(Document):
 
 	def create_image(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
+
 		if cluster.cloud_provider == "AWS EC2":
 			volumes = self.get_volumes_from_virtual_machine()
 			response = self.client.create_image(
@@ -78,6 +90,7 @@ class VirtualMachineImage(Document):
 				BlockDeviceMappings=volumes,
 			)
 			self.image_id = response["ImageId"]
+
 		elif cluster.cloud_provider == "OCI":
 			object_storage_details = {}
 			instance_details = {}
@@ -100,6 +113,7 @@ class VirtualMachineImage(Document):
 				)
 			).data
 			self.image_id = image.id
+
 		elif cluster.cloud_provider == "Hetzner":
 			from hcloud.servers.domain import Server
 
@@ -114,7 +128,19 @@ class VirtualMachineImage(Document):
 				type="snapshot",
 			)
 			self.image_id = response.image.id
+<<<<<<< HEAD
 			self.snapshot_id = response.image.id
+=======
+
+		elif cluster.cloud_provider == "DigitalOcean":
+			action = self.client.droplet_actions.post(
+				self.instance_id,
+				{"type": "snapshot", "name": f"Frappe Cloud {self.name} - {self.virtual_machine}"},
+			)
+			action = action["action"]
+			self.action_id = action["id"]
+
+>>>>>>> 57ced8f07 (feat(do): Add support for virtual machine images)
 		elif cluster.cloud_provider == "Frappe Compute":
 			image_id = self.client.create_image(instance_id=self.instance_id)
 			self.image_id = image_id
@@ -203,6 +229,7 @@ class VirtualMachineImage(Document):
 					self.status = "Unavailable"
 				else:
 					raise e
+<<<<<<< HEAD
 		elif cluster.cloud_provider == "Frappe Compute":
 			try:
 				image_info = self.client.get_image_info(self.image_id)
@@ -215,6 +242,25 @@ class VirtualMachineImage(Document):
 			self.size = image_info["size"]
 			self.root_size = image_info["size"]
 			self.save()
+=======
+		elif cluster.cloud_provider == "DigitalOcean":
+			action_status = self.client.droplet_actions.get(
+				droplet_id=self.instance_id, action_id=self.action_id
+			)
+			action_status = action_status["action"]["status"]
+			self.status = self.get_digital_ocean_status_map(action_status)
+
+			if self.status == "Available":
+				images = self.client.droplets.list_snapshots(self.instance_id)["snapshots"]
+				image = images[
+					0
+				]  # Machine get's one snapshot only and when action is completed we will have an image
+				self.image_id = image["id"]
+				self.size = image["min_disk_size"]
+				self.root_size = image["min_disk_size"]
+
+		self.save()
+>>>>>>> 57ced8f07 (feat(do): Add support for virtual machine images)
 		return self.status
 
 	@retry(
@@ -258,6 +304,12 @@ class VirtualMachineImage(Document):
 		return {
 			"creating": "Pending",
 			"available": "Available",
+		}.get(status, "Unavailable")
+
+	def get_digital_ocean_status_map(self, status: str):
+		return {
+			"in-progress": "Pending",
+			"completed": "Available",
 		}.get(status, "Unavailable")
 
 	def get_oci_status_map(self, status):
@@ -308,6 +360,8 @@ class VirtualMachineImage(Document):
 		if cluster.cloud_provider == "Hetzner":
 			api_token = cluster.get_password("hetzner_api_token")
 			return Client(token=api_token)
+		if cluster.cloud_provider == "DigitalOcean":
+			return pydo.Client(token=cluster.get_password("digital_ocean_api_token"))
 		if cluster.cloud_provider == "Frappe Compute":
 			settings = frappe.get_single("Press Settings")
 			api_token = settings.get_password("compute_api_token")
