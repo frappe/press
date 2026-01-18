@@ -185,7 +185,7 @@
    "set_only_once": 1
   },
   {
-   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\"].includes(doc.provider)",
+   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\", \"DigitalOcean\"].includes(doc.provider)",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
@@ -794,10 +794,14 @@
   }
  ],
 <<<<<<< HEAD
+<<<<<<< HEAD
  "modified": "2026-01-13 11:01:08.298972",
 =======
  "modified": "2026-01-18 15:24:16.730714",
 >>>>>>> 653e02800 (fix(do): Allow digital ocean server types)
+=======
+ "modified": "2026-01-18 16:20:34.150871",
+>>>>>>> 42044c719 (feat(do): Show virtual machine in server docs)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
