@@ -26,7 +26,9 @@
   "mariadb_root_password",
   "section_break_acrc",
   "has_data_volume",
-  "volumes"
+  "volumes",
+  "digital_ocean_action_section",
+  "action_id"
  ],
  "fields": [
   {
@@ -178,12 +180,24 @@
    "fieldtype": "Data",
    "label": "Cloud Provider",
    "reqd": 1
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "eval: doc.cloud_provider == \"DigitalOcean\"",
+   "fieldname": "digital_ocean_action_section",
+   "fieldtype": "Section Break",
+   "label": "Digital Ocean Action"
+  },
+  {
+   "fieldname": "action_id",
+   "fieldtype": "Data",
+   "label": "Action Id"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-08 09:36:03.543410",
+ "modified": "2026-01-18 15:54:34.633890",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",

@@ -10,6 +10,7 @@ import typing
 import boto3
 import botocore
 import frappe
+import pydo
 import rq
 from frappe.core.utils import find
 from frappe.desk.utils import slug
@@ -67,6 +68,7 @@ server_doctypes = [
 ]
 
 HETZNER_ROOT_DISK_ID = "hetzner-root-disk"
+DIGITALOCEAN_ROOT_DISK_ID = "digital-ocean-root-disk"
 HETZNER_ACTION_RETRIES = 60  # retry count; try to keep it lower so that it doesn't surpass than default RQ job timeout of 300 seconds
 
 
@@ -85,7 +87,7 @@ class VirtualMachine(Document):
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
 		availability_zone: DF.Data
-		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner"]
+		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner", "DigitalOcean"]
 		cluster: DF.Link
 		data_disk_snapshot: DF.Link | None
 		data_disk_snapshot_attached: DF.Check
@@ -408,10 +410,67 @@ class VirtualMachine(Document):
 			return self._provision_oci()
 		if self.cloud_provider == "Hetzner":
 			return self._provision_hetzner()
+		if self.cloud_provider == "DigitalOcean":
+			return self._provision_digital_ocean()
 		if self.cloud_provider == "Frappe Compute":
 			return self._provision_frappe_compute()
 
 		return None
+
+	def _get_digital_ocean_ssh_key_id(self) -> int:
+		"""Get digital ocean ssh key id"""
+		keys = self.client().ssh_keys.list()
+		keys = keys.get("ssh_keys", [])
+		existing_key = [key for key in keys if key["name"] == self.ssh_key]
+		if not existing_key:
+			frappe.throw(f"No SSH Key found on Digital Ocean with the name {self.ssh_key}")
+
+		return existing_key[0]["id"]
+
+	def _provision_digital_ocean(self):
+		"""Provision a Digital Ocean Droplet"""
+		if not self.machine_image:
+			frappe.throw("Machine Image is required to provision Hetzner Virtual Machine.")
+
+		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+
+		firewalls = self.client().firewalls.list()
+		firewalls = firewalls.get("firewalls", [])
+		cluster_firewall = next(fw for fw in firewalls if fw["id"] == cluster.security_group_id)
+
+		if cluster_firewall["status"] != "succeeded":
+			frappe.throw(f"Firewall with id {cluster.security_group_id} not active")
+
+		try:
+			droplet = self.client().droplets.create(
+				{
+					"name": self.name,
+					"region": cluster.region,
+					"size": self.machine_type,
+					"image": self.machine_image,
+					"ssh_keys": [self._get_digital_ocean_ssh_key_id()],
+					"backups": False,
+					"vpc_uuid": cluster.vpc_id,
+				}
+			)
+			self.instance_id = droplet["droplet"]["id"]
+		except Exception as e:
+			frappe.throw(f"Failed to provision Digital Ocean Droplet: {e!s}")
+
+		try:
+			self.client().firewalls.assign_droplets(
+				cluster.security_group_id, {"droplet_ids": [self.instance_id]}
+			)
+			if self.series == "n":
+				self.client().firewalls.assign_droplets(
+					cluster.proxy_security_group_id, {"droplet_ids": [self.instance_id]}
+				)
+		except Exception as e:
+			frappe.throw(f"Failed to assign Firewall to Digital Ocean Droplet: {e!s}")
+
+		self.status = self.get_digital_ocean_status_map()[droplet["droplet"]["status"]]
+		self.save()
+		frappe.db.commit()
 
 	def _provision_frappe_compute(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
@@ -729,6 +788,14 @@ class VirtualMachine(Document):
 				return frappe.get_doc(doctype, server)
 		return None
 
+	def get_digital_ocean_status_map(self):
+		return {
+			"new": "Pending",
+			"active": "Running",
+			"off": "Stopped",
+			"archive": "Terminated",
+		}
+
 	def get_hetzner_status_map(self):
 		# Hetzner has not status for Terminating or Terminated. Just returns a server not found.
 		return {
@@ -766,7 +833,7 @@ class VirtualMachine(Document):
 			"TERMINATED": "Terminated",
 		}
 
-	def get_latest_ubuntu_image(self):
+	def get_latest_ubuntu_image(self):  # noqa: C901
 		if self.cloud_provider == "AWS EC2":
 			architecture = {"x86_64": "amd64", "arm64": "arm64"}[self.platform]
 			return self.client("ssm").get_parameter(
@@ -793,6 +860,17 @@ class VirtualMachine(Document):
 			)
 			if images and len(images) > 0:
 				return images[0].id
+
+		if self.cloud_provider == "DigitalOcean":
+			images = self.client().images.list(type="distribution", private=False)
+			images = images["images"]
+			ubuntu_images = [image for image in images if "22.04" in image["name"]]
+
+			if not ubuntu_images:
+				frappe.throw("No image available for Ubuntu 22.04")
+
+			return ubuntu_images[0]["id"]
+
 		if self.cloud_provider == "Frappe Compute":
 			images = self.client().get_all_images()
 			if images:
@@ -807,6 +885,8 @@ class VirtualMachine(Document):
 			self.client().instance_action(instance_id=self.instance_id, action="RESET")
 		elif self.cloud_provider == "Hetzner":
 			self.client().servers.reboot(self.get_hetzner_server_instance(fetch_data=False))
+		elif self.cloud_provider == "DigitalOcean":
+			self.client().droplet_actions.post(self.instance_id, {"type": "reboot"})
 		elif self.cloud_provider == "Frappe Compute":
 			self.client().reboot_vm(self.name)
 
@@ -851,6 +931,18 @@ class VirtualMachine(Document):
 
 			self.client().volumes.resize(Volume(volume_id), volume.size)
 
+		elif self.cloud_provider == "DigitalOcean":
+			if volume_id == DIGITALOCEAN_ROOT_DISK_ID:
+				frappe.throw("Cannot increase disk size for Digital Ocean root disk.")
+
+			self.client().volumes.resize(
+				volume_id,
+				{
+					"size_gigabytes": volume.size,
+					"region": frappe.get_value("Cluster", self.cluster, "region"),
+				},
+			)
+
 		if server := self.get_server():
 			log_server_activity(
 				self.series,
@@ -861,7 +953,7 @@ class VirtualMachine(Document):
 
 		self.save()
 
-	def get_volumes(self):
+	def get_volumes(self):  # noqa: C901
 		if self.cloud_provider == "AWS EC2":
 			response = self.client().describe_volumes(
 				Filters=[{"Name": "attachment.instance-id", "Values": [self.instance_id]}]
@@ -912,6 +1004,37 @@ class VirtualMachine(Document):
 
 			return volumes
 
+		if self.cloud_provider == "DigitalOcean":
+			attached_volumes = []
+			instance = self.get_digital_ocean_server_instance()["droplet"]
+			volume_ids = instance["volume_ids"]  # List of attached volume IDs
+			if volume_ids:
+				volumes = self.client().volumes.list()["volumes"]
+				volumes = [v for v in volumes if v["id"] in volume_ids]
+			else:
+				volumes = []
+
+			for v in volumes:
+				attached_volumes.append(
+					frappe._dict(
+						{
+							"id": v.id,
+							"size": v.size_gigabytes,
+						}
+					)
+				)
+
+			volumes.append(
+				frappe._dict(
+					{
+						"id": DIGITALOCEAN_ROOT_DISK_ID,
+						"device": "/dev/sda",
+						"size": instance["disk"],
+					}
+				)
+			)
+			return volumes
+
 		if self.cloud_provider == "Frappe Compute":
 			return self.client().get_volumes(self.name)
 		return None
@@ -942,9 +1065,82 @@ class VirtualMachine(Document):
 			return self._sync_oci(*args, **kwargs)
 		if self.cloud_provider == "Hetzner":
 			return self._sync_hetzner(*args, **kwargs)
+		if self.cloud_provider == "DigitalOcean":
+			return self._sync_digital_ocean(*args, **kwargs)
 		return None
 
-	def _sync_hetzner(self, server_instance=None):  # noqa: C901
+	def _update_volume_info_after_sync(self):
+		attached_volumes = []
+		attached_devices = []
+
+		for volume_index, volume in enumerate(self.get_volumes(), start=1):
+			existing_volume = find(self.volumes, lambda v: v.volume_id == volume.id)
+			row = existing_volume if existing_volume else frappe._dict()
+			row.volume_id = volume.id
+			attached_volumes.append(row.volume_id)
+			row.size = volume.size
+			row.device = volume.device
+			attached_devices.append(row.device)
+
+			row.idx = volume_index
+			if not existing_volume:
+				self.append("volumes", row)
+
+		for volume in list(self.volumes):
+			if volume.volume_id not in attached_volumes:
+				self.remove(volume)
+
+		for volume in list(self.temporary_volumes):
+			if volume.device not in attached_devices:
+				self.remove(volume)
+
+		if self.volumes:
+			self.disk_size = self.get_data_volume().size
+			self.root_disk_size = self.get_root_volume().size
+
+	def _sync_digital_ocean(self, *args, **kwargs):
+		server_instance = self.get_digital_ocean_server_instance()
+
+		if server_instance.get("id", None) == "not_found":
+			self.status = "Terminated"
+			self.save()
+			self.update_servers()
+			return
+
+		server_instance = server_instance.get("droplet", {})
+
+		self.status = self.get_digital_ocean_status_map()[server_instance["status"]]
+		self.machine_type = server_instance["size"]["slug"]
+		self.vcpu = server_instance["size"]["vcpus"]
+		self.ram = server_instance["size"]["memory"]
+
+		self.private_ip_address = ""
+		self.public_ip_address = ""
+
+		if len(server_instance["networks"]["v4"]) > 0:
+			private_network = next(
+				(net for net in server_instance["networks"]["v4"] if net["type"] == "private"), None
+			)
+			public_network = next(
+				(net for net in server_instance["networks"]["v4"] if net["type"] == "public"), None
+			)
+
+			if private_network:
+				self.private_ip_address = private_network.get("ip_address", "")
+
+			if public_network:
+				self.public_ip_address = public_network.get("ip_address", "")
+
+		# We don't have volume support yet for digital ocean droplets
+		self.root_disk_size = server_instance["disk"]
+		self.disk_size = server_instance["disk"]
+
+		self._update_volume_info_after_sync()
+
+		self.save()
+		self.update_servers()
+
+	def _sync_hetzner(self, server_instance=None):
 		if not server_instance:
 			try:
 				server_instance = self.get_hetzner_server_instance(fetch_data=True)
@@ -972,37 +1168,7 @@ class VirtualMachine(Document):
 
 		self.termination_protection = server_instance.protection.get("delete", False)
 
-		attached_volumes = []
-		attached_devices = []
-
-		for volume_index, volume in enumerate(self.get_volumes(), start=1):  # idx starts from 1
-			existing_volume = find(self.volumes, lambda v: v.volume_id == volume.id)
-			if existing_volume:
-				row = existing_volume
-			else:
-				row = frappe._dict()
-
-			row.volume_id = volume.id
-			attached_volumes.append(row.volume_id)
-			row.size = volume.size
-			row.device = volume.device
-			attached_devices.append(row.device)
-
-			row.idx = volume_index
-			if not existing_volume:
-				self.append("volumes", row)
-
-		for volume in list(self.volumes):
-			if volume.volume_id not in attached_volumes:
-				self.remove(volume)
-
-		for volume in list(self.temporary_volumes):
-			if volume.device not in attached_devices:
-				self.remove(volume)
-
-		if self.volumes:
-			self.disk_size = self.get_data_volume().size
-			self.root_disk_size = self.get_root_volume().size
+		self._update_volume_info_after_sync()
 
 		self.save()
 		self.update_servers()
@@ -1165,6 +1331,7 @@ class VirtualMachine(Document):
 			"AWS EC2": lambda v: v.device == "/dev/sda1",
 			"OCI": lambda v: ".bootvolume." in v.volume_id,
 			"Hetzner": lambda v: v.device == "/dev/sda",
+			"DigitalOcean": lambda v: v.device == "/dev/sda",
 			"Frappe Compute": lambda v: v.device == "/dev/vda",
 		}
 		root_volume_filter = ROOT_VOLUME_FILTERS.get(self.cloud_provider)
@@ -1186,6 +1353,7 @@ class VirtualMachine(Document):
 			"AWS EC2": lambda v: v.device != "/dev/sda1" and v.device not in temporary_volume_devices,
 			"OCI": lambda v: ".bootvolume." not in v.volume_id and v.device not in temporary_volume_devices,
 			"Hetzner": lambda v: v.device != "/dev/sda" and v.device not in temporary_volume_devices,
+			"DigitalOcean": lambda v: v.device != "/dev/sda" and v.device not in temporary_volume_devices,
 		}
 		data_volume_filter = DATA_VOLUME_FILTERS.get(self.cloud_provider)
 		volume = find(self.volumes, data_volume_filter)
@@ -1419,9 +1587,12 @@ class VirtualMachine(Document):
 			self.client().instance_action(instance_id=self.instance_id, action="START")
 		elif self.cloud_provider == "Hetzner":
 			self.client().servers.power_on(self.get_hetzner_server_instance(fetch_data=False))
+		elif self.cloud_provider == "DigitalOcean":
+			self.client().droplet_actions.post(self.instance_id, {"type": "power_on"})
 		elif self.cloud_provider == "Frappe Compute":
 			self.client().start_vm(self.name)
 
+		# Digital Ocean `start` takes some time therefore this sync is useless for DO.
 		self.sync()
 
 	@frappe.whitelist()
@@ -1432,6 +1603,8 @@ class VirtualMachine(Document):
 			self.client().instance_action(instance_id=self.instance_id, action="STOP")
 		elif self.cloud_provider == "Hetzner":
 			self.client().servers.shutdown(self.get_hetzner_server_instance(fetch_data=False))
+		elif self.cloud_provider == "DigitalOcean":
+			self.client().droplet_actions.post(self.instance_id, {"type": "power_off"})
 		elif self.cloud_provider == "Frappe Compute":
 			self.client().stop_vm(self.name)
 		self.sync()
@@ -1451,11 +1624,13 @@ class VirtualMachine(Document):
 			self.client().terminate_instances(InstanceIds=[self.instance_id])
 
 	@frappe.whitelist()
-	def terminate(self):
+	def terminate(self):  # noqa: C901
 		if self.cloud_provider == "AWS EC2":
 			self.client().terminate_instances(InstanceIds=[self.instance_id])
+
 		elif self.cloud_provider == "OCI":
 			self.client().terminate_instance(instance_id=self.instance_id)
+
 		elif self.cloud_provider == "Hetzner":
 			for volume in self.volumes:
 				if volume.volume_id == HETZNER_ROOT_DISK_ID:
@@ -1465,8 +1640,32 @@ class VirtualMachine(Document):
 				self.get_hetzner_server_instance(fetch_data=False)
 			).wait_until_finished(HETZNER_ACTION_RETRIES)
 
+		elif self.cloud_provider == "DigitalOcean":
+			for volume in self.volumes:
+				if volume.volume_id == DIGITALOCEAN_ROOT_DISK_ID:
+					continue
+				self.delete_volume(volume.volume_id, sync=False)
+
+			self.client().droplets.destroy(self.instance_id)
+
 		if server := self.get_server():
 			log_server_activity(self.series, server.name, action="Terminated")
+
+	def _wait_for_digital_ocean_resize_action_completion(self, action_id: int):
+		"""Wait for resize to complete before starting the droplet."""
+		if self.cloud_provider == "DigitalOcean" and action_id:
+			time.sleep(2)  # Wait for some time before checking the action status
+			action = self.client().actions.get(action_id)
+			if action["action"]["status"] == "completed":
+				self.start()
+			else:
+				frappe.enqueue_doc(
+					"Virtual Machine",
+					self.name,
+					"_wait_for_digital_ocean_resize_action_completion",
+					action_id=action_id,
+					queue="long",
+				)
 
 	@frappe.whitelist()
 	def resize(self, machine_type, upgrade_disk: bool = False):
@@ -1493,6 +1692,25 @@ class VirtualMachine(Document):
 				server_type=ServerType(name=machine_type),
 				upgrade_disk=upgrade_disk,
 			)
+
+		elif self.cloud_provider == "DigitalOcean":
+			resize_action = self.client().droplet_actions.post(
+				droplet_id=self.instance_id,
+				body={
+					"type": "resize",
+					"size": machine_type,
+					"disk": upgrade_disk,
+				},
+			)
+			action_id = resize_action["action"]["id"]
+			frappe.enqueue_doc(
+				"Virtual Machine",
+				self.name,
+				"_wait_for_digital_ocean_resize_action_completion",
+				action_id=action_id,
+				queue="long",
+			)
+
 		self.machine_type = machine_type
 		self.save()
 
@@ -1548,11 +1766,18 @@ class VirtualMachine(Document):
 				aws_access_key_id=cluster.aws_access_key_id,
 				aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
 			)
+
 		if self.cloud_provider == "OCI":
 			return (client_type or ComputeClient)(cluster.get_oci_config())
+
 		if self.cloud_provider == "Hetzner":
 			api_token = cluster.get_password("hetzner_api_token")
 			return HetznerClient(token=api_token)
+
+		if self.cloud_provider == "DigitalOcean":
+			api_token = cluster.get_password("digital_ocean_api_token")
+			return pydo.Client(token=api_token)
+
 		if self.cloud_provider == "Frappe Compute":
 			settings = frappe.get_single("Press Settings")
 			orchestrator_base_url = settings.orchestrator_base_url
@@ -2114,6 +2339,13 @@ class VirtualMachine(Document):
 			if e.response.get("Error", {}).get("Code") == "InvalidVolumeModification.NotFound":
 				return None
 
+	def get_digital_ocean_server_instance(self):
+		"""Get digital ocean droplet instance"""
+		if self.cloud_provider != "DigitalOcean":
+			raise NotImplementedError
+
+		return self.client().droplets.get(self.instance_id)
+
 	def get_hetzner_server_instance(self, fetch_data=True):
 		if self.cloud_provider != "Hetzner":
 			raise NotImplementedError
@@ -2202,7 +2434,7 @@ class VirtualMachine(Document):
 		return True
 
 	@frappe.whitelist()
-	def delete_volume(self, volume_id, sync: bool | None = None):
+	def delete_volume(self, volume_id, sync: bool | None = None):  # noqa: C901
 		if sync is None:
 			sync = True
 
@@ -2220,6 +2452,12 @@ class VirtualMachine(Document):
 				from hcloud.volumes.domain import Volume
 
 				self.client().volumes.delete(Volume(id=cint(volume_id)))
+
+			if self.cloud_provider == "DigitalOcean":
+				if volume_id == DIGITALOCEAN_ROOT_DISK_ID:
+					frappe.throw("Cannot delete digitalocean root disk.")
+
+				self.client().volumes.delete(volume_id=volume_id)
 
 		if sync:
 			self.sync()
