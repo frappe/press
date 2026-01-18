@@ -290,6 +290,9 @@ class ProxyServer(BaseServer):
 				self.reload()
 				self.is_proxysql_setup = True
 				self.save()
+				if self.provider == "DigitalOcean":
+					# To adjust docker permissions
+					self.reboot()
 		except Exception:
 			log_error("ProxySQL Setup Exception", server=self.as_dict())
 

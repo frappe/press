@@ -1558,7 +1558,7 @@ class BaseServer(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def reboot(self):
-		if self.provider not in ("AWS EC2", "OCI"):
+		if self.provider not in ("AWS EC2", "OCI", "DigitalOcean", "Hetzner"):
 			raise NotImplementedError
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		virtual_machine.reboot()
@@ -2753,6 +2753,9 @@ class Server(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
+				if self.provider == "DigitalOcean":
+					# To adjust docker permissions
+					self.reboot()
 			else:
 				self.status = "Broken"
 		except Exception:

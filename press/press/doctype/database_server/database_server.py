@@ -765,8 +765,10 @@ class DatabaseServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
-
 				self.process_hybrid_server_setup()
+				if self.provider == "DigitalOcean":
+					# Adjusting docker permissions
+					self.reboot()
 			else:
 				self.status = "Broken"
 		except Exception:
