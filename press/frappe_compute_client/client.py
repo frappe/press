@@ -89,6 +89,29 @@ class FrappeComputeClient:
 			raise APIError(resp)
 		return frappe._dict(resp["message"])
 
+	def create_image(self, instance_id):
+		url = urljoin(
+			self.base_url,
+			quote("/api/method/agent.agent.doctype.virtual_machine_image.virtual_machine_image.create_image"),
+		)
+		resp = self._send_request(url, "POST", {"instance_id": instance_id}).json()
+		if "message" not in resp:
+			if "exc_type" in resp:
+				raise APIError(resp, resp["exc_type"])
+			raise APIError(resp)
+
+		return resp["message"]
+
+	def get_image_info(self, image_id):
+		url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine Image/{image_id}"))
+		resp = self._send_request(url, "GET", {"image_id": image_id}).json()
+		if "data" not in resp:
+			if "exc_type" in resp:
+				raise APIError(resp, resp["exc_type"])
+			raise APIError(resp)
+
+		return frappe._dict(resp["data"])
+
 	def _send_request(self, url, method, data):
 		headers = {"Authorization": f"token {self.api_key}", "Content-Type": "application/json"}
 
