@@ -116,7 +116,8 @@ class VirtualMachineImage(Document):
 			self.image_id = response.image.id
 			self.snapshot_id = response.image.id
 		elif cluster.cloud_provider == "Frappe Compute":
-			return
+			image_id = self.client.create_image(instance_id=self.instance_id)
+			self.image_id = image_id
 		self.sync()
 
 	def create_image_from_copy(self):
@@ -202,8 +203,12 @@ class VirtualMachineImage(Document):
 					self.status = "Unavailable"
 				else:
 					raise e
-
-		self.save()
+		elif cluster.cloud_provider == "Frappe Compute":
+			image_info = self.client.get_image_info(self.image_id)
+			self.status = self.get_frappe_compute_status_map(image_info["status"])
+			self.size = image_info["size"]
+			self.root_size = image_info["size"]
+			self.save()
 		return self.status
 
 	@retry(
@@ -257,6 +262,13 @@ class VirtualMachineImage(Document):
 			"EXPORTING": "Pending",
 			"DISABLED": "Unavailable",
 			"DELETED": "Unavailable",
+		}.get(status, "Unavailable")
+
+	def get_frappe_compute_status_map(self, status):
+		return {
+			"Pending": "Pending",
+			"Ongoing": "Pending",
+			"Completed": "Available",
 		}.get(status, "Unavailable")
 
 	def get_volumes_from_virtual_machine(self):
