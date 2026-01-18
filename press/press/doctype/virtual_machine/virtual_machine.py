@@ -881,6 +881,8 @@ class VirtualMachine(Document):
 			self.client().instance_action(instance_id=self.instance_id, action="RESET")
 		elif self.cloud_provider == "Hetzner":
 			self.client().servers.reboot(self.get_hetzner_server_instance(fetch_data=False))
+		elif self.cloud_provider == "DigitalOcean":
+			self.client().droplet_actions.post(self.instance_id, {"type": "reboot"})
 		elif self.cloud_provider == "Frappe Compute":
 			self.client().reboot_vm(self.name)
 
@@ -925,6 +927,18 @@ class VirtualMachine(Document):
 
 			self.client().volumes.resize(Volume(volume_id), volume.size)
 
+		elif self.cloud_provider == "DigitalOcean":
+			if volume_id == DIGITALOCEAN_ROOT_DISK_ID:
+				frappe.throw("Cannot increase disk size for Digital Ocean root disk.")
+
+			self.client().volumes.resize(
+				volume_id,
+				{
+					"size_gigabytes": volume.size,
+					"region": frappe.get_value("Cluster", self.cluster, "region"),
+				},
+			)
+
 		if server := self.get_server():
 			log_server_activity(
 				self.series,
@@ -935,7 +949,7 @@ class VirtualMachine(Document):
 
 		self.save()
 
-	def get_volumes(self):
+	def get_volumes(self):  # noqa: C901
 		if self.cloud_provider == "AWS EC2":
 			response = self.client().describe_volumes(
 				Filters=[{"Name": "attachment.instance-id", "Values": [self.instance_id]}]
@@ -988,11 +1002,13 @@ class VirtualMachine(Document):
 
 		if self.cloud_provider == "DigitalOcean":
 			attached_volumes = []
-			instance = self.get_digital_ocean_server_instance()
-
+			instance = self.get_digital_ocean_server_instance()["droplet"]
 			volume_ids = instance["volume_ids"]  # List of attached volume IDs
-			volumes = self.client().volumes.list()["volumes"]
-			volumes = [v for v in volumes if v["id"] in volume_ids]
+			if volume_ids:
+				volumes = self.client().volumes.list()["volumes"]
+				volumes = [v for v in volumes if v["id"] in volume_ids]
+			else:
+				volumes = []
 
 			for v in volumes:
 				attached_volumes.append(
@@ -1049,6 +1065,35 @@ class VirtualMachine(Document):
 			return self._sync_digital_ocean(*args, **kwargs)
 		return None
 
+	def _update_volume_info_after_sync(self):
+		attached_volumes = []
+		attached_devices = []
+
+		for volume_index, volume in enumerate(self.get_volumes(), start=1):
+			existing_volume = find(self.volumes, lambda v: v.volume_id == volume.id)
+			row = existing_volume if existing_volume else frappe._dict()
+			row.volume_id = volume.id
+			attached_volumes.append(row.volume_id)
+			row.size = volume.size
+			row.device = volume.device
+			attached_devices.append(row.device)
+
+			row.idx = volume_index
+			if not existing_volume:
+				self.append("volumes", row)
+
+		for volume in list(self.volumes):
+			if volume.volume_id not in attached_volumes:
+				self.remove(volume)
+
+		for volume in list(self.temporary_volumes):
+			if volume.device not in attached_devices:
+				self.remove(volume)
+
+		if self.volumes:
+			self.disk_size = self.get_data_volume().size
+			self.root_disk_size = self.get_root_volume().size
+
 	def _sync_digital_ocean(self, *args, **kwargs):
 		server_instance = self.get_digital_ocean_server_instance()
 
@@ -1065,25 +1110,33 @@ class VirtualMachine(Document):
 		self.vcpu = server_instance["size"]["vcpus"]
 		self.ram = server_instance["size"]["memory"]
 
-		self.private_ip_address = (
-			server_instance["networks"]["v4"][0]["ip_address"]
-			if server_instance["networks"]["v4"][0]["type"] == "private"
-			else ""
-		)
-		self.public_ip_address = (
-			server_instance["networks"]["v4"][1]["ip_address"]
-			if server_instance["networks"]["v4"][0]["type"] == "public"
-			else ""
-		)
+		self.private_ip_address = ""
+		self.public_ip_address = ""
+
+		if len(server_instance["networks"]["v4"]) > 0:
+			private_network = next(
+				(net for net in server_instance["networks"]["v4"] if net["type"] == "private"), None
+			)
+			public_network = next(
+				(net for net in server_instance["networks"]["v4"] if net["type"] == "public"), None
+			)
+
+			if private_network:
+				self.private_ip_address = private_network.get("ip_address", "")
+
+			if public_network:
+				self.public_ip_address = public_network.get("ip_address", "")
 
 		# We don't have volume support yet for digital ocean droplets
 		self.root_disk_size = server_instance["disk"]
 		self.disk_size = server_instance["disk"]
 
+		self._update_volume_info_after_sync()
+
 		self.save()
 		self.update_servers()
 
-	def _sync_hetzner(self, server_instance=None):  # noqa: C901
+	def _sync_hetzner(self, server_instance=None):
 		if not server_instance:
 			try:
 				server_instance = self.get_hetzner_server_instance(fetch_data=True)
@@ -1111,37 +1164,7 @@ class VirtualMachine(Document):
 
 		self.termination_protection = server_instance.protection.get("delete", False)
 
-		attached_volumes = []
-		attached_devices = []
-
-		for volume_index, volume in enumerate(self.get_volumes(), start=1):  # idx starts from 1
-			existing_volume = find(self.volumes, lambda v: v.volume_id == volume.id)
-			if existing_volume:
-				row = existing_volume
-			else:
-				row = frappe._dict()
-
-			row.volume_id = volume.id
-			attached_volumes.append(row.volume_id)
-			row.size = volume.size
-			row.device = volume.device
-			attached_devices.append(row.device)
-
-			row.idx = volume_index
-			if not existing_volume:
-				self.append("volumes", row)
-
-		for volume in list(self.volumes):
-			if volume.volume_id not in attached_volumes:
-				self.remove(volume)
-
-		for volume in list(self.temporary_volumes):
-			if volume.device not in attached_devices:
-				self.remove(volume)
-
-		if self.volumes:
-			self.disk_size = self.get_data_volume().size
-			self.root_disk_size = self.get_root_volume().size
+		self._update_volume_info_after_sync()
 
 		self.save()
 		self.update_servers()
@@ -1304,6 +1327,7 @@ class VirtualMachine(Document):
 			"AWS EC2": lambda v: v.device == "/dev/sda1",
 			"OCI": lambda v: ".bootvolume." in v.volume_id,
 			"Hetzner": lambda v: v.device == "/dev/sda",
+			"DigitalOcean": lambda v: v.device == "/dev/sda",
 			"Frappe Compute": lambda v: v.device == "/dev/vda",
 		}
 		root_volume_filter = ROOT_VOLUME_FILTERS.get(self.cloud_provider)
@@ -1325,6 +1349,7 @@ class VirtualMachine(Document):
 			"AWS EC2": lambda v: v.device != "/dev/sda1" and v.device not in temporary_volume_devices,
 			"OCI": lambda v: ".bootvolume." not in v.volume_id and v.device not in temporary_volume_devices,
 			"Hetzner": lambda v: v.device != "/dev/sda" and v.device not in temporary_volume_devices,
+			"DigitalOcean": lambda v: v.device != "/dev/sda" and v.device not in temporary_volume_devices,
 		}
 		data_volume_filter = DATA_VOLUME_FILTERS.get(self.cloud_provider)
 		volume = find(self.volumes, data_volume_filter)
@@ -1558,9 +1583,12 @@ class VirtualMachine(Document):
 			self.client().instance_action(instance_id=self.instance_id, action="START")
 		elif self.cloud_provider == "Hetzner":
 			self.client().servers.power_on(self.get_hetzner_server_instance(fetch_data=False))
+		elif self.cloud_provider == "DigitalOcean":
+			self.client().droplet_actions.post(self.instance_id, {"type": "power_on"})
 		elif self.cloud_provider == "Frappe Compute":
 			self.client().start_vm(self.name)
 
+		# Digital Ocean `start` takes some time therefore this sync is useless for DO.
 		self.sync()
 
 	@frappe.whitelist()
@@ -1617,6 +1645,22 @@ class VirtualMachine(Document):
 		if server := self.get_server():
 			log_server_activity(self.series, server.name, action="Terminated")
 
+	def _wait_for_digital_ocean_resize_action_completion(self, action_id: int):
+		"""Wait for resize to complete before starting the droplet."""
+		if self.cloud_provider == "DigitalOcean" and action_id:
+			time.sleep(2)  # Wait for some time before checking the action status
+			action = self.client().actions.get(action_id)
+			if action["action"]["status"] == "completed":
+				self.start()
+			else:
+				frappe.enqueue_doc(
+					"Virtual Machine",
+					self.name,
+					"_wait_for_digital_ocean_resize_action_completion",
+					action_id=action_id,
+					queue="long",
+				)
+
 	@frappe.whitelist()
 	def resize(self, machine_type, upgrade_disk: bool = False):
 		if self.cloud_provider == "AWS EC2":
@@ -1642,6 +1686,25 @@ class VirtualMachine(Document):
 				server_type=ServerType(name=machine_type),
 				upgrade_disk=upgrade_disk,
 			)
+
+		elif self.cloud_provider == "DigitalOcean":
+			resize_action = self.client().droplet_actions.post(
+				droplet_id=self.instance_id,
+				body={
+					"type": "resize",
+					"size": machine_type,
+					"disk": upgrade_disk,
+				},
+			)
+			action_id = resize_action["action"]["id"]
+			frappe.enqueue_doc(
+				"Virtual Machine",
+				self.name,
+				"_wait_for_digital_ocean_resize_action_completion",
+				action_id=action_id,
+				queue="long",
+			)
+
 		self.machine_type = machine_type
 		self.save()
 
