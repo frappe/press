@@ -60,8 +60,10 @@ class FrappeComputeClient:
 		return self._send_request(url, "POST", {})
 
 	def terminate_vm(self, name):
-		url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}"))
-		return self._send_request(url, "DELETE", {})
+		url = urljoin(
+			self.base_url, "/api/method/agent.agent.doctype.virtual_machine.virtual_machine.terminate"
+		)
+		self._send_request(url, "POST", {"name": name})
 
 	def attach_volumes(self, name, volumes):
 		url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}/method/attach_volumes"))
