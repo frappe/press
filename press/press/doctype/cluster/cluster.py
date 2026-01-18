@@ -195,7 +195,7 @@ class Cluster(Document):
 			self.provision_on_oci()
 		elif self.cloud_provider == "Hetzner":
 			self.provision_on_hetzner()
-		elif self.cloud_provider == "Digital Ocean":
+		elif self.cloud_provider == "DigitalOcean":
 			self.provision_on_digital_ocean()
 		elif self.cloud_provider == "Frappe Compute":
 			self.provision_on_frappe_compute()
