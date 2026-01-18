@@ -1654,11 +1654,13 @@ class VirtualMachine(Document):
 			self.client().terminate_instances(InstanceIds=[self.instance_id])
 
 	@frappe.whitelist()
-	def terminate(self):
+	def terminate(self):  # noqa: C901
 		if self.cloud_provider == "AWS EC2":
 			self.client().terminate_instances(InstanceIds=[self.instance_id])
+
 		elif self.cloud_provider == "OCI":
 			self.client().terminate_instance(instance_id=self.instance_id)
+
 		elif self.cloud_provider == "Hetzner":
 			for volume in self.volumes:
 				if volume.volume_id == HETZNER_ROOT_DISK_ID:
@@ -1667,6 +1669,14 @@ class VirtualMachine(Document):
 			self.client().servers.delete(
 				self.get_hetzner_server_instance(fetch_data=False)
 			).wait_until_finished(HETZNER_ACTION_RETRIES)
+
+		elif self.cloud_provider == "DigitalOcean":
+			for volume in self.volumes:
+				if volume.volume_id == DIGITALOCEAN_ROOT_DISK_ID:
+					continue
+				self.delete_volume(volume.volume_id, sync=False)
+
+			self.client().droplets.destroy(self.instance_id)
 
 		if server := self.get_server():
 			log_server_activity(self.series, server.name, action="Terminated")
@@ -2421,7 +2431,7 @@ class VirtualMachine(Document):
 		return True
 
 	@frappe.whitelist()
-	def delete_volume(self, volume_id, sync: bool | None = None):
+	def delete_volume(self, volume_id, sync: bool | None = None):  # noqa: C901
 		if sync is None:
 			sync = True
 
@@ -2439,6 +2449,12 @@ class VirtualMachine(Document):
 				from hcloud.volumes.domain import Volume
 
 				self.client().volumes.delete(Volume(id=cint(volume_id)))
+
+			if self.cloud_provider == "DigitalOcean":
+				if volume_id == DIGITALOCEAN_ROOT_DISK_ID:
+					frappe.throw("Cannot delete digitalocean root disk.")
+
+				self.client().volumes.delete(volume_id=volume_id)
 
 		if sync:
 			self.sync()
