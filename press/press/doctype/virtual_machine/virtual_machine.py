@@ -418,7 +418,7 @@ class VirtualMachine(Document):
 		try:
 			instance_id = self.client().create_vm(
 				name=self.name,
-				image="Ubuntu",
+				image=self.machine_image,
 				machine_type=self.machine_type,
 				private_ip_address=self.private_ip_address,
 				private_network=cluster.vpc_id,
@@ -431,6 +431,8 @@ class VirtualMachine(Document):
 			return
 		self.instance_id = instance_id
 		self.status = "Pending"
+		self.save()
+		frappe.db.commit()
 
 	def _provision_hetzner(self):
 		from hcloud.firewalls.domain import Firewall
