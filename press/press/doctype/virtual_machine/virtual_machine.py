@@ -39,7 +39,7 @@ from oci.core.models import (
 )
 from oci.exceptions import TransientServiceError
 
-from press.frappe_compute_client.client import APIError, FrappeComputeClient
+from press.frappe_compute_client.client import FrappeComputeClient
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.utils import log_error
