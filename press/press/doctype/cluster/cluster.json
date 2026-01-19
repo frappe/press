@@ -42,6 +42,8 @@
   "aws_secret_access_key",
   "hetzner_section",
   "hetzner_api_token",
+  "digital_ocean_section",
+  "digital_ocean_api_token",
   "oci_section",
   "oci_user",
   "oci_public_key",
@@ -80,7 +82,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "AWS EC2\nGeneric\nOCI\nHetzner\nFrappe Compute",
+   "options": "AWS EC2\nGeneric\nOCI\nHetzner\nFrappe Compute\nDigitalOcean",
    "reqd": 1,
    "set_only_once": 1
   },
@@ -391,6 +393,18 @@
    "fieldname": "by_default_select_unified_mode",
    "fieldtype": "Check",
    "label": "By Default Select Unified Mode"
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "eval: doc.cloud_provider == \"DigitalOcean\"",
+   "fieldname": "digital_ocean_section",
+   "fieldtype": "Section Break",
+   "label": "Digital Ocean"
+  },
+  {
+   "fieldname": "digital_ocean_api_token",
+   "fieldtype": "Password",
+   "label": "Digital Ocean API Token"
   }
  ],
  "image_field": "image",
@@ -427,7 +441,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2026-01-11 12:34:33.051314",
+ "modified": "2026-01-18 13:22:01.832912",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
