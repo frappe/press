@@ -232,13 +232,6 @@ class Cluster(Document):
 
 	def _add_digital_ocean_ssh_keys(self, client):
 		"""Adds the SSH key to Digital Ocean if it doesn't already exist"""
-		keys = client.ssh_keys.list()
-		keys = keys.get("ssh_keys", [])
-		public_key = frappe.db.get_value("SSH Key", self.ssh_key, "public_key")
-		existing_keys = [key for key in keys if key["public_key"] == public_key]
-		if existing_keys:
-			return
-
 		try:
 			client.ssh_keys.create(
 				{
@@ -247,6 +240,8 @@ class Cluster(Document):
 				}
 			)
 		except Exception as e:
+			if "SSH Key is already in use" in str(e):
+				return
 			frappe.throw(f"Failed to create SSH Key on Digital Ocean: {e!s}")
 
 	def _add_digital_ocean_proxy_firewall(self, client):
