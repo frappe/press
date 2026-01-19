@@ -99,11 +99,7 @@ class DatabaseServer(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-<<<<<<< HEAD
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "Frappe Compute"]
-=======
 		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean"]
->>>>>>> 653e02800 (fix(do): Allow digital ocean server types)
 		public: DF.Check
 		ram: DF.Float
 		root_public_key: DF.Code | None
