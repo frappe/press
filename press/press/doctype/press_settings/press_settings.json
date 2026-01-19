@@ -1559,24 +1559,6 @@
    "fieldtype": "Link",
    "label": "Default Server Plan Type",
    "options": "Server Plan Type"
-<<<<<<< HEAD
-  },
-  {
-   "fieldname": "frappe_compute_section",
-   "fieldtype": "Section Break",
-   "label": "Frappe Compute"
-  },
-  {
-   "fieldname": "compute_api_token",
-   "fieldtype": "Password",
-   "label": "Compute API Token"
-  },
-  {
-   "fieldname": "orchestrator_base_url",
-   "fieldtype": "Data",
-   "label": "Orchestrator Base URL"
-=======
->>>>>>> 6c5672662 (Revert "Merge pull request #4414 from the-bokya/frappe-compute-press")
   }
  ],
  "issingle": 1,

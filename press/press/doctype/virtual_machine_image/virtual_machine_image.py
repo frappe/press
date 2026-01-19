@@ -135,15 +135,6 @@ class VirtualMachineImage(Document):
 			)
 			action = action["action"]
 			self.action_id = action["id"]
-<<<<<<< HEAD
-=======
-
-<<<<<<< HEAD
-		elif cluster.cloud_provider == "Frappe Compute":
-			return
->>>>>>> 19c3a36cf (Revert "Merge pull request #4539 from the-bokya/press-compute-api-continuation")
-=======
->>>>>>> 6c5672662 (Revert "Merge pull request #4414 from the-bokya/frappe-compute-press")
 		self.sync()
 
 	def create_image_from_copy(self):
