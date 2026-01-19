@@ -115,7 +115,7 @@ const _planList = createResource({
 	auto: true,
 	cache: 'planList',
 	onSuccess: (data) => {
-		console.log('Plan List', data);
+		// console.log('Plan List', data);
 	},
 });
 
