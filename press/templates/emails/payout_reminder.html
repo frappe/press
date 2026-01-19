@@ -1,0 +1,40 @@
+{% extends "templates/emails/base.html" %} {% import
+"templates/emails/macros.html" as utils %} {% block content %}
+<td class="text-base leading-6 text-gray-900">
+	<div class="p-8 bg-white">
+		<div class="from-markdown">
+			<p>Hello,</p>
+
+			<p>
+				The following Marketplace payout orders need to be paid out to
+				respective teams.
+			</p>
+
+			<table class="table">
+				<thead>
+					<tr>
+						<th>Team</th>
+						<th>Order ID</th>
+						<th>Period</th>
+						<th>Total Amount</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for order in payout_orders %}
+					<tr>
+						<td>
+							{{team_details[order.team].id}}<br />{{team_details[order.team].user}}
+						</td>
+						<td>{{ order.name }}</td>
+						<td>{{ order.period_start }} to {{ order.period_end }}</td>
+						<td>{{ order.amount }}</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+
+			{{ utils.separator() }} {{ utils.signature() }}
+		</div>
+	</div>
+</td>
+{% endblock %}
