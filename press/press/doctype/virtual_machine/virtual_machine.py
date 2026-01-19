@@ -56,6 +56,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.proxy_server.proxy_server import ProxyServer
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot import VirtualDiskSnapshot
+	from press.press.doctype.virtual_machine_image.virtual_machine_image import VirtualMachineImage
 
 
 server_doctypes = [
@@ -145,7 +146,7 @@ class VirtualMachine(Document):
 
 	def after_insert(self):
 		if self.virtual_machine_image:
-			image = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
+			image: VirtualMachineImage = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
 			if image.has_data_volume:
 				# We have two separate volumes for root and data
 				# Copy their sizes correctly
@@ -443,8 +444,8 @@ class VirtualMachine(Document):
 		firewalls = firewalls.get("firewalls", [])
 		cluster_firewall = next(fw for fw in firewalls if fw["id"] == cluster.security_group_id)
 
-		if cluster_firewall["status"] != "succeeded":
-			frappe.throw(f"Firewall with id {cluster.security_group_id} not active")
+		if cluster_firewall["status"] == "failed":
+			frappe.throw(f"Firewall with id {cluster.security_group_id} failed")
 
 		try:
 			droplet = self.client().droplets.create(
