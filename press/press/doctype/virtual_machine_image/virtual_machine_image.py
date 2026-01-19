@@ -137,6 +137,12 @@ class VirtualMachineImage(Document):
 			)
 			action = action["action"]
 			self.action_id = action["id"]
+<<<<<<< HEAD
+=======
+
+		elif cluster.cloud_provider == "Frappe Compute":
+			return
+>>>>>>> 19c3a36cf (Revert "Merge pull request #4539 from the-bokya/press-compute-api-continuation")
 		self.sync()
 
 	def create_image_from_copy(self):
@@ -298,13 +304,6 @@ class VirtualMachineImage(Document):
 			"EXPORTING": "Pending",
 			"DISABLED": "Unavailable",
 			"DELETED": "Unavailable",
-		}.get(status, "Unavailable")
-
-	def get_frappe_compute_status_map(self, status):
-		return {
-			"Pending": "Pending",
-			"Ongoing": "Pending",
-			"Completed": "Available",
 		}.get(status, "Unavailable")
 
 	def get_volumes_from_virtual_machine(self):
