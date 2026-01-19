@@ -524,11 +524,13 @@ class BaseServer(Document, TagHelpers):
 		self.hostname_abbreviation = get_hostname_abbreviation(self.hostname)
 
 	def after_insert(self):
-		if self.ip and (
-			self.doctype not in ["Database Server", "Server", "Proxy Server"] or not self.is_self_hosted
-		):
+		if self.ip:
+			if self.doctype not in ["Database Server", "Server", "Proxy Server"] or not self.is_self_hosted:
+				self.create_dns_record()
+		elif self.private_ip and self.doctype in ["Server", "Database Server"] and not self.is_self_hosted:
 			self.create_dns_record()
-			self.update_virtual_machine_name()
+
+		self.update_virtual_machine_name()
 
 	@frappe.whitelist()
 	def create_dns_record(self):
@@ -558,7 +560,7 @@ class BaseServer(Document, TagHelpers):
 								"Name": self.name,
 								"Type": "A",
 								"TTL": 3600 if self.doctype == "Proxy Server" else 300,
-								"ResourceRecords": [{"Value": self.ip}],
+								"ResourceRecords": [{"Value": self.ip or self.private_ip}],
 							},
 						}
 					]
@@ -2322,18 +2324,13 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			)
 
 		# if bastion server is not found and server doesnt have public ip, use proxy server as bastion/jump server
-		if not self.ip:
-			proxy_server = None
-			if self.doctype == "Database Server":
-				proxy_server = frappe.db.get_value("Server", {"database_server": self.name}, "proxy_server")
-			elif self.doctype == "Server":
-				proxy_server = frappe.db.get_value(self.doctype, self.name, "proxy_server")
-
-			if proxy_server:
-				return frappe._dict(
-					{"ssh_user": "root", "ip": proxy_server}
-					| frappe.get_cached_value("Proxy Server", proxy_server, ["ssh_port"], as_dict=True)
-				)
+		if not self.ip and self.private_ip:
+			return frappe.get_value(
+				"Proxy Server",
+				{"status": ("!=", "Archived"), "cluster": self.cluster},
+				["ssh_user", "ssh_port", "name as ip"],
+				as_dict=True,
+			)
 
 	@frappe.whitelist()
 	def get_aws_static_ip(self):
