@@ -65,11 +65,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-<<<<<<< HEAD
-   "options": "\nAWS EC2\nOCI\nHetzner\nFrappe Compute",
-=======
    "options": "\nAWS EC2\nOCI\nHetzner\nDigitalOcean",
->>>>>>> ab300ed14 (feat(do): Machine provision and sync)
    "read_only": 1,
    "reqd": 1
   },
@@ -430,15 +426,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
-<<<<<<< HEAD
-<<<<<<< HEAD
- "modified": "2026-01-12 21:00:54.671055",
-=======
- "modified": "2026-01-17 15:33:16.372231",
->>>>>>> ab300ed14 (feat(do): Machine provision and sync)
-=======
  "modified": "2026-01-18 13:54:28.206523",
->>>>>>> ca11557d6 (feat(do): Add Start, Resize and Data Volume in DO)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
