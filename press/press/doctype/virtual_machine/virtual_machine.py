@@ -694,7 +694,7 @@ class VirtualMachine(Document):
 		if server.doctype == "Database Server":
 			return {
 				"server_id": server.server_id,
-				"private_ip": self.private_ip_address,
+				"private_ip": self.private_ip_address or "__PRIVATE_IP__",
 				"ansible_memtotal_mb": memory,
 				"mariadb_root_password": server.get_password("mariadb_root_password"),
 				"db_port": server.db_port or 3306,
@@ -703,7 +703,7 @@ class VirtualMachine(Document):
 			database_server: DatabaseServer = frappe.get_doc("Database Server", server.database_server)
 			return {
 				"server_id": database_server.server_id,
-				"private_ip": self.private_ip_address,
+				"private_ip": self.private_ip_address or "__PRIVATE_IP__",
 				"ansible_memtotal_mb": memory,
 				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
 				"db_port": database_server.db_port or 3306,
@@ -725,7 +725,9 @@ class VirtualMachine(Document):
 			"monitoring_password": server.get_monitoring_password(),
 			"statsd_exporter_service": frappe.render_template(
 				"press/playbooks/roles/statsd_exporter/templates/statsd_exporter.service",
-				{"private_ip": self.private_ip_address},
+				{
+					"private_ip": self.private_ip_address or "__PRIVATE_IP__"
+				},  # Replace inside cloudinit in case of DigitalOcean
 				is_path=True,
 			),
 			"filebeat_config": frappe.render_template(
