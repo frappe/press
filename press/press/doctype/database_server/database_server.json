@@ -177,11 +177,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-<<<<<<< HEAD
-   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner\nVodacom\nFrappe Compute",
-=======
    "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner\nVodacom\nDigitalOcean",
->>>>>>> 653e02800 (fix(do): Allow digital ocean server types)
    "set_only_once": 1
   },
   {
@@ -793,15 +789,7 @@
    "link_fieldname": "database_server"
   }
  ],
-<<<<<<< HEAD
-<<<<<<< HEAD
- "modified": "2026-01-13 11:01:08.298972",
-=======
- "modified": "2026-01-18 15:24:16.730714",
->>>>>>> 653e02800 (fix(do): Allow digital ocean server types)
-=======
  "modified": "2026-01-18 16:20:34.150871",
->>>>>>> 42044c719 (feat(do): Show virtual machine in server docs)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
