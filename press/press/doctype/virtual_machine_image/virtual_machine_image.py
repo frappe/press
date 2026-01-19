@@ -20,7 +20,7 @@ from oci.core.models.image_source_via_object_storage_uri_details import (
 from tenacity import retry, stop_after_attempt, wait_fixed
 from tenacity.retry import retry_if_result
 
-from press.frappe_compute_client.client import APIError, FrappeComputeClient
+from press.frappe_compute_client.client import FrappeComputeClient
 
 
 class VirtualMachineImage(Document):
