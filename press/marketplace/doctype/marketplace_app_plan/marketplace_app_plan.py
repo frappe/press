@@ -39,14 +39,7 @@ class MarketplaceAppPlan(Plan):
 	def create_marketplace_app_subscription(
 		site_name, app_name, plan_name, team_name, while_site_creation=False
 	):
-		marketplace_app, app_author_team = frappe.db.get_value(
-			"Marketplace App", {"app": app_name}, ["name", "team"]
-		)
-
-		# Skip subscription for app authors - they shouldn't be charged for their own app
-		if app_author_team == team_name:
-			return None
-
+		marketplace_app = frappe.db.get_value("Marketplace App", {"app": app_name})
 		subscription = frappe.db.exists(
 			"Subscription",
 			{
