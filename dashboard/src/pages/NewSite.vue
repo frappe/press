@@ -408,6 +408,9 @@ export default {
 			this.cluster = null;
 			this.provider = null;
 			this.agreedToRegionConsent = false;
+			// Reset localisation selection when version changes
+			this.selectedLocalisationCountry = null;
+			this.showLocalisationOption = false;
 		},
 		provider() {
 			if (this.bench) {
@@ -418,9 +421,6 @@ export default {
 			this.cluster = null;
 			this.plan = null;
 			this.agreedToRegionConsent = false;
-			// Reset localisation selection when version changes
-			this.selectedLocalisationCountry = null;
-			this.showLocalisationOption = false;
 		},
 		cluster() {
 			this.plan = null;
@@ -751,7 +751,8 @@ export default {
 				.map((app) => ({
 					label: app?.country,
 					value: app?.country,
-				}));
+				}))
+				.sort((a, b) => a.label.localeCompare(b.label));
 		},
 		selectedPlan() {
 			if (!plans?.data) return;
