@@ -234,7 +234,8 @@ class Cluster(Document):
 		"""Adds the SSH key to Digital Ocean if it doesn't already exist"""
 		keys = client.ssh_keys.list()
 		keys = keys.get("ssh_keys", [])
-		existing_keys = [key for key in keys if key["name"] == self.ssh_key]
+		public_key = frappe.db.get_value("SSH Key", self.ssh_key, "public_key")
+		existing_keys = [key for key in keys if key["public_key"] == public_key]
 		if existing_keys:
 			return
 
