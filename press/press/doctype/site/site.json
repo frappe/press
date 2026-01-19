@@ -19,6 +19,7 @@
   "cluster",
   "admin_password",
   "additional_system_user_created",
+  "backup_timeout",
   "config_tab",
   "hide_config",
   "host_name",
@@ -742,6 +743,12 @@
    "fieldtype": "Datetime",
    "label": "Creation Failed",
    "read_only": 1
+  },
+  {
+   "default": "18000",
+   "fieldname": "backup_timeout",
+   "fieldtype": "Int",
+   "label": "Backup Timeout"
   }
  ],
  "links": [
