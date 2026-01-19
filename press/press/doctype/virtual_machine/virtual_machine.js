@@ -74,8 +74,20 @@ frappe.ui.form.on('Virtual Machine', {
 				frm.doc.series === 'e',
 			],
 			[
+				__('Create NAT Server'),
+				'create_nat_server',
+				false,
+				frm.doc.series === 'nat',
+			],
+			[
 				__('Reboot with serial console'),
 				'reboot_with_serial_console',
+				true,
+				frm.doc.status === 'Running' && frm.doc.cloud_provider === 'AWS EC2',
+			],
+			[
+				__('Assign Secondary Private IP'),
+				'assign_secondary_private_ip',
 				true,
 				frm.doc.status === 'Running' && frm.doc.cloud_provider === 'AWS EC2',
 			],
