@@ -65,7 +65,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "\nAWS EC2\nOCI\nHetzner\nFrappe Compute",
+   "options": "\nAWS EC2\nOCI\nHetzner\nDigitalOcean",
    "read_only": 1,
    "reqd": 1
   },
@@ -426,7 +426,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2026-01-12 21:00:54.671055",
+ "modified": "2026-01-18 13:54:28.206523",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
