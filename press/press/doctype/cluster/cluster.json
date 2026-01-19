@@ -82,7 +82,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "AWS EC2\nGeneric\nOCI\nHetzner\nFrappe Compute\nDigitalOcean",
+   "options": "AWS EC2\nGeneric\nOCI\nHetzner\nDigitalOcean",
    "reqd": 1,
    "set_only_once": 1
   },
