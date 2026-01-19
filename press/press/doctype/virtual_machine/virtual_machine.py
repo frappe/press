@@ -179,7 +179,8 @@ class VirtualMachine(Document):
 		return str(ip + 256 * (2 * (index // 256) + offset) + (index % 256))
 
 	def validate(self):
-		if not self.private_ip_address:
+		# Digital ocean does not support custom private IPs in a vpc
+		if not self.private_ip_address and self.cloud_provider != "DigitalOcean":
 			self.private_ip_address = self.get_private_ip()
 
 		self.validate_data_disk_snapshot()
@@ -460,13 +461,8 @@ class VirtualMachine(Document):
 			frappe.throw(f"Failed to provision Digital Ocean Droplet: {e!s}")
 
 		try:
-			self.client().firewalls.assign_droplets(
-				cluster.security_group_id, {"droplet_ids": [self.instance_id]}
-			)
-			if self.series == "n":
-				self.client().firewalls.assign_droplets(
-					cluster.proxy_security_group_id, {"droplet_ids": [self.instance_id]}
-				)
+			for group in self.get_security_groups():
+				self.client().firewalls.assign_droplets(group, {"droplet_ids": [self.instance_id]})
 		except Exception as e:
 			frappe.throw(f"Failed to assign Firewall to Digital Ocean Droplet: {e!s}")
 
