@@ -20,7 +20,7 @@ from oci.core.models.image_source_via_object_storage_uri_details import (
 from tenacity import retry, stop_after_attempt, wait_fixed
 from tenacity.retry import retry_if_result
 
-from press.frappe_compute_client.client import FrappeComputeClient
+from press.frappe_compute_client.client import APIError, FrappeComputeClient
 
 
 class VirtualMachineImage(Document):
@@ -138,7 +138,8 @@ class VirtualMachineImage(Document):
 			self.action_id = action["id"]
 
 		elif cluster.cloud_provider == "Frappe Compute":
-			return
+			image_id = self.client.create_image(instance_id=self.instance_id)
+			self.image_id = image_id
 		self.sync()
 
 	def create_image_from_copy(self):
@@ -300,6 +301,13 @@ class VirtualMachineImage(Document):
 			"EXPORTING": "Pending",
 			"DISABLED": "Unavailable",
 			"DELETED": "Unavailable",
+		}.get(status, "Unavailable")
+
+	def get_frappe_compute_status_map(self, status):
+		return {
+			"Pending": "Pending",
+			"Ongoing": "Pending",
+			"Completed": "Available",
 		}.get(status, "Unavailable")
 
 	def get_volumes_from_virtual_machine(self):

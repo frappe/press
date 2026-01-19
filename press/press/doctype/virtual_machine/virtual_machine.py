@@ -39,7 +39,7 @@ from oci.core.models import (
 )
 from oci.exceptions import TransientServiceError
 
-from press.frappe_compute_client.client import FrappeComputeClient
+from press.frappe_compute_client.client import APIError, FrappeComputeClient
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.utils import log_error
@@ -110,7 +110,7 @@ class VirtualMachine(Document):
 		public_ip_address: DF.Data | None
 		ram: DF.Int
 		ready_for_conversion: DF.Check
-		region: DF.Link
+		region: DF.Link | None
 		root_disk_size: DF.Int
 		security_group_id: DF.Data | None
 		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "u", "t", "nfs", "fs"]
@@ -472,17 +472,24 @@ class VirtualMachine(Document):
 
 	def _provision_frappe_compute(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
-		return self.client().create_vm(
-			self.name,
-			"Ubuntu 22.04",
-			1,
-			1,
-			cloud_init=self.get_cloud_init(),
-			mac_address=self.mac_address_of_public_ip,
-			ip_address=self.public_ip_address,
-			private_network=cluster.vpc_id,
-			ssh_key=frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
-		)
+		try:
+			instance_id = self.client().create_vm(
+				name=self.name,
+				image=self.machine_image,
+				machine_type=self.machine_type,
+				private_ip_address=self.private_ip_address,
+				private_network=cluster.vpc_id,
+				ssh_key=frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
+				cloud_init=self.get_cloud_init(),
+				root_disk_size=self.root_disk_size,
+			)
+		except Exception as e:
+			frappe.throw(f"There was an error {e}")
+			return
+		self.instance_id = instance_id
+		self.status = "Pending"
+		self.save()
+		frappe.db.commit()
 
 	def _provision_hetzner(self):
 		from hcloud.firewalls.domain import Firewall
@@ -1606,7 +1613,7 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "DigitalOcean":
 			self.client().droplet_actions.post(self.instance_id, {"type": "power_off"})
 		elif self.cloud_provider == "Frappe Compute":
-			self.client().stop_vm(self.name)
+			self.client().stop_vm(self.name, force=force)
 		self.sync()
 
 	@frappe.whitelist()
@@ -1650,6 +1657,8 @@ class VirtualMachine(Document):
 
 		if server := self.get_server():
 			log_server_activity(self.series, server.name, action="Terminated")
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().terminate_vm(self.name)
 
 	def _wait_for_digital_ocean_resize_action_completion(self, action_id: int):
 		"""Wait for resize to complete before starting the droplet."""
