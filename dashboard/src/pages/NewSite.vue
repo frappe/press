@@ -111,7 +111,7 @@
 				/>
 			</div>
 			<div
-				v-if="!bench && selectedVersion && options.providers?.length"
+				v-if="selectedVersion && options.providers?.length"
 				class="flex flex-col"
 			>
 				<h2 class="text-base font-medium leading-6 text-gray-900">

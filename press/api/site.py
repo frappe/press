@@ -818,9 +818,32 @@ def set_bench_and_clusters(version, for_bench):
 				pluck="cluster",
 			)
 		)
-		# ensure only clusters that have at least one Active, public server are included (for public site flow)
-		allowed_cluster_names = cluster_names
-		if cluster_names:
+
+		allowed_cluster_names: list[str] = []
+		if for_bench:
+			current_team = get_current_team()
+			release_group_servers = frappe.db.get_all(
+				"Release Group Server",
+				filters={"parent": version.group.name, "parenttype": "Release Group"},
+				pluck="server",
+			)
+
+			if release_group_servers:
+				server_clusters = frappe.db.get_all(
+					"Server",
+					filters={
+						"status": "Active",
+						"name": ("in", release_group_servers),
+						"cluster": ("in", cluster_names),
+					},
+					or_filters={
+						"public": 1,
+						"team": current_team,
+					},
+					pluck="cluster",
+				)
+				allowed_cluster_names = list(set(server_clusters))
+		else:
 			public_servers_clusters = frappe.db.get_all(
 				"Server",
 				filters={
