@@ -20,8 +20,6 @@ from oci.core.models.image_source_via_object_storage_uri_details import (
 from tenacity import retry, stop_after_attempt, wait_fixed
 from tenacity.retry import retry_if_result
 
-from press.frappe_compute_client.client import FrappeComputeClient
-
 
 class VirtualMachineImage(Document):
 	# begin: auto-generated types
@@ -137,9 +135,6 @@ class VirtualMachineImage(Document):
 			action = action["action"]
 			self.action_id = action["id"]
 
-		elif cluster.cloud_provider == "Frappe Compute":
-			image_id = self.client.create_image(instance_id=self.instance_id)
-			self.image_id = image_id
 		self.sync()
 
 	def create_image_from_copy(self):
@@ -303,13 +298,6 @@ class VirtualMachineImage(Document):
 			"DELETED": "Unavailable",
 		}.get(status, "Unavailable")
 
-	def get_frappe_compute_status_map(self, status):
-		return {
-			"Pending": "Pending",
-			"Ongoing": "Pending",
-			"Completed": "Available",
-		}.get(status, "Unavailable")
-
 	def get_volumes_from_virtual_machine(self):
 		machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		volumes = []
@@ -343,11 +331,6 @@ class VirtualMachineImage(Document):
 			return Client(token=api_token)
 		if cluster.cloud_provider == "DigitalOcean":
 			return pydo.Client(token=cluster.get_password("digital_ocean_api_token"))
-		if cluster.cloud_provider == "Frappe Compute":
-			settings = frappe.get_single("Press Settings")
-			api_token = settings.get_password("compute_api_token")
-			orchestrator_base_url = settings.orchestrator_base_url
-			return FrappeComputeClient(orchestrator_base_url, api_token)
 		return None
 
 	@classmethod

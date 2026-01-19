@@ -35,7 +35,6 @@ from oci.core.models import (
 )
 from oci.identity import IdentityClient
 
-from press.frappe_compute_client.client import FrappeComputeClient
 from press.press.doctype.virtual_machine_image.virtual_machine_image import (
 	VirtualMachineImage,
 )
@@ -71,7 +70,7 @@ class Cluster(Document):
 		beta: DF.Check
 		by_default_select_unified_mode: DF.Check
 		cidr_block: DF.Data | None
-		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner", "Frappe Compute", "DigitalOcean"]
+		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner", "DigitalOcean"]
 		default_app_server_plan: DF.Link | None
 		default_app_server_plan_type: DF.Link | None
 		default_db_server_plan: DF.Link | None
@@ -197,8 +196,6 @@ class Cluster(Document):
 			self.provision_on_hetzner()
 		elif self.cloud_provider == "DigitalOcean":
 			self.provision_on_digital_ocean()
-		elif self.cloud_provider == "Frappe Compute":
-			self.provision_on_frappe_compute()
 
 	def provision_on_digital_ocean(self):
 		api_token = self.get_password("digital_ocean_api_token")
@@ -333,16 +330,6 @@ class Cluster(Document):
 			self.security_group_id = firewall["firewall"]["id"]
 		except Exception as e:
 			frappe.throw(f"Failed to create Firewall on Digital Ocean: {e!s}")
-
-	def provision_on_frappe_compute(self):
-		settings = frappe.get_single("Press Settings")
-		orchestrator_base_url = settings.orchestrator_base_url
-		api_token = settings.get_password("compute_api_token")
-
-		client = FrappeComputeClient(orchestrator_base_url, api_token)
-		network = client.create_vpc(name=f"Frappe Cloud - {self.name}", cidr_block=self.cidr_block)
-		self.vpc_id = network["name"]
-		self.save()
 
 		frappe.msgprint(
 			"To add this cluster to monitoring, go to the Monitor Server and trigger the 'Reconfigure Monitor Server' action from the Actions menu."

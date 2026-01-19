@@ -158,9 +158,6 @@
   "aws_access_key_id",
   "column_break_agig",
   "aws_secret_access_key",
-  "frappe_compute_section",
-  "orchestrator_base_url",
-  "compute_api_token",
   "twilio_section",
   "twilio_account_sid",
   "twilio_api_key_sid",
@@ -1562,21 +1559,6 @@
    "fieldtype": "Link",
    "label": "Default Server Plan Type",
    "options": "Server Plan Type"
-  },
-  { 
-   "fieldname": "frappe_compute_section",
-   "fieldtype": "Section Break",
-   "label": "Frappe Compute"
-  },
-  {
-   "fieldname": "compute_api_token",
-   "fieldtype": "Password",
-   "label": "Compute API Token"
-  },
-  {
-   "fieldname": "orchestrator_base_url",
-   "fieldtype": "Data",
-   "label": "Orchestrator Base URL"
   }
  ],
  "issingle": 1,
