@@ -16,13 +16,12 @@ class FrappeComputeClient:
 		self,
 		name: str,
 		image: str,
-		memory: int,
-		number_of_vcpus: int,
-		cloud_init: str,
-		mac_address: str,
-		ip_address: str,
+		machine_type: str,
+		private_ip_address: str,
 		private_network: str,
 		ssh_key: str,
+		cloud_init: str,
+		root_disk_size: int,
 	):
 		url = urljoin(
 			self.base_url, "/api/method/agent.agent.doctype.virtual_machine.virtual_machine.new_vm_from_image"
@@ -31,29 +30,40 @@ class FrappeComputeClient:
 		params = {
 			"name": name,
 			"image": image,
-			"memory": memory,
-			"number_of_vcpus": number_of_vcpus,
-			"cloud_init": cloud_init,
-			"mac_address": mac_address,
-			"ip_address": ip_address,
+			"machine_type": machine_type,
+			"private_ip_address": private_ip_address,
 			"private_network": private_network,
 			"ssh_key": ssh_key,
+			"cloud_init": cloud_init,
+			"root_disk_size": root_disk_size,
 		}
 
 		response = self._send_request(url, "POST", params)
-		return json.loads(response.text)
+		data = json.loads(response.text)
+		if "message" in data:
+			return data["message"]
+		raise APIError(data)
 
 	def start_vm(self, name):
 		url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}/method/start"))
 		return self._send_request(url, "POST", {})
 
-	def stop_vm(self, name):
-		url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}/method/stop"))
+	def stop_vm(self, name, force):
+		if force:
+			url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}/method/stop"))
+		else:
+			url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}/method/shutdown"))
 		return self._send_request(url, "POST", {})
 
 	def reboot_vm(self, name):
 		url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}/method/reboot"))
 		return self._send_request(url, "POST", {})
+
+	def terminate_vm(self, name):
+		url = urljoin(
+			self.base_url, "/api/method/agent.agent.doctype.virtual_machine.virtual_machine.terminate"
+		)
+		self._send_request(url, "POST", {"name": name})
 
 	def attach_volumes(self, name, volumes):
 		url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}/method/attach_volumes"))
@@ -67,6 +77,43 @@ class FrappeComputeClient:
 		url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine/{name}/method/get_volumes"))
 		return self._send_request(url, "GET", {}).json()["data"]
 
+	def get_vm_info(self, instance_id):
+		url = urljoin(
+			self.base_url,
+			quote(
+				"/api/method/agent.agent.doctype.virtual_machine.virtual_machine.get_vm_details_from_instance_id"
+			),
+		)
+		resp = self._send_request(url, "GET", {"instance_id": instance_id}).json()
+		if "message" not in resp:
+			if "exc_type" in resp:
+				raise APIError(resp, resp["exc_type"])
+			raise APIError(resp)
+		return frappe._dict(resp["message"])
+
+	def create_image(self, instance_id):
+		url = urljoin(
+			self.base_url,
+			quote("/api/method/agent.agent.doctype.virtual_machine_image.virtual_machine_image.create_image"),
+		)
+		resp = self._send_request(url, "POST", {"instance_id": instance_id}).json()
+		if "message" not in resp:
+			if "exc_type" in resp:
+				raise APIError(resp, resp["exc_type"])
+			raise APIError(resp)
+
+		return resp["message"]
+
+	def get_image_info(self, image_id):
+		url = urljoin(self.base_url, quote(f"/api/v2/document/Virtual Machine Image/{image_id}"))
+		resp = self._send_request(url, "GET", {"image_id": image_id}).json()
+		if "data" not in resp:
+			if "errors" in resp:
+				raise APIError(resp, resp["errors"][0]["type"])
+			raise APIError(resp)
+
+		return frappe._dict(resp["data"])
+
 	def _send_request(self, url, method, data):
 		headers = {"Authorization": f"token {self.api_key}", "Content-Type": "application/json"}
 
@@ -79,10 +126,21 @@ class FrappeComputeClient:
 				request_func = requests.post
 			case "PUT":
 				request_func = requests.put
+			case "DELETE":
+				request_func = requests.delete
 			case _:
 				frappe.throw("Method not implemented yet.")
+
+		if method == "GET":
+			return request_func(url, params=data, headers=headers)
 
 		return request_func(url, json=data, headers=headers)
 
 	def get_all_images(self):
 		return [{"id": "Ubuntu"}]
+
+
+class APIError(Exception):
+	def __init__(self, message, exception_code=None):
+		super().__init__(message)
+		self.exception_code = exception_code

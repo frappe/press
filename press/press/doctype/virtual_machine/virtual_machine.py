@@ -38,7 +38,7 @@ from oci.core.models import (
 )
 from oci.exceptions import TransientServiceError
 
-from press.frappe_compute_client.client import FrappeComputeClient
+from press.frappe_compute_client.client import APIError, FrappeComputeClient
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.utils import log_error
@@ -84,8 +84,8 @@ class VirtualMachine(Document):
 		)
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
-		availability_zone: DF.Data
-		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner"]
+		availability_zone: DF.Data | None
+		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner", "Frappe Compute"]
 		cluster: DF.Link
 		data_disk_snapshot: DF.Link | None
 		data_disk_snapshot_attached: DF.Check
@@ -107,7 +107,7 @@ class VirtualMachine(Document):
 		public_ip_address: DF.Data | None
 		ram: DF.Int
 		ready_for_conversion: DF.Check
-		region: DF.Link
+		region: DF.Link | None
 		root_disk_size: DF.Int
 		security_group_id: DF.Data | None
 		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "u", "t", "nfs", "fs"]
@@ -415,17 +415,24 @@ class VirtualMachine(Document):
 
 	def _provision_frappe_compute(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
-		return self.client().create_vm(
-			self.name,
-			"Ubuntu 22.04",
-			1,
-			1,
-			cloud_init=self.get_cloud_init(),
-			mac_address=self.mac_address_of_public_ip,
-			ip_address=self.public_ip_address,
-			private_network=cluster.vpc_id,
-			ssh_key=frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
-		)
+		try:
+			instance_id = self.client().create_vm(
+				name=self.name,
+				image=self.machine_image,
+				machine_type=self.machine_type,
+				private_ip_address=self.private_ip_address,
+				private_network=cluster.vpc_id,
+				ssh_key=frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
+				cloud_init=self.get_cloud_init(),
+				root_disk_size=self.root_disk_size,
+			)
+		except Exception as e:
+			frappe.throw(f"There was an error {e}")
+			return
+		self.instance_id = instance_id
+		self.status = "Pending"
+		self.save()
+		frappe.db.commit()
 
 	def _provision_hetzner(self):
 		from hcloud.firewalls.domain import Firewall
@@ -729,6 +736,14 @@ class VirtualMachine(Document):
 				return frappe.get_doc(doctype, server)
 		return None
 
+	def get_frappe_compute_status_map(self):
+		# Compute has very basic statuses
+		return {
+			"Running": "Running",
+			"Stopped": "Stopped",
+			"Undefined": "Pending",
+		}
+
 	def get_hetzner_status_map(self):
 		# Hetzner has not status for Terminating or Terminated. Just returns a server not found.
 		return {
@@ -942,7 +957,49 @@ class VirtualMachine(Document):
 			return self._sync_oci(*args, **kwargs)
 		if self.cloud_provider == "Hetzner":
 			return self._sync_hetzner(*args, **kwargs)
+		if self.cloud_provider == "Frappe Compute":
+			return self._sync_frappe_compute(*args, **kwargs)
 		return None
+
+	def _sync_frappe_compute(self, instance=None):
+		try:
+			info = self.client().get_vm_info(instance_id=self.instance_id)
+		except APIError as e:
+			if e.exception_code == "DoesNotExistError":
+				self.db_set("status", "Terminated")
+				return
+			raise
+
+		info = frappe._dict(info)
+
+		self.status = self.get_frappe_compute_status_map()[info.state]
+		self.machine_type = info.virtual_machine_type
+		self.vcpu = info.number_of_vcpus
+		self.ram = info.memory
+
+		self.private_ip_address = info.private_ip_addresses[0]
+		self.public_ip_address = info.public_ip_address
+
+		# not implemented yet. mocking
+		self.termination_protection = False
+
+		self.volumes = []
+		for disk in info.disks:
+			disk = frappe._dict(disk)
+			row = frappe._dict()
+			row.idx = disk.idx
+			row.volume_id = disk.name
+			row.size = disk.size
+			row.device = "/dev/" + disk.device
+
+			self.append("volumes", row)
+
+		if self.volumes:
+			self.disk_size = self.get_data_volume().size
+			self.root_disk_size = self.get_root_volume().size
+
+		self.save()
+		self.update_servers()
 
 	def _sync_hetzner(self, server_instance=None):  # noqa: C901
 		if not server_instance:
@@ -1433,7 +1490,7 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "Hetzner":
 			self.client().servers.shutdown(self.get_hetzner_server_instance(fetch_data=False))
 		elif self.cloud_provider == "Frappe Compute":
-			self.client().stop_vm(self.name)
+			self.client().stop_vm(self.name, force=force)
 		self.sync()
 
 	@frappe.whitelist()
@@ -1467,6 +1524,8 @@ class VirtualMachine(Document):
 
 		if server := self.get_server():
 			log_server_activity(self.series, server.name, action="Terminated")
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().terminate_vm(self.name)
 
 	@frappe.whitelist()
 	def resize(self, machine_type, upgrade_disk: bool = False):
