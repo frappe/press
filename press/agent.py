@@ -62,7 +62,7 @@ class Agent:
 			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
 			as_dict=True,
 		)
-		cluster = frappe.db.get_value(self.server_type, self.server, "cluster")
+		cluster = frappe.db.get_value(self.server_type, self.server, "cluster", cache=True)
 		registry_url = frappe.db.get_value("Cluster", cluster, "repository") or settings.docker_registry_url
 
 		data = {
@@ -1024,20 +1024,21 @@ class Agent:
 		return json_response
 
 	def _get_request_url(self, path):
-		proxy, server_ip, server_private_ip = None
 		if self.server_type in ("Server", "Database Server"):
+			proxy = None
 			server_ip, server_private_ip = frappe.db.get_value(
 				self.server_type, self.server, ("ip", "private_ip")
 			)
-			if not server_ip:
-				if self.server_type == "Server":
-					proxy = frappe.db.get_value("Server", self.server, "proxy_server")
-				elif self.server_type == "Database Server":
-					proxy = frappe.db.get_value("Server", {"database_server": self.name}, "proxy_server")
+			if not server_ip and server_private_ip:
+				cluster = frappe.db.get_value(self.server_type, self.server, "cluster", cache=True)
+				proxy = frappe.db.get_value(
+					"Proxy Server",
+					{"status": "Active", "cluster": cluster, "use_as_proxy_for_agent_and_metrics": 1},
+				)
 
-		if proxy:
-			proxy_port = 443 if proxy not in self.__servers_using_alt_ports else 8443
-			return f"https://{proxy}:{proxy_port}/{server_private_ip}:{self.port}/agent/{path}"
+			if proxy:
+				proxy_port = 443 if proxy not in self.__servers_using_alt_ports else 8443
+				return f"https://{proxy}:{proxy_port}/{self.server}:{self.port}/agent/{path}"
 
 		return f"https://{self.server}:{self.port}/agent/{path}"
 
@@ -1549,8 +1550,24 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		if self.server_type != "Database Server":
 			return NotImplementedError("Only Database Server supports this method")
 
+<<<<<<< HEAD
 		cluster = frappe.get_value("Database Server", self.server, "cluster")
 		offsite_config = self._get_offsite_backup_config(cluster, backups_path=self.server)
+=======
+		settings = frappe.get_single("Press Settings")
+		backup_bucket = get_backup_bucket(
+			frappe.get_value("Database Server", self.server, "cluster", cache=True), region=True
+		)
+		bucket_name = backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
+		if not (settings.aws_s3_bucket or bucket_name):
+			return ValueError("Offsite Backups aren't set yet")
+
+		auth = {
+			"ACCESS_KEY": settings.offsite_backups_access_key_id,
+			"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
+			"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
+		}
+>>>>>>> 98c85136b (refactor(minor): find proxy using cluster in _get_request_url)
 
 		return self.create_agent_job(
 			"Upload Binlogs To S3",
