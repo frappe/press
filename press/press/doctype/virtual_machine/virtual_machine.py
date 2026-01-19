@@ -81,10 +81,7 @@ class VirtualMachine(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
-		from press.press.doctype.virtual_machine_temporary_volume.virtual_machine_temporary_volume import (
-			VirtualMachineTemporaryVolume,
-		)
+		from press.press.doctype.virtual_machine_temporary_volume.virtual_machine_temporary_volume import VirtualMachineTemporaryVolume
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
 		availability_zone: DF.Data | None
@@ -101,7 +98,6 @@ class VirtualMachine(Document):
 		instance_id: DF.Data | None
 		is_static_ip: DF.Check
 		kms_key_id: DF.Data | None
-		mac_address_of_public_ip: DF.Data | None
 		machine_image: DF.Data | None
 		machine_type: DF.Data
 		platform: DF.Literal["x86_64", "arm64"]
