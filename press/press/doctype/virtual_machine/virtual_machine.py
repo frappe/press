@@ -39,7 +39,6 @@ from oci.core.models import (
 )
 from oci.exceptions import TransientServiceError
 
-from press.frappe_compute_client.client import FrappeComputeClient
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.utils import log_error
@@ -414,8 +413,6 @@ class VirtualMachine(Document):
 			return self._provision_hetzner()
 		if self.cloud_provider == "DigitalOcean":
 			return self._provision_digital_ocean()
-		if self.cloud_provider == "Frappe Compute":
-			return self._provision_frappe_compute()
 
 		return None
 
@@ -469,19 +466,6 @@ class VirtualMachine(Document):
 		self.status = self.get_digital_ocean_status_map()[droplet["droplet"]["status"]]
 		self.save()
 		frappe.db.commit()
-
-	def _provision_frappe_compute(self):
-		cluster = frappe.get_doc("Cluster", self.cluster)
-		return self.client().create_vm(
-			self.name,
-			"Ubuntu 22.04",
-			1,
-			1,
-			cloud_init=self.get_cloud_init(),
-			mac_address=self.mac_address_of_public_ip,
-			ip_address=self.public_ip_address,
-			private_network=cluster.vpc_id,
-		)
 
 	def _provision_hetzner(self):
 		from hcloud.firewalls.domain import Firewall
@@ -870,10 +854,6 @@ class VirtualMachine(Document):
 
 			return ubuntu_images[0]["id"]
 
-		if self.cloud_provider == "Frappe Compute":
-			images = self.client().get_all_images()
-			if images:
-				return images[0]["id"]
 		return None
 
 	@frappe.whitelist()
@@ -886,8 +866,6 @@ class VirtualMachine(Document):
 			self.client().servers.reboot(self.get_hetzner_server_instance(fetch_data=False))
 		elif self.cloud_provider == "DigitalOcean":
 			self.client().droplet_actions.post(self.instance_id, {"type": "reboot"})
-		elif self.cloud_provider == "Frappe Compute":
-			self.client().reboot_vm(self.name)
 
 		if server := self.get_server():
 			log_server_activity(self.series, server.name, action="Reboot")
@@ -1033,9 +1011,6 @@ class VirtualMachine(Document):
 				)
 			)
 			return volumes
-
-		if self.cloud_provider == "Frappe Compute":
-			return self.client().get_volumes(self.name)
 		return None
 
 	def convert_to_gp3(self):
@@ -1331,7 +1306,6 @@ class VirtualMachine(Document):
 			"OCI": lambda v: ".bootvolume." in v.volume_id,
 			"Hetzner": lambda v: v.device == "/dev/sda",
 			"DigitalOcean": lambda v: v.device == "/dev/sda",
-			"Frappe Compute": lambda v: v.device == "/dev/vda",
 		}
 		root_volume_filter = ROOT_VOLUME_FILTERS.get(self.cloud_provider)
 		volume = find(self.volumes, root_volume_filter)
@@ -1588,8 +1562,6 @@ class VirtualMachine(Document):
 			self.client().servers.power_on(self.get_hetzner_server_instance(fetch_data=False))
 		elif self.cloud_provider == "DigitalOcean":
 			self.client().droplet_actions.post(self.instance_id, {"type": "power_on"})
-		elif self.cloud_provider == "Frappe Compute":
-			self.client().start_vm(self.name)
 
 		# Digital Ocean `start` takes some time therefore this sync is useless for DO.
 		self.sync()
@@ -1604,8 +1576,6 @@ class VirtualMachine(Document):
 			self.client().servers.shutdown(self.get_hetzner_server_instance(fetch_data=False))
 		elif self.cloud_provider == "DigitalOcean":
 			self.client().droplet_actions.post(self.instance_id, {"type": "power_off"})
-		elif self.cloud_provider == "Frappe Compute":
-			self.client().stop_vm(self.name)
 		self.sync()
 
 	@frappe.whitelist()
@@ -1776,12 +1746,6 @@ class VirtualMachine(Document):
 		if self.cloud_provider == "DigitalOcean":
 			api_token = cluster.get_password("digital_ocean_api_token")
 			return pydo.Client(token=api_token)
-
-		if self.cloud_provider == "Frappe Compute":
-			settings = frappe.get_single("Press Settings")
-			orchestrator_base_url = settings.orchestrator_base_url
-			api_token = settings.get_password("compute_api_token")
-			return FrappeComputeClient(orchestrator_base_url, api_token)
 
 		return None
 
