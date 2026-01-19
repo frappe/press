@@ -128,9 +128,7 @@ class VirtualMachineImage(Document):
 				type="snapshot",
 			)
 			self.image_id = response.image.id
-<<<<<<< HEAD
 			self.snapshot_id = response.image.id
-=======
 
 		elif cluster.cloud_provider == "DigitalOcean":
 			action = self.client.droplet_actions.post(
@@ -139,11 +137,6 @@ class VirtualMachineImage(Document):
 			)
 			action = action["action"]
 			self.action_id = action["id"]
-
->>>>>>> 57ced8f07 (feat(do): Add support for virtual machine images)
-		elif cluster.cloud_provider == "Frappe Compute":
-			image_id = self.client.create_image(instance_id=self.instance_id)
-			self.image_id = image_id
 		self.sync()
 
 	def create_image_from_copy(self):
@@ -229,20 +222,6 @@ class VirtualMachineImage(Document):
 					self.status = "Unavailable"
 				else:
 					raise e
-<<<<<<< HEAD
-		elif cluster.cloud_provider == "Frappe Compute":
-			try:
-				image_info = self.client.get_image_info(self.image_id)
-			except APIError as e:
-				if e.exception_code == "DoesNotExistError":
-					self.status = "Unavailable"
-					self.save()
-					return self.status
-			self.status = self.get_frappe_compute_status_map(image_info["status"])
-			self.size = image_info["size"]
-			self.root_size = image_info["size"]
-			self.save()
-=======
 		elif cluster.cloud_provider == "DigitalOcean":
 			action_status = self.client.droplet_actions.get(
 				droplet_id=self.instance_id, action_id=self.action_id
@@ -260,7 +239,6 @@ class VirtualMachineImage(Document):
 				self.root_size = image["min_disk_size"]
 
 		self.save()
->>>>>>> 57ced8f07 (feat(do): Add support for virtual machine images)
 		return self.status
 
 	@retry(
