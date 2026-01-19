@@ -87,13 +87,8 @@ class VirtualMachine(Document):
 		)
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
-<<<<<<< HEAD
-		availability_zone: DF.Data | None
-		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner", "Frappe Compute"]
-=======
 		availability_zone: DF.Data
 		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner", "DigitalOcean"]
->>>>>>> ab300ed14 (feat(do): Machine provision and sync)
 		cluster: DF.Link
 		data_disk_snapshot: DF.Link | None
 		data_disk_snapshot_attached: DF.Check
@@ -800,21 +795,12 @@ class VirtualMachine(Document):
 				return frappe.get_doc(doctype, server)
 		return None
 
-<<<<<<< HEAD
-	def get_frappe_compute_status_map(self):
-		# Compute has very basic statuses
-		return {
-			"Running": "Running",
-			"Stopped": "Stopped",
-			"Undefined": "Pending",
-=======
 	def get_digital_ocean_status_map(self):
 		return {
 			"new": "Pending",
 			"active": "Running",
 			"off": "Stopped",
 			"archive": "Terminated",
->>>>>>> ab300ed14 (feat(do): Machine provision and sync)
 		}
 
 	def get_hetzner_status_map(self):
@@ -1086,48 +1072,6 @@ class VirtualMachine(Document):
 			return self._sync_oci(*args, **kwargs)
 		if self.cloud_provider == "Hetzner":
 			return self._sync_hetzner(*args, **kwargs)
-<<<<<<< HEAD
-		if self.cloud_provider == "Frappe Compute":
-			return self._sync_frappe_compute(*args, **kwargs)
-		return None
-
-	def _sync_frappe_compute(self, instance=None):
-		try:
-			info = self.client().get_vm_info(instance_id=self.instance_id)
-		except APIError as e:
-			if e.exception_code == "DoesNotExistError":
-				self.db_set("status", "Terminated")
-				return
-			raise
-
-		info = frappe._dict(info)
-
-		self.status = self.get_frappe_compute_status_map()[info.state]
-		self.machine_type = info.virtual_machine_type
-		self.vcpu = info.number_of_vcpus
-		self.ram = info.memory
-
-		self.private_ip_address = info.private_ip_addresses[0]
-		self.public_ip_address = info.public_ip_address
-
-		# not implemented yet. mocking
-		self.termination_protection = False
-
-		self.volumes = []
-		for disk in info.disks:
-			disk = frappe._dict(disk)
-			row = frappe._dict()
-			row.idx = disk.idx
-			row.volume_id = disk.name
-			row.size = disk.size
-			row.device = "/dev/" + disk.device
-
-			self.append("volumes", row)
-
-		if self.volumes:
-			self.disk_size = self.get_data_volume().size
-			self.root_disk_size = self.get_root_volume().size
-=======
 		if self.cloud_provider == "DigitalOcean":
 			return self._sync_digital_ocean(*args, **kwargs)
 		return None
@@ -1197,7 +1141,6 @@ class VirtualMachine(Document):
 		# We don't have volume support yet for digital ocean droplets
 		self.root_disk_size = server_instance["disk"]
 		self.disk_size = server_instance["disk"]
->>>>>>> ab300ed14 (feat(do): Machine provision and sync)
 
 		self._update_volume_info_after_sync()
 
@@ -2259,7 +2202,7 @@ class VirtualMachine(Document):
 
 	def bulk_sync_oci_cluster_in_batch(self, instances: list[frappe._dict]):
 		for instance in instances:
-			machine: VirtualMachine = frappe.get_doc("Virtual Machine", {"instance_id": instance.id})
+			machine: VirtualMachine = frappe.get_doc("Virtual Machine", {"instance_id": instance["id"]})
 			if has_job_timeout_exceeded():
 				return
 			try:
