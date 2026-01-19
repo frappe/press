@@ -452,6 +452,7 @@ class VirtualMachine(Document):
 					"ssh_keys": [self._get_digital_ocean_ssh_key_id()],
 					"backups": False,
 					"vpc_uuid": cluster.vpc_id,
+					"user_data": self.get_cloud_init() if self.virtual_machine_image else "",
 				}
 			)
 			self.instance_id = droplet["droplet"]["id"]
