@@ -177,7 +177,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner\nVodacom",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner\nVodacom\nFrappe Compute",
    "set_only_once": 1
   },
   {
@@ -789,7 +789,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2026-01-07 15:03:11.997980",
+ "modified": "2026-01-13 11:01:08.298972",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
