@@ -421,6 +421,37 @@ def parse_grouped_versions(versions):
 
 @frappe.whitelist()
 @role_guard.api("partner")
+def get_certification_requests():
+	from frappe.frappeclient import FrappeClient
+
+	team = get_current_team()
+	cert_requests = frappe.get_all(
+		"Partner Certificate Request",
+		{"partner_team": team},
+		["partner_member_name", "partner_member_email", "course"],
+	)
+
+	for d in cert_requests:
+		d["course"] = "erpnext" if d["course"] == "erpnext-distribution" else "framework"
+		d["email"] = d["partner_member_email"]
+
+	press_settings = frappe.get_cached_doc("Press Settings")
+	school_url = press_settings.school_url
+	api_key = press_settings.school_api_key
+	api_secret = press_settings.get_password("school_api_secret")
+
+	client = FrappeClient(school_url, api_key=api_key, api_secret=api_secret)
+	res = client.get_api("get-certificate-request-status", {"data": json.dumps(cert_requests)})
+
+	if res:
+		for d in res:
+			d["course"] = "ERPNext" if d["course"] == "erpnext" else "Framework"
+
+	return res
+
+
+@frappe.whitelist()
+@role_guard.api("partner")
 def get_partner_invoices(due_date=None, status=None):
 	partner_email = get_current_team(get_doc=True).partner_email
 
@@ -670,6 +701,11 @@ def remove_partner():
 @role_guard.api("partner")
 def apply_for_certificate(member_name, certificate_type):
 	team = get_current_team(get_doc=True)
+	if frappe.db.exists(
+		"Partner Certificate Request", {"partner_member_email": member_name, "course": certificate_type}
+	):
+		frappe.throw("A certificate request already exists for this team member and course.")
+
 	doc = frappe.new_doc("Partner Certificate Request")
 	doc.update(
 		{
@@ -745,6 +781,7 @@ def update_lead_details(lead_name, lead_details):
 			"plan_proposed": lead_details.plan_proposed,
 			"requirement": lead_details.requirement,
 			"probability": lead_details.probability,
+			"engagement_stage": lead_details.engagement_stage,
 		}
 	)
 	doc.save(ignore_permissions=True)
