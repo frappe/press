@@ -207,6 +207,19 @@ const indianStates = computed(() => {
 	}));
 });
 
+const _engagementStageOptions = [
+	'Demo',
+	'Qualification',
+	'Quotation',
+	'Ready for Closing',
+];
+const engagementStageOptions = ref(
+	_engagementStageOptions.map((stage) => ({
+		label: stage,
+		value: stage,
+	})),
+);
+
 const sections = computed(() => {
 	return [
 		{
@@ -222,14 +235,14 @@ const sections = computed(() => {
 			],
 		},
 		{
-			name: 'Domain and Status',
+			name: 'Engagement Stage and Status',
 			columns: 2,
 			fields: [
 				{
 					fieldtype: 'Select',
-					fieldname: 'domain',
-					label: 'Domain',
-					options: domainList.value,
+					fieldname: 'engagement_stage',
+					label: 'Engagement Stage',
+					options: engagementStageOptions.value,
 					required: true,
 				},
 				{
@@ -288,6 +301,19 @@ const sections = computed(() => {
 					required: true,
 					options:
 						leadInfo.value.country === 'India' ? indianStates.value : null,
+				},
+			],
+		},
+		{
+			name: 'Domain',
+			columns: 1,
+			fields: [
+				{
+					fieldtype: 'Select',
+					fieldname: 'domain',
+					label: 'Domain',
+					options: domainList.value,
+					required: true,
 				},
 			],
 		},

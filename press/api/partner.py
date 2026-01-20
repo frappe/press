@@ -781,6 +781,7 @@ def update_lead_details(lead_name, lead_details):
 			"plan_proposed": lead_details.plan_proposed,
 			"requirement": lead_details.requirement,
 			"probability": lead_details.probability,
+			"engagement_stage": lead_details.engagement_stage,
 		}
 	)
 	doc.save(ignore_permissions=True)
