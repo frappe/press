@@ -416,7 +416,7 @@ class BaseServer(Document, TagHelpers):
 				"group": "Application Server Actions",
 			},
 			{
-				"action": "Disable Autoscaling",
+				"action": "Disable Autoscale",
 				"description": "Turn off autoscaling and remove the secondary application server.",
 				"button_label": "Disable",
 				"condition": (
