@@ -452,6 +452,7 @@ class VirtualDiskResize(Document):
 		server.copy_files(
 			source=self.filesystem_mount_point,
 			destination=self.new_filesystem_temporary_mount_point,
+			# extra_options="-x",
 		)
 		return StepStatus.Success
 
