@@ -1566,21 +1566,6 @@
    "options": "Server Plan Type"
   },
   {
-   "fieldname": "frappe_compute_section",
-   "fieldtype": "Section Break",
-   "label": "Frappe Compute"
-  },
-  {
-   "fieldname": "compute_api_token",
-   "fieldtype": "Password",
-   "label": "Compute API Token"
-  },
-  {
-   "fieldname": "orchestrator_base_url",
-   "fieldtype": "Data",
-   "label": "Orchestrator Base URL"
-  },
-  {
    "fieldname": "frappe_school_authentication_section",
    "fieldtype": "Section Break",
    "label": "Frappe School Authentication"
