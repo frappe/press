@@ -1859,6 +1859,27 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			reference_name=reference_name,
 		)
 
+	def setup_firewall(self):
+		return self.create_agent_job(
+			"Setup Firewall",
+			"/firewall/setup",
+		)
+
+	def teardown_firewall(self):
+		return self.create_agent_job(
+			"Teardown Firewall",
+			"/firewall/teardown",
+		)
+
+	def enable_firewall(self):
+		return self.post("firewall/enable")
+
+	def disable_firewall(self):
+		return self.post("firewall/disable")
+
+	def firewall_status(self):
+		return self.get("firewall")
+
 
 class AgentCallbackException(Exception):
 	pass
