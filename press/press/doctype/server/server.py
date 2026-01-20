@@ -1558,7 +1558,7 @@ class BaseServer(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def reboot(self):
-		if self.provider not in ("AWS EC2", "OCI"):
+		if self.provider not in ("AWS EC2", "OCI", "DigitalOcean", "Hetzner"):
 			raise NotImplementedError
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		virtual_machine.reboot()
@@ -2160,7 +2160,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			timeout=7200,
 		)
 
-	def _copy_files(self, source, destination):
+	def _copy_files(self, source, destination, extra_options=None):
 		try:
 			ansible = Ansible(
 				playbook="copy.yml",
@@ -2170,6 +2170,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				variables={
 					"source": source,
 					"destination": destination,
+					"extra_options": extra_options,
 				},
 			)
 			ansible.run()
@@ -2412,7 +2413,7 @@ class Server(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean"]
 		proxy_server: DF.Link | None
 		public: DF.Check
 		ram: DF.Float
@@ -2753,6 +2754,9 @@ class Server(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
+				if self.provider == "DigitalOcean":
+					# To adjust docker permissions
+					self.reboot()
 			else:
 				self.status = "Broken"
 		except Exception:
@@ -3487,7 +3491,8 @@ def get_hostname_abbreviation(hostname):
 	abbr = hostname_parts[0]
 
 	for part in hostname_parts[1:]:
-		abbr += part[0]
+		if part:
+			abbr += part[0]
 
 	return abbr
 

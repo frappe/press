@@ -694,7 +694,7 @@ def options_for_new(for_bench: str | None = None):  # noqa: C901
 		for cluster in version.group.clusters or []:
 			existing_clusters.add(cluster.get("name"))
 			provider_name = cluster.get("cloud_provider")
-			if provider_name and provider_name not in unique_providers:
+			if provider_name and provider_name in cloud_providers and provider_name not in unique_providers:
 				provider_info = cloud_providers.get(provider_name, {})
 				unique_providers[provider_name] = {
 					"name": provider_name,
@@ -818,16 +818,53 @@ def set_bench_and_clusters(version, for_bench):
 				pluck="cluster",
 			)
 		)
+
+		allowed_cluster_names: list[str] = []
+		if for_bench:
+			current_team = get_current_team()
+			release_group_servers = frappe.db.get_all(
+				"Release Group Server",
+				filters={"parent": version.group.name, "parenttype": "Release Group"},
+				pluck="server",
+			)
+
+			if release_group_servers:
+				server_clusters = frappe.db.get_all(
+					"Server",
+					filters={
+						"status": "Active",
+						"name": ("in", release_group_servers),
+						"cluster": ("in", cluster_names),
+					},
+					or_filters={
+						"public": 1,
+						"team": current_team,
+					},
+					pluck="cluster",
+				)
+				allowed_cluster_names = list(set(server_clusters))
+		else:
+			public_servers_clusters = frappe.db.get_all(
+				"Server",
+				filters={
+					"status": "Active",
+					"public": 1,
+					"cluster": ("in", cluster_names),
+				},
+				pluck="cluster",
+			)
+			allowed_cluster_names = list(set(public_servers_clusters))
+
 		clusters = frappe.db.get_all(
 			"Cluster",
-			filters={"name": ("in", cluster_names)},
+			filters={"name": ("in", allowed_cluster_names)},
 			fields=["name", "title", "image", "beta", "cloud_provider"],
 		)
 		if not for_bench:
 			proxy_servers = frappe.db.get_all(
 				"Proxy Server",
 				{
-					"cluster": ("in", cluster_names),
+					"cluster": ("in", allowed_cluster_names),
 					"is_primary": 1,
 				},
 				["name", "cluster"],
@@ -891,7 +928,7 @@ def get_additional_clusters_for_private_benches(existing_clusters, cloud_provide
 			additional_clusters.append(cluster_info)
 			seen_clusters.add(cluster_name)
 
-			if provider_name and provider_name not in unique_providers:
+			if provider_name and provider_name in cloud_providers and provider_name not in unique_providers:
 				provider_info = cloud_providers.get(provider_name, {})
 				unique_providers[provider_name] = {
 					"name": provider_name,
