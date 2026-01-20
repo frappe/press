@@ -13,9 +13,11 @@
 	</div>
 </template>
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, h } from 'vue';
 import { createResource } from 'frappe-ui';
 import ObjectList from '../ObjectList.vue';
+import { renderDialog } from '../../utils/components';
+import CertificateSummary from './CertificateSummary.vue';
 
 const show = ref(true);
 
@@ -30,6 +32,7 @@ const certRequestList = createResource({
 					member_name: row.name,
 					certificate_type: row.course,
 					status: row.status,
+					summary: row.summary || '',
 				};
 			}) || []
 		);
@@ -58,6 +61,17 @@ const requestList = computed(() => {
 			},
 		],
 		orderBy: 'creation desc',
+		onRowClick: (row) => {
+			if (row.summary) {
+				return renderDialog(
+					h(CertificateSummary, {
+						modelValue: true,
+						summary: row.summary,
+						color: row.status === 'In Process' ? 'yellow' : 'blue',
+					}),
+				);
+			}
+		},
 	};
 });
 </script>

@@ -155,13 +155,9 @@ export default {
 						{
 							label: 'Check Certification Status',
 							onClick: () => {
-								console.log('click');
 								renderDialog(
 									h(CertificationStatus, {
 										show: true,
-										onSuccess: () => {
-											console.log('Dialog closed');
-										},
 									}),
 								);
 							},
