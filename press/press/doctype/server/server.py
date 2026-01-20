@@ -405,9 +405,9 @@ class BaseServer(Document, TagHelpers):
 				"group": f"{server_type.title()} Actions",
 			},
 			{
-				"action": "Setup Autoscale",
+				"action": "Enable Autoscale",
 				"description": "Setup a secondary application server to autoscale to during high loads",
-				"button_label": "Setup",
+				"button_label": "Enable",
 				"condition": self.status == "Active"
 				and self.doctype == "Server"
 				and not self.secondary_server
