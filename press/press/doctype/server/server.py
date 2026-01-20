@@ -3408,6 +3408,26 @@ class Server(BaseServer):
 		auto_scale_record.is_automatically_triggered = is_automatically_triggered
 		auto_scale_record.insert()
 
+	@frappe.whitelist()
+	def setup_firewall(self):
+		self.agent.setup_firewall()
+
+	@frappe.whitelist()
+	def teardown_firewall(self):
+		self.agent.teardown_firewall()
+
+	@frappe.whitelist()
+	def enable_firewall(self):
+		self.agent.enable_firewall()
+
+	@frappe.whitelist()
+	def disable_firewall(self):
+		self.agent.disable_firewall()
+
+	@frappe.whitelist()
+	def firewall_status(self):
+		return self.agent.firewall_status()
+
 	@property
 	def can_scale(self) -> bool:
 		"""

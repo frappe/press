@@ -29,3 +29,6 @@
     name: netfilter-persistent
     enabled: yes
     state: started
+
+- name: Grant Python capabilities for raw socket operations
+  command: "setcap cap_net_raw,cap_net_admin+ep /usr/bin/python3.10"

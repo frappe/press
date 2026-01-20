@@ -243,6 +243,20 @@ frappe.ui.form.on('Server', {
 			],
 			[__('Scale Up'), 'scale_up', true, !frm.doc.scaled_up],
 			[__('Scale Down'), 'scale_down', true, frm.doc.scaled_up],
+			[__('Setup Firewall'), 'setup_firewall', true, frm.doc.is_server_setup],
+			[
+				__('Teardown Firewall'),
+				'teardown_firewall',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[__('Enable Firewall'), 'enable_firewall', true, frm.doc.is_server_setup],
+			[
+				__('Disable Firewall'),
+				'disable_firewall',
+				true,
+				frm.doc.is_server_setup,
+			],
 			[
 				__('Install Wazuh Agent'),
 				'install_wazuh_agent',
