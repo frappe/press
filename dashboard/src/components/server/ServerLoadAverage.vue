@@ -17,7 +17,7 @@
 			</div>
 		</div>
 		<LineChart
-			class="h-52 p-2"
+			class="h-[15.5rem] p-2"
 			type="time"
 			title="Load Average"
 			:key="loadAverageData"

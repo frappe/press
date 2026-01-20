@@ -279,7 +279,7 @@ export default {
 				},
 			},
 			{
-				label: 'Bench Group Analytics',
+				label: 'Bench Analytics',
 				icon: icon('bar-chart-2'),
 				condition: (server) => server.doc?.status !== 'Archived',
 				route: 'bench-group-analytics',
@@ -475,6 +475,7 @@ export default {
 						};
 					},
 					primaryAction({ listResource: benches, documentResource: server }) {
+						if (server?.doc?.status !== 'Active') return {};
 						return {
 							label: 'New Bench Group',
 							slots: {

@@ -174,6 +174,7 @@ def setup_account(  # noqa: C901
 	oauth_signup=False,
 	oauth_domain=False,
 	site_domain=None,
+	share_details_consent=False,
 ):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
@@ -194,6 +195,10 @@ def setup_account(  # noqa: C901
 
 	# if the request is authenticated, set the user to Administrator
 	frappe.set_user("Administrator")
+
+	# pass lead to local partner if consent given
+	account_request.agreed_to_partner_consent = share_details_consent
+	account_request.save()
 
 	team = account_request.team
 	email = account_request.email
@@ -1443,7 +1448,7 @@ def get_user_banners():
 	# fetch all enabled banners for this user
 	all_enabled_banners = (
 		frappe.qb.from_(DashboardBanner)
-		.select("*")
+		.select("name")
 		.where(
 			((DashboardBanner.enabled == 1) & (DashboardBanner.is_scheduled == 0))
 			| (
@@ -1459,21 +1464,19 @@ def get_user_banners():
 			| ((DashboardBanner.type_of_scope == "Server") & (DashboardBanner.server.isin(servers or [""])))
 			| ((DashboardBanner.type_of_scope == "Team") & (DashboardBanner.team == team))
 		)
-		.run(as_dict=True)
+		.run(pluck=True)
 	)
 
 	# filter out dismissed banners
-	user = frappe.session.user
-	visible_banners = []
-	for banner in all_enabled_banners:
-		banner_dismissals_by_user = frappe.get_all(
-			"Dashboard Banner Dismissal",
-			filters={"user": user, "parent": banner["name"]},
-		)
-		if not banner_dismissals_by_user:
-			visible_banners.append(banner)
+	banner_dismissals_by_user = frappe.get_all(
+		"Dashboard Banner Dismissal",
+		filters={"user": frappe.session.user, "parent": ["in", all_enabled_banners]},
+		fields=["parent"],
+		pluck=True,
+	)
 
-	return visible_banners
+	# visible banners
+	return [banner for banner in all_enabled_banners if banner not in banner_dismissals_by_user]
 
 
 @frappe.whitelist()

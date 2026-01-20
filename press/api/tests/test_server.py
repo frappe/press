@@ -25,7 +25,7 @@ from press.press.doctype.virtual_machine_image.virtual_machine_image import (
 	VirtualMachineImage,
 )
 from press.runner import Ansible
-from press.utils.test import foreground_enqueue_doc
+from press.utils.test import foreground_enqueue_doc_with_user
 
 
 def create_test_server_plan(
@@ -162,7 +162,7 @@ class TestAPIServer(FrappeTestCase):
 
 	@patch(
 		"press.press.doctype.press_job.press_job.frappe.enqueue_doc",
-		new=foreground_enqueue_doc,
+		new=foreground_enqueue_doc_with_user("Administrator"),
 	)
 	@patch.object(VirtualMachine, "provision", new=successful_provision)
 	@patch.object(VirtualMachine, "sync", new=successful_sync)
@@ -193,7 +193,7 @@ class TestAPIServer(FrappeTestCase):
 
 	@patch(
 		"press.press.doctype.press_job.press_job.frappe.enqueue_doc",
-		new=foreground_enqueue_doc,
+		new=foreground_enqueue_doc_with_user("Administrator"),
 	)
 	@patch.object(VirtualMachine, "provision", new=successful_provision)
 	@patch.object(VirtualMachine, "sync", new=successful_sync)
