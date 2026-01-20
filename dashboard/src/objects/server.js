@@ -98,8 +98,8 @@ export default {
 			{
 				label: 'Database Server Plan',
 				fieldname: 'db_plan',
-				format(value) {
-					if (!value) return '';
+				format(value, row) {
+					if (!value || !row?.doc?.is_unified_server) return '';
 					return planTitle(value);
 				},
 			},
