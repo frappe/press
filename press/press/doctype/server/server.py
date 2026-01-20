@@ -115,7 +115,10 @@ class BaseServer(Document, TagHelpers):
 			query = query.where(Server.status == status)
 		else:
 			# Show only Active and Installing servers ignore pending (secondary server)
-			query = query.where(Server.status.isin(["Active", "Installing"]))
+			query = query.where(
+				Server.status.isin(["Active", "Installing", "Broken"])
+				| ((Server.status == "Pending") & (Server.is_secondary != 1))
+			)
 
 		query = query.where(Server.is_for_recovery != 1).where(Server.team == frappe.local.team().name)
 		results = query.run(as_dict=True)
