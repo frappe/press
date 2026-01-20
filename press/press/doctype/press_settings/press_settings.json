@@ -239,6 +239,11 @@
   "partnership_fee_inr",
   "section_break_dhzi",
   "drive_resource_link",
+  "frappe_school_authentication_section",
+  "school_url",
+  "school_api_key",
+  "column_break_uxxz",
+  "school_api_secret",
   "hybrid_server_tab",
   "hybrid_cluster",
   "hybrid_domain",
@@ -1559,11 +1564,35 @@
    "fieldtype": "Link",
    "label": "Default Server Plan Type",
    "options": "Server Plan Type"
+  },
+  {
+   "fieldname": "frappe_school_authentication_section",
+   "fieldtype": "Section Break",
+   "label": "Frappe School Authentication"
+  },
+  {
+   "fieldname": "school_url",
+   "fieldtype": "Data",
+   "label": "School URL"
+  },
+  {
+   "fieldname": "school_api_key",
+   "fieldtype": "Data",
+   "label": "School API Key"
+  },
+  {
+   "fieldname": "column_break_uxxz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "school_api_secret",
+   "fieldtype": "Password",
+   "label": "School API Secret"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-01-08 18:10:48.053078",
+ "modified": "2026-01-17 11:49:01.799269",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
@@ -1582,7 +1611,6 @@
  ],
  "quick_entry": 1,
  "row_format": "Dynamic",
- "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
