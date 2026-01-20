@@ -113,9 +113,7 @@ class Subscription(Document):
 
 			if doc.doctype == "Server" and doc.is_unified_server:
 				# Update database server plan for sanity in case of unified servers
-				database_server = frappe.get_doc("Database Server", doc.database_server)
-				database_server.plan = self.plan
-				database_server.save()
+				frappe.db.set_value("Database Server", doc.database_server, "plan", self.plan)
 
 		if not self.enabled and doc.plan:
 			doc.plan = ""
