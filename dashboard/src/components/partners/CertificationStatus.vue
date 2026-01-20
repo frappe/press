@@ -18,8 +18,10 @@ import { createResource } from 'frappe-ui';
 import ObjectList from '../ObjectList.vue';
 import { renderDialog } from '../../utils/components';
 import CertificateSummary from './CertificateSummary.vue';
+import { session } from '../../data/session';
 
 const show = ref(true);
+const $session = session || {};
 
 const certRequestList = createResource({
 	url: 'press.api.partner.get_certification_requests',
@@ -62,7 +64,7 @@ const requestList = computed(() => {
 		],
 		orderBy: 'creation desc',
 		onRowClick: (row) => {
-			if (row.summary) {
+			if (row.summary && $session.isSystemUser) {
 				return renderDialog(
 					h(CertificateSummary, {
 						modelValue: true,
