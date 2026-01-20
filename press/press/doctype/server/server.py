@@ -416,9 +416,9 @@ class BaseServer(Document, TagHelpers):
 				"group": "Application Server Actions",
 			},
 			{
-				"action": "Teardown Secondary Server",
-				"description": "Disable secondary server and turn off autoscaling.",
-				"button_label": "Teardown",
+				"action": "Disable Autoscaling",
+				"description": "Turn off autoscaling and remove the secondary application server.",
+				"button_label": "Disable",
 				"condition": (
 					self.status == "Active"
 					and self.doctype == "Server"
