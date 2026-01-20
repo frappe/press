@@ -47,6 +47,7 @@ export default {
 			'plan.price_inr as price_inr',
 			'cluster.image as cluster_image',
 			'cluster.title as cluster_title',
+			'is_unified_server',
 		],
 		searchField: 'title',
 		filterControls() {
@@ -99,7 +100,7 @@ export default {
 				label: 'Database Server Plan',
 				fieldname: 'db_plan',
 				format(value, row) {
-					if (!value || !row?.doc?.is_unified_server) return '';
+					if (!value || row.is_unified_server) return '';
 					return planTitle(value);
 				},
 			},
