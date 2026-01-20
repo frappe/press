@@ -405,19 +405,20 @@ class BaseServer(Document, TagHelpers):
 				"group": f"{server_type.title()} Actions",
 			},
 			{
-				"action": "Setup Secondary Server",
-				"description": "Setup a secondary application server to auto scale to during high loads",
+				"action": "Setup Autoscale",
+				"description": "Setup a secondary application server to autoscale to during high loads",
 				"button_label": "Setup",
 				"condition": self.status == "Active"
 				and self.doctype == "Server"
 				and not self.secondary_server
+				and not getattr(self, "is_unified_server", False)
 				and self.cluster in self._get_clusters_with_autoscale_support(),
 				"group": "Application Server Actions",
 			},
 			{
-				"action": "Teardown Secondary Server",
-				"description": "Disable secondary server and turn off auto-scaling.",
-				"button_label": "Teardown",
+				"action": "Disable Autoscaling",
+				"description": "Turn off autoscaling and remove the secondary application server.",
+				"button_label": "Disable",
 				"condition": (
 					self.status == "Active"
 					and self.doctype == "Server"
