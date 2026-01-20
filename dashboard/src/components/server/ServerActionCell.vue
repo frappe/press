@@ -52,7 +52,7 @@ function getServerActionHandler(action) {
 		'Rename server': onRenameServer,
 		'Drop server': onDropServer,
 		'Cleanup Server': onCleanupServer,
-		'Setup Autoscale': onSetupSecondaryServer,
+		'Enable Autoscale': onSetupSecondaryServer,
 		'Disable Autoscale': onTeardownSecondaryServer,
 		'Enable Performance Schema': onEnablePerformanceSchema,
 		'Disable Performance Schema': onDisablePerformanceSchema,
