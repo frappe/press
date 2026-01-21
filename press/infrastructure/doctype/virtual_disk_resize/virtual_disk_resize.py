@@ -275,21 +275,13 @@ class VirtualDiskResize(Document):
 
 	def reaffirm_old_filesystem_used(self, mountpoint: str):
 		"""Reaffirm file system usage using du"""
-<<<<<<< HEAD
-		output = self.ansible_run(f"du -sb {mountpoint}")["output"]
-=======
 		output = self.ansible_run(f"du -sx --block-size=1024 {mountpoint}")["output"]
->>>>>>> c3a568655 (fix(virtual-disk-resize): Don't count overlay stuff multiple times when checking the old filesystem usage)
 
 		if not output:
 			frappe.throw("Error occurred while fetching filesystem size")
 
 		size = float(output.split()[0])
-<<<<<<< HEAD
-		return size / 1024**3
-=======
 		return size / 1024**2
->>>>>>> c3a568655 (fix(virtual-disk-resize): Don't count overlay stuff multiple times when checking the old filesystem usage)
 
 	def set_old_filesystem_attributes(self, device, filesystem):
 		self.filesystem_mount_point = device["mountpoint"]
