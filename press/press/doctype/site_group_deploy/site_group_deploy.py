@@ -99,7 +99,7 @@ class SiteGroupDeploy(Document):
 			)
 
 		server_stats.sort(key=lambda x: -x["resource_ratio"])
-		return [server_stats[0]["name"]] if server_stats else None
+		return server_stats[0]["name"] if server_stats else None
 
 	def create_release_group(self):
 		from press.press.doctype.release_group.release_group import (
