@@ -76,14 +76,14 @@ class ServerFirewall:
 		"""
 		Remove duplicate entries from rules. This will not save the doc.
 		"""
-		rules_seen = []
-		rules = self.firewall_rules
-		for rule in rules:
+		rules_seen = set()
+		unique_rules = []
+		for rule in self.firewall_rules:
 			rule_tuple = (rule.source, rule.destination, rule.protocol, rule.action)
 			if rule_tuple not in rules_seen:
-				rules_seen.append(rule_tuple)
-			else:
-				self.firewall_rules.remove(rule)
+				rules_seen.add(rule_tuple)
+				unique_rules.append(rule)
+		self.firewall_rules = unique_rules
 
 	def validate_firewall_rules(self):
 		for rule in self.firewall_rules:
