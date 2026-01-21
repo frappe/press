@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 from datetime import timezone as tz
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 import frappe
 import requests
@@ -18,6 +18,8 @@ from press.api.bench import all as all_benches
 from press.api.site import protected
 from press.exceptions import MonitorServerDown
 from press.press.doctype.auto_scale_record.auto_scale_record import validate_scaling_schedule
+from press.press.doctype.cloud_provider.cloud_provider import get_cloud_providers
+from press.press.doctype.server_plan_type.server_plan_type import get_server_plan_types
 from press.press.doctype.site_plan.plan import Plan, filter_by_roles
 from press.press.doctype.team.team import get_child_team_members
 from press.utils import get_current_team
@@ -28,6 +30,13 @@ if TYPE_CHECKING:
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.server_plan.server_plan import ServerPlan
+
+
+class UnifiedServerDetails(TypedDict):
+	title: str
+	cluster: str
+	app_plan: str
+	auto_increase_storage: bool | None
 
 
 def poly_get_doc(doctypes, name):
@@ -188,6 +197,35 @@ def archive(name):
 def get_reclaimable_size(name):
 	server: Server = frappe.get_doc("Server", name)
 	return server.agent.get("server/reclaimable-size")
+
+
+@frappe.whitelist()
+def new_unified(server: UnifiedServerDetails):
+	team = get_current_team(get_doc=True)
+	if not team.enabled:
+		frappe.throw("You cannot create a new server because your account is disabled")
+
+	cluster: Cluster = frappe.get_doc("Cluster", server["cluster"])
+
+	app_plan: ServerPlan = frappe.get_doc("Server Plan", server["app_plan"])
+	if not cluster.check_machine_availability(app_plan.instance_type):
+		frappe.throw(
+			f"No machines of {app_plan.instance_type} are currently available in the {cluster.name} region"
+		)
+
+	auto_increase_storage = server.get("auto_increase_storage", False)
+
+	proxy_server = frappe.get_all(
+		"Proxy Server",
+		{"status": "Active", "cluster": cluster.name, "is_primary": True},
+		limit=1,
+	)[0]
+
+	cluster.proxy_server = proxy_server.get("name")
+	server_doc, database_server_doc, job = cluster.create_unified_server(
+		server["title"], app_plan, team=team.name, auto_increase_storage=auto_increase_storage
+	)
+	return {"server": server_doc.name, "database_server": database_server_doc.name, "job": job.name}
 
 
 @frappe.whitelist()
@@ -389,6 +427,8 @@ def calculate_swap(name):
 @protected(["Server", "Database Server"])
 @redis_cache(ttl=10 * 60)
 def analytics(name, query, timezone, duration, server_type=None):
+	# If the server type is of unified server, then just show server's metrics as application server
+	server_type = "Application Server" if server_type == "Unified Server" else server_type
 	mount_point = get_mount_point(name, server_type)
 	timespan, timegrain = get_timespan_timegrain(duration)
 
@@ -546,11 +586,85 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 def options():
 	if not get_current_team(get_doc=True).servers_enabled:
 		frappe.throw("Servers feature is not yet enabled on your account")
+
+	regions_filter = {"cloud_provider": ("!=", "Generic"), "public": True, "status": "Active"}
+	if (
+		(frappe.session and frappe.session.data and frappe.session.data.user_type)
+		or (
+			frappe.session
+			and frappe.session.user
+			and frappe.get_cached_value("User", frappe.session.user, "user_type")
+		)
+	) == "System User" or (
+		frappe.local and frappe.local.team() and frappe.local.team().hetzner_internal_user
+	):
+		regions_filter.pop("public", None)
+
 	regions = frappe.get_all(
 		"Cluster",
-		{"cloud_provider": ("!=", "Generic"), "public": True},
-		["name", "title", "image", "beta"],
+		regions_filter,
+		[
+			"name",
+			"title",
+			"image",
+			"beta",
+			"has_add_on_storage_support",
+			"cloud_provider",
+			"public",
+			"has_unified_server_support",
+			"default_app_server_plan",
+			"default_app_server_plan_type",
+			"default_db_server_plan",
+			"default_db_server_plan_type",
+			"by_default_select_unified_mode",
+		],
 	)
+
+	for r in regions:
+		r["title"] = r["title"] + " (Internal)" if not r["public"] else r["title"]
+
+	cloud_providers = get_cloud_providers()
+	"""
+	{
+		"Mumbai": {
+			"providers": ["AWS EC2", "OCI"],
+			"image": "<chose any cluster image with same title>",
+			"providers_data": {
+				"AWS EC2": {
+					"cluster_name": "aws-mumbai",
+					"title": "Amazon Web Services",
+					"provider_image": "...",
+					"has_add_on_storage_support": 1,
+					"has_unified_server_support": 1,
+				},
+			}
+		}
+	}
+	"""
+	regions_data = {}
+	for region in regions:
+		provider = region.get("cloud_provider")
+		record = regions_data.setdefault(region.title, {"providers": {}})
+		if region.image and not record.get("image"):
+			record["image"] = region.image
+
+		record["providers"][provider] = {
+			"cluster_name": region.name,
+			"title": cloud_providers[provider]["title"],
+			"provider_image": cloud_providers[provider]["image"],
+			"beta": region.get("beta", 0),
+			"has_add_on_storage_support": region.get("has_add_on_storage_support", 0),
+			"has_unified_server_support": region.get("has_unified_server_support", 0),
+			"default_app_server_plan": region.get("default_app_server_plan"),
+			"default_app_server_plan_type": region.get("default_app_server_plan_type"),
+			"default_db_server_plan": region.get("default_db_server_plan"),
+			"default_db_server_plan_type": region.get("default_db_server_plan_type"),
+			"by_default_select_unified_mode": region.get("by_default_select_unified_mode"),
+		}
+
+	default_server_plan_type = frappe.db.get_single_value("Press Settings", "default_server_plan_type")
+	server_plan_types = get_server_plan_types()
+
 	storage_plan = frappe.db.get_value(
 		"Server Storage Plan",
 		{"enabled": 1},
@@ -565,8 +679,11 @@ def options():
 	)
 	return {
 		"regions": regions,
-		"app_plans": plans("Server"),
-		"db_plans": plans("Database Server"),
+		"regions_data": regions_data,
+		"app_plans": plans("Server").get("plans", []),
+		"db_plans": plans("Database Server").get("plans", []),
+		"plan_types": server_plan_types,
+		"default_plan_type": default_server_plan_type,
 		"storage_plan": storage_plan,
 		"snapshot_plan": snapshot_plan,
 	}
@@ -622,18 +739,35 @@ def secondary_server_plans(
 
 
 @frappe.whitelist()
-def plans(name, cluster=None, platform=None):
-	# Removed default platform of x86_64;
-	# Still use x86_64 for new database servers
+def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_only_resize=False):  # noqa C901
 	filters = {"server_type": name}
 
 	if cluster:
 		filters.update({"cluster": cluster})
 
+	# Removed default platform of x86_64;
+	# Still use x86_64 for new database servers
 	if platform:
 		filters.update({"platform": platform})
 
-	return Plan.get_plans(
+	current_root_disk_size = None
+	if resource_name:
+		resource_details = frappe.db.get_value(
+			name, resource_name, ["virtual_machine", "provider"], as_dict=True
+		)
+
+		if resource_details.provider == "Hetzner":
+			current_root_disk_size = (
+				frappe.db.get_value("Virtual Machine", resource_details.virtual_machine, "root_disk_size")
+				if resource_details and resource_details.virtual_machine
+				else None
+			)
+
+			if current_root_disk_size is not None:
+				# Hide all plans that offer less disk than current disk size
+				filters.update({"disk": [">=", current_root_disk_size]})
+
+	plans = Plan.get_plans(
 		doctype="Server Plan",
 		fields=[
 			"name",
@@ -647,9 +781,43 @@ def plans(name, cluster=None, platform=None):
 			"instance_type",
 			"premium",
 			"platform",
+			"plan_type",
+			"allow_unified_server",
+			"machine_unavailable",
 		],
 		filters=filters,
 	)
+
+	default_server_plan_type = frappe.db.get_single_value("Press Settings", "default_server_plan_type")
+	for plan in plans:
+		if not plan.get("plan_type"):
+			plan["plan_type"] = default_server_plan_type
+
+		if (
+			(frappe.session and frappe.session.data and frappe.session.data.user_type)
+			or (
+				frappe.session
+				and frappe.session.user
+				and frappe.get_cached_value("User", frappe.session.user, "user_type")
+			)
+		) == "System User":
+			plan["allow_unified_server"] = plan.get("allow_unified_server", False)
+		else:
+			plan["allow_unified_server"] = frappe.local.team().allow_unified_servers and plan.get(
+				"allow_unified_server", False
+			)
+
+	server_plan_types = get_server_plan_types()
+
+	if cpu_and_memory_only_resize and current_root_disk_size is not None:
+		# Show only CPU/memory upgrades by normalizing disk size
+		for plan in plans:
+			plan["disk"] = current_root_disk_size
+
+	return {
+		"plans": plans,
+		"types": server_plan_types,
+	}
 
 
 @frappe.whitelist()

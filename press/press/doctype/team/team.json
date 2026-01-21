@@ -88,10 +88,13 @@
   "razorpay_enabled",
   "servers_enabled",
   "code_servers_enabled",
+  "hybrid_servers_enabled",
   "self_hosted_servers_enabled",
   "security_portal_enabled",
   "benches_enabled",
   "mpesa_enabled",
+  "hetzner_internal_user",
+  "allow_unified_servers",
   "discounts_section",
   "discounts",
   "is_us_eu",
@@ -135,7 +138,8 @@
    "fieldname": "stripe_customer_id",
    "fieldtype": "Data",
    "label": "Stripe Customer ID",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "country",
@@ -637,6 +641,24 @@
    "fieldname": "company_name",
    "fieldtype": "Data",
    "label": "Company Name"
+  },
+  {
+   "default": "0",
+   "fieldname": "hybrid_servers_enabled",
+   "fieldtype": "Check",
+   "label": "Hybrid Servers Enabled"
+  },
+  {
+   "default": "0",
+   "fieldname": "hetzner_internal_user",
+   "fieldtype": "Check",
+   "label": "Hetzner Internal User"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_unified_servers",
+   "fieldtype": "Check",
+   "label": "Allow Unified Servers"
   }
  ],
  "grid_page_length": 50,
@@ -702,7 +724,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2025-11-06 18:07:54.307229",
+ "modified": "2026-01-13 20:23:37.626353",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

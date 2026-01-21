@@ -154,6 +154,7 @@ class Site(Document, TagHelpers):
 		apps: DF.Table[SiteApp]
 		archive_failed: DF.Check
 		auto_update_last_triggered_on: DF.Datetime | None
+		backup_timeout: DF.Int
 		bench: DF.Link
 		cluster: DF.Link
 		communication_infos: DF.Table[CommunicationInfo]
@@ -337,11 +338,18 @@ class Site(Document, TagHelpers):
 		)
 		doc.update_information = self.get_update_information()
 		doc.actions = self.get_actions()
-		server = frappe.get_value("Server", self.server, ["ip", "proxy_server", "team", "title"], as_dict=1)
+		server = frappe.get_value(
+			"Server", self.server, ["ip", "proxy_server", "team", "title", "provider"], as_dict=1
+		)
 		doc.cluster = frappe.db.get_value("Cluster", self.cluster, ["title", "image"], as_dict=1)
 		doc.outbound_ip = server.ip
 		doc.server_team = server.team
 		doc.server_title = server.title
+		doc.server_provider = server.provider
+		doc.plan_provider = server.provider
+		if not frappe.db.exists("Cloud Provider", server.provider):
+			# fallback for unlisted providers (Scaleway, Generic) to show available plans
+			doc.plan_provider = "AWS EC2"
 		doc.inbound_ip = self.inbound_ip
 		doc.is_dedicated_server = is_dedicated_server(self.server)
 		doc.suspension_reason = (
@@ -2449,7 +2457,10 @@ class Site(Document, TagHelpers):
 		if team.payment_mode == "Paid By Partner" and team.billing_team:
 			team = frappe.get_doc("Team", team.billing_team)
 
-		if not (team.default_payment_method or team.get_balance()):
+		trial_plans = frappe.get_all("Site Plan", {"is_trial_plan": 1, "enabled": 1}, pluck="name")
+		if (
+			not (team.default_payment_method or team.get_balance()) and self.plan in trial_plans
+		) or not team.payment_mode:
 			frappe.throw(
 				"Cannot change plan because you haven't added a card and not have enough balance",
 				CannotChangePlan,

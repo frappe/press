@@ -185,7 +185,7 @@ const downloadCSV = async () => {
 				v-if="props?.columns?.length || props.data?.length"
 				class="border-separate border-spacing-0"
 			>
-				<thead class="sticky top-0 bg-gray-50">
+				<thead class="sticky top-0 z-10 bg-gray-50">
 					<tr
 						v-for="headerGroup in table.getHeaderGroups()"
 						:key="headerGroup.id"

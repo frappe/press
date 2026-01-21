@@ -748,6 +748,7 @@ class ReleaseGroup(Document, TagHelpers):
 				"environment_variables": environment_variables,
 				"requires_arm_build": requires_arm_build,
 				"requires_intel_build": requires_intel_build,
+				"build_token": frappe.generate_hash(),
 			}
 		)
 
@@ -1830,3 +1831,22 @@ def add_public_servers_to_public_groups():
 			rg.reload()
 			rg.append("servers", {"server": server, "default": False})
 			rg.save()
+
+
+def get_restricted_server_names():
+	restricted_release_group_names = frappe.db.get_all(
+		"Site Plan Release Group",
+		pluck="release_group",
+		filters={"parenttype": "Site Plan", "parentfield": "release_groups"},
+		distinct=True,
+	)
+	return frappe.db.get_all(
+		"Release Group Server",
+		pluck="server",
+		filters={
+			"parenttype": "Release Group",
+			"parentfield": "servers",
+			"parent": ("in", restricted_release_group_names),
+		},
+		distinct=True,
+	)
