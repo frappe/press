@@ -150,7 +150,7 @@ class NFSVolumeDetachment(Document, AutoScaleStepFailureHandler, StepHandler):
 			},
 			"job",
 		)
-		self.handle_agent_job(step, job)
+		self.handle_agent_job(step, job, poll=True)
 
 	def umount_from_primary_server(self, step: "NFSVolumeDetachmentStep") -> None:
 		"""Umount /shared from primary server and remove from fstab"""

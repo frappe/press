@@ -761,7 +761,7 @@
     "parent": "Create Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.ping_ansible()\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Ping Server\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.ping_ansible()\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Ping Server\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n\nvirtual_machine = frappe.get_doc(\"Virtual Machine\", server.virtual_machine)\n\nresult = (plays and plays[0].status == \"Success\" and virtual_machine.private_ip_address != '', False)\n",
     "step_name": "Wait for Server to be accessible",
     "wait_until_true": 1
    },
@@ -854,6 +854,9 @@
     "wait_until_true": 0
    },
    {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "play_statuses = frappe.db.get_all(\"Ansible Play\", filters={\n    \"server_type\": doc.server_type,\n    \"server\": doc.server,\n    \"play\": (\"in\", [\"Install Docker\", \"Setup MariaDB Mount Dependency\"])\n}, pluck=\"status\")\n\nall_completed = True\nis_failure = False\n\nfor status in play_statuses:\n    if status == \"Failure\":\n        is_failure = True\n        \n    all_completed = all_completed and status == \"Success\"\n    \nif all_completed:\n    result = (True, False)\nelif is_failure:\n    result = (False, True)\nelse:\n    result = (False, False)",
     "step_name": "Wait For Dependent Plays To Finish (Hetzner)",
     "wait_until_true": 1

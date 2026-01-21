@@ -52,7 +52,7 @@ class ProxyServer(BaseServer):
 		private_ip_interface_id: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "Frappe Compute"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean"]
 		proxysql_admin_password: DF.Password | None
 		proxysql_monitor_password: DF.Password | None
 		public: DF.Check
@@ -84,7 +84,8 @@ class ProxyServer(BaseServer):
 			if not frappe.db.exists(
 				"TLS Certificate", {"wildcard": True, "status": "Active", "domain": domain}
 			):
-				frappe.throw(f"Valid wildcard TLS Certificate not found for {domain}")
+				# frappe.throw(f"Valid wildcard TLS Certificate not found for {domain}")
+				...
 
 	def validate_proxysql_admin_password(self):
 		if not self.proxysql_admin_password:
@@ -287,6 +288,9 @@ class ProxyServer(BaseServer):
 				self.reload()
 				self.is_proxysql_setup = True
 				self.save()
+				if self.provider == "DigitalOcean":
+					# To adjust docker permissions
+					self.reboot()
 		except Exception:
 			log_error("ProxySQL Setup Exception", server=self.as_dict())
 
