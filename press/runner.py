@@ -190,6 +190,8 @@ class Ansible:
 
 		self.sources = f"{self.host},"
 		self.inventory = InventoryManager(loader=self.loader, sources=self.sources)
+		self.inventory.get_host(self.host).set_variable("ansible_port", port)
+
 		self.variable_manager = VariableManager(loader=self.loader, inventory=self.inventory)
 
 		self.callback = AnsibleCallback()
