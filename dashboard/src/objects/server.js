@@ -292,6 +292,23 @@ export default {
 				},
 			},
 			{
+				label: 'Firewall',
+				icon: icon('shield'),
+				condition: (server) => {
+					return server.doc?.status !== 'Archived';
+				},
+				route: 'firewall',
+				type: 'Component',
+				component: defineAsyncComponent(
+					() => import('../components/server/ServerFirewall.vue'),
+				),
+				props: (server) => {
+					return {
+						id: server.doc.name,
+					};
+				},
+			},
+			{
 				label: 'Sites',
 				icon: icon(LucideAppWindow),
 				condition: (server) => {
