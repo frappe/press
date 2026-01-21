@@ -219,6 +219,14 @@
    "label": "ARM Build",
    "options": "Deploy Candidate Build",
    "read_only": 1
+<<<<<<< HEAD
+=======
+  },
+  {
+   "fieldname": "build_token",
+   "fieldtype": "Data",
+   "label": "Build Token"
+>>>>>>> adc7f577f (fix(asset-store): Set build token to data field)
   }
  ],
  "links": [
@@ -235,7 +243,11 @@
    "link_fieldname": "deploy_candidate"
   }
  ],
+<<<<<<< HEAD
  "modified": "2025-05-27 22:02:19.465983",
+=======
+ "modified": "2026-01-21 13:27:04.037360",
+>>>>>>> adc7f577f (fix(asset-store): Set build token to data field)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

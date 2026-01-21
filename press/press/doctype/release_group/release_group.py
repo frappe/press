@@ -747,6 +747,10 @@ class ReleaseGroup(Document, TagHelpers):
 				"environment_variables": environment_variables,
 				"requires_arm_build": requires_arm_build,
 				"requires_intel_build": requires_intel_build,
+<<<<<<< HEAD
+=======
+				"build_token": frappe.generate_hash(length=10),
+>>>>>>> adc7f577f (fix(asset-store): Set build token to data field)
 			}
 		)
 

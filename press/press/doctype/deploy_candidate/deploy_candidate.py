@@ -67,6 +67,10 @@ class DeployCandidate(Document):
 
 		apps: DF.Table[DeployCandidateApp]
 		arm_build: DF.Link | None
+<<<<<<< HEAD
+=======
+		build_token: DF.Data | None
+>>>>>>> adc7f577f (fix(asset-store): Set build token to data field)
 		compress_app_cache: DF.Check
 		dependencies: DF.Table[DeployCandidateDependency]
 		environment_variables: DF.Table[DeployCandidateVariable]

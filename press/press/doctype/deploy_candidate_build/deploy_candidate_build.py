@@ -355,6 +355,12 @@ class DeployCandidateBuild(Document):
 					"remove_distutils": not is_distutils_supported,
 					"requires_version_based_get_pip": requires_version_based_get_pip,
 					"is_arm_build": self.platform == "arm64",
+<<<<<<< HEAD
+=======
+					"use_asset_store": frappe.db.get_single_value("Press Settings", "use_asset_store"),
+					"build_token": self.candidate.build_token,
+					"site_url": frappe.utils.get_url(),
+>>>>>>> adc7f577f (fix(asset-store): Set build token to data field)
 				},
 				is_path=True,
 			)
