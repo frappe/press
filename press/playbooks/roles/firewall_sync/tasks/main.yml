@@ -26,3 +26,7 @@
     protocol: "{{ item.protocol }}"
     jump: "{{ item.action }}"
   loop: "{{ rules }}"
+
+- name: Persist rules across reboots
+  ansible.builtin.shell: iptables-save > /etc/iptables/rules.v4
+  become: true
