@@ -256,7 +256,7 @@ RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=10
 =======
 
 {% if app.use_cached and use_asset_store %}
-RUN --mount=type=secret,id=build_token \
+RUN --mount=type=secret,id=build_token,mode=0444 \
     --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 \
     --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
     BUILD_TOKEN="$(cat /run/secrets/build_token)" && python${PYTHON_VERSION} /usr/local/bin/get_cached_app.py \
