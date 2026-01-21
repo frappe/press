@@ -7,6 +7,6 @@
   roles:
     - role: essentials
     - role: user
-    - role: nat_iptables
+    - role: nat
     - role: node_exporter
     - role: clamav
