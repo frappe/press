@@ -111,11 +111,19 @@ def upload_asset():
 @frappe.whitelist(allow_guest=True)
 def get_credentials() -> AssetStoreCredentials:
 	"""Get asset store credentials if it is requested from a build server"""
-	request_from_build_server = frappe.db.get_value(
-		"Server", {"ip": frappe.request.remote_addr, "use_for_build": True}
+	build_token = frappe.request.headers.get("build-token")
+	if not build_token:
+		frappe.throw("Build token is required to access asset store credentials", frappe.PermissionError)
+
+	deploy_candidate = frappe.db.get_value("Deploy Candidate", {"build_token": build_token})
+	if not deploy_candidate:
+		frappe.throw("Invalid build token used", frappe.PermissionError)
+
+	running_build = frappe.db.get_value(
+		"Deploy Candidate Build", {"candidate": deploy_candidate, "status": "Running"}
 	)
 
-	if not request_from_build_server:
-		frappe.throw("Not authorized to access asset store credentials", frappe.PermissionError)
+	if not running_build:
+		frappe.throw("Expired token used", frappe.PermissionError)
 
 	return _get_asset_store_credentials()

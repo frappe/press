@@ -15,6 +15,7 @@ from bench.cli import change_working_directory
 
 APP_NAME = sys.argv[1]
 APP_HASH = sys.argv[2]
+BUILD_TOKEN = sys.argv[3]
 
 
 class AssetStoreCredentials(TypedDict):
@@ -27,9 +28,10 @@ class AssetStoreCredentials(TypedDict):
 
 def get_asset_store_credentials() -> AssetStoreCredentials:
 	"""Return asset store credentials from remote api to not make it part of the docker image"""
-	return requests.get("https://cloud.frappe.io/api/method/press.api.assets.get_credentials").json()[
-		"message"
-	]
+	return requests.get(
+		"https://cloud.frappe.io/api/method/press.api.assets.get_credentials",
+		headers={"build-token": BUILD_TOKEN},
+	).json()["message"]
 
 
 def check_existing_asset_in_s3(credentials: AssetStoreCredentials, file_name: str) -> bool:
