@@ -50,7 +50,7 @@ def _get_plans(session: "CloudSession") -> list[str]:
 	"""Fetch available site plans."""
 	resp = session.post("press.api.site.get_site_plans", json={}) or []
 	items = resp if isinstance(resp, list) else resp.get("message", []) if isinstance(resp, dict) else []
-	return [p.get("name") for p in items if isinstance(p, dict) and p.get("name")]
+	return [name for p in items if isinstance(p, dict) and (name := p.get("name")) is not None]
 
 
 def _run_doc_method(
@@ -115,7 +115,9 @@ def new(
 
 	# Validate bench
 	benches = session.get("press.api.bench.all") or []
-	bench_names = [b.get("name") for b in benches if isinstance(b, dict) and b.get("name")]
+	bench_names: list[str] = [
+		name for b in benches if isinstance(b, dict) and (name := b.get("name")) is not None
+	]
 	if bench not in bench_names:
 		Print.error(console, f"Bench '{bench}' not found. Available: {', '.join(bench_names) or 'none'}")
 		return
@@ -142,7 +144,7 @@ def new(
 		Print.error(console, f"Invalid plan '{plan}'. Available: {', '.join(available)}")
 		return
 
-	payload = {
+	payload: dict[str, object] = {
 		"apps": apps or [],
 		"cluster": cluster,  # Include cluster to avoid backend defaulting to Press Settings
 		"domain": DOMAIN,

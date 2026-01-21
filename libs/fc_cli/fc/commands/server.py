@@ -171,7 +171,7 @@ def show_plan(
 			Print.info(console, f"Debug: normalized plans count: {len(plan_names)}")
 			Print.info(console, f"Debug: first plan names: {plan_names[:10]}")
 			needle_family = plan.split("-", 1)[0]
-			candidates = [n for n in plan_names if needle_family and needle_family in n]
+			candidates = [n for n in plan_names if n is not None and needle_family and needle_family in n]
 			if candidates:
 				Print.info(console, f"Debug: candidate plan names: {candidates[:10]}")
 			Print.error(console, f"Plan '{plan}' not found for server '{name}'")
@@ -359,9 +359,15 @@ def create_server(  # noqa: C901
 			return
 
 		# Validate inputs
-		regions = [r.get("name") for r in options.get("regions", []) if isinstance(r, dict)]
+		regions: list[str] = [
+			name
+			for r in options.get("regions", [])
+			if isinstance(r, dict) and (name := r.get("name")) is not None
+		]
 		app_plans_list = options.get("app_plans", [])
-		app_plan_names = [p.get("name") for p in app_plans_list if isinstance(p, dict)]
+		app_plan_names: list[str] = [
+			name for p in app_plans_list if isinstance(p, dict) and (name := p.get("name")) is not None
+		]
 
 		if err := _validate_in_list(cluster, regions, "Cluster"):
 			Print.error(console, err)
