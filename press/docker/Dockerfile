@@ -259,6 +259,7 @@ RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=10
         {{ app.app }} \
         {{ app.hash }} \
         {{ build_token }} \
+        {{ site_url }} \
         `#stage-apps-{{ app.app }}`
 >>>>>>> 8236e2a19 (feat(asset-store): Authenticate using tmp build token)
 {% else %}
