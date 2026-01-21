@@ -1,0 +1,206 @@
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
+import tarfile
+from io import BytesIO
+from typing import TypedDict
+
+import boto3
+import botocore.exceptions
+import requests
+from bench.cli import change_working_directory
+
+APP_NAME = sys.argv[1]
+APP_HASH = sys.argv[2]
+BUILD_TOKEN = sys.argv[3]
+SITE_URL = sys.argv[4]
+
+
+class AssetStoreCredentials(TypedDict):
+	secret_access_key: str
+	access_key: str
+	region_name: str
+	endpoint_url: str
+	bucket_name: str
+
+
+def get_asset_store_credentials() -> AssetStoreCredentials:
+	"""Return asset store credentials from remote api to not make it part of the docker image"""
+	return requests.get(
+		f"{SITE_URL}/api/method/press.api.assets.get_credentials",
+		headers={"build-token": BUILD_TOKEN},
+	).json()["message"]
+
+
+def check_existing_asset_in_s3(credentials: AssetStoreCredentials, file_name: str) -> bool:
+	"""Check if asset with this commit hash already exists in S3"""
+	client = boto3.client(
+		"s3",
+		region_name=credentials["region_name"],
+		endpoint_url=credentials["endpoint_url"],
+		aws_access_key_id=credentials["access_key"],
+		aws_secret_access_key=credentials["secret_access_key"],
+	)
+
+	try:
+		client.head_object(Bucket=credentials["bucket_name"], Key=file_name)
+		return True
+	except botocore.exceptions.ClientError:
+		return False
+
+
+def upload_assets_to_store(credentials: AssetStoreCredentials, file_obj: BytesIO, file_name: str) -> None:
+	"""Upload asset stream to store"""
+	client = boto3.client(
+		"s3",
+		region_name=credentials["region_name"],
+		endpoint_url=credentials["endpoint_url"],
+		aws_access_key_id=credentials["access_key"],
+		aws_secret_access_key=credentials["secret_access_key"],
+	)
+
+	client.upload_fileobj(
+		Fileobj=file_obj,
+		Bucket=credentials["bucket_name"],
+		Key=file_name,
+		ExtraArgs={
+			"ContentType": "application/x-tar",
+		},
+	)
+
+
+def download_asset_from_store(credentials: AssetStoreCredentials, file_name: str) -> BytesIO:
+	"""Download asset from store and return it as a BytesIO stream."""
+	client = boto3.client(
+		"s3",
+		region_name=credentials["region_name"],
+		endpoint_url=credentials["endpoint_url"],
+		aws_access_key_id=credentials["access_key"],
+		aws_secret_access_key=credentials["secret_access_key"],
+	)
+
+	file_stream = BytesIO()
+
+	client.download_fileobj(
+		Bucket=credentials["bucket_name"],
+		Key=file_name,
+		Fileobj=file_stream,
+	)
+
+	file_stream.seek(0)
+	return file_stream
+
+
+def _write_assets(file: os.DirEntry, assets_file: str, relative_path: str):
+	if os.path.exists(assets_file):
+		with open(assets_file, "r+") as f:
+			data = json.load(f)
+			key_parts = file.name.rsplit(".", maxsplit=2)
+			if len(key_parts) > 2:
+				key_parts.pop(-2)  # Remove hash part
+			key = ".".join(key_parts)
+
+			if key not in data:
+				data[key] = relative_path
+
+			f.seek(0)
+			json.dump(data, f, indent=4)
+			f.truncate()
+	else:
+		with open(assets_file, "w") as f:
+			json.dump({file.name: relative_path}, f, indent=4)
+
+
+def _write_js_and_css_assets(app: str, dist_folder: str) -> None:
+	assets_file = os.path.join(os.getcwd(), "sites", "assets", "assets.json")
+	assets_rtl_file = os.path.join(os.getcwd(), "sites", "assets", "assets-rtl.json")
+
+	for assets in ["js", "css"]:
+		for file in os.scandir(os.path.join(dist_folder, assets)):
+			if file.name.endswith(".map"):
+				continue
+
+			relative_path = f"/assets/{app}/dist/{assets}/{file.name}"
+			_write_assets(file, assets_file, relative_path)
+
+	for file in os.scandir(os.path.join(dist_folder, "css-rtl")):
+		if file.name.endswith(".map"):
+			continue
+
+		relative_path = f"/assets/{app}/dist/css-rtl/{file.name}"
+		_write_assets(file, assets_rtl_file, relative_path)
+
+
+def _update_assets_json(app: str) -> None:
+	"""Update assets.json to include the current app's assets."""
+	change_working_directory()
+
+	base_assets_path = os.path.join(os.getcwd(), "sites", "assets")
+	dist_folder = os.path.join(base_assets_path, app, "dist")
+
+	if not os.path.exists(dist_folder):
+		# We don't need to update assets.json if dist folder doesn't exist
+		return
+
+	_write_js_and_css_assets(app, dist_folder)
+
+
+def tar_and_compress_folder(folder_path: str, output_filename: str) -> str:
+	"""Tars and compresses the given folder into a .tar.gz file."""
+	with tarfile.open(output_filename, "w:gz") as tar:
+		tar.add(folder_path, arcname=os.path.basename(folder_path))
+	return output_filename
+
+
+def extract_and_flatten_tar(file_stream: BytesIO) -> dict[str, bytes]:
+	"""Flatten tarfile in the correct assets directory"""
+	change_working_directory()
+
+	with tarfile.open(fileobj=file_stream, mode="r:*") as tar:
+		tar.extractall(path=os.path.join(os.getcwd(), "sites", "assets"), filter="fully_trusted")
+
+
+def build_assets(app: str) -> str:
+	"""Build assets for the app using the app name and return the path to assets"""
+	change_working_directory()
+	subprocess.run(["bench", "build", "--app", app], check=True)
+	return os.path.join(os.getcwd(), "sites", "assets", app)
+
+
+def main():
+	"""Get cached app assets or build and upload them"""
+	if not APP_NAME or not APP_HASH:
+		return
+
+	app_path = (
+		f"file:///home/frappe/context/apps/{APP_NAME}"
+		if os.getenv("FRAPPE_DOCKER_BUILD") == "True"
+		else APP_NAME
+	)
+
+	subprocess.run(["bench", "get-app", app_path, "--skip-assets"], check=True)
+
+	credentials = get_asset_store_credentials()
+	asset_filename = f"{APP_NAME}.{APP_HASH}.tar.gz"
+
+	if check_existing_asset_in_s3(credentials, asset_filename):
+		print(f"Assets {asset_filename} found in store. Extracting and setting up...")
+		file_stream = download_asset_from_store(credentials, asset_filename)
+		extract_and_flatten_tar(file_stream)
+		_update_assets_json(APP_NAME)
+	else:
+		print(f"Assets {asset_filename} not found in store. Building and uploading...")
+		assets_folder = build_assets(APP_NAME)
+		tar_file = tar_and_compress_folder(assets_folder, asset_filename)
+
+		with open(tar_file, "rb") as f:
+			upload_assets_to_store(credentials, f, asset_filename)
+
+		os.remove(tar_file)
+
+
+if __name__ == "__main__":
+	main()

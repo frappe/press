@@ -198,7 +198,6 @@ ENV PATH "$PATH:/home/frappe/.nvm/versions/node/v${NODE_VERSION}/bin"
 # Install Yarn
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 npm install -g yarn `#stage-pre-yarn`
 
-
 # Install Bench
 ENV PATH "$PATH:/home/frappe/.local/bin"
 
@@ -228,6 +227,11 @@ RUN `#stage-bench-env`
 ENV {{v.key}} {{ v.value }}
 {% endfor %}
 
+# Install Boto and Requests for Asset store access
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 \
+  python${PYTHON_VERSION} -m pip install boto3==1.34.162 botocore==1.34.162 requests==2.32.5 \
+  `#stage-pre-Configure Asset Store`
+
 # Install Frappe app
 RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,source=apps/frappe,target=/home/frappe/context/apps/frappe bench init --python /usr/bin/python${PYTHON_VERSION} --no-backups --frappe-path file:///home/frappe/context/apps/frappe frappe-bench `#stage-apps-frappe`
 WORKDIR /home/frappe/frappe-bench
@@ -239,26 +243,31 @@ COPY --chown=frappe:frappe redis /home/frappe/frappe-bench/redis
 COPY --chown=frappe:frappe .vimrc /home/frappe/.vimrc
 COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
 
+# Pass control of get-app to a python file
+COPY get_cached_app.py /usr/local/bin/get_cached_app.py
+RUN chmod +x /usr/local/bin/get_cached_app.py
+
 # Install other apps
 {% for app in doc.apps %}
 {% if app.app != "frappe"%}
 
-{% if app.app != "crm" %}
+
+{% if app.use_cached and use_asset_store %}
 RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 \
-  --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
-  bench get-app file:///home/frappe/context/apps/{{ app.app }} \
-    {% if app.use_cached %}
-    # Bench get-app flags to use get-app cache
-    --cache-key {{ app.hash }} {% if doc.compress_app_cache %}--compress-artifacts{% endif %} \
-    {% endif %}
-  `#stage-apps-{{ app.app }}`
+    --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
+    python${PYTHON_VERSION} /usr/local/bin/get_cached_app.py \
+        {{ app.app }} \
+        {{ app.hash }} \
+        {{ build_token }} \
+        {{ site_url }} \
+        `#stage-apps-{{ app.app }}`
 {% else %}
-
-RUN --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
-  bench get-app file:///home/frappe/context/apps/{{ app.app }} \
-  `#stage-apps-{{ app.app }}`
-
+RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 \
+    --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
+    bench get-app file:///home/frappe/context/apps/{{ app.app }} \
+    `#stage-apps-{{ app.app }}`
 {% endif %}
+
 
 {% endif %}
 {% endfor %}
