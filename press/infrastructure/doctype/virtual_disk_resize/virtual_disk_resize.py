@@ -275,13 +275,13 @@ class VirtualDiskResize(Document):
 
 	def reaffirm_old_filesystem_used(self, mountpoint: str):
 		"""Reaffirm file system usage using du"""
-		output = self.ansible_run(f"du -sb {mountpoint}")["output"]
+		output = self.ansible_run(f"du -sx --block-size=1024 {mountpoint}")["output"]
 
 		if not output:
 			frappe.throw("Error occurred while fetching filesystem size")
 
 		size = float(output.split()[0])
-		return size / 1024**3
+		return size / 1024**2
 
 	def set_old_filesystem_attributes(self, device, filesystem):
 		self.filesystem_mount_point = device["mountpoint"]
@@ -452,6 +452,7 @@ class VirtualDiskResize(Document):
 		server.copy_files(
 			source=self.filesystem_mount_point,
 			destination=self.new_filesystem_temporary_mount_point,
+			# extra_options="-x",
 		)
 		return StepStatus.Success
 
