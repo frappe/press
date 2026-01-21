@@ -992,12 +992,12 @@ class DeployCandidateBuild(Document):
 			},
 			"no_cache": self.no_cache,
 			"no_push": self.no_push,
+			"build_token": self.candidate.build_token,
 			# Next few values are not used by agent but are
 			# read in `process_run_build`
 			"deploy_candidate_build": self.name,
 			"deploy_after_build": self.deploy_after_build,
 			"deploy_on_server": self.deploy_on_server,
-			"build_token": self.candidate.build_token,
 		}
 		if self.platform == "arm64":
 			build_parameters.update({"platform": self.platform})
