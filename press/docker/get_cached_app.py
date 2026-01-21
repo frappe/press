@@ -17,6 +17,7 @@ APP_NAME = sys.argv[1]
 APP_HASH = sys.argv[2]
 BUILD_TOKEN = sys.argv[3]
 SITE_URL = sys.argv[4]
+UPLOAD_ASSETS = bool(sys.argv[5])
 
 
 class AssetStoreCredentials(TypedDict):
@@ -194,12 +195,14 @@ def main():
 	else:
 		print(f"Assets {asset_filename} not found in store. Building and uploading...")
 		assets_folder = build_assets(APP_NAME)
-		tar_file = tar_and_compress_folder(assets_folder, asset_filename)
 
-		with open(tar_file, "rb") as f:
-			upload_assets_to_store(credentials, f, asset_filename)
+		if UPLOAD_ASSETS:
+			tar_file = tar_and_compress_folder(assets_folder, asset_filename)
 
-		os.remove(tar_file)
+			with open(tar_file, "rb") as f:
+				upload_assets_to_store(credentials, f, asset_filename)
+
+			os.remove(tar_file)
 
 
 if __name__ == "__main__":
