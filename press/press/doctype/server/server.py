@@ -39,6 +39,7 @@ from press.press.doctype.auto_scale_record.auto_scale_record import (
 )
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
+from press.press.doctype.server.firewall import ServerFirewall
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
@@ -87,7 +88,7 @@ MARIADB_DATA_MNT_POINT = "/opt/volumes/mariadb"
 BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
 
 
-class BaseServer(Document, TagHelpers):
+class BaseServer(Document, ServerFirewall, TagHelpers):
 	dashboard_fields = (
 		"title",
 		"plan",
@@ -106,6 +107,8 @@ class BaseServer(Document, TagHelpers):
 		"is_monitoring_disabled",
 		"is_provisioning_press_job_completed",
 		"is_unified_server",
+		"firewall_enabled",
+		"firewall_rules",
 	)
 
 	@staticmethod
@@ -509,6 +512,9 @@ class BaseServer(Document, TagHelpers):
 		self.name = f"{self.hostname}.{self.domain}"
 		if self.doctype in ["Database Server", "Server", "Proxy Server"] and self.is_self_hosted:
 			self.name = f"{self.hostname}.{self.self_hosted_server_domain}"
+
+	def before_validate(self):
+		self.deduplicate_firewall_rules()
 
 	def validate(self):
 		self.validate_cluster()
@@ -1976,7 +1982,7 @@ class BaseServer(Document, TagHelpers):
 		response = prometheus_query(
 			f"""predict_linear(
 node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}[3h], 6*3600
-			)""",
+            )""",
 			lambda x: x["mountpoint"],
 			"Asia/Kolkata",
 			120,
@@ -2054,14 +2060,14 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		Calculate required disk increase for servers and handle notifications accordingly.
 
 		- For servers with `auto_increase_storage` enabled:
-			- Compute the required storage increase.
-			- Automatically apply the increase.
-			- Send an email notification about the auto-added storage.
+		    - Compute the required storage increase.
+		    - Automatically apply the increase.
+		    - Send an email notification about the auto-added storage.
 
 		- For servers with `auto_increase_storage` disabled:
-			- If disk usage exceeds 90%, send a warning email.
-			- We have also sent them emails at 80% if they haven't enabled auto add on yet then send here again.
-			- Notify the user to manually increase disk space.
+		    - If disk usage exceeds 90%, send a warning email.
+		    - We have also sent them emails at 80% if they haven't enabled auto add on yet then send here again.
+		    - Notify the user to manually increase disk space.
 		"""
 
 		buffer = self.size_to_increase_by_for_20_percent_available(mountpoint)
@@ -2375,6 +2381,7 @@ class Server(BaseServer):
 		from press.press.doctype.auto_scale_trigger.auto_scale_trigger import AutoScaleTrigger
 		from press.press.doctype.communication_info.communication_info import CommunicationInfo
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
+		from press.press.doctype.server_firewall_rule.server_firewall_rule import ServerFirewallRule
 		from press.press.doctype.server_mount.server_mount import ServerMount
 
 		agent_password: DF.Password | None
@@ -2390,6 +2397,8 @@ class Server(BaseServer):
 		disable_agent_job_auto_retry: DF.Check
 		domain: DF.Link | None
 		enable_logical_replication_during_site_update: DF.Check
+		firewall_enabled: DF.Check
+		firewall_rules: DF.Table[ServerFirewallRule]
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
 		halt_agent_jobs: DF.Check
@@ -2471,6 +2480,8 @@ class Server(BaseServer):
 			self.managed_database_service = ""
 
 	def on_update(self):
+		self.sync_firewall()
+
 		# If Database Server is changed for the server then change it for all the benches
 		if not self.is_new() and (
 			self.has_value_changed("database_server") or self.has_value_changed("managed_database_service")
@@ -3291,12 +3302,12 @@ class Server(BaseServer):
 	def validate_scale(self):
 		"""
 		Check if the server can auto scale, the following parameters before creating a scale record
-			- Benches being modified
-			- Server is configured for auto scale.
-			- Was the last auto scale modified before the cool of period (don't create new auto scale).
-			- There is a auto scale operation running on the server.
-			- There are no active sites on the server.
-			- Check if there are active deployments on primary server
+		    - Benches being modified
+		    - Server is configured for auto scale.
+		    - Was the last auto scale modified before the cool of period (don't create new auto scale).
+		    - There is a auto scale operation running on the server.
+		    - There are no active sites on the server.
+		    - Check if there are active deployments on primary server
 		"""
 		if not self.can_scale:
 			frappe.throw("Server is not configured for auto scaling", frappe.ValidationError)
@@ -3424,26 +3435,6 @@ class Server(BaseServer):
 		auto_scale_record = self._create_auto_scale_record(action="Scale Down")
 		auto_scale_record.is_automatically_triggered = is_automatically_triggered
 		auto_scale_record.insert()
-
-	@frappe.whitelist()
-	def setup_firewall(self):
-		self.agent.setup_firewall()
-
-	@frappe.whitelist()
-	def teardown_firewall(self):
-		self.agent.teardown_firewall()
-
-	@frappe.whitelist()
-	def enable_firewall(self):
-		self.agent.enable_firewall()
-
-	@frappe.whitelist()
-	def disable_firewall(self):
-		self.agent.disable_firewall()
-
-	@frappe.whitelist()
-	def firewall_status(self):
-		return self.agent.firewall_status()
 
 	@property
 	def can_scale(self) -> bool:

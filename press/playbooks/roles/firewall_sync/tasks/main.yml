@@ -1,0 +1,31 @@
+---
+- name: Show enabled value
+  debug:
+    msg: "enabled={{ enabled }} (type={{ enabled | type_debug }})"
+
+- name: Enable Firewall
+  ansible.builtin.iptables:
+    chain: INPUT
+    jump: "{{ chain_main }}"
+    state: present
+  when: enabled | lower == "true"
+
+- name: Disable Firewall
+  ansible.builtin.iptables:
+    chain: INPUT
+    jump: "{{ chain_main }}"
+    state: absent
+  when: enabled | lower != "true"
+
+- name: Clear Existing Rules
+  ansible.builtin.iptables:
+    chain: "{{ chain_main }}"
+    flush: yes
+
+- name: Sync Rules
+  ansible.builtin.iptables:
+    chain: "{{ chain_main }}"
+    source: "{{ item.source }}"
+    destination: "{{ item.destination }}"
+    jump: "{{ item.action }}"
+  loop: "{{ rules }}"
