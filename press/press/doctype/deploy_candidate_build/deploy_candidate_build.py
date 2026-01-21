@@ -379,7 +379,7 @@ class DeployCandidateBuild(Document):
 					"requires_version_based_get_pip": requires_version_based_get_pip,
 					"is_arm_build": self.platform == "arm64",
 					"use_asset_store": frappe.db.get_single_value("Press Settings", "use_asset_store"),
-					"build_token": self.candidate.get_password("build_token"),
+					"build_token": self.candidate.build_token,
 					"site_url": frappe.utils.get_url(),
 				},
 				is_path=True,
