@@ -22,6 +22,7 @@ from press.press.doctype.telegram_message.telegram_message import TelegramMessag
 from press.utils import get_valid_teams_for_user, has_role, log_error
 from press.utils.billing import (
 	get_frappe_io_connection,
+	get_razorpay_client,
 	get_stripe,
 	is_frappe_auth_disabled,
 	process_micro_debit_test_charge,
@@ -64,6 +65,7 @@ class Team(Document):
 		customers: DF.SmallText | None
 		database_access_enabled: DF.Check
 		default_payment_method: DF.Link | None
+		default_razorpay_mandate: DF.Link | None
 		discounts: DF.Table[InvoiceDiscount]
 		enable_inplace_updates: DF.Check
 		enable_performance_tuning: DF.Check
@@ -96,8 +98,9 @@ class Team(Document):
 		partner_status: DF.Literal["Active", "Inactive"]
 		partner_tier: DF.Link | None
 		partnership_date: DF.Date | None
-		payment_mode: DF.Literal["", "Card", "Prepaid Credits", "Paid By Partner"]
 		phone_number: DF.Phone | None
+		payment_mode: DF.Literal["", "Card", "Prepaid Credits", "Paid By Partner", "UPI Autopay"]
+		razorpay_customer_id: DF.Data | None
 		razorpay_enabled: DF.Check
 		receive_budget_alerts: DF.Check
 		referrer_id: DF.Data | None
@@ -626,6 +629,23 @@ class Team(Document):
 			customer = stripe.Customer.create(email=self.user, name=get_fullname(self.user))
 			self.stripe_customer_id = customer.id
 			self.save()
+
+	def create_razorpay_customer(self):
+		if not self.razorpay_customer_id:
+			client = get_razorpay_client()
+			customer = client.customer.create(
+				{
+					"name": self.billing_name or get_fullname(self.user),
+					"email": self.user,
+					"fail_existing": "0",  # Don't fail if customer already exists
+					"notes": {"team": self.name},
+				}
+			)
+			print("Response of customer:", customer)
+			self.razorpay_customer_id = customer.get("id")
+			# self.save()
+			self.db_set("razorpay_customer_id",  self.razorpay_customer_id, commit=True)
+		return self.razorpay_customer_id
 
 	@dashboard_whitelist()
 	def get_communication_infos(self):

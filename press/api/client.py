@@ -82,6 +82,7 @@ ALLOWED_DOCTYPES = [
 	"Site Database User",
 	"Press Settings",
 	"Mpesa Payment Record",
+	"Razorpay Mandate",
 	"Partner Certificate",
 	"Partner Payment Payout",
 	"Deploy Candidate Build",

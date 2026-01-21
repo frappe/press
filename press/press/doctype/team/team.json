@@ -31,12 +31,14 @@
   "billing_tab",
   "subscription_details_section",
   "stripe_customer_id",
+  "razorpay_customer_id",
   "country",
   "phone_number",
   "currency",
   "payment_mode",
   "billing_team",
   "default_payment_method",
+  "default_razorpay_mandate",
   "billing_name",
   "billing_address",
   "free_credits_allocated",
@@ -233,7 +235,7 @@
    "fieldname": "payment_mode",
    "fieldtype": "Select",
    "label": "Payment Mode",
-   "options": "\nCard\nPrepaid Credits\nPaid By Partner"
+   "options": "\nCard\nPrepaid Credits\nPaid By Partner\nUPI Autopay"
   },
   {
    "fieldname": "column_break_9",
@@ -674,6 +676,20 @@
    "fieldname": "banned",
    "fieldtype": "Check",
    "label": "Banned"
+  },
+  {
+   "fieldname": "razorpay_customer_id",
+   "fieldtype": "Data",
+   "label": "Razorpay Customer ID",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "default_razorpay_mandate",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Default Razorpay Mandate",
+   "options": "Razorpay Mandate"
   }
  ],
  "grid_page_length": 50,
