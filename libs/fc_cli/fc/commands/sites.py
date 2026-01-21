@@ -116,7 +116,7 @@ def new(
 	# Validate bench
 	benches = session.get("press.api.bench.all") or []
 	bench_names: list[str] = [
-		name for b in benches if isinstance(b, dict) and (name := b.get("name")) is not None
+		str(name) for b in benches if isinstance(b, dict) and (name := b.get("name")) is not None
 	]
 	if bench not in bench_names:
 		Print.error(console, f"Bench '{bench}' not found. Available: {', '.join(bench_names) or 'none'}")
