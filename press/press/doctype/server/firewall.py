@@ -10,21 +10,41 @@ from press.utils import log_error
 class ServerFirewall:
 	@frappe.whitelist()
 	def setup_firewall(self):
-		Ansible(
-			playbook="firewall_setup.yml",
-			server=self,
-			user=self._ssh_user(),
-			port=self._ssh_port(),
-		).run()
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_setup_firewall",
+		)
+
+	def _setup_firewall(self):
+		try:
+			Ansible(
+				playbook="firewall_setup.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			).run()
+		except Exception:
+			log_error("Failed to setup firewall", doc=self)
 
 	@frappe.whitelist()
 	def teardown_firewall(self):
-		Ansible(
-			playbook="firewall_teardown.yml",
-			server=self,
-			user=self._ssh_user(),
-			port=self._ssh_port(),
-		).run()
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_teardown_firewall",
+		)
+
+	def _teardown_firewall(self):
+		try:
+			Ansible(
+				playbook="firewall_teardown.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			).run()
+		except Exception:
+			log_error("Failed to teardown firewall", doc=self)
 
 	def sync_firewall(self):
 		frappe.enqueue_doc(
