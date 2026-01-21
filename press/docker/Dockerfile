@@ -245,6 +245,7 @@ COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sit
 
 {% if app.app != "crm" %}
 RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 \
+<<<<<<< HEAD
   --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
   bench get-app file:///home/frappe/context/apps/{{ app.app }} \
     {% if app.use_cached %}
@@ -252,6 +253,14 @@ RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=10
     --cache-key {{ app.hash }} {% if doc.compress_app_cache %}--compress-artifacts{% endif %} \
     {% endif %}
   `#stage-apps-{{ app.app }}`
+=======
+    --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
+    python${PYTHON_VERSION} /usr/local/bin/get_cached_app.py \
+        {{ app.app }} \
+        {{ app.hash }} \
+        {{ build_token }} \
+        `#stage-apps-{{ app.app }}`
+>>>>>>> 8236e2a19 (feat(asset-store): Authenticate using tmp build token)
 {% else %}
 
 RUN --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \

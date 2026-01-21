@@ -355,6 +355,11 @@ class DeployCandidateBuild(Document):
 					"remove_distutils": not is_distutils_supported,
 					"requires_version_based_get_pip": requires_version_based_get_pip,
 					"is_arm_build": self.platform == "arm64",
+<<<<<<< HEAD
+=======
+					"use_asset_store": frappe.db.get_single_value("Press Settings", "use_asset_store"),
+					"build_token": self.candidate.build_token,
+>>>>>>> 8236e2a19 (feat(asset-store): Authenticate using tmp build token)
 				},
 				is_path=True,
 			)

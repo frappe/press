@@ -67,6 +67,7 @@ class DeployCandidate(Document):
 
 		apps: DF.Table[DeployCandidateApp]
 		arm_build: DF.Link | None
+		build_token: DF.Password | None
 		compress_app_cache: DF.Check
 		dependencies: DF.Table[DeployCandidateDependency]
 		environment_variables: DF.Table[DeployCandidateVariable]
