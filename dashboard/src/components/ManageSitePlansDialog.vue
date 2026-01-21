@@ -26,7 +26,7 @@
 					v-model="plan"
 					:isPrivateBenchSite="!$site.doc.group_public"
 					:isDedicatedServerSite="$site.doc.is_dedicated_server"
-					:selectedProvider="$site.doc.server_provider"
+					:selectedProvider="$site.doc.plan_provider"
 				/>
 				<div class="mt-4 text-xs text-gray-700">
 					<div
