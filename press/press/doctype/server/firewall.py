@@ -35,15 +35,7 @@ class ServerFirewall:
 				port=self._ssh_port(),
 				variables={
 					"enabled": bool(self.firewall_enabled),
-					"rules": [
-						{
-							"source": rule.source,
-							"destination": rule.destination,
-							"protocol": rule.protocol,
-							"action": self.transform_action(rule.action),
-						}
-						for rule in self.firewall_rules
-					],
+					"rules": list(self.transform_rules()),
 				},
 			).run()
 		except Exception:
@@ -61,6 +53,20 @@ class ServerFirewall:
 				rules_seen.append(rule_tuple)
 			else:
 				self.firewall_rules.remove(rule)
+
+	def transform_rules(self):
+		for rule in self.firewall_rules:
+			rule = {
+				"source": rule.source,
+				"destination": rule.destination,
+				"protocol": rule.protocol,
+				"action": self.transform_action(rule.action),
+			}
+			if not rule["source"]:
+				rule.pop("source")
+			if not rule["destination"]:
+				rule.pop("destination")
+			yield rule
 
 	def transform_action(self, action: str):
 		match action:
