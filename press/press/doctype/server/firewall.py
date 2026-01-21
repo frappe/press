@@ -95,9 +95,9 @@ class ServerFirewall:
 		if not ip:
 			return
 		try:
-			ipaddress.ip_address(ip)
+			ipaddress.ip_network(ip, strict=False)
 		except ValueError:
-			message = _("{0} is not a valid IP address.").format(ip)
+			message = _("{0} is not a valid IP address or CIDR.").format(ip)
 			frappe.throw(message, frappe.ValidationError)
 
 	def transform_rules(self):
