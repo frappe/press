@@ -779,6 +779,7 @@ class DatabaseServer(BaseServer):
 					"certificate_full_chain": config.certificate.full_chain,
 					"certificate_intermediate_chain": config.certificate.intermediate_chain,
 					"mariadb_depends_on_mounts": self.mariadb_depends_on_mounts,
+					"nat_gateway_ip": self.nat_gateway_ip,
 					**self.get_mount_variables(),
 				},
 			)
