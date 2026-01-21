@@ -358,10 +358,14 @@ class DeployCandidateBuild(Document):
 <<<<<<< HEAD
 =======
 					"use_asset_store": frappe.db.get_single_value("Press Settings", "use_asset_store"),
+<<<<<<< HEAD
 					"build_token": self.candidate.build_token,
 <<<<<<< HEAD
 >>>>>>> 8236e2a19 (feat(asset-store): Authenticate using tmp build token)
 =======
+=======
+					"build_token": self.candidate.get_password("build_token"),
+>>>>>>> 99e6481d0 (fix(asset-store): Get password not *)
 					"site_url": frappe.utils.get_url(),
 >>>>>>> ab604e7af (feat(asset-store): Dynamic site url)
 				},
