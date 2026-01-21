@@ -259,6 +259,7 @@ RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=10
         {{ app.app }} \
         {{ app.hash }} \
         {{ build_token }} \
+        {{ site_url }} \
         `#stage-apps-{{ app.app }}`
 {% else %}
 RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 \
