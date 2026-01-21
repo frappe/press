@@ -23,7 +23,7 @@
 		<div class="flex gap-5 col-2">
 			<FormControl
 				label="M-Pesa Phone Number"
-				v-model="this.phoneNumberInput"
+				v-model="phoneNumberInput"
 				name="phone_number"
 				autocomplete="off"
 				class="mb-5"
@@ -33,7 +33,7 @@
 
 			<FormControl
 				label="Tax ID"
-				v-model="this.taxIdInput"
+				v-model="taxIdInput"
 				name="tax_id"
 				autocomplete="off"
 				class="mb-5"
