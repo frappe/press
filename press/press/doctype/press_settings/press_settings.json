@@ -1567,13 +1567,14 @@
    "label": "Disable Binlog Indexer Service"
   },
   {
+   "collapsible": 1,
    "fieldname": "asset_store_section",
    "fieldtype": "Section Break",
    "label": "Asset Store"
   },
   {
    "default": "0",
-   "description": "Will only use this assert storage backend if checked.",
+   "description": "Will only use this asset storage backend if checked.",
    "fieldname": "use_asset_store",
    "fieldtype": "Check",
    "label": "Use Asset Store"
@@ -1636,7 +1637,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-01-17 11:49:01.799269",
+ "modified": "2026-01-21 10:16:18.560642",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

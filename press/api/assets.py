@@ -109,16 +109,13 @@ def upload_asset():
 
 
 @frappe.whitelist(allow_guest=True)
-def get_credentials() -> dict[str, AssetStoreCredentials]:
+def get_credentials() -> AssetStoreCredentials:
 	"""Get asset store credentials if it is requested from a build server"""
-	ip_address = (
-		frappe.request.headers.get("X-Forwarded-For")
-		or frappe.request.headers.get("X-Real-IP")
-		or frappe.request.remote_addr
+	request_from_build_server = frappe.db.get_value(
+		"Server", {"ip": frappe.request.remote_addr, "use_for_build": True}
 	)
-	is_from_build_server = frappe.db.get_value("Server", {"ip": ip_address, "use_for_build": True})
 
-	if not is_from_build_server:
+	if not request_from_build_server:
 		frappe.throw("Not authorized to access asset store credentials", frappe.PermissionError)
 
 	return _get_asset_store_credentials()
