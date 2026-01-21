@@ -118,7 +118,10 @@ class BaseServer(Document, ServerFirewall, TagHelpers):
 			query = query.where(Server.status == status)
 		else:
 			# Show only Active and Installing servers ignore pending (secondary server)
-			query = query.where(Server.status.isin(["Active", "Installing"]))
+			query = query.where(
+				Server.status.isin(["Active", "Installing", "Broken"])
+				| ((Server.status == "Pending") & (Server.is_secondary != 1))
+			)
 
 		query = query.where(Server.is_for_recovery != 1).where(Server.team == frappe.local.team().name)
 		results = query.run(as_dict=True)
@@ -408,19 +411,20 @@ class BaseServer(Document, ServerFirewall, TagHelpers):
 				"group": f"{server_type.title()} Actions",
 			},
 			{
-				"action": "Setup Secondary Server",
-				"description": "Setup a secondary application server to auto scale to during high loads",
-				"button_label": "Setup",
+				"action": "Enable Autoscale",
+				"description": "Setup a secondary application server to autoscale to during high loads",
+				"button_label": "Enable",
 				"condition": self.status == "Active"
 				and self.doctype == "Server"
 				and not self.secondary_server
+				and not getattr(self, "is_unified_server", False)
 				and self.cluster in self._get_clusters_with_autoscale_support(),
 				"group": "Application Server Actions",
 			},
 			{
-				"action": "Teardown Secondary Server",
-				"description": "Disable secondary server and turn off auto-scaling.",
-				"button_label": "Teardown",
+				"action": "Disable Autoscale",
+				"description": "Turn off autoscaling and remove the secondary application server.",
+				"button_label": "Disable",
 				"condition": (
 					self.status == "Active"
 					and self.doctype == "Server"
@@ -1565,7 +1569,7 @@ class BaseServer(Document, ServerFirewall, TagHelpers):
 
 	@dashboard_whitelist()
 	def reboot(self):
-		if self.provider not in ("AWS EC2", "OCI"):
+		if self.provider not in ("AWS EC2", "OCI", "DigitalOcean", "Hetzner"):
 			raise NotImplementedError
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		virtual_machine.reboot()
@@ -2167,7 +2171,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			timeout=7200,
 		)
 
-	def _copy_files(self, source, destination):
+	def _copy_files(self, source, destination, extra_options=None):
 		try:
 			ansible = Ansible(
 				playbook="copy.yml",
@@ -2177,6 +2181,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				variables={
 					"source": source,
 					"destination": destination,
+					"extra_options": extra_options,
 				},
 			)
 			ansible.run()
@@ -2422,7 +2427,7 @@ class Server(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean"]
 		proxy_server: DF.Link | None
 		public: DF.Check
 		ram: DF.Float
@@ -2765,6 +2770,9 @@ class Server(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
+				if self.provider == "DigitalOcean":
+					# To adjust docker permissions
+					self.reboot()
 			else:
 				self.status = "Broken"
 		except Exception:
@@ -3499,7 +3507,8 @@ def get_hostname_abbreviation(hostname):
 	abbr = hostname_parts[0]
 
 	for part in hostname_parts[1:]:
-		abbr += part[0]
+		if part:
+			abbr += part[0]
 
 	return abbr
 

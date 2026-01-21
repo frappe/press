@@ -11,12 +11,14 @@ import { icon, renderDialog } from '../../utils/components';
 import ObjectList from '../ObjectList.vue';
 import PartnerCertificateRequest from './PartnerCertificateRequest.vue';
 import LinkCertificate from './LinkCertificate.vue';
+import CertificationStatus from './CertificationStatus.vue';
 export default {
 	name: 'PartnerCertificates',
 	components: {
 		ObjectList,
 		PartnerCertificateRequest,
 		LinkCertificate,
+		CertificationStatus,
 	},
 	data() {
 		return {
@@ -135,7 +137,7 @@ export default {
 							slots: {
 								prefix: icon('link'),
 							},
-							onClick: (row) => {
+							onClick: () => {
 								renderDialog(
 									h(LinkCertificate, {
 										show: true,
@@ -148,8 +150,19 @@ export default {
 						},
 					];
 				},
-				filters: {
-					team: this.$team.doc.name,
+				moreActions() {
+					return [
+						{
+							label: 'Check Certification Status',
+							onClick: () => {
+								renderDialog(
+									h(CertificationStatus, {
+										show: true,
+									}),
+								);
+							},
+						},
+					];
 				},
 				filterControls() {
 					return [
@@ -157,7 +170,10 @@ export default {
 							type: 'select',
 							fieldname: 'course',
 							label: 'Course',
-							options: ['', 'Framework', 'ERPNext'],
+							options: [
+								{ label: 'Framework', value: 'frappe-developer-certification' },
+								{ label: 'ERPNext', value: 'erpnext-distribution' },
+							],
 						},
 					];
 				},
