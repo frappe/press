@@ -135,7 +135,8 @@
   {
    "fieldname": "secondary_private_ip",
    "fieldtype": "Data",
-   "label": "Secondary Private IP"
+   "label": "Secondary Private IP",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -147,7 +148,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2026-01-12 23:29:11.202837",
+ "modified": "2026-01-21 13:17:52.469379",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "NAT Server",
