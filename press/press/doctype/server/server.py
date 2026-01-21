@@ -507,6 +507,7 @@ class BaseServer(Document, ServerFirewall, TagHelpers):
 		self.deduplicate_firewall_rules()
 
 	def validate(self):
+		self.validate_firewall_rules()
 		self.validate_cluster()
 		self.validate_agent_password()
 		if self.doctype == "Database Server" and not self.self_hosted_mariadb_server:

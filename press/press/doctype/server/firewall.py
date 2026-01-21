@@ -1,4 +1,7 @@
+import ipaddress
+
 import frappe
+from frappe import _
 
 from press.runner import Ansible
 from press.utils import log_error
@@ -53,6 +56,19 @@ class ServerFirewall:
 				rules_seen.append(rule_tuple)
 			else:
 				self.firewall_rules.remove(rule)
+
+	def validate_firewall_rules(self):
+		for rule in self.firewall_rules:
+			self.validate_ip(rule.source)
+			self.validate_ip(rule.destination)
+
+	def validate_ip(self, ip: str):
+		"""Checks if the provided string is a valid IPv4 or IPv6 address."""
+		try:
+			ipaddress.ip_address(ip)
+		except ValueError:
+			message = _("{0} is not a valid IP address.").format(ip)
+			frappe.throw(message, frappe.ValidationError)
 
 	def transform_rules(self):
 		for rule in self.firewall_rules:
