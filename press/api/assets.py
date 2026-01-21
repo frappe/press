@@ -120,7 +120,7 @@ def get_credentials() -> AssetStoreCredentials:
 		frappe.throw("Invalid build token used", frappe.PermissionError)
 
 	running_build = frappe.db.get_value(
-		"Deploy Candidate Build", {"candidate": deploy_candidate, "status": "Running"}
+		"Deploy Candidate Build", {"deploy_candidate": deploy_candidate, "status": "Running"}
 	)
 
 	if not running_build:
