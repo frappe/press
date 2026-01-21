@@ -1,8 +1,4 @@
 ---
-- name: Show enabled value
-  debug:
-    msg: "enabled={{ enabled }} (type={{ enabled | type_debug }})"
-
 - name: Enable Firewall
   ansible.builtin.iptables:
     chain: INPUT
