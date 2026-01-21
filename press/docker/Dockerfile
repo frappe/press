@@ -9,7 +9,7 @@ ENV OPENBLAS_NUM_THREADS 1
 ENV MKL_NUM_THREADS 1
 
 # Install essential packages
-RUN --mount=type=cache,target=/var/cache/apt apt-get update \
+RUN --mount=type=cache,sharing=locked,target=/var/cache/apt apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
   # Essentials
   build-essential \
@@ -64,7 +64,7 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
 COPY --chown=root:root supervisord.conf /etc/supervisor/supervisord.conf
 
 # Install Redis from PPA
-RUN --mount=type=cache,target=/var/cache/apt curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg \
+RUN --mount=type=cache,sharing=locked,target=/var/cache/apt curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg \
   && echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb jammy main" | tee /etc/apt/sources.list.d/redis.list \
   && apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
@@ -73,7 +73,7 @@ RUN --mount=type=cache,target=/var/cache/apt curl -fsSL https://packages.redis.i
 
 # Install Python from DeadSnakes PPA
 ENV {{ doc.get_dependency_version("python", True) }}
-RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/ppa \
+RUN --mount=type=cache,sharing=locked,target=/var/cache/apt add-apt-repository ppa:deadsnakes/ppa \
   && apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
     python${PYTHON_VERSION} \
@@ -143,7 +143,7 @@ RUN useradd -ms /bin/bash frappe
 
 # Run before install scripts
 {% if p.prerequisites %}
-RUN --mount=type=cache,target=/var/cache/apt {{ p.prerequisites }} \
+RUN --mount=type=cache,sharing=locked,target=/var/cache/apt {{ p.prerequisites }} \
   `#stage-pre_before-{{ p.package }}`
 {% endif %}
 
@@ -162,7 +162,7 @@ RUN apt-get update \
 
 # Run after install scripts
 {% if p.after_install %}
-RUN  --mount=type=cache,target=/var/cache/apt {{ p.after_install }} \
+RUN  --mount=type=cache,sharing=locked,target=/var/cache/apt {{ p.after_install }} \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre_after-{{ p.package }}`
 {% endif %}
@@ -249,7 +249,7 @@ RUN chmod +x /usr/local/bin/get_cached_app.py
 
 # Install other apps
 {% for app in doc.apps %}
-{% if app.app != "frappe" %}
+{% if app.app != "frappe"%}
 
 
 {% if app.use_cached and use_asset_store %}

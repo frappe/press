@@ -18,6 +18,11 @@
 				class="col-span-1 rounded-md border lg:col-span-2"
 			>
 				<div
+					v-if="
+						!(
+							server === 'Database Server' && $appServer?.doc?.is_unified_server
+						)
+					"
 					class="grid grid-cols-2 lg:grid-cols-4"
 					:class="{
 						'opacity-70 pointer-events-none':
@@ -38,7 +43,10 @@
 									class="mt-2 flex flex-col space-y-2"
 								>
 									<div class="flex items-center text-base text-gray-700">
-										<span>{{ d.label }}</span>
+										<span v-if="!$appServer?.doc?.is_unified_server">{{
+											d.label
+										}}</span>
+										<span v-else>Unified Server Plan</span>
 										<Badge
 											v-if="
 												server === 'App Secondary Server' &&
@@ -471,6 +479,7 @@ export default {
 										label: 'Increase Storage',
 										icon: 'plus',
 										variant: 'ghost',
+										condition: () => doc.provider != 'Hetzner',
 										onClick: () => {
 											confirmDialog({
 												title: 'Increase Storage',
@@ -543,6 +552,7 @@ export default {
 										label: 'Configure Auto Increase Storage',
 										icon: 'tool',
 										variant: 'ghost',
+										condition: () => doc.provider != 'Hetzner',
 										onClick: () => {
 											confirmDialog({
 												title: 'Configure Auto Increase Storage',
@@ -651,7 +661,14 @@ export default {
 											this.showStorageBreakdownDialog(serverType);
 										},
 									},
-								].filter((e) => e.hidden !== true),
+								]
+									.filter((e) => e.hidden !== true)
+									.filter((e) => {
+										if (e.condition) {
+											return e.condition();
+										}
+										return true;
+									}),
 							},
 						]),
 			];
@@ -661,7 +678,13 @@ export default {
 		serverInformation() {
 			return [
 				{
-					label: 'Application server',
+					label: 'Hosted on',
+					value: `${this.$appServer.doc.provider} - ${this.$appServer.doc.cluster}`,
+				},
+				{
+					label: this.$appServer.doc.is_unified_server
+						? 'Server'
+						: 'Application Server',
 					value: this.$appServer.doc.name,
 				},
 				{
@@ -670,7 +693,9 @@ export default {
 				},
 				{
 					label: 'Database server',
-					value: this.$appServer.doc.database_server,
+					value: !this.$appServer.doc.is_unified_server
+						? this.$appServer.doc.database_server
+						: false,
 				},
 				{
 					label: 'Replication server',

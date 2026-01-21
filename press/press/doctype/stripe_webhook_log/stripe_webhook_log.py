@@ -93,7 +93,10 @@ def allow_insert_log(event):
 	evt_id = event.get("id")
 	invoice_id = get_invoice_id(event)
 	intent_id = get_intent_id(event)
-	description = event["data"]["object"]["description"]
+
+	description = None
+	if event.get("type") == "payment_intent.succeeded":
+		description = event["data"]["object"]["description"]
 
 	if not frappe.db.exists("Stripe Webhook Log", evt_id):
 		return True
@@ -101,12 +104,10 @@ def allow_insert_log(event):
 	if invoice_id and frappe.db.get_value("Invoice", {"stripe_invoice_id": invoice_id}, "status") == "Paid":
 		# Do not insert duplicate webhook logs for invoices that are already paid
 		return False
-	if invoice_id and frappe.db.get_value("Invoice", {"stripe_invoice_id": invoice_id}, "status") == "Unpaid":
-		# Delete existing log and allow reinsertion for unpaid invoices
-		frappe.delete_doc("Stripe Webhook Log", evt_id)
 
 	if (
-		description == "Prepaid Credits"
+		description
+		and description == "Prepaid Credits"
 		and intent_id
 		and frappe.db.exists(
 			"Invoice", {"type": "Prepaid Credits", "status": "Paid", "stripe_payment_intent_id": intent_id}
@@ -114,6 +115,7 @@ def allow_insert_log(event):
 	):
 		return False
 
+	frappe.delete_doc("Stripe Webhook Log", evt_id)
 	return True
 
 
@@ -148,6 +150,8 @@ def get_intent_id(form_dict):
 		intent_id = re.findall(r"pi_\w+", form_dict_str)
 		if intent_id:
 			return intent_id[1]
+		return None
+	except IndexError:
 		return None
 	except Exception:
 		frappe.log_error(title="Failed to capture intent id from stripe webhook log")

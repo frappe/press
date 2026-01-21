@@ -57,7 +57,12 @@
 											value: b.name,
 										}))
 									"
-									v-model="selectedGroup"
+									:modelValue="selectedGroup?.value"
+									@update:modelValue="
+										selectedGroup = options.private_groups.find(
+											(option) => option.value === $event,
+										)
+									"
 								/>
 							</div>
 						</div>

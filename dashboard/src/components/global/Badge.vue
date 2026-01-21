@@ -69,6 +69,11 @@ export default {
 				'Creating Servers': 'orange',
 				'Gathering Site Data': 'orange',
 				'Warming Up': 'orange',
+				Enrolled: 'blue',
+				Certified: 'green',
+				'In Process': 'orange',
+				Scheduled: 'blue',
+				'Not Scheduled': 'red',
 			}[this.label];
 		},
 	},

@@ -24,7 +24,12 @@
 						type="combobox"
 						label="Select Roles"
 						:options="roleOptions"
-						v-model="selectedRole"
+						:modelValue="selectedRole?.value"
+						@update:modelValue="
+							selectedRole = roleOptions.find(
+								(option) => option.value === $event,
+							)
+						"
 					/>
 					<Button
 						label="Add"

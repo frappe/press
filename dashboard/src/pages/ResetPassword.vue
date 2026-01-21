@@ -57,6 +57,7 @@
 					$resources.verify2FA.loading ||
 					$resources.is2FAEnabled.loading
 				"
+				type="submit"
 			>
 				Submit
 			</Button>
