@@ -106,7 +106,11 @@
   "has_data_volume",
   "mounts",
   "notifications_section",
-  "communication_infos"
+  "communication_infos",
+  "security_tab",
+  "firewall_section",
+  "firewall_enabled",
+  "firewall_rules"
  ],
  "fields": [
   {
@@ -741,6 +745,28 @@
    "fieldname": "is_provisioning_press_job_completed",
    "fieldtype": "Check",
    "label": "Is Provisioning Job Completed"
+  },
+  {
+   "fieldname": "security_tab",
+   "fieldtype": "Tab Break",
+   "label": "Security"
+  },
+  {
+   "fieldname": "firewall_section",
+   "fieldtype": "Section Break",
+   "label": "Firewall"
+  },
+  {
+   "default": "0",
+   "fieldname": "firewall_enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "firewall_rules",
+   "fieldtype": "Table",
+   "label": "Rules",
+   "options": "Server Firewall Rule"
   }
  ],
  "links": [
@@ -749,8 +775,8 @@
    "link_fieldname": "primary_server"
   }
  ],
- "modified": "2026-01-07 14:58:23.188531",
- "modified_by": "Administrator",
+ "modified": "2026-01-20 16:06:22.862774",
+ "modified_by": "hello@ssiyad.com",
  "module": "Press",
  "name": "Server",
  "owner": "Administrator",
