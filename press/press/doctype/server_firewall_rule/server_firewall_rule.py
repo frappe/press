@@ -15,12 +15,12 @@ class ServerFirewallRule(Document):
 		from frappe.types import DF
 
 		action: DF.Literal["Allow", "Block"]
-		destination: DF.Data
+		destination: DF.Data | None
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
 		protocol: DF.Literal["TCP", "UDP"]
-		source: DF.Data
+		source: DF.Data | None
 	# end: auto-generated types
 
 	pass

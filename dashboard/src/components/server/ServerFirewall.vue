@@ -46,8 +46,16 @@
 			:options="{
 				data: () => server.doc.firewall_rules,
 				columns: [
-					{ label: 'Source', fieldname: 'source' },
-					{ label: 'Destination', fieldname: 'destination' },
+					{
+						label: 'Source',
+						fieldname: 'source',
+						format: (value: string) => value || '—',
+					},
+					{
+						label: 'Destination',
+						fieldname: 'destination',
+						format: (value: string) => value || '—',
+					},
 					{ label: 'Protocol', fieldname: 'protocol' },
 					{ label: 'Action', fieldname: 'action' },
 				],
