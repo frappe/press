@@ -765,6 +765,7 @@ class BaseServer(Document, TagHelpers):
 					"allocator": database_server.memory_allocator.lower(),
 					"mariadb_root_password": database_server_config.mariadb_root_password,
 					"mariadb_depends_on_mounts": database_server_config.mariadb_depends_on_mounts,
+					"nat_gateway_ip": self.nat_gateway_ip,
 					**self.get_mount_variables(),  # Currently same as database server since no volumes
 				},
 			)
@@ -1115,7 +1116,7 @@ class BaseServer(Document, TagHelpers):
 		return find(machine.volumes, lambda v: v.device == "/dev/sda1")
 
 	def update_virtual_machine_name(self):
-		if self.provider not in ("AWS EC2", "OCI"):
+		if self.provider not in ("AWS EC2"):
 			return None
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		return virtual_machine.update_name_tag(self.name)
@@ -1339,6 +1340,20 @@ class BaseServer(Document, TagHelpers):
 		else:
 			kibana_password = None
 		return log_server, kibana_password
+
+	@property
+	def nat_gateway_ip(self):
+		if not self.ip and self.private_ip:
+			if not (
+				nat_gateway_ip := frappe.db.get_value(
+					"NAT Server",
+					{"status": "Active", "cluster": self.cluster, "secondary_private_ip": ("is", "set")},
+					"secondary_private_ip",
+				)
+			):
+				frappe.throw("NAT Server with secondary private IP not found in cluster")
+			return nat_gateway_ip
+		return None
 
 	def get_monitoring_password(self):
 		return frappe.get_doc("Cluster", self.cluster).get_password("monitoring_password")
@@ -2332,6 +2347,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				as_dict=True,
 			)
 
+		return None
+
 	@frappe.whitelist()
 	def get_aws_static_ip(self):
 		if self.provider != "AWS EC2":
@@ -2765,6 +2782,7 @@ class Server(BaseServer):
 					"db_port": db_port,
 					"agent_repository_branch_or_commit_ref": self.get_agent_repository_branch(),
 					"agent_update_args": " --skip-repo-setup=true",
+					"nat_gateway_ip": self.nat_gateway_ip,
 					**self.get_mount_variables(),
 				},
 			)
