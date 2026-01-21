@@ -379,7 +379,7 @@ class DeployCandidateBuild(Document):
 					"requires_version_based_get_pip": requires_version_based_get_pip,
 					"is_arm_build": self.platform == "arm64",
 					"use_asset_store": frappe.db.get_single_value("Press Settings", "use_asset_store"),
-					"build_token": self.candidate.build_token,
+					"upload_assets": frappe.db.get_value("Release Group", self.group, "public"),
 					"site_url": frappe.utils.get_url(),
 				},
 				is_path=True,
@@ -1017,6 +1017,7 @@ class DeployCandidateBuild(Document):
 			"deploy_candidate_build": self.name,
 			"deploy_after_build": self.deploy_after_build,
 			"deploy_on_server": self.deploy_on_server,
+			"build_token": self.candidate.build_token,
 		}
 		if self.platform == "arm64":
 			build_parameters.update({"platform": self.platform})
