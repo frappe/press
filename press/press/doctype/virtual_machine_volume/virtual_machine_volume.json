@@ -15,6 +15,8 @@
   "last_updated_at",
   "section_break_frlu",
   "device",
+  "toggle_rightsize",
+  "skip_rightsize",
   "column_break_buwy",
   "detach",
   "delete_volume",
@@ -109,12 +111,25 @@
    "fieldname": "update_ebs_performance",
    "fieldtype": "Button",
    "label": "Update EBS Performance"
+  },
+  {
+   "fieldname": "toggle_rightsize",
+   "fieldtype": "Button",
+   "label": "Toggle Rightsize"
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_rightsize",
+   "fieldtype": "Check",
+   "label": "Skip Rightsize",
+   "read_only_depends_on": "eval: false",
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-16 13:11:45.102040",
+ "modified": "2026-01-21 15:47:37.821650",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Volume",
@@ -122,6 +137,7 @@
  "owner": "Administrator",
  "permissions": [],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
