@@ -171,13 +171,13 @@ class VirtualMachine(Document):
 			self.machine_image = self.get_latest_ubuntu_image()
 		self.save()
 
-	def get_private_ip(self):
+	def get_private_ip(self, additional_offset=0):
 		ip = ipaddress.IPv4Interface(self.subnet_cidr_block).ip
 		index = self.index + 356
 		if self.series == "n":
-			return str(ip + index)
+			return str(ip + index + additional_offset)
 		offset = ["n", "f", "m", "c", "p", "e", "r", "u", "t", "nfs", "fs", "nat"].index(self.series)
-		return str(ip + 256 * (2 * (index // 256) + offset) + (index % 256))
+		return str(ip + 256 * (2 * (index // 256) + offset) + (index % 256) + additional_offset)
 
 	def validate(self):
 		# Digital ocean does not support custom private IPs in a vpc
@@ -1261,7 +1261,14 @@ class VirtualMachine(Document):
 
 			self.public_ip_address = instance.get("PublicIpAddress")
 			self.private_ip_address = instance.get("PrivateIpAddress")
-			self.secondary_private_ip = None
+			self.secondary_private_ip = next(
+				(
+					x["PrivateIpAddress"]
+					for x in instance["NetworkInterfaces"][0]["PrivateIpAddresses"]
+					if not x["Primary"]
+				),
+				None,
+			)
 			self.is_static_ip = self.has_static_ip(instance)
 
 			self.public_dns_name = instance.get("PublicDnsName")
@@ -1367,6 +1374,8 @@ class VirtualMachine(Document):
 					frappe.db.set_value(doctype, server, "is_static_ip", self.is_static_ip)
 				if doctype in ["Server", "Database Server"]:
 					frappe.db.set_value(doctype, server, "ram", self.ram)
+				if doctype in ("NAT Server",):
+					frappe.db.set_value(doctype, server, "secondary_private_ip", self.secondary_private_ip)
 				if self.public_ip_address:
 					if self.has_value_changed("public_ip_address"):
 						frappe.get_doc(doctype, server).create_dns_record()
@@ -1394,7 +1403,7 @@ class VirtualMachine(Document):
 			NetworkInterfaceId=instance["Reservations"][0]["Instances"][0]["NetworkInterfaces"][0][
 				"NetworkInterfaceId"
 			],
-			PrivateIpAddresses=[self.get_private_ip()],
+			PrivateIpAddresses=[self.get_private_ip(additional_offset=1)],
 		)
 		self.sync()
 
