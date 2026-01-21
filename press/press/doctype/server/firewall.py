@@ -27,7 +27,15 @@ class ServerFirewall:
 		).run()
 
 	def sync_firewall(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_sync_firewall")
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_sync_firewall",
+			queue="default",
+			enqueue_after_commit=True,
+			deduplicate=True,
+			job_id=f"sync_firewall_{self.name}",
+		)
 
 	def _sync_firewall(self):
 		try:
@@ -64,6 +72,8 @@ class ServerFirewall:
 
 	def validate_ip(self, ip: str):
 		"""Checks if the provided string is a valid IPv4 or IPv6 address."""
+		if not ip:
+			return
 		try:
 			ipaddress.ip_address(ip)
 		except ValueError:
