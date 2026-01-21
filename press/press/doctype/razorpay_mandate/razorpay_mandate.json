@@ -1,0 +1,154 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:RZM{#####}",
+ "creation": "2026-01-21 12:48:59.464895",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "team",
+  "razorpay_customer_id",
+  "mandate_id",
+  "token_id",
+  "status",
+  "method",
+  "auth_type",
+  "column_break_9",
+  "max_amount",
+  "expires_on",
+  "umn",
+  "upi_vpa",
+  "is_default",
+  "failure_reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1
+  },
+  {
+   "fieldname": "razorpay_customer_id",
+   "fieldtype": "Data",
+   "label": "Razorpay Customer ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "mandate_id",
+   "fieldtype": "Data",
+   "label": "Mandate ID",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "token_id",
+   "fieldtype": "Data",
+   "label": "Token ID",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending\nAuthorized\nActive\nPaused\nCancelled\nExpired"
+  },
+  {
+   "default": "emandate",
+   "fieldname": "method",
+   "fieldtype": "Select",
+   "label": "Method",
+   "options": "emandate\ncard\nnach"
+  },
+  {
+   "fieldname": "auth_type",
+   "fieldtype": "Select",
+   "label": "Auth Type",
+   "options": "upi\nnetbanking\ndebitcard"
+  },
+  {
+   "fieldname": "column_break_9",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "max_amount",
+   "fieldtype": "Currency",
+   "label": "Max Amount"
+  },
+  {
+   "fieldname": "expires_on",
+   "fieldtype": "Date",
+   "label": "Expires On"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_default",
+   "fieldtype": "Check",
+   "label": "Is Default"
+  },
+  {
+   "fieldname": "umn",
+   "fieldtype": "Data",
+   "label": "UMN",
+   "read_only": 1
+  },
+  {
+   "fieldname": "upi_vpa",
+   "fieldtype": "Data",
+   "label": "UPI ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "failure_reason",
+   "fieldtype": "Small Text",
+   "label": "Failure Reason",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-01-21 13:55:19.649470",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Razorpay Mandate",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

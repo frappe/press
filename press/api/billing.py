@@ -679,6 +679,93 @@ def is_paypal_enabled() -> bool:
 
 @frappe.whitelist()
 @role_guard.api("billing")
+def get_or_create_razorpay_customer() -> str:
+	"""Get existing or create new Razorpay customer for current team"""
+	team = get_current_team(get_doc=True)
+	return team.create_razorpay_customer()
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
+def create_razorpay_mandate(max_amount: int, auth_type: str = "upi") -> dict:
+	"""
+	Create a Razorpay mandate registration for UPI autopay (or eNACH - this is not setup currently).
+
+	Args:
+		max_amount: Maximum amount in INR for recurring debits
+		auth_type: 'upi' or 'netbanking' (for eNACH)
+
+	Returns:
+		dict with mandate_name, mandate_id, authorization_link, expires_on
+	"""
+	from press.press.doctype.razorpay_mandate.razorpay_mandate import (
+		create_razorpay_mandate as _create_mandate,
+	)
+
+	team = get_current_team()
+
+	if auth_type not in ("upi", "netbanking"):
+		frappe.throw(_("Invalid auth type. Must be 'upi' or 'netbanking'"))
+
+	if max_amount < 100:
+		frappe.throw(_("Maximum amount must be at least ₹100"))
+
+	return _create_mandate(team, max_amount, auth_type)
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
+def get_razorpay_mandates() -> list[dict]:
+	"""Get all Razorpay mandates for the current team"""
+	team = get_current_team()
+
+	mandates = frappe.get_all(
+		"Razorpay Mandate",
+		filters={"team": team},
+		fields=[
+			"name",
+			"mandate_id",
+			"status",
+			"method",
+			"auth_type",
+			"max_amount",
+			"expires_on",
+			"is_default",
+			"upi_vpa",
+			"creation",
+		],
+		order_by="creation desc",
+	)
+
+	return mandates
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
+def set_razorpay_mandate_as_default(mandate_name: str):
+	"""Set a Razorpay mandate as the default for the team"""
+	team = get_current_team()
+
+	mandate = frappe.get_doc("Razorpay Mandate", {"name": mandate_name, "team": team})
+	mandate.set_default()
+
+	return {"success": True}
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
+def cancel_razorpay_mandate(mandate_name: str):
+	"""Cancel a Razorpay mandate"""
+	team = get_current_team()
+
+	mandate = frappe.get_doc("Razorpay Mandate", {"name": mandate_name, "team": team})
+	mandate.cancel("Cancelled by user")
+
+	return {"success": True}
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
 def create_razorpay_order(amount, transaction_type, doc_name=None) -> dict | None:
 	if not transaction_type:
 		frappe.throw(_("Transaction type is not set"))
