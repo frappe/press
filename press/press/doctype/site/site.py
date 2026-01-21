@@ -346,6 +346,10 @@ class Site(Document, TagHelpers):
 		doc.server_team = server.team
 		doc.server_title = server.title
 		doc.server_provider = server.provider
+		doc.plan_provider = server.provider
+		if not frappe.db.exists("Cloud Provider", server.provider):
+			# fallback for unlisted providers (Scaleway, Generic) to show available plans
+			doc.plan_provider = "AWS EC2"
 		doc.inbound_ip = self.inbound_ip
 		doc.is_dedicated_server = is_dedicated_server(self.server)
 		doc.suspension_reason = (
