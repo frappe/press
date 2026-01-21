@@ -39,13 +39,14 @@ class ServerFirewall:
 						{
 							"source": rule.source,
 							"destination": rule.destination,
+							"protocol": rule.protocol,
 							"action": self.transform_action(rule.action),
 						}
 						for rule in self.firewall_rules
 					],
 				},
 			).run()
-		except:
+		except Exception:
 			log_error("Failed to sync firewall rules", doc=self)
 
 	def deduplicate_firewall_rules(self):
@@ -55,7 +56,7 @@ class ServerFirewall:
 		rules_seen = []
 		rules = self.firewall_rules
 		for rule in rules:
-			rule_tuple = (rule.source, rule.destination, rule.action)
+			rule_tuple = (rule.source, rule.destination, rule.protocol, rule.action)
 			if rule_tuple not in rules_seen:
 				rules_seen.append(rule_tuple)
 			else:
@@ -64,7 +65,7 @@ class ServerFirewall:
 	def transform_action(self, action: str):
 		match action:
 			case "Allow":
-				return "FORWARD"
+				return "ACCEPT"
 			case "Block":
 				return "DROP"
 			case _:
