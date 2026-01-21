@@ -19,6 +19,7 @@ class ServerFirewallRule(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
+		protocol: DF.Literal["TCP", "UDP"]
 		source: DF.Data
 	# end: auto-generated types
 

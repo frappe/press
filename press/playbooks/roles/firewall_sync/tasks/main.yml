@@ -15,7 +15,7 @@
     chain: INPUT
     jump: "{{ chain_main }}"
     state: absent
-  when: enabled | lower != "true"
+  when: enabled | lower == "false"
 
 - name: Clear Existing Rules
   ansible.builtin.iptables:
@@ -27,5 +27,6 @@
     chain: "{{ chain_main }}"
     source: "{{ item.source }}"
     destination: "{{ item.destination }}"
+    protocol: "{{ item.protocol }}"
     jump: "{{ item.action }}"
   loop: "{{ rules }}"

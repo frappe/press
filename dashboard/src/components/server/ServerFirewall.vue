@@ -48,6 +48,7 @@
 				columns: [
 					{ label: 'Source', fieldname: 'source' },
 					{ label: 'Destination', fieldname: 'destination' },
+					{ label: 'Protocol', fieldname: 'protocol' },
 					{ label: 'Action', fieldname: 'action' },
 				],
 				rowActions: ({ row }: any) => [
@@ -59,6 +60,7 @@
 									!(
 										rule.source === row.source &&
 										rule.destination === row.destination &&
+										rule.protocol === row.protocol &&
 										rule.action === row.action
 									),
 							);

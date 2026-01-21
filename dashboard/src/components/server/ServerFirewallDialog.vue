@@ -38,8 +38,25 @@
 					variant="subtle"
 				/>
 				<FormControl
+					v-model="values.protocol"
+					label="Protocol"
+					type="select"
+					:options="[
+						{
+							label: 'TCP',
+							value: 'TCP',
+						},
+						{
+							label: 'UDP',
+							value: 'UDP',
+						},
+					]"
+					size="sm"
+					variant="subtle"
+				/>
+				<FormControl
 					v-model="values.action"
-					label="Label"
+					label="Action"
 					type="select"
 					:options="[
 						{
@@ -73,6 +90,7 @@ const emit = defineEmits<{
 		values: {
 			source: string;
 			destination: string;
+			protocol: string;
 			action: string;
 		},
 	): void;
@@ -81,12 +99,14 @@ const emit = defineEmits<{
 const values = reactive({
 	source: '',
 	destination: '',
+	protocol: 'TCP',
 	action: 'Block',
 });
 
 const onClose = () => {
 	values.source = '';
 	values.destination = '';
+	values.protocol = 'TCP';
 	values.action = 'Block';
 	emit('update:modelValue', false);
 };
