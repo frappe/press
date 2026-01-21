@@ -452,7 +452,7 @@ class VirtualDiskResize(Document):
 		server.copy_files(
 			source=self.filesystem_mount_point,
 			destination=self.new_filesystem_temporary_mount_point,
-			# extra_options="-x",
+			extra_options="-x",
 		)
 		return StepStatus.Success
 
@@ -692,7 +692,7 @@ class VirtualDiskResize(Document):
 	def ansible_run(self, command):
 		virtual_machine_ip = frappe.db.get_value("Virtual Machine", self.virtual_machine, "public_ip_address")
 		inventory = f"{virtual_machine_ip},"
-		result = AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
+		result = AnsibleAdHoc(sources=inventory).run(command, self.name, raw_params=True)[0]
 		self.add_command(command, result)
 		return result
 

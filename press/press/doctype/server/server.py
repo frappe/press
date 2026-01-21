@@ -2153,13 +2153,14 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		frappe.throw(f"Failed to fetch {primary.name}'s Frappe public key")
 		return None
 
-	def copy_files(self, source, destination):
+	def copy_files(self, source, destination, extra_options=None):
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
 			"_copy_files",
 			source=source,
 			destination=destination,
+			extra_options=extra_options,
 			queue="long",
 			timeout=7200,
 		)
