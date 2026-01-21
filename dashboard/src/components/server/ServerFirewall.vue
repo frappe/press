@@ -1,5 +1,17 @@
 <template>
 	<div>
+		<div class="bg-blue-100 px-4 py-3 mb-3 rounded-md border border-blue-200">
+			<p class="text-base space-y-2 leading-relaxed">
+				This feature is under development and may not be suitable for production
+				use. Use at your own risk. Please report any issues at:
+				<a
+					href="https://github.com/frappe/press/issues"
+					target="_blank"
+					class="font-medium"
+					>github.com/frappe/press/issues</a
+				>
+			</p>
+		</div>
 		<div
 			class="bg-yellow-100 px-4 py-3 mb-3 rounded-md border border-yellow-200"
 		>
