@@ -171,13 +171,14 @@ class VirtualMachine(Document):
 			self.machine_image = self.get_latest_ubuntu_image()
 		self.save()
 
-	def get_private_ip(self, additional_offset=0):
+	def get_private_ip(self, additional_offset=0) -> str:
 		ip = ipaddress.IPv4Interface(self.subnet_cidr_block).ip
 		index = self.index + 356
 		if self.series == "n":
 			return str(ip + index + additional_offset)
+		window = 2 if self.series == "nat" else 1  # reserve 2 IPs for nat servers
 		offset = ["n", "f", "m", "c", "p", "e", "r", "u", "t", "nfs", "fs", "nat"].index(self.series)
-		return str(ip + 256 * (2 * (index // 256) + offset) + (index % 256) + additional_offset)
+		return str(ip + (256 * (2 * (index // 256) + offset) + (index % 256)) * window + additional_offset)
 
 	def validate(self):
 		# Digital ocean does not support custom private IPs in a vpc
