@@ -143,7 +143,7 @@ export default {
 
 		validateBranchUsingInstallation() {
 			return {
-				url: 'press.api.github.validate_branch',
+				url: 'press.api.bench.validate_branch',
 			};
 		},
 
