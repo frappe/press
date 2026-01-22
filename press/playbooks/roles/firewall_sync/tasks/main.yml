@@ -27,6 +27,15 @@
     jump: "{{ item.action }}"
   loop: "{{ rules }}"
 
+- name: Sync Bypass Rules
+  ansible.builtin.iptables:
+    chain: "{{ chain_bypass }}"
+    source: "{{ item.source | default(omit) }}"
+    destination: "{{ item.destination | default(omit) }}"
+    protocol: "{{ item.protocol }}"
+    jump: "{{ item.action }}"
+  loop: "{{ rules_bypass }}"
+
 - name: Persist rules across reboots
   ansible.builtin.shell: iptables-save > /etc/iptables/rules.v4
   become: true
