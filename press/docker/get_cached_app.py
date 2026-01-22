@@ -181,7 +181,7 @@ def main():
 		if os.getenv("FRAPPE_DOCKER_BUILD") == "True"
 		else APP_NAME
 	)
-
+	os.environ["FRAPPE_HARD_LINK_ASSETS"] = "True"
 	subprocess.run(["bench", "get-app", app_path, "--skip-assets"], check=True)
 
 	credentials = get_asset_store_credentials()
@@ -195,12 +195,14 @@ def main():
 	else:
 		print(f"Assets {asset_filename} not found in store. Building and uploading...")
 		assets_folder = build_assets(APP_NAME)
-		tar_file = tar_and_compress_folder(assets_folder, asset_filename)
 
-		with open(tar_file, "rb") as f:
-			upload_assets_to_store(credentials, f, asset_filename)
+		if UPLOAD_ASSETS:
+			tar_file = tar_and_compress_folder(assets_folder, asset_filename)
 
-		os.remove(tar_file)
+			with open(tar_file, "rb") as f:
+				upload_assets_to_store(credentials, f, asset_filename)
+
+			os.remove(tar_file)
 
 
 if __name__ == "__main__":
