@@ -17,7 +17,11 @@ APP_NAME = sys.argv[1]
 APP_HASH = sys.argv[2]
 BUILD_TOKEN = sys.argv[3]
 SITE_URL = sys.argv[4]
-UPLOAD_ASSETS = bool(sys.argv[5])
+try:
+	UPLOAD_ASSETS = bool(int(sys.argv[5]))
+except Exception as e:
+	print(f"Could not parse upload assets flag: {e}")
+	UPLOAD_ASSETS = False
 
 
 class AssetStoreCredentials(TypedDict):
@@ -201,6 +205,9 @@ def main():
 	else:
 		print(f"Assets {asset_filename} not found in store. Building and uploading...")
 		assets_folder = build_assets(APP_NAME)
+		if not os.path.exists(assets_folder) or not os.path.isdir(assets_folder):
+			print(f"No assets found for app {APP_NAME} at {assets_folder}.")
+			return
 
 		if UPLOAD_ASSETS:
 			tar_file = tar_and_compress_folder(assets_folder, asset_filename)
