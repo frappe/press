@@ -1,0 +1,17 @@
+---
+- name: Unreference Bypass Chain
+  command: iptables -D INPUT -j {{ chain_bypass }}
+  ignore_errors: yes
+
+- name: Unreference Main Chain
+  command: iptables -D INPUT -j {{ chain_main }}
+  ignore_errors: yes
+
+- name: Remove Bypass Chain
+  command: iptables -X {{ chain_bypass }}
+  ignore_errors: yes
+
+- name: Remove Main Chain
+  command: iptables -X {{ chain_main }}
+  ignore_errors: yes
+
