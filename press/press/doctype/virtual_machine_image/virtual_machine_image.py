@@ -244,8 +244,8 @@ class VirtualMachineImage(Document):
 					droplet_id=self.instance_id, action_id=self.action_id
 				)
 
-			action_status = action_status["action"]["status"]
-			self.status = self.get_digital_ocean_status_map(action_status)
+			status = action_status["action"]["status"]
+			self.status = self.get_digital_ocean_status_map(status)
 
 			if self.status == "Available":
 				if self.copied_from:
