@@ -14,3 +14,15 @@
 - name: Reference Main Chain in INPUT
   command: iptables -I INPUT -j {{ chain_main }}
   ignore_errors: yes
+
+- name: Reference Bypass Chain in DOCKER-USER
+  command: iptables -I DOCKER-USER -j {{ chain_bypass }}
+  ignore_errors: yes
+
+- name: Reference Main Chain in DOCKER-USER
+  command: iptables -I DOCKER-USER -j {{ chain_main }}
+  ignore_errors: yes
+
+- name: Reference Bypass Chain in OUTPUT
+  command: iptables -I OUTPUT -j {{ chain_bypass }}
+  ignore_errors: yes
