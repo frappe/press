@@ -527,10 +527,15 @@ class BaseServer(Document, TagHelpers):
 		if self.ip:
 			if self.doctype not in ["Database Server", "Server", "Proxy Server"] or not self.is_self_hosted:
 				self.create_dns_record()
-		elif self.private_ip and self.doctype in ["Server", "Database Server"] and not self.is_self_hosted:
+				self.update_virtual_machine_name()
+		elif (
+			self.private_ip
+			and self.doctype in ["Server", "Database Server"]
+			and not self.is_self_hosted
+			and not frappe.flags.in_test
+		):
 			self.create_dns_record()
-
-		self.update_virtual_machine_name()
+			self.update_virtual_machine_name()
 
 	@frappe.whitelist()
 	def create_dns_record(self):
