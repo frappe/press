@@ -48,7 +48,7 @@ def get_benches():
 	return benches
 
 
-def get_clusters():
+def get_clusters():  # noqa: C901
 	servers = {}
 	servers["proxy"] = frappe.get_all(
 		"Proxy Server",
