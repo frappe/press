@@ -26,10 +26,8 @@
 				label="Enabled"
 				class="border w-60"
 				:disabled="server.get.loading"
-				:modelValue="server.doc.firewall_enabled"
-				@update:model-value="
-					(enabled) => (server.doc.firewall_enabled = enabled)
-				"
+				:modelValue="server.doc.enabled"
+				@update:model-value="(enabled) => (server.doc.enabled = enabled)"
 			/>
 			<div class="flex justify-center gap-2">
 				<Button
@@ -56,7 +54,7 @@
 		</div>
 		<ObjectList
 			:options="{
-				data: () => server.doc.firewall_rules,
+				data: () => server.doc.rules,
 				columns: [
 					{
 						label: 'Source',
@@ -75,7 +73,7 @@
 					{
 						label: 'Remove',
 						onClick: () => {
-							server.doc.firewall_rules = server.doc.firewall_rules.filter(
+							server.doc.rules = server.doc.rules.filter(
 								(rule: any) =>
 									!(
 										rule.source === row.source &&
@@ -91,7 +89,7 @@
 		/>
 		<ServerFirewallDialog
 			v-model="openAddDialog"
-			@submit="(values) => server.doc.firewall_rules.push({ ...values })"
+			@submit="(values) => server.doc.rules.push({ ...values })"
 		/>
 	</div>
 </template>
@@ -109,7 +107,7 @@ const props = defineProps<{
 const openAddDialog = ref(false);
 
 const server = createDocumentResource({
-	doctype: 'Server',
+	doctype: 'Server Firewall',
 	name: props.id,
 	auto: true,
 	cache: ['Server', 'Firewall', props.id],

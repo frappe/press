@@ -1,92 +1,133 @@
+# Copyright (c) 2026, Frappe and contributors
+# For license information, please see license.txt
+
 import ipaddress
 
 import frappe
 from frappe import _
+from frappe.model.document import Document
 
+from press.press.doctype.server.server import Server
 from press.runner import Ansible
 from press.utils import log_error
 
 
-class ServerFirewall:
+class ServerFirewall(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		from press.press.doctype.server_firewall_rule.server_firewall_rule import ServerFirewallRule
+
+		enabled: DF.Check
+		rules: DF.Table[ServerFirewallRule]
+		server_id: DF.Link
+	# end: auto-generated types
+
+	dashboard_fields = (
+		"enabled",
+		"rules",
+	)
+
+	def after_insert(self):
+		self.setup()
+
 	@frappe.whitelist()
-	def setup_firewall(self):
+	def setup(self):
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
-			"_setup_firewall",
+			"_setup",
 		)
 
-	def _setup_firewall(self):
+	def _setup(self):
 		try:
 			Ansible(
 				playbook="firewall_setup.yml",
-				server=self,
-				user=self._ssh_user(),
-				port=self._ssh_port(),
+				server=self.server,
+				user=self.server._ssh_user(),
+				port=self.server._ssh_port(),
 			).run()
 		except Exception:
 			log_error("Failed to setup firewall", doc=self)
 
+	def on_trash(self):
+		self.teardown()
+
 	@frappe.whitelist()
-	def teardown_firewall(self):
+	def teardown(self):
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
-			"_teardown_firewall",
+			"_teardown",
 		)
 
-	def _teardown_firewall(self):
+	def _teardown(self):
 		try:
 			Ansible(
 				playbook="firewall_teardown.yml",
-				server=self,
-				user=self._ssh_user(),
-				port=self._ssh_port(),
+				server=self.server,
+				user=self.server._ssh_user(),
+				port=self.server._ssh_port(),
 			).run()
 		except Exception:
 			log_error("Failed to teardown firewall", doc=self)
 
-	def sync_firewall(self):
+	def before_validate(self):
+		self.deduplicate_rules()
+
+	def validate(self):
+		self.validate_rules()
+
+	def on_update(self):
+		self.sync()
+
+	@frappe.whitelist()
+	def sync(self):
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
-			"_sync_firewall",
+			"_sync",
 			queue="default",
 			enqueue_after_commit=True,
 			deduplicate=True,
 			job_id=f"sync_firewall_{self.name}",
 		)
 
-	def _sync_firewall(self):
+	def _sync(self):
 		try:
 			Ansible(
 				playbook="firewall_sync.yml",
-				server=self,
-				user=self._ssh_user(),
-				port=self._ssh_port(),
+				server=self.server,
+				user=self.server._ssh_user(),
+				port=self.server._ssh_port(),
 				variables={
-					"enabled": bool(self.firewall_enabled),
+					"enabled": bool(self.enabled),
 					"rules": list(self.transform_rules()),
 				},
 			).run()
 		except Exception:
 			log_error("Failed to sync firewall rules", doc=self)
 
-	def deduplicate_firewall_rules(self):
+	def deduplicate_rules(self):
 		"""
 		Remove duplicate entries from rules. This will not save the doc.
 		"""
 		rules_seen = set()
 		unique_rules = []
-		for rule in self.firewall_rules:
+		for rule in self.rules:
 			rule_tuple = (rule.source, rule.destination, rule.protocol, rule.action)
 			if rule_tuple not in rules_seen:
 				rules_seen.add(rule_tuple)
 				unique_rules.append(rule)
-		self.firewall_rules = unique_rules
+		self.rules = unique_rules
 
-	def validate_firewall_rules(self):
-		for rule in self.firewall_rules:
+	def validate_rules(self):
+		for rule in self.rules:
 			self.validate_ip(rule.source)
 			self.validate_ip(rule.destination)
 
@@ -101,7 +142,7 @@ class ServerFirewall:
 			frappe.throw(message, frappe.ValidationError)
 
 	def transform_rules(self):
-		for rule in self.firewall_rules:
+		for rule in self.rules:
 			rule = {
 				"source": rule.source,
 				"destination": rule.destination,
@@ -122,3 +163,7 @@ class ServerFirewall:
 				return "DROP"
 			case _:
 				return "REJECT"
+
+	@property
+	def server(self) -> Server:
+		return frappe.get_doc("Server", self.server_id)
