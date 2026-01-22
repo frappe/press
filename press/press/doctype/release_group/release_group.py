@@ -747,6 +747,7 @@ class ReleaseGroup(Document, TagHelpers):
 				"environment_variables": environment_variables,
 				"requires_arm_build": requires_arm_build,
 				"requires_intel_build": requires_intel_build,
+				"build_token": frappe.generate_hash(length=10),
 			}
 		)
 
