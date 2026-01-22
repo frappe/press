@@ -296,7 +296,9 @@ export default {
 				label: 'Firewall',
 				icon: icon('shield'),
 				condition: (server) => {
-					return server.doc?.status !== 'Archived';
+					return (
+						server.doc?.status !== 'Archived' && !server.doc?.is_self_hosted
+					);
 				},
 				route: 'firewall',
 				type: 'Component',
