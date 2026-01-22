@@ -223,7 +223,7 @@
   },
   {
    "fieldname": "build_token",
-   "fieldtype": "Password",
+   "fieldtype": "Data",
    "label": "Build Token"
   }
  ],
@@ -241,7 +241,7 @@
    "link_fieldname": "deploy_candidate"
   }
  ],
- "modified": "2026-01-21 11:44:11.748562",
+ "modified": "2026-01-21 13:27:04.037360",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
