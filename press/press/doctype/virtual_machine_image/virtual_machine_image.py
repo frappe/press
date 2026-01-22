@@ -138,14 +138,27 @@ class VirtualMachineImage(Document):
 		self.sync()
 
 	def create_image_from_copy(self):
-		source = frappe.get_doc("Virtual Machine Image", self.copied_from)
-		response = self.client.copy_image(
-			Name=f"Frappe Cloud {self.name} - {self.virtual_machine}",
-			SourceImageId=source.image_id,
-			SourceRegion=source.region,
-		)
-		self.image_id = response["ImageId"]
-		self.sync()
+		if self.cloud_provider == "AWS EC2":
+			source = frappe.get_doc("Virtual Machine Image", self.copied_from)
+			response = self.client.copy_image(
+				Name=f"Frappe Cloud {self.name} - {self.virtual_machine}",
+				SourceImageId=source.image_id,
+				SourceRegion=source.region,
+			)
+			self.image_id = response["ImageId"]
+			self.sync()
+
+		elif self.cloud_provider == "DigitalOcean":
+			action = self.client.image_actions.post(
+				self.image_id,
+				{"type": "transfer", "region": frappe.db.get_value("Cluster", self.cluster, "region")},
+			)
+			action = action["action"]
+			self.action_id = action["id"]
+			self.sync()
+
+		else:
+			raise NotImplementedError("Copying images is only supported for AWS EC2 and DigitalOcean.")
 
 	def set_credentials(self):
 		if (self.series == "m" or self.series == "u") and frappe.db.exists(
