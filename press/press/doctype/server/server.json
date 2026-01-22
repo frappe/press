@@ -286,7 +286,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner\nVodacom\nDigitalOcean",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner\nVodacom",
    "set_only_once": 1
   },
   {
@@ -334,7 +334,7 @@
    "label": "Staging"
   },
   {
-   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\", \"DigitalOcean\"].includes(doc.provider)",
+   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\"].includes(doc.provider)",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
@@ -749,8 +749,8 @@
    "link_fieldname": "primary_server"
   }
  ],
- "modified": "2026-01-18 16:20:05.763500",
- "modified_by": "Administrator",
+ "modified": "2026-01-22 17:14:45.219480",
+ "modified_by": "hello@ssiyad.com",
  "module": "Press",
  "name": "Server",
  "owner": "Administrator",

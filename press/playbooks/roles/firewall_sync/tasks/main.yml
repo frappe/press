@@ -1,0 +1,32 @@
+---
+- name: Enable Firewall
+  ansible.builtin.iptables:
+    chain: INPUT
+    jump: "{{ chain_main }}"
+    state: present
+  when: enabled | lower == "true"
+
+- name: Disable Firewall
+  ansible.builtin.iptables:
+    chain: INPUT
+    jump: "{{ chain_main }}"
+    state: absent
+  when: enabled | lower == "false"
+
+- name: Clear Existing Rules
+  ansible.builtin.iptables:
+    chain: "{{ chain_main }}"
+    flush: yes
+
+- name: Sync Rules
+  ansible.builtin.iptables:
+    chain: "{{ chain_main }}"
+    source: "{{ item.source | default(omit) }}"
+    destination: "{{ item.destination | default(omit) }}"
+    protocol: "{{ item.protocol }}"
+    jump: "{{ item.action }}"
+  loop: "{{ rules }}"
+
+- name: Persist rules across reboots
+  ansible.builtin.shell: iptables-save > /etc/iptables/rules.v4
+  become: true
