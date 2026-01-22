@@ -49,6 +49,10 @@ class NATServer(BaseServer):
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
+				variables={
+					"primary_ip": self.private_ip,
+					"secondary_ip": self.secondary_private_ip,
+				},
 			)
 			play = ansible.run()
 			self.reload()
