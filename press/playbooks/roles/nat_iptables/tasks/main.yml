@@ -7,14 +7,12 @@
   package:
     name: iptables-persistent
     state: present
-  when: nat_gateway_ip is defined and nat_gateway_ip
 
 - name: Ensure netfilter-persistent service is enabled
   service:
     name: netfilter-persistent
     enabled: yes
     state: started
-  when: nat_gateway_ip is defined and nat_gateway_ip
 
 - name: Save iptables config
   command: netfilter-persistent save
