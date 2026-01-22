@@ -3,9 +3,53 @@
 
 frappe.ui.form.on('Virtual Machine', {
 	refresh: function (frm) {
+		if (frm.doc.status == 'Draft' && frm.doc.cloud_provider == 'AWS EC2') {
+			frm.add_custom_button(
+				__('Provision'),
+				() => {
+					let d = new frappe.ui.Dialog({
+						title: __('Provision AWS Instance'),
+						fields: [
+							{
+								label: __('Assign Public IP?'),
+								fieldname: 'assign_public_ip',
+								fieldtype: 'Check',
+								default: 1,
+							},
+						],
+						primary_action_label: __('Provision'),
+						primary_action(values) {
+							frm
+								.call({
+									doc: frm.doc,
+									method: 'provision',
+									args: {
+										assign_public_ip: values.assign_public_ip,
+									},
+								})
+								.then((r) => {
+									if (r.message) {
+										frappe.msgprint(r.message);
+									} else {
+										frm.refresh();
+									}
+								});
+							d.hide();
+						},
+					}).show();
+				},
+				__('Actions'),
+			);
+		}
+
 		[
 			[__('Sync'), 'sync', false, frm.doc.status != 'Draft'],
-			[__('Provision'), 'provision', true, frm.doc.status == 'Draft'],
+			[
+				__('Provision'),
+				'provision',
+				true,
+				frm.doc.status == 'Draft' && frm.doc.cloud_provider != 'AWS EC2',
+			],
 			[__('Reboot'), 'reboot', true, frm.doc.status == 'Running'],
 			[__('Stop'), 'stop', true, frm.doc.status == 'Running'],
 			[__('Force Stop'), 'force_stop', true, frm.doc.status == 'Running'],
