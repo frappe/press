@@ -121,6 +121,7 @@ export default {
 		otherBranchName() {
 			this.otherBranchValidated = false;
 			this.branchVerificationError = null;
+			this.branchVerificationSuccess = null;
 		},
 	},
 
@@ -137,6 +138,12 @@ export default {
 				transform(data) {
 					return data.map((d) => d.name);
 				},
+			};
+		},
+
+		validateBranchUsingInstallation() {
+			return {
+				url: 'press.api.bench.validate_branch',
 			};
 		},
 
@@ -166,13 +173,11 @@ export default {
 			this.validatingBranch = true;
 			this.branchVerificationError = null;
 			try {
-				const res = await fetch(
-					`https://api.github.com/repos/${this.app.repository_owner}/${this.app.repository}/branches/${this.otherBranchName}`,
-				);
-
-				if (!res.ok) {
-					throw new Error('Branch not found');
-				}
+				await this.$resources.validateBranchUsingInstallation.submit({
+					bench: this.bench,
+					app: this.app.name,
+					branch: this.otherBranchName,
+				});
 
 				this.otherBranchValidated = true;
 				this.branchVerificationSuccess = 'Branch validated successfully';

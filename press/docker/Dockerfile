@@ -198,7 +198,6 @@ ENV PATH "$PATH:/home/frappe/.nvm/versions/node/v${NODE_VERSION}/bin"
 # Install Yarn
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 npm install -g yarn `#stage-pre-yarn`
 
-
 # Install Bench
 ENV PATH "$PATH:/home/frappe/.local/bin"
 
@@ -228,6 +227,11 @@ RUN `#stage-bench-env`
 ENV {{v.key}} {{ v.value }}
 {% endfor %}
 
+# Install Boto and Requests for Asset store access
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 \
+  python${PYTHON_VERSION} -m pip install boto3==1.34.162 botocore==1.34.162 requests==2.32.5 \
+  `#stage-pre-Configure Asset Store`
+
 # Install Frappe app
 RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,source=apps/frappe,target=/home/frappe/context/apps/frappe bench init --python /usr/bin/python${PYTHON_VERSION} --no-backups --frappe-path file:///home/frappe/context/apps/frappe frappe-bench `#stage-apps-frappe`
 WORKDIR /home/frappe/frappe-bench
@@ -238,6 +242,10 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 /home/frappe
 COPY --chown=frappe:frappe redis /home/frappe/frappe-bench/redis
 COPY --chown=frappe:frappe .vimrc /home/frappe/.vimrc
 COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
+
+# Pass control of get-app to a python file
+COPY get_cached_app.py /usr/local/bin/get_cached_app.py
+RUN chmod +x /usr/local/bin/get_cached_app.py
 
 # Install other apps
 {% for app in doc.apps %}
