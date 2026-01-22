@@ -619,6 +619,73 @@ def app_details_for_new_public_site():
 	return marketplace_apps
 
 
+def get_dedicated_server_info(release_group_name: str) -> dict:
+	"""
+	check servers linked to a release group and determine dedicated server deployment options.
+
+	Returns dict with:
+	- case: str - one of:
+		- "dedicated_only_single" - exactly one dedicated server
+		- "dedicated_only_multiple" - multiple dedicated servers
+		- "user_choice_single" - one dedicated server and other public server(s)
+		"user_choice_multiple" - multiple dedicated servers and public server(s)
+		- "no_dedicated_server"
+	- dedicated_servers: list - Available dedicated servers for user selection
+	"""
+	current_team = get_current_team()
+
+	linked_servers = frappe.db.get_all(
+		"Release Group Server",
+		filters={"parent": release_group_name, "parenttype": "Release Group"},
+		pluck="server",
+	)
+
+	if not linked_servers:
+		return {
+			"case": "no_dedicated_server",
+			"dedicated_servers": [],
+		}
+
+	servers = frappe.db.get_all(
+		"Server",
+		filters={"name": ("in", linked_servers), "status": "Active"},
+		fields=["name", "title", "public", "team", "cluster", "provider"],
+	)
+	public_servers = [s for s in servers if s.public]
+	team_private_servers = [s for s in servers if not s.public and s.team == current_team]
+
+	num_private = len(team_private_servers)
+	has_public_server = bool(public_servers)
+
+	if has_public_server:
+		if num_private == 1:
+			return {
+				"case": "user_choice_single",
+				"dedicated_servers": team_private_servers,
+			}
+		if num_private > 1:
+			return {
+				"case": "user_choice_multiple",
+				"dedicated_servers": team_private_servers,
+			}
+	else:
+		if num_private == 1:
+			return {
+				"case": "dedicated_only_single",
+				"dedicated_servers": team_private_servers,
+			}
+		if num_private > 1:
+			return {
+				"case": "dedicated_only_multiple",
+				"dedicated_servers": team_private_servers,
+			}
+
+	return {
+		"case": "no_dedicated_server",
+		"dedicated_servers": [],
+	}
+
+
 @frappe.whitelist()
 def options_for_new(for_bench: str | None = None):  # noqa: C901
 	from press.press.doctype.cloud_provider.cloud_provider import get_cloud_providers
@@ -773,14 +840,7 @@ def get_available_versions(for_bench: str | None = None):
 		if release_group:
 			version.group = release_group
 			if for_bench:
-				version.group.is_dedicated_server = is_dedicated_server(
-					frappe.get_all(
-						"Release Group Server",
-						filters={"parent": release_group.name, "parenttype": "Release Group"},
-						pluck="server",
-						limit=1,
-					)[0]
-				)
+				version.group.dedicated_server_config = get_dedicated_server_info(release_group.name) or {}
 
 			set_bench_and_clusters(version, for_bench)
 

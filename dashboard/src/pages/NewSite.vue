@@ -111,7 +111,43 @@
 				/>
 			</div>
 			<div
-				v-if="selectedVersion && options.providers?.length"
+				v-if="
+					bench &&
+					(showDedicatedServerOption ||
+						dedicatedServerConfig?.case === 'dedicated_only_multiple')
+				"
+				class="space-y-4"
+			>
+				<FormControl
+					v-if="dedicatedServerConfig?.case != 'dedicated_only_multiple'"
+					type="checkbox"
+					v-model="useDedicatedServer"
+					label="Host this site on your dedicated server"
+				/>
+				<div v-if="shouldShowDedicatedServerDropdown">
+					<h2 class="text-base font-medium leading-6 text-gray-900 mb-2">
+						Select Dedicated Server
+					</h2>
+					<FormControl
+						required
+						v-model="selectedDedicatedServer"
+						type="select"
+						class="w-1/2"
+						:options="
+							availableDedicatedServers.map((s) => ({
+								label: s.title,
+								value: s.name,
+							}))
+						"
+					/>
+				</div>
+			</div>
+			<div
+				v-if="
+					!this.selectedDedicatedServer &&
+					selectedVersion &&
+					options.providers?.length
+				"
 				class="flex flex-col"
 			>
 				<h2 class="text-base font-medium leading-6 text-gray-900">
@@ -149,6 +185,7 @@
 			<div
 				class="flex flex-col"
 				v-if="
+					!this.selectedDedicatedServer &&
 					selectedVersion?.group &&
 					filteredClusters.length &&
 					(provider || bench)
@@ -201,7 +238,7 @@
 					<SitePlansCards
 						v-model="plan"
 						:isPrivateBenchSite="!!bench"
-						:isDedicatedServerSite="selectedVersion.group.is_dedicated_server"
+						:isDedicatedServerSite="isDedicatedServerSite"
 						:selectedCluster="cluster"
 						:selectedApps="apps"
 						:selectedVersion="version"
@@ -380,6 +417,8 @@ export default {
 			showAppPlanSelectorDialog: false,
 			shareDetailsConsent: false,
 			agreedToRegionConsent: false,
+			useDedicatedServer: false,
+			selectedDedicatedServer: null,
 		};
 	},
 	watch: {
@@ -436,6 +475,28 @@ export default {
 				}
 			}
 		},
+		useDedicatedServer(newVal) {
+			if (newVal && this.availableDedicatedServers.length === 1) {
+				const server = this.availableDedicatedServers[0];
+				this.selectedDedicatedServer = server.name;
+				this.cluster = server.cluster;
+				this.provider = server.provider;
+			} else {
+				this.selectedDedicatedServer = null;
+				this.cluster = null;
+				this.provider = null;
+			}
+		},
+		selectedDedicatedServer(newServer) {
+			if (!newServer) return;
+			const server = this.availableDedicatedServers.find(
+				(s) => s.name === newServer,
+			);
+			if (server) {
+				this.cluster = server.cluster;
+				this.provider = server.provider;
+			}
+		},
 		subdomain: {
 			handler: debounce(function (value) {
 				let invalidMessage = validateSubdomain(value);
@@ -457,6 +518,21 @@ export default {
 					this.closestCluster = this.options.closest_cluster;
 					if (this.bench && this.options.versions.length > 0) {
 						this.version = this.options.versions[0].name;
+
+						this.$nextTick(() => {
+							const config = this.dedicatedServerConfig;
+							if (!config || !config.dedicated_servers) return;
+
+							if (config.case === 'dedicated_only_single') {
+								this.useDedicatedServer = true;
+								const server = config.dedicated_servers[0];
+								this.cluster = server.cluster;
+								this.provider = server.provider;
+								this.selectedDedicatedServer = server.name;
+							} else if (config.case === 'dedicated_only_multiple') {
+								this.useDedicatedServer = true;
+							}
+						});
 					}
 				},
 				auto: true,
@@ -513,10 +589,16 @@ export default {
 								domain: this.domain,
 								subscription_plan: this.plan.name,
 								share_details_consent: this.shareDetailsConsent,
+								server: this.selectedDedicatedServer || null,
 							},
 						};
 					},
 					validate() {
+						if (this.useDedicatedServer && !this.selectedDedicatedServer) {
+							throw new DashboardError(
+								'Please select a dedicated server to deploy your site.',
+							);
+						}
 						if (!this.subdomain) {
 							throw new DashboardError('Please enter a subdomain');
 						}
@@ -599,17 +681,49 @@ export default {
 		},
 		domain() {
 			return (
-				this.options.cluster_specific_root_domains.find(
+				this.options?.cluster_specific_root_domains?.find(
 					(d) => d.cluster === this.cluster,
-				)?.name || this.options.domain
+				)?.name || this.options?.domain
 			);
 		},
 		selectedVersion() {
 			return this.options?.versions.find((v) => v.name === this.version);
 		},
+		dedicatedServerConfig() {
+			if (!this.bench) return {};
+			return this.selectedVersion?.group?.dedicated_server_config || {};
+		},
+		showDedicatedServerOption() {
+			const case_type = this.dedicatedServerConfig?.case || '';
+			return (
+				case_type === 'user_choice_single' ||
+				case_type === 'user_choice_multiple'
+			);
+		},
+		isDedicatedServerSite() {
+			return this.useDedicatedServer && this.selectedDedicatedServer;
+		},
+		availableDedicatedServers() {
+			return this.dedicatedServerConfig?.dedicated_servers || [];
+		},
+		shouldShowDedicatedServerDropdown() {
+			const case_type = this.dedicatedServerConfig?.case;
+			const hasMultipleServers = this.availableDedicatedServers.length > 1;
+			// Only show server selection when:
+			// 1. user_choice_multiple - User has enabled dedicated server checkbox AND there are multiple servers
+			// 2. dedicated_only_multiple - bench group has multiple dedicated servers linked to it and none public
+			if (!this.useDedicatedServer || !hasMultipleServers) {
+				return false;
+			}
+
+			return (
+				case_type === 'user_choice_multiple' ||
+				case_type === 'dedicated_only_multiple'
+			);
+		},
 		availableVersions() {
 			if (!this.apps.length || this.bench)
-				return this.options.versions.sort((a, b) =>
+				return (this.options?.versions || []).sort((a, b) =>
 					b.name.localeCompare(a.name),
 				);
 
@@ -618,7 +732,7 @@ export default {
 				return acc.filter((v) => app.sources.map((s) => s.version).includes(v));
 			}, null);
 
-			return this.options.versions.map((v) => ({
+			return (this.options?.versions || []).map((v) => ({
 				...v,
 				disabled: !commonVersions.includes(v.name),
 			}));
@@ -640,7 +754,7 @@ export default {
 			// version clusters with additional private bench clusters
 			const allClusters = [
 				...versionClusters,
-				...(this.options.additional_clusters || []),
+				...(this.options?.additional_clusters || []),
 			];
 
 			return allClusters.filter((c) => c.cloud_provider === this.provider);
@@ -649,7 +763,7 @@ export default {
 			let apps = [];
 
 			if (!this.bench)
-				apps = this.options.app_source_details.sort((a, b) =>
+				apps = (this.options?.app_source_details || []).sort((a, b) =>
 					a.total_installs !== b.total_installs
 						? b.total_installs - a.total_installs
 						: a.app.localeCompare(b.app),
@@ -659,10 +773,11 @@ export default {
 				apps = this.selectedVersion.group.bench_app_sources.map(
 					(app_source) => {
 						let app_source_details =
-							this.options.app_source_details[app_source];
+							this.options?.app_source_details?.[app_source];
 
 						let marketplace_details = app_source_details
-							? this.options.marketplace_details[app_source_details.app]
+							? this.options?.marketplace_details?.[app_source_details.app] ||
+								{}
 							: {};
 
 						return {
