@@ -33,6 +33,9 @@ class ServerFirewall(Document):
 		"rules",
 	)
 
+	def has_permission(self, permtype="read", *, debug=False, user=None) -> bool:
+		return self.server.has_permission(permtype, debug=debug, user=user)
+
 	def after_insert(self):
 		self.setup()
 
