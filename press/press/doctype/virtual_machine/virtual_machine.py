@@ -1375,7 +1375,7 @@ class VirtualMachine(Document):
 			return volume
 		return frappe._dict({"size": 0})
 
-	def update_servers(self):
+	def update_servers(self):  # noqa: C901
 		status_map = {
 			"Pending": "Pending",
 			"Running": "Active",
