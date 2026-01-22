@@ -114,7 +114,7 @@ class VirtualMachine(Document):
 		root_disk_size: DF.Int
 		secondary_private_ip: DF.Data | None
 		security_group_id: DF.Data | None
-		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "t", "nfs", "fs", "nat"]
+		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "u", "t", "nfs", "fs", "nat"]
 		skip_automated_snapshot: DF.Check
 		ssh_key: DF.Link
 		status: DF.Literal["Draft", "Pending", "Running", "Stopped", "Terminated"]
@@ -410,9 +410,9 @@ class VirtualMachine(Document):
 		return
 
 	@frappe.whitelist()
-	def provision(self):
+	def provision(self, assign_public_ip=True):
 		if self.cloud_provider == "AWS EC2":
-			return self._provision_aws()
+			return self._provision_aws(assign_public_ip)
 		if self.cloud_provider == "OCI":
 			return self._provision_oci()
 		if self.cloud_provider == "Hetzner":
@@ -527,7 +527,7 @@ class VirtualMachine(Document):
 		# Enqueue enable protection separately to avoid any issue
 		frappe.enqueue_doc(self.doctype, self.name, "enable_termination_protection", sync=False)
 
-	def _provision_aws(self):  # noqa: C901
+	def _provision_aws(self, assign_public_ip=True):  # noqa: C901
 		additional_volumes = []
 		if self.virtual_machine_image:
 			image = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
@@ -603,11 +603,7 @@ class VirtualMachine(Document):
 			},
 			"NetworkInterfaces": [
 				{
-					"AssociatePublicIpAddress": self.series
-					not in (
-						"f",
-						"m",
-					),
+					"AssociatePublicIpAddress": bool(assign_public_ip),
 					"DeleteOnTermination": True,
 					"DeviceIndex": 0,
 					"PrivateIpAddress": self.private_ip_address,
@@ -1262,15 +1258,17 @@ class VirtualMachine(Document):
 
 			self.public_ip_address = instance.get("PublicIpAddress")
 			self.private_ip_address = instance.get("PrivateIpAddress")
-			self.secondary_private_ip = next(
-				(
-					x["PrivateIpAddress"]
-					for x in instance["NetworkInterfaces"][0]["PrivateIpAddresses"]
-					if not x["Primary"]
-				),
-				None,
-			)
 			self.is_static_ip = self.has_static_ip(instance)
+
+			if instance.get("NetworkInterfaces", []):
+				self.secondary_private_ip = next(
+					(
+						x["PrivateIpAddress"]
+						for x in instance["NetworkInterfaces"][0]["PrivateIpAddresses"]
+						if not x["Primary"]
+					),
+					None,
+				)
 
 			self.public_dns_name = instance.get("PublicDnsName")
 			self.private_dns_name = instance.get("PrivateDnsName")
