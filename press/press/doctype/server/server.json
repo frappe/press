@@ -749,17 +749,8 @@
    "link_fieldname": "primary_server"
   }
  ],
-<<<<<<< HEAD
-<<<<<<< HEAD
- "modified": "2026-01-18 16:20:05.763500",
- "modified_by": "Administrator",
-=======
- "modified": "2026-01-20 16:06:22.862774",
-=======
  "modified": "2026-01-22 17:14:45.219480",
->>>>>>> fa4c52ff5 (refactor(firewall): Move to a separate doctype)
  "modified_by": "hello@ssiyad.com",
->>>>>>> 16c919e59 (fix(firewall): Move to ansible)
  "module": "Press",
  "name": "Server",
  "owner": "Administrator",
