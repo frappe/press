@@ -243,9 +243,6 @@ COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sit
 {% for app in doc.apps %}
 {% if app.app != "frappe"%}
 
-<<<<<<< HEAD
-{% if app.app != "crm" %}
-=======
 
 {% if app.use_cached and use_asset_store %}
 RUN --mount=type=secret,id=build_token,mode=0444 \
@@ -258,22 +255,12 @@ RUN --mount=type=secret,id=build_token,mode=0444 \
         {{ upload_assets }} \
         `#stage-apps-{{ app.app }}`
 {% else %}
->>>>>>> 31ca09fbe (fix(docker-cache): Remove docker cache mounts)
 RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 \
-  --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
-  bench get-app file:///home/frappe/context/apps/{{ app.app }} \
-    {% if app.use_cached %}
-    # Bench get-app flags to use get-app cache
-    --cache-key {{ app.hash }} {% if doc.compress_app_cache %}--compress-artifacts{% endif %} \
-    {% endif %}
-  `#stage-apps-{{ app.app }}`
-{% else %}
-
-RUN --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
-  bench get-app file:///home/frappe/context/apps/{{ app.app }} \
-  `#stage-apps-{{ app.app }}`
-
+    --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
+    bench get-app file:///home/frappe/context/apps/{{ app.app }} \
+    `#stage-apps-{{ app.app }}`
 {% endif %}
+
 
 {% endif %}
 {% endfor %}
