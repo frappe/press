@@ -16,6 +16,7 @@ import warnings
 from datetime import datetime, timedelta
 from enum import Enum
 from functools import cached_property
+from typing import TypedDict
 from urllib.parse import quote
 
 import frappe
@@ -63,6 +64,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
 		DeployCandidateApp,
 	)
+	from press.press.doctype.press_settings.press_settings import PressSettings
 	from press.press.doctype.release_group_server.release_group_server import ReleaseGroupServer
 
 # build_duration, pending_duration are Time fields, >= 1 day is invalid
@@ -130,6 +132,27 @@ STEP_SLUG_MAP = {
 	("package", "context"): "Build Context",
 	("upload", "context"): "Build Context",
 }
+
+
+class AssetStoreCredentials(TypedDict):
+	secret_access_key: str
+	access_key: str
+	region_name: str
+	endpoint_url: str
+	bucket_name: str
+
+
+def get_asset_store_credentials() -> AssetStoreCredentials:
+	"""Return asset store credentials from Press Settings."""
+	settings: PressSettings = frappe.get_cached_doc("Press Settings")
+
+	return {
+		"secret_access_key": settings.get_password("asset_store_secret_access_key"),
+		"access_key": settings.asset_store_access_key,
+		"region_name": settings.asset_store_region,
+		"endpoint_url": settings.asset_store_endpoint,
+		"bucket_name": settings.asset_store_bucket_name,
+	}
 
 
 def get_build_stage_and_step(
@@ -355,19 +378,9 @@ class DeployCandidateBuild(Document):
 					"remove_distutils": not is_distutils_supported,
 					"requires_version_based_get_pip": requires_version_based_get_pip,
 					"is_arm_build": self.platform == "arm64",
-<<<<<<< HEAD
-=======
 					"use_asset_store": frappe.db.get_single_value("Press Settings", "use_asset_store"),
-<<<<<<< HEAD
-					"build_token": self.candidate.build_token,
-<<<<<<< HEAD
->>>>>>> 8236e2a19 (feat(asset-store): Authenticate using tmp build token)
-=======
-=======
-					"build_token": self.candidate.get_password("build_token"),
->>>>>>> 99e6481d0 (fix(asset-store): Get password not *)
+					"upload_assets": frappe.db.get_value("Release Group", self.group, "public"),
 					"site_url": frappe.utils.get_url(),
->>>>>>> ab604e7af (feat(asset-store): Dynamic site url)
 				},
 				is_path=True,
 			)
@@ -391,7 +404,7 @@ class DeployCandidateBuild(Document):
 			f.write(content)
 
 	def _copy_config_files(self):
-		for target in ["common_site_config.json", "supervisord.conf", ".vimrc"]:
+		for target in ["common_site_config.json", "supervisord.conf", ".vimrc", "get_cached_app.py"]:
 			shutil.copy(os.path.join(frappe.get_app_path("press", "docker"), target), self.build_directory)
 
 		for target in ["config", "redis"]:

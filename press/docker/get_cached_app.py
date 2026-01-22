@@ -17,6 +17,7 @@ APP_NAME = sys.argv[1]
 APP_HASH = sys.argv[2]
 BUILD_TOKEN = sys.argv[3]
 SITE_URL = sys.argv[4]
+UPLOAD_ASSETS = bool(sys.argv[5])
 
 
 class AssetStoreCredentials(TypedDict):
