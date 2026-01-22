@@ -138,14 +138,27 @@ class VirtualMachineImage(Document):
 		self.sync()
 
 	def create_image_from_copy(self):
-		source = frappe.get_doc("Virtual Machine Image", self.copied_from)
-		response = self.client.copy_image(
-			Name=f"Frappe Cloud {self.name} - {self.virtual_machine}",
-			SourceImageId=source.image_id,
-			SourceRegion=source.region,
-		)
-		self.image_id = response["ImageId"]
-		self.sync()
+		if self.cloud_provider == "AWS EC2":
+			source = frappe.get_doc("Virtual Machine Image", self.copied_from)
+			response = self.client.copy_image(
+				Name=f"Frappe Cloud {self.name} - {self.virtual_machine}",
+				SourceImageId=source.image_id,
+				SourceRegion=source.region,
+			)
+			self.image_id = response["ImageId"]
+			self.sync()
+
+		elif self.cloud_provider == "DigitalOcean":
+			action = self.client.image_actions.post(
+				self.image_id,
+				{"type": "transfer", "region": frappe.db.get_value("Cluster", self.cluster, "region")},
+			)
+			action = action["action"]
+			self.action_id = action["id"]
+			self.sync()
+
+		else:
+			raise NotImplementedError("Copying images is only supported for AWS EC2 and DigitalOcean.")
 
 	def set_credentials(self):
 		if (self.series == "m" or self.series == "u") and frappe.db.exists(
@@ -221,17 +234,26 @@ class VirtualMachineImage(Document):
 				else:
 					raise e
 		elif cluster.cloud_provider == "DigitalOcean":
-			action_status = self.client.droplet_actions.get(
-				droplet_id=self.instance_id, action_id=self.action_id
-			)
+			if not self.copied_from:
+				action_status = self.client.droplet_actions.get(
+					droplet_id=self.instance_id, action_id=self.action_id
+				)
+			else:
+				action_status = self.client.image_actions.get(
+					action_id=self.action_id,
+					image_id=frappe.db.get_value("Virtual Machine Image", self.copied_from, "image_id"),
+				)
+
 			action_status = action_status["action"]["status"]
 			self.status = self.get_digital_ocean_status_map(action_status)
 
 			if self.status == "Available":
-				images = self.client.droplets.list_snapshots(self.instance_id)["snapshots"]
-				image = images[
-					0
-				]  # Machine get's one snapshot only and when action is completed we will have an image
+				if frappe.db.get_value("Virtual Machine", self.virtual_machine, "status") == "Terminated":
+					images = self.client.snapshots.get(self.image_id)["snapshot"]
+				else:
+					images = self.client.droplets.list_snapshots(self.instance_id)["snapshots"]
+
+				image = images[0] if isinstance(images, list) else images
 				self.image_id = image["id"]
 				self.size = image["min_disk_size"]
 				self.root_size = image["min_disk_size"]
