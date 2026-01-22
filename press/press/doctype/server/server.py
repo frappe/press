@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import datetime
+import ipaddress
 import json
 import shlex
 import typing
@@ -2777,12 +2778,12 @@ class Server(BaseServer):
 		self.save()
 
 	def get_proxy_ip(self):
-		"""In case of standalone setup proxy will not required"""
-
+		# In case of standalone setup, proxy is not required.
 		if self.is_standalone:
 			return self.ip
-
-		return frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
+		private_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
+		with_mask = private_ip + "/24"
+		return str(ipaddress.ip_network(with_mask, strict=False))
 
 	@frappe.whitelist()
 	def setup_standalone(self):
