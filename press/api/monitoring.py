@@ -53,7 +53,7 @@ def get_clusters():  # noqa: C901
 	servers["proxy"] = frappe.get_all(
 		"Proxy Server",
 		{"status": ("!=", "Archived")},
-		["name", "cluster", "use_as_proxy_for_agent_and_metrics"],
+		["name", "cluster", "use_as_proxy_for_agent_and_metrics", "ip"],
 	)
 	servers["app"] = frappe.get_all(
 		"Server",
@@ -68,9 +68,7 @@ def get_clusters():  # noqa: C901
 	servers["nfs"] = frappe.get_all(
 		"NFS Server", {"status": ("!=", "Archived")}, ["name", "cluster", "ip", "private_ip"]
 	)
-	servers["nat"] = frappe.get_all(
-		"NAT Server", {"status": ("!=", "Archived")}, ["name", "cluster", "ip", "private_ip"]
-	)
+	servers["nat"] = frappe.get_all("NAT Server", {"status": ("!=", "Archived")}, ["name", "cluster", "ip"])
 
 	proxy_servers_by_clusters = groupby(servers["proxy"], lambda x: x.cluster)
 
@@ -103,7 +101,9 @@ def get_clusters():  # noqa: C901
 									if relevant_proxy_server[0].name in servers_using_alternative_port
 									else relevant_proxy_server[0].name
 								)
-								cluster["jobs"]["proxied"].setdefault(job, []).append((proxy_server, _server))
+								cluster["jobs"]["proxied"].setdefault(job, []).append(
+									{"proxy": proxy_server, "server": _server}
+								)
 
 	return clusters
 
