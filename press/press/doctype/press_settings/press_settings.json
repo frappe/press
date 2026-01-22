@@ -1595,7 +1595,7 @@
    "fieldname": "school_api_secret",
    "fieldtype": "Password",
    "label": "School API Secret"
-  }
+  },
   {
    "collapsible": 1,
    "fieldname": "asset_store_section",
