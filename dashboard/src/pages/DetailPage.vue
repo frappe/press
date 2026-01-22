@@ -1,5 +1,5 @@
 <template>
-	<Header class="sticky top-0 bg-white">
+	<Header class="sticky top-0 z-10 bg-white">
 		<div class="w-full sm:flex sm:justify-between sm:items-center">
 			<div class="flex items-center space-x-2">
 				<FBreadcrumbs :items="breadcrumbs" />

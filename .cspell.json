@@ -720,6 +720,11 @@
         "Wazuh",
         "DBUS",
         "Zvkq",
-        "reka"
+        "reka",
+        "pydo",
+        "erpnextv",
+        "hrmsv",
+        "Zvkq",
+        "botocore"
     ]
 }

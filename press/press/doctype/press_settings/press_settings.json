@@ -87,6 +87,13 @@
   "docker_registry_username",
   "docker_registry_password",
   "docker_s3_secret_key",
+  "asset_store_section",
+  "asset_store_access_key",
+  "asset_store_secret_access_key",
+  "asset_store_endpoint",
+  "asset_store_region",
+  "asset_store_bucket_name",
+  "use_asset_store",
   "docker_build_section",
   "suspend_builds",
   "clone_directory",
@@ -158,9 +165,6 @@
   "aws_access_key_id",
   "column_break_agig",
   "aws_secret_access_key",
-  "frappe_compute_section",
-  "orchestrator_base_url",
-  "compute_api_token",
   "twilio_section",
   "twilio_account_sid",
   "twilio_api_key_sid",
@@ -242,6 +246,11 @@
   "partnership_fee_inr",
   "section_break_dhzi",
   "drive_resource_link",
+  "frappe_school_authentication_section",
+  "school_url",
+  "school_api_key",
+  "column_break_uxxz",
+  "school_api_secret",
   "hybrid_server_tab",
   "hybrid_cluster",
   "hybrid_domain",
@@ -1564,24 +1573,71 @@
    "options": "Server Plan Type"
   },
   {
-   "fieldname": "frappe_compute_section",
+   "fieldname": "frappe_school_authentication_section",
    "fieldtype": "Section Break",
-   "label": "Frappe Compute"
+   "label": "Frappe School Authentication"
   },
   {
-   "fieldname": "compute_api_token",
-   "fieldtype": "Password",
-   "label": "Compute API Token"
-  },
-  {
-   "fieldname": "orchestrator_base_url",
+   "fieldname": "school_url",
    "fieldtype": "Data",
-   "label": "Orchestrator Base URL"
+   "label": "School URL"
+  },
+  {
+   "fieldname": "school_api_key",
+   "fieldtype": "Data",
+   "label": "School API Key"
+  },
+  {
+   "fieldname": "column_break_uxxz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "school_api_secret",
+   "fieldtype": "Password",
+   "label": "School API Secret"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "asset_store_section",
+   "fieldtype": "Section Break",
+   "label": "Asset Store"
+  },
+  {
+   "default": "0",
+   "description": "Will only use this asset storage backend if checked.",
+   "fieldname": "use_asset_store",
+   "fieldtype": "Check",
+   "label": "Use Asset Store"
+  },
+  {
+   "fieldname": "asset_store_access_key",
+   "fieldtype": "Data",
+   "label": "Asset Store Access Key"
+  },
+  {
+   "fieldname": "asset_store_secret_access_key",
+   "fieldtype": "Password",
+   "label": "Asset Store Secret Access Key"
+  },
+  {
+   "fieldname": "asset_store_endpoint",
+   "fieldtype": "Data",
+   "label": "Asset Store Endpoint"
+  },
+  {
+   "fieldname": "asset_store_bucket_name",
+   "fieldtype": "Data",
+   "label": "Asset Store Bucket Name "
+  },
+  {
+   "fieldname": "asset_store_region",
+   "fieldtype": "Data",
+   "label": "Asset Store Region"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-01-08 18:10:48.053078",
+ "modified": "2026-01-17 11:49:01.799269",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
@@ -1600,7 +1656,6 @@
  ],
  "quick_entry": 1,
  "row_format": "Dynamic",
- "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

@@ -99,7 +99,7 @@ class DatabaseServer(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean"]
 		public: DF.Check
 		ram: DF.Float
 		root_public_key: DF.Code | None
@@ -217,6 +217,8 @@ class DatabaseServer(BaseServer):
 			self.binlog_max_disk_usage_percent = 20
 
 	def on_update(self):
+		self.publish_linked_server_realtime_update()
+
 		if self.flags.in_insert or self.is_new():
 			return
 
@@ -236,6 +238,27 @@ class DatabaseServer(BaseServer):
 
 		if self.public:
 			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
+
+	def publish_linked_server_realtime_update(self):
+		with contextlib.suppress(Exception):
+			app_server = frappe.db.exists(
+				"Server",
+				{
+					"database_server": self.name,
+					"status": ["!=", "Archived"],
+				},
+			)
+			if app_server:
+				frappe.publish_realtime(
+					"doc_update",
+					{
+						"doctype": "Server",
+						"name": app_server,
+					},
+					doctype="Server",
+					docname=app_server,
+					after_commit=True,
+				)
 
 	def update_subscription(self):
 		if self.subscription:
@@ -765,8 +788,10 @@ class DatabaseServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
-
 				self.process_hybrid_server_setup()
+				if self.provider == "DigitalOcean":
+					# Adjusting docker permissions
+					self.reboot()
 			else:
 				self.status = "Broken"
 		except Exception:

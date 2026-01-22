@@ -625,6 +625,8 @@ class MarketplaceApp(WebsiteGenerator):
 		return get_plans_for_app(self.name, frappe_version)
 
 	def can_charge_for_subscription(self, subscription):
+		if subscription.team == self.team:
+			return False
 		return subscription.enabled == 1 and subscription.team and subscription.team != "Administrator"
 
 
