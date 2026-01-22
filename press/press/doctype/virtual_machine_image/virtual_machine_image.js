@@ -28,10 +28,7 @@ frappe.ui.form.on('Virtual Machine Image', {
 							fieldname: 'cluster',
 							get_query: () => {
 								return {
-									filters: [
-										['name', '!=', frm.doc.cluster],
-										['cloud_provider', '=', 'AWS EC2'],
-									],
+									filters: [['name', '!=', frm.doc.cluster]],
 								};
 							},
 						},
