@@ -13,7 +13,6 @@ import frappe
 import jwt
 import requests
 
-from press.api.site import protected
 from press.utils import get_current_team, log_error
 
 if TYPE_CHECKING:
@@ -261,36 +260,6 @@ def branches(owner, name, installation=None):
 	frappe.throw("Error fetching branch list from GitHub: " + response.text)
 	return None
 
-@frappe.whitelist()
-@protected("Release Group")
-def validate_branch(bench, app, branch):
-	"""Validates whether a branch is available for the `app`"""
-	rg = frappe.get_doc("Release Group", bench)
-	app_source = rg.get_app_source(app)
-
-	installation_id = app_source.github_installation_id
-	repo_owner = app_source.repository_owner
-	repo_name = app_source.repository
-
-	token = get_access_token(installation_id)
-
-	if token:
-		headers = {
-			"Authorization": f"token {token}",
-		}
-	else:
-		headers = {}
-
-	response = requests.get(
-		f"https://api.github.com/repos/{repo_owner}/{repo_name}/branches/{branch}",
-		headers=headers,
-		timeout=10,
-	)
-
-	if response.ok:
-		return response.json()
-	frappe.throw("Error validating branch from GitHub: " + response.text)
-	return None
 
 def get_auth_headers(installation_id: str | None = None) -> "dict[str, str]":
 	if token := get_access_token(installation_id):
