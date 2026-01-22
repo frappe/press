@@ -100,8 +100,8 @@ ENV {{ doc.get_dependency_version("wkhtmltopdf", True) }}
 
   {% if doc.get_dependency_version("wkhtmltopdf") == '0.12.6' %}
   RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_arm64.deb  \
-    && dpkg -i wkhtmltox_0.12.6.1-2.jammy_arm64.deb \
-    && rm wkhtmltox_0.12.6.1-2.jammy_arm64.deb \
+    && dpkg -i wkhtmltox_0.12.6.1-2.jammy_arm64 \
+    && rm wkhtmltox_0.12.6.1-2.jammy_arm64 \
     `#stage-pre-wkhtmltopdf`
   {% endif %}
 {% else %}
@@ -251,49 +251,24 @@ RUN chmod +x /usr/local/bin/get_cached_app.py
 {% for app in doc.apps %}
 {% if app.app != "frappe"%}
 
-<<<<<<< HEAD
-{% if app.app != "crm" %}
-=======
 
-<<<<<<< HEAD
-{% if app.use_cached %}
->>>>>>> a24a08342 (feat(build): Isolate assets from image)
-=======
 {% if app.use_cached and use_asset_store %}
->>>>>>> d8b81da15 (feat(build): Allow >3.10 python to use cached assets)
-RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 \
-<<<<<<< HEAD
-  --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
-  bench get-app file:///home/frappe/context/apps/{{ app.app }} \
-    {% if app.use_cached %}
-    # Bench get-app flags to use get-app cache
-    --cache-key {{ app.hash }} {% if doc.compress_app_cache %}--compress-artifacts{% endif %} \
-    {% endif %}
-  `#stage-apps-{{ app.app }}`
-{% else %}
-
-RUN --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
-  bench get-app file:///home/frappe/context/apps/{{ app.app }} \
-  `#stage-apps-{{ app.app }}`
-
-{% endif %}
-=======
+RUN --mount=type=secret,id=build_token,mode=0444 \
     --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
-    python${PYTHON_VERSION} /usr/local/bin/get_cached_app.py \
+    BUILD_TOKEN="$(cat /run/secrets/build_token)" && python${PYTHON_VERSION} /usr/local/bin/get_cached_app.py \
         {{ app.app }} \
         {{ app.hash }} \
+        "$BUILD_TOKEN" \
+        {{ site_url }} \
+        {{ upload_assets }} \
         `#stage-apps-{{ app.app }}`
 {% else %}
 RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 \
     --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
     bench get-app file:///home/frappe/context/apps/{{ app.app }} \
     `#stage-apps-{{ app.app }}`
-<<<<<<< HEAD
->>>>>>> 602c938d0 (refactor(build): Standalone `get-app` file)
-=======
 {% endif %}
 
->>>>>>> a24a08342 (feat(build): Isolate assets from image)
 
 {% endif %}
 {% endfor %}
