@@ -106,11 +106,7 @@
   "has_data_volume",
   "mounts",
   "notifications_section",
-  "communication_infos",
-  "security_tab",
-  "firewall_section",
-  "firewall_enabled",
-  "firewall_rules"
+  "communication_infos"
  ],
  "fields": [
   {
@@ -290,7 +286,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner\nVodacom\nDigitalOcean",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner\nVodacom",
    "set_only_once": 1
   },
   {
@@ -338,7 +334,7 @@
    "label": "Staging"
   },
   {
-   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\", \"DigitalOcean\"].includes(doc.provider)",
+   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\"].includes(doc.provider)",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
@@ -745,28 +741,6 @@
    "fieldname": "is_provisioning_press_job_completed",
    "fieldtype": "Check",
    "label": "Is Provisioning Job Completed"
-  },
-  {
-   "fieldname": "security_tab",
-   "fieldtype": "Tab Break",
-   "label": "Security"
-  },
-  {
-   "fieldname": "firewall_section",
-   "fieldtype": "Section Break",
-   "label": "Firewall"
-  },
-  {
-   "default": "0",
-   "fieldname": "firewall_enabled",
-   "fieldtype": "Check",
-   "label": "Enabled"
-  },
-  {
-   "fieldname": "firewall_rules",
-   "fieldtype": "Table",
-   "label": "Rules",
-   "options": "Server Firewall Rule"
   }
  ],
  "links": [
@@ -776,10 +750,14 @@
   }
  ],
 <<<<<<< HEAD
+<<<<<<< HEAD
  "modified": "2026-01-18 16:20:05.763500",
  "modified_by": "Administrator",
 =======
  "modified": "2026-01-20 16:06:22.862774",
+=======
+ "modified": "2026-01-22 17:14:45.219480",
+>>>>>>> fa4c52ff5 (refactor(firewall): Move to a separate doctype)
  "modified_by": "hello@ssiyad.com",
 >>>>>>> 16c919e59 (fix(firewall): Move to ansible)
  "module": "Press",

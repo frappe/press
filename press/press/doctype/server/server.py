@@ -39,7 +39,6 @@ from press.press.doctype.auto_scale_record.auto_scale_record import (
 )
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
-from press.press.doctype.server.firewall import ServerFirewall
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
@@ -88,7 +87,7 @@ MARIADB_DATA_MNT_POINT = "/opt/volumes/mariadb"
 BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
 
 
-class BaseServer(Document, ServerFirewall, TagHelpers):
+class BaseServer(Document, TagHelpers):
 	dashboard_fields = (
 		"title",
 		"plan",
@@ -107,8 +106,6 @@ class BaseServer(Document, ServerFirewall, TagHelpers):
 		"is_monitoring_disabled",
 		"is_provisioning_press_job_completed",
 		"is_unified_server",
-		"firewall_enabled",
-		"firewall_rules",
 	)
 
 	@staticmethod
@@ -513,11 +510,7 @@ class BaseServer(Document, ServerFirewall, TagHelpers):
 		if self.doctype in ["Database Server", "Server", "Proxy Server"] and self.is_self_hosted:
 			self.name = f"{self.hostname}.{self.self_hosted_server_domain}"
 
-	def before_validate(self):
-		self.deduplicate_firewall_rules()
-
 	def validate(self):
-		self.validate_firewall_rules()
 		self.validate_cluster()
 		self.validate_agent_password()
 		if self.doctype == "Database Server" and not self.self_hosted_mariadb_server:
@@ -2382,7 +2375,6 @@ class Server(BaseServer):
 		from press.press.doctype.auto_scale_trigger.auto_scale_trigger import AutoScaleTrigger
 		from press.press.doctype.communication_info.communication_info import CommunicationInfo
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
-		from press.press.doctype.server_firewall_rule.server_firewall_rule import ServerFirewallRule
 		from press.press.doctype.server_mount.server_mount import ServerMount
 
 		agent_password: DF.Password | None
@@ -2398,8 +2390,6 @@ class Server(BaseServer):
 		disable_agent_job_auto_retry: DF.Check
 		domain: DF.Link | None
 		enable_logical_replication_during_site_update: DF.Check
-		firewall_enabled: DF.Check
-		firewall_rules: DF.Table[ServerFirewallRule]
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
 		halt_agent_jobs: DF.Check
@@ -2436,7 +2426,7 @@ class Server(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom"]
 		proxy_server: DF.Link | None
 		public: DF.Check
 		ram: DF.Float
@@ -2481,8 +2471,6 @@ class Server(BaseServer):
 			self.managed_database_service = ""
 
 	def on_update(self):
-		self.sync_firewall()
-
 		# If Database Server is changed for the server then change it for all the benches
 		if not self.is_new() and (
 			self.has_value_changed("database_server") or self.has_value_changed("managed_database_service")
