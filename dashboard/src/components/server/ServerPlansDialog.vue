@@ -15,10 +15,13 @@
 		v-model="show"
 	>
 		<template #body-content>
-			<!-- Don't show premium plans for Hetzner provider -->
+			<!-- Don't show premium plans for Hetzner & DigitalOcean -->
 			<div
 				class="mb-4 mt-2 w-full space-y-2"
-				v-if="this.$server?.doc?.provider != 'Hetzner'"
+				v-if="
+					this.$server?.doc?.provider != 'Hetzner' &&
+					this.$server?.doc?.provider != 'DigitalOcean'
+				"
 			>
 				<div class="grid grid-cols-2 gap-3">
 					<button
@@ -55,7 +58,10 @@
 
 			<!-- CPU and Ram only upgrade choice -->
 			<div
-				v-if="this.$server?.doc?.provider === 'Hetzner'"
+				v-if="
+					this.$server?.doc?.provider === 'Hetzner' ||
+					this.$server?.doc?.provider === 'DigitalOcean'
+				"
 				class="flex flex-col overflow-hidden rounded text-left w-full p-3 mb-4 cursor-pointer gap-3"
 				:class="{
 					'border-amber-300 bg-amber-100 border-2': !cpu_and_memory_only_resize,
