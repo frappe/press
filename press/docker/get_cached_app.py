@@ -156,7 +156,7 @@ def tar_and_compress_folder(folder_path: str, output_filename: str) -> str:
 	return output_filename
 
 
-def extract_and_flatten_tar(file_stream: BytesIO) -> dict[str, bytes]:
+def extract_and_flatten_tar(file_stream: BytesIO):
 	"""Flatten tarfile in the correct assets directory"""
 	change_working_directory()
 
@@ -167,7 +167,13 @@ def extract_and_flatten_tar(file_stream: BytesIO) -> dict[str, bytes]:
 def build_assets(app: str) -> str:
 	"""Build assets for the app using the app name and return the path to assets"""
 	change_working_directory()
-	subprocess.run(["bench", "build", "--app", app], check=True)
+	env = os.environ.copy()
+
+	# Explicitly hardlink assets
+	if "FRAPPE_HARD_LINK_ASSETS" not in env:
+		env["FRAPPE_HARD_LINK_ASSETS"] = "True"
+
+	subprocess.run(["bench", "build", "--app", app], check=True, env=env)
 	return os.path.join(os.getcwd(), "sites", "assets", app)
 
 
