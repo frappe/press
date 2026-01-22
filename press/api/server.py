@@ -756,7 +756,7 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 			name, resource_name, ["virtual_machine", "provider"], as_dict=True
 		)
 
-		if resource_details.provider == "Hetzner":
+		if resource_details.provider == "Hetzner" or resource_details.provider == "DigitalOcean":
 			current_root_disk_size = (
 				frappe.db.get_value("Virtual Machine", resource_details.virtual_machine, "root_disk_size")
 				if resource_details and resource_details.virtual_machine
