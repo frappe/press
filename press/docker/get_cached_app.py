@@ -205,6 +205,9 @@ def main():
 	else:
 		print(f"Assets {asset_filename} not found in store. Building and uploading...")
 		assets_folder = build_assets(APP_NAME)
+		if not os.path.exists(assets_folder) or not os.path.isdir(assets_folder):
+			print(f"No assets found for app {APP_NAME} at {assets_folder}.")
+			return
 
 		if UPLOAD_ASSETS:
 			tar_file = tar_and_compress_folder(assets_folder, asset_filename)
