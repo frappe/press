@@ -430,7 +430,10 @@ class Site(Document, TagHelpers):
 
 	def before_insert(self):
 		if not self.bench and self.group:
-			self.set_latest_bench()
+			if self.server:
+				self.set_bench_for_server()
+			else:
+				self.set_latest_bench()
 		# initialize site.config based on plan
 		self._update_configuration(self.get_plan_config(), save=False)
 
@@ -2736,6 +2739,32 @@ class Site(Document, TagHelpers):
 		if self.server:
 			bench_query = bench_query.where(servers.name == self.server)
 		return bench_query.run(as_dict=True)
+
+	def set_bench_for_server(self):
+		if not self.server:
+			return
+
+		server_details = frappe.db.get_value("Server", self.server, ["public", "team"], as_dict=True)
+
+		if not server_details:
+			frappe.throw(f"Server {self.server} not found")
+
+		if server_details.team != get_current_team():
+			frappe.throw("You don't have permission to deploy on this server")
+
+		bench = frappe.db.get_value(
+			"Bench", {"group": self.group, "status": "Active", "server": self.server}, ["name", "cluster"]
+		)
+
+		if not bench:
+			frappe.throw(
+				f"No active bench available for group {self.group} on server {self.server}. "
+				"Please contact support."
+			)
+
+		self.bench = bench.name
+		if self.cluster != bench.cluster:
+			frappe.throw(f"Site cannot be deployed on {self.cluster} yet. Please contact support.")
 
 	def set_latest_bench(self):
 		if not (self.domain and self.cluster and self.group):
