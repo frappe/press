@@ -134,7 +134,8 @@ class ServerFirewall(Document):
 				port=self.server._ssh_port(),
 				variables={
 					"enabled": bool(self.enabled),
-					"rules": list(self.transform_rules()),
+					"rules": list(self.get_rules()),
+					"rules_bypass": self.get_bypass_rules(),
 				},
 			).run()
 		except Exception:
@@ -150,7 +151,7 @@ class ServerFirewall(Document):
 			message = _("{0} is not a valid IP address or CIDR.").format(ip)
 			frappe.throw(message, frappe.ValidationError)
 
-	def transform_rules(self):
+	def get_rules(self):
 		for rule in self.rules:
 			rule = {
 				"source": rule.source,
@@ -163,6 +164,26 @@ class ServerFirewall(Document):
 			if not rule["destination"]:
 				rule.pop("destination")
 			yield rule
+
+	def get_bypass_rules(self):
+		monitors = frappe.get_all("Monitor Server", pluck="ip")
+		rules = []
+		for monitor in monitors:
+			rules.append(
+				{
+					"source": monitor,
+					"protocol": "TCP",
+					"action": "ACCEPT",
+				}
+			)
+			rules.append(
+				{
+					"destination": monitor,
+					"protocol": "TCP",
+					"action": "ACCEPT",
+				}
+			)
+		return rules
 
 	def transform_action(self, action: str):
 		match action:
