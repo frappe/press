@@ -228,10 +228,12 @@ class VirtualMachineImage(Document):
 			self.status = self.get_digital_ocean_status_map(action_status)
 
 			if self.status == "Available":
-				images = self.client.droplets.list_snapshots(self.instance_id)["snapshots"]
-				image = images[
-					0
-				]  # Machine get's one snapshot only and when action is completed we will have an image
+				if frappe.db.get_value("Virtual Machine", self.virtual_machine, "status") == "Terminated":
+					images = self.client.snapshots.get(self.image_id)["snapshot"]
+				else:
+					images = self.client.droplets.list_snapshots(self.instance_id)["snapshots"]
+
+				image = images[0] if isinstance(images, list) else images
 				self.image_id = image["id"]
 				self.size = image["min_disk_size"]
 				self.root_size = image["min_disk_size"]
