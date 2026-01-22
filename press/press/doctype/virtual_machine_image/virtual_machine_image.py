@@ -234,24 +234,31 @@ class VirtualMachineImage(Document):
 				else:
 					raise e
 		elif cluster.cloud_provider == "DigitalOcean":
-			if not self.copied_from:
-				action_status = self.client.droplet_actions.get(
-					droplet_id=self.instance_id, action_id=self.action_id
-				)
-			else:
+			if self.copied_from:
 				action_status = self.client.image_actions.get(
 					action_id=self.action_id,
 					image_id=frappe.db.get_value("Virtual Machine Image", self.copied_from, "image_id"),
+				)
+			else:
+				action_status = self.client.droplet_actions.get(
+					droplet_id=self.instance_id, action_id=self.action_id
 				)
 
 			action_status = action_status["action"]["status"]
 			self.status = self.get_digital_ocean_status_map(action_status)
 
 			if self.status == "Available":
-				if frappe.db.get_value("Virtual Machine", self.virtual_machine, "status") == "Terminated":
-					images = self.client.snapshots.get(self.image_id)["snapshot"]
+				if self.copied_from:
+					images = self.client.snapshots.get(action_status["action"]["resource_id"]).get("snapshot")
 				else:
-					images = self.client.droplets.list_snapshots(self.instance_id)["snapshots"]
+					virtual_machine_status = frappe.db.get_value(
+						"Virtual Machine", self.virtual_machine, "status"
+					)
+					if virtual_machine_status == "Terminated":
+						images = self.client.snapshots.get(self.image_id).get("snapshot")
+					else:
+						# We need this since the image ID might not be ready immediately after creation
+						images = self.client.droplets.list_snapshots(self.instance_id).get("snapshots")
 
 				image = images[0] if isinstance(images, list) else images
 				self.image_id = image["id"]
