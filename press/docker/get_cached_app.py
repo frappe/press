@@ -17,7 +17,11 @@ APP_NAME = sys.argv[1]
 APP_HASH = sys.argv[2]
 BUILD_TOKEN = sys.argv[3]
 SITE_URL = sys.argv[4]
-UPLOAD_ASSETS = bool(sys.argv[5])
+try:
+	UPLOAD_ASSETS = bool(int(sys.argv[5]))
+except Exception as e:
+	print(f"Could not parse upload assets flag: {e}")
+	UPLOAD_ASSETS = False
 
 
 class AssetStoreCredentials(TypedDict):
