@@ -25,15 +25,14 @@
 			<Switch
 				label="Enabled"
 				class="border w-60"
+				v-model="server.doc.enabled"
 				:disabled="server.get.loading"
-				:modelValue="server.doc.enabled"
-				@update:model-value="(enabled) => (server.doc.enabled = enabled)"
 			/>
 			<div class="flex justify-center gap-2">
 				<Button
-					label="Restore"
+					label="Discard"
 					icon-left="trash-2"
-					theme="red"
+					theme="gray"
 					:disabled="!server.isDirty"
 					@click.stop.prevent="() => server.reload()"
 				/>
@@ -68,6 +67,18 @@
 					},
 					{ label: 'Protocol', fieldname: 'protocol' },
 					{ label: 'Action', fieldname: 'action' },
+					{
+						label: '',
+						format: (_: any, row: any) => {
+							if (row.name) {
+								return '';
+							}
+							return 'Unsaved';
+						},
+						type: 'Badge',
+						theme: 'orange',
+						width: '100px',
+					},
 				],
 				rowActions: ({ row }: any) => [
 					{
