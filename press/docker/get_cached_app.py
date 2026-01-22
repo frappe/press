@@ -181,7 +181,7 @@ def main():
 		if os.getenv("FRAPPE_DOCKER_BUILD") == "True"
 		else APP_NAME
 	)
-
+	os.environ["FRAPPE_HARD_LINK_ASSETS"] = "True"
 	subprocess.run(["bench", "get-app", app_path, "--skip-assets"], check=True)
 
 	credentials = get_asset_store_credentials()

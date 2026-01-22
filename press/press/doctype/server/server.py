@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import datetime
+import ipaddress
 import json
 import shlex
 import typing
@@ -463,9 +464,13 @@ class BaseServer(Document, TagHelpers):
 		"""Get servers data disk size"""
 		mountpoint = self.guess_data_disk_mountpoint()
 		volume = self.find_mountpoint_volume(mountpoint)
+
 		if not volume:  # Volume might not be attached as soon as the server is created
 			return 0
-		return frappe.db.get_value("Virtual Machine Volume", {"volume_id": volume.volume_id}, "size")
+
+		return frappe.db.get_value(
+			"Virtual Machine Volume", {"volume_id": volume.volume_id, "parent": volume.parent}, "size"
+		)
 
 	def _get_app_and_database_servers(self) -> tuple[Server, DatabaseServer]:
 		if self.doctype == "Database Server":
@@ -2156,18 +2161,19 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		frappe.throw(f"Failed to fetch {primary.name}'s Frappe public key")
 		return None
 
-	def copy_files(self, source, destination):
+	def copy_files(self, source, destination, extra_options=None):
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
 			"_copy_files",
 			source=source,
 			destination=destination,
+			extra_options=extra_options,
 			queue="long",
 			timeout=7200,
 		)
 
-	def _copy_files(self, source, destination):
+	def _copy_files(self, source, destination, extra_options=None):
 		try:
 			ansible = Ansible(
 				playbook="copy.yml",
@@ -2177,6 +2183,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				variables={
 					"source": source,
 					"destination": destination,
+					"extra_options": extra_options,
 				},
 			)
 			ansible.run()
@@ -2771,12 +2778,12 @@ class Server(BaseServer):
 		self.save()
 
 	def get_proxy_ip(self):
-		"""In case of standalone setup proxy will not required"""
-
+		# In case of standalone setup, proxy is not required.
 		if self.is_standalone:
 			return self.ip
-
-		return frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
+		private_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
+		with_mask = private_ip + "/24"
+		return str(ipaddress.ip_network(with_mask, strict=False))
 
 	@frappe.whitelist()
 	def setup_standalone(self):
