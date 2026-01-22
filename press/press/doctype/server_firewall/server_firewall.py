@@ -83,8 +83,32 @@ class ServerFirewall(Document):
 	def before_validate(self):
 		self.deduplicate_rules()
 
+	def deduplicate_rules(self):
+		"""
+		Remove duplicate entries from rules. This will not save the doc.
+		"""
+		rules_seen = set()
+		unique_rules = []
+		for rule in self.rules:
+			rule_tuple = (rule.source, rule.destination, rule.protocol, rule.action)
+			if rule_tuple not in rules_seen:
+				rules_seen.add(rule_tuple)
+				unique_rules.append(rule)
+		self.rules = unique_rules
+
 	def validate(self):
+		self.prevent_selfhosted()
 		self.validate_rules()
+
+	def prevent_selfhosted(self):
+		if self.server.is_self_hosted:
+			message = _("Firewall cannot be enabled for self-hosted servers.")
+			frappe.throw(message, frappe.ValidationError)
+
+	def validate_rules(self):
+		for rule in self.rules:
+			self.validate_ip(rule.source)
+			self.validate_ip(rule.destination)
 
 	def on_update(self):
 		self.sync()
@@ -115,24 +139,6 @@ class ServerFirewall(Document):
 			).run()
 		except Exception:
 			log_error("Failed to sync firewall rules", doc=self)
-
-	def deduplicate_rules(self):
-		"""
-		Remove duplicate entries from rules. This will not save the doc.
-		"""
-		rules_seen = set()
-		unique_rules = []
-		for rule in self.rules:
-			rule_tuple = (rule.source, rule.destination, rule.protocol, rule.action)
-			if rule_tuple not in rules_seen:
-				rules_seen.add(rule_tuple)
-				unique_rules.append(rule)
-		self.rules = unique_rules
-
-	def validate_rules(self):
-		for rule in self.rules:
-			self.validate_ip(rule.source)
-			self.validate_ip(rule.destination)
 
 	def validate_ip(self, ip: str):
 		"""Checks if the provided string is a valid IPv4 or IPv6 address."""
