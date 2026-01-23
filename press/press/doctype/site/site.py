@@ -2753,7 +2753,10 @@ class Site(Document, TagHelpers):
 			frappe.throw("You don't have permission to deploy on this server")
 
 		bench = frappe.db.get_value(
-			"Bench", {"group": self.group, "status": "Active", "server": self.server}, ["name", "cluster"]
+			"Bench",
+			{"group": self.group, "status": "Active", "server": self.server},
+			["name", "cluster"],
+			as_dict=True,
 		)
 
 		if not bench:
