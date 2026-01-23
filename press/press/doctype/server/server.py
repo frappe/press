@@ -2052,16 +2052,14 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 	):
 		"""
 		Calculate required disk increase for servers and handle notifications accordingly.
-
-		- For servers with `auto_increase_storage` enabled:
-		    - Compute the required storage increase.
-		    - Automatically apply the increase.
-		    - Send an email notification about the auto-added storage.
-
-		- For servers with `auto_increase_storage` disabled:
-		    - If disk usage exceeds 90%, send a warning email.
-		    - We have also sent them emails at 80% if they haven't enabled auto add on yet then send here again.
-		    - Notify the user to manually increase disk space.
+			- For servers with `auto_increase_storage` enabled:
+				- Compute the required storage increase.
+				- Automatically apply the increase.
+				- Send an email notification about the auto-added storage.
+			- For servers with `auto_increase_storage` disabled:
+				- If disk usage exceeds 90%, send a warning email.
+				- We have also sent them emails at 80% if they haven't enabled auto add on yet then send here again.
+				- Notify the user to manually increase disk space.
 		"""
 
 		buffer = self.size_to_increase_by_for_20_percent_available(mountpoint)
@@ -3291,12 +3289,12 @@ class Server(BaseServer):
 	def validate_scale(self):
 		"""
 		Check if the server can auto scale, the following parameters before creating a scale record
-		    - Benches being modified
-		    - Server is configured for auto scale.
-		    - Was the last auto scale modified before the cool of period (don't create new auto scale).
-		    - There is a auto scale operation running on the server.
-		    - There are no active sites on the server.
-		    - Check if there are active deployments on primary server
+			- Benches being modified
+			- Server is configured for auto scale.
+			- Was the last auto scale modified before the cool of period (don't create new auto scale).
+			- There is a auto scale operation running on the server.
+			- There are no active sites on the server.
+			- Check if there are active deployments on primary server
 		"""
 		if not self.can_scale:
 			frappe.throw("Server is not configured for auto scaling", frappe.ValidationError)
