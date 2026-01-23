@@ -429,7 +429,7 @@ class Site(Document, TagHelpers):
 
 	def before_insert(self):
 		if not self.bench and self.group:
-			if self.server:
+			if self.server and self.team != "Administrator":  # Check to avoid standby sites
 				self.set_bench_for_server()
 			else:
 				self.set_latest_bench()
