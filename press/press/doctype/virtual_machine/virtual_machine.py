@@ -1289,7 +1289,7 @@ class VirtualMachine(Document):
 			self.is_static_ip = self.has_static_ip(instance)
 >>>>>>> 133667527 (feat(virtual-machine): add nat server bindings in virtual machine controllers)
 
-			if instance.get("NetworkInterfaces", []):
+			if instance.get("NetworkInterfaces"):
 				self.secondary_private_ip = next(
 					(
 						x["PrivateIpAddress"]
@@ -1436,6 +1436,24 @@ class VirtualMachine(Document):
 		self.sync()
 
 		return f"Assigned {self.secondary_private_ip}"
+
+	@frappe.whitelist()
+	def disassociate_auto_assigned_public_ip(self):
+		if self.cloud_provider != "AWS EC2":
+			frappe.throw("Public IP disassociation is currently only supported for AWS EC2 instances")
+
+		if not self.public_ip_address:
+			frappe.throw("No public IP associated with this instance.")
+
+		ec2 = self.client()
+		instance = ec2.describe_instances(InstanceIds=[self.instance_id])
+		ec2.modify_network_interface_attribute(
+			NetworkInterfaceId=instance["Reservations"][0]["Instances"][0]["NetworkInterfaces"][0][
+				"NetworkInterfaceId"
+			],
+			AssociatePublicIpAddress=False,
+		)
+		self.sync()
 
 	@frappe.whitelist()
 	def create_image(self, public=True):
