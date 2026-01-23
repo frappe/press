@@ -430,7 +430,7 @@ class Site(Document, TagHelpers):
 
 	def before_insert(self):
 		if not self.bench and self.group:
-			if self.server:
+			if self.server and self.team != "Administrator":  # Check to avoid standby sites
 				self.set_bench_for_server()
 			else:
 				self.set_latest_bench()
@@ -2753,7 +2753,10 @@ class Site(Document, TagHelpers):
 			frappe.throw("You don't have permission to deploy on this server")
 
 		bench = frappe.db.get_value(
-			"Bench", {"group": self.group, "status": "Active", "server": self.server}, ["name", "cluster"]
+			"Bench",
+			{"group": self.group, "status": "Active", "server": self.server},
+			["name", "cluster"],
+			as_dict=True,
 		)
 
 		if not bench:

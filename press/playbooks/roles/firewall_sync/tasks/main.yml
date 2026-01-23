@@ -1,39 +1,72 @@
 ---
-- name: Enable Firewall
+- name: Link Input Chain
   ansible.builtin.iptables:
     chain: INPUT
     jump: "{{ chain_main }}"
     state: present
-  when: enabled | lower == "true"
+  when: enabled | bool
 
-- name: Disable Firewall
+- name: Link Docker Chain
+  ansible.builtin.iptables:
+    chain: DOCKER-USER
+    jump: "{{ chain_main }}"
+    state: present
+  when: enabled | bool
+
+- name: Link Output Chain
+  ansible.builtin.iptables:
+    chain: OUTPUT
+    jump: "{{ chain_main }}"
+    state: present
+  when: enabled | bool
+
+- name: Unlink Input Chain
   ansible.builtin.iptables:
     chain: INPUT
     jump: "{{ chain_main }}"
     state: absent
-  when: enabled | lower == "false"
+  when: not (enabled | bool)
 
-- name: Clear Existing Rules
+- name: Unlink Docker Chain
+  ansible.builtin.iptables:
+    chain: DOCKER-USER
+    jump: "{{ chain_main }}"
+    state: absent
+  when: not (enabled | bool)
+
+- name: Unlink Output Chain
+  ansible.builtin.iptables:
+    chain: OUTPUT
+    jump: "{{ chain_main }}"
+    state: absent
+  when: not (enabled | bool)
+
+- name: Clear Existing Main Rules
   ansible.builtin.iptables:
     chain: "{{ chain_main }}"
     flush: yes
 
-- name: Sync Rules
-  ansible.builtin.iptables:
-    chain: "{{ chain_main }}"
-    source: "{{ item.source | default(omit) }}"
-    destination: "{{ item.destination | default(omit) }}"
-    protocol: "{{ item.protocol }}"
-    jump: "{{ item.action }}"
-  loop: "{{ rules }}"
-
-- name: Sync Bypass Rules
+- name: Clear Existing Bypass Rules
   ansible.builtin.iptables:
     chain: "{{ chain_bypass }}"
-    source: "{{ item.source | default(omit) }}"
-    destination: "{{ item.destination | default(omit) }}"
-    protocol: "{{ item.protocol }}"
-    jump: "{{ item.action }}"
+    flush: yes
+
+- name: Sync Rules (raw)
+  ansible.builtin.raw: >
+    iptables -A {{ chain_main }} \
+      -m conntrack --ctstate NEW,ESTABLISHED \
+      {% if item.source is defined %}--ctorigsrc {{ item.source }} {% endif %} \
+      {% if item.destination is defined %}--ctorigdst {{ item.destination }} {% endif %} \
+      -p {{ item.protocol }} -j {{ item.action }}
+  loop: "{{ rules }}"
+
+- name: Sync Bypass Rules using raw command
+  ansible.builtin.raw: >-
+    iptables -A {{ chain_bypass }} \
+      -m conntrack --ctstate NEW,ESTABLISHED \
+      {% if item.source is defined %}-m conntrack --ctorigsrc {{ item.source }} {% endif %}\
+      {% if item.destination is defined %}-m conntrack --ctorigdst {{ item.destination }} {% endif %}\
+      -p {{ item.protocol }} -j {{ item.action }}
   loop: "{{ rules_bypass }}"
 
 - name: Persist rules across reboots
