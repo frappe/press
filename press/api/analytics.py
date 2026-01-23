@@ -783,7 +783,7 @@ def get_advanced_analytics(name, timezone, start, end, max_no_of_paths=MAX_NO_OF
 				max_no_of_paths,
 			),
 			"request_count_by_ip": get_nginx_request_by_(
-				name, "count", timezone, timespan, timegrain, max_no_of_paths
+				name, "count", timezone, start, end, timespan, timegrain, max_no_of_paths
 			),
 			"background_job_count_by_method": get_background_job_by_(
 				name,
