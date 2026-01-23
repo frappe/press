@@ -133,7 +133,18 @@ frappe.ui.form.on('Virtual Machine', {
 				__('Assign Secondary Private IP'),
 				'assign_secondary_private_ip',
 				true,
-				frm.doc.status === 'Running' && frm.doc.cloud_provider === 'AWS EC2',
+				frm.doc.status === 'Running' &&
+					frm.doc.cloud_provider === 'AWS EC2' &&
+					!!!frm.doc.secondary_private_ip,
+			],
+			[
+				__('Disassociate Auto Assigned Public IP'),
+				'disassociate_auto_assigned_public_ip',
+				true,
+				frm.doc.status === 'Running' &&
+					frm.doc.cloud_provider === 'AWS EC2' &&
+					!!frm.doc.public_ip_address &&
+					!frm.doc.is_static_ip,
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
