@@ -484,7 +484,7 @@ export default {
 				/* Using allowed units for value: https://day.js.org/docs/en/manipulate/add#list-of-all-available-units */
 				{ label: 'Last 1 hour', value: '1h' },
 				{ label: 'Last 6 hours', value: '6h' },
-				{ label: 'Last 24 hours', value: '24h' },
+				{ label: 'Last day', value: '24h' },
 				{ label: 'Last 7 days', value: '7d' },
 				{ label: 'Last 15 days', value: '15d' },
 			],
