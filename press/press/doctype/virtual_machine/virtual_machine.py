@@ -1376,10 +1376,12 @@ class VirtualMachine(Document):
 				if doctype in ("NAT Server",) and self.secondary_private_ip:
 					frappe.db.set_value(doctype, server, "secondary_private_ip", self.secondary_private_ip)
 				if self.public_ip_address:
-					if self.has_value_changed("public_ip_address"):
+					if frappe.flags.force_update_dns or self.has_value_changed("public_ip_address"):
 						frappe.get_doc(doctype, server).create_dns_record()
-				elif self.private_ip_address and self.has_value_changed("private_ip_address"):
-					frappe.get_doc(doctype, server).create_dns_record(self.private_ip_address)
+				elif self.private_ip_address and (
+					frappe.flags.force_update_dns or self.has_value_changed("private_ip_address")
+				):
+					frappe.get_doc(doctype, server).create_dns_record()
 				frappe.db.set_value(doctype, server, "status", status_map[self.status])
 
 	def update_name_tag(self, name):
@@ -1424,6 +1426,7 @@ class VirtualMachine(Document):
 			],
 			AssociatePublicIpAddress=False,
 		)
+		frappe.flags.force_update_dns = True
 		self.sync()
 
 	@frappe.whitelist()
