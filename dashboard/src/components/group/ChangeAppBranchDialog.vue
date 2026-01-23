@@ -174,9 +174,9 @@ export default {
 			this.branchVerificationError = null;
 			try {
 				await this.$resources.validateBranchUsingInstallation.submit({
-					bench: this.bench,
+					name: this.bench,
 					app: this.app.name,
-					branch: this.otherBranchName,
+					branch: this.otherBranchName.trim(),
 				});
 
 				this.otherBranchValidated = true;
@@ -194,7 +194,7 @@ export default {
 				name: this.bench,
 				app: this.app.name,
 				to_branch: this.useOtherBranch
-					? this.otherBranchName
+					? this.otherBranchName.trim()
 					: this.selectedBranch,
 			});
 		},
