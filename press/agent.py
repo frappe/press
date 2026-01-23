@@ -1021,7 +1021,12 @@ class Agent:
 				cluster = frappe.db.get_value(self.server_type, self.server, "cluster", cache=True)
 				proxy = frappe.db.get_value(
 					"Proxy Server",
-					{"status": "Active", "cluster": cluster, "use_as_proxy_for_agent_and_metrics": 1},
+					{
+						"status": "Active",
+						"cluster": cluster,
+						"halt_agent_jobs": 0,
+						"use_as_proxy_for_agent_and_metrics": 1,
+					},
 				)
 
 			if proxy:
