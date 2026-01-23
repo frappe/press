@@ -423,8 +423,10 @@ export default {
 	},
 	watch: {
 		apps() {
-			this.version = this.autoSelectVersion();
-			this.cluster = null;
+			if (!(this.bench && this.selectedDedicatedServer)) {
+				this.version = this.autoSelectVersion();
+				this.cluster = null;
+			}
 			this.agreedToRegionConsent = false;
 		},
 		showLocalisationOption() {
