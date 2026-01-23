@@ -2364,7 +2364,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		if not self.ip and self.private_ip:
 			return frappe.db.get_value(
 				"Proxy Server",
-				{"status": ("!=", "Archived"), "cluster": self.cluster},
+				{"status": "Active", "cluster": self.cluster},
 				["ssh_user", "ssh_port", "name as ip"],
 				as_dict=True,
 			)
