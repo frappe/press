@@ -263,10 +263,17 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup,
 			],
 			[
+<<<<<<< HEAD
 				__('Setup Wildcard Hosts'),
 				'setup_wildcard_hosts',
 				true,
 				frm.doc.is_server_setup && frm.doc.is_standalone_setup,
+=======
+				__('Install NAT iptables'),
+				'install_nat_iptables',
+				true,
+				frm.doc.is_server_setup,
+>>>>>>> 4c7293e40 (feat: action to install nat iptables on app & db server)
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
