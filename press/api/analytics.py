@@ -836,7 +836,18 @@ def get_advanced_analytics(name, timezone, start, end, max_no_of_paths=MAX_NO_OF
 def daily_usage(name, timezone):
 	timespan = 7 * 24 * 60 * 60
 	timegrain = 24 * 60 * 60
-	request_data = get_usage(name, "request", timezone, timespan, timegrain)
+
+	end = datetime.now(pytz_timezone(timezone))
+	start = frappe.utils.add_to_date(end, seconds=-timespan)
+
+	request_data = request_data = get_usage(
+		name,
+		"request",
+		timezone,
+		start,
+		end,
+		timegrain,
+	)
 
 	plan = frappe.get_cached_doc("Site", name).plan
 
