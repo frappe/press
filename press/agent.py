@@ -1017,7 +1017,7 @@ class Agent:
 			server_ip, server_private_ip = frappe.db.get_value(
 				self.server_type, self.server, ("ip", "private_ip")
 			)
-			if not server_ip and server_private_ip:
+			if not server_ip and server_private_ip and not frappe.flags.in_test:
 				cluster = frappe.db.get_value(self.server_type, self.server, "cluster", cache=True)
 				proxy = frappe.db.get_value(
 					"Proxy Server",
