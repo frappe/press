@@ -23,7 +23,6 @@
 			<span v-else class="text-base text-gray-700">No data</span>
 		</div>
 		<VChart
-			ref="chartRef"
 			v-else
 			autoresize
 			class="chart"
@@ -34,7 +33,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref, toRefs } from 'vue';
+import { ref, toRefs } from 'vue';
 import { DateTime } from 'luxon';
 import { use, graphic } from 'echarts/core';
 import { SVGRenderer } from 'echarts/renderers';
@@ -44,15 +43,11 @@ import {
 	LegendComponent,
 	TooltipComponent,
 	MarkLineComponent,
-	DataZoomComponent,
-	ToolboxComponent,
-	BrushComponent,
 } from 'echarts/components';
 import VChart from 'vue-echarts';
 import Card from '../global/Card.vue';
 import { theme } from '../../utils/theme';
 import { bytes, getUnit } from '../../utils/format';
-import dayjs from '../../utils/dayjs';
 
 const props = defineProps({
 	showCard: {
@@ -114,9 +109,6 @@ use([
 	LegendComponent,
 	TooltipComponent,
 	MarkLineComponent,
-	DataZoomComponent,
-	ToolboxComponent,
-	BrushComponent,
 ]);
 
 const initOptions = {
@@ -154,24 +146,6 @@ const options = ref({
 				)} ${unit.value !== seriesName ? `- ${seriesName}` : ''}</p>`;
 			});
 			return tooltip;
-		},
-	},
-	toolbox: {
-		restore: {},
-		feature: {
-			dataZoom: {
-				yAxisIndex: false,
-			},
-			brush: {
-				type: ['lineX', 'clear'],
-			},
-		},
-	},
-	brush: {
-		xAxisIndex: 'all',
-		brushLink: 'all',
-		outOfBrush: {
-			colorAlpha: 0.1,
 		},
 	},
 	xAxis: {
@@ -249,37 +223,5 @@ const options = ref({
 			},
 		};
 	}),
-});
-
-const chartRef = ref(null);
-const emits = defineEmits(['datazoom']);
-
-onMounted(() => {
-	const chart = chartRef.value?.chart;
-	chart?.on('finished', () => {
-		chart?.dispatchAction({
-			type: 'takeGlobalCursor',
-			key: 'dataZoomSelect',
-			dataZoomSelectActive: true,
-		});
-	});
-
-	chart?.on('datazoom', (evt) => {
-		const timezone = dayjs.tz.guess();
-		const { startValue: startIndex, endValue: endIndex } = evt.batch[0];
-		const responseLabelTimestampFormat = 'YYYY-MM-DD HH:mm:ss';
-		const startDate = dayjs(
-			data.value.labels[startIndex],
-			responseLabelTimestampFormat,
-			timezone,
-		);
-		const endDate = dayjs(
-			data.value.labels[endIndex],
-			responseLabelTimestampFormat,
-			timezone,
-		);
-		evt = { startDate: startDate.toDate(), endDate: endDate.toDate() };
-		emits('datazoom', evt);
-	});
 });
 </script>
