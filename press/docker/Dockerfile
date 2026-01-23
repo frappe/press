@@ -253,8 +253,10 @@ RUN chmod +x /usr/local/bin/get_cached_app.py
 
 
 {% if app.use_cached and use_asset_store %}
+RUN --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
+    bench get-app file:///home/frappe/context/apps/{{ app.app }} --skip-assets
+
 RUN --mount=type=secret,id=build_token,mode=0444 \
-    --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
     BUILD_TOKEN="$(cat /run/secrets/build_token)" && python${PYTHON_VERSION} /usr/local/bin/get_cached_app.py \
         {{ app.app }} \
         {{ app.hash }} \
