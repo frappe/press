@@ -526,8 +526,12 @@ export default {
 				/* Using allowed units for value: https://day.js.org/docs/en/manipulate/add#list-of-all-available-units */
 				{ label: 'Last 1 hour', value: '1h' },
 				{ label: 'Last 6 hours', value: '6h' },
+<<<<<<< HEAD
 				{ label: 'Last 24 hours', value: '24h' },
 				{ label: 'Last 3 days', value: '3d' },
+=======
+				{ label: 'Last day', value: '24h' },
+>>>>>>> 785b37b62 (fix(site-analytics): Change last 24 hours label to last day)
 				{ label: 'Last 7 days', value: '7d' },
 				{ label: 'Last 15 days', value: '15d' },
 			],
