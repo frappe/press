@@ -1373,7 +1373,7 @@ class VirtualMachine(Document):
 					frappe.db.set_value(doctype, server, "is_static_ip", self.is_static_ip)
 				if doctype in ["Server", "Database Server"]:
 					frappe.db.set_value(doctype, server, "ram", self.ram)
-				if doctype in ("NAT Server",):
+				if doctype in ("NAT Server",) and self.secondary_private_ip:
 					frappe.db.set_value(doctype, server, "secondary_private_ip", self.secondary_private_ip)
 				if self.public_ip_address:
 					if self.has_value_changed("public_ip_address"):
