@@ -2362,7 +2362,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		# if bastion server is not found and server doesnt have public ip, use proxy server as bastion/jump server
 		if not self.ip and self.private_ip:
-			return frappe.get_value(
+			return frappe.db.get_value(
 				"Proxy Server",
 				{"status": ("!=", "Archived"), "cluster": self.cluster},
 				["ssh_user", "ssh_port", "name as ip"],
