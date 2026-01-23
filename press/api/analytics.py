@@ -1196,7 +1196,14 @@ def get_usage(site, type, timezone, start, end, timegrain):
 				"filter": [
 					{"match_phrase": {"json.transaction_type": type}},
 					{"match_phrase": {"json.site": site}},
-					{"range": {"@timestamp": {"gte": start, "lte": end}}},
+					{
+						"range": {
+							"@timestamp": {
+								"gte": int(start.timestamp() * 1000),
+								"lte": int(end.timestamp() * 1000),
+							}
+						}
+					},
 				]
 			}
 		},
