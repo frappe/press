@@ -272,8 +272,12 @@ frappe.ui.form.on('Server', {
 				__('Install NAT iptables'),
 				'install_nat_iptables',
 				true,
+<<<<<<< HEAD
 				frm.doc.is_server_setup,
 >>>>>>> 4c7293e40 (feat: action to install nat iptables on app & db server)
+=======
+				frm.doc.is_server_setup && !!!frm.doc.ip && frm.doc.private_ip,
+>>>>>>> 05a27a7ba (fix: show the install nat ip tables actions iff public ip is not present)
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {

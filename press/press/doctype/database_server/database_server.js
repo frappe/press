@@ -211,7 +211,7 @@ frappe.ui.form.on('Database Server', {
 				__('Install NAT iptables'),
 				'install_nat_iptables',
 				true,
-				frm.doc.is_server_setup,
+				frm.doc.is_server_setup && !!!frm.doc.ip && frm.doc.private_ip,
 			],
 >>>>>>> 4c7293e40 (feat: action to install nat iptables on app & db server)
 		].forEach(([label, method, confirm, condition]) => {
