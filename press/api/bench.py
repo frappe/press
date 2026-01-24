@@ -876,9 +876,9 @@ def branch_list(name: str, app: str) -> list[dict]:
 
 @frappe.whitelist()
 @protected("Release Group")
-def validate_branch(bench, app, branch):
+def validate_branch(name: str, app: str, branch: str):
 	"""Validates whether a branch is available for the `app`"""
-	release_group = frappe.get_doc("Release Group", bench)
+	release_group = frappe.get_doc("Release Group", name)
 	app_source = release_group.get_app_source(app)
 
 	token = get_access_token(app_source.github_installation_id)
