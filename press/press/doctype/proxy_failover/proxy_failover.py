@@ -59,6 +59,7 @@ class ProxyFailover(Document, StepHandler):
 				self.wait_for_pending_agent_jobs_to_complete,
 				self.stop_replication,
 				self.replicate_once_manually,
+				self.use_secondary_as_proxy_for_agent_and_metrics,
 				self.move_wildcard_domains_from_primary,
 				self.wait_for_wildcard_domains_setup,
 				self.attach_static_ip_to_secondary,
@@ -106,23 +107,24 @@ class ProxyFailover(Document, StepHandler):
 		).run()
 
 		cluster = frappe.get_doc("Cluster", primary_proxy.cluster)
-		client = cluster.get_aws_client()
-		client.authorize_security_group_ingress(
-			GroupId=cluster.proxy_security_group_id,
-			IpPermissions=[
-				{
-					"FromPort": 8443,
-					"IpProtocol": "tcp",
-					"IpRanges": [
-						{
-							"CidrIp": "0.0.0.0/0",
-							"Description": "HTTPS Alternative Port for Agent and Prometheus",
-						}
-					],
-					"ToPort": 8443,
-				},
-			],
-		)
+		if cluster.cloud_provider == "AWS EC2":
+			client = cluster.get_aws_client()
+			client.authorize_security_group_ingress(
+				GroupId=cluster.proxy_security_group_id,
+				IpPermissions=[
+					{
+						"FromPort": 8443,
+						"IpProtocol": "tcp",
+						"IpRanges": [
+							{
+								"CidrIp": "0.0.0.0/0",
+								"Description": "HTTPS Alternative Port for Agent and Prometheus",
+							}
+						],
+						"ToPort": 8443,
+					},
+				],
+			)
 
 		if self.primary not in (alt_port_servers := servers_using_alternative_port_for_communication()):
 			alt_port_servers.append(self.primary)
@@ -224,6 +226,23 @@ class ProxyFailover(Document, StepHandler):
 
 	def update_app_servers(self, step):
 		frappe.db.set_value("Server", {"proxy_server": self.primary}, "proxy_server", self.secondary)
+
+		step.status = Status.Success
+		step.save()
+
+	def use_secondary_as_proxy_for_agent_and_metrics(self, step):
+		if frappe.db.get_value("Proxy Server", self.primary, "use_as_proxy_for_agent_and_metrics"):
+			frappe.db.set_value(
+				"Proxy Server",
+				self.secondary,
+				{"use_as_proxy_for_agent_and_metrics": 1},
+			)
+
+			frappe.db.set_value(
+				"Proxy Server",
+				self.primary,
+				{"use_as_proxy_for_agent_and_metrics": 0},
+			)
 
 		step.status = Status.Success
 		step.save()
