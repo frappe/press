@@ -1402,13 +1402,21 @@ class VirtualMachine(Document):
 		if self.cloud_provider != "AWS EC2":
 			frappe.throw("Secondary IP assignment is currently only supported for AWS EC2 instances")
 
+		if self.series != "nat":
+			frappe.throw("Secondary IP assignment is only supported for NAT servers")
+
+		# this is needed if we do failover and attach the secondary private ip of one instance to another
+		secondary_private_ip = self.get_private_ip()
+		if frappe.db.get_value("Virtual Machine", {"secondary_private_ip": secondary_private_ip}):
+			frappe.throw(f"Private IP {secondary_private_ip} is already assigned to another instance.")
+
 		ec2 = self.client()
 		instance = ec2.describe_instances(InstanceIds=[self.instance_id])
 		ec2.assign_private_ip_addresses(
 			NetworkInterfaceId=instance["Reservations"][0]["Instances"][0]["NetworkInterfaces"][0][
 				"NetworkInterfaceId"
 			],
-			PrivateIpAddresses=[self.get_private_ip()],
+			PrivateIpAddresses=[secondary_private_ip],
 		)
 		self.sync()
 
