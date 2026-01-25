@@ -10,7 +10,7 @@
 	>
 		<LoginBox
 			title="Select an app to get started"
-			subtitle="Select the app you need to configure them effortlessly"
+			subtitle="Select the app you want to install on your site."
 		>
 			<div v-if="$resources.availableApps.loading">
 				<div class="flex h-40 justify-center">
