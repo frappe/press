@@ -135,7 +135,8 @@ frappe.ui.form.on('Virtual Machine', {
 				true,
 				frm.doc.status === 'Running' &&
 					frm.doc.cloud_provider === 'AWS EC2' &&
-					!!!frm.doc.secondary_private_ip,
+					!!!frm.doc.secondary_private_ip &&
+					frm.doc.series === 'nat',
 			],
 			[
 				__('Disassociate Auto Assigned Public IP'),
