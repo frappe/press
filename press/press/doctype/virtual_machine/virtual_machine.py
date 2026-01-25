@@ -171,12 +171,16 @@ class VirtualMachine(Document):
 			self.machine_image = self.get_latest_ubuntu_image()
 		self.save()
 
-	def get_private_ip(self, additional_offset=0) -> str:
+	def get_private_ip(self) -> str:
 		ip = ipaddress.IPv4Interface(self.subnet_cidr_block).ip
 		index = self.index + 356
+
 		if self.series == "n":
-			return str(ip + index + additional_offset)
+			return str(ip + index)
+
 		window = 2 if self.series == "nat" else 1  # reserve 2 IPs for nat servers
+		additional_offset = int(self.series == "nat" and bool(self.private_ip_address))
+
 		offset = ["n", "f", "m", "c", "p", "e", "r", "u", "t", "nfs", "fs", "nat"].index(self.series)
 		return str(ip + (256 * (2 * (index // 256) + offset) + (index % 256)) * window + additional_offset)
 
@@ -1404,7 +1408,7 @@ class VirtualMachine(Document):
 			NetworkInterfaceId=instance["Reservations"][0]["Instances"][0]["NetworkInterfaces"][0][
 				"NetworkInterfaceId"
 			],
-			PrivateIpAddresses=[self.get_private_ip(additional_offset=1)],
+			PrivateIpAddresses=[self.get_private_ip()],
 		)
 		self.sync()
 
