@@ -68,6 +68,20 @@ server_doctypes = [
 	"NAT Server",
 ]
 
+SERIES_TO_SERVER_TYPE = {
+	"f": "Server",
+	"fs": "Server",
+	"u": "Server",
+	"m": "Database Server",
+	"n": "Proxy Server",
+	"nat": "NAT Server",
+	"nfs": "NFS Server",
+	"p": "Monitor Server",
+	"r": "Registry Server",
+	"e": "Log Server",
+	"t": "Trace Server",
+}
+
 HETZNER_ROOT_DISK_ID = "hetzner-root-disk"
 DIGITALOCEAN_ROOT_DISK_ID = "digital-ocean-root-disk"
 HETZNER_ACTION_RETRIES = 60  # retry count; try to keep it lower so that it doesn't surpass than default RQ job timeout of 300 seconds
