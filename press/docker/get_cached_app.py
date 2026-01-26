@@ -172,27 +172,21 @@ def build_assets(app: str) -> str:
 	"""Build assets for the app using the app name and return the path to assets"""
 	change_working_directory()
 	env = os.environ.copy()
-
-	# Explicitly hardlink assets
-	if "FRAPPE_HARD_LINK_ASSETS" not in env:
-		env["FRAPPE_HARD_LINK_ASSETS"] = "True"
-
-	subprocess.run(["bench", "build", "--app", app], check=True, env=env)
-	return os.path.join(os.getcwd(), "sites", "assets", app)
+	env["FRAPPE_DOCKER_BUILD"] = "True"
+	completed_process = subprocess.run(
+		["bench", "build", "--app", app, "--production"],
+		check=True,
+		env=env,
+	)
+	assets_path = os.path.join(os.getcwd(), "sites", "assets", app)
+	print(f"Build Command Completed. Return Code: {completed_process.returncode}.")
+	return assets_path
 
 
 def main():
 	"""Get cached app assets or build and upload them"""
 	if not APP_NAME or not APP_HASH:
 		return
-
-	app_path = (
-		f"file:///home/frappe/context/apps/{APP_NAME}"
-		if os.getenv("FRAPPE_DOCKER_BUILD") == "True"
-		else APP_NAME
-	)
-	os.environ["FRAPPE_HARD_LINK_ASSETS"] = "True"
-	subprocess.run(["bench", "get-app", app_path, "--skip-assets"], check=True)
 
 	credentials = get_asset_store_credentials()
 	asset_filename = f"{APP_NAME}.{APP_HASH}.tar.gz"
@@ -203,13 +197,14 @@ def main():
 		extract_and_flatten_tar(file_stream)
 		_update_assets_json(APP_NAME)
 	else:
-		print(f"Assets {asset_filename} not found in store. Building and uploading...")
+		print(f"Assets {asset_filename} not found in store. Building...")
 		assets_folder = build_assets(APP_NAME)
 		if not os.path.exists(assets_folder) or not os.path.isdir(assets_folder):
 			print(f"No assets found for app {APP_NAME} at {assets_folder}.")
 			return
 
 		if UPLOAD_ASSETS:
+			print("Upload requested. Uploading assets to store...")
 			tar_file = tar_and_compress_folder(assets_folder, asset_filename)
 
 			with open(tar_file, "rb") as f:
