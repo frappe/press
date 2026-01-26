@@ -371,6 +371,7 @@ class DeployCandidateBuild(Document):
 				if d.dependency == "BENCH_VERSION" and d.version == "5.2.1":
 					dockerfile_template = "press/docker/Dockerfile_Bench_5_2_1"
 
+			team_deploying = frappe.db.get_value("Release Group", self.group, "team")
 			content = frappe.render_template(
 				dockerfile_template,
 				{
@@ -378,8 +379,10 @@ class DeployCandidateBuild(Document):
 					"remove_distutils": not is_distutils_supported,
 					"requires_version_based_get_pip": requires_version_based_get_pip,
 					"is_arm_build": self.platform == "arm64",
-					"use_asset_store": frappe.db.get_single_value("Press Settings", "use_asset_store"),
-					"upload_assets": frappe.db.get_value("Release Group", self.group, "public"),
+					"use_asset_store": frappe.db.get_single_value("Press Settings", "use_asset_store")
+					or team_deploying == "team@erpnext.com",
+					"upload_assets": frappe.db.get_value("Release Group", self.group, "public")
+					or team_deploying == "team@erpnext.com",
 					"site_url": frappe.utils.get_url(),
 				},
 				is_path=True,
