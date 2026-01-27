@@ -229,7 +229,7 @@ ENV {{v.key}} {{ v.value }}
 
 # Install Boto and Requests for Asset store access
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 \
-  python${PYTHON_VERSION} -m pip install boto3==1.34.162 botocore==1.34.162 requests==2.32.5 \
+  python${PYTHON_VERSION} -m pip install boto3 botocore requests \
   `#stage-pre-Configure Asset Store`
 
 # Install Frappe app
@@ -254,9 +254,7 @@ RUN chmod +x /usr/local/bin/get_cached_app.py
 
 {% if app.use_cached and use_asset_store %}
 RUN --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
-    bench get-app file:///home/frappe/context/apps/{{ app.app }} --skip-assets
-
-RUN --mount=type=secret,id=build_token,mode=0444 \
+    --mount=type=secret,id=build_token,mode=0444 \
     BUILD_TOKEN="$(cat /run/secrets/build_token)" && python${PYTHON_VERSION} /usr/local/bin/get_cached_app.py \
         {{ app.app }} \
         {{ app.hash }} \
