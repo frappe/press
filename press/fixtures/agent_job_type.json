@@ -1,5 +1,8 @@
 [
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> fa065e2ef (Revert "chore(fixtures): Prettier on agent job types")
  {
   "disabled_auto_retry": 1,
   "docstatus": 0,
@@ -2027,10 +2030,13 @@
     "step_name": "Reload NGINX"
    }
 <<<<<<< HEAD
+<<<<<<< HEAD
    ]
 }
 ]
 =======
+=======
+>>>>>>> fa065e2ef (Revert "chore(fixtures): Prettier on agent job types")
   ]
  },
  {
@@ -2096,6 +2102,7 @@
    }
   ]
  }
+<<<<<<< HEAD
 ]
 >>>>>>> 9f0a042a8 (fix(server): Agent job type to sync Nginx access)
 =======
@@ -4192,3 +4199,6 @@
 	}
 ]
 >>>>>>> 2f84d955e (chore(fixtures): Prettier on agent job types)
+=======
+]
+>>>>>>> fa065e2ef (Revert "chore(fixtures): Prettier on agent job types")
