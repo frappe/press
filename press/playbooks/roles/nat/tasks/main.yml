@@ -1,9 +1,4 @@
 ---
-- name: Install iptables
-  package:
-    name: iptables
-    state: present
-
 - name: Install iptables-persistent
   package:
     name: iptables-persistent
