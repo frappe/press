@@ -38,5 +38,53 @@ frappe.ui.form.on('NAT Server', {
 				);
 			}
 		});
+
+		if (frm.doc.status === 'Active' && !!frm.doc.secondary_private_ip) {
+			frm.add_custom_button(
+				__('Trigger Failover'),
+				() => {
+					let d = new frappe.ui.Dialog({
+						title: __('Select Failover Instance'),
+						fields: [
+							{
+								label: __('Secondary NAT Server'),
+								fieldname: 'secondary',
+								fieldtype: 'Link',
+								options: 'NAT Server',
+								reqd: 1,
+								get_query: function () {
+									return {
+										filters: {
+											name: ['!=', frm.doc.name],
+											status: 'Active',
+											cluster: frm.doc.cluster,
+											secondary_private_ip: ['is', 'not set'],
+										},
+									};
+								},
+							},
+						],
+						primary_action_label: __('Trigger Failover'),
+						primary_action(values) {
+							frm
+								.call({
+									doc: frm.doc,
+									method: 'trigger_failover',
+									args: {
+										secondary: values.secondary,
+									},
+								})
+								.then((r) => {
+									if (r.message) {
+										frappe.msgprint(r.message);
+									}
+								});
+							d.hide();
+						},
+					}).show();
+				},
+				__('Actions'),
+			);
+		}
 	},
 });

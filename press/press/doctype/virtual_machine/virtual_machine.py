@@ -79,7 +79,6 @@ SERIES_TO_SERVER_TYPE = {
 	"p": "Monitor Server",
 	"r": "Registry Server",
 	"e": "Log Server",
-	"t": "Trace Server",
 }
 
 HETZNER_ROOT_DISK_ID = "hetzner-root-disk"
@@ -1391,7 +1390,7 @@ class VirtualMachine(Document):
 					frappe.db.set_value(doctype, server, "is_static_ip", self.is_static_ip)
 				if doctype in ["Server", "Database Server"]:
 					frappe.db.set_value(doctype, server, "ram", self.ram)
-				if doctype in ("NAT Server",) and self.secondary_private_ip:
+				if doctype in ("NAT Server",):
 					frappe.db.set_value(doctype, server, "secondary_private_ip", self.secondary_private_ip)
 				if self.public_ip_address:
 					if frappe.flags.force_update_dns or self.has_value_changed("public_ip_address"):
@@ -1413,6 +1412,9 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def assign_secondary_private_ip(self):
+		self.attach_secondary_private_ip()
+
+	def attach_secondary_private_ip(self, secondary_private_ip=None):
 		if self.cloud_provider != "AWS EC2":
 			frappe.throw("Secondary IP assignment is currently only supported for AWS EC2 instances")
 
@@ -1420,7 +1422,7 @@ class VirtualMachine(Document):
 			frappe.throw("Secondary IP assignment is only supported for NAT servers")
 
 		# this is needed if we do failover and attach the secondary private ip of one instance to another
-		secondary_private_ip = self.get_private_ip()
+		secondary_private_ip = secondary_private_ip or self.get_private_ip()
 		if frappe.db.get_value("Virtual Machine", {"secondary_private_ip": secondary_private_ip}):
 			frappe.throw(f"Private IP {secondary_private_ip} is already assigned to another instance.")
 
@@ -1435,6 +1437,26 @@ class VirtualMachine(Document):
 		self.sync()
 
 		return f"Assigned {self.secondary_private_ip}"
+
+	def detach_secondary_private_ip(self):
+		if self.cloud_provider != "AWS EC2":
+			frappe.throw("Secondary IP detachment is currently only supported for AWS EC2 instances")
+
+		if self.series != "nat":
+			frappe.throw("Secondary IP detachment is only supported for NAT servers")
+
+		if not self.secondary_private_ip:
+			frappe.throw("No secondary private IP assigned to this instance.")
+
+		ec2 = self.client()
+		instance = ec2.describe_instances(InstanceIds=[self.instance_id])
+		ec2.unassign_private_ip_addresses(
+			NetworkInterfaceId=instance["Reservations"][0]["Instances"][0]["NetworkInterfaces"][0][
+				"NetworkInterfaceId"
+			],
+			PrivateIpAddresses=[self.secondary_private_ip],
+		)
+		self.sync()
 
 	@frappe.whitelist()
 	def disassociate_auto_assigned_public_ip(self):
