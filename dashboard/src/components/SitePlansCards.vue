@@ -84,17 +84,19 @@ export default {
 				plans = plans.filter((plan) => !plan.restricted_plan);
 			}
 			if (this.selectedProvider) {
-				if (["Generic", "Scaleway"].includes(this.selectedProvider)) {
-				// fallback for unlisted providers to show available plans
-					this.selectedProvider = "AWS EC2"
-				}
+				const provider = ["Generic", "Scaleway"].includes(
+					this.selectedProvider,
+				)
+					? "AWS EC2"
+					: this.selectedProvider;
+
 				plans = plans.map((plan) => {
 					return {
 						...plan,
 						disabled:
 							plan.disabled ||
 							(plan.cloud_providers && plan.cloud_providers.length > 0
-								? !plan.cloud_providers.includes(this.selectedProvider)
+								? !plan.cloud_providers.includes(provider)
 								: false),
 					};
 				});
