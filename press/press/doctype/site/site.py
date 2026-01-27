@@ -338,11 +338,14 @@ class Site(Document, TagHelpers):
 		)
 		doc.update_information = self.get_update_information()
 		doc.actions = self.get_actions()
-		server = frappe.get_value("Server", self.server, ["ip", "proxy_server", "team", "title"], as_dict=1)
+		server = frappe.get_value(
+			"Server", self.server, ["ip", "proxy_server", "team", "title", "provider"], as_dict=1
+		)
 		doc.cluster = frappe.db.get_value("Cluster", self.cluster, ["title", "image"], as_dict=1)
 		doc.outbound_ip = server.ip
 		doc.server_team = server.team
 		doc.server_title = server.title
+		doc.server_provider = server.provider
 		doc.inbound_ip = self.inbound_ip
 		doc.is_dedicated_server = is_dedicated_server(self.server)
 		doc.suspension_reason = (
@@ -423,7 +426,10 @@ class Site(Document, TagHelpers):
 
 	def before_insert(self):
 		if not self.bench and self.group:
-			self.set_latest_bench()
+			if self.server and self.team != "Administrator":  # Check to avoid standby sites
+				self.set_bench_for_server()
+			else:
+				self.set_latest_bench()
 		# initialize site.config based on plan
 		self._update_configuration(self.get_plan_config(), save=False)
 
@@ -2729,6 +2735,35 @@ class Site(Document, TagHelpers):
 		if self.server:
 			bench_query = bench_query.where(servers.name == self.server)
 		return bench_query.run(as_dict=True)
+
+	def set_bench_for_server(self):
+		if not self.server:
+			return
+
+		server_details = frappe.db.get_value("Server", self.server, ["public", "team"], as_dict=True)
+
+		if not server_details:
+			frappe.throw(f"Server {self.server} not found")
+
+		if server_details.team != get_current_team():
+			frappe.throw("You don't have permission to deploy on this server")
+
+		bench = frappe.db.get_value(
+			"Bench",
+			{"group": self.group, "status": "Active", "server": self.server},
+			["name", "cluster"],
+			as_dict=True,
+		)
+
+		if not bench:
+			frappe.throw(
+				f"No active bench available for group {self.group} on server {self.server}. "
+				"Please contact support."
+			)
+
+		self.bench = bench.name
+		if self.cluster != bench.cluster:
+			frappe.throw(f"Site cannot be deployed on {self.cluster} yet. Please contact support.")
 
 	def set_latest_bench(self):
 		if not (self.domain and self.cluster and self.group):

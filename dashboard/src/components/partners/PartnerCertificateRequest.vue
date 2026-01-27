@@ -27,7 +27,7 @@
 						v-model="userName"
 					/>
 
-					<div class="pt-4">
+					<div class="pt-4 pb-3">
 						<Button
 							class="w-full"
 							variant="solid"
@@ -35,6 +35,7 @@
 							@click="handleApplyForCertificate()"
 						/>
 					</div>
+					<ErrorMessage :message="errorMessage" />
 				</div>
 				<div v-else>
 					<p class="text-p-base">
@@ -61,6 +62,7 @@ const courseTypes = [
 	{ label: 'ERPNext', value: 'erpnext-distribution' },
 ];
 const show = ref(true);
+const errorMessage = ref('');
 
 const team = getTeam();
 const memberList = ref([]);
@@ -86,14 +88,11 @@ const applyForCertificate = createResource({
 	},
 	onSuccess: () => {
 		show.value = false;
-		toast.success(
-			'Certificate application submitted successfully. You will receive an email regarding the confirmation of your registration in a few minutes.',
-		);
+		toast.success('Certificate application submitted successfully.');
 		emit('success');
 	},
 	onError: (error) => {
-		console.error(error);
-		toast.error(error.message || 'An error occurred during application.');
+		errorMessage.value = 'Certificate Request already exists for this member.';
 	},
 });
 

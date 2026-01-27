@@ -502,33 +502,55 @@ avg by (instance) (
 @protected(["Server", "Database Server"])
 @redis_cache(ttl=10 * 60)
 def get_request_by_site(name, query, timezone, duration):
+	from frappe.utils import add_to_date, now_datetime
+	from pytz import timezone as pytz_timezone
+
 	from press.api.analytics import ResourceType, get_request_by_
 
 	timespan, timegrain = get_timespan_timegrain(duration)
 
-	return get_request_by_(name, query, timezone, timespan, timegrain, ResourceType.SERVER)
+	end = now_datetime().astimezone(pytz_timezone(timezone))
+	start = add_to_date(end, seconds=-timespan)
+
+	timespan, timegrain = get_timespan_timegrain(duration)
+
+	return get_request_by_(name, query, timezone, start, end, timespan, timegrain, ResourceType.SERVER)
 
 
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 @redis_cache(ttl=10 * 60)
 def get_background_job_by_site(name, query, timezone, duration):
+	from frappe.utils import add_to_date, now_datetime
+	from pytz import timezone as pytz_timezone
+
 	from press.api.analytics import ResourceType, get_background_job_by_
 
 	timespan, timegrain = get_timespan_timegrain(duration)
 
-	return get_background_job_by_(name, query, timezone, timespan, timegrain, ResourceType.SERVER)
+	end = now_datetime().astimezone(pytz_timezone(timezone))
+	start = add_to_date(end, seconds=-timespan)
+
+	return get_background_job_by_(name, query, timezone, start, end, timespan, timegrain, ResourceType.SERVER)
 
 
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 @redis_cache(ttl=10 * 60)
 def get_slow_logs_by_site(name, query, timezone, duration, normalize=False):
+	from frappe.utils import add_to_date, now_datetime
+	from pytz import timezone as pytz_timezone
+
 	from press.api.analytics import ResourceType, get_slow_logs
 
 	timespan, timegrain = get_timespan_timegrain(duration)
 
-	return get_slow_logs(name, query, timezone, timespan, timegrain, ResourceType.SERVER, normalize)
+	end = now_datetime().astimezone(pytz_timezone(timezone))
+	start = add_to_date(end, seconds=-timespan)
+
+	return get_slow_logs(
+		name, query, timezone, start, end, timespan, timegrain, ResourceType.SERVER, normalize
+	)
 
 
 def prometheus_query(query, function, timezone, timespan, timegrain):
@@ -756,7 +778,7 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 			name, resource_name, ["virtual_machine", "provider"], as_dict=True
 		)
 
-		if resource_details.provider == "Hetzner":
+		if resource_details.provider == "Hetzner" or resource_details.provider == "DigitalOcean":
 			current_root_disk_size = (
 				frappe.db.get_value("Virtual Machine", resource_details.virtual_machine, "root_disk_size")
 				if resource_details and resource_details.virtual_machine

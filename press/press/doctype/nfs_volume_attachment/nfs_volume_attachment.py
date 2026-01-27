@@ -242,7 +242,7 @@ class NFSVolumeAttachment(Document, AutoScaleStepFailureHandler, StepHandler):
 			"job",
 		)
 
-		self.handle_agent_job(step, job)
+		self.handle_agent_job(step, job, poll=True)
 
 	def add_loopback_rule(self, step: "NFSVolumeAttachmentStep"):
 		"""Allow loopback requests from container"""

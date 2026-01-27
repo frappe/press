@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import datetime
+import ipaddress
 import json
 import shlex
 import typing
@@ -115,7 +116,10 @@ class BaseServer(Document, TagHelpers):
 			query = query.where(Server.status == status)
 		else:
 			# Show only Active and Installing servers ignore pending (secondary server)
-			query = query.where(Server.status.isin(["Active", "Installing"]))
+			query = query.where(
+				Server.status.isin(["Active", "Installing", "Broken"])
+				| ((Server.status == "Pending") & (Server.is_secondary != 1))
+			)
 
 		query = query.where(Server.is_for_recovery != 1).where(Server.team == frappe.local.team().name)
 		results = query.run(as_dict=True)
@@ -405,19 +409,20 @@ class BaseServer(Document, TagHelpers):
 				"group": f"{server_type.title()} Actions",
 			},
 			{
-				"action": "Setup Secondary Server",
-				"description": "Setup a secondary application server to auto scale to during high loads",
-				"button_label": "Setup",
+				"action": "Enable Autoscale",
+				"description": "Setup a secondary application server to autoscale to during high loads",
+				"button_label": "Enable",
 				"condition": self.status == "Active"
 				and self.doctype == "Server"
 				and not self.secondary_server
+				and not getattr(self, "is_unified_server", False)
 				and self.cluster in self._get_clusters_with_autoscale_support(),
 				"group": "Application Server Actions",
 			},
 			{
-				"action": "Teardown Secondary Server",
-				"description": "Disable secondary server and turn off auto-scaling.",
-				"button_label": "Teardown",
+				"action": "Disable Autoscale",
+				"description": "Turn off autoscaling and remove the secondary application server.",
+				"button_label": "Disable",
 				"condition": (
 					self.status == "Active"
 					and self.doctype == "Server"
@@ -458,9 +463,13 @@ class BaseServer(Document, TagHelpers):
 		"""Get servers data disk size"""
 		mountpoint = self.guess_data_disk_mountpoint()
 		volume = self.find_mountpoint_volume(mountpoint)
+
 		if not volume:  # Volume might not be attached as soon as the server is created
 			return 0
-		return frappe.db.get_value("Virtual Machine Volume", {"volume_id": volume.volume_id}, "size")
+
+		return frappe.db.get_value(
+			"Virtual Machine Volume", {"volume_id": volume.volume_id, "parent": volume.parent}, "size"
+		)
 
 	def _get_app_and_database_servers(self) -> tuple[Server, DatabaseServer]:
 		if self.doctype == "Database Server":
@@ -1558,7 +1567,7 @@ class BaseServer(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def reboot(self):
-		if self.provider not in ("AWS EC2", "OCI"):
+		if self.provider not in ("AWS EC2", "OCI", "DigitalOcean", "Hetzner"):
 			raise NotImplementedError
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		virtual_machine.reboot()
@@ -1964,7 +1973,7 @@ class BaseServer(Document, TagHelpers):
 		response = prometheus_query(
 			f"""predict_linear(
 node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}[3h], 6*3600
-			)""",
+            )""",
 			lambda x: x["mountpoint"],
 			"Asia/Kolkata",
 			120,
@@ -2040,16 +2049,14 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 	):
 		"""
 		Calculate required disk increase for servers and handle notifications accordingly.
-
-		- For servers with `auto_increase_storage` enabled:
-			- Compute the required storage increase.
-			- Automatically apply the increase.
-			- Send an email notification about the auto-added storage.
-
-		- For servers with `auto_increase_storage` disabled:
-			- If disk usage exceeds 90%, send a warning email.
-			- We have also sent them emails at 80% if they haven't enabled auto add on yet then send here again.
-			- Notify the user to manually increase disk space.
+			- For servers with `auto_increase_storage` enabled:
+				- Compute the required storage increase.
+				- Automatically apply the increase.
+				- Send an email notification about the auto-added storage.
+			- For servers with `auto_increase_storage` disabled:
+				- If disk usage exceeds 90%, send a warning email.
+				- We have also sent them emails at 80% if they haven't enabled auto add on yet then send here again.
+				- Notify the user to manually increase disk space.
 		"""
 
 		buffer = self.size_to_increase_by_for_20_percent_available(mountpoint)
@@ -2149,18 +2156,19 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		frappe.throw(f"Failed to fetch {primary.name}'s Frappe public key")
 		return None
 
-	def copy_files(self, source, destination):
+	def copy_files(self, source, destination, extra_options=None):
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
 			"_copy_files",
 			source=source,
 			destination=destination,
+			extra_options=extra_options,
 			queue="long",
 			timeout=7200,
 		)
 
-	def _copy_files(self, source, destination):
+	def _copy_files(self, source, destination, extra_options=None):
 		try:
 			ansible = Ansible(
 				playbook="copy.yml",
@@ -2170,6 +2178,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				variables={
 					"source": source,
 					"destination": destination,
+					"extra_options": extra_options,
 				},
 			)
 			ansible.run()
@@ -2412,7 +2421,7 @@ class Server(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "Frappe Compute"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean"]
 		proxy_server: DF.Link | None
 		public: DF.Check
 		ram: DF.Float
@@ -2753,6 +2762,9 @@ class Server(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
+				if self.provider == "DigitalOcean":
+					# To adjust docker permissions
+					self.reboot()
 			else:
 				self.status = "Broken"
 		except Exception:
@@ -2761,12 +2773,12 @@ class Server(BaseServer):
 		self.save()
 
 	def get_proxy_ip(self):
-		"""In case of standalone setup proxy will not required"""
-
+		# In case of standalone setup, proxy is not required.
 		if self.is_standalone:
 			return self.ip
-
-		return frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
+		private_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
+		with_mask = private_ip + "/24"
+		return str(ipaddress.ip_network(with_mask, strict=False))
 
 	@frappe.whitelist()
 	def setup_standalone(self):
@@ -3487,7 +3499,8 @@ def get_hostname_abbreviation(hostname):
 	abbr = hostname_parts[0]
 
 	for part in hostname_parts[1:]:
-		abbr += part[0]
+		if part:
+			abbr += part[0]
 
 	return abbr
 

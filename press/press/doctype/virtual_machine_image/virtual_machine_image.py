@@ -6,6 +6,7 @@ import math
 
 import boto3
 import frappe
+import pydo
 from frappe.core.utils import find
 from frappe.model.document import Document
 from hcloud import APIException, Client
@@ -18,8 +19,6 @@ from oci.core.models.image_source_via_object_storage_uri_details import (
 )
 from tenacity import retry, stop_after_attempt, wait_fixed
 from tenacity.retry import retry_if_result
-
-from press.frappe_compute_client.client import APIError, FrappeComputeClient
 
 
 class VirtualMachineImage(Document):
@@ -35,6 +34,7 @@ class VirtualMachineImage(Document):
 			VirtualMachineImageVolume,
 		)
 
+		action_id: DF.Data | None
 		cloud_provider: DF.Data
 		cluster: DF.Link
 		copied_from: DF.Link | None
@@ -59,8 +59,17 @@ class VirtualMachineImage(Document):
 
 	def before_insert(self):
 		self.set_credentials()
-		if self.cloud_provider == "Hetzner" and self.has_data_volume:
+		if (
+			self.cloud_provider == "Hetzner" or self.cloud_provider == "DigitalOcean"
+		) and self.has_data_volume:
 			frappe.throw("Hetzner Virtual Machine Images cannot have data volumes.")
+
+		if self.cloud_provider == "DigitalOcean":
+			snapshots = self.client.droplets.list_snapshots(self.instance_id)
+			if snapshots.get("snapshots", []):
+				frappe.throw(
+					"A snapshot already exists, please delete the existing snapshot before creating a new image."
+				)
 
 	def after_insert(self):
 		if self.copied_from:
@@ -70,6 +79,7 @@ class VirtualMachineImage(Document):
 
 	def create_image(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
+
 		if cluster.cloud_provider == "AWS EC2":
 			volumes = self.get_volumes_from_virtual_machine()
 			response = self.client.create_image(
@@ -78,6 +88,7 @@ class VirtualMachineImage(Document):
 				BlockDeviceMappings=volumes,
 			)
 			self.image_id = response["ImageId"]
+
 		elif cluster.cloud_provider == "OCI":
 			object_storage_details = {}
 			instance_details = {}
@@ -100,6 +111,7 @@ class VirtualMachineImage(Document):
 				)
 			).data
 			self.image_id = image.id
+
 		elif cluster.cloud_provider == "Hetzner":
 			from hcloud.servers.domain import Server
 
@@ -114,20 +126,39 @@ class VirtualMachineImage(Document):
 				type="snapshot",
 			)
 			self.image_id = response.image.id
-		elif cluster.cloud_provider == "Frappe Compute":
-			image_id = self.client.create_image(instance_id=self.instance_id)
-			self.image_id = image_id
+
+		elif cluster.cloud_provider == "DigitalOcean":
+			action = self.client.droplet_actions.post(
+				self.instance_id,
+				{"type": "snapshot", "name": f"Frappe Cloud {self.name} - {self.virtual_machine}"},
+			)
+			action = action["action"]
+			self.action_id = action["id"]
+
 		self.sync()
 
 	def create_image_from_copy(self):
-		source = frappe.get_doc("Virtual Machine Image", self.copied_from)
-		response = self.client.copy_image(
-			Name=f"Frappe Cloud {self.name} - {self.virtual_machine}",
-			SourceImageId=source.image_id,
-			SourceRegion=source.region,
-		)
-		self.image_id = response["ImageId"]
-		self.sync()
+		if self.cloud_provider == "AWS EC2":
+			source = frappe.get_doc("Virtual Machine Image", self.copied_from)
+			response = self.client.copy_image(
+				Name=f"Frappe Cloud {self.name} - {self.virtual_machine}",
+				SourceImageId=source.image_id,
+				SourceRegion=source.region,
+			)
+			self.image_id = response["ImageId"]
+			self.sync()
+
+		elif self.cloud_provider == "DigitalOcean":
+			action = self.client.image_actions.post(
+				self.image_id,
+				{"type": "transfer", "region": frappe.db.get_value("Cluster", self.cluster, "region")},
+			)
+			action = action["action"]
+			self.action_id = action["id"]
+			self.sync()
+
+		else:
+			raise NotImplementedError("Copying images is only supported for AWS EC2 and DigitalOcean.")
 
 	def set_credentials(self):
 		if (self.series == "m" or self.series == "u") and frappe.db.exists(
@@ -202,18 +233,39 @@ class VirtualMachineImage(Document):
 					self.status = "Unavailable"
 				else:
 					raise e
-		elif cluster.cloud_provider == "Frappe Compute":
-			try:
-				image_info = self.client.get_image_info(self.image_id)
-			except APIError as e:
-				if e.exception_code == "DoesNotExistError":
-					self.status = "Unavailable"
-					self.save()
-					return self.status
-			self.status = self.get_frappe_compute_status_map(image_info["status"])
-			self.size = image_info["size"]
-			self.root_size = image_info["size"]
-			self.save()
+		elif cluster.cloud_provider == "DigitalOcean":
+			if self.copied_from:
+				action_status = self.client.image_actions.get(
+					action_id=self.action_id,
+					image_id=frappe.db.get_value("Virtual Machine Image", self.copied_from, "image_id"),
+				)
+			else:
+				action_status = self.client.droplet_actions.get(
+					droplet_id=self.instance_id, action_id=self.action_id
+				)
+
+			status = action_status["action"]["status"]
+			self.status = self.get_digital_ocean_status_map(status)
+
+			if self.status == "Available":
+				if self.copied_from:
+					images = self.client.snapshots.get(action_status["action"]["resource_id"]).get("snapshot")
+				else:
+					virtual_machine_status = frappe.db.get_value(
+						"Virtual Machine", self.virtual_machine, "status"
+					)
+					if virtual_machine_status == "Terminated":
+						images = self.client.snapshots.get(self.image_id).get("snapshot")
+					else:
+						# We need this since the image ID might not be ready immediately after creation
+						images = self.client.droplets.list_snapshots(self.instance_id).get("snapshots")
+
+				image = images[0] if isinstance(images, list) else images
+				self.image_id = image["id"]
+				self.size = image["min_disk_size"]
+				self.root_size = image["min_disk_size"]
+
+		self.save()
 		return self.status
 
 	@retry(
@@ -259,6 +311,12 @@ class VirtualMachineImage(Document):
 			"available": "Available",
 		}.get(status, "Unavailable")
 
+	def get_digital_ocean_status_map(self, status: str):
+		return {
+			"in-progress": "Pending",
+			"completed": "Available",
+		}.get(status, "Unavailable")
+
 	def get_oci_status_map(self, status):
 		return {
 			"PROVISIONING": "Pending",
@@ -267,13 +325,6 @@ class VirtualMachineImage(Document):
 			"EXPORTING": "Pending",
 			"DISABLED": "Unavailable",
 			"DELETED": "Unavailable",
-		}.get(status, "Unavailable")
-
-	def get_frappe_compute_status_map(self, status):
-		return {
-			"Pending": "Pending",
-			"Ongoing": "Pending",
-			"Completed": "Available",
 		}.get(status, "Unavailable")
 
 	def get_volumes_from_virtual_machine(self):
@@ -307,11 +358,8 @@ class VirtualMachineImage(Document):
 		if cluster.cloud_provider == "Hetzner":
 			api_token = cluster.get_password("hetzner_api_token")
 			return Client(token=api_token)
-		if cluster.cloud_provider == "Frappe Compute":
-			settings = frappe.get_single("Press Settings")
-			api_token = settings.get_password("compute_api_token")
-			orchestrator_base_url = settings.orchestrator_base_url
-			return FrappeComputeClient(orchestrator_base_url, api_token)
+		if cluster.cloud_provider == "DigitalOcean":
+			return pydo.Client(token=cluster.get_password("digital_ocean_api_token"))
 		return None
 
 	@classmethod

@@ -7,11 +7,12 @@ from collections import OrderedDict
 from typing import TYPE_CHECKING
 
 import frappe
+import requests
 from frappe.core.utils import find, find_all
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import flt, sbool
 
-from press.api.github import branches
+from press.api.github import branches, get_access_token
 from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app_patch.app_patch import create_app_patch
@@ -871,6 +872,34 @@ def branch_list(name: str, app: str) -> list[dict]:
 		return get_branches_for_marketplace_app(app, marketplace_app[0], app_source)
 
 	return branches(repo_owner, repo_name, installation_id)
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def validate_branch(name: str, app: str, branch: str):
+	"""Validates whether a branch is available for the `app`"""
+	release_group = frappe.get_doc("Release Group", name)
+	app_source = release_group.get_app_source(app)
+
+	token = get_access_token(app_source.github_installation_id)
+
+	if token:
+		headers = {
+			"Authorization": f"token {token}",
+		}
+	else:
+		headers = {}
+
+	response = requests.get(
+		f"https://api.github.com/repos/{app_source.repository_owner}/{app_source.repository}/branches/{branch}",
+		headers=headers,
+		timeout=10,
+	)
+
+	if response.ok:
+		return response.json()
+	frappe.throw("Error validating branch from GitHub: " + response.text)
+	return None
 
 
 def get_branches_for_marketplace_app(app: str, marketplace_app: str, app_source: AppSource) -> list[dict]:
