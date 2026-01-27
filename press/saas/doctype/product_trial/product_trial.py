@@ -616,7 +616,6 @@ def send_suspend_mail(site_name: str, product_name: str) -> None:
 	}
 	message = frappe.render_template(product.suspension_email_content, context)
 	args.update({"message": message})
-
 	frappe.sendmail(
 		sender=sender,
 		recipients=recipient,
