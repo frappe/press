@@ -126,6 +126,10 @@ class ServerFirewall(Document):
 		)
 
 	def _sync(self):
+		self._sync_firewall()
+		self._sync_nginx()
+
+	def _sync_firewall(self):
 		try:
 			Ansible(
 				playbook="firewall_sync.yml",
@@ -140,6 +144,14 @@ class ServerFirewall(Document):
 			).run()
 		except Exception:
 			log_error("Failed to sync firewall rules", doc=self)
+
+	def _sync_nginx(self):
+		ip_accept = [rule.source for rule in self.rules if rule.action == "Allow" and rule.source]
+		ip_drop = [rule.source for rule in self.rules if rule.action == "Block" and rule.source]
+		try:
+			return self.server.agent.update_nginx_access(ip_accept, ip_drop)
+		except Exception:
+			log_error("Failed to sync nginx access rules", doc=self)
 
 	def validate_ip(self, ip: str):
 		"""Checks if the provided string is a valid IPv4 or IPv6 address."""
