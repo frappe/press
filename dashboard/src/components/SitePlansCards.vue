@@ -84,6 +84,10 @@ export default {
 				plans = plans.filter((plan) => !plan.restricted_plan);
 			}
 			if (this.selectedProvider) {
+				if (["Generic", "Scaleway"].includes(this.selectedProvider)) {
+				// fallback for unlisted providers to show available plans
+					this.selectedProvider = "AWS EC2"
+				}
 				plans = plans.map((plan) => {
 					return {
 						...plan,
