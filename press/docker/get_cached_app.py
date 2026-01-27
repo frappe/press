@@ -191,6 +191,13 @@ def main():
 	credentials = get_asset_store_credentials()
 	asset_filename = f"{APP_NAME}.{APP_HASH}.tar.gz"
 
+	env = os.environ.copy()
+	env["FRAPPE_DOCKER_BUILD"] = "True"
+	app_path = f"file:///home/frappe/context/apps/{APP_NAME}"
+
+	print("Fetching app without assets...")
+	subprocess.run(["bench", "get-app", app_path, "--skip-assets"], check=True, env=env)
+
 	if check_existing_asset_in_s3(credentials, asset_filename):
 		print(f"Assets {asset_filename} found in store. Extracting and setting up...")
 		file_stream = download_asset_from_store(credentials, asset_filename)
