@@ -2080,13 +2080,19 @@
  "docstatus": 0,
  "doctype": "Agent Job Type",
  "max_retry_count": 3,
- "modified": "2026-01-27 15:15:57.412150",
+ "modified": "2026-01-27 17:06:12.080013",
  "name": "Update Nginx Access",
  "request_method": "POST",
  "request_path": "/server/update-nginx-access",
  "steps": [
   {
    "step_name": "Update config IP access"
+  },
+  {
+   "step_name": "Update Agent Nginx Conf File"
+  },
+  {
+   "step_name": "Reload NGINX"
   }
  ]
 }
