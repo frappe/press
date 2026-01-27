@@ -770,6 +770,8 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 	if platform:
 		filters.update({"platform": platform})
 
+	filters.update({"legacy_plan": False})
+
 	current_root_disk_size = None
 	if resource_name:
 		resource_details = frappe.db.get_value(
