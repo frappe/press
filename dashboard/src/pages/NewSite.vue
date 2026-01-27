@@ -242,7 +242,7 @@
 						:selectedCluster="cluster"
 						:selectedApps="apps"
 						:selectedVersion="version"
-						:selectedProvider="provider"
+						:selectedProvider="effectiveProvider"
 						:hideRestrictedPlans="selectedLocalisationCountry"
 					/>
 				</div>
@@ -760,6 +760,17 @@ export default {
 			];
 
 			return allClusters.filter((c) => c.cloud_provider === this.provider);
+		},
+		selectedClusterProvider() {
+			if (!this.cluster) return null;
+			const versionClusters = this.selectedVersion?.group?.clusters || [];
+			const clusterDetails = versionClusters.find(
+				(c) => c.name === this.cluster,
+			);
+			return clusterDetails?.cloud_provider || null;
+		},
+		effectiveProvider() {
+			return this.provider || this.selectedClusterProvider;
 		},
 		selectedVersionApps() {
 			let apps = [];
