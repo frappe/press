@@ -30,7 +30,6 @@
     mode: '0644'
     content: |
       network:
-        dhcp4: true
         ethernets:
           {{ network_interface.stdout }}:
             dhcp4: true
