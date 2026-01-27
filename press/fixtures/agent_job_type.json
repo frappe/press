@@ -2075,4 +2075,8 @@
    }
    ]
 }
+<<<<<<< HEAD
 ]
+=======
+]
+>>>>>>> 39fa2adb9 (Revert "fix(server): Agent job type to sync Nginx access")
