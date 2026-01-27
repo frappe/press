@@ -65,3 +65,58 @@ class NATServer(BaseServer):
 			self.status = "Broken"
 			log_error("Server Setup Exception", server=self.as_dict())
 		self.save()
+
+	@frappe.whitelist()
+	def trigger_failover(self, secondary: str):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_trigger_failover",
+			secondary=secondary,
+			queue="long",
+			timeout=1200,
+			at_front=True,
+		)
+		return "Failover Queued"
+
+	def _trigger_failover(self, secondary: str):
+		if not self.secondary_private_ip:
+			frappe.throw("Secondary IP not configured on current NAT Server")
+
+		secondary_nat_server = frappe.get_doc("NAT Server", secondary)
+		if secondary_nat_server.secondary_private_ip:
+			frappe.throw("Secondary NAT Server already has a secondary IP configured")
+
+		vm = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		secondary_vm = frappe.get_doc("Virtual Machine", secondary_nat_server.virtual_machine)
+		if self.is_static_ip and not secondary_vm.is_static_ip:
+			ip = self.ip
+			vm.detach_static_ip()
+			secondary_vm.attach_static_ip(ip)
+
+		try:
+			secondary_private_ip = self.secondary_private_ip
+			vm.detach_secondary_private_ip()
+			secondary_vm.attach_secondary_private_ip(secondary_private_ip)
+
+			ansible = Ansible(
+				playbook="configure_secondary_ip_in_secondary_nat.yml",
+				server=secondary_nat_server,
+				user=secondary_nat_server._ssh_user(),
+				port=secondary_nat_server._ssh_port(),
+				variables={
+					"primary_ip": secondary_vm.private_ip_address,
+					"secondary_ip": secondary_private_ip,
+				},
+			)
+			play = ansible.run()
+			if play.status != "Success":
+				raise
+		except Exception:
+			log_error(
+				"NAT Server Failover Exception",
+				secondary=secondary,
+				primary=self.name,
+				reference_doctype="NAT Server",
+				reference_name=secondary,
+			)
