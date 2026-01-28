@@ -61,7 +61,7 @@ class Agent:
 			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
 			as_dict=True,
 		)
-		cluster = frappe.db.get_value(self.server_type, self.server, "cluster", cache=True)
+		cluster = frappe.db.get_value(self.server_type, self.server, "cluster")
 		registry_url = frappe.db.get_value("Cluster", cluster, "repository") or settings.docker_registry_url
 
 		data = {
@@ -1014,16 +1014,15 @@ class Agent:
 	def _get_request_url(self, path):
 		if self.server_type in ("Server", "Database Server"):
 			proxy = None
-			server_ip, server_private_ip = frappe.db.get_value(
-				self.server_type, self.server, ("ip", "private_ip")
+			server_ip, server_private_ip, server_cluster = frappe.db.get_value(
+				self.server_type, self.server, ("ip", "private_ip", "cluster")
 			)
 			if not server_ip and server_private_ip and not frappe.flags.in_test:
-				cluster = frappe.db.get_value(self.server_type, self.server, "cluster", cache=True)
 				proxy = frappe.db.get_value(
 					"Proxy Server",
 					{
 						"status": "Active",
-						"cluster": cluster,
+						"cluster": server_cluster,
 						"use_as_proxy_for_agent_and_metrics": 1,
 					},
 				)
@@ -1517,7 +1516,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 
 		settings = frappe.get_single("Press Settings")
 		backup_bucket = get_backup_bucket(
-			frappe.get_value("Database Server", self.server, "cluster", cache=True), region=True
+			frappe.get_value("Database Server", self.server, "cluster"), region=True
 		)
 		bucket_name = backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
 		if not (settings.aws_s3_bucket or bucket_name):
