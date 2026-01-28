@@ -19,7 +19,7 @@
  "engine": "InnoDB",
  "field_order": [
   "inventory_section",
-  "inventory",
+  "inventory_console",
   "nonce",
   "command",
   "output",
@@ -29,12 +29,6 @@
   {
    "fieldname": "inventory_section",
    "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "inventory",
-   "fieldtype": "Code",
-   "label": "Inventory",
-   "max_height": "40px"
   },
   {
    "fieldname": "command",
@@ -62,13 +56,20 @@
    "label": "Error",
    "options": "Shell",
    "read_only": 1
+  },
+  {
+   "description": "Use <code>doc.inventory = ...</code> to set the inventory",
+   "fieldname": "inventory_console",
+   "fieldtype": "Code",
+   "label": "Inventory Console",
+   "options": "Python"
   }
  ],
  "hide_toolbar": 1,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-11-24 14:46:36.102377",
+ "modified": "2026-01-28 18:10:48.759600",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Ansible Console",
@@ -84,6 +85,7 @@
   }
  ],
  "quick_entry": 1,
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
