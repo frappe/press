@@ -19,7 +19,7 @@
 			</div>
 			<div v-else>
 				<div
-					class="flex h-full max-h-96 flex-col items-center space-y-2 overflow-auto py-2"
+					class="flex h-full max-h-96 flex-col items-center space-y-2 overflow-auto py-2 pr-1"
 				>
 					<div
 						v-for="app in $resources.availableApps.data"
@@ -27,23 +27,21 @@
 						class="w-full"
 					>
 						<div
-							class="flex cursor-pointer items-center rounded border border-gray-100 p-2"
+							class="flex cursor-pointer items-center rounded border border-gray-100 p-2 transition-colors"
 							:class="{
-								'bg-gray-100': selectedApp?.name === app.name,
-								'border-gray-100 hover:bg-gray-50':
-									selectedApp?.name !== app.name,
+								'bg-gray-100 border-gray-200': selectedApp?.name === app.name,
+								'hover:bg-gray-50': selectedApp?.name !== app.name,
 							}"
 							@click="selectedApp = app"
 						>
 							<img
 								:src="app.image"
 								:alt="app.title"
-								class="mr-2 h-8 w-8 rounded"
+								class="mr-2 h-8 w-8 rounded flex-shrink-0"
 							/>
-							<div class="space-y-1">
-								<p class="text-lg font-medium">{{ app.title }}</p>
-								<p class="line-clamp-1 text-sm text-gray-600">
-									{{ app.description }}
+							<div class="min-w-0">
+								<p class="text-base font-medium text-gray-900">
+									{{ app.title }}
 								</p>
 							</div>
 						</div>
@@ -118,7 +116,7 @@ export default {
 		if (window.posthog?.__loaded) {
 			window.posthog.identify(this.email || window.posthog.get_distinct_id(), {
 				app: 'frappe_cloud',
-				action: 'login_signup'
+				action: 'login_signup',
 			});
 
 			window.posthog.startSessionRecording();
