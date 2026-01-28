@@ -760,7 +760,7 @@ def secondary_server_plans(
 
 @frappe.whitelist()
 def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_only_resize=False):  # noqa C901
-	filters = {"server_type": name}
+	filters = {"server_type": name, "legacy_plan": False}
 
 	if cluster:
 		filters.update({"cluster": cluster})
@@ -770,7 +770,13 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 	if platform:
 		filters.update({"platform": platform})
 
-	filters.update({"legacy_plan": False})
+	if resource_name:
+		current_plan = frappe.db.get_value(name, resource_name, "plan")
+		if current_plan:
+			legacy_plan, platform = frappe.db.get_value(
+				"Server Plan", current_plan, ["legacy_plan", "platform"]
+			)
+			filters.update({"legacy_plan": legacy_plan if platform == "x86_64" else False})
 
 	current_root_disk_size = None
 	if resource_name:
