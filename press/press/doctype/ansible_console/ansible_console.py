@@ -16,6 +16,7 @@ from ansible.plugins.callback import CallbackBase
 from ansible.vars.manager import VariableManager
 from frappe.model.document import Document
 from frappe.utils import get_timedelta
+from frappe.utils.safe_exec import safe_exec
 
 from press.utils import reconnect_on_failure
 
@@ -29,13 +30,11 @@ class AnsibleConsole(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.ansible_console_output.ansible_console_output import (
-			AnsibleConsoleOutput,
-		)
+		from press.press.doctype.ansible_console_output.ansible_console_output import AnsibleConsoleOutput
 
 		command: DF.Code | None
 		error: DF.Code | None
-		inventory: DF.Code | None
+		inventory_console: DF.Code | None
 		nonce: DF.Data | None
 		output: DF.Table[AnsibleConsoleOutput]
 	# end: auto-generated types
@@ -43,6 +42,7 @@ class AnsibleConsole(Document):
 	def run(self):
 		frappe.only_for("System Manager")
 		try:
+			self.get_inventory()
 			ad_hoc = AnsibleAdHoc(sources=self.inventory)
 			for host in ad_hoc.run(self.command, self.nonce):
 				self.append("output", host)
@@ -55,6 +55,14 @@ class AnsibleConsole(Document):
 		log.update({"doctype": "Ansible Console Log"})
 		frappe.get_doc(log).insert()
 		frappe.db.commit()
+
+	def get_inventory(self):
+		safe_exec(
+			self.inventory_console,
+			script_filename="Ansible Console",
+			restrict_commit_rollback=True,
+			_locals={"doc": self},
+		)
 
 
 @frappe.whitelist()

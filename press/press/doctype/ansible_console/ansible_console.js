@@ -25,15 +25,15 @@ frappe.ui.form.on('Ansible Console', {
 
 		if (window.localStorage.getItem('ansible_console_command')) {
 			frm.set_value(
-				'inventory',
-				window.localStorage.getItem('ansible_console_inventory'),
+				'inventory_console',
+				window.localStorage.getItem('ansible_console_inventory_console'),
 			);
 			frm.set_value(
 				'command',
 				window.localStorage.getItem('ansible_console_command'),
 			);
 
-			window.localStorage.removeItem('ansible_console_inventory');
+			window.localStorage.removeItem('ansible_console_inventory_console');
 			window.localStorage.removeItem('ansible_console_command');
 		}
 
