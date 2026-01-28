@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 import frappe
 import jwt
 import requests
+import tomli
 
 from press.utils import get_current_team, log_error
 
@@ -241,7 +242,14 @@ def app(owner, repository, branch, installation=None):
 		tree,
 	)
 
-	return {"name": app_name, "title": title}
+	frappe_version = _get_compatible_frappe_version_from_pyproject(
+		owner,
+		repository,
+		branch_info,
+		headers,
+	)
+
+	return {"name": app_name, "title": title, "frappe_version": frappe_version}
 
 
 @frappe.whitelist()
@@ -274,6 +282,44 @@ def get_auth_headers(installation_id: str | None = None) -> "dict[str, str]":
 	if token := get_access_token(installation_id):
 		return {"Authorization": f"token {token}"}
 	return {}
+
+
+def _get_compatible_frappe_version_from_pyproject(
+	owner: str, repository: str, branch_info: str, headers: dict[str, str]
+) -> str:
+	"""Get frappe version from pyproject.toml file."""
+	pyproject = requests.get(
+		f"https://api.github.com/repos/{owner}/{repository}/contents/pyproject.toml",
+		params={"ref": branch_info["name"]},
+		headers=headers,
+	).json()
+
+	if "content" not in pyproject:
+		frappe.throw("Could not fetch pyproject.toml file.")
+
+	pyproject = b64decode(pyproject["content"]).decode()
+
+	try:
+		pyproject = tomli.loads(pyproject)
+	except tomli.TOMLDecodeError:
+		frappe.throw("Could not parse pyproject.toml file.")
+
+	compatible_frappe_version = (
+		pyproject.get("tool", {})
+		.get("bench", {})
+		.get("frappe-dependencies", {})
+		.get(
+			"frappe",
+		)
+	)
+
+	if not compatible_frappe_version:
+		frappe.throw(
+			"Could not find compatible Frappe version in pyproject.toml file."
+			" Please ensure 'tool.bench.frappe-dependencies.frappe' is set."
+		)
+
+	return compatible_frappe_version
 
 
 def _get_app_name_and_title_from_hooks(

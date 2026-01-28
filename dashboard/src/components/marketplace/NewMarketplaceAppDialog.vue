@@ -93,6 +93,7 @@ export default {
 			appValidated: false,
 			selectedGithubUser: null,
 			selectedGithubRepository: null,
+			frappeVersion: '',
 		};
 	},
 	resources: {
@@ -118,6 +119,7 @@ export default {
 						github_installation_id: this.selectedGithubUser?.id,
 						branch: this.selectedBranch.value,
 						is_public: isPublic,
+						frappe_version: data.frappe_version,
 					};
 				},
 			};

@@ -166,15 +166,16 @@ class MarketplaceApp(WebsiteGenerator):
 
 		if not self.sources:
 			source = app_doc.add_source(
-				self.version,
-				self.repository_url,
-				self.branch,
-				self.team,
-				self.github_installation_id,
+				repository_url=self.repository_url,
+				branch=self.branch,
+				team=self.team,
+				github_installation_id=self.github_installation_id,
+				frappe_version=self.frappe_version,
 				public=True,
 			)
 			self.app = source.app
-			self.append("sources", {"version": self.version, "source": source.name})
+			for version in source.versions:
+				self.append("sources", {"version": version.version, "source": source.name})
 
 	def validate(self):
 		self.published = self.status == "Published"
