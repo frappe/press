@@ -4672,7 +4672,7 @@ def archive_suspended_sites():
 			(sites.status == "Suspended") & (sites.trial_end_date.isnull()) & (site_plans.is_trial_plan == 0)
 		)
 		.select(sites.name, sites.team, sites.plan, sites.bench, site_plans.offsite_backups)
-		.orderby(sites.creation.asc())
+		.orderby(sites.creation, order=frappe.qb.asc)
 		.limit(archive_at_once)
 		.run(as_dict=True)
 	)
