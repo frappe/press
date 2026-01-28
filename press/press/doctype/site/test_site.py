@@ -525,20 +525,23 @@ class TestSite(FrappeTestCase):
 
 	@patch("press.press.doctype.site.site.frappe.db.commit", new=Mock())
 	@patch("press.press.doctype.site.site.frappe.db.rollback", new=Mock())
-	def test_archive_suspended_sites_archives_only_sites_suspended_longer_than_days(self):
-		site = create_test_site()
+	def test_archive_suspended_sites_archives_only_sites_with_backup_suspended_longer_than_days(self):
+		offsite_backup_plan = create_test_plan(
+			"Site", price_usd=5.0, price_inr=375.0, plan_name="Offsite Backup plan", offsite_backups=True
+		)
+		site = create_test_site(plan=offsite_backup_plan.name)
 		site.db_set("status", "Suspended")
 		site_activity = create_test_site_activity(site.name, "Suspend Site")
 		site_activity.db_set(
 			"creation", frappe.utils.add_days(frappe.utils.now_datetime(), -ARCHIVE_AFTER_SUSPEND_DAYS - 1)
 		)
-		site2 = create_test_site()
+		site2 = create_test_site(plan=offsite_backup_plan.name)
 		site2.db_set("status", "Suspended")
 		site2_activity = create_test_site_activity(site2.name, "Suspend Site")
 		site2_activity.db_set(
 			"creation", frappe.utils.add_days(frappe.utils.now_datetime(), -ARCHIVE_AFTER_SUSPEND_DAYS + 1)
 		)  # site2 suspended recently
-		site3 = create_test_site()  # active site should not be archived
+		site3 = create_test_site(plan=offsite_backup_plan.name)  # active site should not be archived
 
 		create_test_saas_settings(None, [create_test_app(), create_test_app("erpnext", "ERPNext")])
 
@@ -552,8 +555,10 @@ class TestSite(FrappeTestCase):
 
 	@patch("press.press.doctype.site.site.frappe.db.commit", new=Mock())
 	@patch("press.press.doctype.site.site.frappe.db.rollback", new=Mock())
-	def test_suspension_of_10_usd_site_triggers_backup_if_it_does_not_exist(self):
-		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")
+	def test_suspension_of_no_offsite_backup_site_triggers_backup_if_it_does_not_exist(self):
+		plan_10 = create_test_plan(
+			"Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10", offsite_backups=False
+		)
 
 		site = create_test_site()
 		site.db_set("status", "Suspended")
