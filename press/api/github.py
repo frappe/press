@@ -16,7 +16,6 @@ import requests
 from press.utils import get_current_team, log_error
 
 if TYPE_CHECKING:
-
 	from press.press.doctype.github_webhook_log.github_webhook_log import GitHubWebhookLog
 
 
