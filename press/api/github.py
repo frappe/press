@@ -227,11 +227,10 @@ def app(owner, repository, branch, installation=None):
 	).json()
 
 	tree = _generate_files_tree(contents["tree"])
-	py_setup_files = ["setup.py", "setup.cfg", "pyproject.toml"]
 
-	if not any(x in tree for x in py_setup_files):
-		setup_filenames = frappe.bold(" or ".join(py_setup_files))
-		reason = f"Files {setup_filenames} do not exist in app directory."
+	# Force pyproject.toml as a setup file
+	if "pyproject.toml" not in tree:
+		reason = "pyproject.toml does not exist in app directory."
 		frappe.throw(f"Not a valid Frappe App! {reason}")
 
 	app_name, title = _get_app_name_and_title_from_hooks(
