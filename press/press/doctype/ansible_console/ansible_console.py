@@ -148,9 +148,12 @@ class AnsibleAdHoc:
 		self.loader = DataLoader()
 		self.passwords = dict({})
 
-		self.inventory = InventoryManager(loader=self.loader, sources=sources)
+		resolved_sources, proxy_map = self._resolve_sources(sources)
+
+		self.inventory = InventoryManager(loader=self.loader, sources=",".join(resolved_sources) + ",")
 		self.variable_manager = VariableManager(loader=self.loader, inventory=self.inventory)
 
+		self._apply_proxy_configurations(proxy_map)
 		self.callback = AnsibleCallback()
 
 	def run(self, command, nonce=None, raw_params: bool = False, become_user: str = "root"):
@@ -189,3 +192,30 @@ class AnsibleAdHoc:
 
 		self.callback.publish_update()
 		return list(self.callback.hosts.values())
+
+	def _resolve_sources(self, sources):
+		all_ips = []
+		proxy_map = {}
+		cluster_cache = {}
+
+		for src in sources:
+			if src.get("ip") or src.get("name"):
+				all_ips.append(src.get("ip") or src.get("name"))
+			elif src.get("private_ip") and src.get("cluster"):
+				all_ips.append(src["private_ip"])
+				cluster = src["cluster"]
+				if cluster not in cluster_cache:
+					cluster_cache[cluster] = frappe.db.get_value(
+						"Proxy Server", {"status": "Active", "cluster": src["cluster"]}, "name"
+					)
+				proxy_map[src["private_ip"]] = cluster_cache[cluster]
+
+		return all_ips, proxy_map
+
+	def _apply_proxy_configurations(self, proxy_map):
+		"""Applies SSH ProxyJump arguments to the Ansible variable manager."""
+		for target_ip, proxy_ip in proxy_map.items():
+			host = self.inventory.get_host(target_ip)
+			if host:
+				ssh_args = f'-o ProxyCommand="ssh -W %h:%p root@{proxy_ip}"'
+				self.variable_manager.set_host_variable(host.get_name(), "ansible_ssh_common_args", ssh_args)
