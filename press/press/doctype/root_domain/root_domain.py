@@ -188,7 +188,7 @@ class RootDomain(Document):
 			if to_delete:
 				self.delete_dns_records(to_delete)
 
-	def update_dns_records_for_sites(self, sites: list[str], proxy_server: str):
+	def update_dns_records_for_sites(self, sites: list[str], proxy_server: str, ttl: int = 600):
 		if self.generic_dns_provider:
 			return
 
@@ -203,7 +203,7 @@ class RootDomain(Document):
 						"ResourceRecordSet": {
 							"Name": site,
 							"Type": "CNAME",
-							"TTL": 600,
+							"TTL": ttl,
 							"ResourceRecords": [{"Value": proxy_server}],
 						},
 					}

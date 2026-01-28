@@ -264,9 +264,13 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
 			as_dict=True,
 		)
-		primary_server_private_ip = frappe.db.get_value("Server", self.primary_server, "private_ip")
+
+		primary_server_private_ip, primary_server_cluster = frappe.db.get_value(
+			"Server", self.primary_server, ["private_ip", "cluster"]
+		)
 		secondary_server_private_ip = frappe.db.get_value("Server", self.secondary_server, "private_ip")
 		shared_directory = frappe.db.get_single_value("Press Settings", "shared_directory")
+		cluster_repository = frappe.db.get_value("Cluster", primary_server_cluster, "repository")
 
 		agent_job = Agent(self.secondary_server).change_bench_directory(
 			redis_connection_string_ip=primary_server_private_ip,
@@ -274,7 +278,8 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 			directory=shared_directory,
 			is_primary=False,
 			registry_settings={
-				"url": settings.docker_registry_url,
+				"url": cluster_repository
+				or settings.docker_registry_url,  # Use the cluster repository if present
 				"username": settings.docker_registry_username,
 				"password": settings.docker_registry_password,
 			},
@@ -621,7 +626,7 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 			steps=self.scale_steps,
 			timeout=18000,
 			at_front=True,
-			queue="long",
+			queue="auto-scale",
 			enqueue_after_commit=True,
 		)
 
@@ -897,6 +902,15 @@ def update_or_delete_prometheus_rule_for_scaling(
 	existing.save()
 
 
+def _should_enable_trigger(instance_name: str, action: Literal["Scale Up", "Scale Down"]) -> bool:
+	"""Only enable scale down trigger if server is already scaled up"""
+	if action == "Scale Up":
+		return True
+
+	scaled_up = frappe.db.get_value("Server", instance_name, "scaled_up")
+	return bool(scaled_up)
+
+
 def create_prometheus_rule_for_scaling(
 	instance_name: str,
 	metric: Literal["CPU", "Memory"],
@@ -933,7 +947,7 @@ def create_prometheus_rule_for_scaling(
 		new_expression = " OR ".join(parts)
 
 		existing.expression = new_expression
-		existing.enabled = True
+		existing.enabled = _should_enable_trigger(instance_name, action)
 		existing.save()  # Need to call this to allow on_update to trigger
 
 	else:
@@ -943,7 +957,7 @@ def create_prometheus_rule_for_scaling(
 				"name": rule_name,
 				"description": f"Autoscale trigger for {instance_name}",
 				"expression": query_with_threshold,
-				"enabled": 1,
+				"enabled": _should_enable_trigger(instance_name, action),
 				"for": "5m",
 				"repeat_interval": "1h"
 				if action == "Scale Up"

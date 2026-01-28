@@ -7,7 +7,7 @@
 					label: 'Change Region',
 					loading: $resources.changeRegion.loading,
 					variant: 'solid',
-					disabled: !selectedRegion,
+					disabled: !selectedRegion?.value,
 					onClick: changeRegion,
 				},
 			],
@@ -23,11 +23,18 @@
 			<div v-else class="space-y-4">
 				<FormControl
 					variant="outline"
-					type="autocomplete"
+					type="combobox"
 					label="Choose Region"
-					v-model="selectedRegion"
+					placeholder="Select Region"
+					:modelValue="selectedRegion?.value"
+					@update:modelValue="
+						selectedRegion = $resources.changeRegionOptions.data.find(
+							(option) => option.value === $event,
+						)
+					"
 					:options="
-						$resources.changeRegionOptions.data.regions.map((r) => ({
+						console.log($resources.changeRegionOptions.data) ||
+						$resources.changeRegionOptions.data.map((r) => ({
 							label: r.title || r.name,
 							value: r.name,
 							image: r.image,
@@ -136,6 +143,13 @@ export default {
 					name: this.site,
 				},
 				auto: true,
+				transform: (data) => {
+					return data.regions.map((region) => ({
+						...region,
+						label: region.title || region.name,
+						value: region.name,
+					}));
+				},
 			};
 		},
 		changeRegion() {

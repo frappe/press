@@ -49,7 +49,7 @@
 										'Release Group',
 										'Server',
 										'Database Server',
-									].includes(row.document_type) && !row.plan.includes('hour')
+									].includes(row.document_type) && !row.plan?.includes('hour')
 										? $format.plural(row.quantity, 'day', 'days')
 										: 'hours'
 								}}
@@ -132,7 +132,7 @@
 							<td></td>
 							<td class="pr-2 text-right font-medium">Amount Due</td>
 							<td class="whitespace-nowrap py-3 pr-2 text-right font-medium">
-								{{ formatCurrency(doc.amount_due) }}
+								{{ formatCurrency(doc.amount_due_with_tax) }}
 							</td>
 						</tr>
 					</template>

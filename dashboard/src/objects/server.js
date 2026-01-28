@@ -47,6 +47,7 @@ export default {
 			'plan.price_inr as price_inr',
 			'cluster.image as cluster_image',
 			'cluster.title as cluster_title',
+			'is_unified_server',
 		],
 		searchField: 'title',
 		filterControls() {
@@ -98,8 +99,8 @@ export default {
 			{
 				label: 'Database Server Plan',
 				fieldname: 'db_plan',
-				format(value) {
-					if (!value) return '';
+				format(value, row) {
+					if (!value || row.is_unified_server) return '';
 					return planTitle(value);
 				},
 			},
@@ -279,7 +280,7 @@ export default {
 				},
 			},
 			{
-				label: 'Bench Group Analytics',
+				label: 'Bench Analytics',
 				icon: icon('bar-chart-2'),
 				condition: (server) => server.doc?.status !== 'Archived',
 				route: 'bench-group-analytics',
@@ -289,6 +290,25 @@ export default {
 				),
 				props: (server) => {
 					return { serverName: server.doc.name };
+				},
+			},
+			{
+				label: 'Firewall',
+				icon: icon('shield'),
+				condition: (server) => {
+					return (
+						server.doc?.status !== 'Archived' && !server.doc?.is_self_hosted
+					);
+				},
+				route: 'firewall',
+				type: 'Component',
+				component: defineAsyncComponent(
+					() => import('../components/server/ServerFirewall.vue'),
+				),
+				props: (server) => {
+					return {
+						id: server.doc.name,
+					};
 				},
 			},
 			{
@@ -475,6 +495,7 @@ export default {
 						};
 					},
 					primaryAction({ listResource: benches, documentResource: server }) {
+						if (server?.doc?.status !== 'Active') return {};
 						return {
 							label: 'New Bench Group',
 							slots: {

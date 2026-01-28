@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.query_builder.functions import Count
 
 from press.api.client import dashboard_whitelist
 from press.guards import team_guard
@@ -119,12 +120,15 @@ class PressRole(Document):
 
 	@dashboard_whitelist()
 	@team_guard.only_admin(skip=lambda _, args: args.get("skip_validations", False))
-	def add_resource(self, document_type: str, document_name: str):
-		resource_dict = {"document_type": document_type, "document_name": document_name}
-		if self.get("resources", resource_dict):
-			message = _("{0} already belongs to {1}").format(document_name, self.title)
-			frappe.throw(message, frappe.ValidationError)
-		self.append("resources", resource_dict)
+	def add_resource(self, resources: list[dict[str, str]]):
+		for resource in resources:
+			document_type = resource["document_type"]
+			document_name = resource["document_name"]
+			resource_dict = {"document_type": document_type, "document_name": document_name}
+			if self.get("resources", resource_dict):
+				message = _("{0} already belongs to {1}").format(document_name, self.title)
+				frappe.throw(message, frappe.ValidationError)
+			self.append("resources", resource_dict)
 		self.save()
 
 	@dashboard_whitelist()
@@ -149,21 +153,45 @@ class PressRole(Document):
 def create_user_resource(document: Document, _):
 	user = frappe.session.user
 	team: Team = get_current_team(get_doc=True)
+
 	roles_enabled = bool(
 		frappe.db.exists(
 			{
 				"doctype": "Press Role",
-				"team": get_current_team(),
+				"team": team.name,
 			}
 		)
 	)
-	if (not user) or (not roles_enabled) or team.is_team_owner() or team.is_admin_user():
+
+	if (
+		(not user)
+		or (not roles_enabled)
+		or (not user_has_roles())
+		or team.is_team_owner()
+		or team.is_admin_user()
+	):
 		return
+
+	title = user + " / " + document.name
+
+	role_exists = bool(
+		frappe.db.exists(
+			{
+				"doctype": "Press Role",
+				"team": team.name,
+				"title": title,
+			}
+		)
+	)
+
+	if role_exists:
+		return
+
 	frappe.get_doc(
 		{
 			"doctype": "Press Role",
-			"title": user + " / " + document.name,
-			"team": team,
+			"title": title,
+			"team": team.name,
 			"users": [
 				{
 					"user": user,
@@ -176,4 +204,20 @@ def create_user_resource(document: Document, _):
 				}
 			],
 		}
-	).save()
+	).save(ignore_permissions=True)
+
+
+def user_has_roles() -> bool:
+	PressRole = frappe.qb.DocType("Press Role")
+	PressRoleUser = frappe.qb.DocType("Press Role User")
+	return (
+		frappe.qb.from_(PressRole)
+		.inner_join(PressRoleUser)
+		.on(PressRole.name == PressRoleUser.parent)
+		.where(PressRole.team == get_current_team())
+		.where(PressRoleUser.user == frappe.session.user)
+		.select(Count(PressRole.name).as_("role_count"))
+		.run(as_dict=True)
+		.pop()
+		.get("role_count", 0)
+	) > 0

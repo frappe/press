@@ -12,6 +12,7 @@
   "domain",
   "self_hosted_server_domain",
   "tls_certificate_renewal_failed",
+  "is_unified_server",
   "column_break_4",
   "cluster",
   "provider",
@@ -21,6 +22,7 @@
   "is_server_setup",
   "is_server_prepared",
   "is_server_renamed",
+  "is_provisioning_press_job_completed",
   "is_self_hosted",
   "keep_files_on_server_in_offsite_backup",
   "public",
@@ -142,7 +144,7 @@
    "default": "0",
    "fieldname": "is_server_setup",
    "fieldtype": "Check",
-   "label": "Server Setup",
+   "label": "Is Server Setup",
    "read_only": 1
   },
   {
@@ -284,7 +286,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner\nVodacom\nDigitalOcean",
    "set_only_once": 1
   },
   {
@@ -332,7 +334,7 @@
    "label": "Staging"
   },
   {
-   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\"].includes(doc.provider)",
+   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\", \"DigitalOcean\"].includes(doc.provider)",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
@@ -726,6 +728,19 @@
   {
    "fieldname": "column_break_ywnx",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Checked if database and app are hosted on the server server",
+   "fieldname": "is_unified_server",
+   "fieldtype": "Check",
+   "label": "Is Unified Server"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_provisioning_press_job_completed",
+   "fieldtype": "Check",
+   "label": "Is Provisioning Job Completed"
   }
  ],
  "links": [
@@ -734,7 +749,7 @@
    "link_fieldname": "primary_server"
   }
  ],
- "modified": "2025-11-17 11:29:25.581882",
+ "modified": "2026-01-23 10:19:12.514309",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

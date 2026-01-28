@@ -15,9 +15,16 @@
 					variant="outline"
 					:label="`Please select a ${nextVersion} bench group to upgrade your site from ${$site.doc.version}`"
 					class="w-full"
-					type="autocomplete"
+					type="combobox"
 					:options="privateReleaseGroups"
-					v-model="privateReleaseGroup"
+					:modelValue="privateReleaseGroup?.value"
+					@update:modelValue="
+						(optionValue) => {
+							privateReleaseGroup = privateReleaseGroups.find(
+								(option) => option.value === optionValue,
+							);
+						}
+					"
 				/>
 				<DateTimeControl
 					v-if="($site.doc.group_public && nextVersion) || benchHasCommonServer"
@@ -59,7 +66,7 @@
 				v-if="!$site.doc.group_public"
 				class="mb-2 w-full"
 				:disabled="
-					benchHasCommonServer || !privateReleaseGroup.value || !nextVersion
+					benchHasCommonServer || !privateReleaseGroup?.value || !nextVersion
 				"
 				label="Add Server to Bench Group"
 				@click="$resources.addServerToReleaseGroup.submit()"
@@ -73,7 +80,7 @@
 				variant="solid"
 				label="Upgrade"
 				:disabled="
-					((!benchHasCommonServer || !privateReleaseGroup.value) &&
+					((!benchHasCommonServer || !privateReleaseGroup?.value) &&
 						!$site.doc.group_public) ||
 					!nextVersion
 				"

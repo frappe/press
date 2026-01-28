@@ -7,6 +7,23 @@ import frappe
 import requests
 
 
+def foreground_enqueue_doc_with_user(run_as_user: str):
+	def wrapper(*args, **kwargs):
+		# Remove any user-supplied run_as_user
+		kwargs.pop("run_as_user", None)
+
+		current_user = frappe.session.user
+		if run_as_user:
+			frappe.set_user(run_as_user)
+
+		try:
+			return foreground_enqueue_doc(*args, **kwargs)
+		finally:
+			frappe.set_user(current_user)
+
+	return wrapper
+
+
 def foreground_enqueue_doc(
 	doctype: str,
 	docname: str,
@@ -25,6 +42,7 @@ def foreground_enqueue_doc(
 
 	Use for monkey patching enqueue_doc in tests
 	"""
+
 	getattr(frappe.get_doc(doctype, docname), method)(**kwargs)
 
 

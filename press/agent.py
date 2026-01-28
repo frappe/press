@@ -278,7 +278,7 @@ class Agent:
 		assert site.config is not None, "Site config is required to restore site from backup"
 
 		data = {
-			"config": json.loads(site.config),
+			"config": json.loads(site.config) if site.config else {},
 			"apps": apps,
 			"name": site.name,
 			"mariadb_root_password": get_mariadb_root_password(site),
@@ -533,8 +533,10 @@ class Agent:
 	def backup_site(self, site, site_backup: SiteBackup):
 		from press.press.doctype.site_backup.site_backup import get_backup_bucket
 
-		data = {"with_files": site_backup.with_files}
-
+		data = {
+			"with_files": site_backup.with_files,
+			"agent_job_timeout": site.backup_timeout,
+		}
 		if site_backup.offsite:
 			settings = frappe.get_single("Press Settings")
 			backups_path = os.path.join(site.name, str(date.today()))
@@ -1857,6 +1859,16 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			"/server/force-remove-all-benches",
 			reference_doctype=reference_doctype,
 			reference_name=reference_name,
+		)
+
+	def update_nginx_access(self, ip_accept: list[str], ip_drop: list[str]) -> AgentJob:
+		return self.create_agent_job(
+			"Update Nginx Access",
+			"/server/update-nginx-access",
+			data={
+				"ip_access": ip_accept,
+				"ip_drop": ip_drop,
+			},
 		)
 
 

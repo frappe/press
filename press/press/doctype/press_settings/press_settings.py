@@ -30,6 +30,11 @@ class PressSettings(Document):
 		agent_repository_owner: DF.Data | None
 		agent_sentry_dsn: DF.Data | None
 		app_include_script: DF.Data | None
+		asset_store_access_key: DF.Data | None
+		asset_store_bucket_name: DF.Data | None
+		asset_store_endpoint: DF.Data | None
+		asset_store_region: DF.Data | None
+		asset_store_secret_access_key: DF.Password | None
 		auto_update_queue_size: DF.Int
 		autoscale_discount: DF.Float
 		aws_access_key_id: DF.Data | None
@@ -57,6 +62,7 @@ class PressSettings(Document):
 		default_apps: DF.Table[AppGroup]
 		default_outgoing_id: DF.Data | None
 		default_outgoing_pass: DF.Data | None
+		default_server_plan_type: DF.Link | None
 		deploy_marker: DF.Data | None
 		disable_agent_job_deduplication: DF.Check
 		disable_auto_retry: DF.Check
@@ -104,7 +110,6 @@ class PressSettings(Document):
 		github_pat_token: DF.Data | None
 		github_webhook_secret: DF.Data | None
 		gst_percentage: DF.Float
-		hetzner_api_token: DF.Password | None
 		hybrid_cluster: DF.Link | None
 		hybrid_domain: DF.Link | None
 		ic_key: DF.Password | None
@@ -145,6 +150,9 @@ class PressSettings(Document):
 		remote_uploads_bucket: DF.Data | None
 		root_domain: DF.Data | None
 		rsa_key_size: DF.Literal["2048", "3072", "4096"]
+		school_api_key: DF.Data | None
+		school_api_secret: DF.Password | None
+		school_url: DF.Data | None
 		send_email_notifications: DF.Check
 		send_telegram_notifications: DF.Check
 		servers_using_alternative_http_port_for_communication: DF.SmallText | None
@@ -182,6 +190,7 @@ class PressSettings(Document):
 		usd_rate: DF.Float
 		use_agent_job_callbacks: DF.Check
 		use_app_cache: DF.Check
+		use_asset_store: DF.Check
 		use_delta_builds: DF.Check
 		use_staging_ca: DF.Check
 		verify_cards_with_micro_charge: DF.Literal["No", "Only INR", "Only USD", "Both INR and USD"]

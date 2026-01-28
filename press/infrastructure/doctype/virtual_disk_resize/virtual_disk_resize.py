@@ -92,17 +92,14 @@ class VirtualDiskResize(Document):
 
 	def run_prerequisites(self):
 		try:
-			self.status = Status.Preparing
-			self.save()
 			self.set_filesystem_attributes()
 			self.set_new_volume_attributes()
 			self.create_new_volume()
 			self.status = Status.Ready
-			self.save()
-		except Exception as e:
-			frappe.log_error(message=str(e), title="Virtual Disk Resize Prerequisites Failed")
+		except Exception:
+			self.log_error("Virtual Disk Resize Prerequisites Failed")
 			self.status = Status.Failure
-			self.save()
+		self.save()
 
 	def get_lock(self):
 		try:
@@ -118,8 +115,11 @@ class VirtualDiskResize(Document):
 	def execute(self):
 		if not self.get_lock():
 			return
+
 		self.run_prerequisites()
-		self.status = Status.Running
+		if self.status != Status.Ready:
+			return
+
 		self.start = frappe.utils.now_datetime()
 		self.save()
 		self.next()
@@ -275,14 +275,13 @@ class VirtualDiskResize(Document):
 
 	def reaffirm_old_filesystem_used(self, mountpoint: str):
 		"""Reaffirm file system usage using du"""
-		output = self.ansible_run(f"du -s {mountpoint}")["output"]
+		output = self.ansible_run(f"du -sx --block-size=1024 {mountpoint}")["output"]
 
 		if not output:
 			frappe.throw("Error occurred while fetching filesystem size")
 
 		size = float(output.split()[0])
-		size *= 512  # du measures size in units of 512-byte blocks
-		return size / 1024**3
+		return size / 1024**2
 
 	def set_old_filesystem_attributes(self, device, filesystem):
 		self.filesystem_mount_point = device["mountpoint"]
@@ -453,6 +452,7 @@ class VirtualDiskResize(Document):
 		server.copy_files(
 			source=self.filesystem_mount_point,
 			destination=self.new_filesystem_temporary_mount_point,
+			extra_options="-x",
 		)
 		return StepStatus.Success
 
@@ -692,7 +692,7 @@ class VirtualDiskResize(Document):
 	def ansible_run(self, command):
 		virtual_machine_ip = frappe.db.get_value("Virtual Machine", self.virtual_machine, "public_ip_address")
 		inventory = f"{virtual_machine_ip},"
-		result = AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
+		result = AnsibleAdHoc(sources=inventory).run(command, self.name, raw_params=True)[0]
 		self.add_command(command, result)
 		return result
 

@@ -93,6 +93,7 @@ ALLOWED_DOCTYPES = [
 	"Support Access",
 	"Partner Lead Origin",
 	"Auto Scale Record",
+	"Server Firewall",
 ]
 
 whitelisted_methods = set()
