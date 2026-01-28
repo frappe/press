@@ -124,14 +124,23 @@ def _write_js_and_css_assets(app: str, dist_folder: str) -> None:
 	assets_rtl_file = os.path.join(os.getcwd(), "sites", "assets", "assets-rtl.json")
 
 	for assets in ["js", "css"]:
-		for file in os.scandir(os.path.join(dist_folder, assets)):
+		assets_path = os.path.join(dist_folder, assets)
+
+		if not os.path.exists(assets_path):
+			continue
+
+		for file in os.scandir(assets_path):
 			if file.name.endswith(".map"):
 				continue
 
 			relative_path = f"/assets/{app}/dist/{assets}/{file.name}"
 			_write_assets(file, assets_file, relative_path)
 
-	for file in os.scandir(os.path.join(dist_folder, "css-rtl")):
+	css_rtl_path = os.path.join(dist_folder, "css-rtl")
+	if not os.path.exists(css_rtl_path):
+		return
+
+	for file in os.scandir(css_rtl_path):
 		if file.name.endswith(".map"):
 			continue
 
