@@ -690,9 +690,13 @@ class VirtualDiskResize(Document):
 		return None
 
 	def ansible_run(self, command):
-		virtual_machine_ip = frappe.db.get_value("Virtual Machine", self.virtual_machine, "public_ip_address")
-		inventory = f"{virtual_machine_ip},"
-		result = AnsibleAdHoc(sources=inventory).run(command, self.name, raw_params=True)[0]
+		vm = frappe.db.get_value(
+			"Virtual Machine",
+			self.virtual_machine,
+			("public_ip_address as ip", "private_ip_address as private_ip", "cluster"),
+			as_dict=True,
+		)
+		result = AnsibleAdHoc(sources=[vm]).run(command, self.name, raw_params=True)[0]
 		self.add_command(command, result)
 		return result
 

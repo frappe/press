@@ -1159,8 +1159,12 @@ class LogicalReplicationBackup(Document):
 		return None
 
 	def ansible_run(self, command):
-		inventory = f"{self.virtual_machine.public_ip_address},"
-		result = AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
+		vm = {
+			"ip": self.virtual_machine.public_ip_address,
+			"private_ip": self.virtual_machine.private_ip_address,
+			"cluster": self.virtual_machine.cluster,
+		}
+		result = AnsibleAdHoc(sources=[vm]).run(command, self.name)[0]
 		self.add_command(command, result)
 		return result
 
