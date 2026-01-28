@@ -25,14 +25,6 @@
 				@validateApp="validateApp"
 				@fieldChange="appValidated = false"
 			/>
-			<LinkControl
-				v-if="selectedBranch"
-				class="mt-4"
-				type="combobox"
-				label="Choose Version"
-				:options="{ doctype: 'Frappe Version', filters: { public: 1 } }"
-				v-model="selectedVersion"
-			/>
 			<div class="mt-4 space-y-2">
 				<div
 					v-if="$resources.validateApp.loading && !appValidated"
@@ -41,31 +33,40 @@
 					<LoadingIndicator class="mr-2 w-4" />
 					Validating app...
 				</div>
-				<div v-if="appValidated" class="flex text-base text-gray-700">
-					<div v-if="this.app.is_public === true" class="flex gap-1">
+				<div
+					v-if="appValidated"
+					class="flex flex-col text-base text-gray-700 space-y-2"
+				>
+					<div v-if="this.app.is_public" class="flex items-center gap-2">
 						<FeatherIcon
 							class="w-4 p-0.5 text-white rounded bg-green-500"
 							name="check"
 							:stroke-width="3"
 						/>
-						Found {{ this.app.title }} ({{ this.app.name }})
+						<span>
+							Found <strong>{{ this.app.title }}</strong> ({{ this.app.name }}).
+							We will automatically find the compatible Frappe version for this
+							app.
+						</span>
 					</div>
-					<div v-else-if="this.app.is_public === false">
-						<div class="flex text-base text-gray-700 gap-1">
+					<div v-else>
+						<div class="flex items-center gap-2">
 							<FeatherIcon
 								class="w-4 p-0.5 text-white rounded bg-red-500"
 								name="x"
 							/>
-							The Github Repository is private.
-							<Link
-								href="https://frappecloud.com/marketplace/terms"
-								class="font-medium"
-							>
-								Terms and Policy
-							</Link>
+							<span>
+								The GitHub repository is private. Please ensure the repository
+								is public to proceed.
+							</span>
 						</div>
+						<Link
+							href="https://frappecloud.com/marketplace/terms"
+							class="font-medium text-blue-600 hover:underline"
+						>
+							Read our Terms and Policy
+						</Link>
 					</div>
-					<div v-else class="h-4"></div>
 				</div>
 			</div>
 			<ErrorMessage :message="$resources.validateApp.error" />
