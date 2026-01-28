@@ -465,6 +465,7 @@ jobs:
   coverage:
     name: Coverage Wrap Up
     needs: server-tests
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Clone
