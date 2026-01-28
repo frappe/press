@@ -7,7 +7,7 @@
 				{
 					label: 'Add App',
 					variant: 'solid',
-					disabled: (!appValidated && !selectedVersion) || !this.app.is_public,
+					disabled: !appValidated || !this.app.is_public,
 					onClick: addApp,
 				},
 			],
@@ -90,7 +90,6 @@ export default {
 			show: true,
 			app: {},
 			selectedBranch: '',
-			selectedVersion: '',
 			appValidated: false,
 			selectedGithubUser: null,
 			selectedGithubRepository: null,
@@ -131,7 +130,6 @@ export default {
 						doc: {
 							...this.app,
 							doctype: 'Marketplace App',
-							version: this.selectedVersion,
 						},
 					};
 				},
