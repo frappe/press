@@ -79,9 +79,13 @@ def get_data(resource_type, action_type):  # noqa: C901
 
 			server_type = {
 				"f": "Server",
+				"fs": "Server",
+				"u": "Server",
 				"m": "Database Server",
 				"n": "Proxy Server",
-			}[frappe.db.get_value("Virtual Machine", virtual_machine, "series")]
+			}.get(frappe.db.get_value("Virtual Machine", virtual_machine, "series"))
+			if not server_type:
+				continue
 
 			server = frappe.db.get_value(
 				server_type,
