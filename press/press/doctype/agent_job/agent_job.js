@@ -27,6 +27,7 @@ frappe.ui.form.on('Agent Job', {
 			![
 				'New Site',
 				'Archive Site',
+				'Restore Site',
 				'New Site from Backup',
 				'Update Site Pull',
 				'Update Site Migrate',
