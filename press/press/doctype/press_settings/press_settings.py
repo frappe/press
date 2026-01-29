@@ -36,7 +36,6 @@ class PressSettings(Document):
 		asset_store_region: DF.Data | None
 		asset_store_secret_access_key: DF.Password | None
 		auto_update_queue_size: DF.Int
-		autoscale_discount: DF.Float
 		aws_access_key_id: DF.Data | None
 		aws_s3_bucket: DF.Data | None
 		aws_secret_access_key: DF.Password | None
@@ -66,7 +65,6 @@ class PressSettings(Document):
 		deploy_marker: DF.Data | None
 		disable_agent_job_deduplication: DF.Check
 		disable_auto_retry: DF.Check
-		disable_binlog_indexer_service: DF.Check
 		disable_frappe_auth: DF.Check
 		disable_physical_backup: DF.Check
 		disallow_disposable_emails: DF.Check
@@ -194,7 +192,6 @@ class PressSettings(Document):
 		use_delta_builds: DF.Check
 		use_staging_ca: DF.Check
 		verify_cards_with_micro_charge: DF.Literal["No", "Only INR", "Only USD", "Both INR and USD"]
-		wazuh_server: DF.Data | None
 		webroot_directory: DF.Data | None
 	# end: auto-generated types
 
