@@ -196,7 +196,7 @@ def extract_and_link_assets(app_name: str, file_stream: BytesIO):
 	assets_path = os.path.join(bench_path, "sites", "assets", app_name)
 
 	# 1. Remove existing symlink/dir so tar can extract a fresh physical directory
-	if os.path.islink(assets_path) or os.path.exists(assets_path):
+	if os.path.exists(assets_path):
 		if os.path.islink(assets_path):
 			os.unlink(assets_path)
 		else:
