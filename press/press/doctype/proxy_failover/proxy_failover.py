@@ -363,7 +363,7 @@ class ProxyFailover(Document, StepHandler):
 			raise
 
 	def replicate_once_manually(self, step):
-		result = AnsibleAdHoc(sources=f"{frappe.db.get('Proxy Server', self.primary, 'ip')},").run(
+		result = AnsibleAdHoc(sources=[frappe.db.get("Proxy Server", self.primary, "ip", as_dict=True)]).run(
 			f"rsync -aAXvz /home/frappe/agent/nginx/ frappe@{self.secondary}:/home/frappe/agent/nginx/",
 		)[0]
 
