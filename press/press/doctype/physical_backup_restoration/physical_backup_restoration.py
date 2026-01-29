@@ -825,8 +825,10 @@ class PhysicalBackupRestoration(Document):
 		return None
 
 	def ansible_run(self, command, raw_params: bool = False):
-		inventory = f"{self.virtual_machine.public_ip_address},"
-		result = AnsibleAdHoc(sources=inventory).run(command, self.name, raw_params=raw_params)[0]
+		db = frappe.db.get_value(
+			"Database Server", self.destination_server, ("ip", "private_ip", "cluster"), as_dict=True
+		)
+		result = AnsibleAdHoc(sources=[db]).run(command, self.name, raw_params=raw_params)[0]
 		self.add_command(command, result)
 		return result
 
