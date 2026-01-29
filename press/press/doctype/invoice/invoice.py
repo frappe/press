@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
+import contextlib
 import typing
+from datetime import timedelta
 
 import frappe
 from frappe import _
@@ -870,8 +872,6 @@ class Invoice(Document):
 
 				if invoice:
 					self.frappe_invoice = invoice
-					self.fetch_invoice_pdf()
-					self.save()
 					return invoice
 			else:
 				from bs4 import BeautifulSoup
@@ -930,6 +930,7 @@ class Invoice(Document):
 				)
 				ret.save(ignore_permissions=True)
 				self.invoice_pdf = ret.file_url
+				self.save()
 
 	def get_frappeio_connection(self):
 		if not hasattr(self, "frappeio_connection"):
@@ -1167,6 +1168,22 @@ def finalize_draft_invoice(invoice):
 
 def calculate_gst(amount):
 	return amount * 0.18
+
+
+def fetch_invoice_pdf_from_frappeio():
+	invs = frappe.get_all(
+		"Invoice",
+		{
+			"status": "Paid",
+			"frappe_invoice": ["is", "Set"],
+			"invoice_pdf": ["is", "Not Set"],
+			"modified": [">", frappe.utils.now_datetime() - timedelta(minutes=30)],
+		},
+		pluck="name",
+	)
+	for inv in invs:
+		with contextlib.suppress(Exception):
+			frappe.get_doc("Invoice", inv).fetch_invoice_pdf()
 
 
 def get_permission_query_conditions(user):
