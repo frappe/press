@@ -219,6 +219,9 @@ def get_domains():
 	return frappe.get_all("Root Domain", filters={"enabled": ["=", "1"]}, pluck="name")
 
 
-def is_our_domain(domain: str) -> bool:
+def get_matching_domain(domain: str) -> str | None:
 	root_domains = get_domains()
-	return any(domain == rd or domain.endswith(f".{rd}") for rd in root_domains)
+	for rd in root_domains:
+		if domain == rd or domain.endswith(f".{rd}"):
+			return rd
+	return None
