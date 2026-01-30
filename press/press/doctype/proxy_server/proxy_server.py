@@ -478,6 +478,35 @@ class ProxyServer(BaseServer):
 		except Exception:
 			log_error("Wireguard Setup Exception", server=self.as_dict())
 
+	@frappe.whitelist()
+	def pre_failover_tasks(self):
+		from press.press.doctype.proxy_failover.proxy_failover import reduce_ttl_of_sites
+
+		frappe.get_doc(
+			{
+				"doctype": "Dashboard Banner",
+				"enabled": 1,
+				"type": "Warning",
+				"title": f"Proxy Failover Pre Warning - {self.name}",
+				"message": f"There is currently an issue with the proxy server in {self.cluster} region. You may experience some interruptions while accessing your sites in that region. Our team is working to resolve this as quickly as possible.",
+				"is_scheduled": 1,
+				"scheduled_start_time": frappe.utils.now(),
+				"scheduled_end_time": frappe.utils.add_to_date(frappe.utils.now(), hours=10),
+				"is_global": 1,
+			}
+		).insert()
+
+		frappe.enqueue(
+			reduce_ttl_of_sites,
+			proxy=self.name,
+			queue="long",
+			timeout=3600,
+			enqueue_after_commit=True,
+			at_front=True,
+		)
+
+		return "Added a dashboard banner and queued reduction of dns record ttl on sites"
+
 
 def process_update_nginx_job_update(job):
 	proxy_server = frappe.get_doc("Proxy Server", job.server)
