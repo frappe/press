@@ -610,16 +610,16 @@ def options():
 		frappe.throw("Servers feature is not yet enabled on your account")
 
 	regions_filter = {"cloud_provider": ("!=", "Generic"), "public": True, "status": "Active"}
-	if (
+	is_system_user = (
 		(frappe.session and frappe.session.data and frappe.session.data.user_type)
 		or (
 			frappe.session
 			and frappe.session.user
 			and frappe.get_cached_value("User", frappe.session.user, "user_type")
 		)
-	) == "System User" or (
-		frappe.local and frappe.local.team() and frappe.local.team().hetzner_internal_user
-	):
+	) == "System User"
+
+	if is_system_user:
 		regions_filter.pop("public", None)
 
 	regions = frappe.get_all(
@@ -641,6 +641,12 @@ def options():
 			"by_default_select_unified_mode",
 		],
 	)
+
+	if not is_system_user and not (
+		frappe.local and frappe.local.team() and frappe.local.team().hetzner_internal_user
+	):
+		# filter out hetzner clusters
+		regions = [region for region in regions if region.get("cloud_provider") != "Hetzner"]
 
 	cloud_providers = get_cloud_providers()
 	"""
