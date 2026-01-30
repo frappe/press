@@ -76,21 +76,16 @@
 	/>
 	<RoleResources
 		v-else-if="tab === 'resources'"
+		:key="role.doc?.resources"
 		:resources="role.doc?.resources"
-		@include="
-			(document_type, document_name) => {
-				role.add_resource.submit({
-					document_type,
-					document_name,
-				});
-			}
-		"
+		@include="role.add_resource.submit($event)"
 		@remove="
 			(document_type, document_name) => {
 				role.remove_resource.submit({
 					document_type,
 					document_name,
 				});
+				role.reload();
 			}
 		"
 	/>
@@ -98,6 +93,7 @@
 		v-else-if="tab === 'permissions'"
 		:admin_access="role.doc?.admin_access"
 		:allow_bench_creation="role.doc?.allow_bench_creation"
+		:allow_apps="role.doc?.allow_apps"
 		:allow_billing="role.doc?.allow_billing"
 		:allow_partner="role.doc?.allow_partner"
 		:allow_server_creation="role.doc?.allow_server_creation"

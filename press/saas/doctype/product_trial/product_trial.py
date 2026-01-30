@@ -586,12 +586,27 @@ def send_suspend_mail(site_name: str, product_name: str) -> None:
 	)
 	recipient = frappe.get_value("Team", site.team, "user")
 	args = {}
-
+	inline_images = []
 	# TODO: enable it when we use the full logo
 	# if product.email_full_logo:
 	# 	args.update({"image_path": get_url(product.email_full_logo, True)})
 	if product.logo:
 		args.update({"logo": get_url(product.logo, True), "title": product.title})
+		try:
+			logo_name = product.logo[1:]
+			args.update({"logo_name": logo_name})
+			with open(frappe.utils.get_site_path("public", logo_name), "rb") as logo_file:
+				inline_images.append(
+					{
+						"filename": logo_name,
+						"filecontent": logo_file.read(),
+					}
+				)
+		except Exception as ex:
+			log_error(
+				"Error reading logo for inline images in email",
+				data=ex,
+			)
 	if product.email_account:
 		sender = frappe.get_value("Email Account", product.email_account, "email_id")
 
@@ -601,11 +616,11 @@ def send_suspend_mail(site_name: str, product_name: str) -> None:
 	}
 	message = frappe.render_template(product.suspension_email_content, context)
 	args.update({"message": message})
-
 	frappe.sendmail(
 		sender=sender,
 		recipients=recipient,
 		subject=subject,
 		template="product_trial_email",
 		args=args,
+		inline_images=inline_images,
 	)

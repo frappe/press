@@ -7,7 +7,7 @@
 					label="Payment Gateway"
 					v-model="paymentGateway"
 					name="payment_gateway"
-					type="autocomplete"
+					type="combobox"
 					:options="paymentGatewayList"
 					size="sm"
 					variant="subtle"
@@ -21,7 +21,7 @@
 					:options="partnerList"
 					size="sm"
 					variant="subtle"
-					type="autocomplete"
+					type="combobox"
 					class="mb-5"
 					placeholder="Enter Partner"
 				/>
@@ -214,6 +214,7 @@ table {
 	text-align: left;
 	margin-top: 1rem;
 }
+
 th,
 td {
 	padding: 8px 12px;
