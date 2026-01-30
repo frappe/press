@@ -311,6 +311,10 @@ class ProxyFailover(Document, StepHandler):
 		step.save()
 
 	def wait_for_wildcard_domains_setup(self, step):
+		if step.status == Status.Pending:
+			step.status = Status.Running
+			step.save()
+
 		job = frappe.db.get_value(
 			"Proxy Failover Steps",
 			{
@@ -344,8 +348,10 @@ class ProxyFailover(Document, StepHandler):
 			raise
 
 	def replicate_once_manually(self, step):
-		result = AnsibleAdHoc(sources=f"{frappe.db.get('Proxy Server', self.primary, 'ip')},").run(
-			f"rsync -aAXvz /home/frappe/agent/nginx/ frappe@{self.secondary}:/home/frappe/agent/nginx/",
+		result = AnsibleAdHoc(sources=f"{self.primary},").run(
+			f"rsync -aAXvz /home/frappe/agent/nginx/ frappe@{frappe.db.get_value('Proxy Server', self.secondary, 'private_ip')}:/home/frappe/agent/nginx/",
+			raw_params=True,
+			become_user="frappe",
 		)[0]
 
 		if result.get("status") != "Success":
@@ -383,10 +389,15 @@ class ProxyFailover(Document, StepHandler):
 	@frappe.whitelist()
 	def force_continue(self):
 		self.error = None
+
+		for step in self.failover_steps:
+			if step.status == "Failure":
+				step.status = "Pending"
+
 		self.save()
 
 		self.execute_failover_steps()
-		frappe.msgprint("Failover steps re-queued from the point of failure.", alert=True)
+		frappe.msgprint("Failover steps re-queued.", alert=True)
 
 
 def reduce_ttl_of_sites(proxy):
