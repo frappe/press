@@ -307,12 +307,10 @@ class SiteBackup(Document):
 		frappe.db.set_value("Site Backup", self.name, "job", job.name)
 
 	def run_ansible_command_in_database_server(self, command: str) -> bool:
-		virtual_machine_ip = frappe.db.get_value(
-			"Virtual Machine",
-			frappe.get_value("Database Server", self.database_server, "virtual_machine"),
-			"public_ip_address",
+		db = frappe.db.get_value(
+			"Database Server", self.database_server, ("ip", "private_ip", "cluster"), as_dict=True
 		)
-		result = AnsibleAdHoc(sources=f"{virtual_machine_ip},").run(command, self.name)[0]
+		result = AnsibleAdHoc(sources=[db]).run(command, self.name)[0]
 		success = result.get("status") == "Success"
 		if not success:
 			pretty_result = json.dumps(result, indent=2, sort_keys=True, default=str)
