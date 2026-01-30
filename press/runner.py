@@ -1,6 +1,8 @@
 import json
-import time
+import typing
+from collections.abc import Callable
 from contextlib import suppress
+from dataclasses import dataclass
 from enum import Enum
 from typing import Literal
 
@@ -22,6 +24,10 @@ from frappe.utils import cstr
 from frappe.utils import now_datetime as now
 
 from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
+
+if typing.TYPE_CHECKING:
+	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 def reconnect_on_failure():
@@ -298,11 +304,18 @@ class Status(str, Enum):
 class GenericStep(Document):
 	attempt: int
 	job_type: Literal["Ansible Play", "Agent Job"]
-	job: str
+	job: str | None
 	status: Status
+	method_name: str
 
 
+@dataclass
 class StepHandler:
+	save: Callable
+	reload: Callable
+	doctype: str
+	name: str
+
 	def handle_vm_status_job(
 		self,
 		step: GenericStep,
@@ -319,7 +332,11 @@ class StepHandler:
 		step.status = Status.Running if machine_status != expected_status else Status.Success
 		step.save()
 
-	def handle_agent_job(self, step: GenericStep, job: str) -> None:
+	def handle_agent_job(self, step: GenericStep, job: str, poll: bool = False) -> None:
+		if poll:
+			job_doc: AgentJob = frappe.get_doc("Agent Job", job)
+			job_doc.get_status()
+
 		job_status = frappe.db.get_value("Agent Job", job, "status")
 
 		status_map = {
@@ -399,29 +416,38 @@ class StepHandler:
 		return None
 
 	def _execute_steps(self, steps: list[GenericStep]):
-		"""Sequentially execute defined NFS attachment steps."""
+		"""It is now required to be with a `enqueue_doc` else the first step executes in the web worker"""
 		self.status = Status.Running
 		self.save()
 		frappe.db.commit()
 
-		while True:
-			step = self.next_step(steps)
-			if not step:
-				break  # We are done here
+		step = self.next_step(steps)
+		if not step:
+			self.succeed()
+			return
 
-			step = step.reload()
-			method = self._get_method(step.method_name)
+		# Run a single step in this job
+		step = step.reload()
+		method = self._get_method(step.method_name)
 
-			try:
-				method(step)  # Each step updates its own state
-			except Exception:
-				self.reload()
-				self.fail()
-				self.handle_step_failure()
-				return  # Stop on first failure
-
-			self.reload()
+		try:
+			method(step)
 			frappe.db.commit()
-			time.sleep(1)
+		except Exception:
+			self.reload()
+			self.fail()
+			self.handle_step_failure()
+			frappe.db.commit()
+			return
 
-		self.succeed()
+		# After step completes, queue the next step
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_execute_steps",
+			steps=steps,
+			timeout=18000,
+			at_front=True,
+			queue="long",
+			enqueue_after_commit=True,
+		)

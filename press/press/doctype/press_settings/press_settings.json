@@ -19,10 +19,12 @@
   "micro_debit_charge_inr",
   "column_break_wrqp",
   "usage_record_creation_batch_size",
+  "default_server_plan_type",
   "invoicing_section",
   "invoicing_column",
   "gst_percentage",
   "npo_discount",
+  "autoscale_discount",
   "column_break_qfwx",
   "print_format",
   "ic_key",
@@ -85,6 +87,13 @@
   "docker_registry_username",
   "docker_registry_password",
   "docker_s3_secret_key",
+  "asset_store_section",
+  "asset_store_access_key",
+  "asset_store_secret_access_key",
+  "asset_store_endpoint",
+  "asset_store_region",
+  "asset_store_bucket_name",
+  "use_asset_store",
   "docker_build_section",
   "suspend_builds",
   "clone_directory",
@@ -156,8 +165,6 @@
   "aws_access_key_id",
   "column_break_agig",
   "aws_secret_access_key",
-  "hetzner_section",
-  "hetzner_api_token",
   "twilio_section",
   "twilio_account_sid",
   "twilio_api_key_sid",
@@ -221,13 +228,14 @@
   "verify_cards_with_micro_charge",
   "enable_google_oauth",
   "realtime_job_updates",
+  "disable_agent_job_deduplication",
+  "disable_binlog_indexer_service",
   "column_break_rdlr",
   "disable_auto_retry",
-  "disable_agent_job_deduplication",
+  "disallow_disposable_emails",
   "enable_email_pre_verification",
   "execute_incident_action",
   "enable_server_snapshot_recovery",
-  "disallow_disposable_emails",
   "section_break_jstu",
   "enable_app_grouping",
   "default_apps",
@@ -238,6 +246,11 @@
   "partnership_fee_inr",
   "section_break_dhzi",
   "drive_resource_link",
+  "frappe_school_authentication_section",
+  "school_url",
+  "school_api_key",
+  "column_break_uxxz",
+  "school_api_secret",
   "hybrid_server_tab",
   "hybrid_cluster",
   "hybrid_domain",
@@ -1276,16 +1289,6 @@
    "label": "Usage Record Creation Batch Size"
   },
   {
-   "fieldname": "hetzner_section",
-   "fieldtype": "Section Break",
-   "label": "Hetzner"
-  },
-  {
-   "fieldname": "hetzner_api_token",
-   "fieldtype": "Password",
-   "label": "Hetzner API Token"
-  },
-  {
    "fieldname": "press_trial_plan",
    "fieldtype": "Link",
    "label": "Press Trial Plan",
@@ -1551,12 +1554,91 @@
    "fieldname": "wazuh_server",
    "fieldtype": "Data",
    "label": "Wazuh Server"
+  },
+  {
+   "fieldname": "autoscale_discount",
+   "fieldtype": "Float",
+   "label": "Autoscale Discount"
+  },
+  {
+   "default": "1",
+   "fieldname": "disable_binlog_indexer_service",
+   "fieldtype": "Check",
+   "label": "Disable Binlog Indexer Service"
+  },
+  {
+   "fieldname": "default_server_plan_type",
+   "fieldtype": "Link",
+   "label": "Default Server Plan Type",
+   "options": "Server Plan Type"
+  },
+  {
+   "fieldname": "frappe_school_authentication_section",
+   "fieldtype": "Section Break",
+   "label": "Frappe School Authentication"
+  },
+  {
+   "fieldname": "school_url",
+   "fieldtype": "Data",
+   "label": "School URL"
+  },
+  {
+   "fieldname": "school_api_key",
+   "fieldtype": "Data",
+   "label": "School API Key"
+  },
+  {
+   "fieldname": "column_break_uxxz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "school_api_secret",
+   "fieldtype": "Password",
+   "label": "School API Secret"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "asset_store_section",
+   "fieldtype": "Section Break",
+   "label": "Asset Store"
+  },
+  {
+   "default": "0",
+   "description": "Will only use this asset storage backend if checked.",
+   "fieldname": "use_asset_store",
+   "fieldtype": "Check",
+   "label": "Use Asset Store"
+  },
+  {
+   "fieldname": "asset_store_access_key",
+   "fieldtype": "Data",
+   "label": "Asset Store Access Key"
+  },
+  {
+   "fieldname": "asset_store_secret_access_key",
+   "fieldtype": "Password",
+   "label": "Asset Store Secret Access Key"
+  },
+  {
+   "fieldname": "asset_store_endpoint",
+   "fieldtype": "Data",
+   "label": "Asset Store Endpoint"
+  },
+  {
+   "fieldname": "asset_store_bucket_name",
+   "fieldtype": "Data",
+   "label": "Asset Store Bucket Name "
+  },
+  {
+   "fieldname": "asset_store_region",
+   "fieldtype": "Data",
+   "label": "Asset Store Region"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-11-27 17:29:59.207393",
- "modified_by": "hello@ssiyad.com",
+ "modified": "2026-01-17 11:49:01.799269",
+ "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
  "owner": "Administrator",
@@ -1574,7 +1656,6 @@
  ],
  "quick_entry": 1,
  "row_format": "Dynamic",
- "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

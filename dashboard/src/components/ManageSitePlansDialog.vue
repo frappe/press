@@ -26,6 +26,7 @@
 					v-model="plan"
 					:isPrivateBenchSite="!$site.doc.group_public"
 					:isDedicatedServerSite="$site.doc.is_dedicated_server"
+					:selectedProvider="$site.doc.server_provider"
 				/>
 				<div class="mt-4 text-xs text-gray-700">
 					<div
@@ -123,6 +124,8 @@
 					:minimumAmount="
 						$team.doc?.currency === 'INR' ? plan.price_inr : plan.price_usd
 					"
+					:type="'Purchase Plan'"
+					:docName="plan.name"
 					@success="paymentModeAdded"
 				/>
 			</div>

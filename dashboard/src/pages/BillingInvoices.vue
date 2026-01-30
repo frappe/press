@@ -21,9 +21,12 @@
 			v-if="showBuyPrepaidCreditsDialog"
 			v-model="showBuyPrepaidCreditsDialog"
 			:minimumAmount="minimumAmount"
+			:docName="invoiceForPayment"
+			:type="'Invoice'"
 			@success="
 				() => {
 					showBuyPrepaidCreditsDialog = false;
+					invoiceForPayment = null;
 				}
 			"
 		/>
@@ -193,6 +196,7 @@ export default {
 										} else {
 											this.showBuyPrepaidCreditsDialog = true;
 											this.minimumAmount = row.amount_due;
+											this.invoiceForPayment = row.name;
 										}
 									},
 								};

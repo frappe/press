@@ -79,6 +79,7 @@
 </template>
 
 <script>
+import { Switch } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import { getToastErrorMessage } from '../../utils/toast';
 
@@ -94,6 +95,7 @@ export default {
 			errorMessage: '',
 		};
 	},
+	components: { Switch },
 	mounted() {
 		if (this.selectedEvents.length) {
 			this.selectedEvents = this.selectedEvents.map((event) => event.name);

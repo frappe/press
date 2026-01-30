@@ -11,7 +11,10 @@
   "status",
   "column_break_nxd6",
   "action",
-  "scheduled",
+  "start_time",
+  "duration",
+  "scheduled_time",
+  "is_automatically_triggered",
   "failed_validation",
   "steps_section",
   "scale_steps"
@@ -71,16 +74,34 @@
    "reqd": 1
   },
   {
-   "fieldname": "scheduled",
-   "fieldtype": "Datetime",
-   "label": "Scheduled"
-  },
-  {
    "default": "0",
    "description": "Checked if the auto scale failed due to a validation error.\n\n(Adhere to autoscaling rules)",
    "fieldname": "failed_validation",
    "fieldtype": "Check",
    "label": "Failed Validation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "scheduled_time",
+   "fieldtype": "Datetime",
+   "label": "Scheduled Time"
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Time",
+   "label": "Duration"
+  },
+  {
+   "fieldname": "start_time",
+   "fieldtype": "Datetime",
+   "label": "Start Time"
+  },
+  {
+   "default": "0",
+   "description": "Check this if triggered from a  auto scale trigger rule.",
+   "fieldname": "is_automatically_triggered",
+   "fieldtype": "Check",
+   "label": "Is automatically triggered",
    "read_only": 1
   }
  ],
@@ -92,7 +113,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2025-11-28 10:50:25.001026",
+ "modified": "2026-01-16 12:58:07.817192",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Auto Scale Record",
@@ -107,6 +128,29 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
    "share": 1,
    "write": 1
   }

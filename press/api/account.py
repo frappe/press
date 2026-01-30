@@ -174,6 +174,7 @@ def setup_account(  # noqa: C901
 	oauth_signup=False,
 	oauth_domain=False,
 	site_domain=None,
+	share_details_consent=False,
 ):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
@@ -195,6 +196,10 @@ def setup_account(  # noqa: C901
 	# if the request is authenticated, set the user to Administrator
 	frappe.set_user("Administrator")
 
+	# pass lead to local partner if consent given
+	account_request.agreed_to_partner_consent = share_details_consent
+	account_request.save()
+
 	team = account_request.team
 	email = account_request.email
 	role = account_request.role
@@ -204,7 +209,15 @@ def setup_account(  # noqa: C901
 		# if this is a request from an invitation
 		# then Team already exists and will be added to that team
 		doc = frappe.get_doc("Team", team)
-		doc.create_user_for_member(first_name, last_name, email, password, role, press_roles)
+		doc.create_user_for_member(
+			first_name,
+			last_name,
+			email,
+			password,
+			role,
+			press_roles,
+			skip_validations=True,
+		)
 	else:
 		# Team doesn't exist, create it
 		Team.create_new(

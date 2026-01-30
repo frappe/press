@@ -58,7 +58,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-14 15:12:09.694940",
+ "modified": "2025-12-08 23:50:39.961316",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Certificate Link Request",
@@ -96,6 +96,17 @@
    "read": 1,
    "report": 1,
    "role": "Press Member",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Partner",
    "share": 1,
    "write": 1
   }

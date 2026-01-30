@@ -28,6 +28,7 @@ ALLOWED_PATHS = [
 	"/api/method/frappe.integrations.oauth2.openid_profile",
 	"/api/method/frappe.integrations.oauth2_logins.login_via_frappe",
 	"/api/method/frappe.website.doctype.web_page_view.web_page_view.make_view_log",
+	"/api/method/frappe.desk.form.utils.add_comment",
 	"/api/method/get-user-sites-list-for-new-ticket",
 	"/api/method/ping",
 	"/api/method/login",

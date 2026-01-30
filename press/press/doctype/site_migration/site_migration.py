@@ -25,6 +25,7 @@ from press.exceptions import (
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
+from press.press.doctype.site.site import Site
 from press.press.doctype.site_backup.site_backup import (
 	SiteBackup,
 	process_backup_site_job_update,
@@ -37,7 +38,6 @@ if TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.cluster.cluster import Cluster
 	from press.press.doctype.server.server import Server
-	from press.press.doctype.site.site import Site
 	from press.press.doctype.site_domain.site_domain import SiteDomain
 
 
@@ -80,11 +80,6 @@ class SiteMigration(Document):
 	# end: auto-generated types
 
 	def before_insert(self):
-		self.validate_apps()
-		self.validate_bench()
-		self.check_for_inactive_domains()
-		self.check_for_existing_domains()
-		self.check_enough_space_on_destination_server()
 		if get_ongoing_migration(self.site, scheduled=True):
 			frappe.throw(f"Ongoing/Scheduled Site Migration for the site {frappe.bold(self.site)} exists.")
 		site: Site = frappe.get_doc("Site", self.site)
@@ -115,16 +110,7 @@ class SiteMigration(Document):
 
 	@cached_property
 	def last_backup(self) -> SiteBackup | None:
-		return frappe.get_last_doc(
-			"Site Backup",
-			{
-				"site": self.site,
-				"with_files": True,
-				"offsite": True,
-				"status": "Success",
-				"files_availability": "Available",
-			},
-		)
+		return Site("Site", self.site).last_backup
 
 	def check_enough_space_on_source_server(self):
 		# server needs to have enough space to create backup
@@ -133,32 +119,34 @@ class SiteMigration(Document):
 		except frappe.DoesNotExistError:
 			pass
 		else:
-			site: "Site" = frappe.get_doc("Site", self.site)
+			site = Site("Site", self.site)
 			site.remote_database_file = backup.remote_database_file
 			site.remote_public_file = backup.remote_public_file
 			site.remote_private_file = backup.remote_private_file
 			site.check_space_on_server_for_backup()
 
 	def check_enough_space_on_destination_server(self):
-		try:
-			backup = self.last_backup
-		except frappe.DoesNotExistError:
-			pass
-		else:
-			site: "Site" = frappe.get_doc("Site", self.site)
-			site.server = self.destination_server
-			site.remote_database_file = backup.remote_database_file
-			site.remote_public_file = backup.remote_public_file
-			site.remote_private_file = backup.remote_private_file
-			site.check_space_on_server_for_restore()
+		backup = self.last_backup
+		if not backup:
+			return
+		site = Site("Site", self.site)
+		site.server = self.destination_server
+		site.remote_database_file = backup.remote_database_file
+		site.remote_public_file = backup.remote_public_file
+		site.remote_private_file = backup.remote_private_file
+		site.check_space_on_server_for_restore()
 
 	def after_insert(self):
 		self.set_migration_type()
 		self.add_steps()
 		self.save()
+		if not self.scheduled_time:
+			self.start()
+		else:
+			self.run_validations()
 
 	def validate_apps(self):
-		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
+		site_apps = [app.app for app in Site("Site", self.site).apps]
 		bench_apps = [app.app for app in frappe.get_doc("Bench", self.destination_bench).apps]
 
 		if diff := set(site_apps) - set(bench_apps):
@@ -176,17 +164,21 @@ class SiteMigration(Document):
 				InactiveDomains,
 			)
 
+	def run_validations(self):
+		self.validate_bench()
+		self.validate_apps()
+		self.check_for_inactive_domains()
+		self.check_for_existing_domains()
+		self.check_enough_space_on_destination_server()
+
 	@frappe.whitelist()
 	def start(self):
 		self.check_for_ongoing_agent_jobs()  # has to be before setting state to pending so it gets retried
 		previous_status = self.status
 		self.status = "Pending"
 		self.save()
-		self.check_for_inactive_domains()
-		self.check_for_existing_domains()
-		self.validate_apps()
-		self.check_enough_space_on_destination_server()
-		site: Site = frappe.get_doc("Site", self.site)
+		self.run_validations()
+		site = Site("Site", self.site)
 		try:
 			site.ready_for_move()
 		except SiteAlreadyArchived:
@@ -331,7 +323,7 @@ class SiteMigration(Document):
 
 	def setup_redirects(self):
 		"""Setup redirects of site in proxy"""
-		site: "Site" = frappe.get_doc("Site", self.site)
+		site = Site("Site", self.site)
 		ret = site._update_redirects_for_all_site_domains()
 		if ret:
 			# could be no jobs
@@ -441,7 +433,7 @@ class SiteMigration(Document):
 		return find(self.steps, lambda x: x.status == "Failure")
 
 	def activate_site_if_appropriate(self, force=False):
-		site: "Site" = frappe.get_doc("Site", self.site)
+		site = Site("Site", self.site)
 		failed_step_method_name = (self.failed_step or {}).get("method_name", "__NOT_SET__")
 		if force or (
 			failed_step_method_name
@@ -453,6 +445,8 @@ class SiteMigration(Document):
 			and site.status_before_update != "Inactive"
 		):
 			site.activate()
+		elif site.status_before_update == "Inactive":
+			site.db_set("status", "Inactive")
 		if self.is_standalone_migration:
 			site.create_dns_record()
 		if self.migration_type == "Cluster":
@@ -466,7 +460,7 @@ class SiteMigration(Document):
 	def send_fail_notification(self, reason: str | None = None):
 		from press.press.doctype.agent_job.agent_job_notifications import create_job_failed_notification
 
-		site = frappe.get_doc("Site", self.site)
+		site = Site("Site", self.site)
 		message = f"Site Migration ({self.migration_type}) for site <b>{site.host_name}</b> failed"
 		if reason:
 			message += f" due to {reason}"
@@ -491,7 +485,7 @@ class SiteMigration(Document):
 		self.send_success_notification()
 
 	def send_success_notification(self):
-		site = frappe.get_doc("Site", self.site)
+		site = Site("Site", self.site)
 
 		message = (
 			f"Site Migration ({self.migration_type}) for site <b>{site.host_name}</b> completed successfully"

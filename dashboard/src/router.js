@@ -228,9 +228,8 @@ let router = createRouter({
 						},
 						{
 							name: 'SettingsPermissionRolePermissions',
-							path: 'roles/:roleId',
-							component: () =>
-								import('./components/settings/RolePermissions.vue'),
+							path: 'roles/:id',
+							component: () => import('./components/settings/Role.vue'),
 							props: true,
 						},
 					],
@@ -247,6 +246,12 @@ let router = createRouter({
 					name: 'PartnerOverview',
 					path: 'overview',
 					component: () => import('./components/partners/PartnerOverview.vue'),
+				},
+				{
+					name: 'PartnerWebsiteDetails',
+					path: 'website-details',
+					component: () =>
+						import('./components/partners/PartnerWebsiteDetails.vue'),
 				},
 				{
 					name: 'PartnerCustomers',
@@ -314,6 +319,11 @@ let router = createRouter({
 					path: 'partner-admin-lead-list',
 					component: () => import('./pages/PartnerAdminLeads.vue'),
 				},
+				{
+					name: 'PartnerAdminResources',
+					path: 'admin-resources',
+					component: () => import('./components/partners/PartnerResources.vue'),
+				},
 			],
 		},
 		{
@@ -359,6 +369,12 @@ let router = createRouter({
 			name: 'CreateSiteForMarketplaceApp',
 			path: '/create-site/:app',
 			component: () => import('./pages/CreateSiteForMarketplaceApp.vue'),
+			props: true,
+		},
+		{
+			name: 'NewSiteProgress',
+			path: '/sites/new/progress/:siteGroupDeployName',
+			component: () => import('./pages/NewSiteProgress.vue'),
 			props: true,
 		},
 		{

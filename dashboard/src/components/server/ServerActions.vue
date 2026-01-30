@@ -75,6 +75,7 @@ export default {
 			return getCachedDocumentResource('Server', this.server);
 		},
 		$dbServer() {
+			// Should mirror the whitelistedMethods in ServerOverview.vue
 			return getDocResource({
 				doctype: 'Database Server',
 				name: this.$appServer.doc.database_server,
@@ -84,6 +85,8 @@ export default {
 					rename: 'rename',
 					enablePerformanceSchema: 'enable_performance_schema',
 					disablePerformanceSchema: 'disable_performance_schema',
+					enableBinlogIndexing: 'enable_binlog_indexing_service',
+					disableBinlogIndexing: 'disable_binlog_indexing_service',
 					getMariadbVariables: 'get_mariadb_variables',
 					updateInnodbBufferPoolSize: 'update_innodb_buffer_pool_size',
 					updateMaxDbConnections: 'update_max_db_connections',

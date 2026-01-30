@@ -16,7 +16,6 @@ import OpenSSL
 from frappe.model.document import Document
 from frappe.query_builder.functions import Date
 
-from press.api.site import check_dns_cname_a
 from press.exceptions import (
 	DNSValidationError,
 	TLSRetryLimitExceeded,
@@ -25,6 +24,7 @@ from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.runner import Ansible
 from press.utils import get_current_team, log_error
+from press.utils.dns import check_dns_cname_a
 
 if TYPE_CHECKING:
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
@@ -529,19 +529,21 @@ class LetsEncrypt(BaseCA):
 
 	def _obtain_wildcard(self):
 		domain = frappe.get_doc("Root Domain", self.domain[2:])
-		environment = os.environ
+		environment = os.environ.copy()
 		environment.update(
 			{
 				"AWS_ACCESS_KEY_ID": domain.aws_access_key_id,
 				"AWS_SECRET_ACCESS_KEY": domain.get_password("aws_secret_access_key"),
 			}
 		)
+		if domain.aws_region:
+			environment["AWS_DEFAULT_REGION"] = domain.aws_region
 		self.run(self._certbot_command(), environment=environment)
 
 	def _obtain_naked_with_dns(self):
 		domain = frappe.get_all("Root Domain", pluck="name", limit=1)[0]
 		domain = frappe.get_doc("Root Domain", domain)
-		environment = os.environ
+		environment = os.environ.copy()
 		environment.update(
 			{
 				"AWS_ACCESS_KEY_ID": domain.aws_access_key_id,

@@ -52,10 +52,12 @@ function getServerActionHandler(action) {
 		'Rename server': onRenameServer,
 		'Drop server': onDropServer,
 		'Cleanup Server': onCleanupServer,
-		'Setup Secondary Server': onSetupSecondaryServer,
-		'Teardown Secondary Server': onTeardownSecondaryServer,
+		'Enable Autoscale': onSetupSecondaryServer,
+		'Disable Autoscale': onTeardownSecondaryServer,
 		'Enable Performance Schema': onEnablePerformanceSchema,
 		'Disable Performance Schema': onDisablePerformanceSchema,
+		'Enable Binlog Indexer': onEnableBinlogIndexing,
+		'Disable Binlog Indexer': onDisableBinlogIndexing,
 		'Update InnoDB Buffer Pool Size': onUpdateInnodbBufferPoolSize,
 		'Update Max DB Connections': onUpdateMaxDBConnections,
 		'View Database Configuration': onViewDatabaseConfiguration,
@@ -108,10 +110,15 @@ function onTeardownSecondaryServer() {
 					After teardown, autoscaling will <strong>not trigger</strong> unless you configure a new secondary server.
 				</p>
 
-				<p class="mt-3 text-gray-600">
-					See the docs to learn more about autoscaling:
-					<a href="#" target="_blank" rel="noopener">Secondary Server teardown guide</a>.
+				<p class="mt-3">
+					See the docs to learn more about autoscaling:<br>
+					<a href="https://docs.frappe.io/cloud/application-server-horizontal-scaling#opting-out"
+					target="_blank" rel="noopener" style="text-decoration: underline;">
+					<strong>Secondary Server Teardown Guide</strong>
+					</a>
 				</p>
+
+
 		</div>
 
 		</div>
@@ -133,7 +140,10 @@ function onTeardownSecondaryServer() {
 				{
 					loading: 'Tearing down secondary server...',
 					success: 'Secondary server teardown started',
-					error: 'Failed to start secondary server teardown',
+					error: (error) =>
+						error.messages.length
+							? error.messages.join('\n')
+							: 'Failed to drop servers',
 				},
 			);
 		},
@@ -162,9 +172,13 @@ function onSetupSecondaryServer() {
 					After setup, the secondary server will remain in <em>standby</em> (inactive) until autoscaling or manual activation.
 				</p>
 
-				<p class="mt-3 text-gray-600">
-					See the docs to learn more about autoscaling:
-					<a href="#" target="_blank" rel="noopener">Secondary Server setup guide</a>.
+
+				<p class="mt-3">
+					See the docs to learn more about autoscaling:<br>
+					<a href="https://docs.frappe.io/cloud/application-server-horizontal-scaling#setting-up-a-secondary-server"
+					target="_blank" rel="noopener" style="text-decoration: underline;">
+					<strong>Secondary Server Setup Guide</strong>
+					</a>
 				</p>
 		</div>
 
@@ -318,7 +332,9 @@ function onDropServer() {
 
 	confirmDialog({
 		title: 'Drop Server',
-		message: `<div class="prose text-base">Are you sure you want to drop your servers?<br><br>Following servers will be dropped<ul><li>${server.doc.title} (<b>${server.doc.name}</b>)</li><li>${databaseServer.doc.title} (<b>${server.doc.database_server}</b>)</li></ul><br>This action cannot be undone.</div>`,
+		message: server.doc.is_unified_server
+			? `<div class="prose text-base">Are you sure you want to drop your unified server?<br><br>The following server will be dropped<ul><li>${server.doc.title} (<b>${server.doc.name}</b>)</li></ul><br>This action cannot be undone.</div>`
+			: `<div class="prose text-base">Are you sure you want to drop your servers?<br><br>Following servers will be dropped<ul><li>${server.doc.title} (<b>${server.doc.name}</b>)</li><li>${databaseServer.doc.title} (<b>${server.doc.database_server}</b>)</li></ul><br>This action cannot be undone.</div>`,
 		fields: [
 			{
 				label: "Please type either server's name or title to confirm",
@@ -350,6 +366,58 @@ function onDropServer() {
 						? error.messages.join('\n')
 						: 'Failed to drop servers',
 			});
+		},
+	});
+}
+
+function onEnableBinlogIndexing() {
+	if (!server.enableBinlogIndexing) return;
+	confirmDialog({
+		title: 'Enable Binlog Indexing',
+		message: `Are you sure you want to enable the Binlog Indexing on the database server <b>${server.doc.name}</b> ?<br><br><b>Note:</b> Binlog indexes will consume additional disk space (10% of total binlog size). It can take upto 1 day to index existing binlogs depending on the size of binlogs.`,
+		primaryAction: {
+			label: 'Enable Binlog Indexing',
+		},
+		onSuccess({ hide }) {
+			if (server.enableBinlogIndexing.loading) return;
+			toast.promise(
+				server.enableBinlogIndexing.submit(null, {
+					onSuccess() {
+						hide();
+					},
+				}),
+				{
+					loading: 'Enabling Binlog Indexing...',
+					success: 'Binlog Indexing enabled',
+					error: 'Failed to enable Binlog Indexing',
+				},
+			);
+		},
+	});
+}
+
+function onDisableBinlogIndexing() {
+	if (!server.disableBinlogIndexing) return;
+	confirmDialog({
+		title: 'Disable Binlog Indexing',
+		message: `Are you sure you want to disable the Binlog Indexing on the database server <b>${server.doc.name}</b> ?<br><br><b>Note:</b> Disabling binlog indexing will remove all existing binlog indexes from the server.`,
+		primaryAction: {
+			label: 'Disable Binlog Indexing',
+		},
+		onSuccess({ hide }) {
+			if (server.disableBinlogIndexing.loading) return;
+			toast.promise(
+				server.disableBinlogIndexing.submit(null, {
+					onSuccess() {
+						hide();
+					},
+				}),
+				{
+					loading: 'Disabling Binlog Indexing...',
+					success: 'Binlog Indexing disabled',
+					error: 'Failed to disable Binlog Indexing',
+				},
+			);
 		},
 	});
 }

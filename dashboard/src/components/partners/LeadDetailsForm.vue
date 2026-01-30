@@ -110,6 +110,22 @@ const countryList = computed(() => {
 	}));
 });
 
+const _planList = createResource({
+	url: 'press.api.partner.get_fc_plans',
+	auto: true,
+	cache: 'planList',
+	onSuccess: (data) => {
+		// console.log('Plan List', data);
+	},
+});
+
+const planList = computed(() => {
+	return (_planList.data || []).map((plan) => ({
+		label: plan,
+		value: plan,
+	}));
+});
+
 const updateLeadInfo = createResource({
 	url: 'press.api.partner.update_lead_details',
 	makeParams: () => {
@@ -191,6 +207,19 @@ const indianStates = computed(() => {
 	}));
 });
 
+const _engagementStageOptions = [
+	'Demo',
+	'Qualification',
+	'Quotation',
+	'Ready for Closing',
+];
+const engagementStageOptions = ref(
+	_engagementStageOptions.map((stage) => ({
+		label: stage,
+		value: stage,
+	})),
+);
+
 const sections = computed(() => {
 	return [
 		{
@@ -206,14 +235,14 @@ const sections = computed(() => {
 			],
 		},
 		{
-			name: 'Domain and Status',
+			name: 'Engagement Stage and Status',
 			columns: 2,
 			fields: [
 				{
 					fieldtype: 'Select',
-					fieldname: 'domain',
-					label: 'Domain',
-					options: domainList.value,
+					fieldname: 'engagement_stage',
+					label: 'Engagement Stage',
+					options: engagementStageOptions.value,
 					required: true,
 				},
 				{
@@ -276,6 +305,19 @@ const sections = computed(() => {
 			],
 		},
 		{
+			name: 'Domain',
+			columns: 1,
+			fields: [
+				{
+					fieldtype: 'Select',
+					fieldname: 'domain',
+					label: 'Domain',
+					options: domainList.value,
+					required: true,
+				},
+			],
+		},
+		{
 			name: 'Deal details',
 			columns: 2,
 			fields: [
@@ -286,9 +328,10 @@ const sections = computed(() => {
 					options: probability.value,
 				},
 				{
-					fieldtype: 'Data',
+					fieldtype: 'Select',
 					fieldname: 'plan_proposed',
 					label: 'Plan Proposed',
+					options: planList.value,
 				},
 			],
 		},

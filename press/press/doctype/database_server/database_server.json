@@ -11,6 +11,7 @@
   "domain",
   "title",
   "tls_certificate_renewal_failed",
+  "is_unified_server",
   "column_break_4",
   "cluster",
   "provider",
@@ -21,11 +22,11 @@
   "is_self_hosted",
   "enable_physical_backup",
   "halt_agent_jobs",
-  "enable_binlog_indexing",
   "column_break_qsqm",
   "is_server_setup",
   "is_server_renamed",
   "is_server_prepared",
+  "is_provisioning_press_job_completed",
   "is_for_recovery",
   "is_monitoring_disabled",
   "billing_section",
@@ -40,6 +41,7 @@
   "column_break_10",
   "private_ip",
   "private_mac_address",
+  "db_port",
   "private_vlan_id",
   "agent_section",
   "agent_password",
@@ -93,8 +95,6 @@
   "auto_purge_binlog_based_on_size",
   "binlog_max_disk_usage_percent",
   "column_break_hrsi",
-  "binlogs_removed",
-  "binlog_retention_days",
   "replication_tab",
   "is_primary",
   "column_break_vajj",
@@ -105,7 +105,17 @@
   "column_break_clus",
   "gtid_current_pos",
   "column_break_gasc",
-  "gtid_slave_pos"
+  "gtid_slave_pos",
+  "binlog_indexing_tab",
+  "enable_binlog_indexing",
+  "is_binlog_indexer_running",
+  "binlogs_removed",
+  "column_break_coih",
+  "binlog_retention_days",
+  "binlog_index_retention_days",
+  "column_break_blnf",
+  "enable_binlog_upload_to_s3",
+  "uploaded_binlogs_retention_days"
  ],
  "fields": [
   {
@@ -119,11 +129,186 @@
    "reqd": 1
   },
   {
+   "fieldname": "hostname",
+   "fieldtype": "Data",
+   "label": "Hostname",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "hostname_abbreviation",
+   "fieldtype": "Data",
+   "label": "Hostname Abbreviation"
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Link",
+   "label": "Domain",
+   "options": "Root Domain",
+   "read_only": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title"
+  },
+  {
+   "default": "0",
+   "fieldname": "tls_certificate_renewal_failed",
+   "fieldtype": "Check",
+   "label": "TLS Certificate Renewal Failed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Cluster",
+   "options": "Cluster",
+   "set_only_once": 1
+  },
+  {
+   "default": "Generic",
+   "fieldname": "provider",
+   "fieldtype": "Select",
+   "label": "Provider",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner\nVodacom\nDigitalOcean",
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\", \"DigitalOcean\"].includes(doc.provider)",
+   "fieldname": "virtual_machine",
+   "fieldtype": "Link",
+   "label": "Virtual Machine",
+   "mandatory_depends_on": "eval:doc.provider === \"AWS EC2\"",
+   "options": "Virtual Machine"
+  },
+  {
+   "depends_on": "eval:doc.is_self_hosted",
+   "fieldname": "self_hosted_server_domain",
+   "fieldtype": "Data",
+   "label": "Self Hosted Server Domain"
+  },
+  {
+   "fieldname": "section_break_qury",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "public",
+   "fieldtype": "Check",
+   "label": "Public"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_self_hosted",
+   "fieldtype": "Check",
+   "label": "Is Self Hosted"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_physical_backup",
+   "fieldtype": "Check",
+   "label": "Enable Physical Backup"
+  },
+  {
+   "default": "0",
+   "description": "Stop polling and queuing agent jobs",
+   "fieldname": "halt_agent_jobs",
+   "fieldtype": "Check",
+   "label": "Halt Agent Jobs"
+  },
+  {
+   "fieldname": "column_break_qsqm",
+   "fieldtype": "Column Break"
+  },
+  {
    "default": "0",
    "fieldname": "is_server_setup",
    "fieldtype": "Check",
    "label": "Server Setup",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_server_renamed",
+   "fieldtype": "Check",
+   "label": "Is Server Renamed",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_server_prepared",
+   "fieldtype": "Check",
+   "label": "Is Server Prepared",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_for_recovery",
+   "fieldtype": "Check",
+   "label": "Is For Recovery"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_monitoring_disabled",
+   "fieldtype": "Check",
+   "label": "Is Monitoring Disabled",
+   "search_index": 1
+  },
+  {
+   "fieldname": "billing_section",
+   "fieldtype": "Section Break",
+   "label": "Billing"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "column_break_11",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "label": "Plan",
+   "options": "Server Plan"
+  },
+  {
+   "default": "25",
+   "description": "Minimum storage to add automatically each time",
+   "fieldname": "auto_add_storage_min",
+   "fieldtype": "Int",
+   "label": "Auto Add Storage Min",
+   "non_negative": 1,
+   "options": "50"
+  },
+  {
+   "default": "250",
+   "description": "Maximum storage to add automatically each time",
+   "fieldname": "auto_add_storage_max",
+   "fieldtype": "Int",
+   "label": "Auto Add Storage Max",
+   "non_negative": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "auto_increase_storage",
+   "fieldtype": "Check",
+   "label": "Auto Increase Storage"
+  },
+  {
+   "fieldname": "networking_section",
+   "fieldtype": "Section Break",
+   "label": "Networking"
   },
   {
    "fetch_from": "virtual_machine.public_ip_address",
@@ -133,21 +318,37 @@
    "label": "IP"
   },
   {
+   "fieldname": "column_break_10",
+   "fieldtype": "Column Break"
+  },
+  {
    "fetch_from": "virtual_machine.private_ip_address",
    "fieldname": "private_ip",
    "fieldtype": "Data",
    "label": "Private IP"
   },
   {
-   "fieldname": "mariadb_section",
-   "fieldtype": "Section Break",
-   "label": "MariaDB"
+   "depends_on": "eval: doc.provider === \"Scaleway\"",
+   "fieldname": "private_mac_address",
+   "fieldtype": "Data",
+   "label": "Private Mac Address",
+   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
+   "set_only_once": 1
   },
   {
-   "fieldname": "mariadb_root_password",
-   "fieldtype": "Password",
-   "label": "MariaDB Root Password",
-   "read_only": 1
+   "default": "3306",
+   "fieldname": "db_port",
+   "fieldtype": "Int",
+   "label": "DB Port",
+   "read_only_depends_on": "eval:doc.is_server_setup"
+  },
+  {
+   "depends_on": "eval: doc.provider === \"Scaleway\"",
+   "fieldname": "private_vlan_id",
+   "fieldtype": "Data",
+   "label": "Private VLAN ID",
+   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
+   "set_only_once": 1
   },
   {
    "fieldname": "agent_section",
@@ -161,193 +362,9 @@
    "read_only": 1
   },
   {
-   "fieldname": "server_id",
-   "fieldtype": "Int",
-   "label": "Server ID",
-   "set_only_once": 1
-  },
-  {
-   "depends_on": "eval: !doc.is_primary",
-   "fieldname": "primary",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Primary",
-   "mandatory_depends_on": "eval: !doc.is_primary",
-   "options": "Database Server"
-  },
-  {
-   "default": "1",
-   "fieldname": "is_primary",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Is Primary"
-  },
-  {
-   "fieldname": "column_break_12",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "ssh_section",
+   "fieldname": "mariadb_section",
    "fieldtype": "Section Break",
-   "label": "SSH"
-  },
-  {
-   "fieldname": "root_public_key",
-   "fieldtype": "Code",
-   "label": "Root Public Key",
-   "read_only": 1
-  },
-  {
-   "fieldname": "frappe_public_key",
-   "fieldtype": "Code",
-   "label": "Frappe Public Key",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "depends_on": "eval: !doc.is_primary",
-   "fieldname": "is_replication_setup",
-   "fieldtype": "Check",
-   "label": "Replication Setup",
-   "read_only": 1,
-   "search_index": 1
-  },
-  {
-   "fieldname": "column_break_18",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "cluster",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Cluster",
-   "options": "Cluster",
-   "set_only_once": 1
-  },
-  {
-   "fieldname": "hostname",
-   "fieldtype": "Data",
-   "label": "Hostname",
-   "reqd": 1,
-   "set_only_once": 1
-  },
-  {
-   "fieldname": "domain",
-   "fieldtype": "Link",
-   "label": "Domain",
-   "options": "Root Domain",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_4",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "Generic",
-   "fieldname": "provider",
-   "fieldtype": "Select",
-   "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner",
-   "set_only_once": 1
-  },
-  {
-   "fieldname": "frappe_user_password",
-   "fieldtype": "Password",
-   "label": "Frappe User Password",
-   "set_only_once": 1
-  },
-  {
-   "fieldname": "networking_section",
-   "fieldtype": "Section Break",
-   "label": "Networking"
-  },
-  {
-   "fieldname": "column_break_10",
-   "fieldtype": "Column Break"
-  },
-  {
-   "depends_on": "eval: doc.provider === \"Scaleway\"",
-   "fieldname": "private_mac_address",
-   "fieldtype": "Data",
-   "label": "Private Mac Address",
-   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
-   "set_only_once": 1
-  },
-  {
-   "depends_on": "eval: doc.provider === \"Scaleway\"",
-   "fieldname": "private_vlan_id",
-   "fieldtype": "Data",
-   "label": "Private VLAN ID",
-   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
-   "set_only_once": 1
-  },
-  {
-   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\"].includes(doc.provider)",
-   "fieldname": "virtual_machine",
-   "fieldtype": "Link",
-   "label": "Virtual Machine",
-   "mandatory_depends_on": "eval:doc.provider === \"AWS EC2\"",
-   "options": "Virtual Machine"
-  },
-  {
-   "fieldname": "team",
-   "fieldtype": "Link",
-   "label": "Team",
-   "options": "Team"
-  },
-  {
-   "fieldname": "billing_section",
-   "fieldtype": "Section Break",
-   "label": "Billing"
-  },
-  {
-   "fieldname": "column_break_11",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "plan",
-   "fieldtype": "Link",
-   "label": "Plan",
-   "options": "Server Plan"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_server_prepared",
-   "fieldtype": "Check",
-   "label": "Is Server Prepared",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "is_server_renamed",
-   "fieldtype": "Check",
-   "label": "Is Server Renamed",
-   "read_only": 1
-  },
-  {
-   "fieldname": "title",
-   "fieldtype": "Data",
-   "label": "Title"
-  },
-  {
-   "fieldname": "ssh_user",
-   "fieldtype": "Data",
-   "label": "SSH User"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_self_hosted",
-   "fieldtype": "Check",
-   "label": "Is Self Hosted"
-  },
-  {
-   "depends_on": "eval:doc.is_self_hosted",
-   "fieldname": "self_hosted_server_domain",
-   "fieldtype": "Data",
-   "label": "Self Hosted Server Domain"
+   "label": "MariaDB"
   },
   {
    "depends_on": "eval:doc.is_self_hosted",
@@ -356,64 +373,64 @@
    "label": "Self Hosted MariaDB Server IP"
   },
   {
+   "fieldname": "mariadb_root_password",
+   "fieldtype": "Password",
+   "label": "MariaDB Root Password",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_12",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "server_id",
+   "fieldtype": "Int",
+   "label": "Server ID",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "ssh_section",
+   "fieldtype": "Section Break",
+   "label": "SSH"
+  },
+  {
+   "fieldname": "frappe_user_password",
+   "fieldtype": "Password",
+   "label": "Frappe User Password",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "frappe_public_key",
+   "fieldtype": "Code",
+   "label": "Frappe Public Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_18",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ssh_user",
+   "fieldtype": "Data",
+   "label": "SSH User"
+  },
+  {
+   "fieldname": "bastion_server",
+   "fieldtype": "Link",
+   "label": "Bastion Server",
+   "options": "Bastion Server"
+  },
+  {
    "default": "22",
    "fieldname": "ssh_port",
    "fieldtype": "Int",
    "label": "SSH Port"
   },
   {
-   "fieldname": "mariadb_settings_tab",
-   "fieldtype": "Tab Break",
-   "label": "MariaDB Settings"
-  },
-  {
-   "fieldname": "mariadb_system_variables",
-   "fieldtype": "Table",
-   "label": "MariaDB System Variables",
-   "options": "Database Server MariaDB Variable"
-  },
-  {
-   "fieldname": "memory_limits_section",
-   "fieldtype": "Section Break",
-   "label": "Memory"
-  },
-  {
-   "fieldname": "memory_high",
-   "fieldtype": "Float",
-   "label": "Memory High (GB)",
-   "non_negative": 1
-  },
-  {
-   "fieldname": "column_break_eiyu",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "memory_max",
-   "fieldtype": "Float",
-   "label": "Memory Max (GB)",
-   "non_negative": 1
-  },
-  {
-   "fieldname": "section_break_ladc",
-   "fieldtype": "Section Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_performance_schema_enabled",
-   "fieldtype": "Check",
-   "label": "Is Performance Schema Enabled",
+   "fieldname": "root_public_key",
+   "fieldtype": "Code",
+   "label": "Root Public Key",
    "read_only": 1
-  },
-  {
-   "fieldname": "tags_section",
-   "fieldtype": "Section Break",
-   "label": "Tags"
-  },
-  {
-   "fieldname": "tags",
-   "fieldtype": "Table",
-   "label": "Tags",
-   "options": "Resource Tag"
   },
   {
    "fieldname": "section_break_cees",
@@ -429,6 +446,69 @@
    "fieldtype": "Column Break"
   },
   {
+   "fieldname": "tags_section",
+   "fieldtype": "Section Break",
+   "label": "Tags"
+  },
+  {
+   "fieldname": "tags",
+   "fieldtype": "Table",
+   "label": "Tags",
+   "options": "Resource Tag"
+  },
+  {
+   "fieldname": "mounts_section",
+   "fieldtype": "Section Break",
+   "label": "Mounts"
+  },
+  {
+   "default": "0",
+   "fetch_from": "virtual_machine.has_data_volume",
+   "fieldname": "has_data_volume",
+   "fieldtype": "Check",
+   "label": "Has Data Volume",
+   "read_only": 1
+  },
+  {
+   "fieldname": "mounts",
+   "fieldtype": "Table",
+   "label": "Mounts",
+   "options": "Server Mount"
+  },
+  {
+   "fieldname": "notifications_section",
+   "fieldtype": "Section Break",
+   "label": "Notifications"
+  },
+  {
+   "fieldname": "communication_info",
+   "fieldtype": "Table",
+   "label": "Communication Info",
+   "options": "Communication Info"
+  },
+  {
+   "fieldname": "mariadb_settings_tab",
+   "fieldtype": "Tab Break",
+   "label": "MariaDB Settings"
+  },
+  {
+   "fieldname": "memory_limits_section",
+   "fieldtype": "Section Break",
+   "label": "Memory"
+  },
+  {
+   "fieldname": "memory_high",
+   "fieldtype": "Float",
+   "label": "Memory High (GB)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "memory_max",
+   "fieldtype": "Float",
+   "label": "Memory Max (GB)",
+   "non_negative": 1
+  },
+  {
    "default": "0.1",
    "fieldname": "memory_swap_max",
    "fieldtype": "Float",
@@ -436,9 +516,45 @@
    "non_negative": 1
   },
   {
-   "fieldname": "hostname_abbreviation",
+   "fieldname": "column_break_eiyu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "TCMalloc",
+   "fieldname": "memory_allocator",
+   "fieldtype": "Select",
+   "label": "Memory Allocator",
+   "options": "System\njemalloc\nTCMalloc",
+   "read_only": 1
+  },
+  {
+   "fieldname": "memory_allocator_version",
    "fieldtype": "Data",
-   "label": "Hostname Abbreviation"
+   "label": "Memory Allocator Version",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_ladc",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_performance_schema_enabled",
+   "fieldtype": "Check",
+   "label": "Is Performance Schema Enabled",
+   "read_only": 1
+  },
+  {
+   "fieldname": "mariadb_system_variables",
+   "fieldtype": "Table",
+   "label": "MariaDB System Variables",
+   "options": "Database Server MariaDB Variable"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "mariadb_stalk_section",
+   "fieldtype": "Section Break",
+   "label": "MariaDB Stalk"
   },
   {
    "default": "0",
@@ -448,10 +564,16 @@
    "read_only": 1
   },
   {
-   "collapsible": 1,
-   "fieldname": "mariadb_stalk_section",
-   "fieldtype": "Section Break",
-   "label": "MariaDB Stalk"
+   "default": "0",
+   "fieldname": "stalk_gdb_collector",
+   "fieldtype": "Check",
+   "label": "Stalk GDB Collector"
+  },
+  {
+   "default": "0",
+   "fieldname": "stalk_strace_collector",
+   "fieldtype": "Check",
+   "label": "Stalk strace Collector"
   },
   {
    "fieldname": "column_break_qrkk",
@@ -492,135 +614,31 @@
    "label": "Stalk Cycles"
   },
   {
-   "default": "0",
-   "fieldname": "stalk_gdb_collector",
-   "fieldtype": "Check",
-   "label": "Stalk GDB Collector"
-  },
-  {
-   "default": "0",
-   "fieldname": "stalk_strace_collector",
-   "fieldtype": "Check",
-   "label": "Stalk strace Collector"
-  },
-  {
    "default": "300",
    "fieldname": "stalk_sleep",
    "fieldtype": "Int",
    "label": "Stalk Sleep"
   },
   {
-   "default": "0",
-   "fieldname": "public",
-   "fieldtype": "Check",
-   "label": "Public"
-  },
-  {
-   "default": "TCMalloc",
-   "fieldname": "memory_allocator",
-   "fieldtype": "Select",
-   "label": "Memory Allocator",
-   "options": "System\njemalloc\nTCMalloc",
-   "read_only": 1
-  },
-  {
-   "fieldname": "memory_allocator_version",
-   "fieldtype": "Data",
-   "label": "Memory Allocator Version",
-   "read_only": 1
-  },
-  {
-   "default": "25",
-   "description": "Minimum storage to add automatically each time",
-   "fieldname": "auto_add_storage_min",
-   "fieldtype": "Int",
-   "label": "Auto Add Storage Min",
-   "non_negative": 1,
-   "options": "50"
-  },
-  {
-   "default": "250",
-   "description": "Maximum storage to add automatically each time",
-   "fieldname": "auto_add_storage_max",
-   "fieldtype": "Int",
-   "label": "Auto Add Storage Max",
-   "non_negative": 1
-  },
-  {
-   "fieldname": "mounts_section",
-   "fieldtype": "Section Break",
-   "label": "Mounts"
-  },
-  {
-   "fieldname": "mounts",
-   "fieldtype": "Table",
-   "label": "Mounts",
-   "options": "Server Mount"
-  },
-  {
-   "default": "0",
-   "fetch_from": "virtual_machine.has_data_volume",
-   "fieldname": "has_data_volume",
-   "fieldtype": "Check",
-   "label": "Has Data Volume",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "enable_physical_backup",
-   "fieldtype": "Check",
-   "label": "Enable Physical Backup"
-  },
-  {
-   "default": "0",
-   "description": "Stop polling and queuing agent jobs",
-   "fieldname": "halt_agent_jobs",
-   "fieldtype": "Check",
-   "label": "Halt Agent Jobs"
-  },
-  {
-   "fieldname": "section_break_qury",
-   "fieldtype": "Section Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "enable_binlog_indexing",
-   "fieldtype": "Check",
-   "label": "Enable Binlog Indexing"
-  },
-  {
-   "fieldname": "column_break_qsqm",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "section_break_imng",
    "fieldtype": "Section Break"
   },
   {
-   "default": "14",
-   "description": "Only works with Binlog Indexer",
-   "fieldname": "binlog_retention_days",
+   "default": "0",
+   "fieldname": "auto_purge_binlog_based_on_size",
+   "fieldtype": "Check",
+   "label": "Auto Purge binlog Based on Size"
+  },
+  {
+   "default": "100",
+   "fieldname": "binlog_max_disk_usage_percent",
    "fieldtype": "Int",
-   "label": "Binlog Retention (days)"
+   "label": "Binlog Max Disk Usage Percent (%)",
+   "non_negative": 1
   },
   {
-   "default": "0",
-   "fieldname": "binlogs_removed",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "Binlogs Removed"
-  },
-  {
-   "default": "1",
-   "fieldname": "auto_increase_storage",
-   "fieldtype": "Check",
-   "label": "Auto Increase Storage"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_for_recovery",
-   "fieldtype": "Check",
-   "label": "Is For Recovery"
+   "fieldname": "column_break_hrsi",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "replication_tab",
@@ -628,8 +646,35 @@
    "label": "Replication"
   },
   {
+   "default": "1",
+   "fieldname": "is_primary",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Is Primary"
+  },
+  {
    "fieldname": "column_break_vajj",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: !doc.is_primary",
+   "fieldname": "is_replication_setup",
+   "fieldtype": "Check",
+   "label": "Replication Setup",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "depends_on": "eval: !doc.is_primary",
+   "fieldname": "primary",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Primary",
+   "mandatory_depends_on": "eval: !doc.is_primary",
+   "options": "Database Server"
   },
   {
    "fieldname": "section_break_qrcb",
@@ -662,52 +707,72 @@
    "read_only": 1
   },
   {
+   "fieldname": "binlog_indexing_tab",
+   "fieldtype": "Tab Break",
+   "label": "Binlog Indexing"
+  },
+  {
    "default": "0",
-   "fieldname": "tls_certificate_renewal_failed",
+   "fieldname": "enable_binlog_indexing",
    "fieldtype": "Check",
-   "label": "TLS Certificate Renewal Failed",
-   "read_only": 1
+   "label": "Enable Binlog Indexing"
   },
   {
-   "fieldname": "notifications_section",
-   "fieldtype": "Section Break",
-   "label": "Notifications"
+   "default": "0",
+   "fieldname": "is_binlog_indexer_running",
+   "fieldtype": "Check",
+   "label": "Is Binlog Indexer Running"
   },
   {
-   "fieldname": "communication_info",
-   "fieldtype": "Table",
-   "label": "Communication Info",
-   "options": "Communication Info"
+   "default": "0",
+   "fieldname": "binlogs_removed",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Binlogs Removed"
   },
   {
-   "fieldname": "bastion_server",
-   "fieldtype": "Link",
-   "label": "Bastion Server",
-   "options": "Bastion Server"
-  },
-  {
-   "fieldname": "column_break_hrsi",
+   "fieldname": "column_break_coih",
    "fieldtype": "Column Break"
   },
   {
-   "default": "100",
-   "fieldname": "binlog_max_disk_usage_percent",
+   "default": "14",
+   "fieldname": "binlog_retention_days",
    "fieldtype": "Int",
-   "label": "Binlog Max Disk Usage Percent (%)",
-   "non_negative": 1
+   "label": "Binlog Retention (days)"
+  },
+  {
+   "default": "14",
+   "fieldname": "binlog_index_retention_days",
+   "fieldtype": "Int",
+   "label": "Binlog Index Retention (days)"
+  },
+  {
+   "fieldname": "column_break_blnf",
+   "fieldtype": "Column Break"
   },
   {
    "default": "0",
-   "fieldname": "auto_purge_binlog_based_on_size",
+   "fieldname": "enable_binlog_upload_to_s3",
    "fieldtype": "Check",
-   "label": "Auto Purge binlog Based on Size"
+   "label": "Enable Binlog Upload to S3"
+  },
+  {
+   "fieldname": "uploaded_binlogs_retention_days",
+   "fieldtype": "Int",
+   "label": "Uploaded Binlogs Retention (days)"
   },
   {
    "default": "0",
-   "fieldname": "is_monitoring_disabled",
+   "description": "Checked when database server is hosted on the primary app server",
+   "fieldname": "is_unified_server",
    "fieldtype": "Check",
-   "label": "Is Monitoring Disabled",
-   "search_index": 1
+   "label": "Is Unified Server"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_provisioning_press_job_completed",
+   "fieldtype": "Check",
+   "label": "Is Provisioning Job Completed"
   }
  ],
  "grid_page_length": 50,
@@ -724,7 +789,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-10-16 13:11:58.465662",
+ "modified": "2026-01-18 16:20:34.150871",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

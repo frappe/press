@@ -40,9 +40,16 @@
 				v-else-if="$resources.changeServerOptions.data.length > 0"
 				label="Select Server"
 				variant="outline"
-				type="autocomplete"
+				type="combobox"
 				:options="$resources.changeServerOptions.data"
-				v-model="targetServer"
+				:modelValue="targetServer?.value"
+				@update:modelValue="
+					(optionValue) => {
+						targetServer = $resources.changeServerOptions.data.find(
+							(option) => option.value === optionValue,
+						) || { label: '', value: '' };
+					}
+				"
 			/>
 			<div v-if="$resources.isServerAddedInGroup.data" class="mt-4 space-y-4">
 				<DateTimeControl v-model="targetDateTime" label="Schedule Time" />
@@ -98,7 +105,7 @@ export default {
 				this.targetServer.value &&
 				!this.$resources.isServerAddedInGroup.data
 			) {
-				return "The chosen server isn't added to the bench group yet. Please add the server to the bench groupfirst.";
+				return "The chosen server isn't added to the bench group yet. Please add the server to the bench group first.";
 			} else if (
 				this.targetServer.value &&
 				this.$resources.isServerAddedInGroup.data
@@ -133,7 +140,7 @@ export default {
 				initialData: [],
 				auto: true,
 				transform(d) {
-					return d.map((s) => ({
+					return d.servers.map((s) => ({
 						label: s.title || s.name,
 						description: s.name,
 						value: s.name,

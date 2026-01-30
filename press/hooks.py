@@ -169,9 +169,18 @@ doc_events = {
 		],
 	},
 	"Address": {"validate": "press.api.billing.validate_gst"},
-	"Site": {"before_insert": "press.press.doctype.team.team.validate_site_creation"},
+	"Site": {
+		"before_insert": "press.press.doctype.team.team.validate_site_creation",
+		"after_insert": "press.press.doctype.press_role.press_role.create_user_resource",
+	},
 	"Marketplace App Subscription": {
 		"on_update": "press.press.doctype.storage_integration_subscription.storage_integration_subscription.create_after_insert",
+	},
+	"Release Group": {
+		"after_insert": "press.press.doctype.press_role.press_role.create_user_resource",
+	},
+	"Server": {
+		"after_insert": "press.press.doctype.press_role.press_role.create_user_resource",
 	},
 }
 
@@ -190,6 +199,7 @@ scheduler_events = {
 		"press.press.doctype.mariadb_binlog.mariadb_binlog.cleanup_old_records",
 		"press.press.doctype.database_server.database_server.delete_mariadb_binlog_for_archived_servers",
 		"press.press.doctype.team.team.check_budget_alerts",
+		"press.press.doctype.site.site.archive_creation_failed_sites",
 	],
 	"daily_long": [
 		"press.press.audit.check_bench_fields",
@@ -207,10 +217,11 @@ scheduler_events = {
 		"press.press.doctype.press_webhook_log.press_webhook_log.clean_logs_older_than_24_hours",
 		"press.press.doctype.payment_due_extension.payment_due_extension.remove_payment_due_extension",
 		"press.press.doctype.tls_certificate.tls_certificate.notify_custom_tls_renewal",
-		"press.press.doctype.site.site.suspend_sites_exceeding_disk_usage_for_last_7_days",
+		"press.press.doctype.site.site.suspend_sites_exceeding_disk_usage_for_last_14_days",
 		"press.press.doctype.user_2fa.user_2fa.yearly_2fa_recovery_code_reminder",
 		"press.press.doctype.registry_server.registry_server.delete_old_images_from_registry",
 		"press.saas.doctype.product_trial_request.product_trial_request.gather_daily_stats",
+		"press.press.doctype.agent_job.agent_job.agent_poll_count_stats_daily",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -227,6 +238,7 @@ scheduler_events = {
 		"press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.expire_backups",
 		"press.press.doctype.server_snapshot.server_snapshot.expire_snapshots",
 		"press.saas.doctype.product_trial.product_trial.sync_product_site_users",
+		"press.press.doctype.database_server.database_server.sync_binlogs_info",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
@@ -241,12 +253,14 @@ scheduler_events = {
 		"press.press.doctype.deploy_candidate_build.deploy_candidate_build.cleanup_build_directories",
 		"press.press.doctype.deploy_candidate_build.deploy_candidate_build.check_builds_status",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_oci_virtual_machines",
+		"press.press.doctype.virtual_machine.virtual_machine.snapshot_hetzner_virtual_machines",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_aws_internal_virtual_machines",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_old_snapshots",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_expired_snapshots",
 		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
 		"press.press.doctype.press_webhook.press_webhook.auto_disable_high_delivery_failure_webhooks",
 		"press.saas.doctype.product_trial_request.product_trial_request.gather_hourly_stats",
+		"press.press.doctype.agent_job.agent_job.agent_poll_count_stats_hourly",
 	],
 	"all": [
 		"press.auth.flush",
@@ -260,6 +274,9 @@ scheduler_events = {
 		],
 		"*/2 * * * *": [
 			"press.press.doctype.incident.incident.resolve_incidents",
+		],
+		"45 * * * *": [
+			"press.press.doctype.database_server.database_server.update_database_schema_sizes",
 		],
 		"0 4 * * *": [
 			"press.press.doctype.site.backups.cleanup_offsite",
@@ -317,6 +334,7 @@ scheduler_events = {
 			"press.press.doctype.app.app.poll_new_releases",
 			"press.utils.jobs.alert_on_zombie_rq_jobs",
 			"press.saas.doctype.product_trial.product_trial.replenish_standby_sites",
+			"press.press.doctype.server_plan.server_plan.sync_machine_availability_status_of_plans",
 		],
 		"* * * * *": [
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",
@@ -336,7 +354,6 @@ scheduler_events = {
 		"*/30 * * * *": [
 			"press.press.doctype.site_update.scheduled_auto_updates.trigger",
 			"press.press.doctype.team.suspend_sites.execute",
-			"press.press.doctype.database_server.database_server.sync_binlogs_info",
 		],
 		"15,45 * * * *": [
 			"press.press.doctype.site.site_usages.update_cpu_usages",

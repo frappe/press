@@ -33,7 +33,7 @@ from press.press.doctype.site.site import (
 	Site,
 	archive_suspended_sites,
 	process_rename_site_job_update,
-	suspend_sites_exceeding_disk_usage_for_last_7_days,
+	suspend_sites_exceeding_disk_usage_for_last_14_days,
 )
 from press.press.doctype.site_activity.test_site_activity import create_test_site_activity
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
@@ -689,7 +689,7 @@ class TestSite(FrappeTestCase):
 		self.assertIsNone(site.site_usage_exceeded_on)
 
 	@patch("frappe.sendmail", new=Mock())
-	def test_suspend_site_on_exceeding_site_usage_for_consecutive_7_days(self):
+	def test_suspend_site_on_exceeding_site_usage_for_consecutive_14_days(self):
 		frappe.db.set_single_value("Press Settings", "enforce_storage_limits", 1)
 		team = create_test_team()
 		site: Site = create_test_site(public_server=True, free=False, team=team.name)
@@ -700,18 +700,24 @@ class TestSite(FrappeTestCase):
 		site.save()
 		self.assertEqual(site.status, "Active")
 
-		suspend_sites_exceeding_disk_usage_for_last_7_days()
+		suspend_sites_exceeding_disk_usage_for_last_14_days()
 		site.reload()
 		self.assertEqual(site.status, "Active")
 
 		site.site_usage_exceeded_on = frappe.utils.add_to_date(None, days=-6)
 		site.save()
-		suspend_sites_exceeding_disk_usage_for_last_7_days()
+		suspend_sites_exceeding_disk_usage_for_last_14_days()
 		site.reload()
 		self.assertEqual(site.status, "Active")
 
 		site.site_usage_exceeded_on = frappe.utils.add_to_date(None, days=-7)
 		site.save()
-		suspend_sites_exceeding_disk_usage_for_last_7_days()
+		suspend_sites_exceeding_disk_usage_for_last_14_days()
+		site.reload()
+		self.assertEqual(site.status, "Active")
+
+		site.site_usage_exceeded_on = frappe.utils.add_to_date(None, days=-15)
+		site.save()
+		suspend_sites_exceeding_disk_usage_for_last_14_days()
 		site.reload()
 		self.assertEqual(site.status, "Suspended")

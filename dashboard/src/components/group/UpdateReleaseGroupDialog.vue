@@ -18,7 +18,7 @@
 				<!-- Select Apps Step -->
 				<div v-if="step === 'select-apps'">
 					<h2 class="mb-4 text-lg font-medium">
-						{{ lastDeploy ? 'Select apps to update' : 'Select apps to deploy' }}
+						{{ lastDeploy ? 'Select apps to update' : 'Deploy Apps' }}
 					</h2>
 					<GenericList
 						class="max-h-[500px]"
@@ -176,6 +176,9 @@ export default {
 				(app) => app.update_available === true,
 			);
 
+			// preserving this for use in component functions
+			const vm = this;
+
 			return {
 				data: appData,
 				selectable: !!this.lastDeploy,
@@ -225,8 +228,9 @@ export default {
 									return {
 										label: release.tag
 											? release.tag
-											: `${message} (${release.hash.slice(0, 7)})`,
+											: `${release.hash.slice(0, 7)} - ${message}`,
 										value: release.name,
+										timestamp: release.timestamp,
 									};
 								});
 							}
@@ -239,6 +243,8 @@ export default {
 									return app.branch;
 								} else if (next_release) {
 									return next_release.tag || next_release.hash.slice(0, 7);
+								} else {
+									return app.next_release_hash.slice(0, 7);
 								}
 							}
 
@@ -251,10 +257,11 @@ export default {
 
 							return h(CommitChooser, {
 								options: commitChooserOptions(app),
+								app: app.name,
+								source: app.source,
 								modelValue: initialValue,
 								'onUpdate:modelValue': (value) => {
-									appData.find((a) => a.name === app.name).next_release =
-										value.value;
+									vm.updateNextRelease(app.name, value.value, value.hash);
 								},
 							});
 						},
@@ -284,9 +291,10 @@ export default {
 						Button({ row }) {
 							let url;
 							if (row.current_hash && row.next_release) {
-								let hash = row.releases.find(
-									(release) => release.name === row.next_release,
-								)?.hash;
+								let hash =
+									row.releases.find(
+										(release) => release.name === row.next_release,
+									)?.hash ?? row.next_release_hash;
 
 								if (hash)
 									url = `${row.repository_url}/compare/${row.current_hash}...${hash}`;
@@ -294,7 +302,7 @@ export default {
 								url = `${row.repository_url}/commit/${
 									row.releases.find(
 										(release) => release.name === row.next_release,
-									).hash
+									)?.hash ?? row.next_release_hash
 								}`;
 							}
 
@@ -541,6 +549,18 @@ export default {
 		},
 	},
 	methods: {
+		updateNextRelease(name, nextRelease, nextReleaseHash = null) {
+			const app = this.benchDocResource.doc.deploy_information.apps.find(
+				(a) => a.name === name,
+			);
+			if (app) {
+				app.next_release = nextRelease;
+				app.next_release_hash = nextReleaseHash;
+			}
+
+			// Update next_release in selectedApps as well
+			this.handleAppSelection(this.selectedApps.map((a) => a.app));
+		},
 		back() {
 			if (this.step === 'select-apps') {
 				return;
@@ -587,9 +607,9 @@ export default {
 						app: app.name,
 						source: app.source,
 						release: app.next_release,
-						hash: app.releases.find(
-							(release) => release.name === app.next_release,
-						).hash,
+						hash:
+							app.releases.find((release) => release.name === app.next_release)
+								?.hash ?? app.next_release_hash,
 					};
 				});
 		},
@@ -658,9 +678,12 @@ export default {
 				this.step = 'restrict-build';
 				return;
 			}
-
-			this.errorMessage =
-				'Internal Server Error: Deploy could not be initiated';
+			if (Array.isArray(error.messages)) {
+				this.errorMessage = error.messages.join(', ');
+			} else {
+				this.errorMessage =
+					'Internal Server Error: Deploy could not be initiated';
+			}
 		},
 	},
 };

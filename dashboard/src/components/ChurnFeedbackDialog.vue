@@ -118,15 +118,19 @@ export default {
 	computed: {
 		options() {
 			return [
-				'I am moving to a different product e.g ZOHO, Quickbooks, etc.',
-				'I was just exploring the product',
+				'Frappe Cloud is complex and difficult to use',
+				'Unable to migrate to Frappe Cloud',
 				'I prefer self-hosting my instance',
+				'Poor partner experience',
+				'Missing Country Compliance App',
 				'Moved site to another Frappe Cloud account',
-				'I did not like the Frappe Cloud experience',
 				'Frappe Cloud is too expensive for me',
+				'Missing Integration App',
+				'Apps are too complex to use and setup',
 				'Payment issues',
-				'Features were missing',
+				'ERPNext is too complex for my needs',
 				'My reason is not listed here',
+				'I was testing the product',
 			];
 		},
 	},

@@ -37,12 +37,17 @@ frappe.ui.form.on('Virtual Machine', {
 				true,
 				frm.doc.status == 'Running',
 			],
-			[__('Create Server'), 'create_server', true, frm.doc.series === 'f'],
+			[
+				__('Create Server'),
+				'create_server',
+				true,
+				frm.doc.series === 'f' || frm.doc.series === 'u',
+			],
 			[
 				__('Create Database Server'),
 				'create_database_server',
 				false,
-				frm.doc.series === 'm',
+				frm.doc.series === 'm' || frm.doc.series === 'u',
 			],
 			[
 				__('Create Proxy Server'),
@@ -114,20 +119,32 @@ frappe.ui.form.on('Virtual Machine', {
 			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
+				let fields = [
+					{
+						fieldtype: 'Data',
+						label: 'Machine Type',
+						fieldname: 'machine_type',
+						reqd: 1,
+					},
+				];
+				if (frm.doc.cloud_provider == 'Hetzner') {
+					fields.push({
+						fieldtype: 'Check',
+						label: 'Upgrade Disk ?',
+						fieldname: 'upgrade_disk',
+						default: 0,
+					});
+				}
 				frm.add_custom_button(
 					label,
 					() => {
 						frappe.prompt(
-							{
-								fieldtype: 'Data',
-								label: 'Machine Type',
-								fieldname: 'machine_type',
-								reqd: 1,
-							},
-							({ machine_type }) => {
+							fields,
+							({ machine_type, upgrade_disk }) => {
 								frm
 									.call(method, {
 										machine_type,
+										upgrade_disk,
 									})
 									.then((r) => frm.refresh());
 							},

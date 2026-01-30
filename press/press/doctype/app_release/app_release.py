@@ -1,6 +1,7 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+import contextlib
 import os
 import shlex
 import shutil
@@ -10,6 +11,8 @@ from datetime import datetime
 from typing import Optional, TypedDict
 
 import frappe
+import semantic_version as sv
+import tomli
 from frappe.model.document import Document
 
 from press.api.github import get_access_token
@@ -580,31 +583,24 @@ def run(command, cwd):
 	return subprocess.check_output(shlex.split(command), stderr=subprocess.STDOUT, cwd=cwd).decode()
 
 
-def check_python_syntax(dirpath: str) -> str:
-	"""
-	Script `compileall` will compile all the Python files
-	in the given directory.
+def get_python_path(dirpath: str) -> str:
+	"""Check for python version in the pyproject.toml file if present else return bench python path"""
+	pyproject_path = os.path.join(dirpath, "pyproject.toml")
+	if os.path.isfile(pyproject_path):
+		# To handle broken toml files or missing fields
+		with open(pyproject_path, "rb") as f, contextlib.suppress(Exception):
+			pyproject_data = tomli.load(f)
+			requires_python = pyproject_data.get("project", {}).get("requires-python")
+			if requires_python:
+				version_spec = sv.SimpleSpec(requires_python)
+				if version_spec.match(sv.Version("3.14.0")):
+					# try to resolve python3.14 path
+					python_path = shutil.which("python3.14")
+					if python_path:
+						return python_path
+					return "/usr/bin/python3.14"  # Temporary hardcoding until python 3.14 until we move to build server
 
-	If there are errors then return code will be non-zero.
-
-	Flags:
-	- -q: quiet, only print errors (stdout)
-	- -o: optimize level, 0 is no optimization
-	"""
-	_python = _get_python_path()
-	command = f"{_python} -m compileall -q -o 0 {dirpath}"
-	proc = subprocess.run(
-		shlex.split(command),
-		text=True,
-		capture_output=True,
-	)
-	if proc.returncode == 0:
-		return ""
-
-	if not proc.stdout:
-		return proc.stderr
-
-	return proc.stdout
+	return _get_python_path()
 
 
 def _get_python_path() -> str:
@@ -621,6 +617,33 @@ def _get_python_path() -> str:
 		_python_path = "python3"
 
 	return _python_path
+
+
+def check_python_syntax(dirpath: str) -> str:
+	"""
+	Script `compileall` will compile all the Python files
+	in the given directory.
+
+	If there are errors then return code will be non-zero.
+
+	Flags:
+	- -q: quiet, only print errors (stdout)
+	- -o: optimize level, 0 is no optimization
+	"""
+	_python = get_python_path(dirpath)
+	command = f"{_python} -m compileall -q -o 0 {dirpath}"
+	proc = subprocess.run(
+		shlex.split(command),
+		text=True,
+		capture_output=True,
+	)
+	if proc.returncode == 0:
+		return ""
+
+	if not proc.stdout:
+		return proc.stderr
+
+	return proc.stdout
 
 
 def check_pyproject_syntax(dirpath: str) -> str:
