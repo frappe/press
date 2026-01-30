@@ -1375,8 +1375,8 @@ class Site(Document, TagHelpers):
 	def add_domain(self, domain):
 		domain = domain.lower().strip(".")
 		response = check_dns_cname_a(self.name, domain)
-		if domain := get_matching_domain(domain):
-			frappe.throw(f"Cannot add {domain} domain as it is a system reserved domain.")
+		if d := get_matching_domain(domain):
+			frappe.throw(f"Cannot add {d} domain as it is a system reserved domain.")
 		if response["matched"]:
 			if frappe.db.exists("Site Domain", {"domain": domain}):
 				frappe.throw(f"The domain {frappe.bold(domain)} is already used by a site")
