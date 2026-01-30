@@ -48,7 +48,7 @@ from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import 
 	MarketplaceAppPlan,
 )
 from press.press.doctype.communication_info.communication_info import get_communication_info
-from press.press.doctype.root_domain.root_domain import is_our_domain
+from press.press.doctype.root_domain.root_domain import get_matching_domain
 from press.press.doctype.server.server import Server
 from press.saas.doctype.product_trial.product_trial import create_free_app_subscription
 from press.utils.jobs import has_job_timeout_exceeded
@@ -1375,7 +1375,7 @@ class Site(Document, TagHelpers):
 	def add_domain(self, domain):
 		domain = domain.lower().strip(".")
 		response = check_dns_cname_a(self.name, domain)
-		if domain := is_our_domain(domain):
+		if domain := get_matching_domain(domain):
 			frappe.throw(f"Cannot add {domain} domain as it is a system reserved domain.")
 		if response["matched"]:
 			if frappe.db.exists("Site Domain", {"domain": domain}):
