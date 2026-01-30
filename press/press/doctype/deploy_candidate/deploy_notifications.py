@@ -251,6 +251,11 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 			update_with_invalid_app_structure,
 			None,
 		),
+		(
+			"`frappe` package is installed from PyPI, which isn't supported",
+			update_with_frappe_installed_from_pypi,
+			None,
+		),
 	]
 
 
@@ -353,6 +358,27 @@ def get_details(
 		details["assistance_url"] = None
 
 	return details
+
+
+def update_with_frappe_installed_from_pypi(
+	details: "Details",
+	dc: "DeployCandidate",
+	dcb: "DeployCandidateBuild",
+	exc: BaseException,
+):
+	details["title"] = (
+		"[Action Required] App installation failed due to 'frappe' package being installed from PyPI"
+	)
+
+	message = """
+	<p><strong>Installation Failed:</strong> Your custom app's installation is failing because the <code>frappe</code> package is installed from PyPI.
+	This setup is not supported and is preventing the installation from completing.</p>
+
+	<p>Please remove <code>frappe</code> from your app's <code>requirements.txt</code> or <code>pyproject.toml</code> file to proceed.</p>
+	"""
+
+	details["message"] = fmt(message)
+	return True
 
 
 def update_with_unsupported_init_file(
