@@ -2,103 +2,19 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
 import tarfile
-from io import BytesIO
+from dataclasses import dataclass
+from io import BufferedReader, BytesIO
 from typing import TypedDict
 
 import boto3
 import botocore.exceptions
 import requests
+import tomli
 from bench.cli import change_working_directory
-
-APP_NAME = sys.argv[1]
-APP_HASH = sys.argv[2]
-BUILD_TOKEN = sys.argv[3]
-SITE_URL = sys.argv[4]
-try:
-	UPLOAD_ASSETS = bool(int(sys.argv[5]))
-except Exception as e:
-	print(f"Could not parse upload assets flag: {e}")
-	UPLOAD_ASSETS = False
-
-
-class AssetStoreCredentials(TypedDict):
-	secret_access_key: str
-	access_key: str
-	region_name: str
-	endpoint_url: str
-	bucket_name: str
-
-
-def get_asset_store_credentials() -> AssetStoreCredentials:
-	"""Return asset store credentials from remote api to not make it part of the docker image"""
-	return requests.get(
-		f"{SITE_URL}/api/method/press.api.assets.get_credentials",
-		headers={"build-token": BUILD_TOKEN},
-	).json()["message"]
-
-
-def check_existing_asset_in_s3(credentials: AssetStoreCredentials, file_name: str) -> bool:
-	"""Check if asset with this commit hash already exists in S3"""
-	client = boto3.client(
-		"s3",
-		region_name=credentials["region_name"],
-		endpoint_url=credentials["endpoint_url"],
-		aws_access_key_id=credentials["access_key"],
-		aws_secret_access_key=credentials["secret_access_key"],
-	)
-
-	try:
-		client.head_object(Bucket=credentials["bucket_name"], Key=file_name)
-		return True
-	except botocore.exceptions.ClientError:
-		return False
-
-
-def upload_assets_to_store(credentials: AssetStoreCredentials, file_obj: BytesIO, file_name: str) -> None:
-	"""Upload asset stream to store"""
-	client = boto3.client(
-		"s3",
-		region_name=credentials["region_name"],
-		endpoint_url=credentials["endpoint_url"],
-		aws_access_key_id=credentials["access_key"],
-		aws_secret_access_key=credentials["secret_access_key"],
-	)
-
-	client.upload_fileobj(
-		Fileobj=file_obj,
-		Bucket=credentials["bucket_name"],
-		Key=file_name,
-		ExtraArgs={
-			"ContentType": "application/x-tar",
-		},
-	)
-
-
-def download_asset_from_store(credentials: AssetStoreCredentials, file_name: str) -> BytesIO:
-	"""Download asset from store and return it as a BytesIO stream."""
-	client = boto3.client(
-		"s3",
-		region_name=credentials["region_name"],
-		endpoint_url=credentials["endpoint_url"],
-		aws_access_key_id=credentials["access_key"],
-		aws_secret_access_key=credentials["secret_access_key"],
-	)
-
-	file_stream = BytesIO()
-
-	client.download_fileobj(
-		Bucket=credentials["bucket_name"],
-		Key=file_name,
-		Fileobj=file_stream,
-	)
-
-	file_stream.seek(0)
-	return file_stream
 
 
 def _write_assets(file: os.DirEntry, assets_file: str, relative_path: str):
@@ -163,144 +79,284 @@ def _update_assets_json(app: str) -> None:
 	_write_js_and_css_assets(app, dist_folder)
 
 
-def tar_and_compress_folder(folder_path: str, output_filename: str) -> str:
-	"""Tars and compresses the given folder into a .tar.gz file."""
-	with tarfile.open(output_filename, "w:gz", dereference=True) as tar:
-		tar.add(folder_path, arcname=os.path.basename(folder_path), recursive=True)
-	return output_filename
+class AssetStoreCredentials(TypedDict):
+	secret_access_key: str
+	access_key: str
+	region_name: str
+	endpoint_url: str
+	bucket_name: str
 
 
-def build_assets(app: str) -> str:
-	"""Build assets for the app using the app name and return the path to assets"""
-	env = os.environ.copy()
-	env["FRAPPE_DOCKER_BUILD"] = "True"
-	completed_process = subprocess.run(
-		["bench", "build", "--app", app, "--production"],
-		check=True,
-		env=env,
-	)
-	assets_path = os.path.join(os.getcwd(), "sites", "assets", app)
-	print(f"Build Command Completed. Return Code: {completed_process.returncode}.")
-	return assets_path
+@dataclass
+class Builder:
+	app_name: str
+	app_hash: str
+	build_token: str
+	site_url: str
+	upload_assets: bool
+	bench_directory: str
+	environ: dict[str, str]
+	app_path: str
+	asset_folder_path: str = ""
+	compressed_file_name: str = ""
+	app_public_path: str = ""
 
+	@classmethod
+	def from_argv(cls, argv: list[str]) -> Builder:
+		"""Initialize builder"""
+		change_working_directory()
+		os.environ["FRAPPE_DOCKER_BUILD"] = "True"
 
-def extract_and_link_assets(app_name: str, file_stream: BytesIO):
-	"""
-	Extracts assets to sites/assets, moves them to the app source, and restores the symlink.
-	"""
-	bench_path = os.getcwd()
+		try:
+			return cls(
+				app_name=argv[1],
+				app_hash=argv[2],
+				build_token=argv[3],
+				site_url=argv[4],
+				upload_assets=bool(int(argv[5])) if len(argv) > 5 else False,
+				bench_directory=os.getcwd(),
+				environ=os.environ.copy(),
+				app_path=f"file:///home/frappe/context/apps/{argv[1]}",
+			)
+		except (IndexError, ValueError) as e:
+			raise ValueError(f"Error parsing arguments: {e}") from e
 
-	app_public_path = os.path.join(bench_path, "apps", app_name, app_name, "public")
-	assets_path = os.path.join(bench_path, "sites", "assets", app_name)
+	def __post_init__(self):
+		self.asset_folder_path = os.path.join(self.bench_directory, "sites", "assets", self.app_name)
+		self.compressed_file_name = f"{self.app_name}.{self.app_hash}.tar.gz"
+		self.app_public_path = os.path.join(
+			self.bench_directory, "apps", self.app_name, self.app_name, "public"
+		)
+		self.pyproject_path = os.path.join(
+			self.bench_directory,
+			"apps",
+			self.app_name,
+			"pyproject.toml",
+		)
 
-	# 1. Remove existing symlink/dir so tar can extract a fresh physical directory
-	if os.path.exists(assets_path):
-		if os.path.islink(assets_path):
-			os.unlink(assets_path)
-		else:
-			shutil.rmtree(assets_path)
+	def tar_and_compress_folder(self):
+		"""Tars and compresses the given folder into a .tar.gz file."""
+		with tarfile.open(self.compressed_file_name, "w:gz", dereference=True) as tar:
+			tar.add(
+				self.asset_folder_path,
+				arcname=os.path.basename(self.asset_folder_path),
+				recursive=True,
+			)
 
-	# 2. Extract into sites/assets
-	with tarfile.open(fileobj=file_stream, mode="r:*") as tar:
-		tar.extractall(path=os.path.join(bench_path, "sites", "assets"), filter="fully_trusted")
+	def fallback_bench_build(
+		self, credentials: AssetStoreCredentials | None = None, reason: str | None = None
+	):
+		"""Incase something goes wrong fallback and run bench build"""
+		print(
+			f"Falling back to bench build due to: {reason if reason else 'unknown reason'} {self.upload_assets=}"
+		)
 
-	# 3. Move to app public
-	if os.path.exists(app_public_path):
-		shutil.rmtree(app_public_path)
+		subprocess.run(
+			["bench", "build", "--app", self.app_name, "--production"],
+			check=True,
+		)
 
-	shutil.move(assets_path, app_public_path)
+		print(f"Bench build completed for app {self.app_name}.")
 
-	# 4. Restore symlink since we deploy with cp -LR
-	os.symlink(app_public_path, assets_path)
-
-	print(f"Assets moved to {app_public_path} and symlink restored at {assets_path}")
-
-
-def run_post_build_commands(app: str):
-	"""Try and run the app's post build command in case of frappe-ui apps"""
-	bench_path = os.getcwd()
-	root_package_json = os.path.join(bench_path, "apps", app, "package.json")
-	if not os.path.exists(root_package_json):
-		return
-
-	with open(root_package_json, "r") as f:
-		package_data = json.load(f)
-		build_command = package_data.get("scripts", {}).get("build")
-		if not build_command:
-			print(f"No build command found for app {app} in package.json")
+		if not credentials or not os.path.exists(self.asset_folder_path) or not self.upload_assets:
 			return
 
-	# Checking if vite.config.js is in a different directory based on cd command in build script
-	# Example command `npm run check-pnpm && cd frontend && pnpm install && pnpm build`
-	match = re.search(r"cd\s+([^\s&]+)", build_command)
-	if not match:
-		print(f"No build directory found for app {app}")
-		return
+		print(f"Uploading assets for app {self.app_name} to store...")
+		self.tar_and_compress_folder()
+		with open(self.compressed_file_name, "rb") as f:
+			self.upload_assets_to_store(
+				credentials=credentials,
+				file_obj=f,
+				file_name=self.compressed_file_name,
+			)
 
-	build_directory = match.group(1)
-	vite_config_file = os.path.join(bench_path, "apps", app, build_directory, "vite.config.js")
+		print(f"Assets uploaded for app {self.app_name} to store...")
+		os.remove(self.compressed_file_name)
 
-	if not os.path.exists(vite_config_file):
-		print(f"No vite.config.js found for app {app} at {vite_config_file}")
-		return
+		sys.exit(0)
 
-	with open(vite_config_file, "r") as f:
-		vite_config_data = f.read()
-		# Extract the value of the key "indexHtmlPath"
-		match = re.search(r'indexHtmlPath\s*:\s*[\'"]([^\'"]+)[\'"]', vite_config_data)
-		if not match:
-			print(f"No indexHtmlPath found in vite.config.js for app {app}")
-			return
+	def get_asset_store_credentials(self) -> AssetStoreCredentials | None:
+		"""Return asset store credentials from remote api to not make it part of the docker image"""
+		return (
+			requests.get(
+				f"{self.site_url}/api/method/press.api.assets.get_credentials",
+				headers={
+					"build-token": self.build_token,
+				},
+			)
+			.json()
+			.get("message")
+		)
 
-	index_html_path = match.group(1)
-	built_index_path = os.path.join(bench_path, "apps", app, app, "public", build_directory, "index.html")
-	copy_index_to = os.path.join(bench_path, "apps", app, build_directory, index_html_path)
-	if not os.path.exists(built_index_path):
-		print(f"Built index.html not found at {built_index_path}")
-		return
+	def upload_assets_to_store(
+		self, credentials: AssetStoreCredentials, file_obj: BufferedReader, file_name: str
+	) -> None:
+		"""Upload asset stream to store"""
+		client = boto3.client(
+			"s3",
+			region_name=credentials["region_name"],
+			endpoint_url=credentials["endpoint_url"],
+			aws_access_key_id=credentials["access_key"],
+			aws_secret_access_key=credentials["secret_access_key"],
+		)
 
-	print(f"Copying {built_index_path} to {copy_index_to}")
-	shutil.copy2(built_index_path, copy_index_to)
+		client.upload_fileobj(
+			Fileobj=file_obj,
+			Bucket=credentials["bucket_name"],
+			Key=file_name,
+			ExtraArgs={
+				"ContentType": "application/x-tar",
+			},
+		)
 
+	def download_asset_from_store(self, credentials: AssetStoreCredentials) -> BytesIO:
+		"""Download asset from store and return it as a BytesIO stream."""
+		client = boto3.client(
+			"s3",
+			region_name=credentials["region_name"],
+			endpoint_url=credentials["endpoint_url"],
+			aws_access_key_id=credentials["access_key"],
+			aws_secret_access_key=credentials["secret_access_key"],
+		)
 
-def main():
-	"""Get cached app assets or build and upload them"""
-	if not APP_NAME or not APP_HASH:
-		return
+		file_stream = BytesIO()
 
-	credentials = get_asset_store_credentials()
-	asset_filename = f"{APP_NAME}.{APP_HASH}.tar.gz"
-	change_working_directory()
+		client.download_fileobj(
+			Bucket=credentials["bucket_name"],
+			Key=self.compressed_file_name,
+			Fileobj=file_stream,
+		)
 
-	env = os.environ.copy()
-	env["FRAPPE_DOCKER_BUILD"] = "True"
-	app_path = f"file:///home/frappe/context/apps/{APP_NAME}"
+		file_stream.seek(0)
+		return file_stream
 
-	print("Fetching app without assets...")
-	subprocess.run(["bench", "get-app", app_path, "--skip-assets"], check=True, env=env)
+	def has_assets_in_store(self, credentials: AssetStoreCredentials) -> bool:
+		"""Check if asset with this commit hash already exists in S3"""
+		client = boto3.client(
+			"s3",
+			region_name=credentials["region_name"],
+			endpoint_url=credentials["endpoint_url"],
+			aws_access_key_id=credentials["access_key"],
+			aws_secret_access_key=credentials["secret_access_key"],
+		)
 
-	if check_existing_asset_in_s3(credentials, asset_filename):
-		print(f"Assets {asset_filename} found in store. Extracting and setting up...")
-		file_stream = download_asset_from_store(credentials, asset_filename)
-		extract_and_link_assets(APP_NAME, file_stream)
-		run_post_build_commands(APP_NAME)
-		_update_assets_json(APP_NAME)
-	else:
-		print(f"Assets {asset_filename} not found in store. Building...")
-		assets_folder = build_assets(APP_NAME)
-		if not os.path.exists(assets_folder) or not os.path.isdir(assets_folder):
-			print(f"No assets found for app {APP_NAME} at {assets_folder}.")
-			return
+		try:
+			client.head_object(
+				Bucket=credentials["bucket_name"], Key=f"{self.app_name}.{self.app_hash}.tar.gz"
+			)
+			return True
+		except botocore.exceptions.ClientError:
+			return False
 
-		if UPLOAD_ASSETS:
-			print("Upload requested. Uploading assets to store...")
-			tar_file = tar_and_compress_folder(assets_folder, asset_filename)
+	def get_app(self):
+		"""Get app without assets"""
+		print(f"Fetching app {self.app_name} without assets...")
 
-			with open(tar_file, "rb") as f:
-				upload_assets_to_store(credentials, f, asset_filename)
+		subprocess.run(
+			["bench", "get-app", self.app_path, "--skip-assets"],
+			check=True,
+			env=self.environ,
+		)
 
-			os.remove(tar_file)
+		print(f"App {self.app_name} fetched without assets.")
+
+	def extract_and_link_assets(self, file_stream: BytesIO):
+		"""Extracts assets to sites/assets, moves them to the app source, and restores the symlink."""
+		# 1. Remove existing symlink/dir so tar can extract a fresh physical directory
+		if os.path.exists(self.asset_folder_path):
+			if os.path.islink(self.asset_folder_path):
+				os.unlink(self.asset_folder_path)
+			else:
+				shutil.rmtree(self.asset_folder_path)
+
+		# 2. Extract into sites/assets
+		with tarfile.open(fileobj=file_stream, mode="r:*") as tar:
+			tar.extractall(
+				path=os.path.join(
+					self.bench_directory, "sites", "assets"
+				),  # Extracting it here `self.asset_folder_path` - app_name
+				filter="fully_trusted",
+			)
+
+		# 3. Move to app public
+		if os.path.exists(self.app_public_path):
+			shutil.rmtree(self.app_public_path)
+
+		shutil.move(self.asset_folder_path, self.app_public_path)
+
+		# 4. Restore symlink since we deploy with cp -LR
+		os.symlink(self.app_public_path, self.asset_folder_path)
+
+		print(f"Assets moved to {self.app_public_path} and symlink restored at {self.asset_folder_path}")
+
+	def run_post_build_commands(self):
+		"""Try and run the app's post build command to the best of our ability"""
+		build_dir = None
+		out_dir = None
+		index_html_path = None
+
+		with open(self.pyproject_path, "rb") as f:
+			pyproject_data = tomli.load(f)
+			assets_keys = pyproject_data.get("tool", {}).get("bench", {}).get("assets", {})
+			if not assets_keys:
+				self.fallback_bench_build(reason="No assets configuration found in pyproject.toml")
+
+			build_dir = assets_keys.get("build_dir")
+			out_dir = assets_keys.get("out_dir")
+			index_html_path = assets_keys.get("index_html_path")
+
+		if not build_dir or not out_dir or not index_html_path:
+			self.fallback_bench_build(reason="Incomplete assets configuration in pyproject.toml")
+
+		# For now assuming outDir and indexHtmlPath are relative to build directory
+		build_dir_path = os.path.join(self.bench_directory, "apps", self.app_name, build_dir)
+		out_dir_path = os.path.join(build_dir_path, out_dir)
+		index_html_path = os.path.join(build_dir_path, index_html_path)
+
+		if not os.path.exists(build_dir_path):
+			self.fallback_bench_build(reason=f"Build directory does not exist at {build_dir_path}.")
+
+		if not os.path.exists(out_dir_path):
+			self.fallback_bench_build(reason=f"Out directory does not exist at {out_dir_path}.")
+
+		# Assuming all other paths are relative to build_dir
+		built_assets_index = os.path.join(out_dir_path, "index.html")
+		if not os.path.exists(built_assets_index):
+			self.fallback_bench_build(reason=f"Built index.html not found at {built_assets_index}.")
+
+		print(f"Copying built index.html from {built_assets_index} to {index_html_path} ...")
+		shutil.copy2(built_assets_index, index_html_path)
+
+	def build(self):
+		"""Main build function to get/build assets"""
+		# Get app without assets
+		self.get_app()
+
+		# Check if pyproject.toml exists to ensure it's a valid app
+		# Ideally we would never be in this situation as app would not be listed without pyproject.toml
+		# Just in case a app with requirements.txt creeps in.
+		if not os.path.exists(self.pyproject_path):
+			self.fallback_bench_build(reason="pyproject.toml not found.")
+
+		# Check if we can access the asset store
+		credentials = self.get_asset_store_credentials()
+		if not credentials:
+			self.fallback_bench_build(reason="Could not fetch asset store credentials.")
+
+		assets_in_store = self.has_assets_in_store(credentials)
+		if not assets_in_store:
+			self.fallback_bench_build(
+				credentials=credentials,
+				reason="Assets not found in store.",
+			)
+
+		print(f"Assets found in store for app {self.app_name}. Downloading and extracting...")
+		file_stream = self.download_asset_from_store(credentials)
+		self.extract_and_link_assets(file_stream)
+		self.run_post_build_commands()
+		_update_assets_json(self.app_name)
 
 
 if __name__ == "__main__":
-	main()
+	builder = Builder.from_argv(["", "lms", "app_hash", "build_token", "site_url", "0"])
+	builder.run_post_build_commands()
