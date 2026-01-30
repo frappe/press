@@ -127,6 +127,7 @@ PRIVATE_BENCH_DOC = "https://docs.frappe.io/cloud/sites/move-site-to-private-ben
 SERVER_SCRIPT_DISABLED_VERSION = (
 	15  # version from which server scripts were disabled on public benches. No longer set in site
 )
+TRANSITORY_STATES = ["Updating", "Recovering", "Pending", "Installing"]
 
 
 class Site(Document, TagHelpers):
@@ -336,11 +337,14 @@ class Site(Document, TagHelpers):
 		)
 		doc.update_information = self.get_update_information()
 		doc.actions = self.get_actions()
-		server = frappe.get_value("Server", self.server, ["ip", "proxy_server", "team", "title"], as_dict=1)
+		server = frappe.get_value(
+			"Server", self.server, ["ip", "proxy_server", "team", "title", "provider"], as_dict=1
+		)
 		doc.cluster = frappe.db.get_value("Cluster", self.cluster, ["title", "image"], as_dict=1)
 		doc.outbound_ip = server.ip
 		doc.server_team = server.team
 		doc.server_title = server.title
+		doc.server_provider = server.provider
 		doc.inbound_ip = self.inbound_ip
 		doc.is_dedicated_server = is_dedicated_server(self.server)
 		doc.suspension_reason = (
@@ -421,7 +425,10 @@ class Site(Document, TagHelpers):
 
 	def before_insert(self):
 		if not self.bench and self.group:
-			self.set_latest_bench()
+			if self.server and self.team != "Administrator":  # Check to avoid standby sites
+				self.set_bench_for_server()
+			else:
+				self.set_latest_bench()
 		# initialize site.config based on plan
 		self._update_configuration(self.get_plan_config(), save=False)
 
@@ -1239,7 +1246,7 @@ class Site(Document, TagHelpers):
 			frappe.throw(f"Site Update is scheduled for {self.name} at {time}")
 
 	def ready_for_move(self):
-		if self.status in ["Updating", "Recovering", "Pending", "Installing"]:
+		if self.status in TRANSITORY_STATES:
 			frappe.throw(f"Site is in {self.status} state. Cannot Update", SiteUnderMaintenance)
 		elif self.status == "Archived":
 			frappe.throw("Site is archived. Cannot Update", SiteAlreadyArchived)
@@ -2448,7 +2455,10 @@ class Site(Document, TagHelpers):
 		if team.payment_mode == "Paid By Partner" and team.billing_team:
 			team = frappe.get_doc("Team", team.billing_team)
 
-		if not (team.default_payment_method or team.get_balance()):
+		trial_plans = frappe.get_all("Site Plan", {"is_trial_plan": 1, "enabled": 1}, pluck="name")
+		if (
+			not (team.default_payment_method or team.get_balance()) and self.plan in trial_plans
+		) or not team.payment_mode:
 			frappe.throw(
 				"Cannot change plan because you haven't added a card and not have enough balance",
 				CannotChangePlan,
@@ -2724,6 +2734,35 @@ class Site(Document, TagHelpers):
 		if self.server:
 			bench_query = bench_query.where(servers.name == self.server)
 		return bench_query.run(as_dict=True)
+
+	def set_bench_for_server(self):
+		if not self.server:
+			return
+
+		server_details = frappe.db.get_value("Server", self.server, ["public", "team"], as_dict=True)
+
+		if not server_details:
+			frappe.throw(f"Server {self.server} not found")
+
+		if server_details.team != get_current_team():
+			frappe.throw("You don't have permission to deploy on this server")
+
+		bench = frappe.db.get_value(
+			"Bench",
+			{"group": self.group, "status": "Active", "server": self.server},
+			["name", "cluster"],
+			as_dict=True,
+		)
+
+		if not bench:
+			frappe.throw(
+				f"No active bench available for group {self.group} on server {self.server}. "
+				"Please contact support."
+			)
+
+		self.bench = bench.name
+		if self.cluster != bench.cluster:
+			frappe.throw(f"Site cannot be deployed on {self.cluster} yet. Please contact support.")
 
 	def set_latest_bench(self):
 		if not (self.domain and self.cluster and self.group):

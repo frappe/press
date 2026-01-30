@@ -12,23 +12,12 @@
         enabled: yes
         state: started
 
-<<<<<<< HEAD
-    - name: Reload nginx
-      service:
-        name: nginx
-        state: reloaded
-
-    - name: Remove cron to reload nginx every 5 mins
-=======
     - name: Remove cron to reload nginx every 5 mins # kept as we used to reload nginx every 5 mins via cron historically
->>>>>>> cdd65d4cb (refactor: better steps for failover)
       become: yes
       become_user: frappe
       cron:
         name: reload_nginx
         state: absent
-<<<<<<< HEAD
-=======
 
     - name: Reload nginx
       service:
@@ -42,4 +31,3 @@
         user: frappe
         key: "{{ primary_public_key }}"
         state: absent
->>>>>>> cdd65d4cb (refactor: better steps for failover)

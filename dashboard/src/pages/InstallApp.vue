@@ -50,14 +50,19 @@
 							</h2>
 							<div class="mt-2 w-full space-y-2">
 								<FormControl
-									type="autocomplete"
+									type="combobox"
 									:options="
 										options.private_groups.map((b) => ({
 											label: b.title,
 											value: b.name,
 										}))
 									"
-									v-model="selectedGroup"
+									:modelValue="selectedGroup?.value"
+									@update:modelValue="
+										selectedGroup = options.private_groups.find(
+											(option) => option.value === $event,
+										)
+									"
 								/>
 							</div>
 						</div>
