@@ -642,9 +642,6 @@ def options():
 		],
 	)
 
-	for r in regions:
-		r["title"] = r["title"] + " (Internal)" if not r["public"] else r["title"]
-
 	cloud_providers = get_cloud_providers()
 	"""
 	{
