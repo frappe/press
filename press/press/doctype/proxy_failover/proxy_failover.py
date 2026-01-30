@@ -41,10 +41,12 @@ class ProxyFailover(Document, StepHandler):
 		)
 
 		if secondary.cluster != primary.cluster:
-			frappe.throw("Failover can only be initiated between Proxy Servers in the same Cluster")
+			frappe.throw("Failover can only be initiated between Proxy Servers in the same cluster")
 
-		if not primary.is_static_ip and not secondary.is_static_ip:
-			frappe.throw("Failover can only be initiated if one of the proxy server has a static IP")
+		if (not primary.is_static_ip and not secondary.is_static_ip) or (
+			primary.is_static_ip and secondary.is_static_ip
+		):
+			frappe.throw("Failover can only be initiated if one of the proxy server has a static ip")
 
 		if not primary.is_static_ip:
 			routing_steps.extend(
@@ -400,31 +402,37 @@ class ProxyFailover(Document, StepHandler):
 		frappe.msgprint("Failover steps re-queued.", alert=True)
 
 
-def reduce_ttl_of_sites(proxy):
-	proxy = frappe.db.get_value("Proxy Server", proxy, ["domain", "ip", "is_static_ip"], as_dict=True)
-	if proxy.is_static_ip:
+def reduce_ttl_of_sites(primary_proxy_name, secondary_proxy_name):
+	primary_proxy = frappe.db.get_value(
+		"Proxy Server", primary_proxy_name, ["name", "domain", "ip", "is_static_ip"], as_dict=True
+	)
+	if primary_proxy.is_static_ip:
 		# reduce ttl for proxy domain A record
-		domain = frappe.get_doc("Root Domain", proxy.domain)
-		changes = [
-			{
-				"Action": "UPSERT",
-				"ResourceRecordSet": {
-					"Name": proxy.name,
-					"Type": "A",
-					"TTL": 60,
-					"ResourceRecords": [
-						{"Value": proxy.ip},
-					],
-				},
-			}
-		]
-
-		domain.boto3_client.change_resource_record_sets(
-			ChangeBatch={"Changes": changes}, HostedZoneId=domain.hosted_zone
+		secondary_proxy = frappe.db.get_value(
+			"Proxy Server", secondary_proxy_name, ["name", "domain", "ip"], as_dict=True
 		)
+		for proxy in (primary_proxy, secondary_proxy):
+			domain = frappe.get_doc("Root Domain", proxy.domain)
+			changes = [
+				{
+					"Action": "UPSERT",
+					"ResourceRecordSet": {
+						"Name": proxy.name,
+						"Type": "A",
+						"TTL": 60,
+						"ResourceRecords": [
+							{"Value": proxy.ip},
+						],
+					},
+				}
+			]
+
+			domain.boto3_client.change_resource_record_sets(
+				ChangeBatch={"Changes": changes}, HostedZoneId=domain.hosted_zone
+			)
 
 	# reduce ttl for all sites using this proxy
-	servers = frappe.get_all("Server", {"proxy_server": proxy.name}, pluck="name")
+	servers = frappe.get_all("Server", {"proxy_server": primary_proxy.name}, pluck="name")
 	sites_domains = frappe.get_all(
 		"Site",
 		{"status": ("!=", "Archived"), "server": ("in", servers)},
@@ -432,4 +440,4 @@ def reduce_ttl_of_sites(proxy):
 	)
 	for domain_name, sites in groupby(sites_domains, lambda x: x["domain"]):
 		domain = frappe.get_doc("Root Domain", domain_name)
-		domain.update_dns_records_for_sites([site.name for site in sites], proxy.name, ttl=60)
+		domain.update_dns_records_for_sites([site.name for site in sites], primary_proxy.name, ttl=60)
