@@ -816,7 +816,7 @@ class VirtualMachine(Document):
 			"TERMINATED": "Terminated",
 		}
 
-	def get_latest_ubuntu_image(self):  # noqa: C901
+	def get_latest_ubuntu_image(self):
 		if self.cloud_provider == "AWS EC2":
 			architecture = {"x86_64": "amd64", "arm64": "arm64"}[self.platform]
 			return self.client("ssm").get_parameter(
@@ -930,7 +930,7 @@ class VirtualMachine(Document):
 
 		self.save()
 
-	def get_volumes(self):  # noqa: C901
+	def get_volumes(self):
 		if self.cloud_provider == "AWS EC2":
 			response = self.client().describe_volumes(
 				Filters=[{"Name": "attachment.instance-id", "Values": [self.instance_id]}]

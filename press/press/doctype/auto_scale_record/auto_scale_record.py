@@ -6,7 +6,7 @@ import calendar
 import contextlib
 import datetime
 import typing
-from typing import Literal, TypedDict
+from typing import Literal
 
 import frappe
 from frappe.model.document import Document

@@ -27,7 +27,6 @@ from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
-	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 def reconnect_on_failure():
