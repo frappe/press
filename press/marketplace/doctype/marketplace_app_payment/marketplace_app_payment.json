@@ -10,8 +10,12 @@
  "field_order": [
   "team",
   "app",
+  "section_break_rekl",
   "total_usd",
-  "total_inr"
+  "total_inr",
+  "column_break_midh",
+  "commission_usd",
+  "commission_inr"
  ],
  "fields": [
   {
@@ -38,11 +42,31 @@
    "fieldname": "total_inr",
    "fieldtype": "Currency",
    "label": "Total (INR)"
+  },
+  {
+   "fieldname": "section_break_rekl",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_midh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "commission_usd",
+   "fieldtype": "Currency",
+   "label": "Commission USD"
+  },
+  {
+   "default": "0",
+   "fieldname": "commission_inr",
+   "fieldtype": "Currency",
+   "label": "Commission INR"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-20 20:10:28.886130",
+ "modified": "2025-11-20 14:56:11.358862",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Payment",

@@ -154,3 +154,4 @@ press.patches.v0_8_0.clear_alertmanager_webhook_log
 press.press.doctype.press_role.patches.to_resources
 press.press.doctype.server.patches.set_is_provisioning_press_job_completed
 press.patches.v0_8_0.add_cloud_providers_to_site_plans
+press.patches.v0_0_1.fix_marketplace_app_payment_totals

@@ -30,6 +30,7 @@
   "column_break_15",
   "net_total_usd",
   "currency_usd",
+  "commission",
   "section_break_21",
   "ignore_commission"
  ],
@@ -41,6 +42,7 @@
    "label": "Due Date"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "frappe_purchase_order",
    "fieldtype": "Data",
    "label": "Frappe Purchase Order"
@@ -65,7 +67,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Draft\nPaid\nCommissioned"
+   "options": "Draft\nUnpaid\nPaid\nCommissioned\nSubmitted"
   },
   {
    "fieldname": "column_break_4",
@@ -101,6 +103,7 @@
    "fieldtype": "Section Break"
   },
   {
+   "default": "0",
    "fieldname": "net_total_inr",
    "fieldtype": "Currency",
    "label": "Net Total INR",
@@ -108,6 +111,7 @@
    "read_only": 1
   },
   {
+   "default": "0",
    "fieldname": "net_total_usd",
    "fieldtype": "Currency",
    "label": "Net Total USD",
@@ -172,9 +176,18 @@
    "reqd": 1
   },
   {
+   "default": "0",
    "fieldname": "total_amount",
    "fieldtype": "Currency",
    "label": "Total Amount",
+   "options": "recipient_currency",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "commission",
+   "fieldtype": "Currency",
+   "label": "Commission",
    "options": "recipient_currency",
    "read_only": 1
   }
@@ -182,7 +195,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-03-20 10:23:23.836067",
+ "modified": "2025-12-29 15:16:32.571022",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payout Order",
@@ -202,6 +215,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [
@@ -212,6 +226,14 @@
   {
    "color": "Gray",
    "title": "Draft"
+  },
+  {
+   "color": "Orange",
+   "title": "Unpaid"
+  },
+  {
+   "color": "Cyan",
+   "title": "Commissioned"
   }
  ],
  "track_changes": 1

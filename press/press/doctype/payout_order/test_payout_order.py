@@ -38,6 +38,8 @@ class TestPayoutOrder(FrappeTestCase):
 			mode_of_payment="Internal",
 			save=True,
 		)
+		po.submit()
+		po.reload()
 
 		self.assertEqual(len(po.items), 1)
 		self.assertEqual(po.items[0].invoice, self.test_invoice.name)
@@ -64,6 +66,8 @@ class TestPayoutOrder(FrappeTestCase):
 			mode_of_payment="Internal",
 			save=True,
 		)
+		po.submit()
+		po.reload()
 
 		self.assertEqual(len(po.items), 1)
 		self.assertEqual(po.items[0].invoice, self.test_invoice.name)
