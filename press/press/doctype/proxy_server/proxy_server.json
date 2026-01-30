@@ -294,7 +294,8 @@
    "depends_on": "eval: doc.is_primary != 1",
    "fieldname": "is_replication_setup",
    "fieldtype": "Check",
-   "label": "Is Replication Setup"
+   "label": "Is Replication Setup",
+   "read_only": 1
   },
   {
    "default": "0",

@@ -6,7 +6,7 @@ import calendar
 import contextlib
 import datetime
 import typing
-from typing import Literal, TypedDict
+from typing import Literal
 
 import frappe
 from frappe.model.document import Document
@@ -22,10 +22,6 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import PrometheusAlertRule
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
-
-
-class PrometheusAlertRuleRow(TypedDict):
-	expression: str
 
 
 class AutoScaleStepFailureHandler:
@@ -47,7 +43,7 @@ class AutoScaleStepFailureHandler:
 		frappe.db.commit()
 
 
-class AutoScaleRecord(Document, StepHandler):
+class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
