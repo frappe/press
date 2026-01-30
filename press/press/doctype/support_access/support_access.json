@@ -42,13 +42,13 @@
    "read_only": 1
   },
   {
-   "default": "72",
+   "default": "168",
    "description": "in hours",
    "fieldname": "allowed_for",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Allowed for",
-   "options": "3\n6\n12\n24\n72",
+   "options": "3\n6\n12\n24\n72\n168",
    "set_only_once": 1
   },
   {
@@ -143,8 +143,8 @@
  ],
  "grid_page_length": 50,
  "links": [],
- "modified": "2025-11-14 21:55:56.574233",
- "modified_by": "Administrator",
+ "modified": "2026-01-30 10:35:35.780996",
+ "modified_by": "hello@ssiyad.com",
  "module": "Press",
  "name": "Support Access",
  "naming_rule": "Random",
