@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="flex flex-col justify-end items-center sticky top-0 p-3 px-5 w-full bg-white border-b justify-self-center space-y-2"
+		class="flex flex-col justify-end items-center sticky top-0 z-20 p-3 px-5 w-full bg-white border-b justify-self-center space-y-2"
 	>
 		<div class="flex space-x-4 w-full">
 			<!-- Group all content items so spacing is consistent -->
