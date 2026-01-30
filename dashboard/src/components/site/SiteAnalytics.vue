@@ -469,7 +469,7 @@ export default {
 			highlightedCardId: null,
 			now: dayjs(),
 			defaultDuration: '1h',
-			allowTimestampSyncToUrl: false,
+			allowTimestampSyncToUrl: true,
 			inputStartDate: null,
 			logicalStartDate: null,
 			inputEndDate: null,
