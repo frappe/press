@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -151,7 +152,6 @@ def _write_js_and_css_assets(app: str, dist_folder: str) -> None:
 
 def _update_assets_json(app: str) -> None:
 	"""Update assets.json to include the current app's assets."""
-	change_working_directory()
 
 	base_assets_path = os.path.join(os.getcwd(), "sites", "assets")
 	dist_folder = os.path.join(base_assets_path, app, "dist")
@@ -172,7 +172,6 @@ def tar_and_compress_folder(folder_path: str, output_filename: str) -> str:
 
 def build_assets(app: str) -> str:
 	"""Build assets for the app using the app name and return the path to assets"""
-	change_working_directory()
 	env = os.environ.copy()
 	env["FRAPPE_DOCKER_BUILD"] = "True"
 	completed_process = subprocess.run(
@@ -189,7 +188,6 @@ def extract_and_link_assets(app_name: str, file_stream: BytesIO):
 	"""
 	Extracts assets to sites/assets, moves them to the app source, and restores the symlink.
 	"""
-	change_working_directory()
 	bench_path = os.getcwd()
 
 	app_public_path = os.path.join(bench_path, "apps", app_name, app_name, "public")
@@ -218,6 +216,53 @@ def extract_and_link_assets(app_name: str, file_stream: BytesIO):
 	print(f"Assets moved to {app_public_path} and symlink restored at {assets_path}")
 
 
+def run_post_build_commands(app: str):
+	"""Try and run the app's post build command in case of frappe-ui apps"""
+	bench_path = os.getcwd()
+	root_package_json = os.path.join(bench_path, "apps", app, "package.json")
+	if not os.path.exists(root_package_json):
+		return
+
+	with open(root_package_json, "r") as f:
+		package_data = json.load(f)
+		build_command = package_data.get("scripts", {}).get("build")
+		if not build_command:
+			print(f"No build command found for app {app} in package.json")
+			return
+
+	# Checking if vite.config.js is in a different directory based on cd command in build script
+	# Example command `npm run check-pnpm && cd frontend && pnpm install && pnpm build`
+	match = re.search(r"cd\s+([^\s&]+)", build_command)
+	if not match:
+		print(f"No build directory found for app {app}")
+		return
+
+	build_directory = match.group(1)
+	vite_config_file = os.path.join(bench_path, "apps", app, build_directory, "vite.config.js")
+
+	if not os.path.exists(vite_config_file):
+		print(f"No vite.config.js found for app {app} at {vite_config_file}")
+		return
+
+	with open(vite_config_file, "r") as f:
+		vite_config_data = f.read()
+		# Extract the value of the key "indexHtmlPath"
+		match = re.search(r'indexHtmlPath\s*:\s*[\'"]([^\'"]+)[\'"]', vite_config_data)
+		if not match:
+			print(f"No indexHtmlPath found in vite.config.js for app {app}")
+			return
+
+	index_html_path = match.group(1)
+	built_index_path = os.path.join(bench_path, "apps", app, app, "public", build_directory, "index.html")
+	copy_index_to = os.path.join(bench_path, "apps", app, build_directory, index_html_path)
+	if not os.path.exists(built_index_path):
+		print(f"Built index.html not found at {built_index_path}")
+		return
+
+	print(f"Copying {built_index_path} to {copy_index_to}")
+	shutil.copy2(built_index_path, copy_index_to)
+
+
 def main():
 	"""Get cached app assets or build and upload them"""
 	if not APP_NAME or not APP_HASH:
@@ -225,6 +270,7 @@ def main():
 
 	credentials = get_asset_store_credentials()
 	asset_filename = f"{APP_NAME}.{APP_HASH}.tar.gz"
+	change_working_directory()
 
 	env = os.environ.copy()
 	env["FRAPPE_DOCKER_BUILD"] = "True"
@@ -237,6 +283,7 @@ def main():
 		print(f"Assets {asset_filename} found in store. Extracting and setting up...")
 		file_stream = download_asset_from_store(credentials, asset_filename)
 		extract_and_link_assets(APP_NAME, file_stream)
+		run_post_build_commands(APP_NAME)
 		_update_assets_json(APP_NAME)
 	else:
 		print(f"Assets {asset_filename} not found in store. Building...")
