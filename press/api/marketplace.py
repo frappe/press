@@ -774,11 +774,11 @@ def new_app(app: dict):
 		app_doc = new_app_doc(name, app["title"])
 
 	source = app_doc.add_source(
-		app["version"],
-		app["repository_url"],
-		app["branch"],
-		team,
-		app["github_installation_id"],
+		frappe_version=app["version"],
+		repository_url=app["repository_url"],
+		branch=app["branch"],
+		team=team,
+		github_installation_id=app["github_installation_id"],
 	)
 
 	return add_app(source.name, app_doc.name)
