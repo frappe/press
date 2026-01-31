@@ -2248,6 +2248,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			for var_name in default_variables:
 				var: MariaDBVariable = frappe.get_doc("MariaDB Variable", var_name)
 				var.set_on_server(self)
+			if self.has_data_volume:
+				self.add_or_update_mariadb_variable("tmpdir", "value_str", "/opt/volumes/mariadb/tmp")
 
 		self.set_swappiness()
 		self.add_glass_file()

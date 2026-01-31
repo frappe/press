@@ -16,6 +16,7 @@ from press.exceptions import InsufficientSpaceOnServer
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_source.app_source import AppSource
+from press.press.doctype.bench.bench import Bench
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
 )
@@ -45,7 +46,6 @@ from press.utils import get_current_team
 if typing.TYPE_CHECKING:
 	from datetime import datetime
 
-	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
@@ -57,7 +57,7 @@ def create_test_bench(
 	apps: list[dict] | None = None,
 	creation: datetime | None = None,
 	public_server: bool = False,
-) -> "Bench":
+) -> Bench:
 	"""
 	Create test Bench doc.
 
@@ -136,12 +136,12 @@ def create_test_site(
 	with context:
 		creation = creation or frappe.utils.now_datetime()
 		subdomain = subdomain or make_autoname("test-site-.#####")
-		apps = [{"app": app} for app in apps] if apps else None
+		apps_li_di: list[dict] | None = [{"app": app} for app in apps] if apps else None
 		if not bench:
-			bench = create_test_bench(server=server, public_server=kwargs.get("public_server", False))
+			bench_doc = create_test_bench(server=server, public_server=kwargs.get("public_server", False))
 		else:
-			bench = frappe.get_doc("Bench", bench)
-		group = frappe.get_doc("Release Group", bench.group)
+			bench_doc = Bench("Bench", bench)
+		group = frappe.get_doc("Release Group", bench_doc.group)
 
 		status = "Pending" if new else "Active"
 		# on_update checks won't be triggered if not Active
@@ -151,10 +151,10 @@ def create_test_site(
 				"doctype": "Site",
 				"status": status,
 				"subdomain": subdomain,
-				"server": bench.server,
-				"bench": bench.name,
+				"server": bench_doc.server,
+				"bench": bench_doc.name,
 				"team": team or get_current_team(),
-				"apps": apps or [{"app": app.app} for app in group.apps],
+				"apps": apps_li_di or [{"app": app.app} for app in group.apps],
 				"admin_password": "admin",
 				"standby_for_product": standby_for_product,
 				"remote_database_file": remote_database_file,
@@ -525,20 +525,23 @@ class TestSite(FrappeTestCase):
 
 	@patch("press.press.doctype.site.site.frappe.db.commit", new=Mock())
 	@patch("press.press.doctype.site.site.frappe.db.rollback", new=Mock())
-	def test_archive_suspended_sites_archives_only_sites_suspended_longer_than_days(self):
-		site = create_test_site()
+	def test_archive_suspended_sites_archives_only_sites_with_backup_suspended_longer_than_days(self):
+		offsite_backup_plan = create_test_plan(
+			"Site", price_usd=5.0, price_inr=375.0, plan_name="Offsite Backup plan", offsite_backups=True
+		)
+		site = create_test_site(plan=offsite_backup_plan.name)
 		site.db_set("status", "Suspended")
 		site_activity = create_test_site_activity(site.name, "Suspend Site")
 		site_activity.db_set(
 			"creation", frappe.utils.add_days(frappe.utils.now_datetime(), -ARCHIVE_AFTER_SUSPEND_DAYS - 1)
 		)
-		site2 = create_test_site()
+		site2 = create_test_site(plan=offsite_backup_plan.name)
 		site2.db_set("status", "Suspended")
 		site2_activity = create_test_site_activity(site2.name, "Suspend Site")
 		site2_activity.db_set(
 			"creation", frappe.utils.add_days(frappe.utils.now_datetime(), -ARCHIVE_AFTER_SUSPEND_DAYS + 1)
 		)  # site2 suspended recently
-		site3 = create_test_site()  # active site should not be archived
+		site3 = create_test_site(plan=offsite_backup_plan.name)  # active site should not be archived
 
 		create_test_saas_settings(None, [create_test_app(), create_test_app("erpnext", "ERPNext")])
 
@@ -552,8 +555,10 @@ class TestSite(FrappeTestCase):
 
 	@patch("press.press.doctype.site.site.frappe.db.commit", new=Mock())
 	@patch("press.press.doctype.site.site.frappe.db.rollback", new=Mock())
-	def test_suspension_of_10_usd_site_triggers_backup_if_it_does_not_exist(self):
-		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")
+	def test_suspension_of_no_offsite_backup_site_triggers_backup_if_it_does_not_exist(self):
+		plan_10 = create_test_plan(
+			"Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10", offsite_backups=False
+		)
 
 		site = create_test_site()
 		site.db_set("status", "Suspended")

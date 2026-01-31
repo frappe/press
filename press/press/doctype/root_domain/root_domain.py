@@ -217,3 +217,11 @@ def cleanup_cname_records():
 @redis_cache(ttl=3600)
 def get_domains():
 	return frappe.get_all("Root Domain", filters={"enabled": ["=", "1"]}, pluck="name")
+
+
+def get_matching_domain(domain: str) -> str | None:
+	root_domains = get_domains()
+	for rd in root_domains:
+		if domain == rd or domain.endswith(f".{rd}"):
+			return rd
+	return None
