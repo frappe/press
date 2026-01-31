@@ -610,16 +610,16 @@ def options():
 		frappe.throw("Servers feature is not yet enabled on your account")
 
 	regions_filter = {"cloud_provider": ("!=", "Generic"), "public": True, "status": "Active"}
-	if (
+	is_system_user = (
 		(frappe.session and frappe.session.data and frappe.session.data.user_type)
 		or (
 			frappe.session
 			and frappe.session.user
 			and frappe.get_cached_value("User", frappe.session.user, "user_type")
 		)
-	) == "System User" or (
-		frappe.local and frappe.local.team() and frappe.local.team().hetzner_internal_user
-	):
+	) == "System User"
+
+	if is_system_user:
 		regions_filter.pop("public", None)
 
 	regions = frappe.get_all(
@@ -642,8 +642,11 @@ def options():
 		],
 	)
 
-	for r in regions:
-		r["title"] = r["title"] + " (Internal)" if not r["public"] else r["title"]
+	if not is_system_user and not (
+		frappe.local and frappe.local.team() and frappe.local.team().hetzner_internal_user
+	):
+		# filter out hetzner clusters
+		regions = [region for region in regions if region.get("cloud_provider") != "Hetzner"]
 
 	cloud_providers = get_cloud_providers()
 	"""
@@ -762,7 +765,7 @@ def secondary_server_plans(
 
 @frappe.whitelist()
 def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_only_resize=False):  # noqa C901
-	filters = {"server_type": name}
+	filters = {"server_type": name, "legacy_plan": False}
 
 	if cluster:
 		filters.update({"cluster": cluster})
@@ -772,7 +775,13 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 	if platform:
 		filters.update({"platform": platform})
 
-	filters.update({"legacy_plan": False})
+	if resource_name:
+		current_plan = frappe.db.get_value(name, resource_name, "plan")
+		if current_plan:
+			legacy_plan, platform = frappe.db.get_value(
+				"Server Plan", current_plan, ["legacy_plan", "platform"]
+			)
+			filters.update({"legacy_plan": legacy_plan if platform == "x86_64" else False})
 
 	current_root_disk_size = None
 	if resource_name:

@@ -2156,7 +2156,7 @@ class VirtualMachine(Document):
 
 	def bulk_sync_oci_cluster_in_batch(self, instances: list[frappe._dict]):
 		for instance in instances:
-			machine: VirtualMachine = frappe.get_doc("Virtual Machine", {"instance_id": instance["id"]})
+			machine: VirtualMachine = frappe.get_doc("Virtual Machine", {"instance_id": instance.id})
 			if has_job_timeout_exceeded():
 				return
 			try:
