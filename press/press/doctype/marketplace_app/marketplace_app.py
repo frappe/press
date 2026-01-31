@@ -15,11 +15,12 @@ from frappe.website.utils import cleanup_page_name
 from frappe.website.website_generator import WebsiteGenerator
 
 from press.api.client import dashboard_whitelist
-from press.api.github import get_access_token
+from press.api.github import app, get_access_token
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	get_app_plan_features,
 )
 from press.press.doctype.app.app import new_app as new_app_doc
+from press.press.doctype.app.app import parse_frappe_version
 from press.press.doctype.app_release_approval_request.app_release_approval_request import (
 	AppReleaseApprovalRequest,
 )
@@ -27,6 +28,7 @@ from press.press.doctype.marketplace_app.utils import get_rating_percentage_dist
 from press.utils import get_current_team, get_last_doc
 
 if TYPE_CHECKING:
+	from press.press.doctype.app_source.app_source import AppSource
 	from press.press.doctype.site.site import Site
 
 
@@ -247,6 +249,28 @@ class MarketplaceApp(WebsiteGenerator):
 			source_doc.branch = to_branch
 			source_doc.save()
 
+	def validate_frappe_version_for_branch(
+		self,
+		owner: str,
+		repository: str,
+		branch: str,
+		version: str,
+		github_installation_id: str | None = None,
+	):
+		"""Check if the version being added is supported by the branch comparing the frappe versions in pyproject.toml"""
+		app_info = app(
+			owner=owner,
+			repository=repository,
+			branch=branch,
+			installation=github_installation_id
+			if github_installation_id
+			else frappe.get_value("Press Settings", None, "github_access_token"),
+		)
+		frappe_version = app_info.get("frappe_version")
+		frappe_version = parse_frappe_version(frappe_version)
+		if version not in frappe_version:
+			frappe.throw(f"{version} is not supported by branch {branch}")
+
 	@dashboard_whitelist()
 	def add_version(self, version, branch):
 		existing_source = frappe.db.exists(
@@ -257,9 +281,20 @@ class MarketplaceApp(WebsiteGenerator):
 				["App Source", "branch", "=", branch],
 			],
 		)
+		source_doc: "AppSource" = (
+			frappe.get_doc("App Source", existing_source)
+			if existing_source
+			else frappe.get_doc("App Source", self.sources[0].source)
+		)
+		self.validate_frappe_version_for_branch(
+			owner=source_doc.repository_owner,
+			repository=source_doc.repository,
+			branch=branch,
+			version=version,
+			github_installation_id=source_doc.github_installation_id,
+		)
 		if existing_source:
 			# If source with branch to switch already exists, just add version to child table of source and use the same
-			source_doc = frappe.get_doc("App Source", existing_source)
 			try:
 				source_doc.append("versions", {"version": version})
 				source_doc.public = 1
