@@ -125,7 +125,6 @@ def fetch_installations(token):
 	return installations
 
 
-
 def installations(token):
 	installations = []
 	for installation in fetch_installations(token):
