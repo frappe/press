@@ -283,7 +283,7 @@ def _get_app_name_and_title_from_hooks(
 	branch_info,
 	headers,
 	tree,
-) -> "tuple[str, str]":
+) -> tuple[str, str] | None:
 	reason_for_invalidation = f"Files {frappe.bold('hooks.py or patches.txt')} not found."
 	for directory, files in tree.items():
 		if not files:
