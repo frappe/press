@@ -99,7 +99,7 @@ frappe.ui.form.on('Proxy Server', {
 				__('Execute Pre Failover Tasks'),
 				'pre_failover_tasks',
 				true,
-				frm.doc.is_server_setup && frm.doc.is_primary,
+				frm.doc.is_server_setup && !frm.doc.is_primary,
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
