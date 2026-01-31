@@ -16,7 +16,6 @@ import requests
 from press.utils import get_current_team, log_error
 
 if TYPE_CHECKING:
-
 	from press.press.doctype.github_webhook_log.github_webhook_log import GitHubWebhookLog
 
 
@@ -106,27 +105,38 @@ def options():
 	}
 
 
-def installations(token):
+def fetch_installations(token):
 	headers = {
 		"Authorization": f"token {token}",
 		"Accept": "application/vnd.github.machine-man-preview+json",
 	}
-	response = requests.get("https://api.github.com/user/installations", headers=headers)
-	data = response.json()
 	installations = []
-	if response.ok:
-		for installation in data["installations"]:
-			installations.append(
-				{
-					"id": installation["id"],
-					"login": installation["account"]["login"],
-					"url": installation["html_url"],
-					"image": installation["account"]["avatar_url"],
-					"repos": repositories(installation["id"], token),
-				}
-			)
-	else:
-		frappe.throw(data.get("message") or "An error Occurred")
+	current_page, is_last_page = 1, False
+	while not is_last_page:
+		response = requests.get(
+			"https://api.github.com/user/installations",
+			params={"per_page": 100, "page": current_page},
+			headers=headers,
+		)
+		if len(response.json().get("installations", [])) < 100:
+			is_last_page = True
+		installations.extend(response.json().get("installations", []))
+		current_page += 1
+	return installations
+
+
+def installations(token):
+	installations = []
+	for installation in fetch_installations(token):
+		installations.append(
+			{
+				"id": installation["id"],
+				"login": installation["account"]["login"],
+				"url": installation["html_url"],
+				"image": installation["account"]["avatar_url"],
+				"repos": repositories(installation["id"], token),
+			}
+		)
 
 	return installations
 
@@ -273,7 +283,7 @@ def _get_app_name_and_title_from_hooks(
 	branch_info,
 	headers,
 	tree,
-) -> "tuple[str, str]":
+) -> tuple[str, str] | None:
 	reason_for_invalidation = f"Files {frappe.bold('hooks.py or patches.txt')} not found."
 	for directory, files in tree.items():
 		if not files:
