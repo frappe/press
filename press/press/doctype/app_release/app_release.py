@@ -598,7 +598,6 @@ def get_python_path(dirpath: str) -> str:
 					python_path = shutil.which("python3.14")
 					if python_path:
 						return python_path
-					return "/usr/bin/python3.14"  # Temporary hardcoding until python 3.14 until we move to build server
 
 	return _get_python_path()
 

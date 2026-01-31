@@ -4,6 +4,8 @@
   become: yes
   become_user: root
   gather_facts: yes
+  vars:
+    ansible_python_interpreter: auto_silent
 
   roles:
     - provide_frappe_user_du_and_find_permission

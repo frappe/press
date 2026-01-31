@@ -1,5 +1,7 @@
 ---
 - name: Configure ssh session activites logging
   hosts: all
+  vars:
+    ansible_python_interpreter: auto_silent
   roles:
     - role: configure_ssh_logging

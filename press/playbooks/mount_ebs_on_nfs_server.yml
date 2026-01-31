@@ -3,5 +3,7 @@
   become: yes
   become_user: root
   gather_facts: yes
+  vars:
+    ansible_python_interpreter: auto_silent
   roles:
     - role: format_disk_and_mount

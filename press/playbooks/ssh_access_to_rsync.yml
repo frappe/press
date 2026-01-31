@@ -3,5 +3,7 @@
   become: yes
   become_user: root
   gather_facts: yes
+  vars:
+    ansible_python_interpreter: auto_silent
   roles:
     - role: give_ssh_access_to_nfs_server

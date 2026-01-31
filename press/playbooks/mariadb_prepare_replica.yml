@@ -3,6 +3,8 @@
   hosts: all
   become: yes
   become_user: root
+  vars:
+    ansible_python_interpreter: auto_silent
   roles:
     - role: mariadb_add_skip_slave_start
     - role: mariadb_prepare_replica

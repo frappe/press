@@ -4,6 +4,8 @@
   become: yes
   become_user: root
   gather_facts: true
+  vars:
+    ansible_python_interpreter: auto_silent
   roles:
     - role: convert
     - role: mysqld_exporter

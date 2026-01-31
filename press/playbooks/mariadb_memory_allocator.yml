@@ -3,5 +3,7 @@
   hosts: all
   become: yes
   become_user: root
+  vars:
+    ansible_python_interpreter: auto_silent
   roles:
     - role: mariadb_memory_allocator

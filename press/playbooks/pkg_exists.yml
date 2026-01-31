@@ -3,6 +3,8 @@
   hosts: all
   become_user: root
   become_method: sudo
+  vars:
+    ansible_python_interpreter: auto_silent
   tasks:
     - name: Gather package facts
       package_facts:

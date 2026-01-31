@@ -1,5 +1,7 @@
 ---
 - name: Migrate central site
   hosts: all
+  vars:
+    ansible_python_interpreter: auto_silent
   roles:
     - migrate_to_fc
