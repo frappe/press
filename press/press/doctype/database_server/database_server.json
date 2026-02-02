@@ -39,6 +39,7 @@
   "auto_increase_storage",
   "networking_section",
   "ip",
+  "nat_gateway_private_ip",
   "column_break_10",
   "private_ip",
   "private_mac_address",
@@ -776,10 +777,18 @@
    "label": "Is Provisioning Job Completed"
   },
   {
+<<<<<<< HEAD
    "default": "1",
    "fieldname": "enable_schema_size_parser",
    "fieldtype": "Check",
    "label": "Enable Schema Size Parser"
+=======
+   "read_only": 1,
+   "depends_on": "eval: !!!doc.ip",
+   "fieldname": "nat_gateway_private_ip",
+   "fieldtype": "Data",
+   "label": "NAT Gateway Private IP"
+>>>>>>> 32dc917f8 (fix(database-server): add dedicated field for nat gateway private ip)
   }
  ],
  "grid_page_length": 50,
@@ -796,7 +805,11 @@
    "link_fieldname": "database_server"
   }
  ],
+<<<<<<< HEAD
  "modified": "2026-03-08 14:05:17.357104",
+=======
+ "modified": "2026-01-28 03:25:09.850029",
+>>>>>>> 32dc917f8 (fix(database-server): add dedicated field for nat gateway private ip)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
