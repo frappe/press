@@ -8,7 +8,7 @@ from frappe.tests.utils import FrappeTestCase
 class TestAnsibleConsole(FrappeTestCase):
 	def test_ansible_console_run(self):
 		console = frappe.get_doc("Ansible Console")
-		console.inventory = "localhost,"
+		console.inventory_console = "doc.inventory = [{'ip': 'localhost'}]"
 		console.command = "ls"
 		console.run()
 
@@ -22,7 +22,7 @@ class TestAnsibleConsole(FrappeTestCase):
 		count_before = frappe.db.count("Ansible Console Log")
 
 		console = frappe.get_doc("Ansible Console")
-		console.inventory = "localhost,"
+		console.inventory_console = "doc.inventory = [{'ip': 'localhost'}]"
 		console.command = "ls"
 		console.run()
 
