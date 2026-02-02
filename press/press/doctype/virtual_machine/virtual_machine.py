@@ -648,9 +648,7 @@ class VirtualMachine(Document):
 
 		if self.series == "nat":
 			# Disable Source/Dest Check for NAT instances
-			response = self.client().modify_instance_attribute(
-				InstanceId=self.instance_id, SourceDestCheck={"Value": False}
-			)
+			self.disable_source_dest_check()
 
 	def _provision_oci(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
@@ -1458,6 +1456,30 @@ class VirtualMachine(Document):
 		)
 		self.sync()
 
+	def disable_source_dest_check(self):
+		if self.cloud_provider != "AWS EC2":
+			frappe.throw(
+				"Source/Destination check modification is currently only supported for AWS EC2 instances"
+			)
+
+		ec2 = self.client()
+		ec2.modify_instance_attribute(
+			InstanceId=self.instance_id,
+			SourceDestCheck={"Value": False},
+		)
+
+	def enable_source_dest_check(self):
+		if self.cloud_provider != "AWS EC2":
+			frappe.throw(
+				"Source/Destination check modification is currently only supported for AWS EC2 instances"
+			)
+
+		ec2 = self.client()
+		ec2.modify_instance_attribute(
+			InstanceId=self.instance_id,
+			SourceDestCheck={"Value": True},
+		)
+
 	@frappe.whitelist()
 	def disassociate_auto_assigned_public_ip(self):
 		if self.cloud_provider != "AWS EC2":
@@ -1465,6 +1487,13 @@ class VirtualMachine(Document):
 
 		if not self.public_ip_address:
 			frappe.throw("No public IP associated with this instance.")
+
+		try:
+			frappe.db.get_value(self.doctype, self.name, "status", for_update=True, wait=False)
+		except frappe.QueryTimeoutError:
+			frappe.throw(
+				"Unable to get a lock on the vm at this time. Some other process is probably underway"
+			)
 
 		ec2 = self.client()
 		instance = ec2.describe_instances(InstanceIds=[self.instance_id])
