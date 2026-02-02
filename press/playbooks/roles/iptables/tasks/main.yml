@@ -11,5 +11,11 @@
     rule_num: 1
     jump: DROP
 
+- name: Create directory for iptables rules
+  file:
+    path: /etc/iptables
+    state: directory
+    mode: '0755'
+
 - name: Save iptables rules
   shell: iptables-save > /etc/iptables/rules.v4
