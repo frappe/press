@@ -356,7 +356,7 @@ class VirtualMachineMigration(Document):
 		server.start_active_benches()
 		return StepStatus.Success
 
-	def update_partition_labels(self) -> StepStatus:  # type: ignore[arg-type]
+	def update_partition_labels(self) -> StepStatus:
 		"Update partition labels"
 		# Ubuntu images have labels for root (cloudimg-rootfs) and efi (UEFI) partitions
 		# Remove these labels from the old volume
