@@ -38,6 +38,7 @@
   "auto_increase_storage",
   "networking_section",
   "ip",
+  "nat_gateway_private_ip",
   "column_break_10",
   "private_ip",
   "private_mac_address",
@@ -773,6 +774,13 @@
    "fieldname": "is_provisioning_press_job_completed",
    "fieldtype": "Check",
    "label": "Is Provisioning Job Completed"
+  },
+  {
+   "read_only": 1,
+   "depends_on": "eval: !!!doc.ip",
+   "fieldname": "nat_gateway_private_ip",
+   "fieldtype": "Data",
+   "label": "NAT Gateway Private IP"
   }
  ],
  "grid_page_length": 50,
@@ -789,7 +797,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2026-01-18 16:20:34.150871",
+ "modified": "2026-01-28 03:25:09.850029",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
