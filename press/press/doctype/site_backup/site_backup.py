@@ -19,7 +19,7 @@ from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 
 if TYPE_CHECKING:
-	from datetime import datetime
+	from datetime import date
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.site_update.site_update import SiteUpdate
@@ -411,11 +411,11 @@ class SiteBackup(Document):
 				)
 
 	@classmethod
-	def offsite_backup_exists(cls, site: str, day: datetime.date) -> bool:
+	def offsite_backup_exists(cls, site: str, day: date) -> bool:
 		return cls.backup_exists(site, day, {"offsite": True})
 
 	@classmethod
-	def backup_exists(cls, site: str, day: datetime.date, filters: dict):
+	def backup_exists(cls, site: str, day: date, filters: dict):
 		base_filters = {
 			"creation": ("between", [day, day]),
 			"site": site,
@@ -424,7 +424,7 @@ class SiteBackup(Document):
 		return frappe.get_all("Site Backup", {**base_filters, **filters})
 
 	@classmethod
-	def file_backup_exists(cls, site: str, day: datetime.date) -> bool:
+	def file_backup_exists(cls, site: str, day: date) -> bool:
 		return cls.backup_exists(site, day, {"with_files": True})
 
 

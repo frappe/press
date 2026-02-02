@@ -517,9 +517,9 @@ class Agent:
 			"private_ip": frappe.get_value(
 				"Database Server", frappe.db.get_value("Server", site.server, "database_server"), "private_ip"
 			),
-			"backup_db_base_directory": os.path.join(backup_restoration.mount_point, "var/lib/mysql"),
+			"backup_db_base_directory": os.path.join(backup_restoration.mount_point, "var/lib/mysql"),  # type: ignore[arg-type]
 			"restore_specific_tables": backup_restoration.restore_specific_tables,
-			"tables_to_restore": json.loads(backup_restoration.tables_to_restore),
+			"tables_to_restore": json.loads(backup_restoration.tables_to_restore),  # type: ignore[arg-type]
 		}
 		return self.create_agent_job(
 			"Physical Restore Database",

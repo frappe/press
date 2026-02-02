@@ -356,13 +356,13 @@ class VirtualMachineMigration(Document):
 		server.start_active_benches()
 		return StepStatus.Success
 
-	def update_partition_labels(self) -> StepStatus:
+	def update_partition_labels(self) -> StepStatus:  # type: ignore[arg-type]
 		"Update partition labels"
 		# Ubuntu images have labels for root (cloudimg-rootfs) and efi (UEFI) partitions
 		# Remove these labels from the old volume
 		# So the new machine doesn't mount these as root or efi partitions
 		# Important: Update fstab so we can still boot the old machine
-		parsed_devices = json.loads(self.parsed_devices)
+		parsed_devices = json.loads(self.parsed_devices)  # type: ignore[arg-type]
 		for device in parsed_devices:
 			old_label = device["label"]
 			if not old_label:
