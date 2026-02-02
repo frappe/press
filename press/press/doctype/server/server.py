@@ -534,7 +534,8 @@ class BaseServer(Document, TagHelpers):
 			and not self.is_self_hosted
 			and not frappe.flags.in_test
 		):
-			self.nat_gateway_private_ip = self.get_nat_gateway_ip()
+			if not self.nat_gateway_private_ip:
+				self.nat_gateway_private_ip = self.get_nat_gateway_ip()
 			self.create_dns_record()
 			self.update_virtual_machine_name()
 
