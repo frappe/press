@@ -1524,15 +1524,16 @@ def plausible_analytics(name):
 	response.update(
 		{
 			"weekly_installs": frappe.db.sql(
-				f"""
-		SELECT DATE_FORMAT(sa.creation, '%Y-%m-%d') AS date, COUNT(*) AS value
-		FROM `tabSite Activity` as sa
-		WHERE sa.action = 'Install App'
-		AND sa.creation >= DATE_SUB(CURDATE(), INTERVAL 8 WEEK)
-		AND sa.reason = '{name}'
-		GROUP BY WEEK(sa.creation)
-		ORDER BY date
-		""",
+				"""
+					SELECT DATE_FORMAT(sa.creation, '%Y-%m-%d') AS date, COUNT(*) AS value
+					FROM `tabSite Activity` as sa
+					WHERE sa.action = 'Install App'
+					AND sa.creation >= DATE_SUB(CURDATE(), INTERVAL 8 WEEK)
+					AND sa.reason = %s
+					GROUP BY WEEK(sa.creation)
+					ORDER BY date
+					""",
+				(name,),
 				as_dict=True,
 			),
 		}

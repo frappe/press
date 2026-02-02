@@ -545,12 +545,13 @@ def get_permissions():
 		[*frappe.get_all("Press Permission Group User", {"user": user}, pluck="parent"), "1", "2"]
 	)  # [1, 2] is for avoiding singleton tuples
 	docperms = frappe.db.sql(
-		f"""
+		"""
 			SELECT `document_name`, GROUP_CONCAT(`action`) as `actions`
 			FROM `tabPress User Permission`
-			WHERE user='{user}' or `group` in {groups}
+			WHERE user=%s or `group` in %s
 			GROUP BY `document_name`
 		""",
+		(frappe.db.escape(user), frappe.db.escape(groups)),
 		as_dict=True,
 	)
 	return {perm.document_name: perm.actions.split(",") for perm in docperms if perm.actions}
