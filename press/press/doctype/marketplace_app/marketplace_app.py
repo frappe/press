@@ -220,6 +220,7 @@ class MarketplaceApp(WebsiteGenerator):
 			self.published_on = frappe.utils.nowdate()
 
 	def change_branch(self, source, version, to_branch):
+		# This is basically upsert
 		existing_source = frappe.db.exists(
 			"App Source",
 			{
@@ -233,19 +234,31 @@ class MarketplaceApp(WebsiteGenerator):
 		if existing_source:
 			# If source with branch to switch already exists, just add version to child table of source and use the same
 			try:
-				source_doc = frappe.get_doc("App Source", existing_source)
+				source_doc: "AppSource" = frappe.get_doc("App Source", existing_source)
+				self.validate_frappe_version_for_branch(
+					owner=source_doc.repository_owner,
+					repository=source_doc.repository,
+					branch=to_branch,
+					version=version,
+					github_installation_id=source_doc.github_installation_id,
+				)
 				source_doc.append("versions", {"version": version})
 				source_doc.save()
-			except Exception:
-				pass
-
-			for source in self.sources:
-				if source.source == source:
-					source.source = existing_source
-					self.save()
+			except frappe.DoesNotExistError:
+				for source in self.sources:
+					if source.source == source:
+						source.source = existing_source
+						self.save()
 		else:
 			# if a different source with the branch to switch doesn't exists update the existing source
 			source_doc = frappe.get_doc("App Source", source)
+			self.validate_frappe_version_for_branch(
+				owner=source_doc.repository_owner,
+				repository=source_doc.repository,
+				branch=to_branch,
+				version=version,
+				github_installation_id=source_doc.github_installation_id,
+			)
 			source_doc.branch = to_branch
 			source_doc.save()
 
