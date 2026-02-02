@@ -534,6 +534,7 @@ class BaseServer(Document, TagHelpers):
 			and not self.is_self_hosted
 			and not frappe.flags.in_test
 		):
+			self.nat_gateway_private_ip = self.get_nat_gateway_ip()
 			self.create_dns_record()
 			self.update_virtual_machine_name()
 
@@ -565,7 +566,12 @@ class BaseServer(Document, TagHelpers):
 								"Name": self.name,
 								"Type": "A",
 								"TTL": 3600 if self.doctype == "Proxy Server" else 300,
-								"ResourceRecords": [{"Value": self.ip or self.private_ip}],
+								"ResourceRecords": [
+									{
+										"Value": self.ip
+										or (getattr(self, "nat_gateway_private_ip", None) and self.private_ip)
+									}
+								],
 							},
 						}
 					]
@@ -770,7 +776,7 @@ class BaseServer(Document, TagHelpers):
 					"allocator": database_server.memory_allocator.lower(),
 					"mariadb_root_password": database_server_config.mariadb_root_password,
 					"mariadb_depends_on_mounts": database_server_config.mariadb_depends_on_mounts,
-					"nat_gateway_ip": self.nat_gateway_ip,
+					"nat_gateway_ip": self.nat_gateway_private_ip,
 					**self.get_mount_variables(),  # Currently same as database server since no volumes
 				},
 			)
@@ -1346,8 +1352,7 @@ class BaseServer(Document, TagHelpers):
 			kibana_password = None
 		return log_server, kibana_password
 
-	@property
-	def nat_gateway_ip(self):
+	def get_nat_gateway_ip(self):
 		if not self.ip and self.private_ip:
 			if not (
 				nat_gateway_ip := frappe.db.get_value(
@@ -1808,6 +1813,8 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def install_nat_iptables(self):
+		if self.ip:
+			frappe.throw("NAT Iptables can only be installed on servers without public IP")
 		frappe.enqueue_doc(self.doctype, self.name, "_install_nat_iptables")
 
 	def _install_nat_iptables(self):
@@ -1817,7 +1824,7 @@ class BaseServer(Document, TagHelpers):
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
-				variables={"nat_gateway_ip": self.nat_gateway_ip},
+				variables={"nat_gateway_ip": self.nat_gateway_private_ip},
 			)
 			ansible.run()
 		except Exception:
@@ -2465,6 +2472,7 @@ class Server(BaseServer):
 		keep_files_on_server_in_offsite_backup: DF.Check
 		managed_database_service: DF.Link | None
 		mounts: DF.Table[ServerMount]
+		nat_gateway_private_ip: DF.Data | None
 		new_worker_allocation: DF.Check
 		plan: DF.Link | None
 		platform: DF.Literal["x86_64", "arm64"]
@@ -2725,8 +2733,8 @@ class Server(BaseServer):
 		agent.new_server(self.name)
 
 	def ansible_run(self, command: str) -> dict[str, str]:
-		inventory = f"{self.ip},"
-		return AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
+		doc = {"ip": self.ip, "private_ip": self.private_ip, "cluster": self.cluster}
+		return AnsibleAdHoc(sources=[doc]).run(command, self.name)[0]
 
 	def setup_docker(self, now: bool | None = None):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_docker", timeout=1200, now=now or False)
@@ -2804,7 +2812,7 @@ class Server(BaseServer):
 					"db_port": db_port,
 					"agent_repository_branch_or_commit_ref": self.get_agent_repository_branch(),
 					"agent_update_args": " --skip-repo-setup=true",
-					"nat_gateway_ip": self.nat_gateway_ip,
+					"nat_gateway_ip": self.nat_gateway_private_ip,
 					**self.get_mount_variables(),
 				},
 			)

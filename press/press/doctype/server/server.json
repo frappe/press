@@ -44,6 +44,7 @@
   "ip",
   "is_static_ip",
   "ipv6",
+  "nat_gateway_private_ip",
   "column_break_3",
   "private_ip",
   "private_mac_address",
@@ -741,6 +742,13 @@
    "fieldname": "is_provisioning_press_job_completed",
    "fieldtype": "Check",
    "label": "Is Provisioning Job Completed"
+  },
+  {
+   "read_only": 1,
+   "depends_on": "eval: !!!doc.ip || !!!doc.ipv6",
+   "fieldname": "nat_gateway_private_ip",
+   "fieldtype": "Data",
+   "label": "NAT Gateway Private IP"
   }
  ],
  "links": [
@@ -749,7 +757,7 @@
    "link_fieldname": "primary_server"
   }
  ],
- "modified": "2026-01-23 10:19:12.514309",
+ "modified": "2026-01-28 03:24:46.767534",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
