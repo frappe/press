@@ -465,7 +465,7 @@ jobs:
   coverage:
     name: Coverage Wrap Up
     needs: server-tests
-    if: needs.server-tests.result == 'success' || needs.server-tests.result == 'failure'
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Clone

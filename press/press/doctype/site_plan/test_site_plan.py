@@ -25,6 +25,7 @@ def create_test_plan(
 	release_groups: list[str] | None = None,
 	private_benches: bool = False,
 	is_trial_plan: bool = False,
+	offsite_backups: bool = False,
 ):
 	"""Create test Plan doc."""
 	plan_name = plan_name or f"Test {document_type} plan {make_autoname('.#')}"
@@ -45,6 +46,7 @@ def create_test_plan(
 			"instance_type": "t2.micro",
 			"private_benches": private_benches,
 			"is_trial_plan": is_trial_plan,
+			"offsite_backups": offsite_backups,
 		}
 	)
 	if allowed_apps:
