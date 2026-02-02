@@ -1,5 +1,5 @@
 ---
-- name: Configure nat iptables firewall
+- name: Configure nat iptables
   hosts: all
   become: yes
   become_user: root
