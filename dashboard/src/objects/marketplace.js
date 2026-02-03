@@ -130,10 +130,6 @@ export default {
 					filters: (app) => {
 						return { parent: app.doc.name, parenttype: 'Marketplace App' };
 					},
-					onRowClick: (row, context) => {
-						const { listResource: versions, documentResource: app } = context;
-						showReleases(row, app);
-					},
 					fields: [
 						'source.repository_owner as repository_owner',
 						'source.repository as repository',
