@@ -390,11 +390,14 @@ class ProductTrial(Document):
 		standby_sites = query.run(pluck=True)
 		return len(standby_sites)
 
-	def get_prefilled_subdomain(self, account_request):
+	def get_prefilled_subdomain(self, account_request: str | None = None) -> str:
 		"""
 		Get the prefilled subdomain based on the email domain of the account request.
 		If the email domain belongs to a free email provider, generate a unique site name instead.
 		"""
+		if not account_request:
+			return self.get_unique_site_name()
+
 		email = frappe.db.get_value("Account Request", account_request, "email")
 		free_email_providers = {
 			"gmail.com",
