@@ -31,7 +31,7 @@ def create_test_app_source(
 	Also creates app release without github api call.
 	"""
 	if not repository_url:
-		repository_url = frappe.mock("url")
+		repository_url = "https://github.com/frappe/erpnext"
 	team = team or get_current_team()
 	return app.add_source(version, repository_url, branch, team)
 
