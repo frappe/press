@@ -105,7 +105,7 @@ export default {
 						});
 					}
 					if (data.prefilled_subdomain) {
-						this.subdomain = data.prefilled_subdomain || '';
+						this.subdomain = data.prefilled_subdomain;
 					}
 				},
 				onError(error) {
