@@ -150,7 +150,6 @@ class Builder:
 		print(
 			f"Falling back to bench build due to: {reason if reason else 'unknown reason'} {self.upload_assets=}"
 		)
-
 		subprocess.run(
 			["bench", "build", "--app", self.app_name, "--production"],
 			check=True,
@@ -308,10 +307,11 @@ class Builder:
 		if not build_dir or not out_dir or not index_html_path:
 			self.fallback_bench_build(reason="Incomplete assets configuration in pyproject.toml")
 
-		# For now assuming outDir and indexHtmlPath are relative to build directory
-		build_dir_path = os.path.join(self.bench_directory, "apps", self.app_name, build_dir)
-		out_dir_path = os.path.join(build_dir_path, out_dir)
-		index_html_path = os.path.join(build_dir_path, index_html_path)
+		# Paths need to be relative to app root directory
+		app_root_path = os.path.join(self.bench_directory, "apps", self.app_name)
+		build_dir_path = os.path.join(app_root_path, build_dir)
+		out_dir_path = os.path.join(app_root_path, out_dir)
+		index_html_path = os.path.join(app_root_path, index_html_path)
 
 		if not os.path.exists(build_dir_path):
 			self.fallback_bench_build(reason=f"Build directory does not exist at {build_dir_path}.")
@@ -358,5 +358,5 @@ class Builder:
 
 
 if __name__ == "__main__":
-	builder = Builder.from_argv(["", "lms", "app_hash", "build_token", "site_url", "0"])
+	builder = Builder.from_argv(["", "crm", "app_hash", "build_token", "site_url", "0"])
 	builder.run_post_build_commands()
