@@ -33,7 +33,7 @@ def create_test_app_source(
 	if not repository_url:
 		repository_url = "https://github.com/frappe/erpnext"
 	team = team or get_current_team()
-	return app.add_source(version, repository_url, branch, team)
+	return app.add_source(repository_url=repository_url, branch=branch, frappe_version=version, team=team)
 
 
 class TestAppSource(FrappeTestCase):
