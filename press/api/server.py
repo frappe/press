@@ -763,11 +763,6 @@ def secondary_server_plans(
 	return filter_by_roles(plans)
 
 
-def has_similar_enabled_plans(platform: str, cluster: bool) -> bool:
-	"""Check if enabled plans exist for the given platform with the same cluster"""
-	return frappe.db.exists("Server Plan", {"enabled": 1, platform: platform, "cluster": cluster})
-
-
 @frappe.whitelist()
 def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_only_resize=False):  # noqa C901
 	filters = {"server_type": name, "legacy_plan": False}
@@ -777,21 +772,16 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 
 	# Removed default platform of x86_64;
 	# Still use x86_64 for new database servers
-	# Show arms plans as well, if in case platform is already arm
 	if platform:
 		filters.update({"platform": platform})
 
 	if resource_name:
 		current_plan = frappe.db.get_value(name, resource_name, "plan")
 		if current_plan:
-			legacy_plan, cluster = frappe.db.get_value(
-				"Server Plan", current_plan, ["legacy_plan", "cluster"]
+			legacy_plan, platform = frappe.db.get_value(
+				"Server Plan", current_plan, ["legacy_plan", "platform"]
 			)
-			if legacy_plan:
-				has_enabled_plans = has_similar_enabled_plans(platform, cluster)
-				filters.update({"legacy_plan": not has_enabled_plans})
-			else:
-				filters.update({"legacy_plan": False})
+			filters.update({"legacy_plan": legacy_plan if platform == "x86_64" else False})
 
 	current_root_disk_size = None
 	if resource_name:
