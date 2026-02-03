@@ -31,6 +31,7 @@ from press.press.doctype.deploy_candidate.utils import (
 	PackageManagerFiles,
 	is_suspended,
 )
+from press.press.doctype.release_group.release_group import DEFAULT_DEPENDENCIES
 from press.utils import log_error
 
 # build_duration, pending_duration are Time fields, >= 1 day is invalid
@@ -470,7 +471,11 @@ class DeployCandidate(Document):
 		if dependency.islower():
 			dependency = dependency.upper() + "_VERSION"
 
-		version = find(self.dependencies, lambda x: x.dependency == dependency).version
+		dependency_record = find(self.dependencies, lambda x: x.dependency == dependency)
+		if not dependency_record:
+			version = find(DEFAULT_DEPENDENCIES, lambda x: x["dependency"] == dependency)["version"]
+		else:
+			version = dependency_record.version
 
 		if as_env:
 			return f"{dependency} {version}"

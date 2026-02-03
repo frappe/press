@@ -1267,20 +1267,15 @@ class Site(Document, TagHelpers):
 		physical_backup: bool = False,
 		scheduled_time: str | None = None,
 	):
-		log_site_activity(self.name, "Update")
+		from press.press.doctype.site_action.site_action import schedule_site_update
 
-		doc = frappe.get_doc(
-			{
-				"doctype": "Site Update",
-				"site": self.name,
-				"backup_type": "Physical" if physical_backup else "Logical",
-				"skipped_failing_patches": skip_failing_patches,
-				"skipped_backups": skip_backups,
-				"status": "Scheduled" if scheduled_time else "Pending",
-				"scheduled_time": scheduled_time,
-			}
-		).insert()
-		return doc.name
+		return schedule_site_update(
+			self.name,
+			physical_backup=physical_backup,
+			skip_failing_patches=skip_failing_patches,
+			skip_backups=skip_backups,
+			scheduled_time=scheduled_time,
+		).name
 
 	@dashboard_whitelist()
 	def edit_scheduled_update(
