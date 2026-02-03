@@ -1243,7 +1243,7 @@ class ReleaseGroup(Document, TagHelpers):
 			latest_app_release = None
 			latest_app_releases = find_all(latest_releases, lambda x: x.source == app.source)
 
-			if app.source in only_approved_for_sources:
+			if app.source in get_flattened_app_sources(app_sources=only_approved_for_sources):
 				latest_app_release = find(latest_app_releases, can_use_release)
 				latest_app_releases = find_all(latest_app_releases, can_use_release)
 			else:
@@ -1539,11 +1539,11 @@ class ReleaseGroup(Document, TagHelpers):
 			app_doc = new_app(name, app["title"])
 
 		source = app_doc.add_source(
-			self.version,
-			app["repository_url"],
-			app["branch"],
-			self.team,
-			app.get("github_installation_id", None),
+			frappe_version=self.version,
+			repository_url=app["repository_url"],
+			branch=app["branch"],
+			team=self.team,
+			github_installation_id=app.get("github_installation_id", None),
 		)
 		self.update_source(source, is_update)
 
@@ -1850,3 +1850,13 @@ def get_restricted_server_names():
 		},
 		distinct=True,
 	)
+
+
+def get_flattened_app_sources(app_sources: list[str | list[str]]) -> list[str]:
+	flattened_sources = []
+	for source in app_sources:
+		if isinstance(source, list):
+			flattened_sources.extend(source)
+		else:
+			flattened_sources.append(source)
+	return flattened_sources
