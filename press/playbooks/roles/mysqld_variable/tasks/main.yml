@@ -1,4 +1,13 @@
 ---
+- name: Create tmpdir if not exists
+  file:
+    path: '{{ value }}'
+    owner: 'mysql'
+    group: 'mysql'
+    recurse: yes
+    state: directory
+  when: '"{{ variable }}" == "tmpdir" and value is defined'
+
 - name: Set global variable dynamically
   mysql_variables:
     variable: '{{ variable }}'
