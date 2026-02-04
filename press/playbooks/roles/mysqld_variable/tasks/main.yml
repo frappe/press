@@ -1,12 +1,12 @@
 ---
 - name: Create tmpdir if not exists
   file:
-    path: '/opt/volumes/mariadb/tmp'
+    path: '{{ value }}'
     owner: 'mysql'
     group: 'mysql'
     recurse: yes
     state: directory
-  when: '{{ value }} == "/opt/volumes/mariadb/tmp"'
+  when: '"{{ variable }}" == "tmpdir" and value is defined'
 
 - name: Set global variable dynamically
   mysql_variables:
