@@ -63,6 +63,7 @@ class Team(Document):
 		customers: DF.SmallText | None
 		database_access_enabled: DF.Check
 		default_payment_method: DF.Link | None
+		default_razorpay_mandate: DF.Link | None
 		discounts: DF.Table[InvoiceDiscount]
 		enable_inplace_updates: DF.Check
 		enable_performance_tuning: DF.Check
