@@ -170,4 +170,14 @@ def parse_frappe_version(version_string: str) -> set[str]:
 	if version_string in [frappe_version["name"] for frappe_version in frappe_versions]:
 		return set([version_string] if isinstance(version_string, str) else version_string)
 
+	if frappe.flags.in_test and version_string in [
+		"Version 12",
+		"Version 13",
+		"Version 14",
+		"Version 15",
+		"Version 16",
+		"Nightly",
+	]:
+		return set([version_string] if isinstance(version_string, str) else version_string)
+
 	return set(map_frappe_version(version_string, frappe_versions))
