@@ -1,6 +1,7 @@
 ---
 - name: Configure Nginx Routing from Primary to Secondary Proxy
   become: yes
+  hosts: all
   vars:
     secondary_proxy: "{{ secondary_proxy }}"
     nginx_conf_path: "/home/frappe/agent/nginx/nginx.conf"
@@ -9,11 +10,14 @@
 
   tasks:
     - name: Check if stream block already exists in main config
+      become: yes
+      become_user: frappe
       shell: grep "^stream {" {{ nginx_conf_path }}
       register: stream_exists
-      ignore_errors: yes
 
     - name: Add stream block to main nginx.conf
+      become: yes
+      become_user: frappe
       lineinfile:
         path: "{{ nginx_conf_path }}"
         line: |
@@ -38,10 +42,14 @@
       when: stream_exists.rc != 0
 
     - name: Comment out entire proxy.conf file
+      become: yes
+      become_user: frappe
       shell: |
         sed -i 's/^/# /' {{ proxy_conf_path }}
 
     - name: Replace port 443 with 8443 in agent proxy conf
+      become: yes
+      become_user: frappe
       replace:
         path: "{{ upstream_conf_path }}"
         regexp: '(?<=\s|^)443\b'
