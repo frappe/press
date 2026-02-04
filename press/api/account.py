@@ -1444,40 +1444,33 @@ def get_user_banners():
 	servers = list(set([pair["server"] for pair in site_server_pairs if pair.get("server")]))
 
 	DashboardBanner = frappe.qb.DocType("Dashboard Banner")
-	now = frappe.utils.now()
 
 	# fetch all enabled banners for this user
 	all_enabled_banners = (
 		frappe.qb.from_(DashboardBanner)
-		.select("name")
-		.where(
-			((DashboardBanner.enabled == 1) & (DashboardBanner.is_scheduled == 0))
-			| (
-				(DashboardBanner.enabled == 1)
-				& (DashboardBanner.is_scheduled == 1)
-				& (DashboardBanner.scheduled_start_time <= now)
-				& (DashboardBanner.scheduled_end_time >= now)
-			)
-		)
+		.select("*")
+		.where(DashboardBanner.enabled == 1)
 		.where(
 			(DashboardBanner.is_global == 1)
 			| ((DashboardBanner.type_of_scope == "Site") & (DashboardBanner.site.isin(sites or [""])))
 			| ((DashboardBanner.type_of_scope == "Server") & (DashboardBanner.server.isin(servers or [""])))
 			| ((DashboardBanner.type_of_scope == "Team") & (DashboardBanner.team == team))
 		)
-		.run(pluck=True)
+		.run(as_dict=True)
 	)
 
 	# filter out dismissed banners
-	banner_dismissals_by_user = frappe.get_all(
-		"Dashboard Banner Dismissal",
-		filters={"user": frappe.session.user, "parent": ["in", all_enabled_banners]},
-		fields=["parent"],
-		pluck=True,
-	)
+	user = frappe.session.user
+	visible_banners = []
+	for banner in all_enabled_banners:
+		banner_dismissals_by_user = frappe.get_all(
+			"Dashboard Banner Dismissal",
+			filters={"user": user, "parent": banner["name"]},
+		)
+		if not banner_dismissals_by_user:
+			visible_banners.append(banner)
 
-	# visible banners
-	return [banner for banner in all_enabled_banners if banner not in banner_dismissals_by_user]
+	return visible_banners
 
 
 @frappe.whitelist()
