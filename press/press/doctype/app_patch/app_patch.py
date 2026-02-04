@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import json
 import typing
-from typing import TypedDict
+from typing import Any, TypedDict
 
 import frappe
 import requests
@@ -20,7 +20,7 @@ class PatchConfig(TypedDict):
 	filename: str
 	patch_url: str
 	build_assets: bool
-	patch_bench: str | None
+	patch_bench: str
 	patch_all_benches: bool
 	patch_latest_deploy: bool
 
@@ -129,8 +129,10 @@ class AppPatch(Document):
 
 	@staticmethod
 	def process_patch_app(agent_job: "AgentJob"):
+		if not agent_job.reference_name:
+			return
 		request_data = json.loads(agent_job.request_data)
-		app_patch = frappe.get_doc("App Patch", agent_job.reference_name, for_update=True)
+		app_patch = AppPatch("App Patch", agent_job.reference_name, for_update=True)
 
 		revert = request_data.get("revert")
 		if agent_job.status == "Failure" and revert:
@@ -157,7 +159,7 @@ def create_app_patch(
 	app: str,
 	team: str,
 	patch_config: PatchConfig,
-) -> list[str]:
+) -> list[Any | None]:
 	patch = get_patch(patch_config)
 	benches = get_benches(release_group, patch_config)
 	patches = []
@@ -187,7 +189,7 @@ def get_patch(patch_config: PatchConfig) -> str:
 	if patch := patch_config.get("patch"):
 		return patch
 
-	patch_url = patch_config.get("patch_url")
+	patch_url = patch_config["patch_url"]
 	return requests.get(patch_url).text
 
 
