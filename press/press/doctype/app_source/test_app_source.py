@@ -47,10 +47,10 @@ class TestAppSource(FrappeTestCase):
 		team_name = create_test_team().name
 		app: App = self.create_app("hrms", "HRMS")
 		source = app.add_source(
-			"Nightly",
-			"https://github.com/frappe/hrms",
-			"develop",
-			team_name,
+			frappe_version="Nightly",
+			repository_url="https://github.com/frappe/hrms",
+			branch="develop",
+			team=team_name,
 		)
 
 		for req_app in source.required_apps:
@@ -58,10 +58,10 @@ class TestAppSource(FrappeTestCase):
 
 		app: App = self.create_app("lms", "LMS")
 		source = app.add_source(
-			"Nightly",
-			"https://github.com/frappe/lms",
-			"develop",
-			team_name,
+			frappe_version="Nightly",
+			repository_url="https://github.com/frappe/lms",
+			branch="develop",
+			team=team_name,
 		)
 
 		self.assertEqual([], source.required_apps)
