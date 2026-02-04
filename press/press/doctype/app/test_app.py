@@ -26,10 +26,10 @@ class TestApp(FrappeTestCase):
 		self.assertEqual(app.frappe, True)
 
 		source = app.add_source(
-			"Version 12",
-			"https://github.com/frappe/frappe",
-			"version-12",
-			create_test_team().name,
+			frappe_version="Version 12",
+			repository_url="https://github.com/frappe/frappe",
+			branch="version-12",
+			team=create_test_team().name,
 		)
 		self.assertEqual(source.repository, "frappe")
 		self.assertEqual(source.repository_owner, "frappe")
@@ -42,10 +42,10 @@ class TestApp(FrappeTestCase):
 		self.assertEqual(app.frappe, False)
 
 		source = app.add_source(
-			"Version 12",
-			"https://github.com/frappe/erpnext",
-			"version-12",
-			create_test_team().name,
+			frappe_version="Version 12",
+			repository_url="https://github.com/frappe/erpnext",
+			branch="version-12",
+			team=create_test_team().name,
 		)
 		self.assertEqual(source.repository, "erpnext")
 		self.assertEqual(source.repository_owner, "frappe")
@@ -57,16 +57,16 @@ class TestApp(FrappeTestCase):
 		app = create_test_app("frappe", "Frappe Framework")
 
 		source_1 = app.add_source(
-			"Version 12",
-			"https://github.com/frappe/frappe",
-			"version-12",
-			create_test_team().name,
+			frappe_version="Version 12",
+			repository_url="https://github.com/frappe/frappe",
+			branch="version-12",
+			team=create_test_team().name,
 		)
 		source_2 = app.add_source(
-			"Version 13",
-			"https://github.com/frappe/frappe",
-			"version-13",
-			create_test_team().name,
+			frappe_version="Version 13",
+			repository_url="https://github.com/frappe/frappe",
+			branch="version-13",
+			team=create_test_team().name,
 		)
 		self.assertEqual(source_1.branch, "version-12")
 		self.assertEqual(len(source_1.versions), 1)
@@ -81,20 +81,20 @@ class TestApp(FrappeTestCase):
 		team_name = create_test_team().name
 
 		source_1 = app.add_source(
-			"Version 12",
-			"https://github.com/frappe/erpnext_documentation",
-			"master",
-			team_name,
+			frappe_version="Version 12",
+			repository_url="https://github.com/frappe/erpnext_documentation",
+			branch="master",
+			team=team_name,
 		)
 		self.assertEqual(source_1.branch, "master")
 		self.assertEqual(len(source_1.versions), 1)
 		self.assertEqual(source_1.versions[0].version, "Version 12")
 
 		source_2 = app.add_source(
-			"Version 13",
-			"https://github.com/frappe/erpnext_documentation",
-			"master",
-			team_name,
+			frappe_version="Version 13",
+			repository_url="https://github.com/frappe/erpnext_documentation",
+			branch="master",
+			team=team_name,
 		)
 
 		self.assertEqual(source_1.name, source_2.name)
@@ -105,20 +105,20 @@ class TestApp(FrappeTestCase):
 	def test_create_app_add_second_source_after_insert(self):
 		app = create_test_app("frappe", "Frappe Framework")
 		source_1 = app.add_source(
-			"Version 12",
-			"https://github.com/frappe/frappe",
-			"version-12",
-			create_test_team().name,
+			frappe_version="Version 12",
+			repository_url="https://github.com/frappe/frappe",
+			branch="version-12",
+			team=create_test_team().name,
 		)
 		self.assertEqual(source_1.branch, "version-12")
 		self.assertEqual(len(source_1.versions), 1)
 		self.assertEqual(source_1.versions[0].version, "Version 12")
 
 		source_2 = app.add_source(
-			"Version 13",
-			"https://github.com/frappe/frappe",
-			"version-13",
-			create_test_team().name,
+			frappe_version="Version 13",
+			repository_url="https://github.com/frappe/frappe",
+			branch="version-13",
+			team=create_test_team().name,
 		)
 		self.assertEqual(source_1.branch, "version-12")
 		self.assertEqual(len(source_1.versions), 1)
