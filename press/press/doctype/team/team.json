@@ -31,6 +31,7 @@
   "subscription_details_section",
   "stripe_customer_id",
   "country",
+  "phone_number",
   "currency",
   "payment_mode",
   "billing_team",
@@ -659,6 +660,13 @@
    "fieldname": "allow_unified_servers",
    "fieldtype": "Check",
    "label": "Allow Unified Servers"
+  },
+  {
+   "fieldname": "phone_number",
+   "fieldtype": "Phone",
+   "in_list_view": 1,
+   "label": "Phone Number",
+   "options": "Country"
   }
  ],
  "grid_page_length": 50,
@@ -724,7 +732,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2026-01-13 20:23:37.626353",
+ "modified": "2026-02-04 14:46:25.362226",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
