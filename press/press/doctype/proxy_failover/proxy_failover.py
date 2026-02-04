@@ -107,7 +107,7 @@ class ProxyFailover(Document, StepHandler):
 			)
 			ansible_play = ansible.run()
 			if ansible_play.status != Status.Success:
-				raise
+				raise Exception("Failed making changes for nginx tcp streaming")
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
 			return
