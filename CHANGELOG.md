@@ -25,6 +25,9 @@ As a result:
 - Version ranges must follow **NPM semver syntax**
 - Python-style version specifiers (PEP 440), such as `~=`, are **not supported**
 
+### Relevant links
+https://github.com/frappe/press/issues/4809
+
 ### Example
 ```toml
 [tool.bench.frappe-dependencies]
