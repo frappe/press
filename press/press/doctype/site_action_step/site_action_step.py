@@ -36,8 +36,16 @@ class SiteActionStep(Document):
 			frappe.throw("Cannot wait for completion on async kind of step")
 
 	def get_steps(self):
-		# TODO: need refactor
+		if self.reference_doctype and self.reference_name:
+			reference_doc = frappe.get_doc(
+				self.reference_doctype,
+				self.reference_name,
+			)
+			# Check if the doc hsa get_steps method
+			if hasattr(reference_doc, "get_steps"):
+				return reference_doc.get_steps()
 
+		# TODO: somehow have to add visibility of this stage
 		return [
 			{
 				"name": self.name,

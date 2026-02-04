@@ -8,6 +8,7 @@
  "field_order": [
   "status",
   "site",
+  "team",
   "scheduled_time",
   "column_break_qqmh",
   "action_type",
@@ -40,7 +41,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Scheduled\nRunning\nFailure\nSuccess",
+   "options": "Scheduled\nCancelled\nRunning\nFailure\nSuccess",
    "reqd": 1
   },
   {
@@ -68,12 +69,20 @@
    "fieldname": "scheduled_time",
    "fieldtype": "Datetime",
    "label": "Scheduled Time"
+  },
+  {
+   "fetch_from": "site.team",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-04 12:17:58.815226",
+ "modified": "2026-02-04 12:46:19.879740",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Action",
@@ -105,16 +114,13 @@
    "write": 1
   },
   {
-   "create": 1,
-   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
    "report": 1,
    "role": "Press Member",
-   "share": 1,
-   "write": 1
+   "share": 1
   }
  ],
  "row_format": "Dynamic",

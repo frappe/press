@@ -1250,22 +1250,6 @@ export default {
 							type: 'Badge',
 							width: 0.5,
 						},
-						// {
-						// 	label: 'Backup',
-						// 	width: 0.4,
-						// 	type: 'Component',
-						// 	component({ row }) {
-						// 		return h(
-						// 			'div',
-						// 			{
-						// 				class: 'truncate text-base',
-						// 			},
-						// 			row.skipped_backups
-						// 				? 'Skipped'
-						// 				: row.backup_type || 'Logical',
-						// 		);
-						// 	},
-						// },
 						{
 							label: 'Created By',
 							fieldname: 'owner',
@@ -1477,9 +1461,7 @@ export default {
 								onClick() {
 									let ConfigureAutoUpdateDialog = defineAsyncComponent(
 										() =>
-											import(
-												'../components/site/ConfigureAutoUpdateDialog.vue'
-											),
+											import('../components/site/ConfigureAutoUpdateDialog.vue'),
 									);
 
 									renderDialog(
@@ -1496,6 +1478,61 @@ export default {
 							'Your site is currently on a shared bench group. Upgrade to a private bench group to configure auto updates and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
 
 						return getUpsellBanner(site, bannerTitle);
+					},
+				},
+			},
+			{
+				label: 'Site Actions',
+				icon: icon('arrow-up-circle'),
+				route: 'site-actions',
+				type: 'list',
+				condition: (site) => {
+					return site.doc?.status !== 'Archived';
+				},
+				childrenRoutes: ['Site Action'],
+				list: {
+					doctype: 'Site Action',
+					filters: (site) => {
+						return { site: site.doc?.name };
+					},
+					orderBy: 'creation',
+					fields: ['action_type', 'status', 'scheduled_time', 'owner'],
+					columns: [
+						{
+							label: 'Action',
+							fieldname: 'action_type',
+							width: 0.3,
+						},
+						{
+							label: 'Status',
+							fieldname: 'status',
+							type: 'Badge',
+							width: 0.6,
+						},
+						{
+							label: 'Created By',
+							fieldname: 'owner',
+						},
+						{
+							label: 'Scheduled At',
+							fieldname: 'scheduled_time',
+							format(value) {
+								return date(value, 'lll');
+							},
+						},
+						// {
+						// 	label: 'Updated On',
+						// 	fieldname: 'updated_on',
+						// 	format(value) {
+						// 		return date(value, 'lll');
+						// 	},
+						// },
+					],
+					route(row) {
+						return {
+							name: 'Site Action',
+							params: { id: row.name },
+						};
 					},
 				},
 			},
@@ -1768,6 +1805,11 @@ export default {
 			name: 'Site Update',
 			path: 'updates/:id',
 			component: () => import('../pages/SiteUpdate.vue'),
+		},
+		{
+			name: 'Site Action',
+			path: 'actions/:id',
+			component: () => import('../pages/SiteAction.vue'),
 		},
 	],
 };
