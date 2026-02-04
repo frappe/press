@@ -12,6 +12,8 @@ from boto3 import client, resource
 from frappe.model.document import Document
 from frappe.utils.password import get_decrypted_password
 
+from press.press.doctype.site_activity.site_activity import log_site_activity
+
 
 def get_remote_key(file):
 	from hashlib import sha1
@@ -223,6 +225,8 @@ class RemoteFile(Document):
 
 	@frappe.whitelist()
 	def get_download_link(self):
+		log_site_activity(site=self.site, action="Access Offsite Backups")
+		frappe.db.commit()
 		return self.url or self.s3_client.generate_presigned_url(
 			"get_object",
 			Params={"Bucket": self.bucket, "Key": self.file_path},
