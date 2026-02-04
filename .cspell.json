@@ -581,6 +581,7 @@
         "stdc",
         "stime",
         "stkpush",
+        "stopasgroup",
         "Storge",
         "stretchr",
         "stripnl",
