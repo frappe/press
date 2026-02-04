@@ -96,6 +96,7 @@ class Team(Document):
 		partner_tier: DF.Link | None
 		partnership_date: DF.Date | None
 		payment_mode: DF.Literal["", "Card", "Prepaid Credits", "Paid By Partner"]
+		phone_number: DF.Phone | None
 		razorpay_enabled: DF.Check
 		receive_budget_alerts: DF.Check
 		referrer_id: DF.Data | None
@@ -289,23 +290,34 @@ class Team(Document):
 		self.add_comment("Info", "enabled account")
 
 	@classmethod
-	def create_new(
+	def create_new(  # noqa: C901
 		cls,
 		account_request: AccountRequest,
 		first_name: str,
 		last_name: str,
 		password: str | None = None,
 		country: str | None = None,
+		phone: str | None = None,
 		is_us_eu: bool = False,
 		via_erpnext: bool = False,
 		user_exists: bool = False,
 	):
 		"""Create new team along with user (user created first)."""
+		# Get full phone number with country code
+		full_phone = None
+		if phone and country:
+			dialing_code = get_country_dialing_code(country)
+			if dialing_code:
+				full_phone = f"+{dialing_code}-{phone}"
+			else:
+				full_phone = phone
+
 		team: "Team" = frappe.get_doc(
 			{
 				"doctype": "Team",
 				"user": account_request.email,
 				"country": country,
+				"phone_number": full_phone,
 				"enabled": 1,
 				"via_erpnext": via_erpnext,
 				"is_us_eu": is_us_eu,
@@ -1155,7 +1167,7 @@ class Team(Document):
 	def reallocate_workers_if_needed(
 		self, workloads_before: list[tuple[str, float, str]], workloads_after: list[tuple[str, float, str]]
 	):
-		for before, after in zip(workloads_before, workloads_after, strict=False):
+		for before, after in zip(workloads_before, workloads_after, strict=False):  # type: ignore
 			if after[1] - before[1] >= 8:  # 100 USD equivalent
 				frappe.enqueue_doc(
 					"Server",
@@ -1706,3 +1718,17 @@ def send_budget_alert_email(team_info, invoice):
 	except Exception as e:
 		frappe.log_error(f"Failed to send budget alert email: {team_info['user']}", {e})
 		return False
+
+
+def get_country_dialing_code(country_name: str) -> str | None:
+	"""Get the dialing code for a given country name using phonenumbers library."""
+	from phonenumbers import country_code_for_region
+
+	# Get the ISO 3166 ALPHA-2 code from Country doctype
+	country_code = frappe.db.get_value("Country", country_name, "code")
+	if not country_code:
+		return None
+
+	# phonenumbers expects uppercase country code
+	dialing_code = country_code_for_region(country_code.upper())
+	return str(dialing_code) if dialing_code else None
