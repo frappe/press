@@ -63,7 +63,6 @@ class Team(Document):
 		customers: DF.SmallText | None
 		database_access_enabled: DF.Check
 		default_payment_method: DF.Link | None
-		default_razorpay_mandate: DF.Link | None
 		discounts: DF.Table[InvoiceDiscount]
 		enable_inplace_updates: DF.Check
 		enable_performance_tuning: DF.Check
@@ -96,9 +95,8 @@ class Team(Document):
 		partner_status: DF.Literal["Active", "Inactive"]
 		partner_tier: DF.Link | None
 		partnership_date: DF.Date | None
-		payment_mode: DF.Literal["", "Card", "Prepaid Credits", "Paid By Partner", "UPI Autopay"]
+		payment_mode: DF.Literal["", "Card", "Prepaid Credits", "Paid By Partner"]
 		phone_number: DF.Phone | None
-		razorpay_customer_id: DF.Data | None
 		razorpay_enabled: DF.Check
 		receive_budget_alerts: DF.Check
 		referrer_id: DF.Data | None
