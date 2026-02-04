@@ -239,6 +239,7 @@ scheduler_events = {
 		"press.press.doctype.server_snapshot.server_snapshot.expire_snapshots",
 		"press.saas.doctype.product_trial.product_trial.sync_product_site_users",
 		"press.press.doctype.database_server.database_server.sync_binlogs_info",
+		"press.saas.doctype.product_trial.product_trial.process_expired_trials",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
