@@ -7,9 +7,17 @@ from frappe.query_builder import Case
 from frappe.query_builder.functions import Count, Sum
 from frappe.utils import flt
 from frappe.utils.data import add_days, add_months, get_first_day, get_last_day, today
+from frappe.utils.user import is_system_user
 
 from press.guards import role_guard
 from press.utils import get_current_team
+
+
+def is_lead_team(lead):
+	team = get_current_team()
+	if (frappe.db.get_value("Partner Lead", lead, "partner_team") == team) or is_system_user():
+		return True
+	return False
 
 
 @frappe.whitelist()
@@ -314,11 +322,10 @@ def get_user_by_name(email):
 @frappe.whitelist()
 @role_guard.api("partner")
 def get_lead_activities(name):  # noqa: C901
-	doc = frappe.db.get_values("Partner Lead", name, ["creation", "owner", "partner_team"])[0]
-	team = get_current_team()
-	if doc[2] != team:
+	if not is_lead_team(name):
 		return None
 
+	doc = frappe.db.get_values("Partner Lead", name, ["creation", "owner"])[0]
 	get_docinfo("", "Partner Lead", name)
 	res = frappe.response["docinfo"]
 	doc_meta = frappe.get_meta("Partner Lead")
@@ -689,9 +696,8 @@ def get_partner_leads(lead_name=None, status=None, engagement_stage=None, source
 @frappe.whitelist()
 @role_guard.api("partner")
 def change_partner(lead_name, partner):
-	team = get_current_team()
 	doc = frappe.get_doc("Partner Lead", lead_name)
-	if doc.partner_team != team:
+	if not is_lead_team(lead_name):
 		frappe.throw("You are not allowed to change the partner for this lead")
 
 	doc.partner_team = partner
@@ -744,8 +750,6 @@ def apply_for_certificate(member_name, certificate_type):
 @frappe.whitelist()
 @role_guard.api("partner")
 def get_partner_teams(company=None, email=None, country=None, tier=None, active_only=False):
-	from frappe.utils.user import is_system_user
-
 	if not is_system_user(frappe.session.user):
 		frappe.throw("Only system users can access partner teams.")
 
@@ -782,7 +786,7 @@ def get_local_payment_setup():
 @frappe.whitelist()
 @role_guard.api("partner")
 def get_lead_details(lead_id):
-	if frappe.db.get_value("Partner Lead", lead_id, "partner_team") != get_current_team():
+	if not is_lead_team(lead_id):
 		return None
 	return frappe.get_doc("Partner Lead", lead_id).as_dict()
 
@@ -792,7 +796,7 @@ def get_lead_details(lead_id):
 def update_lead_details(lead_name, lead_details):
 	lead_details = frappe._dict(lead_details)
 	doc = frappe.get_doc("Partner Lead", lead_name)
-	if doc.partner_team != get_current_team():
+	if not is_lead_team(lead_name):
 		frappe.throw("You are not allowed to update this lead")
 	doc.update(
 		{
@@ -817,8 +821,7 @@ def update_lead_details(lead_name, lead_details):
 @frappe.whitelist()
 @role_guard.api("partner")
 def update_lead_status(lead_name, status, **kwargs):
-	lead_team = frappe.db.get_value("Partner Lead", lead_name, "partner_team")
-	if lead_team != get_current_team():
+	if not is_lead_team(lead_name):
 		frappe.throw("You are not allowed to update this lead")
 
 	status_dict = {"status": status}
@@ -857,8 +860,7 @@ def update_lead_status(lead_name, status, **kwargs):
 @frappe.whitelist()
 @role_guard.api("partner")
 def fetch_followup_details(id, lead):
-	lead_team = frappe.db.get_value("Partner Lead", lead, "partner_team")
-	if lead_team != get_current_team():
+	if not is_lead_team(lead):
 		return None
 
 	return frappe.get_all(
@@ -894,8 +896,7 @@ def get_fc_plans():
 @frappe.whitelist()
 @role_guard.api("partner")
 def update_followup_details(id, lead, followup_details):
-	lead_team = frappe.db.get_value("Partner Lead", lead, "partner_team")
-	if lead_team != get_current_team():
+	if not is_lead_team(lead):
 		frappe.throw("You are not allowed to update this followup")
 
 	followup_details = frappe._dict(followup_details)
@@ -937,9 +938,11 @@ def update_followup_details(id, lead, followup_details):
 @role_guard.api("partner")
 def add_new_lead(lead_details):
 	lead_details = frappe._dict(lead_details)
+	team = get_current_team(get_doc=True)
+	if (not team.erpnext_partner and team.partner_status != "Active") or not is_system_user():
+		frappe.throw("Only Active Partner team can add new leads.")
+
 	doc = frappe.new_doc("Partner Lead")
-	if doc.partner_team != get_current_team():
-		frappe.throw("You are not allowed to add lead for this partner team")
 	doc.update(
 		{
 			"organization_name": lead_details.organization_name,
