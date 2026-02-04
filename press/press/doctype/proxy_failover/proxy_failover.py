@@ -97,32 +97,40 @@ class ProxyFailover(Document, StepHandler):
 
 		primary_proxy = frappe.get_doc("Proxy Server", self.primary)
 
-		Ansible(
-			playbook="nginx_conf_changes_for_tcp_streaming.yml",
-			server=primary_proxy,
-			user=primary_proxy._ssh_user(),
-			port=primary_proxy._ssh_port(),
-			variables={"secondary_proxy": self.secondary},
-		).run()
+		try:
+			ansible = Ansible(
+				playbook="nginx_conf_changes_for_tcp_streaming.yml",
+				server=primary_proxy,
+				user=primary_proxy._ssh_user(),
+				port=primary_proxy._ssh_port(),
+				variables={"secondary_proxy": self.secondary},
+			)
+			ansible_play = ansible.run()
+			if ansible_play.status != Status.Success:
+				raise Exception("Failed making changes for nginx tcp streaming")
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+			return
 
 		cluster = frappe.get_doc("Cluster", primary_proxy.cluster)
-		client = cluster.get_aws_client()
-		client.authorize_security_group_ingress(
-			GroupId=cluster.proxy_security_group_id,
-			IpPermissions=[
-				{
-					"FromPort": 8443,
-					"IpProtocol": "tcp",
-					"IpRanges": [
-						{
-							"CidrIp": "0.0.0.0/0",
-							"Description": "HTTPS Alternative Port for Agent and Prometheus",
-						}
-					],
-					"ToPort": 8443,
-				},
-			],
-		)
+		if cluster.cloud_provider == "AWS EC2":
+			client = cluster.get_aws_client()
+			client.authorize_security_group_ingress(
+				GroupId=cluster.proxy_security_group_id,
+				IpPermissions=[
+					{
+						"FromPort": 8443,
+						"IpProtocol": "tcp",
+						"IpRanges": [
+							{
+								"CidrIp": "0.0.0.0/0",
+								"Description": "HTTPS Alternative Port for Agent and Prometheus",
+							}
+						],
+						"ToPort": 8443,
+					},
+				],
+			)
 
 		if self.primary not in (alt_port_servers := servers_using_alternative_port_for_communication()):
 			alt_port_servers.append(self.primary)
@@ -440,4 +448,6 @@ def reduce_ttl_of_sites(primary_proxy_name, secondary_proxy_name):
 	)
 	for domain_name, sites in groupby(sites_domains, lambda x: x["domain"]):
 		domain = frappe.get_doc("Root Domain", domain_name)
-		domain.update_dns_records_for_sites([site.name for site in sites], primary_proxy.name, ttl=60)
+		domain.update_dns_records_for_sites(
+			[site.name for site in sites], primary_proxy.name, ttl=60, batch_size=200
+		)

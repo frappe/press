@@ -169,12 +169,13 @@ class RootDomain(Document):
 			if to_delete:
 				self.delete_dns_records(to_delete)
 
-	def update_dns_records_for_sites(self, sites: list[str], proxy_server: str, ttl: int = 600):
+	def update_dns_records_for_sites(
+		self, sites: list[str], proxy_server: str, batch_size: int = 500, ttl: int = 600
+	):
 		if self.generic_dns_provider:
 			return
 
-		# update records in batches of 500
-		batch_size = 500
+		# update records in batches
 		for i in range(0, len(sites), batch_size):
 			changes = []
 			for site in sites[i : i + batch_size]:
