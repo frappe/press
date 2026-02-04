@@ -48,7 +48,7 @@ class TestAPIBench(FrappeTestCase):
 		self.version = "Version 15"
 		self.app = create_test_app()
 		self.app_source = self.app.add_source(
-			self.version,
+			frappe_Version=self.version,
 			repository_url="https://github.com/frappe/frappe",
 			branch="version-15",
 			team=get_current_team(),

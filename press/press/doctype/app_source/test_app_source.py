@@ -31,9 +31,9 @@ def create_test_app_source(
 	Also creates app release without github api call.
 	"""
 	if not repository_url:
-		repository_url = frappe.mock("url")
+		repository_url = "https://github.com/frappe/erpnext"
 	team = team or get_current_team()
-	return app.add_source(version, repository_url, branch, team)
+	return app.add_source(repository_url=repository_url, branch=branch, frappe_version=version, team=team)
 
 
 class TestAppSource(FrappeTestCase):
@@ -47,10 +47,10 @@ class TestAppSource(FrappeTestCase):
 		team_name = create_test_team().name
 		app: App = self.create_app("hrms", "HRMS")
 		source = app.add_source(
-			"Nightly",
-			"https://github.com/frappe/hrms",
-			"develop",
-			team_name,
+			frappe_version="Nightly",
+			repository_url="https://github.com/frappe/hrms",
+			branch="develop",
+			team=team_name,
 		)
 
 		for req_app in source.required_apps:
@@ -58,10 +58,10 @@ class TestAppSource(FrappeTestCase):
 
 		app: App = self.create_app("lms", "LMS")
 		source = app.add_source(
-			"Nightly",
-			"https://github.com/frappe/lms",
-			"develop",
-			team_name,
+			frappe_version="Nightly",
+			repository_url="https://github.com/frappe/lms",
+			branch="develop",
+			team=team_name,
 		)
 
 		self.assertEqual([], source.required_apps)
