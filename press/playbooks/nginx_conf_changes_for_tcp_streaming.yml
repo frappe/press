@@ -50,11 +50,8 @@
     - name: Replace port 443 with 8443 in agent proxy conf
       become: yes
       become_user: frappe
-      replace:
-        path: "{{ upstream_conf_path }}"
-        regexp: '(?<=\s|^)443\b'
-        replace: '8443'
-        backup: yes
+      shell: |
+        sed -i 's/\(^\|[[:space:]]\)443\b/\18443/g' {{ agent_conf_path }}
 
     - name: Reload nginx
       service:
