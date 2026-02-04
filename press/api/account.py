@@ -856,21 +856,15 @@ def get_billing_information(timezone=None):
 
 @frappe.whitelist()
 def update_billing_information(billing_details):
-	try:
-		billing_details = frappe._dict(billing_details)
-		team = get_current_team(get_doc=True)
-		validate_pincode(billing_details)
-		if (team.country != billing_details.country) and (
-			team.country == "India" or billing_details.country == "India"
-		):
-			frappe.throw("Cannot change country after registration")
-		team.update_billing_details(billing_details)
-	except Exception as ex:
-		log_error(
-			"Billing update failing",
-			data=ex,
-			reference_doctype="Team",
-		)
+	billing_details = frappe._dict(billing_details)
+	team = get_current_team(get_doc=True)
+	validate_pincode(billing_details)
+	if (team.country != billing_details.country) and (
+		team.country == "India" or billing_details.country == "India"
+	):
+		frappe.throw("Cannot change country after registration")
+	team.update_billing_details(billing_details)
+
 
 
 def validate_pincode(billing_details):
