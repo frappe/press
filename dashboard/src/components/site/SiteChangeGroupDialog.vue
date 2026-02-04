@@ -6,7 +6,6 @@
 				{
 					label: 'Change Bench Group',
 					loading: $resources.changeGroup.loading,
-					disabled: !$resources.changeGroupOptions?.data?.length,
 					variant: 'solid',
 					onClick: () =>
 						$resources.changeGroup.submit({
@@ -14,14 +13,7 @@
 							group: targetGroup.value,
 							name: site,
 						}),
-				},
-				{
-					label: 'Clone current Bench Group',
-					onClick: () => {
-						$emit('update:modelValue', false);
-						showCloneBenchDialog = true;
-					},
-				},
+				}
 			],
 		}"
 		v-model="show"
@@ -65,41 +57,19 @@
 			</div>
 			<p v-else-if="!errorMessage" class="text-md text-base text-gray-800">
 				There are no other bench groups that you own for this site to move to.
-				You can clone this bench group to move the site.
-			</p>
-			<ErrorMessage class="mt-3" :message="errorMessage" />
-		</template>
-	</Dialog>
-	<Dialog
-		:options="{
-			title: 'Clone Bench Group',
-			actions: [
-				{
-					label: 'Clone Bench Group',
-					variant: 'solid',
-					loading: $resources.cloneGroup.loading,
-					onClick: () =>
-						$resources.cloneGroup.submit({
-							name: site,
-							new_group_title: newGroupTitle,
-							server: selectedServer,
-						}),
-				},
-			],
-		}"
-		v-model="showCloneBenchDialog"
-	>
-		<template #body-content>
-			<FormControl label="New Bench Group Name" v-model="newGroupTitle" />
-			<FormControl
-				v-if="$resources.serverOptions.data.length > 0"
-				class="mt-4"
-				label="Select Server"
-				type="select"
-				:options="$resources.serverOptions.data"
-				v-model="selectedServer"
-			/>
-			<ErrorMessage :message="$resources.cloneGroup.error" />
+				You have to create a new bench group first.
+
+				<FormControl label="New Bench Group Name" v-model="newGroupTitle" class="mt-4" />
+				<FormControl
+				v-if="$resources.serverOptions.data && $resources.serverOptions.data.length > 0"
+					class="mt-4"
+					label="Select Server"
+					type="select"
+					:options="$resources.serverOptions.data"
+					v-model="selectedServer"
+				/>
+				</p>
+				<ErrorMessage class="mt-3" :message="errorMessage" />
 		</template>
 	</Dialog>
 </template>
@@ -126,8 +96,7 @@ export default {
 		errorMessage() {
 			return (
 				this.$resources.changeGroupOptions.error ||
-				this.$resources.changeGroup.error ||
-				this.$resources.cloneGroup.error
+				this.$resources.changeGroup.error
 			);
 		},
 	},
@@ -173,31 +142,13 @@ export default {
 				auto: true,
 			};
 		},
-		cloneGroup() {
-			return {
-				url: 'press.api.site.clone_group',
-				onSuccess(data) {
-					toast.success(
-						'The current bench group has been cloned successfully. Redirecting to the new bench group...',
-					);
-					this.showCloneBenchDialog = false;
-
-					this.$router.push({
-						name: 'Deploy Candidate',
-						params: {
-							name: data.bench_name,
-							id: data.candidate_name,
-						},
-					});
-				},
-			};
-		},
 		serverOptions() {
 			return {
 				type: 'list',
 				doctype: 'Server',
 				fields: ['name', 'title'],
 				auto: true,
+				initialData: [],
 				transform(data) {
 					return data.map((server) => ({
 						label: server.title,

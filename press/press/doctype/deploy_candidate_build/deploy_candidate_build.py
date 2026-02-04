@@ -1301,6 +1301,26 @@ class DeployCandidateBuild(Document):
 		self.build_directory = None
 		self.save()
 
+	def get_steps(self):
+		steps = []
+		# Expand the build steps
+		for s in self.build_steps:
+			steps.append(
+				{
+					"name": f"{s.stage_slug}_{s.step_slug}",
+					"title": s.step.title(),
+					"status": s.status,
+					"output": s.output,
+					"stage": "Bench Build",
+				}
+			)
+
+		# Expand the bench deploy steps if deploy exists
+		if frappe.flags.site_action_args and (bench := frappe.flags.site_action_args.get("cloned_bench")):
+			bench = frappe.get_doc("Bench", bench)
+			steps.extend(bench.get_steps())
+		return steps
+
 
 @frappe.whitelist()
 def stop_and_fail(dn: str):

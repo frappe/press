@@ -16,11 +16,13 @@ from rq.timeouts import JobTimeoutException
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.site_activity.site_activity import log_site_activity
+from press.utils import get_current_team
 from press.utils.jobs import has_job_timeout_exceeded
 
 if TYPE_CHECKING:
 	from collections.abc import Callable
 
+	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.site.site import Site
 	from press.press.doctype.site_action_step.site_action_step import SiteActionStep
 	from press.press.doctype.site_update.site_update import SiteUpdate
@@ -78,15 +80,117 @@ class SiteAction(Document):
 	def get_steps_to_add(
 		self,
 	) -> list[tuple[Callable, str, bool]]:
-		Wait = True  # noqa: F841
+		Wait = True
 		NoWait = False
 
 		if self.action_type == "Update Site":
 			return [
-				(self.schedule_site_update, StepType.Main, NoWait),
+				(self.schedule_site_update, StepType.Main, Wait),
+			]
+
+		if self.action_type == "Move From Shared To Private Bench":
+			return [
+				(self.clone_and_create_bench_group, StepType.Preparation, Wait),
+				(self.move_site_to_bench_group, StepType.Main, Wait),
 			]
 
 		return []
+
+	def clone_and_create_bench_group(self):
+		"""Clone and Create Private Bench"""
+		if (
+			self.current_step.reference_doctype == "Deploy Candidate Build"
+			and self.current_step.reference_name
+		):
+			# Check build status
+			build: DeployCandidateBuild = frappe.get_doc(
+				"Deploy Candidate Build",
+				self.current_step.reference_name,
+			)
+			if build.status == "Failure":
+				return StepStatus.Failure
+
+			if build.status != "Success":
+				return StepStatus.Running
+
+			# If build is success, check for deployed bench
+			bench_name = frappe.db.get_value(
+				"Bench",
+				{
+					"build": build.name,
+					"candidate": self.get_argument("cloned_deploy_candidate"),
+					"server": self.get_argument("server"),
+				},
+			)
+			if not bench_name:
+				return StepStatus.Running
+
+			self.set_argument("cloned_bench", bench_name)
+
+			# If deployed bench is success, return Success
+			bench_status = frappe.db.get_value("Bench", bench_name, "status")
+			if bench_status == "Active":
+				return StepStatus.Success
+			if bench_status in ("Failure", "Archived", "Broken"):
+				return StepStatus.Failure
+			return StepStatus.Running
+
+		site = frappe.get_doc("Site", self.site)
+		group = frappe.get_doc("Release Group", site.group)
+		cloned_group = frappe.new_doc("Release Group")
+
+		cloned_group.update(
+			{
+				"title": self.get_argument("new_bench_group_name") or f"{site.group} - Cloned",
+				"team": get_current_team(),
+				"public": 0,
+				"enabled": 1,
+				"version": group.version,
+				"dependencies": group.dependencies,
+				"is_redisearch_enabled": group.is_redisearch_enabled,
+				"servers": [{"server": self.get_argument("server", site.server), "default": False}],
+			}
+		)
+
+		# add apps to rg if they are installed in site
+		apps_installed_in_site = [app.app for app in site.apps]
+		cloned_group.apps = [app for app in group.apps if app.app in apps_installed_in_site]
+
+		cloned_group.insert()
+
+		candidate = cloned_group.create_deploy_candidate()
+		cloned_deploy_candidate_build = candidate.schedule_build_and_deploy()
+
+		self.set_argument("server", site.server)
+		self.set_argument("cloned_bench_group", cloned_group.name)
+		self.set_argument("cloned_deploy_candidate", candidate.name)
+		self.set_argument("cloned_deploy_candidate_build", cloned_deploy_candidate_build["name"])
+
+		self.current_step.reference_doctype = "Deploy Candidate Build"
+		self.current_step.reference_name = cloned_deploy_candidate_build["name"]
+
+		return StepStatus.Running
+
+	def move_site_to_bench_group(self):
+		"""Move Site to Bench Group"""
+		if self.current_step.reference_doctype == "Site Update" and self.current_step.reference_name:
+			# Site Update is already scheduled
+			doc: SiteUpdate = frappe.get_doc("Site Update", self.current_step.reference_name)
+			if doc.status == "Success":
+				return StepStatus.Success
+			if doc.status == "Fatal" or doc.status == "Failure" or doc.status == "Recovered":
+				return StepStatus.Failure
+
+			return StepStatus.Running
+
+		site_update: SiteUpdate = self.site_doc.move_to_group(
+			self.get_argument("cloned_bench_group"),
+			skip_failing_patches=self.get_argument("skip_failing_patches", False),
+		)
+		self.current_step.reference_doctype = site_update.doctype
+		self.current_step.reference_name = site_update.name
+		self.save()
+		return StepStatus.Running
 
 	def schedule_site_update(self):
 		"""Schedule Site Update"""
@@ -98,13 +202,7 @@ class SiteAction(Document):
 			if doc.status == "Fatal" or doc.status == "Failure":
 				return StepStatus.Failure
 
-			if doc.status in (
-				"Pending",
-				"Running",
-				"Scheduled",
-				"Recovering",
-			):
-				return StepStatus.Running
+			return StepStatus.Running
 
 		args = self.arguments_dict
 		site_update_doc = frappe.get_doc(
@@ -159,7 +257,7 @@ class SiteAction(Document):
 	def set_argument(self, key: str, value) -> None:
 		args = self.arguments_dict
 		args[key] = value
-		self.arguments = json.dumps(args)
+		self.arguments = json.dumps(args, indent=2)
 
 	@cached_property
 	def site_doc(self) -> Site:
@@ -182,6 +280,7 @@ class SiteAction(Document):
 			"stage": "<group>",
 		}
 		"""
+		frappe.flags.site_action_args = self.arguments_dict
 		data = []
 		for step in self.steps:
 			data.extend(step.get_steps())
@@ -399,6 +498,53 @@ def schedule_site_update(
 			"doctype": "Site Action",
 			"site": site,
 			"action_type": "Update Site",
+			"arguments": json.dumps(args),
+			"scheduled_time": scheduled_time,
+		}
+	).insert()  # type: ignore
+
+
+def move_site_from_shared_to_private_bench(
+	site: str,
+	server: str | None = None,
+	new_bench_group_name: str | None = None,
+	skip_failing_patches: bool = False,
+	scheduled_time: str | None = None,
+) -> SiteAction:
+	"""Schedule Move Site From Shared To Private Bench Action for a site"""
+	action = frappe.get_all(
+		"Site Action",
+		filters={
+			"site": site,
+			"action_type": "Move From Shared To Private Bench",
+			"status": ["in", ("Pending", "Running", "Scheduled")],
+		},
+		limit=1,
+	)
+
+	if action:
+		# Move Site Action is already scheduled or running
+		frappe.throw(
+			f"Move Site From Shared To Private Bench is already scheduled or running for site {site}."
+		)
+
+	# ensure the server is public
+	if server and not frappe.db.get_value("Server", server, "public"):
+		frappe.throw(f"Server {server} is a public server. Please select a different server.")
+
+	args = {
+		"skip_failing_patches": skip_failing_patches,
+		"new_bench_group_name": new_bench_group_name,
+		"server": server,
+	}
+
+	log_site_activity(site, "Move From Shared To Private Bench")
+
+	return frappe.get_doc(
+		{
+			"doctype": "Site Action",
+			"site": site,
+			"action_type": "Move From Shared To Private Bench",
 			"arguments": json.dumps(args),
 			"scheduled_time": scheduled_time,
 		}

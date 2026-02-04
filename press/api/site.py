@@ -2340,12 +2340,17 @@ def clone_group(name: str, new_group_title: str, server: str | None = None):
 
 @frappe.whitelist()
 @protected("Site")
-def change_group(name, group, skip_failing_patches=False):
+def change_group(
+	name, group: str | None, new_grp_name: str | None, server: str | None, skip_failing_patches=False
+):
 	team = frappe.db.get_value("Release Group", group, "team")
 	if team != get_current_team():
 		frappe.throw(f"Bench {group} does not belong to your team")
 
-	site = frappe.get_doc("Site", name)
+	if server and frappe.db.get_value("Server", server, "team") != team:
+		frappe.throw(f"Server {server} does not belong to your team")
+
+	site: Site = frappe.get_doc("Site", name)
 	site.move_to_group(group, skip_failing_patches=skip_failing_patches)
 
 
