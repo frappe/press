@@ -1749,8 +1749,9 @@ get_permission_query_conditions = get_permission_query_conditions_for_doctype("R
 def can_use_release(app_src):
 	if not app_src.public:
 		return True
-
-	return app_src.status == "Approved"
+	# For the time being allow Draft releases for public app sources as well
+	# This will be removed when we have better review process for public app sources
+	return app_src.status in ["Approved", "Draft"]
 
 
 def update_rg_app_source(rg: "ReleaseGroup", source: "AppSource"):
