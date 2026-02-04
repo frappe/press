@@ -92,7 +92,10 @@ class TestReleaseGroup(FrappeTestCase):
 	def test_create_release_group(self):
 		app = create_test_app("frappe", "Frappe Framework")
 		source = app.add_source(
-			"Version 12", "https://github.com/frappe/frappe", "version-12", team=self.team
+			frappe_version="Version 12",
+			repository_url="https://github.com/frappe/frappe",
+			branch="version-12",
+			team=self.team,
 		)
 		group = new_release_group(
 			"Test Group",
@@ -105,11 +108,17 @@ class TestReleaseGroup(FrappeTestCase):
 	def test_create_release_group_set_app_from_source(self):
 		app1 = create_test_app("frappe", "Frappe Framework")
 		source1 = app1.add_source(
-			"Version 12", "https://github.com/frappe/frappe", "version-12", team=self.team
+			frappe_version="Version 12",
+			repository_url="https://github.com/frappe/frappe",
+			branch="version-12",
+			team=self.team,
 		)
 		app2 = create_test_app("erpnext", "ERPNext")
 		source2 = app2.add_source(
-			"Version 12", "https://github.com/frappe/erpnext", "version-12", team=self.team
+			frappe_version="Version 12",
+			repository_url="https://github.com/frappe/erpnext",
+			branch="version-12",
+			team=self.team,
 		)
 		group = new_release_group(
 			"Test Group",
@@ -122,7 +131,10 @@ class TestReleaseGroup(FrappeTestCase):
 	def test_create_release_group_fail_when_first_app_is_not_frappe(self):
 		app = create_test_app("erpnext", "ERPNext")
 		source = app.add_source(
-			"Version 12", "https://github.com/frappe/erpnext", "version-12", team=self.team
+			frappe_version="Version 12",
+			repository_url="https://github.com/frappe/erpnext",
+			branch="version-12",
+			team=self.team,
 		)
 		self.assertRaises(
 			frappe.ValidationError,
@@ -136,7 +148,10 @@ class TestReleaseGroup(FrappeTestCase):
 	def test_create_release_group_fail_when_duplicate_apps(self):
 		app = create_test_app("frappe", "Frappe Framework")
 		source = app.add_source(
-			"Version 12", "https://github.com/frappe/frappe", "version-12", team=self.team
+			frappe_version="Version 12",
+			repository_url="https://github.com/frappe/frappe",
+			branch="version-12",
+			team=self.team,
 		)
 		self.assertRaises(
 			frappe.ValidationError,
@@ -153,7 +168,10 @@ class TestReleaseGroup(FrappeTestCase):
 	def test_create_release_group_fail_when_version_mismatch(self):
 		app = create_test_app("frappe", "Frappe Framework")
 		source = app.add_source(
-			"Version 12", "https://github.com/frappe/frappe", "version-12", team=self.team
+			frappe_version="Version 12",
+			repository_url="https://github.com/frappe/frappe",
+			branch="version-12",
+			team=self.team,
 		)
 		self.assertRaises(
 			frappe.ValidationError,
@@ -167,7 +185,10 @@ class TestReleaseGroup(FrappeTestCase):
 	def test_create_release_group_fail_with_duplicate_titles(self):
 		app = create_test_app("frappe", "Frappe Framework")
 		source = app.add_source(
-			"Version 12", "https://github.com/frappe/frappe", "version-12", team=self.team
+			frappe_version="Version 12",
+			repository_url="https://github.com/frappe/frappe",
+			branch="version-12",
+			team=self.team,
 		)
 		new_release_group(
 			"Test Group",
