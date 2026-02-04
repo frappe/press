@@ -34,6 +34,7 @@ from press.utils.telemetry import capture
 
 if TYPE_CHECKING:
 	from press.press.doctype.account_request.account_request import AccountRequest
+	from press.press.doctype.user_2fa_recovery_code import User2FARecoveryCode
 
 
 @frappe.whitelist(allow_guest=True)
@@ -175,6 +176,7 @@ def setup_account(  # noqa: C901
 	password=None,
 	is_invitation=False,
 	country=None,
+	phone=None,
 	user_exists=False,
 	invited_by_parent_team=False,
 	oauth_signup=False,
@@ -232,6 +234,7 @@ def setup_account(  # noqa: C901
 			last_name=last_name,
 			password=password,
 			country=country,
+			phone=phone,
 			user_exists=bool(user_exists),
 		)
 		if invited_by_parent_team:
@@ -865,7 +868,7 @@ def update_billing_information(billing_details):
 
 def validate_pincode(billing_details):
 	# Taken from https://github.com/resilient-tech/india-compliance
-	if billing_details.country != "India" or not billing_details.postal_code:
+	if not billing_details or billing_details.country != "India" or not billing_details.postal_code:
 		return
 	PINCODE_FORMAT = re.compile(r"^[1-9][0-9]{5}$")
 	if not PINCODE_FORMAT.match(billing_details.postal_code):
@@ -1337,7 +1340,6 @@ def disable_2fa(totp_code):
 @rate_limit(limit=5, seconds=60 * 60)
 def recover_2fa(user: str, recovery_code: str):
 	"""Recover 2FA using a recovery code."""
-
 	# Get the User 2FA document.
 	two_fa = frappe.get_doc("User 2FA", user)
 
@@ -1346,7 +1348,7 @@ def recover_2fa(user: str, recovery_code: str):
 		frappe.throw(f"2FA is not enabled for {user}")
 
 	# Get valid recovery code doc.
-	code = None
+	code: "User2FARecoveryCode" | None = None
 	for code_doc in two_fa.recovery_codes:
 		decrypted_code = get_decrypted_password("User 2FA Recovery Code", code_doc.name, "code")
 		if decrypted_code == recovery_code and not code_doc.used_at:
@@ -1356,8 +1358,7 @@ def recover_2fa(user: str, recovery_code: str):
 	# If no valid recovery code found, throw an error.
 	if not code:
 		frappe.throw("Invalid or used recovery code")
-		return
-
+	assert code is not None
 	# Mark the recovery code as used.
 	code.used_at = frappe.utils.now_datetime()
 
