@@ -866,10 +866,9 @@ def update_billing_information(billing_details):
 	team.update_billing_details(billing_details)
 
 
-
 def validate_pincode(billing_details):
 	# Taken from https://github.com/resilient-tech/india-compliance
-	if billing_details.country != "India" or not billing_details.postal_code:
+	if not billing_details or billing_details.country != "India" or not billing_details.postal_code:
 		return
 	PINCODE_FORMAT = re.compile(r"^[1-9][0-9]{5}$")
 	if not PINCODE_FORMAT.match(billing_details.postal_code):
