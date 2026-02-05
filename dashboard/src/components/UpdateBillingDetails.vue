@@ -1,7 +1,7 @@
 <template>
 	<Dialog
 		:options="{
-			title: 'Update Billing Details',
+			title: 'Update Billing Address',
 			actions: [
 				{
 					label: 'Submit',
