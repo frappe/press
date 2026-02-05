@@ -31,13 +31,14 @@
 					/>
 				</div>
 				<!-- Show description -->
-				<p v-if="selectedMigrationMode" class="text-sm text-gray-700">
+				<p v-if="selectedMigrationMode" class="text-base text-gray-700 mb-2">
 					{{ selectedMigrationChoiceDetails?.description }}
 				</p>
 				<!-- Update Site Migration -->
 				<div v-if="selectedMigrationMode == 'Update Site'">
 					<GenericList :options="updateSiteListOptions" />
 				</div>
+
 				<!-- Move From Shared To Private Bench -->
 				<div
 					v-else-if="
@@ -180,6 +181,31 @@
 					</div>
 				</div>
 
+				<!-- Move Site To Different Server -->
+				<div
+					v-else-if="selectedMigrationMode == 'Move Site To Different Server'"
+					class="flex flex-col gap-3"
+				>
+					<!-- Chose The Server -->
+					<div class="flex flex-col gap-2">
+						<p class="text-sm text-gray-700">Select Server</p>
+						<FormControl
+							type="select"
+							:options="
+								dedicatedServersToMoveSiteTo.map((e) => ({
+									label: e.title,
+									value: e.name,
+								}))
+							"
+							size="md"
+							variant="outline"
+							placeholder="Select Server"
+							v-model="selectedServerToMoveTo"
+							required
+						/>
+					</div>
+				</div>
+
 				<!-- Scheduling Option -->
 				<DateTimeControl
 					v-if="showSchedulingOption"
@@ -206,7 +232,6 @@ export default {
 	data() {
 		return {
 			show: true,
-			isPhysical: false,
 			selectedMigrationMode: '',
 			skipFailingPatches: false,
 			skipBackups: false,
@@ -358,9 +383,27 @@ export default {
 					?.dedicated_servers_for_new_release_group ?? []
 			);
 		},
+		dedicatedServersToMoveSiteTo() {
+			if (this.selectedMigrationMode !== 'Move Site To Different Server')
+				return [];
+			return this.selectedMigrationChoiceOptions?.dedicated_servers ?? [];
+		},
 	},
 	methods: {
-		resetValues() {},
+		resetValues() {
+			this.selectedMigrationMode = '';
+			this.skipFailingPatches = false;
+			this.skipBackups = false;
+			this.scheduledTime = '';
+
+			// For migration
+			this.benchMovementType = 'Create A New Bench';
+			this.selectedReleaseGroupToMoveTo = '';
+			this.selectedServerToMoveTo = '';
+			this.selectedServerType = 'Shared Server';
+
+			this.newBenchGroupName = '';
+		},
 		triggerMigration() {
 			// Trigger Migration Logic
 		},

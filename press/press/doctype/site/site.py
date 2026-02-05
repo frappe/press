@@ -3886,7 +3886,7 @@ class Site(Document, TagHelpers):
 				},
 			},
 			"Move Site To Different Server": {
-				"hidden": is_on_public_release_group,
+				"hidden": False,
 				"allow_scheduling": True,
 				"description": "Move your site to a different server",
 				"button_label": "Move Site",
