@@ -2,7 +2,7 @@
 	<Dialog
 		:options="{
 			title: showSetupSubscription ? 'Setup Subscription' : 'Change Plan',
-			size: step === 'site-plans' ? '4xl' : '3xl',
+			size: step === 'site-plans' ? '3xl' : '3xl',
 		}"
 		v-model="show"
 	>
@@ -29,16 +29,7 @@
 					:selectedProvider="$site.doc.server_provider"
 				/>
 				<div class="mt-4 text-xs text-gray-700">
-					<div
-						class="flex items-start rounded bg-gray-50 p-2.5 text-p-base text-gray-800"
-					>
-						<lucide-shield class="mr-1.5 mt-0.5 h-4 w-4 shrink-0 text-gray-600" />
-						<span>
-							<span class="font-semibold">Product Support</span> covers only issues of Frappe apps and not
-							functional queries. You can raise a support ticket for Frappe
-							Cloud issues for all plans.
-						</span>
-					</div>
+					<ProductSupportBanner />
 				</div>
 				<ErrorMessage class="mt-2" :message="$site.setPlan.error" />
 			</div>
@@ -160,6 +151,7 @@ import { getPlans, getPlan } from '../data/plans';
 import CardForm from './billing/CardForm.vue';
 import BillingDetails from './billing/BillingDetails.vue';
 import PrepaidCreditsForm from './billing/PrepaidCreditsForm.vue';
+import ProductSupportBanner from './ProductSupportBanner.vue';
 
 export default {
 	name: 'ManageSitePlansDialog',
