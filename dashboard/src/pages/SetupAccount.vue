@@ -84,7 +84,7 @@
 							<FormControl
 								v-if="!isInvitation"
 								type="tel"
-								label="Phone Number (Optional)"
+								label="Phone Number"
 								v-model="phoneNumber"
 								placeholder="9876543210"
 								variant="outline"
