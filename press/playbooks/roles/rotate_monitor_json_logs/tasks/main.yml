@@ -6,12 +6,11 @@
       /home/frappe/benches/*/logs/monitor.json.log {
           size 200M
           daily
-          rotate 2
-          compress
-          delaycompress
+          rotate 1
           missingok
           notifempty
-          copytruncate
+          nocompress
+          create 640 root adm
       }
 - name: Force logrotate to apply new configuration
   command: logrotate -f /etc/logrotate.d/monitor_json_logs
