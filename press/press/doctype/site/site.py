@@ -3288,30 +3288,10 @@ class Site(Document, TagHelpers):
 				"doc_method": "dummy",
 			},
 			{
-				"action": "Schedule backup",
-				"description": "Schedule a backup for this site",
-				"button_label": "Schedule",
-				"doc_method": "schedule_backup",
-			},
-			{
 				"action": "Transfer site",
 				"description": "Transfer ownership of this site to another team",
 				"button_label": "Transfer",
 				"doc_method": "send_change_team_request",
-			},
-			{
-				"action": "Version upgrade",
-				"description": "Upgrade your site to a major version",
-				"button_label": "Upgrade",
-				"doc_method": "upgrade",
-				"condition": self.status in ["Active", "Broken", "Inactive"],
-			},
-			{
-				"action": "Change region",
-				"description": "Move your site to a different region",
-				"button_label": "Change",
-				"doc_method": "change_region",
-				"condition": self.status in ["Active", "Broken", "Inactive"],
 			},
 			{
 				"action": "Change bench group",
@@ -3319,13 +3299,6 @@ class Site(Document, TagHelpers):
 				"button_label": "Change",
 				"doc_method": "change_bench",
 				"condition": self.status in ["Active", "Broken", "Inactive"],
-			},
-			{
-				"action": "Change server",
-				"description": "Move your site to a different server",
-				"button_label": "Change",
-				"doc_method": "change_server",
-				"condition": self.status in ["Active", "Broken", "Inactive"] and not self.is_group_public,
 			},
 			{
 				"action": "Clear cache",
@@ -3341,7 +3314,7 @@ class Site(Document, TagHelpers):
 				"doc_method": "deactivate",
 			},
 			{
-				"action": "Migrate site",
+				"action": "In-Place Migrate Site",
 				"description": "Run bench migrate command on your site",
 				"button_label": "Migrate",
 				"doc_method": "migrate",
@@ -3798,6 +3771,121 @@ class Site(Document, TagHelpers):
 		)
 
 		update_infos("Site", self.name, values)
+
+	@dashboard_whitelist()
+	def get_migration_options(self):
+		site_update_information = self.get_update_information()
+		release_group: ReleaseGroup = frappe.get_doc("Release Group", self.group)
+		release_group_deploy_information = release_group.deploy_information()
+		# is_on_public_server = bool(frappe.db.get_value("Server", self.server, "public", cache=True))
+		is_on_public_release_group = release_group.public
+
+		# Moving from Shared to Private Bench
+		version = frappe.db.get_value("Release Group", self.group, "version")
+
+		Bench = frappe.qb.DocType("Bench")
+		ReleaseGroup = frappe.qb.DocType("Release Group")
+		Server = frappe.qb.DocType("Server")
+		query = (
+			frappe.qb.from_(Bench)
+			.select(
+				ReleaseGroup.name,
+				ReleaseGroup.title.as_("release_group_title"),
+				ReleaseGroup.public.as_("release_group_public"),
+				Server.public.as_("deployed_on_public_server"),
+			)
+			.inner_join(ReleaseGroup)
+			.on(ReleaseGroup.name == Bench.group)
+			.inner_join(Server)
+			.on(Server.name == Bench.server)
+			.where(Bench.status == "Active")
+			.where(ReleaseGroup.name != self.group)
+			.where(ReleaseGroup.version == version)
+			.where(ReleaseGroup.team == self.team)
+			.where(ReleaseGroup.public == 0)
+			.where(Bench.server == self.server)
+			.where(Server.name == Bench.server)
+			.groupby(ReleaseGroup.name)
+		)
+
+		compatible_release_groups_for_migration = query.run(as_dict=True)
+		owned_dedicated_servers = (
+			frappe.get_all(
+				"Server",
+				filters={"status": "Active", "public": 0, "team": self.team},
+				fields=["name", "title", "cluster"],
+			),
+		)
+
+		cluster_names = release_group.get_clusters()
+		group_regions = frappe.get_all(
+			"Cluster", filters={"name": ("in", cluster_names)}, fields=["name", "title", "image"]
+		)
+
+		return {
+			"Update Site": {
+				"hidden": False,
+				"description": "Update your site to the latest version of the application",
+				"button_label": "Update Site",
+				"options": {
+					"site_update_information": site_update_information,
+					"site_update_available": site_update_information.update_available
+					and self.status in ["Active", "Inactive", "Suspended", "Broken"],
+					"release_group_update_available": not is_on_public_release_group
+					and release_group.deploy_information.last_deploy
+					and not release_group.deploy_information.deploy_in_progress
+					and release_group.deploy_information.update_available
+					and release_group.status == "Active",
+					"release_group_deploy_information": release_group_deploy_information,
+				},
+			},
+			"In-Place Migration": {
+				"hidden": False,
+				"description": "Run bench migrate command on your site to migrate to a new version",
+				"button_label": "Migrate Site",
+				"options": {},
+			},
+			"Move From Shared To Private Bench": {
+				"hidden": not is_on_public_release_group,
+				"description": "Move your site from a shared bench to a private bench",
+				"button_label": "Move to Private Bench",
+				"options": {
+					"server_types": ["Shared Server", "Dedicated Server"],
+					"private_release_groups_on_shared_servers": [
+						x for x in compatible_release_groups_for_migration if x.release_group_public
+					],
+					"private_release_groups_on_dedicated_servers": [
+						x for x in compatible_release_groups_for_migration if not x.release_group_public
+					],
+					"dedicated_servers": owned_dedicated_servers,
+				},
+			},
+			"Move From Private To Shared Bench": {
+				"hidden": is_on_public_release_group,
+				"description": "Move your site from a private bench to a shared bench",
+				"button_label": "Move to Shared Bench",
+				"options": {
+					"shared_release_groups": [
+						x for x in compatible_release_groups_for_migration if x.release_group_public
+					],
+				},
+			},
+			"Move Site To Different Server": {
+				"hidden": is_on_public_release_group,
+				"description": "Move your site to a different server",
+				"button_label": "Move Site",
+				"options": {"dedicated_servers": owned_dedicated_servers},
+			},
+			"Move Site To Different Region": {
+				"hidden": is_on_public_release_group,
+				"description": "Move your site to a different region",
+				"button_label": "Move Site",
+				"options": {
+					"regions": group_regions,
+					"current_region": self.cluster,
+				},
+			},
+		}
 
 	@property
 	def recent_offsite_backups_(self):
