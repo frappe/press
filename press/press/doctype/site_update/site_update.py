@@ -218,12 +218,12 @@ class SiteUpdate(Document):
 		if self.triggered_by_user:
 			return  # Allow user to trigger update for same source and destination
 
-		if not self.skipped_failing_patches and self.have_past_updates_failed():
-			frappe.throw(
-				f"Update from Source Candidate {self.source_candidate} to Destination"
-				f" Candidate {self.destination_candidate} has failed in the past.",
-				frappe.ValidationError,
-			)
+		# if not self.skipped_failing_patches and self.have_past_updates_failed():
+		# 	frappe.throw(
+		# 		f"Update from Source Candidate {self.source_candidate} to Destination"
+		# 		f" Candidate {self.destination_candidate} has failed in the past.",
+		# 		frappe.ValidationError,
+		# 	)
 
 	def validate_apps(self):
 		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]

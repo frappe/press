@@ -108,7 +108,7 @@ export default {
 					record.steps = record.steps.map((step) => {
 						return {
 							name: step.name,
-							title: `${step.stage} - ${step.title}`,
+							title: step.title ? `${step.stage} - ${step.title}` : step.stage,
 							output: step.output || 'No Output',
 							status: step.status,
 							isOpen: false,

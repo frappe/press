@@ -49,9 +49,9 @@ class SiteActionStep(Document):
 		return [
 			{
 				"name": self.name,
-				"title": self.step,
+				"title": "",
 				"status": self.status,
 				"output": self.traceback if self.status == "Failure" else None,
-				"stage": "",
+				"stage": self.step,
 			}
 		]

@@ -6,6 +6,7 @@
 				? [
 						{
 							label: selectedMigrationChoiceDetails?.button_label || 'Proceed',
+							disabled: migrationRequestLoading,
 							variant: 'solid',
 							onClick: triggerMigration,
 						},
@@ -208,7 +209,7 @@
 
 				<!-- Move Site to Different Region -->
 				<div
-					v-else-if="selectedMigrationMode == 'Move Site To Different Region'"
+					v-else-if="selectedMigrationMode === 'Move Site To Different Region'"
 					class="flex flex-col gap-3"
 				>
 					<!-- Chose The Region -->
@@ -237,6 +238,9 @@
 					v-model="scheduledTime"
 					label="Schedule Time in IST"
 				/>
+
+				<!-- Error Message -->
+				<ErrorMessage :message="errorMessage" />
 			</div>
 		</template>
 	</Dialog>
@@ -292,10 +296,80 @@ export default {
 				auto: true,
 			};
 		},
+		createMigrationPlan() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				makeParams: () => {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'create_migration_plan',
+						args: {
+							type: this.selectedMigrationMode,
+							group: this.selectedReleaseGroupToMoveTo,
+							server: this.selectedServerToMoveTo,
+							new_group_name: this.newBenchGroupName,
+							skip_failing_patches: this.skipFailingPatches,
+							skip_backups: false,
+							scheduled_time: this.scheduledTime,
+							cluster: this.selectedRegion,
+						},
+					};
+				},
+			};
+		},
+		changeRegion() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				makeParams: () => {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'change_region',
+						args: {
+							cluster: this.selectedRegion,
+							scheduled_time: this.scheduledTime,
+							skip_failing_patches: this.skipFailingPatches,
+						},
+					};
+				},
+			};
+		},
+		migrateSite() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				makeParams: () => {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'migrate',
+						args: {
+							skip_failing_patches: this.skipFailingPatches,
+						},
+					};
+				},
+			};
+		},
 	},
 	computed: {
 		$site() {
 			return getCachedDocumentResource('Site', this.site);
+		},
+		errorMessage() {
+			return (
+				this.$resources?.createMigrationPlan?.error ??
+				this.$resources?.changeRegion?.error ??
+				this.$resources?.migrateSite?.error ??
+				''
+			);
+		},
+		migrationRequestLoading() {
+			return (
+				this.$resources?.createMigrationPlan?.loading ||
+				this.$resources?.changeRegion?.loading ||
+				this.$resources?.migrateSite?.loading ||
+				false
+			);
 		},
 		migrationOptions() {
 			return this.$resources?.migrationOptions?.data ?? {};
@@ -440,9 +514,28 @@ export default {
 			this.selectedServerType = 'Shared Server';
 
 			this.newBenchGroupName = '';
+
+			// Reset the errors
+			if (this.$resources?.createMigrationPlan) {
+				this.$resources.createMigrationPlan.error = null;
+			}
+			if (this.$resources?.changeRegion) {
+				this.$resources.changeRegion.error = null;
+			}
+			if (this.$resources?.migrateSite) {
+				this.$resources.migrateSite.error = null;
+			}
 		},
 		triggerMigration() {
-			// Trigger Migration Logic
+			if (this.selectedMigrationMode === 'In-Place Migrate Site') {
+				this.$resources?.migrateSite?.submit();
+			} else {
+				this.$resources?.createMigrationPlan?.submit();
+			}
+
+			// this.show = false;
+			// this.$emit('update:modelValue', false);
+			// this.$emit('close');
 		},
 	},
 };

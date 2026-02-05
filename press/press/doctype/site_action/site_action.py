@@ -16,12 +16,12 @@ from rq.timeouts import JobTimeoutException
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.site_activity.site_activity import log_site_activity
-from press.utils import get_current_team
 from press.utils.jobs import has_job_timeout_exceeded
 
 if TYPE_CHECKING:
 	from collections.abc import Callable
 
+	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.site.site import Site
 	from press.press.doctype.site_action_step.site_action_step import SiteActionStep
@@ -60,6 +60,7 @@ class SiteAction(Document):
 			"Move From Shared To Private Bench",
 			"Move From Private To Shared Bench",
 			"Move Site To Different Server",
+			"Move Site To Different Region",
 		]
 		arguments: DF.SmallText
 		scheduled_time: DF.Datetime | None
@@ -78,9 +79,7 @@ class SiteAction(Document):
 		"status",
 	)
 
-	def get_steps_for_action(
-		self,
-	) -> list[tuple[Callable, str, bool]]:
+	def get_steps_for_action(self) -> list[tuple[Callable, str, bool]]:
 		Wait = True
 		NoWait = False
 
@@ -92,14 +91,48 @@ class SiteAction(Document):
 
 		if self.action_type == "Move From Shared To Private Bench":
 			return [
+				(self.pre_validate_move_site_from_shared_to_private_bench, StepType.Validation, Wait),
 				(self.clone_and_create_bench_group, StepType.Preparation, Wait),
 				(self.move_site_to_bench_group, StepType.Main, Wait),
 			]
 
+		if self.action_type == "Move Site To Different Region":
+			return [
+				(self.pre_validate_move_site_to_different_cluster, StepType.Validation, Wait),
+				(self.process_move_site_to_different_cluster, StepType.Main, Wait),
+			]
+
 		return []
 
-	def clone_and_create_bench_group(self):
+	def pre_validate_move_site_from_shared_to_private_bench(self):
+		"""Pre Validate Move Site From Shared To Private Bench"""
+		if not self.get_argument("destination_release_group"):
+			return
+
+		if frappe.db.get_value("Release Group", self.get_argument("destination_release_group"), "public"):
+			frappe.throw(
+				f"Release Group {self.get_argument('destination_release_group')} is a public release group. Please select a different release group."
+			)
+
+	def clone_and_create_bench_group(self):  # noqa
 		"""Clone and Create Private Bench"""
+		if self.get_argument("destination_release_group"):
+			current_cluster = frappe.db.get_value("Server", self.site_doc.server, "cluster")
+
+			filters = {
+				"group": self.get_argument("destination_release_group"),
+				"status": "Active",
+			}
+
+			if self.get_argument("destination_server"):
+				filters["server"] = self.get_argument("destination_server")
+			else:
+				filters["cluster"] = current_cluster
+
+			# find out the destination_bench based on the destination_release_group and
+			self.set_argument("destination_bench", frappe.db.get_value("Bench", filters, "name"))
+			return StepStatus.Skipped
+
 		if (
 			self.current_step.reference_doctype == "Deploy Candidate Build"
 			and self.current_step.reference_name
@@ -132,6 +165,8 @@ class SiteAction(Document):
 			# If deployed bench is success, return Success
 			bench_status = frappe.db.get_value("Bench", bench_name, "status")
 			if bench_status == "Active":
+				self.set_argument("destination_release_group", self.get_argument("cloned_release_group"))
+				self.set_argument("destination_bench", bench_name)
 				return StepStatus.Success
 			if bench_status in ("Failure", "Archived", "Broken"):
 				return StepStatus.Failure
@@ -143,8 +178,8 @@ class SiteAction(Document):
 
 		cloned_group.update(
 			{
-				"title": self.get_argument("new_bench_group_name") or f"{site.group} - Cloned",
-				"team": get_current_team(),
+				"title": self.get_argument("new_release_group_name") or f"{site.group} - Cloned",
+				"team": self.team,
 				"public": 0,
 				"enabled": 1,
 				"version": group.version,
@@ -164,7 +199,7 @@ class SiteAction(Document):
 		cloned_deploy_candidate_build = candidate.schedule_build_and_deploy()
 
 		self.set_argument("server", site.server)
-		self.set_argument("cloned_bench_group", cloned_group.name)
+		self.set_argument("cloned_release_group", cloned_group.name)
 		self.set_argument("cloned_deploy_candidate", candidate.name)
 		self.set_argument("cloned_deploy_candidate_build", cloned_deploy_candidate_build["name"])
 
@@ -185,13 +220,60 @@ class SiteAction(Document):
 
 			return StepStatus.Running
 
-		site_update: SiteUpdate = self.site_doc.move_to_group(
-			self.get_argument("cloned_bench_group"),
+		# Check if destination release group is on same server
+		destination_bench: Bench = frappe.get_doc("Bench", self.get_argument("destination_bench"))
+		current_bench: Bench = frappe.get_doc("Bench", self.site_doc.bench)
+
+		doc = None
+		if current_bench.server != destination_bench.server:
+			# Create site migration
+			doc = self.site_doc.move_to_bench(
+				self.get_argument("destination_bench"),
+				skip_failing_patches=self.get_argument("skip_failing_patches", False),
+			)
+		else:
+			# Create site update
+			doc = self.site_doc.move_to_group(
+				self.get_argument("destination_release_group"),
+				skip_failing_patches=self.get_argument("skip_failing_patches", False),
+				skip_backups=self.get_argument("skip_backups", False),
+			)
+
+		self.current_step.reference_doctype = doc.doctype
+		self.current_step.reference_name = doc.name
+		self.save()
+		return StepStatus.Running
+
+	# Move Site to Different Cluster
+	def pre_validate_move_site_to_different_cluster(self):
+		"""Pre Validate Move Site To Different Cluster"""
+		# validate if the target cluster is different from current cluster
+		target_cluster = self.get_argument("cluster")
+		current_cluster = frappe.db.get_value("Server", self.site_doc.server, "cluster")
+		if target_cluster == current_cluster:
+			frappe.throw("Target cluster must be different from current cluster.")
+
+		# create the `Site Migration`
+		doc = self.site_doc.change_region(
+			cluster=target_cluster,
+			scheduled_time=self.scheduled_time,
 			skip_failing_patches=self.get_argument("skip_failing_patches", False),
 		)
-		self.current_step.reference_doctype = site_update.doctype
-		self.current_step.reference_name = site_update.name
-		self.save()
+		self.set_argument("site_migration", doc.name)
+
+	def process_move_site_to_different_cluster(self):
+		"""Move Site To Different Cluster"""
+		if self.current_step.reference_doctype == "Site Migration" and self.current_step.reference_name:
+			# Site Migration is already scheduled
+			doc = frappe.get_doc("Site Migration", self.current_step.reference_name)
+			if doc.status == "Success":
+				return StepStatus.Success
+			if doc.status == "Failure":
+				return StepStatus.Failure
+			return StepStatus.Running
+
+		self.current_step.reference_doctype = "Site Migration"
+		self.current_step.reference_name = self.get_argument("site_migration")
 		return StepStatus.Running
 
 	def pre_validate_schedule_site_update(self):
@@ -318,6 +400,7 @@ class SiteAction(Document):
 
 	def execute_step(self, step_name):
 		frappe.set_user(self.owner)
+		frappe.local._current_team = frappe.get_cached_doc("Team", self.team)
 
 		step = self.get_step(step_name)
 		self.current_step = step
@@ -514,7 +597,7 @@ def schedule_site_update(
 def move_site_from_shared_to_private_bench(
 	site: str,
 	server: str | None = None,
-	new_bench_group_name: str | None = None,
+	new_release_group_name: str | None = None,
 	skip_failing_patches: bool = False,
 	scheduled_time: str | None = None,
 ) -> SiteAction:
@@ -541,7 +624,7 @@ def move_site_from_shared_to_private_bench(
 
 	args = {
 		"skip_failing_patches": skip_failing_patches,
-		"new_bench_group_name": new_bench_group_name,
+		"new_release_group_name": new_release_group_name,
 		"server": server,
 	}
 

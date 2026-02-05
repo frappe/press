@@ -1041,7 +1041,10 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
-	def migrate(self, skip_failing_patches=False):
+	def migrate(self, skip_failing_patches: bool = False):
+		import time
+
+		time.sleep(5)
 		agent = Agent(self.server)
 		activate = True
 		if self.status in ("Inactive", "Suspended"):
@@ -1315,6 +1318,69 @@ class Site(Document, TagHelpers):
 		doc.status = "Cancelled"
 		doc.save()
 
+	@dashboard_whitelist()
+	def create_migration_plan(
+		self,
+		type: Literal[
+			"Update Site",
+			"Move From Shared To Private Bench",
+			"Move From Private To Shared Bench",
+			"Move Site To Different Server",
+			"Move Site To Different Region",
+		],
+		group: str | None = None,
+		server: str | None = None,
+		new_group_name: str | None = None,
+		skip_failing_patches: bool = False,
+		skip_backups: bool = False,
+		scheduled_time: str | None = None,
+		cluster: str | None = None,
+	):
+		doc = None
+		if type == "Move From Shared To Private Bench":
+			"""
+			There are two variants:
+			- User chose to move to existing private bench and server
+			- Create a new private bench and move that. For this, there are two more combination -
+				- For shared server, create the bench on same server
+				- For dedicated server, create the bench on mentioned server
+			"""
+			if group and new_group_name:
+				frappe.throw("Please provide either group or new_group_name, not both.")
+
+			doc = frappe.get_doc(
+				{
+					"doctype": "Site Action",
+					"site": self.name,
+					"action_type": type,
+					"arguments": json.dumps(
+						{
+							"destination_server": server,
+							"destination_release_group": group,
+							"new_release_group_name": new_group_name,
+							"skip_failing_patches": skip_failing_patches,
+						}
+					),
+					"scheduled_time": scheduled_time,
+				}
+			).insert()
+		elif type == "Move Site To Different Region":
+			doc = frappe.get_doc(
+				{
+					"doctype": "Site Action",
+					"site": self.name,
+					"action_type": type,
+					"arguments": json.dumps(
+						{
+							"cluster": cluster,
+						}
+					),
+					"scheduled_time": scheduled_time,
+				}
+			).insert()
+
+		return doc
+
 	@frappe.whitelist()
 	def move_to_group(self, group, skip_failing_patches=False, skip_backups=False):
 		log_site_activity(self.name, "Update")
@@ -1343,6 +1409,37 @@ class Site(Document, TagHelpers):
 		log_site_activity(self.name, "Update", job=job.name)
 
 		return job
+
+	def change_region(
+		self, cluster: str, scheduled_time: str | None = None, skip_failing_patches: bool = False
+	):
+		group = frappe.db.get_value("Site", self.name, "group")
+		bench_vals = frappe.db.get_value(
+			"Bench", {"group": group, "cluster": cluster, "status": "Active"}, ["name", "server"]
+		)
+
+		if bench_vals is None:
+			frappe.throw(f"Bench {group} does not have an existing deploy in {cluster}")
+
+		bench, server = bench_vals
+
+		site_migration = frappe.get_doc(
+			{
+				"doctype": "Site Migration",
+				"site": self.name,
+				"destination_group": group,
+				"destination_bench": bench,
+				"destination_server": server,
+				"destination_cluster": cluster,
+				"scheduled_time": scheduled_time,
+				"skip_failing_patches": skip_failing_patches,
+			}
+		).insert()
+
+		if not scheduled_time:
+			site_migration.start()
+
+		return site_migration
 
 	def reset_previous_status(self, fix_broken=False):
 		if self.status == "Archived":
@@ -3871,7 +3968,7 @@ class Site(Document, TagHelpers):
 					"release_group_deploy_information": release_group_deploy_information,
 				},
 			},
-			"In-Place Migration": {
+			"In-Place Migrate Site": {
 				"hidden": False,
 				"allow_scheduling": False,
 				"description": "Run bench migrate command on your site to migrate to a new version",
@@ -3915,10 +4012,6 @@ class Site(Document, TagHelpers):
 				},
 			},
 		}
-
-	@dashboard_whitelist()
-	def trigger_migration(self):
-		pass
 
 	@property
 	def recent_offsite_backups_(self):
