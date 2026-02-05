@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 
 
 class StepType:
+	Validation = "Validation"
 	Preparation = "Preparation"
 	Main = "Main"
 	Cleanup = "Cleanup"
@@ -77,7 +78,7 @@ class SiteAction(Document):
 		"status",
 	)
 
-	def get_steps_to_add(
+	def get_steps_for_action(
 		self,
 	) -> list[tuple[Callable, str, bool]]:
 		Wait = True
@@ -85,6 +86,7 @@ class SiteAction(Document):
 
 		if self.action_type == "Update Site":
 			return [
+				(self.pre_validate_schedule_site_update, StepType.Validation, Wait),
 				(self.schedule_site_update, StepType.Main, Wait),
 			]
 
@@ -192,6 +194,11 @@ class SiteAction(Document):
 		self.save()
 		return StepStatus.Running
 
+	def pre_validate_schedule_site_update(self):
+		"""Validate and Create Site Update"""
+
+		return StepStatus.Success
+
 	def schedule_site_update(self):
 		"""Schedule Site Update"""
 		if self.current_step.reference_doctype == "Site Update" and self.current_step.reference_name:
@@ -223,7 +230,10 @@ class SiteAction(Document):
 
 	def add_steps(self):
 		self.steps = []
-		for method, step_type, wait_for_completion in self.get_steps_to_add():
+		for method, step_type, wait_for_completion in self.get_steps_for_action():
+			if step_type == StepType.Validation:
+				continue
+
 			self.append(
 				"steps",
 				{
@@ -236,15 +246,16 @@ class SiteAction(Document):
 
 	def after_insert(self):
 		self.add_steps()
+		self.run_pre_validation_steps()
 		self.save()
 
-	def validate(self):
-		if not self.is_new():
-			return
-		pass
+	def run_pre_validation_steps(self):
+		steps = self.get_steps_for_action()
+		for method, step_type, _ in steps:
+			if step_type != StepType.Validation:
+				continue
 
-	def pre_validate_site_update(self):
-		pass
+			method()
 
 	@property
 	def arguments_dict(self):
