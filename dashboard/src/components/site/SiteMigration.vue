@@ -31,9 +31,9 @@
 					/>
 				</div>
 				<!-- Show description -->
-				<p v-if="selectedMigrationMode" class="text-base text-gray-700 mb-2">
+				<!-- <p v-if="selectedMigrationMode" class="text-base text-gray-700 mb-2">
 					{{ selectedMigrationChoiceDetails?.description }}
-				</p>
+				</p> -->
 				<!-- Update Site Migration -->
 				<div v-if="selectedMigrationMode == 'Update Site'">
 					<GenericList :options="updateSiteListOptions" />
@@ -206,6 +206,31 @@
 					</div>
 				</div>
 
+				<!-- Move Site to Different Region -->
+				<div
+					v-else-if="selectedMigrationMode == 'Move Site To Different Region'"
+					class="flex flex-col gap-3"
+				>
+					<!-- Chose The Region -->
+					<div class="flex flex-col gap-2">
+						<p class="text-sm text-gray-700">Select Region</p>
+						<FormControl
+							type="select"
+							:options="
+								availableRegionsToMoveSiteTo.map((e) => ({
+									label: e.title,
+									value: e.name,
+								}))
+							"
+							size="md"
+							variant="outline"
+							placeholder="Select Region"
+							v-model="selectedRegion"
+							required
+						/>
+					</div>
+				</div>
+
 				<!-- Scheduling Option -->
 				<DateTimeControl
 					v-if="showSchedulingOption"
@@ -244,6 +269,7 @@ export default {
 			selectedServerType: 'Shared Server',
 
 			newBenchGroupName: '',
+			selectedRegion: '',
 		};
 	},
 	watch: {
@@ -391,6 +417,11 @@ export default {
 			if (this.selectedMigrationMode !== 'Move Site To Different Server')
 				return [];
 			return this.selectedMigrationChoiceOptions?.dedicated_servers ?? [];
+		},
+		availableRegionsToMoveSiteTo() {
+			if (this.selectedMigrationMode !== 'Move Site To Different Region')
+				return [];
+			return this.selectedMigrationChoiceOptions?.available_regions ?? [];
 		},
 	},
 	methods: {

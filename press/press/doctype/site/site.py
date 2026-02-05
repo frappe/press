@@ -3893,13 +3893,12 @@ class Site(Document, TagHelpers):
 				"options": {"dedicated_servers": owned_dedicated_servers},
 			},
 			"Move Site To Different Region": {
-				"hidden": is_on_public_release_group,
+				"hidden": False,
 				"allow_scheduling": True,
 				"description": "Move your site to a different region",
 				"button_label": "Move Site",
 				"options": {
-					"regions": group_regions,
-					"current_region": self.cluster,
+					"available_regions": [region for region in group_regions if region.name != self.cluster],
 				},
 			},
 		}
