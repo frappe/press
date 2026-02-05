@@ -3832,8 +3832,21 @@ class Site(Document, TagHelpers):
 					"public": grp.deployed_on_public_server,
 				}
 			)
-
 		compatible_release_groups_for_migration = list(_compatible_release_groups_for_migration.values())
+
+		site_update_available = site_update_information.update_available and self.status in [
+			"Active",
+			"Inactive",
+			"Suspended",
+			"Broken",
+		]
+		release_group_update_available = (
+			not is_on_public_release_group
+			and release_group.deploy_information.last_deploy
+			and not release_group.deploy_information.deploy_in_progress
+			and release_group.deploy_information.update_available
+			and release_group.status == "Active"
+		)
 
 		owned_dedicated_servers = frappe.get_all(
 			"Server",
@@ -3847,19 +3860,14 @@ class Site(Document, TagHelpers):
 
 		return {
 			"Update Site": {
-				"hidden": False,
+				"hidden": not site_update_available,
 				"allow_scheduling": True,
 				"description": "Update your site to the latest version of the application",
 				"button_label": "Update Site",
 				"options": {
 					"site_update_information": site_update_information,
-					"site_update_available": site_update_information.update_available
-					and self.status in ["Active", "Inactive", "Suspended", "Broken"],
-					"release_group_update_available": not is_on_public_release_group
-					and release_group.deploy_information.last_deploy
-					and not release_group.deploy_information.deploy_in_progress
-					and release_group.deploy_information.update_available
-					and release_group.status == "Active",
+					"site_update_available": site_update_available,
+					"release_group_update_available": release_group_update_available,
 					"release_group_deploy_information": release_group_deploy_information,
 				},
 			},

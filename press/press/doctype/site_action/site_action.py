@@ -333,7 +333,6 @@ class SiteAction(Document):
 			"""
 			if step.wait_for_completion and result == StepStatus.Running:
 				step.attempts = step.attempts + 1 if step.attempts else 1
-				self.save(ignore_version=True)
 				time.sleep(1)
 
 		except Exception:
@@ -344,12 +343,12 @@ class SiteAction(Document):
 		step.duration = (step.end - step.start).total_seconds()
 
 		if step.status == "Failure":
-			self.fail(save=True)
-		else:
-			self.save(ignore_version=True)
-			# TODO: need optimization
-			# Some callback, else will take lot of resources
-			self.next()
+			self.fail(save=False)
+
+		self.save(ignore_version=True)
+		# TODO: need optimization
+		# Some callback, else will take lot of resources
+		self.next()
 
 	def fail(self, save: bool = True) -> None:
 		self.status = "Failure"
