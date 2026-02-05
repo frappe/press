@@ -642,6 +642,7 @@ function showReleases(row, app) {
 													Approved: () =>
 														app.yankAppRelease.submit({
 															app_release: row.name,
+															hash: row.hash,
 														}),
 													AwaitingApproval: () =>
 														app.cancelApprovalRequest.submit({
@@ -653,7 +654,7 @@ function showReleases(row, app) {
 														}),
 													Yanked: () =>
 														app.unyankAppRelease.submit({
-															app_release: row.name,
+															hash: row.hash,
 														}),
 												};
 

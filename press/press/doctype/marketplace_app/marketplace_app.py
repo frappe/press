@@ -146,10 +146,9 @@ class MarketplaceApp(WebsiteGenerator):
 		frappe.get_doc("App Release Approval Request", approval_requests[0]).cancel()
 
 	@dashboard_whitelist()
-	def yank_app_release(self, app_release: str):
+	def yank_app_release(self, app_release: str, hash: str):
 		"""Yank app release, this commit hash won't show for any new updates even if in approved state"""
 		team = get_current_team()
-		hash = frappe.db.get_value("App Release", app_release, "hash")
 		# We somehow need to let people know that the app release is yanked to everyone on that current release?
 		# For now mark that particular release as yanked atleast?
 		frappe.new_doc(
@@ -160,9 +159,8 @@ class MarketplaceApp(WebsiteGenerator):
 		).insert()
 
 	@dashboard_whitelist()
-	def unyank_app_release(self, app_release: str):
+	def unyank_app_release(self, hash: str):
 		"""Allow support for unyanking app release (https://peps.pythondiscord.com/pep-0592/)"""
-		hash = frappe.db.get_value("App Release", app_release, "hash")
 		frappe.get_doc("Yanked App Release", {"hash": hash}).delete()
 
 	def before_insert(self):
