@@ -149,7 +149,7 @@ export default {
 			{
 				label: 'Plan',
 				fieldname: 'plan',
-				width: 0.85,
+				width: '15rem',
 				format(value, row) {
 					if (row.trial_end_date) {
 						return trialDays(row.trial_end_date);

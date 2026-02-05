@@ -59,7 +59,7 @@ export default {
 			{
 				label: 'Description',
 				fieldname: 'description',
-				width: 1.0,
+				width: '40rem',
 			},
 		],
 		primaryAction() {
