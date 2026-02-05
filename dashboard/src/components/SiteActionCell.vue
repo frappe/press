@@ -102,7 +102,7 @@ function onDeactivateSite() {
 		message: `
 			Are you sure you want to deactivate this site?<br><br>
 			<div class="text-bg-base bg-gray-100 p-2 rounded-md">
-			The site will go in an <strong>inactive</strong> state.It won't be accessible and background jobs won't run. 
+			The site will go in an <strong>inactive</strong> state. It won't be accessible and background jobs won't run. 
 			<br><br>
 			<div class="text-red-600">You will still be charged for it.</div>
 			</div>
