@@ -325,7 +325,7 @@ class ReleaseGroup(Document, TagHelpers):
 		self.common_site_config = json.dumps(new_config, indent=4)
 
 	@dashboard_whitelist()
-	def update_dependency(self, dependency_name, version, is_custom):
+	def update_dependency(self, dependency_name: str, version: str, is_custom: bool):
 		"""Updates a dependency version in the Release Group Dependency table"""
 		for dependency in self.dependencies:
 			if dependency.name == dependency_name:
@@ -547,8 +547,8 @@ class ReleaseGroup(Document, TagHelpers):
 			frappe.throw(_("Use App Cache cannot be set, BENCH_VERSION must be 5.22.1 or later"))
 
 	def _validate_dependency_format(self, dependency: str, version: str):
-		# Append patch version
-		if version.count(".") == 1:
+		# Append patch version, except for node since nvm path breaks during build
+		if dependency != "NODE_VERSION" and version.count(".") == 1:
 			version += ".0"
 
 		try:
@@ -1243,7 +1243,7 @@ class ReleaseGroup(Document, TagHelpers):
 			latest_app_release = None
 			latest_app_releases = find_all(latest_releases, lambda x: x.source == app.source)
 
-			if app.source in only_approved_for_sources:
+			if app.source in get_flattened_app_sources(app_sources=only_approved_for_sources):
 				latest_app_release = find(latest_app_releases, can_use_release)
 				latest_app_releases = find_all(latest_app_releases, can_use_release)
 			else:
@@ -1539,11 +1539,11 @@ class ReleaseGroup(Document, TagHelpers):
 			app_doc = new_app(name, app["title"])
 
 		source = app_doc.add_source(
-			self.version,
-			app["repository_url"],
-			app["branch"],
-			self.team,
-			app.get("github_installation_id", None),
+			frappe_version=self.version,
+			repository_url=app["repository_url"],
+			branch=app["branch"],
+			team=self.team,
+			github_installation_id=app.get("github_installation_id", None),
 		)
 		self.update_source(source, is_update)
 
@@ -1749,8 +1749,9 @@ get_permission_query_conditions = get_permission_query_conditions_for_doctype("R
 def can_use_release(app_src):
 	if not app_src.public:
 		return True
-
-	return app_src.status == "Approved"
+	# For the time being allow Draft releases for public app sources as well
+	# This will be removed when we have better review process for public app sources
+	return app_src.status in ["Approved", "Draft"]
 
 
 def update_rg_app_source(rg: "ReleaseGroup", source: "AppSource"):
@@ -1850,3 +1851,13 @@ def get_restricted_server_names():
 		},
 		distinct=True,
 	)
+
+
+def get_flattened_app_sources(app_sources: list[str | list[str]]) -> list[str]:
+	flattened_sources = []
+	for source in app_sources:
+		if isinstance(source, list):
+			flattened_sources.extend(source)
+		else:
+			flattened_sources.append(source)
+	return flattened_sources
