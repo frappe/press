@@ -1456,7 +1456,7 @@ def get_user_banners():
 	# fetch all enabled banners for this user
 	all_enabled_banners = (
 		frappe.qb.from_(DashboardBanner)
-		.select("name")
+		.select("*")
 		.where(
 			((DashboardBanner.enabled == 1) & (DashboardBanner.is_scheduled == 0))
 			| (
@@ -1472,19 +1472,19 @@ def get_user_banners():
 			| ((DashboardBanner.type_of_scope == "Server") & (DashboardBanner.server.isin(servers or [""])))
 			| ((DashboardBanner.type_of_scope == "Team") & (DashboardBanner.team == team))
 		)
-		.run(pluck=True)
+		.run(as_dict=True)
 	)
 
 	# filter out dismissed banners
 	banner_dismissals_by_user = frappe.get_all(
 		"Dashboard Banner Dismissal",
-		filters={"user": frappe.session.user, "parent": ["in", all_enabled_banners]},
+		filters={"user": frappe.session.user, "parent": ["in", [b["name"] for b in all_enabled_banners]]},
 		fields=["parent"],
 		pluck=True,
 	)
 
 	# visible banners
-	return [banner for banner in all_enabled_banners if banner not in banner_dismissals_by_user]
+	return [banner for banner in all_enabled_banners if banner["name"] not in banner_dismissals_by_user]
 
 
 @frappe.whitelist()

@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.site_domain.site_domain import SiteDomain
 
 
-def get_ongoing_migration(site: Link, scheduled=False):
+def get_ongoing_migration(site: Link | None, scheduled=False) -> str:
 	"""
 	Return ongoing Site Migration for site.
 
