@@ -3973,7 +3973,9 @@ def process_new_site_job_update(job):  # noqa: C901
 
 	if "Success" == first == second:
 		updated_status = "Active"
-		marketplace_app_hook(site=Site("Site", job.site), op="install")
+		site: Site = Site("Site", job.site)
+		site.sync_apps()  # Sync apps for this site as well to reflect dependant apps
+		marketplace_app_hook(site=site, op="install")
 	elif "Failure" in (first, second) or "Delivery Failure" in (first, second):
 		updated_status = "Broken"
 		frappe.db.set_value("Site", job.site, "creation_failed", frappe.utils.now())
@@ -4195,10 +4197,13 @@ def process_install_app_site_job_update(job):
 		"Delivery Failure": "Active",
 	}[job.status]
 
-	site_status = frappe.get_value("Site", job.site, "status")
-	if updated_status != site_status:
-		site: Site = frappe.get_doc("Site", job.site)
+	site: Site = frappe.get_doc("Site", job.site)
+
+	if job.status == "Success":
+		# Always sync apps on success to ensure installed app is shown
 		site.sync_apps()
+
+	if updated_status != site.status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 		create_site_status_update_webhook_event(job.site)
 
