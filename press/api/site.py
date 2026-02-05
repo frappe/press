@@ -2525,7 +2525,7 @@ def check_existing_upgrade_bench(name, version):
 		frappe.qb.from_(Bench)
 		.join(ReleaseGroup)
 		.on(Bench.group == ReleaseGroup.name)
-		.select(Bench.name, Bench.group)
+		.select(Bench.name, Bench.group, ReleaseGroup.title)
 		.where(Bench.status == "Active")
 		.where(Bench.server == site_server)
 		.where(Bench.team == current_team)
@@ -2540,9 +2540,10 @@ def check_existing_upgrade_bench(name, version):
 				"exists": True,
 				"bench_name": bench.name,
 				"release_group": bench.group,
+				"release_group_title": bench.release_group_title,
 			}
 
-	return {"exists": False, "bench_name": None, "release_group": None}
+	return {"exists": False, "bench_name": None, "release_group": None, "release_group_title": None}
 
 
 @frappe.whitelist()
@@ -2584,7 +2585,7 @@ def check_app_compatibility_for_upgrade(name, version):
 	app_sources = frappe.db.get_all(
 		"App Source",
 		filters={"name": ("in", [app.source for app in current_apps])},
-		fields=["name", "app", "public", "repository_url", "branch", "github_installation_id"],
+		fields=["name", "app_title", "app", "public", "repository_url", "branch", "github_installation_id"],
 	)
 	source_dict = {s.name: s for s in app_sources}
 
@@ -2597,39 +2598,7 @@ def check_app_compatibility_for_upgrade(name, version):
 		if not app_source:
 			continue
 
-		if not app_source.public:
-			# Custom app - needs manual source selection
-			branches = []
-			try:
-				import re
-
-				match = re.search(r"github\.com/([^/]+)/([^/\.]+)", app_source.repository_url)
-				if match:
-					owner, repo = match.groups()
-					from press.api.github import branches
-
-					gh_branches = branches(
-						owner=owner,
-						name=repo,
-					)
-					branches = [b.get("name") for b in gh_branches] if gh_branches else []
-			except Exception as e:
-				frappe.log_error(
-					f"Failed to fetch branches for {app_name}: {e!s}", "check_app_compatibility_for_upgrade"
-				)
-				branches = []
-
-			custom_apps.append(
-				{
-					"app": app_name,
-					"source": source_name,
-					"repository_url": app_source.repository_url,
-					"branch": app_source.branch,
-					"github_installation_id": app_source.github_installation_id,
-					"branches": branches,
-				}
-			)
-		else:
+		if app_source.public:
 			# Check if public app has a compatible version for next version
 			AppSource = frappe.qb.DocType("App Source")
 			AppSourceVersion = frappe.qb.DocType("App Source Version")
@@ -2654,21 +2623,47 @@ def check_app_compatibility_for_upgrade(name, version):
 					}
 				)
 			else:
-				incompatible_apps.append(
-					{
-						"app": app_name,
-						"reason": f"No compatible version found for {next_version}",
-					}
-				)
+				incompatible_apps.append(app_source.app_title)
+		else:  # Custom app, needs manual source selection
+			if len(incompatible_apps):
+				continue  # No point in checking if incompatibile public apps exists
+			branches = []
+			try:
+				import re
 
-	# Only allow upgrade if all public apps are compatible
-	can_upgrade = len(incompatible_apps) == 0
+				match = re.search(r"github\.com/([^/]+)/([^/\.]+)", app_source.repository_url)
+				if match:
+					owner, repo = match.groups()
+					from press.api.github import branches
+
+					gh_branches = branches(
+						owner=owner,
+						name=repo,
+					)
+					branches = [b.get("name") for b in gh_branches] if gh_branches else []
+			except Exception as e:
+				frappe.log_error(
+					f"Failed to fetch branches for {app_name}: {e!s}", "check_app_compatibility_for_upgrade"
+				)
+				branches = []
+
+			custom_apps.append(
+				{
+					"app": app_name,
+					"title": app_source.app_title,
+					"source": source_name,
+					"repository_url": app_source.repository_url,
+					"branch": app_source.branch,
+					"github_installation_id": app_source.github_installation_id,
+					"branches": branches,
+				}
+			)
 
 	return {
 		"compatible": compatible_apps,
 		"incompatible": incompatible_apps,
 		"custom_apps": custom_apps,
-		"can_upgrade": can_upgrade,
+		"can_upgrade": len(incompatible_apps) == 0,  # Only allow upgrade if all public apps are compatible
 	}
 
 
@@ -2790,7 +2785,6 @@ def create_private_bench_for_upgrade(
 		)
 		release_group_name = release_group_doc.name
 
-		# Create Version Upgrade doc to be triggered after bench deploy
 		version_upgrade = frappe.get_doc(
 			{
 				"doctype": "Version Upgrade",
@@ -2804,11 +2798,7 @@ def create_private_bench_for_upgrade(
 			}
 		)
 		version_upgrade.insert()
-
-		# Return release group name for frontend to redirect to deploy page
-		return {
-			"release_group": release_group_name,
-		}
+		return release_group_name
 
 	except Exception as e:
 		frappe.throw(f"Failed to create and deploy bench: {e!s}")
