@@ -64,9 +64,6 @@ function getSiteActionHandler(action) {
 		'Change server': defineAsyncComponent(
 			() => import('./site/SiteChangeServerDialog.vue'),
 		),
-		'Schedule backup': defineAsyncComponent(
-			() => import('./site/SiteScheduleBackup.vue'),
-		),
 	};
 	if (actionDialogs[action]) {
 		const dialog = h(actionDialogs[action], { site: site.doc.name });
@@ -83,6 +80,7 @@ function getSiteActionHandler(action) {
 		'Transfer site': onTransferSite,
 		'Reset site': onSiteReset,
 		'Clear cache': onClearCache,
+		'Schedule backup': onScheduleBackup,
 	};
 	if (actionHandlers[action]) {
 		actionHandlers[action].call(this);
@@ -299,6 +297,13 @@ function onClearCache() {
 				return site.clearSiteCache.submit().then(hide);
 			},
 		},
+	});
+}
+
+function onScheduleBackup() {
+	router.push({
+		name: 'Site Detail Backups',
+		params: { name: site.doc.name },
 	});
 }
 </script>
