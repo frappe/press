@@ -137,7 +137,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Draft\nApproved\nAwaiting Approval\nRejected"
+   "options": "Draft\nApproved\nAwaiting Approval\nRejected\nYanked"
   },
   {
    "fieldname": "timestamp",
@@ -198,7 +198,7 @@
    "link_fieldname": "destination_release"
   }
  ],
- "modified": "2025-08-22 22:42:45.172216",
+ "modified": "2026-02-05 12:40:24.246499",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release",
@@ -241,6 +241,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],

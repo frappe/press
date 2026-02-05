@@ -67,6 +67,7 @@ class LastDeployInfo(TypedDict):
 
 if TYPE_CHECKING:
 	from press.press.doctype.app.app import App
+	from press.press.doctype.app_release.app_release import AppRelease
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
@@ -1746,12 +1747,21 @@ def prune_servers_without_sites():
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Release Group")
 
 
-def can_use_release(app_src):
-	if not app_src.public:
+def can_use_release(app_release: "AppRelease") -> bool:
+	"""Check if the app release can be used in the release group
+	For the time being allow Draft releases for public app sources as well
+	This will be removed when we have better review process for public app sources
+	Yanked release regardless of public or private won't be allowed in release groups
+	"""
+	is_release_yanked = frappe.db.exists("Yanked App Release", {"commit_hash": app_release.hash})
+
+	if is_release_yanked:
+		return False
+
+	if not app_release.public:
 		return True
-	# For the time being allow Draft releases for public app sources as well
-	# This will be removed when we have better review process for public app sources
-	return app_src.status in ["Approved", "Draft"]
+
+	return app_release.status in ["Approved", "Draft"]
 
 
 def update_rg_app_source(rg: "ReleaseGroup", source: "AppSource"):
