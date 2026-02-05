@@ -43,3 +43,101 @@ index 4a652de..826f0a0 100644
    "files": [
      "frappe",
      "src",
+diff --git a/node_modules/frappe-ui/src/components/Combobox/Combobox.vue b/node_modules/frappe-ui/src/components/Combobox/Combobox.vue
+index f594512..6b140c9 100644
+--- a/node_modules/frappe-ui/src/components/Combobox/Combobox.vue
++++ b/node_modules/frappe-ui/src/components/Combobox/Combobox.vue
+@@ -35,6 +35,7 @@ import type {
+ const props = withDefaults(defineProps<ComboboxProps>(), {
+   variant: 'subtle',
+   options: () => [],
++  allowCustomValue: false,
+ })
+ const emit = defineEmits([
+   'update:modelValue',
+@@ -234,15 +235,23 @@ const filteredOptions = computed(() => {
+ 
+ const handleInputChange = (event: Event) => {
+   const target = event.target as HTMLInputElement
+-  searchTerm.value = target.value
+-  lastSearchTerm.value = target.value
++  const value = target.value
++  
++  searchTerm.value = value
++  lastSearchTerm.value = value
+   userHasTyped.value = true
+ 
+   if (searchTerm.value === '') {
+     internalModelValue.value = null
+     emit('update:modelValue', null)
++    emit('update:selectedOption', null)
++  } else if (props.allowCustomValue) {
++    internalModelValue.value = value
++    emit('update:modelValue', value)
++    emit('update:selectedOption', null)
+   }
+-  emit('input', searchTerm.value)
++
++  emit('input', value)
+ }
+ 
+ const handleOpenChange = (open: boolean) => {
+@@ -291,6 +300,23 @@ const variantClasses = computed(() => {
+   }[props.variant]
+ })
+ 
++const hasExactMatch = computed(() => {
++  if (!searchTerm.value) return false
++  return allOptionsFlat.value.some(
++    (opt) => getValue(opt) === searchTerm.value,
++  )
++})
++
++const isFreeCustomValue = computed(() => {
++  if (!props.allowCustomValue) return false
++
++  return (
++    searchTerm.value &&
++    !hasExactMatch.value &&
++    filteredOptions.value.length === 0
++  )
++})
++
+ defineExpose({
+   reset,
+ })
+@@ -344,9 +370,22 @@ defineExpose({
+             :class="{ 'px-1.5 pt-1.5': !isGroup(filteredOptions[0]) }"
+           >
+             <ComboboxEmpty
+-              class="text-ink-gray-5 text-base text-center py-1.5 px-2.5"
++              class="py-1.5 px-2.5"
+             >
+-              No results found for "{{ searchTerm }}"
++              <div
++                v-if="isFreeCustomValue"
++                class="text-base text-ink-gray-7 flex items-center gap-2"
++              >
++                <span class="text-ink-gray-5">Custom value</span>
++                <span class="font-medium">"{{ searchTerm }}"</span>
++              </div>
++
++              <div
++                v-else
++                class="text-ink-gray-5 text-base text-center"
++              >
++                No results found for "{{ searchTerm }}"
++              </div>
+             </ComboboxEmpty>
+             <template
+               v-for="(optionOrGroup, index) in filteredOptions"
+diff --git a/node_modules/frappe-ui/src/components/Combobox/types.ts b/node_modules/frappe-ui/src/components/Combobox/types.ts
+index e775982..f20eb9c 100644
+--- a/node_modules/frappe-ui/src/components/Combobox/types.ts
++++ b/node_modules/frappe-ui/src/components/Combobox/types.ts
+@@ -36,4 +36,5 @@ export interface ComboboxProps {
+   openOnFocus?: boolean
+   openOnClick?: boolean
+   placement?: 'start' | 'center' | 'end'
++  allowCustomValue?: boolean
+ }
