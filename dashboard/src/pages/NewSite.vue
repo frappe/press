@@ -392,6 +392,7 @@ export default {
 		Summary,
 		Header,
 		Badge,
+		ProductSupportBanner,
 	},
 	data() {
 		return {
