@@ -6,7 +6,7 @@
 	>
 		<template #body-content>
 			<div class="space-y-4">
-				<!-- Public bench simple upgrade -->
+				<!-- Public bench upgrade -->
 				<p v-if="$site.doc?.group_public && nextVersion" class="text-base">
 					The site <b>{{ $site.doc.host_name }}</b> will be upgraded to
 					<b>{{ nextVersion }}</b>
@@ -14,7 +14,7 @@
 
 				<!-- Private bench upgrade flow -->
 				<template v-else-if="!$site.doc?.group_public && nextVersion">
-					<!-- If existing compatible bench found -->
+					<!-- If existing compatible bench found  -->
 					<template
 						v-if="upgradeStep === 'ready_to_upgrade' && existingBenchGroup"
 					>
@@ -28,9 +28,9 @@
 								<b>{{ nextVersion }}</b>
 							</p>
 						</div>
-						<DateTimeControl
-							v-model="targetDateTime"
+						<DateTimePicker
 							label="Schedule Time in IST"
+							v-model="targetDateTime"
 						/>
 						<FormControl
 							label="Skip failing patches if any"
@@ -45,25 +45,14 @@
 						/>
 					</template>
 
-					<!--  Incompatible apps, cannot upgrade -->
-					<template
+					<AlertBanner
 						v-else-if="
 							upgradeStep === 'ready_to_upgrade' &&
 							!appCompatibility.can_upgrade
 						"
-					>
-						<div class="rounded-lg bg-red-50 p-3">
-							<div class="text-sm font-medium text-red-800 mb-2">
-								Migration isn't possible - Incompatible apps:
-							</div>
-							<ul class="list-inside list-disc text-sm text-red-700">
-								<li v-for="app in appCompatibility.incompatible" :key="app.app">
-									<b>{{ app.app }}</b
-									>: {{ app.reason }}
-								</li>
-							</ul>
-						</div>
-					</template>
+						:title="`Migration isn't possible due to incompatible app(s): <b>${appCompatibility.incompatible.join(', ')}</b>`"
+						type="error"
+					/>
 
 					<template
 						v-else-if="
@@ -81,7 +70,6 @@
 								All apps are compatible with {{ nextVersion }}
 							</p>
 						</div>
-						<!-- Source selection for custom apps-->
 						<div
 							v-else-if="
 								appCompatibility.custom_apps &&
@@ -92,30 +80,22 @@
 							<div class="text-sm font-medium text-gray-700 mb-3">
 								Select Branch for Custom Apps
 							</div>
-							<table class="w-full table-fixed">
+							<table class="w-full table-fixed pb-4 border-b border-gray-100">
 								<thead>
-									<tr class="border-b-2 border-blue-200">
-										<th
-											class="text-left py-2 px-3 font-medium text-sm text-blue-900 w-1/2"
-										>
-											App
-										</th>
-										<th
-											class="text-left py-2 px-3 font-medium text-sm text-blue-900 w-1/2"
-										>
-											Branch *
-										</th>
+									<tr class="text-sm text-gray-600">
+										<th class="font-medium text-left py-2 w-3/5">App</th>
+										<th class="font-medium text-left py-2 w-2/5">Branch *</th>
 									</tr>
 								</thead>
 								<tbody>
 									<tr
 										v-for="app in appCompatibility.custom_apps"
 										:key="app.app"
-										class="border-b border-blue-100 hover:bg-blue-100 transition-colors"
+										class="hover:bg-gray-100 transition-colors"
 									>
-										<td class="py-3 px-3 w-1/2">
-											<div class="font-medium text-sm text-blue-900">
-												{{ app.app }}
+										<td class="py-3 w-3/5">
+											<div class="font-medium text-sm">
+												{{ app.title }}
 											</div>
 											<div
 												class="text-xs text-gray-600 truncate mt-1"
@@ -124,7 +104,7 @@
 												{{ app.repository_url }}
 											</div>
 										</td>
-										<td class="py-3 px-3 w-1/2">
+										<td class="py-3 w-2/5">
 											<FormControl
 												type="combobox"
 												:options="
@@ -134,7 +114,7 @@
 												@update:modelValue="
 													updateCustomAppSource(app, 'branch', $event)
 												"
-												placeholder="Select branch..."
+												placeholder="Select branch"
 											/>
 										</td>
 									</tr>
@@ -149,22 +129,19 @@
 							placeholder="e.g., My Team - Version 15"
 							class="mt-4"
 						/>
-						<DateTimeControl
-							v-model="targetDateTime"
+						<DateTimePicker
 							label="Schedule Time in IST"
+							v-model="targetDateTime"
 							class="mt-4"
 						/>
-						<div
+						<AlertBanner
 							v-if="
 								!existingBenchGroup && targetDateTime && !isScheduleTimeValid
 							"
-							class="rounded bg-yellow-50 p-3 mt-2"
+							title="Schedule time must be at least 30 minutes from now to allow for bench deployment."
+							type="warning"
 						>
-							<div class="text-sm text-yellow-800">
-								⚠️ When creating a new private bench, schedule time must be at
-								least 30 minutes from now to allow for bench deployment.
-							</div>
-						</div>
+						</AlertBanner>
 						<FormControl
 							label="Skip failing patches if any"
 							type="checkbox"
@@ -240,13 +217,12 @@
 				"
 				class="w-full"
 				variant="solid"
-				label="Create Bench & Schedule Upgrade"
-				:disabled="
-					!newReleaseGroupTitle ||
-					!hasValidCustomAppSources ||
-					!targetDateTime ||
-					!isScheduleTimeValid
+				:label="
+					targetDateTime
+						? 'Create Bench & Schedule Upgrade'
+						: 'Create Bench & Upgrade Site Now'
 				"
+				:disabled="disableButton"
 				:loading="
 					$resources.versionUpgrade.loading ||
 					$resources.createPrivateBench.loading
@@ -260,12 +236,13 @@
 <script>
 import { getCachedDocumentResource } from 'frappe-ui';
 import { toast } from 'vue-sonner';
-import DateTimeControl from '../DateTimeControl.vue';
+import AlertBanner from '../AlertBanner.vue';
+import DateTimePicker from 'frappe-ui/src/components/DatePicker/DateTimePicker.vue';
 
 export default {
 	name: 'SiteVersionUpgradeDialog',
 	props: ['site'],
-	components: { DateTimeControl },
+	components: { DateTimePicker, AlertBanner },
 	data() {
 		return {
 			show: true,
@@ -336,26 +313,25 @@ export default {
 				return true;
 			});
 		},
-		minimumScheduleTime() {
-			if (!this.existingBenchGroup && this.appCompatibility.can_upgrade) {
-				const now = new Date();
-				const minTime = new Date(now.getTime() + 30 * 60 * 1000);
-				return this.$dayjs(minTime).format('YYYY-MM-DDTHH:mm');
-			}
-			return null;
-		},
 		isScheduleTimeValid() {
-			// Validate schedule time is at least 30 mins from now when creating new bench
+			// Atleast 30 mins from now for deploying bench
 			if (!this.targetDateTime) return true;
 			if (!this.existingBenchGroup) {
-				const scheduledTime = this.$dayjs(this.targetDateTime);
+				const scheduledTime = this.targetDateTime.$d
+					? this.$dayjs(this.targetDateTime.$d)
+					: this.$dayjs(this.targetDateTime);
 				const minimumTime = this.$dayjs().add(30, 'minute');
-				return (
-					scheduledTime.isAfter(minimumTime) ||
-					scheduledTime.isSame(minimumTime)
-				);
+				return scheduledTime.isAfter(minimumTime);
 			}
 			return true;
+		},
+		disableButton() {
+			if (!this.newReleaseGroupTitle || !this.hasValidCustomAppSources) {
+				return true;
+			}
+			if (this.targetDateTime && !this.isScheduleTimeValid) {
+				return true;
+			}
 		},
 	},
 	resources: {
@@ -374,9 +350,6 @@ export default {
 				onSuccess: (data) => {
 					toast.success("Site's version upgrade has been scheduled.");
 					this.show = false;
-					// Redirect to bench group deploy page
-					// const deployPage = `/groups/${destination_group}`;
-					// this.$router.push(deployPage);
 				},
 			};
 		},
@@ -388,20 +361,12 @@ export default {
 					version: this.$site.doc?.version,
 				},
 				auto: !this.$site.doc?.group_public,
-				onSuccess: async (result) => {
-					if (result.exists) {
-						// Existing bench found
-						this.existingBenchGroup = result.release_group;
-						const titleResult = await frappe.db.get_value(
-							'Release Group',
-							result.release_group,
-							'title',
-						);
-						this.existingBenchGroupTitle =
-							titleResult.message?.title || result.release_group;
+				onSuccess: (data) => {
+					if (data.exists) {
+						this.existingBenchGroup = data.release_group;
+						this.existingBenchGroupTitle = data.release_group_title;
 						this.upgradeStep = 'ready_to_upgrade';
 					} else {
-						// No existing bench - check app compatibility
 						this.$resources.checkAppCompatibility.fetch();
 					}
 				},
@@ -414,12 +379,11 @@ export default {
 					name: this.site,
 					version: this.$site.doc?.version,
 				},
-				onSuccess: (compatibility) => {
-					this.appCompatibility = compatibility;
+				onSuccess: (data) => {
+					this.appCompatibility = data;
 					this.upgradeStep = 'ready_to_upgrade';
 
-					if (!compatibility.can_upgrade) {
-						// Incompatible public apps
+					if (!data.can_upgrade) {
 						toast.error('Migration blocked - incompatible apps found');
 					}
 				},
@@ -442,6 +406,16 @@ export default {
 					version: this.$site.doc?.version,
 					release_group_title: this.newReleaseGroupTitle,
 					custom_app_sources: custom_app_sources,
+				},
+				onSuccess(data) {
+					this.resetValues();
+					this.show = false;
+					this.$router.push({
+						name: 'Release Group Detail',
+						params: {
+							name: data,
+						},
+					});
 				},
 			};
 		},
@@ -482,7 +456,7 @@ export default {
 
 					this.createdBenchDetails = benchData;
 					toast.success('New bench deployment started', {
-						description: `Version upgrade will be scheduled automatically after successful deployment.`,
+						description: `Site app versions will be upgraded after successful deployment.`,
 					});
 					this.show = false;
 				} catch (error) {

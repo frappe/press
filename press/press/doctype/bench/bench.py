@@ -1240,6 +1240,14 @@ def process_new_bench_job_update(job):
 	if site_group_deploy:
 		frappe.get_doc("Site Group Deploy", site_group_deploy).update_site_group_deploy_on_process_job(job)
 
+	# check if new bench is for site  version upgrade flow
+	version_upgrade = frappe.db.get_value(
+		"Version Upgrade",
+		{"destination_group": bench.group, "deploy_private_bench": 1},
+	)
+	if version_upgrade:
+		frappe.get_doc("Version Upgrade", version_upgrade).update_version_upgrade_on_process_job(job)
+
 	if updated_status != "Active":
 		return
 
