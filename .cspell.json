@@ -728,7 +728,13 @@
         "pydo",
         "erpnextv",
         "hrmsv",
+<<<<<<< HEAD
         "Zvkq",
         "botocore"
+=======
+        "unyank",
+        "unyanking",
+        "unyanked"
+>>>>>>> 147eb1559 (feat(yank): Yank and Unyank app release)
     ]
 }

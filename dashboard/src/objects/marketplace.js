@@ -21,6 +21,7 @@ export default {
 		createApprovalRequest: 'create_approval_request',
 		cancelApprovalRequest: 'cancel_approval_request',
 		yankAppRelease: 'yank_app_release',
+		unyankAppRelease: 'unyank_app_release',
 		updateListing: 'update_listing',
 		markAppReadyForReview: 'mark_app_ready_for_review',
 	},
@@ -620,6 +621,11 @@ function showReleases(row, app) {
 											successMessage = 'The release has been yanked';
 											loadingMessage = 'Yanking release...';
 										}
+										if (row.status == 'Yanked') {
+											label = 'Unyank';
+											successMessage = 'The release has been unyanked';
+											loadingMessage = 'Unyanking release...';
+										}
 										if (row.status === 'Awaiting Approval') {
 											label = 'Cancel';
 											successMessage = 'The release has been cancelled';
@@ -645,6 +651,10 @@ function showReleases(row, app) {
 														}),
 													Draft: () =>
 														app.createApprovalRequest.submit({
+															app_release: row.name,
+														}),
+													Yanked: () =>
+														app.unyankAppRelease.submit({
 															app_release: row.name,
 														}),
 												};
