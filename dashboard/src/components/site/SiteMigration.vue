@@ -246,7 +246,11 @@ export default {
 			newBenchGroupName: '',
 		};
 	},
-	watch: {},
+	watch: {
+		selectedMigrationMode() {
+			this.resetValues(true);
+		},
+	},
 	resources: {
 		migrationOptions() {
 			return {
@@ -390,8 +394,10 @@ export default {
 		},
 	},
 	methods: {
-		resetValues() {
-			this.selectedMigrationMode = '';
+		resetValues(skip_migration_mode_set = false) {
+			if (!skip_migration_mode_set) {
+				this.selectedMigrationMode = '';
+			}
 			this.skipFailingPatches = false;
 			this.skipBackups = false;
 			this.scheduledTime = '';
