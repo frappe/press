@@ -75,6 +75,21 @@ export function planTitle(plan) {
 	return price > 0 ? `${userCurrency(price, 0)}` : plan.plan_title;
 }
 
+export function planDisplay(plan, hourlyPricing = false) {
+	if (plan === undefined) {
+		return { title: '', unit: '' };
+	}
+	const title = hourlyPricing ? planTitleHourly(plan) : planTitle(plan);
+	const unit = hourlyPricing
+		? plan?.price_inr
+			? '/hour'
+			: ''
+		: plan?.price_inr
+			? '/mo'
+			: '';
+	return { title, unit };
+}
+
 export function userCurrency(value, fractions = 2) {
 	const $team = getTeam();
 	if (!$team.doc?.currency) return value;
