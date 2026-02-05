@@ -1192,16 +1192,29 @@ def search_releases(
 	source: str,
 	fields: list,
 	query: str | None = None,
-	page_length: int = 20,
+	limit: int = 10,
+	current_release: str | None = None,
 ):
+	if not query:
+		return []
+
 	DocType = frappe.qb.DocType("App Release")
 	q = (
 		frappe.qb.from_(DocType)
 		.select(*fields)
-		.where(DocType.hash.like(f"%{query}%") | DocType.message.like(f"%{query}%"))
-		.where((DocType.public == 1) & (DocType.status == "Approved"))
+		.where(DocType.hash.like(f"%{query.strip()}%") | DocType.message.like(f"%{query.strip()}%"))
+	)
+
+	if current_release:
+		current_release_creation = frappe.get_value("App Release", current_release, "creation")
+		# downgrading apps is not supported
+		q = q.where(DocType.creation > current_release_creation)
+
+	q = (
+		q.where((DocType.public == 1) & (DocType.status == "Approved"))
 		.where((DocType.app == app) & (DocType.source == source))
 		.orderby(DocType.timestamp, order=frappe.qb.desc)
-		.limit(page_length)
+		.limit(limit)
 	)
+
 	return q.run(as_dict=1)
