@@ -1,3 +1,4 @@
+---
 - name: Ensure logrotate configuration for monitor.json.log
   copy:
     dest: /etc/logrotate.d/monitor_json_logs
@@ -12,9 +13,5 @@
           notifempty
           copytruncate
       }
-  owner: root
-  group: root
-  mode: '0644'
-
 - name: Force logrotate to apply new configuration
   command: logrotate -f /etc/logrotate.d/monitor_json_logs
