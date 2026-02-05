@@ -7,7 +7,7 @@
 		v-model="show"
 	>
 		<template #body-content>
-		<!-- steps are for users without payment method added,
+			<!-- steps are for users without payment method added, 
 		 otherwise user will only go through just the initial step to change plan  -->
 
 			<div v-if="step === 'site-plans'">
@@ -15,7 +15,7 @@
 				<!-- TODO: fix it in frappe-ui -->
 				<Progress
 					v-if="showSetupSubscription"
-					class="mt-8 mb-4"
+					class="my-8"
 					size="md"
 					:label="progressLabel"
 					:interval-count="3"
@@ -29,7 +29,16 @@
 					:selectedProvider="$site.doc.server_provider"
 				/>
 				<div class="mt-4 text-xs text-gray-700">
-					<ProductSupportBanner />
+					<div
+						class="flex items-center rounded bg-gray-50 p-2 text-p-base font-medium text-gray-800"
+					>
+						<lucide-badge-check class="mr-2 h-5 w-12 text-gray-600" />
+						<span>
+							<strong>Support</strong> covers only issues of Frappe apps and not
+							functional queries. You can raise a support ticket for Frappe
+							Cloud issues for all plans.
+						</span>
+					</div>
 				</div>
 				<ErrorMessage class="mt-2" :message="$site.setPlan.error" />
 			</div>
@@ -47,7 +56,7 @@
 					<FeatherIcon class="h-4" name="info" />
 					<span> Add billing details to your account before proceeding.</span>
 				</div>
-				<BillingDetails ref="billingRef" @back="step= 'site-plans'" @success="step = 'add-payment-mode'" />
+				<BillingDetails ref="billingRef" @success="step = 'add-payment-mode'" />
 			</div>
 
 			<div v-else-if="step === 'add-payment-mode'">
@@ -122,9 +131,6 @@
 			</div>
 		</template>
 		<template #actions v-if="step === 'site-plans'">
-			<div class="mb-2 text-center text-xs text-gray-600">
-				Change plans later anytime. Billing is prorated.
-			</div>
 			<Button
 				variant="solid"
 				:disabled="!plan || ($site?.doc && plan === $site.doc.plan)"
@@ -135,7 +141,7 @@
 					!$team.doc.payment_mode ||
 					!$team.doc.billing_details ||
 					!Object.keys(this.$team.doc.billing_details).length
-						? (plan ? `Select Plan: ${planDisplayTitle(plan)}` : 'Next')
+						? 'Next'
 						: $site.doc?.current_plan?.is_trial_plan
 							? 'Upgrade Plan'
 							: 'Change plan'
@@ -151,7 +157,6 @@ import { getPlans, getPlan } from '../data/plans';
 import CardForm from './billing/CardForm.vue';
 import BillingDetails from './billing/BillingDetails.vue';
 import PrepaidCreditsForm from './billing/PrepaidCreditsForm.vue';
-import ProductSupportBanner from './ProductSupportBanner.vue';
 
 export default {
 	name: 'ManageSitePlansDialog',
@@ -220,10 +225,6 @@ export default {
 					},
 				},
 			);
-		},
-		planDisplayTitle(plan) {
-			const display = this.$format.planDisplay(plan, false);
-			return `${display.title}${display.unit}`;
 		},
 		paymentModeAdded() {
 			this.$team.reload();
