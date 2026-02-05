@@ -76,7 +76,9 @@ def get_erpnext_bench():
 			server.use_for_new_sites DESC, bench.creation DESC
 		LIMIT 1
 	"""
-	return frappe.db.sql(query, [proxy_servers, release_group], as_dict=True)[0].name
+	return frappe.db.sql(
+		query, (frappe.db.escape(proxy_servers), frappe.db.escape(release_group)), as_dict=True
+	)[0].name
 
 
 def get_erpnext_domain():

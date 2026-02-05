@@ -787,12 +787,12 @@ def benches_with_available_update(site=None, server=None):
 	if server:
 		values["server"] = server
 	source_benches_info = frappe.db.sql(
-		f"""
+		"""
 		SELECT sb.name AS source_bench, sb.candidate AS source_candidate, sb.server AS server, dcd.destination AS destination_candidate
 		FROM `tabBench` sb, `tabDeploy Candidate Difference` dcd
 		WHERE sb.status IN ('Active', 'Broken') AND sb.candidate = dcd.source
-		{"AND sb.name = %(site_bench)s" if site else ""}
-		{"AND sb.server = %(server)s" if server else ""}
+		AND (%(site_bench)s IS NULL OR sb.name = %(site_bench)s)
+		AND (%(server)s IS NULL OR sb.server = %(server)s)
 		""",
 		values=values,
 		as_dict=True,

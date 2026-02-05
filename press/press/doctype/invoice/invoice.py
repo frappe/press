@@ -520,13 +520,16 @@ class Invoice(Document):
 
 		if self.type == "Subscription" and self.period_start and self.period_end and self.is_new():
 			query = (
-				f"select `name` from `tabInvoice` where team = '{self.team}' and"
-				f" status = 'Draft' and ('{self.period_start}' between `period_start` and"
-				f" `period_end` or '{self.period_end}' between `period_start` and"
+				"select `name` from `tabInvoice` where team = %s and"
+				" status = 'Draft' and (%s between `period_start` and"
+				" `period_end` or %s between `period_start` and"
 				" `period_end`)"
 			)
 
-			intersecting_invoices = [x[0] for x in frappe.db.sql(query, as_list=True)]
+			intersecting_invoices = [
+				x[0]
+				for x in frappe.db.sql(query, (self.team, self.period_start, self.period_end), as_list=True)
+			]
 
 			if intersecting_invoices:
 				frappe.throw(

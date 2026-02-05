@@ -261,18 +261,19 @@ def get_partner_mrr(partner_email):
 def get_dashboard_stats():
 	team = get_current_team(get_doc=True)
 	data = frappe.db.sql(
-		f"""
+		"""
 			SELECT
 				site.plan as plan,
 				COUNT(site.name) as count
 			FROM
 				tabSite as site JOIN tabTeam as team ON site.team = team.name
 			WHERE
-				team.name = '{team.name}'
+				team.name = %s
 				AND site.status = 'Active'
 			GROUP BY
 				site.plan
 		""",
+		(team.name,),
 		as_dict=True,
 	)
 	return [d for d in data]
@@ -283,7 +284,7 @@ def get_dashboard_stats():
 def get_lead_stats():
 	team = get_current_team(get_doc=True)
 	data = frappe.db.sql(
-		f"""
+		"""
 			SELECT
 				COUNT(name) as total,
 				SUM(CASE WHEN status in ('Open', 'In Process') THEN 1 ELSE 0 END) as open,
@@ -292,8 +293,9 @@ def get_lead_stats():
 			FROM
 				`tabPartner Lead`
 			WHERE
-				partner_team = '{team.name}'
+				partner_team = %s
 		""",
+		(team.name,),
 		as_dict=True,
 	)
 	return data[0] if data else {}
