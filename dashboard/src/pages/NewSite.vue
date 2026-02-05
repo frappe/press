@@ -13,7 +13,7 @@
 		<ErrorMessage message="You aren't permitted to create new sites" />
 	</div>
 
-	<div v-else class="mx-auto max-w-2xl px-5">
+	<div v-else class="mx-auto max-w-3xl px-5">
 		<div v-if="$resources.options.loading" class="py-4 text-base text-gray-600">
 			Loading...
 		</div>
@@ -259,16 +259,7 @@
 					</div>
 				</div>
 				<div class="mt-4 text-xs text-gray-700">
-					<div
-						class="flex items-center rounded bg-gray-50 p-2 text-p-base font-medium text-gray-800"
-					>
-						<lucide-badge-check class="h-4 w-8 text-gray-600" />
-						<span class="ml-4">
-							<strong>Support</strong> covers only issues of Frappe apps and not
-							functional queries. You can raise a support ticket for Frappe
-							Cloud issues for all plans.
-						</span>
-					</div>
+					<ProductSupportBanner />
 				</div>
 			</div>
 			<div v-if="selectedVersion && plan && cluster">
@@ -383,6 +374,7 @@ import NewSiteAppSelector from '../components/site/NewSiteAppSelector.vue';
 import Summary from '../components/Summary.vue';
 import { DashboardError } from '../utils/error';
 import { getCountry } from '../utils/country';
+import ProductSupportBanner from '../components/ProductSupportBanner.vue';
 
 export default {
 	name: 'NewSite',

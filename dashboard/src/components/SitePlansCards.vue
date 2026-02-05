@@ -9,7 +9,7 @@
 				:key="group.label || groupIndex"
 				class="rounded-lg bg-gray-50 p-4"
 			>
-				<div class="grid gap-4 @[40rem]:grid-cols-[180px_minmax(0,1fr)]">
+				<div class="grid gap-4 @[38rem]:grid-cols-[180px_minmax(0,1fr)]">
 					<div>
 						<div v-if="group.label" class="text-lg font-semibold text-gray-900">
 							{{ group.label }}
@@ -55,29 +55,20 @@
 						>
 								<div class="min-w-0">
 									<div class="flex items-baseline gap-2">
-										<span class="text-base whitespace-nowrap font-semibold text-gray-900">
-											<template v-if="plan.label">{{ plan.label }}</template>
-											<template v-else>
-												{{ plan.displayTitle }}
-												<span v-if="plan.displayUnit" class="text-gray-700">
-													{{ plan.displayUnit }}
-												</span>
-											</template>
-										</span>
-										<span
-											class="text-xs text-gray-600"
-											v-if="plan.price_inr || plan.price_usd"
+										<Tooltip
+											:text="$format.userCurrency($format.pricePerDay($team.doc.currency === 'INR' ? plan.price_inr : plan.price_usd)) + '/day'"
+											:disabled="!(plan.price_inr || plan.price_usd)"
 										>
-											{{
-												$format.userCurrency(
-													$format.pricePerDay(
-														$team.doc.currency === 'INR'
-															? plan.price_inr
-															: plan.price_usd,
-														),
-												)
-											}}/day
-										</span>
+											<span class="text-base whitespace-nowrap font-semibold text-gray-900">
+												<template v-if="plan.label">{{ plan.label }}</template>
+												<template v-else>
+													{{ plan.displayTitle }}
+													<span v-if="plan.displayUnit" class="text-gray-700">
+														{{ plan.displayUnit }}
+													</span>
+												</template>
+											</span>
+										</Tooltip>
 									</div>
 								</div>
 								<div
@@ -249,7 +240,7 @@ export default {
 							display: `${plan.cpu_time_per_day} ${this.$format.plural(plan.cpu_time_per_day, 'hr', 'hrs')}/day`,
 							condition: !plan.name.includes('Unlimited'),
 							value: plan.cpu_time_per_day,
-							tooltip: 'Amount of compute allocated per day.',
+							tooltip: 'Amount of compute allocated per day',
 							icon: 'cpu',
 							scope: 'plan',
 						},
@@ -257,7 +248,7 @@ export default {
 							label: 'Database',
 							condition: !plan.name.includes('Unlimited'),
 							value: this.$format.bytes(plan.max_database_usage, 1, 2).replace(/\s/g, ''),
-							tooltip: 'Maximum database storage allowed.',
+							tooltip: 'Maximum database storage allowed',
 							icon: 'database',
 							scope: 'plan',
 						},
@@ -265,7 +256,7 @@ export default {
 							label: 'Disk',
 							condition: !plan.name.includes('Unlimited'),
 							value: this.$format.bytes(plan.max_storage_usage, 1, 2).replace(/\s/g, ''),
-							tooltip: 'Maximum disk storage allowed.',
+							tooltip: 'Maximum disk storage allowed',
 							icon: 'hard-drive',
 							scope: 'plan',
 						},
