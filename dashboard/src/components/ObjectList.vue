@@ -131,7 +131,10 @@
 				</div>
 			</div>
 			<div
-				class="p-2 text-right bottom-0 bg-white sticky border-t"
+				class="p-2 text-right"
+				:class="{
+					'border-t bg-white bottom-0 sticky': $list.next && $list.hasNextPage,
+				}"
 				v-if="$list"
 			>
 				<Button
