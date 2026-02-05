@@ -70,6 +70,7 @@ frappe.ui.form.on('Server', {
 				false,
 				frm.doc.provider === 'AWS EC2',
 			],
+			[__('Setup Logrotate'), 'setup_logrotate', true, frm.doc.is_server_setup],
 			[
 				__('Setup PySpy'),
 				'setup_pyspy',

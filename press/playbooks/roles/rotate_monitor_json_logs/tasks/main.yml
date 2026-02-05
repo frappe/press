@@ -1,0 +1,20 @@
+- name: Ensure logrotate configuration for monitor.json.log
+  copy:
+    dest: /etc/logrotate.d/monitor_json_logs
+    content: |
+      /home/frappe/benches/*/logs/monitor.json.log {
+          size 200M
+          daily
+          rotate 2
+          compress
+          delaycompress
+          missingok
+          notifempty
+          copytruncate
+      }
+  owner: root
+  group: root
+  mode: '0644'
+
+- name: Force logrotate to apply new configuration
+  command: logrotate -f /etc/logrotate.d/monitor_json_logs
