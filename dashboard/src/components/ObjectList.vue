@@ -118,7 +118,7 @@
 			</ListView>
 			<div class="px-5" v-if="filteredRows.length === 0">
 				<div
-					class="text-center text-sm leading-10 text-gray-500"
+					class="text-center text-sm leading-10 text-gray-500 pb-[1.75rem]"
 					v-if="isLoading"
 				>
 					Loading...
@@ -126,14 +126,18 @@
 				<div v-else-if="$list?.list?.error" class="py-4 text-center">
 					<ErrorMessage :message="$list.list.error" />
 				</div>
-				<div v-else class="text-center text-sm leading-10 text-gray-500">
+				<div
+					v-else
+					class="text-center text-sm leading-10 text-gray-500 pb-[1.75rem]"
+				>
 					{{ emptyStateMessage }}
 				</div>
 			</div>
 			<div
 				class="p-2 text-right"
 				:class="{
-					'border-t bg-white bottom-0 sticky': $list.next && $list.hasNextPage,
+					'border-t bg-white bottom-0 sticky':
+						$list?.next && $list?.hasNextPage,
 				}"
 				v-if="$list"
 			>
