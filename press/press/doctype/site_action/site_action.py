@@ -87,7 +87,7 @@ class SiteAction(Document):
 		if self.action_type == "Update Site":
 			return [
 				(self.pre_validate_schedule_site_update, StepType.Validation, Wait),
-				(self.schedule_site_update, StepType.Main, Wait),
+				(self.process_site_update, StepType.Main, Wait),
 			]
 
 		if self.action_type == "Move From Shared To Private Bench":
@@ -195,12 +195,23 @@ class SiteAction(Document):
 		return StepStatus.Running
 
 	def pre_validate_schedule_site_update(self):
-		"""Validate and Create Site Update"""
-
-		return StepStatus.Success
-
-	def schedule_site_update(self):
 		"""Schedule Site Update"""
+		args = self.arguments_dict
+		doc: SiteUpdate = frappe.get_doc(
+			{
+				"doctype": "Site Update",
+				"site": self.site,
+				"backup_type": "Physical" if args.get("physical_backup", False) else "Logical",
+				"skipped_failing_patches": args.get("skip_failing_patches", False),
+				"skipped_backups": args.get("skip_backups", False),
+				"status": "Scheduled" if self.scheduled_time else "Pending",
+				"scheduled_time": self.scheduled_time,
+			}
+		).insert()
+		self.set_argument("site_update", doc.name)
+
+	def process_site_update(self):
+		"""Site Update"""
 		if self.current_step.reference_doctype == "Site Update" and self.current_step.reference_name:
 			# Site Update is already scheduled
 			doc: SiteUpdate = frappe.get_doc("Site Update", self.current_step.reference_name)
@@ -208,24 +219,10 @@ class SiteAction(Document):
 				return StepStatus.Success
 			if doc.status == "Fatal" or doc.status == "Failure":
 				return StepStatus.Failure
-
 			return StepStatus.Running
 
-		args = self.arguments_dict
-		site_update_doc = frappe.get_doc(
-			{
-				"doctype": "Site Update",
-				"site": self.site,
-				"backup_type": "Physical" if args.get("physical_backup", False) else "Logical",
-				"skipped_failing_patches": args.get("skip_failing_patches", False),
-				"skipped_backups": args.get("skip_backups", False),
-				"status": "Pending",
-			}
-		).insert()
-		self.current_step.reference_doctype = site_update_doc.doctype
-		self.current_step.reference_name = site_update_doc.name
-		self.save()
-		self.set_argument("site_update", site_update_doc.name)
+		self.current_step.reference_doctype = "Site Update"
+		self.current_step.reference_name = self.get_argument("site_update")
 		return StepStatus.Running
 
 	def add_steps(self):
