@@ -1,10 +1,10 @@
 <template>
 	<div class="p-5">
-		<Button :route="{ name: 'Site Detail Site Actions' }">
+		<Button :route="{ name: 'Site Detail Migrations' }">
 			<template #prefix>
 				<lucide-arrow-left class="inline-block h-4 w-4" />
 			</template>
-			All Actions
+			All Migrations
 		</Button>
 
 		<div class="mt-3">

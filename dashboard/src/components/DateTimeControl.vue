@@ -1,7 +1,7 @@
 <template>
 	<div class="flex items-center space-x-1">
 		<FormControl
-			class="w-2/5"
+			class="flex-[4]"
 			:label="label ? label : 'Date'"
 			type="select"
 			variant="outline"
@@ -10,7 +10,7 @@
 			placeholder="Select date"
 		/>
 		<FormControl
-			class="w-[3/10]"
+			class="flex-[3]"
 			:class="label ? 'mt-5' : ''"
 			:label="label ? '' : 'Hour'"
 			type="select"
@@ -20,7 +20,7 @@
 			placeholder="Select hour"
 		/>
 		<FormControl
-			class="w-[3/10]"
+			class="flex-[3]"
 			:class="label ? 'mt-5' : ''"
 			:label="label ? '' : 'Minute'"
 			type="select"

@@ -1204,292 +1204,14 @@ export default {
 				},
 			},
 			{
-				label: 'Actions',
-				icon: icon('sliders'),
-				route: 'actions',
-				type: 'Component',
-				condition: (site) => {
-					return site.doc?.status !== 'Archived';
-				},
-				component: SiteActions,
-				props: (site) => {
-					return { site: site.doc?.name };
-				},
-			},
-			{
-				label: 'Updates',
+				label: 'Migrations',
 				icon: icon('arrow-up-circle'),
-				route: 'updates',
+				route: 'migrations',
 				type: 'list',
 				condition: (site) => {
 					return site.doc?.status !== 'Archived';
 				},
-				childrenRoutes: ['Site Update'],
-				list: {
-					doctype: 'Site Update',
-					filters: (site) => {
-						return { site: site.doc?.name };
-					},
-					orderBy: 'creation',
-					fields: [
-						'difference',
-						'update_job.end as updated_on',
-						'update_job',
-						'backup_type',
-						'recover_job',
-					],
-					columns: [
-						{
-							label: 'Type',
-							fieldname: 'deploy_type',
-							width: 0.3,
-						},
-						{
-							label: 'Status',
-							fieldname: 'status',
-							type: 'Badge',
-							width: 0.5,
-						},
-						{
-							label: 'Created By',
-							fieldname: 'owner',
-						},
-						{
-							label: 'Scheduled At',
-							fieldname: 'scheduled_time',
-							format(value) {
-								return date(value, 'lll');
-							},
-						},
-						{
-							label: 'Updated On',
-							fieldname: 'updated_on',
-							format(value) {
-								return date(value, 'lll');
-							},
-						},
-					],
-					rowActions({ row, documentResource: site }) {
-						return [
-							{
-								label: 'Edit',
-								condition: () => row.status === 'Scheduled',
-								onClick() {
-									let SiteUpdateDialog = defineAsyncComponent(
-										() => import('../components/SiteUpdateDialog.vue'),
-									);
-									renderDialog(
-										h(SiteUpdateDialog, {
-											site: site.doc?.name,
-											existingUpdate: row.name,
-										}),
-									);
-								},
-							},
-							{
-								label: 'Cancel',
-								condition: () => row.status === 'Scheduled',
-								onClick() {
-									confirmDialog({
-										title: 'Cancel Update',
-										message: `Are you sure you want to cancel the scheduled update?`,
-										onSuccess({ hide }) {
-											if (site.cancelUpdate.loading) return;
-											toast.promise(
-												site.cancelUpdate.submit({ site_update: row.name }),
-												{
-													loading: 'Cancelling update...',
-													success: () => {
-														hide();
-														site.reload();
-														return 'Update cancelled';
-													},
-													error: (e) => getToastErrorMessage(e),
-												},
-											);
-										},
-									});
-								},
-							},
-							{
-								label: 'View Job',
-								condition: () =>
-									!['Scheduled', 'Cancelled'].includes(row.status),
-								onClick() {
-									router.push({
-										name: 'Site Update',
-										params: { id: row.name },
-									});
-								},
-							},
-							{
-								label: 'Update Now',
-								condition: () => row.status === 'Scheduled',
-								onClick() {
-									let siteUpdate = getDocResource({
-										doctype: 'Site Update',
-										name: row.name,
-										whitelistedMethods: {
-											updateNow: 'start',
-										},
-									});
-
-									toast.promise(siteUpdate.updateNow.submit(), {
-										loading: 'Updating site...',
-										success: () => {
-											router.push({
-												name: 'Site Update',
-												params: { id: row.name },
-											});
-
-											return 'Site update started';
-										},
-										error: 'Failed to update site',
-									});
-								},
-							},
-							{
-								label: 'View App Changes',
-								onClick() {
-									createListResource({
-										doctype: 'Deploy Candidate Difference App',
-										fields: [
-											'difference.github_diff_url as diff_url',
-											'difference.source_hash as source_hash',
-											'difference.destination_hash as destination_hash',
-											'app.title as app',
-										],
-										filters: {
-											parenttype: 'Deploy Candidate Difference',
-											parent: row.difference,
-										},
-										auto: true,
-										pageLength: 99,
-										onSuccess(data) {
-											if (data?.length) {
-												renderDialog(
-													h(
-														GenericDialog,
-														{
-															options: {
-																title: 'App Changes',
-																size: '2xl',
-															},
-														},
-														{
-															default: () =>
-																h(ObjectList, {
-																	options: {
-																		data: () => data,
-																		columns: [
-																			{
-																				label: 'App',
-																				fieldname: 'app',
-																			},
-																			{
-																				label: 'From',
-																				fieldname: 'source_hash',
-																				type: 'Button',
-																				Button({ row }) {
-																					return {
-																						label:
-																							row.source_tag ||
-																							row.source_hash.slice(0, 7),
-																						variant: 'ghost',
-																						class: 'font-mono',
-																						link: `${
-																							row.diff_url.split('/compare')[0]
-																						}/commit/${row.source_hash}`,
-																					};
-																				},
-																			},
-																			{
-																				label: 'To',
-																				fieldname: 'destination_hash',
-																				type: 'Button',
-																				Button({ row }) {
-																					return {
-																						label:
-																							row.destination_tag ||
-																							row.destination_hash.slice(0, 7),
-																						variant: 'ghost',
-																						class: 'font-mono',
-																						link: `${
-																							row.diff_url.split('/compare')[0]
-																						}/commit/${row.destination_hash}`,
-																					};
-																				},
-																			},
-																			{
-																				label: 'App Changes',
-																				fieldname: 'diff_url',
-																				align: 'right',
-																				type: 'Button',
-																				Button({ row }) {
-																					return {
-																						label: 'View',
-																						variant: 'ghost',
-																						slots: {
-																							prefix: icon('external-link'),
-																						},
-																						link: row.diff_url,
-																					};
-																				},
-																			},
-																		],
-																	},
-																}),
-														},
-													),
-												);
-											} else toast.error('No app changes found');
-										},
-									});
-								},
-							},
-						];
-					},
-					actions({ documentResource: site }) {
-						if (site.doc.group_public) return [];
-
-						return [
-							{
-								label: 'Configure',
-								slots: {
-									prefix: icon('settings'),
-								},
-								onClick() {
-									let ConfigureAutoUpdateDialog = defineAsyncComponent(
-										() =>
-											import('../components/site/ConfigureAutoUpdateDialog.vue'),
-									);
-
-									renderDialog(
-										h(ConfigureAutoUpdateDialog, {
-											site: site.doc?.name,
-										}),
-									);
-								},
-							},
-						];
-					},
-					banner({ documentResource: site }) {
-						const bannerTitle =
-							'Your site is currently on a shared bench group. Upgrade to a private bench group to configure auto updates and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
-
-						return getUpsellBanner(site, bannerTitle);
-					},
-				},
-			},
-			{
-				label: 'Site Actions',
-				icon: icon('arrow-up-circle'),
-				route: 'site-actions',
-				type: 'list',
-				condition: (site) => {
-					return site.doc?.status !== 'Archived';
-				},
-				childrenRoutes: ['Site Action'],
+				childrenRoutes: ['Site Migration'],
 				list: {
 					doctype: 'Site Action',
 					filters: (site) => {
@@ -1499,9 +1221,9 @@ export default {
 					fields: ['action_type', 'status', 'scheduled_time', 'owner'],
 					columns: [
 						{
-							label: 'Action',
+							label: 'Migration',
 							fieldname: 'action_type',
-							width: 0.3,
+							width: 1,
 						},
 						{
 							label: 'Status',
@@ -1530,12 +1252,47 @@ export default {
 					],
 					route(row) {
 						return {
-							name: 'Site Action',
+							name: 'Site Migration',
 							params: { id: row.name },
+						};
+					},
+					primaryAction({ listResource: backups, documentResource: site }) {
+						return {
+							label: 'Trigger Migration',
+							slots: {
+								prefix: icon('upload-cloud'),
+							},
+							loading: site.backup.loading,
+							onClick() {
+								renderDialog(
+									h(
+										defineAsyncComponent(
+											() => import('../components/site/SiteMigration.vue'),
+										),
+										{
+											site: site.name,
+										},
+									),
+								);
+							},
 						};
 					},
 				},
 			},
+			{
+				label: 'Actions',
+				icon: icon('sliders'),
+				route: 'actions',
+				type: 'Component',
+				condition: (site) => {
+					return site.doc?.status !== 'Archived';
+				},
+				component: SiteActions,
+				props: (site) => {
+					return { site: site.doc?.name };
+				},
+			},
+
 			{
 				label: 'Activity',
 				icon: icon('activity'),
@@ -1807,9 +1564,9 @@ export default {
 			component: () => import('../pages/SiteUpdate.vue'),
 		},
 		{
-			name: 'Site Action',
-			path: 'actions/:id',
-			component: () => import('../pages/SiteAction.vue'),
+			name: 'Site Migration',
+			path: 'migrations/:id',
+			component: () => import('../pages/SiteMigration.vue'),
 		},
 	],
 };

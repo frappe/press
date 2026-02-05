@@ -3825,6 +3825,7 @@ class Site(Document, TagHelpers):
 		return {
 			"Update Site": {
 				"hidden": False,
+				"allow_scheduling": True,
 				"description": "Update your site to the latest version of the application",
 				"button_label": "Update Site",
 				"options": {
@@ -3841,12 +3842,14 @@ class Site(Document, TagHelpers):
 			},
 			"In-Place Migration": {
 				"hidden": False,
+				"allow_scheduling": False,
 				"description": "Run bench migrate command on your site to migrate to a new version",
 				"button_label": "Migrate Site",
 				"options": {},
 			},
 			"Move From Shared To Private Bench": {
 				"hidden": not is_on_public_release_group,
+				"allow_scheduling": True,
 				"description": "Move your site from a shared bench to a private bench",
 				"button_label": "Move to Private Bench",
 				"options": {
@@ -3862,22 +3865,24 @@ class Site(Document, TagHelpers):
 			},
 			"Move From Private To Shared Bench": {
 				"hidden": is_on_public_release_group,
+				"allow_scheduling": True,
 				"description": "Move your site from a private bench to a shared bench",
 				"button_label": "Move to Shared Bench",
 				"options": {
-					"shared_release_groups": [
-						x for x in compatible_release_groups_for_migration if x.release_group_public
-					],
+					# TODO
+					"incompatible_apps": [],
 				},
 			},
 			"Move Site To Different Server": {
 				"hidden": is_on_public_release_group,
+				"allow_scheduling": True,
 				"description": "Move your site to a different server",
 				"button_label": "Move Site",
 				"options": {"dedicated_servers": owned_dedicated_servers},
 			},
 			"Move Site To Different Region": {
 				"hidden": is_on_public_release_group,
+				"allow_scheduling": True,
 				"description": "Move your site to a different region",
 				"button_label": "Move Site",
 				"options": {
