@@ -38,6 +38,147 @@
 				<div v-if="selectedMigrationMode == 'Update Site'">
 					<GenericList :options="updateSiteListOptions" />
 				</div>
+				<!-- Move From Shared To Private Bench -->
+				<div
+					v-else-if="
+						selectedMigrationMode == 'Move From Shared To Private Bench'
+					"
+					class="flex flex-col gap-3"
+				>
+					<!-- Chose Bench Related Opinion -->
+					<div class="flex flex-col gap-2">
+						<p class="text-sm text-gray-700">Select Movement Type</p>
+						<FormControl
+							type="select"
+							:options="[
+								{
+									label: 'Move To Existing Bench',
+									value: 'Move To Existing Bench',
+								},
+								{
+									label: 'Create A New Bench',
+									value: 'Create A New Bench',
+								},
+							]"
+							size="md"
+							variant="outline"
+							placeholder="Select Movement Type"
+							v-model="benchMovementType"
+							required
+						/>
+					</div>
+					<!-- Choose Release Group (For Existing) -->
+					<div
+						class="flex flex-col gap-2"
+						v-if="benchMovementType == 'Move To Existing Bench'"
+					>
+						<p class="text-sm text-gray-700">Select Bench Group</p>
+						<FormControl
+							type="select"
+							:options="
+								availableReleaseGroupsForMovingToPrivateBench.map((e) => ({
+									label: e.title,
+									value: e.name,
+								}))
+							"
+							size="md"
+							variant="outline"
+							placeholder="Choose Release Group"
+							v-model="selectedReleaseGroupToMoveTo"
+							required
+						/>
+					</div>
+					<!-- Choose Server (For Existing) -->
+					<!-- Because, Release group can have multiple server -->
+					<div
+						class="flex flex-col gap-2"
+						v-if="
+							benchMovementType == 'Move To Existing Bench' &&
+							selectedReleaseGroupToMoveTo
+						"
+					>
+						<p class="text-sm text-gray-700">Select Server</p>
+						<FormControl
+							type="select"
+							:options="
+								availableServersForSelectedReleaseGroupForMovingToPrivateBench.map(
+									(e) => ({ label: e.title, value: e.name }),
+								)
+							"
+							size="md"
+							variant="outline"
+							placeholder="Choose Server"
+							v-model="selectedServerToMoveTo"
+							required
+						/>
+					</div>
+
+					<!-- New Bench Group Name (For New) -->
+					<div
+						class="flex flex-col gap-2"
+						v-if="benchMovementType == 'Create A New Bench'"
+					>
+						<p class="text-sm text-gray-700">Provide New Bench Name</p>
+						<FormControl
+							type="text"
+							size="md"
+							variant="outline"
+							placeholder="Provide New Bench Name"
+							v-model="newBenchGroupName"
+							required
+						/>
+					</div>
+
+					<!-- Chose Server Type (For New) -->
+					<div
+						class="flex flex-col gap-2"
+						v-if="benchMovementType == 'Create A New Bench'"
+					>
+						<p class="text-sm text-gray-700">Select Server Type</p>
+						<FormControl
+							type="select"
+							:options="[
+								{
+									label: 'Shared Server',
+									value: 'Shared Server',
+								},
+								{
+									label: 'Dedicated Server',
+									value: 'Dedicated Server',
+								},
+							]"
+							size="md"
+							variant="outline"
+							placeholder="Select Server Type"
+							v-model="selectedServerType"
+							required
+						/>
+					</div>
+
+					<!-- Chose The Server -->
+					<div
+						class="flex flex-col gap-2"
+						v-if="
+							benchMovementType == 'Create A New Bench' &&
+							selectedServerType == 'Dedicated Server'
+						"
+					>
+						<p class="text-sm text-gray-700">Select Server</p>
+						<FormControl
+							type="select"
+							:options="
+								dedicatedServersForNewReleaseGroupForMovingToPrivateBench.map(
+									(e) => ({ label: e.title, value: e.name }),
+								)
+							"
+							size="md"
+							variant="outline"
+							placeholder="Select Server"
+							v-model="selectedServerToMoveTo"
+							required
+						/>
+					</div>
+				</div>
 
 				<!-- Scheduling Option -->
 				<DateTimeControl
@@ -53,6 +194,7 @@
 import { getCachedDocumentResource, Select } from 'frappe-ui';
 import AlertBanner from '../AlertBanner.vue';
 import GenericList from '../GenericList.vue';
+import FormControl from 'frappe-ui/src/components/FormControl/FormControl.vue';
 
 export default {
 	props: ['site'],
@@ -69,6 +211,14 @@ export default {
 			skipFailingPatches: false,
 			skipBackups: false,
 			scheduledTime: '',
+
+			// For migration
+			benchMovementType: 'Create A New Bench',
+			selectedReleaseGroupToMoveTo: '',
+			selectedServerToMoveTo: '',
+			selectedServerType: 'Shared Server',
+
+			newBenchGroupName: '',
 		};
 	},
 	watch: {},
@@ -179,6 +329,34 @@ export default {
 					},
 				],
 			};
+		},
+		// Move Site From Shared Bench to Private Bench
+		availableReleaseGroupsForMovingToPrivateBench() {
+			if (this.selectedMigrationMode !== 'Move From Shared To Private Bench')
+				return {};
+			return (
+				this.selectedMigrationChoiceOptions?.available_release_groups ?? {}
+			);
+		},
+		availableServersForSelectedReleaseGroupForMovingToPrivateBench() {
+			if (this.selectedMigrationMode !== 'Move From Shared To Private Bench')
+				return [];
+			if (this.benchMovementType !== 'Move To Existing Bench') return [];
+			return (
+				this.availableReleaseGroupsForMovingToPrivateBench.find(
+					(e) => e.name === this.selectedReleaseGroupToMoveTo,
+				)?.servers ?? []
+			);
+		},
+		dedicatedServersForNewReleaseGroupForMovingToPrivateBench() {
+			if (this.selectedMigrationMode !== 'Move From Shared To Private Bench')
+				return [];
+			if (this.benchMovementType !== 'Create A New Bench') return [];
+			if (this.selectedServerType !== 'Dedicated Server') return [];
+			return (
+				this.selectedMigrationChoiceOptions
+					?.dedicated_servers_for_new_release_group ?? []
+			);
 		},
 	},
 	methods: {

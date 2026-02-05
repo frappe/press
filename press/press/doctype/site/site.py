@@ -3792,6 +3792,8 @@ class Site(Document, TagHelpers):
 				ReleaseGroup.name,
 				ReleaseGroup.title.as_("release_group_title"),
 				ReleaseGroup.public.as_("release_group_public"),
+				Server.title.as_("server_title"),
+				Server.name.as_("server_name"),
 				Server.public.as_("deployed_on_public_server"),
 			)
 			.inner_join(ReleaseGroup)
@@ -3805,18 +3807,34 @@ class Site(Document, TagHelpers):
 			.where(ReleaseGroup.public == 0)
 			.where(Bench.server == self.server)
 			.where(Server.name == Bench.server)
-			.groupby(ReleaseGroup.name)
 		)
 
-		compatible_release_groups_for_migration = query.run(as_dict=True)
-		owned_dedicated_servers = (
-			frappe.get_all(
-				"Server",
-				filters={"status": "Active", "public": 0, "team": self.team},
-				fields=["name", "title", "cluster"],
-			),
-		)
+		_compatible_release_groups = query.run(as_dict=True)
+		_compatible_release_groups_for_migration = {}
+		for grp in _compatible_release_groups:
+			if grp.name not in _compatible_release_groups_for_migration:
+				_compatible_release_groups_for_migration[grp.name] = {
+					"name": grp.name,
+					"title": grp.release_group_title,
+					"public": grp.release_group_public,
+					"servers": [],
+				}
 
+			_compatible_release_groups_for_migration[grp.name]["servers"].append(
+				{
+					"name": grp.server_name,
+					"title": grp.server_title,
+					"public": grp.deployed_on_public_server,
+				}
+			)
+
+		compatible_release_groups_for_migration = list(_compatible_release_groups_for_migration.values())
+
+		owned_dedicated_servers = frappe.get_all(
+			"Server",
+			filters={"status": "Active", "public": 0, "team": self.team},
+			fields=["name", "title", "cluster"],
+		)
 		cluster_names = release_group.get_clusters()
 		group_regions = frappe.get_all(
 			"Cluster", filters={"name": ("in", cluster_names)}, fields=["name", "title", "image"]
@@ -3853,14 +3871,8 @@ class Site(Document, TagHelpers):
 				"description": "Move your site from a shared bench to a private bench",
 				"button_label": "Move to Private Bench",
 				"options": {
-					"server_types": ["Shared Server", "Dedicated Server"],
-					"private_release_groups_on_shared_servers": [
-						x for x in compatible_release_groups_for_migration if x.release_group_public
-					],
-					"private_release_groups_on_dedicated_servers": [
-						x for x in compatible_release_groups_for_migration if not x.release_group_public
-					],
-					"dedicated_servers": owned_dedicated_servers,
+					"available_release_groups": compatible_release_groups_for_migration,
+					"dedicated_servers_for_new_release_group": owned_dedicated_servers,
 				},
 			},
 			"Move From Private To Shared Bench": {
