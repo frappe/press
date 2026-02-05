@@ -103,7 +103,7 @@ export default {
 			queryResult: [],
 		};
 	},
-	props: ['options', 'modelValue', 'app', 'source'],
+	props: ['options', 'modelValue', 'app', 'source', 'currentRelease'],
 	emits: ['update:modelValue'],
 	methods: {
 		selectOption(option, togglePopover) {
@@ -145,6 +145,7 @@ export default {
 					source: this.source,
 					query: this.searchQuery?.trim(),
 					fields: ['name', 'message', 'timestamp', 'hash'],
+					current_release: this.currentRelease,
 					limit: 20,
 				},
 				initialData: [],
