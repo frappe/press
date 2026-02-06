@@ -2541,7 +2541,7 @@ def check_existing_upgrade_bench(name, version):
 				"exists": True,
 				"bench_name": bench.name,
 				"release_group": bench.group,
-				"release_group_title": bench.release_group_title,
+				"release_group_title": bench.title,
 			}
 
 	return {"exists": False, "bench_name": None, "release_group": None, "release_group_title": None}
