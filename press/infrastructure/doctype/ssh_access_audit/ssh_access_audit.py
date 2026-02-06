@@ -242,7 +242,7 @@ class SSHAccessAudit(Document):
 
 class AnsibleAdHoc:
 	def __init__(self, sources):
-		os.environ["ANSIBLE_HOST_KEY_CHECKING"] = False
+		os.environ["ANSIBLE_HOST_KEY_CHECKING"] = "False"
 		context.CLIARGS = ImmutableDict(
 			become_method="sudo",
 			check=False,

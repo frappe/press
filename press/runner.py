@@ -173,7 +173,7 @@ class Ansible:
 		self.host = f"{server.ip}:{port}"
 		self.variables = variables or {}
 
-		os.environ["ANSIBLE_HOST_KEY_CHECKING"] = False
+		os.environ["ANSIBLE_HOST_KEY_CHECKING"] = "False"
 		context.CLIARGS = ImmutableDict(
 			become_method="sudo",
 			check=False,
