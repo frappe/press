@@ -190,7 +190,7 @@
 				"
 				class="w-full"
 				variant="solid"
-				label="Schedule Upgrade"
+				:label="targetDateTime ? 'Schedule Upgrade' : 'Upgrade Now'"
 				:loading="$resources.versionUpgrade.loading"
 				@click="handleUpgradeSubmit"
 			/>
@@ -204,7 +204,7 @@
 				"
 				class="w-full"
 				variant="subtle"
-				label="Close"
+				:label="targetDateTime ? 'Schedule Upgrade' : 'Upgrade Now'"
 				@click="show = false"
 			/>
 			<!-- Create bench and upgrade -->
@@ -249,7 +249,7 @@ export default {
 			targetDateTime: null,
 			skipBackups: false,
 			skipFailingPatches: false,
-			upgradeStep: null, // 'ready_to_upgrade'
+			upgradeStep: null,
 			existingBenchGroup: null,
 			existingBenchGroupTitle: null,
 			appCompatibility: {
@@ -259,7 +259,7 @@ export default {
 			},
 			newReleaseGroupTitle: '',
 			customAppSources: {}, // { app_name: { branch, source } }
-			createdBenchDetails: null, // { release_group, bench, deploy_job }
+			createdBenchDetails: null,
 		};
 	},
 
@@ -302,7 +302,6 @@ export default {
 			return getCachedDocumentResource('Site', this.site);
 		},
 		hasValidCustomAppSources() {
-			// Check if all custom apps have a valid branch selected
 			return this.appCompatibility.custom_apps.every((app) => {
 				const branch = this.customAppSources[app.app]?.branch;
 				if (!branch) return false;
