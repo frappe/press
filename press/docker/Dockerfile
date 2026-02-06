@@ -41,6 +41,22 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt apt-get update \
   libpangocairo-1.0-0 \
   # Chromium and dependencies
   chromium-browser \
+  libnss3 \
+  libatk1.0-0 \
+  fonts-liberation \
+  libatk-bridge2.0-0 \
+  ibatspi2.0-0 \
+  libgbm1 \
+  libgtk-3-0 \
+  libnspr4 \
+  xdg-utils \
+  libvulkan1 \
+  libxcomposite1 \
+  libxdamage1 \
+  libxfixes3 \
+  libxkbcommon0 \
+  libxrandr2 \
+  libasound2 \
   # wkhtmltopdf dependencies
   ca-certificates \
   fontconfig \
