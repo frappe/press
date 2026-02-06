@@ -53,7 +53,12 @@ def signup(email: str, product: str | None = None, referrer: str | None = None) 
 
 	account_request = frappe.db.get_value(
 		"Account Request",
-		{"email": email, "referrer_id": referrer, "product_trial": product},
+		{
+			"email": email,
+			"referrer_id": referrer,
+			"product_trial": product,
+			"invited_by": ("is", "not set"),
+		},
 		"name",
 	)
 
