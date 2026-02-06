@@ -259,6 +259,7 @@ export default {
 								options: commitChooserOptions(app),
 								app: app.name,
 								source: app.source,
+								currentRelease: app.current_release,
 								modelValue: initialValue,
 								'onUpdate:modelValue': (value) => {
 									vm.updateNextRelease(app.name, value.value, value.hash);

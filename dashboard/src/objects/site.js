@@ -149,7 +149,7 @@ export default {
 			{
 				label: 'Plan',
 				fieldname: 'plan',
-				width: 0.85,
+				width: '15rem',
 				format(value, row) {
 					if (row.trial_end_date) {
 						return trialDays(row.trial_end_date);
@@ -784,8 +784,9 @@ export default {
 										? '<br><br><div class="p-2 bg-gray-100 rounded border-gray-200">You have to be logged in as a <b>System Manager</b> <em>in your site</em> to download the backup.<div>'
 										: ''
 								}`,
-								onSuccess() {
+								onSuccess({ hide }) {
 									downloadBackup(backup, file);
+									hide();
 								},
 							});
 						}

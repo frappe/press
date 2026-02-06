@@ -104,6 +104,9 @@ export default {
 							},
 						});
 					}
+					if (data.prefilled_subdomain) {
+						this.subdomain = data.prefilled_subdomain;
+					}
 				},
 				onError(error) {
 					toast.error(error.messages.join('\n'));
@@ -116,11 +119,6 @@ export default {
 				doctype: 'Product Trial',
 				name: this.productId,
 				auto: true,
-				onSuccess: (data) => {
-					if (data.prefilled_subdomain) {
-						this.subdomain = data.prefilled_subdomain;
-					}
-				},
 			};
 		},
 		createSite() {

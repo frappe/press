@@ -48,7 +48,6 @@
 						$resources.transferCredits.submit({
 							amount: amount,
 							customer: customerTeam.name,
-							partner: $team.doc.name,
 						})
 					"
 				>
