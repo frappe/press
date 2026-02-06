@@ -2534,9 +2534,22 @@ def check_existing_upgrade_bench(name, version):
 		.where(ReleaseGroup.public == 0)
 	).run(as_dict=True)
 
+	if not benches:
+		return {"exists": False, "bench_name": None, "release_group": None, "release_group_title": None}
+
+	bench_groups = [bench.group for bench in benches]
+	all_bench_apps = frappe.db.get_all(
+		"Release Group App", filters={"parent": ("in", bench_groups)}, fields=["parent", "app"]
+	)
+	bench_apps_map = {}
+	for row in all_bench_apps:
+		if row.parent not in bench_apps_map:
+			bench_apps_map[row.parent] = []
+		bench_apps_map[row.parent].append(row.app)
+
 	for bench in benches:
-		bench_apps = frappe.db.get_all("Release Group App", filters={"parent": bench.group}, pluck="app")
-		if set(current_apps).issubset(set(bench_apps)):
+		bench_app_list = bench_apps_map.get(bench.group, [])
+		if set(current_apps).issubset(set(bench_app_list)):
 			return {
 				"exists": True,
 				"bench_name": bench.name,
