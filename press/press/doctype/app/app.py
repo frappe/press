@@ -111,18 +111,20 @@ def poll_new_releases():
 			frappe.db.rollback()
 
 
-def is_bounded_npm_spec(spec: sv.NpmSpec) -> bool:
-	"""Ensure lower and upper bounds exist on versions"""
-	has_lower = False
-	has_upper = False
+def is_bounded(spec: sv.NpmSpec) -> bool:
+	"""Ensure less than and greater than bounds are there, or exact version is given"""
+	standardized = str(spec)
 
-	for r in spec.clause.clauses:
-		if r.operator in (">", ">=", "="):
-			has_lower = True
-		if r.operator in ("<", "<=", "="):
-			has_upper = True
+	if "*" in standardized or not standardized:
+		return False
 
-	return has_lower and has_upper
+	has_upper_bound = "<" in standardized
+	has_lower_bound = ">" in standardized
+
+	if "==" in standardized or (">" not in standardized and "<" not in standardized):
+		return True
+
+	return has_upper_bound and has_lower_bound
 
 
 def map_frappe_version(version_string: str, frappe_versions: list[dict[str, int | str]]) -> list[str]:
@@ -134,7 +136,7 @@ def map_frappe_version(version_string: str, frappe_versions: list[dict[str, int 
 	except ValueError:
 		frappe.throw("Invalid version format. Please use NPM-style semver ranges (e.g. '>=15.0.0 <16.0.0').")
 
-	if not is_bounded_npm_spec(spec):
+	if not is_bounded(spec):
 		frappe.throw(
 			"Version range must be bounded. "
 			"Please provide both a lower and an upper bound "
