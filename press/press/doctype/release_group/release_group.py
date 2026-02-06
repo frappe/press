@@ -175,6 +175,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 	def get_doc(self, doc):
 		doc.deploy_information = self.deploy_information()
+		print(doc.deploy_information.apps_with_yanked_releases)
 		doc.status = self.status
 		doc.actions = self.get_actions()
 		doc.are_builds_suspended = are_builds_suspended()
@@ -855,7 +856,9 @@ class ReleaseGroup(Document, TagHelpers):
 		last_deployed_bench = get_last_doc(
 			"Bench", {"group": self.name, "status": ("in", ("Active", "Installing", "Pending"))}
 		)
-		out.apps = self.get_app_updates(last_deployed_bench.apps if last_deployed_bench else [])
+		out.apps, out.apps_with_yanked_releases = self.get_app_updates(
+			last_deployed_bench.apps if last_deployed_bench else []
+		)
 		out.last_deploy = self.last_dc_info
 		out.deploy_in_progress = self.deploy_in_progress
 
@@ -875,7 +878,6 @@ class ReleaseGroup(Document, TagHelpers):
 				["name", "server", "bench"],
 			)
 		]
-
 		return out
 
 	@dashboard_whitelist()
@@ -1158,8 +1160,8 @@ class ReleaseGroup(Document, TagHelpers):
 		)
 		return query.run(as_dict=True)
 
-	def get_app_updates(self, current_apps):
-		next_apps = self.get_next_apps(current_apps)
+	def get_app_updates(self, current_apps) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+		next_apps, apps_with_yanked_releases = self.get_next_apps(current_apps)
 
 		apps = []
 		for app in next_apps:
@@ -1211,9 +1213,9 @@ class ReleaseGroup(Document, TagHelpers):
 					}
 				)
 			)
-		return apps
+		return apps, apps_with_yanked_releases
 
-	def get_next_apps(self, current_apps):
+	def get_next_apps(self, current_apps) -> tuple[dict[str, str | datetime], list[dict[str, str]]]:
 		marketplace_app_sources = self.get_marketplace_app_sources()
 		current_team = get_current_team(True)
 		app_publishers_team = [current_team.name]
@@ -1239,10 +1241,12 @@ class ReleaseGroup(Document, TagHelpers):
 		YankedAppRelease = frappe.qb.DocType("Yanked App Release")
 		latest_releases = (
 			frappe.qb.from_(AppRelease)
-			.left_join(YankedAppRelease)
-			.on(AppRelease.hash == YankedAppRelease.hash)
-			.where(AppRelease.source.isin(app_sources))
-			.where(YankedAppRelease.hash.isnull())  # Exclude yanked releases directly in the query
+			# .left_join(YankedAppRelease)
+			# .on(AppRelease.hash == YankedAppRelease.hash)
+			# .where(AppRelease.source.isin(app_sources))
+			# .where(
+			# 	YankedAppRelease.hash.isnull()
+			# )  # Exclude yanked releases directly in the query, can't just filter with status since need all releases with this hash to be excluded
 			.select(
 				AppRelease.name,
 				AppRelease.source,
@@ -1253,6 +1257,16 @@ class ReleaseGroup(Document, TagHelpers):
 				AppRelease.creation,
 			)
 			.orderby(AppRelease.creation, order=frappe.qb.desc)
+			.run(as_dict=True)
+		)
+
+		# We need to show the app releases that are yanked
+		apps_with_yanked_releases = (
+			frappe.qb.from_(AppRelease)
+			.join(YankedAppRelease)
+			.on(AppRelease.hash == YankedAppRelease.hash)
+			.where(AppRelease.source.isin(app_sources))
+			.select(AppRelease.app, AppRelease.hash)
 			.run(as_dict=True)
 		)
 
@@ -1303,7 +1317,7 @@ class ReleaseGroup(Document, TagHelpers):
 				)
 			)
 
-		return next_apps
+		return next_apps, apps_with_yanked_releases
 
 	def get_removed_apps(self):
 		# Apps that were removed from the release group
