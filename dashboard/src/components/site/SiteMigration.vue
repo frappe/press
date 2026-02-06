@@ -48,27 +48,29 @@
 					class="flex flex-col gap-3"
 				>
 					<!-- Chose Bench Related Opinion -->
-					<div class="flex flex-col gap-2">
-						<p class="text-sm text-gray-700">Select Movement Type</p>
-						<FormControl
-							type="select"
-							:options="[
-								{
-									label: 'Move To Existing Bench',
-									value: 'Move To Existing Bench',
-								},
-								{
-									label: 'Create A New Bench',
-									value: 'Create A New Bench',
-								},
-							]"
-							size="md"
-							variant="outline"
-							placeholder="Select Movement Type"
-							v-model="benchMovementType"
-							required
-						/>
+					<div
+						class="flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-gray-800"
+					>
+						<div
+							class="w-1/2 text-base cursor-pointer rounded-sm py-2 text-center transition-all"
+							:class="{
+								'bg-gray-100': benchMovementType == 'Create A New Bench',
+							}"
+							@click="benchMovementType = 'Create A New Bench'"
+						>
+							New Bench
+						</div>
+						<div
+							class="w-1/2 text-base cursor-pointer rounded-sm py-2 text-center transition-all"
+							:class="{
+								'bg-gray-100': benchMovementType == 'Move To Existing Bench',
+							}"
+							@click="benchMovementType = 'Move To Existing Bench'"
+						>
+							Existing Bench
+						</div>
 					</div>
+
 					<!-- Choose Release Group (For Existing) -->
 					<div
 						class="flex flex-col gap-2"
