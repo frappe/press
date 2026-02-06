@@ -13,7 +13,7 @@ from frappe.utils import convert_utc_to_timezone, flt
 from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 
-from press.api.analytics import get_rounded_boundaries
+from press.api.analytics import auto_timespan_timegrain, get_rounded_boundaries
 from press.api.bench import all as all_benches
 from press.api.site import protected
 from press.exceptions import MonitorServerDown
@@ -430,7 +430,7 @@ def analytics(name, query, timezone, duration, server_type=None):
 	# If the server type is of unified server, then just show server's metrics as application server
 	server_type = "Application Server" if server_type == "Unified Server" else server_type
 	mount_point = get_mount_point(name, server_type)
-	timespan, timegrain = get_timespan_timegrain(duration)
+	timespan, timegrain = auto_timespan_timegrain(duration)
 
 	query_map = {
 		"cpu": (
@@ -507,12 +507,10 @@ def get_request_by_site(name, query, timezone, duration):
 
 	from press.api.analytics import ResourceType, get_request_by_
 
-	timespan, timegrain = get_timespan_timegrain(duration)
+	timespan, timegrain = auto_timespan_timegrain(duration)
 
 	end = now_datetime().astimezone(pytz_timezone(timezone))
 	start = add_to_date(end, seconds=-timespan)
-
-	timespan, timegrain = get_timespan_timegrain(duration)
 
 	return get_request_by_(name, query, timezone, start, end, timespan, timegrain, ResourceType.SERVER)
 
@@ -526,7 +524,7 @@ def get_background_job_by_site(name, query, timezone, duration):
 
 	from press.api.analytics import ResourceType, get_background_job_by_
 
-	timespan, timegrain = get_timespan_timegrain(duration)
+	timespan, timegrain = auto_timespan_timegrain(duration)
 
 	end = now_datetime().astimezone(pytz_timezone(timezone))
 	start = add_to_date(end, seconds=-timespan)
@@ -543,7 +541,7 @@ def get_slow_logs_by_site(name, query, timezone, duration, normalize=False):
 
 	from press.api.analytics import ResourceType, get_slow_logs
 
-	timespan, timegrain = get_timespan_timegrain(duration)
+	timespan, timegrain = auto_timespan_timegrain(duration)
 
 	end = now_datetime().astimezone(pytz_timezone(timezone))
 	start = add_to_date(end, seconds=-timespan)
@@ -964,18 +962,6 @@ def rename(name, title):
 	doc = poly_get_doc(["Server", "Database Server"], name)
 	doc.title = title
 	doc.save()
-
-
-def get_timespan_timegrain(duration: str) -> tuple[int, int]:
-	timespan, timegrain = {
-		"1 Hour": (60 * 60, 2 * 60),
-		"6 Hour": (6 * 60 * 60, 5 * 60),
-		"24 Hour": (24 * 60 * 60, 30 * 60),
-		"7 Days": (7 * 24 * 60 * 60, 2 * 30 * 60),
-		"15 Days": (15 * 24 * 60 * 60, 3 * 30 * 60),
-	}[duration]
-
-	return timespan, timegrain
 
 
 @frappe.whitelist(allow_guest=True)
