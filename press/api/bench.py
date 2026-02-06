@@ -762,6 +762,29 @@ def deploy(name, apps):
 	return deploy_candidate_build["name"]
 
 
+def validate_app_hashes(apps: list[dict[str, str]]):
+	"""Ensure none of them are yanked"""
+	hashes = []
+	for app in apps:
+		if not app.get("release") or not app.get("hash"):
+			frappe.throw("Each app must have a release and hash to run deploy and update!")
+		else:
+			hashes.append(app.hash)
+
+	YankedAppRelease = frappe.qb.DocType("Yanked App Release")
+	has_yanked_apps = (
+		frappe.qb.from_(YankedAppRelease)
+		.where(YankedAppRelease.hash.isin(hashes))
+		.select(YankedAppRelease.hash)
+		.run(as_dict=True)
+	)
+
+	if has_yanked_apps:
+		frappe.throw(
+			"Invalid app version selected for deploy: " + ", ".join([app.hash for app in has_yanked_apps])
+		)
+
+
 @frappe.whitelist()
 @protected("Release Group")
 def deploy_and_update(
@@ -770,6 +793,8 @@ def deploy_and_update(
 	sites: list | None = None,
 	run_will_fail_check: bool = True,
 ):
+	validate_app_hashes(apps)
+
 	# Returns name of the Deploy Candidate that is running the build
 	return get_bench_update(
 		name,

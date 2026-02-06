@@ -659,7 +659,7 @@ function showReleases(row, app) {
 														}),
 												};
 
-												const action = actions[row.status];
+												const action = actions[row.status.replace(' ', '')];
 												if (!action) return;
 
 												toast.promise(action(), {
