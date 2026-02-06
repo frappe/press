@@ -436,6 +436,6 @@ def create_cache_test_apps(team: "Team") -> dict[str, "AppInfo"]:
 		)
 
 		release = create_test_app_release(source, hash)
-		apps[name] = dict(app=app, source=source, release=release)
+		apps[name] = AppInfo(app=app, source=source, release=release)
 
 	return apps

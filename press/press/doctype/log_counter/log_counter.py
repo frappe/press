@@ -96,7 +96,7 @@ def get_counts(
 
 	q = frappe.qb.from_(table)
 	q = q.select(column, Count("*", alias="count"))
-	q = q.where(table.creation[date_from:date_to])
+	q = q.where(table.creation[date_from:date_to])  # type: ignore
 	q = q.groupby(column)
 	q = q.orderby("count", order=Order.desc)
 	r = q.run()
