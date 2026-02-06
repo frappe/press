@@ -1,9 +1,8 @@
 import json
 import os
 import typing
-from collections.abc import Callable
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Literal
 
 import frappe
@@ -24,10 +23,11 @@ from frappe.model.document import Document
 from frappe.utils import cstr
 from frappe.utils import now_datetime as now
 
-from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
-
 if typing.TYPE_CHECKING:
+	from collections.abc import Callable
+
 	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
@@ -240,7 +240,7 @@ class Ansible:
 		TaskExecutor._poll_async_result = self._poll_async_result
 		ActionModule.run = self.action_module_run
 
-	def run(self) -> AnsiblePlay:
+	def run(self) -> "AnsiblePlay":
 		self.executor = PlaybookExecutor(
 			playbooks=[self.playbook_path],
 			inventory=self.inventory,
@@ -292,7 +292,7 @@ class Ansible:
 					self.task_list.append(task_doc.name)
 
 
-class Status(str, Enum):
+class Status(StrEnum):
 	Pending = "Pending"
 	Running = "Running"
 	Success = "Success"
@@ -313,8 +313,8 @@ class GenericStep(Document):
 
 @dataclass
 class StepHandler:
-	save: Callable
-	reload: Callable
+	save: "Callable"
+	reload: "Callable"
 	doctype: str
 	name: str
 
