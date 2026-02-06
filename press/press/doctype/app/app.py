@@ -112,14 +112,12 @@ def poll_new_releases():
 
 
 def is_bounded(spec: sv.NpmSpec) -> bool:
-	# NpmSpec.clause_groups is a list of requirement sets (OR logic)
+	"""Ensure less than and greater than bounds are there, or exact version is given"""
 	standardized = str(spec)
 
 	if "*" in standardized or not standardized:
 		return False
 
-	# A bounded range must have a 'less than' component
-	# OR be a specific version (==)
 	has_upper_bound = "<" in standardized
 	has_lower_bound = ">" in standardized
 
