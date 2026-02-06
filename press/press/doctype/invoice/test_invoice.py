@@ -15,6 +15,9 @@ from .invoice import Invoice
 
 @patch.object(Invoice, "create_invoice_on_frappeio", new=Mock())
 class TestInvoice(FrappeTestCase):
+	def assertDictContainsSubset(self, subset: dict, dictionary: dict) -> None:
+		self.assertEqual(subset, dictionary | subset)
+
 	def setUp(self):
 		super().setUp()
 
