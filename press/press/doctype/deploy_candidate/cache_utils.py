@@ -133,7 +133,7 @@ def copy_file_from_container(
 		print(proc.stdout)
 
 
-def remove_container(container_id: str) -> str:
+def remove_container(container_id: str) -> None:
 	args = shlex.split(f"docker rm -v {container_id}")
 	subprocess.run(
 		args,
@@ -223,7 +223,7 @@ def get_cached_apps() -> dict[str, list[str]]:
 		cache_target="/home/frappe/.cache",
 	)
 
-	apps = dict()
+	apps: dict[str, list[str]] = dict()
 	if result["returncode"] != 0:
 		return apps
 
