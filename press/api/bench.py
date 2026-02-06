@@ -811,6 +811,7 @@ def update_inplace(
 	apps: list,
 	sites: list,
 ):
+	validate_app_hashes(apps)
 	# Returns name of the Agent Job name that runs the inplace update
 	return get_bench_update(
 		name,
