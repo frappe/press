@@ -28,6 +28,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/*dev-requirements.txt, **/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
+
+      - name: Install dependencies
+        run: |
+          pip install -r dev-requirements.txt
+
       - name: Get changed python files
         id: changed-python-files
         uses: tj-actions/changed-files@v45
@@ -69,7 +87,7 @@ jobs:
         if: steps.changed-python-files.outputs.any_changed == 'true'
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.14'
 
       - name: Cache pip
         if: steps.changed-python-files.outputs.any_changed == 'true'
@@ -101,7 +119,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.14'
 
       - name: Cache pip
         uses: actions/cache@v4
@@ -146,7 +164,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.14'
       - name: Run Semgrep rules
         run: |
           pip install semgrep==1.32
@@ -176,7 +194,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.14'
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -298,7 +316,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.14'
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -441,7 +459,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.14'
 
       - name: Cache apt
         uses: awalsh128/cache-apt-pkgs-action@latest
