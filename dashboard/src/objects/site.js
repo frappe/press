@@ -785,13 +785,12 @@ export default {
 										: ''
 								}`,
 								onSuccess({ hide }) {
-									downloadBackup(backup, file);
-									hide();
+									downloadBackup(backup, file, hide);
 								},
 							});
 						}
 
-						async function downloadBackup(backup, file) {
+						async function downloadBackup(backup, file, hide) {
 							// file: database, public, or private
 							if (backup.offsite) {
 								site.getBackupDownloadLink.submit(
@@ -802,6 +801,7 @@ export default {
 											if (r.message) {
 												window.open(r.message);
 											}
+											hide();
 										},
 									},
 								);
@@ -817,6 +817,7 @@ export default {
 									`$1${site.doc.host_name}/`,
 								);
 								window.open(newUrl);
+								hide();
 							}
 						}
 
