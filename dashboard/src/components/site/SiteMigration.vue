@@ -233,11 +233,10 @@
 				</div>
 
 				<!-- Scheduling Option -->
-				<DateTimeControl
-					v-if="showSchedulingOption"
-					v-model="scheduledTime"
-					label="Schedule Time in IST"
-				/>
+				<div v-if="showSchedulingOption" class="flex flex-col gap-2">
+					<p class="text-sm text-gray-700">Choose Scheduled Time</p>
+					<DateTimeControl v-model="scheduledTime" :hideLabel="true" />
+				</div>
 
 				<!-- Error Message -->
 				<ErrorMessage :message="errorMessage" />
