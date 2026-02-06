@@ -13,7 +13,11 @@ from frappe.utils import convert_utc_to_timezone, flt
 from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 
+<<<<<<< HEAD
 from press.api.analytics import TIMESPAN_TIMEGRAIN_MAP, get_rounded_boundaries
+=======
+from press.api.analytics import auto_timespan_timegrain, get_rounded_boundaries
+>>>>>>> 956a13823 (fix(server-analytics): Add new timegrain function)
 from press.api.bench import all as all_benches
 from press.api.site import protected
 from press.exceptions import MonitorServerDown
@@ -430,7 +434,7 @@ def analytics(name, query, timezone, duration, server_type=None):
 	# If the server type is of unified server, then just show server's metrics as application server
 	server_type = "Application Server" if server_type == "Unified Server" else server_type
 	mount_point = get_mount_point(name, server_type)
-	timespan, timegrain = get_timespan_timegrain(duration)
+	timespan, timegrain = auto_timespan_timegrain(duration)
 
 	query_map = {
 		"cpu": (
@@ -507,12 +511,10 @@ def get_request_by_site(name, query, timezone, duration):
 
 	from press.api.analytics import ResourceType, get_request_by_
 
-	timespan, timegrain = get_timespan_timegrain(duration)
+	timespan, timegrain = auto_timespan_timegrain(duration)
 
 	end = now_datetime().astimezone(pytz_timezone(timezone))
 	start = add_to_date(end, seconds=-timespan)
-
-	timespan, timegrain = get_timespan_timegrain(duration)
 
 	return get_request_by_(name, query, timezone, start, end, timespan, timegrain, ResourceType.SERVER)
 
@@ -526,7 +528,7 @@ def get_background_job_by_site(name, query, timezone, duration):
 
 	from press.api.analytics import ResourceType, get_background_job_by_
 
-	timespan, timegrain = get_timespan_timegrain(duration)
+	timespan, timegrain = auto_timespan_timegrain(duration)
 
 	end = now_datetime().astimezone(pytz_timezone(timezone))
 	start = add_to_date(end, seconds=-timespan)
@@ -543,7 +545,7 @@ def get_slow_logs_by_site(name, query, timezone, duration, normalize=False):
 
 	from press.api.analytics import ResourceType, get_slow_logs
 
-	timespan, timegrain = get_timespan_timegrain(duration)
+	timespan, timegrain = auto_timespan_timegrain(duration)
 
 	end = now_datetime().astimezone(pytz_timezone(timezone))
 	start = add_to_date(end, seconds=-timespan)
@@ -964,10 +966,13 @@ def rename(name, title):
 	doc.save()
 
 
+<<<<<<< HEAD
 def get_timespan_timegrain(duration: str) -> tuple[int, int]:
 	return TIMESPAN_TIMEGRAIN_MAP[duration]
 
 
+=======
+>>>>>>> 956a13823 (fix(server-analytics): Add new timegrain function)
 @frappe.whitelist(allow_guest=True)
 def benches_are_idle(server: str, access_token: str) -> None:
 	"""Shut down the secondary server if all benches are idle.
