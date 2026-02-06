@@ -20,7 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    "ansible==3.4.0",
+    "ansible==11.13.0",
     "beautifulsoup4",
     "boto3==1.39.14",
     "Click",
@@ -42,6 +42,7 @@ dependencies = [
     "selenium==4.23.1",
     "semantic-version==2.10.0",
     "sql_metadata==2.10.0",
+    "standard-imghdr==3.13.0", # Needed for ansible, imghdr was removed from standard library
     "stripe~=3.1.0",
     "tldextract==3.4.4",
     "tomli==2.0.1",

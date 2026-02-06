@@ -1,4 +1,5 @@
 import json
+import os
 import typing
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -7,7 +8,7 @@ from typing import Literal
 
 import frappe
 import wrapt
-from ansible import constants, context
+from ansible import constants, context  # noqa
 from ansible.executor.playbook_executor import PlaybookExecutor
 from ansible.executor.task_executor import TaskExecutor
 from ansible.inventory.manager import InventoryManager
@@ -16,6 +17,7 @@ from ansible.parsing.dataloader import DataLoader
 from ansible.playbook import Playbook
 from ansible.plugins.action.async_status import ActionModule
 from ansible.plugins.callback import CallbackBase
+from ansible.plugins.loader import init_plugin_loader
 from ansible.utils.display import Display
 from ansible.vars.manager import VariableManager
 from frappe.model.document import Document
@@ -171,7 +173,7 @@ class Ansible:
 		self.host = f"{server.ip}:{port}"
 		self.variables = variables or {}
 
-		constants.HOST_KEY_CHECKING = False
+		os.environ["ANSIBLE_HOST_KEY_CHECKING"] = False
 		context.CLIARGS = ImmutableDict(
 			become_method="sudo",
 			check=False,
@@ -185,6 +187,7 @@ class Ansible:
 			ssh_common_args=self._get_ssh_proxy_commad(server),
 		)
 
+		init_plugin_loader()
 		self.loader = DataLoader()
 		self.passwords = dict({})
 
