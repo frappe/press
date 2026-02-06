@@ -192,8 +192,9 @@ export default {
 																label: 'Branch',
 																type: 'Component',
 																component({ row }) {
-																	row.selectedOption = row.branch[0];
-
+																	if (!row.selectedOption) {
+																		row.selectedOption = row.branch[0];
+																	}
 																	return h(Combobox, {
 																		modelValue: row.selectedOption,
 																		options: row.branch,
