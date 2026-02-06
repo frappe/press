@@ -28,10 +28,12 @@
 								<b>{{ nextVersion }}</b>
 							</p>
 						</div>
-						<DateTimePicker
-							label="Schedule Time in IST"
-							v-model="targetDateTime"
-						/>
+						<div class="mt-4">
+							<span class="text-xs text-ink-gray-5 mb-2"
+								>Schedule Time in IST</span
+							>
+							<DateTimePicker v-model="targetDateTime" />
+						</div>
 						<FormControl
 							label="Skip failing patches if any"
 							type="checkbox"
@@ -129,11 +131,12 @@
 							placeholder="e.g., My Team - Version 15"
 							class="mt-4"
 						/>
-						<DateTimePicker
-							label="Schedule Time in IST"
-							v-model="targetDateTime"
-							class="mt-4"
-						/>
+						<div class="mt-4">
+							<span class="text-xs text-ink-gray-5 mb-2"
+								>Schedule Time in IST</span
+							>
+							<DateTimePicker v-model="targetDateTime" />
+						</div>
 						<AlertBanner
 							v-if="
 								!existingBenchGroup && targetDateTime && !isScheduleTimeValid
