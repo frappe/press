@@ -219,8 +219,8 @@
 				variant="solid"
 				:label="
 					targetDateTime
-						? 'Create Bench & Schedule Upgrade'
-						: 'Create Bench & Upgrade Site Now'
+						? 'Deploy Bench & Schedule Upgrade'
+						: 'Deploy Bench & Upgrade Site Now'
 				"
 				:disabled="disableButton"
 				:loading="
@@ -253,7 +253,6 @@ export default {
 			existingBenchGroup: null,
 			existingBenchGroupTitle: null,
 			appCompatibility: {
-				compatible: [],
 				incompatible: [],
 				custom_apps: [],
 				can_upgrade: false,
@@ -473,7 +472,6 @@ export default {
 			this.existingBenchGroup = null;
 			this.existingBenchGroupTitle = null;
 			this.appCompatibility = {
-				compatible: [],
 				incompatible: [],
 				custom_apps: [],
 				can_upgrade: false,
