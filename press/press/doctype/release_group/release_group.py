@@ -175,7 +175,6 @@ class ReleaseGroup(Document, TagHelpers):
 
 	def get_doc(self, doc):
 		doc.deploy_information = self.deploy_information()
-		print(doc.deploy_information.apps_with_yanked_releases)
 		doc.status = self.status
 		doc.actions = self.get_actions()
 		doc.are_builds_suspended = are_builds_suspended()
@@ -1215,7 +1214,7 @@ class ReleaseGroup(Document, TagHelpers):
 			)
 		return apps, apps_with_yanked_releases
 
-	def get_next_apps(self, current_apps) -> tuple[dict[str, str | datetime], list[dict[str, str]]]:
+	def get_next_apps(self, current_apps) -> tuple[dict[str, str | datetime], list[dict[str, str]]]:  # noqa: C901
 		marketplace_app_sources = self.get_marketplace_app_sources()
 		current_team = get_current_team(True)
 		app_publishers_team = [current_team.name]
@@ -1241,12 +1240,7 @@ class ReleaseGroup(Document, TagHelpers):
 		YankedAppRelease = frappe.qb.DocType("Yanked App Release")
 		latest_releases = (
 			frappe.qb.from_(AppRelease)
-			# .left_join(YankedAppRelease)
-			# .on(AppRelease.hash == YankedAppRelease.hash)
-			# .where(AppRelease.source.isin(app_sources))
-			# .where(
-			# 	YankedAppRelease.hash.isnull()
-			# )  # Exclude yanked releases directly in the query, can't just filter with status since need all releases with this hash to be excluded
+			.where(AppRelease.source.isin(app_sources))
 			.select(
 				AppRelease.name,
 				AppRelease.source,
@@ -1279,6 +1273,15 @@ class ReleaseGroup(Document, TagHelpers):
 				latest_app_releases = find_all(latest_app_releases, can_use_release)
 			else:
 				latest_app_release = find(latest_app_releases, lambda x: x.source == app.source)
+
+			yanked_releases = frappe.db.get_all(
+				"Yanked App Release",
+				{"hash": ("in", [release.hash for release in latest_app_releases])},
+				pluck="hash",
+			)
+			if len(yanked_releases) == len(latest_app_releases):
+				# If all releases are yanked, we don't want to show them
+				latest_app_releases = []
 
 			# No release exists for this source
 			if not latest_app_release:

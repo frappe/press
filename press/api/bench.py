@@ -769,7 +769,7 @@ def validate_app_hashes(apps: list[dict[str, str]]):
 		if not app.get("release") or not app.get("hash"):
 			frappe.throw("Each app must have a release and hash to run deploy and update!")
 		else:
-			hashes.append(app.hash)
+			hashes.append(app.get("hash"))
 
 	YankedAppRelease = frappe.qb.DocType("Yanked App Release")
 	has_yanked_apps = (
