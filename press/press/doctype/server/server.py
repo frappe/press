@@ -1555,7 +1555,7 @@ class BaseServer(Document, TagHelpers):
 		"""Ram detected by OS after h/w reservation"""
 		real_ram = 0.972 * self.ram - 218
 
-		if hasattr(self, "is_unified_server"):
+		if hasattr(self, "is_unified_server") and self.is_unified_server:
 			return real_ram / 2
 
 		return real_ram
