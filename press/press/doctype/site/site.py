@@ -1364,6 +1364,20 @@ class Site(Document, TagHelpers):
 					"scheduled_time": scheduled_time,
 				}
 			).insert()
+		elif type == "Move Site To Different Server":
+			doc = frappe.get_doc(
+				{
+					"doctype": "Site Action",
+					"site": self.name,
+					"action_type": type,
+					"arguments": json.dumps(
+						{
+							"destination_server": server,
+						}
+					),
+					"scheduled_time": scheduled_time,
+				}
+			).insert()
 		elif type == "Move Site To Different Region":
 			doc = frappe.get_doc(
 				{
@@ -4000,7 +4014,9 @@ class Site(Document, TagHelpers):
 				"allow_scheduling": True,
 				"description": "Move your site to a different server",
 				"button_label": "Move Site",
-				"options": {"dedicated_servers": owned_dedicated_servers},
+				"options": {
+					"dedicated_servers": [x for x in owned_dedicated_servers if x.name == self.server]
+				},
 			},
 			"Move Site To Different Region": {
 				"hidden": False,

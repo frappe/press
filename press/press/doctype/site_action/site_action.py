@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
+	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.site.site import Site
 	from press.press.doctype.site_action_step.site_action_step import SiteActionStep
 	from press.press.doctype.site_update.site_update import SiteUpdate
@@ -81,7 +82,7 @@ class SiteAction(Document):
 
 	def get_steps_for_action(self) -> list[tuple[Callable, str, bool]]:
 		Wait = True
-		NoWait = False
+		NoWait = False  # noqa
 
 		if self.action_type == "Update Site":
 			return [
@@ -102,7 +103,37 @@ class SiteAction(Document):
 				(self.process_move_site_to_different_cluster, StepType.Main, Wait),
 			]
 
+		if self.action_type == "Move Site To Different Server":
+			return [
+				(self.pre_validate_move_site_to_different_server, StepType.Validation, Wait),
+				(self.clone_and_create_bench_group, StepType.Preparation, Wait),
+				(self.move_site_to_bench_group, StepType.Main, Wait),
+			]
+
 		return []
+
+	def pre_validate_move_site_to_different_server(self):
+		"""Pre Validate Move Site To Different Server"""
+
+		# If public bench, just clone the bench group with `- Clone` suffix and deploy bench there
+		# Else, add the server in release group. Trigger a re-deploy and move the site there.
+
+		current_bench: Bench = frappe.get_doc("Bench", self.site_doc.bench)
+		if current_bench.public:
+			self.set_argument("new_release_group_name", current_bench.group + " - Clone")
+		else:
+			release_group: ReleaseGroup = frappe.get_doc("Release Group", current_bench.group)
+			# Check if current server exists in release group
+			destination_server = self.get_argument("destination_server")
+
+			if not any(server.server == destination_server for server in release_group.servers):
+				dcb_name = release_group.add_server(destination_server, deploy=True, force_new_build=True)
+				dcb: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dcb_name)
+
+				self.set_argument("destination_server", dcb.server)
+				self.set_argument("cloned_release_group", release_group.name)
+				self.set_argument("cloned_deploy_candidate", dcb.candidate)
+				self.set_argument("cloned_deploy_candidate_build", dcb_name)
 
 	def pre_validate_move_site_from_shared_to_private_bench(self):
 		"""Pre Validate Move Site From Shared To Private Bench"""
@@ -154,7 +185,7 @@ class SiteAction(Document):
 				{
 					"build": build.name,
 					"candidate": self.get_argument("cloned_deploy_candidate"),
-					"server": self.get_argument("server"),
+					"server": self.get_argument("destination_server"),
 				},
 			)
 			if not bench_name:
@@ -185,7 +216,9 @@ class SiteAction(Document):
 				"version": group.version,
 				"dependencies": group.dependencies,
 				"is_redisearch_enabled": group.is_redisearch_enabled,
-				"servers": [{"server": self.get_argument("server", site.server), "default": False}],
+				"servers": [
+					{"server": self.get_argument("destination_server", site.server), "default": False}
+				],
 			}
 		)
 
@@ -198,7 +231,7 @@ class SiteAction(Document):
 		candidate = cloned_group.create_deploy_candidate()
 		cloned_deploy_candidate_build = candidate.schedule_build_and_deploy()
 
-		self.set_argument("server", site.server)
+		self.set_argument("destination_server", site.server)
 		self.set_argument("cloned_release_group", cloned_group.name)
 		self.set_argument("cloned_deploy_candidate", candidate.name)
 		self.set_argument("cloned_deploy_candidate_build", cloned_deploy_candidate_build["name"])
