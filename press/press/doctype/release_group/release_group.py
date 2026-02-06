@@ -1236,9 +1236,13 @@ class ReleaseGroup(Document, TagHelpers):
 
 		app_sources = [app.source for app in self.apps]
 		AppRelease = frappe.qb.DocType("App Release")
+		YankedAppRelease = frappe.qb.DocType("Yanked App Release")
 		latest_releases = (
 			frappe.qb.from_(AppRelease)
+			.left_join(YankedAppRelease)
+			.on(AppRelease.hash == YankedAppRelease.hash)
 			.where(AppRelease.source.isin(app_sources))
+			.where(YankedAppRelease.hash.isnull())  # Exclude yanked releases directly in the query
 			.select(
 				AppRelease.name,
 				AppRelease.source,
@@ -1763,13 +1767,7 @@ def can_use_release(app_release: "AppRelease") -> bool:
 	"""Check if the app release can be used in the release group
 	For the time being allow Draft releases for public app sources as well
 	This will be removed when we have better review process for public app sources
-	Yanked release regardless of public or private won't be allowed in release groups
 	"""
-	is_release_yanked = frappe.db.exists("Yanked App Release", {"commit_hash": app_release.hash})
-
-	if is_release_yanked:
-		return False
-
 	if not app_release.public:
 		return True
 
