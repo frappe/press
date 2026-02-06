@@ -233,24 +233,19 @@ class MarketplaceApp(WebsiteGenerator):
 		)
 		if existing_source:
 			# If source with branch to switch already exists, just add version to child table of source and use the same
-			try:
-				source_doc: "AppSource" = frappe.get_doc("App Source", existing_source)
-				self.validate_frappe_version_for_branch(
-					owner=source_doc.repository_owner,
-					repository=source_doc.repository,
-					branch=to_branch,
-					version=version,
-					github_installation_id=source_doc.github_installation_id,
-				)
-				if version not in [version.version for version in source_doc.versions]:
-					source_doc.append("versions", {"version": version})
+			source_doc: "AppSource" = frappe.get_doc("App Source", existing_source)
+			self.validate_frappe_version_for_branch(
+				owner=source_doc.repository_owner,
+				repository=source_doc.repository,
+				branch=to_branch,
+				version=version,
+				github_installation_id=source_doc.github_installation_id,
+			)
+			if version not in [version.version for version in source_doc.versions]:
+				source_doc.append("versions", {"version": version})
 
-				source_doc.save()
-			except frappe.DoesNotExistError:
-				for source in self.sources:
-					if source.source == source:
-						source.source = existing_source
-						self.save()
+			source_doc.save()
+
 		else:
 			# if a different source with the branch to switch doesn't exists update the existing source
 			source_doc = frappe.get_doc("App Source", source)
@@ -263,6 +258,18 @@ class MarketplaceApp(WebsiteGenerator):
 			)
 			source_doc.branch = to_branch
 			source_doc.save()
+
+		for source in self.sources:
+			# In case the version exists then just change the source
+			if source.version == version:
+				source.source = source_doc.name
+				break
+
+		if not any(source.version == version for source in self.sources):
+			# if version doesn't exist then add a new row
+			self.append("sources", {"version": version, "source": source_doc.name})
+
+		self.save()
 
 	def validate_frappe_version_for_branch(
 		self,
