@@ -242,7 +242,9 @@ class MarketplaceApp(WebsiteGenerator):
 					version=version,
 					github_installation_id=source_doc.github_installation_id,
 				)
-				source_doc.append("versions", {"version": version})
+				if version not in [version.version for version in source_doc.versions]:
+					source_doc.append("versions", {"version": version})
+
 				source_doc.save()
 			except frappe.DoesNotExistError:
 				for source in self.sources:
@@ -309,7 +311,9 @@ class MarketplaceApp(WebsiteGenerator):
 		if existing_source:
 			# If source with branch to switch already exists, just add version to child table of source and use the same
 			try:
-				source_doc.append("versions", {"version": version})
+				if version not in [version.version for version in source_doc.versions]:
+					source_doc.append("versions", {"version": version})
+
 				source_doc.public = 1
 				source_doc.save()
 			except Exception:
