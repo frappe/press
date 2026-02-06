@@ -1550,7 +1550,12 @@ class BaseServer(Document, TagHelpers):
 	@property
 	def real_ram(self):
 		"""Ram detected by OS after h/w reservation"""
-		return 0.972 * self.ram - 218
+		real_ram = 0.972 * self.ram - 218
+
+		if hasattr(self, "is_unified_server"):
+			return real_ram / 2
+
+		return real_ram
 
 	@frappe.whitelist()
 	def reboot_with_serial_console(self):
