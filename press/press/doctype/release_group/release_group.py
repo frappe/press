@@ -1187,7 +1187,8 @@ class ReleaseGroup(Document, TagHelpers):
 			next_hash = app.hash
 
 			update_available = not current_hash or current_hash != next_hash or will_branch_change
-			if not app.releases:
+
+			if frappe.db.exists("Yanked App Release", {"hash": next_hash}) or not app.releases:
 				update_available = False
 
 			apps.append(
@@ -1319,7 +1320,6 @@ class ReleaseGroup(Document, TagHelpers):
 					}
 				)
 			)
-
 		return next_apps, apps_with_yanked_releases
 
 	def get_removed_apps(self):
