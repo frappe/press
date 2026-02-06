@@ -8,7 +8,7 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 from textwrap import dedent
-from typing import Tuple, TypedDict
+from typing import TypedDict
 
 
 class CommandOutput(TypedDict):
@@ -82,8 +82,7 @@ def run_command_in_docker_cache(
 		cache_target,
 	)
 	df_path = prep_dockerfile_path(dockerfile)
-	output = run_build_command(df_path, remove_image)
-	return output
+	return run_build_command(df_path, remove_image)
 
 
 def get_cache_check_dockerfile(command: str, cache_target: str) -> str:
@@ -142,7 +141,7 @@ def remove_container(container_id: str) -> str:
 		stdout=subprocess.PIPE,
 		stderr=subprocess.STDOUT,
 		text=True,
-	).stdout
+	)
 
 
 def prep_dockerfile_path(dockerfile: str) -> Path:
@@ -182,7 +181,7 @@ def run_build_command(df_path: Path, remove_image: bool) -> CommandOutput:
 	)
 
 
-def get_cache_check_build_command() -> Tuple[str, str]:
+def get_cache_check_build_command() -> tuple[str, str]:
 	command = "docker build"
 	if platform.machine() == "arm64" and platform.system() == "Darwin" and platform.processor() == "arm":
 		command += "x build --platform linux/amd64"

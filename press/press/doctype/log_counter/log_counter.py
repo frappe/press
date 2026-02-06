@@ -3,7 +3,7 @@
 
 import datetime
 import json
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import frappe
 import frappe.utils
@@ -54,7 +54,7 @@ def record_counts():
 def record_for_date(
 	doctype: str = "Error Log",
 	groupby: str = "method",
-	date: Optional[datetime.date] = None,
+	date: datetime.date | None = None,
 ):
 	counts = get_counts(
 		doctype,
@@ -86,7 +86,7 @@ def record_for_date(
 def get_counts(
 	doctype: str = "Error Log",
 	groupby: str = "method",
-	date: Optional[datetime.date] = None,
+	date: datetime.date | None = None,
 ) -> Counts:
 	date_to = date if date else frappe.utils.now_datetime().date()
 	date_from = date_to - datetime.timedelta(days=1)
@@ -115,7 +115,7 @@ def get_name(doctype: str, date: datetime.date):
 def top_k(
 	k: int = 5,
 	log_type: str = "Error Log",
-	since: Optional[datetime.date] = None,
+	since: datetime.date | None = None,
 ):
 	if not since:
 		since = frappe.utils.now_datetime().date() - datetime.timedelta(days=30)
