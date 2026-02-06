@@ -13,11 +13,13 @@ from frappe.utils import convert_utc_to_timezone, flt
 from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 
-from press.api.analytics import TIMESPAN_TIMEGRAIN_MAP, get_rounded_boundaries
+from press.api.analytics import auto_timespan_timegrain, get_rounded_boundaries
 from press.api.bench import all as all_benches
 from press.api.site import protected
 from press.exceptions import MonitorServerDown
-from press.press.doctype.auto_scale_record.auto_scale_record import validate_scaling_schedule
+from press.press.doctype.auto_scale_record.auto_scale_record import (
+	validate_scaling_schedule,
+)
 from press.press.doctype.cloud_provider.cloud_provider import get_cloud_providers
 from press.press.doctype.server_plan_type.server_plan_type import get_server_plan_types
 from press.press.doctype.site_plan.plan import Plan, filter_by_roles
@@ -149,15 +151,19 @@ def get(name):
 		"title": server.title,
 		"status": server.status,
 		"team": server.team,
-		"app_server": server.name
-		if server.is_self_hosted
-		else f"f{server.name[1:]}",  # Don't use `f` series if self hosted
+		"app_server": (
+			server.name if server.is_self_hosted else f"f{server.name[1:]}"
+		),  # Don't use `f` series if self hosted
 		"region_info": frappe.db.get_value(
 			"Cluster", server.cluster, ["name", "title", "image"], as_dict=True
 		),
 		"server_tags": [{"name": x.tag, "tag": x.tag_name} for x in server.tags],
-		"tags": frappe.get_all("Press Tag", {"team": server.team, "doctype_name": "Server"}, ["name", "tag"]),
-		"type": "database-server" if server.meta.name == "Database Server" else "server",
+		"tags": frappe.get_all(
+			"Press Tag",
+			{"team": server.team, "doctype_name": "Server"},
+			["name", "tag"],
+		),
+		"type": ("database-server" if server.meta.name == "Database Server" else "server"),
 	}
 
 
@@ -223,9 +229,16 @@ def new_unified(server: UnifiedServerDetails):
 
 	cluster.proxy_server = proxy_server.get("name")
 	server_doc, database_server_doc, job = cluster.create_unified_server(
-		server["title"], app_plan, team=team.name, auto_increase_storage=auto_increase_storage
+		server["title"],
+		app_plan,
+		team=team.name,
+		auto_increase_storage=auto_increase_storage,
 	)
-	return {"server": server_doc.name, "database_server": database_server_doc.name, "job": job.name}
+	return {
+		"server": server_doc.name,
+		"database_server": database_server_doc.name,
+		"job": job.name,
+	}
 
 
 @frappe.whitelist()
@@ -274,7 +287,11 @@ def new(server):
 		)
 
 	app_server, job = cluster.create_server(
-		"Server", server["title"], app_plan, team=team.name, auto_increase_storage=auto_increase_storage
+		"Server",
+		server["title"],
+		app_plan,
+		team=team.name,
+		auto_increase_storage=auto_increase_storage,
 	)
 
 	return {"server": app_server.name, "job": job.name}
@@ -430,7 +447,7 @@ def analytics(name, query, timezone, duration, server_type=None):
 	# If the server type is of unified server, then just show server's metrics as application server
 	server_type = "Application Server" if server_type == "Unified Server" else server_type
 	mount_point = get_mount_point(name, server_type)
-	timespan, timegrain = get_timespan_timegrain(duration)
+	timespan, timegrain = auto_timespan_timegrain(duration)
 
 	query_map = {
 		"cpu": (
@@ -467,9 +484,11 @@ def analytics(name, query, timezone, duration, server_type=None):
 		),
 		"database_connections": (
 			f"""{{__name__=~"mysql_global_status_threads_connected|mysql_global_variables_max_connections", instance="{name}"}}""",
-			lambda x: "Max Connections"
-			if x["__name__"] == "mysql_global_variables_max_connections"
-			else "Connected Clients",
+			lambda x: (
+				"Max Connections"
+				if x["__name__"] == "mysql_global_variables_max_connections"
+				else "Connected Clients"
+			),
 		),
 		"innodb_bp_size": (
 			f"""mysql_global_variables_innodb_buffer_pool_size{{instance='{name}'}}""",
@@ -507,12 +526,10 @@ def get_request_by_site(name, query, timezone, duration):
 
 	from press.api.analytics import ResourceType, get_request_by_
 
-	timespan, timegrain = get_timespan_timegrain(duration)
+	timespan, timegrain = auto_timespan_timegrain(duration)
 
 	end = now_datetime().astimezone(pytz_timezone(timezone))
 	start = add_to_date(end, seconds=-timespan)
-
-	timespan, timegrain = get_timespan_timegrain(duration)
 
 	return get_request_by_(name, query, timezone, start, end, timespan, timegrain, ResourceType.SERVER)
 
@@ -526,7 +543,7 @@ def get_background_job_by_site(name, query, timezone, duration):
 
 	from press.api.analytics import ResourceType, get_background_job_by_
 
-	timespan, timegrain = get_timespan_timegrain(duration)
+	timespan, timegrain = auto_timespan_timegrain(duration)
 
 	end = now_datetime().astimezone(pytz_timezone(timezone))
 	start = add_to_date(end, seconds=-timespan)
@@ -543,13 +560,21 @@ def get_slow_logs_by_site(name, query, timezone, duration, normalize=False):
 
 	from press.api.analytics import ResourceType, get_slow_logs
 
-	timespan, timegrain = get_timespan_timegrain(duration)
+	timespan, timegrain = auto_timespan_timegrain(duration)
 
 	end = now_datetime().astimezone(pytz_timezone(timezone))
 	start = add_to_date(end, seconds=-timespan)
 
 	return get_slow_logs(
-		name, query, timezone, start, end, timespan, timegrain, ResourceType.SERVER, normalize
+		name,
+		query,
+		timezone,
+		start,
+		end,
+		timespan,
+		timegrain,
+		ResourceType.SERVER,
+		normalize,
 	)
 
 
@@ -603,12 +628,17 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 
 	return {"datasets": datasets, "labels": labels}
 
+
 @frappe.whitelist()
 def options():
 	if not get_current_team(get_doc=True).servers_enabled:
 		frappe.throw("Servers feature is not yet enabled on your account")
 
-	regions_filter = {"cloud_provider": ("!=", "Generic"), "public": True, "status": "Active"}
+	regions_filter = {
+		"cloud_provider": ("!=", "Generic"),
+		"public": True,
+		"status": "Active",
+	}
 	is_system_user = (
 		(frappe.session and frappe.session.data and frappe.session.data.user_type)
 		or (
@@ -712,6 +742,7 @@ def options():
 		"snapshot_plan": snapshot_plan,
 	}
 
+
 @frappe.whitelist()
 def get_autoscale_discount():
 	return frappe.db.get_single_value("Press Settings", "autoscale_discount", cache=True)
@@ -767,7 +798,13 @@ def has_similar_enabled_plans(platform: str, cluster: bool) -> bool:
 
 
 @frappe.whitelist()
-def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_only_resize=False):  # noqa C901
+def plans(
+	name,
+	cluster=None,
+	platform=None,
+	resource_name=None,
+	cpu_and_memory_only_resize=False,
+):
 	filters = {"server_type": name, "legacy_plan": False}
 
 	if cluster:
@@ -799,7 +836,11 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 
 		if resource_details.provider == "Hetzner" or resource_details.provider == "DigitalOcean":
 			current_root_disk_size = (
-				frappe.db.get_value("Virtual Machine", resource_details.virtual_machine, "root_disk_size")
+				frappe.db.get_value(
+					"Virtual Machine",
+					resource_details.virtual_machine,
+					"root_disk_size",
+				)
 				if resource_details and resource_details.virtual_machine
 				else None
 			)
@@ -964,10 +1005,6 @@ def rename(name, title):
 	doc.save()
 
 
-def get_timespan_timegrain(duration: str) -> tuple[int, int]:
-	return TIMESPAN_TIMEGRAIN_MAP[duration]
-
-
 @frappe.whitelist(allow_guest=True)
 def benches_are_idle(server: str, access_token: str) -> None:
 	"""Shut down the secondary server if all benches are idle.
@@ -988,7 +1025,8 @@ def benches_are_idle(server: str, access_token: str) -> None:
 		"Server", {"secondary_server": server}, ["name", "scaled_up"]
 	)
 	running_scale_down = frappe.db.get_value(
-		"Auto Scale Record", {"secondary_server": server, "status": ("IN", ("Running", "Pending"))}
+		"Auto Scale Record",
+		{"secondary_server": server, "status": ("IN", ("Running", "Pending"))},
 	)
 	scaled_up_at = frappe.db.get_value(
 		"Auto Scale Record", {"secondary_server": server, "scale_up": True}, "modified"
@@ -1019,7 +1057,9 @@ def benches_are_idle(server: str, access_token: str) -> None:
 @frappe.whitelist()
 @protected(["Server"])
 def schedule_auto_scale(
-	name, scheduled_scale_up_time: str | datetime, scheduled_scale_down_time: str | datetime
+	name,
+	scheduled_scale_up_time: str | datetime,
+	scheduled_scale_down_time: str | datetime,
 ) -> None:
 	"""Schedule two auto scale record with scale up and down actions at given times"""
 	secondary_server = frappe.db.get_value("Server", name, "secondary_server")
