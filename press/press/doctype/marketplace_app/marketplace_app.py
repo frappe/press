@@ -242,7 +242,9 @@ class MarketplaceApp(WebsiteGenerator):
 					version=version,
 					github_installation_id=source_doc.github_installation_id,
 				)
-				source_doc.append("versions", {"version": version})
+				if version not in [version.version for version in source_doc.versions]:
+					source_doc.append("versions", {"version": version})
+
 				source_doc.save()
 			except frappe.DoesNotExistError:
 				for source in self.sources:
