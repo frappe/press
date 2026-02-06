@@ -32,7 +32,7 @@ export default {
 				label: 'App',
 				fieldname: 'title',
 				class: 'font-medium',
-				width: 0.6,
+				width: 0.3,
 				prefix(row) {
 					return row.image
 						? h('img', {
