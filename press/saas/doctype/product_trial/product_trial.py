@@ -40,6 +40,8 @@ class ProductTrial(Document):
 		hybrid_pool_rules: DF.Table[HybridPoolItem]
 		logo: DF.AttachImage | None
 		published: DF.Check
+		read_only_email_content: DF.HTMLEditor | None
+		read_only_email_subject: DF.Data | None
 		redirect_to_after_login: DF.Data
 		release_group: DF.Link
 		standby_pool_size: DF.Int
@@ -675,3 +677,127 @@ def send_suspend_mail(site_name: str, product_name: str) -> None:
 		args=args,
 		inline_images=inline_images,
 	)
+
+
+def send_read_only_mail(site_name: str, product_name: str) -> None:
+	"""Send read only mail to the site owner."""
+	site = frappe.db.get_value(
+		"Site", site_name, ["team", "trial_end_date", "name", "host_name"], as_dict=True
+	)
+	product = frappe.db.get_value(
+		"Product Trial",
+		product_name,
+		[
+			"title",
+			"read_only_email_subject",
+			"read_only_email_content",
+			"email_full_logo",
+			"logo",
+			"email_account",
+		],
+		as_dict=True,
+	)
+
+	if not site or not product:
+		return
+
+	sender = ""
+	subject = (
+		product.read_only_email_subject.format(product_title=product.title)
+		or f"Your {product.title} site is in Read Only Mode"
+	)
+	recipient = frappe.get_value("Team", site.team, "user")
+	args = {}
+	inline_images = []
+
+	if product.logo:
+		args.update({"logo": get_url(product.logo, True), "title": product.title})
+		try:
+			logo_name = product.logo[1:]
+			args.update({"logo_name": logo_name})
+			with open(frappe.utils.get_site_path("public", logo_name), "rb") as logo_file:
+				inline_images.append(
+					{
+						"filename": logo_name,
+						"filecontent": logo_file.read(),
+					}
+				)
+		except Exception as ex:
+			log_error(
+				"Error reading logo for inline images in email",
+				data=ex,
+			)
+	if product.email_account:
+		sender = frappe.get_value("Email Account", product.email_account, "email_id")
+
+	context = {
+		"site": site,
+		"product": product,
+	}
+	message = frappe.render_template(product.read_only_email_content, context)
+	args.update({"message": message})
+	frappe.sendmail(
+		sender=sender,
+		recipients=recipient,
+		subject=subject,
+		template="product_trial_email",
+		args=args,
+		inline_images=inline_images,
+	)
+
+
+def process_expired_trials():
+	"""
+	Process expired trials:
+	1. If trial ended yesterday, set to Read Only mode and send email.
+	2. If trial ended grace_period (same as trial period) days ago, suspend the site.
+	"""
+	today = frappe.utils.today()
+
+	# 1: Set to read-only if expired and not yet read-only
+	site = frappe.qb.DocType("Site")
+	site_plan = frappe.qb.DocType("Site Plan")
+
+	base_site_query = (
+		frappe.qb.from_(site)
+		.join(site_plan)
+		.on(site.plan == site_plan.name)
+		.select(site.name, site.standby_for_product, site.trial_end_date)
+		.where(site.status == "Active")
+		.where(site.standby_for_product.isnotnull())
+		.where(site.trial_end_date < today)
+		.where(site_plan.is_trial_plan == 1)
+		.limit(20)
+	)
+
+	sites_to_read_only = (base_site_query.where(site.is_read_only == 0)).run(as_dict=True)
+
+	for site_data in sites_to_read_only:
+		# Check if we should suspend instead (grace period exceeded)
+		product = frappe.get_doc("Product Trial", site_data.standby_for_product)
+		grace_period = product.trial_days or 14
+		suspension_date = frappe.utils.add_days(site_data.trial_end_date, grace_period)
+
+		if frappe.utils.getdate(today) >= frappe.utils.getdate(suspension_date):
+			# Will be handled by Step 2
+			continue
+
+		site_doc = frappe.get_doc("Site", site_data.name)
+
+		# Set read-only mode
+		site_doc.update_site_config({"maintenance_mode": 1, "allow_reads_during_maintenance": 1})
+		site_doc.db_set("is_read_only", 1)
+
+		send_read_only_mail(site_doc.name, site_data.standby_for_product)
+
+	# 2: Suspend if grace period exceeded (read-only sites)
+	potential_suspensions = (base_site_query.where(site.is_read_only == 1)).run(as_dict=True)
+
+	for site_data in potential_suspensions:
+		site = frappe.get_doc("Site", site_data.name)
+		product = frappe.get_doc("Product Trial", site_data.standby_for_product)
+		grace_period = product.trial_days or 14
+		suspension_date = frappe.utils.add_days(site_data.trial_end_date, grace_period)
+
+		if frappe.utils.getdate(today) >= frappe.utils.getdate(suspension_date):
+			site.suspend(reason="Trial expired and the grace period is over")

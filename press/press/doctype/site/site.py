@@ -178,6 +178,7 @@ class Site(Document, TagHelpers):
 		hybrid_saas_pool: DF.Link | None
 		is_erpnext_setup: DF.Check
 		is_monitoring_disabled: DF.Check
+		is_read_only: DF.Check
 		is_standby: DF.Check
 		last_site_usage_warning_mail_sent_on: DF.Datetime | None
 		logical_backup_times: DF.Table[SiteBackupTime]
@@ -644,6 +645,12 @@ class Site(Document, TagHelpers):
 			frappe.db.set_value("Site Domain", self.host_name, "redirect_to_primary", False)
 
 		self.update_subscription()
+
+		if self.is_read_only and self.has_value_changed("plan"):
+			plan = frappe.get_doc("Site Plan", self.plan)
+			if not plan.is_trial_plan:
+				self.update_site_config({"maintenance_mode": 0, "allow_reads_during_maintenance": 0})
+				self.db_set("is_read_only", 0)
 
 		if self.has_value_changed("team"):
 			frappe.db.set_value("Site Domain", {"site": self.name}, "team", self.team)
