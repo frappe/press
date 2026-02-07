@@ -57,7 +57,6 @@ class SiteAction(Document):
 		from press.press.doctype.site_action_step.site_action_step import SiteActionStep
 
 		action_type: DF.Literal[
-			"Update Site",
 			"Move From Shared To Private Bench",
 			"Move From Private To Shared Bench",
 			"Move Site To Different Server",
@@ -83,12 +82,6 @@ class SiteAction(Document):
 	def get_steps_for_action(self) -> list[tuple[Callable, str, bool]]:
 		Wait = True
 		NoWait = False  # noqa
-
-		if self.action_type == "Update Site":
-			return [
-				(self.pre_validate_schedule_site_update, StepType.Validation, Wait),
-				(self.process_site_update, StepType.Main, Wait),
-			]
 
 		if self.action_type == "Move From Shared To Private Bench":
 			return [
@@ -324,21 +317,6 @@ class SiteAction(Document):
 			}
 		).insert()
 		self.set_argument("site_update", doc.name)
-
-	def process_site_update(self):
-		"""Site Update"""
-		if self.current_step.reference_doctype == "Site Update" and self.current_step.reference_name:
-			# Site Update is already scheduled
-			doc: SiteUpdate = frappe.get_doc("Site Update", self.current_step.reference_name)
-			if doc.status == "Success":
-				return StepStatus.Success
-			if doc.status == "Fatal" or doc.status == "Failure":
-				return StepStatus.Failure
-			return StepStatus.Running
-
-		self.current_step.reference_doctype = "Site Update"
-		self.current_step.reference_name = self.get_argument("site_update")
-		return StepStatus.Running
 
 	def add_steps(self):
 		self.steps = []
@@ -584,47 +562,6 @@ get_permission_query_conditions = get_permission_query_conditions_for_doctype("S
 
 
 # Utility functions
-
-
-def schedule_site_update(
-	site: str,
-	physical_backup: bool = False,
-	skip_failing_patches: bool = False,
-	skip_backups: bool = False,
-	scheduled_time: str | None = None,
-) -> SiteAction:
-	"""Schedule Site Update Action for a site"""
-	action = frappe.get_all(
-		"Site Action",
-		filters={
-			"site": site,
-			"action_type": "Update Site",
-			"status": ["in", ("Pending", "Running", "Scheduled")],
-		},
-		limit=1,
-	)
-
-	if action:
-		# Site Update Action is already scheduled or running
-		frappe.throw(f"Site Update is already scheduled or running for site {site}.")
-
-	args = {
-		"physical_backup": physical_backup,
-		"skip_failing_patches": skip_failing_patches,
-		"skip_backups": skip_backups,
-	}
-
-	log_site_activity(site, "Update")
-
-	return frappe.get_doc(
-		{
-			"doctype": "Site Action",
-			"site": site,
-			"action_type": "Update Site",
-			"arguments": json.dumps(args),
-			"scheduled_time": scheduled_time,
-		}
-	).insert()  # type: ignore
 
 
 def move_site_from_shared_to_private_bench(

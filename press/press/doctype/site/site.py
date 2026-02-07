@@ -3999,16 +3999,16 @@ class Site(Document, TagHelpers):
 					"dedicated_servers_for_new_release_group": owned_dedicated_servers,
 				},
 			},
-			"Move From Private To Shared Bench": {
-				"hidden": is_on_public_release_group,
-				"allow_scheduling": True,
-				"description": "Move your site from a private bench to a shared bench",
-				"button_label": "Move to Shared Bench",
-				"options": {
-					# TODO
-					"incompatible_apps": [],
-				},
-			},
+			# "Move From Private To Shared Bench": {
+			# 	"hidden": is_on_public_release_group,
+			# 	"allow_scheduling": True,
+			# 	"description": "Move your site from a private bench to a shared bench",
+			# 	"button_label": "Move to Shared Bench",
+			# 	"options": {
+			# 		# TODO
+			# 		"incompatible_apps": [],
+			# 	},
+			# },
 			"Move Site To Different Server": {
 				"hidden": False,
 				"allow_scheduling": True,

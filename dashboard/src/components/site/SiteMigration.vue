@@ -1,4 +1,5 @@
 <template>
+	<!-- This page is named as SiteMigration but the doctype is `Site Action` -->
 	<Dialog
 		:options="{
 			title: 'Migrate Site',
