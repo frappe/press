@@ -334,6 +334,10 @@ class SiteAction(Document):
 				},
 			)
 
+	def validate(self):
+		if self.action_type == "Move From Private To Shared Bench":
+			frappe.throw("Move From Private To Shared Bench action is not available currently.")
+
 	def after_insert(self):
 		self.add_steps()
 		self.run_pre_validation_steps()
