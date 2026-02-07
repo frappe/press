@@ -13,7 +13,6 @@ from frappe.model.document import Document
 from frappe.utils import now_datetime
 from rq.timeouts import JobTimeoutException
 
-from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.utils.jobs import has_job_timeout_exceeded
@@ -398,20 +397,6 @@ class SiteAction(Document):
 			return
 
 		self.next()
-
-	@dashboard_whitelist()
-	def start_now(self):
-		if self.status != "Scheduled":
-			frappe.throw("Only Scheduled Site Actions can be started now.")
-		self.scheduled_time = None
-		self.save()
-
-	@dashboard_whitelist()
-	def cancel_action(self):
-		if self.status not in ("Scheduled"):
-			frappe.throw("Only Scheduled Site Actions can be cancelled.")
-		self.status = "Cancelled"
-		self.save()
 
 	def execute_step(self, step_name):
 		frappe.set_user(self.owner)
