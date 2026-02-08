@@ -817,7 +817,6 @@ def total_unpaid_amount():
 	balance = team.get_balance()
 	negative_balance = -1 * balance if balance < 0 else 0
 
-
 	try:
 		return (
 			frappe.get_all(
