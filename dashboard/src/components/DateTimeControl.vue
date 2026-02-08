@@ -1,8 +1,8 @@
 <template>
 	<div class="flex items-center space-x-1">
 		<FormControl
-			class="w-2/5"
-			:label="label ? label : 'Date'"
+			class="flex-[4]"
+			:label="hideLabel ? '' : label ? label : 'Date'"
 			type="select"
 			variant="outline"
 			:options="dayOptions"
@@ -10,9 +10,9 @@
 			placeholder="Select date"
 		/>
 		<FormControl
-			class="w-[3/10]"
+			class="flex-[3]"
 			:class="label ? 'mt-5' : ''"
-			:label="label ? '' : 'Hour'"
+			:label="hideLabel ? '' : label ? label : 'Hour'"
 			type="select"
 			variant="outline"
 			:options="hourOptions"
@@ -20,9 +20,9 @@
 			placeholder="Select hour"
 		/>
 		<FormControl
-			class="w-[3/10]"
+			class="flex-[3]"
 			:class="label ? 'mt-5' : ''"
-			:label="label ? '' : 'Minute'"
+			:label="hideLabel ? '' : label ? label : 'Minute'"
 			type="select"
 			variant="outline"
 			:options="minuteOptions"
@@ -36,7 +36,7 @@
 import dayjs from '../utils/dayjs';
 
 export default {
-	props: ['modelValue', 'label'],
+	props: ['modelValue', 'label', 'hideLabel'],
 	emits: ['update:modelValue'],
 	computed: {
 		scheduledDate: {
