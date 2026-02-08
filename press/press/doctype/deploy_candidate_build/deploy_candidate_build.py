@@ -643,7 +643,7 @@ class DeployCandidateBuild(Document):
 		if job.status == "Failure":
 			return True
 
-		if job_data.get("build_failure"):
+		if job_data.get("build_failed"):
 			return True
 
 		if (usu := self.upload_step_updater) and usu.upload_step and usu.upload_step.status == "Failure":
