@@ -313,8 +313,7 @@ def run_doc_method(dt: str, dn: str, method: str, args: dict | None = None):
 		args=fix_args(method, args),
 	)
 
-	# frappe.response.docs = [get(dt, dn)]
-	frappe.response.docs = {}
+	frappe.response.docs = [get(dt, dn)]
 
 
 @frappe.whitelist()
