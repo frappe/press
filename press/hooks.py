@@ -263,6 +263,7 @@ scheduler_events = {
 		"press.press.doctype.press_webhook.press_webhook.auto_disable_high_delivery_failure_webhooks",
 		"press.saas.doctype.product_trial_request.product_trial_request.gather_hourly_stats",
 		"press.press.doctype.agent_job.agent_job.agent_poll_count_stats_hourly",
+		"press.press.doctype.team.team.auto_enable_ssh_access_for_7_days_older_teams",
 	],
 	"all": [
 		"press.auth.flush",
