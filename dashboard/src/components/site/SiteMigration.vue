@@ -18,7 +18,13 @@
 		@close="resetValues"
 	>
 		<template #body-content>
-			<div class="flex flex-col gap-3">
+			<div
+				v-if="this.$resources?.migrationOptions?.loading"
+				class="flex flex-col items-center justify-center h-[200px]"
+			>
+				<Spinner class="h-4 w-4 text-gray-600" />
+			</div>
+			<div v-else class="flex flex-col gap-3">
 				<!-- Chose Migration Mode -->
 				<div class="flex flex-col gap-2">
 					<p class="text-base text-gray-800">Select Migration Type</p>
@@ -318,22 +324,8 @@ export default {
 						},
 					};
 				},
-			};
-		},
-		changeRegion() {
-			return {
-				url: 'press.api.client.run_doc_method',
-				makeParams: () => {
-					return {
-						dt: 'Site',
-						dn: this.site,
-						method: 'change_region',
-						args: {
-							cluster: this.selectedRegion,
-							scheduled_time: this.scheduledTime,
-							skip_failing_patches: this.skipFailingPatches,
-						},
-					};
+				onSuccess: () => {
+					this.hide();
 				},
 			};
 		},
@@ -350,6 +342,9 @@ export default {
 						},
 					};
 				},
+				onSuccess: () => {
+					this.hide();
+				},
 			};
 		},
 	},
@@ -360,7 +355,6 @@ export default {
 		errorMessage() {
 			return (
 				this.$resources?.createMigrationPlan?.error ??
-				this.$resources?.changeRegion?.error ??
 				this.$resources?.migrateSite?.error ??
 				''
 			);
@@ -368,13 +362,12 @@ export default {
 		migrationRequestLoading() {
 			return (
 				this.$resources?.createMigrationPlan?.loading ||
-				this.$resources?.changeRegion?.loading ||
 				this.$resources?.migrateSite?.loading ||
 				false
 			);
 		},
 		migrationOptions() {
-			return this.$resources?.migrationOptions?.data ?? {};
+			return this.$resources?.migrationOptions?.data?.message ?? {};
 		},
 		migrationChoices() {
 			return Object.keys(this.migrationOptions)
@@ -521,9 +514,6 @@ export default {
 			if (this.$resources?.createMigrationPlan) {
 				this.$resources.createMigrationPlan.error = null;
 			}
-			if (this.$resources?.changeRegion) {
-				this.$resources.changeRegion.error = null;
-			}
 			if (this.$resources?.migrateSite) {
 				this.$resources.migrateSite.error = null;
 			}
@@ -534,10 +524,11 @@ export default {
 			} else {
 				this.$resources?.createMigrationPlan?.submit();
 			}
-
-			// this.show = false;
-			// this.$emit('update:modelValue', false);
-			// this.$emit('close');
+		},
+		hide() {
+			this.show = false;
+			this.$emit('update:modelValue', false);
+			this.$emit('close');
 		},
 	},
 };
