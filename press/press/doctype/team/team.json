@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
+  "banned",
   "team_title",
   "user",
   "account_request",
@@ -259,7 +260,7 @@
    "fieldtype": "Section Break"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "ssh_access_enabled",
    "fieldtype": "Check",
    "label": "SSH Access Enabled"
@@ -667,6 +668,12 @@
    "in_list_view": 1,
    "label": "Phone Number",
    "options": "Country"
+  },
+  {
+   "default": "0",
+   "fieldname": "banned",
+   "fieldtype": "Check",
+   "label": "Banned"
   }
  ],
  "grid_page_length": 50,
@@ -732,7 +739,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2026-02-04 14:46:25.362226",
+ "modified": "2026-02-08 19:03:07.774884",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
