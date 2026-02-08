@@ -32,7 +32,7 @@ export default {
 				label: 'App',
 				fieldname: 'title',
 				class: 'font-medium',
-				width: 0.3,
+				width: 0.6,
 				prefix(row) {
 					return row.image
 						? h('img', {
@@ -192,8 +192,9 @@ export default {
 																label: 'Branch',
 																type: 'Component',
 																component({ row }) {
-																	row.selectedOption = row.branch[0];
-
+																	if (!row.selectedOption) {
+																		row.selectedOption = row.branch[0];
+																	}
 																	return h(Combobox, {
 																		modelValue: row.selectedOption,
 																		options: row.branch,
