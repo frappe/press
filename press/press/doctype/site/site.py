@@ -1042,9 +1042,6 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def migrate(self, skip_failing_patches: bool = False):
-		import time
-
-		time.sleep(5)
 		agent = Agent(self.server)
 		activate = True
 		if self.status in ("Inactive", "Suspended"):

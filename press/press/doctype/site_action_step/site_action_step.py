@@ -28,7 +28,6 @@ class SiteActionStep(Document):
 		step: DF.Data
 		step_type: DF.Literal["Preparation", "Main", "Cleanup"]
 		traceback: DF.Text | None
-		wait_for_completion: DF.Check
 	# end: auto-generated types
 
 	def validate(self):

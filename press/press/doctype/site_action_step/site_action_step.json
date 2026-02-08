@@ -16,7 +16,6 @@
   "duration",
   "column_break_mvqv",
   "step_type",
-  "wait_for_completion",
   "attempts",
   "section_break_czvk",
   "traceback"
@@ -67,12 +66,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "0",
-   "fieldname": "wait_for_completion",
-   "fieldtype": "Check",
-   "label": "Wait For Completion"
-  },
-  {
    "fieldname": "attempts",
    "fieldtype": "Int",
    "label": "Attempts"
@@ -112,7 +105,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-02-05 19:51:16.954310",
+ "modified": "2026-02-08 11:14:11.662769",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Action Step",

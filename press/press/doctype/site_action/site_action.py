@@ -319,7 +319,7 @@ class SiteAction(Document):
 
 	def add_steps(self):
 		self.steps = []
-		for method, step_type, wait_for_completion in self.get_steps_for_action():
+		for method, step_type in self.get_steps_for_action():
 			if step_type == StepType.Validation:
 				continue
 
@@ -328,7 +328,6 @@ class SiteAction(Document):
 				{
 					"step": method.__doc__,
 					"method": method.__name__,
-					"wait_for_completion": wait_for_completion,
 					"step_type": step_type,
 				},
 			)
@@ -414,7 +413,7 @@ class SiteAction(Document):
 			If the step is sync and function is marked to wait for completion,
 			Then wait for the function to complete
 			"""
-			if step.wait_for_completion and result == StepStatus.Running:
+			if result == StepStatus.Running:
 				step.attempts = step.attempts + 1 if step.attempts else 1
 				time.sleep(1)
 
@@ -475,9 +474,6 @@ class SiteAction(Document):
 			"execute_step",
 			step_name=next_step_to_run.name,
 			enqueue_after_commit=True,
-			deduplicate=next_step_to_run.wait_for_completion
-			is False,  # Don't deduplicate if wait_for_completion is True
-			job_id=f"site_action||{self.name}||{next_step_to_run.name}",
 		)
 
 	@frappe.whitelist()
