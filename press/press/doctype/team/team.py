@@ -49,6 +49,7 @@ class Team(Document):
 		account_request: DF.Link | None
 		allow_unified_servers: DF.Check
 		apply_npo_discount: DF.Check
+		banned: DF.Check
 		benches_enabled: DF.Check
 		billing_address: DF.Link | None
 		billing_name: DF.Data | None
