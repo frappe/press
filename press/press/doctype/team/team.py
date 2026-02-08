@@ -13,7 +13,7 @@ from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.query_builder.functions import Count
 from frappe.rate_limiter import rate_limit
-from frappe.utils import get_fullname, get_last_day, get_url_to_form, getdate, random_string
+from frappe.utils import add_to_date, get_fullname, get_last_day, get_url_to_form, getdate, random_string
 
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
@@ -1749,3 +1749,24 @@ def get_country_dialing_code(country_name: str) -> str | None:
 	# phonenumbers expects uppercase country code
 	dialing_code = country_code_for_region(country_code.upper())
 	return str(dialing_code) if dialing_code else None
+
+
+def auto_enable_ssh_access_for_7_days_older_teams():
+	teams = frappe.get_all(
+		"Team",
+		filters={
+			"enabled": 1,
+			"ssh_access_enabled": 0,
+			"creation": ("<", add_to_date(None, days=-7)),
+		},
+		pluck="name",
+	)
+
+	frappe.db.set_value(
+		"Team",
+		filters={
+			"name": ("in", teams),
+		},
+		fieldname="ssh_access_enabled",
+		value=1,
+	)
