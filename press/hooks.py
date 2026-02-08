@@ -303,6 +303,7 @@ scheduler_events = {
 		"* * * * * 0/30": [
 			"press.press.doctype.account_request.account_request.expire_request_key",
 			"press.press.doctype.physical_backup_restoration.physical_backup_restoration.process_scheduled_restorations",
+			"press.press.doctype.site_action.site_action.process_site_actions",
 		],
 		"0 */2 * * *": [
 			"press.signup_e2e.run_signup_e2e",
