@@ -157,10 +157,10 @@ def get_asset_store_credentials() -> AssetStoreCredentials:
 
 def get_build_stage_and_step(
 	stage_slug: str, step_slug: str, app_titles: dict[str, str] | None = None
-) -> tuple[str, str]:
+) -> tuple[str, str | None]:
 	stage = STAGE_SLUG_MAP.get(stage_slug, stage_slug)
 	step = step_slug
-	if stage_slug == "clone" or stage_slug == "apps":
+	if (stage_slug == "clone" or stage_slug == "apps") and app_titles:
 		step = app_titles.get(step_slug, step_slug)
 	else:
 		step = STEP_SLUG_MAP.get((stage_slug, step_slug), step_slug)
@@ -396,7 +396,8 @@ class DeployCandidateBuild(Document):
 
 	def _generate_config_from_template(self, template: ConfigFileTemplate):
 		_, template_conf_name = os.path.split(template.value)
-		conf_file = os.path.join(self.build_directory, "config", template_conf_name)
+		assert self.build_directory, "Build directory must be set before generating config files"
+		conf_file: str = os.path.join(self.build_directory, "config", template_conf_name)
 
 		with open(conf_file, "w") as f:
 			content = frappe.render_template(
@@ -480,6 +481,7 @@ class DeployCandidateBuild(Document):
 
 	def _clone_app(self, app: DeployCandidateApp):
 		step = self.get_step("clone", app.app)
+		assert step is not None, f"Step not found for cloning app {app.app}"
 		source, cloned = frappe.get_value("App Release", app.release, ["clone_directory", "cloned"])
 
 		step.command = f"git clone {app.app}"
@@ -490,6 +492,7 @@ class DeployCandidateBuild(Document):
 		else:
 			source = self._clone_release_and_update_step(app.release, step)
 
+		assert self.build_directory, "Build directory must be set before cloning apps"
 		target = os.path.join(self.build_directory, "apps", app.app)
 		shutil.copytree(source, target, symlinks=True)
 
@@ -594,14 +597,16 @@ class DeployCandidateBuild(Document):
 				app_titles,
 			)
 
-			step = dict(
-				status="Pending",
-				stage_slug=stage_slug,
-				step_slug=step_slug,
-				stage=stage,
-				step=step,
+			self.append(
+				"build_steps",
+				dict(
+					status="Pending",
+					stage_slug=stage_slug,
+					step_slug=step_slug,
+					stage=stage,
+					step=step,
+				),
 			)
-			self.append("build_steps", step)
 
 		self.save()
 
@@ -1300,6 +1305,26 @@ class DeployCandidateBuild(Document):
 
 		self.build_directory = None
 		self.save()
+
+	def get_steps(self):
+		steps = []
+		# Expand the build steps
+		for s in self.build_steps:
+			steps.append(
+				{
+					"name": f"{s.stage_slug}_{s.step_slug}",
+					"title": s.step.title(),
+					"status": s.status,
+					"output": s.output,
+					"stage": "Bench Build",
+				}
+			)
+
+		# Expand the bench deploy steps if deploy exists
+		if frappe.flags.site_action_args and (bench := frappe.flags.site_action_args.get("cloned_bench")):
+			bench = frappe.get_doc("Bench", bench)
+			steps.extend(bench.get_steps())
+		return steps
 
 
 @frappe.whitelist()
