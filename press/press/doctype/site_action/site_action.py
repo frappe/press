@@ -78,28 +78,25 @@ class SiteAction(Document):
 		"status",
 	)
 
-	def get_steps_for_action(self) -> list[tuple[Callable, str, bool]]:
-		Wait = True
-		NoWait = False  # noqa
-
+	def get_steps_for_action(self) -> list[tuple[Callable, str]]:
 		if self.action_type == "Move From Shared To Private Bench":
 			return [
-				(self.pre_validate_move_site_from_shared_to_private_bench, StepType.Validation, Wait),
-				(self.clone_and_create_bench_group, StepType.Preparation, Wait),
-				(self.move_site_to_bench_group, StepType.Main, Wait),
+				(self.pre_validate_move_site_from_shared_to_private_bench, StepType.Validation),
+				(self.clone_and_create_bench_group, StepType.Preparation),
+				(self.move_site_to_bench_group, StepType.Main),
 			]
 
 		if self.action_type == "Move Site To Different Region":
 			return [
-				(self.pre_validate_move_site_to_different_cluster, StepType.Validation, Wait),
-				(self.process_move_site_to_different_cluster, StepType.Main, Wait),
+				(self.pre_validate_move_site_to_different_cluster, StepType.Validation),
+				(self.process_move_site_to_different_cluster, StepType.Main),
 			]
 
 		if self.action_type == "Move Site To Different Server":
 			return [
-				(self.pre_validate_move_site_to_different_server, StepType.Validation, Wait),
-				(self.clone_and_create_bench_group, StepType.Preparation, Wait),
-				(self.move_site_to_bench_group, StepType.Main, Wait),
+				(self.pre_validate_move_site_to_different_server, StepType.Validation),
+				(self.clone_and_create_bench_group, StepType.Preparation),
+				(self.move_site_to_bench_group, StepType.Main),
 			]
 
 		return []
