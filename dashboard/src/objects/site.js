@@ -4,6 +4,7 @@ import {
 	LoadingIndicator,
 } from 'frappe-ui';
 import LucideVenetianMask from '~icons/lucide/venetian-mask';
+import ArrowLeftRightIcon from '~icons/lucide/arrow-left-right';
 import { defineAsyncComponent, h } from 'vue';
 import { unparse } from 'papaparse';
 import { toast } from 'vue-sonner';
@@ -1204,16 +1205,79 @@ export default {
 				},
 			},
 			{
-				label: 'Actions',
-				icon: icon('sliders'),
-				route: 'actions',
-				type: 'Component',
+				label: 'Migrations',
+				icon: icon(ArrowLeftRightIcon),
+				route: 'migrations',
+				type: 'list',
 				condition: (site) => {
 					return site.doc?.status !== 'Archived';
 				},
-				component: SiteActions,
-				props: (site) => {
-					return { site: site.doc?.name };
+				childrenRoutes: ['Site Migration'],
+				list: {
+					doctype: 'Site Action',
+					filters: (site) => {
+						return { site: site.doc?.name };
+					},
+					orderBy: 'creation',
+					fields: ['action_type', 'status', 'scheduled_time', 'owner'],
+					columns: [
+						{
+							label: 'Migration',
+							fieldname: 'action_type',
+							width: 1,
+						},
+						{
+							label: 'Status',
+							fieldname: 'status',
+							type: 'Badge',
+							width: 0.6,
+						},
+						{
+							label: 'Created By',
+							fieldname: 'owner',
+						},
+						{
+							label: 'Scheduled At',
+							fieldname: 'scheduled_time',
+							format(value) {
+								return date(value, 'lll');
+							},
+						},
+						// {
+						// 	label: 'Updated On',
+						// 	fieldname: 'updated_on',
+						// 	format(value) {
+						// 		return date(value, 'lll');
+						// 	},
+						// },
+					],
+					route(row) {
+						return {
+							name: 'Site Migration',
+							params: { id: row.name },
+						};
+					},
+					primaryAction({ listResource: backups, documentResource: site }) {
+						return {
+							label: 'Trigger Migration',
+							slots: {
+								prefix: icon('upload-cloud'),
+							},
+							loading: site.backup.loading,
+							onClick() {
+								renderDialog(
+									h(
+										defineAsyncComponent(
+											() => import('../components/site/SiteMigration.vue'),
+										),
+										{
+											site: site.name,
+										},
+									),
+								);
+							},
+						};
+					}
 				},
 			},
 			{
@@ -1477,9 +1541,7 @@ export default {
 								onClick() {
 									let ConfigureAutoUpdateDialog = defineAsyncComponent(
 										() =>
-											import(
-												'../components/site/ConfigureAutoUpdateDialog.vue'
-											),
+											import('../components/site/ConfigureAutoUpdateDialog.vue'),
 									);
 
 									renderDialog(
@@ -1499,6 +1561,20 @@ export default {
 					},
 				},
 			},
+			{
+				label: 'Actions',
+				icon: icon('sliders'),
+				route: 'actions',
+				type: 'Component',
+				condition: (site) => {
+					return site.doc?.status !== 'Archived';
+				},
+				component: SiteActions,
+				props: (site) => {
+					return { site: site.doc?.name };
+				},
+			},
+
 			{
 				label: 'Activity',
 				icon: icon('activity'),
@@ -1768,6 +1844,11 @@ export default {
 			name: 'Site Update',
 			path: 'updates/:id',
 			component: () => import('../pages/SiteUpdate.vue'),
+		},
+		{
+			name: 'Site Migration',
+			path: 'migrations/:id',
+			component: () => import('../pages/SiteMigration.vue'),
 		},
 	],
 };

@@ -792,7 +792,7 @@
   },
   {
    "group": "Related Documents",
-   "link_doctype": "ERPNext Site Settings",
+   "link_doctype": "Site Action",
    "link_fieldname": "site"
   },
   {
@@ -819,9 +819,14 @@
    "group": "Related Documents",
    "link_doctype": "Physical Backup Restoration",
    "link_fieldname": "site"
+  },
+  {
+   "group": "Related Documents",
+   "link_doctype": "ERPNext Site Settings",
+   "link_fieldname": "site"
   }
  ],
- "modified": "2025-12-12 22:26:41.654346",
+ "modified": "2026-02-03 10:01:03.086574",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

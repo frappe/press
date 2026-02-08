@@ -104,6 +104,7 @@ notification_config = "press.notifications.get_notification_config"
 
 permission_query_conditions = {
 	"Site": "press.press.doctype.site.site.get_permission_query_conditions",
+	"Site Action": "press.press.doctype.site_action.site_action.get_permission_query_conditions",
 	"Site Backup": "press.press.doctype.site_backup.site_backup.get_permission_query_conditions",
 	"Site Domain": ("press.press.doctype.site_domain.site_domain.get_permission_query_conditions"),
 	"TLS Certificate": "press.press.doctype.tls_certificate.tls_certificate.get_permission_query_conditions",
@@ -131,6 +132,7 @@ permission_query_conditions = {
 }
 has_permission = {
 	"Site": "press.overrides.has_permission",
+	"Site Action": "press.overrides.has_permission",
 	"Site Backup": "press.overrides.has_permission",
 	"Site Domain": "press.overrides.has_permission",
 	"TLS Certificate": "press.overrides.has_permission",
