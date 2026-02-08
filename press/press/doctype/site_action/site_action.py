@@ -340,7 +340,7 @@ class SiteAction(Document):
 
 	def run_pre_validation_steps(self):
 		steps = self.get_steps_for_action()
-		for method, step_type, _ in steps:
+		for method, step_type in steps:
 			if step_type != StepType.Validation:
 				continue
 
