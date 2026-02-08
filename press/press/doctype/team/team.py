@@ -223,6 +223,7 @@ class Team(Document):
 		self.unset_saas_team_type_if_required()
 		self.validate_disable()
 		self.validate_billing_team()
+		self.reject_reenabling_team_for_banned_team()
 
 	def before_insert(self):
 		self.currency = "INR" if self.country == "India" else "USD"
@@ -256,6 +257,10 @@ class Team(Document):
 			frappe.throw(
 				"Cannot set payment mode to Paid By Partner. Please finalize and settle the pending invoices first"
 			)
+
+	def reject_reenabling_team_for_banned_team(self):
+		if self.has_value_changed("enabled") and self.enabled == 1 and self.banned:
+			frappe.throw(f"{self.user} is banned. Please signup with a different email or contact support.")
 
 	def delete(self, force=False, workflow=False):
 		if not (force or workflow):
@@ -537,6 +542,17 @@ class Team(Document):
 		)
 		impersonation.save()
 		frappe.local.login_manager.login_as(user)
+
+	@frappe.whitelist()
+	def ban(self):
+		frappe.only_for("System Manager")
+		self.banned = 1
+		self.enabled = 0
+		linked_user = frappe.get_doc("User", self.user)
+		linked_user.enabled = 0
+		linked_user.save(ignore_permissions=True)
+		self.save(ignore_permissions=True)
+		self.suspend_sites(reason="Team banned")
 
 	@frappe.whitelist()
 	def enable_erpnext_partner_privileges(self):
