@@ -1,6 +1,7 @@
 <template>
 	<div
 		:id="slugifiedTitle"
+		class="group"
 		:class="[
 			'rounded-md border duration-700 ring-blue-500',
 			shouldHighlight && 'ring-1',
@@ -9,9 +10,9 @@
 		<div class="flex h-12 items-center justify-between border-b px-5 gap-2">
 			<div class="flex items-center">
 				<h3 class="text-lg font-medium text-gray-900">{{ title }}</h3>
-				<div class="pl-1">
+				<div class="pl-2">
 					<Tooltip text="Share Link to this Card">
-						<LinkIcon
+						<CopyIcon
 							class="h-4 text-gray-600 outline-none duration-200 hover:text-current cursor-pointer"
 							@click="shareCard"
 						/>
@@ -27,15 +28,15 @@
 
 <script>
 import { Tooltip } from 'frappe-ui';
-import LinkIcon from '../icons/LinkIcon.vue';
+import { icon } from '../../utils/components';
 
 export default {
 	name: 'AnalyticsCard',
 	props: ['title'],
 	emits: ['share-card'],
 	components: {
-		LinkIcon,
 		Tooltip,
+		CopyIcon: icon('copy'),
 	},
 
 	data() {
