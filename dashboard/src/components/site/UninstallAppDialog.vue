@@ -30,6 +30,13 @@
 						<b>data</b> within this app will be removed from the site.
 					</div>
 				</div>
+				<div class="space-y-4">
+					<FormControl
+						type="checkbox"
+						label="Create backup before uninstalling app"
+						v-model="createOffsiteBackup"
+					/>
+				</div>
 				<div v-if="app.collect_feedback" class="space-y-4">
 					<FormControl
 						type="checkbox"
@@ -80,6 +87,7 @@ const showDialog = defineModel<boolean>({ default: true });
 const giveFeedback = ref(false);
 const feedback = ref('');
 const specifyFeedback = ref('');
+const createOffsiteBackup = ref(false);
 const feedbackOptions = [
 	'Switched to another tool',
 	'Was just testing, not a long-term user',
@@ -98,6 +106,7 @@ const uninstallApp = createResource({
 		method: 'uninstall_app',
 		args: {
 			app: props.app.app,
+			create_offsite_backup: createOffsiteBackup.value,
 			feedback:
 				feedback.value === 'Other' ? specifyFeedback.value : feedback.value,
 		},
