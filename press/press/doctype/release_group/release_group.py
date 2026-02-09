@@ -1547,9 +1547,10 @@ class ReleaseGroup(Document, TagHelpers):
 			return
 
 		if frappe.db.exists("App", name):
-			app_doc: "App" = frappe.get_doc("App", name)
+			app_doc: "App" = frappe.get_doc("App", name, for_update=True)
 		else:
 			app_doc = new_app(name, app["title"])
+			frappe.get_value("App", app_doc.name, "name", for_update=True)  # to lock the app row
 
 		source = app_doc.add_source(
 			frappe_version=self.version,
