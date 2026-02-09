@@ -155,6 +155,7 @@ class Site(Document, TagHelpers):
 		apps: DF.Table[SiteApp]
 		archive_failed: DF.Check
 		auto_update_last_triggered_on: DF.Datetime | None
+		backup_timeout: DF.Int
 		bench: DF.Link
 		cluster: DF.Link
 		communication_infos: DF.Table[CommunicationInfo]
