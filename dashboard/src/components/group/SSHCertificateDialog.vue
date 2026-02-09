@@ -94,6 +94,10 @@
 					>
 					for more details.
 				</p>
+				<ErrorMessage
+					class="mt-3"
+					:message="$releaseGroup.generateCertificate.error"
+				/>
 			</div>
 		</template>
 		<template
@@ -117,10 +121,6 @@
 				>Generate SSH Certificate</Button
 			>
 		</template>
-		<ErrorMessage
-			class="mt-3"
-			:message="$releaseGroup.generateCertificate.error"
-		/>
 	</Dialog>
 </template>
 

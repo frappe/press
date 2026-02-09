@@ -3407,6 +3407,13 @@ class Site(Document, TagHelpers):
 				"doc_method": "send_change_team_request",
 			},
 			{
+				"action": "Version upgrade",
+				"description": "Upgrade your site to a major version",
+				"button_label": "Upgrade",
+				"doc_method": "upgrade",
+				"condition": self.status in ["Active", "Broken", "Inactive"],
+			},
+			{
 				"action": "Change bench group",
 				"description": "Move your site to a different bench group",
 				"button_label": "Change",
