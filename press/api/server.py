@@ -13,11 +13,7 @@ from frappe.utils import convert_utc_to_timezone, flt
 from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 
-<<<<<<< HEAD
-from press.api.analytics import TIMESPAN_TIMEGRAIN_MAP, get_rounded_boundaries
-=======
 from press.api.analytics import auto_timespan_timegrain, get_rounded_boundaries, get_rounded_boundary
->>>>>>> 5f2ad6721 (fix(server-analytics): Add arbitrary duration support)
 from press.api.bench import all as all_benches
 from press.api.site import protected
 from press.exceptions import MonitorServerDown
@@ -434,13 +430,9 @@ def analytics(name, query, timezone, start, end, server_type=None):
 	# If the server type is of unified server, then just show server's metrics as application server
 	server_type = "Application Server" if server_type == "Unified Server" else server_type
 	mount_point = get_mount_point(name, server_type)
-<<<<<<< HEAD
-	timespan, timegrain = get_timespan_timegrain(duration)
-=======
 	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
 	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
 	_, timegrain = auto_timespan_timegrain(start, end)
->>>>>>> 5f2ad6721 (fix(server-analytics): Add arbitrary duration support)
 
 	query_map = {
 		"cpu": (
@@ -523,18 +515,9 @@ avg by (instance) (
 def get_request_by_site(name, query, timezone, start, end):
 	from press.api.analytics import ResourceType, get_request_by_
 
-<<<<<<< HEAD
-	timespan, timegrain = get_timespan_timegrain(duration)
-
-	end = now_datetime().astimezone(pytz_timezone(timezone))
-	start = add_to_date(end, seconds=-timespan)
-=======
 	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
 	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
 	timespan, timegrain = auto_timespan_timegrain(start, end)
->>>>>>> 5f2ad6721 (fix(server-analytics): Add arbitrary duration support)
-
-	timespan, timegrain = get_timespan_timegrain(duration)
 
 	return get_request_by_(name, query, timezone, start, end, timespan, timegrain, ResourceType.SERVER)
 
@@ -545,16 +528,9 @@ def get_request_by_site(name, query, timezone, start, end):
 def get_background_job_by_site(name, query, timezone, start, end):
 	from press.api.analytics import ResourceType, get_background_job_by_
 
-<<<<<<< HEAD
-	timespan, timegrain = get_timespan_timegrain(duration)
-
-	end = now_datetime().astimezone(pytz_timezone(timezone))
-	start = add_to_date(end, seconds=-timespan)
-=======
 	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
 	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
 	timespan, timegrain = auto_timespan_timegrain(start, end)
->>>>>>> 5f2ad6721 (fix(server-analytics): Add arbitrary duration support)
 
 	return get_background_job_by_(name, query, timezone, start, end, timespan, timegrain, ResourceType.SERVER)
 
@@ -565,16 +541,9 @@ def get_background_job_by_site(name, query, timezone, start, end):
 def get_slow_logs_by_site(name, query, timezone, start, end, normalize=False):
 	from press.api.analytics import ResourceType, get_slow_logs
 
-<<<<<<< HEAD
-	timespan, timegrain = get_timespan_timegrain(duration)
-
-	end = now_datetime().astimezone(pytz_timezone(timezone))
-	start = add_to_date(end, seconds=-timespan)
-=======
 	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
 	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
 	timespan, timegrain = auto_timespan_timegrain(start, end)
->>>>>>> 5f2ad6721 (fix(server-analytics): Add arbitrary duration support)
 
 	return get_slow_logs(
 		name, query, timezone, start, end, timespan, timegrain, ResourceType.SERVER, normalize
@@ -643,6 +612,7 @@ def prometheus_query(
 	]
 
 	return {"datasets": datasets, "labels": labels}
+
 
 @frappe.whitelist()
 def options():
@@ -752,6 +722,7 @@ def options():
 		"storage_plan": storage_plan,
 		"snapshot_plan": snapshot_plan,
 	}
+
 
 @frappe.whitelist()
 def get_autoscale_discount():
@@ -1003,10 +974,6 @@ def rename(name, title):
 	doc = poly_get_doc(["Server", "Database Server"], name)
 	doc.title = title
 	doc.save()
-
-
-def get_timespan_timegrain(duration: str) -> tuple[int, int]:
-	return TIMESPAN_TIMEGRAIN_MAP[duration]
 
 
 @frappe.whitelist(allow_guest=True)

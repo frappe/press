@@ -458,14 +458,10 @@ export default {
 		const defaultDuration = '1h';
 
 		return {
-<<<<<<< HEAD
-			duration: '1h',
-=======
 			defaultDuration,
 			duration: defaultDuration,
 			customStartTime: null,
 			customEndTime: null,
->>>>>>> 5f2ad6721 (fix(server-analytics): Add arbitrary duration support)
 			showAdvancedAnalytics: false,
 			localTimezone: dayjs.tz.guess(),
 			slowLogsDurationType: 'Denormalized',
@@ -479,10 +475,7 @@ export default {
 				{ label: '3 days', value: '3d' },
 				{ label: '7 days', value: '7d' },
 				{ label: '15 days', value: '15d' },
-<<<<<<< HEAD
-=======
 				{ label: 'Custom', value: 'custom' },
->>>>>>> 5f2ad6721 (fix(server-analytics): Add arbitrary duration support)
 			],
 			chartColors: [
 				this.$theme.colors.green[500],
