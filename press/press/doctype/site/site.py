@@ -830,14 +830,14 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
-	def uninstall_app(self, app: str, feedback: str = "") -> str:
+	def uninstall_app(self, app: str, create_offsite_backup: bool = False, feedback: str = "") -> str:
 		from press.marketplace.doctype.marketplace_app_feedback.marketplace_app_feedback import (
 			collect_app_uninstall_feedback,
 		)
 
 		collect_app_uninstall_feedback(app, feedback, self.name)
 		agent = Agent(self.server)
-		job = agent.uninstall_app_site(self, app)
+		job = agent.uninstall_app_site(self, app, create_offsite_backup)
 
 		log_site_activity(self.name, "Uninstall App", app, job.name)
 
@@ -4376,14 +4376,14 @@ def update_backup_restoration_test(site: str, status: str):
 		frappe.db.set_value("Backup Restoration Test", backup_tests[0], "status", "Archive Failed")
 
 
-def _create_site_backup_from_archive_job(job: "AgentJob"):
+def _create_site_backup_from_agent_job(job: "AgentJob"):
 	"""
 	Create Site Backup and Remote File records from archival backup data.
 	"""
 	try:
 		from press.press.doctype.site_backup.site_backup import track_offsite_backups
 
-		if job.job_type != "Archive Site" or not job.data:
+		if (job.job_type not in ["Archive Site", "Uninstall App from Site"]) or not job.data:
 			return
 		job_data = json.loads(job.data)
 		if not job_data["backups"]:
@@ -4449,7 +4449,7 @@ def _create_site_backup_from_archive_job(job: "AgentJob"):
 		site_backup.insert(ignore_permissions=True)
 	except Exception as e:
 		frappe.log_error(
-			f"Failed to create Site Backup record from archive job: {e!s}",
+			f"Failed to create Site Backup record from {job.job_type} agent job: {e!s}",
 			reference_doctype="Agent Job",
 			reference_name=job.name,
 		)
@@ -4506,6 +4506,9 @@ def process_archive_site_job_update(job: "AgentJob"):  # noqa: C901
 		)
 		update_backup_restoration_test(job.site, updated_status)
 		if updated_status == "Archived":
+			# Create Site Backup record if backup was created during archival
+			if job.job_type == "Archive Site":
+				_create_site_backup_from_agent_job(job)
 			site_cleanup_after_archive(job.site)
 
 
@@ -4539,6 +4542,7 @@ def process_uninstall_app_site_job_update(job):
 	}[job.status]
 
 	site_status = frappe.get_value("Site", job.site, "status")
+	_create_site_backup_from_agent_job(job)
 	if updated_status != site_status:
 		site: Site = frappe.get_doc("Site", job.site)
 		site.sync_apps()
