@@ -12,7 +12,7 @@ from typing import Literal
 import ansible_runner
 import frappe
 import wrapt
-from ansible.inventory.manager import os
+import os
 from frappe.model.document import Document
 from frappe.utils import get_datetime
 from frappe.utils import now_datetime as now
@@ -99,12 +99,12 @@ class Ansible:
 
 		ansible_runner.run(
 			playbook=self.playbook_path,
-			inventory=f"{self.host}:{self.port}",
+			inventory=f"{self.host}:{self.port},",
 			extravars=self.variables,
 			cmdline=self.generate_cmdline(),
 			event_handler=self.event_handler,
 			quiet=(not self.debug),
-			verbosity=0 if self.debug else 1,
+			verbosity=1 if self.debug else 0,
 		)
 		assert self.play, "Play not found"
 		return frappe.get_doc("Ansible Play", self.play)
@@ -147,6 +147,11 @@ class Ansible:
 		self.update_task("Running", task=event)
 
 	def runner_on_ok(self, event):
+		# When an async task starts, the initial "ok" event contains the job_id
+		res = event.get("res", {})
+		job_id = res.get("ansible_job_id")
+		if job_id:
+			self._save_async_job_id(event, job_id)
 		self.update_task("Success", event)
 		self.process_task_success(event)
 
@@ -158,6 +163,21 @@ class Ansible:
 
 	def runner_on_unreachable(self, event):
 		self.update_task("Unreachable", result=event)
+
+	@reconnect_on_failure()
+	def _save_async_job_id(self, event, job_id):
+		"""Save the ansible_job_id to the task doc so polling can find it later."""
+		role, name = event.get("role"), event.get("task")
+		if not role or not name:
+			return
+		name = name.strip()
+		if role not in self.tasks or name not in self.tasks[role]:
+			return
+		task_name = self.tasks[role][name]
+		task = frappe.get_doc("Ansible Task", task_name)
+		task.job_id = job_id
+		task.save()
+		frappe.db.commit()
 
 	@reconnect_on_failure()
 	def process_task_success(self, event):
