@@ -36,7 +36,7 @@ dependencies = [
     "PyGithub==1.44.1",
     "pyOpenSSL~=23.2.0",
     "python-telegram-bot==22.6",
-    "razorpay~=1.2.0",
+    "razorpay~=2.0.0",
     "requests<2.32",
     "responses==0.23.1",
     "selenium==4.23.1",
