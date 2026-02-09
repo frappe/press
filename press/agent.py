@@ -798,7 +798,11 @@ class Agent:
 			reference_name=reference_name,
 		)
 
-	def create_database_access_credentials(self, site, mode):
+	def create_database_access_credentials(
+		self,
+		site: Site,
+		mode: Literal["read_only", "read_write"] | None = None,
+	):
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		data = {
 			"mode": mode,
