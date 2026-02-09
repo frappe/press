@@ -1474,6 +1474,12 @@
   "request_path": null,
   "steps": [
    {
+    "step_name": "Backup Site"
+   },
+   {
+    "step_name": "Upload Site Backup to S3"
+   },
+   {
     "step_name": "Archive Site"
    },
    {
