@@ -21,8 +21,6 @@ class SiteUser(Document):
 
 	def login_to_site(self):
 		"""Login to the site."""
-		if not self.enabled:
-			frappe.throw("User is disabled")
 
 		site = frappe.get_doc("Site", self.site)
 		return site.login_as_user(self.user)
