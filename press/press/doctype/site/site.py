@@ -4204,13 +4204,14 @@ def process_new_site_job_update(job):  # noqa: C901
 	if "Success" == first == second:
 		updated_status = "Active"
 		site: Site = Site("Site", job.site)
-		site.sync_apps()  # Sync apps for this site as well to reflect dependant apps
 		is_unified_server = frappe.db.get_value("Server", site.server, "is_unified_server")
 		# Only noticed this on unified servers
 		if is_unified_server:
 			Agent(site.server).create_database_access_credentials(
 				site=site
 			)  # In case the permissions are missing correct them
+
+		site.sync_apps()  # Sync apps for this site as well to reflect dependant apps
 		marketplace_app_hook(site=site, op="install")
 	elif "Failure" in (first, second) or "Delivery Failure" in (first, second):
 		updated_status = "Broken"
