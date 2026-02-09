@@ -1354,10 +1354,6 @@ class DatabaseServer(BaseServer):
 		except Exception:
 			log_error("Percona Stalk Setup Exception", server=self.as_dict())
 
-	@frappe.whitelist()
-	def setup_logrotate(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_logrotate", queue="long", timeout=1200)
-
 	def _setup_logrotate(self):
 		try:
 			ansible = Ansible(

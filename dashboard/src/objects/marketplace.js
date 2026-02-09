@@ -1,5 +1,5 @@
 import { defineAsyncComponent, h } from 'vue';
-import { Button, Badge } from 'frappe-ui';
+import { Button, Badge, Combobox } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import ChangeAppBranchDialog from '../components/marketplace/ChangeAppBranchDialog.vue';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
@@ -59,7 +59,7 @@ export default {
 			{
 				label: 'Description',
 				fieldname: 'description',
-				width: 1.0,
+				width: '40rem',
 			},
 		],
 		primaryAction() {
@@ -190,17 +190,19 @@ export default {
 															},
 															{
 																label: 'Branch',
-																type: 'Select',
-																fieldname: 'branch',
-																format: (value, row) => {
-																	row.selectedOption = value[0];
-																	return value.map((v) => ({
-																		label: v,
-																		value: v,
-																		onClick: () => {
-																			row.selectedOption = v;
+																type: 'Component',
+																component({ row }) {
+																	if (!row.selectedOption) {
+																		row.selectedOption = row.branch[0];
+																	}
+																	return h(Combobox, {
+																		modelValue: row.selectedOption,
+																		options: row.branch,
+																		allowCustomValue: true,
+																		'onUpdate:modelValue': (value) => {
+																			row.selectedOption = value;
 																		},
-																	}));
+																	});
 																},
 															},
 															{

@@ -12,7 +12,7 @@ import time
 from datetime import datetime, timedelta
 from functools import wraps
 from pathlib import Path
-from typing import TypedDict, TypeVar
+from typing import TYPE_CHECKING, Literal, TypedDict, TypeVar, overload
 from urllib.parse import urljoin
 from urllib.request import urlopen
 
@@ -29,6 +29,9 @@ from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import site_cache
 
 from press.utils.email_validator import validate_email
+
+if TYPE_CHECKING:
+	from press.press.doctype.team.team import Team
 
 
 class SupervisorProcess(TypedDict):
@@ -91,7 +94,15 @@ def log_error(title, **kwargs):
 		)
 
 
-def get_current_team(get_doc=False):
+@overload
+def get_current_team(get_doc: Literal[True]) -> Team: ...
+
+
+@overload
+def get_current_team(get_doc: Literal[False] = False) -> str: ...
+
+
+def get_current_team(get_doc=False) -> Team | str:
 	if frappe.session.user == "Guest":
 		frappe.throw("Not Permitted", frappe.AuthenticationError)
 

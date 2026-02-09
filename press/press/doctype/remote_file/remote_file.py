@@ -225,8 +225,12 @@ class RemoteFile(Document):
 
 	@frappe.whitelist()
 	def get_download_link(self):
-		log_site_activity(site=self.site, action="Access Offsite Backups")
-		frappe.db.commit()
+		# The `site` field is not set during the upload & restore of files.
+		# Not gonna play with the code here.
+		# Also, it doesn't make sense to log access while restoring.
+		if self.site:
+			log_site_activity(site=self.site, action="Access Offsite Backups")
+			frappe.db.commit()
 		return self.url or self.s3_client.generate_presigned_url(
 			"get_object",
 			Params={"Bucket": self.bucket, "Key": self.file_path},

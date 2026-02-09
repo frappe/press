@@ -1,0 +1,118 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-02-03 09:36:14.164572",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "step",
+  "status",
+  "method",
+  "reference_doctype",
+  "reference_name",
+  "column_break_alkj",
+  "start",
+  "end",
+  "duration",
+  "column_break_mvqv",
+  "step_type",
+  "attempts",
+  "section_break_czvk",
+  "traceback"
+ ],
+ "fields": [
+  {
+   "fieldname": "step",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Step",
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nScheduled\nRunning\nSkipped\nSuccess\nFailure",
+   "reqd": 1
+  },
+  {
+   "fieldname": "method",
+   "fieldtype": "Data",
+   "label": "Method",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_alkj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "start",
+   "fieldtype": "Datetime",
+   "label": "Start"
+  },
+  {
+   "fieldname": "end",
+   "fieldtype": "Datetime",
+   "label": "End"
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Duration",
+   "label": "Duration"
+  },
+  {
+   "fieldname": "column_break_mvqv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "attempts",
+   "fieldtype": "Int",
+   "label": "Attempts"
+  },
+  {
+   "fieldname": "section_break_czvk",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "traceback",
+   "fieldtype": "Text",
+   "label": "Traceback"
+  },
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "label": "Reference Doctype",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Reference Name",
+   "options": "reference_doctype"
+  },
+  {
+   "default": "Main",
+   "fieldname": "step_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Step Type",
+   "options": "Preparation\nMain\nCleanup"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-02-08 11:14:11.662769",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Site Action Step",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

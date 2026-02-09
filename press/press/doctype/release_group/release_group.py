@@ -18,6 +18,7 @@ from frappe.model.naming import append_number_if_name_exists
 from frappe.query_builder.functions import Count
 from frappe.utils import cstr, flt, get_url, sbool
 from frappe.utils.caching import redis_cache
+from frappe.utils.data import add_to_date
 
 from press.access.actions import ReleaseGroupActions
 from press.access.decorators import action_guard
@@ -325,7 +326,7 @@ class ReleaseGroup(Document, TagHelpers):
 		self.common_site_config = json.dumps(new_config, indent=4)
 
 	@dashboard_whitelist()
-	def update_dependency(self, dependency_name, version, is_custom):
+	def update_dependency(self, dependency_name: str, version: str, is_custom: bool):
 		"""Updates a dependency version in the Release Group Dependency table"""
 		for dependency in self.dependencies:
 			if dependency.name == dependency_name:
@@ -547,8 +548,8 @@ class ReleaseGroup(Document, TagHelpers):
 			frappe.throw(_("Use App Cache cannot be set, BENCH_VERSION must be 5.22.1 or later"))
 
 	def _validate_dependency_format(self, dependency: str, version: str):
-		# Append patch version
-		if version.count(".") == 1:
+		# Append patch version, except for node since nvm path breaks during build
+		if dependency != "NODE_VERSION" and version.count(".") == 1:
 			version += ".0"
 
 		try:
@@ -1032,6 +1033,18 @@ class ReleaseGroup(Document, TagHelpers):
 	@dashboard_whitelist()
 	@action_guard(ReleaseGroupActions.SSHAccess)
 	def generate_certificate(self):
+		# Check if team has access to SSH
+		team = get_current_team(get_doc=True)
+		if team and not team.ssh_access_enabled:
+			if team.creation > add_to_date(None, days=-7):
+				frappe.throw(
+					"SSH access is unavailable because your team was created less than 7 days ago.\nIf you need urgent access, please create a support ticket at support.frappe.io using your team email ID."
+				)
+			else:
+				frappe.throw(
+					"SSH access is not enabled for your team.\nTo request access, please open a ticket at support.frappe.io using your team email ID."
+				)
+
 		ssh_key = frappe.get_all(
 			"User SSH Key",
 			{"user": frappe.session.user, "is_default": True},
