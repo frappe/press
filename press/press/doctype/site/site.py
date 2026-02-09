@@ -4204,6 +4204,13 @@ def process_new_site_job_update(job):  # noqa: C901
 	if "Success" == first == second:
 		updated_status = "Active"
 		site: Site = Site("Site", job.site)
+		is_unified_server = frappe.db.get_value("Server", site.server, "is_unified_server")
+		# Only noticed this on unified servers
+		if is_unified_server:
+			Agent(site.server).create_database_access_credentials(
+				site=site
+			)  # In case the permissions are missing correct them
+
 		site.sync_apps()  # Sync apps for this site as well to reflect dependant apps
 		marketplace_app_hook(site=site, op="install")
 	elif "Failure" in (first, second) or "Delivery Failure" in (first, second):
@@ -4486,10 +4493,16 @@ def process_restore_job_update(job, force=False):
 	if force or updated_status != site_status:
 		if job.status == "Success":
 			apps_from_backup: list[str] = [line.split()[0] for line in job.output.splitlines() if line]
-			site = Site("Site", job.site)
+			site: Site = Site("Site", job.site)
+			is_unified_server = frappe.db.get_value("Server", site.server, "is_unified_server")
+			# Only noticed this on unified servers
+			if is_unified_server:
+				Agent(site.server).create_database_access_credentials(
+					site=site
+				)  # In case the permissions are missing correct them
 			process_marketplace_hooks_for_backup_restore(set(apps_from_backup), site)
 			site.set_apps(apps_from_backup)
-			frappe.db.set_value("Site", job.site, "creation_failed", None)
+			frappe.db.set_value("Site", site.name, "creation_failed", None)
 		elif job.status == "Failure":
 			frappe.db.set_value("Site", job.site, "creation_failed", frappe.utils.now())
 		frappe.db.set_value("Site", job.site, "status", updated_status)
@@ -4510,9 +4523,16 @@ def process_reinstall_site_job_update(job):
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 		create_site_status_update_webhook_event(job.site)
 	if job.status == "Success":
-		frappe.db.set_value("Site", job.site, "setup_wizard_complete", 0)
-		frappe.db.set_value("Site", job.site, "database_name", None)
-		frappe.db.set_value("Site", job.site, "additional_system_user_created", False)
+		site: Site = Site("Site", job.site)
+		frappe.db.set_value("Site", site.name, "setup_wizard_complete", 0)
+		frappe.db.set_value("Site", site.name, "database_name", None)
+		frappe.db.set_value("Site", site.name, "additional_system_user_created", False)
+		is_unified_server = frappe.db.get_value("Server", site.server, "is_unified_server")
+		# Only noticed this on unified servers
+		if is_unified_server:
+			Agent(site.server).create_database_access_credentials(
+				site=site
+			)  # In case the permissions are missing correct them
 
 
 def process_migrate_site_job_update(job):
