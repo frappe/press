@@ -164,7 +164,11 @@ const options = ref({
 		max: data.value.yMax,
 		axisLabel: {
 			formatter: (value) => {
-				if (unit.value === 'bytes') {
+				if (unit.value === '%') {
+					return `${value}%`;
+				} else if (unit.value === 'IOps') {
+					return `${value} IOps`;
+				} else if (unit.value === 'bytes') {
 					return bytes(value, 0);
 				} else {
 					if (value >= 1000000000) return `${value / 1000000000}B`;
@@ -193,6 +197,7 @@ const options = ref({
 			showSymbol: false,
 			data: dataset.dataset || dataset,
 			markLine: data.value.markLine,
+			connectNulls: true,
 			emphasis: {
 				itemStyle: {
 					shadowBlur: 10,
