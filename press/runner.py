@@ -1,13 +1,13 @@
 import json
+import os
 import typing
-from collections.abc import Callable
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Literal
 
 import frappe
 import wrapt
-from ansible import constants, context
+from ansible import constants, context  # noqa
 from ansible.executor.playbook_executor import PlaybookExecutor
 from ansible.executor.task_executor import TaskExecutor
 from ansible.inventory.manager import InventoryManager
@@ -16,16 +16,18 @@ from ansible.parsing.dataloader import DataLoader
 from ansible.playbook import Playbook
 from ansible.plugins.action.async_status import ActionModule
 from ansible.plugins.callback import CallbackBase
+from ansible.plugins.loader import init_plugin_loader
 from ansible.utils.display import Display
 from ansible.vars.manager import VariableManager
 from frappe.model.document import Document
 from frappe.utils import cstr
 from frappe.utils import now_datetime as now
 
-from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
-
 if typing.TYPE_CHECKING:
+	from collections.abc import Callable
+
 	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
@@ -171,7 +173,7 @@ class Ansible:
 		self.host = f"{server.ip}:{port}"
 		self.variables = variables or {}
 
-		constants.HOST_KEY_CHECKING = False
+		os.environ["ANSIBLE_HOST_KEY_CHECKING"] = "False"
 		context.CLIARGS = ImmutableDict(
 			become_method="sudo",
 			check=False,
@@ -185,6 +187,7 @@ class Ansible:
 			ssh_common_args=self._get_ssh_proxy_commad(server),
 		)
 
+		init_plugin_loader()
 		self.loader = DataLoader()
 		self.passwords = dict({})
 
@@ -237,7 +240,7 @@ class Ansible:
 		TaskExecutor._poll_async_result = self._poll_async_result
 		ActionModule.run = self.action_module_run
 
-	def run(self) -> AnsiblePlay:
+	def run(self) -> "AnsiblePlay":
 		self.executor = PlaybookExecutor(
 			playbooks=[self.playbook_path],
 			inventory=self.inventory,
@@ -289,7 +292,7 @@ class Ansible:
 					self.task_list.append(task_doc.name)
 
 
-class Status(str, Enum):
+class Status(StrEnum):
 	Pending = "Pending"
 	Running = "Running"
 	Success = "Success"
@@ -310,8 +313,8 @@ class GenericStep(Document):
 
 @dataclass
 class StepHandler:
-	save: Callable
-	reload: Callable
+	save: "Callable"
+	reload: "Callable"
 	doctype: str
 	name: str
 
