@@ -209,6 +209,7 @@ class BackupRecordCheck(Audit):
 					site_backup.site = site.name
 				WHERE
 					site.status = "Active" and
+					site_backup.status = "Success" and
 					site_backup.owner = "Administrator" and
 					DATE(site_backup.creation) >= "{self.yesterday}"
 					{cond_filters}
@@ -262,13 +263,17 @@ class BackupRecordCheck(Audit):
 			success_rate = (len(sites_with_backup_in_interval) / len(all_sites)) * 100
 		except ZeroDivisionError:
 			success_rate = 0
-		summary = {
-			"Successful Backups": len(sites_with_backup_in_interval),
-			"Failed Backups": len(sites_without_backups),
-			"Total Active Sites": len(all_sites),
-			"Success Rate": rounded(success_rate, 1),
-		}
-		log[self.backup_summary] = summary
+			site_without_backup = []
+			for site in sites_without_backups:
+				site_without_backup.append(site)
+
+			summary = {
+				"Successful Backups": len(sites_with_backup_in_interval),
+				"Failed Backups": site_without_backup,
+				"Total Active Sites": len(all_sites),
+				"Success Rate": rounded(success_rate, 1),
+			}
+			log[self.backup_summary] = summary
 
 		if sites_without_backups:
 			log[self.list_key] = list(sites_without_backups)
@@ -307,7 +312,7 @@ class OffsiteBackupCheck(Audit):
 				site_backup.site = remote_file.site
 			WHERE
 				site_backup.status = "Success" and
-				site_backup.files_availability = "Available" and
+				site_backup.files_availability = "Unavailable" and
 				site_backup.offsite = True
 			""",
 			as_dict=True,
