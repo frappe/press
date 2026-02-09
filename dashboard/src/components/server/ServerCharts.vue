@@ -510,12 +510,6 @@ export default {
 				.subtract(...dur)
 				.toDate();
 		},
-		startTime(newval) {
-			console.log('startTime changed:', newval);
-		},
-		endTime(newval) {
-			console.log('endTime changed:', newval);
-		},
 	},
 	resources: {
 		loadavg() {
