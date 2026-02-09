@@ -3311,7 +3311,6 @@ class Site(Document, TagHelpers):
 				"condition": self.status in ["Active", "Broken", "Inactive"],
 			},
 			{
-<<<<<<< HEAD
 				"action": "Change region",
 				"description": "Move your site to a different region",
 				"button_label": "Change",
@@ -3319,8 +3318,6 @@ class Site(Document, TagHelpers):
 				"condition": self.status in ["Active", "Broken", "Inactive"],
 			},
 			{
-=======
->>>>>>> bb788d774 (chore(dashboard): Add version upgrade option back in actions)
 				"action": "Change bench group",
 				"description": "Move your site to a different bench group",
 				"button_label": "Change",
