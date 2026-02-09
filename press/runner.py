@@ -1,4 +1,5 @@
 import json
+import sys
 import typing
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -16,13 +17,36 @@ from ansible.parsing.dataloader import DataLoader
 from ansible.playbook import Playbook
 from ansible.plugins.action.async_status import ActionModule
 from ansible.plugins.callback import CallbackBase
+from ansible.utils.collection_loader._collection_finder import _AnsibleCollectionFinder
 from ansible.utils.display import Display
 from ansible.vars.manager import VariableManager
 from frappe.model.document import Document
 from frappe.utils import cstr
 from frappe.utils import now_datetime as now
 
-from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
+
+def _init_ansible_collection_loader():
+	"""Initialize the Ansible collection loader for proper module resolution.
+
+	This is required for ansible-core 2.17+ where the collection system
+	needs explicit initialization when using the Python API directly.
+	"""
+	import ansible_collections
+
+	collection_paths = list(ansible_collections.__path__)
+
+	# Remove any existing collection finders
+	sys.meta_path = [f for f in sys.meta_path if not isinstance(f, _AnsibleCollectionFinder)]
+
+	# Install the collection finder with our paths
+	finder = _AnsibleCollectionFinder(paths=collection_paths)
+	sys.meta_path.insert(0, finder)
+
+
+# Initialize collection loader on module import
+_init_ansible_collection_loader()
+
+from press.press.doctype.ansible_play.ansible_play import AnsiblePlay  # noqa: E402
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
