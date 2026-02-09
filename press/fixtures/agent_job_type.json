@@ -532,6 +532,12 @@
   "request_path": "/benches/{bench}/sites/{site}/apps",
   "steps": [
    {
+    "step_name": "Backup Site"
+   },
+   {
+    "step_name": "Upload Site Backup to S3"
+   },
+   {
     "step_name": "Uninstall App from Site"
    }
   ]

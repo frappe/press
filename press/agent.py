@@ -309,11 +309,20 @@ class Agent:
 			site=site.name,
 		)
 
-	def uninstall_app_site(self, site, app):
+	def uninstall_app_site(self, site, app, create_offsite_backup=False):
+		data = {}
+		if create_offsite_backup:
+			backups_path = os.path.join(site.name, str(date.today()))
+			offsite_config = self._get_offsite_backup_config(site.cluster, backups_path)
+			if offsite_config:
+				data.update({"offsite": offsite_config})
+			else:
+				log_error("Offsite Backups aren't set yet")
 		return self.create_agent_job(
 			"Uninstall App from Site",
 			f"benches/{site.bench}/sites/{site.name}/apps/{app}",
 			method="DELETE",
+			data=data,
 			bench=site.bench,
 			site=site.name,
 		)
