@@ -23,7 +23,7 @@
 					type="datetime"
 					format="hh:mm a, D MMM YYYY"
 					:model-value="customStartTime"
-					@update:model-value="(value) => (customStartTime = value)"
+					@update:model-value="customStartTime = new Date($event)"
 				/>
 			</div>
 			<div v-if="duration === 'custom'" class="flex flex-col gap-1.5">
@@ -33,7 +33,7 @@
 					type="datetime"
 					format="hh:mm a, D MMM YYYY"
 					:model-value="customEndTime"
-					@update:model-value="(value) => (customEndTime = value)"
+					@update:model-value="customEndTime = new Date($event)"
 				/>
 			</div>
 		</div>
@@ -500,15 +500,13 @@ export default {
 			});
 		},
 		duration() {
-			const now = new Date();
-			this.customEndTime = now;
+			const now = dayjs();
+			this.customEndTime = now.toDate();
 			const dur =
 				this.duration === 'custom'
 					? this.defaultDurationToArray
 					: this.inputDurationToArray;
-			this.customStartTime = dayjs(now)
-				.subtract(...dur)
-				.toDate();
+			this.customStartTime = now.subtract(...dur).toDate();
 		},
 	},
 	resources: {
@@ -845,9 +843,6 @@ export default {
 			return [durationValue, durationUnit];
 		},
 		defaultDurationToArray() {
-			if (this.duration === 'custom') {
-				return null;
-			}
 			const durationValue = Number(this.defaultDuration.slice(0, -1));
 			const durationUnit = this.defaultDuration.slice(-1);
 			return [durationValue, durationUnit];
