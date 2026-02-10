@@ -7,6 +7,7 @@ import re
 from base64 import b64decode
 from datetime import datetime, timedelta
 from pathlib import Path
+import contextlib
 from typing import TYPE_CHECKING
 
 import frappe
@@ -288,6 +289,7 @@ def _get_compatible_frappe_version_from_pyproject(
 	owner: str, repository: str, branch_info: str, headers: dict[str, str]
 ) -> str:
 	"""Get frappe version from pyproject.toml file."""
+	compatible_frappe_version = None
 	pyproject = requests.get(
 		f"https://api.github.com/repos/{owner}/{repository}/contents/pyproject.toml",
 		params={"ref": branch_info["name"]},
@@ -301,22 +303,25 @@ def _get_compatible_frappe_version_from_pyproject(
 
 	try:
 		pyproject = tomli.loads(pyproject)
-	except tomli.TOMLDecodeError:
-		frappe.throw("Could not parse pyproject.toml file.")
-
-	compatible_frappe_version = (
-		pyproject.get("tool", {})
-		.get("bench", {})
-		.get("frappe-dependencies", {})
-		.get(
-			"frappe",
+	except tomli.TOMLDecodeError as e:
+		frappe.throw(
+			f"Invalid pyproject.toml section found\n{e.doc.splitlines()[e.lineno - 1]}\nat line {e.lineno} column {e.colno}"
 		)
-	)
+
+	with contextlib.suppress(Exception):
+		compatible_frappe_version = (
+			pyproject.get("tool", {})
+			.get("bench", {})
+			.get("frappe-dependencies", {})
+			.get(
+				"frappe",
+			)
+		)
 
 	if not compatible_frappe_version:
 		frappe.throw(
-			"Could not find compatible Frappe version in pyproject.toml file."
-			" Please ensure 'tool.bench.frappe-dependencies' is set."
+			"Could not find compatible Frappe version in pyproject.toml file. "
+			"Please ensure '[tool.bench.frappe-dependencies]"
 		)
 
 	return compatible_frappe_version
