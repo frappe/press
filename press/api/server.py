@@ -13,7 +13,7 @@ from frappe.utils import convert_utc_to_timezone, flt
 from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 
-from press.api.analytics import get_rounded_boundaries
+from press.api.analytics import auto_timespan_timegrain, get_rounded_boundaries, get_rounded_boundary
 from press.api.bench import all as all_benches
 from press.api.site import protected
 from press.exceptions import MonitorServerDown
@@ -426,11 +426,13 @@ def calculate_swap(name):
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 @redis_cache(ttl=10 * 60)
-def analytics(name, query, timezone, duration, server_type=None):
+def analytics(name, query, timezone, start, end, server_type=None):
 	# If the server type is of unified server, then just show server's metrics as application server
 	server_type = "Application Server" if server_type == "Unified Server" else server_type
 	mount_point = get_mount_point(name, server_type)
-	timespan, timegrain = get_timespan_timegrain(duration)
+	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
+	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
+	_, timegrain = auto_timespan_timegrain(start, end)
 
 	query_map = {
 		"cpu": (
@@ -495,24 +497,27 @@ avg by (instance) (
 		),
 	}
 
-	return prometheus_query(query_map[query][0], query_map[query][1], timezone, timespan, timegrain)
+	return prometheus_query(
+		query_map[query][0],
+		query_map[query][1],
+		timezone,
+		0,
+		timegrain,
+		use_timestamps=True,
+		start=start,
+		end=end,
+	)
 
 
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 @redis_cache(ttl=10 * 60)
-def get_request_by_site(name, query, timezone, duration):
-	from frappe.utils import add_to_date, now_datetime
-	from pytz import timezone as pytz_timezone
-
+def get_request_by_site(name, query, timezone, start, end):
 	from press.api.analytics import ResourceType, get_request_by_
 
-	timespan, timegrain = get_timespan_timegrain(duration)
-
-	end = now_datetime().astimezone(pytz_timezone(timezone))
-	start = add_to_date(end, seconds=-timespan)
-
-	timespan, timegrain = get_timespan_timegrain(duration)
+	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
+	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
+	timespan, timegrain = auto_timespan_timegrain(start, end)
 
 	return get_request_by_(name, query, timezone, start, end, timespan, timegrain, ResourceType.SERVER)
 
@@ -520,16 +525,12 @@ def get_request_by_site(name, query, timezone, duration):
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 @redis_cache(ttl=10 * 60)
-def get_background_job_by_site(name, query, timezone, duration):
-	from frappe.utils import add_to_date, now_datetime
-	from pytz import timezone as pytz_timezone
-
+def get_background_job_by_site(name, query, timezone, start, end):
 	from press.api.analytics import ResourceType, get_background_job_by_
 
-	timespan, timegrain = get_timespan_timegrain(duration)
-
-	end = now_datetime().astimezone(pytz_timezone(timezone))
-	start = add_to_date(end, seconds=-timespan)
+	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
+	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
+	timespan, timegrain = auto_timespan_timegrain(start, end)
 
 	return get_background_job_by_(name, query, timezone, start, end, timespan, timegrain, ResourceType.SERVER)
 
@@ -537,23 +538,28 @@ def get_background_job_by_site(name, query, timezone, duration):
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 @redis_cache(ttl=10 * 60)
-def get_slow_logs_by_site(name, query, timezone, duration, normalize=False):
-	from frappe.utils import add_to_date, now_datetime
-	from pytz import timezone as pytz_timezone
-
+def get_slow_logs_by_site(name, query, timezone, start, end, normalize=False):
 	from press.api.analytics import ResourceType, get_slow_logs
 
-	timespan, timegrain = get_timespan_timegrain(duration)
-
-	end = now_datetime().astimezone(pytz_timezone(timezone))
-	start = add_to_date(end, seconds=-timespan)
+	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
+	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
+	timespan, timegrain = auto_timespan_timegrain(start, end)
 
 	return get_slow_logs(
 		name, query, timezone, start, end, timespan, timegrain, ResourceType.SERVER, normalize
 	)
 
 
-def prometheus_query(query, function, timezone, timespan, timegrain):
+def prometheus_query(
+	query,
+	function,
+	timezone: str,
+	timespan: int,
+	timegrain: int,
+	use_timestamps: bool = False,
+	start: None | datetime = None,
+	end: None | datetime = None,
+):
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	if not monitor_server:
 		return {"datasets": [], "labels": []}
@@ -561,10 +567,14 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 	url = f"https://{monitor_server}/prometheus/api/v1/query_range"
 	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
 
-	start, end = get_rounded_boundaries(
-		timespan,
-		timegrain,
-	)  # timezone not passed as only utc time allowed in promql
+	if use_timestamps and isinstance(start, datetime) and isinstance(end, datetime):
+		start = get_rounded_boundary(start, timegrain)
+		end = get_rounded_boundary(end, timegrain)
+	else:
+		start, end = get_rounded_boundaries(
+			timespan,
+			timegrain,
+		)  # timezone not passed as only utc time allowed in promql
 
 	query = {
 		"query": query,
@@ -964,18 +974,6 @@ def rename(name, title):
 	doc = poly_get_doc(["Server", "Database Server"], name)
 	doc.title = title
 	doc.save()
-
-
-def get_timespan_timegrain(duration: str) -> tuple[int, int]:
-	timespan, timegrain = {
-		"1 Hour": (60 * 60, 2 * 60),
-		"6 Hour": (6 * 60 * 60, 5 * 60),
-		"24 Hour": (24 * 60 * 60, 30 * 60),
-		"7 Days": (7 * 24 * 60 * 60, 2 * 30 * 60),
-		"15 Days": (15 * 24 * 60 * 60, 3 * 30 * 60),
-	}[duration]
-
-	return timespan, timegrain
 
 
 @frappe.whitelist(allow_guest=True)
