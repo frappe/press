@@ -36,7 +36,7 @@ export default {
 	emits: ['share-card'],
 	components: {
 		Tooltip,
-		CopyIcon: icon('copy'),
+		CopyIcon: icon('link'),
 	},
 
 	data() {

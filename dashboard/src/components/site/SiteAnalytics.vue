@@ -474,7 +474,7 @@ export default {
 			logicalStartDate: null,
 			inputEndDate: null,
 			logicalEndDate: null,
-			showAdvancedAnalytics: true,
+			showAdvancedAnalytics: false,
 			localTimezone: dayjs.tz.guess(),
 			slowLogsDurationType: 'Denormalized',
 			slowLogsFrequencyType: 'Denormalized',
@@ -491,7 +491,7 @@ export default {
 		};
 	},
 	mounted() {
-		// Initialise date range from URL if present
+		// Initialize date range from URL if present
 		const start = dayjs(this.$route.query.start);
 		const end = dayjs(this.$route.query.end);
 		if (start.isValid && end.isValid && start.isBefore(end)) {
