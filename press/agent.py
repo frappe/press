@@ -796,10 +796,9 @@ class Agent:
 			reference_name=reference_name,
 		)
 
-	def create_database_access_credentials(self, site, mode):
+	def create_database_access_credentials(self, site: Site):
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		data = {
-			"mode": mode,
 			"mariadb_root_password": get_decrypted_password(
 				"Database Server", database_server, "mariadb_root_password"
 			),
