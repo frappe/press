@@ -65,7 +65,21 @@ server_doctypes = [
 	"Monitor Server",
 	"Log Server",
 	"NFS Server",
+	"NAT Server",
 ]
+
+SERIES_TO_SERVER_TYPE = {
+	"f": "Server",
+	"fs": "Server",
+	"u": "Server",
+	"m": "Database Server",
+	"n": "Proxy Server",
+	"nat": "NAT Server",
+	"nfs": "NFS Server",
+	"p": "Monitor Server",
+	"r": "Registry Server",
+	"e": "Log Server",
+}
 
 HETZNER_ROOT_DISK_ID = "hetzner-root-disk"
 DIGITALOCEAN_ROOT_DISK_ID = "digital-ocean-root-disk"
@@ -111,8 +125,9 @@ class VirtualMachine(Document):
 		ready_for_conversion: DF.Check
 		region: DF.Link
 		root_disk_size: DF.Int
+		secondary_private_ip: DF.Data | None
 		security_group_id: DF.Data | None
-		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "u", "t", "nfs", "fs"]
+		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "u", "t", "nfs", "fs", "nat"]
 		skip_automated_snapshot: DF.Check
 		ssh_key: DF.Link
 		status: DF.Literal["Draft", "Pending", "Running", "Stopped", "Terminated"]
@@ -169,13 +184,18 @@ class VirtualMachine(Document):
 			self.machine_image = self.get_latest_ubuntu_image()
 		self.save()
 
-	def get_private_ip(self):
+	def get_private_ip(self) -> str:
 		ip = ipaddress.IPv4Interface(self.subnet_cidr_block).ip
 		index = self.index + 356
+
 		if self.series == "n":
 			return str(ip + index)
-		offset = ["n", "f", "m", "c", "p", "e", "r", "u", "t", "nfs", "fs"].index(self.series)
-		return str(ip + 256 * (2 * (index // 256) + offset) + (index % 256))
+
+		window = 2 if self.series == "nat" else 1  # reserve 2 IPs for nat servers
+		additional_offset = int(self.series == "nat" and bool(self.private_ip_address))
+
+		offset = ["n", "f", "m", "c", "p", "e", "r", "u", "t", "nfs", "fs", "nat"].index(self.series)
+		return str(ip + (256 * (2 * (index // 256) + offset) + (index % 256)) * window + additional_offset)
 
 	def validate(self):
 		# Digital ocean does not support custom private IPs in a vpc
@@ -183,6 +203,9 @@ class VirtualMachine(Document):
 			self.private_ip_address = self.get_private_ip()
 
 		self.validate_data_disk_snapshot()
+
+		if self.series == "nat" and self.cloud_provider != "AWS EC2":
+			frappe.throw("NAT Servers are only supported on AWS EC2")
 
 	def validate_data_disk_snapshot(self):
 		if not self.is_new() or not self.data_disk_snapshot:
@@ -404,9 +427,9 @@ class VirtualMachine(Document):
 		return
 
 	@frappe.whitelist()
-	def provision(self):
+	def provision(self, assign_public_ip=True):
 		if self.cloud_provider == "AWS EC2":
-			return self._provision_aws()
+			return self._provision_aws(assign_public_ip)
 		if self.cloud_provider == "OCI":
 			return self._provision_oci()
 		if self.cloud_provider == "Hetzner":
@@ -521,7 +544,7 @@ class VirtualMachine(Document):
 		# Enqueue enable protection separately to avoid any issue
 		frappe.enqueue_doc(self.doctype, self.name, "enable_termination_protection", sync=False)
 
-	def _provision_aws(self):  # noqa: C901
+	def _provision_aws(self, assign_public_ip=True):  # noqa: C901
 		additional_volumes = []
 		if self.virtual_machine_image:
 			image = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
@@ -597,7 +620,7 @@ class VirtualMachine(Document):
 			},
 			"NetworkInterfaces": [
 				{
-					"AssociatePublicIpAddress": True,
+					"AssociatePublicIpAddress": bool(assign_public_ip),
 					"DeleteOnTermination": True,
 					"DeviceIndex": 0,
 					"PrivateIpAddress": self.private_ip_address,
@@ -622,6 +645,10 @@ class VirtualMachine(Document):
 		self.instance_id = response["Instances"][0]["InstanceId"]
 		self.status = self.get_aws_status_map()[response["Instances"][0]["State"]["Name"]]
 		self.save()
+
+		if self.series == "nat":
+			# Disable Source/Dest Check for NAT instances
+			self.disable_source_dest_check()
 
 	def _provision_oci(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
@@ -816,7 +843,7 @@ class VirtualMachine(Document):
 			"TERMINATED": "Terminated",
 		}
 
-	def get_latest_ubuntu_image(self):  # noqa: C901
+	def get_latest_ubuntu_image(self):
 		if self.cloud_provider == "AWS EC2":
 			architecture = {"x86_64": "amd64", "arm64": "arm64"}[self.platform]
 			return self.client("ssm").get_parameter(
@@ -930,7 +957,7 @@ class VirtualMachine(Document):
 
 		self.save()
 
-	def get_volumes(self):  # noqa: C901
+	def get_volumes(self):
 		if self.cloud_provider == "AWS EC2":
 			response = self.client().describe_volumes(
 				Filters=[{"Name": "attachment.instance-id", "Values": [self.instance_id]}]
@@ -1248,6 +1275,16 @@ class VirtualMachine(Document):
 			self.private_ip_address = instance.get("PrivateIpAddress")
 			self.is_static_ip = self.has_static_ip(instance)
 
+			if instance.get("NetworkInterfaces"):
+				self.secondary_private_ip = next(
+					(
+						x["PrivateIpAddress"]
+						for x in instance["NetworkInterfaces"][0]["PrivateIpAddresses"]
+						if not x["Primary"]
+					),
+					None,
+				)
+
 			self.public_dns_name = instance.get("PublicDnsName")
 			self.private_dns_name = instance.get("PrivateDnsName")
 			self.platform = instance.get("Architecture", "x86_64")
@@ -1334,7 +1371,7 @@ class VirtualMachine(Document):
 			return volume
 		return frappe._dict({"size": 0})
 
-	def update_servers(self):
+	def update_servers(self):  # noqa: C901
 		status_map = {
 			"Pending": "Pending",
 			"Running": "Active",
@@ -1351,7 +1388,14 @@ class VirtualMachine(Document):
 					frappe.db.set_value(doctype, server, "is_static_ip", self.is_static_ip)
 				if doctype in ["Server", "Database Server"]:
 					frappe.db.set_value(doctype, server, "ram", self.ram)
-				if self.public_ip_address and self.has_value_changed("public_ip_address"):
+				if doctype in ("NAT Server",):
+					frappe.db.set_value(doctype, server, "secondary_private_ip", self.secondary_private_ip)
+				if self.public_ip_address:
+					if frappe.flags.force_update_dns or self.has_value_changed("public_ip_address"):
+						frappe.get_doc(doctype, server).create_dns_record()
+				elif self.private_ip_address and (
+					frappe.flags.force_update_dns or self.has_value_changed("private_ip_address")
+				):
 					frappe.get_doc(doctype, server).create_dns_record()
 				frappe.db.set_value(doctype, server, "status", status_map[self.status])
 
@@ -1363,6 +1407,104 @@ class VirtualMachine(Document):
 					{"Key": "Name", "Value": name},
 				],
 			)
+
+	@frappe.whitelist()
+	def assign_secondary_private_ip(self):
+		self.attach_secondary_private_ip()
+
+	def attach_secondary_private_ip(self, secondary_private_ip=None):
+		if self.cloud_provider != "AWS EC2":
+			frappe.throw("Secondary IP assignment is currently only supported for AWS EC2 instances")
+
+		if self.series != "nat":
+			frappe.throw("Secondary IP assignment is only supported for NAT servers")
+
+		# this is needed if we do failover and attach the secondary private ip of one instance to another
+		secondary_private_ip = secondary_private_ip or self.get_private_ip()
+		if frappe.db.get_value("Virtual Machine", {"secondary_private_ip": secondary_private_ip}):
+			frappe.throw(f"Private IP {secondary_private_ip} is already assigned to another instance.")
+
+		ec2 = self.client()
+		instance = ec2.describe_instances(InstanceIds=[self.instance_id])
+		ec2.assign_private_ip_addresses(
+			NetworkInterfaceId=instance["Reservations"][0]["Instances"][0]["NetworkInterfaces"][0][
+				"NetworkInterfaceId"
+			],
+			PrivateIpAddresses=[secondary_private_ip],
+		)
+		self.sync()
+
+		return f"Assigned {self.secondary_private_ip}"
+
+	def detach_secondary_private_ip(self):
+		if self.cloud_provider != "AWS EC2":
+			frappe.throw("Secondary IP detachment is currently only supported for AWS EC2 instances")
+
+		if self.series != "nat":
+			frappe.throw("Secondary IP detachment is only supported for NAT servers")
+
+		if not self.secondary_private_ip:
+			frappe.throw("No secondary private IP assigned to this instance.")
+
+		ec2 = self.client()
+		instance = ec2.describe_instances(InstanceIds=[self.instance_id])
+		ec2.unassign_private_ip_addresses(
+			NetworkInterfaceId=instance["Reservations"][0]["Instances"][0]["NetworkInterfaces"][0][
+				"NetworkInterfaceId"
+			],
+			PrivateIpAddresses=[self.secondary_private_ip],
+		)
+		self.sync()
+
+	def disable_source_dest_check(self):
+		if self.cloud_provider != "AWS EC2":
+			frappe.throw(
+				"Source/Destination check modification is currently only supported for AWS EC2 instances"
+			)
+
+		ec2 = self.client()
+		ec2.modify_instance_attribute(
+			InstanceId=self.instance_id,
+			SourceDestCheck={"Value": False},
+		)
+
+	def enable_source_dest_check(self):
+		if self.cloud_provider != "AWS EC2":
+			frappe.throw(
+				"Source/Destination check modification is currently only supported for AWS EC2 instances"
+			)
+
+		ec2 = self.client()
+		ec2.modify_instance_attribute(
+			InstanceId=self.instance_id,
+			SourceDestCheck={"Value": True},
+		)
+
+	@frappe.whitelist()
+	def disassociate_auto_assigned_public_ip(self):
+		if self.cloud_provider != "AWS EC2":
+			frappe.throw("Public IP disassociation is currently only supported for AWS EC2 instances")
+
+		if not self.public_ip_address:
+			frappe.throw("No public IP associated with this instance.")
+
+		try:
+			frappe.db.get_value(self.doctype, self.name, "status", for_update=True, wait=False)
+		except frappe.QueryTimeoutError:
+			frappe.throw(
+				"Unable to get a lock on the vm at this time. Some other process is probably underway"
+			)
+
+		ec2 = self.client()
+		instance = ec2.describe_instances(InstanceIds=[self.instance_id])
+		ec2.modify_network_interface_attribute(
+			NetworkInterfaceId=instance["Reservations"][0]["Instances"][0]["NetworkInterfaces"][0][
+				"NetworkInterfaceId"
+			],
+			AssociatePublicIpAddress=False,
+		)
+		frappe.flags.force_update_dns = True
+		self.sync()
 
 	@frappe.whitelist()
 	def create_image(self, public=True):
@@ -1958,6 +2100,26 @@ class VirtualMachine(Document):
 			"provider": "AWS EC2",
 			"virtual_machine": self.name,
 			"team": self.team,
+		}
+		if self.virtual_machine_image:
+			document["is_server_setup"] = True
+
+		server = frappe.get_doc(document).insert()
+		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))
+		return server
+
+	@frappe.whitelist()
+	def create_nat_server(self):
+		if self.series != "nat":
+			frappe.throw("Only virtual machines of series 'nat' can create NAT servers")
+
+		document = {
+			"doctype": "NAT Server",
+			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
+			"domain": self.domain,
+			"cluster": self.cluster,
+			"provider": "AWS EC2",
+			"virtual_machine": self.name,
 		}
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True

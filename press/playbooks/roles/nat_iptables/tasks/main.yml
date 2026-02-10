@@ -1,0 +1,19 @@
+---
+- name: Add nat server private ip
+  shell: ip route replace default via {{ nat_gateway_ip }}
+  when: nat_gateway_ip is defined and nat_gateway_ip
+
+- name: Install iptables-persistent
+  package:
+    name: iptables-persistent
+    state: present
+
+- name: Ensure netfilter-persistent service is enabled
+  service:
+    name: netfilter-persistent
+    enabled: yes
+    state: started
+
+- name: Save IPTables rules
+  shell: netfilter-persistent save
+  when: nat_gateway_ip is defined and nat_gateway_ip

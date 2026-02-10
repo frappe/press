@@ -37,6 +37,7 @@
   "agent_password",
   "column_break_mznm",
   "disable_agent_job_auto_retry",
+  "use_as_proxy_for_agent_and_metrics",
   "replica_section",
   "is_primary",
   "primary",
@@ -465,6 +466,13 @@
    "fieldtype": "Link",
    "label": "Plan",
    "options": "Server Plan"
+  },
+  {
+   "default": "0",
+   "description": "If checked, this server will be used for passing requests to servers (app and db) without public ip",
+   "fieldname": "use_as_proxy_for_agent_and_metrics",
+   "fieldtype": "Check",
+   "label": "Use as Proxy for Agent and Metrics"
   }
  ],
  "links": [],

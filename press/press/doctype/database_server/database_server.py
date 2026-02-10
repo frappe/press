@@ -94,6 +94,7 @@ class DatabaseServer(BaseServer):
 		memory_max: DF.Float
 		memory_swap_max: DF.Float
 		mounts: DF.Table[ServerMount]
+		nat_gateway_private_ip: DF.Data | None
 		plan: DF.Link | None
 		primary: DF.Link | None
 		private_ip: DF.Data | None
@@ -779,6 +780,7 @@ class DatabaseServer(BaseServer):
 					"certificate_full_chain": config.certificate.full_chain,
 					"certificate_intermediate_chain": config.certificate.intermediate_chain,
 					"mariadb_depends_on_mounts": self.mariadb_depends_on_mounts,
+					"nat_gateway_ip": self.nat_gateway_private_ip,
 					**self.get_mount_variables(),
 				},
 			)
@@ -827,8 +829,8 @@ class DatabaseServer(BaseServer):
 		)
 
 	def ansible_run(self, command: str) -> dict[str, str]:
-		inventory = f"{self.ip},"
-		return AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
+		doc = {"ip": self.ip, "private_ip": self.private_ip, "cluster": self.cluster}
+		return AnsibleAdHoc(sources=[doc]).run(command, self.name)[0]
 
 	@frappe.whitelist()
 	def setup_essentials(self):
@@ -2198,7 +2200,8 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 	@dashboard_whitelist()
 	def get_storage_usage(self):
 		try:
-			result = AnsibleAdHoc(sources=f"{self.ip},").run(
+			doc = {"ip": self.ip, "private_ip": self.private_ip, "cluster": self.cluster}
+			result = AnsibleAdHoc(sources=[doc]).run(
 				'df --output=source,size,used,target | tail -n +2  && echo -e "\n\n" && du -s /var/lib/mysql/*',
 				self.name,
 				raw_params=True,
@@ -2208,7 +2211,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 
 			binlog_indexes_size = 0
 			with contextlib.suppress(Exception):
-				binlog_indexes_size_result = AnsibleAdHoc(sources=f"{self.ip},").run(
+				binlog_indexes_size_result = AnsibleAdHoc(sources=[doc]).run(
 					"du -sk /home/frappe/binlog_indexes/ | cut -f1",
 					self.name,
 					raw_params=True,
@@ -2300,17 +2303,18 @@ def monitor_disk_performance():
 	databases = frappe.db.get_all(
 		"Database Server",
 		filters={"status": "Active", "is_server_setup": 1, "is_self_hosted": 0},
-		pluck="name",
+		fields=("name", "ip", "private_ip", "cluster"),
 	)
-	frappe.enqueue(
-		"press.press.doctype.disk_performance.disk_performance.check_disk_read_write_latency",
-		servers=databases,
-		server_type="db",
-		deduplicate=True,
-		queue="long",
-		job_id="monitor_disk_performance||database",
-		timeout=3600,
-	)
+	if databases:
+		frappe.enqueue(
+			"press.press.doctype.disk_performance.disk_performance.check_disk_read_write_latency",
+			servers=databases,
+			server_type="db",
+			deduplicate=True,
+			queue="long",
+			job_id="monitor_disk_performance||database",
+			timeout=3600,
+		)
 
 
 def sync_binlogs_info():

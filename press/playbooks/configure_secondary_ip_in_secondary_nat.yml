@@ -1,0 +1,25 @@
+---
+- name: Configure Secondary IP in Secondary NAT
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+
+  tasks:
+    - name: Get network interface
+      shell: ip route show default | awk '{for(i=1;i<=NF;i++) if ($i=="dev") print $(i+1)}'
+      register: network_interface
+
+    - name: Create Netplan configuration for secondary IP
+      copy:
+        dest: /etc/netplan/60-secondary-ip.yaml
+        mode: '0644'
+        content: |
+          network:
+            ethernets:
+              {{ network_interface.stdout }}:
+                dhcp4: true
+                addresses:
+                  - {{ primary_ip }}/16
+                  - {{ secondary_ip }}/16
+      when: secondary_ip is defined and secondary_ip

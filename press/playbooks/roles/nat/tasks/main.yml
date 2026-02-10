@@ -1,0 +1,44 @@
+---
+- name: Install iptables-persistent
+  package:
+    name: iptables-persistent
+    state: present
+
+- name: Ensure netfilter-persistent service is enabled
+  service:
+    name: netfilter-persistent
+    enabled: yes
+    state: started
+
+- name: Enable IP forwarding
+  shell: |
+    echo "net.ipv4.ip_forward = 1" | tee -a /etc/sysctl.conf
+    sysctl -p
+
+- name: Get network interface
+  shell: ip route show default | awk '{for(i=1;i<=NF;i++) if ($i=="dev") print $(i+1)}'
+  register: network_interface
+
+- name: Create Netplan configuration for secondary IP
+  copy:
+    dest: /etc/netplan/60-secondary-ip.yaml
+    mode: '0644'
+    content: |
+      network:
+        ethernets:
+          {{ network_interface.stdout }}:
+            dhcp4: true
+            addresses:
+              - {{ primary_ip }}/16
+              - {{ secondary_ip }}/16
+  when: secondary_ip is defined and secondary_ip
+
+- name: Apply Netplan
+  command: netplan apply
+  when: secondary_ip is defined and secondary_ip
+
+- name: Set up NAT with iptables
+  shell: |
+    iptables -t nat -A POSTROUTING -o {{ network_interface.stdout }} -j MASQUERADE
+    iptables -F FORWARD
+    netfilter-persistent save

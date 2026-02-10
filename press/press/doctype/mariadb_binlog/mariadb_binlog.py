@@ -71,12 +71,10 @@ class MariaDBBinlog(Document):
 			return
 
 		command = f"curl -sSL '{download_link}' | gunzip -c > /var/lib/mysql/{self.file_name}.bak"
-		virtual_machine_ip = frappe.db.get_value(
-			"Virtual Machine",
-			frappe.get_value("Database Server", self.database_server, "virtual_machine"),
-			"public_ip_address",
+		db = frappe.get_value(
+			"Database Server", self.database_server, ("ip", "private_ip", "cluster"), as_dict=True
 		)
-		result = AnsibleAdHoc(sources=f"{virtual_machine_ip},").run(command, self.name, raw_params=True)[0]
+		result = AnsibleAdHoc(sources=[db]).run(command, self.name, raw_params=True)[0]
 		if not result.get("success"):
 			pretty_result = json.dumps(result, indent=2, sort_keys=True, default=str)
 			comment = f"<pre><code>{command}</code></pre><pre><code>{pretty_result}</pre></code>"

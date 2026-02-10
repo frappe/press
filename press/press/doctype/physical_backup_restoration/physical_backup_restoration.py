@@ -346,14 +346,17 @@ class PhysicalBackupRestoration(Document):
 		devices_info_str: str = result["output"]
 		devices_info = json.loads(devices_info_str)["blockdevices"]
 
+		assert self.device is not None, "Device is not set"
 		disk_name = self.device.split("/")[-1]  # /dev/sdf -> sdf
 
 		# If disk name is sdf, it might be possible mounted as xvdf
 		# https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/device_naming.html#device-name-limits
 		possible_disks = [disk_name, "xvd{}".format(disk_name.lstrip("sd")[-1])]
-		disk_serial = self.volume.replace("-", "").lower()
-		disk_partition_to_mount = None
 
+		assert self.volume is not None, "Volume is not set"
+		disk_serial = self.volume.replace("-", "").lower()
+
+		disk_partition_to_mount = None
 		for device_info in devices_info:
 			if device_info["type"] not in ["disk", "part"]:
 				continue
@@ -431,6 +434,7 @@ class PhysicalBackupRestoration(Document):
 
 	def change_permission_of_backup_directory(self) -> StepStatus:
 		"""Change permission of backup files"""
+		assert self.mount_point is not None, "Mount point is not set"
 		base_path = os.path.join(self.mount_point, "var/lib/mysql")
 		result = self.ansible_run(f"chmod 777 {base_path}")
 		if result["status"] == "Success":
@@ -825,8 +829,10 @@ class PhysicalBackupRestoration(Document):
 		return None
 
 	def ansible_run(self, command, raw_params: bool = False):
-		inventory = f"{self.virtual_machine.public_ip_address},"
-		result = AnsibleAdHoc(sources=inventory).run(command, self.name, raw_params=raw_params)[0]
+		db = frappe.db.get_value(
+			"Database Server", self.destination_server, ("ip", "private_ip", "cluster"), as_dict=True
+		)
+		result = AnsibleAdHoc(sources=[db]).run(command, self.name, raw_params=raw_params)[0]
 		self.add_command(command, result)
 		return result
 

@@ -329,14 +329,14 @@ class LogicalReplicationBackup(Document):
 		return frappe.get_doc("Database Server", hot_standby_server)
 
 	@property
-	def site_replication_config_dict(self) -> dict:
+	def site_replication_config_dict(self) -> dict:  # type: ignore[return-value]
 		try:
 			return json.loads(self.site_replication_config or "{}")
 		except json.JSONDecodeError:
 			frappe.throw("Invalid site replication config JSON format.")
 
 	@property
-	def bench_replication_config_dict(self) -> dict:
+	def bench_replication_config_dict(self) -> dict:  # type: ignore[return-value]
 		try:
 			return json.loads(self.bench_replication_config or "{}")
 		except json.JSONDecodeError:
@@ -1086,7 +1086,7 @@ class LogicalReplicationBackup(Document):
 			return self.failover_steps
 
 		frappe.throw(f"Invalid execution stage: {self.execution_stage}")
-		return None
+		return None  # type: ignore[return-value]
 
 	@property
 	def current_running_step(self) -> "LogicalReplicationStep | None":
@@ -1159,8 +1159,12 @@ class LogicalReplicationBackup(Document):
 		return None
 
 	def ansible_run(self, command):
-		inventory = f"{self.virtual_machine.public_ip_address},"
-		result = AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
+		vm = {
+			"ip": self.virtual_machine.public_ip_address,
+			"private_ip": self.virtual_machine.private_ip_address,
+			"cluster": self.virtual_machine.cluster,
+		}
+		result = AnsibleAdHoc(sources=[vm]).run(command, self.name)[0]
 		self.add_command(command, result)
 		return result
 

@@ -362,7 +362,7 @@ class VirtualMachineMigration(Document):
 		# Remove these labels from the old volume
 		# So the new machine doesn't mount these as root or efi partitions
 		# Important: Update fstab so we can still boot the old machine
-		parsed_devices = json.loads(self.parsed_devices)
+		parsed_devices = json.loads(self.parsed_devices)  # type: ignore[arg-type]
 		for device in parsed_devices:
 			old_label = device["label"]
 			if not old_label:
@@ -677,9 +677,13 @@ class VirtualMachineMigration(Document):
 		return None
 
 	def ansible_run(self, command):
-		virtual_machine_ip = frappe.db.get_value("Virtual Machine", self.virtual_machine, "public_ip_address")
-		inventory = f"{virtual_machine_ip},"
-		result = AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
+		vm = frappe.db.get_value(
+			"Virtual Machine",
+			self.virtual_machine,
+			("public_ip_address as ip", "private_ip_address as private_ip", "cluster"),
+			as_dict=True,
+		)
+		result = AnsibleAdHoc(sources=[vm]).run(command, self.name)[0]
 		self.add_command(command, result)
 		return result
 

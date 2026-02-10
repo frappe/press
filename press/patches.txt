@@ -155,3 +155,4 @@ press.press.doctype.press_role.patches.to_resources
 press.press.doctype.server.patches.set_is_provisioning_press_job_completed
 press.patches.v0_8_0.add_cloud_providers_to_site_plans
 press.patches.v0_8_0.update_tmpdir_for_data_volume_dbs
+press.press.doctype.proxy_server.patches.set_use_as_proxy_for_agent_and_metrics_for_proxy_servers

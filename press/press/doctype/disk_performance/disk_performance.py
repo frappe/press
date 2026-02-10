@@ -28,9 +28,9 @@ class DiskPerformance(Document):
 	pass
 
 
-def check_disk_read_write_latency(servers: list[str], server_type: typing.Literal["app", "db"]):
+def check_disk_read_write_latency(servers: list, server_type: typing.Literal["app", "db"]):
 	"""
-	servers: list of server names
+	servers: list of servers
 	path: path where we can write a small file
 
 	Recommended path for,
@@ -41,15 +41,12 @@ def check_disk_read_write_latency(servers: list[str], server_type: typing.Litera
 
 	if not servers:
 		return
-
-	inventory = ",".join(servers) + ","
-
 	if server_type == "app":
 		file_path = "/home/frappe/disk_test.bin"
 	elif server_type == "db":
 		file_path = "/var/lib/mysql/disk_test.bin"
 
-	runner = AnsibleAdHoc(sources=inventory)
+	runner = AnsibleAdHoc(sources=servers)
 	results = runner.run(
 		r"dd if=/dev/zero of="
 		+ file_path

@@ -19,7 +19,7 @@ from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 
 if TYPE_CHECKING:
-	from datetime import datetime
+	from datetime import date
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.site_update.site_update import SiteUpdate
@@ -307,12 +307,10 @@ class SiteBackup(Document):
 		frappe.db.set_value("Site Backup", self.name, "job", job.name)
 
 	def run_ansible_command_in_database_server(self, command: str) -> bool:
-		virtual_machine_ip = frappe.db.get_value(
-			"Virtual Machine",
-			frappe.get_value("Database Server", self.database_server, "virtual_machine"),
-			"public_ip_address",
+		db = frappe.db.get_value(
+			"Database Server", self.database_server, ("ip", "private_ip", "cluster"), as_dict=True
 		)
-		result = AnsibleAdHoc(sources=f"{virtual_machine_ip},").run(command, self.name)[0]
+		result = AnsibleAdHoc(sources=[db]).run(command, self.name)[0]
 		success = result.get("status") == "Success"
 		if not success:
 			pretty_result = json.dumps(result, indent=2, sort_keys=True, default=str)
@@ -413,11 +411,11 @@ class SiteBackup(Document):
 				)
 
 	@classmethod
-	def offsite_backup_exists(cls, site: str, day: datetime.date) -> bool:
+	def offsite_backup_exists(cls, site: str, day: date) -> bool:
 		return cls.backup_exists(site, day, {"offsite": True})
 
 	@classmethod
-	def backup_exists(cls, site: str, day: datetime.date, filters: dict):
+	def backup_exists(cls, site: str, day: date, filters: dict):
 		base_filters = {
 			"creation": ("between", [day, day]),
 			"site": site,
@@ -426,7 +424,7 @@ class SiteBackup(Document):
 		return frappe.get_all("Site Backup", {**base_filters, **filters})
 
 	@classmethod
-	def file_backup_exists(cls, site: str, day: datetime.date) -> bool:
+	def file_backup_exists(cls, site: str, day: date) -> bool:
 		return cls.backup_exists(site, day, {"with_files": True})
 
 

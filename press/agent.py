@@ -51,7 +51,8 @@ class Agent:
 	def __init__(self, server, server_type="Server"):
 		self.server_type = server_type
 		self.server = server
-		self.port = 443 if self.server not in servers_using_alternative_port_for_communication() else 8443
+		self.__servers_using_alt_ports = servers_using_alternative_port_for_communication()
+		self.port = 443 if self.server not in self.__servers_using_alt_ports else 8443
 
 	def new_bench(self, bench: "Bench"):
 		settings = frappe.db.get_value(
@@ -516,9 +517,9 @@ class Agent:
 			"private_ip": frappe.get_value(
 				"Database Server", frappe.db.get_value("Server", site.server, "database_server"), "private_ip"
 			),
-			"backup_db_base_directory": os.path.join(backup_restoration.mount_point, "var/lib/mysql"),
+			"backup_db_base_directory": os.path.join(backup_restoration.mount_point, "var/lib/mysql"),  # type: ignore[arg-type]
 			"restore_specific_tables": backup_restoration.restore_specific_tables,
-			"tables_to_restore": json.loads(backup_restoration.tables_to_restore),
+			"tables_to_restore": json.loads(backup_restoration.tables_to_restore),  # type: ignore[arg-type]
 		}
 		return self.create_agent_job(
 			"Physical Restore Database",
@@ -904,15 +905,19 @@ class Agent:
 		return self.request("DELETE", path, data, raises=raises)
 
 	def _make_req(self, method, path, data, files, agent_job_id):
+		url = self._get_request_url(path)
 		password = get_decrypted_password(self.server_type, self.server, "agent_password")
 		headers = {"Authorization": f"bearer {password}", "X-Agent-Job-Id": agent_job_id}
-		url = f"https://{self.server}:{self.port}/agent/{path}"
-		intermediate_ca = frappe.db.get_value("Press Settings", "Press Settings", "backbone_intermediate_ca")
-		if frappe.conf.developer_mode and intermediate_ca:
+
+		verify = True
+		if frappe.conf.developer_mode and (
+			intermediate_ca := frappe.db.get_value(
+				"Press Settings", "Press Settings", "backbone_intermediate_ca"
+			)
+		):
 			root_ca = frappe.db.get_value("Certificate Authority", intermediate_ca, "parent_authority")
 			verify = frappe.get_doc("Certificate Authority", root_ca).certificate_file
-		else:
-			verify = True
+
 		if files:
 			file_objects = {
 				key: value
@@ -995,7 +1000,7 @@ class Agent:
 			frappe.new_doc("Agent Request Failure", **fields).insert(ignore_permissions=True)
 
 	def raw_request(self, method, path, data=None, raises=True, timeout=None):
-		url = f"https://{self.server}:{self.port}/agent/{path}"
+		url = self._get_request_url(path)
 		password = get_decrypted_password(self.server_type, self.server, "agent_password")
 		headers = {"Authorization": f"bearer {password}"}
 		timeout = timeout or (10, 30)
@@ -1004,6 +1009,28 @@ class Agent:
 		if raises:
 			response.raise_for_status()
 		return json_response
+
+	def _get_request_url(self, path):
+		if self.server_type in ("Server", "Database Server"):
+			proxy = None
+			server_ip, server_private_ip, server_cluster = frappe.db.get_value(
+				self.server_type, self.server, ("ip", "private_ip", "cluster")
+			)
+			if not server_ip and server_private_ip and not frappe.flags.in_test:
+				proxy = frappe.db.get_value(
+					"Proxy Server",
+					{
+						"status": "Active",
+						"cluster": server_cluster,
+						"use_as_proxy_for_agent_and_metrics": 1,
+					},
+				)
+
+			if proxy:
+				proxy_port = 443 if proxy not in self.__servers_using_alt_ports else 8443
+				return f"https://{proxy}:{proxy_port}/{self.server}:{self.port}/agent/{path}"
+
+		return f"https://{self.server}:{self.port}/agent/{path}"
 
 	def should_skip_requests(self):
 		if self.server_type in ("Server", "Database Server", "Proxy Server") and frappe.db.get_value(
@@ -1192,7 +1219,8 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		return status
 
 	def get_jobs_id(self, agent_job_ids):
-		return self.get(f"agent-jobs/{agent_job_ids}")
+		ids = ",".join(agent_job_ids) if isinstance(agent_job_ids, (list, tuple)) else agent_job_ids
+		return self.get(f"agent-jobs/{ids}")
 
 	def get_version(self):
 		return self.raw_request("GET", "version", raises=True, timeout=(2, 10))

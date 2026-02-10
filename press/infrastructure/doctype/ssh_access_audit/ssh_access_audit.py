@@ -7,16 +7,11 @@ import json
 from functools import cached_property
 
 import frappe
-from ansible import constants, context
 from ansible.executor.task_queue_manager import TaskQueueManager
-from ansible.inventory.manager import InventoryManager
-from ansible.module_utils.common.collections import ImmutableDict
-from ansible.parsing.dataloader import DataLoader
 from ansible.playbook.play import Play
-from ansible.plugins.callback import CallbackBase
-from ansible.vars.manager import VariableManager
 from frappe.model.document import Document
 
+from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc, AnsibleCallback
 from press.utils import reconnect_on_failure
 
 SERVER_TYPES = [
@@ -28,6 +23,7 @@ SERVER_TYPES = [
 	"Monitor Server",
 	"Registry Server",
 	"Trace Server",
+	"NAT Server",
 ]
 
 
@@ -83,7 +79,7 @@ class SSHAccessAudit(Document):
 
 	def fetch_keys_from_servers(self):
 		try:
-			ad_hoc = AnsibleAdHoc(sources=self.inventory)
+			ad_hoc = SSHAdHoc(sources=self.inventory)
 			hosts = ad_hoc.run()
 			sorted_hosts = sorted(hosts, key=lambda host: self.inventory.index(host["host"]))
 			for host in sorted_hosts:
@@ -99,24 +95,26 @@ class SSHAccessAudit(Document):
 		for server_type in SERVER_TYPES:
 			# Skip self-hosted servers
 			filters = {"status": "Active", "domain": domain}
+			fields = ("ip", "private_ip")
 			meta = frappe.get_meta(server_type)
 			if meta.has_field("cluster"):
 				filters["cluster"] = ("!=", "Hybrid")
+				fields.add("cluster")
 
 			if meta.has_field("is_self_hosted"):
 				filters["is_self_hosted"] = False
 
-			servers = frappe.get_all(server_type, filters=filters, pluck="name", order_by="creation asc")
+			servers = frappe.get_all(server_type, filters=filters, fields=fields)
 			all_servers.extend(servers)
 
 		all_servers.extend(self.get_self_inventory())
-		self.inventory = ",".join(all_servers)
+		self.inventory = all_servers
 
 	def get_self_inventory(self):
 		# Press should audit itself
-		servers = [frappe.local.site, f"db.{frappe.local.site}"]
+		servers = [{"name": frappe.local.site}, {"name": f"db.{frappe.local.site}"}]
 		if frappe.conf.replica_host:
-			servers.append(f"db2.{frappe.local.site}")
+			servers.append({"name": f"db2.{frappe.local.site}"})
 		return servers
 
 	def get_acceptable_key_fields(self):
@@ -238,27 +236,9 @@ class SSHAccessAudit(Document):
 			self.status = "Success"
 
 
-class AnsibleAdHoc:
-	def __init__(self, sources):
-		constants.HOST_KEY_CHECKING = False
-		context.CLIARGS = ImmutableDict(
-			become_method="sudo",
-			check=False,
-			connection="ssh",
-			extra_vars=[],
-			remote_user="root",
-			start_at_task=None,
-			syntax=False,
-			verbosity=3,
-		)
-
-		self.loader = DataLoader()
-		self.passwords = dict({})
-
-		self.inventory = InventoryManager(loader=self.loader, sources=sources)
-		self.variable_manager = VariableManager(loader=self.loader, inventory=self.inventory)
-
-		self.callback = AnsibleCallback()
+class SSHAdHoc(AnsibleAdHoc):
+	def _callback(self):
+		return SSHCallback()
 
 	def run(self):
 		self.tasks = [
@@ -298,19 +278,12 @@ class AnsibleAdHoc:
 		return list(self.callback.hosts.values())
 
 
-class AnsibleCallback(CallbackBase):
-	def __init__(self, *args, **kwargs):
-		super().__init__(*args, **kwargs)
-		self.hosts = {}
-
+class SSHCallback(AnsibleCallback):
 	def v2_runner_on_ok(self, result, *args, **kwargs):
 		self.update_task("Completed", result)
 
 	def v2_runner_on_failed(self, result, *args, **kwargs):
 		self.update_task("Completed", result)
-
-	def v2_runner_on_unreachable(self, result):
-		self.update_task("Unreachable", result)
 
 	@reconnect_on_failure()
 	def update_task(self, status, result):

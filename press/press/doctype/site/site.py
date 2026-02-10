@@ -340,10 +340,20 @@ class Site(Document, TagHelpers):
 		doc.update_information = self.get_update_information()
 		doc.actions = self.get_actions()
 		server = frappe.get_value(
-			"Server", self.server, ["ip", "proxy_server", "team", "title", "provider"], as_dict=1
+			"Server",
+			self.server,
+			["ip", "private_ip", "proxy_server", "team", "title", "provider"],
+			as_dict=1,
 		)
 		doc.cluster = frappe.db.get_value("Cluster", self.cluster, ["title", "image"], as_dict=1)
-		doc.outbound_ip = server.ip
+		doc.outbound_ip = server.ip or (
+			server.private_ip
+			and frappe.db.get_value(
+				"NAT Server",
+				{"status": "Active", "cluster": self.cluster, "secondary_private_ip": ("is", "set")},
+				"ip",
+			)
+		)
 		doc.server_team = server.team
 		doc.server_title = server.title
 		doc.server_provider = server.provider

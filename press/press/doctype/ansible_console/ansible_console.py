@@ -16,6 +16,7 @@ from ansible.plugins.callback import CallbackBase
 from ansible.vars.manager import VariableManager
 from frappe.model.document import Document
 from frappe.utils import get_timedelta
+from frappe.utils.safe_exec import safe_exec
 
 from press.utils import reconnect_on_failure
 
@@ -29,13 +30,11 @@ class AnsibleConsole(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.ansible_console_output.ansible_console_output import (
-			AnsibleConsoleOutput,
-		)
+		from press.press.doctype.ansible_console_output.ansible_console_output import AnsibleConsoleOutput
 
 		command: DF.Code | None
 		error: DF.Code | None
-		inventory: DF.Code | None
+		inventory_console: DF.Code | None
 		nonce: DF.Data | None
 		output: DF.Table[AnsibleConsoleOutput]
 	# end: auto-generated types
@@ -43,6 +42,7 @@ class AnsibleConsole(Document):
 	def run(self):
 		frappe.only_for("System Manager")
 		try:
+			self.set_inventory()
 			ad_hoc = AnsibleAdHoc(sources=self.inventory)
 			for host in ad_hoc.run(self.command, self.nonce):
 				self.append("output", host)
@@ -55,6 +55,14 @@ class AnsibleConsole(Document):
 		log.update({"doctype": "Ansible Console Log"})
 		frappe.get_doc(log).insert()
 		frappe.db.commit()
+
+	def set_inventory(self):
+		safe_exec(
+			self.inventory_console,
+			script_filename="Ansible Console",
+			restrict_commit_rollback=True,
+			_locals={"doc": self},
+		)
 
 
 @frappe.whitelist()
@@ -140,10 +148,16 @@ class AnsibleAdHoc:
 		self.loader = DataLoader()
 		self.passwords = dict({})
 
-		self.inventory = InventoryManager(loader=self.loader, sources=sources)
+		resolved_sources, proxy_map = self._resolve_sources(sources)
+
+		self.inventory = InventoryManager(loader=self.loader, sources=",".join(resolved_sources) + ",")
 		self.variable_manager = VariableManager(loader=self.loader, inventory=self.inventory)
 
-		self.callback = AnsibleCallback()
+		self._apply_proxy_configurations(proxy_map)
+		self.callback = self._callback()
+
+	def _callback(self):
+		return AnsibleCallback()
 
 	def run(self, command, nonce=None, raw_params: bool = False, become_user: str = "root"):
 		shell_command_args = command
@@ -181,3 +195,30 @@ class AnsibleAdHoc:
 
 		self.callback.publish_update()
 		return list(self.callback.hosts.values())
+
+	def _resolve_sources(self, sources):
+		all_ips = []
+		proxy_map = {}
+		cluster_cache = {}
+
+		for src in sources:
+			if src.get("ip") or src.get("name"):
+				all_ips.append(src.get("ip") or src.get("name"))
+			elif src.get("private_ip") and src.get("cluster"):
+				all_ips.append(src["private_ip"])
+				cluster = src["cluster"]
+				if cluster not in cluster_cache:
+					cluster_cache[cluster] = frappe.db.get_value(
+						"Proxy Server", {"status": "Active", "cluster": src["cluster"]}, "name"
+					)
+				proxy_map[src["private_ip"]] = cluster_cache[cluster]
+
+		return all_ips, proxy_map
+
+	def _apply_proxy_configurations(self, proxy_map):
+		"""Applies SSH ProxyJump arguments to the Ansible variable manager."""
+		for target_ip, proxy_ip in proxy_map.items():
+			host = self.inventory.get_host(target_ip)
+			if host:
+				ssh_args = f'-o ProxyCommand="ssh -W %h:%p root@{proxy_ip}"'
+				self.variable_manager.set_host_variable(host.get_name(), "ansible_ssh_common_args", ssh_args)

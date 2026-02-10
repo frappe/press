@@ -1,0 +1,175 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-01-09 13:26:57.211367",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "hostname",
+  "domain",
+  "column_break_vpdt",
+  "cluster",
+  "provider",
+  "virtual_machine",
+  "is_server_setup",
+  "networking_section",
+  "ip",
+  "is_static_ip",
+  "column_break_oygq",
+  "private_ip",
+  "secondary_private_ip",
+  "ssh_section",
+  "ssh_port",
+  "frappe_public_key",
+  "column_break_cpxp",
+  "root_public_key"
+ ],
+ "fields": [
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nInstalling\nActive\nBroken\nArchived"
+  },
+  {
+   "fieldname": "hostname",
+   "fieldtype": "Data",
+   "label": "Hostname"
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Link",
+   "label": "Domain",
+   "options": "Root Domain"
+  },
+  {
+   "fieldname": "column_break_vpdt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Cluster",
+   "options": "Cluster"
+  },
+  {
+   "default": "AWS EC2",
+   "fieldname": "provider",
+   "fieldtype": "Select",
+   "label": "Provider",
+   "options": "AWS EC2"
+  },
+  {
+   "fieldname": "virtual_machine",
+   "fieldtype": "Link",
+   "label": "Virtual Machine",
+   "options": "Virtual Machine"
+  },
+  {
+   "fieldname": "networking_section",
+   "fieldtype": "Section Break",
+   "label": "Networking"
+  },
+  {
+   "fetch_from": "virtual_machine.public_ip_address",
+   "fieldname": "ip",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "IP"
+  },
+  {
+   "default": "0",
+   "fetch_from": "virtual_machine.is_static_ip",
+   "fieldname": "is_static_ip",
+   "fieldtype": "Check",
+   "label": "Is Static Ip"
+  },
+  {
+   "fieldname": "column_break_oygq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "virtual_machine.private_ip_address",
+   "fieldname": "private_ip",
+   "fieldtype": "Data",
+   "label": "Private IP"
+  },
+  {
+   "fieldname": "ssh_section",
+   "fieldtype": "Section Break",
+   "label": "SSH"
+  },
+  {
+   "default": "22",
+   "fieldname": "ssh_port",
+   "fieldtype": "Data",
+   "label": "SSH Port"
+  },
+  {
+   "fieldname": "frappe_public_key",
+   "fieldtype": "Code",
+   "label": "Frappe Public Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_cpxp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "root_public_key",
+   "fieldtype": "Code",
+   "label": "Root Public Key",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_server_setup",
+   "fieldtype": "Check",
+   "label": "Server Setup",
+   "read_only": 1
+  },
+  {
+   "fieldname": "secondary_private_ip",
+   "fieldtype": "Data",
+   "label": "Secondary Private IP",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "group": "Logs",
+   "link_doctype": "Ansible Play",
+   "link_fieldname": "server"
+  }
+ ],
+ "modified": "2026-01-21 13:17:52.469379",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "NAT Server",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
