@@ -304,9 +304,17 @@ def _get_compatible_frappe_version_from_pyproject(
 	try:
 		pyproject = tomli.loads(pyproject)
 	except tomli.TOMLDecodeError as e:
-		frappe.throw(
-			f"Invalid pyproject.toml section found\n{e.doc.splitlines()[e.lineno - 1]}\nat line {e.lineno} column {e.colno}"
-		)
+		out = []
+		out.append("Invalid pyproject.toml file found")
+		lines = e.doc.splitlines()
+		start = max(e.lineno - 3, 0)
+		end = e.lineno + 2
+
+		for i, line in enumerate(lines[start:end], start=start + 1):
+			out.append(f"{i:>4}: {line}")
+
+		out = "\n".join(out)
+		frappe.throw(out)
 
 	with contextlib.suppress(Exception):
 		compatible_frappe_version = (
