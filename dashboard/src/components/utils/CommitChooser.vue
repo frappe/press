@@ -79,7 +79,7 @@
 								v-if="option.is_yanked"
 								class="text-xs text-red-500 font-medium"
 							>
-								Blacklisted
+								Yanked
 							</span>
 						</div>
 					</div>

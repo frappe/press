@@ -781,7 +781,7 @@ def validate_app_hashes(apps: list[dict[str, str]]):
 
 	if has_yanked_apps:
 		frappe.throw(
-			"Invalid app version selected for deploy: " + ", ".join([app.hash for app in has_yanked_apps])
+			"Some app versions have been yanked and cannot be deployed, please refresh and retry deploy."
 		)
 
 

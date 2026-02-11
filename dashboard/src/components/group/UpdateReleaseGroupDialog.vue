@@ -20,7 +20,7 @@
 					)
 				"
 				class="mb-4"
-				title="<b>A few commits have been blacklisted</b>"
+				title="<b>A few commits have been yanked</b>"
 				type="info"
 			/>
 			<!-- Update Steps -->
