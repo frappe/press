@@ -2,7 +2,7 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import json
 
 import frappe
 from frappe.utils import unique
@@ -16,6 +16,8 @@ from press.utils import log_error
 class ProxyServer(BaseServer):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
@@ -46,6 +48,7 @@ class ProxyServer(BaseServer):
 		is_ssh_proxy_setup: DF.Check
 		is_static_ip: DF.Check
 		is_wireguard_setup: DF.Check
+		mem_limits: DF.Code | None
 		plan: DF.Link | None
 		primary: DF.Link | None
 		private_ip: DF.Data | None
@@ -514,6 +517,45 @@ class ProxyServer(BaseServer):
 		)
 
 		return "Added a dashboard banner and queued reduction of dns record ttl on sites"
+
+	@frappe.whitelist()
+	def get_memory_limits(self):
+		if self.mem_limits:
+			return json.loads(self.mem_limits)
+		return None
+
+	@frappe.whitelist()
+	def set_memory_limits(self, limits: list):
+		for limit in limits:
+			if int(limit["memory_high"]) > int(limit["memory_max"]):
+				frappe.throw(f"MemoryHigh cannot be more than MemoryMax for process {limit['process']}")
+
+			for key in list(limit.keys()):
+				if key not in ("process", "memory_high", "memory_max"):
+					del limit[key]
+
+		self.mem_limits = json.dumps(limits, indent=1)
+		self.save()
+
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_set_memory_limits",
+			enqueue_after_commit=True,
+		)
+
+		return "Queued memory limit update"
+
+	def _set_memory_limits(self):
+		Ansible(
+			playbook="set_proxy_memory_limits.yml",
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+			variables={
+				"memory_limits": json.loads(self.mem_limits),
+			},
+		).run()
 
 
 def process_update_nginx_job_update(job):

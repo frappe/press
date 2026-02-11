@@ -59,6 +59,8 @@
   "proxysql_admin_password",
   "proxysql_monitor_password",
   "is_proxysql_setup",
+  "memory_limits_section",
+  "mem_limits",
   "vpn_tab",
   "wireguard_network",
   "wireguard_network_ip",
@@ -465,10 +467,21 @@
    "fieldtype": "Link",
    "label": "Plan",
    "options": "Server Plan"
+  },
+  {
+   "fieldname": "memory_limits_section",
+   "fieldtype": "Section Break",
+   "label": "Memory Limits"
+  },
+  {
+   "fieldname": "mem_limits",
+   "fieldtype": "Code",
+   "options": "JSON",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2026-02-06 16:20:49.521726",
+ "modified": "2026-02-11 14:20:10.063782",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
