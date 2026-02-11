@@ -13,7 +13,7 @@
 				title="<b>Builds Suspended:</b> updates will be scheduled to run when builds resume."
 				type="warning"
 			/>
-			<AlertBanner
+			<!-- <AlertBanner
 				v-if="
 					benchDocResource.doc.deploy_information.apps_with_yanked_releases
 						.length > 0
@@ -21,7 +21,7 @@
 				class="mb-4"
 				title="<b>A few commits have been blacklisted</b>"
 				type="info"
-			/>
+			/> -->
 			<!-- Update Steps -->
 			<div class="space-y-4">
 				<!-- Select Apps Step -->
@@ -181,20 +181,7 @@ export default {
 	computed: {
 		updatableAppOptions() {
 			let deployInformation = this.benchDocResource.doc.deploy_information;
-			let appData = deployInformation.apps.filter((app) => {
-				if (app.update_available === true) {
-					// Ensure each release in app.releases has isYanked set
-					app.releases = app.releases.map((release) => {
-						release.isYanked = deployInformation.apps_with_yanked_releases.some(
-							(yanked) => yanked.hash === release.hash,
-						);
-						return release;
-					});
-
-					return true;
-				}
-				return false;
-			});
+			let appData = deployInformation.apps;
 
 			// preserving this for use in component functions
 			const vm = this;
@@ -251,7 +238,7 @@ export default {
 											: `${release.hash.slice(0, 7)} - ${message}`,
 										value: release.name,
 										timestamp: release.timestamp,
-										isYanked: release.isYanked,
+										is_yanked: release.is_yanked,
 									};
 								});
 							}
@@ -259,7 +246,7 @@ export default {
 							function initialDeployTo(app) {
 								const next_release = app.releases.filter(
 									(release) =>
-										release.name === app.next_release && !release.isYanked,
+										release.name === app.next_release && !release.is_yanked,
 								)[0];
 
 								if (app.will_branch_change) {
@@ -279,7 +266,7 @@ export default {
 								value:
 									app.releases.find(
 										(release) =>
-											release.name === app.next_release && !release.isYanked,
+											release.name === app.next_release && !release.is_yanked,
 									)?.name || null, // Don't make any implicit selections
 							};
 
@@ -627,18 +614,7 @@ export default {
 		},
 		handleAppSelection(apps) {
 			apps = Array.from(apps);
-			let appData = this.benchDocResource.doc.deploy_information.apps.map(
-				(app) => {
-					app.releases = app.releases.map((release) => {
-						release.isYanked =
-							this.benchDocResource.doc.deploy_information.apps_with_yanked_releases.some(
-								(yanked) => yanked.hash === release.hash,
-							);
-						return release;
-					});
-					return app;
-				},
-			);
+			let appData = this.benchDocResource.doc.deploy_information.apps;
 
 			this.selectedApps = appData
 				.filter((app) => apps.includes(app.name))
@@ -648,11 +624,11 @@ export default {
 						source: app.source,
 						release: app.releases.find(
 							(release) =>
-								release.name === app.next_release && !release.isYanked,
+								release.name === app.next_release && !release.is_yanked,
 						)?.name,
 						hash: app.releases.find(
 							(release) =>
-								release.name === app.next_release && !release.isYanked,
+								release.name === app.next_release && !release.is_yanked,
 						)?.hash,
 					};
 				});

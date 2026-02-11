@@ -44,11 +44,11 @@
 					<div
 						v-for="option in displayedOptions"
 						:key="option.value"
-						@click="!option.isYanked && selectOption(option, togglePopover)"
+						@click="!option.is_yanked && selectOption(option, togglePopover)"
 						class="flex cursor-pointer items-center justify-between rounded px-2.5 py-1.5 text-base hover:bg-gray-50"
 						:class="{
 							'bg-surface-gray-3': isSelected(option),
-							'opacity-50 cursor-not-allowed': option.isYanked,
+							'opacity-50 cursor-not-allowed': option.is_yanked,
 						}"
 					>
 						<div class="flex flex-1 gap-2 overflow-hidden items-center">
@@ -76,7 +76,7 @@
 								{{ option.label }}
 							</span>
 							<span
-								v-if="option.isYanked"
+								v-if="option.is_yanked"
 								class="text-xs text-red-500 font-medium"
 							>
 								Blacklisted
@@ -118,7 +118,7 @@ export default {
 		'app',
 		'source',
 		'currentRelease',
-		'isYanked',
+		'is_yanked',
 	],
 	emits: ['update:modelValue'],
 	methods: {
