@@ -296,8 +296,10 @@ export default {
 								return 'Will be Uninstalled';
 							} else if (!row.will_branch_change && !row.current_hash) {
 								return 'First Deploy';
+							} else if (row.update_available) {
+								return 'Update Available';
 							}
-							return 'Update Available';
+							return 'Latest Version Deployed';
 						},
 					},
 					{
