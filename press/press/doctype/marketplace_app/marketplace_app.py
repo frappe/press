@@ -252,7 +252,8 @@ class MarketplaceApp(WebsiteGenerator):
 		if existing_source:
 			# If source with branch to switch already exists, just add version to child table of source and use the same
 			source_doc: "AppSource" = frappe.get_doc("App Source", existing_source)
-			self.validate_frappe_version_for_branch(
+			validate_frappe_version_for_branch(
+				app_name=self.app,
 				owner=source_doc.repository_owner,
 				repository=source_doc.repository,
 				branch=to_branch,
@@ -267,7 +268,8 @@ class MarketplaceApp(WebsiteGenerator):
 		else:
 			# if a different source with the branch to switch doesn't exists update the existing source
 			source_doc = frappe.get_doc("App Source", source)
-			self.validate_frappe_version_for_branch(
+			validate_frappe_version_for_branch(
+				app_name=self.app,
 				owner=source_doc.repository_owner,
 				repository=source_doc.repository,
 				branch=to_branch,
@@ -289,28 +291,6 @@ class MarketplaceApp(WebsiteGenerator):
 
 		self.save()
 
-	def validate_frappe_version_for_branch(
-		self,
-		owner: str,
-		repository: str,
-		branch: str,
-		version: str,
-		github_installation_id: str | None = None,
-	):
-		"""Check if the version being added is supported by the branch comparing the frappe versions in pyproject.toml"""
-		app_info = app(
-			owner=owner,
-			repository=repository,
-			branch=branch,
-			installation=github_installation_id
-			if github_installation_id
-			else frappe.get_value("Press Settings", None, "github_access_token"),
-		)
-		frappe_version = app_info.get("frappe_version")
-		frappe_version = parse_frappe_version(frappe_version)
-		if version not in frappe_version:
-			frappe.throw(f"{version} is not supported by branch {branch}")
-
 	@dashboard_whitelist()
 	def add_version(self, version, branch):
 		existing_source = frappe.db.exists(
@@ -326,7 +306,8 @@ class MarketplaceApp(WebsiteGenerator):
 			if existing_source
 			else frappe.get_doc("App Source", self.sources[0].source)
 		)
-		self.validate_frappe_version_for_branch(
+		validate_frappe_version_for_branch(
+			app_name=self.app,
 			owner=source_doc.repository_owner,
 			repository=source_doc.repository,
 			branch=branch,
@@ -699,6 +680,29 @@ class MarketplaceApp(WebsiteGenerator):
 		if subscription.team == self.team:
 			return False
 		return subscription.enabled == 1 and subscription.team and subscription.team != "Administrator"
+
+
+def validate_frappe_version_for_branch(
+	app_name: str,
+	owner: str,
+	repository: str,
+	branch: str,
+	version: str,
+	github_installation_id: str | None = None,
+):
+	"""Check if the version being added is supported by the branch comparing the frappe versions in pyproject.toml"""
+	app_info = app(
+		owner=owner,
+		repository=repository,
+		branch=branch,
+		installation=github_installation_id
+		if github_installation_id
+		else frappe.get_value("Press Settings", None, "github_access_token"),
+	)
+	frappe_version = app_info.get("frappe_version")
+	frappe_version = parse_frappe_version(frappe_version)
+	if version not in frappe_version:
+		frappe.throw(f"{version} is not supported by branch {branch} for app {app_name}")
 
 
 def get_plans_for_app(
