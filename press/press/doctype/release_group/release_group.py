@@ -1158,7 +1158,7 @@ class ReleaseGroup(Document, TagHelpers):
 		)
 		return query.run(as_dict=True)
 
-	def get_app_updates(self, current_apps) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+	def get_app_updates(self, current_apps):
 		next_apps = self.get_next_apps(current_apps)
 
 		apps = []
@@ -1186,7 +1186,8 @@ class ReleaseGroup(Document, TagHelpers):
 			next_hash = app.hash
 
 			update_available = not current_hash or current_hash != next_hash or will_branch_change
-			update_available = any(not release.is_yanked for release in app.releases)
+			if app.releases:
+				update_available = any(not release.is_yanked for release in app.releases)
 
 			apps.append(
 				frappe._dict(
@@ -1212,7 +1213,7 @@ class ReleaseGroup(Document, TagHelpers):
 			)
 		return apps
 
-	def get_next_apps(self, current_apps) -> tuple[dict[str, str | datetime]]:  # noqa: C901
+	def get_next_apps(self, current_apps) -> list[frappe._dict[str, str | datetime]]:  # noqa: C901
 		marketplace_app_sources = self.get_marketplace_app_sources()
 		current_team = get_current_team(True)
 		app_publishers_team = [current_team.name]
