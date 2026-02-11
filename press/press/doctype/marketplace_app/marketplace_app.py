@@ -235,7 +235,7 @@ class MarketplaceApp(WebsiteGenerator):
 			# If source with branch to switch already exists, just add version to child table of source and use the same
 			source_doc: "AppSource" = frappe.get_doc("App Source", existing_source)
 			validate_frappe_version_for_branch(
-				app=self.app,
+				app_name=self.app,
 				owner=source_doc.repository_owner,
 				repository=source_doc.repository,
 				branch=to_branch,
@@ -251,7 +251,7 @@ class MarketplaceApp(WebsiteGenerator):
 			# if a different source with the branch to switch doesn't exists update the existing source
 			source_doc = frappe.get_doc("App Source", source)
 			validate_frappe_version_for_branch(
-				app=self.app,
+				app_name=self.app,
 				owner=source_doc.repository_owner,
 				repository=source_doc.repository,
 				branch=to_branch,
@@ -289,7 +289,7 @@ class MarketplaceApp(WebsiteGenerator):
 			else frappe.get_doc("App Source", self.sources[0].source)
 		)
 		validate_frappe_version_for_branch(
-			app=self.app,
+			app_name=self.app,
 			owner=source_doc.repository_owner,
 			repository=source_doc.repository,
 			branch=branch,
