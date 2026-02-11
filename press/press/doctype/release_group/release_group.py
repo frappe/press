@@ -8,7 +8,6 @@ from itertools import chain
 from typing import TYPE_CHECKING, TypedDict
 
 import frappe
-import frappe.query_builder
 import semantic_version as sv
 from frappe import _
 from frappe.core.doctype.version.version import get_diff
@@ -68,6 +67,7 @@ class LastDeployInfo(TypedDict):
 
 if TYPE_CHECKING:
 	from press.press.doctype.app.app import App
+	from press.press.doctype.app_release.app_release import AppRelease
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
@@ -856,6 +856,7 @@ class ReleaseGroup(Document, TagHelpers):
 			"Bench", {"group": self.name, "status": ("in", ("Active", "Installing", "Pending"))}
 		)
 		out.apps = self.get_app_updates(last_deployed_bench.apps if last_deployed_bench else [])
+
 		out.last_deploy = self.last_dc_info
 		out.deploy_in_progress = self.deploy_in_progress
 
@@ -875,7 +876,6 @@ class ReleaseGroup(Document, TagHelpers):
 				["name", "server", "bench"],
 			)
 		]
-
 		return out
 
 	@dashboard_whitelist()
@@ -1158,7 +1158,7 @@ class ReleaseGroup(Document, TagHelpers):
 		)
 		return query.run(as_dict=True)
 
-	def get_app_updates(self, current_apps):
+	def get_app_updates(self, current_apps) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
 		next_apps = self.get_next_apps(current_apps)
 
 		apps = []
@@ -1186,8 +1186,7 @@ class ReleaseGroup(Document, TagHelpers):
 			next_hash = app.hash
 
 			update_available = not current_hash or current_hash != next_hash or will_branch_change
-			if not app.releases:
-				update_available = False
+			update_available = any(not release.is_yanked for release in app.releases)
 
 			apps.append(
 				frappe._dict(
@@ -1213,7 +1212,7 @@ class ReleaseGroup(Document, TagHelpers):
 			)
 		return apps
 
-	def get_next_apps(self, current_apps):
+	def get_next_apps(self, current_apps) -> tuple[dict[str, str | datetime]]:  # noqa: C901
 		marketplace_app_sources = self.get_marketplace_app_sources()
 		current_team = get_current_team(True)
 		app_publishers_team = [current_team.name]
@@ -1236,8 +1235,11 @@ class ReleaseGroup(Document, TagHelpers):
 
 		app_sources = [app.source for app in self.apps]
 		AppRelease = frappe.qb.DocType("App Release")
+		YankedAppRelease = frappe.qb.DocType("Yanked App Release")
 		latest_releases = (
 			frappe.qb.from_(AppRelease)
+			.left_join(YankedAppRelease)  # All rows in AppRelease and matched row in YankedAppRelease ?
+			.on(YankedAppRelease.hash == AppRelease.hash)
 			.where(AppRelease.source.isin(app_sources))
 			.select(
 				AppRelease.name,
@@ -1247,6 +1249,7 @@ class ReleaseGroup(Document, TagHelpers):
 				AppRelease.hash,
 				AppRelease.message,
 				AppRelease.creation,
+				(YankedAppRelease.hash.isnotnull()).as_("is_yanked"),
 			)
 			.orderby(AppRelease.creation, order=frappe.qb.desc)
 			.run(as_dict=True)
@@ -1261,6 +1264,15 @@ class ReleaseGroup(Document, TagHelpers):
 				latest_app_releases = find_all(latest_app_releases, can_use_release)
 			else:
 				latest_app_release = find(latest_app_releases, lambda x: x.source == app.source)
+
+			yanked_releases = frappe.db.get_all(
+				"Yanked App Release",
+				{"hash": ("in", [release.hash for release in latest_app_releases])},
+				pluck="hash",
+			)
+			if len(yanked_releases) == len(latest_app_releases):
+				# If all releases are yanked, we don't want to show them
+				latest_app_releases = []
 
 			# No release exists for this source
 			if not latest_app_release:
@@ -1298,7 +1310,6 @@ class ReleaseGroup(Document, TagHelpers):
 					}
 				)
 			)
-
 		return next_apps
 
 	def get_removed_apps(self):
@@ -1759,12 +1770,15 @@ def prune_servers_without_sites():
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Release Group")
 
 
-def can_use_release(app_src):
-	if not app_src.public:
+def can_use_release(app_release: "AppRelease") -> bool:
+	"""Check if the app release can be used in the release group
+	For the time being allow Draft releases for public app sources as well
+	This will be removed when we have better review process for public app sources
+	"""
+	if not app_release.public:
 		return True
-	# For the time being allow Draft releases for public app sources as well
-	# This will be removed when we have better review process for public app sources
-	return app_src.status in ["Approved", "Draft"]
+
+	return app_release.status in ["Approved", "Draft"]
 
 
 def update_rg_app_source(rg: "ReleaseGroup", source: "AppSource"):

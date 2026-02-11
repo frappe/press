@@ -13,6 +13,16 @@
 				title="<b>Builds Suspended:</b> updates will be scheduled to run when builds resume."
 				type="warning"
 			/>
+			<AlertBanner
+				v-if="
+					benchDocResource.doc.deploy_information.apps.some((app) =>
+						app.releases.some((release) => release.is_yanked),
+					)
+				"
+				class="mb-4"
+				title="A few commits have been yanked, <a href='https://docs.frappe.io/cloud/benches/updating_a_bench#yanked-app-releases' target='_blank' style='font-weight: bold;'>click here</a> to know more."
+				type="info"
+			/>
 			<!-- Update Steps -->
 			<div class="space-y-4">
 				<!-- Select Apps Step -->
@@ -172,9 +182,7 @@ export default {
 	computed: {
 		updatableAppOptions() {
 			let deployInformation = this.benchDocResource.doc.deploy_information;
-			let appData = deployInformation.apps.filter(
-				(app) => app.update_available === true,
-			);
+			let appData = deployInformation.apps;
 
 			// preserving this for use in component functions
 			const vm = this;
@@ -231,28 +239,36 @@ export default {
 											: `${release.hash.slice(0, 7)} - ${message}`,
 										value: release.name,
 										timestamp: release.timestamp,
+										is_yanked: release.is_yanked,
 									};
 								});
 							}
 
 							function initialDeployTo(app) {
 								const next_release = app.releases.filter(
-									(release) => release.name === app.next_release,
+									(release) =>
+										release.name === app.next_release && !release.is_yanked,
 								)[0];
+
 								if (app.will_branch_change) {
 									return app.branch;
 								} else if (next_release) {
 									return next_release.tag || next_release.hash.slice(0, 7);
-								} else {
+								} else if (app.next_release_hash) {
 									return app.next_release_hash.slice(0, 7);
+								} else {
+									return null;
 								}
 							}
 
 							if (!app.releases.length) return undefined;
-
 							let initialValue = {
 								label: initialDeployTo(app),
-								value: app.next_release,
+								value:
+									app.releases.find(
+										(release) =>
+											release.name === app.next_release && !release.is_yanked,
+									)?.name || null, // Don't make any implicit selections
 							};
 
 							return h(CommitChooser, {
@@ -607,10 +623,14 @@ export default {
 					return {
 						app: app.name,
 						source: app.source,
-						release: app.next_release,
-						hash:
-							app.releases.find((release) => release.name === app.next_release)
-								?.hash ?? app.next_release_hash,
+						release: app.releases.find(
+							(release) =>
+								release.name === app.next_release && !release.is_yanked,
+						)?.name,
+						hash: app.releases.find(
+							(release) =>
+								release.name === app.next_release && !release.is_yanked,
+						)?.hash,
 					};
 				});
 		},
