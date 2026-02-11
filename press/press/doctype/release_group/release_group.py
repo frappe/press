@@ -8,7 +8,6 @@ from itertools import chain
 from typing import TYPE_CHECKING, TypedDict
 
 import frappe
-import frappe.query_builder
 import semantic_version as sv
 from frappe import _
 from frappe.core.doctype.version.version import get_diff
@@ -856,9 +855,8 @@ class ReleaseGroup(Document, TagHelpers):
 		last_deployed_bench = get_last_doc(
 			"Bench", {"group": self.name, "status": ("in", ("Active", "Installing", "Pending"))}
 		)
-		out.apps, out.apps_with_yanked_releases = self.get_app_updates(
-			last_deployed_bench.apps if last_deployed_bench else []
-		)
+		out.apps = self.get_app_updates(last_deployed_bench.apps if last_deployed_bench else [])
+
 		out.last_deploy = self.last_dc_info
 		out.deploy_in_progress = self.deploy_in_progress
 
@@ -1161,7 +1159,7 @@ class ReleaseGroup(Document, TagHelpers):
 		return query.run(as_dict=True)
 
 	def get_app_updates(self, current_apps) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
-		next_apps, apps_with_yanked_releases = self.get_next_apps(current_apps)
+		next_apps = self.get_next_apps(current_apps)
 
 		apps = []
 		for app in next_apps:
@@ -1188,9 +1186,7 @@ class ReleaseGroup(Document, TagHelpers):
 			next_hash = app.hash
 
 			update_available = not current_hash or current_hash != next_hash or will_branch_change
-
-			if frappe.db.exists("Yanked App Release", {"hash": next_hash}) or not app.releases:
-				update_available = False
+			update_available = any(not release.is_yanked for release in app.releases)
 
 			apps.append(
 				frappe._dict(
@@ -1214,9 +1210,9 @@ class ReleaseGroup(Document, TagHelpers):
 					}
 				)
 			)
-		return apps, apps_with_yanked_releases
+		return apps
 
-	def get_next_apps(self, current_apps) -> tuple[dict[str, str | datetime], list[dict[str, str]]]:  # noqa: C901
+	def get_next_apps(self, current_apps) -> tuple[dict[str, str | datetime]]:  # noqa: C901
 		marketplace_app_sources = self.get_marketplace_app_sources()
 		current_team = get_current_team(True)
 		app_publishers_team = [current_team.name]
@@ -1242,6 +1238,8 @@ class ReleaseGroup(Document, TagHelpers):
 		YankedAppRelease = frappe.qb.DocType("Yanked App Release")
 		latest_releases = (
 			frappe.qb.from_(AppRelease)
+			.left_join(YankedAppRelease)  # All rows in AppRelease and matched row in YankedAppRelease ?
+			.on(YankedAppRelease.hash == AppRelease.hash)
 			.where(AppRelease.source.isin(app_sources))
 			.select(
 				AppRelease.name,
@@ -1251,18 +1249,9 @@ class ReleaseGroup(Document, TagHelpers):
 				AppRelease.hash,
 				AppRelease.message,
 				AppRelease.creation,
+				(YankedAppRelease.hash.isnotnull()).as_("is_yanked"),
 			)
 			.orderby(AppRelease.creation, order=frappe.qb.desc)
-			.run(as_dict=True)
-		)
-
-		# We need to show the app releases that are yanked
-		apps_with_yanked_releases = (
-			frappe.qb.from_(AppRelease)
-			.join(YankedAppRelease)
-			.on(AppRelease.hash == YankedAppRelease.hash)
-			.where(AppRelease.source.isin(app_sources))
-			.select(AppRelease.app, AppRelease.hash)
 			.run(as_dict=True)
 		)
 
@@ -1321,7 +1310,7 @@ class ReleaseGroup(Document, TagHelpers):
 					}
 				)
 			)
-		return next_apps, apps_with_yanked_releases
+		return next_apps
 
 	def get_removed_apps(self):
 		# Apps that were removed from the release group
