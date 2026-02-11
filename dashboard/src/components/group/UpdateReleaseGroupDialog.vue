@@ -20,7 +20,7 @@
 					)
 				"
 				class="mb-4"
-				title="<b>A few commits have been yanked</b>"
+				title="A few commits have been yanked, <a href='https://docs.frappe.io/cloud/benches/updating_a_bench#yanked-app-releases' target='_blank' style='font-weight: bold;'>click here</a> to know more."
 				type="info"
 			/>
 			<!-- Update Steps -->
