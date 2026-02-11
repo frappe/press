@@ -13,15 +13,16 @@
 				title="<b>Builds Suspended:</b> updates will be scheduled to run when builds resume."
 				type="warning"
 			/>
-			<!-- <AlertBanner
+			<AlertBanner
 				v-if="
-					benchDocResource.doc.deploy_information.apps_with_yanked_releases
-						.length > 0
+					benchDocResource.doc.deploy_information.apps.some((app) =>
+						app.releases.some((release) => release.is_yanked),
+					)
 				"
 				class="mb-4"
 				title="<b>A few commits have been blacklisted</b>"
 				type="info"
-			/> -->
+			/>
 			<!-- Update Steps -->
 			<div class="space-y-4">
 				<!-- Select Apps Step -->
