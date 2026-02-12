@@ -299,6 +299,7 @@ class MarketplaceApp(WebsiteGenerator):
 				["App Source", "app", "=", self.app],
 				["App Source", "team", "=", self.team],
 				["App Source", "branch", "=", branch],
+				["App Source", "enabled", "=", 1],
 			],
 		)
 		source_doc: "AppSource" = (
