@@ -3,11 +3,11 @@
 
 from __future__ import annotations
 
+import contextlib
 import re
 from base64 import b64decode
 from datetime import datetime, timedelta
 from pathlib import Path
-import contextlib
 from typing import TYPE_CHECKING
 
 import frappe
