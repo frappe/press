@@ -184,6 +184,12 @@ export default {
 			let deployInformation = this.benchDocResource.doc.deploy_information;
 			let appData = deployInformation.apps;
 
+			appData.forEach((app) => {
+				if (!app.releases?.length) {
+					app.__disabled = true;
+				}
+			});
+
 			// preserving this for use in component functions
 			const vm = this;
 
