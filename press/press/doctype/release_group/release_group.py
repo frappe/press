@@ -6,6 +6,7 @@ from contextlib import suppress
 from functools import cached_property
 from itertools import chain
 from typing import TYPE_CHECKING, TypedDict
+from urllib.parse import urlparse
 
 import frappe
 import semantic_version as sv
@@ -30,6 +31,9 @@ from press.press.doctype.app.app import new_app
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
 from press.press.doctype.deploy_candidate.utils import is_suspended
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import create_platform_build_and_deploy
+from press.press.doctype.marketplace_app.marketplace_app import (
+	validate_frappe_version_for_branch,
+)
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server import Server
 from press.utils import (
@@ -1562,6 +1566,23 @@ class ReleaseGroup(Document, TagHelpers):
 			app_doc: "App" = frappe.get_doc("App", name)
 		else:
 			app_doc = new_app(name, app["title"])
+
+		# Check if the app that's being has support for the release group version
+		parsed_url = urlparse(app["repository_url"])
+		path_parts = parsed_url.path.strip("/").split("/")
+
+		if len(path_parts) < 2:
+			frappe.throw("Invalid repository URL for app!")
+
+		with suppress(frappe.ValidationError):
+			validate_frappe_version_for_branch(
+				app_name=app_doc.name,
+				owner=path_parts[0],
+				repository=path_parts[1],
+				branch=app["branch"],
+				version=self.version,
+				github_installation_id=app.get("github_installation_id", None),
+			)
 
 		source = app_doc.add_source(
 			frappe_version=self.version,
