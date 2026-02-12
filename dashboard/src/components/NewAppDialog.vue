@@ -5,9 +5,13 @@
 			size: 'xl',
 			actions: [
 				{
-					label: isAppOnBench ? 'Update App' : 'Add App',
+					label: isAppOnBench
+						? 'Update App'
+						: $resources.validateApp.loading
+							? `Validating branch '${selectedBranch?.value}'`
+							: 'Add App',
 					variant: 'solid',
-					disabled: !app || !appValidated,
+					disabled: !app || !appValidated || $resources.validateApp.loading,
 					onClick: addAppHandler,
 				},
 			],
@@ -78,14 +82,14 @@
 						</div>
 						<div class="mt-4 space-y-2">
 							<div
-								v-if="$resources.validateApp.loading && !appValidated"
+								v-if="$resources.validateApp.loading"
 								class="flex text-base text-gray-700"
 							>
 								<LoadingIndicator class="mr-2 w-4" />
 								Validating app...
 							</div>
 							<div
-								v-if="appValidated && app"
+								v-else-if="appValidated && app"
 								class="flex text-base text-gray-700"
 							>
 								<GreenCheckIcon class="mr-2 w-4" />
