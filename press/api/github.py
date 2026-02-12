@@ -333,7 +333,8 @@ def _get_compatible_frappe_version_from_pyproject(
 	if not compatible_frappe_version:
 		frappe.throw(
 			"Could not find compatible Frappe version in pyproject.toml file. "
-			"Please ensure '[tool.bench.frappe-dependencies]"
+			"Please ensure '[tool.bench.frappe-dependencies]' is defined. "
+			"Click <a href='https://docs.frappe.io/cloud/benches/custom-app#note'>here</a> for more details."
 		)
 
 	return compatible_frappe_version
