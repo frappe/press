@@ -231,7 +231,10 @@ def details():
 def fetch_invoice_items(invoice):
 	team = get_current_team()
 	if frappe.db.get_value("Invoice", invoice, "team") != team:
-		frappe.throw("Only team owners and members are permitted to download Invoice")
+		frappe.throw(
+			"Only team owners and members are permitted to download invoices. "
+			'<a href="https://docs.frappe.io/cloud/role-permissions" target="_blank">Learn more</a>'
+		)
 
 	return frappe.get_all(
 		"Invoice Item",
@@ -631,11 +634,17 @@ def validate_gst(address, method=None):
 
 	if address.gstin and address.gstin != "Not Applicable":
 		if not GSTIN_FORMAT.match(address.gstin):
-			frappe.throw("Invalid GSTIN. The input you've entered does not match the format of GSTIN.")
+			frappe.throw(
+				"Invalid GSTIN. The input you've entered does not match the required GSTIN format. "
+				'<a href="https://docs.frappe.io/erpnext/v14/user/manual/en/regional/india/gst-setup" target="_blank">Learn more</a>'
+			)
 
 		tin_code = states_with_tin[address.state]
 		if not address.gstin.startswith(tin_code):
-			frappe.throw(f"GSTIN must start with {tin_code} for {address.state}.")
+			frappe.throw(
+				f"GSTIN must start with {tin_code} for {address.state}. "
+				'<a href="https://docs.frappe.io/erpnext/v14/user/manual/en/regional/india/gst-setup" target="_blank">Learn more</a>'
+			)
 
 		validate_gstin_check_digit(address.gstin)
 
@@ -681,9 +690,13 @@ def is_paypal_enabled() -> bool:
 @role_guard.api("billing")
 def create_razorpay_order(amount, transaction_type, doc_name=None) -> dict | None:
 	if not transaction_type:
-		frappe.throw(_("Transaction type is not set"))
+		frappe.throw(
+			_("Transaction type is not set. Please specify a valid transaction type. ")
+		)
 	if not amount or amount <= 0:
-		frappe.throw(_("Amount should be greater than zero"))
+		frappe.throw(
+			_("Amount should be greater than zero. Enter a valid amount to proceed. ")
+		)
 
 	team = get_current_team(get_doc=True)
 
@@ -745,12 +758,16 @@ def _validate_prepaid_credits(amount, currency):
 	minimum_amount = 100 if currency == "INR" else 5
 	if amount < minimum_amount:
 		currency_symbol = "₹" if currency == "INR" else "$"
-		frappe.throw(_("Amount should be at least {0}{1}").format(currency_symbol, minimum_amount))
+		frappe.throw(
+			_("Amount should be at least {0}{1}. ").format(currency_symbol, minimum_amount)
+		)
 
 
 def _validate_purchase_plan(amount, doc_name, currency):
 	if not doc_name or not frappe.db.exists("Plan", doc_name):
-		frappe.throw(_("Plan {0} does not exist").format(doc_name or ""))
+		frappe.throw(
+			_("Plan {0} does not exist. Make sure the plan name is correct. ").format(doc_name or "")
+		)
 
 	price_field = "price_inr" if currency == "INR" else "price_usd"
 	plan_amount = frappe.db.get_value("Plan", doc_name, price_field)
@@ -764,7 +781,9 @@ def _validate_purchase_plan(amount, doc_name, currency):
 
 def _validate_invoice_payment(amount, doc_name, currency):
 	if not doc_name or not frappe.db.exists("Invoice", doc_name):
-		frappe.throw(_("Invoice {0} does not exist").format(doc_name or ""))
+		frappe.throw(
+			_("Invoice {0} does not exist. Make sure the invoice name is correct. ").format(doc_name or "")
+		)
 
 	invoice_amount = frappe.db.get_value("Invoice", doc_name, "amount_due_with_tax")
 	if amount < invoice_amount:
@@ -921,12 +940,18 @@ def parse_transaction_response(kwargs):
 
 	if "Body" not in kwargs or "stkCallback" not in kwargs["Body"]:
 		frappe.log_error(title="Invalid transaction response format", message=kwargs)
-		frappe.throw(_("Invalid transaction response format"))
+		frappe.throw(
+			_("Invalid transaction response format. Please check the response structure. ")
+			+ '<a href="#" target="_blank">Learn more</a>'
+		)
 
 	transaction_response = frappe._dict(kwargs["Body"]["stkCallback"])
 	checkout_id = getattr(transaction_response, "CheckoutRequestID", "")
 	if not isinstance(checkout_id, str):
-		frappe.throw(_("Invalid Checkout Request ID"))
+		frappe.throw(
+			_("Invalid Checkout Request ID. Please provide a valid ID. ")
+			+ '<a href="#" target="_blank">Learn more</a>'
+		)
 
 	return transaction_response, checkout_id
 
@@ -1003,7 +1028,11 @@ def handle_api_mpesa_response(global_id, request_dict, response):
 	create_mpesa_request_log(request_dict, "Host", "Mpesa Express", req_name, error, output=response)
 
 	if error:
-		frappe.throw(_(response.errorMessage), title=_("Transaction Error"))
+		frappe.throw(
+			_(response.errorMessage) + " "
+			'<a href="#" target="_blank">Learn more</a>',
+			title=_("Transaction Error"),
+		)
 
 
 def create_mpesa_payment_record(transaction_response):
