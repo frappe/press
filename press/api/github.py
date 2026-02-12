@@ -306,6 +306,10 @@ def _get_compatible_frappe_version_from_pyproject(
 	except tomli.TOMLDecodeError as e:
 		out = []
 		out.append("Invalid pyproject.toml file found")
+
+		if not hasattr(e, "doc") or not hasattr(e, "lineno"):
+			frappe.throw("\n".join(out))
+
 		lines = e.doc.splitlines()
 		start = max(e.lineno - 3, 0)
 		end = e.lineno + 2
