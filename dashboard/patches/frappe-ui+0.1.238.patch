@@ -205,7 +205,7 @@ index 7f50517..b75275a 100644
 -  props.rows.forEach((row) => selections.add(row[props.rowKey]))
 +  props.rows.forEach((row) => {
 +    if (!row.__disabled) {
-+      selections.add(r[props.rowKey])
++      selections.add(row[props.rowKey])
 +    }
 +  })
  }
