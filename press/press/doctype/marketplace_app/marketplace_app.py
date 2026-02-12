@@ -32,6 +32,9 @@ if TYPE_CHECKING:
 	from press.press.doctype.site.site import Site
 
 
+class VersioningError(frappe.ValidationError): ...
+
+
 class MarketplaceApp(WebsiteGenerator):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
@@ -703,7 +706,7 @@ def validate_frappe_version_for_branch(
 	frappe_version = app_info.get("frappe_version")
 	frappe_version = parse_frappe_version(frappe_version)
 	if version not in frappe_version:
-		frappe.throw(f"{version} is not supported by branch {branch} for app {app_name}")
+		frappe.throw(f"{version} is not supported by branch {branch} for app {app_name}", VersioningError)
 
 
 def get_plans_for_app(
