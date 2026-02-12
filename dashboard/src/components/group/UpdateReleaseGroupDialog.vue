@@ -176,6 +176,12 @@ export default {
 				(app) => app.update_available === true,
 			);
 
+			appData.forEach((app) => {
+				if (!app.releases?.length) {
+					app.__disabled = true;
+				}
+			});
+
 			// preserving this for use in component functions
 			const vm = this;
 
