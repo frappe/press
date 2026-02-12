@@ -1,0 +1,51 @@
+---
+- name: Set container processes
+  set_fact:
+    container_processes: ["proxysql", "ssh"]
+
+- name: Create systemd override directory
+  file:
+    path: /etc/systemd/system/{{ item.process }}.service.d
+    state: directory
+    mode: '0755'
+  loop: "{{ memory_limits }}"
+  when: item.process not in container_processes
+
+- name: Configure MemoryHigh and MemoryMax
+  copy:
+    dest: /etc/systemd/system/{{ item.process }}.service.d/memory_limits.conf
+    content: |
+      [Service]
+      MemoryMax={{ (item.memory_max == -1) | ternary('infinity', item.memory_max ~ 'M') }}
+      MemoryHigh={{ (item.memory_high == -1) | ternary('', item.memory_high ~ 'M') }}
+  loop: "{{ memory_limits }}"
+  when: item.process not in container_processes
+
+- name: Reload systemd and restart service
+  systemd:
+    name: "{{ item.process }}"
+    state: restarted
+    daemon_reload: yes
+  loop: "{{ memory_limits }}"
+  when: item.process not in container_processes
+
+- name: Check if Docker is installed
+  command: docker --version
+  register: docker_check
+  ignore_errors: true
+
+- name: Get list of existing Docker containers
+  command: docker ps -a --format '{{ '{{' }} .Names {{ '}}' }}'
+  register: existing_containers
+  when: docker_check.rc == 0
+
+- name: Update Docker container memory limits
+  command: >
+    docker update {{ item.process }}
+    --memory {{ (item.memory_max == -1) | ternary('0', item.memory_max) }}M
+    --memory-reservation {{ (item.memory_high == -1) | ternary('0', item.memory_high) }}M
+  loop: "{{ memory_limits }}"
+  when:
+   - docker_check.rc == 0
+   - item.process in container_processes
+   - item.process in existing_containers.stdout_lines

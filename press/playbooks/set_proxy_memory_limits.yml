@@ -1,37 +1,5 @@
 - name: Set memory limits for proxy processes
   hosts: all
   become: yes
-  vars:
-    container_processes: ["proxysql", "ssh"]
-  tasks:
-    - name: Create systemd override directory
-      file:
-        path: /etc/systemd/system/{{ item.process }}.service.d
-        state: directory
-        mode: '0755'
-      loop: "{{ memory_limits }}"
-      when: item.process not in container_processes
-
-    - name: Configure MemoryHigh and MemoryMax
-      copy:
-        dest: /etc/systemd/system/{{ item.process }}.service.d/memory_limits.conf
-        content: |
-          [Service]
-          MemoryHigh={{ item.memory_high }}M
-          MemoryMax={{ item.memory_max }}M
-      loop: "{{ memory_limits }}"
-      when: item.process not in container_processes
-
-    - name: Reload systemd and restart service
-      systemd:
-        name: myapp
-        state: restarted
-        daemon_reload: yes
-
-    - name: Update Docker container memory limits
-      command: >
-        docker update {{ item.process }}
-        --memory {{ (item.memory_max == -1) | ternary('0', item.memory_max) }}M
-        --memory-reservation {{ (item.memory_high == -1) | ternary('0', item.memory_high) }}M
-      loop: "{{ memory_limits }}"
-      when: item.process in container_processes
+  roles:
+    - set_proxy_memory_limits

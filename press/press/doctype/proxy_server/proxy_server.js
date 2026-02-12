@@ -189,7 +189,7 @@ frappe.ui.form.on('Proxy Server', {
 				dialog.show();
 
 				frm.call('get_memory_limits').then((r) => {
-					if (r?.message) {
+					if (r.message) {
 						r.message.forEach((limit) => {
 							dialog.fields_dict.process_table.df.data.push({
 								process: limit.process,
