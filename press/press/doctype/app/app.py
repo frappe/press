@@ -155,7 +155,11 @@ def map_frappe_version(version_string: str, frappe_versions: list[dict[str, int 
 			matched.append(str(version["name"]))
 
 	# Check if the spec can support more than the highest stable version
-	if spec.match(highest_supported_stable_version.next_patch()):
+	if (
+		spec.match(highest_supported_stable_version.next_patch())
+		or spec.match(highest_supported_stable_version.next_minor())
+		or spec.match(highest_supported_stable_version.next_major())
+	):
 		matched.append("Nightly")
 
 	return matched
