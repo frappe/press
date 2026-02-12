@@ -146,7 +146,7 @@
 					title="Disk I/O"
 					:key="iopsData"
 					:data="iopsData"
-					unit="I0ps"
+					unit="IOps"
 					:chartTheme="[$theme.colors.purple[500], $theme.colors.blue[500]]"
 					:loading="$resources.iops.loading"
 					:error="$resources.iops.error"
