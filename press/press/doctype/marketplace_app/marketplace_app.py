@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.site.site import Site
 
 
-class VersioningError(frappe.ValidationError): ...
+class VersioningError(Exception): ...
 
 
 class MarketplaceApp(WebsiteGenerator):
