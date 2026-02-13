@@ -35,7 +35,7 @@
   ignore_errors: true
 
 - name: Get list of existing Docker containers
-  command: docker ps -a --format '{{ '{{' }} .Names {{ '}}' }}'
+  command: docker ps -a --format '{{ '{{' }}.Names{{ '}}' }}'
   register: existing_containers
   when: docker_check.rc == 0
 

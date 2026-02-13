@@ -469,6 +469,7 @@
    "options": "Server Plan"
   },
   {
+   "collapsible": 1,
    "fieldname": "memory_limits_section",
    "fieldtype": "Section Break",
    "label": "Memory Limits"
@@ -481,7 +482,7 @@
   }
  ],
  "links": [],
- "modified": "2026-02-11 14:20:10.063782",
+ "modified": "2026-02-13 18:06:59.344863",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
