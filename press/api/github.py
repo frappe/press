@@ -3,11 +3,11 @@
 
 from __future__ import annotations
 
+import contextlib
 import re
 from base64 import b64decode
 from datetime import datetime, timedelta
 from pathlib import Path
-import contextlib
 from typing import TYPE_CHECKING
 
 import frappe
@@ -286,7 +286,7 @@ def get_auth_headers(installation_id: str | None = None) -> "dict[str, str]":
 
 
 def _get_compatible_frappe_version_from_pyproject(
-	owner: str, repository: str, branch_info: str, headers: dict[str, str]
+	owner: str, repository: str, branch_info: dict, headers: dict[str, str]
 ) -> str:
 	"""Get frappe version from pyproject.toml file."""
 	compatible_frappe_version = None
@@ -307,17 +307,18 @@ def _get_compatible_frappe_version_from_pyproject(
 		out = []
 		out.append("Invalid pyproject.toml file found")
 		lines = e.doc.splitlines()
+
 		start = max(e.lineno - 3, 0)
 		end = e.lineno + 2
 
 		for i, line in enumerate(lines[start:end], start=start + 1):
 			out.append(f"{i:>4}: {line}")
 
-		out = "\n".join(out)
-		frappe.throw(out)
+		out_s = "\n".join(out)
+		frappe.throw(out_s)
 
 	with contextlib.suppress(Exception):
-		compatible_frappe_version = (
+		compatible_frappe_version = str(
 			pyproject.get("tool", {})
 			.get("bench", {})
 			.get("frappe-dependencies", {})
@@ -331,6 +332,7 @@ def _get_compatible_frappe_version_from_pyproject(
 			"Could not find compatible Frappe version in pyproject.toml file. "
 			"Please ensure '[tool.bench.frappe-dependencies]"
 		)
+		raise  # for mypy: NoReturn
 
 	return compatible_frappe_version
 
