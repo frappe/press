@@ -1079,41 +1079,69 @@ class Cluster(Document):
 		api_token = self.get_password("hetzner_api_token")
 		return Client(token=api_token)
 
-	def _check_aws_machine_availability(self, machine_type: str) -> bool:
+	def _check_aws_machine_availability(self, machine_type: str | list) -> bool | dict[str, bool]:
 		"""Check if instance offering in the region is present"""
 		client = self.get_aws_client()
 		response = client.describe_instance_type_offerings(
-			Filters=[{"Name": "instance-type", "Values": [machine_type]}]
+			Filters=[
+				{
+					"Name": "instance-type",
+					"Values": [machine_type] if isinstance(machine_type, str) else machine_type,
+				}
+			]
 		)
-		return bool(response.get("InstanceTypeOfferings"))
+		if isinstance(machine_type, str):
+			return bool(response.get("InstanceTypeOfferings"))
+		results = {}
+		available_machine_types = [r["InstanceType"] for r in response.get("InstanceTypeOfferings", [])]
+		for m in machine_type:
+			results[m] = m in available_machine_types
+		return results
 
-	def _check_oci_machine_availability(self, machine_type: str) -> bool:
+	def _check_oci_machine_availability(self, machine_type: str | list) -> bool | dict[str, bool]:
 		"""
 		We use machine type VM.Standard.E4.Flex or all OCI machines
 		This simply checks if VM.Standard.E4.Flex is present in the region
 		and the memory and cpu options are within supported limit.
 		"""
+		if isinstance(machine_type, list):
+			results = {}
+			for m in machine_type:
+				results[m] = True
+			return results
 		return True
 
 	@redis_cache(ttl=60)
-	def _check_hetzner_machine_availability(self, machine_type: str) -> bool:
+	def _check_hetzner_machine_availability(self, machine_type: str | list) -> bool | dict[str, bool]:
 		client = self.get_hetzner_client()
-		machine = client.server_types.get_by_name(machine_type)
-		if not machine:
-			return False
-
-		machine_id = machine.id
+		machine_type_id_map = {}
+		if isinstance(machine_type, list):
+			for m in machine_type:
+				machine = client.server_types.get_by_name(m)
+				if not machine:
+					continue
+				machine_type_id_map[m] = machine.id
+		else:
+			machine = client.server_types.get_by_name(machine_type)
+			if not machine:
+				return False
+			machine_type_id_map[machine_type] = machine.id
 
 		datacenters = client.datacenters.get_all()
 		datacenters = [dc for dc in datacenters if dc.location.name == self.region]
+		available_machine_ids = []
 		for dc in datacenters:
 			for st in dc.server_types.available:
-				if st.id == machine_id:
-					return True
-		return False
+				available_machine_ids.append(st.id)
+
+		results = {}
+		for m in machine_type if isinstance(machine_type, list) else [machine_type]:
+			results[m] = m in available_machine_ids
+
+		return results
 
 	@frappe.whitelist()
-	def check_machine_availability(self, machine_type: str) -> bool:
+	def check_machine_availability(self, machine_type: str | list) -> bool | dict[str, bool]:
 		"Check availability of machine in the region before allowing provision"
 		if self.cloud_provider == "AWS EC2":
 			return self._check_aws_machine_availability(machine_type)
