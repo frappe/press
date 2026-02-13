@@ -27,6 +27,7 @@ def new(
 	session: CloudSession = ctx.obj
 
 	benches = session.get("press.api.bench.all") or []
+<<<<<<< HEAD
 	bench_names = [b.get("name") for b in benches if isinstance(b, dict) and b.get("name")]
 	if bench_opt in bench_names:
 		bench = bench_opt
@@ -34,6 +35,28 @@ def new(
 		Print.error(
 			console,
 			f"Bench '{bench_opt}' not found. Available benches: {', '.join(bench_names) if bench_names else 'none'}",
+=======
+	bench_names: list[str] = [
+		str(name) for b in benches if isinstance(b, dict) and (name := b.get("name")) is not None
+	]
+	if bench not in bench_names:
+		Print.error(console, f"Bench '{bench}' not found. Available: {', '.join(bench_names) or 'none'}")
+		return
+
+	# Fetch bench group server and its cluster
+	bench_details = session.post(
+		"press.api.client.get",
+		json={"doctype": "Release Group", "name": bench, "fields": ["server"]},
+		message="[bold green]Fetching bench group details...",
+	)
+	server_name = bench_details.get("server") if isinstance(bench_details, dict) else None
+	cluster = None
+	if server_name:
+		server_details = session.post(
+			"press.api.client.get",
+			json={"doctype": "Server", "name": server_name, "fields": ["cluster"]},
+			message="[bold green]Fetching server cluster...",
+>>>>>>> 015a54c60 (fix(cli): fix git conflicts)
 		)
 		return
 
