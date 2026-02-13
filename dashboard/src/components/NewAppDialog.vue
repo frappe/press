@@ -11,7 +11,11 @@
 							? `Validating branch '${selectedBranch?.value}'`
 							: 'Add App',
 					variant: 'solid',
-					disabled: !app || !appValidated || $resources.validateApp.loading,
+					disabled:
+						!app ||
+						!appValidated ||
+						$resources.validateApp.loading ||
+						!selectedBranch?.value,
 					onClick: addAppHandler,
 				},
 			],
@@ -53,25 +57,13 @@
 										})
 									"
 								/>
-								<FormControl
+								<Combobox
 									v-else
-									type="combobox"
 									:options="branchOptions"
 									:modelValue="selectedBranch?.value"
-									@update:modelValue="
-										selectedBranch = branchOptions.find(
-											(option) => option.value === $event,
-										)
-									"
-								>
-									<template v-slot:target="{ togglePopover }">
-										<Button
-											:label="selectedBranch?.value || selectedBranch"
-											icon-right="chevron-down"
-											@click="() => togglePopover()"
-										/>
-									</template>
-								</FormControl>
+									allow-custom-value
+									@update:modelValue="onChangeBranchDebounce"
+								/>
 							</div>
 						</div>
 						<div v-else-if="tab.value === 'your-github-app'" class="pt-4">
@@ -118,7 +110,7 @@
 </template>
 
 <script>
-import { FormControl, Tabs } from 'frappe-ui';
+import { Combobox, debounce, FormControl, Tabs } from 'frappe-ui';
 import { DashboardError } from '../utils/error';
 import GitHubAppSelector from './GitHubAppSelector.vue';
 import AlertBanner from './AlertBanner.vue';
@@ -130,6 +122,7 @@ export default {
 		FTabs: Tabs,
 		FormControl,
 		AlertBanner,
+		Combobox,
 	},
 	props: {
 		group: {
@@ -138,6 +131,11 @@ export default {
 		},
 	},
 	emits: ['app-added'],
+	created() {
+		this.onChangeBranchDebounce = debounce((val) => {
+			this.selectedBranch = { label: val, value: val };
+		}, 500);
+	},
 	data() {
 		return {
 			show: true,
@@ -175,7 +173,7 @@ export default {
 			this.appValidated = false;
 		},
 		selectedBranch(newSelectedBranch) {
-			if (this.appOwner && this.appName && newSelectedBranch)
+			if (this.appOwner && this.appName && newSelectedBranch?.value)
 				this.$resources.validateApp.submit({
 					owner: this.appOwner,
 					repository: this.appName,
@@ -208,6 +206,9 @@ export default {
 						github_installation_id: this.selectedGithubUser?.id,
 						branch: this.selectedBranch.value,
 					};
+				},
+				onError() {
+					this.appValidated = false;
 				},
 			};
 		},
