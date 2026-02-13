@@ -830,14 +830,14 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
-	def uninstall_app(self, app: str, feedback: str = "") -> str:
+	def uninstall_app(self, app: str, create_offsite_backup: bool = False, feedback: str = "") -> str:
 		from press.marketplace.doctype.marketplace_app_feedback.marketplace_app_feedback import (
 			collect_app_uninstall_feedback,
 		)
 
 		collect_app_uninstall_feedback(app, feedback, self.name)
 		agent = Agent(self.server)
-		job = agent.uninstall_app_site(self, app)
+		job = agent.uninstall_app_site(self, app, create_offsite_backup)
 
 		log_site_activity(self.name, "Uninstall App", app, job.name)
 
@@ -1656,11 +1656,11 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Inactive", "Suspended"])
-	def archive(self, site_name=None, reason=None, force=False):
+	def archive(self, site_name=None, reason=None, force=False, create_offsite_backup=False):
 		agent = Agent(self.server)
 		self.status = "Pending"
 		self.save()
-		job = agent.archive_site(self, site_name, force)
+		job = agent.archive_site(self, site_name, force, create_offsite_backup)
 		log_site_activity(self.name, "Archive", reason, job.name)
 
 		server = frappe.get_all("Server", filters={"name": self.server}, fields=["proxy_server"], limit=1)[0]
@@ -4371,6 +4371,85 @@ def update_backup_restoration_test(site: str, status: str):
 		frappe.db.set_value("Backup Restoration Test", backup_tests[0], "status", "Archive Failed")
 
 
+def _create_site_backup_from_agent_job(job: "AgentJob"):
+	"""
+	Create Site Backup and Remote File records from archival backup data.
+	"""
+	try:
+		from press.press.doctype.site_backup.site_backup import track_offsite_backups
+
+		if (job.job_type not in ["Archive Site", "Uninstall App from Site"]) or not job.data:
+			return
+		job_data = json.loads(job.data)
+		if not job_data["backups"]:
+			return
+
+		site_server = frappe.db.get_value("Site", job.site, "server")
+		site_backup = frappe.get_doc(
+			{
+				"doctype": "Site Backup",
+				"site": job.site,
+				"server": site_server,
+				"status": job.status if job.status == "Success" else "Failure",
+				"with_files": True,
+				"offsite": True,
+				"job": job.name,
+			}
+		)
+		site_backup.flags.skip_backup_after_insert = True
+
+		if job.status == "Success":
+			backup_data = job_data["backups"]
+			offsite_backup_data = job_data.get("offsite", {})
+			(
+				remote_database,
+				remote_config_file,
+				remote_public,
+				remote_private,
+			) = track_offsite_backups(job.site, backup_data, offsite_backup_data)
+
+			site_backup_dict = {
+				"files_availability": "Available",
+				"database_size": backup_data["database"]["size"],
+				"database_url": backup_data["database"]["url"],
+				"database_file": backup_data["database"]["file"],
+				"remote_database_file": remote_database,
+			}
+
+			if "site_config" in backup_data:
+				site_backup_dict.update(
+					{
+						"config_file_size": backup_data["site_config"]["size"],
+						"config_file_url": backup_data["site_config"]["url"],
+						"config_file": backup_data["site_config"]["file"],
+						"remote_config_file": remote_config_file,
+					}
+				)
+
+			if "private" in backup_data and "public" in backup_data:
+				site_backup_dict.update(
+					{
+						"private_size": backup_data["private"]["size"],
+						"private_url": backup_data["private"]["url"],
+						"private_file": backup_data["private"]["file"],
+						"remote_public_file": remote_public,
+						"public_size": backup_data["public"]["size"],
+						"public_url": backup_data["public"]["url"],
+						"public_file": backup_data["public"]["file"],
+						"remote_private_file": remote_private,
+					}
+				)
+			for key, value in site_backup_dict.items():
+				site_backup.set(key, value)
+		site_backup.insert(ignore_permissions=True)
+	except Exception as e:
+		frappe.log_error(
+			f"Failed to create Site Backup record from {job.job_type} agent job: {e!s}",
+			reference_doctype="Agent Job",
+			reference_name=job.name,
+		)
+
+
 def process_archive_site_job_update(job: "AgentJob"):  # noqa: C901
 	with suppress(Exception):
 		is_secondary_server = frappe.db.get_value("Server", job.upstream, "is_secondary")
@@ -4422,6 +4501,9 @@ def process_archive_site_job_update(job: "AgentJob"):  # noqa: C901
 		)
 		update_backup_restoration_test(job.site, updated_status)
 		if updated_status == "Archived":
+			# Create Site Backup record if backup was created during archival
+			if job.job_type == "Archive Site":
+				_create_site_backup_from_agent_job(job)
 			site_cleanup_after_archive(job.site)
 
 
@@ -4455,6 +4537,7 @@ def process_uninstall_app_site_job_update(job):
 	}[job.status]
 
 	site_status = frappe.get_value("Site", job.site, "status")
+	_create_site_backup_from_agent_job(job)
 	if updated_status != site_status:
 		site: Site = frappe.get_doc("Site", job.site)
 		site.sync_apps()
