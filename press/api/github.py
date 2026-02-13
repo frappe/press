@@ -286,7 +286,7 @@ def get_auth_headers(installation_id: str | None = None) -> "dict[str, str]":
 
 
 def _get_compatible_frappe_version_from_pyproject(
-	owner: str, repository: str, branch_info: str, headers: dict[str, str]
+	owner: str, repository: str, branch_info: dict, headers: dict[str, str]
 ) -> str:
 	"""Get frappe version from pyproject.toml file."""
 	compatible_frappe_version = None
@@ -311,17 +311,18 @@ def _get_compatible_frappe_version_from_pyproject(
 			frappe.throw("\n".join(out))
 
 		lines = e.doc.splitlines()
+
 		start = max(e.lineno - 3, 0)
 		end = e.lineno + 2
 
 		for i, line in enumerate(lines[start:end], start=start + 1):
 			out.append(f"{i:>4}: {line}")
 
-		out = "\n".join(out)
-		frappe.throw(out)
+		out_s = "\n".join(out)
+		frappe.throw(out_s)
 
 	with contextlib.suppress(Exception):
-		compatible_frappe_version = (
+		compatible_frappe_version = str(
 			pyproject.get("tool", {})
 			.get("bench", {})
 			.get("frappe-dependencies", {})
@@ -336,6 +337,7 @@ def _get_compatible_frappe_version_from_pyproject(
 			"Please ensure '[tool.bench.frappe-dependencies]' is defined. "
 			"Click <a href='https://docs.frappe.io/cloud/benches/custom-app#note'>here</a> for more details."
 		)
+		raise  # for mypy: NoReturn
 
 	return compatible_frappe_version
 
