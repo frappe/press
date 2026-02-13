@@ -52,12 +52,8 @@ export default {
 					name: this.server,
 					timezone: localTimezone,
 					query: 'loadavg',
-<<<<<<< HEAD
-					duration: '6h',
-=======
 					start: start.toISOString(),
 					end: end.toISOString(),
->>>>>>> 57a458470 (fix(cpu-loadavg-metric): Add missing start and end args)
 				},
 				auto: true,
 			};
