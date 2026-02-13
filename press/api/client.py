@@ -26,6 +26,7 @@ if typing.TYPE_CHECKING:
 ALLOWED_DOCTYPES = [
 	"Site",
 	"Site App",
+	"Site Action",
 	"Site Domain",
 	"Site Backup",
 	"Site Activity",
