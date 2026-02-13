@@ -170,6 +170,7 @@ class Ansible:
 		self.playbook_path = frappe.get_app_path("press", "playbooks", self.playbook)
 		self.host = f"{server.ip}:{port}"
 		self.variables = variables or {}
+		self.variables.setdefault("ansible_python_interpreter", "auto_silent")
 
 		constants.HOST_KEY_CHECKING = False
 		context.CLIARGS = ImmutableDict(
