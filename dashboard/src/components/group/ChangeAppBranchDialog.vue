@@ -7,55 +7,57 @@
 			<div class="flex flex-col items-center gap-2 w-full">
 				<LoadingText class="my-4" v-if="$resources.branches.loading" />
 
-				<!-- Branch Selector -->
-				<FormControl
-					v-if="!useOtherBranch"
-					class="w-full"
-					label="Select Branch"
-					type="select"
-					:options="$resources.branches.data"
-					v-model="selectedBranch"
-				/>
+				<template v-else>
+					<!-- Branch Selector -->
+					<FormControl
+						v-if="!useOtherBranch"
+						class="w-full"
+						label="Select Branch"
+						type="select"
+						:options="$resources.branches.data"
+						v-model="selectedBranch"
+					/>
 
-				<!-- Other Branch Input -->
-				<FormControl
-					v-else
-					class="w-full"
-					label="Branch Name"
-					type="text"
-					placeholder="Enter branch name"
-					v-model="otherBranchName"
-				/>
+					<!-- Other Branch Input -->
+					<FormControl
+						v-else
+						class="w-full"
+						label="Branch Name"
+						type="text"
+						placeholder="Enter branch name"
+						v-model="otherBranchName"
+					/>
 
-				<!-- Other branches toggle -->
-				<FormControl
-					type="checkbox"
-					label="Other branches"
-					v-model="useOtherBranch"
-					class="self-start"
-				/>
+					<!-- Other branches toggle -->
+					<FormControl
+						type="checkbox"
+						label="Other branches"
+						v-model="useOtherBranch"
+						class="self-start"
+					/>
 
-				<!-- GitHub verification error -->
-				<span
-					v-if="branchVerificationError"
-					class="text-sm text-red-600 w-full mt-3"
-				>
-					{{ branchVerificationError }}
-				</span>
+					<!-- GitHub verification error -->
+					<span
+						v-if="branchVerificationError"
+						class="text-sm text-red-600 w-full mt-3"
+					>
+						{{ branchVerificationError }}
+					</span>
 
-				<!-- GitHub verification error -->
-				<span
-					v-else-if="branchVerificationSuccess"
-					class="text-sm text-green-600 w-full mt-3"
-				>
-					{{ branchVerificationSuccess }}
-				</span>
+					<!-- GitHub verification error -->
+					<span
+						v-else-if="branchVerificationSuccess"
+						class="text-sm text-green-600 w-full mt-3"
+					>
+						{{ branchVerificationSuccess }}
+					</span>
 
-				<ErrorMessage
-					v-if="$resources.changeBranch?.error"
-					class="mt-2 w-full"
-					:message="$resources.changeBranch.error"
-				/>
+					<ErrorMessage
+						v-if="$resources.changeBranch?.error"
+						class="mt-2 w-full"
+						:message="$resources.changeBranch.error"
+					/>
+				</template>
 			</div>
 		</template>
 
