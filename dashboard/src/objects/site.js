@@ -784,13 +784,18 @@ export default {
 										? '<br><br><div class="p-2 bg-gray-100 rounded border-gray-200">You have to be logged in as a <b>System Manager</b> <em>in your site</em> to download the backup.<div>'
 										: ''
 								}`,
+<<<<<<< HEAD
 								onSuccess() {
 									downloadBackup(backup, file);
+=======
+								onSuccess({ hide }) {
+									downloadBackup(backup, file, hide);
+>>>>>>> 1aa1bfc3a (fix(dashboard): pass hide action to downloadbackup to handle async cases)
 								},
 							});
 						}
 
-						async function downloadBackup(backup, file) {
+						async function downloadBackup(backup, file, hide) {
 							// file: database, public, or private
 							if (backup.offsite) {
 								site.getBackupDownloadLink.submit(
@@ -801,6 +806,7 @@ export default {
 											if (r.message) {
 												window.open(r.message);
 											}
+											hide();
 										},
 									},
 								);
@@ -816,6 +822,7 @@ export default {
 									`$1${site.doc.host_name}/`,
 								);
 								window.open(newUrl);
+								hide();
 							}
 						}
 
