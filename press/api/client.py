@@ -124,7 +124,10 @@ def get_list(
 
 	meta = frappe.get_meta(doctype)
 	if meta.istable and not (filters.get("parenttype") and filters.get("parent")):
-		frappe.throw("parenttype and parent are required to get child records")
+		frappe.throw(
+			"parenttype and parent are required to get child records. "
+			'<a href="https://docs.frappe.io/framework/user/en/basics/doctypes/child-doctype" target="_blank">Learn more</a>'
+		)
 
 	apply_team_filter = not (
 		filters.get("skip_team_filter_for_system_user_and_support_agent")
@@ -242,14 +245,20 @@ def get(doctype, name):
 @frappe.whitelist(methods=["POST", "PUT"])
 def insert(doc=None):
 	if not doc or not doc.get("doctype"):
-		frappe.throw(frappe._("doc.doctype is required"))
+		frappe.throw(
+			frappe._("doc.doctype is required. ")
+			+ '<a href="https://docs.frappe.io/framework/user/en/api/rest" target="_blank">Learn more</a>'
+		)
 
 	check_permissions(doc.get("doctype"))
 
 	doc = frappe._dict(doc)
 	if frappe.is_table(doc.doctype):
 		if not (doc.parenttype and doc.parent and doc.parentfield):
-			frappe.throw(frappe._("Parenttype, Parent and Parentfield are required to insert a child record"))
+			frappe.throw(
+				frappe._("Parenttype, Parent and Parentfield are required to insert a child record. ")
+				+ '<a href="https://docs.frappe.io/framework/user/en/basics/doctypes/child-doctype" target="_blank">Learn more</a>'
+			)
 
 		# inserting a child record
 		parent = frappe.get_doc(doc.parenttype, doc.parent)
@@ -490,7 +499,7 @@ def check_permissions(doctype):
 
 	if not hasattr(frappe.local, "team") or not frappe.local.team():
 		frappe.throw(
-			"current_team is not set. Use X-PRESS-TEAM header in the request to set it.",
+			"current_team is not set. Use X-PRESS-TEAM header in the request to set it. ",
 			TeamHeaderNotInRequestError,
 		)
 
@@ -509,7 +518,11 @@ def is_owned_by_team(doctype, docname, raise_exception=True):
 
 
 def raise_not_permitted():
-	frappe.throw("Not permitted", frappe.PermissionError)
+	frappe.throw(
+		"Not permitted. You do not have access to this resource. "
+		'<a href="https://docs.frappe.io/cloud/role-permissions" target="_blank">Learn more</a>',
+		frappe.PermissionError,
+	)
 
 
 def dashboard_whitelist(allow_guest=False, xss_safe=False, methods=None):
