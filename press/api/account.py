@@ -47,9 +47,13 @@ def signup(email: str, product: str | None = None, referrer: str | None = None) 
 
 	account_request = None
 	if exists and not enabled:
-		frappe.throw(_("Account {0} has been deactivated").format(email))
+		frappe.throw(
+			_("Account {0} has been deactivated. ").format(email)
+		)
 	elif exists and enabled:
-		frappe.throw(_("Account {0} is already registered").format(email))
+		frappe.throw(
+			_("Account {0} is already registered. If you forgot your password, use the password reset option. ").format(email)
+		)
 
 	account_request = frappe.db.get_value(
 		"Account Request",
@@ -93,10 +97,14 @@ def verify_otp(account_request: str, otp: str) -> str:
 		and not account_request_doc.product_trial
 	):
 		ip_tracker and ip_tracker.add_failure_attempt()
-		frappe.throw("Invalid OTP. Please try again.")
+		frappe.throw(
+			"Invalid OTP. Please try again. "
+		)
 	if account_request_doc.otp != otp:
 		ip_tracker and ip_tracker.add_failure_attempt()
-		frappe.throw("Invalid OTP. Please try again.")
+		frappe.throw(
+			"Invalid OTP. Please try again. "
+		)
 
 	ip_tracker and ip_tracker.add_success_attempt()
 	account_request_doc.reset_otp()
@@ -115,14 +123,19 @@ def verify_otp_and_login(email: str, otp: str):
 	account_request = frappe.db.get_value("Account Request", {"email": email}, "name")
 
 	if not account_request:
-		frappe.throw("Please sign up first")
+		frappe.throw(
+			"Please sign up first. "
+			'<a href="https://frappecloud.com/dashboard/signup" target="_blank">Learn more</a>'
+		)
 
 	account_request_doc: "AccountRequest" = frappe.get_doc("Account Request", account_request)
 	ip_tracker = get_login_attempt_tracker(frappe.local.request_ip)
 
 	if account_request_doc.otp != otp:
 		ip_tracker and ip_tracker.add_failure_attempt()
-		frappe.throw("Invalid OTP. Please try again.")
+		frappe.throw(
+			"Invalid OTP. Please try again. "
+		)
 
 	ip_tracker and ip_tracker.add_success_attempt()
 	account_request_doc.reset_otp()
@@ -140,14 +153,18 @@ def resend_otp(account_request: str, for_2fa_keys: bool = False):
 		account_request_doc.otp_generated_at
 		and (frappe.utils.now_datetime() - account_request_doc.otp_generated_at).seconds < 30
 	):
-		frappe.throw("Please wait for 30 seconds before requesting a new OTP")
+		frappe.throw(
+			"Please wait for 30 seconds before requesting a new OTP. "
+		)
 
 	# ensure no team has been created with this email
 	if (
 		frappe.db.exists("Team", {"user": account_request_doc.email})
 		and not account_request_doc.product_trial
 	):
-		frappe.throw("Invalid Email")
+		frappe.throw(
+			"Invalid Email. Please enter a valid email address. "
+		)
 	account_request_doc.reset_otp()
 	account_request_doc.send_otp_mail(for_login=not for_2fa_keys)
 
@@ -158,7 +175,10 @@ def send_otp(email: str, for_2fa_keys: bool = False):
 	account_request = frappe.db.get_value("Account Request", {"email": email}, "name")
 
 	if not account_request:
-		frappe.throw("Please sign up first")
+		frappe.throw(
+			"Please sign up first. "
+			'<a href="https://frappecloud.com/dashboard/signup" target="_blank">Learn more</a>'
+		)
 
 	account_request_doc: "AccountRequest" = frappe.get_doc("Account Request", account_request)
 
@@ -167,7 +187,9 @@ def send_otp(email: str, for_2fa_keys: bool = False):
 		account_request_doc.otp_generated_at
 		and (frappe.utils.now_datetime() - account_request_doc.otp_generated_at).seconds < 30
 	):
-		frappe.throw("Please wait for 30 seconds before requesting a new OTP")
+		frappe.throw(
+			"Please wait for 30 seconds before requesting a new OTP. "
+		)
 
 	account_request_doc.reset_otp()
 	account_request_doc.send_otp_mail(for_login=not for_2fa_keys)
@@ -191,20 +213,28 @@ def setup_account(  # noqa: C901
 ):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
-		frappe.throw("Invalid or Expired Key")
+		frappe.throw(
+			"Invalid or Expired Key. Request a new key if needed. "
+		)
 
 	if not user_exists:
 		if not first_name:
-			frappe.throw("First Name is required")
+			frappe.throw(
+				"First Name is required. "
+			)
 
 		if not is_invitation and not country:
-			frappe.throw("Country is required")
+			frappe.throw(
+				"Country is required. "
+			)
 
 		if not is_invitation and country:
 			all_countries = frappe.db.get_all("Country", pluck="name")
 			country = find(all_countries, lambda x: x.lower() == country.lower())
 			if not country:
-				frappe.throw("Please provide a valid country name")
+				frappe.throw(
+					"Please provide a valid country name. "
+				)
 
 	# if the request is authenticated, set the user to Administrator
 	frappe.set_user("Administrator")
@@ -263,10 +293,16 @@ def accept_team_invite(key: str):
 	account_request = get_account_request_from_key(key)
 
 	if not account_request:
-		frappe.throw("Invalid or Expired Key")
+		frappe.throw(
+			"Invalid or Expired Key. Request a new key if needed. "
+			'<a href="https://docs.frappe.io/cloud/managing_team_members" target="_blank">Learn more</a>'
+		)
 
 	if not account_request.invited_by:
-		frappe.throw("You are not invited by any team")
+		frappe.throw(
+			"You are not invited by any team. "
+			'<a href="https://docs.frappe.io/cloud/managing_team_members" target="_blank">Learn more</a>'
+		)
 
 	team = account_request.team
 	first_name = account_request.first_name
@@ -284,7 +320,10 @@ def accept_team_invite(key: str):
 @rate_limit(limit=5, seconds=60 * 60)
 def send_login_link(email):
 	if not frappe.db.exists("User", email):
-		frappe.throw("No registered account with this email address")
+		frappe.throw(
+			"No registered account with this email address. Please check your email or sign up. "
+			'<a href="#" target="_blank">Learn more</a>'
+		)
 
 	key = frappe.generate_hash("Login Link", 20)
 	minutes = 10
@@ -340,12 +379,21 @@ def disable_account(totp_code: str | None):
 
 	if is_2fa_enabled(user):
 		if not totp_code:
-			frappe.throw("2FA Code is required")
+			frappe.throw(
+				"2FA Code is required. Enter your 2FA code to proceed. "
+				'<a href="https://docs.frappe.io/cloud/two-factor-authentication-2fa" target="_blank">Learn more</a>'
+			)
 		if not verify_2fa(user, totp_code):
-			frappe.throw("Invalid 2FA Code")
+			frappe.throw(
+				"Invalid 2FA Code. "
+				'<a href="https://docs.frappe.io/cloud/two-factor-authentication-2fa" target="_blank">Learn more</a>'
+			)
 
 	if user != team.user:
-		frappe.throw("Only team owner can disable the account")
+		frappe.throw(
+			"Only team owner can disable the account. "
+			'<a href="https://docs.frappe.io/cloud/role-permissions" target="_blank">Learn more</a>'
+		)
 
 	team.disable_account()
 
@@ -359,7 +407,10 @@ def has_active_servers(team):
 def enable_account():
 	team = get_current_team(get_doc=True)
 	if frappe.session.user != team.user:
-		frappe.throw("Only team owner can enable the account")
+		frappe.throw(
+			"Only team owner can enable the account. "
+			'<a href="https://docs.frappe.io/cloud/role-permissions" target="_blank">Learn more</a>'
+		)
 	team.enable_account()
 
 
@@ -472,7 +523,9 @@ def get_account_request_from_key(key: str):
 	"""Find Account Request using `key`"""
 
 	if not key or not isinstance(key, str):
-		frappe.throw(_("Invalid Key"))
+		frappe.throw(
+			_("Invalid key. Please provide a valid account request key. ")
+		)
 
 	try:
 		return frappe.get_doc("Account Request", {"request_key": key})
@@ -493,7 +546,9 @@ def get():
 def _get():
 	user = frappe.session.user
 	if not frappe.db.exists("User", user):
-		frappe.throw(_("Account does not exist"))
+		frappe.throw(
+			_("Account does not exist. Please check your account details. ")
+		)
 
 	team_doc = get_current_team(get_doc=True)
 
@@ -546,7 +601,9 @@ def _get():
 def current_team():
 	user = frappe.session.user
 	if not frappe.db.exists("User", user):
-		frappe.throw(_("Account does not exist"))
+		frappe.throw(
+			_("Account does not exist. Please check your account details. ")
+		)
 
 	from press.api.client import get
 
@@ -625,9 +682,13 @@ def create_child_team(title):
 	if title in [
 		d.team_title for d in frappe.get_all("Team", {"parent_team": current_team.name}, ["team_title"])
 	]:
-		frappe.throw(f"Child Team {title} already exists.")
+		frappe.throw(
+			f"Child Team {title} already exists. Choose a different name for your child team. "
+		)
 	elif title == "Parent Team":
-		frappe.throw("Child team name cannot be same as parent team")
+		frappe.throw(
+			"Child team name cannot be same as parent team. "
+		)
 
 	doc = frappe.get_doc(
 		{
@@ -682,7 +743,9 @@ def update_profile(first_name=None, last_name=None, email=None):
 		frappe.utils.validate_email_address(email, True)
 	STR_FORMAT = re.compile("^[a-zA-Z']+$")
 	if (first_name and not STR_FORMAT.match(first_name)) or (last_name and not STR_FORMAT.match(last_name)):
-		frappe.throw("Names cannot contain invalid characters")
+		frappe.throw(
+			"Names cannot contain invalid characters. "
+		)
 	user = frappe.session.user
 	doc = frappe.get_doc("User", user)
 	doc.first_name = first_name
@@ -766,7 +829,9 @@ def reset_password(key, password):
 @rate_limit(limit=10, seconds=60 * 60)
 def get_user_for_reset_password_key(key):
 	if not key or not isinstance(key, str):
-		frappe.throw(_("Invalid Key"))
+		frappe.throw(
+			_("Invalid Key. Please check your key and try again. ")
+		)
 
 	hashed_key = sha256_hash(key)
 	user_doc = frappe.db.get_value(
@@ -776,14 +841,18 @@ def get_user_for_reset_password_key(key):
 		as_dict=True,
 	)
 	if not user_doc:
-		frappe.throw(_("Invalid Key"))
+		frappe.throw(
+			_("Invalid Key. Please check your key and try again. ")
+		)
 
 	from datetime import timedelta
 
 	if user_doc.last_reset_password_key_generated_on:
 		expiry_time = user_doc.last_reset_password_key_generated_on + timedelta(minutes=10)
 		if frappe.utils.now_datetime() > expiry_time:
-			frappe.throw(_("Key has expired. Please retry resetting your password."))
+			frappe.throw(
+				_("Key has expired. Please request a new password reset link. ")
+			)
 
 	return user_doc.name
 
@@ -799,7 +868,9 @@ def remove_child_team(child_team):
 	team = frappe.get_doc("Team", child_team)
 	sites = frappe.get_all("Site", {"status": ("!=", "Archived"), "team": team.name}, pluck="name")
 	if sites:
-		frappe.throw("Child team has Active Sites")
+		frappe.throw(
+			"Child team has active sites. Archive or transfer all sites before removing. "
+		)
 
 	team.enabled = 0
 	team.parent_team = ""
@@ -837,7 +908,10 @@ def leave_team(team):
 	cur_team = frappe.session.user
 
 	if team_to_leave.user == cur_team:
-		frappe.throw("Cannot leave this team as you are the owner.")
+		frappe.throw(
+			"Cannot leave this team as you are the owner. Transfer ownership before leaving. "
+			'<a href="https://docs.frappe.io/cloud/role-permissions" target="_blank">Learn more</a>'
+		)
 
 	team_to_leave.remove_team_member(cur_team)
 
@@ -868,7 +942,10 @@ def update_billing_information(billing_details):
 		if (team.country != billing_details.country) and (
 			team.country == "India" or billing_details.country == "India"
 		):
-			frappe.throw("Cannot change country after registration")
+			frappe.throw(
+				"Cannot change country after registration. Contact support for assistance. "
+				'<a href="https://frappe.io/cloud/customer-support" target="_blank">Learn more</a>'
+			)
 		team.update_billing_details(billing_details)
 	except Exception as ex:
 		log_error(
@@ -884,7 +961,9 @@ def validate_pincode(billing_details):
 		return
 	PINCODE_FORMAT = re.compile(r"^[1-9][0-9]{5}$")
 	if not PINCODE_FORMAT.match(billing_details.postal_code):
-		frappe.throw("Invalid Postal Code")
+		frappe.throw(
+			"Invalid Postal Code. Please enter a valid 6-digit Indian postal code. "
+		)
 
 	if billing_details.state not in STATE_PINCODE_MAPPING:
 		return
@@ -899,7 +978,10 @@ def validate_pincode(billing_details):
 		if lower_limit <= int(first_three_digits) <= upper_limit:
 			return
 
-	frappe.throw(f"Postal Code {billing_details.postal_code} is not associated with {billing_details.state}")
+	frappe.throw(
+		f"Postal Code {billing_details.postal_code} is not associated with {billing_details.state}. Please verify your postal code and state. "
+		'<a href="https://docs.frappe.io/erpnext/v14/user/manual/en/regional/india/gst-setup" target="_blank">Learn more</a>'
+	)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -1172,7 +1254,10 @@ def groups():
 @frappe.whitelist()
 def permission_group_users(name):
 	if get_current_team() != frappe.db.get_value("Press Permission Group", name, "team"):
-		frappe.throw("You are not allowed to view this group")
+		frappe.throw(
+			"You are not allowed to view this group. You must be a member of the team to access this group. "
+			'<a href="https://docs.frappe.io/cloud/role-permissions" target="_blank">Learn more</a>'
+		)
 
 	return frappe.get_all("Press Permission Group User", {"parent": name}, pluck="user")
 
@@ -1265,7 +1350,11 @@ def verify_2fa(user, totp_code):
 	if verified:
 		frappe.db.set_value("User 2FA", user, "last_verified_at", frappe.utils.now())
 	else:
-		frappe.throw("Invalid 2FA code", frappe.AuthenticationError)
+		frappe.throw(
+			"Invalid 2FA code. Please enter a valid code. "
+			'<a href="https://docs.frappe.io/cloud/two-factor-authentication-2fa" target="_blank">Learn more</a>',
+			frappe.AuthenticationError,
+		)
 
 	return verified
 
@@ -1300,7 +1389,10 @@ def enable_2fa(totp_code):
 	user_totp_secret = get_decrypted_password("User 2FA", frappe.session.user, "totp_secret")
 
 	if not pyotp.totp.TOTP(user_totp_secret).verify(totp_code):
-		frappe.throw("Invalid TOTP code")
+		frappe.throw(
+			"Invalid TOTP code. "
+			'<a href="https://docs.frappe.io/cloud/two-factor-authentication-2fa" target="_blank">Learn more</a>'
+		)
 
 	two_fa.enabled = 1
 
@@ -1340,12 +1432,18 @@ def disable_2fa(totp_code):
 	if frappe.db.exists("User 2FA", frappe.session.user):
 		user_totp_secret = get_decrypted_password("User 2FA", frappe.session.user, "totp_secret")
 	else:
-		frappe.throw(f"2FA is not enabled for {frappe.session.user}")
+		frappe.throw(
+			f"2FA is not enabled for {frappe.session.user}. "
+			'<a href="https://docs.frappe.io/cloud/two-factor-authentication-2fa" target="_blank">Learn more</a>'
+		)
 
 	if pyotp.totp.TOTP(user_totp_secret).verify(totp_code):
 		frappe.db.set_value("User 2FA", frappe.session.user, "enabled", 0)
 	else:
-		frappe.throw("Invalid TOTP code")
+		frappe.throw(
+			"Invalid TOTP code. Please enter a valid code. "
+			'<a href="https://docs.frappe.io/cloud/two-factor-authentication-2fa" target="_blank">Learn more</a>'
+		)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -1357,7 +1455,10 @@ def recover_2fa(user: str, recovery_code: str):
 
 	# Check if the user has 2FA enabled.
 	if not two_fa.enabled:
-		frappe.throw(f"2FA is not enabled for {user}")
+		frappe.throw(
+			f"2FA is not enabled for {user}. "
+			'<a href="https://docs.frappe.io/cloud/two-factor-authentication-2fa" target="_blank">Learn more</a>'
+		)
 
 	# Get valid recovery code doc.
 	code: "User2FARecoveryCode" | None = None
@@ -1369,7 +1470,10 @@ def recover_2fa(user: str, recovery_code: str):
 
 	# If no valid recovery code found, throw an error.
 	if not code:
-		frappe.throw("Invalid or used recovery code")
+		frappe.throw(
+			"Invalid or used recovery code. "
+			'<a href="https://docs.frappe.io/cloud/two-factor-authentication-2fa" target="_blank">Learn more</a>'
+		)
 	assert code is not None
 	# Mark the recovery code as used.
 	code.used_at = frappe.utils.now_datetime()
@@ -1384,12 +1488,18 @@ def get_2fa_recovery_codes(verification_code: int):
 	"""Get the recovery codes for the user."""
 
 	if not frappe.db.exists("User 2FA", {"user": frappe.session.user, "enabled": 1}):
-		frappe.throw("2FA is not enabled for this user")
+		frappe.throw(
+			"2FA is not enabled for this user. "
+			'<a href="https://docs.frappe.io/cloud/two-factor-authentication-2fa" target="_blank">Learn more</a>'
+		)
 
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", {"email": frappe.session.user})
 
 	if account_request.otp != verification_code:
-		frappe.throw("Invalid OTP. Please try again.")
+		frappe.throw(
+			"Invalid OTP. Please try again. "
+			'<a href="https://docs.frappe.io/cloud/two-factor-authentication-2fa" target="_blank">Learn more</a>'
+		)
 
 	account_request.reset_otp()
 
@@ -1417,7 +1527,10 @@ def reset_2fa_recovery_codes():
 
 	# Check if the user has 2FA enabled.
 	if not frappe.db.exists("User 2FA", frappe.session.user):
-		frappe.throw("2FA is not enabled for this user")
+		frappe.throw(
+			"2FA is not enabled for this user. "
+			'<a href="https://docs.frappe.io/cloud/two-factor-authentication-2fa" target="_blank">Learn more</a>'
+		)
 
 	# Get the User 2FA document.
 	two_fa = frappe.get_doc("User 2FA", frappe.session.user)
