@@ -92,7 +92,9 @@ def get_analytics(**data):
 
 	for value in (site, subscription_key):
 		if not value or not isinstance(value, str):
-			frappe.throw("Invalid Request")
+			frappe.throw(
+				"Invalid Request. Please provide valid site and subscription key. "
+			)
 
 	return frappe.get_all(
 		"Mail Log",
@@ -118,7 +120,7 @@ def validate_plan(secret_key):
 
 	if not secret_key:
 		frappe.throw(
-			"Secret key missing. Email Delivery Service seems to be improperly installed. Try reinstalling it.",
+			"Secret key missing. Email Delivery Service seems to be improperly installed. Try reinstalling it. ",
 			EmailConfigError,
 		)
 
@@ -126,15 +128,16 @@ def validate_plan(secret_key):
 		subscription = get_subscription_info(secret_key=secret_key)
 	except Exception as e:
 		frappe.throw(
-			str(e)
-			or "Something went wrong fetching subscription details of Email Delivery Service. Please raise a ticket at support.frappe.io",
+			(str(e) or "Something went wrong fetching subscription details of Email Delivery Service. Please raise a ticket at support.frappe.io. ")
+			+ '<a href="https://docs.frappe.io/cloud/billing/bill-payments" target="_blank">Learn more</a>',
 			type(e),
 		)
 
 	if not subscription["enabled"]:
 		frappe.throw(
-			"Your subscription is not active. Try reinstalling Email Delivery Service."
-			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/apps",
+			"Your subscription is not active. Try reinstalling Email Delivery Service. "
+			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/apps "
+			'<a href="https://docs.frappe.io/cloud/billing/billing-cycle" target="_blank">Learn more</a>',
 			EmailConfigError,
 		)
 
@@ -150,8 +153,9 @@ def validate_plan(secret_key):
 	)
 	if not count < plan_label_map[subscription["plan"]]:
 		frappe.throw(
-			"You have exceeded your quota for Email Delivery Service. Try upgrading it from, "
-			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/apps",
+			"You have exceeded your quota for Email Delivery Service. Try upgrading it from "
+			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/apps "
+			'<a href="https://docs.frappe.io/cloud/instructions-to-upgrade-the-email-delivery-service-plan" target="_blank">Learn more</a>',
 			EmailLimitExceeded,
 		)
 
@@ -189,7 +193,9 @@ def check_spam(message: bytes):
 
 docs: https://spamassassin.apache.org/old/tests_3_3_x.html
 
-{spamd_res}""",
+{spamd_res}
+
+""",
 				SpamDetectionError,
 			)
 	except requests.exceptions.HTTPError as e:
@@ -233,10 +239,15 @@ def send_mime_mail(**data):
 		return "Sending"  # Not really required as v14 and up automatically marks the email q as sent
 	if resp.status_code == 400:
 		err_msg: str = resp.json().get("message", "Invalid request")
-		frappe.throw(f"Something went wrong with sending emails: {err_msg}", InvalidEmail)
+		frappe.throw(
+			f"Something went wrong with sending emails: {err_msg}. "
+			'<a href="https://docs.frappe.io/erpnext/user/manual/en/email-account" target="_blank">Learn more</a>',
+			InvalidEmail,
+		)
 	log_error("Email Delivery Service: Sending error", response=resp.text, data=data, message=message)
 	frappe.throw(
-		"Something went wrong with sending emails. Please try again later or raise a support ticket with support.frappe.io",
+		"Something went wrong with sending emails. Please try again later or raise a support ticket at support.frappe.io. "
+		'<a href="https://frappe.io/cloud/customer-support" target="_blank">Learn more</a>',
 		EmailSendError,
 	)
 	return None
