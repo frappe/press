@@ -71,7 +71,9 @@ def callback(code=None, state=None):  # noqa: C901
 	team_name, team_enabled = frappe.db.get_value("Team", {"user": email}, ["name", "enabled"]) or [0, 0]
 
 	if team_name and not team_enabled:
-		frappe.throw(_("Account {0} has been deactivated").format(email))
+		frappe.throw(
+			_("Account {0} has been deactivated. Please contact support to reactivate your account. ").format(email)
+		)
 		return None
 
 	# if team exitst and  oauth is not using in saas login/signup flow
@@ -152,5 +154,8 @@ def get_google_credentials():
 
 	config = frappe.conf.get("google_credentials")
 	if not config:
-		frappe.throw("google_credentials not found in site_config.json")
+		frappe.throw(
+			"Google credentials not found in site_config.json. Please configure Google OAuth credentials for your site. "
+			'<a href="https://docs.frappe.io/framework/user/en/integration/google_drive" target="_blank">Learn more</a>'
+		)
 	return config
