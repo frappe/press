@@ -6,58 +6,80 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "reference_doctype",
-  "reference_name",
-  "method",
-  "output",
-  "wait"
+  "step_name",
+  "method_name",
+  "status",
+  "job_type",
+  "job",
+  "attempt",
+  "max_attempt",
+  "is_waiting",
+  "output"
  ],
  "fields": [
-  {
-   "fieldname": "method",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Method",
-   "read_only": 1
-  },
-  {
-   "fieldname": "reference_doctype",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Reference DocType",
-   "options": "DocType"
-  },
-  {
-   "fieldname": "reference_name",
-   "fieldtype": "Dynamic Link",
-   "in_list_view": 1,
-   "label": "Reference Name",
-   "options": "reference_doctype"
-  },
   {
    "fieldname": "output",
    "fieldtype": "Code",
    "label": "Output"
   },
   {
+   "fieldname": "step_name",
+   "fieldtype": "Data",
+   "label": "Name"
+  },
+  {
+   "fieldname": "method_name",
+   "fieldtype": "Data",
+   "label": "Method"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure"
+  },
+  {
+   "fieldname": "job_type",
+   "fieldtype": "Link",
+   "label": "Job Type",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "job",
+   "fieldtype": "Dynamic Link",
+   "label": "Job",
+   "options": "job_type"
+  },
+  {
+   "fieldname": "attempt",
+   "fieldtype": "Int",
+   "label": "Attempt"
+  },
+  {
    "default": "0",
    "description": "Wait at this step till a given condition is met with a retry at every 1 second",
-   "fieldname": "wait",
+   "fieldname": "is_waiting",
    "fieldtype": "Check",
-   "label": "Wait"
+   "label": "Is Waiting"
+  },
+  {
+   "fieldname": "max_attempt",
+   "fieldtype": "Int",
+   "label": "Max Attempt"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-09-08 11:11:54.450396",
+ "modified": "2026-02-15 04:36:34.863247",
  "modified_by": "Administrator",
  "module": "Incident Management",
  "name": "Action Step",
  "owner": "Administrator",
  "permissions": [],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": []

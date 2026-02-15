@@ -381,13 +381,13 @@ class StepHandler:
 		step.output = str(e)
 		step.save()
 
-	def fail(self):
-		self.status = Status.Failure
+	def fail(self, failure_status: str = Status.Failure):
+		self.status = failure_status
 		self.save()
 		frappe.db.commit()
 
-	def succeed(self):
-		self.status = Status.Success
+	def succeed(self, success_status: str = Status.Success):
+		self.status = success_status
 		self.save()
 		frappe.db.commit()
 
@@ -417,15 +417,21 @@ class StepHandler:
 
 		return None
 
-	def _execute_steps(self, steps: list[GenericStep]):
+	def _execute_steps(
+		self,
+		steps: list[GenericStep],
+		commit: bool = False,
+		start_status: str = Status.Running,
+		success_status: str = Status.Success,
+		failure_status: str = Status.Failure,
+	):
 		"""It is now required to be with a `enqueue_doc` else the first step executes in the web worker"""
-		self.status = Status.Running
+		self.status = start_status
 		self.save()
-		frappe.db.commit()
 
 		step = self.next_step(steps)
 		if not step:
-			self.succeed()
+			self.succeed(success_status)
 			return
 
 		# Run a single step in this job
@@ -434,13 +440,14 @@ class StepHandler:
 
 		try:
 			method(step)
-			frappe.db.commit()
 		except Exception:
 			self.reload()
-			self.fail()
+			self.fail(failure_status)
 			self.handle_step_failure()
-			frappe.db.commit()
 			return
+
+		if commit:
+			frappe.db.commit()
 
 		# After step completes, queue the next step
 		frappe.enqueue_doc(
