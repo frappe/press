@@ -25,6 +25,7 @@
   {
    "fieldname": "step_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Name"
   },
   {
@@ -35,6 +36,7 @@
   {
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Status",
    "options": "Pending\nRunning\nSuccess\nFailure"
   },
@@ -47,6 +49,7 @@
   {
    "fieldname": "job",
    "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
    "label": "Job",
    "options": "job_type"
   },
@@ -72,7 +75,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-02-15 04:36:34.863247",
+ "modified": "2026-02-15 15:40:56.990671",
  "modified_by": "Administrator",
  "module": "Incident Management",
  "name": "Action Step",

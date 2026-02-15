@@ -408,7 +408,8 @@ class IncidentInvestigator(Document, StepHandler):
 		step.status = StepStatus.Running
 		step.save()
 
-		virtual_machine = frappe.db.get_value("Database Server", self.server, "virtual_machine")
+		database_server = frappe.db.get_value("Server", self.server, "database_server")
+		virtual_machine = frappe.db.get_value("Database Server", database_server, "virtual_machine")
 		provider = frappe.db.get_value("Virtual Machine", virtual_machine, "cloud_provider")
 
 		virtual_machine_doc: VirtualMachine = frappe.get_doc("Virtual Machine", virtual_machine)
@@ -476,6 +477,8 @@ class IncidentInvestigator(Document, StepHandler):
 		"""Stop calls in case of high disk usage & add investigation actions"""
 		self.stop_calls_on_high_disk_usage()
 		self.add_investigation_actions()
+		self.save()
+
 		execute_action_steps = frappe.db.get_single_value(
 			"Press Settings", "execute_incident_action", cache=True
 		)
@@ -494,7 +497,7 @@ class IncidentInvestigator(Document, StepHandler):
 				enqueue_after_commit=True,
 			)
 
-		if not self.action_steps:
+		if not execute_action_steps or not self.action_steps:
 			self.set_status(Status.COMPLETED)
 
 	def investigate(self):
