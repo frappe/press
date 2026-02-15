@@ -962,7 +962,7 @@ def validate_pincode(billing_details):
 	PINCODE_FORMAT = re.compile(r"^[1-9][0-9]{5}$")
 	if not PINCODE_FORMAT.match(billing_details.postal_code):
 		frappe.throw(
-			"Invalid Postal Code. Please enter a valid 6-digit Indian postal code. "
+			"Invalid Postal Code. Please enter a valid postal code. "
 		)
 
 	if billing_details.state not in STATE_PINCODE_MAPPING:
