@@ -29,7 +29,7 @@ if typing.TYPE_CHECKING:
 	)
 
 
-INVESTIGATION_WINDOW = "5"  # Use 5m timeframe
+INVESTIGATION_WINDOW = 5  # Use 5m timeframe
 
 
 class Status(str, Enum):
@@ -442,7 +442,7 @@ class IncidentInvestigator(Document, StepHandler):
 
 	def after_insert(self):
 		self.investigation_window_start_time = frappe.utils.add_to_date(
-			frappe.utils.now_datetime(), minutes=-int(INVESTIGATION_WINDOW)
+			frappe.utils.now_datetime(), minutes=-INVESTIGATION_WINDOW
 		)
 		self.investigation_window_end_time = frappe.utils.now_datetime()
 
