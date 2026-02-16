@@ -3,7 +3,7 @@
 
 frappe.ui.form.on('Incident Investigator', {
 	refresh(frm) {
-		if (frm.doc.status == 'Pending') {
+		if (frm.doc.status == 'Pending' || frm.doc.status == 'Completed') {
 			frm.add_custom_button(
 				'Start Investigation',
 				() => {
