@@ -165,7 +165,7 @@ class TestAPIBench(FrappeTestCase):
 		)
 
 		self.assertRaises(
-			frappe.exceptions.MandatoryError,
+			frappe.exceptions.ValidationError,
 			deploy_and_update,
 			group,
 			[{"app": self.app.name}],
