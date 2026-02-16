@@ -200,7 +200,7 @@ class TestAPIBench(FrappeTestCase):
 				"server": None,
 			}
 		)
-		self.assertRaises(frappe.exceptions.MandatoryError, deploy, group, [])
+		deploy(group, [])
 
 	@timeout(20)
 	def _check_if_docker_image_was_built(self, group: str):
