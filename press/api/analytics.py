@@ -665,7 +665,7 @@ def get_cpu_usage(name: str, timezone: str, duration: str = "24h"):
 
 @frappe.whitelist()
 @protected("Site")
-@redis_cache(ttl=10 * 60)
+@redis_cache(ttl=15 * 60)
 def get(name, timezone, start, end):
 	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
 	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
@@ -836,7 +836,7 @@ def get_advanced_analytics(name, timezone, start, end, max_no_of_paths=MAX_NO_OF
 
 @frappe.whitelist()
 @protected("Site")
-@redis_cache(ttl=10 * 60)
+@redis_cache(ttl=15 * 60)
 def daily_usage(name, timezone):
 	timespan = 7 * 24 * 60 * 60
 	timegrain = 24 * 60 * 60
@@ -874,7 +874,7 @@ def rounded_time(dt: datetime | None = None, round_to=60):
 	return dt + timedelta(0, rounding - seconds, -dt.microsecond)
 
 
-@redis_cache(ttl=10 * 60)
+@redis_cache(ttl=15 * 60)
 def get_rounded_boundaries(timespan: int, timegrain: int, timezone: str = "UTC"):
 	"""
 	Round the start and end time to the nearest interval, because Elasticsearch does this
@@ -885,7 +885,7 @@ def get_rounded_boundaries(timespan: int, timegrain: int, timezone: str = "UTC")
 	return rounded_time(start, timegrain), rounded_time(end, timegrain)
 
 
-@redis_cache(ttl=10 * 60)
+@redis_cache(ttl=15 * 60)
 def get_rounded_boundary(dt: datetime, timegrain=60):
 	"""
 	Floor a datetime to the previous interval boundary.
@@ -956,7 +956,7 @@ def normalize_datasets(datasets: list[Dataset]) -> list[Dataset]:
 	return list(n_datasets.values())
 
 
-@redis_cache(ttl=10 * 60)
+@redis_cache(ttl=15 * 60)
 def get_request_by_(
 	name,
 	agg_type: AggType,
@@ -981,7 +981,7 @@ def get_request_by_(
 	).run()
 
 
-@redis_cache(ttl=10 * 60)
+@redis_cache(ttl=15 * 60)
 def get_nginx_request_by_(
 	name,
 	agg_type: AggType,
@@ -1005,7 +1005,7 @@ def get_nginx_request_by_(
 	).run()
 
 
-@redis_cache(ttl=10 * 60)
+@redis_cache(ttl=15 * 60)
 def get_background_job_by_(
 	site,
 	agg_type,
@@ -1050,7 +1050,7 @@ def get_slow_logs_by_query(
 	)
 
 
-@redis_cache(ttl=10 * 60)
+@redis_cache(ttl=15 * 60)
 def get_slow_logs(
 	name,
 	agg_type,
