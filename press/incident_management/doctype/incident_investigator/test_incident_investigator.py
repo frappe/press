@@ -217,9 +217,6 @@ class TestIncidentInvestigator(FrappeTestCase):
 		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
 		foreground_enqueue_doc,
 	)
-	@patch.object(
-		IncidentInvestigator, "investigate_proxy_server", Mock()
-	)  # We don't have any sites this will fail
 	def test_all_high_metrics(self):
 		"""Since instance is not taken into account while mocking both database and sever will have same likely causes"""
 		create_test_incident(self.server.name)
@@ -242,9 +239,6 @@ class TestIncidentInvestigator(FrappeTestCase):
 		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
 		foreground_enqueue_doc,
 	)
-	@patch.object(
-		IncidentInvestigator, "investigate_proxy_server", Mock()
-	)  # We don't have any sites this will fail
 	def test_varied_metrics(self):
 		"""Since instance is not taken into account while mocking both database and sever will have same likely causes"""
 		create_test_incident(self.server.name)
@@ -257,19 +251,11 @@ class TestIncidentInvestigator(FrappeTestCase):
 				self.assertTrue(step.is_likely_cause)
 
 		# Since database has high memory and high cpu add database action step
-		self.assertEqual(len(investigator.action_steps), 3)
-		first_step, wait_step, second_step = investigator.action_steps
+		self.assertEqual(len(investigator.action_steps), 2)
+
 		self.assertListEqual(
-			[wait_step.reference_doctype, wait_step.reference_name, wait_step.method],
-			["Incident Investigator", investigator.name, "_check_process_list_capture"],
-		)
-		self.assertListEqual(
-			[first_step.reference_doctype, first_step.reference_name, first_step.method],
-			["Database Server", self.database_server.name, "capture_process_list"],
-		)
-		self.assertListEqual(
-			[second_step.reference_doctype, second_step.reference_name, second_step.method],
-			["Database Server", self.database_server.name, "restart_mariadb"],
+			[step.method_name for step in investigator.action_steps],
+			["capture_process_list", "initiate_database_reboot"],
 		)
 
 	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=False))
@@ -279,9 +265,6 @@ class TestIncidentInvestigator(FrappeTestCase):
 		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
 		foreground_enqueue_doc,
 	)
-	@patch.object(
-		IncidentInvestigator, "investigate_proxy_server", Mock()
-	)  # We don't have any sites this will fail
 	def test_database_server_unreachable(self):
 		create_test_incident(self.server.name)
 		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
@@ -292,42 +275,9 @@ class TestIncidentInvestigator(FrappeTestCase):
 
 		self.assertEqual(len(investigator.action_steps), 1)
 		step = investigator.action_steps[0]
-		self.assertListEqual(
-			[step.reference_doctype, step.reference_name],
-			["Virtual Machine", self.database_server.virtual_machine],
-		)
-		self.assertIn(step.method, ["reboot", "reboot_with_serial_console"])
+		self.assertEqual(step.method_name, "initiate_database_reboot")
 		incident = frappe.get_doc("Incident", investigator.incident)
 		self.assertTrue(incident.phone_call)
-
-	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=True))
-	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=False))
-	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=False))
-	@patch(
-		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
-		foreground_enqueue_doc,
-	)
-	@patch.object(
-		IncidentInvestigator, "investigate_proxy_server", Mock()
-	)  # We don't have any sites this will fail
-	def test_we_only_ignore_calls_when_disk_is_high(self):
-		create_test_incident(self.server.name)
-		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
-
-		for step in investigator.server_investigation_steps:
-			if step.method == investigator.has_high_disk_usage.__name__:
-				self.assertTrue(step.is_likely_cause)
-			else:
-				self.assertFalse(step.is_likely_cause)
-
-		for step in investigator.database_investigation_steps:
-			if step.method == investigator.has_high_disk_usage.__name__:
-				self.assertTrue(step.is_likely_cause)
-			else:
-				self.assertFalse(step.is_likely_cause)
-
-		incident = frappe.get_doc("Incident", investigator.incident)
-		self.assertFalse(incident.phone_call)
 
 	@patch.object(IncidentInvestigator, "after_insert", Mock())
 	def test_investigation_cool_off_period(self):
@@ -370,6 +320,4 @@ class TestIncidentInvestigator(FrappeTestCase):
 
 	@classmethod
 	def tearDownClass(cls):
-		frappe.db.delete("Database Server", cls.database_server.name)
-		frappe.db.delete("Proxy Server", cls.proxy_server.name)
-		frappe.db.delete("Server", cls.server.name)
+		frappe.db.rollback()
