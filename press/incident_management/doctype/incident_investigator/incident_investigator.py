@@ -16,7 +16,6 @@ from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils.password import get_decrypted_password
 from prometheus_api_client import MetricRangeDataFrame, PrometheusConnect
-from prometheus_api_client.utils import parse_datetime
 
 from press.runner import Ansible, StepHandler
 from press.runner import Status as StepStatus
@@ -30,7 +29,7 @@ if typing.TYPE_CHECKING:
 	)
 
 
-INVESTIGATION_WINDOW = "5m"  # Use 5m timeframe
+INVESTIGATION_WINDOW = "5"  # Use 5m timeframe
 
 
 class Status(str, Enum):
@@ -432,7 +431,9 @@ class IncidentInvestigator(Document, StepHandler):
 		if not last_created_investigation:
 			return
 
-		time_since_last_investigation: datetime.timedelta = parse_datetime("now") - last_created_investigation
+		time_since_last_investigation: datetime.timedelta = (
+			frappe.utils.now_datetime() - last_created_investigation
+		)
 		if time_since_last_investigation.total_seconds() < self.cool_off_period:
 			frappe.throw(
 				f"Investigation for {self.server} is in a cool off period",
@@ -440,8 +441,10 @@ class IncidentInvestigator(Document, StepHandler):
 			)
 
 	def after_insert(self):
-		self.investigation_window_start_time = parse_datetime(INVESTIGATION_WINDOW)
-		self.investigation_window_end_time = parse_datetime("now")
+		self.investigation_window_start_time = frappe.utils.add_to_date(
+			frappe.utils.now_datetime(), minutes=-int(INVESTIGATION_WINDOW)
+		)
+		self.investigation_window_end_time = frappe.utils.now_datetime()
 
 		self.add_investigation_steps()
 		self.action_steps = []  # Ensure no action steps are already set
