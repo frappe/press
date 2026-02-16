@@ -15,7 +15,7 @@
 						variant="subtle"
 						label="Start date"
 						:disabled="false"
-						:formatter="dateFormatter"
+						format="D MMM YYYY, hh:mm a"
 						@update:modelValue="updateStartDate"
 					/>
 				</div>
@@ -28,7 +28,7 @@
 						variant="subtle"
 						label="End date"
 						:disabled="false"
-						:formatter="dateFormatter"
+						format="D MMM YYYY, hh:mm a"
 						@update:modelValue="updateEndDate"
 					/>
 				</div>
@@ -41,7 +41,7 @@
 					<label class="text-base self-center text-gray-600">Relative</label>
 					<FormControl
 						type="select"
-						class="w-32"
+						class="w-36"
 						:options="durationOptions"
 						v-model="duration"
 					/>
@@ -481,7 +481,7 @@
 <script>
 import { TabButtons, DateTimePicker, Button, Tooltip } from 'frappe-ui';
 import { toast } from 'vue-sonner';
-import dayjs from '../../utils/dayjs';
+import dayjs, { dayjsFloorToMinutes } from '../../utils/dayjs';
 import LineChart from '@/components/charts/LineChart.vue';
 import BarChart from '@/components/charts/BarChart.vue';
 import SiteUptime from './SiteUptime.vue';
@@ -910,7 +910,9 @@ export default {
 		duration(newValue) {
 			if (!newValue) return;
 			this.now = dayjs();
-			this.updateEndDate(this.now, false);
+			// floor to 15 minutes to avoid issues with caching
+			const flooredEndDate = dayjsFloorToMinutes(this.now, 15);
+			this.updateEndDate(flooredEndDate, false);
 			const int = parseInt(newValue.slice(0, -1));
 			const unit = newValue.slice(-1);
 			this.updateStartDate(dayjs(this.inputEndDate).subtract(int, unit), false);
