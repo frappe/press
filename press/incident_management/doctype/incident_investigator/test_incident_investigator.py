@@ -209,6 +209,7 @@ class TestIncidentInvestigator(FrappeTestCase):
 		test_incident = create_test_incident(server=self.server.name)
 		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
 		self.assertEqual(investigator.incident, test_incident.name)
+		self.assertEqual(test_incident.investigation, investigator.name)
 
 	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=True))
 	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=True))
