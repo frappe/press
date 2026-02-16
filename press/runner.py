@@ -403,8 +403,12 @@ class StepHandler:
 			for method in methods
 		]
 
-	def _get_method(self, method_name: str):
+	def _get_method(self, method_name: str, method_classes: list[type] | None = None):
 		"""Retrieve a method object by name."""
+		method_classes = method_classes or []
+		for method_class in method_classes:
+			if hasattr(method_class, method_name):
+				return getattr(method_class, method_name)
 		return getattr(self, method_name)
 
 	def next_step(self, steps: list[GenericStep]) -> GenericStep | None:
@@ -421,6 +425,7 @@ class StepHandler:
 		start_status: str = Status.Running,
 		success_status: str = Status.Success,
 		failure_status: str = Status.Failure,
+		method_classes: list[type] | None = None,
 	):
 		"""It is now required to be with a `enqueue_doc` else the first step executes in the web worker"""
 		self.status = start_status
@@ -433,7 +438,7 @@ class StepHandler:
 
 		# Run a single step in this job
 		step = step.reload()
-		method = self._get_method(step.method_name)
+		method = self._get_method(method_classes=method_classes, method_name=step.method_name)
 
 		try:
 			method(step)
