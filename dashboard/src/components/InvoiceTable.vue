@@ -49,6 +49,7 @@
 										'Release Group',
 										'Server',
 										'Database Server',
+										'Marketplace App',
 									].includes(row.document_type) && !row.plan?.includes('hour')
 										? $format.plural(row.quantity, 'day', 'days')
 										: 'hours'
