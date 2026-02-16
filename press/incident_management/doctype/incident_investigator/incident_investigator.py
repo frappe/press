@@ -42,10 +42,7 @@ class Status(str, Enum):
 def get_prometheus_client() -> PrometheusConnect:
 	"""Get prometheus client"""
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server") or "monitor.frappe.cloud"
-	password = (
-		get_decrypted_password("Monitor Server", monitor_server, "grafana_password", raise_exception=False)
-		or "e7c16a69c8319ce5363014ad841d9f78"
-	)
+	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
 	return PrometheusConnect(f"https://{monitor_server}/prometheus", auth=("frappe", password))
 
 
