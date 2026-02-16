@@ -1166,6 +1166,45 @@ class Bench(Document):
 			bench = cls(cls.DOCTYPE, bench_name)
 			yield bench.name, bench.workload, bench.server
 
+	def get_steps(self):
+		steps = []
+		new_bench_agent_job = frappe.db.exists(
+			"Agent Job",
+			{
+				"bench": self.name,
+				"job_type": "New Bench",
+			},
+		)
+		if not new_bench_agent_job:
+			steps.append(
+				{
+					"name": "create_bench",
+					"title": "Creating bench on server",
+					"status": "Pending",
+					"output": "",
+					"stage": "Deploy Bench",
+				}
+			)
+			return steps
+
+		agent_steps = frappe.db.get_all(
+			"Agent Job Step",
+			filters={"agent_job": new_bench_agent_job},
+			order_by="creation asc",
+			fields=["name", "step_name", "status", "output"],
+		)
+		for step in agent_steps:
+			steps.append(
+				{
+					"name": step.name,
+					"title": step.step_name,
+					"status": step.status,
+					"output": step.output,
+					"stage": "Deploy Bench",
+				}
+			)
+		return steps
+
 
 class StagingSite(Site):
 	def __init__(self, bench: Bench):
@@ -1239,6 +1278,14 @@ def process_new_bench_job_update(job):
 	)
 	if site_group_deploy:
 		frappe.get_doc("Site Group Deploy", site_group_deploy).update_site_group_deploy_on_process_job(job)
+
+	# check if new bench is for site  version upgrade flow
+	version_upgrade = frappe.db.get_value(
+		"Version Upgrade",
+		{"destination_group": bench.group, "deploy_private_bench": 1},
+	)
+	if version_upgrade:
+		frappe.get_doc("Version Upgrade", version_upgrade).update_version_upgrade_on_process_job(job)
 
 	if updated_status != "Active":
 		return

@@ -70,6 +70,7 @@ frappe.ui.form.on('Server', {
 				false,
 				frm.doc.provider === 'AWS EC2',
 			],
+			[__('Setup Logrotate'), 'setup_logrotate', true, frm.doc.is_server_setup],
 			[
 				__('Setup PySpy'),
 				'setup_pyspy',
@@ -261,6 +262,12 @@ frappe.ui.form.on('Server', {
 				'uninstall_wazuh_agent',
 				true,
 				frm.doc.is_server_setup,
+			],
+			[
+				__('Setup Wildcard Hosts'),
+				'setup_wildcard_hosts',
+				true,
+				frm.doc.is_server_setup && frm.doc.is_standalone_setup,
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {

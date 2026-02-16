@@ -41,10 +41,12 @@ class ProxyFailover(Document, StepHandler):
 		)
 
 		if secondary.cluster != primary.cluster:
-			frappe.throw("Failover can only be initiated between Proxy Servers in the same Cluster")
+			frappe.throw("Failover can only be initiated between Proxy Servers in the same cluster")
 
-		if not primary.is_static_ip and not secondary.is_static_ip:
-			frappe.throw("Failover can only be initiated if one of the proxy server has a static IP")
+		if (not primary.is_static_ip and not secondary.is_static_ip) or (
+			primary.is_static_ip and secondary.is_static_ip
+		):
+			frappe.throw("Failover can only be initiated if one of the proxy server has a static ip")
 
 		if not primary.is_static_ip:
 			routing_steps.extend(
@@ -95,32 +97,40 @@ class ProxyFailover(Document, StepHandler):
 
 		primary_proxy = frappe.get_doc("Proxy Server", self.primary)
 
-		Ansible(
-			playbook="nginx_conf_changes_for_tcp_streaming.yml",
-			server=primary_proxy,
-			user=primary_proxy._ssh_user(),
-			port=primary_proxy._ssh_port(),
-			variables={"secondary_proxy": self.secondary},
-		).run()
+		try:
+			ansible = Ansible(
+				playbook="nginx_conf_changes_for_tcp_streaming.yml",
+				server=primary_proxy,
+				user=primary_proxy._ssh_user(),
+				port=primary_proxy._ssh_port(),
+				variables={"secondary_proxy": self.secondary},
+			)
+			ansible_play = ansible.run()
+			if ansible_play.status != Status.Success:
+				raise Exception("Failed making changes for nginx tcp streaming")
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+			return
 
 		cluster = frappe.get_doc("Cluster", primary_proxy.cluster)
-		client = cluster.get_aws_client()
-		client.authorize_security_group_ingress(
-			GroupId=cluster.proxy_security_group_id,
-			IpPermissions=[
-				{
-					"FromPort": 8443,
-					"IpProtocol": "tcp",
-					"IpRanges": [
-						{
-							"CidrIp": "0.0.0.0/0",
-							"Description": "HTTPS Alternative Port for Agent and Prometheus",
-						}
-					],
-					"ToPort": 8443,
-				},
-			],
-		)
+		if cluster.cloud_provider == "AWS EC2":
+			client = cluster.get_aws_client()
+			client.authorize_security_group_ingress(
+				GroupId=cluster.proxy_security_group_id,
+				IpPermissions=[
+					{
+						"FromPort": 8443,
+						"IpProtocol": "tcp",
+						"IpRanges": [
+							{
+								"CidrIp": "0.0.0.0/0",
+								"Description": "HTTPS Alternative Port for Agent and Prometheus",
+							}
+						],
+						"ToPort": 8443,
+					},
+				],
+			)
 
 		if self.primary not in (alt_port_servers := servers_using_alternative_port_for_communication()):
 			alt_port_servers.append(self.primary)
@@ -187,7 +197,7 @@ class ProxyFailover(Document, StepHandler):
 		)
 		for domain_name, sites in groupby(sites_domains, lambda x: x["domain"]):
 			domain = frappe.get_doc("Root Domain", domain_name)
-			domain.update_dns_records_for_sites([site.name for site in sites], self.secondary)
+			domain.update_dns_records_for_sites([site.name for site in sites], self.secondary, batch_size=200)
 
 		step.status = Status.Success
 		step.save()
@@ -237,9 +247,16 @@ class ProxyFailover(Document, StepHandler):
 		step.save()
 
 	def forward_undelivered_jobs_to_secondary(self, step):
+		from frappe.utils import add_to_date
+
+		threshold = add_to_date(None, days=-2)
 		frappe.db.set_value(
 			"Agent Job",
-			{"server": self.primary, "status": "Undelivered"},
+			{
+				"server": self.primary,
+				"status": "Undelivered",
+				"creation": (">=", threshold),
+			},  # only last 2 days
 			"server",
 			self.secondary,
 		)
@@ -311,6 +328,10 @@ class ProxyFailover(Document, StepHandler):
 		step.save()
 
 	def wait_for_wildcard_domains_setup(self, step):
+		if step.status == Status.Pending:
+			step.status = Status.Running
+			step.save()
+
 		job = frappe.db.get_value(
 			"Proxy Failover Steps",
 			{
@@ -344,8 +365,10 @@ class ProxyFailover(Document, StepHandler):
 			raise
 
 	def replicate_once_manually(self, step):
-		result = AnsibleAdHoc(sources=f"{frappe.db.get('Proxy Server', self.primary, 'ip')},").run(
-			f"rsync -aAXvz /home/frappe/agent/nginx/ frappe@{self.secondary}:/home/frappe/agent/nginx/",
+		result = AnsibleAdHoc(sources=f"{self.primary},").run(
+			f"rsync -aAXvz /home/frappe/agent/nginx/ frappe@{frappe.db.get_value('Proxy Server', self.secondary, 'private_ip')}:/home/frappe/agent/nginx/",
+			raw_params=True,
+			become_user="frappe",
 		)[0]
 
 		if result.get("status") != "Success":
@@ -383,37 +406,48 @@ class ProxyFailover(Document, StepHandler):
 	@frappe.whitelist()
 	def force_continue(self):
 		self.error = None
+
+		for step in self.failover_steps:
+			if step.status == "Failure":
+				step.status = "Pending"
+
 		self.save()
 
 		self.execute_failover_steps()
-		frappe.msgprint("Failover steps re-queued from the point of failure.", alert=True)
+		frappe.msgprint("Failover steps re-queued.", alert=True)
 
 
-def reduce_ttl_of_sites(proxy):
-	proxy = frappe.db.get_value("Proxy Server", proxy, ["domain", "ip", "is_static_ip"], as_dict=True)
-	if proxy.is_static_ip:
+def reduce_ttl_of_sites(primary_proxy_name, secondary_proxy_name):
+	primary_proxy = frappe.db.get_value(
+		"Proxy Server", primary_proxy_name, ["name", "domain", "ip", "is_static_ip"], as_dict=True
+	)
+	if primary_proxy.is_static_ip:
 		# reduce ttl for proxy domain A record
-		domain = frappe.get_doc("Root Domain", proxy.domain)
-		changes = [
-			{
-				"Action": "UPSERT",
-				"ResourceRecordSet": {
-					"Name": proxy.name,
-					"Type": "A",
-					"TTL": 60,
-					"ResourceRecords": [
-						{"Value": proxy.ip},
-					],
-				},
-			}
-		]
-
-		domain.boto3_client.change_resource_record_sets(
-			ChangeBatch={"Changes": changes}, HostedZoneId=domain.hosted_zone
+		secondary_proxy = frappe.db.get_value(
+			"Proxy Server", secondary_proxy_name, ["name", "domain", "ip"], as_dict=True
 		)
+		for proxy in (primary_proxy, secondary_proxy):
+			domain = frappe.get_doc("Root Domain", proxy.domain)
+			changes = [
+				{
+					"Action": "UPSERT",
+					"ResourceRecordSet": {
+						"Name": proxy.name,
+						"Type": "A",
+						"TTL": 60,
+						"ResourceRecords": [
+							{"Value": proxy.ip},
+						],
+					},
+				}
+			]
+
+			domain.boto3_client.change_resource_record_sets(
+				ChangeBatch={"Changes": changes}, HostedZoneId=domain.hosted_zone
+			)
 
 	# reduce ttl for all sites using this proxy
-	servers = frappe.get_all("Server", {"proxy_server": proxy.name}, pluck="name")
+	servers = frappe.get_all("Server", {"proxy_server": primary_proxy.name}, pluck="name")
 	sites_domains = frappe.get_all(
 		"Site",
 		{"status": ("!=", "Archived"), "server": ("in", servers)},
@@ -421,4 +455,6 @@ def reduce_ttl_of_sites(proxy):
 	)
 	for domain_name, sites in groupby(sites_domains, lambda x: x["domain"]):
 		domain = frappe.get_doc("Root Domain", domain_name)
-		domain.update_dns_records_for_sites([site.name for site in sites], proxy.name, ttl=60)
+		domain.update_dns_records_for_sites(
+			[site.name for site in sites], primary_proxy.name, ttl=60, batch_size=200
+		)

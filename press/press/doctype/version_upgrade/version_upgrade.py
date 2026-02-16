@@ -28,6 +28,8 @@ class VersionUpgrade(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		bench_deploy_successful: DF.Check
+		deploy_private_bench: DF.Check
 		destination_group: DF.Link
 		last_output: DF.Code | None
 		last_traceback: DF.Code | None
@@ -46,8 +48,16 @@ class VersionUpgrade(Document):
 		if self.status == "Failure":
 			return
 		self.validate_versions()
-		self.validate_same_server()
+		# Skip server validation if waiting for bench deploy
+		if not self.deploy_private_bench or self.bench_deploy_successful:
+			self.validate_same_server()
 		self.validate_apps()
+
+	def after_insert(self):
+		if self.deploy_private_bench and self.destination_group:
+			self.status = "Pending"
+			self.save()
+			frappe.get_doc("Release Group", self.destination_group).initial_deploy()
 
 	def validate_same_server(self):
 		site_server = frappe.get_doc("Site", self.site).server
@@ -136,6 +146,35 @@ class VersionUpgrade(Document):
 				)
 		self.save()
 
+	def update_version_upgrade_on_process_job(self, job):
+		if job.job_type != "New Bench":
+			return
+
+		if job.status == "Success":
+			self.bench_deploy_successful = 1
+			if self.scheduled_time:
+				self.status = "Scheduled"
+				self.save()
+			else:
+				self.start()
+		elif job.status in ["Failure", "Delivery Failure"]:
+			self.status = "Failure"
+			self.last_traceback = job.traceback
+			self.last_output = job.output
+			self.save()
+
+			site = frappe.get_doc("Site", self.site)
+			next_version = frappe.get_value("Release Group", self.destination_group, "version")
+			message = f"Bench deployment for site upgrade of <b>{site.host_name}</b> to <b>{next_version}</b> failed"
+
+			create_new_notification(
+				site.team,
+				"Version Upgrade",
+				"Agent Job",
+				job.name,
+				message,
+			)
+
 	@classmethod
 	def get_all_scheduled_before_now(cls) -> list["VersionUpgrade"]:
 		upgrades = frappe.get_all(
@@ -195,6 +234,8 @@ def run_scheduled_upgrades():
 			if site_status in TRANSITORY_STATES:
 				# If we attempt to start the upgrade now, it will fail
 				# This will be picked up in the next iteration
+				continue
+			if upgrade.deploy_private_bench and not upgrade.bench_deploy_successful:
 				continue
 			upgrade.start()
 			frappe.db.commit()

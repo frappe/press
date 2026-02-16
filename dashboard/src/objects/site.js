@@ -4,6 +4,7 @@ import {
 	LoadingIndicator,
 } from 'frappe-ui';
 import LucideVenetianMask from '~icons/lucide/venetian-mask';
+import ArrowLeftRightIcon from '~icons/lucide/arrow-left-right';
 import { defineAsyncComponent, h } from 'vue';
 import { unparse } from 'papaparse';
 import { toast } from 'vue-sonner';
@@ -149,7 +150,7 @@ export default {
 			{
 				label: 'Plan',
 				fieldname: 'plan',
-				width: 0.85,
+				width: '15rem',
 				format(value, row) {
 					if (row.trial_end_date) {
 						return trialDays(row.trial_end_date);
@@ -784,13 +785,13 @@ export default {
 										? '<br><br><div class="p-2 bg-gray-100 rounded border-gray-200">You have to be logged in as a <b>System Manager</b> <em>in your site</em> to download the backup.<div>'
 										: ''
 								}`,
-								onSuccess() {
-									downloadBackup(backup, file);
+								onSuccess({ hide }) {
+									downloadBackup(backup, file, hide);
 								},
 							});
 						}
 
-						async function downloadBackup(backup, file) {
+						async function downloadBackup(backup, file, hide) {
 							// file: database, public, or private
 							if (backup.offsite) {
 								site.getBackupDownloadLink.submit(
@@ -801,6 +802,7 @@ export default {
 											if (r.message) {
 												window.open(r.message);
 											}
+											hide();
 										},
 									},
 								);
@@ -816,6 +818,7 @@ export default {
 									`$1${site.doc.host_name}/`,
 								);
 								window.open(newUrl);
+								hide();
 							}
 						}
 
@@ -1204,16 +1207,79 @@ export default {
 				},
 			},
 			{
-				label: 'Actions',
-				icon: icon('sliders'),
-				route: 'actions',
-				type: 'Component',
+				label: 'Migrations',
+				icon: icon(ArrowLeftRightIcon),
+				route: 'migrations',
+				type: 'list',
 				condition: (site) => {
 					return site.doc?.status !== 'Archived';
 				},
-				component: SiteActions,
-				props: (site) => {
-					return { site: site.doc?.name };
+				childrenRoutes: ['Site Migration'],
+				list: {
+					doctype: 'Site Action',
+					filters: (site) => {
+						return { site: site.doc?.name };
+					},
+					orderBy: 'creation',
+					fields: ['action_type', 'status', 'scheduled_time', 'owner'],
+					columns: [
+						{
+							label: 'Migration',
+							fieldname: 'action_type',
+							width: 1,
+						},
+						{
+							label: 'Status',
+							fieldname: 'status',
+							type: 'Badge',
+							width: 0.6,
+						},
+						{
+							label: 'Created By',
+							fieldname: 'owner',
+						},
+						{
+							label: 'Scheduled At',
+							fieldname: 'scheduled_time',
+							format(value) {
+								return date(value, 'lll');
+							},
+						},
+						// {
+						// 	label: 'Updated On',
+						// 	fieldname: 'updated_on',
+						// 	format(value) {
+						// 		return date(value, 'lll');
+						// 	},
+						// },
+					],
+					route(row) {
+						return {
+							name: 'Site Migration',
+							params: { id: row.name },
+						};
+					},
+					primaryAction({ listResource: backups, documentResource: site }) {
+						return {
+							label: 'Trigger Migration',
+							slots: {
+								prefix: icon('upload-cloud'),
+							},
+							loading: site.backup.loading,
+							onClick() {
+								renderDialog(
+									h(
+										defineAsyncComponent(
+											() => import('../components/site/SiteMigration.vue'),
+										),
+										{
+											site: site.name,
+										},
+									),
+								);
+							},
+						};
+					}
 				},
 			},
 			{
@@ -1477,9 +1543,7 @@ export default {
 								onClick() {
 									let ConfigureAutoUpdateDialog = defineAsyncComponent(
 										() =>
-											import(
-												'../components/site/ConfigureAutoUpdateDialog.vue'
-											),
+											import('../components/site/ConfigureAutoUpdateDialog.vue'),
 									);
 
 									renderDialog(
@@ -1499,6 +1563,20 @@ export default {
 					},
 				},
 			},
+			{
+				label: 'Actions',
+				icon: icon('sliders'),
+				route: 'actions',
+				type: 'Component',
+				condition: (site) => {
+					return site.doc?.status !== 'Archived';
+				},
+				component: SiteActions,
+				props: (site) => {
+					return { site: site.doc?.name };
+				},
+			},
+
 			{
 				label: 'Activity',
 				icon: icon('activity'),
@@ -1768,6 +1846,11 @@ export default {
 			name: 'Site Update',
 			path: 'updates/:id',
 			component: () => import('../pages/SiteUpdate.vue'),
+		},
+		{
+			name: 'Site Migration',
+			path: 'migrations/:id',
+			component: () => import('../pages/SiteMigration.vue'),
 		},
 	],
 };

@@ -67,6 +67,7 @@ withDefaults(
 	defineProps<{
 		admin_access?: number;
 		allow_bench_creation?: number;
+		allow_apps?: number;
 		allow_billing?: number;
 		allow_partner?: number;
 		allow_server_creation?: number;
@@ -81,6 +82,7 @@ withDefaults(
 	{
 		admin_access: 0,
 		allow_bench_creation: 0,
+		allow_apps: 0,
 		allow_billing: 0,
 		allow_partner: 0,
 		allow_server_creation: 0,
@@ -111,6 +113,11 @@ const permissionsGeneral = [
 		key: 'allow_site_creation',
 		label: 'Site',
 		description: 'Enables site creation',
+	},
+	{
+		key: 'allow_apps',
+		label: 'Apps',
+		description: 'Enables marketplace management',
 	},
 	{
 		key: 'allow_server_creation',

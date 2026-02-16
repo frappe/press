@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -124,14 +125,23 @@ def _write_js_and_css_assets(app: str, dist_folder: str) -> None:
 	assets_rtl_file = os.path.join(os.getcwd(), "sites", "assets", "assets-rtl.json")
 
 	for assets in ["js", "css"]:
-		for file in os.scandir(os.path.join(dist_folder, assets)):
+		assets_path = os.path.join(dist_folder, assets)
+
+		if not os.path.exists(assets_path):
+			continue
+
+		for file in os.scandir(assets_path):
 			if file.name.endswith(".map"):
 				continue
 
 			relative_path = f"/assets/{app}/dist/{assets}/{file.name}"
 			_write_assets(file, assets_file, relative_path)
 
-	for file in os.scandir(os.path.join(dist_folder, "css-rtl")):
+	css_rtl_path = os.path.join(dist_folder, "css-rtl")
+	if not os.path.exists(css_rtl_path):
+		return
+
+	for file in os.scandir(css_rtl_path):
 		if file.name.endswith(".map"):
 			continue
 
@@ -155,30 +165,57 @@ def _update_assets_json(app: str) -> None:
 
 def tar_and_compress_folder(folder_path: str, output_filename: str) -> str:
 	"""Tars and compresses the given folder into a .tar.gz file."""
-	with tarfile.open(output_filename, "w:gz") as tar:
-		tar.add(folder_path, arcname=os.path.basename(folder_path))
+	with tarfile.open(output_filename, "w:gz", dereference=True) as tar:
+		tar.add(folder_path, arcname=os.path.basename(folder_path), recursive=True)
 	return output_filename
-
-
-def extract_and_flatten_tar(file_stream: BytesIO):
-	"""Flatten tarfile in the correct assets directory"""
-	change_working_directory()
-
-	with tarfile.open(fileobj=file_stream, mode="r:*") as tar:
-		tar.extractall(path=os.path.join(os.getcwd(), "sites", "assets"), filter="fully_trusted")
 
 
 def build_assets(app: str) -> str:
 	"""Build assets for the app using the app name and return the path to assets"""
 	change_working_directory()
 	env = os.environ.copy()
+	env["FRAPPE_DOCKER_BUILD"] = "True"
+	completed_process = subprocess.run(
+		["bench", "build", "--app", app, "--production"],
+		check=True,
+		env=env,
+	)
+	assets_path = os.path.join(os.getcwd(), "sites", "assets", app)
+	print(f"Build Command Completed. Return Code: {completed_process.returncode}.")
+	return assets_path
 
-	# Explicitly hardlink assets
-	if "FRAPPE_HARD_LINK_ASSETS" not in env:
-		env["FRAPPE_HARD_LINK_ASSETS"] = "True"
 
-	subprocess.run(["bench", "build", "--app", app], check=True, env=env)
-	return os.path.join(os.getcwd(), "sites", "assets", app)
+def extract_and_link_assets(app_name: str, file_stream: BytesIO):
+	"""
+	Extracts assets to sites/assets, moves them to the app source, and restores the symlink.
+	"""
+	change_working_directory()
+	bench_path = os.getcwd()
+
+	app_public_path = os.path.join(bench_path, "apps", app_name, app_name, "public")
+	assets_path = os.path.join(bench_path, "sites", "assets", app_name)
+
+	# 1. Remove existing symlink/dir so tar can extract a fresh physical directory
+	if os.path.exists(assets_path):
+		if os.path.islink(assets_path):
+			os.unlink(assets_path)
+		else:
+			shutil.rmtree(assets_path)
+
+	# 2. Extract into sites/assets
+	with tarfile.open(fileobj=file_stream, mode="r:*") as tar:
+		tar.extractall(path=os.path.join(bench_path, "sites", "assets"), filter="fully_trusted")
+
+	# 3. Move to app public
+	if os.path.exists(app_public_path):
+		shutil.rmtree(app_public_path)
+
+	shutil.move(assets_path, app_public_path)
+
+	# 4. Restore symlink since we deploy with cp -LR
+	os.symlink(app_public_path, assets_path)
+
+	print(f"Assets moved to {app_public_path} and symlink restored at {assets_path}")
 
 
 def main():
@@ -186,30 +223,30 @@ def main():
 	if not APP_NAME or not APP_HASH:
 		return
 
-	app_path = (
-		f"file:///home/frappe/context/apps/{APP_NAME}"
-		if os.getenv("FRAPPE_DOCKER_BUILD") == "True"
-		else APP_NAME
-	)
-	os.environ["FRAPPE_HARD_LINK_ASSETS"] = "True"
-	subprocess.run(["bench", "get-app", app_path, "--skip-assets"], check=True)
-
 	credentials = get_asset_store_credentials()
 	asset_filename = f"{APP_NAME}.{APP_HASH}.tar.gz"
+
+	env = os.environ.copy()
+	env["FRAPPE_DOCKER_BUILD"] = "True"
+	app_path = f"file:///home/frappe/context/apps/{APP_NAME}"
+
+	print("Fetching app without assets...")
+	subprocess.run(["bench", "get-app", app_path, "--skip-assets"], check=True, env=env)
 
 	if check_existing_asset_in_s3(credentials, asset_filename):
 		print(f"Assets {asset_filename} found in store. Extracting and setting up...")
 		file_stream = download_asset_from_store(credentials, asset_filename)
-		extract_and_flatten_tar(file_stream)
+		extract_and_link_assets(APP_NAME, file_stream)
 		_update_assets_json(APP_NAME)
 	else:
-		print(f"Assets {asset_filename} not found in store. Building and uploading...")
+		print(f"Assets {asset_filename} not found in store. Building...")
 		assets_folder = build_assets(APP_NAME)
 		if not os.path.exists(assets_folder) or not os.path.isdir(assets_folder):
 			print(f"No assets found for app {APP_NAME} at {assets_folder}.")
 			return
 
 		if UPLOAD_ASSETS:
+			print("Upload requested. Uploading assets to store...")
 			tar_file = tar_and_compress_folder(assets_folder, asset_filename)
 
 			with open(tar_file, "rb") as f:

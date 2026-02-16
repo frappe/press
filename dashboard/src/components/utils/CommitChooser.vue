@@ -44,9 +44,12 @@
 					<div
 						v-for="option in displayedOptions"
 						:key="option.value"
-						@click="selectOption(option, togglePopover)"
+						@click="!option.is_yanked && selectOption(option, togglePopover)"
 						class="flex cursor-pointer items-center justify-between rounded px-2.5 py-1.5 text-base hover:bg-gray-50"
-						:class="{ 'bg-surface-gray-3': isSelected(option) }"
+						:class="{
+							'bg-surface-gray-3': isSelected(option),
+							'opacity-50 cursor-not-allowed': option.is_yanked,
+						}"
 					>
 						<div class="flex flex-1 gap-2 overflow-hidden items-center">
 							<div class="flex flex-shrink-0">
@@ -71,6 +74,12 @@
 								class="flex-1 truncate text-ink-gray-7"
 							>
 								{{ option.label }}
+							</span>
+							<span
+								v-if="option.is_yanked"
+								class="text-xs text-red-500 font-medium"
+							>
+								Yanked
 							</span>
 						</div>
 					</div>
@@ -103,7 +112,14 @@ export default {
 			queryResult: [],
 		};
 	},
-	props: ['options', 'modelValue', 'app', 'source'],
+	props: [
+		'options',
+		'modelValue',
+		'app',
+		'source',
+		'currentRelease',
+		'is_yanked',
+	],
 	emits: ['update:modelValue'],
 	methods: {
 		selectOption(option, togglePopover) {
@@ -145,6 +161,7 @@ export default {
 					source: this.source,
 					query: this.searchQuery?.trim(),
 					fields: ['name', 'message', 'timestamp', 'hash'],
+					current_release: this.currentRelease,
 					limit: 20,
 				},
 				initialData: [],

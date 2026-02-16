@@ -41,6 +41,22 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt apt-get update \
   libpangocairo-1.0-0 \
   # Chromium and dependencies
   chromium-browser \
+  libnss3 \
+  libatk1.0-0 \
+  fonts-liberation \
+  libatk-bridge2.0-0 \
+  ibatspi2.0-0 \
+  libgbm1 \
+  libgtk-3-0 \
+  libnspr4 \
+  xdg-utils \
+  libvulkan1 \
+  libxcomposite1 \
+  libxdamage1 \
+  libxfixes3 \
+  libxkbcommon0 \
+  libxrandr2 \
+  libasound2 \
   # wkhtmltopdf dependencies
   ca-certificates \
   fontconfig \
@@ -229,7 +245,7 @@ ENV {{v.key}} {{ v.value }}
 
 # Install Boto and Requests for Asset store access
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 \
-  python${PYTHON_VERSION} -m pip install boto3==1.34.162 botocore==1.34.162 requests==2.32.5 \
+  python${PYTHON_VERSION} -m pip install boto3 botocore requests \
   `#stage-pre-Configure Asset Store`
 
 # Install Frappe app
@@ -253,8 +269,8 @@ RUN chmod +x /usr/local/bin/get_cached_app.py
 
 
 {% if app.use_cached and use_asset_store %}
-RUN --mount=type=secret,id=build_token,mode=0444 \
-    --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
+RUN --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
+    --mount=type=secret,id=build_token,mode=0444 \
     BUILD_TOKEN="$(cat /run/secrets/build_token)" && python${PYTHON_VERSION} /usr/local/bin/get_cached_app.py \
         {{ app.app }} \
         {{ app.hash }} \

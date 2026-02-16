@@ -77,6 +77,12 @@ frappe.ui.form.on('Proxy Server', {
 					!frm.doc.is_replication_setup,
 			],
 			[
+				__('Execute Pre Failover Tasks'),
+				'pre_failover_tasks',
+				true,
+				frm.doc.is_server_setup && !frm.doc.is_primary,
+			],
+			[
 				__('Trigger Failover'),
 				'trigger_failover',
 				true,
@@ -94,12 +100,6 @@ frappe.ui.form.on('Proxy Server', {
 				'reboot_with_serial_console',
 				true,
 				frm.doc.virtual_machine,
-			],
-			[
-				__('Execute Pre Failover Tasks'),
-				'pre_failover_tasks',
-				true,
-				frm.doc.is_server_setup && frm.doc.is_primary,
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {

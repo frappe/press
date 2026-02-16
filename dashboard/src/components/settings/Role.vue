@@ -93,6 +93,7 @@
 		v-else-if="tab === 'permissions'"
 		:admin_access="role.doc?.admin_access"
 		:allow_bench_creation="role.doc?.allow_bench_creation"
+		:allow_apps="role.doc?.allow_apps"
 		:allow_billing="role.doc?.allow_billing"
 		:allow_partner="role.doc?.allow_partner"
 		:allow_server_creation="role.doc?.allow_server_creation"

@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.site_domain.site_domain import SiteDomain
 
 
-def get_ongoing_migration(site: Link, scheduled=False):
+def get_ongoing_migration(site: Link | None, scheduled=False) -> str:
 	"""
 	Return ongoing Site Migration for site.
 
@@ -771,6 +771,41 @@ class SiteMigration(Document):
 				)
 			)  # sometimes site may not even get created in destination to clean it up
 		)
+
+	def get_steps(self) -> list[dict]:
+		steps = []
+		for step in self.steps:
+			# Now if the step has agent job expand that as well
+			if step.step_job:
+				job = frappe.get_doc("Agent Job", step.step_job)
+				agent_steps = frappe.get_all(
+					"Agent Job Step",
+					{"agent_job": step.step_job},
+					["name", "step_name", "status", "output"],
+					order_by="creation asc",
+				)
+				for s in agent_steps:
+					steps.append(
+						{
+							"name": s.name,
+							"title": s.step_name,
+							"status": s.status,
+							"output": s.output,
+							"stage": job.job_type,
+						}
+					)
+			else:
+				steps.append(
+					{
+						"name": step.name,
+						"title": step.step_title,
+						"status": step.status,
+						"output": "",
+						"stage": "Migrating Site",
+					}
+				)
+
+		return steps
 
 
 def process_required_job_callbacks(job):

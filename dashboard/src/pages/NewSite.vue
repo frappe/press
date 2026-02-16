@@ -13,7 +13,7 @@
 		<ErrorMessage message="You aren't permitted to create new sites" />
 	</div>
 
-	<div v-else class="mx-auto max-w-2xl px-5">
+	<div v-else class="mx-auto max-w-3xl px-5">
 		<div v-if="$resources.options.loading" class="py-4 text-base text-gray-600">
 			Loading...
 		</div>
@@ -242,7 +242,7 @@
 						:selectedCluster="cluster"
 						:selectedApps="apps"
 						:selectedVersion="version"
-						:selectedProvider="provider"
+						:selectedProvider="effectiveProvider"
 						:hideRestrictedPlans="selectedLocalisationCountry"
 					/>
 				</div>
@@ -259,16 +259,7 @@
 					</div>
 				</div>
 				<div class="mt-4 text-xs text-gray-700">
-					<div
-						class="flex items-center rounded bg-gray-50 p-2 text-p-base font-medium text-gray-800"
-					>
-						<lucide-badge-check class="h-4 w-8 text-gray-600" />
-						<span class="ml-4">
-							<strong>Support</strong> covers only issues of Frappe apps and not
-							functional queries. You can raise a support ticket for Frappe
-							Cloud issues for all plans.
-						</span>
-					</div>
+					<ProductSupportBanner />
 				</div>
 			</div>
 			<div v-if="selectedVersion && plan && cluster">
@@ -383,6 +374,7 @@ import NewSiteAppSelector from '../components/site/NewSiteAppSelector.vue';
 import Summary from '../components/Summary.vue';
 import { DashboardError } from '../utils/error';
 import { getCountry } from '../utils/country';
+import ProductSupportBanner from '../components/ProductSupportBanner.vue';
 
 export default {
 	name: 'NewSite',
@@ -400,6 +392,7 @@ export default {
 		Summary,
 		Header,
 		Badge,
+		ProductSupportBanner,
 	},
 	data() {
 		return {
@@ -423,8 +416,10 @@ export default {
 	},
 	watch: {
 		apps() {
-			this.version = this.autoSelectVersion();
-			this.cluster = null;
+			if (!(this.bench && this.selectedDedicatedServer)) {
+				this.version = this.autoSelectVersion();
+				this.cluster = null;
+			}
 			this.agreedToRegionConsent = false;
 		},
 		showLocalisationOption() {
@@ -758,6 +753,17 @@ export default {
 			];
 
 			return allClusters.filter((c) => c.cloud_provider === this.provider);
+		},
+		selectedClusterProvider() {
+			if (!this.cluster) return null;
+			const versionClusters = this.selectedVersion?.group?.clusters || [];
+			const clusterDetails = versionClusters.find(
+				(c) => c.name === this.cluster,
+			);
+			return clusterDetails?.cloud_provider || null;
+		},
+		effectiveProvider() {
+			return this.provider || this.selectedClusterProvider;
 		},
 		selectedVersionApps() {
 			let apps = [];

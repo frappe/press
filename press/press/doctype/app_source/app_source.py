@@ -58,6 +58,7 @@ class AppSource(Document):
 	def set_required_apps(self, match: str):
 		# In the format frappe/erpnext
 		apps = match.replace("'", "").replace('"', "").replace(" ", "").split(",")
+		added_required_apps = [app.repository_url for app in self.required_apps]
 
 		for app in apps:
 			try:
@@ -65,7 +66,9 @@ class AppSource(Document):
 			except ValueError:
 				owner, repo = "frappe", app
 
-			self.append("required_apps", {"repository_url": f"https://github.com/{owner}/{repo}"})
+			repository_url = f"https://github.com/{owner}/{repo}"
+			if repository_url not in added_required_apps:
+				self.append("required_apps", {"repository_url": repository_url})
 
 	def validate_dependent_apps(self):
 		hooks_uri = f"{self.repository_owner}/{self.repository}/{self.branch}/{self.app}/hooks.py"

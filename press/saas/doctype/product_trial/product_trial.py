@@ -65,7 +65,6 @@ class ProductTrial(Document):
 			frappe.throw("Not permitted")
 
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
-		doc.prefilled_subdomain = self.get_unique_site_name()
 		return doc
 
 	def validate(self):
@@ -391,16 +390,67 @@ class ProductTrial(Document):
 		standby_sites = query.run(pluck=True)
 		return len(standby_sites)
 
+	def get_prefilled_subdomain(self, account_request: str | None = None) -> str:
+		"""
+		Get the prefilled subdomain based on the email domain of the account request.
+		If the email domain belongs to a free email provider, generate a unique site name instead.
+		"""
+		if not account_request:
+			return self.get_unique_site_name()
+
+		email = frappe.db.get_value("Account Request", account_request, "email")
+		free_email_providers = {
+			"gmail.com",
+			"yahoo.com",
+			"hotmail.com",
+			"outlook.com",
+			"aol.com",
+			"icloud.com",
+			"mail.com",
+			"zoho.com",
+			"protonmail.com",
+			"gmx.com",
+			"yandex.com",
+			"live.com",
+			"me.com",
+			"msn.com",
+			"googlemail.com",
+			"163.com",
+			"sina.com",
+			"qq.com",
+			"naver.com",
+			"hanmail.net",
+			"daum.net",
+			"nate.com",
+			"yahoo.co.jp",
+			"yahoo.co.in",
+			"yahoo.co.uk",
+			"hotmail.co.uk",
+			"live.co.uk",
+			"outlook.in",
+			"rediffmail.com",
+		}
+
+		if email and "@" in email:
+			domain = email.split("@")[1].lower()
+			if domain not in free_email_providers:
+				suggested_subdomain = domain.split(".")[0]
+				if len(suggested_subdomain) < 5:
+					suggested_subdomain += f"-{domain.split('.')[1]}"
+
+				return suggested_subdomain
+
+		return self.get_unique_site_name()
+
 	def get_unique_site_name(self):
-		subdomain = f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}"
 		filters = {
-			"subdomain": subdomain,
+			"subdomain": f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}",
 			"domain": self.domain,
 			"status": ("!=", "Archived"),
 		}
 		while frappe.db.exists("Site", filters):
-			subdomain = f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}"
-		return subdomain
+			filters["subdomain"] = f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}"
+		return filters["subdomain"]
 
 	def get_server_from_cluster(self, cluster):
 		"""Return the server with the least number of standby sites in the cluster"""
@@ -586,12 +636,27 @@ def send_suspend_mail(site_name: str, product_name: str) -> None:
 	)
 	recipient = frappe.get_value("Team", site.team, "user")
 	args = {}
-
+	inline_images = []
 	# TODO: enable it when we use the full logo
 	# if product.email_full_logo:
 	# 	args.update({"image_path": get_url(product.email_full_logo, True)})
 	if product.logo:
 		args.update({"logo": get_url(product.logo, True), "title": product.title})
+		try:
+			logo_name = product.logo[1:]
+			args.update({"logo_name": logo_name})
+			with open(frappe.utils.get_site_path("public", logo_name), "rb") as logo_file:
+				inline_images.append(
+					{
+						"filename": logo_name,
+						"filecontent": logo_file.read(),
+					}
+				)
+		except Exception as ex:
+			log_error(
+				"Error reading logo for inline images in email",
+				data=ex,
+			)
 	if product.email_account:
 		sender = frappe.get_value("Email Account", product.email_account, "email_id")
 
@@ -601,11 +666,11 @@ def send_suspend_mail(site_name: str, product_name: str) -> None:
 	}
 	message = frappe.render_template(product.suspension_email_content, context)
 	args.update({"message": message})
-
 	frappe.sendmail(
 		sender=sender,
 		recipients=recipient,
 		subject=subject,
 		template="product_trial_email",
 		args=args,
+		inline_images=inline_images,
 	)

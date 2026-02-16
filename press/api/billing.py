@@ -252,17 +252,6 @@ def fetch_invoice_items(invoice):
 
 @frappe.whitelist()
 @role_guard.api("billing")
-def get_customer_details(team):
-	"""This method is called by frappe.io for creating Customer and Address"""
-	team_doc = frappe.db.get_value("Team", team, "*")
-	return {
-		"team": team_doc,
-		"address": frappe.get_doc("Address", team_doc.billing_address),
-	}
-
-
-@frappe.whitelist()
-@role_guard.api("billing")
 def create_payment_intent_for_micro_debit():
 	team = get_current_team(True)
 	stripe = get_stripe()
@@ -749,12 +738,11 @@ def _validate_prepaid_credits(amount, currency):
 
 
 def _validate_purchase_plan(amount, doc_name, currency):
-	if not doc_name or not frappe.db.exists("Plan", doc_name):
+	if not doc_name or not frappe.db.exists("Site Plan", doc_name):
 		frappe.throw(_("Plan {0} does not exist").format(doc_name or ""))
 
 	price_field = "price_inr" if currency == "INR" else "price_usd"
-	plan_amount = frappe.db.get_value("Plan", doc_name, price_field)
-
+	plan_amount = frappe.db.get_value("Site Plan", doc_name, price_field)
 	if amount < plan_amount:
 		currency_symbol = "₹" if currency == "INR" else "$"
 		frappe.throw(

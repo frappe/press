@@ -13,7 +13,8 @@
         "test_**",
         "**.conf",
         "requirements.txt",
-        "press/utils/country_timezone.py"
+        "press/utils/country_timezone.py",
+        ".secrets.baseline"
     ],
     "words": [
         "2.4.6",
@@ -127,6 +128,7 @@
         "DAYOFMONTH",
         "DAYOFWEEK",
         "DAYOFYEAR",
+        "daum",
         "dbgsym",
         "dboptimize",
         "dbserver",
@@ -514,6 +516,7 @@
         "rdata",
         "rdatatype",
         "recognise",
+        "rediffmail",
         "redisearch",
         "referer",
         "Regs",
@@ -562,6 +565,7 @@
         "shadrak",
         "shuralyov",
         "signup",
+        "sina",
         "SLXVDP",
         "smembers",
         "SNUBA",
@@ -579,6 +583,7 @@
         "stdc",
         "stime",
         "stkpush",
+        "stopasgroup",
         "Storge",
         "stretchr",
         "stripnl",
@@ -723,6 +728,9 @@
         "reka",
         "pydo",
         "erpnextv",
-        "hrmsv"
+        "hrmsv",
+        "unyank",
+        "unyanking",
+        "unyanked"
     ]
 }

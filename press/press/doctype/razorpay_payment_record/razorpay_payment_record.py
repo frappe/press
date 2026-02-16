@@ -163,10 +163,10 @@ def fetch_pending_payment_orders(hours=12):
 		pluck="order_id",
 	)
 
-	client = get_razorpay_client()
 	if not pending_orders:
 		return
 
+	client = get_razorpay_client()
 	for order_id in pending_orders:
 		try:
 			response = client.order.payments(order_id)

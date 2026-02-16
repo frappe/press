@@ -13,7 +13,7 @@ from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.query_builder.functions import Count
 from frappe.rate_limiter import rate_limit
-from frappe.utils import get_fullname, get_last_day, get_url_to_form, getdate, random_string
+from frappe.utils import add_to_date, get_fullname, get_last_day, get_url_to_form, getdate, random_string
 
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
@@ -49,6 +49,7 @@ class Team(Document):
 		account_request: DF.Link | None
 		allow_unified_servers: DF.Check
 		apply_npo_discount: DF.Check
+		banned: DF.Check
 		benches_enabled: DF.Check
 		billing_address: DF.Link | None
 		billing_name: DF.Data | None
@@ -96,6 +97,7 @@ class Team(Document):
 		partner_tier: DF.Link | None
 		partnership_date: DF.Date | None
 		payment_mode: DF.Literal["", "Card", "Prepaid Credits", "Paid By Partner"]
+		phone_number: DF.Phone | None
 		razorpay_enabled: DF.Check
 		receive_budget_alerts: DF.Check
 		referrer_id: DF.Data | None
@@ -221,6 +223,7 @@ class Team(Document):
 		self.unset_saas_team_type_if_required()
 		self.validate_disable()
 		self.validate_billing_team()
+		self.reject_reenabling_team_for_banned_team()
 
 	def before_insert(self):
 		self.currency = "INR" if self.country == "India" else "USD"
@@ -254,6 +257,10 @@ class Team(Document):
 			frappe.throw(
 				"Cannot set payment mode to Paid By Partner. Please finalize and settle the pending invoices first"
 			)
+
+	def reject_reenabling_team_for_banned_team(self):
+		if self.has_value_changed("enabled") and self.enabled == 1 and self.banned:
+			frappe.throw(f"{self.user} is banned. Please signup with a different email or contact support.")
 
 	def delete(self, force=False, workflow=False):
 		if not (force or workflow):
@@ -289,23 +296,34 @@ class Team(Document):
 		self.add_comment("Info", "enabled account")
 
 	@classmethod
-	def create_new(
+	def create_new(  # noqa: C901
 		cls,
 		account_request: AccountRequest,
 		first_name: str,
 		last_name: str,
 		password: str | None = None,
 		country: str | None = None,
+		phone: str | None = None,
 		is_us_eu: bool = False,
 		via_erpnext: bool = False,
 		user_exists: bool = False,
 	):
 		"""Create new team along with user (user created first)."""
+		# Get full phone number with country code
+		full_phone = None
+		if phone and country:
+			dialing_code = get_country_dialing_code(country)
+			if dialing_code:
+				full_phone = f"+{dialing_code}-{phone}"
+			else:
+				full_phone = phone
+
 		team: "Team" = frappe.get_doc(
 			{
 				"doctype": "Team",
 				"user": account_request.email,
 				"country": country,
+				"phone_number": full_phone,
 				"enabled": 1,
 				"via_erpnext": via_erpnext,
 				"is_us_eu": is_us_eu,
@@ -524,6 +542,17 @@ class Team(Document):
 		)
 		impersonation.save()
 		frappe.local.login_manager.login_as(user)
+
+	@frappe.whitelist()
+	def ban(self):
+		frappe.only_for("System Manager")
+		self.banned = 1
+		self.enabled = 0
+		linked_user = frappe.get_doc("User", self.user)
+		linked_user.enabled = 0
+		linked_user.save(ignore_permissions=True)
+		self.save(ignore_permissions=True)
+		self.suspend_sites(reason="Team banned")
 
 	@frappe.whitelist()
 	def enable_erpnext_partner_privileges(self):
@@ -1706,3 +1735,38 @@ def send_budget_alert_email(team_info, invoice):
 	except Exception as e:
 		frappe.log_error(f"Failed to send budget alert email: {team_info['user']}", {e})
 		return False
+
+
+def get_country_dialing_code(country_name: str) -> str | None:
+	"""Get the dialing code for a given country name using phonenumbers library."""
+	from phonenumbers import country_code_for_region
+
+	# Get the ISO 3166 ALPHA-2 code from Country doctype
+	country_code = frappe.db.get_value("Country", country_name, "code")
+	if not country_code:
+		return None
+
+	# phonenumbers expects uppercase country code
+	dialing_code = country_code_for_region(country_code.upper())
+	return str(dialing_code) if dialing_code else None
+
+
+def auto_enable_ssh_access_for_7_days_older_teams():
+	teams = frappe.get_all(
+		"Team",
+		filters={
+			"enabled": 1,
+			"ssh_access_enabled": 0,
+			"creation": ("<", add_to_date(None, days=-7)),
+		},
+		pluck="name",
+	)
+
+	frappe.db.set_value(
+		"Team",
+		filters={
+			"name": ("in", teams),
+		},
+		fieldname="ssh_access_enabled",
+		value=1,
+	)

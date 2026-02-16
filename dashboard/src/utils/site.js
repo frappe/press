@@ -2,24 +2,31 @@ import { dayjsLocal } from './dayjs';
 import { plural } from './format';
 
 export function trialDays(_trialEndDate) {
-	let trialEndDate = dayjsLocal(_trialEndDate);
-	let today = dayjsLocal();
-	let diffHours = trialEndDate.diff(today, 'hours');
-	let endsIn = '';
-	if (diffHours < 0) {
-		let daysAgo = Math.floor(Math.abs(diffHours) / 24);
-		endsIn = `${daysAgo} ${plural(daysAgo, 'day', 'days')} ago`;
+	const trialEndDate = dayjsLocal(_trialEndDate);
+	const today = dayjsLocal();
+	const diffHours = trialEndDate.diff(today, 'hours');
+	const diffDays = trialEndDate
+		.startOf('day')
+		.diff(today.startOf('day'), 'day');
+	let statusText = '';
+	const isExpired = diffHours < 0;
+	if (isExpired) {
+		const absDays = Math.abs(diffDays);
+		if (absDays === 0) {
+			statusText = `earlier today`;
+		} else {
+			statusText = `${absDays} ${plural(absDays, 'day', 'days')} ago`;
+		}
+	} else if (diffHours < 1) {
+		statusText = 'in less than an hour';
 	} else if (diffHours < 24) {
-		endsIn = `today`;
+		statusText = `in ${diffHours} ${plural(diffHours, 'hour', 'hours')}`;
+	} else if (diffDays === 1) {
+		statusText = 'tomorrow';
 	} else {
-		let days = Math.round(diffHours / 24) + 1;
-		endsIn = `in ${days} ${plural(days, 'day', 'days')}`;
+		statusText = `in ${diffDays} ${plural(diffDays, 'day', 'days')}`;
 	}
-	if (trialEndDate.isAfter(today) || trialEndDate.isSame(today, 'day')) {
-		return `Trial ends ${endsIn}`;
-	} else {
-		return `Trial ended ${endsIn}`;
-	}
+	return isExpired ? `Trial ended ${statusText}` : `Trial ends ${statusText}`;
 }
 
 export function isTrialEnded(_trialEndDate) {

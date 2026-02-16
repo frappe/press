@@ -37,7 +37,7 @@
 						<div>
 							<div class="text-sm font-medium text-gray-500">Creation</div>
 							<div class="mt-2 text-sm text-gray-900">
-								{{ $format.date(play.creation) }}
+								{{ $format.date(play.creation, 'lll') }}
 							</div>
 						</div>
 						<div>
@@ -55,13 +55,13 @@
 						<div>
 							<div class="text-sm font-medium text-gray-500">Start</div>
 							<div class="mt-2 text-sm text-gray-900">
-								{{ $format.date(play.start) }}
+								{{ $format.date(play.start, 'lll') }}
 							</div>
 						</div>
 						<div>
 							<div class="text-sm font-medium text-gray-500">End</div>
 							<div class="mt-2 text-sm text-gray-900">
-								{{ $format.date(play.end) }}
+								{{ $format.date(play.end, 'lll') }}
 							</div>
 						</div>
 					</div>
