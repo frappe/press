@@ -499,7 +499,7 @@ class IncidentInvestigator(Document, StepHandler):
 				self.doctype,
 				self.name,
 				"_execute_steps",
-				method_classes=[database_investigation_actions],
+				method_objects=[database_investigation_actions],
 				start_status=Status.REACTING,
 				success_status=Status.COMPLETED,
 				failure_status=Status.COMPLETED,  # We mark any failed step also as completed investigation
