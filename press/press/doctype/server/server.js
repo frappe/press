@@ -263,6 +263,12 @@ frappe.ui.form.on('Server', {
 				true,
 				frm.doc.is_server_setup,
 			],
+			[
+				__('Setup Wildcard Hosts'),
+				'setup_wildcard_hosts',
+				true,
+				frm.doc.is_server_setup && frm.doc.is_standalone_setup,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

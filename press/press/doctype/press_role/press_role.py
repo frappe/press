@@ -119,7 +119,7 @@ class PressRole(Document):
 			self.remove_press_admin_role(user)
 
 	@dashboard_whitelist()
-	@team_guard.only_admin(skip=lambda _, args: args.get("skip_validations", False))
+	@team_guard.only_admin()
 	def add_resource(self, resources: list[dict[str, str]]):
 		for resource in resources:
 			document_type = resource["document_type"]
