@@ -101,34 +101,36 @@
 				Add from GitHub
 			</Link>
 		</p>
-		<FormControl
-			v-if="selectedGithubRepository"
-			type="combobox"
-			label="Choose Branch"
-			:options="branchOptions"
-			:modelValue="selectedBranch?.value"
-			@update:modelValue="
-				(optionValue) => {
-					selectedBranch = branchOptions.find(
-						(option) => option.value === optionValue,
-					);
-				}
-			"
-		>
-			<template #prefix>
-				<FeatherIcon name="git-branch" class="mr-2 h-4 w-4" />
-			</template>
-		</FormControl>
+
+		<div v-if="selectedGithubRepository" class="space-y-1.5">
+			<div class="text-xs text-ink-gray-5">Choose Branch</div>
+			<Combobox
+				v-if="selectedGithubRepository"
+				allow-custom-value
+				:options="branchOptions"
+				:modelValue="selectedBranch?.value"
+				@update:modelValue="onChangeBranchDebounce"
+			>
+				<template #prefix>
+					<FeatherIcon name="git-branch" class="mr-2 h-4 w-4" />
+				</template>
+			</Combobox>
+		</div>
 	</div>
 </template>
 
 <script>
+import { Combobox, debounce } from 'frappe-ui';
+
 export default {
+	components: {
+		Combobox,
+	},
 	emits: ['validateApp', 'fieldChange'],
 	data() {
 		return {
 			app: {},
-			selectedBranch: '',
+			selectedBranch: null,
 			selectedGithubUser: null,
 			selectedGithubRepository: null,
 		};
@@ -228,6 +230,11 @@ export default {
 			let state = { team: this.$team.name, url: location };
 			return btoa(JSON.stringify(state));
 		},
+	},
+	created() {
+		this.onChangeBranchDebounce = debounce((val) => {
+			this.selectedBranch = { label: val, value: val };
+		}, 500);
 	},
 };
 </script>

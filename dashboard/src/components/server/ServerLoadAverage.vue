@@ -44,13 +44,16 @@ export default {
 	resources: {
 		loadavg() {
 			let localTimezone = dayjs.tz.guess();
+			const end = dayjs();
+			const start = end.subtract(6, 'hour');
 			return {
 				url: 'press.api.server.analytics',
 				params: {
 					name: this.server,
 					timezone: localTimezone,
 					query: 'loadavg',
-					duration: '6 Hour',
+					start: start.toISOString(),
+					end: end.toISOString(),
 				},
 				auto: true,
 			};
