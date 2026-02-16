@@ -167,6 +167,7 @@ export default {
 			this.selectedGithubUser = null;
 			this.selectedGithubRepository = null;
 			this.$resources.branches.reset();
+			this.$resources.validateApp.reset();
 		},
 		githubAppLink() {
 			this.selectedBranch = '';
