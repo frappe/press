@@ -82,9 +82,9 @@ class PrometheusInvestigationHelper:
 	def load_from_server(
 		cls,
 		server: str,
-		high_cpu_load_threshold,
-		high_memory_usage_threshold,
-		high_disk_usage_threshold_in_gb,
+		high_cpu_load_threshold: int,
+		high_memory_usage_threshold: int,
+		high_disk_usage_threshold_in_gb: int,
 		investigation_window_start_time: datetime.datetime,
 		investigation_window_end_time: datetime.datetime,
 	) -> "PrometheusInvestigationHelper":
