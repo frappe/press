@@ -456,6 +456,7 @@ class StepHandler:
 			self.doctype,
 			self.name,
 			"_execute_steps",
+			method_objects=method_objects,
 			steps=steps,
 			commit=commit,
 			start_status=start_status,
