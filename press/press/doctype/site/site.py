@@ -1258,7 +1258,7 @@ class Site(Document, TagHelpers):
 		self.save()
 
 	@dashboard_whitelist()
-	@site_action(["Active", "Inactive", "Suspended"])
+	@site_action(["Active", "Inactive", "Suspended", "Broken"])
 	def schedule_update(
 		self,
 		skip_failing_patches: bool = False,
