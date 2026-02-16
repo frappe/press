@@ -13,7 +13,8 @@
         "test_**",
         "**.conf",
         "requirements.txt",
-        "press/utils/country_timezone.py"
+        "press/utils/country_timezone.py",
+        ".secrets.baseline"
     ],
     "words": [
         "2.4.6",
