@@ -149,8 +149,7 @@
   {
    "fieldname": "grafana_password",
    "fieldtype": "Password",
-   "label": "Grafana Password",
-   "set_only_once": 1
+   "label": "Grafana Password"
   },
   {
    "fieldname": "ssh_section",
@@ -279,7 +278,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2025-11-22 15:49:17.754965",
+ "modified": "2026-02-16 11:36:45.578971",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Monitor Server",
