@@ -53,11 +53,15 @@ class PrometheusInvestigationHelper:
 	high_cpu_load_threshold: int
 	high_memory_usage_threshold: int
 	high_disk_usage_threshold_in_gb: int
-	prometheus_client: PrometheusConnect = field(default_factory=get_prometheus_client)
+	prometheus_client: PrometheusConnect = None
 	investigation_window_start_time: datetime.datetime = field(
 		default_factory=lambda: parse_datetime(INVESTIGATION_WINDOW)
 	)
 	investigation_window_end_time: datetime.datetime = field(default_factory=lambda: parse_datetime("now"))
+
+	def __post_init__(self):
+		if self.prometheus_client is None:
+			self.prometheus_client = get_prometheus_client()
 
 	# Define the investigation steps for different servers
 	INVESTIGATION_CHECKS: typing.ClassVar = {
@@ -89,8 +93,10 @@ class PrometheusInvestigationHelper:
 			high_cpu_load_threshold=high_cpu_load_threshold,
 			high_memory_usage_threshold=high_memory_usage_threshold,
 			high_disk_usage_threshold_in_gb=high_disk_usage_threshold_in_gb,
-			high_system_load_threshold=3 * frappe.db.get_value("Virtual Machine", server, "vcpu")
-			or 4,  # Placeholder, will be set based on vcpus
+			high_system_load_threshold=3
+			* (
+				frappe.db.get_value("Virtual Machine", server, "vcpu") or 4
+			),  # Placeholder, will be set based on vcpus
 		)
 
 	def is_unable_to_investigate(self, step: "InvestigationStep"):
@@ -114,13 +120,11 @@ class PrometheusInvestigationHelper:
 
 		if not metric_data:
 			self.is_unable_to_investigate(step)
-			return None
+			return
 
 		metric_data = MetricRangeDataFrame(metric_data, ts_as_datetime=False)
 		step.is_likely_cause = float(metric_data.value.mean()) > self.high_system_load_threshold
 		step.save()
-
-		return metric_data.to_dict()
 
 	def has_high_cpu_load(self, instance: str, step: "InvestigationStep"):
 		"""Check high cpu rate during window"""
@@ -138,7 +142,7 @@ class PrometheusInvestigationHelper:
 
 		if not metric_data or len(metric_data[0]["values"]) < 2:
 			self.is_unable_to_investigate(step)
-			return None
+			return
 
 		values = metric_data[0]["values"]
 		cpu_idle_rate = (float(values[-1][1]) - float(values[0][1])) / (
@@ -148,8 +152,6 @@ class PrometheusInvestigationHelper:
 
 		step.is_likely_cause = cpu_busy_percentage > self.high_cpu_load_threshold
 		step.save()
-
-		return metric_data.to_dict()
 
 	def has_high_memory_usage(self, instance: str, step: "InvestigationStep"):
 		"Determine high memory usage over a period of investigation window"
@@ -172,13 +174,11 @@ class PrometheusInvestigationHelper:
 
 		if not metric_data:
 			self.is_unable_to_investigate(step)
-			return None
+			return
 
 		metric_data = MetricRangeDataFrame(metric_data, ts_as_datetime=False)
 		step.is_likely_cause = float(metric_data.value.mean()) > self.high_memory_usage_threshold
 		step.save()
-
-		return metric_data.to_dict()
 
 	def has_high_disk_usage(self, instance: str, step: "InvestigationStep"):
 		"""Determined if disk is full in any of the relevant mountpoints at present"""
@@ -437,10 +437,12 @@ class IncidentInvestigator(Document, StepHandler):
 				frappe.ValidationError,
 			)
 
+	def after_insert(self):
 		self.add_investigation_steps()
 		self.action_steps = []  # Ensure no action steps are already set
 
-	def after_insert(self):
+		self.save()
+
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
@@ -452,7 +454,7 @@ class IncidentInvestigator(Document, StepHandler):
 	def investigate(self):
 		"""Main method to execute investigation steps in order"""
 		self.set_status(Status.INVESTIGATING)
-		self.prometheus_investigation_helper = PrometheusInvestigationHelper.load_from_server(
+		prometheus_investigation_helper = PrometheusInvestigationHelper.load_from_server(
 			self.server,
 			self.high_cpu_load_threshold,
 			self.high_memory_usage_threshold,
@@ -461,7 +463,7 @@ class IncidentInvestigator(Document, StepHandler):
 
 		for step_key, methods in PrometheusInvestigationHelper.INVESTIGATION_CHECKS.items():
 			for method in methods:
-				investigation_method = getattr(self.prometheus_investigation_helper, method)
+				investigation_method = getattr(prometheus_investigation_helper, method)
 				if step_key == "server_investigation_steps":
 					investigation_method(
 						instance=self.server,
