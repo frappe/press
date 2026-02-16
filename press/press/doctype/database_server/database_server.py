@@ -1382,6 +1382,30 @@ class DatabaseServer(BaseServer):
 			log_error("MariaDB Provide Frappe User DU Permission Exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def provide_frappe_user_mariadb_table_usage_permission(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_provide_frappe_user_mariadb_table_usage_permission",
+			queue="long",
+			timeout=1200,
+		)
+
+	def _provide_frappe_user_mariadb_table_usage_permission(self):
+		try:
+			ansible = Ansible(
+				playbook="provide_frappe_user_mariadb_table_usage_permission.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error(
+				"MariaDB Provide Frappe User Mariadb Table Usage Permission Exception", server=self.as_dict()
+			)
+
+	@frappe.whitelist()
 	def setup_mariadb_debug_symbols(self):
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_setup_mariadb_debug_symbols", queue="long", timeout=1200
