@@ -369,7 +369,7 @@ class IncidentInvestigator(Document, StepHandler):
 		"""Return likely causes for database and server from investigation"""
 		return {
 			"database": [step.method for step in self.database_investigation_steps if step.is_likely_cause],
-			"server": [step.method for step in self.database_investigation_steps if step.is_likely_cause],
+			"server": [step.method for step in self.server_investigation_steps if step.is_likely_cause],
 			"proxy": [step.method for step in self.proxy_investigation_steps if step.is_likely_cause],
 		}
 
