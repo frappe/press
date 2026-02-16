@@ -445,7 +445,7 @@ class IncidentInvestigator(Document, StepHandler):
 
 		self.add_investigation_steps()
 		self.action_steps = []  # Ensure no action steps are already set
-
+		self.status = Status.INVESTIGATING
 		self.save()
 
 		frappe.enqueue_doc(
@@ -458,7 +458,6 @@ class IncidentInvestigator(Document, StepHandler):
 
 	def investigate(self):
 		"""Main method to execute investigation steps in order"""
-		self.set_status(Status.INVESTIGATING)
 		prometheus_investigation_helper = PrometheusInvestigationHelper.load_from_server(
 			server=self.server,
 			high_cpu_load_threshold=self.high_cpu_load_threshold,
