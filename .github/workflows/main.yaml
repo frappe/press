@@ -119,7 +119,6 @@ jobs:
 
   install:
     name: Setup Bench
-    needs: format
     runs-on: ubuntu-latest
     if: needs.format.outputs.changed-python == 'true' || needs.format.outputs.changed-json == 'true' || needs.format.outputs.changed-js-vue == 'true' || needs.format.outputs.changed-build == 'true'
 
@@ -224,7 +223,7 @@ jobs:
           path: /data/mariadb_data
 
   ui-tests:
-    needs: [format, install]
+    needs: install
     name: Client
     runs-on: ubuntu-latest
     env:
@@ -366,7 +365,7 @@ jobs:
           flags: dashboard
 
   server-tests:
-    needs: [format, install]
+    needs: install
     name: Server
     runs-on: ubuntu-latest
     strategy:
