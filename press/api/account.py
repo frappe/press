@@ -471,11 +471,11 @@ def set_country(country):
 def get_account_request_from_key(key: str):
 	"""Find Account Request using `key`"""
 
-	if not key or not isinstance(key, str):
+	if not key or not isinstance(key, str) or not key.strip():
 		frappe.throw(_("Invalid Key"))
 
 	try:
-		return frappe.get_doc("Account Request", {"request_key": key})
+		return frappe.get_doc("Account Request", {"request_key": key.strip()})
 	except frappe.DoesNotExistError:
 		return None
 
