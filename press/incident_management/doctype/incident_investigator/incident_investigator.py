@@ -7,7 +7,7 @@ import json
 import random
 import typing
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 
 import frappe
@@ -53,11 +53,9 @@ class PrometheusInvestigationHelper:
 	high_cpu_load_threshold: int
 	high_memory_usage_threshold: int
 	high_disk_usage_threshold_in_gb: int
+	investigation_window_start_time: datetime.datetime
+	investigation_window_end_time: datetime.datetime
 	prometheus_client: PrometheusConnect = None
-	investigation_window_start_time: datetime.datetime = field(
-		default_factory=lambda: parse_datetime(INVESTIGATION_WINDOW)
-	)
-	investigation_window_end_time: datetime.datetime = field(default_factory=lambda: parse_datetime("now"))
 
 	def __post_init__(self):
 		if self.prometheus_client is None:
@@ -87,6 +85,8 @@ class PrometheusInvestigationHelper:
 		high_cpu_load_threshold,
 		high_memory_usage_threshold,
 		high_disk_usage_threshold_in_gb,
+		investigation_window_start_time: datetime.datetime,
+		investigation_window_end_time: datetime.datetime,
 	) -> "PrometheusInvestigationHelper":
 		"""Initialize PrometheusInvestigationHelper with server-specific thresholds"""
 		return cls(
@@ -97,6 +97,8 @@ class PrometheusInvestigationHelper:
 			* (
 				frappe.db.get_value("Virtual Machine", server, "vcpu") or 4
 			),  # Placeholder, will be set based on vcpus
+			investigation_window_start_time=investigation_window_start_time,
+			investigation_window_end_time=investigation_window_end_time,
 		)
 
 	def is_unable_to_investigate(self, step: "InvestigationStep"):
@@ -438,6 +440,9 @@ class IncidentInvestigator(Document, StepHandler):
 			)
 
 	def after_insert(self):
+		self.investigation_window_start_time = parse_datetime(INVESTIGATION_WINDOW)
+		self.investigation_window_end_time = parse_datetime("now")
+
 		self.add_investigation_steps()
 		self.action_steps = []  # Ensure no action steps are already set
 

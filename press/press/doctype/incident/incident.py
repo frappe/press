@@ -138,6 +138,7 @@ class Incident(WebsiteGenerator):
 			)
 			incident_investigator.insert(ignore_permissions=True)
 			self.investigation = incident_investigator.name
+			self.save()
 		except frappe.ValidationError:
 			# Investigator in cool off period
 			pass
