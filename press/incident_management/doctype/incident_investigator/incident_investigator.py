@@ -36,6 +36,7 @@ INVESTIGATION_WINDOW = "5m"  # Use 5m timeframe
 class Status(str, Enum):
 	PENDING = "Pending"
 	INVESTIGATING = "Investigating"
+	REACTING = "Reacting"
 	COMPLETED = "Completed"
 
 
@@ -347,7 +348,7 @@ class IncidentInvestigator(Document, StepHandler):
 		proxy_investigation_steps: DF.Table[InvestigationStep]
 		server: DF.Link | None
 		server_investigation_steps: DF.Table[InvestigationStep]
-		status: DF.Literal["Pending", "Investigating", "Completed"]
+		status: DF.Literal["Pending", "Investigating", "Reacting", "Completed"]
 	# end: auto-generated types
 
 	def set_status(self, status: str):
@@ -437,7 +438,7 @@ class IncidentInvestigator(Document, StepHandler):
 			)
 
 		self.add_investigation_steps()
-		self.action_steps = []
+		self.action_steps = []  # Ensure no action steps are already set
 
 	def after_insert(self):
 		frappe.enqueue_doc(
@@ -497,7 +498,7 @@ class IncidentInvestigator(Document, StepHandler):
 				self.name,
 				"_execute_steps",
 				method_classes=[database_investigation_actions],
-				start_status=Status.INVESTIGATING,
+				start_status=Status.REACTING,
 				success_status=Status.COMPLETED,
 				failure_status=Status.COMPLETED,  # We mark any failed step also as completed investigation
 				steps=self.action_steps,
@@ -511,7 +512,7 @@ class IncidentInvestigator(Document, StepHandler):
 
 	@frappe.whitelist()
 	def start_investigation(self):
-		if self.status == "Pending":
+		if self.status == "Pending" or self.status == "Completed":
 			self.action_steps = []
 			self.save()
 			frappe.enqueue_doc(self.doctype, self.name, "investigate", queue="long")
