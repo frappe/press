@@ -21,7 +21,7 @@
 				<DateTimePicker
 					class="w-52"
 					type="datetime"
-					format="hh:mm a, D MMM YYYY"
+					format="D MMM YYYY, hh:mm a"
 					:model-value="customStartTime"
 					@update:model-value="customStartTime = new Date($event)"
 				/>
@@ -31,7 +31,7 @@
 				<DateTimePicker
 					class="w-52"
 					type="datetime"
-					format="hh:mm a, D MMM YYYY"
+					format="D MMM YYYY, hh:mm a"
 					:model-value="customEndTime"
 					@update:model-value="customEndTime = new Date($event)"
 				/>
@@ -443,7 +443,7 @@ import {
 import LineChart from '@/components/charts/LineChart.vue';
 import BarChart from '@/components/charts/BarChart.vue';
 import AnalyticsCard from '../site/AnalyticsCard.vue';
-import dayjs from '../../utils/dayjs';
+import dayjs, { dayjsFloorToMinutes } from '../../utils/dayjs';
 import { duration } from '../../utils/format';
 
 export default {
@@ -501,12 +501,14 @@ export default {
 		},
 		duration() {
 			const now = dayjs();
-			this.customEndTime = now.toDate();
+			// floor to 15 minutes to avoid issues with caching
+			const flooredEndDate = dayjsFloorToMinutes(now, 15);
+			this.customEndTime = flooredEndDate.toDate();
 			const dur =
 				this.duration === 'custom'
 					? this.defaultDurationToArray
 					: this.inputDurationToArray;
-			this.customStartTime = now.subtract(...dur).toDate();
+			this.customStartTime = flooredEndDate.subtract(...dur).toDate();
 		},
 	},
 	resources: {
@@ -859,8 +861,10 @@ export default {
 			if (this.duration === 'custom') {
 				return this.customEndTime;
 			}
-			const now = dayjs().toDate();
-			return now;
+			const now = dayjs();
+			// floor to 15 minutes to avoid issues with caching
+			const flooredNow = dayjsFloorToMinutes(now, 15);
+			return flooredNow.toDate();
 		},
 		loadAverageData() {
 			let loadavg = this.$resources.loadavg.data;
