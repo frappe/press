@@ -460,10 +460,12 @@ class IncidentInvestigator(Document, StepHandler):
 		"""Main method to execute investigation steps in order"""
 		self.set_status(Status.INVESTIGATING)
 		prometheus_investigation_helper = PrometheusInvestigationHelper.load_from_server(
-			self.server,
-			self.high_cpu_load_threshold,
-			self.high_memory_usage_threshold,
-			self.high_disk_usage_threshold_in_gb,
+			server=self.server,
+			high_cpu_load_threshold=self.high_cpu_load_threshold,
+			high_memory_usage_threshold=self.high_memory_usage_threshold,
+			high_disk_usage_threshold_in_gb=self.high_disk_usage_threshold_in_gb,
+			investigation_window_start_time=self.investigation_window_start_time,
+			investigation_window_end_time=self.investigation_window_end_time,
 		)
 
 		for step_key, methods in PrometheusInvestigationHelper.INVESTIGATION_CHECKS.items():
