@@ -252,17 +252,6 @@ def fetch_invoice_items(invoice):
 
 @frappe.whitelist()
 @role_guard.api("billing")
-def get_customer_details(team):
-	"""This method is called by frappe.io for creating Customer and Address"""
-	team_doc = frappe.db.get_value("Team", team, "*")
-	return {
-		"team": team_doc,
-		"address": frappe.get_doc("Address", team_doc.billing_address),
-	}
-
-
-@frappe.whitelist()
-@role_guard.api("billing")
 def create_payment_intent_for_micro_debit():
 	team = get_current_team(True)
 	stripe = get_stripe()
