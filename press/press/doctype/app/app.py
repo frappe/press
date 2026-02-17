@@ -52,7 +52,7 @@ class App(Document):
 		repository_owner=None,
 	) -> "AppSource":
 		# Ensure no .git suffix when looking for existing sources
-		supported_frappe_versions = parse_frappe_version(frappe_version)
+		supported_frappe_versions = parse_frappe_version(frappe_version, self.title)
 		repository_url = repository_url.removesuffix(".git")
 		existing_source = frappe.get_all(
 			"App Source",
@@ -127,18 +127,22 @@ def is_bounded(spec: sv.NpmSpec) -> bool:
 	return has_upper_bound and has_lower_bound
 
 
-def map_frappe_version(version_string: str, frappe_versions: list[dict[str, int | str]]) -> list[str]:
+def map_frappe_version(
+	version_string: str, frappe_versions: list[dict[str, int | str]], app_title: str
+) -> list[str]:
 	"""Map a version spec to supported Frappe versions."""
 	matched = []
 	try:
 		version_string = version_string.replace(" ", "").replace(",", " ")
 		spec = sv.NpmSpec(version_string)
 	except ValueError:
-		frappe.throw("Invalid version format. Please use NPM-style semver ranges (e.g. '>=15.0.0 <16.0.0').")
+		frappe.throw(
+			f"Invalid version format for app '{app_title}'. Please use NPM-style semver ranges (e.g. '>=15.0.0 <16.0.0')."
+		)
 
 	if not is_bounded(spec):
 		frappe.throw(
-			"Version range must be bounded. "
+			f"Version range must be bounded for app '{app_title}'. "
 			"Please provide both a lower and an upper bound "
 			"(e.g. '>=15.0.0 <16.0.0')."
 		)
@@ -165,7 +169,7 @@ def map_frappe_version(version_string: str, frappe_versions: list[dict[str, int 
 	return matched
 
 
-def parse_frappe_version(version_string: str) -> set[str]:
+def parse_frappe_version(version_string: str, app_title: str) -> set[str]:
 	"""Parse the Frappe version from a version string."""
 	frappe_versions = frappe.get_all(
 		"Frappe Version",
@@ -186,4 +190,4 @@ def parse_frappe_version(version_string: str) -> set[str]:
 	]:
 		return set([version_string] if isinstance(version_string, str) else version_string)
 
-	return set(map_frappe_version(version_string, frappe_versions))
+	return set(map_frappe_version(version_string, frappe_versions, app_title))
