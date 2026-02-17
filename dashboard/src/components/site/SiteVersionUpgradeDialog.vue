@@ -151,15 +151,12 @@
 						/>
 					</div>
 				</div>
-
-				<div
+				<AlertBanner
 					v-if="skipBackups"
-					class="flex items-center rounded bg-gray-50 p-4 text-sm text-gray-700"
-				>
-					<lucide-info class="mr-2 h-4 w-8" />
-					Backups will not be taken during the upgrade process and in case of
-					any failure rollback will not be possible.
-				</div>
+					title="Backups will not be taken during the upgrade process and in case of
+					any failure rollback will not be possible."
+					type="warning"
+				></AlertBanner>
 				<p v-if="message && !errorMessage" class="text-sm text-gray-700">
 					{{ message }}
 				</p>
@@ -185,6 +182,7 @@
 					existingBenchGroup
 				"
 				class="w-full"
+				:class="skipBackups ? 'text-white bg-red-600 hover:bg-red-700' : ''"
 				variant="solid"
 				:label="targetDateTime ? 'Schedule Upgrade' : 'Upgrade Now'"
 				:loading="$resources.versionUpgrade.loading"
@@ -199,6 +197,7 @@
 					!appCompatibility.can_upgrade
 				"
 				class="w-full"
+				:class="skipBackups ? 'text-white bg-red-600 hover:bg-red-700' : ''"
 				variant="subtle"
 				:label="targetDateTime ? 'Schedule Upgrade' : 'Upgrade Now'"
 				@click="show = false"
@@ -212,6 +211,7 @@
 					appCompatibility.can_upgrade
 				"
 				class="w-full"
+				:class="skipBackups ? 'text-white bg-red-600 hover:bg-red-700' : ''"
 				variant="solid"
 				:label="
 					targetDateTime
