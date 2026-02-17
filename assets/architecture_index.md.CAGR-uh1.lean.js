@@ -1,1 +1,0 @@
-import{_ as e,o as t,c as r}from"./chunks/framework.CWenapAC.js";const m=JSON.parse('{"title":"","description":"","frontmatter":{},"headers":[],"relativePath":"architecture/index.md","filePath":"architecture/index.md"}'),a={name:"architecture/index.md"};function c(n,i,o,s,d,p){return t(),r("div")}const f=e(a,[["render",c]]);export{m as __pageData,f as default};
