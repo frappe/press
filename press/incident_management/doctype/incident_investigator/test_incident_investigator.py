@@ -261,7 +261,7 @@ class TestIncidentInvestigator(FrappeTestCase):
 
 	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=False))
 	@patch.object(PrometheusConnect, "custom_query_range", unreachable_metrics())
-	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=False))
+	@patch.object(PrometheusConnect, "get_metric_range_data", unreachable_metrics())
 	@patch(
 		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
 		foreground_enqueue_doc,
@@ -274,7 +274,9 @@ class TestIncidentInvestigator(FrappeTestCase):
 			if step.method == "has_high_cpu_load" or step.method == "has_high_memory_load":
 				self.assertTrue(step.is_unable_to_investigate)
 
-		self.assertEqual(len(investigator.action_steps), 1)
+		self.assertEqual(
+			len(investigator.action_steps), 1
+		)  # All of resource investigations need to be unreachable for action to be added
 		step = investigator.action_steps[0]
 		self.assertEqual(step.method_name, "initiate_database_reboot")
 		incident = frappe.get_doc("Incident", investigator.incident)
