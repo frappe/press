@@ -13,6 +13,9 @@
   "admin_access",
   "allow_billing",
   "allow_apps",
+  "all_servers",
+  "all_sites",
+  "all_release_groups",
   "allow_partner",
   "column_break_todb",
   "allow_site_creation",
@@ -159,11 +162,29 @@
    "fieldtype": "Table",
    "label": "Resources",
    "options": "Press Role Resource"
+  },
+  {
+   "default": "0",
+   "fieldname": "all_servers",
+   "fieldtype": "Check",
+   "label": "All Servers"
+  },
+  {
+   "default": "0",
+   "fieldname": "all_sites",
+   "fieldtype": "Check",
+   "label": "All Sites"
+  },
+  {
+   "default": "0",
+   "fieldname": "all_release_groups",
+   "fieldtype": "Check",
+   "label": "All Release Groups"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-23 12:41:33.964051",
+ "modified": "2026-02-18 00:50:44.438190",
  "modified_by": "hello@ssiyad.com",
  "module": "Press",
  "name": "Press Role",

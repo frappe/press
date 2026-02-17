@@ -1,7 +1,7 @@
 <template>
-	<div class="space-y-8">
+	<div class="space-y-8 text-base">
 		<div class="space-y-2">
-			<div class="font-medium text-lg">Important</div>
+			<div class="font-medium">Important</div>
 			<div class="grid grid-cols-5 gap-2 text-base">
 				<div v-for="permission in permissionsImportant">
 					<div class="border rounded">
@@ -19,7 +19,7 @@
 			</div>
 		</div>
 		<div class="space-y-2">
-			<div class="font-medium text-lg">General</div>
+			<div class="font-medium">General</div>
 			<div class="grid grid-cols-5 gap-2 text-base">
 				<div v-for="permission in permissionsGeneral">
 					<div class="border rounded">
@@ -37,7 +37,25 @@
 			</div>
 		</div>
 		<div class="space-y-2">
-			<div class="font-medium text-lg">Partner</div>
+			<div class="font-medium">Resources</div>
+			<div class="grid grid-cols-5 gap-2 text-base">
+				<div v-for="permission in permissionsResources">
+					<div class="border rounded">
+						<Switch
+							size="sm"
+							:disabled="disabled"
+							:label="permission.label"
+							:model-value="$props[permission.key]"
+							@update:model-value="
+								(value: boolean) => $emit('update', permission.key, value)
+							"
+						/>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="space-y-2">
+			<div class="font-medium">Partner</div>
 			<div class="grid grid-cols-5 gap-2 text-base">
 				<div v-for="permission in permissionsPartner">
 					<div class="border rounded">
@@ -60,9 +78,12 @@
 <script setup lang="ts">
 import { Switch } from 'frappe-ui';
 
-withDefaults(
+const props = withDefaults(
 	defineProps<{
 		admin_access?: number;
+		all_servers?: number;
+		all_sites?: number;
+		all_release_groups?: number;
 		allow_bench_creation?: number;
 		allow_apps?: number;
 		allow_billing?: number;
@@ -78,6 +99,9 @@ withDefaults(
 	}>(),
 	{
 		admin_access: 0,
+		all_servers: 0,
+		all_sites: 0,
+		all_release_groups: 0,
 		allow_bench_creation: 0,
 		allow_apps: 0,
 		allow_billing: 0,
@@ -92,6 +116,8 @@ withDefaults(
 		disabled: false,
 	},
 );
+
+console.log('props', props);
 
 defineEmits<{
 	update: [key: string, value: boolean];
@@ -132,6 +158,21 @@ const permissionsGeneral = [
 	{
 		key: 'allow_partner',
 		label: 'Partner Management',
+	},
+];
+
+const permissionsResources = [
+	{
+		key: 'all_servers',
+		label: 'All Servers',
+	},
+	{
+		key: 'all_sites',
+		label: 'All Sites',
+	},
+	{
+		key: 'all_release_groups',
+		label: 'All Release Groups',
 	},
 ];
 
