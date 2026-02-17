@@ -434,12 +434,32 @@ class ProductTrial(Document):
 		if email and "@" in email:
 			domain = email.split("@")[1].lower()
 			if domain not in free_email_providers:
-				suggested_subdomain = domain.split(".")[0]
-				if len(suggested_subdomain) < 5:
-					suggested_subdomain += f"-{domain.split('.')[1]}"
+				return self._get_unique_subdomain(domain)
 
-				return suggested_subdomain
+		return self.get_unique_site_name()
 
+	def _get_unique_subdomain(self, base_subdomain: str) -> str:
+		suggested_subdomain = base_subdomain.split(".")[0]
+		if len(suggested_subdomain) < 5:
+			suggested_subdomain += f"-{base_subdomain.split('.')[1]}"
+		candidates = [suggested_subdomain]
+		for _ in range(7):
+			suffix = generate_random_name(segment_length=3, num_segments=1)
+			candidates.append(f"{suggested_subdomain}-{suffix}")
+		existing = set(
+			frappe.db.get_all(
+				"Site",
+				filters={
+					"subdomain": ("in", candidates),
+					"domain": self.domain,
+					"status": ("!=", "Archived"),
+				},
+				pluck="subdomain",
+			)
+		)
+		for candidate in candidates:
+			if candidate not in existing:
+				return candidate
 		return self.get_unique_site_name()
 
 	def get_unique_site_name(self):
