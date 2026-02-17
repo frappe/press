@@ -14,6 +14,7 @@ from frappe.core.doctype.user.user import update_password
 from frappe.core.utils import find
 from frappe.exceptions import DoesNotExistError
 from frappe.query_builder.custom import GROUP_CONCAT
+from frappe.query_builder.functions import Count
 from frappe.rate_limiter import rate_limit
 from frappe.utils import cint, get_url
 from frappe.utils.data import sha256_hash
@@ -24,6 +25,7 @@ from pypika.terms import ValueWrapper
 
 from press.api.site import protected
 from press.guards import mfa
+from press.guards.role_guard import skip_roles
 from press.press.doctype.team.team import (
 	Team,
 	get_child_team_members,
@@ -1211,33 +1213,44 @@ def remove_permission_group_user(name, user):
 			break
 
 
-@frappe.whitelist()
-def get_permission_roles():
+def has_user_permission(key: str):
 	PressRole = frappe.qb.DocType("Press Role")
 	PressRoleUser = frappe.qb.DocType("Press Role User")
-
 	return (
 		frappe.qb.from_(PressRole)
-		.select(
-			PressRole.name,
-			PressRole.admin_access,
-			PressRole.allow_billing,
-			PressRole.allow_apps,
-			PressRole.allow_partner,
-			PressRole.allow_site_creation,
-			PressRole.allow_bench_creation,
-			PressRole.allow_server_creation,
-			PressRole.allow_webhook_configuration,
-			PressRole.allow_dashboard,
-			PressRole.allow_customer,
-			PressRole.allow_leads,
-			PressRole.allow_contribution,
-		)
-		.join(PressRoleUser)
-		.on((PressRole.name == PressRoleUser.parent) & (PressRoleUser.user == frappe.session.user))
+		.inner_join(PressRoleUser)
+		.on(PressRoleUser.parent == PressRole.name)
+		.select(Count(PressRole.name).as_("count"))
 		.where(PressRole.team == get_current_team())
+		.where(PressRole[key] == 1)
+		.where(PressRoleUser.user == frappe.session.user)
 		.run(as_dict=True)
+		.pop()
+		.get("count")
+		> 0
 	)
+
+
+@frappe.whitelist()
+def user_permissions():
+	team = get_current_team(get_doc=True)
+	is_owner = team.user == frappe.session.user
+	is_admin = is_owner or skip_roles() or has_user_permission("admin_access")
+	return {
+		"owner": is_owner,
+		"admin": is_admin,
+		"billing": is_admin or has_user_permission("allow_billing"),
+		"webhook": is_admin or has_user_permission("allow_webhook_configuration"),
+		"apps": is_admin or has_user_permission("allow_apps"),
+		"partner": is_admin or has_user_permission("allow_partner"),
+		"partner_dashboard": is_admin or has_user_permission("allow_dashboard"),
+		"partner_leads": is_admin or has_user_permission("allow_leads"),
+		"partner_customer": is_admin or has_user_permission("allow_customer"),
+		"partner_contribution": is_admin or has_user_permission("allow_contribution"),
+		"site_creation": is_admin or has_user_permission("allow_site_creation"),
+		"bench_creation": is_admin or has_user_permission("allow_bench_creation"),
+		"server_creation": is_admin or has_user_permission("allow_server_creation"),
+	}
 
 
 @frappe.whitelist()
