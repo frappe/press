@@ -332,7 +332,7 @@ class DatabaseInvestigationActions:
 			if step.method != PrometheusInvestigationHelper.has_high_disk_usage.__name__
 		]  # If all resource investigation steps have missing data then just reboot?
 
-		if all([step for step in database_resource_investigation_steps if step.is_unable_to_investigate]):
+		if all([step.is_unable_to_investigate for step in database_resource_investigation_steps]):
 			# We need to think about missing data from prometheus here?
 			for step in self.investigator.get_steps([self.initiate_database_reboot]):
 				self.investigator.append("action_steps", step)
