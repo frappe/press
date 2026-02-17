@@ -326,9 +326,13 @@ class DatabaseInvestigationActions:
 			- Unreachable or missing metrics from promethues results in a database server reboot
 			- Busy resources result in a mariadb reboot post a process list capture.
 		"""
-		if any(
-			[step for step in self.investigator.database_investigation_steps if step.is_unable_to_investigate]
-		):
+		database_resource_investigation_steps = [
+			step
+			for step in self.investigator.database_investigation_steps
+			if step.method != PrometheusInvestigationHelper.has_high_disk_usage.__name__
+		]  # If all resource investigation steps have missing data then just reboot?
+
+		if all([step.is_unable_to_investigate for step in database_resource_investigation_steps]):
 			# We need to think about missing data from prometheus here?
 			for step in self.investigator.get_steps([self.initiate_database_reboot]):
 				self.investigator.append("action_steps", step)
