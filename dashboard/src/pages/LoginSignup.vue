@@ -442,12 +442,15 @@ import GoogleIconSolid from '@/components/icons/GoogleIconSolid.vue';
 import GoogleIcon from '@/components/icons/GoogleIcon.vue';
 import { toast } from 'vue-sonner';
 import { getToastErrorMessage } from '../utils/toast';
+import { h } from 'vue';
+import CustomToast from '../components/CustomToast.vue';
 
 export default {
 	name: 'Signup',
 	components: {
 		LoginBox,
 		GoogleIcon,
+		CustomToast,
 	},
 	data() {
 		return {
@@ -479,6 +482,31 @@ export default {
 				this.otpResendCountdown -= 1;
 			}
 		}, 1000);
+
+		if (this.$route.query?.reason) {
+			switch (this.$route.query.reason) {
+				case 'INVALID_TEAM':
+					toast.custom(
+						h(CustomToast, {
+							html: `
+							You are not part of an active team<br/>
+							<span class="text-sm text-gray-800">
+								If the issue persists, please contact 
+								<a href="https://support.frappe.io" class="font-medium underline" target="_blank" rel="noopener noreferrer">
+									support.
+								</a>
+							</span>
+						`,
+						}),
+						{ duration: 5000 },
+					);
+					break;
+				default:
+					toast.error(
+						'An unknown error occurred. Please try logging in again.',
+					);
+			}
+		}
 	},
 	watch: {
 		email() {
