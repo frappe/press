@@ -76,7 +76,7 @@ func CheckLowIOOrPause(thresholdPercent float64, closeFd func(), openFd func() e
 	}
 
 	// High IO detected
-	fmt.Printf("High IO detected (%.2f%% > %.2f%%). Pausing execution...\n", wait, thresholdPercent)
+	fmt.Fprintf(os.Stderr, "High IO detected (%.2f%% > %.2f%%). Pausing execution...\n", wait, thresholdPercent)
 	if closeFd != nil {
 		closeFd()
 	}
@@ -97,7 +97,7 @@ func CheckLowIOOrPause(thresholdPercent float64, closeFd func(), openFd func() e
 				continue
 			}
 			if wait <= thresholdPercent {
-				fmt.Printf("IO wait dropped to %.2f%%. Resuming...\n", wait)
+				fmt.Fprintf(os.Stderr, "IO wait dropped to %.2f%%. Resuming...\n", wait)
 				if openFd != nil {
 					if err := openFd(); err != nil {
 						return fmt.Errorf("failed to reopen file: %v", err)
@@ -105,7 +105,7 @@ func CheckLowIOOrPause(thresholdPercent float64, closeFd func(), openFd func() e
 				}
 				return nil
 			}
-			fmt.Printf("IO wait still high (%.2f%%)... waiting\n", wait)
+			fmt.Fprintf(os.Stderr, "IO wait still high (%.2f%%)... waiting\n", wait)
 		}
 	}
 }
