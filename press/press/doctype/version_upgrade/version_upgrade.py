@@ -129,10 +129,12 @@ class VersionUpgrade(Document):
 				message,
 			)
 		else:
-			site_update_status = frappe.db.get_value("Site Update", self.site_update, "status")
+			site_update_status, site_update_job = frappe.db.get_value(
+				"Site Update", self.site_update, ["status", "update_job"]
+			)
 			if site_update_status in ["Failure", "Recovered", "Fatal"]:
 				self.status = "Failure"
-				self.send_version_upgrade_failure_email(agent_job=self.site_update)
+				self.send_version_upgrade_failure_email(agent_job=site_update_job)
 			else:
 				self.status = site_update_status
 			if self.status == "Success":
@@ -169,10 +171,13 @@ class VersionUpgrade(Document):
 			self.save()
 
 	def send_version_upgrade_failure_email(self, agent_job: str, bench_deploy_failure: bool = False) -> None:
-		# Set failure traceback and send email to inform user
-		traceback, output = frappe.get_value("Agent Job", agent_job, ["traceback", "output"])
-		self.last_traceback = traceback
-		self.last_output = output
+		traceback = ""
+		output = ""
+		if agent_job:
+			# Set failure traceback and send email to inform user
+			traceback, output = frappe.get_value("Agent Job", agent_job, ["traceback", "output"])
+			self.last_traceback = traceback
+			self.last_output = output
 
 		recipients = get_communication_info("Email", "Site Activity", "Site", self.site)
 		if not recipients:
