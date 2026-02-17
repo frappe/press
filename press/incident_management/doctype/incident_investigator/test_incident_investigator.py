@@ -12,6 +12,7 @@ from prometheus_api_client import PrometheusConnect
 
 from press.incident_management.doctype.incident_investigator.incident_investigator import (
 	IncidentInvestigator,
+	get_utc_time,
 )
 from press.press.doctype.incident.incident import Incident
 from press.press.doctype.server.test_server import (
@@ -336,7 +337,8 @@ class TestIncidentInvestigator(FrappeTestCase):
 			expected_server_shifts = [0, 2, 5]
 			expected_database_server_shifts = [0, 2, 5]
 			actual_shifts = [
-				investigator.investigation_window_start_time.minute - call.kwargs.get("start_time").minute
+				get_utc_time(investigator.investigation_window_start_time).minute
+				- call.kwargs.get("start_time").minute
 				for call in mock_get_metric_range_data.call_args_list
 			]
 
