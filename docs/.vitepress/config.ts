@@ -7,6 +7,7 @@ export default defineConfig(
 		{
 			title: 'Frappe Cloud Internals',
 			description: 'Documentation for Frappe Cloud architecture and code.',
+			base: '/press/',
 			themeConfig: {
 				// https://vitepress.dev/reference/default-theme-config
 				nav: [
