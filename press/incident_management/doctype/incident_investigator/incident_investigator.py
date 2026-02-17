@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 import frappe
+import pytz
 import requests
 from frappe.core.utils import find
 from frappe.model.document import Document
@@ -44,6 +45,12 @@ def get_prometheus_client() -> PrometheusConnect:
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server") or "monitor.frappe.cloud"
 	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
 	return PrometheusConnect(f"https://{monitor_server}/prometheus", auth=("frappe", password))
+
+
+def get_utc_time(time: datetime.datetime) -> datetime.datetime:
+	"""Convert given system time to utc time"""
+	system_time_zone = frappe.utils.get_system_timezone()
+	return pytz.timezone(system_time_zone).localize(time).astimezone(pytz.utc)
 
 
 @dataclass
@@ -119,8 +126,12 @@ class PrometheusInvestigationHelper:
 
 		# Return the first metric data found, or None if no data is found
 		for shift in shifts:
-			shifted_start_time = self.investigation_window_start_time - datetime.timedelta(minutes=shift)
-			shifted_end_time = self.investigation_window_end_time - datetime.timedelta(minutes=shift)
+			shifted_start_time = get_utc_time(
+				self.investigation_window_start_time - datetime.timedelta(minutes=shift)
+			)
+			shifted_end_time = get_utc_time(
+				self.investigation_window_end_time - datetime.timedelta(minutes=shift)
+			)
 			metric_data = fetch_fn(
 				start_time=shifted_start_time,
 				end_time=shifted_end_time,
