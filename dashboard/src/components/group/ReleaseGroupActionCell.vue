@@ -33,6 +33,7 @@ const props = defineProps({
 	description: { type: String, required: true },
 	buttonLabel: { type: String, required: true },
 	group: { type: String, required: false },
+	linkedVersionUpgrade: { type: Boolean, required: false, default: false },
 });
 
 const releaseGroup = getCachedDocumentResource(
@@ -123,11 +124,23 @@ function onTransferBench() {
 }
 
 function onDropBench() {
+	let message = `Are you sure you want to drop the bench group <b>${
+		releaseGroup.doc.title || releaseGroup.name
+	}</b>?`;
+
+	if (props.linkedVersionUpgrade) {
+		message = `
+			<div class="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800">
+				<p class="font-semibold">Warning</p>
+				<p class="mt-1">This bench group was created for upgrading your site's version and dropping this will cancel the site upgrade as well.</p>
+			</div>
+			${message}
+		`;
+	}
+
 	confirmDialog({
 		title: 'Drop Bench Group',
-		message: `Are you sure you want to drop the bench group <b>${
-			releaseGroup.doc.title || releaseGroup.name
-		}</b>?`,
+		message: message,
 		fields: [
 			{
 				label: 'Please type the bench group name to confirm',
