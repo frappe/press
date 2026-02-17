@@ -213,6 +213,7 @@ def setup_account(  # noqa: C901
 
 	# pass lead to local partner if consent given
 	account_request.agreed_to_partner_consent = share_details_consent
+	account_request.country = country
 	account_request.save()
 
 	team = account_request.team
