@@ -168,3 +168,7 @@ press/public/css/marketplace-next.css
 # IDE
 .idea
 .vscode
+
+# Vitepress
+docs/.vitepress/cache
+docs/.vitepress/dist
