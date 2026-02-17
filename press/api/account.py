@@ -25,7 +25,6 @@ from pypika.terms import ValueWrapper
 
 from press.api.site import protected
 from press.guards import mfa
-from press.guards.role_guard import skip_roles
 from press.press.doctype.team.team import (
 	Team,
 	get_child_team_members,
@@ -1236,7 +1235,7 @@ def has_user_permission(key: str):
 def user_permissions():
 	team = get_current_team(get_doc=True)
 	is_owner = team.user == frappe.session.user
-	is_admin = is_owner or skip_roles() or has_user_permission("admin_access")
+	is_admin = is_owner or has_user_permission("admin_access")
 	return {
 		"owner": is_owner,
 		"admin": is_admin,
