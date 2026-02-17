@@ -39,7 +39,7 @@ class VersionUpgrade(Document):
 		skip_backups: DF.Check
 		skip_failing_patches: DF.Check
 		source_group: DF.Link | None
-		status: DF.Literal["Scheduled", "Pending", "Running", "Success", "Failure"]
+		status: DF.Literal["Scheduled", "Pending", "Running", "Success", "Failure", "Cancelled"]
 	# end: auto-generated types
 
 	doctype = "Version Upgrade"
@@ -129,7 +129,12 @@ class VersionUpgrade(Document):
 				message,
 			)
 		else:
-			self.status = frappe.db.get_value("Site Update", self.site_update, "status")
+			site_update_status = frappe.db.get_value("Site Update", self.site_update, "status")
+			if site_update_status in ["Failure", "Recovered", "Fatal"]:
+				self.status = "Failure"
+				self.send_version_upgrade_failure_email(agent_job=self.site_update)
+			else:
+				self.status = site_update_status
 			if self.status == "Success":
 				site = frappe.get_doc("Site", self.site)
 				next_version = frappe.get_value("Release Group", self.destination_group, "version")
@@ -147,6 +152,7 @@ class VersionUpgrade(Document):
 		self.save()
 
 	def update_version_upgrade_on_process_job(self, job):
+		"""Handles agent job updates when new bench deploy is involved for site version upgrade"""
 		if job.job_type != "New Bench":
 			return
 
@@ -255,10 +261,14 @@ def run_scheduled_upgrades():
 	for upgrade in VersionUpgrade.get_all_scheduled_before_now():
 		try:
 			site_status = frappe.db.get_value("Site", upgrade.site, "status")
+			if site_status == "Archived":
+				frappe.db.set_value("Version Upgrade", upgrade.name, "status", "Cancelled")
+				continue
 			if site_status in TRANSITORY_STATES:
 				# If we attempt to start the upgrade now, it will fail
 				# This will be picked up in the next iteration
 				continue
+
 			if upgrade.deploy_private_bench and not upgrade.bench_deploy_successful:
 				continue
 			upgrade.start()
