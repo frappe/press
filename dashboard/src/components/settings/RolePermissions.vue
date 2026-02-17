@@ -1,15 +1,14 @@
 <template>
-	<div class="space-y-4">
+	<div class="space-y-8">
 		<div class="space-y-2">
 			<div class="font-medium text-lg">Important</div>
-			<div class="grid grid-cols-3 gap-4 text-base">
+			<div class="grid grid-cols-5 gap-2 text-base">
 				<div v-for="permission in permissionsImportant">
-					<div class="px-5 py-4 border rounded">
+					<div class="border rounded">
 						<Switch
 							size="sm"
 							:disabled="disabled"
 							:label="permission.label"
-							:description="permission.description"
 							:model-value="$props[permission.key]"
 							@update:model-value="
 								(value: boolean) => $emit('update', permission.key, value)
@@ -21,14 +20,13 @@
 		</div>
 		<div class="space-y-2">
 			<div class="font-medium text-lg">General</div>
-			<div class="grid grid-cols-3 gap-4 text-base">
+			<div class="grid grid-cols-5 gap-2 text-base">
 				<div v-for="permission in permissionsGeneral">
-					<div class="px-5 py-4 border rounded">
+					<div class="border rounded">
 						<Switch
 							size="sm"
 							:disabled="disabled"
 							:label="permission.label"
-							:description="permission.description"
 							:model-value="$props[permission.key]"
 							@update:model-value="
 								(value: boolean) => $emit('update', permission.key, value)
@@ -40,14 +38,13 @@
 		</div>
 		<div class="space-y-2">
 			<div class="font-medium text-lg">Partner</div>
-			<div class="grid grid-cols-3 gap-4 text-base">
+			<div class="grid grid-cols-5 gap-2 text-base">
 				<div v-for="permission in permissionsPartner">
-					<div class="px-5 py-4 border rounded">
+					<div class="border rounded">
 						<Switch
 							size="sm"
 							:disabled="disabled || !$props.allow_partner"
 							:label="permission.label"
-							:description="permission.description"
 							:model-value="$props[permission.key]"
 							@update:model-value="
 								(value: boolean) => $emit('update', permission.key, value)
@@ -103,46 +100,38 @@ defineEmits<{
 const permissionsImportant = [
 	{
 		key: 'admin_access',
-		label: 'Admin',
-		description: 'Grants full administrative access',
+		label: 'Administrator',
 	},
 ];
 
 const permissionsGeneral = [
 	{
-		key: 'allow_site_creation',
-		label: 'Site',
-		description: 'Enables site creation',
-	},
-	{
-		key: 'allow_apps',
-		label: 'Apps',
-		description: 'Enables marketplace management',
-	},
-	{
 		key: 'allow_server_creation',
-		label: 'Server',
-		description: 'Enables server creation',
+		label: 'Create Servers',
+	},
+	{
+		key: 'allow_site_creation',
+		label: 'Create Sites',
 	},
 	{
 		key: 'allow_bench_creation',
-		label: 'Release Group',
-		description: 'Enables release group creation',
+		label: 'Create Release Groups',
+	},
+	{
+		key: 'allow_apps',
+		label: 'Marketplace',
 	},
 	{
 		key: 'allow_webhook_configuration',
-		label: 'Webhook',
-		description: 'Enables webhook configuration',
+		label: 'Webhooks',
 	},
 	{
 		key: 'allow_billing',
 		label: 'Billing',
-		description: 'Enables access to billing features',
 	},
 	{
 		key: 'allow_partner',
-		label: 'Partner',
-		description: 'Enables access to partner features',
+		label: 'Partner Management',
 	},
 ];
 
@@ -150,22 +139,18 @@ const permissionsPartner = [
 	{
 		key: 'allow_dashboard',
 		label: 'Dashboard',
-		description: 'Enables access to dashboard features for Partner',
 	},
 	{
 		key: 'allow_customer',
 		label: 'Customer',
-		description: 'Enables access to customer features for Partner',
 	},
 	{
 		key: 'allow_leads',
 		label: 'Leads',
-		description: 'Enables access to leads features for Partner',
 	},
 	{
 		key: 'allow_contribution',
 		label: 'Contribution',
-		description: 'Enables access to contribution features for Partner',
 	},
 ];
 </script>
