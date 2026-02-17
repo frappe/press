@@ -104,6 +104,33 @@ class PrometheusInvestigationHelper:
 		step.is_unable_to_investigate = True
 		step.save()
 
+	def _fetch_with_time_shifts(
+		self,
+		fetch_fn: typing.Callable,
+		shifts: list[int] | int,
+		**kwargs,
+	):
+		"""Fetch range data with retries and shifted time windows in case of missing data"""
+		if isinstance(shifts, int):
+			shifts = [shifts]
+
+		if 0 not in shifts:
+			shifts.insert(0, 0)  # Ensure we check the original window first
+
+		# Return the first metric data found, or None if no data is found
+		for shift in shifts:
+			shifted_start_time = self.investigation_window_start_time - datetime.timedelta(minutes=shift)
+			shifted_end_time = self.investigation_window_end_time - datetime.timedelta(minutes=shift)
+			metric_data = fetch_fn(
+				start_time=shifted_start_time,
+				end_time=shifted_end_time,
+				**kwargs,
+			)
+			if metric_data:
+				return metric_data
+
+		return None
+
 	def has_high_system_load(self, instance: str, step: "InvestigationStep"):
 		"""Check number of processes waiting for cpu time
 		if the number is higher than 3 times the number of vcpus load is high
@@ -111,11 +138,12 @@ class PrometheusInvestigationHelper:
 		assert self.investigation_window_start_time and self.investigation_window_end_time, (
 			"Investigation window not set"
 		)
-		metric_data = self.prometheus_client.get_metric_range_data(
+
+		metric_data = self._fetch_with_time_shifts(
+			fetch_fn=self.prometheus_client.get_metric_range_data,
+			shifts=[2, 5],
 			metric_name="node_load5",
 			label_config={"instance": instance, "job": "node"},
-			start_time=self.investigation_window_start_time,
-			end_time=self.investigation_window_end_time,
 			chunk_size=(self.investigation_window_end_time - self.investigation_window_start_time),
 		)
 
@@ -134,11 +162,8 @@ class PrometheusInvestigationHelper:
 			"Investigation window not set"
 		)
 
-		metric_data = self.prometheus_client.custom_query_range(
-			query,
-			start_time=self.investigation_window_start_time,
-			end_time=self.investigation_window_end_time,
-			step="1m",
+		metric_data = self._fetch_with_time_shifts(
+			fetch_fn=self.prometheus_client.custom_query_range, shifts=[2, 5], query=query, step="1m"
 		)
 
 		if not metric_data or len(metric_data[0]["values"]) < 2:
@@ -166,11 +191,11 @@ class PrometheusInvestigationHelper:
 				) * 100
 				"""
 
-		metric_data = self.prometheus_client.custom_query_range(
-			query,
-			start_time=self.investigation_window_start_time,
-			end_time=self.investigation_window_end_time,
-			step="1m",  # Since investigation window is of 5m resolution of 1m is fine for now
+		metric_data = self._fetch_with_time_shifts(
+			fetch_fn=self.prometheus_client.custom_query_range,
+			shifts=[2, 5],
+			query=query,
+			step="1m",
 		)
 
 		if not metric_data:
