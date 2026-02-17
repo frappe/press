@@ -19,7 +19,7 @@ from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 
 if TYPE_CHECKING:
-	from datetime import datetime
+	from datetime import date
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.site_update.site_update import SiteUpdate
@@ -147,10 +147,14 @@ class SiteBackup(Document):
 			frappe.throw("Site deactivation should be used for physical backups only")
 
 	def before_insert(self):
+		if self.flags.get("skip_backup_after_insert"):
+			return
+
 		if getattr(self, "force", False):
 			if self.physical:
 				frappe.throw("Physical backups cannot be forcefully triggered")
 			return
+
 		# For backups, check if there are too many pending backups
 		two_hours_ago = frappe.utils.add_to_date(None, hours=-2)
 		if frappe.db.count(
@@ -163,27 +167,13 @@ class SiteBackup(Document):
 		):
 			frappe.throw("Too many pending backups", SiteTooManyPendingBackups)
 
-		if self.physical:
-			# validate physical backup enabled on database server
-			if not bool(
-				frappe.utils.cint(
-					frappe.get_value("Database Server", self.database_server, "enable_physical_backup")
-				)
-			):
-				frappe.throw(
-					"Physical backup is not enabled for this database server. Please reach out to support."
-				)
-			# Set some default values
-			site = frappe.get_doc("Site", self.site)
-			if not site.database_name:
-				site.sync_info()
-				site.reload()
-			if not site.database_name:
-				frappe.throw("Database name is missing in the site")
-			self.database_name = site.database_name
-			self.snapshot_request_key = frappe.generate_hash(length=32)
+		self.validate_and_setup_physical_backup()
 
 	def after_insert(self):
+		# Skip backup creation if this record was created from archive site or unistall app jobs (backup already performed, just recording it)
+		if self.flags.get("skip_backup_after_insert"):
+			return
+
 		if self.deactivate_site_during_backup:
 			agent = Agent(self.server)
 			agent.deactivate_site(
@@ -191,6 +181,28 @@ class SiteBackup(Document):
 			)
 		else:
 			self.start_backup()
+
+	def validate_and_setup_physical_backup(self):
+		if not self.physical:
+			return
+		# Validate physical backup enabled on database server
+		if not bool(
+			frappe.utils.cint(
+				frappe.get_value("Database Server", self.database_server, "enable_physical_backup")
+			)
+		):
+			frappe.throw(
+				"Physical backup is not enabled for this database server. Please reach out to support."
+			)
+		# Set some default values
+		site = frappe.get_doc("Site", self.site)
+		if not site.database_name:
+			site.sync_info()
+			site.reload()
+		if not site.database_name:
+			frappe.throw("Database name is missing in the site")
+		self.database_name = site.database_name
+		self.snapshot_request_key = frappe.generate_hash(length=32)
 
 	def start_backup(self):
 		if self.physical:
@@ -413,11 +425,11 @@ class SiteBackup(Document):
 				)
 
 	@classmethod
-	def offsite_backup_exists(cls, site: str, day: datetime.date) -> bool:
+	def offsite_backup_exists(cls, site: str, day: date) -> bool:
 		return cls.backup_exists(site, day, {"offsite": True})
 
 	@classmethod
-	def backup_exists(cls, site: str, day: datetime.date, filters: dict):
+	def backup_exists(cls, site: str, day: date, filters: dict):
 		base_filters = {
 			"creation": ("between", [day, day]),
 			"site": site,
@@ -426,7 +438,7 @@ class SiteBackup(Document):
 		return frappe.get_all("Site Backup", {**base_filters, **filters})
 
 	@classmethod
-	def file_backup_exists(cls, site: str, day: datetime.date) -> bool:
+	def file_backup_exists(cls, site: str, day: date) -> bool:
 		return cls.backup_exists(site, day, {"with_files": True})
 
 
