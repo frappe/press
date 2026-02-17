@@ -229,27 +229,17 @@ def update_from_site_update():
 	ongoing_version_upgrades = VersionUpgrade.get_all_ongoing_version_upgrades()
 	for version_upgrade in ongoing_version_upgrades:
 		try:
-			site_update = frappe.get_doc("Site Update", version_upgrade.site_update)
-			version_upgrade.status = site_update.status
-			if site_update.status in ["Failure", "Recovered", "Fatal"]:
-				last_traceback = frappe.get_value("Agent Job", site_update.update_job, "traceback")
-				last_output = frappe.get_value("Agent Job", site_update.update_job, "output")
-				version_upgrade.last_traceback = last_traceback
-				version_upgrade.last_output = last_output
+			if not version_upgrade.site_update:
+				continue
+			site_update_status, site_update_job = frappe.db.get_value(
+				"Site Update",
+				version_upgrade.site_update,
+				["status", "update_job"],
+			)
+			version_upgrade.status = site_update_status
+			if site_update_status in ["Failure", "Recovered", "Fatal"]:
 				version_upgrade.status = "Failure"
-
-				frappe.sendmail(
-					recipients=get_communication_info("Email", "Site Activity", "Site", version_upgrade.site),
-					subject=f"Automated Version Upgrade Failed for {version_upgrade.site}",
-					reference_doctype="Version Upgrade",
-					reference_name=version_upgrade.name,
-					template="version_upgrade_failed",
-					args={
-						"site": version_upgrade.site,
-						"traceback": last_traceback,
-						"output": last_output,
-					},
-				)
+				version_upgrade.send_version_upgrade_failure_email(agent_job=site_update_job)
 			version_upgrade.save()
 			frappe.db.commit()
 		except Exception:
