@@ -158,22 +158,46 @@ class VersionUpgrade(Document):
 			else:
 				self.start()
 		elif job.status in ["Failure", "Delivery Failure"]:
-			self.status = "Failure"
-			self.last_traceback = job.traceback
-			self.last_output = job.output
+			self.status = "Cancelled"
+			self.send_version_upgrade_failure_email(agent_job=job.name, bench_deploy_failure=True)
 			self.save()
 
-			site = frappe.get_doc("Site", self.site)
-			next_version = frappe.get_value("Release Group", self.destination_group, "version")
-			message = f"Bench deployment for site upgrade of <b>{site.host_name}</b> to <b>{next_version}</b> failed"
+	def send_version_upgrade_failure_email(self, agent_job: str, bench_deploy_failure: bool = False) -> None:
+		# Set failure traceback and send email to inform user
+		traceback, output = frappe.get_value("Agent Job", agent_job, ["traceback", "output"])
+		self.last_traceback = traceback
+		self.last_output = output
 
-			create_new_notification(
-				site.team,
-				"Version Upgrade",
-				"Agent Job",
-				job.name,
-				message,
-			)
+		recipients = get_communication_info("Email", "Site Activity", "Site", self.site)
+		if not recipients:
+			return
+
+		subject = f"Automated Version Upgrade Failed for {self.site}"
+		content = frappe.render_template(
+			"press/templates/emails/version_upgrade_failed.html",
+			{
+				"site": self.site,
+				"traceback": traceback,
+				"output": output,
+				"bench_deploy_failure": bench_deploy_failure,
+			},
+			is_path=True,
+		)
+		communication = frappe.get_doc(
+			{
+				"doctype": "Communication",
+				"communication_type": "Communication",
+				"communication_medium": "Email",
+				"reference_doctype": self.doctype,
+				"reference_name": self.name,
+				"subject": subject,
+				"content": content,
+				"is_notification": True,
+				"recipients": ", ".join(recipients),
+			}
+		)
+		communication.insert(ignore_permissions=True)
+		communication.send_email()
 
 	@classmethod
 	def get_all_scheduled_before_now(cls) -> list["VersionUpgrade"]:
