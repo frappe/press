@@ -2681,14 +2681,17 @@ class Site(Document, TagHelpers):
 	def suspend(self, reason=None, skip_reload=False):
 		log_site_activity(self.name, "Suspend Site", reason)
 		self.status = "Suspended"
-		self.update_site_config({"maintenance_mode": 1})
-		self.update_site_status_on_proxy("suspended", skip_reload=skip_reload)
-		self.deactivate_app_subscriptions()
 
 		if self.standby_for_product:
 			from press.saas.doctype.product_trial.product_trial import send_suspend_mail
 
 			send_suspend_mail(self.name, self.standby_for_product)
+			self.update_site_config({"maintenance_mode": 1, "allow_reads_during_maintenance": 1})
+		else:
+			self.update_site_config({"maintenance_mode": 1})
+			self.update_site_status_on_proxy("suspended", skip_reload=skip_reload)
+
+		self.deactivate_app_subscriptions()
 
 		if self.site_usage_exceeded:
 			frappe.sendmail(
