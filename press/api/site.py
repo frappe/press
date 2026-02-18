@@ -14,6 +14,7 @@ from botocore.exceptions import ClientError
 from frappe.core.utils import find
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.query_builder import Case
+from frappe.query_builder.terms import ValueWrapper
 from frappe.rate_limiter import rate_limit
 from frappe.utils import flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
@@ -2430,8 +2431,9 @@ def get_private_groups_for_upgrade(name, version, release_groups=None):
 	if role_guard.is_restricted():
 		release_groups = role_guard.permitted_documents("Release Group")
 		if not release_groups:
-			return []
-		query = query.where(ReleaseGroup.name.isin(release_groups))
+			query = query.where(ValueWrapper(1) == 0)  # Hack!
+		else:
+			query = query.where(ReleaseGroup.name.isin(release_groups))
 
 	return query.run(as_dict=True)
 
