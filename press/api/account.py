@@ -273,22 +273,18 @@ def accept_team_invite(key: str):
 	if frappe.session.user != account_request.email:
 		frappe.throw("This invite is not for your account")
 
-	current_user = frappe.session.user
-	try:
-		frappe.set_user("Administrator")
+	team = account_request.team
+	first_name = account_request.first_name
+	last_name = account_request.last_name
+	email = account_request.email
+	password = None
+	role = account_request.role
+	press_roles = account_request.press_roles
 
-		team = account_request.team
-		first_name = account_request.first_name
-		last_name = account_request.last_name
-		email = account_request.email
-		password = None
-		role = account_request.role
-		press_roles = account_request.press_roles
-
-		team_doc = frappe.get_doc("Team", team)
-		team_doc.create_user_for_member(first_name, last_name, email, password, role, press_roles)
-	finally:
-		frappe.set_user(current_user)
+	team_doc = frappe.get_doc("Team", team, ignore_permissions=True)
+	team_doc.create_user_for_member(
+		first_name, last_name, email, password, role, press_roles, skip_validations=True
+	)
 
 
 @frappe.whitelist(allow_guest=True)
