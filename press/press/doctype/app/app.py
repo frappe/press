@@ -8,6 +8,7 @@ import frappe
 import rq
 import semantic_version as sv
 from frappe.model.document import Document
+from semantic_version.base import AllOf, AnyOf
 
 from press.utils.jobs import has_job_timeout_exceeded
 
@@ -125,11 +126,26 @@ def is_bounded(spec: sv.NpmSpec) -> bool:
 
 
 def get_lower_bound_major(spec: sv.NpmSpec) -> int | None:
-	lower_bound = [clause for clause in spec.clause.clauses if ">" in clause.operator]
-	if lower_bound:
-		return lower_bound[0].target.major
+	stack = [spec.clause]
+	clauses = []
 
-	return None
+	while stack:
+		node = stack.pop()
+
+		if hasattr(node, "operator"):
+			clauses.append(node)
+			continue
+
+		if isinstance(node, (AllOf, AnyOf)):
+			# Takes care of mess like `-dev` parsing the all of tree
+			stack.extend(node.clauses)
+
+	lowers = [c.target for c in clauses if c.operator in (">", ">=")]
+
+	if not lowers:
+		return None
+
+	return min(lowers).major
 
 
 def map_frappe_version(
