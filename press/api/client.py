@@ -28,6 +28,7 @@ if typing.TYPE_CHECKING:
 ALLOWED_DOCTYPES = [
 	"Site",
 	"Site App",
+	"Site Action",
 	"Site Domain",
 	"Site Backup",
 	"Site Activity",
@@ -316,7 +317,8 @@ def run_doc_method(dt: str, dn: str, method: str, args: dict | None = None):
 		args=fix_args(method, args),
 	)
 
-	frappe.response.docs = [get(dt, dn)]
+	# frappe.response.docs = [get(dt, dn)]
+	frappe.response.docs = {}
 
 
 @frappe.whitelist()

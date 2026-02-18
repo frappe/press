@@ -55,14 +55,8 @@ function getSiteActionHandler(action) {
 		'Version upgrade': defineAsyncComponent(
 			() => import('./site/SiteVersionUpgradeDialog.vue'),
 		),
-		'Change bench group': defineAsyncComponent(
-			() => import('./site/SiteChangeGroupDialog.vue'),
-		),
-		'Change region': defineAsyncComponent(
-			() => import('./site/SiteChangeRegionDialog.vue'),
-		),
-		'Change server': defineAsyncComponent(
-			() => import('./site/SiteChangeServerDialog.vue'),
+		'Schedule backup': defineAsyncComponent(
+			() => import('./site/SiteScheduleBackup.vue'),
 		),
 	};
 	if (actionDialogs[action]) {
