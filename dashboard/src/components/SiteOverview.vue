@@ -177,7 +177,7 @@
 						<div>
 							<div class="mt-2 flex justify-between">
 								<div class="text-sm text-gray-600">
-									{{ currentUsage.cpu }}
+									{{ currentUsageLoading ? '—' : currentUsage.cpu }}
 									{{ $format.plural(currentUsage.cpu, 'hour', 'hours') }}
 									<template
 										v-if="currentPlan && !$site.doc.is_dedicated_server"
@@ -208,7 +208,11 @@
 						<div>
 							<div class="mt-2 flex justify-between">
 								<div class="text-sm text-gray-600">
-									{{ formatBytes(currentUsage.storage) }}
+									{{
+										currentUsageLoading
+											? '—'
+											: formatBytes(currentUsage.storage)
+									}}
 									<template
 										v-if="currentPlan && !$site.doc.is_dedicated_server"
 									>
@@ -249,7 +253,11 @@
 						<div>
 							<div class="mt-2 flex justify-between">
 								<div class="text-sm text-gray-600">
-									{{ formatBytes(currentUsage.database) }}
+									{{
+										currentUsageLoading
+											? '—'
+											: formatBytes(currentUsage.database)
+									}}
 									<template
 										v-if="currentPlan && !$site.doc.is_dedicated_server"
 									>
@@ -410,6 +418,21 @@ export default {
 		},
 		trialDays,
 	},
+	resources: {
+		currentUsage() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				makeParams() {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'get_current_usage',
+					};
+				},
+				auto: true,
+			};
+		},
+	},
 	computed: {
 		siteInformation() {
 			return [
@@ -478,7 +501,16 @@ export default {
 			};
 		},
 		currentUsage() {
-			return this.$site.doc?.current_usage;
+			return (
+				this.$resources?.currentUsage?.data?.message ?? {
+					cpu: 0,
+					storage: 0,
+					database: 0,
+				}
+			);
+		},
+		currentUsageLoading() {
+			return this.$resources?.currentUsage?.loading ?? true;
 		},
 		$site() {
 			return getCachedDocumentResource('Site', this.site);
