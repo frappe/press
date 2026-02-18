@@ -5,23 +5,11 @@ from press.utils import get_current_team
 
 
 @frappe.whitelist()
-@role_guard.document(
-	document_type=lambda _: "Site",
-	inject_values=True,
-	should_throw=False,
-)
-@role_guard.document(
-	document_type=lambda _: "Release Group",
-	inject_values=True,
-	should_throw=False,
-)
 def get_notifications(
 	filters=None,
 	order_by="creation desc",
 	limit_start=None,
 	limit_page_length=None,
-	sites=None,
-	release_groups=None,
 ):
 	if not filters:
 		filters = {}
@@ -47,13 +35,12 @@ def get_notifications(
 		.offset(limit_start)
 	)
 
-	resources = set()
-	if sites and isinstance(sites, list):
-		resources.update(sites)
-	if release_groups and isinstance(release_groups, list):
-		resources.update(release_groups)
-
-	if resources:
+	if role_guard.is_restricted():
+		pemitted_sites = role_guard.permitted_documents("Site")
+		permitted_release_groups = role_guard.permitted_documents("Release Group")
+		resources = [*pemitted_sites, *permitted_release_groups]
+		if not resources:
+			return []
 		query = query.where(PressNotification.reference_name.isin(resources))
 
 	if filters.get("read") == "Unread":

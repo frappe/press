@@ -66,16 +66,8 @@ def validate(self):
 
 ```python
 @frappe.whitelist()
-@role_guard.document(
-	document_type=lambda _: "Site",
-	inject_values=True,
-	should_throw=False,
-)
-@role_guard.document(
-	document_type=lambda _: "Release Group",
-	inject_values=True,
-	should_throw=False,
-)
+@role_guard.document(document_type=lambda _: "Site")
+@role_guard.document(document_type=lambda _: "Release Group")
 def get_notifications(
 	filters=None,
 	order_by="creation desc",
@@ -89,11 +81,7 @@ def get_notifications(
 `role_guard.action` can be used to restrict site and server creations.
 `role_guard.document` can be used to restrict access to documents based on the
 user's role in the team that the document belongs to. In the above example, we
-are restricting access to "Site" and "Release Group" documents. The
-`inject_values` parameter allows us to inject the team value into the function
-parameters, which can then be used to apply necessary filters in our queries.
-The `should_throw` parameter determines whether an exception should be thrown
-if the user does not have the required role.
+are restricting access to "Site" and "Release Group" documents.
 
 ## Warnings
 

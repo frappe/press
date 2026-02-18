@@ -162,12 +162,6 @@ def get_list(
 	return []
 
 
-@role_guard.document(
-	document_type=lambda args: str(args.get("doctype")),
-	should_throw=False,
-	inject_values=True,
-	injection_key="document_options",
-)
 def get_list_query(
 	doctype: str,
 	meta: "Meta",
@@ -177,7 +171,6 @@ def get_list_query(
 	start: int,
 	limit: int,
 	order_by: str | None,
-	document_options=None,
 ):
 	query = frappe.qb.get_query(
 		doctype,
@@ -198,9 +191,13 @@ def get_list_query(
 			.where(ParentDocType.team == frappe.local.team().name)
 		)
 
-	if document_options and isinstance(document_options, list):
+	restricted_doctypes = ("Site", "Release Group", "Server")
+	if doctype in restricted_doctypes and role_guard.is_restricted():
+		permitted_documents = role_guard.permitted_documents(doctype)
+		if not permitted_documents:
+			return []
 		QueryDoctype = frappe.qb.DocType(doctype)
-		query = query.where(QueryDoctype.name.isin(document_options))
+		query = query.where(QueryDoctype.name.isin(permitted_documents))
 
 	return query
 
