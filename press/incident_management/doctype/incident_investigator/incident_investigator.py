@@ -312,12 +312,15 @@ class DatabaseInvestigationActions:
 		provider = frappe.db.get_value("Virtual Machine", virtual_machine, "cloud_provider")
 
 		virtual_machine_doc: VirtualMachine = frappe.get_cached_doc("Virtual Machine", virtual_machine)
-		if provider == "AWS EC2":
-			virtual_machine_doc.reboot_with_serial_console()
-		else:
-			virtual_machine_doc.reboot()
+		try:
+			if provider == "AWS EC2":
+				virtual_machine_doc.reboot_with_serial_console()
+			else:
+				virtual_machine_doc.reboot()
+			step.status = StepStatus.Success
+		except Exception:
+			step.status = StepStatus.Failure
 
-		step.status = StepStatus.Success
 		step.save()
 
 	def add_database_server_investigation_actions(self):

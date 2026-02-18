@@ -121,14 +121,22 @@ def is_bounded(spec: sv.NpmSpec) -> bool:
 	has_upper_bound = "<" in standardized
 	has_lower_bound = ">" in standardized
 
-	if "==" in standardized or (">" not in standardized and "<" not in standardized):
-		return True
-
 	return has_upper_bound and has_lower_bound
 
 
+def get_lower_bound_major(spec: sv.NpmSpec) -> int | None:
+	lower_bound = [clause for clause in spec.clause.clauses if ">" in clause.operator]
+	if lower_bound:
+		return lower_bound[0].target.major
+
+	return None
+
+
 def map_frappe_version(
-	version_string: str, frappe_versions: list[dict[str, int | str]], app_title: str
+	version_string: str,
+	frappe_versions: list[dict[str, int | str]],
+	app_title: str,
+	ease_versioning_constrains: bool = False,
 ) -> list[str]:
 	"""Map a version spec to supported Frappe versions."""
 	matched = []
@@ -158,6 +166,12 @@ def map_frappe_version(
 		if spec.match(supported_version):
 			matched.append(str(version["name"]))
 
+		if ease_versioning_constrains:
+			# Get major version of the lower bound
+			lower_bound_major = get_lower_bound_major(spec)
+			if lower_bound_major == version["number"] and str(version["name"]) not in matched:
+				matched.append(str(version["name"]))
+
 	# Check if the spec can support more than the highest stable version
 	if (
 		spec.match(highest_supported_stable_version.next_patch())
@@ -169,7 +183,9 @@ def map_frappe_version(
 	return matched
 
 
-def parse_frappe_version(version_string: str, app_title: str) -> set[str]:
+def parse_frappe_version(
+	version_string: str, app_title: str, ease_versioning_constrains: bool = False
+) -> set[str]:
 	"""Parse the Frappe version from a version string."""
 	frappe_versions = frappe.get_all(
 		"Frappe Version",
@@ -190,4 +206,4 @@ def parse_frappe_version(version_string: str, app_title: str) -> set[str]:
 	]:
 		return set([version_string] if isinstance(version_string, str) else version_string)
 
-	return set(map_frappe_version(version_string, frappe_versions, app_title))
+	return set(map_frappe_version(version_string, frappe_versions, app_title, ease_versioning_constrains))
