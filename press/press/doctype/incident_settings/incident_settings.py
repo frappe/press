@@ -33,6 +33,7 @@ class IncidentSettings(Document):
 		phone_call_alerts: DF.Check
 		self_hosted_users: DF.Table[IncidentSettingsSelfHostedUser]
 		users: DF.Table[IncidentSettingsUser]
+		wait_time_post_investigator_actions: DF.Duration | None
 	# end: auto-generated types
 
 	pass

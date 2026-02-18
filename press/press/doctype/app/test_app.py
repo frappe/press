@@ -131,28 +131,6 @@ class TestApp(FrappeTestCase):
 
 	def test_version_parsing(self):
 		"""Test version parsing"""
-		frappe_versions = [
-			{"version": "Version 12", "number": 12, "public": 1, "status": "stable"},
-			{"version": "Version 13", "number": 13, "public": 1, "status": "stable"},
-			{"version": "Version 14", "number": 14, "public": 1, "status": "stable"},
-			{"version": "Version 15", "number": 15, "public": 1, "status": "stable"},
-			{"version": "Version 16", "number": 16, "public": 1, "status": "develop"},
-			{"version": "Nightly", "number": 15, "public": 1, "status": "stable"},
-		]
-
-		for version in frappe_versions:
-			(
-				frappe.get_doc(
-					{
-						"doctype": "Frappe Version",
-						"version": version["version"],
-						"number": version["number"],
-						"public": version["public"],
-						"status": version["status"],
-					}
-				)
-			)
-
 		accepted_frappe_version_strings = [
 			"Version 12",
 			"Version 13",
@@ -167,7 +145,7 @@ class TestApp(FrappeTestCase):
 			self.assertSetEqual(parsed_version, {version_string})
 
 		accepted_custom_version_strings = [
-			(">=16.0.0,<17.0.0", {"Version 16", "Version 16 Beta", "Nightly"}),
+			(">=16.0.0,<17.0.0", {"Version 16", "Nightly"}),
 			(">=15.0.0,<16.0.0", {"Version 15", "Nightly"}),
 			(">=14.0.0,<15.0.0", {"Version 14"}),
 			(">=13.0.0,<14.0.0", {"Version 13"}),

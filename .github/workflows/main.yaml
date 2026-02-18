@@ -447,10 +447,6 @@ jobs:
         with:
           install: true
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: failure()
-
       - name: Run Tests
         working-directory: /home/runner/frappe-bench
         run: |

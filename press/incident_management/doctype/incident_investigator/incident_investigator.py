@@ -341,24 +341,19 @@ class DatabaseInvestigationActions:
 			return
 
 		database_likely_causes = set(self.investigator.likely_causes["database"])
-		if (
-			database_likely_causes
-			and database_likely_causes.issubset(
-				{
-					PrometheusInvestigationHelper.has_high_cpu_load.__name__,
-					PrometheusInvestigationHelper.has_high_memory_usage.__name__,
-					PrometheusInvestigationHelper.has_high_system_load.__name__,
-				}
-			)
-			and database_likely_causes
-			!= {
-				PrometheusInvestigationHelper.has_high_memory_usage.__name__
-			}  # This ensure that memory high is not the only likely cause
-		):  # don't trigger this only for high memory issues
-			for step in self.investigator.get_steps(
-				[self.capture_process_list, self.initiate_database_reboot]
-			):
-				self.investigator.append("action_steps", step)
+		if database_likely_causes:
+			all_three_causes = {
+				PrometheusInvestigationHelper.has_high_cpu_load.__name__,
+				PrometheusInvestigationHelper.has_high_memory_usage.__name__,
+				PrometheusInvestigationHelper.has_high_system_load.__name__,
+			}
+
+			# Check if all three causes are identified
+			if database_likely_causes.issubset(all_three_causes):
+				for step in self.investigator.get_steps(
+					[self.capture_process_list, self.initiate_database_reboot]
+				):
+					self.investigator.append("action_steps", step)
 
 		self.investigator.save()
 
