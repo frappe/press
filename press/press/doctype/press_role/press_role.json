@@ -50,7 +50,8 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "section_break_zdiv",
@@ -75,31 +76,36 @@
    "default": "0",
    "fieldname": "allow_billing",
    "fieldtype": "Check",
-   "label": "Allow Billing"
+   "label": "Allow Billing",
+   "search_index": 1
   },
   {
    "default": "0",
    "fieldname": "allow_apps",
    "fieldtype": "Check",
-   "label": "Allow Apps"
+   "label": "Allow Apps",
+   "search_index": 1
   },
   {
    "default": "0",
    "fieldname": "allow_site_creation",
    "fieldtype": "Check",
-   "label": "Allow Site Creation"
+   "label": "Allow Site Creation",
+   "search_index": 1
   },
   {
    "default": "0",
    "fieldname": "allow_bench_creation",
    "fieldtype": "Check",
-   "label": "Allow Bench Creation"
+   "label": "Allow Bench Creation",
+   "search_index": 1
   },
   {
    "default": "0",
    "fieldname": "allow_server_creation",
    "fieldtype": "Check",
-   "label": "Allow Server Creation"
+   "label": "Allow Server Creation",
+   "search_index": 1
   },
   {
    "default": "0",
@@ -111,13 +117,15 @@
    "default": "0",
    "fieldname": "admin_access",
    "fieldtype": "Check",
-   "label": "Admin Access"
+   "label": "Admin Access",
+   "search_index": 1
   },
   {
    "default": "0",
    "fieldname": "allow_webhook_configuration",
    "fieldtype": "Check",
-   "label": "Allow Webhook Configuration"
+   "label": "Allow Webhook Configuration",
+   "search_index": 1
   },
   {
    "depends_on": "allow_partner",
@@ -167,24 +175,27 @@
    "default": "0",
    "fieldname": "all_servers",
    "fieldtype": "Check",
-   "label": "All Servers"
+   "label": "All Servers",
+   "search_index": 1
   },
   {
    "default": "0",
    "fieldname": "all_sites",
    "fieldtype": "Check",
-   "label": "All Sites"
+   "label": "All Sites",
+   "search_index": 1
   },
   {
    "default": "0",
    "fieldname": "all_release_groups",
    "fieldtype": "Check",
-   "label": "All Release Groups"
+   "label": "All Release Groups",
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-18 00:50:44.438190",
+ "modified": "2026-02-18 18:52:22.107986",
  "modified_by": "hello@ssiyad.com",
  "module": "Press",
  "name": "Press Role",
