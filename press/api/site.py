@@ -2268,11 +2268,7 @@ def validate_group_for_upgrade(name, group_name):
 
 @frappe.whitelist()
 @protected("Site")
-@role_guard.document(
-	document_type=lambda _: "Release Group",
-	inject_values=True,
-	should_throw=False,
-)
+@role_guard.document(document_type=lambda _: "Release Group")
 def change_group_options(name, release_groups=None):
 	team = get_current_team()
 	group, server, plan = frappe.db.get_value("Site", name, ["group", "server", "plan"])
