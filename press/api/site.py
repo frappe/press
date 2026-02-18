@@ -2267,6 +2267,7 @@ def validate_group_for_upgrade(name, group_name):
 
 @frappe.whitelist()
 @protected("Site")
+<<<<<<< HEAD
 @role_guard.document(
 	document_type=lambda _: "Release Group",
 	inject_values=True,
@@ -2404,6 +2405,8 @@ def change_region(name, cluster, scheduled_datetime=None, skip_failing_patches=F
 	inject_values=True,
 	should_throw=False,
 )
+=======
+>>>>>>> 4e0b00a27 (feat(roles): Get rid of inject)
 def get_private_groups_for_upgrade(name, version, release_groups=None):
 	team = get_current_team()
 	version_number = frappe.db.get_value("Frappe Version", version, "number")
@@ -2432,7 +2435,10 @@ def get_private_groups_for_upgrade(name, version, release_groups=None):
 		.distinct()
 	)
 
-	if release_groups and isinstance(release_groups, list):
+	if role_guard.is_restricted():
+		release_groups = role_guard.permitted_documents("Release Group")
+		if not release_groups:
+			return []
 		query = query.where(ReleaseGroup.name.isin(release_groups))
 
 	return query.run(as_dict=True)

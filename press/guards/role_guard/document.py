@@ -6,7 +6,7 @@ from frappe.query_builder.terms import QueryBuilder
 from press.utils import get_current_team
 
 
-def check(base_query: QueryBuilder, document_type: str, document_name: str) -> bool | list[str]:
+def check(base_query: QueryBuilder, document_type: str, document_name: str | None = None) -> bool | list[str]:
 	if document_name:
 		return has_user_permission(document_type) or document(base_query, document_type, document_name)
 	if has_user_permission(document_type):
