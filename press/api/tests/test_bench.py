@@ -265,7 +265,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11"},  # updated
+					{"key": "NODE_VERSION", "value": "16.11.0"},  # updated
 					{"key": "NVM_VERSION", "value": "0.36.0"},
 					{"key": "PYTHON_VERSION", "value": "3.6"},  # updated
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
@@ -278,7 +278,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 		self.rg.reload()
 		self.assertTrue(self.rg.last_dependency_update)
 		self.assertEqual(
-			find(self.rg.dependencies, lambda d: d.dependency == "NODE_VERSION").version, "16.11"
+			find(self.rg.dependencies, lambda d: d.dependency == "NODE_VERSION").version, "16.11.0"
 		)
 		self.assertEqual(
 			find(self.rg.dependencies, lambda d: d.dependency == "PYTHON_VERSION").version,
@@ -332,7 +332,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11"},
+					{"key": "NODE_VERSION", "value": "16.11.0"},
 					{"key": "NVM_VERSION", "value": "0.36.0"},
 					{"key": "PYTHON_VERSION", "value": "3.6"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
@@ -348,7 +348,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11"},
+					{"key": "NODE_VERSION", "value": "16.11.0"},
 					{"key": "NVM_VERSION", "value": "0.36.0"},
 					{"key": "PYTHON_VERSION", "value": "3.6"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
@@ -373,7 +373,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11"},
+					{"key": "NODE_VERSION", "value": "16.11.0"},
 					{"key": "NVM_VERSION", "value": "0.36.0"},
 					{"key": "PYTHON_VERSION", "value": "3.6"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
@@ -395,7 +395,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11"},
+					{"key": "NODE_VERSION", "value": "16.11.0"},
 					{"key": "NVM_VERSION", "value": "0.36.0"},
 					{"key": "PYTHON_VERSION", "value": "3.6"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
@@ -419,7 +419,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11"},
+					{"key": "NODE_VERSION", "value": "16.11.0"},
 					{"key": "NVM_VERSION", "value": "0.36.0"},
 					{"key": "PYTHON_VERSION", "value": "3.6"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
@@ -433,7 +433,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 
 	def test_dependencies_lists_all_dependencies(self):
 		deps = [
-			{"key": "NODE_VERSION", "value": "16.11"},
+			{"key": "NODE_VERSION", "value": "16.11.0"},
 			{"key": "NVM_VERSION", "value": "0.36.0"},
 			{"key": "PYTHON_VERSION", "value": "3.6"},
 			{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
@@ -452,7 +452,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 
 	def test_dependencies_shows_dependency_update_available_on_update_of_the_same(self):
 		deps = [
-			{"key": "NODE_VERSION", "value": "16.11"},
+			{"key": "NODE_VERSION", "value": "16.11.0"},
 			{"key": "NVM_VERSION", "value": "0.36.0"},
 			{"key": "PYTHON_VERSION", "value": "3.6"},
 			{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
@@ -461,7 +461,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 		]
 		self.assertFalse(dependencies(self.rg.name)["update_available"])
 		create_test_bench(group=self.rg)  # don't show dependency update available for new deploys
-		deps[0]["value"] = "16.12"
+		deps[0]["value"] = "16.12.0"
 		update_dependencies(
 			self.rg.name,
 			json.dumps(deps),
