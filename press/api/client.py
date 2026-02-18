@@ -46,7 +46,6 @@ ALLOWED_DOCTYPES = [
 	"Release Group App",
 	"Release Group Dependency",
 	"Cluster",
-	"Press Permission Group",
 	"Press Role",
 	"Team",
 	"Product Trial Request",
