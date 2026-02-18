@@ -13,7 +13,6 @@ from frappe import _
 from frappe.core.doctype.user.user import update_password
 from frappe.core.utils import find
 from frappe.exceptions import DoesNotExistError
-from frappe.query_builder.functions import Count
 from frappe.rate_limiter import rate_limit
 from frappe.utils import cint, get_url
 from frappe.utils.data import sha256_hash
@@ -1047,44 +1046,61 @@ def fuse_list():
 	return frappe.db.sql(query, as_dict=True)
 
 
-def has_user_permission(key: str):
-	PressRole = frappe.qb.DocType("Press Role")
-	PressRoleUser = frappe.qb.DocType("Press Role User")
-	return (
-		frappe.qb.from_(PressRole)
-		.inner_join(PressRoleUser)
-		.on(PressRoleUser.parent == PressRole.name)
-		.select(Count(PressRole.name).as_("count"))
-		.where(PressRole.team == get_current_team())
-		.where(PressRole[key] == 1)
-		.where(PressRoleUser.user == frappe.session.user)
-		.run(as_dict=True)
-		.pop()
-		.get("count")
-		> 0
-	)
-
-
 @frappe.whitelist()
 def user_permissions():
 	team = get_current_team(get_doc=True)
+	cache_key = ".".join(("user_permissions", str(team.name), str(frappe.session.user)))
+	if frappe.cache.exists(cache_key):
+		return frappe.cache.get_value(cache_key)
 	is_owner = team.user == frappe.session.user
-	is_admin = is_owner or has_user_permission("admin_access")
-	return {
+	PressRole = frappe.qb.DocType("Press Role")
+	PressRoleUser = frappe.qb.DocType("Press Role User")
+	permission_fields = [
+		"admin_access",
+		"allow_billing",
+		"allow_webhook_configuration",
+		"allow_apps",
+		"allow_partner",
+		"allow_dashboard",
+		"allow_leads",
+		"allow_customer",
+		"allow_contribution",
+		"allow_site_creation",
+		"allow_bench_creation",
+		"allow_server_creation",
+	]
+	select_fields = [PressRole.name] + [PressRole[field] for field in permission_fields]
+	result = (
+		frappe.qb.from_(PressRole)
+		.inner_join(PressRoleUser)
+		.on(PressRoleUser.parent == PressRole.name)
+		.select(*select_fields)
+		.where(PressRole.team == team.name)
+		.where(PressRoleUser.user == frappe.session.user)
+		.run(as_dict=True)
+	)
+	permissions = {field: 0 for field in permission_fields}
+	for row in result:
+		for field in permission_fields:
+			permissions[field] = permissions[field] or row.get(field, 0)
+	is_admin = is_owner or permissions["admin_access"]
+	result = {
 		"owner": is_owner,
 		"admin": is_admin,
-		"billing": is_admin or has_user_permission("allow_billing"),
-		"webhook": is_admin or has_user_permission("allow_webhook_configuration"),
-		"apps": is_admin or has_user_permission("allow_apps"),
-		"partner": is_admin or has_user_permission("allow_partner"),
-		"partner_dashboard": is_admin or has_user_permission("allow_dashboard"),
-		"partner_leads": is_admin or has_user_permission("allow_leads"),
-		"partner_customer": is_admin or has_user_permission("allow_customer"),
-		"partner_contribution": is_admin or has_user_permission("allow_contribution"),
-		"site_creation": is_admin or has_user_permission("allow_site_creation"),
-		"bench_creation": is_admin or has_user_permission("allow_bench_creation"),
-		"server_creation": is_admin or has_user_permission("allow_server_creation"),
+		"billing": is_admin or permissions["allow_billing"],
+		"webhook": is_admin or permissions["allow_webhook_configuration"],
+		"apps": is_admin or permissions["allow_apps"],
+		"partner": is_admin or permissions["allow_partner"],
+		"partner_dashboard": is_admin or permissions["allow_dashboard"],
+		"partner_leads": is_admin or permissions["allow_leads"],
+		"partner_customer": is_admin or permissions["allow_customer"],
+		"partner_contribution": is_admin or permissions["allow_contribution"],
+		"site_creation": is_admin or permissions["allow_site_creation"],
+		"bench_creation": is_admin or permissions["allow_bench_creation"],
+		"server_creation": is_admin or permissions["allow_server_creation"],
 	}
+	frappe.cache.set_value(cache_key, result, expires_in_sec=60 * 5)
+	return result
 
 
 @frappe.whitelist()
