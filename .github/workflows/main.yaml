@@ -447,9 +447,6 @@ jobs:
         with:
           install: true
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
       - name: Run Tests
         working-directory: /home/runner/frappe-bench
         run: |
@@ -458,6 +455,12 @@ jobs:
         env:
           TYPE: server
           COVERAGE_RCFILE: /home/runner/frappe-bench/apps/press/.coveragerc
+
+      - name: Debug via tmate (on failure)
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
+        with:
+          timeout-minutes: 15
 
       - name: Upload coverage reports to Codecov
         uses: actions/upload-artifact@v4
