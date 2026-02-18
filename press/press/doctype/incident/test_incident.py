@@ -559,6 +559,9 @@ class TestIncident(FrappeTestCase):
 			)
 		)
 		incident = frappe.get_last_doc("Incident")
+		investigator = frappe.get_last_doc("Incident Investigator")
+		investigator.db_set("status", "Completed")
+
 		incident.db_set("status", "Confirmed")
 		incident.db_set(
 			"creation",
