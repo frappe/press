@@ -327,7 +327,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 	def test_cannot_remove_dependencies(self):
 		self.assertRaisesRegex(
 			Exception,
-			"You cannot add or remove dependencies, only update their versions. All required dependencies must be provided. Learn more",
+			"Need all required dependencies",
 			update_dependencies,
 			self.rg.name,
 			json.dumps(
@@ -343,7 +343,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 	def test_cannot_add_additional_invalid_dependencies(self):
 		self.assertRaisesRegex(
 			Exception,
-			"You cannot add or remove dependencies, only update their versions. All required dependencies must be provided. Learn more",
+			"Need all required dependencies",
 			update_dependencies,
 			self.rg.name,
 			json.dumps(
