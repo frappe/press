@@ -155,3 +155,4 @@ press.press.doctype.press_role.patches.to_resources
 press.press.doctype.server.patches.set_is_provisioning_press_job_completed
 press.patches.v0_8_0.add_cloud_providers_to_site_plans
 press.patches.v0_8_0.update_tmpdir_for_data_volume_dbs
+press.patches.v0_0_1.cancel_pending_version_upgrades_for_disabled_bench_groups.py
