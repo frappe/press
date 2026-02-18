@@ -1,6 +1,6 @@
 ---
 - name: Copy Files from Source to Destination
-  command: "cp --archive --recursive {{ source }}/. {{ destination }}/"
+  command: "cp --archive --recursive {{ extra_options | default('') }} {{ source }}/. {{ destination }}/"
   async: 7200
   poll: 5
 

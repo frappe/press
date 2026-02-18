@@ -169,12 +169,13 @@ class RootDomain(Document):
 			if to_delete:
 				self.delete_dns_records(to_delete)
 
-	def update_dns_records_for_sites(self, sites: list[str], proxy_server: str):
+	def update_dns_records_for_sites(
+		self, sites: list[str], proxy_server: str, batch_size: int = 500, ttl: int = 600
+	):
 		if self.generic_dns_provider:
 			return
 
-		# update records in batches of 500
-		batch_size = 500
+		# update records in batches
 		for i in range(0, len(sites), batch_size):
 			changes = []
 			for site in sites[i : i + batch_size]:
@@ -184,7 +185,7 @@ class RootDomain(Document):
 						"ResourceRecordSet": {
 							"Name": site,
 							"Type": "CNAME",
-							"TTL": 600,
+							"TTL": ttl,
 							"ResourceRecords": [{"Value": proxy_server}],
 						},
 					}
@@ -217,3 +218,11 @@ def cleanup_cname_records():
 @redis_cache(ttl=3600)
 def get_domains():
 	return frappe.get_all("Root Domain", filters={"enabled": ["=", "1"]}, pluck="name")
+
+
+def get_matching_domain(domain: str) -> str | None:
+	root_domains = get_domains()
+	for rd in root_domains:
+		if domain == rd or domain.endswith(f".{rd}"):
+			return rd
+	return None

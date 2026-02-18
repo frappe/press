@@ -1,10 +1,16 @@
 <template>
 	<FTabs v-if="visibleTabs?.length" v-model="currentTab" :tabs="visibleTabs">
-		<template #tab-panel="{ tab }">
+		<!-- TAB BUTTONS -->
+    <template #tab-item="{ tab, selected }">
+			<slot name="tab-item" :tab="tab" :selected="selected" />
+    </template>
+		
+		<!-- TAB CONTENT -->
+    <template #tab-panel="{ tab }">
 			<slot name="tab-content" :tab="tab">
 				<router-view :tab="tab" />
 			</slot>
-		</template>
+    </template>
 	</FTabs>
 </template>
 <script>
@@ -45,11 +51,12 @@ export default {
 				}
 				return 0;
 			},
-			set(val) {
-				let tab = this.visibleTabs[val];
-				let tabRouteName = tab.routeName || tab.route.name;
-				this.$router.push({ name: tabRouteName });
-			},
+			set(value) {
+				const tab = this.visibleTabs[value];
+				if (tab.route) {
+					this.$router.push(tab.route);
+				}
+			}
 		},
 	},
 };

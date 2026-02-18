@@ -138,6 +138,7 @@ class Incident(WebsiteGenerator):
 			)
 			incident_investigator.insert(ignore_permissions=True)
 			self.investigation = incident_investigator.name
+			self.save()
 		except frappe.ValidationError:
 			# Investigator in cool off period
 			pass
@@ -214,7 +215,31 @@ class Incident(WebsiteGenerator):
 		self.identify_affected_resource()  # assume 1 resource; Occam's razor
 		self.identify_problem()
 		self.take_grafana_screenshots()
+		if self.down_bench:
+			self.comment_bench_web_err_log(self.down_bench)
 		self.save()
+
+	def get_last_n_lines_of_log(self, log: str, n: int = 100) -> str:
+		# get last n lines of log
+		lines = log.splitlines()
+		return "\n".join(lines[-n:]) if len(lines) > n else log
+
+	def comment_bench_web_err_log(self, bench_name: str):
+		# get last 100 lines of web.error.log from the bench
+		bench: Bench = Bench("Bench", bench_name)
+		try:
+			log = bench.get_server_log("web.error.log")["web.error.log"]
+		except Exception as e:
+			log = f"Error fetching web.error.log: {e!s}"
+
+		self.add_comment(
+			"Comment",
+			f"""Last 100 lines of web.error.log for bench {bench_name}:<br/><br/>
+<pre class="ql-code-block-container">
+{self.get_last_n_lines_of_log(log)}
+</pre>
+""",
+		)
 
 	@frappe.whitelist()
 	def regather_info_and_screenshots(self):
@@ -431,6 +456,11 @@ class Incident(WebsiteGenerator):
 
 	def add_likely_cause(self, cause: str):
 		self.likely_cause = self.likely_cause + cause + "\n" if self.likely_cause else cause + "\n"
+
+	@cached_property
+	def down_bench(self):
+		down_benches = self.monitor_server.get_benches_down_for_server(str(self.server))
+		return down_benches[0] if down_benches else None
 
 	@frappe.whitelist()
 	def restart_down_benches(self):

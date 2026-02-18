@@ -60,7 +60,7 @@ class PartnerCertificate(Document):
 			)
 		)
 		if filters:
-			if filters.get("team") and not frappe.local.system_user():
+			if filters.get("team"):
 				query = query.where(PartnerCertificate.team == filters.get("team"))
 			if filters.get("course"):
 				query = query.where(PartnerCertificate.course == filters.get("course"))

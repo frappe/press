@@ -11,6 +11,14 @@
 		/>
 
 		<AlertBanner
+			v-if="$site?.doc?.creation_failed"
+			class="col-span-1 lg:col-span-2"
+			type="error"
+			:title="`Site creation failed. You can restore the site from a backup or drop this site to create a new one. The site will be automatically dropped after ${$site?.doc?.creation_failure_retention_days} days if not restored.`"
+		>
+		</AlertBanner>
+
+		<AlertBanner
 			v-if="$site?.doc?.status === 'Suspended' && $site?.doc?.suspension_reason"
 			class="col-span-1 lg:col-span-2"
 			type="error"

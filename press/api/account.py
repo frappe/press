@@ -13,6 +13,7 @@ from frappe import _
 from frappe.core.doctype.user.user import update_password
 from frappe.core.utils import find
 from frappe.exceptions import DoesNotExistError
+from frappe.query_builder.functions import Count
 from frappe.rate_limiter import rate_limit
 from frappe.utils import cint, get_url
 from frappe.utils.data import sha256_hash
@@ -31,6 +32,7 @@ from press.utils.telemetry import capture
 
 if TYPE_CHECKING:
 	from press.press.doctype.account_request.account_request import AccountRequest
+	from press.press.doctype.user_2fa_recovery_code import User2FARecoveryCode
 
 
 @frappe.whitelist(allow_guest=True)
@@ -49,7 +51,12 @@ def signup(email: str, product: str | None = None, referrer: str | None = None) 
 
 	account_request = frappe.db.get_value(
 		"Account Request",
-		{"email": email, "referrer_id": referrer, "product_trial": product},
+		{
+			"email": email,
+			"referrer_id": referrer,
+			"product_trial": product,
+			"invited_by": ("is", "not set"),
+		},
 		"name",
 	)
 
@@ -75,24 +82,27 @@ def signup(email: str, product: str | None = None, referrer: str | None = None) 
 def verify_otp(account_request: str, otp: str) -> str:
 	from frappe.auth import get_login_attempt_tracker
 
-	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
+	account_request_doc: "AccountRequest" = frappe.get_doc("Account Request", account_request)
 	ip_tracker = get_login_attempt_tracker(frappe.local.request_ip)
 
 	# ensure no team has been created with this email
-	if frappe.db.exists("Team", {"user": account_request.email}) and not account_request.product_trial:
+	if (
+		frappe.db.exists("Team", {"user": account_request_doc.email})
+		and not account_request_doc.product_trial
+	):
 		ip_tracker and ip_tracker.add_failure_attempt()
 		frappe.throw("Invalid OTP. Please try again.")
-	if account_request.otp != otp:
+	if account_request_doc.otp != otp:
 		ip_tracker and ip_tracker.add_failure_attempt()
 		frappe.throw("Invalid OTP. Please try again.")
 
 	ip_tracker and ip_tracker.add_success_attempt()
-	account_request.reset_otp()
+	account_request_doc.reset_otp()
 
-	if account_request.product_trial:
-		capture("otp_verified", "fc_product_trial", account_request.name)
+	if account_request_doc.product_trial:
+		capture("otp_verified", "fc_product_trial", account_request_doc.name)
 
-	return account_request.request_key
+	return account_request_doc.request_key
 
 
 @frappe.whitelist(allow_guest=True)
@@ -105,15 +115,15 @@ def verify_otp_and_login(email: str, otp: str):
 	if not account_request:
 		frappe.throw("Please sign up first")
 
-	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
+	account_request_doc: "AccountRequest" = frappe.get_doc("Account Request", account_request)
 	ip_tracker = get_login_attempt_tracker(frappe.local.request_ip)
 
-	if account_request.otp != otp:
+	if account_request_doc.otp != otp:
 		ip_tracker and ip_tracker.add_failure_attempt()
 		frappe.throw("Invalid OTP. Please try again.")
 
 	ip_tracker and ip_tracker.add_success_attempt()
-	account_request.reset_otp()
+	account_request_doc.reset_otp()
 
 	return frappe.local.login_manager.login_as(email)
 
@@ -121,20 +131,23 @@ def verify_otp_and_login(email: str, otp: str):
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60)
 def resend_otp(account_request: str, for_2fa_keys: bool = False):
-	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
+	account_request_doc: "AccountRequest" = frappe.get_doc("Account Request", account_request)
 
 	# if last OTP was sent less than 30 seconds ago, throw an error
 	if (
-		account_request.otp_generated_at
-		and (frappe.utils.now_datetime() - account_request.otp_generated_at).seconds < 30
+		account_request_doc.otp_generated_at
+		and (frappe.utils.now_datetime() - account_request_doc.otp_generated_at).seconds < 30
 	):
 		frappe.throw("Please wait for 30 seconds before requesting a new OTP")
 
 	# ensure no team has been created with this email
-	if frappe.db.exists("Team", {"user": account_request.email}) and not account_request.product_trial:
+	if (
+		frappe.db.exists("Team", {"user": account_request_doc.email})
+		and not account_request_doc.product_trial
+	):
 		frappe.throw("Invalid Email")
-	account_request.reset_otp()
-	account_request.send_otp_mail(for_login=not for_2fa_keys)
+	account_request_doc.reset_otp()
+	account_request_doc.send_otp_mail(for_login=not for_2fa_keys)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -145,17 +158,17 @@ def send_otp(email: str, for_2fa_keys: bool = False):
 	if not account_request:
 		frappe.throw("Please sign up first")
 
-	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
+	account_request_doc: "AccountRequest" = frappe.get_doc("Account Request", account_request)
 
 	# if last OTP was sent less than 30 seconds ago, throw an error
 	if (
-		account_request.otp_generated_at
-		and (frappe.utils.now_datetime() - account_request.otp_generated_at).seconds < 30
+		account_request_doc.otp_generated_at
+		and (frappe.utils.now_datetime() - account_request_doc.otp_generated_at).seconds < 30
 	):
 		frappe.throw("Please wait for 30 seconds before requesting a new OTP")
 
-	account_request.reset_otp()
-	account_request.send_otp_mail(for_login=not for_2fa_keys)
+	account_request_doc.reset_otp()
+	account_request_doc.send_otp_mail(for_login=not for_2fa_keys)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -166,11 +179,13 @@ def setup_account(  # noqa: C901
 	password=None,
 	is_invitation=False,
 	country=None,
+	phone=None,
 	user_exists=False,
 	invited_by_parent_team=False,
 	oauth_signup=False,
 	oauth_domain=False,
 	site_domain=None,
+	share_details_consent=False,
 ):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
@@ -191,6 +206,11 @@ def setup_account(  # noqa: C901
 
 	# if the request is authenticated, set the user to Administrator
 	frappe.set_user("Administrator")
+
+	# pass lead to local partner if consent given
+	account_request.agreed_to_partner_consent = share_details_consent
+	account_request.country = country
+	account_request.save()
 
 	team = account_request.team
 	email = account_request.email
@@ -218,6 +238,7 @@ def setup_account(  # noqa: C901
 			last_name=last_name,
 			password=password,
 			country=country,
+			phone=phone,
 			user_exists=bool(user_exists),
 		)
 		if invited_by_parent_team:
@@ -246,6 +267,9 @@ def accept_team_invite(key: str):
 	if not account_request.invited_by:
 		frappe.throw("You are not invited by any team")
 
+	if frappe.session.user != account_request.email:
+		frappe.throw("This invite is not for your account")
+
 	team = account_request.team
 	first_name = account_request.first_name
 	last_name = account_request.last_name
@@ -254,8 +278,10 @@ def accept_team_invite(key: str):
 	role = account_request.role
 	press_roles = account_request.press_roles
 
-	team_doc = frappe.get_doc("Team", team)
-	return team_doc.create_user_for_member(first_name, last_name, email, password, role, press_roles)
+	team_doc = frappe.get_doc("Team", team, ignore_permissions=True)
+	team_doc.create_user_for_member(
+		first_name, last_name, email, password, role, press_roles, skip_validations=True
+	)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -449,11 +475,11 @@ def set_country(country):
 def get_account_request_from_key(key: str):
 	"""Find Account Request using `key`"""
 
-	if not key or not isinstance(key, str):
+	if not key or not isinstance(key, str) or not key.strip():
 		frappe.throw(_("Invalid Key"))
 
 	try:
-		return frappe.get_doc("Account Request", {"request_key": key})
+		return frappe.get_doc("Account Request", {"request_key": key.strip()})
 	except frappe.DoesNotExistError:
 		return None
 
@@ -1033,33 +1059,44 @@ def fuse_list():
 	return frappe.db.sql(query, as_dict=True)
 
 
-@frappe.whitelist()
-def get_permission_roles():
+def has_user_permission(key: str):
 	PressRole = frappe.qb.DocType("Press Role")
 	PressRoleUser = frappe.qb.DocType("Press Role User")
-
 	return (
 		frappe.qb.from_(PressRole)
-		.select(
-			PressRole.name,
-			PressRole.admin_access,
-			PressRole.allow_billing,
-			PressRole.allow_apps,
-			PressRole.allow_partner,
-			PressRole.allow_site_creation,
-			PressRole.allow_bench_creation,
-			PressRole.allow_server_creation,
-			PressRole.allow_webhook_configuration,
-			PressRole.allow_dashboard,
-			PressRole.allow_customer,
-			PressRole.allow_leads,
-			PressRole.allow_contribution,
-		)
-		.join(PressRoleUser)
-		.on((PressRole.name == PressRoleUser.parent) & (PressRoleUser.user == frappe.session.user))
+		.inner_join(PressRoleUser)
+		.on(PressRoleUser.parent == PressRole.name)
+		.select(Count(PressRole.name).as_("count"))
 		.where(PressRole.team == get_current_team())
+		.where(PressRole[key] == 1)
+		.where(PressRoleUser.user == frappe.session.user)
 		.run(as_dict=True)
+		.pop()
+		.get("count")
+		> 0
 	)
+
+
+@frappe.whitelist()
+def user_permissions():
+	team = get_current_team(get_doc=True)
+	is_owner = team.user == frappe.session.user
+	is_admin = is_owner or has_user_permission("admin_access")
+	return {
+		"owner": is_owner,
+		"admin": is_admin,
+		"billing": is_admin or has_user_permission("allow_billing"),
+		"webhook": is_admin or has_user_permission("allow_webhook_configuration"),
+		"apps": is_admin or has_user_permission("allow_apps"),
+		"partner": is_admin or has_user_permission("allow_partner"),
+		"partner_dashboard": is_admin or has_user_permission("allow_dashboard"),
+		"partner_leads": is_admin or has_user_permission("allow_leads"),
+		"partner_customer": is_admin or has_user_permission("allow_customer"),
+		"partner_contribution": is_admin or has_user_permission("allow_contribution"),
+		"site_creation": is_admin or has_user_permission("allow_site_creation"),
+		"bench_creation": is_admin or has_user_permission("allow_bench_creation"),
+		"server_creation": is_admin or has_user_permission("allow_server_creation"),
+	}
 
 
 @frappe.whitelist()
@@ -1174,7 +1211,6 @@ def disable_2fa(totp_code):
 @rate_limit(limit=5, seconds=60 * 60)
 def recover_2fa(user: str, recovery_code: str):
 	"""Recover 2FA using a recovery code."""
-
 	# Get the User 2FA document.
 	two_fa = frappe.get_doc("User 2FA", user)
 
@@ -1183,7 +1219,7 @@ def recover_2fa(user: str, recovery_code: str):
 		frappe.throw(f"2FA is not enabled for {user}")
 
 	# Get valid recovery code doc.
-	code = None
+	code: "User2FARecoveryCode" | None = None
 	for code_doc in two_fa.recovery_codes:
 		decrypted_code = get_decrypted_password("User 2FA Recovery Code", code_doc.name, "code")
 		if decrypted_code == recovery_code and not code_doc.used_at:
@@ -1193,7 +1229,7 @@ def recover_2fa(user: str, recovery_code: str):
 	# If no valid recovery code found, throw an error.
 	if not code:
 		frappe.throw("Invalid or used recovery code")
-
+	assert code is not None
 	# Mark the recovery code as used.
 	code.used_at = frappe.utils.now_datetime()
 
@@ -1304,17 +1340,15 @@ def get_user_banners():
 	)
 
 	# filter out dismissed banners
-	user = frappe.session.user
-	visible_banners = []
-	for banner in all_enabled_banners:
-		banner_dismissals_by_user = frappe.get_all(
-			"Dashboard Banner Dismissal",
-			filters={"user": user, "parent": banner["name"]},
-		)
-		if not banner_dismissals_by_user:
-			visible_banners.append(banner)
+	banner_dismissals_by_user = frappe.get_all(
+		"Dashboard Banner Dismissal",
+		filters={"user": frappe.session.user, "parent": ["in", [b["name"] for b in all_enabled_banners]]},
+		fields=["parent"],
+		pluck=True,
+	)
 
-	return visible_banners
+	# visible banners
+	return [banner for banner in all_enabled_banners if banner["name"] not in banner_dismissals_by_user]
 
 
 @frappe.whitelist()

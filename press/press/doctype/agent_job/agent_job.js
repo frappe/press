@@ -23,26 +23,36 @@ frappe.ui.form.on('Agent Job', {
 				__('Actions'),
 			);
 		}
-
-		frm.add_custom_button(
-			__('Retry'),
-			() => {
-				frappe.confirm(`Are you sure you want to retry this job?`, () =>
-					frm
-						.call('retry')
-						.then((result) =>
-							frappe.msgprint(
-								frappe.utils.get_form_link(
-									'Agent Job',
-									result.message.name,
-									true,
+		if (
+			![
+				'New Site',
+				'Archive Site',
+				'Restore Site',
+				'New Site from Backup',
+				'Update Site Pull',
+				'Update Site Migrate',
+			].includes(frm.doc.job_type)
+		) {
+			frm.add_custom_button(
+				__('Retry'),
+				() => {
+					frappe.confirm(`Are you sure you want to retry this job?`, () =>
+						frm
+							.call('retry')
+							.then((result) =>
+								frappe.msgprint(
+									frappe.utils.get_form_link(
+										'Agent Job',
+										result.message.name,
+										true,
+									),
 								),
 							),
-						),
-				);
-			},
-			__('Actions'),
-		);
+					);
+				},
+				__('Actions'),
+			);
+		}
 
 		[
 			[__('Retry In-Place'), 'retry_in_place'],
@@ -52,7 +62,11 @@ frappe.ui.form.on('Agent Job', {
 				__('Succeed and Process Job Updates'),
 				'succeed_and_process_job_updates',
 			],
-			[__('Cancel Job'), 'cancel_job', ['Pending', "Running"].includes(frm.doc.status)],
+			[
+				__('Cancel Job'),
+				'cancel_job',
+				['Pending', 'Running'].includes(frm.doc.status),
+			],
 		].forEach(([label, method, condition]) => {
 			frm.add_custom_button(
 				label,

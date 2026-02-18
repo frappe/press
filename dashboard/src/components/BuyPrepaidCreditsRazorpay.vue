@@ -5,6 +5,10 @@
 			Banking, UPI, Wallets, etc. If you are using Net Banking, it may take upto
 			5 days for balance to reflect.
 		</p>
+		<p v-if="showPaypal" class="mt-3 text-p-sm">
+			You can pay using your PayPal account. Processing may take a few minutes
+			for the balance to reflect.
+		</p>
 		<ErrorMessage
 			class="mt-3"
 			:message="$resources.createRazorpayOrder.error"
@@ -17,7 +21,7 @@
 				v-if="!isPaymentComplete"
 				@click="buyCreditsWithRazorpay"
 			>
-				Proceed to payment using Razorpay
+				Proceed to payment using {{ paypalEnabled ? 'PayPal' : 'Razorpay' }}
 			</Button>
 			<Button v-else variant="solid" :loading="isVerifyingPayment"
 				>Confirming payment</Button
@@ -45,12 +49,22 @@ export default {
 			type: String,
 			default: 'Prepaid Credits',
 		},
+		paypalEnabled: {
+			type: Boolean,
+			default: false,
+		},
 	},
 	data() {
 		return {
+			paypalEnabled: this.$team.doc.currency === 'USD' && this.paypalEnabled,
 			isPaymentComplete: false,
 			isVerifyingPayment: false,
 		};
+	},
+	computed: {
+		showPaypal() {
+			return this.$team.doc.currency === 'USD' && this.paypalEnabled;
+		},
 	},
 	mounted() {
 		this.razorpayCheckoutJS = document.createElement('script');
@@ -105,6 +119,29 @@ export default {
 				},
 				handler: this.handlePaymentSuccess,
 				theme: { color: '#171717' },
+				...(this.paypalEnabled
+					? {
+							config: {
+								display: {
+									blocks: {
+										wallets: {
+											name: 'Pay using PayPal',
+											instruments: [
+												{
+													method: 'wallet',
+													wallets: ['paypal'],
+												},
+											],
+										},
+									},
+									sequence: ['block.wallets'],
+									preferences: {
+										show_default_blocks: false,
+									},
+								},
+							},
+						}
+					: {}),
 			};
 
 			const rzp = new Razorpay(options);

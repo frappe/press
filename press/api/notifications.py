@@ -1,27 +1,16 @@
 import frappe
 
 from press.guards import role_guard
+from press.guards.role_guard.document import has_user_permission
 from press.utils import get_current_team
 
 
 @frappe.whitelist()
-@role_guard.document(
-	document_type=lambda _: "Site",
-	inject_values=True,
-	should_throw=False,
-)
-@role_guard.document(
-	document_type=lambda _: "Release Group",
-	inject_values=True,
-	should_throw=False,
-)
 def get_notifications(
 	filters=None,
 	order_by="creation desc",
 	limit_start=None,
 	limit_page_length=None,
-	sites=None,
-	release_groups=None,
 ):
 	if not filters:
 		filters = {}
@@ -47,14 +36,19 @@ def get_notifications(
 		.offset(limit_start)
 	)
 
-	resources = set()
-	if sites and isinstance(sites, list):
-		resources.update(sites)
-	if release_groups and isinstance(release_groups, list):
-		resources.update(release_groups)
-
-	if resources:
-		query = query.where(PressNotification.reference_name.isin(resources))
+	if role_guard.is_restricted():
+		if not has_user_permission("Site"):
+			pemitted_sites = role_guard.permitted_documents("Site")
+			if not pemitted_sites:
+				query = query.where(PressNotification.document_type != "Site")
+			else:
+				query = query.where(PressNotification.document_name.isin(pemitted_sites))
+		if not has_user_permission("Release Group"):
+			permitted_release_groups = role_guard.permitted_documents("Release Group")
+			if not permitted_release_groups:
+				query = query.where(PressNotification.document_type != "Release Group")
+			else:
+				query = query.where(PressNotification.document_name.isin(permitted_release_groups))
 
 	if filters.get("read") == "Unread":
 		query = query.where(PressNotification.read == 0)

@@ -166,7 +166,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner\nVodacom\nDigitalOcean",
    "set_only_once": 1
   },
   {
@@ -212,7 +212,7 @@
    "options": "Proxy Server Domain"
   },
   {
-   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\"].includes(doc.provider)",
+   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\", \"DigitalOcean\"].includes(doc.provider)",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
@@ -468,7 +468,7 @@
   }
  ],
  "links": [],
- "modified": "2025-11-24 13:00:59.569565",
+ "modified": "2026-02-06 16:20:49.521726",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",

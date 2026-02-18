@@ -2,9 +2,15 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import frappe
 
 from press.press.doctype.site_plan.plan import Plan
+from press.utils.jobs import has_job_timeout_exceeded
+
+if TYPE_CHECKING:
+	from press.press.doctype.cluster.cluster import Cluster
 
 
 class ServerPlan(Plan):
@@ -17,12 +23,17 @@ class ServerPlan(Plan):
 		from frappe.core.doctype.has_role.has_role import HasRole
 		from frappe.types import DF
 
+		allow_unified_server: DF.Check
+		cloud_provider: DF.Link | None
 		cluster: DF.Link | None
 		disk: DF.Int
 		enabled: DF.Check
+		ignore_machine_availability_sync: DF.Check
 		instance_type: DF.Data | None
 		legacy_plan: DF.Check
+		machine_unavailable: DF.Check
 		memory: DF.Int
+		plan_type: DF.Link | None
 		platform: DF.Literal["x86_64", "arm64", "amd64"]
 		premium: DF.Check
 		price_inr: DF.Currency
@@ -42,6 +53,9 @@ class ServerPlan(Plan):
 		"disk",
 		"platform",
 		"premium",
+		"plan_type",
+		"allow_unified_server",
+		"machine_unavailable",
 	)
 
 	def get_doc(self, doc):
@@ -60,3 +74,33 @@ class ServerPlan(Plan):
 				frappe.throw(
 					f"Cannot disable this plan. This plan is used in {active_sub_count} active subscription(s)."
 				)
+
+
+def sync_machine_availability_status_of_plans():
+	plans = frappe.get_all(
+		"Server Plan",
+		filters={"ignore_machine_availability_sync": 0},
+		fields=["name", "cluster", "machine_unavailable", "instance_type"],
+	)
+	cluster_doc_map: dict[str, Cluster] = {}
+
+	for plan in plans:
+		if has_job_timeout_exceeded():
+			return
+
+		if not plan.instance_type:
+			continue
+
+		if plan.cluster not in cluster_doc_map:
+			cluster_doc_map[plan.cluster] = frappe.get_doc("Cluster", plan.cluster)
+
+		try:
+			is_unavailable = not cluster_doc_map[plan.cluster].check_machine_availability(plan.instance_type)
+			if is_unavailable != plan.machine_unavailable:
+				frappe.db.set_value("Server Plan", plan.name, "machine_unavailable", is_unavailable)
+			frappe.db.commit()
+		except Exception:
+			frappe.log_error(
+				f"Failed to sync machine availability status for Server Plan {plan.name}",
+			)
+			frappe.db.rollback()

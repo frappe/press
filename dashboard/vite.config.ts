@@ -31,6 +31,7 @@ export default defineConfig({
 			project: process.env.SENTRY_PROJECT,
 			applicationKey: 'press-dashboard',
 			authToken: process.env.SENTRY_AUTH_TOKEN,
+			errorHandler: (err) => console.warn(err),
 		}),
 		...(process.env.ENABLE_VUE_DEVTOOLS ? [vueDevTools()] : []),
 	],

@@ -22,7 +22,7 @@ def only_owner(team: Callable[[Document, OrderedDict], str] = lambda document, _
 	def wrapper(fn):
 		@functools.wraps(fn)
 		def inner(self, *args, **kwargs):
-			if utils_user.is_system_manager():
+			if self.flags.ignore_permissions or utils_user.is_system_manager():
 				return fn(self, *args, **kwargs)
 			bound_args = inspect.signature(fn).bind(self, *args, **kwargs)
 			bound_args.apply_defaults()
@@ -50,7 +50,7 @@ def only_admin(
 	def wrapper(fn):
 		@functools.wraps(fn)
 		def inner(self, *args, **kwargs):
-			if utils_user.is_system_manager():
+			if self.flags.ignore_permissions or utils_user.is_system_manager():
 				return fn(self, *args, **kwargs)
 			bound_args = inspect.signature(fn).bind(self, *args, **kwargs)
 			bound_args.apply_defaults()
@@ -81,7 +81,7 @@ def only_member(
 	def wrapper(fn):
 		@functools.wraps(fn)
 		def inner(self, *args, **kwargs):
-			if utils_user.is_system_manager():
+			if self.flags.ignore_permissions or utils_user.is_system_manager():
 				return fn(self, *args, **kwargs)
 			bound_args = inspect.signature(fn).bind(self, *args, **kwargs)
 			bound_args.apply_defaults()

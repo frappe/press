@@ -48,7 +48,7 @@ class TestAPIBench(FrappeTestCase):
 		self.version = "Version 15"
 		self.app = create_test_app()
 		self.app_source = self.app.add_source(
-			self.version,
+			frappe_version=self.version,
 			repository_url="https://github.com/frappe/frappe",
 			branch="version-15",
 			team=get_current_team(),
@@ -165,7 +165,7 @@ class TestAPIBench(FrappeTestCase):
 		)
 
 		self.assertRaises(
-			frappe.exceptions.MandatoryError,
+			frappe.exceptions.ValidationError,
 			deploy_and_update,
 			group,
 			[{"app": self.app.name}],
@@ -200,7 +200,7 @@ class TestAPIBench(FrappeTestCase):
 				"server": None,
 			}
 		)
-		self.assertRaises(frappe.exceptions.MandatoryError, deploy, group, [])
+		deploy(group, [])
 
 	@timeout(20)
 	def _check_if_docker_image_was_built(self, group: str):

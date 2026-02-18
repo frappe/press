@@ -14,7 +14,7 @@
 					<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
 						<div>
 							<FormControl
-								type="autocomplete"
+								type="combobox"
 								:options="partners"
 								size="sm"
 								variant="subtle"
@@ -27,7 +27,7 @@
 						</div>
 						<div>
 							<FormControl
-								type="autocomplete"
+								type="combobox"
 								:options="paymentGateways"
 								size="sm"
 								variant="subtle"

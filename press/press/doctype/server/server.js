@@ -70,6 +70,7 @@ frappe.ui.form.on('Server', {
 				false,
 				frm.doc.provider === 'AWS EC2',
 			],
+			[__('Setup Logrotate'), 'setup_logrotate', true, frm.doc.is_server_setup],
 			[
 				__('Setup PySpy'),
 				'setup_pyspy',
@@ -83,6 +84,12 @@ frappe.ui.form.on('Server', {
 				!frm.doc.is_server_prepared,
 			],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
+			[
+				__('Setup Unified Server'),
+				'setup_unified_server',
+				true,
+				frm.doc.is_unified_server,
+			],
 			[
 				__('Add to Proxy'),
 				'add_upstream_to_proxy',
@@ -129,7 +136,6 @@ frappe.ui.form.on('Server', {
 			],
 			[__('Create Image'), 'create_image', true, frm.doc.status == 'Active'],
 			[__('Archive'), 'archive', true, frm.doc.status !== 'Archived'],
-			[__('Setup Fail2ban'), 'setup_fail2ban', true, frm.doc.is_server_setup],
 			[
 				__('Setup MySQLdump'),
 				'setup_mysqldump',
@@ -238,6 +244,13 @@ frappe.ui.form.on('Server', {
 			],
 			[__('Scale Up'), 'scale_up', true, !frm.doc.scaled_up],
 			[__('Scale Down'), 'scale_down', true, frm.doc.scaled_up],
+			[__('Setup Firewall'), 'setup_firewall', true, frm.doc.is_server_setup],
+			[
+				__('Teardown Firewall'),
+				'teardown_firewall',
+				true,
+				frm.doc.is_server_setup,
+			],
 			[
 				__('Install Wazuh Agent'),
 				'install_wazuh_agent',
@@ -249,6 +262,12 @@ frappe.ui.form.on('Server', {
 				'uninstall_wazuh_agent',
 				true,
 				frm.doc.is_server_setup,
+			],
+			[
+				__('Setup Wildcard Hosts'),
+				'setup_wildcard_hosts',
+				true,
+				frm.doc.is_server_setup && frm.doc.is_standalone_setup,
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {

@@ -1,7 +1,7 @@
 <template>
 	<FormControl
 		v-if="field.fieldtype == 'Autocomplete'"
-		type="autocomplete"
+		type="combobox"
 		:options="autocompleteOptions"
 		:placeholder="field.placeholder"
 	/>

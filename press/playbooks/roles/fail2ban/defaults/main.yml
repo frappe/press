@@ -1,2 +1,3 @@
 ---
-fail2ban_nginx_access_log: /var/log/nginx/access.log
+nginx_log: /var/log/nginx/access.log
+ignore_ips: ""

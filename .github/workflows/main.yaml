@@ -9,19 +9,19 @@ on:
       - '*'
   workflow_dispatch:
 
-env:
-  DB_NAME: test_frappe
-  DB_USER: test_frappe
-  DB_PASSWORD: test_frappe
-
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   format:
-    name: 'Lint and Format'
+    name: Lint and Format
     runs-on: ubuntu-latest
+    outputs:
+      changed-python: ${{ steps.changed-python-files.outputs.any_changed }}
+      changed-build: ${{ steps.changed-build-files.outputs.any_changed }}
+      changed-json: ${{ steps.changed-json-files.outputs.any_changed }}
+      changed-js-vue: ${{ steps.changed-js-vue-files.outputs.any_changed }}
 
     steps:
       - name: Checkout code
@@ -32,16 +32,47 @@ jobs:
         with:
           python-version: '3.10'
 
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/*dev-requirements.txt, **/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
+
       - name: Install dependencies
         run: |
           pip install -r dev-requirements.txt
 
-      - name: Get changed files
+      - name: Get changed python files
         id: changed-python-files
         uses: tj-actions/changed-files@v45
         with:
           files: |
             **.py
+
+      - name: Get changed build files
+        id: changed-build-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            pyproject.toml
+
+      - name: Get changed json files
+        id: changed-json-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            **.json
+
+      - name: Get changed js or vue files
+        id: changed-js-vue-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            **.js
+            **.vue
 
       - name: List all changed files
         if: steps.changed-python-files.outputs.any_changed == 'true'
@@ -86,13 +117,11 @@ jobs:
           pip install semgrep==1.32
           semgrep ci --config ./press-semgrep-rules.yml --config r/python.lang.correctness
 
-  ui-tests:
-    name: Client
+  install:
+    name: Setup Bench
+    needs: format
     runs-on: ubuntu-latest
-    env:
-      PRESS_ADMIN_USER_EMAIL: playwright@example.com
-      PRESS_ADMIN_USER_PASSWORD: playwright
-      BASE_URL: http://test_site:8000
+    if: needs.format.outputs.changed-python == 'true' || needs.format.outputs.changed-json == 'true' || needs.format.outputs.changed-js-vue == 'true' || needs.format.outputs.changed-build == 'true'
 
     services:
       mariadb:
@@ -102,13 +131,10 @@ jobs:
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
+        volumes:
+          - /data/mariadb_data:/var/lib/mysql
 
     steps:
-      - name: Remove unnecessary files
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-
       - name: Clone
         uses: actions/checkout@v4
 
@@ -119,6 +145,128 @@ jobs:
               then echo "Found merge conflicts"
               exit 1
           fi
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          check-latest: true
+
+      - name: Cache apt
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: redis-server libcups2-dev
+          version: 1.0 # Arbitrary version to bust cache when needed
+
+      - name: Cache wkhtmltopdf
+        id: cache-wkhtmltopdf
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/wkhtmltopdf
+          key: ${{ runner.os }}-wkhtmltopdf-0.12.3
+
+      - name: Install wkhtmltopdf
+        if: steps.cache-wkhtmltopdf.outputs.cache-hit != 'true'
+        run: |
+          wget -O /tmp/wkhtmltox.tar.xz https://github.com/frappe/wkhtmltopdf/raw/master/wkhtmltox-0.12.3_linux-generic-amd64.tar.xz
+          tar -xf /tmp/wkhtmltox.tar.xz -C /tmp
+          sudo mv /tmp/wkhtmltox/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf
+          sudo chmod o+x /usr/local/bin/wkhtmltopdf
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/*dev-requirements.txt, **/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: 'echo "::set-output name=dir::$(yarn cache dir)"'
+
+      - name: Cache yarn
+        uses: actions/cache@v4
+        id: yarn-cache
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Install
+        run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
+
+      - name: Cache bench directory
+        uses: actions/cache/save@v4
+        with:
+          key: bench-dir-${{ github.run_id }}
+          path: /home/runner/frappe-bench
+
+      - name: Stop mariadb service
+        run: |
+          docker stop ${{ job.services.mariadb.id }}
+
+      - name: Change ownership of mariadb data directory (for caching)
+        run: |
+          sudo chown -R runner:runner /data/mariadb_data
+
+      - name: Cache mariadb data directory
+        uses: actions/cache/save@v4
+        with:
+          key: mariadb-data-${{ github.run_id }}
+          path: /data/mariadb_data
+
+  ui-tests:
+    needs: [format, install]
+    name: Client
+    runs-on: ubuntu-latest
+    env:
+      PRESS_ADMIN_USER_EMAIL: playwright@example.com
+      PRESS_ADMIN_USER_PASSWORD: playwright
+      BASE_URL: http://test_site:8000
+
+    steps:
+      - name: Create mariadb data directory
+        run: |
+          sudo mkdir -p /data/mariadb_data
+
+      - name: Change ownership of mariadb data directory (for cache restore)
+        run: |
+          sudo chown -R runner:runner /data/mariadb_data
+
+      - name: Restore mariadb data directory from cache
+        uses: actions/cache/restore@v4
+        with:
+          key: mariadb-data-${{ github.run_id }}
+          path: /data/mariadb_data
+
+      - name: Change ownership of mariadb data directory (post cache restore)
+        run: |
+          sudo chown -R 999:systemd-journal /data/mariadb_data
+
+      - name: Start mariadb service
+        run: |
+          docker run -d \
+            --name mariadb \
+            -e MYSQL_ROOT_PASSWORD=root \
+            -p 3306:3306 \
+            -v /data/mariadb_data:/var/lib/mysql \
+            --health-cmd="mysqladmin ping" \
+            --health-interval=5s \
+            --health-timeout=2s \
+            --health-retries=3 \
+            mariadb:10.6
+
+      - name: Clone
+        uses: actions/checkout@v4
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -130,29 +278,48 @@ jobs:
           node-version: 18
           check-latest: true
 
-      - name: Cache pip
+      - name: Cache apt
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: redis-server libcups2-dev
+          version: 1.0 # Arbitrary version to bust cache when needed
+
+      - name: Cache wkhtmltopdf
+        id: cache-wkhtmltopdf
         uses: actions/cache@v4
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-            ${{ runner.os }}-
+          path: /usr/local/bin/wkhtmltopdf
+          key: ${{ runner.os }}-wkhtmltopdf-0.12.3
 
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: 'echo "::set-output name=dir::$(yarn cache dir)"'
+      - name: Install wkhtmltopdf
+        if: steps.cache-wkhtmltopdf.outputs.cache-hit != 'true'
+        run: |
+          wget -O /tmp/wkhtmltox.tar.xz https://github.com/frappe/wkhtmltopdf/raw/master/wkhtmltox-0.12.3_linux-generic-amd64.tar.xz
+          tar -xf /tmp/wkhtmltox.tar.xz -C /tmp
+          sudo mv /tmp/wkhtmltox/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf
+          sudo chmod o+x /usr/local/bin/wkhtmltopdf
 
-      - uses: actions/cache@v4
-        id: yarn-cache
+      - name: Restore bench directory from cache
+        uses: actions/cache/restore@v4
         with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+          path: /home/runner/frappe-bench
+          key: bench-dir-${{ github.run_id }}
 
-      - name: Install
-        run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
+      - name: Install Bench command
+        run: pip install frappe-bench
+
+      - name: Don't run unnecessary services
+        working-directory: /home/runner/frappe-bench
+        run: |
+          sed -i 's/watch:/# watch:/g' Procfile
+          sed -i 's/schedule:/# schedule:/g' Procfile
+          sed -i 's/socketio:/# socketio:/g' Procfile
+          sed -i 's/redis_socketio:/# redis_socketio:/g' Procfile
+
+      - name: Start Bench
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench start &> bench_start_logs.txt &
 
       - name: Add to Hosts
         run: |
@@ -198,74 +365,75 @@ jobs:
           name: press-dashboard
           flags: dashboard
 
-  tests:
+  server-tests:
+    needs: [format, install]
+    name: Server
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        container: [1, 2]
-
-    name: Server
-
-    services:
-      mariadb:
-        image: mariadb:10.6
-        env:
-          MYSQL_ROOT_PASSWORD: root
-        ports:
-          - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
+        container: [1, 2, 3]
+    if: needs.format.outputs.changed-python == 'true' || needs.format.outputs.changed-json == 'true' || needs.format.outputs.changed-build == 'true'
 
     steps:
-      - name: Remove unnecessary files
+      - name: Create mariadb data directory
         run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo mkdir -p /data/mariadb_data
+
+      - name: Change ownership of mariadb data directory (for cache restore)
+        run: |
+          sudo chown -R runner:runner /data/mariadb_data
+
+      - name: Restore mariadb data directory from cache
+        uses: actions/cache/restore@v4
+        with:
+          key: mariadb-data-${{ github.run_id }}
+          path: /data/mariadb_data
+
+      - name: Change ownership of mariadb data directory (post cache restore)
+        run: |
+          sudo chown -R 999:systemd-journal /data/mariadb_data
+
+      - name: Start mariadb service
+        run: |
+          docker run -d \
+            --name mariadb \
+            -e MYSQL_ROOT_PASSWORD=root \
+            -p 3306:3306 \
+            -v /data/mariadb_data:/var/lib/mysql \
+            --health-cmd="mysqladmin ping" \
+            --health-interval=5s \
+            --health-timeout=2s \
+            --health-retries=3 \
+            mariadb:10.6
 
       - name: Clone
         uses: actions/checkout@v4
 
-      - name: Check for valid Python & Merge Conflicts
-        run: |
-          python -m compileall -q -f "${GITHUB_WORKSPACE}"
-          if grep -lr --exclude-dir=node_modules "^<<<<<<< " "${GITHUB_WORKSPACE}"
-              then echo "Found merge conflicts"
-              exit 1
-          fi
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Cache apt
+        uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          node-version: 18
-          check-latest: true
+          packages: redis-server libcups2-dev
+          version: 1.0 # Arbitrary version to bust cache when needed
 
-      - name: Cache pip
-        uses: actions/cache@v4
+      - name: Restore bench directory from cache
+        uses: actions/cache/restore@v4
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-            ${{ runner.os }}-
+          path: /home/runner/frappe-bench
+          key: bench-dir-${{ github.run_id }}
 
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: 'echo "::set-output name=dir::$(yarn cache dir)"'
+      - name: Install Bench command
+        run: pip install frappe-bench
 
-      - uses: actions/cache@v4
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-
-      - name: Install
-        run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
+      - name: Start Bench
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench start &> bench_start_logs.txt &
 
       - name: Add to Hosts
         run: |
@@ -279,11 +447,15 @@ jobs:
         with:
           install: true
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: failure()
+
       - name: Run Tests
         working-directory: /home/runner/frappe-bench
         run: |
           bench --site test_site set-config allow_tests true
-          bench --site test_site run-parallel-tests --app press --with-coverage --total-builds 2 --build-number ${{ matrix.container }}
+          bench --site test_site run-parallel-tests --app press --with-coverage --total-builds 3 --build-number ${{ matrix.container }}
         env:
           TYPE: server
           COVERAGE_RCFILE: /home/runner/frappe-bench/apps/press/.coveragerc
@@ -304,8 +476,8 @@ jobs:
 
   coverage:
     name: Coverage Wrap Up
+    needs: server-tests
     if: always()
-    needs: tests
     runs-on: ubuntu-latest
     steps:
       - name: Clone

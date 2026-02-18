@@ -7,6 +7,7 @@
  "field_order": [
   "group",
   "team",
+  "build_token",
   "feature_flags_section",
   "is_redisearch_enabled",
   "redis_cache_size",
@@ -219,6 +220,11 @@
    "label": "ARM Build",
    "options": "Deploy Candidate Build",
    "read_only": 1
+  },
+  {
+   "fieldname": "build_token",
+   "fieldtype": "Data",
+   "label": "Build Token"
   }
  ],
  "links": [
@@ -235,7 +241,7 @@
    "link_fieldname": "deploy_candidate"
   }
  ],
- "modified": "2025-05-27 22:02:19.465983",
+ "modified": "2026-01-21 13:27:04.037360",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
@@ -267,6 +273,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

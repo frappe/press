@@ -78,12 +78,14 @@ class DatabaseServer(BaseServer):
 		is_monitoring_disabled: DF.Check
 		is_performance_schema_enabled: DF.Check
 		is_primary: DF.Check
+		is_provisioning_press_job_completed: DF.Check
 		is_replication_setup: DF.Check
 		is_self_hosted: DF.Check
 		is_server_prepared: DF.Check
 		is_server_renamed: DF.Check
 		is_server_setup: DF.Check
 		is_stalk_setup: DF.Check
+		is_unified_server: DF.Check
 		mariadb_root_password: DF.Password | None
 		mariadb_system_variables: DF.Table[DatabaseServerMariaDBVariable]
 		memory_allocator: DF.Literal["System", "jemalloc", "TCMalloc"]
@@ -97,7 +99,7 @@ class DatabaseServer(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean"]
 		public: DF.Check
 		ram: DF.Float
 		root_public_key: DF.Code | None
@@ -166,6 +168,13 @@ class DatabaseServer(BaseServer):
 		self.validate_server_id()
 		self.validate_server_team()
 		self.validate_mariadb_system_variables()
+		self.validate_physical_backup()
+
+	def validate_physical_backup(self):
+		if self.is_unified_server and self.enable_physical_backup:
+			frappe.throw(
+				"Physical backup cannot be enabled for unified servers.",
+			)
 
 	def validate_mariadb_root_password(self):
 		# Check if db server created from snapshot
@@ -208,6 +217,8 @@ class DatabaseServer(BaseServer):
 			self.binlog_max_disk_usage_percent = 20
 
 	def on_update(self):
+		self.publish_linked_server_realtime_update()
+
 		if self.flags.in_insert or self.is_new():
 			return
 
@@ -227,6 +238,27 @@ class DatabaseServer(BaseServer):
 
 		if self.public:
 			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
+
+	def publish_linked_server_realtime_update(self):
+		with contextlib.suppress(Exception):
+			app_server = frappe.db.exists(
+				"Server",
+				{
+					"database_server": self.name,
+					"status": ["!=", "Archived"],
+				},
+			)
+			if app_server:
+				frappe.publish_realtime(
+					"doc_update",
+					{
+						"doctype": "Server",
+						"name": app_server,
+					},
+					doctype="Server",
+					docname=app_server,
+					after_commit=True,
+				)
 
 	def update_subscription(self):
 		if self.subscription:
@@ -299,7 +331,14 @@ class DatabaseServer(BaseServer):
 
 	def get_actions(self):
 		server_actions = super().get_actions()
-		server_type = "database server"
+
+		if self.is_unified_server:
+			# Remove rename from database actions section for unified servers
+			server_actions = list(
+				filter(lambda action: action.get("action") != "Rename server", server_actions)
+			)
+
+		server_type = "database server" if not self.is_unified_server else "database"
 		actions = [
 			{
 				"action": "View Database Configuration",
@@ -749,8 +788,10 @@ class DatabaseServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
-
 				self.process_hybrid_server_setup()
+				if self.provider == "DigitalOcean":
+					# Adjusting docker permissions
+					self.reboot()
 			else:
 				self.status = "Broken"
 		except Exception:
@@ -1312,10 +1353,6 @@ class DatabaseServer(BaseServer):
 				self.save()
 		except Exception:
 			log_error("Percona Stalk Setup Exception", server=self.as_dict())
-
-	@frappe.whitelist()
-	def setup_logrotate(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_logrotate", queue="long", timeout=1200)
 
 	def _setup_logrotate(self):
 		try:
@@ -2220,10 +2257,10 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		except Exception:
 			frappe.throw("Failed to fetch storage usage. Try again later.")
 
-	def set_mariadb_mount_dependency(self):
+	def set_mariadb_mount_dependency(self, now: bool | None = None):
 		if not self.mariadb_depends_on_mounts:
 			return
-		frappe.enqueue_doc(self.doctype, self.name, "_set_mariadb_mount_dependency", timeout=1800)
+		frappe.enqueue_doc(self.doctype, self.name, "_set_mariadb_mount_dependency", timeout=1800, now=now)
 
 	def _set_mariadb_mount_dependency(self):
 		try:

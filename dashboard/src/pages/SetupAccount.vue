@@ -81,11 +81,33 @@
 								variant="outline"
 								required
 							/>
+							<FormControl
+								v-if="!isInvitation"
+								type="tel"
+								label="Phone Number"
+								v-model="phoneNumber"
+								placeholder="9876543210"
+								variant="outline"
+							/>
 						</div>
 						<ErrorMessage
 							class="mt-4"
 							:message="$resources.setupAccount.error"
 						/>
+						<div v-if="showLeadsConsentCheckbox" class="mt-4 text-gray-600">
+							<input
+								id="share-details-consent"
+								type="checkbox"
+								class="rounded-sm mt-[1px] bg-surface-white border-outline-gray-4 text-ink-gray-9 hover:border-outline-gray-5 focus:ring-offset-0 focus:border-outline-gray-8 active:border-outline-gray-6 transition hover:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-outline-gray-3 active:bg-surface-gray-2 w-3.5 h-3.5 checkbox"
+								v-model="shareDetailsConsent"
+							/>
+
+							<label
+								for="share-details-consent"
+								class="ml-2 text-base font-normal"
+								>Allow my details to be shared with a local partner</label
+							>
+						</div>
 						<Button
 							class="mt-4"
 							variant="solid"
@@ -93,6 +115,7 @@
 								$resources.setupAccount.loading ||
 								$resources.acceptInvite.loading
 							"
+							type="submit"
 						>
 							{{
 								is2FA ? 'Verify' : isInvitation ? 'Accept' : 'Create account'
@@ -129,7 +152,16 @@
 import LoginBox from '../components/auth/LoginBox.vue';
 import Link from '@/components/Link.vue';
 import Form from '@/components/Form.vue';
-import { DashboardError } from '../utils/error';
+
+const detailsSharedProducts = [
+	'erpnext',
+	'erpnextv15',
+	'crm',
+	'helpdesk',
+	'hrms',
+	'hrmsv15',
+	'lending',
+];
 
 export default {
 	name: 'SetupAccount',
@@ -157,6 +189,9 @@ export default {
 			countries: [],
 			saasProduct: null,
 			signupValues: {},
+			detailsSharedProducts,
+			shareDetailsConsent: false,
+			phoneNumber: '',
 		};
 	},
 	resources: {
@@ -197,11 +232,14 @@ export default {
 					first_name: this.firstName,
 					last_name: this.lastName,
 					country: this.country,
+					phone: this.phoneNumber || null,
 					is_invitation: this.isInvitation,
 					user_exists: this.userExists,
 					invited_by_parent_team: this.invitedByParentTeam,
 					oauth_signup: this.oauthSignup,
 					oauth_domain: this.oauthDomain,
+					share_details_consent:
+						this.showLeadsConsentCheckbox && this.shareDetailsConsent,
 				},
 				onSuccess() {
 					let path = '/dashboard/create-site/app-selector';
@@ -246,6 +284,12 @@ export default {
 		is2FA() {
 			return (
 				this.$route.name === 'Setup Account' && this.$route.query.two_factor
+			);
+		},
+		showLeadsConsentCheckbox() {
+			return (
+				this.saasProduct &&
+				this.detailsSharedProducts.includes(this.saasProduct.name.toLowerCase())
 			);
 		},
 	},

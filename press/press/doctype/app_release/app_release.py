@@ -61,7 +61,7 @@ class AppRelease(Document):
 		output: DF.Code | None
 		public: DF.Check
 		source: DF.Link
-		status: DF.Literal["Draft", "Approved", "Awaiting Approval", "Rejected"]
+		status: DF.Literal["Draft", "Approved", "Awaiting Approval", "Rejected", "Yanked"]
 		team: DF.Link
 		timestamp: DF.Datetime | None
 	# end: auto-generated types
@@ -105,6 +105,8 @@ class AppRelease(Document):
 			self.set_clone_directory()
 
 	def before_save(self):
+		# We are approving any app with the name raven, could even be a custom app with the name raven or any featured apps
+		# Weird but not hurting anyone right now
 		apps = frappe.get_all("Featured App", {"parent": "Marketplace Settings"}, pluck="app")
 		teams = frappe.get_all("Auto Release Team", {"parent": "Marketplace Settings"}, pluck="team")
 		if self.team in teams or self.app in apps:
@@ -594,6 +596,10 @@ def get_python_path(dirpath: str) -> str:
 			if requires_python:
 				version_spec = sv.SimpleSpec(requires_python)
 				if version_spec.match(sv.Version("3.14.0")):
+					# try to resolve python3.14 path
+					python_path = shutil.which("python3.14")
+					if python_path:
+						return python_path
 					return "/usr/bin/python3.14"  # Temporary hardcoding until python 3.14 until we move to build server
 
 	return _get_python_path()

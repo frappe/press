@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.site_domain.site_domain import SiteDomain
 
 
-def get_ongoing_migration(site: Link, scheduled=False):
+def get_ongoing_migration(site: Link | None, scheduled=False) -> str:
 	"""
 	Return ongoing Site Migration for site.
 
@@ -80,11 +80,6 @@ class SiteMigration(Document):
 	# end: auto-generated types
 
 	def before_insert(self):
-		self.validate_apps()
-		self.validate_bench()
-		self.check_for_inactive_domains()
-		self.check_for_existing_domains()
-		self.check_enough_space_on_destination_server()
 		if get_ongoing_migration(self.site, scheduled=True):
 			frappe.throw(f"Ongoing/Scheduled Site Migration for the site {frappe.bold(self.site)} exists.")
 		site: Site = frappe.get_doc("Site", self.site)
@@ -145,6 +140,10 @@ class SiteMigration(Document):
 		self.set_migration_type()
 		self.add_steps()
 		self.save()
+		if not self.scheduled_time:
+			self.start()
+		else:
+			self.run_validations()
 
 	def validate_apps(self):
 		site_apps = [app.app for app in Site("Site", self.site).apps]
@@ -165,16 +164,20 @@ class SiteMigration(Document):
 				InactiveDomains,
 			)
 
+	def run_validations(self):
+		self.validate_bench()
+		self.validate_apps()
+		self.check_for_inactive_domains()
+		self.check_for_existing_domains()
+		self.check_enough_space_on_destination_server()
+
 	@frappe.whitelist()
 	def start(self):
 		self.check_for_ongoing_agent_jobs()  # has to be before setting state to pending so it gets retried
 		previous_status = self.status
 		self.status = "Pending"
 		self.save()
-		self.check_for_inactive_domains()
-		self.check_for_existing_domains()
-		self.validate_apps()
-		self.check_enough_space_on_destination_server()
+		self.run_validations()
 		site = Site("Site", self.site)
 		try:
 			site.ready_for_move()
@@ -768,6 +771,41 @@ class SiteMigration(Document):
 				)
 			)  # sometimes site may not even get created in destination to clean it up
 		)
+
+	def get_steps(self) -> list[dict]:
+		steps = []
+		for step in self.steps:
+			# Now if the step has agent job expand that as well
+			if step.step_job:
+				job = frappe.get_doc("Agent Job", step.step_job)
+				agent_steps = frappe.get_all(
+					"Agent Job Step",
+					{"agent_job": step.step_job},
+					["name", "step_name", "status", "output"],
+					order_by="creation asc",
+				)
+				for s in agent_steps:
+					steps.append(
+						{
+							"name": s.name,
+							"title": s.step_name,
+							"status": s.status,
+							"output": s.output,
+							"stage": job.job_type,
+						}
+					)
+			else:
+				steps.append(
+					{
+						"name": step.name,
+						"title": step.step_title,
+						"status": step.status,
+						"output": "",
+						"stage": "Migrating Site",
+					}
+				)
+
+		return steps
 
 
 def process_required_job_callbacks(job):

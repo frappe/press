@@ -118,19 +118,19 @@ export default {
 	computed: {
 		options() {
 			return [
-				'I was testing the product',
+				'Frappe Cloud is complex and difficult to use',
+				'Unable to migrate to Frappe Cloud',
 				'I prefer self-hosting my instance',
-				'Moved site to another Frappe Cloud account',
-				'Frappe Cloud is too expensive for me',
-				'Payment issues',
-				'Missing Integration App',
 				'Poor partner experience',
 				'Missing Country Compliance App',
+				'Moved site to another Frappe Cloud account',
+				'Frappe Cloud is too expensive for me',
+				'Missing Integration App',
 				'Apps are too complex to use and setup',
-				'Frappe Cloud is complex and difficult to use',
+				'Payment issues',
 				'ERPNext is too complex for my needs',
-				'Unable to migrate to Frappe Cloud',
 				'My reason is not listed here',
+				'I was testing the product',
 			];
 		},
 	},

@@ -104,6 +104,7 @@ notification_config = "press.notifications.get_notification_config"
 
 permission_query_conditions = {
 	"Site": "press.press.doctype.site.site.get_permission_query_conditions",
+	"Site Action": "press.press.doctype.site_action.site_action.get_permission_query_conditions",
 	"Site Backup": "press.press.doctype.site_backup.site_backup.get_permission_query_conditions",
 	"Site Domain": ("press.press.doctype.site_domain.site_domain.get_permission_query_conditions"),
 	"TLS Certificate": "press.press.doctype.tls_certificate.tls_certificate.get_permission_query_conditions",
@@ -131,6 +132,7 @@ permission_query_conditions = {
 }
 has_permission = {
 	"Site": "press.overrides.has_permission",
+	"Site Action": "press.overrides.has_permission",
 	"Site Backup": "press.overrides.has_permission",
 	"Site Domain": "press.overrides.has_permission",
 	"TLS Certificate": "press.overrides.has_permission",
@@ -199,6 +201,7 @@ scheduler_events = {
 		"press.press.doctype.mariadb_binlog.mariadb_binlog.cleanup_old_records",
 		"press.press.doctype.database_server.database_server.delete_mariadb_binlog_for_archived_servers",
 		"press.press.doctype.team.team.check_budget_alerts",
+		"press.press.doctype.site.site.archive_creation_failed_sites",
 	],
 	"daily_long": [
 		"press.press.audit.check_bench_fields",
@@ -252,6 +255,7 @@ scheduler_events = {
 		"press.press.doctype.deploy_candidate_build.deploy_candidate_build.cleanup_build_directories",
 		"press.press.doctype.deploy_candidate_build.deploy_candidate_build.check_builds_status",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_oci_virtual_machines",
+		"press.press.doctype.virtual_machine.virtual_machine.snapshot_hetzner_virtual_machines",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_aws_internal_virtual_machines",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_old_snapshots",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_expired_snapshots",
@@ -259,6 +263,7 @@ scheduler_events = {
 		"press.press.doctype.press_webhook.press_webhook.auto_disable_high_delivery_failure_webhooks",
 		"press.saas.doctype.product_trial_request.product_trial_request.gather_hourly_stats",
 		"press.press.doctype.agent_job.agent_job.agent_poll_count_stats_hourly",
+		"press.press.doctype.team.team.auto_enable_ssh_access_for_7_days_older_teams",
 	],
 	"all": [
 		"press.auth.flush",
@@ -301,6 +306,7 @@ scheduler_events = {
 		"* * * * * 0/30": [
 			"press.press.doctype.account_request.account_request.expire_request_key",
 			"press.press.doctype.physical_backup_restoration.physical_backup_restoration.process_scheduled_restorations",
+			"press.press.doctype.site_action.site_action.process_site_actions",
 		],
 		"0 */2 * * *": [
 			"press.signup_e2e.run_signup_e2e",
@@ -332,6 +338,7 @@ scheduler_events = {
 			"press.press.doctype.app.app.poll_new_releases",
 			"press.utils.jobs.alert_on_zombie_rq_jobs",
 			"press.saas.doctype.product_trial.product_trial.replenish_standby_sites",
+			"press.press.doctype.server_plan.server_plan.sync_machine_availability_status_of_plans",
 		],
 		"* * * * *": [
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",

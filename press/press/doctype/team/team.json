@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
+  "banned",
   "team_title",
   "user",
   "account_request",
@@ -31,6 +32,7 @@
   "subscription_details_section",
   "stripe_customer_id",
   "country",
+  "phone_number",
   "currency",
   "payment_mode",
   "billing_team",
@@ -88,10 +90,13 @@
   "razorpay_enabled",
   "servers_enabled",
   "code_servers_enabled",
+  "hybrid_servers_enabled",
   "self_hosted_servers_enabled",
   "security_portal_enabled",
   "benches_enabled",
   "mpesa_enabled",
+  "hetzner_internal_user",
+  "allow_unified_servers",
   "discounts_section",
   "discounts",
   "is_us_eu",
@@ -135,7 +140,8 @@
    "fieldname": "stripe_customer_id",
    "fieldtype": "Data",
    "label": "Stripe Customer ID",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "country",
@@ -254,7 +260,7 @@
    "fieldtype": "Section Break"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "ssh_access_enabled",
    "fieldtype": "Check",
    "label": "SSH Access Enabled"
@@ -637,6 +643,37 @@
    "fieldname": "company_name",
    "fieldtype": "Data",
    "label": "Company Name"
+  },
+  {
+   "default": "0",
+   "fieldname": "hybrid_servers_enabled",
+   "fieldtype": "Check",
+   "label": "Hybrid Servers Enabled"
+  },
+  {
+   "default": "0",
+   "fieldname": "hetzner_internal_user",
+   "fieldtype": "Check",
+   "label": "Hetzner Internal User"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_unified_servers",
+   "fieldtype": "Check",
+   "label": "Allow Unified Servers"
+  },
+  {
+   "fieldname": "phone_number",
+   "fieldtype": "Phone",
+   "in_list_view": 1,
+   "label": "Phone Number",
+   "options": "Country"
+  },
+  {
+   "default": "0",
+   "fieldname": "banned",
+   "fieldtype": "Check",
+   "label": "Banned"
   }
  ],
  "grid_page_length": 50,
@@ -702,7 +739,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2025-11-06 18:07:54.307229",
+ "modified": "2026-02-08 19:03:07.774884",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

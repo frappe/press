@@ -212,7 +212,7 @@ watch(
 					'h-80': !props.data?.length,
 				}"
 			>
-				<thead class="sticky top-0 bg-gray-50">
+				<thead class="sticky top-0 z-10 bg-gray-50">
 					<tr
 						v-for="headerGroup in table.getHeaderGroups()"
 						:key="headerGroup.id"

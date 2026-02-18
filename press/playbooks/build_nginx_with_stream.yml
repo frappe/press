@@ -1,0 +1,144 @@
+---
+- name: Build Nginx with Stream Module
+  become: yes
+  hosts: all
+  vars:
+    build_dir: "/tmp/nginx_build"
+
+  tasks:
+    - name: Check if nginx is already built with stream module
+      shell: nginx -V 2>&1 | grep -oP '\-\-with-stream(?=\s|$)'
+      register: nginx_stream_check
+      ignore_errors: yes
+
+    - name: Extract NGINX version
+      shell: "nginx -v 2>&1 | grep -oP '[\\d.]*'"
+      register: nginx_version_output
+      when: nginx_stream_check.rc != 0
+
+    - name: Set nginx version variable
+      set_fact:
+        nginx_version: "{{ nginx_version_output.stdout }}"
+      when: nginx_stream_check.rc != 0
+
+    - name: Set nginx source directory
+      set_fact:
+        nginx_source_dir: "{{ build_dir }}/nginx-{{ nginx_version }}"
+      when: nginx_stream_check.rc != 0
+
+    - name: Install prerequisite packages
+      apt:
+        name:
+          - build-essential
+          - libpcre3
+          - libpcre3-dev
+          - zlib1g
+          - zlib1g-dev
+          - libssl-dev
+        state: present
+        update_cache: yes
+      when: nginx_stream_check.rc != 0
+
+    - name: Create build directory
+      file:
+        path: "{{ build_dir }}"
+        state: directory
+        mode: '0755'
+      when: nginx_stream_check.rc != 0
+
+    - name: Download nginx source
+      get_url:
+        url: "http://nginx.org/download/nginx-{{ nginx_version }}.tar.gz"
+        dest: "{{ build_dir }}/nginx-{{ nginx_version }}.tar.gz"
+        mode: '0644'
+      when: nginx_stream_check.rc != 0
+
+    - name: Extract nginx source
+      unarchive:
+        src: "{{ build_dir }}/nginx-{{ nginx_version }}.tar.gz"
+        dest: "{{ build_dir }}"
+        remote_src: yes
+        creates: "{{ nginx_source_dir }}"
+      when: nginx_stream_check.rc != 0
+
+    - name: Configure nginx with stream module
+      shell: |
+        cd {{ nginx_source_dir }}
+        ./configure \
+          --with-ld-opt='-Wl,-Bsymbolic-functions -flto=auto -ffat-lto-objects -flto=auto -Wl,-z,relro -Wl,-z,now -fPIC' \
+          --prefix=/usr/share/nginx \
+          --conf-path=/etc/nginx/nginx.conf \
+          --http-log-path=/var/log/nginx/access.log \
+          --error-log-path=/var/log/nginx/error.log \
+          --lock-path=/var/lock/nginx.lock \
+          --pid-path=/run/nginx.pid \
+          --modules-path=/usr/lib/nginx/modules \
+          --http-client-body-temp-path=/var/lib/nginx/body \
+          --http-fastcgi-temp-path=/var/lib/nginx/fastcgi \
+          --http-proxy-temp-path=/var/lib/nginx/proxy \
+          --http-scgi-temp-path=/var/lib/nginx/scgi \
+          --http-uwsgi-temp-path=/var/lib/nginx/uwsgi \
+          --with-compat \
+          --with-debug \
+          --with-pcre-jit \
+          --with-http_ssl_module \
+          --with-http_stub_status_module \
+          --with-http_realip_module \
+          --with-http_auth_request_module \
+          --with-http_v2_module \
+          --with-http_dav_module \
+          --with-http_slice_module \
+          --with-threads \
+          --with-http_addition_module \
+          --with-http_gunzip_module \
+          --with-http_gzip_static_module \
+          --with-http_sub_module \
+          --with-stream_ssl_module \
+          --with-stream \
+          --with-openssl-opt="no-deprecated"
+      args:
+        chdir: "{{ nginx_source_dir }}"
+        creates: "{{ nginx_source_dir }}/Makefile"
+      when: nginx_stream_check.rc != 0
+
+    - name: Compile nginx with deprecated declarations suppressed
+      shell: |
+        make CFLAGS="-Wno-error=deprecated-declarations"
+      args:
+        chdir: "{{ nginx_source_dir }}"
+      when: nginx_stream_check.rc != 0
+
+    - name: Stop nginx service
+      systemd:
+        name: nginx
+        state: stopped
+      when: nginx_stream_check.rc != 0
+
+    - name: Backup existing nginx binary
+      command: mv /usr/sbin/nginx /usr/sbin/nginx.bak
+      when: nginx_stream_check.rc != 0
+
+    - name: Move compiled nginx binary to /usr/sbin
+      copy:
+        src: "{{ nginx_source_dir }}/objs/nginx"
+        dest: /usr/sbin/nginx
+        remote_src: yes
+        mode: '0755'
+        owner: root
+        group: root
+      when: nginx_stream_check.rc != 0
+
+    - name: Start nginx service
+      systemd:
+        name: nginx
+        state: started
+      when: nginx_stream_check.rc != 0
+
+    - name: Check if nginx is built with stream module
+      shell: nginx -V 2>&1 | grep -oP '\-\-with-stream(?=\s|$)'
+      when: nginx_stream_check.rc != 0
+
+    - name: Clean up build directory
+      file:
+        path: "{{ build_dir }}"
+        state: absent

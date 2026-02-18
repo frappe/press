@@ -274,42 +274,42 @@
     "dependencies": [
      {
       "dependency": "NVM_VERSION",
-      "parent": "Version 16 Beta",
+      "parent": "Version 16",
       "parentfield": "dependencies",
       "parenttype": "Frappe Version",
       "version": "0.36.0"
      },
      {
       "dependency": "NODE_VERSION",
-      "parent": "Version 16 Beta",
+      "parent": "Version 16",
       "parentfield": "dependencies",
       "parenttype": "Frappe Version",
       "version": "24.12.0"
      },
      {
       "dependency": "PYTHON_VERSION",
-      "parent": "Version 16 Beta",
+      "parent": "Version 16",
       "parentfield": "dependencies",
       "parenttype": "Frappe Version",
       "version": "3.14"
      },
      {
       "dependency": "WKHTMLTOPDF_VERSION",
-      "parent": "Version 16 Beta",
+      "parent": "Version 16",
       "parentfield": "dependencies",
       "parenttype": "Frappe Version",
       "version": "0.12.5"
      },
      {
       "dependency": "BENCH_VERSION",
-      "parent": "Version 16 Beta",
+      "parent": "Version 16",
       "parentfield": "dependencies",
       "parenttype": "Frappe Version",
-      "version": "5.26.0"
+      "version": "5.28.0"
      },
      {
       "dependency": "PIP_VERSION",
-      "parent": "Version 16 Beta",
+      "parent": "Version 16",
       "parentfield": "dependencies",
       "parenttype": "Frappe Version",
       "version": "25.3"
@@ -318,9 +318,9 @@
     "docstatus": 0,
     "doctype": "Frappe Version",
     "modified": "2025-05-23 11:09:57.983138",
-    "name": "Version 16 Beta",
+    "name": "Version 16",
     "number": 16,
     "public": 1,
-    "status": "Beta"
+    "status": "Stable"
    }
 ]

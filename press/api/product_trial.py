@@ -11,7 +11,7 @@ from frappe.rate_limiter import rate_limit
 
 from press.api.account import get_account_request_from_key
 from press.press.doctype.team.team import Team
-from press.saas.doctype.product_trial.product_trial import send_verification_mail_for_login
+from press.saas.doctype.product_trial.product_trial import ProductTrial, send_verification_mail_for_login
 from press.utils.telemetry import capture
 
 
@@ -47,10 +47,10 @@ def send_verification_code_for_login(email: str, product: str):
 	if not is_user_exists:
 		frappe.throw("You have no active sites for this product. Please try signing up.")
 	# generate otp and store in redis
-	otp = random.randint(100000, 999999)
+	otp = str(random.randint(100000, 999999))
 	frappe.cache.set_value(
 		f"product_trial_login_verification_code:{email}",
-		frappe.utils.sha256_hash(str(otp)),
+		frappe.utils.sha256_hash(otp),
 		expires_in_sec=300,
 	)
 
@@ -185,9 +185,9 @@ def get_request(product: str, account_request: str | None = None) -> dict:
 			account_request=account_request,
 		).insert(ignore_permissions=True)
 
-	product_trial = frappe.get_doc("Product Trial", product)
+	product_trial: ProductTrial = frappe.get_doc("Product Trial", product)
 	if product_trial.enable_hybrid_pooling:
-		cluster = None
+		cluster = ""
 		fields = [rule.field for rule in product_trial.hybrid_pool_rules]
 		acc_req = (
 			frappe.db.get_value(
@@ -214,6 +214,7 @@ def get_request(product: str, account_request: str | None = None) -> dict:
 	else:
 		cluster = get_nearest_cluster()
 	domain = frappe.db.get_value("Product Trial", product, "domain")
+	prefilled_subdomain = product_trial.get_prefilled_subdomain(account_request)
 	cluster_domains = frappe.db.get_all(
 		"Root Domain", {"name": ("like", f"%.{domain}")}, ["name", "default_cluster as cluster"]
 	)
@@ -229,4 +230,5 @@ def get_request(product: str, account_request: str | None = None) -> dict:
 		"product_trial": site_request.product_trial,
 		"domain": cluster_domain["name"] if cluster_domain else domain,
 		"status": site_request.status,
+		"prefilled_subdomain": prefilled_subdomain,
 	}

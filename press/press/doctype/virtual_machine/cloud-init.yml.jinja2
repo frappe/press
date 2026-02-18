@@ -20,18 +20,51 @@ runcmd:
 - su - frappe -c "cd /home/frappe/agent && env/bin/agent setup authentication --password {{ agent_password }}"
 - su - frappe -c "htpasswd -Bbc /home/frappe/agent/nginx/monitoring.htpasswd frappe {{ monitoring_password }}"
 - supervisorctl restart all
-{% if server.doctype == 'Database Server' and server.provider != 'Hetzner' %}
+{% if server.doctype == 'Database Server' and server.provider != 'Hetzner' and server.provider != 'DigitalOcean' %}
 - resize2fs $(findmnt /opt/volumes/mariadb --noheadings --output SOURCE)
 - systemctl daemon-reload
 - systemctl restart mariadb
 - systemctl restart mysqld_exporter
 - systemctl restart deadlock_logger
-{% elif server.doctype == 'Server' and server.provider != 'Hetzner' %}
+{% elif server.doctype == 'Server' and server.provider != 'Hetzner' and server.provider != 'DigitalOcean' %}
 - resize2fs $(findmnt /opt/volumes/benches --noheadings --output SOURCE)
 {% endif %}
 {% if server.provider == 'OCI' %}
 - iptables -D INPUT -j REJECT --reject-with icmp-host-prohibited
 - sed -i 's/^-A INPUT -j REJECT --reject-with icmp-host-prohibited$/#-A INPUT -j REJECT --reject-with icmp-host-prohibited/g' /etc/iptables/rules.v4
+{% endif %}
+
+{% if server.provider == 'DigitalOcean' %}
+- |
+    for i in {1..20}; do
+      curl -sf http://169.254.169.254/metadata/v1/id && break
+      sleep 1
+    done
+
+    PRIVATE_IP=$(curl -s http://169.254.169.254/metadata/v1/interfaces/private/0/ipv4/address)
+
+    FILES="
+      /etc/systemd/system/statsd_exporter.service
+      /etc/filebeat/filebeat.yml
+      /etc/mysql/conf.d/frappe.cnf
+      /etc/systemd/system/mariadb.service.d/memory.conf
+      /etc/systemd/system/mysqld_exporter.service
+      /etc/systemd/system/deadlock_logger.service
+      /root/.my.cnf
+    "
+
+    for f in $FILES; do
+      if [ -f "$f" ]; then
+        sed -i "s/__PRIVATE_IP__/${PRIVATE_IP}/g" "$f"
+      fi
+    done
+
+    systemctl daemon-reload
+
+    systemctl restart mariadb || true
+    systemctl restart mysqld_exporter || true
+    systemctl restart deadlock_logger || true
+    systemctl restart statsd_exporter || true
 {% endif %}
 
 write_files:
@@ -56,7 +89,7 @@ write_files:
     TrustedUserCAKeys /etc/ssh/ca.pub
     AuthorizedPrincipalsFile /etc/ssh/auth_principals/%u
 
-{% if server.doctype == 'Database Server' %}
+{% if server.doctype == 'Database Server' or is_unified_server %}
 - path: /etc/mysql/conf.d/frappe.cnf
   content: |
     {{ mariadb_config | indent(4) }}

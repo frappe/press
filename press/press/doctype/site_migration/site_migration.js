@@ -73,5 +73,18 @@ frappe.ui.form.on('Site Migration', {
 				);
 			});
 		}
+		if (frm.is_new()) {
+			frm.dashboard.set_headline_alert(
+				__(
+					`Scheduled time not set. The migration will start immediately on save`,
+				),
+				'orange',
+			);
+		}
+	},
+	scheduled_time: function (frm) {
+		if (frm.doc.scheduled_time) {
+			frm.dashboard.clear_headline();
+		}
 	},
 });

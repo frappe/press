@@ -19,6 +19,7 @@
   "micro_debit_charge_inr",
   "column_break_wrqp",
   "usage_record_creation_batch_size",
+  "default_server_plan_type",
   "invoicing_section",
   "invoicing_column",
   "gst_percentage",
@@ -86,6 +87,13 @@
   "docker_registry_username",
   "docker_registry_password",
   "docker_s3_secret_key",
+  "asset_store_section",
+  "asset_store_access_key",
+  "asset_store_secret_access_key",
+  "asset_store_endpoint",
+  "asset_store_region",
+  "asset_store_bucket_name",
+  "use_asset_store",
   "docker_build_section",
   "suspend_builds",
   "clone_directory",
@@ -157,8 +165,6 @@
   "aws_access_key_id",
   "column_break_agig",
   "aws_secret_access_key",
-  "hetzner_section",
-  "hetzner_api_token",
   "twilio_section",
   "twilio_account_sid",
   "twilio_api_key_sid",
@@ -240,6 +246,11 @@
   "partnership_fee_inr",
   "section_break_dhzi",
   "drive_resource_link",
+  "frappe_school_authentication_section",
+  "school_url",
+  "school_api_key",
+  "column_break_uxxz",
+  "school_api_secret",
   "hybrid_server_tab",
   "hybrid_cluster",
   "hybrid_domain",
@@ -1278,16 +1289,6 @@
    "label": "Usage Record Creation Batch Size"
   },
   {
-   "fieldname": "hetzner_section",
-   "fieldtype": "Section Break",
-   "label": "Hetzner"
-  },
-  {
-   "fieldname": "hetzner_api_token",
-   "fieldtype": "Password",
-   "label": "Hetzner API Token"
-  },
-  {
    "fieldname": "press_trial_plan",
    "fieldtype": "Link",
    "label": "Press Trial Plan",
@@ -1564,11 +1565,79 @@
    "fieldname": "disable_binlog_indexer_service",
    "fieldtype": "Check",
    "label": "Disable Binlog Indexer Service"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "asset_store_section",
+   "fieldtype": "Section Break",
+   "label": "Asset Store"
+  },
+  {
+   "default": "0",
+   "description": "Will only use this asset storage backend if checked.",
+   "fieldname": "use_asset_store",
+   "fieldtype": "Check",
+   "label": "Use Asset Store"
+  },
+  {
+   "fieldname": "asset_store_access_key",
+   "fieldtype": "Data",
+   "label": "Asset Store Access Key"
+  },
+  {
+   "fieldname": "asset_store_secret_access_key",
+   "fieldtype": "Password",
+   "label": "Asset Store Secret Access Key"
+  },
+  {
+   "fieldname": "asset_store_endpoint",
+   "fieldtype": "Data",
+   "label": "Asset Store Endpoint"
+  },
+  {
+   "fieldname": "asset_store_bucket_name",
+   "fieldtype": "Data",
+   "label": "Asset Store Bucket Name "
+  },
+  {
+   "fieldname": "asset_store_region",
+   "fieldtype": "Data",
+   "label": "Asset Store Region"
+  },
+  {
+   "fieldname": "default_server_plan_type",
+   "fieldtype": "Link",
+   "label": "Default Server Plan Type",
+   "options": "Server Plan Type"
+  },
+  {
+   "fieldname": "frappe_school_authentication_section",
+   "fieldtype": "Section Break",
+   "label": "Frappe School Authentication"
+  },
+  {
+   "fieldname": "school_url",
+   "fieldtype": "Data",
+   "label": "School URL"
+  },
+  {
+   "fieldname": "school_api_key",
+   "fieldtype": "Data",
+   "label": "School API Key"
+  },
+  {
+   "fieldname": "column_break_uxxz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "school_api_secret",
+   "fieldtype": "Password",
+   "label": "School API Secret"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-12-09 00:06:25.213870",
+ "modified": "2026-01-21 10:16:18.560642",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
@@ -1587,7 +1656,6 @@
  ],
  "quick_entry": 1,
  "row_format": "Dynamic",
- "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

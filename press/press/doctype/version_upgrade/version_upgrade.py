@@ -12,6 +12,7 @@ from press.press.doctype.communication_info.communication_info import get_commun
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
+from press.press.doctype.site.site import TRANSITORY_STATES
 from press.utils import log_error
 
 if TYPE_CHECKING:
@@ -27,6 +28,8 @@ class VersionUpgrade(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		bench_deploy_successful: DF.Check
+		deploy_private_bench: DF.Check
 		destination_group: DF.Link
 		last_output: DF.Code | None
 		last_traceback: DF.Code | None
@@ -36,7 +39,7 @@ class VersionUpgrade(Document):
 		skip_backups: DF.Check
 		skip_failing_patches: DF.Check
 		source_group: DF.Link | None
-		status: DF.Literal["Scheduled", "Pending", "Running", "Success", "Failure"]
+		status: DF.Literal["Scheduled", "Pending", "Running", "Success", "Failure", "Cancelled"]
 	# end: auto-generated types
 
 	doctype = "Version Upgrade"
@@ -45,8 +48,16 @@ class VersionUpgrade(Document):
 		if self.status == "Failure":
 			return
 		self.validate_versions()
-		self.validate_same_server()
+		# Skip server validation if waiting for bench deploy
+		if not self.deploy_private_bench or self.bench_deploy_successful:
+			self.validate_same_server()
 		self.validate_apps()
+
+	def after_insert(self):
+		if self.deploy_private_bench and self.destination_group:
+			self.status = "Pending"
+			self.save()
+			frappe.get_doc("Release Group", self.destination_group).initial_deploy()
 
 	def validate_same_server(self):
 		site_server = frappe.get_doc("Site", self.site).server
@@ -93,7 +104,7 @@ class VersionUpgrade(Document):
 	@frappe.whitelist()
 	def start(self):
 		site: "Site" = frappe.get_doc("Site", self.site)
-		if site.status.endswith("ing"):
+		if site.status in TRANSITORY_STATES:
 			frappe.throw("Site is under maintenance. Cannot Update")
 		try:
 			self.site_update = site.move_to_group(
@@ -118,7 +129,14 @@ class VersionUpgrade(Document):
 				message,
 			)
 		else:
-			self.status = frappe.db.get_value("Site Update", self.site_update, "status")
+			site_update_status, site_update_job = frappe.db.get_value(
+				"Site Update", self.site_update, ["status", "update_job"]
+			)
+			if site_update_status in ["Failure", "Recovered", "Fatal"]:
+				self.status = "Failure"
+				self.send_version_upgrade_failure_email(agent_job=site_update_job)
+			else:
+				self.status = site_update_status
 			if self.status == "Success":
 				site = frappe.get_doc("Site", self.site)
 				next_version = frappe.get_value("Release Group", self.destination_group, "version")
@@ -134,6 +152,63 @@ class VersionUpgrade(Document):
 					message,
 				)
 		self.save()
+
+	def update_version_upgrade_on_process_job(self, job):
+		"""Handles agent job updates when new bench deploy is involved for site version upgrade"""
+		if job.job_type != "New Bench":
+			return
+
+		if job.status == "Success":
+			self.bench_deploy_successful = 1
+			if self.scheduled_time:
+				self.status = "Scheduled"
+				self.save()
+			else:
+				self.start()
+		elif job.status in ["Failure", "Delivery Failure"]:
+			self.status = "Cancelled"
+			self.send_version_upgrade_failure_email(agent_job=job.name, bench_deploy_failure=True)
+			self.save()
+
+	def send_version_upgrade_failure_email(self, agent_job: str, bench_deploy_failure: bool = False) -> None:
+		traceback = ""
+		output = ""
+		if agent_job:
+			# Set failure traceback and send email to inform user
+			traceback, output = frappe.get_value("Agent Job", agent_job, ["traceback", "output"])
+			self.last_traceback = traceback
+			self.last_output = output
+
+		recipients = get_communication_info("Email", "Site Activity", "Site", self.site)
+		if not recipients:
+			return
+
+		subject = f"Automated Version Upgrade Failed for {self.site}"
+		content = frappe.render_template(
+			"press/templates/emails/version_upgrade_failed.html",
+			{
+				"site": self.site,
+				"traceback": traceback,
+				"output": output,
+				"bench_deploy_failure": bench_deploy_failure,
+			},
+			is_path=True,
+		)
+		communication = frappe.get_doc(
+			{
+				"doctype": "Communication",
+				"communication_type": "Communication",
+				"communication_medium": "Email",
+				"reference_doctype": self.doctype,
+				"reference_name": self.name,
+				"subject": subject,
+				"content": content,
+				"is_notification": True,
+				"recipients": ", ".join(recipients),
+			}
+		)
+		communication.insert(ignore_permissions=True)
+		communication.send_email()
 
 	@classmethod
 	def get_all_scheduled_before_now(cls) -> list["VersionUpgrade"]:
@@ -159,27 +234,17 @@ def update_from_site_update():
 	ongoing_version_upgrades = VersionUpgrade.get_all_ongoing_version_upgrades()
 	for version_upgrade in ongoing_version_upgrades:
 		try:
-			site_update = frappe.get_doc("Site Update", version_upgrade.site_update)
-			version_upgrade.status = site_update.status
-			if site_update.status in ["Failure", "Recovered", "Fatal"]:
-				last_traceback = frappe.get_value("Agent Job", site_update.update_job, "traceback")
-				last_output = frappe.get_value("Agent Job", site_update.update_job, "output")
-				version_upgrade.last_traceback = last_traceback
-				version_upgrade.last_output = last_output
+			if not version_upgrade.site_update:
+				continue
+			site_update_status, site_update_job = frappe.db.get_value(
+				"Site Update",
+				version_upgrade.site_update,
+				["status", "update_job"],
+			)
+			version_upgrade.status = site_update_status
+			if site_update_status in ["Failure", "Recovered", "Fatal"]:
 				version_upgrade.status = "Failure"
-
-				frappe.sendmail(
-					recipients=get_communication_info("Email", "Site Activity", "Site", version_upgrade.site),
-					subject=f"Automated Version Upgrade Failed for {version_upgrade.site}",
-					reference_doctype="Version Upgrade",
-					reference_name=version_upgrade.name,
-					template="version_upgrade_failed",
-					args={
-						"site": version_upgrade.site,
-						"traceback": last_traceback,
-						"output": last_output,
-					},
-				)
+				version_upgrade.send_version_upgrade_failure_email(agent_job=site_update_job)
 			version_upgrade.save()
 			frappe.db.commit()
 		except Exception:
@@ -191,9 +256,15 @@ def run_scheduled_upgrades():
 	for upgrade in VersionUpgrade.get_all_scheduled_before_now():
 		try:
 			site_status = frappe.db.get_value("Site", upgrade.site, "status")
-			if site_status.endswith("ing"):
+			if site_status == "Archived":
+				frappe.db.set_value("Version Upgrade", upgrade.name, "status", "Cancelled")
+				continue
+			if site_status in TRANSITORY_STATES:
 				# If we attempt to start the upgrade now, it will fail
 				# This will be picked up in the next iteration
+				continue
+
+			if upgrade.deploy_private_bench and not upgrade.bench_deploy_successful:
 				continue
 			upgrade.start()
 			frappe.db.commit()

@@ -372,6 +372,12 @@ let router = createRouter({
 			props: true,
 		},
 		{
+			name: 'NewSiteProgress',
+			path: '/sites/new/progress/:siteGroupDeployName',
+			component: () => import('./pages/NewSiteProgress.vue'),
+			props: true,
+		},
+		{
 			path: '/developer-reply/:marketplaceApp/:reviewId',
 			name: 'ReplyMarketplaceApp',
 			component: () =>
@@ -423,6 +429,55 @@ let router = createRouter({
 			props: true,
 		},
 		...generateRoutes(),
+		// TODO: makeshift redirect fixes for /insights paths
+		{
+			path: '/sites/:site/insights/overview',
+			redirect: (to) => ({
+				path: `/sites/${to.params.site}/overview`,
+			}),
+		},
+		{
+			path: '/sites/:site/insights/apps',
+			redirect: (to) => ({
+				path: `/sites/${to.params.site}/apps`,
+			}),
+		},
+		{
+			path: '/sites/:site/insights/domains',
+			redirect: (to) => ({
+				path: `/sites/${to.params.site}/domains`,
+			}),
+		},
+		{
+			path: '/sites/:site/insights/backups',
+			redirect: (to) => ({
+				path: `/sites/${to.params.site}/backups`,
+			}),
+		},
+		{
+			path: '/sites/:site/insights/site-config',
+			redirect: (to) => ({
+				path: `/sites/${to.params.site}/site-config`,
+			}),
+		},
+		{
+			path: '/sites/:site/insights/actions',
+			redirect: (to) => ({
+				path: `/sites/${to.params.site}/actions`,
+			}),
+		},
+		{
+			path: '/sites/:site/insights/updates',
+			redirect: (to) => ({
+				path: `/sites/${to.params.site}/updates`,
+			}),
+		},
+		{
+			path: '/sites/:site/insights/activity',
+			redirect: (to) => ({
+				path: `/sites/${to.params.site}/activity`,
+			}),
+		},
 		{
 			path: '/:pathMatch(.*)*',
 			name: '404',

@@ -196,7 +196,7 @@
    "link_fieldname": "alert"
   }
  ],
- "modified": "2025-12-18 21:04:16.605761",
+ "modified": "2026-01-16 14:24:38.200768",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Prometheus Alert Rule",
@@ -212,6 +212,29 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
    "share": 1,
    "write": 1
   }

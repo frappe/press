@@ -13,12 +13,22 @@
 				title="<b>Builds Suspended:</b> updates will be scheduled to run when builds resume."
 				type="warning"
 			/>
+			<AlertBanner
+				v-if="
+					benchDocResource.doc.deploy_information.apps.some((app) =>
+						app.releases.some((release) => release.is_yanked),
+					)
+				"
+				class="mb-4"
+				title="A few commits have been yanked, <a href='https://docs.frappe.io/cloud/benches/updating_a_bench#yanked-app-releases' target='_blank' style='font-weight: bold;'>click here</a> to know more."
+				type="info"
+			/>
 			<!-- Update Steps -->
 			<div class="space-y-4">
 				<!-- Select Apps Step -->
 				<div v-if="step === 'select-apps'">
 					<h2 class="mb-4 text-lg font-medium">
-						{{ lastDeploy ? 'Select apps to update' : 'Select apps to deploy' }}
+						{{ lastDeploy ? 'Select apps to update' : 'Deploy Apps' }}
 					</h2>
 					<GenericList
 						class="max-h-[500px]"
@@ -172,9 +182,13 @@ export default {
 	computed: {
 		updatableAppOptions() {
 			let deployInformation = this.benchDocResource.doc.deploy_information;
-			let appData = deployInformation.apps.filter(
-				(app) => app.update_available === true,
-			);
+			let appData = deployInformation.apps;
+
+			appData.forEach((app) => {
+				if (!app.releases?.length) {
+					app.__disabled = true;
+				}
+			});
 
 			// preserving this for use in component functions
 			const vm = this;
@@ -228,35 +242,49 @@ export default {
 									return {
 										label: release.tag
 											? release.tag
-											: `${message} (${release.hash.slice(0, 7)})`,
+											: `${release.hash.slice(0, 7)} - ${message}`,
 										value: release.name,
+										timestamp: release.timestamp,
+										is_yanked: release.is_yanked,
 									};
 								});
 							}
 
 							function initialDeployTo(app) {
 								const next_release = app.releases.filter(
-									(release) => release.name === app.next_release,
+									(release) =>
+										release.name === app.next_release && !release.is_yanked,
 								)[0];
+
 								if (app.will_branch_change) {
 									return app.branch;
 								} else if (next_release) {
 									return next_release.tag || next_release.hash.slice(0, 7);
+								} else if (app.next_release_hash) {
+									return app.next_release_hash.slice(0, 7);
+								} else {
+									return null;
 								}
 							}
 
 							if (!app.releases.length) return undefined;
-
 							let initialValue = {
 								label: initialDeployTo(app),
-								value: app.next_release,
+								value:
+									app.releases.find(
+										(release) =>
+											release.name === app.next_release && !release.is_yanked,
+									)?.name || null, // Don't make any implicit selections
 							};
 
 							return h(CommitChooser, {
 								options: commitChooserOptions(app),
+								app: app.name,
+								source: app.source,
+								currentRelease: app.current_release,
 								modelValue: initialValue,
 								'onUpdate:modelValue': (value) => {
-									vm.updateNextRelease(app.name, value.value);
+									vm.updateNextRelease(app.name, value.value, value.hash);
 								},
 							});
 						},
@@ -274,8 +302,10 @@ export default {
 								return 'Will be Uninstalled';
 							} else if (!row.will_branch_change && !row.current_hash) {
 								return 'First Deploy';
+							} else if (row.update_available) {
+								return 'Update Available';
 							}
-							return 'Update Available';
+							return 'Latest Version Deployed';
 						},
 					},
 					{
@@ -286,9 +316,10 @@ export default {
 						Button({ row }) {
 							let url;
 							if (row.current_hash && row.next_release) {
-								let hash = row.releases.find(
-									(release) => release.name === row.next_release,
-								)?.hash;
+								let hash =
+									row.releases.find(
+										(release) => release.name === row.next_release,
+									)?.hash ?? row.next_release_hash;
 
 								if (hash)
 									url = `${row.repository_url}/compare/${row.current_hash}...${hash}`;
@@ -296,7 +327,7 @@ export default {
 								url = `${row.repository_url}/commit/${
 									row.releases.find(
 										(release) => release.name === row.next_release,
-									).hash
+									)?.hash ?? row.next_release_hash
 								}`;
 							}
 
@@ -543,11 +574,14 @@ export default {
 		},
 	},
 	methods: {
-		updateNextRelease(name, next) {
+		updateNextRelease(name, nextRelease, nextReleaseHash = null) {
 			const app = this.benchDocResource.doc.deploy_information.apps.find(
 				(a) => a.name === name,
 			);
-			if (app) app.next_release = next;
+			if (app) {
+				app.next_release = nextRelease;
+				app.next_release_hash = nextReleaseHash;
+			}
 
 			// Update next_release in selectedApps as well
 			this.handleAppSelection(this.selectedApps.map((a) => a.app));
@@ -597,10 +631,14 @@ export default {
 					return {
 						app: app.name,
 						source: app.source,
-						release: app.next_release,
+						release: app.releases.find(
+							(release) =>
+								release.name === app.next_release && !release.is_yanked,
+						)?.name,
 						hash: app.releases.find(
-							(release) => release.name === app.next_release,
-						).hash,
+							(release) =>
+								release.name === app.next_release && !release.is_yanked,
+						)?.hash,
 					};
 				});
 		},

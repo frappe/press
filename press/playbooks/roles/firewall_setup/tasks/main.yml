@@ -1,0 +1,33 @@
+---
+- name: Setup Bypass Chain
+  command: iptables -N {{ chain_bypass }}
+  ignore_errors: yes
+
+- name: Setup Main Chain
+  command: iptables -N {{ chain_main }}
+  ignore_errors: yes
+
+- name: Reference Main Chain in INPUT
+  command: iptables -I INPUT 1 -j {{ chain_main }}
+  ignore_errors: yes
+
+- name: Reference Bypass Chain in INPUT
+  command: iptables -I INPUT 1  -j {{ chain_bypass }}
+  ignore_errors: yes
+
+- name: Reference Main Chain in DOCKER-USER
+  command: iptables -I DOCKER-USER 1 -j {{ chain_main }}
+  ignore_errors: yes
+
+- name: Reference Bypass Chain in DOCKER-USER
+  command: iptables -I DOCKER-USER 1 -j {{ chain_bypass }}
+  ignore_errors: yes
+
+- name: Reference Main Chain in OUTPUT
+  command: iptables -I OUTPUT 1 -j {{ chain_main }}
+  ignore_errors: yes
+
+- name: Reference Bypass Chain in OUTPUT
+  command: iptables -I OUTPUT 1 -j {{ chain_bypass }}
+  ignore_errors: yes
+

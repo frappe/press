@@ -8,21 +8,22 @@
 		<ErrorMessage class="mt-2" :message="errorMessage" />
 
 		<FormControl
-			type="autocomplete"
+			type="combobox"
 			:options="teams"
 			size="sm"
 			variant="subtle"
 			placeholder="Payment Partner"
 			:disabled="false"
 			label="Select Payment Partner"
-			v-model="partnerInput"
+			:modelValue="partnerInput"
+			@update:modelValue="partnerInput = $event"
 			class="mb-5"
 		/>
 
 		<div class="flex gap-5 col-2">
 			<FormControl
 				label="M-Pesa Phone Number"
-				v-model="this.phoneNumberInput"
+				v-model="phoneNumberInput"
 				name="phone_number"
 				autocomplete="off"
 				class="mb-5"
@@ -32,7 +33,7 @@
 
 			<FormControl
 				label="Tax ID"
-				v-model="this.taxIdInput"
+				v-model="taxIdInput"
 				name="tax_id"
 				autocomplete="off"
 				class="mb-5"
@@ -116,7 +117,7 @@ export default {
 				params: {
 					request_amount: this.amountKES,
 					sender: this.phoneNumberInput,
-					partner: this.partnerInput.value,
+					partner: this.getPartnerValue(),
 					tax_id: this.taxIdInput,
 					amount_with_tax: this.amountWithTax,
 					phone_number: this.phoneNumberInput,
@@ -135,7 +136,8 @@ export default {
 							`Amount is more than the maximum allowed: ${this.maximumAmount}`,
 						);
 					}
-					if (!this.partnerInput.value || !this.phoneNumberInput) {
+					const partnerValue = this.getPartnerValue();
+					if (!partnerValue || !this.phoneNumberInput) {
 						throw new DashboardError(
 							'Both partner and phone number are required for payment.',
 						);
@@ -164,6 +166,13 @@ export default {
 		},
 	},
 	methods: {
+		getPartnerValue() {
+			if (!this.partnerInput) return null;
+			if (typeof this.partnerInput === 'object' && this.partnerInput !== null) {
+				return this.partnerInput.value || this.partnerInput;
+			}
+			return this.partnerInput;
+		},
 		async onPayClick() {
 			this.paymentInProgress = true;
 			try {
@@ -211,7 +220,7 @@ export default {
 					url: '/api/method/press.api.regional_payments.mpesa.utils.get_tax_percentage',
 					method: 'GET',
 					params: {
-						payment_partner: this.partnerInput.value,
+						payment_partner: this.getPartnerValue(),
 					},
 				});
 				this.taxPercentage = taxPercentage;

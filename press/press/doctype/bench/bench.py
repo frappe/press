@@ -42,6 +42,8 @@ if TYPE_CHECKING:
 
 	from frappe.types import DF
 
+	from press.press.doctype.release_group.release_group import ReleaseGroup
+
 
 TRANSITORY_STATES = ["Pending", "Installing"]
 FINAL_STATES = ["Active", "Broken", "Archived"]
@@ -308,7 +310,7 @@ class Bench(Document):
 				"Managed Database Service", self.managed_database_service, "port"
 			)
 
-		press_settings_common_site_config = frappe.db.get_single_value(
+		press_settings_common_site_config: str = frappe.db.get_single_value(
 			"Press Settings", "bench_configuration"
 		)
 		if press_settings_common_site_config:
@@ -316,7 +318,9 @@ class Bench(Document):
 
 		self.update_config_with_rg_config(config)
 
-		server_private_ip = frappe.db.get_value("Server", self.server, "private_ip")
+		if not (server_private_ip := frappe.db.get_value("Server", self.server, "private_ip")):
+			frappe.throw("Server must have a private IP to create Bench")
+
 		bench_config = {
 			"docker_image": self.docker_image,
 			"web_port": 18000 + self.port_offset,
@@ -624,7 +628,7 @@ class Bench(Document):
 		)
 		for site in sites:
 			try:
-				site = frappe.get_doc("Site", site)
+				site: Site = frappe.get_doc("Site", site)
 				site.schedule_update()
 				frappe.db.commit()
 			except Exception:
@@ -872,6 +876,19 @@ class Bench(Document):
 			programs,
 		)
 
+	def is_this_version_or_above(self, version: int) -> bool:
+		group: ReleaseGroup = frappe.get_cached_doc("Release Group", self.group)
+		return group.is_this_version_or_above(version)
+
+	def remove_scheduler_status(self, processes: list[SupervisorProcess]) -> list[SupervisorProcess]:
+		if self.is_this_version_or_above(14):
+			processes = [
+				p
+				for p in processes
+				if not (p["name"] == "frappe-bench-frappe-schedule" and p["status"] == "Exited")
+			]
+		return processes
+
 	def supervisorctl_status(self):
 		result = self.docker_execute("supervisorctl status")
 		if result["status"] != "Success" or not result["output"]:
@@ -880,7 +897,9 @@ class Bench(Document):
 
 		output = result["output"]
 		processes = parse_supervisor_status(output)
-		return sort_supervisor_processes(processes)
+		# remove scheduler from the list
+		processes = sort_supervisor_processes(processes)
+		return self.remove_scheduler_status(processes)
 
 	def update_inplace(self, apps: "list[BenchUpdateApp]", sites: "list[str]") -> str:
 		self.set_self_and_site_status(sites, status="Updating", site_status="Updating")
@@ -1147,6 +1166,45 @@ class Bench(Document):
 			bench = cls(cls.DOCTYPE, bench_name)
 			yield bench.name, bench.workload, bench.server
 
+	def get_steps(self):
+		steps = []
+		new_bench_agent_job = frappe.db.exists(
+			"Agent Job",
+			{
+				"bench": self.name,
+				"job_type": "New Bench",
+			},
+		)
+		if not new_bench_agent_job:
+			steps.append(
+				{
+					"name": "create_bench",
+					"title": "Creating bench on server",
+					"status": "Pending",
+					"output": "",
+					"stage": "Deploy Bench",
+				}
+			)
+			return steps
+
+		agent_steps = frappe.db.get_all(
+			"Agent Job Step",
+			filters={"agent_job": new_bench_agent_job},
+			order_by="creation asc",
+			fields=["name", "step_name", "status", "output"],
+		)
+		for step in agent_steps:
+			steps.append(
+				{
+					"name": step.name,
+					"title": step.step_name,
+					"status": step.status,
+					"output": step.output,
+					"stage": "Deploy Bench",
+				}
+			)
+		return steps
+
 
 class StagingSite(Site):
 	def __init__(self, bench: Bench):
@@ -1220,6 +1278,14 @@ def process_new_bench_job_update(job):
 	)
 	if site_group_deploy:
 		frappe.get_doc("Site Group Deploy", site_group_deploy).update_site_group_deploy_on_process_job(job)
+
+	# check if new bench is for site  version upgrade flow
+	version_upgrade = frappe.db.get_value(
+		"Version Upgrade",
+		{"destination_group": bench.group, "deploy_private_bench": 1},
+	)
+	if version_upgrade:
+		frappe.get_doc("Version Upgrade", version_upgrade).update_version_upgrade_on_process_job(job)
 
 	if updated_status != "Active":
 		return

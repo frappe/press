@@ -47,6 +47,9 @@ if typing.TYPE_CHECKING:
 		DeployCandidateApp,
 	)
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
+	from press.press.doctype.deploy_candidate_build_step.deploy_candidate_build_step import (
+		DeployCandidateBuildStep,
+	)
 
 	# TYPE_CHECKING guard for code below cause DeployCandidate
 	# might cause circular import.
@@ -55,6 +58,7 @@ if typing.TYPE_CHECKING:
 			self,
 			details: "Details",
 			dc: "DeployCandidate",
+			dcb: "DeployCandidateBuild",
 			exc: BaseException,
 		) -> bool:  # Return True if is_actionable
 			...
@@ -84,8 +88,10 @@ DOC_URLS = {
 }
 
 
-def handlers() -> "list[UserAddressableHandlerTuple]":
+def handlers():
 	"""
+	Returns list[UserAddressableHandlerTuple]
+
 	Before adding anything here, view the type:
 	`UserAddressableHandlerTuple`
 
@@ -251,6 +257,11 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 			update_with_invalid_app_structure,
 			None,
 		),
+		(
+			"`frappe` package is installed from PyPI, which isn't supported",
+			update_with_frappe_installed_from_pypi,
+			None,
+		),
 	]
 
 
@@ -353,6 +364,27 @@ def get_details(
 		details["assistance_url"] = None
 
 	return details
+
+
+def update_with_frappe_installed_from_pypi(
+	details: "Details",
+	dc: "DeployCandidate",
+	dcb: "DeployCandidateBuild",
+	exc: BaseException,
+):
+	details["title"] = (
+		"[Action Required] App installation failed due to 'frappe' package being installed from PyPI"
+	)
+
+	message = """
+	<p><strong>Installation Failed:</strong> Your custom app's installation is failing because the <code>frappe</code> package is installed from PyPI.
+	This setup is not supported and is preventing the installation from completing.</p>
+
+	<p>Please remove <code>frappe</code> from your app's <code>requirements.txt</code> or <code>pyproject.toml</code> file to proceed.</p>
+	"""
+
+	details["message"] = fmt(message)
+	return True
 
 
 def update_with_unsupported_init_file(
@@ -606,7 +638,7 @@ def update_with_invalid_pyproject_error(
 	if len(exc.args) <= 1 or not (app := exc.args[1]):
 		return False
 
-	build_step = get_ct_row(dcb, app, "build_steps", "step_slug")
+	build_step: DeployCandidateBuildStep = get_ct_row(dcb, app, "build_steps", "step_slug")
 	app_name = build_step.step
 
 	details["title"] = "Invalid pyproject.toml file found"
@@ -630,7 +662,7 @@ def update_with_invalid_app_structure(
 	if len(exc.args) <= 1 or not (app := exc.args[1]):
 		return False
 
-	build_step = get_ct_row(dcb, app, "build_steps", "step_slug")
+	build_step: DeployCandidateBuildStep = get_ct_row(dcb, app, "build_steps", "step_slug")
 	app_name = build_step.step
 
 	details["title"] = "App Installation Failed"
@@ -657,7 +689,7 @@ def update_with_invalid_package_json_error(
 	if len(exc.args) <= 1 or not (app := exc.args[1]):
 		return False
 
-	build_step = get_ct_row(dcb, app, "build_steps", "step_slug")
+	build_step: DeployCandidateBuildStep = get_ct_row(dcb, app, "build_steps", "step_slug")
 	app_name = build_step.step
 
 	loc_str = ""
@@ -718,7 +750,7 @@ def update_with_incompatible_node(
 	dc: "DeployCandidate",
 	dcb: "DeployCandidateBuild",
 	exc: BaseException,
-) -> None:
+) -> bool:
 	# Example line:
 	# `#60 5.030 error customization_forms@1.0.0: The engine "node" is incompatible with this module. Expected version ">=18.0.0". Got "16.16.0"`
 	if line := get_build_output_line(dcb, '"node" is incompatible with this module'):
@@ -797,7 +829,7 @@ def update_with_incompatible_node_prebuild(
 	details: "Details",
 	dc: "DeployCandidate",
 	exc: BaseException,
-) -> None:
+) -> bool:
 	if len(exc.args) != 5:
 		return False
 
@@ -829,7 +861,7 @@ def update_with_incompatible_python_prebuild(
 	dc: "DeployCandidate",
 	dcb: "DeployCandidateBuild",
 	exc: BaseException,
-) -> None:
+) -> bool:
 	if len(exc.args) != 4:
 		return False
 
@@ -855,7 +887,7 @@ def update_with_incompatible_app_prebuild(
 	dc: "DeployCandidate",
 	dcb: "DeployCandidateBuild",
 	exc: BaseException,
-) -> None:
+) -> bool:
 	if len(exc.args) != 5:
 		return False
 

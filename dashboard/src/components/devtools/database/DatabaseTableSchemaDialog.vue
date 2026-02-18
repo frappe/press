@@ -10,9 +10,14 @@
 			<div class="flex flex-row gap-2">
 				<FormControl
 					class="w-full"
-					type="autocomplete"
+					type="combobox"
 					:options="autocompleteOptions"
-					v-model="selectedSchema"
+					:modelValue="selectedSchema?.value"
+					@update:modelValue="
+						selectedSchema = autocompleteOptions.find(
+							(option) => option.value === $event,
+						)
+					"
 				/>
 				<Button
 					icon="copy"

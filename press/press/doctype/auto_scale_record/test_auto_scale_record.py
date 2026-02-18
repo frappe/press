@@ -13,6 +13,7 @@ from press.press.doctype.auto_scale_record.auto_scale_record import (
 	AutoScaleRecord,
 	is_secondary_ready_for_scale_down,
 )
+from press.press.doctype.nfs_volume_detachment.nfs_volume_detachment import NFSVolumeDetachment
 from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import (
 	PrometheusAlertRule,
 )
@@ -35,6 +36,7 @@ def mimic_get_cpu_and_memory_usage(is_high: bool = False):
 
 @patch.object(AutoScaleRecord, "after_insert", new=Mock())
 @patch.object(PrometheusAlertRule, "on_update", new=Mock())
+@patch.object(NFSVolumeDetachment, "after_insert", new=Mock())
 class UnitTestAutoScaleRecord(TestCase):
 	"""
 	Unit tests for AutoScaleRecord.
@@ -159,6 +161,34 @@ class UnitTestAutoScaleRecord(TestCase):
 
 		self.assertEqual(expected_expression_only_cpu, actual_expression)
 		self.assertEqual(prometheus_alert_rule.enabled, 1)
+
+	def test_dropping_secondary_server_with_triggers(self):
+		self.primary_server.add_automated_scaling_triggers(
+			metric="CPU",
+			action="Scale Up",
+			threshold=75.0,
+		)
+
+		with self.assertRaises(frappe.ValidationError) as context:
+			nfs_volume_detachment: "NFSVolumeDetachment" = frappe.get_doc(
+				{"doctype": "NFS Volume Detachment", "primary_server": self.primary_server.name}
+			)
+			nfs_volume_detachment.insert(ignore_permissions=True)
+
+		self.assertIn(
+			"Please remove all auto scale triggers before dropping the secondary server",
+			str(context.exception),
+		)
+
+		auto_scale_triggers = frappe.get_all(
+			"Auto Scale Trigger", filters={"parent": self.primary_server.name}, pluck="name"
+		)
+		self.primary_server.remove_automated_scaling_triggers(triggers=auto_scale_triggers)
+
+		nfs_volume_detachment: "NFSVolumeDetachment" = frappe.get_doc(
+			{"doctype": "NFS Volume Detachment", "primary_server": self.primary_server.name}
+		)
+		nfs_volume_detachment.insert(ignore_permissions=True)
 
 	def test_remove_all_triggers(self):
 		self.primary_server.add_automated_scaling_triggers(

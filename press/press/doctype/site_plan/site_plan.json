@@ -30,6 +30,9 @@
   "support_included",
   "dedicated_server_plan",
   "is_frappe_plan",
+  "private_bench_support",
+  "allowed_providers_section",
+  "cloud_providers",
   "customization_for_bench_section",
   "release_groups",
   "allowed_apps",
@@ -244,12 +247,30 @@
    "fieldname": "legacy_plan",
    "fieldtype": "Check",
    "label": "Legacy Plan"
+  },
+  {
+   "fieldname": "allowed_providers_section",
+   "fieldtype": "Section Break",
+   "label": "Allowed Providers"
+  },
+  {
+   "fieldname": "cloud_providers",
+   "fieldtype": "Table",
+   "label": "Cloud Providers",
+   "options": "Cloud Providers"
+  },
+  {
+   "default": "0",
+   "description": "Create Site On A Newly Deployed Bench",
+   "fieldname": "private_bench_support",
+   "fieldtype": "Check",
+   "label": "Private Bench Support"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-30 10:48:08.852441",
+ "modified": "2026-01-11 20:29:59.240087",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Plan",

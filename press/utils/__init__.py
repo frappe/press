@@ -12,7 +12,7 @@ import time
 from datetime import datetime, timedelta
 from functools import wraps
 from pathlib import Path
-from typing import TypedDict, TypeVar
+from typing import TYPE_CHECKING, Literal, TypedDict, TypeVar, overload
 from urllib.parse import urljoin
 from urllib.request import urlopen
 
@@ -29,6 +29,9 @@ from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import site_cache
 
 from press.utils.email_validator import validate_email
+
+if TYPE_CHECKING:
+	from press.press.doctype.team.team import Team
 
 
 class SupervisorProcess(TypedDict):
@@ -91,7 +94,15 @@ def log_error(title, **kwargs):
 		)
 
 
-def get_current_team(get_doc=False):
+@overload
+def get_current_team(get_doc: Literal[True]) -> Team: ...
+
+
+@overload
+def get_current_team(get_doc: Literal[False] = False) -> str: ...
+
+
+def get_current_team(get_doc=False) -> Team | str:
 	if frappe.session.user == "Guest":
 		frappe.throw("Not Permitted", frappe.AuthenticationError)
 
@@ -617,7 +628,7 @@ def reconnect_on_failure():
 	return wrapper
 
 
-def parse_supervisor_status(output: str):
+def parse_supervisor_status(output: str) -> list[SupervisorProcess]:
 	# Note: this function is verbose due to supervisor status being kinda
 	# unstructured, and I'm not entirely sure of all possible input formats.
 	#
@@ -631,15 +642,21 @@ def parse_supervisor_status(output: str):
 	pid_rex = re.compile(r"^pid\s+\d+")
 
 	lines = output.split("\n")
-	parsed = []
+	parsed: list[SupervisorProcess] = []
 
 	for line in lines:
 		if "DeprecationWarning:" in line or "pkg_resources is deprecated" in line:
 			continue
 
-		entry = {
+		entry: SupervisorProcess = {
 			"program": "",
 			"status": "",
+			"name": "",
+			"uptime": None,
+			"uptime_string": None,
+			"message": None,
+			"group": None,
+			"pid": None,
 		}
 
 		splits = strip_split(line, maxsplit=1)
@@ -686,7 +703,7 @@ def parse_pid_uptime(s: str):
 	splits = strip_split(s, ",", maxsplit=1)
 
 	if len(splits) != 2:
-		return pid, uptime
+		return pid, uptime, None
 
 	# example: "pid 9"
 	pid_split = splits[0]

@@ -10,15 +10,26 @@
   "description",
   "column_break_2",
   "status",
-  "public",
-  "beta",
-  "hybrid",
-  "has_arm_support",
-  "column_break_fsht",
   "monitoring_password",
   "image",
+  "section_break_ymkq",
+  "public",
+  "beta",
+  "column_break_ynby",
+  "hybrid",
+  "has_arm_support",
+  "has_add_on_storage_support",
+  "enable_autoscaling",
+  "has_unified_server_support",
   "billing_section",
   "team",
+  "by_default_select_unified_mode",
+  "column_break_fsqb",
+  "default_app_server_plan",
+  "default_db_server_plan",
+  "column_break_lktr",
+  "default_app_server_plan_type",
+  "default_db_server_plan_type",
   "provisioning_section",
   "cloud_provider",
   "region",
@@ -29,6 +40,10 @@
   "aws_access_key_id",
   "column_break_qpia",
   "aws_secret_access_key",
+  "hetzner_section",
+  "hetzner_api_token",
+  "digital_ocean_section",
+  "digital_ocean_api_token",
   "oci_section",
   "oci_user",
   "oci_public_key",
@@ -38,9 +53,9 @@
   "networking_section",
   "cidr_block",
   "subnet_cidr_block",
-  "column_break_12",
   "vpc_id",
   "subnet_id",
+  "column_break_12",
   "security_group_id",
   "proxy_security_group_id",
   "network_acl_id",
@@ -67,7 +82,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "AWS EC2\nGeneric\nOCI\nHetzner",
+   "options": "AWS EC2\nGeneric\nOCI\nHetzner\nDigitalOcean",
    "reqd": 1,
    "set_only_once": 1
   },
@@ -161,10 +176,6 @@
    "fieldname": "image",
    "fieldtype": "Attach Image",
    "label": "Image"
-  },
-  {
-   "fieldname": "column_break_fsht",
-   "fieldtype": "Column Break"
   },
   {
    "default": "Active",
@@ -302,6 +313,98 @@
    "fieldname": "repository",
    "fieldtype": "Data",
    "label": "Repository"
+  },
+  {
+   "fieldname": "section_break_ymkq",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_ynby",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "has_add_on_storage_support",
+   "fieldtype": "Check",
+   "label": "Has Add On Storage Support"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_autoscaling",
+   "fieldtype": "Check",
+   "label": "Enable Autoscaling"
+  },
+  {
+   "default": "0",
+   "description": "Has unified server support",
+   "fieldname": "has_unified_server_support",
+   "fieldtype": "Check",
+   "label": "Has Unified Server Support"
+  },
+  {
+   "collapsible": 1,
+   "default": "0",
+   "depends_on": "eval: doc.cloud_provider == \"Hetzner\"",
+   "fieldname": "hetzner_section",
+   "fieldtype": "Section Break",
+   "label": "Hetzner"
+  },
+  {
+   "fieldname": "hetzner_api_token",
+   "fieldtype": "Password",
+   "label": "Hetzner API Token"
+  },
+  {
+   "fieldname": "column_break_fsqb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_lktr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "default_app_server_plan",
+   "fieldtype": "Link",
+   "label": "Default App Server Plan",
+   "options": "Server Plan"
+  },
+  {
+   "fieldname": "default_db_server_plan",
+   "fieldtype": "Link",
+   "label": "Default DB Server Plan",
+   "options": "Server Plan"
+  },
+  {
+   "fetch_from": "default_db_server_plan.plan_type",
+   "fieldname": "default_db_server_plan_type",
+   "fieldtype": "Link",
+   "label": "Default DB Server Plan Type",
+   "options": "Server Plan Type"
+  },
+  {
+   "fetch_from": "default_app_server_plan.plan_type",
+   "fieldname": "default_app_server_plan_type",
+   "fieldtype": "Link",
+   "label": "Default App Server Plan Type",
+   "options": "Server Plan Type"
+  },
+  {
+   "default": "0",
+   "fieldname": "by_default_select_unified_mode",
+   "fieldtype": "Check",
+   "label": "By Default Select Unified Mode"
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "eval: doc.cloud_provider == \"DigitalOcean\"",
+   "fieldname": "digital_ocean_section",
+   "fieldtype": "Section Break",
+   "label": "Digital Ocean"
+  },
+  {
+   "fieldname": "digital_ocean_api_token",
+   "fieldtype": "Password",
+   "label": "Digital Ocean API Token"
   }
  ],
  "image_field": "image",
@@ -338,7 +441,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2025-09-19 16:27:01.820199",
+ "modified": "2026-01-18 13:22:01.832912",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",

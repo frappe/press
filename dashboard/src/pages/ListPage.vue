@@ -1,13 +1,11 @@
 <template>
 	<div class="flex h-full flex-col">
-		<div class="sticky top-0 z-10 shrink-0">
-			<Header>
-				<Breadcrumbs
-					:items="[{ label: object.list.title, route: object.list.route }]"
-				/>
-			</Header>
-		</div>
-		<div class="p-5">
+		<Header :sticky="true">
+			<Breadcrumbs
+				:items="[{ label: object.list.title, route: object.list.route }]"
+			/>
+		</Header>
+		<div class="p-5 pb-0">
 			<AlertAddPaymentMode
 				class="mb-5"
 				v-if="$team?.doc && !$team.doc.payment_mode && !$team.doc.parent_team"

@@ -1,5 +1,23 @@
 [
  {
+  "callback_max_retry": 1,
+  "callback_script": null,
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2025-11-26 15:28:08.243873",
+  "name": "Auto Scale Application Server",
+  "steps": [
+   {
+    "parent": "Auto Scale Application Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Server\":\n    server.scale_up()",
+    "step_name": "Auto Scale Application Server",
+    "wait_until_true": 0
+   }
+  ]
+ },
+ {
   "callback_max_retry": 5,
   "callback_script": "snapshot = frappe.get_doc(\"Server Snapshot\", arguments.get(\"server_snapshot\"))\nif doc.server_type == \"Server\":\n\tsnapshot.resume_app_server_services()\nelif doc.server_type == \"Database Server\":\n\tsnapshot.resume_database_server_services()\n\nif doc.status == \"Failure\":\n    frappe.db.set_value(\"Server Snapshot\", snapshot.name, \"status\", \"Failure\", update_modified=False)\n    for s in snapshot.snapshots:\n        try:\n            frappe.get_doc(\"Virtual Disk Snapshot\", s).delete_snapshot()\n        except:\n            pass\n        \nelse:\n    snapshot.sync(now=False)",
   "docstatus": 0,
@@ -8,26 +26,41 @@
   "name": "Snapshot Disk",
   "steps": [
    {
+    "parent": "Snapshot Disk",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n\nwhile True:\n    try:\n        machine.sync()\n    finally:\n        break\n\nif machine.status == \"Terminated\":\n    raise Exception(\"Can't snapshot terminated virtual machine\")\nelif machine.status == \"Draft\":\n    raise Exception(\"Can't snapshot draft virtual machine\")",
     "step_name": "Verify Virtual Machine Status",
     "wait_until_true": 0
    },
    {
+    "parent": "Snapshot Disk",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "if doc.server_type == \"Server\" and arguments.get(\"is_consistent_snapshot\", False):\n    server = frappe.get_doc(\"Server\", doc.server)\n    output = server.ansible_run(\"systemctl stop docker\")\n    if not (output and output.get(\"status\") == \"Success\"):\n        raise Exception(\"Failed to stop docker daemon\")\nelse:\n    result = (False, False) # Skipped\n",
     "step_name": "Stop Docker Daemon",
     "wait_until_true": 0
    },
    {
+    "parent": "Snapshot Disk",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "if doc.server_type == \"Database Server\" and arguments.get(\"is_consistent_snapshot\", False):\n    server = frappe.get_doc(\"Database Server\", doc.server)\n    output = server.ansible_run(\"systemctl stop mariadb\")\n    if not (output and output.get(\"status\") == \"Success\"):\n        raise Exception(\"Failed to stop mariadb service\")\n    result = (True, False)\nelse:\n    result = (False, False) # Skipped\n",
     "step_name": "Stop MariaDB Service",
     "wait_until_true": 0
    },
    {
+    "parent": "Snapshot Disk",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\noutput = server.ansible_run(\"sync\")\nif not (output and output.get(\"status\") == \"Success\"):\n    raise Exception(\"Failed to flush file system buffers to disk\")\n",
     "step_name": "Flush File System Buffers to Disk",
     "wait_until_true": 0
    },
    {
+    "parent": "Snapshot Disk",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.create_snapshots(exclude_boot_volume=True, dedicated_snapshot=True)\n\nfield_name = \"app_server_snapshot\" if doc.server_type == \"Server\" else \"database_server_snapshot\"\nno_of_snapshots = len(machine.flags.created_snapshots)\nif no_of_snapshots != 1:\n    raise Exception(\"Expected 1 disk snapshot. Found : \"+str(no_of_snapshots))\n    \nfrappe.db.set_value(\"Server Snapshot\", arguments.get(\"server_snapshot\"), field_name, machine.flags.created_snapshots[0], update_modified=False)",
     "step_name": "Snapshot Disk",
     "wait_until_true": 0
@@ -43,58 +76,11 @@
   "name": "Attach Volume",
   "steps": [
    {
+    "parent": "Attach Volume",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nprint(machine.as_dict())\nif machine.cloud_provider in [\"AWS EC2\", \"OCI\"]:\n    machine.attach_new_volume(machine.size, machine.iops, machine.throughput)\nelse:\n    machine.attach_volume(size=100)",
     "step_name": "Attach Volume",
-    "wait_until_true": 0
-   }
-  ]
- },
- {
-  "callback_max_retry": 0,
-  "callback_script": null,
-  "docstatus": 0,
-  "doctype": "Press Job Type",
-  "modified": "2025-01-02 15:33:27.252601",
-  "name": "Resize Server",
-  "steps": [
-   {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.stop()",
-    "step_name": "Stop Virtual Machine",
-    "wait_until_true": 0
-   },
-   {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = (machine.status == \"Stopped\", False)",
-    "step_name": "Wait for Virtual Machine to Stop",
-    "wait_until_true": 1
-   },
-   {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.resize(arguments.machine_type)",
-    "step_name": "Resize Virtual Machine",
-    "wait_until_true": 0
-   },
-   {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\ntry:\n    machine.start()\n    result = (True, False)\nexcept:\n    result = (False, False)",
-    "step_name": "Start Virtual Machine",
-    "wait_until_true": 1
-   },
-   {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = (machine.status == \"Running\", False)",
-    "step_name": "Wait for Virtual Machine to Start",
-    "wait_until_true": 1
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.ping_ansible()\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Ping Server\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
-    "step_name": "Wait for Server to be accessible",
-    "wait_until_true": 1
-   },
-   {
-    "script": "if doc.server_type == \"Database Server\":\n    server = frappe.get_doc(doc.server_type, doc.server)\n    server.adjust_memory_config()\nelif doc.server_type == \"Server\":\n    server = frappe.get_doc(doc.server_type, doc.server)\n    server.auto_scale_workers()",
-    "step_name": "Set additional config",
-    "wait_until_true": 0
-   },
-   {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n\nserver = frappe.get_doc(doc.server_type, doc.server)\nif server.plan:\n    plan_disk_size = frappe.db.get_value(\"Server Plan\", server.plan, \"disk\")\n    if plan_disk_size and plan_disk_size > machine.disk_size:\n        try:\n            server.increase_disk_size(increment=plan_disk_size - machine.disk_size)\n        except:\n            pass",
-    "step_name": "Increase Disk Size",
     "wait_until_true": 0
    }
   ]
@@ -108,31 +94,49 @@
   "name": "Create Server Snapshot",
   "steps": [
    {
+    "parent": "Create Server Snapshot",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.stop()\n",
     "step_name": "Stop Virtual Machine",
     "wait_until_true": 0
    },
    {
+    "parent": "Create Server Snapshot",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = (machine.status == \"Stopped\", False)",
     "step_name": "Wait for Virtual Machine to Stop",
     "wait_until_true": 1
    },
    {
+    "parent": "Create Server Snapshot",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\narguments.image = machine.create_image()",
     "step_name": "Create Snapshot",
     "wait_until_true": 0
    },
    {
+    "parent": "Create Server Snapshot",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\ntry:\n    machine.start()\n    result = (True, False)\nexcept:\n    result = (False, False)",
     "step_name": "Start Virtual Machine",
     "wait_until_true": 1
    },
    {
+    "parent": "Create Server Snapshot",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = (machine.status == \"Running\", False)",
     "step_name": "Wait for Virtual Machine to Start",
     "wait_until_true": 1
    },
    {
+    "parent": "Create Server Snapshot",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "image = frappe.get_doc(\"Virtual Machine Image\", arguments.image)\nimage.sync()\nresult = (image.status == \"Available\", False)",
     "step_name": "Wait for Snapshot to Complete",
     "wait_until_true": 1
@@ -148,16 +152,25 @@
   "name": "Archive Server",
   "steps": [
    {
+    "parent": "Archive Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.disable_termination_protection()",
     "step_name": "Disable Termination Protection",
     "wait_until_true": 0
    },
    {
+    "parent": "Archive Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.terminate()",
     "step_name": "Terminate Virtual Machine",
     "wait_until_true": 0
    },
    {
+    "parent": "Archive Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\ntry:\n    # Usually machine sync never fails\n    # It can fail weirdly due to TimestampMismatchError or lock timeout\n    # Don't fail this whole thing just because of that\n    # Ignore the errors of sync and keep retrying\n    machine.sync()\nexcept:\n    pass\nresult = (machine.status == \"Terminated\", False)",
     "step_name": "Wait for Virtual Machine to Terminate",
     "wait_until_true": 1
@@ -173,26 +186,41 @@
   "name": "Upgrade MariaDB",
   "steps": [
    {
+    "parent": "Upgrade MariaDB",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(\"Database Server\", doc.server)\nserver.stop_mariadb()",
     "step_name": "Stop MariaDB",
     "wait_until_true": 0
    },
    {
+    "parent": "Upgrade MariaDB",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Stop MariaDB\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
     "step_name": "Wait for MariaDB to Stop",
     "wait_until_true": 1
    },
    {
+    "parent": "Upgrade MariaDB",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.create_snapshots()\nsnapshot = frappe.get_last_doc(\"Virtual Disk Snapshot\", {\"virtual_machine\": doc.virtual_machine})\nsnapshot.add_comment(text=\"Before MariaDB Upgrade\")",
     "step_name": "Create Server Snapshot",
     "wait_until_true": 0
    },
    {
+    "parent": "Upgrade MariaDB",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(\"Database Server\", doc.server)\nserver.upgrade_mariadb()",
     "step_name": "Upgrade MariaDB",
     "wait_until_true": 0
    },
    {
+    "parent": "Upgrade MariaDB",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Upgrade MariaDB\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\n",
     "step_name": "Wait for MariaDB Upgrade to Complete",
     "wait_until_true": 1
@@ -208,31 +236,49 @@
   "name": "Increase Disk Size",
   "steps": [
    {
+    "parent": "Increase Disk Size",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nmountpoint = arguments.labels.get(\"mountpoint\")\nserver.calculated_increase_disk_size(mountpoint=mountpoint)",
     "step_name": "Increase Disk Size",
     "wait_until_true": 0
    },
    {
+    "parent": "Increase Disk Size",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "should_auto_increase = frappe.db.get_value(doc.server_type, doc.server, \"auto_increase_storage\")\nif not should_auto_increase:\n    result = (True, False)\n\nelse:\n    if frappe.db.get_value(doc.server_type, doc.server, \"provider\") == \"AWS EC2\":\n        plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Extend EC2 Volume\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n        result = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\n    else:\n        result = (True, False)",
     "step_name": "Wait for partition to resize (AWS)",
     "wait_until_true": 1
    },
    {
+    "parent": "Increase Disk Size",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"OCI\":\n    machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n    machine.sync()\n    result = (machine.status == \"Running\", False)\nelse:\n    result = (True, False)",
     "step_name": "Wait for server to start (OCI)",
     "wait_until_true": 1
    },
    {
+    "parent": "Increase Disk Size",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"OCI\":\n    server.ping_ansible()\n\n    plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Ping Server\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n    result = (plays and plays[0].status == \"Success\", False)\nelse:\n    result = (True, False)\n",
     "step_name": "Wait for server to be accessible (OCI)",
     "wait_until_true": 1
    },
    {
+    "parent": "Increase Disk Size",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"OCI\":\n    server.add_glass_file()\nelse:\n    result = (True, False)\n    # handled for aws already in extend playbook",
     "step_name": "Add glass file back (OCI)",
     "wait_until_true": 0
    },
    {
+    "parent": "Increase Disk Size",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "if doc.server_type == 'Server':\n    server = frappe.get_doc(doc.server_type, doc.server)\n    server.start_active_benches()\n",
     "step_name": "Restart Active Benches",
     "wait_until_true": 0
@@ -248,11 +294,17 @@
   "name": "Prune Docker system",
   "steps": [
    {
+    "parent": "Prune Docker system",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\ntelegram_message = frappe.get_doc(\"Press Settings\").telegram_message\ntelegram_message.enqueue(f\"Pruning docker cache on [{server.name}]({frappe.utils.get_url_to_form(server.doctype, server.name)})\", \"Information\")\nserver.prune_docker_system()",
     "step_name": "Prune Docker system",
     "wait_until_true": 0
    },
    {
+    "parent": "Prune Docker system",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Prune Docker System\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\n",
     "step_name": "Wait for docker system prune",
     "wait_until_true": 1
@@ -268,11 +320,17 @@
   "name": "Increase Swap",
   "steps": [
    {
+    "parent": "Increase Swap",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\ntelegram_message = frappe.get_doc(\"Press Settings\").telegram_message\ntelegram_message.enqueue(f\"Increasing swap on [{server.name}]({frappe.utils.get_url_to_form(server.doctype, server.name)})\", \"Information\")\nserver.increase_swap(4)",
     "step_name": "Add swap on server",
     "wait_until_true": 0
    },
    {
+    "parent": "Increase Swap",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Increase Swap\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")",
     "step_name": "Wait for swap to be added",
     "wait_until_true": 1
@@ -288,26 +346,41 @@
   "name": "Stop and Start Server",
   "steps": [
    {
+    "parent": "Stop and Start Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.stop()",
     "step_name": "Stop Virtual Machine",
     "wait_until_true": 0
    },
    {
+    "parent": "Stop and Start Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = (machine.status == \"Stopped\", False)",
     "step_name": "Wait for Virtual Machine to Stop",
     "wait_until_true": 1
    },
    {
+    "parent": "Stop and Start Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\ntry:\n    machine.start()\n    result = (True, False)\nexcept:\n    result = (False, False)",
     "step_name": "Start Virtual Machine",
     "wait_until_true": 1
    },
    {
+    "parent": "Stop and Start Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = (machine.status == \"Running\", False)",
     "step_name": "Wait for Virtual Machine to Start",
     "wait_until_true": 1
    },
    {
+    "parent": "Stop and Start Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.ping_ansible()\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Ping Server\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
     "step_name": "Wait for Server to be accessible",
     "wait_until_true": 1
@@ -323,11 +396,17 @@
   "name": "Reset Swap",
   "steps": [
    {
+    "parent": "Reset Swap",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\ntelegram_message = frappe.get_doc(\"Press Settings\").telegram_message\ntelegram_message.enqueue(f\"Resetting swap on [{server.name}]({frappe.utils.get_url_to_form(server.doctype, server.name)})\", \"Information\")\nserver.reset_swap()",
     "step_name": "Reset swap on server",
     "wait_until_true": 0
    },
    {
+    "parent": "Reset Swap",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Reset Swap\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")",
     "step_name": "Wait for swap to be reset",
     "wait_until_true": 1
@@ -343,6 +422,9 @@
   "name": "Warn disk at 80%",
   "steps": [
    {
+    "parent": "Warn disk at 80%",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nmountpoint = arguments.labels.get(\"mountpoint\")\nserver.recommend_disk_increase(mountpoint=mountpoint)",
     "step_name": "Send Warning",
     "wait_until_true": 0
@@ -358,6 +440,9 @@
   "name": "Trigger Build Server Cleanup",
   "steps": [
    {
+    "parent": "Trigger Build Server Cleanup",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif server.use_for_build:\n    server.prune_docker_system()\n    \n",
     "step_name": "Trigger Build Server Cleanup",
     "wait_until_true": 0
@@ -373,76 +458,121 @@
   "name": "Create Server (old)",
   "steps": [
    {
+    "parent": "Create Server (old)",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.provision()\n",
     "step_name": "Create Server",
     "wait_until_true": 0
    },
    {
+    "parent": "Create Server (old)",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = (machine.status == \"Running\", False)\n",
     "step_name": "Wait for Server to start",
     "wait_until_true": 1
    },
    {
+    "parent": "Create Server (old)",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.ping_ansible()\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Ping Server\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
     "step_name": "Wait for Server to be accessible",
     "wait_until_true": 1
    },
    {
+    "parent": "Create Server (old)",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.wait_for_cloud_init()",
     "step_name": "Check Cloud Init status",
     "wait_until_true": 0
    },
    {
+    "parent": "Create Server (old)",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Wait for Cloud Init to finish\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
     "step_name": "Wait for Cloud Init to finish",
     "wait_until_true": 1
    },
    {
+    "parent": "Create Server (old)",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "provider = frappe.db.get_value(doc.server_type, doc.server, 'provider')\nif provider == \"Hetzner\" and doc.server_type != \"Proxy Server\":\n    vm = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n    vm.attach_new_volume(100)\n    vm.sync()\n    server = frappe.get_doc(doc.server_type, doc.server)\n    server.validate_mounts()\n    server.save()\n    server.mount_volumes()\n",
     "step_name": "Create and mount volumes",
     "wait_until_true": 0
    },
    {
+    "parent": "Create Server (old)",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "provider = frappe.db.get_value(doc.server_type, doc.server, 'provider')\nif provider == 'Hetzner' and doc.server_type != \"Proxy Server\":\n    plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Mount Volumes\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n    result = (plays and plays[0].status == \"Success\", False)\nelse:\n    result = (True, False)",
     "step_name": "Wait for volumes to mount",
     "wait_until_true": 1
    },
    {
+    "parent": "Create Server (old)",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"Hetzner\" :\n    if server.doctype == \"Server\":\n        server.setup_docker()\n    elif server.doctype == \"Database Server\":\n        server.set_mariadb_mount_dependency()\n        ",
     "step_name": "Configure apps for mounts",
     "wait_until_true": 0
    },
    {
+    "parent": "Create Server (old)",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.update_tls_certificate()",
     "step_name": "Update TLS Certificate",
     "wait_until_true": 0
    },
    {
+    "parent": "Create Server (old)",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Setup TLS Certificates\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
     "step_name": "Wait for TLS Certificate to be updated",
     "wait_until_true": 1
    },
    {
+    "parent": "Create Server (old)",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.update_agent_ansible()",
     "step_name": "Update Agent Ansible",
     "wait_until_true": 0
    },
    {
+    "parent": "Create Server (old)",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Update Agent\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
     "step_name": "Wait for Agent to be updated",
     "wait_until_true": 1
    },
    {
+    "parent": "Create Server (old)",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "if doc.server_type == \"Database Server\":\n    server = frappe.get_doc(\"Database Server\", doc.server)\n    server.upgrade_mariadb()",
     "step_name": "Upgrade MariaDB",
     "wait_until_true": 0
    },
    {
+    "parent": "Create Server (old)",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "if doc.server_type == \"Database Server\":\n    plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Upgrade MariaDB\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n    result = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\nelse:\n    result = (True,)",
     "step_name": "Wait for MariaDB Upgrade to Complete",
     "wait_until_true": 1
    },
    {
+    "parent": "Create Server (old)",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.set_additional_config()",
     "step_name": "Set additional config",
     "wait_until_true": 0
@@ -458,163 +588,19 @@
   "name": "Resume Services After Snapshot",
   "steps": [
    {
+    "parent": "Resume Services After Snapshot",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "if doc.server_type == \"Server\" and arguments.get(\"is_consistent_snapshot\", False):\n    server = frappe.get_doc(\"Server\", doc.server)\n    output = server.ansible_run(\"systemctl start docker\")\n    if not (output and output.get(\"status\") == \"Success\"):\n        raise Exception(\"Failed to start docker daemon\")\n\n    frappe.db.set_value(\"Server Snapshot\", arguments.get(\"server_snapshot\"), \"app_server_services_started\", True, update_modified=False)\nelse:\n    result = (False, False) # Skipped\n    # As it wasn't a consistent snapshot services were never stopped\n    frappe.db.set_value(\"Server Snapshot\", arguments.get(\"server_snapshot\"), \"app_server_services_started\", True, update_modified=False)",
     "step_name": "Start Docker Daemon",
     "wait_until_true": 0
    },
    {
+    "parent": "Resume Services After Snapshot",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "if doc.server_type == \"Database Server\" and arguments.get(\"is_consistent_snapshot\", False):\n    server = frappe.get_doc(\"Database Server\", doc.server)\n    output = server.ansible_run(\"systemctl start mariadb\")\n    if not (output and output.get(\"status\") == \"Success\"):\n        raise Exception(\"Failed to start mariadb service\")\n    frappe.db.set_value(\"Server Snapshot\", arguments.get(\"server_snapshot\"), \"database_server_services_started\", True, update_modified=False)\n\nelse:\n    result = (False, False) # Skipped\n    # As it wasn't a consistent snapshot services were never stopped\n    frappe.db.set_value(\"Server Snapshot\", arguments.get(\"server_snapshot\"), \"database_server_services_started\", True, update_modified=False)",
     "step_name": "Start MariaDB Service",
-    "wait_until_true": 0
-   }
-  ]
- },
- {
-  "callback_max_retry": 1,
-  "callback_script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type in [\"Server\", \"Database Server\"] and server.is_for_recovery:\n    filter_field = \"app_server\" if doc.server_type == \"Server\" else \"database_server\"\n    recovery_record_name = frappe.db.get_value(\"Server Snapshot Recovery\", {filter_field: doc.server}, \"name\")\n    if recovery_record_name:\n        recovery_record = frappe.get_doc(\"Server Snapshot Recovery\", recovery_record_name, for_update=True)\n    \n        if doc.status == \"Success\":\n            if doc.server_type == \"Server\":\n                recovery_record.is_app_server_ready = True\n            else:\n                recovery_record.is_database_server_ready = True\n            recovery_record.save()\n        else:\n            recovery_record.mark_server_provisioning_as_failed()\n            \nif doc.server_type in [\"Server\", \"Database Server\"] and \"logical_replication_backup\" in arguments:\n    if doc.status == \"Success\":\n        frappe.get_doc(\"Logical Replication Backup\", arguments.get(\"logical_replication_backup\")).next()\n    if doc.status == \"Failure\":\n        frappe.get_doc(\"Logical Replication Backup\", arguments.get(\"logical_replication_backup\")).fail()",
-  "docstatus": 0,
-  "doctype": "Press Job Type",
-  "modified": "2025-10-18 20:59:59.413236",
-  "name": "Create Server",
-  "steps": [
-   {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.provision()\n",
-    "step_name": "Create Server",
-    "wait_until_true": 0
-   },
-   {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\ntry:\n    # Usually machine sync never fails\n    # It can fail weirdly due to TimestampMismatchError or lock timeout\n    # Don't fail this whole thing just because of that\n    # Ignore the errors of sync and keep retrying\n    machine.sync()\n\nexcept (frappe.QueryDeadlockError, frappe.QueryTimeoutError, frappe.TimestampMismatchError):\n    result = (False, False)\nelse:\n    result = (machine.status == \"Running\", False)\n",
-    "step_name": "Wait for Server to start",
-    "wait_until_true": 1
-   },
-   {
-    "script": "provider = frappe.db.get_value(doc.server_type, doc.server, 'provider')\nif provider == \"Hetzner\":\n    vm = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n    vm.correct_private_ip() #blocking\n    vm.enable_termination_protection() #blocking",
-    "step_name": "Correct private IP (Hetzner)",
-    "wait_until_true": 0
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.ping_ansible()\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Ping Server\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
-    "step_name": "Wait for Server to be accessible",
-    "wait_until_true": 1
-   },
-   {
-    "script": "try:\n    vm = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n    vm.sync()\n    if len(vm.volumes) > 0:\n        result = (True, False)\n    else:\n        result = (False, False)\nexcept (frappe.QueryDeadlockError, frappe.QueryTimeoutError, frappe.TimestampMismatchError):\n    result = (False, False)\nexcept Exception as e:\n    raise e",
-    "step_name": "Sync Default Volumes",
-    "wait_until_true": 1
-   },
-   {
-    "script": "vm = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nif vm.data_disk_snapshot:\n    is_created = vm.create_data_disk_volume_from_snapshot()\n    if is_created:\n        result = (True, False)\n    else:\n        arguments.update({\"max_volume_creation_retries\": arguments.get(\"max_volume_creation_retries\", 6)-1})\n        if arguments.get(\"max_volume_creation_retries\") <= 0:\n            result = (False, True)\n        result = (False, False)",
-    "step_name": "Create Volume From Snapshot",
-    "wait_until_true": 1
-   },
-   {
-    "script": "vm = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nif vm.data_disk_snapshot:\n    is_attached = vm.check_and_attach_data_disk_snapshot_volume()\n    if is_attached:\n        result = (True, False)\n    else:\n        result = (False, False)",
-    "step_name": "Attach Snapshotted Volume",
-    "wait_until_true": 1
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"AWS EC2\" and frappe.db.get_value(\"Virtual Machine\", server.virtual_machine, \"data_disk_snapshot\"):\n    try:\n        vm = frappe.get_doc(\"Virtual Machine\", server.virtual_machine)\n        vm.sync()\n        \n        if len(vm.volumes) == 0 or (vm.data_disk_snapshot_attached and len(vm.volumes) == 1):\n            result = (False, False)\n        else:\n            server.reload()\n            server.validate_mounts()\n            server.save()\n            result = (True, False)\n    except (frappe.QueryDeadlockError, frappe.QueryTimeoutError, frappe.exceptions.TimestampMismatchError):\n        result = (False, False)\n    except Exception as e:\n        raise e\nelse:\n    result = (True, False)",
-    "step_name": "Sync Attached Volumes",
-    "wait_until_true": 1
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"AWS EC2\" and frappe.db.get_value(\"Virtual Machine\", server.virtual_machine, \"data_disk_snapshot\"):\n    cleanup_db_replication_files = False\n    if doc.server_type == \"Database Server\" and (server.is_for_recovery or arguments.get(\"setup_db_replication\", False)):\n        cleanup_db_replication_files = True\n    server.mount_volumes(\n        now=False,\n        stop_docker_before_mount=doc.server_type == \"Server\",\n        stop_mariadb_before_mount=doc.server_type == \"Database Server\",\n        # If server is in recovery mode, don't start docker and containers\n        # Because If site gets active, background job witll be started and that can modify data\n        start_docker_after_mount=doc.server_type == \"Server\" and not server.is_for_recovery,\n        # If goal is to create replica server, don't start database\n        # As we need to do some additional config before starting database\n        start_mariadb_after_mount=doc.server_type == \"Database Server\" and not arguments.get(\"setup_db_replication\", False),\n        cleanup_db_replication_files=cleanup_db_replication_files,\n        # It's important to change uuid, labels of attached disk\n        # There is high chance that the root disk and data disk might have same disk info\n        rotate_additional_volume_metadata=True\n    )\nelse:\n    result = (False, False)",
-    "step_name": "Mount Data Disk",
-    "wait_until_true": 0
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"AWS EC2\" and frappe.db.get_value(\"Virtual Machine\", server.virtual_machine, \"data_disk_snapshot\"):\n    plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Mount Volumes\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n    result = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\nelse:\n    result = None",
-    "step_name": "Wait for Data Disk Mount to Complete",
-    "wait_until_true": 1
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.wait_for_cloud_init()",
-    "step_name": "Check Cloud Init status",
-    "wait_until_true": 0
-   },
-   {
-    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Wait for Cloud Init to finish\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
-    "step_name": "Wait for Cloud Init to finish",
-    "wait_until_true": 1
-   },
-   {
-    "script": "provider = frappe.db.get_value(doc.server_type, doc.server, 'provider')\nif provider == \"Hetzner\" and doc.server_type != \"Proxy Server\":\n    vm = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n    vm.attach_new_volume(100)\n    vm.sync()\n    server = frappe.get_doc(doc.server_type, doc.server)\n    server.validate_mounts()\n    server.save()\n    server.mount_volumes(now=False)\n",
-    "step_name": "Create and mount volumes (Hetzner)",
-    "wait_until_true": 0
-   },
-   {
-    "script": "provider = frappe.db.get_value(doc.server_type, doc.server, 'provider')\nif provider == 'Hetzner' and doc.server_type != \"Proxy Server\":\n    plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Mount Volumes\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n    result = (plays and plays[0].status == \"Success\", False)\nelse:\n    result = (True, False)",
-    "step_name": "Wait for volumes to mount",
-    "wait_until_true": 1
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"Hetzner\" :\n    if server.doctype == \"Server\":\n        server.setup_docker()\n    elif server.doctype == \"Database Server\":\n        server.set_mariadb_mount_dependency()",
-    "step_name": "Configure apps for mounts (Hetzner)",
-    "wait_until_true": 0
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.update_tls_certificate()",
-    "step_name": "Update TLS Certificate",
-    "wait_until_true": 0
-   },
-   {
-    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Setup TLS Certificates\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
-    "step_name": "Wait for TLS Certificate to be updated",
-    "wait_until_true": 1
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.update_agent_ansible()",
-    "step_name": "Update Agent Ansible",
-    "wait_until_true": 0
-   },
-   {
-    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Update Agent\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
-    "step_name": "Wait for Agent to be updated",
-    "wait_until_true": 1
-   },
-   {
-    "script": "if doc.server_type == \"Database Server\" and arguments.get(\"setup_db_replication\", False):\n    pass",
-    "step_name": "Stop MariaDB Slave",
-    "wait_until_true": 0
-   },
-   {
-    "script": "if doc.server_type == \"Database Server\":\n    server = frappe.get_doc(\"Database Server\", doc.server)\n    server.upgrade_mariadb()",
-    "step_name": "Upgrade MariaDB",
-    "wait_until_true": 0
-   },
-   {
-    "script": "if doc.server_type == \"Database Server\":\n    plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Upgrade MariaDB\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n    result = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\nelse:\n    result = (True,)",
-    "step_name": "Wait for MariaDB Upgrade to Complete",
-    "wait_until_true": 1
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Database Server\" and arguments.get(\"setup_db_replication\", False):\n    server.prepare_mariadb_replica()\n    result = (True, False)\nelse:\n    result = (False, False)",
-    "step_name": "Prepare MariaDB Replica",
-    "wait_until_true": 0
-   },
-   {
-    "script": "if doc.server_type == \"Database Server\" and arguments.get(\"setup_db_replication\", False):\n    plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Prepare MariaDB Replica\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n    result = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\nelse:\n    result = (True,)",
-    "step_name": "Wait for MariaDB Replica to Be Prepared",
-    "wait_until_true": 1
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Database Server\" and arguments.get(\"setup_db_replication\", False):\n    server.configure_replication()\n    result = (True, False)\nelse:\n    result = (False, False)",
-    "step_name": "Configure MariaDB Replica",
-    "wait_until_true": 0
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Database Server\" and arguments.get(\"setup_db_replication\", False):\n    server.start_replication()\n    result = (True, False)\nelse:\n    result = (False, False)",
-    "step_name": "Start MariaDB Replica",
-    "wait_until_true": 0
-   },
-   {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.set_additional_config()",
-    "step_name": "Set additional config",
-    "wait_until_true": 0
-   },
-   {
-    "script": "if doc.server.startswith(\"fs\") and doc.server_type == \"Server\":\n    primary_server = frappe.db.get_value(\"Server\", doc.server, \"primary\")\n    nfs_volume_attachment = frappe.get_doc(\n\t    {\"doctype\": \"NFS Volume Attachment\", \"primary_server\": primary_server}\n    )\n    nfs_volume_attachment.insert(ignore_permissions=True)\n    frappe.db.commit()",
-    "step_name": "Share benches over NFS",
     "wait_until_true": 0
    }
   ]
@@ -628,6 +614,9 @@
   "name": "Prune Mirror Registry",
   "steps": [
    {
+    "parent": "Prune Mirror Registry",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Registry Server\":\n    server.prune_mirror_registry()",
     "step_name": "Prune Mirror Registry",
     "wait_until_true": 0
@@ -643,11 +632,14 @@
   "name": "Auto Scale Up Application Server",
   "steps": [
    {
+    "parent": "Auto Scale Up Application Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Server\" and not server.scaled_up:\n    server.scale_up(is_automatically_triggered=True)",
     "step_name": "Auto Scale Up Application Server",
     "wait_until_true": 0
-    }
-   ]
+   }
+  ]
  },
  {
   "callback_max_retry": 1,
@@ -658,10 +650,321 @@
   "name": "Auto Scale Down Application Server",
   "steps": [
    {
+    "parent": "Auto Scale Down Application Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Server\" and server.scaled_up:\n    server.scale_down(is_automatically_triggered=True)",
     "step_name": "Auto Scale Down Application Server",
     "wait_until_true": 0
-    }
-   ]
- }  
+   }
+  ]
+ },
+ {
+  "callback_max_retry": 0,
+  "callback_script": null,
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2026-02-17 17:06:34.246514",
+  "name": "Resize Server",
+  "steps": [
+   {
+    "parent": "Resize Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.stop()",
+    "step_name": "Stop Virtual Machine",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Resize Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = (machine.status == \"Stopped\", False)",
+    "step_name": "Wait for Virtual Machine to Stop",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Resize Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.resize(arguments.machine_type, arguments.get(\"upgrade_disk\", None))",
+    "step_name": "Resize Virtual Machine",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Resize Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\ntry:\n    machine.start()\n    result = (True, False)\nexcept:\n    result = (False, False)",
+    "step_name": "Start Virtual Machine",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Resize Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = (machine.status == \"Running\", False)",
+    "step_name": "Wait for Virtual Machine to Start",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Resize Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.ping_ansible()\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Ping Server\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
+    "step_name": "Wait for Server to be accessible",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Resize Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif getattr(server, \"is_unified_server\", False):\n    server_doc = frappe.get_doc(\"Server\", doc.server)\n    db_doc = frappe.get_doc(\"Database Server\", doc.server)\n\n    server_doc.auto_scale_workers()\n    db_doc.adjust_memory_config()\n\nelse:\n    if doc.server_type == \"Database Server\":\n        server.adjust_memory_config()\n\n    elif doc.server_type == \"Server\":\n        server.auto_scale_workers()\n",
+    "step_name": "Set additional config",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Resize Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n\nserver = frappe.get_doc(doc.server_type, doc.server)\nif server.plan:\n    plan_disk_size = frappe.db.get_value(\"Server Plan\", server.plan, \"disk\")\n    if plan_disk_size and plan_disk_size > machine.disk_size:\n        try:\n            server.increase_disk_size(increment=plan_disk_size - machine.disk_size)\n        except:\n            pass",
+    "step_name": "Increase Disk Size",
+    "wait_until_true": 0
+   }
+  ]
+ },
+ {
+  "callback_max_retry": 1,
+  "callback_script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type in [\"Server\", \"Database Server\"] and server.is_for_recovery:\n    filter_field = \"app_server\" if doc.server_type == \"Server\" else \"database_server\"\n    recovery_record_name = frappe.db.get_value(\"Server Snapshot Recovery\", {filter_field: doc.server}, \"name\")\n    if recovery_record_name:\n        recovery_record = frappe.get_doc(\"Server Snapshot Recovery\", recovery_record_name, for_update=True)\n    \n        if doc.status == \"Success\":\n            if doc.server_type == \"Server\":\n                recovery_record.is_app_server_ready = True\n            else:\n                recovery_record.is_database_server_ready = True\n            recovery_record.save()\n        else:\n            recovery_record.mark_server_provisioning_as_failed()\n            \nif doc.server_type in [\"Server\", \"Database Server\"] and \"logical_replication_backup\" in arguments:\n    if doc.status == \"Success\":\n        frappe.get_doc(\"Logical Replication Backup\", arguments.get(\"logical_replication_backup\")).next()\n    if doc.status == \"Failure\":\n        frappe.get_doc(\"Logical Replication Backup\", arguments.get(\"logical_replication_backup\")).fail()\n        \nif doc.server_type in [\"Server\", \"Database Server\"] and doc.status == \"Success\":\n    server.is_provisioning_press_job_completed = 1\n    server.save(ignore_permissions=True)\n    \n    if server.is_unified_server:\n        frappe.db.set_value(\"Database Server\", server.database_server, \"is_provisioning_press_job_completed\", 1, update_modified =False)",
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2026-01-21 18:03:50.212370",
+  "name": "Create Server",
+  "steps": [
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.provision()\n",
+    "step_name": "Create Server",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\ntry:\n    # Usually machine sync never fails\n    # It can fail weirdly due to TimestampMismatchError or lock timeout\n    # Don't fail this whole thing just because of that\n    # Ignore the errors of sync and keep retrying\n    machine.sync()\n\nexcept (frappe.QueryDeadlockError, frappe.QueryTimeoutError, frappe.TimestampMismatchError):\n    result = (False, False)\nelse:\n    result = (machine.status == \"Running\", False)\n",
+    "step_name": "Wait for Server to start",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.ping_ansible()\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Ping Server\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n\nvirtual_machine = frappe.get_doc(\"Virtual Machine\", server.virtual_machine)\n\nresult = (plays and plays[0].status == \"Success\" and virtual_machine.private_ip_address != '', False)\n",
+    "step_name": "Wait for Server to be accessible",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "try:\n    vm = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n    vm.sync()\n    if len(vm.volumes) > 0:\n        result = (True, False)\n    else:\n        result = (False, False)\nexcept (frappe.QueryDeadlockError, frappe.QueryTimeoutError, frappe.TimestampMismatchError):\n    result = (False, False)\nexcept Exception as e:\n    raise e",
+    "step_name": "Sync Default Volumes",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "vm = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nif vm.data_disk_snapshot:\n    is_created = vm.create_data_disk_volume_from_snapshot()\n    if is_created:\n        result = (True, False)\n    else:\n        arguments.update({\"max_volume_creation_retries\": arguments.get(\"max_volume_creation_retries\", 6)-1})\n        if arguments.get(\"max_volume_creation_retries\") <= 0:\n            result = (False, True)\n        result = (False, False)",
+    "step_name": "Create Volume From Snapshot",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "vm = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nif vm.data_disk_snapshot:\n    is_attached = vm.check_and_attach_data_disk_snapshot_volume()\n    if is_attached:\n        result = (True, False)\n    else:\n        result = (False, False)",
+    "step_name": "Attach Snapshotted Volume",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"AWS EC2\" and frappe.db.get_value(\"Virtual Machine\", server.virtual_machine, \"data_disk_snapshot\"):\n    try:\n        vm = frappe.get_doc(\"Virtual Machine\", server.virtual_machine)\n        vm.sync()\n        \n        if len(vm.volumes) == 0 or (vm.data_disk_snapshot_attached and len(vm.volumes) == 1):\n            result = (False, False)\n        else:\n            server.reload()\n            server.validate_mounts()\n            server.save()\n            result = (True, False)\n    except (frappe.QueryDeadlockError, frappe.QueryTimeoutError, frappe.exceptions.TimestampMismatchError):\n        result = (False, False)\n    except Exception as e:\n        raise e\nelse:\n    result = (True, False)",
+    "step_name": "Sync Attached Volumes",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"AWS EC2\" and frappe.db.get_value(\"Virtual Machine\", server.virtual_machine, \"data_disk_snapshot\"):\n    cleanup_db_replication_files = False\n    if doc.server_type == \"Database Server\" and (server.is_for_recovery or arguments.get(\"setup_db_replication\", False)):\n        cleanup_db_replication_files = True\n    server.mount_volumes(\n        now=False,\n        stop_docker_before_mount=doc.server_type == \"Server\",\n        stop_mariadb_before_mount=doc.server_type == \"Database Server\",\n        # If server is in recovery mode, don't start docker and containers\n        # Because If site gets active, background job witll be started and that can modify data\n        start_docker_after_mount=doc.server_type == \"Server\" and not server.is_for_recovery,\n        # If goal is to create replica server, don't start database\n        # As we need to do some additional config before starting database\n        start_mariadb_after_mount=doc.server_type == \"Database Server\" and not arguments.get(\"setup_db_replication\", False),\n        cleanup_db_replication_files=cleanup_db_replication_files,\n        # It's important to change uuid, labels of attached disk\n        # There is high chance that the root disk and data disk might have same disk info\n        rotate_additional_volume_metadata=True\n    )\nelse:\n    result = (False, False)",
+    "step_name": "Mount Data Disk",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"AWS EC2\" and frappe.db.get_value(\"Virtual Machine\", server.virtual_machine, \"data_disk_snapshot\"):\n    plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Mount Volumes\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n    result = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\nelse:\n    result = None",
+    "step_name": "Wait for Data Disk Mount to Complete",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.wait_for_cloud_init()",
+    "step_name": "Check Cloud Init status",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Wait for Cloud Init to finish\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
+    "step_name": "Wait for Cloud Init to finish",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "provider = frappe.db.get_value(doc.server_type, doc.server, 'provider')\nif provider == \"Hetzner\" and doc.virtual_machine:\n    vm = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n    server = frappe.get_doc(doc.server_type, doc.server)\n    \n    if vm.virtual_machine_image:\n        vmi = frappe.get_doc(\"Virtual Machine Image\", vm.virtual_machine_image)\n\n        if vmi.has_data_volume:\n            # If VMI has data volume, then only proceed with attaching disk\n            if server.plan:\n                data_disk_size = int(frappe.db.get_value(\"Server Plan\", server.plan ,\"disk\"))\n            else:\n                data_disk_size = 25\n            \n            vm.attach_new_volume(data_disk_size)\n            \n            # Do Virtual Machine Sync\n            # Until we got no error\n            max_sync_tries = 100\n            while max_sync_tries:\n                try:\n                    vm.sync()\n                    break\n                except Exception as e:\n                    max_sync_tries = max_sync_tries - 1\n                    if max_sync_tries <=0 :\n                        raise e\n     \n            server.validate_mounts()\n            server.save(ignore_version=True) # To avoid timestamp mismatch errors\n            server.mount_volumes(now=False)\n            result = (True, False)\n        else:\n            result = (False, False)\n",
+    "step_name": "Create and mount volumes (Hetzner)",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "provider = frappe.db.get_value(doc.server_type, doc.server, 'provider')\nif provider == \"Hetzner\" and doc.virtual_machine:\n    vm = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n\n    if vm.virtual_machine_image:\n        vmi = frappe.get_doc(\"Virtual Machine Image\", vm.virtual_machine_image)\n        if vmi.has_data_volume:\n            # Check for running ansible play\n            plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Mount Volumes\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n            result = (plays and plays[0].status == \"Success\", False)\n        else:\n            result = None\n",
+    "step_name": "Wait for volumes to mount",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"Hetzner\" and server.has_data_volume:\n    if server.doctype == \"Server\":\n        server.setup_docker()\n    elif server.doctype == \"Database Server\":\n        server.set_mariadb_mount_dependency()\nelse:\n    result = (False, False)",
+    "step_name": "Configure apps for mounts (Hetzner)",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "play_statuses = frappe.db.get_all(\"Ansible Play\", filters={\n    \"server_type\": doc.server_type,\n    \"server\": doc.server,\n    \"play\": (\"in\", [\"Install Docker\", \"Setup MariaDB Mount Dependency\"])\n}, pluck=\"status\")\n\nall_completed = True\nis_failure = False\n\nfor status in play_statuses:\n    if status == \"Failure\":\n        is_failure = True\n        \n    all_completed = all_completed and status == \"Success\"\n    \nif all_completed:\n    result = (True, False)\nelif is_failure:\n    result = (False, True)\nelse:\n    result = (False, False)",
+    "step_name": "Wait For Dependent Plays To Finish (Hetzner)",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.update_tls_certificate()",
+    "step_name": "Update TLS Certificate",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Setup TLS Certificates\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
+    "step_name": "Wait for TLS Certificate to be updated",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.update_agent_ansible()",
+    "step_name": "Update Agent Ansible",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Update Agent\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
+    "step_name": "Wait for Agent to be updated",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "\nif doc.server_type == \"Database Server\" and arguments.get(\n\t\"setup_db_replication\", False\n):\n\tpass\n",
+    "step_name": "Stop MariaDB Slave",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "if doc.server_type == \"Database Server\":\n    server = frappe.get_doc(\"Database Server\", doc.server)\n    server.upgrade_mariadb()\n\nif doc.is_unified_server:\n    database_server = frappe.get_doc(\"Database Server\", doc.database_server)\n    database_server.upgrade_mariadb()",
+    "step_name": "Upgrade MariaDB",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "if doc.server_type == \"Database Server\" or doc.is_unified_server:\n    plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Upgrade MariaDB\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n    result = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\nelse:\n    result = (True,)",
+    "step_name": "Wait for MariaDB Upgrade to Complete",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Database Server\" and arguments.get(\n\t\"setup_db_replication\", False\n):\n\tserver.prepare_mariadb_replica()\n\tresult = (True, False)\nelse:\n\tresult = (False, False)\n",
+    "step_name": "Prepare MariaDB Replica",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "if doc.server_type == \"Database Server\" and arguments.get(\"setup_db_replication\", False):\n    plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Prepare MariaDB Replica\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n    result = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\nelse:\n    result = (True,)",
+    "step_name": "Wait for MariaDB Replica to Be Prepared",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Database Server\" and arguments.get(\n\t\"setup_db_replication\", False\n):\n\tserver.configure_replication()\n\tresult = (True, False)\nelse:\n\tresult = (False, False)\n",
+    "step_name": "Configure MariaDB Replica",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type == \"Database Server\" and arguments.get(\n\t\"setup_db_replication\", False\n):\n\tserver.start_replication()\n\tresult = (True, False)\nelse:\n\tresult = (False, False)\n",
+    "step_name": "Start MariaDB Replica",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.set_additional_config()",
+    "step_name": "Set additional config",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "if doc.server.startswith(\"fs\") and doc.server_type == \"Server\":\n    primary_server = frappe.db.get_value(\"Server\", doc.server, \"primary\")\n    nfs_volume_attachment = frappe.get_doc(\n\t    {\"doctype\": \"NFS Volume Attachment\", \"primary_server\": primary_server}\n    )\n    nfs_volume_attachment.insert(ignore_permissions=True)\n    frappe.db.commit()",
+    "step_name": "Share benches over NFS",
+    "wait_until_true": 0
+   }
+  ]
+ }
 ]

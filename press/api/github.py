@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import re
 from base64 import b64decode
 from datetime import datetime, timedelta
@@ -12,11 +13,11 @@ from typing import TYPE_CHECKING
 import frappe
 import jwt
 import requests
+import tomli
 
 from press.utils import get_current_team, log_error
 
 if TYPE_CHECKING:
-
 	from press.press.doctype.github_webhook_log.github_webhook_log import GitHubWebhookLog
 
 
@@ -106,27 +107,38 @@ def options():
 	}
 
 
-def installations(token):
+def fetch_installations(token):
 	headers = {
 		"Authorization": f"token {token}",
 		"Accept": "application/vnd.github.machine-man-preview+json",
 	}
-	response = requests.get("https://api.github.com/user/installations", headers=headers)
-	data = response.json()
 	installations = []
-	if response.ok:
-		for installation in data["installations"]:
-			installations.append(
-				{
-					"id": installation["id"],
-					"login": installation["account"]["login"],
-					"url": installation["html_url"],
-					"image": installation["account"]["avatar_url"],
-					"repos": repositories(installation["id"], token),
-				}
-			)
-	else:
-		frappe.throw(data.get("message") or "An error Occurred")
+	current_page, is_last_page = 1, False
+	while not is_last_page:
+		response = requests.get(
+			"https://api.github.com/user/installations",
+			params={"per_page": 100, "page": current_page},
+			headers=headers,
+		)
+		if len(response.json().get("installations", [])) < 100:
+			is_last_page = True
+		installations.extend(response.json().get("installations", []))
+		current_page += 1
+	return installations
+
+
+def installations(token):
+	installations = []
+	for installation in fetch_installations(token):
+		installations.append(
+			{
+				"id": installation["id"],
+				"login": installation["account"]["login"],
+				"url": installation["html_url"],
+				"image": installation["account"]["avatar_url"],
+				"repos": repositories(installation["id"], token),
+			}
+		)
 
 	return installations
 
@@ -217,11 +229,10 @@ def app(owner, repository, branch, installation=None):
 	).json()
 
 	tree = _generate_files_tree(contents["tree"])
-	py_setup_files = ["setup.py", "setup.cfg", "pyproject.toml"]
 
-	if not any(x in tree for x in py_setup_files):
-		setup_filenames = frappe.bold(" or ".join(py_setup_files))
-		reason = f"Files {setup_filenames} do not exist in app directory."
+	# Force pyproject.toml as a setup file
+	if "pyproject.toml" not in tree:
+		reason = "pyproject.toml does not exist in app directory."
 		frappe.throw(f"Not a valid Frappe App! {reason}")
 
 	app_name, title = _get_app_name_and_title_from_hooks(
@@ -232,7 +243,14 @@ def app(owner, repository, branch, installation=None):
 		tree,
 	)
 
-	return {"name": app_name, "title": title}
+	frappe_version = _get_compatible_frappe_version_from_pyproject(
+		owner,
+		repository,
+		branch_info,
+		headers,
+	)
+
+	return {"name": app_name, "title": title, "frappe_version": frappe_version}
 
 
 @frappe.whitelist()
@@ -267,13 +285,68 @@ def get_auth_headers(installation_id: str | None = None) -> "dict[str, str]":
 	return {}
 
 
+def _get_compatible_frappe_version_from_pyproject(
+	owner: str, repository: str, branch_info: str, headers: dict[str, str]
+) -> str:
+	"""Get frappe version from pyproject.toml file."""
+	compatible_frappe_version = None
+	pyproject = requests.get(
+		f"https://api.github.com/repos/{owner}/{repository}/contents/pyproject.toml",
+		params={"ref": branch_info["name"]},
+		headers=headers,
+	).json()
+
+	if "content" not in pyproject:
+		frappe.throw("Could not fetch pyproject.toml file.")
+
+	pyproject = b64decode(pyproject["content"]).decode()
+
+	try:
+		pyproject = tomli.loads(pyproject)
+	except tomli.TOMLDecodeError as e:
+		out = []
+		out.append("Invalid pyproject.toml file found")
+
+		if not hasattr(e, "doc") or not hasattr(e, "lineno"):
+			frappe.throw("\n".join(out))
+
+		lines = e.doc.splitlines()
+		start = max(e.lineno - 3, 0)
+		end = e.lineno + 2
+
+		for i, line in enumerate(lines[start:end], start=start + 1):
+			out.append(f"{i:>4}: {line}")
+
+		out = "\n".join(out)
+		frappe.throw(out)
+
+	with contextlib.suppress(Exception):
+		compatible_frappe_version = (
+			pyproject.get("tool", {})
+			.get("bench", {})
+			.get("frappe-dependencies", {})
+			.get(
+				"frappe",
+			)
+		)
+
+	if not compatible_frappe_version:
+		frappe.throw(
+			"Could not find compatible Frappe version in pyproject.toml file. "
+			"Please ensure '[tool.bench.frappe-dependencies]' is defined. "
+			"Click <a href='https://docs.frappe.io/cloud/benches/custom-app#note'>here</a> for more details."
+		)
+
+	return compatible_frappe_version
+
+
 def _get_app_name_and_title_from_hooks(
 	owner,
 	repository,
 	branch_info,
 	headers,
 	tree,
-) -> "tuple[str, str]":
+) -> tuple[str, str] | None:
 	reason_for_invalidation = f"Files {frappe.bold('hooks.py or patches.txt')} not found."
 	for directory, files in tree.items():
 		if not files:

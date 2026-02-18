@@ -65,7 +65,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "\nAWS EC2\nOCI\nHetzner",
+   "options": "\nAWS EC2\nOCI\nHetzner\nDigitalOcean",
    "read_only": 1,
    "reqd": 1
   },
@@ -75,16 +75,14 @@
    "fieldtype": "Link",
    "label": "Region",
    "options": "Cloud Region",
-   "read_only": 1,
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fetch_from": "cluster.availability_zone",
    "fieldname": "availability_zone",
    "fieldtype": "Data",
    "label": "Availability Zone",
-   "read_only": 1,
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "cluster",
@@ -251,7 +249,7 @@
    "fieldname": "series",
    "fieldtype": "Select",
    "label": "Series",
-   "options": "n\nf\nm\nc\np\ne\nr\nt\nnfs\nfs",
+   "options": "n\nf\nm\nc\np\ne\nr\nu\nt\nnfs\nfs",
    "reqd": 1
   },
   {
@@ -426,7 +424,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2025-10-13 14:56:34.498409",
+ "modified": "2026-01-18 13:54:28.206523",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
@@ -458,6 +456,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

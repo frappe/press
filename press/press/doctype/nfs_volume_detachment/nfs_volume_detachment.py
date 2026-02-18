@@ -150,7 +150,7 @@ class NFSVolumeDetachment(Document, AutoScaleStepFailureHandler, StepHandler):
 			},
 			"job",
 		)
-		self.handle_agent_job(step, job)
+		self.handle_agent_job(step, job, poll=True)
 
 	def umount_from_primary_server(self, step: "NFSVolumeDetachmentStep") -> None:
 		"""Umount /shared from primary server and remove from fstab"""
@@ -328,9 +328,27 @@ class NFSVolumeDetachment(Document, AutoScaleStepFailureHandler, StepHandler):
 		self.secondary_server = frappe.db.get_value("Server", self.primary_server, "secondary_server")
 
 	def validate(self):
-		is_server_auto_scaled = frappe.db.get_value("Server", self.primary_server, "auto_scale")
+		is_server_auto_scaled = frappe.db.get_value("Server", self.primary_server, "scaled_up")
 		if is_server_auto_scaled:
 			frappe.throw("Benches are currently running on the secondary server!")
+
+		has_triggers = frappe.db.get_value(
+			"Prometheus Alert Rule",
+			filters={
+				"name": [
+					"in",
+					[
+						f"Auto Scale Up Trigger - {self.primary_server}",
+						f"Auto Scale Down Trigger - {self.primary_server}",
+					],
+				],
+				"enabled": 1,
+			},
+			pluck="name",
+		)
+
+		if has_triggers:
+			frappe.throw("Please remove all auto scale triggers before dropping the secondary server")
 
 	@frappe.whitelist()
 	def force_continue(self):
@@ -344,7 +362,7 @@ class NFSVolumeDetachment(Document, AutoScaleStepFailureHandler, StepHandler):
 			steps=self.nfs_volume_detachment_steps,
 			timeout=18000,
 			at_front=True,
-			queue="long",
+			queue="auto-scale",
 			enqueue_after_commit=True,
 		)
 

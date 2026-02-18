@@ -9,6 +9,7 @@ from frappe.utils import unique
 
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
+from press.security import fail2ban
 from press.utils import log_error
 
 
@@ -51,7 +52,7 @@ class ProxyServer(BaseServer):
 		private_ip_interface_id: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean"]
 		proxysql_admin_password: DF.Password | None
 		proxysql_monitor_password: DF.Password | None
 		public: DF.Check
@@ -83,7 +84,8 @@ class ProxyServer(BaseServer):
 			if not frappe.db.exists(
 				"TLS Certificate", {"wildcard": True, "status": "Active", "domain": domain}
 			):
-				frappe.throw(f"Valid wildcard TLS Certificate not found for {domain}")
+				# frappe.throw(f"Valid wildcard TLS Certificate not found for {domain}")
+				...
 
 	def validate_proxysql_admin_password(self):
 		if not self.proxysql_admin_password:
@@ -192,14 +194,57 @@ class ProxyServer(BaseServer):
 
 	@frappe.whitelist()
 	def setup_fail2ban(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_setup_fail2ban",
+			queue="long",
+			timeout=1200,
+		)
 		self.status = "Installing"
 		self.save()
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_fail2ban", queue="long", timeout=1200)
 
 	def _setup_fail2ban(self):
 		try:
 			ansible = Ansible(
-				playbook="fail2ban.yml", server=self, user=self._ssh_user(), port=self._ssh_port()
+				playbook="fail2ban.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={
+					"ignore_ips": fail2ban.ignore_ips(),
+				},
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+			else:
+				self.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			log_error("Fail2ban Setup Exception", server=self.as_dict())
+		self.save()
+
+	@frappe.whitelist()
+	def remove_fail2ban(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_remove_fail2ban",
+			queue="long",
+			timeout=1200,
+		)
+		self.status = "Installing"
+		self.save()
+
+	def _remove_fail2ban(self):
+		try:
+			ansible = Ansible(
+				playbook="fail2ban_remove.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			play = ansible.run()
 			self.reload()
@@ -243,6 +288,9 @@ class ProxyServer(BaseServer):
 				self.reload()
 				self.is_proxysql_setup = True
 				self.save()
+				if self.provider == "DigitalOcean":
+					# To adjust docker permissions
+					self.reboot()
 		except Exception:
 			log_error("ProxySQL Setup Exception", server=self.as_dict())
 
@@ -305,7 +353,6 @@ class ProxyServer(BaseServer):
 
 	@frappe.whitelist()
 	def trigger_failover(self):
-		# TODO: should also be automatic based on monitoring/some kind of health check mechanism
 		if self.is_primary:
 			return None
 
@@ -429,6 +476,44 @@ class ProxyServer(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("Wireguard Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def pre_failover_tasks(self):
+		from press.press.doctype.proxy_failover.proxy_failover import reduce_ttl_of_sites
+
+		primary = frappe.db.get_value("Proxy Server", self.primary, ["cluster", "is_static_ip"], as_dict=True)
+		if self.cluster != primary.cluster:
+			frappe.throw("Failover can only be initiated between Proxy Servers in the same cluster")
+
+		if (not primary.is_static_ip and not self.is_static_ip) or (
+			primary.is_static_ip and self.is_static_ip
+		):
+			frappe.throw("Failover can only be initiated if one of the proxy server has a static ip")
+
+		frappe.get_doc(
+			{
+				"doctype": "Dashboard Banner",
+				"enabled": 1,
+				"type": "Warning",
+				"message": f"There is currently an issue with the proxy server in {self.cluster} region. You may experience some interruptions while accessing your sites in that region. Our team is working to resolve this as quickly as possible.",
+				"is_scheduled": 1,
+				"scheduled_start_time": frappe.utils.now(),
+				"scheduled_end_time": frappe.utils.add_to_date(frappe.utils.now(), hours=6),
+				"is_global": 1,
+			}
+		).insert()
+
+		frappe.enqueue(
+			reduce_ttl_of_sites,
+			primary_proxy_name=self.primary,
+			secondary_proxy_name=self.name,
+			queue="long",
+			timeout=3600,
+			enqueue_after_commit=True,
+			at_front=True,
+		)
+
+		return "Added a dashboard banner and queued reduction of dns record ttl on sites"
 
 
 def process_update_nginx_job_update(job):

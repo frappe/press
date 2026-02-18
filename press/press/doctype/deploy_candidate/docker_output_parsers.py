@@ -15,7 +15,8 @@ ansi_escape_rx = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 done_check_rx = re.compile(r"#\d+\sDONE\s\d+\.\d+")
 
 if typing.TYPE_CHECKING:
-	from typing import Any, Generator
+	from collections.abc import Generator
+	from typing import Any
 
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.deploy_candidate_build_step.deploy_candidate_build_step import (
@@ -148,7 +149,7 @@ class DockerBuildOutputParser:
 		elif line.startswith("DONE"):
 			step.status = "Success"
 			step.duration = float(line.split()[1][:-1])
-		elif line == "CACHED":
+		elif line == "CACHED" or "found in store. Extracting and setting up" in line:
 			step.status = "Success"
 			step.cached = True
 		elif line.startswith("ERROR"):
@@ -210,9 +211,7 @@ def ansi_escape(text: str) -> str:
 def get_command(name: str) -> str:
 	# Strip docker flags and commands from the line
 	line = dockerfile.parse_string(name)[0]
-	command = " ".join(line.value).strip()
-	if not command:
-		command: str = line.original.split(maxsplit=1)[1]
+	command = " ".join(line.value).strip() or line.original.split(maxsplit=1)[1]
 	command = command.split("`#stage-", maxsplit=1)[0]
 
 	# Remove line fold slashes
