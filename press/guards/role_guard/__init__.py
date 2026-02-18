@@ -103,31 +103,15 @@ def document(
 	document_type: Callable[[OrderedDict], str],
 	document_name: Callable[[OrderedDict], str] = lambda _: "",
 	default_value: Callable[[OrderedDict], Any] | None = None,
-	should_throw: bool = True,
-	inject_values: bool = False,
-	injection_key: str | None = None,
 ):
 	"""
 	Check if the user has permission to access a specific document type and
 	name. This decorator can inject the result into the decorated function's
 	kwargs.
 
-	```python
-	@role_guard.document(
-		document_type=lambda _: "Release Group",
-		inject_values=True,
-		should_throw=False,
-	)
-	def example_function(release_groups: list[str]):
-		pass
-	```
-
 	:param document_type: Document type extractor function
 	:param document_name: Document name extractor function
 	:param default_value: Return a default value if permission check fails
-	:param should_throw: Whether to throw an error if permission check fails
-	:param inject_values: Whether to inject the result into the decorated function's kwargs
-	:param injection_key: Custom key for injected values in kwargs
 	"""
 
 	def wrapper(fn):
@@ -143,11 +127,9 @@ def document(
 			r = (not roles_enabled()) or utils_user.is_system_manager() or check(t, n)
 			if not r and default_value:
 				return default_value(bound_args.arguments)
-			if not r and should_throw:
+			if not r:
 				error_message = _("You do not have permission to access this {0}.").format(t)
 				frappe.throw(error_message, frappe.PermissionError)
-			if inject_values:
-				kwargs[gen_key(t)] = r
 			return fn(*args, **kwargs)
 
 		return inner
@@ -200,6 +182,20 @@ def check(document_type: str, document_name: str) -> bool | list[str]:
 			return site_backup_check(query, document_name)
 		case _:
 			return True
+
+
+def is_restricted() -> bool:
+	team = get_current_team(get_doc=True)
+	return (
+		roles_enabled()
+		and not utils_user.is_system_manager()
+		and not team.is_team_owner()
+		and not team.is_admin_user()
+	)
+
+
+def permitted_documents(document_type: str) -> list[str]:
+	return document_check(base_query(), document_type)
 
 
 def roles_enabled() -> bool:
