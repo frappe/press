@@ -120,7 +120,10 @@ def fetch_installations(token):
 			params={"per_page": 100, "page": current_page},
 			headers=headers,
 		)
-		if len(response.json().get("installations", [])) < 100:
+		data = response.json()
+		if not response.ok:
+			frappe.throw("Error fetching installations from GitHub: " + data.get("message", "Unknown error"))
+		if len(data.get("installations", [])) < 100:
 			is_last_page = True
 		installations.extend(response.json().get("installations", []))
 		current_page += 1
