@@ -226,9 +226,42 @@ class TestIncidentInvestigator(FrappeTestCase):
 		for step in investigator.server_investigation_steps:
 			self.assertTrue(step.is_likely_cause)
 
+		for step in investigator.database_investigation_steps:
+			self.assertTrue(step.is_likely_cause)
+
 		self.assertEqual(investigator.status, "Completed")
-		# Since memory is a part of the high metrics we won't be taking any actions on db either
+		# Since disk is a part of the high metrics we won't be taking any actions on db either since reboot might be a wasted effort if only 2GB of disk is left
 		self.assertEqual(investigator.action_steps, [])
+		self.assertEqual(
+			frappe.get_doc("Incident", investigator.incident).phone_call, True
+		)  # Ensure we get calls in case everything is high
+
+	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=False))
+	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=True))
+	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=True))
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
+		foreground_enqueue_doc,
+	)
+	def test_all_high_resource_metrics(self):
+		"""Reboot in case everything is high except disk since in case of high disk reboot might help"""
+		create_test_incident(self.server.name)
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+
+		for step in investigator.database_investigation_steps:
+			if step.method == "has_high_disk_usage":
+				self.assertFalse(step.is_likely_cause)
+			else:
+				self.assertTrue(step.is_likely_cause)
+
+		self.assertEqual(investigator.status, "Completed")
+		self.assertEqual(len(investigator.action_steps), 2)
+
+		self.assertListEqual(
+			[step.method_name for step in investigator.action_steps],
+			["capture_process_list", "initiate_database_reboot"],
+		)
+
 		self.assertEqual(
 			frappe.get_doc("Incident", investigator.incident).phone_call, True
 		)  # Ensure we get calls in case everything is high
