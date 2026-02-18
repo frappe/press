@@ -146,7 +146,7 @@ class TestApp(FrappeTestCase):
 
 		accepted_custom_version_strings = [
 			(">=16.0.0,<17.0.0", {"Version 16", "Nightly"}),
-			(">=15.0.0,<16.0.0", {"Version 15", "Nightly"}),
+			(">=15.0.0,<16.0.0", {"Version 15", "Nightly"}),  # Nightly's version number is 15 for some reason
 			(">=14.0.0,<15.0.0", {"Version 14"}),
 			(">=13.0.0,<14.0.0", {"Version 13"}),
 		]
@@ -165,3 +165,18 @@ class TestApp(FrappeTestCase):
 		for invalid_custom_version_string in invalid_custom_version_strings:
 			with self.assertRaises(frappe.ValidationError):
 				parse_frappe_version(invalid_custom_version_string, app_title="test-app")
+
+	def test_version_parsing_with_ease_versioning_constrains(self):
+		"""Test version parsing with ease_versioning_constrains=True basically only lower bound major version compatibility check"""
+		accepted_custom_version_strings = [
+			(">=16.0.0,<17.0.0", {"Version 16", "Nightly"}),
+			(">=15.75.0,<16.0.0", {"Version 15", "Nightly"}),
+			(">=14.55.0,<15.0.0", {"Version 14"}),
+			(">=13.50.0,<14.0.0", {"Version 13"}),
+		]
+
+		for accepted_custom_version_string, supported_versions in accepted_custom_version_strings:
+			parsed_version = parse_frappe_version(
+				accepted_custom_version_string, app_title="test-app", ease_versioning_constrains=True
+			)
+			self.assertSetEqual(parsed_version, supported_versions)
