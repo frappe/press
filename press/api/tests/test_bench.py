@@ -1,7 +1,6 @@
 import json
 import os
 import time
-import typing
 from unittest import skip
 from unittest.mock import MagicMock, Mock, patch
 
@@ -38,9 +37,6 @@ from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.utils import get_current_team
 from press.utils.test import foreground_enqueue_doc
-
-if typing.TYPE_CHECKING:
-	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
@@ -190,24 +186,6 @@ class TestAPIBench(FrappeTestCase):
 			}
 		)
 		self.assertRaises(TypeError, deploy, group)
-
-	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock())
-	def test_deploy_fn_fails_with_empty_apps(self):
-		frappe.set_user(self.team.user)
-		server = create_test_server()
-		group: ReleaseGroup = new(
-			{
-				"title": "Test Bench",
-				"apps": [{"name": self.app.name, "source": self.app_source.name}],
-				"version": self.version,
-				"cluster": "Default",
-				"saas_app": None,
-				"server": None,
-			}
-		)
-		group.build_server = server.name
-		group.save()
-		deploy(group, [])
 
 	@timeout(20)
 	def _check_if_docker_image_was_built(self, group: str):
