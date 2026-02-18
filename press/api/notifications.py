@@ -1,6 +1,7 @@
 import frappe
 
 from press.guards import role_guard
+from press.guards.role_guard.document import has_user_permission
 from press.utils import get_current_team
 
 
@@ -36,12 +37,18 @@ def get_notifications(
 	)
 
 	if role_guard.is_restricted():
-		pemitted_sites = role_guard.permitted_documents("Site")
-		permitted_release_groups = role_guard.permitted_documents("Release Group")
-		resources = [*pemitted_sites, *permitted_release_groups]
-		if not resources:
-			return []
-		query = query.where(PressNotification.reference_name.isin(resources))
+		if not has_user_permission("Site"):
+			pemitted_sites = role_guard.permitted_documents("Site")
+			if not pemitted_sites:
+				query = query.where(PressNotification.document_type != "Site")
+			else:
+				query = query.where(PressNotification.document_name.isin(pemitted_sites))
+		if not has_user_permission("Release Group"):
+			permitted_release_groups = role_guard.permitted_documents("Release Group")
+			if not permitted_release_groups:
+				query = query.where(PressNotification.document_type != "Release Group")
+			else:
+				query = query.where(PressNotification.document_name.isin(permitted_release_groups))
 
 	if filters.get("read") == "Unread":
 		query = query.where(PressNotification.read == 0)
