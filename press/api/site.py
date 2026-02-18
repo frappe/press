@@ -2400,11 +2400,6 @@ def change_region(name, cluster, scheduled_datetime=None, skip_failing_patches=F
 
 @frappe.whitelist()
 @protected("Site")
-@role_guard.document(
-	document_type=lambda _: "Release Group",
-	inject_values=True,
-	should_throw=False,
-)
 def get_private_groups_for_upgrade(name, version, release_groups=None):
 	team = get_current_team()
 	version_number = frappe.db.get_value("Frappe Version", version, "number")
@@ -2433,17 +2428,12 @@ def get_private_groups_for_upgrade(name, version, release_groups=None):
 		.distinct()
 	)
 
-<<<<<<< HEAD
-	if release_groups and isinstance(release_groups, list):
-		query = query.where(ReleaseGroup.name.isin(release_groups))
-=======
 	if role_guard.is_restricted():
 		release_groups = role_guard.permitted_documents("Release Group")
 		if not release_groups:
 			query = query.where(ValueWrapper(1) == 0)  # Hack!
 		else:
 			query = query.where(ReleaseGroup.name.isin(release_groups))
->>>>>>> cc917306f (fix(roles): Return false queries in case of empty lists)
 
 	return query.run(as_dict=True)
 

@@ -6,23 +6,11 @@ from press.utils import get_current_team
 
 
 @frappe.whitelist()
-@role_guard.document(
-	document_type=lambda _: "Site",
-	inject_values=True,
-	should_throw=False,
-)
-@role_guard.document(
-	document_type=lambda _: "Release Group",
-	inject_values=True,
-	should_throw=False,
-)
 def get_notifications(
 	filters=None,
 	order_by="creation desc",
 	limit_start=None,
 	limit_page_length=None,
-	sites=None,
-	release_groups=None,
 ):
 	if not filters:
 		filters = {}
@@ -48,16 +36,6 @@ def get_notifications(
 		.offset(limit_start)
 	)
 
-<<<<<<< HEAD
-	resources = set()
-	if sites and isinstance(sites, list):
-		resources.update(sites)
-	if release_groups and isinstance(release_groups, list):
-		resources.update(release_groups)
-
-	if resources:
-		query = query.where(PressNotification.reference_name.isin(resources))
-=======
 	if role_guard.is_restricted():
 		if not has_user_permission("Site"):
 			pemitted_sites = role_guard.permitted_documents("Site")
@@ -71,7 +49,6 @@ def get_notifications(
 				query = query.where(PressNotification.document_type != "Release Group")
 			else:
 				query = query.where(PressNotification.document_name.isin(permitted_release_groups))
->>>>>>> cc917306f (fix(roles): Return false queries in case of empty lists)
 
 	if filters.get("read") == "Unread":
 		query = query.where(PressNotification.read == 0)
