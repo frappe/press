@@ -25,7 +25,6 @@ from pypika.terms import ValueWrapper
 
 from press.api.site import protected
 from press.guards import mfa
-from press.guards.role_guard import skip_roles
 from press.press.doctype.team.team import (
 	Team,
 	get_child_team_members,
@@ -213,6 +212,7 @@ def setup_account(  # noqa: C901
 
 	# pass lead to local partner if consent given
 	account_request.agreed_to_partner_consent = share_details_consent
+	account_request.country = country
 	account_request.save()
 
 	team = account_request.team
@@ -270,16 +270,25 @@ def accept_team_invite(key: str):
 	if not account_request.invited_by:
 		frappe.throw("You are not invited by any team")
 
-	team = account_request.team
-	first_name = account_request.first_name
-	last_name = account_request.last_name
-	email = account_request.email
-	password = None
-	role = account_request.role
-	press_roles = account_request.press_roles
+	if frappe.session.user != account_request.email:
+		frappe.throw("This invite is not for your account")
 
-	team_doc = frappe.get_doc("Team", team)
-	return team_doc.create_user_for_member(first_name, last_name, email, password, role, press_roles)
+	current_user = frappe.session.user
+	try:
+		frappe.set_user("Administrator")
+
+		team = account_request.team
+		first_name = account_request.first_name
+		last_name = account_request.last_name
+		email = account_request.email
+		password = None
+		role = account_request.role
+		press_roles = account_request.press_roles
+
+		team_doc = frappe.get_doc("Team", team)
+		team_doc.create_user_for_member(first_name, last_name, email, password, role, press_roles)
+	finally:
+		frappe.set_user(current_user)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -1235,7 +1244,7 @@ def has_user_permission(key: str):
 def user_permissions():
 	team = get_current_team(get_doc=True)
 	is_owner = team.user == frappe.session.user
-	is_admin = is_owner or skip_roles() or has_user_permission("admin_access")
+	is_admin = is_owner or has_user_permission("admin_access")
 	return {
 		"owner": is_owner,
 		"admin": is_admin,

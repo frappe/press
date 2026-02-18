@@ -163,7 +163,7 @@ class TestApp(FrappeTestCase):
 		]
 
 		for version_string in accepted_frappe_version_strings:
-			parsed_version = parse_frappe_version(version_string)
+			parsed_version = parse_frappe_version(version_string, app_title="test-app")
 			self.assertSetEqual(parsed_version, {version_string})
 
 		accepted_custom_version_strings = [
@@ -174,7 +174,7 @@ class TestApp(FrappeTestCase):
 		]
 
 		for accepted_custom_version_string, supported_versions in accepted_custom_version_strings:
-			parsed_version = parse_frappe_version(accepted_custom_version_string)
+			parsed_version = parse_frappe_version(accepted_custom_version_string, app_title="test-app")
 			self.assertSetEqual(parsed_version, supported_versions)
 
 		invalid_custom_version_strings = [
@@ -186,4 +186,4 @@ class TestApp(FrappeTestCase):
 
 		for invalid_custom_version_string in invalid_custom_version_strings:
 			with self.assertRaises(frappe.ValidationError):
-				parse_frappe_version(invalid_custom_version_string)
+				parse_frappe_version(invalid_custom_version_string, app_title="test-app")
