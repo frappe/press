@@ -1590,6 +1590,7 @@ class ReleaseGroup(Document, TagHelpers):
 				branch=app["branch"],
 				version=self.version,
 				github_installation_id=app.get("github_installation_id", None),
+				ease_versioning_constrains=True,  # Allow 15.75.0 in a version 15 release group, for example
 			)
 
 		source = app_doc.add_source(
