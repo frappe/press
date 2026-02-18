@@ -1096,25 +1096,23 @@ def user_permissions():
 		for field in permission_fields:
 			permissions[field] = permissions[field] or row.get(field, 0)
 	is_admin = is_owner or permissions["admin_access"]
-	frappe.cache.set_value(
-		cache_key,
-		{
-			"owner": is_owner,
-			"admin": is_admin,
-			"billing": is_admin or permissions["allow_billing"],
-			"webhook": is_admin or permissions["allow_webhook_configuration"],
-			"apps": is_admin or permissions["allow_apps"],
-			"partner": is_admin or permissions["allow_partner"],
-			"partner_dashboard": is_admin or permissions["allow_dashboard"],
-			"partner_leads": is_admin or permissions["allow_leads"],
-			"partner_customer": is_admin or permissions["allow_customer"],
-			"partner_contribution": is_admin or permissions["allow_contribution"],
-			"site_creation": is_admin or permissions["allow_site_creation"],
-			"bench_creation": is_admin or permissions["allow_bench_creation"],
-			"server_creation": is_admin or permissions["allow_server_creation"],
-		},
-	)
-	return frappe.cache.get_value(cache_key)
+	result = {
+		"owner": is_owner,
+		"admin": is_admin,
+		"billing": is_admin or permissions["allow_billing"],
+		"webhook": is_admin or permissions["allow_webhook_configuration"],
+		"apps": is_admin or permissions["allow_apps"],
+		"partner": is_admin or permissions["allow_partner"],
+		"partner_dashboard": is_admin or permissions["allow_dashboard"],
+		"partner_leads": is_admin or permissions["allow_leads"],
+		"partner_customer": is_admin or permissions["allow_customer"],
+		"partner_contribution": is_admin or permissions["allow_contribution"],
+		"site_creation": is_admin or permissions["allow_site_creation"],
+		"bench_creation": is_admin or permissions["allow_bench_creation"],
+		"server_creation": is_admin or permissions["allow_server_creation"],
+	}
+	frappe.cache.set_value(cache_key, result, expires_in_sec=60 * 5)
+	return result
 
 
 @frappe.whitelist()
