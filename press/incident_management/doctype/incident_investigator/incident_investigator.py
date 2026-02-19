@@ -95,7 +95,10 @@ class PrometheusInvestigationHelper:
 		investigation_window_end_time: datetime.datetime,
 	) -> "PrometheusInvestigationHelper":
 		"""Initialize PrometheusInvestigationHelper with server-specific thresholds"""
-		high_system_load_threshold = 3 * (frappe.db.get_value("Virtual Machine", server, "vcpu") or 4)
+		virtual_machine = frappe.db.get_value("Server", server, "virtual_machine")
+		high_system_load_threshold = 3 * (
+			frappe.db.get_value("Virtual Machine", virtual_machine, "vcpu") or 4
+		)
 		return cls(
 			high_cpu_load_threshold=high_cpu_load_threshold,
 			high_memory_usage_threshold=high_memory_usage_threshold,
@@ -271,6 +274,31 @@ class PrometheusInvestigationHelper:
 		step.is_likely_cause = all(status != 200 for status in ping_results)
 		step.save()
 
+	def _get_bench_memory_usage(self, instance: str) -> dict[str, float] | None:
+		"""Get the average memory usage for each bench on the server averaged over the investigation window."""
+		benches = frappe.db.get_all(
+			"Bench",
+			fields=["name"],
+			filters={"server": instance, "status": "Active"},
+			pluck="name",
+		)
+		benches = "|".join(benches)
+		promql_query = f'''
+			sum by (name) (
+				avg_over_time(
+					container_memory_usage_bytes{{job="cadvisor", name=~"{benches}"}}
+					[
+						{(self.investigation_window_end_time - self.investigation_window_start_time).total_seconds()}s
+					]
+				) / 1024 / 1024 / 1024
+			)
+		'''
+		metric_data = self.prometheus_client.custom_query(query=promql_query)
+		if not metric_data:
+			return None
+
+		return {item["metric"]["name"]: float(item["value"][1]) for item in metric_data}
+
 
 class DatabaseInvestigationActions:
 	def __init__(
@@ -341,22 +369,74 @@ class DatabaseInvestigationActions:
 			self.investigator.save()
 			return
 
+		resource_causes = {
+			PrometheusInvestigationHelper.has_high_cpu_load.__name__,
+			PrometheusInvestigationHelper.has_high_memory_usage.__name__,
+			PrometheusInvestigationHelper.has_high_system_load.__name__,
+		}
 		database_likely_causes = set(self.investigator.likely_causes["database"])
-		if database_likely_causes:
-			all_three_causes = {
-				PrometheusInvestigationHelper.has_high_cpu_load.__name__,
-				PrometheusInvestigationHelper.has_high_memory_usage.__name__,
-				PrometheusInvestigationHelper.has_high_system_load.__name__,
-			}
-
-			# Check if all three causes are identified
-			if database_likely_causes.issubset(all_three_causes):
-				for step in self.investigator.get_steps(
-					[self.capture_process_list, self.initiate_database_reboot]
-				):
-					self.investigator.append("action_steps", step)
+		if database_likely_causes and database_likely_causes.issubset(resource_causes):
+			for step in self.investigator.get_steps(
+				[self.capture_process_list, self.initiate_database_reboot]
+			):
+				self.investigator.append("action_steps", step)
 
 		self.investigator.save()
+
+
+class AppServerInvestigationActions:
+	def __init__(self, investigator: "IncidentInvestigator"):
+		self.investigator = investigator
+
+	def get_bench_memory_usage_data(self, step: "ActionStep"):
+		"""Get memory usage data and do something with it"""
+		step.status = StepStatus.Running
+		step.save()
+
+		memory_usage_data = self.investigator.prometheus_investigation_helper._get_bench_memory_usage(
+			instance=self.investigator.server
+		)
+
+		if memory_usage_data is None:
+			step.status = StepStatus.Failure
+			step.save()
+			return
+
+		step.status = StepStatus.Success
+		step.save()
+
+	def add_app_server_investigation_actions(self):
+		"""In case of app server incidents we do the following
+		- Memory or CPU spikes
+			- Inform customers directly of application server issues, with upgrade options.
+			- Not a lot can be done here?
+
+		- Disk issues
+			Addressed by common actions
+
+		"""
+		resource_causes = {
+			PrometheusInvestigationHelper.has_high_cpu_load.__name__,
+			PrometheusInvestigationHelper.has_high_memory_usage.__name__,
+			PrometheusInvestigationHelper.has_high_system_load.__name__,
+		}
+
+		app_server_likely_causes = set(self.investigator.likely_causes["server"])
+
+		if app_server_likely_causes and app_server_likely_causes.issubset(resource_causes):
+			for step in self.investigator.get_steps([self.get_bench_memory_usage_data]):
+				self.investigator.append("action_steps", step)
+
+
+class CommonInvestigationActions:
+	def __init__(self, investigator: "IncidentInvestigator"):
+		self.investigator = investigator
+
+	def add_common_investigation_actions(self):
+		"""Mute incidents in case of common causes like high disk issue on either app and database
+		server, and ensure that this is the only cause and nothing else was found to be a likely cause.
+		"""
+		...
 
 
 class IncidentInvestigator(Document, StepHandler):
@@ -504,7 +584,7 @@ class IncidentInvestigator(Document, StepHandler):
 
 	def investigate(self):
 		"""Main method to execute investigation steps in order"""
-		prometheus_investigation_helper = PrometheusInvestigationHelper.load_from_server(
+		self.prometheus_investigation_helper = PrometheusInvestigationHelper.load_from_server(
 			server=self.server,
 			high_cpu_load_threshold=self.high_cpu_load_threshold,
 			high_memory_usage_threshold=self.high_memory_usage_threshold,
@@ -515,7 +595,7 @@ class IncidentInvestigator(Document, StepHandler):
 
 		for step_key, methods in PrometheusInvestigationHelper.INVESTIGATION_CHECKS.items():
 			for method in methods:
-				investigation_method = getattr(prometheus_investigation_helper, method)
+				investigation_method = getattr(self.prometheus_investigation_helper, method)
 				if step_key == "server_investigation_steps":
 					investigation_method(
 						instance=self.server,
@@ -540,6 +620,9 @@ class IncidentInvestigator(Document, StepHandler):
 		"""Perform post-investigation actions"""
 		database_investigation_actions = DatabaseInvestigationActions(self)
 		database_investigation_actions.add_database_server_investigation_actions()
+
+		app_server_investigation_actions = AppServerInvestigationActions(self)
+		app_server_investigation_actions.add_app_server_investigation_actions()
 
 		execute_action_steps = frappe.db.get_single_value(
 			"Press Settings", "execute_incident_action", cache=True
