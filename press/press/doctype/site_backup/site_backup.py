@@ -25,8 +25,6 @@ if TYPE_CHECKING:
 	from press.press.doctype.site_update.site_update import SiteUpdate
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
-ARCHIVED_SITE_BACKUP_RETENTION_CUTOFF_DATE = frappe.utils.add_to_date(frappe.utils.now(), months=-6)
-
 
 class SiteBackup(Document):
 	# begin: auto-generated types
@@ -172,7 +170,7 @@ class SiteBackup(Document):
 		self.validate_and_setup_physical_backup()
 
 	def after_insert(self):
-		# Skip backup creation if this record was created from archive site or unistall app jobs (backup already performed, just recording it)
+		# Skip backup creation if this record was created from 'Archive Site' or 'Unistall App From Site' jobs (backup already performed, just recording it)
 		if self.flags.get("skip_backup_after_insert"):
 			return
 
@@ -595,7 +593,7 @@ def on_doctype_update():
 
 def _create_site_backup_from_agent_job(job: "AgentJob"):
 	"""
-	Create Site Backup and Remote File records from archive site or uninstall app agent job's response.
+	Create Site Backup and Remote File records from 'Archive Site' or 'Uninstall App From Site' agent job's response.
 	"""
 	try:
 		from press.press.doctype.site_backup.site_backup import track_offsite_backups
@@ -606,7 +604,7 @@ def _create_site_backup_from_agent_job(job: "AgentJob"):
 			return
 
 		job_data = json.loads(job.data)
-		backup_data = job_data.get("backups")
+		backup_data = job_data.get("backups", {})
 		offsite_backup_data = job_data.get("offsite", {})
 
 		if not backup_data or not offsite_backup_data:
@@ -680,4 +678,3 @@ def _check_backup_steps_status(agent_job: str) -> bool:
 		return len(steps) == 2
 	except Exception:
 		return False
-
