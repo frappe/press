@@ -95,14 +95,12 @@ class PrometheusInvestigationHelper:
 		investigation_window_end_time: datetime.datetime,
 	) -> "PrometheusInvestigationHelper":
 		"""Initialize PrometheusInvestigationHelper with server-specific thresholds"""
+		high_system_load_threshold = 3 * (frappe.db.get_value("Virtual Machine", server, "vcpu") or 4)
 		return cls(
 			high_cpu_load_threshold=high_cpu_load_threshold,
 			high_memory_usage_threshold=high_memory_usage_threshold,
 			high_disk_usage_threshold_in_gb=high_disk_usage_threshold_in_gb,
-			high_system_load_threshold=3
-			* (
-				frappe.db.get_value("Virtual Machine", server, "vcpu") or 4
-			),  # Placeholder, will be set based on vcpus
+			high_system_load_threshold=high_system_load_threshold,
 			investigation_window_start_time=investigation_window_start_time,
 			investigation_window_end_time=investigation_window_end_time,
 		)
@@ -483,6 +481,13 @@ class IncidentInvestigator(Document, StepHandler):
 			frappe.utils.now_datetime(), minutes=-INVESTIGATION_WINDOW
 		)
 		self.investigation_window_end_time = frappe.utils.now_datetime()
+
+		# For unified servers we set memory threshold to 80% (based on incidents data)
+		self.high_memory_usage_threshold = (
+			85
+			if frappe.db.get_value("Server", self.server, "is_unified_server")
+			else self.high_memory_usage_threshold
+		)
 
 		self.add_investigation_steps()
 		self.action_steps = []  # Ensure no action steps are already set
