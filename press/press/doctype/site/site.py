@@ -2190,8 +2190,14 @@ class Site(Document, TagHelpers):
 		except (ValueError, InvalidToken):
 			frappe.throw(
 				_(
-					"This is not a valid encryption key. Please copy it exactly. Read <a href='https://docs.frappe.io/cloud/sites/migrate-an-existing-site#encryption-key' class='underline' target='_blank'>here</a> if you have lost the encryption key."
+					"This is not a valid encryption key. Please copy it exactly. Check <a href='https://docs.frappe.io/cloud/sites/migrate-an-existing-site#encryption-key' class='underline' target='_blank'>this document</a> if you have lost the encryption key."
 				)
+			)
+
+	def disallow_developer_mode(self, key: str):
+		if key == "developer_mode":
+			frappe.throw(
+				"You shouldn't enable developer mode on Frappe Cloud as your changes won't persist. Consider using a custom app instead. Read more <a href='https://docs.frappe.io/cloud/sites/site-config#why-cant-i-enable-developer-mode' class='underline' target='_blank'>here</a>."
 			)
 
 	@dashboard_whitelist()
@@ -2205,6 +2211,7 @@ class Site(Document, TagHelpers):
 
 		sanitized_config = {}
 		for key, value in config.items():
+			self.disallow_developer_mode(key)
 			if key in get_client_blacklisted_keys():
 				frappe.throw(_(f"The key <b>{key}</b> is blacklisted or internal and cannot be updated"))
 			self.check_server_script_enabled_on_public_bench(key)
