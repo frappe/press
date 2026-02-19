@@ -1,7 +1,7 @@
 ---
 - name: Set container processes
   set_fact:
-    container_processes: ["proxysql", "ssh"]
+    container_services: ["proxysql", "ssh"]
 
 - name: Create systemd override directory
   file:
@@ -9,17 +9,17 @@
     state: directory
     mode: '0755'
   loop: "{{ memory_limits }}"
-  when: item.process not in container_processes
+  when: item.process not in container_services
 
-- name: Configure MemoryHigh and MemoryMax
+- name: Configure Memory limits for systemd services
   copy:
     dest: /etc/systemd/system/{{ item.process }}.service.d/memory_limits.conf
     content: |
       [Service]
-      MemoryMax={{ (item.memory_max == -1) | ternary('infinity', item.memory_max ~ 'M') }}
+      MemoryMax={{ (item.memory_max == -1) | ternary('', item.memory_max ~ 'M') }}
       MemoryHigh={{ (item.memory_high == -1) | ternary('', item.memory_high ~ 'M') }}
   loop: "{{ memory_limits }}"
-  when: item.process not in container_processes
+  when: item.process not in container_services
 
 - name: Reload systemd and restart service
   systemd:
@@ -27,25 +27,25 @@
     state: restarted
     daemon_reload: yes
   loop: "{{ memory_limits }}"
-  when: item.process not in container_processes
+  when: item.process not in container_services
 
 - name: Check if Docker is installed
   command: docker --version
   register: docker_check
   ignore_errors: true
 
-- name: Get list of existing Docker containers
-  command: docker ps -a --format '{{ '{{' }}.Names{{ '}}' }}'
+- name: Get list of running Docker containers
+  command: docker ps --format '{% raw %}{{.Names}}{% endraw %}'
   register: existing_containers
   when: docker_check.rc == 0
 
 - name: Update Docker container memory limits
   command: >
     docker update {{ item.process }}
-    --memory {{ (item.memory_max == -1) | ternary('0', item.memory_max) }}M
-    --memory-reservation {{ (item.memory_high == -1) | ternary('0', item.memory_high) }}M
+    --memory={{ (item.memory_max == -1) | ternary('0', item.memory_max ~ 'M') }}
+    --memory-reservation={{ (item.memory_high == -1) | ternary('0', item.memory_high ~ 'M') }}
   loop: "{{ memory_limits }}"
   when:
    - docker_check.rc == 0
-   - item.process in container_processes
+   - item.process in container_services
    - item.process in existing_containers.stdout_lines

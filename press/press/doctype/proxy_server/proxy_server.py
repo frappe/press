@@ -526,13 +526,19 @@ class ProxyServer(BaseServer):
 
 	@frappe.whitelist()
 	def set_memory_limits(self, limits: list):
+		already_seen_processes = set()
 		for limit in limits:
+			if limit["process"] in already_seen_processes:
+				frappe.throw(f"Duplicate process {limit['process']} found in memory limits")
+
 			if int(limit["memory_high"]) > int(limit["memory_max"]):
 				frappe.throw(f"MemoryHigh cannot be more than MemoryMax for process {limit['process']}")
 
 			for key in list(limit.keys()):
 				if key not in ("process", "memory_high", "memory_max"):
 					del limit[key]
+
+			already_seen_processes.add(limit["process"])
 
 		self.mem_limits = json.dumps(limits, indent=1)
 		self.save()

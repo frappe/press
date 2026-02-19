@@ -133,84 +133,82 @@ frappe.ui.form.on('Proxy Server', {
 			}
 		});
 
-		frm.add_custom_button(
-			__('Update Memory Limits'),
-			() => {
-				const dialog = new frappe.ui.Dialog({
-					title: 'Set Memory Limits',
-					fields: [
-						{
-							fieldname: 'process_table',
-							fieldtype: 'Table',
-							label: 'Processes',
-							cannot_add_rows: true,
-							cannot_delete_rows: true,
-							in_place_edit: true,
-							data: [],
-							description: 'Use -1 for unsetting values',
-							fields: [
-								{
-									fieldname: 'process',
-									fieldtype: 'Data',
-									label: 'Process',
-									read_only: 1,
-									in_list_view: 1,
-									columns: 4,
-								},
-								{
-									fieldname: 'memory_high',
-									fieldtype: 'Int',
-									label: 'Memory High (MB)',
-									in_list_view: 1,
-									reqd: 1,
-									columns: 4,
-								},
-								{
-									fieldname: 'memory_max',
-									fieldtype: 'Int',
-									label: 'Memory Max (MB)',
-									in_list_view: 1,
-									reqd: 1,
-									columns: 4,
-								},
-							],
-						},
-					],
-					primary_action_label: 'Update',
-					primary_action(values) {
-						frm
-							.call('set_memory_limits', { limits: values.process_table })
-							.then((r) => {
-								frappe.show_alert(r.message);
-								dialog.hide();
-							});
-					},
-				});
-				dialog.show();
+		if (frm.doc.is_server_setup) {
+			frm.add_custom_button(
+				__('Update Memory Limits'),
+				() => {
+					let process_options = ['', 'nginx', 'filebeat'];
+					frm.doc.is_proxysql_setup && process_options.push('proxysql');
+					frm.doc.is_ssh_proxy_setup && process_options.push('ssh');
 
-				frm.call('get_memory_limits').then((r) => {
-					if (r.message) {
-						r.message.forEach((limit) => {
-							dialog.fields_dict.process_table.df.data.push({
-								process: limit.process,
-								memory_high: limit.memory_high,
-								memory_max: limit.memory_max,
+					const dialog = new frappe.ui.Dialog({
+						title: 'Set Memory Limits',
+						fields: [
+							{
+								fieldname: 'process_table',
+								fieldtype: 'Table',
+								label: 'Processes',
+								reqd: 1,
+								description: 'Use -1 for unsetting limits',
+								in_place_edit: true,
+								data: [],
+								fields: [
+									{
+										fieldname: 'process',
+										fieldtype: 'Select',
+										label: 'Process',
+										in_list_view: 1,
+										columns: 4,
+										options: process_options.join('\n'),
+										reqd: 1,
+									},
+									{
+										fieldname: 'memory_high',
+										fieldtype: 'Int',
+										label: 'Memory High (MB)',
+										in_list_view: 1,
+										reqd: 1,
+										columns: 3,
+									},
+									{
+										fieldname: 'memory_max',
+										fieldtype: 'Int',
+										label: 'Memory Max (MB)',
+										in_list_view: 1,
+										reqd: 1,
+										columns: 5,
+									},
+								],
+							},
+						],
+						primary_action_label: 'Update',
+						primary_action(values) {
+							frm
+								.call('set_memory_limits', { limits: values.process_table })
+								.then((r) => {
+									frappe.show_alert(r.message);
+									dialog.hide();
+								});
+						},
+					});
+					dialog.show();
+
+					frm.call('get_memory_limits').then((r) => {
+						if (r.message) {
+							r.message.forEach((limit) => {
+								dialog.fields_dict.process_table.df.data.push({
+									process: limit.process,
+									memory_high: limit.memory_high,
+									memory_max: limit.memory_max,
+								});
 							});
-						});
-					} else {
-						['nginx', 'filebeat', 'proxysql', 'ssh'].forEach((proc) => {
-							dialog.fields_dict.process_table.df.data.push({
-								process: proc,
-								memory_high: -1,
-								memory_max: -1,
-							});
-						});
-					}
-					dialog.fields_dict.process_table.grid.refresh();
-				});
-			},
-			__('Actions'),
-		);
+						}
+						dialog.fields_dict.process_table.grid.refresh();
+					});
+				},
+				__('Actions'),
+			);
+		}
 	},
 
 	hostname: function (frm) {
