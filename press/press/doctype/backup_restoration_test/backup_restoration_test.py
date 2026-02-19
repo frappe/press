@@ -62,7 +62,7 @@ class BackupRestorationTest(Document):
 			frappe.throw(f"Site {self.test_site} is already active. Please archive the site first.")
 
 	def create_brt_site(self) -> None:
-		site_dict = prepare_site(self.site)
+		site_dict = prepare_site(str(self.site))
 		server = frappe.get_value("Site", self.site, "server")
 		try:
 			site_job = _new(site_dict, server, True)
