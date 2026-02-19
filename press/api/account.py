@@ -274,8 +274,10 @@ def accept_team_invite(key: str):
 	role = account_request.role
 	press_roles = account_request.press_roles
 
-	team_doc = frappe.get_doc("Team", team)
-	return team_doc.create_user_for_member(first_name, last_name, email, password, role, press_roles)
+	team_doc = frappe.get_doc("Team", team, ignore_permissions=True)
+	team_doc.create_user_for_member(
+		first_name, last_name, email, password, role, press_roles, skip_validations=True
+	)
 
 
 @frappe.whitelist(allow_guest=True)
