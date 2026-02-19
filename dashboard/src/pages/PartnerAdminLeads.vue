@@ -42,7 +42,7 @@ export default {
 						class: 'truncate',
 						format: (value) => {
 							if (!value) return '';
-							return value.length > 30 ? `${value.slice(0, 30)}...` : value;
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
 						},
 					},
 					{
