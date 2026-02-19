@@ -52,7 +52,7 @@ def signup(email: str, product: str | None = None, referrer: str | None = None) 
 		)
 	elif exists and enabled:
 		frappe.throw(
-			_("Account {0} is already registered. If you forgot your password, use the password reset option. ").format(email)
+			_("invalid credentials or account issue. Please try again.").format(email)
 		)
 
 	account_request = frappe.db.get_value(
@@ -97,9 +97,7 @@ def verify_otp(account_request: str, otp: str) -> str:
 		and not account_request_doc.product_trial
 	):
 		ip_tracker and ip_tracker.add_failure_attempt()
-		frappe.throw(
-			"Invalid OTP. Please try again. "
-		)
+		frappe.throw("Invalid OTP. Please try again. ")
 	if account_request_doc.otp != otp:
 		ip_tracker and ip_tracker.add_failure_attempt()
 		frappe.throw(
@@ -133,9 +131,7 @@ def verify_otp_and_login(email: str, otp: str):
 
 	if account_request_doc.otp != otp:
 		ip_tracker and ip_tracker.add_failure_attempt()
-		frappe.throw(
-			"Invalid OTP. Please try again. "
-		)
+		frappe.throw("Invalid OTP. Please try again. ")
 
 	ip_tracker and ip_tracker.add_success_attempt()
 	account_request_doc.reset_otp()
@@ -153,18 +149,14 @@ def resend_otp(account_request: str, for_2fa_keys: bool = False):
 		account_request_doc.otp_generated_at
 		and (frappe.utils.now_datetime() - account_request_doc.otp_generated_at).seconds < 30
 	):
-		frappe.throw(
-			"Please wait for 30 seconds before requesting a new OTP. "
-		)
+		frappe.throw("Please wait for 30 seconds before requesting a new OTP. ")
 
 	# ensure no team has been created with this email
 	if (
 		frappe.db.exists("Team", {"user": account_request_doc.email})
 		and not account_request_doc.product_trial
 	):
-		frappe.throw(
-			"Invalid Email. Please enter a valid email address. "
-		)
+		frappe.throw("Invalid Email. Please enter a valid email address. ")
 	account_request_doc.reset_otp()
 	account_request_doc.send_otp_mail(for_login=not for_2fa_keys)
 
@@ -187,9 +179,7 @@ def send_otp(email: str, for_2fa_keys: bool = False):
 		account_request_doc.otp_generated_at
 		and (frappe.utils.now_datetime() - account_request_doc.otp_generated_at).seconds < 30
 	):
-		frappe.throw(
-			"Please wait for 30 seconds before requesting a new OTP. "
-		)
+		frappe.throw("Please wait for 30 seconds before requesting a new OTP. ")
 
 	account_request_doc.reset_otp()
 	account_request_doc.send_otp_mail(for_login=not for_2fa_keys)
@@ -320,10 +310,7 @@ def accept_team_invite(key: str):
 @rate_limit(limit=5, seconds=60 * 60)
 def send_login_link(email):
 	if not frappe.db.exists("User", email):
-		frappe.throw(
-			"No registered account with this email address. Please check your email or sign up. "
-			'<a href="#" target="_blank">Learn more</a>'
-		)
+		frappe.throw("If an account exists with this email, a login link has been sent. ")
 
 	key = frappe.generate_hash("Login Link", 20)
 	minutes = 10
