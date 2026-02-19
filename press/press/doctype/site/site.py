@@ -1656,7 +1656,7 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Inactive", "Suspended"])
-	def archive(self, site_name=None, reason=None, force=False, create_offsite_backup=False):
+	def archive(self, site_name=None, reason=None, force=False, create_offsite_backup=True):
 		agent = Agent(self.server)
 		self.status = "Pending"
 		self.save()
