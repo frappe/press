@@ -39,7 +39,7 @@ class BackupRestorationTest(Document):
 		self.check_duplicate_active_site()
 
 	def after_insert(self):
-		self.create_test_site()
+		self.create_brt_site()
 
 	def check_duplicate_test(self):
 		# check if another backup restoration is already running
@@ -55,17 +55,13 @@ class BackupRestorationTest(Document):
 		# check if any active backup restoration test site is active
 		sites = frappe.get_all(
 			"Site",
-			dict(
-				status=("in", ["Active", "Inactive", "Broken", "Suspended"]), name=self.test_site
-			),
+			dict(status=("in", ["Active", "Inactive", "Broken", "Suspended"]), name=self.test_site),
 			pluck="name",
 		)
 		if sites:
-			frappe.throw(
-				f"Site {self.test_site} is already active. Please archive the site first."
-			)
+			frappe.throw(f"Site {self.test_site} is already active. Please archive the site first.")
 
-	def create_test_site(self) -> None:
+	def create_brt_site(self) -> None:
 		site_dict = prepare_site(self.site)
 		server = frappe.get_value("Site", self.site, "server")
 		try:
