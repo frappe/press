@@ -100,6 +100,7 @@ def create_test_bench(
 	return bench
 
 
+@patch.object(Site, "sync_apps", new=Mock())
 def create_test_site(
 	subdomain: str = "",
 	new: bool = False,
@@ -130,6 +131,7 @@ def create_test_site(
 				"Add Site to Upstream": {"status": "Success"},
 			}
 		)
+
 	else:
 		context = patch.object(AgentJob, "enqueue_http_request", new=Mock())
 
