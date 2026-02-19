@@ -3,6 +3,7 @@
 
 
 import typing
+from collections.abc import Iterator
 
 import frappe
 import rq
@@ -125,25 +126,37 @@ def is_bounded(spec: sv.NpmSpec) -> bool:
 	return has_upper_bound and has_lower_bound
 
 
+def _iter_clause_tree(spec: sv.NpmSpec | AllOf | AnyOf) -> Iterator:
+	if hasattr(spec, "operator"):
+		yield spec
+
+	elif hasattr(spec, "clause"):
+		yield from _iter_clause_tree(spec.clause)
+
+	elif hasattr(spec, "clauses"):
+		for clause in spec.clauses:
+			yield from _iter_clause_tree(clause)
+
+
 def get_lower_bound_major(spec: sv.NpmSpec) -> int | None:
-	stack = [spec.clause]
-	clauses = []
+	"""Fetch lower bound major version from the spec take into account multiple lower bounds"""
+	lowers = [
+		c.target
+		for c in _iter_clause_tree(spec)
+		if getattr(c, "operator", None) in (">", ">=") and getattr(c, "target", None) is not None
+	]
+	uppers = [
+		c.target
+		for c in _iter_clause_tree(spec)
+		if getattr(c, "operator", None) in ("<", "<=") and getattr(c, "target", None) is not None
+	]
 
-	while stack:
-		node = stack.pop()
-
-		if hasattr(node, "operator"):
-			clauses.append(node)
-			continue
-
-		if isinstance(node, (AllOf, AnyOf)):
-			# Takes care of mess like `-dev` parsing the all of tree
-			stack.extend(node.clauses)
-
-	lowers = [c.target for c in clauses if c.operator in (">", ">=")]
-
-	if not lowers:
-		return None
+	if max(uppers).major == min(lowers).major or max(uppers).major < min(lowers).major:
+		frappe.throw(
+			f"Invalid version range: The upper bound major version ({max(uppers).major}) "
+			f"and the lower bound major version ({min(lowers).major}) are either the same or inconsistent. "
+			"Please ensure the version range specifies distinct and valid major versions.",
+		)
 
 	return min(lowers).major
 
