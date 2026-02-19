@@ -387,7 +387,7 @@ class Bench(Document):
 			return {
 				"memory_high": self.max_possible_memory_high_limit,
 				"memory_max": self.max_possible_memory_limit,
-				"memory_swap": self.max_possible_memory_limit * 2,
+				"memory_swap": self.max_possible_memory_limit * 1.5,
 				"vcpu": self.vcpu,
 			}
 		return {
