@@ -344,7 +344,7 @@ def get_lead_activities(name):  # noqa: C901
 			continue
 
 		if change := data.get("changed")[0]:
-			field = fields.get(change[0], None)
+			field = fields.get(change[0])
 			if not field or (not change[1] and not change[2]):
 				continue
 
@@ -839,11 +839,17 @@ def update_lead_status(lead_name, status, **kwargs):
 				}
 			)
 	elif status == "Won":
+		hosting = kwargs.get("hosting")
+		site = kwargs.get("site_url")
+		server = kwargs.get("server_name")
+		team = kwargs.get("team_name")
 		status_dict.update(
 			{
 				"conversion_date": kwargs.get("conversion_date"),
-				"hosting": kwargs.get("hosting"),
-				"site_url": kwargs.get("site_url"),
+				"hosting": hosting,
+				"site_url": site,
+				"server_name": server,
+				"team_name": team,
 			}
 		)
 	elif status == "Lost":
