@@ -63,6 +63,7 @@ class SupportAccess(Document):
 			.select(Count(AccessResource.name).as_("resource_count"))
 			.groupby(Access.name)
 			.select(AccessResource.document_name.as_("resource_name"))
+			.where(Access.requested_team == team | Access.target_team == team)
 		)
 		conditions = []
 		match filters.get("source"):
@@ -72,6 +73,14 @@ class SupportAccess(Document):
 				conditions.append(Access.requested_by == frappe.session.user)
 				conditions.append(Access.requested_team == team)
 		return query.where(Criterion.any(conditions)).run(as_dict=True)
+
+	def has_permission(self, permtype="read", *, debug=False, user=None) -> bool:
+		permission = super().has_permission(permtype, debug=debug, user=user)
+		if permtype == "read":
+			if permission and (get_current_team() in (self.requested_team, self.target_team)):
+				return True
+			return False
+		return permission
 
 	@property
 	def access_expired(self):
