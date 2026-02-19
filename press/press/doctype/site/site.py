@@ -3960,6 +3960,30 @@ def process_fetch_database_table_schema_job_update(job):
 		frappe.cache().set_value(key_for_schema_status, 2, expires_in_sec=6000)
 
 
+def update_backup_restoration_test_status(job, updated_status):
+	status_map = {
+		"Active": "Success",
+		"Broken": "Failure",
+		"Installing": "Running",
+		"Pending": "Running",
+	}
+
+	backup_tests = frappe.get_all(
+		"Backup Restoration Test",
+		dict(test_site=job.site, status="Running"),
+		pluck="name",
+	)
+	if not backup_tests:
+		return
+	frappe.db.set_value(
+		"Backup Restoration Test",
+		backup_tests[0],
+		"status",
+		status_map[updated_status],
+	)
+	frappe.db.commit()
+
+
 def process_new_site_job_update(job):  # noqa: C901
 	site_status = frappe.get_value("Site", job.site, "status", for_update=True)
 
@@ -3975,12 +3999,6 @@ def process_new_site_job_update(job):  # noqa: C901
 		{"job_type": ("in", other_job_types), "site": job.site},
 		"status",
 		for_update=True,
-	)
-
-	backup_tests = frappe.get_all(
-		"Backup Restoration Test",
-		dict(test_site=job.site, status="Running"),
-		pluck="name",
 	)
 
 	if "Success" == first == second:
@@ -4003,23 +4021,8 @@ def process_new_site_job_update(job):  # noqa: C901
 	else:
 		updated_status = "Pending"
 
-	status_map = {
-		"Active": "Success",
-		"Broken": "Failure",
-		"Installing": "Running",
-		"Pending": "Running",
-	}
-
 	if updated_status != site_status:
-		if backup_tests:
-			frappe.db.set_value(
-				"Backup Restoration Test",
-				backup_tests[0],
-				"status",
-				status_map[updated_status],
-			)
-			frappe.db.commit()
-
+		update_backup_restoration_test_status(job, updated_status)
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 		create_site_status_update_webhook_event(job.site)
 
@@ -4129,7 +4132,7 @@ def get_remove_step_status(job):
 	)
 
 
-def get_backup_restoration_tests(site: str) -> list[str]:
+def get_finished_backup_restoration_tests(site: str) -> list[str]:
 	return frappe.get_all(
 		"Backup Restoration Test",
 		dict(test_site=site, status=("in", ("Success", "Archive Failed"))),
@@ -4137,8 +4140,8 @@ def get_backup_restoration_tests(site: str) -> list[str]:
 	)
 
 
-def update_backup_restoration_test(site: str, status: str):
-	backup_tests = get_backup_restoration_tests(site)
+def update_finished_backup_restoration_test(site: str, status: str):
+	backup_tests = get_finished_backup_restoration_tests(site)
 
 	if not backup_tests:
 		return
@@ -4202,7 +4205,7 @@ def process_archive_site_job_update(job: "AgentJob"):  # noqa: C901
 			job.site,
 			{"status": updated_status, "archive_failed": updated_status != "Archived"},
 		)
-		update_backup_restoration_test(job.site, updated_status)
+		update_finished_backup_restoration_test(job.site, updated_status)
 		if updated_status == "Archived":
 			site_cleanup_after_archive(job.site)
 
