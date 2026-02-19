@@ -3,7 +3,6 @@ import {
 	createResource,
 	LoadingIndicator,
 } from 'frappe-ui';
-import LucideVenetianMask from '~icons/lucide/venetian-mask';
 import ArrowLeftRightIcon from '~icons/lucide/arrow-left-right';
 import { defineAsyncComponent, h } from 'vue';
 import { unparse } from 'papaparse';
@@ -1279,7 +1278,7 @@ export default {
 								);
 							},
 						};
-					}
+					},
 				},
 			},
 			{
@@ -1543,7 +1542,9 @@ export default {
 								onClick() {
 									let ConfigureAutoUpdateDialog = defineAsyncComponent(
 										() =>
-											import('../components/site/ConfigureAutoUpdateDialog.vue'),
+											import(
+												'../components/site/ConfigureAutoUpdateDialog.vue'
+											),
 									);
 
 									renderDialog(
@@ -1738,7 +1739,9 @@ export default {
 					label: 'Impersonate Site Owner',
 					title: 'Impersonate Site Owner', // for label to pop-up on hover
 					slots: {
-						icon: icon(LucideVenetianMask),
+						icon: defineAsyncComponent(
+							() => import('~icons/lucide/venetian-mask'),
+						),
 					},
 					condition: () =>
 						$team.doc?.is_desk_user && site.doc.team !== $team.name,
