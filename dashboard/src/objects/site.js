@@ -798,11 +798,11 @@ export default {
 									{ backup: backup.name, file },
 									{
 										onSuccess(r) {
+											hide();
 											// TODO: fix this in documentResource, it should return message directly
 											if (r.message) {
 												window.open(r.message);
 											}
-											hide();
 										},
 									},
 								);
@@ -817,8 +817,8 @@ export default {
 									domainRegex,
 									`$1${site.doc.host_name}/`,
 								);
-								window.open(newUrl);
 								hide();
+								window.open(newUrl);
 							}
 						}
 
@@ -1279,7 +1279,7 @@ export default {
 								);
 							},
 						};
-					}
+					},
 				},
 			},
 			{
@@ -1543,7 +1543,9 @@ export default {
 								onClick() {
 									let ConfigureAutoUpdateDialog = defineAsyncComponent(
 										() =>
-											import('../components/site/ConfigureAutoUpdateDialog.vue'),
+											import(
+												'../components/site/ConfigureAutoUpdateDialog.vue'
+											),
 									);
 
 									renderDialog(

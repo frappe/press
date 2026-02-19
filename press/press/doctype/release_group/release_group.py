@@ -203,6 +203,15 @@ class ReleaseGroup(Document, TagHelpers):
 		if doc.enable_inplace_updates:
 			doc.inplace_update_failed_benches = self.get_inplace_update_failed_benches()
 
+		doc.linked_version_upgrade = frappe.db.exists(
+			"Version Upgrade",
+			{
+				"destination_group": self.name,
+				"deploy_private_bench": 1,
+				"status": ("in", ["Pending", "Scheduled"]),
+			},
+		)
+
 	def get_inplace_update_failed_benches(self):
 		return frappe.db.get_all(
 			"Bench",
@@ -1582,6 +1591,7 @@ class ReleaseGroup(Document, TagHelpers):
 				branch=app["branch"],
 				version=self.version,
 				github_installation_id=app.get("github_installation_id", None),
+				ease_versioning_constrains=True,  # Allow 15.75.0 in a version 15 release group, for example
 			)
 
 		source = app_doc.add_source(
@@ -1611,6 +1621,18 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def archive(self):
+		# Cancel any pending/scheduled version upgrades linked to this bench
+		version_upgrades = frappe.db.get_all(
+			"Version Upgrade",
+			filters={
+				"destination_group": self.name,
+				"status": ("in", ["Pending", "Scheduled"]),
+			},
+			pluck="name",
+		)
+		for upgrade_name in version_upgrades:
+			frappe.db.set_value("Version Upgrade", upgrade_name, "status", "Cancelled")
+
 		benches = frappe.get_all("Bench", filters={"group": self.name, "status": "Active"}, pluck="name")
 		for bench in benches:
 			frappe.get_doc("Bench", bench).archive()
@@ -1623,7 +1645,6 @@ class ReleaseGroup(Document, TagHelpers):
 	@dashboard_whitelist()
 	def delete(self) -> None:
 		# Note: using delete instead of archive to avoid client api fetching the doc again
-
 		self.archive()
 
 	def set_default_app_cache_flags(self):

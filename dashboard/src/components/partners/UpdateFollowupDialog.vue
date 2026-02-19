@@ -9,7 +9,23 @@
 					:class="`grid-cols-${section.columns}`"
 				>
 					<div v-for="field in section.fields" :key="field.name">
+						<div
+							v-if="field.fieldtype === 'Date'"
+							class="text-gray-600 h-1.5 text-xs"
+						>
+							{{ field.label }}
+							<DatePicker
+								class="mt-1.5"
+								v-if="field.fieldtype === 'Date'"
+								v-model="followup_details[field.fieldname]"
+								:label="field.label || field.fieldname"
+								:name="field.fieldname"
+								:required="field.required"
+								:format="'DD-MM-YYYY'"
+							/>
+						</div>
 						<FormControl
+							v-else
 							v-model="followup_details[field.fieldname]"
 							:label="field.label || field.fieldname"
 							:type="getInputType(field)"
@@ -31,7 +47,7 @@
 	</Dialog>
 </template>
 <script setup>
-import { createResource, Dialog, FormControl } from 'frappe-ui';
+import { createResource, Dialog, FormControl, DatePicker } from 'frappe-ui';
 import { computed, reactive, ref } from 'vue';
 import { getTeam } from '../../data/team';
 
@@ -63,7 +79,7 @@ createResource({
 		if (!data) return '';
 		let res = data[0];
 		Object.assign(followup_details, {
-			followup_date: Date(res.followup_date) || '',
+			followup_date: new Date(res.date).toISOString() || '',
 			followup_by: res.followup_by || '',
 			communication_type: res.communication_type || '',
 			spoke_to: res.spoke_to || '',

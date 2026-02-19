@@ -32,6 +32,7 @@ from frappe.utils import (
 	sbool,
 	time_diff_in_hours,
 )
+from frappe.utils.caching import redis_cache
 
 from press.access.actions import SiteActions
 from press.access.decorators import action_guard
@@ -330,7 +331,6 @@ class Site(Document, TagHelpers):
 			pluck="name",
 		)
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
-		doc.current_usage = self.current_usage
 		doc.current_plan = get("Site Plan", self.plan) if self.plan else None
 		doc.last_updated = self.last_updated
 		doc.creation_failure_retention_days = CREATION_FAILURE_RETENTION_DAYS
@@ -2310,7 +2310,7 @@ class Site(Document, TagHelpers):
 			)
 
 	@dashboard_whitelist()
-	@site_action(["Active"])
+	@site_action(["Active", "Broken"])
 	def update_config(self, config=None):
 		"""Updates site.configuration, meant for dashboard and API users"""
 		if config is None:
@@ -3383,6 +3383,11 @@ class Site(Document, TagHelpers):
 	@cached_property
 	def is_group_public(self):
 		return bool(frappe.get_cached_value("Release Group", self.group, "public"))
+
+	@dashboard_whitelist()
+	@redis_cache(ttl=60)
+	def get_current_usage(self):
+		return self.current_usage
 
 	@frappe.whitelist()
 	def get_actions(self):

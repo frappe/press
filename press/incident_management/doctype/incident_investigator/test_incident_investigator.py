@@ -12,6 +12,7 @@ from prometheus_api_client import PrometheusConnect
 
 from press.incident_management.doctype.incident_investigator.incident_investigator import (
 	IncidentInvestigator,
+	get_utc_time,
 )
 from press.press.doctype.incident.incident import Incident
 from press.press.doctype.server.test_server import (
@@ -169,8 +170,7 @@ def make_custom_query_range_side_effect(
 	is_high: bool = False, only_for_database: bool = False, only_for_server: bool = False
 ):
 	def custom_query_range_side_effect(*args, **kwargs):
-		query = args[1] if args else kwargs.get("query")
-
+		query = kwargs.get("query")
 		if "node_memory_MemAvailable_bytes" in query:
 			return decide_server_specific_high(
 				query, is_high, only_for_database, only_for_server, mock_memory_usage
@@ -209,6 +209,7 @@ class TestIncidentInvestigator(FrappeTestCase):
 		test_incident = create_test_incident(server=self.server.name)
 		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
 		self.assertEqual(investigator.incident, test_incident.name)
+		self.assertEqual(test_incident.investigation, investigator.name)
 
 	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=True))
 	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=True))
@@ -217,9 +218,6 @@ class TestIncidentInvestigator(FrappeTestCase):
 		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
 		foreground_enqueue_doc,
 	)
-	@patch.object(
-		IncidentInvestigator, "investigate_proxy_server", Mock()
-	)  # We don't have any sites this will fail
 	def test_all_high_metrics(self):
 		"""Since instance is not taken into account while mocking both database and sever will have same likely causes"""
 		create_test_incident(self.server.name)
@@ -228,9 +226,42 @@ class TestIncidentInvestigator(FrappeTestCase):
 		for step in investigator.server_investigation_steps:
 			self.assertTrue(step.is_likely_cause)
 
+		for step in investigator.database_investigation_steps:
+			self.assertTrue(step.is_likely_cause)
+
 		self.assertEqual(investigator.status, "Completed")
-		# Since memory is a part of the high metrics we won't be taking any actions on db either
+		# Since disk is a part of the high metrics we won't be taking any actions on db either since reboot might be a wasted effort if only 2GB of disk is left
 		self.assertEqual(investigator.action_steps, [])
+		self.assertEqual(
+			frappe.get_doc("Incident", investigator.incident).phone_call, True
+		)  # Ensure we get calls in case everything is high
+
+	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=False))
+	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=True))
+	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=True))
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
+		foreground_enqueue_doc,
+	)
+	def test_all_high_resource_metrics(self):
+		"""Reboot in case everything is high except disk since in case of high disk reboot might help"""
+		create_test_incident(self.server.name)
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+
+		for step in investigator.database_investigation_steps:
+			if step.method == "has_high_disk_usage":
+				self.assertFalse(step.is_likely_cause)
+			else:
+				self.assertTrue(step.is_likely_cause)
+
+		self.assertEqual(investigator.status, "Completed")
+		self.assertEqual(len(investigator.action_steps), 2)
+
+		self.assertListEqual(
+			[step.method_name for step in investigator.action_steps],
+			["capture_process_list", "initiate_database_reboot"],
+		)
+
 		self.assertEqual(
 			frappe.get_doc("Incident", investigator.incident).phone_call, True
 		)  # Ensure we get calls in case everything is high
@@ -242,9 +273,6 @@ class TestIncidentInvestigator(FrappeTestCase):
 		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
 		foreground_enqueue_doc,
 	)
-	@patch.object(
-		IncidentInvestigator, "investigate_proxy_server", Mock()
-	)  # We don't have any sites this will fail
 	def test_varied_metrics(self):
 		"""Since instance is not taken into account while mocking both database and sever will have same likely causes"""
 		create_test_incident(self.server.name)
@@ -257,31 +285,20 @@ class TestIncidentInvestigator(FrappeTestCase):
 				self.assertTrue(step.is_likely_cause)
 
 		# Since database has high memory and high cpu add database action step
-		self.assertEqual(len(investigator.action_steps), 3)
-		first_step, wait_step, second_step = investigator.action_steps
+		self.assertEqual(len(investigator.action_steps), 2)
+
 		self.assertListEqual(
-			[wait_step.reference_doctype, wait_step.reference_name, wait_step.method],
-			["Incident Investigator", investigator.name, "_check_process_list_capture"],
-		)
-		self.assertListEqual(
-			[first_step.reference_doctype, first_step.reference_name, first_step.method],
-			["Database Server", self.database_server.name, "capture_process_list"],
-		)
-		self.assertListEqual(
-			[second_step.reference_doctype, second_step.reference_name, second_step.method],
-			["Database Server", self.database_server.name, "restart_mariadb"],
+			[step.method_name for step in investigator.action_steps],
+			["capture_process_list", "initiate_database_reboot"],
 		)
 
 	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=False))
 	@patch.object(PrometheusConnect, "custom_query_range", unreachable_metrics())
-	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=False))
+	@patch.object(PrometheusConnect, "get_metric_range_data", unreachable_metrics())
 	@patch(
 		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
 		foreground_enqueue_doc,
 	)
-	@patch.object(
-		IncidentInvestigator, "investigate_proxy_server", Mock()
-	)  # We don't have any sites this will fail
 	def test_database_server_unreachable(self):
 		create_test_incident(self.server.name)
 		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
@@ -290,44 +307,13 @@ class TestIncidentInvestigator(FrappeTestCase):
 			if step.method == "has_high_cpu_load" or step.method == "has_high_memory_load":
 				self.assertTrue(step.is_unable_to_investigate)
 
-		self.assertEqual(len(investigator.action_steps), 1)
+		self.assertEqual(
+			len(investigator.action_steps), 1
+		)  # All of resource investigations need to be unreachable for action to be added
 		step = investigator.action_steps[0]
-		self.assertListEqual(
-			[step.reference_doctype, step.reference_name],
-			["Virtual Machine", self.database_server.virtual_machine],
-		)
-		self.assertIn(step.method, ["reboot", "reboot_with_serial_console"])
+		self.assertEqual(step.method_name, "initiate_database_reboot")
 		incident = frappe.get_doc("Incident", investigator.incident)
 		self.assertTrue(incident.phone_call)
-
-	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=True))
-	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=False))
-	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=False))
-	@patch(
-		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
-		foreground_enqueue_doc,
-	)
-	@patch.object(
-		IncidentInvestigator, "investigate_proxy_server", Mock()
-	)  # We don't have any sites this will fail
-	def test_we_only_ignore_calls_when_disk_is_high(self):
-		create_test_incident(self.server.name)
-		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
-
-		for step in investigator.server_investigation_steps:
-			if step.method == investigator.has_high_disk_usage.__name__:
-				self.assertTrue(step.is_likely_cause)
-			else:
-				self.assertFalse(step.is_likely_cause)
-
-		for step in investigator.database_investigation_steps:
-			if step.method == investigator.has_high_disk_usage.__name__:
-				self.assertTrue(step.is_likely_cause)
-			else:
-				self.assertFalse(step.is_likely_cause)
-
-		incident = frappe.get_doc("Incident", investigator.incident)
-		self.assertFalse(incident.phone_call)
 
 	@patch.object(IncidentInvestigator, "after_insert", Mock())
 	def test_investigation_cool_off_period(self):
@@ -368,8 +354,38 @@ class TestIncidentInvestigator(FrappeTestCase):
 		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
 		self.assertEqual(investigator.incident, test_incident_2.name)
 
+	@patch.object(PrometheusConnect, "get_current_metric_value", unreachable_metrics())
+	@patch.object(PrometheusConnect, "custom_query_range", unreachable_metrics())
+	@patch.object(PrometheusConnect, "get_metric_range_data", Mock())
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
+		foreground_enqueue_doc,
+	)
+	def test_unreachable_metrics_with_shifts(self):
+		"""Ensure that in case of unreachable metrics, we try with shifts 0, 2, and 5"""
+		with patch.object(PrometheusConnect, "get_metric_range_data") as mock_get_metric_range_data:
+			mock_get_metric_range_data.side_effect = unreachable_metrics()
+
+			create_test_incident(self.server.name)
+			investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+
+			expected_server_shifts = [0, 2, 5]
+			expected_database_server_shifts = [0, 2, 5]
+			actual_shifts = [
+				get_utc_time(investigator.investigation_window_start_time).minute
+				- call.kwargs.get("start_time").minute
+				for call in mock_get_metric_range_data.call_args_list
+			]
+
+			self.assertListEqual(expected_server_shifts + expected_database_server_shifts, actual_shifts)
+
+			# Ensure all investigation steps are marked as unable to investigate
+			for step in investigator.server_investigation_steps:
+				self.assertTrue(step.is_unable_to_investigate)
+
+			# Ensure database action is taken in case of unreachable metrics
+			self.assertEqual(len(investigator.action_steps), 1)
+
 	@classmethod
 	def tearDownClass(cls):
-		frappe.db.delete("Database Server", cls.database_server.name)
-		frappe.db.delete("Proxy Server", cls.proxy_server.name)
-		frappe.db.delete("Server", cls.server.name)
+		frappe.db.rollback()
