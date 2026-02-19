@@ -100,9 +100,7 @@ def verify_otp(account_request: str, otp: str) -> str:
 		frappe.throw("Invalid OTP. Please try again. ")
 	if account_request_doc.otp != otp:
 		ip_tracker and ip_tracker.add_failure_attempt()
-		frappe.throw(
-			"Invalid OTP. Please try again. "
-		)
+		frappe.throw("Invalid OTP. Please try again. ")
 
 	ip_tracker and ip_tracker.add_success_attempt()
 	account_request_doc.reset_otp()
