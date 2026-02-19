@@ -61,7 +61,9 @@ import { toast } from 'vue-sonner';
 import { useRouter } from 'vue-router';
 import { DocumentResource } from '../../objects/common/types';
 import { getToastErrorMessage } from '../../utils/toast';
-import { PropType, ref } from 'vue';
+import { PropType, ref, defineAsyncComponent, h } from 'vue';
+import { isLastSite } from '../../data/team';
+import { renderDialog } from '../../utils/components';
 
 const props = defineProps({
 	site: {
@@ -105,7 +107,23 @@ const handleConfirm = async () => {
 		await archiveSite.submit();
 		toast.success('Site drop scheduled successfully');
 		showDialog.value = false;
-		await router.replace({ name: 'Site List' });
+
+		const isLast = await isLastSite(props.site.doc?.team);
+		if (isLast) {
+			const ChurnFeedbackDialog = defineAsyncComponent(
+				() => import('../ChurnFeedbackDialog.vue'),
+			);
+			renderDialog(
+				h(ChurnFeedbackDialog, {
+					team: props.site.doc?.team,
+					onUpdated() {
+						router.replace({ name: 'Site List' });
+					},
+				}),
+			);
+		} else {
+			router.replace({ name: 'Site List' });
+		}
 	} catch (e: any) {
 		const errorMsg = getToastErrorMessage(e);
 		toast.error(errorMsg);
