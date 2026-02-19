@@ -59,6 +59,8 @@
   "proxysql_admin_password",
   "proxysql_monitor_password",
   "is_proxysql_setup",
+  "memory_limits_section",
+  "mem_limits",
   "vpn_tab",
   "wireguard_network",
   "wireguard_network_ip",
@@ -464,10 +466,26 @@
    "fieldtype": "Link",
    "label": "Plan",
    "options": "Server Plan"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "memory_limits_section",
+   "fieldtype": "Section Break",
+   "label": "Memory Limits"
+  },
+  {
+   "fieldname": "mem_limits",
+   "fieldtype": "Code",
+   "options": "JSON",
+   "read_only": 1
   }
  ],
  "links": [],
+<<<<<<< HEAD
  "modified": "2026-01-18 16:20:49.521726",
+=======
+ "modified": "2026-02-13 18:06:59.344863",
+>>>>>>> 0231b4505 (feat(proxy-server): Allow setting memory limits for certain processes (#5046))
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
