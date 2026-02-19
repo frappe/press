@@ -120,6 +120,9 @@ const newLeadInfo = createResource({
 		toast.success('New Lead created successfully');
 		show.value = false;
 	},
+	onError: () => {
+		toast.error('Failed to create lead');
+	},
 });
 
 function _newLeadInfo() {

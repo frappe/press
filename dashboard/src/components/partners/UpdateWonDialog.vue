@@ -21,10 +21,41 @@
 					:required="true"
 				/>
 				<FormControl
+					v-if="hosting_type == 'Frappe Cloud'"
+					v-model="resource_type"
+					label="Resource Type"
+					type="select"
+					name="resource_type"
+					:options="[
+						{ label: 'Site', value: 'Site' },
+						{ label: 'Server Name', value: 'Server' },
+						{ label: 'Team Name', value: 'Team' },
+					]"
+					:required="true"
+				/>
+				<FormControl
+					v-if="resource_type == 'Site'"
 					v-model="site_url"
 					label="Site URL"
 					type="data"
 					name="site_url"
+					:required="true"
+				/>
+				<FormControl
+					v-if="resource_type == 'Server'"
+					v-model="server_name"
+					label="Server Name"
+					type="data"
+					name="server_name"
+					placeholder="e.g. f1-mumbai.frappe.cloud"
+					:required="true"
+				/>
+				<FormControl
+					v-if="resource_type == 'Team'"
+					v-model="team_name"
+					label="Team Name"
+					type="data"
+					name="team_name"
 					:required="true"
 				/>
 				<ErrorMessage :message="errorMessage" />
@@ -52,6 +83,9 @@ const props = defineProps({
 const conversion_date = ref();
 const hosting_type = ref();
 const site_url = ref();
+const server_name = ref();
+const team_name = ref();
+const resource_type = ref();
 const errorMessage = ref('');
 const updateStatus = createResource({
 	url: 'press.api.partner.update_lead_status',
@@ -62,13 +96,17 @@ const updateStatus = createResource({
 			conversion_date: conversion_date.value,
 			hosting: hosting_type.value,
 			site_url: site_url.value,
+			server_name: server_name.value,
+			team_name: team_name.value,
 		};
 	},
 	validate: () => {
 		if (
-			conversion_date.value === undefined ||
-			hosting_type.value === undefined ||
-			site_url.value === undefined
+			(conversion_date.value === undefined ||
+				hosting_type.value === undefined) &&
+			(site_url.value === undefined ||
+				server_name.value === undefined ||
+				team_name.value === undefined)
 		) {
 			let error = 'Please fill all the required fields';
 			errorMessage.value = error;
