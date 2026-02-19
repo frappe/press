@@ -1395,21 +1395,9 @@ class ReleaseGroup(Document, TagHelpers):
 			fields=["name", "team", "public"],
 		)
 
-		if required_app_source:
-			required_app_source = required_app_source[0]
-			if not required_app_source.public:
-				required_app_source = frappe.get_doc("App Source", required_app_source.name)
-				# check if the version already exists
-				if not any(vs.version == self.version for vs in required_app_source.versions):
-					required_app_source.append(
-						"versions",
-						{
-							"version": self.version,
-						},
-					)
-					required_app_source.save()
+		required_app_source = required_app_source[0] if required_app_source else None
 
-		else:
+		if not required_app_source:
 			versions = frappe.get_all(
 				"App Source Version", filters={"parent": current_app_source.name}, pluck="version"
 			)
