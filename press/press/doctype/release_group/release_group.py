@@ -247,7 +247,6 @@ class ReleaseGroup(Document, TagHelpers):
 		self.validate_title()
 		self.validate_frappe_app()
 		self.validate_duplicate_app()
-		self.validate_app_versions()
 		self.validate_servers()
 		self.validate_rq_queues()
 		self.validate_max_min_workers()
@@ -494,24 +493,6 @@ class ReleaseGroup(Document, TagHelpers):
 			if app_name in apps:
 				frappe.throw(f"App {app.app} can be added only once", frappe.ValidationError)
 			apps.add(app_name)
-
-	def validate_app_versions(self):
-		# App Source should be compatible with Release Group's version
-		with suppress(AttributeError, RuntimeError):
-			if (
-				not frappe.flags.in_test
-				and frappe.request.path == "/api/method/press.api.bench.change_branch"
-			):
-				return  # Separate validation exists in set_app_source
-		for app in self.apps:
-			self.validate_app_version(app)
-
-	def validate_app_version(self, app: "ReleaseGroupApp"):
-		source = frappe.get_doc("App Source", app.source)
-		if all(row.version != self.version for row in source.versions):
-			branch, repo = frappe.db.get_values("App Source", app.source, ("branch", "repository"))[0]
-			msg = f"{repo.rsplit('/')[-1] or repo.rsplit('/')[-2]}:{branch} branch is no longer compatible with {self.version} version of Frappe"
-			frappe.throw(msg, frappe.ValidationError)
 
 	def validate_servers(self):
 		if self.servers:
@@ -1448,7 +1429,6 @@ class ReleaseGroup(Document, TagHelpers):
 				app.source = source
 				app.save()
 				break
-		self.validate_app_version(app)
 		self.save()
 
 	def get_marketplace_app_sources(self) -> list[str]:
