@@ -101,10 +101,6 @@ const handleConfirm = async () => {
 		return;
 	}
 
-	const loadingMessage = createOffsiteBackup.value
-		? 'Creating backup and scheduling site drop...'
-		: 'Scheduling site drop...';
-
 	try {
 		await archiveSite.submit();
 		toast.success('Site drop scheduled successfully');
