@@ -27,6 +27,7 @@ from press.press.doctype.team.team import (
 	get_team_members,
 )
 from press.utils import get_country_info, get_current_team, is_user_part_of_team, log_error
+from press.utils import user as user_utils
 from press.utils.telemetry import capture
 
 if TYPE_CHECKING:
@@ -1064,7 +1065,6 @@ def user_permissions():
 	cache_key = ".".join(("user_permissions", str(team.name), str(frappe.session.user)))
 	if frappe.cache.exists(cache_key):
 		return frappe.cache.get_value(cache_key)
-	is_owner = team.user == frappe.session.user
 	PressRole = frappe.qb.DocType("Press Role")
 	PressRoleUser = frappe.qb.DocType("Press Role User")
 	permission_fields = [
@@ -1095,7 +1095,8 @@ def user_permissions():
 	for row in result:
 		for field in permission_fields:
 			permissions[field] = permissions[field] or row.get(field, 0)
-	is_admin = is_owner or permissions["admin_access"]
+	is_owner = team.user == frappe.session.user
+	is_admin = is_owner or permissions["admin_access"] or user_utils.is_system_manager()
 	result = {
 		"owner": is_owner,
 		"admin": is_admin,
