@@ -798,6 +798,10 @@ class Agent:
 			reference_name=reference_name,
 		)
 
+	def get_earlyoom_logs(self, start_time: str, end_time: str):
+		"""Get earlyoom logs ensure that time range is small and in UTC"""
+		return self.get("server/earlyoom/logs", params={"start_time": start_time, "end_time": end_time})
+
 	def create_database_access_credentials(self, site: Site):
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		data = {
@@ -894,8 +898,8 @@ class Agent:
 	def cleanup_unused_files(self, force: bool = False):
 		return self.create_agent_job("Cleanup Unused Files", "server/cleanup", {"force": force})
 
-	def get(self, path, raises=True):
-		return self.request("GET", path, raises=raises)
+	def get(self, path, raises=True, params: dict | None = None):
+		return self.request("GET", path, raises=raises, params=params)
 
 	def post(self, path, data=None, raises=True):
 		return self.request("POST", path, data, raises=raises)
@@ -903,7 +907,7 @@ class Agent:
 	def delete(self, path, data=None, raises=True):
 		return self.request("DELETE", path, data, raises=raises)
 
-	def _make_req(self, method, path, data, files, agent_job_id):
+	def _make_req(self, method, path, data, files, agent_job_id, params: dict | None = None):
 		password = get_decrypted_password(self.server_type, self.server, "agent_password")
 		headers = {"Authorization": f"bearer {password}", "X-Agent-Job-Id": agent_job_id}
 		url = f"https://{self.server}:{self.port}/agent/{path}"
@@ -922,14 +926,18 @@ class Agent:
 			}
 			file_objects["json"] = json.dumps(data).encode()
 			return requests.request(method, url, headers=headers, files=file_objects, verify=verify)
-		return requests.request(method, url, headers=headers, json=data, verify=verify, timeout=(10, 30))
+		return requests.request(
+			method, url, headers=headers, json=data, verify=verify, timeout=(10, 30), params=params
+		)
 
-	def request(self, method, path, data=None, files=None, agent_job=None, raises=True):
+	def request(
+		self, method, path, data=None, files=None, agent_job=None, raises=True, params: dict | None = None
+	):
 		self.raise_if_past_requests_have_failed()
 		response = json_response = None
 		try:
 			agent_job_id = agent_job.name if agent_job else None
-			response = self._make_req(method, path, data, files, agent_job_id)
+			response = self._make_req(method, path, data, files, agent_job_id, params=params)
 			json_response = response.json()
 			if raises and response.status_code >= 400:
 				output = "\n\n".join([json_response.get("output", ""), json_response.get("traceback", "")])

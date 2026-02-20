@@ -1,0 +1,8 @@
+---
+- name: Add frappe User to Systemd Journal Group
+  command: usermod -aG systemd-journal frappe
+
+- name: Restart Web Worker
+  supervisorctl:
+    name: agent:web
+    state: restarted

@@ -18,6 +18,7 @@ from frappe.model.document import Document
 from frappe.utils.password import get_decrypted_password
 from prometheus_api_client import MetricRangeDataFrame, PrometheusConnect
 
+from press.agent import Agent
 from press.runner import Ansible, StepHandler
 from press.runner import Status as StepStatus
 
@@ -306,34 +307,6 @@ class PrometheusInvestigationHelper:
 
 		return {item["metric"]["name"]: float(item["value"][1]) for item in metric_data}
 
-	def _get_oom_kill_events(self, instance: str) -> dict[str, int] | None:
-		"""Get the number of OOM kill events on the server during the investigation window."""
-		benches = frappe.db.get_all(
-			"Bench",
-			fields=["name"],
-			filters={"server": instance, "status": "Active"},
-			pluck="name",
-		)
-		benches = "|".join(benches)
-
-		query = f"""
-			increase(
-				container_oom_events_total{{
-					job="cadvisor",
-					name=~"{benches}"
-				}}[
-					{(self.investigation_window_end_time - self.investigation_window_start_time).total_seconds()}s
-				]
-			)
-		"""
-		metric_data = self._fetch_with_time_shifts(
-			fetch_fn=self.prometheus_client.custom_query, shifts=[2, 5], query=query
-		)
-		if not metric_data:
-			return None
-
-		return {item["metric"]["name"]: int(item["value"][1]) for item in metric_data}
-
 
 class DatabaseInvestigationActions:
 	def __init__(
@@ -453,20 +426,41 @@ class AppServerInvestigationActions:
 		step.save()
 
 	def get_oom_kill_events(self, step: "ActionStep"):
-		"""Get OOM kill events data and do something with it"""
+		"""Get OOM kill events data and do something with it start and end time are UTC times!"""
 		step.status = StepStatus.Running
 		step.save()
 
-		oom_kill_data = self.investigator.prometheus_investigation_helper._get_oom_kill_events(
-			instance=self.investigator.server
+		# Mypy won't be happy otherwise
+		assert (
+			self.investigator.investigation_window_start_time
+			and self.investigator.investigation_window_end_time
+		), "Investigation window not set"
+
+		earlyoom_logs = (
+			Agent(self.investigator.server)
+			.get_earlyoom_logs(
+				start_time=get_utc_time(
+					frappe.utils.add_to_date(
+						self.investigator.investigation_window_start_time, minutes=-INVESTIGATION_WINDOW * 6
+					)
+				).strftime("%Y-%m-%d %H:%M:%S"),
+				end_time=get_utc_time(self.investigator.investigation_window_end_time).strftime(
+					"%Y-%m-%d %H:%M:%S"
+				),
+			)
+			.get("logs")
 		)
 
-		if oom_kill_data is None:
+		if not earlyoom_logs:
 			step.status = StepStatus.Failure
+			step.output = "No earlyoom logs found in the investigation window."
 			step.save()
 			return
 
-		step.output = json.dumps(oom_kill_data, indent=2)
+		for log in earlyoom_logs:
+			if "killing process" in log.get("MESSAGE", ""):
+				step.output += log.get("MESSAGE")
+
 		step.status = StepStatus.Success
 		step.save()
 
