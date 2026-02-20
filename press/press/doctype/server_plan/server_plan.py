@@ -24,6 +24,7 @@ class ServerPlan(Plan):
 		from frappe.types import DF
 
 		allow_unified_server: DF.Check
+		cloud_provider: DF.Link | None
 		cluster: DF.Link | None
 		disk: DF.Int
 		enabled: DF.Check

@@ -24,29 +24,48 @@ export default {
 		partnerAdminLeadsList() {
 			return {
 				doctype: 'Partner Lead',
-				fields: [],
 				columns: [
 					{
 						label: 'Lead Name',
 						fieldname: 'lead_name',
+						width: 0.6,
+						class: 'truncate',
+						format: (value) => {
+							if (!value) return '';
+							return value.length > 30 ? `${value.slice(0, 30)}...` : value;
+						},
 					},
 					{
 						label: 'Organization',
 						fieldname: 'organization_name',
+						width: 0.6,
+						class: 'truncate',
+						format: (value) => {
+							if (!value) return '';
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+						},
 					},
 					{
 						label: 'Source',
 						fieldname: 'lead_source',
+						width: 0.5,
 					},
 					{
 						label: 'Partner',
 						fieldname: 'company_name',
 						width: 0.6,
+						class: 'truncate',
+						format: (value) => {
+							if (!value) return '';
+							return value.length > 30 ? `${value.slice(0, 30)}...` : value;
+						},
 					},
 					{
 						label: 'Status',
 						fieldname: 'status',
 						type: 'Badge',
+						width: 0.4,
+						align: 'center',
 					},
 					{
 						label: 'Lead ID',
@@ -96,9 +115,9 @@ export default {
 					];
 				},
 				orderBy: 'modified desc',
-				onRowClick(row) {
+				onRowClick: (row) => {
 					this.$router.push({
-						name: 'PartnerLeadDetail',
+						name: 'LeadOverview',
 						params: { leadId: row.name },
 					});
 				},
