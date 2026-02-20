@@ -2029,16 +2029,18 @@ def get_trial_plan():
 def get_upload_link(file, parts=1):
 	bucket_name = frappe.db.get_single_value("Press Settings", "remote_uploads_bucket")
 	expiration = frappe.db.get_single_value("Press Settings", "remote_link_expiry") or 3600
+	aws_region = frappe.db.get_single_value("Press Settings", "backup_region")
 	object_name = get_remote_key(file)
 	parts = int(parts)
 
 	s3_client = client(
 		"s3",
+		endpoint_url=f"https://s3.{aws_region}.amazonaws.com", 
 		aws_access_key_id=frappe.db.get_single_value("Press Settings", "remote_access_key_id"),
 		aws_secret_access_key=get_decrypted_password(
 			"Press Settings", "Press Settings", "remote_secret_access_key"
 		),
-		region_name="ap-south-1",
+		region_name=aws_region,
 	)
 	try:
 		# The response contains the presigned URL and required fields
