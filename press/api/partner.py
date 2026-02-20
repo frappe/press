@@ -677,6 +677,7 @@ def get_partner_leads(lead_name=None, status=None, engagement_stage=None, source
 		"Partner Lead",
 		filters,
 		["name", "organization_name", "lead_name", "status", "lead_source", "partner_team"],
+		order_by="modified desc",
 	)
 
 
