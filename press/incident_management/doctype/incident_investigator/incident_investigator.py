@@ -450,6 +450,7 @@ class AppServerInvestigationActions:
 			f"https://{log_server}/elasticsearch", basic_auth=("frappe", password), request_timeout=120
 		)
 
+		instance = frappe.get_value("Server", self.investigator.server, "virtual_machine")
 		start_time = (
 			get_utc_time(
 				frappe.utils.add_to_date(
@@ -470,7 +471,7 @@ class AppServerInvestigationActions:
 				"bool": {
 					"filter": [
 						{"term": {"process.name": "earlyoom"}},
-						{"term": {"host.name": "f119-mumbai.frappe.cloud"}},
+						{"term": {"host.name": instance}},
 						{"range": {"@timestamp": {"gte": start_time, "lte": end_time}}},
 					]
 				}
