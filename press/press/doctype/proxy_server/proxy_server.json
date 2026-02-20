@@ -72,6 +72,7 @@
  ],
  "fields": [
   {
+   "fetch_from": "virtual_machine.public_ip_address",
    "fieldname": "ip",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -467,7 +468,7 @@
   }
  ],
  "links": [],
- "modified": "2026-01-18 16:20:49.521726",
+ "modified": "2026-02-06 16:20:49.521726",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
