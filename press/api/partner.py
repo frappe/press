@@ -662,19 +662,6 @@ def get_partner_customers():
 
 @frappe.whitelist()
 @role_guard.api("partner")
-def get_partner_members(partner):
-	from press.utils.billing import get_frappe_io_connection
-
-	client = get_frappe_io_connection()
-	return client.get_list(
-		"LMS Certificate",
-		filters={"partner": partner},
-		fields=["member_name", "member_email", "course", "version"],
-	)
-
-
-@frappe.whitelist()
-@role_guard.api("partner")
 def get_partner_leads(lead_name=None, status=None, engagement_stage=None, source=None):
 	team = get_current_team()
 	filters = {"partner_team": team}
@@ -690,6 +677,7 @@ def get_partner_leads(lead_name=None, status=None, engagement_stage=None, source
 		"Partner Lead",
 		filters,
 		["name", "organization_name", "lead_name", "status", "lead_source", "partner_team"],
+		order_by="modified desc",
 	)
 
 
@@ -945,7 +933,7 @@ def update_followup_details(id, lead, followup_details):
 def add_new_lead(lead_details):
 	lead_details = frappe._dict(lead_details)
 	team = get_current_team(get_doc=True)
-	if (not team.erpnext_partner and team.partner_status != "Active") or not is_system_user():
+	if not team.erpnext_partner and team.partner_status != "Active":
 		frappe.throw("Only Active Partner team can add new leads.")
 
 	doc = frappe.new_doc("Partner Lead")

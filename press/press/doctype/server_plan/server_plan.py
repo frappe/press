@@ -77,12 +77,22 @@ class ServerPlan(Plan):
 
 
 def sync_machine_availability_status_of_plans():
+	frappe.enqueue(
+		_sync_machine_availability_status_of_plans,
+		timeout=3600,
+		deduplicate=True,
+		job_id="sync_machine_availability_status_of_plans",
+	)
+
+
+def _sync_machine_availability_status_of_plans():  # noqa
 	plans = frappe.get_all(
 		"Server Plan",
-		filters={"ignore_machine_availability_sync": 0},
+		filters={"ignore_machine_availability_sync": 0, "enabled": 1},
 		fields=["name", "cluster", "machine_unavailable", "instance_type"],
 	)
 	cluster_doc_map: dict[str, Cluster] = {}
+	cluster_plans: dict[str, list[dict]] = {}
 
 	for plan in plans:
 		if has_job_timeout_exceeded():
@@ -94,10 +104,30 @@ def sync_machine_availability_status_of_plans():
 		if plan.cluster not in cluster_doc_map:
 			cluster_doc_map[plan.cluster] = frappe.get_doc("Cluster", plan.cluster)
 
+		if plan.cluster not in cluster_plans:
+			cluster_plans[plan.cluster] = []
+		cluster_plans[plan.cluster].append(plan)
+
+	for c in cluster_plans:
+		if has_job_timeout_exceeded():
+			return
+
 		try:
-			is_unavailable = not cluster_doc_map[plan.cluster].check_machine_availability(plan.instance_type)
-			if is_unavailable != plan.machine_unavailable:
-				frappe.db.set_value("Server Plan", plan.name, "machine_unavailable", is_unavailable)
+			cluster: Cluster = cluster_doc_map[c]
+			instance_types = [p["instance_type"] for p in cluster_plans[c]]
+			plan_availability_results = cluster.check_machine_availability(instance_types)
+
+			# Some Cluster implementations may return a boolean instead of a dict.
+			# Normalize to a dict so that the code below can safely use .get(...).
+			if isinstance(plan_availability_results, bool):
+				plan_availability_results = {
+					instance_type: plan_availability_results for instance_type in instance_types
+				}
+			for plan in cluster_plans[c]:
+				is_unavailable = not plan_availability_results.get(plan.instance_type, False)
+				if is_unavailable != plan.machine_unavailable:
+					frappe.db.set_value("Server Plan", plan.name, "machine_unavailable", is_unavailable)
+
 			frappe.db.commit()
 		except Exception:
 			frappe.log_error(
