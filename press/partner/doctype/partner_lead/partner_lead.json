@@ -68,6 +68,8 @@
   "hosting",
   "column_break_rdxj",
   "site_url",
+  "server_name",
+  "team_name",
   "reference_section",
   "crm_deal",
   "passed_date"
@@ -426,12 +428,22 @@
   {
    "fieldname": "column_break_psrb",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "server_name",
+   "fieldtype": "Data",
+   "label": "Server Name"
+  },
+  {
+   "fieldname": "team_name",
+   "fieldtype": "Data",
+   "label": "Team Name"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-09 19:21:42.585693",
+ "modified": "2026-02-19 09:19:48.744420",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Partner Lead",

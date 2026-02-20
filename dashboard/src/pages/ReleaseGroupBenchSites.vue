@@ -225,9 +225,11 @@ export default {
 			if (!this.$resources.benches.data) return [];
 			return this.$resources.benches.data.map((bench) => {
 				let sites = (data || []).filter((site) => site.bench === bench.name);
+				const isLargeDataset = this.$resources.benches.data?.length >= 1000;
 				return {
 					...bench,
-					collapsed: false,
+					// To prevent rendering delays for large servers with many benches and sites
+					collapsed: isLargeDataset,
 					group: bench.name,
 					rows: sites,
 				};

@@ -784,13 +784,8 @@ export default {
 										? '<br><br><div class="p-2 bg-gray-100 rounded border-gray-200">You have to be logged in as a <b>System Manager</b> <em>in your site</em> to download the backup.<div>'
 										: ''
 								}`,
-<<<<<<< HEAD
-								onSuccess() {
-									downloadBackup(backup, file);
-=======
 								onSuccess({ hide }) {
 									downloadBackup(backup, file, hide);
->>>>>>> 1aa1bfc3a (fix(dashboard): pass hide action to downloadbackup to handle async cases)
 								},
 							});
 						}

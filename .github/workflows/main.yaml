@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       changed-python: ${{ steps.changed-python-files.outputs.any_changed }}
+      changed-build: ${{ steps.changed-build-files.outputs.any_changed }}
       changed-json: ${{ steps.changed-json-files.outputs.any_changed }}
       changed-js-vue: ${{ steps.changed-js-vue-files.outputs.any_changed }}
 
@@ -50,6 +51,13 @@ jobs:
         with:
           files: |
             **.py
+
+      - name: Get changed build files
+        id: changed-build-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            pyproject.toml
 
       - name: Get changed json files
         id: changed-json-files
@@ -111,9 +119,9 @@ jobs:
 
   install:
     name: Setup Bench
-    needs: format
     runs-on: ubuntu-latest
-    if: needs.format.outputs.changed-python == 'true' || needs.format.outputs.changed-json == 'true' || needs.format.outputs.changed-js-vue == 'true'
+    needs: format
+    if: needs.format.outputs.changed-python == 'true' || needs.format.outputs.changed-json == 'true' || needs.format.outputs.changed-js-vue == 'true' || needs.format.outputs.changed-build == 'true'
 
     services:
       mariadb:
@@ -146,7 +154,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           check-latest: true
 
       - name: Cache apt
@@ -216,7 +224,7 @@ jobs:
           path: /data/mariadb_data
 
   ui-tests:
-    needs: [format, install]
+    needs: install
     name: Client
     runs-on: ubuntu-latest
     env:
@@ -358,14 +366,14 @@ jobs:
           flags: dashboard
 
   server-tests:
-    needs: [format, install]
+    needs: install
     name: Server
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         container: [1, 2, 3]
-    if: needs.format.outputs.changed-python == 'true' || needs.format.outputs.changed-json == 'true'
+    if: needs.format.outputs.changed-python == 'true' || needs.format.outputs.changed-json == 'true' || needs.format.outputs.changed-build == 'true'
 
     steps:
       - name: Create mariadb data directory

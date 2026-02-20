@@ -60,8 +60,8 @@
 							purposes.
 						</p>
 						<p>
-							Do not install/uninstall apps as you would on a local machine. Use
-							the dashboard instead.
+							The changes(app/files) made during the SSH session are not
+							guaranteed to persist after the session ends.
 						</p>
 					</div>
 				</div>
@@ -94,6 +94,10 @@
 					>
 					for more details.
 				</p>
+				<ErrorMessage
+					class="mt-3"
+					:message="$releaseGroup.generateCertificate.error"
+				/>
 			</div>
 		</template>
 		<template
@@ -117,10 +121,6 @@
 				>Generate SSH Certificate</Button
 			>
 		</template>
-		<ErrorMessage
-			class="mt-3"
-			:message="$releaseGroup.generateCertificate.error"
-		/>
 	</Dialog>
 </template>
 

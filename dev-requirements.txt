@@ -7,3 +7,5 @@ types-requests<2.32
 types-pytz~=2025.2
 types-python-dateutil~=2.9.0
 types-boto3==1.39.14
+setuptools~=81.0
+types-jwt==0.1.3

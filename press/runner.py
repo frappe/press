@@ -378,13 +378,13 @@ class StepHandler:
 		step.output = str(e)
 		step.save()
 
-	def fail(self):
-		self.status = Status.Failure
+	def fail(self, failure_status: str = Status.Failure):
+		self.status = failure_status
 		self.save()
 		frappe.db.commit()
 
-	def succeed(self):
-		self.status = Status.Success
+	def succeed(self, success_status: str = Status.Success):
+		self.status = success_status
 		self.save()
 		frappe.db.commit()
 
@@ -403,8 +403,12 @@ class StepHandler:
 			for method in methods
 		]
 
-	def _get_method(self, method_name: str):
+	def _get_method(self, method_name: str, method_objects: list[object] | None = None):
 		"""Retrieve a method object by name."""
+		method_objects = method_objects or []
+		for method_object in method_objects:
+			if hasattr(method_object, method_name):
+				return getattr(method_object, method_name)
 		return getattr(self, method_name)
 
 	def next_step(self, steps: list[GenericStep]) -> GenericStep | None:
@@ -414,37 +418,50 @@ class StepHandler:
 
 		return None
 
-	def _execute_steps(self, steps: list[GenericStep]):
+	def _execute_steps(
+		self,
+		steps: list[GenericStep],
+		commit: bool = False,
+		start_status: str = Status.Running,
+		success_status: str = Status.Success,
+		failure_status: str = Status.Failure,
+		method_objects: list[object] | None = None,
+	):
 		"""It is now required to be with a `enqueue_doc` else the first step executes in the web worker"""
-		self.status = Status.Running
+		self.status = start_status
 		self.save()
-		frappe.db.commit()
 
 		step = self.next_step(steps)
 		if not step:
-			self.succeed()
+			self.succeed(success_status)
 			return
 
 		# Run a single step in this job
 		step = step.reload()
-		method = self._get_method(step.method_name)
+		method = self._get_method(method_objects=method_objects, method_name=step.method_name)
 
 		try:
 			method(step)
-			frappe.db.commit()
 		except Exception:
 			self.reload()
-			self.fail()
+			self.fail(failure_status)
 			self.handle_step_failure()
-			frappe.db.commit()
 			return
+
+		if commit:
+			frappe.db.commit()
 
 		# After step completes, queue the next step
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
 			"_execute_steps",
+			method_objects=method_objects,
 			steps=steps,
+			commit=commit,
+			start_status=start_status,
+			success_status=success_status,
+			failure_status=failure_status,
 			timeout=18000,
 			at_front=True,
 			queue="long",

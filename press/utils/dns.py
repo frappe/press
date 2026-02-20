@@ -158,16 +158,11 @@ def get_dns_provider_link_substr(domain: str):
 	return f" at your DNS provider (hint: {accessible_link_substr(mname) or accessible_link_substr(rname) or rname})"  # likely rname has meaningful link
 
 
-def check_domain_allows_letsencrypt_certs(domain):
-	# Check if domain is allowed to get letsencrypt certificates
-	# This is a security measure to prevent unauthorized certificate issuance
-	from tldextract import extract
-
-	naked_domain = extract(domain).registered_domain
+def throw_for_caa_record(domain):
 	resolver = Resolver(configure=False)
 	resolver.nameservers = NAMESERVERS
 	try:
-		answer = resolver.query(naked_domain, CAA)
+		answer = resolver.query(domain, CAA)
 		for rdata in answer:
 			if "letsencrypt.org" in rdata.to_text():
 				return True
@@ -177,9 +172,20 @@ def check_domain_allows_letsencrypt_certs(domain):
 		pass  # We have other problems
 	else:
 		frappe.throw(
-			f"Domain {naked_domain} does not allow Let's Encrypt certificates. Please update or remove <b>CAA</b> record{get_dns_provider_link_substr(domain)}.",
+			f"Domain {domain} does not allow Let's Encrypt certificates. Please update or remove <b>CAA</b> record{get_dns_provider_link_substr(domain)}.",
 			ConflictingCAARecord,
 		)
+
+
+def check_domain_allows_letsencrypt_certs(domain):
+	# Check if domain is allowed to get letsencrypt certificates
+	# This is a security measure to prevent unauthorized certificate issuance
+	from tldextract import extract
+
+	throw_for_caa_record(domain)
+	naked_domain = extract(domain).registered_domain
+	if naked_domain != domain:
+		throw_for_caa_record(naked_domain)
 
 
 def check_dns_cname(name, domain):
@@ -330,7 +336,7 @@ def _check_dns_cname_a(name, domain, ignore_proxying=False):
 		if ignore_proxying:  # no point checking the rest if proxied
 			return {"CNAME": {}, "A": {}, "matched": True, "type": "A"}  # assume A
 		frappe.throw(
-			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please turn off proxying{get_dns_provider_link_substr(domain)} and try again in some time.
+			f"""Domain <b>{domain}</b> appears to be proxied (server: <b>{proxy}</b>). Please <a class='underline' href="https://docs.frappe.io/cloud/sites/custom-domains#dns-verification-failed-even-after-adding-dns-record-on-cloudflare">turn off proxying</a>{get_dns_provider_link_substr(domain)} and try again in some time.
 			<br>You may enable it once the domain is verified.""",
 			DomainProxied,
 		)

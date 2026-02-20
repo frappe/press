@@ -11,6 +11,7 @@ from frappe.client import set_value as _set_value
 from frappe.handler import run_doc_method as _run_doc_method
 from frappe.model import child_table_fields, default_fields
 from frappe.model.base_document import get_controller
+from frappe.query_builder.terms import ValueWrapper
 from frappe.utils import cstr
 from pypika.queries import QueryBuilder
 
@@ -18,6 +19,7 @@ from press.access import dashboard_access_rules
 from press.access.support_access import has_support_access
 from press.exceptions import TeamHeaderNotInRequestError
 from press.guards import role_guard
+from press.guards.role_guard.document import has_user_permission
 from press.utils import has_role
 
 if typing.TYPE_CHECKING:
@@ -44,7 +46,6 @@ ALLOWED_DOCTYPES = [
 	"Release Group App",
 	"Release Group Dependency",
 	"Cluster",
-	"Press Permission Group",
 	"Press Role",
 	"Team",
 	"Product Trial Request",
@@ -162,12 +163,6 @@ def get_list(
 	return []
 
 
-@role_guard.document(
-	document_type=lambda args: str(args.get("doctype")),
-	should_throw=False,
-	inject_values=True,
-	injection_key="document_options",
-)
 def get_list_query(
 	doctype: str,
 	meta: "Meta",
@@ -177,7 +172,6 @@ def get_list_query(
 	start: int,
 	limit: int,
 	order_by: str | None,
-	document_options=None,
 ):
 	query = frappe.qb.get_query(
 		doctype,
@@ -198,9 +192,14 @@ def get_list_query(
 			.where(ParentDocType.team == frappe.local.team().name)
 		)
 
-	if document_options and isinstance(document_options, list):
-		QueryDoctype = frappe.qb.DocType(doctype)
-		query = query.where(QueryDoctype.name.isin(document_options))
+	restricted_doctypes = ("Site", "Release Group", "Server")
+	if doctype in restricted_doctypes and role_guard.is_restricted() and not has_user_permission(doctype):
+		permitted_documents = role_guard.permitted_documents(doctype)
+		if not permitted_documents:
+			query = query.where(ValueWrapper(1) == 0)  # Hack!
+		else:
+			QueryDoctype = frappe.qb.DocType(doctype)
+			query = query.where(QueryDoctype.name.isin(permitted_documents))
 
 	return query
 

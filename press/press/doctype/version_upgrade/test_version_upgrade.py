@@ -14,7 +14,10 @@ from press.press.doctype.release_group.test_release_group import (
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_update.test_site_update import create_test_site_update
-from press.press.doctype.version_upgrade.version_upgrade import VersionUpgrade
+from press.press.doctype.version_upgrade.version_upgrade import (
+	VersionUpgrade,
+	run_scheduled_upgrades,
+)
 
 
 def create_test_version_upgrade(site: str, destination_group: str) -> VersionUpgrade:
@@ -77,3 +80,36 @@ class TestVersionUpgrade(FrappeTestCase):
 		version_upgrade.start()  # simulate scheduled one. User will be admin
 		site_updates_after = frappe.db.count("Site Update", {"site": site.name})
 		self.assertEqual(site_updates_before + 1, site_updates_after)
+
+	def test_run_scheduled_upgrades_cancels_upgrade_when_site_is_archived(self):
+		"""Test that scheduled upgrades are cancelled when site is archived and start() is not called."""
+		server = create_test_server()
+		app1 = create_test_app()  # frappe
+
+		group1 = create_test_release_group([app1])
+		group2 = create_test_release_group([app1])
+
+		source_bench = create_test_bench(group=group1, server=server.name)
+		create_test_bench(group=group2, server=server.name)
+
+		site = create_test_site(bench=source_bench.name)
+
+		group2.append("servers", {"server": server.name})
+		group2.save()
+
+		# Create a scheduled upgrade
+		version_upgrade = create_test_version_upgrade(site.name, group2.name)
+		version_upgrade.status = "Scheduled"
+		version_upgrade.scheduled_time = frappe.utils.now()
+		version_upgrade.save()
+
+		site.status = "Archived"
+		site.save()
+
+		run_scheduled_upgrades()
+
+		# Verify the upgrade was cancelled
+		updated_upgrade = frappe.get_doc("Version Upgrade", version_upgrade.name)
+		self.assertEqual(updated_upgrade.status, "Cancelled")
+		# Verify start() was not called by checking that no site_update was created
+		self.assertIsNone(updated_upgrade.site_update)

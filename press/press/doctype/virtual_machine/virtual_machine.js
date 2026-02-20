@@ -115,7 +115,7 @@ frappe.ui.form.on('Virtual Machine', {
 				__('Resize'),
 				'resize',
 				frm.doc.status == 'Stopped' ||
-					(frm.doc.cloud_provider == 'OCI' && frm.doc.status != 'Draft'),
+				(frm.doc.cloud_provider == 'OCI' && frm.doc.status != 'Draft'),
 			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
@@ -380,6 +380,10 @@ frappe.ui.form.on('Virtual Machine', {
 });
 
 frappe.ui.form.on('Virtual Machine Volume', {
+	toggle_rightsize(frm, cdt, cdn) {
+		frappe.model.set_value(cdt, cdn, 'skip_rightsize', !frm.selected_doc.skip_rightsize);
+		frm.save();
+	},
 	detach(frm, cdt, cdn) {
 		let row = frm.selected_doc;
 		frappe.confirm(

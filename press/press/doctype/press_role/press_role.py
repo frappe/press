@@ -30,6 +30,9 @@ class PressRole(Document):
 		from press.press.doctype.press_role_user.press_role_user import PressRoleUser
 
 		admin_access: DF.Check
+		all_release_groups: DF.Check
+		all_servers: DF.Check
+		all_sites: DF.Check
 		allow_apps: DF.Check
 		allow_bench_creation: DF.Check
 		allow_billing: DF.Check
@@ -49,6 +52,9 @@ class PressRole(Document):
 
 	dashboard_fields = (
 		"admin_access",
+		"all_servers",
+		"all_sites",
+		"all_release_groups",
 		"allow_apps",
 		"allow_bench_creation",
 		"allow_billing",
@@ -119,7 +125,7 @@ class PressRole(Document):
 			self.remove_press_admin_role(user)
 
 	@dashboard_whitelist()
-	@team_guard.only_admin(skip=lambda _, args: args.get("skip_validations", False))
+	@team_guard.only_admin()
 	def add_resource(self, resources: list[dict[str, str]]):
 		for resource in resources:
 			document_type = resource["document_type"]

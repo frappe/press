@@ -12,20 +12,15 @@
 					<b>{{ nextVersion }}</b>
 				</p>
 
-				<!-- Private bench upgrade flow -->
-				<template v-else-if="!$site.doc?.group_public && nextVersion">
+				<!-- Private bench upgrade -->
+				<div v-else-if="!$site.doc?.group_public && nextVersion">
 					<!-- If existing compatible bench found  -->
-					<template
-						v-if="upgradeStep === 'ready_to_upgrade' && existingBenchGroup"
-					>
-						<div class="rounded-lg bg-green-50 p-3 mb-4">
-							<div class="text-sm font-medium text-green-800">
-								✓ Compatible bench found
-							</div>
-							<p class="text-sm text-green-700 mt-1">
-								Your site will be moved to
-								<b>{{ existingBenchGroupTitle }}</b> for
-								<b>{{ nextVersion }}</b>
+					<div v-if="upgradeStep === 'ready_to_upgrade' && existingBenchGroup">
+						<div class="mb-4 text-base">
+							<p>
+								The site <b>{{ $site.doc.host_name }}</b> will be moved to
+								<b>{{ existingBenchGroupTitle }}</b> bench group for upgrade to
+								{{ nextVersion }}.
 							</p>
 						</div>
 						<div class="mt-4">
@@ -45,7 +40,7 @@
 							v-model="skipBackups"
 							class="ml-4"
 						/>
-					</template>
+					</div>
 
 					<AlertBanner
 						v-else-if="
@@ -56,20 +51,18 @@
 						type="error"
 					/>
 
-					<template
+					<div
 						v-else-if="
 							upgradeStep === 'ready_to_upgrade' && appCompatibility.can_upgrade
 						"
 					>
 						<div
 							v-if="appCompatibility.custom_apps.length === 0"
-							class="rounded-lg bg-green-50 p-3 mb-4"
+							class="mb-4 text-base"
 						>
-							<div class="text-sm font-medium text-green-800">
-								✓ Migration is possible
-							</div>
-							<p class="text-sm text-green-700 mt-1">
-								All apps are compatible with {{ nextVersion }}
+							<p>
+								The site <b>{{ $site.doc.host_name }}</b> will be moved to a new
+								<b>{{ nextVersion }}</b> bench group for upgrade.
 							</p>
 						</div>
 						<div
@@ -156,17 +149,14 @@
 							v-model="skipBackups"
 							class="ml-4"
 						/>
-					</template>
-				</template>
-
-				<div
-					v-if="skipBackups"
-					class="flex items-center rounded bg-gray-50 p-4 text-sm text-gray-700"
-				>
-					<lucide-info class="mr-2 h-4 w-8" />
-					Backups will not be taken during the upgrade process and in case of
-					any failure rollback will not be possible.
+					</div>
 				</div>
+				<AlertBanner
+					v-if="skipBackups"
+					title="Backups will not be taken during the upgrade process and in case of
+					any failure rollback will not be possible."
+					type="warning"
+				></AlertBanner>
 				<p v-if="message && !errorMessage" class="text-sm text-gray-700">
 					{{ message }}
 				</p>
@@ -192,6 +182,7 @@
 					existingBenchGroup
 				"
 				class="w-full"
+				:class="skipBackups ? 'text-white bg-red-600 hover:bg-red-700' : ''"
 				variant="solid"
 				:label="targetDateTime ? 'Schedule Upgrade' : 'Upgrade Now'"
 				:loading="$resources.versionUpgrade.loading"
@@ -206,6 +197,7 @@
 					!appCompatibility.can_upgrade
 				"
 				class="w-full"
+				:class="skipBackups ? 'text-white bg-red-600 hover:bg-red-700' : ''"
 				variant="subtle"
 				:label="targetDateTime ? 'Schedule Upgrade' : 'Upgrade Now'"
 				@click="show = false"
@@ -219,6 +211,7 @@
 					appCompatibility.can_upgrade
 				"
 				class="w-full"
+				:class="skipBackups ? 'text-white bg-red-600 hover:bg-red-700' : ''"
 				variant="solid"
 				:label="
 					targetDateTime
