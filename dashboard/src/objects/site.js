@@ -797,11 +797,11 @@ export default {
 									{ backup: backup.name, file },
 									{
 										onSuccess(r) {
+											hide();
 											// TODO: fix this in documentResource, it should return message directly
 											if (r.message) {
 												window.open(r.message);
 											}
-											hide();
 										},
 									},
 								);
@@ -816,8 +816,8 @@ export default {
 									domainRegex,
 									`$1${site.doc.host_name}/`,
 								);
-								window.open(newUrl);
 								hide();
+								window.open(newUrl);
 							}
 						}
 
@@ -1213,9 +1213,9 @@ export default {
 				condition: (site) => {
 					return site.doc?.status !== 'Archived';
 				},
-				component: SiteActions,
-				props: (site) => {
-					return { site: site.doc?.name };
+component: SiteActions,
+props: (site) => {
+return { site: site.doc?.name };
 				},
 			},
 			{
