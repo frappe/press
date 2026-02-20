@@ -194,7 +194,10 @@ class StackedGroupByChart:
 
 	def setup_search_aggs(self):
 		if not self.group_by_field:
-			frappe.throw("Group by field not set")
+			frappe.throw(
+				"Group by field is not set. Please specify a field to group by. "
+				'<a href="https://docs.frappe.io/framework/user/en/api/database" target="_blank">Learn more</a>'
+			)
 		if AggType(self.agg_type) is AggType.COUNT:
 			self.search.aggs.bucket(
 				"method_path",
@@ -425,7 +428,10 @@ class NginxRequestGroupByChart(StackedGroupByChart):
 				)
 			)
 		):
-			frappe.throw("Monitor server not set in Press Settings")
+			frappe.throw(
+				"Monitor server is not set in Press Settings. Configure your log server to enable analytics. "
+				'<a href="https://docs.frappe.io/cloud/sites/monitoring" target="_blank">Learn more</a>'
+			)
 		self.search = self.search.exclude("match_phrase", source__ip=monitor_ip)
 		if ResourceType(self.resource_type) is ResourceType.SITE:
 			server = frappe.db.get_value("Site", self.name, "server")
@@ -558,12 +564,18 @@ def get_metrics(
 	duration: str = "24h",
 ):
 	if not name:
-		frappe.throw("No release group found!")
+		frappe.throw(
+			"No release group found. Please ensure the release group exists and is active. "
+			'<a href="https://docs.frappe.io/cloud/benches/create-new" target="_blank">Learn more</a>'
+		)
 
 	benches = frappe.get_all("Bench", {"status": "Active", "group": name}, pluck="name")
 
 	if not benches:
-		frappe.throw("No active benches found!")
+		frappe.throw(
+			"No active benches found. Please activate a bench before proceeding. "
+			'<a href="https://docs.frappe.io/cloud/benches/updating_a_bench" target="_blank">Learn more</a>'
+		)
 
 	benches = "|".join(benches)
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
@@ -573,7 +585,10 @@ def get_metrics(
 		datasets, labels = _get_cadvisor_data(promql_query, timezone, timespan, timegrain)
 		return {response_key: {"datasets": datasets, "labels": labels}}
 	except ValueError:
-		frappe.throw("Unable to fetch metrics")
+		frappe.throw(
+			"Unable to fetch metrics. Check your configuration and try again. "
+			'<a href="https://docs.frappe.io/cloud/sites/monitoring" target="_blank">Learn more</a>'
+		)
 
 
 @frappe.whitelist()
@@ -1557,7 +1572,10 @@ def mariadb_add_suggested_index(name, table, column):
 		},
 	)
 	if record_exists:
-		frappe.throw("There is already a pending job for Add Database Index. Please wait until finished.")
+		frappe.throw(
+			"There is already a pending job for Add Database Index. Please wait for it to finish before starting a new one. "
+			'<a href="https://docs.frappe.io/cloud/performance-tuning" target="_blank">Learn more</a>'
+		)
 	doctype = get_doctype_name(table)
 	site = frappe.get_cached_doc("Site", name)
 	agent = Agent(site.server)
