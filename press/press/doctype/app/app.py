@@ -3,11 +3,13 @@
 
 
 import typing
+from collections.abc import Iterator
 
 import frappe
 import rq
 import semantic_version as sv
 from frappe.model.document import Document
+from semantic_version.base import AllOf, AnyOf
 
 from press.utils.jobs import has_job_timeout_exceeded
 
@@ -52,7 +54,7 @@ class App(Document):
 		repository_owner=None,
 	) -> "AppSource":
 		# Ensure no .git suffix when looking for existing sources
-		supported_frappe_versions = parse_frappe_version(frappe_version)
+		supported_frappe_versions = parse_frappe_version(frappe_version, self.title)
 		repository_url = repository_url.removesuffix(".git")
 		existing_source = frappe.get_all(
 			"App Source",
@@ -121,24 +123,63 @@ def is_bounded(spec: sv.NpmSpec) -> bool:
 	has_upper_bound = "<" in standardized
 	has_lower_bound = ">" in standardized
 
-	if "==" in standardized or (">" not in standardized and "<" not in standardized):
-		return True
-
 	return has_upper_bound and has_lower_bound
 
 
-def map_frappe_version(version_string: str, frappe_versions: list[dict[str, int | str]]) -> list[str]:
+def _iter_clause_tree(spec: sv.NpmSpec | AllOf | AnyOf) -> Iterator:
+	if hasattr(spec, "operator"):
+		yield spec
+
+	elif hasattr(spec, "clause"):
+		yield from _iter_clause_tree(spec.clause)
+
+	elif hasattr(spec, "clauses"):
+		for clause in spec.clauses:
+			yield from _iter_clause_tree(clause)
+
+
+def get_lower_bound_major(spec: sv.NpmSpec) -> int | None:
+	"""Fetch lower bound major version from the spec take into account multiple lower bounds"""
+	lowers = [
+		c.target
+		for c in _iter_clause_tree(spec)
+		if getattr(c, "operator", None) in (">", ">=") and getattr(c, "target", None) is not None
+	]
+	uppers = [
+		c.target
+		for c in _iter_clause_tree(spec)
+		if getattr(c, "operator", None) in ("<", "<=") and getattr(c, "target", None) is not None
+	]
+
+	if max(uppers).major == min(lowers).major or max(uppers).major < min(lowers).major:
+		frappe.throw(
+			f"Invalid version range: The upper bound major version ({max(uppers).major}) "
+			f"and the lower bound major version ({min(lowers).major}) are either the same or inconsistent. "
+			"Please ensure the version range specifies distinct and valid major versions.",
+		)
+
+	return min(lowers).major
+
+
+def map_frappe_version(
+	version_string: str,
+	frappe_versions: list[dict[str, int | str]],
+	app_title: str,
+	ease_versioning_constrains: bool = False,
+) -> list[str]:
 	"""Map a version spec to supported Frappe versions."""
 	matched = []
 	try:
 		version_string = version_string.replace(" ", "").replace(",", " ")
 		spec = sv.NpmSpec(version_string)
 	except ValueError:
-		frappe.throw("Invalid version format. Please use NPM-style semver ranges (e.g. '>=15.0.0 <16.0.0').")
+		frappe.throw(
+			f"Invalid version format for app '{app_title}'. Please use NPM-style semver ranges (e.g. '>=15.0.0 <16.0.0')."
+		)
 
 	if not is_bounded(spec):
 		frappe.throw(
-			"Version range must be bounded. "
+			f"Version range must be bounded for app '{app_title}'. "
 			"Please provide both a lower and an upper bound "
 			"(e.g. '>=15.0.0 <16.0.0')."
 		)
@@ -154,6 +195,12 @@ def map_frappe_version(version_string: str, frappe_versions: list[dict[str, int 
 		if spec.match(supported_version):
 			matched.append(str(version["name"]))
 
+		if ease_versioning_constrains:
+			# Get major version of the lower bound
+			lower_bound_major = get_lower_bound_major(spec)
+			if lower_bound_major == version["number"] and str(version["name"]) not in matched:
+				matched.append(str(version["name"]))
+
 	# Check if the spec can support more than the highest stable version
 	if (
 		spec.match(highest_supported_stable_version.next_patch())
@@ -165,7 +212,9 @@ def map_frappe_version(version_string: str, frappe_versions: list[dict[str, int 
 	return matched
 
 
-def parse_frappe_version(version_string: str) -> set[str]:
+def parse_frappe_version(
+	version_string: str, app_title: str, ease_versioning_constrains: bool = False
+) -> set[str]:
 	"""Parse the Frappe version from a version string."""
 	frappe_versions = frappe.get_all(
 		"Frappe Version",
@@ -186,4 +235,4 @@ def parse_frappe_version(version_string: str) -> set[str]:
 	]:
 		return set([version_string] if isinstance(version_string, str) else version_string)
 
-	return set(map_frappe_version(version_string, frappe_versions))
+	return set(map_frappe_version(version_string, frappe_versions, app_title, ease_versioning_constrains))

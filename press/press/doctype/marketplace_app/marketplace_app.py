@@ -693,8 +693,11 @@ def validate_frappe_version_for_branch(
 	branch: str,
 	version: str,
 	github_installation_id: str | None = None,
+	ease_versioning_constrains: bool = False,
 ):
-	"""Check if the version being added is supported by the branch comparing the frappe versions in pyproject.toml"""
+	"""Check if the version being added is supported by the branch comparing the frappe versions in pyproject.toml
+	Only check for lower bounds major version compatibility in case `ease_versioning_constrains` is set to True
+	"""
 	app_info = app(
 		owner=owner,
 		repository=repository,
@@ -704,7 +707,7 @@ def validate_frappe_version_for_branch(
 		else frappe.get_value("Press Settings", None, "github_access_token"),
 	)
 	frappe_version = app_info.get("frappe_version")
-	frappe_version = parse_frappe_version(frappe_version)
+	frappe_version = parse_frappe_version(frappe_version, app_info.get("title"), ease_versioning_constrains)
 	if version not in frappe_version:
 		frappe.throw(f"{version} is not supported by branch {branch} for app {app_name}", VersioningError)
 

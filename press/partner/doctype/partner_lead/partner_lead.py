@@ -85,9 +85,11 @@ class PartnerLead(Document):
 		require_deal_assistance: DF.Check
 		requirement: DF.Text | None
 		requirements: DF.SmallText | None
+		server_name: DF.Data | None
 		site_url: DF.Data | None
 		state: DF.Data | None
 		status: DF.Literal["Open", "In Process", "Won", "Lost", "Junk", "Pass to Other Partner"]
+		team_name: DF.Data | None
 		territory: DF.Data | None
 	# end: auto-generated types
 
@@ -122,14 +124,20 @@ class PartnerLead(Document):
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
 		PartnerLead = frappe.qb.DocType("Partner Lead")
-		query = frappe.qb.from_(PartnerLead).select(
-			PartnerLead.name,
-			PartnerLead.organization_name,
-			PartnerLead.status,
-			PartnerLead.engagement_stage,
-			PartnerLead.lead_source,
-			PartnerLead.lead_name,
-			PartnerLead.company_name,
+		query = (
+			frappe.qb.from_(PartnerLead)
+			.select(
+				PartnerLead.name,
+				PartnerLead.organization_name,
+				PartnerLead.status,
+				PartnerLead.engagement_stage,
+				PartnerLead.lead_source,
+				PartnerLead.lead_name,
+				PartnerLead.company_name,
+			)
+			.limit(list_args["limit"])
+			.offset(list_args["start"])
+			.orderby(PartnerLead.modified, order=frappe.qb.desc)
 		)
 
 		if filters:
@@ -139,6 +147,8 @@ class PartnerLead(Document):
 				query = query.where(PartnerLead.status == filters.get("status"))
 			if filters.get("origin"):
 				query = query.where(PartnerLead.origin == filters.get("origin"))
+			if filters.get("engagement_stage"):
+				query = query.where(PartnerLead.engagement_stage == filters.get("engagement_stage"))
 			if filters.get("search-text"):
 				search_text = f"%{filters.get('search-text')}%"
 				query = query.where(

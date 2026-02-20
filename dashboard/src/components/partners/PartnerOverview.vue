@@ -64,7 +64,7 @@
 					<div class="flex-1">
 						<div class="flex items-center justify-between">
 							<div class="text-sm text-gray-600">Certified Members</div>
-							<Button label="View" @click="showPartnerMembersDialog = true" />
+							<Button label="View" @click="routeToCertification()" />
 						</div>
 						<div class="flex items-center">
 							<div class="text-xl font-semibold py-2">
@@ -144,16 +144,6 @@
 		</Dialog>
 
 		<Dialog
-			:show="showPartnerMembersDialog"
-			v-model="showPartnerMembersDialog"
-			:options="{ size: '3xl', title: 'Certified Members' }"
-		>
-			<template #body-content>
-				<PartnerMembers :partnerName="partnerDetails.data?.name" />
-			</template>
-		</Dialog>
-
-		<Dialog
 			:show="showRenewalConfirmationDialog"
 			v-model="showRenewalConfirmationDialog"
 			:options="{
@@ -203,14 +193,13 @@ import {
 import PartnerContribution from './PartnerContribution.vue';
 import ClickToCopyField from '../ClickToCopyField.vue';
 import PartnerCreditsForm from './PartnerCreditsForm.vue';
-import PartnerMembers from './PartnerMembers.vue';
 import { toast } from 'vue-sonner';
+import router from '../../router';
 
 const team = inject('team');
 
 const showPartnerContributionDialog = ref(false);
 const showPartnerCreditsDialog = ref(false);
-const showPartnerMembersDialog = ref(false);
 const showRenewalConfirmationDialog = ref(false);
 
 const partnerDetails = createResource({
@@ -232,6 +221,10 @@ const partnerConsent = createListResource({
 		toast.success('Partner consent recorded successfully');
 	},
 });
+
+function routeToCertification() {
+	router.push('/partners/certificates');
+}
 
 const daysUntilRenewal = computed(() => {
 	const today = new Date();

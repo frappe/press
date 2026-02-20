@@ -204,6 +204,7 @@ frappe.ui.form.on('Database Server', {
 				false,
 				frm.doc.is_server_setup,
 			],
+			['Trigger Flush Tables', 'flush_tables', true, frm.doc.is_server_setup],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
