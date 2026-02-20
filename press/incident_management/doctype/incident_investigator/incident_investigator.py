@@ -437,6 +437,13 @@ class AppServerInvestigationActions:
 		), "Investigation window not set"
 
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
+
+		if not log_server:
+			step.status = StepStatus.Failure
+			step.output = "Unable to fetch OOM kill events since log server is not configured"
+			step.save()
+			return
+
 		password = get_decrypted_password("Log Server", log_server, "password")
 
 		es = Elasticsearch(
