@@ -151,9 +151,6 @@ def get_lower_bound_major(spec: sv.NpmSpec) -> int | None:
 		if getattr(c, "operator", None) in ("<", "<=") and getattr(c, "target", None) is not None
 	]
 
-	if not lowers or not uppers:
-		frappe.throw("Invalid version range: Missing lower or upper bounds.")
-
 	# Ensure that there is no overlap or inconsistency between upper and lower bounds
 	if any(upper.major < lower.major for upper in uppers for lower in lowers):
 		frappe.throw(
