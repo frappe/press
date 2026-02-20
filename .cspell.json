@@ -735,6 +735,17 @@
         "botocore",
         "unyank",
         "unyanking",
+<<<<<<< HEAD
         "unyanked"
+=======
+        "unyanked",
+        "shirou",
+        "gopsutil",
+        "SSIZE",
+        "innobase",
+        "FSEG",
+        "XDES",
+        "FLST"
+>>>>>>> 5a7ebfcd7 (fix(mariadb-table-usage): Calculate inodes per page dynamically (#5232))
     ]
 }
