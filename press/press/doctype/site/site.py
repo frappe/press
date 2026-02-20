@@ -171,6 +171,7 @@ class Site(Document, TagHelpers):
 		disable_site_usage_exceed_check: DF.Check
 		domain: DF.Link | None
 		erpnext_consultant: DF.Link | None
+		fatal_site_update: DF.Link | None
 		free: DF.Check
 		group: DF.Link
 		hide_config: DF.Check
@@ -262,6 +263,7 @@ class Site(Document, TagHelpers):
 		"is_monitoring_disabled",
 		"reason_for_disabling_monitoring",
 		"creation_failed",
+		"fatal_site_update",
 	)
 
 	@staticmethod
@@ -1257,6 +1259,12 @@ class Site(Document, TagHelpers):
 		self.status_before_update = self.status
 		self.status = "Pending"
 		self.save()
+
+	def check_fatal_site_update(self):
+		if self.fatal_site_update:
+			frappe.throw(
+				"Site has encountered a fatal error during last update. Please open a ticket at support.frappe.io with the error details to resolve the issue.",
+			)
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Inactive", "Suspended", "Broken"])
@@ -2670,9 +2678,17 @@ class Site(Document, TagHelpers):
 		log_site_activity(self.name, "Activate Site")
 		if self.status == "Suspended":
 			self.reset_disk_usage_exceeded_status()
+
 		# If site was broken, check if it's responsive before marking it as active
-		self.status = "Broken" if (self.status == "Broken" and not self.is_responsive()) else "Active"
-		self.update_site_config({"maintenance_mode": 0})
+		self.status = (
+			"Broken"
+			if (self.status == "Broken" and not (self.is_responsive() or self.fatal_site_update))
+			else "Active"
+		)
+		# If fatal site update has been detected, do not allow site to be activated until it's resolved by support team
+		if not self.fatal_site_update:
+			self.update_site_config({"maintenance_mode": 0})
+
 		self.update_site_status_on_proxy("activated")
 		self.reactivate_app_subscriptions()
 
