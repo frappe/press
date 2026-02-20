@@ -74,14 +74,6 @@ class SupportAccess(Document):
 				conditions.append(Access.requested_team == team)
 		return query.where(Criterion.any(conditions)).run(as_dict=True)
 
-	def has_permission(self, permtype="read", *, debug=False, user=None) -> bool:
-		permission = super().has_permission(permtype, debug=debug, user=user)
-		if permtype == "read":
-			if permission and (get_current_team() in (self.requested_team, self.target_team)):
-				return True
-			return False
-		return permission
-
 	@property
 	def access_expired(self):
 		return bool(
@@ -311,3 +303,9 @@ class SupportAccess(Document):
 				"team": self.target_team,
 			},
 		)
+
+
+def has_permission(doc, user=None, permission_type=None) -> bool:
+	if get_current_team() in (doc.requested_team, doc.target_team):
+		return True
+	return False
