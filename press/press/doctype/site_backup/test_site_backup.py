@@ -314,10 +314,7 @@ class TestSiteBackup(FrappeTestCase):
 		_create_site_backup_from_agent_job(archive_job)
 
 		# verify Site Backup record creation
-		site_backups = frappe.get_all("Site Backup", {"job": archive_job.name})
-		self.assertEqual(len(site_backups), 1)
-
-		site_backup = frappe.get_doc("Site Backup", site_backups[0].name)
+		site_backup = frappe.get_doc("Site Backup", {"job": archive_job.name})
 
 		self.assertEqual(site_backup.status, "Success")
 		self.assertEqual(site_backup.files_availability, "Available")
