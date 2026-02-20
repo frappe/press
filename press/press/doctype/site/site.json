@@ -13,6 +13,7 @@
   "server",
   "archive_failed",
   "creation_failed",
+  "fatal_site_update",
   "column_break_3",
   "bench",
   "group",
@@ -742,6 +743,21 @@
    "fieldtype": "Datetime",
    "label": "Creation Failed",
    "read_only": 1
+<<<<<<< HEAD
+=======
+  },
+  {
+   "default": "18000",
+   "fieldname": "backup_timeout",
+   "fieldtype": "Int",
+   "label": "Backup Timeout"
+  },
+  {
+   "fieldname": "fatal_site_update",
+   "fieldtype": "Link",
+   "label": "Fatal Site Update",
+   "options": "Site Update"
+>>>>>>> 12ebb22dc (feat(site-update): Dont allow update/migration with fatal site update (#5031))
   }
  ],
  "links": [
@@ -821,7 +837,11 @@
    "link_fieldname": "site"
   }
  ],
+<<<<<<< HEAD
  "modified": "2025-12-12 22:26:41.654346",
+=======
+ "modified": "2026-02-09 16:05:29.084553",
+>>>>>>> 12ebb22dc (feat(site-update): Dont allow update/migration with fatal site update (#5031))
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
