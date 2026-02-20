@@ -132,7 +132,7 @@ class VersionUpgrade(Document):
 			site_update_status, site_update_job = frappe.db.get_value(
 				"Site Update", self.site_update, ["status", "update_job"]
 			)
-			if site_update_status in ["Failure", "Recovered", "Fatal"]:
+			if site_update_status in ["Failure", "Recovered", "Recovering", "Fatal", "Cancelled"]:
 				self.status = "Failure"
 				self.send_version_upgrade_failure_email(agent_job=site_update_job)
 			else:
@@ -235,7 +235,9 @@ def update_from_site_update():
 	for version_upgrade in ongoing_version_upgrades:
 		try:
 			site_update = version_upgrade.get("site_update")
-			if not site_update or not frappe.db.exists("Site Update", site_update):
+			if not site_update:
+				continue
+			if not frappe.db.exists("Site Update", site_update):
 				continue
 			site_update_status, site_update_job = frappe.db.get_value(
 				"Site Update",
@@ -243,7 +245,7 @@ def update_from_site_update():
 				["status", "update_job"],
 			)
 			version_upgrade.status = site_update_status
-			if site_update_status in ["Failure", "Recovered", "Fatal"]:
+			if site_update_status in ["Failure", "Recovered", "Fatal", "Recovering"]:
 				version_upgrade.status = "Failure"
 				version_upgrade.send_version_upgrade_failure_email(agent_job=site_update_job)
 			version_upgrade.save()
