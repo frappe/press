@@ -812,7 +812,9 @@ def update_lead_status(lead_name, status, **kwargs):  # noqa: C901
 	if not is_lead_team(lead_name):
 		frappe.throw("You are not allowed to update this lead")
 
+	doc = frappe.get_doc("Partner Lead", lead_name)
 	status_dict = {"status": status}
+
 	if status == "In Process":
 		status_dict.update(
 			{
@@ -874,8 +876,21 @@ def update_lead_status(lead_name, status, **kwargs):  # noqa: C901
 				"lost_reason_specify": kwargs.get("other_reason"),
 			}
 		)
+	elif status == "Passed to Other Partner":
+		status_dict = {}
+		status_dict.update(
+			{
+				"partner_team": "",
+				"company_name": "",
+				"partner_email": "",
+				"partner_manager": "",
+				"status": "Open",
+			}
+		)
 
-	frappe.db.set_value("Partner Lead", lead_name, status_dict)
+	doc.update(status_dict)
+	doc.save(ignore_permissions=True)
+	doc.reload()
 
 
 @frappe.whitelist()
