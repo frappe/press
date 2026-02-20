@@ -600,14 +600,15 @@ def _create_site_backup_from_agent_job(job: "AgentJob"):
 
 		if (job.job_type not in ["Archive Site", "Uninstall App from Site"]) or not job.data:
 			return
-		if not _check_backup_steps_status(job.name):
-			return
 
 		job_data = json.loads(job.data)
 		backup_data = job_data.get("backups", {})
 		offsite_backup_data = job_data.get("offsite", {})
 
 		if not backup_data or not offsite_backup_data:
+			return
+
+		if not _check_backup_steps_status(job.name):
 			return
 
 		(
