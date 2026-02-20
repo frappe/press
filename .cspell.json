@@ -735,6 +735,11 @@
         "unyanking",
         "unyanked",
         "shirou",
-        "gopsutil"
+        "gopsutil",
+        "SSIZE",
+        "innobase",
+        "FSEG",
+        "XDES",
+        "FLST"
     ]
 }
