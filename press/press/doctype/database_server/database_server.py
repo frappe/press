@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import subprocess
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -354,6 +355,14 @@ class DatabaseServer(BaseServer):
 				"button_label": "View",
 				"condition": self.status == "Active",
 				"doc_method": "get_binlogs_info",
+				"group": f"{server_type.title()} Actions",
+			},
+			{
+				"action": "Forcefully Purge Binlogs",
+				"description": "Use this in case of disk full issues",
+				"button_label": "Purge",
+				"condition": self.status == "Active",
+				"doc_method": "purge_binlogs_forcefully",
 				"group": f"{server_type.title()} Actions",
 			},
 			{
@@ -1814,6 +1823,75 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		except Exception as e:
 			frappe.throw(f"Failed to purge binlogs. Please try again later. {e!s}")
 			raise e
+
+	@dashboard_whitelist()
+	def purge_binlogs_forcefully(self, no_of_binlogs: int):
+		if self.is_part_of_replica:
+			frappe.throw("The server has replication setup. Binlogs cannot be purged forcefully.")
+
+		if not no_of_binlogs or not isinstance(no_of_binlogs, int) or no_of_binlogs < 0:
+			frappe.throw("No of Binlogs are invalid")
+
+		script = f"""
+#!/usr/bin/env bash
+set -e
+
+BINLOG_DIR="/var/lib/mysql"
+INDEX_FILE="$BINLOG_DIR/mysql-bin.index"
+DELETE_N="${1:-0}"
+
+[ "$DELETE_N" -eq 0 ] && exit 0
+
+# List only actual binlog files (exclude index!)
+BINLOGS=$(ls "$BINLOG_DIR"/mysql-bin.[0-9]* 2>/dev/null | sort -V || true)
+
+TOTAL=$(printf "%s\n" $BINLOGS | wc -l)
+[ "$TOTAL" -eq 0 ] && exit 0
+
+# Cap delete count
+[ "$DELETE_N" -gt "$TOTAL" ] && DELETE_N="$TOTAL"
+
+TO_DELETE=$(printf "%s\n" $BINLOGS | head -n "$DELETE_N")
+
+# Delete binlogs
+rm -f $TO_DELETE
+
+# Fix index if it exists
+if [ -f "$INDEX_FILE" ]; then
+  grep -vF -f <(printf "%s\n" $TO_DELETE) "$INDEX_FILE" > "$INDEX_FILE.tmp"
+  mv "$INDEX_FILE.tmp" "$INDEX_FILE"
+fi
+"""
+
+		is_failed = False
+		try:
+			subprocess.check_output(
+				[
+					"ssh",
+					"-o",
+					"BatchMode=yes",
+					"-o",
+					"StrictHostKeyChecking=no",
+					"-o",
+					"UserKnownHostsFile=/dev/null",
+					"-o",
+					"ConnectTimeout=30",
+					f"root@{self.ip}",
+					"bash",
+					"-s",
+					"--",
+					str(no_of_binlogs),
+				],
+				input=script.encode(),
+				stderr=subprocess.STDOUT,
+				timeout=120,
+			)
+		except Exception:
+			log_error("Failed to purge binlogs on server")
+			is_failed = True
+
+		if is_failed:
+			frappe.throw("Failed to purge binlogs. Reach out to support.frappe.io if the issue persists.")
 
 	def purge_binlogs_by_configured_size_limit(self):
 		if not self.auto_purge_binlog_based_on_size:
