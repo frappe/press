@@ -828,11 +828,7 @@
    "link_fieldname": "site"
   }
  ],
-<<<<<<< HEAD
- "modified": "2025-12-12 22:26:41.654346",
-=======
  "modified": "2026-02-09 16:05:29.084553",
->>>>>>> 12ebb22dc (feat(site-update): Dont allow update/migration with fatal site update (#5031))
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
