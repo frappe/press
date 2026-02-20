@@ -1426,6 +1426,21 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			reference_name=self.server,
 		)
 
+	def database_flush_tables(self):
+		if self.server_type != "Database Server":
+			return NotImplementedError("This method is only supported for Database Server")
+
+		return self.create_agent_job(
+			"Flush Tables",
+			"database/flush-tables",
+			data={
+				"private_ip": frappe.get_value("Database Server", self.server, "private_ip"),
+				"mariadb_root_password": get_decrypted_password(
+					"Database Server", self.server, "mariadb_root_password"
+				),
+			},
+		)
+
 	def fetch_database_variables(self):
 		if self.server_type != "Database Server":
 			return NotImplementedError("Only Database Server supports this method")
