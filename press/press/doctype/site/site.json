@@ -743,21 +743,12 @@
    "fieldtype": "Datetime",
    "label": "Creation Failed",
    "read_only": 1
-<<<<<<< HEAD
-=======
-  },
-  {
-   "default": "18000",
-   "fieldname": "backup_timeout",
-   "fieldtype": "Int",
-   "label": "Backup Timeout"
   },
   {
    "fieldname": "fatal_site_update",
    "fieldtype": "Link",
    "label": "Fatal Site Update",
    "options": "Site Update"
->>>>>>> 12ebb22dc (feat(site-update): Dont allow update/migration with fatal site update (#5031))
   }
  ],
  "links": [
