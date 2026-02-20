@@ -197,7 +197,7 @@ class ProxyFailover(Document, StepHandler):
 		)
 		for domain_name, sites in groupby(sites_domains, lambda x: x["domain"]):
 			domain = frappe.get_doc("Root Domain", domain_name)
-			domain.update_dns_records_for_sites([site.name for site in sites], self.secondary)
+			domain.update_dns_records_for_sites([site.name for site in sites], self.secondary, batch_size=200)
 
 		step.status = Status.Success
 		step.save()
@@ -247,9 +247,16 @@ class ProxyFailover(Document, StepHandler):
 		step.save()
 
 	def forward_undelivered_jobs_to_secondary(self, step):
+		from frappe.utils import add_to_date
+
+		threshold = add_to_date(None, days=-2)
 		frappe.db.set_value(
 			"Agent Job",
-			{"server": self.primary, "status": "Undelivered"},
+			{
+				"server": self.primary,
+				"status": "Undelivered",
+				"creation": (">=", threshold),
+			},  # only last 2 days
 			"server",
 			self.secondary,
 		)

@@ -88,27 +88,49 @@ export default {
 					{
 						label: 'Lead Name',
 						fieldname: 'lead_name',
+						width: 0.6,
+						class: 'truncate',
+						format: (value) => {
+							if (!value) return '';
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+						},
 					},
 					{
 						label: 'Organization',
 						fieldname: 'organization',
+						width: 0.6,
+						class: 'truncate',
+						format: (value) => {
+							if (!value) return '';
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+						},
 					},
 					{
 						label: 'Lead Source',
 						fieldname: 'lead_source',
+						width: 0.5,
 					},
 					{
 						label: 'Status',
 						fieldname: 'status',
 						type: 'Badge',
+						width: 0.4,
+						align: 'center',
 					},
 					{
 						label: 'Lead ID',
 						fieldname: 'name',
+						width: 0.5,
 					},
 					{
 						label: 'Partner',
 						fieldname: 'partner_team',
+						width: 0.6,
+						class: 'truncate',
+						format: (value) => {
+							if (!value) return '';
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+						},
 						condition: () => Boolean(this.$team.doc.is_desk_user),
 					},
 				],
@@ -182,6 +204,7 @@ export default {
 						},
 					};
 				},
+				orderBy: 'modified desc',
 			};
 		},
 		statusTheme() {

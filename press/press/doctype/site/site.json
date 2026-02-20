@@ -13,6 +13,7 @@
   "server",
   "archive_failed",
   "creation_failed",
+  "fatal_site_update",
   "column_break_3",
   "bench",
   "group",
@@ -742,6 +743,12 @@
    "fieldtype": "Datetime",
    "label": "Creation Failed",
    "read_only": 1
+  },
+  {
+   "fieldname": "fatal_site_update",
+   "fieldtype": "Link",
+   "label": "Fatal Site Update",
+   "options": "Site Update"
   }
  ],
  "links": [
@@ -821,7 +828,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2025-12-12 22:26:41.654346",
+ "modified": "2026-02-09 16:05:29.084553",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

@@ -443,15 +443,14 @@ class ProductTrial(Document):
 		return self.get_unique_site_name()
 
 	def get_unique_site_name(self):
-		subdomain = f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}"
 		filters = {
-			"subdomain": subdomain,
+			"subdomain": f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}",
 			"domain": self.domain,
 			"status": ("!=", "Archived"),
 		}
 		while frappe.db.exists("Site", filters):
-			subdomain = f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}"
-		return subdomain
+			filters["subdomain"] = f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}"
+		return filters["subdomain"]
 
 	def get_server_from_cluster(self, cluster):
 		"""Return the server with the least number of standby sites in the cluster"""

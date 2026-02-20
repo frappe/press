@@ -74,6 +74,7 @@
  ],
  "fields": [
   {
+   "fetch_from": "virtual_machine.public_ip_address",
    "fieldname": "ip",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -481,11 +482,7 @@
   }
  ],
  "links": [],
-<<<<<<< HEAD
- "modified": "2026-01-18 16:20:49.521726",
-=======
  "modified": "2026-02-13 18:06:59.344863",
->>>>>>> 0231b4505 (feat(proxy-server): Allow setting memory limits for certain processes (#5046))
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",

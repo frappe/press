@@ -84,6 +84,7 @@ class SiteMigration(Document):
 			frappe.throw(f"Ongoing/Scheduled Site Migration for the site {frappe.bold(self.site)} exists.")
 		site: Site = frappe.get_doc("Site", self.site)
 		site.check_move_scheduled()
+		site.check_fatal_site_update()
 
 	def check_for_existing_domains(self):
 		"""
