@@ -1411,14 +1411,19 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		if self.server_type != "Database Server":
 			return NotImplementedError("This method is only supported for Database Server")
 
+		database_server: DatabaseServer = frappe.get_doc("Database Server", self.server)
+		data_disk_volume = database_server.find_mountpoint_volume(
+			database_server.guess_data_disk_mountpoint()
+		)
+
 		return self.create_agent_job(
 			"Update Database Schema Sizes",
 			"database/update-schema-sizes",
 			data={
-				"private_ip": frappe.get_value("Database Server", self.server, "private_ip"),
-				"mariadb_root_password": get_decrypted_password(
-					"Database Server", self.server, "mariadb_root_password"
-				),
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+				"io_ops_limit": min(int(data_disk_volume.iops * 0.2), 300) if data_disk_volume else 300,
+				"concurrency": 50,
 			},
 			reference_doctype=self.server_type,
 			reference_name=self.server,
