@@ -735,6 +735,8 @@
         "botocore",
         "unyank",
         "unyanking",
-        "unyanked"
+        "unyanked",
+        "shirou",
+        "gopsutil"
     ]
 }

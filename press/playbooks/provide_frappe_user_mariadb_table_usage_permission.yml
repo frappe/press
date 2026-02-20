@@ -1,0 +1,9 @@
+---
+- name: Provide frappe user mariadb_table_usage cli permission
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+
+  roles:
+    - provide_frappe_user_mariadb_table_usage_permission
