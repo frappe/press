@@ -234,7 +234,6 @@ class TestSiteBackup(FrappeTestCase):
 		self.assertTrue(self.site_backup.remote_private_file)
 		self.assertTrue(self.site_backup.remote_config_file)
 
-
 	def test_archiving_site_with_offsite_backup_creates_site_backup_record(self):
 		"""
 		When a site is archived after taking an offsite backup, test if a Site Backup record is created from the 'Archive Site' agent job's response.
