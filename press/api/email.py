@@ -92,7 +92,7 @@ def get_analytics(**data):
 
 	for value in (site, subscription_key):
 		if not value or not isinstance(value, str):
-			frappe.throw("Invalid Request")
+			frappe.throw("Invalid request. Please provide a valid site name and subscription key.")
 
 	return frappe.get_all(
 		"Mail Log",

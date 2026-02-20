@@ -23,12 +23,12 @@ def account_request(
 	frappe.utils.validate_email_address(email, True)
 
 	if not check_subdomain_availability(subdomain):
-		frappe.throw(f"Subdomain {subdomain} is already taken")
+		frappe.throw(f"Subdomain {subdomain} is already taken. Please choose a different subdomain.")
 
 	all_countries = frappe.db.get_all("Country", pluck="name")
 	country = find(all_countries, lambda x: x.lower() == country.lower())
 	if not country:
-		frappe.throw("Country filed should be a valid country name")
+		frappe.throw("Country field must be a valid country name.")
 
 	account_request = frappe.get_doc(
 		{
@@ -158,7 +158,7 @@ def options_for_regional_data(key):
 @frappe.whitelist(allow_guest=True)
 def get_trial_end_date(site):
 	if not site or not isinstance(site, str):
-		frappe.throw("Invalid Site")
+		frappe.throw("Invalid site.")
 
 	return frappe.db.get_value("Site", site, "trial_end_date")
 
@@ -166,7 +166,7 @@ def get_trial_end_date(site):
 @frappe.whitelist(allow_guest=True)
 def send_login_link(site):
 	if not site or not isinstance(site, str) or not frappe.db.exists("Site", site):
-		frappe.throw("Invalid site")
+		frappe.throw("Invalid site.")
 
 	from press.api.account import send_login_link as send_link
 

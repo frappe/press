@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
@@ -25,7 +24,7 @@ def all():
 def create_new_tag(name, doctype, tag):
 	team = get_current_team()
 	if frappe.db.exists("Press Tag", {"tag": tag, "doctype_name": doctype, "team": team}):
-		frappe.throw(f"Tag '{tag}' already exists")
+		frappe.throw(f"Tag '{tag}' already exists. Please choose a different tag name.")
 	tag = frappe.get_doc(
 		{
 			"doctype": "Press Tag",
