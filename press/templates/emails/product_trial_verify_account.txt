@@ -1,0 +1,16 @@
+{% if header_content %}
+{{ header_content | striptags | trim }}
+
+{% else %}
+You're almost done!
+Just one quick step left.
+
+{% endif %}
+Verification Code: {{ otp }}
+{% if link %}
+Verification Link: {{ link }}
+{% endif %}
+
+Team Frappe
+
+This email was sent by Frappe Cloud
