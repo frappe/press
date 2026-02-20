@@ -151,11 +151,11 @@ def get_lower_bound_major(spec: sv.NpmSpec) -> int | None:
 		if getattr(c, "operator", None) in ("<", "<=") and getattr(c, "target", None) is not None
 	]
 
-	if max(uppers).major < min(lowers).major:
+	# Ensure that there is no overlap or inconsistency between upper and lower bounds
+	if any(upper.major < lower.major for upper in uppers for lower in lowers):
 		frappe.throw(
-			f"Invalid version range: The upper bound major version ({max(uppers).major}) "
-			f"and the lower bound major version ({min(lowers).major}) are inconsistent. "
-			"Please ensure the version range specifies valid major versions.",
+			"Invalid version range: There is an inconsistency between the upper and lower bound major versions. "
+			"Please ensure the version range specifies valid major versions."
 		)
 
 	return min(lowers).major
