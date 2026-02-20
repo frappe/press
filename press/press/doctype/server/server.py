@@ -2235,6 +2235,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		database_server.adjust_memory_config()
 		database_server.provide_frappe_user_du_and_find_permission()
+		database_server.provide_frappe_user_mariadb_table_usage_permission()
 		database_server.setup_logrotate()  # Logrotate mariadb logs
 		database_server.setup_user_lingering()
 
@@ -2285,6 +2286,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		if self.doctype == "Database Server":
 			self.adjust_memory_config()
 			self.provide_frappe_user_du_and_find_permission()
+			self.provide_frappe_user_mariadb_table_usage_permission()
 			self.setup_user_lingering()
 
 			if self.has_data_volume:
