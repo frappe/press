@@ -72,7 +72,9 @@ def callback(code=None, state=None):  # noqa: C901
 
 	if team_name and not team_enabled:
 		frappe.throw(
-			_("Account {0} has been deactivated. Please contact support to reactivate your account. ").format(email)
+			_("Account {0} has been deactivated. Please contact support to reactivate your account. ").format(
+				email
+			)
 		)
 		return None
 

@@ -103,7 +103,9 @@ def upload_asset():
 
 	has_existing_asset = check_existing_asset_in_s3(credentials, asset_file.filename)
 	if has_existing_asset:
-		frappe.throw(f"Asset with name {asset_file.filename} already exists in the asset store. Use a different filename or delete the existing asset.")
+		frappe.throw(
+			f"Asset with name {asset_file.filename} already exists in the asset store. Use a different filename or delete the existing asset."
+		)
 
 	upload_assets_to_store(credentials, asset_file.stream, asset_file.filename)
 
@@ -113,11 +115,16 @@ def get_credentials() -> AssetStoreCredentials:
 	"""Get asset store credentials if it is requested from a build server"""
 	build_token = frappe.request.headers.get("build-token")
 	if not build_token:
-		frappe.throw("Build token is required to access asset store credentials. <a href='https://docs.frappe.io/cloud/local-fc-setup' target='_blank'>Learn more</a>", frappe.PermissionError)
+		frappe.throw(
+			"Build token is required to access asset store credentials. <a href='https://docs.frappe.io/cloud/local-fc-setup' target='_blank'>Learn more</a>",
+			frappe.PermissionError,
+		)
 
 	deploy_candidate = frappe.db.get_value("Deploy Candidate", {"build_token": build_token})
 	if not deploy_candidate:
-		frappe.throw("Invalid build token used. Ensure you are using the correct token", frappe.PermissionError)
+		frappe.throw(
+			"Invalid build token used. Ensure you are using the correct token", frappe.PermissionError
+		)
 
 	running_build = frappe.db.get_value(
 		"Deploy Candidate Build", {"deploy_candidate": deploy_candidate, "status": "Running"}

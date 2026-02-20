@@ -16,9 +16,7 @@ from press.press.doctype.team.team import Team
 
 
 @frappe.whitelist(allow_guest=True)
-def account_request(
-	subdomain, email, first_name, last_name, phone_number, country, url_args=None
-):
+def account_request(subdomain, email, first_name, last_name, phone_number, country, url_args=None):
 	email = email.strip().lower()
 	frappe.utils.validate_email_address(email, True)
 

@@ -49,7 +49,9 @@ if TYPE_CHECKING:
 def new(bench):
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
-		frappe.throw("Your account is currently disabled. Please re-enable your account to create a new bench.")
+		frappe.throw(
+			"Your account is currently disabled. Please re-enable your account to create a new bench."
+		)
 
 	if exists(bench["title"]):
 		frappe.throw("A bench with this name already exists on your account. Please choose a different name.")
@@ -58,7 +60,9 @@ def new(bench):
 		frappe.session.data.user_type == "System User"
 		or frappe.db.get_value("Server", bench["server"], "team") == team.name
 	):
-		frappe.throw("You can only create benches on servers owned by your team. <a href='https://docs.frappe.io/cloud/change-team-of-bench-group' target='_blank'>Learn more</a>")
+		frappe.throw(
+			"You can only create benches on servers owned by your team. <a href='https://docs.frappe.io/cloud/change-team-of-bench-group' target='_blank'>Learn more</a>"
+		)
 
 	apps = [{"app": app["name"], "source": app["source"]} for app in bench["apps"]]
 	group = new_release_group(
@@ -283,7 +287,9 @@ def options():
 	clusters = Cluster.get_all_for_new_bench()
 
 	if not versions:
-		frappe.throw("No app versions found. Only enabled and public app sources are listed here. Please check your app source settings.")
+		frappe.throw(
+			"No app versions found. Only enabled and public app sources are listed here. Please check your app source settings."
+		)
 
 	return {"versions": versions, "clusters": clusters}
 
@@ -392,18 +398,28 @@ def update_dependencies(name: str, dependencies: str):
 	dependencies = frappe.parse_json(dependencies)
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 	if len(rg.dependencies) != len(dependencies):
-		frappe.throw("All required dependencies must be provided. <a href='https://docs.frappe.io/cloud/common-issues/required-app-not-found' target='_blank'>Learn more</a>")
+		frappe.throw(
+			"All required dependencies must be provided. <a href='https://docs.frappe.io/cloud/common-issues/required-app-not-found' target='_blank'>Learn more</a>"
+		)
 	if diff := set([d["key"] for d in dependencies]) - set(d.dependency for d in rg.dependencies):
-		frappe.throw("Invalid dependencies: " + ", ".join(diff) + ". <a href='https://docs.frappe.io/cloud/common-issues/incompatible-dependency-version' target='_blank'>Learn more</a>")
+		frappe.throw(
+			"Invalid dependencies: "
+			+ ", ".join(diff)
+			+ ". <a href='https://docs.frappe.io/cloud/common-issues/incompatible-dependency-version' target='_blank'>Learn more</a>"
+		)
 	for dep, new in zip(
 		sorted(rg.dependencies, key=lambda x: x.dependency),
 		sorted(dependencies, key=lambda x: x["key"]),
 		strict=False,
 	):
 		if dep.dependency != new["key"]:
-			frappe.throw(f"Invalid dependency: {new['key']}. <a href='https://docs.frappe.io/cloud/common-issues/incompatible-dependency-version' target='_blank'>Learn more</a>")
+			frappe.throw(
+				f"Invalid dependency: {new['key']}. <a href='https://docs.frappe.io/cloud/common-issues/incompatible-dependency-version' target='_blank'>Learn more</a>"
+			)
 		if not re.match(r"^\d+\.\d+\.*\d*$", new["value"]):
-			frappe.throw(f"Invalid version format for {new['key']}. Expected X.Y.Z (e.g., 14.0.0). <a href='https://docs.frappe.io/cloud/common-issues/incompatible-app-version' target='_blank'>Learn more</a>")
+			frappe.throw(
+				f"Invalid version format for {new['key']}. Expected X.Y.Z (e.g., 14.0.0). <a href='https://docs.frappe.io/cloud/common-issues/incompatible-app-version' target='_blank'>Learn more</a>"
+			)
 		dep.version = new["value"]
 	rg.save()
 
@@ -751,7 +767,10 @@ def deploy(name, apps):
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 
 	if rg.team != team.name:
-		frappe.throw("Bench can only be deployed by the bench owner. <a href='https://docs.frappe.io/cloud/role-permissions' target='_blank'>Learn more</a>", exc=frappe.PermissionError)
+		frappe.throw(
+			"Bench can only be deployed by the bench owner. <a href='https://docs.frappe.io/cloud/role-permissions' target='_blank'>Learn more</a>",
+			exc=frappe.PermissionError,
+		)
 
 	if rg.deploy_in_progress:
 		frappe.throw("A deploy for this bench is already in progress")
@@ -1157,7 +1176,10 @@ def redeploy(name: str, dc_name: str) -> str:
 	response = redeploy_candidate(dc_name)
 
 	if response["error"]:
-		frappe.throw("Unable to redeploy this build. It may have already been redeployed or is in an invalid state.", frappe.ValidationError)
+		frappe.throw(
+			"Unable to redeploy this build. It may have already been redeployed or is in an invalid state.",
+			frappe.ValidationError,
+		)
 
 	return response["message"]
 
