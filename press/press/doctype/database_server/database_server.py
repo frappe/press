@@ -63,6 +63,7 @@ class DatabaseServer(BaseServer):
 		enable_binlog_indexing: DF.Check
 		enable_binlog_upload_to_s3: DF.Check
 		enable_physical_backup: DF.Check
+		enable_schema_size_parser: DF.Check
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
 		gtid_binlog_pos: DF.Data | None
@@ -2535,9 +2536,7 @@ def auto_purge_binlogs_by_size_limit():
 def update_database_schema_sizes():
 	databases = frappe.db.get_all(
 		"Database Server",
-		filters={
-			"status": "Active",
-		},
+		filters={"status": "Active", "enable_schema_size_parser": 1},
 		pluck="name",
 	)
 
