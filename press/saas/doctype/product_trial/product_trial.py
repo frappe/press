@@ -9,6 +9,7 @@ from typing import Any
 import frappe
 import frappe.utils
 from frappe.model.document import Document
+from frappe.query_builder.functions import Count
 from frappe.utils.data import get_url
 
 from press.utils import log_error
@@ -457,9 +458,13 @@ class ProductTrial(Document):
 		ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
 		Server = frappe.qb.DocType("Server")
 		Bench = frappe.qb.DocType("Bench")
-		servers = (
+		Site = frappe.qb.DocType("Site")
+		min_server = (
 			frappe.qb.from_(ReleaseGroupServer)
-			.select(ReleaseGroupServer.server)
+			.select(
+				ReleaseGroupServer.server,
+				Count(Site.name).as_("site_count"),
+			)
 			.distinct()
 			.where(ReleaseGroupServer.parent == self.release_group)
 			.join(Server)
@@ -467,21 +472,14 @@ class ProductTrial(Document):
 			.where(Server.cluster == cluster)
 			.join(Bench)
 			.on(Bench.server == ReleaseGroupServer.server)
-			.run(pluck="server")
+			.left_join(Site)
+			.on(Site.server == ReleaseGroupServer.server & Site.status != "Archived" & Site.is_standby == 1)
+			.groupby(ReleaseGroupServer.server)
+			.orderby(Count(Site.name))
+			.limit(1)
+			.run(as_dict=True)
 		)
-		server_sites = {}
-		for server in servers:
-			server_sites[server] = frappe.db.count(
-				"Site",
-				{
-					"server": server,
-					"status": ("!=", "Archived"),
-					"is_standby": 1,
-				},
-			)
-
-		# get the server with the least number of sites
-		return min(server_sites, key=server_sites.get)
+		return min_server[0]["server"] if min_server else None
 
 
 def create_free_app_subscription(app: str, site: str | None = None):
