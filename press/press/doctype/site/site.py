@@ -829,14 +829,14 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
-	def uninstall_app(self, app: str, feedback: str = "") -> str:
+	def uninstall_app(self, app: str, create_offsite_backup: bool = False, feedback: str = "") -> str:
 		from press.marketplace.doctype.marketplace_app_feedback.marketplace_app_feedback import (
 			collect_app_uninstall_feedback,
 		)
 
 		collect_app_uninstall_feedback(app, feedback, self.name)
 		agent = Agent(self.server)
-		job = agent.uninstall_app_site(self, app)
+		job = agent.uninstall_app_site(self, app, create_offsite_backup)
 
 		log_site_activity(self.name, "Uninstall App", app, job.name)
 
@@ -1547,11 +1547,11 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Inactive", "Suspended"])
-	def archive(self, site_name=None, reason=None, force=False):
+	def archive(self, site_name=None, reason=None, force=False, create_offsite_backup=True):
 		agent = Agent(self.server)
 		self.status = "Pending"
 		self.save()
-		job = agent.archive_site(self, site_name, force)
+		job = agent.archive_site(self, site_name, force, create_offsite_backup)
 		log_site_activity(self.name, "Archive", reason, job.name)
 
 		server = frappe.get_all("Server", filters={"name": self.server}, fields=["proxy_server"], limit=1)[0]
@@ -1602,7 +1602,7 @@ class Site(Document, TagHelpers):
 			# the background sync job might cause timestamp mismatch error or version error
 			frappe.get_doc("Virtual Disk Snapshot", snapshot, for_update=True).delete_snapshot()
 
-	def delete_offsite_backups(self):
+	def delete_offsite_backups(self, keep_latest: bool = True):
 		from press.press.doctype.remote_file.remote_file import (
 			delete_remote_backup_objects,
 		)
@@ -1610,7 +1610,7 @@ class Site(Document, TagHelpers):
 		log_site_activity(self.name, "Drop Offsite Backups")
 
 		sites_remote_files = []
-		site_backups = frappe.get_all(
+		all_backups = frappe.get_all(
 			"Site Backup",
 			filters={
 				"site": self.name,
@@ -1620,7 +1620,8 @@ class Site(Document, TagHelpers):
 			},
 			pluck="name",
 			order_by="creation desc",
-		)[1:]  # Keep latest backup
+		)
+		site_backups = all_backups[1:] if keep_latest else all_backups
 		for backup_files in frappe.get_all(
 			"Site Backup",
 			filters={"name": ("in", site_backups)},
@@ -4208,6 +4209,11 @@ def process_archive_site_job_update(job: "AgentJob"):  # noqa: C901
 		update_finished_backup_restoration_test(job.site, updated_status)
 		if updated_status == "Archived":
 			site_cleanup_after_archive(job.site)
+	# Create Site Backup record if backup was created during archival
+	if job.job_type == "Archive Site":
+		from press.press.doctype.site_backup.site_backup import _create_site_backup_from_agent_job
+
+		_create_site_backup_from_agent_job(job)
 
 
 def process_install_app_site_job_update(job):
@@ -4231,6 +4237,8 @@ def process_install_app_site_job_update(job):
 
 
 def process_uninstall_app_site_job_update(job):
+	from press.press.doctype.site_backup.site_backup import _create_site_backup_from_agent_job
+
 	updated_status = {
 		"Pending": "Pending",
 		"Running": "Installing",
@@ -4240,6 +4248,7 @@ def process_uninstall_app_site_job_update(job):
 	}[job.status]
 
 	site_status = frappe.get_value("Site", job.site, "status")
+	_create_site_backup_from_agent_job(job)
 	if updated_status != site_status:
 		site: Site = frappe.get_doc("Site", job.site)
 		site.sync_apps()
