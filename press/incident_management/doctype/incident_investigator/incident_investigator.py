@@ -646,7 +646,7 @@ class IncidentInvestigator(Document, StepHandler):
 	def investigate(self):
 		"""Main method to execute investigation steps in order"""
 		virtual_machine = frappe.get_value("Server", self.server, "virtual_machine")
-		self.prometheus_investigation_helper = PrometheusInvestigationHelper.load_from_server(
+		prometheus_investigation_helper = PrometheusInvestigationHelper.load_from_server(
 			server=virtual_machine,
 			high_cpu_load_threshold=self.high_cpu_load_threshold,
 			high_memory_usage_threshold=self.high_memory_usage_threshold,
@@ -657,7 +657,7 @@ class IncidentInvestigator(Document, StepHandler):
 
 		for step_key, methods in PrometheusInvestigationHelper.INVESTIGATION_CHECKS.items():
 			for method in methods:
-				investigation_method = getattr(self.prometheus_investigation_helper, method)
+				investigation_method = getattr(prometheus_investigation_helper, method)
 				if step_key == "server_investigation_steps":
 					investigation_method(
 						instance=virtual_machine,
