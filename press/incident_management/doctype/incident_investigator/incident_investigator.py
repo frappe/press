@@ -13,12 +13,12 @@ from enum import Enum
 import frappe
 import pytz
 import requests
+from elasticsearch import Elasticsearch
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils.password import get_decrypted_password
 from prometheus_api_client import MetricRangeDataFrame, PrometheusConnect
 
-from press.agent import Agent
 from press.runner import Ansible, StepHandler
 from press.runner import Status as StepStatus
 
@@ -436,30 +436,53 @@ class AppServerInvestigationActions:
 			and self.investigator.investigation_window_end_time
 		), "Investigation window not set"
 
-		earlyoom_logs = (
-			Agent(self.investigator.server)
-			.get_earlyoom_logs(
-				start_time=get_utc_time(
-					frappe.utils.add_to_date(
-						self.investigator.investigation_window_start_time, minutes=-INVESTIGATION_WINDOW * 6
-					)
-				).strftime("%Y-%m-%d %H:%M:%S"),
-				end_time=get_utc_time(self.investigator.investigation_window_end_time).strftime(
-					"%Y-%m-%d %H:%M:%S"
-				),
-			)
-			.get("logs")
+		log_server = frappe.db.get_single_value("Press Settings", "log_server")
+		password = get_decrypted_password("Log Server", log_server, "password")
+
+		es = Elasticsearch(
+			f"https://{log_server}/elasticsearch", basic_auth=("frappe", password), request_timeout=120
 		)
 
-		if not earlyoom_logs:
+		start_time = (
+			get_utc_time(
+				frappe.utils.add_to_date(
+					self.investigator.investigation_window_start_time, minutes=-INVESTIGATION_WINDOW * 6
+				)
+			)
+			.isoformat()
+			.replace("+00:00", "Z")
+		)  # We are looking at a larger window since we want to capture any OOM events leading up to the incident (30m?)
+		end_time = (
+			get_utc_time(self.investigator.investigation_window_end_time).isoformat().replace("+00:00", "Z")
+		)
+
+		query = {
+			"size": 1000,
+			"_source": ["@timestamp", "message", "process.pid", "process.name", "host.name"],
+			"query": {
+				"bool": {
+					"filter": [
+						{"term": {"process.name": "earlyoom"}},
+						{"term": {"host.name": "f119-mumbai.frappe.cloud"}},
+						{"range": {"@timestamp": {"gte": start_time, "lte": end_time}}},
+					]
+				}
+			},
+			"sort": [{"@timestamp": {"order": "asc"}}],
+		}
+
+		response = es.search(index="filebeat-*", body=query)
+		oom_events = [hit["_source"] for hit in response["hits"]["hits"]]
+
+		if not oom_events:
 			step.status = StepStatus.Failure
-			step.output = "No earlyoom logs found in the investigation window."
+			step.output = "No OOM kill events found in the investigation window"
 			step.save()
 			return
 
-		for log in earlyoom_logs:
-			if "killing process" in log.get("MESSAGE", ""):
-				step.output += log.get("MESSAGE")
+		for event in oom_events:
+			if "killing process" in event["message"]:
+				step.output += event["message"]
 
 		step.status = StepStatus.Success
 		step.save()

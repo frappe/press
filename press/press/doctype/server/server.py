@@ -2225,7 +2225,6 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		self.setup_iptables()
 		self.install_cadvisor()
 		self.setup_logrotate()  # Logrotate monitor json
-		self.add_frappe_to_systemd_journal_group()
 
 		# Database Server specific config
 		database_server: DatabaseServer = frappe.get_doc("Database Server", self.database_server)
@@ -2241,21 +2240,6 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		self.validate_mounts()
 		self.save(ignore_permissions=True)
-
-	def add_frappe_to_systemd_journal_group(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_add_frappe_to_systemd_journal_group")
-
-	def _add_frappe_to_systemd_journal_group(self):
-		try:
-			ansible = Ansible(
-				playbook="add_frappe_to_journal_group.yml",
-				server=self,
-				user=self._ssh_user(),
-				port=self._ssh_port(),
-			)
-			ansible.run()
-		except Exception:
-			log_error("Add Frappe to Systemd Journal Group Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def set_additional_config(self):  # noqa: C901
@@ -2286,7 +2270,6 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			self.install_earlyoom()
 			self.setup_ncdu()
 			self.setup_iptables()
-			self.add_frappe_to_systemd_journal_group()
 
 			if self.has_data_volume:
 				self.setup_archived_folder()

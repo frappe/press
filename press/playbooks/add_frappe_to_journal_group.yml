@@ -1,7 +1,0 @@
----
-- name: Add frappe User to Systemd Journal Group
-  hosts: all
-  become: yes
-  become_user: root
-  roles:
-    - role: add_frappe_to_journal_group
