@@ -113,11 +113,16 @@ def _sync_machine_availability_status_of_plans():  # noqa
 			return
 
 		try:
-			cluster: Cluster = frappe.get_doc("Cluster", c)
-			plan_availability_results: dict[str, bool] = cluster.check_machine_availability(
-				[p["instance_type"] for p in cluster_plans[c]]
-			)
+			cluster: Cluster = cluster_doc_map[c]
+			instance_types = [p["instance_type"] for p in cluster_plans[c]]
+			plan_availability_results = cluster.check_machine_availability(instance_types)
 
+			# Some Cluster implementations may return a boolean instead of a dict.
+			# Normalize to a dict so that the code below can safely use .get(...).
+			if isinstance(plan_availability_results, bool):
+				plan_availability_results = {
+					instance_type: plan_availability_results for instance_type in instance_types
+				}
 			for plan in cluster_plans[c]:
 				is_unavailable = not plan_availability_results.get(plan.instance_type, False)
 				if is_unavailable != plan.machine_unavailable:

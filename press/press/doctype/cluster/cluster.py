@@ -15,7 +15,6 @@ import boto3
 import frappe
 import pydo
 from frappe.model.document import Document
-from frappe.utils.caching import redis_cache
 from hcloud import APIException, Client
 from hcloud.firewalls.domain import FirewallRule as HetznerFirewallRule
 from hcloud.networks.domain import NetworkSubnet
@@ -1125,8 +1124,7 @@ class Cluster(Document):
 			return results
 		return True
 
-	@redis_cache(ttl=60)
-	def _check_hetzner_machine_availability(self, machine_type: str | list) -> bool | dict[str, bool]:
+	def _check_hetzner_machine_availability(self, machine_type: str | list) -> bool | dict[str, bool]:  # noqa: C901
 		client = self.get_hetzner_client()
 		machine_type_id_map = {}
 		if isinstance(machine_type, list):
@@ -1148,10 +1146,17 @@ class Cluster(Document):
 			for st in dc.server_types.available:
 				available_machine_ids.append(st.id)
 
-		results = {}
-		for m in machine_type if isinstance(machine_type, list) else [machine_type]:
-			results[m] = m in available_machine_ids
+		# For a single machine type, return a boolean to preserve the original behavior.
+		if isinstance(machine_type, str):
+			machine_id = machine_type_id_map[machine_type]
+			return machine_id in available_machine_ids
 
+		# For a list of machine types, return a mapping of name -> availability.
+		results: dict[str, bool] = {}
+		for m in machine_type:
+			# If a machine type was not resolved earlier, treat it as unavailable.
+			machine_id = machine_type_id_map.get(m)
+			results[m] = machine_id in available_machine_ids
 		return results
 
 	@frappe.whitelist()
