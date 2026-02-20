@@ -1213,78 +1213,9 @@ export default {
 				condition: (site) => {
 					return site.doc?.status !== 'Archived';
 				},
-<<<<<<< HEAD
-				component: SiteActions,
-				props: (site) => {
-					return { site: site.doc?.name };
-=======
-				childrenRoutes: ['Site Migration'],
-				list: {
-					doctype: 'Site Action',
-					filters: (site) => {
-						return { site: site.doc?.name };
-					},
-					orderBy: 'creation',
-					fields: ['action_type', 'status', 'scheduled_time', 'owner'],
-					columns: [
-						{
-							label: 'Migration',
-							fieldname: 'action_type',
-							width: 1,
-						},
-						{
-							label: 'Status',
-							fieldname: 'status',
-							type: 'Badge',
-							width: 0.6,
-						},
-						{
-							label: 'Created By',
-							fieldname: 'owner',
-						},
-						{
-							label: 'Scheduled At',
-							fieldname: 'scheduled_time',
-							format(value) {
-								return date(value, 'lll');
-							},
-						},
-						// {
-						// 	label: 'Updated On',
-						// 	fieldname: 'updated_on',
-						// 	format(value) {
-						// 		return date(value, 'lll');
-						// 	},
-						// },
-					],
-					route(row) {
-						return {
-							name: 'Site Migration',
-							params: { id: row.name },
-						};
-					},
-					primaryAction({ listResource: backups, documentResource: site }) {
-						return {
-							label: 'Trigger Migration',
-							slots: {
-								prefix: icon('upload-cloud'),
-							},
-							loading: site.backup.loading,
-							onClick() {
-								renderDialog(
-									h(
-										defineAsyncComponent(
-											() => import('../components/site/SiteMigration.vue'),
-										),
-										{
-											site: site.name,
-										},
-									),
-								);
-							},
-						};
-					},
->>>>>>> 0231b4505 (feat(proxy-server): Allow setting memory limits for certain processes (#5046))
+component: SiteActions,
+props: (site) => {
+return { site: site.doc?.name };
 				},
 			},
 			{
